@@ -8,12 +8,13 @@
  * @related-files [tests/scenario_framework/runner/assertions.ts, tests/scenario_framework/runner/evidence_collector.ts, tests/scenario_framework/schema/step_schema.ts]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertStringIncludes, fail } from "@std/assert";
 import { join } from "@std/path";
-import { evaluateCriterion, evaluateStepOutcome } from "../../runner/assertions.ts";
+import { callLlmEndpoint, evaluateCriterion, evaluateStepOutcome } from "../../runner/assertions.ts";
 import { copyEvidenceArtifact, writeRunManifest } from "../../runner/evidence_collector.ts";
 import { CriterionKind, CriterionPhase, CriterionStatus, ScenarioStepType } from "../../schema/step_schema.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
+import { withEnv } from "@exaix/testing";
 
 async function withTempWorkspace(
   fn: (workspaceRoot: string) => Promise<void>,
@@ -490,4 +491,162 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] version criteria can check work
     assertEquals(result.status, CriterionStatus.PASSED);
     assertEquals(result.observed_value, WORKSPACE_SCHEMA_VERSION);
   }, "scenario-framework-version-");
+});
+
+// ---------------------------------------------------------------------------
+// LLM Endpoint Dispatch Tests (TDD: will fail until EXA_LLM_PROVIDER dispatch is implemented)
+// ---------------------------------------------------------------------------
+
+Deno.test({
+  name: "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint dispatches to Ollama when EXA_LLM_PROVIDER is unset",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  fn: async () => {
+    await withEnv(
+      { EXA_LLM_PROVIDER: null, EXA_EVAL_LLM_MOCK: "false", EXA_LLM_ENDPOINT: "http://127.0.0.1:1" },
+      async () => {
+        try {
+          await callLlmEndpoint("test prompt");
+          fail("Expected error to be thrown");
+        } catch (err) {
+          assertStringIncludes((err as Error).message, "LLM call failed");
+        }
+      },
+    );
+  },
+});
+
+Deno.test({
+  name: "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint dispatches to Ollama when EXA_LLM_PROVIDER=ollama",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  fn: async () => {
+    await withEnv(
+      { EXA_LLM_PROVIDER: "ollama", EXA_EVAL_LLM_MOCK: "false", EXA_LLM_ENDPOINT: "http://127.0.0.1:1" },
+      async () => {
+        try {
+          await callLlmEndpoint("test prompt");
+          fail("Expected error to be thrown");
+        } catch (err) {
+          assertStringIncludes((err as Error).message, "LLM call failed");
+        }
+      },
+    );
+  },
+});
+
+Deno.test({
+  name: "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint dispatches to Anthropic when EXA_LLM_PROVIDER=anthropic",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  fn: async () => {
+    await withEnv(
+      { EXA_LLM_PROVIDER: "anthropic", EXA_EVAL_LLM_MOCK: "false", EXA_LLM_ENDPOINT: "http://127.0.0.1:1" },
+      async () => {
+        try {
+          await callLlmEndpoint("test prompt");
+          fail("Expected error to be thrown");
+        } catch (err) {
+          assertStringIncludes((err as Error).message, "Anthropic");
+        }
+      },
+    );
+  },
+});
+
+Deno.test({
+  name: "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint dispatches to OpenAI when EXA_LLM_PROVIDER=openai",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  fn: async () => {
+    await withEnv(
+      { EXA_LLM_PROVIDER: "openai", EXA_EVAL_LLM_MOCK: "false", EXA_LLM_ENDPOINT: "http://127.0.0.1:1" },
+      async () => {
+        try {
+          await callLlmEndpoint("test prompt");
+          fail("Expected error to be thrown");
+        } catch (err) {
+          assertStringIncludes((err as Error).message, "OpenAI");
+        }
+      },
+    );
+  },
+});
+
+Deno.test({
+  name: "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint dispatches to Google when EXA_LLM_PROVIDER=google",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  fn: async () => {
+    await withEnv(
+      { EXA_LLM_PROVIDER: "google", EXA_EVAL_LLM_MOCK: "false", EXA_LLM_ENDPOINT: "http://127.0.0.1:1" },
+      async () => {
+        try {
+          await callLlmEndpoint("test prompt");
+          fail("Expected error to be thrown");
+        } catch (err) {
+          assertStringIncludes((err as Error).message, "Google");
+        }
+      },
+    );
+  },
+});
+
+Deno.test({
+  name:
+    "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint dispatches to OpenRouter when EXA_LLM_PROVIDER=openrouter",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  fn: async () => {
+    await withEnv({
+      EXA_LLM_PROVIDER: "openrouter",
+      EXA_EVAL_LLM_MOCK: "false",
+      EXA_LLM_ENDPOINT: "http://127.0.0.1:1",
+    }, async () => {
+      try {
+        await callLlmEndpoint("test prompt");
+        fail("Expected error to be thrown");
+      } catch (err) {
+        assertStringIncludes((err as Error).message, "OPENROUTER_API_KEY");
+      }
+    });
+  },
+});
+
+Deno.test({
+  name:
+    "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint dispatches to Anthropic when ANTHROPIC_API_KEY is set without EXA_LLM_PROVIDER (backward compat)",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  fn: async () => {
+    await withEnv({
+      EXA_LLM_PROVIDER: null,
+      ANTHROPIC_API_KEY: "sk-test-key",
+      EXA_EVAL_LLM_MOCK: "false",
+      EXA_LLM_ENDPOINT: "http://127.0.0.1:1",
+    }, async () => {
+      try {
+        await callLlmEndpoint("test prompt");
+        fail("Expected error to be thrown");
+      } catch (err) {
+        assertStringIncludes((err as Error).message, "Anthropic");
+      }
+    });
+  },
+});
+
+Deno.test({
+  name: "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint throws for invalid EXA_LLM_PROVIDER value",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  fn: async () => {
+    await withEnv({ EXA_LLM_PROVIDER: "invalid-provider" }, async () => {
+      try {
+        await callLlmEndpoint("test prompt");
+        fail("Expected error to be thrown");
+      } catch (err) {
+        assertStringIncludes((err as Error).message, "EXA_LLM_PROVIDER");
+      }
+    });
+  },
 });

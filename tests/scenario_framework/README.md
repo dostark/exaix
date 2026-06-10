@@ -58,6 +58,33 @@ They work in any workspace, including CI pre-push hooks.
 See **[`docs/Exaix_Evaluation.md`](../docs/Exaix_Evaluation.md)** for the full
 CLI reference, scoring formulas, scenario authoring guide, and CI integration.
 
+### LLM Provider Configuration
+
+The llm-judge criterion dispatches to different providers via the `EXA_LLM_PROVIDER` env var. Each provider reads its own API key and allows endpoint/model overrides:
+
+| Provider       | `EXA_LLM_PROVIDER` | API Key Env Var      | Default Model               | Default Endpoint                                |
+| -------------- | ------------------ | -------------------- | --------------------------- | ----------------------------------------------- |
+| Anthropic      | `anthropic`        | `ANTHROPIC_API_KEY`  | `claude-haiku-4-5-20251001` | `https://api.anthropic.com/v1/messages`         |
+| OpenAI         | `openai`           | `OPENAI_API_KEY`     | `gpt-4o-mini`               | `https://api.openai.com/v1/chat/completions`    |
+| Google Gemini  | `google`           | `GOOGLE_API_KEY`     | `gemini-2.0-flash`          | `https://generativelanguage.googleapis.com/...` |
+| OpenRouter     | `openrouter`       | `OPENROUTER_API_KEY` | `openrouter/auto`           | `https://openrouter.ai/api/v1/chat/completions` |
+| Ollama (local) | `ollama`           | _(none)_             | `llama3`                    | `http://127.0.0.1:11434/api/generate`           |
+
+Override the endpoint or model for any provider via `EXA_LLM_ENDPOINT` and `EXA_LLM_MODEL`. Backward compatibility: setting `ANTHROPIC_API_KEY` without `EXA_LLM_PROVIDER` routes to Anthropic. Unset `EXA_LLM_PROVIDER` with no API key defaults to Ollama.
+
+```bash
+# Example: test with OpenAI
+export EXA_LLM_PROVIDER=openai
+export OPENAI_API_KEY="sk-..."
+exactl eval run --pack eval-edge-cases
+
+# Example: test with Google Gemini
+export EXA_LLM_PROVIDER=google
+export GOOGLE_API_KEY="..."
+export EXA_LLM_MODEL=gemini-1.5-flash
+exactl eval run --pack eval-smoke
+```
+
 ---
 
 ## 2. Validation (Secondary Role)

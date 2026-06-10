@@ -1212,23 +1212,43 @@ async function evaluateLlmJudgeCriterion(
   }
 }
 
-async function callLlmEndpoint(prompt: string): Promise<string> {
+export async function callLlmEndpoint(prompt: string): Promise<string> {
+  const provider = (Deno.env.get("EXA_LLM_PROVIDER") ?? "").toLowerCase().trim();
+
+  // Backward compatibility: ANTHROPIC_API_KEY without explicit provider routes to Anthropic
   const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
-  if (anthropicKey) {
+  if (!provider && anthropicKey) {
     return callAnthropicEndpoint(prompt, anthropicKey);
   }
-  const endpoint = Deno.env.get("EXA_LLM_ENDPOINT") ?? "http://127.0.0.1:11434/api/generate";
-  const model = Deno.env.get("EXA_LLM_MODEL") ?? "llama3";
-  try {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model, prompt, stream: false }),
-    });
-    const data = await response.json();
-    return data.response ?? JSON.stringify(data);
-  } catch (error) {
-    throw new Error(`LLM call failed: ${(error as Error).message}`);
+
+  switch (provider) {
+    case "anthropic": {
+      const key = anthropicKey ?? Deno.env.get("ANTHROPIC_API_KEY") ?? "";
+      if (!key) throw new Error("EXA_LLM_PROVIDER=anthropic requires ANTHROPIC_API_KEY");
+      return await callAnthropicEndpoint(prompt, key);
+    }
+    case "openai": {
+      const key = Deno.env.get("OPENAI_API_KEY");
+      if (!key) throw new Error("EXA_LLM_PROVIDER=openai requires OPENAI_API_KEY");
+      return await callOpenAIEndpoint(prompt, key);
+    }
+    case "google": {
+      const key = Deno.env.get("GOOGLE_API_KEY");
+      if (!key) throw new Error("EXA_LLM_PROVIDER=google requires GOOGLE_API_KEY");
+      return await callGoogleEndpoint(prompt, key);
+    }
+    case "openrouter": {
+      const key = Deno.env.get("OPENROUTER_API_KEY");
+      if (!key) throw new Error("EXA_LLM_PROVIDER=openrouter requires OPENROUTER_API_KEY");
+      return await callOpenRouterEndpoint(prompt, key);
+    }
+    case "ollama":
+    case "":
+      return await callOllamaEndpoint(prompt);
+    default:
+      throw new Error(
+        `Unknown EXA_LLM_PROVIDER="${provider}". Supported values: anthropic, openai, google, openrouter, ollama`,
+      );
   }
 }
 
@@ -1257,6 +1277,101 @@ async function callAnthropicEndpoint(prompt: string, apiKey: string): Promise<st
     return text;
   } catch (error) {
     throw new Error(`Anthropic LLM call failed: ${(error as Error).message}`);
+  }
+}
+
+async function callOpenAIEndpoint(prompt: string, apiKey: string): Promise<string> {
+  const endpoint = Deno.env.get("EXA_LLM_ENDPOINT") ?? "https://api.openai.com/v1/chat/completions";
+  const model = Deno.env.get("EXA_LLM_MODEL") ?? "gpt-4o-mini";
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 4096,
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${data.error?.message ?? response.statusText}`);
+    }
+    const text = data.choices?.[0]?.message?.content ?? JSON.stringify(data);
+    return text;
+  } catch (error) {
+    throw new Error(`OpenAI LLM call failed: ${(error as Error).message}`);
+  }
+}
+
+async function callGoogleEndpoint(prompt: string, apiKey: string): Promise<string> {
+  const model = Deno.env.get("EXA_LLM_MODEL") ?? "gemini-2.0-flash";
+  const baseUrl = Deno.env.get("EXA_LLM_ENDPOINT") ??
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+  try {
+    const url = baseUrl.includes("?") ? `${baseUrl}&key=${apiKey}` : `${baseUrl}?key=${apiKey}`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 4096 },
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(`Google API error: ${data.error?.message ?? response.statusText}`);
+    }
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? JSON.stringify(data);
+    return text;
+  } catch (error) {
+    throw new Error(`Google LLM call failed: ${(error as Error).message}`);
+  }
+}
+
+async function callOpenRouterEndpoint(prompt: string, apiKey: string): Promise<string> {
+  const endpoint = Deno.env.get("EXA_LLM_ENDPOINT") ?? "https://openrouter.ai/api/v1/chat/completions";
+  const model = Deno.env.get("EXA_LLM_MODEL") ?? "openrouter/auto";
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 4096,
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(`OpenRouter API error: ${data.error?.message ?? response.statusText}`);
+    }
+    const text = data.choices?.[0]?.message?.content ?? JSON.stringify(data);
+    return text;
+  } catch (error) {
+    throw new Error(`OpenRouter LLM call failed: ${(error as Error).message}`);
+  }
+}
+
+async function callOllamaEndpoint(prompt: string): Promise<string> {
+  const endpoint = Deno.env.get("EXA_LLM_ENDPOINT") ?? "http://127.0.0.1:11434/api/generate";
+  const model = Deno.env.get("EXA_LLM_MODEL") ?? "llama3";
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model, prompt, stream: false }),
+    });
+    const data = await response.json();
+    return data.response ?? JSON.stringify(data);
+  } catch (error) {
+    throw new Error(`LLM call failed: ${(error as Error).message}`);
   }
 }
 
