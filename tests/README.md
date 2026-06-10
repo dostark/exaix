@@ -325,7 +325,6 @@ When a package exposes test helpers for external consumers, use the `@exaix/<pac
 ```typescript
 import { createGitTestHelper } from "@exaix/git/testing";
 import { createMcpTestSetup } from "@exaix/mcp/testing";
-import { createMemoryTestHelper } from "@exaix/memory/testing";
 ```
 
 ---

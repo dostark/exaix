@@ -12,7 +12,7 @@ import { MemoryType } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
 import { type ISearchDeps, searchByKeyword, searchByTags, searchMemoryAdvanced } from "@exaix/memory";
 import type { IExecutionMemory, IProjectMemory } from "@exaix/schemas/memory_bank.ts";
-import { createTestLearning } from "@exaix/memory/testing";
+import { createTestLearning } from "@exaix/testing";
 import {
   ConfidenceAssessmentLevel,
   ExecutionStatus,

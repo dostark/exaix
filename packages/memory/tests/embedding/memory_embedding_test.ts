@@ -21,7 +21,7 @@ import { cosineSimilarity, generateMockEmbedding, MemoryEmbeddingService } from 
 import { initTestDbService } from "@exaix/testing";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
 import { MemoryStatus } from "@exaix/core/status";
-import { getMemoryIndexDir } from "@exaix/memory/testing";
+import { getMemoryIndexDir } from "@exaix/testing";
 
 // ===== Test Fixtures =====
 

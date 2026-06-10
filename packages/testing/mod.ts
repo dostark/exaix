@@ -14,7 +14,6 @@ export { createMockConfig, writeTestConfigFile } from "./src/helpers/config.ts";
 export { createMockLogger } from "./src/helpers/services/graceful_shutdown_test_helpers.ts";
 export type { IMockEventLogger } from "./src/helpers/services/graceful_shutdown_test_helpers.ts";
 export { createMockProvider } from "./src/helpers/mock_provider.ts";
-export { createTestLearning, createTestProposal } from "./src/helpers/services/memory_test_helpers.ts";
 export { getFixturePath, readFixtureTextSync } from "./src/helpers/fixtures.ts";
 export { initActivityTableSchema, initTestDbService } from "./src/helpers/init_db.ts";
 export { isCi, withEnv } from "./src/helpers/env.ts";
@@ -40,10 +39,24 @@ export {
   sampleRouterRequest,
 } from "./src/helpers/services/barrel.ts";
 export {
+  createApprovedProposal,
+  createBaseLearning,
+  createFailedExecutionMemory,
+  createGlobalProposal,
+  createInvalidProposal,
+  createInvalidStatusProposal,
+  createMinimalProposal,
+  createSuccessfulExecutionMemory,
+  createTestLearning,
+  createTestProposal,
+} from "./src/helpers/services/memory_test_helpers.ts";
+export {
   createMinimalExecutionMemory,
+  createMinimalProjectMemory,
+  createSampleDecision,
+  createSampleLearning,
+  createSamplePattern,
   createSampleProjectMemory,
-  createTestMemoryBankWithGlobal,
-  createTestMemoryBankWithProject,
 } from "./src/helpers/services/memory_bank_test_helpers.ts";
 export {
   createNotificationTestProposal,

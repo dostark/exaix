@@ -23,13 +23,9 @@ import {
   MemoryScope,
 } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
-import { getMemoryExecutionDir, getMemoryIndexDir, getMemoryProjectsDir } from "@exaix/memory/testing";
-import {
-  createMinimalExecutionMemory,
-  createMinimalProjectMemory,
-  createSampleProjectMemory,
-  createTestMemoryBankWithProject,
-} from "@exaix/memory/testing";
+import { getMemoryExecutionDir, getMemoryIndexDir, getMemoryProjectsDir } from "@exaix/testing";
+import { createMinimalExecutionMemory, createMinimalProjectMemory, createSampleProjectMemory } from "@exaix/testing";
+import { createTestMemoryBankWithProject } from "../helpers/memory_bank_harness.ts";
 // Helper function to generate valid UUIDs for testing
 function generateTestUUID(): string {
   return crypto.randomUUID();

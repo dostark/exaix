@@ -49,7 +49,7 @@ This avoids deep imports from root `tests/` into package-local tests.
 
 - If a helper is specific to one package's tests, keep it in `packages/<name>/tests/helpers/`.
 - If a helper must be imported by external consumers, expose it via `@exaix/<package>/testing`
-  (e.g., `@exaix/git/testing`, `@exaix/mcp/testing`, `@exaix/memory/testing`).
+  (e.g., `@exaix/git/testing`, `@exaix/mcp/testing`).
 - Package-owned testing subpaths may depend on the owning package API plus
   `@exaix/testing` for shared helpers, but should not depend on unrelated runtime packages.
 

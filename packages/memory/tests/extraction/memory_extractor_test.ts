@@ -24,7 +24,7 @@ import {
   getMemoryIndexDir,
   getMemoryPendingDir,
   getMemoryProjectsDir,
-} from "@exaix/memory/testing";
+} from "@exaix/testing";
 import {
   createApprovedProposal,
   createFailedExecutionMemory,
@@ -34,8 +34,8 @@ import {
   createMinimalProposal,
   createSuccessfulExecutionMemory,
   createTestProposal,
-} from "@exaix/memory/testing";
-import { createMinimalProjectMemory } from "@exaix/memory/testing";
+} from "@exaix/testing";
+import { createMinimalProjectMemory } from "@exaix/testing";
 
 // ===== MemoryUpdateProposalSchema Tests =====
 
