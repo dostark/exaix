@@ -185,6 +185,62 @@ function computePageRankScores(
 // SymbolExtractor
 // ---------------------------------------------------------------------------
 
+/**
+ * Normalise raw `deno doc --json` output into the legacy flat-node format.
+ * Handles both Deno 1.x (bare array) and Deno 2.x (`{version, nodes: {...}}`).
+ */
+function parseDenoDocNodes(raw: string): IDenoDocNode[] {
+  const parsed = JSON.parse(raw);
+
+  // Deno 1.x: bare array of nodes
+  if (Array.isArray(parsed)) return parsed as IDenoDocNode[];
+
+  // Deno 2.x: { version: 2, nodes: { "file:///path": { symbols: [...] } } }
+  const doc2 = parsed as {
+    version?: number;
+    nodes?: Record<string, {
+      symbols?: Array<{
+        name?: string;
+        declarations?: Array<{
+          kind?: string;
+          location?: IDenoDocLocation;
+          jsDoc?: IDenoDocJsDoc;
+          def?: IDenoDocFunctionDef | IDenoDocVariableDef | object;
+        }>;
+      }>;
+    }>;
+  };
+  if (!doc2.nodes || typeof doc2.nodes !== "object") return [];
+
+  const result: IDenoDocNode[] = [];
+  for (const fileUrl of Object.keys(doc2.nodes)) {
+    const filePath = fileUrl.startsWith("file://") ? fileUrl.slice(7) : fileUrl;
+    const modInfo = doc2.nodes[fileUrl];
+    if (!modInfo.symbols) continue;
+
+    for (const sym of modInfo.symbols) {
+      const name = sym.name ?? "";
+      if (!name) continue;
+      const decl = sym.declarations?.[0];
+      if (!decl) continue;
+
+      result.push({
+        name,
+        kind: decl.kind ?? "unknown",
+        location: decl.location ?? { filename: filePath },
+        jsDoc: decl.jsDoc,
+        functionDef: decl.kind === "function" ? (decl.def as IDenoDocFunctionDef) : undefined,
+        variableDef: decl.kind === "variable" ? (decl.def as IDenoDocVariableDef) : undefined,
+        classDef: decl.kind === "class" ? {} : undefined,
+        interfaceDef: decl.kind === "interface" ? {} : undefined,
+        enumDef: decl.kind === "enum" ? {} : undefined,
+        typeAliasDef: decl.kind === "typeAlias" ? {} : undefined,
+      });
+    }
+  }
+  return result;
+}
+
 /** TypeScript/Deno symbol index extractor via `deno doc --json`. */
 export class SymbolExtractor {
   private readonly _runner: IDocCommandRunner;
@@ -227,7 +283,7 @@ export class SymbolExtractor {
 
         let nodes: IDenoDocNode[];
         try {
-          nodes = JSON.parse(raw) as IDenoDocNode[];
+          nodes = parseDenoDocNodes(raw);
         } catch {
           continue;
         }
