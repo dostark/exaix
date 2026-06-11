@@ -8,8 +8,7 @@
     "@std/testing/bdd": "jsr:@std/testing@^1.0.18/bdd",
     "@exaix/memory": "./mod.ts",
     "@exaix/memory/": "./src/",
-    "@exaix/memory/testing": "./testing/mod.ts",
-    "@exaix/memory/testing/": "./testing/",
+
     "@exaix/core": "../core/mod.ts",
     "@exaix/core/": "../core/src/",
     "@exaix/core/types": "../core/src/types/mod.ts",
@@ -28,8 +27,7 @@
     "@exaix/storage-sqlite/": "../storage-sqlite/src/"
   },
   "exports": {
-    ".": "./mod.ts",
-    "./testing": "./testing/mod.ts"
+    ".": "./mod.ts"
   },
   "compilerOptions": {
     "lib": [
