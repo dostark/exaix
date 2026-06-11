@@ -42,8 +42,8 @@ Deno.test("Integration: context overflow recovers by truncating prompt via alloc
     const strategyRegistry = new StrategyRegistry();
     strategyRegistry.register({
       name: ExecutionStrategyName.LEGACY,
-      execute: (blueprint, context, options) => {
-        const prompt = holder.executor!.buildExecutionPrompt(blueprint, context, options);
+      execute: async (blueprint, context, options) => {
+        const prompt = await holder.executor!.buildExecutionPrompt(blueprint, context, options);
         promptLengthSeen = prompt.length;
         const skillMatch = prompt.match(/--- BEGIN SKILLS ---\n([\s\S]*?)\n--- END SKILLS ---/);
         skillsBlockLengthSeen = skillMatch?.[1].length ?? 0;
