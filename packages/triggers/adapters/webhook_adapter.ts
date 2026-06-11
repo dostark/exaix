@@ -6,9 +6,10 @@
  * @related-files ["packages/triggers/adapters/adapter_registry.ts"]
  * @ungrounded
  * @description Optional trigger adapter for HTTP webhook payloads. Enforces a
- * configurable payload size limit and supports HMAC-SHA256 signature verification
- * (off by default — enabled when a `secret` is provided in config). External adapters
- * are optional: Exaix operates fully offline when no webhook infrastructure is active.
+ * configurable payload size limit and MANDATORY HMAC-SHA256 signature verification:
+ * an adapter with no configured `secret` fails closed and rejects every payload
+ * (Finding 9) rather than accepting unsigned, unauthenticated flow triggers. External
+ * adapters are optional: Exaix operates fully offline when no webhook infra is active.
  */
 
 import type { ExecutionTriggerEnvelope, ITriggerAdapter } from "@exaix/core/triggers";
@@ -30,7 +31,11 @@ interface IWebhookBodyObject {
 }
 
 export interface IWebhookAdapterConfig {
-  /** HMAC-SHA256 secret. When set, the adapter verifies the `x-hub-signature-256` header. */
+  /**
+   * HMAC-SHA256 secret. REQUIRED to accept payloads: the adapter verifies the
+   * `x-hub-signature-256` header against it. Without a secret the adapter fails
+   * closed and rejects every payload (Finding 9).
+   */
   secret?: string;
   /** Override header name for the HMAC signature. Defaults to "x-hub-signature-256". */
   signatureHeader?: string;
@@ -67,9 +72,15 @@ export class WebhookAdapter implements ITriggerAdapter<IWebhookInput> {
       );
     }
 
-    if (this.secret !== undefined) {
-      await this.verifyHmac(bodyBytes, rawInput.headers);
+    // Fail closed (Finding 9): a webhook with no configured secret must not accept
+    // unsigned payloads — that would allow unauthenticated flow triggers.
+    if (this.secret === undefined || this.secret === "") {
+      throw new Error(
+        "Webhook secret is not configured: refusing to accept an unsigned payload. " +
+          "Set a webhook secret to enable mandatory HMAC-SHA256 verification.",
+      );
     }
+    await this.verifyHmac(bodyBytes, rawInput.headers);
 
     const subject = rawInput.subject ?? "webhook";
     const bodyText = new TextDecoder().decode(bodyBytes);
