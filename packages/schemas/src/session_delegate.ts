@@ -1,0 +1,159 @@
+/**
+ * @module SessionDelegateSchemas
+ * @path packages/schemas/src/session_delegate.ts
+ * @description Zod schemas for the Phase 106 session-delegation handoff contract:
+ *   brief (input), return (output), wait state, and config block.
+ * @architectural-layer Schemas
+ * @related-files [packages/schemas/src/mod.ts, packages/schemas/tests/session_delegate_test.ts]
+ */
+
+import { z } from "zod";
+
+/** Which gate a delegation is bound to. */
+export const SessionGateSchema = z.enum([
+  "refinement",
+  "plan_review",
+  "code_changes",
+  "review",
+]);
+export type SessionGate = z.infer<typeof SessionGateSchema>;
+
+/** Supported external session tools. */
+export const SessionToolSchema = z.enum([
+  "claude-code",
+  "opencode",
+  "cursor",
+  "vscode",
+]);
+export type SessionTool = z.infer<typeof SessionToolSchema>;
+
+/** Token budget constraints handed to the session tool via the brief. */
+export const SessionTokenBudgetSchema = z.object({
+  max_input_tokens: z.number().int().positive(),
+  max_output_tokens: z.number().int().positive(),
+  /** Hard ceiling across the whole session; reconciliation flags overage. */
+  max_total_tokens: z.number().int().positive(),
+});
+export type SessionTokenBudget = z.infer<typeof SessionTokenBudgetSchema>;
+
+/** Brief (input contract) materialized to Session/{traceId}/brief.json. */
+export const SessionBriefSchema = z.object({
+  trace_id: z.string().uuid(),
+  gate: SessionGateSchema,
+  tool: SessionToolSchema,
+  objective: z.string().min(1),
+  /** Artifact under work (request / plan / diff) by relative path. */
+  artifact_ref: z.string().min(1),
+  /** Portal knowledge.json reference for context. */
+  context_card_ref: z.string().optional(),
+  acceptance_criteria: z.array(z.string()).default([]),
+  /** Paths the session tool is permitted to modify (worktree-relative globs). */
+  permitted_paths: z.array(z.string()).min(1),
+  /** Worktree checkout the tool must operate in (code_changes / review). */
+  worktree_path: z.string().optional(),
+  token_budget: SessionTokenBudgetSchema,
+  /** Resume token issued by the durable wait state. */
+  resume_token: z.string().min(1),
+  deadline: z.string().datetime(),
+});
+export type SessionBrief = z.infer<typeof SessionBriefSchema>;
+
+/** Decision verbs allowed per gate. */
+export const SessionDecisionSchema = z.enum([
+  "enriched",
+  "approved",
+  "amended",
+  "changes_made",
+  "rejected",
+  "abandoned",
+]);
+export type SessionDecision = z.infer<typeof SessionDecisionSchema>;
+
+/** Required token statistics reported by the session tool. */
+export const SessionTokenStatsSchema = z.object({
+  input_tokens: z.number().int().nonnegative(),
+  output_tokens: z.number().int().nonnegative(),
+  total_tokens: z.number().int().nonnegative(),
+  /** Provider/model the human's tool actually used, for the AI-BOM. */
+  model: z.string().optional(),
+});
+export type SessionTokenStats = z.infer<typeof SessionTokenStatsSchema>;
+
+/** Return (output contract) — MANDATORY at Session/{traceId}/return.json. */
+export const SessionReturnSchema = z.object({
+  trace_id: z.string().uuid(),
+  resume_token: z.string().min(1),
+  decision: SessionDecisionSchema,
+  summary: z.string().min(1),
+  paths_touched: z.array(z.string()).default([]),
+  token_stats: SessionTokenStatsSchema,
+  /** Opaque audit-only reference; never parsed as pipeline state. */
+  transcript_ref: z.string().optional(),
+});
+export type SessionReturn = z.infer<typeof SessionReturnSchema>;
+
+/** Wait state persisted under Memory/Execution/{traceId}/session_wait.json. */
+export const SessionWaitStatusSchema = z.enum([
+  "pending",
+  "resumed",
+  "expired",
+  "cancelled",
+]);
+export type SessionWaitStatus = z.infer<typeof SessionWaitStatusSchema>;
+
+export const SessionWaitStateSchema = z.object({
+  trace_id: z.string().uuid(),
+  gate: SessionGateSchema,
+  resume_token: z.string().min(1),
+  deadline: z.string().datetime(),
+  status: SessionWaitStatusSchema,
+  decision: SessionDecisionSchema.optional(),
+  created_at: z.string().datetime(),
+  resumed_at: z.string().datetime().optional(),
+});
+export type SessionWaitState = z.infer<typeof SessionWaitStateSchema>;
+
+/**
+ * Decision-verb-per-gate compatibility matrix. A delegated `return.json`
+ * decision is only legal for the gate its brief was bound to. `abandoned` is
+ * universally permitted (the human gave up at any gate). Reconciliation
+ * (Phase 106 Step 4) rejects a return whose decision is not listed here for
+ * the brief's gate.
+ */
+export const SESSION_GATE_DECISIONS: Record<SessionGate, readonly SessionDecision[]> = {
+  [SessionGateSchema.enum.refinement]: [
+    SessionDecisionSchema.enum.enriched,
+    SessionDecisionSchema.enum.abandoned,
+  ],
+  [SessionGateSchema.enum.plan_review]: [
+    SessionDecisionSchema.enum.approved,
+    SessionDecisionSchema.enum.amended,
+    SessionDecisionSchema.enum.rejected,
+    SessionDecisionSchema.enum.abandoned,
+  ],
+  [SessionGateSchema.enum.code_changes]: [
+    SessionDecisionSchema.enum.changes_made,
+    SessionDecisionSchema.enum.abandoned,
+  ],
+  [SessionGateSchema.enum.review]: [
+    SessionDecisionSchema.enum.approved,
+    SessionDecisionSchema.enum.rejected,
+    SessionDecisionSchema.enum.abandoned,
+  ],
+};
+
+/** True when `decision` is a legal outcome verb for `gate`. */
+export function isDecisionValidForGate(gate: SessionGate, decision: SessionDecision): boolean {
+  return SESSION_GATE_DECISIONS[gate].includes(decision);
+}
+
+/** TOML config block: [session_delegate] at request/portal/blueprint scope. */
+export const SessionDelegateConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  tool: SessionToolSchema,
+  gates: z.array(SessionGateSchema).min(1),
+  /** "advisory" (Mode 1) or "supervised" (Mode 2). Mode 3 deferred. */
+  launch_mode: z.enum(["advisory", "supervised"]).default("advisory"),
+  token_budget: SessionTokenBudgetSchema.optional(),
+});
+export type SessionDelegateConfig = z.infer<typeof SessionDelegateConfigSchema>;
