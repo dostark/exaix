@@ -8,6 +8,7 @@
     "@exaix/schemas/": "../schemas/src/",
     "@exaix/core": "../core/mod.ts",
     "@exaix/core/types": "../core/src/types/mod.ts",
+    "@exaix/core/status": "../core/src/status/mod.ts",
     "@exaix/core/": "../core/src/",
     "@exaix/tool-runtime": "../tool-runtime/mod.ts",
     "@exaix/tool-runtime/": "../tool-runtime/src/",

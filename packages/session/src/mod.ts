@@ -33,6 +33,13 @@ import { SessionWaitStore } from "./wait/session_wait_store.ts";
 import type { ISessionWaitStore } from "./wait/i_session_wait_store.ts";
 import { SessionReturnProcessor } from "./session_return_processor.ts";
 import type { ISessionReturnOutcome, ISessionReturnProcessorDeps } from "./session_return_processor.ts";
+import {
+  buildAmendmentDecision,
+  buildReviewDecisionPatch,
+  sessionDecisionToAmendmentVerdict,
+  sessionDecisionToReviewStatus,
+} from "./gate_mappers.ts";
+import type { IAmendmentDecisionInput, IReviewDecisionPatch } from "./gate_mappers.ts";
 
 export { type IReconcileInput, type IReconcileResult, reconcile };
 export type { ISessionAdapter, ISessionLaunch };
@@ -51,3 +58,10 @@ export { SessionWaitStore };
 export type { ISessionWaitStore };
 export { SessionReturnProcessor };
 export type { ISessionReturnOutcome, ISessionReturnProcessorDeps };
+export {
+  buildAmendmentDecision,
+  buildReviewDecisionPatch,
+  sessionDecisionToAmendmentVerdict,
+  sessionDecisionToReviewStatus,
+};
+export type { IAmendmentDecisionInput, IReviewDecisionPatch };
