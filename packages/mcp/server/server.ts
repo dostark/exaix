@@ -915,11 +915,51 @@ export class MCPServer {
   }
 
   /**
+   * Returns true if the request's Host resolves to the local loopback. The HTTP
+   * server binds to localhost, but a DNS-rebinding page can still reach it from a
+   * victim's browser with an attacker Host header — so we validate it (Finding 5).
+   */
+  private static isLoopbackHost(hostname: string): boolean {
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]" || hostname === "::1";
+  }
+
+  /**
+   * Rejects requests that are not safe to serve on a localhost-only tool endpoint:
+   * a non-loopback Host (DNS rebinding) or a cross-origin browser request (CSRF).
+   * Local CLI/MCP clients send a loopback Host and no Origin, so they are unaffected.
+   */
+  private rejectUnsafeOrigin(request: Request): MCPHttpResponse | null {
+    const hostname = new URL(request.url).hostname;
+    if (!MCPServer.isLoopbackHost(hostname)) {
+      return this.addSecurityHeaders(new Response("Forbidden: host not allowed", { status: 403 }));
+    }
+
+    const origin = request.headers.get("Origin");
+    if (origin !== null) {
+      let originHost: string | null = null;
+      try {
+        originHost = new URL(origin).hostname;
+      } catch {
+        originHost = null;
+      }
+      if (originHost === null || !MCPServer.isLoopbackHost(originHost)) {
+        return this.addSecurityHeaders(new Response("Forbidden: cross-origin request", { status: 403 }));
+      }
+    }
+    return null;
+  }
+
+  /**
    * Handles HTTP requests for MCP over HTTP transport
    * Applies security headers to all responses
    */
   async handleHTTPRequest(request: Request): Promise<MCPHttpResponse> {
     try {
+      // Reject DNS-rebinding (non-loopback Host) and cross-origin (CSRF) requests
+      // before any routing or body parsing.
+      const rejection = this.rejectUnsafeOrigin(request);
+      if (rejection) return rejection;
+
       // Delegate to SSE handler for SSE routes
       if (this.sseHandler) {
         const url = new URL(request.url);

@@ -246,3 +246,39 @@ Deno.test("MCPServer: HTTP server only starts with SSE transport", async () => {
     );
   });
 });
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Finding 5 — Host/Origin validation (anti DNS-rebinding / CSRF)
+
+function jsonRpcRequest(url: string, headers: Record<string, string> = {}): Request {
+  return new Request(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} }),
+  });
+}
+
+Deno.test("security: MCPServer rejects a non-localhost Host header (DNS rebinding)", async () => {
+  await withMCPServerSecurity({ transport: McpTransportType.SSE }, async ({ server }) => {
+    const response = await server.handleHTTPRequest(jsonRpcRequest("http://attacker.example.com:3000"));
+    assertEquals(response.status, 403);
+  });
+});
+
+Deno.test("security: MCPServer rejects a cross-origin request (CSRF)", async () => {
+  await withMCPServerSecurity({ transport: McpTransportType.SSE }, async ({ server }) => {
+    const response = await server.handleHTTPRequest(
+      jsonRpcRequest("http://localhost:3000", { "Origin": "https://evil.example.com" }),
+    );
+    assertEquals(response.status, 403);
+  });
+});
+
+Deno.test("security: MCPServer allows a same-origin localhost request", async () => {
+  await withMCPServerSecurity({ transport: McpTransportType.SSE }, async ({ server }) => {
+    const response = await server.handleHTTPRequest(
+      jsonRpcRequest("http://127.0.0.1:3000", { "Origin": "http://127.0.0.1:3000" }),
+    );
+    assertEquals(response.status, 200);
+  });
+});
