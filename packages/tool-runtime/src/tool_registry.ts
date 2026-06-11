@@ -194,13 +194,27 @@ function validateGitArguments(args: string[]): { valid: boolean; reason?: string
 }
 
 /**
- * Validate runtime command arguments (npm, node, deno, exoctl)
+ * Validate runtime command arguments (npm, node, deno, exoctl).
+ *
+ * Security (Finding 4): only inert, non-code-executing subcommands are permitted,
+ * and the WHOLE argument vector is checked. Code-executing subcommands
+ * (`test`, `run`, `eval`, `repl`, `task`, `bench`, `exec`, `start`, a bare script
+ * path for node, etc.) are rejected — they would run arbitrary code — as is any
+ * Deno permission flag (`-A` / `--allow-*`) anywhere in the vector.
  */
 function validateRuntimeArguments(runtime: string, args: string[]): { valid: boolean; reason?: string } {
-  // Only allow specific safe subcommands
-  const safeSubcommands = ["--version", "--help", "version", "info", "test", "lint", "fmt", "check", "status"];
+  // Inert subcommands that do not execute project code (static checks / metadata).
+  const safeSubcommands = ["--version", "--help", "-V", "-v", "version", "info", "lint", "fmt", "check"];
 
-  if (args.length === 0) return { valid: true }; // Allow bare command
+  if (args.length === 0) return { valid: true }; // Allow bare command (e.g. `deno`)
+
+  // Reject Deno permission flags anywhere — they would re-enable host access.
+  if (args.some((arg) => arg === "-A" || arg.startsWith("--allow-"))) {
+    return {
+      valid: false,
+      reason: `${runtime} permission flags are not allowed`,
+    };
+  }
 
   const firstArg = args[0];
   if (!safeSubcommands.includes(firstArg)) {
