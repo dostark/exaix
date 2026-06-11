@@ -989,10 +989,12 @@ export class ToolRegistry implements IToolRegistry {
       }
 
       if (error instanceof PathAccessError) {
-        // Log access violation
+        // Full detail — including the absolute allowed roots — goes to the operator
+        // journal only; the caller-facing message stays generic (Finding 10).
         const payload = {
           attempted_path: path,
           resolved_path: error.message.includes("->") ? error.message.split("->")[1]?.trim() : null,
+          allowed_roots: allowedRoots.join(", "),
           error: error.message,
           trace_id: this.traceId ?? null,
           identity_id: this.identityId ?? null,
@@ -1001,8 +1003,7 @@ export class ToolRegistry implements IToolRegistry {
           void this.logger.warn(DomainEventType.SecurityPathAccessDenied, path, payload, this.traceId);
         }
 
-        const allowedRootsList = allowedRoots.join(", ");
-        throw new Error(`Access denied: Path outside allowed directories. Allowed roots: ${allowedRootsList}`);
+        throw new Error("Access denied: path is outside the allowed directories");
       }
 
       // Log generic path resolution errors

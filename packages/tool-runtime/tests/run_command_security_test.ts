@@ -110,6 +110,29 @@ Deno.test("security: run_command rejects a cwd outside the allowed roots", async
   }
 });
 
+Deno.test("security: path-denied tool error does not leak the allowed-roots list (Finding 10)", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "run-cmd-leak-" });
+  const registry = createToolRegistryForTests(tempDir);
+  try {
+    // An absolute path outside the allowed roots must be rejected without disclosing
+    // the absolute root paths to the caller.
+    const result = await registry.execute(ToolName.READ_FILE, { path: "/etc/passwd" });
+    assert(!result.success, "reading outside allowed roots must fail");
+    assertEquals(
+      result.error?.includes("Allowed roots:") ?? false,
+      false,
+      `error leaked the allowed-roots list: ${result.error}`,
+    );
+    assertEquals(
+      result.error?.includes(tempDir) ?? false,
+      false,
+      `error leaked an absolute host path: ${result.error}`,
+    );
+  } finally {
+    await cleanupTempDir(tempDir);
+  }
+});
+
 Deno.test("security: run_command still allows inert runtime subcommands", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "run-cmd-security-ok-" });
   const registry = createToolRegistryForTests(tempDir);

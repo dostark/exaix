@@ -9,7 +9,7 @@
  * is rejected. A string-prefix check passes such paths because it never follows symlinks.
  */
 
-import { assertRejects } from "@std/assert";
+import { assertEquals, assertInstanceOf, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { PathResolver } from "@exaix/portal";
 import { createMockConfig } from "@exaix/testing";
@@ -43,6 +43,40 @@ Deno.test("security: PathResolver rejects an in-portal symlink that escapes the 
       () => resolver.resolve("@Project/escape/secret.txt"),
       Error,
       "Access denied",
+    );
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+Deno.test("security: PathResolver error message does not leak absolute host paths (Finding 10)", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "path-resolver-leak-" });
+  try {
+    const portalDir = join(tempDir, "Project");
+    const outsideDir = join(tempDir, "outside");
+    await Deno.mkdir(portalDir, { recursive: true });
+    await Deno.mkdir(outsideDir, { recursive: true });
+    await Deno.symlink(outsideDir, join(portalDir, "escape"));
+
+    const config = createMockConfig(tempDir);
+    config.portals = [
+      {
+        alias: "Project",
+        target_path: portalDir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
+      },
+    ];
+    const resolver = new PathResolver(config);
+
+    const error = await resolver.resolve("@Project/escape/secret.txt").then(() => null).catch((e) => e);
+    assertInstanceOf(error, Error);
+    // The caller-facing message must not disclose absolute host filesystem paths.
+    assertEquals(
+      error.message.includes(tempDir),
+      false,
+      `error message leaked an absolute host path: ${error.message}`,
     );
   } finally {
     await Deno.remove(tempDir, { recursive: true });

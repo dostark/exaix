@@ -132,12 +132,14 @@ export class PathResolver {
       }
     }
 
+    // Full detail (absolute paths) goes to the operator journal only; the caller-facing
+    // message is generic so it does not disclose host filesystem layout (Finding 10).
     this.logSecurityViolation(
       DomainEventType.PathAccessDenied,
       path,
       `Path ${path} resolves to ${physicalPath}, which is outside allowed roots`,
     );
-    throw new Error(`Access denied: Path ${path} is outside allowed roots.`);
+    throw new Error("Access denied: path is outside the allowed portal roots.");
   }
 
   /**
