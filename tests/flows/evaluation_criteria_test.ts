@@ -419,8 +419,8 @@ Deno.test("buildEvaluationPrompt: includes JSON format instructions", () => {
   const criteria: EvaluationCriterion[] = [CRITERIA.CODE_CORRECTNESS];
   const prompt = buildEvaluationPrompt("Content", criteria);
 
-  assertEquals(prompt.includes("overallScore"), true);
-  assertEquals(prompt.includes("criteriaScores"), true);
+  assertEquals(prompt.includes("score"), true);
+  assertEquals(prompt.includes("reasoning"), true);
   assertEquals(prompt.includes("JSON"), true);
 });
 

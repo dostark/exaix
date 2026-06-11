@@ -55,6 +55,7 @@ Deno.test("[ScenarioFrameworkPackGeneralization] tag filtering returns the expec
     smokeTagged.map((scenario: IScenario) => scenario.id).sort(),
     [
       "dynamic-exploration-smoke",
+      "flowrunner-execution",
       "framework-smoke-validation",
       "memory-aware-analysis",
       "portal-knowledge-snapshot",

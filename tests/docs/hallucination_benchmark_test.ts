@@ -5,7 +5,9 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { join } from "@std/path";
+import { dirname, fromFileUrl, join } from "@std/path";
+
+const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
 
 /**
  * These tests verify that the 'Nervous System' (frontmatter + AGENT_LOGIC)
@@ -15,7 +17,7 @@ import { join } from "@std/path";
  */
 
 Deno.test("[hallucination-bench] Verify Frontmatter Consistency", async () => {
-  const content = await Deno.readTextFile(join(Deno.cwd(), "ARCHITECTURE.md"));
+  const content = await Deno.readTextFile(join(REPO_ROOT, "ARCHITECTURE.md"));
 
   // Verify it contains copilot_knowledge_base: true
   assertEquals(content.includes("copilot_knowledge_base: true"), true, "ARCHITECTURE.md must be a knowledge base.");
@@ -26,7 +28,7 @@ Deno.test("[hallucination-bench] Verify Frontmatter Consistency", async () => {
 });
 
 Deno.test("[hallucination-bench] Verify AGENT_LOGIC steps exist as symbols", async () => {
-  const content = await Deno.readTextFile(join(Deno.cwd(), "ARCHITECTURE.md"));
+  const content = await Deno.readTextFile(join(REPO_ROOT, "ARCHITECTURE.md"));
   const logicBlocks = content.matchAll(/<!-- AGENT_LOGIC: ([\s\S]*?) -->/g);
 
   let totalBlocks = 0;
@@ -41,7 +43,7 @@ Deno.test("[hallucination-bench] Verify AGENT_LOGIC steps exist as symbols", asy
 });
 
 Deno.test("[hallucination-bench] Verify Component Responsibilities mapping", async () => {
-  const content = await Deno.readTextFile(join(Deno.cwd(), "ARCHITECTURE.md"));
+  const content = await Deno.readTextFile(join(REPO_ROOT, "ARCHITECTURE.md"));
 
   // Verify key components have stable links
   assertEquals(
