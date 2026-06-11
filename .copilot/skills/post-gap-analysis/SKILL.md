@@ -10,7 +10,7 @@ scope: dev
 title: "Post-Gap Analysis Skill (#post-gap-analysis)"
 description: Deep post-implementation review of a phase planning document — verifies what was built against the plan, finds gaps, and writes remediation steps back into the document
 short_summary: "Deep review of an existing phase planning document: checks implementation against plan, finds gaps, and writes remediation steps back into the document."
-version: "1.2"
+version: "1.4"
 topics: ["planning", "gap-analysis", "review", "tdd", "architecture", "quality", "security"]
 qwen_skill: post-gap-analysis
 ---
@@ -35,6 +35,13 @@ Key points
   gaps are remediated.
 - Bump the document version (e.g., 1.2 → 1.3) and update the Status line
   to "🚧 Gap Remediation In Progress" after writing gaps into it.
+- Run a semantic value verification (Phase 2a) on every step that adds fields
+  to events, schemas, or responses — verify values are correct, not just present.
+- Run an integration surface audit (Phase 2b) on every step that introduces a
+  new interface or output field — dead fields with no consumers are gaps.
+- Run a module convention probe (Phase 2c) on every step that modifies or
+  creates source files — new code should match the existing module's dominant
+  style.
 - Run a security gap check (Phase 5) on every step that touches input
   handling, auth, path resolution, secrets, or external data.
 - Run a traceability & configurability check (Phase 6) on every step that
@@ -58,6 +65,9 @@ Do / Don't
   requirements (Actions / Architecture Notes / Planned Tests / Success Criteria).
 - ✅ Do classify every gap with a severity symbol (🔴 Critical / 🔒 Security /
   🟡 Feasibility / 🟠 Testing / 🔵 Conceptual) so the team can triage quickly.
+- ✅ Do verify values, not just presence — a field existing with the wrong value is a gap (Phase 2a).
+- ✅ Do trace output fields to their consumers — dead fields with no readers are gaps (Phase 2b).
+- ✅ Do check new code against existing module conventions — inconsistency within a file is a gap (Phase 2c).
 - ✅ Do run Phase 5 security checks on every step touching input handling,
   auth/authorisation, path resolution, secrets, or external payloads.
 - ✅ Do include a numbered gap summary table before the detailed gap entries.
@@ -122,6 +132,85 @@ real code.
 
 For **every incomplete step**: check whether it was implemented anyway but the
 plan not updated (document gap, 🔵 Conceptual).
+
+---
+
+### Phase 2a — Semantic Value Verification
+
+For **every field** in events, schemas, config, or API responses introduced
+or modified by the step:
+
+1. **Verify the value is correct, not just present.**
+   Confirm each field's runtime value is consistent with the component's
+   injected dependencies, configuration, and operational state. A field
+   that always resolves to a specific value due to the component's
+   construction should not report a contradictory value. Presence alone
+   is insufficient.
+
+1. **Cross-validate against component capabilities.**
+   For every field whose value depends on a dependency or configuration flag:
+   trace the dependency chain from constructor to emission point and verify
+   the field's value matches what the dependency chain dictates.
+
+---
+
+### Phase 2b — Integration Surface Audit
+
+For **every interface, type, or output field** the step introduces:
+
+1. **Grep the codebase for consumers.**
+   For each exported symbol or field the step adds, search the codebase for
+   importers, callers, and readers. A symbol with zero consumers is dead data
+   and should be flagged (🟠 Testing if unused in tests, 🔵 Conceptual if
+   unused in production).
+
+1. **Trace every consumer path end-to-end.**
+   For each consumer found, verify the data flow completes — the consumer
+   receives the value in the expected format and can act on it. If a path
+   claims integration with an adjacent service, verify that service is
+   actually wired and called.
+
+1. **Flag orphaned interface slices.**
+   If the step defines a field that the plan's prose says will be consumed by
+   a specific component, but that component never reads the field, flag the
+   gap (🔴 Critical if a required integration is missing, 🔵 Conceptual if
+   the field is forward-compatibility-only).
+
+1. **Verify constructor wiring for new services and classes.**
+   For every new class, service, or data structure the step introduces:
+   - Grep the production codebase (excluding tests and test helpers) for
+     importers and instantiation sites. The class must be imported and its
+     constructor called by at least one production consumer.
+   - If the class is only instantiated in tests, it is production-dead code
+     and should be flagged (🔴 Critical if the integration is required by
+     the plan, 🔵 Conceptual if intentional but undocumented).
+   - If the class is a service, verify it is either injected via constructor
+     DI into a production consumer or registered in the appropriate factory /
+     registry / bootstrap module. Services that exist solely as definitions
+     with no wiring path are dead regardless of how many tests create them.
+
+---
+
+### Phase 2c — Module Convention Probe
+
+For **every file the step modifies or creates**:
+
+1. **Survey the dominant convention in the existing file.**
+   Before evaluating whether the new code is well-structured, read 5–10
+   existing examples of the same concern (event emission, error handling,
+   import style, type usage) in the same file or module.
+
+1. **Check the new code against that convention.**
+   If the existing file uses one pattern for a concern (event emission,
+   error handling, type usage, import style) and the new code uses a
+   different pattern, flag divergence (🔵 Conceptual). Both approaches
+   may be syntactically valid and pass lint, but inconsistency within a
+   module creates maintenance debt.
+
+1. **Justify intentional divergence.**
+   If the plan explicitly chooses a different convention, verify the
+   Architecture Notes justify why. Without justification, flag as
+   underspecified (🔵 Conceptual).
 
 ---
 
