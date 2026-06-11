@@ -1548,6 +1548,9 @@ export const SESSION_BIN_OPENCODE = "opencode";
 export const SESSION_BIN_CURSOR = "cursor";
 export const SESSION_BIN_VSCODE = "code";
 
+/** Filesystem event kinds that indicate a (re)written file worth processing. */
+export const FS_WRITE_EVENT_KINDS: ReadonlySet<string> = new Set(["create", "modify", "rename"]);
+
 /**
  * Run async tasks with bounded concurrency.
  * Processes items in batches of `concurrency`, ensuring at most `concurrency`

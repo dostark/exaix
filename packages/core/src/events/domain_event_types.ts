@@ -22,6 +22,18 @@ export const DomainEventType = {
   WaitStateCreated: "wait_state.created",
   WaitStateResolved: "wait_state.resolved",
 
+  // Session delegation events (Phase 106)
+  SessionDelegateBriefed: "session.delegate.briefed",
+  SessionDelegateLaunched: "session.delegate.launched",
+  SessionDelegateReturned: "session.delegate.returned",
+  SessionDelegateReconciled: "session.delegate.reconciled",
+  SessionDelegateScopeViolation: "session.delegate.scope_violation",
+  SessionDelegateBudgetExceeded: "session.delegate.budget_exceeded",
+  SessionDelegateTokenRejected: "session.delegate.token_rejected",
+  SessionDelegatePathRejected: "session.delegate.path_rejected",
+  SessionDelegateExpired: "session.delegate.expired",
+  SessionDelegateCancelled: "session.delegate.cancelled",
+
   // Cost tracking events
   LlmUsageRecorded: "llm.usage",
 
