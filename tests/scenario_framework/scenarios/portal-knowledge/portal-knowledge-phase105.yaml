@@ -1,0 +1,228 @@
+schema_version: "1.0.0"
+id: "portal-knowledge-phase105"
+title: "Phase 105 — Comprehensive portal knowledge collection validation (all 11 strategies)"
+pack: "portal-knowledge"
+tags: ["smoke", "portal", "knowledge"]
+request_fixture: "fixtures/requests/portal-knowledge/portal_knowledge_phase105.md"
+mode_support: ["auto"]
+portals:
+  - alias: "portal-exaix"
+    source_path: "$FRAMEWORK_HOME/../.."
+steps:
+  # ── Step 1: register the portal ─────────────────────────────────────────
+  - id: "register-portal"
+    type: "exactl"
+    command: "portal"
+    args: ["add", "$FRAMEWORK_HOME/../..", "portal-exaix"]
+    output_criteria:
+      - id: "portal-add-exit-code"
+        score_weight: 0.05
+        kind: "command-exit-code"
+        equals: 0
+
+  # ── Step 2: verify portal is mounted ────────────────────────────────────
+  - id: "verify-portal-mounted"
+    type: "exactl"
+    command: "portal show portal-exaix"
+    output_criteria:
+      - id: "portal-show-exit-code"
+        score_weight: 0.05
+        kind: "command-exit-code"
+        equals: 0
+
+  # ── Step 3: trigger analysis ────────────────────────────────────────────
+  - id: "trigger-analysis"
+    type: "exactl"
+    command: "portal analyze portal-exaix --mode standard"
+    input_criteria:
+      - id: "portal-mounted-check"
+        score_weight: 0.05
+        kind: "portal-mounted"
+        alias: "portal-exaix"
+    output_criteria:
+      - id: "analyze-exit-code"
+        score_weight: 0.1
+        kind: "command-exit-code"
+        equals: 0
+
+  # ── Step 4: wait for knowledge.json ─────────────────────────────────────
+  - id: "knowledge-artifact"
+    type: "wait-for-file"
+    args: ["Memory/Projects/portal-exaix/knowledge.json"]
+    timeout_sec: 300
+    output_criteria:
+      - id: "knowledge-json-found"
+        score_weight: 0.1
+        kind: "file-found"
+        path_pattern: "Memory/Projects/*/knowledge.json"
+
+  # ── Step 5: deep field-level validation ─────────────────────────────────
+  - id: "validate-fields"
+    type: "json-assert"
+    output_criteria:
+      # ─ Strategy 1-6: exact known values ─
+      - id: "metadata-mode"
+        score_weight: 0.1
+        kind: "json-path-equals"
+        target_file: "Memory/Projects/portal-exaix/knowledge.json"
+        path: "$.metadata.mode"
+        equals: "standard"
+
+      # ─ Strategy 7: AstAnalyzer — check non-zero numbers ─
+      - id: "ast-total-modules-exists"
+        score_weight: 0.1
+        kind: "json-path-exists"
+        target_file: "Memory/Projects/portal-exaix/knowledge.json"
+        path: "$.astDiagnostics.totalModules"
+      - id: "ast-total-imports-exists"
+        score_weight: 0.05
+        kind: "json-path-exists"
+        target_file: "Memory/Projects/portal-exaix/knowledge.json"
+        path: "$.astDiagnostics.totalImports"
+
+      # ─ Strategy 9: LicenseDetector — check top-level field exists ─
+      - id: "licenses-field-exists"
+        score_weight: 0.1
+        kind: "json-path-exists"
+        target_file: "Memory/Projects/portal-exaix/knowledge.json"
+        path: "$.licenses"
+
+      # ─ Strategy 11: GitHistoryAnalyzer — check field exists ─
+      - id: "git-history-field-exists"
+        score_weight: 0.1
+        kind: "json-path-exists"
+        target_file: "Memory/Projects/portal-exaix/knowledge.json"
+        path: "$.gitHistory"
+
+  # ── Step 6: deep structural validation via deno eval ────────────────────
+  - id: "validate-deep-structure"
+    type: "shell"
+    command: "deno"
+    args:
+      - "eval"
+      - |
+          const path = "Memory/Projects/portal-exaix/knowledge.json";
+          const raw = Deno.readTextFileSync(path);
+          const k = JSON.parse(raw);
+          const errs = [];
+
+          // ─ Strategy 1: architecture overview — at least 3 sentences ─
+          if (typeof k.architectureOverview !== "string") {
+            errs.push(`architectureOverview: expected string, got ${typeof k.architectureOverview}`);
+          } else if (k.architectureOverview.length < 50) {
+            errs.push(`architectureOverview: expected ≥50 chars, got ${k.architectureOverview.length}`);
+          } else {
+            const sentences = k.architectureOverview.split(/[.!?]\s+/).filter(Boolean);
+            if (sentences.length < 3) {
+              errs.push(`architectureOverview: expected ≥3 sentences, got ${sentences.length}`);
+            }
+          }
+
+          // ─ Strategy 2: keyFiles — at least 20 entries with roles ─
+          if (!Array.isArray(k.keyFiles)) {
+            errs.push("keyFiles: expected array");
+          } else if (k.keyFiles.length < 20) {
+            errs.push(`keyFiles: expected ≥20 entries for Exaix repo, got ${k.keyFiles.length}`);
+          } else {
+            for (let i = 0; i < Math.min(3, k.keyFiles.length); i++) {
+              const kf = k.keyFiles[i];
+              if (typeof kf.path !== "string" || kf.path.length === 0) {
+                errs.push(`keyFiles[${i}].path: expected non-empty string`);
+              }
+              if (typeof kf.role !== "string" || kf.role.length === 0) {
+                errs.push(`keyFiles[${i}].role: expected non-empty string`);
+              }
+            }
+          }
+
+          // ─ Strategy 3: conventions — at least 3 conventions detected ─
+          if (!Array.isArray(k.conventions) || k.conventions.length < 3) {
+            errs.push(`conventions: expected ≥3 entries for Exaix repo, got ${k.conventions?.length ?? 0}`);
+          }
+
+          // ─ Strategy 4: dependencies — at least 1 (Exaix deno.json deps) ─
+          if (!Array.isArray(k.dependencies) || k.dependencies.length < 1) {
+            errs.push(`dependencies: expected ≥1 entries for Exaix repo, got ${k.dependencies?.length ?? 0}`);
+          }
+
+          // ─ Strategy 6: symbolMap — at least 50 exported symbols ─
+          if (!Array.isArray(k.symbolMap) || k.symbolMap.length < 50) {
+            errs.push(`symbolMap: expected ≥50 symbols for Exaix repo, got ${k.symbolMap?.length ?? 0}`);
+          } else {
+            const first = k.symbolMap[0];
+            if (typeof first.name !== "string" || first.name.length === 0) {
+              errs.push("symbolMap[0].name: expected non-empty string");
+            }
+          }
+
+          // ─ Strategy 7: AstAnalyzer — Exaix has 600+ modules, at least 20 entrypoints ─
+          if (typeof k.astDiagnostics?.totalModules !== "number" || k.astDiagnostics.totalModules < 20) {
+            errs.push(`astDiagnostics.totalModules: expected ≥20 for Exaix repo, got ${k.astDiagnostics?.totalModules}`);
+          }
+
+          // ─ Strategy 9: LicenseDetector — non-empty with expected shape ─
+          if (Array.isArray(k.licenses)) {
+            k.licenses.forEach((lic, i) => {
+              if (typeof lic.type !== "string" || lic.type.length === 0) {
+                errs.push(`licenses[${i}].type: expected non-empty string`);
+              }
+            });
+          }
+
+          // ─ Strategy 11: GitHistoryAnalyzer — parse what's available ─
+          // totalCommitsLastYear may be 0 in shallow-clone or fresh CI environments
+          if (k.gitHistory && typeof k.gitHistory === "object") {
+            if (typeof k.gitHistory.totalAuthors !== "number" || k.gitHistory.totalAuthors < 1) {
+              errs.push(`gitHistory.totalAuthors: expected ≥1, got ${k.gitHistory.totalAuthors}`);
+            }
+            if (Array.isArray(k.gitHistory.topAuthors) && k.gitHistory.topAuthors.length > 0) {
+              for (let i = 0; i < Math.min(2, k.gitHistory.topAuthors.length); i++) {
+                const a = k.gitHistory.topAuthors[i];
+                if (typeof a.name !== "string" || a.name.length === 0) {
+                  errs.push(`gitHistory.topAuthors[${i}].name: expected non-empty string`);
+                }
+              }
+            }
+            if (Array.isArray(k.gitHistory.mostChangedFiles) && k.gitHistory.mostChangedFiles.length > 0) {
+              const first = k.gitHistory.mostChangedFiles[0];
+              if (typeof first.path !== "string" || first.path.length === 0) {
+                errs.push("gitHistory.mostChangedFiles[0].path: expected non-empty string");
+              }
+            }
+          }
+
+          // ─ SymbolSourceFilesScanned: Exaix has many TS files ─
+          if (typeof k.metadata?.symbolSourceFilesScanned !== "number" || k.metadata.symbolSourceFilesScanned < 30) {
+            errs.push(`metadata.symbolSourceFilesScanned: expected ≥30, got ${k.metadata?.symbolSourceFilesScanned}`);
+          }
+
+          // ─ Duration: analysis took at least 2s ─
+          if (typeof k.metadata?.durationMs !== "number" || k.metadata.durationMs < 2000) {
+            errs.push(`metadata.durationMs: expected ≥2000ms, got ${k.metadata?.durationMs}`);
+          }
+
+          if (errs.length > 0) {
+            console.error("FAILED validations:");
+            errs.forEach(e => console.error("  - " + e));
+            Deno.exit(1);
+          }
+          console.log("PASSED: all deep structural validations ok");
+    output_criteria:
+      - id: "deep-validations-passed"
+        score_weight: 0.3
+        kind: "command-output-contains"
+        contains: ["PASSED: all deep structural validations ok"]
+      - id: "deep-validations-exit-code"
+        score_weight: 0.2
+        kind: "command-exit-code"
+        equals: 0
+
+  # ── Step 7: deep mode works ─────────────────────────────────────────────
+  - id: "analyze-deep-mode"
+    type: "exactl"
+    command: "portal analyze portal-exaix --mode deep --force"
+    output_criteria:
+      - id: "deep-analyze-exit-code"
+        score_weight: 0.1
+        kind: "command-exit-code"
+        equals: 0

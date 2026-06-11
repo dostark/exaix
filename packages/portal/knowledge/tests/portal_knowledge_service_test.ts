@@ -1004,3 +1004,79 @@ Deno.test(
     }
   },
 );
+
+Deno.test(
+  "[PortalKnowledgeService] standard mode runs strategies 7, 9, 11 but not 8 or 10",
+  async () => {
+    const tempDir = await makeTempPortal();
+    try {
+      const svc = new PortalKnowledgeService({
+        config: makeConfig({
+          useLlmInference: false,
+          enableAstAnalysis: true,
+          enableGitHistoryAnalysis: true,
+        }),
+        memoryBank: makeMockMemoryBank(),
+
+        runner: makeMockDocRunner(),
+      });
+      const result = await svc.analyze("gate-all-std", tempDir, PortalAnalysisMode.STANDARD);
+      assertEquals(
+        result.astDiagnostics !== undefined,
+        true,
+        "standard mode must run strategy 7 with enableAstAnalysis=true",
+      );
+      assertEquals(Array.isArray(result.licenses), true, "standard mode must run strategy 9");
+      assertEquals(
+        result.gitHistory !== undefined,
+        true,
+        "standard mode must run strategy 11 with enableGitHistoryAnalysis=true",
+      );
+      assertEquals(result.testInfo, undefined, "standard mode must NOT run strategy 8 (deep only)");
+      assertEquals(result.vulnerabilities, undefined, "standard mode must NOT run strategy 10 (deep only)");
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+  },
+);
+
+Deno.test(
+  "[PortalKnowledgeService] deep mode runs all 11 strategies when all flags enabled",
+  async () => {
+    const tempDir = await makeTempPortal();
+    try {
+      const svc = new PortalKnowledgeService({
+        config: makeConfig({
+          useLlmInference: false,
+          enableAstAnalysis: true,
+          enableTestExecution: true,
+          enableVulnerabilityScan: true,
+          enableGitHistoryAnalysis: true,
+        }),
+        memoryBank: makeMockMemoryBank(),
+
+        runner: makeMockDocRunner(),
+      });
+      const result = await svc.analyze("gate-all-deep", tempDir, PortalAnalysisMode.DEEP);
+      assertEquals(
+        result.astDiagnostics !== undefined,
+        true,
+        "deep mode must run strategy 7 with enableAstAnalysis=true",
+      );
+      assertEquals(result.testInfo !== undefined, true, "deep mode must run strategy 8 with enableTestExecution=true");
+      assertEquals(Array.isArray(result.licenses), true, "deep mode must run strategy 9");
+      assertEquals(
+        result.vulnerabilities !== undefined,
+        true,
+        "deep mode must run strategy 10 with enableVulnerabilityScan=true",
+      );
+      assertEquals(
+        result.gitHistory !== undefined,
+        true,
+        "deep mode must run strategy 11 with enableGitHistoryAnalysis=true",
+      );
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+  },
+);

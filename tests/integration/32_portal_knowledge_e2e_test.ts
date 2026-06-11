@@ -383,6 +383,7 @@ Deno.test("[E2E] standard mode populates licenses and gitHistory optional fields
     const service = new PortalKnowledgeService({
       config: makeConfig({
         defaultMode: PortalAnalysisMode.STANDARD,
+        enableAstAnalysis: true,
         enableGitHistoryAnalysis: true,
       }),
       memoryBank: null as never,
@@ -390,6 +391,7 @@ Deno.test("[E2E] standard mode populates licenses and gitHistory optional fields
     });
     const knowledge = await service.analyze("e2e-new-fields", portalDir, PortalAnalysisMode.STANDARD);
 
+    assertExists(knowledge.astDiagnostics, "standard mode must populate astDiagnostics (strategy 7)");
     assert(Array.isArray(knowledge.licenses), "standard mode must populate licenses (strategy 9)");
     assertExists(knowledge.gitHistory, "standard mode must populate gitHistory (strategy 11)");
     assertEquals(knowledge.testInfo, undefined, "testInfo absent without enableTestExecution");
