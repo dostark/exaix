@@ -5,7 +5,7 @@
  * query filters (trace_id, identity_id, action_type), sort ordering, and asynchronous flush behavior.
  */
 
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { initTestDbService } from "@exaix/testing";
 
@@ -93,5 +93,19 @@ describe("DatabaseService - Journal Queries", () => {
   it("should return empty array when no matches", async () => {
     const results = await db.queryActivity({ traceId: "non-existent" });
     assertEquals(results.length, 0);
+  });
+
+  it("security: rejects a distinct field that is not an activity column (Finding 12)", async () => {
+    // A non-column distinct value must be rejected by an allowlist check before it can
+    // be interpolated into SQL — not merely error at the SQLite layer.
+    const error = await db.queryActivity({ distinct: "id); DROP TABLE activity; --" })
+      .then(() => null)
+      .catch((e) => e);
+    assert(error instanceof Error, "malicious distinct field must be rejected");
+    assertStringIncludes(error.message, "Invalid distinct field");
+
+    // The table is intact and still queryable.
+    const results = await db.queryActivity({});
+    assertEquals(results.length, 5);
   });
 });
