@@ -1,0 +1,33 @@
+{
+  "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json",
+  "name": "Exaix Dev Sandbox",
+  "build": {
+    "context": "..",
+    "dockerfile": "../Dockerfile",
+    "target": "builder"
+  },
+  "remoteUser": "deno",
+  "workspaceFolder": "/workspaces/exaix",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/exaix,type=bind,consistency=cached",
+  "containerEnv": {
+    "DENO_DIR": "/deno-dir"
+  },
+  "runArgs": [
+    "--cap-drop=ALL",
+    "--security-opt=no-new-privileges:true"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": ["denoland.vscode-deno"],
+      "settings": {
+        "deno.enable": true,
+        "deno.lint": true,
+        "editor.defaultFormatter": "denoland.vscode-deno"
+      }
+    }
+  },
+  "postCreateCommand": "deno --version && deno cache --config deno.json apps/daemon/main.ts",
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}"
+  }
+}

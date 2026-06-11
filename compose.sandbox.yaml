@@ -1,0 +1,55 @@
+# Hardened runtime profile for the Exaix agent daemon.
+#
+#   docker compose -f compose.sandbox.yaml up --build
+#
+# This profile treats the container as the authoritative containment boundary for
+# agent execution. Even if an agent achieves in-process code execution, it is
+# confined to: the workspace + portal bind mounts, the allowlisted egress, a
+# read-only root filesystem, a non-root user, all Linux capabilities dropped, and
+# no privilege escalation.
+#
+# ⚠️ Adjust the bind mounts and the egress allowlist to your environment before use.
+services:
+  exaix:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: exaix-sandbox:dev
+    # --- Identity: never run agents as root ---
+    user: "10001:10001"
+    # --- Privilege containment ---
+    read_only: true # root filesystem is immutable
+    cap_drop:
+      - ALL # drop every Linux capability
+    security_opt:
+      - no-new-privileges:true # block setuid/privilege escalation
+    # --- Writable scratch (rootfs is read-only) ---
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m
+    # --- Resource bounds (defense against runaway agents) ---
+    pids_limit: 512
+    mem_limit: 2g
+    cpus: 2.0
+    # --- Data: mount only what agents must touch ---
+    volumes:
+      # Exaix runtime home: Workspace / Memory / .exa journal / exa.config.toml.
+      - ./.exa-runtime:/exa:rw
+      # Portal targets the agent may edit. Add one bind per portal; prefer :ro
+      # for portals the agent should only read.
+      # - /home/you/Dev/MyProject:/exa/Portals/MyProject:rw
+    # --- Secrets: provider API keys via env (never bake into the image) ---
+    environment:
+      - EXA_HOME=/exa
+      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+    # --- Network: restrict egress to the LLM providers you actually use ---
+    # Compose cannot host-allowlist egress directly; attach a user-defined network
+    # and enforce egress with a firewall/proxy (e.g. an egress gateway). The default
+    # bridge below still isolates the container from other containers.
+    networks:
+      - exaix-egress
+    restart: unless-stopped
+
+networks:
+  exaix-egress:
+    driver: bridge
