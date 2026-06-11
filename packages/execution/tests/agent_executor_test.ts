@@ -37,6 +37,7 @@ import { ContextCache } from "@exaix/core/context";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { type IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
+import type { ITokenizer } from "@exaix/core/func";
 import { stub } from "@std/testing/mock";
 import { SafeError } from "@exaix/core/errors";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -57,6 +58,7 @@ interface IBudgetCompactedPayload {
   tokensAfter: number;
   compressedCount: number;
   preservedCount: number;
+  summarizationModel?: string;
 }
 
 /** Payload for budget consumption and truncation events. */
@@ -1273,7 +1275,7 @@ Deno.test({
         audit_enabled: true,
       };
 
-      const prompt = executor.buildExecutionPrompt(blueprint, context, options);
+      const prompt = await executor.buildExecutionPrompt(blueprint, context, options);
 
       // Verify prompt includes system prompt and context
       assertStringIncludes(prompt, "You are a helpful assistant.");
@@ -1326,7 +1328,7 @@ Deno.test({
         audit_enabled: true,
       };
 
-      const prompt = executor.buildExecutionPrompt(blueprint, maliciousContext, options);
+      const prompt = await executor.buildExecutionPrompt(blueprint, maliciousContext, options);
 
       // Verify prompt still contains system prompt (not overridden)
       assertStringIncludes(prompt, "You are a helpful assistant.");
@@ -1575,7 +1577,7 @@ DROP TABLE sensitive_data;
         audit_enabled: true,
       };
 
-      const prompt = executor.buildExecutionPrompt(blueprint, context, options);
+      const prompt = await executor.buildExecutionPrompt(blueprint, context, options);
 
       assertStringIncludes(prompt, "You are a helpful assistant.");
       // Verify potentially dangerous content is sanitized
@@ -1881,54 +1883,198 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: buildExecutionPrompt handles portal context",
+  name: "AgentExecutor: applyTokenBudget uses tokenizer countTokens when available (GAP-31)",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(testConfig, db, logger, pathResolver, permissions);
-
-      const blueprint: IAgentFileBlueprint = {
-        name: "agent1",
-        model: "mock-model",
-        provider: "mock",
-        systemPrompt: "You are an agent.",
-        capabilities: [],
-      };
-      const context: IExecutionContext = {
-        trace_id: "t1",
-        request_id: "r1",
-        request: "Do stuff",
-        plan: "My plan",
-        portal: "P1",
-      };
-      const options: IAgentExecutionOptions = {
-        portal: "P1",
-        security_mode: SecurityMode.HYBRID,
-        identity_id: "agent1",
-        timeout_ms: 300000,
-        max_tool_calls: 100,
-        audit_enabled: true,
+      let tokenizerCalled = false;
+      let tokenizerInput = "";
+      let tokenizerModel = "";
+      const mockTokenizer: ITokenizer = {
+        countTokens: (input: string, modelId: string) => {
+          tokenizerCalled = true;
+          tokenizerInput = input;
+          tokenizerModel = modelId;
+          return Promise.resolve(42);
+        },
+        countTokensBatch: (_texts: string[], _model: string) => {
+          return Promise.resolve([42]);
+        },
       };
 
-      // Set execution context to enable portal context block
-      const execContext: IWorkspaceExecutionContext = {
-        workingDirectory: testDir,
-        portalTarget: portalDir,
-        allowedPaths: [portalDir],
-        gitRepository: "",
-        reviewRepo: "",
-      };
-      executor.setExecutionContext(execContext);
+      const strategyRegistry = new StrategyRegistry();
+      strategyRegistry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: async (
+          blueprint: IAgentFileBlueprint,
+          ctx: IExecutionContext,
+          opts: IAgentExecutionOptions,
+        ) => {
+          await executor.buildExecutionPrompt(blueprint, ctx, opts);
+          return {
+            branch: "feat/tokenizer-test",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [],
+            description: "Tokenizer test",
+            tool_calls: 1,
+            execution_time_ms: 10,
+          };
+        },
+      });
 
-      const prompt = executor.buildExecutionPrompt(blueprint, context, options);
-      assertStringIncludes(prompt, "Portal Alias: P1");
-      assertStringIncludes(prompt, "--- BEGIN USER INPUT ---");
-      assertStringIncludes(prompt, "Do stuff");
-      assertStringIncludes(prompt, "My plan");
+      const executor = new AgentExecutor(
+        testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        undefined,
+        strategyRegistry,
+        undefined,
+        undefined,
+        undefined,
+        mockTokenizer,
+      );
 
-      executor.clearExecutionContext();
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      await executor.executeStep(
+        {
+          trace_id: crypto.randomUUID(),
+          request_id: "tokenizer-test-1",
+          request: "Test tokenizer counting",
+          plan: "Plan",
+          portal: "TestPortal",
+        },
+        {
+          portal: "TestPortal",
+          identity_id: "test-agent",
+          security_mode: SecurityMode.HYBRID,
+          timeout_ms: 300000,
+          max_tool_calls: 100,
+          audit_enabled: true,
+        },
+      );
+
+      assert(tokenizerCalled, "tokenizer.countTokens should have been called");
+      assert(tokenizerInput.length > 0, "tokenizer should have received prompt content");
+      assertEquals(
+        tokenizerModel,
+        "openai:gpt-4o-mini",
+        "tokenizer should receive the full model ID with provider prefix",
+      );
+      executor.dispose();
     } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name: "AgentExecutor: compactLoopHistory includes summarizationModel in event when configured (GAP-32)",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      Object.assign(testConfig, {
+        execution: {
+          summarization_model: "default",
+          milestone_streaming_enabled: true,
+        },
+      });
+
+      const loggedPayloads: Array<IBudgetCompactedPayload> = [];
+      logger.info = ((_name: string, _id: string, payload?: IBudgetCompactedPayload) => {
+        if (payload) loggedPayloads.push(payload);
+        return Promise.resolve();
+      }) as typeof logger.info;
+
+      const mockProvider: IModelProvider = {
+        id: "mock",
+        generate: async (): Promise<IGenerateResult> => {
+          await Promise.resolve();
+          return {
+            content: "Summarized",
+            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+            model: "mock-model",
+            provider: "mock",
+            cost_usd: 0,
+          };
+        },
+      };
+
+      const strategyRegistry = new StrategyRegistry();
+      strategyRegistry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: () =>
+          Promise.resolve({
+            branch: "feat/summarization",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: ["src/test.ts"],
+            description: "Step",
+            tool_calls: 1,
+            execution_time_ms: 10,
+          }),
+      });
+
+      const executor = new AgentExecutor(
+        testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        mockProvider,
+        strategyRegistry,
+      );
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      for (let i = 1; i <= 4; i++) {
+        await executor.executeStep(
+          {
+            trace_id: crypto.randomUUID(),
+            request_id: `sm-req-${i}`,
+            request: `Step ${i}`,
+            plan: "Plan",
+            portal: "TestPortal",
+          },
+          {
+            portal: "TestPortal",
+            identity_id: "test-agent",
+            security_mode: SecurityMode.HYBRID,
+            timeout_ms: 300000,
+            max_tool_calls: 100,
+            audit_enabled: true,
+          },
+        );
+      }
+
+      await executor.compactLoopHistory(2);
+
+      const compactedEvent = loggedPayloads.find(
+        (p) => p.tokensBefore > 0 && p.compressedCount > 0,
+      );
+      assert(compactedEvent, "should have received a compacted event");
+      assertEquals(compactedEvent.summarizationModel, "default");
+      assert(compactedEvent.tokensBefore > 0);
+      assert(compactedEvent.compressedCount > 0);
+
+      executor.dispose();
+    } finally {
+      Object.assign(testConfig, { execution: undefined });
       await cleanup();
     }
   },
@@ -1982,7 +2128,7 @@ Deno.test({
         audit_enabled: true,
       };
 
-      const prompt = executor.buildExecutionPrompt(blueprint, context, options);
+      const prompt = await executor.buildExecutionPrompt(blueprint, context, options);
       const skillMatch = prompt.match(/--- BEGIN SKILLS ---\n([\s\S]*?)\n--- END SKILLS ---/);
 
       assertExists(skillMatch);
@@ -2567,6 +2713,128 @@ Deno.test({
   sanitizeOps: false,
 });
 
+Deno.test({
+  name: "AgentExecutor: compacted originalStepIds match compressed step IDs (GAP-36)",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      let stepCount = 0;
+      const strategyRegistry = new StrategyRegistry();
+      strategyRegistry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: () => {
+          stepCount++;
+          return Promise.resolve({
+            branch: `feat/gap36-${stepCount}`,
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [`src/step${stepCount}.ts`],
+            description: `Step ${stepCount} execution`,
+            tool_calls: 1,
+            execution_time_ms: stepCount * 10,
+          });
+        },
+      });
+
+      const mockProvider: IModelProvider = {
+        id: "mock",
+        generate: async (): Promise<IGenerateResult> => {
+          await Promise.resolve();
+          return {
+            content: "Summarized: completed earlier steps",
+            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+            model: "mock-model",
+            provider: "mock",
+            cost_usd: 0,
+          };
+        },
+      };
+
+      const executor = new AgentExecutor(
+        testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        mockProvider,
+        strategyRegistry,
+      );
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      // Run 5 steps to capture step IDs
+      const stepIds: string[] = [];
+      for (let i = 1; i <= 5; i++) {
+        const context: IExecutionContext = {
+          trace_id: crypto.randomUUID(),
+          request_id: `gap36-req-${i}`,
+          request: `Step ${i}`,
+          plan: "Execute a step",
+          portal: "TestPortal",
+        };
+        const options: IAgentExecutionOptions = {
+          portal: "TestPortal",
+          identity_id: "test-agent",
+          security_mode: SecurityMode.HYBRID,
+          timeout_ms: 300000,
+          max_tool_calls: 100,
+          audit_enabled: true,
+        };
+        await executor.executeStep(context, options);
+        // Track step IDs in order
+        const entries = executor.loopHistory;
+        for (const entry of entries) {
+          if (entry.type === "step" && !stepIds.includes(entry.stepId)) {
+            stepIds.push(entry.stepId);
+          }
+        }
+      }
+
+      // 5 steps in history
+      assertEquals(executor.loopHistory.length, 5);
+      assertEquals(stepIds.length, 5);
+
+      // Compact — compress steps older than N-2 (keep 2 newest)
+      await executor.compactLoopHistory(2);
+
+      // 3 entries: 1 compacted + 2 individual steps
+      assertEquals(executor.loopHistory.length, 3);
+
+      const compacted = executor.loopHistory[0] as ICompactedEntry;
+      assertEquals(compacted.type, "compacted");
+
+      // originalStepIds should match the first 3 step IDs (the compressed ones)
+      assertEquals(compacted.originalStepIds.length, 3);
+      assertEquals(compacted.originalStepIds[0], stepIds[0]);
+      assertEquals(compacted.originalStepIds[1], stepIds[1]);
+      assertEquals(compacted.originalStepIds[2], stepIds[2]);
+
+      // Remaining individual steps should be steps 4 and 5
+      const remaining1 = executor.loopHistory[1] as ILoopHistoryEntry;
+      const remaining2 = executor.loopHistory[2] as ILoopHistoryEntry;
+      assertEquals(remaining1.stepId, stepIds[3]);
+      assertEquals(remaining2.stepId, stepIds[4]);
+
+      // NOTE: FlowCheckpointService integration is not yet wired into
+      // AgentExecutor. The originalStepIds field is a forward-compatibility
+      // hook — once FlowCheckpointService is wired into compactLoopHistory(),
+      // these IDs can be used to retrieve original checkpoint data.
+      // See phase-103 Step 103.14 for the deferred integration plan.
+
+      executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
 /** Sum tokens from all entries in the loop history. */
 function sumTokens(history: Array<ILoopHistoryEntry | ICompactedEntry>): number {
   return history.reduce((acc, entry) => acc + entry.tokens, 0);
@@ -2699,18 +2967,18 @@ Deno.test({
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
         name: ExecutionStrategyName.LEGACY,
-        execute: (_blueprint: IAgentFileBlueprint, ctx: IExecutionContext, opts: IAgentExecutionOptions) => {
+        execute: async (_blueprint: IAgentFileBlueprint, ctx: IExecutionContext, opts: IAgentExecutionOptions) => {
           // buildExecutionPrompt is called within executeStep's strategy execution,
           // so currentPromptBudget is set. We just need to trigger prompt building.
-          executor.buildExecutionPrompt(_blueprint, ctx, opts);
-          return Promise.resolve({
+          await executor.buildExecutionPrompt(_blueprint, ctx, opts);
+          return {
             branch: "feat/budget-event-test",
             commit_sha: "0000000000000000000000000000000000000000",
             files_changed: [],
             description: "Budget event test",
             tool_calls: 1,
             execution_time_ms: 10,
-          });
+          };
         },
       });
 
@@ -2777,16 +3045,16 @@ Deno.test({
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
         name: ExecutionStrategyName.LEGACY,
-        execute: (_blueprint: IAgentFileBlueprint, ctx: IExecutionContext, opts: IAgentExecutionOptions) => {
-          executor.buildExecutionPrompt(_blueprint, ctx, opts);
-          return Promise.resolve({
+        execute: async (_blueprint: IAgentFileBlueprint, ctx: IExecutionContext, opts: IAgentExecutionOptions) => {
+          await executor.buildExecutionPrompt(_blueprint, ctx, opts);
+          return {
             branch: "feat/trunc-event-test",
             commit_sha: "0000000000000000000000000000000000000000",
             files_changed: [],
             description: "Truncation event test",
             tool_calls: 1,
             execution_time_ms: 10,
-          });
+          };
         },
       });
 
@@ -2865,16 +3133,16 @@ Deno.test({
       const strategyRegistry = new StrategyRegistry();
       strategyRegistry.register({
         name: ExecutionStrategyName.LEGACY,
-        execute: (_blueprint: IAgentFileBlueprint, _ctx: IExecutionContext, _opts: IAgentExecutionOptions) => {
-          executor.buildExecutionPrompt(_blueprint, _ctx, _opts);
-          return Promise.resolve({
+        execute: async (_blueprint: IAgentFileBlueprint, _ctx: IExecutionContext, _opts: IAgentExecutionOptions) => {
+          await executor.buildExecutionPrompt(_blueprint, _ctx, _opts);
+          return {
             branch: "feat/cache-test",
             commit_sha: "0000000000000000000000000000000000000000",
             files_changed: [],
             description: "Context cache test",
             tool_calls: 1,
             execution_time_ms: 10,
-          });
+          };
         },
       });
 

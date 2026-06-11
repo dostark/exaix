@@ -33,6 +33,7 @@ const VALID_MODELS = [
   "Antigravity",
   "Ollama",
   "Llama",
+  "DeepSeek",
 ];
 
 /**
