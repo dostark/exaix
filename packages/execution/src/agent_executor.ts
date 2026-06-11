@@ -18,6 +18,7 @@ import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ITokenizer } from "@exaix/core/func";
 import { SafeError } from "@exaix/core/errors";
+import { ProviderFactory } from "@exaix/ai/provider_factory.ts";
 import { PromptBudgetAllocator, SafeSubprocess, SubprocessTimeoutError } from "@exaix/core";
 import {
   AGENT_EVENT_EXECUTION_COMPLETED,
@@ -81,8 +82,6 @@ import type { ISnapshotStore } from "./context/snapshot_store.ts";
 import type { ContextCache } from "@exaix/core/context";
 import {
   COMPACT_SUMMARY_MAX_TOKENS,
-  CONTEXT_BUDGET_CONSUMED,
-  CONTEXT_SECTION_TRUNCATED,
   DEFAULT_KEEP_LAST_N_STEPS,
   LOOP_HISTORY_BUDGET_THRESHOLD,
   LOOP_HISTORY_COMPRESSION_RATIO,
@@ -248,9 +247,25 @@ export class AgentExecutor {
 
     let summary = `${compressible.length} steps completed`;
     try {
-      const provider = this.provider;
-      if (provider) {
-        const result = await provider.generate(summaryPrompt, { max_tokens: COMPACT_SUMMARY_MAX_TOKENS });
+      const summarizationModel = this.config.execution?.summarization_model;
+      let summarizationProvider = this.provider;
+      if (summarizationModel && this.config) {
+        try {
+          summarizationProvider = await ProviderFactory.createByName(
+            this.config,
+            summarizationModel,
+            this.db,
+            this.logger,
+          );
+        } catch {
+          // Fall back to executing provider if summarization model resolution fails
+          summarizationProvider = this.provider;
+        }
+      }
+      if (summarizationProvider) {
+        const result = await summarizationProvider.generate(summaryPrompt, {
+          max_tokens: COMPACT_SUMMARY_MAX_TOKENS,
+        });
         summary = result.content.trim();
       }
     } catch {
@@ -725,36 +740,42 @@ export class AgentExecutor {
   /**
    * Build execution prompt for LLM agent
    */
-  public buildExecutionPrompt(
+  public async buildExecutionPrompt(
     blueprint: IAgentFileBlueprint,
     context: IExecutionContext,
     options: IAgentExecutionOptions,
-  ): string {
+  ): Promise<string> {
+    const modelId = this.resolveModelId(blueprint);
     // Sanitize all user-controlled inputs
-    const sanitizedRequest = this.applyTokenBudget(
+    const sanitizedRequest = await this.applyTokenBudget(
       this.sanitizeUserInput(context.request),
       this._currentPromptBudget?.sections.memory,
       "memory",
+      modelId,
     );
-    const sanitizedPlan = this.applyTokenBudget(
+    const sanitizedPlan = await this.applyTokenBudget(
       this.sanitizeUserInput(context.plan),
       this._currentPromptBudget?.sections.plan,
       "plan",
+      modelId,
     );
-    const portalContext = this.applyTokenBudget(
+    const portalContext = await this.applyTokenBudget(
       this.buildPortalContextBlock(options.portal) ?? "",
       this._currentPromptBudget?.sections.portalKnowledge,
       "portalKnowledge",
+      modelId,
     );
-    const systemPrompt = this.applyTokenBudget(
+    const systemPrompt = await this.applyTokenBudget(
       blueprint.systemPrompt,
       this._currentPromptBudget?.sections.system,
       "system",
+      modelId,
     );
-    const skillContext = this.applyTokenBudget(
+    const skillContext = await this.applyTokenBudget(
       context.skills_context ?? "",
       this._currentPromptBudget?.sections.skills,
       "skills",
+      modelId,
     );
 
     // Mark stable sections in context cache for potential cache_control
@@ -815,19 +836,32 @@ Respond with valid JSON containing the changeset result:
 Ensure your response contains ONLY valid JSON, no additional text.`;
   }
 
-  private applyTokenBudget(text: string, tokenBudget?: number, sectionName?: string): string {
+  private async applyTokenBudget(
+    text: string,
+    tokenBudget?: number,
+    sectionName?: string,
+    modelId?: string,
+  ): Promise<string> {
     if (!tokenBudget || tokenBudget <= 0) {
       return text;
     }
 
-    const tokenSource = this._tokenizer ? "bpe" : "heuristic";
+    const estimateTokens = async (input: string): Promise<number> => {
+      if (this._tokenizer && modelId) {
+        return await this._tokenizer.countTokens(input, modelId);
+      }
+      return Math.ceil(input.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
+    };
+
+    const tokenSource = this._tokenizer && modelId ? "bpe" : "heuristic";
     const maxChars = tokenBudget * TOKEN_ESTIMATION_CHARS_PER_TOKEN;
+
     if (text.length <= maxChars) {
       if (sectionName) {
-        this.logger.info(CONTEXT_BUDGET_CONSUMED, "", {
+        this.logger.info(DomainEventType.ContextBudgetConsumed, "", {
           section: sectionName,
           allocatedTokens: tokenBudget,
-          actualTokens: Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN),
+          actualTokens: await estimateTokens(text),
           truncated: false,
           tokenSource,
         });
@@ -837,17 +871,19 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
 
     const truncated = text.slice(0, Math.max(0, maxChars));
     if (sectionName) {
-      this.logger.info(CONTEXT_BUDGET_CONSUMED, "", {
+      const actualTokens = await estimateTokens(truncated);
+      const rawTokens = await estimateTokens(text);
+      this.logger.info(DomainEventType.ContextBudgetConsumed, "", {
         section: sectionName,
         allocatedTokens: tokenBudget,
-        actualTokens: Math.ceil(truncated.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN),
+        actualTokens,
         truncated: true,
         tokenSource,
       });
-      this.logger.info(CONTEXT_SECTION_TRUNCATED, "", {
+      this.logger.info(DomainEventType.ContextSectionTruncated, "", {
         section: sectionName,
         allocatedTokens: tokenBudget,
-        actualTokens: Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN),
+        actualTokens: rawTokens,
         truncatedAtChar: maxChars,
         tokenSource,
       });

@@ -16,8 +16,8 @@ import { parse as parseToml } from "@std/toml";
 import type { JSONValue } from "@exaix/core";
 import type { IEventBusService } from "@exaix/core/observability";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
+import { DomainEventType } from "@exaix/core/events";
 import {
-  CONTEXT_BUDGET_EXCEEDED,
   CONTEXT_PRIORITY_REFLECTION,
   CONTEXT_PRIORITY_SYSTEM,
   CONTEXT_PRIORITY_TOOL_RESULT,
@@ -330,7 +330,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       snapshot.maxContextTokens > 0 &&
       snapshot.usedInputTokens / snapshot.maxContextTokens >= LOOP_HISTORY_BUDGET_THRESHOLD
     ) {
-      void this.executor.budgetLogger?.info(CONTEXT_BUDGET_EXCEEDED, context.trace_id, {
+      void this.executor.budgetLogger?.info(DomainEventType.ContextBudgetExceeded, context.trace_id, {
         model: blueprint.model as string,
         contextWindow: snapshot.maxContextTokens as number,
         estimatedTokens: snapshot.usedInputTokens as number,

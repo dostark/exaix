@@ -9,6 +9,7 @@
 
 import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 
+/** @deprecated Use `ITokenizer` / `AiTokenEstimatorTokenizer` from `tokenizer.ts` for model-accurate token counting. */
 export class TokenCounter {
   countTokens(text: string): number {
     if (!text || text.length === 0) {

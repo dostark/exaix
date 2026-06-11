@@ -478,7 +478,7 @@ Deno.test("[PromptBudgetAllocator] budget events include tokenSource field", asy
 
   const allocEvents = events.filter((e) => e.action === "context.budget.allocated");
   assert(allocEvents.length >= 1);
-  assertEquals(allocEvents[0].payload.tokenSource, "heuristic");
+  assertEquals(allocEvents[0].payload.tokenSource, "bpe");
 });
 
 // ============================================================================

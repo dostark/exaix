@@ -258,6 +258,12 @@ export const DomainEventType = {
   TriggerAccepted: "trigger.accepted",
   TriggerRejected: "trigger.rejected",
 
+  // Context budget events (Phase 103)
+  ContextBudgetAllocated: "context.budget.allocated",
+  ContextBudgetConsumed: "context.budget.consumed",
+  ContextSectionTruncated: "context.section.truncated",
+  ContextBudgetExceeded: "context.budget.exceeded",
+
   // Shutdown lifecycle
   DaemonShutdownSignal: "shutdown.signal_received",
   DaemonShutdownStarting: "shutdown.starting",
