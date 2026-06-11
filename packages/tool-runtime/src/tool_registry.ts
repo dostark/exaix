@@ -684,7 +684,10 @@ export class ToolRegistry implements IToolRegistry {
     this.executors.set(ToolName.WRITE_FILE, (p) => this.writeFile(str(p.path), str(p.content)));
     this.executors.set(ToolName.LIST_DIRECTORY, (p) => this.listDirectory(str(p.path)));
     this.executors.set(ToolName.SEARCH_FILES, (p) => this.searchFiles(str(p.pattern), str(p.path)));
-    this.executors.set(ToolName.RUN_COMMAND, (p) => this.runCommand(str(p.command), p.args ? strArr(p.args) : []));
+    this.executors.set(
+      ToolName.RUN_COMMAND,
+      (p) => this.runCommand(str(p.command), p.args ? strArr(p.args) : [], p.cwd ? str(p.cwd) : undefined),
+    );
     this.executors.set(ToolName.CREATE_DIRECTORY, (p) => this.createDirectory(str(p.path)));
     this.executors.set(
       ToolName.FETCH_URL,
@@ -929,6 +932,24 @@ export class ToolRegistry implements IToolRegistry {
   }
 
   /**
+   * The absolute filesystem roots a tool may operate within: the workspace, memory,
+   * and blueprint dirs under system root, the system root itself, and every configured
+   * portal target. Used to validate both resolved file paths and run_command cwd.
+   */
+  private async getAllowedRoots(): Promise<string[]> {
+    const systemRootAbsolute = await Deno.realPath(this.config.system.root).catch(() =>
+      resolve(this.config.system.root)
+    );
+    return [
+      join(systemRootAbsolute, this.config.paths.workspace),
+      join(systemRootAbsolute, this.config.paths.memory),
+      join(systemRootAbsolute, this.config.paths.blueprints),
+      systemRootAbsolute,
+      ...this.config.portals.map((p) => p.target_path),
+    ];
+  }
+
+  /**
    * Resolve and validate a path
    * - If path starts with @, use PathResolver (for alias resolution)
    * - Otherwise, validate it's within allowed roots
@@ -939,22 +960,7 @@ export class ToolRegistry implements IToolRegistry {
       return await this.pathResolver.resolve(path);
     }
 
-    // Define allowed roots - RESOLVE TO ABSOLUTE PATHS
-    // We must resolve config.system.root to absolute first if receiving relative paths
-    // But typically config.system.root should be correct.
-    // The issue is mixing relative config paths with absolute Portal paths.
-    // We normalize all to absolute here.
-    const systemRootAbsolute = await Deno.realPath(this.config.system.root).catch(() =>
-      resolve(this.config.system.root)
-    );
-
-    const allowedRoots = [
-      join(systemRootAbsolute, this.config.paths.workspace),
-      join(systemRootAbsolute, this.config.paths.memory),
-      join(systemRootAbsolute, this.config.paths.blueprints),
-      systemRootAbsolute,
-      ...this.config.portals.map((p) => p.target_path),
-    ];
+    const allowedRoots = await this.getAllowedRoots();
 
     try {
       // Securely resolve path within allowed roots
@@ -1015,9 +1021,13 @@ export class ToolRegistry implements IToolRegistry {
   }
 
   /**
-   * Run command tool implementation
+   * Run command tool implementation.
+   *
+   * Security (Finding 6): when a `cwd` is provided it is validated to be within the
+   * allowed roots (e.g. the portal the caller was authorized for) before the command
+   * spawns there. Without a `cwd` the command runs in baseDir (system root) as before.
    */
-  public async runCommand(command: string, args: string[]): Promise<IToolResult> {
+  public async runCommand(command: string, args: string[], cwd?: string): Promise<IToolResult> {
     try {
       // Check if command is whitelisted
       if (!ALLOWED_COMMANDS.has(command)) {
@@ -1036,9 +1046,21 @@ export class ToolRegistry implements IToolRegistry {
         };
       }
 
+      let workingDir = this.baseDir;
+      if (cwd !== undefined) {
+        try {
+          workingDir = await this.pathSecurity.resolveWithinRoots(cwd, await this.getAllowedRoots(), this.baseDir);
+        } catch {
+          return {
+            success: false,
+            error: `Command working directory is not allowed: it must be within an authorized root`,
+          };
+        }
+      }
+
       const cmd = new Deno.Command(command, {
         args,
-        cwd: this.baseDir,
+        cwd: workingDir,
         stdout: "piped",
         stderr: "piped",
       });

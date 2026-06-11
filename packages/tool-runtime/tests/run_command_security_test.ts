@@ -8,7 +8,8 @@
  * Deno permission flag anywhere in the argument vector — must be rejected.
  */
 
-import { assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
+import { join } from "@std/path";
 import { cleanupTempDir, createToolRegistryForTests } from "./helpers.ts";
 import { ToolName } from "@exaix/core";
 
@@ -68,6 +69,44 @@ Deno.test("security: run_command blocks git -c / -C config-injection options", a
     }
   } finally {
     await cleanupTempDir(tempDir);
+  }
+});
+
+Deno.test("security: run_command executes in the provided portal cwd, not system root", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "run-cmd-cwd-" });
+  const registry = createToolRegistryForTests(tempDir);
+  try {
+    const portalDir = join(tempDir, "portal-sub");
+    await Deno.mkdir(portalDir, { recursive: true });
+
+    const result = await registry.execute(ToolName.RUN_COMMAND, {
+      command: "pwd",
+      args: [],
+      cwd: portalDir,
+    });
+
+    assert(result.success, `pwd should succeed: ${result.error}`);
+    const output = (result.data as { output: string }).output.trim();
+    assertEquals(output, await Deno.realPath(portalDir), "command must run in the portal cwd, not system root");
+  } finally {
+    await cleanupTempDir(tempDir);
+  }
+});
+
+Deno.test("security: run_command rejects a cwd outside the allowed roots", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "run-cmd-cwd-bad-" });
+  const outside = await Deno.makeTempDir({ prefix: "run-cmd-outside-" });
+  const registry = createToolRegistryForTests(tempDir);
+  try {
+    const result = await registry.execute(ToolName.RUN_COMMAND, {
+      command: "pwd",
+      args: [],
+      cwd: outside,
+    });
+    assert(!result.success, "a cwd outside the allowed roots must be rejected");
+  } finally {
+    await cleanupTempDir(tempDir);
+    await cleanupTempDir(outside);
   }
 });
 

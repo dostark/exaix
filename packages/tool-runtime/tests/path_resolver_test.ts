@@ -89,13 +89,14 @@ Deno.test("[security] PathResolver: throws on accessing file outside allowed roo
 
     const resolver = new PathResolver(config);
 
-    // Try to resolve the symlink which points outside
-    // Note: PathResolver validates normalized path is within allowed root
-    // Symlink target resolution happens at file access time, not path resolution time
-    const resolved = await resolver.resolve("@Blueprints/link_to_secret");
-    // The path resolves to the symlink path within Blueprints dir
-    // Security check passes because normalized path is within allowed root
-    assert(resolved.includes("Blueprints"), "Resolved path should include Blueprints");
+    // The symlink physically points outside the allowed root, so resolution must be
+    // rejected: PathResolver resolves symlinks on the target before the within-root
+    // check (Finding 8). A string-prefix check would wrongly accept this path.
+    await assertRejects(
+      () => resolver.resolve("@Blueprints/link_to_secret"),
+      Error,
+      "Access denied",
+    );
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }
