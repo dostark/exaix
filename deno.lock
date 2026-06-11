@@ -364,6 +364,12 @@
           "jsr:@std/yaml@^1.0.2"
         ]
       },
+      "packages/session": {
+        "dependencies": [
+          "jsr:@std/assert@^1.0.19",
+          "jsr:@std/path@^1.1.4"
+        ]
+      },
       "packages/storage-sqlite": {
         "dependencies": [
           "jsr:@db/sqlite@0.13",

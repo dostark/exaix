@@ -27,6 +27,7 @@
     "./packages/execution",
     "./packages/request",
     "./packages/flow",
+    "./packages/session",
     "./apps/daemon",
     "./apps/exactl",
     "./apps/mcp-server",

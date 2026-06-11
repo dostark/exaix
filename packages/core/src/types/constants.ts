@@ -1531,6 +1531,24 @@ export const SESSION_DEFAULT_MAX_OUTPUT_TOKENS = 50_000;
 export const SESSION_DEFAULT_MAX_TOTAL_TOKENS = 100_000;
 
 /**
+ * Token-budget environment variables injected into a delegated session tool's
+ * launch. Tool-agnostic; the adapter sets only these (never inherits secrets).
+ */
+export const SESSION_ENV_MAX_INPUT_TOKENS = "EXA_SESSION_MAX_INPUT_TOKENS";
+export const SESSION_ENV_MAX_OUTPUT_TOKENS = "EXA_SESSION_MAX_OUTPUT_TOKENS";
+export const SESSION_ENV_MAX_TOTAL_TOKENS = "EXA_SESSION_MAX_TOTAL_TOKENS";
+
+/** CLI-adapter argv flags pointing the tool at the brief and its token ceiling. */
+export const SESSION_FLAG_BRIEF = "--brief";
+export const SESSION_FLAG_MAX_TOTAL_TOKENS = "--max-total-tokens";
+
+/** Default binary names per built-in session adapter (override via config). */
+export const SESSION_BIN_CLAUDE_CODE = "claude";
+export const SESSION_BIN_OPENCODE = "opencode";
+export const SESSION_BIN_CURSOR = "cursor";
+export const SESSION_BIN_VSCODE = "code";
+
+/**
  * Run async tasks with bounded concurrency.
  * Processes items in batches of `concurrency`, ensuring at most `concurrency`
  * promises are in-flight at any time.
