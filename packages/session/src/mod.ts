@@ -42,6 +42,11 @@ import {
 } from "./gate_mappers.ts";
 import type { IAmendmentDecisionInput, IRefinementClarificationInput, IReviewDecisionPatch } from "./gate_mappers.ts";
 import { assertBinaryAllowed, sanitizeChildEnv } from "./supervised_launch.ts";
+import { sessionReturnToCostRecord } from "./cost_mapping.ts";
+import type { ISessionCostInput } from "./cost_mapping.ts";
+import { resolveSessionDelegateConfig } from "./config_resolver.ts";
+import type { ISessionDelegateScopes } from "./config_resolver.ts";
+import type { ISessionDelegateEventPayload } from "./event_payload.ts";
 
 export { type IReconcileInput, type IReconcileResult, reconcile };
 export type { ISessionAdapter, ISessionLaunch };
@@ -69,3 +74,8 @@ export {
 };
 export type { IAmendmentDecisionInput, IRefinementClarificationInput, IReviewDecisionPatch };
 export { assertBinaryAllowed, sanitizeChildEnv };
+export { sessionReturnToCostRecord };
+export type { ISessionCostInput };
+export { resolveSessionDelegateConfig };
+export type { ISessionDelegateScopes };
+export type { ISessionDelegateEventPayload };

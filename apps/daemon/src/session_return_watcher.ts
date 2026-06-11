@@ -15,8 +15,8 @@ import { basename, dirname } from "@std/path";
 import { DomainEventType } from "@exaix/core/events";
 import { FS_WRITE_EVENT_KINDS } from "@exaix/core/types";
 import type { ILogEvent } from "@exaix/core/types";
-import type { JSONValue } from "@exaix/core/types";
 import type { SessionReturnProcessor } from "@exaix/session/session_return_processor.ts";
+import type { ISessionDelegateEventPayload } from "@exaix/session/event_payload.ts";
 
 /** Narrow journaling seam — satisfied structurally by EventLogger. */
 export interface ISessionEventSink {
@@ -97,7 +97,7 @@ export class SessionReturnWatcher {
     this.fsWatcher = null;
   }
 
-  private async journal(action: string, target: string, payload: Record<string, JSONValue>): Promise<void> {
+  private async journal(action: string, target: string, payload: ISessionDelegateEventPayload): Promise<void> {
     await this.deps.logger.log({ action, target, payload, icon: "🤝" });
   }
 }

@@ -1551,6 +1551,9 @@ export const SESSION_BIN_VSCODE = "code";
 /** Filesystem event kinds that indicate a (re)written file worth processing. */
 export const FS_WRITE_EVENT_KINDS: ReadonlySet<string> = new Set(["create", "modify", "rename"]);
 
+/** Cost-record provider prefix for a delegated (human-run) session tool. */
+export const SESSION_COST_PROVIDER_PREFIX = "session:";
+
 /**
  * Run async tasks with bounded concurrency.
  * Processes items in batches of `concurrency`, ensuring at most `concurrency`
