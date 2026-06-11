@@ -1516,6 +1516,20 @@ export function sleep(ms: number): Promise<void> {
 /** Maximum parallel deno doc --json processes for SymbolExtractor. */
 export const SYMBOL_EXTRACTOR_CONCURRENCY = 4;
 
+/** Directory name for session-delegation handoffs under the workspace root. */
+export const SESSION_DELEGATE_DIR = "Session";
+
+/** Sub-directory for session wait-state files: Memory/Execution/{traceId}/. */
+export const SESSION_WAIT_STATE_DIR = "Memory/Execution";
+
+/** Default delegation deadline in hours from brief creation. */
+export const SESSION_DEFAULT_DEADLINE_HOURS = 24;
+
+/** Default token budget bounds passed in every brief. */
+export const SESSION_DEFAULT_MAX_INPUT_TOKENS = 50_000;
+export const SESSION_DEFAULT_MAX_OUTPUT_TOKENS = 50_000;
+export const SESSION_DEFAULT_MAX_TOTAL_TOKENS = 100_000;
+
 /**
  * Run async tasks with bounded concurrency.
  * Processes items in batches of `concurrency`, ensuring at most `concurrency`
