@@ -39,6 +39,7 @@
     "jsr:@std/text@^1.0.19": "1.0.19",
     "jsr:@std/toml@^1.0.11": "1.0.11",
     "jsr:@std/toml@^1.0.2": "1.0.11",
+    "jsr:@std/yaml@*": "1.1.1",
     "jsr:@std/yaml@^1.0.2": "1.1.1",
     "jsr:@std/yaml@^1.1.1": "1.1.1",
     "npm:@babel/parser@7.29.3": "7.29.3",
