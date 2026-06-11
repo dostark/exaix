@@ -54,6 +54,7 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] CI-safe scenario list excludes scen
   assertEquals(
     ciSafeScenarios.map((scenario: IScenario) => scenario.id).sort(),
     [
+      "flowrunner-execution",
       "memory-aware-analysis",
       "plan-amendment-lifecycle",
       "portal-knowledge-snapshot",
@@ -71,6 +72,7 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] scenario metadata for the Agent Flo
     [
       "acceptance-criteria-propagation",
       "context-budget-react-overflow",
+      "flowrunner-execution",
       "memory-aware-analysis",
       "plan-amendment-lifecycle",
       "portal-knowledge-snapshot",
