@@ -20,6 +20,35 @@ import type { LogMetadata } from "@exaix/core";
 // Shared helpers
 // ---------------------------------------------------------------------------
 
+// Webhook HMAC verification is mandatory (Finding 9), so scenario payloads are signed.
+const WEBHOOK_SECRET = "triggers-basic-scenario-secret";
+
+async function computeHmacSha256(secret: string, body: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));
+  const hex = Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return `sha256=${hex}`;
+}
+
+/** Builds a signed webhook input for the mandatory-HMAC WebhookAdapter. */
+async function signedWebhookInput(
+  body: string,
+  subject?: string,
+): Promise<{ body: string; headers: Record<string, string>; subject?: string }> {
+  const signature = await computeHmacSha256(WEBHOOK_SECRET, body);
+  return {
+    body,
+    headers: { "content-type": "application/json", "x-hub-signature-256": signature },
+    subject,
+  };
+}
+
 function makeNullLogger(): IEventLogger {
   return {
     log: () => Promise.resolve(),
@@ -54,13 +83,9 @@ function makeTrackedLogger(): IEventLogger & { calls: Array<{ action: string; pa
 // ---------------------------------------------------------------------------
 
 Deno.test("[triggers-basic] webhook adapter produces valid envelope", async () => {
-  const adapter = new WebhookAdapter({});
+  const adapter = new WebhookAdapter({ secret: WEBHOOK_SECRET });
   const body = JSON.stringify({ event: "push", repository: "exaix" });
-  const envelope = await adapter.parse({
-    body,
-    headers: { "content-type": "application/json" },
-    subject: "push event",
-  });
+  const envelope = await adapter.parse(await signedWebhookInput(body, "push event"));
 
   assertEquals(envelope.source, "webhook");
   assertEquals(envelope.action, "start_flow");
@@ -85,12 +110,10 @@ Deno.test("[triggers-basic] ingestion service writes request file with correct f
       idempotencyLedger: ledger,
     });
 
-    const adapter = new WebhookAdapter({});
-    const envelope = await adapter.parse({
-      body: JSON.stringify({ event: "deploy", ref: "main" }),
-      headers: { "content-type": "application/json" },
-      subject: "deploy trigger",
-    });
+    const adapter = new WebhookAdapter({ secret: WEBHOOK_SECRET });
+    const envelope = await adapter.parse(
+      await signedWebhookInput(JSON.stringify({ event: "deploy", ref: "main" }), "deploy trigger"),
+    );
 
     const result = await service.ingest(envelope);
 
@@ -129,11 +152,10 @@ Deno.test("[triggers-basic] duplicate webhook trigger is deduplicated", async ()
       idempotencyLedger: ledger,
     });
 
-    const adapter = new WebhookAdapter({});
+    const adapter = new WebhookAdapter({ secret: WEBHOOK_SECRET });
     const body = JSON.stringify({ event: "push", ref: "main" });
-    const headers = { "content-type": "application/json" };
 
-    const first = await adapter.parse({ body, headers, subject: "push" });
+    const first = await adapter.parse(await signedWebhookInput(body, "push"));
     // Use same idempotency key for both
     const second = { ...first, triggerId: crypto.randomUUID() };
 
