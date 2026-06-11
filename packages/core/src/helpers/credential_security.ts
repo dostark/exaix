@@ -1,10 +1,18 @@
 /**
  * @module CredentialSecurity
  * @path packages/core/src/helpers/credential_security.ts
- * @description Secure credential storage using AES-GCM encryption for API keys and sensitive tokens.
+ * @description In-memory credential holder for API keys and tokens.
  * @architectural-layer Helpers
  * @ungrounded
  * @related-files ["packages/storage-sqlite/src/database_service.ts"]
+ *
+ * SECURITY NOTE (Finding 11): this is **best-effort in-memory obfuscation, not a hard
+ * security boundary**. Values are AES-GCM-encrypted, but the key is generated per
+ * process and held in the same process memory as the ciphertext — an adversary with
+ * process-memory access recovers both. It defends against accidental exposure (heap
+ * dumps, casual inspection), not against an attacker who already runs code in-process.
+ * For real secret protection use an OS keychain / secrets manager. Never log, print,
+ * or include these values in error messages.
  */
 
 export class SecureCredentialStore {
@@ -18,8 +26,6 @@ export class SecureCredentialStore {
   static async set(name: string, value: string): Promise<void> {
     const encrypted = await this.encrypt(value);
     this.store.set(name, encrypted);
-    // Zero out original value to prevent memory leaks
-    this.zeroOutString(value);
   }
 
   /**
@@ -96,16 +102,5 @@ export class SecureCredentialStore {
       encrypted,
     );
     return new TextDecoder().decode(decrypted);
-  }
-
-  /**
-   * Zero out a string to prevent memory leaks
-   */
-  private static zeroOutString(str: string): void {
-    // In JavaScript/TypeScript, strings are immutable, so we can't directly
-    // zero them out. However, by setting the reference to null and letting
-    // the garbage collector handle it, we minimize the window of exposure.
-    // The original string will be garbage collected when no longer referenced.
-    str = "\0".repeat(str.length);
   }
 }

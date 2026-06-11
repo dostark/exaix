@@ -55,9 +55,10 @@ Deno.test("SecureCredentialStore: stored data is encrypted", async () => {
   const stored = SecureCredentialStore["store"].get("test");
   assertExists(stored);
 
-  // The stored data should not contain the plaintext key
+  // The stored data must not contain the plaintext key — not merely differ from it.
   const storedString = new TextDecoder().decode(stored);
   assertNotEquals(storedString, testKey);
+  assertEquals(storedString.includes(testKey), false, "ciphertext must not contain the plaintext key");
 
   // But we should be able to decrypt it back
   const retrieved = await SecureCredentialStore.get("test");
