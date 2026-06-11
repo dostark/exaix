@@ -94,6 +94,16 @@ VERIFY phase — value correctness, wiring, consumer tracing, convention check
       diverges from the dominant convention, flag it. Divergence without documented
       justification in the plan's Architecture Notes is a gap.
 
+SECURITY gate (apply when the step touches portal code or any of: input parsing,
+  file paths, database queries, subprocesses, HTTP handlers, auth, secrets)
+  13a. Consult Blueprints/Skills/security-first.skill.md and verify the step
+       addresses all applicable sections (input validation, path traversal,
+       injection, auth boundary, secret handling, transport, dependency pinning).
+  13b. If the step introduces a new input path, query, subprocess call, or HTTP
+       handler, confirm a security test exists that asserts rejection-by-validation
+       (tagged [security]).
+  13c. Run deno task test:security if any security-relevant file was touched.
+
 REFACTOR + CI gates
   14. deno lint <src-file> <test-file>
   15. deno check <src-file>
@@ -160,6 +170,8 @@ Related skills
 - #tdd-workflow      — Full TDD red-green-refactor reference for individual components (used within each step)
 - #refactor-check-magic — Run when check:magic violations are non-trivial
 - #fix-bug           — Fix a bug discovered during implementation (branches off this skill)
+- #security          — Full security audit skill for Exaix internals (use when 3+ security findings exist)
+- Blueprints/Skills/security-first.skill.md — Secure coding practices for portal (user project) code; apply during step 13a whenever the step touches input, paths, queries, subprocesses, HTTP, auth, or secrets
 
 Workflow chain (typical):
   #plan → #pre-gap-analysis → **#next-steps** → #post-gap-analysis → #commit

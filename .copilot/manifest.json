@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-11T14:03:36.091Z",
+  "generated_at": "2026-06-11T14:33:58.101Z",
   "docs": [
     {
       "path": ".copilot/prompts/infra.prompt.md",
@@ -623,7 +623,9 @@
         ".copilot/chunks/SKILL.md.chunk1.txt",
         ".copilot/chunks/SKILL.md.chunk2.txt",
         ".copilot/chunks/SKILL.md.chunk3.txt",
-        ".copilot/chunks/SKILL.md.chunk4.txt"
+        ".copilot/chunks/SKILL.md.chunk4.txt",
+        ".copilot/chunks/SKILL.md.chunk5.txt",
+        ".copilot/chunks/SKILL.md.chunk6.txt"
       ]
     },
     {
@@ -740,8 +742,8 @@
       "agent": "senior-coder",
       "scope": "dev",
       "title": "Security Skill (#security)",
-      "short_summary": "Autonomous security audit for Exaix code: applies the Phase 3b nine-item checklist and writes findings with remediation steps.",
-      "version": "1.0",
+      "short_summary": "Autonomous security audit for Exaix code: applies the Phase 3b nine-item checklist against Exaix's real trust boundaries, reuses the canonical security primitives, and writes findings with TDD remediation steps.",
+      "version": "1.1",
       "topics": [
         "security",
         "owasp",
@@ -750,7 +752,13 @@
         "injection",
         "auth",
         "secrets",
-        "tdd"
+        "tdd",
+        "mcp",
+        "portal",
+        "run-command",
+        "deno-permissions",
+        "sandbox",
+        "webhook"
       ],
       "qwen_skill": "security",
       "chunks": [

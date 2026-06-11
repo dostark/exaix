@@ -327,6 +327,7 @@ The `.copilot/` folder contains **machine-readable guidance** for AI assistants:
 - **Hybrid:** Read-only access to Portal paths
 - Workspace paths are file-system paths under `Workspace/` such as `Workspace/Active`, `Workspace/Requests`, `Workspace/Plans`, and their subdirectories.
 - All production code and test helpers that construct or accept workspace paths must validate them through `PathResolver`; standalone utilities under `scripts/` are exempt only when they do not access workspace paths.
+- When writing or modifying code **inside a portal** (user project), apply the secure-by-default practices in [`Blueprints/Skills/security-first.skill.md`](Blueprints/Skills/security-first.skill.md): input validation, path traversal, injection prevention, auth boundaries, secret handling, and the OWASP 2021 checklist.
 
 ### Package vs App Placement
 

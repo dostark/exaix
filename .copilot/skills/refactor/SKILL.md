@@ -55,6 +55,17 @@ Exaix refactoring patterns
      Before: const p = `${base}/${userInput}`;
      After:  const p = await PathSecurity.resolveAndValidate(userInput, [base]);
 
+Security check (apply when the refactor touches portal code or any boundary:
+  input parsing, file paths, SQL queries, subprocesses, HTTP handlers, auth, secrets)
+  - Before restructuring, verify the existing control routes through the canonical
+    primitive (PathSecurity.resolveWithinRoots, parameterized queries, argument
+    arrays). Refactoring must not silently downgrade a boundary — e.g. inlining a
+    path check as a string comparison instead of keeping PathResolver.
+  - If the refactor changes error messages, confirm access-denied messages remain
+    generic (no host paths echoed to callers).
+  - Consult Blueprints/Skills/security-first.skill.md for the full checklist when
+    the refactor's scope covers input, path, injection, or auth surfaces.
+
 Validation
   deno test --allow-all <test-file>     # before refactor (baseline GREEN)
   # ... apply refactor ...
@@ -76,6 +87,8 @@ Related
 - #refactor-check-magic — targeted magic-value reduction workflow
 - #clean-codebase       — full CI-green sweep including style + arch
 - #tdd-workflow         — when refactor requires adding tests first
+- #security             — full security audit when refactor exposes 3+ control gaps
+- [Blueprints/Skills/security-first.skill.md](../../../Blueprints/Skills/security-first.skill.md) — secure coding checklist for portal code; consult when refactor touches input, path, injection, or auth boundaries
 - [LLM_GUIDE.md](../../../LLM_GUIDE.md) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
 - CODE_STYLE.md         — authoritative naming, type, import, and constants rules
 ```
