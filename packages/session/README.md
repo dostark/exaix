@@ -18,11 +18,23 @@ contract; runtime wiring (daemon watcher, gate hooks, CLI/TUI) lives in `apps/`.
 
 ## Components
 
-- `packages/session/src/i_session_adapter.ts` — `ISessionAdapter` / `ISessionLaunch`
-  launch-strategy contract.
-- `packages/session/src/session_adapter_registry.ts` — `SessionAdapterRegistry`
+- `session_adapter_registry.ts` / `i_session_adapter.ts` — `SessionAdapterRegistry`
   plus the four built-in adapters (`claude-code`, `opencode` are
   supervised-capable; `cursor`, `vscode` are advisory-only).
+- `session_delegate_service.ts` — `prepareBrief` (atomic brief.json + single-use
+  resume token) and `resolveLaunch`.
+- `reconcile.ts` / `scope_checker.ts` — constant-time token binding, two-stage
+  path-scope enforcement, gate/decision legality, non-blocking budget overage.
+- `wait/session_wait_store.ts` — durable wait-state shim (`ISessionWaitStore`),
+  swappable for Phase 84's `WaitStateService`.
+- `session_return_processor.ts` — reads brief+return, reconciles, resumes (the
+  partial/forged/out-of-scope-safe core the daemon `SessionReturnWatcher` calls).
+- `gate_mappers.ts` — maps a delegated return into the existing
+  `ZPlanAmendmentDecision`, `Review` status, and `ClarificationSession` contracts.
+- `supervised_launch.ts` — GAP-4 spawn hardening (`sanitizeChildEnv` secret strip,
+  `assertBinaryAllowed`).
+- `cost_mapping.ts` / `config_resolver.ts` / `event_payload.ts` — cost record
+  (`session:<tool>`, USD sentinel), config precedence, typed event payload.
 
 The security invariant is mechanical: only files and the typed `return.json`
 cross back into the core pipeline — never session or conversation state.

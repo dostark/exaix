@@ -63,7 +63,15 @@ Session tools are treated as **external delegates** — launched via a configura
 
 Session tool integration **must not introduce session state into Exaix's core pipeline**. The pipeline remains file-driven and asynchronous. The session tool is a transient external process that reads from and writes to the same file system — it does not change how Exaix models work.
 
-For the pipeline gate diagram with ASCII art and TOML configuration sample, see `packages/flow/README.md#session-tool-integration`.
+### Handoff Contract (Phase 106)
+
+The integration is realized by the `@exaix/session` package as a strict three-part handoff, so the invariant holds by construction (only files + a typed `return.json` cross back):
+
+1. **Brief** — `SessionDelegateService.prepareBrief` (`packages/session/src/session_delegate_service.ts`) atomically writes `Session/{traceId}/brief.json` (objective, scope globs, token budget, single-use resume token, deadline).
+2. **Launch** — a per-tool `ISessionAdapter` from `SessionAdapterRegistry` (`packages/session/src/session_adapter_registry.ts`) builds a hardened launch (bare binary + discrete argv, token-budget env only); supervised spawns strip provider secrets and enforce a binary allowlist (`packages/session/src/supervised_launch.ts`).
+3. **Return + Reconcile** — the tool writes a mandatory `Session/{traceId}/return.json`; the daemon's `SessionReturnWatcher` (`apps/daemon/src/session_return_watcher.ts`) invokes `SessionReturnProcessor`/`reconcile` (constant-time token check, two-stage path-scope enforcement, gate/decision legality, non-blocking budget overage), maps the outcome into the existing amendment/review/clarification contracts (`packages/session/src/gate_mappers.ts`), and resumes the gate's durable wait state (`packages/session/src/wait/`).
+
+Delegated output is **untrusted** and still flows through the same quality, critique, and review gates as autonomous output. For the pipeline gate diagram with ASCII art and TOML configuration sample, see `packages/flow/README.md#session-tool-integration`.
 
 ---
 
