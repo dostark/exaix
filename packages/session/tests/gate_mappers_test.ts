@@ -9,11 +9,13 @@
 
 import { assertEquals } from "@std/assert";
 import { ZPlanAmendmentDecision } from "@exaix/schemas/plan_amendment.ts";
+import { ClarificationSessionSchema, ClarificationSessionStatus } from "@exaix/schemas/clarification_session.ts";
 import { ReviewStatus } from "@exaix/core/status";
 import { SessionReturnSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionReturn } from "@exaix/schemas/session_delegate.ts";
 import {
   buildAmendmentDecision,
+  buildClarificationFromDelegation,
   buildReviewDecisionPatch,
   sessionDecisionToAmendmentVerdict,
   sessionDecisionToReviewStatus,
@@ -81,4 +83,26 @@ Deno.test("[gate_mappers] buildReviewDecisionPatch carries the rejection reason 
   const rejected = buildReviewDecisionPatch(ret("rejected", "Fails the quality gate"));
   assertEquals(rejected.status, ReviewStatus.REJECTED);
   assertEquals(rejected.rejection_reason, "Fails the quality gate");
+});
+
+Deno.test("[gate_mappers] an enriched refinement round-trips through ClarificationSessionSchema", () => {
+  const session = buildClarificationFromDelegation({
+    requestId: "req-01",
+    originalBody: "Add a feature.",
+    sessionReturn: ret("enriched", "Clarified acceptance criteria."),
+  });
+  const parsed = ClarificationSessionSchema.parse(session);
+  assertEquals(parsed.requestId, "req-01");
+  assertEquals(parsed.originalBody, "Add a feature.");
+  assertEquals(parsed.status, ClarificationSessionStatus.USER_CONFIRMED);
+  assertEquals(parsed.rounds, []);
+});
+
+Deno.test("[gate_mappers] an abandoned refinement marks the clarification user-cancelled", () => {
+  const session = buildClarificationFromDelegation({
+    requestId: "req-02",
+    originalBody: "Add a feature.",
+    sessionReturn: ret("abandoned", "Gave up."),
+  });
+  assertEquals(session.status, ClarificationSessionStatus.USER_CANCELLED);
 });

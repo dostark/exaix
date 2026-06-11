@@ -35,11 +35,13 @@ import { SessionReturnProcessor } from "./session_return_processor.ts";
 import type { ISessionReturnOutcome, ISessionReturnProcessorDeps } from "./session_return_processor.ts";
 import {
   buildAmendmentDecision,
+  buildClarificationFromDelegation,
   buildReviewDecisionPatch,
   sessionDecisionToAmendmentVerdict,
   sessionDecisionToReviewStatus,
 } from "./gate_mappers.ts";
-import type { IAmendmentDecisionInput, IReviewDecisionPatch } from "./gate_mappers.ts";
+import type { IAmendmentDecisionInput, IRefinementClarificationInput, IReviewDecisionPatch } from "./gate_mappers.ts";
+import { assertBinaryAllowed, sanitizeChildEnv } from "./supervised_launch.ts";
 
 export { type IReconcileInput, type IReconcileResult, reconcile };
 export type { ISessionAdapter, ISessionLaunch };
@@ -60,8 +62,10 @@ export { SessionReturnProcessor };
 export type { ISessionReturnOutcome, ISessionReturnProcessorDeps };
 export {
   buildAmendmentDecision,
+  buildClarificationFromDelegation,
   buildReviewDecisionPatch,
   sessionDecisionToAmendmentVerdict,
   sessionDecisionToReviewStatus,
 };
-export type { IAmendmentDecisionInput, IReviewDecisionPatch };
+export type { IAmendmentDecisionInput, IRefinementClarificationInput, IReviewDecisionPatch };
+export { assertBinaryAllowed, sanitizeChildEnv };

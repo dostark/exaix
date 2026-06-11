@@ -13,6 +13,8 @@
 
 import { ZPlanAmendmentDecision } from "@exaix/schemas/plan_amendment.ts";
 import type { IPlanAmendmentDecision } from "@exaix/schemas/plan_amendment.ts";
+import { ClarificationSessionSchema, ClarificationSessionStatus } from "@exaix/schemas/clarification_session.ts";
+import type { IClarificationSession } from "@exaix/schemas/clarification_session.ts";
 import { ReviewStatus } from "@exaix/core/status";
 import type { IReviewStatus } from "@exaix/core/status";
 import type { SessionDecision, SessionReturn } from "@exaix/schemas/session_delegate.ts";
@@ -31,6 +33,14 @@ export interface IAmendmentDecisionInput {
   decidedBy: string;
   /** ISO timestamp of the decision. */
   now: string;
+}
+
+/** Inputs for recording a delegated refinement as a clarification session. */
+export interface IRefinementClarificationInput {
+  requestId: string;
+  /** The original, unmodified request body. */
+  originalBody: string;
+  sessionReturn: SessionReturn;
 }
 
 /** Map a delegated plan_review verb to an amendment-decision verdict. */
@@ -68,4 +78,24 @@ export function sessionDecisionToReviewStatus(decision: SessionDecision): IRevie
 export function buildReviewDecisionPatch(sessionReturn: SessionReturn): IReviewDecisionPatch {
   const status = sessionDecisionToReviewStatus(sessionReturn.decision);
   return status === ReviewStatus.REJECTED ? { status, rejection_reason: sessionReturn.summary } : { status };
+}
+
+/**
+ * Record a delegated refinement as a schema-valid ClarificationSession (GAP-8).
+ * A delegated enrichment is free-text, not an agent Q&A loop, so no synthetic
+ * rounds are fabricated: an `enriched` return marks the session user-confirmed,
+ * anything else (e.g. `abandoned`) marks it user-cancelled. The enrichment text
+ * itself rides on the journaled return summary.
+ */
+export function buildClarificationFromDelegation(input: IRefinementClarificationInput): IClarificationSession {
+  const status = input.sessionReturn.decision === "enriched"
+    ? ClarificationSessionStatus.USER_CONFIRMED
+    : ClarificationSessionStatus.USER_CANCELLED;
+  return ClarificationSessionSchema.parse({
+    requestId: input.requestId,
+    originalBody: input.originalBody,
+    rounds: [],
+    status,
+    qualityHistory: [],
+  });
 }
