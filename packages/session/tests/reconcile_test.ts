@@ -2,7 +2,7 @@
  * @module ReconcileTest
  * @path packages/session/tests/reconcile_test.ts
  * @description Phase 106 Step 4 — tests for reconcile(): GAP-2 token validation,
- *   gate/decision legality, GAP-3 scope enforcement (hard block), and GAP-7
+ *   gate/decision legality, GAP-3 scope enforcement (hard block), and R7
  *   non-blocking budget overage. A forged token, an out-of-gate decision, or any
  *   out-of-scope path must reject; an opaque transcript_ref is never parsed.
  */
@@ -97,7 +97,7 @@ Deno.test("[reconcile] an out-of-gate decision verb is rejected", () => {
   assertEquals(result.rejection, "decision_gate_mismatch");
 });
 
-Deno.test("[reconcile] GAP-7 — budget overage is flagged but does not block", () => {
+Deno.test("[reconcile] R7 — budget overage is flagged but does not block", () => {
   const result = reconcile({
     brief: brief(),
     sessionReturn: ret({

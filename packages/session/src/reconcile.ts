@@ -4,7 +4,7 @@
  * @description Session-delegation reconciliation: validate a parsed return.json
  *   against its brief. Enforces GAP-2 (constant-time token + trace binding),
  *   gate/decision legality, and GAP-3 scope (a non-empty violation list hard-
- *   blocks). GAP-7 budget overage is flagged but non-blocking. The opaque
+ *   blocks). Budget overage (Risk R7) is flagged but non-blocking. The opaque
  *   transcript_ref is never read. Package-pure: no Config / DatabaseService.
  * @architectural-layer Services
  * @dependencies [@exaix/schemas]
@@ -41,7 +41,7 @@ export interface IReconcileResult {
   /** Touched paths outside permitted_paths (GAP-3); non-empty hard-blocks. */
   scopeViolations: string[];
   tokenStats: SessionTokenStats;
-  /** token_stats.total_tokens > brief budget (GAP-7); non-blocking. */
+  /** token_stats.total_tokens > brief budget (Risk R7); non-blocking. */
   budgetExceeded: boolean;
   /** Typed reason when `accepted` is false; absent when accepted. */
   rejection?: SessionReconcileRejection;
