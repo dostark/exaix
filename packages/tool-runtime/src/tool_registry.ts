@@ -181,8 +181,13 @@ function validateGitArguments(args: string[]): { valid: boolean; reason?: string
     }
   }
 
+  // Exact-match options that enable config-injection / scope-escape RCE primitives.
+  // `-c <key>=<val>` injects arbitrary git config (sshCommand, protocol.ext.allow,
+  // fsmonitor, pager, …); `-C <dir>` runs git against an arbitrary directory.
+  const dangerousExactOptions = ["-c", "-C"];
+
   for (const arg of args) {
-    if (dangerousGitOptions.some((option) => arg.startsWith(option))) {
+    if (dangerousExactOptions.includes(arg) || dangerousGitOptions.some((option) => arg.startsWith(option))) {
       return {
         valid: false,
         reason: `Dangerous git option not allowed: ${arg}`,
