@@ -15,20 +15,14 @@ import type { INotificationService } from "@exaix/core/types";
 import type { SessionMemoryService } from "../session/session_memory.ts";
 import type { MemoryBankService } from "../bank/memory_bank.ts";
 
-type INotificationServiceMinimal = Pick<INotificationService, "notifyPendingDigestIfNeeded">;
-type IMemoryExtractorServiceMinimal = Pick<MemoryExtractorService, "listPending">;
-type IAutoApprovalServiceMinimal = Pick<MemoryAutoApprovalService, "runApprovalCycle">;
-type ISessionMemoryMinimal = Pick<SessionMemoryService, "promoteMemories">;
-type IMemoryBankMinimal = Pick<MemoryBankService, "rebuildIndices">;
-
 export interface IMemoryMaintenanceOptions {
-  notificationService: INotificationServiceMinimal;
-  memoryExtractor: IMemoryExtractorServiceMinimal;
-  autoApprovalService: IAutoApprovalServiceMinimal;
+  notificationService: Pick<INotificationService, "notifyPendingDigestIfNeeded">;
+  memoryExtractor: Pick<MemoryExtractorService, "listPending">;
+  autoApprovalService: Pick<MemoryAutoApprovalService, "runApprovalCycle">;
   logger: IEventLogger;
   intervalMs?: number;
-  sessionMemory?: ISessionMemoryMinimal;
-  memoryBank?: IMemoryBankMinimal;
+  sessionMemory?: Pick<SessionMemoryService, "promoteMemories">;
+  memoryBank?: Pick<MemoryBankService, "rebuildIndices">;
 }
 
 export async function initializeMemoryAutoApprovalMaintenance(

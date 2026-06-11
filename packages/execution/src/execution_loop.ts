@@ -1280,7 +1280,8 @@ export class ExecutionLoop {
     if (!this.context?.extractor) return;
 
     try {
-      const memoryBank = new MemoryBankService(this.config, this.logger);
+      const memoryBank =
+        (this.context?.memoryBank ?? new MemoryBankService(this.config, this.logger)) as MemoryBankService;
       const executionMemory = await memoryBank.getExecutionByTraceId(traceId);
       if (!executionMemory) return;
 
