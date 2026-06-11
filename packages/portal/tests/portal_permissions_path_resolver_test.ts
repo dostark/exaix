@@ -7,7 +7,7 @@
  * are strictly confined to authorized portal root directories.
  */
 
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { PathResolver } from "@exaix/portal";
 import { createMockConfig } from "@exaix/testing";
@@ -104,13 +104,14 @@ Deno.test("[security] PathResolver: prevents access via symlink out of user-defi
 
     const resolver = new PathResolver(config);
 
-    // Try to resolve the symlink which points outside the portal root
-    // Note: PathResolver validates normalized path is within allowed root
-    // Symlink target resolution happens at file access time, not path resolution time
-    const resolved = await resolver.resolve("@MyProject/link_to_secret");
-    // The path resolves to the symlink path within portal dir
-    // Security check passes because normalized path is within allowed root
-    assert(resolved.includes("link_to_secret"), "Resolved path should include symlink name");
+    // The symlink physically points outside the portal root, so resolution must be
+    // rejected: PathResolver resolves symlinks on the target before the within-root
+    // check (Finding 8). A string-prefix check would wrongly accept this path.
+    await assertRejects(
+      () => resolver.resolve("@MyProject/link_to_secret"),
+      Error,
+      "Access denied",
+    );
   } finally {
     await Deno.remove(tempDir, { recursive: true });
     await Deno.remove(externalDir, { recursive: true });
