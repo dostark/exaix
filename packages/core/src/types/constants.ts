@@ -1390,16 +1390,28 @@ export const COMPACT_SUMMARY_MAX_TOKENS = 200;
 /** Number of most recent steps preserved in full during compaction. */
 export const DEFAULT_KEEP_LAST_N_STEPS = 2;
 
-/** Event name emitted after initial budget allocation with full breakdown. */
+/**
+ * Event name emitted after initial budget allocation with full breakdown.
+ * @deprecated Use `DomainEventType.ContextBudgetAllocated` from `@exaix/core/events` instead.
+ */
 export const CONTEXT_BUDGET_ALLOCATED = "context.budget.allocated";
 
-/** Event name emitted after each section is built in the execution prompt. */
+/**
+ * Event name emitted after each section is built in the execution prompt.
+ * @deprecated Use `DomainEventType.ContextBudgetConsumed` from `@exaix/core/events` instead.
+ */
 export const CONTEXT_BUDGET_CONSUMED = "context.budget.consumed";
 
-/** Event name emitted when a section is truncated to fit budget. */
+/**
+ * Event name emitted when a section is truncated to fit budget.
+ * @deprecated Use `DomainEventType.ContextSectionTruncated` from `@exaix/core/events` instead.
+ */
 export const CONTEXT_SECTION_TRUNCATED = "context.section.truncated";
 
-/** Event name emitted when total estimated tokens exceed context window. */
+/**
+ * Event name emitted when total estimated tokens exceed context window.
+ * @deprecated Use `DomainEventType.ContextBudgetExceeded` from `@exaix/core/events` instead.
+ */
 export const CONTEXT_BUDGET_EXCEEDED = "context.budget.exceeded";
 
 // ============================================================================

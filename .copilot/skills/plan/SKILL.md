@@ -10,7 +10,7 @@ scope: dev
 title: "Plan Skill (#plan)"
 description: Draft a new Phase Planning Document for a feature, refactor, or architectural change — follows Exaix standards for TDD, security, and traceability
 short_summary: "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy."
-version: "1.3"
+version: "1.4"
 topics: ["planning", "architecture", "tdd", "security", "traceability", "configurability"]
 qwen_skill: plan
 ---
@@ -28,6 +28,10 @@ Key points
 - Name the planning document `.copilot/planning/phase-NN-<kebab-slug>.md` (NN = next sequential phase number).
 - Keep each phase to 8–10 implementation steps maximum — split larger features into two sequential phases.
 - Assess `tests/scenario_framework/` coverage (§3E) whenever the feature touches the request → plan → execution → review → memory → update flow.
+- **Specify exact values**: For every enum, union, or variant field, state which concrete value each component emits and under what conditions — not just the allowed set. Vague "can be one of X, Y, Z" without per-component mapping is a pre-gap.
+- **Trace every output to its consumer**: For every new interface field or event payload name a consuming component and verify the data flow reaches it. Fields with no readers are dead data.
+- **Survey module conventions**: Before committing to a pattern choice (event naming, error handling, DI style), read 5–10 existing examples in the affected module and document the dominant convention. Divergence requires justification in Architecture Notes.
+- **Map prose claims to named tests**: Every behavioural claim made in the prose (e.g., "checkpoint preserves data", "service Y calls service Z") must have a named test in Planned Tests. Claims without test names are gaps.
 - When reading existing source files to understand context, work in batches of 5–10 files: read a batch, record findings, then continue.
 
 Canonical prompt (short):
@@ -42,6 +46,10 @@ Do / Don't
 - ✅ Do include MERMAID diagrams for complex logic flows.
 - ✅ Do include a Section 12 for Safety Gates / Mid-execution replanning if applicable.
 - ✅ Do use symbols like 🔴 🔒 🟡 🟠 🔵 for risk and gap classification.
+- ✅ Do specify the exact value each component emits for every enum/variant field — not just the allowed set.
+- ✅ Do trace every new output field to a named consumer — verify the data flow has a destination before writing it.
+- ✅ Do survey the affected module's existing conventions before choosing a pattern — document divergence in Architecture Notes.
+- ✅ Do map every prose behavioural claim to a named test in the step's Planned Tests section.
 - ✅ Do name the planning document `phase-NN-<kebab-slug>.md` for consistent slugs.
 - ✅ Do keep phases to 8–10 steps maximum — split larger features into two sequential phases.
 - ✅ Do assess scenario framework coverage (§3E) for any change to the end-to-end flow.
@@ -96,6 +104,18 @@ For every step, verify:
 - Ensure file modifications are grouped into approved Changesets.
 - DB operations must be wrapped in transactions where atomicity is required.
 
+#### D. Field Specification & Consumer Tracing
+
+For every new or modified interface, event payload, or schema field:
+
+- **Exact values**: If the field's type is an enum, union, or set of allowed values,
+  specify the exact value each component emits and the condition under which that value
+  changes. "Field can be one of A, B, C" without per-component mapping is underspecified.
+- **Consumer destination**: Name the component or code path that reads each output field.
+  A field defined in one step whose consumer is never implemented is dead data.
+- **Flow completion**: Document the end-to-end data flow from producer to consumer.
+  Verify at least one named test exercises the complete chain.
+
 ### 3. Documentation Update Protocol (§3D)
 
 Include a final **Step N (§3D): Update Documentation** that covers:
@@ -124,6 +144,11 @@ coverage:
 - **Phase Dependencies**: Explicitly list required prior phases.
 - **Risk Level**: L/M/H classification with justification.
 - **Symbolic References**: Use `file:Symbol` syntax for traceability.
+- **Convention survey**: Before committing to an interface shape, naming pattern, or architectural
+  style in a module with existing code, survey 5–10 examples in the same file to determine the
+  dominant convention. Document divergence in Architecture Notes.
+- **Claim-to-test mapping**: For every prose behavioural claim, list a corresponding named test in
+  the step's Planned Tests section. Prose without test names is a pre-gap.
 
 ---
 

@@ -44,7 +44,7 @@ export class LegacyAgentStrategy implements IExecutionStrategy {
       return this.buildFallbackResult(context, startTime);
     }
 
-    const prompt = this.executor.buildExecutionPrompt(blueprint, context, options);
+    const prompt = await this.executor.buildExecutionPrompt(blueprint, context, options);
     const result = await this.provider.generate(prompt, {
       temperature: LEGACY_EXECUTION_TEMPERATURE,
       max_tokens: LEGACY_EXECUTION_MAX_TOKENS,

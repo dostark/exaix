@@ -13,7 +13,7 @@ scope: dev
 title: "Next-Steps Skill (#next-steps)"
 description: Run plan-driven TDD step-by-step workflow with CI gates and per-step commits
 short_summary: "Prompt for iterating through .copilot/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits."
-version: "1.0"
+version: "1.2"
 topics: ["tdd", "red-green-refactor", "planning", "steps", "ci", "commits"]
 qwen_skill: next-steps
 ---
@@ -46,48 +46,76 @@ Validation policy
        - a planning document explicitly requires repository-wide validation and the step is broad enough to justify it
 
 RED phase
-  1. Restate the step context: read the step's "Architecture notes", "Success criteria",
-     and "Planned tests" from the .copilot/planning/ doc. Briefly confirm what will be
-     built (e.g. "Implementing Step 3.2: Add user authentication validation").
-  2. Create the test file at the mirrored path under tests/.
-     If the step has no Planned tests, note this explicitly, skip the RED/GREEN test-file creation,
-     and proceed directly to implementing the source file followed by REFACTOR/CI gates.
-     Document the absence of tests in the commit body.
-  3. Add a module-header JSDoc block (required by check:arch):
-       /** @module XxxTest @path tests/... @description ... */
-  4. Write all planned tests — they must import the not-yet-existing source file
-     so that `deno check` or `deno test` fails with TS2307 (module not found).
-  5. Confirm RED: run `deno test --allow-all <test-file>` and verify it errors.
+   1. Restate the step context: read the step's "Architecture notes", "Success criteria",
+      and "Planned tests" from the .copilot/planning/ doc. Briefly confirm what will be
+      built (e.g. "Implementing Step 3.2: Add user authentication validation").
+   2. Cross-reference against pre-gap analysis: if the plan document has a
+      Pre-Gap Analysis section with findings for this step number, read each relevant
+      gap entry and confirm the step's Planned Tests and Architecture Notes address
+      them. Flag any pre-gap finding not covered by the step's tests.
+   3. Create the test file at the mirrored path under tests/.
+      If the step has no Planned tests, note this explicitly, skip the RED/GREEN test-file creation,
+      and proceed directly to implementing the source file followed by REFACTOR/CI gates.
+      Document the absence of tests in the commit body.
+   4. Add a module-header JSDoc block (required by check:arch):
+        /** @module XxxTest @path tests/... @description ... */
+   5. Write all planned tests — they must import the not-yet-existing source file
+      so that `deno check` or `deno test` fails with TS2307 (module not found).
+   6. Confirm RED: run `deno test --allow-all <test-file>` and verify it errors.
 
 GREEN phase
-  6. Create the source file at the appropriate `packages/<package>/src/...` or `apps/<app>/src/...`
-     path with the minimum implementation needed to pass all tests (include a module-header
-     with @module, @path, @description, @architectural-layer, @dependencies, @related-files).
-  7. Run `deno test --allow-all <test-file>` — all tests must pass.
-  8. Fix any test failures; do not skip tests.
+   7. Create the source file at the appropriate `packages/<package>/src/...` or `apps/<app>/src/...`
+      path with the minimum implementation needed to pass all tests (include a module-header
+      with @module, @path, @description, @architectural-layer, @dependencies, @related-files).
+   8. Run `deno test --allow-all <test-file>` — all tests must pass.
+   9. Fix any test failures; do not skip tests.
+
+VERIFY phase — value correctness, wiring, consumer tracing, convention check
+  10. Verify field values are correct, not just present.
+      For every field the step introduces in events, schemas, or API responses:
+      trace the component's injected dependencies and configuration to confirm the
+      field's runtime value is consistent. A field whose value contradicts what the
+      component's construction dictates is a gap even if tests pass.
+  11. Verify constructor wiring for new services and classes.
+      For every new class, service, or data structure the step introduces:
+      grep the production codebase (excluding tests and test helpers) for
+      importers and instantiation sites. If the class is only instantiated
+      in tests, it is production-dead code. If the class is a service, verify
+      it is injected via constructor DI into a production consumer or registered
+      in the appropriate factory / registry / bootstrap module.
+  12. Trace every output field to its consumer.
+      Grep the codebase for consumers of each new exported symbol, interface field,
+      or event payload field the step introduces. If a field has zero readers, flag
+      it as dead data. If a field claims integration with an adjacent service, verify
+      that service is actually wired and called.
+  13. Check new code against existing module conventions.
+      Survey 5–10 existing examples of the same concern (event emission, error
+      handling, import style, type usage) in the same file or module. If the new code
+      diverges from the dominant convention, flag it. Divergence without documented
+      justification in the plan's Architecture Notes is a gap.
 
 REFACTOR + CI gates
-  9. deno lint <src-file> <test-file>
- 10. deno check <src-file>
- 11. deno task check:style   → fix any errors (interface naming I*, no magic unions)
- 12. deno task check:arch    → all files must be GROUNDED, 0 UNGROUNDED
- 13. deno fmt <src-file> <test-file>  (run before commit, not after)
- 14. deno task check:magic   → if new string/number literals were added, reduce violations
-     (use #refactor-check-magic if the count is non-trivial)
- 15. (optional) deno task check:complexity  if implementation is non-trivial
-     (complexity threshold: 15 — refactor any function breaching it)
- 16. (exception only) See Validation policy above for when a full-suite command is warranted.
+  14. deno lint <src-file> <test-file>
+  15. deno check <src-file>
+  16. deno task check:style   → fix any errors (interface naming I*, no magic unions)
+  17. deno task check:arch    → all files must be GROUNDED, 0 UNGROUNDED
+  18. deno fmt <src-file> <test-file>  (run before commit, not after)
+  19. deno task check:magic   → if new string/number literals were added, reduce violations
+      (use #refactor-check-magic if the count is non-trivial)
+  20. (optional) deno task check:complexity  if implementation is non-trivial
+      (complexity threshold: 15 — refactor any function breaching it)
+  21. (exception only) See Validation policy above for when a full-suite command is warranted.
 
 Planning doc update
- 17. In the step's "Success criteria" block change `- [ ]` → `- [x]` for each
-     criterion now met.
- 18. Change each planned-test bullet `- \`...\`` → `- ✅ \`...\``
- 19. Add a line immediately after the test list:
-       **✅ IMPLEMENTED** — `<packages/.../src/path>`, N/N tests passing
+  22. In the step's "Success criteria" block change `- [ ]` → `- [x]` for each
+      criterion now met.
+  23. Change each planned-test bullet `- \`...\`` → `- ✅ \`...\``
+  24. Add a line immediately after the test list:
+        **✅ IMPLEMENTED** — `<packages/.../src/path>`, N/N tests passing
 
 Commit
- 20. Stage: src file, test file, planning doc.
- 21. Use #commit for the full structured commit body. At minimum the subject line must
+  25. Stage: src file, test file, planning doc.
+  26. Use #commit for the full structured commit body. At minimum the subject line must
      follow conventional commits and the body must include what:, rationale:, tests:,
      who:, and impact: fields. A concise per-step shorthand is acceptable:
        feat(<scope>): implement <What> (Step N)
@@ -110,6 +138,11 @@ Do / Don't
 - ✅ Do use IFoo interface naming (not Foo) — enforced by check:style
 - ✅ Do use ICodeConvention["confidence"] instead of "low"|"medium"|"high" literal union
 - ✅ Do keep test execution proportional to scope; prefer focused tests for a single-step cycle
+- ✅ Do verify field values are correct given the component's dependencies, not just present (step 10)
+- ✅ Do verify new services and classes are wired into production code, not just tests (step 11)
+- ✅ Do trace new output fields to their consumers — dead fields with no readers are gaps (step 12)
+- ✅ Do check new code against existing module conventions — inconsistency within a file is a gap (step 12)
+- ✅ Do cross-reference the step's tests against pre-gap analysis findings for the same step number (step 2)
 - ✅ Do document any edge cases handled and any deviations from the plan in the commit body
 - ❌ Don't implement source code before writing the failing test
 - ❌ Don't batch multiple steps into one commit

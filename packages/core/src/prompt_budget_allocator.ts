@@ -14,8 +14,6 @@ import {
   ADJUSTMENT_PORTAL_KNOWLEDGE_BOOST,
   ADJUSTMENT_PORTAL_KNOWLEDGE_REDUCTION,
   ADJUSTMENT_PRECISION,
-  CONTEXT_BUDGET_ALLOCATED,
-  CONTEXT_BUDGET_EXCEEDED,
   DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED,
   DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED,
   LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK,
@@ -36,6 +34,7 @@ import { AiTokenEstimatorTokenizer } from "./func/tokenizer.ts";
 import { ContextBudgetExceededError } from "./errors/context_budget_error.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IEventLogger } from "./logger/event_logger.ts";
+import { DomainEventType } from "@exaix/core/events";
 import { TaskType } from "./types/enums.ts";
 
 export interface IAllocationHints {
@@ -125,12 +124,12 @@ export class PromptBudgetAllocator {
     const estimatedTotal = Math.max(allocatedTotal, hintTotal);
 
     if (estimatedTotal > totalTokens) {
-      this.logger?.info(CONTEXT_BUDGET_EXCEEDED, "", {
+      this.logger?.info(DomainEventType.ContextBudgetExceeded, "", {
         model: modelId,
         contextWindow: totalTokens,
         estimatedTokens: estimatedTotal,
         sectionBreakdown: { ...sections },
-        tokenSource: "heuristic",
+        tokenSource: "bpe",
       });
       return Promise.reject(
         new ContextBudgetExceededError(
@@ -152,12 +151,12 @@ export class PromptBudgetAllocator {
       sections,
     };
 
-    this.logger?.info(CONTEXT_BUDGET_ALLOCATED, "", {
+    this.logger?.info(DomainEventType.ContextBudgetAllocated, "", {
       model: modelId,
       totalTokens,
       safetyBufferTokens,
       sections: { ...sections },
-      tokenSource: "heuristic",
+      tokenSource: "bpe",
     });
 
     return Promise.resolve(budget);

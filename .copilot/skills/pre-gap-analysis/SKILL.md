@@ -10,7 +10,7 @@ scope: dev
 title: "Pre-Gap Analysis Skill (#pre-gap-analysis)"
 description: Pre-implementation gap analysis of a phase planning document — finds ambiguities, missing contracts, and security risks before coding starts
 short_summary: "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against."
-version: "1.3"
+version: "1.4"
 topics: ["planning", "gap-analysis", "architecture", "risk", "quality", "security", "tdd"]
 qwen_skill: pre-gap-analysis
 ---
@@ -71,6 +71,9 @@ Do / Don't
 - ✅ Do check constructor signatures for every newly injected dependency.
 - ✅ Do verify Zod schemas have .default() on every optional new field.
 - ✅ Do check that every new interface is exported from an index/barrel file.
+- ✅ Do verify value specification depth — enum/variant fields must specify which value each component emits, not just the allowed set.
+- ✅ Do survey module conventions before accepting the plan's pattern choices — new code should match the dominant existing style in the same module.
+- ✅ Do trace every prose behavioural claim to a named test in Planned Tests — claims without test names are gaps.
 - ✅ Do look for magic numbers/strings that belong in constants.
 - ✅ Do classify every gap with a severity symbol (🔴 Critical / 🔒 Security /
   🟡 Feasibility / 🟠 Testing / 🔵 Conceptual) so the team can triage quickly.
@@ -255,6 +258,22 @@ gaps.
    - Is there a single authoritative definition?
    - Is it imported rather than duplicated?
    - Is the owning module's export path declared in the plan?
+
+1. **Verify value specification depth.**
+   For every field with an enum, union, or variant type that the plan introduces:
+   - Confirm the plan specifies which concrete value each component emits, stores, or produces — not just the allowed set.
+   - If the plan says "field can be one of X, Y, Z" without mapping values to components or conditions, flag as underspecified.
+
+1. **Survey module conventions.**
+   Before accepting the plan's choice of interface shape, naming pattern, or architectural style in a module that already has established conventions:
+   - Survey 5–10 existing examples in the same file or module.
+   - Identify the dominant convention for the concern the plan touches (event emission, field naming, error handling, DI pattern, etc.).
+   - If the plan's approach diverges from the module's existing convention without justification, flag a gap.
+
+1. **Trace claimed consumer paths against Planned Tests.**
+   For every behavioural claim the plan makes in prose (e.g., "checkpoint preserves data", "component X calls service Y", "result remains accessible via Z"):
+   - Verify a named test in the step's Planned Tests section explicitly covers that claim.
+   - Prose-only claims that lack a corresponding test name are a gap — flag whether the missing test or the prose claim is the problem.
 
 ---
 
