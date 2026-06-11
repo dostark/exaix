@@ -26,27 +26,33 @@ Deno.test("EmbeddingProviderFactory: returns Ollama provider for ollama config",
   assertEquals(provider.providerId, "ollama");
 });
 
-Deno.test("EmbeddingProviderFactory: returns OpenAI provider for openai config", () => {
-  const provider = createEmbeddingProvider({
-    provider: "openai",
-    model: "text-embedding-3-small",
-    apiKey: "sk-test-key",
-    baseUrl: "https://api.openai.com/v1",
-    chunkSize: 8000,
-  });
-
-  assertEquals(provider.providerId, "openai");
+Deno.test("EmbeddingProviderFactory: throws PROVIDER_UNAVAILABLE for openai config", () => {
+  assertThrows(
+    () =>
+      createEmbeddingProvider({
+        provider: "openai",
+        model: "text-embedding-3-small",
+        apiKey: "sk-test-key",
+        baseUrl: "https://api.openai.com/v1",
+        chunkSize: 8000,
+      }),
+    EmbeddingError,
+    "not yet implemented",
+  );
 });
 
-Deno.test("EmbeddingProviderFactory: returns llama.cpp provider for llamacpp config", () => {
-  const provider = createEmbeddingProvider({
-    provider: "llamacpp",
-    model: "nomic-embed-text",
-    baseUrl: "http://127.0.0.1:8080",
-    chunkSize: 1000,
-  });
-
-  assertEquals(provider.providerId, "llamacpp");
+Deno.test("EmbeddingProviderFactory: throws PROVIDER_UNAVAILABLE for llamacpp config", () => {
+  assertThrows(
+    () =>
+      createEmbeddingProvider({
+        provider: "llamacpp",
+        model: "nomic-embed-text",
+        baseUrl: "http://127.0.0.1:8080",
+        chunkSize: 1000,
+      }),
+    EmbeddingError,
+    "not yet implemented",
+  );
 });
 
 Deno.test("EmbeddingProviderFactory: throws on unknown provider", () => {
@@ -74,20 +80,5 @@ Deno.test("EmbeddingProviderFactory: Ollama provider rejects non-localhost baseU
       }),
     EmbeddingError,
     "localhost",
-  );
-});
-
-Deno.test("EmbeddingProviderFactory: OpenAI provider rejects empty apiKey", () => {
-  assertThrows(
-    () =>
-      createEmbeddingProvider({
-        provider: "openai",
-        model: "text-embedding-3-small",
-        apiKey: "",
-        baseUrl: "https://api.openai.com/v1",
-        chunkSize: 8000,
-      }),
-    EmbeddingError,
-    "API key",
   );
 });

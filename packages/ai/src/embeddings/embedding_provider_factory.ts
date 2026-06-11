@@ -13,9 +13,7 @@ import type { IEmbeddingProvider } from "./embedding_provider.ts";
 import { EmbeddingError } from "./embedding_errors.ts";
 import { OllamaEmbeddingClient } from "@exaix/ai-ollama";
 import type { IOllamaEmbeddingConfig } from "@exaix/ai-ollama";
-import { OpenAIEmbeddingClient } from "../providers/openai_embedding_client.ts";
 import type { IOpenAIEmbeddingConfig } from "../providers/openai_embedding_client.ts";
-import { LlamaCppEmbeddingClient } from "../providers/llamacpp_embedding_client.ts";
 import type { ILlamaCppEmbeddingConfig } from "../providers/llamacpp_embedding_client.ts";
 
 /**
@@ -37,9 +35,15 @@ export function createEmbeddingProvider(config: IEmbeddingProviderConfig): IEmbe
     case "ollama":
       return new OllamaEmbeddingClient(config);
     case "openai":
-      return new OpenAIEmbeddingClient(config);
+      throw new EmbeddingError(
+        "PROVIDER_UNAVAILABLE",
+        "OpenAI embedding client is not yet implemented. Use provider: 'ollama' instead.",
+      );
     case "llamacpp":
-      return new LlamaCppEmbeddingClient(config);
+      throw new EmbeddingError(
+        "PROVIDER_UNAVAILABLE",
+        "LlamaCpp embedding client is not yet implemented. Use provider: 'ollama' instead.",
+      );
     default: {
       const _exhaustive: never = config;
       throw new EmbeddingError(
