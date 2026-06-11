@@ -22,7 +22,7 @@ import {
   SESSION_ENV_MAX_TOTAL_TOKENS,
   SESSION_FLAG_BRIEF,
   SESSION_FLAG_MAX_TOTAL_TOKENS,
-} from "@exaix/core/types/constants.ts";
+} from "@exaix/core/types";
 import {
   SESSION_GATE_DECISIONS,
   SessionLaunchModeSchema,

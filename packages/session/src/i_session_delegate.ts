@@ -1,0 +1,58 @@
+/**
+ * @module ISessionDelegate
+ * @path packages/session/src/i_session_delegate.ts
+ * @description Service-level contract for Phase 106 session delegation:
+ *   brief materialization (prepareBrief) and launch resolution (resolveLaunch).
+ *   Package-pure (GAP-13): the service takes a path-safety helper, a clock, the
+ *   adapter registry, and a pre-resolved absolute Session dir — never Config.
+ * @architectural-layer Services
+ * @dependencies [@exaix/schemas]
+ * @related-files [packages/session/src/session_delegate_service.ts, packages/session/src/i_session_adapter.ts]
+ */
+
+import type {
+  SessionBrief,
+  SessionGate,
+  SessionLaunchMode,
+  SessionTokenBudget,
+  SessionTool,
+} from "@exaix/schemas/session_delegate.ts";
+import type { ISessionLaunch } from "./i_session_adapter.ts";
+
+/** Monotonic clock seam so deadlines are deterministic under test. */
+export interface ISessionClock {
+  now(): Date;
+}
+
+/** Config-free path-safety seam (wraps tool-runtime PathSecurity). */
+export interface ISessionPathSafety {
+  /** Normalize and reject traversal / null bytes; returns the safe relative path. */
+  normalize(path: string): string;
+}
+
+/** Input to SessionDelegateService.prepareBrief(). */
+export interface IPrepareBriefInput {
+  traceId: string;
+  gate: SessionGate;
+  tool: SessionTool;
+  objective: string;
+  /** Artifact under work (request / plan / diff), worktree-relative. */
+  artifactRef: string;
+  /** Worktree-relative globs the tool may modify. */
+  permittedPaths: string[];
+  tokenBudget: SessionTokenBudget;
+  contextCardRef?: string;
+  /** Absolute worktree checkout for code_changes / review gates. */
+  worktreePath?: string;
+  acceptanceCriteria?: string[];
+  /** ISO override; defaults to clock.now() + SESSION_DEFAULT_DEADLINE_HOURS. */
+  deadline?: string;
+}
+
+/** Package-pure orchestration of the brief/launch half of the contract. */
+export interface ISessionDelegateService {
+  /** Materialize Session/{traceId}/brief.json atomically and return the brief. */
+  prepareBrief(input: IPrepareBriefInput): Promise<SessionBrief>;
+  /** Resolve the per-tool adapter and build a launch for the brief. */
+  resolveLaunch(brief: SessionBrief, mode: SessionLaunchMode): ISessionLaunch;
+}
