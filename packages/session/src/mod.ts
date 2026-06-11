@@ -28,6 +28,9 @@ import {
   systemClock,
 } from "./session_delegate_service.ts";
 import { checkScope, type IScopeCheckResult } from "./scope_checker.ts";
+import { constantTimeEqual } from "./constant_time.ts";
+import { SessionWaitStore } from "./wait/session_wait_store.ts";
+import type { ISessionWaitStore } from "./wait/i_session_wait_store.ts";
 
 export { type IReconcileInput, type IReconcileResult, reconcile };
 export type { ISessionAdapter, ISessionLaunch };
@@ -41,3 +44,6 @@ export {
   systemClock,
 };
 export { checkScope, type IScopeCheckResult };
+export { constantTimeEqual };
+export { SessionWaitStore };
+export type { ISessionWaitStore };

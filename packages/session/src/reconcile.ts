@@ -19,6 +19,7 @@ import type {
   SessionReturn,
   SessionTokenStats,
 } from "@exaix/schemas/session_delegate.ts";
+import { constantTimeEqual } from "./constant_time.ts";
 import { checkScope } from "./scope_checker.ts";
 
 /** Inputs to reconcile() — a parsed return plus its originating brief. */
@@ -44,16 +45,6 @@ export interface IReconcileResult {
   budgetExceeded: boolean;
   /** Typed reason when `accepted` is false; absent when accepted. */
   rejection?: SessionReconcileRejection;
-}
-
-/** Constant-time string comparison (no early-out on first mismatch). */
-function constantTimeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) {
-    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-  return diff === 0;
 }
 
 /**
