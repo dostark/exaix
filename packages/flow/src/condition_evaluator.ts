@@ -7,9 +7,9 @@
  */
 
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
-import { FlowInputSource, RequestKind } from "@exaix/core";
 import type { IStepResult } from "./flow_runner.ts";
 import type { JSONValue } from "@exaix/core";
+import { evaluateExpression, type ExpressionContext, validateExpression } from "./safe_expression.ts";
 
 /**
  * Context available during condition evaluation
@@ -184,20 +184,21 @@ export class ConditionEvaluator {
   }
 
   /**
-   * Safely evaluate a condition expression
-   * Uses Function constructor with restricted context
+   * Safely evaluate a condition expression.
+   *
+   * Conditions are treated as DATA: they are parsed against a restricted
+   * boolean-expression grammar and evaluated against an allowlisted context
+   * (results / request / flow) by {@link evaluateExpression}. They can never
+   * reach host globals (Deno, globalThis, fetch, import), call arbitrary
+   * functions, perform assignments, or trigger side effects.
    */
   private safeEvaluate(condition: string, context: IConditionContext): boolean {
-    // Create a function that has access to context variables
-    // This is safer than eval() as it creates a new scope
-    const fn = new Function(
-      "results",
-      FlowInputSource.REQUEST,
-      RequestKind.FLOW,
-      `"use strict"; return (${condition});`,
+    // Project the context to a plain JSON structure: conditions only ever read
+    // JSON-shaped step data, and this yields an ExpressionContext without casts.
+    const jsonContext: ExpressionContext = JSON.parse(
+      JSON.stringify({ results: context.results, request: context.request, flow: context.flow }),
     );
-
-    return Boolean(fn(context.results, context.request, context.flow));
+    return evaluateExpression(condition, jsonContext);
   }
 
   /**
@@ -222,16 +223,8 @@ export class ConditionEvaluator {
       return { valid: true };
     }
 
-    try {
-      // Try to parse the condition as a function body
-      new Function("results", FlowInputSource.REQUEST, RequestKind.FLOW, `"use strict"; return (${condition});`);
-      return { valid: true };
-    } catch (error) {
-      return {
-        valid: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
+    // Statically parse + validate the condition without evaluating it.
+    return validateExpression(condition);
   }
 }
 
