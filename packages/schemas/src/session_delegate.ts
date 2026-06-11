@@ -156,6 +156,18 @@ export function isDecisionValidForGate(gate: SessionGate, decision: SessionDecis
   return SESSION_GATE_DECISIONS[gate].includes(decision);
 }
 
+/**
+ * Why reconciliation rejected a delegated return. Distinct from the legitimate
+ * `abandoned` decision verb — a rejection means the return is untrusted and the
+ * gate must NOT be resumed with it.
+ */
+export const SessionReconcileRejectionSchema = z.enum([
+  "forged_token", // resume_token / trace_id mismatch (GAP-2)
+  "decision_gate_mismatch", // decision verb is illegal for the brief's gate
+  "scope_violation", // a touched path is outside permitted_paths (GAP-3)
+]);
+export type SessionReconcileRejection = z.infer<typeof SessionReconcileRejectionSchema>;
+
 /** TOML config block: [session_delegate] at request/portal/blueprint scope. */
 export const SessionDelegateConfigSchema = z.object({
   enabled: z.boolean().default(false),
