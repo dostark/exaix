@@ -54,7 +54,7 @@ export class GitWorktreeTool extends ToolHandler {
           throw new Error("Path is required for worktree add");
         }
 
-        resolvedPath = this.resolvePortalPath(portalPath, path);
+        resolvedPath = await this.resolvePortalPath(portalPath, path);
 
         if (force) {
           worktreeArgs.push("--force");
@@ -82,7 +82,7 @@ export class GitWorktreeTool extends ToolHandler {
         if (!path) {
           throw new Error("Path is required for worktree remove");
         }
-        resolvedPath = this.resolvePortalPath(portalPath, path);
+        resolvedPath = await this.resolvePortalPath(portalPath, path);
         if (force) {
           worktreeArgs.push("--force");
         }
@@ -105,7 +105,7 @@ export class GitWorktreeTool extends ToolHandler {
         if (!path) {
           throw new Error("Path is required for worktree lock");
         }
-        resolvedPath = this.resolvePortalPath(portalPath, path);
+        resolvedPath = await this.resolvePortalPath(portalPath, path);
         if (reason) {
           worktreeArgs.push("--reason", reason);
         }
@@ -116,7 +116,7 @@ export class GitWorktreeTool extends ToolHandler {
         if (!path) {
           throw new Error("Path is required for worktree unlock");
         }
-        resolvedPath = this.resolvePortalPath(portalPath, path);
+        resolvedPath = await this.resolvePortalPath(portalPath, path);
         worktreeArgs.push(resolvedPath);
       }
 

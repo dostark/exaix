@@ -38,7 +38,7 @@ export class ListDirectoryTool extends ToolHandler {
 
       // Resolve and validate path (defaults to portal root)
       const listPath = path || "";
-      const absolutePath = this.resolvePortalPath(portalPath, listPath);
+      const absolutePath = await this.resolvePortalPath(portalPath, listPath);
 
       // Read directory
       const entries: string[] = [];

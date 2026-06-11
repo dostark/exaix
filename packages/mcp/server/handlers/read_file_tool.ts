@@ -35,7 +35,7 @@ export class ReadFileTool extends ToolHandler {
       const portalPath = this.validatePortalExists(portal);
 
       // Resolve and validate path
-      const absolutePath = this.resolvePortalPath(portalPath, path);
+      const absolutePath = await this.resolvePortalPath(portalPath, path);
 
       // Read file
       let content: string;
