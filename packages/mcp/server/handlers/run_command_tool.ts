@@ -25,20 +25,20 @@ export class RunCommandTool extends ToolHandler {
       // For safety, we'll check for GIT permission as it implies repository control
       this.validatePermission(portal, identity_id, PortalOperation.GIT);
 
-      // Validate portal exists
-      const _portalPath = this.validatePortalExists(portal);
+      // Validate portal exists and resolve its working directory.
+      const portalPath = this.validatePortalExists(portal);
 
       if (!this.context.toolRegistry) {
         throw new Error("ToolRegistry not available in context");
       }
 
-      // Execute via ToolRegistry which handles whitelisting and security
+      // Execute via ToolRegistry which handles whitelisting and security. The command
+      // runs in the authorized portal directory (Finding 6) — not the system root —
+      // so the execution context matches the portal the permission was checked against.
       const result = await this.context.toolRegistry.execute(McpToolName.RUN_COMMAND, {
         command,
         args: cmdArgs || [],
-        // The ToolRegistry implementation of run_command might need a base directory
-        // but it currently defaults to system root. We'll need to ensure whitelisted
-        // commands that operate on files are safe.
+        cwd: portalPath,
       });
 
       if (!result.success) {

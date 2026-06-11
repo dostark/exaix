@@ -15,8 +15,19 @@ import { ZStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 
 const TRACE_STREAM_PATTERN = /^\/api\/v1\/traces\/([^/]+)\/stream$/;
 
+/** Heartbeat keep-alive cadence for an open SSE stream. */
+const HEARTBEAT_INTERVAL_MS = 15_000;
+
+/** Default cap on concurrent SSE subscriptions, guarding against local DoS (Finding 13). */
+const DEFAULT_MAX_CONCURRENT_STREAMS = 64;
+
 export class SseHandler {
-  constructor(private eventBus: IEventBusService) {}
+  private activeStreams = 0;
+
+  constructor(
+    private eventBus: IEventBusService,
+    private readonly maxConcurrentStreams: number = DEFAULT_MAX_CONCURRENT_STREAMS,
+  ) {}
 
   /**
    * Format an IStreamingEvent as a well-formed SSE text block.
@@ -84,15 +95,33 @@ export class SseHandler {
 
   /**
    * Bridge HTTP SSE to EventBusService.subscribe.
-   * Unsubscribes on client disconnect (req.signal abort).
+   * Enforces a concurrent-stream cap (Finding 13) and unsubscribes on client
+   * disconnect (req.signal abort) or stream cancellation.
    */
   private streamEvents(traceId: string, req: Request): Response {
+    // Cap concurrent subscriptions to guard against local DoS.
+    if (this.activeStreams >= this.maxConcurrentStreams) {
+      return new Response("Too many concurrent streams", { status: 429 });
+    }
+    this.activeStreams += 1;
+
+    let unsubscribe: (() => void) | undefined;
+    let heartbeatInterval: ReturnType<typeof setInterval> | undefined;
+    let closed = false;
+    const cleanup = () => {
+      if (closed) return;
+      closed = true;
+      if (heartbeatInterval !== undefined) clearInterval(heartbeatInterval);
+      unsubscribe?.();
+      this.activeStreams -= 1;
+    };
+
     const stream = new ReadableStream({
       start: (controller) => {
         // Send initial comment/keepalive
         controller.enqueue(new TextEncoder().encode(":\n\n"));
 
-        const unsubscribe = this.eventBus.subscribe(traceId, (event: IStreamingEvent) => {
+        unsubscribe = this.eventBus.subscribe(traceId, (event: IStreamingEvent) => {
           const data = SseHandler.formatSseEvent(event);
           try {
             controller.enqueue(new TextEncoder().encode(data));
@@ -101,19 +130,18 @@ export class SseHandler {
           }
         });
 
-        // Emit heartbeat every 15s to keep the connection alive
-        const heartbeatInterval = setInterval(() => {
+        // Emit a heartbeat to keep the connection alive.
+        heartbeatInterval = setInterval(() => {
           try {
             controller.enqueue(new TextEncoder().encode(":\n\n"));
           } catch {
             // Stream already closed — ignore
           }
-        }, 15_000);
+        }, HEARTBEAT_INTERVAL_MS);
 
-        // Unsubscribe and clear heartbeat on client disconnect
+        // Free the subscription + slot on client disconnect.
         req.signal.addEventListener("abort", () => {
-          clearInterval(heartbeatInterval);
-          unsubscribe();
+          cleanup();
           try {
             controller.close();
           } catch {
@@ -121,6 +149,8 @@ export class SseHandler {
           }
         }, { once: true });
       },
+      // Also free the slot if the stream is cancelled by the consumer.
+      cancel: () => cleanup(),
     });
 
     return new Response(stream, {

@@ -112,33 +112,51 @@ export class PathResolver {
 
   /**
    * Validates that a path is within allowed roots.
-   * Uses Deno.realPath to resolve symlinks and .. segments.
+   *
+   * Security (Finding 8): resolves symlinks on BOTH the root and the target before
+   * the within-root check. The physical target is `Deno.realPath` of the path (or, for
+   * a not-yet-existing path, the realpath of its nearest existing ancestor). A string
+   * prefix check is insufficient because an in-portal symlink pointing outside the
+   * portal would otherwise pass.
    */
   private async validatePath(path: string, allowedRoots: string[]): Promise<string> {
-    // 1. Normalize the target path to resolve .. and . segments
-    // Note: this does NOT resolve symlinks, but we check against realRoot below
     const normalizedPath = join(path);
+    const physicalPath = await this.resolvePhysicalPath(normalizedPath);
 
     for (const root of allowedRoots) {
-      // 2. Resolve the physical root (follows symlinks)
+      // Resolve the physical root (follows symlinks).
       const realRoot = await Deno.realPath(root);
-
-      // 3. Check if the normalized path is within the real root
-      // We also ensure root ends with separator or is exact match
-      const isAllowed = normalizedPath === realRoot || normalizedPath.startsWith(realRoot + "/");
-
-      if (isAllowed) {
+      if (physicalPath === realRoot || physicalPath.startsWith(realRoot + "/")) {
+        // Return the resolved normalized path (existing callers expect a usable path).
         return normalizedPath;
       }
     }
 
-    // If we reach here, it's not within any allowed root
+    // Full detail (absolute paths) goes to the operator journal only; the caller-facing
+    // message is generic so it does not disclose host filesystem layout (Finding 10).
     this.logSecurityViolation(
       DomainEventType.PathAccessDenied,
       path,
-      `Path ${path} resolves to ${normalizedPath}, which is outside allowed roots`,
+      `Path ${path} resolves to ${physicalPath}, which is outside allowed roots`,
     );
-    throw new Error(`Access denied: Path ${path} is outside allowed roots.`);
+    throw new Error("Access denied: path is outside the allowed portal roots.");
+  }
+
+  /**
+   * Resolves a path to its physical location, following symlinks. For a path that does
+   * not exist yet, resolves the nearest existing ancestor and re-appends the remainder,
+   * so a symlinked ancestor is still detected.
+   */
+  private async resolvePhysicalPath(target: string): Promise<string> {
+    try {
+      return await Deno.realPath(target);
+    } catch (error) {
+      if (!(error instanceof Deno.errors.NotFound)) throw error;
+      const parent = join(target, "..");
+      if (parent === target) return target;
+      const realParent = await this.resolvePhysicalPath(parent);
+      return join(realParent, target.slice(target.lastIndexOf("/") + 1));
+    }
   }
 
   /**

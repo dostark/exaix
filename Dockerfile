@@ -1,0 +1,73 @@
+# syntax=docker/dockerfile:1.7
+#
+# Exaix agent sandbox image.
+#
+# The container is the *authoritative* containment boundary for agent execution:
+# even a full in-process escape (e.g. via the SQLite FFI dependency) is confined to
+# this container's mounts and network rather than the host. The in-container Deno
+# permission flags are defense-in-depth only.
+#
+# Build:   docker build -t exaix-sandbox:dev .
+# Run:     see compose.sandbox.yaml for the hardened runtime profile.
+
+# ---------------------------------------------------------------------------
+# Stage 1 — builder: vendor the module graph and warm the SQLite FFI native lib
+# ---------------------------------------------------------------------------
+FROM denoland/deno:2.8.2 AS builder
+
+ENV DENO_DIR=/deno-dir
+WORKDIR /app
+
+# Copy the module-graph inputs first so dependency caching is its own layer.
+COPY deno.json deno.lock ./
+COPY packages/ packages/
+COPY apps/ apps/
+
+# Vendor the daemon module graph into DENO_DIR. (The CLI `exactl` is not run inside
+# the daemon container; one of its commands imports from tests/, which is excluded.)
+RUN deno cache --config deno.json apps/daemon/main.ts
+
+# @db/sqlite loads a native library that @denosaurs/plug downloads at RUNTIME from
+# GitHub. Warm it here so the .so is baked into DENO_DIR and the runtime container
+# can run with restricted network egress (no GitHub access needed at start).
+RUN printf 'import { Database } from "@db/sqlite";\nconst db = new Database(":memory:");\ndb.close();\n' > /tmp/warm_sqlite.ts \
+  && deno run --config deno.json --allow-ffi --allow-read --allow-write --allow-env --allow-net /tmp/warm_sqlite.ts \
+  && rm /tmp/warm_sqlite.ts
+
+# ---------------------------------------------------------------------------
+# Stage 2 — runtime: non-root, minimal toolset, scoped permissions
+# ---------------------------------------------------------------------------
+FROM denoland/deno:2.8.2 AS runtime
+
+# git is required by GitService and the run_command allowlist; ca-certificates for TLS.
+# node/npm are intentionally omitted — add them only if your portals need JS tooling.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+ENV DENO_DIR=/deno-dir
+# Mount the Exaix runtime home (workspace, memory, journal) here as a volume.
+ENV EXA_HOME=/exa
+
+# Dedicated non-root runtime user (uid/gid 10001).
+RUN groupadd --gid 10001 exaix \
+  && useradd --uid 10001 --gid 10001 --create-home --home-dir /home/exaix exaix \
+  && mkdir -p /app /exa \
+  && chown -R 10001:10001 /exa /home/exaix
+
+WORKDIR /app
+COPY --from=builder --chown=10001:10001 /deno-dir /deno-dir
+COPY --chown=10001:10001 deno.json deno.lock ./
+COPY --chown=10001:10001 packages/ packages/
+COPY --chown=10001:10001 apps/ apps/
+
+USER 10001:10001
+WORKDIR /exa
+
+# Scoped permissions mirror deno.json's hardened `start` task (defense-in-depth;
+# the container boundary is what actually contains an escape).
+ENTRYPOINT ["deno", "run", \
+  "--config", "/app/deno.json", \
+  "--allow-read", "--allow-write", "--allow-net", "--allow-env", "--allow-ffi", "--allow-import", \
+  "--allow-run=git,deno,npm,node,exoctl,ls,grep,echo,printf,pwd,whoami,id,date,uptime,which,type,command,hash,alias", \
+  "/app/apps/daemon/main.ts"]

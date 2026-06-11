@@ -52,10 +52,16 @@ Deno.test("[WebhookAdapter] source is webhook", () => {
   assertEquals(adapter.source, "webhook");
 });
 
-Deno.test("[WebhookAdapter] parses valid webhook body without HMAC", async () => {
-  const adapter = new WebhookAdapter({});
+Deno.test("[WebhookAdapter] parses a valid HMAC-signed webhook body", async () => {
+  const secret = "github-push-secret";
   const body = JSON.stringify({ event: "push", ref: "refs/heads/main" });
-  const envelope = await adapter.parse({ body, headers: {}, subject: "github.push" });
+  const signature = await computeHmacSha256(secret, body);
+  const adapter = new WebhookAdapter({ secret });
+  const envelope = await adapter.parse({
+    body,
+    headers: { "x-hub-signature-256": signature },
+    subject: "github.push",
+  });
   assertEquals(envelope.source, "webhook");
   assertEquals(envelope.action, "start_flow");
   assertEquals(envelope.subject, "github.push");
@@ -110,10 +116,14 @@ Deno.test("[WebhookAdapter] rejects missing signature header when secret is conf
   );
 });
 
-Deno.test("[WebhookAdapter] skips HMAC verification when no secret configured", async () => {
+Deno.test("security: WebhookAdapter fails closed when no secret is configured (Finding 9)", async () => {
   const adapter = new WebhookAdapter({});
-  const envelope = await adapter.parse({ body: "{}", headers: {} });
-  assertEquals(envelope.source, "webhook");
+  // An adapter with no secret must reject every payload rather than accept it unsigned.
+  await assertRejects(
+    () => adapter.parse({ body: "{}", headers: {} }),
+    Error,
+    "secret",
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -239,8 +249,14 @@ Deno.test("[AdapterRegistry] resolve returns undefined for unregistered source",
 
 Deno.test("[AdapterRegistry] parseRaw returns envelope for registered adapter", async () => {
   const registry = new AdapterRegistry();
-  registry.register(new WebhookAdapter({}));
-  const envelope = await registry.parseRaw("webhook", { body: "{}", headers: {} });
+  const secret = "registry-dispatch-secret";
+  const body = "{}";
+  const signature = await computeHmacSha256(secret, body);
+  registry.register(new WebhookAdapter({ secret }));
+  const envelope = await registry.parseRaw("webhook", {
+    body,
+    headers: { "x-hub-signature-256": signature },
+  });
   assertEquals(envelope.source, "webhook");
 });
 
@@ -321,12 +337,18 @@ Deno.test("[InternalEventAdapter] accepts absent eventType as unknown", async ()
 
 Deno.test("[Integration] WebhookAdapter parses and registry resolves for start_flow", async () => {
   const registry = new AdapterRegistry();
-  registry.register(new WebhookAdapter({}));
+  const secret = "integration-webhook-secret";
+  registry.register(new WebhookAdapter({ secret }));
   registry.register(new ScheduleAdapter());
   registry.register(new FilesystemAdapter({ allowedDir: "/workspace" }));
 
   const body = JSON.stringify({ event: "deployment.created" });
-  const envelope = await registry.parseRaw("webhook", { body, headers: {}, subject: "deployment.created" });
+  const signature = await computeHmacSha256(secret, body);
+  const envelope = await registry.parseRaw("webhook", {
+    body,
+    headers: { "x-hub-signature-256": signature },
+    subject: "deployment.created",
+  });
 
   assertEquals(envelope.source, "webhook");
   assertEquals(envelope.action, "start_flow");

@@ -1,0 +1,21 @@
+# Build context excludes — keep the image small and the context fast to upload.
+.git
+.github
+coverage
+exaix-dev-docs
+tests
+docs
+*.md
+.duplication_report_*
+.exa
+Workspace
+Memory
+Portals
+*.db
+*.db-wal
+*.db-shm
+node_modules
+.devcontainer
+compose.sandbox.yaml
+Dockerfile
+.dockerignore

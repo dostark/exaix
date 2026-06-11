@@ -34,7 +34,7 @@ export class CreateDirectoryTool extends ToolHandler {
     this.validatePermission(portal, identity_id, PortalOperation.WRITE);
 
     const portalPath = this.validatePortalExists(portal);
-    const absolutePath = this.resolvePortalPath(portalPath, path);
+    const absolutePath = await this.resolvePortalPath(portalPath, path);
 
     await Deno.mkdir(absolutePath, { recursive: true });
 

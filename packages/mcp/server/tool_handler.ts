@@ -5,7 +5,8 @@
  * @architectural-layer MCP
  * @related-files ["packages/portal/src/portal_permissions.ts", packages/mcp/server/handlers/read_file_tool.ts, packages/mcp/server/handlers/write_file_tool.ts]
  */
-import { join, normalize, relative } from "@std/path";
+import { join, normalize } from "@std/path";
+import { PathSecurity } from "@exaix/tool-runtime";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IEventJournalReader } from "@exaix/core/events";
@@ -93,20 +94,21 @@ export abstract class ToolHandler {
   }
 
   /**
-   * Resolves a portal-relative path to absolute filesystem path
-   * Validates the resolved path stays within portal bounds
+   * Resolves a portal-relative path to an absolute filesystem path, enforcing
+   * that the resolved path stays within the portal.
+   *
+   * Security (Finding 3): resolution is realpath-based via
+   * {@link PathSecurity.resolveWithinRoots} — symlinks (including the portal root
+   * itself) are resolved before the boundary check, so an in-portal symlink that
+   * points outside the portal is rejected. String-only `..` checks are insufficient
+   * because they never follow symlinks.
    */
-  protected resolvePortalPath(portalPath: string, relativePath: string): string {
+  protected async resolvePortalPath(portalPath: string, relativePath: string): Promise<string> {
     this.validatePathSafety(relativePath);
-    const absolutePath = join(portalPath, relativePath);
-    const relativeFromPortal = relative(portalPath, absolutePath);
-
-    // Ensure resolved path is still within portal
-    if (relativeFromPortal.startsWith("..")) {
-      throw new Error("Path traversal not allowed. Resolved path escapes portal.");
-    }
-
-    return absolutePath;
+    // Resolve the portal root through any symlinks so legitimate in-portal paths
+    // compare correctly against the physical root.
+    const realRoot = await Deno.realPath(portalPath);
+    return await PathSecurity.resolveWithinRoots(relativePath, [realRoot], realRoot);
   }
 
   /**

@@ -19,6 +19,28 @@ import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/s
 
 export type SqliteParam = string | number | boolean | null;
 
+/**
+ * Columns of the `activity` table that may be used as a SQL identifier (e.g. the
+ * DISTINCT field). Any caller-supplied identifier MUST be validated against this
+ * allowlist before interpolation, since identifiers cannot be parameterized
+ * (Finding 12 — prevents column-name / sub-select injection).
+ */
+const ACTIVITY_COLUMNS: ReadonlySet<string> = new Set([
+  "id",
+  "trace_id",
+  "actor",
+  "actor_type",
+  "identity_id",
+  "agent_kind",
+  "action_type",
+  "target",
+  "payload",
+  "prompt_tokens",
+  "completion_tokens",
+  "cost_usd",
+  "timestamp",
+]);
+
 interface LogEntry {
   activityId: string;
   traceId: string;
@@ -458,6 +480,11 @@ export class DatabaseService implements IDatabaseService {
 
     let selectClause = `SELECT `;
     if (filter.distinct) {
+      // The distinct field is a SQL identifier and cannot be parameterized, so it must
+      // be validated against the column allowlist before interpolation (Finding 12).
+      if (!ACTIVITY_COLUMNS.has(filter.distinct)) {
+        throw new Error(`Invalid distinct field: ${filter.distinct}`);
+      }
       selectClause += `DISTINCT ${filter.distinct}`;
     } else if (filter.count) {
       selectClause += `action_type, COUNT(*) as count`;

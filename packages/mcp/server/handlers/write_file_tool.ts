@@ -39,7 +39,7 @@ export class WriteFileTool extends ToolHandler {
       const portalPath = this.validatePortalExists(portal);
 
       // Resolve and validate path
-      const absolutePath = this.resolvePortalPath(portalPath, path);
+      const absolutePath = await this.resolvePortalPath(portalPath, path);
 
       // Create parent directories if needed
       const parentDir = dirname(absolutePath);

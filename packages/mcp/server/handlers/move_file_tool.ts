@@ -44,8 +44,8 @@ export class MoveFileTool extends ToolHandler {
       const portalPath = this.validatePortalExists(portal);
 
       // Validate both paths independently
-      const absoluteFrom = this.resolvePortalPath(portalPath, from);
-      const absoluteTo = this.resolvePortalPath(portalPath, to);
+      const absoluteFrom = await this.resolvePortalPath(portalPath, from);
+      const absoluteTo = await this.resolvePortalPath(portalPath, to);
 
       // Verify source exists and is a regular file
       let stat: Deno.FileInfo;

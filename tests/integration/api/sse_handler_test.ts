@@ -155,6 +155,36 @@ Deno.test("SseHandler: handleRequest returns SSE content-type for valid request"
   bus.close();
 });
 
+Deno.test(
+  "security: SseHandler caps concurrent streams (Finding 13)",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    const bus = new EventBusService();
+    // Cap of 2 concurrent streams.
+    const handler = new SseHandler(bus, 2);
+
+    const traceId = "550e8400-e29b-41d4-a716-446655440000";
+    const url = `http://127.0.0.1:8765/api/v1/traces/${traceId}/stream`;
+
+    const r1 = await handler.handleRequest(new Request(url));
+    const r2 = await handler.handleRequest(new Request(url));
+    const r3 = await handler.handleRequest(new Request(url));
+
+    assertEquals(r1.status, 200);
+    assertEquals(r2.status, 200);
+    assertEquals(r3.status, 429, "the over-cap stream must be rejected with 429");
+
+    // A freed slot allows a new stream again.
+    await r1.body?.cancel();
+    const r4 = await handler.handleRequest(new Request(url));
+    assertEquals(r4.status, 200);
+
+    await r2.body?.cancel();
+    await r4.body?.cancel();
+    bus.close();
+  },
+);
+
 // ============================================================================
 // Integration Test: SSE Stream with Event Bus
 // ============================================================================
