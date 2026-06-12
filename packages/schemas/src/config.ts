@@ -68,6 +68,7 @@ import { AnalysisMode } from "@exaix/core/request";
 
 import { PortalPermissionsSchema } from "./portal_permissions.ts";
 import { ZBudgetPolicy } from "./prompt_budget.ts";
+import { SessionDelegateConfigSchema } from "./session_delegate.ts";
 
 export interface IPortalConfig {
   alias: string;
@@ -617,6 +618,8 @@ export const ConfigSchema = z.object({
     fallback_enabled: DEFAULTS.DEFAULT_PROVIDER_STRATEGY_FALLBACK_ENABLED,
   }),
   routing: RoutingConfigSchema,
+  /** Phase 106 — optional session-delegation block (global scope). */
+  session_delegate: SessionDelegateConfigSchema.optional(),
   /** Provider-specific configuration overrides */
   providers: z.record(z.object({
     cost_tier: z.nativeEnum(ProviderCostTier).optional(),

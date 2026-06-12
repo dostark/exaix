@@ -1,0 +1,118 @@
+/**
+ * @module SessionDelegateService
+ * @path packages/session/src/session_delegate_service.ts
+ * @description Phase 106 Step 3 — materializes the session brief and resolves
+ *   launches. Generates the single-use resume token (GAP-2), validates every
+ *   path field against traversal/null-byte (GAP-5), and writes brief.json
+ *   atomically (write tmp + rename). Package-pure: no Config/DB/EventLogger.
+ * @architectural-layer Services
+ * @dependencies [@exaix/schemas, @exaix/core, @exaix/tool-runtime]
+ * @related-files [packages/session/src/i_session_delegate.ts, packages/session/src/session_adapter_registry.ts]
+ */
+
+import { dirname, join } from "@std/path";
+import { SESSION_DEFAULT_DEADLINE_HOURS, TIME_MS_PER_HOUR } from "@exaix/core/types";
+import { SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
+import type { SessionBrief, SessionLaunchMode } from "@exaix/schemas/session_delegate.ts";
+import { PathSecurity } from "@exaix/tool-runtime";
+import type { ISessionLaunch } from "./i_session_adapter.ts";
+import type { SessionAdapterRegistry } from "./session_adapter_registry.ts";
+import type {
+  IPrepareBriefInput,
+  ISessionClock,
+  ISessionDelegateService,
+  ISessionPathSafety,
+} from "./i_session_delegate.ts";
+
+/** Dependencies for SessionDelegateService (constructor DI, all Config-free). */
+export interface ISessionDelegateServiceDeps {
+  registry: SessionAdapterRegistry;
+  clock: ISessionClock;
+  /** Absolute Session/ directory under which {traceId}/brief.json is written. */
+  sessionDir: string;
+  /** Defaults to defaultSessionPathSafety. */
+  pathSafety?: ISessionPathSafety;
+}
+
+const BRIEF_FILE = "brief.json";
+const RESUME_TOKEN_ENTROPY_BYTES = 32; // 256-bit suffix (GAP-2)
+
+/** System wall-clock implementation of the clock seam. */
+export const systemClock: ISessionClock = { now: () => new Date() };
+
+/**
+ * Config-free path-safety helper. Rejects null bytes explicitly (PathSecurity
+ * strips them silently) before delegating traversal detection to PathSecurity.
+ */
+export const defaultSessionPathSafety: ISessionPathSafety = {
+  normalize(path: string): string {
+    if (path.includes("\x00")) {
+      throw new Error("path field contains a null byte");
+    }
+    return PathSecurity.normalizePath(path);
+  },
+};
+
+/**
+ * Generate a single-use resume token: a UUID plus a 256-bit random suffix
+ * (GAP-2). Bound to a trace + gate in the wait record, compared in constant time
+ * at resume, and never reused.
+ */
+export function generateResumeToken(): string {
+  const bytes = new Uint8Array(RESUME_TOKEN_ENTROPY_BYTES);
+  crypto.getRandomValues(bytes);
+  const suffix = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  return `${crypto.randomUUID()}.${suffix}`;
+}
+
+export class SessionDelegateService implements ISessionDelegateService {
+  private readonly pathSafety: ISessionPathSafety;
+
+  constructor(private readonly deps: ISessionDelegateServiceDeps) {
+    this.pathSafety = deps.pathSafety ?? defaultSessionPathSafety;
+  }
+
+  /** Absolute path of the brief for a trace. */
+  briefPathFor(traceId: string): string {
+    return join(this.deps.sessionDir, traceId, BRIEF_FILE);
+  }
+
+  async prepareBrief(input: IPrepareBriefInput): Promise<SessionBrief> {
+    const artifactRef = this.pathSafety.normalize(input.artifactRef);
+    const permittedPaths = input.permittedPaths.map((p) => this.pathSafety.normalize(p));
+    if (input.contextCardRef !== undefined) {
+      this.pathSafety.normalize(input.contextCardRef);
+    }
+
+    const deadline = input.deadline ??
+      new Date(this.deps.clock.now().getTime() + SESSION_DEFAULT_DEADLINE_HOURS * TIME_MS_PER_HOUR).toISOString();
+
+    const brief = SessionBriefSchema.parse({
+      trace_id: input.traceId,
+      gate: input.gate,
+      tool: input.tool,
+      objective: input.objective,
+      artifact_ref: artifactRef,
+      context_card_ref: input.contextCardRef,
+      acceptance_criteria: input.acceptanceCriteria ?? [],
+      permitted_paths: permittedPaths,
+      worktree_path: input.worktreePath,
+      token_budget: input.tokenBudget,
+      resume_token: generateResumeToken(),
+      deadline,
+    });
+
+    const briefPath = this.briefPathFor(input.traceId);
+    await Deno.mkdir(dirname(briefPath), { recursive: true });
+    const tmp = `${briefPath}.tmp`;
+    await Deno.writeTextFile(tmp, JSON.stringify(brief, null, 2));
+    await Deno.rename(tmp, briefPath);
+    return brief;
+  }
+
+  resolveLaunch(brief: SessionBrief, mode: SessionLaunchMode): ISessionLaunch {
+    return this.deps.registry
+      .resolve(brief.tool)
+      .buildLaunch(brief, mode, this.briefPathFor(brief.trace_id));
+  }
+}

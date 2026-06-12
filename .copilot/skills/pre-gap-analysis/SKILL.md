@@ -10,8 +10,18 @@ scope: dev
 title: "Pre-Gap Analysis Skill (#pre-gap-analysis)"
 description: Pre-implementation gap analysis of a phase planning document — finds ambiguities, missing contracts, and security risks before coding starts
 short_summary: "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against."
-version: "1.4"
-topics: ["planning", "gap-analysis", "architecture", "risk", "quality", "security", "tdd"]
+version: "1.5"
+topics: [
+  "planning",
+  "gap-analysis",
+  "architecture",
+  "risk",
+  "quality",
+  "security",
+  "tdd",
+  "reachability",
+  "integration",
+]
 qwen_skill: pre-gap-analysis
 ---
 
@@ -44,6 +54,15 @@ Key points
 - A traceability & configurability check (Phase 7) is required for every step
   that introduces new EventLogger events, thresholds, timeouts, or opt-in
   features. Untyped events and hardcoded values are gaps.
+- An integration feasibility & reachability check (Phase 8) is mandatory for
+  every plan. Phase 3 confirms the plan's named symbols *resolve*; it cannot
+  reveal that no step actually *wires* them into a live path. A plan whose steps
+  build all the cores but never connect them ships "every part exists, nothing
+  works" — the most expensive post-implementation gap. Verify a production
+  call-site + integration test per runtime-claiming step, no forward-deferral
+  chains, a non-deferrable cutover step, opt-in proof, and a seeded Reachability
+  Ledger. A runtime success criterion with no wiring path anywhere in the plan is
+  🔴 Critical (the plan is internally contradictory).
 - When verifying more than ~20 source files, work in batches of 5–10: read a batch, record findings, then continue.
 - Bump the document version (e.g., 1.0 → 1.1) after writing all gaps in.
 
@@ -87,6 +106,16 @@ Do / Don't
   introduces new `EventLogger` events, thresholds, timeouts, or opt-in features.
 - ✅ Do run Phase 5 scenario framework coverage checks on every step that
   affects the request → plan → execution → review → memory → update flow.
+- ✅ Do run the Phase 8 reachability check on every plan — for each runtime-claiming
+  step verify a named production call-site AND an integration/scenario test; flag any
+  forward-deferral chain that never terminates, any step-ordering inversion, a missing
+  cutover step, an opt-in flag with no real-config proof, and a missing Reachability Ledger.
+- ✅ Do escalate a runtime success criterion that has no wiring path anywhere in the plan
+  to 🔴 Critical — the plan promises behaviour its steps cannot deliver.
+- ❌ Don't pass a plan as READY TO IMPLEMENT while a 🔴 reachability gap is open (no wiring
+  path / no cutover step) — that is how production-dead features get greenlit.
+- ❌ Don't accept "wired in a later step" without confirming that later step's Actions
+  contain the concrete wiring; a deferral to "follow-ups" or an unnamed step is a gap.
 - ❌ Don't mark a step gap-free unless its data sources, types, and tests are
   fully specified.
 - ❌ Don't skip Phase 2 architectural alignment for any planning document —
@@ -340,7 +369,66 @@ For **every step** that introduces new behaviour, check:
 
 ---
 
-### Phase 8 — Gap Classification
+### Phase 8 — Integration Feasibility & Reachability Check
+
+The most expensive post-implementation gap is a plan whose components are all
+buildable and testable but whose **step sequence never wires them into a live path** —
+the feature ships as disconnected cores ("every part exists, nothing works"). Phase 3
+confirms the plan's named symbols resolve; it cannot reveal that no step connects them,
+because a plan can name every class and still never call any of them from production.
+Run this check on every plan. Findings are 🟡 Feasibility by default and **🔴 Critical
+when a step's Success Criteria assert runtime behaviour with no wiring path anywhere in
+the plan** (the plan is internally contradictory). The same audit is re-run later by
+`#next-steps`' phase-completion gate and `#post-gap-analysis` — catching it here is the
+cheapest point.
+
+1. **Reachability anchor per runtime-claiming step.**
+   For every step whose Success Criteria assert runtime/observable behaviour (a daemon
+   does X, a gate produces Y, an out-of-band event resumes Z), verify the plan names:
+   (a) the exact production call-site/constructor (`file:Symbol`, e.g.
+   `apps/daemon/main.ts`) that will invoke the new code, and (b) a named integration or
+   scenario test that drives that call-site. A runtime claim whose only Planned Tests are
+   package-unit tests — or that names no production call-site — is a reachability gap:
+   unit tests cannot detect that nothing calls the code (the test is the only caller).
+
+1. **Forward-deferral chain audit.**
+   Grep the plan for every "consumed by Step M" / "wired in Step M" / "registered later"
+   deferral. For each, confirm Step M's Actions actually CONTAIN the concrete wiring. Flag:
+   - a deferral whose target step does not contain the wiring (dangling pointer);
+   - a deferral to "follow-ups", "a future phase", or an unnamed later step (open-ended);
+   - a chain where the LAST step still defers (the chain never terminates — this is the
+     exact failure mode that shipped Phase 106 production-dead).
+
+1. **Dependency-ordering (inversion) check.**
+   Build the inter-step dependency graph: if Step N consumes something Step N+k builds
+   (e.g. gate hooks in Step 7 read a config field added in Step 9), the ordering is
+   inverted. Flag it; recommend re-sequencing or an explicit stub-then-replace.
+
+1. **Terminal cutover step presence.**
+   Verify the plan ends with a non-deferrable "Integration & cutover" step whose Success
+   Criterion is end-to-end reachability from a real daemon/CLI run with the feature
+   enabled. Its absence is a gap — there is then no step that makes the feature work.
+
+1. **Opt-in proof.**
+   For every `enabled`-style flag the plan introduces, verify a Success Metric of the
+   form "with `feature.enabled=true`, observable behaviour B occurs", backed by a test
+   that flips the REAL config (not a unit test of the gated component in isolation). A
+   flag with no such metric/test risks shipping a toggle that does nothing.
+
+1. **Vertical-slice ordering.**
+   Detect horizontal layer-by-layer ordering (all schemas → all services → "wire it
+   last"). If the first N−1 steps build cores and only the final step(s) connect
+   anything, flag the structural risk and recommend a vertical-slice re-ordering: one
+   complete path (entry point → … → observable output) first, then breadth.
+
+1. **Reachability Ledger seeded.**
+   Confirm the plan contains a (possibly empty) `## Reachability Ledger (pending
+   production consumers)` section for `#next-steps` to maintain. Its absence is a
+   🔵 Conceptual gap — note it so `#plan`/`#next-steps` seeds it.
+
+---
+
+### Phase 9 — Gap Classification
 
 Classify every gap:
 
@@ -352,11 +440,16 @@ Classify every gap:
 | 🟠 Testing     | Missing or under-specified test — step may ship without coverage              |
 | 🔵 Conceptual  | Minor ambiguity or style issue — low risk, but should be clarified            |
 
+Reachability findings (Phase 8) map to 🟡 Feasibility by default, and to 🔴 Critical when
+a runtime success criterion has no wiring path anywhere in the plan (the plan is
+internally contradictory). An open 🔴 reachability gap blocks the `✅ READY TO IMPLEMENT`
+verdict.
+
 Build a gap summary table before detailed entries.
 
 ---
 
-### Phase 9 — Write Gaps Into the Document
+### Phase 10 — Write Gaps Into the Document
 
 Append at the end of the planning document using the exact format below.
 
@@ -366,6 +459,8 @@ Append at the end of the planning document using the exact format below.
 ---
 
 ## Pre-Gap Analysis — <ISO date> — Verdict: ⚠️ GAPS FOUND / ✅ READY TO IMPLEMENT
+
+<!-- READY TO IMPLEMENT requires zero open 🔴 gaps, including 🔴 reachability gaps (Phase 8). -->
 
 ### Gap Summary
 
@@ -394,9 +489,11 @@ Append at the end of the planning document using the exact format below.
 
 ---
 
-### Phase 10 — Finalize
+### Phase 11 — Finalize
 
 1. Bump the document version in frontmatter.
+1. If the plan had no `## Reachability Ledger` section, append an empty one (Phase 8.7)
+   so `#next-steps` has a place to track wiring debt.
 1. Run `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/<doc>`.
 
 ---

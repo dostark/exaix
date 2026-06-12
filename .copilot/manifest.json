@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-11T20:06:46.723Z",
+  "generated_at": "2026-06-12T13:20:13.713Z",
   "docs": [
     {
       "path": ".copilot/prompts/infra.prompt.md",
@@ -584,14 +584,15 @@
       "scope": "dev",
       "title": "Plan Skill (#plan)",
       "short_summary": "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy.",
-      "version": "1.4",
+      "version": "1.6",
       "topics": [
         "planning",
         "architecture",
         "tdd",
         "security",
         "traceability",
-        "configurability"
+        "configurability",
+        "reachability"
       ],
       "qwen_skill": "plan",
       "chunks": [
@@ -905,14 +906,15 @@
       "scope": "dev",
       "title": "Next-Steps Skill (#next-steps)",
       "short_summary": "Prompt for iterating through .copilot/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits.",
-      "version": "1.2",
+      "version": "1.4",
       "topics": [
         "tdd",
         "red-green-refactor",
         "planning",
         "steps",
         "ci",
-        "commits"
+        "commits",
+        "reachability"
       ],
       "qwen_skill": "next-steps",
       "chunks": [
@@ -932,7 +934,7 @@
       "scope": "dev",
       "title": "Pre-Gap Analysis Skill (#pre-gap-analysis)",
       "short_summary": "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against.",
-      "version": "1.4",
+      "version": "1.5",
       "topics": [
         "planning",
         "gap-analysis",
@@ -940,7 +942,9 @@
         "risk",
         "quality",
         "security",
-        "tdd"
+        "tdd",
+        "reachability",
+        "integration"
       ],
       "qwen_skill": "pre-gap-analysis",
       "chunks": [

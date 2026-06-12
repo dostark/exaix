@@ -215,7 +215,7 @@ paths that could be reached via an indirect call.
 import { z } from "zod";
 const CreateUserSchema = z.object({
   email: z.string().email().max(254),
-  role: z.enum(["viewer", "editor"]),   // allowlist, not free string
+  role: z.enum(["viewer", "editor"]), // allowlist, not free string
 });
 const body = CreateUserSchema.parse(await request.json());
 
@@ -241,7 +241,7 @@ absolute path first, then check containment.
 
 ```typescript
 // ✅ Resolve symlinks, then verify containment
-import { resolve, relative } from "node:path";
+import { relative, resolve } from "node:path";
 import { realpath } from "node:fs/promises";
 
 async function safeRead(root: string, userInput: string): Promise<string> {
@@ -249,7 +249,7 @@ async function safeRead(root: string, userInput: string): Promise<string> {
   const target = resolve(realRoot, userInput);
   const realTarget = await realpath(target).catch(() => target); // non-existent → use resolved
   if (!realTarget.startsWith(realRoot + "/") && realTarget !== realRoot) {
-    throw new Error("Access denied");  // generic — never echo the paths
+    throw new Error("Access denied"); // generic — never echo the paths
   }
   return readFile(realTarget, "utf8");
 }
@@ -302,7 +302,7 @@ import { spawn } from "node:child_process";
 const proc = spawn("git", ["log", "--oneline", "-n", "10"], { cwd: repoPath });
 
 // ❌ Shell string — user input can inject commands
-exec(`git log ${userBranch}`);   // userBranch = "; rm -rf /"
+exec(`git log ${userBranch}`); // userBranch = "; rm -rf /"
 ```
 
 **Additional rules:**
@@ -333,7 +333,7 @@ const result = new Function("results", "request", `return ${condition}`)(results
 // ✅ Explicit permission check after resource resolution
 const resource = await resolveResource(request.params.id, session.tenantId);
 if (!session.permissions.includes("resource:write")) {
-  throw new ForbiddenError("Insufficient permissions");  // generic, no resource detail
+  throw new ForbiddenError("Insufficient permissions"); // generic, no resource detail
 }
 await resource.update(body);
 
@@ -382,12 +382,12 @@ logger.info(`Calling payments API with key=${apiKey}`);
 ```typescript
 // ✅ Key derivation for passwords (Argon2id preferred; bcrypt acceptable)
 import { hash, verify } from "@node-rs/argon2";
-const stored = await hash(plainPassword);           // store this
+const stored = await hash(plainPassword); // store this
 const ok = await verify(stored, candidatePassword); // verify this
 
 // ❌ Reversible or weak
-const stored = Buffer.from(password).toString("base64");  // trivially reversible
-const stored = createHash("md5").update(password).digest("hex");  // rainbow-table vulnerable
+const stored = Buffer.from(password).toString("base64"); // trivially reversible
+const stored = createHash("md5").update(password).digest("hex"); // rainbow-table vulnerable
 ```
 
 **Rules:**
@@ -411,7 +411,7 @@ try {
 } catch (err) {
   auditLog.emit("resource.access.failed", { userId, resourceId, reason: err.message });
   logger.error("Sensitive operation failed", { err, userId, resourceId }); // server-side only
-  throw new Error("Operation failed");  // generic to caller — no internal detail
+  throw new Error("Operation failed"); // generic to caller — no internal detail
 }
 
 // ❌ Leaks internal structure
@@ -483,15 +483,15 @@ Deno.test("file handler fails on bad path", async () => {
 
 **Required test types per control:**
 
-| Control | Required test |
-| ------- | ------------- |
-| Input validation | Rejects schema violations (wrong type, over-length, invalid enum value) |
-| Path traversal guard | Rejects `../` traversal; rejects symlink escape; allows valid path |
-| SQL parameterization | Injection payload stored literally, not executed (check DB state) |
-| Command allowlist | Rejects blocked subcommands/flags; allows permitted ones |
-| Auth boundary | Unauthenticated request → 401; unauthorized identity → 403; authorized → succeeds |
-| HMAC / webhook | No secret configured → reject; bad signature → reject; valid signature → accept |
-| Error messages | Denied response body does not contain internal paths or stack traces |
+| Control              | Required test                                                                     |
+| -------------------- | --------------------------------------------------------------------------------- |
+| Input validation     | Rejects schema violations (wrong type, over-length, invalid enum value)           |
+| Path traversal guard | Rejects `../` traversal; rejects symlink escape; allows valid path                |
+| SQL parameterization | Injection payload stored literally, not executed (check DB state)                 |
+| Command allowlist    | Rejects blocked subcommands/flags; allows permitted ones                          |
+| Auth boundary        | Unauthenticated request → 401; unauthorized identity → 403; authorized → succeeds |
+| HMAC / webhook       | No secret configured → reject; bad signature → reject; valid signature → accept   |
+| Error messages       | Denied response body does not contain internal paths or stack traces              |
 
 Tag security tests so the dedicated CI job picks them up: use `[security]` in the
 test name for test runners that filter by name pattern.

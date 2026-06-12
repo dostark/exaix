@@ -278,16 +278,31 @@ Request (file) → [Refinement] ◄ Optional: launch session tool for interactiv
   → Review & Merge
 ```
 
-Configuration per request, portal, or blueprint:
+Implemented by the `@exaix/session` package (Phase 106) as a three-part
+brief → launch → return handoff: Exaix writes `Session/{traceId}/brief.json`, a
+per-tool adapter launches the tool (advisory print or supervised spawn), the tool
+writes a mandatory `Session/{traceId}/return.json`, and reconciliation validates
+scope + token, maps the outcome into the existing amendment/review/clarification
+contracts, and resumes a durable wait state. Only files cross back — never
+session/conversation state.
+
+Configuration per request, portal, or blueprint (global scope shown):
 
 ```toml
-[portal.my-app.session_delegate]
+[session_delegate]
 enabled = true
-tool = "open-code"
-stages = ["refinement", "code_changes"]
+tool = "opencode"            # claude-code | opencode | cursor | vscode
+gates = ["refinement", "code_changes"]   # refinement | plan_review | code_changes | review
+launch_mode = "advisory"     # advisory (Mode 1) | supervised (Mode 2)
 ```
 
+> The legacy `stages` key is accepted as a deprecated alias for `gates`. Only
+> `claude-code`/`opencode` support `supervised` launch; `cursor`/`vscode` are
+> advisory-only.
+
 ## See Also
+
+- [@exaix/session](../../packages/session/) — Session-delegation handoff contract
 
 - [@exaix/execution](../../packages/execution/) — Plan execution engine
 - [@exaix/request](../../packages/request/) — Request processing that triggers flows

@@ -13,8 +13,8 @@ scope: dev
 title: "Next-Steps Skill (#next-steps)"
 description: Run plan-driven TDD step-by-step workflow with CI gates and per-step commits
 short_summary: "Prompt for iterating through .copilot/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits."
-version: "1.2"
-topics: ["tdd", "red-green-refactor", "planning", "steps", "ci", "commits"]
+version: "1.4"
+topics: ["tdd", "red-green-refactor", "planning", "steps", "ci", "commits", "reachability"]
 qwen_skill: next-steps
 ---
 
@@ -27,6 +27,7 @@ Key points
 - If interrupted mid-step, re-read the RED/GREEN evidence in the chat to determine which phase you are in before proceeding
 - Use focused, file-scoped test commands by default; reserve full-suite commands for massive changes or explicit user requests
 - When reading plan references across more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue
+- **Reachability ledger (lives IN THE PLANNING DOC)**: a step that adds a symbol with NO production importer appends a row to a **Reachability Ledger** table kept in the planning doc itself — not just chat/commit, so the debt survives context compaction and is visible to anyone reading the plan. Each later step that wires an item closes its row in the same commit. The PHASE cannot be marked complete while any row is still ⏳ — see VERIFY step 11, the ledger template (step 24a), and the Phase-completion gate. A green package-unit test proves correctness, NOT that production calls the code; the test is the only caller.
 
 Canonical prompt (short):
 "Continue with implementation of next steps one-by-one in TDD red-green-refactor
@@ -76,13 +77,29 @@ VERIFY phase — value correctness, wiring, consumer tracing, convention check
       trace the component's injected dependencies and configuration to confirm the
       field's runtime value is consistent. A field whose value contradicts what the
       component's construction dictates is a gap even if tests pass.
-  11. Verify constructor wiring for new services and classes.
+  11. Verify constructor wiring for new services and classes — and DO NOT accept
+      "a later step will wire it" as satisfying this check.
       For every new class, service, or data structure the step introduces:
       grep the production codebase (excluding tests and test helpers) for
       importers and instantiation sites. If the class is only instantiated
-      in tests, it is production-dead code. If the class is a service, verify
-      it is injected via constructor DI into a production consumer or registered
-      in the appropriate factory / registry / bootstrap module.
+      in tests, it is PRODUCTION-DEAD code — invisible to TDD, coverage, and
+      check:arch grounding (a test-only consumer keeps it "alive"; grounding is
+      satisfied by a README/@related-files reference, not a real import). None of
+      those gates detect a missing production caller; only this check does.
+      - If a production consumer exists now: verify the class is injected via
+        constructor DI into that consumer, or registered in the appropriate
+        factory / registry / bootstrap module (e.g. apps/daemon/main.ts).
+      - If NO production consumer exists yet: append a ⏳ row to the **Reachability
+        Ledger** section of the planning doc (create the section if absent — see the
+        template in step 24a), naming the symbol, the step that added it, and the
+        named later step whose Actions contain the wiring. This is allowed ONLY if
+        that later step IN THIS PLAN really contains the concrete wiring — deferral to
+        "follow-ups", "a future phase", or an unnamed later step is NOT allowed;
+        re-sequence so the wiring lands in this phase, or pause and surface it to the
+        user. Stage the planning-doc ledger edit in THIS step's commit.
+      - If the CURRENT step wires an item an earlier step put on the ledger: flip that
+        row to ✅ and fill in the production call-site, in this step's commit.
+      Every ledger row MUST be ✅ before the phase is closed (Phase-completion gate G2).
   12. Trace every output field to its consumer.
       Grep the codebase for consumers of each new exported symbol, interface field,
       or event payload field the step introduces. If a field has zero readers, flag
@@ -120,11 +137,34 @@ Planning doc update
   22. In the step's "Success criteria" block change `- [ ]` → `- [x]` for each
       criterion now met.
   23. Change each planned-test bullet `- \`...\`` → `- ✅ \`...\``
-  24. Add a line immediately after the test list:
-        **✅ IMPLEMENTED** — `<packages/.../src/path>`, N/N tests passing
+  24. Add a status line immediately after the test list, using the marker that
+      reflects REACHABILITY (not merely "I wrote the code"):
+        - **✅ WIRED** — `<src path>`, N/N tests passing, reached by `<production call-site file:Symbol>`
+          (use ONLY when a production consumer invokes the code — verified in VERIFY step 11).
+        - **✅ CORE** — `<src path>`, N/N tests passing; NOT yet reached by production
+          (use when the symbol is on the pending-consumer ledger; NAME the later step in
+          this plan that wires it).
+      A bare **✅ IMPLEMENTED** is forbidden on any step whose Success Criteria assert
+      runtime/observable behaviour — such a step is either ✅ WIRED or it is not done.
+  24a. Maintain the **Reachability Ledger** section of the planning doc — create it
+       once (if #plan did not seed it), then keep it current EVERY step. One row per
+       symbol not yet reached by production:
+
+         ## Reachability Ledger (pending production consumers)
+
+         | Symbol                 | Added in | Wiring step | Production call-site   | Status |
+         | ---------------------- | -------- | ----------- | --------------------- | ------ |
+         | `SessionReturnWatcher` | Step 6   | Step 9      | `apps/daemon/main.ts` | ⏳     |
+
+       Append a ⏳ row when VERIFY step 11 finds a production-dead symbol; flip Status
+       to ✅ and fill the call-site when a later step wires it. Stage this doc edit in
+       the same step's commit. Reading the ledger top-to-bottom is the to-do list the
+       remaining steps (and the terminal cutover step) must drain — the phase is done
+       only when every row is ✅ (or the ledger is empty).
 
 Commit
-  25. Stage: src file, test file, planning doc.
+  25. Stage: src file, test file, planning doc (including any Reachability Ledger
+      row added or closed this step — step 24a).
   26. Use #commit for the full structured commit body. At minimum the subject line must
      follow conventional commits and the body must include what:, rationale:, tests:,
      who:, and impact: fields. A concise per-step shorthand is acceptable:
@@ -140,6 +180,25 @@ Commit
 
        refs: <planning-doc-slug> step N
 
+PHASE-COMPLETION GATE (run ONCE, after the last step, BEFORE declaring the phase complete)
+  G1. Integration-surface audit across EVERY symbol the phase added: for each new
+      exported class / service / function, grep the production codebase (excluding
+      tests + test helpers) for a real importer or caller. ANY runtime-claiming symbol
+      still production-dead is a BLOCKING failure — the phase cannot be marked complete.
+      (This is the same audit #post-gap-analysis runs — running it here turns an
+      after-the-fact finding into a pre-close gate.)
+  G2. The planning doc's **Reachability Ledger** MUST have every row at ✅ (or be
+      empty). Any ⏳ row is a BLOCKING failure — drain it (wire the symbol; that is
+      the terminal cutover step's job) before closing the phase. Read the ledger as
+      the residual to-do list.
+  G3. For every opt-in flag the phase introduced, confirm a test flips the REAL config
+      (e.g. `config.feature.enabled = true`) and asserts the observable behaviour — not
+      a unit test of the gated component in isolation. "Enabling the flag does nothing"
+      is a blocking failure.
+  G4. If G1–G3 fail: do NOT close the phase. Either implement the missing wiring as
+      additional steps in this phase, or pause and surface the production-dead set to
+      the user with the explicit statement that the feature would ship non-functional.
+
 Do / Don't
 - ✅ Do write the test file BEFORE the source file (RED must come first)
 - ✅ Do add module-header JSDoc to every new file (src and test)
@@ -150,6 +209,10 @@ Do / Don't
 - ✅ Do keep test execution proportional to scope; prefer focused tests for a single-step cycle
 - ✅ Do verify field values are correct given the component's dependencies, not just present (step 10)
 - ✅ Do verify new services and classes are wired into production code, not just tests (step 11)
+- ✅ Do treat "no production importer" as a blocking debt on the pending-consumer ledger — never as "done" (step 11)
+- ✅ Do keep the Reachability Ledger current IN THE PLANNING DOC every step — append a ⏳ row when a symbol is production-dead, flip it to ✅ when wired, stage the doc edit in that step's commit (step 24a)
+- ✅ Do run the Phase-completion gate (integration-surface audit) before declaring the phase complete — production-dead runtime code blocks closure (G1–G4)
+- ✅ Do mark runtime steps **✅ WIRED** only when a production caller exists; use **✅ CORE** (naming the wiring step) otherwise (step 24)
 - ✅ Do trace new output fields to their consumers — dead fields with no readers are gaps (step 12)
 - ✅ Do check new code against existing module conventions — inconsistency within a file is a gap (step 12)
 - ✅ Do cross-reference the step's tests against pre-gap analysis findings for the same step number (step 2)
@@ -159,6 +222,9 @@ Do / Don't
 - ❌ Don't proceed to the next step if any CI gate fails
 - ✅ If a CI gate failure cannot be resolved within the current step's file scope (e.g. check:arch failure in an unrelated file), document the blocker in a comment, pause execution, and surface the specific failing command output and file to the user for a decision before proceeding.
 - ❌ Don't use Record<string, unknown> — define a specific interface instead
+- ❌ Don't accept a green package-unit test as evidence a runtime success criterion is met — the test is the only caller; it proves correctness, not reachability
+- ❌ Don't defer wiring to "follow-ups" or an unnamed future step — re-sequence so it lands in this phase, or surface it to the user
+- ❌ Don't put a bare "✅ IMPLEMENTED" on a runtime-claiming step — it is ✅ WIRED or it is not done
 - ❌ Don't commit without running deno fmt first
 - ❌ Don't run full-suite commands for a narrow step — see Validation policy above
 

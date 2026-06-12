@@ -1516,6 +1516,44 @@ export function sleep(ms: number): Promise<void> {
 /** Maximum parallel deno doc --json processes for SymbolExtractor. */
 export const SYMBOL_EXTRACTOR_CONCURRENCY = 4;
 
+/** Directory name for session-delegation handoffs under the workspace root. */
+export const SESSION_DELEGATE_DIR = "Session";
+
+/** Sub-directory for session wait-state files: Memory/Execution/{traceId}/. */
+export const SESSION_WAIT_STATE_DIR = "Memory/Execution";
+
+/** Default delegation deadline in hours from brief creation. */
+export const SESSION_DEFAULT_DEADLINE_HOURS = 24;
+
+/** Default token budget bounds passed in every brief. */
+export const SESSION_DEFAULT_MAX_INPUT_TOKENS = 50_000;
+export const SESSION_DEFAULT_MAX_OUTPUT_TOKENS = 50_000;
+export const SESSION_DEFAULT_MAX_TOTAL_TOKENS = 100_000;
+
+/**
+ * Token-budget environment variables injected into a delegated session tool's
+ * launch. Tool-agnostic; the adapter sets only these (never inherits secrets).
+ */
+export const SESSION_ENV_MAX_INPUT_TOKENS = "EXA_SESSION_MAX_INPUT_TOKENS";
+export const SESSION_ENV_MAX_OUTPUT_TOKENS = "EXA_SESSION_MAX_OUTPUT_TOKENS";
+export const SESSION_ENV_MAX_TOTAL_TOKENS = "EXA_SESSION_MAX_TOTAL_TOKENS";
+
+/** CLI-adapter argv flags pointing the tool at the brief and its token ceiling. */
+export const SESSION_FLAG_BRIEF = "--brief";
+export const SESSION_FLAG_MAX_TOTAL_TOKENS = "--max-total-tokens";
+
+/** Default binary names per built-in session adapter (override via config). */
+export const SESSION_BIN_CLAUDE_CODE = "claude";
+export const SESSION_BIN_OPENCODE = "opencode";
+export const SESSION_BIN_CURSOR = "cursor";
+export const SESSION_BIN_VSCODE = "code";
+
+/** Filesystem event kinds that indicate a (re)written file worth processing. */
+export const FS_WRITE_EVENT_KINDS: ReadonlySet<string> = new Set(["create", "modify", "rename"]);
+
+/** Cost-record provider prefix for a delegated (human-run) session tool. */
+export const SESSION_COST_PROVIDER_PREFIX = "session:";
+
 /**
  * Run async tasks with bounded concurrency.
  * Processes items in batches of `concurrency`, ensuring at most `concurrency`
