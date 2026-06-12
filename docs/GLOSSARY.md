@@ -267,6 +267,80 @@ These names are **not changed**.
 
 ---
 
+## Anomaly Surfacing
+
+### Anomaly
+
+A record in the Activity Journal whose event type is classified as
+anomaly-relevant (`DomainEventType`). Anomalies are never detected or
+written by a separate subsystem — they are a **read-time projection** over
+events the system already emits during execution (tool failures, security
+violations, step failures, etc.). See `DomainEventType` in
+[domain_event_types.ts](packages/core/src/events/domain_event_types.ts) for
+the complete taxonomy.
+
+### Severity
+
+The classification of an anomaly into one of three ordinal levels:
+
+| Severity   | Meaning                                                     | Example Events                                                              |
+| ---------- | ----------------------------------------------------------- | --------------------------------------------------------------------------- |
+| **high**   | Security violations, permission denials, execution failures | `SecurityViolation`, `ExecutionFailed`, `McpPermissionDenied`               |
+| **medium** | Tool call failures, validation failures, git audit failures | `McpToolFailed`, `ExecutionActionFailed`, `LlmCallFailed`, `GitAuditFailed` |
+| **low**    | Timeouts, compaction events                                 | `GitAuditTimeout`, `ExecutionContextCompacted`                              |
+
+The mapping from event type to severity is defined in the
+`ANOMALY_EVENT_SEVERITY` constant in
+[anomaly_classification.ts](packages/core/src/events/anomaly_classification.ts).
+
+### Recovered Failure
+
+A failure anomaly (e.g. `ExecutionActionFailed`, `McpToolFailed`) whose
+target later recorded the matching success event (`ExecutionActionCompleted`,
+`McpToolExecuted`) within the same trace. Recovered failures are **excluded
+from the high/medium/low counts** and counted separately as `recovered`.
+The badge hides recovered-only traces: only actionable (unrecovered) signal
+is displayed at the list level. Recovery uses exact string matching on the
+event `target` field and is defined by the `RECOVERY_PAIRINGS` constant in
+[anomaly_classification.ts](packages/core/src/events/anomaly_classification.ts).
+
+### Anomaly Badge
+
+Shown by `exactl review list` when a review's trace has live anomalies
+(high + medium + low > 0). Format:
+
+```
+⚠️ N anomalies (X high, Y medium, Z low)
+```
+
+Appends `(+N recovered)` when recovered > 0 and the badge is shown.
+
+### Anomaly Section
+
+Shown by `exactl review show` beneath the diff and commit history. Lists
+each finding with severity, target, and event type. Recovered findings are
+annotated with `recovered: true`.
+
+### `classifyTraceAnomalies`
+
+Pure function in `packages/core/src/events/anomaly_classification.ts` that
+takes `IActivityRecord[]` and returns `AnomalyFinding[]`. Iterates
+activity event types against the `ANOMALY_EVENT_SEVERITY` map and applies
+the recovery rule.
+
+### `summarizeAnomalies`
+
+Pure function that aggregates an `AnomalyFinding[]` into an
+`AnomalySummary` with counts for `high`, `medium`, `low`, and `recovered`.
+Recovered findings contribute only to the `recovered` count.
+
+### `loadAnomalyPayload`
+
+Private method on the `ReviewCommands` class (`apps/exactl/src/commands/
+review_commands.ts`) that loads activities from the database for a given
+trace, classifies them, and returns the anomaly findings and summary.
+Used by the `show()` and DB-backed list paths.
+
 ## Directories and Constants
 
 ### `Blueprints/Identities/`

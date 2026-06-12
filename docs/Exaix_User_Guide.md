@@ -1015,8 +1015,57 @@ $ exactl review approve implement-auth
 ✓ Review approved
   Branch: feat/implement-auth-550e8400
   Merged to main: 3b5f7a21
-  Files changed: 12
+   Files changed: 12
 ```
+
+##### Execution Anomaly Surfacing
+
+When you run `exactl review list`, reviews whose execution trace contains
+anomaly-relevant events display a severity badge:
+
+```
+⚠️ 1 anomaly (0 high, 1 medium, 0 low)
+```
+
+The badge appears only when there are live anomalies (high + medium + low > 0).
+If all detected failures were later recovered by a successful retry on the same
+target, the badge is suppressed entirely — only actionable signal is surfaced
+at the list level.
+
+**Severity meanings:**
+
+| Severity   | Meaning                                                                                       |
+| ---------- | --------------------------------------------------------------------------------------------- |
+| **high**   | Security violations, permission denials, execution failures, plan execution failures          |
+| **medium** | Tool call failures, step failures, LLM call failures, validation failures, git audit failures |
+| **low**    | Timeout warnings, context compaction events                                                   |
+
+When you run `exactl review show`, an "Execution anomalies" section lists each
+individual finding with its severity, target, and event type:
+
+```
+📋 Review: implement-auth
+
+...
+Execution anomalies:
+  medium  build-step  (execution.action_failed)
+```
+
+A recovered failure is annotated with `recovered: true`:
+
+```
+medium  build-step  (execution.action_failed, recovered: true)
+```
+
+Recovered findings are excluded from the high/medium/low badge counts and are
+instead summarized as a `(+N recovered)` tail on the badge when it is shown.
+If all anomalies in a trace are recovered, the badge is hidden entirely — only
+actionable signal is surfaced at the list level.
+
+**How it works:** The system reads the Activity Journal (the same underlying
+data that tracks execution progress) and projects a read-time classification of
+anomaly-relevant event types. No separate detection, LLM call, or write path is
+involved — events the system already emits are simply surfaced.
 
 #### **Git Commands** - Repository operations with trace_id
 

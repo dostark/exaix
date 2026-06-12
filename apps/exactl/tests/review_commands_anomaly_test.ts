@@ -141,9 +141,8 @@ describe("ReviewAnomaly", () => {
 
     const result = await reviewCommands.list();
     const match = result.find((r: IReviewMetadata) => r.trace_id === "anm-t5");
-    if (match) {
-      assertExists(match.anomalySummary, "DB-backed path should populate anomalySummary");
-    }
+    assertExists(match, "review should be found in list");
+    assertExists(match.anomalySummary, "DB-backed path should populate anomalySummary");
   });
 
   it("[Review] artifact show returns no anomalies", async () => {
