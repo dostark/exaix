@@ -10,7 +10,7 @@ scope: dev
 title: "Pre-Gap Analysis Skill (#pre-gap-analysis)"
 description: Pre-implementation gap analysis of a phase planning document — finds ambiguities, missing contracts, and security risks before coding starts
 short_summary: "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against."
-version: "1.5"
+version: "1.6"
 topics: [
   "planning",
   "gap-analysis",
@@ -64,6 +64,7 @@ Key points
   Ledger. A runtime success criterion with no wiring path anywhere in the plan is
   🔴 Critical (the plan is internally contradictory).
 - When verifying more than ~20 source files, work in batches of 5–10: read a batch, record findings, then continue.
+- **Trivial gaps (typos, wrong module paths, minor formatting, missing clarifying sentences) MUST be fixed by editing the plan text in-place — do NOT register them as gap entries.** Only non-trivial gaps (underspecified algorithms, missing tests, security concerns, architectural issues, missing wiring paths, design decisions) get full gap entries. After all in-place fixes, append a brief "In-Place Fixes" subsection listing what was fixed, then proceed to register only the non-trivial gaps.
 - Bump the document version (e.g., 1.0 → 1.1) after writing all gaps in.
 
 Canonical prompt (short):
@@ -101,6 +102,8 @@ Do / Don't
   auth/authorisation, path resolution, secrets, or external payloads.
 - ✅ Do write all gaps and a Pre-Implementation Actions list into the document.
 - ✅ Do bump the document version after writing gaps in.
+- ✅ Do fix trivial gaps (typos, wrong paths, minor formatting, missing clarifying sentences) by editing the plan text in-place without registering a gap entry.
+- ✅ Do include a brief "In-Place Fixes" subsection in the Pre-Gap Analysis section listing all in-place fixes so the reader knows what was changed.
 - ✅ Do use any additionally supplied documents as context.
 - ✅ Do run Phase 7 traceability & configurability checks on every step that
   introduces new `EventLogger` events, thresholds, timeouts, or opt-in features.
@@ -134,6 +137,7 @@ Do / Don't
   constants in `packages/core/src/types/constants.ts` or config-schema fields.
 - ❌ Don't skip event payload typing — untyped events block audit chain
   verification and make integration tests fragile.
+- ❌ Don't register trivial gaps (typos, wrong paths, minor formatting) as full gap entries — fix them in-place and note in an "In-Place Fixes" subsection instead. Reserve full entries for gaps that need design discussion, test additions, or significant new content.
 
 Related skills:
 - #plan             — Draft a new phase planning document from scratch (precedes this skill)
@@ -449,9 +453,26 @@ Build a gap summary table before detailed entries.
 
 ---
 
-### Phase 10 — Write Gaps Into the Document
+### Phase 10 — Apply In-Place Fixes and Write Gaps Into the Document
 
-Append at the end of the planning document using the exact format below.
+1. **Fix trivial gaps in-place first.** Before writing any gap entry, scan all findings and
+   separate trivial from non-trivial:
+   - **Trivial** (typos, wrong module paths, minor formatting, obvious clarifying sentence):
+     edit the plan text directly. No gap entry needed.
+   - **Non-trivial** (underspecified algorithm, missing tests, security concern, missing
+     wiring, design decision): register as a full gap entry.
+1. **List in-place fixes.** After all in-place edits, add a brief `### In-Place Fixes`
+   subsection (before `### Gap Summary`) listing what was fixed, e.g.:
+
+   ```text
+   ### In-Place Fixes
+   - Corrected test directory path to match existing convention.
+   - Fixed field name on `IReviewMetadata` for type clarity.
+   - Inline clarifying sentences added to Architecture Notes.
+   ```
+
+1. **Register non-trivial gaps.** Append the gap summary table, detailed gap entries,
+   and Pre-Implementation Actions list after the last existing section.
 
 #### Required markdown format
 
@@ -500,8 +521,8 @@ Append at the end of the planning document using the exact format below.
 
 ## Output format
 
-1. Brief chat summary: total gaps by severity and whether the plan is safe to implement.
+1. Brief chat summary: total gaps by severity, list of in-place fixes, and whether the plan is safe to implement.
 1. Gap summary table — one row per gap (step, severity, description).
-1. Confirmation that the planning document was updated with the gap sections and Pre-Implementation Actions list.
+1. Confirmation that the planning document was updated: in-place fixes applied, gap sections and Pre-Implementation Actions list appended.
 1. Version bump confirmation — the document version was bumped in frontmatter.
 1. Any blocking issue that must be resolved before implementation can begin.
