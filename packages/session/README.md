@@ -7,6 +7,13 @@ Code, OpenCode) as a **bounded external delegate** at a pipeline gate. It is a
 package-pure implementation of the three-part brief → launch → return handoff
 contract; runtime wiring (daemon watcher, gate hooks, CLI/TUI) lives in `apps/`.
 
+> **Status: package complete; not yet reached by production.** Every component
+> below is implemented and test-backed, but no live path imports this package
+> yet — the daemon-startup registration, gate hooks, headless launch, and CLI are
+> tracked in **Phase 111** (`exaix-dev-docs/planning/phase-111-session-delegation-runtime-and-e2e.md`)
+> and its Reachability Ledger. Until then, `session_delegate.enabled = true` has no
+> runtime effect.
+
 ## Contract
 
 | Stage         | Responsibility                                                                  |
