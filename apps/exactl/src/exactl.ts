@@ -209,6 +209,19 @@ async function handleReviewListAction(options: { status?: string; type?: string 
 }
 
 function logReviewListItem(cs: IReviewMetadata) {
+  let badge: string | undefined;
+  if (cs.anomalySummary) {
+    const { high, medium, low, recovered } = cs.anomalySummary;
+    const live = high + medium + low;
+    if (live > 0) {
+      const parts: string[] = [];
+      if (high > 0) parts.push(`${high} high`);
+      if (medium > 0) parts.push(`${medium} medium`);
+      if (low > 0) parts.push(`${low} low`);
+      badge = `⚠️ ${live} anomalies (${parts.join(", ")})`;
+      if (recovered > 0) badge += ` (+${recovered} recovered)`;
+    }
+  }
   const statusEmoji = getReviewStatusEmoji(cs.status);
   const requestTitle = cs.request_subject ? `"${cs.request_subject}"` : cs.request_id;
   const planInfo = cs.plan_id ? `plan: ${cs.plan_id} (${cs.plan_status})` : undefined;
@@ -228,6 +241,7 @@ function logReviewListItem(cs: IReviewMetadata) {
     files: cs.files_changed,
     created: new Date(cs.created_at).toLocaleString(),
     trace: trace || null,
+    anomalies: badge ?? null,
   });
 }
 
@@ -261,8 +275,25 @@ async function handleReviewShowAction(options: { diff?: boolean }, id: string) {
 function renderReviewShow(cs: ReviewDetails, id: string) {
   renderReviewShowSummary(cs);
   renderReviewShowDecision(cs);
+  renderReviewShowAnomalies(cs);
   renderReviewShowCommits(cs);
   display.info("review.diff", id, { diff: cs.diff });
+}
+
+function renderReviewShowAnomalies(cs: ReviewDetails) {
+  if (!cs.anomalies || cs.anomalies.length === 0) return;
+
+  display.info("review.anomalies", "", { count: cs.anomalies.length });
+  for (const finding of cs.anomalies) {
+    display.info(
+      `  ${finding.severity}`,
+      finding.target ?? "(no target)",
+      {
+        eventType: finding.eventType,
+        recovered: finding.recovered,
+      },
+    );
+  }
 }
 
 function renderReviewShowSummary(cs: ReviewDetails) {

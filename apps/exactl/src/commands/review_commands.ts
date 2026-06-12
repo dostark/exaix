@@ -21,6 +21,8 @@ import type { IReviewStatus } from "@exaix/core/status";
 import type { IArtifact, IArtifactFilters, IArtifactWithContent } from "@exaix/schemas/artifact.ts";
 import type { IGitService } from "@exaix/core/types";
 import { type ArtifactSubtype, ReviewType, ReviewTypeFilter as ReviewFilterEnum } from "@exaix/core";
+import { classifyTraceAnomalies, summarizeAnomalies } from "@exaix/core/events";
+import type { IAnomalyFinding, IAnomalySummary } from "@exaix/core/events";
 import { GitBranchName } from "@exaix/git";
 import { createGitService } from "../../../../apps/common/adapters/git_adapter.ts";
 import { GIT_CMD_BRANCH, GIT_CMD_LIST, GIT_CMD_REV_PARSE, GIT_CMD_WORKTREE } from "@exaix/git";
@@ -53,6 +55,8 @@ export interface IReviewMetadata {
   status?: IReviewStatus;
   approved_at?: string;
   approved_by?: string;
+  // Anomaly context
+  anomalySummary?: IAnomalySummary;
   rejected_at?: string;
   rejected_by?: string;
   rejection_reason?: string;
@@ -66,6 +70,7 @@ export interface ReviewDetails extends IReviewMetadata {
     message: string;
     timestamp: string;
   }>;
+  anomalies?: IAnomalyFinding[];
 }
 
 export type ReviewTypeFilter = ReviewFilterEnum;
@@ -797,6 +802,17 @@ export class ReviewCommands extends BaseCommand {
   private async pushEnrichedOrBasic(reviews: IReviewMetadata[], basic: IReviewMetadata): Promise<void> {
     try {
       const enrichedMetadata = await this.extractReviewMetadataWithContext(basic);
+      try {
+        const activities = await this.db.getActivitiesByTraceSafe(basic.trace_id);
+        const anomalySummary = summarizeAnomalies(classifyTraceAnomalies(activities));
+        if (
+          anomalySummary.high > 0 || anomalySummary.medium > 0 || anomalySummary.low > 0 || anomalySummary.recovered > 0
+        ) {
+          enrichedMetadata.anomalySummary = anomalySummary;
+        }
+      } catch {
+        // silently skip anomalies on failure
+      }
       reviews.push(enrichedMetadata);
     } catch {
       reviews.push(basic);
@@ -919,6 +935,8 @@ export class ReviewCommands extends BaseCommand {
     const status = this.getStatusFromActivities(activities);
     if (normalizedStatus && status !== normalizedStatus) return null;
 
+    const anomalySummary = summarizeAnomalies(classifyTraceAnomalies(activities));
+
     const filesChanged = await this.getFilesChangedCount(repoPath, baseBranch, branch);
 
     const basicMetadata: IReviewMetadata = {
@@ -932,9 +950,34 @@ export class ReviewCommands extends BaseCommand {
       created_at: logInfo.timestamp,
       identity_id: logInfo.identity_id,
       status,
+      anomalySummary:
+        anomalySummary.high > 0 || anomalySummary.medium > 0 || anomalySummary.low > 0 || anomalySummary.recovered > 0
+          ? anomalySummary
+          : undefined,
     };
 
     return await this.extractReviewMetadataWithContext(basicMetadata);
+  }
+
+  private async loadAnomalyPayload(
+    traceId: string,
+  ): Promise<{
+    anomalies?: IAnomalyFinding[];
+    anomalySummary?: IAnomalySummary;
+  }> {
+    try {
+      const activities = await this.db.getActivitiesByTraceSafe(traceId);
+      const findings = classifyTraceAnomalies(activities);
+      if (findings.length === 0) return {};
+      const summary = summarizeAnomalies(findings);
+      const hasLiveAnomalies = summary.high > 0 || summary.medium > 0 || summary.low > 0;
+      return {
+        anomalies: findings,
+        anomalySummary: hasLiveAnomalies || summary.recovered > 0 ? summary : undefined,
+      };
+    } catch {
+      return {};
+    }
   }
 
   /**
@@ -1085,10 +1128,13 @@ export class ReviewCommands extends BaseCommand {
     // Enrich with request and plan context
     const enrichedMetadata = await this.extractReviewMetadataWithContext(basicMetadata);
 
+    const anomalyPayload = await this.loadAnomalyPayload(storedTraceId ?? trace_id);
+
     return {
       ...enrichedMetadata,
       diff,
       commits,
+      ...anomalyPayload,
     };
   }
 
