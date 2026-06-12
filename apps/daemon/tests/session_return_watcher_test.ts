@@ -161,3 +161,26 @@ Deno.test("[session_return_watcher][security] GAP-10 — a partial return journa
     await rig.cleanup();
   }
 });
+
+Deno.test("[session_return_watcher] an over-budget accepted return also journals budget_exceeded (P2)", async () => {
+  const rig = await makeRig();
+  try {
+    const brief = await setup(rig, "plan_review", ["Workspace/Plans/**"]);
+    // total_tokens 150_000 exceeds the brief's 100_000 max — accepted but over budget.
+    const path = await dropReturn(rig, brief.trace_id, {
+      trace_id: brief.trace_id,
+      resume_token: brief.resume_token,
+      decision: "approved",
+      summary: "ok but pricey",
+      paths_touched: [],
+      token_stats: { input_tokens: 120_000, output_tokens: 30_000, total_tokens: 150_000 },
+    });
+    await rig.watcher.handleReturnPath(path);
+    assertEquals(rig.sink.actions().includes(DomainEventType.SessionDelegateReconciled), true);
+    assertEquals(rig.sink.actions().includes(DomainEventType.SessionDelegateBudgetExceeded), true);
+    // Budget overage is non-blocking: the gate still resumes.
+    assertEquals((await rig.store.get(brief.trace_id))?.status, "resumed");
+  } finally {
+    await rig.cleanup();
+  }
+});

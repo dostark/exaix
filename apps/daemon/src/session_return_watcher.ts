@@ -58,6 +58,13 @@ export class SessionReturnWatcher {
       await this.journal(DomainEventType.SessionDelegateReconciled, traceId, {
         decision: outcome.decision ?? null,
       });
+      // Budget overage is non-blocking but must be auditable as its own event (P2).
+      if (outcome.budgetExceeded) {
+        await this.journal(DomainEventType.SessionDelegateBudgetExceeded, traceId, {
+          budget_exceeded: true,
+          decision: outcome.decision ?? null,
+        });
+      }
       return;
     }
 

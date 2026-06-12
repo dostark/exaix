@@ -22,17 +22,22 @@ export const DomainEventType = {
   WaitStateCreated: "wait_state.created",
   WaitStateResolved: "wait_state.resolved",
 
-  // Session delegation events (Phase 106)
-  SessionDelegateBriefed: "session.delegate.briefed",
-  SessionDelegateLaunched: "session.delegate.launched",
+  // Session delegation events (Phase 106).
+  // Emitted today by SessionReturnWatcher: returned, reconciled, scope_violation,
+  // token_rejected, budget_exceeded. The remaining four (briefed, launched,
+  // path_rejected, expired, cancelled) are emitted by the Phase 111 gate hooks /
+  // brief path-validation / wait-state deadline sweep / CLI cancel respectively —
+  // declared here so the taxonomy states intent rather than dead constants.
+  SessionDelegateBriefed: "session.delegate.briefed", // Phase 111: gate hook on prepareBrief
+  SessionDelegateLaunched: "session.delegate.launched", // Phase 111: gate hook on launch
   SessionDelegateReturned: "session.delegate.returned",
   SessionDelegateReconciled: "session.delegate.reconciled",
   SessionDelegateScopeViolation: "session.delegate.scope_violation",
   SessionDelegateBudgetExceeded: "session.delegate.budget_exceeded",
   SessionDelegateTokenRejected: "session.delegate.token_rejected",
-  SessionDelegatePathRejected: "session.delegate.path_rejected",
-  SessionDelegateExpired: "session.delegate.expired",
-  SessionDelegateCancelled: "session.delegate.cancelled",
+  SessionDelegatePathRejected: "session.delegate.path_rejected", // Phase 111: brief path validation
+  SessionDelegateExpired: "session.delegate.expired", // Phase 111: wait-state deadline sweep
+  SessionDelegateCancelled: "session.delegate.cancelled", // Phase 111: exactl session cancel
 
   // Cost tracking events
   LlmUsageRecorded: "llm.usage",
