@@ -10,7 +10,7 @@ scope: dev
 title: "Plan Skill (#plan)"
 description: Draft a new Phase Planning Document for a feature, refactor, or architectural change — follows Exaix standards for TDD, security, and traceability
 short_summary: "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy."
-version: "1.5"
+version: "1.6"
 topics: ["planning", "architecture", "tdd", "security", "traceability", "configurability", "reachability"]
 qwen_skill: plan
 ---
@@ -90,6 +90,7 @@ Follow the structure defined in `.copilot/planning/README.md`:
 1. **Technical Architecture**: Schemas (Zod), Interfaces (TS), Logic Flows (Mermaid).
 1. **Implementation Plan**: Numbered steps using the TDD-First format (Actions, Architecture Notes, Planned Tests, Success Criteria), sequenced as a vertical end-to-end slice first (§E), not horizontal layers.
 1. **Integration & Cutover (§E)**: A mandatory, non-deferrable penultimate step that wires the feature into a live path and proves it is reachable from a real daemon/CLI run with the feature enabled.
+1. **Reachability Ledger (§E)**: A seeded (initially empty) `## Reachability Ledger (pending production consumers)` table that #next-steps maintains step-by-step; the phase cannot close while any row is ⏳.
 1. **Documentation Updates (§3D)**: Mandatory final step to update `ARCHITECTURE.md`, `docs/`, `TOOLS.md`, etc.
 1. **Success Metrics**: Quantitative targets (performance, quality), including an opt-in reachability metric for every `enabled`-style flag.
 
@@ -155,6 +156,13 @@ in the plan itself:
 - **Opt-in proof.** For every `enabled`-style flag, a Success Metric must read "with
   `feature.enabled=true`, observable behaviour B occurs", backed by a test that flips
   the REAL config — not a unit test of the gated component in isolation.
+- **Seed the Reachability Ledger.** Add an (initially empty) `## Reachability Ledger
+  (pending production consumers)` section to the planning doc — a table with columns
+  `Symbol | Added in | Wiring step | Production call-site | Status`. #next-steps
+  appends a ⏳ row whenever a step ships a symbol with no production caller and flips
+  it to ✅ when a later step wires it; the phase cannot close while any row is ⏳. The
+  ledger is the durable, doc-resident to-do list that prevents production-dead code
+  from being silently forgotten between steps.
 
 > If the feature is genuinely too large to wire end-to-end within one 8–10 step phase,
 > split it so that **each** phase delivers a reachable vertical slice — never a phase

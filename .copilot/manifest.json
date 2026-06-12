@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-12T11:39:45.153Z",
+  "generated_at": "2026-06-12T11:44:56.396Z",
   "docs": [
     {
       "path": ".copilot/prompts/infra.prompt.md",
@@ -584,7 +584,7 @@
       "scope": "dev",
       "title": "Plan Skill (#plan)",
       "short_summary": "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy.",
-      "version": "1.5",
+      "version": "1.6",
       "topics": [
         "planning",
         "architecture",
@@ -906,7 +906,7 @@
       "scope": "dev",
       "title": "Next-Steps Skill (#next-steps)",
       "short_summary": "Prompt for iterating through .copilot/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits.",
-      "version": "1.3",
+      "version": "1.4",
       "topics": [
         "tdd",
         "red-green-refactor",
