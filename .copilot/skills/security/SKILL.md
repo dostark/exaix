@@ -11,7 +11,22 @@ title: "Security Skill (#security)"
 description: Systematic security audit mapping the OWASP-Top-10 checklist (path traversal, injection, auth, secrets) onto Exaix's concrete trust boundaries, reusing its canonical security primitives
 short_summary: "Autonomous security audit for Exaix code: applies the Phase 3b nine-item checklist against Exaix's real trust boundaries, reuses the canonical security primitives, and writes findings with TDD remediation steps."
 version: "1.1"
-topics: ["security", "owasp", "audit", "path-traversal", "injection", "auth", "secrets", "tdd", "mcp", "portal", "run-command", "deno-permissions", "sandbox", "webhook"]
+topics: [
+  "security",
+  "owasp",
+  "audit",
+  "path-traversal",
+  "injection",
+  "auth",
+  "secrets",
+  "tdd",
+  "mcp",
+  "portal",
+  "run-command",
+  "deno-permissions",
+  "sandbox",
+  "webhook",
+]
 qwen_skill: security
 ---
 
@@ -93,17 +108,17 @@ Exaix is a **local-first, single-user** agent harness whose threat model is
 paths, shell commands, and flow expressions; the security boundary is the code
 that **validates those proposals before they take effect**. Audit the boundary.
 
-| # | Surface | Entry point | Canonical control | Regression test |
-| - | ------- | ----------- | ----------------- | --------------- |
-| S1 | **MCP file tools** (read/write/move/delete/patch/mkdir/list) | `packages/mcp/server/handlers/*_tool.ts` → `tool_handler.ts:resolvePortalPath` | `PathSecurity.resolveWithinRoots(rel, [realRoot], realRoot)` over `await Deno.realPath(portalPath)` | `packages/mcp/tests/mcp_symlink_traversal_security_test.ts` |
-| S2 | **`run_command` tool** | `packages/tool-runtime/src/tool_registry.ts:execute` | `validateGitArguments` + `validateRuntimeArguments`; cwd scoped via `getAllowedRoots()` + `resolveWithinRoots` | `packages/tool-runtime/tests/run_command_security_test.ts`, `tests/security/git_security_regression_test.ts` |
-| S3 | **Portal filesystem** (Workspace/Portals path access) | `packages/portal/src/path_resolver.ts:PathResolver.validatePath` | realPath of target (or nearest existing ancestor) checked within allowed roots | `packages/portal/tests/path_resolver_symlink_security_test.ts` |
-| S4 | **Flow condition expressions** | `packages/flow/src/condition_evaluator.ts` → `safe_expression.ts` | `validateExpression` / `evaluateExpression` over a JSON-projected context; allowlisted roots `results`/`request`/`flow`; NO `new Function`/`eval` | `tests/security/condition_evaluator_sandbox_test.ts` |
-| S5 | **Local HTTP / SSE endpoint** | `packages/mcp/server/server.ts:handleHTTPRequest`, `sse_handler.ts` | 127.0.0.1 bind + `isLoopbackHost`/`rejectUnsafeOrigin` (DNS-rebind/CSRF); SSE `validateTraceId` (UUID) + concurrent-stream cap | `packages/mcp/tests/http_security_test.ts`, `tests/integration/api/sse_handler_test.ts` |
-| S6 | **External triggers** (webhooks) | `packages/triggers/adapters/webhook_adapter.ts:parse` | MANDATORY HMAC-SHA256, fail-closed (no secret ⇒ reject every payload); size cap | `packages/triggers/tests/external_adapters_test.ts` |
-| S7 | **Activity journal / storage** | `packages/storage-sqlite/src/database_service.ts` | Parameterized queries everywhere; identifiers (e.g. `filter.distinct`) allowlisted via `ACTIVITY_COLUMNS` | `packages/storage-sqlite/tests/db_journal_test.ts` |
-| S8 | **Secrets in memory** | `packages/core/src/helpers/credential_security.ts:SecureCredentialStore` | Best-effort in-memory obfuscation — **NOT a hard boundary**; never logged/serialized | `tests/security/credential_security_test.ts` |
-| S9 | **Process containment** | `deno.json` tasks, `Dockerfile`, `compose.sandbox.yaml` | Scoped `--allow-run` allowlist + `*:unsafe` opt-ins (defense-in-depth); container = authoritative (cap-drop, read-only rootfs, no-new-privileges, non-root, `--network none`) | `tests/security/deno_permissions_policy_test.ts`, `tests/security/subprocess_isolation_test.ts` |
+| #  | Surface                                                      | Entry point                                                                    | Canonical control                                                                                                                                                             | Regression test                                                                                              |
+| -- | ------------------------------------------------------------ | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| S1 | **MCP file tools** (read/write/move/delete/patch/mkdir/list) | `packages/mcp/server/handlers/*_tool.ts` → `tool_handler.ts:resolvePortalPath` | `PathSecurity.resolveWithinRoots(rel, [realRoot], realRoot)` over `await Deno.realPath(portalPath)`                                                                           | `packages/mcp/tests/mcp_symlink_traversal_security_test.ts`                                                  |
+| S2 | **`run_command` tool**                                       | `packages/tool-runtime/src/tool_registry.ts:execute`                           | `validateGitArguments` + `validateRuntimeArguments`; cwd scoped via `getAllowedRoots()` + `resolveWithinRoots`                                                                | `packages/tool-runtime/tests/run_command_security_test.ts`, `tests/security/git_security_regression_test.ts` |
+| S3 | **Portal filesystem** (Workspace/Portals path access)        | `packages/portal/src/path_resolver.ts:PathResolver.validatePath`               | realPath of target (or nearest existing ancestor) checked within allowed roots                                                                                                | `packages/portal/tests/path_resolver_symlink_security_test.ts`                                               |
+| S4 | **Flow condition expressions**                               | `packages/flow/src/condition_evaluator.ts` → `safe_expression.ts`              | `validateExpression` / `evaluateExpression` over a JSON-projected context; allowlisted roots `results`/`request`/`flow`; NO `new Function`/`eval`                             | `tests/security/condition_evaluator_sandbox_test.ts`                                                         |
+| S5 | **Local HTTP / SSE endpoint**                                | `packages/mcp/server/server.ts:handleHTTPRequest`, `sse_handler.ts`            | 127.0.0.1 bind + `isLoopbackHost`/`rejectUnsafeOrigin` (DNS-rebind/CSRF); SSE `validateTraceId` (UUID) + concurrent-stream cap                                                | `packages/mcp/tests/http_security_test.ts`, `tests/integration/api/sse_handler_test.ts`                      |
+| S6 | **External triggers** (webhooks)                             | `packages/triggers/adapters/webhook_adapter.ts:parse`                          | MANDATORY HMAC-SHA256, fail-closed (no secret ⇒ reject every payload); size cap                                                                                               | `packages/triggers/tests/external_adapters_test.ts`                                                          |
+| S7 | **Activity journal / storage**                               | `packages/storage-sqlite/src/database_service.ts`                              | Parameterized queries everywhere; identifiers (e.g. `filter.distinct`) allowlisted via `ACTIVITY_COLUMNS`                                                                     | `packages/storage-sqlite/tests/db_journal_test.ts`                                                           |
+| S8 | **Secrets in memory**                                        | `packages/core/src/helpers/credential_security.ts:SecureCredentialStore`       | Best-effort in-memory obfuscation — **NOT a hard boundary**; never logged/serialized                                                                                          | `tests/security/credential_security_test.ts`                                                                 |
+| S9 | **Process containment**                                      | `deno.json` tasks, `Dockerfile`, `compose.sandbox.yaml`                        | Scoped `--allow-run` allowlist + `*:unsafe` opt-ins (defense-in-depth); container = authoritative (cap-drop, read-only rootfs, no-new-privileges, non-root, `--network none`) | `tests/security/deno_permissions_policy_test.ts`, `tests/security/subprocess_isolation_test.ts`              |
 
 **Boundary invariant:** because the SQLite journal binds native code (`@db/sqlite`
 → `Deno.dlopen`) the daemon currently REQUIRES `--allow-ffi`, so the Deno
@@ -113,15 +128,15 @@ dependency is tracked in `exaix-dev-docs/planning/phase-110-security-hardening-f
 
 ### Reusable Security Primitives (prefer these over a new check)
 
-| Primitive | Module | Use it for |
-| --------- | ------ | ---------- |
-| `PathSecurity.resolveWithinRoots(input, roots, rootDir)` | `@exaix/tool-runtime` (`path_security.ts`) | Any path derived from agent/tool input; resolves symlinks and rejects escapes |
-| `PathResolver.validatePath` | `packages/portal/src/path_resolver.ts` | Workspace/Portal path validation in services |
-| `validateGitArguments` / `validateRuntimeArguments` | `packages/tool-runtime/src/tool_registry.ts` | Vetting `run_command` argv before spawn |
-| `validateExpression` / `evaluateExpression` | `packages/flow/src/safe_expression.ts` | Evaluating any agent/flow-authored boolean expression — never `new Function` |
-| `MCPServer.isLoopbackHost` / `rejectUnsafeOrigin` | `packages/mcp/server/server.ts` | Guarding any new local HTTP route (Host/Origin) |
-| `ACTIVITY_COLUMNS` allowlist pattern | `packages/storage-sqlite/src/database_service.ts` | Any SQL where an identifier (column/table) comes from input — identifiers can't be parameterized |
-| Mandatory-HMAC fail-closed pattern | `packages/triggers/adapters/webhook_adapter.ts` | Any new external-event ingestion adapter |
+| Primitive                                                | Module                                            | Use it for                                                                                       |
+| -------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `PathSecurity.resolveWithinRoots(input, roots, rootDir)` | `@exaix/tool-runtime` (`path_security.ts`)        | Any path derived from agent/tool input; resolves symlinks and rejects escapes                    |
+| `PathResolver.validatePath`                              | `packages/portal/src/path_resolver.ts`            | Workspace/Portal path validation in services                                                     |
+| `validateGitArguments` / `validateRuntimeArguments`      | `packages/tool-runtime/src/tool_registry.ts`      | Vetting `run_command` argv before spawn                                                          |
+| `validateExpression` / `evaluateExpression`              | `packages/flow/src/safe_expression.ts`            | Evaluating any agent/flow-authored boolean expression — never `new Function`                     |
+| `MCPServer.isLoopbackHost` / `rejectUnsafeOrigin`        | `packages/mcp/server/server.ts`                   | Guarding any new local HTTP route (Host/Origin)                                                  |
+| `ACTIVITY_COLUMNS` allowlist pattern                     | `packages/storage-sqlite/src/database_service.ts` | Any SQL where an identifier (column/table) comes from input — identifiers can't be parameterized |
+| Mandatory-HMAC fail-closed pattern                       | `packages/triggers/adapters/webhook_adapter.ts`   | Any new external-event ingestion adapter                                                         |
 
 > The full catalogue of prior findings and their fixes lives in
 > `exaix-dev-docs/dev/Exaix_Security_Vulnerability_Analysis.md`. Read it before
@@ -249,19 +264,19 @@ sub-processes, or touches shared mutable state.
 These are the recurring shapes the 13-finding audit found. Treat each as a grep
 target — if you see the left column, you likely have the right column.
 
-| Anti-pattern (what you see) | Why it's a finding | Correct pattern |
-| --------------------------- | ------------------ | --------------- |
-| `new Function(expr)` / `eval` to evaluate a flow or agent expression | Arbitrary code execution from LLM output (Finding 1) | `safe_expression.validateExpression`/`evaluateExpression` |
-| `join(root, rel)` then `rel.startsWith("..")` | String check misses symlinks + encoded traversal (Findings 3, 8) | `PathSecurity.resolveWithinRoots` over `Deno.realPath(root)` |
-| `--allow-all` / `-A` on an operational `deno.json` task | Grants the daemon full host access by default (Finding 2) | Scoped `--allow-*` + `--allow-run=<allowlist>`; keep `-A` only on `*:unsafe` opt-ins |
-| `run_command` allowing `deno test`/`status`, or `-A`/`--allow-*` in argv | Test-runner / permission-flag bypass to run arbitrary code (Finding 4) | `validateRuntimeArguments` allowlist; reject `--allow-*` anywhere |
-| `git -c core.x=…` / `-C <dir>` reachable via `run_command` | Config-injection → command execution (Finding 7) | `validateGitArguments` exact-match block on `-c`/`-C` (subcommand allowlist still open) |
-| Local HTTP route with no Host/Origin check | DNS-rebinding + CSRF against the loopback daemon (Finding 5) | `isLoopbackHost` + `rejectUnsafeOrigin` before routing |
-| Webhook/event adapter that accepts unsigned payloads when no secret is set | Forged external triggers (Finding 9) | Fail closed: no secret ⇒ reject; mandatory HMAC verify |
-| SQL with an interpolated identifier (`SELECT DISTINCT ${field}`) | Identifier injection — identifiers can't be parameterized (Finding 12) | Allowlist the identifier (`ACTIVITY_COLUMNS.has(field)`) |
-| Error message echoing the rejected/denied host path | Information disclosure of the host layout (Finding 10) | Generic denial message; host path → journal payload only |
-| Unbounded streams/subscriptions/timers per request | Local resource-exhaustion DoS (Finding 13) | Injectable cap + idempotent cleanup on disconnect/cancel |
-| `zeroOutString`-style "secure wipe" of an immutable JS string | No-op that misrepresents the security guarantee (Finding 11) | Remove the theatre; document the store as best-effort |
+| Anti-pattern (what you see)                                                | Why it's a finding                                                     | Correct pattern                                                                         |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `new Function(expr)` / `eval` to evaluate a flow or agent expression       | Arbitrary code execution from LLM output (Finding 1)                   | `safe_expression.validateExpression`/`evaluateExpression`                               |
+| `join(root, rel)` then `rel.startsWith("..")`                              | String check misses symlinks + encoded traversal (Findings 3, 8)       | `PathSecurity.resolveWithinRoots` over `Deno.realPath(root)`                            |
+| `--allow-all` / `-A` on an operational `deno.json` task                    | Grants the daemon full host access by default (Finding 2)              | Scoped `--allow-*` + `--allow-run=<allowlist>`; keep `-A` only on `*:unsafe` opt-ins    |
+| `run_command` allowing `deno test`/`status`, or `-A`/`--allow-*` in argv   | Test-runner / permission-flag bypass to run arbitrary code (Finding 4) | `validateRuntimeArguments` allowlist; reject `--allow-*` anywhere                       |
+| `git -c core.x=…` / `-C <dir>` reachable via `run_command`                 | Config-injection → command execution (Finding 7)                       | `validateGitArguments` exact-match block on `-c`/`-C` (subcommand allowlist still open) |
+| Local HTTP route with no Host/Origin check                                 | DNS-rebinding + CSRF against the loopback daemon (Finding 5)           | `isLoopbackHost` + `rejectUnsafeOrigin` before routing                                  |
+| Webhook/event adapter that accepts unsigned payloads when no secret is set | Forged external triggers (Finding 9)                                   | Fail closed: no secret ⇒ reject; mandatory HMAC verify                                  |
+| SQL with an interpolated identifier (`SELECT DISTINCT ${field}`)           | Identifier injection — identifiers can't be parameterized (Finding 12) | Allowlist the identifier (`ACTIVITY_COLUMNS.has(field)`)                                |
+| Error message echoing the rejected/denied host path                        | Information disclosure of the host layout (Finding 10)                 | Generic denial message; host path → journal payload only                                |
+| Unbounded streams/subscriptions/timers per request                         | Local resource-exhaustion DoS (Finding 13)                             | Injectable cap + idempotent cleanup on disconnect/cancel                                |
+| `zeroOutString`-style "secure wipe" of an immutable JS string              | No-op that misrepresents the security guarantee (Finding 11)           | Remove the theatre; document the store as best-effort                                   |
 
 ### Phase 4 — Classify Findings
 

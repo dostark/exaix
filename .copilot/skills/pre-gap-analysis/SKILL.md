@@ -11,7 +11,17 @@ title: "Pre-Gap Analysis Skill (#pre-gap-analysis)"
 description: Pre-implementation gap analysis of a phase planning document — finds ambiguities, missing contracts, and security risks before coding starts
 short_summary: "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against."
 version: "1.5"
-topics: ["planning", "gap-analysis", "architecture", "risk", "quality", "security", "tdd", "reachability", "integration"]
+topics: [
+  "planning",
+  "gap-analysis",
+  "architecture",
+  "risk",
+  "quality",
+  "security",
+  "tdd",
+  "reachability",
+  "integration",
+]
 qwen_skill: pre-gap-analysis
 ---
 
@@ -449,6 +459,7 @@ Append at the end of the planning document using the exact format below.
 ---
 
 ## Pre-Gap Analysis — <ISO date> — Verdict: ⚠️ GAPS FOUND / ✅ READY TO IMPLEMENT
+
 <!-- READY TO IMPLEMENT requires zero open 🔴 gaps, including 🔴 reachability gaps (Phase 8). -->
 
 ### Gap Summary
