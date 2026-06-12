@@ -10,8 +10,8 @@ scope: dev
 title: "Plan Skill (#plan)"
 description: Draft a new Phase Planning Document for a feature, refactor, or architectural change — follows Exaix standards for TDD, security, and traceability
 short_summary: "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy."
-version: "1.4"
-topics: ["planning", "architecture", "tdd", "security", "traceability", "configurability"]
+version: "1.5"
+topics: ["planning", "architecture", "tdd", "security", "traceability", "configurability", "reachability"]
 qwen_skill: plan
 ---
 
@@ -32,6 +32,11 @@ Key points
 - **Trace every output to its consumer**: For every new interface field or event payload name a consuming component and verify the data flow reaches it. Fields with no readers are dead data.
 - **Survey module conventions**: Before committing to a pattern choice (event naming, error handling, DI style), read 5–10 existing examples in the affected module and document the dominant convention. Divergence requires justification in Architecture Notes.
 - **Map prose claims to named tests**: Every behavioural claim made in the prose (e.g., "checkpoint preserves data", "service Y calls service Z") must have a named test in Planned Tests. Claims without test names are gaps.
+- **Reachability over layering**: structure the plan as a VERTICAL end-to-end slice (one complete path entry-point → … → output) BEFORE breadth. A horizontal, layer-by-layer plan (all schemas, then all services, then "wire it") is the classic setup for "every component exists, nothing works" — flag it and re-sequence. See §E.
+- **Integration anchor per runtime-claiming step**: any step whose Success Criteria assert runtime/observable behaviour MUST name (a) the exact production call-site/constructor (`file:Symbol`) that invokes the new code, and (b) a named integration or scenario test that exercises that call-site. A runtime claim backed only by package-unit tests is a pre-gap.
+- **No forward-deferral chains**: a step may not consume something a LATER step builds (dependency inversion); "wired in Step M" is acceptable only if Step M's Actions contain the concrete wiring. Every "consumed by Step M" must resolve to a real call in Step M.
+- **One non-deferrable cutover step**: end the phase with an "Integration & cutover" step whose Success Criterion is "the feature is reachable from a real daemon/CLI run with config X", and which may NOT defer to a future phase.
+- **Opt-in toggles must do something**: for any `enabled`-style flag, add a Success Metric of the form "with `feature.enabled=true`, observable behaviour B occurs", backed by a test that flips the REAL config.
 - When reading existing source files to understand context, work in batches of 5–10 files: read a batch, record findings, then continue.
 
 Canonical prompt (short):
@@ -50,11 +55,16 @@ Do / Don't
 - ✅ Do trace every new output field to a named consumer — verify the data flow has a destination before writing it.
 - ✅ Do survey the affected module's existing conventions before choosing a pattern — document divergence in Architecture Notes.
 - ✅ Do map every prose behavioural claim to a named test in the step's Planned Tests section.
+- ✅ Do anchor every runtime-claiming step to a named production call-site AND an integration/scenario test (not just a unit test).
+- ✅ Do include one terminal, non-deferrable "Integration & cutover" step proving the feature is reachable from a real run.
+- ✅ Do order steps so no step consumes something a later step builds; prefer a vertical end-to-end slice before breadth.
 - ✅ Do name the planning document `phase-NN-<kebab-slug>.md` for consistent slugs.
 - ✅ Do keep phases to 8–10 steps maximum — split larger features into two sequential phases.
 - ✅ Do assess scenario framework coverage (§3E) for any change to the end-to-end flow.
 - ❌ Don't use 'any' or vague types; use Zod schemas and TypeScript interfaces.
 - ❌ Don't skip the 'Planned Tests' section for any implementation step.
+- ❌ Don't let a runtime success criterion be satisfiable by a package-unit test alone — that is how production-dead code ships green.
+- ❌ Don't structure a feature as horizontal layers ("all cores, then wire") — it maximizes the risk that nothing is connected.
 - ❌ Don't defer documentation updates; implement them as the last step of the phase.
 
 Prototypes & Validation:
@@ -78,9 +88,10 @@ Follow the structure defined in `.copilot/planning/README.md`:
 1. **Executive Summary**: Problem, Solution, Goal.
 1. **Current State Analysis**: Key Files table, Constraints, Affected Interfaces.
 1. **Technical Architecture**: Schemas (Zod), Interfaces (TS), Logic Flows (Mermaid).
-1. **Implementation Plan**: Numbered steps using the TDD-First format (Actions, Architecture Notes, Planned Tests, Success Criteria).
-1. **Documentation Updates (§3D)**: Mandatory step to update `ARCHITECTURE.md`, `docs/`, `TOOLS.md`, etc.
-1. **Success Metrics**: Quantitative targets (performance, quality).
+1. **Implementation Plan**: Numbered steps using the TDD-First format (Actions, Architecture Notes, Planned Tests, Success Criteria), sequenced as a vertical end-to-end slice first (§E), not horizontal layers.
+1. **Integration & Cutover (§E)**: A mandatory, non-deferrable penultimate step that wires the feature into a live path and proves it is reachable from a real daemon/CLI run with the feature enabled.
+1. **Documentation Updates (§3D)**: Mandatory final step to update `ARCHITECTURE.md`, `docs/`, `TOOLS.md`, etc.
+1. **Success Metrics**: Quantitative targets (performance, quality), including an opt-in reachability metric for every `enabled`-style flag.
 
 ### 2. Core Principles Integration
 
@@ -115,6 +126,40 @@ For every new or modified interface, event payload, or schema field:
   A field defined in one step whose consumer is never implemented is dead data.
 - **Flow completion**: Document the end-to-end data flow from producer to consumer.
   Verify at least one named test exercises the complete chain.
+
+#### E. Reachability & Integration Anchoring (the production-dead guard)
+
+The most common — and most expensive — post-implementation gap is a feature whose
+components are all built and tested but never wired into a live path: every test is
+green because the test is the only caller. TDD, coverage, and `check:arch` grounding
+all pass on production-dead code (a test-only consumer keeps it "alive"; grounding is
+satisfied by a README/`@related-files` reference, not a real import). Guard against it
+in the plan itself:
+
+- **Vertical slice first.** Sequence steps so the FIRST deliverable is one complete
+  end-to-end path (entry point → … → observable output), then add breadth. Reject a
+  horizontal layer-by-layer ordering (all schemas → all services → "wire it later").
+- **Integration anchor.** For every step whose Success Criteria assert
+  runtime/observable behaviour, the step MUST name: (1) the exact production call-site
+  or constructor (`file:Symbol`) that invokes the new code, and (2) a named integration
+  or scenario test that drives that call-site. A runtime claim whose only Planned Tests
+  are package-unit tests is a pre-gap — unit tests cannot detect that nothing calls the
+  code.
+- **No forward-deferral chains.** A step may not consume something a later step builds.
+  "Wired in Step M" is acceptable only if Step M's Actions contain the concrete wiring;
+  verify each "consumed by Step M" resolves to a real call in Step M. Deferral to
+  "follow-ups" or an unnamed future step is forbidden.
+- **Terminal cutover step (non-deferrable).** The phase MUST include an
+  "Integration & cutover" step whose Success Criterion is reachability from a real
+  daemon/CLI run with the feature enabled, and which may not defer to a future phase.
+- **Opt-in proof.** For every `enabled`-style flag, a Success Metric must read "with
+  `feature.enabled=true`, observable behaviour B occurs", backed by a test that flips
+  the REAL config — not a unit test of the gated component in isolation.
+
+> If the feature is genuinely too large to wire end-to-end within one 8–10 step phase,
+> split it so that **each** phase delivers a reachable vertical slice — never a phase
+> that ships only disconnected cores. A "package now, wiring next phase" split is only
+> acceptable if the package phase's own Success Metrics do not claim runtime behaviour.
 
 ### 3. Documentation Update Protocol (§3D)
 
