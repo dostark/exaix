@@ -122,5 +122,8 @@ jobs:
         with:
           deno-version: "2.x"
 
+      - name: "Clear Deno plug cache (avoid corrupted SQLite native plugin)"
+        run: rm -rf ~/.cache/deno/plug/
+
       - name: "Run Test Suite & Verify Coverage"
         run: deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts
