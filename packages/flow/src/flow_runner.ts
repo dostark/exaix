@@ -15,7 +15,6 @@ import type {
   IGateEvaluate,
   IParallelMergeMode,
 } from "@exaix/schemas/flow.ts";
-import { join } from "@std/path";
 import { encodeHex } from "@std/encoding/hex";
 import { DependencyResolver } from "@exaix/flow";
 import type { IAgentExecutionResult } from "@exaix/execution";
@@ -26,7 +25,6 @@ import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
 import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers/stub_factories.ts";
 import {
   FlowInputSource,
@@ -44,9 +42,13 @@ import { LlmClient } from "@exaix/ai/llm_client.ts";
 import type { ToolHandler } from "@exaix/mcp/server";
 import type { McpToolName } from "@exaix/mcp";
 import type { Config } from "@exaix/schemas/config.ts";
-import { BlueprintLoader } from "@exaix/core/blueprint";
 import { RetryPolicy } from "@exaix/core/request";
-import type { IApplicationContext, IGateConfig, IGateEvaluator, IGateResult } from "@exaix/core/types";
+import type { IApplicationContext, IGateConfig, IGateEvaluator } from "@exaix/core/types";
+import { FlowStepHandlerRegistry } from "./step_handlers/step_handler_registry.ts";
+import { GateStepHandler, type IPendingWaitStateRef } from "./step_handlers/gate_step_handler.ts";
+import { AgentStepHandler } from "./step_handlers/agent_step_handler.ts";
+import { UnknownFlowStepError } from "./step_handlers/flow_step_error.ts";
+import type { IStepExecutionContext } from "./step_handlers/step_handler.ts";
 import {
   FlowCheckpointService,
   FlowNamespaceService,
@@ -82,7 +84,6 @@ import {
   FLOW_EVENT_STEP_SKIPPED,
   FLOW_EVENT_STEP_SKIPPED_BY_REUSE,
   FLOW_EVENT_VALIDATION_FAILED,
-  MILESTONE_APPROVAL_GATE_ENTERED,
   MILESTONE_APPROVAL_GATE_RESOLVED,
   MILESTONE_FLOW_COMPLETED,
   MILESTONE_FLOW_FAILED,
@@ -686,8 +687,9 @@ export class FlowRunner implements IFlowRunner {
   private stepDurabilityStore: IStepDurabilityStore;
   private stepReplayPolicy: IStepReplayPolicy;
   private readonly migratedCheckpointTraceIds = new Set<string>();
+  private readonly stepHandlerRegistry = new FlowStepHandlerRegistry();
   private waitStateService?: IWaitStateService;
-  private pendingWaitStateId?: string;
+  private readonly pendingWaitStateRef: IPendingWaitStateRef = { current: undefined };
   private eventRegistry?: IEventRegistry;
 
   private createNoOpDurabilityStore(): IStepDurabilityStore {
@@ -793,6 +795,31 @@ export class FlowRunner implements IFlowRunner {
         this.options.milestoneEmitter,
       );
     }
+
+    this.stepHandlerRegistry.register(
+      new GateStepHandler({
+        gateEvaluator: this.gateEvaluator!,
+        eventLogger: this.eventLogger,
+        waitStateService: this.waitStateService,
+        milestoneEmitter: this.options.milestoneEmitter,
+        pendingWaitStateRef: this.pendingWaitStateRef,
+      }),
+    );
+    this.stepHandlerRegistry.register(
+      new AgentStepHandler({
+        agentExecutor: this.agentExecutor,
+        dynamicStepExecutor: this.dynamicStepExecutor,
+        config: this.config,
+      }),
+    );
+  }
+
+  /**
+   * Expose the step-handler registry for external extension.
+   * Paid-edition handlers register additional step types here at bootstrap.
+   */
+  getStepHandlerRegistry(): FlowStepHandlerRegistry {
+    return this.stepHandlerRegistry;
   }
 
   private async emitMilestone(
@@ -2293,9 +2320,9 @@ export class FlowRunner implements IFlowRunner {
   }
 
   /**
-   * Execute step logic (gate or agent execution)
+   * Execute step logic by dispatching to a registered IFlowStepHandler.
    */
-  private executeStepLogic(
+  private async executeStepLogic(
     flowRunId: string,
     step: IFlowStep,
     flow: IFlow,
@@ -2303,149 +2330,37 @@ export class FlowRunner implements IFlowRunner {
     stepRequest: IFlowStepRequest,
     startedAt: Date,
   ): Promise<IAgentExecutionResult> {
-    // Gate steps route to GateEvaluator
-    if (step.type === FlowStepType.GATE && step.evaluate && this.gateEvaluator) {
-      return this.executeGateStep(flowRunId, step, flow, request, stepRequest, startedAt);
+    const stepType = step.type ?? FlowStepType.AGENT;
+    const handler = this.stepHandlerRegistry.get(stepType);
+    if (!handler) {
+      throw new UnknownFlowStepError(stepType, step.id);
     }
-
-    // Agent execution (dynamic or declared mode)
-    return this.executeAgentStep(step, request, stepRequest);
-  }
-
-  /**
-   * Execute a gate step
-   */
-  private async executeGateStep(
-    flowRunId: string,
-    step: IFlowStep,
-    flow: IFlow,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
-    stepRequest: IFlowStepRequest,
-    _startedAt: Date,
-  ): Promise<IAgentExecutionResult> {
-    if (!step.evaluate || !this.gateEvaluator) {
-      throw new Error("Gate evaluator not available");
-    }
-
-    const gateConfig = toGateConfig(step.evaluate);
-    const effectiveInclude = gateConfig.includeRequestCriteria || flow.settings?.includeRequestCriteria;
-    const effectiveGateConfig: IGateConfig = { ...gateConfig, includeRequestCriteria: effectiveInclude };
-
-    if (effectiveGateConfig.includeRequestCriteria && !stepRequest.requestAnalysis) {
-      await this.eventLogger.log(DomainEventType.FlowGateCriteriaNoAnalysis, {
-        flowRunId,
-        stepId: step.id,
+    const flowLogBase = this.getIFlowLogBase(flow, request);
+    const ctx: IStepExecutionContext = {
+      stepType,
+      step,
+      flow: { id: flow.id, settings: flow.settings },
+      request: {
+        userPrompt: request.userPrompt,
         traceId: request.traceId,
         requestId: request.requestId,
-      });
-    }
-
-    const gateResult: IGateResult = await this.gateEvaluator.evaluate(
-      effectiveGateConfig,
-      stepRequest.userPrompt,
-      stepRequest.userPrompt,
-      0,
-      stepRequest.requestAnalysis,
-    );
-
-    // When a wait-state service is configured and the gate fails, create a durable wait state
-    // so an operator can resolve the gate decision asynchronously.
-    if (this.waitStateService && gateResult.score < effectiveGateConfig.threshold && request.traceId) {
-      try {
-        const ws = await this.waitStateService.create({
-          kind: "plan_approval",
-          traceId: request.traceId,
-          artifactPath: `Workspace/WaitStates/${request.traceId}/${step.id}.json`,
-          resumeToken: crypto.randomUUID(),
-          requestedBy: step.identity,
-          deadlineAt: undefined,
-        });
-        this.pendingWaitStateId = ws.waitStateId;
-        await this.eventLogger.log(DomainEventType.WaitStateCreated, {
-          flowRunId,
-          stepId: step.id,
-          waitStateId: ws.waitStateId,
-          resumeToken: ws.resumeToken,
-          kind: ws.kind,
-          traceId: request.traceId!,
-          ...this.getIFlowLogBase(flow, request),
-        });
-
-        await this.emitMilestone(
-          MILESTONE_APPROVAL_GATE_ENTERED,
-          request.traceId,
-          `Approval gate entered for step ${step.id}`,
-          undefined,
-          true,
-          "Operator approval needed to continue",
-        );
-      } catch {
-        // Non-critical: wait state creation failure should not break the flow
-        this.pendingWaitStateId = undefined;
-      }
-    }
-
-    return {
-      thought: "",
-      content: gateResult.evaluation.feedback,
-      raw: JSON.stringify(gateResult.evaluation),
+        requestAnalysis: request.requestAnalysis,
+      },
+      stepRequest: {
+        userPrompt: stepRequest.userPrompt,
+        context: stepRequest.context ?? {},
+        traceId: stepRequest.traceId,
+        requestId: stepRequest.requestId,
+        requestAnalysis: stepRequest.requestAnalysis,
+        skills: stepRequest.skills,
+        sharedNamespace: stepRequest.sharedNamespace,
+        parallelGroupResults: stepRequest.parallelGroupResults,
+      },
+      flowRunId,
+      startedAt,
+      flowLogBase,
     };
-  }
-
-  /**
-   * Execute an agent step (dynamic or declared mode)
-   */
-  private executeAgentStep(
-    step: IFlowStep,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
-    stepRequest: IFlowStepRequest,
-  ): Promise<IAgentExecutionResult> {
-    if (step.execution_mode === FlowStepExecutionMode.DYNAMIC && this.dynamicStepExecutor) {
-      return this.executeDynamicStep(step, request, stepRequest);
-    }
-    return this.executeDeclaredStep(step, stepRequest);
-  }
-
-  /**
-   * Execute a dynamic step using ReAct reasoning engine
-   */
-  private async executeDynamicStep(
-    step: IFlowStep,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
-    stepRequest: IFlowStepRequest,
-  ): Promise<IAgentExecutionResult> {
-    const blueprintsPath = this.config
-      ? join(this.config.system.root, this.config.paths.blueprints, this.config.paths.identities)
-      : "";
-    const loader = new BlueprintLoader({ blueprintsPath });
-    const loaded = await loader.load(step.identity);
-
-    if (!loaded) {
-      throw new Error(`Blueprint not found for dynamic step: ${step.identity}`);
-    }
-
-    const dynamicResult = await this.dynamicStepExecutor!.execute(
-      step,
-      loaded.frontmatter as IBlueprintFrontmatter,
-      stepRequest.userPrompt,
-      { traceId: request.traceId || crypto.randomUUID() },
-    );
-
-    return {
-      thought: `Dynamic execution completed in ${dynamicResult.iterations} iterations`,
-      content: dynamicResult.output,
-      raw: JSON.stringify(dynamicResult.toolCallsLog),
-    };
-  }
-
-  /**
-   * Execute a declared step using agent executor
-   */
-  private async executeDeclaredStep(
-    step: IFlowStep,
-    stepRequest: IFlowStepRequest,
-  ): Promise<IAgentExecutionResult> {
-    return await this.agentExecutor.run(step.identity, stepRequest);
+    return await handler.execute(ctx);
   }
 
   /**
@@ -2479,8 +2394,8 @@ export class FlowRunner implements IFlowRunner {
       currentStepLabel: step.name || step.id,
     });
 
-    const waitStateId = this.pendingWaitStateId;
-    this.pendingWaitStateId = undefined;
+    const waitStateId = this.pendingWaitStateRef.current;
+    this.pendingWaitStateRef.current = undefined;
 
     return {
       stepId: step.id,

@@ -41,6 +41,20 @@ export interface IStepExecutionContext {
     readonly traceId?: string;
     readonly requestId?: string;
     readonly requestAnalysis?: IRequestAnalysis;
+    readonly skills?: readonly string[];
+    readonly sharedNamespace?: Readonly<Record<string, string>>;
+    readonly parallelGroupResults?: Readonly<
+      Record<
+        string,
+        {
+          readonly groupId: string;
+          readonly mergedOutput: string;
+          readonly memberCount: number;
+          readonly successCount: number;
+          readonly completedAt: string;
+        }
+      >
+    >;
   };
 
   /** Unique identifier for this flow run */

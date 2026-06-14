@@ -9,7 +9,7 @@
 
 import type { IFlowStepHandler, IStepExecutionContext } from "./step_handler.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
-import type { IAgentExecutor } from "../flow_runner.ts";
+import type { IAgentExecutor, IFlowStepRequest } from "../flow_runner.ts";
 import type { DynamicStepExecutor } from "../dynamic_step_executor.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
@@ -78,6 +78,6 @@ export class AgentStepHandler implements IFlowStepHandler {
     step: IStepExecutionContext["step"],
     stepRequest: IStepExecutionContext["stepRequest"],
   ): Promise<IAgentExecutionResult> {
-    return await this.#agentExecutor.run(step.identity, stepRequest);
+    return await this.#agentExecutor.run(step.identity, stepRequest as IFlowStepRequest);
   }
 }

@@ -37,7 +37,7 @@ export interface IGateStepHandlerDeps {
         resumeToken?: string;
         kind?: string;
       },
-    ): Promise<void>;
+    ): void;
   };
   waitStateService?: IWaitStateService;
   milestoneEmitter?: IMilestoneEmitter;
