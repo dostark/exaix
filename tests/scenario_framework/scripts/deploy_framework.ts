@@ -79,6 +79,7 @@ export async function deployFrameworkToDirectory(
   options: IFrameworkDeploymentOptions,
 ): Promise<IFrameworkDeploymentResult> {
   const plan = await planFrameworkDeployment(options);
+  const repoRoot = resolve(plan.sourceFrameworkRoot, "../..");
   await ensureDir(plan.destinationFrameworkRoot);
 
   for (const assetPath of plan.copiedAssets) {
@@ -93,9 +94,40 @@ export async function deployFrameworkToDirectory(
   const destinationDenoConfig = join(plan.destinationFrameworkRoot, "deno.json");
   try {
     await Deno.copyFile(rootDenoConfig, destinationDenoConfig);
+
+    // Rewrite relative import-map entries to absolute paths so the deployed
+    // framework can resolve @exaix/* imports by pointing back to the real repo.
+    const configText = await Deno.readTextFile(destinationDenoConfig);
+    const config = JSON.parse(configText);
+    if (config.imports) {
+      for (const [key, value] of Object.entries(config.imports)) {
+        if (typeof value === "string" && value.startsWith("./")) {
+          config.imports[key] = resolve(repoRoot, value);
+        }
+      }
+    }
+    await Deno.writeTextFile(destinationDenoConfig, JSON.stringify(config, null, 2) + "\n");
+
     plan.copiedAssets.push("deno.json");
   } catch (error) {
     console.warn(`Warning: Could not copy root deno.json to ${destinationDenoConfig}:`, (error as Error).message);
+  }
+
+  // Copy external dependency files referenced via relative imports from the framework.
+  const externalDeps: Array<{ src: string; relativeDest: string }> = [
+    // assertions.ts imports apps/common/registry_bootstrap.ts via "../../../apps/common/registry_bootstrap.ts"
+    { src: "apps/common/registry_bootstrap.ts", relativeDest: "apps/common/registry_bootstrap.ts" },
+  ];
+  for (const dep of externalDeps) {
+    const sourcePath = join(repoRoot, dep.src);
+    const destPath = join(plan.destinationFrameworkRoot, "..", dep.relativeDest);
+    try {
+      await ensureDir(dirname(destPath));
+      await Deno.copyFile(sourcePath, destPath);
+      plan.copiedAssets.push(dep.relativeDest);
+    } catch (error) {
+      console.warn(`Warning: Could not copy external dependency ${dep.src}:`, (error as Error).message);
+    }
   }
 
   await Deno.writeTextFile(
