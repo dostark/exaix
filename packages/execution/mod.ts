@@ -9,6 +9,7 @@
 
 export * from "./src/agent_runner.ts";
 export * from "./src/agent_executor.ts";
+export * from "./src/guardrail_runner.ts";
 export * from "./src/strategies/execution_strategy.ts";
 export * from "./src/strategies/strategy_registry.ts";
 export * from "./src/strategies/legacy_strategy.ts";

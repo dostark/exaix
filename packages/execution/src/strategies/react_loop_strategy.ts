@@ -39,6 +39,7 @@ import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IContextBudgetManager, IContextBudgetManagerInput } from "../context/context_budget_manager.ts";
 import type { IContextSegment } from "../context/context_segment.ts";
 import type { IEventLogger } from "@exaix/core/logger";
+import type { IGuardrailRunner } from "../guardrail_runner.ts";
 
 interface IReActLoopExecutor {
   logAgentOutput: AgentExecutor["logAgentOutput"];
@@ -53,6 +54,11 @@ interface IReActLoopExecutor {
   currentPromptBudget?: IPromptBudget;
   /** Logger for budget pressure events (Phase 83); optional for backward-compat. */
   budgetLogger?: IEventLogger;
+  /**
+   * Optional guardrail screening seam (Phase 115 Step 1). Absent in Solo (no-op); paid
+   * editions (P107) inject a concurrent runner via the edition composer.
+   */
+  guardrailRunner?: IGuardrailRunner;
 }
 
 export interface IReActAction {
@@ -110,6 +116,15 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     let totalCostUsd = 0;
 
     for (let i = 0; i < this.MAX_ITERATIONS; i++) {
+      // 0. Guardrail seam (Phase 115 Step 1): halt at the iteration boundary if a prior
+      //    concurrent screen() accumulated a blocking violation. No-op in Solo (no runner).
+      if (this.executor.guardrailRunner?.hasBlockingViolation(context.trace_id)) {
+        throw new AgentExecutionError(
+          "Execution halted by a blocking guardrail violation",
+          AgentExecutionErrorType.EXECUTION_ERROR,
+        );
+      }
+
       // 1. Apply segment-level budget compaction when manager is configured (Phase 83).
       //    No-op when contextBudgetManager is absent — backward-compatible.
       const budgetedHistory = await this.applyContextBudget(
@@ -180,6 +195,16 @@ export class ReActLoopStrategy implements IExecutionStrategy {
           AgentExecutionErrorType.TOOL_ERROR,
         );
       }
+
+      // Guardrail seam (Phase 115 Step 1): fire-and-forget screening of the proposed
+      // thought + actions at the iteration boundary. No-op in Solo (no runner injected);
+      // paid editions screen concurrently and surface a verdict via hasBlockingViolation.
+      void this.executor.guardrailRunner?.screen({
+        traceId: context.trace_id,
+        iteration: i,
+        thought,
+        actions,
+      });
 
       // 5. Execute actions
       for (const action of actions) {
