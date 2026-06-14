@@ -85,7 +85,6 @@ jobs:
         run: deno run -A scripts/ci.ts eval --threshold 0.5
 
   eval-llm:
-    if: ${{ github.event_name != 'workflow_dispatch' && secrets.ANTHROPIC_API_KEY != '' }}
     runs-on: ubuntu-latest
     environment: eval-llm
     steps:
@@ -107,6 +106,7 @@ jobs:
           deno-version: "2.x"
 
       - name: "Run Full Evaluation with Anthropic LLM"
+        if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: deno run -A scripts/ci.ts eval --anthropic --threshold 0.5
