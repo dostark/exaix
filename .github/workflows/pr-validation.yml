@@ -106,10 +106,14 @@ jobs:
           deno-version: "2.x"
 
       - name: "Run Full Evaluation with Anthropic LLM"
-        if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: deno run -A scripts/ci.ts eval --anthropic --threshold 0.5
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "ANTHROPIC_API_KEY not available - skipping"
+            exit 0
+          fi
+          deno run -A scripts/ci.ts eval --anthropic --threshold 0.5
 
   scenarios:
     runs-on: ubuntu-latest
