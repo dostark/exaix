@@ -85,7 +85,7 @@ jobs:
         run: deno run -A scripts/ci.ts eval --threshold 0.5
 
   eval-llm:
-    if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+    if: ${{ github.event_name != 'workflow_dispatch' && secrets.ANTHROPIC_API_KEY != '' }}
     runs-on: ubuntu-latest
     environment: eval-llm
     steps:
