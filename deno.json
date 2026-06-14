@@ -72,8 +72,8 @@
     "coverage:with-llama": "deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts --with-llama",
     "bench": "deno bench --allow-all tests/benchmarks/",
     "lint": "deno lint --rules-include=explicit-module-boundary-types --rules-exclude=no-import-prefix tests/ packages/ packages-team/ apps/",
-"fmt": "deno fmt tests/ docs/ packages/ packages-team/ apps/",
-"fmt:check": "deno fmt --check tests/ docs/ packages/ packages-team/ apps/",
+    "fmt": "deno fmt tests/ docs/ packages/ packages-team/ apps/",
+    "fmt:check": "deno fmt --check tests/ docs/ packages/ packages-team/ apps/",
     "cache": "deno cache apps/daemon/main.ts apps/exactl/main.ts apps/mcp-server/main.ts apps/tui/main.ts",
     "hooks:install": "deno run --allow-read --allow-write scripts/setup_hooks.ts",
     "check": "deno check packages/ packages-team/ apps/ tests/",
@@ -91,9 +91,12 @@
     "compile:unsafe": "deno compile --allow-all --output exaix apps/daemon/main.ts",
     "docs-agent-validate": "deno fmt --check *.md && deno run -A scripts/validate_doc_links.ts && deno run -A scripts/validate_cross_reference.ts && grep -q 'copilot_knowledge_base: true' *.md && deno run -A scripts/validate_agents_docs.ts",
     "docs-bench": "deno test -A --filter \"[hallucination-bench]\" tests/docs/",
-"workspace:check": "deno check --unstable ./packages/** ./packages-team/**",
-"workspace:test": "deno test --allow-all ./packages/** ./packages-team/**",
-    "docs-sync-schemas": "deno run -A scripts/sync_tool_schemas.ts && deno fmt TOOLS.md"
+    "workspace:check": "deno check --unstable ./packages/** ./packages-team/**",
+    "workspace:test": "deno test --allow-all ./packages/** ./packages-team/**",
+    "docs-sync-schemas": "deno run -A scripts/sync_tool_schemas.ts && deno fmt TOOLS.md",
+    "build:solo": "deno run -A scripts/ci.ts build --edition solo",
+    "build:team": "deno run -A scripts/ci.ts build --edition team",
+    "build:enterprise": "deno run -A scripts/ci.ts build --edition enterprise"
   },
   "imports": {
     "@cliffy/table": "jsr:@cliffy/table@^1.2.1",
