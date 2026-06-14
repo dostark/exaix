@@ -18,7 +18,8 @@ import { identifyKeyFiles } from "./key_file_identifier.ts";
 import { computeAdaptiveSampleSize, detectPatterns, selectSampleFiles } from "./pattern_detector.ts";
 import { ArchitectureInferrer, type IArchitectureValidator } from "./architecture_inferrer.ts";
 import { AstAnalyzer } from "./ast_analyzer.ts";
-import { type IDocCommandRunner, SymbolExtractor } from "./symbol_extractor.ts";
+import type { IDocCommandRunner } from "./symbol_extractor.ts";
+import { createDefaultSymbolExtractorRegistry, type ISymbolExtractorRegistry } from "./symbol_extractor_registry.ts";
 import { GitHeadResolver, type IGitHeadResolver } from "./git_head_resolver.ts";
 import { GitHistoryAnalyzer } from "./git_history_analyzer.ts";
 import { LicenseDetector } from "./license_detector.ts";
@@ -52,6 +53,8 @@ export interface IPortalKnowledgeServiceOptions {
   validator?: IArchitectureValidator;
   evLogger?: IEventLogger;
   runner?: IDocCommandRunner;
+  /** Per-language symbol-extractor registry (Phase 115 Step 4); defaults to TS/JS only. */
+  symbolExtractorRegistry?: ISymbolExtractorRegistry;
   gitHeadResolver?: IGitHeadResolver;
   invalidationStrategy?: IKnowledgeInvalidationStrategy;
   embeddingProvider?: IEmbeddingProvider;
@@ -103,6 +106,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
   private readonly _validator?: IArchitectureValidator;
   private readonly _evLogger?: IEventLogger;
   private readonly _symbolRunner: IDocCommandRunner | undefined;
+  private readonly _symbolExtractorRegistry: ISymbolExtractorRegistry;
   private readonly _gitHeadResolver: IGitHeadResolver;
   private readonly _invalidationStrategy: IKnowledgeInvalidationStrategy;
   private readonly _embeddingProvider?: IEmbeddingProvider;
@@ -136,6 +140,9 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     this._validator = optionsWithDefaults.validator;
     this._evLogger = optionsWithDefaults.evLogger;
     this._symbolRunner = optionsWithDefaults.runner;
+    // Default-wire the TS/JS extractor; a paid edition injects a registry with more languages.
+    this._symbolExtractorRegistry = optionsWithDefaults.symbolExtractorRegistry ??
+      createDefaultSymbolExtractorRegistry(this._symbolRunner);
     this._gitHeadResolver = optionsWithDefaults.gitHeadResolver ?? new GitHeadResolver();
     this._invalidationStrategy = optionsWithDefaults.invalidationStrategy ?? new KnowledgeInvalidationStrategy(
       this._gitHeadResolver,
@@ -261,7 +268,9 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     let symbolMap: IPortalKnowledge["symbolMap"] = [];
     let symbolSourceFilesScanned: number | undefined;
     if (resolvedMode !== PortalAnalysisMode.QUICK) {
-      const extractor = this._symbolRunner ? new SymbolExtractor(this._symbolRunner) : new SymbolExtractor();
+      // Select the extractor by primary language (Phase 115 Step 4); TS/JS → deno-doc extractor,
+      // other languages → no-op ([]) unless a paid edition registered one.
+      const extractor = this._symbolExtractorRegistry.getForLanguage(primaryLanguage);
       const allTsFiles = fileList.filter((f) => /\.(ts|tsx|js|jsx|mjs|cjs)$/.test(f));
       symbolSourceFilesScanned = allTsFiles.length;
       symbolMap = await extractor.extractSymbols(portalPath, allTsFiles, {

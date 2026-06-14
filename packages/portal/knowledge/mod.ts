@@ -20,9 +20,16 @@ export {
   type IDenoDocReturnType,
   type IDenoDocVariableDef,
   type IDocCommandRunner,
+  type ISymbolExtractor,
   type ISymbolExtractorOptions,
   SymbolExtractor,
 } from "./symbol_extractor.ts";
+export {
+  createDefaultSymbolExtractorRegistry,
+  EMPTY_SYMBOL_EXTRACTOR,
+  type ISymbolExtractorRegistry,
+  SymbolExtractorRegistry,
+} from "./symbol_extractor_registry.ts";
 export { loadKnowledge, saveKnowledge } from "./knowledge_persistence.ts";
 export { GitHeadResolver } from "./git_head_resolver.ts";
 export type { IGitHeadResolver } from "./git_head_resolver.ts";
