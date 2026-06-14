@@ -42,7 +42,7 @@ jobs:
           git log -1 --pretty=%B > .git/COMMIT_EDITMSG
           deno task check-commit-msg .git/COMMIT_EDITMSG
 
-      # --- GATE 1: Format Check ---
+      # --- GATE 1: Format Check (includes packages-team/ via deno task config) ---
       - name: "Gate 1: Formatting"
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task fmt:check
