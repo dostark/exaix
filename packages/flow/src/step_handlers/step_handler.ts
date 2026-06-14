@@ -105,4 +105,7 @@ export interface IFlowStepHandlerRegistry {
 
   /** Check whether a handler is registered for the given step type. */
   has(stepType: string): boolean;
+
+  /** Return all registered step-type keys. */
+  keys(): string[];
 }

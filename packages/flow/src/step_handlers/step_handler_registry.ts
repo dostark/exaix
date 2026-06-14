@@ -34,4 +34,8 @@ export class FlowStepHandlerRegistry implements IFlowStepHandlerRegistry {
   has(stepType: string): boolean {
     return this.#handlers.has(stepType);
   }
+
+  keys(): string[] {
+    return Array.from(this.#handlers.keys());
+  }
 }

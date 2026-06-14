@@ -8,7 +8,7 @@
 
 /**
  * Error raised when no IFlowStepHandler is registered for a step type.
- * Includes the unknown stepType and optional stepId for diagnostics.
+ * Includes the unknown stepType, optional stepId, and registered known types for diagnostics.
  */
 export class UnknownFlowStepError extends Error {
   override readonly name = "UnknownFlowStepError";
@@ -18,8 +18,11 @@ export class UnknownFlowStepError extends Error {
     public readonly stepType: string,
     /** Optional step ID for diagnostics. */
     public readonly stepId: string = "",
+    /** Registered known types for debugging. */
+    public readonly knownTypes: readonly string[] = [],
   ) {
     const idPart = stepId ? ` (stepId: ${stepId})` : "";
-    super(`Unknown flow step type: "${stepType}"${idPart}`);
+    const knownPart = knownTypes.length > 0 ? `. Known types: [${knownTypes.join(", ")}]` : "";
+    super(`Unknown flow step type: "${stepType}"${idPart}${knownPart}`);
   }
 }

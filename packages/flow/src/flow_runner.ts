@@ -2335,7 +2335,7 @@ export class FlowRunner implements IFlowRunner {
     const stepType = step.type ?? FlowStepType.AGENT;
     const handler = this.stepHandlerRegistry.get(stepType);
     if (!handler) {
-      throw new UnknownFlowStepError(stepType, step.id);
+      throw new UnknownFlowStepError(stepType, step.id, this.stepHandlerRegistry.keys());
     }
     const flowLogBase = this.getIFlowLogBase(flow, request);
     const ctx: IStepExecutionContext = {

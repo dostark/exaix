@@ -73,6 +73,19 @@ Deno.test("[flow] FlowStepHandlerRegistry — get with string key works", () => 
   assertEquals(registry.get("custom-type"), handler);
 });
 
+Deno.test("[flow] FlowStepHandlerRegistry — keys() returns all registered types", () => {
+  const registry = new FlowStepHandlerRegistry();
+  registry.register(new StubHandler(FlowStepType.AGENT));
+  registry.register(new StubHandler(FlowStepType.GATE));
+  registry.registerWithKey(FlowStepType.BRANCH, registry.get(FlowStepType.AGENT)!);
+
+  const keys = registry.keys();
+  assertEquals(keys.length, 3);
+  assert(keys.includes(FlowStepType.AGENT));
+  assert(keys.includes(FlowStepType.GATE));
+  assert(keys.includes(FlowStepType.BRANCH));
+});
+
 Deno.test("[flow] FlowStepHandlerRegistry — registerWithKey registers under alias key", () => {
   const registry = new FlowStepHandlerRegistry();
   const handler = new StubHandler(FlowStepType.AGENT);
@@ -131,6 +144,16 @@ Deno.test("[flow] UnknownFlowStepError — message includes step type and id", (
   assertEquals(error.stepId, "step-42");
   assert(error.message.includes("voting_group"));
   assert(error.message.includes("step-42"));
+});
+
+Deno.test("[flow] UnknownFlowStepError — message includes known types when provided", () => {
+  const error = new UnknownFlowStepError("unknown", "step-1", ["agent", "gate"]);
+
+  assert(error.message.includes("unknown"));
+  assert(error.message.includes("step-1"));
+  assert(error.message.includes("agent"));
+  assert(error.message.includes("gate"));
+  assertEquals(error.knownTypes, ["agent", "gate"]);
 });
 
 Deno.test("[flow] UnknownFlowStepError — extends FlowExecutionError", () => {
