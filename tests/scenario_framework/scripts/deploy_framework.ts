@@ -120,7 +120,7 @@ export async function deployFrameworkToDirectory(
   ];
   for (const dep of externalDeps) {
     const sourcePath = join(repoRoot, dep.src);
-    const destPath = join(plan.destinationFrameworkRoot, "..", dep.relativeDest);
+    const destPath = join(plan.destinationFrameworkRoot, "../..", dep.relativeDest);
     try {
       await ensureDir(dirname(destPath));
       await Deno.copyFile(sourcePath, destPath);
