@@ -73,6 +73,16 @@ Deno.test("[flow] FlowStepHandlerRegistry — get with string key works", () => 
   assertEquals(registry.get("custom-type"), handler);
 });
 
+Deno.test("[flow] FlowStepHandlerRegistry — registerWithKey registers under alias key", () => {
+  const registry = new FlowStepHandlerRegistry();
+  const handler = new StubHandler(FlowStepType.AGENT);
+  registry.registerWithKey(FlowStepType.BRANCH, handler);
+
+  assertEquals(registry.has(FlowStepType.BRANCH), true);
+  assertEquals(registry.has(FlowStepType.AGENT), false);
+  assertEquals(registry.get(FlowStepType.BRANCH), handler);
+});
+
 Deno.test("[flow] FlowStepHandlerRegistry — register overwrites existing handler for same key", () => {
   const registry = new FlowStepHandlerRegistry();
   const first = new StubHandler("dup");

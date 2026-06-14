@@ -805,13 +805,15 @@ export class FlowRunner implements IFlowRunner {
         pendingWaitStateRef: this.pendingWaitStateRef,
       }),
     );
-    this.stepHandlerRegistry.register(
-      new AgentStepHandler({
-        agentExecutor: this.agentExecutor,
-        dynamicStepExecutor: this.dynamicStepExecutor,
-        config: this.config,
-      }),
-    );
+    const agentHandler = new AgentStepHandler({
+      agentExecutor: this.agentExecutor,
+      dynamicStepExecutor: this.dynamicStepExecutor,
+      config: this.config,
+    });
+    this.stepHandlerRegistry.register(agentHandler);
+    // Preserve old fall-through: BRANCH, CONSENSUS, and unknown types all routed to agent
+    this.stepHandlerRegistry.registerWithKey(FlowStepType.BRANCH, agentHandler);
+    this.stepHandlerRegistry.registerWithKey(FlowStepType.CONSENSUS, agentHandler);
   }
 
   /**

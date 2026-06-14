@@ -94,6 +94,12 @@ export interface IFlowStepHandlerRegistry {
   /** Register a handler for its declared stepType. Overwrites any existing handler for that key. */
   register(handler: IFlowStepHandler): void;
 
+  /**
+   * Register a handler under a specific key, overriding its stepType.
+   * Useful for aliasing (e.g. AgentStepHandler for BRANCH and CONSENSUS).
+   */
+  registerWithKey(key: string, handler: IFlowStepHandler): void;
+
   /** Retrieve a handler by step type string. Returns undefined if not registered. */
   get(stepType: string): IFlowStepHandler | undefined;
 

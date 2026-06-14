@@ -19,6 +19,14 @@ export class FlowStepHandlerRegistry implements IFlowStepHandlerRegistry {
     this.#handlers.set(handler.stepType, handler);
   }
 
+  /**
+   * Register a handler under a specific key, overriding its stepType.
+   * Useful for aliasing (e.g. AgentStepHandler for BRANCH and CONSENSUS).
+   */
+  registerWithKey(key: string, handler: IFlowStepHandler): void {
+    this.#handlers.set(key, handler);
+  }
+
   get(stepType: string): IFlowStepHandler | undefined {
     return this.#handlers.get(stepType);
   }
