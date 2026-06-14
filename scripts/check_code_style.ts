@@ -483,6 +483,24 @@ const rules: Rule[] = [
     severity: "error" as const,
     pathFilter: (path: string) => !path.includes("/tests/") && !path.endsWith(".test.ts") && !path.endsWith("_test.ts"),
   },
+  {
+    name: "edition-conditional-outside-composer",
+    // Forbid edition conditionals (edition ===, edition !==, EXAIX_EDITION)
+    // outside the edition composer. Edition-selection logic must be contained
+    // in the composer — core packages and apps must not branch on edition.
+    regex: /EXAIX_EDITION|\bedition\s*(?:===?|!==?)/,
+    message:
+      "Edition conditionals (edition === / EXAIX_EDITION) are only allowed inside the edition composer. Move edition-selection logic to the composer, or check the composer for inadvertent edition branching in core code.",
+    severity: "error" as const,
+    pathFilter: (path: string) =>
+      !path.includes("/tests/") &&
+      !path.endsWith(".test.ts") &&
+      !path.endsWith("_test.ts") &&
+      !path.endsWith("check_code_style.ts") &&
+      !path.startsWith("exaix-enterprise/") &&
+      !path.startsWith("packages-team/") &&
+      !path.includes("/src/composer/"),
+  },
 ];
 
 let errorCount = 0;
