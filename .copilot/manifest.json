@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-12T18:09:42.295Z",
+  "generated_at": "2026-06-14T17:52:33.543Z",
   "docs": [
     {
       "path": ".copilot/prompts/infra.prompt.md",
@@ -13,6 +13,13 @@
       "short_summary": "",
       "chunks": [
         ".copilot/chunks/package-extraction.prompt.md.chunk0.txt"
+      ]
+    },
+    {
+      "path": ".copilot/prompts/edition-development.prompt.md",
+      "short_summary": "",
+      "chunks": [
+        ".copilot/chunks/edition-development.prompt.md.chunk0.txt"
       ]
     },
     {
@@ -470,6 +477,38 @@
         "quality"
       ],
       "qwen_skill": "coverage",
+      "chunks": [
+        ".copilot/chunks/SKILL.md.chunk0.txt",
+        ".copilot/chunks/SKILL.md.chunk1.txt",
+        ".copilot/chunks/SKILL.md.chunk2.txt",
+        ".copilot/chunks/SKILL.md.chunk3.txt",
+        ".copilot/chunks/SKILL.md.chunk4.txt",
+        ".copilot/chunks/SKILL.md.chunk5.txt",
+        ".copilot/chunks/SKILL.md.chunk6.txt",
+        ".copilot/chunks/SKILL.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/skills/edition-development/SKILL.md",
+      "agent": "copilot",
+      "scope": "dev",
+      "title": "Edition Development Skill (#edition-development)",
+      "short_summary": "Develop edition-specific features (Solo/Team/Enterprise) following Exaix's composition architecture, Option-C layout, and seam-based extension model.",
+      "version": "1.0",
+      "topics": [
+        "edition",
+        "solo",
+        "team",
+        "enterprise",
+        "composer",
+        "seam",
+        "option-c",
+        "build",
+        "ci",
+        "leak-guard",
+        "architecture"
+      ],
+      "qwen_skill": "edition-development",
       "chunks": [
         ".copilot/chunks/SKILL.md.chunk0.txt",
         ".copilot/chunks/SKILL.md.chunk1.txt",

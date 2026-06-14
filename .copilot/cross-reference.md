@@ -27,6 +27,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 | Review-Research-Improvement Pattern | [guidelines/review-research-improvement.md](guidelines/review-research-improvement.md) | |
 | Documentation Skill (#doc) | [skills/doc/SKILL.md](skills/doc/SKILL.md) | |
 | Coverage Skill (#coverage) | [skills/coverage/SKILL.md](skills/coverage/SKILL.md) | |
+| Edition Development Skill (#edition-development) | [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md) | |
 | Package Extraction Skill (#package-extraction) | [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md) | |
 | Submodule Workflow Skill (#submodule-workflow) | [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md) | |
 | Fix Bug Skill (#fix-bug) | [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md) | |
@@ -62,7 +63,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 
 - **`agent-tools`** → [../TOOLS.md](../TOOLS.md)
 - **`agents`** → [guidelines/agent-thought-standardization.md](guidelines/agent-thought-standardization.md), [guidelines/self-improvement.md](guidelines/self-improvement.md), [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md)
-- **`architecture`** → [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md), [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/explore/SKILL.md](skills/explore/SKILL.md), [skills/review/SKILL.md](skills/review/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
+- **`architecture`** → [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md), [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md), [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/explore/SKILL.md](skills/explore/SKILL.md), [skills/review/SKILL.md](skills/review/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`architecture-review`** → [guidelines/review-research-improvement.md](guidelines/review-research-improvement.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md)
 - **`audit`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`auth`** → [skills/security/SKILL.md](skills/security/SKILL.md)
@@ -70,7 +71,8 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`best-practices`** → [guidelines/README.md](guidelines/README.md), [skills/commit/SKILL.md](skills/commit/SKILL.md), [skills/review/SKILL.md](skills/review/SKILL.md)
 - **`blueprints`** → [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md)
 - **`bug-fix`** → [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md)
-- **`ci`** → [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md)
+- **`build`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
+- **`ci`** → [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md), [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md)
 - **`clarity`** → [skills/doc/SKILL.md](skills/doc/SKILL.md)
 - **`cleanup`** → [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)
 - **`code-quality`** → [skills/refactor/SKILL.md](skills/refactor/SKILL.md), [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md)
@@ -78,6 +80,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`coding-standards`** → [../LLM_GUIDE.md](../LLM_GUIDE.md)
 - **`commit`** → [skills/commit/SKILL.md](skills/commit/SKILL.md)
 - **`commits`** → [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md)
+- **`composer`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`concepts`** → [../GLOSSARY.md](../GLOSSARY.md)
 - **`configurability`** → [skills/plan/SKILL.md](skills/plan/SKILL.md)
 - **`configuration`** → [skills/infra/SKILL.md](skills/infra/SKILL.md)
@@ -94,6 +97,8 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`discovery`** → [skills/explore/SKILL.md](skills/explore/SKILL.md)
 - **`docs`** → [guidelines/documentation.md](guidelines/documentation.md), [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md)
 - **`documentation`** → [skills/doc/SKILL.md](skills/doc/SKILL.md), [skills/commit/SKILL.md](skills/commit/SKILL.md)
+- **`edition`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
+- **`enterprise`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`enums`** → [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md)
 - **`exploration`** → [skills/explore/SKILL.md](skills/explore/SKILL.md)
 - **`gap-analysis`** → [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
@@ -110,6 +115,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`integration`** → [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`jscpd`** → [guidelines/jscpd-guide.md](guidelines/jscpd-guide.md)
 - **`json`** → [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md)
+- **`leak-guard`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`linting`** → [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)
 - **`long-context`** → [providers/google.md](providers/google.md), [providers/google-long-context.md](providers/google-long-context.md)
 - **`magic-values`** → [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md)
@@ -119,6 +125,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`migration`** → [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md)
 - **`navigation`** → [skills/explore/SKILL.md](skills/explore/SKILL.md)
 - **`onboarding`** → [../GLOSSARY.md](../GLOSSARY.md)
+- **`option-c`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`owasp`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`packages`** → [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md)
 - **`parallel-tool-calls`** → [providers/google.md](providers/google.md)
@@ -149,11 +156,13 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`sandbox`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`schema`** → [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md)
 - **`sdd`** → [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md), [guidelines/process-README.md](guidelines/process-README.md)
+- **`seam`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`secrets`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`security`** → [guidelines/README.md](guidelines/README.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/security/SKILL.md](skills/security/SKILL.md), [skills/review/SKILL.md](skills/review/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`self-improvement`** → [guidelines/self-improvement.md](guidelines/self-improvement.md), [guidelines/process-README.md](guidelines/process-README.md)
 - **`setup`** → [skills/infra/SKILL.md](skills/infra/SKILL.md)
 - **`skills`** → [prompts/README.md](prompts/README.md)
+- **`solo`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`source`** → [guidelines/exaix-development.md](guidelines/exaix-development.md)
 - **`standardization`** → [guidelines/agent-thought-standardization.md](guidelines/agent-thought-standardization.md)
 - **`steps`** → [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md)
@@ -161,6 +170,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`style`** → [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)
 - **`submodule`** → [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md)
 - **`tdd`** → [guidelines/testing.md](guidelines/testing.md), [guidelines/exaix-development.md](guidelines/exaix-development.md), [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md), [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md), [skills/security/SKILL.md](skills/security/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md), [providers/claude.md](providers/claude.md)
+- **`team`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`terminology`** → [../GLOSSARY.md](../GLOSSARY.md)
 - **`testing`** → [guidelines/README.md](guidelines/README.md), [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md), [skills/review/SKILL.md](skills/review/SKILL.md)
 - **`tests`** → [guidelines/testing.md](guidelines/testing.md)
