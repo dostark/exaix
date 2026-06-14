@@ -37,6 +37,24 @@ export interface ISymbolExtractorOptions {
   importMap?: Record<string, string[]>;
 }
 
+/**
+ * Edition-separation seam (Phase 115 Step 4): a pluggable, per-language symbol-index
+ * extractor. Solo ships the deno-doc TS/JS {@link SymbolExtractor}; paid editions (P46)
+ * register additional language extractors (e.g. tree-sitter) through the edition composer
+ * via SymbolExtractorRegistry.
+ */
+export interface ISymbolExtractor {
+  /**
+   * Extract a symbol index for the given files. Returns [] when the extractor does not
+   * support `options.primaryLanguage`.
+   */
+  extractSymbols(
+    portalPath: string,
+    filePaths: string[],
+    options: ISymbolExtractorOptions,
+  ): Promise<ISymbolEntry[]>;
+}
+
 /** Minimal interface for running `deno doc --json`; injectable for testing. */
 export interface IDocCommandRunner {
   /**
@@ -242,7 +260,7 @@ function parseDenoDocNodes(raw: string): IDenoDocNode[] {
 }
 
 /** TypeScript/Deno symbol index extractor via `deno doc --json`. */
-export class SymbolExtractor {
+export class SymbolExtractor implements ISymbolExtractor {
   private readonly _runner: IDocCommandRunner;
 
   constructor(runner: IDocCommandRunner = DEFAULT_RUNNER) {

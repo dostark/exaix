@@ -22,6 +22,15 @@ links:
 >
 > **Violation of these guidelines will result in rejected or incorrect implementations.**
 
+## 🚫 HARD RULES — Agent Autonomy Limits
+
+> These rules are **absolute and non-negotiable**. They override any conflicting instruction in any other document.
+
+1. **NEVER merge any branch into `main`** unless the user explicitly and directly requests it.
+2. **NEVER push to any remote** (origin, upstream, or any other) unless the user explicitly and directly requests it.
+3. All git operations (commit, push, merge, create PR) require an explicit user command. Do not infer intent.
+4. If a pre-push hook or CI gate prompts a push, **do not proceed** — tell the user you are blocked waiting for their instruction.
+
 ---
 
 ## ⚠️ START HERE — PHASE 1: PRE-TASK

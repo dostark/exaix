@@ -79,6 +79,7 @@ import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { ICompactedEntry, ILoopHistoryEntry } from "./types.ts";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
 import type { ISnapshotStore } from "./context/snapshot_store.ts";
+import type { IGuardrailRunner } from "./guardrail_runner.ts";
 import type { ContextCache } from "@exaix/core/context";
 import {
   COMPACT_SUMMARY_MAX_TOKENS,
@@ -172,6 +173,15 @@ export class AgentExecutor {
     return this.logger;
   }
 
+  /**
+   * Optional guardrail screening runner forwarded to IReActLoopExecutor (Phase 115 Step 1).
+   * Undefined in Solo (the ReAct seam is a no-op); paid editions (P107) inject one via the
+   * edition composer. Exposing it here is the production wiring path for the seam.
+   */
+  public get guardrailRunner(): IGuardrailRunner | undefined {
+    return this._guardrailRunner;
+  }
+
   constructor(
     private config: Config,
     private db: IDatabaseService,
@@ -186,6 +196,7 @@ export class AgentExecutor {
     tokenizer?: ITokenizer,
     contextBudgetManager?: IContextBudgetManager,
     snapshotStore?: ISnapshotStore,
+    private _guardrailRunner?: IGuardrailRunner,
   ) {
     this.promptBudgetAllocator = promptBudgetAllocator ??
       new PromptBudgetAllocator(this.config.budget_enforcement, undefined, this.logger);

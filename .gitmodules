@@ -1,3 +1,6 @@
 [submodule "exaix-dev-docs"]
 	path = exaix-dev-docs
 	url = git@github.com:dostark/exaix-dev-docs.git
+[submodule "exaix-enterprise"]
+	path = exaix-enterprise
+	url = git@github.com:dostark/exaix-enterprise.git

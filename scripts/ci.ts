@@ -107,14 +107,18 @@ const testCommand = new Command()
     if (!success) Deno.exit(1);
   });
 
+type EditionType = "solo" | "team" | "enterprise";
+
 const buildCommand = new Command()
   .description("Build binaries")
   .option("--targets <targets:string>", "Comma separated list of targets")
   .option("-c, --compile", "Compile the standalone binary", { default: false })
+  .option("--edition <edition:string>", "Edition to build: solo|team|enterprise", { default: "solo" })
   .action(async (options) => {
     const success = await generateBuilds({
       targets: options.targets?.split(","),
       compile: options.compile,
+      edition: (options.edition ?? "solo") as EditionType,
     });
     if (!success) Deno.exit(1);
   });
@@ -122,37 +126,59 @@ const buildCommand = new Command()
 interface BuildOptions {
   targets?: string[];
   compile?: boolean;
+  edition?: EditionType;
 }
 
 async function generateBuilds(options: BuildOptions = {}): Promise<boolean> {
-  const { targets, compile = true } = options;
+  const { targets, compile = true, edition = "solo" } = options;
   const buildTargets = targets ?? [Deno.build.target];
 
-  if (!compile) {
-    console.log("\n🏗️  Starting Build Phase (Compilation skipped)");
-    return true;
+  const VALID_EDITIONS = ["solo", "team", "enterprise"];
+  if (!VALID_EDITIONS.includes(edition)) {
+    console.error(`❌ Unknown edition: ${edition}. Use solo, team, or enterprise.`);
+    return false;
   }
 
-  console.log(`\n🏗️  Starting Build Phase (Compiling) for: ${buildTargets.join(", ")}`);
+  if (!compile) {
+    console.log(`\n🏗️  Starting Build Phase (Compilation skipped) [edition: ${edition}]`);
+    return true;
+  }
 
   const binDir = "dist/bin";
   await Deno.mkdir(binDir, { recursive: true });
 
+  // Edition determines the entry point and binary name prefix.
+  // Solo excludes packages-team/ + exaix-enterprise (not imported).
+  // Team includes packages-team/ but excludes exaix-enterprise.
+  // Enterprise builds the empty submodule scaffold.
+  const editionConfigs: Record<string, { entry: string; prefix: string }> = {
+    solo: { entry: "apps/daemon/main.ts", prefix: "exaix" },
+    team: { entry: "apps/daemon/main.ts", prefix: "exaix-team" },
+    enterprise: { entry: "exaix-enterprise/mod.ts", prefix: "exaix-enterprise" },
+  };
+  const cfg = editionConfigs[edition];
+  const entryPoint = cfg.entry;
+  const binaryPrefix = cfg.prefix;
+
+  console.log(`\n🏗️  Starting Build Phase (Compiling) [edition: ${edition}] for: ${buildTargets.join(", ")}`);
+  console.log(`   Entry: ${entryPoint}`);
+
   const tasks = buildTargets.map((target) => {
     const isWin = target.includes("windows");
-    const output = isWin ? `${binDir}/exaix-${target}.exe` : `${binDir}/exaix-${target}`;
+    const output = isWin ? `${binDir}/${binaryPrefix}-${target}.exe` : `${binDir}/${binaryPrefix}-${target}`;
+    const buildArgs = [
+      "deno",
+      "compile",
+      "--allow-all",
+      "--target",
+      target,
+      "--output",
+      output,
+      entryPoint,
+    ];
     return {
-      cmd: [
-        "deno",
-        "compile",
-        "--allow-all",
-        "--target",
-        target,
-        "--output",
-        output,
-        "apps/daemon/main.ts",
-      ],
-      desc: `Compiling for ${target}`,
+      cmd: buildArgs,
+      desc: `Compiling ${binaryPrefix} for ${target}`,
     };
   });
 

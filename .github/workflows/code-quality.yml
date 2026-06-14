@@ -42,7 +42,7 @@ jobs:
           git log -1 --pretty=%B > .git/COMMIT_EDITMSG
           deno task check-commit-msg .git/COMMIT_EDITMSG
 
-      # --- GATE 1: Format Check ---
+      # --- GATE 1: Format Check (includes packages-team/ via deno task config) ---
       - name: "Gate 1: Formatting"
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task fmt:check
@@ -106,6 +106,7 @@ jobs:
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task docs-bench
 
+
   tests-and-coverage:
     name: "Tests & Coverage"
     runs-on: ubuntu-latest
@@ -127,3 +128,30 @@ jobs:
 
       - name: "Run Test Suite & Verify Coverage"
         run: deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts
+
+  edition-build:
+    name: "Edition Build Smoke Tests"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+
+      - name: "Setup Deno"
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: "2.x"
+
+      - name: "Build Solo edition"
+        run: deno task build:solo
+
+      - name: "Build Team edition"
+        run: deno task build:team
+
+      - name: "Build Enterprise edition (basis scaffold)"
+        run: deno task build:enterprise
+
+      - name: "Check no edition conditionals outside allowed dirs"
+        run: deno task check:no-edition-conditionals

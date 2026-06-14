@@ -4,6 +4,7 @@
     ".qwen/skills/commit",
     ".qwen/skills/coverage",
     ".qwen/skills/doc",
+    ".qwen/skills/edition-development",
     ".qwen/skills/explore",
     ".qwen/skills/fix-bug",
     ".qwen/skills/infra",

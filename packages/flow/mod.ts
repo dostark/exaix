@@ -49,3 +49,16 @@ export { FlowAbortError, FlowExecutionError, FlowRunner, toGateConfig } from "./
 export { AgentExecutorAdapter } from "./src/agent_executor_adapter.ts";
 export { GateConfigSchema, GateEvaluator, MockJudgeInvoker } from "./src/gate_evaluator.ts";
 export { createJudgeEvaluator, JudgeEvaluator } from "./src/judge_evaluator.ts";
+
+// Step 3 — Flow step-handler registry
+export { FlowStepHandlerRegistry } from "./src/step_handlers/step_handler_registry.ts";
+export { AgentStepHandler } from "./src/step_handlers/agent_step_handler.ts";
+export { GateStepHandler } from "./src/step_handlers/gate_step_handler.ts";
+export { UnknownFlowStepError } from "./src/step_handlers/flow_step_error.ts";
+export type { IAgentStepHandlerDeps } from "./src/step_handlers/agent_step_handler.ts";
+export type { IGateStepHandlerDeps, IPendingWaitStateRef } from "./src/step_handlers/gate_step_handler.ts";
+export type {
+  IFlowStepHandler,
+  IFlowStepHandlerRegistry,
+  IStepExecutionContext,
+} from "./src/step_handlers/step_handler.ts";

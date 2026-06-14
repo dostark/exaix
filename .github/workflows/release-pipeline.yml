@@ -8,7 +8,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build-release:
+  leak-guard:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -22,12 +22,33 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Build Binaries
-        run: deno run -A scripts/ci.ts build --compile --targets x86_64-unknown-linux-gnu,x86_64-apple-darwin,aarch64-apple-darwin,x86_64-pc-windows-msvc
+      - name: Run Leak Guard
+        run: deno run -A scripts/leak_guard.ts --check-gitmodules --check-headers
+
+      - name: Verify Solo build is clean (no enterprise imports)
+        run: deno run -A scripts/leak_guard.ts --allowlist packages apps --check-headers
+
+  build-release:
+    needs: leak-guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Build Solo Binaries
+        run: deno run -A scripts/ci.ts build --edition solo --compile --targets x86_64-unknown-linux-gnu,x86_64-apple-darwin,aarch64-apple-darwin,x86_64-pc-windows-msvc
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            dist/bin/*
+            dist/bin/exaix-*

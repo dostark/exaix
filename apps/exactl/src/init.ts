@@ -33,6 +33,7 @@ import { RequestService } from "@exaix/request";
 import { PlanService } from "@exaix/core/planning";
 import { PlanAmendmentService } from "@exaix/core/planning";
 import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstrap.ts";
+import { SoloComposer } from "@exaix/core";
 
 // Adapters
 import {
@@ -125,6 +126,11 @@ export async function initializeServices(
     // For provider, ensure we have a valid model name or fallback
     const model = cfg.agents?.default_model || "mock:test";
     bootstrapProviderRegistry();
+    // Edition composer — Solo edition ships no capability modules.
+    // Team/Enterprise editions call registerCapabilityModule() for each paid module.
+    const _editionComposer = new SoloComposer();
+    // _editionComposer is unused in Solo mode. Team/Enterprise editions
+    // call _editionComposer.registerCapabilityModule(...) for each paid module.
     const providerLocal = await ProviderFactory.createByName(cfg, model);
     const displayLogger = new EventLogger({ db: dbLocal });
     const displayAdapter = new DisplayAdapter(displayLogger);

@@ -43,6 +43,7 @@ import type { IApplicationContext } from "@exaix/core/types";
 import { type LogMetadata, toSafeJson } from "@exaix/core/types";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
+import { SoloComposer } from "@exaix/core";
 
 if (import.meta.main) {
   // Simple argument handling for the compiled binary
@@ -101,6 +102,12 @@ if (import.meta.main) {
 
     // Initialize LLM Provider
     bootstrapProviderRegistry();
+    // Edition composer — Solo edition ships no capability modules.
+    // Team/Enterprise editions replace this with their own composer that
+    // registers ICapabilityModule implementations via registerCapabilityModule().
+    const _editionComposer = new SoloComposer();
+    // _editionComposer is unused in Solo mode; Team/Enterprise editions call
+    // _editionComposer.registerCapabilityModule(...) for each paid module.
     const defaultModelName = config.agents.default_model;
     const providerInfo = ProviderFactory.getProviderInfoByName(config, defaultModelName);
     const llmProvider = await ProviderFactory.createByName(config, defaultModelName);
