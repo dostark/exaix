@@ -15,8 +15,10 @@
  * by the composer implementation at the app-entry level.
  */
 
+import type { IAuthorizer } from "../authorizer/authorizer.ts";
+
 /**
- * Opaque placeholder for seam-registry types.
+ * Opaque placeholder for seam-registry types that have not yet been defined.
  * Replaced with a concrete interface (e.g. IFlowStepHandlerRegistry) when
  * a capability module hook is implemented. Using an empty interface instead of
  * `unknown` satisfies the explicit-unknown style rule.
@@ -62,7 +64,7 @@ export interface ICapabilityModule {
    * Called with the app's IAuthorizer.
    * @remarks Seam defined when the RBAC phase is added (future phase).
    */
-  registerEntitlement?(registry: ISeamRegistryPlaceholder): void;
+  registerEntitlement?(authorizer: IAuthorizer): void;
 }
 
 /**

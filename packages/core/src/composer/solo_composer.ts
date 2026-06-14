@@ -15,15 +15,20 @@
  */
 
 import type { ICapabilityModule, IEditionComposer } from "./edition_composer.ts";
+import type { IAuthorizer } from "../authorizer/authorizer.ts";
+import { AllowAllAuthorizer } from "../authorizer/authorizer.ts";
 
 /**
  * Default Solo edition composer.
  * Accepts capability modules but applies no hooks (Solo has no paid features).
- * Kept for interface compatibility — the Team/Enterprise composers will
- * iterate registered modules and invoke each hook with concrete registries.
+ * Holds a concrete AllowAllAuthorizer as the default entitlement seam.
+ * Team/Enterprise composers will iterate registered modules and invoke each
+ * hook with concrete registries.
  */
 export class SoloComposer implements IEditionComposer {
   private readonly modules: ICapabilityModule[] = [];
+  /** Default Solo authorizer — permits every action. */
+  readonly authorizer: IAuthorizer = new AllowAllAuthorizer();
 
   registerCapabilityModule(module: ICapabilityModule): void {
     this.modules.push(module);

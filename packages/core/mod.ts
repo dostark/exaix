@@ -36,3 +36,7 @@ export type { IAllocationHints } from "./src/prompt_budget_allocator.ts";
 
 export type { ICapabilityModule, IEditionComposer, ISeamRegistryPlaceholder } from "./src/composer/edition_composer.ts";
 export { SoloComposer } from "./src/composer/solo_composer.ts";
+
+export type { AuthorizationAction, AuthorizationResource } from "./src/authorizer/authorizer.ts";
+export type { IAuthorizationContext, IAuthorizationDecision, IAuthorizer } from "./src/authorizer/authorizer.ts";
+export { AllowAllAuthorizer } from "./src/authorizer/authorizer.ts";

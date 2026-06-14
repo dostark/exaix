@@ -84,9 +84,9 @@ deno run -A scripts/check_code_style.ts --convert-warnings-to-errors
 
 ## Edition Boundary
 
-| Tag                                 | Severity | What it detects                                                |
-| ----------------------------------- | -------- | -------------------------------------------------------------- |
-| `[edition-conditional-outside-composer]` | error    | `edition ===` / `EXAIX_EDITION` outside the edition composer   |
+| Tag                                      | Severity | What it detects                                              |
+| ---------------------------------------- | -------- | ------------------------------------------------------------ |
+| `[edition-conditional-outside-composer]` | error    | `edition ===` / `EXAIX_EDITION` outside the edition composer |
 
 ---
 
