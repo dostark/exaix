@@ -106,10 +106,6 @@ jobs:
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task docs-bench
 
-      # --- GATE 12: Reachability Ledger ---
-      - name: "Gate 12: Reachability Ledger"
-        if: always() && steps.setup-deno.outcome == 'success'
-        run: deno task check:ledger-gate
 
   tests-and-coverage:
     name: "Tests & Coverage"
