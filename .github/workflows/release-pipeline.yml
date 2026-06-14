@@ -14,8 +14,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: true
-          token: ${{ secrets.GH_PAT }}
+          submodules: false
+
+      - name: Init public submodule
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          git config --local submodule.exaix-dev-docs.url "https://x-access-token:${GH_PAT}@github.com/dostark/exaix-dev-docs.git"
+          git submodule update --init --depth 1 exaix-dev-docs
 
       - name: Setup Deno
         uses: denoland/setup-deno@v2
@@ -35,8 +41,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: true
-          token: ${{ secrets.GH_PAT }}
+          submodules: false
+
+      - name: Init public submodule
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          git config --local submodule.exaix-dev-docs.url "https://x-access-token:${GH_PAT}@github.com/dostark/exaix-dev-docs.git"
+          git submodule update --init --depth 1 exaix-dev-docs
 
       - name: Setup Deno
         uses: denoland/setup-deno@v2
