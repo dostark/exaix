@@ -6,7 +6,13 @@
 
 import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
-import { type ICapabilityModule, type IEditionComposer, type ISeamRegistryPlaceholder, SoloComposer } from "../mod.ts";
+import {
+  type IAuthorizer,
+  type ICapabilityModule,
+  type IEditionComposer,
+  type ISeamRegistryPlaceholder,
+  SoloComposer,
+} from "../mod.ts";
 
 describe("SoloComposer", () => {
   it("accepts zero modules and runs clean", () => {
@@ -62,7 +68,7 @@ describe("ICapabilityModule structure", () => {
       registerProviderRoutingStrategy: (_registry: ISeamRegistryPlaceholder) => {
         called.push("routing");
       },
-      registerEntitlement: (_registry: ISeamRegistryPlaceholder) => {
+      registerEntitlement: (_auth: IAuthorizer) => {
         called.push("entitlement");
       },
     };

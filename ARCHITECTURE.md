@@ -37,9 +37,29 @@ The pipeline processes work through a gated pipeline (file → plan → approve 
 
 ## Edition Model Overview
 
-> **Current Status (May 2026):** The **Solo edition** is fully implemented in this repository. Team and Enterprise editions describe aspirational features (Web UI, PostgreSQL, immudb, SSO/SAML, governance dashboard) that are planned but not yet present in the codebase.
+> **Current Status (June 2026):** The **Solo edition** is fully implemented in this repository. Team and Enterprise editions use the **Option-C layout** — `packages-team/` (BSL) lives in the same repo; `exaix-enterprise/` is a private submodule. Edition-specific code is never loaded into Solo builds.
 
-Exaix follows a **three-tier edition model** to serve different organizational needs:
+Exaix follows a **three-tier edition model** served by a single **`IEditionComposer`** composition seam:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    exaix (monorepo)                       │
+│  ┌────────────────────────────────────────────────────┐  │
+│  │  packages/  (MIT — always compiled)                 │  │
+│  │  apps/daemon · apps/exactl · apps/tui · apps/mcp   │  │
+│  └────────────────────────────────────────────────────┘  │
+│  ┌────────────────────────────────────────────────────┐  │
+│  │  packages-team/  (BSL — Team+Enterprise)            │  │
+│  └────────────────────────────────────────────────────┘  │
+│  ┌────────────────────────────────────────────────────┐  │
+│  │  exaix-enterprise/  (private submodule — Enterprise) │  │
+│  └────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Composition architecture:** `IEditionComposer` (`@exaix/core/composer/`) is the single attach point for edition-specific capabilities. The Solo edition uses `SoloComposer` (default — zero paid features). Team and Enterprise editions register `ICapabilityModule` instances that fill optional hooks (flow-step handlers, symbol extractors, guardrail runner, routing strategy, entitlement).
+
+**Publishing:** Solo+Team source is published as OSS mirrors (`exaix-core` MIT, `exaix-team` BSL) via `git subtree split` with a leak-guard (`scripts/leak_guard.ts`) that blocks proprietary Enterprise code. The Enterprise submodule is excluded from the subtree filter and stripped from `.gitmodules` before publishing.
 
 | Edition           | Target Audience                         | Key Differentiation                                             |
 | ----------------- | --------------------------------------- | --------------------------------------------------------------- |
@@ -121,6 +141,12 @@ Delegated output is **untrusted** and still flows through the same quality, crit
 - Core components available in all editions (🟢 Solo)
 - Collaboration features in Team+ (🔵 Team)
 - Governance and compliance features in Enterprise (🟣 Enterprise)
+- **Composition seam:** `IEditionComposer` (`@exaix/core/composer/`) is the single attach point for paid capabilities; `ICapabilityModule` registers hooks per seam
+- **Option-C layout:** `packages/` (MIT) · `packages-team/` (BSL, same repo) · `exaix-enterprise/` (private submodule)
+- **Solo defaults:** `SoloComposer` with `AllowAllAuthorizer` — zero paid code in Solo builds
+- **Edition build:** `build:solo|team|enterprise` selects entry point + prefix via `scripts/ci.ts`
+- **Leak-guard:** `scripts/leak_guard.ts` blocks Enterprise paths and proprietary headers from OSS publish targets
+- **Seam registries** (flow-step handlers, symbol extractors, guardrail runner, routing strategy) use `ISeamRegistryPlaceholder` in core; concrete types resolved at the app-entry level
 - Transparent feature tiering with upgrade path
 
 ---
