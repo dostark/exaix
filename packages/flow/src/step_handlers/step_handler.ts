@@ -10,6 +10,7 @@
 import type { IFlowStep } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
+import type { JSONValue } from "@exaix/core";
 
 /**
  * Context passed to a flow step handler's execute() method.
@@ -36,6 +37,9 @@ export interface IStepExecutionContext {
   /** The prepared step request */
   readonly stepRequest: {
     readonly userPrompt: string;
+    readonly context: Record<string, JSONValue>;
+    readonly traceId?: string;
+    readonly requestId?: string;
     readonly requestAnalysis?: IRequestAnalysis;
   };
 

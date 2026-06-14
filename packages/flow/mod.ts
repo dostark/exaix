@@ -52,8 +52,10 @@ export { createJudgeEvaluator, JudgeEvaluator } from "./src/judge_evaluator.ts";
 
 // Step 3 — Flow step-handler registry
 export { FlowStepHandlerRegistry } from "./src/step_handlers/step_handler_registry.ts";
+export { AgentStepHandler } from "./src/step_handlers/agent_step_handler.ts";
 export { GateStepHandler } from "./src/step_handlers/gate_step_handler.ts";
 export { UnknownFlowStepError } from "./src/step_handlers/flow_step_error.ts";
+export type { IAgentStepHandlerDeps } from "./src/step_handlers/agent_step_handler.ts";
 export type { IGateStepHandlerDeps, IPendingWaitStateRef } from "./src/step_handlers/gate_step_handler.ts";
 export type {
   IFlowStepHandler,

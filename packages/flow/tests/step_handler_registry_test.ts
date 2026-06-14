@@ -90,7 +90,7 @@ function makeMinimalCtx(stepType: string): IStepExecutionContext {
     step: { id: "step-1", type: stepType } as IStepExecutionContext["step"],
     flow: { id: "flow-1" },
     request: { userPrompt: "test" },
-    stepRequest: { userPrompt: "test" },
+    stepRequest: { userPrompt: "test", context: {} },
     flowRunId: "run-1",
     startedAt: new Date(),
     flowLogBase: { flowId: "flow-1" },
