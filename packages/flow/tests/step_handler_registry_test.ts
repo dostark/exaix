@@ -84,9 +84,22 @@ Deno.test("[flow] FlowStepHandlerRegistry — register overwrites existing handl
   assertEquals(registry.get("dup"), second);
 });
 
+function makeMinimalCtx(stepType: string): IStepExecutionContext {
+  return {
+    stepType,
+    step: { id: "step-1", type: stepType } as IStepExecutionContext["step"],
+    flow: { id: "flow-1" },
+    request: { userPrompt: "test" },
+    stepRequest: { userPrompt: "test" },
+    flowRunId: "run-1",
+    startedAt: new Date(),
+    flowLogBase: { flowId: "flow-1" },
+  } as IStepExecutionContext;
+}
+
 Deno.test("[flow] StubHandler.execute produces expected result", async () => {
   const handler = new StubHandler(FlowStepType.AGENT);
-  const ctx: IStepExecutionContext = { stepType: FlowStepType.AGENT };
+  const ctx = makeMinimalCtx(FlowStepType.AGENT);
 
   const result = await handler.execute(ctx);
 

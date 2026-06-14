@@ -7,17 +7,50 @@
  * @related-files [packages/flow/src/step_handlers/step_handler_registry.ts, packages/flow/src/flow_runner.ts]
  */
 
+import type { IFlowStep } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 
 /**
  * Context passed to a flow step handler's execute() method.
- * Carries the minimal slice of step, request, and flow state the handler needs.
+ * Carries the step, request, flow state, and runtime services the handler needs.
  */
 export interface IStepExecutionContext {
   /** The step type string that was dispatched */
   readonly stepType: string;
-  // Additional fields (step, request, stepRequest, flow, flowRunId, startedAt, etc.)
-  // are added in later sub-steps as handler implementations concretise their needs.
+
+  /** The flow step being executed */
+  readonly step: IFlowStep;
+
+  /** The flow being executed */
+  readonly flow: { readonly id: string; readonly settings?: { readonly includeRequestCriteria?: boolean } };
+
+  /** The original request */
+  readonly request: {
+    readonly userPrompt: string;
+    readonly traceId?: string;
+    readonly requestId?: string;
+    readonly requestAnalysis?: IRequestAnalysis;
+  };
+
+  /** The prepared step request */
+  readonly stepRequest: {
+    readonly userPrompt: string;
+    readonly requestAnalysis?: IRequestAnalysis;
+  };
+
+  /** Unique identifier for this flow run */
+  readonly flowRunId: string;
+
+  /** When the step execution started */
+  readonly startedAt: Date;
+
+  /** Base event-log info derived from flow + request (filled by FlowRunner before dispatch) */
+  readonly flowLogBase: {
+    readonly flowId: string;
+    readonly traceId?: string;
+    readonly requestId?: string;
+  };
 }
 
 /**
