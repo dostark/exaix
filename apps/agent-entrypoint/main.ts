@@ -8,8 +8,14 @@
  */
 
 import { TextLineStream } from "@std/streams";
+import { SoloComposer } from "@exaix/core";
 
 async function main() {
+  // Edition composer — Solo edition ships no capability modules.
+  // Team/Enterprise editions call _editionComposer.registerCapabilityModule(...).
+  const _editionComposer = new SoloComposer();
+  // _editionComposer unused in Solo mode; Team/Enterprise replace with their composer.
+
   // 1. Handshake
   console.log(JSON.stringify({ type: "ready", pid: Deno.pid }));
 
