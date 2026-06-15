@@ -12,15 +12,8 @@
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { IModelProvider } from "@exaix/ai";
-import type {
-  GuardrailConfig,
-  GuardrailIncident,
-  GuardrailPolicy,
-} from "@exaix/schemas";
-import {
-  GUARDRAIL_FLAGGED_EXCERPT_MAX_CHARS,
-  GUARDRAIL_SCREEN_TIMEOUT_MS,
-} from "@exaix/core";
+import type { GuardrailConfig, GuardrailIncident, GuardrailPolicy } from "@exaix/schemas";
+import { GUARDRAIL_FLAGGED_EXCERPT_MAX_CHARS, GUARDRAIL_SCREEN_TIMEOUT_MS } from "@exaix/core";
 import type { IGuardrailRunner } from "@exaix/execution";
 
 const GUARDRAIL_SOURCE = "guardrail";
@@ -80,9 +73,7 @@ export class GuardrailRunner implements IGuardrailRunner {
     }
 
     const results = await Promise.allSettled(
-      this.#config.policies.map((policy) =>
-        this.#evaluatePolicy(policy, agentOutput, traceId, iteration)
-      ),
+      this.#config.policies.map((policy) => this.#evaluatePolicy(policy, agentOutput, traceId, iteration)),
     );
 
     const incidents: GuardrailIncident[] = [];
@@ -165,10 +156,9 @@ export class GuardrailRunner implements IGuardrailRunner {
       return null;
     }
 
-    const flaggedExcerpt =
-      agentOutput.length > GUARDRAIL_FLAGGED_EXCERPT_MAX_CHARS
-        ? agentOutput.slice(0, GUARDRAIL_FLAGGED_EXCERPT_MAX_CHARS)
-        : undefined;
+    const flaggedExcerpt = agentOutput.length > GUARDRAIL_FLAGGED_EXCERPT_MAX_CHARS
+      ? agentOutput.slice(0, GUARDRAIL_FLAGGED_EXCERPT_MAX_CHARS)
+      : undefined;
 
     if (policy.severity === SEVERITY_BLOCK) {
       const state = this.#getOrCreateTrace(traceId);

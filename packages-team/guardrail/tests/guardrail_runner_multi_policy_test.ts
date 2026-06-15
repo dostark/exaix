@@ -37,8 +37,6 @@ class MockLogger implements IEventLogger {
   }
 }
 
-const MOCK_USAGE = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
-
 function makeProvider(verdict: string): IModelProvider {
   return {
     id: "mock-" + verdict,
