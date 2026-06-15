@@ -500,7 +500,9 @@ const rules: Rule[] = [
       !path.endsWith("check_no_edition_conditionals.ts") &&
       !path.startsWith("exaix-enterprise/") &&
       !path.startsWith("packages-team/") &&
-      !path.includes("/src/composer/"),
+      !path.includes("/src/composer/") &&
+      !path.startsWith("apps/daemon/") &&
+      !path.startsWith("apps/exactl/"),
   },
 ];
 

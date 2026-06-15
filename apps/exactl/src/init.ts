@@ -34,6 +34,9 @@ import { PlanService } from "@exaix/core/planning";
 import { PlanAmendmentService } from "@exaix/core/planning";
 import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstrap.ts";
 import { SoloComposer } from "@exaix/core";
+// Team imports — resolved unconditionally from import map;
+// dead-code eliminated in Solo builds when editionType !== "team".
+import { bootstrapTeamProviders, TeamComposer } from "@exaix-team/team-composer";
 
 // Adapters
 import {
@@ -126,11 +129,16 @@ export async function initializeServices(
     // For provider, ensure we have a valid model name or fallback
     const model = cfg.agents?.default_model || "mock:test";
     bootstrapProviderRegistry();
-    // Edition composer — Solo edition ships no capability modules.
-    // Team/Enterprise editions call registerCapabilityModule() for each paid module.
-    const _editionComposer = new SoloComposer();
-    // _editionComposer is unused in Solo mode. Team/Enterprise editions
-    // call _editionComposer.registerCapabilityModule(...) for each paid module.
+    // Edition-aware composer — Team edition additionally registers Team-only
+    // capability modules and bootstraps Team-only providers (Vertex AI).
+    const editionType = Deno.env.get("EXAIX_EDITION") ?? "solo";
+    let _editionComposer: SoloComposer | TeamComposer;
+    if (editionType === "team") {
+      bootstrapTeamProviders();
+      _editionComposer = new TeamComposer();
+    } else {
+      _editionComposer = new SoloComposer();
+    }
     const providerLocal = await ProviderFactory.createByName(cfg, model);
     const displayLogger = new EventLogger({ db: dbLocal });
     const displayAdapter = new DisplayAdapter(displayLogger);
