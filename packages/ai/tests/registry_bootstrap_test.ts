@@ -1,14 +1,14 @@
 /**
  * @module RootRegistryBootstrapTest
  * @path packages/ai/tests/registry_bootstrap_test.ts
- * @description Verifies that the root composition bootstrap registers extracted concrete AI providers.
+ * @description Verifies that the root composition bootstrap registers Solo-tier concrete AI providers and excludes Team-only providers.
  */
 
 import { assertEquals, assertExists } from "@std/assert";
 import { ProviderRegistry } from "@exaix/ai";
 import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstrap.ts";
 
-Deno.test("bootstrapProviderRegistry registers root concrete providers and is idempotent", () => {
+Deno.test("bootstrapProviderRegistry registers Solo-tier providers and excludes Team-only providers", () => {
   ProviderRegistry.clear();
 
   bootstrapProviderRegistry();
@@ -18,14 +18,14 @@ Deno.test("bootstrapProviderRegistry registers root concrete providers and is id
   assertEquals(supported.includes("anthropic"), true);
   assertEquals(supported.includes("openai"), true);
   assertEquals(supported.includes("google"), true);
-  assertEquals(supported.includes("vertex-ai"), true);
+  assertEquals(supported.includes("vertex-ai"), false);
   assertEquals(supported.includes("openrouter"), true);
   assertEquals(supported.includes("ollama"), true);
   assertExists(ProviderRegistry.getFactory("mock"));
   assertExists(ProviderRegistry.getFactory("anthropic"));
   assertExists(ProviderRegistry.getFactory("openai"));
   assertExists(ProviderRegistry.getFactory("google"));
-  assertExists(ProviderRegistry.getFactory("vertex-ai"));
+  assertEquals(ProviderRegistry.getFactory("vertex-ai"), undefined);
   assertExists(ProviderRegistry.getFactory("openrouter"));
   assertExists(ProviderRegistry.getFactory("ollama"));
 
