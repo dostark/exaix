@@ -9,7 +9,15 @@
  */
 
 // app entries are edition-dispatch points (apps/daemon/main.ts, apps/exactl/src/init.ts)
-const ALLOWED = ["apps/common", "packages-team", "exaix-enterprise", "scripts", ".github", "apps/daemon", "apps/exactl"];
+const ALLOWED = [
+  "apps/common",
+  "packages-team",
+  "exaix-enterprise",
+  "scripts",
+  ".github",
+  "apps/daemon",
+  "apps/exactl",
+];
 const SKIP = [".git", "node_modules", "dist", ".exa", "_archive"];
 const PATTERN = 'EXAIX_EDITION|\\bedition\\s*===\\s*"';
 

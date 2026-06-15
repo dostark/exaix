@@ -1,0 +1,10 @@
+{
+  "name": "@exaix-team/team-composer",
+  "version": "0.1.0",
+  "exports": {
+    ".": "./mod.ts"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "deno.ns", "deno.unstable"]
+  }
+}

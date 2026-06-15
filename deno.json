@@ -33,7 +33,8 @@
     "./apps/mcp-server",
     "./apps/tui",
     "./apps/agent-entrypoint",
-    "./packages-team/team-placeholder"
+    "./packages-team/team-placeholder",
+    "./packages-team/team-composer"
   ],
   "lock": true,
   "exports": "./apps/daemon/main.ts",
@@ -198,7 +199,9 @@
     "@exaix/request": "./packages/request/mod.ts",
     "@exaix/request/": "./packages/request/src/",
     "@exaix/flow": "./packages/flow/mod.ts",
-    "@exaix/flow/": "./packages/flow/src/"
+    "@exaix/flow/": "./packages/flow/src/",
+    "@exaix-team/team-composer": "./packages-team/team-composer/mod.ts",
+    "@exaix-team/team-composer/": "./packages-team/team-composer/"
   },
   "exclude": [
     "cov_profile",
