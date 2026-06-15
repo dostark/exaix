@@ -17,6 +17,13 @@ export const HTTP_TOO_MANY_REQUESTS = 429;
 export const HTTP_SERVER_ERROR = 500;
 
 // ============================================================================
+// Edition Constants
+// ============================================================================
+export const EDITION_SOLO = "solo";
+export const EDITION_TEAM = "team";
+export const EDITION_ENTERPRISE = "enterprise";
+
+// ============================================================================
 // Path Configuration Defaults
 // ============================================================================
 export const DEFAULT_WORKSPACE_PATH = "Workspace";

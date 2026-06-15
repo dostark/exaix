@@ -12,7 +12,7 @@ import { GitService } from "@exaix/git";
 import { EventLogger } from "@exaix/core/logger";
 import { ProviderFactory } from "@exaix/ai";
 import { FlowLoader } from "@exaix/flow";
-import { ActivityActor, ExaPathDefaults } from "@exaix/core";
+import { ActivityActor, EDITION_SOLO, EDITION_TEAM, ExaPathDefaults } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import type { IDatabaseService } from "@exaix/core/types";
@@ -131,9 +131,9 @@ export async function initializeServices(
     bootstrapProviderRegistry();
     // Edition-aware composer — Team edition additionally registers Team-only
     // capability modules and bootstraps Team-only providers (Vertex AI).
-    const editionType = Deno.env.get("EXAIX_EDITION") ?? "solo";
+    const editionType = Deno.env.get("EXAIX_EDITION") ?? EDITION_SOLO;
     let _editionComposer: SoloComposer | TeamComposer;
-    if (editionType === "team") {
+    if (editionType === EDITION_TEAM) {
       bootstrapTeamProviders();
       _editionComposer = new TeamComposer();
     } else {

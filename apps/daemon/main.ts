@@ -7,9 +7,16 @@
  * @architectural-layer Application
  * @related-files ["packages/execution/src/execution_loop.ts", "../../apps/daemon/src/watcher.ts", "../../apps/exactl/src/commands/daemon_commands.ts"]
  */
+import {
+  DAEMON_IDENTITY_ID,
+  DaemonStatus,
+  DEFAULT_IDENTITIES_PATH,
+  EDITION_SOLO,
+  EDITION_TEAM,
+  ProviderType,
+} from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import { ConfigService } from "@exaix/core/config";
-import { DAEMON_IDENTITY_ID, DaemonStatus, DEFAULT_IDENTITIES_PATH, ProviderType } from "@exaix/core";
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ProviderFactory } from "@exaix/ai";
@@ -108,9 +115,9 @@ if (import.meta.main) {
     bootstrapProviderRegistry();
     // Edition-aware composer — Team edition additionally registers Team-only
     // capability modules and bootstraps Team-only providers (Vertex AI).
-    const editionType = Deno.env.get("EXAIX_EDITION") ?? "solo";
+    const editionType = Deno.env.get("EXAIX_EDITION") ?? EDITION_SOLO;
     let _editionComposer: SoloComposer | TeamComposer;
-    if (editionType === "team") {
+    if (editionType === EDITION_TEAM) {
       bootstrapTeamProviders();
       _editionComposer = new TeamComposer();
     } else {

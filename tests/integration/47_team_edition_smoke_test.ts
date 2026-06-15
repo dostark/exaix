@@ -8,7 +8,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
 import { ProviderRegistry } from "@exaix/ai";
-import { ProviderType, SoloComposer } from "@exaix/core";
+import { EDITION_SOLO, EDITION_TEAM, ProviderType, SoloComposer } from "@exaix/core";
 import { bootstrapTeamProviders, TeamComposer } from "@exaix-team/team-composer";
 import type { ICapabilityModule } from "@exaix/core";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
@@ -104,22 +104,22 @@ describe("Edition selection via EXAIX_EDITION", () => {
 
   it("defaults to Solo when EXAIX_EDITION is unset", () => {
     Deno.env.delete("EXAIX_EDITION");
-    const editionType = Deno.env.get("EXAIX_EDITION") ?? "solo";
-    const composer = editionType === "team" ? new TeamComposer() : new SoloComposer();
+    const editionType = Deno.env.get("EXAIX_EDITION") ?? EDITION_SOLO;
+    const composer = editionType === EDITION_TEAM ? new TeamComposer() : new SoloComposer();
     assertEquals(composer instanceof SoloComposer, true);
   });
 
   it("creates TeamComposer when EXAIX_EDITION=team", () => {
-    Deno.env.set("EXAIX_EDITION", "team");
-    const editionType = Deno.env.get("EXAIX_EDITION") ?? "solo";
-    const composer = editionType === "team" ? new TeamComposer() : new SoloComposer();
+    Deno.env.set("EXAIX_EDITION", EDITION_TEAM);
+    const editionType = Deno.env.get("EXAIX_EDITION") ?? EDITION_SOLO;
+    const composer = editionType === EDITION_TEAM ? new TeamComposer() : new SoloComposer();
     assertEquals(composer instanceof TeamComposer, true);
   });
 
   it("creates SoloComposer when EXAIX_EDITION=solo", () => {
-    Deno.env.set("EXAIX_EDITION", "solo");
-    const editionType = Deno.env.get("EXAIX_EDITION") ?? "solo";
-    const composer = editionType === "team" ? new TeamComposer() : new SoloComposer();
+    Deno.env.set("EXAIX_EDITION", EDITION_SOLO);
+    const editionType = Deno.env.get("EXAIX_EDITION") ?? EDITION_SOLO;
+    const composer = editionType === EDITION_TEAM ? new TeamComposer() : new SoloComposer();
     assertEquals(composer instanceof SoloComposer, true);
   });
 
