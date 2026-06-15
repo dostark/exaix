@@ -3438,4 +3438,48 @@ CI integration, see **[`docs/Exaix_Evaluation.md`](Exaix_Evaluation.md)**.
 
 ---
 
+## Concurrent Guardrail Runner (Phase 107)
+
+The concurrent guardrail runner screens each ReAct iteration's generated output
+against configurable policies using a fast-slot LLM. It runs **in parallel** with
+the primary agent loop and never blocks execution.
+
+### Configuration
+
+The guardrail is configured via an optional `[guardrail]` block in
+`exa.config.toml`:
+
+```toml
+[guardrail]
+enabled = false                         # opt-in, disabled by default
+check_interval_iterations = 1           # screen every Nth iteration (1 = every)
+screen_final_output = true              # also screen output before Review gate
+
+[[guardrail.policies]]
+policy_id = "safety-policy"
+description = "Detect harmful content in agent output"
+blueprint = "guardrail/safety"
+severity = "block"                      # "warn" (logs only) or "block" (halts)
+```
+
+### Behaviour
+
+- **Fire-and-forget**: `screen()` is called after each iteration but never
+  awaited on the critical path.
+- **Fail-open**: If the screening model errors or times out, the error is
+  journaled as `guardrail.screen.error` and execution continues.
+- **Blocking violations**: A `block`-severity violation halts the loop via the
+  Plan Amendment gate (`guardrail_violation` trigger). The pre-execution
+  Quality Gate remains the hard gate.
+- **Zero overhead when disabled**: With `enabled = false`, no runner is
+  constructed and no code path changes.
+
+### Edition
+
+**Team/Enterprise only.** In Solo builds, the guardrail runner is never
+constructed even if `enabled = true`. See `ARCHITECTURE.md` for the
+architecture overview.
+
+---
+
 ### End of User Guide
