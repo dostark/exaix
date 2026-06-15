@@ -23,7 +23,8 @@ import {
 } from "@exaix/core";
 import type { IGuardrailRunner } from "@exaix/execution";
 
-const GUARDRAIL_SOURCE = GUARDRAIL_SOURCE;
+const GUARDRAIL_SOURCE = "guardrail";
+const FINAL_ITERATION = Number.MAX_SAFE_INTEGER;
 const VERDICT_PASS = "pass";
 const VERDICT_VIOLATION = "violation";
 const SEVERITY_WARN = "warn";
@@ -50,12 +51,31 @@ export class GuardrailRunner implements IGuardrailRunner {
     this.#logger = logger;
   }
 
+  /**
+   * Screen agent output. Handles check_interval_iterations and screen_final_output:
+   * - Regular calls (iteration < MAX_SAFE_INTEGER): screened every Nth iteration per config.
+   * - Final-output calls (identified by caller): pass a large iteration sentinel.
+   */
   async screen(
     agentOutput: string,
     traceId: string,
     iteration: number,
   ): Promise<GuardrailIncident[]> {
     if (!this.#config.enabled || this.#config.policies.length === 0) {
+      return [];
+    }
+
+    // Honour check_interval_iterations: screen only every Nth iteration.
+    // The FINAL_ITERATION sentinel bypasses the interval check for final-output screening.
+    if (
+      iteration !== FINAL_ITERATION &&
+      iteration % this.#config.check_interval_iterations !== 0
+    ) {
+      return [];
+    }
+
+    // Honour screen_final_output: if false, skip calls marked with FINAL_ITERATION.
+    if (iteration === FINAL_ITERATION && !this.#config.screen_final_output) {
       return [];
     }
 

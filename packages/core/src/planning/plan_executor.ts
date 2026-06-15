@@ -14,7 +14,6 @@ import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import { SafeSubprocess } from "@exaix/core";
-import { AgentExecutor } from "@exaix/execution";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { ConfidenceScorer } from "@exaix/execution";
 import { DEFAULT_AMENDMENT_THRESHOLD, ExecutionStatus, SecurityMode } from "@exaix/core";
@@ -38,9 +37,10 @@ import {
 import type { JSONValue } from "@exaix/core";
 import type { IApplicationContext, IPlanAmendmentService } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";
+import { AgentExecutor, type IAgentExecutorOptions, type IGuardrailRunner } from "@exaix/execution";
 import { PlanAmendmentService } from "./plan_amendment_service.ts";
 import type { IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
-import { PlanAmendmentPendingError } from "./errors.ts";
+import { GuardrailBlockedError, PlanAmendmentPendingError } from "./errors.ts";
 
 export interface IPlanStep {
   number: number;
@@ -67,6 +67,8 @@ export interface IPlanExecutorOptions {
   context?: IApplicationContext;
   confidenceScorer?: ConfidenceScorer;
   amendmentService?: IPlanAmendmentService;
+  /** Optional guardrail runner. When provided, built in createAgentExecutor. */
+  guardrailRunner?: IGuardrailRunner;
 }
 
 export interface IPlanActionReport {
@@ -123,7 +125,10 @@ export class PlanExecutor {
   /**
    * Execute a plan
    */
-  async execute(planPath: string, context: IPlanContext): Promise<IPlanExecutionResult> {
+  async execute(
+    planPath: string,
+    context: IPlanContext,
+  ): Promise<IPlanExecutionResult> {
     const traceId = context.trace_id;
     const requestId = context.request_id;
     const actionReports: IPlanActionReport[] = [];
@@ -164,14 +169,23 @@ export class PlanExecutor {
         );
 
         if (git) {
-          await this.commitPlanCompletion(git, requestId, traceId, context.identity);
+          await this.commitPlanCompletion(
+            git,
+            requestId,
+            traceId,
+            context.identity,
+          );
         }
 
-        await this.logger.info(DomainEventType.PlanExecutionCompleted, planPath, {
-          trace_id: traceId,
-          status: ExecutionStatus.COMPLETED,
-          last_commit: lastCommitSha === initialHeadSha ? null : lastCommitSha,
-        });
+        await this.logger.info(
+          DomainEventType.PlanExecutionCompleted,
+          planPath,
+          {
+            trace_id: traceId,
+            status: ExecutionStatus.COMPLETED,
+            last_commit: lastCommitSha === initialHeadSha ? null : lastCommitSha,
+          },
+        );
 
         const report = (this.generateReport || context.steps.length === 0)
           ? await this.generateExecutionReport(context, actionReports)
@@ -218,6 +232,11 @@ export class PlanExecutor {
     });
     const permissions = new PortalPermissionsService(this.config.portals);
 
+    const options: IAgentExecutorOptions = {};
+    if (this.options.guardrailRunner) {
+      options.guardrailRunner = this.options.guardrailRunner;
+    }
+
     return new AgentExecutor(
       this.config,
       this.db as DatabaseService,
@@ -225,6 +244,15 @@ export class PlanExecutor {
       pathResolver,
       permissions,
       this.llmProvider,
+      undefined, // strategyRegistry
+      undefined, // _toolRegistry
+      undefined, // promptBudgetAllocator
+      undefined, // contextCache
+      undefined, // tokenizer
+      undefined, // contextBudgetManager
+      undefined, // snapshotStore
+      undefined, // _guardrailRunner (positional — use options instead)
+      options,
     );
   }
 
@@ -263,8 +291,11 @@ export class PlanExecutor {
 
         // Step 66.2: Low Confidence Trigger Detection
         if (this.options.confidenceScorer && this.config.amendment?.enabled) {
-          const assessment = this.options.confidenceScorer.assessQuick(result.description);
-          const threshold = this.config.amendment.threshold ?? DEFAULT_AMENDMENT_THRESHOLD;
+          const assessment = this.options.confidenceScorer.assessQuick(
+            result.description,
+          );
+          const threshold = this.config.amendment.threshold ??
+            DEFAULT_AMENDMENT_THRESHOLD;
 
           if (assessment.score < threshold) {
             await this.handleAmendmentTrigger(
@@ -294,11 +325,15 @@ export class PlanExecutor {
           output: result.description,
         });
       } catch (error) {
-        // Step 66.2: Tool Error Trigger Detection
-        if (this.config.amendment?.enabled && !(error instanceof PlanAmendmentPendingError)) {
+        // Step 66.2: Tool Error / Guardrail Block Trigger Detection
+        if (
+          this.config.amendment?.enabled &&
+          !(error instanceof PlanAmendmentPendingError)
+        ) {
+          const source = error instanceof GuardrailBlockedError ? "guardrail_violation" : "tool_error";
           await this.handleAmendmentTrigger(
             {
-              source: "tool_error",
+              source,
               stepId: String(step.number),
               reason: error instanceof Error ? error.message : String(error),
             },
@@ -330,7 +365,10 @@ export class PlanExecutor {
         traceId,
       });
     } catch (error) {
-      if (!(error instanceof Error && error.message.includes(GIT_ERROR_NOTHING_TO_COMMIT))) {
+      if (
+        !(error instanceof Error &&
+          error.message.includes(GIT_ERROR_NOTHING_TO_COMMIT))
+      ) {
         throw error;
       }
     }
@@ -352,7 +390,10 @@ export class PlanExecutor {
         traceId,
       });
     } catch (error) {
-      if (!(error instanceof Error && error.message.includes(GIT_ERROR_NOTHING_TO_COMMIT))) {
+      if (
+        !(error instanceof Error &&
+          error.message.includes(GIT_ERROR_NOTHING_TO_COMMIT))
+      ) {
         throw error;
       }
     }
@@ -384,14 +425,19 @@ export class PlanExecutor {
     context: IPlanContext,
     _currentStep: IPlanStep,
   ): Promise<void> {
-    const service = this.options.amendmentService || new PlanAmendmentService(this.config, this.llmProvider);
+    const service = this.options.amendmentService ||
+      new PlanAmendmentService(this.config, this.llmProvider);
 
     if (await service.shouldAmend(trigger)) {
-      await this.logger.info(DomainEventType.PlanAmendmentTriggered, context.trace_id, {
-        source: trigger.source,
-        reason: trigger.reason,
-        stepId: trigger.stepId,
-      });
+      await this.logger.info(
+        DomainEventType.PlanAmendmentTriggered,
+        context.trace_id,
+        {
+          source: trigger.source,
+          reason: trigger.reason,
+          stepId: trigger.stepId,
+        },
+      );
 
       // 1. Compute remaining steps
       const remainingSteps = context.steps.filter((s) => s.number > _currentStep.number);
@@ -429,13 +475,17 @@ export class PlanExecutor {
       );
 
       // 5. Emit event for TUI/Notification
-      await this.logger.info(PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL, context.trace_id, {
-        amendmentId: patch.amendmentId,
-        planId: patch.planId,
-        triggerSource: trigger.source,
-        affectedStepCount: patch.affectedRemainingStepIds.length,
-        createdAt: patch.createdAt,
-      });
+      await this.logger.info(
+        PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL,
+        context.trace_id,
+        {
+          amendmentId: patch.amendmentId,
+          planId: patch.planId,
+          triggerSource: trigger.source,
+          affectedStepCount: patch.affectedRemainingStepIds.length,
+          createdAt: patch.createdAt,
+        },
+      );
 
       // 6. Throw error to pause execution loop
       throw new PlanAmendmentPendingError(
@@ -451,7 +501,10 @@ export class PlanExecutor {
    */
   private async getPortalHeadSha(path: string): Promise<string | null> {
     try {
-      const result = await SafeSubprocess.run("git", [GIT_CMD_REV_PARSE, "HEAD"], {
+      const result = await SafeSubprocess.run("git", [
+        GIT_CMD_REV_PARSE,
+        "HEAD",
+      ], {
         cwd: path,
         timeoutMs: DEFAULT_GIT_REV_PARSE_TIMEOUT_MS,
       });

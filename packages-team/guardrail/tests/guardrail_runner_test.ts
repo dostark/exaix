@@ -225,3 +225,75 @@ Deno.test("policy-throw-is-nonblocking", async () => {
   assertEquals(errorEvents.length, 1);
   assertExists(errorEvents[0].payload);
 });
+
+Deno.test("interval-2-skips-odd-iterations", async () => {
+  const config = makeConfig({
+    enabled: true,
+    check_interval_iterations: 2,
+    policies: [
+      GuardrailPolicySchema.parse({
+        policy_id: "p1",
+        description: "test",
+        blueprint: "test-blueprint",
+      }),
+    ],
+  });
+  const logger = new MockLogger();
+  const runner = new GuardrailRunner(config, makePassProvider(), logger);
+
+  await runner.screen("output", "t1", 0);
+  const after0 =
+    logger.events.filter((e) => e.event === "guardrail.screen.pass").length;
+  assertEquals(after0, 1);
+
+  await runner.screen("output", "t1", 1);
+  const after1 =
+    logger.events.filter((e) => e.event === "guardrail.screen.pass").length;
+  assertEquals(after1, 1); // iteration 1 skipped
+
+  await runner.screen("output", "t1", 2);
+  const after2 =
+    logger.events.filter((e) => e.event === "guardrail.screen.pass").length;
+  assertEquals(after2, 2); // iteration 2 screened
+});
+
+Deno.test("final-output-respects-screen_final_output", async () => {
+  const config = makeConfig({
+    enabled: true,
+    screen_final_output: false,
+    policies: [
+      GuardrailPolicySchema.parse({
+        policy_id: "p1",
+        description: "test",
+        blueprint: "test-blueprint",
+      }),
+    ],
+  });
+  const logger = new MockLogger();
+  const runner = new GuardrailRunner(config, makePassProvider(), logger);
+
+  await runner.screen("final", "t1", Number.MAX_SAFE_INTEGER);
+  assertEquals(logger.events.length, 0);
+});
+
+Deno.test("final-output-screened-when-enabled", async () => {
+  const config = makeConfig({
+    enabled: true,
+    screen_final_output: true,
+    policies: [
+      GuardrailPolicySchema.parse({
+        policy_id: "p1",
+        description: "test",
+        blueprint: "test-blueprint",
+      }),
+    ],
+  });
+  const logger = new MockLogger();
+  const runner = new GuardrailRunner(config, makePassProvider(), logger);
+
+  await runner.screen("final", "t1", Number.MAX_SAFE_INTEGER);
+  const passEvents = logger.events.filter((e) =>
+    e.event === "guardrail.screen.pass"
+  );
+  assertEquals(passEvents.length, 1);
+});

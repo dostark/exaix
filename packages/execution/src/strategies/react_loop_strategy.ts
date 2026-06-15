@@ -12,6 +12,7 @@ import { AgentExecutionError, type AgentExecutor, type IAgentFileBlueprint } fro
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { AgentExecutionErrorType, ExecutionStrategyName, ToolName } from "@exaix/core";
+import { GuardrailBlockedError } from "@exaix/core/planning";
 import { parse as parseToml } from "@std/toml";
 import type { JSONValue } from "@exaix/core";
 import type { IEventBusService } from "@exaix/core/observability";
@@ -116,14 +117,15 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     let totalCostUsd = 0;
 
     for (let i = 0; i < this.MAX_ITERATIONS; i++) {
-      // 0. Guardrail seam (Phase 115 Step 1): halt at the iteration boundary if a prior
+      // 0. Guardrail seam (Phase 107): halt at the iteration boundary if a prior
       //    concurrent screen() accumulated a blocking violation. No-op in Solo (no runner).
+      //    The guardrail.block event is already emitted by GuardrailRunner.screen().
       if (
         this.executor.guardrailRunner?.hasBlockingViolation(context.trace_id)
       ) {
-        throw new AgentExecutionError(
+        throw new GuardrailBlockedError(
+          context.trace_id,
           "Execution halted by a blocking guardrail violation",
-          AgentExecutionErrorType.EXECUTION_ERROR,
         );
       }
 
@@ -184,6 +186,27 @@ export class ReActLoopStrategy implements IExecutionStrategy {
 
       if (isComplete) {
         // Agent signaled completion
+
+        // Screen the final output before review (Phase 107 Step 5).
+        // Uses FINAL_ITERATION sentinel — the runner honours screen_final_output config.
+        if (response.content) {
+          void this.executor.guardrailRunner?.screen(
+            response.content,
+            context.trace_id,
+            Number.MAX_SAFE_INTEGER,
+          );
+          if (
+            this.executor.guardrailRunner?.hasBlockingViolation(
+              context.trace_id,
+            )
+          ) {
+            throw new GuardrailBlockedError(
+              context.trace_id,
+              "Guardrail blocked final output before review",
+            );
+          }
+        }
+
         const finalResult = this.createFinalResult(
           response.content,
           context,
