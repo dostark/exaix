@@ -20,22 +20,19 @@ import {
 
 export function bootstrapTeamProviders(): void {
   const supported = ProviderRegistry.getSupportedProviders();
-  if (!supported.includes(PROVIDER_VERTEX)) {
-    const vertexMetadata: IProviderMetadata = {
-      name: VERTEX_PROVIDER_METADATA.name,
-      description: VERTEX_PROVIDER_METADATA.description,
-      capabilities: [...VERTEX_PROVIDER_METADATA.capabilities],
-      costTier: VERTEX_PROVIDER_METADATA.costTier,
-      pricingTier: PricingTier.MEDIUM,
-      strengths: [...VERTEX_PROVIDER_METADATA.strengths],
-    };
-    ProviderRegistry.registerWithMetadata(
-      PROVIDER_VERTEX,
-      new VertexProviderFactory(),
-      vertexMetadata,
-    );
-  }
-  if (!supported.includes(PROVIDER_VERTEX)) {
-    ProviderDefaultsRegistry.register(PROVIDER_VERTEX, VERTEX_DEFAULTS);
-  }
+  if (supported.includes(PROVIDER_VERTEX)) return;
+  const vertexMetadata: IProviderMetadata = {
+    name: VERTEX_PROVIDER_METADATA.name,
+    description: VERTEX_PROVIDER_METADATA.description,
+    capabilities: [...VERTEX_PROVIDER_METADATA.capabilities],
+    costTier: VERTEX_PROVIDER_METADATA.costTier,
+    pricingTier: PricingTier.MEDIUM,
+    strengths: [...VERTEX_PROVIDER_METADATA.strengths],
+  };
+  ProviderRegistry.registerWithMetadata(
+    PROVIDER_VERTEX,
+    new VertexProviderFactory(),
+    vertexMetadata,
+  );
+  ProviderDefaultsRegistry.register(PROVIDER_VERTEX, VERTEX_DEFAULTS);
 }
