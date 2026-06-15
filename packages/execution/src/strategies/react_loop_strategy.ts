@@ -118,7 +118,9 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     for (let i = 0; i < this.MAX_ITERATIONS; i++) {
       // 0. Guardrail seam (Phase 115 Step 1): halt at the iteration boundary if a prior
       //    concurrent screen() accumulated a blocking violation. No-op in Solo (no runner).
-      if (this.executor.guardrailRunner?.hasBlockingViolation(context.trace_id)) {
+      if (
+        this.executor.guardrailRunner?.hasBlockingViolation(context.trace_id)
+      ) {
         throw new AgentExecutionError(
           "Execution halted by a blocking guardrail violation",
           AgentExecutionErrorType.EXECUTION_ERROR,
@@ -135,14 +137,22 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       );
 
       // 2. Build prompt with (possibly compacted) history
-      const prompt = this.buildPrompt(blueprint, context, options, budgetedHistory);
+      const prompt = this.buildPrompt(
+        blueprint,
+        context,
+        options,
+        budgetedHistory,
+      );
 
       // 3. Generate next step with heartbeat during long LLM waits
-      const response = await this.withHeartbeat(context, () =>
-        this.provider!.generate(prompt, {
-          temperature: REACT_DEFAULT_TEMPERATURE,
-          max_tokens: REACT_DEFAULT_MAX_TOKENS,
-        }));
+      const response = await this.withHeartbeat(
+        context,
+        () =>
+          this.provider!.generate(prompt, {
+            temperature: REACT_DEFAULT_TEMPERATURE,
+            max_tokens: REACT_DEFAULT_MAX_TOKENS,
+          }),
+      );
 
       // Log individual generation metrics (Phase 69)
       await this.executor.logGeneration(
@@ -160,16 +170,26 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       totalCostUsd += response.cost_usd ?? 0;
 
       // 3. Parse thought and actions
-      const { thought, actions, isComplete } = this.parseResponse(response.content);
+      const { thought, actions, isComplete } = this.parseResponse(
+        response.content,
+      );
 
       if (thought) {
         history.push({ role: ReActRole.THOUGHT, content: thought });
-        await this.executor.logAgentOutput(context.trace_id, `${REACT_THOUGHT_PREFIX}${thought}`);
+        await this.executor.logAgentOutput(
+          context.trace_id,
+          `${REACT_THOUGHT_PREFIX}${thought}`,
+        );
       }
 
       if (isComplete) {
         // Agent signaled completion
-        const finalResult = this.createFinalResult(response.content, context, startTime, toolCallCount);
+        const finalResult = this.createFinalResult(
+          response.content,
+          context,
+          startTime,
+          toolCallCount,
+        );
 
         // Attach accumulated usage (aggregated across all loop iterations)
         finalResult.usage = {
@@ -196,20 +216,24 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         );
       }
 
-      // Guardrail seam (Phase 115 Step 1): fire-and-forget screening of the proposed
-      // thought + actions at the iteration boundary. No-op in Solo (no runner injected);
-      // paid editions screen concurrently and surface a verdict via hasBlockingViolation.
-      void this.executor.guardrailRunner?.screen({
-        traceId: context.trace_id,
-        iteration: i,
-        thought,
-        actions,
-      });
+      // Guardrail seam (Phase 107): fire-and-forget screening of the agent output.
+      // No-op in Solo (no runner injected); Team edition screens concurrently and
+      // surfaces a verdict via hasBlockingViolation.
+      if (response.content) {
+        void this.executor.guardrailRunner?.screen(
+          response.content,
+          context.trace_id,
+          i,
+        );
+      }
 
       // 5. Execute actions
       for (const action of actions) {
         toolCallCount++;
-        await this.executor.logAgentOutput(context.trace_id, `${REACT_CALLING_TOOL_PREFIX}${action.tool}`);
+        await this.executor.logAgentOutput(
+          context.trace_id,
+          `${REACT_CALLING_TOOL_PREFIX}${action.tool}`,
+        );
 
         const result = await this.executeTool(action, options);
         history.push({
@@ -219,7 +243,10 @@ export class ReActLoopStrategy implements IExecutionStrategy {
 
         if (!result.success) {
           // Let the agent see the error and decide how to proceed
-          await this.executor.logAgentOutput(context.trace_id, `${REACT_TOOL_ERROR_PREFIX}${result.error}`);
+          await this.executor.logAgentOutput(
+            context.trace_id,
+            `${REACT_TOOL_ERROR_PREFIX}${result.error}`,
+          );
         }
       }
     }
@@ -235,19 +262,26 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     options: IAgentExecutionOptions,
   ): Promise<IToolExecutionResult> {
     if (!this.executor.toolRegistry) {
-      throw new AgentExecutionError("ToolRegistry not available", AgentExecutionErrorType.CONFIGURATION_ERROR);
+      throw new AgentExecutionError(
+        "ToolRegistry not available",
+        AgentExecutionErrorType.CONFIGURATION_ERROR,
+      );
     }
 
     // Ensure portal isolation via path prefixing (consistent with McpAgentStrategy)
     const enrichedParams = { ...action.params };
     if (
-      options.portal && enrichedParams.path && typeof enrichedParams.path === "string" &&
+      options.portal && enrichedParams.path &&
+      typeof enrichedParams.path === "string" &&
       !enrichedParams.path.startsWith("@")
     ) {
       enrichedParams.path = `@${options.portal}/${enrichedParams.path}`;
     }
 
-    return await this.executor.toolRegistry.execute(action.tool, enrichedParams) as IToolExecutionResult;
+    return await this.executor.toolRegistry.execute(
+      action.tool,
+      enrichedParams,
+    ) as IToolExecutionResult;
   }
 
   /**
@@ -307,7 +341,9 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     const segments: IContextSegment[] = [];
 
     // Per-segment cap for tool_result kind in dynamic mode (GAP-5).
-    const toolResultCap = Math.floor(promptBudget.sections.loopHistory * REACT_TOOL_RESULT_BUDGET_RATIO);
+    const toolResultCap = Math.floor(
+      promptBudget.sections.loopHistory * REACT_TOOL_RESULT_BUDGET_RATIO,
+    );
 
     // System prompt — always protected
     if (blueprint.systemPrompt) {
@@ -316,7 +352,9 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         kind: "system",
         content: blueprint.systemPrompt,
         priority: CONTEXT_PRIORITY_SYSTEM,
-        tokenEstimate: Math.ceil(blueprint.systemPrompt.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN),
+        tokenEstimate: Math.ceil(
+          blueprint.systemPrompt.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN,
+        ),
         metadata: {},
       });
     }
@@ -325,7 +363,9 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     for (let idx = 0; idx < history.length; idx++) {
       const entry = history[idx];
       const kind = entry.role === ReActRole.RESULT ? "tool_result" as const : "reflection" as const;
-      let tokenEstimate = Math.ceil(entry.content.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
+      let tokenEstimate = Math.ceil(
+        entry.content.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN,
+      );
       if (kind === "tool_result" && toolResultCap > 0) {
         tokenEstimate = Math.min(tokenEstimate, toolResultCap);
       }
@@ -353,14 +393,19 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     // Emit budget pressure journal event if utilisation exceeds the threshold
     if (
       snapshot.maxContextTokens > 0 &&
-      snapshot.usedInputTokens / snapshot.maxContextTokens >= LOOP_HISTORY_BUDGET_THRESHOLD
+      snapshot.usedInputTokens / snapshot.maxContextTokens >=
+        LOOP_HISTORY_BUDGET_THRESHOLD
     ) {
-      void this.executor.budgetLogger?.info(DomainEventType.ContextBudgetExceeded, context.trace_id, {
-        model: blueprint.model as string,
-        contextWindow: snapshot.maxContextTokens as number,
-        estimatedTokens: snapshot.usedInputTokens as number,
-        tokenSource: "heuristic" as string,
-      });
+      void this.executor.budgetLogger?.info(
+        DomainEventType.ContextBudgetExceeded,
+        context.trace_id,
+        {
+          model: blueprint.model as string,
+          contextWindow: snapshot.maxContextTokens as number,
+          estimatedTokens: snapshot.usedInputTokens as number,
+          tokenSource: "heuristic" as string,
+        },
+      );
     }
 
     // Rebuild history from kept history segments (system segment is not in history)
@@ -402,7 +447,13 @@ INSTRUCTIONS:
 AVAILABLE TOOLS:
 ${
       (options.permitted_tools ||
-        [ToolName.READ_FILE, ToolName.WRITE_FILE, ToolName.RUN_COMMAND, ToolName.LIST_DIRECTORY, ToolName.SEARCH_FILES])
+        [
+          ToolName.READ_FILE,
+          ToolName.WRITE_FILE,
+          ToolName.RUN_COMMAND,
+          ToolName.LIST_DIRECTORY,
+          ToolName.SEARCH_FILES,
+        ])
         .join(", ")
     }
 
@@ -458,7 +509,9 @@ ${REACT_SUMMARY_PREFIX}[What was done]
     return loopHistoryTokens * TOKEN_ESTIMATION_CHARS_PER_TOKEN;
   }
 
-  private parseResponse(response: string): { thought?: string; actions: IReActAction[]; isComplete: boolean } {
+  private parseResponse(
+    response: string,
+  ): { thought?: string; actions: IReActAction[]; isComplete: boolean } {
     const isComplete = response.includes(REACT_STATUS_COMPLETE);
 
     // Improved thought parsing to handle both prefix and blocks
@@ -474,7 +527,13 @@ ${REACT_SUMMARY_PREFIX}[What was done]
       try {
         const block = match[1].trim();
         const parsed = parseToml(block) as {
-          actions?: Array<{ tool: string; params?: Record<string, JSONValue>; description?: string }>;
+          actions?: Array<
+            {
+              tool: string;
+              params?: Record<string, JSONValue>;
+              description?: string;
+            }
+          >;
         };
 
         if (parsed.actions && Array.isArray(parsed.actions)) {
@@ -502,14 +561,23 @@ ${REACT_SUMMARY_PREFIX}[What was done]
   ): IChangesetResult {
     // Try to extract JSON from the response using the executor's parser (Phase 61.2)
     // This allows the agent to provide a summary JSON at the end of the ReAct loop
-    const jsonResult = this.executor.parseAgentResponse(response, context, startTime);
+    const jsonResult = this.executor.parseAgentResponse(
+      response,
+      context,
+      startTime,
+    );
 
     // Always merge tool call count from the loop with any manual count in JSON
     jsonResult.tool_calls = (jsonResult.tool_calls || 0) + toolCallCount;
 
     // If we have a summary text but no explicit JSON description, use the summary
-    const summaryMatch = response.match(new RegExp(`${REACT_SUMMARY_PREFIX}\\s*(.*)`, "s"));
-    if (summaryMatch && (!jsonResult.description || jsonResult.description === context.plan)) {
+    const summaryMatch = response.match(
+      new RegExp(`${REACT_SUMMARY_PREFIX}\\s*(.*)`, "s"),
+    );
+    if (
+      summaryMatch &&
+      (!jsonResult.description || jsonResult.description === context.plan)
+    ) {
       jsonResult.description = summaryMatch[1].trim();
     }
 

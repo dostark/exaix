@@ -1,44 +1,34 @@
 /**
  * @module GuardrailRunner
  * @path packages/execution/src/guardrail_runner.ts
- * @description Edition-separation seam (Phase 115 Step 1): an optional guardrail screening
- * hook for the ReAct agent loop. Solo injects no runner, so the hook is a pure no-op; paid
- * editions (P107 concurrent guardrail) register an implementation through the edition composer.
- * Core never knows the concrete runner — it only invokes this interface when one is present.
+ * @description Post-output guardrail screening seam (Phase 107, replaces Phase 115 pre-action seam).
+ *   Solo injects no runner, so the hook is a pure no-op; Team edition injects GuardrailRunner
+ *   (packages-team/guardrail/) which screens agent output against configurable policies.
  * @architectural-layer Services
  * @dependencies [packages/execution/src/strategies/react_loop_strategy.ts]
- * @related-files [packages/execution/src/strategies/react_loop_strategy.ts, packages/execution/src/agent_executor.ts]
+ * @related-files [packages-team/guardrail/src/guardrail_runner.ts, packages/execution/src/agent_executor.ts]
  */
 
-import type { IReActAction } from "./strategies/react_loop_strategy.ts";
-
-/** Context passed to a guardrail runner for one ReAct iteration's screening. */
-export interface IGuardrailScreenContext {
-  /** Trace id of the executing agent run. */
-  readonly traceId: string;
-  /** Zero-based ReAct iteration index. */
-  readonly iteration: number;
-  /** The agent's reasoning for this iteration, if any. */
-  readonly thought?: string;
-  /** The tool actions the agent proposes to execute this iteration. */
-  readonly actions: readonly IReActAction[];
-}
+import type { GuardrailIncident } from "@exaix/schemas";
 
 /**
- * Optional screening seam for the ReAct loop. No-op in Solo (no runner injected). Paid
- * editions register a concurrent implementation (P107) through the edition composer.
+ * Optional post-output screening seam for the ReAct loop. No-op in Solo (no runner injected).
+ * Team edition injects a concurrent GuardrailRunner (P107) that screens agent output against
+ * configurable policies. Never throws — policy errors are journaled and non-blocking.
  */
 export interface IGuardrailRunner {
   /**
-   * Fire-and-forget screening of one ReAct iteration's proposed thought + actions.
-   * Implementations may screen concurrently; their verdict is observed later via
-   * {@link IGuardrailRunner.hasBlockingViolation}. Must not throw.
+   * Screen one agent-output string against all configured policies.
+   * Fire-and-forget from the caller's perspective: resolves when policies settle,
+   * but the ReAct loop does NOT await it on the critical path. Never throws —
+   * policy errors are journaled as guardrail.screen.error and are not violations.
    */
-  screen(context: IGuardrailScreenContext): void;
+  screen(
+    agentOutput: string,
+    traceId: string,
+    iteration: number,
+  ): Promise<GuardrailIncident[]>;
 
-  /**
-   * Whether screening has accumulated a blocking violation for `traceId` that must halt
-   * the loop. Checked at the top of each ReAct iteration.
-   */
+  /** True iff a block-severity violation has been recorded for this trace. Cheap, synchronous. */
   hasBlockingViolation(traceId: string): boolean;
 }
