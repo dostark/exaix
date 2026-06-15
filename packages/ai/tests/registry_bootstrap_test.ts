@@ -1,7 +1,7 @@
 /**
  * @module RootRegistryBootstrapTest
  * @path packages/ai/tests/registry_bootstrap_test.ts
- * @description Verifies that the root composition bootstrap registers Solo-tier concrete AI providers and excludes Team-only providers.
+ * @description Verifies that the root composition bootstrap registers Solo-tier concrete AI providers and excludes Team-only providers (Vertex AI, OpenRouter).
  */
 
 import { assertEquals, assertExists } from "@std/assert";
@@ -19,14 +19,14 @@ Deno.test("bootstrapProviderRegistry registers Solo-tier providers and excludes 
   assertEquals(supported.includes("openai"), true);
   assertEquals(supported.includes("google"), true);
   assertEquals(supported.includes("vertex-ai"), false);
-  assertEquals(supported.includes("openrouter"), true);
+  assertEquals(supported.includes("openrouter"), false);
   assertEquals(supported.includes("ollama"), true);
   assertExists(ProviderRegistry.getFactory("mock"));
   assertExists(ProviderRegistry.getFactory("anthropic"));
   assertExists(ProviderRegistry.getFactory("openai"));
   assertExists(ProviderRegistry.getFactory("google"));
   assertEquals(ProviderRegistry.getFactory("vertex-ai"), undefined);
-  assertExists(ProviderRegistry.getFactory("openrouter"));
+  assertEquals(ProviderRegistry.getFactory("openrouter"), undefined);
   assertExists(ProviderRegistry.getFactory("ollama"));
 
   bootstrapProviderRegistry();

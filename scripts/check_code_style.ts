@@ -505,6 +505,7 @@ const rules: Rule[] = [
       !path.includes("/src/composer/") &&
       !path.startsWith("apps/daemon/") &&
       !path.startsWith("apps/exactl/") &&
+      !path.startsWith("apps/common/") &&
       !path.startsWith("tests/scenario_framework/runner/modes.ts") &&
       !path.endsWith("scripts/test_parallel.ts"),
   },

@@ -1,0 +1,47 @@
+/**
+ * @module CapabilityConstants
+ * @path packages/core/src/composer/capabilities.ts
+ * @description Edition capability IDs and their tier mappings. Used by the Deferred Phase Wire-up
+ *   to replace the documentation-only edition availability table in packages/ai/README.md with
+ *   programmatic constants.
+ *
+ *   Each capability ID represents a feature that shipped un-gated and is positioned for a specific
+ *   edition tier. The CAPABILITY_EDITION map records the intended tier for build-time scoping.
+ *
+ *   These constants are NOT a runtime entitlement check — that is Phase B work. They serve as the
+ *   single source of truth for which edition a feature belongs to, used by build-time gating and
+ *   documentation.
+ *
+ * @architectural-layer Shared
+ * @related-files ["packages/core/src/types/constants.ts", "packages/ai/README.md", "apps/common/registry_bootstrap.ts"]
+ */
+
+import { EDITION_TEAM } from "../types/constants.ts";
+
+// ============================================================================
+// Capability IDs
+// ============================================================================
+
+/** P113: VOTING_GROUP step type — Team/Enterprise only */
+export const CAP_VOTING = "voting";
+
+/** P94: Per-action HITL governance surface — Team/Enterprise only */
+export const CAP_HITL_GOVERNANCE = "hitl_governance";
+
+/** P107: Advanced guardrail policies — Team/Enterprise only */
+export const CAP_GUARDRAIL_ADVANCED = "guardrail_advanced";
+
+/** P80: OpenRouter as Team+ differentiator — Team/Enterprise (ships in Solo today, subject to future gating) */
+export const CAP_OPENROUTER_TEAM = "openrouter_team";
+
+// ============================================================================
+// Edition tier map
+// ============================================================================
+
+/** Maps each capability ID to its required edition tier. */
+export const CAPABILITY_EDITION: Record<string, string> = {
+  [CAP_VOTING]: EDITION_TEAM,
+  [CAP_HITL_GOVERNANCE]: EDITION_TEAM,
+  [CAP_GUARDRAIL_ADVANCED]: EDITION_TEAM,
+  [CAP_OPENROUTER_TEAM]: EDITION_TEAM,
+};

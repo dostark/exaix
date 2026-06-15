@@ -7,7 +7,7 @@
  */
 
 import { initializeRegistry, type IProviderMetadata, ProviderRegistry, setProviderRegistryBootstrap } from "@exaix/ai";
-import { PricingTier, ProviderDefaultsRegistry } from "@exaix/core";
+import { EDITION_SOLO, PricingTier, ProviderDefaultsRegistry } from "@exaix/core";
 import {
   ANTHROPIC_DEFAULTS,
   ANTHROPIC_PROVIDER_METADATA,
@@ -87,7 +87,8 @@ function registerConcreteProviders(): void {
     );
   }
 
-  if (!supported.includes(PROVIDER_OPENROUTER)) {
+  const editionType = Deno.env.get("EXAIX_EDITION") ?? EDITION_SOLO;
+  if (editionType !== EDITION_SOLO && !supported.includes(PROVIDER_OPENROUTER)) {
     const openrouterMetadata: IProviderMetadata = {
       name: OPENROUTER_PROVIDER_METADATA.name,
       description: OPENROUTER_PROVIDER_METADATA.description,
@@ -109,7 +110,10 @@ function registerProviderDefaults(): void {
   ProviderDefaultsRegistry.register(PROVIDER_ANTHROPIC, ANTHROPIC_DEFAULTS);
   ProviderDefaultsRegistry.register(PROVIDER_OPENAI, OPENAI_DEFAULTS);
   ProviderDefaultsRegistry.register(PROVIDER_GOOGLE, GOOGLE_DEFAULTS);
-  ProviderDefaultsRegistry.register(PROVIDER_OPENROUTER, OPENROUTER_DEFAULTS);
+  const editionType = Deno.env.get("EXAIX_EDITION") ?? EDITION_SOLO;
+  if (editionType !== EDITION_SOLO) {
+    ProviderDefaultsRegistry.register(PROVIDER_OPENROUTER, OPENROUTER_DEFAULTS);
+  }
 }
 
 setProviderRegistryBootstrap(registerConcreteProviders);
