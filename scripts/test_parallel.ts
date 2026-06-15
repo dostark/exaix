@@ -580,7 +580,7 @@ export async function main(args: string[]): Promise<number> {
   const batch1IgnoreArg = `--ignore=${SEQUENTIAL_FILES.join(",")}`;
 
   const batch1Stats = await runAndCapture(
-    ["--parallel", batch1IgnoreArg, "tests/", "packages/", "apps/", ...forwardedArgs],
+    ["--parallel", batch1IgnoreArg, "tests/", "packages/", "packages-team/", "apps/", ...forwardedArgs],
     "Batch 1 – Parallel suite",
     batch1Env,
     "tap",
