@@ -9,7 +9,7 @@
  */
 
 import { assert, assertEquals, assertRejects } from "@std/assert";
-import { GoogleAuth, type ServiceAccountKey } from "@exaix/ai-vertex";
+import { GoogleAuth, type ServiceAccountKey } from "@exaix-team/ai-vertex";
 
 async function generatePrivateKeyPem(): Promise<string> {
   const kp = await crypto.subtle.generateKey(

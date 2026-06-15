@@ -21,7 +21,7 @@ import {
   GoogleAuth,
   parseServiceAccountFromEnv,
   type ServiceAccountKey,
-} from "@exaix/ai-vertex";
+} from "@exaix-team/ai-vertex";
 
 interface ICapturedEvent {
   action: string;

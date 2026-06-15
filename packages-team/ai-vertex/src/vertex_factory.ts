@@ -3,7 +3,7 @@
  * @path packages/ai-vertex/src/vertex_factory.ts
  * @related-files ["packages/ai-vertex/src/vertex_provider.ts", "packages/ai-vertex/src/auth/service_account.ts", "packages/ai-vertex/src/constants.ts"]
  * @architectural-layer AI
- * @dependencies ["@exaix/ai", "@exaix/ai/providers", "@exaix/ai-vertex/src/auth/service_account.ts"]
+ * @dependencies ["@exaix/ai", "@exaix/ai/providers", "@exaix-team/ai-vertex/src/auth/service_account.ts"]
  * @description Factory for creating VertexProvider instances. Resolves the service account
  * from its environment variable and fails with an actionable error when it is missing/invalid.
  */

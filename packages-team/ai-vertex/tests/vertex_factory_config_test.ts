@@ -10,7 +10,7 @@
 import { assert, assertStringIncludes } from "@std/assert";
 import { ExaPathDefaults, LogLevel, ProviderType } from "@exaix/core";
 import { type Config, ConfigSchema } from "@exaix/schemas";
-import { type ServiceAccountKey, VertexProvider, VertexProviderFactory } from "@exaix/ai-vertex";
+import { type ServiceAccountKey, VertexProvider, VertexProviderFactory } from "@exaix-team/ai-vertex";
 
 interface IConfigOverrides {
   ai_vertex?: { service_account_env?: string; region?: string };

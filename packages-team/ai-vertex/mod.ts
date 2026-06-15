@@ -1,10 +1,10 @@
 /**
- * @module AIVertexPackage
- * @path packages/ai-vertex/mod.ts
+ * @module AIVertexTeamPackage
+ * @path packages-team/ai-vertex/mod.ts
  * @ungrounded
  * @related-files []
- * @architectural-layer AI
- * @description Package entrypoint for @exaix/ai-vertex (Google Vertex AI provider + service-account auth).
+ * @architectural-layer Team-AI
+ * @description Package entrypoint for @exaix-team/ai-vertex (Google Vertex AI provider + service-account auth). Team-only per D-providers.
  */
 
 export * from "./src/constants.ts";

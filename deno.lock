@@ -246,6 +246,11 @@
       "npm:typescript@6.0.3"
     ],
     "members": {
+      "packages-team/ai-vertex": {
+        "dependencies": [
+          "jsr:@std/assert@^1.0.19"
+        ]
+      },
       "packages/ai": {
         "dependencies": [
           "jsr:@std/assert@^1.0.19",
@@ -273,11 +278,6 @@
         ]
       },
       "packages/ai-openrouter": {
-        "dependencies": [
-          "jsr:@std/assert@^1.0.19"
-        ]
-      },
-      "packages/ai-vertex": {
         "dependencies": [
           "jsr:@std/assert@^1.0.19"
         ]

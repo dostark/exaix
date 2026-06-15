@@ -9,7 +9,6 @@
     "./packages/ai-anthropic",
     "./packages/ai-openai",
     "./packages/ai-google",
-    "./packages/ai-vertex",
     "./packages/ai-openrouter",
     "./packages/ai-ollama",
     "./packages/tui",
@@ -34,7 +33,8 @@
     "./apps/tui",
     "./apps/agent-entrypoint",
     "./packages-team/team-placeholder",
-    "./packages-team/team-composer"
+    "./packages-team/team-composer",
+    "./packages-team/ai-vertex"
   ],
   "lock": true,
   "exports": "./apps/daemon/main.ts",
@@ -128,8 +128,8 @@
     "@exaix/ai-openai/": "./packages/ai-openai/",
     "@exaix/ai-google": "./packages/ai-google/mod.ts",
     "@exaix/ai-google/": "./packages/ai-google/",
-    "@exaix/ai-vertex": "./packages/ai-vertex/mod.ts",
-    "@exaix/ai-vertex/": "./packages/ai-vertex/",
+    "@exaix-team/ai-vertex": "./packages-team/ai-vertex/mod.ts",
+    "@exaix-team/ai-vertex/": "./packages-team/ai-vertex/",
     "@exaix/ai-openrouter": "./packages/ai-openrouter/mod.ts",
     "@exaix/ai-openrouter/": "./packages/ai-openrouter/",
     "@exaix/ai-ollama": "./packages/ai-ollama/mod.ts",

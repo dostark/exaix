@@ -4,7 +4,7 @@
  * @related-files ["packages/ai-vertex/src/auth/google_auth.ts", "packages/ai-vertex/src/auth/service_account.ts"]
  * @architectural-layer AI
  * @dependencies ["@exaix/core"]
- * @description Vertex AI provider + service-account auth constants owned by @exaix/ai-vertex.
+ * @description Vertex AI provider + service-account auth constants owned by @exaix-team/ai-vertex.
  */
 
 import { type IProviderDefaults, ProviderCostTier, ProviderType } from "@exaix/core";

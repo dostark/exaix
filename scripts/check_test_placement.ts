@@ -104,7 +104,8 @@ export function getTestPlacementIssue(path: string): ITestPlacementIssue | null 
   ) {
     return {
       path: normalized,
-      message: "Test files must live under tests/, packages/<package>/tests/, packages-team/<package>/tests/, or apps/<app>/tests/.",
+      message:
+        "Test files must live under tests/, packages/<package>/tests/, packages-team/<package>/tests/, or apps/<app>/tests/.",
       suggestion: recommendTestDirectoryForSource(normalized) ??
         "Move this file under tests/, a package/app tests folder, or packages-team/<package>/tests/.",
     };

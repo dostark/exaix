@@ -12,14 +12,14 @@ import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/
 import { ProviderType } from "@exaix/core";
 import { AuthenticationError } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { IGoogleAuth } from "@exaix/ai-vertex";
+import type { IGoogleAuth } from "@exaix-team/ai-vertex";
 import {
   DEFAULT_VERTEX_SERVICE_ACCOUNT_ENV,
   type ServiceAccountKey,
   VERTEX_PROVIDER_METADATA,
   VertexProvider,
   VertexProviderFactory,
-} from "@exaix/ai-vertex";
+} from "@exaix-team/ai-vertex";
 
 async function generatePrivateKeyPem(): Promise<string> {
   const kp = await crypto.subtle.generateKey(

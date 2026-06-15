@@ -18,7 +18,7 @@ import {
   parseServiceAccountFromEnv,
   type ServiceAccountKey,
   ServiceAccountKeySchema,
-} from "@exaix/ai-vertex";
+} from "@exaix-team/ai-vertex";
 
 const FAKE_KEY_MARKER = "SUPER-SECRET-PRIVATE-KEY-MATERIAL";
 
