@@ -9,6 +9,23 @@
  * typos and establish a single source of truth for the event taxonomy.
  */
 
+/** Guardrail verdict type. */
+export type GuardrailVerdict = "pass" | "violation";
+/** Guardrail severity type. */
+export type GuardrailSeverity = "warn" | "block";
+
+/** Typed payload for guardrail.* events. */
+export interface IGuardrailEventPayload {
+  policy_id: string;
+  iteration: number;
+  verdict: GuardrailVerdict;
+  severity: GuardrailSeverity;
+  flagged_excerpt?: string;
+  explanation?: string;
+  /** Present only on guardrail.screen.error. */
+  error_message?: string;
+}
+
 export const DomainEventType = {
   // Flow step events
   FlowStepExecuted: "flow.step.executed",
@@ -294,6 +311,17 @@ export const DomainEventType = {
   DaemonUnhandledRejection: "daemon.unhandled_rejection",
   DaemonUncaughtError: "daemon.uncaught_error",
   DaemonErrorHandlersRegistered: "daemon.error_handlers_registered",
+
+  // ---------------------------------------------------------------------------
+  // Guardrail (Phase 107)
+  // ---------------------------------------------------------------------------
+  GuardrailScreenPass: "guardrail.screen.pass",
+  GuardrailScreenViolation: "guardrail.screen.violation",
+  GuardrailScreenError: "guardrail.screen.error",
+  GuardrailWarn: "guardrail.warn",
+  GuardrailBlock: "guardrail.block",
+  GuardrailInitialized: "guardrail.initialized",
+  GuardrailInitFailed: "guardrail.init_failed",
 } as const;
 
 export type TDomainEventType = typeof DomainEventType[keyof typeof DomainEventType];

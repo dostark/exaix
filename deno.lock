@@ -398,6 +398,9 @@
           "jsr:@std/path@^1.1.4"
         ]
       }
+    },
+    "links": {
+      "jsr:@exaix-team/guardrail@0.1.0": {}
     }
   }
 }

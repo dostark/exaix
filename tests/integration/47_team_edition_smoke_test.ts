@@ -18,10 +18,12 @@ const SOLO_PROVIDERS = [
   ProviderType.ANTHROPIC,
   ProviderType.OPENAI,
   ProviderType.GOOGLE,
-  ProviderType.OPENROUTER,
 ];
 
-const TEAM_ONLY_PROVIDER = ProviderType.VERTEX;
+const TEAM_PROVIDERS = [
+  ProviderType.VERTEX,
+  ProviderType.OPENROUTER,
+];
 
 function freshSoloBootstrap(): void {
   ProviderRegistry.clear();
@@ -39,34 +41,48 @@ describe("[team] Team edition provider bootstrap", () => {
       );
     }
 
-    assert(
-      !ProviderRegistry.getSupportedProviders().includes(TEAM_ONLY_PROVIDER),
-      "Vertex AI must NOT be registered after Solo bootstrap",
-    );
-  });
-
-  it("Team bootstrap adds Vertex AI alongside Solo providers", () => {
-    freshSoloBootstrap();
-    bootstrapTeamProviders();
-
-    for (const provider of SOLO_PROVIDERS) {
+    for (const provider of TEAM_PROVIDERS) {
       assert(
-        ProviderRegistry.getSupportedProviders().includes(provider),
-        `Expected Solo provider ${provider} to be registered after Team bootstrap`,
+        !ProviderRegistry.getSupportedProviders().includes(provider),
+        `Team provider ${provider} must NOT be registered after Solo bootstrap`,
       );
     }
+  });
 
-    assert(
-      ProviderRegistry.getSupportedProviders().includes(TEAM_ONLY_PROVIDER),
-      "Vertex AI must be registered after Team bootstrap",
-    );
+  it("Team bootstrap adds Team providers alongside Solo providers", () => {
+    const prevEdition = Deno.env.get("EXAIX_EDITION");
+    Deno.env.set("EXAIX_EDITION", "team");
+    try {
+      freshSoloBootstrap();
+      bootstrapTeamProviders();
+
+      for (const provider of SOLO_PROVIDERS) {
+        assert(
+          ProviderRegistry.getSupportedProviders().includes(provider),
+          `Expected Solo provider ${provider} to be registered after Team bootstrap`,
+        );
+      }
+
+      for (const provider of TEAM_PROVIDERS) {
+        assert(
+          ProviderRegistry.getSupportedProviders().includes(provider),
+          `Expected Team provider ${provider} to be registered after Team bootstrap`,
+        );
+      }
+    } finally {
+      if (prevEdition !== undefined) {
+        Deno.env.set("EXAIX_EDITION", prevEdition);
+      } else {
+        Deno.env.delete("EXAIX_EDITION");
+      }
+    }
   });
 
   it("Vertex AI factory is retrievable after Team bootstrap", () => {
     freshSoloBootstrap();
     bootstrapTeamProviders();
 
-    const factory = ProviderRegistry.getFactory(TEAM_ONLY_PROVIDER);
+    const factory = ProviderRegistry.getFactory(ProviderType.VERTEX);
     assert(factory !== undefined, "Vertex AI factory must be retrievable");
     assertEquals(typeof factory!.create, "function");
   });

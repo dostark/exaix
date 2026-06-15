@@ -3,15 +3,14 @@
  * @path packages/execution/tests/agents/react_loop_strategy_guardrail_test.ts
  * @related-files [packages/execution/src/strategies/react_loop_strategy.ts, packages/execution/src/guardrail_runner.ts]
  * @architectural-layer Services
- * @description Phase 115 Step 1 — verifies the optional IGuardrailRunner screening seam in
- * the ReAct loop: no-op when absent (parity), screen() invoked per action iteration, and
- * hasBlockingViolation halting the loop. The seam keeps Solo a no-op; paid editions (P107)
- * inject a concurrent runner via the edition composer.
+ * @description Phase 107 — verifies the optional IGuardrailRunner screening seam in
+ * the ReAct loop: no-op when absent (parity), screen() invoked per iteration, and
+ * hasBlockingViolation halting the loop.
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
-import { AgentExecutionError, ReActLoopStrategy } from "@exaix/execution";
-import type { IAgentFileBlueprint, IGuardrailRunner, IGuardrailScreenContext } from "@exaix/execution";
+import { ReActLoopStrategy } from "@exaix/execution";
+import type { IAgentFileBlueprint, IGuardrailRunner } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import {
@@ -21,6 +20,8 @@ import {
   REACT_THOUGHT_PREFIX,
   SecurityMode,
 } from "@exaix/core";
+import { GuardrailBlockedError } from "@exaix/core/planning";
+import type { GuardrailIncident } from "@exaix/schemas";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import type { JSONValue } from "@exaix/core/types";
 
@@ -47,10 +48,11 @@ class MockModelProvider implements IModelProvider {
 
 /** A test double recording screen() calls and reporting a configurable blocking verdict. */
 class StubGuardrailRunner implements IGuardrailRunner {
-  readonly screenCalls: IGuardrailScreenContext[] = [];
+  readonly screenCalls: Array<{ output: string; traceId: string; iteration: number }> = [];
   blocking = false;
-  screen(context: IGuardrailScreenContext): void {
-    this.screenCalls.push(context);
+  screen(agentOutput: string, traceId: string, iteration: number): Promise<GuardrailIncident[]> {
+    this.screenCalls.push({ output: agentOutput, traceId, iteration });
+    return Promise.resolve([]);
   }
   hasBlockingViolation(_traceId: string): boolean {
     return this.blocking;
@@ -125,7 +127,6 @@ Deno.test("[execution] ReAct loop behaves identically with no runner injected", 
     writeAction(1),
     `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`,
   ]);
-  // baseExecutor has no guardrailRunner — the seam must be a pure no-op.
   const strategy = new ReActLoopStrategy(baseExecutor as ReActExecutor, provider);
   const result = await strategy.execute(blueprint, context, options());
   assertEquals(result.tool_calls, 1);
@@ -144,9 +145,8 @@ Deno.test("[execution] injected stub runner.screen() is invoked once per action 
   );
   await strategy.execute(blueprint, context, options());
 
-  assertEquals(runner.screenCalls.length, 2);
-  assertEquals(runner.screenCalls.map((c) => c.iteration), [0, 1]);
-  assertEquals(runner.screenCalls[0].actions.map((a) => a.tool), ["write_file"]);
+  assertEquals(runner.screenCalls.length, 3);
+  assertEquals(runner.screenCalls.map((c) => c.iteration), [0, 1, Number.MAX_SAFE_INTEGER]);
   assertEquals(runner.screenCalls[0].traceId, context.trace_id);
 });
 
@@ -160,9 +160,8 @@ Deno.test("[execution] hasBlockingViolation halts the loop", async () => {
   );
   await assertRejects(
     () => strategy.execute(blueprint, context, options()),
-    AgentExecutionError,
+    GuardrailBlockedError,
     "guardrail",
   );
-  // Halt happens at the top of iteration 0, before any model generation or screening.
   assertEquals(runner.screenCalls.length, 0);
 });

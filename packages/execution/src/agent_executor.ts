@@ -138,6 +138,11 @@ const BlueprintSchema = z.object({
   default_skills: z.array(z.string()).optional(),
 }).passthrough(); // Allow extra fields without failing validation
 
+/** Optional configuration for AgentExecutor. */
+export interface IAgentExecutorOptions {
+  guardrailRunner?: IGuardrailRunner;
+}
+
 /**
  * AgentExecutor orchestrates agent execution with MCP
  */
@@ -197,6 +202,7 @@ export class AgentExecutor {
     contextBudgetManager?: IContextBudgetManager,
     snapshotStore?: ISnapshotStore,
     private _guardrailRunner?: IGuardrailRunner,
+    options?: IAgentExecutorOptions,
   ) {
     this.promptBudgetAllocator = promptBudgetAllocator ??
       new PromptBudgetAllocator(this.config.budget_enforcement, undefined, this.logger);
@@ -204,6 +210,9 @@ export class AgentExecutor {
     this._tokenizer = tokenizer;
     this._contextBudgetManager = contextBudgetManager;
     this._snapshotStore = snapshotStore;
+    if (options?.guardrailRunner) {
+      this._guardrailRunner = options.guardrailRunner;
+    }
     // If no registry provided, create one and register core strategies
     if (!this.strategyRegistry) {
       this.strategyRegistry = new StrategyRegistry();

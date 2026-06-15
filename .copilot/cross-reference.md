@@ -204,6 +204,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - Development guidelines: [guidelines/exaix-development.md](guidelines/exaix-development.md)
 - Self-improvement process: [guidelines/self-improvement.md](guidelines/self-improvement.md)
 - Tool confirmation / human-in-loop: [exaix-dev-docs/planning/phase-79-tool-confirmation-interceptor.md](../exaix-dev-docs/planning/phase-79-tool-confirmation-interceptor.md), `packages/tool-runtime/src/cli_confirmation_interceptor.ts`, `packages/tool-runtime/src/notification_queue_confirmation_interceptor.ts`
+- Concurrent guardrail runner (Phase 107): [exaix-dev-docs/planning/phase-107-concurrent-guardrail-runner.md](../exaix-dev-docs/planning/phase-107-concurrent-guardrail-runner.md), `packages-team/guardrail/src/guardrail_runner.ts`, `packages/execution/src/guardrail_runner.ts`
 
 ## Directory Structure
 

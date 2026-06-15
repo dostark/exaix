@@ -138,6 +138,8 @@
     "@exaix-team/ai-vertex": "./packages-team/ai-vertex/mod.ts",
     "@exaix-team/ai-vertex/": "./packages-team/ai-vertex/",
     "@exaix-team/mcp-server": "./packages-team/mcp-server/mod.ts",
+    "@exaix-team/guardrail": "./packages-team/guardrail/mod.ts",
+    "@exaix-team/guardrail/": "./packages-team/guardrail/",
     "@exaix-team/mcp-server/": "./packages-team/mcp-server/",
     "@exaix/ai-openrouter": "./packages/ai-openrouter/mod.ts",
     "@exaix/ai-openrouter/": "./packages/ai-openrouter/",

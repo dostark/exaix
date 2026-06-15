@@ -12,7 +12,7 @@ import { z } from "zod";
  * Trigger that initiates an amendment proposal
  */
 export const ZPlanAmendmentTrigger = z.object({
-  source: z.enum(["tool_error", "low_confidence", "context_mismatch", "manual_request"]),
+  source: z.enum(["tool_error", "low_confidence", "context_mismatch", "manual_request", "guardrail_violation"]),
   stepId: z.string(),
   reason: z.string().min(1),
   confidenceScore: z.number().min(0).max(100).optional(),

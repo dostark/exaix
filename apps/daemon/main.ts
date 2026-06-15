@@ -55,6 +55,7 @@ import { SoloComposer } from "@exaix/core";
 // dead-code eliminated in Solo builds because TeamComposer/bootstrapTeamProviders
 // are never called when editionType !== "team".
 import { bootstrapTeamProviders, TeamComposer } from "@exaix-team/team-composer";
+import { GuardrailRunner } from "@exaix-team/guardrail";
 
 if (import.meta.main) {
   // Simple argument handling for the compiled binary
@@ -133,6 +134,25 @@ if (import.meta.main) {
       source: providerInfo.source,
       named_model: defaultModelName,
     });
+
+    // Construct GuardrailRunner if enabled and Team edition (Phase 107)
+    let guardrailRunner: GuardrailRunner | undefined;
+    if (editionType !== EDITION_SOLO && config.guardrail?.enabled) {
+      try {
+        guardrailRunner = new GuardrailRunner(
+          config.guardrail,
+          llmProvider,
+          logger,
+        );
+        logger.info(DomainEventType.GuardrailInitialized, "daemon", {
+          policies: config.guardrail.policies.length,
+        });
+      } catch (err) {
+        logger.error(DomainEventType.GuardrailInitFailed, "daemon", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
 
     // Initialize Git orchestration service
     const gitService = new GitService({
@@ -324,6 +344,7 @@ if (import.meta.main) {
       llmProvider,
       reviewRegistry,
       sessionMemory,
+      guardrailRunner,
     });
 
     // Initialize Memory Auto-Approval Service (reuses memoryExtractor from context setup)

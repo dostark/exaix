@@ -30,7 +30,8 @@ import { ToolRegistry } from "@exaix/tool-runtime";
 import type { ReviewRegistry } from "@exaix/core/artifact";
 import { MemoryBankService, type SessionMemoryService } from "@exaix/memory";
 import { MissionReporter } from "@exaix/core/artifact";
-import { PlanExecutor } from "@exaix/core/planning";
+import { type IPlanExecutorOptions, PlanExecutor } from "@exaix/core/planning";
+import type { IGuardrailRunner } from "./guardrail_runner.ts";
 import { ExecutionStatus, PortalExecutionStrategy } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 import { type IStructuredPlan, parseStructuredPlanFromMarkdown } from "@exaix/core/planning";
@@ -71,6 +72,8 @@ export interface IExecutionLoopConfig {
   reviewRegistry?: ReviewRegistry;
   context?: IApplicationContext;
   sessionMemory?: SessionMemoryService;
+  /** Optional guardrail runner for PlanExecutor (Phase 107). */
+  guardrailRunner?: IGuardrailRunner;
 }
 
 export interface IExecutionResult {
@@ -122,6 +125,7 @@ export class ExecutionLoop {
   private confidenceScorer?: ConfidenceScorer;
   private amendmentService?: PlanAmendmentService;
   private sessionMemory?: SessionMemoryService;
+  private guardrailRunner?: IGuardrailRunner;
 
   constructor(
     config: IExecutionLoopConfig,
@@ -135,6 +139,7 @@ export class ExecutionLoop {
     this.reviewRegistry = config.reviewRegistry;
     this.context = ctx;
     this.sessionMemory = config.sessionMemory;
+    this.guardrailRunner = config.guardrailRunner;
     this.plansDir = join(this.config.system.root, this.config.paths.workspace, this.config.paths.active);
     this.blueprintLoader = new BlueprintLoader({
       blueprintsPath: join(this.config.system.root, this.config.paths.blueprints, this.config.paths.identities),
@@ -783,18 +788,22 @@ export class ExecutionLoop {
     }
 
     // Create PlanExecutor
+    const planExecutorOptions: IPlanExecutorOptions = {
+      ...options,
+      context: this.context,
+      confidenceScorer: this.confidenceScorer,
+      amendmentService: this.amendmentService,
+    };
+    if (this.guardrailRunner) {
+      planExecutorOptions.guardrailRunner = this.guardrailRunner;
+    }
     const planExecutor = new PlanExecutor(
       this.config,
       this.llmProvider,
       this.db,
       executionRoot,
       this.logger,
-      {
-        ...options,
-        context: this.context,
-        confidenceScorer: this.confidenceScorer,
-        amendmentService: this.amendmentService,
-      },
+      planExecutorOptions,
     );
 
     // Create plan context
