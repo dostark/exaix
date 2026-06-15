@@ -399,6 +399,35 @@ every ReAct iteration. `ReActLoopStrategy` reads both values via `IReActLoopExec
 For segment kinds, priority constants, and the two-tier timing model, see
 `packages/execution/README.md#context-budget-manager`.
 
+### Concurrent Guardrail Runner (Phase 107)
+
+The guardrail runner is a **side-channel safety screener** that runs in parallel with the primary
+ReAct agent. It screens each iteration's generated output against configurable policies using a
+fast-slot LLM, **without blocking** the primary agent loop.
+
+**Architecture:**
+
+- `IGuardrailRunner` interface in `packages/execution/src/guardrail_runner.ts` (MIT) defines the
+  post-output contract: `screen(agentOutput, traceId, iteration)` and `hasBlockingViolation(traceId)`.
+- `GuardrailRunner` implementation in `packages-team/guardrail/src/guardrail_runner.ts` (BSL) uses
+  `Promise.allSettled` over configured policies, parses structured JSON verdicts, and journals
+  outcomes via `EventLogger` using the `guardrail.*` event family.
+- `ReActLoopStrategy` calls `screen()` fire-and-forget after each iteration; checks
+  `hasBlockingViolation()` at the top of the next iteration.
+- On a block-severity violation, `GuardrailBlockedError` is thrown and caught by `PlanExecutor`,
+  which triggers a plan amendment with `source: "guardrail_violation"`.
+
+**Events** (`DomainEventType`):
+
+- `guardrail.screen.pass` — output passed all policies
+- `guardrail.screen.violation` — output violated a policy
+- `guardrail.screen.error` — policy evaluation errored (non-blocking)
+- `guardrail.warn` — warn-severity violation (execution continues)
+- `guardrail.block` — block-severity violation (execution halts via amendment)
+
+**Edition:** Team/Enterprise only. Solo builds never construct the runner.
+Capability constant: `CAP_GUARDRAIL_ADVANCED` in `@exaix/core`.
+
 ### Security and Auditability
 
 For the security features table (runtime supervision, permission boundaries, traceability, cost control), see `packages/mcp/README.md#security-boundaries`.
