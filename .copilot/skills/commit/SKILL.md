@@ -15,7 +15,7 @@ topics: ["git", "commit", "documentation", "best-practices", "structured-logging
 qwen_skill: commit
 ---
 
-```text
+````text
 Key points
 - Review changes with `git status` and `git diff` before committing.
 - Unless the prompt explicitly says otherwise, include ALL current repository changes in the commit workflow: both already-staged changes and any unstaged changes you created or modified while doing the task.
@@ -43,7 +43,13 @@ Default commit scope and batching
 Required validation before commit
 - Run the relevant quality gates for the touched changes before finalizing a commit proposal.
 - At minimum, include applicable formatting, linting, type-checking, and tests required by the repository or touched area.
-- For Exaix, prefer the repository-standard checks when they are relevant to the change, such as `deno fmt --check`, `deno lint`, `deno task test_parallel` (two-batch parallel+sequential runner), and any task-specific checks implicated by the modified files.
+- For Exaix, always use `deno task test_parallel` (two-batch parallel+sequential runner) for test validation — never `deno task test`, which is significantly slower. Also run `deno fmt --check`, `deno lint`, and any task-specific checks implicated by the modified files.
+- **CRITICAL:** When running `deno task test_parallel`, always redirect stdout+stderr to a temp file and grep for failures from that file. Never rerun the test command just to inspect results. Pattern:
+  ```bash
+  deno task test_parallel > /tmp/test_output.txt 2>&1
+  rg "FAILED|failed|error|FAIL" /tmp/test_output.txt
+````
+
 - The pre-commit hook auto-regenerates and stages `.copilot/manifest.json` whenever `.copilot/` sources are staged — you do NOT need to run `build_agents_index.ts` manually.
 - If a required check was not run, say so explicitly in `tests:` and treat that as a blocking issue before an actual commit.
 - Do not present the final `git commit` command as ready to run if known required checks are failing.
@@ -65,12 +71,14 @@ tool_audit: <list of key tools used (e.g., run_command, replace_file_content)>
 model: <YOUR actual model name and version>
 
 ⚠️ CRITICAL: Identity Accuracy
+
 - DO NOT hallucinate your model name or agent name.
 - Use your actual agent identity (e.g., Claude, Copilot).
 - Use your actual underlying model name (e.g., "Claude Sonnet 4.6", "GPT-4o") for the model
   field — do NOT write "Gemini" unless you are genuinely a Google Gemini model.
 
 ⚠️ CRITICAL: Impact Field Traps (common validator failures)
+
 - The **component word(s) before `:` in `impact:`** must appear **verbatim (case-insensitive)** in `what:`. The validator enforces this. Strategy: draft `what:` first using real ARCHITECTURE.md component names; then mirror that exact word in `impact:`. Do NOT choose a generic category label (e.g., `Documentation`, `Planning`, `Schemas`) unless that exact word already appeared in your `what:` text.
 - **Semicolons in `impact:` separate multiple `Component: detail` entries only.** Appending plain English clauses after a semicolon (e.g., `; no runtime changes.` or `; doc-only change.`) causes the validator to misread the clause as a spurious component name. Put such notes inside the `detail` part (e.g., `CompA: added X, no runtime changes`).
 
@@ -80,6 +88,7 @@ Review all staged and unstaged changes first, split them into logical commit bat
 Identify yourself accurately — do not write 'Antigravity' or 'Gemini' unless that is your actual identity."
 
 Examples:
+
 - "feat(scripts): add commit validator (Step 1)
 
   what: Implemented validator script...
@@ -90,11 +99,14 @@ Examples:
   model: Claude Sonnet 4.6"
 
 Do / Don't:
+
 - ✅ Do use a blank line after the subject line.
 - ✅ Do treat both staged and unstaged task changes as in scope by default.
 - ✅ Do split unrelated or weakly related changes into separate structured commits.
 - ✅ Do run the required linting, tests, and other pre-commit checks before proposing the final commit command.
 - ✅ If the pre-commit hook fails (e.g., `fmt:check` or `lint`), fix the issue, re-stage the affected files, and retry `git commit` — never bypass with `--no-verify`.
+- ✅ Do use `deno task test_parallel` for test validation — `deno task test` is too slow and should be avoided.
+- ✅ Do redirect `deno task test_parallel` output to a temp file and grep for failures. Never rerun the command just to inspect results.
 - ✅ Do reference specific components from ARCHITECTURE.md in the impact field.
 - ✅ Do list actual tool usage in tool_audit.
 - ✅ Do include your real identity.
@@ -110,21 +122,24 @@ Do / Don't:
   unless you are genuinely those agents — use your real provider/model identity).
 
 Related skills:
-- #next-steps       — TDD step execution that ends with a commit
+
+- #next-steps — TDD step execution that ends with a commit
 - #post-gap-analysis — Post-implementation review that ends with remediation commits
 - #refactor-check-magic — Magic-value refactor that ends with a commit
 
 Workflow chain (typical):
-  #plan → #pre-gap-analysis → #next-steps → #post-gap-analysis → **#commit**
+#plan → #pre-gap-analysis → #next-steps → #post-gap-analysis → **#commit**
 
 Expected Response Pattern:
+
 1. Review and summarize both staged and unstaged changes, then decide whether one commit or multiple logical batches are required.
 1. Run and summarize the relevant pre-commit checks, or clearly identify what still must be run.
 1. Show `git add` commands for the full intended scope, or one `git add` sequence per logical batch.
 1. Show the corresponding structured `git commit` command for each batch using heredoc or multiple `-m` flags to ensure the full structured body is included.
 1. Verify all mandatory headers are present and correctly filled for every proposed commit, and list any blocking validation issue.
-```
 
+```
 ## Related
 
 - [CODE_STYLE.md](../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
+```

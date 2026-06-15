@@ -574,13 +574,19 @@ export async function main(args: string[]): Promise<number> {
   }
 
   // ---------------------------------------------------------------------------
+  // Edition filtering: exclude Team-only paths when EXAIX_EDITION is solo/unset
+  // ---------------------------------------------------------------------------
+  const edition = Deno.env.get("EXAIX_EDITION") ?? "solo";
+  const teamPaths = edition === "solo" ? [] : ["packages-team/"];
+
+  // ---------------------------------------------------------------------------
   // Batch 1: full test suite in parallel (use TAP reporter for error capture)
   // ---------------------------------------------------------------------------
   const batch1Env: Record<string, string> = { ...Deno.env.toObject(), DENO_JOBS: "8" };
   const batch1IgnoreArg = `--ignore=${SEQUENTIAL_FILES.join(",")}`;
 
   const batch1Stats = await runAndCapture(
-    ["--parallel", batch1IgnoreArg, "tests/", "packages/", "packages-team/", "apps/", ...forwardedArgs],
+    ["--parallel", batch1IgnoreArg, "tests/", "packages/", ...teamPaths, "apps/", ...forwardedArgs],
     "Batch 1 – Parallel suite",
     batch1Env,
     "tap",

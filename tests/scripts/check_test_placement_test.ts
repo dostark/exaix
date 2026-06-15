@@ -24,8 +24,14 @@ Deno.test("validateTestPlacement: accepts correctly placed service tests", () =>
 Deno.test("getTestPlacementIssue: rejects test files outside tests/", () => {
   const issue = getTestPlacementIssue("foo/bar/baz_test.ts");
 
-  assertEquals(issue?.message, "Test files must live under tests/, packages/<package>/tests/, or apps/<app>/tests/.");
-  assertEquals(issue?.suggestion, "Move this file under tests/ or a package/app tests folder.");
+  assertEquals(
+    issue?.message,
+    "Test files must live under tests/, packages/<package>/tests/, packages-team/<package>/tests/, or apps/<app>/tests/.",
+  );
+  assertEquals(
+    issue?.suggestion,
+    "Move this file under tests/, a package/app tests folder, or packages-team/<package>/tests/.",
+  );
 });
 
 Deno.test("getTestPlacementIssue: rejects retired directories", () => {
