@@ -135,7 +135,7 @@ function discoverPublicPackageAliases(): IPublicPackageAlias[] {
     };
 
     for (const [alias, mappedPath] of Object.entries(denoJson.imports ?? {})) {
-      if (!alias.startsWith("@exaix/") || alias.endsWith("/")) {
+      if ((!alias.startsWith("@exaix/") && !alias.startsWith("@exaix-team/")) || alias.endsWith("/")) {
         continue;
       }
       if (!isRepoRelativeSpecifier(mappedPath)) {
@@ -143,16 +143,17 @@ function discoverPublicPackageAliases(): IPublicPackageAlias[] {
       }
 
       const entryPath = normalize(mappedPath.replace(/^\.\//, ""));
-      if (!entryPath.startsWith("packages/")) {
+      if (!entryPath.startsWith("packages/") && !entryPath.startsWith("packages-team/")) {
         continue;
       }
 
+      const prefix = entryPath.startsWith("packages-team/") ? "packages-team" : "packages";
       const packageName = entryPath.split("/")[1];
       if (!packageName) {
         continue;
       }
 
-      const packageRoot = normalize(join("packages", packageName));
+      const packageRoot = normalize(join(prefix, packageName));
       const rootPath = normalize(dirname(entryPath));
       aliases.push({ alias, entryPath, rootPath, packageRoot });
     }
@@ -499,8 +500,13 @@ const rules: Rule[] = [
       !path.endsWith("check_code_style.ts") &&
       !path.endsWith("check_no_edition_conditionals.ts") &&
       !path.startsWith("exaix-enterprise/") &&
+      !path.endsWith("scripts/ci.ts") &&
       !path.startsWith("packages-team/") &&
-      !path.includes("/src/composer/"),
+      !path.includes("/src/composer/") &&
+      !path.startsWith("apps/daemon/") &&
+      !path.startsWith("apps/exactl/") &&
+      !path.startsWith("tests/scenario_framework/runner/modes.ts") &&
+      !path.endsWith("scripts/test_parallel.ts"),
   },
 ];
 
@@ -854,6 +860,23 @@ async function checkFile(path: string) {
             } – Import from '${canonicalSpecifierAliasInfo.alias}' instead of deep-importing the canonical package subpath '${importPath}'.`,
           );
           errorCount++;
+        }
+
+        if (!canonicalSpecifierAliasInfo) {
+          const teamAlias = publicPackageAliases.find(
+            (a) =>
+              a.alias.startsWith("@exaix-team") &&
+              a.rootPath === a.packageRoot &&
+              importPath.startsWith(`${a.alias}/`),
+          );
+          if (teamAlias) {
+            console.log(
+              `ERROR [package-canonical-import] ${relativePath}:${
+                idx + 1
+              } – Import from '${teamAlias.alias}' instead of deep-importing the canonical package subpath '${importPath}'.`,
+            );
+            errorCount++;
+          }
         }
       }
 

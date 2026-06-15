@@ -7,9 +7,16 @@
  * @architectural-layer Application
  * @related-files ["packages/execution/src/execution_loop.ts", "../../apps/daemon/src/watcher.ts", "../../apps/exactl/src/commands/daemon_commands.ts"]
  */
+import {
+  DAEMON_IDENTITY_ID,
+  DaemonStatus,
+  DEFAULT_IDENTITIES_PATH,
+  EDITION_SOLO,
+  EDITION_TEAM,
+  ProviderType,
+} from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import { ConfigService } from "@exaix/core/config";
-import { DAEMON_IDENTITY_ID, DaemonStatus, DEFAULT_IDENTITIES_PATH, ProviderType } from "@exaix/core";
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ProviderFactory } from "@exaix/ai";
@@ -44,6 +51,10 @@ import { type LogMetadata, toSafeJson } from "@exaix/core/types";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
 import { SoloComposer } from "@exaix/core";
+// Team imports — resolved unconditionally from import map;
+// dead-code eliminated in Solo builds because TeamComposer/bootstrapTeamProviders
+// are never called when editionType !== "team".
+import { bootstrapTeamProviders, TeamComposer } from "@exaix-team/team-composer";
 
 if (import.meta.main) {
   // Simple argument handling for the compiled binary
@@ -102,12 +113,16 @@ if (import.meta.main) {
 
     // Initialize LLM Provider
     bootstrapProviderRegistry();
-    // Edition composer — Solo edition ships no capability modules.
-    // Team/Enterprise editions replace this with their own composer that
-    // registers ICapabilityModule implementations via registerCapabilityModule().
-    const _editionComposer = new SoloComposer();
-    // _editionComposer is unused in Solo mode; Team/Enterprise editions call
-    // _editionComposer.registerCapabilityModule(...) for each paid module.
+    // Edition-aware composer — Team edition additionally registers Team-only
+    // capability modules and bootstraps Team-only providers (Vertex AI).
+    const editionType = Deno.env.get("EXAIX_EDITION") ?? EDITION_SOLO;
+    let _editionComposer: SoloComposer | TeamComposer;
+    if (editionType === EDITION_TEAM) {
+      bootstrapTeamProviders();
+      _editionComposer = new TeamComposer();
+    } else {
+      _editionComposer = new SoloComposer();
+    }
     const defaultModelName = config.agents.default_model;
     const providerInfo = ProviderFactory.getProviderInfoByName(config, defaultModelName);
     const llmProvider = await ProviderFactory.createByName(config, defaultModelName);

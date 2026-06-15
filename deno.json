@@ -9,7 +9,6 @@
     "./packages/ai-anthropic",
     "./packages/ai-openai",
     "./packages/ai-google",
-    "./packages/ai-vertex",
     "./packages/ai-openrouter",
     "./packages/ai-ollama",
     "./packages/tui",
@@ -33,7 +32,10 @@
     "./apps/mcp-server",
     "./apps/tui",
     "./apps/agent-entrypoint",
-    "./packages-team/team-placeholder"
+    "./packages-team/team-placeholder",
+    "./packages-team/team-composer",
+    "./packages-team/ai-vertex",
+    "./packages-team/mcp-server"
   ],
   "lock": true,
   "exports": "./apps/daemon/main.ts",
@@ -59,9 +61,13 @@
     "scenario:test:unit": "deno test --allow-all tests/scenario_framework/tests/unit/",
     "test": "deno test --allow-all --reporter=dot tests/ packages/ packages-team/ apps/",
     "test_verbose": "deno test --allow-all tests/ packages/ packages-team/ apps/",
-    "test_parallel": "deno run --allow-run --allow-read --allow-env --allow-write scripts/test_parallel.ts --reporter=dot",
-    "test_parallel:pretty": "deno run --allow-run --allow-read --allow-env --allow-write scripts/test_parallel.ts --reporter=pretty",
+    "test:solo": "deno test --allow-all --reporter=dot tests/ packages/ apps/",
+    "test:team": "deno test --allow-all --reporter=dot tests/ packages/ packages-team/ apps/",
+    "test_parallel": "EXAIX_EDITION=solo deno run --allow-run --allow-read --allow-env --allow-write scripts/test_parallel.ts --reporter=dot",
+    "test_parallel:team": "EXAIX_EDITION=team deno run --allow-run --allow-read --allow-env --allow-write scripts/test_parallel.ts --reporter=dot",
+    "test_parallel:pretty": "EXAIX_EDITION=solo deno run --allow-run --allow-read --allow-env --allow-write scripts/test_parallel.ts --reporter=pretty",
     "test:security": "deno test --allow-all --filter \"[security]\" tests/",
+    "test:team-smoke": "deno test --allow-all --filter \"[team]\" tests/",
     "test:ci": "deno test --allow-all tests/infra/",
     "test:llama": "EXA_RUN_LLAMA_TESTS=true deno test --allow-all tests/llama_provider_test.ts",
     "test:watch": "deno test --watch --allow-all tests/ packages/ packages-team/ apps/",
@@ -98,7 +104,9 @@
     "docs-sync-schemas": "deno run -A scripts/sync_tool_schemas.ts && deno fmt TOOLS.md",
     "build:solo": "deno run -A scripts/ci.ts build --edition solo",
     "build:team": "deno run -A scripts/ci.ts build --edition team",
-    "build:enterprise": "deno run -A scripts/ci.ts build --edition enterprise"
+    "build:enterprise": "deno run -A scripts/ci.ts build --edition enterprise",
+    "ci:solo": "deno run -A scripts/ci.ts all --edition solo",
+    "ci:team": "deno run -A scripts/ci.ts all --edition team"
   },
   "imports": {
     "@cliffy/table": "jsr:@cliffy/table@^1.2.1",
@@ -127,8 +135,10 @@
     "@exaix/ai-openai/": "./packages/ai-openai/",
     "@exaix/ai-google": "./packages/ai-google/mod.ts",
     "@exaix/ai-google/": "./packages/ai-google/",
-    "@exaix/ai-vertex": "./packages/ai-vertex/mod.ts",
-    "@exaix/ai-vertex/": "./packages/ai-vertex/",
+    "@exaix-team/ai-vertex": "./packages-team/ai-vertex/mod.ts",
+    "@exaix-team/ai-vertex/": "./packages-team/ai-vertex/",
+    "@exaix-team/mcp-server": "./packages-team/mcp-server/mod.ts",
+    "@exaix-team/mcp-server/": "./packages-team/mcp-server/",
     "@exaix/ai-openrouter": "./packages/ai-openrouter/mod.ts",
     "@exaix/ai-openrouter/": "./packages/ai-openrouter/",
     "@exaix/ai-ollama": "./packages/ai-ollama/mod.ts",
@@ -198,7 +208,9 @@
     "@exaix/request": "./packages/request/mod.ts",
     "@exaix/request/": "./packages/request/src/",
     "@exaix/flow": "./packages/flow/mod.ts",
-    "@exaix/flow/": "./packages/flow/src/"
+    "@exaix/flow/": "./packages/flow/src/",
+    "@exaix-team/team-composer": "./packages-team/team-composer/mod.ts",
+    "@exaix-team/team-composer/": "./packages-team/team-composer/"
   },
   "exclude": [
     "cov_profile",

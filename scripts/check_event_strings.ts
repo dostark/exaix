@@ -52,7 +52,7 @@ interface Violation {
 const violations: Violation[] = [];
 const scannedFiles: number[] = [];
 
-for (const dir of ["packages", "apps"]) {
+for (const dir of ["packages", "packages-team", "apps"]) {
   let dirExists = true;
   try {
     await Deno.stat(dir);

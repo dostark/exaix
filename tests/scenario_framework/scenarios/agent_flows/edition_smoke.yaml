@@ -1,0 +1,20 @@
+schema_version: "1.0.0"
+id: "edition-smoke"
+title: "Edition-aware smoke — verifies correct provider registry for Solo vs Team"
+pack: "agent_flows"
+tags: ["smoke", "edition"]
+edition: "team"
+request_fixture: "fixtures/requests/agent_flows/edition_smoke.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "edition-provider-assert"
+    type: "exactl"
+    command: "evaluate"
+    args: ["--edition-provider-check"]
+    input_criteria: []
+    output_criteria:
+      - id: "edition-command-succeeded"
+        score_weight: 1.0
+        kind: "command-exit-code"
+        equals: 0

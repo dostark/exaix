@@ -128,7 +128,7 @@ exaix/
 
 Deployed workspace adds `Workspace/`, `Portals/`, `Memory/`, `.exa/` (runtime state).
 
-The current workspace package set includes all 21 packages and 6 app wrappers, declared in `deno.json`. Provider integrations (`@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix/ai-vertex`, `@exaix/ai-openrouter`, `@exaix/ai-ollama`) are independent packages selected at bootstrap — see [ARCHITECTURE.md](./ARCHITECTURE.md) for the full provider and package architecture.
+The current workspace package set includes all 21 packages and 6 app wrappers, declared in `deno.json`. Provider integrations (`@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix-team/ai-vertex`, `@exaix/ai-openrouter`, `@exaix/ai-ollama`) are independent packages selected at bootstrap — see [ARCHITECTURE.md](./ARCHITECTURE.md) for the full provider and package architecture.
 
 ## LLM Configuration
 

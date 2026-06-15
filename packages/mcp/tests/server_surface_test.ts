@@ -3,30 +3,13 @@
  * @path packages/mcp/tests/server_surface_test.ts
  * @related-files []
  * @architectural-layer MCP
- * @description Verifies the public @exaix/mcp/server subpath exposes the canonical MCP server/runtime surface.
+ * @description Verifies the public @exaix/mcp/server subpath exposes the canonical MIT surface.
  */
 
 import { assertEquals } from "@std/assert";
-import {
-  buildDynamicHandlers,
-  buildHandlers,
-  discoverAllResources,
-  generatePrompt,
-  getPrompts,
-  McpClient,
-  MCPServer,
-  parsePortalURI,
-  ToolHandler,
-} from "@exaix/mcp/server";
+import { McpClient, ToolHandler } from "@exaix/mcp/server";
 
-Deno.test("@exaix/mcp/server exports the canonical MCP server/runtime surface", () => {
-  assertEquals(typeof MCPServer, "function");
+Deno.test("@exaix/mcp/server exports the canonical MCP client surface", () => {
   assertEquals(typeof McpClient, "function");
   assertEquals(typeof ToolHandler, "function");
-  assertEquals(typeof buildHandlers, "function");
-  assertEquals(typeof buildDynamicHandlers, "function");
-  assertEquals(typeof discoverAllResources, "function");
-  assertEquals(typeof parsePortalURI, "function");
-  assertEquals(typeof generatePrompt, "function");
-  assertEquals(typeof getPrompts, "function");
 });

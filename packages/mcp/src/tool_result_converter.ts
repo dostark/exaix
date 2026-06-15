@@ -6,7 +6,7 @@
  * @ungrounded
  * @package @exaix/mcp
  * @dependencies [@exaix/schemas/mcp.ts, @exaix/core/types]
- * @related-files [packages/mcp/src/tool_result_metadata.ts, packages/mcp/server/tool_handler.ts, packages/mcp/server/handlers/run_command_tool.ts, packages/mcp/server/handlers/search_files_tool.ts]
+ * @related-files [packages/mcp/src/tool_result_metadata.ts, packages/mcp/server/tool_handler.ts, packages-team/mcp-server/handlers/run_command_tool.ts, packages-team/mcp-server/handlers/search_files_tool.ts]
  */
 import type { MCPToolResponse } from "@exaix/schemas";
 

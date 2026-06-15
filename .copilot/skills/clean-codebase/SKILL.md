@@ -24,6 +24,8 @@ Key points
 - Never mark complete until ALL checks report zero errors/warnings/violations
 - Prefer running check scripts with file-scope flags to get faster feedback loops
 - When the scope involves more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue
+- Edition awareness: `deno task` wrappers (check, lint, fmt) already include `packages-team/` automatically.
+  For edition-scoped cleanups, use `deno task ci:solo` or `deno task ci:team` instead of raw commands.
 
 Canonical prompt (short):
 "Drive the repository to fully green CI. Fix all type errors, lint issues,
@@ -35,29 +37,41 @@ Workflow
 ────────
 Phase 1 — Baseline measurement
   1. Run each check in sequence and record all failures:
-       deno check packages/ apps/ tests/                       → list type errors
-       deno lint                                        → list lint violations
-       deno fmt --check                                 → list formatting diffs
-       deno task check:style                            → list style violations
-       deno task check:arch                             → list UNGROUNDED files
-       deno task check:magic                            → count magic violations
-       deno run -A scripts/measure_duplication.ts       → duplication % per category
-       deno task check:complexity                       → list functions above threshold
-  2. Tally totals: N type errors, N lint, N fmt, N style, N UNGROUNDED,
-     N magic, duplication X/Y/Z%, complexity breaches.
+       deno task check                                   → list type errors (includes packages-team/)
+       deno lint                                         → list lint violations (includes packages-team/)
+       deno fmt --check                                  → list formatting diffs (includes packages-team/)
+       deno task check:style                             → list style violations
+       deno task check:no-edition-conditionals            → list edition-conditional violations outside allowed dirs
+       deno task check:arch                              → list UNGROUNDED files (includes packages-team/)
+       deno task check:magic                             → count magic violations
+       deno run -A scripts/measure_duplication.ts        → duplication % per category
+       deno task check:complexity                        → list functions above threshold
+       deno task check:tool-result-parity                → tool manifest ↔ handler parity
+       deno task docs-agent-validate                     → agent doc schema validation
+  2. Tally totals: N type errors, N lint, N fmt, N style, N edition-conditional,
+     N UNGROUNDED, N magic, duplication X/Y/Z%, complexity breaches.
   3. Do NOT attempt all fixes at once — process one category per batch.
 
+  Edition note: All `deno task` commands above already include `packages-team/`. The `check:style`
+  script has an `edition-conditional-outside-composer` rule that forbids `EXAIX_EDITION` /
+  `edition ===` conditionals outside these allowed paths:
+    - `packages-team/`, `apps/daemon/`, `apps/exactl/`, `tests/`, `scripts/ci.ts`, `scripts/test_parallel.ts`
+    - `tests/scenario_framework/runner/modes.ts`, `.github/`, `exaix-enterprise/`
+  If a cleanup introduces an edition conditional in a path not in this list, the style check will fail.
+
 Phase 2 — Type errors (highest priority)
-  4. Fix every error reported by `deno check packages/ apps/ tests/`.
+  4. Fix every error reported by `deno task check`.
      - Remove `any` types; replace with specific interfaces or `unknown`.
      - Resolve missing module errors (TS2307) by creating stubs or fixing imports.
      - Never cast to `as any` to silence type errors.
-  5. Re-run `deno check packages/ apps/ tests/` — must report 0 errors before continuing.
+     - Note: `deno task check` includes packages-team/ (use `deno check packages/ apps/ tests/` for Solo-only scope).
+  5. Re-run `deno task check` — must report 0 errors before continuing.
 
 Phase 3 — Lint
   6. Fix every violation reported by `deno lint`.
      - Prefer fixing the root cause over `// deno-lint-ignore` suppressions.
      - If suppression is the only option, add an inline comment explaining why.
+     - Note: `deno lint` includes packages-team/ by default via deno.json task definition.
   7. Re-run `deno lint` — 0 errors, 0 warnings.
 
 Phase 4 — Formatting
@@ -69,12 +83,17 @@ Phase 5 — Style checker
      - Interface naming: class Foo → interface IFoo (check:style enforces this)
      - No raw string/number literal type unions (use ICodeConvention["field"])
      - Module boundary violations
+     - Edition-conditional-outside-composer: `EXAIX_EDITION` / `edition ===` only in allowed paths (see Phase 1)
  11. Re-run `deno task check:style` — 0 violations.
 
 Phase 6 — Architecture groundedness
  12. Fix every UNGROUNDED file reported by `deno task check:arch`:
      - Add or correct the module-header JSDoc block with @module, @path, @description,
        @architectural-layer, @dependencies, @related-files.
+     - Files under `packages-team/` are already scanned by check:arch and share the same
+       grounding requirements as `packages/`. Files tagged `@ungrounded` are exempted.
+     - For packages-team only: if a file belongs to a Team-specific package and should not
+       be grounded (no ARCHITECTURE.md reference), add the `@ungrounded` tag to the JSDoc header.
  13. Re-run `deno task check:arch` — 0 UNGROUNDED files.
 
 Phase 7 — Magic values
@@ -83,29 +102,34 @@ Phase 7 — Magic values
  15. Re-run `deno task check:magic` — confirm reduction (target: minimize, ideally 0).
 
 Phase 8 — Duplication (if threshold breached)
-  16. Run `deno run -A scripts/measure_duplication.ts` — checks three categories:
-      - Source: threshold 2%
-      - Tests: threshold 3%
-      - Integration tests: threshold 3%
-  17. If any category exceeds threshold, identify the top duplication clusters and
-      extract common code into shared utilities. Do NOT over-abstract — only extract
-      when the duplication is identical behavior, not just similar-looking code.
-  18. Re-run `measure_duplication.ts` — all three categories must pass.
+ 16. Run `deno run -A scripts/measure_duplication.ts` — checks three categories:
+     - Source (packages/, packages-team/, apps/): threshold 2%
+     - Tests (tests/): threshold 3%
+     - Integration tests (tests/integration/, tests/scenario_framework/): threshold 3%
+ 17. If any category exceeds threshold, identify the top duplication clusters and
+     extract common code into shared utilities. Do NOT over-abstract — only extract
+     when the duplication is identical behavior, not just similar-looking code.
+ 18. Re-run `measure_duplication.ts` — all three categories must pass.
 
 Phase 9 — Code complexity (if threshold breached)
-  19. Run `deno task check:complexity` — verifies no function exceeds cyclomatic
-      complexity of 15 (--threshold 15 --fail).
-  20. If violations found, refactor over-complex functions by splitting into smaller
-      single-responsibility functions. Keep behavioral changes to zero.
-  21. Re-run `deno task check:complexity` — must exit 0 with "Complexity matches expectations."
+ 19. Run `deno task check:complexity` — verifies no function exceeds cyclomatic
+     complexity of 15 (--threshold 15 --fail). Scans packages/, packages-team/, apps/.
+ 20. If violations found, refactor over-complex functions by splitting into smaller
+     single-responsibility functions. Keep behavioral changes to zero.
+ 21. Re-run `deno task check:complexity` — must exit 0 with "Complexity matches expectations."
 
-Phase 10 — Tool result parity
-  22. Run `deno task check:tool-result-parity` — verifies that TOOL_MANIFEST metadata
-      is consistent with the actual tool handler schemas, ensuring tool documentation
-      and result contracts stay in sync.
+Phase 10 — Edition-conditional compliance
+ 22. Run `deno task check:no-edition-conditionals` — verifies `EXAIX_EDITION` references
+     only appear in edition-aware directories (apps/common, packages-team, exaix-enterprise,
+     scripts, .github, apps/daemon, apps/exactl, tests/). Any violation outside these paths
+     must be fixed by moving edition logic to an edition-composer or a script boundary.
 
-Phase 11 — Agent docs validation
-  23. Validate all `.copilot/` documentation meets schema requirements:
+Phase 11 — Tool result parity
+ 23. Run `deno task check:tool-result-parity` — verifies that TOOL_MANIFEST metadata
+     is consistent with the actual tool handler schemas across all edition layers.
+
+Phase 12 — Agent docs validation
+ 24. Validate all `.copilot/` documentation meets schema requirements:
         deno task docs-agent-validate
       This runs a comprehensive check covering:
       - Markdown formatting of `*.md` files
@@ -114,19 +138,29 @@ Phase 11 — Agent docs validation
       - Required frontmatter keys, 'Canonical prompt', and 'Examples' sections
       - Manifest freshness (`deno task check:docs`)
 
-Phase 12 — Final full-suite validation
-  23. Run tests to confirm all gates green:
+Phase 13 — Final full-suite validation
+ 25. Run tests to confirm all gates green. Choose the edition-scoped command:
+         # Full (all editions — slowest)
          deno task test_parallel
-      Or sequentially:
-         deno check packages/ apps/ tests/ && deno lint && deno fmt --check &&
-         deno task check:style && deno task check:arch && deno task check:magic &&
+         # Solo-only (excludes packages-team/)
+         deno task test:solo && deno task test:security
+         # Team edition (includes packages-team/)
+         deno task test:team
+         # CI pipeline (edition-aware)
+         deno task ci:solo    # Solo checks + Solo tests
+         deno task ci:team    # Team checks + Team tests
+      Or validate every gate sequentially:
+         deno task check && deno lint && deno fmt --check &&
+         deno task check:style && deno task check:no-edition-conditionals &&
+         deno task check:arch && deno task check:magic &&
+         deno task check:tool-result-parity && deno task docs-agent-validate &&
          deno run -A scripts/measure_duplication.ts &&
          deno task check:complexity &&
-         deno task test
-  24. All checks must report zero errors/warnings/violations before committing.
+         deno task test:solo
+ 26. All checks must report zero errors/warnings/violations before committing.
 
 Commit
-  25. Use #commit for the structured commit body. Subject example:
+ 27. Use #commit for the structured commit body. Subject example:
         chore: drive codebase to fully green CI (N violations fixed)
 
         what: fixed N type errors, N lint, N style, N UNGROUNDED files, magic reduced,
@@ -134,28 +168,32 @@ Commit
         rationale: CI must be green before next feature phase
         tests: full suite N/N passing, coverage line X% branch Y%
         who: <agent identity>
-         impact: repository-wide cleanup, no behavior changes
+        impact: repository-wide cleanup, no behavior changes
 
-         CI gates: lint OK, type-check OK, style 0 errors, arch N GROUNDED,
-                   magic OK, duplication X%, complexity OK
+        CI gates: lint OK, type-check OK, style 0 errors, edition-conditionals OK,
+                  arch N GROUNDED, magic OK, duplication X%, complexity OK
 
 Do / Don't
 - ✅ Do fix in dependency order (type errors first — they cascade into other failures)
 - ✅ Do run the specific check after each fix batch before moving to the next phase
 - ✅ Do prefer fixing root cause over suppression annotations
-- ✅ Do run `deno task test` AFTER all other checks to confirm no regressions
+- ✅ Do run `deno task test:solo` (or `test:team`) AFTER all other checks to confirm no regressions
 - ✅ Do keep changes behavioral-neutral (cleanup only, no feature changes)
+- ✅ Do use `deno task` wrappers instead of raw `deno check/lint/fmt` — they automatically include `packages-team/`
+- ✅ Do verify edition-conditional placement when touching edition-aware code
 - ❌ Don't use `as any` to silence type errors
 - ❌ Don't skip intermediate validations and only run the full suite at the end
 - ❌ Don't refactor or restructure code during a cleanup pass
 - ❌ Don't commit until every check reports zero violations
 - ❌ Don't suppress lint rules without a documented reason
+- ❌ Don't add `EXAIX_EDITION` conditionals outside allowed paths — use edition-composer instead
 
 Related skills
 - #refactor-check-magic — Run when magic violation count is non-trivial (> 5)
 - #fix-bug              — For any regression introduced by a cleanup fix
 - #next-steps           — When cleanup is one gated step in a phase plan
 - #commit               — Create a structured commit message after cleanup
+- #edition-development  — When the cleanup touches edition-separation logic (composers, seam wiring)
 
 Workflow chain (typical):
   **#clean-codebase** → #commit

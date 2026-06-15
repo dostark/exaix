@@ -4,7 +4,7 @@
  * @description Provides CLI commands for starting the MCP server by delegating
  * to the standalone apps/mcp-server/main.ts entry point.
  * @architectural-layer CLI
- * @related-files ["apps/mcp-server/main.ts", "packages/mcp/server/server.ts"]
+ * @related-files ["apps/mcp-server/main.ts", "packages-team/mcp-server/server.ts"]
  */
 
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";

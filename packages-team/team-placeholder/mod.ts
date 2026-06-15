@@ -3,6 +3,7 @@
  * @path packages-team/team-placeholder/mod.ts
  * @architectural-layer Team
  * @related-files []
+ * @ungrounded
  * @description Placeholder package for Team edition (BSL-licensed).
  * Active member of the workspace so build-exclusion (Step 7) can reference it.
  */

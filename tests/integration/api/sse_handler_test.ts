@@ -7,7 +7,7 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { EventBusService } from "@exaix/core/observability";
-import { SseHandler } from "@exaix/mcp/server";
+import { SseHandler } from "@exaix-team/mcp-server";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import { STREAMING_EVENT_HEARTBEAT, STREAMING_EVENT_TOOL_START } from "@exaix/core";
 

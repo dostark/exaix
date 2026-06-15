@@ -8,7 +8,17 @@
  * may only appear in edition-aware directories. Phase 115 Step 9b.
  */
 
-const ALLOWED = ["apps/common", "packages-team", "exaix-enterprise", "scripts", ".github"];
+// app entries are edition-dispatch points (apps/daemon/main.ts, apps/exactl/src/init.ts)
+const ALLOWED = [
+  "apps/common",
+  "packages-team",
+  "exaix-enterprise",
+  "scripts",
+  ".github",
+  "apps/daemon",
+  "apps/exactl",
+  "tests",
+];
 const SKIP = [".git", "node_modules", "dist", ".exa", "_archive"];
 const PATTERN = 'EXAIX_EDITION|\\bedition\\s*===\\s*"';
 

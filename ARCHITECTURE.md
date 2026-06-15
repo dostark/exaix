@@ -46,7 +46,7 @@ Exaix follows a **three-tier edition model** served by a single **`IEditionCompo
 │                    exaix (monorepo)                       │
 │  ┌────────────────────────────────────────────────────┐  │
 │  │  packages/  (MIT — always compiled)                 │  │
-│  │  apps/daemon · apps/exactl · apps/tui · apps/mcp   │  │
+│  │  apps/daemon · apps/exactl · apps/tui · apps/mcp-server   │  │
 │  └────────────────────────────────────────────────────┘  │
 │  ┌────────────────────────────────────────────────────┐  │
 │  │  packages-team/  (BSL — Team+Enterprise)            │  │
@@ -123,10 +123,10 @@ Delegated output is **untrusted** and still flows through the same quality, crit
 
 - Local-first: Ollama (no cloud required)
 - Cloud options: Claude, GPT, Gemini (🟢 all editions)
-- Vertex AI: Google service-account auth for project-based quotas and regional endpoints (🟢 all editions; `@exaix/ai-vertex`)
+- Vertex AI: Google service-account auth for project-based quotas and regional endpoints (🔵 Team+; `@exaix-team/ai-vertex`)
 - OpenRouter: unified gateway to many models (ships in the Solo build; positioned as a 🔵 Team+ differentiator; `@exaix/ai-openrouter`)
 - Enterprise providers: Azure OpenAI, AWS Bedrock (🟣 Enterprise)
-- Provider factory pattern for extensibility; concrete providers register at bootstrap via `apps/common/registry_bootstrap.ts`
+- Provider factory pattern for extensibility; concrete providers register at bootstrap via `apps/common/registry_bootstrap.ts` (Solo) or `packages-team/team-composer/src/team_bootstrap.ts` (Team)
 - Cost management with edition-tiered capabilities
 
 ### 5. **Portal System**
@@ -335,7 +335,7 @@ yet be relied on as a complete guarantee.
 
 ## AI Provider Architecture {#ai-provider-architecture}
 
-Provider integrations are organized as independent packages (`@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix/ai-vertex`, `@exaix/ai-openrouter`, `@exaix/ai-ollama`), selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory` and registered at bootstrap by `apps/common/registry_bootstrap.ts`.
+Provider integrations are organized as independent packages (`@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix-team/ai-vertex`, `@exaix/ai-openrouter`, `@exaix/ai-ollama`), selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory`. Solo-edition providers are registered by `apps/common/registry_bootstrap.ts`; Team-edition providers (Vertex AI) are registered by `packages-team/team-composer/src/team_bootstrap.ts`.
 
 For the provider component table and edition availability matrix, see `packages/ai/README.md#provider-components`.
 

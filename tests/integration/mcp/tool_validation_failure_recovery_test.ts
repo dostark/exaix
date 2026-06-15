@@ -14,7 +14,7 @@ import { validateMCPToolResponse } from "@exaix/schemas/tool_result_validator.ts
 import type { IToolResultValidationFailure } from "@exaix/schemas/tool_result.ts";
 import { McpTransportType } from "@exaix/mcp";
 import { AllowAllPermissionsService } from "@exaix/mcp/testing";
-import { MCPServer } from "@exaix/mcp/server";
+import { MCPServer } from "@exaix-team/mcp-server";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";

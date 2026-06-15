@@ -13,7 +13,19 @@ title: "Edition Development Skill (#edition-development)"
 description: Guide for developing edition-specific features within Exaix's three-tier edition architecture — Option-C layout, seam wiring, composer contracts, build targets, and CI/release pipeline
 short_summary: "Develop edition-specific features (Solo/Team/Enterprise) following Exaix's composition architecture, Option-C layout, and seam-based extension model."
 version: "1.0"
-topics: ["edition", "solo", "team", "enterprise", "composer", "seam", "option-c", "build", "ci", "leak-guard", "architecture"]
+topics: [
+  "edition",
+  "solo",
+  "team",
+  "enterprise",
+  "composer",
+  "seam",
+  "option-c",
+  "build",
+  "ci",
+  "leak-guard",
+  "architecture",
+]
 qwen_skill: edition-development
 ---
 
@@ -37,13 +49,13 @@ Canonical prompt (short):
 
 ## Step 1 — Determine the correct directory
 
-| Code type | Directory | License | Available in |
-|---|---|---|---|
-| Core contracts, shared logic | `packages/<name>/` | MIT | All editions |
-| Team-only feature | `packages-team/<name>/` | BSL | Team + Enterprise |
-| Enterprise-only feature | `exaix-enterprise/<name>/` | Proprietary | Enterprise only |
-| App wiring | `apps/<name>/` | MIT | All editions |
-| Build/CI tooling | `scripts/` | MIT | All editions |
+| Code type                    | Directory                  | License     | Available in      |
+| ---------------------------- | -------------------------- | ----------- | ----------------- |
+| Core contracts, shared logic | `packages/<name>/`         | MIT         | All editions      |
+| Team-only feature            | `packages-team/<name>/`    | BSL         | Team + Enterprise |
+| Enterprise-only feature      | `exaix-enterprise/<name>/` | Proprietary | Enterprise only   |
+| App wiring                   | `apps/<name>/`             | MIT         | All editions      |
+| Build/CI tooling             | `scripts/`                 | MIT         | All editions      |
 
 **Rule:** If the feature could be consumed by any edition, put the interface in `packages/`. Put the edition-specific implementation in `packages-team/` or `exaix-enterprise/`.
 
@@ -52,6 +64,7 @@ Canonical prompt (short):
 ## Step 2 — Define or use the seam interface
 
 A **seam** has:
+
 - An **interface** in the owning `packages/<consumer>/` (e.g. `IFlowStepHandler` in `@exaix/flow`)
 - A **registry** in the same package (e.g. `IFlowStepHandlerRegistry`)
 - A **hook** on `ICapabilityModule` in `@exaix/core` (e.g. `registerFlowStepHandlers?()`)
@@ -59,21 +72,25 @@ A **seam** has:
 
 ### Current seams
 
-| Seam | Interface | Hook | Solo default |
-|---|---|---|---|
-| Flow-step handlers | `IFlowStepHandler` | `registerFlowStepHandlers?()` | `GateStepHandler`, `AgentStepHandler` |
-| Symbol extractors | `ISymbolExtractor` | `registerSymbolExtractors?()` | `TypeScriptExtractor` |
-| Guardrail runner | `IGuardrailRunner` | `registerGuardrailRunner?()` | Built-in guardrails |
-| Routing strategy | `IProviderRoutingStrategy` | `registerProviderRoutingStrategy?()` | `DefaultRoutingStrategy` |
-| Entitlement | `IAuthorizer` | `registerEntitlement?()` | `AllowAllAuthorizer` |
+| Seam               | Interface                  | Hook                                 | Solo default                          |
+| ------------------ | -------------------------- | ------------------------------------ | ------------------------------------- |
+| Flow-step handlers | `IFlowStepHandler`         | `registerFlowStepHandlers?()`        | `GateStepHandler`, `AgentStepHandler` |
+| Symbol extractors  | `ISymbolExtractor`         | `registerSymbolExtractors?()`        | `TypeScriptExtractor`                 |
+| Guardrail runner   | `IGuardrailRunner`         | `registerGuardrailRunner?()`         | Built-in guardrails                   |
+| Routing strategy   | `IProviderRoutingStrategy` | `registerProviderRoutingStrategy?()` | `DefaultRoutingStrategy`              |
+| Entitlement        | `IAuthorizer`              | `registerEntitlement?()`             | `AllowAllAuthorizer`                  |
 
 ### Adding a new seam
 
 ```typescript
 // 1. Define in owning package
 // packages/foo/src/my_seam.ts
-export interface IMySeam { doSomething(): void; }
-export interface IMySeamRegistry { register(name: string, seam: IMySeam): void; }
+export interface IMySeam {
+  doSomething(): void;
+}
+export interface IMySeamRegistry {
+  register(name: string, seam: IMySeam): void;
+}
 
 // 2. Add hook to ICapabilityModule in @exaix/core
 // packages/core/src/composer/edition_composer.ts
@@ -91,7 +108,7 @@ export interface ICapabilityModule {
 
 ```typescript
 // packages-team/team-feature/src/team_module.ts
-import type { ICapabilityModule, ISeamRegistryPlaceholder, IAuthorizer } from "@exaix/core";
+import type { IAuthorizer, ICapabilityModule, ISeamRegistryPlaceholder } from "@exaix/core";
 
 export class TeamFeatureModule implements ICapabilityModule {
   registerFlowStepHandlers?(registry: ISeamRegistryPlaceholder): void {
@@ -151,12 +168,12 @@ deno run -A scripts/leak_guard.ts --check-gitmodules
 
 ## Step 6 — Write tests
 
-| Test type | Location | What to test |
-|---|---|---|
-| Composer unit tests | `packages/core/tests/` | `SoloComposer` construction, module registration, authorizer |
-| Authorizer unit tests | `packages/core/tests/` | `AllowAllAuthorizer` permits, decision shape |
-| Composition smoke tests | `tests/integration/` | Solo zero-module no-crash + stub module with all hooks |
-| Seam-specific tests | `packages/<seam>/tests/` | Seam interface contract, registry behavior, default impl |
+| Test type               | Location                 | What to test                                                 |
+| ----------------------- | ------------------------ | ------------------------------------------------------------ |
+| Composer unit tests     | `packages/core/tests/`   | `SoloComposer` construction, module registration, authorizer |
+| Authorizer unit tests   | `packages/core/tests/`   | `AllowAllAuthorizer` permits, decision shape                 |
+| Composition smoke tests | `tests/integration/`     | Solo zero-module no-crash + stub module with all hooks       |
+| Seam-specific tests     | `packages/<seam>/tests/` | Seam interface contract, registry behavior, default impl     |
 
 ### Composition smoke test pattern
 
@@ -175,11 +192,21 @@ describe("Solo composition — zero modules", () => {
 describe("Team composition — stub module with all hooks", () => {
   it("registers a module with all hooks", () => {
     const stub: ICapabilityModule = {
-      registerFlowStepHandlers: (_r) => { called.push("flow"); },
-      registerSymbolExtractors: (_r) => { called.push("symbols"); },
-      registerGuardrailRunner: (_r) => { called.push("guardrail"); },
-      registerProviderRoutingStrategy: (_r) => { called.push("routing"); },
-      registerEntitlement: (_a) => { called.push("entitlement"); },
+      registerFlowStepHandlers: (_r) => {
+        called.push("flow");
+      },
+      registerSymbolExtractors: (_r) => {
+        called.push("symbols");
+      },
+      registerGuardrailRunner: (_r) => {
+        called.push("guardrail");
+      },
+      registerProviderRoutingStrategy: (_r) => {
+        called.push("routing");
+      },
+      registerEntitlement: (_a) => {
+        called.push("entitlement");
+      },
     };
     const composer = new SoloComposer();
     composer.registerCapabilityModule(stub);

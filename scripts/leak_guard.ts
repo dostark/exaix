@@ -33,7 +33,7 @@ export interface ILeakResult {
 const REPO_ROOT = normalize(join(dirname(fromFileUrl(import.meta.url)), ".."));
 
 // Allowlisted directories for public mirror content
-const LEAK_PATHS = ["exaix-enterprise", "packages-enterprise"];
+const LEAK_PATHS = ["exaix-enterprise", "packages-enterprise", "packages-team"];
 
 // Patterns that indicate a proprietary (BSL+) license header
 const PROPRIETARY_HEADER_PATTERNS = [
@@ -127,9 +127,10 @@ export async function runLeakGuard(options: ILeakGuardOptions = {}): Promise<ILe
                     `LEAK: ${relativePath}:${i + 1} — runtime import of '${leakPath}' (would fail in public mirror)`,
                   );
                 }
-                // Flag literal string references that reveal enterprise paths
+                // Flag literal string references that reveal enterprise or team paths
                 if (
-                  line.match(/["'`][^"'`]*exaix-enterprise[^"'`]*["'`]/) &&
+                  (line.match(/["'`][^"'`]*exaix-enterprise[^"'`]*["'`]/) ||
+                    line.match(/["'`][^"'`]*packages-team[^"'`]*["'`]/)) &&
                   (line.includes("import") || line.includes("require"))
                 ) {
                   errors.push(
