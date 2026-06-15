@@ -320,6 +320,8 @@ export const DomainEventType = {
   GuardrailScreenError: "guardrail.screen.error",
   GuardrailWarn: "guardrail.warn",
   GuardrailBlock: "guardrail.block",
+  GuardrailInitialized: "guardrail.initialized",
+  GuardrailInitFailed: "guardrail.init_failed",
 } as const;
 
 export type TDomainEventType = typeof DomainEventType[keyof typeof DomainEventType];
