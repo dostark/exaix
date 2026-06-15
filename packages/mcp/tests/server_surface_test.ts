@@ -3,7 +3,7 @@
  * @path packages/mcp/tests/server_surface_test.ts
  * @related-files []
  * @architectural-layer MCP
- * @description Verifies the public @exaix/mcp/server subpath exposes the canonical MCP server/runtime surface.
+ * @description Verifies the public @exaix-team/mcp-server subpath exposes the canonical MCP server/runtime surface.
  */
 
 import { assertEquals } from "@std/assert";
@@ -17,9 +17,9 @@ import {
   MCPServer,
   parsePortalURI,
   ToolHandler,
-} from "@exaix/mcp/server";
+} from "@exaix-team/mcp-server";
 
-Deno.test("@exaix/mcp/server exports the canonical MCP server/runtime surface", () => {
+Deno.test("@exaix-team/mcp-server exports the canonical MCP server/runtime surface", () => {
   assertEquals(typeof MCPServer, "function");
   assertEquals(typeof McpClient, "function");
   assertEquals(typeof ToolHandler, "function");

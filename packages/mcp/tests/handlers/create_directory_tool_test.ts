@@ -6,7 +6,7 @@
  * @description Unit tests for the CreateDirectoryTool MCP tool.
  */
 import { assertEquals, assertRejects } from "@std/assert";
-import { CreateDirectoryTool } from "@exaix/mcp/server";
+import { CreateDirectoryTool } from "@exaix-team/mcp-server";
 import {
   assertToolDefinitionFields,
   createBaseToolContext,

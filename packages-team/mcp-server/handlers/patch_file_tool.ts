@@ -1,12 +1,12 @@
 /**
  * @module PatchFileTool
- * @path packages/mcp/server/handlers/patch_file_tool.ts
+ * @path packages-team/mcp-server/handlers/patch_file_tool.ts
  * @description MCP tool handler for applying targeted string replacements to portal files.
  * Preferred over write_file for code edits — produces minimal, auditable changes.
  * @architectural-layer MCP
- * @related-files [packages/mcp/server/tool_handler.ts, packages/mcp/server/handlers/write_file_tool.ts]
+ * @related-files [packages/mcp/server/tool_handler.ts, packages-team/mcp-server/handlers/write_file_tool.ts]
  */
-import { ToolHandler } from "../tool_handler.ts";
+import { ToolHandler } from "@exaix/mcp/server";
 import { type MCPToolResponse, PatchFileToolArgsSchema } from "@exaix/schemas/mcp.ts";
 import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";

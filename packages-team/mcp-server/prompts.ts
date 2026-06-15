@@ -1,6 +1,6 @@
 /**
  * @module MCPPrompts
- * @path packages/mcp/server/prompts.ts
+ * @path packages-team/mcp-server/prompts.ts
  * @description Provides prompt templates for common Exaix operations, guiding agents through structured workflows.
  * @architectural-layer MCP
  * @related-files ["packages/storage-sqlite/src/database_service.ts"]

@@ -1,11 +1,11 @@
 /**
  * @module ListDirectoryTool
- * @path packages/mcp/server/handlers/list_directory_tool.ts
+ * @path packages-team/mcp-server/handlers/list_directory_tool.ts
  * @description MCP tool handler for listing directory contents in a portal with security validation.
  * @architectural-layer MCP
  * @related-files [packages/mcp/server/tool_handler.ts]
  */
-import { ToolHandler } from "../tool_handler.ts";
+import { ToolHandler } from "@exaix/mcp/server";
 import { ListDirectoryToolArgsSchema, type MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { MCP_CONTENT_TYPE_STRUCTURED_DATA, PortalOperation, ToolErrorCode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";

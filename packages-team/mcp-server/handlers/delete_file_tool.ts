@@ -1,12 +1,12 @@
 /**
  * @module DeleteFileTool
- * @path packages/mcp/server/handlers/delete_file_tool.ts
+ * @path packages-team/mcp-server/handlers/delete_file_tool.ts
  * @description MCP tool handler for deleting a single file from a portal.
  * Destructive and irreversible at the filesystem level — git history preserves deleted files.
  * @architectural-layer MCP
  * @related-files [packages/mcp/server/tool_handler.ts]
  */
-import { ToolHandler } from "../tool_handler.ts";
+import { ToolHandler } from "@exaix/mcp/server";
 import { DeleteFileToolArgsSchema, type MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";

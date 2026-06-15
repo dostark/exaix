@@ -7,8 +7,8 @@
  */
 import { assertEquals } from "@std/assert";
 import { ToolErrorCode } from "@exaix/core";
-import { QueryJournalTool } from "@exaix/mcp/server";
-import { RunCommandTool } from "@exaix/mcp/server";
+import { QueryJournalTool } from "@exaix-team/mcp-server";
+import { RunCommandTool } from "@exaix-team/mcp-server";
 import { createBaseToolContext } from "@exaix/mcp/testing";
 import { createStubDb } from "@exaix/testing";
 import { createPermissionsService, createToolContext, withToolPermissionTest } from "@exaix/mcp/testing";

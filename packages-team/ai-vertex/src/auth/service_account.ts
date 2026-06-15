@@ -1,7 +1,8 @@
 /**
  * @module VertexServiceAccount
- * @path packages/ai-vertex/src/auth/service_account.ts
- * @related-files ["packages/ai-vertex/src/auth/google_auth.ts", "packages/ai-vertex/src/constants.ts"]
+ * @path packages-team/ai-vertex/src/auth/service_account.ts
+ * @related-files ["packages-team/ai-vertex/src/auth/google_auth.ts", "packages-team/ai-vertex/src/constants.ts"]
+ * @ungrounded
  * @architectural-layer AI
  * @dependencies ["zod", "@exaix/core", "@exaix/core/logger"]
  * @description Google service-account key schema (with token-endpoint allowlist), safe

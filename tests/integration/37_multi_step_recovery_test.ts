@@ -3,7 +3,7 @@
  * @path tests/integration/37_multi_step_recovery_test.ts
  * @description Integration coverage for Step 63.4 compensation against a real git-backed portal worktree.
  * @architectural-layer Test
- * @related-files [packages/flow/src/flow_runner.ts, packages/mcp/server/handlers/delete_file_tool.ts]
+ * @related-files [packages/flow/src/flow_runner.ts, packages-team/mcp-server/handlers/delete_file_tool.ts]
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
@@ -22,7 +22,7 @@ import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import { DEFAULT_FLOW_VERSION } from "@exaix/core";
 import type { JSONValue } from "@exaix/core/types";
-import { DeleteFileTool } from "@exaix/mcp/server";
+import { DeleteFileTool } from "@exaix-team/mcp-server";
 import { PortalPermissionsService } from "@exaix/portal";
 import { createStubConfig, createStubContext } from "@exaix/testing";
 import { GitTestHelper, setupGitRepo } from "@exaix/git/testing";

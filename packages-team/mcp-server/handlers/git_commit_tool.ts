@@ -1,11 +1,11 @@
 /**
  * @module GitCommitTool
- * @path packages/mcp/server/handlers/git_commit_tool.ts
+ * @path packages-team/mcp-server/handlers/git_commit_tool.ts
  * @description MCP tool handler for committing changes in a portal git repository.
  * @architectural-layer MCP
  * @related-files [packages/mcp/server/tool_handler.ts, packages/git/src/git_service.ts]
  */
-import { ToolHandler } from "../tool_handler.ts";
+import { ToolHandler } from "@exaix/mcp/server";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { JsonSchemaType, PortalOperation, ToolErrorCode } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";

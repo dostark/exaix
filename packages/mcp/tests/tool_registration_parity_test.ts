@@ -9,7 +9,7 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { TOOL_MANIFEST, ToolKind } from "@exaix/mcp";
-import { LIVE_MCP_TOOL_FACTORIES } from "@exaix/mcp/server";
+import { LIVE_MCP_TOOL_FACTORIES } from "@exaix-team/mcp-server";
 import { createMCPRequest, initMCPTestWithoutPortal } from "@exaix/mcp/testing";
 
 interface IToolsListResult {

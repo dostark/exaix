@@ -1,9 +1,9 @@
 /**
  * @module McpServer
- * @path packages/mcp/server/server.ts
+ * @path packages-team/mcp-server/server.ts
  * @description core MCP server implementation, handling JSON-RPC transport, tool registration, and security orchestration.
  * @architectural-layer MCP
- * @related-files [packages/mcp/server/tools.ts, packages/mcp/server/resources.ts, packages/mcp/server/prompts.ts]
+ * @related-files [packages-team/mcp-server/tools.ts, packages-team/mcp-server/resources.ts, packages-team/mcp-server/prompts.ts]
  */
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
@@ -13,7 +13,7 @@ import { MCPConfigSchema, type MCPTool } from "@exaix/schemas/mcp.ts";
 import type { JSONValue } from "@exaix/core";
 import { JsonRpcErrorCode } from "@exaix/core";
 import { McpTransportType } from "@exaix/mcp";
-import type { ToolHandler } from "./tool_handler.ts";
+import type { ToolHandler } from "@exaix/mcp/server";
 import { EventBusService } from "@exaix/core/observability";
 import { SseHandler } from "./sse_handler.ts";
 import { buildHandlers } from "./tools.ts";

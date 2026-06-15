@@ -1,7 +1,8 @@
 /**
  * @module VertexGoogleAuth
- * @path packages/ai-vertex/src/auth/google_auth.ts
- * @related-files ["packages/ai-vertex/src/auth/service_account.ts", "packages/ai-vertex/src/auth/encoding.ts", "packages/ai-vertex/src/constants.ts"]
+ * @path packages-team/ai-vertex/src/auth/google_auth.ts
+ * @related-files ["packages-team/ai-vertex/src/auth/service_account.ts", "packages-team/ai-vertex/src/auth/encoding.ts", "packages-team/ai-vertex/src/constants.ts"]
+ * @ungrounded
  * @architectural-layer AI
  * @dependencies ["@exaix/ai/providers", "@exaix/core", "@exaix/core/logger"]
  * @description OAuth2 service-account authentication for Vertex AI: signs an RS256 JWT

@@ -1,7 +1,8 @@
 /**
  * @module VertexPackageConstants
- * @path packages/ai-vertex/src/constants.ts
- * @related-files ["packages/ai-vertex/src/auth/google_auth.ts", "packages/ai-vertex/src/auth/service_account.ts"]
+ * @path packages-team/ai-vertex/src/constants.ts
+ * @related-files ["packages-team/ai-vertex/src/auth/google_auth.ts", "packages-team/ai-vertex/src/auth/service_account.ts"]
+ * @ungrounded
  * @architectural-layer AI
  * @dependencies ["@exaix/core"]
  * @description Vertex AI provider + service-account auth constants owned by @exaix-team/ai-vertex.

@@ -3,7 +3,7 @@
  * @path packages/core/src/events/event_journal_reader.ts
  * @architectural-layer Core
  * @dependencies ["@exaix/storage-sqlite", "@exaix/core/types"]
- * @related-files ["packages/mcp/server/domain_tools.ts", "packages/core/src/artifact/mission_reporter.ts"]
+ * @related-files ["packages-team/mcp-server/domain_tools.ts", "packages/core/src/artifact/mission_reporter.ts"]
  * @description Read-only interface for querying the activity journal.
  * Encapsulates IDatabaseService behind a focused read contract so that
  * consumers like QueryJournalTool and MissionReporter do not depend on

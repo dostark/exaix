@@ -3,6 +3,7 @@
  * @path packages-team/team-composer/src/team_composer.ts
  * @architectural-layer Team
  * @related-files [packages/core/src/composer/solo_composer.ts, packages-team/team-composer/src/team_bootstrap.ts]
+ * @ungrounded
  * @description Team-edition composer — stores capability modules and invokes
  * every optional hook with the corresponding seam registries at registration time.
  *

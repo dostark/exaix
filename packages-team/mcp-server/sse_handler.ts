@@ -1,6 +1,6 @@
 /**
  * @module SseHandler
- * @path packages/mcp/server/sse_handler.ts
+ * @path packages-team/mcp-server/sse_handler.ts
  * @description Local SSE endpoint that bridges HTTP Server-Sent Events to
  * EventBusService.subscribe. Binds to 127.0.0.1 only for security.
  * Validates traceId against z.string().uuid() before subscribing.

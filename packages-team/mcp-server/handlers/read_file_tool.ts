@@ -1,11 +1,11 @@
 /**
  * @module ReadFileTool
- * @path packages/mcp/server/handlers/read_file_tool.ts
+ * @path packages-team/mcp-server/handlers/read_file_tool.ts
  * @description Module for ReadFileTool.
  * @architectural-layer MCP
  * @related-files [packages/mcp/server/tool_handler.ts]
  */
-import { ToolHandler } from "../tool_handler.ts";
+import { ToolHandler } from "@exaix/mcp/server";
 import type { JSONValue } from "@exaix/core";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { ReadFileToolArgsSchema } from "@exaix/schemas/mcp.ts";

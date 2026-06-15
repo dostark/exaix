@@ -1,11 +1,11 @@
 /**
  * @module GitStatusTool
- * @path packages/mcp/server/handlers/git_status_tool.ts
+ * @path packages-team/mcp-server/handlers/git_status_tool.ts
  * @description MCP tool handler for checking git status in a portal.
  * @architectural-layer MCP
  * @related-files [packages/mcp/server/tool_handler.ts, packages/git/src/git_service.ts]
  */
-import { ToolHandler } from "../tool_handler.ts";
+import { ToolHandler } from "@exaix/mcp/server";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import type { JSONValue } from "@exaix/core";
 import { GitStatusFormat, PortalOperation, ToolErrorCode } from "@exaix/core";

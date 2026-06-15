@@ -1,12 +1,12 @@
 /**
  * @module CreateDirectoryTool
- * @path packages/mcp/server/handlers/create_directory_tool.ts
+ * @path packages-team/mcp-server/handlers/create_directory_tool.ts
  * @description MCP tool handler for creating a directory tree within a portal.
  * Low-risk altering operation — creates parent directories recursively.
  * @architectural-layer MCP
  * @related-files [packages/mcp/server/tool_handler.ts]
  */
-import { ToolHandler } from "../tool_handler.ts";
+import { ToolHandler } from "@exaix/mcp/server";
 import { CreateDirectoryToolArgsSchema, type MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { PortalOperation } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";

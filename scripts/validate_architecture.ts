@@ -17,6 +17,7 @@ const PACKAGES_DIR = join(ROOT, "packages");
 const SCRIPTS_DIR = join(ROOT, "scripts");
 const APPS_DIR = join(ROOT, "apps");
 const COPILOT_DIR = join(ROOT, ".copilot");
+const TEAM_PACKAGES_DIR = join(ROOT, "packages-team");
 const ARCH_DOC = join(ROOT, "ARCHITECTURE.md");
 
 interface ModuleInfo {
@@ -42,8 +43,8 @@ async function validate() {
   const testFiles = new Set<string>();
   const packageFiles = new Set<string>();
 
-  // 1. Gather all .ts files in packages/ and apps/ (no top-level src/ anymore)
-  for (const dir of [PACKAGES_DIR, APPS_DIR]) {
+  // 1. Gather all .ts files in packages/, apps/, and packages-team/ (no top-level src/ anymore)
+  for (const dir of [PACKAGES_DIR, APPS_DIR, TEAM_PACKAGES_DIR]) {
     if (await Deno.stat(dir).then((s) => s.isDirectory).catch(() => false)) {
       for await (const entry of walk(dir, { includeDirs: false })) {
         if (!entry.path.endsWith(".ts")) continue;
@@ -66,11 +67,13 @@ async function validate() {
     }
   }
 
-  // 1.2 Gather all .ts files in packages/
-  if (await Deno.stat(PACKAGES_DIR).then((s) => s.isDirectory).catch(() => false)) {
-    for await (const entry of walk(PACKAGES_DIR, { includeDirs: false })) {
-      if (!entry.path.endsWith(".ts")) continue;
-      packageFiles.add(relative(ROOT, entry.path));
+  // 1.2 Gather all .ts files in packages/ and packages-team/
+  for (const pkgDir of [PACKAGES_DIR, TEAM_PACKAGES_DIR]) {
+    if (await Deno.stat(pkgDir).then((s) => s.isDirectory).catch(() => false)) {
+      for await (const entry of walk(pkgDir, { includeDirs: false })) {
+        if (!entry.path.endsWith(".ts")) continue;
+        packageFiles.add(relative(ROOT, entry.path));
+      }
     }
   }
 

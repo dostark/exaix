@@ -3,6 +3,7 @@
  * @path packages-team/team-composer/src/team_bootstrap.ts
  * @architectural-layer Team
  * @related-files [apps/common/registry_bootstrap.ts, packages-team/team-composer/src/team_composer.ts]
+ * @ungrounded
  * @description Team-edition provider bootstrap — registers Team-only providers
  * (Vertex AI) into the global ProviderRegistry. Called once at app startup
  * when EXAIX_EDITION=team.

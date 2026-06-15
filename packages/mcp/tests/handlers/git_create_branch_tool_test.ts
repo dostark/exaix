@@ -7,7 +7,7 @@
  */
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
-import { GitCreateBranchTool } from "@exaix/mcp/server";
+import { GitCreateBranchTool } from "@exaix-team/mcp-server";
 import {
   assertToolDefinitionFields,
   createBaseToolContext,

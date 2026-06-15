@@ -34,7 +34,8 @@
     "./apps/agent-entrypoint",
     "./packages-team/team-placeholder",
     "./packages-team/team-composer",
-    "./packages-team/ai-vertex"
+    "./packages-team/ai-vertex",
+    "./packages-team/mcp-server"
   ],
   "lock": true,
   "exports": "./apps/daemon/main.ts",
@@ -130,6 +131,8 @@
     "@exaix/ai-google/": "./packages/ai-google/",
     "@exaix-team/ai-vertex": "./packages-team/ai-vertex/mod.ts",
     "@exaix-team/ai-vertex/": "./packages-team/ai-vertex/",
+    "@exaix-team/mcp-server": "./packages-team/mcp-server/mod.ts",
+    "@exaix-team/mcp-server/": "./packages-team/mcp-server/",
     "@exaix/ai-openrouter": "./packages/ai-openrouter/mod.ts",
     "@exaix/ai-openrouter/": "./packages/ai-openrouter/",
     "@exaix/ai-ollama": "./packages/ai-ollama/mod.ts",

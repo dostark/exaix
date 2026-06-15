@@ -6,7 +6,7 @@
  * @description Unit tests for the RunCommandTool MCP tool.
  */
 import { assertEquals } from "@std/assert";
-import { RunCommandTool } from "@exaix/mcp/server";
+import { RunCommandTool } from "@exaix-team/mcp-server";
 import {
   assertToolDefinitionFields,
   createBaseToolContext,

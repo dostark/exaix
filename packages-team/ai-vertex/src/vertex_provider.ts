@@ -1,7 +1,8 @@
 /**
  * @module VertexProvider
- * @path packages/ai-vertex/src/vertex_provider.ts
- * @related-files ["packages/ai-vertex/src/vertex_factory.ts", "packages/ai-vertex/src/auth/google_auth.ts", "packages/ai-vertex/src/constants.ts"]
+ * @path packages-team/ai-vertex/src/vertex_provider.ts
+ * @related-files ["packages-team/ai-vertex/src/vertex_factory.ts", "packages-team/ai-vertex/src/auth/google_auth.ts", "packages-team/ai-vertex/src/constants.ts"]
+ * @ungrounded
  * @architectural-layer AI
  * @dependencies ["@exaix/ai/providers", "@exaix/ai/provider_common_utils.ts", "@exaix-team/ai-vertex/src/auth/google_auth.ts"]
  * @description Vertex AI provider: authenticates via a service-account bearer token and calls

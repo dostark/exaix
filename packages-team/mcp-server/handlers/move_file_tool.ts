@@ -1,13 +1,13 @@
 /**
  * @module MoveFileTool
- * @path packages/mcp/server/handlers/move_file_tool.ts
+ * @path packages-team/mcp-server/handlers/move_file_tool.ts
  * @description MCP tool handler for moving or renaming a file within a portal.
  * Used for rename/restructure tasks. Both source and destination must be within portal bounds.
  * @architectural-layer MCP
  * @related-files [packages/mcp/server/tool_handler.ts]
  */
 import { dirname } from "@std/path";
-import { ToolHandler } from "../tool_handler.ts";
+import { ToolHandler } from "@exaix/mcp/server";
 import { type MCPToolResponse, MoveFileToolArgsSchema } from "@exaix/schemas/mcp.ts";
 import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";

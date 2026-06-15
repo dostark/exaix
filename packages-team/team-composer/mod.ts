@@ -1,6 +1,8 @@
 /**
  * @module TeamComposerBarrel
  * @path packages-team/team-composer/mod.ts
+ * @ungrounded
+ * @related-files []
  * @architectural-layer Team
  * @description Barrel exports for @exaix-team/team-composer.
  */

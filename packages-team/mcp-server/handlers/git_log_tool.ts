@@ -1,11 +1,11 @@
 /**
  * @module GitLogTool
- * @path packages/mcp/server/handlers/git_log_tool.ts
+ * @path packages-team/mcp-server/handlers/git_log_tool.ts
  * @description MCP tool handler for querying git commit history in a portal.
  * @architectural-layer MCP
  * @related-files [packages/mcp/server/tool_handler.ts, packages/git/src/git_service.ts]
  */
-import { ToolHandler } from "../tool_handler.ts";
+import { ToolHandler } from "@exaix/mcp/server";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { GitLogFormat, PortalOperation, ToolErrorCode } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";

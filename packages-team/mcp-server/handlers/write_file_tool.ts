@@ -1,11 +1,11 @@
 /**
  * @module WriteFileTool
- * @path packages/mcp/server/handlers/write_file_tool.ts
+ * @path packages-team/mcp-server/handlers/write_file_tool.ts
  * @description MCP tool handler for writing files to a portal with security validation and path safety.
  * @architectural-layer MCP
  * @related-files [packages/mcp/server/tool_handler.ts]
  */
-import { ToolHandler } from "../tool_handler.ts";
+import { ToolHandler } from "@exaix/mcp/server";
 import { type MCPToolResponse, WriteFileToolArgsSchema } from "@exaix/schemas/mcp.ts";
 import { PortalOperation } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";

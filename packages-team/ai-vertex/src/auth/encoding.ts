@@ -1,7 +1,8 @@
 /**
  * @module VertexAuthEncoding
- * @path packages/ai-vertex/src/auth/encoding.ts
- * @related-files ["packages/ai-vertex/src/auth/google_auth.ts"]
+ * @path packages-team/ai-vertex/src/auth/encoding.ts
+ * @related-files ["packages-team/ai-vertex/src/auth/google_auth.ts"]
+ * @ungrounded
  * @architectural-layer AI
  * @dependencies ["@exaix-team/ai-vertex/src/constants.ts"]
  * @description Overflow-safe base64url encoding used for JWT assertion signing.

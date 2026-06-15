@@ -10,7 +10,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { McpTransportType } from "@exaix/mcp";
 import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 
-import { MCPServer } from "@exaix/mcp/server";
+import { MCPServer } from "@exaix-team/mcp-server";
 import { createMockConfig } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";

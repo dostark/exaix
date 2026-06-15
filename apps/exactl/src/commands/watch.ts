@@ -5,8 +5,8 @@
  * SSE streams with color-coded output, falling back to historical DB queries
  * for completed traces.
  * @architectural-layer CLI
- * @dependencies [packages/mcp/server/sse_handler.ts, packages/core/src/observability/event_bus_service.ts]
- * @related-files [apps/exactl/src/commands/journal_commands.ts, packages/mcp/server/sse_handler.ts]
+ * @dependencies [packages-team/mcp-server/sse_handler.ts, packages/core/src/observability/event_bus_service.ts]
+ * @related-files [apps/exactl/src/commands/journal_commands.ts, packages-team/mcp-server/sse_handler.ts]
  */
 
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";

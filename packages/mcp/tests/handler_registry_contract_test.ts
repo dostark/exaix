@@ -7,8 +7,8 @@
  */
 import { assertEquals } from "@std/assert";
 import { toolResultToMcpResponse } from "@exaix/mcp";
-import { RunCommandTool } from "@exaix/mcp/server";
-import { SearchFilesTool } from "@exaix/mcp/server";
+import { RunCommandTool } from "@exaix-team/mcp-server";
+import { SearchFilesTool } from "@exaix-team/mcp-server";
 import { createPermissionsService, createToolContext, withToolPermissionTest } from "@exaix/mcp/testing";
 import { PortalOperation } from "@exaix/core";
 import type { IToolRegistry, IToolResult } from "@exaix/core/types";

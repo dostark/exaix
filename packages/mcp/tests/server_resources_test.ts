@@ -17,7 +17,7 @@ import { ensureDir } from "@std/fs";
 import { createMockConfig } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
-import { MCPServer } from "@exaix/mcp/server";
+import { MCPServer } from "@exaix-team/mcp-server";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import type { IApplicationContext } from "@exaix/core/types";

@@ -4,7 +4,7 @@
  * @description Standalone MCP server entry point. Wires minimal services and starts
  * the MCP server over stdio or SSE transport.
  * @architectural-layer Application
- * @related-files ["packages/mcp/server/server.ts", "apps/exactl/src/commands/mcp_commands.ts"]
+ * @related-files ["packages-team/mcp-server/server.ts", "apps/exactl/src/commands/mcp_commands.ts"]
  */
 
 import { ConfigService } from "@exaix/core/config";
@@ -14,7 +14,7 @@ import type { ICliApplicationContext } from "@exaix/core/types";
 import type { IModelProvider } from "@exaix/ai";
 import type { IGitService } from "@exaix/core/types";
 import type { IDisplayService } from "@exaix/core/types";
-import { MCPServer } from "@exaix/mcp/server";
+import { MCPServer } from "@exaix-team/mcp-server";
 import { DEFAULT_MCP_HTTP_PORT, McpTransportType } from "@exaix/mcp";
 import { validateMCPToolResponse, validateToolResultEnvelope } from "@exaix/schemas/tool_result_validator.ts";
 import type { JSONValue } from "@exaix/core";

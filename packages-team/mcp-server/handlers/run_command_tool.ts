@@ -1,11 +1,11 @@
 /**
  * @module RunCommandTool
- * @path packages/mcp/server/handlers/run_command_tool.ts
+ * @path packages-team/mcp-server/handlers/run_command_tool.ts
  * @description MCP tool handler for executing whitelisted commands in a portal.
  * @architectural-layer MCP
  * @related-files [packages/mcp/server/tool_handler.ts, packages/tool-runtime/src/tool_registry.ts]
  */
-import { ToolHandler } from "../tool_handler.ts";
+import { ToolHandler } from "@exaix/mcp/server";
 import { toolResultToMcpResponse } from "@exaix/mcp";
 import { type MCPToolResponse, RunCommandToolArgsSchema } from "@exaix/schemas/mcp.ts";
 import { JsonSchemaType, PortalOperation, ToolErrorCode } from "@exaix/core";

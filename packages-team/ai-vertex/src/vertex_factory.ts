@@ -1,7 +1,8 @@
 /**
  * @module VertexProviderFactory
- * @path packages/ai-vertex/src/vertex_factory.ts
- * @related-files ["packages/ai-vertex/src/vertex_provider.ts", "packages/ai-vertex/src/auth/service_account.ts", "packages/ai-vertex/src/constants.ts"]
+ * @path packages-team/ai-vertex/src/vertex_factory.ts
+ * @related-files ["packages-team/ai-vertex/src/vertex_provider.ts", "packages-team/ai-vertex/src/auth/service_account.ts", "packages-team/ai-vertex/src/constants.ts"]
+ * @ungrounded
  * @architectural-layer AI
  * @dependencies ["@exaix/ai", "@exaix/ai/providers", "@exaix-team/ai-vertex/src/auth/service_account.ts"]
  * @description Factory for creating VertexProvider instances. Resolves the service account

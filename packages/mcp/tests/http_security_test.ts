@@ -11,7 +11,7 @@ import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/
 import { McpTransportType } from "@exaix/mcp";
 import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 
-import { MCPServer } from "@exaix/mcp/server";
+import { MCPServer } from "@exaix-team/mcp-server";
 import { initTestDbService } from "@exaix/testing";
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";

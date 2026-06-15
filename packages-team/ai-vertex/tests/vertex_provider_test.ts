@@ -1,7 +1,7 @@
 /**
  * @module VertexProviderTest
- * @path packages/ai-vertex/tests/vertex_provider_test.ts
- * @related-files ["packages/ai-vertex/src/vertex_provider.ts", "packages/ai-vertex/src/vertex_factory.ts", "packages/ai-vertex/src/constants.ts"]
+ * @path packages-team/ai-vertex/tests/vertex_provider_test.ts
+ * @related-files ["packages-team/ai-vertex/src/vertex_provider.ts", "packages-team/ai-vertex/src/vertex_factory.ts", "packages-team/ai-vertex/src/constants.ts"]
  * @architectural-layer AI
  * @description Phase 80 Step 3 — validates the VertexProvider (regional endpoint, bearer-token
  * auth, Gemini response parsing into IGenerateResult) and the VertexProviderFactory (service

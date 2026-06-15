@@ -1,7 +1,7 @@
 /**
  * @module VertexGoogleAuthTest
- * @path packages/ai-vertex/tests/google_auth_test.ts
- * @related-files ["packages/ai-vertex/src/auth/service_account.ts", "packages/ai-vertex/src/auth/google_auth.ts", "packages/ai-vertex/src/auth/encoding.ts"]
+ * @path packages-team/ai-vertex/tests/google_auth_test.ts
+ * @related-files ["packages-team/ai-vertex/src/auth/service_account.ts", "packages-team/ai-vertex/src/auth/google_auth.ts", "packages-team/ai-vertex/src/auth/encoding.ts"]
  * @architectural-layer AI
  * @description Phase 80 Step 2 — validates secure Google service-account auth for Vertex AI:
  * schema + token-URI allowlist, env parsing with zero credential leakage, JWT RS256 signing,

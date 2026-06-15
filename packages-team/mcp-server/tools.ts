@@ -1,6 +1,6 @@
 /**
  * @module McpTools
- * @path packages/mcp/server/tools.ts
+ * @path packages-team/mcp-server/tools.ts
  * @description Transitional assembly and export module for all MCP tool handlers.
  * Re-exports the canonical tool manifest from @exaix/mcp and provides factory functions
  * that assemble handler maps for the live MCP server and for dynamic execution.
@@ -8,11 +8,11 @@
  * maps inline. When the server/bootstrap is extracted in Phase 76, this module moves
  * with it.
  * @architectural-layer MCP
- * @related-files [packages/mcp/server/server.ts, packages/mcp/server/tool_handler.ts, packages/mcp/src/manifest.ts]
+ * @related-files [packages-team/mcp-server/server.ts, packages/mcp/server/tool_handler.ts, packages/mcp/src/manifest.ts]
  */
 
 import { McpToolName, TOOL_MANIFEST, ToolKind } from "@exaix/mcp";
-import type { ToolHandler } from "./tool_handler.ts";
+import type { ToolHandler } from "@exaix/mcp/server";
 import type { ICliApplicationContext } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";

@@ -1,7 +1,7 @@
 /**
  * @module VertexGoogleAuthHardeningTest
- * @path packages/ai-vertex/tests/google_auth_hardening_test.ts
- * @related-files ["packages/ai-vertex/src/auth/google_auth.ts", "packages/ai-vertex/src/constants.ts"]
+ * @path packages-team/ai-vertex/tests/google_auth_hardening_test.ts
+ * @related-files ["packages-team/ai-vertex/src/auth/google_auth.ts", "packages-team/ai-vertex/src/constants.ts"]
  * @architectural-layer AI
  * @description Phase 80 Step 9 — hardens GoogleAuth token refresh: in-flight dedup
  * (single fetch under concurrency), a token-fetch timeout, validation of the token

@@ -1,7 +1,7 @@
 /**
  * @module VertexFactoryConfigTest
- * @path packages/ai-vertex/tests/vertex_factory_config_test.ts
- * @related-files ["packages/ai-vertex/src/vertex_factory.ts", "packages/ai/src/provider_factory.ts", "packages/schemas/src/config.ts"]
+ * @path packages-team/ai-vertex/tests/vertex_factory_config_test.ts
+ * @related-files ["packages-team/ai-vertex/src/vertex_factory.ts", "packages/ai/src/provider_factory.ts", "packages/schemas/src/config.ts"]
  * @architectural-layer AI
  * @description Phase 80 follow-up — verifies the VertexProviderFactory honours config.ai_vertex
  * overrides (service_account_env, region) threaded through IResolvedProviderOptions.config.

@@ -5,7 +5,7 @@
  * tools. This is the single source of truth for registration, classification, docs visibility,
  * dynamic-execution policy, and agent-quality metadata.
  * @architectural-layer MCP
- * @related-files [packages/mcp/server/tools.ts, packages/mcp/server/server.ts, packages/core/src/types/enums.ts]
+ * @related-files [packages-team/mcp-server/tools.ts, packages-team/mcp-server/server.ts, packages/core/src/types/enums.ts]
  */
 
 import { JsonSchemaType, McpToolName, ToolCategory, ToolKind, ToolSideEffectScope } from "@exaix/core";

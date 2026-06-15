@@ -13,7 +13,7 @@ import { assert } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { PortalOperation } from "@exaix/core";
-import { ReadFileTool, WriteFileTool } from "@exaix/mcp/server";
+import { ReadFileTool, WriteFileTool } from "@exaix-team/mcp-server";
 import { createPermissionsService, createToolContext, withToolPermissionTest } from "@exaix/mcp/testing";
 
 /** Creates `<portal>/escape` as a symlink to an out-of-portal directory and returns it. */

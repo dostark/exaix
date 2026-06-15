@@ -171,7 +171,7 @@ export class McpClient extends McpClientBase {}
 
       assertEquals(result.code, 1, result.output);
       assertStringIncludes(result.output, "[package-canonical-import]");
-      assertStringIncludes(result.output, "@exaix/mcp/server");
+      assertStringIncludes(result.output, "@exaix-team/mcp-server");
     } finally {
       await Deno.remove(filePath);
     }
@@ -189,7 +189,7 @@ Deno.test("check_code_style flags deep package alias imports when a canonical su
  * @description Temporary regression file for canonical package subpath alias enforcement.
  */
 
-import { parsePortalURI } from "@exaix/mcp/server/resources.ts";
+import { parsePortalURI } from "@exaix-team/mcp-server/resources.ts";
 
 console.log(parsePortalURI);
 `,
@@ -200,7 +200,7 @@ console.log(parsePortalURI);
 
     assertEquals(result.code, 1, result.output);
     assertStringIncludes(result.output, "[package-canonical-import]");
-    assertStringIncludes(result.output, "@exaix/mcp/server");
+    assertStringIncludes(result.output, "@exaix-team/mcp-server");
   } finally {
     await Deno.remove(filePath);
   }

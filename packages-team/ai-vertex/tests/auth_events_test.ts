@@ -1,7 +1,7 @@
 /**
  * @module VertexAuthEventsTest
- * @path packages/ai-vertex/tests/auth_events_test.ts
- * @related-files ["packages/ai-vertex/src/auth/google_auth.ts", "packages/ai-vertex/src/auth/service_account.ts", "packages/core/src/cost/cost_tracker.ts"]
+ * @path packages-team/ai-vertex/tests/auth_events_test.ts
+ * @related-files ["packages-team/ai-vertex/src/auth/google_auth.ts", "packages-team/ai-vertex/src/auth/service_account.ts", "packages/core/src/cost/cost_tracker.ts"]
  * @architectural-layer AI
  * @description Phase 80 Step 7 — locks the traceability contract for Vertex auth: a successful
  * token refresh emits a typed, secret-free `provider.auth.token_refreshed` event, a malformed

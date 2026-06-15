@@ -16,7 +16,7 @@ import { assert, assertEquals } from "@std/assert";
 import { DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS, TOOL_MANIFEST } from "@exaix/mcp";
 import { McpToolName, ToolKind } from "@exaix/core";
 import { AllowAllPermissionsService } from "@exaix/mcp/testing";
-import { buildDynamicHandlers, buildHandlers } from "@exaix/mcp/server";
+import { buildDynamicHandlers, buildHandlers } from "@exaix-team/mcp-server";
 import { createStubContext } from "@exaix/testing";
 
 const context = createStubContext();

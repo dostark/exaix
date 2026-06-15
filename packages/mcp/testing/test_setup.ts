@@ -18,7 +18,7 @@ import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 import { McpTransportType } from "@exaix/mcp";
 import { PortalOperation } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
-import { MCPServer } from "@exaix/mcp/server";
+import { MCPServer } from "@exaix-team/mcp-server";
 import { PortalPermissionsService } from "@exaix/portal";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import {

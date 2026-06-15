@@ -10,9 +10,9 @@
 import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { PortalOperation } from "@exaix/core";
 
-import { GitStatusTool } from "@exaix/mcp/server";
-import { ReadFileTool } from "@exaix/mcp/server";
-import { WriteFileTool } from "@exaix/mcp/server";
+import { GitStatusTool } from "@exaix-team/mcp-server";
+import { ReadFileTool } from "@exaix-team/mcp-server";
+import { WriteFileTool } from "@exaix-team/mcp-server";
 import { PortalPermissionsService } from "@exaix/portal";
 import { initToolPermissionTest } from "@exaix/mcp/testing";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
