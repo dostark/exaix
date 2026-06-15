@@ -90,17 +90,16 @@ graph TB
 
 ## Edition Availability
 
-| Provider Category                       | Solo | Team | Enterprise |
-| --------------------------------------- | ---- | ---- | ---------- |
-| Local (Ollama)                          | ✅   | ✅   | ✅         |
-| Cloud Basic (OpenAI, Anthropic, Google) | ✅   | ✅   | ✅         |
-| Cloud Vertex AI                         | ❌   | ✅   | ✅         |
-| Unified Gateway (OpenRouter)            | ✅\* | ✅   | ✅         |
-| Cloud Enterprise (Azure, Bedrock)       | ❌   | ❌   | ✅         |
+Provider edition tiers are defined as capability constants in `@exaix/core` (`packages/core/src/composer/capabilities.ts`):
 
-> Vertex AI is a service-account auth variant of the Google provider implemented in `@exaix-team/ai-vertex`. It is available in Team and Enterprise editions only.
-> \* OpenRouter ships in the Solo build today; it is positioned as a Team+ differentiator, so runtime
-> edition-gating may be applied in a future edition-enforcement phase.
+| Capability ID        | Edition tier | Description                         |
+| -------------------- | ------------ | ----------------------------------- |
+| `openrouter_team`    | Team         | OpenRouter as Team+ differentiator  |
+| `hitl_governance`    | Team         | Advanced per-action HITL governance |
+| `guardrail_advanced` | Team         | Advanced guardrail policies         |
+| `voting`             | Team         | VOTING_GROUP step type              |
+
+Vertex AI (`@exaix-team/ai-vertex`) is Team+ only. OpenRouter is gated behind build-time edition scoping (`EXAIX_EDITION`) — available in Team and Enterprise builds.
 
 ## Provider Configuration
 
@@ -109,6 +108,7 @@ Provider selection is configured in `exa.config.toml`. See the [Provider Strateg
 ### Vertex AI & OpenRouter notes
 
 - **Vertex token refresh** is hardened: concurrent refreshes are deduplicated into a single token exchange, the exchange is timeout-bounded, the token response is schema-validated, and an early-refresh skew margin is applied. Service-account credentials are env-only and never logged; the token endpoint is restricted to `*.googleapis.com`.
+- **OpenRouter** is gated behind Team edition. In Solo builds, the provider is not registered.
 - **OpenRouter is intentionally unmetered** — pricing varies per underlying sub-model, so the inline `IGenerateResult.cost_usd` is informational; authoritative spend is recorded by `CostTracker`, keyed on `ProviderType`. Vertex bills at the Google output rate.
 - Neither provider implements streaming yet, so their capability metadata does not advertise `streaming`.
 
