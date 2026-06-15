@@ -66,6 +66,7 @@
     "test_parallel": "deno run --allow-run --allow-read --allow-env --allow-write scripts/test_parallel.ts --reporter=dot",
     "test_parallel:pretty": "deno run --allow-run --allow-read --allow-env --allow-write scripts/test_parallel.ts --reporter=pretty",
     "test:security": "deno test --allow-all --filter \"[security]\" tests/",
+    "test:team-smoke": "deno test --allow-all --filter \"[team]\" tests/",
     "test:ci": "deno test --allow-all tests/infra/",
     "test:llama": "EXA_RUN_LLAMA_TESTS=true deno test --allow-all tests/llama_provider_test.ts",
     "test:watch": "deno test --watch --allow-all tests/ packages/ packages-team/ apps/",

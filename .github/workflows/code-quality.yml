@@ -168,6 +168,9 @@ jobs:
       - name: "Test Team edition (includes packages-team/)"
         run: deno run -A scripts/ci.ts test --edition team
 
+      - name: "Team edition smoke test"
+        run: deno task test:team-smoke
+
       - name: "Build Enterprise edition (basis scaffold)"
         if: hashFiles('exaix-enterprise/mod.ts') != ''
         run: deno task build:enterprise
