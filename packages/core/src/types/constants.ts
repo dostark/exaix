@@ -24,6 +24,15 @@ export const EDITION_TEAM = "team";
 export const EDITION_ENTERPRISE = "enterprise";
 
 // ============================================================================
+// Guardrail (Phase 107)
+// ============================================================================
+/** Maximum time (ms) to wait for a guardrail policy evaluation before timing out. */
+export const GUARDRAIL_SCREEN_TIMEOUT_MS = 10_000;
+
+/** Maximum characters to include in the flagged_excerpt field of a GuardrailIncident. */
+export const GUARDRAIL_FLAGGED_EXCERPT_MAX_CHARS = 500;
+
+// ============================================================================
 // Path Configuration Defaults
 // ============================================================================
 export const DEFAULT_WORKSPACE_PATH = "Workspace";

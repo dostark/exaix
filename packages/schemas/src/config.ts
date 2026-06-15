@@ -68,6 +68,7 @@ import { AnalysisMode } from "@exaix/core/request";
 
 import { PortalPermissionsSchema } from "./portal_permissions.ts";
 import { ZBudgetPolicy } from "./prompt_budget.ts";
+import { GuardrailConfigSchema } from "./guardrail.ts";
 import { SessionDelegateConfigSchema } from "./session_delegate.ts";
 
 export interface IPortalConfig {
@@ -620,6 +621,8 @@ export const ConfigSchema = z.object({
   routing: RoutingConfigSchema,
   /** Phase 106 — optional session-delegation block (global scope). */
   session_delegate: SessionDelegateConfigSchema.optional(),
+  /** Phase 107 — optional guardrail block. Disabled by default (enabled: false). */
+  guardrail: GuardrailConfigSchema.optional(),
   /** Provider-specific configuration overrides */
   providers: z.record(z.object({
     cost_tier: z.nativeEnum(ProviderCostTier).optional(),

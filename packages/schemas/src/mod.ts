@@ -16,6 +16,7 @@ export * from "./clarification_session.ts";
 export * from "./session_delegate.ts";
 export * from "./config.ts";
 export * from "./flow.ts";
+export * from "./guardrail.ts";
 export * from "./mcp.ts";
 export * from "./memory_bank.ts";
 export * from "./plan_schema.ts";
