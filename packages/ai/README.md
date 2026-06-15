@@ -27,10 +27,13 @@ graph TB
         Mock[MockLLMProvider<br/>Testing]
     end
 
+    subgraph TeamProviders["Team Providers"]
+        Vertex[GCPVertex<br/>vertex.googleapis.com]
+    end
+
     subgraph EnterpriseProviders["Enterprise Providers"]
         Azure[AzureOpenAI<br/>your-endpoint.azure.com]
         Bedrock[AWSBedrock<br/>bedrock.amazonaws.com]
-        Vertex[GCPVertex<br/>vertex.googleapis.com]
     end
 
     subgraph Interface["Provider Interface"]
@@ -60,13 +63,15 @@ graph TB
     classDef factory fill:#e1bee7,stroke:#6a1b9a,stroke-width:2px
     classDef config fill:#fff9c4,stroke:#f57f17,stroke-width:2px
     classDef provider fill:#fce4ec,stroke:#880e4f,stroke-width:2px
-    classDef enterprise fill:#d1c4e9,stroke:#512da8,stroke-width:2px
+    classDef team fill:#d1c4e9,stroke:#512da8,stroke-width:2px
+    classDef enterprise fill:#e8e0f0,stroke:#7b1fa2,stroke-width:2px
     classDef interface fill:#b2dfdb,stroke:#00695c,stroke-width:2px
 
     class PF,Info factory
     class Cfg config
     class Ollama,Claude,GPT,Gemini,Mock provider
-    class Azure,Bedrock,Vertex enterprise
+    class Vertex team
+    class Azure,Bedrock enterprise
     class Gen interface
 ```
 
@@ -85,14 +90,15 @@ graph TB
 
 ## Edition Availability
 
-| Provider Category                                  | Solo | Team | Enterprise |
-| -------------------------------------------------- | ---- | ---- | ---------- |
-| Local (Ollama)                                     | ✅   | ✅   | ✅         |
-| Cloud Basic (OpenAI, Anthropic, Google, Vertex AI) | ✅   | ✅   | ✅         |
-| Unified Gateway (OpenRouter)                       | ✅\* | ✅   | ✅         |
-| Cloud Enterprise (Azure, Bedrock)                  | ❌   | ❌   | ✅         |
+| Provider Category                       | Solo | Team | Enterprise |
+| --------------------------------------- | ---- | ---- | ---------- |
+| Local (Ollama)                          | ✅   | ✅   | ✅         |
+| Cloud Basic (OpenAI, Anthropic, Google) | ✅   | ✅   | ✅         |
+| Cloud Vertex AI                         | ❌   | ✅   | ✅         |
+| Unified Gateway (OpenRouter)            | ✅\* | ✅   | ✅         |
+| Cloud Enterprise (Azure, Bedrock)       | ❌   | ❌   | ✅         |
 
-> Vertex AI is a service-account auth variant of the Google provider and is available in all editions.
+> Vertex AI is a service-account auth variant of the Google provider implemented in `@exaix-team/ai-vertex`. It is available in Team and Enterprise editions only.
 > \* OpenRouter ships in the Solo build today; it is positioned as a Team+ differentiator, so runtime
 > edition-gating may be applied in a future edition-enforcement phase.
 

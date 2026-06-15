@@ -18,6 +18,7 @@ import {
 import type { IScenarioStepExecutionResult } from "./step_executor.ts";
 import { type IScenarioStep, ScenarioExecutionMode } from "../schema/step_schema.ts";
 import { CI_EXCLUDED_TAGS } from "./scenario_catalog.ts";
+import { EDITION_SOLO } from "@exaix/core";
 
 export enum ExecutionStateStatus {
   PAUSED = "paused",
@@ -88,6 +89,7 @@ export interface ISelectableScenario {
   pack: string;
   tags: string[];
   mode_support: string[];
+  edition?: string;
 }
 
 export interface IScenarioSelectionFilterOptions extends IScenarioSelectionOptions {
@@ -174,19 +176,27 @@ export function selectScenariosForExecution(
 ): ISelectableScenario[] {
   const selection = resolveScenarioSelection(options);
 
+  let selected: ISelectableScenario[];
+
   if (selection.source === ScenarioSelectionSource.EXPLICIT_SCENARIO_IDS) {
-    return options.scenarios.filter((scenario) => selection.scenarioIds.includes(scenario.id));
+    selected = options.scenarios.filter((scenario) => selection.scenarioIds.includes(scenario.id));
+  } else if (selection.source === ScenarioSelectionSource.EXPLICIT_PACKS) {
+    selected = options.scenarios.filter((scenario) => selection.packs.includes(scenario.pack));
+  } else if (selection.source === ScenarioSelectionSource.EXPLICIT_TAGS) {
+    selected = options.scenarios.filter((scenario) => scenario.tags.some((tag) => selection.tags.includes(tag)));
+  } else {
+    selected = filterByProfileDefaults(options.scenarios, selection);
   }
 
-  if (selection.source === ScenarioSelectionSource.EXPLICIT_PACKS) {
-    return options.scenarios.filter((scenario) => selection.packs.includes(scenario.pack));
-  }
+  return filterByEdition(selected);
+}
 
-  if (selection.source === ScenarioSelectionSource.EXPLICIT_TAGS) {
-    return options.scenarios.filter((scenario) => scenario.tags.some((tag) => selection.tags.includes(tag)));
-  }
-
-  return filterByProfileDefaults(options.scenarios, selection);
+function filterByEdition(scenarios: ISelectableScenario[]): ISelectableScenario[] {
+  const currentEdition = Deno.env.get("EXAIX_EDITION") ?? EDITION_SOLO;
+  return scenarios.filter((scenario) => {
+    if (!scenario.edition) return true;
+    return scenario.edition === currentEdition;
+  });
 }
 
 function isInteractiveMode(mode: ScenarioExecutionMode): boolean {

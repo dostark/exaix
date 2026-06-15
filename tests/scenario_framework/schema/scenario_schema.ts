@@ -28,6 +28,7 @@ export const ScenarioSchema = z.object({
   mode_support: z.array(z.nativeEnum(ScenarioExecutionMode)).min(1),
   portals: z.array(PortalMountSchema),
   steps: z.array(ScenarioStepSchema).min(1),
+  edition: z.enum(["solo", "team", "enterprise"]).optional(),
   description: z.string().min(1).optional(),
   risk: z.string().min(1).optional(),
   ci_profile: z.string().min(1).optional(),
