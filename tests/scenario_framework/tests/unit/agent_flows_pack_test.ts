@@ -56,6 +56,7 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] CI-safe scenario list excludes scen
     [
       "edition-smoke",
       "flowrunner-execution",
+      "guardrail-block-violation",
       "memory-aware-analysis",
       "plan-amendment-lifecycle",
       "portal-knowledge-snapshot",
@@ -75,6 +76,7 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] scenario metadata for the Agent Flo
       "context-budget-react-overflow",
       "edition-smoke",
       "flowrunner-execution",
+      "guardrail-block-violation",
       "memory-aware-analysis",
       "plan-amendment-lifecycle",
       "portal-knowledge-snapshot",
