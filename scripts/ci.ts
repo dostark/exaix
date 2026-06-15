@@ -89,19 +89,17 @@ const checkCommand = new Command()
 const testCommand = new Command()
   .description("Run tests")
   .option("--quick", "Skip slow integration tests")
+  .option("--edition <edition:string>", "Edition to test: solo|team|enterprise")
   .action(async (options) => {
     if (options.quick) {
-      // Example of how we might filter.
-      // For now, let's just assume we run all if not specified otherwise
       console.log("ℹ️ Quick mode enabled (placeholder)");
     }
 
-    // Run security tests in parellel with standard tests if possible,
-    // but usually standard test includes everything.
-    // Let's run security explicitly to be safe + standard suite.
+    const edition = options.edition as EditionType | undefined;
+    const testTask = edition === "solo" ? "test:solo" : edition === "team" ? "test:team" : "test_parallel";
 
     const success = await runParallel([
-      { cmd: ["deno", "task", "test_parallel"], desc: "Unit & Integration Tests" },
+      { cmd: ["deno", "task", testTask], desc: `Unit & Integration Tests [edition: ${edition ?? "all"}]` },
       { cmd: ["deno", "task", "test:security"], desc: "Security Regression Tests" },
     ]);
     if (!success) Deno.exit(1);
@@ -210,8 +208,9 @@ async function generateBuilds(options: BuildOptions = {}): Promise<boolean> {
   return true;
 }
 
-async function verifyCoverage(): Promise<boolean> {
-  console.log(`\n⏳ Starting: Coverage Verification...${isDryRun ? " (DRY RUN)" : ""}`);
+async function verifyCoverage(edition: EditionType = "solo"): Promise<boolean> {
+  const editionLabel = `[edition: ${edition}]`;
+  console.log(`\n⏳ Starting: Coverage Verification...${isDryRun ? ` (DRY RUN) ${editionLabel}` : ` ${editionLabel}`}`);
 
   const COVERAGE_DIR = "coverage";
   const COVERAGE_INCLUDE_PATTERN = "^file://.*/(src|packages)/";
@@ -278,8 +277,11 @@ async function verifyCoverage(): Promise<boolean> {
     await Deno.mkdir(COVERAGE_DIR, { recursive: true });
 
     const testStart = Date.now();
+    const testPaths = edition === "solo"
+      ? ["tests/", "packages/", "apps/"]
+      : ["tests/", "packages/", "packages-team/", "apps/"];
     const testCmd = new Deno.Command("deno", {
-      args: ["test", "--allow-all", `--coverage=${COVERAGE_DIR}`, "tests/", "packages/", "apps/"],
+      args: ["test", "--allow-all", `--coverage=${COVERAGE_DIR}`, ...testPaths],
       stdout: "inherit",
       stderr: "piped",
     });
@@ -378,14 +380,17 @@ async function verifyCoverage(): Promise<boolean> {
 
 const coverageCommand = new Command()
   .description("Run coverage checks")
-  .action(async () => {
-    if (!await verifyCoverage()) Deno.exit(1);
+  .option("--edition <edition:string>", "Edition to check coverage for: solo|team|enterprise", { default: "solo" })
+  .action(async (options) => {
+    if (!await verifyCoverage((options.edition ?? "solo") as EditionType)) Deno.exit(1);
   });
 
 const allCommand = new Command()
   .description("Run full CI pipeline")
-  .action(async () => {
-    console.log("🚀 Starting Full CI Pipeline");
+  .option("--edition <edition:string>", "Edition to build: solo|team|enterprise", { default: "solo" })
+  .action(async (options) => {
+    const edition = (options.edition ?? "solo") as EditionType;
+    console.log(`🚀 Starting Full CI Pipeline [edition: ${edition}]`);
     const start = Date.now();
 
     // 1. Checks (Parallel)
@@ -405,22 +410,22 @@ const allCommand = new Command()
       );
     }
 
-    // 2. Tests (Parallel)
-    console.log("\n--- Phase 2: Testing ---");
+    // 2. Tests (Parallel) — edition-scoped
+    console.log(`\n--- Phase 2: Testing [edition: ${edition}] ---`);
+    const testTask = edition === "solo" ? "test:solo" : edition === "team" ? "test:team" : "test_parallel";
     if (
       !await runParallel([
-        { cmd: ["deno", "task", "test_parallel"], desc: "test suite" },
+        { cmd: ["deno", "task", testTask], desc: `test suite [edition: ${edition}]` },
       ])
     ) Deno.exit(1);
 
     // 3. Coverage (Optional for now, but part of 'all')
     console.log("\n--- Phase 3: Coverage ---");
-    // We don't fail 'all' on coverage yet to avoid blocking dev flow until thresholds are tuned
-    await verifyCoverage();
+    await verifyCoverage(edition);
 
     // 4. Build
     console.log("\n--- Phase 4: Build ---");
-    if (!await generateBuilds({ compile: true })) Deno.exit(1);
+    if (!await generateBuilds({ compile: true, edition })) Deno.exit(1);
 
     console.log(`\n🎉 CI Pipeline Completed Successfully in ${Date.now() - start}ms`);
   });

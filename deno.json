@@ -102,7 +102,9 @@
     "docs-sync-schemas": "deno run -A scripts/sync_tool_schemas.ts && deno fmt TOOLS.md",
     "build:solo": "deno run -A scripts/ci.ts build --edition solo",
     "build:team": "deno run -A scripts/ci.ts build --edition team",
-    "build:enterprise": "deno run -A scripts/ci.ts build --edition enterprise"
+    "build:enterprise": "deno run -A scripts/ci.ts build --edition enterprise",
+    "ci:solo": "deno run -A scripts/ci.ts all --edition solo",
+    "ci:team": "deno run -A scripts/ci.ts all --edition team"
   },
   "imports": {
     "@cliffy/table": "jsr:@cliffy/table@^1.2.1",

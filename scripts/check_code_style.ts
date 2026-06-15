@@ -499,6 +499,7 @@ const rules: Rule[] = [
       !path.endsWith("check_code_style.ts") &&
       !path.endsWith("check_no_edition_conditionals.ts") &&
       !path.startsWith("exaix-enterprise/") &&
+      !path.endsWith("scripts/ci.ts") &&
       !path.startsWith("packages-team/") &&
       !path.includes("/src/composer/") &&
       !path.startsWith("apps/daemon/") &&

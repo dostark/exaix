@@ -111,7 +111,6 @@ jobs:
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task docs-bench
 
-
   tests-and-coverage:
     name: "Tests & Coverage"
     runs-on: ubuntu-latest
@@ -160,8 +159,14 @@ jobs:
       - name: "Build Solo edition"
         run: deno task build:solo
 
+      - name: "Test Solo edition (excludes packages-team/)"
+        run: deno run -A scripts/ci.ts test --edition solo
+
       - name: "Build Team edition"
         run: deno task build:team
+
+      - name: "Test Team edition (includes packages-team/)"
+        run: deno run -A scripts/ci.ts test --edition team
 
       - name: "Build Enterprise edition (basis scaffold)"
         if: hashFiles('exaix-enterprise/mod.ts') != ''
