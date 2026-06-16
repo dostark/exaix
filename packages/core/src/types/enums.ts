@@ -815,6 +815,8 @@ export enum FlowStepType {
   GATE = "gate",
   BRANCH = "branch",
   CONSENSUS = "consensus",
+  /** P113: Multi-agent voting/consensus — fans out N runners and resolves majority/weighted/llm-judge */
+  VOTING_GROUP = "voting_group",
 }
 
 /**
@@ -834,6 +836,24 @@ export enum FlowConsensusMethod {
   WEIGHTED = "weighted",
   UNANIMOUS = "unanimous",
   JUDGE = "judge",
+}
+
+/**
+ * Voting model slots for voting_group runner configuration (Phase 113).
+ */
+export enum VotingModelSlot {
+  DEFAULT = "default",
+  FAST = "fast",
+  LOCAL = "local",
+}
+
+/**
+ * Voting strategies for multi-agent voting_group steps (Phase 113).
+ */
+export enum VotingStrategy {
+  MAJORITY = "majority",
+  WEIGHTED = "weighted",
+  LLM_JUDGE = "llm-judge",
 }
 
 /**

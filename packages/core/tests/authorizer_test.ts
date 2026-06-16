@@ -6,8 +6,8 @@
 
 import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
-import { AllowAllAuthorizer, SoloComposer } from "../mod.ts";
-import type { IAuthorizationContext, IAuthorizer } from "../mod.ts";
+import { AllowAllAuthorizer, type IAuthorizationContext, type IAuthorizer } from "../mod.ts";
+import { SoloComposer } from "../src/composer/mod.ts";
 
 describe("AllowAllAuthorizer", () => {
   it("permits every action unconditionally", () => {

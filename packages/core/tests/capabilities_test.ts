@@ -5,14 +5,14 @@
  */
 
 import { assertEquals } from "@std/assert";
+import { EDITION_TEAM } from "../mod.ts";
 import {
   CAP_GUARDRAIL_ADVANCED,
   CAP_HITL_GOVERNANCE,
   CAP_OPENROUTER_TEAM,
   CAP_VOTING,
   CAPABILITY_EDITION,
-  EDITION_TEAM,
-} from "../mod.ts";
+} from "../src/composer/mod.ts";
 
 Deno.test("capabilities: all expected capability IDs are defined", () => {
   assertEquals(CAP_VOTING, "voting");

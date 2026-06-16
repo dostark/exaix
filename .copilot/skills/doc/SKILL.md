@@ -24,6 +24,10 @@ Key points
 - exaix-dev-docs is a git submodule — follow .copilot/skills/submodule-workflow/SKILL.md
   for any changes that span the parent repo and the submodule
 - Consult .copilot/guidelines/documentation.md for full structure and publishing protocol
+- ARCHITECTURE.md is a strategic document — describe what and why, not where.
+  Never include implementation-specific file paths or module locations there.
+  Move those details into the relevant package README (e.g.,
+  packages/<name>/README.md) and reference the package from ARCHITECTURE.md.
 
 Canonical prompt (short):
 "Create/update documentation for {component/feature}.

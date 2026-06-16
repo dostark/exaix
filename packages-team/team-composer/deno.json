@@ -1,6 +1,9 @@
 {
   "name": "@exaix-team/team-composer",
   "version": "0.1.0",
+  "imports": {
+    "@exaix/core/composer": "../../packages/core/src/composer/mod.ts"
+  },
   "exports": {
     ".": "./mod.ts"
   },

@@ -42,6 +42,7 @@ import { PortalKnowledgeService } from "@exaix/portal/knowledge";
 import type { IPortalKnowledgeConfig, PortalAnalysisMode } from "@exaix/core/types";
 import { createConfigReloadHandler } from "@exaix/core/config";
 import { GracefulShutdown } from "./src/graceful_shutdown.ts";
+import { registerTeamCapabilities } from "./src/bootstrap_team.ts";
 import { ensureDir } from "@std/fs";
 import { WaitStateSchema } from "@exaix/flow";
 import { join } from "@std/path";
@@ -50,7 +51,7 @@ import type { IApplicationContext } from "@exaix/core/types";
 import { type LogMetadata, toSafeJson } from "@exaix/core/types";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
-import { SoloComposer } from "@exaix/core";
+import { SoloComposer } from "@exaix/core/composer";
 // Team imports — resolved unconditionally from import map;
 // dead-code eliminated in Solo builds because TeamComposer/bootstrapTeamProviders
 // are never called when editionType !== "team".
@@ -266,6 +267,11 @@ if (import.meta.main) {
       config,
       eventLogger: flowLogger,
     });
+
+    // Wire Team-edition capability modules through the edition-composer seam
+    if (_editionComposer instanceof TeamComposer) {
+      registerTeamCapabilities(agentExecutorAdapter, logger, flowRunner, _editionComposer);
+    }
 
     // Initialize Request Processor
     const requestProcessor = new RequestProcessor({

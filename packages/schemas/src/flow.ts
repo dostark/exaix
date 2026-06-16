@@ -23,6 +23,7 @@ import {
   StepSideEffectClass,
 } from "@exaix/core";
 import { JSONValueSchema } from "@exaix/core";
+import { VotingGroupConfigSchema } from "./voting.ts";
 
 import {
   DEFAULT_FLOW_MAX_RETRIES,
@@ -206,6 +207,8 @@ export const FlowStepSchema = z.object({
   default: z.string().optional(),
   /** Consensus config (for type: "consensus") */
   consensus: ConsensusConfigSchema.optional(),
+  /** Voting group config (for type: "voting_group") */
+  voting: VotingGroupConfigSchema.optional(),
   /** Skills to apply for this step (Phase 17) */
   skills: z.array(z.string()).optional(),
   /** Cost tier annotation for provider routing (Gap UF-3) */

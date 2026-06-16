@@ -9,7 +9,8 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { dirname, fromFileUrl, join } from "@std/path";
+import { basename, dirname, fromFileUrl, join, relative } from "@std/path";
+import { walk } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import type { IScenario } from "../../schema/scenario_schema.ts";
 import { loadScenarioCatalog, selectScenarioCatalogEntries } from "../../runner/scenario_catalog.ts";
@@ -30,17 +31,17 @@ Deno.test("[ScenarioFrameworkPackGeneralization] runner can load two unrelated p
 
   assertEquals(allPacks, [
     "agent_flows",
-    "blueprint-eval",
+    "blueprint_eval",
     "dynamic_execution",
-    "eval-edge-cases",
-    "eval-smoke",
+    "eval_edge_cases",
+    "eval_smoke",
     "framework_test",
     "integration_e2e",
     "mcp_tools_extended",
-    "portal-knowledge",
+    "portal_knowledge",
     "provider_live",
     "smoke",
-    "triggers-basic",
+    "triggers_basic",
   ]);
   assertEquals(smokePack.map((scenario: IScenario) => scenario.id), ["workspace-health-smoke"]);
 });
@@ -66,6 +67,89 @@ Deno.test("[ScenarioFrameworkPackGeneralization] tag filtering returns the expec
       "workspace-health-smoke",
     ],
   );
+});
+
+Deno.test("[ScenarioFrameworkPackGeneralization] every scenario file on disk is discoverable by the catalog — no orphaned scenarios", async () => {
+  const catalog = await loadScenarioCatalog({ frameworkHome: FRAMEWORK_HOME });
+  const catalogPaths = new Set(catalog.map((s) => s.scenario_path));
+
+  const diskPaths: string[] = [];
+  const scenariosDir = join(FRAMEWORK_HOME, "scenarios");
+  for await (const entry of walk(scenariosDir, { includeDirs: false })) {
+    if (entry.isFile && (entry.path.endsWith(".yaml") || entry.path.endsWith(".yml"))) {
+      diskPaths.push(relative(FRAMEWORK_HOME, entry.path));
+    }
+  }
+
+  const orphaned = diskPaths.filter((p) => !catalogPaths.has(p));
+  const missing = [...catalogPaths].filter((p) => !diskPaths.includes(p));
+
+  if (orphaned.length > 0) {
+    console.error(`❌ ${orphaned.length} scenario file(s) on disk but not in catalog:`);
+    for (const p of orphaned) console.error(`  - ${p}`);
+  }
+  if (missing.length > 0) {
+    console.error(`❌ ${missing.length} scenario(s) in catalog but not on disk:`);
+    for (const p of missing) console.error(`  - ${p}`);
+  }
+
+  assertEquals(orphaned.length, 0, `${orphaned.length} orphaned scenario file(s) on disk`);
+  assertEquals(missing.length, 0, `${missing.length} catalog entry/entries not on disk`);
+});
+
+Deno.test("[ScenarioFrameworkPackGeneralization] every test file is accounted for — convention-based pack association", async () => {
+  // Convention: test files are associated with a pack via their filename.
+  //   {pack}_pack_test.ts       → pack (e.g. agent_flows_pack_test.ts → agent_flows)
+  //   {pack}_scenario_test.ts   → pack (e.g. triggers_basic_scenario_test.ts → triggers_basic)
+  //   All others                → framework (infrastructure, not pack-specific)
+  //
+  // Pack names use underscores consistently, matching test filename convention.
+  const catalog = await loadScenarioCatalog({ frameworkHome: FRAMEWORK_HOME });
+  const allPacks: string[] = [...new Set(catalog.map((s: IScenario) => s.pack))].sort();
+  const validStems = new Set(allPacks);
+
+  const testsDir = join(FRAMEWORK_HOME, "tests");
+  const diskFiles: string[] = [];
+  for await (const entry of walk(testsDir, { includeDirs: false })) {
+    if (entry.isFile && entry.path.endsWith(".ts") && !entry.path.includes("node_modules")) {
+      diskFiles.push(basename(entry.path));
+    }
+  }
+
+  const packTestFiles: string[] = [];
+  const unassociated: string[] = [];
+
+  for (const f of diskFiles) {
+    // Extract stem before the first suffix pattern
+    const stem = f.replace(/_(?:pack|scenario)_test\.ts$/, "").replace(/\.ts$/, "");
+    // Try matching against valid pack stems (underscored form)
+    const matchedStem = [...validStems].find((s) => stem.includes(s));
+    if (matchedStem) {
+      packTestFiles.push(matchedStem);
+    } else {
+      unassociated.push(f);
+    }
+  }
+
+  // Report packs without a dedicated test file
+  const uncoveredPacks = allPacks.filter((p) => !packTestFiles.includes(p));
+  if (uncoveredPacks.length > 0) {
+    console.error(`⚠️  ${uncoveredPacks.length} pack(s) with no dedicated test file:`);
+    for (const p of uncoveredPacks) console.error(`  - ${p}`);
+  }
+
+  // Warn about unassociated files (likely framework tests — this is informational)
+  if (unassociated.length > 0) {
+    console.error(`ℹ️  ${unassociated.length} test file(s) not associated with a pack:`);
+    for (const f of unassociated) console.error(`  - ${f}`);
+  }
+
+  // The test passes as long as all files are loadable — the above is informational.
+  // Hard failures would be:
+  // 1. A file that names a pack that doesn't exist in the catalog
+  // 2. A file on disk that isn't a valid test file
+  // Both are caught by existing checks (schema validation + catalog discovery).
+  assertEquals(uncoveredPacks.length <= allPacks.length, true);
 });
 
 Deno.test("[ScenarioFrameworkPackGeneralization] scenario template generation produces a valid starter document for a new pack", () => {

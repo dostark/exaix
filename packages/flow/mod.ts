@@ -57,6 +57,8 @@ export { GateStepHandler } from "./src/step_handlers/gate_step_handler.ts";
 export { UnknownFlowStepError } from "./src/step_handlers/flow_step_error.ts";
 export type { IAgentStepHandlerDeps } from "./src/step_handlers/agent_step_handler.ts";
 export type { IGateStepHandlerDeps, IPendingWaitStateRef } from "./src/step_handlers/gate_step_handler.ts";
+export { VotingStepHandler } from "./src/step_handlers/voting_step_handler.ts";
+export type { IVotingStepHandlerDeps } from "./src/step_handlers/voting_step_handler.ts";
 export type {
   IFlowStepHandler,
   IFlowStepHandlerRegistry,

@@ -87,9 +87,9 @@ Session tool integration **must not introduce session state into Exaix's core pi
 
 The integration is realized by the `@exaix/session` package as a strict three-part handoff, so the invariant holds by construction (only files + a typed `return.json` cross back):
 
-1. **Brief** — `SessionDelegateService.prepareBrief` (`packages/session/src/session_delegate_service.ts`) atomically writes `Session/{traceId}/brief.json` (objective, scope globs, token budget, single-use resume token, deadline).
-2. **Launch** — a per-tool `ISessionAdapter` from `SessionAdapterRegistry` (`packages/session/src/session_adapter_registry.ts`) builds a hardened launch (bare binary + discrete argv, token-budget env only); supervised spawns strip provider secrets and enforce a binary allowlist (`packages/session/src/supervised_launch.ts`).
-3. **Return + Reconcile** — the tool writes a mandatory `Session/{traceId}/return.json`; the daemon's `SessionReturnWatcher` (`apps/daemon/src/session_return_watcher.ts`) invokes `SessionReturnProcessor`/`reconcile` (constant-time token check, two-stage path-scope enforcement, gate/decision legality, non-blocking budget overage), maps the outcome into the existing amendment/review/clarification contracts (`packages/session/src/gate_mappers.ts`), and resumes the gate's durable wait state (`packages/session/src/wait/`).
+1. **Brief** — `SessionDelegateService.prepareBrief` (`@exaix/session`) atomically writes `Session/{traceId}/brief.json` (objective, scope globs, token budget, single-use resume token, deadline).
+2. **Launch** — a per-tool `ISessionAdapter` from `SessionAdapterRegistry` (`@exaix/session`) builds a hardened launch (bare binary + discrete argv, token-budget env only); supervised spawns strip provider secrets and enforce a binary allowlist (`@exaix/session`).
+3. **Return + Reconcile** — the tool writes a mandatory `Session/{traceId}/return.json`; the daemon's `SessionReturnWatcher` invokes `SessionReturnProcessor`/`reconcile` (constant-time token check, two-stage path-scope enforcement, gate/decision legality, non-blocking budget overage), maps the outcome into the existing amendment/review/clarification contracts (`@exaix/session`), and resumes the gate's durable wait state (`@exaix/session`).
 
 Delegated output is **untrusted** and still flows through the same quality, critique, and review gates as autonomous output. For the pipeline gate diagram with ASCII art and TOML configuration sample, see `packages/flow/README.md#session-tool-integration`.
 
@@ -163,7 +163,7 @@ Together these three tiers answer the question every operator asks before trusti
 
 ### Semantic Progress Milestones
 
-Milestone events are higher-level projections of domain events for operator-facing UX surfaces. They follow a stable enumerated taxonomy defined in `packages/schemas/src/milestone_event.ts:ExecutionMilestoneSchema` and are emitted via `packages/core/src/observability/milestone_emitter.ts:IMilestoneEmitter`.
+Milestone events are higher-level projections of domain events for operator-facing UX surfaces. They follow a stable enumerated taxonomy (`ExecutionMilestoneSchema`, `@exaix/schemas`) and are emitted via `IMilestoneEmitter` (`@exaix/core`).
 
 - **Schema**: `ExecutionMilestoneSchema` (Zod) validates `milestoneId` (UUID), `traceId`, `milestoneType` (18-value enum), `requiresAttention` flag, `attentionReason`, `progressHint` (steps completed/total/current label), `occurredAt` timestamp, and `summary` (printable ASCII).
 - **Emitter interface**: `IMilestoneEmitter` exposes `emit(milestone: IExecutionMilestone): Promise<void>`. A `NoopMilestoneEmitter` provides a no-op default when milestone streaming is disabled.
@@ -233,8 +233,8 @@ flowchart TB
 
 Exaix centralizes file-format parsing and validation into two layers:
 
-- **Parsers** (`packages/core/src/parsing/`): extract structure from Markdown files (YAML frontmatter + body).
-- **Schemas** (`packages/schemas/src/`): validate structured objects using Zod (requests, plans, flows, portals, MCP).
+- **Parsers** (`@exaix/core`): extract structure from Markdown files (YAML frontmatter + body).
+- **Schemas** (`@exaix/schemas`): validate structured objects using Zod (requests, plans, flows, portals, MCP).
 
 This layer is what keeps file-driven workflows safe and deterministic: request/plan files may come from humans or LLMs, but the runtime only proceeds when schemas validate.
 
@@ -333,9 +333,55 @@ yet be relied on as a complete guarantee.
 
 ---
 
+## Voting & Consensus {#voting-consensus}
+
+The `voting_group` flow step type enables multi-agent consensus by fanning out N
+runner executions and resolving a winner via configurable strategy. It is a
+**Team/Enterprise** feature (Solo ❌ / Team ✅ / Enterprise ✅).
+
+### Step Type
+
+`FlowStepType.VOTING_GROUP` (`"voting_group"`) is dispatched by the
+`FlowRunner` to `VotingStepHandler`, which delegates to
+`VotingConsensusService`. The handler is registered at daemon bootstrap via the
+`VotingCapabilityModule` → `IEditionComposer` seam — in Solo mode no handler is
+registered, so a `voting_group` step raises `UnknownFlowStepError`.
+
+### Fan-Out
+
+The service fans out N runners via `Promise.allSettled` over an injected
+`IExecutor`. Each runner executes a distinct blueprint with an optional
+prompt variant. Partial failures (some runners crash) are isolated — survivors
+still resolve.
+
+### Strategy Table
+
+| Strategy    | Deterministic | CI-safe | Description                                               |
+| ----------- | ------------- | ------- | --------------------------------------------------------- |
+| `majority`  | ✅            | ✅      | Most frequent response wins                               |
+| `weighted`  | ✅            | ✅      | Highest `confidence` score wins; ties → no-consensus      |
+| `llm-judge` | ❌            | ❌      | Judge blueprint ranks candidates; requires eval substrate |
+
+### No-Consensus Governance
+
+When consensus cannot be reached, the `halt_on_no_consensus` config flag
+determines behavior:
+
+- **`true`** (default) — triggers the Plan Amendment gate via
+  `IPlanAmendmentService`, halting execution
+- **`false`** — continues with the best-confidence candidate, journaling a
+  `dissent_summary`
+
+### Cost Attribution
+
+Each runner execution records a cost entry through `ICostTracker` (if
+configured), attributed per `runner_id` with the voting step's `traceId`.
+
+---
+
 ## AI Provider Architecture {#ai-provider-architecture}
 
-Provider integrations are organized as independent packages (`@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix-team/ai-vertex`, `@exaix/ai-openrouter`, `@exaix/ai-ollama`), selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory`. Solo-edition providers are registered by `apps/common/registry_bootstrap.ts`; Team-edition providers (Vertex AI) are registered by `packages-team/team-composer/src/team_bootstrap.ts`.
+Provider integrations are organized as independent packages (`@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix-team/ai-vertex`, `@exaix/ai-openrouter`, `@exaix/ai-ollama`), selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory`. Solo-edition providers are registered by `apps/common/registry_bootstrap.ts`; Team-edition providers (Vertex AI) are registered by `@exaix-team/team-composer`.
 
 For the provider component table and edition availability matrix, see `packages/ai/README.md#provider-components`.
 
@@ -376,11 +422,11 @@ reasoning → tool call → permission check → observe → iterate/complete.
 
 Dynamic execution is bounded by a two-layer context budget system:
 
-1. **Section-level allocation** (`PromptBudgetAllocator`, `packages/core/src/prompt_budget_allocator.ts`):
+1. **Section-level allocation** (`PromptBudgetAllocator`, `@exaix/core`):
    resolves token limits per section (system / plan / portalKnowledge / memory / skills / loopHistory)
    using `SECTION_BASE_WEIGHTS` and `MODEL_CONTEXT_WINDOWS` before the first LLM call.
 
-2. **Segment-level compaction** (`IContextBudgetManager`, `packages/execution/src/context/`):
+2. **Segment-level compaction** (`IContextBudgetManager`, `@exaix/execution`):
    runs before each ReAct iteration. It decomposes the accumulated prompt (system prompt, prior
    thoughts as `"reflection"` segments, tool observations as `"tool_result"` segments) into typed
    `IContextSegment[]` units, applies a priority-driven keep / trim / drop policy within each
@@ -407,9 +453,9 @@ fast-slot LLM, **without blocking** the primary agent loop.
 
 **Architecture:**
 
-- `IGuardrailRunner` interface in `packages/execution/src/guardrail_runner.ts` (MIT) defines the
+- `IGuardrailRunner` interface (`@exaix/execution`, MIT) defines the
   post-output contract: `screen(agentOutput, traceId, iteration)` and `hasBlockingViolation(traceId)`.
-- `GuardrailRunner` implementation in `packages-team/guardrail/src/guardrail_runner.ts` (BSL) uses
+- `GuardrailRunner` implementation (`@exaix-team/guardrail`, BSL) uses
   `Promise.allSettled` over configured policies, parses structured JSON verdicts, and journals
   outcomes via `EventLogger` using the `guardrail.*` event family.
 - `ReActLoopStrategy` calls `screen()` fire-and-forget after each iteration; checks

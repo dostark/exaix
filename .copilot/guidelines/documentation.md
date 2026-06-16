@@ -119,6 +119,22 @@ Maintain a standard Terminology Reference and link to it from major documents. U
 
 Use relative paths for internal links and include file paths when referencing code. Keep documentation changes minimal and tied to Implementation Plan steps.
 
+### ARCHITECTURE.md vs Package READMEs
+
+**ARCHITECTURE.md** is a strategic document — it describes what the system does
+and why, not where the code lives. Never include implementation-specific file
+paths or module locations in ARCHITECTURE.md. Reference packages by name
+(e.g. "the `@exaix-team/voting` package") and point to ARCHITECTURE.md sections
+by anchor.
+
+**Package READMEs** (`packages/<name>/README.md`) are the home for
+implementation details: key files, module paths, contracts, and wiring
+diagrams. Reference the corresponding ARCHITECTURE.md section from the README
+so readers can find the strategic context.
+
+This keeps ARCHITECTURE.md stable and package READMEs discoverable regardless
+of refactoring.
+
 ---
 
 ## Canonical Prompt (Short)

@@ -6,7 +6,7 @@
 
 import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
-import type { ICapabilityModule } from "@exaix/core";
+import type { ICapabilityModule } from "@exaix/core/composer";
 import { TeamComposer } from "../src/team_composer.ts";
 
 describe("TeamComposer", () => {

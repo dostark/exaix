@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-15T19:08:15.029Z",
+  "generated_at": "2026-06-16T12:43:57.528Z",
   "docs": [
     {
       "path": ".copilot/prompts/infra.prompt.md",
@@ -494,7 +494,7 @@
       "scope": "dev",
       "title": "Edition Development Skill (#edition-development)",
       "short_summary": "Develop edition-specific features (Solo/Team/Enterprise) following Exaix's composition architecture, Option-C layout, and seam-based extension model.",
-      "version": "1.0",
+      "version": "1.1",
       "topics": [
         "edition",
         "solo",

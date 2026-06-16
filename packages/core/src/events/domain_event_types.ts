@@ -9,10 +9,24 @@
  * typos and establish a single source of truth for the event taxonomy.
  */
 
+import type { VotingStrategy } from "../types/enums.ts";
+
 /** Guardrail verdict type. */
 export type GuardrailVerdict = "pass" | "violation";
 /** Guardrail severity type. */
 export type GuardrailSeverity = "warn" | "block";
+
+/** Typed payload for voting.* events (Phase 113). */
+export interface IVotingEventPayload {
+  step_id: string;
+  strategy: VotingStrategy;
+  candidate_count: number;
+  consensus_reached: boolean;
+  winner_runner_id?: string;
+  dissent_summary?: string;
+  /** Present on `voting.runner_failed` — the error message from the failed runner. */
+  error?: string;
+}
 
 /** Typed payload for guardrail.* events. */
 export interface IGuardrailEventPayload {
@@ -322,6 +336,14 @@ export const DomainEventType = {
   GuardrailBlock: "guardrail.block",
   GuardrailInitialized: "guardrail.initialized",
   GuardrailInitFailed: "guardrail.init_failed",
+
+  // ---------------------------------------------------------------------------
+  // Voting / Consensus (Phase 113)
+  // ---------------------------------------------------------------------------
+  VotingStarted: "voting.started",
+  VotingResolved: "voting.resolved",
+  VotingNoConsensus: "voting.no_consensus",
+  VotingRunnerFailed: "voting.runner_failed",
 } as const;
 
 export type TDomainEventType = typeof DomainEventType[keyof typeof DomainEventType];

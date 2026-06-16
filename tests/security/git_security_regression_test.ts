@@ -7,7 +7,7 @@
 
 import { assert, assertRejects } from "@std/assert";
 import { join } from "@std/path";
-import { createGitTestContext, GitTestHelper, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
+import { createGitTestContext, GitTestHelper, setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { type IPlanContext, PlanExecutor } from "@exaix/core/planning";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import { GitService } from "@exaix/git";
@@ -132,9 +132,10 @@ Deno.test("Git Security: prevents system root taint during Portal execution fail
   const portalPath = join(portalsDir, "test-portal");
   await Deno.mkdir(portalPath, { recursive: true });
 
-  // Init portal as a git repo
+  // Init portal as a git repo (configures a local identity so commits work on
+  // CI runners that have no global git identity).
+  await setupGitRepo(portalPath);
   const portalHelper = new GitTestHelper(portalPath);
-  await portalHelper.runGit(["init"]);
   await Deno.writeTextFile(join(portalPath, "README.md"), "# Test Portal");
   await portalHelper.runGit(["add", "."]);
   await portalHelper.runGit(["commit", "-m", "Initial"]);

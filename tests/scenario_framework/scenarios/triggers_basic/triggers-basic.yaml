@@ -1,7 +1,7 @@
 schema_version: "1.0.0"
 id: "triggers-basic"
 title: "Triggers basic — webhook adapter → ingestion service → request file"
-pack: "triggers-basic"
+pack: "triggers_basic"
 tags: ["triggers", "webhook", "ingestion", "unit"]
 mode_support: ["auto"]
 request_fixture: "fixtures/requests/framework_test/smoke.md"

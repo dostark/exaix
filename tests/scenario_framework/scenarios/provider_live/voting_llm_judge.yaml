@@ -1,0 +1,19 @@
+schema_version: "1.0.0"
+id: "voting-llm-judge"
+title: "Voting llm-judge consensus against provider"
+pack: "provider_live"
+tags: ["provider-live", "voting", "llm-judge"]
+request_fixture: "fixtures/requests/agent_flows/voting_majority_consensus.md"
+mode_support: ["auto"]
+edition: "team"
+portals: []
+steps:
+  - id: "submit-voting-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE"]
+    output_criteria:
+      - id: "plan-produced"
+        kind: "file-found"
+        path_pattern: "**/_plan.md"
+        score_weight: 1.0
