@@ -177,7 +177,7 @@ All analysis above describes the **agent request path**. Exaix also supports **f
 | Portal Knowledge (46) | Not injected | Resolve before routing split; pass to `FlowRunner`; inject into step contexts |
 | `IFlowStepRequest` | Has empty `context: {}` | Extend with `requestAnalysis`, `specification`, `portalKnowledge` fields |
 
-**Architectural principle:** The SDD specification phase (Phases 45, 46, 47) operates on the *request*, which is independent of the execution mechanism. Analysis, quality gating, specification building, and portal knowledge resolution should all happen before the agent/flow routing decision. Only the *consumption* of these artifacts differs between the agent path and the flow path.
+**Architectural principle:** The SDD specification phase (Phases 45, 119, 47) operates on the *request*, which is independent of the execution mechanism. Analysis, quality gating, specification building, and portal knowledge resolution should all happen before the agent/flow routing decision. Only the *consumption* of these artifacts differs between the agent path and the flow path.
 
 See the "Flow Request Coverage" sections in each phase document for detailed integration designs.
 
