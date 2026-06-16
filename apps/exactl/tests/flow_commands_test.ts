@@ -27,8 +27,8 @@ async function createMockContext(
 }
 
 function getFlowDir(ctx: ICliApplicationContext) {
-  const config = ctx.config.getAll();
-  return join(config.system.root, config.paths.blueprints, "Flows");
+  const cfg = ctx.config.getAll();
+  return join(cfg.system.root, cfg.paths.flows);
 }
 
 async function withFlowsDir(

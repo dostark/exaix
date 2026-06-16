@@ -37,7 +37,7 @@ export class FlowCommands extends BaseCommand {
 
   constructor(context: ICliApplicationContext) {
     super(context);
-    const flowsDir = join(this.config.system.root, this.config.paths.blueprints, this.config.paths.flows);
+    const flowsDir = join(this.config.system.root, this.config.paths.flows);
     this.flowLoader = new FlowLoader(flowsDir);
   }
 
@@ -150,7 +150,6 @@ export class FlowCommands extends BaseCommand {
     try {
       const filePath = join(
         this.config.system.root,
-        this.config.paths.blueprints,
         this.config.paths.flows,
         `${flowId}.flow.yaml`,
       );
