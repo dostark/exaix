@@ -41,7 +41,9 @@ async function getMarkdownFiles(dir: string): Promise<string[]> {
   const files: string[] = [];
   try {
     for await (const entry of Deno.readDir(dir)) {
-      if (entry.isFile && entry.name.endsWith(".md") && entry.name !== "README.md") {
+      if (
+        entry.isFile && entry.name.endsWith(".md") && entry.name !== "README.md"
+      ) {
         files.push(join(dir, entry.name));
       }
     }
@@ -63,29 +65,45 @@ Deno.test("Blueprint validation: default.md passes schema", async () => {
   assertEquals(frontmatter!.identity_id, "default");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
-  assertEquals(result.success, true, `Schema errors: ${!result.success ? result.error?.message : ""}`);
+  assertEquals(
+    result.success,
+    true,
+    `Schema errors: ${!result.success ? result.error?.message : ""}`,
+  );
 });
 
 Deno.test("Blueprint validation: senior-coder.md passes schema", async () => {
-  const content = await Deno.readTextFile(join(BLUEPRINTS_DIR, "senior-coder.md"));
+  const content = await Deno.readTextFile(
+    join(BLUEPRINTS_DIR, "senior-coder.md"),
+  );
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
   assertEquals(frontmatter!.identity_id, "senior-coder");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
-  assertEquals(result.success, true, `Schema errors: ${!result.success ? result.error?.message : ""}`);
+  assertEquals(
+    result.success,
+    true,
+    `Schema errors: ${!result.success ? result.error?.message : ""}`,
+  );
 });
 
 Deno.test("Blueprint validation: quality-judge.md passes schema", async () => {
-  const content = await Deno.readTextFile(join(BLUEPRINTS_DIR, "quality-judge.md"));
+  const content = await Deno.readTextFile(
+    join(BLUEPRINTS_DIR, "quality-judge.md"),
+  );
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
   assertEquals(frontmatter!.identity_id, "quality-judge");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
-  assertEquals(result.success, true, `Schema errors: ${!result.success ? result.error?.message : ""}`);
+  assertEquals(
+    result.success,
+    true,
+    `Schema errors: ${!result.success ? result.error?.message : ""}`,
+  );
 });
 
 // ============================================================================
@@ -93,7 +111,9 @@ Deno.test("Blueprint validation: quality-judge.md passes schema", async () => {
 // ============================================================================
 
 Deno.test("Blueprint validation: examples/code-reviewer.md passes schema", async () => {
-  const content = await Deno.readTextFile(join(EXAMPLES_DIR, "code-reviewer.md"));
+  const content = await Deno.readTextFile(
+    join(EXAMPLES_DIR, "code-reviewer.md"),
+  );
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
@@ -101,11 +121,17 @@ Deno.test("Blueprint validation: examples/code-reviewer.md passes schema", async
   assertExists(frontmatter!.default_skills, "Should have default_skills");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
-  assertEquals(result.success, true, `Schema errors: ${!result.success ? result.error?.message : ""}`);
+  assertEquals(
+    result.success,
+    true,
+    `Schema errors: ${!result.success ? result.error?.message : ""}`,
+  );
 });
 
 Deno.test("Blueprint validation: examples/feature-developer.md passes schema", async () => {
-  const content = await Deno.readTextFile(join(EXAMPLES_DIR, "feature-developer.md"));
+  const content = await Deno.readTextFile(
+    join(EXAMPLES_DIR, "feature-developer.md"),
+  );
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
@@ -113,11 +139,17 @@ Deno.test("Blueprint validation: examples/feature-developer.md passes schema", a
   assertExists(frontmatter!.default_skills, "Should have default_skills");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
-  assertEquals(result.success, true, `Schema errors: ${!result.success ? result.error?.message : ""}`);
+  assertEquals(
+    result.success,
+    true,
+    `Schema errors: ${!result.success ? result.error?.message : ""}`,
+  );
 });
 
 Deno.test("Blueprint validation: examples/security-auditor.md passes schema", async () => {
-  const content = await Deno.readTextFile(join(EXAMPLES_DIR, "security-auditor.md"));
+  const content = await Deno.readTextFile(
+    join(EXAMPLES_DIR, "security-auditor.md"),
+  );
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
@@ -125,7 +157,11 @@ Deno.test("Blueprint validation: examples/security-auditor.md passes schema", as
   assertExists(frontmatter!.default_skills, "Should have default_skills");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
-  assertEquals(result.success, true, `Schema errors: ${!result.success ? result.error?.message : ""}`);
+  assertEquals(
+    result.success,
+    true,
+    `Schema errors: ${!result.success ? result.error?.message : ""}`,
+  );
 });
 
 // ============================================================================
@@ -133,7 +169,9 @@ Deno.test("Blueprint validation: examples/security-auditor.md passes schema", as
 // ============================================================================
 
 Deno.test("Blueprint validation: security-expert.md passes schema", async () => {
-  const content = await Deno.readTextFile(join(BLUEPRINTS_DIR, "security-expert.md"));
+  const content = await Deno.readTextFile(
+    join(BLUEPRINTS_DIR, "security-expert.md"),
+  );
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
@@ -141,51 +179,79 @@ Deno.test("Blueprint validation: security-expert.md passes schema", async () => 
   assertExists(frontmatter!.default_skills, "Should have default_skills");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
-  assertEquals(result.success, true, `Schema errors: ${!result.success ? result.error?.message : ""}`);
+  assertEquals(
+    result.success,
+    true,
+    `Schema errors: ${!result.success ? result.error?.message : ""}`,
+  );
 });
 
 Deno.test("Blueprint validation: performance-engineer.md passes schema", async () => {
-  const content = await Deno.readTextFile(join(BLUEPRINTS_DIR, "performance-engineer.md"));
+  const content = await Deno.readTextFile(
+    join(BLUEPRINTS_DIR, "performance-engineer.md"),
+  );
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
   assertEquals(frontmatter!.identity_id, "performance-engineer");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
-  assertEquals(result.success, true, `Schema errors: ${!result.success ? result.error?.message : ""}`);
+  assertEquals(
+    result.success,
+    true,
+    `Schema errors: ${!result.success ? result.error?.message : ""}`,
+  );
 });
 
 Deno.test("Blueprint validation: technical-writer.md passes schema", async () => {
-  const content = await Deno.readTextFile(join(BLUEPRINTS_DIR, "technical-writer.md"));
+  const content = await Deno.readTextFile(
+    join(BLUEPRINTS_DIR, "technical-writer.md"),
+  );
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
   assertEquals(frontmatter!.identity_id, "technical-writer");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
-  assertEquals(result.success, true, `Schema errors: ${!result.success ? result.error?.message : ""}`);
+  assertEquals(
+    result.success,
+    true,
+    `Schema errors: ${!result.success ? result.error?.message : ""}`,
+  );
 });
 
 Deno.test("Blueprint validation: software-architect.md passes schema", async () => {
-  const content = await Deno.readTextFile(join(BLUEPRINTS_DIR, "software-architect.md"));
+  const content = await Deno.readTextFile(
+    join(BLUEPRINTS_DIR, "software-architect.md"),
+  );
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
   assertEquals(frontmatter!.identity_id, "software-architect");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
-  assertEquals(result.success, true, `Schema errors: ${!result.success ? result.error?.message : ""}`);
+  assertEquals(
+    result.success,
+    true,
+    `Schema errors: ${!result.success ? result.error?.message : ""}`,
+  );
 });
 
 Deno.test("Blueprint validation: test-engineer.md passes schema", async () => {
-  const content = await Deno.readTextFile(join(BLUEPRINTS_DIR, "test-engineer.md"));
+  const content = await Deno.readTextFile(
+    join(BLUEPRINTS_DIR, "test-engineer.md"),
+  );
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
   assertEquals(frontmatter!.identity_id, "test-engineer");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
-  assertEquals(result.success, true, `Schema errors: ${!result.success ? result.error?.message : ""}`);
+  assertEquals(
+    result.success,
+    true,
+    `Schema errors: ${!result.success ? result.error?.message : ""}`,
+  );
 });
 
 // ============================================================================
@@ -248,6 +314,20 @@ Deno.test("Blueprint validation: all agents use YAML frontmatter (not TOML)", as
 // ============================================================================
 // Skills Assignment Tests
 // ============================================================================
+
+Deno.test("Blueprint validation: voting-judge.md passes schema", async () => {
+  const content = await Deno.readTextFile(
+    join(BLUEPRINTS_DIR, "voting-judge.md"),
+  );
+  const frontmatter = parseFrontmatter(content);
+  assertExists(
+    frontmatter,
+    "voting-judge.md should have valid YAML frontmatter",
+  );
+  const parsed = BlueprintFrontmatterSchema.parse(frontmatter);
+  assertEquals(parsed.identity_id, "voting-judge");
+  assertEquals(parsed.name, "Voting Consensus Judge");
+});
 
 Deno.test("Blueprint validation: all example agents have default_skills", async () => {
   const exampleFiles = await getMarkdownFiles(EXAMPLES_DIR);
