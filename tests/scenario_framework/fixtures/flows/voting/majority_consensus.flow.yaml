@@ -1,0 +1,35 @@
+# @schema-version: 1.0.0
+---
+id: "voting-majority-consensus"
+name: "Voting Majority Consensus"
+description: "Flow with a voting_group step — 3 MockProvider runners produce 2-vs-1 majority"
+version: "1.0.0"
+output:
+  from: vote
+  format: markdown
+steps:
+  - id: "vote"
+    name: "Vote on result"
+    type: "voting_group"
+    identity: "voter"
+    execution_mode: "declared"
+    input:
+      source: "request"
+    timeout: 30000
+    retry:
+      maxAttempts: 1
+      backoffMs: 0
+    voting:
+      runners:
+        - blueprint: "senior-coder"
+          model_slot: "default"
+          prompt_variant: "Approve the change"
+        - blueprint: "senior-coder"
+          model_slot: "default"
+          prompt_variant: "Approve the change"
+        - blueprint: "senior-coder"
+          model_slot: "default"
+          prompt_variant: "Reject the change"
+      strategy: "majority"
+      halt_on_no_consensus: true
+      timeout_ms: 30000

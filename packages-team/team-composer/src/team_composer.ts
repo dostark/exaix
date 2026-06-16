@@ -13,7 +13,7 @@
  * seam are wired here.
  */
 
-import type { ICapabilityModule, IEditionComposer } from "@exaix/core";
+import type { ICapabilityModule, IEditionComposer } from "@exaix/core/composer";
 
 export class TeamComposer implements IEditionComposer {
   private readonly modules: ICapabilityModule[] = [];

@@ -1,13 +1,13 @@
 /**
  * @module VotingConsensusTest
- * @path packages/voting/tests/voting_consensus_test.ts
+ * @path packages-team/voting/tests/voting_consensus_test.ts
  * @description Unit tests for VotingConsensusService: majority, weighted, and runner failure fallback.
  */
 
 import { assertEquals } from "@std/assert";
 import type { VotingGroupConfig } from "@exaix/schemas/voting.ts";
 import { VotingModelSlot, VotingStrategy } from "@exaix/core/types";
-import type { IExecutor } from "../mod.ts";
+import type { IExecutor } from "@exaix/core/types";
 import { VotingConsensusService } from "../mod.ts";
 import { createMockLogger } from "@exaix/testing";
 import { DomainEventType } from "@exaix/core/events";

@@ -1380,13 +1380,14 @@ exactl routing policy validate
 
 Flows support various step types for different orchestration patterns:
 
-| Step Type  | Purpose               | Key Features                    |
-| ---------- | --------------------- | ------------------------------- |
-| `agent`    | Execute an agent      | Agent invocation with context   |
-| `gate`     | Quality checkpoint    | Pass/fail criteria, retry logic |
-| `branch`   | Conditional branching | Expression-based path selection |
-| `parallel` | Concurrent execution  | Multiple steps in parallel      |
-| `loop`     | Iterative processing  | Repeat until condition met      |
+| Step Type      | Purpose               | Key Features                               |
+| -------------- | --------------------- | ------------------------------------------ |
+| `agent`        | Execute an agent      | Agent invocation with context              |
+| `gate`         | Quality checkpoint    | Pass/fail criteria, retry logic            |
+| `branch`       | Conditional branching | Expression-based path selection            |
+| `parallel`     | Concurrent execution  | Multiple steps in parallel                 |
+| `loop`         | Iterative processing  | Repeat until condition met                 |
+| `voting_group` | Multi-agent consensus | Fan-out N runners, majority/weighted/judge |
 
 ##### Condition Expressions
 
@@ -1543,6 +1544,48 @@ Solution: Increase limit with: echo fs.inotify.max_user_watches=524288 | sudo te
 - Cannot be empty
 - Cannot use reserved names: `System`, `Workspace`, `Memory`, `Blueprints`, `Active`, `Archive`
 - Maximum length: 50 characters
+
+##### Voting Group Steps
+
+`voting_group` steps run multiple agents on the same objective and resolve
+consensus. This is a **Team/Enterprise** feature (Solo ❌ / Team ✅ / Enterprise ✅).
+
+```yaml
+step:
+  id: "vote-on-result"
+  type: "voting_group"
+  identity: "voter"
+  voting:
+    runners:
+      - blueprint: "senior-coder"
+        prompt_variant: "Focus on correctness"
+      - blueprint: "senior-coder"
+        prompt_variant: "Focus on performance"
+      - blueprint: "senior-coder"
+        prompt_variant: "Focus on maintainability"
+    strategy: "majority" # majority | weighted | llm-judge
+    halt_on_no_consensus: true # true: halt via Plan Amendment
+    timeout_ms: 30000
+```
+
+**Strategies:**
+
+- `majority` — Most frequent response wins (deterministic, CI-safe)
+- `weighted` — Highest `confidence` score wins (deterministic, CI-safe)
+- `llm-judge` — Judge blueprint ranks candidates (non-deterministic, provider-live)
+
+When `halt_on_no_consensus: true` and no consensus is reached, execution halts
+via the Plan Amendment gate for operator resolution. When `false`, the best
+candidate is returned with a `dissent_summary`.
+
+Fan-out cost is attributed per runner through `ICostTracker`. Each runner
+execution is logged as a separate `voting.runner_failed` or `voting.resolved`
+event.
+
+**Edition note:** Runtime edition-gating is deferred to a future
+edition-enforcement phase. The `voting_group` construct is reachable in Team
+builds but must not be advertised as a generally available Solo feature until
+edition-enforcement ships.
 
 #### **Daemon Commands** - Control the Exaix daemon
 

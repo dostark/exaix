@@ -186,6 +186,7 @@
     "@exaix/core/notification": "./packages/core/src/notification/mod.ts",
     "@exaix/core/blueprint": "./packages/core/src/blueprint/mod.ts",
     "@exaix/core/evaluation": "./packages/core/src/evaluation/mod.ts",
+    "@exaix/core/composer": "./packages/core/src/composer/mod.ts",
     "@exaix/core/skills": "./packages/core/src/skills/mod.ts",
     "@exaix/core/artifact": "./packages/core/src/artifact/mod.ts",
     "@exaix/core/planning": "./packages/core/src/planning/mod.ts",
@@ -211,6 +212,8 @@
     "@exaix/request/": "./packages/request/src/",
     "@exaix/flow": "./packages/flow/mod.ts",
     "@exaix/flow/": "./packages/flow/src/",
+    "@exaix-team/voting": "./packages-team/voting/mod.ts",
+    "@exaix-team/voting/": "./packages-team/voting/src/",
     "@exaix-team/team-composer": "./packages-team/team-composer/mod.ts",
     "@exaix-team/team-composer/": "./packages-team/team-composer/"
   },

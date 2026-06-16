@@ -5,7 +5,7 @@
  * validates all 11 knowledge collection strategies produce correct output for
  * a portal mounted to the Exaix repo itself.
  * @architectural-layer Test
- * @related-files [tests/scenario_framework/scenarios/portal-knowledge/portal-knowledge-phase105.yaml]
+ * @related-files [tests/scenario_framework/scenarios/portal_knowledge/portal-knowledge-phase105.yaml]
  */
 
 import { assert, assertEquals } from "@std/assert";

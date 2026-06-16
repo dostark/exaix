@@ -8,13 +8,8 @@
 
 import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
-import {
-  AllowAllAuthorizer,
-  type IAuthorizer,
-  type ICapabilityModule,
-  type ISeamRegistryPlaceholder,
-  SoloComposer,
-} from "../../packages/core/mod.ts";
+import { AllowAllAuthorizer, type IAuthorizer } from "@exaix/core";
+import { type ICapabilityModule, type ISeamRegistryPlaceholder, SoloComposer } from "@exaix/core/composer";
 
 describe("Solo composition — zero modules", () => {
   it("constructs SoloComposer without crash", () => {

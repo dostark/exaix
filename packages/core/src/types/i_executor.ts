@@ -1,11 +1,10 @@
 /**
  * @module IExecutor
- * @path packages/voting/src/i_executor.ts
- * @ungrounded
+ * @path packages/core/src/types/i_executor.ts
  * @description Minimal executor interface for voting fan-out — runs a blueprint with a prompt and returns content + optional confidence.
- * @architectural-layer Voting
+ * @architectural-layer Core
  * @dependencies []
- * @related-files [packages/voting/src/voting_consensus_service.ts]
+ * @related-files [packages-team/voting/src/voting_consensus_service.ts]
  */
 
 export interface IExecutorResult {

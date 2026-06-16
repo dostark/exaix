@@ -485,6 +485,19 @@ const rules: Rule[] = [
     pathFilter: (path: string) => !path.includes("/tests/") && !path.endsWith(".test.ts") && !path.endsWith("_test.ts"),
   },
   {
+    name: "mit-team-import",
+    regex: /from\s+["'][^"']*(?:@exaix-team\/|packages-team\/)[^"']*["']/,
+    message: "Source files under packages/ must not import from packages-team/. " +
+      "Move shared interfaces to packages/core/types/ or add a rule exclusion with rationale.",
+    severity: "error" as const,
+    pathFilter: (path: string) =>
+      path.startsWith("packages/") &&
+      !path.includes("/tests/") &&
+      !path.includes("/testing/") &&
+      !path.endsWith(".test.ts") &&
+      !path.endsWith("_test.ts"),
+  },
+  {
     name: "edition-conditional-outside-composer",
     // Forbid edition conditionals (edition ===, edition !==, EXAIX_EDITION)
     // outside the edition composer. Edition-selection logic must be contained

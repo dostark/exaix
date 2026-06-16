@@ -33,7 +33,7 @@ import { RequestService } from "@exaix/request";
 import { PlanService } from "@exaix/core/planning";
 import { PlanAmendmentService } from "@exaix/core/planning";
 import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstrap.ts";
-import { SoloComposer } from "@exaix/core";
+import { SoloComposer } from "@exaix/core/composer";
 // Team imports — resolved unconditionally from import map;
 // dead-code eliminated in Solo builds when editionType !== "team".
 import { bootstrapTeamProviders, TeamComposer } from "@exaix-team/team-composer";

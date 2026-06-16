@@ -9,3 +9,4 @@
 
 export type { ICapabilityModule, IEditionComposer, ISeamRegistryPlaceholder } from "./edition_composer.ts";
 export { SoloComposer } from "./solo_composer.ts";
+export * from "./capabilities.ts";

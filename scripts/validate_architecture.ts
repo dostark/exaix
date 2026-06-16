@@ -323,6 +323,37 @@ async function validate() {
     }
   }
 
+  // 4b. Verify ARCHITECTURE.md contains no implementation-specific file paths
+  let archPathErrors = 0;
+  try {
+    const archContent = await Deno.readTextFile(ARCH_DOC);
+    const archLines = archContent.split("\n");
+    // Flags any line (prose or bullet) that contains file paths under packages/
+    // or packages-team/ with /src/ — ARCHITECTURE.md must reference packages by
+    // name only. YAML frontmatter (between --- markers) is metadata, not content.
+    const implPathPattern = /(?:packages|packages-team)\/[^\s"')`]+src\//;
+    let inFrontmatter = false;
+    for (let i = 0; i < archLines.length; i++) {
+      const line = archLines[i];
+      if (line.trim() === "---") {
+        inFrontmatter = !inFrontmatter;
+        continue;
+      }
+      if (inFrontmatter) continue;
+      if (implPathPattern.test(line)) {
+        console.error(
+          `❌ ARCHITECTURE.md:${i + 1} — implementation file path detected. ` +
+            `ARCHITECTURE.md is a strategic document — reference packages by name, not file paths. ` +
+            `Move path details to the relevant package README.`,
+        );
+        archPathErrors++;
+      }
+    }
+  } catch {
+    console.error("❌ Could not read ARCHITECTURE.md");
+    archPathErrors++;
+  }
+
   // 5. Report results
   const ungroundedCandidates = Array.from(srcFiles).filter((f) => !fullyGrounded.has(f));
   const exempted = ungroundedCandidates.filter((f) => moduleMap.get(f)?.ungrounded || f.includes("/tests/"));
@@ -347,7 +378,7 @@ async function validate() {
     exempted.sort().forEach((f) => console.log(`  - ${f}`));
   }
 
-  if (headerFailures > 0 || ungrounded.length > 0) {
+  if (headerFailures > 0 || ungrounded.length > 0 || archPathErrors > 0) {
     Deno.exit(1);
   } else {
     console.log("\n✅ Architecture is fully grounded and valid!");

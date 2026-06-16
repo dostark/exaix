@@ -12,7 +12,7 @@ scope: dev
 title: "Edition Development Skill (#edition-development)"
 description: Guide for developing edition-specific features within Exaix's three-tier edition architecture — Option-C layout, seam wiring, composer contracts, build targets, and CI/release pipeline
 short_summary: "Develop edition-specific features (Solo/Team/Enterprise) following Exaix's composition architecture, Option-C layout, and seam-based extension model."
-version: "1.0"
+version: "1.1"
 topics: [
   "edition",
   "solo",
@@ -35,12 +35,12 @@ Key points
 
 - Exaix ships **three tiers**: Solo (MIT), Team (BSL), Enterprise (private submodule)
 - **Option-C layout:** `packages/` (MIT always compiled) · `packages-team/` (BSL, same repo) · `exaix-enterprise/` (private submodule, never published)
-- **`IEditionComposer`** is the single attach point for paid capabilities. `SoloComposer` is the default (stores modules, invokes no hooks).
-- **`ICapabilityModule`** fills optional seam hooks. All hooks are optional; a module registers only what it provides.
-- **`ISeamRegistryPlaceholder`** avoids circular deps between `@exaix/core` and consumer packages like `@exaix/flow`. Concrete types resolved at app-entry level.
-- Edition conditionals (`edition ===`, `EXAIX_EDITION`) are **forbidden** outside the composer, `packages-team/`, `exaix-enterprise/`, `scripts/`, and `apps/common/`.
+- **`IEditionComposer`** + **`ICapabilityModule`** seam shipped in **Phase 115**. `SoloComposer` stores modules but invokes no hooks; `TeamComposer` (Phase 116) is wired in the daemon when `EXAIX_EDITION=team`.
+- **`ISeamRegistryPlaceholder`** avoids circular deps between `@exaix/core` and consumer packages. Concrete types are resolved at the app-entry level via `as unknown as ISeamRegistryPlaceholder` — this is the intended bridge (the placeholder is replaced by a concrete type when the first consumer exists, per the JSDoc).
+- **Module hooks are invoked post-construction.** Build the seam owner first (e.g., `FlowRunner`), then iterate `composer.getModules()` and call each hook with the concrete registry cast to `ISeamRegistryPlaceholder`.
+- Edition conditionals (`edition ===`, `EXAIX_EDITION`) are **forbidden** outside `apps/daemon/main.ts`, `apps/exactl/src/init.ts`, `packages-team/`, `exaix-enterprise/`, `scripts/`, and `apps/common/`. Enforced by `deno task check:no-edition-conditionals`.
 - **Leak-guard** (`scripts/leak_guard.ts`) blocks enterprise paths/headers before OSS publishing.
-- **build:solo|team|enterprise** compile distinct binaries with edition-specific entry points and prefixes.
+- **build:solo|team|enterprise** (`deno.json` lines 105-107) compile distinct binaries via `scripts/ci.ts build --edition <name>`.
 
 Canonical prompt (short):
 "Implement a {edition-tier} feature for Exaix. Determine the correct directory, create an ICapabilityModule, wire it through the composer, add build support, and write tests."
@@ -125,26 +125,85 @@ export class TeamFeatureModule implements ICapabilityModule {
 
 ## Step 4 — Wire through the composer
 
-### Current Solo wiring (all three app entries use this)
+The daemon (`apps/daemon/main.ts`) already implements the edition bootstrap pattern (Phase 115/116).
+`apps/exactl/src/init.ts` follows the same pattern for the CLI.
+
+### Daemon edition bootstrap (Phase 115/116 pattern)
 
 ```typescript
-import { SoloComposer } from "@exaix/core";
-const composer = new SoloComposer();
-// SoloComposer stores modules, doesn't invoke hooks
+// apps/daemon/main.ts — edition-aware bootstrap
+const editionType = Deno.env.get("EXAIX_EDITION") ?? EDITION_SOLO;
+let _editionComposer: SoloComposer | TeamComposer;
+if (editionType === EDITION_TEAM) {
+  bootstrapTeamProviders();
+  _editionComposer = new TeamComposer();
+} else {
+  _editionComposer = new SoloComposer();
+}
 ```
 
-### Future Team wiring (when TeamComposer is built)
+### Register a capability module and invoke its hooks
+
+Build the seam owner first, then wire module hooks post-construction.
+This is the pattern established by Phase 113 (voting):
 
 ```typescript
-import { TeamComposer } from "packages-team/team-composer/mod.ts";
-import { TeamFeatureModule } from "packages-team/team-feature/mod.ts";
+// 1. Build the seam owner (FlowRunner, etc.)
+const flowRunner = new FlowRunner({ agentExecutor, config, eventLogger });
 
-const composer = new TeamComposer();
-composer.registerCapabilityModule(new TeamFeatureModule());
-// TeamComposer iterates getModules() and invokes each hook with concrete registries
+// 2. Construct the service and capability module (Team-only)
+const votingService = new VotingConsensusService(agentExecutor, logger);
+const votingModule = new VotingCapabilityModule(votingService, logger);
+
+// 3. Register module with the composer
+_editionComposer.registerCapabilityModule(votingModule);
+
+// 4. Invoke module hooks against the seam owner's registry
+const registry = flowRunner.getStepHandlerRegistry();
+for (const module of _editionComposer.getModules()) {
+  module.registerFlowStepHandlers?.(registry as unknown as ISeamRegistryPlaceholder);
+}
+
+// 5. Guard with EXAIX_EDITION check (only Team edition wires the module)
+if (editionType === EDITION_TEAM) {
+  // steps 2–4 above
+}
 ```
 
-**App entries to update:** `apps/daemon/main.ts`, `apps/exactl/src/init.ts`, `apps/agent-entrypoint/main.ts`.
+### Casting `ISeamRegistryPlaceholder` in the capability module
+
+Inside the module's hook implementation, cast back to the concrete registry type:
+
+```typescript
+// packages-team/voting/src/voting_capability_module.ts
+export class VotingCapabilityModule implements ICapabilityModule {
+  readonly #votingService: IVotingConsensusService;
+  readonly #logger: IEventLogger;
+
+  constructor(votingService: IVotingConsensusService, logger: IEventLogger) {
+    this.#votingService = votingService;
+    this.#logger = logger;
+  }
+
+  registerFlowStepHandlers(registry: ISeamRegistryPlaceholder): void {
+    const flowRegistry = registry as unknown as FlowStepHandlerRegistry;
+    flowRegistry.register(
+      new VotingStepHandler({
+        votingService: this.#votingService,
+        eventLogger: this.#logger,
+      }),
+    );
+  }
+}
+```
+
+### Why post-construction instead of constructor injection?
+
+- `GateStepHandler` receives `gateEvaluator` via `FlowRunner` options because `gateEvaluator` is available at construction time.
+- Voting and other Team features need `FlowRunner`'s registry _after_ construction — they register handlers externally via `getStepHandlerRegistry()`.
+- The `ICapabilityModule` seam is the single attach point: the module receives the registry, not the FlowRunner constructor options.
+
+**App entries to update:** `apps/daemon/main.ts` (primary), `apps/exactl/src/init.ts` (CLI).
 
 ---
 
@@ -156,10 +215,17 @@ deno task build:solo        # entry: apps/daemon/main.ts, prefix: exaix
 deno task build:team        # entry: apps/daemon/main.ts, prefix: exaix-team
 deno task build:enterprise  # entry: exaix-enterprise/mod.ts, prefix: exaix-enterprise
 
-# Check edition conditionals
+# Check edition conditionals — ensures no edition === / EXAIX_EDITION leaks
+# into MIT packages. Forbidden everywhere except:
+#   apps/daemon/main.ts, apps/exactl/src/init.ts,
+#   packages-team/, exaix-enterprise/, scripts/, apps/common/
 deno task check:no-edition-conditionals
 
-# Leak guard (before publishing)
+# Full CI pipeline per edition
+deno task ci:solo           # check + test + coverage + build (Solo)
+deno task ci:team           # check + test + coverage + build (Team)
+
+# Leak guard (before publishing Solo OSS)
 deno run -A scripts/leak_guard.ts --allowlist packages apps --check-headers
 deno run -A scripts/leak_guard.ts --check-gitmodules
 ```
@@ -221,7 +287,7 @@ describe("Team composition — stub module with all hooks", () => {
 
 1. **Never put edition conditionals in core packages.** The `[edition-conditional-outside-composer]` rule in `check_code_style.ts` enforces this. Allowed only in: `src/composer/`, `packages-team/`, `exaix-enterprise/`, `scripts/`, `apps/common/`.
 
-2. **Never import from `packages-team/` or `exaix-enterprise/` in MIT packages or apps.** Solo builds exclude those directories — any import would be a compile error.
+2. **Never import from `packages-team/` or `@exaix-team/*` in MIT source files.** The `[mit-team-import]` rule in `check_code_style.ts` enforces this across `packages/`. Test files (`/tests/`, `/testing/`) are exempt — integration tests legitimately import Team classes. When MIT source needs a Team type, extract the interface to `packages/core/types/`.
 
 3. **Leak-guard must pass before publishing.** The CI release pipeline blocks on it. Leaks detected: enterprise path imports in source, proprietary license headers, `.gitmodules` enterprise entry.
 
@@ -235,8 +301,8 @@ describe("Team composition — stub module with all hooks", () => {
 
 1. Define the handler in `packages-team/team-flow/src/` implementing `IFlowStepHandler`
 2. Create a `TeamFlowModule` implementing `ICapabilityModule` with `registerFlowStepHandlers`
-3. The module receives an `ISeamRegistryPlaceholder` (resolved to `IFlowStepHandlerRegistry` by the Team composer)
-4. In `apps/daemon/main.ts`, replace `SoloComposer` with `TeamComposer` and register `TeamFlowModule`
+3. The module receives an `ISeamRegistryPlaceholder` (cast to `IFlowStepHandlerRegistry` in the module)
+4. In `apps/daemon/main.ts`, within the `if (editionType === EDITION_TEAM)` block, construct the module, register it with the composer, and call `registerFlowStepHandlers` against the FlowRunner's registry
 5. Test: add a stub hook in `tests/integration/composition_smoke_test.ts`
 6. Build: `deno task build:team`
 
@@ -257,6 +323,26 @@ describe("Team composition — stub module with all hooks", () => {
 4. Create a stub hook test in `tests/integration/composition_smoke_test.ts`
 5. Implement the Solo default as a no-op or pass-through
 6. Wire the concrete registry in the future Team/Enterprise composer
+
+**Example 4: Phase 113 voting module — first concrete seam consumer (reference implementation).**
+
+The voting module (`packages-team/voting/src/voting_capability_module.ts`) is the **first production
+consumer** of `ICapabilityModule.registerFlowStepHandlers`. Follow this pattern for new Team features:
+
+1. Create the capability module alongside the service (MIT package). The edition gating happens at
+   the daemon level via `EXAIX_EDITION`, not in the module itself.
+2. The module's hook casts `ISeamRegistryPlaceholder` to `FlowStepHandlerRegistry` and registers
+   the handler.
+3. In the daemon, construct the service, construct the module, register with `TeamComposer`,
+   then iterate modules and invoke hooks against the FlowRunner's registry.
+4. Handler-level tests prove the module registers correctly.
+5. Integration tests (`tests/integration/voting_flow_test.ts`) prove the full path with `EXAIX_EDITION=team`.
+
+Key files to reference:
+
+- `packages-team/voting/src/voting_capability_module.ts` — the module
+- `packages/flow/src/step_handlers/voting_step_handler.ts` — the handler
+- `apps/daemon/main.ts` (Team edition bootstrap) — the wiring
 
 ---
 

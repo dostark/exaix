@@ -490,6 +490,18 @@ These rules are enforced by `scripts/check_code_style.ts` via:
 
 Boundary checks run as part of the standard quality gates in pre-commit hooks and CI.
 
+### MIT-to-Team Import Boundary
+
+Source files in `packages/` (MIT) **must not import** from `packages-team/` or `@exaix-team/*`. This prevents accidental compile-time coupling of Solo-edition code to Team-only packages.
+
+**Valid exception**: Test files in `packages/*/tests/` may import Team packages for integration testing.
+
+**Remediation**: When MIT source needs a type from Team code, extract the interface or contract into `packages/core/types/` and have both sides depend on the MIT home.
+
+Enforced by `scripts/check_code_style.ts` via:
+
+- `[mit-team-import]`
+
 ---
 
 ## 9. Module Boundaries & CLI Isolation {#cli-boundaries}

@@ -5,7 +5,7 @@
  * envelope production, TriggerIngestionService request-file writing, and duplicate
  * deduplication — all without requiring a daemon or FileWatcher.
  * @architectural-layer Tests
- * @related-files [packages/triggers/adapters/webhook_adapter.ts, packages/triggers/services/ingestion_service.ts, tests/scenario_framework/scenarios/triggers-basic/triggers-basic.yaml]
+ * @related-files [packages/triggers/adapters/webhook_adapter.ts, packages/triggers/services/ingestion_service.ts, tests/scenario_framework/scenarios/triggers_basic/triggers-basic.yaml]
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
@@ -21,7 +21,7 @@ import type { LogMetadata } from "@exaix/core";
 // ---------------------------------------------------------------------------
 
 // Webhook HMAC verification is mandatory (Finding 9), so scenario payloads are signed.
-const WEBHOOK_SECRET = "triggers-basic-scenario-secret";
+const WEBHOOK_SECRET = "triggers_basic-scenario-secret";
 
 async function computeHmacSha256(secret: string, body: string): Promise<string> {
   const key = await crypto.subtle.importKey(
@@ -82,7 +82,7 @@ function makeTrackedLogger(): IEventLogger & { calls: Array<{ action: string; pa
 // Scenario tests
 // ---------------------------------------------------------------------------
 
-Deno.test("[triggers-basic] webhook adapter produces valid envelope", async () => {
+Deno.test("[triggers_basic] webhook adapter produces valid envelope", async () => {
   const adapter = new WebhookAdapter({ secret: WEBHOOK_SECRET });
   const body = JSON.stringify({ event: "push", repository: "exaix" });
   const envelope = await adapter.parse(await signedWebhookInput(body, "push event"));
@@ -96,12 +96,12 @@ Deno.test("[triggers-basic] webhook adapter produces valid envelope", async () =
   assertEquals(typeof envelope.payload, "object");
 });
 
-Deno.test("[triggers-basic] ingestion service writes request file with correct frontmatter", async () => {
+Deno.test("[triggers_basic] ingestion service writes request file with correct frontmatter", async () => {
   const ledger = new InMemoryIdempotencyLedger();
   const gate = new TriggerPolicyGate(ledger);
   const logger = makeTrackedLogger();
 
-  const tmpDir = await Deno.makeTempDir({ prefix: "exaix-triggers-basic-" });
+  const tmpDir = await Deno.makeTempDir({ prefix: "exaix-triggers_basic-" });
   try {
     const service = new TriggerIngestionService({
       policyGate: gate,
@@ -138,12 +138,12 @@ Deno.test("[triggers-basic] ingestion service writes request file with correct f
   }
 });
 
-Deno.test("[triggers-basic] duplicate webhook trigger is deduplicated", async () => {
+Deno.test("[triggers_basic] duplicate webhook trigger is deduplicated", async () => {
   const ledger = new InMemoryIdempotencyLedger();
   const gate = new TriggerPolicyGate(ledger);
   const logger = makeNullLogger();
 
-  const tmpDir = await Deno.makeTempDir({ prefix: "exaix-triggers-basic-" });
+  const tmpDir = await Deno.makeTempDir({ prefix: "exaix-triggers_basic-" });
   try {
     const service = new TriggerIngestionService({
       policyGate: gate,

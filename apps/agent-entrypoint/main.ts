@@ -8,7 +8,7 @@
  */
 
 import { TextLineStream } from "@std/streams";
-import { SoloComposer } from "@exaix/core";
+import { SoloComposer } from "@exaix/core/composer";
 
 async function main() {
   // Edition composer — Solo edition ships no capability modules.

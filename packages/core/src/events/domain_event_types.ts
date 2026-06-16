@@ -24,6 +24,8 @@ export interface IVotingEventPayload {
   consensus_reached: boolean;
   winner_runner_id?: string;
   dissent_summary?: string;
+  /** Present on `voting.runner_failed` — the error message from the failed runner. */
+  error?: string;
 }
 
 /** Typed payload for guardrail.* events. */

@@ -1,9 +1,9 @@
 schema_version: "1.0.0"
 id: "portal-knowledge-phase105"
 title: "Phase 105 — Comprehensive portal knowledge collection validation (all 11 strategies)"
-pack: "portal-knowledge"
+pack: "portal_knowledge"
 tags: ["smoke", "portal", "knowledge"]
-request_fixture: "fixtures/requests/portal-knowledge/portal_knowledge_phase105.md"
+request_fixture: "fixtures/requests/portal_knowledge/portal_knowledge_phase105.md"
 mode_support: ["auto"]
 portals:
   - alias: "portal-exaix"

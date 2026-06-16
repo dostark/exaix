@@ -8,9 +8,10 @@
 import { assert, assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
 import { ProviderRegistry } from "@exaix/ai";
-import { EDITION_SOLO, EDITION_TEAM, ProviderType, SoloComposer } from "@exaix/core";
+import { EDITION_SOLO, EDITION_TEAM, ProviderType } from "@exaix/core";
+import { SoloComposer } from "@exaix/core/composer";
+import type { ICapabilityModule } from "@exaix/core/composer";
 import { bootstrapTeamProviders, TeamComposer } from "@exaix-team/team-composer";
-import type { ICapabilityModule } from "@exaix/core";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
 
 const SOLO_PROVIDERS = [

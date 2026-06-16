@@ -6,13 +6,13 @@
 
 import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
+import type { IAuthorizer } from "../mod.ts";
 import {
-  type IAuthorizer,
   type ICapabilityModule,
   type IEditionComposer,
   type ISeamRegistryPlaceholder,
   SoloComposer,
-} from "../mod.ts";
+} from "../src/composer/mod.ts";
 
 describe("SoloComposer", () => {
   it("accepts zero modules and runs clean", () => {

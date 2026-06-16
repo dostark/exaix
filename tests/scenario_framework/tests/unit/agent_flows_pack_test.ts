@@ -61,6 +61,7 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] CI-safe scenario list excludes scen
       "plan-amendment-lifecycle",
       "portal-knowledge-snapshot",
       "request-analysis-smoke",
+      "voting-majority-consensus",
     ],
   );
 });
@@ -83,6 +84,7 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] scenario metadata for the Agent Flo
       "quality-gate-clarification",
       "request-analysis-smoke",
       "step-durability-resume",
+      "voting-majority-consensus",
     ],
   );
 

@@ -1,9 +1,9 @@
 schema_version: "1.0.0"
 id: "blueprint-eval-mixed-outcome"
 title: "Mixed outcome with weighted criteria — verifies partial credit scoring"
-pack: "blueprint-eval"
+pack: "blueprint_eval"
 tags: ["eval", "scoring", "mixed"]
-request_fixture: "fixtures/requests/blueprint-eval/mixed-outcome.md"
+request_fixture: "fixtures/requests/blueprint_eval/mixed-outcome.md"
 mode_support: ["auto"]
 portals: []
 steps:
