@@ -719,7 +719,7 @@ export const ConfigSchema = z.object({
     memory_warn_percent: DEFAULTS.DEFAULT_MEMORY_WARN_PERCENT,
     memory_critical_percent: DEFAULTS.DEFAULT_MEMORY_CRITICAL_PERCENT,
   }),
-  /** Portal codebase knowledge gathering configuration (Phase 46) */
+  /** Portal codebase knowledge gathering configuration (Phase 119) */
   portal_knowledge: z.object({
     /** Automatically trigger knowledge analysis after portal mount. */
     auto_analyze_on_mount: z.boolean().default(true),

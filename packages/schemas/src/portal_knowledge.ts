@@ -2,7 +2,7 @@
  * @module PortalKnowledgeSchema
  * @path packages/schemas/src/portal_knowledge.ts
  * @description Zod validation schemas and inferred TypeScript types for the
- * IPortalKnowledge structure produced by PortalKnowledgeService (Phase 46).
+ * IPortalKnowledge structure produced by PortalKnowledgeService (Phase 119).
  * Captures architecture, layers, key files, conventions, dependencies, and
  * symbol maps extracted from deep codebase analysis of mounted portals.
  * @architectural-layer Shared

@@ -2532,7 +2532,7 @@ exactl request --portal my-project "Analyze code"
 # Result: Operates in ~/git/MyProject
 ```
 
-#### Portal Knowledge Gathering (Phase 46)
+#### Portal Knowledge Gathering (Phase 119)
 
 Exaix automatically analyzes every portal codebase and stores the results in
 `Memory/Projects/{alias}/knowledge.json`. This gives agents structured, up-to-date

@@ -27,7 +27,7 @@ Exaix's Phases 45–49 quality pipeline implements an adapted form of SDD optimi
 | 2 | **Spec defines acceptance criteria** | `IRequestAnalysis` extracts acceptance criteria; `CriteriaGenerator` converts them into evaluation rubric items (`GOAL_ALIGNMENT`, `TASK_FULFILLMENT`) | Phase 45 + 48 |
 | 3 | **Iterate on the spec, not on code** | Multi-round Q&A refines the specification through conversation; rounds track quality improvement; agent and user both must be satisfied                | Phase 47      |
 | 4 | **Spec is the contract**             | `IRequestSpecification` is preserved (never overwritten), persisted as `_clarification.json`, and used as ground truth for evaluation                  | Phase 47      |
-| 5 | **Grounded in reality**              | `PortalKnowledgeService` provides actual codebase architecture, conventions, and key files — specs are written with awareness of what exists           | Phase 46      |
+| 5 | **Grounded in reality**              | `PortalKnowledgeService` provides actual codebase architecture, conventions, and key files — specs are written with awareness of what exists           | Phase 119      |
 | 6 | **Spec as evaluation rubric**        | Quality gates, reflexive agent, and confidence scorer evaluate against spec-derived criteria, not generic heuristics                                   | Phase 48 + 49 |
 | 7 | **Change the spec, not the code**    | Structured frontmatter allows users to express expectations declaratively; spec revision path under consideration                                      | Phase 49      |
 
@@ -105,7 +105,7 @@ This avoids the friction of over-specifying trivial tasks while ensuring complex
 
 Traditional SDD specs are written by humans who (presumably) know the codebase. When working with AI agents, this assumption breaks down — neither the agent writing the spec nor (sometimes) the user has deep codebase familiarity.
 
-Exaix's `PortalKnowledgeService` (Phase 46) addresses this by providing:
+Exaix's `PortalKnowledgeService` (Phase 119) addresses this by providing:
 
 - Actual architecture layers and key files
 - Detected code conventions and patterns
@@ -142,7 +142,7 @@ Exaix's current design finalizes the specification before execution and does not
 ## Phase Dependency Map
 
 ```text
-Phase 46: Portal Knowledge ─────────────────────────┐
+Phase 119: Portal Knowledge ─────────────────────────┐
   (codebase context)                                  │
                                                       ▼
 Phase 47: Quality Gate & Q&A Loop ──▶ IRequestSpecification
@@ -186,7 +186,7 @@ See the "Flow Request Coverage" sections in each phase document for detailed int
 ## References
 
 - Phase 45: [Request Intent Analysis](../planning/phase-45-request-intent-analysis.md)
-- Phase 46: [Portal Codebase Knowledge Gathering](../planning/phase-46-portal-knowledge-gathering.md)
+- Phase 119: [Portal Codebase Knowledge Gathering](../planning/phase-119-multi-language-portal-extraction.md)
 - Phase 47: [Request Quality Gate & Clarification](../planning/phase-47-request-quality-gate.md)
 - Phase 48: [Acceptance Criteria Propagation](../planning/phase-48-acceptance-criteria-propagation.md)
 - Phase 49: [Quality Pipeline Hardening](../planning/phase-49-quality-pipeline-hardening.md)

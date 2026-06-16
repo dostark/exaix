@@ -25,7 +25,7 @@ import { EDITION_TEAM } from "../types/constants.ts";
 /** P113: VOTING_GROUP step type — Team/Enterprise only */
 export const CAP_VOTING = "voting";
 
-/** P94: Per-action HITL governance surface — Team/Enterprise only */
+/** P118: Per-action HITL governance surface — Team/Enterprise only */
 export const CAP_HITL_GOVERNANCE = "hitl_governance";
 
 /** P107: Advanced guardrail policies — Team/Enterprise only */

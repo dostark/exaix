@@ -3,7 +3,7 @@
  * @path packages/portal/knowledge/symbol_extractor_registry.ts
  * @description Edition-separation seam (Phase 115 Step 4): a per-language registry that selects
  * an ISymbolExtractor by primary language. Solo registers the deno-doc TS/JS SymbolExtractor;
- * paid editions (P46 multi-language) register additional extractors (e.g. tree-sitter) through
+ * paid editions (P119 multi-language) register additional extractors (e.g. tree-sitter) through
  * the edition composer. Unregistered languages resolve to a no-op extractor (empty index),
  * preserving the historical behaviour for non-TS portals.
  * @architectural-layer Portal

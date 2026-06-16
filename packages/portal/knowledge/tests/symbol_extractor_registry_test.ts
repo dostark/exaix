@@ -6,7 +6,7 @@
  * @description Phase 115 Step 4 — verifies the ISymbolExtractor seam + per-language registry:
  * TS extraction is unchanged through the interface (parity), and a stub extractor registers and
  * is selected for a non-TS language while unregistered languages fall back to a no-op ([]).
- * Solo keeps the deno-doc TS extractor; paid editions (P46) register more via the composer.
+ * Solo keeps the deno-doc TS extractor; paid editions (P119) register more via the composer.
  */
 
 import { assertEquals } from "@std/assert";

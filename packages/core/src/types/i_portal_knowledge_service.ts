@@ -2,7 +2,7 @@
  * @module IPortalKnowledgeService
  * @path packages/core/src/types/i_portal_knowledge_service.ts
  * @description Service interface and configuration type for PortalKnowledgeService
- * (Phase 46), which performs deep codebase analysis of mounted portals and
+ * (Phase 119), which performs deep codebase analysis of mounted portals and
  * persists structured knowledge in Memory/Projects/{portal}/.
  * @architectural-layer Shared
  * @related-files [packages/portal/knowledge/portal_knowledge_service.ts, packages/core/src/types/mod.ts]
@@ -103,7 +103,7 @@ export interface IPortalKnowledgeService {
   /**
    * Perform an incremental knowledge update.
    *
-   * In Phase 46 this is a **CLI-only** operation (triggered by
+   * In Phase 119 this is a **CLI-only** operation (triggered by
    * `exactl portal analyze [--force]`). The `changedFiles` parameter is
    * reserved for a future automatic-integration phase and may be ignored by
    * current implementations.

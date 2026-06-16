@@ -39,7 +39,7 @@ export interface ISymbolExtractorOptions {
 
 /**
  * Edition-separation seam (Phase 115 Step 4): a pluggable, per-language symbol-index
- * extractor. Solo ships the deno-doc TS/JS {@link SymbolExtractor}; paid editions (P46)
+ * extractor. Solo ships the deno-doc TS/JS {@link SymbolExtractor}; paid editions (P119)
  * register additional language extractors (e.g. tree-sitter) through the edition composer
  * via SymbolExtractorRegistry.
  */
