@@ -1024,6 +1024,35 @@ export const DEFAULT_SYMBOL_MAP_LIMIT = 100;
 /** Subprocess timeout for `deno doc --json` call in milliseconds. */
 export const DENO_DOC_TIMEOUT_MS = 15_000;
 
+// ---------------------------------------------------------------------------
+// Multi-language symbol extraction (Phase 119)
+// ---------------------------------------------------------------------------
+
+/** Source-file extensions per language recognized by the symbol extractors (Phase 119). */
+export const LANGUAGE_SOURCE_EXTENSIONS: Record<string, readonly string[]> = {
+  typescript: [".ts", ".tsx"],
+  javascript: [".js", ".jsx", ".mjs", ".cjs"],
+  python: [".py", ".pyi"],
+  rust: [".rs"],
+  go: [".go"],
+  java: [".java"],
+};
+
+/** Default extension set (TS/JS) used when a language has no LANGUAGE_SOURCE_EXTENSIONS entry. */
+export const TS_JS_EXTENSIONS: readonly string[] = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
+
+/** Per-file byte cap for tree-sitter symbol extraction; larger files are skipped (DoS bound). */
+export const SYMBOL_EXTRACT_MAX_FILE_BYTES = 1_000_000;
+
+/** Per-zone cap on source files scanned by a single symbol-extraction pass (DoS bound). */
+export const SYMBOL_EXTRACT_MAX_FILES = 2_000;
+
+/** Per-file syntax-tree node cap; files exceeding it are skipped (WASM-memory DoS bound). */
+export const SYMBOL_EXTRACT_MAX_NODES = 200_000;
+
+/** Total wall-clock budget for one symbol-extraction pass, in milliseconds. */
+export const SYMBOL_EXTRACT_TIMEOUT_MS = 15_000;
+
 /** The deno CLI executable name used when spawning subprocesses. */
 export const DENO_COMMAND = "deno";
 
