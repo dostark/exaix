@@ -57,6 +57,7 @@ import { SoloComposer } from "@exaix/core/composer";
 // are never called when editionType !== "team".
 import { bootstrapTeamProviders, TeamComposer } from "@exaix-team/team-composer";
 import { GuardrailRunner } from "@exaix-team/guardrail";
+import { HitlPolicyEvaluator } from "@exaix-team/hitl";
 
 if (import.meta.main) {
   // Simple argument handling for the compiled binary
@@ -153,6 +154,12 @@ if (import.meta.main) {
           error: err instanceof Error ? err.message : String(err),
         });
       }
+    }
+
+    // Phase 118: Initialize HITL policy evaluator if Team edition and enabled
+    let hitlPolicyEvaluator: HitlPolicyEvaluator | undefined;
+    if (editionType !== EDITION_SOLO && config.hitl?.enabled) {
+      hitlPolicyEvaluator = new HitlPolicyEvaluator(config.hitl.mandatory_rules);
     }
 
     // Initialize Git orchestration service
@@ -266,6 +273,7 @@ if (import.meta.main) {
       agentExecutor: agentExecutorAdapter,
       config,
       eventLogger: flowLogger,
+      hitlPolicyEvaluator,
     });
 
     // Wire Team-edition capability modules through the edition-composer seam
