@@ -8,10 +8,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { RustSymbolExtractor } from "../src/rust_symbol_extractor.ts";
-import {
-  DEFAULT_SYMBOL_MAP_LIMIT,
-  SYMBOL_EXTRACT_MAX_FILE_BYTES,
-} from "@exaix/core";
+import { DEFAULT_SYMBOL_MAP_LIMIT, SYMBOL_EXTRACT_MAX_FILE_BYTES } from "@exaix/core";
 
 const FIXTURE_DIR = join(
   import.meta.dirname ?? ".",

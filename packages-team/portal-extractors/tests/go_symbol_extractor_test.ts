@@ -8,10 +8,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { GoSymbolExtractor } from "../src/go_symbol_extractor.ts";
-import {
-  DEFAULT_SYMBOL_MAP_LIMIT,
-  SYMBOL_EXTRACT_MAX_FILE_BYTES,
-} from "@exaix/core";
+import { DEFAULT_SYMBOL_MAP_LIMIT, SYMBOL_EXTRACT_MAX_FILE_BYTES } from "@exaix/core";
 
 const FIXTURE_DIR = join(
   import.meta.dirname ?? ".",
@@ -37,6 +34,7 @@ Deno.test("[GoSymbolExtractor] extracts struct/interface/fn/const from Go fixtur
   assert(names.includes("Shape"), "Shape interface");
   assert(names.includes("NewPoint"), "NewPoint fn");
   assert(names.includes("MaxCoord"), "MaxCoord const");
+  assert(names.includes("MyInt"), "MyInt type alias");
   assert(names.includes("DoublePoint"), "DoublePoint fn");
   assert(names.includes("Pi"), "Pi const");
 
@@ -55,6 +53,10 @@ Deno.test("[GoSymbolExtractor] extracts struct/interface/fn/const from Go fixtur
   assert(
     result.find((s) => s.name === "MaxCoord")!.kind === "const",
     "const → const",
+  );
+  assert(
+    result.find((s) => s.name === "MyInt")!.kind === "type",
+    "type alias → type",
   );
 });
 

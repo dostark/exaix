@@ -58,8 +58,7 @@ const CAPTURE_KIND: Record<string, ISymbolEntry["kind"]> = {
  */
 export class PythonSymbolExtractor extends TreeSitterSymbolExtractor {
   protected readonly languageName = "python";
-  protected readonly grammarWasmSpecifier =
-    "npm:tree-sitter-python/tree-sitter-python.wasm";
+  protected readonly grammarWasmSpecifier = "npm:tree-sitter-python/tree-sitter-python.wasm";
   protected readonly grammarNpmName = "tree-sitter-python";
   protected readonly grammarVersion = "0.25.0";
   protected readonly grammarWasmFilename = "tree-sitter-python.wasm";
@@ -69,9 +68,7 @@ export class PythonSymbolExtractor extends TreeSitterSymbolExtractor {
   }
 
   protected processMatch(match: QueryMatch, file: string): ISymbolEntry[] {
-    const defCap = match.captures.find((c) =>
-      c.name.startsWith(SYM_DEF_PREFIX)
-    );
+    const defCap = match.captures.find((c) => c.name.startsWith(SYM_DEF_PREFIX));
     const nameCap = match.captures.find((c) => c.name === SYM_NAME_CAPTURE);
     if (!defCap || !nameCap) return [];
 
@@ -121,9 +118,7 @@ export class PythonSymbolExtractor extends TreeSitterSymbolExtractor {
         const lastSegment = moduleName.split(".").pop();
         if (lastSegment) imports.push(lastSegment);
         // Also import each named import
-        const namedImports = m[2].split(",").map((s) =>
-          s.trim().split(" as ")[0]
-        );
+        const namedImports = m[2].split(",").map((s) => s.trim().split(" as ")[0]);
         imports.push(...namedImports);
       }
     }

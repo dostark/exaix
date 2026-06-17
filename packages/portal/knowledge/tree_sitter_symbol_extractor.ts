@@ -13,10 +13,7 @@
 
 import { Language, Parser, Query, type QueryMatch } from "web-tree-sitter";
 import { join, resolve } from "@std/path";
-import type {
-  ISymbolExtractor,
-  ISymbolExtractorOptions,
-} from "./symbol_extractor.ts";
+import type { ISymbolExtractor, ISymbolExtractorOptions } from "./symbol_extractor.ts";
 import type { ISymbolEntry } from "@exaix/schemas";
 import {
   DEFAULT_SYMBOL_MAP_LIMIT,
@@ -25,10 +22,7 @@ import {
   SYMBOL_EXTRACT_MAX_NODES,
   SYMBOL_EXTRACT_TIMEOUT_MS,
 } from "@exaix/core";
-import {
-  resolveNpmPackageFile,
-  resolveNpmWasmPath,
-} from "./npm_wasm_loader.ts";
+import { resolveNpmPackageFile, resolveNpmWasmPath } from "./npm_wasm_loader.ts";
 
 // ---------------------------------------------------------------------------
 // Base class
@@ -78,19 +72,19 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
     );
     const wasmDir = resolve(join(coreWasmPath, ".."));
 
-    // Resolve grammar WASM — use package-aware resolution for cases where
-    // import.meta.resolve doesn't return file:// URLs (e.g. tree-sitter-rust).
+    // Resolve grammar WASM — try import.meta.resolve first, fall back to
+    // package-aware cache path for packages whose WASM isn't a module entry.
     let grammarWasmPath: string;
     try {
       grammarWasmPath = resolveNpmWasmPath(this.grammarWasmSpecifier);
-    } catch {
+    } catch (_resolveErr) {
       grammarWasmPath = resolveNpmPackageFile(
         this.grammarNpmName,
         this.grammarVersion,
         this.grammarWasmFilename,
       );
     }
-    const grammarWasm = Deno.readFileSync(grammarWasmPath);
+    const grammarWasm = await Deno.readFile(grammarWasmPath);
 
     await Parser.init({
       locateFile: (path: string) => join(wasmDir, path),
@@ -136,7 +130,9 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
         if (!stat.isFile) continue;
         if (stat.size > SYMBOL_EXTRACT_MAX_FILE_BYTES) continue;
         content = await Deno.readTextFile(fullPath);
-      } catch {
+      } catch (_fileErr) {
+        // Fail-soft: skip unreadable or race-condition files silently.
+        // In a debug-logging context, _fileErr contains the OS error.
         continue;
       }
 
@@ -154,9 +150,27 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
       }
     }
 
+    // Deduplicate by name: keep the last entry per name (preferred over type).
+    // When both "type" and "class"/"interface" match the same symbol (e.g.,
+    // a Go struct matching both generic type_spec and specific struct_type),
+    // the more specific kind wins by appearing later in tree-sitter output.
+    const seen = new Map<string, number>();
+    const deduped: ISymbolEntry[] = [];
+    for (const sym of allSymbols) {
+      const existing = seen.get(sym.name);
+      if (existing !== undefined) {
+        // Replace if the existing entry has kind "type" or this one is
+        // more specific (last-wins for same position).
+        deduped[existing] = sym;
+      } else {
+        seen.set(sym.name, deduped.length);
+        deduped.push(sym);
+      }
+    }
+
     const ranked = this._computePageRank(
-      allSymbols,
-      allSymbols.map((s) => s.file),
+      deduped,
+      deduped.map((s) => s.file),
       fileImportTargets,
     );
 
@@ -169,20 +183,17 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
   // Helpers
   // -----------------------------------------------------------------------
 
+  /** Recursively count syntax nodes in the tree. The `child` callback
+   * returns a node-like object or null — only non-null values recurse. */
   private _countNodes(
-    node: {
-      childCount: number;
-      child: (
-        i: number,
-      ) => { childCount: number; child: (i: number) => unknown } | null;
-    },
+    node: { childCount: number; child: (i: number) => unknown },
   ): number {
     let count = 1;
     for (let i = 0; i < node.childCount; i++) {
       const child = node.child(i);
       if (child) {
         count += this._countNodes(
-          child as Parameters<typeof this._countNodes>[0],
+          child as { childCount: number; child: (i: number) => unknown },
         );
       }
     }

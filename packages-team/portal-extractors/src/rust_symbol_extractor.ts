@@ -8,6 +8,7 @@
  * Team edition — gated by CAP_EXTENDED_LANG_EXTRACTION.
  * @architectural-layer Portal
  * @dependencies [npm:tree-sitter-rust]
+ * @related-files [packages-team/portal-extractors/src/portal_extractors_module.ts]
  */
 
 import type { QueryMatch } from "web-tree-sitter";
@@ -47,8 +48,7 @@ const CAPTURE_KIND: Record<string, ISymbolEntry["kind"]> = {
 
 export class RustSymbolExtractor extends TreeSitterSymbolExtractor {
   protected readonly languageName = "rust";
-  protected readonly grammarWasmSpecifier =
-    "npm:tree-sitter-rust/tree-sitter-rust.wasm";
+  protected readonly grammarWasmSpecifier = "npm:tree-sitter-rust/tree-sitter-rust.wasm";
   protected readonly grammarNpmName = "tree-sitter-rust";
   protected readonly grammarVersion = "0.24.0";
   protected readonly grammarWasmFilename = "tree-sitter-rust.wasm";
@@ -58,9 +58,7 @@ export class RustSymbolExtractor extends TreeSitterSymbolExtractor {
   }
 
   protected processMatch(match: QueryMatch, file: string): ISymbolEntry[] {
-    const defCap = match.captures.find((c) =>
-      c.name.startsWith(SYM_DEF_PREFIX)
-    );
+    const defCap = match.captures.find((c) => c.name.startsWith(SYM_DEF_PREFIX));
     const nameCap = match.captures.find((c) => c.name === SYM_NAME_CAPTURE);
     if (!defCap || !nameCap) return [];
     const kind = CAPTURE_KIND[defCap.name];

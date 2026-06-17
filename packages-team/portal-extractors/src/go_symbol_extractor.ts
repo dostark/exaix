@@ -8,6 +8,7 @@
  * Team edition — gated by CAP_EXTENDED_LANG_EXTRACTION.
  * @architectural-layer Portal
  * @dependencies [npm:tree-sitter-go]
+ * @related-files [packages-team/portal-extractors/src/portal_extractors_module.ts]
  */
 
 import type { QueryMatch } from "web-tree-sitter";
@@ -19,6 +20,7 @@ import {
   SYM_KIND_CONST,
   SYM_KIND_FUNCTION,
   SYM_KIND_INTERFACE,
+  SYM_KIND_TYPE,
   SYM_NAME_CAPTURE,
 } from "@exaix/portal/knowledge";
 
@@ -28,6 +30,7 @@ const GO_QUERY = `
 (type_declaration (type_spec name: (type_identifier) @name type: (struct_type))) @definition.class
 (type_declaration (type_spec name: (type_identifier) @name type: (interface_type))) @definition.interface
 (const_declaration (const_spec name: (identifier) @name)) @definition.const
+(type_spec name: (type_identifier) @name) @definition.type
 `;
 
 const CAPTURE_KIND: Record<string, ISymbolEntry["kind"]> = {
@@ -36,12 +39,12 @@ const CAPTURE_KIND: Record<string, ISymbolEntry["kind"]> = {
   [`${SYM_DEF_PREFIX}class`]: SYM_KIND_CLASS,
   [`${SYM_DEF_PREFIX}interface`]: SYM_KIND_INTERFACE,
   [`${SYM_DEF_PREFIX}const`]: SYM_KIND_CONST,
+  [`${SYM_DEF_PREFIX}type`]: SYM_KIND_TYPE,
 };
 
 export class GoSymbolExtractor extends TreeSitterSymbolExtractor {
   protected readonly languageName = "go";
-  protected readonly grammarWasmSpecifier =
-    "npm:tree-sitter-go/tree-sitter-go.wasm";
+  protected readonly grammarWasmSpecifier = "npm:tree-sitter-go/tree-sitter-go.wasm";
   protected readonly grammarNpmName = "tree-sitter-go";
   protected readonly grammarVersion = "0.25.0";
   protected readonly grammarWasmFilename = "tree-sitter-go.wasm";
@@ -51,9 +54,7 @@ export class GoSymbolExtractor extends TreeSitterSymbolExtractor {
   }
 
   protected processMatch(match: QueryMatch, file: string): ISymbolEntry[] {
-    const defCap = match.captures.find((c) =>
-      c.name.startsWith(SYM_DEF_PREFIX)
-    );
+    const defCap = match.captures.find((c) => c.name.startsWith(SYM_DEF_PREFIX));
     const nameCap = match.captures.find((c) => c.name === SYM_NAME_CAPTURE);
     if (!defCap || !nameCap) return [];
     const kind = CAPTURE_KIND[defCap.name];

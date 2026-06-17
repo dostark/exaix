@@ -18,3 +18,6 @@ func NewPoint(x, y float64) Point {
 
 // MaxCoord is the maximum coordinate value.
 const MaxCoord = 1000.0
+
+// MyInt is a type alias for int.
+type MyInt int

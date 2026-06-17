@@ -12,14 +12,8 @@
  */
 
 import { EDITION_TEAM, LANG_GO, LANG_JAVA, LANG_RUST } from "@exaix/core";
-import {
-  CAP_EXTENDED_LANG_EXTRACTION,
-  CAPABILITY_EDITION,
-} from "@exaix/core/composer";
-import type {
-  ICapabilityModule,
-  ISeamRegistryPlaceholder,
-} from "@exaix/core/composer";
+import { CAP_EXTENDED_LANG_EXTRACTION, CAPABILITY_EDITION } from "@exaix/core/composer";
+import type { ICapabilityModule, ISeamRegistryPlaceholder } from "@exaix/core/composer";
 import type { ISymbolExtractorRegistry } from "@exaix/portal/knowledge";
 import { RustSymbolExtractor } from "./rust_symbol_extractor.ts";
 import { GoSymbolExtractor } from "./go_symbol_extractor.ts";
