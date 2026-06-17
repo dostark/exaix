@@ -3457,6 +3457,48 @@ threshold = 60            # Confidence threshold (0-100) (default: 60)
 expiry_ms = 86400000       # How long an amendment can stay pending (default: 24h)
 ```
 
+### 12.4 Per-Action HITL Governance (Phase 118, Team/Enterprise Edition)
+
+> **This is a Team/Enterprise Edition feature.** It is off by default and only activates when
+> `EXAIX_EDITION=team` and `config.hitl.enabled=true`.
+
+Per-action HITL adds a **third human checkpoint** (alongside plan approval and amendment approval)
+that pauses individual tool invocations based on per-argument policy rules.
+
+**Blueprint authors** declare which tool calls need secondary approval via the YAML frontmatter:
+
+```yaml
+hitl:
+  require_secondary_approval:
+    - tool: git_commit
+      path_pattern: "**/migrations/**"
+      reason: "Migrations require secondary approval"
+    - tool: run_command
+      command_pattern: "*rm -rf*"
+      reason: "Destructive commands require secondary approval"
+    - tool: write_file
+      path_pattern: "**/.env*"
+      reason: "Env file writes require secondary approval"
+```
+
+**Administrators** declare non-bypassable rules in `exa.config.toml`:
+
+```toml
+[hitl]
+enabled = true
+mandatory_rules = [
+  { tool = "run_command", command_pattern = "*rm -rf*", reason = "Admin: no destructive rm" }
+]
+```
+
+A mandatory rule applies to **all** blueprints and cannot be overridden. If no approver is
+available (e.g. CLI mode without a confirmation interceptor), the tool is **denied** (fail-closed).
+Blueprint-only rules degrade gracefully (tool proceeds without interruption).
+
+**Read-only tools** (e.g. `read_file`, `search_files`) are never automatically paused — HITL
+must be explicitly configured to gate them. This is recommended only for sensitive-path
+confidentiality (secrets, PII), not for routine reads, to avoid stalling the agent's reasoning loop.
+
 ---
 
 ## 13. Evaluation & Scoring

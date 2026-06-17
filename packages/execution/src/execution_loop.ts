@@ -34,6 +34,8 @@ import { type IPlanExecutorOptions, PlanExecutor } from "@exaix/core/planning";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
 import { ExecutionStatus, PortalExecutionStrategy } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
+import type { IHitlPolicyEvaluator, IToolConfirmationInterceptor } from "@exaix/core/types";
+import type { HitlRule } from "@exaix/schemas/hitl.ts";
 import { type IStructuredPlan, parseStructuredPlanFromMarkdown } from "@exaix/core/planning";
 import { isReadOnlyAgentCapabilities } from "@exaix/core/func";
 import { ArtifactRegistry, DatabaseArtifactRepository } from "@exaix/core/artifact";
@@ -74,6 +76,12 @@ export interface IExecutionLoopConfig {
   sessionMemory?: SessionMemoryService;
   /** Optional guardrail runner for PlanExecutor (Phase 107). */
   guardrailRunner?: IGuardrailRunner;
+  /** Phase 118: Per-action HITL policy evaluator for ToolRegistry pipeline. */
+  hitlPolicyEvaluator?: IHitlPolicyEvaluator;
+  /** Phase 118: Confirmation interceptor for HITL approval flow. */
+  confirmationInterceptor?: IToolConfirmationInterceptor;
+  /** Phase 118: Blueprint-level HITL rules passed to ToolRegistry. */
+  hitlBlueprintRules?: HitlRule[];
 }
 
 export interface IExecutionResult {
@@ -126,6 +134,9 @@ export class ExecutionLoop {
   private amendmentService?: PlanAmendmentService;
   private sessionMemory?: SessionMemoryService;
   private guardrailRunner?: IGuardrailRunner;
+  private hitlPolicyEvaluator?: IHitlPolicyEvaluator;
+  private confirmationInterceptor?: IToolConfirmationInterceptor;
+  private hitlBlueprintRules?: HitlRule[];
 
   constructor(
     config: IExecutionLoopConfig,
@@ -140,6 +151,9 @@ export class ExecutionLoop {
     this.context = ctx;
     this.sessionMemory = config.sessionMemory;
     this.guardrailRunner = config.guardrailRunner;
+    this.hitlPolicyEvaluator = config.hitlPolicyEvaluator;
+    this.confirmationInterceptor = config.confirmationInterceptor;
+    this.hitlBlueprintRules = config.hitlBlueprintRules;
     this.plansDir = join(this.config.system.root, this.config.paths.workspace, this.config.paths.active);
     this.blueprintLoader = new BlueprintLoader({
       blueprintsPath: join(this.config.system.root, this.config.paths.blueprints, this.config.paths.identities),
@@ -719,6 +733,9 @@ export class ExecutionLoop {
       identityId: this.identityId,
       baseDir: executionRoot,
       context: this.context,
+      hitlPolicyEvaluator: this.hitlPolicyEvaluator,
+      confirmationInterceptor: this.confirmationInterceptor,
+      hitlBlueprintRules: this.hitlBlueprintRules,
     });
 
     let actionIndex = 0;

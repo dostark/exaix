@@ -857,6 +857,22 @@ export enum VotingStrategy {
 }
 
 /**
+ * Source of a matching HITL governance rule (Phase 118).
+ */
+export enum HitlRuleSource {
+  BLUEPRINT = "blueprint",
+  MANDATORY = "mandatory",
+}
+
+/**
+ * Execution surface where a HITL policy match occurred (Phase 118).
+ */
+export enum HitlSurface {
+  TOOL_REGISTRY = "tool_registry",
+  DYNAMIC = "dynamic",
+}
+
+/**
  * Sources for flow step input data.
  */
 export enum FlowInputSource {

@@ -57,6 +57,7 @@ import { SoloComposer } from "@exaix/core/composer";
 // are never called when editionType !== "team".
 import { bootstrapTeamProviders, TeamComposer } from "@exaix-team/team-composer";
 import { GuardrailRunner } from "@exaix-team/guardrail";
+import { HitlPolicyEvaluator } from "@exaix-team/hitl";
 
 if (import.meta.main) {
   // Simple argument handling for the compiled binary
@@ -68,8 +69,14 @@ if (import.meta.main) {
   try {
     // Always use EXA_CONFIG_PATH if set, and fail fast in test mode
     const configPath = Deno.env.get("EXA_CONFIG_PATH");
-    if (!configPath && (Deno.env.get("EXA_TEST_CLI_MODE") === "1" || Deno.env.get("EXA_TEST_MODE") === "1")) {
-      throw new Error("❌ Test mode: Configuration file not found. Set EXA_CONFIG_PATH to the ephemeral config.");
+    if (
+      !configPath &&
+      (Deno.env.get("EXA_TEST_CLI_MODE") === "1" ||
+        Deno.env.get("EXA_TEST_MODE") === "1")
+    ) {
+      throw new Error(
+        "❌ Test mode: Configuration file not found. Set EXA_CONFIG_PATH to the ephemeral config.",
+      );
     }
     const configService = new ConfigService(configPath);
     const config = configService.get();
@@ -111,7 +118,9 @@ if (import.meta.main) {
       log_level: config.system.log_level,
     });
 
-    await logger.info(DomainEventType.DatabaseConnected, "journal.db", { mode: "WAL" });
+    await logger.info(DomainEventType.DatabaseConnected, "journal.db", {
+      mode: "WAL",
+    });
 
     // Initialize LLM Provider
     bootstrapProviderRegistry();
@@ -126,8 +135,14 @@ if (import.meta.main) {
       _editionComposer = new SoloComposer();
     }
     const defaultModelName = config.agents.default_model;
-    const providerInfo = ProviderFactory.getProviderInfoByName(config, defaultModelName);
-    const llmProvider = await ProviderFactory.createByName(config, defaultModelName);
+    const providerInfo = ProviderFactory.getProviderInfoByName(
+      config,
+      defaultModelName,
+    );
+    const llmProvider = await ProviderFactory.createByName(
+      config,
+      defaultModelName,
+    );
 
     await logger.info(DomainEventType.LlmProviderInitialized, providerInfo.id, {
       type: providerInfo.type,
@@ -155,6 +170,14 @@ if (import.meta.main) {
       }
     }
 
+    // Phase 118: Initialize HITL policy evaluator if Team edition and enabled
+    let hitlPolicyEvaluator: HitlPolicyEvaluator | undefined;
+    if (editionType !== EDITION_SOLO && config.hitl?.enabled) {
+      hitlPolicyEvaluator = new HitlPolicyEvaluator(
+        config.hitl.mandatory_rules,
+      );
+    }
+
     // Initialize Git orchestration service
     const gitService = new GitService({
       config,
@@ -165,13 +188,21 @@ if (import.meta.main) {
     // Initialize Memory Services (needed for context and request processing)
     const memoryBank = new MemoryBankService(config, logger);
     const memoryAdapter = new MemoryBankAdapter(memoryBank);
-    const memoryExtractor = new MemoryExtractorService(config, dbService, memoryAdapter);
+    const memoryExtractor = new MemoryExtractorService(
+      config,
+      dbService,
+      memoryAdapter,
+    );
     const embCfg = config.memory?.embedding;
     const providerType = embCfg?.provider ?? "ollama";
     let providerConfig: IEmbeddingProviderConfig;
     switch (providerType) {
       case ProviderType.OPENAI:
-        providerConfig = { provider: ProviderType.OPENAI, apiKey: embCfg?.apiKey ?? "", model: embCfg?.model };
+        providerConfig = {
+          provider: ProviderType.OPENAI,
+          apiKey: embCfg?.apiKey ?? "",
+          model: embCfg?.model,
+        };
         break;
       case ProviderType.LLAMACPP:
         providerConfig = {
@@ -193,10 +224,23 @@ if (import.meta.main) {
     const embeddingProvider = createEmbeddingProvider(providerConfig);
     const costTracker = new CostTracker(dbService, config);
     const memoryCostRouter = new MemoryCostRouter(costTracker, logger);
-    const providerEmbedding = new ProviderEmbeddingService(config, embeddingProvider, memoryCostRouter);
+    const providerEmbedding = new ProviderEmbeddingService(
+      config,
+      embeddingProvider,
+      memoryCostRouter,
+    );
 
-    const tieredEntriesPath = join(config.system.root, config.paths.memory, "tiered_entries.json");
-    const sessionMemory = new SessionMemoryService(memoryBank, providerEmbedding, undefined, tieredEntriesPath);
+    const tieredEntriesPath = join(
+      config.system.root,
+      config.paths.memory,
+      "tiered_entries.json",
+    );
+    const sessionMemory = new SessionMemoryService(
+      memoryBank,
+      providerEmbedding,
+      undefined,
+      tieredEntriesPath,
+    );
 
     memoryBank.setEmbeddingService(providerEmbedding);
 
@@ -241,43 +285,83 @@ if (import.meta.main) {
     };
 
     // Ensure required directories exist
-    const requestsPath = join(config.system.root, config.paths.workspace, "Requests");
+    const requestsPath = join(
+      config.system.root,
+      config.paths.workspace,
+      "Requests",
+    );
     const plansPath = join(config.system.root, config.paths.workspace, "Plans");
-    const activePath = join(config.system.root, config.paths.workspace, "Active");
+    const activePath = join(
+      config.system.root,
+      config.paths.workspace,
+      "Active",
+    );
     await ensureDir(requestsPath);
     await ensureDir(plansPath);
     await ensureDir(activePath);
 
     // Initialize wait state storage path for clarification lifecycle
-    const waitStatesRoot = join(config.system.root, config.paths.workspace, config.paths.waitStates ?? "WaitStates");
+    const waitStatesRoot = join(
+      config.system.root,
+      config.paths.workspace,
+      config.paths.waitStates ?? "WaitStates",
+    );
 
     // Create flow event logger adapter (EventLogger → IFlowEventLogger)
     const flowLogger: IFlowEventLogger = {
-      log: <TEvent extends string>(event: TEvent, payload: IFlowEventPayload<TEvent>): void => {
-        logger.info(event, "flow-runner", payload as Record<string, string | number | boolean | null | undefined>);
+      log: <TEvent extends string>(
+        event: TEvent,
+        payload: IFlowEventPayload<TEvent>,
+      ): void => {
+        logger.info(
+          event,
+          "flow-runner",
+          payload as Record<
+            string,
+            string | number | boolean | null | undefined
+          >,
+        );
       },
     };
 
     // Create FlowRunner for multi-agent flow execution
-    const blueprintsPath = join(config.system.root, config.paths.blueprints, DEFAULT_IDENTITIES_PATH);
+    const blueprintsPath = join(
+      config.system.root,
+      config.paths.blueprints,
+      DEFAULT_IDENTITIES_PATH,
+    );
     const agentRunner = new AgentRunner(llmProvider);
-    const agentExecutorAdapter = new AgentExecutorAdapter(agentRunner, blueprintsPath);
+    const agentExecutorAdapter = new AgentExecutorAdapter(
+      agentRunner,
+      blueprintsPath,
+    );
     const flowRunner = new FlowRunner({
       agentExecutor: agentExecutorAdapter,
       config,
       eventLogger: flowLogger,
+      hitlPolicyEvaluator,
     });
 
     // Wire Team-edition capability modules through the edition-composer seam
     if (_editionComposer instanceof TeamComposer) {
-      registerTeamCapabilities(agentExecutorAdapter, logger, flowRunner, _editionComposer);
+      registerTeamCapabilities(
+        agentExecutorAdapter,
+        logger,
+        flowRunner,
+        _editionComposer,
+        hitlPolicyEvaluator,
+      );
     }
 
     // Initialize Request Processor
     const requestProcessor = new RequestProcessor({
       workspacePath: join(config.system.root, config.paths.workspace),
       requestsDir: requestsPath,
-      blueprintsPath: join(config.system.root, config.paths.blueprints, DEFAULT_IDENTITIES_PATH),
+      blueprintsPath: join(
+        config.system.root,
+        config.paths.blueprints,
+        DEFAULT_IDENTITIES_PATH,
+      ),
       includeReasoning: true,
       context, // Support unified DI
       sessionMemory,
@@ -306,10 +390,18 @@ if (import.meta.main) {
       },
     });
 
-    await logger.info(DomainEventType.DaemonRequestProcessorInitialized, "RequestProcessor", {
-      requestsDir: requestsPath,
-      blueprints: join(config.system.root, config.paths.blueprints, DEFAULT_IDENTITIES_PATH),
-    });
+    await logger.info(
+      DomainEventType.DaemonRequestProcessorInitialized,
+      "RequestProcessor",
+      {
+        requestsDir: requestsPath,
+        blueprints: join(
+          config.system.root,
+          config.paths.blueprints,
+          DEFAULT_IDENTITIES_PATH,
+        ),
+      },
+    );
 
     // Create child logger for watcher events
     const watcherLogger = logger.child({ actor: DEFAULT_MCP_IDENTITY_ID });
@@ -351,10 +443,14 @@ if (import.meta.main) {
       reviewRegistry,
       sessionMemory,
       guardrailRunner,
+      hitlPolicyEvaluator,
     });
 
     // Initialize Memory Auto-Approval Service (reuses memoryExtractor from context setup)
-    const autoApprovalService = new MemoryAutoApprovalService(config, memoryExtractor);
+    const autoApprovalService = new MemoryAutoApprovalService(
+      config,
+      memoryExtractor,
+    );
 
     const { stop: stopAutoApproval } = await initializeMemoryAutoApprovalMaintenance({
       notificationService,
@@ -421,7 +517,11 @@ if (import.meta.main) {
     // Register cleanup tasks for graceful shutdown
     gracefulShutdown.registerCleanup("stop_request_watcher", async () => {
       await requestWatcher.stop();
-      await logger.info(DomainEventType.ShutdownWatchersStopped, "request and plan watchers", {});
+      await logger.info(
+        DomainEventType.ShutdownWatchersStopped,
+        "request and plan watchers",
+        {},
+      );
     });
 
     gracefulShutdown.registerCleanup("stop_plan_watcher", async () => {
@@ -434,12 +534,20 @@ if (import.meta.main) {
 
     gracefulShutdown.registerCleanup("stop_auto_approval", async () => {
       stopAutoApproval();
-      await logger.info(DomainEventType.ShutdownAutoApprovalStopped, "memory auto-approval cycle", {});
+      await logger.info(
+        DomainEventType.ShutdownAutoApprovalStopped,
+        "memory auto-approval cycle",
+        {},
+      );
     });
 
     gracefulShutdown.registerCleanup("close_database", async () => {
       dbService.close();
-      await logger.info(DomainEventType.ShutdownDatabaseClosed, "journal.db", {});
+      await logger.info(
+        DomainEventType.ShutdownDatabaseClosed,
+        "journal.db",
+        {},
+      );
     });
 
     // Register signal handlers

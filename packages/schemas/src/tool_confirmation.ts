@@ -16,8 +16,9 @@ export const ToolConfirmationRequestSchema = z.object({
   id: z.string().uuid("Confirmation request ID must be a valid UUID"),
   toolName: z.string().min(1),
   args: z.record(z.string(), z.unknown()),
-  stepId: z.string().min(1),
+  stepId: z.string().min(1).optional(),
   traceId: z.string().min(1),
+  reason: z.string().optional(),
   requestedAt: z.string().datetime(),
   expiresAt: z.string().datetime(),
 });

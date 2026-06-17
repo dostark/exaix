@@ -38,7 +38,7 @@ Deno.test("ToolCommands: pending lists queued tool confirmations", async () => {
 
     assertStringIncludes(output, request.id);
     assertStringIncludes(output, request.toolName);
-    assertStringIncludes(output, request.stepId);
+    assertStringIncludes(output, request.stepId!);
   } finally {
     await cleanup();
   }

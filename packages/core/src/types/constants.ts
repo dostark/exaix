@@ -33,6 +33,12 @@ export const GUARDRAIL_SCREEN_TIMEOUT_MS = 10_000;
 export const GUARDRAIL_FLAGGED_EXCERPT_MAX_CHARS = 500;
 
 // ============================================================================
+// HITL / Governance (Phase 118)
+// ============================================================================
+/** Maximum time (ms) for a HitlPolicyEvaluator.evaluate() call to stay within. */
+export const HITL_EVAL_BUDGET_MS = 5;
+
+// ============================================================================
 // Path Configuration Defaults
 // ============================================================================
 export const DEFAULT_WORKSPACE_PATH = "Workspace";

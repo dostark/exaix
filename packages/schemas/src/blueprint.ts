@@ -9,6 +9,7 @@
 import { z } from "zod";
 import { DEFAULT_BLUEPRINT_VERSION } from "@exaix/core";
 import { ActivityActor, type BlueprintStatus, McpToolName, TaskType } from "@exaix/core";
+import { HitlPolicySchema } from "./hitl.ts";
 
 // ============================================================================
 // Blueprint Interfaces
@@ -112,6 +113,9 @@ export const BlueprintFrontmatterSchema = z.object({
    * Omitting this field means the identity has no dynamic tool permissions.
    */
   permitted_tools: z.array(z.nativeEnum(McpToolName)).optional(),
+
+  /** Per-action HITL governance rules (Phase 118). Optional; absent means no per-action HITL policy. */
+  hitl: HitlPolicySchema.optional(),
 });
 
 export type IBlueprintFrontmatter = z.infer<typeof BlueprintFrontmatterSchema>;

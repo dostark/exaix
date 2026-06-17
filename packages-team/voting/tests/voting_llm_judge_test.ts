@@ -92,9 +92,7 @@ Deno.test("[voting] llm-judge tie returns no consensus", async () => {
   const result = await service.run(config, "test", "trace-tie");
   assertEquals(result.consensus_reached, false);
   assertEquals(
-    logger.info.calls.filter((c) =>
-      c.args[0] === DomainEventType.VotingNoConsensus
-    ).length,
+    logger.info.calls.filter((c) => c.args[0] === DomainEventType.VotingNoConsensus).length,
     1,
   );
 });

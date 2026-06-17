@@ -14,6 +14,7 @@ import { z } from "zod";
 import { DataFormat } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_IDENTITIES_PATH, McpToolName } from "@exaix/core";
+import { HitlPolicySchema } from "@exaix/schemas/hitl.ts";
 
 /**
  * Fully loaded and validated blueprint
@@ -138,6 +139,11 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
 
   /** Prefer this agent locally for routing fallback */
   routing_prefer_local: z.boolean().optional(),
+
+  // === Phase 118 Per-Action HITL Governance Extension ===
+
+  /** Per-action HITL governance rules for this blueprint. */
+  hitl: HitlPolicySchema.optional(),
 });
 
 export type RuntimeBlueprintFrontmatter = z.infer<typeof RuntimeBlueprintFrontmatterSchema>;

@@ -9,7 +9,7 @@
  * typos and establish a single source of truth for the event taxonomy.
  */
 
-import type { VotingStrategy } from "../types/enums.ts";
+import type { HitlRuleSource, HitlSurface, VotingStrategy } from "../types/enums.ts";
 
 /** Guardrail verdict type. */
 export type GuardrailVerdict = "pass" | "violation";
@@ -26,6 +26,16 @@ export interface IVotingEventPayload {
   dissent_summary?: string;
   /** Present on `voting.runner_failed` — the error message from the failed runner. */
   error?: string;
+}
+
+/** Typed payload for hitl.policy.matched events (Phase 118). */
+export interface IHitlPolicyMatchedPayload {
+  traceId: string;
+  stepId?: string;
+  tool: string;
+  ruleSource: HitlRuleSource;
+  reason?: string;
+  surface: HitlSurface;
 }
 
 /** Typed payload for guardrail.* events. */
@@ -344,6 +354,11 @@ export const DomainEventType = {
   VotingResolved: "voting.resolved",
   VotingNoConsensus: "voting.no_consensus",
   VotingRunnerFailed: "voting.runner_failed",
+
+  // ---------------------------------------------------------------------------
+  // HITL / Governance (Phase 118)
+  // ---------------------------------------------------------------------------
+  HitlPolicyMatched: "hitl.policy.matched",
 } as const;
 
 export type TDomainEventType = typeof DomainEventType[keyof typeof DomainEventType];

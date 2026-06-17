@@ -401,6 +401,7 @@
     },
     "links": {
       "jsr:@exaix-team/guardrail@0.1.0": {},
+      "jsr:@exaix-team/hitl@0.1.0": {},
       "jsr:@exaix-team/voting@0.1.0": {}
     }
   }

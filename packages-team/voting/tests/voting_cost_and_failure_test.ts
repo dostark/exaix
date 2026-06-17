@@ -6,12 +6,7 @@
 
 import { assertEquals } from "@std/assert";
 import type { VotingGroupConfig } from "@exaix/schemas/voting.ts";
-import {
-  type ICostTracker,
-  type IExecutor,
-  VotingModelSlot,
-  VotingStrategy,
-} from "@exaix/core/types";
+import { type ICostTracker, type IExecutor, VotingModelSlot, VotingStrategy } from "@exaix/core/types";
 import { VotingConsensusService } from "../mod.ts";
 import { createMockLogger } from "@exaix/testing";
 import { DomainEventType } from "@exaix/core/events";
@@ -45,8 +40,7 @@ Deno.test("[voting] all-runner-costs-recorded", async () => {
   };
 
   const executor: IExecutor = {
-    run: (blueprint: string) =>
-      Promise.resolve({ content: `${blueprint}-response` }),
+    run: (blueprint: string) => Promise.resolve({ content: `${blueprint}-response` }),
   };
 
   const service = new VotingConsensusService(
@@ -142,15 +136,11 @@ Deno.test("[voting] all-runners-fail-returns-no-consensus", async () => {
   assertEquals(result.candidates.length, 0, "no candidates");
   assertEquals(result.dissent_summary, "All runners failed");
   assertEquals(
-    logger.info.calls.filter((c) =>
-      c.args[0] === DomainEventType.VotingRunnerFailed
-    ).length,
+    logger.info.calls.filter((c) => c.args[0] === DomainEventType.VotingRunnerFailed).length,
     3,
   );
   assertEquals(
-    logger.info.calls.filter((c) =>
-      c.args[0] === DomainEventType.VotingNoConsensus
-    ).length,
+    logger.info.calls.filter((c) => c.args[0] === DomainEventType.VotingNoConsensus).length,
     1,
   );
 });

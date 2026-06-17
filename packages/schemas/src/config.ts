@@ -70,6 +70,7 @@ import { PortalPermissionsSchema } from "./portal_permissions.ts";
 import { ZBudgetPolicy } from "./prompt_budget.ts";
 import { GuardrailConfigSchema } from "./guardrail.ts";
 import { SessionDelegateConfigSchema } from "./session_delegate.ts";
+import { HitlRuleSchema } from "./hitl.ts";
 
 export interface IPortalConfig {
   alias: string;
@@ -623,6 +624,18 @@ export const ConfigSchema = z.object({
   session_delegate: SessionDelegateConfigSchema.optional(),
   /** Phase 107 — optional guardrail block. Disabled by default (enabled: false). */
   guardrail: GuardrailConfigSchema.optional(),
+  /**
+   * Per-action HITL governance (Phase 118).
+   * Distinct from `amendment.hitl_timeout_ms` — this governs per-tool action policy,
+   * not plan-amendment approval.
+   */
+  hitl: z.object({
+    enabled: z.boolean().default(false),
+    mandatory_rules: z.array(HitlRuleSchema).default([]),
+  }).default({
+    enabled: false,
+    mandatory_rules: [],
+  }),
   /** Provider-specific configuration overrides */
   providers: z.record(z.object({
     cost_tier: z.nativeEnum(ProviderCostTier).optional(),

@@ -37,6 +37,7 @@ import { SoloComposer } from "@exaix/core/composer";
 // Team imports — resolved unconditionally from import map;
 // dead-code eliminated in Solo builds when editionType !== "team".
 import { bootstrapTeamProviders, TeamComposer } from "@exaix-team/team-composer";
+import { HitlPolicyEvaluator } from "@exaix-team/hitl";
 
 // Adapters
 import {
@@ -189,8 +190,14 @@ export async function initializeServices(
       provider: providerLocal,
     });
 
+    // Phase 118: Create HITL policy evaluator if Team/Enterprise edition
+    const hitlPolicyEvaluator = editionType !== EDITION_SOLO && cfg.hitl?.enabled
+      ? new HitlPolicyEvaluator(cfg.hitl.mandatory_rules)
+      : undefined;
+
     const toolRegistry = new ToolRegistry({
       config: cfg,
+      hitlPolicyEvaluator,
     });
 
     const context: ICliApplicationContext = {

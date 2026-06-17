@@ -43,7 +43,7 @@ import type { ToolHandler } from "@exaix/mcp/server";
 import type { McpToolName } from "@exaix/mcp";
 import type { Config } from "@exaix/schemas/config.ts";
 import { RetryPolicy } from "@exaix/core/request";
-import type { IApplicationContext, IGateConfig, IGateEvaluator } from "@exaix/core/types";
+import type { IApplicationContext, IGateConfig, IGateEvaluator, IHitlPolicyEvaluator } from "@exaix/core/types";
 import { FlowStepHandlerRegistry } from "./step_handlers/step_handler_registry.ts";
 import { GateStepHandler, type IPendingWaitStateRef } from "./step_handlers/gate_step_handler.ts";
 import { AgentStepHandler } from "./step_handlers/agent_step_handler.ts";
@@ -182,6 +182,8 @@ export interface IFlowRunnerConfig {
    * between declared and dynamic step provider resolution.
    */
   dynamicModel?: string;
+  /** Optional Phase 118 HITL policy evaluator for per-action governance. No-op (Solo) when omitted. */
+  hitlPolicyEvaluator?: IHitlPolicyEvaluator;
 }
 
 /**
@@ -793,6 +795,7 @@ export class FlowRunner implements IFlowRunner {
         activityJournal,
         confirmationInterceptor,
         this.options.milestoneEmitter,
+        this.options.hitlPolicyEvaluator,
       );
     }
 
