@@ -8,3 +8,4 @@
  */
 
 export { HitlPolicyEvaluator } from "./src/hitl_policy_evaluator.ts";
+export { HitlCapabilityModule } from "./src/hitl_capability_module.ts";

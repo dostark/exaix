@@ -9,7 +9,8 @@
  */
 
 import { VotingCapabilityModule, VotingConsensusService } from "@exaix-team/voting";
-import type { IExecutor } from "@exaix/core/types";
+import { HitlCapabilityModule } from "@exaix-team/hitl";
+import type { IExecutor, IHitlPolicyEvaluator } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { AgentExecutorAdapter, FlowRunner } from "@exaix/flow";
 import type { TeamComposer } from "@exaix-team/team-composer";
@@ -28,6 +29,7 @@ export function registerTeamCapabilities(
   logger: IEventLogger,
   flowRunner: FlowRunner,
   composer: TeamComposer,
+  hitlPolicyEvaluator?: IHitlPolicyEvaluator,
 ): void {
   // Assert the capability-to-edition mapping is consistent at wiring time
   if (CAPABILITY_EDITION[CAP_VOTING] !== EDITION_TEAM) {
@@ -35,6 +37,12 @@ export function registerTeamCapabilities(
       `CAP_VOTING maps to "${CAPABILITY_EDITION[CAP_VOTING]}" but is being wired in Team edition. ` +
         "Update CAPABILITY_EDITION or move this wiring to the correct bootstrap.",
     );
+  }
+
+  // Phase 118: Register HITL governance capability module (asserts edition mapping)
+  if (hitlPolicyEvaluator) {
+    const hitlModule = new HitlCapabilityModule();
+    composer.registerCapabilityModule(hitlModule);
   }
 
   // Phase 113: Wire voting capability through the edition-composer seam

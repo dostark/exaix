@@ -8,6 +8,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { HitlPolicyEvaluator } from "../mod.ts";
+import { HITL_EVAL_BUDGET_MS } from "@exaix/core";
 import type { HitlRule } from "@exaix/schemas/hitl.ts";
 
 Deno.test("evaluator: tool + path_pattern match", () => {
@@ -125,7 +126,7 @@ Deno.test("[security] evaluator: absent target arg fails safe to require confirm
   assertEquals(result.source, "blueprint");
 });
 
-Deno.test("[security] evaluator: null-byte arg is rejected", () => {
+Deno.test("[security] evaluator: null-byte arg triggers mandatory block", () => {
   const eval_ = new HitlPolicyEvaluator([]);
   const blueprintRules: HitlRule[] = [
     { tool: "write_file", path_pattern: "**/.env*" },
@@ -133,7 +134,13 @@ Deno.test("[security] evaluator: null-byte arg is rejected", () => {
   const result = eval_.evaluate(blueprintRules, "write_file", {
     path: ".env\u0000",
   });
-  assertEquals(result, null, "Null-byte arg should be rejected (no match)");
+  assert(result !== null, "Null-byte arg should trigger a mandatory block");
+  assertEquals(result.source, "mandatory");
+  assertEquals(result.rule.tool, "write_file");
+  assert(
+    result.rule.reason?.includes("Null byte"),
+    `Expected reason about null byte, got: ${result.rule.reason}`,
+  );
 });
 
 Deno.test("benchmark: 50-rule unmatched evaluation under HITL_EVAL_BUDGET_MS", () => {
@@ -149,7 +156,7 @@ Deno.test("benchmark: 50-rule unmatched evaluation under HITL_EVAL_BUDGET_MS", (
   const elapsed = performance.now() - start;
   const avgPerCall = elapsed / 100;
   assert(
-    avgPerCall < 5,
-    `Average evaluation time ${avgPerCall.toFixed(3)}ms exceeds budget of 5ms`,
+    avgPerCall < HITL_EVAL_BUDGET_MS,
+    `Average evaluation time ${avgPerCall.toFixed(3)}ms exceeds budget of ${HITL_EVAL_BUDGET_MS}ms`,
   );
 });

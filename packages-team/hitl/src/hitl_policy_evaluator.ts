@@ -14,11 +14,7 @@
 import { globToRegExp } from "@std/path";
 import { PathSecurity, PathTraversalError } from "@exaix/tool-runtime";
 import type { HitlRule } from "@exaix/schemas/hitl.ts";
-import type {
-  HitlRuleSource,
-  IHitlPolicyEvaluator,
-  LogMetadata,
-} from "@exaix/core/types";
+import type { HitlRuleSource, IHitlPolicyEvaluator, LogMetadata } from "@exaix/core/types";
 
 export class HitlPolicyEvaluator implements IHitlPolicyEvaluator {
   #mandatoryRules: HitlRule[];
@@ -35,7 +31,13 @@ export class HitlPolicyEvaluator implements IHitlPolicyEvaluator {
     for (const key in toolArgs) {
       const val = toolArgs[key];
       if (typeof val === "string" && val.includes("\0")) {
-        return null;
+        return {
+          rule: {
+            tool: toolName,
+            reason: "Null byte detected in tool argument",
+          },
+          source: "mandatory" as HitlRuleSource,
+        };
       }
     }
 
@@ -126,8 +128,6 @@ export class HitlPolicyEvaluator implements IHitlPolicyEvaluator {
     if (candidateTables === undefined || candidateTables === null) return true;
     if (!Array.isArray(candidateTables)) return true;
 
-    return candidateTables.some((t) =>
-      typeof t === "string" && allowedTables.includes(t)
-    );
+    return candidateTables.some((t) => typeof t === "string" && allowedTables.includes(t));
   }
 }
