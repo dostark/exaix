@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-17T15:05:59.532Z",
+  "generated_at": "2026-06-17T19:15:03.195Z",
   "docs": [
     {
       "path": ".copilot/prompts/infra.prompt.md",
@@ -701,8 +701,8 @@
       "agent": "senior-coder",
       "scope": "dev",
       "title": "Post-Gap Analysis Skill (#post-gap-analysis)",
-      "short_summary": "Deep review of an existing phase planning document: checks implementation against plan, finds gaps, and writes remediation steps back into the document.",
-      "version": "1.4",
+      "short_summary": "Deep review of an existing phase planning document: checks implementation against plan, evaluates code quality (style, TS idiomacy, defensive programming, performance, dependencies), finds gaps, and writes remediation steps back into the document.",
+      "version": "1.5",
       "topics": [
         "planning",
         "gap-analysis",
@@ -710,7 +710,10 @@
         "tdd",
         "architecture",
         "quality",
-        "security"
+        "security",
+        "code-style",
+        "typescript",
+        "performance"
       ],
       "qwen_skill": "post-gap-analysis",
       "chunks": [
