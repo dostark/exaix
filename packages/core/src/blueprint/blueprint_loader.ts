@@ -14,7 +14,6 @@ import { z } from "zod";
 import { DataFormat } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_IDENTITIES_PATH, McpToolName } from "@exaix/core";
-import { HitlPolicySchema } from "@exaix/schemas/hitl.ts";
 
 /**
  * Fully loaded and validated blueprint
@@ -68,6 +67,18 @@ export interface IBlueprintLoaderOptions {
 // ============================================================================
 // Blueprint Schema (Extended for Runtime)
 // ============================================================================
+
+/** Inline HITL policy schema — avoids runtime cross-package import from @exaix/schemas. */
+const HitlRuleSchema = z.object({
+  command_pattern: z.string().optional(),
+  path_pattern: z.string().optional(),
+  branch_pattern: z.string().optional(),
+  tables: z.array(z.string()).optional(),
+  reason: z.string().min(1),
+});
+const HitlPolicySchema = z.object({
+  require_secondary_approval: z.array(HitlRuleSchema).default([]),
+});
 
 /**
  * Extended schema for runtime blueprint usage

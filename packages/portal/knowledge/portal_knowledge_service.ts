@@ -41,7 +41,9 @@ import {
   DEFAULT_NONE_VALUE,
   GIT_HISTORY_COMMIT_LIMIT,
   GIT_HISTORY_SINCE,
+  LANGUAGE_SOURCE_EXTENSIONS,
   PortalAnalysisMode,
+  TS_JS_EXTENSIONS,
 } from "@exaix/core";
 
 import { HnswVectorIndex, type IVectorIndexSnapshot } from "@exaix/memory";
@@ -264,16 +266,19 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
       architectureInferenceFailed = inferrer.architectureInferenceFailed;
     }
 
-    // Strategy 6: symbol extraction (standard/deep + TS/JS) — uses all TS/JS files
+    // Strategy 6: symbol extraction (standard/deep + language-aware selection) — uses source
+    // files matching the primary language's extensions (Phase 119 Step 2). Falls back to
+    // TS_JS_EXTENSIONS for unrecognized languages (backward-compatible).
     let symbolMap: IPortalKnowledge["symbolMap"] = [];
     let symbolSourceFilesScanned: number | undefined;
     if (resolvedMode !== PortalAnalysisMode.QUICK) {
       // Select the extractor by primary language (Phase 115 Step 4); TS/JS → deno-doc extractor,
-      // other languages → no-op ([]) unless a paid edition registered one.
+      // other languages → registered extractor (Solo: Python; Team: extended set) or no-op.
       const extractor = this._symbolExtractorRegistry.getForLanguage(primaryLanguage);
-      const allTsFiles = fileList.filter((f) => /\.(ts|tsx|js|jsx|mjs|cjs)$/.test(f));
-      symbolSourceFilesScanned = allTsFiles.length;
-      symbolMap = await extractor.extractSymbols(portalPath, allTsFiles, {
+      const sourceExtensions = LANGUAGE_SOURCE_EXTENSIONS[primaryLanguage] ?? TS_JS_EXTENSIONS;
+      const sourceFiles = fileList.filter((f) => sourceExtensions.some((ext) => f.endsWith(ext)));
+      symbolSourceFilesScanned = sourceFiles.length;
+      symbolMap = await extractor.extractSymbols(portalPath, sourceFiles, {
         primaryLanguage,
         allFilePaths: fileList,
       });

@@ -7,6 +7,9 @@
  * inference, persistence, and knowledge service.
  */
 
+export { TreeSitterSymbolExtractor } from "./tree_sitter_symbol_extractor.ts";
+export { PythonSymbolExtractor } from "./python_symbol_extractor.ts";
+export * from "./symbol_extraction_constants.ts";
 export { analyzeDirectory, type IWalkResult, walkDirectory } from "./directory_analyzer.ts";
 export { type IConfigParseResult, parseConfigFiles } from "./config_parser.ts";
 export { identifyKeyFiles } from "./key_file_identifier.ts";

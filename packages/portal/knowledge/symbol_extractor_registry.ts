@@ -11,8 +11,9 @@
  * @related-files [packages/portal/knowledge/symbol_extractor.ts, packages/portal/knowledge/portal_knowledge_service.ts]
  */
 
-import { LANG_JAVASCRIPT, LANG_TYPESCRIPT } from "@exaix/core";
+import { LANG_JAVASCRIPT, LANG_PYTHON, LANG_TYPESCRIPT } from "@exaix/core";
 import { type IDocCommandRunner, type ISymbolExtractor, SymbolExtractor } from "./symbol_extractor.ts";
+import { PythonSymbolExtractor } from "./python_symbol_extractor.ts";
 
 /** Selects an ISymbolExtractor by language; lets paid editions register more extractors. */
 export interface ISymbolExtractorRegistry {
@@ -50,5 +51,7 @@ export function createDefaultSymbolExtractorRegistry(runner?: IDocCommandRunner)
   const tsExtractor = runner ? new SymbolExtractor(runner) : new SymbolExtractor();
   registry.register(LANG_TYPESCRIPT, tsExtractor);
   registry.register(LANG_JAVASCRIPT, tsExtractor);
+  // Phase 119: Python tree-sitter extractor ships in Solo (MIT) alongside TS/JS.
+  registry.register(LANG_PYTHON, new PythonSymbolExtractor());
   return registry;
 }

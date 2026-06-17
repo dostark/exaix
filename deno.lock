@@ -44,7 +44,16 @@
     "jsr:@std/yaml@^1.1.1": "1.1.1",
     "npm:@babel/parser@7.29.3": "7.29.3",
     "npm:ai-token-estimator@1.7.1": "1.7.1",
-    "npm:typescript@6.0.3": "6.0.3"
+    "npm:tree-sitter-go@*": "0.25.0",
+    "npm:tree-sitter-go@0.25.0": "0.25.0",
+    "npm:tree-sitter-java@*": "0.23.5",
+    "npm:tree-sitter-java@0.23.5": "0.23.5",
+    "npm:tree-sitter-python@*": "0.25.0",
+    "npm:tree-sitter-python@0.25.0": "0.25.0",
+    "npm:tree-sitter-rust@0.24.0": "0.24.0",
+    "npm:typescript@6.0.3": "6.0.3",
+    "npm:web-tree-sitter@*": "0.26.9",
+    "npm:web-tree-sitter@0.26.9": "0.26.9"
   },
   "jsr": {
     "@cliffy/command@1.2.1": {
@@ -204,9 +213,51 @@
     "ai-token-estimator@1.7.1": {
       "integrity": "sha512-4li0kKJNgC9+DUdX5b4RCQQ+KXm46r9IK9Ya8NoLRzbiKpz996dOHwJMwuLb9rXu1zBXIEoawtS8u45We4zg3w=="
     },
+    "node-addon-api@8.8.0": {
+      "integrity": "sha512-c5Ko1fZJIJmzhFIkhRN76WTq+fC6tWnGy9CXA0fA+XygsWZmEwG8vmbkNqxMyoaa0Tin4djul49NzdVcJJcjeA=="
+    },
+    "node-gyp-build@4.8.4": {
+      "integrity": "sha512-LA4ZjwlnUblHVgq0oBF3Jl/6h/Nvs5fzBLwdEF4nuxnFdsfajde4WfxtJr3CaiH+F6ewcIB/q4jQ4UzPyid+CQ==",
+      "bin": true
+    },
+    "tree-sitter-go@0.25.0": {
+      "integrity": "sha512-APBc/Dq3xz/e35Xpkhb1blu5UgW+2E3RyGWawZSCNcbGwa7jhSQPS8KsUupuzBla8PCo8+lz9W/JDJjmfRa2tw==",
+      "dependencies": [
+        "node-addon-api",
+        "node-gyp-build"
+      ],
+      "scripts": true
+    },
+    "tree-sitter-java@0.23.5": {
+      "integrity": "sha512-Yju7oQ0Xx7GcUT01mUglPP+bYfvqjNCGdxqigTnew9nLGoII42PNVP3bHrYeMxswiCRM0yubWmN5qk+zsg0zMA==",
+      "dependencies": [
+        "node-addon-api",
+        "node-gyp-build"
+      ],
+      "scripts": true
+    },
+    "tree-sitter-python@0.25.0": {
+      "integrity": "sha512-eCmJx6zQa35GxaCtQD+wXHOhYqBxEL+bp71W/s3fcDMu06MrtzkVXR437dRrCrbrDbyLuUDJpAgycs7ncngLXw==",
+      "dependencies": [
+        "node-addon-api",
+        "node-gyp-build"
+      ],
+      "scripts": true
+    },
+    "tree-sitter-rust@0.24.0": {
+      "integrity": "sha512-NWemUDf629Tfc90Y0Z55zuwPCAHkLxWnMf2RznYu4iBkkrQl2o/CHGB7Cr52TyN5F1DAx8FmUnDtCy9iUkXZEQ==",
+      "dependencies": [
+        "node-addon-api",
+        "node-gyp-build"
+      ],
+      "scripts": true
+    },
     "typescript@6.0.3": {
       "integrity": "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==",
       "bin": true
+    },
+    "web-tree-sitter@0.26.9": {
+      "integrity": "sha512-YJwSHANl6XFgeEjB8nitgj0qZYt5gkIesJ4w2srS2wcLB4GUa4xcOkM0YaMsU6WNR53YVIkDSY7Ej4pf3IXtCA=="
     }
   },
   "remote": {
@@ -243,7 +294,12 @@
       "jsr:@std/toml@^1.0.11",
       "jsr:@std/yaml@^1.1.1",
       "npm:@babel/parser@7.29.3",
-      "npm:typescript@6.0.3"
+      "npm:tree-sitter-go@0.25.0",
+      "npm:tree-sitter-java@0.23.5",
+      "npm:tree-sitter-python@0.25.0",
+      "npm:tree-sitter-rust@0.24.0",
+      "npm:typescript@6.0.3",
+      "npm:web-tree-sitter@0.26.9"
     ],
     "members": {
       "packages-team/ai-vertex": {
@@ -402,6 +458,7 @@
     "links": {
       "jsr:@exaix-team/guardrail@0.1.0": {},
       "jsr:@exaix-team/hitl@0.1.0": {},
+      "jsr:@exaix-team/portal-extractors@0.1.0": {},
       "jsr:@exaix-team/voting@0.1.0": {}
     }
   }

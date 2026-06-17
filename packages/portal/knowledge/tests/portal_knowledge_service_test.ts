@@ -15,12 +15,16 @@ import { ensureDir } from "@std/fs";
 import {
   type IDocCommandRunner,
   type IKnowledgeInvalidationStrategy,
+  type ISymbolExtractor,
+  type ISymbolExtractorOptions,
   PortalKnowledgeService,
+  SymbolExtractorRegistry,
 } from "@exaix/portal/knowledge";
 import type { IMemoryBankService, IPortalKnowledgeConfig } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IEmbeddingProvider, IModelProvider } from "@exaix/ai";
 import { KnowledgeAnalysisMode, KnowledgeValidityReason, PortalAnalysisMode } from "@exaix/core";
+import type { ISymbolEntry } from "@exaix/schemas";
 
 // ---------------------------------------------------------------------------
 // Mock helpers
@@ -108,6 +112,44 @@ async function makeTempPortal(): Promise<string> {
     JSON.stringify({ tasks: { test: "deno test" } }),
   );
   return dir;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 119 Step 2: language-aware file-selection helpers
+// ---------------------------------------------------------------------------
+
+/** Capturing extractor records the filePaths passed to extractSymbols(). */
+class CapturingExtractor implements ISymbolExtractor {
+  lastFilePaths: string[] = [];
+  extractSymbols(
+    _portalPath: string,
+    filePaths: string[],
+    _options: ISymbolExtractorOptions,
+  ): Promise<ISymbolEntry[]> {
+    this.lastFilePaths = filePaths.slice();
+    return Promise.resolve([]);
+  }
+}
+
+/** Temp portal where Python files dominate (3 .py + 1 .ts), so primaryLanguage = "python". */
+async function makeTempPortalPython(): Promise<{
+  dir: string;
+  pyFiles: string[];
+  tsFiles: string[];
+}> {
+  const dir = await Deno.makeTempDir({ prefix: "pks_py_" });
+  await Deno.mkdir(join(dir, "src"), { recursive: true });
+  // Python files (dominant)
+  await Deno.writeTextFile(join(dir, "src", "main.py"), "def main(): pass\n");
+  await Deno.writeTextFile(join(dir, "src", "utils.py"), "def util(): pass\n");
+  await Deno.writeTextFile(join(dir, "src", "models.py"), "class Model: pass\n");
+  // Non-dominant TS file
+  await Deno.writeTextFile(join(dir, "src", "config.ts"), "export const config = {};\n");
+  return {
+    dir,
+    pyFiles: ["src/main.py", "src/utils.py", "src/models.py"],
+    tsFiles: ["src/config.ts"],
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -643,6 +685,80 @@ Deno.test("[PortalKnowledgeService] overlapping sentence groups provide broader 
     await Deno.remove(tempDir, { recursive: true });
   }
 });
+
+// ============================================================================
+// Phase 119 Step 2 — language-aware source-file selection
+// ============================================================================
+
+Deno.test(
+  "[PortalKnowledgeService] selects .py files for a python portal (language-aware filter)",
+  async () => {
+    const { dir, pyFiles, tsFiles } = await makeTempPortalPython();
+    try {
+      const pyExtractor = new CapturingExtractor();
+      const registry = new SymbolExtractorRegistry();
+      registry.register("python", pyExtractor);
+      const svc = new PortalKnowledgeService({
+        config: makeConfig({
+          useLlmInference: false,
+          enableAstAnalysis: false,
+          enableGitHistoryAnalysis: false,
+        }),
+        memoryBank: makeMockMemoryBank(),
+        symbolExtractorRegistry: registry,
+        runner: makeMockDocRunner(),
+      });
+      await svc.analyze("py-portal", dir, PortalAnalysisMode.STANDARD);
+      // All .py files should be passed to the extractor
+      for (const pyFile of pyFiles) {
+        assert(
+          pyExtractor.lastFilePaths.some((f) => f.endsWith(pyFile)),
+          `expected .py file in extractor paths: ${pyFile}`,
+        );
+      }
+      // .ts files should NOT be passed (Python is dominant)
+      for (const tsFile of tsFiles) {
+        assertEquals(
+          pyExtractor.lastFilePaths.some((f) => f.endsWith(tsFile)),
+          false,
+          `.ts file should NOT be passed for a python portal: ${tsFile}`,
+        );
+      }
+    } finally {
+      await Deno.remove(dir, { recursive: true });
+    }
+  },
+);
+
+Deno.test(
+  "[PortalKnowledgeService][regression] selects the same TS/JS files for a typescript portal (language-aware filter)",
+  async () => {
+    const { dir, tsFileCount } = await makeTempPortalMultiFile();
+    try {
+      const tsExtractor = new CapturingExtractor();
+      const registry = new SymbolExtractorRegistry();
+      registry.register("typescript", tsExtractor);
+      const svc = new PortalKnowledgeService({
+        config: makeConfig({
+          useLlmInference: false,
+          enableAstAnalysis: false,
+          enableGitHistoryAnalysis: false,
+        }),
+        memoryBank: makeMockMemoryBank(),
+        symbolExtractorRegistry: registry,
+        runner: makeMockDocRunner(),
+      });
+      await svc.analyze("ts-portal", dir, PortalAnalysisMode.STANDARD);
+      assertEquals(
+        tsExtractor.lastFilePaths.length,
+        tsFileCount,
+        `TS extractor should receive all ${tsFileCount} TS/JS files`,
+      );
+    } finally {
+      await Deno.remove(dir, { recursive: true });
+    }
+  },
+);
 
 // ============================================================================
 // Step 105.11 — Strategy 6 all-TS-files wiring + symbolSourceFilesScanned

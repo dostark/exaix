@@ -38,7 +38,11 @@ import { createEmbeddingProvider } from "@exaix/ai/embeddings/embedding_provider
 import type { IEmbeddingProviderConfig } from "@exaix/ai/embeddings/embedding_provider_factory.ts";
 import { NotificationService } from "@exaix/core/notification";
 import { MemoryBankAdapter } from "../../apps/common/adapters/memory_bank_adapter.ts";
-import { PortalKnowledgeService } from "@exaix/portal/knowledge";
+import {
+  createDefaultSymbolExtractorRegistry,
+  type ISymbolExtractorRegistry,
+  PortalKnowledgeService,
+} from "@exaix/portal/knowledge";
 import type { IPortalKnowledgeConfig, PortalAnalysisMode } from "@exaix/core/types";
 import { createConfigReloadHandler } from "@exaix/core/config";
 import { GracefulShutdown } from "./src/graceful_shutdown.ts";
@@ -264,10 +268,15 @@ if (import.meta.main) {
       gitHistoryCommitLimit: pkCfg.git_history_commit_limit,
       gitHistorySince: pkCfg.git_history_since,
     };
+    // Build per-language symbol-extractor registry (Phase 119 Step 4):
+    // Solo baseline includes TS/JS + Python tree-sitter; Team edition adds
+    // extended-language extractors via the composer hook (below, at :347).
+    const symbolRegistry: ISymbolExtractorRegistry = createDefaultSymbolExtractorRegistry();
     const portalKnowledge = new PortalKnowledgeService({
       config: portalKnowledgeConfig,
       memoryBank,
       embeddingProvider,
+      symbolExtractorRegistry: symbolRegistry,
     });
 
     // Create central application context
@@ -349,6 +358,7 @@ if (import.meta.main) {
         logger,
         flowRunner,
         _editionComposer,
+        symbolRegistry,
         hitlPolicyEvaluator,
       );
     }

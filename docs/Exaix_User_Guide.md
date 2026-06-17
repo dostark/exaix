@@ -2597,6 +2597,22 @@ ignore_patterns       = ["node_modules", ".git", "dist", "build"]
 Knowledge snapshots are saved at `Memory/Projects/{alias}/knowledge.json`. You can
 inspect them directly or via `exactl portal knowledge <alias> --json`.
 
+**Supported languages for symbol extraction:**
+
+The portal knowledge pipeline produces a `symbolMap` — a ranked index of exported
+symbols. The languages available depend on edition:
+
+| Edition | Languages                                                             |
+| ------- | --------------------------------------------------------------------- |
+| Solo    | TypeScript, JavaScript (via `deno doc`), **Python** (via tree-sitter) |
+| Team    | Solo baseline + extended set: Rust, Go, Java (via tree-sitter)        |
+| None    | All other languages yield an empty map (fail-soft, no error)          |
+
+Python extraction uses a local tree-sitter WASM grammar — no network access, no
+native code (`--allow-ffi` not required). Extended-language extractors (Team)
+follow the same pattern. Symbol extraction is primary-language-scoped: only the
+dominant language's symbols are mapped in mixed-language portals.
+
 ---
 
 ## 6. Advanced Agent Features
