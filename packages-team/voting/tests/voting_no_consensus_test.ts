@@ -9,10 +9,7 @@ import { assertEquals } from "@std/assert";
 import type { VotingGroupConfig } from "@exaix/schemas/voting.ts";
 import { VotingModelSlot, VotingStrategy } from "@exaix/core/types";
 import type { IExecutor, IPlanAmendmentService } from "@exaix/core/types";
-import type {
-  IPlanAmendmentPatch,
-  IPlanAmendmentTrigger,
-} from "@exaix/schemas/plan_amendment.ts";
+import type { IPlanAmendmentPatch, IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
 import { VotingConsensusService } from "../mod.ts";
 import { createMockLogger } from "@exaix/testing";
 import { DomainEventType } from "@exaix/core/events";
@@ -39,8 +36,7 @@ Deno.test("[voting] halt_on_no_consensus triggers amendment gate", async () => {
         removes: [],
         createdAt: "",
       }),
-    applyApprovedAmendment: (_content: string, _patch: IPlanAmendmentPatch) =>
-      "",
+    applyApprovedAmendment: (_content: string, _patch: IPlanAmendmentPatch) => "",
   };
 
   const executor: IExecutor = {
@@ -70,9 +66,7 @@ Deno.test("[voting] halt_on_no_consensus triggers amendment gate", async () => {
   assertEquals(amendmentCalled, true);
   assertEquals(lastTrigger?.source, "voting_no_consensus");
   assertEquals(
-    logger.info.calls.filter((c) =>
-      c.args[0] === DomainEventType.VotingNoConsensus
-    ).length,
+    logger.info.calls.filter((c) => c.args[0] === DomainEventType.VotingNoConsensus).length,
     1,
   );
 });
