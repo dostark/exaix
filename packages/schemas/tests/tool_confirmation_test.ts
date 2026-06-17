@@ -9,6 +9,7 @@
 
 import { assertEquals, assertFalse } from "@std/assert";
 import { ToolConfirmationDecisionSchema, ToolConfirmationRequestSchema } from "@exaix/schemas/tool_confirmation.ts";
+import { initTestDbService } from "@exaix/testing";
 
 // ── ToolConfirmationRequestSchema ─────────────────────────────────────────────
 
@@ -112,6 +113,77 @@ Deno.test("ToolConfirmationDecisionSchema: approval without optional fields is v
   assertEquals(result.approved, true);
   assertEquals(result.reason, undefined);
   assertEquals(result.decidedBy, undefined);
+});
+
+Deno.test("ToolConfirmationRequestSchema: optional reason round-trips", () => {
+  const withReason = ToolConfirmationRequestSchema.parse({
+    id: "550e8400-e29b-41d4-a716-446655440000",
+    toolName: "git_commit",
+    args: { path: "src/main.ts" },
+    stepId: "step-1",
+    traceId: "trace-abc",
+    requestedAt: "2026-06-17T10:00:00.000Z",
+    expiresAt: "2026-06-17T10:02:00.000Z",
+    reason: "Migration commit requires approval",
+  });
+  assertEquals(withReason.reason, "Migration commit requires approval");
+
+  const withoutReason = ToolConfirmationRequestSchema.parse({
+    id: "550e8400-e29b-41d4-a716-446655440000",
+    toolName: "git_commit",
+    args: { path: "src/main.ts" },
+    stepId: "step-1",
+    traceId: "trace-abc",
+    requestedAt: "2026-06-17T10:00:00.000Z",
+    expiresAt: "2026-06-17T10:02:00.000Z",
+  });
+  assertEquals(withoutReason.reason, undefined);
+});
+
+Deno.test("ToolConfirmationRequestSchema: stepId now optional", () => {
+  const withStepId = ToolConfirmationRequestSchema.parse({
+    id: "550e8400-e29b-41d4-a716-446655440000",
+    toolName: "git_commit",
+    args: {},
+    stepId: "step-1",
+    traceId: "trace-abc",
+    requestedAt: "2026-06-17T10:00:00.000Z",
+    expiresAt: "2026-06-17T10:02:00.000Z",
+  });
+  assertEquals(withStepId.stepId, "step-1");
+
+  const withoutStepId = ToolConfirmationRequestSchema.parse({
+    id: "550e8400-e29b-41d4-a716-446655440000",
+    toolName: "git_commit",
+    args: {},
+    traceId: "trace-abc",
+    requestedAt: "2026-06-17T10:00:00.000Z",
+    expiresAt: "2026-06-17T10:02:00.000Z",
+  });
+  assertEquals(withoutStepId.stepId, undefined);
+});
+
+Deno.test("ToolConfirmationRequestSchema: synthetic stepId round-trips through insertToolConfirmationRequest", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const request = {
+      id: crypto.randomUUID(),
+      toolName: "git_commit",
+      args: { path: "src/main.ts" },
+      stepId: "tool:" + crypto.randomUUID() as string,
+      traceId: "trace-abc",
+      requestedAt: "2026-06-17T10:00:00.000Z",
+      expiresAt: "2026-06-17T10:02:00.000Z",
+    };
+    const parsed = ToolConfirmationRequestSchema.parse(request);
+    await db.insertToolConfirmationRequest(parsed);
+    const pending = await db.listPendingToolConfirmations();
+    const found = pending.find((r) => r.id === request.id);
+    assertEquals(found?.stepId, request.stepId);
+    assertEquals(found?.toolName, "git_commit");
+  } finally {
+    await cleanup();
+  }
 });
 
 Deno.test("ToolConfirmationDecisionSchema: invalid UUID on id fails", () => {

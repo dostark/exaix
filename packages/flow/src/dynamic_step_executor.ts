@@ -17,7 +17,8 @@ import {
   TOOL_CONFIRMATION_EVENT_DENIED,
   ToolErrorCode,
 } from "@exaix/core";
-import type { IToolConfirmationInterceptor, IToolManifestResolver } from "@exaix/core/types";
+import type { IHitlPolicyEvaluator, IToolConfirmationInterceptor, IToolManifestResolver } from "@exaix/core/types";
+import { DomainEventType } from "@exaix/core/events";
 import { DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS, type McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 import { MILESTONE_TOOL_CALL_COMPLETED, MILESTONE_TOOL_CALL_STARTED } from "@exaix/core";
@@ -92,6 +93,7 @@ export class DynamicStepExecutor {
     private readonly activityJournal: IActivityJournal,
     readonly confirmationInterceptor?: IToolConfirmationInterceptor,
     milestoneEmitter?: IMilestoneEmitter,
+    private readonly hitlPolicyEvaluator?: IHitlPolicyEvaluator,
   ) {
     this.emitMilestoneFn = milestoneEmitter?.emit.bind(milestoneEmitter);
   }
@@ -175,11 +177,29 @@ export class DynamicStepExecutor {
         );
       }
 
-      if (this.mcpClient.requiresHumanApproval(decision.tool)) {
+      const policyMatch = this.hitlPolicyEvaluator?.evaluate(
+        identity.hitl?.require_secondary_approval ?? [],
+        decision.tool,
+        decision.args ?? {},
+      );
+
+      if (this.mcpClient.requiresHumanApproval(decision.tool) || policyMatch) {
         if (!this.confirmationInterceptor) {
           throw new Error(
             `Dynamic step "${step.id}": tool "${decision.tool}" requires human approval but no confirmation interceptor is configured`,
           );
+        }
+
+        if (policyMatch) {
+          await this.activityJournal.log({
+            traceId: opts.traceId,
+            stepId: step.id,
+            event: DomainEventType.HitlPolicyMatched,
+            tool: decision.tool,
+            ruleSource: policyMatch.source,
+            reason: policyMatch.rule.reason,
+            surface: "dynamic",
+          });
         }
 
         const confirmationRequest = this.createConfirmationRequest(
@@ -188,6 +208,7 @@ export class DynamicStepExecutor {
           step.id,
           opts.traceId,
           opts.config?.tools?.confirmation_timeout_s,
+          policyMatch?.rule.reason,
         );
         const approvalDecision = await this.confirmationInterceptor.requestApproval(confirmationRequest);
 
@@ -314,6 +335,7 @@ export class DynamicStepExecutor {
     stepId: string,
     traceId: string,
     timeoutS?: number,
+    reason?: string,
   ): ToolConfirmationRequest {
     const requestedAt = new Date();
     const expiresAt = new Date(
@@ -326,6 +348,7 @@ export class DynamicStepExecutor {
       args,
       stepId,
       traceId,
+      reason,
       requestedAt: requestedAt.toISOString(),
       expiresAt: expiresAt.toISOString(),
     };

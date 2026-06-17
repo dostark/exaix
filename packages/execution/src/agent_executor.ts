@@ -11,6 +11,7 @@ import { isAbsolute, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
+import type { HitlPolicy } from "@exaix/schemas/hitl.ts";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
@@ -103,6 +104,8 @@ export interface IAgentFileBlueprint {
   permitted_tools?: string[];
   allowed_paths?: string[];
   systemPrompt: string;
+  /** Per-action HITL governance rules (Phase 118). Resolved by ExecutionLoop for ToolRegistry path. */
+  hitl?: HitlPolicy;
 }
 
 /**

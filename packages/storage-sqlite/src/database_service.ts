@@ -401,7 +401,7 @@ export class DatabaseService implements IDatabaseService {
         request.id,
         request.toolName,
         JSON.stringify(request.args),
-        request.stepId,
+        request.stepId ?? "",
         request.traceId,
         request.requestedAt,
         request.expiresAt,

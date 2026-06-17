@@ -28,6 +28,7 @@ export * from "./i_display_service.ts";
 export * from "./i_executor.ts";
 export * from "./i_flow_validator_service.ts";
 export * from "./i_voting_consensus_service.ts";
+export * from "./i_hitl_policy_evaluator.ts";
 export * from "./i_gate_evaluator.ts";
 export * from "./i_git_service.ts";
 export * from "./i_journal_service.ts";

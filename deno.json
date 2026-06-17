@@ -214,6 +214,8 @@
     "@exaix/flow/": "./packages/flow/src/",
     "@exaix-team/voting": "./packages-team/voting/mod.ts",
     "@exaix-team/voting/": "./packages-team/voting/src/",
+    "@exaix-team/hitl": "./packages-team/hitl/mod.ts",
+    "@exaix-team/hitl/": "./packages-team/hitl/src/",
     "@exaix-team/team-composer": "./packages-team/team-composer/mod.ts",
     "@exaix-team/team-composer/": "./packages-team/team-composer/"
   },

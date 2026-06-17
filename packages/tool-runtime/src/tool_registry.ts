@@ -17,9 +17,20 @@ import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 import { type IMiddlewarePipeline, type IPathSecurityOps, PathAccessError, PathTraversalError } from "./types.ts";
 import { createPathSecurity } from "./path_security.ts";
 import type { JSONValue } from "@exaix/core";
-import type { IApplicationContext, IServiceContext, ITool, IToolRegistry, IToolResult } from "@exaix/core/types";
+import type {
+  IApplicationContext,
+  IHitlPolicyEvaluator,
+  IServiceContext,
+  ITool,
+  IToolRegistry,
+  IToolResult,
+} from "@exaix/core/types";
+import type { IToolConfirmationInterceptor } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
+import type { HitlRule } from "@exaix/schemas/hitl.ts";
+import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
+import { DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S } from "@exaix/core";
 import type { IToolResultRemediationPolicy } from "@exaix/schemas/tool_result.ts";
 import type { IToolResultValidator } from "@exaix/schemas/tool_result_validator.ts";
 import {
@@ -48,6 +59,9 @@ export interface IToolRegistryConfig {
   validationEventLogger?: IEventLogger;
   middlewarePipeline?: IMiddlewarePipeline<IToolContext>;
   pathSecurity?: IPathSecurityOps;
+  confirmationInterceptor?: IToolConfirmationInterceptor;
+  hitlPolicyEvaluator?: IHitlPolicyEvaluator;
+  hitlBlueprintRules?: HitlRule[];
 }
 
 interface IToolContext extends IServiceContext {
@@ -296,6 +310,9 @@ export class ToolRegistry implements IToolRegistry {
   private validationReportContext?: IValidationReportContext;
   private remediationPolicyResolver?: RemediationPolicyResolver;
   private validationEventLogger?: IEventLogger;
+  private confirmationInterceptor?: IToolConfirmationInterceptor;
+  private hitlPolicyEvaluator?: IHitlPolicyEvaluator;
+  private hitlBlueprintRules?: HitlRule[];
 
   constructor(
     middlewarePipelineOrOptions?: IMiddlewarePipeline<IToolContext> | IToolRegistryConfig,
@@ -342,6 +359,9 @@ export class ToolRegistry implements IToolRegistry {
     this.validationReportContext = resolvedOptions?.validationReportContext;
     this.remediationPolicyResolver = resolvedOptions?.remediationPolicyResolver;
     this.validationEventLogger = resolvedOptions?.validationEventLogger ?? this.logger;
+    this.confirmationInterceptor = resolvedOptions?.confirmationInterceptor;
+    this.hitlPolicyEvaluator = resolvedOptions?.hitlPolicyEvaluator;
+    this.hitlBlueprintRules = resolvedOptions?.hitlBlueprintRules;
 
     this.registerCoreTools();
     this.registerCoreExecutors();
@@ -356,7 +376,41 @@ export class ToolRegistry implements IToolRegistry {
           success: false,
           error: `Tool '${ctx.toolName}' not found`,
         };
-        return; // Stop pipeline
+        return;
+      }
+      await next();
+    });
+
+    // HITL Confirmation Middleware (Phase 118 — per-action governance)
+    this.pipeline.use(async (ctx, next) => {
+      if (!this.hitlPolicyEvaluator) return await next();
+      const match = this.hitlPolicyEvaluator.evaluate(
+        this.hitlBlueprintRules ?? [],
+        ctx.toolName,
+        ctx.params,
+      );
+      if (!match) return await next();
+      if (this.logger) {
+        void this.logger.info(DomainEventType.HitlPolicyMatched, ctx.toolName, {
+          traceId: this.traceId,
+          tool: ctx.toolName,
+          ruleSource: match.source,
+          reason: match.rule.reason,
+          surface: "tool_registry",
+        }, this.traceId);
+      }
+      if (!this.confirmationInterceptor) {
+        if (match.source === "mandatory") {
+          ctx.result = this.#deniedResult(ctx.toolName, "HITL governance: no approver available");
+          return;
+        }
+        return await next();
+      }
+      const request = this.#buildRequest(ctx.toolName, ctx.params, match.rule.reason);
+      const decision = await this.confirmationInterceptor.requestApproval(request);
+      if (!decision.approved) {
+        ctx.result = this.#deniedResult(ctx.toolName, decision.reason);
+        return;
       }
       await next();
     });
@@ -392,6 +446,34 @@ export class ToolRegistry implements IToolRegistry {
         ctx.result = this.formatError(error);
       }
     });
+  }
+
+  #deniedResult(toolName: string, reason?: string): IToolResult {
+    return {
+      success: false,
+      error: `Tool '${toolName}' execution denied: ${reason ?? "HITL governance blocked"}`,
+    };
+  }
+
+  #buildRequest(
+    toolName: string,
+    params: Record<string, JSONValue>,
+    reason?: string,
+  ): ToolConfirmationRequest {
+    const requestedAt = new Date();
+    const expiresAt = new Date(
+      requestedAt.getTime() + DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S * 1000,
+    );
+    return {
+      id: crypto.randomUUID(),
+      toolName,
+      args: params as Record<string, unknown>,
+      stepId: "tool:" + crypto.randomUUID(),
+      traceId: this.traceId ?? "tool-registry",
+      reason,
+      requestedAt: requestedAt.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+    };
   }
 
   /**
