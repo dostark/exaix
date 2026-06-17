@@ -125,6 +125,8 @@
     "zod": "https://deno.land/x/zod@v3.22.4/mod.ts",
     "typescript": "npm:typescript@6.0.3",
     "@babel/parser": "npm:@babel/parser@7.29.3",
+    "web-tree-sitter": "npm:web-tree-sitter@0.26.9",
+    "tree-sitter-python": "npm:tree-sitter-python@0.25.0",
     "@std/flags": "jsr:@std/flags@^0.224.0",
     "@std/streams": "jsr:@std/streams@^1.1.1",
     "@std/io": "jsr:@std/io@^0.225.3",
@@ -216,6 +218,8 @@
     "@exaix-team/voting/": "./packages-team/voting/src/",
     "@exaix-team/hitl": "./packages-team/hitl/mod.ts",
     "@exaix-team/hitl/": "./packages-team/hitl/src/",
+    "@exaix-team/portal-extractors": "./packages-team/portal-extractors/mod.ts",
+    "@exaix-team/portal-extractors/": "./packages-team/portal-extractors/src/",
     "@exaix-team/team-composer": "./packages-team/team-composer/mod.ts",
     "@exaix-team/team-composer/": "./packages-team/team-composer/"
   },

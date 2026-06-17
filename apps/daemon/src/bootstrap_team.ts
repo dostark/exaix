@@ -10,11 +10,14 @@
 
 import { VotingCapabilityModule, VotingConsensusService } from "@exaix-team/voting";
 import { HitlCapabilityModule } from "@exaix-team/hitl";
+import { PortalExtractorsModule } from "@exaix-team/portal-extractors";
 import type { IExecutor, IHitlPolicyEvaluator } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { AgentExecutorAdapter, FlowRunner } from "@exaix/flow";
 import type { TeamComposer } from "@exaix-team/team-composer";
 import { CAP_VOTING, CAPABILITY_EDITION } from "@exaix/core/composer";
+import type { ISeamRegistryPlaceholder } from "@exaix/core/composer";
+import type { ISymbolExtractorRegistry } from "@exaix/portal/knowledge";
 import { EDITION_TEAM } from "@exaix/core";
 
 /**
@@ -29,6 +32,7 @@ export function registerTeamCapabilities(
   logger: IEventLogger,
   flowRunner: FlowRunner,
   composer: TeamComposer,
+  symbolRegistry: ISymbolExtractorRegistry,
   hitlPolicyEvaluator?: IHitlPolicyEvaluator,
 ): void {
   // Assert the capability-to-edition mapping is consistent at wiring time
@@ -59,8 +63,13 @@ export function registerTeamCapabilities(
   const votingModule = new VotingCapabilityModule(votingService, logger);
   composer.registerCapabilityModule(votingModule);
 
-  const registry = flowRunner.getStepHandlerRegistry();
+  // Phase 119: Register PortalExtractorsModule for extended-language symbol extraction
+  const portalExtractorsModule = new PortalExtractorsModule();
+  composer.registerCapabilityModule(portalExtractorsModule);
+
+  const stepRegistry = flowRunner.getStepHandlerRegistry();
   for (const module of composer.getModules()) {
-    module.registerFlowStepHandlers?.(registry);
+    module.registerFlowStepHandlers?.(stepRegistry);
+    module.registerSymbolExtractors?.(symbolRegistry as ISeamRegistryPlaceholder);
   }
 }

@@ -28,7 +28,11 @@ import { ArchiveService } from "@exaix/core/artifact";
 import { FlowValidatorImpl } from "@exaix/flow";
 import { ContextCardGenerator } from "@exaix/core/context";
 import { PortalService } from "@exaix/portal";
-import { PortalKnowledgeService } from "@exaix/portal/knowledge";
+import {
+  createDefaultSymbolExtractorRegistry,
+  type ISymbolExtractorRegistry,
+  PortalKnowledgeService,
+} from "@exaix/portal/knowledge";
 import { RequestService } from "@exaix/request";
 import { PlanService } from "@exaix/core/planning";
 import { PlanAmendmentService } from "@exaix/core/planning";
@@ -184,10 +188,12 @@ export async function initializeServices(
       gitHistorySince: cfg.portal_knowledge.git_history_since,
     };
 
+    const symbolRegistry: ISymbolExtractorRegistry = createDefaultSymbolExtractorRegistry();
     const portalKnowledge = new PortalKnowledgeService({
       config: portalKnowledgeConfig,
       memoryBank,
       provider: providerLocal,
+      symbolExtractorRegistry: symbolRegistry,
     });
 
     // Phase 118: Create HITL policy evaluator if Team/Enterprise edition

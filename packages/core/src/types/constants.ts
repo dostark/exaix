@@ -1513,6 +1513,10 @@ export const PORTAL_PREFIX_PATTERN = /@[a-zA-Z0-9_-]+\//g;
 /** Programming language identifiers */
 export const LANG_TYPESCRIPT = "typescript";
 export const LANG_JAVASCRIPT = "javascript";
+export const LANG_PYTHON = "python";
+export const LANG_RUST = "rust";
+export const LANG_GO = "go";
+export const LANG_JAVA = "java";
 
 /** JSON Schema draft-07 primitive type name constants. Used in tool manifest output_schema fields. */
 export const JsonSchemaType = {
