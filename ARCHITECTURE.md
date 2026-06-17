@@ -333,7 +333,43 @@ yet be relied on as a complete guarantee.
 
 ---
 
-## Voting & Consensus {#voting-consensus}
+## Per-Action HITL Governance {#hitl-governance}
+
+_Phase 118, Team/Enterprise Edition — gated by `CAP_HITL_GOVERNANCE`._
+
+Exaix provides **three distinct human checkpoints**, each with a different scope:
+
+| Checkpoint             | Scope                                               | Config                                    | Surface                                                      |
+| ---------------------- | --------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------ |
+| **Plan approval**      | Authorizes an entire plan before execution          | `amendment.hitl_timeout_ms`               | Plan gate                                                    |
+| **Amendment approval** | Authorizes plan changes during execution            | `amendment.hitl_timeout_ms`               | `PlanAmendmentGate`                                          |
+| **Per-action HITL**    | Pauses a specific tool invocation by argument match | `config.hitl.enabled` + `mandatory_rules` | `ToolRegistry` (primary) + `DynamicStepExecutor` (secondary) |
+
+### How it works
+
+A blueprint author declares which tool invocations need secondary approval via an optional
+`hitl.require_secondary_approval` block in the YAML frontmatter. An administrator can declare
+non-bypassable `config.hitl.mandatory_rules`. Both use the same `HitlRuleSchema` with per-argument
+glob matching (`path_pattern`, `command_pattern`, `branch_pattern`, `tables`).
+
+When a tool is invoked, a single `IHitlPolicyEvaluator` instance is consulted at **two call-sites**:
+
+1. **`ToolRegistry` pipeline (primary)** — a HITL middleware stage runs before the core executor,
+   covering all mutating tools (`write_file`, `git_commit`, `run_command`, etc.).
+2. **`DynamicStepExecutor` (secondary)** — the same evaluator is consulted at the existing Phase 79
+   decision point, covering read-biased tools in the ReAct loop.
+
+On a rule match, the pipeline journals a typed `HitlPolicyMatched` event (carrying the matched
+`rule.reason` and `surface: "tool_registry" | "dynamic"`) and routes through the existing
+`IToolConfirmationInterceptor`. On denial, the tool is short-circuited with a denied `IToolResult`.
+If no interceptor is available, **mandatory** rules fail closed (tool denied), while **blueprint-only**
+rules degrade gracefully (tool proceeds).
+
+The Team-only `HitlPolicyEvaluator` lives in the `@exaix-team/hitl` package.
+The MIT seam (`IHitlPolicyEvaluator`) is exported from `@exaix/core/types`.
+Solo edition injects no evaluator, producing identical behaviour to pre-P118.
+
+---
 
 The `voting_group` flow step type enables multi-agent consensus by fanning out N
 runner executions and resolving a winner via configurable strategy. It is a
@@ -583,9 +619,9 @@ For the component table, event flow mermaid diagram, database schema details, an
 
 ### Event Taxonomy {#event-taxonomy}
 
-All event type strings are defined as members of the `DomainEventType` const object in `packages/core/src/events/domain_event_types.ts`. Inline string literals for event actions are prohibited — every emission site must reference a `DomainEventType` member.
+All event type strings are defined as members of the `DomainEventType` const object (from `@exaix/core/events`). Inline string literals for event actions are prohibited — every emission site must reference a `DomainEventType` member.
 
-Event sources register with `EventRegistry` (`packages/core/src/events/event_registry.ts`) before emitting, which validates the source + event type combination before delegating to `EventLogger`. `EventLogger` is the single delivery gate: console → DB → event bus, in that order.
+Event sources register with `EventRegistry` (from `@exaix/core/events`) before emitting, which validates the source + event type combination before delegating to `EventLogger`. `EventLogger` is the single delivery gate: console → DB → event bus, in that order.
 
 For the full event type table grouped by domain, see `docs/Reference_Data.md#event-taxonomy`.
 
