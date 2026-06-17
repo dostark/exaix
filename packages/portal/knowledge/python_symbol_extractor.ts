@@ -13,6 +13,13 @@
 import type { QueryMatch } from "web-tree-sitter";
 import { TreeSitterSymbolExtractor } from "./tree_sitter_symbol_extractor.ts";
 import type { ISymbolEntry } from "@exaix/schemas";
+import {
+  SYM_DEF_PREFIX,
+  SYM_KIND_CLASS,
+  SYM_KIND_CONST,
+  SYM_KIND_FUNCTION,
+  SYM_NAME_CAPTURE,
+} from "./symbol_extraction_constants.ts";
 
 // ---------------------------------------------------------------------------
 // Python .scm query — mirrors tree-sitter-python's bundled tags.scm
@@ -29,9 +36,9 @@ const PYTHON_QUERY = `
 // ---------------------------------------------------------------------------
 
 const CAPTURE_KIND: Record<string, ISymbolEntry["kind"]> = {
-  "definition.function": "function",
-  "definition.class": "class",
-  "definition.constant": "const",
+  [`${SYM_DEF_PREFIX}function`]: SYM_KIND_FUNCTION,
+  [`${SYM_DEF_PREFIX}class`]: SYM_KIND_CLASS,
+  [`${SYM_DEF_PREFIX}constant`]: SYM_KIND_CONST,
 };
 
 // ---------------------------------------------------------------------------
@@ -51,15 +58,21 @@ const CAPTURE_KIND: Record<string, ISymbolEntry["kind"]> = {
  */
 export class PythonSymbolExtractor extends TreeSitterSymbolExtractor {
   protected readonly languageName = "python";
-  protected readonly grammarWasmSpecifier = "npm:tree-sitter-python/tree-sitter-python.wasm";
+  protected readonly grammarWasmSpecifier =
+    "npm:tree-sitter-python/tree-sitter-python.wasm";
+  protected readonly grammarNpmName = "tree-sitter-python";
+  protected readonly grammarVersion = "0.25.0";
+  protected readonly grammarWasmFilename = "tree-sitter-python.wasm";
 
   protected scmQuerySource(): string {
     return PYTHON_QUERY;
   }
 
   protected processMatch(match: QueryMatch, file: string): ISymbolEntry[] {
-    const defCap = match.captures.find((c) => c.name.startsWith("definition."));
-    const nameCap = match.captures.find((c) => c.name === "name");
+    const defCap = match.captures.find((c) =>
+      c.name.startsWith(SYM_DEF_PREFIX)
+    );
+    const nameCap = match.captures.find((c) => c.name === SYM_NAME_CAPTURE);
     if (!defCap || !nameCap) return [];
 
     const kind = CAPTURE_KIND[defCap.name];
@@ -108,7 +121,9 @@ export class PythonSymbolExtractor extends TreeSitterSymbolExtractor {
         const lastSegment = moduleName.split(".").pop();
         if (lastSegment) imports.push(lastSegment);
         // Also import each named import
-        const namedImports = m[2].split(",").map((s) => s.trim().split(" as ")[0]);
+        const namedImports = m[2].split(",").map((s) =>
+          s.trim().split(" as ")[0]
+        );
         imports.push(...namedImports);
       }
     }
@@ -126,7 +141,11 @@ export class PythonSymbolExtractor extends TreeSitterSymbolExtractor {
    * For class definitions, extract `class Name`.
    * For constants, extract `NAME = ...`.
    */
-  private _buildSignature(nodeText: string, nodeType: string, _name: string): string {
+  private _buildSignature(
+    nodeText: string,
+    nodeType: string,
+    _name: string,
+  ): string {
     const firstLine = nodeText.split("\n")[0].trim();
     if (nodeType === "function_definition") {
       return firstLine.replace(/\s*:\s*$/, "");
@@ -151,11 +170,13 @@ export class PythonSymbolExtractor extends TreeSitterSymbolExtractor {
     // Match the first triple-quoted string after the colon
     const m = nodeText.match(/"""(.*?)"""/s);
     if (m) {
-      return m[1].split("\n").map((l) => l.trim()).filter(Boolean).join(" ").trim();
+      return m[1].split("\n").map((l) => l.trim()).filter(Boolean).join(" ")
+        .trim();
     }
     const m2 = nodeText.match(/'''(.*?)'''/s);
     if (m2) {
-      return m2[1].split("\n").map((l) => l.trim()).filter(Boolean).join(" ").trim();
+      return m2[1].split("\n").map((l) => l.trim()).filter(Boolean).join(" ")
+        .trim();
     }
     return undefined;
   }

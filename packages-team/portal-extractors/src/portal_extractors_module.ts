@@ -7,16 +7,23 @@
  * mapping and registers each extended-language extractor through the composer seam.
  * The Python extractor is NOT registered here — it ships in Solo (MIT) via
  * createDefaultSymbolExtractorRegistry().
- *
- * Follow-on languages (Rust, Go, Java) will call registry.register() for their
- * extractor in registerSymbolExtractors() once implemented.
  * @architectural-layer Portal
  * @related-files [packages/core/src/composer/edition_composer.ts, packages/portal/knowledge/symbol_extractor_registry.ts]
  */
 
-import { EDITION_TEAM } from "@exaix/core";
-import { CAP_EXTENDED_LANG_EXTRACTION, CAPABILITY_EDITION } from "@exaix/core/composer";
-import type { ICapabilityModule, ISeamRegistryPlaceholder } from "@exaix/core/composer";
+import { EDITION_TEAM, LANG_GO, LANG_JAVA, LANG_RUST } from "@exaix/core";
+import {
+  CAP_EXTENDED_LANG_EXTRACTION,
+  CAPABILITY_EDITION,
+} from "@exaix/core/composer";
+import type {
+  ICapabilityModule,
+  ISeamRegistryPlaceholder,
+} from "@exaix/core/composer";
+import type { ISymbolExtractorRegistry } from "@exaix/portal/knowledge";
+import { RustSymbolExtractor } from "./rust_symbol_extractor.ts";
+import { GoSymbolExtractor } from "./go_symbol_extractor.ts";
+import { JavaSymbolExtractor } from "./java_symbol_extractor.ts";
 
 export class PortalExtractorsModule implements ICapabilityModule {
   constructor() {
@@ -30,9 +37,10 @@ export class PortalExtractorsModule implements ICapabilityModule {
     }
   }
 
-  registerSymbolExtractors(_registry: ISeamRegistryPlaceholder): void {
-    // Extended-language extractors (Rust, Go, Java, …) will be registered here
-    // in follow-on steps. The Python extractor is MIT/Solo and registered in
-    // createDefaultSymbolExtractorRegistry(), not through this module.
+  registerSymbolExtractors(registry: ISeamRegistryPlaceholder): void {
+    const symRegistry = registry as ISymbolExtractorRegistry;
+    symRegistry.register(LANG_RUST, new RustSymbolExtractor());
+    symRegistry.register(LANG_GO, new GoSymbolExtractor());
+    symRegistry.register(LANG_JAVA, new JavaSymbolExtractor());
   }
 }

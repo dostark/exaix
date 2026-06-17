@@ -13,7 +13,10 @@
 
 import { Language, Parser, Query, type QueryMatch } from "web-tree-sitter";
 import { join, resolve } from "@std/path";
-import type { ISymbolExtractor, ISymbolExtractorOptions } from "./symbol_extractor.ts";
+import type {
+  ISymbolExtractor,
+  ISymbolExtractorOptions,
+} from "./symbol_extractor.ts";
 import type { ISymbolEntry } from "@exaix/schemas";
 import {
   DEFAULT_SYMBOL_MAP_LIMIT,
@@ -22,7 +25,10 @@ import {
   SYMBOL_EXTRACT_MAX_NODES,
   SYMBOL_EXTRACT_TIMEOUT_MS,
 } from "@exaix/core";
-import { resolveNpmWasmPath } from "./npm_wasm_loader.ts";
+import {
+  resolveNpmPackageFile,
+  resolveNpmWasmPath,
+} from "./npm_wasm_loader.ts";
 
 // ---------------------------------------------------------------------------
 // Base class
@@ -39,8 +45,17 @@ import { resolveNpmWasmPath } from "./npm_wasm_loader.ts";
 export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
   protected abstract readonly languageName: string;
   protected abstract readonly grammarWasmSpecifier: string;
+  /** npm package name for the grammar (e.g. "tree-sitter-rust") — used for fallback resolution. */
+  protected abstract readonly grammarNpmName: string;
+  /** Grammar version (e.g. "0.24.0") — used for fallback resolution. */
+  protected abstract readonly grammarVersion: string;
+  /** Grammar WASM filename (e.g. "tree-sitter-rust.wasm"). */
+  protected abstract readonly grammarWasmFilename: string;
   protected abstract scmQuerySource(): string;
-  protected abstract processMatch(match: QueryMatch, file: string): ISymbolEntry[];
+  protected abstract processMatch(
+    match: QueryMatch,
+    file: string,
+  ): ISymbolEntry[];
   protected abstract extractImports(source: string): string[];
 
   private _initPromise: Promise<void> | null = null;
@@ -58,9 +73,23 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
   }
 
   private async _doInit(): Promise<void> {
-    const coreWasmPath = resolveNpmWasmPath("npm:web-tree-sitter/web-tree-sitter.wasm");
+    const coreWasmPath = resolveNpmWasmPath(
+      "npm:web-tree-sitter/web-tree-sitter.wasm",
+    );
     const wasmDir = resolve(join(coreWasmPath, ".."));
-    const grammarWasmPath = resolveNpmWasmPath(this.grammarWasmSpecifier);
+
+    // Resolve grammar WASM — use package-aware resolution for cases where
+    // import.meta.resolve doesn't return file:// URLs (e.g. tree-sitter-rust).
+    let grammarWasmPath: string;
+    try {
+      grammarWasmPath = resolveNpmWasmPath(this.grammarWasmSpecifier);
+    } catch {
+      grammarWasmPath = resolveNpmPackageFile(
+        this.grammarNpmName,
+        this.grammarVersion,
+        this.grammarWasmFilename,
+      );
+    }
     const grammarWasm = Deno.readFileSync(grammarWasmPath);
 
     await Parser.init({
@@ -125,7 +154,11 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
       }
     }
 
-    const ranked = this._computePageRank(allSymbols, allSymbols.map((s) => s.file), fileImportTargets);
+    const ranked = this._computePageRank(
+      allSymbols,
+      allSymbols.map((s) => s.file),
+      fileImportTargets,
+    );
 
     return ranked
       .sort((a, b) => (b.pageRankScore ?? 0) - (a.pageRankScore ?? 0))
@@ -137,12 +170,21 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
   // -----------------------------------------------------------------------
 
   private _countNodes(
-    node: { childCount: number; child: (i: number) => { childCount: number; child: (i: number) => unknown } | null },
+    node: {
+      childCount: number;
+      child: (
+        i: number,
+      ) => { childCount: number; child: (i: number) => unknown } | null;
+    },
   ): number {
     let count = 1;
     for (let i = 0; i < node.childCount; i++) {
       const child = node.child(i);
-      if (child) count += this._countNodes(child as Parameters<typeof this._countNodes>[0]);
+      if (child) {
+        count += this._countNodes(
+          child as Parameters<typeof this._countNodes>[0],
+        );
+      }
     }
     return count;
   }

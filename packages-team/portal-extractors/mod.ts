@@ -13,3 +13,6 @@
  */
 
 export { PortalExtractorsModule } from "./src/portal_extractors_module.ts";
+export { RustSymbolExtractor } from "./src/rust_symbol_extractor.ts";
+export { GoSymbolExtractor } from "./src/go_symbol_extractor.ts";
+export { JavaSymbolExtractor } from "./src/java_symbol_extractor.ts";
