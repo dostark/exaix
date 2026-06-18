@@ -6,22 +6,16 @@
  */
 
 import { assert, assertExists, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 
 Deno.test("dogfood smoke: request → plan via RequestProcessor.process()", async (t) => {
   const env = await TestEnvironment.create();
 
   try {
-    await env.createBlueprint(
-      "senior-coder",
-    );
+    await env.createBlueprint("senior-coder");
 
     const { processor } = env.createRequestProcessor();
 
-    // ========================================================================
-    // Step: Create and process a request
-    // ========================================================================
     let planPath: string;
     await t.step("creates request and generates plan", async () => {
       const requestResult = await env.createRequest(
@@ -33,13 +27,10 @@ Deno.test("dogfood smoke: request → plan via RequestProcessor.process()", asyn
       assertExists(processorResult, "RequestProcessor should generate plan");
       planPath = processorResult;
 
-      const planExists = await Deno.stat(planPath).then(() => true).catch(() => false);
+      const planExists = await env.fileExists(planPath.replace(env.tempDir + "/", ""));
       assert(planExists, "Plan file should exist on filesystem");
     });
 
-    // ========================================================================
-    // Step: Verify plan content
-    // ========================================================================
     await t.step("plan contains expected sections", async () => {
       const planContent = await Deno.readTextFile(planPath!);
 
@@ -47,19 +38,11 @@ Deno.test("dogfood smoke: request → plan via RequestProcessor.process()", asyn
       assertStringIncludes(planContent, "## Execution Steps", "Plan should contain Execution Steps section");
     });
 
-    // ========================================================================
-    // Step: Verify request status updated
-    // ========================================================================
     await t.step("request status updated to planned", async () => {
-      const requestsDir = join(env.tempDir, "Workspace", "Requests");
-      const entries: string[] = [];
-      for await (const entry of Deno.readDir(requestsDir)) {
-        entries.push(entry.name);
-      }
+      const entries = await env.listFiles("Workspace/Requests");
       assert(entries.length > 0, "Requests directory should contain files");
 
-      // Read the only request file and verify status
-      const requestContent = await Deno.readTextFile(join(requestsDir, entries[0]!));
+      const requestContent = await env.readFile(`Workspace/Requests/${entries[0]}`);
       assertStringIncludes(requestContent, "status: planned", "Status should update after planning");
     });
   } finally {
