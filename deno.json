@@ -106,7 +106,12 @@
     "build:team": "deno run -A scripts/ci.ts build --edition team",
     "build:enterprise": "deno run -A scripts/ci.ts build --edition enterprise",
     "ci:solo": "deno run -A scripts/ci.ts all --edition solo",
-    "ci:team": "deno run -A scripts/ci.ts all --edition team"
+    "ci:team": "deno run -A scripts/ci.ts all --edition team",
+
+    "dogfood": "deno run -A scripts/dogfood_daemon.ts start",
+    "dogfood:stop": "deno run -A scripts/dogfood_daemon.ts stop",
+    "dogfood:status": "deno run -A scripts/dogfood_daemon.ts status",
+    "dogfood:log": "deno run --allow-read=.dogfood/.exa/daemon.log bash -c 'head -50 .dogfood/.exa/daemon.log'"
   },
   "imports": {
     "@cliffy/table": "jsr:@cliffy/table@^1.2.1",
