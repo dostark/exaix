@@ -97,7 +97,7 @@ deno task dogfood:stop
 
 The dogfooding workflow follows a **Brief → Execute → Review** cycle:
 
-```
+```text
 ┌─────────────────────────────────────┐
 │        1. Author a brief             │
 │  (request file with frontmatter,     │
@@ -317,9 +317,7 @@ acceptance:
   outcomes:
     - "deno task check clean"
 ```
-````
 
-````
 ### Using the /plan Skill
 
 ```bash
@@ -332,6 +330,7 @@ acceptance:
 #   - Copy the step manifest fields to request frontmatter
 #   - Copy Actions/Acceptance to request body
 #   - Drop into Workspace/Requests/
+```
 ````
 
 ---
