@@ -1,0 +1,27 @@
+[system]
+root = "./.dogfood"
+log_level = "info"
+
+[paths]
+workspace = "Workspace"
+portals = "Portals"
+memory = "Memory"
+
+[ai]
+provider = "ollama"
+model = "ollama/llama3"
+
+[[portals]]
+alias = "exaix-self"
+target_path = "__WORKTREE_PATH__"
+execution_strategy = "worktree"
+default_branch = "main"
+
+[portal_knowledge]
+auto_analyze_on_mount = true
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = true
