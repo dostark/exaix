@@ -98,6 +98,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`discovery`** → [skills/explore/SKILL.md](skills/explore/SKILL.md)
 - **`docs`** → [guidelines/documentation.md](guidelines/documentation.md), [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md)
 - **`documentation`** → [skills/doc/SKILL.md](skills/doc/SKILL.md), [skills/commit/SKILL.md](skills/commit/SKILL.md)
+- **`dogfooding`** → [skills/plan/SKILL.md](skills/plan/SKILL.md)
 - **`edition`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`enterprise`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`enums`** → [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md)
