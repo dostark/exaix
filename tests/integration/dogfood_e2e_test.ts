@@ -118,12 +118,14 @@ Deno.test({
         }
 
         let planPath: string | undefined;
+        let requestTraceId: string;
 
         await t.step("request → plan", async () => {
           const requestResult = await env.createRequest(
             "Add a health endpoint to src/api/health.ts returning { status: 'ok' }",
             { identityId: "senior-coder", priority: 5 },
           );
+          requestTraceId = requestResult.traceId;
 
           // Poll Plans directory for any plan file containing the trace_id
           const found = await env.waitFor(
@@ -137,7 +139,7 @@ Deno.test({
               for (const f of files) {
                 if (f.endsWith("_plan.md")) {
                   const content = await env.readFile(`Workspace/Plans/${f}`);
-                  if (content.includes(requestResult.traceId)) {
+                  if (content.includes(requestTraceId)) {
                     planPath = join(tempDir, "Workspace", "Plans", f);
                     return true;
                   }
@@ -156,6 +158,15 @@ Deno.test({
           const content = await Deno.readTextFile(planPath!);
           assertStringIncludes(content, "## Reasoning");
           assertStringIncludes(content, "## Execution Steps");
+        });
+
+        // Journal assertion: the daemon writes events to the shared SQLite DB.
+        // The daemon's DatabaseService uses the same journal.db as the test env.
+        // Wait briefly for async batch flush, then verify at least two events.
+        await t.step("journal contains daemon events", async () => {
+          await new Promise((r) => setTimeout(r, 500));
+          const activities = env.getActivityLog(requestTraceId!);
+          assert(activities.length >= 2, `Expected >=2 journal entries for trace, got ${activities.length}`);
         });
       } finally {
         try {

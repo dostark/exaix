@@ -54,7 +54,7 @@ function resolveRoot(): string {
     if (trimmed.startsWith("[")) continue;
     const match = trimmed.match(/^root\s*=\s*"(.+)"$/);
     if (match) {
-      let val = match[1];
+      const val = match[1];
       if (val === "__DOGFOOD_ROOT__") {
         console.error(
           "Error: Config still contains __DOGFOOD_ROOT__ sentinel.\n" +
@@ -169,14 +169,20 @@ async function cmdStop(): Promise<void> {
       Deno.kill(pid, 0);
       await new Promise((r) => setTimeout(r, 100));
     } catch {
-      try { Deno.removeSync(pidPath); } catch {}
+      try { Deno.removeSync(pidPath); } catch {
+        // ignore
+      }
       console.log("Daemon stopped");
       return;
     }
   }
 
-  try { Deno.kill(pid, "SIGKILL"); } catch {}
-  try { Deno.removeSync(pidPath); } catch {}
+  try { Deno.kill(pid, "SIGKILL"); } catch {
+    // ignore
+  }
+  try { Deno.removeSync(pidPath); } catch {
+    // ignore
+  }
   console.log("Daemon force-stopped (SIGKILL)");
 }
 
@@ -194,7 +200,9 @@ function cmdStatus(): void {
       console.log("not running");
       Deno.exit(1);
     }
-    try { Deno.removeSync(pidPath); } catch {}
+    try { Deno.removeSync(pidPath); } catch {
+      // ignore
+    }
     console.log("not running (stale PID file cleaned up)");
     Deno.exit(1);
   }

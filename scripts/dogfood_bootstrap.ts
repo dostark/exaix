@@ -17,7 +17,8 @@
  *   --worktree  Required. Git worktree path (agent's isolated working copy)
  *
  * Environment:
- *   DOGFOOD_BOOTSTRAP_TEST=1  Skip git worktree and portal commands (CI testing)
+ *   DOGFOOD_BOOTSTRAP_TEST=1  Skip git worktree, deploy, migrate, and portal commands (full CI test mode)
+ *   DOGFOOD_BOOTSTRAP_SKIP_PORTAL=1  Skip portal registration only (allows testing worktree creation in CI)
  *   TEST_GIT_REPO=<path>      Git repo root for test mode (default: cwd)
  */
 
@@ -69,7 +70,11 @@ async function runCommand(
 
 async function main() {
   const isTestMode = Deno.env.get("DOGFOOD_BOOTSTRAP_TEST") === "1";
+  const skipPortal = Deno.env.get("DOGFOOD_BOOTSTRAP_SKIP_PORTAL") === "1";
   const testGitRepo = Deno.env.get("TEST_GIT_REPO");
+  // When SKIP_PORTAL is set with a test git repo, skip deploy/migrate
+  // (they need full repo structure) but still create the worktree.
+  const testModeForDeploy = isTestMode || (skipPortal && !!testGitRepo);
   const args = Deno.args;
 
   // Parse --dir and --worktree
@@ -93,7 +98,7 @@ async function main() {
     Deno.exit(1);
   }
 
-  const gitRepoRoot = (isTestMode && testGitRepo) ? resolve(testGitRepo) : REPO_ROOT;
+  const gitRepoRoot = testGitRepo ? resolve(testGitRepo) : REPO_ROOT;
   const workspaceDir = join(sandboxRoot, "workspace");
   const configPath = join(workspaceDir, "exa.config.toml");
   const runtimeDir = join(sandboxRoot, ".exa");
@@ -139,7 +144,7 @@ async function main() {
   // 2. Create sandbox directory structure
   await Deno.mkdir(sandboxRoot, { recursive: true });
 
-  if (!isTestMode) {
+  if (!testModeForDeploy) {
     // 3. Deploy workspace (reuses existing deploy_workspace.ts)
     if (
       !await run(
@@ -164,7 +169,7 @@ async function main() {
   console.log(`  ✅ Dogfood config written to ${configPath}`);
 
   // 5. Initialize database
-  if (!isTestMode) {
+  if (!testModeForDeploy) {
     if (
       !await run(
         ["deno", "run", "-A", join(REPO_ROOT, "scripts/migrate_db.ts"), "up"],
@@ -176,7 +181,7 @@ async function main() {
     }
   }
 
-  // 6. Create git worktree (skip in test mode)
+  // 6. Create git worktree (skip only in full test mode)
   if (!isTestMode) {
     if (
       !await run(
@@ -190,8 +195,8 @@ async function main() {
     }
   }
 
-  // 7. Register portal
-  if (!isTestMode) {
+  // 7. Register portal and wait for knowledge (skip when SKIP_PORTAL is set or in full test mode)
+  if (!isTestMode && !skipPortal) {
     const portalResult = await runCommand(
       [...EXACTL_CMD, "portal", "add", worktreePath, "exaix-self"],
     );
