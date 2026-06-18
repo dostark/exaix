@@ -61,6 +61,8 @@ Do / Don't
 - ✅ Do name the planning document `phase-NN-<kebab-slug>.md` for consistent slugs.
 - ✅ Do keep phases to 8–10 steps maximum — split larger features into two sequential phases.
 - ✅ Do assess scenario framework coverage (§3E) for any change to the end-to-end flow.
+- ✅ Do use `[ ]` for all success criteria and success metric checkboxes in planning documents — these represent aspirational targets, not completion status. Reserve `[x]` (or ✅) for actual implementation progress tracked during execution (e.g., in todo lists or step-manifests).
+- ✅ Do use plain descriptive prose to summarize a step's outputs and consumers — never status-like labels such as `**✅ CORE**` or `**✅ WIRED**` that could be mistaken for implementation status.
 - ❌ Don't use 'any' or vague types; use Zod schemas and TypeScript interfaces.
 - ❌ Don't skip the 'Planned Tests' section for any implementation step.
 - ❌ Don't let a runtime success criterion be satisfiable by a package-unit test alone — that is how production-dead code ships green.

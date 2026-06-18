@@ -724,5 +724,6 @@ For the full 60+ entry component responsibilities table with file paths and edit
   - `docs/Reference_Data.md` — Edition matrix, scenario packs, scripts, module index, live streaming, component responsibilities, activity journal, daemon lifecycle, event taxonomy
 - **[Test Directory Guide](tests/README.md)** — Test structure and package-local test mapping
 - **[Testing Helpers](packages/testing/README.md)** - Shared test helpers (`@exaix/testing`)
+- **[Dogfooding Guide](docs/Exaix_Dogfooding.md)** — Self-hosted dogfooding workflow: config preset (`configs/dogfood.toml`), daemon lifecycle script (`scripts/dogfood_daemon.ts`), bootstrap workflow (`scripts/dogfood_bootstrap.ts`)
 
 ---

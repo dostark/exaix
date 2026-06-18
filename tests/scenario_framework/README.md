@@ -342,3 +342,132 @@ scenario_framework/
 | Deploy framework to sandbox                   | `./bin/deploy-framework` (see §2.2)                       |
 | Full CLI reference                            | [`docs/Exaix_Evaluation.md`](../docs/Exaix_Evaluation.md) |
 | Schema contracts                              | `schema/step_schema.ts`, `schema/scenario_schema.ts`      |
+
+---
+
+## 6. Developing Scenarios & Tests
+
+### When to Use the Scenario Framework
+
+| Concern                         | Use scenario framework                     | Use `tests/integration/`          |
+| ------------------------------- | ------------------------------------------ | --------------------------------- |
+| Quantitative scoring            | ✅ Built-in (weights, LLM-as-judge)        | ❌ No                             |
+| Multi-trial reliability         | ✅ `--trials N` (mean, stdev, Pass@k)      | ❌ No                             |
+| Trajectory analysis             | ✅ Tool-call sequence validation           | ❌ No                             |
+| Declarative YAML scenarios      | ✅ Author in `.yaml`, no TypeScript needed | ❌ TypeScript required            |
+| In-process pipeline testing     | ❌ Requires daemon + sandbox               | ✅ `TestEnvironment` + in-process |
+| Rapid TDD (RED-GREEN-REFACTOR)  | ❌ Heavy setup                             | ✅ `deno test --watch`            |
+| File watcher / daemon behaviour | ❌ Assumes daemon is running               | ✅ Subprocess + `null` pipes      |
+
+**Rule of thumb:** If you need a score or multi-trial statistics, use the scenario
+framework. If you need deterministic assertion of internal behaviour (pipeline
+wiring, config loading, status updates), use `tests/integration/`.
+
+### Authoring New Scenarios
+
+Scenarios are YAML files in `scenarios/<pack>/`. Create a new file following
+the existing patterns:
+
+```yaml
+schema_version: "1.0.0"
+id: my-validation-scenario
+title: Descriptive title for reports
+pack: my_pack # matches the directory name
+tags: [smoke, quality] # filters: --tag smoke
+request_fixture: fixtures/requests/my_pack/my_request.md
+mode_support: [auto] # auto (default) | step | manual-checkpoint
+portals: [] # list of portals the scenario mounts
+steps:
+  - id: do-something
+    type: exactl # exactl | shell | wait-for-file | json-assert | journal-assert
+    command: "request" # exactl subcommand
+    args: ["--file", "$REQUEST_FIXTURE"]
+    input_criteria: [] # preconditions
+    output_criteria:
+      - id: check-exit-code
+        score_weight: 0.7 # weight in overall score (0.0–1.0)
+        kind: command-exit-code
+        equals: 0
+```
+
+**Key rules:**
+
+- **No embedded prompts.** Always use `request_fixture` pointing to a file under `fixtures/requests/`.
+- **Reference existing packs.** Look at `scenarios/smoke/` for the simplest pattern,
+  `scenarios/agent_flows/` for multi-step flows.
+- **Scenarios should be independent.** Each scenario is a self-contained validation;
+  use tags to group related scenarios for CI profiles.
+- **All step types** available in §3 (file-exists, text-contains, json-path-equals,
+  journal-event-exists, llm-judge, etc.)
+
+### Running Scenarios Locally (before sandbox deploy)
+
+The fastest local workflow uses the synthetic runner (`runner/synthetic_runner.ts`)
+directly — no daemon, no sandbox. This validates your YAML syntax and criteria
+configuration:
+
+```bash
+# Validate YAML + criteria wiring
+deno run --allow-read tests/scenario_framework/runner/synthetic_runner.ts \
+  --scenario tests/scenario_framework/scenarios/smoke/workspace-health-smoke.yaml
+
+# Validate all scenarios in a pack
+for f in tests/scenario_framework/scenarios/smoke/*.yaml; do
+  deno run --allow-read tests/scenario_framework/runner/synthetic_runner.ts --scenario "$f"
+done
+```
+
+For a full daemon-required run, deploy a sandbox first (see §2.1), then use
+`./bin/run-scenarios` from the deployed directory.
+
+### Framework's Own Tests
+
+The framework's internal logic is tested via standard Deno tests in `tests/`:
+
+| Test file                                          | What it covers                   |
+| -------------------------------------------------- | -------------------------------- |
+| `tests/unit/`                                      | Unit tests for runner components |
+| `tests/integration/`                               | Integration tests for runner     |
+| `tests/plan_amendment_scenario_test.ts`            | Plan amendment scenarios         |
+| `tests/portal_knowledge_phase105_scenario_test.ts` | Portal knowledge validation      |
+| `tests/triggers_basic_scenario_test.ts`            | Trigger scenario validation      |
+
+Run them with:
+
+```bash
+deno test --allow-all tests/scenario_framework/tests/
+```
+
+### Forbidden Patterns
+
+| ❌ Don't do this                                    | ✅ Do this instead                                           |
+| --------------------------------------------------- | ------------------------------------------------------------ |
+| Embed prompts in YAML `steps.args`                  | Use `request_fixture` + `$REQUEST_FIXTURE`                   |
+| Hardcode absolute paths in scenario YAML            | Use `$HOME`, `$WORKSPACE_ROOT`, `$REQUEST_FIXTURE`           |
+| Create a new test pack for a single scenario        | Add to an existing pack or tag                               |
+| Duplicate criteria across steps                     | Reuse criteria IDs or factor shared checks                   |
+| Write TypeScript `Deno.test` for scenario logic     | Write YAML scenario definitions                              |
+| Require a real LLM provider in self-contained packs | Use mock provider (default when `EXA_LLM_PROVIDER` is unset) |
+
+### Validation Checklist
+
+Before committing a new scenario:
+
+1. **YAML is valid** — run the synthetic runner against it
+1. **`request_fixture` exists** — the file path under `fixtures/requests/` is correct
+1. **Criteria are measurable** — every `input_criteria` and `output_criteria` has
+   a realistic `kind` and `equals`/`path`/`pattern` value
+1. **`score_weight` sums make sense** — criteria weights within a step do not
+   exceed 1.0 in expectation
+1. **Mode support** — `auto` for CI; add `step` or `manual-checkpoint` only when
+   interactive debugging is needed
+1. **No hardcoded paths** — use `$WORKSPACE_ROOT`, `$REQUEST_FIXTURE`, `$HOME`
+
+### See Also
+
+- `scenarios/smoke/workspace-health-smoke.yaml` — minimal scenario example
+- `scenarios/framework_test/smoke-validation.yaml` — multi-step scenario with scores
+- `scenarios/integration_e2e/` — full E2E workflow scenarios
+- `docs/Exaix_Evaluation.md` — CLI reference, scoring formulas, authoring guide
+- `schema/scenario_schema.ts` — authoritative Zod schema for scenario YAML
+- `schema/step_schema.ts` — authoritative Zod schema for steps and criteria
