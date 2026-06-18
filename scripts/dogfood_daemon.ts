@@ -58,8 +58,8 @@ function resolveRoot(): string {
       if (val === "__DOGFOOD_ROOT__") {
         console.error(
           "Error: Config still contains __DOGFOOD_ROOT__ sentinel.\n" +
-          "  Run: deno run -A scripts/dogfood_bootstrap.ts --dir <path> --worktree <path>\n" +
-          "  Or set: DOGFOOD_ROOT=/path/to/sandbox",
+            "  Run: deno run -A scripts/dogfood_bootstrap.ts --dir <path> --worktree <path>\n" +
+            "  Or set: DOGFOOD_ROOT=/path/to/sandbox",
         );
         Deno.exit(1);
       }
@@ -91,10 +91,25 @@ async function cmdStart(): Promise<void> {
   const logPath = join(runtimeDir, "daemon.log");
 
   const allowRunBinaries = [
-    "git", "deno", "npm", "node", "exoctl",
-    "ls", "grep", "echo", "printf", "pwd",
-    "whoami", "id", "date", "uptime", "which",
-    "type", "command", "hash", "alias",
+    "git",
+    "deno",
+    "npm",
+    "node",
+    "exoctl",
+    "ls",
+    "grep",
+    "echo",
+    "printf",
+    "pwd",
+    "whoami",
+    "id",
+    "date",
+    "uptime",
+    "which",
+    "type",
+    "command",
+    "hash",
+    "alias",
   ].join(",");
 
   const proc = new Deno.Command("deno", {
@@ -169,7 +184,9 @@ async function cmdStop(): Promise<void> {
       Deno.kill(pid, 0);
       await new Promise((r) => setTimeout(r, 100));
     } catch {
-      try { Deno.removeSync(pidPath); } catch {
+      try {
+        Deno.removeSync(pidPath);
+      } catch {
         // ignore
       }
       console.log("Daemon stopped");
@@ -177,10 +194,14 @@ async function cmdStop(): Promise<void> {
     }
   }
 
-  try { Deno.kill(pid, "SIGKILL"); } catch {
+  try {
+    Deno.kill(pid, "SIGKILL");
+  } catch {
     // ignore
   }
-  try { Deno.removeSync(pidPath); } catch {
+  try {
+    Deno.removeSync(pidPath);
+  } catch {
     // ignore
   }
   console.log("Daemon force-stopped (SIGKILL)");
@@ -200,7 +221,9 @@ function cmdStatus(): void {
       console.log("not running");
       Deno.exit(1);
     }
-    try { Deno.removeSync(pidPath); } catch {
+    try {
+      Deno.removeSync(pidPath);
+    } catch {
       // ignore
     }
     console.log("not running (stale PID file cleaned up)");

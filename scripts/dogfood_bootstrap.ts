@@ -101,7 +101,6 @@ async function main() {
   const gitRepoRoot = testGitRepo ? resolve(testGitRepo) : REPO_ROOT;
   const workspaceDir = join(sandboxRoot, "workspace");
   const configPath = join(workspaceDir, "exa.config.toml");
-  const runtimeDir = join(sandboxRoot, ".exa");
 
   // 1. Validate inputs (always runs, even in test mode — safety checks)
   try {
@@ -223,7 +222,9 @@ async function main() {
     if (knowledgeReady) {
       console.log("  ✅ Portal knowledge ready");
     } else {
-      console.error("  ⚠️  Portal knowledge not generated within timeout (you can run: exactl portal analyze exaix-self)");
+      console.error(
+        "  ⚠️  Portal knowledge not generated within timeout (you can run: exactl portal analyze exaix-self)",
+      );
     }
   }
 
