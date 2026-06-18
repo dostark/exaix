@@ -8,10 +8,10 @@ tools:
   - run_command
 scope: dev
 title: "Plan Skill (#plan)"
-description: Draft a new Phase Planning Document for a feature, refactor, or architectural change — follows Exaix standards for TDD, security, and traceability
+description: Draft a new Phase Planning Document for a feature, refactor, or architectural change — follows Exaix standards for TDD, security, and traceability. Produces plans that are machine-convertible to dogfood requests (step-manifests for automated request extraction).
 short_summary: "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy."
-version: "1.6"
-topics: ["planning", "architecture", "tdd", "security", "traceability", "configurability", "reachability"]
+version: "1.7"
+topics: ["planning", "architecture", "tdd", "security", "traceability", "configurability", "reachability", "dogfooding"]
 qwen_skill: plan
 ---
 
@@ -73,6 +73,9 @@ Prototypes & Validation:
 
 Workflow chain (typical):
   #plan → #pre-gap-analysis → #next-steps → #post-gap-analysis → #commit
+
+Dogfooding chain (alternative, once Phase E tooling ships):
+  #plan (produces step-manifests) → #plan_to_requests (generates request queue) → daemon executes via dogfood sandbox
 ```
 
 ---
@@ -93,6 +96,29 @@ Follow the structure defined in `.copilot/planning/README.md`:
 1. **Reachability Ledger (§E)**: A seeded (initially empty) `## Reachability Ledger (pending production consumers)` table that #next-steps maintains step-by-step; the phase cannot close while any row is ⏳.
 1. **Documentation Updates (§3D)**: Mandatory final step to update `ARCHITECTURE.md`, `docs/`, `TOOLS.md`, etc.
 1. **Success Metrics**: Quantitative targets (performance, quality), including an opt-in reachability metric for every `enabled`-style flag.
+1. **Step Manifests (dogfooding compatibility)**: Every implementation step MUST end with a fenced YAML `step-manifest` block containing `step`, `title`, `identity`, `skills`, `portal`, `target_branch`, `depends_on`, and `acceptance` (tests + outcomes). This makes the plan machine-convertible to daemon requests via `plan_to_requests.ts`. Example:
+
+   ```yaml
+   # step-manifest
+   step: 1
+   title: Capability + constants
+   identity: senior-coder
+   skills: [tdd-methodology, exaix-conventions, portal-grounding, security-first]
+   portal: exaix-self
+   target_branch: feat/phase-NN-step-1
+   depends_on: []
+   acceptance:
+     tests:
+       - "capability is defined and gated to Team"
+       - "[regression] all boundary constants accept and return expected types"
+     outcomes:
+       - "deno task check clean"
+   ```
+
+   The manifest is **additive** — it sits beside the existing prose sections (Actions,
+   Architecture Notes, Planned Tests, Success Criteria), never replaces them. Tools that
+   don't understand manifests continue to read the prose. The `plan_to_requests.ts`
+   generator prefers the manifest and falls back to heading scrape when absent.
 
 ### 2. Core Principles Integration
 
@@ -202,6 +228,12 @@ coverage:
   dominant convention. Document divergence in Architecture Notes.
 - **Claim-to-test mapping**: For every prose behavioural claim, list a corresponding named test in
   the step's Planned Tests section. Prose without test names is a pre-gap.
+- **Step-manifest convention**: Every implementation step must include a fenced YAML step-manifest
+  block (after Success Criteria) for machine conversion to dogfood requests. The manifest fields
+  (`identity`, `skills`, `portal`, `target_branch`, `depends_on`, `acceptance`) are a subset of the
+  daemon request schema — validating early ensures the step is representable as a request. The
+  manifest is additive and backward-compatible: existing tools read the prose, `plan_to_requests.ts`
+  prefers the manifest.
 
 ---
 
@@ -213,6 +245,7 @@ coverage:
 
 1. Brief chat summary of the architectural approach and key identified risks.
 1. The path to the new or updated planning document file.
+1. Each implementation step includes a fenced YAML step-manifest block (for dogfooding compatibility).
 1. Markdown lint result: `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/<doc>`.
 1. Recommendation to run `#pre-gap-analysis` on the new plan to verify its completeness against the codebase.
 1. Commit payload — use `#commit` to stage and commit the new planning document.

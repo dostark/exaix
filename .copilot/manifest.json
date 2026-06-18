@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-17T19:25:58.670Z",
+  "generated_at": "2026-06-18T10:44:46.967Z",
   "docs": [
     {
       "path": ".copilot/prompts/infra.prompt.md",
@@ -623,7 +623,7 @@
       "scope": "dev",
       "title": "Plan Skill (#plan)",
       "short_summary": "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy.",
-      "version": "1.6",
+      "version": "1.7",
       "topics": [
         "planning",
         "architecture",
@@ -631,7 +631,8 @@
         "security",
         "traceability",
         "configurability",
-        "reachability"
+        "reachability",
+        "dogfooding"
       ],
       "qwen_skill": "plan",
       "chunks": [
