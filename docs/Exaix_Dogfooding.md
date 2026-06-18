@@ -1,234 +1,515 @@
 # Exaix Dogfooding Guide
 
-Dogfooding means using Exaix to develop Exaix itself — submitting requests against the
-Exaix codebase through daemon-agent pipelines, reviewing plans, and tracking the
-full trace_id audit trail.
+Dogfooding means using Exaix to develop Exaix itself — running the daemon locally,
+creating structured requests against the Exaix codebase, reviewing machine-generated
+plans, and tracking every change through the full trace_id audit trail.
 
-## Prerequisites
+This guide covers the **hybrid dogfooding model**: you author the plan and acceptance
+criteria (the "what" and "why"), the daemon agent executes the mechanical work (the
+"how"), and you review the result before it reaches the main branch.
 
-- Git (for worktree creation)
-- Deno 2.x
-- A running [Ollama](https://ollama.ai) instance (default) or an API key for
-  Anthropic, OpenAI, or Google. The config preset defaults to `ollama`; set
-  `EXA_LLM_PROVIDER` to switch.
-- Unix-like OS (Linux or macOS). Windows is not yet supported for dogfooding.
+---
 
-## Quick Start
+## Table of Contents
+
+1. [Prerequisites](#1-prerequisites)
+2. [Quick Start](#2-quick-start)
+3. [The Dogfooding Loop](#3-the-dogfooding-loop)
+4. [Writing Requests](#4-writing-requests)
+5. [Skills & Plans](#5-skills--plans)
+6. [Headless Delegation](#6-headless-delegation)
+7. [Configuration](#7-configuration)
+8. [When to Dogfood vs Interactive](#8-when-to-dogfood-vs-interactive)
+9. [Troubleshooting](#9-troubleshooting)
+
+---
+
+## 1. Prerequisites
+
+- **Git** — for worktree creation (isolates agent changes from the live checkout)
+- **Deno 2.x** — runtime for the Exaix daemon and scripts
+- **LLM provider** — Ollama (default, free, no API key), or an API key for
+  Anthropic, OpenAI, or Google. Set `EXA_LLM_PROVIDER` to switch.
+- **OpenCode CLI** (optional) — for headless agent delegation (`opencode run`)
+- **Claude Code** (optional) — for headless delegation on a Claude Pro/Max subscription
+- Unix-like OS (Linux or macOS). Windows is not yet supported.
+
+---
+
+## 2. Quick Start
 
 ```bash
-# 1. Bootstrap a dogfood sandbox (creates workspace + git worktree)
+# 1. Bootstrap a dogfood sandbox (external directory, not inside the repo)
 deno run -A scripts/dogfood_bootstrap.ts \
   --dir ~/exa-dogfood \
   --worktree /path/to/worktree
 
 # 2. Start the daemon pointing at the sandbox
-EXA_CONFIG_PATH=~/exa-dogfood/workspace/exa.config.toml deno task dogfood
+export DOGFOOD_SANDBOX=~/exa-dogfood
+export EXA_CONFIG_PATH=$DOGFOOD_SANDBOX/workspace/exa.config.toml
+deno task dogfood
 
-# 3. Write a request file
-cat > ~/exa-dogfood/workspace/Workspace/Requests/my-task.md << 'EOF'
+# 3. Write a structured request
+cat > $DOGFOOD_SANDBOX/workspace/Workspace/Requests/add-health-endpoint.md << 'REQUEST'
 ---
 trace_id: "$(uuidgen)"
 created: "$(date -Iseconds)"
 status: pending
 priority: 5
 identity: senior-coder
-source: dogfood
-created_by: developer
+skills: [tdd-methodology, exaix-conventions]
+portal: "exaix-self"
+target_branch: "feature/health-endpoint"
+tags: ["feature", "phase-121"]
 ---
-Add a comment explaining the ConfigService.load() method
-EOF
+# Add health endpoint to daemon
+
+Implement a `/health` HTTP endpoint on the daemon's monitoring server
+that returns `{ "status": "ok" }` and a 200 status code.
+
+## Acceptance — tests
+
+- `GET /health` returns 200
+- Response body contains `"status": "ok"`
+- Endpoint is wired in `apps/daemon/main.ts`
+
+## Acceptance — outcomes
+
+- `deno task check clean`
+- `deno task test` passes
+REQUEST
 
 # 4. Wait for the plan to appear
-ls ~/exa-dogfood/workspace/Workspace/Plans/
+ls $DOGFOOD_SANDBOX/workspace/Workspace/Plans/
 
 # 5. Review and approve the plan
 deno run -A apps/exactl/main.ts plan list
+deno run -A apps/exactl/main.ts plan show <plan-id>
 deno run -A apps/exactl/main.ts plan approve <plan-id>
 
 # 6. Stop the daemon when done
 deno task dogfood:stop
 ```
 
-## Detailed Setup
+---
 
-### Step 1: Bootstrap a Sandbox
+## 3. The Dogfooding Loop
 
-The bootstrap script creates an external sandbox directory (outside the repo),
-deploys a workspace into it, creates a git worktree, and registers it as a portal:
+The dogfooding workflow follows a **Brief → Execute → Review** cycle:
 
-```bash
-deno run -A scripts/dogfood_bootstrap.ts \
-  --dir ~/exa-dogfood \
-  --worktree /path/to/worktree
+```
+┌─────────────────────────────────────┐
+│        1. Author a brief             │
+│  (request file with frontmatter,     │
+│   skills, acceptance criteria)       │
+└──────────────┬──────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────┐
+│        2. Daemon generates plan      │
+│  (RequestProcessor → AgentRunner     │
+│   → PlanWriter → Workspace/Plans/)   │
+└──────────────┬──────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────┐
+│   3. Human reviews the plan          │
+│  (approve, reject, or request        │
+│   clarification)                     │
+└──────────────┬──────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────┐
+│   4. Agent executes the plan         │
+│  (FILE edits, git commits,           │
+│   CI validation)                     │
+└──────────────┬──────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────┐
+│   5. Human reviews the changeset     │
+│  (git diff, CI results,              │
+│   journal audit trail)               │
+└──────────────┬──────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────┐
+│   6. Close the loop                  │
+│  (merge, or revise brief and         │
+│   restart the cycle)                 │
+└─────────────────────────────────────┘
 ```
 
-This:
+### 3.1 Authoring a Plan (the `/plan` skill)
 
-1. Creates the sandbox at `~/exa-dogfood/` (or your chosen path)
-1. Deploys a workspace with `deploy_workspace.ts` (reusing existing infrastructure)
-1. Writes the dogfood config with `__DOGFOOD_ROOT__` and `__WORKTREE_PATH__` replaced
-1. Initializes the database via `migrate_db.ts`
-1. Creates the worktree via `git worktree add`
-1. Registers the portal as `exaix-self`
-1. Waits for portal knowledge generation
-
-> **Safety:** The sandbox lives outside your repo checkout. No files are created
-> inside the repository. The worktree isolates agent writes so the live repo
-> never sees unapproved changes.
-
-### Step 2: Start the Daemon
+Before writing a request, use the `/plan` skill to create a phase planning document:
 
 ```bash
-EXA_CONFIG_PATH=~/exa-dogfood/workspace/exa.config.toml deno task dogfood
+# The /plan skill is loaded via your AI agent (OpenCode TUI, Claude Code, etc.)
+# It produces a phase-NN-*.md with structured steps:
+
+## Fields a good plan step has:
+# - Actions: what files to change and why
+# - Architecture Notes: dependency injection, patterns, rationale
+# - Planned Tests: test names in RED (failing first)
+# - Success Criteria: measurable outcomes
+# - step-manifest: YAML block for machine-convertibility
 ```
 
-Or, for convenience, export the path once:
+Each step in the plan becomes a request. The step manifest (`step`, `identity`,
+`skills`, `portal`, `target_branch`, `depends_on`, `acceptance`) maps directly
+to the request frontmatter, making plan-to-request conversion mechanical.
 
-```bash
-export DOGFOOD_SANDBOX=~/exa-dogfood
-export EXA_CONFIG_PATH=$DOGFOOD_SANDBOX/workspace/exa.config.toml
-deno task dogfood
-```
+### 3.2 From Plan Step to Request
 
-This launches the daemon as a background subprocess using the sandbox's config
-file. The daemon watches `Workspace/Requests/` for new request files, processes
-them through `RequestProcessor`, and writes plans to `Workspace/Plans/`.
+A step's manifest fields:
 
-Useful daemon commands:
+| Manifest field     | Request frontmatter   | Purpose                            |
+| ------------------ | --------------------- | ---------------------------------- |
+| `step`             | `tags: [step-N]`      | Request queue ordering             |
+| `depends_on`       | `priority` / ordering | Step N+1 waits for N               |
+| `identity`         | `identity`            | Which agent persona executes       |
+| `skills`           | `skills`              | Pinned rigor (tdd, security, etc.) |
+| `portal`           | `portal`              | Which workspace the agent uses     |
+| `target_branch`    | `target_branch`       | Feature branch isolation           |
+| `acceptance.tests` | Body "Acceptance"     | Machine-verifiable test names      |
 
-| Command                    | Purpose                     |
-| -------------------------- | --------------------------- |
-| `deno task dogfood`        | Start daemon in background  |
-| `deno task dogfood:stop`   | Gracefully stop the daemon  |
-| `deno task dogfood:status` | Check if daemon is running  |
-| `deno task dogfood:log`    | Print the last 50 log lines |
+### 3.3 Request Queue with `depends_on`
 
-### Step 3: Write a Request
-
-Requests are markdown files with YAML frontmatter placed in `Workspace/Requests/`:
+For multi-step features, chain requests so step N+1 starts only after N is approved:
 
 ```yaml
 ---
-trace_id: "a-unique-uuid"
-created: "2026-06-18T12:00:00.000Z"
-status: pending
+trace_id: "step-1-uuid"
+identity: "senior-coder"
 priority: 5
-identity: senior-coder
-source: dogfood
-created_by: developer
+tags: ["phase-121", "step-1"]
 portal: "exaix-self"
+target_branch: "feature/health-endpoint"
 ---
-Describe what you want the agent to do here.
+# Step 1: Add health endpoint constant
+
+Add `HEALTH_ENDPOINT_PATH = "/health"` to `packages/core/src/types/constants.ts`.
 ```
 
-**Fields:**
+```yaml
+---
+trace_id: "step-2-uuid"
+identity: "senior-coder"
+priority: 6
+tags: ["phase-121", "step-2"]
+portal: "exaix-self"
+target_branch: "feature/health-endpoint"
+depends_on: ["step-1-uuid"]
+---
+# Step 2: Implement health handler
 
-| Field        | Required | Description                                |
-| ------------ | -------- | ------------------------------------------ |
-| `trace_id`   | Yes      | UUID linking all artifacts                 |
-| `created`    | Yes      | ISO timestamp                              |
-| `status`     | Yes      | Must be `pending`                          |
-| `priority`   | No       | 1–10 (default: 5)                          |
-| `identity`   | Yes      | Agent identity (e.g., `senior-coder`)      |
-| `source`     | No       | Origin of request (e.g., `dogfood`, `cli`) |
-| `created_by` | No       | Who created the request                    |
-| `portal`     | No       | Portal alias for context                   |
-| `tags`       | No       | Array of tag strings                       |
+Wire the `/health` endpoint in `apps/daemon/main.ts`.
+```
 
-### Step 4: Review and Approve Plans
+The queue processor skips step 2 until step 1's plan is approved and executed.
 
-Once the daemon processes a request, a plan file appears in
-`Workspace/Plans/`. Use `exactl` to review and approve:
+---
+
+## 4. Writing Requests
+
+Requests are markdown files with YAML frontmatter placed in
+`Workspace/Requests/`. The full field reference:
+
+```yaml
+---
+trace_id: "a-unique-uuid"           # Required. UUID linking all artifacts.
+created: "2026-06-18T12:00:00Z"     # Required. ISO timestamp.
+status: pending                      # Required. Must be "pending".
+priority: 5                          # Optional. 1–10 (default: 5).
+identity: senior-coder               # Required. Agent persona.
+source: dogfood                      # Optional. Origin of request.
+created_by: developer                # Optional. Who created it.
+skills: [tdd-methodology]            # Optional. Skills to pin.
+portal: "exaix-self"                 # Optional. Portal for context.
+target_branch: "feature/my-thing"   # Optional. Feature branch.
+tags: ["feature", "phase-121"]      # Optional. Categorization.
+depends_on: ["step-1-uuid"]          # Optional. Prior dependency.
+flow: "my-flow"                      # Optional. Flow ID (mutually
+                                     #          exclusive with identity).
+---
+# Title
+
+Describe what you want the agent to do.
+
+## Acceptance — tests
+
+Specific test names the agent must write first (TDD).
+
+## Acceptance — outcomes
+
+CI gates and other measurable outcomes.
+```
+
+### Skills Reference
+
+Define skills by name in the `skills` frontmatter field. Each skill
+auto-injects its instructions into the agent's prompt:
+
+| Skill               | What it enforces                                |
+| ------------------- | ----------------------------------------------- |
+| `tdd-methodology`   | RED→GREEN→REFACTOR cycle; tests before code     |
+| `exaix-conventions` | Code style, import rules, DI patterns           |
+| `security-first`    | OWASP Top 10 checks; path traversal, injection  |
+| `portal-grounding`  | Portal-aware path resolution via `PathResolver` |
+
+Skills live in `.copilot/skills/<name>/SKILL.md` (interactive agent) and
+`Blueprints/Skills/<name>.skill.md` (daemon agent). Both formats converge
+on `name`, `description`, and a procedural Markdown body.
+
+---
+
+## 5. Skills & Plans
+
+### The /plan Skill
+
+The `/plan` skill produces structured phase planning documents
+(`phase-NN-*.md`) with:
+
+- **Per-step manifests** — machine-readable YAML blocks beside the prose
+- **TDD-First format** — Actions, Architecture Notes, Planned Tests, Success Criteria
+- **Dependency graph** — `depends_on` chains between steps
+- **Acceptance criteria** — both test names and outcome gates
+
+Output example:
+
+````markdown
+### Step 3: Wire health endpoint in daemon main
+
+**Actions:**
+
+- `apps/daemon/main.ts`: Add `/health` route registration in the
+  `createServer()` setup block, after the existing config watcher.
+
+**Architecture Notes:**
+
+- The endpoint does not need auth — it is a liveness probe.
+- Use the existing `Router` instance from `@exaix/serve`.
+
+**Planned Tests:**
+
+- `GET /health returns 200` — integration test with mock server.
+- `[regression] existing routes still respond correctly` — ensures no
+  route collision.
+
+**Success Criteria:**
+
+- `deno task check clean`
+- `deno task test --filter health` passes
+
+```yaml
+# step-manifest
+step: 3
+title: Wire health endpoint in daemon main
+identity: senior-coder
+skills: [tdd-methodology]
+portal: exaix-self
+target_branch: feature/health-endpoint
+depends_on: [2]
+acceptance:
+  tests:
+    - "GET /health returns 200"
+  outcomes:
+    - "deno task check clean"
+```
+````
+
+````
+### Using the /plan Skill
 
 ```bash
-# List plans
-deno run -A apps/exactl/main.ts plan list
+# Load the plan skill in your AI agent session:
+#   /plan
+# Describe the feature at a high level.
+# The skill produces a full phase-NN-*.md document.
 
-# Show a specific plan
-deno run -A apps/exactl/main.ts plan show <plan-id>
+# Then convert each step to a request file:
+#   - Copy the step manifest fields to request frontmatter
+#   - Copy Actions/Acceptance to request body
+#   - Drop into Workspace/Requests/
+````
 
-# Approve a plan (triggers execution)
-deno run -A apps/exactl/main.ts plan approve <plan-id>
-```
+---
 
-### Step 5: Track Progress
+## 6. Headless Delegation
 
-Each request→plan→execution cycle is tracked in the Activity Journal:
+For steps that need stronger reasoning than Ollama provides, delegate
+execution to OpenCode CLI or Claude Code as a headless subprocess.
+
+### 6.1 OpenCode CLI (`opencode run`)
+
+Requires: [OpenCode CLI](https://opencode.ai) installed and configured.
+
+The daemon can spawn `opencode run` as a headless agent inside the worktree:
 
 ```bash
-# List recent activity
-deno run -A apps/exactl/main.ts activity list --limit 10
-
-# Show details for a specific trace
-deno run -A apps/exactl/main.ts activity show <trace-id>
+opencode run --format json \
+  --dir /path/to/worktree \
+  --agent dogfood-coder \
+  "Implement the health endpoint as specified in Session/abc-123/brief.json"
 ```
 
-## Configuration
+**Key flags for dogfooding:**
 
-### Environment Variable Overrides
+| Flag                             | Purpose                                       |
+| -------------------------------- | --------------------------------------------- |
+| `--format json`                  | Machine-parseable JSON events to stdout       |
+| `--dir <path>`                   | Isolate to worktree (never sees live repo)    |
+| `--agent <name>`                 | Agent with pinned tool permissions            |
+| `--file <path>`                  | Attach context files (brief, acceptance)      |
+| `-m provider/model`              | Override model per step                       |
+| `-c / --continue`                | Resume interrupted session                    |
+| `--dangerously-skip-permissions` | Skip approval prompts (use with pinned agent) |
 
-| Variable           | Default         | Description                     |
-| ------------------ | --------------- | ------------------------------- |
-| `EXA_LLM_PROVIDER` | `ollama`        | LLM provider (`ollama`, `mock`) |
-| `EXA_LLM_MODEL`    | `ollama/llama3` | Model name                      |
-| `EXA_LLM_BASE_URL` | —               | Provider API base URL           |
-| `EXA_CONFIG_PATH`  | —               | Override config file path       |
-| `DOGFOOD_ROOT`     | —               | Override sandbox root (testing) |
+**Recommended agent config** (`~/.config/opencode/opencode.jsonc`):
+
+```jsonc
+{
+  "agent": {
+    "dogfood-coder": {
+      "permission": {
+        "*": "deny",
+        "read": "allow",
+        "edit": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "bash": {
+          "*": "deny",
+          "git status *": "allow",
+          "git diff *": "allow",
+          "git add *": "allow",
+          "git commit *": "allow",
+          "deno task *": "allow",
+          "deno test *": "allow",
+          "deno check *": "allow",
+          "deno fmt --check *": "allow",
+          "grep *": "allow"
+        }
+      }
+    }
+  }
+}
+```
+
+### 6.2 Claude Code (`claude -p`)
+
+Requires: Claude Code Pro/Max subscription.
+
+```bash
+claude -p "Implement the health endpoint" \
+  --output-format json \
+  --permission-mode acceptEdits
+```
+
+Note: Claude Code runs on your subscription, not your API key. The daemon
+strips provider env vars before spawning to avoid auth confusion.
+
+### 6.3 The Brief → Launch → Return → Reconcile Cycle
+
+When the daemon delegates to a headless agent:
+
+1. **Brief** — The daemon writes `Session/{traceId}/brief.json` with
+   the objective, scope, and acceptance criteria from the request.
+2. **Launch** — The daemon spawns `opencode run` or `claude -p` inside
+   the worktree, passing the brief as context.
+3. **Work** — The headless agent plans, edits files, and runs commands
+   inside the isolated worktree.
+4. **Return** — The daemon parses the JSON event stream, computes the
+   `git diff`, and synthesizes `return.json`.
+5. **Reconcile** — The daemon runs a path-scope check (only worktree
+   files were touched), attributes costs, and presents the changeset
+   for human review.
+
+This is Phase 111 (not yet implemented). Without it, the daemon uses its
+in-process agent (`ReActLoopStrategy`) which works identically but runs
+on the daemon's own provider.
+
+---
+
+## 7. Configuration
+
+### Environment Variables
+
+| Variable           | Default         | Description                           |
+| ------------------ | --------------- | ------------------------------------- |
+| `EXA_LLM_PROVIDER` | `ollama`        | LLM provider (`ollama`, `mock`, etc.) |
+| `EXA_LLM_MODEL`    | `ollama/llama3` | Model name                            |
+| `EXA_LLM_BASE_URL` | —               | Provider API base URL                 |
+| `EXA_CONFIG_PATH`  | —               | Config file path (set by bootstrap)   |
+| `DOGFOOD_ROOT`     | —               | Override sandbox root (testing)       |
 
 ### Config Preset
 
-The dogfood config template lives at `configs/dogfood.toml`. It uses sentinel
-values (`__DOGFOOD_ROOT__`, `__WORKTREE_PATH__`) that are replaced by the
-bootstrap script when creating a sandbox. The final config is written to
-`<sandbox>/workspace/exa.config.toml`.
+The dogfood config template at `configs/dogfood.toml` uses sentinel values
+replaced by the bootstrap script:
 
-Key settings:
+- `system.root = "__DOGFOOD_ROOT__"` → replaced with `~/exa-dogfood`
+- `ai.provider = "ollama"` — overridable via `EXA_LLM_PROVIDER`
+- `[[portals]]` — worktree portal `exaix-self` with `execution_strategy = "worktree"`
+- `quality_gate.enabled = false` — disabled for development workflows
 
-- `system.root = "__DOGFOOD_ROOT__"` — Replaced with the sandbox path
-- `ai.provider = "ollama"` — Default LLM provider (overridable)
-- `[[portals]]` — Worktree portal `exaix-self` with `execution_strategy = "worktree"`
-- `quality_gate.enabled = false` — Quality gate disabled for development workflows
+The final config is written to `<sandbox>/workspace/exa.config.toml`.
 
-## CI Gates
+### Daemon Commands
 
-Before submitting any dogfooding-related changes, run:
+| Command                                 | Purpose                    |
+| --------------------------------------- | -------------------------- |
+| `EXA_CONFIG_PATH=... deno task dogfood` | Start daemon               |
+| `deno task dogfood:stop`                | Gracefully stop            |
+| `deno task dogfood:status`              | Check if running           |
+| `deno task dogfood:log`                 | Last 50 log lines          |
+| `deno task dogfood:bootstrap`           | Bootstrap sandbox (legacy) |
 
-```bash
-deno task check clean
-deno task test
-```
+---
 
-All 14 pre-commit gates (fmt, lint, style, test-placement, magic, arch,
-complexity, docs, event-strings) must pass.
+## 8. When to Dogfood vs Interactive
 
-## Safety Notes
+| Scenario                                | Dogfood | Interactive |
+| --------------------------------------- | ------- | ----------- |
+| Hardened plan with well-scoped steps    | ✅      | ⚠️          |
+| Trivial one-line fix                    | ❌      | ✅          |
+| Complex refactor with clear acceptance  | ✅      | ⚠️          |
+| Investigating a flaky test              | ❌      | ✅          |
+| New feature from a known spec           | ✅      | ⚠️          |
+| Spiking a new library / pattern         | ❌      | ✅          |
+| Cross-cutting rename across 40 files    | ✅      | ⚠️          |
+| Interactive debugging / quick iteration | ❌      | ✅          |
+| Onboarding a new contributor            | ✅      | ⚠️          |
+| Security review of a changeset          | ✅      | ❌          |
 
-1. **Sandbox is external.** The dogfood sandbox lives at a path you choose outside
-   the repo — no files are created inside the checkout. The `.gitignore` entry
-   for `.dogfood/` is a safety net, not the primary mechanism.
-1. **Always use a worktree.** The dogfood config preset sets
-   `execution_strategy = "worktree"` and the bootstrap creates a dedicated
-   worktree. Never point `target_path` at your live checkout.
-1. **The config preset contains no secrets.** No API keys are committed.
-   Provider credentials are supplied via `EXA_LLM_*` environment variables.
-1. **Mock provider for testing.** Use `EXA_LLM_PROVIDER=mock` to test the
-   pipeline without a real LLM — no API call is made and no network is needed.
+**The sweet spot:** Author a plan with the `/plan` skill (interactive),
+convert steps to requests, let the daemon execute each step's
+RED→GREEN→commit loop, then review the diff and CI result. The daemon
+handles the mechanical work; you handle architecture decisions and
+final sign-off.
 
-## Troubleshooting
+---
 
-| Symptom                    | Likely Cause              | Fix                                    |
-| -------------------------- | ------------------------- | -------------------------------------- |
-| Daemon exits immediately   | Config validation error   | Run `deno task dogfood:log` for error  |
-| Request not processed      | Debounce timer            | Wait 2–3 seconds after writing         |
-| Plan not generated         | Provider not available    | Check Ollama or API key                |
-| Portal knowledge empty     | Empty or new repo         | Run `exactl portal analyze exaix-self` |
-| Permission errors on start | Missing `--allow-*` flags | Use `deno task dogfood` (sets flags)   |
+## 9. Troubleshooting
+
+| Symptom                    | Likely Cause                | Fix                                  |
+| -------------------------- | --------------------------- | ------------------------------------ |
+| Daemon exits immediately   | Config validation error     | Run `deno task dogfood:log`          |
+| Request not processed      | FileWatcher debounce        | Wait 2–3 seconds after writing       |
+| Plan not generated         | Provider not available      | Check Ollama or API key              |
+| Portal knowledge empty     | Empty or new repo           | `exactl portal analyze exaix-self`   |
+| Permission errors on start | Missing `--allow-*` flags   | Use `deno task dogfood` (sets flags) |
+| Worktree creation fails    | Dirty index / branch exists | Manual `git worktree prune`          |
+
+---
 
 ## See Also
 
-- `configs/dogfood.toml` — Dogfood config preset
-- `scripts/dogfood_daemon.ts` — Daemon lifecycle script
-- `scripts/dogfood_bootstrap.ts` — Worktree bootstrap script
-- `tests/integration/dogfood_e2e_test.ts` — End-to-end integration test
-- `tests/integration/dogfood_smoke_test.ts` — In-process request→plan test
-- [Exaix User Guide](Exaix_User_Guide.md) — General usage documentation
+- `exaix-dev-docs/dev/Exaix_Dogfooding_Analysis.md` — Full analysis of dogfooding readiness, gaps, and future phases
+- `exaix-dev-docs/planning/phase-120-dogfooding-a-c.md` — Phase 120 implementation plan (config, bootstrap, docs)
+- [Exaix User Guide](Exaix_User_Guide.md) — General usage and deployment
+- [Exaix Evaluation Guide](Exaix_Evaluation.md) — Scenario framework and `exactl eval`
+- `TOOLS.md` — All agent-accessible MCP tools
+- `CODE_STYLE.md` — Coding standards and conventions
+- `.copilot/skills/` — Available agent skills for plans and execution
+- `docs/Reference_Data.md` — Event taxonomy, edition matrix, module index
