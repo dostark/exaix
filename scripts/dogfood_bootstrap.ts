@@ -2,22 +2,57 @@
 /**
  * @module DogfoodBootstrap
  * @path scripts/dogfood_bootstrap.ts
- * @description Bootstraps a dogfooding worktree: creates a git worktree, registers
- *   the portal, and waits for portal knowledge.
+ * @description Bootstraps a dogfooding sandbox by reusing existing deployment
+ *   infrastructure (deploy_workspace.ts, migrate_db.ts). Creates an external
+ *   sandbox directory, deploys a workspace, creates a git worktree, registers
+ *   it as a portal, and replaces sentinel values in the dogfood config.
  *
  * Usage:
- *   deno run -A scripts/dogfood_bootstrap.ts <worktree_path>
+ *   deno run -A scripts/dogfood_bootstrap.ts \
+ *     --dir ~/exa-dogfood \
+ *     --worktree /path/to/worktree
+ *
+ * Options:
+ *   --dir       Required. External sandbox root (no files created inside the repo)
+ *   --worktree  Required. Git worktree path (agent's isolated working copy)
+ *
+ * Environment:
+ *   DOGFOOD_BOOTSTRAP_TEST=1  Skip git worktree and portal commands (CI testing)
+ *   TEST_GIT_REPO=<path>      Git repo root for test mode (default: cwd)
  */
 
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 
 const REPO_ROOT = resolve(join(dirname(fromFileUrl(import.meta.url)), ".."));
-const CONFIG_PATH = Deno.env.get("OVERRIDE_CONFIG_PATH") || join(REPO_ROOT, "configs/dogfood.toml");
+const DOGFOOD_CONFIG_TEMPLATE = Deno.env.get("OVERRIDE_CONFIG_PATH") || join(REPO_ROOT, "configs/dogfood.toml");
 const EXACTL_CMD = ["deno", "run", "-A", join(REPO_ROOT, "apps/exactl/main.ts")];
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 30_000;
 
-async function runCommand(cmd: string[], cwd?: string): Promise<{ code: number; stdout: string; stderr: string }> {
+async function run(
+  cmd: string[],
+  description: string,
+  options: { cwd?: string; env?: Record<string, string> } = {},
+): Promise<boolean> {
+  console.log(`  ${description}...`);
+  const status = await new Deno.Command(cmd[0], {
+    args: cmd.slice(1),
+    stdout: "inherit",
+    stderr: "inherit",
+    cwd: options.cwd,
+    env: options.env,
+  }).spawn().status;
+  if (!status.success) {
+    console.error(`  ❌ ${description} failed`);
+    return false;
+  }
+  return true;
+}
+
+async function runCommand(
+  cmd: string[],
+  cwd?: string,
+): Promise<{ code: number; stdout: string; stderr: string }> {
   const proc = new Deno.Command(cmd[0], {
     args: cmd.slice(1),
     cwd,
@@ -33,24 +68,50 @@ async function runCommand(cmd: string[], cwd?: string): Promise<{ code: number; 
 }
 
 async function main() {
-  const args = Deno.args;
   const isTestMode = Deno.env.get("DOGFOOD_BOOTSTRAP_TEST") === "1";
   const testGitRepo = Deno.env.get("TEST_GIT_REPO");
+  const args = Deno.args;
 
-  if (args.length < 1) {
-    console.error("Usage: dogfood_bootstrap.ts <worktree_path>");
+  // Parse --dir and --worktree
+  let sandboxRoot: string | undefined;
+  let worktreePath: string | undefined;
+  let i = 0;
+  while (i < args.length) {
+    if (args[i] === "--dir" && i + 1 < args.length) {
+      sandboxRoot = resolve(args[i + 1]);
+      i += 2;
+    } else if (args[i] === "--worktree" && i + 1 < args.length) {
+      worktreePath = resolve(args[i + 1]);
+      i += 2;
+    } else {
+      i++;
+    }
+  }
+
+  if (!sandboxRoot || !worktreePath) {
+    console.error("Usage: dogfood_bootstrap.ts --dir <sandbox-root> --worktree <worktree-path>");
     Deno.exit(1);
   }
 
-  let worktreePath = args[0];
-  if (!worktreePath.startsWith("/")) {
-    worktreePath = resolve(Deno.cwd(), worktreePath);
-  }
+  const gitRepoRoot = (isTestMode && testGitRepo) ? resolve(testGitRepo) : REPO_ROOT;
+  const workspaceDir = join(sandboxRoot, "workspace");
+  const configPath = join(workspaceDir, "exa.config.toml");
+  const runtimeDir = join(sandboxRoot, ".exa");
 
-  // Validate the worktree path does not already exist
+  // 1. Validate inputs (always runs, even in test mode — safety checks)
+  try {
+    await Deno.stat(sandboxRoot);
+    console.error(`Error: Sandbox root already exists: ${sandboxRoot}`);
+    Deno.exit(1);
+  } catch (e) {
+    if (!(e instanceof Deno.errors.NotFound)) {
+      console.error(`Error checking sandbox root: ${e}`);
+      Deno.exit(1);
+    }
+  }
   try {
     await Deno.stat(worktreePath);
-    console.error(`Error: Path already exists: ${worktreePath}`);
+    console.error(`Error: Worktree path already exists: ${worktreePath}`);
     Deno.exit(1);
   } catch (e) {
     if (!(e instanceof Deno.errors.NotFound)) {
@@ -59,14 +120,10 @@ async function main() {
     }
   }
 
-  // Determine git repo root
-  const gitRepoRoot = (isTestMode && testGitRepo) ? testGitRepo : REPO_ROOT;
-
-  // Validate repo root
   const gitDir = join(gitRepoRoot, ".git");
   try {
-    const stat = await Deno.stat(gitDir);
-    if (!stat.isDirectory && !stat.isFile) {
+    const st = await Deno.stat(gitDir);
+    if (!st.isDirectory && !st.isFile) {
       console.error("Error: Not a git repository (no .git directory found)");
       Deno.exit(1);
     }
@@ -75,58 +132,106 @@ async function main() {
     Deno.exit(1);
   }
 
+  console.log(`\nBootstrapping dogfood sandbox at: ${sandboxRoot}`);
+  console.log(`  Worktree: ${worktreePath}`);
+  console.log(`  Git repo: ${gitRepoRoot}\n`);
+
+  // 2. Create sandbox directory structure
+  await Deno.mkdir(sandboxRoot, { recursive: true });
+
   if (!isTestMode) {
-    // 1. Create git worktree
-    console.log(`Creating git worktree at: ${worktreePath}`);
-    const wtResult = await runCommand(["git", "worktree", "add", "--force", worktreePath, "HEAD"], gitRepoRoot);
-    if (wtResult.code !== 0) {
-      console.error(`Failed to create worktree: ${wtResult.stderr.trim()}`);
+    // 3. Deploy workspace (reuses existing deploy_workspace.ts)
+    if (
+      !await run(
+        ["deno", "run", "-A", join(REPO_ROOT, "scripts/deploy_workspace.ts"), workspaceDir],
+        "Deploying workspace",
+      )
+    ) {
+      Deno.exit(1);
+    }
+  } else {
+    // Test mode: create workspace dirs directly (no deploy_workspace.ts needed)
+    await Deno.mkdir(workspaceDir, { recursive: true });
+    await Deno.mkdir(join(workspaceDir, "Workspace", "Requests"), { recursive: true });
+    await Deno.mkdir(join(workspaceDir, "Workspace", "Plans"), { recursive: true });
+  }
+
+  // 4. Write dogfood config into workspace (replace sentinels)
+  const templateContent = Deno.readTextFileSync(DOGFOOD_CONFIG_TEMPLATE);
+  let configContent = templateContent.replaceAll("__DOGFOOD_ROOT__", sandboxRoot);
+  configContent = configContent.replaceAll("__WORKTREE_PATH__", worktreePath);
+  Deno.writeTextFileSync(configPath, configContent);
+  console.log(`  ✅ Dogfood config written to ${configPath}`);
+
+  // 5. Initialize database
+  if (!isTestMode) {
+    if (
+      !await run(
+        ["deno", "run", "-A", join(REPO_ROOT, "scripts/migrate_db.ts"), "up"],
+        "Initializing database",
+        { env: { EXA_CONFIG_PATH: configPath } },
+      )
+    ) {
       Deno.exit(1);
     }
   }
 
-  // 2. Replace __WORKTREE_PATH__ in config
-  console.log("Updating config with worktree path...");
-  const configContent = Deno.readTextFileSync(CONFIG_PATH);
-  const updated = configContent.replace(/__WORKTREE_PATH__/g, worktreePath);
-  Deno.writeTextFileSync(CONFIG_PATH, updated);
-
-  // 3. Register portal (skip in test mode)
+  // 6. Create git worktree (skip in test mode)
   if (!isTestMode) {
-    console.log("Registering portal exaix-self...");
-    const portalResult = await runCommand([...EXACTL_CMD, "portal", "add", worktreePath, "exaix-self"]);
+    if (
+      !await run(
+        ["git", "worktree", "add", "--force", worktreePath, "HEAD"],
+        "Creating git worktree",
+        { cwd: gitRepoRoot },
+      )
+    ) {
+      console.error("Failed to create worktree. See output above.");
+      Deno.exit(1);
+    }
+  }
+
+  // 7. Register portal
+  if (!isTestMode) {
+    const portalResult = await runCommand(
+      [...EXACTL_CMD, "portal", "add", worktreePath, "exaix-self"],
+    );
     if (portalResult.code !== 0) {
       console.error(`Failed to register portal: ${portalResult.stderr.trim()}`);
       Deno.exit(1);
     }
+    console.log("  ✅ Portal exaix-self registered");
 
-    // 4. Wait for portal knowledge
-    console.log("Waiting for portal knowledge...");
+    // 8. Wait for portal knowledge
+    console.log("  Waiting for portal knowledge...");
     const deadline = Date.now() + POLL_TIMEOUT_MS;
     let knowledgeReady = false;
     while (Date.now() < deadline) {
-      const knResult = await runCommand([...EXACTL_CMD, "portal", "knowledge", "exaix-self", "--json"]);
+      const knResult = await runCommand(
+        [...EXACTL_CMD, "portal", "knowledge", "exaix-self", "--json"],
+      );
       if (knResult.code === 0 && knResult.stdout.trim().length > 0 && knResult.stdout.trim() !== "{}") {
         knowledgeReady = true;
         break;
       }
       await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
     }
-
-    if (!knowledgeReady) {
-      console.error("Warning: Portal knowledge not generated within timeout.");
+    if (knowledgeReady) {
+      console.log("  ✅ Portal knowledge ready");
     } else {
-      console.log("Portal knowledge ready.");
+      console.error("  ⚠️  Portal knowledge not generated within timeout (you can run: exactl portal analyze exaix-self)");
     }
   }
 
-  console.log("\nBootstrap complete!");
+  console.log(`\n✅ Bootstrap complete!`);
+  console.log(`  Sandbox: ${sandboxRoot}`);
   console.log(`  Worktree: ${worktreePath}`);
-  if (!isTestMode) {
-    console.log("\nNext steps:");
-    console.log("  deno task dogfood");
-    console.log("  # Write a request to Workspace/Requests/");
-  }
+  console.log(`  Config: ${configPath}`);
+  console.log(`\nStart the daemon with:`);
+  console.log(`  EXA_CONFIG_PATH=${configPath} deno task dogfood`);
+  console.log(`\nOr set up aliases:`);
+  console.log(`  export DOGFOOD_SANDBOX=${sandboxRoot}`);
+  console.log(`  export EXA_CONFIG_PATH=${configPath}`);
+  console.log(`  deno task dogfood`);
 }
 
 if (import.meta.main) {

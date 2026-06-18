@@ -1,7 +1,8 @@
 /**
  * @module DogfoodDaemonTest
  * @path tests/integration/dogfood_daemon_test.ts
- * @description Integration test for the dogfood daemon lifecycle script
+ * @description Integration test for the dogfood daemon lifecycle script, operating
+ * in an isolated temp directory via DOGFOOD_ROOT to avoid touching real .dogfood/.
  */
 
 import { assert, assertEquals } from "@std/assert";
@@ -31,51 +32,70 @@ async function runScript(
 }
 
 Deno.test({
-  name: "dogfood daemon lifecycle: start → status → stop",
+  name: "dogfood daemon lifecycle: start → status → stop (isolated temp dir)",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    // Start the daemon
-    const startResult = await runScript(["start"]);
-    assertEquals(startResult.code, 0, `start failed: ${startResult.stderr}`);
+    const sandboxRoot = await Deno.makeTempDir({ prefix: "dogfood-daemon-test-" });
+    const pidPath = join(sandboxRoot, ".exa", "daemon.pid");
 
-    // Verify PID file exists
-    const pidPath = join(".dogfood", ".exa", "daemon.pid");
-    let pidFile: Deno.FileInfo;
+    // Set DOGFOOD_ROOT to point at temp dir (prevents touching real .dogfood/)
+    const env = { DOGFOOD_ROOT: sandboxRoot };
+
     try {
-      pidFile = await Deno.stat(pidPath);
-    } catch {
-      throw new Error(`PID file not found at ${pidPath}. stdout: ${startResult.stdout}`);
-    }
-    assert(pidFile.isFile, "PID file should be a regular file");
+      // Start the daemon
+      const startResult = await runScript(["start"], env);
+      assertEquals(startResult.code, 0, `start failed: ${startResult.stderr}`);
 
-    // Verify status reports running
-    const statusResult = await runScript(["status"]);
-    assertEquals(statusResult.code, 0, "status should exit 0 when running");
-    assert(statusResult.stdout.includes("running"), `expected "running" in status output: ${statusResult.stdout}`);
+      // Verify PID file exists in the temp sandbox
+      let pidFile: Deno.FileInfo;
+      try {
+        pidFile = await Deno.stat(pidPath);
+      } catch {
+        throw new Error(
+          `PID file not found at ${pidPath}. stdout: ${startResult.stdout}`,
+        );
+      }
+      assert(pidFile.isFile, "PID file should be a regular file");
 
-    // Stop the daemon
-    const stopResult = await runScript(["stop"]);
-    assertEquals(stopResult.code, 0, `stop failed: ${stopResult.stderr}`);
+      // Verify status reports running
+      const statusResult = await runScript(["status"], env);
+      assertEquals(statusResult.code, 0, "status should exit 0 when running");
+      assert(
+        statusResult.stdout.includes("running"),
+        `expected "running" in status output: ${statusResult.stdout}`,
+      );
 
-    // Verify PID file is cleaned up
-    try {
-      await Deno.stat(pidPath);
-      throw new Error("PID file should have been removed after stop");
-    } catch (e) {
-      if (e instanceof Deno.errors.NotFound) {
-        // Expected — PID file removed
-      } else {
-        throw e;
+      // Stop the daemon
+      const stopResult = await runScript(["stop"], env);
+      assertEquals(stopResult.code, 0, `stop failed: ${stopResult.stderr}`);
+
+      // Verify PID file is cleaned up
+      try {
+        await Deno.stat(pidPath);
+        throw new Error("PID file should have been removed after stop");
+      } catch (e) {
+        if (e instanceof Deno.errors.NotFound) {
+          // Expected — PID file removed
+        } else {
+          throw e;
+        }
+      }
+
+      // Verify status reports not running
+      const statusAfterResult = await runScript(["status"], env);
+      assertEquals(statusAfterResult.code, 1, "status should exit 1 when not running");
+      assert(
+        statusAfterResult.stdout.includes("not running"),
+        `expected "not running" in status output: ${statusAfterResult.stdout}`,
+      );
+    } finally {
+      // Clean up temp sandbox
+      try {
+        await Deno.remove(sandboxRoot, { recursive: true });
+      } catch {
+        // ignore cleanup errors
       }
     }
-
-    // Verify status reports not running
-    const statusAfterResult = await runScript(["status"]);
-    assertEquals(statusAfterResult.code, 1, "status should exit 1 when not running");
-    assert(
-      statusAfterResult.stdout.includes("not running"),
-      `expected "not running" in status output: ${statusAfterResult.stdout}`,
-    );
   },
 });

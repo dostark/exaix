@@ -3,38 +3,78 @@
  * @module DogfoodDaemon
  * @path scripts/dogfood_daemon.ts
  * @description Manages the dogfood daemon lifecycle — start, stop, status.
- *   Reads configs/dogfood.toml to resolve the runtime directory and PID file path.
- *   Spawns apps/daemon/main.ts as a subprocess.
+ *   Reads the dogfood config (configs/dogfood.toml or EXA_CONFIG_PATH) to resolve
+ *   the sandbox root and PID file. Supports DOGFOOD_ROOT for test isolation.
  *
  * Usage:
  *   deno run -A scripts/dogfood_daemon.ts start
  *   deno run -A scripts/dogfood_daemon.ts stop
  *   deno run -A scripts/dogfood_daemon.ts status
+ *
+ * Environment:
+ *   DOGFOOD_ROOT   Override sandbox root (for testing with isolated temp dirs)
+ *   EXA_CONFIG_PATH  Config file path (set by bootstrap or user)
+ *   EXA_TEST_MODE  Passed to daemon subprocess
  */
 
 import { ensureDir } from "@std/fs";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 
 const REPO_ROOT = resolve(join(dirname(fromFileUrl(import.meta.url)), ".."));
-const DOGFOOD_CONFIG_PATH = join(REPO_ROOT, "configs/dogfood.toml");
+const DEFAULT_CONFIG_PATH = join(REPO_ROOT, "configs/dogfood.toml");
 
-function getRootFromConfig(): string {
-  const content = Deno.readTextFileSync(DOGFOOD_CONFIG_PATH);
+function getConfigPath(): string {
+  const cfgFromEnv = Deno.env.get("EXA_CONFIG_PATH");
+  if (cfgFromEnv) return cfgFromEnv;
+
+  // When DOGFOOD_ROOT is set, create a resolved copy of the default config
+  const envRoot = Deno.env.get("DOGFOOD_ROOT");
+  if (envRoot) {
+    const resolvedRoot = resolve(envRoot);
+    const content = Deno.readTextFileSync(DEFAULT_CONFIG_PATH);
+    const updated = content.replaceAll("__DOGFOOD_ROOT__", resolvedRoot);
+    const tempCfg = join(resolvedRoot, ".exa", "dogfood-config.toml");
+    Deno.writeTextFileSync(tempCfg, updated);
+    return tempCfg;
+  }
+
+  return DEFAULT_CONFIG_PATH;
+}
+
+function resolveRoot(): string {
+  const envRoot = Deno.env.get("DOGFOOD_ROOT");
+  if (envRoot) {
+    return resolve(envRoot);
+  }
+
+  const configPath = getConfigPath();
+  const content = Deno.readTextFileSync(configPath);
   for (const line of content.split("\n")) {
     const trimmed = line.trim();
-    if (trimmed.startsWith("[system]")) continue;
+    if (trimmed.startsWith("[")) continue;
     const match = trimmed.match(/^root\s*=\s*"(.+)"$/);
-    if (match) return match[1];
+    if (match) {
+      let val = match[1];
+      if (val === "__DOGFOOD_ROOT__") {
+        console.error(
+          "Error: Config still contains __DOGFOOD_ROOT__ sentinel.\n" +
+          "  Run: deno run -A scripts/dogfood_bootstrap.ts --dir <path> --worktree <path>\n" +
+          "  Or set: DOGFOOD_ROOT=/path/to/sandbox",
+        );
+        Deno.exit(1);
+      }
+      if (!val.startsWith("/")) {
+        return join(REPO_ROOT, val);
+      }
+      return val;
+    }
   }
-  return "./.dogfood";
+  console.error("Error: Could not determine dogfood root from config");
+  Deno.exit(1);
 }
 
 function getRuntimeDir(): string {
-  let root = getRootFromConfig();
-  if (!root.startsWith("/")) {
-    root = join(REPO_ROOT, root);
-  }
-  return join(root, ".exa");
+  return join(resolveRoot(), ".exa");
 }
 
 function getPidPath(): string {
@@ -47,30 +87,15 @@ async function cmdStart(): Promise<void> {
 
   const pidPath = getPidPath();
   const daemonEntry = join(REPO_ROOT, "apps/daemon/main.ts");
+  const configPath = getConfigPath();
+  const logPath = join(runtimeDir, "daemon.log");
 
   const allowRunBinaries = [
-    "git",
-    "deno",
-    "npm",
-    "node",
-    "exoctl",
-    "ls",
-    "grep",
-    "echo",
-    "printf",
-    "pwd",
-    "whoami",
-    "id",
-    "date",
-    "uptime",
-    "which",
-    "type",
-    "command",
-    "hash",
-    "alias",
+    "git", "deno", "npm", "node", "exoctl",
+    "ls", "grep", "echo", "printf", "pwd",
+    "whoami", "id", "date", "uptime", "which",
+    "type", "command", "hash", "alias",
   ].join(",");
-
-  const logPath = join(getRuntimeDir(), "daemon.log");
 
   const proc = new Deno.Command("deno", {
     args: [
@@ -88,12 +113,11 @@ async function cmdStart(): Promise<void> {
     stdout: "piped",
     stderr: "piped",
     env: {
-      EXA_CONFIG_PATH: DOGFOOD_CONFIG_PATH,
+      EXA_CONFIG_PATH: configPath,
       ...(Deno.env.get("EXA_TEST_MODE") ? { EXA_TEST_MODE: "1" } : {}),
     },
   }).spawn();
 
-  // Pipe daemon output to log file
   (async () => {
     const logFile = await Deno.open(logPath, { write: true, create: true, append: true });
     try {
@@ -137,37 +161,22 @@ async function cmdStop(): Promise<void> {
   try {
     Deno.kill(pid, "SIGTERM");
   } catch {
-    // Process may already be dead
+    // already dead
   }
 
-  // Wait up to 5 seconds for the process to exit
   for (let i = 0; i < 50; i++) {
     try {
       Deno.kill(pid, 0);
       await new Promise((r) => setTimeout(r, 100));
     } catch {
-      // Process exited
-      try {
-        Deno.removeSync(pidPath);
-      } catch {
-        // PID file may already be removed
-      }
+      try { Deno.removeSync(pidPath); } catch {}
       console.log("Daemon stopped");
       return;
     }
   }
 
-  // Force kill
-  try {
-    Deno.kill(pid, "SIGKILL");
-  } catch {
-    // Process already dead
-  }
-  try {
-    Deno.removeSync(pidPath);
-  } catch {
-    // PID file may already be removed
-  }
+  try { Deno.kill(pid, "SIGKILL"); } catch {}
+  try { Deno.removeSync(pidPath); } catch {}
   console.log("Daemon force-stopped (SIGKILL)");
 }
 
@@ -176,10 +185,7 @@ function cmdStatus(): void {
   try {
     const content = Deno.readTextFileSync(pidPath).trim();
     const pid = Number(content);
-    if (isNaN(pid)) {
-      console.log("not running (invalid PID file)");
-      Deno.exit(1);
-    }
+    if (isNaN(pid)) throw new Error("invalid PID");
     Deno.kill(pid, 0);
     console.log(`running (PID ${pid})`);
     Deno.exit(0);
@@ -188,12 +194,7 @@ function cmdStatus(): void {
       console.log("not running");
       Deno.exit(1);
     }
-    // PID exists but process not found
-    try {
-      Deno.removeSync(pidPath);
-    } catch {
-      // ignore cleanup errors
-    }
+    try { Deno.removeSync(pidPath); } catch {}
     console.log("not running (stale PID file cleaned up)");
     Deno.exit(1);
   }
@@ -201,7 +202,6 @@ function cmdStatus(): void {
 
 async function main() {
   const cmd = Deno.args[0];
-
   switch (cmd) {
     case "start":
       await cmdStart();

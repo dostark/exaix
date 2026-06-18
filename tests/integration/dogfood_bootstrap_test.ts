@@ -41,7 +41,14 @@ Deno.test("dogfood bootstrap fails without argument", async () => {
 Deno.test("dogfood bootstrap fails on non-git directory", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "dogfood-bootstrap-test-" });
   try {
-    const result = await runScript([join(tempDir, "worktree")], {
+    const sandboxRoot = join(tempDir, "sandbox");
+    const worktreePath = join(tempDir, "worktree");
+    const result = await runScript([
+      "--dir",
+      sandboxRoot,
+      "--worktree",
+      worktreePath,
+    ], {
       DOGFOOD_BOOTSTRAP_TEST: "1",
       TEST_GIT_REPO: tempDir,
     });
@@ -56,16 +63,21 @@ Deno.test("dogfood bootstrap fails on non-git directory", async () => {
   }
 });
 
-Deno.test("dogfood bootstrap validates existing path", async () => {
+Deno.test("dogfood bootstrap validates existing paths", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "dogfood-bootstrap-test-" });
   try {
     createFakeGitRepo(tempDir);
-    // Path already exists (tempDir itself)
-    const result = await runScript([tempDir], {
+    // Both sandbox root and worktree path already exist (tempDir itself)
+    const result = await runScript([
+      "--dir",
+      tempDir,
+      "--worktree",
+      tempDir,
+    ], {
       DOGFOOD_BOOTSTRAP_TEST: "1",
       TEST_GIT_REPO: tempDir,
     });
-    assert(result.code !== 0, "should exit non-zero when worktree path exists");
+    assert(result.code !== 0, "should exit non-zero when paths exist");
     assertStringIncludes(result.stderr, "already exists");
   } finally {
     try {
@@ -76,8 +88,9 @@ Deno.test("dogfood bootstrap validates existing path", async () => {
   }
 });
 
-Deno.test("dogfood bootstrap replaces __WORKTREE_PATH__ in config", async () => {
+Deno.test("dogfood bootstrap replaces sentinels in config", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "dogfood-bootstrap-test-" });
+  const sandboxRoot = join(tempDir, "sandbox");
   const worktreePath = join(tempDir, "worktree");
 
   try {
@@ -89,7 +102,12 @@ Deno.test("dogfood bootstrap replaces __WORKTREE_PATH__ in config", async () => 
     const realConfig = Deno.readTextFileSync("configs/dogfood.toml");
     Deno.writeTextFileSync(join(configsDir, "dogfood.toml"), realConfig);
 
-    const result = await runScript([worktreePath], {
+    const result = await runScript([
+      "--dir",
+      sandboxRoot,
+      "--worktree",
+      worktreePath,
+    ], {
       DOGFOOD_BOOTSTRAP_TEST: "1",
       TEST_GIT_REPO: tempDir,
       OVERRIDE_CONFIG_PATH: join(configsDir, "dogfood.toml"),
@@ -97,9 +115,13 @@ Deno.test("dogfood bootstrap replaces __WORKTREE_PATH__ in config", async () => 
 
     assert(result.code === 0, `bootstrap should succeed: ${result.stderr}`);
 
-    // Verify __WORKTREE_PATH__ was replaced in the config
-    const configContent = Deno.readTextFileSync(join(configsDir, "dogfood.toml"));
-    assert(!configContent.includes("__WORKTREE_PATH__"), "placeholder should be replaced");
+    // Verify __DOGFOOD_ROOT__ and __WORKTREE_PATH__ were replaced
+    // (the script writes to workspace/exa.config.toml, not to the template)
+    const workspaceConfig = join(sandboxRoot, "workspace", "exa.config.toml");
+    const configContent = Deno.readTextFileSync(workspaceConfig);
+    assert(!configContent.includes("__DOGFOOD_ROOT__"), "__DOGFOOD_ROOT__ should be replaced");
+    assert(!configContent.includes("__WORKTREE_PATH__"), "__WORKTREE_PATH__ should be replaced");
+    assertStringIncludes(configContent, sandboxRoot);
     assertStringIncludes(configContent, worktreePath);
   } finally {
     try {

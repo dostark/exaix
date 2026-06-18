@@ -16,14 +16,16 @@ full trace_id audit trail.
 ## Quick Start
 
 ```bash
-# 1. Create a git worktree (isolated working copy for agent changes)
-deno task dogfood:bootstrap /path/to/worktree
+# 1. Bootstrap a dogfood sandbox (creates workspace + git worktree)
+deno run -A scripts/dogfood_bootstrap.ts \
+  --dir ~/exa-dogfood \
+  --worktree /path/to/worktree
 
-# 2. Start the daemon with the dogfood config preset
-deno task dogfood
+# 2. Start the daemon pointing at the sandbox
+EXA_CONFIG_PATH=~/exa-dogfood/workspace/exa.config.toml deno task dogfood
 
 # 3. Write a request file
-cat > .dogfood/Workspace/Requests/my-task.md << 'EOF'
+cat > ~/exa-dogfood/workspace/Workspace/Requests/my-task.md << 'EOF'
 ---
 trace_id: "$(uuidgen)"
 created: "$(date -Iseconds)"
@@ -36,8 +38,8 @@ created_by: developer
 Add a comment explaining the ConfigService.load() method
 EOF
 
-# 4. Wait for the plan to appear in .dogfood/Workspace/Plans/
-ls .dogfood/Workspace/Plans/
+# 4. Wait for the plan to appear
+ls ~/exa-dogfood/workspace/Workspace/Plans/
 
 # 5. Review and approve the plan
 deno run -A apps/exactl/main.ts plan list
@@ -49,37 +51,48 @@ deno task dogfood:stop
 
 ## Detailed Setup
 
-### Step 1: Bootstrap a Worktree
+### Step 1: Bootstrap a Sandbox
 
-The bootstrap script creates a git worktree, registers it as a portal, and
-replaces the `__WORKTREE_PATH__` placeholder in `configs/dogfood.toml` with
-the actual worktree path:
+The bootstrap script creates an external sandbox directory (outside the repo),
+deploys a workspace into it, creates a git worktree, and registers it as a portal:
 
 ```bash
-deno task dogfood:bootstrap /path/to/worktree
+deno run -A scripts/dogfood_bootstrap.ts \
+  --dir ~/exa-dogfood \
+  --worktree /path/to/worktree
 ```
 
 This:
 
+1. Creates the sandbox at `~/exa-dogfood/` (or your chosen path)
+1. Deploys a workspace with `deploy_workspace.ts` (reusing existing infrastructure)
+1. Writes the dogfood config with `__DOGFOOD_ROOT__` and `__WORKTREE_PATH__` replaced
+1. Initializes the database via `migrate_db.ts`
 1. Creates the worktree via `git worktree add`
-1. Sets `target_path` in `configs/dogfood.toml` to the worktree path
 1. Registers the portal as `exaix-self`
 1. Waits for portal knowledge generation
 
-> **Safety:** Always use a worktree — never point `target_path` at your live
-> checkout. Worktrees isolate agent writes so the live repo never sees
-> unapproved changes.
+> **Safety:** The sandbox lives outside your repo checkout. No files are created
+> inside the repository. The worktree isolates agent writes so the live repo
+> never sees unapproved changes.
 
 ### Step 2: Start the Daemon
 
 ```bash
+EXA_CONFIG_PATH=~/exa-dogfood/workspace/exa.config.toml deno task dogfood
+```
+
+Or, for convenience, export the path once:
+
+```bash
+export DOGFOOD_SANDBOX=~/exa-dogfood
+export EXA_CONFIG_PATH=$DOGFOOD_SANDBOX/workspace/exa.config.toml
 deno task dogfood
 ```
 
-This launches the daemon as a background subprocess using the dogfood config
-preset (`configs/dogfood.toml`). The daemon watches `Workspace/Requests/` for
-new request files, processes them through `RequestProcessor`, and writes plans
-to `Workspace/Plans/`.
+This launches the daemon as a background subprocess using the sandbox's config
+file. The daemon watches `Workspace/Requests/` for new request files, processes
+them through `RequestProcessor`, and writes plans to `Workspace/Plans/`.
 
 Useful daemon commands:
 
@@ -160,12 +173,18 @@ deno run -A apps/exactl/main.ts activity show <trace-id>
 | `EXA_LLM_MODEL`    | `ollama/llama3` | Model name                      |
 | `EXA_LLM_BASE_URL` | —               | Provider API base URL           |
 | `EXA_CONFIG_PATH`  | —               | Override config file path       |
+| `DOGFOOD_ROOT`     | —               | Override sandbox root (testing) |
 
 ### Config Preset
 
-The dogfood config preset lives at `configs/dogfood.toml`. Key settings:
+The dogfood config template lives at `configs/dogfood.toml`. It uses sentinel
+values (`__DOGFOOD_ROOT__`, `__WORKTREE_PATH__`) that are replaced by the
+bootstrap script when creating a sandbox. The final config is written to
+`<sandbox>/workspace/exa.config.toml`.
 
-- `system.root = "./.dogfood"` — All workspace data goes under `.dogfood/`
+Key settings:
+
+- `system.root = "__DOGFOOD_ROOT__"` — Replaced with the sandbox path
 - `ai.provider = "ollama"` — Default LLM provider (overridable)
 - `[[portals]]` — Worktree portal `exaix-self` with `execution_strategy = "worktree"`
 - `quality_gate.enabled = false` — Quality gate disabled for development workflows
@@ -184,6 +203,9 @@ complexity, docs, event-strings) must pass.
 
 ## Safety Notes
 
+1. **Sandbox is external.** The dogfood sandbox lives at a path you choose outside
+   the repo — no files are created inside the checkout. The `.gitignore` entry
+   for `.dogfood/` is a safety net, not the primary mechanism.
 1. **Always use a worktree.** The dogfood config preset sets
    `execution_strategy = "worktree"` and the bootstrap creates a dedicated
    worktree. Never point `target_path` at your live checkout.

@@ -39,8 +39,10 @@ Deno.test("dogfood smoke: request → plan via RequestProcessor.process()", asyn
     });
 
     await t.step("request status updated to planned", async () => {
-      const entries = await env.listFiles("Workspace/Requests");
-      assert(entries.length > 0, "Requests directory should contain files");
+      const entries = (await env.listFiles("Workspace/Requests")).filter(
+        (f) => f.endsWith(".md"),
+      );
+      assert(entries.length > 0, "Requests directory should contain .md files");
 
       const requestContent = await env.readFile(`Workspace/Requests/${entries[0]}`);
       assertStringIncludes(requestContent, "status: planned", "Status should update after planning");
