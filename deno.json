@@ -111,7 +111,8 @@
     "dogfood": "deno run -A scripts/dogfood_daemon.ts start",
     "dogfood:stop": "deno run -A scripts/dogfood_daemon.ts stop",
     "dogfood:status": "deno run -A scripts/dogfood_daemon.ts status",
-    "dogfood:log": "deno run --allow-read=.dogfood/.exa/daemon.log bash -c 'head -50 .dogfood/.exa/daemon.log'"
+    "dogfood:log": "deno run --allow-read=.dogfood/.exa/daemon.log bash -c 'head -50 .dogfood/.exa/daemon.log'",
+    "dogfood:bootstrap": "deno run -A scripts/dogfood_bootstrap.ts"
   },
   "imports": {
     "@cliffy/table": "jsr:@cliffy/table@^1.2.1",

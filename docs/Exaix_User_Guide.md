@@ -3584,3 +3584,7 @@ architecture overview.
 ---
 
 ### End of User Guide
+
+## 9. Dogfooding & Development
+
+For developers contributing to Exaix itself, see the **[Dogfooding Guide](Exaix_Dogfooding.md)** for a self-hosted workflow using `configs/dogfood.toml`, the daemon lifecycle script, and the bootstrap workflow.
