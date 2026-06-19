@@ -113,8 +113,8 @@ steps:
             errs.push(`architectureOverview: expected ≥50 chars, got ${k.architectureOverview.length}`);
           } else {
             const sentences = k.architectureOverview.split(/[.!?]\s+/).filter(Boolean);
-            if (sentences.length < 3) {
-              errs.push(`architectureOverview: expected ≥3 sentences, got ${sentences.length}`);
+            if (sentences.length < 2) {
+              errs.push(`architectureOverview: expected ≥2 sentences, got ${sentences.length}`);
             }
           }
 

@@ -8,11 +8,11 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { withRepoRoot } from "@exaix/testing";
 
-// These tests are flaky in CI due to race conditions and environmental differences.
-// They can be run locally for debugging.
-// Phase 111: also skip when session delegation is globally enabled (interferes with execution flow).
-const skipInCI = !!Deno.env.get("CI") || !!Deno.env.get("GITHUB_ACTIONS") ||
-  Deno.env.get("EXA_SESSION_DELEGATE_ENABLED") === "true";
+// This test is flaky in CI due to race conditions with other tests and
+// environmental differences (timing, resource constraints, daemon lifecycle).
+// It is skipped in CI and can be run locally for debugging.
+// TODO: Re-enable once the scenario framework is hardened for CI execution.
+const skipInCI = !!Deno.env.get("CI") || !!Deno.env.get("GITHUB_ACTIONS");
 
 Deno.test({
   name: "Scenario: Plan Amendment Lifecycle",

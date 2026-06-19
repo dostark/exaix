@@ -16,8 +16,7 @@ import { withRepoRoot } from "@exaix/testing";
 // This test is resource-intensive (full portal analysis on the Exaix repo)
 // and is skipped in CI to avoid flakiness from concurrent tests or slow
 // deno check on the full codebase.
-const skipInCI = !!Deno.env.get("CI") || !!Deno.env.get("GITHUB_ACTIONS") ||
-  Deno.env.get("EXA_SESSION_DELEGATE_ENABLED") === "true";
+const skipInCI = !!Deno.env.get("CI") || !!Deno.env.get("GITHUB_ACTIONS");
 
 Deno.test({
   name: "Scenario: Portal Knowledge Phase 105 — all 11 strategies",

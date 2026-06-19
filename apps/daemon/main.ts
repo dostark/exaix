@@ -61,7 +61,7 @@ import { HeadlessSessionLauncher } from "./src/headless_session_launcher.ts";
 import { createOnReconciledHandler } from "./src/on_reconciled_dispatcher.ts";
 import { SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
 import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adapter_registry.ts";
-import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
+import type { SessionGate, SessionTool } from "@exaix/schemas/session_delegate.ts";
 import {
   SESSION_BIN_CLAUDE_CODE,
   SESSION_BIN_CURSOR,
@@ -333,20 +333,26 @@ if (import.meta.main) {
     const GATE_REFINEMENT = "refinement";
     const GATE_PLAN_REVIEW = "plan_review";
     const GATE_CODE_CHANGES = "code_changes";
-    const GATE_REVIEW = "review";
     // Allow EXA_SESSION_DELEGATE_ENABLED env var to override TOML config (E2E scenarios)
     if (Deno.env.get("EXA_SESSION_DELEGATE_ENABLED") === "true") {
       const envTool = Deno.env.get("EXA_SESSION_DELEGATE_TOOL");
+      const envGatesRaw = Deno.env.get("EXA_SESSION_DELEGATE_GATES");
+      const envGates: SessionGate[] = envGatesRaw
+        ? envGatesRaw.split(",").map((s) => s.trim()).filter((s): s is SessionGate =>
+          s === "refinement" || s === "plan_review" || s === "code_changes" || s === "review"
+        )
+        : [GATE_REFINEMENT, GATE_PLAN_REVIEW];
       if (!config.session_delegate) {
         config.session_delegate = {
           enabled: true,
           tool: (envTool as SessionTool) ?? "claude-code",
-          gates: [GATE_REFINEMENT, GATE_PLAN_REVIEW, GATE_CODE_CHANGES, GATE_REVIEW],
+          gates: envGates,
           launch_mode: LAUNCH_MODE_HEADLESS,
           bin_overrides: Deno.env.get("EXA_SESSION_DELEGATE_BIN_OVERRIDES")?.split(",").map((s) => s.trim()) ?? [],
         };
       } else {
         config.session_delegate.enabled = true;
+        config.session_delegate.gates = envGates;
         if (envTool) {
           config.session_delegate.tool = envTool as SessionTool;
         }
@@ -584,7 +590,8 @@ if (import.meta.main) {
       }
     });
 
-    const onCodeChangesDelegate = _sessionDelegateService && _sessionWaitStore && _headlessLauncher
+    const onCodeChangesDelegate = _sessionDelegateService && _sessionWaitStore && _headlessLauncher &&
+        config.session_delegate?.gates?.includes(GATE_CODE_CHANGES)
       ? async (traceId: string, stepId: string): Promise<string> => {
         const sd = config.session_delegate!;
         try {
