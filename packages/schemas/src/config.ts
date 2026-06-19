@@ -163,7 +163,9 @@ export const ConfigSchema = z.object({
     log_level: z.nativeEnum(LogLevel).default(LogLevel.INFO),
     version: z.string().optional(),
     schema_version: z.string().default(WORKSPACE_SCHEMA_VERSION),
-    allow_net: z.array(z.string())
+    allow_net: z.array(
+      z.string().regex(/^[\w.-]+(:\d+)?$/, "Must be a hostname or IP with optional :port"),
+    )
       .describe("Host:port entries for outbound network access; empty array blocks all, omitted = default list")
       .optional(),
   }),

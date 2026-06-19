@@ -48,7 +48,7 @@ export async function recoverOrphanedDelegations(deps: IRecoveryDeps): Promise<n
       if (record.timestamp < cutoff) continue;
 
       // Check for any terminal event for this trace
-      const traceEvents = deps.db.getActivitiesByTrace(record.trace_id);
+      const traceEvents = await deps.db.getActivitiesByTraceSafe(record.trace_id);
       const hasTerminal = traceEvents.some((e) => TERMINAL_EVENTS.has(e.action_type));
       if (hasTerminal) continue;
 
