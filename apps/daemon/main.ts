@@ -54,6 +54,16 @@ import { GitService } from "@exaix/git";
 import type { IApplicationContext } from "@exaix/core/types";
 import { type LogMetadata, toSafeJson } from "@exaix/core/types";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
+import { SessionWaitStore } from "@exaix/session/wait/session_wait_store.ts";
+import { SessionReturnProcessor } from "@exaix/session/session_return_processor.ts";
+import { SessionReturnWatcher } from "./src/session_return_watcher.ts";
+import { HeadlessSessionLauncher } from "./src/headless_session_launcher.ts";
+import {
+  SESSION_BIN_CLAUDE_CODE,
+  SESSION_BIN_CURSOR,
+  SESSION_BIN_OPENCODE,
+  SESSION_BIN_VSCODE,
+} from "@exaix/core/types/constants.ts";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
 import { SoloComposer } from "@exaix/core/composer";
 // Team imports — resolved unconditionally from import map;
@@ -524,6 +534,47 @@ if (import.meta.main) {
       },
     );
 
+    // ── Session-delegation runtime (Phase 111) ──────────────────────────
+    let sessionReturnWatcher: SessionReturnWatcher | null = null;
+    let _headlessLauncher: HeadlessSessionLauncher | null = null;
+    if (config.session_delegate?.enabled) {
+      const sessionDir = join(config.system.root, "Session");
+      const waitStoreBase = join(config.system.root, "Memory", "Execution");
+      await ensureDir(sessionDir);
+      await ensureDir(waitStoreBase);
+
+      const waitStore = new SessionWaitStore(waitStoreBase);
+      const processor = new SessionReturnProcessor({
+        sessionDir,
+        workspaceRoot: join(config.system.root, config.paths.workspace),
+        waitStore,
+      });
+
+      const allowlist = new Set([
+        SESSION_BIN_CLAUDE_CODE,
+        SESSION_BIN_CURSOR,
+        SESSION_BIN_OPENCODE,
+        SESSION_BIN_VSCODE,
+        ...(config.session_delegate.bin_overrides ?? []),
+      ]);
+
+      _headlessLauncher = new HeadlessSessionLauncher({
+        sessionDir,
+        allowlist,
+      });
+
+      sessionReturnWatcher = new SessionReturnWatcher({
+        sessionDir,
+        processor,
+        logger,
+      });
+
+      gracefulShutdown.registerCleanup("stop_session_return_watcher", async () => {
+        sessionReturnWatcher?.stop();
+        await logger.info(DomainEventType.ShutdownWatchersStopped, "session return watcher", {});
+      });
+    }
+
     // Register cleanup tasks for graceful shutdown
     gracefulShutdown.registerCleanup("stop_request_watcher", async () => {
       await requestWatcher.stop();
@@ -580,11 +631,13 @@ if (import.meta.main) {
     });
 
     // Start watching directories
-    await Promise.all([
+    const watchers = [
       requestWatcher.start(),
       planWatcher.start(),
       configWatcher.start(),
-    ]);
+    ];
+    if (sessionReturnWatcher) watchers.push(sessionReturnWatcher.start());
+    await Promise.all(watchers);
   } catch (error) {
     console.error("❌ Fatal Error:", error);
     Deno.exit(1);

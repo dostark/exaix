@@ -82,6 +82,14 @@ export interface IExecutionLoopConfig {
   confirmationInterceptor?: IToolConfirmationInterceptor;
   /** Phase 118: Blueprint-level HITL rules passed to ToolRegistry. */
   hitlBlueprintRules?: HitlRule[];
+  /**
+   * Optional callback invoked when a code-changes delegation result is
+   * reconciled. Wired at daemon construction from HeadlessSessionLauncher;
+   * PlanExecutor calls this to delegate code-change steps to a foreign
+   * agent without importing the concrete launcher (layer-boundary seam).
+   * Phase 111 Step 8 wires the actual invocation.
+   */
+  onCodeChangesDelegate?: (traceId: string, stepId: string) => Promise<string>;
 }
 
 export interface IExecutionResult {

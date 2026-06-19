@@ -162,6 +162,54 @@ Deno.test("[session_return_watcher][security] GAP-10 — a partial return journa
   }
 });
 
+Deno.test("[session_return_watcher] onReconciled callback invoked on accept, not on rejection", async () => {
+  const rig = await makeRig();
+  try {
+    const reconciledCalls: string[] = [];
+    const watcher = new SessionReturnWatcher({
+      sessionDir: rig.sessionDir,
+      processor: new SessionReturnProcessor({
+        sessionDir: rig.sessionDir,
+        workspaceRoot: rig.sessionDir,
+        waitStore: rig.store,
+      }),
+      logger: rig.sink,
+      onReconciled: (traceId: string, decision: string) => {
+        reconciledCalls.push(`${traceId}:${decision}`);
+      },
+    });
+
+    // Accepted return triggers onReconciled
+    const brief1 = await setup(rig, "plan_review", ["Workspace/Plans/**"]);
+    const path1 = await dropReturn(rig, brief1.trace_id, {
+      trace_id: brief1.trace_id,
+      resume_token: brief1.resume_token,
+      decision: "approved",
+      summary: "ok",
+      paths_touched: [],
+      token_stats: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
+    });
+    await watcher.handleReturnPath(path1);
+    assertEquals(reconciledCalls.length, 1, "onReconciled must fire on accept");
+    assertEquals(reconciledCalls[0].startsWith(brief1.trace_id), true);
+
+    // Forged-token rejection does NOT trigger onReconciled
+    const brief2 = await setup(rig, "code_changes", ["src/**"]);
+    const path2 = await dropReturn(rig, brief2.trace_id, {
+      trace_id: brief2.trace_id,
+      resume_token: "FORGED",
+      decision: "changes_made",
+      summary: "x",
+      paths_touched: ["src/a.ts"],
+      token_stats: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
+    });
+    await watcher.handleReturnPath(path2);
+    assertEquals(reconciledCalls.length, 1, "onReconciled must NOT fire on rejection");
+  } finally {
+    await rig.cleanup();
+  }
+});
+
 Deno.test("[session_return_watcher] an over-budget accepted return also journals budget_exceeded (P2)", async () => {
   const rig = await makeRig();
   try {

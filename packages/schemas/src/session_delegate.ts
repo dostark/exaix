@@ -176,5 +176,7 @@ export const SessionDelegateConfigSchema = z.object({
   /** "advisory" (Mode 1), "supervised" (Mode 2), or "headless" (Mode 3, Phase 111). */
   launch_mode: SessionLaunchModeSchema.default("advisory"),
   token_budget: SessionTokenBudgetSchema.optional(),
+  /** Absolute paths to additional binaries allowed for headless launch (Phase 111). */
+  bin_overrides: z.array(z.string()).optional(),
 });
 export type SessionDelegateConfig = z.infer<typeof SessionDelegateConfigSchema>;
