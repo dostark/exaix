@@ -82,6 +82,8 @@ export const DomainEventType = {
 
   // Phase 121: net allowlist instrumentation
   NetAllowlist: "net.allowlist",
+  // Phase 121: crash recovery for orphaned delegations
+  SessionDelegateCrashRecovered: "session.delegate.crash_recovered",
 
   // Cost tracking events
   LlmUsageRecorded: "llm.usage",

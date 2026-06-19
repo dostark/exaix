@@ -1593,6 +1593,9 @@ export const SESSION_ENV_MAX_INPUT_TOKENS = "EXA_SESSION_MAX_INPUT_TOKENS";
 export const SESSION_ENV_MAX_OUTPUT_TOKENS = "EXA_SESSION_MAX_OUTPUT_TOKENS";
 export const SESSION_ENV_MAX_TOTAL_TOKENS = "EXA_SESSION_MAX_TOTAL_TOKENS";
 
+/** Lookback window for crash recovery (24h) — delegations older than this are considered stale. */
+export const CRASH_RECOVERY_LOOKBACK_MS = 86_400_000;
+
 /** CLI-adapter argv flags pointing the tool at the brief and its token ceiling. */
 export const SESSION_FLAG_BRIEF = "--brief";
 export const SESSION_FLAG_MAX_TOTAL_TOKENS = "--max-total-tokens";

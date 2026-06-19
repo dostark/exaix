@@ -46,6 +46,7 @@ import {
 import type { IPortalKnowledgeConfig, PortalAnalysisMode } from "@exaix/core/types";
 import { createConfigReloadHandler } from "@exaix/core/config";
 import { GracefulShutdown } from "./src/graceful_shutdown.ts";
+import { recoverOrphanedDelegations } from "./src/recovery.ts";
 import { registerTeamCapabilities } from "./src/bootstrap_team.ts";
 import { ensureDir } from "@std/fs";
 import { WaitStateSchema } from "@exaix/flow";
@@ -152,6 +153,17 @@ if (import.meta.main) {
     await logger.info(DomainEventType.DatabaseConnected, "journal.db", {
       mode: "WAL",
     });
+
+    // Phase 121 Step 3: recover orphaned session delegations from journal
+    const workspaceRoot = join(config.system.root, config.paths.workspace);
+    const recoveredCount = await recoverOrphanedDelegations({
+      db: dbService,
+      logger,
+      workspaceRoot,
+    });
+    if (recoveredCount > 0) {
+      logger.info(DomainEventType.SessionDelegateCrashRecovered, "crash-recovery", { recovered: recoveredCount });
+    }
 
     // Initialize LLM Provider
     bootstrapProviderRegistry();
