@@ -61,6 +61,7 @@ import { HeadlessSessionLauncher } from "./src/headless_session_launcher.ts";
 import { createOnReconciledHandler } from "./src/on_reconciled_dispatcher.ts";
 import { SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
 import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adapter_registry.ts";
+import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
 import {
   SESSION_BIN_CLAUDE_CODE,
   SESSION_BIN_CURSOR,
@@ -329,18 +330,26 @@ if (import.meta.main) {
     const LAUNCH_MODE_HEADLESS = "headless";
     const DECISION_ABANDONED = "abandoned";
     const DECISION_CHANGES_MADE = "changes_made";
+    const GATE_REFINEMENT = "refinement";
+    const GATE_PLAN_REVIEW = "plan_review";
+    const GATE_CODE_CHANGES = "code_changes";
+    const GATE_REVIEW = "review";
     // Allow EXA_SESSION_DELEGATE_ENABLED env var to override TOML config (E2E scenarios)
     if (Deno.env.get("EXA_SESSION_DELEGATE_ENABLED") === "true") {
+      const envTool = Deno.env.get("EXA_SESSION_DELEGATE_TOOL");
       if (!config.session_delegate) {
         config.session_delegate = {
           enabled: true,
-          tool: "claude-code",
-          gates: ["refinement", "plan_review", "code_changes", "review"],
+          tool: (envTool as SessionTool) ?? "claude-code",
+          gates: [GATE_REFINEMENT, GATE_PLAN_REVIEW, GATE_CODE_CHANGES, GATE_REVIEW],
           launch_mode: LAUNCH_MODE_HEADLESS,
           bin_overrides: Deno.env.get("EXA_SESSION_DELEGATE_BIN_OVERRIDES")?.split(",").map((s) => s.trim()) ?? [],
         };
       } else {
         config.session_delegate.enabled = true;
+        if (envTool) {
+          config.session_delegate.tool = envTool as SessionTool;
+        }
         const envBins = Deno.env.get("EXA_SESSION_DELEGATE_BIN_OVERRIDES");
         if (envBins) {
           const parsed = envBins.split(",").map((s) => s.trim());
@@ -508,7 +517,7 @@ if (import.meta.main) {
           // Use optional chaining for obj access instead of type-assertion cast
           const brief = await _sessionDelegateService!.prepareBrief({
             traceId,
-            gate: "refinement",
+            gate: GATE_REFINEMENT,
             tool: sd.tool,
             objective: body,
             artifactRef: `Workspace/Requests/${_requestId}.md`,
@@ -578,50 +587,62 @@ if (import.meta.main) {
     const onCodeChangesDelegate = _sessionDelegateService && _sessionWaitStore && _headlessLauncher
       ? async (traceId: string, stepId: string): Promise<string> => {
         const sd = config.session_delegate!;
-        const brief = await _sessionDelegateService!.prepareBrief({
-          traceId,
-          gate: "code_changes",
-          tool: sd.tool,
-          objective: `Execute step ${stepId}`,
-          artifactRef: `trace:${traceId}/step:${stepId}`,
-          permittedPaths: [`Workspace/**`],
-          worktreePath: join(config.system.root, config.paths.workspace, "worktrees", traceId),
-          tokenBudget: sd.token_budget ??
-            { max_input_tokens: 50000, max_output_tokens: 50000, max_total_tokens: 100000 },
-          deadline: new Date(Date.now() + 3_600_000).toISOString(),
-        });
-        const state = await _sessionWaitStore!.park(traceId, brief.gate, brief.resume_token, brief.deadline);
-        if (state.status !== "pending") {
-          logger.info(DomainEventType.SessionDelegateReconciled, traceId, {
-            gate: "code_changes",
-            error: `failed to park wait state (${state.status})`,
-          });
-          return DECISION_ABANDONED;
-        }
-
-        if (sd.launch_mode === LAUNCH_MODE_HEADLESS) {
-          const launch = _sessionDelegateService!.resolveLaunch(brief, LAUNCH_MODE_HEADLESS);
-          await _headlessLauncher.launch(launch, traceId);
-        } else {
-          logger.info(DomainEventType.SessionDelegateBriefed, traceId, {
-            mode: sd.launch_mode,
+        try {
+          const brief = await _sessionDelegateService!.prepareBrief({
+            traceId,
+            gate: GATE_CODE_CHANGES,
             tool: sd.tool,
+            objective: `Execute step ${stepId}`,
+            artifactRef: `trace:${traceId}/step:${stepId}`,
+            permittedPaths: [`Workspace/**`],
+            worktreePath: join(config.system.root, config.paths.workspace, "worktrees", traceId),
+            tokenBudget: sd.token_budget ??
+              { max_input_tokens: 50000, max_output_tokens: 50000, max_total_tokens: 100000 },
+            deadline: new Date(Date.now() + 3_600_000).toISOString(),
           });
-        }
-
-        // Block until reconciled or deadline — poll every 2s
-        const deadline = Date.parse(brief.deadline);
-        while (Date.now() < deadline) {
-          const current = await _sessionWaitStore!.get(traceId);
-          if (current && current.status === "resumed") {
-            return current.decision === DECISION_CHANGES_MADE ? DECISION_CHANGES_MADE : DECISION_ABANDONED;
-          }
-          if (current && (current.status === "expired" || current.status === "cancelled")) {
+          const state = await _sessionWaitStore!.park(traceId, brief.gate, brief.resume_token, brief.deadline);
+          if (state.status !== "pending") {
+            logger.info(DomainEventType.SessionDelegateReconciled, traceId, {
+              gate: GATE_CODE_CHANGES,
+              error: `failed to park wait state (${state.status})`,
+            });
             return DECISION_ABANDONED;
           }
-          await new Promise((r) => setTimeout(r, 2000));
+
+          if (sd.launch_mode === LAUNCH_MODE_HEADLESS) {
+            const launch = _sessionDelegateService!.resolveLaunch(brief, LAUNCH_MODE_HEADLESS);
+            await _headlessLauncher.launch(launch, traceId);
+          } else {
+            logger.info(DomainEventType.SessionDelegateBriefed, traceId, {
+              mode: sd.launch_mode,
+              tool: sd.tool,
+            });
+          }
+
+          // Block until reconciled or deadline — poll every 2s
+          const deadline = Date.parse(brief.deadline);
+          while (Date.now() < deadline) {
+            const current = await _sessionWaitStore!.get(traceId);
+            if (current && current.status === "resumed") {
+              return current.decision === DECISION_CHANGES_MADE ? DECISION_CHANGES_MADE : DECISION_ABANDONED;
+            }
+            if (current && (current.status === "expired" || current.status === "cancelled")) {
+              return DECISION_ABANDONED;
+            }
+            await new Promise((r) => setTimeout(r, 2000));
+          }
+          return DECISION_ABANDONED;
+        } catch (err) {
+          // Launch failed (binary not found, etc.) — expire the wait state and return abandoned
+          logger.info(DomainEventType.SessionDelegateReconciled, traceId, {
+            gate: GATE_CODE_CHANGES,
+            error: err instanceof Error ? err.message : String(err),
+          });
+          try {
+            await _sessionWaitStore!.expire(traceId);
+          } catch { /* ignore */ }
+          return DECISION_ABANDONED;
         }
-        return DECISION_ABANDONED;
       }
       : undefined;
 
