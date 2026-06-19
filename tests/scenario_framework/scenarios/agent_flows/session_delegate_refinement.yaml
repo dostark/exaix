@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "session-delegate-refinement"
 title: "Session Delegation — Refinement Gate"
 pack: "agent_flows"
-tags: ["safety-gate", "session-delegation", "manual-only"]
+tags: ["safety-gate", "session-delegation"]
 request_fixture: "fixtures/requests/agent_flows/quality_gate_clarification.md"
 mode_support: ["auto"]
 portals: []
@@ -15,6 +15,23 @@ steps:
     output_criteria:
       - id: "setup-done"
         score_weight: 0.7
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "build-mock-tool"
+    type: "shell"
+    command: "deno"
+    args: [
+      "run",
+      "-A",
+      "--config",
+      "$FRAMEWORK_HOME/../../deno.json",
+      "scripts/build_mock_session_tool.sh",
+      "$FRAMEWORK_HOME/mock_session_tool_bin",
+    ]
+    output_criteria:
+      - id: "build-done"
+        score_weight: 0.5
         kind: "command-exit-code"
         equals: 0
 
@@ -35,6 +52,8 @@ steps:
     env:
       EXA_LLM_PROVIDER: "mock"
       EXA_CI_MODE: "1"
+      EXA_SESSION_DELEGATE_ENABLED: "true"
+      EXA_SESSION_DELEGATE_BIN_OVERRIDES: "$FRAMEWORK_HOME/mock_session_tool_bin"
     output_criteria:
       - id: "daemon-started"
         score_weight: 0.7

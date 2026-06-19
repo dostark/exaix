@@ -672,3 +672,28 @@ Deno.test("ExecutionLoop: handles unknown tool gracefully", async () => {
     assertStringIncludes(String(result.error), "Tool 'non_existent_tool' not found");
   });
 });
+
+Deno.test("ExecutionLoop: onCodeChangesDelegate is accepted in config without error", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "exec-test-delegate-" });
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const config = createMockConfig(tempDir);
+    const logger = new EventLogger({ db });
+
+    const loop = new ExecutionLoop({
+      config,
+      db,
+      logger,
+      identityId: "test-identity",
+      onCodeChangesDelegate: (_traceId: string, _stepId: string) => {
+        return Promise.resolve("changes_made");
+      },
+    });
+
+    // Constructor accepted the callback without error — wiring is intact
+    assert(loop instanceof ExecutionLoop);
+  } finally {
+    await cleanup();
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});

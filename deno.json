@@ -112,7 +112,8 @@
     "dogfood:stop": "deno run -A scripts/dogfood_daemon.ts stop",
     "dogfood:status": "deno run -A scripts/dogfood_daemon.ts status",
     "dogfood:log": "deno run --allow-read=.dogfood/.exa/daemon.log bash -c 'head -50 .dogfood/.exa/daemon.log'",
-    "dogfood:bootstrap": "deno run -A scripts/dogfood_bootstrap.ts --dir .dogfood --worktree"
+    "dogfood:bootstrap": "deno run -A scripts/dogfood_bootstrap.ts --dir .dogfood --worktree",
+    "build:mock-tool": "deno compile -A scripts/mock_session_tool.ts -o scripts/mock_session_tool_bin"
   },
   "imports": {
     "@cliffy/table": "jsr:@cliffy/table@^1.2.1",

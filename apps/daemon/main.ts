@@ -326,6 +326,28 @@ if (import.meta.main) {
     const reviewRegistry = new ReviewRegistry(dbService, logger);
 
     // ── Session-delegation runtime (Phase 111) ──────────────────────────
+    // Allow EXA_SESSION_DELEGATE_ENABLED env var to override TOML config (E2E scenarios)
+    if (Deno.env.get("EXA_SESSION_DELEGATE_ENABLED") === "true") {
+      if (!config.session_delegate) {
+        config.session_delegate = {
+          enabled: true,
+          tool: "claude-code",
+          gates: ["refinement", "plan_review", "code_changes", "review"],
+          launch_mode: "headless",
+          bin_overrides: Deno.env.get("EXA_SESSION_DELEGATE_BIN_OVERRIDES")?.split(",").map((s) => s.trim()) ?? [],
+        };
+      } else {
+        config.session_delegate.enabled = true;
+        const envBins = Deno.env.get("EXA_SESSION_DELEGATE_BIN_OVERRIDES");
+        if (envBins) {
+          const parsed = envBins.split(",").map((s) => s.trim());
+          config.session_delegate.bin_overrides = [
+            ...(config.session_delegate.bin_overrides ?? []),
+            ...parsed,
+          ];
+        }
+      }
+    }
     let sessionReturnWatcher: SessionReturnWatcher | null = null;
     let _headlessLauncher: HeadlessSessionLauncher | null = null;
     let _sessionDelegateService: SessionDelegateService | null = null;
