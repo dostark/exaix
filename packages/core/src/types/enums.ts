@@ -814,6 +814,11 @@ export enum FlowStepType {
   AGENT = "agent",
   GATE = "gate",
   BRANCH = "branch",
+  /**
+   * Deprecated — use VOTING_GROUP instead.
+   * In Team builds, CONSENSUS is aliased to VotingStepHandler.
+   * In Solo, it falls through to AgentStepHandler and logs a warning.
+   */
   CONSENSUS = "consensus",
   /** P113: Multi-agent voting/consensus — fans out N runners and resolves majority/weighted/llm-judge */
   VOTING_GROUP = "voting_group",

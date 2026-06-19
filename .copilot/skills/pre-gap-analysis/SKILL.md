@@ -101,6 +101,12 @@ Do / Don't
 - ✅ Do run Phase 6 security checks on every step touching input handling,
   auth/authorisation, path resolution, secrets, or external payloads.
 - ✅ Do write all gaps and a Pre-Implementation Actions list into the document.
+- ✅ Do grep-verify every Pre-Implementation Action that claims a source-code change
+  before marking it ✅ — a resolution that only edits the doc but claims code was
+  changed is ⛔ UNVERIFIED. The grep must find the claimed symbol in production code.
+- ❌ Don't accept a doc-only edit as resolving a code-change gap — if the gap says
+  "file X needs a new field", editing the plan to say "file X has the field" does not
+  create the field. Only a real code change and a successful grep close the gap.
 - ✅ Do bump the document version after writing gaps in.
 - ✅ Do fix trivial gaps (typos, wrong paths, minor formatting, missing clarifying sentences) by editing the plan text in-place without registering a gap entry.
 - ✅ Do include a brief "In-Place Fixes" subsection in the Pre-Gap Analysis section listing all in-place fixes so the reader knows what was changed.
@@ -430,6 +436,7 @@ cheapest point.
    production consumers)` section for `#next-steps` to maintain. Its absence is a
    🔵 Conceptual gap — note it so `#plan`/`#next-steps` seeds it.
 
+
 ---
 
 ### Phase 9 — Gap Classification
@@ -503,18 +510,42 @@ Build a gap summary table before detailed entries.
 
 ### Pre-Implementation Actions (ordered by severity)
 
-1. 🔴 [GAP-1] <action>
-2. 🔒 [GAP-2] <action>
-3. 🟡 [GAP-3] <action>
+List every resolution in priority order. Each action must state the exact file and
+change. The grep verification and marker-consistency check (see Finalize section) run after these
+are written. Format with grep outcome annotations:
+
+```markdown
+1. 🔴 [GAP-1] <action> — ✅ [grep: `symbol` in `file.ts:N`]
+2. 🟡 [GAP-2] <action> — ⛔ UNVERIFIED [grep: `symbol` not found]
 ```
+
+**Verification rules (applied during finalize):**
+
+1. **Grep every code-change claim.** If the expected symbol doesn't exist in production
+   code, the resolution is `⛔ UNVERIFIED` — downgrade the step to ⏳ pending.
+
+2. **Cross-reference against step markers.** If a resolution claims enforcement is
+   "implemented" but the step is marked CORE (not WIRED), flag the contradiction.
+   Either the resolution is wrong or the marker is wrong.
+
+3. **No doc-only code-change resolutions.** A doc edit alone cannot close a gap that
+   requires source code. The grep must find the claimed change.
 
 ---
 
 ### Phase 11 — Finalize
 
 1. Bump the document version in frontmatter.
-1. If the plan had no `## Reachability Ledger` section, append an empty one (Phase 8.7)
+1. If the plan had no `## Reachability Ledger` section, append an empty one
+   (see the "Reachability Ledger seeded" check in the Integration Feasibility section)
    so `#next-steps` has a place to track wiring debt.
+1. **Grep-verify every code-change resolution.** For each Pre-Implementation Action that
+   claims a source-code change, grep the production codebase for the expected symbol.
+   A resolution that only edits the doc but claims code was changed is ⛔ UNVERIFIED
+   (see the Pre-Implementation Actions section for the full grep protocol).
+1. **Check step-level marker consistency.** Verify every step has `⏳ pending` markers —
+   no code has been written yet. Flag any `✅ CORE`/`✅ WIRED`/`[x]` as premature and
+   reset to `⏳`. Exempt only prior-phase steps confirmed shipped via grep.
 1. Run `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/<doc>`.
 
 ---

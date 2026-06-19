@@ -49,7 +49,10 @@ export DOGFOOD_SANDBOX=~/exa-dogfood
 export EXA_CONFIG_PATH=$DOGFOOD_SANDBOX/workspace/exa.config.toml
 deno task dogfood
 
-# 3. Write a structured request
+# 3. Wait for daemon readiness
+deno run -A scripts/wait_for_daemon.ts $DOGFOOD_SANDBOX/workspace
+
+# 4. Write a structured request
 cat > $DOGFOOD_SANDBOX/workspace/Workspace/Requests/add-health-endpoint.md << 'REQUEST'
 ---
 trace_id: "$(uuidgen)"

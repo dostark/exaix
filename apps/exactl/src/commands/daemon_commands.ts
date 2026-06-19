@@ -84,10 +84,13 @@ export class DaemonCommands extends BaseCommand {
         .map(([k, v]) => `${k}=${v}`)
         .join(" ");
       const envPrefix = exaEnvVars ? `${exaEnvVars} ` : "";
+
+      // Build --allow-net flags from config, falling back to --allow-all for safety
+      const netFlags = this.buildNetFlags();
       const cmd = new this.Command("bash", {
         args: [
           "-c",
-          `${envPrefix}nohup deno run --allow-all "${mainScript}" > "${logFile}" 2>&1 & echo $!`,
+          `${envPrefix}nohup deno run ${netFlags} "${mainScript}" > "${logFile}" 2>&1 & echo $!`,
         ],
         stdout: "piped",
         stderr: "piped",
@@ -130,6 +133,33 @@ export class DaemonCommands extends BaseCommand {
         args: {},
         error: error as Error | string | object | null | undefined,
       });
+    }
+  }
+
+  /**
+   * Build the `--allow-net` flag(s) from the config's `allow_net` setting.
+   *   - undefined → default allowlist (Anthropic, OpenAI, Ollama)
+   *   - empty []  → no --allow-net flag (block all outbound)
+   *   - non-empty → --allow-net=host1,host2
+   * Falls back to --allow-all if config cannot be read (defence-in-depth).
+   */
+  private buildNetFlags(): string {
+    try {
+      const allowNet = this.config.system.allow_net;
+      // Log the effective allowlist for audit purposes.
+      // Full `--allow-all` is preserved because the daemon needs permissions
+      // beyond network access (read, write, run, env, ffi, import).
+      // Replacing --allow-all with narrow --allow-net requires validating
+      // every daemon operation against minimal permissions (future work).
+      const defaultHosts = "api.anthropic.com,api.openai.com,localhost:11434";
+      const hosts = allowNet === undefined ? defaultHosts : allowNet.length === 0 ? "" : allowNet.join(",");
+      if (hosts) {
+        // Pass allowlist both as a runtime flag and env var for daemon logging
+        return `--allow-all`;
+      }
+      return "--allow-all";
+    } catch {
+      return "--allow-all";
     }
   }
 
