@@ -61,6 +61,7 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] CI-safe scenario list excludes scen
       "plan-amendment-lifecycle",
       "portal-knowledge-snapshot",
       "request-analysis-smoke",
+      "session-delegate-refinement",
       "voting-majority-consensus",
     ],
   );
@@ -83,6 +84,10 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] scenario metadata for the Agent Flo
       "portal-knowledge-snapshot",
       "quality-gate-clarification",
       "request-analysis-smoke",
+      "session-delegate-code-changes",
+      "session-delegate-plan-review",
+      "session-delegate-refinement",
+      "session-delegate-review",
       "step-durability-resume",
       "voting-majority-consensus",
     ],

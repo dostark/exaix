@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import { DEFAULT_PORTAL_DEFAULT_BRANCH, PermissionAction, PortalOperation, SecurityMode } from "@exaix/core";
+import { SessionDelegateConfigSchema } from "./session_delegate.ts";
 
 // ============================================================================
 // Permission Check Interfaces
@@ -155,6 +156,9 @@ export const PortalPermissionsSchema = z.object({
 
   // Security settings
   security: PortalSecurityConfigSchema.optional(),
+
+  // Session delegation configuration (Phase 111)
+  session_delegate: SessionDelegateConfigSchema.optional(),
 });
 
 export type IPortalPermissions = z.output<typeof PortalPermissionsSchema>;

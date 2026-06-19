@@ -121,6 +121,12 @@ export interface IRequestProcessorConfig {
   /** Optional callback invoked when a clarification wait state should be resolved. */
   onClarificationResolved?: (traceId: string) => Promise<void>;
   /**
+   * Optional callback invoked when the refinement gate delegates to a session
+   * tool. Fires after config-check: session_delegate.enabled && "refinement" in gates.
+   * The daemon wires this to prepareBrief + park + launch.
+   */
+  onDelegateRefinement?: (traceId: string, requestId: string, body: string) => Promise<void>;
+  /**
    * Optional FlowRunner for executing flow requests.
    * When set, processFlowRequest delegates to flowRunner.execute()
    * instead of generating a stub plan.
@@ -421,6 +427,9 @@ export class RequestProcessor {
         return { earlyReturn: true };
       }
       if (qgResult.recommendation === RequestQualityRecommendation.NEEDS_CLARIFICATION) {
+        if (await this._tryDelegateRefinement(filePath, requestId, body, traceId)) {
+          return { earlyReturn: true };
+        }
         await this._startClarificationSession(filePath, requestId, body, traceId);
         return { earlyReturn: true };
       }
@@ -439,6 +448,27 @@ export class RequestProcessor {
       traceLogger.warn(DomainEventType.RequestQualityGateFailed, filePath, { requestId });
     }
     return { earlyReturn: false };
+  }
+
+  /**
+   * Phase 111 Step 5: config-gated refinement delegation branch.
+   * Returns true when delegation was initiated (brief prepared, wait parked, launch triggered).
+   */
+  private async _tryDelegateRefinement(
+    filePath: string,
+    requestId: string,
+    body: string,
+    traceId?: string,
+  ): Promise<boolean> {
+    const sd = this.config.session_delegate;
+    if (!sd?.enabled || !sd.gates?.includes("refinement") || !this.processorConfig.onDelegateRefinement) {
+      return false;
+    }
+    await this.statusManager.updateStatus(filePath, RequestStatus.REFINING);
+    if (traceId) {
+      await this.processorConfig.onDelegateRefinement(traceId, requestId, body);
+    }
+    return true;
   }
 
   private async _startClarificationSession(

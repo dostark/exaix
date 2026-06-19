@@ -311,6 +311,71 @@ deno task setup
 deno task start
 ```
 
+### 2.5 Session Delegation Configuration (Phase 111)
+
+Exaix can delegate specific pipeline gates to external CLI agent tools (OpenCode, Claude Code)
+instead of using the built-in LLM. This is useful when you want human-in-the-loop review or
+want to use a specialized tool for specific tasks.
+
+#### 2.5.1 Configuration
+
+Add a `[session_delegate]` section to your `exa.config.toml`:
+
+```toml
+[session_delegate]
+enabled = true
+tool = "opencode"              # claude-code | opencode | cursor | vscode
+gates = ["refinement", "plan_review"]   # which gates to delegate
+launch_mode = "headless"       # advisory (Mode 1) | supervised (Mode 2) | headless (Mode 3)
+```
+
+#### 2.5.2 Launch Modes
+
+| Mode       | Value        | Description                                                                |
+| ---------- | ------------ | -------------------------------------------------------------------------- |
+| **Mode 1** | `advisory`   | Prints the command; human runs the tool out-of-band                        |
+| **Mode 2** | `supervised` | Interactive TTY spawn from `exactl execute --delegate`                     |
+| **Mode 3** | `headless`   | Non-interactive spawn; daemon captures stdout and reconciles automatically |
+
+Mode 3 (headless) supports both `claude-code` and `opencode`. The daemon captures
+JSON event output from `opencode run --format json` and synthesizes a valid `return.json`.
+
+#### 2.5.3 Per-Request Override via Environment Variables
+
+For CI and testing, use environment variables instead of TOML config:
+
+```bash
+export EXA_SESSION_DELEGATE_ENABLED=true
+export EXA_SESSION_DELEGATE_TOOL=opencode
+export EXA_SESSION_DELEGATE_GATES=refinement,plan_review
+export EXA_SESSION_DELEGATE_BIN_OVERRIDES=/path/to/custom/binary
+```
+
+Default gates when `EXA_SESSION_DELEGATE_ENABLED=true`: `refinement`, `plan_review`.
+`code_changes` requires explicit opt-in via `EXA_SESSION_DELEGATE_GATES`.
+
+#### 2.5.4 Gate Effects
+
+| Gate           | What happens when delegated                                        |
+| -------------- | ------------------------------------------------------------------ |
+| `refinement`   | Request quality gate delegates to CLI tool instead of LLM Q&A loop |
+| `plan_review`  | Plan approval delegates to CLI tool (requires handler wiring)      |
+| `code_changes` | Plan step execution delegates to CLI tool instead of AgentExecutor |
+| `review`       | Code review delegates to CLI tool (requires handler wiring)        |
+
+#### 2.5.5 Mock Binary for Testing
+
+```bash
+deno task build:mock-tool   # compiles .cache/mock_session_tool_bin
+```
+
+The mock binary reads `--brief <path>` and writes a schema-valid `return.json`.
+Add it to `bin_overrides` for CI scenarios:
+
+```toml
+bin_overrides = ["/path/to/.cache/mock_session_tool_bin"]
+```
+
 ## 3. Workspace Overview
 
 ### 3.1 Directory Structure

@@ -82,6 +82,14 @@ export interface IExecutionLoopConfig {
   confirmationInterceptor?: IToolConfirmationInterceptor;
   /** Phase 118: Blueprint-level HITL rules passed to ToolRegistry. */
   hitlBlueprintRules?: HitlRule[];
+  /**
+   * Optional callback invoked when a code-changes delegation result is
+   * reconciled. Wired at daemon construction from HeadlessSessionLauncher;
+   * PlanExecutor calls this to delegate code-change steps to a foreign
+   * agent without importing the concrete launcher (layer-boundary seam).
+   * Phase 111 Step 8 wires the actual invocation.
+   */
+  onCodeChangesDelegate?: (traceId: string, stepId: string) => Promise<string>;
 }
 
 export interface IExecutionResult {
@@ -137,6 +145,7 @@ export class ExecutionLoop {
   private hitlPolicyEvaluator?: IHitlPolicyEvaluator;
   private confirmationInterceptor?: IToolConfirmationInterceptor;
   private hitlBlueprintRules?: HitlRule[];
+  private onCodeChangesDelegate?: (traceId: string, stepId: string) => Promise<string>;
 
   constructor(
     config: IExecutionLoopConfig,
@@ -154,6 +163,7 @@ export class ExecutionLoop {
     this.hitlPolicyEvaluator = config.hitlPolicyEvaluator;
     this.confirmationInterceptor = config.confirmationInterceptor;
     this.hitlBlueprintRules = config.hitlBlueprintRules;
+    this.onCodeChangesDelegate = config.onCodeChangesDelegate;
     this.plansDir = join(this.config.system.root, this.config.paths.workspace, this.config.paths.active);
     this.blueprintLoader = new BlueprintLoader({
       blueprintsPath: join(this.config.system.root, this.config.paths.blueprints, this.config.paths.identities),
@@ -810,6 +820,7 @@ export class ExecutionLoop {
       context: this.context,
       confidenceScorer: this.confidenceScorer,
       amendmentService: this.amendmentService,
+      onCodeChangesDelegate: this.onCodeChangesDelegate,
     };
     if (this.guardrailRunner) {
       planExecutorOptions.guardrailRunner = this.guardrailRunner;

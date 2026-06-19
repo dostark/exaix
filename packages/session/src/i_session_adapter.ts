@@ -33,6 +33,8 @@ export interface ISessionAdapter {
   readonly tool: SessionTool;
   /** Whether the tool can be spawned on the caller's TTY (Mode 2). */
   readonly supportsSupervised: boolean;
+  /** Whether the tool supports non-interactive headless launch (Mode 3, Phase 111). */
+  readonly supportsHeadless: boolean;
   /**
    * Build a launch descriptor for the brief. `briefPath` is the absolute path to
    * the materialized brief.json the tool/human reads. Throws when `mode` is

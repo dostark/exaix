@@ -69,6 +69,13 @@ export interface IPlanExecutorOptions {
   amendmentService?: IPlanAmendmentService;
   /** Optional guardrail runner. When provided, built in createAgentExecutor. */
   guardrailRunner?: IGuardrailRunner;
+  /**
+   * Optional callback invoked when a code-changes delegation result is
+   * reconciled. PlanExecutor calls this to delegate code-change steps to a
+   * foreign agent without importing the concrete launcher (layer-boundary seam).
+   * Phase 111 Step 7.
+   */
+  onCodeChangesDelegate?: (traceId: string, stepId: string) => Promise<string>;
 }
 
 export interface IPlanActionReport {
@@ -273,21 +280,31 @@ export class PlanExecutor {
 
     for (const step of context.steps) {
       try {
-        const result = await agentExecutor.executeStep(
-          {
-            trace_id: traceId,
-            request_id: requestId,
-            request: step.content,
-            plan: `${PROMPT_PLAN_STEP_TASK_PREFIX}${step.title}${PROMPT_PLAN_STEP_REASONING_PREFIX}${step.content}`,
-            portal: portalName,
-          },
-          {
-            identity_id: context.identity,
-            portal: portalName,
-            security_mode: SecurityMode.HYBRID,
-            audit_enabled: true,
-          },
-        );
+        let result: { description: string } | undefined;
+
+        const delegateOutcome = await this._tryDelegateStep(step, traceId, actionReports);
+        if (delegateOutcome.skip) continue;
+        if (delegateOutcome.result) {
+          result = delegateOutcome.result;
+        }
+
+        if (!result) {
+          result = await agentExecutor.executeStep(
+            {
+              trace_id: traceId,
+              request_id: requestId,
+              request: step.content,
+              plan: `${PROMPT_PLAN_STEP_TASK_PREFIX}${step.title}${PROMPT_PLAN_STEP_REASONING_PREFIX}${step.content}`,
+              portal: portalName,
+            },
+            {
+              identity_id: context.identity,
+              portal: portalName,
+              security_mode: SecurityMode.HYBRID,
+              audit_enabled: true,
+            },
+          );
+        }
 
         // Step 66.2: Low Confidence Trigger Detection
         if (this.options.confidenceScorer && this.config.amendment?.enabled) {
@@ -346,6 +363,32 @@ export class PlanExecutor {
     }
 
     return lastCommitSha;
+  }
+
+  private async _tryDelegateStep(
+    step: IPlanStep,
+    traceId: string,
+    actionReports: IPlanActionReport[],
+  ): Promise<{ skip: boolean; result?: { description: string } }> {
+    if (!this.options.onCodeChangesDelegate) {
+      return { skip: false };
+    }
+    const delegateResult = await this.options.onCodeChangesDelegate(traceId, String(step.number));
+    if (delegateResult === "changes_made") {
+      return {
+        skip: false,
+        result: { description: `Delegated step ${step.number}: ${step.title} (changes_made)` },
+      };
+    }
+    actionReports.push({
+      stepNumber: step.number,
+      stepTitle: step.title,
+      tool: "delegated",
+      params: { request: step.content },
+      success: false,
+      output: "delegated and abandoned",
+    });
+    return { skip: true };
   }
 
   /**

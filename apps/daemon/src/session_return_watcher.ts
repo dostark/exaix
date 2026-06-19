@@ -28,6 +28,12 @@ export interface ISessionReturnWatcherDeps {
   sessionDir: string;
   processor: SessionReturnProcessor;
   logger: ISessionEventSink;
+  /**
+   * Optional callback fired on each successful reconciliation (outcome.accepted === true).
+   * Receives traceId and the reconciled decision. Gate hooks (Steps 5–7) use this to
+   * map delegated output to the appropriate artifact.
+   */
+  onReconciled?: (traceId: string, decision: string) => void | Promise<void>;
 }
 
 const RETURN_FILE = "return.json";
@@ -58,6 +64,10 @@ export class SessionReturnWatcher {
       await this.journal(DomainEventType.SessionDelegateReconciled, traceId, {
         decision: outcome.decision ?? null,
       });
+      // Notify the post-reconcile hook (e.g. gate artifact mapping).
+      if (this.deps.onReconciled && outcome.decision) {
+        await this.deps.onReconciled(traceId, outcome.decision);
+      }
       // Budget overage is non-blocking but must be auditable as its own event (P2).
       if (outcome.budgetExceeded) {
         await this.journal(DomainEventType.SessionDelegateBudgetExceeded, traceId, {

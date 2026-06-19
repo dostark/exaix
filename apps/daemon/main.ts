@@ -54,6 +54,20 @@ import { GitService } from "@exaix/git";
 import type { IApplicationContext } from "@exaix/core/types";
 import { type LogMetadata, toSafeJson } from "@exaix/core/types";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
+import { SessionWaitStore } from "@exaix/session/wait/session_wait_store.ts";
+import { SessionReturnProcessor } from "@exaix/session/session_return_processor.ts";
+import { SessionReturnWatcher } from "./src/session_return_watcher.ts";
+import { HeadlessSessionLauncher } from "./src/headless_session_launcher.ts";
+import { createOnReconciledHandler } from "./src/on_reconciled_dispatcher.ts";
+import { SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
+import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adapter_registry.ts";
+import type { SessionGate, SessionTool } from "@exaix/schemas/session_delegate.ts";
+import {
+  SESSION_BIN_CLAUDE_CODE,
+  SESSION_BIN_CURSOR,
+  SESSION_BIN_OPENCODE,
+  SESSION_BIN_VSCODE,
+} from "@exaix/core/types/constants.ts";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
 import { SoloComposer } from "@exaix/core/composer";
 // Team imports — resolved unconditionally from import map;
@@ -309,6 +323,111 @@ if (import.meta.main) {
     await ensureDir(plansPath);
     await ensureDir(activePath);
 
+    // ── Review Registry (needed before session-delegation for onReconciled wiring) ──
+    const reviewRegistry = new ReviewRegistry(dbService, logger);
+
+    // ── Session-delegation runtime (Phase 111) ──────────────────────────
+    const LAUNCH_MODE_HEADLESS = "headless";
+    const DECISION_ABANDONED = "abandoned";
+    const DECISION_CHANGES_MADE = "changes_made";
+    const GATE_REFINEMENT = "refinement";
+    const GATE_PLAN_REVIEW = "plan_review";
+    const GATE_CODE_CHANGES = "code_changes";
+    // Allow EXA_SESSION_DELEGATE_ENABLED env var to override TOML config (E2E scenarios)
+    if (Deno.env.get("EXA_SESSION_DELEGATE_ENABLED") === "true") {
+      const envTool = Deno.env.get("EXA_SESSION_DELEGATE_TOOL");
+      const envGatesRaw = Deno.env.get("EXA_SESSION_DELEGATE_GATES");
+      const envGates: SessionGate[] = envGatesRaw
+        ? envGatesRaw.split(",").map((s) => s.trim()).filter((s): s is SessionGate =>
+          s === "refinement" || s === "plan_review" || s === "code_changes" || s === "review"
+        )
+        : [GATE_REFINEMENT, GATE_PLAN_REVIEW];
+      if (!config.session_delegate) {
+        config.session_delegate = {
+          enabled: true,
+          tool: (envTool as SessionTool) ?? "claude-code",
+          gates: envGates,
+          launch_mode: LAUNCH_MODE_HEADLESS,
+          bin_overrides: Deno.env.get("EXA_SESSION_DELEGATE_BIN_OVERRIDES")?.split(",").map((s) => s.trim()) ?? [],
+        };
+      } else {
+        config.session_delegate.enabled = true;
+        config.session_delegate.gates = envGates;
+        if (envTool) {
+          config.session_delegate.tool = envTool as SessionTool;
+        }
+        const envBins = Deno.env.get("EXA_SESSION_DELEGATE_BIN_OVERRIDES");
+        if (envBins) {
+          const parsed = envBins.split(",").map((s) => s.trim());
+          config.session_delegate.bin_overrides = [
+            ...(config.session_delegate.bin_overrides ?? []),
+            ...parsed,
+          ];
+        }
+      }
+    }
+    let sessionReturnWatcher: SessionReturnWatcher | null = null;
+    let _headlessLauncher: HeadlessSessionLauncher | null = null;
+    let _sessionDelegateService: SessionDelegateService | null = null;
+    let _sessionWaitStore: SessionWaitStore | null = null;
+    if (config.session_delegate?.enabled) {
+      const sessionDir = join(config.system.root, "Session");
+      const workspaceRoot = join(config.system.root, config.paths.workspace);
+      const waitStoreBase = join(config.system.root, "Memory", "Execution");
+      await ensureDir(sessionDir);
+      await ensureDir(waitStoreBase);
+
+      _sessionWaitStore = new SessionWaitStore(waitStoreBase);
+      _sessionDelegateService = new SessionDelegateService({
+        registry: createDefaultSessionAdapterRegistry(),
+        sessionDir,
+        clock: { now: () => new Date() },
+      });
+      const processor = new SessionReturnProcessor({
+        sessionDir,
+        workspaceRoot,
+        waitStore: _sessionWaitStore,
+      });
+
+      const allowlist = new Set([
+        SESSION_BIN_CLAUDE_CODE,
+        SESSION_BIN_CURSOR,
+        SESSION_BIN_OPENCODE,
+        SESSION_BIN_VSCODE,
+        ...(config.session_delegate.bin_overrides ?? []),
+      ]);
+
+      _headlessLauncher = new HeadlessSessionLauncher({
+        sessionDir,
+        allowlist,
+      });
+
+      const onReconciled = createOnReconciledHandler({
+        sessionDir,
+        workspaceRoot,
+        reviewRegistry: {
+          getByTrace: (traceId: string) => reviewRegistry.getByTrace(traceId),
+          updateStatus: (id: string, status, user, reason) => reviewRegistry.updateStatus(id, status, user, reason),
+        },
+        costTracker: {
+          trackGeneration: (provider, model, usage, traceId) =>
+            costTracker.trackGeneration(provider, model, usage, traceId),
+        },
+        logger,
+      });
+      sessionReturnWatcher = new SessionReturnWatcher({
+        sessionDir,
+        processor,
+        logger,
+        onReconciled,
+      });
+
+      gracefulShutdown.registerCleanup("stop_session_return_watcher", async () => {
+        sessionReturnWatcher?.stop();
+        await logger.info(DomainEventType.ShutdownWatchersStopped, "session return watcher", {});
+      });
+    }
+
     // Initialize wait state storage path for clarification lifecycle
     const waitStatesRoot = join(
       config.system.root,
@@ -398,6 +517,36 @@ if (import.meta.main) {
           JSON.stringify(waitState, null, 2),
         );
       },
+      onDelegateRefinement: _sessionDelegateService && _sessionWaitStore
+        ? async (traceId: string, _requestId: string, body: string) => {
+          const sd = config.session_delegate!;
+          // Use optional chaining for obj access instead of type-assertion cast
+          const brief = await _sessionDelegateService!.prepareBrief({
+            traceId,
+            gate: GATE_REFINEMENT,
+            tool: sd.tool,
+            objective: body,
+            artifactRef: `Workspace/Requests/${_requestId}.md`,
+            permittedPaths: [`Workspace/Requests/${_requestId}.md`],
+            tokenBudget: sd.token_budget ??
+              { max_input_tokens: 10000, max_output_tokens: 10000, max_total_tokens: 20000 },
+            deadline: new Date(Date.now() + 3_600_000).toISOString(),
+          });
+          const state = await _sessionWaitStore!.park(traceId, brief.gate, brief.resume_token, brief.deadline);
+          if (state.status !== "pending") throw new Error("failed to park refinement wait state");
+
+          if (sd.launch_mode === LAUNCH_MODE_HEADLESS && _headlessLauncher) {
+            const launch = _sessionDelegateService!.resolveLaunch(brief, LAUNCH_MODE_HEADLESS);
+            await _headlessLauncher.launch(launch, traceId);
+          } else {
+            logger.info(DomainEventType.SessionDelegateBriefed, traceId, {
+              mode: sd.launch_mode,
+              tool: sd.tool,
+              objective_length: body.length,
+            });
+          }
+        }
+        : undefined,
     });
 
     await logger.info(
@@ -441,8 +590,68 @@ if (import.meta.main) {
       }
     });
 
-    // Initialize Review Registry
-    const reviewRegistry = new ReviewRegistry(dbService, logger);
+    const onCodeChangesDelegate = _sessionDelegateService && _sessionWaitStore && _headlessLauncher &&
+        config.session_delegate?.gates?.includes(GATE_CODE_CHANGES)
+      ? async (traceId: string, stepId: string): Promise<string> => {
+        const sd = config.session_delegate!;
+        try {
+          const brief = await _sessionDelegateService!.prepareBrief({
+            traceId,
+            gate: GATE_CODE_CHANGES,
+            tool: sd.tool,
+            objective: `Execute step ${stepId}`,
+            artifactRef: `trace:${traceId}/step:${stepId}`,
+            permittedPaths: [`Workspace/**`],
+            worktreePath: join(config.system.root, config.paths.workspace, "worktrees", traceId),
+            tokenBudget: sd.token_budget ??
+              { max_input_tokens: 50000, max_output_tokens: 50000, max_total_tokens: 100000 },
+            deadline: new Date(Date.now() + 3_600_000).toISOString(),
+          });
+          const state = await _sessionWaitStore!.park(traceId, brief.gate, brief.resume_token, brief.deadline);
+          if (state.status !== "pending") {
+            logger.info(DomainEventType.SessionDelegateReconciled, traceId, {
+              gate: GATE_CODE_CHANGES,
+              error: `failed to park wait state (${state.status})`,
+            });
+            return DECISION_ABANDONED;
+          }
+
+          if (sd.launch_mode === LAUNCH_MODE_HEADLESS) {
+            const launch = _sessionDelegateService!.resolveLaunch(brief, LAUNCH_MODE_HEADLESS);
+            await _headlessLauncher.launch(launch, traceId);
+          } else {
+            logger.info(DomainEventType.SessionDelegateBriefed, traceId, {
+              mode: sd.launch_mode,
+              tool: sd.tool,
+            });
+          }
+
+          // Block until reconciled or deadline — poll every 2s
+          const deadline = Date.parse(brief.deadline);
+          while (Date.now() < deadline) {
+            const current = await _sessionWaitStore!.get(traceId);
+            if (current && current.status === "resumed") {
+              return current.decision === DECISION_CHANGES_MADE ? DECISION_CHANGES_MADE : DECISION_ABANDONED;
+            }
+            if (current && (current.status === "expired" || current.status === "cancelled")) {
+              return DECISION_ABANDONED;
+            }
+            await new Promise((r) => setTimeout(r, 2000));
+          }
+          return DECISION_ABANDONED;
+        } catch (err) {
+          // Launch failed (binary not found, etc.) — expire the wait state and return abandoned
+          logger.info(DomainEventType.SessionDelegateReconciled, traceId, {
+            gate: GATE_CODE_CHANGES,
+            error: err instanceof Error ? err.message : String(err),
+          });
+          try {
+            await _sessionWaitStore!.expire(traceId);
+          } catch { /* ignore */ }
+          return DECISION_ABANDONED;
+        }
+      }
+      : undefined;
 
     const executionLoop = new ExecutionLoop({
       context,
@@ -454,6 +663,7 @@ if (import.meta.main) {
       sessionMemory,
       guardrailRunner,
       hitlPolicyEvaluator,
+      onCodeChangesDelegate,
     });
 
     // Initialize Memory Auto-Approval Service (reuses memoryExtractor from context setup)
@@ -580,11 +790,13 @@ if (import.meta.main) {
     });
 
     // Start watching directories
-    await Promise.all([
+    const watchers = [
       requestWatcher.start(),
       planWatcher.start(),
       configWatcher.start(),
-    ]);
+    ];
+    if (sessionReturnWatcher) watchers.push(sessionReturnWatcher.start());
+    await Promise.all(watchers);
   } catch (error) {
     console.error("❌ Fatal Error:", error);
     Deno.exit(1);

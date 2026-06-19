@@ -21,7 +21,12 @@ import {
   SESSION_ENV_MAX_OUTPUT_TOKENS,
   SESSION_ENV_MAX_TOTAL_TOKENS,
   SESSION_FLAG_BRIEF,
+  SESSION_FLAG_FORMAT,
   SESSION_FLAG_MAX_TOTAL_TOKENS,
+  SESSION_FLAG_OUTPUT_FORMAT,
+  SESSION_FLAG_PRINT,
+  SESSION_OUTPUT_FORMAT_JSON,
+  SESSION_SUBCMD_RUN,
 } from "@exaix/core/types";
 import {
   SESSION_GATE_DECISIONS,
@@ -51,11 +56,42 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
     readonly tool: SessionTool,
     private readonly bin: string,
     readonly supportsSupervised: boolean,
+    readonly supportsHeadless: boolean,
   ) {}
 
   buildLaunch(brief: SessionBrief, mode: SessionLaunchMode, briefPath: string): ISessionLaunch {
     if (mode === SessionLaunchModeSchema.enum.supervised && !this.supportsSupervised) {
       throw new Error(`Session tool '${this.tool}' supports advisory launch only`);
+    }
+    if (mode === SessionLaunchModeSchema.enum.headless) {
+      if (!this.supportsHeadless) {
+        throw new Error(`Session tool '${this.tool}' does not support headless launch`);
+      }
+      if (this.tool === "claude-code") {
+        return {
+          command: this.bin,
+          args: [
+            SESSION_FLAG_PRINT,
+            brief.objective,
+            SESSION_FLAG_OUTPUT_FORMAT,
+            SESSION_OUTPUT_FORMAT_JSON,
+          ],
+          cwd: brief.worktree_path ?? dirname(briefPath),
+          env: budgetEnv(brief),
+        };
+      }
+      // opencode headless — opencode run supports --format json, not --output-format
+      return {
+        command: this.bin,
+        args: [
+          SESSION_SUBCMD_RUN,
+          SESSION_FLAG_FORMAT,
+          SESSION_OUTPUT_FORMAT_JSON,
+          brief.objective,
+        ],
+        cwd: brief.worktree_path ?? dirname(briefPath),
+        env: budgetEnv(brief),
+      };
     }
     const cwd = brief.worktree_path ?? dirname(briefPath);
     const args = this.supportsSupervised
@@ -110,9 +146,9 @@ export class SessionAdapterRegistry {
 /** Registry pre-loaded with the four shipped adapters. */
 export function createDefaultSessionAdapterRegistry(): SessionAdapterRegistry {
   const registry = new SessionAdapterRegistry();
-  registry.register(new BuiltinSessionAdapter("claude-code", SESSION_BIN_CLAUDE_CODE, true));
-  registry.register(new BuiltinSessionAdapter("opencode", SESSION_BIN_OPENCODE, true));
-  registry.register(new BuiltinSessionAdapter("cursor", SESSION_BIN_CURSOR, false));
-  registry.register(new BuiltinSessionAdapter("vscode", SESSION_BIN_VSCODE, false));
+  registry.register(new BuiltinSessionAdapter("claude-code", SESSION_BIN_CLAUDE_CODE, true, true));
+  registry.register(new BuiltinSessionAdapter("opencode", SESSION_BIN_OPENCODE, true, true));
+  registry.register(new BuiltinSessionAdapter("cursor", SESSION_BIN_CURSOR, false, false));
+  registry.register(new BuiltinSessionAdapter("vscode", SESSION_BIN_VSCODE, false, false));
   return registry;
 }
