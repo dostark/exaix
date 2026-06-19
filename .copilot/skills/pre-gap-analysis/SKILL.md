@@ -107,6 +107,12 @@ Do / Don't
 - ❌ Don't accept a doc-only edit as resolving a code-change gap — if the gap says
   "file X needs a new field", editing the plan to say "file X has the field" does not
   create the field. Only a real code change and a successful grep close the gap.
+- ✅ Do flag every step that has `✅ CORE` / `✅ WIRED` / `[x]` completion markers
+  during pre-gap analysis as a 🔵 Conceptual gap — no code has been written yet.
+  All step status markers must be `⏳ pending` until #next-steps starts implementation.
+  A plan that ships with pre-set completion markers is either misleading (claims work
+  that wasn't done) or structurally confusing (mixes planning phase with implementation
+  phase). Reset them during the pre-gap.
 - ✅ Do bump the document version after writing gaps in.
 - ✅ Do fix trivial gaps (typos, wrong paths, minor formatting, missing clarifying sentences) by editing the plan text in-place without registering a gap entry.
 - ✅ Do include a brief "In-Place Fixes" subsection in the Pre-Gap Analysis section listing all in-place fixes so the reader knows what was changed.
@@ -441,6 +447,14 @@ cheapest point.
    codebase for the expected symbol. A resolution that edits only the planning doc
    but claims a source-code change is **unverified** — mark it ⛔ UNVERIFIED. See
    the Pre-Implementation Actions section for the full grep protocol.
+
+1. **Step-level marker consistency check.**
+   Check every step in the plan for `✅ CORE`, `✅ WIRED`, `✅ DONE`, or `[x]` completion
+   markers. During pre-gap analysis **no code has been written yet** — these markers are
+   premature. Flag any non-`⏳` marker as a 🔵 Conceptual gap and reset it to `⏳ pending`.
+   The only exception is a step inherited from a prior phase that was actually shipped
+   (verified by grep for its production call-site). A step with a CORE/WIRED marker but
+   no corresponding implementation in the codebase is misleading and must be corrected.
 
 ---
 
