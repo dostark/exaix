@@ -326,6 +326,9 @@ if (import.meta.main) {
     const reviewRegistry = new ReviewRegistry(dbService, logger);
 
     // ── Session-delegation runtime (Phase 111) ──────────────────────────
+    const LAUNCH_MODE_HEADLESS = "headless";
+    const DECISION_ABANDONED = "abandoned";
+    const DECISION_CHANGES_MADE = "changes_made";
     // Allow EXA_SESSION_DELEGATE_ENABLED env var to override TOML config (E2E scenarios)
     if (Deno.env.get("EXA_SESSION_DELEGATE_ENABLED") === "true") {
       if (!config.session_delegate) {
@@ -333,7 +336,7 @@ if (import.meta.main) {
           enabled: true,
           tool: "claude-code",
           gates: ["refinement", "plan_review", "code_changes", "review"],
-          launch_mode: "headless",
+          launch_mode: LAUNCH_MODE_HEADLESS,
           bin_overrides: Deno.env.get("EXA_SESSION_DELEGATE_BIN_OVERRIDES")?.split(",").map((s) => s.trim()) ?? [],
         };
       } else {
@@ -517,8 +520,8 @@ if (import.meta.main) {
           const state = await _sessionWaitStore!.park(traceId, brief.gate, brief.resume_token, brief.deadline);
           if (state.status !== "pending") throw new Error("failed to park refinement wait state");
 
-          if (sd.launch_mode === "headless" && _headlessLauncher) {
-            const launch = _sessionDelegateService!.resolveLaunch(brief, "headless");
+          if (sd.launch_mode === LAUNCH_MODE_HEADLESS && _headlessLauncher) {
+            const launch = _sessionDelegateService!.resolveLaunch(brief, LAUNCH_MODE_HEADLESS);
             await _headlessLauncher.launch(launch, traceId);
           } else {
             logger.info(DomainEventType.SessionDelegateBriefed, traceId, {
@@ -572,6 +575,56 @@ if (import.meta.main) {
       }
     });
 
+    const onCodeChangesDelegate = _sessionDelegateService && _sessionWaitStore && _headlessLauncher
+      ? async (traceId: string, stepId: string): Promise<string> => {
+        const sd = config.session_delegate!;
+        const brief = await _sessionDelegateService!.prepareBrief({
+          traceId,
+          gate: "code_changes",
+          tool: sd.tool,
+          objective: `Execute step ${stepId}`,
+          artifactRef: `trace:${traceId}/step:${stepId}`,
+          permittedPaths: [`Workspace/**`],
+          worktreePath: join(config.system.root, config.paths.workspace, "worktrees", traceId),
+          tokenBudget: sd.token_budget ??
+            { max_input_tokens: 50000, max_output_tokens: 50000, max_total_tokens: 100000 },
+          deadline: new Date(Date.now() + 3_600_000).toISOString(),
+        });
+        const state = await _sessionWaitStore!.park(traceId, brief.gate, brief.resume_token, brief.deadline);
+        if (state.status !== "pending") {
+          logger.info(DomainEventType.SessionDelegateReconciled, traceId, {
+            gate: "code_changes",
+            error: `failed to park wait state (${state.status})`,
+          });
+          return DECISION_ABANDONED;
+        }
+
+        if (sd.launch_mode === LAUNCH_MODE_HEADLESS) {
+          const launch = _sessionDelegateService!.resolveLaunch(brief, LAUNCH_MODE_HEADLESS);
+          await _headlessLauncher.launch(launch, traceId);
+        } else {
+          logger.info(DomainEventType.SessionDelegateBriefed, traceId, {
+            mode: sd.launch_mode,
+            tool: sd.tool,
+          });
+        }
+
+        // Block until reconciled or deadline — poll every 2s
+        const deadline = Date.parse(brief.deadline);
+        while (Date.now() < deadline) {
+          const current = await _sessionWaitStore!.get(traceId);
+          if (current && current.status === "resumed") {
+            return current.decision === DECISION_CHANGES_MADE ? DECISION_CHANGES_MADE : DECISION_ABANDONED;
+          }
+          if (current && (current.status === "expired" || current.status === "cancelled")) {
+            return DECISION_ABANDONED;
+          }
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+        return DECISION_ABANDONED;
+      }
+      : undefined;
+
     const executionLoop = new ExecutionLoop({
       context,
       config,
@@ -582,6 +635,7 @@ if (import.meta.main) {
       sessionMemory,
       guardrailRunner,
       hitlPolicyEvaluator,
+      onCodeChangesDelegate,
     });
 
     // Initialize Memory Auto-Approval Service (reuses memoryExtractor from context setup)

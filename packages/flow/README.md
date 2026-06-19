@@ -293,7 +293,7 @@ Configuration per request, portal, or blueprint (global scope shown):
 enabled = true
 tool = "opencode"            # claude-code | opencode | cursor | vscode
 gates = ["refinement", "code_changes"]   # refinement | plan_review | code_changes | review
-launch_mode = "advisory"     # advisory (Mode 1) | supervised (Mode 2)
+launch_mode = "advisory"     # advisory (Mode 1) | supervised (Mode 2) | headless (Mode 3)
 ```
 
 > The legacy `stages` key is accepted as a deprecated alias for `gates`. Only
