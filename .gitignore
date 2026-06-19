@@ -18,7 +18,6 @@
 /.cache
 dist/
 **/*.log
-scripts/mock_session_tool_bin
 
 # --------------------------------------------
 # Dogfooding workspace (Phase 120)
