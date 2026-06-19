@@ -6,15 +6,18 @@
  *   against the allowlist (assertBinaryAllowed), spawns via Deno.Command with
  *   discrete argv (no shell). On non-zero exit with no return.json, synthesizes an
  *   abandoned return so the gate is not left dangling.
+ *   Phase 111 GAP-1 fix: captures stdout for tools that emit JSON events (openCode
+ *   --format json) and synthesizes return.json from the event stream.
  * @architectural-layer Services
  * @dependencies [@exaix/session, @exaix/schemas, @std/path]
- * @related-files [packages/session/src/supervised_launch.ts, apps/daemon/src/session_return_watcher.ts]
+ * @related-files [packages/session/src/supervised_launch.ts, packages/session/src/session_adapter_registry.ts]
  */
 
 import { join } from "@std/path";
 import { assertBinaryAllowed, sanitizeChildEnv } from "@exaix/session/supervised_launch.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
-import { SessionReturnSchema } from "@exaix/schemas/session_delegate.ts";
+import { SESSION_GATE_DECISIONS, SessionReturnSchema } from "@exaix/schemas/session_delegate.ts";
+import type { SessionDecision, SessionReturn } from "@exaix/schemas/session_delegate.ts";
 
 /** Args forwarded to the (injectable) spawn function, for testability. */
 export interface ISpawnArgs {
@@ -37,6 +40,9 @@ export interface IHeadlessSessionLauncherDeps {
 }
 
 const RETURN_FILE = "return.json";
+/** OpenCode JSON event type strings — used by tryReadStdoutAndSynthesize. */
+const OPENCODE_EVENT_TEXT = "text";
+const OPENCODE_EVENT_STEP_FINISH = "step_finish";
 
 /**
  * Fire-and-forget headless session launcher. Spawns the binary, waits for exit in
@@ -67,13 +73,83 @@ export class HeadlessSessionLauncher {
     await child.status;
 
     const returnPath = join(this.deps.sessionDir, traceId, RETURN_FILE);
+    if (await this.tryReadStdoutAndSynthesize(child, traceId, returnPath)) {
+      return; // Successfully synthesized from stdout
+    }
+    // Fall back to checking for tool-written return.json
     try {
       await Deno.stat(returnPath);
       // return.json exists — no abandoned synthesis needed
     } catch {
-      // No return.json — synthesize abandoned
+      // No return.json and no stdout — synthesize abandoned
       await this.synthesizeAbandoned(traceId);
     }
+  }
+
+  /**
+   * Read the child's piped stdout, attempt to parse as JSON events
+   * (e.g. opencode --format json), and if found, synthesize a return.json.
+   * Returns true when synthesis succeeded.
+   * Fail-safe: catches all errors (incl. mock ChildProcess with no real stdout).
+   */
+  private async tryReadStdoutAndSynthesize(
+    child: Deno.ChildProcess,
+    traceId: string,
+    returnPath: string,
+  ): Promise<boolean> {
+    let raw: string;
+    try {
+      const reader = child.stdout.getReader();
+      const timeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error("stdout timeout")), 100));
+      const { value, done } = await Promise.race([reader.read(), timeout]);
+      reader.releaseLock();
+      if (done || !value) return false;
+      raw = new TextDecoder().decode(value);
+    } catch {
+      return false;
+    }
+    if (!raw.trim()) return false;
+
+    const { lastText, tokens, hasJsonEvents } = this.parseJsonEvents(raw);
+    if (!hasJsonEvents) return false;
+
+    // Read the brief to determine gate and trace info
+    const briefPath = join(this.deps.sessionDir, traceId, "brief.json");
+    let briefGate: string;
+    let briefTraceId: string;
+    let briefResumeToken: string;
+    try {
+      const raw = await Deno.readTextFile(briefPath);
+      const parsed = JSON.parse(raw);
+      briefGate = parsed.gate;
+      briefTraceId = parsed.trace_id;
+      briefResumeToken = parsed.resume_token;
+    } catch {
+      return false;
+    }
+
+    const gate = briefGate as SessionDecision;
+    const decision =
+      (SESSION_GATE_DECISIONS[gate as keyof typeof SESSION_GATE_DECISIONS]?.[0] ?? "abandoned") as SessionDecision;
+
+    const sessionReturn: SessionReturn = SessionReturnSchema.parse({
+      trace_id: briefTraceId,
+      resume_token: briefResumeToken,
+      decision,
+      summary: lastText || `Session tool completed the ${gate} task.`,
+      paths_touched: [],
+      token_stats: {
+        input_tokens: tokens.input,
+        output_tokens: tokens.output,
+        total_tokens: tokens.total,
+      },
+    });
+
+    await Deno.mkdir(join(this.deps.sessionDir, traceId), { recursive: true });
+    const tmp = `${returnPath}.tmp`;
+    await Deno.writeTextFile(tmp, JSON.stringify(sessionReturn, null, 2));
+    await Deno.rename(tmp, returnPath);
+    return true;
   }
 
   private async synthesizeAbandoned(traceId: string): Promise<void> {
@@ -91,5 +167,41 @@ export class HeadlessSessionLauncher {
     const tmp = `${returnPath}.tmp`;
     await Deno.writeTextFile(tmp, JSON.stringify(abandoned, null, 2));
     await Deno.rename(tmp, returnPath);
+  }
+
+  /**
+   * Parse a stream of newline-delimited JSON events (e.g. opencode --format json)
+   * and extract the last text response and token stats.
+   */
+  private parseJsonEvents(raw: string): {
+    lastText: string;
+    tokens: { input: number; output: number; total: number };
+    hasJsonEvents: boolean;
+  } {
+    let lastText = "";
+    let tokens = { input: 0, output: 0, total: 0 };
+    let hasJsonEvents = false;
+
+    for (const line of raw.trim().split("\n")) {
+      if (!line.trim()) continue;
+      try {
+        const event = JSON.parse(line);
+        if (typeof event !== "object" || !event.type) continue;
+        hasJsonEvents = true;
+        if (event.type === OPENCODE_EVENT_TEXT && event.part?.text) {
+          lastText = event.part.text;
+        }
+        if (event.type === OPENCODE_EVENT_STEP_FINISH && event.part?.tokens) {
+          tokens = {
+            input: event.part.tokens.input ?? 0,
+            output: event.part.tokens.output ?? 0,
+            total: event.part.tokens.total ?? 0,
+          };
+        }
+      } catch {
+        // Not a JSON line — skip
+      }
+    }
+    return { lastText, tokens, hasJsonEvents };
   }
 }

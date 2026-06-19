@@ -1600,6 +1600,8 @@ export const SESSION_FLAG_MAX_TOTAL_TOKENS = "--max-total-tokens";
 export const SESSION_FLAG_PRINT = "-p";
 export const SESSION_SUBCMD_RUN = "run";
 export const SESSION_FLAG_OUTPUT_FORMAT = "--output-format";
+/** OpenCode-specific: --format json (differs from claude's --output-format). */
+export const SESSION_FLAG_FORMAT = "--format";
 export const SESSION_OUTPUT_FORMAT_JSON = "json";
 
 /** Default binary names per built-in session adapter (override via config). */

@@ -21,6 +21,7 @@ import {
   SESSION_ENV_MAX_OUTPUT_TOKENS,
   SESSION_ENV_MAX_TOTAL_TOKENS,
   SESSION_FLAG_BRIEF,
+  SESSION_FLAG_FORMAT,
   SESSION_FLAG_MAX_TOTAL_TOKENS,
   SESSION_FLAG_OUTPUT_FORMAT,
   SESSION_FLAG_PRINT,
@@ -84,16 +85,14 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
           env: budgetEnv(brief),
         };
       }
-      // opencode headless
+      // opencode headless — opencode run supports --format json, not --output-format
       return {
         command: this.bin,
         args: [
           SESSION_SUBCMD_RUN,
+          SESSION_FLAG_FORMAT,
+          SESSION_OUTPUT_FORMAT_JSON,
           brief.objective,
-          SESSION_FLAG_BRIEF,
-          briefPath,
-          SESSION_FLAG_MAX_TOTAL_TOKENS,
-          budget,
         ],
         cwd: brief.worktree_path ?? dirname(briefPath),
         env: budgetEnv(brief),
