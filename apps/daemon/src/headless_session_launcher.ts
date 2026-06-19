@@ -183,7 +183,13 @@ export class HeadlessSessionLauncher {
     let tokens = { input: 0, output: 0, total: 0 };
     let hasJsonEvents = false;
 
-    for (const line of raw.trim().split("\n")) {
+    // Try single JSON object format (Claude Code --output-format json)
+    const singleResult = this.tryParseSingleJsonResult(raw);
+    if (singleResult) return singleResult;
+
+    // Newline-delimited JSON events format (OpenCode --format json)
+    const trimmed = raw.trim();
+    for (const line of trimmed.split("\n")) {
       if (!line.trim()) continue;
       try {
         const event = JSON.parse(line);
@@ -204,5 +210,32 @@ export class HeadlessSessionLauncher {
       }
     }
     return { lastText, tokens, hasJsonEvents };
+  }
+
+  /**
+   * Try to parse a single JSON result object (Claude Code --output-format json).
+   * Returns parsed data or null if the format doesn't match.
+   */
+  private tryParseSingleJsonResult(raw: string): {
+    lastText: string;
+    tokens: { input: number; output: number; total: number };
+    hasJsonEvents: boolean;
+  } | null {
+    const trimmed = raw.trim();
+    if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) return null;
+    try {
+      const obj = JSON.parse(trimmed);
+      if (obj.type !== "result" || typeof obj.result !== "string") return null;
+      const tokens = obj.usage
+        ? {
+          input: obj.usage.input_tokens ?? 0,
+          output: obj.usage.output_tokens ?? 0,
+          total: (obj.usage.input_tokens ?? 0) + (obj.usage.output_tokens ?? 0),
+        }
+        : { input: 0, output: 0, total: 0 };
+      return { lastText: obj.result, tokens, hasJsonEvents: true };
+    } catch {
+      return null;
+    }
   }
 }

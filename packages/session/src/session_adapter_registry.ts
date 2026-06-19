@@ -67,17 +67,12 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
       if (!this.supportsHeadless) {
         throw new Error(`Session tool '${this.tool}' does not support headless launch`);
       }
-      const budget = String(brief.token_budget.max_total_tokens);
       if (this.tool === "claude-code") {
         return {
           command: this.bin,
           args: [
             SESSION_FLAG_PRINT,
             brief.objective,
-            SESSION_FLAG_BRIEF,
-            briefPath,
-            SESSION_FLAG_MAX_TOTAL_TOKENS,
-            budget,
             SESSION_FLAG_OUTPUT_FORMAT,
             SESSION_OUTPUT_FORMAT_JSON,
           ],
