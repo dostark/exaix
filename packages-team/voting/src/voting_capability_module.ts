@@ -9,6 +9,7 @@
  * @related-files [packages/flow/src/step_handlers/voting_step_handler.ts, packages/core/src/composer/edition_composer.ts]
  */
 
+import { FlowStepType } from "@exaix/core";
 import type { ICapabilityModule, ISeamRegistryPlaceholder } from "@exaix/core/composer";
 import type { IVotingConsensusService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
@@ -31,5 +32,7 @@ export class VotingCapabilityModule implements ICapabilityModule {
 
     const r = registry as FlowStepHandlerRegistry;
     r.register(handler);
+    // Phase 121 Step 4: alias CONSENSUS to the same VotingStepHandler
+    r.registerWithKey(FlowStepType.CONSENSUS, handler);
   }
 }

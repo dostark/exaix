@@ -817,6 +817,7 @@ export class FlowRunner implements IFlowRunner {
     // Preserve old fall-through: BRANCH, CONSENSUS, and unknown types all routed to agent
     this.stepHandlerRegistry.registerWithKey(FlowStepType.BRANCH, agentHandler);
     this.stepHandlerRegistry.registerWithKey(FlowStepType.CONSENSUS, agentHandler);
+    this.eventLogger.log("flow.deprecation.consensus", { step_type: FlowStepType.CONSENSUS });
   }
 
   /**
