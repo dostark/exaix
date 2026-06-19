@@ -427,13 +427,7 @@ export class RequestProcessor {
         return { earlyReturn: true };
       }
       if (qgResult.recommendation === RequestQualityRecommendation.NEEDS_CLARIFICATION) {
-        // Phase 111 Step 5: config-gated refinement delegation branch
-        const sd = this.config.session_delegate;
-        if (sd?.enabled && sd.gates?.includes("refinement") && this.processorConfig.onDelegateRefinement) {
-          await this.statusManager.updateStatus(filePath, RequestStatus.REFINING);
-          if (traceId) {
-            await this.processorConfig.onDelegateRefinement(traceId, requestId, body);
-          }
+        if (await this._tryDelegateRefinement(filePath, requestId, body, traceId)) {
           return { earlyReturn: true };
         }
         await this._startClarificationSession(filePath, requestId, body, traceId);
@@ -454,6 +448,27 @@ export class RequestProcessor {
       traceLogger.warn(DomainEventType.RequestQualityGateFailed, filePath, { requestId });
     }
     return { earlyReturn: false };
+  }
+
+  /**
+   * Phase 111 Step 5: config-gated refinement delegation branch.
+   * Returns true when delegation was initiated (brief prepared, wait parked, launch triggered).
+   */
+  private async _tryDelegateRefinement(
+    filePath: string,
+    requestId: string,
+    body: string,
+    traceId?: string,
+  ): Promise<boolean> {
+    const sd = this.config.session_delegate;
+    if (!sd?.enabled || !sd.gates?.includes("refinement") || !this.processorConfig.onDelegateRefinement) {
+      return false;
+    }
+    await this.statusManager.updateStatus(filePath, RequestStatus.REFINING);
+    if (traceId) {
+      await this.processorConfig.onDelegateRefinement(traceId, requestId, body);
+    }
+    return true;
   }
 
   private async _startClarificationSession(

@@ -58,6 +58,7 @@ import { SessionWaitStore } from "@exaix/session/wait/session_wait_store.ts";
 import { SessionReturnProcessor } from "@exaix/session/session_return_processor.ts";
 import { SessionReturnWatcher } from "./src/session_return_watcher.ts";
 import { HeadlessSessionLauncher } from "./src/headless_session_launcher.ts";
+import { createOnReconciledHandler } from "./src/on_reconciled_dispatcher.ts";
 import { SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
 import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adapter_registry.ts";
 import {
@@ -321,6 +322,9 @@ if (import.meta.main) {
     await ensureDir(plansPath);
     await ensureDir(activePath);
 
+    // ── Review Registry (needed before session-delegation for onReconciled wiring) ──
+    const reviewRegistry = new ReviewRegistry(dbService, logger);
+
     // ── Session-delegation runtime (Phase 111) ──────────────────────────
     let sessionReturnWatcher: SessionReturnWatcher | null = null;
     let _headlessLauncher: HeadlessSessionLauncher | null = null;
@@ -328,6 +332,7 @@ if (import.meta.main) {
     let _sessionWaitStore: SessionWaitStore | null = null;
     if (config.session_delegate?.enabled) {
       const sessionDir = join(config.system.root, "Session");
+      const workspaceRoot = join(config.system.root, config.paths.workspace);
       const waitStoreBase = join(config.system.root, "Memory", "Execution");
       await ensureDir(sessionDir);
       await ensureDir(waitStoreBase);
@@ -340,7 +345,7 @@ if (import.meta.main) {
       });
       const processor = new SessionReturnProcessor({
         sessionDir,
-        workspaceRoot: join(config.system.root, config.paths.workspace),
+        workspaceRoot,
         waitStore: _sessionWaitStore,
       });
 
@@ -357,10 +362,20 @@ if (import.meta.main) {
         allowlist,
       });
 
+      const onReconciled = createOnReconciledHandler({
+        sessionDir,
+        workspaceRoot,
+        reviewRegistry: {
+          getByTrace: (traceId: string) => reviewRegistry.getByTrace(traceId),
+          updateStatus: (id: string, status, user, reason) => reviewRegistry.updateStatus(id, status, user, reason),
+        },
+        logger,
+      });
       sessionReturnWatcher = new SessionReturnWatcher({
         sessionDir,
         processor,
         logger,
+        onReconciled,
       });
 
       gracefulShutdown.registerCleanup("stop_session_return_watcher", async () => {
@@ -530,9 +545,6 @@ if (import.meta.main) {
         });
       }
     });
-
-    // Initialize Review Registry
-    const reviewRegistry = new ReviewRegistry(dbService, logger);
 
     const executionLoop = new ExecutionLoop({
       context,
