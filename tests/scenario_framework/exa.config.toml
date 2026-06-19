@@ -31,3 +31,10 @@ stability_check = true
 [amendment]
 enabled = true
 threshold = 60
+
+[session_delegate]
+enabled = false
+tool = "claude-code"
+gates = ["refinement", "plan_review", "code_changes", "review"]
+launch_mode = "headless"
+bin_overrides = []
