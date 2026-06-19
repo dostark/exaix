@@ -58,6 +58,8 @@ import { SessionWaitStore } from "@exaix/session/wait/session_wait_store.ts";
 import { SessionReturnProcessor } from "@exaix/session/session_return_processor.ts";
 import { SessionReturnWatcher } from "./src/session_return_watcher.ts";
 import { HeadlessSessionLauncher } from "./src/headless_session_launcher.ts";
+import { SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
+import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adapter_registry.ts";
 import {
   SESSION_BIN_CLAUDE_CODE,
   SESSION_BIN_CURSOR,
@@ -319,6 +321,54 @@ if (import.meta.main) {
     await ensureDir(plansPath);
     await ensureDir(activePath);
 
+    // ── Session-delegation runtime (Phase 111) ──────────────────────────
+    let sessionReturnWatcher: SessionReturnWatcher | null = null;
+    let _headlessLauncher: HeadlessSessionLauncher | null = null;
+    let _sessionDelegateService: SessionDelegateService | null = null;
+    let _sessionWaitStore: SessionWaitStore | null = null;
+    if (config.session_delegate?.enabled) {
+      const sessionDir = join(config.system.root, "Session");
+      const waitStoreBase = join(config.system.root, "Memory", "Execution");
+      await ensureDir(sessionDir);
+      await ensureDir(waitStoreBase);
+
+      _sessionWaitStore = new SessionWaitStore(waitStoreBase);
+      _sessionDelegateService = new SessionDelegateService({
+        registry: createDefaultSessionAdapterRegistry(),
+        sessionDir,
+        clock: { now: () => new Date() },
+      });
+      const processor = new SessionReturnProcessor({
+        sessionDir,
+        workspaceRoot: join(config.system.root, config.paths.workspace),
+        waitStore: _sessionWaitStore,
+      });
+
+      const allowlist = new Set([
+        SESSION_BIN_CLAUDE_CODE,
+        SESSION_BIN_CURSOR,
+        SESSION_BIN_OPENCODE,
+        SESSION_BIN_VSCODE,
+        ...(config.session_delegate.bin_overrides ?? []),
+      ]);
+
+      _headlessLauncher = new HeadlessSessionLauncher({
+        sessionDir,
+        allowlist,
+      });
+
+      sessionReturnWatcher = new SessionReturnWatcher({
+        sessionDir,
+        processor,
+        logger,
+      });
+
+      gracefulShutdown.registerCleanup("stop_session_return_watcher", async () => {
+        sessionReturnWatcher?.stop();
+        await logger.info(DomainEventType.ShutdownWatchersStopped, "session return watcher", {});
+      });
+    }
+
     // Initialize wait state storage path for clarification lifecycle
     const waitStatesRoot = join(
       config.system.root,
@@ -408,6 +458,36 @@ if (import.meta.main) {
           JSON.stringify(waitState, null, 2),
         );
       },
+      onDelegateRefinement: _sessionDelegateService && _sessionWaitStore
+        ? async (traceId: string, _requestId: string, body: string) => {
+          const sd = config.session_delegate!;
+          // Use optional chaining for obj access instead of type-assertion cast
+          const brief = await _sessionDelegateService!.prepareBrief({
+            traceId,
+            gate: "refinement",
+            tool: sd.tool,
+            objective: body,
+            artifactRef: `Workspace/Requests/${_requestId}.md`,
+            permittedPaths: [`Workspace/Requests/${_requestId}.md`],
+            tokenBudget: sd.token_budget ??
+              { max_input_tokens: 10000, max_output_tokens: 10000, max_total_tokens: 20000 },
+            deadline: new Date(Date.now() + 3_600_000).toISOString(),
+          });
+          const state = await _sessionWaitStore!.park(traceId, brief.gate, brief.resume_token, brief.deadline);
+          if (state.status !== "pending") throw new Error("failed to park refinement wait state");
+
+          if (sd.launch_mode === "headless" && _headlessLauncher) {
+            const launch = _sessionDelegateService!.resolveLaunch(brief, "headless");
+            await _headlessLauncher.launch(launch, traceId);
+          } else {
+            logger.info(DomainEventType.SessionDelegateBriefed, traceId, {
+              mode: sd.launch_mode,
+              tool: sd.tool,
+              objective_length: body.length,
+            });
+          }
+        }
+        : undefined,
     });
 
     await logger.info(
@@ -533,47 +613,6 @@ if (import.meta.main) {
         extensions: [".toml"],
       },
     );
-
-    // ── Session-delegation runtime (Phase 111) ──────────────────────────
-    let sessionReturnWatcher: SessionReturnWatcher | null = null;
-    let _headlessLauncher: HeadlessSessionLauncher | null = null;
-    if (config.session_delegate?.enabled) {
-      const sessionDir = join(config.system.root, "Session");
-      const waitStoreBase = join(config.system.root, "Memory", "Execution");
-      await ensureDir(sessionDir);
-      await ensureDir(waitStoreBase);
-
-      const waitStore = new SessionWaitStore(waitStoreBase);
-      const processor = new SessionReturnProcessor({
-        sessionDir,
-        workspaceRoot: join(config.system.root, config.paths.workspace),
-        waitStore,
-      });
-
-      const allowlist = new Set([
-        SESSION_BIN_CLAUDE_CODE,
-        SESSION_BIN_CURSOR,
-        SESSION_BIN_OPENCODE,
-        SESSION_BIN_VSCODE,
-        ...(config.session_delegate.bin_overrides ?? []),
-      ]);
-
-      _headlessLauncher = new HeadlessSessionLauncher({
-        sessionDir,
-        allowlist,
-      });
-
-      sessionReturnWatcher = new SessionReturnWatcher({
-        sessionDir,
-        processor,
-        logger,
-      });
-
-      gracefulShutdown.registerCleanup("stop_session_return_watcher", async () => {
-        sessionReturnWatcher?.stop();
-        await logger.info(DomainEventType.ShutdownWatchersStopped, "session return watcher", {});
-      });
-    }
 
     // Register cleanup tasks for graceful shutdown
     gracefulShutdown.registerCleanup("stop_request_watcher", async () => {

@@ -28,6 +28,7 @@ import {
 } from "@exaix/testing";
 import type { IClarificationSession } from "@exaix/schemas/clarification_session.ts";
 import { ClarificationSessionStatus } from "@exaix/schemas/clarification_session.ts";
+import type { SessionDelegateConfig } from "@exaix/schemas/session_delegate.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -136,6 +137,7 @@ function makeTestProcessor(
   opts: {
     gate?: IRequestQualityGateService;
     config?: Parameters<typeof createStubConfig>[0];
+    onDelegateRefinement?: (traceId: string, requestId: string, body: string) => Promise<void>;
   } = {},
 ): { processor: RequestProcessor; mockProvider: ReturnType<typeof createMockProvider> } {
   const mockProvider = createMockProvider(["<content>{}</content>"]);
@@ -151,6 +153,7 @@ function makeTestProcessor(
     context,
     testProvider: mockProvider,
     ...(opts.gate !== undefined ? { testQualityGate: opts.gate } : {}),
+    ...(opts.onDelegateRefinement !== undefined ? { onDelegateRefinement: opts.onDelegateRefinement } : {}),
   });
   return { processor, mockProvider };
 }
@@ -376,6 +379,74 @@ Deno.test("[RequestProcessor] builds quality gate from TOML config when none inj
     // before the processor reached blueprint lookup.
     const content = await Deno.readTextFile(filePath);
     assertEquals(content.includes(RequestStatus.REFINING), true);
+  } finally {
+    await env.cleanup();
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Phase 111 Step 5 — refinement-delegation gate
+// ---------------------------------------------------------------------------
+
+Deno.test("[RequestProcessor] refinement-delegation fires onDelegateRefinement when config enables it", async () => {
+  const env = await makeEnv();
+  try {
+    const filePath = makeRequestFile(env.requestsDir, "I need more clarity on architecture", {
+      requestId: "req-ref-delegate",
+    });
+    const stubGate = makeStubGate(RequestQualityRecommendation.NEEDS_CLARIFICATION);
+
+    let delegateCalled = false;
+    let capturedTraceId = "";
+    const { processor } = makeTestProcessor(env, {
+      gate: stubGate,
+      config: {
+        ...env.config,
+        session_delegate: {
+          enabled: true,
+          tool: "claude-code",
+          gates: ["refinement"],
+          launch_mode: "advisory",
+        } satisfies SessionDelegateConfig,
+      },
+      onDelegateRefinement: (traceId: string, _requestId: string, _body: string) => {
+        delegateCalled = true;
+        capturedTraceId = traceId;
+        return Promise.resolve();
+      },
+    });
+
+    await processor.process(filePath);
+    assertEquals(delegateCalled, true, "onDelegateRefinement must fire when refinement delegation is enabled");
+    assertEquals(capturedTraceId.startsWith("trace-"), true, "traceId must be passed to the callback");
+  } finally {
+    await env.cleanup();
+  }
+});
+
+Deno.test("[RequestProcessor] refinement-delegation does NOT fire when session_delegate is disabled", async () => {
+  const env = await makeEnv();
+  try {
+    const filePath = makeRequestFile(env.requestsDir, "I need more clarity on architecture", {
+      requestId: "req-ref-no-delegate",
+    });
+    const stubGate = makeStubGate(RequestQualityRecommendation.NEEDS_CLARIFICATION);
+
+    let delegateCalled = false;
+    const { processor } = makeTestProcessor(env, {
+      gate: stubGate,
+      config: {
+        ...env.config,
+        session_delegate: undefined,
+      },
+      onDelegateRefinement: (_traceId: string, _requestId: string, _body: string) => {
+        delegateCalled = true;
+        return Promise.resolve();
+      },
+    });
+
+    await processor.process(filePath);
+    assertEquals(delegateCalled, false, "onDelegateRefinement must NOT fire when delegation is disabled");
   } finally {
     await env.cleanup();
   }
