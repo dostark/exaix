@@ -101,6 +101,12 @@ Do / Don't
 - ✅ Do run Phase 6 security checks on every step touching input handling,
   auth/authorisation, path resolution, secrets, or external payloads.
 - ✅ Do write all gaps and a Pre-Implementation Actions list into the document.
+- ✅ Do grep-verify every Pre-Implementation Action that claims a source-code change
+  before marking it ✅ — a resolution that only edits the doc but claims code was
+  changed is ⛔ UNVERIFIED. The grep must find the claimed symbol in production code.
+- ❌ Don't accept a doc-only edit as resolving a code-change gap — if the gap says
+  "file X needs a new field", editing the plan to say "file X has the field" does not
+  create the field. Only a real code change and a successful grep close the gap.
 - ✅ Do bump the document version after writing gaps in.
 - ✅ Do fix trivial gaps (typos, wrong paths, minor formatting, missing clarifying sentences) by editing the plan text in-place without registering a gap entry.
 - ✅ Do include a brief "In-Place Fixes" subsection in the Pre-Gap Analysis section listing all in-place fixes so the reader knows what was changed.
@@ -430,6 +436,12 @@ cheapest point.
    production consumers)` section for `#next-steps` to maintain. Its absence is a
    🔵 Conceptual gap — note it so `#plan`/`#next-steps` seeds it.
 
+1. **Resolution-claim verification (grep gate).**
+   Before marking any Pre-Implementation Action as ✅ resolved, grep the production
+   codebase for the expected symbol. A resolution that edits only the planning doc
+   but claims a source-code change is **unverified** — mark it ⛔ UNVERIFIED. See
+   the Pre-Implementation Actions section for the full grep protocol.
+
 ---
 
 ### Phase 9 — Gap Classification
@@ -503,9 +515,33 @@ Build a gap summary table before detailed entries.
 
 ### Pre-Implementation Actions (ordered by severity)
 
-1. 🔴 [GAP-1] <action>
-2. 🔒 [GAP-2] <action>
-3. 🟡 [GAP-3] <action>
+Before writing each action, verify the resolution claim against the actual codebase:
+
+1. **Grep the codebase for every code-change resolution.**
+   For each resolution that claims a source-code change (e.g. "Added X field to Y schema",
+   "Implemented Z enforcement in A.ts"), grep the production codebase (excluding tests
+   and test helpers) for the expected symbol, string literal, or file change. If the grep
+   finds zero matches, the resolution exists only in the planning doc — it is **not real**.
+   Mark it as `⛔ UNVERIFIED` instead of `✅` and downgrade the step status from CORE/WIRED
+   to ⏳ pending. A resolution that survives to the final Pre-Implementation Actions list
+   with a `✅` marker MUST be backed by a real code change that grep can find.
+
+2. **Cross-reference against step-level markers.**
+   If a resolution claims enforcement is "implemented" but the owning step is marked CORE
+   (not WIRED), flag the contradiction. A step that is CORE means spawn-time enforcement
+   is explicitly **not done** — a gap resolution cannot claim it is. Either the resolution
+   is wrong (fix the resolution) or the step marker is wrong (elevate to WIRED).
+
+3. **No doc-only resolutions.**
+   A resolution that edits the planning document but does not change any source file is
+   not a "code change" — it is a doc clarification. If the original gap was about missing
+   code, a doc edit cannot close it. The resolution must describe what source file was
+   changed and the grep (step 1) must confirm the change exists.
+
+Format:
+```markdown
+1. 🔴 [GAP-1] <action> — ✅ [grep: `symbol` found in `file.ts:N`]
+2. 🔒 [GAP-2] <action> — ⛔ UNVERIFIED [grep: `symbol` not found]
 ```
 
 ---
