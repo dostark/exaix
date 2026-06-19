@@ -31,9 +31,9 @@ export type SessionTool = z.infer<typeof SessionToolSchema>;
  * Launch coupling mode for an adapter.
  *  - advisory: Exaix prints the command; the human runs the tool out-of-band.
  *  - supervised: interactive `exactl` spawns the tool on the caller's TTY.
- * (Mode 3 "headless" is deferred to Phase 85 and is not modelled here.)
+ *  - headless: non-interactive launch via `claude -p` or `opencode run` (Phase 111).
  */
-export const SessionLaunchModeSchema = z.enum(["advisory", "supervised"]);
+export const SessionLaunchModeSchema = z.enum(["advisory", "supervised", "headless"]);
 export type SessionLaunchMode = z.infer<typeof SessionLaunchModeSchema>;
 
 /** Token budget constraints handed to the session tool via the brief. */
@@ -173,7 +173,7 @@ export const SessionDelegateConfigSchema = z.object({
   enabled: z.boolean().default(false),
   tool: SessionToolSchema,
   gates: z.array(SessionGateSchema).min(1),
-  /** "advisory" (Mode 1) or "supervised" (Mode 2). Mode 3 deferred. */
+  /** "advisory" (Mode 1), "supervised" (Mode 2), or "headless" (Mode 3, Phase 111). */
   launch_mode: SessionLaunchModeSchema.default("advisory"),
   token_budget: SessionTokenBudgetSchema.optional(),
 });

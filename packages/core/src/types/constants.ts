@@ -1596,6 +1596,11 @@ export const SESSION_ENV_MAX_TOTAL_TOKENS = "EXA_SESSION_MAX_TOTAL_TOKENS";
 /** CLI-adapter argv flags pointing the tool at the brief and its token ceiling. */
 export const SESSION_FLAG_BRIEF = "--brief";
 export const SESSION_FLAG_MAX_TOTAL_TOKENS = "--max-total-tokens";
+/** Headless-mode flags: claude -p <objective>, opencode run <objective>, and output-format json. */
+export const SESSION_FLAG_PRINT = "-p";
+export const SESSION_SUBCMD_RUN = "run";
+export const SESSION_FLAG_OUTPUT_FORMAT = "--output-format";
+export const SESSION_OUTPUT_FORMAT_JSON = "json";
 
 /** Default binary names per built-in session adapter (override via config). */
 export const SESSION_BIN_CLAUDE_CODE = "claude";
