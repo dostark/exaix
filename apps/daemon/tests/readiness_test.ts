@@ -1,50 +1,19 @@
 /**
  * @module ReadinessTest
  * @path apps/daemon/tests/readiness_test.ts
- * @description Phase 121 Step 1 — tests for the daemon readiness signal utilities.
- *   Verifies writeReadinessMarker, removeReadinessMarker, and waitForReadiness.
+ * @description Phase 121 Step 1 — tests for daemon readiness via PID polling.
+ *   Uses `waitForReadiness` which polls the PID file + `isProcessAlive`.
  */
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { removeReadinessMarker, waitForReadiness, writeReadinessMarker } from "../src/readiness.ts";
+import { waitForReadiness } from "../src/readiness.ts";
 
-Deno.test("[readiness] writeReadinessMarker creates .exa/ready file", () => {
+Deno.test("[readiness] waitForReadiness returns true when PID file contains a live PID", async () => {
   const dir = Deno.makeTempDirSync();
   try {
-    writeReadinessMarker(dir);
-    const marker = join(dir, ".exa", "ready");
-    const stat = Deno.statSync(marker);
-    assertEquals(stat.isFile, true);
-    assertEquals(stat.size, 0, "marker must be zero-byte");
-  } finally {
-    Deno.removeSync(dir, { recursive: true });
-  }
-});
-
-Deno.test("[readiness] removeReadinessMarker deletes .exa/ready file", () => {
-  const dir = Deno.makeTempDirSync();
-  try {
-    writeReadinessMarker(dir);
-    const marker = join(dir, ".exa", "ready");
-    assertEquals(Deno.statSync(marker).isFile, true);
-    removeReadinessMarker(dir);
-    let exists = true;
-    try {
-      Deno.statSync(marker);
-    } catch {
-      exists = false;
-    }
-    assertEquals(exists, false, "marker must be removed");
-  } finally {
-    Deno.removeSync(dir, { recursive: true });
-  }
-});
-
-Deno.test("[readiness] waitForReadiness returns true when marker present", async () => {
-  const dir = Deno.makeTempDirSync();
-  try {
-    writeReadinessMarker(dir);
+    Deno.mkdirSync(join(dir, ".exa"));
+    Deno.writeTextFileSync(join(dir, ".exa", "daemon.pid"), String(Deno.pid));
     const result = await waitForReadiness(dir, 1000);
     assertEquals(result, true);
   } finally {
@@ -52,10 +21,21 @@ Deno.test("[readiness] waitForReadiness returns true when marker present", async
   }
 });
 
-Deno.test("[readiness] waitForReadiness returns false on timeout", async () => {
+Deno.test("[readiness] waitForReadiness returns false on timeout (no PID file)", async () => {
   const dir = Deno.makeTempDirSync();
   try {
-    // No marker written — should timeout
+    const result = await waitForReadiness(dir, 500);
+    assertEquals(result, false);
+  } finally {
+    Deno.removeSync(dir, { recursive: true });
+  }
+});
+
+Deno.test("[readiness] waitForReadiness returns false for a non-existent PID", async () => {
+  const dir = Deno.makeTempDirSync();
+  try {
+    Deno.mkdirSync(join(dir, ".exa"));
+    Deno.writeTextFileSync(join(dir, ".exa", "daemon.pid"), "999999999");
     const result = await waitForReadiness(dir, 500);
     assertEquals(result, false);
   } finally {

@@ -58,7 +58,6 @@ import { SessionWaitStore } from "@exaix/session/wait/session_wait_store.ts";
 import { SessionReturnProcessor } from "@exaix/session/session_return_processor.ts";
 import { SessionReturnWatcher } from "./src/session_return_watcher.ts";
 import { HeadlessSessionLauncher } from "./src/headless_session_launcher.ts";
-import { removeReadinessMarker, writeReadinessMarker } from "./src/readiness.ts";
 import { createOnReconciledHandler } from "./src/on_reconciled_dispatcher.ts";
 import { SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
 import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adapter_registry.ts";
@@ -762,11 +761,6 @@ if (import.meta.main) {
       );
     });
 
-    gracefulShutdown.registerCleanup("readiness_marker", () => {
-      removeReadinessMarker(config.system.root);
-      return Promise.resolve();
-    });
-
     gracefulShutdown.registerCleanup("close_database", async () => {
       dbService.close();
       await logger.info(
@@ -803,9 +797,6 @@ if (import.meta.main) {
     ];
     if (sessionReturnWatcher) watchers.push(sessionReturnWatcher.start());
     await Promise.all(watchers);
-
-    // Phase 121 Step 1: signal readiness once all watchers are running
-    writeReadinessMarker(config.system.root);
   } catch (error) {
     console.error("❌ Fatal Error:", error);
     Deno.exit(1);

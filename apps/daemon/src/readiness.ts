@@ -1,61 +1,39 @@
 /**
  * @module Readiness
  * @path apps/daemon/src/readiness.ts
- * @description Phase 121 Step 1 — daemon readiness signal utility.
- *   Writes and removes a zero-byte `.exa/ready` marker file so external
- *   scripts (e.g. `wait_for_daemon.ts`) can poll for completion of startup.
+ * @description Phase 121 Step 1 — daemon readiness utility.
+ *   Polls the daemon PID file and verifies the process is alive via
+ *   `kill -0`, reusing the same mechanism as `exactl daemon status`.
+ *   No file marker needed — the existing PID file + process liveness
+ *   check is not spoofable (a fake PID won't pass kill -0).
  * @architectural-layer Services
- * @dependencies [@std/path]
- * @related-files [apps/daemon/main.ts, scripts/wait_for_daemon.ts]
+ * @dependencies [@std/path, @exaix/cli]
+ * @related-files [scripts/wait_for_daemon.ts]
  */
 
 import { join } from "@std/path";
+import { isProcessAlive } from "@exaix/cli/process_utils.ts";
 
-const READY_FILE = "ready";
-const EXA_DIR = ".exa";
-
-function readyPath(rootDir: string): string {
-  return join(rootDir, EXA_DIR, READY_FILE);
+/** .exa/daemon.pid path for a given daemon root. */
+function pidPath(rootDir: string): string {
+  return join(rootDir, ".exa", "daemon.pid");
 }
 
 /**
- * Write a zero-byte readiness marker at {rootDir}/.exa/ready.
- * Creates the .exa/ directory if it does not exist.
- */
-export function writeReadinessMarker(rootDir: string): void {
-  const dir = join(rootDir, EXA_DIR);
-  try {
-    Deno.mkdirSync(dir, { recursive: true });
-  } catch {
-    // Directory already exists
-  }
-  Deno.writeTextFileSync(readyPath(rootDir), "");
-}
-
-/**
- * Remove the readiness marker at {rootDir}/.exa/ready.
- * No-op if the marker does not exist.
- */
-export function removeReadinessMarker(rootDir: string): void {
-  try {
-    Deno.removeSync(readyPath(rootDir));
-  } catch {
-    // File already removed — no-op
-  }
-}
-
-/**
- * Poll for the readiness marker up to `timeoutMs` milliseconds.
- * Checks every 500ms. Returns true when the marker appears, false on timeout.
+ * Poll for the daemon PID file and verify the process is alive.
+ * Checks every 500ms. Returns true when the daemon is running, false on timeout.
  */
 export async function waitForReadiness(rootDir: string, timeoutMs = 30000): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     try {
-      Deno.statSync(readyPath(rootDir));
-      return true;
+      const pidRaw = Deno.readTextFileSync(pidPath(rootDir));
+      const pid = parseInt(pidRaw.trim(), 10);
+      if (!isNaN(pid) && await isProcessAlive(pid)) {
+        return true;
+      }
     } catch {
-      // Marker not yet present — wait and retry
+      // PID file not found — wait and retry
     }
     await new Promise((r) => setTimeout(r, 500));
   }
