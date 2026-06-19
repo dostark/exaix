@@ -511,15 +511,15 @@ Build a gap summary table before detailed entries.
 ### Pre-Implementation Actions (ordered by severity)
 
 List every resolution in priority order. Each action must state the exact file and
-change. The grep verification (Phase 11.3) and marker-consistency check (Phase 11.4)
-run after these are written. Format with grep outcome annotations:
+change. The grep verification and marker-consistency check (see Finalize section) run after these
+are written. Format with grep outcome annotations:
 
 ```markdown
 1. 🔴 [GAP-1] <action> — ✅ [grep: `symbol` in `file.ts:N`]
 2. 🟡 [GAP-2] <action> — ⛔ UNVERIFIED [grep: `symbol` not found]
 ```
 
-**Verification rules (applied in Phase 11):**
+**Verification rules (applied during finalize):**
 
 1. **Grep every code-change claim.** If the expected symbol doesn't exist in production
    code, the resolution is `⛔ UNVERIFIED` — downgrade the step to ⏳ pending.
@@ -536,7 +536,8 @@ run after these are written. Format with grep outcome annotations:
 ### Phase 11 — Finalize
 
 1. Bump the document version in frontmatter.
-1. If the plan had no `## Reachability Ledger` section, append an empty one (Phase 8.7)
+1. If the plan had no `## Reachability Ledger` section, append an empty one
+   (see the "Reachability Ledger seeded" check in the Integration Feasibility section)
    so `#next-steps` has a place to track wiring debt.
 1. **Grep-verify every code-change resolution.** For each Pre-Implementation Action that
    claims a source-code change, grep the production codebase for the expected symbol.
