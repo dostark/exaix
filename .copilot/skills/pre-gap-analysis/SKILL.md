@@ -107,12 +107,6 @@ Do / Don't
 - ❌ Don't accept a doc-only edit as resolving a code-change gap — if the gap says
   "file X needs a new field", editing the plan to say "file X has the field" does not
   create the field. Only a real code change and a successful grep close the gap.
-- ✅ Do flag every step that has `✅ CORE` / `✅ WIRED` / `[x]` completion markers
-  during pre-gap analysis as a 🔵 Conceptual gap — no code has been written yet.
-  All step status markers must be `⏳ pending` until #next-steps starts implementation.
-  A plan that ships with pre-set completion markers is either misleading (claims work
-  that wasn't done) or structurally confusing (mixes planning phase with implementation
-  phase). Reset them during the pre-gap.
 - ✅ Do bump the document version after writing gaps in.
 - ✅ Do fix trivial gaps (typos, wrong paths, minor formatting, missing clarifying sentences) by editing the plan text in-place without registering a gap entry.
 - ✅ Do include a brief "In-Place Fixes" subsection in the Pre-Gap Analysis section listing all in-place fixes so the reader knows what was changed.
@@ -442,19 +436,6 @@ cheapest point.
    production consumers)` section for `#next-steps` to maintain. Its absence is a
    🔵 Conceptual gap — note it so `#plan`/`#next-steps` seeds it.
 
-1. **Resolution-claim verification (grep gate).**
-   Before marking any Pre-Implementation Action as ✅ resolved, grep the production
-   codebase for the expected symbol. A resolution that edits only the planning doc
-   but claims a source-code change is **unverified** — mark it ⛔ UNVERIFIED. See
-   the Pre-Implementation Actions section for the full grep protocol.
-
-1. **Step-level marker consistency check.**
-   Check every step in the plan for `✅ CORE`, `✅ WIRED`, `✅ DONE`, or `[x]` completion
-   markers. During pre-gap analysis **no code has been written yet** — these markers are
-   premature. Flag any non-`⏳` marker as a 🔵 Conceptual gap and reset it to `⏳ pending`.
-   The only exception is a step inherited from a prior phase that was actually shipped
-   (verified by grep for its production call-site). A step with a CORE/WIRED marker but
-   no corresponding implementation in the codebase is misleading and must be corrected.
 
 ---
 
@@ -529,34 +510,26 @@ Build a gap summary table before detailed entries.
 
 ### Pre-Implementation Actions (ordered by severity)
 
-Before writing each action, verify the resolution claim against the actual codebase:
+List every resolution in priority order. Each action must state the exact file and
+change. The grep verification (Phase 11.3) and marker-consistency check (Phase 11.4)
+run after these are written. Format with grep outcome annotations:
 
-1. **Grep the codebase for every code-change resolution.**
-   For each resolution that claims a source-code change (e.g. "Added X field to Y schema",
-   "Implemented Z enforcement in A.ts"), grep the production codebase (excluding tests
-   and test helpers) for the expected symbol, string literal, or file change. If the grep
-   finds zero matches, the resolution exists only in the planning doc — it is **not real**.
-   Mark it as `⛔ UNVERIFIED` instead of `✅` and downgrade the step status from CORE/WIRED
-   to ⏳ pending. A resolution that survives to the final Pre-Implementation Actions list
-   with a `✅` marker MUST be backed by a real code change that grep can find.
-
-2. **Cross-reference against step-level markers.**
-   If a resolution claims enforcement is "implemented" but the owning step is marked CORE
-   (not WIRED), flag the contradiction. A step that is CORE means spawn-time enforcement
-   is explicitly **not done** — a gap resolution cannot claim it is. Either the resolution
-   is wrong (fix the resolution) or the step marker is wrong (elevate to WIRED).
-
-3. **No doc-only resolutions.**
-   A resolution that edits the planning document but does not change any source file is
-   not a "code change" — it is a doc clarification. If the original gap was about missing
-   code, a doc edit cannot close it. The resolution must describe what source file was
-   changed and the grep (step 1) must confirm the change exists.
-
-Format:
 ```markdown
-1. 🔴 [GAP-1] <action> — ✅ [grep: `symbol` found in `file.ts:N`]
-2. 🔒 [GAP-2] <action> — ⛔ UNVERIFIED [grep: `symbol` not found]
+1. 🔴 [GAP-1] <action> — ✅ [grep: `symbol` in `file.ts:N`]
+2. 🟡 [GAP-2] <action> — ⛔ UNVERIFIED [grep: `symbol` not found]
 ```
+
+**Verification rules (applied in Phase 11):**
+
+1. **Grep every code-change claim.** If the expected symbol doesn't exist in production
+   code, the resolution is `⛔ UNVERIFIED` — downgrade the step to ⏳ pending.
+
+2. **Cross-reference against step markers.** If a resolution claims enforcement is
+   "implemented" but the step is marked CORE (not WIRED), flag the contradiction.
+   Either the resolution is wrong or the marker is wrong.
+
+3. **No doc-only code-change resolutions.** A doc edit alone cannot close a gap that
+   requires source code. The grep must find the claimed change.
 
 ---
 
@@ -565,6 +538,13 @@ Format:
 1. Bump the document version in frontmatter.
 1. If the plan had no `## Reachability Ledger` section, append an empty one (Phase 8.7)
    so `#next-steps` has a place to track wiring debt.
+1. **Grep-verify every code-change resolution.** For each Pre-Implementation Action that
+   claims a source-code change, grep the production codebase for the expected symbol.
+   A resolution that only edits the doc but claims code was changed is ⛔ UNVERIFIED
+   (see the Pre-Implementation Actions section for the full grep protocol).
+1. **Check step-level marker consistency.** Verify every step has `⏳ pending` markers —
+   no code has been written yet. Flag any `✅ CORE`/`✅ WIRED`/`[x]` as premature and
+   reset to `⏳`. Exempt only prior-phase steps confirmed shipped via grep.
 1. Run `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/<doc>`.
 
 ---
