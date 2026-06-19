@@ -92,7 +92,8 @@ export class HeadlessSessionLauncher {
    * Returns true when synthesis succeeded.
    * Fail-safe: catches all errors (incl. mock ChildProcess with no real stdout).
    */
-  private async tryReadStdoutAndSynthesize(
+  /** @internal Visible for testing — parses opencode --format json stdout. */
+  async tryReadStdoutAndSynthesize(
     child: Deno.ChildProcess,
     traceId: string,
     returnPath: string,
