@@ -145,6 +145,7 @@ export class ExecutionLoop {
   private hitlPolicyEvaluator?: IHitlPolicyEvaluator;
   private confirmationInterceptor?: IToolConfirmationInterceptor;
   private hitlBlueprintRules?: HitlRule[];
+  private onCodeChangesDelegate?: (traceId: string, stepId: string) => Promise<string>;
 
   constructor(
     config: IExecutionLoopConfig,
@@ -162,6 +163,7 @@ export class ExecutionLoop {
     this.hitlPolicyEvaluator = config.hitlPolicyEvaluator;
     this.confirmationInterceptor = config.confirmationInterceptor;
     this.hitlBlueprintRules = config.hitlBlueprintRules;
+    this.onCodeChangesDelegate = config.onCodeChangesDelegate;
     this.plansDir = join(this.config.system.root, this.config.paths.workspace, this.config.paths.active);
     this.blueprintLoader = new BlueprintLoader({
       blueprintsPath: join(this.config.system.root, this.config.paths.blueprints, this.config.paths.identities),
@@ -818,6 +820,7 @@ export class ExecutionLoop {
       context: this.context,
       confidenceScorer: this.confidenceScorer,
       amendmentService: this.amendmentService,
+      onCodeChangesDelegate: this.onCodeChangesDelegate,
     };
     if (this.guardrailRunner) {
       planExecutorOptions.guardrailRunner = this.guardrailRunner;

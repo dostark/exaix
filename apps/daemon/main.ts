@@ -369,6 +369,10 @@ if (import.meta.main) {
           getByTrace: (traceId: string) => reviewRegistry.getByTrace(traceId),
           updateStatus: (id: string, status, user, reason) => reviewRegistry.updateStatus(id, status, user, reason),
         },
+        costTracker: {
+          trackGeneration: (provider, model, usage, traceId) =>
+            costTracker.trackGeneration(provider, model, usage, traceId),
+        },
         logger,
       });
       sessionReturnWatcher = new SessionReturnWatcher({

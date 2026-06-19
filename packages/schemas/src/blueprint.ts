@@ -10,6 +10,7 @@ import { z } from "zod";
 import { DEFAULT_BLUEPRINT_VERSION } from "@exaix/core";
 import { ActivityActor, type BlueprintStatus, McpToolName, TaskType } from "@exaix/core";
 import { HitlPolicySchema } from "./hitl.ts";
+import { SessionDelegateConfigSchema } from "./session_delegate.ts";
 
 // ============================================================================
 // Blueprint Interfaces
@@ -116,6 +117,9 @@ export const BlueprintFrontmatterSchema = z.object({
 
   /** Per-action HITL governance rules (Phase 118). Optional; absent means no per-action HITL policy. */
   hitl: HitlPolicySchema.optional(),
+
+  /** Session delegation configuration (Phase 111). Overrides portal/global settings. */
+  session_delegate: SessionDelegateConfigSchema.optional(),
 });
 
 export type IBlueprintFrontmatter = z.infer<typeof BlueprintFrontmatterSchema>;

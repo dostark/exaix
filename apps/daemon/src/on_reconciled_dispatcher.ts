@@ -19,6 +19,7 @@ import {
   buildClarificationFromDelegation,
   buildReviewDecisionPatch,
 } from "@exaix/session/gate_mappers.ts";
+import { sessionReturnToCostRecord } from "@exaix/session/cost_mapping.ts";
 
 /** Shape of a structural-log payload (avoids bare generic object). */
 export interface ILogPayload {
@@ -35,6 +36,14 @@ export interface IOnReconciledDeps {
   reviewRegistry: {
     getByTrace(traceId: string): Promise<Array<{ id: string }>>;
     updateStatus(id: string, status: IReviewStatus, user?: string, reason?: string): Promise<void>;
+  };
+  costTracker?: {
+    trackGeneration(
+      provider: string,
+      model: string,
+      usage: { promptTokens: number; completionTokens: number; totalTokens: number },
+      traceId?: string,
+    ): Promise<number>;
   };
   logger: IReconciledLogger;
 }
@@ -119,6 +128,27 @@ export function createOnReconciledHandler(
           });
           break;
         }
+      }
+
+      // Record cost for every accepted reconcile (P2, non-blocking)
+      if (deps.costTracker) {
+        const costRecord = sessionReturnToCostRecord({
+          id: crypto.randomUUID(),
+          tool: brief.tool,
+          sessionReturn,
+          traceId,
+          timestamp: new Date(),
+        });
+        await deps.costTracker.trackGeneration(
+          costRecord.provider,
+          costRecord.model,
+          {
+            promptTokens: costRecord.promptTokens,
+            completionTokens: costRecord.completionTokens,
+            totalTokens: costRecord.tokens,
+          },
+          costRecord.traceId,
+        );
       }
     } catch (err) {
       deps.logger.info(DomainEventType.SessionDelegateReconciled, traceId, {
