@@ -433,6 +433,80 @@ Provider integrations are organized as independent packages (`@exaix/ai-anthropi
 
 For the provider component table and edition availability matrix, see `packages/ai/README.md#provider-components`.
 
+### LLM Routing Architecture
+
+Exaix has **five independent routing mechanisms** that control how LLM calls reach their target. They operate at different layers and can be combined:
+
+#### 1. Provider Selection — API Provider A vs B
+
+**File:** `packages/ai/src/provider_factory.ts` (line 240), `packages/ai/src/routing/default_routing_strategy.ts` (line 76)
+
+Selects which LLM API provider to call (Anthropic, OpenAI, Google, Ollama, OpenRouter, or Mock):
+
+```
+EXA_LLM_PROVIDER env var ──guard──→ config.ai.provider ──guard──→
+  config.provider_strategy.task_routing[taskType] ──guard──→
+    selectProvider(capability + free + budget + health + complexity)
+```
+
+**Guards at each step:** provider must be registered, not blocked in CI/Test (`EXA_TEST_ENABLE_PAID_LLM=1` to unblock), and healthy. Defaults to `mock` when nothing is configured.
+
+#### 2. Quality Gate Mode — Heuristic vs LLM Assessment
+
+**File:** `packages/quality-gate/src/request_quality_gate.ts` (line 221)
+
+Controls whether the request quality gate uses zero-cost heuristics or LLM-powered assessment:
+
+| Config `quality_gate.mode` | LLM called?                           | Fallback                 |
+| -------------------------- | ------------------------------------- | ------------------------ |
+| `"heuristic"`              | Never                                 | N/A                      |
+| `"llm"`                    | Always                                | Heuristic on LLM failure |
+| `"hybrid"` (default)       | Only if heuristic score is borderline | Heuristic                |
+
+#### 3. Refinement Routing — LLM Q&A vs Session Tool Delegation
+
+**File:** `packages/request/src/processor.ts` (line 457)
+
+When the quality gate determines a request needs clarification, decides between the LLM-powered Q&A loop and delegation to an external session tool (OpenCode, Claude Code):
+
+```
+NEEDS_CLARIFICATION
+  ├── session_delegate.enabled && gates.includes("refinement")
+  │   └── HeadlessSessionLauncher → external CLI tool
+  └── otherwise → _startClarificationSession() → LLM Q&A loop
+```
+
+Controlled by `[session_delegate]` TOML config and `EXA_SESSION_DELEGATE_*` env vars.
+
+#### 4. Step Execution Routing — AgentExecutor vs Session Tool Delegation
+
+**File:** `packages/core/src/planning/plan_executor.ts` (line 368)
+
+During plan execution, each step can be executed by the LLM ReAct loop or delegated to an external CLI tool:
+
+```
+For each plan step:
+  onCodeChangesDelegate set?
+    ├── YES, returns "changes_made" → skip AgentExecutor, use delegated result
+    ├── YES, returns "abandoned"    → skip step entirely
+    └── NO → AgentExecutor.executeStep() (ReAct loop via LLM)
+```
+
+Controlled by `EXA_SESSION_DELEGATE_GATES=code_changes` env var.
+
+#### 5. Route Decision Matrix
+
+All five mechanisms can be combined for dual-mode operation:
+
+| Mode                     | Provider                                                                       | Refinement            | Step execution        | Use case                     |
+| ------------------------ | ------------------------------------------------------------------------------ | --------------------- | --------------------- | ---------------------------- |
+| **Pure API**             | `EXA_LLM_PROVIDER=anthropic`                                                   | LLM Q&A               | AgentExecutor         | Standard pipeline            |
+| **API + CLI delegation** | `EXA_LLM_PROVIDER=anthropic` + `EXA_SESSION_DELEGATE_ENABLED=true`             | Delegated to OpenCode | AgentExecutor         | Human-in-the-loop gates only |
+| **Pure CLI**             | `EXA_LLM_PROVIDER=mock` + `EXA_SESSION_DELEGATE_GATES=refinement,code_changes` | Delegated to OpenCode | Delegated to OpenCode | Full pipeline via CLI tool   |
+| **Testing**              | `EXA_LLM_PROVIDER=mock`                                                        | Heuristic             | Mock                  | Deterministic CI             |
+
+For env var reference, see `packages/flow/README.md#session-tool-integration` and `docs/Reference_Data.md#environment-variables`.
+
 ---
 
 ## Agent Orchestration Architecture

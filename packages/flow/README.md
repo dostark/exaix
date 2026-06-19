@@ -300,6 +300,65 @@ launch_mode = "advisory"     # advisory (Mode 1) | supervised (Mode 2) | headles
 > `claude-code`/`opencode` support `supervised` launch; `cursor`/`vscode` are
 > advisory-only.
 
+### Headless Mode (Mode 3) — OpenCode First-Class Support
+
+When `launch_mode = "headless"`, the daemon spawns the tool non-interactively. OpenCode
+and Claude Code use different CLI flags:
+
+| Tool          | Headless command                                                                           |
+| ------------- | ------------------------------------------------------------------------------------------ |
+| `claude-code` | `claude -p <objective> --brief <path> --max-total-tokens <n> --output-format json`         |
+| `opencode`    | `opencode run --format json <objective>` (does NOT support `--brief`/`--max-total-tokens`) |
+
+**OpenCode stdout capture:** Since `opencode run` does not write `return.json` natively, the
+`HeadlessSessionLauncher` captures stdout, parses newline-delimited JSON events
+(`type: "text"` for the response, `type: "step_finish"` for token stats), and synthesizes
+a schema-valid `return.json`. This allows OpenCode to be a first-class headless
+delegation target without requiring a wrapper script.
+
+#### Environment Variable Override (Phase 111)
+
+For CI and E2E testing, the `[session_delegate]` TOML config can be overridden by
+environment variables. This is useful when running the same scenario in both
+API-LLM and CLI-delegation modes:
+
+| Env var                              | Purpose                                                    | Example                   |
+| ------------------------------------ | ---------------------------------------------------------- | ------------------------- |
+| `EXA_SESSION_DELEGATE_ENABLED`       | Master switch (default gates: `refinement`, `plan_review`) | `true`                    |
+| `EXA_SESSION_DELEGATE_TOOL`          | Override the session tool                                  | `opencode`                |
+| `EXA_SESSION_DELEGATE_GATES`         | Comma-separated gate list                                  | `refinement,code_changes` |
+| `EXA_SESSION_DELEGATE_BIN_OVERRIDES` | Comma-separated binary paths added to allowlist            | `/path/to/mock_bin`       |
+
+When `EXA_SESSION_DELEGATE_ENABLED=true`, the default gates are `refinement` and `plan_review`.
+The `code_changes` and `review` gates require **explicit opt-in** via config or
+`EXA_SESSION_DELEGATE_GATES`, because `code_changes` intercepts all plan step execution.
+
+#### Dual-Mode Test Pattern
+
+The same scenario can be run in both modes by toggling env vars:
+
+```bash
+# Mode 1: Pure API LLM
+deno test --filter "Plan Amendment" tests/scenario_framework/
+
+# Mode 2: API LLM + CLI delegation for refinement/plan_review
+EXA_SESSION_DELEGATE_ENABLED=true \
+  EXA_SESSION_DELEGATE_TOOL=opencode \
+  deno test --filter "Plan Amendment" tests/scenario_framework/
+
+# Mode 3: Full CLI delegation
+EXA_SESSION_DELEGATE_ENABLED=true \
+  EXA_SESSION_DELEGATE_TOOL=opencode \
+  EXA_SESSION_DELEGATE_GATES=refinement,code_changes \
+  deno test --filter "session-delegate" tests/scenario_framework/
+```
+
+#### Building the Mock Binary for CI
+
+```bash
+deno task build:mock-tool   # compiles .cache/mock_session_tool_bin
+```
+
 ## See Also
 
 - [@exaix/session](../../packages/session/) — Session-delegation handoff contract
