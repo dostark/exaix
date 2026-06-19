@@ -136,6 +136,19 @@ if (import.meta.main) {
       log_level: config.system.log_level,
     });
 
+    // Phase 121 Step 2: log the effective net allowlist
+    if (config.system.allow_net === undefined) {
+      logger.info(DomainEventType.NetAllowlist, "default-allowlist", {
+        hosts: "api.anthropic.com,api.openai.com,localhost:11434",
+      });
+    } else if (config.system.allow_net.length === 0) {
+      logger.info(DomainEventType.NetAllowlist, "all-blocked", { hosts: "" });
+    } else {
+      logger.info(DomainEventType.NetAllowlist, "custom-allowlist", {
+        hosts: config.system.allow_net.join(","),
+      });
+    }
+
     await logger.info(DomainEventType.DatabaseConnected, "journal.db", {
       mode: "WAL",
     });

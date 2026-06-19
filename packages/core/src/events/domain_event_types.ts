@@ -80,6 +80,9 @@ export const DomainEventType = {
   SessionDelegateExpired: "session.delegate.expired", // Phase 111: wait-state deadline sweep
   SessionDelegateCancelled: "session.delegate.cancelled", // Phase 111: exactl session cancel
 
+  // Phase 121: net allowlist instrumentation
+  NetAllowlist: "net.allowlist",
+
   // Cost tracking events
   LlmUsageRecorded: "llm.usage",
 
