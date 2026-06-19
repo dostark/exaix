@@ -424,9 +424,9 @@ When the daemon delegates to a headless agent:
    files were touched), attributes costs, and presents the changeset
    for human review.
 
-This is Phase 111 (not yet implemented). Without it, the daemon uses its
-in-process agent (`ReActLoopStrategy`) which works identically but runs
-on the daemon's own provider.
+This is Phase 111 (shipped — see `exaix-dev-docs/planning/phase-111-session-delegation-runtime-and-e2e.md`).
+Without it, the daemon uses its in-process agent (`ReActLoopStrategy`) which works identically
+but runs on the daemon's own provider.
 
 ---
 
