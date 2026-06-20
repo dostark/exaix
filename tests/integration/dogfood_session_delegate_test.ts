@@ -29,6 +29,7 @@ Deno.test("dogfood config preset enables headless opencode delegation for code_c
   assertEquals(parsed.session_delegate?.tool, "opencode");
   assertEquals(parsed.session_delegate?.launch_mode, "headless");
   assertEquals(parsed.session_delegate?.gates, ["code_changes"]);
+  assertEquals(parsed.session_delegate?.model, "deepseek-v4-flash");
 });
 
 Deno.test("blueprint-scoped session_delegate resolves to opencode/headless", () => {

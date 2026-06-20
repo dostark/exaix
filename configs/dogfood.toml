@@ -34,5 +34,9 @@ enabled = true
 [session_delegate]
 enabled = true
 tool = "opencode"
+# Model the delegate (opencode) should use, passed as `--model <model>`.
+# Change this to swap the code-changes model (e.g. a Qwen slug), or change `tool`
+# to "claude-code". The tool resolves the slug against its own provider config.
+model = "deepseek-v4-flash"
 gates = ["code_changes"]
 launch_mode = "headless"

@@ -51,6 +51,8 @@ export const SessionBriefSchema = z.object({
   gate: SessionGateSchema,
   tool: SessionToolSchema,
   objective: z.string().min(1),
+  /** Model the delegate tool should use (headless `--model <model>`). Optional; tool default when absent. */
+  model: z.string().min(1).optional(),
   /** Artifact under work (request / plan / diff) by relative path. */
   artifact_ref: z.string().min(1),
   /** Portal knowledge.json reference for context. */
@@ -172,6 +174,8 @@ export type SessionReconcileRejection = z.infer<typeof SessionReconcileRejection
 export const SessionDelegateConfigSchema = z.object({
   enabled: z.boolean().default(false),
   tool: SessionToolSchema,
+  /** Model the delegate tool should use (headless `--model <model>`). Optional; tool default when absent. */
+  model: z.string().min(1).optional(),
   gates: z.array(SessionGateSchema).min(1),
   /** "advisory" (Mode 1), "supervised" (Mode 2), or "headless" (Mode 3, Phase 111). */
   launch_mode: SessionLaunchModeSchema.default("advisory"),

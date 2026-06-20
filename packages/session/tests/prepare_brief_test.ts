@@ -44,6 +44,31 @@ function baseInput(overrides: Partial<IPrepareBriefInput> = {}): IPrepareBriefIn
   };
 }
 
+Deno.test("[prepare_brief] carries the optional model from input into the brief and resolved launch", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const service = makeService(dir);
+    const brief = await service.prepareBrief(baseInput({ tool: "opencode", model: "deepseek-v4-flash" }));
+    assertEquals(brief.model, "deepseek-v4-flash");
+
+    const launch = service.resolveLaunch(brief, "headless");
+    const modelIdx = launch.args.indexOf("--model");
+    assertEquals(launch.args[modelIdx + 1], "deepseek-v4-flash");
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("[prepare_brief] omits model from the brief when input has none", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const brief = await makeService(dir).prepareBrief(baseInput());
+    assertEquals(brief.model, undefined);
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
 Deno.test("[prepare_brief] writes a schema-valid brief.json with correct scope/budget/deadline", async () => {
   const dir = await Deno.makeTempDir();
   try {
