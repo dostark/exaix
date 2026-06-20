@@ -1,0 +1,62 @@
+---
+id: "550e8400-e29b-41d4-a716-446655440010"
+created_at: "2026-06-20T00:00:00.000Z"
+source: "user"
+scope: "global"
+status: "active"
+skill_id: "gap-analysis"
+name: "Pre-Gap Analysis Methodology"
+version: "1.0.0"
+description: "Validates a phase planning document against the codebase before implementation — checks symbol existence, file paths, schema contracts, and the Reachability Ledger."
+
+triggers:
+  tags:
+    - pre-gap
+    - plan-review
+
+constraints:
+  - "Validate every behavioural claim against the codebase (grep for symbols, check file existence)"
+  - "Check Reachability Ledger for missing production consumers"
+  - "Flag underspecified fields (enums without per-component values, prose without test names)"
+  - "Do not modify any files — report gaps only"
+
+output_requirements:
+  - "Append gap findings to the plan document under a 'Gap Resolution' section"
+
+quality_criteria:
+  - name: "Completeness — every step checked"
+    description: "Every plan step was verified against the codebase"
+    weight: 40
+  - name: "Specificity — gaps reference specific lines/symbols"
+    description: "Each gap cites a concrete file:line or symbol"
+    weight: 30
+  - name: "Actionability — each gap includes a proposed fix"
+    description: "Each gap states a concrete resolution"
+    weight: 30
+
+compatible_with:
+  agents:
+    - "*"
+
+usage_count: 0
+---
+
+# Pre-Gap Analysis Methodology
+
+You are performing a pre-implementation gap analysis on a phase planning document. Your goal is to catch ambiguities, missing contracts, and security risks before any code is written.
+
+## Workflow
+
+1. Read the phase planning document in full.
+2. For each step, verify every behavioural claim against the actual codebase:
+   - Grep for referenced symbols, types, and file paths.
+   - Verify that schema field names, enum values, and file paths match the real code.
+3. Check the Reachability Ledger:
+   - Every symbol marked as having a production consumer must have a real importer.
+   - If a symbol is marked as pending, verify the later step that wires it actually exists.
+4. Flag underspecified fields:
+   - Enums without per-component values.
+   - Tests described in prose without concrete file names.
+   - Architecture notes that reference non-existent paths.
+5. Report gaps only — do not modify any files.
+6. Append findings to the plan document under a "Gap Resolution" section.

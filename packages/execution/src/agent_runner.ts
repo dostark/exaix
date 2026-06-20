@@ -368,11 +368,21 @@ export class AgentRunner implements IAgentRunner {
       const matchScores = new Map<string, number>();
       let totalAvailable = 0;
 
-      // 1. Explicit request-level override
+      // 1. Explicit request-level override (merged with blueprint default skills)
       if (request.skills?.length) {
-        skillIds = request.skills;
+        skillIds = [...request.skills];
         skillIds.forEach((id) => matchScores.set(id, 1.0));
         totalAvailable = skillIds.length;
+        // Union in default skills from the identity blueprint (GAP-5)
+        if (blueprint.defaultSkills?.length) {
+          for (const id of blueprint.defaultSkills) {
+            if (!skillIds.includes(id)) {
+              skillIds.push(id);
+              matchScores.set(id, 0.5);
+              totalAvailable++;
+            }
+          }
+        }
       } // 2. Dynamic matching
       else {
         try {
