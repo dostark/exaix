@@ -14,6 +14,7 @@ export * from "./artifact.ts";
 export * from "./blueprint.ts";
 export * from "./clarification_session.ts";
 export * from "./session_delegate.ts";
+export * from "./step_manifest.ts";
 export * from "./config.ts";
 export * from "./flow.ts";
 export * from "./guardrail.ts";

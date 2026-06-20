@@ -24,6 +24,7 @@ graph TB
         Claude[ClaudeProvider<br/>api.anthropic.com]
         GPT[OpenAIProvider<br/>api.openai.com]
         Gemini[GeminiProvider<br/>generativelanguage.googleapis.com]
+        OpenRouter[OpenRouterProvider<br/>openrouter.ai/api/v1]
         Mock[MockLLMProvider<br/>Testing]
     end
 
@@ -94,12 +95,11 @@ Provider edition tiers are defined as capability constants in `@exaix/core` (`pa
 
 | Capability ID        | Edition tier | Description                         |
 | -------------------- | ------------ | ----------------------------------- |
-| `openrouter_team`    | Team         | OpenRouter as Team+ differentiator  |
 | `hitl_governance`    | Team         | Advanced per-action HITL governance |
 | `guardrail_advanced` | Team         | Advanced guardrail policies         |
 | `voting`             | Team         | VOTING_GROUP step type              |
 
-Vertex AI (`@exaix-team/ai-vertex`) is Team+ only. OpenRouter is gated behind build-time edition scoping (`EXAIX_EDITION`) — available in Team and Enterprise builds.
+Vertex AI (`@exaix-team/ai-vertex`) is Team+ only. **OpenRouter ships in Solo (all editions)** — a BYO-key, independently-free aggregator — per edition decision **D5b/D-providers** (2026-06-13); it is registered unconditionally in `apps/common/registry_bootstrap.ts`.
 
 ## Provider Configuration
 
@@ -108,7 +108,7 @@ Provider selection is configured in `exa.config.toml`. See the [Provider Strateg
 ### Vertex AI & OpenRouter notes
 
 - **Vertex token refresh** is hardened: concurrent refreshes are deduplicated into a single token exchange, the exchange is timeout-bounded, the token response is schema-validated, and an early-refresh skew margin is applied. Service-account credentials are env-only and never logged; the token endpoint is restricted to `*.googleapis.com`.
-- **OpenRouter** is gated behind Team edition. In Solo builds, the provider is not registered.
+- **OpenRouter ships in Solo (all editions)** — registered unconditionally in `apps/common/registry_bootstrap.ts` (BYO `OPENROUTER_API_KEY`). Edition decision D5b/D-providers: gating an independently-free, BYO-key aggregator adds no value.
 - **OpenRouter is intentionally unmetered** — pricing varies per underlying sub-model, so the inline `IGenerateResult.cost_usd` is informational; authoritative spend is recorded by `CostTracker`, keyed on `ProviderType`. Vertex bills at the Google output rate.
 - Neither provider implements streaming yet, so their capability metadata does not advertise `streaming`.
 

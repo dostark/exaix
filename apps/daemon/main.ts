@@ -624,6 +624,7 @@ if (import.meta.main) {
             traceId,
             gate: GATE_CODE_CHANGES,
             tool: sd.tool,
+            model: sd.model,
             objective: `Execute step ${stepId}`,
             artifactRef: `trace:${traceId}/step:${stepId}`,
             permittedPaths: [`Workspace/**`],

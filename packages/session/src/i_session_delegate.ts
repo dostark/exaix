@@ -36,6 +36,8 @@ export interface IPrepareBriefInput {
   gate: SessionGate;
   tool: SessionTool;
   objective: string;
+  /** Model the delegate tool should use (headless `--model <model>`). Optional. */
+  model?: string;
   /** Artifact under work (request / plan / diff), worktree-relative. */
   artifactRef: string;
   /** Worktree-relative globs the tool may modify. */

@@ -1606,6 +1606,8 @@ export const SESSION_FLAG_OUTPUT_FORMAT = "--output-format";
 /** OpenCode-specific: --format json (differs from claude's --output-format). */
 export const SESSION_FLAG_FORMAT = "--format";
 export const SESSION_OUTPUT_FORMAT_JSON = "json";
+/** Headless model selector: `claude --model <m>` / `opencode run --model <m>` (Phase 122 Step 0b). */
+export const SESSION_FLAG_MODEL = "--model";
 
 /** Default binary names per built-in session adapter (override via config). */
 export const SESSION_BIN_CLAUDE_CODE = "claude";

@@ -23,6 +23,7 @@ import {
   SESSION_FLAG_BRIEF,
   SESSION_FLAG_FORMAT,
   SESSION_FLAG_MAX_TOTAL_TOKENS,
+  SESSION_FLAG_MODEL,
   SESSION_FLAG_OUTPUT_FORMAT,
   SESSION_FLAG_PRINT,
   SESSION_OUTPUT_FORMAT_JSON,
@@ -67,6 +68,8 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
       if (!this.supportsHeadless) {
         throw new Error(`Session tool '${this.tool}' does not support headless launch`);
       }
+      // Optional model selector (`--model <model>`); flags precede the trailing objective.
+      const modelFlag = brief.model ? [SESSION_FLAG_MODEL, brief.model] : [];
       if (this.tool === "claude-code") {
         return {
           command: this.bin,
@@ -75,6 +78,7 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
             brief.objective,
             SESSION_FLAG_OUTPUT_FORMAT,
             SESSION_OUTPUT_FORMAT_JSON,
+            ...modelFlag,
           ],
           cwd: brief.worktree_path ?? dirname(briefPath),
           env: budgetEnv(brief),
@@ -87,6 +91,7 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
           SESSION_SUBCMD_RUN,
           SESSION_FLAG_FORMAT,
           SESSION_OUTPUT_FORMAT_JSON,
+          ...modelFlag,
           brief.objective,
         ],
         cwd: brief.worktree_path ?? dirname(briefPath),

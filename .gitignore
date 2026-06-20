@@ -87,6 +87,7 @@ exa.config.toml
 .copilot/manifest.json
 /Memory/*
 !/Memory/**/.gitkeep
+!/Memory/Skills/
 
 # Local SSH deploy key for CI submodule checkout
 .github/deploy_key

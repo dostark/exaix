@@ -92,6 +92,7 @@ export class SessionDelegateService implements ISessionDelegateService {
       gate: input.gate,
       tool: input.tool,
       objective: input.objective,
+      model: input.model,
       artifact_ref: artifactRef,
       context_card_ref: input.contextCardRef,
       acceptance_criteria: input.acceptanceCriteria ?? [],
