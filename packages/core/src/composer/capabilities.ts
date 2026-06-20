@@ -31,9 +31,6 @@ export const CAP_HITL_GOVERNANCE = "hitl_governance";
 /** P107: Advanced guardrail policies — Team/Enterprise only */
 export const CAP_GUARDRAIL_ADVANCED = "guardrail_advanced";
 
-/** P80: OpenRouter as Team+ differentiator — Team/Enterprise (ships in Solo today, subject to future gating) */
-export const CAP_OPENROUTER_TEAM = "openrouter_team";
-
 /** P119: Extended-language portal symbol extraction (Rust/Go/Java + long tail) — Team/Enterprise only.
  *  Python and TS/JS ship un-gated in Solo; this capability gates only the extended-language extractors. */
 export const CAP_EXTENDED_LANG_EXTRACTION = "extended_lang_extraction";
@@ -47,6 +44,7 @@ export const CAPABILITY_EDITION: Record<string, string> = {
   [CAP_VOTING]: EDITION_TEAM,
   [CAP_HITL_GOVERNANCE]: EDITION_TEAM,
   [CAP_GUARDRAIL_ADVANCED]: EDITION_TEAM,
-  [CAP_OPENROUTER_TEAM]: EDITION_TEAM,
+  // OpenRouter intentionally omitted: it ships in Solo (all editions) per edition decision
+  // D5b/D-providers (2026-06-13) — a BYO-key, independently-free aggregator, not a Team gate.
   [CAP_EXTENDED_LANG_EXTRACTION]: EDITION_TEAM,
 };
