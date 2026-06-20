@@ -15,6 +15,7 @@ criteria (the "what" and "why"), the daemon agent executes the mechanical work (
 1. [Prerequisites](#1-prerequisites)
 2. [Quick Start](#2-quick-start)
 3. [The Dogfooding Loop](#3-the-dogfooding-loop)
+   - [3.4 Generating Step Requests from a Plan](#34-generating-step-requests-from-a-plan)
 4. [Writing Requests](#4-writing-requests)
 5. [Skills & Plans](#5-skills--plans)
 6. [Headless Delegation](#6-headless-delegation)
@@ -254,16 +255,47 @@ CI gates and other measurable outcomes.
 Define skills by name in the `skills` frontmatter field. Each skill
 auto-injects its instructions into the agent's prompt:
 
-| Skill               | What it enforces                                |
-| ------------------- | ----------------------------------------------- |
-| `tdd-methodology`   | RED→GREEN→REFACTOR cycle; tests before code     |
-| `exaix-conventions` | Code style, import rules, DI patterns           |
-| `security-first`    | OWASP Top 10 checks; path traversal, injection  |
-| `portal-grounding`  | Portal-aware path resolution via `PathResolver` |
+| Skill               | What it enforces                                    |
+| ------------------- | --------------------------------------------------- |
+| `tdd-methodology`   | RED→GREEN→REFACTOR cycle; tests before code         |
+| `exaix-conventions` | Code style, import rules, DI patterns               |
+| `security-first`    | OWASP Top 10 checks; path traversal, injection      |
+| `portal-grounding`  | Portal-aware path resolution via `PathResolver`     |
+| `code-review`       | Systematic correctness, security, coverage review   |
+| `gap-analysis`      | Pre-implementation plan validation against codebase |
+| `step-execution`    | TDD step-by-step workflow with CI gates per step    |
 
-Skills live in `.copilot/skills/<name>/SKILL.md` (interactive agent) and
-`Blueprints/Skills/<name>.skill.md` (daemon agent). Both formats converge
-on `name`, `description`, and a procedural Markdown body.
+Skills live in `Blueprints/Skills/<name>.skill.md` (source) and
+`Memory/Skills/global/<name>.json` (runtime, loaded by `SkillsService`).
+Runtime JSON skills are validated against `SkillSchema`.
+
+### 3.4 Generating Step Requests from a Plan
+
+Instead of writing each request manually, use the `plan_to_requests.ts` generator to
+convert a phase planning document into a queue of request files:
+
+```bash
+# Generate request files for Phase 122 (default: Workspace/Requests/)
+deno run -A scripts/plan_to_requests.ts exaix-dev-docs/planning/phase-122-dogfooding-e.md
+
+# Preview without writing
+deno run -A scripts/plan_to_requests.ts exaix-dev-docs/planning/phase-122-dogfooding-e.md --dry-run
+
+# Write to a custom directory
+deno run -A scripts/plan_to_requests.ts exaix-dev-docs/planning/phase-122-dogfooding-e.md --out-dir .dogfood/Workspace/Requests/
+```
+
+The generator reads fenced YAML step-manifests (the `# step-manifest` blocks in
+phase-NN-*.md documents). Each manifest maps to a request file with:
+
+- `identity_id` from the manifest's `identity` field (defaults to `senior-coder`)
+- `priority` clamped to 0–10 (earlier steps higher priority)
+- `skills` merged with the identity's `default_skills` by `agent_runner`
+- `trace_id` generated as a UUID
+
+**Prerequisite:** the plan file must use `## Step N` or `### Step N` headings.
+Steps without manifests fall back to heading scraping (`**Actions:**`, `**Architecture Notes:**`,
+`**Planned Tests:**`, `**Success Criteria:**`).
 
 ---
 
