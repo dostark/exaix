@@ -115,7 +115,10 @@ export async function generateManifestObject(includeSubmodule = false) {
     });
   }
 
-  return { generated_at: new Date().toISOString(), docs };
+  // No `generated_at` timestamp: it made the committed manifest churn on every
+  // run (a nondeterministic 1-line diff) with no consumer using the value.
+  // The manifest is now deterministic — it changes only when `docs` change.
+  return { docs };
 }
 
 export async function updateCrossReference(docs: JSONObject[]) {
