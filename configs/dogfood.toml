@@ -26,3 +26,13 @@ enabled = false
 
 [request_analysis]
 enabled = true
+
+# Delegate the code_changes gate to headless OpenCode (Phase 122 Step 0).
+# Reuses the shipped Phase 111 runtime: PlanExecutor.onCodeChangesDelegate ->
+# HeadlessSessionLauncher spawns `opencode run --format json <objective>`.
+# Requires the `opencode` CLI on PATH; absent it, an `abandoned` return is synthesized.
+[session_delegate]
+enabled = true
+tool = "opencode"
+gates = ["code_changes"]
+launch_mode = "headless"
