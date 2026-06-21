@@ -166,6 +166,57 @@ Deno.test("[session_delegate] dogfood.claude.toml preset parses via ConfigSchema
   assertEquals(result.data.session_delegate?.gates, ["code_changes"]);
 });
 
+Deno.test("[session_delegate] SessionDelegateConfigSchema accepts provider block", () => {
+  const result = SessionDelegateConfigSchema.safeParse({
+    enabled: true,
+    tool: "opencode",
+    gates: ["code_changes"],
+    launch_mode: "headless",
+    provider: { name: "openrouter", key_env: "OPENROUTER_KEY" },
+  });
+  assertEquals(result.success, true);
+  if (!result.success) return;
+  assertEquals(result.data.provider?.name, "openrouter");
+  assertEquals(result.data.provider?.key_env, "OPENROUTER_KEY");
+});
+
+Deno.test("[session_delegate] SessionDelegateConfigSchema accepts provider with base_url", () => {
+  const result = SessionDelegateConfigSchema.safeParse({
+    enabled: true,
+    tool: "claude-code",
+    gates: ["code_changes"],
+    launch_mode: "headless",
+    provider: {
+      name: "openrouter",
+      key_env: "OR_KEY",
+      base_url: "https://custom.openrouter.ai/api",
+    },
+  });
+  assertEquals(result.success, true);
+  if (!result.success) return;
+  assertEquals(result.data.provider?.base_url, "https://custom.openrouter.ai/api");
+});
+
+Deno.test("[session_delegate] SessionDelegateConfigSchema rejects provider with empty key_env", () => {
+  const result = SessionDelegateConfigSchema.safeParse({
+    enabled: true,
+    tool: "opencode",
+    gates: ["code_changes"],
+    provider: { name: "openrouter", key_env: "" },
+  });
+  assertEquals(result.success, false);
+});
+
+Deno.test("[session_delegate] SessionDelegateConfigSchema rejects provider with invalid base_url", () => {
+  const result = SessionDelegateConfigSchema.safeParse({
+    enabled: true,
+    tool: "opencode",
+    gates: ["code_changes"],
+    provider: { name: "openrouter", key_env: "KEY", base_url: "not-a-url" },
+  });
+  assertEquals(result.success, false);
+});
+
 Deno.test("[session_delegate] SessionDelegateConfigSchema rejects unknown tool", () => {
   const result = SessionDelegateConfigSchema.safeParse({
     tool: "vim",

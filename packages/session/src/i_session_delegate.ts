@@ -12,6 +12,7 @@
 
 import type {
   SessionBrief,
+  SessionDelegateConfig,
   SessionGate,
   SessionLaunchMode,
   SessionTokenBudget,
@@ -57,4 +58,15 @@ export interface ISessionDelegateService {
   prepareBrief(input: IPrepareBriefInput): Promise<SessionBrief>;
   /** Resolve the per-tool adapter and build a launch for the brief. */
   resolveLaunch(brief: SessionBrief, mode: SessionLaunchMode): ISessionLaunch;
+  /**
+   * Resolve the delegate provider env for a given config + tool combo.
+   * Reads no env vars itself (package-pure); the caller (main.ts) resolves
+   * the key_env and passes the value. Returns an empty record when there is
+   * no provider block.
+   */
+  resolveDelegateEnv(
+    config: SessionDelegateConfig,
+    tool: SessionTool,
+    providerApiKey: string,
+  ): Record<string, string>;
 }

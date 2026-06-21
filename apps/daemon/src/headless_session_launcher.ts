@@ -16,7 +16,7 @@
  */
 
 import { join } from "@std/path";
-import { assertBinaryAllowed, sanitizeChildEnv } from "@exaix/session/supervised_launch.ts";
+import { assertBinaryAllowed, mergeDelegateEnv, sanitizeChildEnv } from "@exaix/session/supervised_launch.ts";
 import { parseDelegateStdout } from "@exaix/session/delegate_return_parser.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
 import { SESSION_GATE_DECISIONS, SessionReturnSchema } from "@exaix/schemas/session_delegate.ts";
@@ -55,10 +55,13 @@ export class HeadlessSessionLauncher {
   /**
    * Spawn a headless session tool. Returns once the process has been spawned
    * (fire-and-forget); exit handling and abandoned synthesis happen asynchronously.
+   * When delegateProviderEnv is provided, it is merged after sanitizeChildEnv so
+   * injected API_KEY vars survive the SECRET_ENV_PATTERN strip.
    */
-  async launch(launch: ISessionLaunch, traceId: string): Promise<void> {
+  async launch(launch: ISessionLaunch, traceId: string, delegateProviderEnv?: Record<string, string>): Promise<void> {
     const parentEnv = Deno.env.toObject();
     const sanitizedEnv = sanitizeChildEnv(launch.env, parentEnv);
+    const childEnv = delegateProviderEnv ? mergeDelegateEnv(sanitizedEnv, delegateProviderEnv) : sanitizedEnv;
     assertBinaryAllowed(launch.command, this.deps.allowlist);
 
     const spawn = this.deps.spawn ?? ((args: ISpawnArgs) =>
@@ -70,7 +73,7 @@ export class HeadlessSessionLauncher {
         stderr: "piped",
       }).spawn());
 
-    const child = spawn({ command: launch.command, args: launch.args, cwd: launch.cwd, env: sanitizedEnv });
+    const child = spawn({ command: launch.command, args: launch.args, cwd: launch.cwd, env: childEnv });
     await child.status;
 
     const returnPath = join(this.deps.sessionDir, traceId, RETURN_FILE);
