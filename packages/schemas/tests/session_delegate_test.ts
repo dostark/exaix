@@ -18,6 +18,7 @@ import {
   SessionTokenBudgetSchema,
   SessionWaitStateSchema,
 } from "@exaix/schemas/session_delegate.ts";
+import { ConfigSchema } from "@exaix/schemas";
 
 const VALID_BUDGET = {
   max_input_tokens: 50_000,
@@ -128,6 +129,41 @@ Deno.test("[session_delegate] SessionDelegateConfigSchema defaults enabled to fa
   if (!result.success) return;
   assertEquals(result.data.enabled, false);
   assertEquals(result.data.launch_mode, "advisory");
+});
+
+Deno.test("[session_delegate] dogfood.claude.toml preset parses via ConfigSchema", () => {
+  const claudePreset = {
+    system: {
+      root: "/tmp/my-root",
+      log_level: "info",
+      allow_net: ["api.anthropic.com", "api.openai.com", "localhost:11434"],
+    },
+    paths: { workspace: "Workspace", portals: "Portals", memory: "Memory" },
+    ai: { provider: "ollama", model: "ollama/llama3" },
+    portals: [{
+      alias: "exaix-self",
+      target_path: "/tmp/worktree",
+      execution_strategy: "worktree",
+      default_branch: "main",
+    }],
+    portal_knowledge: { auto_analyze_on_mount: true },
+    quality_gate: { enabled: false },
+    request_analysis: { enabled: true },
+    session_delegate: {
+      enabled: true,
+      tool: "claude-code",
+      model: "claude-sonnet-4-20250514",
+      gates: ["code_changes"],
+      launch_mode: "headless",
+    },
+  };
+  const result = ConfigSchema.safeParse(claudePreset);
+  assertEquals(result.success, true, "dogfood.claude.toml must be valid ConfigSchema");
+  if (!result.success) return;
+  assertEquals(result.data.session_delegate?.enabled, true);
+  assertEquals(result.data.session_delegate?.tool, "claude-code");
+  assertEquals(result.data.session_delegate?.launch_mode, "headless");
+  assertEquals(result.data.session_delegate?.gates, ["code_changes"]);
 });
 
 Deno.test("[session_delegate] SessionDelegateConfigSchema rejects unknown tool", () => {
