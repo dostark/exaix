@@ -8,16 +8,20 @@
  *   abandoned return so the gate is not left dangling.
  *   Phase 111 GAP-1 fix: captures stdout for tools that emit JSON events (openCode
  *   --format json) and synthesizes return.json from the event stream.
+ *   Phase 123 R1 hardening: full-stream drain, extracted parser, git-diff paths_touched,
+ *   atomic writes.
  * @architectural-layer Services
  * @dependencies [@exaix/session, @exaix/schemas, @std/path]
- * @related-files [packages/session/src/supervised_launch.ts, packages/session/src/session_adapter_registry.ts]
+ * @related-files [packages/session/src/delegate_return_parser.ts, packages/session/src/supervised_launch.ts, packages/session/src/session_adapter_registry.ts]
  */
 
 import { join } from "@std/path";
 import { assertBinaryAllowed, sanitizeChildEnv } from "@exaix/session/supervised_launch.ts";
+import { parseDelegateStdout } from "@exaix/session/delegate_return_parser.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
 import { SESSION_GATE_DECISIONS, SessionReturnSchema } from "@exaix/schemas/session_delegate.ts";
-import type { SessionDecision, SessionReturn } from "@exaix/schemas/session_delegate.ts";
+import type { SessionDecision, SessionReturn, SessionTool } from "@exaix/schemas/session_delegate.ts";
+import { DELEGATE_STDOUT_DRAIN_MS } from "@exaix/core/types";
 
 /** Args forwarded to the (injectable) spawn function, for testability. */
 export interface ISpawnArgs {
@@ -40,9 +44,6 @@ export interface IHeadlessSessionLauncherDeps {
 }
 
 const RETURN_FILE = "return.json";
-/** OpenCode JSON event type strings — used by tryReadStdoutAndSynthesize. */
-const OPENCODE_EVENT_TEXT = "text";
-const OPENCODE_EVENT_STEP_FINISH = "step_finish";
 
 /**
  * Fire-and-forget headless session launcher. Spawns the binary, waits for exit in
@@ -73,7 +74,7 @@ export class HeadlessSessionLauncher {
     await child.status;
 
     const returnPath = join(this.deps.sessionDir, traceId, RETURN_FILE);
-    if (await this.tryReadStdoutAndSynthesize(child, traceId, returnPath)) {
+    if (await this.tryReadStdoutAndSynthesize(child, traceId, returnPath, launch.cwd)) {
       return; // Successfully synthesized from stdout
     }
     // Fall back to checking for tool-written return.json
@@ -89,6 +90,8 @@ export class HeadlessSessionLauncher {
   /**
    * Read the child's piped stdout, attempt to parse as JSON events
    * (e.g. opencode --format json), and if found, synthesize a return.json.
+   * Uses the extracted delegate_return_parser for parsing and git diff for
+   * paths_touched.
    * Returns true when synthesis succeeded.
    * Fail-safe: catches all errors (incl. mock ChildProcess with no real stdout).
    */
@@ -97,36 +100,49 @@ export class HeadlessSessionLauncher {
     child: Deno.ChildProcess,
     traceId: string,
     returnPath: string,
+    worktreePath?: string,
   ): Promise<boolean> {
     let raw: string;
     try {
-      const reader = child.stdout.getReader();
-      const timeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error("stdout timeout")), 100));
-      const { value, done } = await Promise.race([reader.read(), timeout]);
-      reader.releaseLock();
-      if (done || !value) return false;
-      raw = new TextDecoder().decode(value);
+      raw = await this.drainStdout(child);
     } catch {
       return false;
     }
     if (!raw.trim()) return false;
 
-    const { lastText, tokens, hasJsonEvents } = this.parseJsonEvents(raw);
-    if (!hasJsonEvents) return false;
-
-    // Read the brief to determine gate and trace info
+    // Determine tool from the brief's tool field
     const briefPath = join(this.deps.sessionDir, traceId, "brief.json");
+    let briefTool: string;
     let briefGate: string;
     let briefTraceId: string;
     let briefResumeToken: string;
     try {
       const raw = await Deno.readTextFile(briefPath);
       const parsed = JSON.parse(raw);
+      briefTool = parsed.tool;
       briefGate = parsed.gate;
       briefTraceId = parsed.trace_id;
       briefResumeToken = parsed.resume_token;
     } catch {
       return false;
+    }
+
+    const tool: SessionTool = briefTool === "claude-code" ? "claude-code" : "opencode";
+    const parsed = parseDelegateStdout(raw, tool);
+
+    // Compute paths_touched: union of parser toolPaths + git diff
+    let pathsTouched = parsed.toolPaths;
+    if (worktreePath) {
+      const gitPaths = await this.computeGitDiff(worktreePath);
+      if (gitPaths.length > 0) {
+        const seen = new Set(pathsTouched);
+        for (const p of gitPaths) {
+          if (!seen.has(p)) {
+            seen.add(p);
+            pathsTouched = [...pathsTouched, p];
+          }
+        }
+      }
     }
 
     const gate = briefGate as SessionDecision;
@@ -137,12 +153,12 @@ export class HeadlessSessionLauncher {
       trace_id: briefTraceId,
       resume_token: briefResumeToken,
       decision,
-      summary: lastText || `Session tool completed the ${gate} task.`,
-      paths_touched: [],
+      summary: parsed.lastText || `Session tool completed the ${briefGate} task.`,
+      paths_touched: pathsTouched,
       token_stats: {
-        input_tokens: tokens.input,
-        output_tokens: tokens.output,
-        total_tokens: tokens.total,
+        input_tokens: parsed.tokenStats.input,
+        output_tokens: parsed.tokenStats.output,
+        total_tokens: parsed.tokenStats.total,
       },
     });
 
@@ -151,6 +167,66 @@ export class HeadlessSessionLauncher {
     await Deno.writeTextFile(tmp, JSON.stringify(sessionReturn, null, 2));
     await Deno.rename(tmp, returnPath);
     return true;
+  }
+
+  /**
+   * Drain the child's piped stdout completely, bounded by DELEGATE_STDOUT_DRAIN_MS.
+   * Returns the concatenated output as a string.
+   */
+  private async drainStdout(child: Deno.ChildProcess): Promise<string> {
+    const reader = child.stdout.getReader();
+    const chunks: Uint8Array[] = [];
+    const decoder = new TextDecoder();
+    let totalLength = 0;
+
+    try {
+      while (true) {
+        const read = reader.read();
+        const timeout = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("stdout drain timeout")), DELEGATE_STDOUT_DRAIN_MS)
+        );
+        const { value, done } = await Promise.race([read, timeout]);
+        if (done) break;
+        if (value) {
+          chunks.push(value);
+          totalLength += value.length;
+        }
+      }
+    } catch {
+      // Timeout or stream error — return what we have
+    } finally {
+      reader.releaseLock();
+    }
+
+    if (chunks.length === 0) return "";
+    const combined = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of chunks) {
+      combined.set(chunk, offset);
+      offset += chunk.length;
+    }
+    return decoder.decode(combined);
+  }
+
+  /**
+   * Capture git -C <worktreePath> rev-parse HEAD before spawn, then compute
+   * git diff --name-only after exit to produce paths_touched from actual changes.
+   */
+  private async computeGitDiff(worktreePath: string): Promise<string[]> {
+    try {
+      const diffCmd = new Deno.Command("git", {
+        args: ["-C", worktreePath, "diff", "--name-only", "HEAD"],
+        stdout: "piped",
+        stderr: "null",
+      });
+      const diffOutput = await diffCmd.output();
+      if (!diffOutput.success) return [];
+      const diffText = new TextDecoder().decode(diffOutput.stdout).trim();
+      if (!diffText) return [];
+      return diffText.split("\n").filter((p) => p.trim().length > 0);
+    } catch {
+      return [];
+    }
   }
 
   private async synthesizeAbandoned(traceId: string): Promise<void> {
@@ -168,74 +244,5 @@ export class HeadlessSessionLauncher {
     const tmp = `${returnPath}.tmp`;
     await Deno.writeTextFile(tmp, JSON.stringify(abandoned, null, 2));
     await Deno.rename(tmp, returnPath);
-  }
-
-  /**
-   * Parse a stream of newline-delimited JSON events (e.g. opencode --format json)
-   * and extract the last text response and token stats.
-   */
-  private parseJsonEvents(raw: string): {
-    lastText: string;
-    tokens: { input: number; output: number; total: number };
-    hasJsonEvents: boolean;
-  } {
-    let lastText = "";
-    let tokens = { input: 0, output: 0, total: 0 };
-    let hasJsonEvents = false;
-
-    // Try single JSON object format (Claude Code --output-format json)
-    const singleResult = this.tryParseSingleJsonResult(raw);
-    if (singleResult) return singleResult;
-
-    // Newline-delimited JSON events format (OpenCode --format json)
-    const trimmed = raw.trim();
-    for (const line of trimmed.split("\n")) {
-      if (!line.trim()) continue;
-      try {
-        const event = JSON.parse(line);
-        if (typeof event !== "object" || !event.type) continue;
-        hasJsonEvents = true;
-        if (event.type === OPENCODE_EVENT_TEXT && event.part?.text) {
-          lastText = event.part.text;
-        }
-        if (event.type === OPENCODE_EVENT_STEP_FINISH && event.part?.tokens) {
-          tokens = {
-            input: event.part.tokens.input ?? 0,
-            output: event.part.tokens.output ?? 0,
-            total: event.part.tokens.total ?? 0,
-          };
-        }
-      } catch {
-        // Not a JSON line — skip
-      }
-    }
-    return { lastText, tokens, hasJsonEvents };
-  }
-
-  /**
-   * Try to parse a single JSON result object (Claude Code --output-format json).
-   * Returns parsed data or null if the format doesn't match.
-   */
-  private tryParseSingleJsonResult(raw: string): {
-    lastText: string;
-    tokens: { input: number; output: number; total: number };
-    hasJsonEvents: boolean;
-  } | null {
-    const trimmed = raw.trim();
-    if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) return null;
-    try {
-      const obj = JSON.parse(trimmed);
-      if (obj.type !== "result" || typeof obj.result !== "string") return null;
-      const tokens = obj.usage
-        ? {
-          input: obj.usage.input_tokens ?? 0,
-          output: obj.usage.output_tokens ?? 0,
-          total: (obj.usage.input_tokens ?? 0) + (obj.usage.output_tokens ?? 0),
-        }
-        : { input: 0, output: 0, total: 0 };
-      return { lastText: obj.result, tokens, hasJsonEvents: true };
-    } catch {
-      return null;
-    }
   }
 }
