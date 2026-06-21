@@ -65,3 +65,79 @@ Deno.test("[ConfigSchema] accepts the combined ai_vertex / ai_openrouter overrid
     assertEquals(result.data.ai_openrouter.api_key_env, "K");
   }
 });
+
+Deno.test("[ConfigSchema] ai_openrouter.routing accepts valid routing block", () => {
+  const result = ConfigSchema.safeParse({
+    ...baseConfig(),
+    ai_openrouter: {
+      routing: {
+        models: ["openai/gpt-4o", "anthropic/claude-sonnet-4"],
+        provider: {
+          order: ["openai", "anthropic"],
+          sort: "cost",
+        },
+        zdr: true,
+        data_collection: "deny",
+      },
+    },
+  });
+  assertEquals(result.success, true);
+  if (!result.success) return;
+  assertEquals(result.data.ai_openrouter.routing?.models?.length, 2);
+  assertEquals(result.data.ai_openrouter.routing?.zdr, true);
+  assertEquals(result.data.ai_openrouter.routing?.data_collection, "deny");
+});
+
+Deno.test("[ConfigSchema] ai_openrouter.routing rejects >3 models", () => {
+  const result = ConfigSchema.safeParse({
+    ...baseConfig(),
+    ai_openrouter: {
+      routing: {
+        models: ["a/a", "b/b", "c/c", "d/d"],
+      },
+    },
+  });
+  assertEquals(result.success, false);
+});
+
+Deno.test("[ConfigSchema] ai_openrouter.routing accepts provider.max_price", () => {
+  const result = ConfigSchema.safeParse({
+    ...baseConfig(),
+    ai_openrouter: {
+      routing: {
+        provider: {
+          max_price: { completion: 0.01, request: 0.002 },
+        },
+      },
+    },
+  });
+  assertEquals(result.success, true);
+  if (!result.success) return;
+  assertEquals(result.data.ai_openrouter.routing?.provider?.max_price?.completion, 0.01);
+});
+
+Deno.test("[ConfigSchema] ai_openrouter.routing rejects negative max_price", () => {
+  const result = ConfigSchema.safeParse({
+    ...baseConfig(),
+    ai_openrouter: {
+      routing: {
+        provider: {
+          max_price: { completion: -0.01 },
+        },
+      },
+    },
+  });
+  assertEquals(result.success, false);
+});
+
+Deno.test("[ConfigSchema] ai_openrouter.routing rejects invalid data_collection", () => {
+  const result = ConfigSchema.safeParse({
+    ...baseConfig(),
+    ai_openrouter: {
+      routing: {
+        data_collection: "maybe",
+      },
+    },
+  });
+  assertEquals(result.success, false);
+});

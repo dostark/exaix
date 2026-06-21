@@ -39,6 +39,7 @@ export class OpenRouterProviderFactory extends AbstractKeyBasedProviderFactory {
       timeoutMs: options.timeoutMs,
       siteName: openrouterConfig?.site_name,
       siteUrl: openrouterConfig?.site_url,
+      routing: openrouterConfig?.routing,
     });
   }
 }

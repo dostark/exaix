@@ -9,7 +9,6 @@
  */
 
 import {
-  createOpenAIChatCompletionsRequestInit,
   extractOpenAIContent,
   type OpenAIResponse,
   performProviderCall,
@@ -30,10 +29,55 @@ import {
   X_TITLE_HEADER,
 } from "./constants.ts";
 
+export type OpenRouterSortStrategy = "throughput" | "latency" | "cost";
+export type OpenRouterDataCollection = "allow" | "deny";
+
+/** OpenRouter control-surface passthrough: provider routing, fallback models, privacy (Phase 123 R10). */
+export interface IOpenRouterRouting {
+  models?: string[];
+  provider?: {
+    order?: string[];
+    only?: string[];
+    ignore?: string[];
+    sort?: OpenRouterSortStrategy;
+    max_price?: {
+      completion?: number;
+      request?: number;
+      image?: number;
+    };
+  };
+  zdr?: boolean;
+  data_collection?: OpenRouterDataCollection;
+}
+
+/** Internal request-body shape for serialization. */
+interface OpenRouterRequestBody {
+  model: string;
+  messages: Array<{ role: string; content: string }>;
+  max_tokens?: number;
+  temperature?: number;
+  top_p?: number;
+  stop?: string[];
+  models?: string[];
+  provider?: OpenRouterProviderBody;
+}
+
+interface OpenRouterProviderBody {
+  order?: string[];
+  only?: string[];
+  ignore?: string[];
+  sort?: OpenRouterSortStrategy;
+  max_price?: { completion?: number; request?: number; image?: number };
+  zdr?: boolean;
+  data_collection?: OpenRouterDataCollection;
+}
+
 /** Options for OpenRouterProvider. `siteName`/`siteUrl` populate OpenRouter ranking headers. */
 export type OpenRouterProviderOptions = IBaseProviderOptions & {
   siteName?: string;
   siteUrl?: string;
+  /** Control-surface passthrough: serialized into the request body alongside model/messages. */
+  routing?: IOpenRouterRouting;
 };
 
 /**
@@ -42,6 +86,7 @@ export type OpenRouterProviderOptions = IBaseProviderOptions & {
 export class OpenRouterProvider extends BaseProvider {
   private readonly siteName: string;
   private readonly siteUrl: string;
+  private readonly routing?: IOpenRouterRouting;
 
   constructor(options: OpenRouterProviderOptions) {
     super(
@@ -55,17 +100,49 @@ export class OpenRouterProvider extends BaseProvider {
     );
     this.siteName = options.siteName ?? OPENROUTER_DEFAULT_SITE_NAME;
     this.siteUrl = options.siteUrl ?? OPENROUTER_DEFAULT_SITE_URL;
+    this.routing = options.routing;
+  }
+
+  /** Build the request body with optional OpenRouter routing fields injected. */
+  private buildRequestBody(prompt: string, options?: IModelOptions): OpenRouterRequestBody {
+    const body: OpenRouterRequestBody = {
+      model: this.model,
+      messages: [{ role: "user", content: prompt }],
+    };
+    if (options?.max_tokens !== undefined) body.max_tokens = options.max_tokens;
+    if (options?.temperature !== undefined) body.temperature = options.temperature;
+    if (options?.top_p !== undefined) body.top_p = options.top_p;
+    if (options?.stop !== undefined) body.stop = options.stop;
+
+    if (this.routing) {
+      if (this.routing.models !== undefined) {
+        body.models = this.routing.models;
+      }
+      const rp: OpenRouterProviderBody = this.routing.provider ? { ...this.routing.provider } : {};
+      if (this.routing.zdr !== undefined) rp.zdr = this.routing.zdr;
+      if (this.routing.data_collection !== undefined) rp.data_collection = this.routing.data_collection;
+      if (Object.keys(rp).length > 0) {
+        body.provider = rp;
+      }
+    }
+
+    return body;
   }
 
   protected override async attemptGenerate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
-    const init = createOpenAIChatCompletionsRequestInit(this.apiKey, this.model, prompt, options);
+    const body = this.buildRequestBody(prompt, options);
     const headers: Record<string, string> = {
-      ...(init.headers as Record<string, string>),
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${this.apiKey}`,
       [HTTP_REFERER_HEADER]: this.siteUrl,
       [X_TITLE_HEADER]: this.siteName,
     };
 
-    return await performProviderCall<OpenAIResponse>(this.baseUrl, { ...init, headers }, {
+    return await performProviderCall<OpenAIResponse>(this.baseUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    }, {
       id: this.id,
       maxAttempts: this.maxRetries,
       backoffBaseMs: this.retryDelayMs,
