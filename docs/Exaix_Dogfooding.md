@@ -463,6 +463,44 @@ This is Phase 111 (shipped — see `exaix-dev-docs/planning/phase-111-session-de
 Without it, the daemon uses its in-process agent (`ReActLoopStrategy`) which works identically
 but runs on the daemon's own provider.
 
+### 6.4 Config Presets (Phase 123)
+
+The daemon ships four `[session_delegate]` presets:
+
+| Preset                   | Tool          | Provider   | File                              |
+| ------------------------ | ------------- | ---------- | --------------------------------- |
+| OpenCode (default)       | `opencode`    | direct     | `configs/dogfood.toml`            |
+| Claude Code (direct)     | `claude-code` | direct     | `configs/dogfood.claude.toml`     |
+| OpenCode + OpenRouter    | `opencode`    | openrouter | `configs/dogfood.openrouter.toml` |
+| Claude Code + OpenRouter | `claude-code` | openrouter | (compose yourself; see below)     |
+
+The `[session_delegate.provider]` block (Phase 123 R9) declares which API gateway a tool
+should use. When present, the daemon reads the key from `key_env` and injects it into
+the child process **after** the default environment sanitisation (so secrets from the
+parent are never leaked, but the delegate gets exactly the keys it needs):
+
+```toml
+[session_delegate.provider]
+name = "openrouter"          # "openrouter" | "anthropic" | "ollama"
+key_env = "OPENROUTER_API_KEY"
+base_url = "https://openrouter.ai/api"
+```
+
+Per-tool environment injection:
+
+| `name`       | `tool=opencode`                 | `tool=claude-code`                                                   |
+| ------------ | ------------------------------- | -------------------------------------------------------------------- |
+| `openrouter` | `OPENROUTER_API_KEY=<key>`      | `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_API_KEY=""` |
+| `anthropic`  | `ANTHROPIC_API_KEY=<key>`       | `ANTHROPIC_API_KEY=<key>`                                            |
+| `ollama`     | native localhost (no env added) | n/a (warn)                                                           |
+
+Claude Code + OpenRouter requires the three-environment-variable trio:
+`ANTHROPIC_BASE_URL=https://openrouter.ai/api`, `ANTHROPIC_AUTH_TOKEN=<your OpenRouter key>`,
+and `ANTHROPIC_API_KEY=""`. This is because Claude Code's OpenRouter support uses
+the Anthropic-compatible endpoint with an auth token rather than the standard
+API-key header. The return is parsed from the single `{type:"result"}` JSON object
+that `claude --output-format json` emits.
+
 ---
 
 ## 7. Configuration

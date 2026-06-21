@@ -89,7 +89,7 @@ The integration is realized by the `@exaix/session` package as a strict three-pa
 
 1. **Brief** — `SessionDelegateService.prepareBrief` (`@exaix/session`) atomically writes `Session/{traceId}/brief.json` (objective, scope globs, token budget, single-use resume token, deadline).
 2. **Launch** — a per-tool `ISessionAdapter` from `SessionAdapterRegistry` (`@exaix/session`) builds a hardened launch (bare binary + discrete argv, token-budget env only); supervised spawns strip provider secrets and enforce a binary allowlist (`@exaix/session`).
-3. **Return + Reconcile** — the tool writes a mandatory `Session/{traceId}/return.json`; the daemon's `SessionReturnWatcher` invokes `SessionReturnProcessor`/`reconcile` (constant-time token check, two-stage path-scope enforcement, gate/decision legality, non-blocking budget overage), maps the outcome into the existing amendment/review/clarification contracts (`@exaix/session`), and resumes the gate's durable wait state (`@exaix/session`).
+3. **Return + Reconcile** — the daemon drains the tool's full stdout stream (bounded by `DELEGATE_STDOUT_DRAIN_MS`), parses tool-specific JSON events (`opencode` JSONL `text`/`step_finish`/`tool_use` events or `claude-code` single `{type:"result"}` object), computes `git diff --name-only HEAD` for `paths_touched`, and atomically writes `Session/{traceId}/return.json` with real `paths_touched`, `token_stats`, and `cost_usd`. `SessionReturnWatcher` then invokes `SessionReturnProcessor`/`reconcile` (constant-time token check, two-stage path-scope enforcement against actual touched paths, gate/decision legality, non-blocking budget overage), maps the outcome into the existing amendment/review/clarification contracts (`@exaix/session`), and resumes the gate's durable wait state (`@exaix/session`).
 
 Delegated output is **untrusted** and still flows through the same quality, critique, and review gates as autonomous output. For the pipeline gate diagram with ASCII art and TOML configuration sample, see `packages/flow/README.md#session-tool-integration`.
 
@@ -104,6 +104,29 @@ The session tool can be launched in one of three modes, configured via `session_
 | **Mode 3** | `headless`   | Non-interactive spawn via `claude -p` / `opencode run`. The daemon spawns the binary with a discrete argv prompt, fire-and-forget; `SessionReturnWatcher` reconciles the dropped `return.json`. | CI, automation, and daemon-side delegation where no human is present.  |
 
 Mode 3 requires `bin_overrides` to add the tool binary to the spawn allowlist (see `packages/flow/README.md#session-tool-integration`). The compiled mock tool at `.cache/mock_session_tool_bin` (built via `deno task build:mock-tool`) is used for CI testing.
+
+Mode 3 also supports a `[session_delegate.provider]` block (Phase 123 R9) that
+declares which API gateway the delegate should use. When present, the daemon reads
+the key from `key_env` and injects it into the child process **after** environment
+sanitisation, so injected `API_KEY` vars survive the `SECRET_ENV_PATTERN` strip:
+
+```toml
+[session_delegate.provider]
+name = "openrouter"       # "openrouter" | "anthropic" | "ollama"
+key_env = "OPENROUTER_API_KEY"
+base_url = "https://openrouter.ai/api"
+```
+
+Per-tool env injection follows a translation table
+(`SessionDelegateService.resolveDelegateEnv`): OpenRouter+opencode sets
+`OPENROUTER_API_KEY`; OpenRouter+claude-code sets `ANTHROPIC_BASE_URL`,
+`ANTHROPIC_AUTH_TOKEN`, and `ANTHROPIC_API_KEY=""`.
+
+The OpenRouter in-process provider (`@exaix/ai-openrouter`) also exposes OpenRouter's
+control surface via a `routing` config block (Phase 123 R10): `provider` ordering
+(`order`/`only`/`ignore`/`sort`), model fallbacks (`models`, ≤3), zero-data-retention
+(`zdr`), and data-collection consent (`data_collection`). These fields are serialised
+into the request body alongside `model` and `messages`.
 
 ---
 
