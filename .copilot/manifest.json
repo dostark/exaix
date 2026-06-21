@@ -622,7 +622,7 @@
       "scope": "dev",
       "title": "Plan Skill (#plan)",
       "short_summary": "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy.",
-      "version": "1.7",
+      "version": "1.8",
       "topics": [
         "planning",
         "architecture",
@@ -631,7 +631,8 @@
         "traceability",
         "configurability",
         "reachability",
-        "dogfooding"
+        "dogfooding",
+        "integrations"
       ],
       "qwen_skill": "plan",
       "chunks": [

@@ -115,6 +115,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`injection`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`instruction-adequacy`** → [guidelines/self-improvement.md](guidelines/self-improvement.md)
 - **`integration`** → [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
+- **`integrations`** → [skills/plan/SKILL.md](skills/plan/SKILL.md)
 - **`jscpd`** → [guidelines/jscpd-guide.md](guidelines/jscpd-guide.md)
 - **`json`** → [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md)
 - **`leak-guard`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)

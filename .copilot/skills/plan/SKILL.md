@@ -8,10 +8,10 @@ tools:
   - run_command
 scope: dev
 title: "Plan Skill (#plan)"
-description: Draft a new Phase Planning Document for a feature, refactor, or architectural change — follows Exaix standards for TDD, security, and traceability. Produces plans that are machine-convertible to dogfood requests (step-manifests for automated request extraction).
+description: Draft a new Phase Planning Document for a feature, refactor, or architectural change — follows Exaix standards for TDD, security, and traceability. Produces plans that are machine-convertible to dogfood requests (step-manifests for automated request extraction). Grounds any third-party service/provider integration in deep web research of the provider's real, current capability surface so integrations are first-class, not hacks.
 short_summary: "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy."
-version: "1.7"
-topics: ["planning", "architecture", "tdd", "security", "traceability", "configurability", "reachability", "dogfooding"]
+version: "1.8"
+topics: ["planning", "architecture", "tdd", "security", "traceability", "configurability", "reachability", "dogfooding", "integrations"]
 qwen_skill: plan
 ---
 
@@ -31,6 +31,7 @@ Key points
 - **Specify exact values**: For every enum, union, or variant field, state which concrete value each component emits and under what conditions — not just the allowed set. Vague "can be one of X, Y, Z" without per-component mapping is a pre-gap.
 - **Trace every output to its consumer**: For every new interface field or event payload name a consuming component and verify the data flow reaches it. Fields with no readers are dead data.
 - **Survey module conventions**: Before committing to a pattern choice (event naming, error handling, DI style), read 5–10 existing examples in the affected module and document the dominant convention. Divergence requires justification in Architecture Notes.
+- **Ground third-party integrations in web research**: When a plan integrates an external service, provider, API, or CLI (an LLM provider, a coding-agent tool, a cloud/SaaS API, a binary), do deep web research on the provider's CURRENT official capability surface FIRST — supported endpoints, auth model, config/routing knobs, limits, versioning — and design to its real first-class mechanism. A wrapper/proxy/scrape/undocumented-flag "integration" is a hack that breaks on the next provider update: flag it and prefer the documented path. Record the doc URLs + research date. See §2F.
 - **Map prose claims to named tests**: Every behavioural claim made in the prose (e.g., "checkpoint preserves data", "service Y calls service Z") must have a named test in Planned Tests. Claims without test names are gaps.
 - **Reachability over layering**: structure the plan as a VERTICAL end-to-end slice (one complete path entry-point → … → output) BEFORE breadth. A horizontal, layer-by-layer plan (all schemas, then all services, then "wire it") is the classic setup for "every component exists, nothing works" — flag it and re-sequence. See §E.
 - **Integration anchor per runtime-claiming step**: any step whose Success Criteria assert runtime/observable behaviour MUST name (a) the exact production call-site/constructor (`file:Symbol`) that invokes the new code, and (b) a named integration or scenario test that exercises that call-site. A runtime claim backed only by package-unit tests is a pre-gap.
@@ -54,6 +55,7 @@ Do / Don't
 - ✅ Do specify the exact value each component emits for every enum/variant field — not just the allowed set.
 - ✅ Do trace every new output field to a named consumer — verify the data flow has a destination before writing it.
 - ✅ Do survey the affected module's existing conventions before choosing a pattern — document divergence in Architecture Notes.
+- ✅ Do ground every third-party/provider integration in deep web research of the provider's current official docs — design to the supported first-class endpoint/auth/config surface, and cite the URLs + research date (§2F).
 - ✅ Do map every prose behavioural claim to a named test in the step's Planned Tests section.
 - ✅ Do anchor every runtime-claiming step to a named production call-site AND an integration/scenario test (not just a unit test).
 - ✅ Do include one terminal, non-deferrable "Integration & cutover" step proving the feature is reachable from a real run.
@@ -67,6 +69,7 @@ Do / Don't
 - ❌ Don't skip the 'Planned Tests' section for any implementation step.
 - ❌ Don't let a runtime success criterion be satisfiable by a package-unit test alone — that is how production-dead code ships green.
 - ❌ Don't structure a feature as horizontal layers ("all cores, then wire") — it maximizes the risk that nothing is connected.
+- ❌ Don't design a third-party integration from memory or assumptions, or settle for a proxy/scrape/undocumented-flag hack when an official integration path exists — verify against the provider's live docs first (§2F).
 - ❌ Don't defer documentation updates; implement them as the last step of the phase.
 
 Prototypes & Validation:
@@ -197,6 +200,37 @@ in the plan itself:
 > that ships only disconnected cores. A "package now, wiring next phase" split is only
 > acceptable if the package phase's own Success Metrics do not claim runtime behaviour.
 
+#### F. Third-Party Integration Research (Capability Grounding)
+
+When a plan integrates an external service, provider, API, or CLI (an LLM provider, a
+coding-agent tool, a SaaS/cloud API, a CLI binary), DO NOT design from memory, training
+data, or assumptions — provider capabilities and APIs drift. Research the provider's
+CURRENT official surface with web search/fetch (where available), then design to its
+real, supported, first-class mechanism:
+
+- **Find the official integration path.** Fetch the provider's own current docs (API
+  reference, integration/cookbook pages, auth guide). Identify the supported endpoint(s)
+  and their shape (e.g. OpenAI-compatible vs Anthropic-compatible), the auth model
+  (API key / OAuth / BYOK), and any official "use with `<tool>`" recipe. Prefer a
+  documented first-class path over everything else.
+- **Treat workarounds as a RED flag.** A proxy/shim, HTML scrape, undocumented flag, or
+  reverse-engineered protocol is a hack that breaks on the next provider release. If a
+  first-class path exists, design to it. If none exists, say so explicitly and justify
+  the workaround as a stop-gap with the risk called out — never present a hack as a
+  first-class integration.
+- **Expose the capability surface, don't hardcode one path.** A provider is usually a
+  control plane, not a single endpoint. Surface its real knobs (routing, fallback,
+  caching, rate/cost limits, data-retention/privacy) through Exaix config rather than
+  pinning one hardcoded behaviour.
+- **Separate the axes.** Keep model vs provider vs endpoint vs auth-realm distinct in the
+  design — conflating them is how "first-class" silently degrades to "works in one config".
+- **Capture caveats + versions.** Record provider-stated caveats ("only guaranteed with
+  X"), minimum binary/API versions, and auth-env gotchas, so the plan is implementable
+  exactly as written.
+- **Cite sources, date the research.** List the consulted doc URLs and the research date
+  in a **Sources** block in the plan, marking each as official vs community/unofficial;
+  re-verify if the plan is implemented much later.
+
 ### 3. Documentation Update Protocol (§3D)
 
 Include a final **Step N (§3D): Update Documentation** that covers:
@@ -230,6 +264,9 @@ coverage:
   dominant convention. Document divergence in Architecture Notes.
 - **Claim-to-test mapping**: For every prose behavioural claim, list a corresponding named test in
   the step's Planned Tests section. Prose without test names is a pre-gap.
+- **Integration capability grounding**: For any third-party/provider integration, research the
+  provider's current official docs (web search/fetch) and design to its first-class supported surface
+  — endpoints, auth model, config knobs — never a workaround. Record sources + research date (§2F).
 - **Step-manifest convention**: Every implementation step must include a fenced YAML step-manifest
   block (after Success Criteria) for machine conversion to dogfood requests. The manifest fields
   (`identity`, `skills`, `portal`, `target_branch`, `depends_on`, `acceptance`) are a subset of the
@@ -249,6 +286,7 @@ coverage:
 1. The path to the new or updated planning document file.
 1. Each implementation step includes a fenced YAML step-manifest block (for dogfooding compatibility).
 1. Markdown lint result: `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/<doc>`.
+1. If the plan integrates a third-party service/provider, a **Sources** block: the provider doc URLs consulted (marked official vs community/unofficial) and the research date (§2F).
 1. Recommendation to run `#pre-gap-analysis` on the new plan to verify its completeness against the codebase.
 1. Commit payload — use `#commit` to stage and commit the new planning document.
 
