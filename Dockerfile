@@ -34,6 +34,16 @@ RUN printf 'import { Database } from "@db/sqlite";\nconst db = new Database(":me
   && deno run --config deno.json --allow-ffi --allow-read --allow-write --allow-env --allow-net /tmp/warm_sqlite.ts \
   && rm /tmp/warm_sqlite.ts
 
+# Install Node.js and delegate CLI tools (Claude Code, OpenCode CLI) for
+# headless agent integration tests and dogfooding. The devcontainer (target
+# "builder") needs these on PATH so the @provider_live E2E test can run.
+# OpenRouter does not require a binary — it is configured via env vars only.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates curl nodejs npm \
+  && npm install -g @anthropic-ai/claude-code \
+  && curl -fsSL https://opencode.ai/install.sh | sh \
+  && rm -rf /var/lib/apt/lists/* /root/.npm /root/.cache
+
 # ---------------------------------------------------------------------------
 # Stage 2 — runtime: non-root, minimal toolset, scoped permissions
 # ---------------------------------------------------------------------------
@@ -69,5 +79,5 @@ WORKDIR /exa
 ENTRYPOINT ["deno", "run", \
   "--config", "/app/deno.json", \
   "--allow-read", "--allow-write", "--allow-net", "--allow-env", "--allow-ffi", "--allow-import", \
-  "--allow-run=git,deno,npm,node,exoctl,ls,grep,echo,printf,pwd,whoami,id,date,uptime,which,type,command,hash,alias", \
+  "--allow-run=git,deno,npm,node,exoctl,opencode,claude,ls,grep,echo,printf,pwd,whoami,id,date,uptime,which,type,command,hash,alias", \
   "/app/apps/daemon/main.ts"]
