@@ -100,6 +100,8 @@ export const SessionReturnSchema = z.object({
   token_stats: SessionTokenStatsSchema,
   /** Opaque audit-only reference; never parsed as pipeline state. */
   transcript_ref: z.string().optional(),
+  /** USD cost reported by the delegate tool (e.g. opencode step_finish.cost, claude total_cost_usd). */
+  cost_usd: z.number().nonnegative().optional(),
 });
 export type SessionReturn = z.infer<typeof SessionReturnSchema>;
 

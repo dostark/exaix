@@ -160,6 +160,7 @@ export class HeadlessSessionLauncher {
         output_tokens: parsed.tokenStats.output,
         total_tokens: parsed.tokenStats.total,
       },
+      cost_usd: parsed.costUsd,
     });
 
     await Deno.mkdir(join(this.deps.sessionDir, traceId), { recursive: true });
