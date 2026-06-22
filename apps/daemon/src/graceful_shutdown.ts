@@ -9,6 +9,7 @@
 import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface ICleanupTask {
   name: string;
@@ -25,7 +26,11 @@ export class GracefulShutdown {
     this.logger = logger;
   }
 
-  registerCleanup(name: string, handler: () => Promise<void>, timeout = DEFAULT_AI_TIMEOUT_MS): void {
+  registerCleanup(
+    name: string,
+    handler: () => Promise<void>,
+    timeout: Opt<number, Reason.SensibleDefault> = DEFAULT_AI_TIMEOUT_MS,
+  ): void {
     this.cleanupTasks.push({ name, handler, timeout });
   }
 
@@ -71,7 +76,10 @@ export class GracefulShutdown {
     this.logger.info(DomainEventType.DaemonErrorHandlersRegistered, "Error handlers registered for graceful shutdown");
   }
 
-  async shutdown(exitCode: number, shouldExit = true): Promise<void> {
+  async shutdown(
+    exitCode: number,
+    shouldExit: Opt<boolean, Reason.SensibleDefault> = true,
+  ): Promise<void> {
     if (this.shuttingDown) {
       this.logger.warn(
         DomainEventType.DaemonShutdownDuplicate,

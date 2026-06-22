@@ -8,7 +8,7 @@
 
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import type { PortalAnalysisMode, PortalExecutionStrategy } from "@exaix/core";
-import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types";
+import type { IPortalDetails, IPortalInfo, IVerificationResult, Opt, Reason } from "@exaix/core/types";
 import { formatKnowledge } from "@exaix/cli/formatters/portal_knowledge.ts";
 
 /**
@@ -83,7 +83,7 @@ export class PortalCommands extends BaseCommand {
    */
   async knowledge(
     alias: string,
-    options?: { json?: boolean },
+    options?: Opt<{ json?: boolean }, Reason.OptionalInput>,
   ): Promise<string> {
     const data = await this.portals.getKnowledge(alias);
 

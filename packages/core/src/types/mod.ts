@@ -54,6 +54,7 @@ export * from "./json.ts";
 export * from "./logging.ts";
 export * from "./memory.ts";
 export * from "./notification.ts";
+export * from "./optional_marker.ts";
 export * from "./plan.ts";
 export * from "./portal.ts";
 export * from "./request.ts";

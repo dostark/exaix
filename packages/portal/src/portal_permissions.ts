@@ -26,6 +26,7 @@ import {
 } from "@exaix/core";
 import { toSafeJson } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Service for validating portal permissions
@@ -267,7 +268,7 @@ export class PortalPermissionsService {
    */
   private async logPermissionCheck(
     result: IRBACPermissionCheckResult,
-    context?: { timestamp?: Date; ip?: string },
+    context?: Opt<{ timestamp?: Date; ip?: string }, Reason.OptionalContext>,
   ): Promise<void> {
     if (!this.auditLogger) return;
 
@@ -299,7 +300,7 @@ export class PortalPermissionsService {
     identityId: string,
     action: PermissionAction,
     resource: string,
-    context?: { timestamp?: Date; ip?: string },
+    context?: Opt<{ timestamp?: Date; ip?: string }, Reason.OptionalContext>,
   ): IRBACPermissionCheckResult {
     const permissions = portal.permissions!;
 
@@ -471,7 +472,7 @@ export class PortalPermissionsService {
    */
   private checkConditions(
     conditions: NonNullable<IPermissionConditions>,
-    context?: { timestamp?: Date; ip?: string },
+    context?: Opt<{ timestamp?: Date; ip?: string }, Reason.OptionalContext>,
   ): { allowed: boolean; reason?: string } {
     if (!context) {
       // If no context provided but conditions exist, deny access

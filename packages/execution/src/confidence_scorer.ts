@@ -15,6 +15,30 @@ import { createOutputValidator, type OutputValidator } from "@exaix/tool-runtime
 import { ConfidenceAssessmentLevel, FactorImpact } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 
+import {
+  CONFIDENCE_ADJUSTMENT_CERTAIN,
+  CONFIDENCE_ADJUSTMENT_HEDGING,
+  CONFIDENCE_ADJUSTMENT_QUALIFIER,
+  CONFIDENCE_ADJUSTMENT_QUESTION,
+  CONFIDENCE_ADJUSTMENT_SHORT,
+  CONFIDENCE_ADJUSTMENT_UNCERTAIN,
+  CONFIDENCE_ADJUSTMENT_VERY_SHORT,
+  CONFIDENCE_DEFAULT_HIGH_THRESHOLD,
+  CONFIDENCE_DEFAULT_LOW_THRESHOLD,
+  CONFIDENCE_DEFAULT_VERY_LOW_THRESHOLD,
+  CONFIDENCE_LENGTH_THRESHOLD_SHORT,
+  CONFIDENCE_LENGTH_THRESHOLD_VERY_SHORT,
+  CONFIDENCE_SCORE_BASE,
+  CONFIDENCE_THRESHOLD_HIGH,
+  CONFIDENCE_THRESHOLD_LOW,
+  CONFIDENCE_THRESHOLD_MEDIUM,
+  CONFIDENCE_THRESHOLD_VERY_LOW,
+  EXISTING_SCORE_CONFIDENCE_WEIGHT,
+  GOAL_ALIGNMENT_CONFIDENCE_WEIGHT,
+} from "@exaix/core";
+import type { ICritique } from "./types.ts";
+import type { Opt, Reason } from "@exaix/core/types";
+
 export interface IConfidenceScorerConfig {
   lowConfidenceThreshold?: number;
   veryLowThreshold?: number;
@@ -56,28 +80,6 @@ export interface IConfidenceMetrics {
   flaggedRate: number;
   levelDistribution: Record<ConfidenceAssessmentLevel, number>;
 }
-import {
-  CONFIDENCE_ADJUSTMENT_CERTAIN,
-  CONFIDENCE_ADJUSTMENT_HEDGING,
-  CONFIDENCE_ADJUSTMENT_QUALIFIER,
-  CONFIDENCE_ADJUSTMENT_QUESTION,
-  CONFIDENCE_ADJUSTMENT_SHORT,
-  CONFIDENCE_ADJUSTMENT_UNCERTAIN,
-  CONFIDENCE_ADJUSTMENT_VERY_SHORT,
-  CONFIDENCE_DEFAULT_HIGH_THRESHOLD,
-  CONFIDENCE_DEFAULT_LOW_THRESHOLD,
-  CONFIDENCE_DEFAULT_VERY_LOW_THRESHOLD,
-  CONFIDENCE_LENGTH_THRESHOLD_SHORT,
-  CONFIDENCE_LENGTH_THRESHOLD_VERY_SHORT,
-  CONFIDENCE_SCORE_BASE,
-  CONFIDENCE_THRESHOLD_HIGH,
-  CONFIDENCE_THRESHOLD_LOW,
-  CONFIDENCE_THRESHOLD_MEDIUM,
-  CONFIDENCE_THRESHOLD_VERY_LOW,
-  EXISTING_SCORE_CONFIDENCE_WEIGHT,
-  GOAL_ALIGNMENT_CONFIDENCE_WEIGHT,
-} from "@exaix/core";
-import type { ICritique } from "./types.ts";
 
 // ============================================================================
 // Confidence Schema
@@ -229,7 +231,7 @@ export class ConfidenceScorer {
     request: string,
     response: string,
     traceId?: string,
-    critique?: ICritique,
+    critique?: Opt<ICritique, Reason.OptionalInput>,
   ): Promise<IConfidenceResult> {
     const assessmentPrompt = this.config.extractionPromptTemplate
       .replace("{request}", request)
@@ -484,14 +486,14 @@ export class ConfidenceScorer {
 
 export function createConfidenceScorer(
   modelProvider: IModelProvider,
-  config?: IConfidenceScorerConfig,
+  config?: Opt<IConfidenceScorerConfig, Reason.FactoryPreset>,
 ): ConfidenceScorer {
   return new ConfidenceScorer(modelProvider, config);
 }
 
 export function createStrictConfidenceScorer(
   modelProvider: IModelProvider,
-  config?: IConfidenceScorerConfig,
+  config?: Opt<IConfidenceScorerConfig, Reason.FactoryPreset>,
 ): ConfidenceScorer {
   return new ConfidenceScorer(modelProvider, {
     lowConfidenceThreshold: CONFIDENCE_THRESHOLD_MEDIUM,
@@ -504,7 +506,7 @@ export function createStrictConfidenceScorer(
 
 export function createLenientConfidenceScorer(
   modelProvider: IModelProvider,
-  config?: IConfidenceScorerConfig,
+  config?: Opt<IConfidenceScorerConfig, Reason.FactoryPreset>,
 ): ConfidenceScorer {
   return new ConfidenceScorer(modelProvider, {
     lowConfidenceThreshold: CONFIDENCE_THRESHOLD_VERY_LOW,

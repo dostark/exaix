@@ -19,7 +19,7 @@ import { enrichWithRequest } from "../helpers/request_enricher.ts";
 import { isReviewStatus, ReviewStatus } from "@exaix/core/status";
 import type { IReviewStatus } from "@exaix/core/status";
 import type { IArtifact, IArtifactFilters, IArtifactWithContent } from "@exaix/schemas/artifact.ts";
-import type { IGitService } from "@exaix/core/types";
+import type { IGitService, Opt, Reason } from "@exaix/core/types";
 import { type ArtifactSubtype, ReviewType, ReviewTypeFilter as ReviewFilterEnum } from "@exaix/core";
 import { classifyTraceAnomalies, summarizeAnomalies } from "@exaix/core/events";
 import type { IAnomalyFinding, IAnomalySummary } from "@exaix/core/events";
@@ -102,7 +102,9 @@ export class ReviewCommands extends BaseCommand {
     return id.startsWith("artifact-");
   }
 
-  private normalizeTypeFilter(typeFilter?: string): ReviewTypeFilter {
+  private normalizeTypeFilter(
+    typeFilter?: Opt<string, Reason.QueryFilter>,
+  ): ReviewTypeFilter {
     if (!typeFilter) return ReviewFilterEnum.ALL;
     const normalized = typeFilter.toLowerCase();
 
@@ -114,7 +116,7 @@ export class ReviewCommands extends BaseCommand {
   }
 
   private normalizeStatusFilter(
-    statusFilter?: string,
+    statusFilter?: Opt<string, Reason.QueryFilter>,
   ): IReviewStatus | undefined {
     if (!statusFilter) return undefined;
     const normalized = statusFilter.toLowerCase();

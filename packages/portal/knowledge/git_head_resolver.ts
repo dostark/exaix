@@ -9,6 +9,7 @@
 import { join } from "@std/path";
 import { SafeSubprocess } from "@exaix/core";
 import { DEFAULT_GIT_REV_PARSE_TIMEOUT_MS, GIT_CMD_REV_PARSE } from "@exaix/git";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IGitHeadResolver {
   resolve(portalPath: string): Promise<string | null>;
@@ -61,7 +62,7 @@ export class GitHeadResolver implements IGitHeadResolver {
   startWatching(
     portalPath: string,
     onHeadChange: (newHash: string, prevHash: string) => void,
-    options?: { signal?: AbortSignal },
+    options?: Opt<{ signal?: AbortSignal }, Reason.CancellationOptional>,
   ): void {
     if (this._abortController) return;
     this._abortController = new AbortController();

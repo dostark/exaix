@@ -20,6 +20,7 @@ import {
 } from "@exaix/schemas/routing_policy.ts";
 import type { IIdentityPerformanceSnapshot } from "./identity_performance_repository.ts";
 import type { IRoutingPolicyLoadResult } from "./routing_policy_loader.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IRoutingPolicyLoader {
   loadPolicy(): Promise<IRoutingPolicyLoadResult>;
@@ -185,7 +186,10 @@ export class RoutingPolicyService {
       this.matchesTags(match.tags, criteria.tags);
   }
 
-  private matchesField(value?: string, candidate?: string): boolean {
+  private matchesField(
+    value?: Opt<string, Reason.OptionalInput>,
+    candidate?: Opt<string, Reason.OptionalInput>,
+  ): boolean {
     if (!value) return true;
     return value.trim().toLowerCase() === (candidate ?? "").trim().toLowerCase();
   }
@@ -211,7 +215,10 @@ export class RoutingPolicyService {
     return true;
   }
 
-  private matchesTags(matchTags?: string[], criteriaTags?: string[]): boolean {
+  private matchesTags(
+    matchTags?: Opt<string[], Reason.OptionalInput>,
+    criteriaTags?: Opt<string[], Reason.OptionalInput>,
+  ): boolean {
     if (!matchTags || matchTags.length === 0) return true;
     const normalizedCriteriaTags = (criteriaTags ?? []).map((tag) => tag.trim().toLowerCase());
     return matchTags.every((tag) => normalizedCriteriaTags.includes(tag.trim().toLowerCase()));
@@ -277,7 +284,7 @@ export class RoutingPolicyService {
     winner: IRoutingCandidate,
     experimentScore: number,
     criteria: IRoutingMatchCriteria,
-    portalName?: string,
+    portalName?: Opt<string, Reason.OptionalContext>,
   ): Promise<IRoutingCandidate[]> {
     const journalSnapshots = criteria.capability
       ? await this.options.performanceRepository.getPerformanceByCapability(criteria.capability, portalName)
@@ -312,7 +319,7 @@ export class RoutingPolicyService {
     policy: IRoutingPolicy,
     criteria: IRoutingMatchCriteria,
     candidates: IRoutingCandidate[],
-    portalName?: string,
+    portalName?: Opt<string, Reason.OptionalContext>,
   ): Promise<IRoutingPolicyDecision> {
     const scoredCandidates = await this.scoreCandidates(
       candidates,

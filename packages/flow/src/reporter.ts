@@ -14,6 +14,7 @@ import { ICON_FAILURE, ICON_SUCCESS } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import type { IEventLogger } from "@exaix/core/logger";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IFlowResult {
   flowRunId: string;
@@ -68,7 +69,7 @@ export class FlowReporter {
   async generate(
     flow: IFlow,
     flowResult: IFlowResult,
-    requestId?: string,
+    requestId?: Opt<string, Reason.OptionalContext>,
   ): Promise<FlowReportResult> {
     const startTime = Date.now();
 
@@ -98,7 +99,7 @@ export class FlowReporter {
   private async buildReport(
     flow: IFlow,
     flowResult: IFlowResult,
-    requestId?: string,
+    requestId?: Opt<string, Reason.OptionalContext>,
   ): Promise<string> {
     const sections: string[] = [];
 
@@ -119,7 +120,7 @@ export class FlowReporter {
   private buildFrontmatter(
     flow: IFlow,
     flowResult: IFlowResult,
-    requestId?: string,
+    requestId?: Opt<string, Reason.OptionalContext>,
   ): string {
     const completedAt = flowResult.completedAt.toISOString();
     const stepsCompleted = Array.from(flowResult.stepResults.values())

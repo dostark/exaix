@@ -8,8 +8,12 @@
  */
 
 import type { JSONValue } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
-export function extractFallbackSubject(text: string, maxLength = 60): string {
+export function extractFallbackSubject(
+  text: string,
+  maxLength: Opt<number, Reason.SensibleDefault> = 60,
+): string {
   if (!text) return "";
 
   const firstLine = text.split("\n").find((l) => l.trim().length > 0) || "";

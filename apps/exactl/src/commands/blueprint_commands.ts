@@ -23,6 +23,7 @@ import {
   type IBlueprintValidationResult,
   isReservedAgentId,
 } from "@exaix/schemas/blueprint.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 // ============================================================================
 // Types and Interfaces
@@ -625,7 +626,10 @@ export class BlueprintCommands extends BaseCommand {
   /**
    * Load and validate system prompt
    */
-  private async loadSystemPrompt(options: BlueprintCreateOptions, systemPrompt?: string): Promise<string> {
+  private async loadSystemPrompt(
+    options: BlueprintCreateOptions,
+    systemPrompt?: Opt<string, Reason.OptionalInput>,
+  ): Promise<string> {
     let finalPrompt = systemPrompt;
 
     // Load from file if specified

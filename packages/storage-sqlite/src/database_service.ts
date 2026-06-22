@@ -16,6 +16,7 @@ import { DB_MAX_RETRY_DELAY_MS, DEFAULT_QUERY_LIMIT } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService, IJournalFilterOptions } from "@exaix/core/types";
 import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export type SqliteParam = string | number | boolean | null;
 
@@ -199,7 +200,7 @@ export class DatabaseService implements IDatabaseService {
 
   private async retryTransaction<T>(
     callback: () => Promise<T>,
-    options: RetryOptions = {},
+    options: Opt<RetryOptions, Reason.SensibleDefault> = {},
   ): Promise<T> {
     const {
       maxRetries = 3,

@@ -26,6 +26,7 @@ import type { IModelProvider, IProviderInfo, IResolvedProviderOptions } from "./
 import { ProviderFactoryError } from "./errors.ts";
 
 import { LazyProvider } from "./providers/lazy_provider.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 declare const Deno: { env: { get(key: string): string | undefined } };
 
@@ -33,7 +34,9 @@ export type ProviderRegistryBootstrap = () => void;
 
 let externalProviderRegistryBootstrap: ProviderRegistryBootstrap | undefined;
 
-export function setProviderRegistryBootstrap(bootstrap?: ProviderRegistryBootstrap): void {
+export function setProviderRegistryBootstrap(
+  bootstrap?: Opt<ProviderRegistryBootstrap, Reason.FactoryPreset>,
+): void {
   externalProviderRegistryBootstrap = bootstrap;
 }
 
@@ -68,9 +71,9 @@ export class ProviderFactory {
       maxRetries?: number;
       healthCheck?: boolean;
     },
-    db?: IDatabaseService,
-    logger?: IEventLogger,
-    costTracker?: ICostTracker,
+    db?: Opt<IDatabaseService, Reason.OptionalDependency>,
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>,
+    costTracker?: Opt<ICostTracker, Reason.OptionalDependency>,
   ): Promise<IModelProvider> {
     const chain = [fallback.primary, ...fallback.fallbacks];
     let lastError: Error | undefined;
@@ -125,9 +128,9 @@ export class ProviderFactory {
   static async createByChainName(
     config: Config,
     chainName: string,
-    db?: IDatabaseService,
-    logger?: IEventLogger,
-    costTracker?: ICostTracker,
+    db?: Opt<IDatabaseService, Reason.OptionalDependency>,
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>,
+    costTracker?: Opt<ICostTracker, Reason.OptionalDependency>,
   ): Promise<IModelProvider> {
     const chain = config.provider_strategy?.fallback_chains?.[chainName];
 
@@ -168,9 +171,9 @@ export class ProviderFactory {
    */
   static async create(
     config: Config,
-    db?: IDatabaseService,
-    logger?: IEventLogger,
-    costTracker?: ICostTracker,
+    db?: Opt<IDatabaseService, Reason.OptionalDependency>,
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>,
+    costTracker?: Opt<ICostTracker, Reason.OptionalDependency>,
   ): Promise<IModelProvider> {
     const options = this.resolveOptions(config);
     options.logger = logger;
@@ -188,9 +191,9 @@ export class ProviderFactory {
   static async createByName(
     config: Config,
     name: string,
-    db?: IDatabaseService,
-    logger?: IEventLogger,
-    costTracker?: ICostTracker,
+    db?: Opt<IDatabaseService, Reason.OptionalDependency>,
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>,
+    costTracker?: Opt<ICostTracker, Reason.OptionalDependency>,
   ): Promise<IModelProvider> {
     // Check if name refers to a fallback chain
     if (config.provider_strategy?.fallback_enabled && config.provider_strategy?.fallback_chains?.[name]) {
@@ -338,8 +341,8 @@ export class ProviderFactory {
   private static async createAndWrap(
     config: Config,
     options: IResolvedProviderOptions,
-    _db?: IDatabaseService,
-    costTracker?: ICostTracker,
+    _db?: Opt<IDatabaseService, Reason.OptionalDependency>,
+    costTracker?: Opt<ICostTracker, Reason.OptionalDependency>,
   ): Promise<IModelProvider> {
     let provider = await this.createProvider(options);
 

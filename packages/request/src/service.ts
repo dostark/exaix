@@ -22,6 +22,7 @@ import type { JSONValue } from "@exaix/core";
 import type { IRequestEntry, IRequestMetadata, IRequestOptions } from "@exaix/core/request";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IOutputValidator } from "@exaix/tool-runtime";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IRequestServiceConfig {
   config: Config;
@@ -315,7 +316,7 @@ export class RequestService {
     };
   }
 
-  private parsePriority(priority?: string): RequestPriority {
+  private parsePriority(priority?: Opt<string, Reason.SensibleDefault>): RequestPriority {
     if (
       priority === RequestPriority.LOW ||
       priority === RequestPriority.NORMAL ||
@@ -327,7 +328,7 @@ export class RequestService {
     return RequestPriority.NORMAL;
   }
 
-  private parseSource(source?: string): RequestSource {
+  private parseSource(source?: Opt<string, Reason.SensibleDefault>): RequestSource {
     if (
       source === RequestSource.CLI || source === RequestSource.FILE || source === RequestSource.INTERACTIVE ||
       source === RequestSource.TUI

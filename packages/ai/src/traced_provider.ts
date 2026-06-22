@@ -12,6 +12,7 @@ import type { IGenerateResult } from "./providers/common.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { IModelOptions } from "./types.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export class TracedProvider implements IModelProvider {
   public readonly id: string;
@@ -63,7 +64,10 @@ export class TracedProvider implements IModelProvider {
     }
   }
 
-  generateStream?(prompt: string, options?: IModelOptions): AsyncGenerator<string> {
+  generateStream?(
+    prompt: string,
+    options?: Opt<IModelOptions, Reason.AbstractBoundary>,
+  ): AsyncGenerator<string> {
     if (!this.inner.generateStream) {
       throw new Error("Inner provider does not support streaming");
     }

@@ -54,6 +54,7 @@ import {
   splitPane as helperSplitPane,
   switchPane as helperSwitchPane,
 } from "@exaix/tui/layout/pane_manager.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 // Type alias for convenience
 type Theme = ITuiTheme;
@@ -594,13 +595,13 @@ function _handleViewPicker(
 }
 
 export async function launchTuiDashboard(
-  options: {
+  options: Opt<{
     testMode?: boolean;
     nonInteractive?: boolean;
     notificationService?: INotificationService;
     databaseService?: IDatabaseService;
     config?: Config;
-  } = {},
+  }, Reason.UiDefault> = {},
 ): Promise<ITuiDashboard | undefined> {
   if (options.testMode) {
     return await createTestDashboard(options);

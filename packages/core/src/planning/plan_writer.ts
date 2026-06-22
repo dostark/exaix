@@ -24,6 +24,7 @@ import type { JSONValue } from "@exaix/core";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IRequestMetadata {
   requestId: string;
@@ -252,7 +253,10 @@ export class PlanWriter {
   /**
    * Generate YAML frontmatter
    */
-  private generateFrontmatter(metadata: IRequestMetadata, tokenSummary?: ITokenUsageSummary | null): string {
+  private generateFrontmatter(
+    metadata: IRequestMetadata,
+    tokenSummary?: Opt<ITokenUsageSummary | null, Reason.OptionalInput>,
+  ): string {
     const frontmatter: PlanFrontmatter = {
       trace_id: metadata.traceId,
       request_id: metadata.requestId,

@@ -15,6 +15,7 @@ import { ToolReflectionIssueType, ToolReflectionSeverity } from "@exaix/core";
 import { JSONValueSchema, type LogMetadata, toSafeJson } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IToolCall {
   id: string;
@@ -195,7 +196,7 @@ export class ToolReflector {
   async executeWithReflection(
     toolCall: IToolCall,
     executor: (params: Record<string, JSONValue>) => Promise<IToolResult>,
-    traceId?: string,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<IReflectedToolResult> {
     let currentParams = { ...toolCall.parameters };
     let retryCount = 0;
@@ -267,7 +268,7 @@ export class ToolReflector {
   async executeMultiple(
     toolCalls: IToolCall[],
     executor: (call: IToolCall) => Promise<IToolResult>,
-    traceId?: string,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<IReflectedToolResult[]> {
     if (!this.config.parallelExecution) {
       const results: IReflectedToolResult[] = [];
@@ -308,7 +309,11 @@ export class ToolReflector {
   /**
    * Reflect on a tool result
    */
-  private async reflect(toolCall: IToolCall, result: IToolResult, traceId?: string): Promise<IToolReflection> {
+  private async reflect(
+    toolCall: IToolCall,
+    result: IToolResult,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): Promise<IToolReflection> {
     const reflectionPrompt = this.config.reflectionPromptTemplate
       .replace("{tool_name}", toolCall.name)
       .replace("{purpose}", toolCall.purpose)
@@ -473,7 +478,7 @@ export class ToolReflector {
 export function createToolReflector(
   agentRunner: IToolAgentExecutor,
   outputValidator: IOutputValidator,
-  config?: IToolReflectorConfig,
+  config?: Opt<IToolReflectorConfig, Reason.FactoryPreset>,
 ): ToolReflector {
   return new ToolReflector(agentRunner, outputValidator, config);
 }
@@ -481,7 +486,7 @@ export function createToolReflector(
 export function createStrictToolReflector(
   agentRunner: IToolAgentExecutor,
   outputValidator: IOutputValidator,
-  config?: IToolReflectorConfig,
+  config?: Opt<IToolReflectorConfig, Reason.FactoryPreset>,
 ): ToolReflector {
   return new ToolReflector(agentRunner, outputValidator, {
     maxRetries: 3,
@@ -494,7 +499,7 @@ export function createStrictToolReflector(
 export function createFastToolReflector(
   agentRunner: IToolAgentExecutor,
   outputValidator: IOutputValidator,
-  config?: IToolReflectorConfig,
+  config?: Opt<IToolReflectorConfig, Reason.FactoryPreset>,
 ): ToolReflector {
   return new ToolReflector(agentRunner, outputValidator, {
     maxRetries: 1,

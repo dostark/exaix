@@ -10,6 +10,7 @@ import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import type { IStepResult } from "./flow_runner.ts";
 import type { JSONValue } from "@exaix/core";
 import { evaluateExpression, type ExpressionContext, validateExpression } from "./safe_expression.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Context available during condition evaluation
@@ -204,7 +205,7 @@ export class ConditionEvaluator {
   /**
    * Try to parse content as JSON, return undefined if not valid JSON
    */
-  private tryParseJson(content?: string): JSONValue | undefined {
+  private tryParseJson(content?: Opt<string, Reason.OptionalInput>): JSONValue | undefined {
     if (!content) return undefined;
 
     try {

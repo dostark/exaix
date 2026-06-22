@@ -8,6 +8,7 @@
 import type { IModelProvider, IResolvedProviderOptions } from "../types.ts";
 import { getApiKeyWithOptionalPersistence } from "../provider_api_key.ts";
 import { ProviderFactoryError } from "../errors.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Interface that all provider factories must implement.
@@ -28,7 +29,11 @@ export interface IProviderFactory {
 export abstract class AbstractProviderFactory implements IProviderFactory {
   abstract create(options: IResolvedProviderOptions): Promise<IModelProvider>;
 
-  protected generateId(provider: string, model: string, id?: string): string {
+  protected generateId(
+    provider: string,
+    model: string,
+    id?: Opt<string, Reason.AbstractBoundary>,
+  ): string {
     return id ?? `${provider}-${model}`;
   }
 }

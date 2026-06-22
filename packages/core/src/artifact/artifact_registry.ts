@@ -18,6 +18,7 @@ import { coerceReviewStatus, ReviewStatus } from "@exaix/core/status";
 import { ArtifactSubtype as ArtifactType, DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH } from "@exaix/core";
 import type { IReviewStatus } from "@exaix/core/status";
 import type { IArtifactRepository, IArtifactRow } from "./artifact_repository.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Generate short ID for artifacts
@@ -62,8 +63,8 @@ export class ArtifactRegistry {
     requestId: string,
     identity: string,
     content: string,
-    portal?: string,
-    targetBranch?: string,
+    portal?: Opt<string, Reason.OptionalContext>,
+    targetBranch?: Opt<string, Reason.OptionalContext>,
   ): Promise<string> {
     const artifactId = `artifact-${shortId()}`;
     const relativeFilePath = join(DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, `${artifactId}.md`);

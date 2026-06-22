@@ -8,6 +8,7 @@
 
 import { GeneralStatus } from "../types/enums.ts";
 import type { JSONValue } from "../types/json.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export const ReviewStatus = {
   PENDING: GeneralStatus.PENDING,
@@ -31,7 +32,7 @@ export function isReviewStatus(value: ReviewStatusCandidate): value is IReviewSt
 
 export function coerceReviewStatus(
   value: ReviewStatusCandidate,
-  fallback: IReviewStatus = ReviewStatus.PENDING,
+  fallback: Opt<IReviewStatus, Reason.CoercionDefault> = ReviewStatus.PENDING,
 ): IReviewStatus {
   return isReviewStatus(value) ? value : fallback;
 }

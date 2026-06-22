@@ -24,13 +24,16 @@ import {
   TOKENS_PER_COST_UNIT,
 } from "../../mod.ts";
 import { ProviderType } from "../../mod.ts";
+import type { Opt, Reason } from "../types/mod.ts";
 
 /**
  * Service for tracking and managing LLM provider costs.
  * Provides budget enforcement and cost analytics.
  */
 export class CostTracker implements ICostTracker {
-  private static getCostRates(config?: Config): Record<string, number> {
+  private static getCostRates(
+    config?: Opt<Config, Reason.FactoryPreset>,
+  ): Record<string, number> {
     const configuredRates = config?.cost_tracking?.rates ?? {};
     const defaultRates: Record<string, number> = {
       [ProviderType.OPENAI]: COST_RATE_OPENAI,
@@ -108,8 +111,8 @@ export class CostTracker implements ICostTracker {
     provider: string,
     model: string,
     usage: { promptTokens: number; completionTokens: number; totalTokens: number },
-    traceId?: string,
-    portal?: string,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+    portal?: Opt<string, Reason.OptionalContext>,
   ): Promise<number> {
     const cost = this.estimateCost(provider, usage.totalTokens);
     await this.trackRequest(provider, usage.totalTokens, {
@@ -189,13 +192,16 @@ export class CostTracker implements ICostTracker {
     return 0;
   }
 
-  async isWithinBudget(provider?: string, budget?: number): Promise<boolean> {
+  async isWithinBudget(
+    provider?: Opt<string, Reason.QueryFilter>,
+    budget?: Opt<number, Reason.SensibleDefault>,
+  ): Promise<boolean> {
     const dailyBudget = budget ?? this.config?.provider_strategy?.max_daily_cost_usd ?? 5.0;
     const dailyCost = await this.getDailyCost(provider);
     return dailyCost < dailyBudget;
   }
 
-  async getDailyCost(provider?: string): Promise<number> {
+  async getDailyCost(provider?: Opt<string, Reason.QueryFilter>): Promise<number> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);

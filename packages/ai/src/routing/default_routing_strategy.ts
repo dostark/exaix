@@ -18,6 +18,7 @@ import { isCIMode, isTestMode } from "@exaix/core/config";
 import { PricingTier, ProviderCostTier, TaskComplexity } from "@exaix/core";
 import type { IProviderHealthChecker, ISelectionCriteria } from "../provider_selector.ts";
 import type { IProviderRoutingStrategy } from "./provider_routing_strategy.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /** A registered provider entry with its factory and metadata. */
 type ProviderEntry = { factory: IProviderFactory; metadata: IProviderMetadata };
@@ -96,7 +97,9 @@ export class DefaultRoutingStrategy implements IProviderRoutingStrategy {
     return this.selectProvider(criteria);
   }
 
-  private async trySelectEnvProvider(providerName?: string): Promise<string | null> {
+  private async trySelectEnvProvider(
+    providerName?: Opt<string, Reason.OptionalInput>,
+  ): Promise<string | null> {
     if (!providerName) return null;
 
     const metadata = this.registry.getProviderMetadata(providerName);

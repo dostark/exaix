@@ -39,6 +39,7 @@ import {
   QG_TECH_SPECIFICS_PATTERN,
   QG_TECHNICAL_SPECIFICS_BONUS,
 } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 function mapScoreToLevel(score: number): RequestQualityLevel {
   if (score >= 85) return RequestQualityLevel.EXCELLENT;
@@ -168,7 +169,7 @@ function runFullHeuristicScan(
 
 export function assessHeuristic(
   requestText: string,
-  existingAnalysis?: IRequestAnalysis,
+  existingAnalysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
 ): IRequestQualityAssessment {
   const startMs = performance.now();
 

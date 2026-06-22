@@ -8,6 +8,7 @@
 
 import { GeneralStatus } from "../types/enums.ts";
 import type { JSONValue } from "../types/json.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export const RequestStatus = {
   PENDING: GeneralStatus.PENDING,
@@ -48,7 +49,7 @@ export function isRequestStatus(value: JSONValue): value is RequestStatus {
 
 export function coerceRequestStatus(
   value: JSONValue,
-  fallback: RequestStatus = RequestStatus.PENDING,
+  fallback: Opt<RequestStatus, Reason.CoercionDefault> = RequestStatus.PENDING,
 ): RequestStatus {
   return isRequestStatus(value) ? value : fallback;
 }

@@ -9,6 +9,7 @@
 import { TUI_ACTION_SEARCH } from "@exaix/tui/helpers/constants.ts";
 import { GeneralStatus } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export const MemoryTuiScope = {
   GLOBAL: "global",
@@ -34,7 +35,7 @@ export function isMemoryTuiScope(value: JSONValue): value is IMemoryTuiScopeType
 
 export function coerceMemoryTuiScope(
   value: JSONValue,
-  fallback: IMemoryTuiScopeType = MemoryTuiScope.PROJECTS,
+  fallback: Opt<IMemoryTuiScopeType, Reason.CoercionDefault> = MemoryTuiScope.PROJECTS,
 ): IMemoryTuiScopeType {
   return isMemoryTuiScope(value) ? value : fallback;
 }

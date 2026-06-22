@@ -28,6 +28,7 @@ import {
   PROVIDER_OPENROUTER,
   X_TITLE_HEADER,
 } from "./constants.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export type OpenRouterSortStrategy = "throughput" | "latency" | "cost";
 export type OpenRouterDataCollection = "allow" | "deny";
@@ -105,7 +106,10 @@ export class OpenRouterProvider extends BaseProvider {
   }
 
   /** Build the request body with optional OpenRouter routing fields injected. */
-  private buildRequestBody(prompt: string, options?: IModelOptions): OpenRouterRequestBody {
+  private buildRequestBody(
+    prompt: string,
+    options?: Opt<IModelOptions, Reason.AbstractBoundary>,
+  ): OpenRouterRequestBody {
     const body: OpenRouterRequestBody = {
       model: this.model,
       messages: [{ role: "user", content: prompt }],
@@ -130,7 +134,10 @@ export class OpenRouterProvider extends BaseProvider {
     return body;
   }
 
-  protected override async attemptGenerate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
+  protected override async attemptGenerate(
+    prompt: string,
+    options?: Opt<IModelOptions, Reason.AbstractBoundary>,
+  ): Promise<IGenerateResult> {
     const body = this.buildRequestBody(prompt, options);
     const headers: Record<string, string> = {
       "Content-Type": "application/json",

@@ -18,6 +18,7 @@ import {
   ToolSideEffectScope,
 } from "@exaix/core";
 import { type IToolManifestEntry, TOOL_MANIFEST } from "./manifest.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IMcpToolClassificationSets {
   readOnlyTools: ReadonlySet<McpToolName>;
@@ -38,7 +39,7 @@ function isLiveMcpTool(entry: IToolManifestEntry): boolean {
 }
 
 export function deriveMcpToolClassificationSets(
-  entries: readonly IToolManifestEntry[] = TOOL_MANIFEST,
+  entries: Opt<readonly IToolManifestEntry[], Reason.SensibleDefault> = TOOL_MANIFEST,
 ): IMcpToolClassificationSets {
   const readOnlyTools = new Set<McpToolName>();
   const writeTools = new Set<McpToolName>();

@@ -9,6 +9,7 @@
 import type { BlueprintLoader } from "./internal_types.ts";
 import { CapabilityMatcher } from "./capability_matcher.ts";
 import type { IRoutingCandidate, IRoutingMatchCriteria } from "@exaix/schemas/routing_policy.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface ICandidateDiscoveryOptions {
   allowDeprecated?: boolean;
@@ -23,7 +24,7 @@ export class CandidateDiscovery {
 
   async listCandidates(
     criteria: IRoutingMatchCriteria,
-    explicitIdentityId?: string,
+    explicitIdentityId?: Opt<string, Reason.OptionalInput>,
   ): Promise<IRoutingCandidate[]> {
     const blueprints = await this.blueprintLoader.listAll();
 

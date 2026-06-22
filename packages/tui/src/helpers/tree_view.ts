@@ -8,6 +8,7 @@
 
 import { colorize, getTheme, padEnd, visibleLength } from "./colors.ts";
 import { TUI_TREE_ICONS } from "./constants.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 // ===== Tree Node Types =====
 
@@ -98,9 +99,9 @@ const TREE_CHARS = {
  */
 export function flattenTree<T>(
   nodes: ITreeNode<T>[],
-  depth: number = 0,
-  prefix: string = "",
-  isParentLast: boolean = true,
+  depth: Opt<number, Reason.RecursiveOmit> = 0,
+  prefix: Opt<string, Reason.RecursiveOmit> = "",
+  isParentLast: Opt<boolean, Reason.RecursiveOmit> = true,
 ): IFlatTreeNode<T>[] {
   const result: IFlatTreeNode<T>[] = [];
   let globalIndex = 0;

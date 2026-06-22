@@ -11,6 +11,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import { ConfidenceAssessmentLevel } from "@exaix/core";
 import type { IMemoryUpdateProposal, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 import type { IMemoryExtractorService } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 export type IEligibleMemoryUpdateProposal = IMemoryUpdateProposal & {
   learning: IProposalLearning & { eligible_at: string };
 };
@@ -136,7 +137,9 @@ export class MemoryAutoApprovalService {
    * @param opts - Run options (e.g., dryRun)
    * @returns Summary of the run
    */
-  async runApprovalCycle(opts: { dryRun: boolean } = { dryRun: false }): Promise<IAutoApprovalResult> {
+  async runApprovalCycle(
+    opts: Opt<{ dryRun: boolean }, Reason.ExecutionConfig> = { dryRun: false },
+  ): Promise<IAutoApprovalResult> {
     const eligible = await this.listEligible();
     const runAt = new Date().toISOString();
 

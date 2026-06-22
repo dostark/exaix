@@ -6,6 +6,8 @@
  * @related-files ["packages/tui/src/helpers/tree_view.ts", "packages/tui/src/helpers/status_bar.ts"]
  */
 
+import type { Opt, Reason } from "@exaix/core/types";
+
 // ===== Theme Interface =====
 
 export interface ITuiTheme {
@@ -245,14 +247,14 @@ export function colorize(text: string, color: string, reset: string = ANSI.reset
 /**
  * Make text bold
  */
-export function bold(text: string, useColors: boolean = true): string {
+export function bold(text: string, useColors: Opt<boolean, Reason.UiDefault> = true): string {
   return useColors ? colorize(text, ANSI.bold) : text;
 }
 
 /**
  * Make text dim
  */
-export function dim(text: string, useColors: boolean = true): string {
+export function dim(text: string, useColors: Opt<boolean, Reason.UiDefault> = true): string {
   return useColors ? colorize(text, ANSI.dim) : text;
 }
 
@@ -302,7 +304,11 @@ export function visibleLength(text: string): number {
 /**
  * Pad string to width, accounting for ANSI codes
  */
-export function padEnd(text: string, width: number, char: string = " "): string {
+export function padEnd(
+  text: string,
+  width: number,
+  char: Opt<string, Reason.UiDefault> = " ",
+): string {
   const visible = visibleLength(text);
   if (visible >= width) return text;
   return text + char.repeat(width - visible);
@@ -311,7 +317,11 @@ export function padEnd(text: string, width: number, char: string = " "): string 
 /**
  * Pad string to width from start, accounting for ANSI codes
  */
-export function padStart(text: string, width: number, char: string = " "): string {
+export function padStart(
+  text: string,
+  width: number,
+  char: Opt<string, Reason.UiDefault> = " ",
+): string {
   const visible = visibleLength(text);
   if (visible >= width) return text;
   return char.repeat(width - visible) + text;

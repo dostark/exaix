@@ -25,6 +25,7 @@ import {
   type TreeRenderOptions,
 } from "@exaix/tui/helpers/tree_view.ts";
 import { createTreeViewState, type ITreeViewState } from "@exaix/tui/base/tree_view_state.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export abstract class BaseTreeView<T> extends TuiSessionBase {
   public state: ITreeViewState<T>;
@@ -239,7 +240,7 @@ export abstract class BaseTreeView<T> extends TuiSessionBase {
   async executeWithLoading<R>(
     message: string,
     action: () => Promise<R>,
-    successMessage?: (result: R) => string,
+    successMessage?: Opt<(result: R) => string, Reason.UiDefault>,
   ): Promise<R | null> {
     this.setLoading(true, message);
     try {

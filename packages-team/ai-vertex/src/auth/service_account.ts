@@ -12,6 +12,7 @@
 import { z } from "zod";
 import type { LogMetadata } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
+import type { Opt, Reason } from "@exaix/core/types";
 import { EVENT_AUTH_INVALID_SERVICE_ACCOUNT, GOOGLE_TOKEN_HOST_SUFFIX, PROVIDER_VERTEX } from "../constants.ts";
 
 /** True when the URL's host is under the allowlisted googleapis.com suffix. */
@@ -60,7 +61,10 @@ export function authEventPayload(fields: IProviderAuthEventPayload): LogMetadata
  * On any failure returns `null` and emits a redacted event — the raw value and
  * parse error are NEVER logged, since they may contain `private_key` material.
  */
-export function parseServiceAccountFromEnv(envVar: string, logger?: IEventLogger): ServiceAccountKey | null {
+export function parseServiceAccountFromEnv(
+  envVar: string,
+  logger?: Opt<IEventLogger, Reason.OptionalDependency>,
+): ServiceAccountKey | null {
   const raw = Deno.env.get(envVar);
   if (!raw) {
     return null;

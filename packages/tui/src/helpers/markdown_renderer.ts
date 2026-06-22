@@ -10,6 +10,7 @@
 import { ConfidenceLevel } from "@exaix/core";
 import { TUI_LAYOUT_FULL_WIDTH } from "./constants.ts";
 import { ANSI } from "./colors.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 // ===== Interfaces =====
 
@@ -198,8 +199,8 @@ export function renderSpinner(frame: number): string {
 export function renderProgressBar(
   current: number,
   total: number,
-  width: number = 20,
-  useColors: boolean = true,
+  width: Opt<number, Reason.UiDefault> = 20,
+  useColors: Opt<boolean, Reason.UiDefault> = true,
 ): string {
   const percent = Math.min(1, Math.max(0, current / total));
   const filled = Math.round(width * percent);

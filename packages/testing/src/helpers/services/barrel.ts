@@ -21,6 +21,7 @@ import type { JSONValue, LogMetadata } from "@exaix/core/types";
 import { LogLevel } from "@exaix/core";
 import { createTestConfig } from "../../../../ai/tests/helpers/test_config.ts";
 import { TEST_AGENT_NAME, TEST_DEFAULT_AGENT, TEST_ID } from "../constants.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 type IMockFlowRunner = IFlowRunner & {
   executedFlows: Array<{ flow: IFlow; request: { userPrompt: string; traceId?: string; requestId?: string } }>;
@@ -155,7 +156,12 @@ export function createMockEventLogger(): IMockEventLogger {
       });
     }
 
-    fatal(action: string, target: string | null, payload?: LogMetadata, traceId?: string): Promise<void> {
+    fatal(
+      action: string,
+      target: string | null,
+      payload?: Opt<LogMetadata, Reason.OptionalContext>,
+      traceId?: string,
+    ): Promise<void> {
       return this.log({
         level: LogLevel.FATAL,
         action,

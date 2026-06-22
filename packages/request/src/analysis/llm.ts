@@ -20,6 +20,7 @@ import {
 import { AnalysisMode } from "@exaix/core/types";
 import type { IRequestAnalysisContext } from "@exaix/core/types";
 import { ANALYZER_VERSION } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 const RequestAnalysisCoreSchema = RequestAnalysisSchema.omit({ metadata: true });
 
@@ -74,7 +75,9 @@ Your task:
 
 {CONTEXT_SECTION}`;
 
-function buildContextSection(context?: IRequestAnalysisContext): string {
+function buildContextSection(
+  context?: Opt<IRequestAnalysisContext, Reason.OptionalContext>,
+): string {
   let contextSection = "";
   if (context) {
     const parts: string[] = [];
@@ -96,7 +99,10 @@ function buildContextSection(context?: IRequestAnalysisContext): string {
   return contextSection;
 }
 
-function buildPrompt(requestText: string, context?: IRequestAnalysisContext): string {
+function buildPrompt(
+  requestText: string,
+  context?: Opt<IRequestAnalysisContext, Reason.OptionalContext>,
+): string {
   const contextSection = buildContextSection(context);
 
   return ANALYSIS_PROMPT_TEMPLATE

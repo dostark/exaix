@@ -22,6 +22,7 @@ import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
 import { SESSION_GATE_DECISIONS, SessionReturnSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionDecision, SessionReturn, SessionTool } from "@exaix/schemas/session_delegate.ts";
 import { DELEGATE_STDOUT_DRAIN_MS } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /** Args forwarded to the (injectable) spawn function, for testability. */
 export interface ISpawnArgs {
@@ -107,7 +108,7 @@ export class HeadlessSessionLauncher {
     child: Deno.ChildProcess,
     traceId: string,
     returnPath: string,
-    worktreePath?: string,
+    worktreePath?: Opt<string, Reason.OptionalInput>,
   ): Promise<boolean> {
     let raw: string;
     try {

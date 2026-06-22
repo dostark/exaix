@@ -28,6 +28,7 @@ import type {
   IPortalKnowledgeConfig,
   IPortalKnowledgeService,
 } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export class PortalService {
   private portalsDir: string;
@@ -279,7 +280,7 @@ export class PortalService {
     });
   }
 
-  async verify(alias?: string): Promise<IVerificationResult[]> {
+  async verify(alias?: Opt<string, Reason.OptionalContext>): Promise<IVerificationResult[]> {
     const results: IVerificationResult[] = [];
     const portalsToVerify = alias ? [alias] : (await this.list()).map((p) => p.alias);
 
@@ -450,7 +451,10 @@ export class PortalService {
     ].join("\n");
   }
 
-  private async validateBranchName(branch: string, opts?: { label?: string }): Promise<void> {
+  private async validateBranchName(
+    branch: string,
+    opts?: Opt<{ label?: string }, Reason.OptionalInput>,
+  ): Promise<void> {
     const label = opts?.label ?? GIT_CMD_BRANCH;
     if (typeof branch !== "string" || branch.trim().length === 0) {
       throw new Error(`Invalid ${label}: must be non-empty string`);

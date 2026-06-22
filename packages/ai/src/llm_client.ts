@@ -15,6 +15,7 @@ import type { IModelProvider } from "./types.ts";
 
 import { z } from "zod";
 import type { JSONValue } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 interface RawLlmError {
   message?: string;
@@ -98,7 +99,9 @@ export class LlmClient implements ILlmClient {
    * Blueprint overrides (provider:model) take priority over env/config.
    * Falls back to the standard ProviderFactory resolution when no model is specified.
    */
-  private async resolveProvider(model?: string): Promise<IModelProvider> {
+  private async resolveProvider(
+    model?: Opt<string, Reason.AbstractBoundary>,
+  ): Promise<IModelProvider> {
     const overrides = LlmClient.parseModelString(model);
 
     // Scoped env var override so blueprint model takes priority

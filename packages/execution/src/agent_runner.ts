@@ -44,6 +44,7 @@ import {
   PORTAL_KNOWLEDGE_KEY,
 } from "@exaix/core";
 import type { IRetryContext, IRetryPolicy, IRetryPolicyConfig, IRetryResult } from "@exaix/core/request";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Blueprint defines the agent's persona and system instructions
@@ -637,7 +638,7 @@ export class AgentRunner implements IAgentRunner {
   private async constructPrompt(
     blueprint: IBlueprint,
     request: IParsedRequest,
-    skillContext?: string,
+    skillContext?: Opt<string, Reason.OptionalContext>,
   ): Promise<string> {
     const k = ContextSegmentKindSchema.enum;
     type SegmentEntry = { content: string; kind: IContextSegment["kind"]; priority: number; nonCompactable: boolean };

@@ -6,6 +6,8 @@
  * @description Minimal vendored text utilities for skill keyword extraction.
  */
 
+import type { Opt, Reason } from "@exaix/core/types";
+
 const STOP_WORDS = new Set([
   "the",
   "a",
@@ -111,7 +113,10 @@ const STOP_WORDS = new Set([
   "get",
 ]);
 
-export function extractKeywords(text: string, minLength = 3): string[] {
+export function extractKeywords(
+  text: string,
+  minLength: Opt<number, Reason.SensibleDefault> = 3,
+): string[] {
   if (!text) return [];
 
   const words = text.toLowerCase().split(/[^a-z0-9]+/);

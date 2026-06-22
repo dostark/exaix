@@ -27,6 +27,7 @@ import type { ILlmClient, ToolArgs } from "@exaix/ai";
 import type { IMcpClient } from "@exaix/mcp";
 import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 import type { IExecutionMilestone } from "@exaix/schemas";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Journal entry for activity logging
@@ -334,8 +335,8 @@ export class DynamicStepExecutor {
     args: ToolArgs,
     stepId: string,
     traceId: string,
-    timeoutS?: number,
-    reason?: string,
+    timeoutS?: Opt<number, Reason.ExecutionConfig>,
+    reason?: Opt<string, Reason.OptionalInput>,
   ): ToolConfirmationRequest {
     const requestedAt = new Date();
     const expiresAt = new Date(
@@ -354,7 +355,10 @@ export class DynamicStepExecutor {
     };
   }
 
-  private formatDenialObservation(tool: McpToolName, reason?: string): string {
+  private formatDenialObservation(
+    tool: McpToolName,
+    reason?: Opt<string, Reason.OptionalInput>,
+  ): string {
     return `Tool '${tool}' call denied: ${reason ?? "User declined"}`;
   }
 }

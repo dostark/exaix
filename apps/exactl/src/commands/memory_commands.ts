@@ -14,7 +14,7 @@ import { MemoryAutoApprovalAdapter } from "../../../../apps/common/adapters/memo
 import { MemoryBankSource, MemoryScope, MemoryType, SkillStatus } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
 import type { SkillDefinition } from "@exaix/schemas/memory_bank.ts";
-import type { ISkillMatchRequest } from "@exaix/core/types";
+import type { ISkillMatchRequest, Opt, Reason } from "@exaix/core/types";
 import type { ILearning, IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
 import { MEMORY_COMMAND_DEFAULTS } from "@exaix/cli/config.ts";
 import { MemoryFormatter } from "@exaix/cli/formatters/memory_formatter.ts";
@@ -267,11 +267,11 @@ export class MemoryCommands extends BaseCommand {
    * @returns Formatted execution list
    */
   async executionList(
-    options?: {
+    options?: Opt<{
       portal?: string;
       limit?: number;
       format?: OutputFormat;
-    },
+    }, Reason.OptionalInput>,
   ): Promise<string> {
     const format = options?.format || MEMORY_COMMAND_DEFAULTS.FORMAT;
     const limit = options?.limit || MEMORY_COMMAND_DEFAULTS.LIMIT;
@@ -491,7 +491,10 @@ export class MemoryCommands extends BaseCommand {
    * @param proposalId - Proposal ID to approve
    * @returns Success or error message
    */
-  async pendingApprove(proposalId?: string, dryRun = false): Promise<string> {
+  async pendingApprove(
+    proposalId?: Opt<string, Reason.OptionalInput>,
+    dryRun = false,
+  ): Promise<string> {
     if (dryRun) {
       if (proposalId) {
         return "Error: --dry-run is only supported without a proposal ID. Use `exactl memory pending approve --dry-run`.";

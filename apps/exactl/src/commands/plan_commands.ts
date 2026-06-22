@@ -33,7 +33,7 @@ import { type IPlanAmendmentPatch, ZPlanAmendmentPatch } from "@exaix/schemas/pl
 import { type PlanFrontmatter, PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
 import type { JSONValue } from "@exaix/core";
 
-import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types";
+import type { IPlanDetails, IPlanMetadata, Opt, Reason } from "@exaix/core/types";
 
 const FIELD_PLAN_ID = "planId";
 
@@ -818,7 +818,9 @@ export class PlanCommands extends BaseCommand {
   /**
    * Resolve which directories to scan based on status filter.
    */
-  private resolvePlanDirectories(statusFilter?: PlanStatusType): string[] {
+  private resolvePlanDirectories(
+    statusFilter?: Opt<PlanStatusType, Reason.QueryFilter>,
+  ): string[] {
     if (!statusFilter) {
       return [
         this.workspacePlansDir,

@@ -7,6 +7,7 @@
  */
 
 import { KeyModifier } from "../types/enums.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 // ===== Key Handling Interfaces =====
 
@@ -400,7 +401,10 @@ export function parseKey(raw: string): IKeyEvent {
 /**
  * Format key for display
  */
-export function formatKey(key: string, modifiers?: KeyModifier[]): string {
+export function formatKey(
+  key: string,
+  modifiers?: Opt<KeyModifier[], Reason.UiDefault>,
+): string {
   const parts: string[] = [];
 
   if (modifiers) {

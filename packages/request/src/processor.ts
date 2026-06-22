@@ -81,6 +81,7 @@ import { RequestQualityRecommendation } from "@exaix/schemas/request_quality_ass
 import { ClarificationSessionStatus } from "@exaix/schemas/clarification_session.ts";
 import type { IRequestSpecification } from "@exaix/schemas/request_specification.ts";
 import type { EnhancedRequest, SessionMemoryService } from "@exaix/memory";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IRequestProcessingContext extends IServiceContext {
   filePath: string;
@@ -406,7 +407,7 @@ export class RequestProcessor {
     filePath: string,
     requestId: string,
     traceLogger: IEventLogger,
-    traceId?: string,
+    traceId: Opt<string, Reason.TraceAbsent>,
   ): Promise<
     { earlyReturn: true } | { earlyReturn: false; enrichedBody?: string; specification?: IRequestSpecification }
   > {
@@ -458,7 +459,7 @@ export class RequestProcessor {
     filePath: string,
     requestId: string,
     body: string,
-    traceId?: string,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<boolean> {
     const sd = this.config.session_delegate;
     if (!sd?.enabled || !sd.gates?.includes("refinement") || !this.processorConfig.onDelegateRefinement) {
@@ -475,7 +476,7 @@ export class RequestProcessor {
     filePath: string,
     requestId: string,
     body: string,
-    traceId?: string,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<void> {
     await this.statusManager.updateStatus(filePath, RequestStatus.REFINING);
     try {
@@ -583,10 +584,10 @@ export class RequestProcessor {
     requestId: string,
     traceId: string,
     traceLogger: IEventLogger,
-    analysis?: IRequestAnalysis,
-    portalKnowledge?: IPortalKnowledge,
-    specification?: IRequestSpecification,
-    memoryContext?: EnhancedRequest,
+    analysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
+    portalKnowledge?: Opt<IPortalKnowledge, Reason.OptionalInput>,
+    specification?: Opt<IRequestSpecification, Reason.OptionalInput>,
+    memoryContext?: Opt<EnhancedRequest, Reason.OptionalInput>,
   ): Promise<string | null> {
     if (kind === RequestKind.FLOW) {
       return this.processFlowRequest(frontmatter, filePath, requestId, traceId, traceLogger, analysis, portalKnowledge);
@@ -612,8 +613,8 @@ export class RequestProcessor {
     requestId: string,
     traceId: string,
     traceLogger: IEventLogger,
-    analysis?: IRequestAnalysis,
-    _portalKnowledge?: IPortalKnowledge,
+    analysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
+    _portalKnowledge?: Opt<IPortalKnowledge, Reason.OptionalInput>,
   ): Promise<string | null> {
     if (this.flowValidator) {
       const validation = await this.flowValidator.validateFlow(frontmatter.flow!);
@@ -710,10 +711,10 @@ export class RequestProcessor {
     requestId: string,
     traceId: string,
     traceLogger: IEventLogger,
-    analysis?: IRequestAnalysis,
-    portalKnowledge?: IPortalKnowledge,
-    specification?: IRequestSpecification,
-    memoryContext?: EnhancedRequest,
+    analysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
+    portalKnowledge?: Opt<IPortalKnowledge, Reason.OptionalInput>,
+    specification?: Opt<IRequestSpecification, Reason.OptionalInput>,
+    memoryContext?: Opt<EnhancedRequest, Reason.OptionalInput>,
   ): Promise<string | null> {
     const identityId = frontmatter.identity || frontmatter.identity;
     const loadedBlueprint = await this.loadBlueprintWithFallback(identityId!, traceLogger);
@@ -967,7 +968,7 @@ ${result.content}`,
     filePath: string,
     requestId: string,
     traceLogger: IEventLogger,
-    frontmatter?: IRequestFrontmatter,
+    frontmatter?: Opt<IRequestFrontmatter, Reason.OptionalInput>,
   ): Promise<void> {
     const errorMessage = error instanceof Error ? error.message : String(error);
 
@@ -1094,7 +1095,7 @@ Raw Details: ${args.rawDetails}
   private classifyTaskComplexity(
     blueprint: IBlueprint,
     request: IParsedRequest,
-    analysis?: IRequestAnalysis,
+    analysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
   ): TaskComplexity {
     if (analysis?.complexity) {
       return this.mapAnalysisComplexity(analysis.complexity);
@@ -1120,7 +1121,9 @@ Raw Details: ${args.rawDetails}
     }
   }
 
-  private checkContentHeuristics(body?: string): TaskComplexity | null {
+  private checkContentHeuristics(
+    body?: Opt<string, Reason.OptionalInput>,
+  ): TaskComplexity | null {
     if (!body) return null;
     const fileRefs = body.match(COMPLEXITY_FILE_REF_PATTERN);
     if (fileRefs && fileRefs.length >= COMPLEXITY_FILE_REF_THRESHOLD_HIGH) return TaskComplexity.COMPLEX;
@@ -1130,7 +1133,9 @@ Raw Details: ${args.rawDetails}
     return null;
   }
 
-  private classifyByAgentId(identityId?: string): TaskComplexity {
+  private classifyByAgentId(
+    identityId?: Opt<string, Reason.OptionalContext>,
+  ): TaskComplexity {
     const id = identityId || "";
     if (id.includes("analyzer") || id.includes("summarizer")) return TaskComplexity.SIMPLE;
     if (id.includes("coder") || id.includes("planner") || id.includes("architect")) {
@@ -1139,7 +1144,10 @@ Raw Details: ${args.rawDetails}
     return TaskComplexity.MEDIUM;
   }
 
-  private async buildPortalContext(portalAlias?: string, traceLogger?: IEventLogger): Promise<string | null> {
+  private async buildPortalContext(
+    portalAlias?: Opt<string, Reason.OptionalContext>,
+    traceLogger?: Opt<IEventLogger, Reason.OptionalDependency>,
+  ): Promise<string | null> {
     if (!portalAlias) return null;
 
     const portal = this.config.portals.find((p) => p.alias === portalAlias);
@@ -1219,7 +1227,7 @@ Raw Details: ${args.rawDetails}
  */
 export function buildPortalKnowledgeSummary(
   knowledge: IPortalKnowledge,
-  maxLines = PORTAL_KNOWLEDGE_PROMPT_MAX_LINES,
+  maxLines: Opt<number, Reason.SensibleDefault> = PORTAL_KNOWLEDGE_PROMPT_MAX_LINES,
 ): string {
   const lines: string[] = ["## Portal Knowledge Summary"];
 
@@ -1250,7 +1258,9 @@ export function buildPortalKnowledgeSummary(
 }
 
 /** Wrap an IDisplayService as IEventLogger, adding .child() if missing. */
-function wrapLogger(display?: IEventLogger): IEventLogger | undefined {
+function wrapLogger(
+  display?: Opt<IEventLogger, Reason.OptionalDependency>,
+): IEventLogger | undefined {
   if (!display) return undefined;
   if (typeof (display as { child?: (...args: Array<never>) => void }).child === "function") return display;
   const makeChild = (overrides: Partial<ILogEvent>): IEventLogger => ({

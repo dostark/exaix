@@ -19,6 +19,7 @@ import type { IMemoryEmbeddingService } from "@exaix/core/types";
 import { HnswVectorIndex } from "./vector_index.ts";
 import { OllamaEmbeddingClient } from "@exaix/ai-ollama";
 import { computeTextHash, DiskBackedEmbeddingCache } from "./disk_cache.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 const EMBEDDING_CACHE_MAX_ENTRIES = 512;
 
@@ -26,6 +27,7 @@ const EMBEDDING_CACHE_MAX_ENTRIES = 512;
  * Estimated cost per embedding API call in USD.
  * Based on ~100 tokens per query at ~$0.002/1K tokens.
  */
+
 const ESTIMATED_EMBED_COST_USD = 0.0002;
 
 interface IEmbeddingFile {
@@ -120,7 +122,7 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
 
   async searchByEmbedding(
     query: string,
-    options?: { limit?: number; threshold?: number },
+    options?: Opt<{ limit?: number; threshold?: number }, Reason.ExecutionConfig>,
   ): Promise<IEmbeddingSearchResult[]> {
     const manifest = await this.loadManifest();
     if (manifest.index.length === 0) return [];

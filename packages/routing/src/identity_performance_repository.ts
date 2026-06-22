@@ -9,6 +9,7 @@
 import type { IActivityRecord, IJournalFilterOptions } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IIdentityPerformanceSnapshot {
   identityId: string;
@@ -72,8 +73,8 @@ export class IdentityPerformanceRepository implements IIdentityPerformanceReposi
 
   async getPerformanceByCapability(
     capability: string,
-    portalName?: string,
-    options?: IBuildSnapshotOptions,
+    portalName?: Opt<string, Reason.QueryFilter>,
+    options?: Opt<IBuildSnapshotOptions, Reason.QueryFilter>,
   ): Promise<IIdentityPerformanceSnapshot[]> {
     const filter: IJournalFilterOptions = { payload: capability, limit: 1000 };
     if (options?.maxAgeMs) {
@@ -85,7 +86,7 @@ export class IdentityPerformanceRepository implements IIdentityPerformanceReposi
 
   async getPerformanceByIdentity(
     identityId: string,
-    options?: IBuildSnapshotOptions,
+    options?: Opt<IBuildSnapshotOptions, Reason.QueryFilter>,
   ): Promise<IIdentityPerformanceSnapshot[]> {
     const filter: IJournalFilterOptions = { identityId, limit: 1000 };
     if (options?.maxAgeMs) {
@@ -97,9 +98,9 @@ export class IdentityPerformanceRepository implements IIdentityPerformanceReposi
 
   private buildSnapshots(
     records: IActivityRecord[],
-    capability?: string,
-    portalName?: string,
-    options?: IBuildSnapshotOptions,
+    capability?: Opt<string, Reason.QueryFilter>,
+    portalName?: Opt<string, Reason.QueryFilter>,
+    options?: Opt<IBuildSnapshotOptions, Reason.QueryFilter>,
   ): IIdentityPerformanceSnapshot[] {
     const buckets = new Map<string, SnapshotAccumulator>();
     const now = Date.now();

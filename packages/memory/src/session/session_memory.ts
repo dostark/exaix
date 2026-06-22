@@ -35,6 +35,7 @@ import {
   MEMORY_TIER_SEMANTIC_PROMOTION_ACCESS_COUNT,
   MemoryTier,
 } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 function mapConfidenceLevelToAssessment(
   confidence: ConfidenceLevel,
@@ -198,8 +199,8 @@ export class SessionMemoryService {
    */
   async lookupMemories(
     query: string,
-    tokenCap?: number,
-    options?: Partial<SessionMemoryConfig>,
+    tokenCap?: Opt<number, Reason.ExecutionConfig>,
+    options?: Opt<Partial<SessionMemoryConfig>, Reason.ExecutionConfig>,
   ): Promise<MemoryItem[]> {
     const cfg = { ...this.config, ...options };
 
@@ -318,7 +319,7 @@ export class SessionMemoryService {
    */
   async enhanceRequest(
     request: string,
-    options?: Partial<SessionMemoryConfig>,
+    options?: Opt<Partial<SessionMemoryConfig>, Reason.ExecutionConfig>,
   ): Promise<EnhancedRequest> {
     const cfg = { ...this.config, ...options };
     const startTime = performance.now();
@@ -501,7 +502,7 @@ export class SessionMemoryService {
    */
   async getMemoriesByTag(
     tags: string[],
-    options?: Partial<SessionMemoryConfig>,
+    options?: Opt<Partial<SessionMemoryConfig>, Reason.ExecutionConfig>,
   ): Promise<MemoryItem[]> {
     const cfg = { ...this.config, ...options };
 

@@ -36,6 +36,7 @@ import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IEventLogger } from "./logger/event_logger.ts";
 import { DomainEventType } from "@exaix/core/events";
 import { TaskType } from "./types/enums.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IAllocationHints {
   memoryUsedTokens?: number;
@@ -56,7 +57,9 @@ export interface IPromptBudgetSectionsWeights {
   loopHistory: number;
 }
 
-function normalizeBudgetPolicy(policy?: Partial<IBudgetPolicy>): IBudgetPolicy {
+function normalizeBudgetPolicy(
+  policy?: Opt<Partial<IBudgetPolicy>, Reason.FactoryPreset>,
+): IBudgetPolicy {
   return {
     cloud: policy?.cloud ?? DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED,
     local: policy?.local ?? DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED,
@@ -75,7 +78,11 @@ export class PromptBudgetAllocator {
     this.logger = logger;
   }
 
-  allocate(modelId: string, hints?: IAllocationHints, analysis?: IRequestAnalysis): Promise<IPromptBudget> {
+  allocate(
+    modelId: string,
+    hints?: Opt<IAllocationHints, Reason.OptionalInput>,
+    analysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
+  ): Promise<IPromptBudget> {
     const isLocalModel = this._isLocalModel(modelId);
     const totalTokens = this._resolveTotalTokens(modelId, isLocalModel);
 
@@ -199,7 +206,7 @@ export class PromptBudgetAllocator {
 
   private _calculateSurplus(
     sections: IPromptBudgetSections,
-    hints?: IAllocationHints,
+    hints?: Opt<IAllocationHints, Reason.OptionalInput>,
   ): number {
     let surplus = 0;
 
@@ -222,7 +229,7 @@ export class PromptBudgetAllocator {
   }
 
   /** Sum hinted usage values, or 0 if no hints provided. */
-  private _calculateHintTotal(hints?: IAllocationHints): number {
+  private _calculateHintTotal(hints?: Opt<IAllocationHints, Reason.OptionalInput>): number {
     if (!hints) return 0;
     return (hints.systemUsedTokens ?? 0) +
       (hints.planUsedTokens ?? 0) +
@@ -236,7 +243,9 @@ export class PromptBudgetAllocator {
    * Adjust weight ratios based on request analysis.
    * Returns the adjusted weight object, or SECTION_BASE_WEIGHTS if no analysis.
    */
-  private _adjustWeights(analysis?: IRequestAnalysis): IPromptBudgetSectionsWeights {
+  private _adjustWeights(
+    analysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
+  ): IPromptBudgetSectionsWeights {
     if (!analysis) return SECTION_BASE_WEIGHTS;
 
     const weights: IPromptBudgetSectionsWeights = { ...SECTION_BASE_WEIGHTS };
