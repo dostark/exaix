@@ -10,6 +10,7 @@ import { relative } from "@std/path";
 import { walk } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
+import type { Opt, Reason } from "@exaix/core/types";
 import { DomainEventType } from "@exaix/core/events";
 
 // ============================================================================
@@ -164,7 +165,7 @@ export async function discoverPortalResources(
  */
 export async function discoverAllResources(
   config: Config,
-  logger?: IEventLogger,
+  logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   options: {
     maxDepth?: number;
     includeHidden?: boolean;

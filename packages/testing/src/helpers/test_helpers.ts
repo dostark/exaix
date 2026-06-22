@@ -21,6 +21,7 @@ import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import { ExaPathDefaults, LogLevel, PortalOperation } from "@exaix/core";
 import { createGitServiceStub } from "@exaix/testing/helpers/mod.ts";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /** Local interface matching IConfigService shape for use in testing package. */
 interface ILocalConfigService {
@@ -43,7 +44,9 @@ interface ILocalConfigService {
  * Returns an object matching `IDatabaseService` with no-op implementations so
  * tests can pass it without casting to `any`.
  */
-export function createStubDb(overrides: Partial<IDatabaseService> = {}): IDatabaseService {
+export function createStubDb(
+  overrides: Opt<Partial<IDatabaseService>, Reason.TestOverride> = {},
+): IDatabaseService {
   const base: IDatabaseService = {
     logActivity: (
       _actor: string,
@@ -167,7 +170,10 @@ export function createStubConfig(config: Config): ILocalConfigService {
  * Build a minimal IGenerateResult from a content string.
  * Convenience helper for test stubs.
  */
-export function makeGenerateResult(content: string, overrides: Partial<IGenerateResult> = {}): IGenerateResult {
+export function makeGenerateResult(
+  content: string,
+  overrides: Opt<Partial<IGenerateResult>, Reason.TestOverride> = {},
+): IGenerateResult {
   return {
     content,
     usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
@@ -181,7 +187,9 @@ export function makeGenerateResult(content: string, overrides: Partial<IGenerate
 /**
  * Create a stub IModelProvider for tests.
  */
-export function createStubProvider(responseContent = "Mock response"): IModelProvider {
+export function createStubProvider(
+  responseContent: Opt<string, Reason.TestStub> = "Mock response",
+): IModelProvider {
   return {
     id: "mock-provider",
     generate: () => Promise.resolve(makeGenerateResult(responseContent)),
@@ -192,7 +200,9 @@ export function createStubProvider(responseContent = "Mock response"): IModelPro
  * Create a stub IGitService for tests.
  * Returns an object matching `IGitService` with no-op implementations.
  */
-export function createStubGit(overrides: Partial<IGitService> = {}): IGitService {
+export function createStubGit(
+  overrides: Opt<Partial<IGitService>, Reason.TestOverride> = {},
+): IGitService {
   // Backwards compatibility: provide legacy defaults for existing tests
   const defaults: Partial<IGitService> = {
     getRepository: () => "/mock/repo",

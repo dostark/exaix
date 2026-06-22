@@ -27,6 +27,7 @@ import type { IRoutingPolicyDecision } from "@exaix/schemas/routing_policy.ts";
 import type { IRoutingPolicyService } from "@exaix/routing";
 import { GitBranchName } from "@exaix/git";
 import type { JSONValue } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IFlowResult {
   flowRunId: string;
@@ -93,7 +94,7 @@ type RouterRequestFrontmatterMap = IRequestFrontmatter & {
   [key: string]: JSONValue;
 };
 
-function normalizeText(value?: string): string | undefined {
+function normalizeText(value?: Opt<string, Reason.SensibleDefault>): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
 }
 

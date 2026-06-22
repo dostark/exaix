@@ -26,6 +26,7 @@ import type {
 } from "@exaix/core/types";
 import { CriteriaGenerator } from "@exaix/core/skills";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 /**
  * Gate configuration schema
  */
@@ -142,8 +143,8 @@ export class GateEvaluator implements IGateEvaluator {
   evaluateStepResult(
     config: GateConfig,
     stepResult: IStepResult,
-    originalRequest?: string,
-    previousAttempts: number = 0,
+    originalRequest?: Opt<string, Reason.OptionalInput>,
+    previousAttempts: Opt<number, Reason.SensibleDefault> = 0,
   ): Promise<IGateResult> {
     const content = stepResult.result?.content ?? "";
     return this.evaluate(config, content, originalRequest, previousAttempts);

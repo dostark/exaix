@@ -34,6 +34,7 @@ import {
   STREAMING_EVENT_TOOL_END,
   STREAMING_EVENT_TOOL_START,
 } from "../types/constants.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Configuration for EventLogger
@@ -413,7 +414,7 @@ export class EventLogger implements IEventLogger {
     level: LogLevel,
     action: string,
     target: string,
-    payload?: LogMetadata,
+    payload?: Opt<LogMetadata, Reason.OptionalContext>,
     traceId?: string,
   ): Promise<void> {
     await this.log({

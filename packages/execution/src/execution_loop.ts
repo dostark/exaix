@@ -56,6 +56,7 @@ import {
 } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { ConfidenceAssessmentLevel, ConfidenceLevel } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /** Represents raw YAML frontmatter before validation */
 interface RawFrontmatter {
@@ -805,7 +806,7 @@ export class ExecutionLoop {
     executionRoot: string,
     _gitService: IGitService,
     frontmatter: PlanFrontmatter,
-    options?: { enableGit?: boolean; generateReport?: boolean },
+    options?: Opt<{ enableGit?: boolean; generateReport?: boolean }, Reason.ExecutionConfig>,
   ): Promise<{ report?: string }> {
     if (!this.llmProvider) {
       throw new Error("LLM provider required for structured plan execution");
@@ -933,8 +934,8 @@ export class ExecutionLoop {
     planPath: string,
     traceId: string,
     requestId: string,
-    frontmatter?: PlanFrontmatter,
-    artifactContext?: ISuccessArtifactContext,
+    frontmatter?: Opt<PlanFrontmatter, Reason.OptionalInput>,
+    artifactContext?: Opt<ISuccessArtifactContext, Reason.OptionalContext>,
   ): Promise<void> {
     // Generate mission report
     await this.generateMissionReport(traceId, requestId, frontmatter);
@@ -1066,7 +1067,7 @@ export class ExecutionLoop {
     traceId: string,
     requestId: string,
     error: string,
-    frontmatter?: PlanFrontmatter,
+    frontmatter?: Opt<PlanFrontmatter, Reason.OptionalInput>,
     _cleanup?: {
       portalGitService?: IGitService;
       worktreePath?: string;
@@ -1379,7 +1380,7 @@ export class ExecutionLoop {
     commitSha: string,
     repository: string,
     baseBranch: string,
-    worktreePath?: string,
+    worktreePath?: Opt<string, Reason.OptionalInput>,
   ): Promise<void> {
     try {
       console.log(`[ExecutionLoop] Registering review for ${requestId} (Branch: ${branch})`);
@@ -1411,7 +1412,7 @@ export class ExecutionLoop {
   private async generateMissionReport(
     traceId: string,
     requestId: string,
-    frontmatter?: PlanFrontmatter,
+    frontmatter?: Opt<PlanFrontmatter, Reason.OptionalInput>,
   ): Promise<void> {
     try {
       const reporter = this.createMissionReporter();
@@ -1456,7 +1457,7 @@ export class ExecutionLoop {
     traceId: string,
     requestId: string,
     error: string,
-    frontmatter?: PlanFrontmatter,
+    frontmatter?: Opt<PlanFrontmatter, Reason.OptionalInput>,
   ): Promise<void> {
     try {
       const reporter = this.createMissionReporter();

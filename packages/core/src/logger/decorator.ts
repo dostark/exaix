@@ -8,6 +8,7 @@
 import type { EventLogger } from "./event_logger.ts";
 import { DEFAULT_UNKNOWN_LABEL } from "../types/constants.ts";
 import { toSafeJson } from "../types/json.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 type SafeJsonInput = string | number | boolean | null | undefined | SafeJsonInput[] | { [key: string]: SafeJsonInput };
 
@@ -16,7 +17,10 @@ type AsyncMethodDecorator = <This, Args extends Array<unknown>, Return>(
   context: ClassMethodDecoratorContext<This, (this: This, ...args: Args) => Promise<Return>>,
 ) => ((this: This, ...args: Args) => Promise<Return>) | void;
 
-export function LogMethod(logger: EventLogger, action?: string): AsyncMethodDecorator {
+export function LogMethod(
+  logger: EventLogger,
+  action?: Opt<string, Reason.OptionalContext>,
+): AsyncMethodDecorator {
   return function <This, Args extends Array<unknown>, Return>(
     target: (this: This, ...args: Args) => Promise<Return>,
     context: ClassMethodDecoratorContext<This, (this: This, ...args: Args) => Promise<Return>>,

@@ -88,6 +88,7 @@ import {
   LOOP_HISTORY_BUDGET_THRESHOLD,
   LOOP_HISTORY_COMPRESSION_RATIO,
 } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IPromptBudgetAllocator {
   allocate(modelId: string, hints?: object, analysis?: IRequestAnalysis): Promise<IPromptBudget>;
@@ -251,7 +252,9 @@ export class AgentExecutor {
    * Preserves the last `keepLastN` entries as individual steps and replaces
    * all older entries with a single compacted summary.
    */
-  public async compactLoopHistory(keepLastN: number = DEFAULT_KEEP_LAST_N_STEPS): Promise<void> {
+  public async compactLoopHistory(
+    keepLastN: Opt<number, Reason.SensibleDefault> = DEFAULT_KEEP_LAST_N_STEPS,
+  ): Promise<void> {
     if (this._loopHistory.length <= keepLastN + 1) return;
 
     const compressible = this._loopHistory.slice(0, this._loopHistory.length - keepLastN);
@@ -338,7 +341,10 @@ export class AgentExecutor {
    * Query recent activities for a given trace ID.
    * Used by sub-agents via parent_context_query to understand execution context.
    */
-  public async getRecentActivitiesByTraceId(traceId: string, limit: number = 10): Promise<
+  public async getRecentActivitiesByTraceId(
+    traceId: string,
+    limit: Opt<number, Reason.SensibleDefault> = 10,
+  ): Promise<
     Array<{ actionType: string; target: string | null; payload: Record<string, JSONValue>; timestamp: string }>
   > {
     const records = await this.db.getActivitiesByTraceSafe(traceId);
@@ -861,9 +867,9 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
 
   private async applyTokenBudget(
     text: string,
-    tokenBudget?: number,
-    sectionName?: string,
-    modelId?: string,
+    tokenBudget?: Opt<number, Reason.ExecutionConfig>,
+    sectionName?: Opt<string, Reason.OptionalContext>,
+    modelId?: Opt<string, Reason.ExecutionConfig>,
   ): Promise<string> {
     if (!tokenBudget || tokenBudget <= 0) {
       return text;
@@ -1581,7 +1587,10 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
     traceId: string,
     identityId: string,
     result: IChangesetResult,
-    usage?: { tokens: number; cost_usd_estimate: number; prompt_tokens?: number; completion_tokens?: number },
+    usage?: Opt<
+      { tokens: number; cost_usd_estimate: number; prompt_tokens?: number; completion_tokens?: number },
+      Reason.OptionalInput
+    >,
   ): Promise<void> {
     const usagePayload = usage ?? {
       tokens: Math.max(1, Math.ceil(result.description.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN)),

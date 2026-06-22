@@ -30,6 +30,7 @@ import {
   HEURISTIC_SCORE_COMPLEXITY_BONUS,
 } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
+import type { Opt, Reason } from "@exaix/core/types";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -208,7 +209,11 @@ export class RequestAnalyzer implements IRequestAnalyzerService {
     }
   }
 
-  private _logActivity(requestText: string, result: IRequestAnalysis, context?: IRequestAnalysisContext): void {
+  private _logActivity(
+    requestText: string,
+    result: IRequestAnalysis,
+    context?: Opt<IRequestAnalysisContext, Reason.OptionalContext>,
+  ): void {
     if (this.logger) {
       try {
         this.logger.info(

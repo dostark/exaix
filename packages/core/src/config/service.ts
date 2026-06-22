@@ -14,6 +14,7 @@ import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
 import type { PortalExecutionStrategy } from "../types/portal.ts";
 import type { IPortalConfigEntry } from "../types/mod.ts";
 import { ExaPathDefaults } from "../types/constants.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export class ConfigService {
   private readonly configPath: string;
@@ -162,7 +163,10 @@ milestone_streaming_enabled = true
   public async addPortal(
     alias: string,
     targetPath: string,
-    options?: { defaultBranch?: string; executionStrategy?: PortalExecutionStrategy },
+    options?: Opt<
+      { defaultBranch?: string; executionStrategy?: PortalExecutionStrategy },
+      Reason.ExecutionConfig
+    >,
   ): Promise<void> {
     const created = new Date().toISOString();
 

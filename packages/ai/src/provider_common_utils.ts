@@ -31,6 +31,7 @@ import {
   TOKENS_PER_COST_UNIT,
 } from "@exaix/core";
 import { HTTP_FORBIDDEN, HTTP_TOO_MANY_REQUESTS, HTTP_UNAUTHORIZED } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export type TokenMap = {
   prompt_tokens?: number;
@@ -122,8 +123,8 @@ export function calculateCost(provider: string, totalTokens: number): number {
 export async function handleProviderResponse<T>(
   response: Response,
   id: string,
-  logger?: IEventLogger,
-  tokenMapper?: ResponseTokenMapper<T>,
+  logger?: Opt<IEventLogger, Reason.OptionalDependency>,
+  tokenMapper?: Opt<ResponseTokenMapper<T>, Reason.OptionalDependency>,
 ): Promise<T> {
   if (!response.ok) {
     // Include HTTP status code in messages so tests can assert on it (e.g. "HTTP 503").
@@ -202,7 +203,7 @@ export function createOpenAIChatCompletionsRequestInit(
   apiKey: string,
   model: string,
   prompt: string,
-  options?: IModelOptions,
+  options?: Opt<IModelOptions, Reason.OptionalInput>,
 ): RequestInit {
   return {
     method: "POST",

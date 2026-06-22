@@ -23,6 +23,7 @@ import {
   REMEDIATION_MODE_RETRY_WITH_BACKOFF,
 } from "./tool_result.ts";
 import type { IToolResultValidator } from "./tool_result_validator.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 // ============================================================================
 // Exported interfaces (must precede functional code — check:style requirement)
@@ -87,7 +88,7 @@ export const REMEDIATION_OUTCOME_VALUES = [
 
 function canRetryTool(
   policy: IToolResultRemediationPolicy,
-  toolMetadata?: IRemediationToolMetadata,
+  toolMetadata?: Opt<IRemediationToolMetadata, Reason.OptionalInput>,
 ): boolean {
   if (!toolMetadata) {
     return false;
@@ -132,7 +133,7 @@ export async function applyRemediationPolicy(
   policy: IToolResultRemediationPolicy,
   validationFailure: IToolResultValidationFailure,
   validator: IToolResultValidator,
-  context?: IRemediationContext,
+  context?: Opt<IRemediationContext, Reason.OptionalInput>,
 ): Promise<IRemediationResult> {
   switch (policy.mode) {
     case REMEDIATION_MODE_FAIL_CLOSED:

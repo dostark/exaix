@@ -22,6 +22,7 @@ import { describeSchema } from "@exaix/schemas/schema_describer.ts";
 import { JSONValueSchema } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export type IOutputFormat =
   | "xml_tagged"
@@ -372,7 +373,7 @@ export class OutputValidator implements IOutputValidator {
 }
 
 export function createOutputValidator(
-  config?: IOutputValidatorConfig,
+  config?: Opt<IOutputValidatorConfig, Reason.FactoryPreset>,
 ): OutputValidator {
   return new OutputValidator(config);
 }

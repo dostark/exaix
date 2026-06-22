@@ -10,6 +10,7 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { DefaultWaitStateTransitionPolicy, type IWaitState, type WaitStateAction, WaitStateSchema } from "@exaix/flow";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IWaitStateListEntry {
   waitStateId: string;
@@ -86,7 +87,10 @@ export class WaitStateCommands extends BaseCommand {
     return await this.transitionByToken(resumeToken, "reject", resolutionSummary);
   }
 
-  async amend(resumeToken: string, resolutionSummary?: string): Promise<IWaitState> {
+  async amend(
+    resumeToken: string,
+    resolutionSummary?: Opt<string, Reason.OptionalInput>,
+  ): Promise<IWaitState> {
     return await this.transitionByToken(resumeToken, "amend", resolutionSummary);
   }
 
@@ -101,7 +105,7 @@ export class WaitStateCommands extends BaseCommand {
   private async transitionByToken(
     resumeToken: string,
     action: WaitStateAction,
-    resolutionSummary?: string,
+    resolutionSummary?: Opt<string, Reason.OptionalInput>,
   ): Promise<IWaitState> {
     await this.initStore();
     const policy = new DefaultWaitStateTransitionPolicy();

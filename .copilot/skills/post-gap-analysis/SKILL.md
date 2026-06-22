@@ -11,7 +11,18 @@ title: "Post-Gap Analysis Skill (#post-gap-analysis)"
 description: Deep post-implementation review of a phase planning document — verifies what was built against the plan, evaluates code quality (style, TS idiomacy, defensive programming, performance, dependency hygiene), finds gaps, and writes remediation steps back into the document
 short_summary: "Deep review of an existing phase planning document: checks implementation against plan, evaluates code quality (style, TS idiomacy, defensive programming, performance, dependencies), finds gaps, and writes remediation steps back into the document."
 version: "1.5"
-topics: ["planning", "gap-analysis", "review", "tdd", "architecture", "quality", "security", "code-style", "typescript", "performance"]
+topics: [
+  "planning",
+  "gap-analysis",
+  "review",
+  "tdd",
+  "architecture",
+  "quality",
+  "security",
+  "code-style",
+  "typescript",
+  "performance",
+]
 qwen_skill: post-gap-analysis
 ---
 
@@ -428,13 +439,13 @@ Evaluate the implementation for obvious performance issues:
 
 ### Phase 8 — Gap Classification
 
-| Symbol         | Meaning                                                            |
-| -------------- | ------------------------------------------------------------------ |
-| 🔴 Critical    | Blocks correctness — code diverges from plan in a breaking way. Also: fail-open on security check, circular dependency, missing type safety that causes runtime error. |
+| Symbol         | Meaning                                                                                                                                                                                                                               |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🔴 Critical    | Blocks correctness — code diverges from plan in a breaking way. Also: fail-open on security check, circular dependency, missing type safety that causes runtime error.                                                                |
 | 🔒 Security    | Security vulnerability or missing security control (OWASP Top 10). Also: resource leak without cleanup, unbounded memory on untrusted input, missing timeout, path traversal bypass, silent error swallow in security-sensitive path. |
-| 🟡 Feasibility | Plan claim is unverifiable or implementation-risky. Also: sync I/O in async path blocking event loop, missing fallback causing hard crash, unnecessary parser initialisation, redundant I/O. |
-| 🟠 Testing     | Missing or under-specified test; implementation may ship uncovered. Also: bare `catch {}` discarding diagnostic info, budget-check running after completion, uncovered edge case. |
-| 🔵 Conceptual  | Minor mismatch, missing doc marker, or style divergence. Also: unused export without consumer, multi-line import that fmt would flatten, missing `import type`. |
+| 🟡 Feasibility | Plan claim is unverifiable or implementation-risky. Also: sync I/O in async path blocking event loop, missing fallback causing hard crash, unnecessary parser initialisation, redundant I/O.                                          |
+| 🟠 Testing     | Missing or under-specified test; implementation may ship uncovered. Also: bare `catch {}` discarding diagnostic info, budget-check running after completion, uncovered edge case.                                                     |
+| 🔵 Conceptual  | Minor mismatch, missing doc marker, or style divergence. Also: unused export without consumer, multi-line import that fmt would flatten, missing `import type`.                                                                       |
 
 Build a gap summary table before detailed entries.
 

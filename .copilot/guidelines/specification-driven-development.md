@@ -27,7 +27,7 @@ Exaix's Phases 45–49 quality pipeline implements an adapted form of SDD optimi
 | 2 | **Spec defines acceptance criteria** | `IRequestAnalysis` extracts acceptance criteria; `CriteriaGenerator` converts them into evaluation rubric items (`GOAL_ALIGNMENT`, `TASK_FULFILLMENT`) | Phase 45 + 48 |
 | 3 | **Iterate on the spec, not on code** | Multi-round Q&A refines the specification through conversation; rounds track quality improvement; agent and user both must be satisfied                | Phase 47      |
 | 4 | **Spec is the contract**             | `IRequestSpecification` is preserved (never overwritten), persisted as `_clarification.json`, and used as ground truth for evaluation                  | Phase 47      |
-| 5 | **Grounded in reality**              | `PortalKnowledgeService` provides actual codebase architecture, conventions, and key files — specs are written with awareness of what exists           | Phase 119      |
+| 5 | **Grounded in reality**              | `PortalKnowledgeService` provides actual codebase architecture, conventions, and key files — specs are written with awareness of what exists           | Phase 119     |
 | 6 | **Spec as evaluation rubric**        | Quality gates, reflexive agent, and confidence scorer evaluate against spec-derived criteria, not generic heuristics                                   | Phase 48 + 49 |
 | 7 | **Change the spec, not the code**    | Structured frontmatter allows users to express expectations declaratively; spec revision path under consideration                                      | Phase 49      |
 

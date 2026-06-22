@@ -13,6 +13,7 @@ import type { IModelProvider } from "@exaix/ai";
 import type { IGenerateResult } from "@exaix/ai/providers";
 
 import { GitBranchName } from "@exaix/git";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Create a stub IGitService with no-op implementations.
@@ -42,7 +43,9 @@ export function createGitServiceStub(overrides: Partial<IGitService> = {}): IGit
  * Create a stub IModelProvider with minimal implementation.
  * Useful for CLI initialization and testing.
  */
-export function createProviderStub(overrides: Partial<IModelProvider> = {}): IModelProvider {
+export function createProviderStub(
+  overrides: Opt<Partial<IModelProvider>, Reason.TestOverride> = {},
+): IModelProvider {
   const base: IModelProvider = {
     id: "stub-provider",
     generate: (): Promise<IGenerateResult> =>

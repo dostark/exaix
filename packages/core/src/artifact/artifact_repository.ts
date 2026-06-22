@@ -10,6 +10,7 @@
  */
 
 import type { IDatabaseService } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IArtifactRow {
   id: string;
@@ -97,12 +98,14 @@ export class DatabaseArtifactRepository implements IArtifactRepository {
     return rows[0];
   }
 
-  async listArtifactRecords(filters?: {
-    status?: string;
-    identity?: string;
-    portal?: string | null;
-    type?: string;
-  }): Promise<IArtifactRow[]> {
+  async listArtifactRecords(
+    filters?: Opt<{
+      status?: string;
+      identity?: string;
+      portal?: string | null;
+      type?: string;
+    }, Reason.QueryFilter>,
+  ): Promise<IArtifactRow[]> {
     let query =
       `SELECT id, status, type, identity, portal, target_branch, created, updated, request_id, file_path, rejection_reason
        FROM artifacts WHERE 1=1`;

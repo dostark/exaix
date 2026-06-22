@@ -8,6 +8,7 @@
 
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { GIT_CMD_BRANCH } from "@exaix/git";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IBranchInfo {
   name: string;
@@ -38,7 +39,7 @@ export class GitCommands extends BaseCommand {
    * @param pattern Optional glob pattern for branch names
    * @returns List of branches
    */
-  async listBranches(pattern?: string): Promise<IBranchInfo[]> {
+  async listBranches(pattern?: Opt<string, Reason.OptionalInput>): Promise<IBranchInfo[]> {
     const workspaceRoot = this.config.system.root;
 
     const args = [

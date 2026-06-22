@@ -65,6 +65,7 @@ import { parseDecisions, parsePatterns } from "./parsers.ts";
 import { formatExecutionSummary } from "./formatters.ts";
 import { buildFilesIndex, buildPatternsIndex, buildTagsIndex, writeIndices } from "./index_builder.ts";
 import type { IMemoryBankService, IMemoryEmbeddingService } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 /**
  * Memory Bank Service
  *
@@ -133,8 +134,8 @@ export class MemoryBankService implements IMemoryBankService {
   private async withFileLock<T>(
     lockPath: string,
     operation: () => Promise<T>,
-    timeoutMs: number = LOCK_ACQUIRE_TIMEOUT_MS,
-    maxRetries: number = 3,
+    timeoutMs: Opt<number, Reason.SensibleDefault> = LOCK_ACQUIRE_TIMEOUT_MS,
+    maxRetries: Opt<number, Reason.SensibleDefault> = 3,
   ): Promise<T> {
     let lastError: Error | null = null;
 
@@ -479,7 +480,7 @@ export class MemoryBankService implements IMemoryBankService {
    * @returns Array of execution memories, sorted by started_at descending
    */
   async getExecutionHistory(
-    portal?: string,
+    portal?: Opt<string, Reason.QueryFilter>,
     limit: number = 100,
   ): Promise<IExecutionMemory[]> {
     const executions: IExecutionMemory[] = [];
@@ -861,7 +862,7 @@ export class MemoryBankService implements IMemoryBankService {
    */
   async searchMemory(
     query: string,
-    options?: { portal?: string; limit?: number },
+    options?: Opt<{ portal?: string; limit?: number }, Reason.ExecutionConfig>,
   ): Promise<IMemorySearchResult[]> {
     return await searchMemoryHelper(query, options, this.buildSearchDeps());
   }
@@ -875,7 +876,7 @@ export class MemoryBankService implements IMemoryBankService {
    */
   async searchByTags(
     tags: string[],
-    options?: { portal?: string; limit?: number },
+    options?: Opt<{ portal?: string; limit?: number }, Reason.ExecutionConfig>,
   ): Promise<IMemorySearchResult[]> {
     return await searchByTagsHelper(tags, options, this.buildSearchDeps());
   }
@@ -889,7 +890,7 @@ export class MemoryBankService implements IMemoryBankService {
    */
   async searchByKeyword(
     keyword: string,
-    options?: { portal?: string; limit?: number },
+    options?: Opt<{ portal?: string; limit?: number }, Reason.ExecutionConfig>,
   ): Promise<IMemorySearchResult[]> {
     return await searchByKeywordHelper(keyword, options, this.buildSearchDeps());
   }

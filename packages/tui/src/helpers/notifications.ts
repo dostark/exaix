@@ -11,6 +11,7 @@ import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { colorize, type ITuiTheme } from "@exaix/tui/helpers/colors.ts";
 import { SECONDS_PER_HOUR } from "@exaix/core";
 import type { IMemoryNotification, INotificationService } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 
 interface ITuiNotification extends IMemoryNotification {
   icon?: string;
@@ -45,7 +46,7 @@ export async function renderNotificationPanel(
   notificationService: INotificationService,
   theme: ITuiTheme,
   state: ITuiNotificationDashboardState,
-  maxHeight = 10,
+  maxHeight: Opt<number, Reason.UiDefault> = 10,
 ): Promise<string[]> {
   const lines: string[] = [];
   let activeNotifications = await notificationService.getNotifications() as ITuiNotification[];

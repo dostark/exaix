@@ -28,6 +28,7 @@ import type { IServiceContext } from "@exaix/core/types";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { CritiqueSchema, type ICritique } from "./types.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 import { type ConfidenceAssessment, ConfidenceScorer } from "./confidence_scorer.ts";
 import {
   AgentRunner,
@@ -488,7 +489,7 @@ export class ReflexiveAgent {
   public async critique(
     request: IParsedRequest,
     response: IAgentExecutionResult,
-    requestAnalysis?: IRequestAnalysis,
+    requestAnalysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
   ): Promise<ICritique> {
     let critiquePrompt = this.config.critiquePromptTemplate
       .replace("{request}", request.userPrompt)
@@ -709,7 +710,9 @@ export class ReflexiveAgent {
     }
   }
 
-  private computeEffectiveMaxIterations(requestAnalysis?: IRequestAnalysis): number {
+  private computeEffectiveMaxIterations(
+    requestAnalysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
+  ): number {
     const baseIterations = this.config.convergenceConfig.baseMaxIterations;
     if (!this.config.adaptiveIterationBudget || !requestAnalysis?.complexity) {
       return Math.min(baseIterations, this.config.convergenceConfig.absoluteMaxIterations);

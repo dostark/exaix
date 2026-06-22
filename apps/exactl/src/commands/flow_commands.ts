@@ -13,6 +13,7 @@ import type { IFlow } from "@exaix/schemas/flow.ts";
 import { DEFAULT_NONE_LABEL } from "@exaix/core";
 import { BaseCommand } from "@exaix/cli/base.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 interface FlowListOptions {
   json?: boolean;
@@ -41,7 +42,7 @@ export class FlowCommands extends BaseCommand {
     this.flowLoader = new FlowLoader(flowsDir);
   }
 
-  private exit(code?: number): never {
+  private exit(code?: Opt<number, Reason.OptionalInput>): never {
     const testExit = (this.context as ICliApplicationContext & { exit?: (code?: number) => never }).exit;
     if (typeof testExit === "function") {
       return testExit(code);

@@ -676,7 +676,7 @@ The `?` annotation communicates intent: "this parameter may be omitted." When
 actual call-site usage contradicts that intent, the `?` becomes a liability
 — either misleading readers or hiding wiring gaps.
 
-Two anti-patterns are enforced by `deno task check:optional-params` (Gate 14):
+Three anti-patterns are enforced by `deno task check:optional-params` (Gate 14):
 
 ### REDUNDANT_OPTIONAL — param is `?` but all callers pass it
 
@@ -693,18 +693,13 @@ function doSomething(task: string, logger?: ILogger) { ... }
 function doSomething(task: string, logger: ILogger) { ... }
 ```
 
-**Exception allowed:** Optional parameters in exported API interfaces where
-external consumers (outside this repo) are expected to call without the
-parameter. This does not apply to internal functions or package-private methods.
-
 ### UNUSED_OPTIONAL — param is `?`, used in body, but no caller passes it
 
 The most dangerous pattern. A parameter is marked optional, referenced in the
 function body (so changing it would change behavior), yet **zero** production
 callers supply a value. This is either:
 
-1. **A wiring gap** — the value was meant to be injected but never connected
-   (the bug we fixed with `delegateProviderEnv`).
+1. **A wiring gap** — the value was meant to be injected but never connected.
 2. **Dead code** — the parameter is consumed by default-value logic that always
    fires. Either way, the `?` is a red flag.
 
@@ -717,6 +712,66 @@ async launch(launch: ISessionLaunch, traceId: string, delegateProviderEnv?: Reco
 // all callers: launcher.launch(launch, traceId)  ← never passes delegateProviderEnv
 ```
 
+### MARKED_NOT_OPTIONAL — `Opt<T, R>` used on a non-optional param
+
+A parameter is wrapped with `Opt<T, Reason.R>` (declaring it intentionally
+optional) but lacks both `?` and a default value — the marker is a lie. Every
+`Opt` usage must correspond to a truly optional parameter.
+
+```ts
+// ❌ MARKED_NOT_OPTIONAL — wrapped but not optional
+function process(param: Opt<string, Reason.OptionalInput>) { ... }
+
+// ✅ Correct — truly optional
+function process(param?: Opt<string, Reason.OptionalInput>) { ... }
+function process(param: Opt<string, Reason.SensibleDefault> = "") { ... }
+```
+
+---
+
+### Exempting intentional optionality with `Opt<T, Reason.R>`
+
+When a parameter is legitimately optional by design (abstract boundary, factory
+preset, sensible default, test override, etc.), wrap the type with
+`Opt<T, Reason.R>` to suppress false positives.
+
+```ts
+// Legitimate: abstract method — implementations vary
+protected abstract attemptGenerate(prompt: string, options?: Opt<IModelOptions, Reason.AbstractBoundary>): Promise<IGenerateResult>;
+
+// Legitimate: test factory with default overrides
+function createStub(overrides: Opt<Partial<IDatabaseService>, Reason.TestOverride> = {}): IDatabaseService;
+```
+
+The second type argument **must** be a member of the `Reason` enum — a codified
+reason that proves the decision was reviewed, not mechanical.
+
+| Category                    | Enum member                   | Typical pattern                      |
+| --------------------------- | ----------------------------- | ------------------------------------ |
+| Test factory                | `Reason.TestOverride`         | `overrides: Partial<T> = {}`         |
+| Test stub                   | `Reason.TestStub`             | `responseContent = "..."`            |
+| Recursive helper            | `Reason.RecursiveOmit`        | `depth = 0`, `prefix = ""`           |
+| Coercion fallback           | `Reason.CoercionDefault`      | `fallback = Status.PENDING`          |
+| Factory preset              | `Reason.FactoryPreset`        | `config?: IFooConfig`                |
+| Sensible default            | `Reason.SensibleDefault`      | `limit = 10`, `minLength = 3`        |
+| UI rendering default        | `Reason.UiDefault`            | `char = " "`, `disabled = false`     |
+| Abstract/interface boundary | `Reason.AbstractBoundary`     | `options?` on base method            |
+| Optional DI dependency      | `Reason.OptionalDependency`   | `logger?`, `costTracker?`            |
+| Trace absent                | `Reason.TraceAbsent`          | `traceId?: string`                   |
+| Cancellation optional       | `Reason.CancellationOptional` | `options?: { signal?: AbortSignal }` |
+| Query filter                | `Reason.QueryFilter`          | `options?: IBuildSnapshotOptions`    |
+| Optional data input         | `Reason.OptionalInput`        | `analysis?`, `frontmatter?`          |
+| Execution config            | `Reason.ExecutionConfig`      | `timeoutS?`, `modelId?`              |
+| Optional context            | `Reason.OptionalContext`      | `requestId?`, `portal?`              |
+
+There is no catch-all. If none of these categories fits, a new one **must** be
+added to the `Reason` enum in `packages/core/src/types/optional_marker.ts`.
+
+**Marking without `?` or a default is a type error** — the checker reports
+`MARKED_NOT_OPTIONAL`.
+
+---
+
 ### Guidelines
 
 1. **Prefer required by default.** A parameter should only be `?` when there is
@@ -727,25 +782,28 @@ async launch(launch: ISessionLaunch, traceId: string, delegateProviderEnv?: Reco
    every production caller provides it anyway, remove the `?` and make it
    required. The default adds noise when it never triggers.
 
-   ```ts
-   // ❌ default never used — every caller passes opts
-   function connect(opts?: ConnectionOptions = DEFAULT_OPTS) { ... }
-   // call sites: connect(myOpts)  ← always passes
-
-   // ✅ required with no default
-   function connect(opts: ConnectionOptions) { ... }
-   ```
-
-3. **`| undefined` is still optional.** Writing `param: T | undefined` instead
-   of `param?: T` does not escape this rule. The check detects both forms.
+3. **`| undefined` is not optionality.** Writing `param: T | undefined` instead
+   of `param?: T` does not make the parameter optional — callers must still
+   pass `undefined` explicitly. Use `?` for true optionality, and add `Opt`
+   to document why.
 
 4. **Reveal root cause, don't use `?` as a Band-Aid.** If a function has too
    many parameters and you're tempted to mark some optional, refactor to a
    parameter object instead (see §11 parameter limit).
 
-5. **When legitimately optional, document why.** If a parameter is truly
-   optional (e.g., a callback in an event emitter, or DI in a test helper),
-   add a brief comment explaining which callers omit it and why.
+### Opt type and Reason enum
+
+Both are defined in `packages/core/src/types/optional_marker.ts` and exported
+from `@exaix/core/types`:
+
+```ts
+import { Opt, Reason } from "@exaix/core/types";
+
+type Opt<T, R extends Reason> = T | undefined;
+```
+
+`Opt` is `T | undefined` at runtime — it adds no overhead. The `Reason` enum
+provides the closed set of codified categories (no catch-all).
 
 ### Automated Enforcement
 
@@ -754,13 +812,13 @@ the TypeScript compiler API. It compares each function/method declaration with
 optional parameters against all name-matched call sites and reports mismatches.
 
 ```bash
-deno run -A scripts/check_optional_params.ts          # advisory
 deno run -A scripts/check_optional_params.ts --fail    # hard gate
+deno run -A scripts/check_optional_params.ts           # advisory (no --fail)
 ```
 
-The check is integrated as `deno task check:optional-params` and runs as part of
-the CI pipeline (advisory mode — Gate 14). Run with `--fail` locally to audit
-your changes before opening a PR.
+The check is integrated as `deno task check:optional-params --fail` and runs as
+part of the CI pipeline (Gate 14). Run without `--fail` locally for advisory
+feedback during development.
 
 ---
 

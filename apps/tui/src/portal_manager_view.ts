@@ -32,6 +32,7 @@ import {
   TUI_LAYOUT_NARROW_WIDTH,
   TUI_PORTAL_ICONS,
 } from "@exaix/tui/helpers/constants.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 // ===== Portal View Extensions =====
 
@@ -239,7 +240,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
 
   // ===== Selection & Sync =====
 
-  override setSelectedIndex(idx: number, _maxLength?: number): void {
+  override setSelectedIndex(idx: number, _maxLength?: Opt<number, Reason.UiDefault>): void {
     // Sync tree selection with index in portals array
     if (idx >= 0 && idx < this.portals.length) {
       this.state.selectedId = this.portals[idx].alias;

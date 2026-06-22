@@ -27,6 +27,7 @@ import {
 } from "@exaix/core/request";
 import { join } from "@std/path";
 import { WaitStateSchema } from "@exaix/flow";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * RequestCommands provides CLI operations for creating and managing requests.
@@ -117,7 +118,10 @@ export class RequestCommands extends BaseCommand {
    * @param options Flags: answers, proceed, cancel, engine (for DI in tests)
    * @returns Current clarification state with pending questions and quality score
    */
-  async clarify(requestId: string, options?: IClarifyOptions): Promise<IClarifyResult> {
+  async clarify(
+    requestId: string,
+    options?: Opt<IClarifyOptions, Reason.OptionalInput>,
+  ): Promise<IClarifyResult> {
     if (!options?.onClarificationResolved) {
       const cfg = this.context.config.getAll();
       const waitStatesRoot = join(cfg.system.root, cfg.paths.workspace, cfg.paths.waitStates ?? "WaitStates");

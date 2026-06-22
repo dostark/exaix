@@ -13,9 +13,10 @@ import { createRoutingPolicyService, loadRoutingPolicy } from "../../../../apps/
 import { ZRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
 import type { JSONValue } from "@exaix/core";
 import type { IRoutingContext, IRoutingMatchCriteria, IRoutingPolicyDecision } from "@exaix/schemas/routing_policy.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export class RoutingCommands extends BaseCommand {
-  async validatePolicy(policyPath?: string): Promise<{
+  async validatePolicy(policyPath?: Opt<string, Reason.OptionalInput>): Promise<{
     success: boolean;
     errors: string[];
     path: string;

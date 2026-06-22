@@ -19,6 +19,7 @@ import {
   REMEDIATION_OUTCOME_NORMALIZATION_FAILED,
   REMEDIATION_OUTCOME_RETRY_EXHAUSTED,
 } from "@exaix/schemas/tool_result_remediation.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IValidationReportContext {
   planId?: string;
@@ -48,7 +49,7 @@ export async function logValidationResult(
   policy: IToolResultRemediationPolicy,
   result: IRemediationResult,
   logger: IEventLogger,
-  context?: IValidationReportContext,
+  context?: Opt<IValidationReportContext, Reason.OptionalContext>,
 ): Promise<void> {
   if (policy.logValidationFailures) {
     const action = resolveEventAction(result);

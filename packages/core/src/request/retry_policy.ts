@@ -14,6 +14,7 @@
  */
 
 import { z } from "zod";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IRetryContext {
   attempt: number;
@@ -327,7 +328,9 @@ export class RetryPolicy implements IRetryPolicy {
 /**
  * Create a RetryPolicy with default configuration
  */
-export function createRetryPolicy(config?: Partial<IRetryPolicyConfig>): RetryPolicy {
+export function createRetryPolicy(
+  config?: Opt<Partial<IRetryPolicyConfig>, Reason.FactoryPreset>,
+): RetryPolicy {
   return new RetryPolicy(config);
 }
 

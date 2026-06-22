@@ -12,6 +12,7 @@ import { colorize, getTheme } from "./colors.ts";
 import { renderBoxBottom, renderBoxLine, renderBoxLineCentered, renderBoxTop } from "./dialog_base.ts";
 import { ScrollDirection } from "../types/enums.ts";
 import type { IKeyBinding } from "./keyboard.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 // ===== Help Interfaces =====
 
@@ -242,7 +243,7 @@ export function createHelpDialogState(): IHelpDialogState {
  */
 export function toggleHelpDialog(
   state: IHelpDialogState,
-  content?: string[],
+  content?: Opt<string[], Reason.UiDefault>,
 ): IHelpDialogState {
   return {
     ...state,

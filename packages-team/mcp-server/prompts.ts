@@ -8,6 +8,7 @@
 
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
+import type { Opt, Reason } from "@exaix/core/types";
 import { DomainEventType } from "@exaix/core/events";
 import { MessageRole } from "@exaix/core";
 import { PORTAL_LABEL } from "@exaix/core";
@@ -114,7 +115,7 @@ export function getPrompt(name: string): IMCPPrompt | null {
  */
 export function generateExecutePlanPrompt(
   args: { plan_id: string; portal: string },
-  logger?: IEventLogger,
+  logger?: Opt<IEventLogger, Reason.OptionalDependency>,
 ): MCPPromptResult {
   const { plan_id, portal } = args;
 
@@ -176,7 +177,7 @@ Begin executing the plan.`,
  */
 export function generateCreateReviewPrompt(
   args: { portal: string; description: string; trace_id: string },
-  logger?: IEventLogger,
+  logger?: Opt<IEventLogger, Reason.OptionalDependency>,
 ): MCPPromptResult {
   const { portal, description, trace_id } = args;
 
@@ -253,7 +254,7 @@ export function generatePrompt(
   name: string,
   args: PromptArgs,
   _config: Config,
-  logger?: IEventLogger,
+  logger?: Opt<IEventLogger, Reason.OptionalDependency>,
 ): MCPPromptResult | null {
   switch (name) {
     case "execute_plan":
@@ -281,7 +282,7 @@ export function generatePrompt(
  */
 export function generateCommitMessagePrompt(
   args: { portal: string },
-  logger?: IEventLogger,
+  logger?: Opt<IEventLogger, Reason.OptionalDependency>,
 ): MCPPromptResult {
   const { portal } = args;
 

@@ -33,6 +33,7 @@ import type {
 import type { ISkillsService } from "../types/mod.ts";
 import type { ISkillMatchRequest } from "../types/mod.ts";
 import type { IEventLogger } from "@exaix/core/logger";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface ISkillsConfig {
   autoMatch: boolean;
@@ -99,11 +100,13 @@ export class SkillsService implements ISkillsService {
     }
   }
 
-  async listSkills(filter?: {
-    status?: SkillStatus;
-    scope?: MemoryScope;
-    source?: MemoryBankSource;
-  }): Promise<ISkill[]> {
+  async listSkills(
+    filter?: Opt<{
+      status?: SkillStatus;
+      scope?: MemoryScope;
+      source?: MemoryBankSource;
+    }, Reason.QueryFilter>,
+  ): Promise<ISkill[]> {
     const index = await this.loadIndex();
     let filtered = index.skills;
 

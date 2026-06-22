@@ -22,6 +22,7 @@ import {
 } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
 import { TEST_IDENTITY_ID, TEST_PORTAL_NAME, TEST_SAMPLE_PREFIX, TEST_TIMESTAMP } from "../constants.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Creates a minimal valid IProjectMemory for testing
@@ -111,7 +112,9 @@ export function createSampleLearning(overrides: Partial<ILearning> = {}): ILearn
 /**
  * Creates a sample IPattern for testing
  */
-export function createSamplePattern(overrides: Partial<IPattern> = {}): IPattern {
+export function createSamplePattern(
+  overrides: Opt<Partial<IPattern>, Reason.TestOverride> = {},
+): IPattern {
   return {
     name: overrides.name ?? "Sample IPattern",
     description: overrides.description ?? "A sample pattern",
@@ -124,7 +127,9 @@ export function createSamplePattern(overrides: Partial<IPattern> = {}): IPattern
 /**
  * Creates a sample IDecision for testing
  */
-export function createSampleDecision(overrides: Partial<IDecision> = {}): IDecision {
+export function createSampleDecision(
+  overrides: Opt<Partial<IDecision>, Reason.TestOverride> = {},
+): IDecision {
   return {
     date: overrides.date ?? "2026-01-04",
     decision: overrides.decision ?? "Sample IDecision",

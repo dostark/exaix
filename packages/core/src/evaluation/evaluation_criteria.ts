@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import { EvaluationCategory, type EvaluationCriterionProperty, FulfillmentStatus } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export const EvaluationCriterionSchema = z.object({
   name: z.string(),
@@ -340,7 +341,7 @@ export function createCriterion(
 export function buildEvaluationPrompt(
   content: string,
   criteria: EvaluationCriterion[],
-  context?: string,
+  context?: Opt<string, Reason.OptionalContext>,
 ): string {
   const criteriaList = criteria
     .map((c, i: number) =>

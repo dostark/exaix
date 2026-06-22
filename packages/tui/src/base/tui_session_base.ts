@@ -19,6 +19,7 @@ import { createStatusBarState, type IStatusBarState, setStatusMessage } from "@e
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import type { IKeyBinding, KeyHandler } from "@exaix/tui/helpers/keyboard.ts";
 import { MessageType } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface ITuiViewState {
   selectedIndex: number;
@@ -31,7 +32,9 @@ export interface ITuiViewState {
   activeDialog: string | null;
 }
 
-export function createViewState(overrides: Partial<ITuiViewState> = {}): ITuiViewState {
+export function createViewState(
+  overrides: Opt<Partial<ITuiViewState>, Reason.UiDefault> = {},
+): ITuiViewState {
   return {
     selectedIndex: 0,
     itemCount: 0,
@@ -197,7 +200,10 @@ export class TuiSessionBase {
     return this.viewState.activeDialog !== null;
   }
 
-  configureRefresh(onRefresh: () => Promise<void>, intervalMs = 0): void {
+  configureRefresh(
+    onRefresh: () => Promise<void>,
+    intervalMs: Opt<number, Reason.UiDefault> = 0,
+  ): void {
     this.refreshConfig = createRefreshConfig(onRefresh, intervalMs);
     if (intervalMs > 0) {
       this.startAutoRefresh();
@@ -256,7 +262,7 @@ export class TuiSessionBase {
 
   protected async performWithLoading<T>(
     actionFn: () => Promise<T>,
-    loadingMessage = "Working...",
+    loadingMessage: Opt<string, Reason.UiDefault> = "Working...",
   ): Promise<T | null> {
     this.startLoading(loadingMessage);
     try {

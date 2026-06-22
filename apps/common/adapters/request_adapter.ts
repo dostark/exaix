@@ -13,6 +13,7 @@ import type { RequestStatusType } from "@exaix/core/status";
 import type { AnalysisMode } from "@exaix/core/types";
 import type { RequestSource } from "@exaix/core";
 import type { IRequestEntry, IRequestMetadata, IRequestOptions, IRequestShowResult } from "@exaix/core/request";
+import type { Opt, Reason } from "@exaix/core/types";
 
 interface IRequestCommandService {
   create(description: string, options?: IRequestOptions, source?: RequestSource): Promise<IRequestMetadata>;
@@ -39,7 +40,10 @@ export class RequestAdapter implements IRequestService {
     return await this.service.create(description, options, source);
   }
 
-  async createRequest(description: string, options?: IRequestOptions): Promise<IRequestMetadata> {
+  async createRequest(
+    description: string,
+    options?: Opt<IRequestOptions, Reason.OptionalInput>,
+  ): Promise<IRequestMetadata> {
     return await this.create(description, options);
   }
 
@@ -50,7 +54,10 @@ export class RequestAdapter implements IRequestService {
     return await this.service.list(status, includeArchived);
   }
 
-  async listRequests(status?: RequestStatusType, includeArchived?: boolean): Promise<IRequestEntry[]> {
+  async listRequests(
+    status?: Opt<RequestStatusType, Reason.QueryFilter>,
+    includeArchived?: boolean,
+  ): Promise<IRequestEntry[]> {
     return await this.list(status, includeArchived);
   }
 

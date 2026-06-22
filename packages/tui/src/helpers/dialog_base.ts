@@ -22,6 +22,7 @@ import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 
 import { DialogStatus, MemoryScope, RequestOperation } from "@exaix/core";
 import { KEYS } from "./keyboard.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export type DialogState = DialogStatus;
 
@@ -601,7 +602,7 @@ export function renderButton(
   focused: boolean,
   destructive: boolean,
   theme: ITuiTheme,
-  disabled: boolean = false,
+  disabled: Opt<boolean, Reason.UiDefault> = false,
 ): string {
   const wrapper = focused ? ["[", "]"] : [" ", " "];
   const buttonText = `${wrapper[0]}${text}${wrapper[1]}`;

@@ -12,11 +12,12 @@ import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { IConfigService, IDatabaseService, IDisplayService, IGitService } from "@exaix/core/types";
 import type { IModelProvider } from "@exaix/ai";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 // ── Stub factories ─────────────────────────────────────────────────────
 
 export function createStubGitService(
-  overrides: Partial<IGitService> = {},
+  overrides: Opt<Partial<IGitService>, Reason.TestOverride> = {},
 ): IGitService {
   return {
     setRepository: () => {},
@@ -38,7 +39,7 @@ export function createStubGitService(
 }
 
 export function createStubDatabase(
-  overrides: Partial<IDatabaseService> = {},
+  overrides: Opt<Partial<IDatabaseService>, Reason.TestOverride> = {},
 ): IDatabaseService {
   const noop = () => {};
   const asyncNoop = async () => {};
@@ -69,7 +70,7 @@ const defaultConfig = ConfigSchema.parse({
 });
 
 export function createStubConfigService(
-  overrides: Partial<IConfigService> = {},
+  overrides: Opt<Partial<IConfigService>, Reason.TestOverride> = {},
 ): IConfigService {
   return {
     get: () => defaultConfig,

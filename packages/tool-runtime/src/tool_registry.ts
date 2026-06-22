@@ -40,6 +40,7 @@ import {
 } from "@exaix/schemas/tool_result_remediation.ts";
 import { lookupRemediationPolicy, lookupRemediationToolMetadata } from "@exaix/mcp";
 import { type IValidationReportContext, logValidationResult } from "./tool_validation_reporter.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 type RemediationPolicyResolver = (
   toolName: string,
@@ -1110,7 +1111,11 @@ export class ToolRegistry implements IToolRegistry {
    * allowed roots (e.g. the portal the caller was authorized for) before the command
    * spawns there. Without a `cwd` the command runs in baseDir (system root) as before.
    */
-  public async runCommand(command: string, args: string[], cwd?: string): Promise<IToolResult> {
+  public async runCommand(
+    command: string,
+    args: string[],
+    cwd?: Opt<string, Reason.SensibleDefault>,
+  ): Promise<IToolResult> {
     try {
       // Check if command is whitelisted
       if (!ALLOWED_COMMANDS.has(command)) {
@@ -1576,7 +1581,11 @@ export class ToolRegistry implements IToolRegistry {
   /**
    * Deno task tool implementation
    */
-  private async denoTask(task: string, path?: string, args: string[] = []): Promise<IToolResult> {
+  private async denoTask(
+    task: string,
+    path?: Opt<string, Reason.SensibleDefault>,
+    args: string[] = [],
+  ): Promise<IToolResult> {
     try {
       const allowedTasks = ["test", "lint", "fmt", "check"];
       if (!allowedTasks.includes(task)) {

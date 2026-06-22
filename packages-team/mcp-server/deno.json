@@ -1,6 +1,10 @@
 {
   "name": "@exaix-team/mcp-server",
   "version": "0.1.0",
+  "imports": {
+    "@exaix/core": "../../packages/core/mod.ts",
+    "@exaix/core/types": "../../packages/core/src/types/mod.ts"
+  },
   "exports": {
     ".": "./mod.ts"
   },

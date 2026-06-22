@@ -20,6 +20,7 @@ import {
   WaitStateSchema,
   type WaitStateStatus,
 } from "./wait_state.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IWaitStateTransitionPolicy {
   validate(input: {
@@ -206,7 +207,7 @@ export class WaitStateService implements IWaitStateService {
     return updated;
   }
 
-  async listPending(traceId?: string): Promise<IWaitState[]> {
+  async listPending(traceId?: Opt<string, Reason.TraceAbsent>): Promise<IWaitState[]> {
     const expired = [...this.store.values()].filter(
       (ws) => ws.status === PENDING && ws.deadlineAt && new Date(ws.deadlineAt) <= new Date(),
     );

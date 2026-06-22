@@ -96,6 +96,7 @@ import {
 import type { IStepDurabilityStore, IStepExecutionRecord, IStepReplayPolicy } from "./contracts/step_durability.ts";
 import { DefaultStepReplayPolicy } from "./contracts/step_durability.ts";
 import type { IWaitStateService } from "./wait_states/wait_state_service.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Interface for agent executors (AgentRunner or similar)
@@ -1851,10 +1852,15 @@ export class FlowRunner implements IFlowRunner {
     flowRunId: string,
     step: IFlowStep,
     flow: IFlow,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    request: {
+      userPrompt: string;
+      traceId?: Opt<string, Reason.TraceAbsent>;
+      requestId?: Opt<string, Reason.OptionalContext>;
+      requestAnalysis?: Opt<IRequestAnalysis, Reason.OptionalInput>;
+    },
     stepResults: Map<string, IStepResult>,
     startedAt: Date,
-    attemptClass: StepAttemptClass = StepAttemptClass.INITIAL,
+    attemptClass: Opt<StepAttemptClass, Reason.SensibleDefault> = StepAttemptClass.INITIAL,
   ): Promise<{ result: IAgentExecutionResult; namespaceWrites?: IStepNamespaceWrites }> {
     const stepRequest = await this.prepareStepRequest(flowRunId, step, flow, request, stepResults);
     const inputHash = await this.computeStepInputHash(stepRequest);
@@ -2375,11 +2381,16 @@ export class FlowRunner implements IFlowRunner {
   private formatStepSuccess(
     flowRunId: string,
     step: IFlowStep,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    request: {
+      userPrompt: string;
+      traceId?: Opt<string, Reason.TraceAbsent>;
+      requestId?: Opt<string, Reason.OptionalContext>;
+      requestAnalysis?: Opt<IRequestAnalysis, Reason.OptionalInput>;
+    },
     result: IAgentExecutionResult,
     startedAt: Date,
-    recoveryMetadata?: IStepRecoveryMetadata,
-    namespaceWrites?: IStepNamespaceWrites,
+    recoveryMetadata?: Opt<IStepRecoveryMetadata, Reason.OptionalInput>,
+    namespaceWrites?: Opt<IStepNamespaceWrites, Reason.OptionalInput>,
   ): IStepResult {
     const completedAt = new Date();
     const duration = completedAt.getTime() - startedAt.getTime();
@@ -2812,8 +2823,8 @@ export class FlowRunner implements IFlowRunner {
   private applyTransform(
     input: string,
     transform: string | ((input: string) => string),
-    transformArgs?: JSONValue,
-    originalRequest?: string,
+    transformArgs?: Opt<JSONValue, Reason.OptionalInput>,
+    originalRequest?: Opt<string, Reason.OptionalInput>,
   ): string {
     // Handle custom transform functions
     if (typeof transform === "function") {
@@ -3162,7 +3173,7 @@ export class FlowRunner implements IFlowRunner {
     flowRunId: string,
     flowId: string,
     traceId: string,
-    requestId?: string,
+    requestId?: Opt<string, Reason.OptionalContext>,
   ): Promise<IFlowResult["tokenSummary"] | null> {
     try {
       // Query all LLM usage events for this trace

@@ -43,6 +43,8 @@ import type {
   JsonValue,
 } from "./i_git_service.ts";
 
+import type { Opt, Reason } from "@exaix/core/types";
+
 type GitServiceError = Error | string | Record<string, JsonValue>;
 
 const DAEMON_IDENTITY_ID = "daemon";
@@ -439,7 +441,10 @@ export class GitService implements IGitService {
   /**
    * Checkout a branch
    */
-  async checkoutBranch(branchName: string, options?: { allowProtected?: boolean }): Promise<void> {
+  async checkoutBranch(
+    branchName: string,
+    options?: Opt<{ allowProtected?: boolean }, Reason.ExecutionConfig>,
+  ): Promise<void> {
     const startTime = Date.now();
 
     // Security Guard: Prevent checkouts to protected branches for agents
@@ -490,7 +495,7 @@ export class GitService implements IGitService {
   /**
    * Get the default branch name (what HEAD points to)
    */
-  async getDefaultBranch(repoPath?: string): Promise<string> {
+  async getDefaultBranch(repoPath?: Opt<string, Reason.SensibleDefault>): Promise<string> {
     const cwd = repoPath || this.repoPath || Deno.cwd();
 
     // Prefer local HEAD resolution (works for local repos and even for unborn branches).
@@ -557,7 +562,10 @@ export class GitService implements IGitService {
    *
    * This is not used by Phase 37.6 yet, but is helpful for future lifecycle cleanup.
    */
-  async removeWorktree(worktreePath: string, options?: { force?: boolean }): Promise<void> {
+  async removeWorktree(
+    worktreePath: string,
+    options?: Opt<{ force?: boolean }, Reason.ExecutionConfig>,
+  ): Promise<void> {
     const args = [GIT_CMD_WORKTREE, "remove"];
     if (options?.force) args.push("--force");
     args.push(worktreePath);
@@ -570,7 +578,12 @@ export class GitService implements IGitService {
    * This is useful when worktree directories were deleted manually or after crashes,
    * leaving stale entries under `.git/worktrees`.
    */
-  async pruneWorktrees(options?: { dryRun?: boolean; verbose?: boolean; expire?: string }): Promise<string> {
+  async pruneWorktrees(
+    options?: Opt<
+      { dryRun?: boolean; verbose?: boolean; expire?: string },
+      Reason.ExecutionConfig
+    >,
+  ): Promise<string> {
     const args = [GIT_CMD_WORKTREE, "prune"];
     if (options?.dryRun) args.push("--dry-run");
     if (options?.verbose) args.push("--verbose");

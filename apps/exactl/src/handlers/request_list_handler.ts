@@ -14,6 +14,7 @@ import { getWorkspaceArchiveDir, getWorkspaceRejectedDir, getWorkspaceRequestsDi
 import { DEFAULT_IDENTITY_ID, PORTAL_LABEL } from "@exaix/core";
 import { RequestKind, RequestPriority } from "@exaix/core";
 import { coerceRequestStatus, type RequestStatusType } from "@exaix/core/status";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export class RequestListHandler extends BaseCommand {
   private workspaceRequestsDir: string;
@@ -37,7 +38,7 @@ export class RequestListHandler extends BaseCommand {
     return requests;
   }
 
-  private getDirectoriesToScan(includeArchived?: boolean): string[] {
+  private getDirectoriesToScan(includeArchived?: Opt<boolean, Reason.QueryFilter>): string[] {
     const dirs = [this.workspaceRequestsDir];
     if (includeArchived) {
       dirs.push(getWorkspaceArchiveDir(this.context));
@@ -46,7 +47,10 @@ export class RequestListHandler extends BaseCommand {
     return dirs;
   }
 
-  private async scanDirectories(dirs: string[], statusFilter?: RequestStatusType): Promise<IRequestEntry[]> {
+  private async scanDirectories(
+    dirs: string[],
+    statusFilter?: Opt<RequestStatusType, Reason.QueryFilter>,
+  ): Promise<IRequestEntry[]> {
     const requests: IRequestEntry[] = [];
     for (const dir of dirs) {
       if (!await exists(dir)) continue;
@@ -68,7 +72,7 @@ export class RequestListHandler extends BaseCommand {
   private async processRequestEntry(
     dir: string,
     filename: string,
-    statusFilter?: RequestStatusType,
+    statusFilter?: Opt<RequestStatusType, Reason.QueryFilter>,
   ): Promise<IRequestEntry | null> {
     const filePath = join(dir, filename);
     try {

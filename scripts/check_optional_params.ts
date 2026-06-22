@@ -23,6 +23,7 @@ const args = new Set(Deno.args);
 const includeTests = args.has("--include-tests");
 const verbose = args.has("--verbose");
 const failOnViolations = args.has("--fail");
+const autoFix = args.has("--fix");
 
 if (args.has("--help") || args.has("-h")) {
   console.log(`Optional Parameter Usage Checker
@@ -31,10 +32,11 @@ Usage:
   deno run -A scripts/check_optional_params.ts [options]
 
 Options:
-  --include-tests    Include test files in scan (default: false)
-  --verbose          Show per-call-site breakdown
-  --fail             Exit non-zero when violations found (default: advisory)
-  --help, -h         Show this help message
+   --include-tests    Include test files in scan (default: false)
+   --verbose          Show per-call-site breakdown
+   --fail             Exit non-zero when violations found (default: advisory)
+   --fix              Remove ? from REDUNDANT_OPTIONAL params (makes them required)
+   --help, -h         Show this help message
 `);
   Deno.exit(0);
 }
@@ -46,7 +48,11 @@ const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..");
 interface FuncParam {
   name: string;
   index: number; // 0-based position in the parameter list
-  isOptional: boolean;
+  isOptional: boolean; // true if has ? token OR has default value
+  hasQuestionToken: boolean; // true only if explicitly marked with ?
+  qTokenPos: number; // -1 if no ? token, else position in source file
+  typeEndPos: number; // position after the last char of the type annotation
+  intentional: boolean; // true if param type is wrapped with Opt<T>
 }
 
 interface FuncDecl {
@@ -70,6 +76,7 @@ interface CallSite {
 enum ViolationKind {
   REDUNDANT_OPTIONAL = "REDUNDANT_OPTIONAL",
   UNUSED_OPTIONAL = "UNUSED_OPTIONAL",
+  MARKED_NOT_OPTIONAL = "MARKED_NOT_OPTIONAL",
 }
 
 interface Violation {
@@ -81,6 +88,8 @@ interface Violation {
   callerCount: number;
   callersPassing: number;
   callersOmitting: number;
+  qTokenPos: number; // position of ? token in source, -1 if unknown
+  typeEndPos: number; // position after the type annotation, -1 if unknown
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -93,8 +102,21 @@ function isScriptOrFixturePath(filePath: string): boolean {
   return filePath.includes("/scripts/") || filePath.includes("/tests/fixtures/");
 }
 
+/** Check if a parameter is wrapped with Opt<T> type marker. */
+function isOptType(param: ts.ParameterDeclaration): boolean {
+  if (!param.type) return false;
+  if (!ts.isTypeReferenceNode(param.type)) return false;
+  const typeName = ts.isIdentifier(param.type.typeName) ? param.type.typeName.text : "";
+  return typeName === "Opt";
+}
+
+/** Check if a parameter is intentionally optional via type wrapper. */
+function isOpt(param: ts.ParameterDeclaration): boolean {
+  return isOptType(param);
+}
+
 /** Check if a node (or its children) references a given parameter name. */
-function paramNameUsedInBody(body: ts.FunctionBody, paramName: string, sourceFile: ts.SourceFile): boolean {
+function paramNameUsedInBody(body: ts.FunctionBody, paramName: string, _sourceFile: ts.SourceFile): boolean {
   let found = false;
   function visit(node: ts.Node): void {
     if (found) return;
@@ -134,10 +156,15 @@ function collectFunctions(
         const p = node.parameters[i];
         const pName = ts.isIdentifier(p.name) ? p.name.text : null;
         if (!pName) continue;
+        const hasQt = !!p.questionToken;
         params.push({
           name: pName,
           index: i,
-          isOptional: !!p.questionToken || !!p.initializer,
+          isOptional: hasQt || !!p.initializer,
+          hasQuestionToken: hasQt,
+          qTokenPos: p.questionToken ? p.questionToken.pos : -1,
+          typeEndPos: p.type ? p.type.end : -1,
+          intentional: isOpt(p),
         });
       }
 
@@ -241,7 +268,7 @@ function analyze(matched: MatchedFunc[]): Violation[] {
   const violations: Violation[] = [];
 
   // Build a set of all public API exported names to reduce noise
-  const publicApiNames = new Set<string>();
+  const _publicApiNames = new Set<string>();
 
   for (const { decl, calls } of matched) {
     if (decl.optionalCount === 0) continue;
@@ -264,7 +291,9 @@ function analyze(matched: MatchedFunc[]): Violation[] {
       const isUsedInBody = decl.optionalUsedInBody[optIndex];
 
       // REDUNDANT_OPTIONAL: all callers pass a value for this param
-      if (callersPassing === callerCount) {
+      // Only flag ? params, not =default params (defaults are intentionally optional)
+      // Skip params wrapped with Opt<T> — those are marked by-design
+      if (callersPassing === callerCount && optParam.hasQuestionToken && !optParam.intentional) {
         violations.push({
           kind: ViolationKind.REDUNDANT_OPTIONAL,
           message: `'${optParam.name}' is optional (?) but all ${callerCount} callers pass it — should be required`,
@@ -274,12 +303,14 @@ function analyze(matched: MatchedFunc[]): Violation[] {
           callerCount,
           callersPassing,
           callersOmitting,
+          qTokenPos: optParam.qTokenPos,
+          typeEndPos: optParam.typeEndPos,
         });
       }
 
       // UNUSED_OPTIONAL: no caller passes a value AND the param is used in body
       // (unused + not in body is dead code, lower severity)
-      if (callersPassing === 0 && isUsedInBody) {
+      if (callersPassing === 0 && isUsedInBody && !optParam.intentional) {
         violations.push({
           kind: ViolationKind.UNUSED_OPTIONAL,
           message:
@@ -290,7 +321,28 @@ function analyze(matched: MatchedFunc[]): Violation[] {
           callerCount,
           callersPassing,
           callersOmitting,
+          qTokenPos: optParam.qTokenPos,
+          typeEndPos: optParam.typeEndPos,
         });
+      }
+      // MARKED_NOT_OPTIONAL: param uses Opt<T,R> wrapper but
+      // is not actually optional (no ?, no default value) — the marker is a lie.
+      for (const p of decl.params) {
+        if (p.intentional && !p.isOptional) {
+          violations.push({
+            kind: ViolationKind.MARKED_NOT_OPTIONAL,
+            message:
+              `'${p.name}' uses Opt<${p.name}, R> but is not optional — add ? or a default value to match the marker's intent`,
+            funcFile: decl.file,
+            funcLine: decl.line,
+            optionalParam: p.name,
+            callerCount: 0,
+            callersPassing: 0,
+            callersOmitting: 0,
+            qTokenPos: p.qTokenPos,
+            typeEndPos: p.typeEndPos,
+          });
+        }
       }
     }
   }
@@ -303,6 +355,7 @@ function analyze(matched: MatchedFunc[]): Violation[] {
 function report(violations: Violation[]): void {
   const redundant = violations.filter((v) => v.kind === ViolationKind.REDUNDANT_OPTIONAL);
   const unused = violations.filter((v) => v.kind === ViolationKind.UNUSED_OPTIONAL);
+  const markedNotOptional = violations.filter((v) => v.kind === ViolationKind.MARKED_NOT_OPTIONAL);
 
   if (redundant.length > 0) {
     console.error("🟡 REDUNDANT_OPTIONAL — param marked optional but ALL callers pass it:\n");
@@ -322,6 +375,16 @@ function report(violations: Violation[]): void {
       console.error(`  ${shortPath}:${v.funcLine}`);
       console.error(`    ${v.message}`);
       console.error(`    callers: ${v.callerCount} total, ${v.callersPassing} pass, ${v.callersOmitting} omit`);
+    }
+    console.error("");
+  }
+
+  if (markedNotOptional.length > 0) {
+    console.error("🟠 MARKED_NOT_OPTIONAL — param uses Opt<T,R> but is not actually optional:\n");
+    for (const v of markedNotOptional) {
+      const shortPath = relative(REPO_ROOT, v.funcFile);
+      console.error(`  ${shortPath}:${v.funcLine}`);
+      console.error(`    ${v.message}`);
     }
     console.error("");
   }
@@ -400,13 +463,36 @@ async function main(): Promise<void> {
     console.error("");
   }
 
+  if (autoFix) {
+    const redundant = violations.filter((v) => v.kind === ViolationKind.REDUNDANT_OPTIONAL);
+    if (redundant.length > 0) {
+      let fixedCount = 0;
+      const fileSources = new Map<string, string>();
+      const sorted = [...redundant].filter((v) => v.qTokenPos >= 0).sort((a, b) => b.qTokenPos - a.qTokenPos);
+      for (const v of sorted) {
+        if (!fileSources.has(v.funcFile)) {
+          fileSources.set(v.funcFile, await Deno.readTextFile(v.funcFile));
+        }
+        const src = fileSources.get(v.funcFile)!;
+        fileSources.set(v.funcFile, src.slice(0, v.qTokenPos) + src.slice(v.qTokenPos + 1));
+        fixedCount++;
+      }
+      for (const [filePath, source] of fileSources) {
+        await Deno.writeTextFile(filePath, source);
+      }
+      console.error(`✅ Auto-fixed ${fixedCount} REDUNDANT_OPTIONAL violation(s) across ${fileSources.size} file(s)`);
+    }
+  }
+
   if (violations.length > 0) {
     report(violations);
     if (failOnViolations) {
       console.error(`${violations.length} violation(s) found`);
       Deno.exit(1);
     }
-    console.error(`${violations.length} violation(s) found (advisory — use --fail to enforce)`);
+    if (!autoFix) {
+      console.error(`${violations.length} violation(s) found (advisory — use --fail to enforce)`);
+    }
   } else {
     report(violations);
   }

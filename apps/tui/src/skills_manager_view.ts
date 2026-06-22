@@ -28,6 +28,7 @@ import {
 } from "@exaix/tui/helpers/constants.ts";
 import type { ISkill, ISkillMatch, SkillDefinition } from "@exaix/schemas/memory_bank.ts";
 import type { ISkillMatchRequest } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 
 // ===== Interfaces =====
 
@@ -213,7 +214,9 @@ export class SkillsManagerView {
 
   constructor(private readonly skillsService: ISkillsViewService) {}
 
-  async getSkillsList(filter?: { source?: MemoryBankSource; status?: SkillStatus }): Promise<ISkillSummary[]> {
+  async getSkillsList(
+    filter?: Opt<{ source?: MemoryBankSource; status?: SkillStatus }, Reason.QueryFilter>,
+  ): Promise<ISkillSummary[]> {
     this.skills = await this.skillsService.listSkills(filter);
     return this.skills;
   }

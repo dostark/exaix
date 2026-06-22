@@ -22,6 +22,7 @@ import { AnalysisMode, type IRequestAnalysis } from "@exaix/core/request";
 import { PRIORITY_ICONS } from "@exaix/cli/config.ts";
 import type { IDisplayService } from "@exaix/core/types";
 import { type JSONObject, toSafeJson } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IRequestActionContext {
   requestCommands: RequestCommands;
@@ -107,7 +108,7 @@ export async function handleRequestAnalyze(
 export async function handleRequestCreate(
   context: IRequestActionContext,
   options: RequestCreateOptions,
-  description?: string,
+  description?: Opt<string, Reason.OptionalInput>,
 ): Promise<void> {
   const { requestCommands, display } = context;
 

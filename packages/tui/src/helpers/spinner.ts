@@ -9,6 +9,7 @@
 import { colorize, getTheme } from "./colors.ts";
 import { SpinnerStyle } from "../types/enums.ts";
 import { SECONDS_PER_HOUR } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface ISpinnerConfig {
   style: SpinnerStyle;
@@ -63,7 +64,9 @@ export interface SpinnerState {
 /**
  * Create a new spinner state
  */
-export function createSpinnerState(message: string = ""): SpinnerState {
+export function createSpinnerState(
+  message: Opt<string, Reason.UiDefault> = "",
+): SpinnerState {
   return {
     active: false,
     frame: 0,
@@ -75,7 +78,10 @@ export function createSpinnerState(message: string = ""): SpinnerState {
 /**
  * Start a spinner
  */
-export function startSpinner(state: SpinnerState, message?: string): SpinnerState {
+export function startSpinner(
+  state: SpinnerState,
+  message?: Opt<string, Reason.UiDefault>,
+): SpinnerState {
   return {
     ...state,
     active: true,
@@ -172,7 +178,11 @@ export function createProgressState(total: number, message: string = ""): Progre
 /**
  * Update progress
  */
-export function updateProgress(state: ProgressState, current: number, message?: string): ProgressState {
+export function updateProgress(
+  state: ProgressState,
+  current: number,
+  message?: Opt<string, Reason.UiDefault>,
+): ProgressState {
   return {
     ...state,
     current: Math.min(current, state.total),

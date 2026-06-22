@@ -19,6 +19,7 @@ import { CAP_VOTING, CAPABILITY_EDITION } from "@exaix/core/composer";
 import type { ISeamRegistryPlaceholder } from "@exaix/core/composer";
 import type { ISymbolExtractorRegistry } from "@exaix/portal/knowledge";
 import { EDITION_TEAM } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Register all Team-edition capability modules and invoke their
@@ -33,7 +34,7 @@ export function registerTeamCapabilities(
   flowRunner: FlowRunner,
   composer: TeamComposer,
   symbolRegistry: ISymbolExtractorRegistry,
-  hitlPolicyEvaluator?: IHitlPolicyEvaluator,
+  hitlPolicyEvaluator?: Opt<IHitlPolicyEvaluator, Reason.OptionalDependency>,
 ): void {
   // Assert the capability-to-edition mapping is consistent at wiring time
   if (CAPABILITY_EDITION[CAP_VOTING] !== EDITION_TEAM) {
