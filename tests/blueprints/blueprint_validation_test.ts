@@ -259,7 +259,7 @@ Deno.test("Blueprint validation: test-engineer.md passes schema", async () => {
 // ============================================================================
 
 Deno.test("Blueprint validation: all agents have valid model format", async () => {
-  const modelRegex = /^[a-z]+:[a-z0-9-.:]+$/;
+  const modelRegex = /^[a-z]+:[a-z0-9-.:/]+$/;
   const allFiles = [
     ...await getMarkdownFiles(BLUEPRINTS_DIR),
     ...await getMarkdownFiles(EXAMPLES_DIR),

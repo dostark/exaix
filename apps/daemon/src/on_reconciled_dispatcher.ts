@@ -136,6 +136,7 @@ export function createOnReconciledHandler(
           id: crypto.randomUUID(),
           tool: brief.tool,
           sessionReturn,
+          costUsd: sessionReturn.cost_usd,
           traceId,
           timestamp: new Date(),
         });

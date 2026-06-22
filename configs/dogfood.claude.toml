@@ -1,0 +1,40 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+log_level = "info"
+allow_net = ["api.anthropic.com", "api.openai.com", "localhost:11434"]
+
+[paths]
+workspace = "Workspace"
+portals = "Portals"
+memory = "Memory"
+
+[ai]
+provider = "ollama"
+model = "ollama/llama3"
+
+[[portals]]
+alias = "exaix-self"
+target_path = "__WORKTREE_PATH__"
+execution_strategy = "worktree"
+default_branch = "main"
+
+[portal_knowledge]
+auto_analyze_on_mount = true
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = true
+
+# Delegate the code_changes gate to headless Claude Code.
+# Uses --output-format json; return is parsed from the single {type:"result"} object.
+# Requires the `claude` CLI on PATH with OAuth or API key in the daemon env.
+# Provider keys are stripped from the child by sanitizeChildEnv — auth comes
+# from the daemon's own environment or the [session_delegate.provider] block.
+[session_delegate]
+enabled = true
+tool = "claude-code"
+model = "claude-sonnet-4-20250514"
+gates = ["code_changes"]
+launch_mode = "headless"

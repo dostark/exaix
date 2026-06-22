@@ -10,7 +10,8 @@
   "workspaceFolder": "/workspaces/exaix",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/exaix,type=bind,consistency=cached",
   "containerEnv": {
-    "DENO_DIR": "/deno-dir"
+    "DENO_DIR": "/deno-dir",
+    "OPENROUTER_API_KEY": "${localEnv:OPENROUTER_API_KEY}"
   },
   "runArgs": [
     "--cap-drop=ALL",
@@ -26,7 +27,7 @@
       }
     }
   },
-  "postCreateCommand": "deno --version && deno cache --config deno.json apps/daemon/main.ts",
+  "postCreateCommand": "deno --version && deno cache --config deno.json apps/daemon/main.ts && claude --version && opencode --version",
   "remoteEnv": {
     "PATH": "${containerEnv:PATH}"
   }

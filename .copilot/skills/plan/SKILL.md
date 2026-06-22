@@ -11,7 +11,17 @@ title: "Plan Skill (#plan)"
 description: Draft a new Phase Planning Document for a feature, refactor, or architectural change — follows Exaix standards for TDD, security, and traceability. Produces plans that are machine-convertible to dogfood requests (step-manifests for automated request extraction). Grounds any third-party service/provider integration in deep web research of the provider's real, current capability surface so integrations are first-class, not hacks.
 short_summary: "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy."
 version: "1.8"
-topics: ["planning", "architecture", "tdd", "security", "traceability", "configurability", "reachability", "dogfooding", "integrations"]
+topics: [
+  "planning",
+  "architecture",
+  "tdd",
+  "security",
+  "traceability",
+  "configurability",
+  "reachability",
+  "dogfooding",
+  "integrations",
+]
 qwen_skill: plan
 ---
 
@@ -65,6 +75,7 @@ Do / Don't
 - ✅ Do assess scenario framework coverage (§3E) for any change to the end-to-end flow.
 - ✅ Do use `[ ]` for all success criteria and success metric checkboxes in planning documents — these represent aspirational targets, not completion status. Reserve `[x]` (or ✅) for actual implementation progress tracked during execution (e.g., in todo lists or step-manifests).
 - ✅ Do use plain descriptive prose to summarize a step's outputs and consumers — never status-like labels such as `**✅ CORE**` or `**✅ WIRED**` that could be mistaken for implementation status.
+- ✅ Do ensure every h2 section carries its own descriptive content that fulfills the section's stated purpose. A section that is only a heading followed immediately by sub-headings (e.g., `## Current State Analysis` with no prose before `### Key Files`) is a **blank container** — it reads as an unfinished outline placeholder, not a written plan. Every h2 must contain at least one paragraph of content at its own level that introduces, summarizes, or frames the sub-sections below it. This is especially critical for `## Executive Summary`, `## Current State Analysis`, `## Technical Architecture`, and `## Security Constraints` — sections whose heading promises information that must not be deferred entirely to sub-sections.
 - ❌ Don't use 'any' or vague types; use Zod schemas and TypeScript interfaces.
 - ❌ Don't skip the 'Planned Tests' section for any implementation step.
 - ❌ Don't let a runtime success criterion be satisfiable by a package-unit test alone — that is how production-dead code ships green.

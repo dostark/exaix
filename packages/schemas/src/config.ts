@@ -405,11 +405,29 @@ export const ConfigSchema = z.object({
     service_account_env: "VERTEX_AI_SERVICE_ACCOUNT",
     region: "us-central1",
   }),
-  /** OpenRouter unified-gateway provider options (API key + ranking headers) */
+  /** OpenRouter unified-gateway provider options (API key + ranking headers + routing). */
   ai_openrouter: z.object({
     api_key_env: z.string().default("OPENROUTER_API_KEY"),
     site_name: z.string().default("Exaix"),
     site_url: z.string().url().default("https://exaix.dev"),
+    /** Control-surface passthrough: model fallbacks, provider routing, privacy (Phase 123 R10). */
+    routing: z.object({
+      models: z.array(z.string()).max(3).optional(),
+      provider: z.object({
+        order: z.array(z.string()).optional(),
+        only: z.array(z.string()).optional(),
+        ignore: z.array(z.string()).optional(),
+        sort: z.enum(["throughput", "latency", "cost"]).optional(),
+        max_price: z.object({
+          prompt: z.number().nonnegative().optional(),
+          completion: z.number().nonnegative().optional(),
+          request: z.number().nonnegative().optional(),
+          image: z.number().nonnegative().optional(),
+        }).optional(),
+      }).optional(),
+      zdr: z.boolean().optional(),
+      data_collection: z.enum(["allow", "deny"]).optional(),
+    }).optional(),
   }).optional().default({
     api_key_env: "OPENROUTER_API_KEY",
     site_name: "Exaix",

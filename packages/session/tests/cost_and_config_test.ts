@@ -53,6 +53,63 @@ Deno.test("[cost_mapping] GAP-6 — an absent model falls back to the Unknown la
   assertEquals(record.model, "Unknown");
 });
 
+Deno.test("[cost_mapping] cost_usd from ISessionCostInput overrides sessionReturn.cost_usd", () => {
+  const sessionReturn = SessionReturnSchema.parse({
+    trace_id: "00000000-0000-0000-0000-000000000c10",
+    resume_token: "tok",
+    decision: "changes_made",
+    summary: "done",
+    paths_touched: ["src/a.ts"],
+    token_stats: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
+    cost_usd: 0.002,
+  });
+  const record = sessionReturnToCostRecord({
+    id: "cost-2",
+    tool: "opencode",
+    sessionReturn,
+    costUsd: 0.005,
+    timestamp: NOW,
+  });
+  assertEquals(record.estimatedCostUsd, 0.005);
+});
+
+Deno.test("[cost_mapping] cost_usd from sessionReturn.cost_usd used when ISessionCostInput.costUsd absent", () => {
+  const sessionReturn = SessionReturnSchema.parse({
+    trace_id: "00000000-0000-0000-0000-000000000c11",
+    resume_token: "tok",
+    decision: "changes_made",
+    summary: "done",
+    paths_touched: ["src/b.ts"],
+    token_stats: { input_tokens: 200, output_tokens: 100, total_tokens: 300 },
+    cost_usd: 0.015,
+  });
+  const record = sessionReturnToCostRecord({
+    id: "cost-3",
+    tool: "claude-code",
+    sessionReturn,
+    timestamp: NOW,
+  });
+  assertEquals(record.estimatedCostUsd, 0.015);
+});
+
+Deno.test("[cost_mapping] cost_usd defaults to 0 when absent from both input and return", () => {
+  const sessionReturn = SessionReturnSchema.parse({
+    trace_id: "00000000-0000-0000-0000-000000000c12",
+    resume_token: "tok",
+    decision: "changes_made",
+    summary: "done",
+    paths_touched: [],
+    token_stats: { input_tokens: 0, output_tokens: 0, total_tokens: 0 },
+  });
+  const record = sessionReturnToCostRecord({
+    id: "cost-4",
+    tool: "opencode",
+    sessionReturn,
+    timestamp: NOW,
+  });
+  assertEquals(record.estimatedCostUsd, 0); // external/unmetered sentinel
+});
+
 Deno.test("[config_resolver] GAP-7 — the most specific scope wins", () => {
   const resolved = resolveSessionDelegateConfig({
     global: cfg("vscode"),

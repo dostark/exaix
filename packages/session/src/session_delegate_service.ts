@@ -11,9 +11,20 @@
  */
 
 import { dirname, join } from "@std/path";
-import { SESSION_DEFAULT_DEADLINE_HOURS, TIME_MS_PER_HOUR } from "@exaix/core/types";
+import {
+  PROVIDER_ANTHROPIC,
+  PROVIDER_OLLAMA,
+  PROVIDER_OPENROUTER,
+  SESSION_DEFAULT_DEADLINE_HOURS,
+  TIME_MS_PER_HOUR,
+} from "@exaix/core/types";
 import { SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
-import type { SessionBrief, SessionLaunchMode } from "@exaix/schemas/session_delegate.ts";
+import type {
+  SessionBrief,
+  SessionDelegateConfig,
+  SessionLaunchMode,
+  SessionTool,
+} from "@exaix/schemas/session_delegate.ts";
 import { PathSecurity } from "@exaix/tool-runtime";
 import type { ISessionLaunch } from "./i_session_adapter.ts";
 import type { SessionAdapterRegistry } from "./session_adapter_registry.ts";
@@ -36,6 +47,8 @@ export interface ISessionDelegateServiceDeps {
 
 const BRIEF_FILE = "brief.json";
 const RESUME_TOKEN_ENTROPY_BYTES = 32; // 256-bit suffix (GAP-2)
+const TOOL_OPENCODE = "opencode";
+const TOOL_CLAUDE_CODE = "claude-code";
 
 /** System wall-clock implementation of the clock seam. */
 export const systemClock: ISessionClock = { now: () => new Date() };
@@ -115,5 +128,39 @@ export class SessionDelegateService implements ISessionDelegateService {
     return this.deps.registry
       .resolve(brief.tool)
       .buildLaunch(brief, mode, this.briefPathFor(brief.trace_id));
+  }
+
+  resolveDelegateEnv(
+    config: SessionDelegateConfig,
+    tool: SessionTool,
+    providerApiKey: string,
+  ): Record<string, string> {
+    if (!config.provider) return {};
+
+    const { name, base_url } = config.provider;
+
+    if (name === PROVIDER_OPENROUTER) {
+      if (tool === TOOL_OPENCODE) {
+        return { OPENROUTER_API_KEY: providerApiKey };
+      }
+      if (tool === TOOL_CLAUDE_CODE) {
+        return {
+          ANTHROPIC_BASE_URL: base_url ?? "https://openrouter.ai/api",
+          ANTHROPIC_AUTH_TOKEN: providerApiKey,
+          ANTHROPIC_API_KEY: "",
+        };
+      }
+      return {};
+    }
+
+    if (name === PROVIDER_ANTHROPIC) {
+      return { ANTHROPIC_API_KEY: providerApiKey };
+    }
+
+    if (name === PROVIDER_OLLAMA) {
+      return {};
+    }
+
+    return {};
   }
 }

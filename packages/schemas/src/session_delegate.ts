@@ -100,6 +100,8 @@ export const SessionReturnSchema = z.object({
   token_stats: SessionTokenStatsSchema,
   /** Opaque audit-only reference; never parsed as pipeline state. */
   transcript_ref: z.string().optional(),
+  /** USD cost reported by the delegate tool (e.g. opencode step_finish.cost, claude total_cost_usd). */
+  cost_usd: z.number().nonnegative().optional(),
 });
 export type SessionReturn = z.infer<typeof SessionReturnSchema>;
 
@@ -170,6 +172,14 @@ export const SessionReconcileRejectionSchema = z.enum([
 ]);
 export type SessionReconcileRejection = z.infer<typeof SessionReconcileRejectionSchema>;
 
+/** Provider resolution for a delegate tool (Phase 123 R9). */
+export const SessionDelegateProviderSchema = z.object({
+  name: z.string().min(1),
+  key_env: z.string().min(1),
+  base_url: z.string().url().optional(),
+});
+export type SessionDelegateProvider = z.infer<typeof SessionDelegateProviderSchema>;
+
 /** TOML config block: [session_delegate] at request/portal/blueprint scope. */
 export const SessionDelegateConfigSchema = z.object({
   enabled: z.boolean().default(false),
@@ -182,5 +192,7 @@ export const SessionDelegateConfigSchema = z.object({
   token_budget: SessionTokenBudgetSchema.optional(),
   /** Absolute paths to additional binaries allowed for headless launch (Phase 111). */
   bin_overrides: z.array(z.string()).optional(),
+  /** Declarative delegate provider block: routes the tool through a specific API gateway. */
+  provider: SessionDelegateProviderSchema.optional(),
 });
 export type SessionDelegateConfig = z.infer<typeof SessionDelegateConfigSchema>;

@@ -1,0 +1,44 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+log_level = "info"
+allow_net = ["api.anthropic.com", "api.openai.com", "api.openrouter.ai", "localhost:11434"]
+
+[paths]
+workspace = "Workspace"
+portals = "Portals"
+memory = "Memory"
+
+[ai]
+provider = "ollama"
+model = "ollama/llama3"
+
+[[portals]]
+alias = "exaix-self"
+target_path = "__WORKTREE_PATH__"
+execution_strategy = "worktree"
+default_branch = "main"
+
+[portal_knowledge]
+auto_analyze_on_mount = true
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = true
+
+# Delegate the code_changes gate to headless OpenCode routed through OpenRouter.
+# The ANTHROPIC_API_KEY is deliberately empty — Claude Code via OpenRouter requires
+# ANTHROPIC_AUTH_TOKEN (the OpenRouter key) and ANTHROPIC_BASE_URL, not the
+# first-party Anthropic key. Provider keys are stripped from the parent env by
+# sanitizeChildEnv; only the resolved delegate-provider env reaches the child.
+[session_delegate]
+enabled = true
+tool = "opencode"
+model = "deepseek-v4-flash"
+gates = ["code_changes"]
+launch_mode = "headless"
+
+[session_delegate.provider]
+name = "openrouter"
+key_env = "OPENROUTER_API_KEY"

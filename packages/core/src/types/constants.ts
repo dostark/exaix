@@ -161,6 +161,12 @@ export const DEFAULT_WATCHER_STABILITY_MIN_FILE_SIZE = 1;
 // ============================================================================
 
 // ============================================================================
+// Session Delegate (Phase 111/123)
+// ============================================================================
+/** Maximum time (ms) to drain a headless delegate's stdout stream. */
+export const DELEGATE_STDOUT_DRAIN_MS = 5_000;
+
+// ============================================================================
 // Service Limits and Batch Sizes
 // ============================================================================
 export const DEFAULT_LOG_BUFFER_SIZE = 10000;

@@ -277,6 +277,8 @@ For users who hit free-tier quotas on a paid subscription, or who want one key f
 
 **OpenRouter** — a single API key to many models (`vendor/model` names).
 
+Sign up at [openrouter.ai](https://openrouter.ai) and create an API key. See the [OpenRouter docs](https://openrouter.ai/docs) for available models and rate limits.
+
 ```bash
 export OPENROUTER_API_KEY="sk-or-v1-..."
 ```
@@ -329,7 +331,17 @@ gates = ["refinement", "plan_review"]   # which gates to delegate
 launch_mode = "headless"       # advisory (Mode 1) | supervised (Mode 2) | headless (Mode 3)
 ```
 
-#### 2.5.2 Launch Modes
+#### 2.5.2 Prerequisites
+
+The delegate tools must be installed separately:
+
+| Tool            | Installation                                                                                                                             |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **OpenCode**    | [opencode.ai](https://opencode.ai) — CLI installer and setup guide                                                                       |
+| **Claude Code** | [docs.anthropic.com/en/docs/claude-code](https://docs.anthropic.com/en/docs/claude-code/overview) — requires Claude Pro/Max subscription |
+| **OpenRouter**  | See [§2.4.4](#244-enterprise-providers-vertex-ai-openrouter) — API key from [openrouter.ai](https://openrouter.ai)                       |
+
+#### 2.5.3 Launch Modes
 
 | Mode       | Value        | Description                                                                |
 | ---------- | ------------ | -------------------------------------------------------------------------- |
@@ -340,7 +352,7 @@ launch_mode = "headless"       # advisory (Mode 1) | supervised (Mode 2) | headl
 Mode 3 (headless) supports both `claude-code` and `opencode`. The daemon captures
 JSON event output from `opencode run --format json` and synthesizes a valid `return.json`.
 
-#### 2.5.3 Per-Request Override via Environment Variables
+#### 2.5.4 Per-Request Override via Environment Variables
 
 For CI and testing, use environment variables instead of TOML config:
 
@@ -354,7 +366,7 @@ export EXA_SESSION_DELEGATE_BIN_OVERRIDES=/path/to/custom/binary
 Default gates when `EXA_SESSION_DELEGATE_ENABLED=true`: `refinement`, `plan_review`.
 `code_changes` requires explicit opt-in via `EXA_SESSION_DELEGATE_GATES`.
 
-#### 2.5.4 Gate Effects
+#### 2.5.5 Gate Effects
 
 | Gate           | What happens when delegated                                        |
 | -------------- | ------------------------------------------------------------------ |
@@ -363,7 +375,7 @@ Default gates when `EXA_SESSION_DELEGATE_ENABLED=true`: `refinement`, `plan_revi
 | `code_changes` | Plan step execution delegates to CLI tool instead of AgentExecutor |
 | `review`       | Code review delegates to CLI tool (requires handler wiring)        |
 
-#### 2.5.5 Mock Binary for Testing
+#### 2.5.6 Mock Binary for Testing
 
 ```bash
 deno task build:mock-tool   # compiles .cache/mock_session_tool_bin

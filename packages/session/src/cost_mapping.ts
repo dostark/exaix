@@ -20,17 +20,18 @@ export interface ISessionCostInput {
   id: string;
   tool: SessionTool;
   sessionReturn: SessionReturn;
+  costUsd?: number;
   traceId?: string;
   portal?: string;
   timestamp: Date;
 }
 
-/** USD sentinel for an external, unmetered (human-subscription) session tool. */
-const EXTERNAL_UNMETERED_USD = 0;
-
-/** Map a delegated return's token_stats to an IProviderCostRecord (GAP-6). */
+/** Map a delegated return's token_stats to an IProviderCostRecord (GAP-6).
+ *  Uses `input.costUsd` when provided; falls back to `input.sessionReturn.cost_usd`;
+ *  defaults to 0 (external/unmetered sentinel) when absent. */
 export function sessionReturnToCostRecord(input: ISessionCostInput): IProviderCostRecord {
   const stats = input.sessionReturn.token_stats;
+  const costUsd = input.costUsd ?? input.sessionReturn.cost_usd ?? 0;
   return {
     id: input.id,
     provider: `${SESSION_COST_PROVIDER_PREFIX}${input.tool}`,
@@ -38,7 +39,7 @@ export function sessionReturnToCostRecord(input: ISessionCostInput): IProviderCo
     tokens: stats.total_tokens,
     promptTokens: stats.input_tokens,
     completionTokens: stats.output_tokens,
-    estimatedCostUsd: EXTERNAL_UNMETERED_USD,
+    estimatedCostUsd: costUsd,
     traceId: input.traceId,
     portal: input.portal,
     timestamp: input.timestamp,

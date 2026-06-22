@@ -79,7 +79,7 @@ export const BlueprintFrontmatterSchema = z.object({
   /** Model in provider:model format */
   model: z.string()
     .min(1)
-    .regex(/^[a-z]+:[a-z0-9-.:]+$/, "model must be in provider:model format"),
+    .regex(/^[a-z]+:[a-z0-9-.:/]+$/, "model must be in provider:model format"),
 
   /** Agent capabilities */
   capabilities: z.array(z.string()).optional().default([]),

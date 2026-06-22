@@ -46,3 +46,15 @@ export function assertBinaryAllowed(bin: string, allowlist: ReadonlySet<string>)
     throw new Error(`session tool binary is not allowlisted: ${bin}`);
   }
 }
+
+/**
+ * Merge delegate provider env onto a sanitized child env.
+ * Applied after sanitizeChildEnv so injected API_KEY vars survive the SECRET_ENV_PATTERN strip.
+ * The delegate env is additive — it never removes keys from the sanitized base.
+ */
+export function mergeDelegateEnv(
+  sanitizedEnv: Record<string, string>,
+  delegateEnv: Record<string, string>,
+): Record<string, string> {
+  return { ...sanitizedEnv, ...delegateEnv };
+}

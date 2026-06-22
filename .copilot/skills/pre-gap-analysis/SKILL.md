@@ -327,6 +327,9 @@ gaps.
 
    A step missing any sub-section is a gap (severity depends on which one).
 
+1. **Check h2 sections carry their own descriptive content (no blank containers).**
+   For every h2 heading in the plan document, verify it contains at least one paragraph of substantive content at its own level before any sub-headings. A section whose heading is followed immediately by a `###` sub-heading (e.g., `## Current State Analysis` → `### Key Files` with no prose in between) is a **blank container** — the heading promises information that the plan has not yet delivered. Flag it as a 🟠 Conceptual gap. This applies especially to `## Executive Summary`, `## Current State Analysis`, `## Technical Architecture`, and `## Security Constraints` — sections whose purpose is not fully satisfied by sub-sections alone. The fix is to write introductory content at the h2 level, not to remove the sub-sections.
+
 1. **Check test coverage specification.**
    For every new code path the plan introduces:
    - Is there a named unit test in Planned Tests?
@@ -436,7 +439,6 @@ cheapest point.
    production consumers)` section for `#next-steps` to maintain. Its absence is a
    🔵 Conceptual gap — note it so `#plan`/`#next-steps` seeds it.
 
-
 ---
 
 ### Phase 9 — Gap Classification
@@ -483,7 +485,7 @@ Build a gap summary table before detailed entries.
 
 #### Required markdown format
 
-```markdown
+````markdown
 ---
 
 ## Pre-Gap Analysis — <ISO date> — Verdict: ⚠️ GAPS FOUND / ✅ READY TO IMPLEMENT
@@ -518,6 +520,7 @@ are written. Format with grep outcome annotations:
 1. 🔴 [GAP-1] <action> — ✅ [grep: `symbol` in `file.ts:N`]
 2. 🟡 [GAP-2] <action> — ⛔ UNVERIFIED [grep: `symbol` not found]
 ```
+````
 
 **Verification rules (applied during finalize):**
 

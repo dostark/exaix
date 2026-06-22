@@ -100,3 +100,94 @@ Deno.test("OpenRouterProvider.generate maps a 401 to AuthenticationError", async
     globalThis.fetch = origFetch;
   }
 });
+
+Deno.test("[openrouter] routing block serialized into request body", async () => {
+  let capturedBody = "";
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+    capturedBody = String(init?.body ?? "");
+    return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
+  }) as typeof fetch;
+
+  try {
+    const provider = new OpenRouterProvider({
+      apiKey: "sk-test",
+      model: "openai/gpt-4o",
+      routing: {
+        models: ["openai/gpt-4o", "anthropic/claude-sonnet-4"],
+        provider: {
+          order: ["OpenAI", "Anthropic"],
+          sort: "cost",
+        },
+        zdr: true,
+        data_collection: "deny",
+      },
+    });
+    await provider.generate("test prompt");
+
+    const body = JSON.parse(capturedBody);
+    assertEquals(body.model, "openai/gpt-4o");
+    assertEquals(body.messages[0].content, "test prompt");
+    assertEquals(body.models, ["openai/gpt-4o", "anthropic/claude-sonnet-4"]);
+    assertEquals(body.provider.order, ["OpenAI", "Anthropic"]);
+    assertEquals(body.provider.sort, "cost");
+    assertEquals(body.provider.zdr, true);
+    assertEquals(body.provider.data_collection, "deny");
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+Deno.test("[openrouter] routing block serializes max_price into request body", async () => {
+  let capturedBody = "";
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+    capturedBody = String(init?.body ?? "");
+    return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
+  }) as typeof fetch;
+
+  try {
+    const provider = new OpenRouterProvider({
+      apiKey: "sk-test",
+      model: "openai/gpt-4o",
+      routing: {
+        provider: {
+          max_price: { prompt: 2, completion: 1, request: 0.01, image: 0.005 },
+        },
+      },
+    });
+    await provider.generate("test prompt");
+
+    const body = JSON.parse(capturedBody);
+    assertEquals(body.provider.max_price.prompt, 2);
+    assertEquals(body.provider.max_price.completion, 1);
+    assertEquals(body.provider.max_price.request, 0.01);
+    assertEquals(body.provider.max_price.image, 0.005);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+Deno.test("[openrouter] routing block omitted when not configured", async () => {
+  let capturedBody = "";
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
+    capturedBody = String(init?.body ?? "");
+    return Promise.resolve(new Response(OPENAI_RESPONSE, { status: 200 }));
+  }) as typeof fetch;
+
+  try {
+    const provider = new OpenRouterProvider({
+      apiKey: "sk-test",
+      model: "openai/gpt-4o",
+    });
+    await provider.generate("test prompt");
+
+    const body = JSON.parse(capturedBody);
+    assertEquals(body.model, "openai/gpt-4o");
+    assertEquals(body.models, undefined);
+    assertEquals(body.provider, undefined);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});

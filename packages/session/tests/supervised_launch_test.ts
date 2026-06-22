@@ -8,7 +8,7 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-import { assertBinaryAllowed, sanitizeChildEnv } from "@exaix/session/supervised_launch.ts";
+import { assertBinaryAllowed, mergeDelegateEnv, sanitizeChildEnv } from "@exaix/session/supervised_launch.ts";
 import { SESSION_ENV_MAX_TOTAL_TOKENS } from "@exaix/core/types";
 
 Deno.test("[supervised_launch][security] GAP-4 — parent secrets are never forwarded to the child", () => {
@@ -44,4 +44,30 @@ Deno.test("[supervised_launch][security] GAP-4 — only an allowlisted binary ma
   assertBinaryAllowed("claude", allow); // no throw
   assertThrows(() => assertBinaryAllowed("rm", allow));
   assertThrows(() => assertBinaryAllowed("/bin/sh", allow));
+});
+
+Deno.test("[supervised_launch][security] mergeDelegateEnv keeps injected OPENROUTER_API_KEY after sanitize", () => {
+  const parent = {
+    PATH: "/usr/bin",
+    HOME: "/home/dev",
+    ANTHROPIC_API_KEY: "sk-should-be-stripped",
+  };
+  const sanitized = sanitizeChildEnv({}, parent);
+  // Before merge: no API_KEY vars survive
+  assertEquals(sanitized["ANTHROPIC_API_KEY"], undefined);
+  // After merge: injected delegate key survives
+  const merged = mergeDelegateEnv(sanitized, { OPENROUTER_API_KEY: "sk-or-v1-abc" });
+  assertEquals(merged["OPENROUTER_API_KEY"], "sk-or-v1-abc");
+  // Original secrets still stripped
+  assertEquals(merged["ANTHROPIC_API_KEY"], undefined);
+  // Safe parent vars still present
+  assertEquals(merged["PATH"], "/usr/bin");
+});
+
+Deno.test("[supervised_launch][security] mergeDelegateEnv does not remove existing keys", () => {
+  const sanitized = { PATH: "/usr/bin", MY_VAR: "keep-me" };
+  const merged = mergeDelegateEnv(sanitized, { NEW_VAR: "new-value" });
+  assertEquals(merged["PATH"], "/usr/bin");
+  assertEquals(merged["MY_VAR"], "keep-me");
+  assertEquals(merged["NEW_VAR"], "new-value");
 });

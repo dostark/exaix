@@ -134,7 +134,7 @@ Deno.test("[launcher_stdout] empty stdout returns false (no synthesis)", async (
   }
 });
 
-Deno.test("[launcher_stdout] non-JSON stdout returns false", async () => {
+Deno.test("[launcher_stdout] non-JSON stdout synthesizes fallback return", async () => {
   const rig = await makeRig();
   try {
     const child = makeMockChild("just regular text output\nwith multiple lines");
@@ -143,7 +143,11 @@ Deno.test("[launcher_stdout] non-JSON stdout returns false", async () => {
       TRACE_ID,
       join(rig.sessionDir, TRACE_ID, "return.json"),
     );
-    assertEquals(synth, false);
+    assertEquals(synth, true, "non-JSON stdout still produces a synthesized return");
+    const raw = await Deno.readTextFile(join(rig.sessionDir, TRACE_ID, "return.json"));
+    const parsed = JSON.parse(raw);
+    assertEquals(parsed.trace_id, TRACE_ID);
+    assertEquals(typeof parsed.summary, "string");
   } finally {
     await rig.cleanup();
   }
