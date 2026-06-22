@@ -19,11 +19,11 @@ const SOLO_PROVIDERS = [
   ProviderType.ANTHROPIC,
   ProviderType.OPENAI,
   ProviderType.GOOGLE,
+  ProviderType.OPENROUTER, // BYO-key aggregator — available in all editions (D5b)
 ];
 
 const TEAM_PROVIDERS = [
   ProviderType.VERTEX,
-  ProviderType.OPENROUTER,
 ];
 
 function freshSoloBootstrap(): void {
@@ -32,7 +32,7 @@ function freshSoloBootstrap(): void {
 }
 
 describe("[team] Team edition provider bootstrap", () => {
-  it("Solo bootstrap registers standard providers but not Vertex AI", () => {
+  it("Solo bootstrap registers standard providers and OpenRouter but not Vertex AI", () => {
     freshSoloBootstrap();
 
     for (const provider of SOLO_PROVIDERS) {

@@ -419,9 +419,10 @@ export const ConfigSchema = z.object({
         ignore: z.array(z.string()).optional(),
         sort: z.enum(["throughput", "latency", "cost"]).optional(),
         max_price: z.object({
-          completion: z.number().positive().optional(),
-          request: z.number().positive().optional(),
-          image: z.number().positive().optional(),
+          prompt: z.number().nonnegative().optional(),
+          completion: z.number().nonnegative().optional(),
+          request: z.number().nonnegative().optional(),
+          image: z.number().nonnegative().optional(),
         }).optional(),
       }).optional(),
       zdr: z.boolean().optional(),

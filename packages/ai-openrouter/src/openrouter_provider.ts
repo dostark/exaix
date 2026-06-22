@@ -41,6 +41,7 @@ export interface IOpenRouterRouting {
     ignore?: string[];
     sort?: OpenRouterSortStrategy;
     max_price?: {
+      prompt?: number;
       completion?: number;
       request?: number;
       image?: number;
@@ -67,7 +68,7 @@ interface OpenRouterProviderBody {
   only?: string[];
   ignore?: string[];
   sort?: OpenRouterSortStrategy;
-  max_price?: { completion?: number; request?: number; image?: number };
+  max_price?: { prompt?: number; completion?: number; request?: number; image?: number };
   zdr?: boolean;
   data_collection?: OpenRouterDataCollection;
 }

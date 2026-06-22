@@ -106,14 +106,31 @@ Deno.test("[ConfigSchema] ai_openrouter.routing accepts provider.max_price", () 
     ai_openrouter: {
       routing: {
         provider: {
-          max_price: { completion: 0.01, request: 0.002 },
+          max_price: { prompt: 0.5, completion: 0.01, request: 0.002, image: 0.001 },
         },
       },
     },
   });
   assertEquals(result.success, true);
   if (!result.success) return;
+  assertEquals(result.data.ai_openrouter.routing?.provider?.max_price?.prompt, 0.5);
   assertEquals(result.data.ai_openrouter.routing?.provider?.max_price?.completion, 0.01);
+  assertEquals(result.data.ai_openrouter.routing?.provider?.max_price?.request, 0.002);
+  assertEquals(result.data.ai_openrouter.routing?.provider?.max_price?.image, 0.001);
+});
+
+Deno.test("[ConfigSchema] ai_openrouter.routing accepts zero max_price", () => {
+  const result = ConfigSchema.safeParse({
+    ...baseConfig(),
+    ai_openrouter: {
+      routing: {
+        provider: {
+          max_price: { prompt: 0, completion: 0, request: 0, image: 0 },
+        },
+      },
+    },
+  });
+  assertEquals(result.success, true, "zero max_price must be valid for free-only routing");
 });
 
 Deno.test("[ConfigSchema] ai_openrouter.routing rejects negative max_price", () => {
@@ -128,6 +145,22 @@ Deno.test("[ConfigSchema] ai_openrouter.routing rejects negative max_price", () 
     },
   });
   assertEquals(result.success, false);
+});
+
+Deno.test("[ConfigSchema] ai_openrouter.routing accepts prompt-only max_price", () => {
+  const result = ConfigSchema.safeParse({
+    ...baseConfig(),
+    ai_openrouter: {
+      routing: {
+        provider: {
+          max_price: { prompt: 1 },
+        },
+      },
+    },
+  });
+  assertEquals(result.success, true);
+  if (!result.success) return;
+  assertEquals(result.data.ai_openrouter.routing?.provider?.max_price?.prompt, 1);
 });
 
 Deno.test("[ConfigSchema] ai_openrouter.routing rejects invalid data_collection", () => {

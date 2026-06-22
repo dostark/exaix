@@ -17,18 +17,72 @@ import type { SessionReturn } from "@exaix/schemas/session_delegate.ts";
 
 const IS_LIVE = Deno.env.get("EXA_TEST_LIVE_DELEGATION") === "true";
 
+function createBrief(traceId: string, tool: "opencode" | "claude-code", worktreePath: string) {
+  return {
+    trace_id: traceId,
+    gate: "code_changes" as const,
+    tool,
+    objective: "Create result.txt containing the text 'e2e-pass'",
+    artifact_ref: `trace:${traceId}`,
+    permitted_paths: ["**"],
+    worktree_path: worktreePath,
+    token_budget: { max_input_tokens: 5000, max_output_tokens: 5000, max_total_tokens: 10000 },
+    resume_token: `tok-${traceId}`,
+    deadline: new Date(Date.now() + 120_000).toISOString(),
+  };
+}
+
+async function assertReturn(
+  tmpDir: string,
+  traceId: string,
+  traceDir: string,
+  brief: ReturnType<typeof createBrief>,
+  worktreePath: string,
+) {
+  const returnPath = join(traceDir, "return.json");
+  let raw: string;
+  try {
+    raw = await Deno.readTextFile(returnPath);
+  } catch {
+    assert(false, "return.json must exist after headless launch");
+    return;
+  }
+  const ret: SessionReturn = JSON.parse(raw);
+
+  assertExists(ret.trace_id, "return must have trace_id");
+  assertEquals(ret.trace_id, traceId);
+  assertExists(ret.decision, "return must have decision");
+  assertExists(ret.summary, "return must have summary");
+
+  assertExists(ret.paths_touched, "return must have paths_touched");
+  assert(ret.paths_touched.length > 0, "paths_touched must be non-empty for a file-creating run");
+
+  assertExists(ret.token_stats, "return must have token_stats");
+  assert(ret.token_stats.total_tokens >= 0, "token_stats.total_tokens must be non-negative");
+
+  assertExists(ret.cost_usd, "return must have cost_usd");
+
+  const scopeResult = checkScope(ret.paths_touched, brief.permitted_paths, worktreePath);
+  assertEquals(
+    scopeResult.violations.length,
+    0,
+    `no scope violations: ${JSON.stringify(scopeResult.violations)}`,
+  );
+  assert(scopeResult.accepted.length > 0, "at least one path must be accepted by scope_checker");
+
+  await Deno.remove(tmpDir, { recursive: true });
+}
+
 Deno.test({
   name: "[provider_live][opencode] real run produces scope-checked return with paths + cost",
   ignore: !IS_LIVE,
   async fn() {
-    // Create temp workspace
     const tmpDir = await Deno.makeTempDir({ prefix: "p123-e2e-" });
     const sessionDir = join(tmpDir, "Session");
     const worktreePath = join(tmpDir, "worktree");
     await ensureDir(sessionDir);
     await ensureDir(worktreePath);
 
-    // Init git repo with a commit (so we have HEAD to diff against)
     await gitExec(worktreePath, ["init"]);
     await Deno.writeTextFile(join(worktreePath, "existing.txt"), "hello\n");
     await gitExec(worktreePath, ["add", "-A"]);
@@ -38,22 +92,9 @@ Deno.test({
     const traceDir = join(sessionDir, traceId);
     await ensureDir(traceDir);
 
-    // Write brief.json
-    const brief = {
-      trace_id: traceId,
-      gate: "code_changes" as const,
-      tool: "opencode" as const,
-      objective: "Create result.txt containing the text 'e2e-pass'",
-      artifact_ref: `trace:${traceId}`,
-      permitted_paths: ["**"],
-      worktree_path: worktreePath,
-      token_budget: { max_input_tokens: 5000, max_output_tokens: 5000, max_total_tokens: 10000 },
-      resume_token: `tok-${traceId}`,
-      deadline: new Date(Date.now() + 120_000).toISOString(),
-    };
+    const brief = createBrief(traceId, "opencode", worktreePath);
     await Deno.writeTextFile(join(traceDir, "brief.json"), JSON.stringify(brief, null, 2));
 
-    // Launch headless opencode
     const launcher = new HeadlessSessionLauncher({
       sessionDir,
       allowlist: new Set(["opencode", "claude"]),
@@ -66,41 +107,45 @@ Deno.test({
     };
     await launcher.launch(launch, traceId);
 
-    // Read return.json
-    const returnPath = join(traceDir, "return.json");
-    let raw: string;
-    try {
-      raw = await Deno.readTextFile(returnPath);
-    } catch {
-      assert(false, "return.json must exist after headless launch");
-      return;
-    }
-    const ret: SessionReturn = JSON.parse(raw);
+    await assertReturn(tmpDir, traceId, traceDir, brief, worktreePath);
+  },
+});
 
-    // Assertions
-    assertExists(ret.trace_id, "return must have trace_id");
-    assertEquals(ret.trace_id, traceId);
-    assertExists(ret.decision, "return must have decision");
-    assertExists(ret.summary, "return must have summary");
+Deno.test({
+  name: "[provider_live][claude-code] real run produces scope-checked return with paths + cost",
+  ignore: !IS_LIVE,
+  async fn() {
+    const tmpDir = await Deno.makeTempDir({ prefix: "p123-e2e-" });
+    const sessionDir = join(tmpDir, "Session");
+    const worktreePath = join(tmpDir, "worktree");
+    await ensureDir(sessionDir);
+    await ensureDir(worktreePath);
 
-    // paths_touched must be non-empty (the run creates result.txt)
-    assertExists(ret.paths_touched, "return must have paths_touched");
-    assert(ret.paths_touched.length > 0, "paths_touched must be non-empty for a file-creating run");
+    await gitExec(worktreePath, ["init"]);
+    await Deno.writeTextFile(join(worktreePath, "existing.txt"), "hello\n");
+    await gitExec(worktreePath, ["add", "-A"]);
+    await gitExec(worktreePath, ["commit", "-m", "initial"]);
 
-    // token_stats must be populated
-    assertExists(ret.token_stats, "return must have token_stats");
-    assert(ret.token_stats.total_tokens >= 0, "token_stats.total_tokens must be non-negative");
+    const traceId = crypto.randomUUID();
+    const traceDir = join(sessionDir, traceId);
+    await ensureDir(traceDir);
 
-    // cost_usd must be present (may be 0 for free models)
-    assertExists(ret.cost_usd, "return must have cost_usd");
+    const brief = createBrief(traceId, "claude-code", worktreePath);
+    await Deno.writeTextFile(join(traceDir, "brief.json"), JSON.stringify(brief, null, 2));
 
-    // scope_checker must pass
-    const scopeResult = checkScope(ret.paths_touched, brief.permitted_paths, worktreePath);
-    assertEquals(scopeResult.violations.length, 0, `no scope violations: ${JSON.stringify(scopeResult.violations)}`);
-    assert(scopeResult.accepted.length > 0, "at least one path must be accepted by scope_checker");
+    const launcher = new HeadlessSessionLauncher({
+      sessionDir,
+      allowlist: new Set(["opencode", "claude"]),
+    });
+    const launch = {
+      command: "claude",
+      args: ["-p", brief.objective, "--output-format", "json"],
+      cwd: worktreePath,
+      env: {},
+    };
+    await launcher.launch(launch, traceId);
 
-    // Cleanup
-    await Deno.remove(tmpDir, { recursive: true });
+    await assertReturn(tmpDir, traceId, traceDir, brief, worktreePath);
   },
 });
 
