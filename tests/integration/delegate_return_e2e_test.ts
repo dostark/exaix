@@ -105,7 +105,7 @@ Deno.test({
       cwd: worktreePath,
       env: {},
     };
-    await launcher.launch(launch, traceId);
+    await launcher.launch(launch, traceId, undefined);
 
     await assertReturn(tmpDir, traceId, traceDir, brief, worktreePath);
   },
@@ -143,7 +143,7 @@ Deno.test({
       cwd: worktreePath,
       env: {},
     };
-    await launcher.launch(launch, traceId);
+    await launcher.launch(launch, traceId, undefined);
 
     await assertReturn(tmpDir, traceId, traceDir, brief, worktreePath);
   },

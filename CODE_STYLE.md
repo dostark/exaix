@@ -670,6 +670,100 @@ constructor(private readonly config: Config) {}
 
 ---
 
+## 14. Optional Parameter Usage {#optional-params}
+
+The `?` annotation communicates intent: "this parameter may be omitted." When
+actual call-site usage contradicts that intent, the `?` becomes a liability
+— either misleading readers or hiding wiring gaps.
+
+Two anti-patterns are enforced by `deno task check:optional-params` (Gate 14):
+
+### REDUNDANT_OPTIONAL — param is `?` but all callers pass it
+
+A parameter declared optional that **every** production caller supplies a value
+for should be required. The `?` misleads readers into thinking the caller has a
+choice when in practice no caller ever omits it.
+
+```ts
+// ❌ REDUNDANT — all callers pass `logger`, so it's never truly optional
+function doSomething(task: string, logger?: ILogger) { ... }
+// call site: doSomething("x", logger)  ← always passes logger
+
+// ✅ Correct — required parameter
+function doSomething(task: string, logger: ILogger) { ... }
+```
+
+**Exception allowed:** Optional parameters in exported API interfaces where
+external consumers (outside this repo) are expected to call without the
+parameter. This does not apply to internal functions or package-private methods.
+
+### UNUSED_OPTIONAL — param is `?`, used in body, but no caller passes it
+
+The most dangerous pattern. A parameter is marked optional, referenced in the
+function body (so changing it would change behavior), yet **zero** production
+callers supply a value. This is either:
+
+1. **A wiring gap** — the value was meant to be injected but never connected
+   (the bug we fixed with `delegateProviderEnv`).
+2. **Dead code** — the parameter is consumed by default-value logic that always
+   fires. Either way, the `?` is a red flag.
+
+```ts
+// 🔴 UNUSED — body uses `delegateProviderEnv` but no caller passes it
+async launch(launch: ISessionLaunch, traceId: string, delegateProviderEnv?: Record<string, string>) {
+  const childEnv = delegateProviderEnv ? mergeDelegateEnv(sanitizedEnv, delegateProviderEnv) : sanitizedEnv;
+  // ...
+}
+// all callers: launcher.launch(launch, traceId)  ← never passes delegateProviderEnv
+```
+
+### Guidelines
+
+1. **Prefer required by default.** A parameter should only be `?` when there is
+   at least one known production call site that omits it. Speculative
+   "future-proofing" with `?` is the leading cause of both anti-patterns.
+
+2. **Defaults are not optionality.** When a parameter has a default value but
+   every production caller provides it anyway, remove the `?` and make it
+   required. The default adds noise when it never triggers.
+
+   ```ts
+   // ❌ default never used — every caller passes opts
+   function connect(opts?: ConnectionOptions = DEFAULT_OPTS) { ... }
+   // call sites: connect(myOpts)  ← always passes
+
+   // ✅ required with no default
+   function connect(opts: ConnectionOptions) { ... }
+   ```
+
+3. **`| undefined` is still optional.** Writing `param: T | undefined` instead
+   of `param?: T` does not escape this rule. The check detects both forms.
+
+4. **Reveal root cause, don't use `?` as a Band-Aid.** If a function has too
+   many parameters and you're tempted to mark some optional, refactor to a
+   parameter object instead (see §11 parameter limit).
+
+5. **When legitimately optional, document why.** If a parameter is truly
+   optional (e.g., a callback in an event emitter, or DI in a test helper),
+   add a brief comment explaining which callers omit it and why.
+
+### Automated Enforcement
+
+`scripts/check_optional_params.ts` scans production `.ts` and `.tsx` files using
+the TypeScript compiler API. It compares each function/method declaration with
+optional parameters against all name-matched call sites and reports mismatches.
+
+```bash
+deno run -A scripts/check_optional_params.ts          # advisory
+deno run -A scripts/check_optional_params.ts --fail    # hard gate
+```
+
+The check is integrated as `deno task check:optional-params` and runs as part of
+the CI pipeline (advisory mode — Gate 14). Run with `--fail` locally to audit
+your changes before opening a PR.
+
+---
+
 > ⚠️ Keep this file short and focused. Architectural patterns such as timeout
 > protection, file locking, or error classification belong in other guides
 > (e.g. `.copilot/workflows/exaix-development.md`) and **are not** repeated here unless they

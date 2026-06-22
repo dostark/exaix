@@ -74,6 +74,7 @@ const checkCommand = new Command()
       { cmd: ["deno", "task", "check:style"], desc: "Style/Boundary Validation" },
       { cmd: ["deno", "task", "check:test-placement"], desc: "Test Placement Validation" },
       { cmd: ["deno", "task", "check:tool-result-parity"], desc: "Tool Result Parity Check" },
+      { cmd: ["deno", "task", "check:optional-params"], desc: "Optional Param Usage Check (advisory)" },
       { cmd: ["deno", "task", "check"], desc: "Type Checking" },
     ]);
 
