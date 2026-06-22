@@ -134,6 +134,9 @@ jobs:
       - name: "Clear Deno plug cache (avoid corrupted SQLite native plugin)"
         run: rm -rf ~/.cache/deno/plug/
 
+      - name: "Build agent index (generate .copilot/chunks/)"
+        run: deno run --allow-read --allow-write scripts/build_agents_index.ts
+
       - name: "Run Test Suite & Verify Coverage"
         run: deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts
 
