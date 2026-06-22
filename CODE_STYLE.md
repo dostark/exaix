@@ -812,13 +812,13 @@ the TypeScript compiler API. It compares each function/method declaration with
 optional parameters against all name-matched call sites and reports mismatches.
 
 ```bash
-deno run -A scripts/check_optional_params.ts          # advisory
 deno run -A scripts/check_optional_params.ts --fail    # hard gate
+deno run -A scripts/check_optional_params.ts           # advisory (no --fail)
 ```
 
-The check is integrated as `deno task check:optional-params` and runs as part of
-the CI pipeline (advisory mode — Gate 14). Run with `--fail` locally to audit
-your changes before opening a PR.
+The check is integrated as `deno task check:optional-params --fail` and runs as
+part of the CI pipeline (Gate 14). Run without `--fail` locally for advisory
+feedback during development.
 
 ---
 
