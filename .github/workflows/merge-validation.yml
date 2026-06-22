@@ -30,5 +30,24 @@ jobs:
       - name: "Clear Deno plug cache (avoid corrupted SQLite native plugin)"
         run: rm -rf ~/.cache/deno/plug/
 
+      - name: "Check for Team-edition changes"
+        id: team-check
+        run: |
+          BASE="${GITHUB_BASE_REF:-main}"
+          if git rev-parse --verify "$BASE" >/dev/null 2>&1; then
+            CHANGED=$(git diff --name-only "$BASE"...HEAD 2>/dev/null || git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+          else
+            CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+          fi
+          if echo "$CHANGED" | grep -qE '^packages-team/|^apps/common/|^scripts/ci\.ts|^deno\.json|^\.github/workflows/'; then
+            echo "team_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "team_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: "Run parallel test suite (Solo)"
         run: deno task test
+
+      - name: "Run Team edition tests"
+        if: steps.team-check.outputs.team_changed == 'true'
+        run: deno run -A scripts/ci.ts test --edition team
