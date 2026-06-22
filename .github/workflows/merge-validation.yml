@@ -9,7 +9,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  validate-and-publish:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout repository"
@@ -27,49 +27,8 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: "Configure git identity (CI)"
-        run: |
-          git config --global user.email "ci@example.com"
-          git config --global user.name "CI Bot"
-
-      - name: "CI debug: show commit and config"
-        run: |
-          echo "GITHUB_SHA=$GITHUB_SHA"
-          echo "EXA_CONFIG_PATH=$EXA_CONFIG_PATH"
-          echo "Workspace listing:" && ls -la
-          if [ -f exa.config.toml ]; then
-            echo "--- exa.config.toml ---"
-            sed -n '1,200p' exa.config.toml
-            echo "--- end exa.config.toml ---"
-          else
-            echo "exa.config.toml not found in workspace"
-          fi
-
       - name: "Clear Deno plug cache (avoid corrupted SQLite native plugin)"
         run: rm -rf ~/.cache/deno/plug/
 
-      - name: "Check for Team-edition or CI changes"
-        id: team-check
-        run: |
-          BASE="${GITHUB_BASE_REF:-main}"
-          if git rev-parse --verify "$BASE" >/dev/null 2>&1; then
-            CHANGED=$(git diff --name-only "$BASE"...HEAD 2>/dev/null || git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
-          else
-            CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
-          fi
-          if echo "$CHANGED" | grep -qE '^packages-team/|^apps/common/|^scripts/ci\.ts|^deno\.json|^\.github/workflows/'; then
-            echo "team_changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "team_changed=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: "Run Full Pipeline (Solo)"
-        run: deno run -A scripts/ci.ts all
-
-      - name: "Run Team Edition Tests"
-        if: steps.team-check.outputs.team_changed == 'true'
+      - name: "Run full test suite"
         run: deno run -A scripts/ci.ts test --edition team
-
-      # Placeholder for coverage upload
-      # - name: Upload Coverage
-      #   uses: codecov/codecov-action@v3
