@@ -1,4 +1,4 @@
-name: Merge Validation
+name: Test Suite
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  test:
+  parallel-test-suite:
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout repository"
@@ -30,5 +30,5 @@ jobs:
       - name: "Clear Deno plug cache (avoid corrupted SQLite native plugin)"
         run: rm -rf ~/.cache/deno/plug/
 
-      - name: "Run full test suite"
+      - name: "Run parallel test suite (Solo)"
         run: deno task test
