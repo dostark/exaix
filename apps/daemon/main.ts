@@ -562,7 +562,19 @@ if (import.meta.main) {
 
           if (sd.launch_mode === LAUNCH_MODE_HEADLESS && _headlessLauncher) {
             const launch = _sessionDelegateService!.resolveLaunch(brief, LAUNCH_MODE_HEADLESS);
-            await _headlessLauncher.launch(launch, traceId);
+            let delegateProviderEnv: Record<string, string> | undefined;
+            if (sd.provider) {
+              const apiKey = Deno.env.get(sd.provider.key_env);
+              if (!apiKey && sd.provider.name !== ProviderType.OLLAMA) {
+                throw new Error(
+                  `[session_delegate] provider '${sd.provider.name}' requires env '${sd.provider.key_env}' — not set`,
+                );
+              }
+              if (apiKey) {
+                delegateProviderEnv = _sessionDelegateService!.resolveDelegateEnv(sd, sd.tool, apiKey);
+              }
+            }
+            await _headlessLauncher.launch(launch, traceId, delegateProviderEnv);
           } else {
             logger.info(DomainEventType.SessionDelegateBriefed, traceId, {
               mode: sd.launch_mode,
@@ -644,7 +656,19 @@ if (import.meta.main) {
 
           if (sd.launch_mode === LAUNCH_MODE_HEADLESS) {
             const launch = _sessionDelegateService!.resolveLaunch(brief, LAUNCH_MODE_HEADLESS);
-            await _headlessLauncher.launch(launch, traceId);
+            let delegateProviderEnv: Record<string, string> | undefined;
+            if (sd.provider) {
+              const apiKey = Deno.env.get(sd.provider.key_env);
+              if (!apiKey && sd.provider.name !== ProviderType.OLLAMA) {
+                throw new Error(
+                  `[session_delegate] provider '${sd.provider.name}' requires env '${sd.provider.key_env}' — not set`,
+                );
+              }
+              if (apiKey) {
+                delegateProviderEnv = _sessionDelegateService!.resolveDelegateEnv(sd, sd.tool, apiKey);
+              }
+            }
+            await _headlessLauncher.launch(launch, traceId, delegateProviderEnv);
           } else {
             logger.info(DomainEventType.SessionDelegateBriefed, traceId, {
               mode: sd.launch_mode,

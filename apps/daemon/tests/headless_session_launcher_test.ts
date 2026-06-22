@@ -42,7 +42,7 @@ Deno.test("[headless_launcher][security] non-allowlisted binary is rejected", as
     spawn: () => makeMockChild(0),
   });
   await assertRejects(
-    () => launcher.launch(makeLaunch({ command: "evil-script" }), "00000000-0000-0000-0000-000000000000"),
+    () => launcher.launch(makeLaunch({ command: "evil-script" }), "00000000-0000-0000-0000-000000000000", undefined),
     Error,
   );
 });
@@ -60,6 +60,7 @@ Deno.test("[headless_launcher] spawn is called with the command and args from th
   await launcher.launch(
     makeLaunch({ command: "claude", args: ["-p", "refactor"] }),
     "00000000-0000-0000-0000-000000000001",
+    undefined,
   );
   assertEquals(captured.length, 1, "spawn must be called exactly once");
   if (captured.length > 0) {
@@ -86,6 +87,7 @@ Deno.test("[headless_launcher] stub binary that writes return.json round-trips",
   await launcher.launch(
     makeLaunch({ command: "stub", cwd: traceDir }),
     traceId,
+    undefined,
   );
   const content = await Deno.readTextFile(returnPath).catch(() => null);
   assertEquals(content !== null, true, "return.json must exist after launch");
@@ -106,6 +108,7 @@ Deno.test("[headless_launcher] exit-without-return synthesizes abandoned return.
   await launcher.launch(
     makeLaunch({ command: "stub", cwd: traceDir }),
     traceId,
+    undefined,
   );
   const content = await Deno.readTextFile(returnPath).catch(() => null);
   assertEquals(content !== null, true, "abandoned return.json must be synthesized");
@@ -163,7 +166,7 @@ Deno.test({
         cwd: traceDir,
         env: {},
       };
-      await launcher.launch(launch, traceId);
+      await launcher.launch(launch, traceId, undefined);
 
       const raw = await Deno.readTextFile(returnPath).catch(() => null);
       assertEquals(raw !== null, true, `return.json must exist for gate ${gate}`);

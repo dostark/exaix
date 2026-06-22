@@ -58,7 +58,11 @@ export class HeadlessSessionLauncher {
    * When delegateProviderEnv is provided, it is merged after sanitizeChildEnv so
    * injected API_KEY vars survive the SECRET_ENV_PATTERN strip.
    */
-  async launch(launch: ISessionLaunch, traceId: string, delegateProviderEnv?: Record<string, string>): Promise<void> {
+  async launch(
+    launch: ISessionLaunch,
+    traceId: string,
+    delegateProviderEnv: Record<string, string> | undefined,
+  ): Promise<void> {
     const parentEnv = Deno.env.toObject();
     const sanitizedEnv = sanitizeChildEnv(launch.env, parentEnv);
     const childEnv = delegateProviderEnv ? mergeDelegateEnv(sanitizedEnv, delegateProviderEnv) : sanitizedEnv;

@@ -108,6 +108,7 @@ async function runCycle(
   await launcher.launch(
     { command: tool.command, args: launchArgs, cwd, env: {} },
     traceId,
+    undefined,
   );
 
   const returnExists = await Deno.stat(returnPath).then(() => true).catch(() => false);
