@@ -403,7 +403,11 @@ const allCommand = new Command()
       !await runParallel([
         { cmd: ["deno", "task", "fmt:check"], desc: "Formatting" },
         { cmd: ["deno", "task", "lint"], desc: "Linting" },
-        { cmd: ["deno", "task", "check"], desc: "Type Check" },
+        { cmd: ["deno", "task", "check:style"], desc: "Style/Boundary Validation" },
+        { cmd: ["deno", "task", "check:test-placement"], desc: "Test Placement Validation" },
+        { cmd: ["deno", "task", "check:tool-result-parity"], desc: "Tool Result Parity Check" },
+        { cmd: ["deno", "task", "check:optional-params", "--fail"], desc: "Optional Param Usage Check" },
+        { cmd: ["deno", "task", "check"], desc: "Type Checking" },
       ])
     ) Deno.exit(1);
 
@@ -419,7 +423,8 @@ const allCommand = new Command()
     const testTask = edition === EDITION_SOLO ? "test:solo" : edition === EDITION_TEAM ? "test:team" : "test_parallel";
     if (
       !await runParallel([
-        { cmd: ["deno", "task", testTask], desc: `test suite [edition: ${edition}]` },
+        { cmd: ["deno", "task", testTask], desc: `Unit & Integration Tests [edition: ${edition}]` },
+        { cmd: ["deno", "task", "test:security"], desc: "Security Regression Tests" },
       ])
     ) Deno.exit(1);
 
