@@ -31,4 +31,4 @@ jobs:
         run: rm -rf ~/.cache/deno/plug/
 
       - name: "Run full test suite"
-        run: deno run -A scripts/ci.ts test --edition team
+        run: deno task test_parallel
