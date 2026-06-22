@@ -31,4 +31,4 @@ jobs:
         run: rm -rf ~/.cache/deno/plug/
 
       - name: "Run full test suite"
-        run: deno task test_parallel
+        run: deno task test
