@@ -281,8 +281,8 @@ deno run -A scripts/plan_to_requests.ts exaix-dev-docs/planning/phase-122-dogfoo
 # Preview without writing
 deno run -A scripts/plan_to_requests.ts exaix-dev-docs/planning/phase-122-dogfooding-e.md --dry-run
 
-# Write to a custom directory
-deno run -A scripts/plan_to_requests.ts exaix-dev-docs/planning/phase-122-dogfooding-e.md --out-dir .dogfood/Workspace/Requests/
+# Write to the sandbox's request queue (external sandbox root)
+deno run -A scripts/plan_to_requests.ts exaix-dev-docs/planning/phase-122-dogfooding-e.md --out-dir "$DOGFOOD_SANDBOX/workspace/Workspace/Requests/"
 ```
 
 The generator reads fenced YAML step-manifests (the `# step-manifest` blocks in
@@ -540,8 +540,10 @@ The final config is written to `<sandbox>/workspace/exa.config.toml`.
 
 #### Cleaning / resetting the sandbox
 
-`deno task dogfood:clean` removes the configured `.dogfood/` (or `DOGFOOD_ROOT`)
-sandbox so you can start a loop from scratch. It is deliberately conservative:
+`deno task dogfood:clean` removes the configured **external** sandbox root
+(resolved from `DOGFOOD_ROOT` or the `root` field in `configs/dogfood.toml` — the
+sandbox lives outside the repo, e.g. `~/exa-dogfood`) so you can start a loop from
+scratch. It is deliberately conservative:
 
 - It only removes the **realpath-equal configured root** — a symlinked root, a
   `..`-bearing path, or any `--path` that does not resolve to the configured

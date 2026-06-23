@@ -112,8 +112,8 @@
     "dogfood": "deno run -A scripts/dogfood_daemon.ts start",
     "dogfood:stop": "deno run -A scripts/dogfood_daemon.ts stop",
     "dogfood:status": "deno run -A scripts/dogfood_daemon.ts status",
-    "dogfood:log": "deno run --allow-read=.dogfood/.exa/daemon.log bash -c 'head -50 .dogfood/.exa/daemon.log'",
-    "dogfood:bootstrap": "deno run -A scripts/dogfood_bootstrap.ts --dir .dogfood --worktree",
+    "dogfood:log": "deno run -A scripts/dogfood_daemon.ts log",
+    "dogfood:bootstrap": "deno run -A scripts/dogfood_bootstrap.ts",
     "dogfood:clean": "deno run -A scripts/dogfood_clean.ts",
     "build:mock-tool": "bash scripts/build_mock_session_tool.sh"
   },

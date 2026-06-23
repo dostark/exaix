@@ -3,10 +3,11 @@
  * @module DogfoodClean
  * @path scripts/dogfood_clean.ts
  * @description Guarded removal of the dogfood sandbox root (Phase 124 R13).
- *   Resolves the configured `.dogfood/` root (DOGFOOD_ROOT or configs/dogfood.toml),
- *   refuses any path that is not the realpath-equal configured root (GAP-4:
- *   symlink- and `..`-safe), refuses while the daemon PID is alive, then removes
- *   the tree. Never `rm -rf`s an arbitrary argument.
+ *   Resolves the configured external sandbox root (DOGFOOD_ROOT or the `root`
+ *   field in configs/dogfood.toml — the sandbox lives outside the repo), refuses
+ *   any path that is not the realpath-equal configured root (GAP-4: symlink- and
+ *   `..`-safe), refuses while the daemon PID is alive, then removes the tree.
+ *   Never `rm -rf`s an arbitrary argument.
  *
  * Usage:
  *   deno run -A scripts/dogfood_clean.ts            # prompts for confirmation

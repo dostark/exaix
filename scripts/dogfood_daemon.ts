@@ -256,6 +256,20 @@ function cmdStatus(): void {
   }
 }
 
+/** Print the last `lines` of the daemon log, resolving the path from the sandbox root. */
+function cmdLog(lines = 50): void {
+  const logPath = join(getRuntimeDir(), "daemon.log");
+  let content: string;
+  try {
+    content = Deno.readTextFileSync(logPath);
+  } catch {
+    console.error(`No daemon log at ${logPath}`);
+    Deno.exit(1);
+  }
+  const tail = content.split("\n").slice(-lines).join("\n");
+  console.log(tail);
+}
+
 async function main() {
   const cmd = Deno.args[0];
   switch (cmd) {
@@ -268,8 +282,11 @@ async function main() {
     case "status":
       cmdStatus();
       break;
+    case "log":
+      cmdLog();
+      break;
     default:
-      console.error("Usage: dogfood_daemon.ts <start|stop|status>");
+      console.error("Usage: dogfood_daemon.ts <start|stop|status|log>");
       Deno.exit(1);
   }
 }
