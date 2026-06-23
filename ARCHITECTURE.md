@@ -722,6 +722,33 @@ For the built-in template list, blueprint CLI commands, and runtime usage flow d
 
 For the daemon state diagram with all transitions and notes, see `docs/Reference_Data.md#daemon-lifecycle`.
 
+### Least-Privilege Spawn (Phase 124)
+
+The daemon launcher does not run the daemon with blanket `--allow-all`.
+`DaemonCommands.buildSpawnFlags()` (`apps/exactl/src/commands/daemon_commands.ts`)
+constructs a minimal `--allow-*` set from the typed `DAEMON_SPAWN_PERMISSIONS`
+template (`packages/core/src/types/constants.ts`): unscoped `--allow-read` (the
+daemon reads the Deno cache, sqlite plugin, `$HOME`, and the repo),
+`--allow-write` scoped to the data root, `--allow-run` limited to a single shared
+binary allowlist (`DAEMON_SPAWN_RUN_BINARIES`), `--allow-env`/`--allow-ffi`/`--allow-import`,
+and a `--allow-net` derived from `[system].allow_net` (omitted → default hosts;
+`[]` → outbound blocked; list → narrowed). `--allow-all` is used only as a
+defence-in-depth fallback when the config cannot be read, and that fallback is
+logged. The dogfood launcher (`scripts/dogfood_daemon.ts`) mirrors this and shares
+the same run-binary allowlist constant so the two launch paths cannot drift.
+
+### Crash Recovery for Orphaned Delegations (Phase 121 + 124)
+
+When a session delegation is launched, `apps/daemon/main.ts` emits
+`session.delegate.launched` (with the trace and brief) **before** spawning the
+headless tool, so a crash mid-delegation leaves a launched event with no terminal
+event. At startup, `recoverOrphanedDelegations` (`apps/daemon/src/recovery.ts`)
+scans the journal for such orphans and re-queues each as a
+`Workspace/Requests/{trace}_crash_recovery.md` request (emitting
+`session.delegate.crash_recovered`), which the FileWatcher then picks up for human
+review. The recovery write target is the watched `Workspace/Requests/` directory
+(rooted at `config.system.root`).
+
 ---
 
 ## Activity Journal Flow {#activity-journal-flow}
