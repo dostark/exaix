@@ -38,15 +38,6 @@ export interface ISkillMdData {
 }
 
 /**
- * Parsed SKILL.md result — frontmatter YAML, body text, and optional exaix block.
- */
-export interface ISkillMdParsed {
-  frontmatter: ISkillMdData;
-  body: string;
-  exaixBlock: ISkillMdData | null;
-}
-
-/**
  * Result of a single generator run.
  */
 export interface IGenerateSkillJsonResult {
