@@ -113,7 +113,7 @@ If any test fails after a refactor batch, revert the batch and narrow scope befo
 - `#plan` — If this analysis reveals a systemic issue requiring architectural
   changes, start a new phase document with `#plan`.
 - `#next-steps` — If this refactor is part of an active phase, continue via `#next-steps`.
-- [CODE_STYLE.md](../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
+- [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
 
 ## Output Format
 

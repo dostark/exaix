@@ -15,6 +15,13 @@
       ]
     },
     {
+      "path": ".copilot/prompts/review-code.prompt.md",
+      "short_summary": "",
+      "chunks": [
+        ".copilot/chunks/review-code.prompt.md.chunk0.txt"
+      ]
+    },
+    {
       "path": ".copilot/prompts/edition-development.prompt.md",
       "short_summary": "",
       "chunks": [
@@ -74,13 +81,6 @@
       "short_summary": "",
       "chunks": [
         ".copilot/chunks/refactor.prompt.md.chunk0.txt"
-      ]
-    },
-    {
-      "path": ".copilot/prompts/review.prompt.md",
-      "short_summary": "",
-      "chunks": [
-        ".copilot/chunks/review.prompt.md.chunk0.txt"
       ]
     },
     {
@@ -458,7 +458,8 @@
         ".copilot/chunks/SKILL.md.chunk0.txt",
         ".copilot/chunks/SKILL.md.chunk1.txt",
         ".copilot/chunks/SKILL.md.chunk2.txt",
-        ".copilot/chunks/SKILL.md.chunk3.txt"
+        ".copilot/chunks/SKILL.md.chunk3.txt",
+        ".copilot/chunks/SKILL.md.chunk4.txt"
       ]
     },
     {
@@ -598,6 +599,33 @@
       ]
     },
     {
+      "path": ".copilot/skills/review-code/SKILL.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Review-Code Skill (#review-code)",
+      "short_summary": "Autonomous code review against Exaix standards: correctness, security (Phase 3b), test coverage, architecture grounding, and style compliance.",
+      "version": "1.1",
+      "topics": [
+        "code-review",
+        "quality-assurance",
+        "security",
+        "testing",
+        "architecture",
+        "best-practices"
+      ],
+      "qwen_skill": "review-code",
+      "chunks": [
+        ".copilot/chunks/SKILL.md.chunk0.txt",
+        ".copilot/chunks/SKILL.md.chunk1.txt",
+        ".copilot/chunks/SKILL.md.chunk2.txt",
+        ".copilot/chunks/SKILL.md.chunk3.txt",
+        ".copilot/chunks/SKILL.md.chunk4.txt",
+        ".copilot/chunks/SKILL.md.chunk5.txt",
+        ".copilot/chunks/SKILL.md.chunk6.txt",
+        ".copilot/chunks/SKILL.md.chunk7.txt"
+      ]
+    },
+    {
       "path": ".copilot/skills/infra/SKILL.md",
       "agent": "general",
       "scope": "dev",
@@ -615,7 +643,8 @@
         ".copilot/chunks/SKILL.md.chunk0.txt",
         ".copilot/chunks/SKILL.md.chunk1.txt",
         ".copilot/chunks/SKILL.md.chunk2.txt",
-        ".copilot/chunks/SKILL.md.chunk3.txt"
+        ".copilot/chunks/SKILL.md.chunk3.txt",
+        ".copilot/chunks/SKILL.md.chunk4.txt"
       ]
     },
     {
@@ -704,7 +733,7 @@
       "agent": "senior-coder",
       "scope": "dev",
       "title": "Post-Gap Analysis Skill (#post-gap-analysis)",
-      "short_summary": "Deep review of an existing phase planning document: checks implementation against plan, evaluates code quality (style, TS idiomacy, defensive programming, performance, dependencies), finds gaps, and writes remediation steps back into the document.",
+      "short_summary": "Deep review of an existing phase planning document: checks implementation against plan, delegates code quality to #review-code, finds gaps, and writes remediation steps back into the document.",
       "version": "1.5",
       "topics": [
         "planning",
@@ -907,33 +936,6 @@
         "planning"
       ],
       "qwen_skill": "review-research",
-      "chunks": [
-        ".copilot/chunks/SKILL.md.chunk0.txt",
-        ".copilot/chunks/SKILL.md.chunk1.txt",
-        ".copilot/chunks/SKILL.md.chunk2.txt",
-        ".copilot/chunks/SKILL.md.chunk3.txt",
-        ".copilot/chunks/SKILL.md.chunk4.txt",
-        ".copilot/chunks/SKILL.md.chunk5.txt",
-        ".copilot/chunks/SKILL.md.chunk6.txt",
-        ".copilot/chunks/SKILL.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/skills/review/SKILL.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Review Skill (#review)",
-      "short_summary": "Autonomous code review against Exaix standards: correctness, security (Phase 3b), test coverage, architecture grounding, and style compliance.",
-      "version": "1.0",
-      "topics": [
-        "code-review",
-        "quality-assurance",
-        "security",
-        "testing",
-        "architecture",
-        "best-practices"
-      ],
-      "qwen_skill": "review",
       "chunks": [
         ".copilot/chunks/SKILL.md.chunk0.txt",
         ".copilot/chunks/SKILL.md.chunk1.txt",

@@ -93,6 +93,15 @@ Related
 - CODE_STYLE.md         — authoritative naming, type, import, and constants rules
 ```
 
+## Output Format
+
+1. **Refactoring type** — interface extraction / DI injection / constants extraction / path hardening.
+1. **Files changed** — list of source files modified.
+1. **Baseline evidence** — tests pass before refactor.
+1. **Verification evidence** — tests pass after refactor (same count).
+1. **CI gate results** — lint, type-check, style, arch, fmt.
+1. **Commit payload** — use `#commit` for the structured commit message.
+
 ## Examples
 
 - `#refactor Extract IEventLogger interface from EventLogger class`

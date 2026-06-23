@@ -80,12 +80,12 @@ Do / Don't
 - ❌ Don't skip test requirements — a control without a test is as good as no control.
 
 Related skills:
-- #review   — General code review (use #security when 3+ security findings exist)
+- #review-code — General code review (use #security when 3+ security findings exist)
 - #fix-bug  — Implement the fix for a specific finding
 - #commit   — Structured commit after all security findings are remediated
 
 Workflow chain:
-  #review (found security issues) → **#security** → #fix-bug → #commit
+  #review-code (found security issues) → **#security** → #fix-bug → #commit
 ```
 
 ---
@@ -366,7 +366,7 @@ and the `impact:` component before `:` must appear verbatim in `what:`.
 
 ## Related
 
-- [CODE_STYLE.md](../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
+- [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
 
 ## Output Format
 

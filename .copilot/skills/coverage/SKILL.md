@@ -165,4 +165,4 @@ Confirm no new UNGROUNDED files and no lint errors.
 
 ## Related
 
-- [CODE_STYLE.md](../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules for any new test code
+- [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules for any new test code

@@ -121,6 +121,14 @@ Do / Don't
 - ❌ Don't skip submodule initialization (git submodule update --init --recursive)
 - ❌ Don't use the same branch name in both repos without checking your workflow supports it
 
+## Output Format
+
+1. **Action** — submodule change or pointer update.
+1. **Submodule SHA** — before and after the change.
+1. **Verification** — `git status --submodule=summary`, `git diff --submodule=log`.
+1. **Push order confirmed** — submodule main pushed before parent main.
+1. **Commit payload** — use `#commit` for the structured commit message.
+
 ## Examples
 
 - Update planning doc in `exaix-dev-docs/` and bump parent repo pointer for phase-76

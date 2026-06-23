@@ -141,5 +141,5 @@ Expected Response Pattern:
 ```
 ## Related
 
-- [CODE_STYLE.md](../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
+- [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
 ```
