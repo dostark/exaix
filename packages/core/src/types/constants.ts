@@ -1627,6 +1627,96 @@ export const FS_WRITE_EVENT_KINDS: ReadonlySet<string> = new Set(["create", "mod
 /** Cost-record provider prefix for a delegated (human-run) session tool. */
 export const SESSION_COST_PROVIDER_PREFIX = "session:";
 
+// ============================================================================
+// Daemon Least-Privilege Spawn Permissions (Phase 124)
+// ============================================================================
+
+/**
+ * Binaries the daemon is allowed to run via `--allow-run`. This is the SINGLE
+ * source of truth for the run allowlist — both `DaemonCommands.start()` and
+ * `scripts/dogfood_daemon.ts` import it (Phase 124 GAP-6), so the list cannot
+ * drift between the two launch paths. Mirrors the historical `deno task dev`
+ * allowlist plus the delegate binaries (`opencode`, `claude`).
+ */
+export const DAEMON_SPAWN_RUN_BINARIES: readonly string[] = [
+  "git",
+  "deno",
+  "npm",
+  "node",
+  "exoctl",
+  SESSION_BIN_OPENCODE,
+  SESSION_BIN_CLAUDE_CODE,
+  "ls",
+  "grep",
+  "echo",
+  "printf",
+  "pwd",
+  "whoami",
+  "id",
+  "date",
+  "uptime",
+  "which",
+  "type",
+  "command",
+  "hash",
+  "alias",
+];
+
+/**
+ * Default outbound hosts the daemon may reach when `config.system.allow_net` is
+ * `undefined`. An explicit `[]` blocks outbound entirely; a non-empty list
+ * narrows to those hosts (enforced by `buildSpawnFlags` in Phase 124 Step 2).
+ */
+export const DAEMON_DEFAULT_NET_HOSTS: readonly string[] = [
+  "api.anthropic.com",
+  "api.openai.com",
+  "localhost:11434",
+];
+
+/**
+ * Structured least-privilege permission set for the daemon spawn (Phase 124).
+ * `buildSpawnFlags(config)` assembles the concrete `--allow-*` flags from these
+ * typed fields, so per-flag scoping is expressible (GAP-7).
+ *
+ * Read scope decision (GAP-3): `--allow-read` is kept UNSCOPED. The daemon reads
+ * far beyond `config.system.root` — the Deno module/plug cache (incl. the sqlite
+ * native plugin), `$HOME` for identity, and the repo root for dynamic import —
+ * and a scoped `--allow-read` that omits any of these fails the sqlite FFI load
+ * at boot. Narrowing the headline SSRF surface is achieved by the `write` scope
+ * (`config.system.root`) and the `net` allowlist, not by scoping reads.
+ */
+export interface IDaemonSpawnPermissions {
+  /** Read scopes; empty array means unscoped `--allow-read` (see GAP-3 above). */
+  readonly read: readonly string[];
+  /** Write scopes (resolved absolute paths); empty means unscoped. */
+  readonly write: readonly string[];
+  /** Run-binary allowlist (the single source of truth). */
+  readonly run: readonly string[];
+  /** Default outbound host list when `allow_net` is undefined. */
+  readonly net: readonly string[];
+  /** Whether `--allow-env` is granted. */
+  readonly env: boolean;
+  /** Whether `--allow-ffi` is granted (sqlite native plugin). */
+  readonly ffi: boolean;
+  /** Whether `--allow-import` is granted (Deno dynamic module loading). */
+  readonly import: boolean;
+}
+
+/**
+ * The daemon's least-privilege permission template. `read`/`write` are left as
+ * empty arrays here (meaning "decided at spawn time from the resolved config
+ * root"); `buildSpawnFlags` resolves the write scope to `config.system.root`.
+ */
+export const DAEMON_SPAWN_PERMISSIONS: IDaemonSpawnPermissions = {
+  read: [],
+  write: [],
+  run: DAEMON_SPAWN_RUN_BINARIES,
+  net: DAEMON_DEFAULT_NET_HOSTS,
+  env: true,
+  ffi: true,
+  import: true,
+};
+
 /**
  * Run async tasks with bounded concurrency.
  * Processes items in batches of `concurrency`, ensuring at most `concurrency`
