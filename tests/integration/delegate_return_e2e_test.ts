@@ -73,41 +73,55 @@ async function assertReturn(
   await Deno.remove(tmpDir, { recursive: true });
 }
 
+async function runDelegateTest(
+  tool: "opencode" | "claude-code",
+  launchArgs: string[],
+): Promise<void> {
+  const tmpDir = await Deno.makeTempDir({ prefix: "p123-e2e-" });
+  const sessionDir = join(tmpDir, "Session");
+  const worktreePath = join(tmpDir, "worktree");
+  await ensureDir(sessionDir);
+  await ensureDir(worktreePath);
+
+  await gitExec(worktreePath, ["init"]);
+  await Deno.writeTextFile(join(worktreePath, "existing.txt"), "hello\n");
+  await gitExec(worktreePath, ["add", "-A"]);
+  await gitExec(worktreePath, ["commit", "-m", "initial"]);
+
+  const traceId = crypto.randomUUID();
+  const traceDir = join(sessionDir, traceId);
+  await ensureDir(traceDir);
+
+  const brief = createBrief(traceId, tool, worktreePath);
+  await Deno.writeTextFile(join(traceDir, "brief.json"), JSON.stringify(brief, null, 2));
+
+  const launcher = new HeadlessSessionLauncher({
+    sessionDir,
+    allowlist: new Set(["opencode", "claude"]),
+  });
+  const launch = {
+    command: tool === "opencode" ? "opencode" : "claude",
+    args: launchArgs,
+    cwd: worktreePath,
+    env: {},
+  };
+  await launcher.launch(launch, traceId, undefined);
+
+  await assertReturn(tmpDir, traceId, traceDir, brief, worktreePath);
+}
+
 Deno.test({
   name: "[provider_live][opencode] real run produces scope-checked return with paths + cost",
   ignore: !IS_LIVE,
   async fn() {
-    const tmpDir = await Deno.makeTempDir({ prefix: "p123-e2e-" });
-    const sessionDir = join(tmpDir, "Session");
-    const worktreePath = join(tmpDir, "worktree");
-    await ensureDir(sessionDir);
-    await ensureDir(worktreePath);
-
-    await gitExec(worktreePath, ["init"]);
-    await Deno.writeTextFile(join(worktreePath, "existing.txt"), "hello\n");
-    await gitExec(worktreePath, ["add", "-A"]);
-    await gitExec(worktreePath, ["commit", "-m", "initial"]);
-
-    const traceId = crypto.randomUUID();
-    const traceDir = join(sessionDir, traceId);
-    await ensureDir(traceDir);
-
-    const brief = createBrief(traceId, "opencode", worktreePath);
-    await Deno.writeTextFile(join(traceDir, "brief.json"), JSON.stringify(brief, null, 2));
-
-    const launcher = new HeadlessSessionLauncher({
-      sessionDir,
-      allowlist: new Set(["opencode", "claude"]),
-    });
-    const launch = {
-      command: "opencode",
-      args: ["run", "--format", "json", "--model", "deepseek-v4-flash", brief.objective],
-      cwd: worktreePath,
-      env: {},
-    };
-    await launcher.launch(launch, traceId, undefined);
-
-    await assertReturn(tmpDir, traceId, traceDir, brief, worktreePath);
+    await runDelegateTest("opencode", [
+      "run",
+      "--format",
+      "json",
+      "--model",
+      "deepseek-v4-flash",
+      "Create result.txt containing the text 'e2e-pass'",
+    ]);
   },
 });
 
@@ -115,37 +129,12 @@ Deno.test({
   name: "[provider_live][claude-code] real run produces scope-checked return with paths + cost",
   ignore: !IS_LIVE,
   async fn() {
-    const tmpDir = await Deno.makeTempDir({ prefix: "p123-e2e-" });
-    const sessionDir = join(tmpDir, "Session");
-    const worktreePath = join(tmpDir, "worktree");
-    await ensureDir(sessionDir);
-    await ensureDir(worktreePath);
-
-    await gitExec(worktreePath, ["init"]);
-    await Deno.writeTextFile(join(worktreePath, "existing.txt"), "hello\n");
-    await gitExec(worktreePath, ["add", "-A"]);
-    await gitExec(worktreePath, ["commit", "-m", "initial"]);
-
-    const traceId = crypto.randomUUID();
-    const traceDir = join(sessionDir, traceId);
-    await ensureDir(traceDir);
-
-    const brief = createBrief(traceId, "claude-code", worktreePath);
-    await Deno.writeTextFile(join(traceDir, "brief.json"), JSON.stringify(brief, null, 2));
-
-    const launcher = new HeadlessSessionLauncher({
-      sessionDir,
-      allowlist: new Set(["opencode", "claude"]),
-    });
-    const launch = {
-      command: "claude",
-      args: ["-p", brief.objective, "--output-format", "json"],
-      cwd: worktreePath,
-      env: {},
-    };
-    await launcher.launch(launch, traceId, undefined);
-
-    await assertReturn(tmpDir, traceId, traceDir, brief, worktreePath);
+    await runDelegateTest("claude-code", [
+      "-p",
+      "Create result.txt containing the text 'e2e-pass'",
+      "--output-format",
+      "json",
+    ]);
   },
 });
 
