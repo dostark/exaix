@@ -117,18 +117,27 @@ async function cmdStart(): Promise<void> {
   const allowRunBinaries = DAEMON_SPAWN_RUN_BINARIES.join(",");
   const netFlag = resolveDogfoodNetFlag(configPath);
 
+  // Phase 124 Step 2/5: the least-privilege flag set (never blanket --allow-all).
+  // Write scope is the daemon's data root (where it writes the journal, logs, and
+  // Workspace) AND the repo root (for any in-repo artifacts). Scoping to REPO_ROOT
+  // alone denies all writes when the daemon root is an out-of-repo sandbox (e.g.
+  // DOGFOOD_ROOT under /tmp) — caught by the Step 5 cutover.
+  const dataRoot = resolveRoot();
+  const spawnFlags = [
+    "--allow-read",
+    `--allow-write=${dataRoot},${REPO_ROOT}`,
+    ...(netFlag ? [netFlag] : []),
+    "--allow-env",
+    "--allow-ffi",
+    "--allow-import",
+    `--allow-run=${allowRunBinaries}`,
+  ];
+  // Log the effective flags so the cutover test can assert the daemon booted
+  // under narrowed permissions (not --allow-all).
+  console.log(`Daemon spawn flags: ${spawnFlags.join(" ")}`);
+
   const proc = new Deno.Command("deno", {
-    args: [
-      "run",
-      "--allow-read",
-      `--allow-write=${REPO_ROOT}`,
-      ...(netFlag ? [netFlag] : []),
-      "--allow-env",
-      "--allow-ffi",
-      "--allow-import",
-      `--allow-run=${allowRunBinaries}`,
-      daemonEntry,
-    ],
+    args: ["run", ...spawnFlags, daemonEntry],
     stdin: "null",
     stdout: "piped",
     stderr: "piped",
