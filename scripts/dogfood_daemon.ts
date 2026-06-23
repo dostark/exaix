@@ -19,6 +19,8 @@
 
 import { ensureDir } from "@std/fs";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
+import { parse as parseToml } from "@std/toml";
+import { DAEMON_DEFAULT_NET_HOSTS, DAEMON_SPAWN_RUN_BINARIES } from "@exaix/core/types";
 
 const REPO_ROOT = resolve(join(dirname(fromFileUrl(import.meta.url)), ".."));
 const DEFAULT_CONFIG_PATH = join(REPO_ROOT, "configs/dogfood.toml");
@@ -81,6 +83,37 @@ function getPidPath(): string {
   return join(getRuntimeDir(), "daemon.pid");
 }
 
+/**
+ * Resolve the `--allow-net` flag from the dogfood config's `[system].allow_net`,
+ * mirroring DaemonCommands.buildSpawnFlags (Phase 124 Step 2). Returns `null`
+ * when outbound should be blocked (no flag emitted). GAP-2: an explicit empty
+ * array blocks; a config-read error falls back to the open default list.
+ */
+/** Loosely-typed view of the `[system]` table we read for `allow_net`. */
+interface IParsedSystemTable {
+  system?: { allow_net?: string[] };
+}
+
+export function resolveDogfoodNetFlag(configPath: string): string | null {
+  const defaultFlag = `--allow-net=${DAEMON_DEFAULT_NET_HOSTS.join(",")}`;
+  let raw: string[] | undefined;
+  try {
+    const parsed = parseToml(Deno.readTextFileSync(configPath)) as IParsedSystemTable;
+    raw = parsed.system?.allow_net;
+  } catch {
+    // Config unreadable/unparseable — fall back to the open default list.
+    return defaultFlag;
+  }
+  if (raw === undefined) return defaultFlag;
+  // GAP-12: validate the shape at runtime rather than trusting the cast. A
+  // malformed value (not an array, or non-string entries) falls back to default.
+  if (!Array.isArray(raw) || !raw.every((h): h is string => typeof h === "string")) {
+    return defaultFlag;
+  }
+  if (raw.length === 0) return null; // intentional block — no flag
+  return `--allow-net=${raw.join(",")}`;
+}
+
 async function cmdStart(): Promise<void> {
   const runtimeDir = getRuntimeDir();
   await ensureDir(runtimeDir);
@@ -90,40 +123,32 @@ async function cmdStart(): Promise<void> {
   const configPath = getConfigPath();
   const logPath = join(runtimeDir, "daemon.log");
 
-  const allowRunBinaries = [
-    "git",
-    "deno",
-    "npm",
-    "node",
-    "exoctl",
-    "ls",
-    "grep",
-    "echo",
-    "printf",
-    "pwd",
-    "whoami",
-    "id",
-    "date",
-    "uptime",
-    "which",
-    "type",
-    "command",
-    "hash",
-    "alias",
-  ].join(",");
+  // GAP-6: single source of truth for the run allowlist — shared with
+  // DaemonCommands.buildSpawnFlags() so the two launch paths cannot drift.
+  const allowRunBinaries = DAEMON_SPAWN_RUN_BINARIES.join(",");
+  const netFlag = resolveDogfoodNetFlag(configPath);
+
+  // Phase 124 Step 2/5: the least-privilege flag set (never blanket --allow-all).
+  // Write scope is the daemon's data root (where it writes the journal, logs, and
+  // Workspace) AND the repo root (for any in-repo artifacts). Scoping to REPO_ROOT
+  // alone denies all writes when the daemon root is an out-of-repo sandbox (e.g.
+  // DOGFOOD_ROOT under /tmp) — caught by the Step 5 cutover.
+  const dataRoot = resolveRoot();
+  const spawnFlags = [
+    "--allow-read",
+    `--allow-write=${dataRoot},${REPO_ROOT}`,
+    ...(netFlag ? [netFlag] : []),
+    "--allow-env",
+    "--allow-ffi",
+    "--allow-import",
+    `--allow-run=${allowRunBinaries}`,
+  ];
+  // Log the effective flags so the cutover test can assert the daemon booted
+  // under narrowed permissions (not --allow-all).
+  console.log(`Daemon spawn flags: ${spawnFlags.join(" ")}`);
 
   const proc = new Deno.Command("deno", {
-    args: [
-      "run",
-      "--allow-read",
-      `--allow-write=${REPO_ROOT}`,
-      "--allow-net",
-      "--allow-env",
-      "--allow-ffi",
-      "--allow-import",
-      `--allow-run=${allowRunBinaries}`,
-      daemonEntry,
-    ],
+    args: ["run", ...spawnFlags, daemonEntry],
     stdin: "null",
     stdout: "piped",
     stderr: "piped",
@@ -231,6 +256,20 @@ function cmdStatus(): void {
   }
 }
 
+/** Print the last `lines` of the daemon log, resolving the path from the sandbox root. */
+function cmdLog(lines = 50): void {
+  const logPath = join(getRuntimeDir(), "daemon.log");
+  let content: string;
+  try {
+    content = Deno.readTextFileSync(logPath);
+  } catch {
+    console.error(`No daemon log at ${logPath}`);
+    Deno.exit(1);
+  }
+  const tail = content.split("\n").slice(-lines).join("\n");
+  console.log(tail);
+}
+
 async function main() {
   const cmd = Deno.args[0];
   switch (cmd) {
@@ -243,8 +282,11 @@ async function main() {
     case "status":
       cmdStatus();
       break;
+    case "log":
+      cmdLog();
+      break;
     default:
-      console.error("Usage: dogfood_daemon.ts <start|stop|status>");
+      console.error("Usage: dogfood_daemon.ts <start|stop|status|log>");
       Deno.exit(1);
   }
 }

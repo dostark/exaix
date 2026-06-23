@@ -17,6 +17,7 @@ import {
 } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import { ConfigService } from "@exaix/core/config";
+import { evaluateNetPolicy } from "@exaix/core/security";
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ProviderFactory } from "@exaix/ai";
@@ -150,16 +151,38 @@ if (import.meta.main) {
       });
     }
 
+    // Phase 124 (full-alignment): self-enforce the allow_net policy regardless of
+    // how the daemon was launched. The launcher bakes --allow-net into the spawn,
+    // but a compiled binary or `deno task dev` freezes its flags at build time and
+    // cannot honour allow_net. If the config says "block all outbound" (allow_net=[])
+    // yet this process still holds net access, refuse to start (fail-closed) — the
+    // operator asked for no egress and we must not silently provide it.
+    const netStatus = await Deno.permissions.query({ name: "net" });
+    const netPolicy = evaluateNetPolicy({
+      allowNet: config.system.allow_net,
+      grantedNet: netStatus.state === "granted",
+    });
+    if (netPolicy.violated) {
+      await logger.error(DomainEventType.NetAllowlist, "policy-violation", {
+        reason: netPolicy.reason ?? "net policy violation",
+      });
+      throw new Error(`Daemon refusing to start: ${netPolicy.reason}`);
+    }
+
     await logger.info(DomainEventType.DatabaseConnected, "journal.db", {
       mode: "WAL",
     });
 
-    // Phase 121 Step 3: recover orphaned session delegations from journal
-    const workspaceRoot = join(config.system.root, config.paths.workspace);
+    // Phase 121 Step 3: recover orphaned session delegations from journal.
+    // recovery.ts joins workspaceRoot + "Workspace" + "Requests", so pass the
+    // project root (config.system.root) here — NOT root/workspace, which would
+    // produce a doubled Workspace/Workspace/Requests path the watcher never scans
+    // (Phase 124 GAP-9, caught by the Step 4b E2E).
+    const recoveryRoot = config.system.root;
     const recoveredCount = await recoverOrphanedDelegations({
       db: dbService,
       logger,
-      workspaceRoot,
+      workspaceRoot: recoveryRoot,
     });
     if (recoveredCount > 0) {
       logger.info(DomainEventType.SessionDelegateCrashRecovered, "crash-recovery", { recovered: recoveredCount });
@@ -574,6 +597,12 @@ if (import.meta.main) {
                 delegateProviderEnv = _sessionDelegateService!.resolveDelegateEnv(sd, sd.tool, apiKey);
               }
             }
+            // Phase 124 Step 4a: emit launched before spawning (orphan marker on crash).
+            await logger.info(DomainEventType.SessionDelegateLaunched, traceId, {
+              gate: GATE_REFINEMENT,
+              tool: sd.tool,
+              brief: brief.objective,
+            });
             await _headlessLauncher.launch(launch, traceId, delegateProviderEnv);
           } else {
             logger.info(DomainEventType.SessionDelegateBriefed, traceId, {
@@ -668,6 +697,14 @@ if (import.meta.main) {
                 delegateProviderEnv = _sessionDelegateService!.resolveDelegateEnv(sd, sd.tool, apiKey);
               }
             }
+            // Phase 124 Step 4a: emit the launched event BEFORE spawning so a
+            // crash during launch leaves a `launched` with no terminal event —
+            // the orphan that recoverOrphanedDelegations re-queues on restart.
+            await logger.info(DomainEventType.SessionDelegateLaunched, traceId, {
+              gate: GATE_CODE_CHANGES,
+              tool: sd.tool,
+              brief: brief.objective,
+            });
             await _headlessLauncher.launch(launch, traceId, delegateProviderEnv);
           } else {
             logger.info(DomainEventType.SessionDelegateBriefed, traceId, {

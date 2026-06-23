@@ -14,6 +14,7 @@ import { CLI_DEFAULTS } from "@exaix/cli/config.ts";
 import { STDIO_INHERIT } from "./constants.ts";
 import { DefaultErrorStrategy } from "@exaix/cli/errors/error_strategy.ts";
 import { DAEMON_STOP_TIMEOUT_MS } from "@exaix/core";
+import { DAEMON_SPAWN_PERMISSIONS } from "@exaix/core/types";
 import { isProcessAlive } from "@exaix/cli/process_utils.ts";
 import type { JSONObject } from "@exaix/core/types";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core/version.ts";
@@ -85,12 +86,13 @@ export class DaemonCommands extends BaseCommand {
         .join(" ");
       const envPrefix = exaEnvVars ? `${exaEnvVars} ` : "";
 
-      // Build --allow-net flags from config, falling back to --allow-all for safety
-      const netFlags = this.buildNetFlags();
+      // Build the minimal --allow-* spawn flags from config (Phase 124 R12);
+      // falls back to --allow-all only on a config-read exception (logged).
+      const spawnFlags = this.buildSpawnFlags().join(" ");
       const cmd = new this.Command("bash", {
         args: [
           "-c",
-          `${envPrefix}nohup deno run ${netFlags} "${mainScript}" > "${logFile}" 2>&1 & echo $!`,
+          `${envPrefix}nohup deno run ${spawnFlags} "${mainScript}" > "${logFile}" 2>&1 & echo $!`,
         ],
         stdout: "piped",
         stderr: "piped",
@@ -137,29 +139,57 @@ export class DaemonCommands extends BaseCommand {
   }
 
   /**
-   * Build the `--allow-net` flag(s) from the config's `allow_net` setting.
-   *   - undefined → default allowlist (Anthropic, OpenAI, Ollama)
-   *   - empty []  → no --allow-net flag (block all outbound)
-   *   - non-empty → --allow-net=host1,host2
-   * Falls back to --allow-all if config cannot be read (defence-in-depth).
+   * Build the minimal `--allow-*` flag set for the daemon spawn from config
+   * (Phase 124 R12). Replaces the former blanket `--allow-all`.
+   *
+   * Permissions: `--allow-read` (unscoped — the daemon reads the Deno cache,
+   * sqlite plugin, `$HOME`, and the repo; see DAEMON_SPAWN_PERMISSIONS JSDoc),
+   * `--allow-write=<config.system.root>`, `--allow-run=<DAEMON_SPAWN_RUN_BINARIES>`,
+   * `--allow-env`, `--allow-ffi`, `--allow-import`, and a net flag governed by
+   * `config.system.allow_net`:
+   *   - `undefined` → `--allow-net=<DAEMON_DEFAULT_NET_HOSTS>`
+   *   - `[]`        → no `--allow-net` flag (outbound blocked)
+   *   - non-empty   → `--allow-net=host1,host2`
+   *
+   * GAP-2: the `--allow-all` fallback is reached ONLY when reading the config
+   * throws (defence-in-depth so a malformed config never blocks startup). A
+   * successfully-read `allow_net=[]` blocks outbound and must NOT fall back.
    */
-  private buildNetFlags(): string {
+  protected buildSpawnFlags(): string[] {
     try {
+      const root = this.config.system.root!;
       const allowNet = this.config.system.allow_net;
-      // Log the effective allowlist for audit purposes.
-      // Full `--allow-all` is preserved because the daemon needs permissions
-      // beyond network access (read, write, run, env, ffi, import).
-      // Replacing --allow-all with narrow --allow-net requires validating
-      // every daemon operation against minimal permissions (future work).
-      const defaultHosts = "api.anthropic.com,api.openai.com,localhost:11434";
-      const hosts = allowNet === undefined ? defaultHosts : allowNet.length === 0 ? "" : allowNet.join(",");
-      if (hosts) {
-        // Pass allowlist both as a runtime flag and env var for daemon logging
-        return `--allow-all`;
+      const perms = DAEMON_SPAWN_PERMISSIONS;
+
+      // GAP-11: derive every flag from the typed DAEMON_SPAWN_PERMISSIONS struct
+      // so it is the single source of truth (no hardcoded flag list that could
+      // drift from the documented permission template).
+      const flags: string[] = [];
+      // read: empty scope list → unscoped --allow-read; otherwise scoped.
+      flags.push(perms.read.length === 0 ? "--allow-read" : `--allow-read=${perms.read.join(",")}`);
+      // write: the struct leaves write scope to spawn time → resolved to the data root.
+      const writeScopes = perms.write.length === 0 ? [root] : perms.write;
+      flags.push(`--allow-write=${writeScopes.join(",")}`);
+      flags.push(`--allow-run=${perms.run.join(",")}`);
+      if (perms.env) flags.push("--allow-env");
+      if (perms.ffi) flags.push("--allow-ffi");
+      if (perms.import) flags.push("--allow-import");
+
+      // Net rules — empty array is an intentional block (no flag), never fallback.
+      if (allowNet === undefined) {
+        flags.push(`--allow-net=${perms.net.join(",")}`);
+      } else if (allowNet.length > 0) {
+        flags.push(`--allow-net=${allowNet.join(",")}`);
       }
-      return "--allow-all";
-    } catch {
-      return "--allow-all";
+      return flags;
+    } catch (error) {
+      // Config-read exception only: fall back to full permissions but warn loudly.
+      this.logger.warn(
+        DomainEventType.DaemonStarting,
+        DAEMON_ACTOR,
+        { fallback: "--allow-all", reason: error instanceof Error ? error.message : String(error) },
+      );
+      return ["--allow-all"];
     }
   }
 

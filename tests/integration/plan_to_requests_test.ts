@@ -13,6 +13,7 @@
 import { assertEquals, assertExists, assertMatch } from "@std/assert";
 import { join } from "@std/path";
 import { RequestSchema } from "@exaix/schemas/request.ts";
+import { parseFrontmatter } from "./helpers/parse_frontmatter.ts";
 
 const DOGFOOD_META_RE = /> Dogfood metadata — portal: `([^`]+)`; target_branch: `([^`]+)`/;
 
@@ -68,33 +69,8 @@ Deno.test("[plan-to-requests] each emitted frontmatter passes RequestSchema.pars
     for (const stepNum of [1, 2, 3]) {
       const filePath = join(tmpDir, `phase-nn-fixture-step-${stepNum}.md`);
       const content = await Deno.readTextFile(filePath);
-      const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-      assertExists(frontmatterMatch, `Step ${stepNum} must have frontmatter`);
-
-      const yamlLines = frontmatterMatch[1];
-      const parsed: { [key: string]: string | number | boolean | string[] } = {};
-      for (const line of yamlLines.split("\n")) {
-        const kvMatch = line.match(/^\s*(\w+):\s*(.+)/);
-        if (kvMatch) {
-          const val = kvMatch[2].trim();
-          if (val === "true") parsed[kvMatch[1]] = true;
-          else if (val === "false") parsed[kvMatch[1]] = false;
-          else if (/^\d+$/.test(val)) parsed[kvMatch[1]] = parseInt(val, 10);
-          else if (val.startsWith('"') && val.endsWith('"')) parsed[kvMatch[1]] = val.slice(1, -1);
-          else parsed[kvMatch[1]] = val;
-        }
-        const arrMatch = line.match(/^\s+(\w+):\s*$/);
-        if (arrMatch) {
-          parsed[arrMatch[1]] = [];
-        }
-        const itemMatch = line.match(/^\s+-\s+(.+)/);
-        if (itemMatch) {
-          const lastKey = Object.keys(parsed).pop()!;
-          if (Array.isArray(parsed[lastKey])) {
-            (parsed[lastKey] as string[]).push(itemMatch[1].trim());
-          }
-        }
-      }
+      const parsed = parseFrontmatter(content);
+      assertExists(parsed, `Step ${stepNum} must have frontmatter`);
 
       const result = RequestSchema.safeParse(parsed);
       assertEquals(result.success, true, `Step ${stepNum} frontmatter must pass RequestSchema`);
@@ -241,23 +217,9 @@ Deno.test("[plan-to-requests] heading-scrape fallback produces RequestSchema-val
     // Check files exist and have valid frontmatter
     for (const stepNum of [1, 2]) {
       const content = await Deno.readTextFile(join(outDir, `scrape-plan-step-${stepNum}.md`));
-      const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-      assertExists(frontmatterMatch, `Step ${stepNum} must have frontmatter`);
+      const parsed = parseFrontmatter(content);
+      assertExists(parsed, `Step ${stepNum} must have frontmatter`);
 
-      const yamlLines = frontmatterMatch[1];
-      const parsed: { [key: string]: string | number | boolean | string[] } = {};
-      for (const line of yamlLines.split("\n")) {
-        const kvMatch = line.match(/^\s*(\w+):\s*(.+)/);
-        if (kvMatch) {
-          const val = kvMatch[2].trim();
-          if (val === "true") parsed[kvMatch[1]] = true;
-          else if (/^\d+$/.test(val)) parsed[kvMatch[1]] = parseInt(val, 10);
-          else if (val.startsWith('"') && val.endsWith('"')) parsed[kvMatch[1]] = val.slice(1, -1);
-          else parsed[kvMatch[1]] = val;
-        }
-      }
-
-      // Must pass RequestSchema
       const result = RequestSchema.safeParse(parsed);
       assertEquals(result.success, true, `Step ${stepNum} heading-scrape must pass RequestSchema`);
     }

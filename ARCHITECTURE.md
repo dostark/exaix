@@ -41,7 +41,7 @@ The pipeline processes work through a gated pipeline (file → plan → approve 
 
 Exaix follows a **three-tier edition model** served by a single **`IEditionComposer`** composition seam:
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │                    exaix (monorepo)                       │
 │  ┌────────────────────────────────────────────────────┐  │
@@ -466,7 +466,7 @@ Exaix has **five independent routing mechanisms** that control how LLM calls rea
 
 Selects which LLM API provider to call (Anthropic, OpenAI, Google, Ollama, OpenRouter, or Mock):
 
-```
+```text
 EXA_LLM_PROVIDER env var ──guard──→ config.ai.provider ──guard──→
   config.provider_strategy.task_routing[taskType] ──guard──→
     selectProvider(capability + free + budget + health + complexity)
@@ -492,7 +492,7 @@ Controls whether the request quality gate uses zero-cost heuristics or LLM-power
 
 When the quality gate determines a request needs clarification, decides between the LLM-powered Q&A loop and delegation to an external session tool (OpenCode, Claude Code):
 
-```
+```text
 NEEDS_CLARIFICATION
   ├── session_delegate.enabled && gates.includes("refinement")
   │   └── HeadlessSessionLauncher → external CLI tool
@@ -507,7 +507,7 @@ Controlled by `[session_delegate]` TOML config and `EXA_SESSION_DELEGATE_*` env 
 
 During plan execution, each step can be executed by the LLM ReAct loop or delegated to an external CLI tool:
 
-```
+```text
 For each plan step:
   onCodeChangesDelegate set?
     ├── YES, returns "changes_made" → skip AgentExecutor, use delegated result
@@ -721,6 +721,43 @@ For the built-in template list, blueprint CLI commands, and runtime usage flow d
 ## Daemon Lifecycle
 
 For the daemon state diagram with all transitions and notes, see `docs/Reference_Data.md#daemon-lifecycle`.
+
+### Least-Privilege Spawn
+
+The daemon launcher does not run the daemon with blanket `--allow-all`.
+`DaemonCommands.buildSpawnFlags()` (`apps/exactl/src/commands/daemon_commands.ts`)
+constructs a minimal `--allow-*` set from the typed `DAEMON_SPAWN_PERMISSIONS`
+template (`packages/core/src/types/constants.ts`): unscoped `--allow-read` (the
+daemon reads the Deno cache, sqlite plugin, `$HOME`, and the repo),
+`--allow-write` scoped to the data root, `--allow-run` limited to a single shared
+binary allowlist (`DAEMON_SPAWN_RUN_BINARIES`), `--allow-env`/`--allow-ffi`/`--allow-import`,
+and a `--allow-net` derived from `[system].allow_net` (omitted → default hosts;
+`[]` → outbound blocked; list → narrowed). `--allow-all` is used only as a
+defence-in-depth fallback when the config cannot be read, and that fallback is
+logged. The dogfood launcher (`scripts/dogfood_daemon.ts`) mirrors this and shares
+the same run-binary allowlist constant so the two launch paths cannot drift.
+
+Because the launcher flag is frozen for build-time-fixed launch paths (the
+compiled `exaix` binary, `deno task dev`), the daemon also **self-enforces** the
+strict-block policy at startup: `evaluateNetPolicy` (`@exaix/core/security`)
+compares `Deno.permissions.query({name:"net"})` against `allow_net`, and if the
+config says block-all (`[]`) while the process holds net access, the daemon
+refuses to start (fail-closed). Host-level allowlists remain launcher-enforced
+(the OS reports net permission only at the blanket level). The TUI Daemon Control
+view spawns `exactl daemon` via the scoped `EXACTL_CLI_SPAWN_FLAGS` constant, not
+`--allow-all`.
+
+### Crash Recovery for Orphaned Delegations
+
+When a session delegation is launched, `apps/daemon/main.ts` emits
+`session.delegate.launched` (with the trace and brief) **before** spawning the
+headless tool, so a crash mid-delegation leaves a launched event with no terminal
+event. At startup, `recoverOrphanedDelegations` (`apps/daemon/src/recovery.ts`)
+scans the journal for such orphans and re-queues each as a
+`Workspace/Requests/{trace}_crash_recovery.md` request (emitting
+`session.delegate.crash_recovered`), which the FileWatcher then picks up for human
+review. The recovery write target is the watched `Workspace/Requests/` directory
+(rooted at `config.system.root`).
 
 ---
 
