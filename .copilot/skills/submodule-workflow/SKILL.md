@@ -58,10 +58,12 @@ git commit -m "chore(exaix): update exaix-dev-docs pointer to <sha> for <feature
 git push -u origin HEAD
 ```
 
-⚠️ Post-merge follow-up (commonly forgotten)
+⚠️ Post-merge follow-up — push order matters (commonly forgotten)
 
-After the parent feature branch is merged into main, the submodule's
-feature branch MUST also be merged and its main pushed:
+After the parent feature branch is merged into main, CI will check out
+the parent commit and try to resolve the submodule pointer. The
+submodule commit MUST already exist on the submodule's remote `main`
+before you push the parent. **Push submodule main FIRST, then parent.**
 
 ```bash
 # 1. Merge submodule feature branch into submodule main
@@ -69,7 +71,7 @@ cd exaix-dev-docs
 git checkout main
 git merge --ff-only feat/<feature>   # or --no-ff if preferred
 
-# 2. Push submodule main so the parent's pointer is resolvable
+# 2. Push submodule main FIRST — so the commit is reachable
 git push origin main
 
 # 3. Return to parent and verify pointer matches submodule main
@@ -77,13 +79,18 @@ cd ..
 git ls-tree HEAD exaix-dev-docs       # shows committed pointer SHA
 git -C exaix-dev-docs rev-parse HEAD  # should match
 
-# 4. Push parent main (pointer already correct if merged with --no-ff)
+# 4. Push parent main SECOND — CI can now resolve the pointer
 git push origin main
 ```
 
-Failing to do this leaves the parent `main` pointing at a submodule
-commit that only exists on a feature branch — breaking the build for
-anyone cloning with `--recurse-submodules`.
+**Why this order?** CI checks out the parent commit, then runs
+`git submodule update`, which fetches the submodule at the recorded
+SHA. If that SHA only exists on a submodule feature branch (or hasn't
+been pushed yet), `git submodule update` fails and the build breaks.
+
+Failing to do the full sequence leaves the parent `main` pointing at a
+submodule commit that only exists on a feature branch — breaking the
+build for anyone cloning with `--recurse-submodules`.
 
 Verification commands
 
@@ -109,7 +116,7 @@ Do / Don't
 - ✅ Do always commit submodule changes first before updating the parent pointer
 - ✅ Do use git status --submodule=summary to verify pointer state
 - ✅ Do document the submodule SHA in the parent PR description
-- ✅ Do merge submodule feature branch to main AND push it after the parent merge
+- ✅ Do push submodule main BEFORE pushing parent main (CI must resolve the pointer)
 - ❌ Don't update the parent pointer before the submodule change is committed and pushed
 - ❌ Don't skip submodule initialization (git submodule update --init --recursive)
 - ❌ Don't use the same branch name in both repos without checking your workflow supports it
