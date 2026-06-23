@@ -41,7 +41,7 @@ The pipeline processes work through a gated pipeline (file → plan → approve 
 
 Exaix follows a **three-tier edition model** served by a single **`IEditionComposer`** composition seam:
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │                    exaix (monorepo)                       │
 │  ┌────────────────────────────────────────────────────┐  │
@@ -466,7 +466,7 @@ Exaix has **five independent routing mechanisms** that control how LLM calls rea
 
 Selects which LLM API provider to call (Anthropic, OpenAI, Google, Ollama, OpenRouter, or Mock):
 
-```
+```text
 EXA_LLM_PROVIDER env var ──guard──→ config.ai.provider ──guard──→
   config.provider_strategy.task_routing[taskType] ──guard──→
     selectProvider(capability + free + budget + health + complexity)
@@ -492,7 +492,7 @@ Controls whether the request quality gate uses zero-cost heuristics or LLM-power
 
 When the quality gate determines a request needs clarification, decides between the LLM-powered Q&A loop and delegation to an external session tool (OpenCode, Claude Code):
 
-```
+```text
 NEEDS_CLARIFICATION
   ├── session_delegate.enabled && gates.includes("refinement")
   │   └── HeadlessSessionLauncher → external CLI tool
@@ -507,7 +507,7 @@ Controlled by `[session_delegate]` TOML config and `EXA_SESSION_DELEGATE_*` env 
 
 During plan execution, each step can be executed by the LLM ReAct loop or delegated to an external CLI tool:
 
-```
+```text
 For each plan step:
   onCodeChangesDelegate set?
     ├── YES, returns "changes_made" → skip AgentExecutor, use delegated result
@@ -722,7 +722,7 @@ For the built-in template list, blueprint CLI commands, and runtime usage flow d
 
 For the daemon state diagram with all transitions and notes, see `docs/Reference_Data.md#daemon-lifecycle`.
 
-### Least-Privilege Spawn (Phase 124)
+### Least-Privilege Spawn
 
 The daemon launcher does not run the daemon with blanket `--allow-all`.
 `DaemonCommands.buildSpawnFlags()` (`apps/exactl/src/commands/daemon_commands.ts`)
@@ -737,7 +737,7 @@ defence-in-depth fallback when the config cannot be read, and that fallback is
 logged. The dogfood launcher (`scripts/dogfood_daemon.ts`) mirrors this and shares
 the same run-binary allowlist constant so the two launch paths cannot drift.
 
-### Crash Recovery for Orphaned Delegations (Phase 121 + 124)
+### Crash Recovery for Orphaned Delegations
 
 When a session delegation is launched, `apps/daemon/main.ts` emits
 `session.delegate.launched` (with the trace and brief) **before** spawning the
