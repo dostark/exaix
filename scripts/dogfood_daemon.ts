@@ -89,18 +89,29 @@ function getPidPath(): string {
  * when outbound should be blocked (no flag emitted). GAP-2: an explicit empty
  * array blocks; a config-read error falls back to the open default list.
  */
-function resolveDogfoodNetFlag(configPath: string): string | null {
-  let allowNet: string[] | undefined;
+/** Loosely-typed view of the `[system]` table we read for `allow_net`. */
+interface IParsedSystemTable {
+  system?: { allow_net?: string[] };
+}
+
+export function resolveDogfoodNetFlag(configPath: string): string | null {
+  const defaultFlag = `--allow-net=${DAEMON_DEFAULT_NET_HOSTS.join(",")}`;
+  let raw: string[] | undefined;
   try {
-    const parsed = parseToml(Deno.readTextFileSync(configPath)) as { system?: { allow_net?: string[] } };
-    allowNet = parsed.system?.allow_net;
+    const parsed = parseToml(Deno.readTextFileSync(configPath)) as IParsedSystemTable;
+    raw = parsed.system?.allow_net;
   } catch {
     // Config unreadable/unparseable — fall back to the open default list.
-    return `--allow-net=${DAEMON_DEFAULT_NET_HOSTS.join(",")}`;
+    return defaultFlag;
   }
-  if (allowNet === undefined) return `--allow-net=${DAEMON_DEFAULT_NET_HOSTS.join(",")}`;
-  if (allowNet.length === 0) return null; // intentional block — no flag
-  return `--allow-net=${allowNet.join(",")}`;
+  if (raw === undefined) return defaultFlag;
+  // GAP-12: validate the shape at runtime rather than trusting the cast. A
+  // malformed value (not an array, or non-string entries) falls back to default.
+  if (!Array.isArray(raw) || !raw.every((h): h is string => typeof h === "string")) {
+    return defaultFlag;
+  }
+  if (raw.length === 0) return null; // intentional block — no flag
+  return `--allow-net=${raw.join(",")}`;
 }
 
 async function cmdStart(): Promise<void> {

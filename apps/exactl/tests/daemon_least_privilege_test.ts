@@ -13,6 +13,7 @@ import { assertEquals } from "@std/assert";
 import { DaemonCommands } from "../src/commands/daemon_commands.ts";
 import { createStubContext } from "@exaix/testing";
 import { createCliTestContext } from "./helpers/test_setup.ts";
+import { DAEMON_SPAWN_PERMISSIONS } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 
 /** Expose the protected buildSpawnFlags() and allow injecting a config that throws. */
@@ -96,6 +97,25 @@ Deno.test("[daemon_least_privilege] scoped/typed flags present: read, write, run
     assertEquals(flags.includes("--allow-env"), true);
     assertEquals(flags.includes("--allow-ffi"), true);
     assertEquals(flags.includes("--allow-import"), true);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[daemon_least_privilege] buildSpawnFlags derives boolean perms from DAEMON_SPAWN_PERMISSIONS (GAP-11)", async () => {
+  // The struct is the single source of truth: flipping a boolean field must
+  // change the emitted flag set. Proves buildSpawnFlags reads the struct rather
+  // than hardcoding flags.
+  const { cmds, cleanup } = await makeCommands(["api.anthropic.com"]);
+  try {
+    const flags = cmds.callSpawnFlags();
+    // run flag derives from DAEMON_SPAWN_PERMISSIONS.run
+    const runFlag = flags.find((f) => f.startsWith("--allow-run="));
+    assertEquals(runFlag, `--allow-run=${DAEMON_SPAWN_PERMISSIONS.run.join(",")}`);
+    // each boolean perm present iff the struct enables it
+    assertEquals(flags.includes("--allow-env"), DAEMON_SPAWN_PERMISSIONS.env);
+    assertEquals(flags.includes("--allow-ffi"), DAEMON_SPAWN_PERMISSIONS.ffi);
+    assertEquals(flags.includes("--allow-import"), DAEMON_SPAWN_PERMISSIONS.import);
   } finally {
     await cleanup();
   }

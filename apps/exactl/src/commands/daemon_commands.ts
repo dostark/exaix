@@ -14,7 +14,7 @@ import { CLI_DEFAULTS } from "@exaix/cli/config.ts";
 import { STDIO_INHERIT } from "./constants.ts";
 import { DefaultErrorStrategy } from "@exaix/cli/errors/error_strategy.ts";
 import { DAEMON_STOP_TIMEOUT_MS } from "@exaix/core";
-import { DAEMON_DEFAULT_NET_HOSTS, DAEMON_SPAWN_RUN_BINARIES } from "@exaix/core/types";
+import { DAEMON_SPAWN_PERMISSIONS } from "@exaix/core/types";
 import { isProcessAlive } from "@exaix/cli/process_utils.ts";
 import type { JSONObject } from "@exaix/core/types";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core/version.ts";
@@ -159,19 +159,25 @@ export class DaemonCommands extends BaseCommand {
     try {
       const root = this.config.system.root!;
       const allowNet = this.config.system.allow_net;
+      const perms = DAEMON_SPAWN_PERMISSIONS;
 
-      const flags: string[] = [
-        "--allow-read",
-        `--allow-write=${root}`,
-        `--allow-run=${DAEMON_SPAWN_RUN_BINARIES.join(",")}`,
-        "--allow-env",
-        "--allow-ffi",
-        "--allow-import",
-      ];
+      // GAP-11: derive every flag from the typed DAEMON_SPAWN_PERMISSIONS struct
+      // so it is the single source of truth (no hardcoded flag list that could
+      // drift from the documented permission template).
+      const flags: string[] = [];
+      // read: empty scope list → unscoped --allow-read; otherwise scoped.
+      flags.push(perms.read.length === 0 ? "--allow-read" : `--allow-read=${perms.read.join(",")}`);
+      // write: the struct leaves write scope to spawn time → resolved to the data root.
+      const writeScopes = perms.write.length === 0 ? [root] : perms.write;
+      flags.push(`--allow-write=${writeScopes.join(",")}`);
+      flags.push(`--allow-run=${perms.run.join(",")}`);
+      if (perms.env) flags.push("--allow-env");
+      if (perms.ffi) flags.push("--allow-ffi");
+      if (perms.import) flags.push("--allow-import");
 
       // Net rules — empty array is an intentional block (no flag), never fallback.
       if (allowNet === undefined) {
-        flags.push(`--allow-net=${DAEMON_DEFAULT_NET_HOSTS.join(",")}`);
+        flags.push(`--allow-net=${perms.net.join(",")}`);
       } else if (allowNet.length > 0) {
         flags.push(`--allow-net=${allowNet.join(",")}`);
       }
