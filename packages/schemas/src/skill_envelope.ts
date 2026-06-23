@@ -20,7 +20,8 @@
  *     envelope.quality_criteria    → SkillSchema.quality_criteria (reuses
  *                                     SkillQualityCriterionSchema shape)
  *     envelope.agent               → SkillSchema.compatible_with.agents[0]
- *     envelope.tools               → SkillSchema.compatible_with.flows (mapped by generator)
+ *     envelope.tools               → parsed into the envelope but NOT currently
+ *                                     consumed by the generator (no runtime mapping)
  *
  *   Managed fields (synthesised by generator, not in envelope):
  *     id, created_at, source, source_id, status, instructions (from body),

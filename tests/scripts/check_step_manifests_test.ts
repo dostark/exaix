@@ -184,3 +184,20 @@ Deno.test("[check_step_manifests] multiple steps all need manifests", async () =
     await Deno.remove(tempDir, { recursive: true });
   }
 });
+
+Deno.test("[check_step_manifests] a step with a non-manifest yaml fence before its real manifest passes", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "csm-fence-order-" });
+  try {
+    // An illustrative yaml fence (no # step-manifest) appears BEFORE the real
+    // manifest fence within the same step section (GAP-20).
+    const illustrative = "\n```yaml\n# just an example, not a manifest\nfoo: bar\n```\n";
+    const content = stepMd(1, illustrative + MANIFEST_YAML);
+    const file = createPlanDoc(tempDir, "phase-99-test.md", content);
+
+    const result: ICheckResult = await checkStepManifests(file);
+    assertEquals(result.success, true, "must find the real manifest regardless of fence order");
+    assertEquals(result.errors.length, 0);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});

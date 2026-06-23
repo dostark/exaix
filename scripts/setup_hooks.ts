@@ -157,6 +157,20 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# 14. Skill Envelope Validity (every .copilot/skills exaix: block must transform)
+deno task check:skill-envelopes
+if [ $? -ne 0 ]; then
+  echo "❌ Error: A .copilot/skills exaix: block is invalid (would not load in the dogfood daemon)."
+  exit 1
+fi
+
+# 15. Step Manifest Validity (every phase-NN step, NN >= 130, must have a valid manifest)
+deno task check:manifests
+if [ $? -ne 0 ]; then
+  echo "❌ Error: A phase plan step is missing or has an invalid step-manifest."
+  exit 1
+fi
+
 echo "✅ Pre-commit checks passed!\n"
 `;
 
@@ -312,7 +326,7 @@ const COMMIT_MSG_CONTENT = `#!/bin/sh
 echo "\n🔍 Validating Commit Message Structure..."
 
 # Run the validation script pointing to the commit message file
-deno task check-commit-msg "$1"
+deno task check:commit-msg "$1"
 if [ $? -ne 0 ]; then
   echo "❌ Error: Invalid commit message format. Commit blocked."
   exit 1

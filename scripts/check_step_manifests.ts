@@ -44,7 +44,7 @@ function parseArgs(): { path: string; since: number | null } {
     console.error("Usage: check_step_manifests.ts <path> [--since <phase-number>]");
     Deno.exit(1);
   }
-  let targetPath = args[0];
+  const targetPath = args[0];
   let since: number | null = null;
   for (let i = 1; i < args.length; i++) {
     if (args[i] === "--since" && i + 1 < args.length) {
@@ -124,19 +124,24 @@ function parseSteps(content: string): ParsedStep[] {
 }
 
 function extractManifest(sectionText: string): ManifestRecord | null {
-  const yamlMatch = sectionText.match(/```yaml\s*\n([\s\S]*?)```/);
-  if (!yamlMatch) return null;
+  // Scan ALL yaml fences in the section and select the one carrying the
+  // `# step-manifest` marker, so an illustrative yaml fence appearing before the
+  // real manifest does not shadow it (GAP-20).
+  const fenceRegex = /```yaml\s*\n([\s\S]*?)```/g;
+  let m: RegExpExecArray | null;
+  while ((m = fenceRegex.exec(sectionText)) !== null) {
+    const yamlBlock = m[1];
+    if (!yamlBlock.includes("# step-manifest")) continue;
 
-  const yamlBlock = yamlMatch[1];
-  if (!yamlBlock.includes("# step-manifest")) return null;
-
-  try {
-    const parsed = parseYaml(yamlBlock);
-    if (typeof parsed !== "object" || parsed === null) return null;
-    return parsed as ManifestRecord;
-  } catch {
-    return null;
+    try {
+      const parsed = parseYaml(yamlBlock);
+      if (typeof parsed !== "object" || parsed === null) return null;
+      return parsed as ManifestRecord;
+    } catch {
+      return null;
+    }
   }
+  return null;
 }
 
 /**

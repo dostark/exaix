@@ -26,7 +26,8 @@ import { dirname, join, resolve } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { type ISkillEnvelope, SkillEnvelopeSchema } from "@exaix/schemas/skill_envelope.ts";
-import { SkillSchema } from "@exaix/schemas/memory_bank.ts";
+import { type ISkill, SkillSchema } from "@exaix/schemas/memory_bank.ts";
+import { MemoryBankSource, MemoryScope, SkillStatus } from "@exaix/core/types";
 
 /**
  * Dynamic data extracted from SKILL.md YAML (frontmatter or exaix block).
@@ -87,19 +88,25 @@ async function validateTargetInsideSandbox(targetDir: string, sandboxRoot: strin
 
 /**
  * Parses a SKILL.md file and returns frontmatter, body, and exaix block.
+ *
+ * `exaixError` is set when an `exaix:` fence is present but cannot be parsed
+ * (GAP-19): the caller must treat that as a hard error rather than silently
+ * skipping the skill. `exaixBlock: null` with no `exaixError` means the skill
+ * legitimately has no `exaix:` block (a benign skip).
  */
 function parseSkillMd(content: string): {
   frontmatter: ISkillMdData;
   body: string;
   exaixBlock: ISkillMdData | null;
+  exaixError: string | null;
 } {
   if (!content.startsWith("---\n")) {
-    return { frontmatter: {}, body: content.trim(), exaixBlock: null };
+    return { frontmatter: {}, body: content.trim(), exaixBlock: null, exaixError: null };
   }
 
   const endFmIndex = content.indexOf("\n---\n", 4);
   if (endFmIndex === -1) {
-    return { frontmatter: {}, body: content.trim(), exaixBlock: null };
+    return { frontmatter: {}, body: content.trim(), exaixBlock: null, exaixError: null };
   }
 
   const frontmatterYaml = content.slice(4, endFmIndex);
@@ -115,28 +122,50 @@ function parseSkillMd(content: string): {
   const bodyBeforeExaix = afterFm.replace(/\n?---\nexaix:[\s\S]*?\n---\s*$/, "").trim();
   const exaixMatch = afterFm.match(/\n---\nexaix:\n([\s\S]*?)\n---/);
 
+  // Detect a present-but-malformed exaix fence: an `exaix:` marker exists in a
+  // trailing block but the strict shape above did not match (GAP-19).
   if (!exaixMatch) {
-    return { frontmatter, body: afterFm.trim(), exaixBlock: null };
+    const hasExaixMarker = /\n---\s*\nexaix\s*:/.test(afterFm);
+    return {
+      frontmatter,
+      body: afterFm.trim(),
+      exaixBlock: null,
+      exaixError: hasExaixMarker ? "an exaix: block is present but malformed (unexpected fence/indentation)" : null,
+    };
   }
 
-  let exaixBlock: ISkillMdData | null = null;
   try {
     const exaixYaml = `exaix:\n${exaixMatch[1]}`;
     const parsed = parseYaml(exaixYaml) as ISkillMdData;
-    exaixBlock = (parsed.exaix as ISkillMdData) ?? null;
-  } catch {
-    exaixBlock = null;
+    const exaixBlock = (parsed.exaix as ISkillMdData) ?? null;
+    if (exaixBlock === null) {
+      return {
+        frontmatter,
+        body: bodyBeforeExaix,
+        exaixBlock: null,
+        exaixError: "exaix: block is empty or not a mapping",
+      };
+    }
+    return { frontmatter, body: bodyBeforeExaix, exaixBlock, exaixError: null };
+  } catch (e) {
+    return {
+      frontmatter,
+      body: bodyBeforeExaix,
+      exaixBlock: null,
+      exaixError: `exaix: block YAML parse failed: ${e instanceof Error ? e.message : String(e)}`,
+    };
   }
-
-  return { frontmatter, body: bodyBeforeExaix, exaixBlock };
 }
 
 /**
  * Reads an existing skill JSON if present (for preserving id/created_at/usage_count).
+ * Returns a parsed ISkill if the file exists and validates, else null. A present
+ * but invalid file is treated as absent (fresh identity will be minted).
  */
-function readExistingSkill(path: string): ISkillMdData | null {
+function readExistingSkill(path: string): ISkill | null {
   try {
-    return JSON.parse(Deno.readTextFileSync(path));
+    const parsed = SkillSchema.safeParse(JSON.parse(Deno.readTextFileSync(path)));
+    return parsed.success ? parsed.data : null;
   } catch {
     return null;
   }
@@ -149,14 +178,14 @@ function readExistingSkill(path: string): ISkillMdData | null {
 function composeSkillSchema(
   envelope: ISkillEnvelope,
   body: string,
-  existing?: ISkillMdData | null,
-): ISkillMdData {
+  existing?: ISkill | null,
+): ISkill {
   return {
     id: existing?.id ?? crypto.randomUUID(),
     created_at: existing?.created_at ?? new Date().toISOString(),
-    source: "user",
-    scope: "global",
-    status: "active",
+    source: MemoryBankSource.USER,
+    scope: MemoryScope.GLOBAL,
+    status: SkillStatus.ACTIVE,
     skill_id: envelope.skill_id,
     name: envelope.name,
     version: envelope.version ?? "1.0.0",
@@ -225,7 +254,13 @@ export async function generateSkillJson(
       continue;
     }
 
-    const { frontmatter, body, exaixBlock } = parseSkillMd(content);
+    const { frontmatter, body, exaixBlock, exaixError } = parseSkillMd(content);
+
+    if (exaixError) {
+      result.errors.push(`Malformed exaix block in ${skillDir}: ${exaixError}`);
+      result.success = false;
+      continue;
+    }
 
     if (!exaixBlock) {
       result.warnings.push(`No exaix block in ${skillDir}`);
@@ -306,16 +341,42 @@ export async function generateSkillJson(
   return result;
 }
 
+/**
+ * Parsed CLI arguments. Returns null when the required positionals are absent.
+ */
+export interface IParsedCliArgs {
+  targetDir: string;
+  sandboxRoot: string;
+  check: boolean;
+}
+
+/**
+ * Parses CLI args, requiring exactly two positional arguments
+ * (<target-skills-dir> <sandbox-root>) regardless of flag presence.
+ * Flags (those starting with "--") are excluded from the positional count, so
+ * `<dir> --check` is rejected (one positional) rather than treating "--check"
+ * as the sandbox root (GAP-16). Returns null when fewer than two positionals.
+ */
+export function parseCliArgs(args: string[]): IParsedCliArgs | null {
+  const positionals = args.filter((a) => !a.startsWith("--"));
+  if (positionals.length < 2) return null;
+  return {
+    targetDir: positionals[0],
+    sandboxRoot: positionals[1],
+    check: args.includes("--check"),
+  };
+}
+
 async function main(): Promise<void> {
-  const args = Deno.args;
-  if (args.length < 2) {
+  const parsed = parseCliArgs(Deno.args);
+  if (parsed === null) {
     console.error("Usage: deno run -A scripts/generate_skill_json.ts <target-skills-dir> <sandbox-root> [--check]");
     Deno.exit(1);
   }
 
-  const targetDir = resolve(args[0]);
-  const sandboxRoot = resolve(args[1]);
-  const check = args.includes("--check");
+  const targetDir = resolve(parsed.targetDir);
+  const sandboxRoot = resolve(parsed.sandboxRoot);
+  const check = parsed.check;
 
   const repoRoot = resolve(join(dirname(new URL(import.meta.url).pathname), ".."));
   const skillsDir = join(repoRoot, ".copilot", "skills");

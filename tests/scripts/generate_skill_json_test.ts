@@ -14,7 +14,7 @@ import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/a
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { SkillSchema } from "@exaix/schemas/memory_bank.ts";
-import { generateSkillJson, type IGenerateSkillJsonResult } from "../../scripts/generate_skill_json.ts";
+import { generateSkillJson, type IGenerateSkillJsonResult, parseCliArgs } from "../../scripts/generate_skill_json.ts";
 
 function createFixtureSkill(dir: string, overrides?: Record<string, string>): string {
   const skillDir = join(dir, "test-skill");
@@ -252,6 +252,64 @@ Just a body without an exaix block.
     assertEquals(result.generated.length, 0, "no exaix block means no JSON generated");
     assertEquals(result.warnings.length, 1);
     assertStringIncludes(result.warnings[0], "no-exaix-skill");
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+Deno.test("[generate_skill_json] one positional + --check is rejected (insufficient args)", () => {
+  // GAP-16: `generate_skill_json.ts /tmp/x --check` must NOT treat "--check" as
+  // the sandbox-root positional. Only one real positional is present → invalid.
+  const parsed = parseCliArgs(["/tmp/x", "--check"]);
+  assertEquals(parsed, null, "one positional + a flag must be rejected, not silently accepted");
+});
+
+Deno.test("[generate_skill_json] two positionals + --check parse correctly", () => {
+  const parsed = parseCliArgs(["/tmp/target", "/tmp/sandbox", "--check"]);
+  assertExists(parsed);
+  assertEquals(parsed.targetDir, "/tmp/target");
+  assertEquals(parsed.sandboxRoot, "/tmp/sandbox");
+  assertEquals(parsed.check, true);
+});
+
+Deno.test("[generate_skill_json] two positionals without --check parse with check=false", () => {
+  const parsed = parseCliArgs(["/tmp/target", "/tmp/sandbox"]);
+  assertExists(parsed);
+  assertEquals(parsed.check, false);
+});
+
+Deno.test("[generate_skill_json] no positionals is rejected", () => {
+  assertEquals(parseCliArgs(["--check"]), null);
+  assertEquals(parseCliArgs([]), null);
+});
+
+Deno.test("[generate_skill_json] a present-but-malformed exaix block fails (error, not silent skip)", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "gen-skill-malformed-yaml-" });
+  try {
+    const skillsDir = createEmptySkillsDir(tempDir);
+    // An exaix: block whose YAML is structurally broken (unparseable), not merely
+    // schema-invalid. GAP-19: this must produce an ERROR, not a silent warning-skip.
+    createFixtureSkill(skillsDir, {
+      exaix: `
+---
+exaix:
+  skill_id: test-skill
+  triggers:
+      - this: is
+    - broken: yaml
+   indentation
+---
+`,
+    });
+    const targetDir = join(tempDir, "target", "Memory", "Skills");
+    const sandboxRoot = join(tempDir, "target");
+
+    const result = await generateSkillJson(skillsDir, targetDir, sandboxRoot, { check: true });
+    assertEquals(result.success, false, "a malformed exaix block must fail, not be silently skipped");
+    assert(
+      result.errors.some((e) => e.toLowerCase().includes("exaix")),
+      "error must reference the malformed exaix block",
+    );
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }
