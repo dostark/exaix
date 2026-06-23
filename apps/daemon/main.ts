@@ -17,6 +17,7 @@ import {
 } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import { ConfigService } from "@exaix/core/config";
+import { evaluateNetPolicy } from "@exaix/core/security";
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ProviderFactory } from "@exaix/ai";
@@ -148,6 +149,24 @@ if (import.meta.main) {
       await logger.info(DomainEventType.NetAllowlist, "custom-allowlist", {
         hosts: config.system.allow_net.join(","),
       });
+    }
+
+    // Phase 124 (full-alignment): self-enforce the allow_net policy regardless of
+    // how the daemon was launched. The launcher bakes --allow-net into the spawn,
+    // but a compiled binary or `deno task dev` freezes its flags at build time and
+    // cannot honour allow_net. If the config says "block all outbound" (allow_net=[])
+    // yet this process still holds net access, refuse to start (fail-closed) — the
+    // operator asked for no egress and we must not silently provide it.
+    const netStatus = await Deno.permissions.query({ name: "net" });
+    const netPolicy = evaluateNetPolicy({
+      allowNet: config.system.allow_net,
+      grantedNet: netStatus.state === "granted",
+    });
+    if (netPolicy.violated) {
+      await logger.error(DomainEventType.NetAllowlist, "policy-violation", {
+        reason: netPolicy.reason ?? "net policy violation",
+      });
+      throw new Error(`Daemon refusing to start: ${netPolicy.reason}`);
     }
 
     await logger.info(DomainEventType.DatabaseConnected, "journal.db", {

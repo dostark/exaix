@@ -1718,6 +1718,24 @@ export const DAEMON_SPAWN_PERMISSIONS: IDaemonSpawnPermissions = {
 };
 
 /**
+ * Permission flags for spawning the `exactl` CLI to run a `daemon` subcommand
+ * (used by the TUI Daemon Control view). This is the CLI-dispatch layer — it
+ * reads config, writes the PID file, runs git/deno, and opens sqlite for status;
+ * the actual long-lived daemon it launches is separately narrowed via
+ * `DAEMON_SPAWN_PERMISSIONS`/`buildSpawnFlags`. Scoped instead of `--allow-all`
+ * (Phase 124 full-alignment).
+ */
+export const EXACTL_CLI_SPAWN_FLAGS: readonly string[] = [
+  "--allow-read",
+  "--allow-write",
+  "--allow-net",
+  "--allow-env",
+  "--allow-ffi",
+  "--allow-import",
+  `--allow-run=${DAEMON_SPAWN_RUN_BINARIES.join(",")}`,
+];
+
+/**
  * Run async tasks with bounded concurrency.
  * Processes items in batches of `concurrency`, ensuring at most `concurrency`
  * promises are in-flight at any time.

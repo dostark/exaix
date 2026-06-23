@@ -737,6 +737,16 @@ defence-in-depth fallback when the config cannot be read, and that fallback is
 logged. The dogfood launcher (`scripts/dogfood_daemon.ts`) mirrors this and shares
 the same run-binary allowlist constant so the two launch paths cannot drift.
 
+Because the launcher flag is frozen for build-time-fixed launch paths (the
+compiled `exaix` binary, `deno task dev`), the daemon also **self-enforces** the
+strict-block policy at startup: `evaluateNetPolicy` (`@exaix/core/security`)
+compares `Deno.permissions.query({name:"net"})` against `allow_net`, and if the
+config says block-all (`[]`) while the process holds net access, the daemon
+refuses to start (fail-closed). Host-level allowlists remain launcher-enforced
+(the OS reports net permission only at the blanket level). The TUI Daemon Control
+view spawns `exactl daemon` via the scoped `EXACTL_CLI_SPAWN_FLAGS` constant, not
+`--allow-all`.
+
 ### Crash Recovery for Orphaned Delegations
 
 When a session delegation is launched, `apps/daemon/main.ts` emits

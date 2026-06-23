@@ -3175,6 +3175,34 @@ import, and env are granted because the daemon genuinely needs them. The
 `exactl daemon` launcher and the dogfood launcher share one run-binary allowlist
 so the two paths cannot drift.
 
+#### How `allow_net` is enforced (two layers)
+
+`allow_net` is enforced at two layers, so it holds no matter how the daemon was
+started:
+
+1. **Launcher flag (primary).** When you start the daemon via `exactl daemon
+   start` or the dogfood launcher, the launcher bakes the computed `--allow-net`
+   into the spawned daemon process. Deno enforces it at the OS level — the
+   narrowing applies to specific hosts.
+
+2. **Startup self-check (defence-in-depth).** Some launch paths cannot read
+   `allow_net` at startup — most importantly the **compiled `exaix` binary** (its
+   `--allow-*` flags are frozen at `deno compile` time) and `deno task dev` (flags
+   are fixed in the task). For these, the daemon performs a startup check: if
+   `allow_net = []` (block all) but the process was nonetheless granted network
+   access, **the daemon refuses to start** (fail-closed) and logs the reason.
+   This guarantees the strict-block policy is honoured even by the compiled
+   binary.
+
+   > **Caveat (host allowlists, not strict block):** A _non-empty_ host
+   > allowlist (e.g. `["api.anthropic.com"]`) can only be enforced by the
+   > launcher's `--allow-net=<hosts>` flag, because the OS reports network
+   > permission at the blanket level, not per-host. If you run the **compiled
+   > binary** or `deno task dev` directly, a host allowlist is **not** narrowed —
+   > only the strict block (`allow_net = []`) is self-enforced. For per-host
+   > narrowing, launch via `exactl daemon start`, or rebuild the binary with the
+   > desired `--allow-net=<hosts>` flag.
+
 ### 9.2 Best Practices
 
 1. **Review Plans:** Always inspect the diffs in the TUI (`exactl plan show`) before approving.
