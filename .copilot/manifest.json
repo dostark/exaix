@@ -733,7 +733,7 @@
       "agent": "senior-coder",
       "scope": "dev",
       "title": "Post-Gap Analysis Skill (#post-gap-analysis)",
-      "short_summary": "Deep review of an existing phase planning document: checks implementation against plan, evaluates code quality (style, TS idiomacy, defensive programming, performance, dependencies), finds gaps, and writes remediation steps back into the document.",
+      "short_summary": "Deep review of an existing phase planning document: checks implementation against plan, delegates code quality to #review-code, finds gaps, and writes remediation steps back into the document.",
       "version": "1.5",
       "topics": [
         "planning",

@@ -8,8 +8,8 @@ tools:
   - run_command
 scope: dev
 title: "Post-Gap Analysis Skill (#post-gap-analysis)"
-description: Deep post-implementation review of a phase planning document — verifies what was built against the plan, evaluates code quality (style, TS idiomacy, defensive programming, performance, dependency hygiene), finds gaps, and writes remediation steps back into the document
-short_summary: "Deep review of an existing phase planning document: checks implementation against plan, evaluates code quality (style, TS idiomacy, defensive programming, performance, dependencies), finds gaps, and writes remediation steps back into the document."
+description: Deep post-implementation review of a phase planning document — verifies what was built against the plan, delegates code quality review to #review-code, finds gaps, and writes remediation steps back into the document
+short_summary: "Deep review of an existing phase planning document: checks implementation against plan, delegates code quality to #review-code, finds gaps, and writes remediation steps back into the document."
 version: "1.5"
 topics: [
   "planning",
@@ -57,9 +57,8 @@ Key points
   handling, auth, path resolution, secrets, or external data.
 - Run a traceability & configurability check (Phase 6) on every step that
   introduces new EventLogger events, thresholds, timeouts, or opt-in features.
-- Run a code quality review (Phase 7) on every source file — check style
-  adherence, TypeScript idiomacy, defensive programming, performance, and
-  dependency hygiene.
+- Delegate code quality review to #review-code (Phase 7) instead of
+  duplicating style/TS/defensive/perf checks here.
 - When reviewing more than ~20 source files, work in batches of 5–10: read a batch, record findings, then continue.
 
 Canonical prompt (short):
@@ -94,18 +93,9 @@ Do / Don't
   introduces new `EventLogger` events, thresholds, timeouts, or opt-in features.
 - ✅ Do run Phase 4 scenario framework coverage verification on every step that
   affects the request → plan → execution → review → memory → update flow.
-- ✅ Do run Phase 7 (Code Quality Review) on every step that modifies or creates
-  source files — check style adherence, TS idiomacy, defensive programming,
-  performance, and dependency hygiene.
-- ✅ Do run `deno lint` and `deno fmt --check` on every new or modified file
-  and flag any violation not justified by a code comment.
-- ✅ Do verify no `record-unknown` violations — `Record<string, unknown>` is
-  banned; every map-like structure must have a typed interface.
-- ✅ Do check for bare `catch {}` blocks that discard diagnostic information —
-  a silent catch in a security-sensitive or diagnostic path is at minimum
-  🟠 Testing.
-- ✅ Do flag sync I/O (`readFileSync`, `statSync`) in async functions as a
-  performance concern — prefer async variants in non-initialisation paths.
+- ✅ Do delegate all code quality checks (lint, fmt, TS idiomacy, defensive
+  programming, performance, dep hygiene) to #review-code Phase 7 — do not
+  re-check from scratch.
 - ❌ Don't mark a plan step as gap-free unless you verified its test files.
 - ❌ Don't skip Phase 5 for steps that handle external data or file paths.
 - ❌ Don't invent remediation steps for code that already exists and passes.
@@ -117,12 +107,16 @@ Do / Don't
   constants in `packages/core/src/types/constants.ts` or config-schema fields.
 - ❌ Don't skip event payload typing — untyped events block audit chain
   verification and make integration tests fragile.
+- ❌ Don't re-run the #review-code checklists in Phase 7 — delegate to
+  #review-code and use its report; duplicating creates inconsistency.
 
 Related skills:
 - #pre-gap-analysis — Pre-implementation gap analysis (no code to check yet)
-- #plan         — Draft a new phase planning document from scratch
-- #next-steps   — Re-enter the TDD loop to remediate gaps found here
-- #commit       — Create a structured commit after remediation
+- #plan              — Draft a new phase planning document from scratch
+- #next-steps        — Re-enter the TDD loop to remediate gaps found here
+- #commit            — Create a structured commit after remediation
+- #review-code       — Code quality review (style, TS idiomacy, defensive,
+                       performance, deps) — Phase 7 delegates here
 
 Workflow chain (typical):
   #plan → #pre-gap-analysis → #next-steps → **#post-gap-analysis** → #commit
@@ -274,166 +268,29 @@ config validation tests.
 
 ### Phase 7 — Code Quality Review
 
-For **every source file the step modifies or creates**, evaluate the implementation
-against the following quality dimensions. Each failure below the dimension's bar
-is a gap — classify by the severity that fits the concrete consequence.
-
-#### 7a — Project Code Style & Convention Adherence
-
-Check the new code against the project's enforced style rules and the dominant
-conventions in the existing file:
-
-1. **Lint & format compliance.** Verify `deno lint <file>` and `deno fmt --check`
-   produce zero violations on the new code. Flag any lint suppression
-   (`// deno-lint-ignore`) that isn't justified by a code comment.
-
-1. **Import style.** The project's `check:style` rule requires:
-   - Multi-line `import { ... }` blocks must be collapsed to single-line when they fit
-     within the formatter's line width. A multi-line import that deno fmt would
-     flatten is a style violation.
-   - `import type` must be used when only type-level imports are used
-     (`verbatim-module-syntax`). A runtime `import` used exclusively for type
-     positions is a violation.
-   - Inline `npm:`, `jsr:`, or `https:` specifiers in source files are forbidden
-     (`no-import-prefix`). All external dependencies must be declared in
-     `deno.json`'s `imports` map and referenced by bare specifier.
-   - Import paths should use the project's `@exaix/*` / `@exaix-team/*` aliases
-     wherever those aliases exist, rather than relative paths that reach into
-     sibling or parent packages.
-
-1. **Interface naming.** The project enforces `IFooBar` naming for interfaces
-   (`check:style` rule `[interface-naming]`). A non-prefixed interface is a
-   violation unless it has `@ungrounded` in its JSDoc header.
-
-1. **Module header JSDoc.** Every source file must have a `@module`, `@path`,
-   `@architectural-layer`, and (for non-exempt files) `@related-files` entry.
-   Missing or invalid headers fail `check:arch`.
-
-1. **Magic-value discipline.** String or number literals that appear more than
-   once across the codebase must be extracted into named constants
-   (`check:magic`). This applies particularly to:
-   - Kind strings (`"function"`, `"class"`, `"const"`, etc.) used in
-     `CAPTURE_KIND` maps — extract to shared constants.
-   - Capture names (`"name"`, `"definition."`) — extract to shared constants.
-   - Thresholds, timeouts, file-size limits — must live in
-     `packages/core/src/types/constants.ts` or a config-schema field.
-
-1. **`Record<string, unknown>` prohibition.** The project bans
-   `Record<string, unknown>` in favour of specific interfaces
-   (`check:style` rule). Use a typed interface instead.
-
-#### 7b — TypeScript Idiomacy & Type Safety
-
-Evaluate whether the code uses TypeScript effectively and idiomatically:
-
-1. **Proper type annotations.** Public API surfaces (exported functions, class
-   methods, interface fields) must have explicit type annotations. Avoid relying
-   on implicit `any` — every `find()` callback parameter, `catch` variable, and
-   generic type argument should be typed.
-
-1. **Exhaustive conditionals.** Switch/if-else chains over union types should be
-   exhaustive. Missing branches that silently fall through are a 🟡 Feasibility
-   gap (latent bug when a new variant is added).
-
-1. **Generic constraints.** Generic type parameters should be constrained where
-   possible (`<T extends SomeBase>`) rather than unbounded `<T>`.
-
-1. **Async/await hygiene.**
-   - `async` functions that contain no `await` are lint violations
-     (`require-await`) unless they exist solely to satisfy an `Promise`-returning
-     interface. In the latter case the violation must be justified.
-   - Promise chains (`.then()/.catch()`) should prefer `async`/`await` unless
-     there is a clear parallel-execution reason.
-   - `void` operator on promise-returning expressions must be intentional
-     (fire-and-forget). Unexplained `void` is a 🟡 Feasibility gap.
-
-1. **Null safety.** Use `??` (nullish coalescing) over `||` for default values
-   when `0` / `""` / `false` are valid inputs. Use `?.` (optional chaining)
-   over `&&` for property access.
-
-1. **Discriminated unions.** Where a value can be one of several shapes, prefer
-   discriminated unions (`{ type: "a", ... } | { type: "b", ... }`) over
-   optional fields on a single interface.
-
-#### 7c — Defensive Programming & Error Robustness
-
-Evaluate error handling, edge-case coverage, and fail-soft behaviour:
-
-1. **Input validation at trust boundaries.** Every file path, language string,
-   or external input received from an untrusted source (portal source, user
-   config) must be validated before use. A missing validation step that could
-   lead to path traversal, injection, or logic bypass is a 🔒 Security gap.
-
-1. **Fail-closed vs fail-open.** Security-relevant decisions (path access,
-   permission checks, policy evaluation) must fail closed (deny on error/ambiguity)
-   rather than fail open. A check that defaults to "allow" on error is 🔴 Critical.
-
-1. **Fallback chains.** Extractors and resolvers should have a fallback chain
-   (preferred → degraded → safe default) so a failure in one link does not
-   crash the whole operation. A missing fallback that causes a hard crash on
-   recoverable failure is 🟡 Feasibility.
-
-1. **Resource cleanup.** Temporary files, directory handles, and open file
-   descriptors must be cleaned up in `finally` blocks or via
-   `using`/`await using` (Deno 2). A leak in a long-running process is
-   🔒 Security (resource exhaustion).
-
-1. **Timeout enforcement.** Every operation that reads external data or runs a
-   subprocess must have a timeout. Missing or excessively long timeouts are
-   🔒 Security (DoS vector).
-
-1. **Error context preservation.** Catch blocks should not swallow errors
-   silently. Log or wrap with context before re-throwing. A bare `catch {}`
-   that discards diagnostic information is 🟠 Testing (debuggability gap).
-
-#### 7d — Performance & Resource Efficiency
-
-Evaluate the implementation for obvious performance issues:
-
-1. **Unnecessary synchronous I/O.** In an async context, `readFileSync`,
-   `statSync`, and similar synchronous calls block the event loop. Prefer
-   `readFile`, `stat`, etc. Flag sync I/O in an async function as 🟡 Feasibility
-   (event-loop blockage under concurrent analysis).
-
-1. **Redundant parsing or allocation.** Avoid parsing the same input twice,
-   reading the same file more than once, or constructing intermediate data
-   structures that are immediately discarded. A repeated parse in a hot loop
-   is 🟡 Feasibility.
-
-1. **File I/O batching.** When reading many small files (e.g. portal source),
-   batch reads or use streaming rather than sequential `await` per file where
-   the data is independent. Sequential reads over hundreds of files are
-   🟡 Feasibility (unnecessary latency).
-
-1. **Memory bounds on untrusted input.** WASM parse trees, in-memory file
-   content, and result arrays must be bounded. Missing bounds on tree size,
-   node count, or result set size are 🔒 Security (memory exhaustion).
-
-1. **Early termination on budget exhaustion.** When a wall-clock budget or
-   file-count cap is hit, processing must stop immediately rather than
-   finishing the current batch. A soft budget that runs to completion before
-   checking is 🟠 Testing (behavioural gap).
-
-1. **Short-circuit for zero-cost cases.** If no files of the target language
-   are found (empty `filePaths`), the extractor should return `[]` immediately
-   without initialising the parser. Unnecessary initialisation is a minor
-   🟡 Feasibility gap.
-
-#### 7e — Dependency & Import Hygiene
-
-1. **Unused imports and exports.** Every import must be consumed. An import
-   that is only used in type positions must use `import type`. Unused exports
-   (symbols exported from `mod.ts` that have no external consumer) should be
-   flagged (🟠 Testing if intentional but unchecked, 🔵 Conceptual if
-   forgotten).
-
-1. **Circular dependency risk.** If the new code creates a new import edge
-   between packages, verify it does not create a cycle. A new circular
-   dependency is 🔴 Critical.
-
-1. **npm dependency footprint.** Each new `npm:` dependency must be justified
-   in the plan's Architecture Notes. An undocumented npm dependency that
-   duplicates existing capability is 🟡 Feasibility.
+> **Delegated to `#review-code`.** The detailed code quality dimensions (style
+> conventions, TypeScript idiomacy, defensive programming, performance, and
+> dependency hygiene) are owned by the `#review-code` skill. Run it on every
+> source file the step modifies or creates:
+>
+> ```
+> #review-code packages/<package>/src/<file>.ts
+> ```
+>
+> The `#review-code` skill checks, in order:
+> - **Phase 4** — Architecture, Style & Conventions (module headers, interface
+>   naming, import style, magic values, Record types, EventLogger, exports)
+> - **Phase 5** — TypeScript Idiomacy & Type Safety (type annotations,
+>   exhaustive conditionals, async/await hygiene, null safety, discriminated unions)
+> - **Phase 6** — Defensive Programming & Error Robustness (input validation,
+>   fail-closed, fallback chains, resource cleanup, timeout enforcement)
+> - **Phase 7** — Performance & Dependency Hygiene (sync I/O, redundant parsing,
+>   memory bounds, unused imports, circular deps, dependency footprint)
+>
+> A finding in any of these dimensions that was **introduced by this phase's
+> implementation** is a gap — classify using the severity table in Phase 8 below.
+> Use the gap classification from `#review-code`'s report directly; do not
+> re-evaluate from scratch.
 
 ---
 
