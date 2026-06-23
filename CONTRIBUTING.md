@@ -171,7 +171,7 @@ git rebase -i origin/main
 
 ### 5.1 Commit Message Guidelines
 
-All commits must use the Exaix structured format. The `commit-msg` hook (`deno task check-commit-msg`) validates every commit automatically.
+All commits must use the Exaix structured format. The `commit-msg` hook (`deno task check:commit-msg`) validates every commit automatically.
 
 **Mandatory schema:**
 

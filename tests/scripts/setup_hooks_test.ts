@@ -38,7 +38,7 @@ describe("scripts/setup_hooks.ts", () => {
 
     // A safer way: Check if deno.json has the task.
     const denoConfig = JSON.parse(await Deno.readTextFile("deno.json"));
-    assert(denoConfig.tasks["check-commit-msg"], "deno.json should have check-commit-msg task");
+    assert(denoConfig.tasks["check:commit-msg"], "deno.json should have check:commit-msg task");
     assert(denoConfig.tasks["check:test-placement"], "deno.json should have check:test-placement task");
 
     const hookInstaller = await Deno.readTextFile("scripts/setup_hooks.ts");
