@@ -154,12 +154,16 @@ if (import.meta.main) {
       mode: "WAL",
     });
 
-    // Phase 121 Step 3: recover orphaned session delegations from journal
-    const workspaceRoot = join(config.system.root, config.paths.workspace);
+    // Phase 121 Step 3: recover orphaned session delegations from journal.
+    // recovery.ts joins workspaceRoot + "Workspace" + "Requests", so pass the
+    // project root (config.system.root) here — NOT root/workspace, which would
+    // produce a doubled Workspace/Workspace/Requests path the watcher never scans
+    // (Phase 124 GAP-9, caught by the Step 4b E2E).
+    const recoveryRoot = config.system.root;
     const recoveredCount = await recoverOrphanedDelegations({
       db: dbService,
       logger,
-      workspaceRoot,
+      workspaceRoot: recoveryRoot,
     });
     if (recoveredCount > 0) {
       logger.info(DomainEventType.SessionDelegateCrashRecovered, "crash-recovery", { recovered: recoveredCount });
@@ -574,6 +578,12 @@ if (import.meta.main) {
                 delegateProviderEnv = _sessionDelegateService!.resolveDelegateEnv(sd, sd.tool, apiKey);
               }
             }
+            // Phase 124 Step 4a: emit launched before spawning (orphan marker on crash).
+            await logger.info(DomainEventType.SessionDelegateLaunched, traceId, {
+              gate: GATE_REFINEMENT,
+              tool: sd.tool,
+              brief: brief.objective,
+            });
             await _headlessLauncher.launch(launch, traceId, delegateProviderEnv);
           } else {
             logger.info(DomainEventType.SessionDelegateBriefed, traceId, {
@@ -668,6 +678,14 @@ if (import.meta.main) {
                 delegateProviderEnv = _sessionDelegateService!.resolveDelegateEnv(sd, sd.tool, apiKey);
               }
             }
+            // Phase 124 Step 4a: emit the launched event BEFORE spawning so a
+            // crash during launch leaves a `launched` with no terminal event —
+            // the orphan that recoverOrphanedDelegations re-queues on restart.
+            await logger.info(DomainEventType.SessionDelegateLaunched, traceId, {
+              gate: GATE_CODE_CHANGES,
+              tool: sd.tool,
+              brief: brief.objective,
+            });
             await _headlessLauncher.launch(launch, traceId, delegateProviderEnv);
           } else {
             logger.info(DomainEventType.SessionDelegateBriefed, traceId, {
