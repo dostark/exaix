@@ -12,7 +12,7 @@ scope: dev
 title: "Submodule Workflow Skill (#submodule-workflow)"
 description: Manage simultaneous parent repo and exaix-dev-docs submodule changes safely with correct pointer policy
 short_summary: "Correct handling of simultaneous parent repo and exaix-dev-docs submodule changes."
-version: "1.0"
+version: "1.0.0"
 topics: ["git", "submodule", "docs", "workflow"]
 qwen_skill: submodule-workflow
 ---
@@ -134,3 +134,31 @@ Do / Don't
 - Update planning doc in `exaix-dev-docs/` and bump parent repo pointer for phase-76
 - Add new architecture document to `exaix-dev-docs/` before updating parent pointer
 - Fix a broken parent pointer: `git submodule update --init --recursive` then re-commit
+
+---
+exaix:
+  skill_id: submodule-workflow
+  triggers:
+    keywords: [submodule, exaix-dev-docs, pointer, git-submodule, subrepo]
+    task_types: [chore, docs]
+    tags: [git, submodule]
+  constraints:
+    - "Never commit a submodule pointer update without corresponding parent repo changes"
+    - "Always commit submodule changes before updating parent pointer"
+    - "Use correct pointer policy — detached HEAD in submodule is normal"
+    - "Verify submodule status with git submodule status before committing"
+  output_requirements:
+    - "Submodule updated to correct commit hash"
+    - "Parent repo commit includes the new submodule pointer"
+    - "No dangling submodule references"
+  quality_criteria:
+    - name: pointer_consistency
+      description: Submodule pointer matches the parent repo's expected state
+      weight: 40
+    - name: commit_order
+      description: Submodule changes committed before parent pointer update
+      weight: 30
+    - name: verification
+      description: git submodule status confirms clean state after update
+      weight: 30
+---

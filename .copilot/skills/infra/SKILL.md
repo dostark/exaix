@@ -11,7 +11,7 @@ scope: dev
 title: "Infrastructure/Config Skill (#infra)"
 description: Plan and implement infrastructure or configuration changes with validation and rollback steps
 short_summary: "Plan and implement Exaix infra/config changes: TOML schema, Zod validation, PathResolver, CI verification."
-version: "1.0"
+version: "1.0.0"
 topics: ["infrastructure", "configuration", "deployment", "setup"]
 qwen_skill: infra
 ---
@@ -85,4 +85,35 @@ Related
 
 - `#infra Add new TOML section [llm_cache] with Zod schema and env override`
 - `#infra Move hardcoded timeout to exa.config.toml with validated default`
+
+---
+exaix:
+  skill_id: infra
+  triggers:
+    keywords: [infra, infrastructure, config, configuration, ci, pipeline, toml]
+    task_types: [feature, chore]
+    tags: [infrastructure, configuration]
+  constraints:
+    - "All new config values must have Zod schema validation"
+    - "Include rollback steps in the implementation plan"
+    - "Use exa.config.toml for runtime configuration — not hardcoded values"
+    - "Validate path security for any user-supplied paths"
+    - "Test both the change and the rollback procedure"
+  output_requirements:
+    - "Infrastructure change applied with validation"
+    - "Rollback plan documented and tested"
+    - "New config values validated via Zod schema"
+    - "CI pipeline updated if applicable"
+  quality_criteria:
+    - name: validation_coverage
+      description: All new config values have Zod schema guards
+      weight: 40
+    - name: rollback_readiness
+      description: Rollback procedure documented and tested
+      weight: 30
+    - name: security_check
+      description: Path security applied for user-supplied paths
+      weight: 30
+---
+
 - `#infra Add PathSecurity.resolveAndValidate() for user-supplied log path`

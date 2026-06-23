@@ -405,4 +405,3 @@ exaix:
       description: Findings reference specific file:line
       weight: 30
 ---
-

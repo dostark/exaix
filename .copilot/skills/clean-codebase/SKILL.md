@@ -11,7 +11,7 @@ scope: dev
 title: "Clean Codebase Skill (#clean-codebase)"
 description: Drive the entire codebase to a fully green CI state — type errors, lint, fmt, style, arch, magic, duplication — with zero violations
 short_summary: "Multi-phase skill to eliminate all type errors, lint warnings, style violations, and CI failures from the repository."
-version: "1.0"
+version: "1.0.0"
 topics: ["cleanup", "validation", "linting", "style", "qa", "ci", "architecture"]
 qwen_skill: clean-codebase
 ---
@@ -217,3 +217,34 @@ Workflow chain (typical):
 - `#clean-codebase` — drive the full repo to CI-green from scratch
 - `#clean-codebase packages/` — scope cleanup to the packages layer only
 - `#clean-codebase after merge — fix type errors and lint introduced by the merge`
+
+---
+exaix:
+  skill_id: clean-codebase
+  triggers:
+    keywords: [clean-codebase, ci-green, cleanup, fix-all, sweep]
+    task_types: [chore, refactor]
+    tags: [cleanup, ci]
+  constraints:
+    - "Fix in dependency order: type errors first (they cascade)"
+    - "Run the specific check after each fix batch before moving to next phase"
+    - "Prefer fixing root cause over suppression annotations"
+    - "Keep changes behavioral-neutral — cleanup only, no feature changes"
+    - "Do not use as any to silence type errors"
+    - "Do not refactor or restructure code during a cleanup pass"
+  output_requirements:
+    - "Baseline tallies per gate (type errors, lint, fmt, style, arch, magic, duplication, complexity)"
+    - "Fix log per phase — what was fixed, file:line"
+    - "Intermediate check results after each phase (0 errors confirmed)"
+    - "Final full-suite test output: all gates green"
+  quality_criteria:
+    - name: full_coverage
+      description: All CI gates pass with zero violations
+      weight: 40
+    - name: root_cause_fix
+      description: Fixes address root cause, not suppress symptoms
+      weight: 30
+    - name: behavioral_neutrality
+      description: No behavioral changes introduced during cleanup
+      weight: 30
+---

@@ -11,7 +11,7 @@ scope: dev
 title: "Refactor-Check-Magic Skill (#refactor-check-magic)"
 description: Refactor magic-value violations from deno task check:magic
 short_summary: "Execution prompt for reducing magic value violations using principled refactoring, shared constants/enums, and behavior-preserving changes."
-version: "1.0"
+version: "1.0.0"
 topics: ["refactoring", "magic-values", "constants", "enums", "code-quality", "tdd"]
 qwen_skill: refactor-check-magic
 ---
@@ -130,3 +130,34 @@ If any test fails after a refactor batch, revert the batch and narrow scope befo
 - `#refactor-check-magic` — address all current check:magic violations
 - `#refactor-check-magic packages/request/src/plan_service.ts` — fix magic values in one file
 - `#refactor-check-magic — top 10 highest-score literals only`
+
+---
+exaix:
+  skill_id: refactor-check-magic
+  triggers:
+    keywords: [refactor-check-magic, magic-numbers, magic-values, constants, literal]
+    task_types: [refactor]
+    tags: [magic-numbers, refactoring]
+  constraints:
+    - "Do not alter behaviour — tests must pass identically before and after"
+    - "Prefer existing canonical definitions over introducing duplicates"
+    - "Keep naming explicit and domain-driven"
+    - "Do not add blanket ignore rules that hide real findings"
+    - "Do not over-generalize constants that make code less clear"
+  output_requirements:
+    - "Violation delta: total count before vs. after each batch"
+    - "Findings addressed: literal, strategy, files changed"
+    - "Residual high-score literals with reason not addressed"
+    - "Next 3 best candidates for follow-up"
+    - "CI gate results: check:magic, lint, check:arch, deno check"
+  quality_criteria:
+    - name: violation_reduction
+      description: Magic value violation count reduced
+      weight: 40
+    - name: naming_quality
+      description: Extracted constants have explicit, domain-driven names
+      weight: 30
+    - name: behavioral_neutrality
+      description: No behavioral changes introduced
+      weight: 30
+---

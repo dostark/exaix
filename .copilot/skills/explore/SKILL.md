@@ -9,7 +9,7 @@ scope: dev
 title: "Codebase Exploration (#explore)"
 description: Systematically explore a module or flow to answer architectural questions or map dependencies
 short_summary: "Explore the Exaix codebase using the manifest, ARCHITECTURE.md AGENT_LOGIC block, and layer-aware search."
-version: "1.0"
+version: "1.0.0"
 topics: ["exploration", "architecture", "discovery", "navigation"]
 qwen_skill: explore
 ---
@@ -85,3 +85,32 @@ Related
 - `#explore How does PlanService write to the Workspace/Active database?`
 - `#explore Map all callers of EventLogger.log() across the services layer`
 - `#explore What does the MCP execution flow look like end-to-end?`
+
+---
+exaix:
+  skill_id: explore
+  triggers:
+    keywords: [explore, investigate, understand, map, trace, research]
+    task_types: [research]
+    tags: [exploration, research]
+  constraints:
+    - "Read ARCHITECTURE.md AGENT_LOGIC block before any architectural conclusion"
+    - "Use .copilot/manifest.json as the doc index (not just file listing)"
+    - "Prefer deno doc for public API surface over reading full implementation files"
+    - "Do not draw architectural conclusions from a single file — check the layer map"
+    - "Do not conflate file exists with actively used — check for dead code paths"
+  output_requirements:
+    - "Architectural map or dependency flow"
+    - "Key files and their roles identified"
+    - "Suggested next steps for further investigation"
+  quality_criteria:
+    - name: depth
+      description: Exploration covers multiple layers and files, not just one
+      weight: 40
+    - name: accuracy
+      description: Conclusions verified against actual code, not assumptions
+      weight: 30
+    - name: actionability
+      description: Output includes actionable next steps or findings
+      weight: 30
+---

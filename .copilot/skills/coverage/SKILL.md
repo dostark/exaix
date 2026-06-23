@@ -11,7 +11,7 @@ scope: dev
 title: "Coverage Skill (#coverage)"
 description: Identify uncovered code paths, write targeted tests to meet thresholds, and verify with measure_coverage.ts
 short_summary: "Coverage improvement workflow: measure → identify gaps → write targeted tests → re-measure until thresholds pass."
-version: "1.0"
+version: "1.0.0"
 topics: ["testing", "coverage", "tdd", "ci", "quality"]
 qwen_skill: coverage
 ---
@@ -166,3 +166,31 @@ Confirm no new UNGROUNDED files and no lint errors.
 ## Related
 
 - [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules for any new test code
+
+---
+exaix:
+  skill_id: coverage
+  triggers:
+    keywords: [coverage, test-coverage, uncovered, untested, threshold]
+    task_types: [testing]
+    tags: [coverage, testing]
+  constraints:
+    - "Run measure_coverage.ts before and after writing tests"
+    - "Target uncovered code paths reported by coverage tool"
+    - "Do not reduce overall line or branch coverage"
+    - "Preferred file-scoped test commands — full suite for cross-cutting only"
+  output_requirements:
+    - "Coverage delta report (before vs after)"
+    - "Targeted tests for previously uncovered paths"
+    - "All tests passing after new tests added"
+  quality_criteria:
+    - name: path_closure
+      description: Every reported uncovered path has a corresponding test
+      weight: 40
+    - name: threshold_defense
+      description: Line coverage does not drop below 70%, branch below 60%
+      weight: 30
+    - name: minimal_overhead
+      description: Tests are concise and targeted, not blanket coverage
+      weight: 30
+---

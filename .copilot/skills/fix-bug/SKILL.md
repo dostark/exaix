@@ -13,7 +13,7 @@ scope: dev
 title: "Fix Bug Skill (#fix-bug)"
 description: Fix a bug or failing test using TDD root-cause loop — regression test first, minimal fix, CI gates, structured commit
 short_summary: "Systematic bug-fix workflow: reproduce → regress → fix → CI gates → commit. Never skip the regression test."
-version: "1.0"
+version: "1.0.0"
 topics: ["bug-fix", "tdd", "regression", "root-cause", "ci", "validation"]
 qwen_skill: fix-bug
 ---
@@ -161,3 +161,33 @@ in the `tests:` field.
 
 - [LLM_GUIDE.md](../../../LLM_GUIDE.md) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
 - [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
+
+---
+exaix:
+  skill_id: fix-bug
+  triggers:
+    keywords: [fix, bug, bugfix, failing-test, defect, regression]
+    task_types: [bugfix]
+    tags: [bugfix, tdd]
+  constraints:
+    - "Write regression test first that reproduces the bug (RED phase)"
+    - "Implement minimal fix to pass the test (GREEN phase)"
+    - "Run all CI gates after fix to prevent regressions"
+    - "If GREEN unreachable after 2 attempts, revert and re-analyse"
+    - "Use structured commit with bug reference"
+  output_requirements:
+    - "RED evidence: failing test reproducing the bug"
+    - "GREEN evidence: all tests passing after fix"
+    - "CI gates clean before commit"
+    - "Structured commit message referencing the bug"
+  quality_criteria:
+    - name: regression_test
+      description: Test written that reproduces the bug before fix
+      weight: 40
+    - name: minimal_fix
+      description: Only the minimum code changed to fix the bug
+      weight: 30
+    - name: ci_gate_compliance
+      description: All CI gates pass before commit
+      weight: 30
+---

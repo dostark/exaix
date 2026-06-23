@@ -11,7 +11,7 @@ scope: docs
 title: "Documentation Skill (#doc)"
 description: Create or update documentation ensuring accuracy, code examples, and usage coverage
 short_summary: "Create or update Exaix docs with the correct target file, structure, and sync commands."
-version: "1.0"
+version: "1.0.0"
 topics: ["documentation", "writing", "clarity"]
 qwen_skill: doc
 ---
@@ -82,3 +82,33 @@ Do / Don't
 - `#doc Document the new PlanService.createPlan() API in ARCHITECTURE.md`
 - `#doc Update Building_with_AI_Agents.md with Phase 13 TUI patterns`
 - `#doc Sync TOOLS.md after adding the new mcp/handlers/memory.ts handler`
+
+---
+exaix:
+  skill_id: doc
+  triggers:
+    keywords: [doc, documentation, docs, readme, guide]
+    task_types: [docs]
+    tags: [documentation]
+  constraints:
+    - "Ensure accuracy — verify code examples against real source"
+    - "Cover edge cases, not just happy paths"
+    - "Include usage examples for every public API surface"
+    - "Sync schemas and tool indexes after doc changes"
+    - "Do not create documentation files unless explicitly requested"
+  output_requirements:
+    - "Target file identified and read before editing"
+    - "Summary of what was changed or added"
+    - "Sync commands run (docs-sync-schemas, build_agents_index)"
+    - "Quality checklist passed (code examples, edge cases, links, formatting)"
+  quality_criteria:
+    - name: accuracy
+      description: Code examples verified against actual source
+      weight: 40
+    - name: coverage
+      description: Edge cases and error conditions documented
+      weight: 30
+    - name: completeness
+      description: Every public API has usage example
+      weight: 30
+---

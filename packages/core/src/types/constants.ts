@@ -1735,6 +1735,9 @@ export const EXACTL_CLI_SPAWN_FLAGS: readonly string[] = [
   `--allow-run=${DAEMON_SPAWN_RUN_BINARIES.join(",")}`,
 ];
 
+// Plan document constants
+export const MAX_PLAN_FILE_BYTES = 1_048_576; // 1 MB — safety bound for check_step_manifests.ts
+
 /**
  * Run async tasks with bounded concurrency.
  * Processes items in batches of `concurrency`, ensuring at most `concurrency`

@@ -11,7 +11,7 @@ scope: dev
 title: "Refactoring Skill (#refactor)"
 description: Systematically refactor code for clarity, performance, or maintainability without changing behavior
 short_summary: "Refactor Exaix code using IFoo interfaces, constructor DI, constants extraction, and zero behavior change."
-version: "1.0"
+version: "1.0.0"
 topics: ["refactoring", "code-quality", "maintenance"]
 qwen_skill: refactor
 ---
@@ -107,3 +107,33 @@ Related
 - `#refactor Extract IEventLogger interface from EventLogger class`
 - `#refactor Replace module-level DatabaseService singleton with constructor DI`
 - `#refactor Move hardcoded 30000 timeout to DEFAULT_TIMEOUT_MS constant`
+
+---
+exaix:
+  skill_id: refactor
+  triggers:
+    keywords: [refactor, restructure, rename, extract, interface, di]
+    task_types: [refactor]
+    tags: [refactoring]
+  constraints:
+    - "Do not change behaviour — tests must pass before and after"
+    - "Do not mix refactoring with new features in the same commit"
+    - "Use IFoo naming for extracted interfaces"
+    - "Place constants in the correct file (prod vs. test)"
+    - "Do not use as any to resolve type errors introduced by refactor"
+  output_requirements:
+    - "Baseline evidence: tests pass before refactor"
+    - "Verification evidence: tests pass after refactor (same count)"
+    - "CI gates clean (lint, type-check, style, arch, fmt)"
+    - "Structured commit with refactoring type and files changed"
+  quality_criteria:
+    - name: behavior_preservation
+      description: Test count and results identical before and after
+      weight: 40
+    - name: interface_quality
+      description: Extracted interfaces follow IFoo naming convention
+      weight: 30
+    - name: ci_gate_compliance
+      description: All CI gates pass before commit
+      weight: 30
+---

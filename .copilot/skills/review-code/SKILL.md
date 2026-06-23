@@ -374,4 +374,3 @@ exaix:
       description: Findings reference specific file:line or symbol
       weight: 40
 ---
-

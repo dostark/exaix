@@ -12,7 +12,7 @@ scope: dev
 title: "Edition Development Skill (#edition-development)"
 description: Guide for developing edition-specific features within Exaix's three-tier edition architecture — Option-C layout, seam wiring, composer contracts, build targets, and CI/release pipeline
 short_summary: "Develop edition-specific features (Solo/Team/Enterprise) following Exaix's composition architecture, Option-C layout, and seam-based extension model."
-version: "1.1"
+version: "1.1.0"
 topics: [
   "edition",
   "solo",
@@ -363,3 +363,33 @@ Key files to reference:
 - **Design doc:** `exaix-dev-docs/dev/Exaix_Edition_Separation_Design.md` — original design decisions, Option-C rationale, §16 registry.
 - **ARCHITECTURE.md §Edition Model Overview:** high-level edition model summary with layout diagram.
 - **Sources:** `packages/core/src/composer/` (contracts), `packages/core/src/authorizer/` (IAuthorizer), `scripts/ci.ts` (build), `scripts/leak_guard.ts` (publish gate).
+
+---
+exaix:
+  skill_id: edition-development
+  triggers:
+    keywords: [edition, edition-model, tier, community, pro, enterprise, option-c]
+    task_types: [feature, refactor]
+    tags: [edition, architecture]
+  constraints:
+    - "Follow Exaix three-tier edition architecture (Community, Pro, Enterprise)"
+    - "Use Option-C layout for edition-specific code"
+    - "Wire via seam interfaces in packages/core/src/composer/"
+    - "Respect build targets and CI pipeline per edition"
+    - "Do not introduce edition conditionals in shared code paths"
+  output_requirements:
+    - "Edition-specific implementation in correct tier directory"
+    - "Seam interface wired in composer contract"
+    - "Build target updated for the new edition"
+    - "CI pipeline includes edition-specific gate"
+  quality_criteria:
+    - name: seam_compliance
+      description: Edition features wired through composer contracts, not conditionals
+      weight: 40
+    - name: build_integrity
+      description: Each edition builds independently with correct dependencies
+      weight: 30
+    - name: boundary_discipline
+      description: Shared code paths contain no edition-specific branching
+      weight: 30
+---

@@ -447,7 +447,7 @@
       "scope": "docs",
       "title": "Documentation Skill (#doc)",
       "short_summary": "Create or update Exaix docs with the correct target file, structure, and sync commands.",
-      "version": "1.0",
+      "version": "1.0.0",
       "topics": [
         "documentation",
         "writing",
@@ -459,7 +459,8 @@
         ".copilot/chunks/SKILL.md.chunk1.txt",
         ".copilot/chunks/SKILL.md.chunk2.txt",
         ".copilot/chunks/SKILL.md.chunk3.txt",
-        ".copilot/chunks/SKILL.md.chunk4.txt"
+        ".copilot/chunks/SKILL.md.chunk4.txt",
+        ".copilot/chunks/SKILL.md.chunk5.txt"
       ]
     },
     {
@@ -468,7 +469,7 @@
       "scope": "dev",
       "title": "Coverage Skill (#coverage)",
       "short_summary": "Coverage improvement workflow: measure → identify gaps → write targeted tests → re-measure until thresholds pass.",
-      "version": "1.0",
+      "version": "1.0.0",
       "topics": [
         "testing",
         "coverage",
@@ -494,7 +495,7 @@
       "scope": "dev",
       "title": "Edition Development Skill (#edition-development)",
       "short_summary": "Develop edition-specific features (Solo/Team/Enterprise) following Exaix's composition architecture, Option-C layout, and seam-based extension model.",
-      "version": "1.1",
+      "version": "1.1.0",
       "topics": [
         "edition",
         "solo",
@@ -526,7 +527,7 @@
       "scope": "dev",
       "title": "Package Extraction Skill (#package-extraction)",
       "short_summary": "Retired skill describing the guided workflow that selected and extracted package-owned slices from src/ into packages/ using Exaix package-boundary rules, canonical package imports, and mandatory src retirement.",
-      "version": "2.0",
+      "version": "2.0.0",
       "topics": [
         "packages",
         "migration",
@@ -553,7 +554,7 @@
       "scope": "dev",
       "title": "Submodule Workflow Skill (#submodule-workflow)",
       "short_summary": "Correct handling of simultaneous parent repo and exaix-dev-docs submodule changes.",
-      "version": "1.0",
+      "version": "1.0.0",
       "topics": [
         "git",
         "submodule",
@@ -568,7 +569,8 @@
         ".copilot/chunks/SKILL.md.chunk3.txt",
         ".copilot/chunks/SKILL.md.chunk4.txt",
         ".copilot/chunks/SKILL.md.chunk5.txt",
-        ".copilot/chunks/SKILL.md.chunk6.txt"
+        ".copilot/chunks/SKILL.md.chunk6.txt",
+        ".copilot/chunks/SKILL.md.chunk7.txt"
       ]
     },
     {
@@ -577,7 +579,7 @@
       "scope": "dev",
       "title": "Fix Bug Skill (#fix-bug)",
       "short_summary": "Systematic bug-fix workflow: reproduce → regress → fix → CI gates → commit. Never skip the regression test.",
-      "version": "1.0",
+      "version": "1.0.0",
       "topics": [
         "bug-fix",
         "tdd",
@@ -631,7 +633,7 @@
       "scope": "dev",
       "title": "Infrastructure/Config Skill (#infra)",
       "short_summary": "Plan and implement Exaix infra/config changes: TOML schema, Zod validation, PathResolver, CI verification.",
-      "version": "1.0",
+      "version": "1.0.0",
       "topics": [
         "infrastructure",
         "configuration",
@@ -644,7 +646,9 @@
         ".copilot/chunks/SKILL.md.chunk1.txt",
         ".copilot/chunks/SKILL.md.chunk2.txt",
         ".copilot/chunks/SKILL.md.chunk3.txt",
-        ".copilot/chunks/SKILL.md.chunk4.txt"
+        ".copilot/chunks/SKILL.md.chunk4.txt",
+        ".copilot/chunks/SKILL.md.chunk5.txt",
+        ".copilot/chunks/SKILL.md.chunk6.txt"
       ]
     },
     {
@@ -683,7 +687,7 @@
       "scope": "dev",
       "title": "Refactoring Skill (#refactor)",
       "short_summary": "Refactor Exaix code using IFoo interfaces, constructor DI, constants extraction, and zero behavior change.",
-      "version": "1.0",
+      "version": "1.0.0",
       "topics": [
         "refactoring",
         "code-quality",
@@ -697,7 +701,8 @@
         ".copilot/chunks/SKILL.md.chunk3.txt",
         ".copilot/chunks/SKILL.md.chunk4.txt",
         ".copilot/chunks/SKILL.md.chunk5.txt",
-        ".copilot/chunks/SKILL.md.chunk6.txt"
+        ".copilot/chunks/SKILL.md.chunk6.txt",
+        ".copilot/chunks/SKILL.md.chunk7.txt"
       ]
     },
     {
@@ -706,7 +711,7 @@
       "scope": "dev",
       "title": "Clean Codebase Skill (#clean-codebase)",
       "short_summary": "Multi-phase skill to eliminate all type errors, lint warnings, style violations, and CI failures from the repository.",
-      "version": "1.0",
+      "version": "1.0.0",
       "topics": [
         "cleanup",
         "validation",
@@ -790,7 +795,7 @@
       "scope": "dev",
       "title": "Refactor-Check-Magic Skill (#refactor-check-magic)",
       "short_summary": "Execution prompt for reducing magic value violations using principled refactoring, shared constants/enums, and behavior-preserving changes.",
-      "version": "1.0",
+      "version": "1.0.0",
       "topics": [
         "refactoring",
         "magic-values",
@@ -878,7 +883,7 @@
       "scope": "dev",
       "title": "Codebase Exploration (#explore)",
       "short_summary": "Explore the Exaix codebase using the manifest, ARCHITECTURE.md AGENT_LOGIC block, and layer-aware search.",
-      "version": "1.0",
+      "version": "1.0.0",
       "topics": [
         "exploration",
         "architecture",
@@ -890,7 +895,8 @@
         ".copilot/chunks/SKILL.md.chunk0.txt",
         ".copilot/chunks/SKILL.md.chunk1.txt",
         ".copilot/chunks/SKILL.md.chunk2.txt",
-        ".copilot/chunks/SKILL.md.chunk3.txt"
+        ".copilot/chunks/SKILL.md.chunk3.txt",
+        ".copilot/chunks/SKILL.md.chunk4.txt"
       ]
     },
     {
@@ -899,7 +905,7 @@
       "scope": "dev",
       "title": "Upgrade Skill (#upgrade)",
       "short_summary": "Multi-step skill for planning and executing dependency or runtime upgrades with full regression coverage.",
-      "version": "1.0",
+      "version": "1.0.0",
       "topics": [
         "upgrade",
         "dependencies",
@@ -975,7 +981,7 @@
       "scope": "dev",
       "title": "Review-Research-Improvement Skill (#review-research)",
       "short_summary": "Autonomous skill for systematic subsystem review: analyze current state, research best practices, create actionable improvement plan with phase doc and templates.",
-      "version": "1.0",
+      "version": "1.0.0",
       "topics": [
         "architecture-review",
         "improvement-planning",

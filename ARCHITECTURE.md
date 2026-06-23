@@ -686,6 +686,16 @@ The Memory Banks system provides persistent knowledge storage for project contex
 
 For the bank-type-to-service mapping table, directory structure mermaid, update workflow sequence diagram, CLI command tree, and key components table, see `docs/Reference_Data.md#memory-banks`.
 
+### Skill Stores
+
+Skills exist in three distinct stores, each with a different origin and lifecycle:
+
+- **`.copilot/skills/` (dev skills)** — Markdown files with YAML frontmatter and an optional `exaix:` block. These are authored by Exaix developers and ship with the repo. During `dogfood_bootstrap.ts`, the `generate_skill_json.ts` transform converts them into runtime JSON in the **sandbox's** `Memory/Skills/` only (never the main repo). Each skill's `exaix:` block defines trigger conditions (keywords, tags, task types), constraints, output requirements, and quality criteria so the dogfood daemon can auto-select them for matching requests. All 23 skills in `.copilot/skills/` carry `exaix:` blocks as of Phase 125. To add a new dev skill, create a `SKILL.md` in `.copilot/skills/<name>/` with frontmatter + `exaix:` block (see existing skills for the pattern); the CI gate `check:skill-envelopes` validates the envelope.
+
+- **`Blueprints/Skills/` (universal seed set)** — Skills bundled with `deploy_workspace.ts` for new portal setup. These are the canonical seeds shipped to every user portal. The `.copilot`→sandbox transform never writes to `Blueprints/` or `deploy_workspace.ts`. A known follow-up (Phase 126+) will sync dev skills from `.copilot/skills/` into `Blueprints/Skills/` to keep user portals current.
+
+- **`Memory/Skills/` (runtime store)** — JSON files loaded by `SkillsService` at daemon start via `loadIndex()`/`buildIndex()`. Contains self-improvement-learned skills (from learning extraction), product skills from `Blueprints/` seeding, and (in dogfood sandbox only) the transformed `.copilot/` dev skills. The `SkillEnvelopeSchema`/`SkillSchema` dual validation ensures every JSON skill matches the runtime shape.
+
 ---
 
 ## Portal System Architecture
@@ -872,5 +882,6 @@ For the full 60+ entry component responsibilities table with file paths and edit
 - **[Testing Helpers](packages/testing/README.md)** - Shared test helpers (`@exaix/testing`)
 - **[Dogfooding Guide](docs/Exaix_Dogfooding.md)** — Self-hosted dogfooding workflow: config preset (`configs/dogfood.toml`), daemon lifecycle script (`scripts/dogfood_daemon.ts`), bootstrap workflow (`scripts/dogfood_bootstrap.ts`)
 - **[Phase 122 — Dogfood Identity, Skills & Generator](exaix-dev-docs/planning/phase-122-dogfooding-e.md)** — The `dogfood-coder` identity (`Blueprints/Identities/dogfood-coder.md`) bundles 5 rigor skills (tdd-methodology, exaix-conventions, portal-grounding, security-first, code-review) as `default_skills`. Two meta-workflow skills (`gap-analysis`, `step-execution`) are stored as runtime JSON in `Memory/Skills/global/`. The `agent_runner` (`packages/execution/src/agent_runner.ts`) now unions `default_skills` with explicit `request.skills` so identity rigor skills are never bypassed. The `plan_to_requests.ts` script (`scripts/plan_to_requests.ts`) reads a `phase-NN-*.md` document and generates RequestSchema-valid request files, completing the dogfooding loop.
+- **[Phase 125 — Dogfood Meta-Workflow Skills](exaix-dev-docs/planning/phase-125-dogfood-meta-workflow-skills.md)** — Completes the dogfood meta-workflow loop by (a) adding `exaix:` blocks to all 23 `.copilot/skills/` so every dev skill becomes a runtime skill in the dogfood sandbox, (b) wiring the `generate_skill_json.ts` transform into `dogfood_bootstrap.ts`, (c) adding gap-remediation skills (`remediate-plan-gaps`, `remediate-code-gaps`) that consume pre-/post-gap-analysis output, (d) making `/plan` emit step-manifests for every step with a `check_step_manifests.ts` CI gate (`--since 130`), and (e) an E2E cutover test proving a generated skill loads and injects through the real `SkillsService`. Delivers dogfooding roadmap items R5 (skill transform), R6 (gap remediation), and R7 (manifest-first plans).
 
 ---

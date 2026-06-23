@@ -95,6 +95,8 @@
     "check:tool-result-parity": "deno run -A scripts/check_tool_result_parity.ts",
     "check:complexity": "deno run --allow-run --allow-read scripts/measure_complexity.ts --threshold 15 --fail",
     "check:optional-params": "deno run -A scripts/check_optional_params.ts",
+    "check:skill-envelopes": "deno run -A scripts/generate_skill_json.ts /tmp/skill-env-check-target /tmp/skill-env-check-root --check",
+    "check:manifests": "deno run -A scripts/check_step_manifests.ts exaix-dev-docs/planning/ --since 130",
     "measure:duplication": "deno run --allow-run --allow-read --allow-write scripts/measure_duplication.ts",
     "compile": "deno compile --allow-read --allow-write --allow-net --allow-env --allow-ffi --allow-import --allow-run=git,deno,npm,node,exoctl,ls,grep,echo,printf,pwd,whoami,id,date,uptime,which,type,command,hash,alias --output exaix apps/daemon/main.ts",
     "compile:unsafe": "deno compile --allow-all --output exaix apps/daemon/main.ts",

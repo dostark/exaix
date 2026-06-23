@@ -136,6 +136,8 @@ Follow the structure defined in `.copilot/planning/README.md`:
    don't understand manifests continue to read the prose. The `plan_to_requests.ts`
    generator prefers the manifest and falls back to heading scrape when absent.
 
+   **Self-check:** After drafting all steps, run `deno run -A scripts/check_step_manifests.ts <plan-path>` to verify every step has a valid manifest. The CI gate `deno task check:manifests` runs the same check across all planning docs. A manifest-less step is a blocking failure — fix it before considering the plan ready for review.
+
 ### 2. Core Principles Integration
 
 #### A. Security (Phase 3b Feasibility)
@@ -337,4 +339,3 @@ exaix:
       description: Reachability Ledger tracks production-dead symbols
       weight: 30
 ---
-

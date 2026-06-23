@@ -11,7 +11,7 @@ scope: dev
 title: "Upgrade Skill (#upgrade)"
 description: Safely upgrade a dependency or runtime version — semver audit, compatibility check, regression validation, breaking-change docs
 short_summary: "Multi-step skill for planning and executing dependency or runtime upgrades with full regression coverage."
-version: "1.0"
+version: "1.0.0"
 topics: ["upgrade", "dependencies", "version", "maintenance", "regression"]
 qwen_skill: upgrade
 ---
@@ -129,3 +129,36 @@ Workflow chain (typical):
 - `#upgrade Deno runtime from 1.44 to 2.x`
 - `#upgrade @std/path to latest — check for breaking API changes`
 - `#upgrade openai SDK — write regression tests on current version first`
+
+---
+exaix:
+  skill_id: upgrade
+  triggers:
+    keywords: [upgrade, update, dependency, version, semver, bump]
+    task_types: [chore]
+    tags: [upgrade, dependencies]
+  constraints:
+    - "Read the changelog before touching any code"
+    - "Write regression tests on current version BEFORE upgrading"
+    - "Fix breaking changes by adapting call sites, not with as any"
+    - "Run the full test suite after a version bump"
+    - "Prefer one dependency per commit for clean rollback"
+    - "Do not upgrade without a verified rollback path"
+  output_requirements:
+    - "Audit summary: package, old to new version, breaking changes identified"
+    - "Affected call sites list"
+    - "Regression net: test files written or updated, GREEN baseline confirmed"
+    - "Compile/lint results after upgrade applied"
+    - "Full test suite results: N/N passing"
+    - "Coverage delta (before vs. after)"
+  quality_criteria:
+    - name: regression_safety
+      description: Regression tests written on current version before upgrade
+      weight: 40
+    - name: breaking_change_coverage
+      description: All breaking-change call sites adapted, not suppressed
+      weight: 30
+    - name: rollback_readiness
+      description: Rollback path verified before committing
+      weight: 30
+---

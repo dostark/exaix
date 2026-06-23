@@ -15,7 +15,7 @@ scope: dev
 title: "Package Extraction Skill (#package-extraction)"
 description: Extracted package-owned slices from src/ into packages/, rewired imports to canonical package paths, and retired the legacy src modules
 short_summary: "Retired skill describing the guided workflow that selected and extracted package-owned slices from src/ into packages/ using Exaix package-boundary rules, canonical package imports, and mandatory src retirement."
-version: "2.0"
+version: "2.0.0"
 topics: ["packages", "migration", "refactor", "tdd", "architecture", "workspace"]
 qwen_skill: package-extraction
 ---
@@ -291,3 +291,33 @@ When invoked, the agent should:
 - `#package-extraction Evaluate a src/ module cluster and migrate only the portion that is actually package-ready.`
 - `#package-extraction Use the dependency graph to identify the next MCP-owned slice, move it into @exaix/mcp, normalize imports to canonical package paths, and retire the old src/ files.`
 - `#package-extraction Create a package-owned testing subpath for helpers and fixtures that need to be shared outside the package without deep-importing package tests.`
+
+---
+exaix:
+  skill_id: package-extraction
+  triggers:
+    keywords: [package-extraction, extract, migrate, package, module, slice, src]
+    task_types: [refactor, chore]
+    tags: [package, refactoring]
+  constraints:
+    - "Only extract code that is package-ready (used by multiple consumers)"
+    - "Update all imports to canonical package paths after extraction"
+    - "Delete the legacy src/ module after successful relocation"
+    - "Run full CI check after extraction to verify no broken imports"
+    - "Do not extract runtime-wiring or daemon-specific code"
+  output_requirements:
+    - "Code moved from src/ or apps/ into packages/<name>/"
+    - "Imports rewritten to @exaix/<package> canonical paths"
+    - "Legacy src/ module deleted"
+    - "CI gates clean after extraction"
+  quality_criteria:
+    - name: completeness
+      description: All consumers updated to new package path
+      weight: 40
+    - name: legacy_cleanup
+      description: Old source files deleted — no dead imports remain
+      weight: 30
+    - name: api_stability
+      description: Public API unchanged — consumers need no behavioural updates
+      weight: 30
+---

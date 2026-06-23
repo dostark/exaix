@@ -278,6 +278,7 @@ config validation tests.
 > ```
 >
 > The `#review-code` skill checks, in order:
+>
 > - **Phase 4** — Architecture, Style & Conventions (module headers, interface
 >   naming, import style, magic values, Record types, EventLogger, exports)
 > - **Phase 5** — TypeScript Idiomacy & Type Safety (type annotations,
@@ -403,4 +404,3 @@ exaix:
       description: Code quality concerns delegated to review-code
       weight: 30
 ---
-
