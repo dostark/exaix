@@ -7,13 +7,21 @@
  *   detection, 1 on timeout. No file marker needed — the PID file + kill -0
  *   check is not spoofable.
  *   Usage: deno run -A scripts/wait_for_daemon.ts [root-dir]
- *   Default root-dir: .dogfood
+ *   Default root-dir: $DOGFOOD_ROOT (the external sandbox root), if set.
  */
 
 import { join } from "@std/path";
 import { isProcessAlive } from "@exaix/cli/process_utils.ts";
 
-const ROOT_DIR = Deno.args[0] ?? ".dogfood";
+const ROOT_DIR = Deno.args[0] ?? Deno.env.get("DOGFOOD_ROOT");
+if (!ROOT_DIR) {
+  console.error(
+    "Error: no root-dir given and DOGFOOD_ROOT is not set.\n" +
+      "  Usage: deno run -A scripts/wait_for_daemon.ts <root-dir>\n" +
+      "  Or set DOGFOOD_ROOT to the external sandbox root.",
+  );
+  Deno.exit(1);
+}
 const PID_PATH = join(ROOT_DIR, ".exa", "daemon.pid");
 const TIMEOUT_MS = 30_000;
 const POLL_MS = 2_000;

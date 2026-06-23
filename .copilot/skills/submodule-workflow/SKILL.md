@@ -58,11 +58,39 @@ git commit -m "chore(exaix): update exaix-dev-docs pointer to <sha> for <feature
 git push -u origin HEAD
 ```
 
+⚠️ Post-merge follow-up (commonly forgotten)
+
+After the parent feature branch is merged into main, the submodule's
+feature branch MUST also be merged and its main pushed:
+
+```bash
+# 1. Merge submodule feature branch into submodule main
+cd exaix-dev-docs
+git checkout main
+git merge --ff-only feat/<feature>   # or --no-ff if preferred
+
+# 2. Push submodule main so the parent's pointer is resolvable
+git push origin main
+
+# 3. Return to parent and verify pointer matches submodule main
+cd ..
+git ls-tree HEAD exaix-dev-docs       # shows committed pointer SHA
+git -C exaix-dev-docs rev-parse HEAD  # should match
+
+# 4. Push parent main (pointer already correct if merged with --no-ff)
+git push origin main
+```
+
+Failing to do this leaves the parent `main` pointing at a submodule
+commit that only exists on a feature branch — breaking the build for
+anyone cloning with `--recurse-submodules`.
+
 Verification commands
 
 ```bash
 git status --submodule=summary     # confirm pointer state
 git diff --submodule=log           # show submodule commit log diff
+git ls-tree HEAD exaix-dev-docs    # show committed submodule SHA
 ```
 
 PR and review guidance
@@ -81,6 +109,7 @@ Do / Don't
 - ✅ Do always commit submodule changes first before updating the parent pointer
 - ✅ Do use git status --submodule=summary to verify pointer state
 - ✅ Do document the submodule SHA in the parent PR description
+- ✅ Do merge submodule feature branch to main AND push it after the parent merge
 - ❌ Don't update the parent pointer before the submodule change is committed and pushed
 - ❌ Don't skip submodule initialization (git submodule update --init --recursive)
 - ❌ Don't use the same branch name in both repos without checking your workflow supports it

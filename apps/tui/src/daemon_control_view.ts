@@ -13,6 +13,7 @@ import { ConfirmDialog, type InputDialog } from "@exaix/tui/helpers/dialog_base.
 import { KeyBindingsBase } from "@exaix/tui/base/key_bindings_base.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { DaemonAction, DaemonStatus, DialogStatus, GeneralStatus, MessageType, SystemCommand } from "@exaix/core";
+import { EXACTL_CLI_SPAWN_FLAGS } from "@exaix/core/types";
 import { TUI_DAEMON_STATUS_ICONS, TUI_LABEL_CANCEL, TUI_LAYOUT_MEDIUM_WIDTH } from "@exaix/tui/helpers/constants.ts";
 import { ANSI } from "@exaix/tui/helpers/colors.ts";
 import { TUI_SECTION } from "@exaix/tui/helpers/decorations.ts";
@@ -194,7 +195,7 @@ export class CLIDaemonService implements IDaemonService {
   }
   async getStatus(): Promise<DaemonStatus> {
     const cmd = new Deno.Command(SystemCommand.DENO, {
-      args: ["run", "--allow-all", this.#cliScript, CLI_CMD_DAEMON, CLI_CMD_STATUS],
+      args: ["run", ...EXACTL_CLI_SPAWN_FLAGS, this.#cliScript, CLI_CMD_DAEMON, CLI_CMD_STATUS],
       stdout: "piped",
       stderr: "null",
     });
@@ -214,7 +215,7 @@ export class CLIDaemonService implements IDaemonService {
   }
   async #runDaemonCmd(args: string[]): Promise<void> {
     const cmd = new Deno.Command(SystemCommand.DENO, {
-      args: ["run", "--allow-all", this.#cliScript, "daemon", ...args],
+      args: ["run", ...EXACTL_CLI_SPAWN_FLAGS, this.#cliScript, "daemon", ...args],
       stdout: "null",
       stderr: "null",
     });
