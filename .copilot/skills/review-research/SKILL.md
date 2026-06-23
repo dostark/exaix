@@ -145,7 +145,7 @@ Do / Don't
 Related skills
 - #plan              — Draft or extend a phase planning document (lighter-weight alternative)
 - #pre-gap-analysis  — Validate a plan's ambiguities and security risks before execution
-- #review            — Code-level review (individual PR/change scope, not subsystem scope)
+- #review-code       — Code-level review (individual PR/change scope, not subsystem scope)
 - #next-steps        — Execute the improvement plan produced by this skill
 - #commit            — Create a structured commit message for the artifacts
 

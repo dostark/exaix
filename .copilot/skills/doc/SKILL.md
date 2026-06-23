@@ -69,6 +69,14 @@ Do / Don't
 - ❌ Don't create new docs/ files without matching entries in the implementation plan
 ```
 
+## Output Format
+
+1. **Target file** — which file was created or updated.
+1. **Summary** — what was added or changed.
+1. **Sync commands run** — docs-sync-schemas, build_agents_index, etc.
+1. **Quality checklist results** — code examples, edge cases, links, formatting.
+1. **Commit payload** — use `#commit` to generate the final structured message.
+
 ## Examples
 
 - `#doc Document the new PlanService.createPlan() API in ARCHITECTURE.md`

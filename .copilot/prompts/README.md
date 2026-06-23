@@ -42,7 +42,7 @@ Every file in this directory must have a corresponding `.copilot/skills/<name>/S
 | `pre-gap-analysis.prompt.md`     | `.copilot/skills/pre-gap-analysis/`     |
 | `refactor.prompt.md`             | `.copilot/skills/refactor/`             |
 | `refactor-check-magic.prompt.md` | `.copilot/skills/refactor-check-magic/` |
-| `review.prompt.md`               | `.copilot/skills/review/`               |
+| `review-code.prompt.md`          | `.copilot/skills/review-code/`          |
 | `review-research.prompt.md`      | `.copilot/skills/review-research/`      |
 | `security.prompt.md`             | `.copilot/skills/security/`             |
 | `submodule-workflow.prompt.md`   | `.copilot/skills/submodule-workflow/`   |

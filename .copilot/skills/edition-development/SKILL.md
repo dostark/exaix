@@ -295,6 +295,17 @@ describe("Team composition — stub module with all hooks", () => {
 
 ---
 
+## Output Format
+
+1. **Edition tier** — Solo / Team / Enterprise.
+1. **Directory selected** — `packages/`, `packages-team/`, or `exaix-enterprise/`.
+1. **Seam interface** — interface name, registry, and hook on `ICapabilityModule`.
+1. **Capability module** — file path and hook implementation.
+1. **Wiring changes** — files modified in `apps/daemon/main.ts` or `apps/exactl/src/init.ts`.
+1. **Build verification** — `deno task build:<edition>` result.
+1. **CI gate results** — `check:style`, `check:arch`, `check:no-edition-conditionals`.
+1. **Commit payload** — use `#commit` for the structured commit.
+
 ## Examples
 
 **Example 1: Add a Team-only flow-step handler.**

@@ -1,17 +1,17 @@
 ---
-name: review
+name: review-code
 agent: senior-coder
 tools:
   - read_file
   - search_files
   - run_command
 scope: dev
-title: "Review Skill (#review)"
+title: "Review-Code Skill (#review-code)"
 description: Systematic code review — correctness, security, test coverage, architecture, and Exaix conventions
 short_summary: "Autonomous code review against Exaix standards: correctness, security (Phase 3b), test coverage, architecture grounding, and style compliance."
-version: "1.0"
+version: "1.1"
 topics: ["code-review", "quality-assurance", "security", "testing", "architecture", "best-practices"]
-qwen_skill: review
+qwen_skill: review-code
 ---
 
 ```text
@@ -30,8 +30,8 @@ Canonical prompt (short):
 Exaix architecture compliance. Report findings as Critical / Major / Minor."
 
 Examples
-- "#review packages/core/src/vault_service.ts and packages/core/tests/vault_service_test.ts"
-- "#review — review all staged changes before merging to main"
+- "#review-code packages/core/src/vault_service.ts and packages/core/tests/vault_service_test.ts"
+- "#review-code — review all staged changes before merging to main"
 
 Do / Don't
 - ✅ Do read the actual source files — never review from memory.
@@ -49,12 +49,13 @@ Do / Don't
 - ❌ Don't suggest refactoring out of scope unless it is blocking correctness.
 
 Related skills:
-- #fix-bug  — Implement a fix for a Critical finding
-- #security — Deep security audit (when 3+ security findings exist)
-- #commit   — Structured commit after implementing review fixes
+- #fix-bug     — Implement a fix for a Critical finding
+- #security    — Deep security audit (when 3+ security findings exist)
+- #commit      — Structured commit after implementing review fixes
+- #review-research — Subsystem-level review (broader scope than individual PR/change)
 
 Workflow chain:
-  #next-steps (implement) → **#review** → #fix-bug (if needed) → #commit
+  #next-steps (implement) → **#review-code** → #fix-bug (if needed) → #commit
 ```
 
 ---
@@ -168,7 +169,7 @@ Severity scale:
 ## Related
 
 - [LLM_GUIDE.md](../../../LLM_GUIDE.md) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
-- [CODE_STYLE.md](../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
+- [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
 
 ## Output Format
 
@@ -178,3 +179,8 @@ Severity scale:
    and the required fix.
 4. **Suggested next action** — use `#fix-bug` for each Critical/Security finding, or
    `#commit` if the review is clean.
+
+## Examples
+
+- `#review-code packages/core/src/vault_service.ts and packages/core/tests/vault_service_test.ts`
+- `#review-code — review all staged changes before merging to main`

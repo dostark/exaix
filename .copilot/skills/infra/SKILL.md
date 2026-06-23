@@ -70,8 +70,16 @@ Do / Don't
 - ❌ Don't skip deno check after schema changes — type errors cascade silently
 
 Related
-- CODE_STYLE.md — authoritative naming, type, import, and constants rules
+- [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
 ```
+
+## Output Format
+
+1. **Change summary** — what config or infra was added/changed, with rollback path.
+1. **Validation results** — `deno check`, `deno lint`, `check:style`, config tests.
+1. **Submodule handling** — if any exaix-dev-docs changes were needed.
+1. **CI gate results** — all gates passing.
+1. **Commit payload** — use `#commit` for the structured commit message.
 
 ## Examples
 
