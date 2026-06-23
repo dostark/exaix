@@ -10,7 +10,7 @@ scope: dev
 title: "Security Skill (#security)"
 description: Systematic security audit mapping the OWASP-Top-10 checklist (path traversal, injection, auth, secrets) onto Exaix's concrete trust boundaries, reusing its canonical security primitives
 short_summary: "Autonomous security audit for Exaix code: applies the Phase 3b nine-item checklist against Exaix's real trust boundaries, reuses the canonical security primitives, and writes findings with TDD remediation steps."
-version: "1.1"
+version: "1.1.0"
 topics: [
   "security",
   "owasp",
@@ -377,3 +377,32 @@ and the `impact:` component before `:` must appear verbatim in `what:`.
 4. **Remediation steps** — TDD-First steps ready for `#next-steps` or direct implementation.
 5. **Next action** — use `#fix-bug` per finding, then `#commit` when all resolved.
 6. **Commit payload** — structured commit message generated via `#commit` once all findings are remediated.
+
+---
+exaix:
+  skill_id: security
+  triggers:
+    keywords: [security, audit, OWASP, vulnerability, exploit]
+    task_types: [feature, bugfix, security]
+    tags: [security, audit]
+  constraints:
+    - "Map OWASP Top 10 checklist to Exaix trust boundaries"
+    - "Reuse canonical security primitives (PathSecurity, PathResolver, validateGitArguments)"
+    - "Include TDD remediation steps with each finding"
+    - "Every finding classified as Security (not general code review)"
+  output_requirements:
+    - "Security findings per OWASP category"
+    - "File:line references for each finding"
+    - "TDD remediation steps with tests before fixes"
+  quality_criteria:
+    - name: owasp_coverage
+      description: All applicable OWASP categories checked
+      weight: 35
+    - name: remediation_completeness
+      description: Each finding has concrete remediation
+      weight: 35
+    - name: evidence_quality
+      description: Findings reference specific file:line
+      weight: 30
+---
+

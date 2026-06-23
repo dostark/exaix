@@ -11,7 +11,7 @@ scope: dev
 title: "TDD Workflow Skill (#tdd-workflow)"
 description: Enforce test-driven development for any code change — write failing tests first, implement minimally, refactor, verify coverage
 short_summary: "Autonomous skill for applying rigorous TDD red-green-refactor to any Exaix code change."
-version: "1.0"
+version: "1.0.0"
 topics: ["tdd", "testing", "red-green-refactor", "coverage", "helpers"]
 qwen_skill: tdd-workflow
 ---
@@ -138,3 +138,30 @@ Workflow chain (typical):
 - `#tdd-workflow Add unit tests for PlanService.createPlan() then implement`
 - `#tdd-workflow Cover validatePath() with edge cases (missing dir, symlink, escape)`
 - `#tdd-workflow Implement EventLogger structured output — red-green-refactor cycle`
+
+---
+exaix:
+  skill_id: tdd-methodology
+  triggers:
+    keywords: [tdd, test, red-green-refactor]
+    task_types: [feature, bugfix, refactor]
+    tags: [tdd, testing]
+  constraints:
+    - "Write the failing test BEFORE writing any source code (RED must come first)"
+    - "TDD is non-negotiable -- no implementation without a prior failing test"
+    - "When the scope involves more than ~20 files, work in batches of 5-10"
+  output_requirements:
+    - "CONTEXT: Component, test helper selection, test file path"
+    - "RED evidence: failing test run output (error type and line)"
+    - "GREEN evidence: passing test run summary (N/N tests passing)"
+  quality_criteria:
+    - name: tdd_compliance
+      description: Tests were written before implementation for every behaviour change
+      weight: 40
+    - name: ci_gate_compliance
+      description: All CI gates pass before each commit (lint, type-check, style, arch, magic)
+      weight: 30
+    - name: coverage_maintained
+      description: Line coverage does not drop below 70%, branch below 60%
+      weight: 30
+---

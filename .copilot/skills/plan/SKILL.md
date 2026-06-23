@@ -10,7 +10,7 @@ scope: dev
 title: "Plan Skill (#plan)"
 description: Draft a new Phase Planning Document for a feature, refactor, or architectural change — follows Exaix standards for TDD, security, and traceability. Produces plans that are machine-convertible to dogfood requests (step-manifests for automated request extraction). Grounds any third-party service/provider integration in deep web research of the provider's real, current capability surface so integrations are first-class, not hacks.
 short_summary: "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy."
-version: "1.8"
+version: "1.8.0"
 topics: [
   "planning",
   "architecture",
@@ -306,3 +306,35 @@ coverage:
 - `#plan Phase 14: Add caching layer for LLM provider responses`
 - `#plan Refactor EventLogger to support structured JSON output`
 - `#plan Migrate CLI from Cliffy to a lighter argument parser`
+
+---
+exaix:
+  skill_id: plan
+  triggers:
+    keywords: [plan, phase, planning, design]
+    task_types: [planning]
+    tags: [planning, architecture]
+  constraints:
+    - "Follow Exaix TDD, security, and traceability standards"
+    - "Each step includes a step-manifest YAML block"
+    - "Ground third-party integrations in deep web research"
+    - "Include a Reachability Ledger section"
+    - "Vertical end-to-end slice before breadth"
+    - "Documentation update step as final step"
+  output_requirements:
+    - "Phase planning document with numbered steps"
+    - "Step-manifest blocks for dogfood compatibility"
+    - "Reachability Ledger table"
+    - "Pre-Gap Analysis recommended"
+  quality_criteria:
+    - name: step_manifest_completeness
+      description: Every step has a manifest block
+      weight: 35
+    - name: architectural_rigor
+      description: Plan references ARCHITECTURE.md components
+      weight: 35
+    - name: reachability_tracking
+      description: Reachability Ledger tracks production-dead symbols
+      weight: 30
+---
+

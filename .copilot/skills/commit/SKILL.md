@@ -10,7 +10,7 @@ scope: dev
 title: "Commit Skill (#commit)"
 description: Create a structured commit message for current changes following Exaix conventions
 short_summary: "Enforces structured, informative commit messages for agents and human developers."
-version: "1.0"
+version: "1.0.0"
 topics: ["git", "commit", "documentation", "best-practices", "structured-logging"]
 qwen_skill: commit
 ---
@@ -142,4 +142,34 @@ Expected Response Pattern:
 ## Related
 
 - [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
+
+---
+exaix:
+  skill_id: commit
+  triggers:
+    keywords: [commit, git, stage, message]
+    task_types: [feature, bugfix, refactor, docs, chore]
+    tags: [commit, git]
+  constraints:
+    - "Review all staged and unstaged changes before committing"
+    - "Split into logical batches when changes are unrelated"
+    - "Run pre-commit validation before committing"
+    - "Use conventional commit format for subject line"
+    - "Include mandatory fields: what, rationale, tests, who, impact"
+  output_requirements:
+    - "Structured commit message with subject + body"
+    - "Subject in conventional commit format"
+    - "Body includes what, rationale, tests, who, impact"
+    - "CI gates passing per commit batch"
+  quality_criteria:
+    - name: format_compliance
+      description: Subject follows conventional commit format
+      weight: 40
+    - name: structural_completeness
+      description: Body includes all mandatory fields
+      weight: 30
+    - name: ci_gate_compliance
+      description: Pre-commit checks pass
+      weight: 30
+---
 ```

@@ -10,7 +10,7 @@ scope: dev
 title: "Post-Gap Analysis Skill (#post-gap-analysis)"
 description: Deep post-implementation review of a phase planning document — verifies what was built against the plan, delegates code quality review to #review-code, finds gaps, and writes remediation steps back into the document
 short_summary: "Deep review of an existing phase planning document: checks implementation against plan, delegates code quality to #review-code, finds gaps, and writes remediation steps back into the document."
-version: "1.5"
+version: "1.5.0"
 topics: [
   "planning",
   "gap-analysis",
@@ -373,3 +373,34 @@ Append at end of planning document using the exact format below.
 1. Confirmation that the planning document was updated with remediation steps in §F TDD-First format.
 1. Any blocking critical or security gap requiring immediate attention.
 1. Commit payload — use `#commit` after all remediation steps are written into the document.
+
+---
+exaix:
+  skill_id: post-gap-analysis
+  triggers:
+    keywords: [post-gap, implementation-review, post-implementation]
+    task_types: [planning, review]
+    tags: [post-gap, review]
+  constraints:
+    - "Verify what was built matches the plan"
+    - "Delegate code quality review to review-code skill"
+    - "Write remediation steps back into the plan document"
+    - "Run semantic value verification on events, schemas, responses"
+    - "Run integration surface audit — dead fields with no consumers are gaps"
+  output_requirements:
+    - "Gap summary table with findings per step"
+    - "Detailed gap entries with Expected vs Actual"
+    - "Remediation steps in TDD-First format"
+    - "Documentation update step for interface/schema/CLI changes"
+  quality_criteria:
+    - name: plan_accuracy
+      description: Each step verified against plan
+      weight: 40
+    - name: remediation_clarity
+      description: Each gap has clear remediation steps
+      weight: 30
+    - name: delegation
+      description: Code quality concerns delegated to review-code
+      weight: 30
+---
+

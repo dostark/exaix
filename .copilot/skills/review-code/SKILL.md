@@ -9,7 +9,7 @@ scope: dev
 title: "Review-Code Skill (#review-code)"
 description: Systematic code review — correctness, security, test coverage, architecture, and Exaix conventions
 short_summary: "Autonomous code review against Exaix standards: correctness, security (Phase 3b), test coverage, architecture grounding, and style compliance."
-version: "1.1"
+version: "1.1.0"
 topics: ["code-review", "quality-assurance", "security", "testing", "architecture", "best-practices"]
 qwen_skill: review-code
 ---
@@ -344,3 +344,34 @@ Severity scale:
 
 - `#review-code packages/core/src/vault_service.ts and packages/core/tests/vault_service_test.ts`
 - `#review-code — review all staged changes before merging to main`
+
+---
+exaix:
+  skill_id: review-code
+  triggers:
+    keywords: [review, code-review, pr-review, cr]
+    task_types: [feature, bugfix, refactor]
+    tags: [code-review, quality]
+  constraints:
+    - "Check correctness, security, test coverage, architecture, style"
+    - "Reference Exaix conventions (CODE_STYLE.md, ARCHITECTURE.md)"
+    - "Do not implement changes — report findings only"
+    - "Work through all 10 phases in order"
+    - "Apply Phase 3b security for any input/FS/auth/secrets/network change"
+  output_requirements:
+    - "Review verdict: Approved / Approved with minor issues / Changes requested"
+    - "Findings table with severity per finding"
+    - "Detail section for Critical and Security findings"
+    - "Suggested next action"
+  quality_criteria:
+    - name: dimension_coverage
+      description: All five review dimensions covered
+      weight: 30
+    - name: actionability
+      description: Each finding includes concrete suggestion
+      weight: 30
+    - name: evidence_quality
+      description: Findings reference specific file:line or symbol
+      weight: 40
+---
+

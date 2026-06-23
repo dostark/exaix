@@ -13,7 +13,7 @@ scope: dev
 title: "Next-Steps Skill (#next-steps)"
 description: Run plan-driven TDD step-by-step workflow with CI gates and per-step commits
 short_summary: "Prompt for iterating through .copilot/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits."
-version: "1.4"
+version: "1.4.0"
 topics: ["tdd", "red-green-refactor", "planning", "steps", "ci", "commits", "reachability"]
 qwen_skill: next-steps
 ---
@@ -261,3 +261,34 @@ Workflow chain (typical):
 - `#next-steps .copilot/planning/phase-14-caching.md` — execute the next unstarted step
 - `#next-steps Step 3: Add ICache interface and inject into LLMProvider`
 - `#next-steps Continue phase-76 — pick up from last completed step`
+
+---
+exaix:
+  skill_id: next-steps
+  triggers:
+    keywords: [next-steps, step-execution, implement, execute]
+    task_types: [feature, bugfix, refactor, testing]
+    tags: [step-execution, tdd]
+  constraints:
+    - "Complete each step in sequence with TDD red-green-refactor"
+    - "One commit per step with structured message"
+    - "Run CI gates against each step before moving to next"
+    - "Update planning doc with step status per step"
+    - "Maintain Reachability Ledger in planning doc"
+  output_requirements:
+    - "Step completed with passing tests"
+    - "CI gates clean per step"
+    - "Planning doc updated with completion markers"
+    - "Reachability Ledger row added or closed per step"
+  quality_criteria:
+    - name: tdd_compliance
+      description: Tests written before implementation
+      weight: 40
+    - name: step_independence
+      description: Each step committed independently
+      weight: 30
+    - name: ci_gate_compliance
+      description: All CI gates pass before each commit
+      weight: 30
+---
+

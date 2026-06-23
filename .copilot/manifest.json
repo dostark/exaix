@@ -604,7 +604,7 @@
       "scope": "dev",
       "title": "Review-Code Skill (#review-code)",
       "short_summary": "Autonomous code review against Exaix standards: correctness, security (Phase 3b), test coverage, architecture grounding, and style compliance.",
-      "version": "1.1",
+      "version": "1.1.0",
       "topics": [
         "code-review",
         "quality-assurance",
@@ -653,7 +653,7 @@
       "scope": "dev",
       "title": "Plan Skill (#plan)",
       "short_summary": "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy.",
-      "version": "1.8",
+      "version": "1.8.0",
       "topics": [
         "planning",
         "architecture",
@@ -734,7 +734,7 @@
       "scope": "dev",
       "title": "Post-Gap Analysis Skill (#post-gap-analysis)",
       "short_summary": "Deep review of an existing phase planning document: checks implementation against plan, delegates code quality to #review-code, finds gaps, and writes remediation steps back into the document.",
-      "version": "1.5",
+      "version": "1.5.0",
       "topics": [
         "planning",
         "gap-analysis",
@@ -757,6 +757,31 @@
         ".copilot/chunks/SKILL.md.chunk5.txt",
         ".copilot/chunks/SKILL.md.chunk6.txt",
         ".copilot/chunks/SKILL.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/skills/remediate-plan-gaps/SKILL.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Remediate Plan Gaps Skill (#remediate-plan-gaps)",
+      "short_summary": "Edits phase planning documents to close gaps identified by pre-gap-analysis, then re-runs tests and bumps the document version.",
+      "version": "1.0.0",
+      "topics": [
+        "planning",
+        "gap-analysis",
+        "remediation",
+        "tdd",
+        "documentation"
+      ],
+      "qwen_skill": "remediate-plan-gaps",
+      "chunks": [
+        ".copilot/chunks/SKILL.md.chunk0.txt",
+        ".copilot/chunks/SKILL.md.chunk1.txt",
+        ".copilot/chunks/SKILL.md.chunk2.txt",
+        ".copilot/chunks/SKILL.md.chunk3.txt",
+        ".copilot/chunks/SKILL.md.chunk4.txt",
+        ".copilot/chunks/SKILL.md.chunk5.txt",
+        ".copilot/chunks/SKILL.md.chunk6.txt"
       ]
     },
     {
@@ -792,7 +817,7 @@
       "scope": "dev",
       "title": "Commit Skill (#commit)",
       "short_summary": "Enforces structured, informative commit messages for agents and human developers.",
-      "version": "1.0",
+      "version": "1.0.0",
       "topics": [
         "git",
         "commit",
@@ -818,7 +843,7 @@
       "scope": "dev",
       "title": "Security Skill (#security)",
       "short_summary": "Autonomous security audit for Exaix code: applies the Phase 3b nine-item checklist against Exaix's real trust boundaries, reuses the canonical security primitives, and writes findings with TDD remediation steps.",
-      "version": "1.1",
+      "version": "1.1.0",
       "topics": [
         "security",
         "owasp",
@@ -900,7 +925,7 @@
       "scope": "dev",
       "title": "TDD Workflow Skill (#tdd-workflow)",
       "short_summary": "Autonomous skill for applying rigorous TDD red-green-refactor to any Exaix code change.",
-      "version": "1.0",
+      "version": "1.0.0",
       "topics": [
         "tdd",
         "testing",
@@ -918,6 +943,30 @@
         ".copilot/chunks/SKILL.md.chunk5.txt",
         ".copilot/chunks/SKILL.md.chunk6.txt",
         ".copilot/chunks/SKILL.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/skills/remediate-code-gaps/SKILL.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Remediate Code Gaps Skill (#remediate-code-gaps)",
+      "short_summary": "Edits source files to close code-level gaps identified by post-gap-analysis, then re-runs tests and creates a structured commit.",
+      "version": "1.0.0",
+      "topics": [
+        "planning",
+        "gap-analysis",
+        "remediation",
+        "tdd",
+        "code-quality"
+      ],
+      "qwen_skill": "remediate-code-gaps",
+      "chunks": [
+        ".copilot/chunks/SKILL.md.chunk0.txt",
+        ".copilot/chunks/SKILL.md.chunk1.txt",
+        ".copilot/chunks/SKILL.md.chunk2.txt",
+        ".copilot/chunks/SKILL.md.chunk3.txt",
+        ".copilot/chunks/SKILL.md.chunk4.txt",
+        ".copilot/chunks/SKILL.md.chunk5.txt"
       ]
     },
     {
@@ -953,7 +1002,7 @@
       "scope": "dev",
       "title": "Next-Steps Skill (#next-steps)",
       "short_summary": "Prompt for iterating through .copilot/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits.",
-      "version": "1.4",
+      "version": "1.4.0",
       "topics": [
         "tdd",
         "red-green-refactor",
@@ -981,7 +1030,7 @@
       "scope": "dev",
       "title": "Pre-Gap Analysis Skill (#pre-gap-analysis)",
       "short_summary": "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against.",
-      "version": "1.6",
+      "version": "1.6.0",
       "topics": [
         "planning",
         "gap-analysis",

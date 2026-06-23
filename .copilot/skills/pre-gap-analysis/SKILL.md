@@ -10,7 +10,7 @@ scope: dev
 title: "Pre-Gap Analysis Skill (#pre-gap-analysis)"
 description: Pre-implementation gap analysis of a phase planning document — finds ambiguities, missing contracts, and security risks before coding starts
 short_summary: "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against."
-version: "1.6"
+version: "1.6.0"
 topics: [
   "planning",
   "gap-analysis",
@@ -560,3 +560,34 @@ are written. Format with grep outcome annotations:
 1. Confirmation that the planning document was updated: in-place fixes applied, gap sections and Pre-Implementation Actions list appended.
 1. Version bump confirmation — the document version was bumped in frontmatter.
 1. Any blocking issue that must be resolved before implementation can begin.
+
+---
+exaix:
+  skill_id: pre-gap-analysis
+  triggers:
+    keywords: [pre-gap, plan-review, gap-analysis, gap]
+    task_types: [planning]
+    tags: [pre-gap, plan-review]
+  constraints:
+    - "Validate every behavioural claim against the codebase"
+    - "Check Reachability Ledger for missing production consumers"
+    - "Flag underspecified fields"
+    - "Do not modify source files — report gaps only"
+    - "Fix trivial gaps in-place in plan, register non-trivial as gap entries"
+  output_requirements:
+    - "Gap summary table sorted by severity"
+    - "Detailed gap entries with Finding, Impact, Resolution"
+    - "Pre-Implementation Actions list with grep verification"
+    - "In-Place fixes subsection listing trivial corrections"
+  quality_criteria:
+    - name: completeness
+      description: Every plan step verified against codebase
+      weight: 40
+    - name: specificity
+      description: Gaps reference specific lines or symbols
+      weight: 30
+    - name: actionability
+      description: Each gap includes a proposed fix
+      weight: 30
+---
+

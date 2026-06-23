@@ -167,7 +167,18 @@ async function main() {
   Deno.writeTextFileSync(configPath, configContent);
   console.log(`  ✅ Dogfood config written to ${configPath}`);
 
-  // 5. Initialize database
+  // 5. Generate skill JSON from .copilot/skills/ SKILL.md envelopes
+  const skillsTargetDir = join(workspaceDir, "Memory", "Skills");
+  if (
+    !await run(
+      ["deno", "run", "-A", join(REPO_ROOT, "scripts/generate_skill_json.ts"), skillsTargetDir, sandboxRoot],
+      "Generating skill JSON from .copilot/skills/",
+    )
+  ) {
+    Deno.exit(1);
+  }
+
+  // 6. Initialize database
   if (!testModeForDeploy) {
     if (
       !await run(
@@ -180,7 +191,7 @@ async function main() {
     }
   }
 
-  // 6. Create git worktree (skip only in full test mode)
+  // 7. Create git worktree (skip only in full test mode)
   if (!isTestMode) {
     if (
       !await run(
@@ -194,7 +205,7 @@ async function main() {
     }
   }
 
-  // 7. Register portal and wait for knowledge (skip when SKIP_PORTAL is set or in full test mode)
+  // 8. Register portal and wait for knowledge (skip when SKIP_PORTAL is set or in full test mode)
   if (!isTestMode && !skipPortal) {
     const portalResult = await runCommand(
       [...EXACTL_CMD, "portal", "add", worktreePath, "exaix-self"],
@@ -205,7 +216,7 @@ async function main() {
     }
     console.log("  ✅ Portal exaix-self registered");
 
-    // 8. Wait for portal knowledge
+    // 9. Wait for portal knowledge
     console.log("  Waiting for portal knowledge...");
     const deadline = Date.now() + POLL_TIMEOUT_MS;
     let knowledgeReady = false;
