@@ -195,7 +195,7 @@ const TEAM_TIER_APP_PATHS = [
   "apps/mcp-server/",
 ];
 
-function editionTierOfPath(repoPath: string): number | null {
+export function editionTierOfPath(repoPath: string): number | null {
   if (repoPath.startsWith("exaix-enterprise/")) return EDITION_TIER_ENTERPRISE;
   if (repoPath.startsWith("packages-team/")) return EDITION_TIER_TEAM;
   if (TEAM_TIER_APP_PATHS.some((p) => repoPath === p || repoPath.startsWith(p))) {

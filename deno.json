@@ -85,6 +85,7 @@
     "check:version": "deno run -A scripts/check_version.ts",
     "check:commit-msg": "deno run -A scripts/check_commit_msg.ts",
     "check:style": "deno run -A scripts/check_code_style.ts",
+    "check:edition-graph": "deno run -A scripts/check_edition_graph.ts",
     "check:test-placement": "deno run -A scripts/check_test_placement.ts --all",
     "check:docs": "deno run --allow-all scripts/verify_manifest_fresh.ts",
     "dep:graph": "deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint apps/daemon/main.ts --format text",

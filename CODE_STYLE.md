@@ -585,6 +585,21 @@ Solo. Only `apps/daemon/` and `apps/exactl/` may host these guarded dynamic impo
 > map pointing `@exaix-team/*` at stub modules (not yet implemented). Until then, prefer the
 > source-run deploy for a genuinely Team-free Solo distribution. See `dev/Exaix_Edition_Architecture.md`.
 
+#### Graph gate: a defense-in-depth double-check {#edition-graph-gate}
+
+`[edition-leak]` is a source-text rule, so its correctness depends on its own regex/parsing. A bug
+there — an import specifier shape it fails to match, a guard it mis-reads — could let a real leak pass
+with `check:style` green. `scripts/check_edition_graph.ts` (task `check:edition-graph`) guards exactly
+that failure mode: it resolves the daemon + exactl module graphs with `deno info --json` and fails on
+any **static (non-dynamic) runtime `code` edge** from a lower edition tier into a higher one, using the
+**same** `editionTierOfPath` classification the static rule uses. It mirrors the static rule's
+exemptions — edition-gated **dynamic** edges (`isDynamic`) and **type-only** edges (which carry no
+`code` edge) are not leaks — so on a clean tree the two gates agree (verified: 0 static leaks across
+both entry graphs). It is **not** the retired build-artifact gate (which measured the `deno compile`
+graph and could never go green); it measures the source-run deploy's real static edges, the same
+artifact `[edition-leak]` governs, and goes green today. It runs in CI **Gate 3b**, in
+`scripts/ci.ts check`, and in the pre-commit hook, immediately after `check:style`.
+
 ---
 
 ## 9. Module Boundaries & CLI Isolation {#cli-boundaries}

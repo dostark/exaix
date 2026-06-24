@@ -62,6 +62,15 @@ jobs:
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task check:style
 
+      # --- GATE 3b: Edition-Leak Graph Gate ---
+      # Defense-in-depth double-check of the text-based [edition-leak] rule (Gate 3):
+      # resolves the daemon + exactl module graphs via `deno info --json` and fails on any
+      # STATIC (non-dynamic) edge into a higher edition tier. If check:style passes but this
+      # fails, the static rule has a parsing bug and a Team/Enterprise leak slipped through.
+      - name: "Gate 3b: Edition-Leak Graph"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:edition-graph
+
       # --- GATE 4: Test Placement Check ---
       - name: "Gate 4: Test Placement"
         if: always() && steps.setup-deno.outcome == 'success'
