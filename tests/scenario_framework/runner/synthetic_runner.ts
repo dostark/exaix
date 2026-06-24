@@ -80,6 +80,10 @@ export async function runSyntheticScenario(
   const runnableGroups: IRunnableStepGroup[] = resolveRunnableSteps(loadedScenario.scenario, {
     env: envForExpansion,
     binOnPath: (bin) => binIsOnPath(bin),
+    // The daemon resolves a relative EXA_CONFIG_PATH against its CWD (the workspace),
+    // not the repo, so the cell's preset must be made absolute against the repo root
+    // (frameworkHome/../..) before it is overlaid onto the start-daemon step.
+    configBaseDir: join(options.frameworkHome, "..", ".."),
   });
   const firstRunnable = runnableGroups.find((g) => g.status === "run");
   const stepsToRun = firstRunnable?.steps ?? loadedScenario.steps;

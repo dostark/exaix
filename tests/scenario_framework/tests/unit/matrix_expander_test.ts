@@ -133,6 +133,24 @@ Deno.test("[scenario_matrix] a runnable cell overlays EXA_CONFIG_PATH (its prese
   );
 });
 
+Deno.test("[scenario_matrix] when configBaseDir is given, EXA_CONFIG_PATH is the cell preset resolved to an absolute path (daemon CWD is the workspace, not the repo)", () => {
+  const steps = [startDaemonStep(), otherStep()];
+  const runs = expandMatrix(steps, FOUR_CELL_MATRIX, {
+    env: { OPENROUTER_API_KEY: "k", ANTHROPIC_API_KEY: "k", EXA_MATRIX_OPENCODE: "1" },
+    binOnPath: () => true,
+    configBaseDir: REPO_ROOT,
+  });
+
+  const claudeDirect = runs.find(
+    (r) => r.cell.tool === "claude-code" && r.cell.provider === "direct",
+  );
+  assert(claudeDirect, "claude-code/direct cell must be present");
+  const daemon = claudeDirect.steps.find((s) => s.id === MATRIX_START_DAEMON_STEP_ID);
+  assert(daemon, "start-daemon step must survive expansion");
+  const env = daemon.env ?? {};
+  assertEquals(env.EXA_CONFIG_PATH, join(REPO_ROOT, "configs/dogfood.claude.toml"));
+});
+
 Deno.test("[scenario_matrix] the overlay does not mutate non-daemon steps", () => {
   const steps = [startDaemonStep(), otherStep()];
   const runs = expandMatrix(steps, FOUR_CELL_MATRIX, {

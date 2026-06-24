@@ -16,6 +16,7 @@
  */
 
 import { z } from "zod";
+import { isAbsolute, join } from "@std/path";
 import type { IScenarioStep } from "../schema/step_schema.ts";
 
 /** A single cell's expansion: either a runnable step list or a recorded skip. */
@@ -31,6 +32,15 @@ export interface IExpandMatrixOptions {
   env: Record<string, string | undefined>;
   /** Returns true when the named binary is resolvable on PATH. */
   binOnPath: (bin: string) => boolean;
+  /**
+   * Repo root the cell `config` preset is resolved against. The daemon resolves a
+   * relative EXA_CONFIG_PATH against its own CWD — which is the workspace, NOT the repo —
+   * so a bare relative preset (e.g. `configs/dogfood.claude.toml`) would be looked up under
+   * the workspace and not found. When set, the overlay rewrites EXA_CONFIG_PATH to the
+   * preset resolved absolutely against this base. Omitted in pure-unit callers that only
+   * assert the relative passthrough.
+   */
+  configBaseDir?: string;
 }
 
 /**
@@ -110,14 +120,19 @@ function cellSkipReason(cell: IMatrixCell, options: IExpandMatrixOptions): strin
  * Overlay the per-cell delegate env onto the start-daemon step, leaving all other
  * steps untouched. Returns a fresh step array (no mutation of the input).
  */
-function overlayCellEnv(steps: IScenarioStep[], cell: IMatrixCell): IScenarioStep[] {
+function overlayCellEnv(
+  steps: IScenarioStep[],
+  cell: IMatrixCell,
+  configBaseDir: string | undefined,
+): IScenarioStep[] {
+  const configPath = configBaseDir && !isAbsolute(cell.config) ? join(configBaseDir, cell.config) : cell.config;
   return steps.map((step) => {
     if (step.id !== MATRIX_START_DAEMON_STEP_ID) return step;
     return {
       ...step,
       env: {
         ...(step.env ?? {}),
-        [ENV_CONFIG_PATH]: cell.config,
+        [ENV_CONFIG_PATH]: configPath,
         [ENV_DELEGATE_TOOL]: cell.tool,
         [ENV_DELEGATE_ENABLED]: "true",
       },
@@ -140,7 +155,11 @@ export function expandMatrix(
     if (reason !== null) {
       return { cell, steps, status: MatrixCellStatus.SKIP, skipReason: reason };
     }
-    return { cell, steps: overlayCellEnv(steps, cell), status: MatrixCellStatus.RUN };
+    return {
+      cell,
+      steps: overlayCellEnv(steps, cell, options.configBaseDir),
+      status: MatrixCellStatus.RUN,
+    };
   });
 }
 
