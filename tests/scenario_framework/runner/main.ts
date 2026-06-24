@@ -16,7 +16,7 @@ import type { IRunManifest } from "./evidence_collector.ts";
 import { reportScenarioFailure } from "./reporter.ts";
 import { selectScenariosForExecution } from "./modes.ts";
 import { writeEvalHistoryEntry } from "./history_writer.ts";
-import { EvalSqliteStore } from "./history_sqlite.ts";
+import { EvalSqliteStore } from "@exaix/eval-history";
 
 const modeType = new EnumType(ScenarioExecutionMode);
 const profileType = new EnumType(ScenarioCiProfile);

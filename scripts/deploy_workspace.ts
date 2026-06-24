@@ -17,6 +17,36 @@ import { ensureDir } from "@std/fs";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { copy, type CopyOptions } from "@std/fs/copy";
 
+/**
+ * Source directories the deploy copies into a standalone workspace. The deployed
+ * deno.json's import map points `@exaix-team/*` at `./packages-team/` and its `workspace`
+ * array lists packages-team members, and apps/ statically import `@exaix-team/team-composer`
+ * (dead-code-eliminated at runtime in Solo, but still resolved at module load) — so
+ * `packages-team` MUST be copied or a deployed exactl/daemon fails with
+ * `Module not found ".../packages-team/team-composer/mod.ts"`.
+ */
+export const WORKSPACE_COPY_DIRS: readonly string[] = [
+  "packages",
+  "packages-team",
+  "apps",
+  "migrations",
+];
+
+/** Copy each existing WORKSPACE_COPY_DIRS entry from repoRoot into dest. */
+export async function copyWorkspaceDirs(
+  repoRoot: string,
+  dest: string,
+  copyOpts: CopyOptions,
+): Promise<void> {
+  for (const dir of WORKSPACE_COPY_DIRS) {
+    const source = join(repoRoot, dir);
+    if (await Deno.stat(source).then((s) => s.isDirectory).catch(() => false)) {
+      console.log(`Copying ${dir}/...`);
+      await copy(source, join(dest, dir), copyOpts);
+    }
+  }
+}
+
 async function run(cmd: string[], options: { cwd?: string; env?: Record<string, string> } = {}) {
   const command = new Deno.Command(cmd[0], {
     args: cmd.slice(1),
@@ -78,26 +108,10 @@ async function main() {
     }
   }
 
-  // Copy packages workspace members
-  const packagesSource = join(repoRoot, "packages");
-  if (await Deno.stat(packagesSource).then((s) => s.isDirectory).catch(() => false)) {
-    console.log("Copying packages/...");
-    await copy(packagesSource, join(dest, "packages"), copyOpts);
-  }
-
-  // Copy apps workspace members
-  const appsSource = join(repoRoot, "apps");
-  if (await Deno.stat(appsSource).then((s) => s.isDirectory).catch(() => false)) {
-    console.log("Copying apps/...");
-    await copy(appsSource, join(dest, "apps"), copyOpts);
-  }
-
-  // Copy migrations
-  const migrationsSource = join(repoRoot, "migrations");
-  if (await Deno.stat(migrationsSource).then((s) => s.isDirectory).catch(() => false)) {
-    console.log("Copying migrations/...");
-    await copy(migrationsSource, join(dest, "migrations"), copyOpts);
-  }
+  // Copy workspace members (packages, packages-team, apps) + migrations. packages-team
+  // MUST be included so the deployed deno.json's @exaix-team/* import map + workspace
+  // members resolve (apps/exactl + apps/daemon statically import @exaix-team/team-composer).
+  await copyWorkspaceDirs(repoRoot, dest, copyOpts);
 
   // Copy runtime scripts
   const scriptFiles = ["setup_db.ts", "migrate_db.ts", "scaffold.ts", "deploy_workspace.ts"];

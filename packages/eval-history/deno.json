@@ -1,0 +1,19 @@
+{
+  "name": "@exaix/eval-history",
+  "version": "0.1.0",
+  "imports": {
+    "@exaix/eval-history": "./mod.ts",
+    "@exaix/eval-history/": "./src/",
+    "@exaix/core": "../core/mod.ts",
+    "@exaix/core/": "../core/src/",
+    "@db/sqlite": "jsr:@db/sqlite@^0.13.0",
+    "@std/path": "jsr:@std/path@^1.1.4",
+    "zod": "https://deno.land/x/zod@v3.22.4/mod.ts"
+  },
+  "exports": {
+    ".": "./mod.ts"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "deno.ns", "deno.unstable"]
+  }
+}

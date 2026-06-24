@@ -1,16 +1,15 @@
 /**
- * @module ScenarioFrameworkHistorySqliteTest
- * @path tests/scenario_framework/tests/unit/history_sqlite_test.ts
+ * @module EvalHistorySqliteTest
+ * @path packages/eval-history/tests/history_sqlite_test.ts
  * @description Tests for SQLite-backed evaluation history store.
  * @architectural-layer Test
- * @related-files [tests/scenario_framework/runner/history_sqlite.ts]
+ * @related-files [packages/eval-history/src/history_sqlite.ts]
  */
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
-import { EvalSqliteStore } from "../../runner/history_sqlite.ts";
-import type { IEvalHistoryEntry } from "../../schema/history_schema.ts";
+import { EvalSqliteStore, type IEvalHistoryEntry } from "@exaix/eval-history";
 
 function makeTestEntry(overrides: Partial<IEvalHistoryEntry> = {}): IEvalHistoryEntry {
   return {

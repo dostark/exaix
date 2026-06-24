@@ -4,15 +4,11 @@
  * @description Implements eval history JSONL writing with atomic append
  * to both scenario-specific and global history files.
  * @architectural-layer Test
- * @related-files [tests/scenario_framework/schema/history_schema.ts, tests/scenario_framework/tests/unit/history_writer_test.ts]
+ * @related-files [packages/eval-history/src/history_schema.ts, tests/scenario_framework/tests/unit/history_writer_test.ts]
  */
 
 import { dirname, resolve } from "@std/path";
-import {
-  EvalHistoryEntrySchema,
-  getDefaultComponentVersions,
-  type IEvalHistoryEntry,
-} from "../schema/history_schema.ts";
+import { EvalHistoryEntrySchema, getDefaultComponentVersions, type IEvalHistoryEntry } from "@exaix/eval-history";
 import type { IRunManifest } from "./evidence_collector.ts";
 
 export interface IWriteEvalHistoryOptions {

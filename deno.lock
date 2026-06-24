@@ -356,6 +356,12 @@
           "npm:ai-token-estimator@1.7.1"
         ]
       },
+      "packages/eval-history": {
+        "dependencies": [
+          "jsr:@db/sqlite@0.13",
+          "jsr:@std/path@^1.1.4"
+        ]
+      },
       "packages/execution": {
         "dependencies": [
           "jsr:@std/assert@^1.0.19",

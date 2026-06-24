@@ -3,12 +3,12 @@
  * @path apps/exactl/src/commands/eval_commands.ts
  * @description Provides CLI commands for evaluation runs and history queries.
  * @architectural-layer CLI
- * @related-files [tests/scenario_framework/runner/main.ts, tests/scenario_framework/schema/history_schema.ts]
+ * @related-files [packages/eval-history/mod.ts, tests/scenario_framework/runner/main.ts]
  */
 
 import { resolve } from "@std/path";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
-import { EvalSqliteStore } from "../../../../tests/scenario_framework/runner/history_sqlite.ts";
+import { EvalSqliteStore } from "@exaix/eval-history";
 
 interface IRunManifest {
   scenarioId: string;

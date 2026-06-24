@@ -1,15 +1,17 @@
 /**
- * @module ScenarioFrameworkHistorySqlite
- * @path tests/scenario_framework/runner/history_sqlite.ts
+ * @module EvalHistorySqlite
+ * @path packages/eval-history/src/history_sqlite.ts
  * @description SQLite-backed evaluation history store with table creation
- * migration, write, query, compare, and cleanup operations.
- * @architectural-layer Test
- * @related-files [tests/scenario_framework/schema/history_schema.ts, tests/scenario_framework/runner/history_writer.ts]
+ * migration, write, query, compare, and cleanup operations. Consumed by the
+ * `exactl eval` command (production) and the scenario-framework runner.
+ * @architectural-layer Services
+ * @dependencies [@db/sqlite, @std/path]
+ * @related-files [packages/eval-history/src/history_schema.ts, packages/eval-history/mod.ts]
  */
 
 import { Database } from "@db/sqlite";
 import { dirname, resolve } from "@std/path";
-import type { IEvalHistoryEntry } from "../schema/history_schema.ts";
+import type { IEvalHistoryEntry } from "./history_schema.ts";
 
 interface IRunRow {
   run_id: string;
