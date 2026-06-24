@@ -48,6 +48,9 @@ export interface IStaticEditionLeak extends IGraphEdge {
 /** Entry points whose graphs ship in a Solo (MIT) source-run deploy. */
 const DEFAULT_ENTRIES = ["apps/daemon/main.ts", "apps/exactl/main.ts"];
 
+/** Hard cap on the `deno info` resolve so a hung subprocess cannot stall the CI gate. */
+const DENO_INFO_TIMEOUT_MS = 120_000;
+
 /**
  * Pure core: return every STATIC edge whose target tier is strictly higher than its source
  * tier. Edges between untiered modules (scripts/, tests/, external) are ignored, as are
@@ -97,8 +100,19 @@ async function resolveGraphEdges(entry: string, repoRootUrl: string): Promise<IG
     args: ["info", "--json", entry],
     stdout: "piped",
     stderr: "piped",
+    signal: AbortSignal.timeout(DENO_INFO_TIMEOUT_MS),
   });
-  const out = await cmd.output();
+  let out: Deno.CommandOutput;
+  try {
+    out = await cmd.output();
+  } catch (err) {
+    // AbortSignal.timeout aborts with a TimeoutError; surface it as a gate failure (fail-closed).
+    throw new Error(
+      `deno info timed out or aborted for ${entry} after ${DENO_INFO_TIMEOUT_MS}ms: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
+  }
   if (!out.success) {
     throw new Error(`deno info failed for ${entry}: ${new TextDecoder().decode(out.stderr)}`);
   }

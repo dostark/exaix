@@ -386,11 +386,17 @@ export function expandVariablesInStep(step: IScenarioStep, env: Record<string, s
   } as IScenarioStep;
 }
 
+/**
+ * Expand `$VAR` and `${VAR}` references in a single pass, substituting each by the FULL
+ * variable name. A single regex pass (not iterate-and-replaceAll over env keys) avoids the
+ * prefix-collision bug where `$EXA_CONFIG` would corrupt `$EXA_CONFIG_PATH` to `<value>_PATH`
+ * depending on key-iteration order. An unknown name is left untouched (preserved verbatim).
+ */
 function expandInString(str: string, env: Record<string, string>): string {
   if (!str) return str;
-  let res = str;
-  for (const [key, value] of Object.entries(env)) {
-    res = res.replaceAll(`$${key}`, value);
-  }
-  return res;
+  return str.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)/g, (match, braced, bare) => {
+    const name = braced ?? bare;
+    const value = env[name];
+    return value !== undefined ? value : match;
+  });
 }

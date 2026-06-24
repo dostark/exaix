@@ -51,3 +51,41 @@ Deno.test("[step_env] a step without env is unaffected", () => {
   const resolved = expandVariablesInStep(step, { FRAMEWORK_HOME: "/x" });
   assertEquals(resolved.env, undefined);
 });
+
+Deno.test("[step_env] a longer var is not corrupted by a shorter prefix var (no $EXA_CONFIG-into-$EXA_CONFIG_PATH bleed)", () => {
+  const step = {
+    id: "start-daemon",
+    type: ScenarioStepType.EXACTL,
+    command: "daemon",
+    args: ["start"],
+    // $EXA_CONFIG is a prefix of $EXA_CONFIG_PATH; iterate-and-replaceAll would corrupt the
+    // longer name to "/short_PATH" if the shorter key is processed first. A correct single-pass
+    // expansion must substitute each $VAR by its full name only.
+    env: { CFG: "$EXA_CONFIG_PATH", SHORT: "$EXA_CONFIG" },
+    continue_on_failure: false,
+    input_criteria: [],
+    output_criteria: [],
+  } as IScenarioStep;
+
+  const resolved = expandVariablesInStep(step, {
+    EXA_CONFIG: "/short",
+    EXA_CONFIG_PATH: "/full/path",
+  });
+
+  assertEquals(resolved.env?.CFG, "/full/path", "$EXA_CONFIG_PATH must expand to its own value, not /short_PATH");
+  assertEquals(resolved.env?.SHORT, "/short");
+});
+
+Deno.test("[step_env] an unknown $VAR is left untouched (not blanked)", () => {
+  const step = {
+    id: "plain",
+    type: ScenarioStepType.SHELL,
+    command: "echo",
+    args: ["$NOT_A_DEFINED_VAR/x"],
+    continue_on_failure: false,
+    input_criteria: [],
+    output_criteria: [],
+  } as IScenarioStep;
+  const resolved = expandVariablesInStep(step, { FRAMEWORK_HOME: "/x" });
+  assertEquals(resolved.args?.[0], "$NOT_A_DEFINED_VAR/x", "unknown vars must be preserved verbatim");
+});

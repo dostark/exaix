@@ -125,6 +125,13 @@ function overlayCellEnv(
   cell: IMatrixCell,
   configBaseDir: string | undefined,
 ): IScenarioStep[] {
+  // The overlay targets exactly one step (start-daemon). If it is missing the cell would
+  // boot with no delegate config and silently false-green — fail loudly on the authoring error.
+  if (!steps.some((step) => step.id === MATRIX_START_DAEMON_STEP_ID)) {
+    throw new Error(
+      `matrix cell (tool=${cell.tool}, provider=${cell.provider}) has no '${MATRIX_START_DAEMON_STEP_ID}' step to overlay the per-cell env onto`,
+    );
+  }
   const configPath = configBaseDir && !isAbsolute(cell.config) ? join(configBaseDir, cell.config) : cell.config;
   return steps.map((step) => {
     if (step.id !== MATRIX_START_DAEMON_STEP_ID) return step;

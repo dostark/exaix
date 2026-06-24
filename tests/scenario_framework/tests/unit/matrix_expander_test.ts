@@ -14,7 +14,7 @@
  * @related-files [tests/scenario_framework/runner/matrix_expander.ts, tests/scenario_framework/schema/scenario_schema.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertThrows } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import {
@@ -149,6 +149,34 @@ Deno.test("[scenario_matrix] when configBaseDir is given, EXA_CONFIG_PATH is the
   assert(daemon, "start-daemon step must survive expansion");
   const env = daemon.env ?? {};
   assertEquals(env.EXA_CONFIG_PATH, join(REPO_ROOT, "configs/dogfood.claude.toml"));
+});
+
+Deno.test("[scenario_matrix] a runnable cell whose steps lack a start-daemon step throws (no silent no-op overlay)", () => {
+  // A matrix scenario MUST carry a start-daemon step — that is the only step the per-cell
+  // env overlay targets. Without it the cell would boot with no delegate config and produce
+  // a false green; expansion must fail loudly on this authoring error instead.
+  const stepsWithoutDaemon = [otherStep()];
+  assertThrows(
+    () =>
+      expandMatrix(stepsWithoutDaemon, FOUR_CELL_MATRIX, {
+        env: { OPENROUTER_API_KEY: "k", ANTHROPIC_API_KEY: "k", EXA_MATRIX_OPENCODE: "1" },
+        binOnPath: () => true,
+      }),
+    Error,
+    MATRIX_START_DAEMON_STEP_ID,
+  );
+});
+
+Deno.test("[scenario_matrix] a SKIPPED cell does not require a start-daemon step (skip short-circuits before overlay)", () => {
+  // Skip resolution happens before the overlay, so a matrix whose cells all skip must not
+  // throw even without a start-daemon step — nothing is overlaid.
+  const stepsWithoutDaemon = [otherStep()];
+  const runs = expandMatrix(stepsWithoutDaemon, FOUR_CELL_MATRIX, {
+    env: {}, // no keys, no opt-in → every cell skips
+    binOnPath: () => false, // no binaries → every cell skips
+  });
+  assertEquals(runs.length, 4);
+  for (const run of runs) assertEquals(run.status, "skip");
 });
 
 Deno.test("[scenario_matrix] the overlay does not mutate non-daemon steps", () => {
