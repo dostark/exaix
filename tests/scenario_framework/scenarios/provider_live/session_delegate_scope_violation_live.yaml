@@ -1,8 +1,12 @@
 schema_version: "1.0.0"
-id: "session-delegate-code-changes-live"
-title: "Session Delegation — Code Changes Gate (provider-live)"
+id: "session-delegate-scope-violation-live"
+title: "Session Delegation — Worktree Scope Violation (provider-live, safety-gate)"
 pack: "provider_live"
-tags: ["provider-live", "session-delegation"]
+# safety-gate: this scenario proves the production worktree-isolation guard
+# (reconcile.ts:78 checkScope -> session_return_watcher.ts) journals
+# session.delegate.scope_violation when a delegate edits outside its permitted_paths.
+# Phase 127 Step 3 — no new scenario step kind; it asserts the existing journal event.
+tags: ["provider-live", "session-delegation", "safety-gate"]
 request_fixture: "fixtures/requests/agent_flows/request_analysis_smoke.md"
 mode_support: ["auto"]
 portals: []
@@ -28,6 +32,10 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
+  # The delegate is briefed with a narrow permitted_paths; a return that touches a
+  # path outside it (e.g. a write to ".env") is rejected by reconcile.ts:78 and the
+  # watcher journals session.delegate.scope_violation. This mirrors the production
+  # unit coverage in apps/daemon/tests/session_return_watcher_test.ts:132.
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"
@@ -53,35 +61,26 @@ steps:
         kind: "command-output-contains"
         contains: ["request.created"]
 
-  - id: "wait-for-plan"
+  # Wait for the delegate to drop its return.json — that is what SessionReturnWatcher
+  # reconciles (reconcile.ts:78), producing the scope_violation when the touched paths
+  # escape permitted_paths. wait-for-file is the proven polling step (mirrors the other
+  # provider_live scenarios), not the unhandled wait-for-status.
+  - id: "wait-for-delegate-return"
     type: "wait-for-file"
-    args: ["**/Plans/*_plan.md"]
-    timeout_sec: 120
-
-  - id: "approve-plan"
-    type: "exactl"
-    command: "plan"
-    args: ["approve-all"]
-    output_criteria:
-      - id: "plan-approved"
-        score_weight: 0.5
-        kind: "command-output-contains"
-        contains: ["approved"]
-
-  - id: "wait-for-execution-completion"
-    type: "wait-for-file"
-    args: ["**/Archive/*_plan.md"]
+    args: ["**/Session/**/return.json"]
     timeout_sec: 300
 
-  - id: "verify-execution-success"
-    type: "exactl"
-    command: "request"
-    args: ["list", "--status", "completed", "--all"]
+  # The genuine isolation proof: the production scope guard fired and journalled
+  # the violation. Uses the existing journal-assert step kind + the exact
+  # DomainEventType.SessionDelegateScopeViolation string (no literal drift).
+  - id: "assert-scope-violation-journalled"
+    type: "journal-assert"
+    input_criteria: []
     output_criteria:
-      - id: "request-completed"
+      - id: "scope-violation-event-present"
         score_weight: 1.0
-        kind: "command-output-contains"
-        contains: ["completed"]
+        kind: "journal-event-exists"
+        event_type: "session.delegate.scope_violation"
 
   - id: "stop-daemon"
     type: "exactl"
