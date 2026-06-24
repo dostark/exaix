@@ -257,6 +257,31 @@ export * from "../../apps/other_app/src/some_export.ts";
 
 Package entrypoints must only expose package-local source exports, not direct imports from other packages' source trees.
 
+### No Production Dependency on `tests/` {#no-prod-tests-dependency}
+
+Functional, deployable modules under `packages/`, `packages-team/`, and `apps/` **must not** import from the repository's `tests/` folder. Test code is **excluded from a deployed workspace**, so a production module that imports it (even a type-only or transitively dead import) fails to resolve at module load in a deploy, breaking the deployed `exactl`/daemon. This is the layering bug that originally placed `EvalSqliteStore` under `tests/scenario_framework/` and was imported by the production `exactl eval` command — relocate such shared code into a real package under `packages/` instead.
+
+**Prohibited (in any `packages/`, `packages-team/`, or `apps/` non-test module):**
+
+```ts
+// apps/exactl/src/commands/eval_commands.ts
+import { EvalSqliteStore } from "../../../../tests/scenario_framework/runner/history_sqlite.ts"; // ❌
+```
+
+**Correct — relocate the shared code to a package and import the alias:**
+
+```ts
+// apps/exactl/src/commands/eval_commands.ts
+import { EvalSqliteStore } from "@exaix/eval-history"; // ✅ package-owned, deployable
+```
+
+**Exemptions:**
+
+- **Test files** (paths containing `/tests/` or ending in `_test.ts` / `.test.ts`) may import test helpers and fixtures from `tests/`.
+- **Test-infrastructure modules** — the `@exaix/testing` package (`packages/testing/`) and any `*/testing/` compatibility shim — exist solely to provide shared test helpers and never ship in a production deploy, so they may bridge to `tests/`.
+
+This is enforced as `[package-tests-boundary]` by `deno task check:style`.
+
 ### Multi-line Named Imports
 
 The style checker does not enforce a specific format for named imports. Use your judgment to balance readability and conciseness. `deno fmt` will automatically format imports according to its configured line width.
@@ -326,6 +351,8 @@ These rules are enforced in part by `scripts/check_code_style.ts` via the `[pack
 - Barrel re-export violations from source are reported as `[src-barrel-re-export]`.
 
 - Canonical package and subpackage barrel enforcement is reported as `[package-canonical-import]`.
+
+- Production-module imports from the `tests/` folder are reported as `[package-tests-boundary]` (see [No Production Dependency on `tests/`](#no-prod-tests-dependency)).
 
 - Structured multiline test fixtures are also flagged as `[test-inline-multiline-fixture]` in test files.
 

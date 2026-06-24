@@ -101,6 +101,37 @@ function isRepoRelativeSpecifier(specifier: string): boolean {
   return !/^[a-z]+:/i.test(specifier) && !specifier.startsWith("//");
 }
 
+/** True when repoPath is a functional, deployable production module (not a test file). */
+function isProductionModulePath(repoPath: string): boolean {
+  const isProductionRoot = repoPath.startsWith("packages/") ||
+    repoPath.startsWith("packages-team/") ||
+    repoPath.startsWith("apps/");
+  const isTestFile = repoPath.includes("/tests/") ||
+    repoPath.endsWith("_test.ts") ||
+    repoPath.endsWith(".test.ts");
+  // Test-infrastructure modules are NOT deployable production code: the @exaix/testing
+  // package and any `*/testing/` compatibility shim exist to provide test helpers and may
+  // legitimately bridge to tests/. They never ship in a production deploy.
+  const isTestInfra = repoPath.startsWith("packages/testing/") ||
+    repoPath.includes("/testing/");
+  return isProductionRoot && !isTestFile && !isTestInfra;
+}
+
+/**
+ * True when a production module (packages/, packages-team/, apps/) imports from the
+ * root tests/ folder. Functional deployable modules must not depend on test code: it
+ * is excluded from a deployed workspace, so such an import breaks the deployed
+ * exactl/daemon at module load. This is the EvalSqliteStore-under-tests/ layering bug.
+ * Test files are exempt — they may import test helpers/fixtures.
+ */
+export function isProductionToTestsImport(repoPath: string, specifier: string): boolean {
+  if (!isProductionModulePath(repoPath)) return false;
+  if (!isRepoRelativeSpecifier(specifier)) return false; // bare alias / URL — not a tests/ path
+  // Resolve the specifier against the importing file's directory; flag if it lands in tests/.
+  const resolved = specifier.startsWith(".") ? normalize(join(dirname(repoPath), specifier)) : specifier;
+  return resolved === "tests" || resolved.startsWith("tests/");
+}
+
 function discoverPackageTestingAliases(): Map<string, string> {
   const aliases = new Map<string, string>();
   const packagesDir = join(REPO_ROOT, "packages");
@@ -765,6 +796,24 @@ async function checkFile(path: string) {
       }
 
       const relativePath = path.startsWith(REPO_ROOT) ? path.slice(REPO_ROOT.length + 1) : path;
+
+      // Functional deployable modules (packages/, packages-team/, apps/) must not depend on
+      // the tests/ folder — it is excluded from a deployed workspace, so such an import breaks
+      // a deployed exactl/daemon at module load (the EvalSqliteStore-under-tests/ layering bug).
+      {
+        const prodImportMatch = line.match(/from\s+["']([^"']+)["']/) ||
+          line.match(/^\s*import\s+["']([^"']+)["']/);
+        const prodImportPath = prodImportMatch?.[1];
+        if (prodImportPath && isProductionToTestsImport(relativePath, prodImportPath)) {
+          console.log(
+            `ERROR [package-tests-boundary] ${relativePath}:${
+              idx + 1
+            } – Functional deployable module must not import from the tests/ folder: '${prodImportPath}'. Move shared code into a package under packages/ (test code is excluded from a deployed workspace).`,
+          );
+          errorCount++;
+        }
+      }
+
       if (relativePath.startsWith("packages/")) {
         const importMatch = line.match(/from\s+["']([^"']+)["']/) || line.match(/^\s*import\s+["']([^"']+)["']/);
         const importPath = importMatch?.[1];
