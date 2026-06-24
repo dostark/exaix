@@ -312,7 +312,7 @@ The `text-matches` criterion supports multiple patterns with custom flags:
 
 ## 4. Directory Structure
 
-```
+```text
 scenario_framework/
 ├── bin/              # Shell wrappers for runner and deployer
 ├── runner/           # Core execution (loader, executor, assertions, modes)
@@ -399,6 +399,46 @@ steps:
   use tags to group related scenarios for CI profiles.
 - **All step types** available in §3 (file-exists, text-contains, json-path-equals,
   journal-event-exists, llm-judge, etc.)
+
+### The `matrix:` block — one scenario, many cells (Phase 127)
+
+A scenario may declare an **additive, optional** `matrix:` block to run the same step list
+once per cell of a `tool × provider` (or any axis) cross-product. It is purely additive: a
+scenario without a `matrix:` block behaves exactly as before. Each cell selects its runtime by
+overlaying environment onto the `start-daemon` step — **the cell's `config` preset is the
+provider/realm selector** (its `[session_delegate.provider]` block), and `EXA_SESSION_DELEGATE_TOOL`
+selects the tool. There is **no** `EXA_SESSION_DELEGATE_PROVIDER` env var; the provider follows from
+the loaded config.
+
+```yaml
+matrix:
+  axes: # documentary only — the cross-product is the explicit `cells` list below
+    tool: ["opencode", "claude-code"]
+    provider: ["direct", "openrouter"]
+  cells:
+    - tool: "claude-code"
+      provider: "direct"
+      config: "configs/dogfood.claude.toml" # selects the provider realm
+      requires_bin: "claude" # must be on PATH, else the cell SKIPS
+      requires_key: "ANTHROPIC_API_KEY" # must be set, else SKIP
+    - tool: "opencode"
+      provider: "direct"
+      config: "configs/dogfood.toml"
+      requires_bin: "opencode"
+      requires_optin: "EXA_MATRIX_OPENCODE" # OpenCode has no probe-able key env; opt-in instead
+```
+
+**Per-cell skip (no false reds).** A cell runs only when **all** of its predicates hold:
+`requires_bin` is on `PATH`, every `requires_key` is set, and `requires_optin` (if present) is set.
+Otherwise the cell is recorded **`skipped`** (never `failed`) with a named reason. This keeps the
+matrix CI-safe and lets a developer run only the cells their environment supports. Tag a matrix
+scenario `provider-live` so it is omitted from CI auto-runs.
+
+**Reachability.** `runner/synthetic_runner.ts` resolves a matrix scenario through
+`resolveRunnableSteps()` → `expandMatrix()` (see `runner/matrix_expander.ts`) and runs the first
+runnable cell; the cell's config preset is resolved to an **absolute** path (the daemon's CWD is the
+workspace, not the repo). See `scenarios/provider_live/session_delegate_matrix_live.yaml` for the
+full four-cell example.
 
 ### Running Scenarios Locally (before sandbox deploy)
 
