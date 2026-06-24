@@ -149,10 +149,10 @@ interface IExecuteSyntheticStepOptions {
 async function executeSyntheticStep(
   options: IExecuteSyntheticStepOptions,
 ): Promise<IScenarioStepOutcome> {
-  const env = {
+  // Base env (without step.env) used to expand the step's own $VARS — incl. step.env values.
+  const baseEnv = {
     ...Deno.env.toObject(),
     ...(options.env ?? {}),
-    ...(options.step.env ?? {}),
     REQUEST_FIXTURE: options.requestFixturePath,
     WORKSPACE_ROOT: options.workspaceRoot,
     EXA_SYSTEM_ROOT: options.workspaceRoot,
@@ -160,7 +160,11 @@ async function executeSyntheticStep(
     EXA_CONFIG_PATH: join(options.workspaceRoot, "exa.config.toml"),
   };
 
-  const resolvedStep = expandVariablesInStep(options.step, env);
+  const resolvedStep = expandVariablesInStep(options.step, baseEnv);
+
+  // Merge the EXPANDED step.env last so values like EXA_MIGRATIONS_DIR resolve before
+  // they reach the spawned process.
+  const env = { ...baseEnv, ...(resolvedStep.env ?? {}) };
 
   const inputResults = await evaluateInputCriteria({
     ...options,
@@ -344,11 +348,17 @@ function mapExecutionStatus(outcome: IScenarioStepOutcome): string {
 
 type CriterionPathField = "path" | "target_file";
 
-function expandVariablesInStep(step: IScenarioStep, env: Record<string, string>): IScenarioStep {
+export function expandVariablesInStep(step: IScenarioStep, env: Record<string, string>): IScenarioStep {
   return {
     ...step,
     command: step.command ? expandInString(step.command, env) : step.command,
     args: step.args?.map((arg) => expandInString(arg, env)),
+    // Expand $VARS in step.env values too (e.g. EXA_MIGRATIONS_DIR=$FRAMEWORK_HOME/...).
+    env: step.env
+      ? Object.fromEntries(
+        Object.entries(step.env).map(([k, v]) => [k, expandInString(v, env)]),
+      )
+      : step.env,
     input_criteria: step.input_criteria.map((criterion: ICriterion) => {
       const updates: Partial<Record<CriterionPathField, string>> = {};
       if ("path" in criterion && typeof criterion.path === "string") {

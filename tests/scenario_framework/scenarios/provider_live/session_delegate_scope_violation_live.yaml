@@ -25,7 +25,9 @@ steps:
   - id: "add-portal"
     type: "exactl"
     command: "portal"
-    args: ["add", "$WORKSPACE_ROOT/fixtures/portals/simple_repo", "test-project"]
+    # Fixtures live under the framework home in both the in-repo and deployed-sandbox
+    # layouts, so reference $FRAMEWORK_HOME (not $WORKSPACE_ROOT).
+    args: ["add", "$FRAMEWORK_HOME/fixtures/portals/simple_repo", "test-project"]
     output_criteria:
       - id: "portal-added"
         score_weight: 0.5

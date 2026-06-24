@@ -47,6 +47,11 @@ steps:
         "$FRAMEWORK_HOME/../../deno.json",
         "$FRAMEWORK_HOME/../../scripts/setup_db.ts",
       ]
+    # The DB lands in the workspace CWD (.exa/journal.db) so the daemon finds it; the
+    # migrations *source* is the repo (a deployable workspace has no migrations/ dir).
+    # EXA_MIGRATIONS_DIR points setup_db.ts at the repo migrations (Phase 127 harness fix).
+    env:
+      EXA_MIGRATIONS_DIR: "$FRAMEWORK_HOME/../../migrations"
     output_criteria:
       - id: "setup-done"
         score_weight: 0.5
@@ -56,7 +61,9 @@ steps:
   - id: "add-portal"
     type: "exactl"
     command: "portal"
-    args: ["add", "$WORKSPACE_ROOT/fixtures/portals/simple_repo", "test-project"]
+    # Fixtures live under the framework home in BOTH the in-repo and deployed-sandbox
+    # layouts (workspace != framework in a real sandbox), so reference $FRAMEWORK_HOME.
+    args: ["add", "$FRAMEWORK_HOME/fixtures/portals/simple_repo", "test-project"]
     output_criteria:
       - id: "portal-added"
         score_weight: 0.5
