@@ -517,17 +517,68 @@ These rules are enforced by `scripts/check_code_style.ts` via:
 
 Boundary checks run as part of the standard quality gates in pre-commit hooks and CI.
 
-### MIT-to-Team Import Boundary
+### Edition Tier Import Boundary {#edition-tier-boundary}
 
-Source files in `packages/` (MIT) **must not import** from `packages-team/` or `@exaix-team/*`. This prevents accidental compile-time coupling of Solo-edition code to Team-only packages.
+Exaix is edition-separated by license and distribution: **MIT** (`packages/`, `apps/`) < **Team**
+(`packages-team/`, BSL) < **Enterprise** (`exaix-enterprise/`). A **lower-edition module must not
+import from a higher edition.** Doing so couples the lower edition's source and build to code that is
+licensed and shipped separately — e.g. an MIT Solo app importing BSL Team code, which ships Team
+source into the free deployment and pulls it into the Solo binary (the Team-into-Solo leak).
 
-**Valid exception**: Test files in `packages/*/tests/` may import Team packages for integration testing.
+**Prohibited (in any lower-edition non-test source module):**
 
-**Remediation**: When MIT source needs a type from Team code, extract the interface or contract into `packages/core/types/` and have both sides depend on the MIT home.
+```ts
+// apps/exactl/src/init.ts (MIT)
+import { TeamComposer } from "@exaix-team/team-composer"; // ❌ MIT → Team
 
-Enforced by `scripts/check_code_style.ts` via:
+// packages-team/voting/src/x.ts (Team)
+import { Y } from "@exaix-enterprise/mod.ts"; // ❌ Team → Enterprise
+```
 
-- `[mit-team-import]`
+**Allowed — the two sanctioned cross-tier references:**
+
+```ts
+// 1. Type-only imports (erased at compile time, never enter a build):
+import type { TeamComposer } from "@exaix-team/team-composer"; // ✅
+
+// 2. An edition-gated DYNAMIC import in a dispatch entry (apps/daemon, apps/exactl),
+//    loaded only in the editionType !== "solo" branch so a Solo run never references it:
+if (editionType === EDITION_TEAM) {
+  const { TeamComposer } = await import("@exaix-team/team-composer"); // ✅
+}
+```
+
+**Exemptions:**
+
+- **Test files** (`/tests/`, `_test.ts`, `.test.ts`) — integration tests may exercise higher tiers.
+- **Test-infra** (`*/testing/` shims) — never deployed.
+- **Team-tier modules that live under `apps/`** — `apps/daemon/src/bootstrap_team.ts` (edition glue,
+  loaded only in the Team branch) and `apps/mcp-server/` (a Team-coupled standalone app) are Team-tier
+  and may statically import `@exaix-team/*`.
+
+**Remediation**: When lower-edition source needs a _type_ from higher-edition code, extract the
+interface into `packages/core/types/` and have both sides depend on the MIT home; when it needs a
+_value_, use the edition-gated dynamic import in the dispatch entry.
+
+Enforced by `scripts/check_code_style.ts` via `[edition-leak]` (supersedes the former
+`[mit-team-import]` rule, which only covered `packages/` → Team).
+
+#### Build-Artifact Gate (`check:edition-bundle`) {#edition-bundle-gate}
+
+The `[edition-leak]` source rule guards the import _edge_; it cannot see what `deno compile` actually
+**bundles**. Both `deno compile` and `deno info` follow **dynamic** imports, so a Solo entry's module
+graph can still contain Team/Enterprise code even when every static import is clean.
+
+`deno task check:edition-bundle` resolves the entry's module graph (`deno info --json`) and reports
+any module from a higher edition tier than the build's edition (default: solo, entry
+`apps/daemon/main.ts`). It is **advisory** (exit 0 + report) by default; `--fail` makes it blocking.
+
+> ⚠️ **Current state:** the Solo daemon graph still contains Team modules — the edition-gated dynamic
+> imports remain graph-reachable, so `deno compile` bundles them. The **source-run deploy**
+> (`deploy_workspace.ts`) genuinely excludes Team (it omits `packages-team/` and rewrites
+> `deno.json`'s `workspace[]`), but the **compiled binary** is not yet Team-free. Making it Team-free
+> requires a Solo-specific import map pointing `@exaix-team/*` at stub modules; until that lands the
+> gate stays advisory. See `dev/Exaix_Edition_Architecture.md`.
 
 ---
 
