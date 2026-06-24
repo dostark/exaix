@@ -14,6 +14,7 @@ import { type IRunManifest, writeExecutionLog, writeRunManifest } from "./eviden
 import { computeStepScore, computeSuiteScore, type IStepScoreInput } from "./scoring.ts";
 import { type IRunScenarioInModeResult, runScenarioInMode } from "./modes.ts";
 import { type ILoadedScenario, loadScenarioFromYamlFile } from "./scenario_loader.ts";
+import { binIsOnPath, type IRunnableStepGroup, resolveRunnableSteps } from "./matrix_expander.ts";
 import { executeScenarioStep, type IScenarioStepExecutionResult } from "./step_executor.ts";
 import {
   CriterionPhase,
@@ -72,9 +73,20 @@ export async function runSyntheticScenario(
 
   const stepOutcomes: IScenarioStepOutcome[] = [];
 
+  // Phase 127 Step 5 — matrix-aware step resolution. For a `matrix:` scenario this
+  // invokes expandMatrix() (closing its reachability ledger row); for a matrix-less
+  // scenario it returns a single pass-through group with the original steps. The runner
+  // executes the first runnable group (per-cell provider-live execution is gated/manual).
+  const runnableGroups: IRunnableStepGroup[] = resolveRunnableSteps(loadedScenario.scenario, {
+    env: envForExpansion,
+    binOnPath: (bin) => binIsOnPath(bin),
+  });
+  const firstRunnable = runnableGroups.find((g) => g.status === "run");
+  const stepsToRun = firstRunnable?.steps ?? loadedScenario.steps;
+
   const runResult = await runScenarioInMode({
     scenarioId: loadedScenario.scenario.id,
-    steps: loadedScenario.steps,
+    steps: stepsToRun,
     mode: options.mode,
     interactiveAllowed: options.interactiveAllowed,
     startStepIndex: options.startStepIndex,

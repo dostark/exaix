@@ -33,6 +33,23 @@ export interface IExpandMatrixOptions {
   binOnPath: (bin: string) => boolean;
 }
 
+/**
+ * A runnable group the runner consumes: either a matrix cell-run (with its `cell`)
+ * or the single pass-through group of a non-matrix scenario (`cell` undefined).
+ */
+export interface IRunnableStepGroup {
+  steps: IScenarioStep[];
+  status: MatrixCellStatusValue;
+  cell?: IMatrixCell;
+  skipReason?: string;
+}
+
+/** A loaded scenario as seen by the resolver — only the fields it needs. */
+export interface IResolvableScenario {
+  steps: IScenarioStep[];
+  matrix?: IMatrixBlock;
+}
+
 /** The start-daemon step id the per-cell env overlay targets. */
 export const MATRIX_START_DAEMON_STEP_ID = "start-daemon";
 
@@ -125,4 +142,44 @@ export function expandMatrix(
     }
     return { cell, steps: overlayCellEnv(steps, cell), status: MatrixCellStatus.RUN };
   });
+}
+
+/**
+ * Real PATH probe used as the default `binOnPath` in production runs. Splits PATH and
+ * checks each directory for an executable entry. Pure of side effects beyond stat reads.
+ */
+export function binIsOnPath(bin: string, pathEnv: string | undefined = Deno.env.get("PATH")): boolean {
+  if (!pathEnv) return false;
+  for (const dir of pathEnv.split(":")) {
+    if (!dir) continue;
+    try {
+      const stat = Deno.statSync(`${dir}/${bin}`);
+      if (stat.isFile) return true;
+    } catch {
+      // not in this dir; keep scanning
+    }
+  }
+  return false;
+}
+
+/**
+ * The runner integration seam (Phase 127 Step 5): turn a loaded scenario into the
+ * runnable groups the runner executes. A scenario with a `matrix:` block is expanded
+ * via expandMatrix() — making it reachable from a real run (synthetic_runner.ts), not
+ * just unit tests. A matrix-less scenario yields a single pass-through group carrying
+ * its own steps unchanged (backward-compatible).
+ */
+export function resolveRunnableSteps(
+  scenario: IResolvableScenario,
+  options: IExpandMatrixOptions,
+): IRunnableStepGroup[] {
+  if (!scenario.matrix) {
+    return [{ steps: scenario.steps, status: MatrixCellStatus.RUN }];
+  }
+  return expandMatrix(scenario.steps, scenario.matrix, options).map((run) => ({
+    steps: run.steps,
+    status: run.status,
+    cell: run.cell,
+    skipReason: run.skipReason,
+  }));
 }
