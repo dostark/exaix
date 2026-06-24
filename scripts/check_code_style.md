@@ -84,21 +84,23 @@ deno run -A scripts/check_code_style.ts --convert-warnings-to-errors
 
 ## Edition Boundary
 
-| Tag                                      | Severity | What it detects                                                                 |
-| ---------------------------------------- | -------- | ------------------------------------------------------------------------------- |
-| `[edition-conditional-outside-composer]` | error    | `edition ===` / `EXAIX_EDITION` outside the edition composer                    |
-| `[edition-leak]`                         | error    | Lower-edition module imports a higher edition (MIT → Team/Enterprise, Team → Enterprise); type-only + edition-gated dynamic imports in dispatch entries are exempt |
-| `[edition-bundle]`                       | advisory | Higher-edition module present in a build's resolved graph (`deno task check:edition-bundle`; what source rules can't see — `deno compile` bundles dynamic imports). `--fail` to enforce |
+| Tag                                      | Severity | What it detects                                                                                                                                                                                                        |
+| ---------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[edition-conditional-outside-composer]` | error    | `edition ===` / `EXAIX_EDITION` outside the edition composer                                                                                                                                                           |
+| `[edition-leak]`                         | error    | Lower-edition module imports a higher edition (MIT → Team/Enterprise, Team → Enterprise); exempt only: type-only imports, and `editionType`-guarded dynamic `import("@exaix-team/...")` in `apps/daemon`/`apps/exactl` |
 
 > `[edition-leak]` supersedes the former `[mit-team-import]` rule (which only covered `packages/` → Team).
+> It is the enforceable bundle guarantee for the **source-run deploy** — every upper-edition reference
+> must be type-only or `editionType`-guarded-dynamic, so a Solo run never loads Team code. (`deno compile`
+> binaries still bundle Team code regardless; see CODE_STYLE.md → Edition Tier Import Boundary.)
 
 ---
 
 ## Package & Tests Boundary
 
-| Tag                        | Severity | What it detects                                                                      |
-| -------------------------- | -------- | ----------------------------------------------------------------------------------- |
-| `[package-tests-boundary]` | error    | A deployable module (`packages/`, `packages-team/`, `apps/`) imports from `tests/`  |
+| Tag                        | Severity | What it detects                                                                    |
+| -------------------------- | -------- | ---------------------------------------------------------------------------------- |
+| `[package-tests-boundary]` | error    | A deployable module (`packages/`, `packages-team/`, `apps/`) imports from `tests/` |
 
 ---
 

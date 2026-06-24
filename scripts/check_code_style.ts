@@ -132,19 +132,51 @@ export function isProductionToTestsImport(repoPath: string, specifier: string): 
   return resolved === "tests" || resolved.startsWith("tests/");
 }
 
+/** How many preceding source lines to scan for the enclosing `editionType` guard. */
+const EDITION_GUARD_LOOKBACK_LINES = 12;
+
+/** A dynamic import of @exaix-team/* or the daemon's bootstrap_team module. */
+function isTeamDynamicImportLine(line: string): boolean {
+  return /\bimport\s*\(\s*["'](@exaix-team\/|\.\/src\/bootstrap_team)/.test(line);
+}
+
+/** True when the import sits in one of the two sanctioned edition-dispatch entry points. */
+function isEditionDispatchEntry(repoPath: string): boolean {
+  return repoPath.startsWith("apps/daemon/") || repoPath.startsWith("apps/exactl/");
+}
+
 /**
- * True for an edition-gated dynamic Team import in a sanctioned edition-dispatch entry
- * point. Edition separation REQUIRES `await import("@exaix-team/...")` inside the
- * `editionType !== "solo"` branch so a Solo build/binary never references Team code
- * (static top-level imports would be bundled by `deno compile` even in Solo). These are
- * the only dynamic imports allowed inside a statement; everything else stays prohibited.
+ * True when an `editionType` guard (`editionType === EDITION_TEAM` / `!== EDITION_SOLO`)
+ * appears within the preceding-lines window — proof the dynamic import is reached only in a
+ * non-Solo run, not loaded unconditionally at module scope.
+ */
+function precededByEditionGuard(precedingLines: string[]): boolean {
+  const window = precedingLines.slice(-EDITION_GUARD_LOOKBACK_LINES);
+  return window.some((l) => /\beditionType\s*(?:===?|!==?)\s*EDITION_/.test(l));
+}
+
+/**
+ * Shape check (line-only): a dynamic Team import in a dispatch entry. Used by the
+ * dynamic-import / import-inside-statement STYLE exemptions, which only need to recognise
+ * the sanctioned shape — the stricter edition-guard check below governs the edition-leak rule.
  */
 function isEditionGatedTeamDynamicImport(repoPath: string, line: string): boolean {
-  const inDispatchEntry = repoPath.startsWith("apps/daemon/") || repoPath.startsWith("apps/exactl/");
-  // A dynamic import of @exaix-team/* directly, or of the daemon's bootstrap_team module
-  // (which statically pulls in @exaix-team deps and so must itself be loaded lazily).
-  const isTeamDynamicImport = /\bimport\s*\(\s*["'](@exaix-team\/|\.\/src\/bootstrap_team)/.test(line);
-  return inDispatchEntry && isTeamDynamicImport;
+  return isEditionDispatchEntry(repoPath) && isTeamDynamicImportLine(line);
+}
+
+/**
+ * True for a genuinely edition-gated dynamic Team import: it is in a dispatch entry, is a
+ * dynamic `import("@exaix-team/...")`, AND is preceded by an `editionType` guard. This is
+ * the ONLY allowed upper-edition value reference in lower-edition source — a Solo source-run
+ * never executes it, so the Team module is never loaded and the deploy can omit packages-team/.
+ * (A dynamic import without an edition guard would load Team code even in Solo — the hole this
+ * closes; `deno compile` bundles it either way, which is why the deploy ships source, not a
+ * compiled binary — see dev/Exaix_Edition_Architecture.md.)
+ */
+function isGuardedEditionDynamicImport(repoPath: string, line: string, precedingLines: string[]): boolean {
+  return isEditionDispatchEntry(repoPath) &&
+    isTeamDynamicImportLine(line) &&
+    precededByEditionGuard(precedingLines);
 }
 
 /** Edition tier of a repo path. Higher number = higher (more restricted) tier. */
@@ -192,10 +224,16 @@ function editionTierOfSpecifier(specifier: string): number | null {
  *
  * Exemptions: test files (integration tests may exercise higher tiers); type-only imports
  * (erased at compile, so they never enter a build); and the single sanctioned exception —
- * an edition-gated dynamic `await import("@exaix-team/...")` in a dispatch entry, which a
- * Solo run never executes (see `isEditionGatedTeamDynamicImport`).
+ * a GENUINELY edition-gated dynamic `await import("@exaix-team/...")` in a dispatch entry,
+ * i.e. one preceded by an `editionType` guard (see `isGuardedEditionDynamicImport`). A
+ * dynamic import without an edition guard is NOT exempt — it would load Team code even in a
+ * Solo run. `precedingLines` is the source lines above `line`, used to verify the guard.
  */
-export function isEditionLeakImport(repoPath: string, line: string): boolean {
+export function isEditionLeakImport(
+  repoPath: string,
+  line: string,
+  precedingLines: string[] = [],
+): boolean {
   const sourceTier = editionTierOfPath(repoPath);
   if (sourceTier === null) return false;
   if (
@@ -208,8 +246,8 @@ export function isEditionLeakImport(repoPath: string, line: string): boolean {
   }
   // type-only imports are erased at compile time and never enter a bundle.
   if (/^\s*import\s+type\b/.test(line)) return false;
-  // sanctioned edition-gated dynamic Team import in a dispatch entry.
-  if (isEditionGatedTeamDynamicImport(repoPath, line)) return false;
+  // the only sanctioned upper-edition value reference: an edition-GUARDED dynamic import.
+  if (isGuardedEditionDynamicImport(repoPath, line, precedingLines)) return false;
 
   const specMatch = line.match(/(?:from|import)\s*\(?\s*["']([^"']+)["']/);
   const specifier = specMatch?.[1];
@@ -897,11 +935,11 @@ async function checkFile(path: string) {
       // Enterprise exaix-enterprise/) must not import a higher-edition one — it leaks the higher
       // edition's source/build into the lower one (the Team-into-Solo deploy/bundle leak). The
       // only allowed cross-tier reference is an edition-gated dynamic import in a dispatch entry.
-      if (isEditionLeakImport(relativePath, line)) {
+      if (isEditionLeakImport(relativePath, line, lines.slice(0, idx))) {
         console.log(
           `ERROR [edition-leak] ${relativePath}:${
             idx + 1
-          } – Lower-edition module must not import a higher edition: '${line.trim()}'. A Solo/MIT build must not reference Team/Enterprise code. Use a type-only import for types, or an edition-gated dynamic import() in the dispatch entry; otherwise extract the shared contract into packages/core.`,
+          } – Lower-edition module must not import a higher edition: '${line.trim()}'. A Solo/MIT build must not reference Team/Enterprise code. Use a type-only import for types, or an edition-gated (editionType-guarded) dynamic import() in a dispatch entry; otherwise extract the shared contract into packages/core.`,
         );
         errorCount++;
       }

@@ -563,22 +563,27 @@ _value_, use the edition-gated dynamic import in the dispatch entry.
 Enforced by `scripts/check_code_style.ts` via `[edition-leak]` (supersedes the former
 `[mit-team-import]` rule, which only covered `packages/` → Team).
 
-#### Build-Artifact Gate (`check:edition-bundle`) {#edition-bundle-gate}
+#### Why the static rule is the enforceable guarantee {#edition-static-guarantee}
 
-The `[edition-leak]` source rule guards the import _edge_; it cannot see what `deno compile` actually
-**bundles**. Both `deno compile` and `deno info` follow **dynamic** imports, so a Solo entry's module
-graph can still contain Team/Enterprise code even when every static import is clean.
+`[edition-leak]` is the **complete, hard** edition-bundle guard for the artifact Exaix actually ships
+— the **source-run deploy** (`deploy_workspace.ts`). The invariant it enforces is: in a lower-edition
+source module, **every** upper-edition reference is either type-only (erased at compile) or a
+genuinely **edition-gated** dynamic import (preceded by an `editionType` guard, in a dispatch entry).
+Given that invariant, a Solo run never executes any upper-edition import, so `packages-team/` can be
+physically absent from the deployed workspace and Solo still boots — which is exactly what
+`deploy_workspace.ts` does (it omits `packages-team/` and rewrites `deno.json`'s `workspace[]`).
 
-`deno task check:edition-bundle` resolves the entry's module graph (`deno info --json`) and reports
-any module from a higher edition tier than the build's edition (default: solo, entry
-`apps/daemon/main.ts`). It is **advisory** (exit 0 + report) by default; `--fail` makes it blocking.
+The guard is **strict about "edition-gated"**: a dynamic `import("@exaix-team/...")` that is NOT
+inside an `editionType` guard is still flagged — it would load Team code unconditionally, even in
+Solo. Only `apps/daemon/` and `apps/exactl/` may host these guarded dynamic imports.
 
-> ⚠️ **Current state:** the Solo daemon graph still contains Team modules — the edition-gated dynamic
-> imports remain graph-reachable, so `deno compile` bundles them. The **source-run deploy**
-> (`deploy_workspace.ts`) genuinely excludes Team (it omits `packages-team/` and rewrites
-> `deno.json`'s `workspace[]`), but the **compiled binary** is not yet Team-free. Making it Team-free
-> requires a Solo-specific import map pointing `@exaix-team/*` at stub modules; until that lands the
-> gate stays advisory. See `dev/Exaix_Edition_Architecture.md`.
+> ⚠️ **`deno compile` is the exception — and it is not the shipped artifact.** `deno compile` is a
+> whole-program bundler: it embeds the entire resolved module graph, following dynamic imports, and
+> neither dynamic imports nor `--exclude` drop them (verified). So a `build:solo` **binary** still
+> contains compiled Team code. The static rule cannot change this — no source discipline keeps code
+> out of a `deno compile` artifact. Making the **binary** Team-free requires a Solo-specific import
+> map pointing `@exaix-team/*` at stub modules (not yet implemented). Until then, prefer the
+> source-run deploy for a genuinely Team-free Solo distribution. See `dev/Exaix_Edition_Architecture.md`.
 
 ---
 

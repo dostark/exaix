@@ -79,14 +79,50 @@ function dynamicTeamImport(spec: string): string {
   return `      const { X } = await ${"import"}("${spec}");`;
 }
 
-Deno.test("[edition-leak] an edition-gated dynamic @exaix-team import in a dispatch entry is NOT flagged", () => {
+// An edition guard within the preceding-lines window makes a dynamic Team import sanctioned.
+const EDITION_GUARD_CONTEXT = ["    if (editionType === EDITION_TEAM) {"];
+
+Deno.test("[edition-leak] a dynamic @exaix-team import INSIDE an edition guard in a dispatch entry is NOT flagged", () => {
   assertEquals(
-    isEditionLeakImport("apps/daemon/main.ts", dynamicTeamImport("@exaix-team/team-composer")),
+    isEditionLeakImport(
+      "apps/daemon/main.ts",
+      dynamicTeamImport("@exaix-team/team-composer"),
+      EDITION_GUARD_CONTEXT,
+    ),
     false,
   );
   assertEquals(
-    isEditionLeakImport("apps/exactl/src/init.ts", dynamicTeamImport("@exaix-team/hitl")),
+    isEditionLeakImport(
+      "apps/exactl/src/init.ts",
+      dynamicTeamImport("@exaix-team/hitl"),
+      ["    if (editionType !== EDITION_SOLO && cfg.hitl?.enabled) {"],
+    ),
     false,
+  );
+});
+
+Deno.test("[edition-leak] a dynamic @exaix-team import NOT inside an edition guard is FLAGGED (would load in Solo)", () => {
+  // The hole this closes: a dispatch-file dynamic import with no editionType guard above it
+  // is loaded unconditionally — Team code would resolve even in a Solo run.
+  assertEquals(
+    isEditionLeakImport(
+      "apps/daemon/main.ts",
+      dynamicTeamImport("@exaix-team/team-composer"),
+      ["    const x = 1;", "    doSomethingUnrelated();"],
+    ),
+    true,
+  );
+});
+
+Deno.test("[edition-leak] a dynamic @exaix-team import in a NON-dispatch module is FLAGGED even with a guard", () => {
+  // Only the daemon/exactl dispatch entries may host edition-gated dynamic Team loads.
+  assertEquals(
+    isEditionLeakImport(
+      "packages/core/src/x.ts",
+      dynamicTeamImport("@exaix-team/voting"),
+      EDITION_GUARD_CONTEXT,
+    ),
+    true,
   );
 });
 
