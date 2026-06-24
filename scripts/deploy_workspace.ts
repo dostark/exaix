@@ -18,19 +18,37 @@ import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { copy, type CopyOptions } from "@std/fs/copy";
 
 /**
- * Source directories the deploy copies into a standalone workspace. The deployed
- * deno.json's import map points `@exaix-team/*` at `./packages-team/` and its `workspace`
- * array lists packages-team members, and apps/ statically import `@exaix-team/team-composer`
- * (dead-code-eliminated at runtime in Solo, but still resolved at module load) — so
- * `packages-team` MUST be copied or a deployed exactl/daemon fails with
- * `Module not found ".../packages-team/team-composer/mod.ts"`.
+ * Source directories a **Solo** deploy copies into a standalone workspace. `packages-team/`
+ * is deliberately EXCLUDED: it is BSL-licensed Team code that must not ship in an MIT Solo
+ * deployment (edition separation). This is safe because the app entry points load
+ * `@exaix-team/*` dynamically only inside the `editionType !== "solo"` branch, so a Solo run
+ * never references Team modules (see apps/daemon/main.ts, apps/exactl/src/init.ts). The
+ * deployed deno.json's `workspace[]` is rewritten to drop packages-team members (see
+ * `stripTeamWorkspaceMembers`).
  */
+/** Minimal shape of a deno.json config the deploy rewrites (only `workspace` is touched). */
+export interface IDenoConfigShape {
+  workspace?: string[];
+}
+
 export const WORKSPACE_COPY_DIRS: readonly string[] = [
   "packages",
-  "packages-team",
   "apps",
   "migrations",
 ];
+
+/**
+ * Remove `packages-team/*` entries from a deployed deno.json's `workspace` array so a Solo
+ * deploy (which excludes packages-team/ source) does not reference absent workspace members.
+ * Other config fields are preserved unchanged. Returns the rewritten config object.
+ */
+export function stripTeamWorkspaceMembers<T extends IDenoConfigShape>(denoConfig: T): T {
+  if (!Array.isArray(denoConfig.workspace)) return denoConfig;
+  return {
+    ...denoConfig,
+    workspace: denoConfig.workspace.filter((member) => !member.includes("packages-team/")),
+  };
+}
 
 /** Copy each existing WORKSPACE_COPY_DIRS entry from repoRoot into dest. */
 export async function copyWorkspaceDirs(
@@ -82,8 +100,14 @@ async function main() {
   // 2. Copy artifacts
   const copyOpts: CopyOptions = { overwrite: true };
 
-  // Copy deno.json
-  await copy(join(repoRoot, "deno.json"), join(dest, "deno.json"), copyOpts);
+  // Copy deno.json, stripping packages-team workspace members (Solo deploy excludes them).
+  // The @exaix-team/* import-map entries remain so a Team run's dynamic Team load can still
+  // resolve when packages-team/ IS present; a Solo run never triggers those Team loads.
+  const denoConfig = JSON.parse(await Deno.readTextFile(join(repoRoot, "deno.json")));
+  await Deno.writeTextFile(
+    join(dest, "deno.json"),
+    JSON.stringify(stripTeamWorkspaceMembers(denoConfig), null, 2) + "\n",
+  );
 
   // Copy Memory/ (all content)
   const memorySource = join(repoRoot, "Memory");
@@ -108,9 +132,9 @@ async function main() {
     }
   }
 
-  // Copy workspace members (packages, packages-team, apps) + migrations. packages-team
-  // MUST be included so the deployed deno.json's @exaix-team/* import map + workspace
-  // members resolve (apps/exactl + apps/daemon statically import @exaix-team/team-composer).
+  // Copy workspace members (packages, apps) + migrations. packages-team/ is EXCLUDED —
+  // it is BSL Team code that must not ship in a Solo deploy; the apps load @exaix-team/*
+  // dynamically only in the Team branch, so a Solo run never needs it on disk.
   await copyWorkspaceDirs(repoRoot, dest, copyOpts);
 
   // Copy runtime scripts
@@ -126,8 +150,19 @@ async function main() {
 
   // 3. Post-deploy tasks
   if (!flags["no-run"]) {
-    console.log(`Running deno task cache and setup in ${dest}...`);
-    await run(["deno", "task", "cache"], { cwd: dest });
+    console.log(`Caching Solo runtime entries and running setup in ${dest}...`);
+    // Cache only the Solo runtime entries — NOT apps/mcp-server/main.ts, which statically
+    // imports @exaix-team/mcp-server (a Team feature, excluded from a Solo deploy). The
+    // `exactl mcp` command spawns mcp-server as a subprocess only under Team.
+    await run([
+      "deno",
+      "cache",
+      "--config",
+      join(dest, "deno.json"),
+      join(dest, "apps/daemon/main.ts"),
+      join(dest, "apps/exactl/main.ts"),
+      join(dest, "apps/tui/main.ts"),
+    ], { cwd: dest });
     await run(["deno", "task", "setup"], { cwd: dest });
 
     // Install exactl shim

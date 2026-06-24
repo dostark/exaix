@@ -48,7 +48,9 @@ import type { IPortalKnowledgeConfig, PortalAnalysisMode } from "@exaix/core/typ
 import { createConfigReloadHandler } from "@exaix/core/config";
 import { GracefulShutdown } from "./src/graceful_shutdown.ts";
 import { recoverOrphanedDelegations } from "./src/recovery.ts";
-import { registerTeamCapabilities } from "./src/bootstrap_team.ts";
+// registerTeamCapabilities is loaded dynamically inside the Team branch only —
+// bootstrap_team.ts statically pulls in @exaix-team/voting|hitl|portal-extractors,
+// which must stay out of the Solo binary.
 import { ensureDir } from "@std/fs";
 import { WaitStateSchema } from "@exaix/flow";
 import { join } from "@std/path";
@@ -72,12 +74,13 @@ import {
 } from "@exaix/core/types/constants.ts";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
 import { SoloComposer } from "@exaix/core/composer";
-// Team imports — resolved unconditionally from import map;
-// dead-code eliminated in Solo builds because TeamComposer/bootstrapTeamProviders
-// are never called when editionType !== "team".
-import { bootstrapTeamProviders, TeamComposer } from "@exaix-team/team-composer";
-import { GuardrailRunner } from "@exaix-team/guardrail";
-import { HitlPolicyEvaluator } from "@exaix-team/hitl";
+// Team modules are loaded dynamically ONLY inside the editionType !== "solo" branches
+// below, so the Solo binary never references @exaix-team/* at all (a static top-level
+// dependency would be bundled by `deno compile` even in Solo — defeating edition
+// separation). Type-only imports are erased at compile time and are safe to keep static.
+import type { TeamComposer } from "@exaix-team/team-composer";
+import type { GuardrailRunner } from "@exaix-team/guardrail";
+import type { HitlPolicyEvaluator } from "@exaix-team/hitl";
 
 if (import.meta.main) {
   // Simple argument handling for the compiled binary
@@ -195,6 +198,7 @@ if (import.meta.main) {
     const editionType = Deno.env.get("EXAIX_EDITION") ?? EDITION_SOLO;
     let _editionComposer: SoloComposer | TeamComposer;
     if (editionType === EDITION_TEAM) {
+      const { bootstrapTeamProviders, TeamComposer } = await import("@exaix-team/team-composer");
       bootstrapTeamProviders();
       _editionComposer = new TeamComposer();
     } else {
@@ -221,6 +225,7 @@ if (import.meta.main) {
     let guardrailRunner: GuardrailRunner | undefined;
     if (editionType !== EDITION_SOLO && config.guardrail?.enabled) {
       try {
+        const { GuardrailRunner } = await import("@exaix-team/guardrail");
         guardrailRunner = new GuardrailRunner(
           config.guardrail,
           llmProvider,
@@ -239,6 +244,7 @@ if (import.meta.main) {
     // Phase 118: Initialize HITL policy evaluator if Team edition and enabled
     let hitlPolicyEvaluator: HitlPolicyEvaluator | undefined;
     if (editionType !== EDITION_SOLO && config.hitl?.enabled) {
+      const { HitlPolicyEvaluator } = await import("@exaix-team/hitl");
       hitlPolicyEvaluator = new HitlPolicyEvaluator(
         config.hitl.mandatory_rules,
       );
@@ -518,13 +524,15 @@ if (import.meta.main) {
       hitlPolicyEvaluator,
     });
 
-    // Wire Team-edition capability modules through the edition-composer seam
-    if (_editionComposer instanceof TeamComposer) {
+    // Wire Team-edition capability modules through the edition-composer seam.
+    // Dynamic import keeps bootstrap_team.ts (+ its @exaix-team deps) out of the Solo binary.
+    if (editionType === EDITION_TEAM) {
+      const { registerTeamCapabilities } = await import("./src/bootstrap_team.ts");
       registerTeamCapabilities(
         agentExecutorAdapter,
         logger,
         flowRunner,
-        _editionComposer,
+        _editionComposer as TeamComposer,
         symbolRegistry,
         hitlPolicyEvaluator,
       );

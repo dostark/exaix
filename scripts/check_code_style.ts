@@ -132,6 +132,21 @@ export function isProductionToTestsImport(repoPath: string, specifier: string): 
   return resolved === "tests" || resolved.startsWith("tests/");
 }
 
+/**
+ * True for an edition-gated dynamic Team import in a sanctioned edition-dispatch entry
+ * point. Edition separation REQUIRES `await import("@exaix-team/...")` inside the
+ * `editionType !== "solo"` branch so a Solo build/binary never references Team code
+ * (static top-level imports would be bundled by `deno compile` even in Solo). These are
+ * the only dynamic imports allowed inside a statement; everything else stays prohibited.
+ */
+function isEditionGatedTeamDynamicImport(repoPath: string, line: string): boolean {
+  const inDispatchEntry = repoPath.startsWith("apps/daemon/") || repoPath.startsWith("apps/exactl/");
+  // A dynamic import of @exaix-team/* directly, or of the daemon's bootstrap_team module
+  // (which statically pulls in @exaix-team deps and so must itself be loaded lazily).
+  const isTeamDynamicImport = /\bimport\s*\(\s*["'](@exaix-team\/|\.\/src\/bootstrap_team)/.test(line);
+  return inDispatchEntry && isTeamDynamicImport;
+}
+
 function discoverPackageTestingAliases(): Map<string, string> {
   const aliases = new Map<string, string>();
   const packagesDir = join(REPO_ROOT, "packages");
@@ -1501,6 +1516,15 @@ async function checkFile(path: string) {
       }
       if (rule.regex.test(lineToTest)) {
         if (rule.name === "re-export-imported" && isPackageEntrypoint(path) && isSamePackageReExport(lineToTest)) {
+          return;
+        }
+        // Edition separation: an edition-gated `await import("@exaix-team/...")` in a
+        // dispatch entry point is the sanctioned mechanism that keeps Team code out of
+        // Solo builds. Exempt it from both the inside-statement and dynamic-import rules.
+        if (
+          (rule.name === "import-inside-statement" || rule.name === "dynamic-import") &&
+          isEditionGatedTeamDynamicImport(repoPath, lineToTest)
+        ) {
           return;
         }
         if (rule.severity === "warn") {
