@@ -46,6 +46,7 @@ const SEQUENTIAL_FILES: string[] = [
   "packages/ai/tests/providers/free_providers_test.ts",
   "packages/ai/tests/providers/openai_shim_retry_test.ts",
   "packages/ai/tests/provider_factory_test.ts",
+  "tests/integration/agent/mcp_real_execution_test.ts",
 ];
 
 interface TestStats {
