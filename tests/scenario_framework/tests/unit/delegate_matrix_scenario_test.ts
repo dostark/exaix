@@ -121,6 +121,29 @@ Deno.test("[delegate_matrix] dry parse: every cell terminates in journal-assert 
   );
 });
 
+Deno.test("[delegate_matrix] the clean-cell assertion is acceptance-accurate (payload_absent: rejected), not a bare event-type match (PG-1 regression)", async () => {
+  const scenario = await parseMatrixScenario();
+  const reconciledCriteria = scenario.steps
+    .flatMap((step) => step.output_criteria)
+    .filter((c) =>
+      c.kind === CriterionKind.JOURNAL_EVENT_EXISTS &&
+      "event_type" in c && c.event_type === "session.delegate.reconciled"
+    );
+  assert(reconciledCriteria.length > 0, "matrix must assert session.delegate.reconciled");
+  for (const c of reconciledCriteria) {
+    const payloadAbsent = "payload_absent" in c ? c.payload_absent : undefined;
+    assert(
+      payloadAbsent !== undefined,
+      "the reconciled assertion must carry payload_absent so it means ACCEPTED, not merely reconciled (PG-1)",
+    );
+    assertEquals(
+      payloadAbsent.rejected,
+      true,
+      "payload_absent must exclude rejected:true so a non-scope-rejected reconcile fails the cell",
+    );
+  }
+});
+
 Deno.test("[delegate_matrix] the scenario steps expandMatrix produces 4 cell-runs with correct per-cell overlay", async () => {
   const scenario = await parseMatrixScenario();
   assert(scenario.matrix, "scenario must have a matrix block");

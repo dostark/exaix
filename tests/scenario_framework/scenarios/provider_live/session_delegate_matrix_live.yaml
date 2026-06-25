@@ -108,19 +108,25 @@ steps:
     args: ["**/Session/**/return.json"]
     timeout_sec: 300
 
-  # --- Assertion: the delegate reconciled cleanly ---
-  # session.delegate.reconciled must be PRESENT (the delegate returned a
-  # parseable result and the scope check passed). The scope_violation event
-  # is asserted by the negative scenario (session_delegate_scope_violation_live.yaml);
-  # the matrix does not re-assert it here.
+  # --- Assertion: the delegate reconciled cleanly AND was ACCEPTED ---
+  # session.delegate.reconciled must be PRESENT *with an accepted payload*. The watcher
+  # journals this same event on BOTH the accepted path ({decision}) and a non-scope
+  # rejection ({rejected:true}); `payload_absent: {rejected: true}` requires a matching
+  # event that is NOT a rejection, so the delegate genuinely returned a parseable result
+  # and reconciliation accepted (the scope check passed — reconciled is only emitted on the
+  # accepted branch when accepted, and the rejected branch sets rejected:true).
+  # The scope_violation event is asserted by the negative scenario
+  # (session_delegate_scope_violation_live.yaml); the matrix does not re-assert it here.
   - id: "assert-reconciled-clean"
     type: "journal-assert"
     input_criteria: []
     output_criteria:
-      - id: "reconciled-event-present"
+      - id: "reconciled-event-accepted"
         score_weight: 1.0
         kind: "journal-event-exists"
         event_type: "session.delegate.reconciled"
+        payload_absent:
+          rejected: true
 
   # --- Teardown ---
   - id: "stop-daemon"

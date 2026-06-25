@@ -171,6 +171,10 @@ const JournalEventExistsCriterionSchema = BaseCriterionSchema.extend({
   kind: z.literal(CriterionKind.JOURNAL_EVENT_EXISTS),
   event_type: NON_EMPTY_STRING,
   journal_file: NON_EMPTY_STRING.optional(),
+  // Phase 127 Step 7: when set, a matching event must exist whose parsed `payload` does NOT
+  // carry every one of these key/value pairs. Distinguishes an ACCEPTED reconcile from a
+  // non-scope-rejected one (both emit session.delegate.reconciled) — see assertions.ts.
+  payload_absent: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
 }).strict();
 
 const CommandExitCodeCriterionSchema = BaseCriterionSchema.extend({

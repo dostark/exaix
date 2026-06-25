@@ -38,6 +38,11 @@ interface IJournalEvent {
   [key: string]: any;
 }
 
+/** A parsed journal-event payload: an open key→value map (the payload shape is event-specific). */
+interface IJournalPayloadFields {
+  [key: string]: JSONValue;
+}
+
 export enum StepFailureStage {
   INPUT = "input",
   EXECUTION = "execution",
@@ -573,19 +578,60 @@ async function evaluateJournalEventExistsCriterion(
   }
 
   // Modern Exaix uses 'action_type' for event identification in the SQLite journal.
-  const found = events.some((
-    e,
-  ) => (e.action_type === criterion.event_type || e.event_type === criterion.event_type));
+  const typeMatches = events.filter((e) =>
+    e.action_type === criterion.event_type || e.event_type === criterion.event_type
+  );
 
-  if (found) {
-    return buildPassedResult(options, []);
+  // Without a payload_absent predicate, a bare event-type match passes (backward-compatible).
+  if (!criterion.payload_absent) {
+    if (typeMatches.length > 0) return buildPassedResult(options, []);
+    return buildFailedResult(options, {
+      message: `expected journal event type: ${criterion.event_type}`,
+      expectedValue: criterion.event_type,
+      observedValue: `Latest 50 events: ${events.slice(0, 50).map((e) => e.action_type || e.event_type).join(", ")}`,
+    });
   }
 
+  // payload_absent (Phase 127 Step 7): require at least one matching event whose parsed payload
+  // does NOT carry every one of the given key/value pairs — proving e.g. an ACCEPTED reconcile
+  // (no `rejected: true`) rather than a non-scope-rejected one that emits the same event type.
+  const accepted = typeMatches.some((e) => !payloadContainsAll(e, criterion.payload_absent!));
+  if (accepted) return buildPassedResult(options, []);
+
+  const absentSummary = JSON.stringify(criterion.payload_absent);
   return buildFailedResult(options, {
-    message: `expected journal event type: ${criterion.event_type}`,
-    expectedValue: criterion.event_type,
-    observedValue: `Latest 50 events: ${events.slice(0, 50).map((e) => e.action_type || e.event_type).join(", ")}`,
+    message: typeMatches.length === 0
+      ? `expected journal event type: ${criterion.event_type}`
+      : `expected a '${criterion.event_type}' event whose payload omits ${absentSummary}, but every matching event carried it`,
+    expectedValue: `${criterion.event_type} without payload ${absentSummary}`,
+    observedValue: typeMatches.length === 0
+      ? `Latest 50 events: ${events.slice(0, 50).map((e) => e.action_type || e.event_type).join(", ")}`
+      : `${typeMatches.length} matching event(s), all carrying ${absentSummary}`,
   });
+}
+
+/**
+ * True when the event's payload contains EVERY key/value pair in `expected`. The CLI journal
+ * serializes the payload as a JSON string (IActivityRecord.payload), so it is parsed first;
+ * a payload that is missing, non-string, or unparseable is treated as not-containing.
+ */
+function payloadContainsAll(event: IJournalEvent, expected: IJournalPayloadFields): boolean {
+  const raw = event.payload;
+  let payload: IJournalPayloadFields;
+  if (typeof raw === "string") {
+    try {
+      payload = JSON.parse(raw) as IJournalPayloadFields;
+    } catch {
+      return false;
+    }
+  } else if (raw && typeof raw === "object") {
+    payload = raw as IJournalPayloadFields;
+  } else {
+    return false;
+  }
+  return Object.entries(expected).every(([key, value]) =>
+    key in payload && JSON.stringify(payload[key]) === JSON.stringify(value)
+  );
 }
 
 async function loadJournalFromCli(options: IEvaluateCriterionOptions): Promise<IJournalEvent[] | null> {
