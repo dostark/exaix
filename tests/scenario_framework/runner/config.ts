@@ -7,7 +7,7 @@
  * @related-files [tests/scenario_framework/schema/scenario_schema.ts, tests/scenario_framework/tests/unit/framework_contract_test.ts, tests/scenario_framework/README.md]
  */
 
-import { resolve } from "@std/path";
+import { dirname, join, resolve } from "@std/path";
 import { z } from "zod";
 import { ScenarioExecutionMode } from "../schema/step_schema.ts";
 import type { JSONObject } from "@exaix/core/types";
@@ -55,6 +55,15 @@ const DEFAULT_RUNTIME_TIMEOUT_SEC = 120;
 const NON_EMPTY_STRING = z.string().min(1);
 const ABSOLUTE_PATH = z.string().min(1).startsWith("/");
 
+// Sandbox default-location policy. When no explicit workspace_path is supplied, the runner
+// must NOT fall back to the repo root (resolve("") === CWD), which leaks runtime state
+// (.exa/journal.db, .logs/) into the working tree. Instead it deploys a sibling-of-repo
+// sandbox under `<base>/<SANDBOX_DIR_NAME>/<run-id>`, where `<base>` is the EXA_SANDBOX_BASE
+// env override when set, else the parent directory of the repo root.
+const SANDBOX_BASE_ENV = "EXA_SANDBOX_BASE";
+const SANDBOX_DIR_NAME = "exaix-sandboxes";
+const SANDBOX_OUTPUT_SUBDIR = "output";
+
 export enum ScenarioCiProfile {
   SMOKE = "ci-smoke",
   CORE = "ci-core",
@@ -97,6 +106,33 @@ export function loadRuntimeConfig(rawConfig: JSONObject): IRuntimeConfig {
   return RuntimeConfigSchema.parse(rawConfig);
 }
 
+/**
+ * Compute the default sibling-of-repo sandbox root for a run when no explicit workspace_path
+ * is supplied. Base is `EXA_SANDBOX_BASE` if set, else the parent directory of the repo root
+ * (the framework lives at `<repo>/tests/scenario_framework`, so the repo root is two levels
+ * above frameworkHome). The run-id keeps concurrent/repeated runs isolated.
+ */
+function defaultSandboxRoot(frameworkHome: string, runId: string): string {
+  const repoRoot = resolve(frameworkHome, "..", "..");
+  const base = Deno.env.get(SANDBOX_BASE_ENV) ?? dirname(repoRoot);
+  return join(resolve(base), SANDBOX_DIR_NAME, runId);
+}
+
+/**
+ * Guard against routing runtime state into the repo tree. A resolved workspace root equal to
+ * the repo root (the classic `resolve("")` === CWD leak) is rejected loudly so .exa/ and
+ * .logs/ never contaminate the working tree.
+ */
+function assertNotRepoRoot(workspacePath: string, frameworkHome: string): void {
+  const repoRoot = resolve(frameworkHome, "..", "..");
+  if (workspacePath === repoRoot) {
+    throw new Error(
+      `Refusing to use the repo root as the sandbox workspace (${repoRoot}); ` +
+        `pass an explicit --workspace or set ${SANDBOX_BASE_ENV} so runtime state stays out of the repo tree.`,
+    );
+  }
+}
+
 export function resolveRuntimeConfigForExecution(
   options: IRuntimeConfigResolutionOptions,
 ): IRuntimeConfig {
@@ -104,11 +140,23 @@ export function resolveRuntimeConfigForExecution(
   const frameworkHome = resolve(fileConfig.framework_home ?? options.executionDirectory);
   const portals = normalizePortalPaths(fileConfig.portals);
 
+  // Workspace precedence: explicit CLI flag > file config > sibling-of-repo default (never CWD).
+  const explicitWorkspace = options.cliFlags?.workspace ?? fileConfig.workspace_path;
+  const runId = `${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}`;
+  const workspacePath = explicitWorkspace ? resolve(explicitWorkspace) : defaultSandboxRoot(frameworkHome, runId);
+
+  assertNotRepoRoot(workspacePath, frameworkHome);
+
+  // Output precedence mirrors workspace: explicit wins, else default UNDER the sandbox so all
+  // run artifacts (evidence, manifest) live beside the workspace, never in the repo tree.
+  const explicitOutput = options.cliFlags?.output ?? fileConfig.output_dir;
+  const outputDir = explicitOutput ? resolve(explicitOutput) : join(workspacePath, SANDBOX_OUTPUT_SUBDIR);
+
   return RuntimeConfigSchema.parse({
     ...fileConfig,
     framework_home: frameworkHome,
-    workspace_path: resolve(options.cliFlags?.workspace ?? fileConfig.workspace_path ?? ""),
-    output_dir: resolve(options.cliFlags?.output ?? fileConfig.output_dir ?? ""),
+    workspace_path: workspacePath,
+    output_dir: outputDir,
     portals,
     mode: options.cliFlags?.mode ?? fileConfig.mode ?? ScenarioExecutionMode.AUTO,
     profile: options.cliFlags?.profile ?? fileConfig.profile,
