@@ -9,12 +9,20 @@
  */
 
 import { join } from "@std/path";
+import { ensureDir } from "@std/fs";
 import { evaluateCriterion, evaluateStepOutcome, type IScenarioStepOutcome, StepFailureStage } from "./assertions.ts";
 import { type IRunManifest, writeExecutionLog, writeRunManifest } from "./evidence_collector.ts";
 import { computeStepScore, computeSuiteScore, type IStepScoreInput } from "./scoring.ts";
 import { type IRunScenarioInModeResult, runScenarioInMode } from "./modes.ts";
 import { type ILoadedScenario, loadScenarioFromYamlFile } from "./scenario_loader.ts";
-import { binIsOnPath, type IRunnableStepGroup, resolveRunnableSteps } from "./matrix_expander.ts";
+import {
+  binIsOnPath,
+  type ICellConfigTargets,
+  type IRunnableStepGroup,
+  MATRIX_START_DAEMON_STEP_ID,
+  resolveCellConfig,
+  resolveRunnableSteps,
+} from "./matrix_expander.ts";
 import { executeScenarioStep, type IScenarioStepExecutionResult } from "./step_executor.ts";
 import {
   CriterionPhase,
@@ -62,7 +70,7 @@ export async function runSyntheticScenario(
     ...(options.env ?? {}),
     WORKSPACE_ROOT: options.workspaceRoot,
     FRAMEWORK_HOME: options.frameworkHome,
-    EXA_CONFIG_PATH: join(options.workspaceRoot, "exa.config.toml"),
+    EXA_CONFIG_PATH: join(options.workspaceRoot, WORKSPACE_CONFIG_FILE),
   };
 
   // Expand top-level portals for portability (e.g., using $FRAMEWORK_HOME)
@@ -86,7 +94,18 @@ export async function runSyntheticScenario(
     configBaseDir: join(options.frameworkHome, "..", ".."),
   });
   const firstRunnable = runnableGroups.find((g) => g.status === "run");
-  const stepsToRun = firstRunnable?.steps ?? loadedScenario.steps;
+  let stepsToRun = firstRunnable?.steps ?? loadedScenario.steps;
+
+  // Phase 127 Step 8 (LIVE-RT): a runnable matrix cell boots the daemon on a dogfood preset
+  // carrying deploy-time sentinels. Materialize a sentinel-resolved copy into the workspace
+  // (root → workspace, worktree → the mounted portal) so the daemon roots where the runner
+  // submits requests. In-repo topology mounts the repo (frameworkHome/../..) as the portal.
+  if (firstRunnable?.cell) {
+    stepsToRun = await materializeCellConfig(stepsToRun, {
+      workspaceRoot: options.workspaceRoot,
+      worktreePath: join(options.frameworkHome, "..", ".."),
+    });
+  }
 
   const runResult = await runScenarioInMode({
     scenarioId: loadedScenario.scenario.id,
@@ -139,6 +158,48 @@ export async function runSyntheticScenario(
   };
 }
 
+/** Where the runner writes the sentinel-resolved per-cell config (under the workspace `.exa`). */
+/** The workspace's canonical config file — the single source of truth every step loads. */
+const WORKSPACE_CONFIG_FILE = "exa.config.toml";
+
+/**
+ * Phase 127 Step 8 (LIVE-RT): for a runnable matrix cell, read the dogfood preset that the
+ * `start-daemon` step's EXA_CONFIG_PATH points at, resolve its deploy-time sentinels
+ * (`__DOGFOOD_ROOT__` → workspace, `__WORKTREE_PATH__` → the mounted portal) via
+ * `resolveCellConfig`, and write the resolved config to the workspace's canonical
+ * `exa.config.toml` — the SAME file every other step (add-portal, restart-daemon, submit-request)
+ * loads via the baseEnv default. Writing one shared config is essential: `portal add` appends its
+ * `[[portals]]` entry to whatever config EXA_CONFIG_PATH points at, and the daemon must run that
+ * exact config to learn the portal — otherwise a request referencing `test-project` hits a daemon
+ * whose config never registered it and stalls unprocessed. Because a running daemon does not hot-
+ * reload config, the scenario follows the documented sequence (README §2.2): start-daemon →
+ * add-portal → restart-daemon (stop+start, reloads the now-portal-bearing config) → submit-request.
+ * The start-daemon step's EXA_CONFIG_PATH is repointed at the shared file. Runs BEFORE any step, so
+ * every step sees one config. Works for BOTH in-repo (portal = repo) and a deployed sandbox with a
+ * third-party portal. Steps without a start-daemon EXA_CONFIG_PATH are returned unchanged.
+ */
+export async function materializeCellConfig(
+  steps: IScenarioStep[],
+  targets: ICellConfigTargets,
+): Promise<IScenarioStep[]> {
+  const daemon = steps.find((s) => s.id === MATRIX_START_DAEMON_STEP_ID);
+  const presetPath = daemon?.env?.EXA_CONFIG_PATH;
+  if (!daemon || !presetPath) return steps;
+
+  const presetText = await Deno.readTextFile(presetPath);
+  const resolved = resolveCellConfig(presetText, targets);
+
+  await ensureDir(targets.workspaceRoot);
+  const materializedPath = join(targets.workspaceRoot, WORKSPACE_CONFIG_FILE);
+  await Deno.writeTextFile(materializedPath, resolved);
+
+  return steps.map((step) =>
+    step.id === MATRIX_START_DAEMON_STEP_ID
+      ? { ...step, env: { ...(step.env ?? {}), EXA_CONFIG_PATH: materializedPath } }
+      : step
+  );
+}
+
 interface IExecuteSyntheticStepOptions {
   step: IScenarioStep;
   workspaceRoot: string;
@@ -161,7 +222,7 @@ async function executeSyntheticStep(
     WORKSPACE_ROOT: options.workspaceRoot,
     EXA_SYSTEM_ROOT: options.workspaceRoot,
     FRAMEWORK_HOME: options.frameworkHome,
-    EXA_CONFIG_PATH: join(options.workspaceRoot, "exa.config.toml"),
+    EXA_CONFIG_PATH: join(options.workspaceRoot, WORKSPACE_CONFIG_FILE),
   };
 
   const resolvedStep = expandVariablesInStep(options.step, baseEnv);

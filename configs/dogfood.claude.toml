@@ -8,9 +8,30 @@ workspace = "Workspace"
 portals = "Portals"
 memory = "Memory"
 
+# Analysis/planning model (the daemon's own in-process LLM, distinct from the delegate below).
+# A "claude" preset plans with Claude: routes the request → plan step through the Anthropic API
+# (ANTHROPIC_API_KEY), so the whole flow — analysis AND the headless `claude -p` delegate — runs on
+# Claude, with no dependency on an auto-detected Google/Ollama provider.
 [ai]
-provider = "ollama"
-model = "ollama/llama3"
+provider = "anthropic"
+model = "claude-haiku-4-5-20251001"
+
+# The daemon resolves its analysis provider via `agents.default_model` → `[models.<name>]`, NOT the
+# `[ai]` block above (which is only a fallback). The config schema DEFAULTS `[models].default` to
+# Google, so a preset without an explicit [models] silently plans on Google regardless of [ai].
+# Pin the named models to Anthropic here so this Claude preset truly plans with Claude.
+[models.default]
+provider = "anthropic"
+model = "claude-haiku-4-5-20251001"
+timeout_ms = 60000
+
+[models.fast]
+provider = "anthropic"
+model = "claude-haiku-4-5-20251001"
+timeout_ms = 60000
+
+[agents]
+default_model = "default"
 
 [[portals]]
 alias = "exaix-self"
@@ -35,6 +56,9 @@ enabled = true
 [session_delegate]
 enabled = true
 tool = "claude-code"
-model = "claude-sonnet-4-20250514"
+# Known-valid current model id (the stale claude-sonnet-4-20250514 was rejected by the headless
+# `claude` CLI as non-existent, so the delegate spawned but made no edits). Matches the analysis
+# model above, which this environment confirmed works for live runs.
+model = "claude-haiku-4-5-20251001"
 gates = ["code_changes"]
 launch_mode = "headless"

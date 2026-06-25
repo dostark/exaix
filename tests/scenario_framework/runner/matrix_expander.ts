@@ -43,6 +43,14 @@ export interface IExpandMatrixOptions {
   configBaseDir?: string;
 }
 
+/** Real targets the dogfood-preset sentinels resolve to for a matrix cell run. */
+export interface ICellConfigTargets {
+  /** Replaces `__DOGFOOD_ROOT__` — the daemon's `[system] root` (the runner's workspace/sandbox root). */
+  workspaceRoot: string;
+  /** Replaces `__WORKTREE_PATH__` — the mounted portal target (the repo in-repo, or a third-party repo in a deployed sandbox). */
+  worktreePath: string;
+}
+
 /**
  * A runnable group the runner consumes: either a matrix cell-run (with its `cell`)
  * or the single pass-through group of a non-matrix scenario (`cell` undefined).
@@ -62,6 +70,24 @@ export interface IResolvableScenario {
 
 /** The start-daemon step id the per-cell env overlay targets. */
 export const MATRIX_START_DAEMON_STEP_ID = "start-daemon";
+
+/** Deploy-time sentinels in the dogfood presets (mirrors scripts/dogfood_bootstrap.ts). */
+const SENTINEL_DOGFOOD_ROOT = "__DOGFOOD_ROOT__";
+const SENTINEL_WORKTREE_PATH = "__WORKTREE_PATH__";
+
+/**
+ * Pure substitution of a dogfood preset's deploy-time sentinels with the run's real paths,
+ * so the synthetic runner can boot the daemon on the preset WITHOUT the literal placeholders
+ * that would otherwise leave `[system] root` = "__DOGFOOD_ROOT__" (rooting the daemon away from
+ * where the runner submits requests). Mirrors `dogfood_bootstrap.ts`'s `replaceAll` mapping.
+ * A sentinel-free preset is returned unchanged. Topology-agnostic: the caller chooses the
+ * targets (in-repo: portal = repo root; deployed sandbox: portal = the mounted third-party repo).
+ */
+export function resolveCellConfig(presetText: string, targets: ICellConfigTargets): string {
+  return presetText
+    .replaceAll(SENTINEL_DOGFOOD_ROOT, targets.workspaceRoot)
+    .replaceAll(SENTINEL_WORKTREE_PATH, targets.worktreePath);
+}
 
 /** Per-cell expansion outcome. Named union (no magic string union). */
 export const MatrixCellStatus = {

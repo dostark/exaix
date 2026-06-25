@@ -23,6 +23,7 @@ export enum ScenarioStepType {
   SHELL = "shell",
   EXACTL = "exactl",
   WAIT_FOR_FILE = "wait-for-file",
+  WAIT_FOR_JOURNAL_EVENT = "wait-for-journal-event",
   WAIT_FOR_STATUS = "wait-for-status",
   WAIT_FOR_JSON_FIELD = "wait-for-json-field",
   JOURNAL_ASSERT = "journal-assert",
@@ -293,6 +294,8 @@ export const ScenarioStepSchema = z.object({
   args: z.array(z.string()).optional(),
   env: z.record(z.string(), z.string()).optional(),
   timeout_sec: z.number().int().positive().optional(),
+  // wait-for-journal-event: the action_type to poll the workspace journal for (e.g. daemon.ready).
+  event_type: NON_EMPTY_STRING.optional(),
   checkpoint: z.union([NON_EMPTY_STRING, z.boolean()]).optional(),
   instructions: NON_EMPTY_STRING.optional(),
   continue_on_failure: z.boolean().default(false),
