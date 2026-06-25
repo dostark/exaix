@@ -257,6 +257,31 @@ export * from "../../apps/other_app/src/some_export.ts";
 
 Package entrypoints must only expose package-local source exports, not direct imports from other packages' source trees.
 
+### No Production Dependency on `tests/` {#no-prod-tests-dependency}
+
+Functional, deployable modules under `packages/`, `packages-team/`, and `apps/` **must not** import from the repository's `tests/` folder. Test code is **excluded from a deployed workspace**, so a production module that imports it (even a type-only or transitively dead import) fails to resolve at module load in a deploy, breaking the deployed `exactl`/daemon. This is the layering bug that originally placed `EvalSqliteStore` under `tests/scenario_framework/` and was imported by the production `exactl eval` command — relocate such shared code into a real package under `packages/` instead.
+
+**Prohibited (in any `packages/`, `packages-team/`, or `apps/` non-test module):**
+
+```ts
+// apps/exactl/src/commands/eval_commands.ts
+import { EvalSqliteStore } from "../../../../tests/scenario_framework/runner/history_sqlite.ts"; // ❌
+```
+
+**Correct — relocate the shared code to a package and import the alias:**
+
+```ts
+// apps/exactl/src/commands/eval_commands.ts
+import { EvalSqliteStore } from "@exaix/eval-history"; // ✅ package-owned, deployable
+```
+
+**Exemptions:**
+
+- **Test files** (paths containing `/tests/` or ending in `_test.ts` / `.test.ts`) may import test helpers and fixtures from `tests/`.
+- **Test-infrastructure modules** — the `@exaix/testing` package (`packages/testing/`) and any `*/testing/` compatibility shim — exist solely to provide shared test helpers and never ship in a production deploy, so they may bridge to `tests/`.
+
+This is enforced as `[package-tests-boundary]` by `deno task check:style`.
+
 ### Multi-line Named Imports
 
 The style checker does not enforce a specific format for named imports. Use your judgment to balance readability and conciseness. `deno fmt` will automatically format imports according to its configured line width.
@@ -326,6 +351,8 @@ These rules are enforced in part by `scripts/check_code_style.ts` via the `[pack
 - Barrel re-export violations from source are reported as `[src-barrel-re-export]`.
 
 - Canonical package and subpackage barrel enforcement is reported as `[package-canonical-import]`.
+
+- Production-module imports from the `tests/` folder are reported as `[package-tests-boundary]` (see [No Production Dependency on `tests/`](#no-prod-tests-dependency)).
 
 - Structured multiline test fixtures are also flagged as `[test-inline-multiline-fixture]` in test files.
 
@@ -490,17 +517,88 @@ These rules are enforced by `scripts/check_code_style.ts` via:
 
 Boundary checks run as part of the standard quality gates in pre-commit hooks and CI.
 
-### MIT-to-Team Import Boundary
+### Edition Tier Import Boundary {#edition-tier-boundary}
 
-Source files in `packages/` (MIT) **must not import** from `packages-team/` or `@exaix-team/*`. This prevents accidental compile-time coupling of Solo-edition code to Team-only packages.
+Exaix is edition-separated by license and distribution: **MIT** (`packages/`, `apps/`) < **Team**
+(`packages-team/`, BSL) < **Enterprise** (`exaix-enterprise/`). A **lower-edition module must not
+import from a higher edition.** Doing so couples the lower edition's source and build to code that is
+licensed and shipped separately — e.g. an MIT Solo app importing BSL Team code, which ships Team
+source into the free deployment and pulls it into the Solo binary (the Team-into-Solo leak).
 
-**Valid exception**: Test files in `packages/*/tests/` may import Team packages for integration testing.
+**Prohibited (in any lower-edition non-test source module):**
 
-**Remediation**: When MIT source needs a type from Team code, extract the interface or contract into `packages/core/types/` and have both sides depend on the MIT home.
+```ts
+// apps/exactl/src/init.ts (MIT)
+import { TeamComposer } from "@exaix-team/team-composer"; // ❌ MIT → Team
 
-Enforced by `scripts/check_code_style.ts` via:
+// packages-team/voting/src/x.ts (Team)
+import { Y } from "@exaix-enterprise/mod.ts"; // ❌ Team → Enterprise
+```
 
-- `[mit-team-import]`
+**Allowed — the two sanctioned cross-tier references:**
+
+```ts
+// 1. Type-only imports (erased at compile time, never enter a build):
+import type { TeamComposer } from "@exaix-team/team-composer"; // ✅
+
+// 2. An edition-gated DYNAMIC import in a dispatch entry (apps/daemon, apps/exactl),
+//    loaded only in the editionType !== "solo" branch so a Solo run never references it:
+if (editionType === EDITION_TEAM) {
+  const { TeamComposer } = await import("@exaix-team/team-composer"); // ✅
+}
+```
+
+**Exemptions:**
+
+- **Test files** (`/tests/`, `_test.ts`, `.test.ts`) — integration tests may exercise higher tiers.
+- **Test-infra** (`*/testing/` shims) — never deployed.
+- **Team-tier modules that live under `apps/`** — `apps/daemon/src/bootstrap_team.ts` (edition glue,
+  loaded only in the Team branch) and `apps/mcp-server/` (a Team-coupled standalone app) are Team-tier
+  and may statically import `@exaix-team/*`.
+
+**Remediation**: When lower-edition source needs a _type_ from higher-edition code, extract the
+interface into `packages/core/types/` and have both sides depend on the MIT home; when it needs a
+_value_, use the edition-gated dynamic import in the dispatch entry.
+
+Enforced by `scripts/check_code_style.ts` via `[edition-leak]` (supersedes the former
+`[mit-team-import]` rule, which only covered `packages/` → Team).
+
+#### Why the static rule is the enforceable guarantee {#edition-static-guarantee}
+
+`[edition-leak]` is the **complete, hard** edition-bundle guard for the artifact Exaix actually ships
+— the **source-run deploy** (`deploy_workspace.ts`). The invariant it enforces is: in a lower-edition
+source module, **every** upper-edition reference is either type-only (erased at compile) or a
+genuinely **edition-gated** dynamic import (preceded by an `editionType` guard, in a dispatch entry).
+Given that invariant, a Solo run never executes any upper-edition import, so `packages-team/` can be
+physically absent from the deployed workspace and Solo still boots — which is exactly what
+`deploy_workspace.ts` does (it omits `packages-team/` and rewrites `deno.json`'s `workspace[]`).
+
+The guard is **strict about "edition-gated"**: a dynamic `import("@exaix-team/...")` that is NOT
+inside an `editionType` guard is still flagged — it would load Team code unconditionally, even in
+Solo. Only `apps/daemon/` and `apps/exactl/` may host these guarded dynamic imports.
+
+> ⚠️ **`deno compile` is the exception — and it is not the shipped artifact.** `deno compile` is a
+> whole-program bundler: it embeds the entire resolved module graph, following dynamic imports, and
+> neither dynamic imports nor `--exclude` drop them (verified). So a `build:solo` **binary** still
+> contains compiled Team code. The static rule cannot change this — no source discipline keeps code
+> out of a `deno compile` artifact. Making the **binary** Team-free requires a Solo-specific import
+> map pointing `@exaix-team/*` at stub modules (not yet implemented). Until then, prefer the
+> source-run deploy for a genuinely Team-free Solo distribution. See `dev/Exaix_Edition_Architecture.md`.
+
+#### Graph gate: a defense-in-depth double-check {#edition-graph-gate}
+
+`[edition-leak]` is a source-text rule, so its correctness depends on its own regex/parsing. A bug
+there — an import specifier shape it fails to match, a guard it mis-reads — could let a real leak pass
+with `check:style` green. `scripts/check_edition_graph.ts` (task `check:edition-graph`) guards exactly
+that failure mode: it resolves the daemon + exactl module graphs with `deno info --json` and fails on
+any **static (non-dynamic) runtime `code` edge** from a lower edition tier into a higher one, using the
+**same** `editionTierOfPath` classification the static rule uses. It mirrors the static rule's
+exemptions — edition-gated **dynamic** edges (`isDynamic`) and **type-only** edges (which carry no
+`code` edge) are not leaks — so on a clean tree the two gates agree (verified: 0 static leaks across
+both entry graphs). It is **not** the retired build-artifact gate (which measured the `deno compile`
+graph and could never go green); it measures the source-run deploy's real static edges, the same
+artifact `[edition-leak]` governs, and goes green today. It runs in CI **Gate 3b**, in
+`scripts/ci.ts check`, and in the pre-commit hook, immediately after `check:style`.
 
 ---
 

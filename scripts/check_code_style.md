@@ -84,9 +84,32 @@ deno run -A scripts/check_code_style.ts --convert-warnings-to-errors
 
 ## Edition Boundary
 
-| Tag                                      | Severity | What it detects                                              |
-| ---------------------------------------- | -------- | ------------------------------------------------------------ |
-| `[edition-conditional-outside-composer]` | error    | `edition ===` / `EXAIX_EDITION` outside the edition composer |
+| Tag                                      | Severity | What it detects                                                                                                                                                                                                        |
+| ---------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[edition-conditional-outside-composer]` | error    | `edition ===` / `EXAIX_EDITION` outside the edition composer                                                                                                                                                           |
+| `[edition-leak]`                         | error    | Lower-edition module imports a higher edition (MIT → Team/Enterprise, Team → Enterprise); exempt only: type-only imports, and `editionType`-guarded dynamic `import("@exaix-team/...")` in `apps/daemon`/`apps/exactl` |
+
+> `[edition-leak]` supersedes the former `[mit-team-import]` rule (which only covered `packages/` → Team).
+> It is the enforceable bundle guarantee for the **source-run deploy** — every upper-edition reference
+> must be type-only or `editionType`-guarded-dynamic, so a Solo run never loads Team code. (`deno compile`
+> binaries still bundle Team code regardless; see CODE_STYLE.md → Edition Tier Import Boundary.)
+>
+> **Companion graph gate (`scripts/check_edition_graph.ts`, task `check:edition-graph`).** Because
+> `[edition-leak]` is a source-text regex rule, a bug in its parsing — a specifier shape it fails to
+> match, a guard it mis-reads — could let a real leak through silently. The graph gate is an
+> independent, AST-grounded double-check: it resolves the daemon + exactl module graphs via
+> `deno info --json` and fails on any **static (non-dynamic) runtime `code` edge** into a higher
+> edition tier. It mirrors the static rule's exemptions exactly (edition-gated dynamic edges and
+> type-only edges are not leaks), so the two gates agree on a clean tree (verified 0). It runs in
+> CI Gate 3b, in `scripts/ci.ts check`, and in the pre-commit hook, right after `check:style`.
+
+---
+
+## Package & Tests Boundary
+
+| Tag                        | Severity | What it detects                                                                    |
+| -------------------------- | -------- | ---------------------------------------------------------------------------------- |
+| `[package-tests-boundary]` | error    | A deployable module (`packages/`, `packages-team/`, `apps/`) imports from `tests/` |
 
 ---
 

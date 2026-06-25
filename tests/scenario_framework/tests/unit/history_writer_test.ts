@@ -5,13 +5,13 @@
  * history entries are written atomically to both scenario-specific
  * and global history files in eval mode.
  * @architectural-layer Test
- * @related-files [tests/scenario_framework/runner/history_writer.ts, tests/scenario_framework/schema/history_schema.ts]
+ * @related-files [tests/scenario_framework/runner/history_writer.ts, packages/eval-history/mod.ts]
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { writeEvalHistoryEntry } from "../../runner/history_writer.ts";
-import { EvalHistoryEntrySchema } from "../../schema/history_schema.ts";
+import { EvalHistoryEntrySchema } from "@exaix/eval-history";
 import { CriterionKind, CriterionPhase, CriterionStatus, ScenarioStepType } from "../../schema/step_schema.ts";
 import type { IRunManifest } from "../../runner/evidence_collector.ts";
 

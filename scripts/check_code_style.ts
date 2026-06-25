@@ -101,6 +101,163 @@ function isRepoRelativeSpecifier(specifier: string): boolean {
   return !/^[a-z]+:/i.test(specifier) && !specifier.startsWith("//");
 }
 
+/** True when repoPath is a functional, deployable production module (not a test file). */
+function isProductionModulePath(repoPath: string): boolean {
+  const isProductionRoot = repoPath.startsWith("packages/") ||
+    repoPath.startsWith("packages-team/") ||
+    repoPath.startsWith("apps/");
+  const isTestFile = repoPath.includes("/tests/") ||
+    repoPath.endsWith("_test.ts") ||
+    repoPath.endsWith(".test.ts");
+  // Test-infrastructure modules are NOT deployable production code: the @exaix/testing
+  // package and any `*/testing/` compatibility shim exist to provide test helpers and may
+  // legitimately bridge to tests/. They never ship in a production deploy.
+  const isTestInfra = repoPath.startsWith("packages/testing/") ||
+    repoPath.includes("/testing/");
+  return isProductionRoot && !isTestFile && !isTestInfra;
+}
+
+/**
+ * True when a production module (packages/, packages-team/, apps/) imports from the
+ * root tests/ folder. Functional deployable modules must not depend on test code: it
+ * is excluded from a deployed workspace, so such an import breaks the deployed
+ * exactl/daemon at module load. This is the EvalSqliteStore-under-tests/ layering bug.
+ * Test files are exempt — they may import test helpers/fixtures.
+ */
+export function isProductionToTestsImport(repoPath: string, specifier: string): boolean {
+  if (!isProductionModulePath(repoPath)) return false;
+  if (!isRepoRelativeSpecifier(specifier)) return false; // bare alias / URL — not a tests/ path
+  // Resolve the specifier against the importing file's directory; flag if it lands in tests/.
+  const resolved = specifier.startsWith(".") ? normalize(join(dirname(repoPath), specifier)) : specifier;
+  return resolved === "tests" || resolved.startsWith("tests/");
+}
+
+/** How many preceding source lines to scan for the enclosing `editionType` guard. */
+const EDITION_GUARD_LOOKBACK_LINES = 12;
+
+/** A dynamic import of @exaix-team/* or the daemon's bootstrap_team module. */
+function isTeamDynamicImportLine(line: string): boolean {
+  return /\bimport\s*\(\s*["'](@exaix-team\/|\.\/src\/bootstrap_team)/.test(line);
+}
+
+/** True when the import sits in one of the two sanctioned edition-dispatch entry points. */
+function isEditionDispatchEntry(repoPath: string): boolean {
+  return repoPath.startsWith("apps/daemon/") || repoPath.startsWith("apps/exactl/");
+}
+
+/**
+ * True when an `editionType` guard (`editionType === EDITION_TEAM` / `!== EDITION_SOLO`)
+ * appears within the preceding-lines window — proof the dynamic import is reached only in a
+ * non-Solo run, not loaded unconditionally at module scope.
+ */
+function precededByEditionGuard(precedingLines: string[]): boolean {
+  const window = precedingLines.slice(-EDITION_GUARD_LOOKBACK_LINES);
+  return window.some((l) => /\beditionType\s*(?:===?|!==?)\s*EDITION_/.test(l));
+}
+
+/**
+ * Shape check (line-only): a dynamic Team import in a dispatch entry. Used by the
+ * dynamic-import / import-inside-statement STYLE exemptions, which only need to recognise
+ * the sanctioned shape — the stricter edition-guard check below governs the edition-leak rule.
+ */
+function isEditionGatedTeamDynamicImport(repoPath: string, line: string): boolean {
+  return isEditionDispatchEntry(repoPath) && isTeamDynamicImportLine(line);
+}
+
+/**
+ * True for a genuinely edition-gated dynamic Team import: it is in a dispatch entry, is a
+ * dynamic `import("@exaix-team/...")`, AND is preceded by an `editionType` guard. This is
+ * the ONLY allowed upper-edition value reference in lower-edition source — a Solo source-run
+ * never executes it, so the Team module is never loaded and the deploy can omit packages-team/.
+ * (A dynamic import without an edition guard would load Team code even in Solo — the hole this
+ * closes; `deno compile` bundles it either way, which is why the deploy ships source, not a
+ * compiled binary — see dev/Exaix_Edition_Architecture.md.)
+ */
+function isGuardedEditionDynamicImport(repoPath: string, line: string, precedingLines: string[]): boolean {
+  return isEditionDispatchEntry(repoPath) &&
+    isTeamDynamicImportLine(line) &&
+    precededByEditionGuard(precedingLines);
+}
+
+/** Edition tier of a repo path. Higher number = higher (more restricted) tier. */
+const EDITION_TIER_MIT = 0;
+const EDITION_TIER_TEAM = 1;
+const EDITION_TIER_ENTERPRISE = 2;
+
+/**
+ * Team-edition modules that physically live under `apps/` (edition glue / Team-only apps),
+ * so they are Team-tier despite the `apps/` prefix and may statically import `@exaix-team/*`.
+ * They are loaded only in the Team branch (bootstrap_team via dynamic import; mcp-server as a
+ * Team-spawned subprocess) and never enter a Solo build.
+ */
+const TEAM_TIER_APP_PATHS = [
+  "apps/daemon/src/bootstrap_team.ts",
+  "apps/mcp-server/",
+];
+
+export function editionTierOfPath(repoPath: string): number | null {
+  if (repoPath.startsWith("exaix-enterprise/")) return EDITION_TIER_ENTERPRISE;
+  if (repoPath.startsWith("packages-team/")) return EDITION_TIER_TEAM;
+  if (TEAM_TIER_APP_PATHS.some((p) => repoPath === p || repoPath.startsWith(p))) {
+    return EDITION_TIER_TEAM;
+  }
+  if (repoPath.startsWith("packages/") || repoPath.startsWith("apps/")) return EDITION_TIER_MIT;
+  return null; // scripts/, tests/, etc. — not an edition-tiered module
+}
+
+/** Edition tier of an import specifier, or null when it is not edition-tiered. */
+function editionTierOfSpecifier(specifier: string): number | null {
+  if (/(^|\/)exaix-enterprise(\/|$)|^@exaix-enterprise(\/|$)/.test(specifier)) {
+    return EDITION_TIER_ENTERPRISE;
+  }
+  if (/(^|\/)packages-team(\/|$)|^@exaix-team(\/|$)/.test(specifier)) {
+    return EDITION_TIER_TEAM;
+  }
+  return null;
+}
+
+/**
+ * True when a module imports from a HIGHER edition tier than its own — the edition leak
+ * that couples a lower edition's source/build to code shipped or licensed separately
+ * (e.g. an MIT Solo app importing BSL Team code → the Team-into-Solo deploy/bundle leak).
+ * Tiers: MIT (packages/, apps/) < Team (packages-team/) < Enterprise (exaix-enterprise/).
+ *
+ * Exemptions: test files (integration tests may exercise higher tiers); type-only imports
+ * (erased at compile, so they never enter a build); and the single sanctioned exception —
+ * a GENUINELY edition-gated dynamic `await import("@exaix-team/...")` in a dispatch entry,
+ * i.e. one preceded by an `editionType` guard (see `isGuardedEditionDynamicImport`). A
+ * dynamic import without an edition guard is NOT exempt — it would load Team code even in a
+ * Solo run. `precedingLines` is the source lines above `line`, used to verify the guard.
+ */
+export function isEditionLeakImport(
+  repoPath: string,
+  line: string,
+  precedingLines: string[] = [],
+): boolean {
+  const sourceTier = editionTierOfPath(repoPath);
+  if (sourceTier === null) return false;
+  if (
+    repoPath.includes("/tests/") ||
+    repoPath.includes("/testing/") ||
+    repoPath.endsWith("_test.ts") ||
+    repoPath.endsWith(".test.ts")
+  ) {
+    return false;
+  }
+  // type-only imports are erased at compile time and never enter a bundle.
+  if (/^\s*import\s+type\b/.test(line)) return false;
+  // the only sanctioned upper-edition value reference: an edition-GUARDED dynamic import.
+  if (isGuardedEditionDynamicImport(repoPath, line, precedingLines)) return false;
+
+  const specMatch = line.match(/(?:from|import)\s*\(?\s*["']([^"']+)["']/);
+  const specifier = specMatch?.[1];
+  if (!specifier) return false;
+
+  const targetTier = editionTierOfSpecifier(specifier);
+  if (targetTier === null) return false;
+  return targetTier > sourceTier;
+}
+
 function discoverPackageTestingAliases(): Map<string, string> {
   const aliases = new Map<string, string>();
   const packagesDir = join(REPO_ROOT, "packages");
@@ -484,19 +641,10 @@ const rules: Rule[] = [
     severity: "error" as const,
     pathFilter: (path: string) => !path.includes("/tests/") && !path.endsWith(".test.ts") && !path.endsWith("_test.ts"),
   },
-  {
-    name: "mit-team-import",
-    regex: /from\s+["'][^"']*(?:@exaix-team\/|packages-team\/)[^"']*["']/,
-    message: "Source files under packages/ must not import from packages-team/. " +
-      "Move shared interfaces to packages/core/types/ or add a rule exclusion with rationale.",
-    severity: "error" as const,
-    pathFilter: (path: string) =>
-      path.startsWith("packages/") &&
-      !path.includes("/tests/") &&
-      !path.includes("/testing/") &&
-      !path.endsWith(".test.ts") &&
-      !path.endsWith("_test.ts"),
-  },
+  // NOTE: the former [mit-team-import] regex rule (packages/ must not import packages-team/)
+  // is superseded by the [edition-leak] check in checkFile(), which enforces the full tier
+  // model (MIT < Team < Enterprise) across packages/, apps/, and packages-team/ with
+  // type-only + edition-gated-dynamic exemptions. See isEditionLeakImport().
   {
     name: "edition-conditional-outside-composer",
     // Forbid edition conditionals (edition ===, edition !==, EXAIX_EDITION)
@@ -765,6 +913,37 @@ async function checkFile(path: string) {
       }
 
       const relativePath = path.startsWith(REPO_ROOT) ? path.slice(REPO_ROOT.length + 1) : path;
+
+      // Functional deployable modules (packages/, packages-team/, apps/) must not depend on
+      // the tests/ folder — it is excluded from a deployed workspace, so such an import breaks
+      // a deployed exactl/daemon at module load (the EvalSqliteStore-under-tests/ layering bug).
+      {
+        const prodImportMatch = line.match(/from\s+["']([^"']+)["']/) ||
+          line.match(/^\s*import\s+["']([^"']+)["']/);
+        const prodImportPath = prodImportMatch?.[1];
+        if (prodImportPath && isProductionToTestsImport(relativePath, prodImportPath)) {
+          console.log(
+            `ERROR [package-tests-boundary] ${relativePath}:${
+              idx + 1
+            } – Functional deployable module must not import from the tests/ folder: '${prodImportPath}'. Move shared code into a package under packages/ (test code is excluded from a deployed workspace).`,
+          );
+          errorCount++;
+        }
+      }
+
+      // Edition separation: a lower-edition module (MIT packages/+apps/ < Team packages-team/ <
+      // Enterprise exaix-enterprise/) must not import a higher-edition one — it leaks the higher
+      // edition's source/build into the lower one (the Team-into-Solo deploy/bundle leak). The
+      // only allowed cross-tier reference is an edition-gated dynamic import in a dispatch entry.
+      if (isEditionLeakImport(relativePath, line, lines.slice(0, idx))) {
+        console.log(
+          `ERROR [edition-leak] ${relativePath}:${
+            idx + 1
+          } – Lower-edition module must not import a higher edition: '${line.trim()}'. A Solo/MIT build must not reference Team/Enterprise code. Use a type-only import for types, or an edition-gated (editionType-guarded) dynamic import() in a dispatch entry; otherwise extract the shared contract into packages/core.`,
+        );
+        errorCount++;
+      }
+
       if (relativePath.startsWith("packages/")) {
         const importMatch = line.match(/from\s+["']([^"']+)["']/) || line.match(/^\s*import\s+["']([^"']+)["']/);
         const importPath = importMatch?.[1];
@@ -1452,6 +1631,15 @@ async function checkFile(path: string) {
       }
       if (rule.regex.test(lineToTest)) {
         if (rule.name === "re-export-imported" && isPackageEntrypoint(path) && isSamePackageReExport(lineToTest)) {
+          return;
+        }
+        // Edition separation: an edition-gated `await import("@exaix-team/...")` in a
+        // dispatch entry point is the sanctioned mechanism that keeps Team code out of
+        // Solo builds. Exempt it from both the inside-statement and dynamic-import rules.
+        if (
+          (rule.name === "import-inside-statement" || rule.name === "dynamic-import") &&
+          isEditionGatedTeamDynamicImport(repoPath, lineToTest)
+        ) {
           return;
         }
         if (rule.severity === "warn") {

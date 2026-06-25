@@ -48,6 +48,10 @@ tests/scenario_framework/output/
 # --------------------------------------------
 # Runtime State (.exa/)
 # --------------------------------------------
+# .exa/ is a predefined Exaix runtime directory that is deployed (its structure may be
+# tracked); only its RUNTIME CONTENTS are ignored, never the directory itself. Scenario/
+# dogfood sandboxes deploy OUTSIDE the repo tree (sibling-of-repo default, or
+# EXA_SANDBOX_BASE), so these patterns are a backstop against stray runtime files only.
 .exa/*.db
 .exa/*.db-shm
 .exa/*.db-wal

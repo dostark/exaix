@@ -1,10 +1,11 @@
 /**
- * @module ScenarioFrameworkHistorySchema
- * @path tests/scenario_framework/schema/history_schema.ts
- * @description Defines the Zod schema for eval history JSONL entries
- * used by the scenario framework eval mode.
- * @architectural-layer Test
- * @related-files [tests/scenario_framework/runner/history_writer.ts, tests/scenario_framework/tests/unit/history_writer_test.ts]
+ * @module EvalHistorySchema
+ * @path packages/eval-history/src/history_schema.ts
+ * @description Defines the Zod schema for eval history JSONL entries used by the
+ * `exactl eval` command and the scenario-framework eval mode.
+ * @architectural-layer Shared
+ * @dependencies [zod, @exaix/core]
+ * @related-files [packages/eval-history/src/history_sqlite.ts, packages/eval-history/mod.ts]
  */
 
 import { z } from "zod";

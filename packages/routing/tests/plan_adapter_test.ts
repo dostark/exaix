@@ -65,3 +65,17 @@ ${validPlanJson}
   const plan = adapter.parse(markdownJson);
   assertEquals(plan.subject, "Create src/utils.ts with hello world function");
 });
+
+Deno.test("PlanAdapter: renders a fallback heading (not '# undefined') when the plan has no title or subject", () => {
+  // Both title and subject are now optional; a candidate may omit a name entirely. The
+  // markdown header must never render the literal "# undefined" — it falls back to subject,
+  // then to a stable "Untitled Plan" label.
+  const adapter = new PlanAdapter();
+  const plan = adapter.parse(JSON.stringify({
+    description: "A nameless plan",
+    steps: [{ step: 1, title: "Do it", description: "the thing" }],
+  }));
+  const markdown = adapter.toMarkdown(plan);
+  assertEquals(markdown.includes("# undefined"), false);
+  assertEquals(markdown.includes("# Untitled Plan"), true);
+});

@@ -14,6 +14,7 @@ import {
   ScenarioSchemaVersionSchema,
   ScenarioStepSchema,
 } from "./step_schema.ts";
+import { MatrixSchema } from "../runner/matrix_expander.ts";
 
 const NON_EMPTY_STRING = z.string().min(1);
 
@@ -28,6 +29,12 @@ export const ScenarioSchema = z.object({
   mode_support: z.array(z.nativeEnum(ScenarioExecutionMode)).min(1),
   portals: z.array(PortalMountSchema),
   steps: z.array(ScenarioStepSchema).min(1),
+  /**
+   * Phase 127 — additive `tool × provider` matrix block. When present, the runner
+   * expands the scenario into one cell-run per cell (see runner/matrix_expander.ts).
+   * Absent → the scenario runs exactly as before (backward-compatible).
+   */
+  matrix: MatrixSchema.optional(),
   edition: z.enum(["solo", "team", "enterprise"]).optional(),
   description: z.string().min(1).optional(),
   risk: z.string().min(1).optional(),

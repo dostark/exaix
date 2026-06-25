@@ -371,7 +371,7 @@ describe("PlanWriter - JSON Integration", () => {
   });
 
   describe("Subject Priority", () => {
-    it("should use agent subject if request subject is fallback", async () => {
+    it("keeps the request's subject even when it is a fallback (rule 3: subject is always the request's)", async () => {
       const agentResult: IAgentExecutionResult = {
         thought: "test",
         content: createJsonPlan("Agent Subject", "Desc"),
@@ -385,12 +385,14 @@ describe("PlanWriter - JSON Integration", () => {
         contextFiles: [],
         contextWarnings: [],
         subject: "Fallback Request Subject",
-        subjectIsFallback: true,
       };
 
       const result = await planWriter.writePlan(agentResult, metadata);
+      // The H1 is the plan's own title (the agent's name), but the plan's `subject` is the
+      // request's subject — NOT upgraded to the agent's title, even though it was a fallback.
       assertStringIncludes(result.content, "# Agent Subject");
-      assertEquals(result.subject, "Agent Subject");
+      assertEquals(result.subject, "Fallback Request Subject");
+      assertEquals(result.title, "Agent Subject");
     });
 
     it("should prefer explicit request subject over agent subject", async () => {
@@ -407,7 +409,6 @@ describe("PlanWriter - JSON Integration", () => {
         contextFiles: [],
         contextWarnings: [],
         subject: "Explicit Request Subject",
-        subjectIsFallback: false,
       };
 
       const result = await planWriter.writePlan(agentResult, metadata);

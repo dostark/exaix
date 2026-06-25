@@ -6,9 +6,10 @@
  */
 
 import { assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
+import { fromFileUrl, join } from "@std/path";
 
-const EXECUTION_README_PATH = join(Deno.cwd(), "packages/execution/README.md");
+const REPO_ROOT = fromFileUrl(new URL("../..", import.meta.url));
+const EXECUTION_README_PATH = join(REPO_ROOT, "packages/execution/README.md");
 
 async function readDoc(path: string): Promise<string> {
   return await Deno.readTextFile(path);

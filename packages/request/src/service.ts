@@ -97,7 +97,6 @@ export class RequestService {
       source,
       created_by,
       subject,
-      subject_is_fallback: !options.subject?.trim(),
     };
 
     if (portal) frontmatterFields.portal = portal;

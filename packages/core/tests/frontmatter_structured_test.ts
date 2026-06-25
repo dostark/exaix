@@ -130,7 +130,6 @@ Deno.test("[IRequestFrontmatter] existing fields unaffected by new additions", (
     portal: "/portal",
     model: "gpt-4o",
     subject: "Refactor module",
-    subject_is_fallback: false,
     assessed_at: "2024-01-01T01:00:00Z",
     clarification_session_path: "/Workspace/Active/req.clarification.json",
   };

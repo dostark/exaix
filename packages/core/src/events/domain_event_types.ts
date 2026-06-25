@@ -220,7 +220,14 @@ export const DomainEventType = {
 
   // Daemon lifecycle events (apps/daemon/main.ts, apps/exactl)
   DaemonStarting: "daemon.starting",
+  // daemon.started: emitted by the `exactl daemon start` CLI once the process is ALIVE (a PID
+  // check) — it does NOT mean the daemon's watchers are listening yet.
   DaemonStarted: "daemon.started",
+  // daemon.ready: emitted by the daemon process itself (apps/daemon/main.ts) ONLY after every
+  // file-watcher is confirmed listening — the authoritative "fully functioning" signal. A consumer
+  // that must not race the request watcher (e.g. before submitting a request) waits for THIS, not
+  // daemon.started.
+  DaemonReady: "daemon.ready",
   DaemonStopping: "daemon.stopping",
   DaemonStopped: "daemon.stopped",
   DaemonForceStopping: "daemon.force_stopping",

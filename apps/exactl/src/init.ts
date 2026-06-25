@@ -38,10 +38,12 @@ import { PlanService } from "@exaix/core/planning";
 import { PlanAmendmentService } from "@exaix/core/planning";
 import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstrap.ts";
 import { SoloComposer } from "@exaix/core/composer";
-// Team imports — resolved unconditionally from import map;
-// dead-code eliminated in Solo builds when editionType !== "team".
-import { bootstrapTeamProviders, TeamComposer } from "@exaix-team/team-composer";
-import { HitlPolicyEvaluator } from "@exaix-team/hitl";
+// Team modules are loaded dynamically ONLY inside the editionType !== "solo" branches
+// below, so a Solo build/binary never references @exaix-team/* at all (a static top-level
+// dependency would be bundled by `deno compile` even in Solo — defeating edition
+// separation). Type-only imports are erased at compile time and are safe to keep static.
+import type { TeamComposer } from "@exaix-team/team-composer";
+import type { HitlPolicyEvaluator } from "@exaix-team/hitl";
 
 // Adapters
 import {
@@ -139,6 +141,8 @@ export async function initializeServices(
     const editionType = Deno.env.get("EXAIX_EDITION") ?? EDITION_SOLO;
     let _editionComposer: SoloComposer | TeamComposer;
     if (editionType === EDITION_TEAM) {
+      // Dynamic import keeps @exaix-team/* out of the Solo build (edition separation).
+      const { bootstrapTeamProviders, TeamComposer } = await import("@exaix-team/team-composer");
       bootstrapTeamProviders();
       _editionComposer = new TeamComposer();
     } else {
@@ -196,10 +200,13 @@ export async function initializeServices(
       symbolExtractorRegistry: symbolRegistry,
     });
 
-    // Phase 118: Create HITL policy evaluator if Team/Enterprise edition
-    const hitlPolicyEvaluator = editionType !== EDITION_SOLO && cfg.hitl?.enabled
-      ? new HitlPolicyEvaluator(cfg.hitl.mandatory_rules)
-      : undefined;
+    // Phase 118: Create HITL policy evaluator if Team/Enterprise edition.
+    // Dynamic import keeps @exaix-team/hitl out of the Solo build (edition separation).
+    let hitlPolicyEvaluator: HitlPolicyEvaluator | undefined;
+    if (editionType !== EDITION_SOLO && cfg.hitl?.enabled) {
+      const { HitlPolicyEvaluator } = await import("@exaix-team/hitl");
+      hitlPolicyEvaluator = new HitlPolicyEvaluator(cfg.hitl.mandatory_rules);
+    }
 
     const toolRegistry = new ToolRegistry({
       config: cfg,

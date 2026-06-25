@@ -467,12 +467,12 @@ but runs on the daemon's own provider.
 
 The daemon ships four `[session_delegate]` presets:
 
-| Preset                   | Tool          | Provider   | File                              |
-| ------------------------ | ------------- | ---------- | --------------------------------- |
-| OpenCode (default)       | `opencode`    | direct     | `configs/dogfood.toml`            |
-| Claude Code (direct)     | `claude-code` | direct     | `configs/dogfood.claude.toml`     |
-| OpenCode + OpenRouter    | `opencode`    | openrouter | `configs/dogfood.openrouter.toml` |
-| Claude Code + OpenRouter | `claude-code` | openrouter | (compose yourself; see below)     |
+| Preset                   | Tool          | Provider   | File                                                 |
+| ------------------------ | ------------- | ---------- | ---------------------------------------------------- |
+| OpenCode (default)       | `opencode`    | direct     | `configs/dogfood.toml`                               |
+| Claude Code (direct)     | `claude-code` | direct     | `configs/dogfood.claude.toml`                        |
+| OpenCode + OpenRouter    | `opencode`    | openrouter | `configs/dogfood.openrouter.toml`                    |
+| Claude Code + OpenRouter | `claude-code` | openrouter | `configs/dogfood.claude.openrouter.toml` (Phase 127) |
 
 The `[session_delegate.provider]` block (Phase 123 R9) declares which API gateway a tool
 should use. When present, the daemon reads the key from `key_env` and injects it into
@@ -500,6 +500,41 @@ and `ANTHROPIC_API_KEY=""`. This is because Claude Code's OpenRouter support use
 the Anthropic-compatible endpoint with an auth token rather than the standard
 API-key header. The return is parsed from the single `{type:"result"}` JSON object
 that `claude --output-format json` emits.
+
+### 6.5 Running the `provider_live` delegate matrix (Phase 127)
+
+The four presets above are exercised end-to-end by a single parametrized scenario,
+`tests/scenario_framework/scenarios/provider_live/session_delegate_matrix_live.yaml`. It iterates the
+`tool × provider` cross-product; **each cell selects its provider realm by its `config` preset** (not
+an env var) and runs only when its binary + auth are present, otherwise it **skips cleanly** (no false
+reds). The pack is tagged `provider-live`, so it is omitted from CI auto-runs and executed on demand.
+
+Run the matrix (only the cells your environment supports will execute):
+
+```bash
+deno run -A tests/scenario_framework/runner/main.ts \
+  --scenario session-delegate-matrix-live \
+  --workspace /tmp/exa-matrix-ws --output /tmp/exa-matrix-out --mode auto
+```
+
+Per-cell requirements — a cell **skips** unless **all** of its predicates hold:
+
+| Cell (tool / provider)   | Binary on `PATH` | Required env / auth                                                      |
+| ------------------------ | ---------------- | ------------------------------------------------------------------------ |
+| opencode / direct        | `opencode`       | `EXA_MATRIX_OPENCODE=1` (opt-in; OpenCode auth lives in its `auth.json`) |
+| opencode / openrouter    | `opencode`       | `EXA_MATRIX_OPENCODE=1` **+** `OPENROUTER_API_KEY`                       |
+| claude-code / direct     | `claude`         | `ANTHROPIC_API_KEY`                                                      |
+| claude-code / openrouter | `claude`         | `OPENROUTER_API_KEY` (injected as the Anthropic-compatible trio above)   |
+
+> **Why the OpenCode opt-in?** OpenCode authenticates via its own `auth.json`, so there is no
+> API-key env var Exaix can probe to know auth is configured. Set `EXA_MATRIX_OPENCODE=1` to assert
+> "OpenCode is logged in" and enable its cells. The claude-code cells gate on the real provider key.
+>
+> **Live token-spend.** The deterministic matrix (parse + per-cell RUN/SKIP resolution) is proven and
+> CI-safe; a present cell additionally **spends provider tokens** when it boots a real delegate. The
+> end-to-end `session.delegate.reconciled` journal proof is run on demand (tracked as the LIVE-RT item
+> in the Phase 127 plan). A clean cell journals `session.delegate.reconciled`; an out-of-scope edit
+> journals `session.delegate.scope_violation` (asserted by the negative scenario).
 
 ---
 

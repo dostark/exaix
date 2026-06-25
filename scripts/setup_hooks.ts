@@ -66,6 +66,13 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# 3b. Edition-Leak Graph Gate (deno-info double-check of the [edition-leak] static rule)
+deno task check:edition-graph
+if [ $? -ne 0 ]; then
+  echo "❌ Error: Edition-leak graph gate failed (a static higher-tier import reached the resolved graph)."
+  exit 1
+fi
+
 # 4. Test Placement Check
 deno task check:test-placement
 if [ $? -ne 0 ]; then
