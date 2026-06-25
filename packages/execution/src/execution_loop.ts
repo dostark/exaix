@@ -90,7 +90,7 @@ export interface IExecutionLoopConfig {
    * agent without importing the concrete launcher (layer-boundary seam).
    * Phase 111 Step 8 wires the actual invocation.
    */
-  onCodeChangesDelegate?: (traceId: string, stepId: string) => Promise<string>;
+  onCodeChangesDelegate?: (traceId: string, stepId: string, worktreePath: string) => Promise<string>;
 }
 
 export interface IExecutionResult {
@@ -146,7 +146,7 @@ export class ExecutionLoop {
   private hitlPolicyEvaluator?: IHitlPolicyEvaluator;
   private confirmationInterceptor?: IToolConfirmationInterceptor;
   private hitlBlueprintRules?: HitlRule[];
-  private onCodeChangesDelegate?: (traceId: string, stepId: string) => Promise<string>;
+  private onCodeChangesDelegate?: (traceId: string, stepId: string, worktreePath: string) => Promise<string>;
 
   constructor(
     config: IExecutionLoopConfig,

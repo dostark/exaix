@@ -475,3 +475,40 @@ Deno.test("PlanExecutor: generates execution report", async () => {
     assertEquals(result.report, "This is a report analysis.");
   }, { ensureGit: false });
 });
+
+Deno.test("PlanExecutor: passes its executionRoot (worktree path) to the code-changes delegate", async () => {
+  // Regression for the LIVE-RT worktree-path mismatch (Layer 12): the delegate must be invoked
+  // with the REAL worktree path PlanExecutor was constructed with (its repoPath/executionRoot),
+  // so the daemon spawns `claude -p` in the directory the execution loop actually created —
+  // not a recomputed `Workspace/worktrees/<traceId>` that no one made.
+  await withPlanExecutorTestContext(
+    "plan-exec-delegate-worktree-",
+    async ({ repoDir, writeBlueprint, createExecutor }) => {
+      await writeBlueprint(BASIC_TEST_BLUEPRINT);
+
+      const received: { traceId?: string; stepId?: string; worktreePath?: string } = {};
+      const executor = createExecutor(new MockProvider("noop"), {
+        onCodeChangesDelegate: (traceId: string, stepId: string, worktreePath: string) => {
+          received.traceId = traceId;
+          received.stepId = stepId;
+          received.worktreePath = worktreePath;
+          return Promise.resolve("changes_made");
+        },
+      });
+
+      const context: IPlanContext = {
+        trace_id: "00000000-0000-0000-0000-0000000000aa",
+        request_id: "req-wt",
+        identity: "test-agent",
+        frontmatter: { trace_id: "00000000-0000-0000-0000-0000000000aa", request_id: "req-wt" },
+        steps: [{ number: 1, title: "Edit code", content: "Make a code change" }],
+      };
+
+      await executor.execute(join("/tmp", "unused_plan.md"), context);
+
+      // The delegate was invoked with the executor's real worktree root, not a recomputed path.
+      assertEquals(received.worktreePath, repoDir);
+      assertEquals(received.stepId, "1");
+    },
+  );
+});

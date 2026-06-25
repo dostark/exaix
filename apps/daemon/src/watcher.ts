@@ -42,6 +42,8 @@ export class FileWatcher {
   private onFileReady: (event: IFileReadyEvent) => void | Promise<void>;
   private abortController: AbortController | null = null;
   private fsWatcher: Deno.FsWatcher | null = null;
+  /** The detached consume-loop promise (set by start(), awaited by run()). */
+  private runPromise: Promise<void> = Promise.resolve();
   private logger: EventLogger;
   private extensions: string[];
 
@@ -72,28 +74,58 @@ export class FileWatcher {
   }
 
   /**
-   * Start watching the directory
+   * Establish the file-system watch and signal readiness. Returns once the watch is open and
+   * `watcher.started` has been journalled — NOT when watching ends. The consume-loop runs detached
+   * via `run()`, so callers awaiting `start()` know the watcher is genuinely listening (this lets
+   * the daemon emit `daemon.ready` only after every watcher is ready — no race window). To block
+   * until the watcher stops (e.g. to keep a process alive), await `run()` after `start()`.
    */
   async start(): Promise<void> {
     this.abortController = new AbortController();
 
+    let watcher: Deno.FsWatcher;
     try {
-      const watcher = Deno.watchFs(this.watchPath, {
-        recursive: false,
+      watcher = Deno.watchFs(this.watchPath, { recursive: false });
+    } catch (error) {
+      await this.logger.error(DomainEventType.WatcherError, this.watchPath, {
+        error_type: error instanceof Error ? error.constructor.name : DEFAULT_UNKNOWN_LABEL,
+        error_message: error instanceof Error ? error.message : String(error),
       });
-      this.fsWatcher = watcher;
+      if (error instanceof Deno.errors.NotFound) {
+        console.error(`❌ Watch directory not found: ${this.watchPath}`);
+        console.error(`   Create it with: mkdir -p "${this.watchPath}"`);
+      }
+      throw error;
+    }
+    this.fsWatcher = watcher;
 
-      await this.logger.log({
-        action: "watcher.started",
-        target: this.watchPath,
-        payload: {
-          debounce_ms: this.debounceMs,
-          stability_check: this.stabilityCheck,
-          extensions: this.extensions,
-        },
-        icon: "📁",
-      });
+    await this.logger.log({
+      action: "watcher.started",
+      target: this.watchPath,
+      payload: {
+        debounce_ms: this.debounceMs,
+        stability_check: this.stabilityCheck,
+        extensions: this.extensions,
+      },
+      icon: "📁",
+    });
 
+    // Carry the consume-loop detached so start() resolves at readiness. The loop's promise is
+    // retained so run() can await the same completion (used by long-lived hosts to stay alive).
+    this.runPromise = this.consume(watcher);
+  }
+
+  /**
+   * Resolves when the watcher's consume-loop ends (on stop / abort). Await this to keep a
+   * long-lived process alive after start(). Safe to call before start() (resolves immediately).
+   */
+  async run(): Promise<void> {
+    await this.runPromise;
+  }
+
+  /** The detached consume-loop: drain FS events until aborted, debouncing eligible files. */
+  private async consume(watcher: Deno.FsWatcher): Promise<void> {
+    try {
       for await (const event of watcher) {
         if (this.abortController?.signal.aborted) {
           break;
@@ -124,18 +156,14 @@ export class FileWatcher {
         }
       }
     } catch (error) {
-      // Log watcher error
+      // A close() during stop() surfaces here as a benign interruption — only log real errors.
+      if (this.abortController?.signal.aborted) {
+        return;
+      }
       await this.logger.error(DomainEventType.WatcherError, this.watchPath, {
         error_type: error instanceof Error ? error.constructor.name : DEFAULT_UNKNOWN_LABEL,
         error_message: error instanceof Error ? error.message : String(error),
       });
-
-      if (error instanceof Deno.errors.NotFound) {
-        // Console-only message for user guidance
-        console.error(`❌ Watch directory not found: ${this.watchPath}`);
-        console.error(`   Create it with: mkdir -p "${this.watchPath}"`);
-      }
-      throw error;
     }
   }
 

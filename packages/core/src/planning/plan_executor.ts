@@ -73,9 +73,11 @@ export interface IPlanExecutorOptions {
    * Optional callback invoked when a code-changes delegation result is
    * reconciled. PlanExecutor calls this to delegate code-change steps to a
    * foreign agent without importing the concrete launcher (layer-boundary seam).
-   * Phase 111 Step 7.
+   * `worktreePath` is PlanExecutor's executionRoot — the real git worktree the
+   * execution loop created — so the delegate spawns in the directory that exists
+   * (not a recomputed one). Phase 111 Step 7; LIVE-RT worktree-path fix.
    */
-  onCodeChangesDelegate?: (traceId: string, stepId: string) => Promise<string>;
+  onCodeChangesDelegate?: (traceId: string, stepId: string, worktreePath: string) => Promise<string>;
 }
 
 export interface IPlanActionReport {
@@ -373,7 +375,7 @@ export class PlanExecutor {
     if (!this.options.onCodeChangesDelegate) {
       return { skip: false };
     }
-    const delegateResult = await this.options.onCodeChangesDelegate(traceId, String(step.number));
+    const delegateResult = await this.options.onCodeChangesDelegate(traceId, String(step.number), this.repoPath);
     if (delegateResult === "changes_made") {
       return {
         skip: false,

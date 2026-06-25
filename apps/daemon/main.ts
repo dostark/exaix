@@ -662,11 +662,11 @@ if (import.meta.main) {
           error: error instanceof Error ? error.message : String(error),
         });
       }
-    });
+    }, { db: dbService });
 
     const onCodeChangesDelegate = _sessionDelegateService && _sessionWaitStore && _headlessLauncher &&
         config.session_delegate?.gates?.includes(GATE_CODE_CHANGES)
-      ? async (traceId: string, stepId: string): Promise<string> => {
+      ? async (traceId: string, stepId: string, worktreePath: string): Promise<string> => {
         const sd = config.session_delegate!;
         try {
           const brief = await _sessionDelegateService!.prepareBrief({
@@ -677,7 +677,9 @@ if (import.meta.main) {
             objective: `Execute step ${stepId}`,
             artifactRef: `trace:${traceId}/step:${stepId}`,
             permittedPaths: [`Workspace/**`],
-            worktreePath: join(config.system.root, config.paths.workspace, "worktrees", traceId),
+            // Use the REAL worktree the execution loop created (PlanExecutor's executionRoot),
+            // not a recomputed path — fixes the LIVE-RT "No such cwd" spawn failure (Layer 12).
+            worktreePath,
             tokenBudget: sd.token_budget ??
               { max_input_tokens: 50000, max_output_tokens: 50000, max_total_tokens: 100000 },
             deadline: new Date(Date.now() + 3_600_000).toISOString(),
@@ -815,7 +817,7 @@ if (import.meta.main) {
           );
         }
       },
-      { customWatchPath: activePath }, // Custom watch path
+      { customWatchPath: activePath, db: dbService }, // Custom watch path
     );
 
     // Dynamic Config Reloading (Task: Investigate missing portal logs)
@@ -826,6 +828,7 @@ if (import.meta.main) {
       {
         customWatchPath: config.system.root,
         extensions: [".toml"],
+        db: dbService,
       },
     );
 
@@ -871,8 +874,24 @@ if (import.meta.main) {
     // Register error handlers
     gracefulShutdown.registerErrorHandlers();
 
+    // Establish all watchers (start() returns once each FS watch is open and watcher.started is
+    // journalled — it does NOT block on the consume-loop). Awaiting these confirms every watcher
+    // is genuinely listening before we emit daemon.started, so that event is a true "fully
+    // functioning" readiness signal with no race window for a consumer that waits on it.
+    const fileWatchers = [requestWatcher, planWatcher, configWatcher];
+    await Promise.all(fileWatchers.map((w) => w.start()));
+
+    // SessionReturnWatcher.start() is a blocking consume-loop (its own design), so launch it
+    // detached and keep its promise for the long-lived await below — never await it for readiness.
+    const longLived = fileWatchers.map((w) => w.run());
+    if (sessionReturnWatcher) longLived.push(sessionReturnWatcher.start());
+
+    // daemon.ready (NOT daemon.started): the watchers above are confirmed listening, so this is the
+    // authoritative "fully functioning" signal. The CLI `daemon start` already emitted daemon.started
+    // on process-alive; emitting a distinct daemon.ready here avoids two same-named events and lets a
+    // consumer wait for genuine readiness (the request watcher is live) before submitting work.
     await logger.log({
-      action: DomainEventType.DaemonStarted,
+      action: DomainEventType.DaemonReady,
       target: "exaix",
       payload: {
         provider: providerInfo.id,
@@ -884,14 +903,9 @@ if (import.meta.main) {
       icon: "✅",
     });
 
-    // Start watching directories
-    const watchers = [
-      requestWatcher.start(),
-      planWatcher.start(),
-      configWatcher.start(),
-    ];
-    if (sessionReturnWatcher) watchers.push(sessionReturnWatcher.start());
-    await Promise.all(watchers);
+    // Keep the daemon alive on the detached consume-loops (this is the long-lived main loop;
+    // each resolves only when its watcher stops during graceful shutdown).
+    await Promise.all(longLived);
   } catch (error) {
     console.error("❌ Fatal Error:", error);
     Deno.exit(1);
