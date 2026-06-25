@@ -78,7 +78,6 @@ export class RequestCreateHandler extends BaseCommand {
         source,
         created_by,
         subject,
-        subject_is_fallback: !options.subject?.trim(),
       };
 
       this.addOptionalFrontmatterFields(frontmatterFields, options, portal);

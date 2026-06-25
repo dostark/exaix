@@ -806,7 +806,6 @@ export class RequestProcessor {
       portal: frontmatter.portal,
       targetBranch: frontmatter.target_branch,
       subject: frontmatter.subject,
-      subjectIsFallback: frontmatter.subject_is_fallback,
       requestAnalysis: analysis,
     };
 
@@ -1078,14 +1077,11 @@ Raw Details: ${args.rawDetails}
   ): Promise<string> {
     const planResult = await this.ioBreaker.execute(() => this.planWriter.writePlan(result, metadata));
 
-    // Update request status and potentially "upgrade" the subject if agent suggested a better one
-    // Only upgrade if the current subject was a fallback (not explicitly set by the user)
-    const extraRequestFields: Record<string, string> = {};
-    if (metadata.subjectIsFallback && planResult.subject && planResult.subject !== metadata.subject) {
-      extraRequestFields.subject = planResult.subject;
-    }
-
-    await this.statusManager.updateStatus(filePath, RequestStatus.PLANNED, undefined, extraRequestFields);
+    // Rule 3: the request's subject is NEVER overwritten by the agent's plan title — the request
+    // subject is authoritative and stable. The plan carries its own name in `title`; the request
+    // keeps its own subject. (Previously a fallback subject was "upgraded" to the agent title here;
+    // that cross-contamination is removed so subject and title stay distinct.)
+    await this.statusManager.updateStatus(filePath, RequestStatus.PLANNED, undefined);
 
     const logObj: LogMetadata = { plan_path: planResult.planPath, ...(extra ?? {}) };
     traceLogger.info(DomainEventType.RequestPlanned, filePath, logObj);

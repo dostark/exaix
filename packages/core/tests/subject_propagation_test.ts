@@ -101,9 +101,10 @@ Follow instructions
   }
 }
 
-Deno.test("RequestProcessor - Subject Propagation - Agent Upgrades Subject", async () => {
+Deno.test("RequestProcessor - Subject Propagation - request subject is never upgraded to the agent's", async () => {
   await withSubjectPropagationEnv(async ({ workspaceDir, requestsDir, blueprintsDir, db, config }) => {
-    // Mock LLM Response with a subject
+    // The agent suggests its own plan name, but rule 3 says the request subject is authoritative
+    // and is never overwritten by the agent's plan title — not even when it was a fallback.
     const agentSubject = "Refactor Database Schema";
     const mockProviderRaw = {
       id: "mock",
@@ -145,7 +146,7 @@ Deno.test("RequestProcessor - Subject Propagation - Agent Upgrades Subject", asy
       testProvider: mockProvider,
     });
 
-    // 1. Create a request with a fallback subject
+    // 1. Create a request whose subject was auto-derived (no explicit user subject)
     const requestId = "request-123";
     const requestFilePath = join(requestsDir, `${requestId}.md`);
     const initialSubject = "Initial Subject";
@@ -160,7 +161,6 @@ identity: "test-agent"
 source: RequestSource.CLI
 created_by: "user"
 subject: "${initialSubject}"
-subject_is_fallback: true
 ---
 
 Fix the database please.`,
@@ -170,14 +170,17 @@ Fix the database please.`,
     const planPath = await processor.process(requestFilePath);
     assertExists(planPath);
 
-    // 3. Verify the plan has the agent's subject in frontmatter
+    // 3. The plan's frontmatter subject is the REQUEST's subject, not the agent's plan title.
     const planContent = await Deno.readTextFile(planPath);
-    assertExists(planContent.match(new RegExp(`subject: ${agentSubject}`)));
+    assertExists(planContent.match(new RegExp(`subject: ${initialSubject}`)));
+    assertEquals(planContent.includes(`subject: ${agentSubject}`), false);
+    // The agent's name still appears as the plan's own title (H1), kept distinct from subject.
+    assertExists(planContent.match(new RegExp(`# ${agentSubject}`)));
 
-    // 4. Verify the request file was "upgraded" with the agent's subject
-    // StatusManager writes extra fields as quoted strings: subject: "Refactor Database Schema"
+    // 4. The request file's subject is NOT upgraded — it stays exactly what the request had.
     const updatedRequestContent = await Deno.readTextFile(requestFilePath);
-    assertExists(updatedRequestContent.match(new RegExp(`subject: "${agentSubject}"`)));
+    assertExists(updatedRequestContent.match(new RegExp(`subject: "${initialSubject}"`)));
+    assertEquals(updatedRequestContent.includes(`subject: "${agentSubject}"`), false);
   });
 });
 
@@ -232,7 +235,6 @@ identity: "test-agent"
 source: RequestSource.CLI
 created_by: "user"
 subject: "${explicitSubject}"
-subject_is_fallback: false
 ---
 
 Request content.`,

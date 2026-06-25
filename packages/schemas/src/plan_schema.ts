@@ -139,8 +139,16 @@ const QAE2ECaseSchema = z.object({
  * Enhanced to support specialized agent outputs (analysis, security, QA, performance)
  */
 export const PlanSchema = z.object({
-  /** Mnemonic name for the plan (max 80 chars) */
-  subject: z.string().min(1).max(80),
+  /**
+   * Plan name. `title` is the canonical, industry-standard, LLM-native field (every blueprint
+   * instructs it, and models emit it naturally). `subject` is accepted as a legacy alias and is
+   * surfaced onto `title` by the transform below ONLY when `title` is absent. Both are fully
+   * optional and NEITHER is required: a plan candidate may omit a name entirely, and the
+   * plan-writer supplies the originating request's subject onto the plan downstream
+   * (plan_writer.ts), independent of the candidate. (max 80 chars)
+   */
+  title: z.string().min(1).max(80).optional(),
+  subject: z.string().min(1).max(80).optional(),
 
   /** Overall plan description */
   description: z.string().min(1),
@@ -287,6 +295,14 @@ export const PlanSchema = z.object({
 }, {
   message:
     "Plan must contain either 'steps' for execution plans or at least one specialized field (analysis, security, qa, performance) for analysis reports",
+}).transform((data) => {
+  // `title` is the plan candidate's own name (what agents emit, industry-standard); `subject` is
+  // a legacy alias. BOTH are optional — neither is required, because the plan-writer supplies the
+  // originating request's subject onto the plan downstream (plan_writer.ts), independent of what
+  // the candidate carries. As a convenience, when only the legacy `subject` was supplied as the
+  // name, surface it as `title` too so consumers that read the canonical name get a value —
+  // WITHOUT clobbering the distinct `subject`. When both are absent, both stay undefined.
+  return data.title === undefined && data.subject !== undefined ? { ...data, title: data.subject } : data;
 });
 
 export type Plan = z.infer<typeof PlanSchema>;

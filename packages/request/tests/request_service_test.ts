@@ -101,14 +101,17 @@ Deno.test("RequestService.create: uses provided options", async () => {
   }
 });
 
-Deno.test("RequestService.create: subject_is_fallback when no explicit subject", async () => {
+Deno.test("RequestService.create: derives the subject from the description when none is given", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "req-svc-fallback-" });
   try {
     const service = createTestRequestService(tempDir);
     const metadata = await service.create("Test description");
 
     const content = await Deno.readTextFile(metadata.path!);
-    assertEquals(content.includes("subject_is_fallback: true"), true);
+    // No explicit subject → the first line of the description becomes the subject. The legacy
+    // `subject_is_fallback` flag is gone (the request subject is authoritative; never upgraded).
+    assertEquals(content.includes("subject: Test description"), true);
+    assertEquals(content.includes("subject_is_fallback"), false);
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});
   }

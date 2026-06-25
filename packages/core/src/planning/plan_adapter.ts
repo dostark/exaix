@@ -104,7 +104,7 @@ Your response in the <content> section MUST be a valid JSON object matching this
 ${schemaDesc}
 
 Common Requirements:
-- "subject": string (1-80 chars, summary describing the goal)
+- "title": string (1-80 chars, the plan name / summary describing the goal)
 - "description": string
 - "steps": array of objects (if this is an execution plan)
 - analysis, security, qa, performance: objects (if this is an analysis report)
@@ -139,8 +139,11 @@ Ensure you use valid JSON syntax (no trailing commas, double quotes for keys).
    * Render the plan header with title, description, duration, and risks
    */
   private renderPlanHeader(plan: Plan): string[] {
+    // title and subject are both optional; never render the literal "# undefined". Fall back to
+    // the legacy subject, then to a stable label so the markdown always has a valid H1.
+    const headerName = plan.title ?? plan.subject ?? "Untitled Plan";
     const sections = [
-      `# ${plan.subject}`,
+      `# ${headerName}`,
       "",
       plan.description,
       "",

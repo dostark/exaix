@@ -191,6 +191,60 @@ describe("PlanStepSchema", () => {
 });
 
 describe("PlanSchema", () => {
+  describe("Plan name field (title canonical, subject alias)", () => {
+    const baseSteps = [{ step: 1, title: "Do it", description: "the thing" }];
+
+    it("accepts `title` (the industry-standard, LLM-native field) and exposes it as .title", () => {
+      const result = PlanSchema.safeParse({
+        title: "Add GREETING constant",
+        description: "A minimal edit",
+        steps: baseSteps,
+      });
+      assertEquals(result.success, true);
+      if (result.success) assertEquals(result.data.title, "Add GREETING constant");
+    });
+
+    it("accepts legacy `subject` as an alias and normalizes it to .title", () => {
+      const result = PlanSchema.safeParse({
+        subject: "Legacy named plan",
+        description: "Older blueprints emit subject",
+        steps: baseSteps,
+      });
+      assertEquals(result.success, true);
+      if (result.success) assertEquals(result.data.title, "Legacy named plan");
+    });
+
+    it("preserves `title` as-is and keeps a distinct `subject` when both are present", () => {
+      const result = PlanSchema.safeParse({
+        title: "Canonical",
+        subject: "Alias",
+        description: "both supplied",
+        steps: baseSteps,
+      });
+      assertEquals(result.success, true);
+      if (result.success) {
+        // title is the plan candidate's own name, preserved untouched.
+        assertEquals(result.data.title, "Canonical");
+        // subject is NOT clobbered by the title transform — the two stay distinct.
+        assertEquals(result.data.subject, "Alias");
+      }
+    });
+
+    it("accepts a plan with neither title nor subject (both are optional)", () => {
+      // Neither field is required by the schema: the plan candidate may omit a name and
+      // the plan-writer supplies the request subject downstream (see plan_writer.ts).
+      const result = PlanSchema.safeParse({
+        description: "no name at all",
+        steps: baseSteps,
+      });
+      assertEquals(result.success, true);
+      if (result.success) {
+        assertEquals(result.data.title, undefined);
+        assertEquals(result.data.subject, undefined);
+      }
+    });
+  });
+
   describe("Valid Plans", () => {
     it("should validate plan with all optional fields", () => {
       const planData = {
@@ -223,7 +277,7 @@ describe("PlanSchema", () => {
       assertEquals(result.success, true);
       if (result.success) {
         const plan: Plan = result.data;
-        assertEquals(plan.subject, "Implement Authentication System");
+        assertEquals(plan.title, "Implement Authentication System");
         assertEquals(plan.steps?.length, 2);
         assertEquals(plan.estimatedDuration, "2-3 hours");
         assertEquals(plan.risks?.length, 2);
@@ -255,9 +309,9 @@ describe("PlanSchema", () => {
   });
 
   describe("Invalid Plans", () => {
-    it("should reject plan with missing subject", () => {
+    it("accepts a plan with no title and no subject (name is optional; writer supplies subject)", () => {
       const planData = {
-        description: "Missing subject",
+        description: "Missing name",
         steps: [
           {
             step: 1,
@@ -268,11 +322,10 @@ describe("PlanSchema", () => {
       };
 
       const result = PlanSchema.safeParse(planData);
-      assertEquals(result.success, false);
-      if (!result.success) {
-        const errors = result.error as ZodError;
-        const subjectError = errors.errors.find((e) => e.path.includes("subject"));
-        assertExists(subjectError);
+      assertEquals(result.success, true);
+      if (result.success) {
+        assertEquals(result.data.title, undefined);
+        assertEquals(result.data.subject, undefined);
       }
     });
 

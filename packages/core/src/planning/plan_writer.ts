@@ -37,7 +37,6 @@ export interface IRequestMetadata {
   portal?: string;
   targetBranch?: string;
   subject?: string;
-  subjectIsFallback?: boolean;
   requestAnalysis?: IRequestAnalysis;
 }
 
@@ -54,7 +53,10 @@ export interface IPlanWriteResult {
   planPath: string;
   content: string;
   writtenAt: Date;
+  /** The request's subject, carried onto the plan to keep the plan↔request visual link. */
   subject?: string;
+  /** The plan's own name, as produced by the agent (PlanSchema `title`). */
+  title?: string;
 }
 
 export interface IAgentExecutionResult {
@@ -126,8 +128,9 @@ export class PlanWriter {
     let writeResult: IPlanWriteResult;
 
     await pipeline.execute(context, async () => {
-      // Generate plan content (with JSON validation)
-      const { content, subject } = await this.formatPlan(result, metadata);
+      // Generate plan content (with JSON validation). `title` is the plan's own name (agent-produced);
+      // `subject` is the request subject carried onto the plan to keep the plan↔request visual link.
+      const { content, subject, title } = await this.formatPlan(result, metadata);
 
       // Generate filename: request-id_plan.md
       const filename = this.generateFilename(metadata.requestId);
@@ -146,6 +149,7 @@ export class PlanWriter {
         content,
         writtenAt,
         subject,
+        title,
       };
     });
 
@@ -159,16 +163,16 @@ export class PlanWriter {
   private async formatPlan(
     result: IAgentExecutionResult,
     metadata: IRequestMetadata,
-  ): Promise<{ content: string; subject?: string }> {
+  ): Promise<{ content: string; subject?: string; title?: string }> {
     const sections: string[] = [];
 
     // 2. Validate and convert JSON plan to markdown
     let planMarkdown: string;
-    let agentSubject: string | undefined;
+    let agentTitle: string | undefined;
     try {
       const plan = this.adapter.parse(result.content);
       planMarkdown = this.adapter.toMarkdown(plan);
-      agentSubject = plan.subject;
+      agentTitle = plan.title;
 
       // Log validation success
       await this.logPlanValidation(
@@ -210,11 +214,10 @@ export class PlanWriter {
     // 1. Frontmatter (now potentially with upgraded subject)
     const tokenSummary = await this.getTokenUsageSummary(metadata.traceId);
 
-    // Priority: Explicit user subject > Agent subject > Fallback subject
-    // We treat metadata.subject as "explicit" unless subjectIsFallback is true
-    const finalSubject = (metadata.subjectIsFallback && agentSubject)
-      ? agentSubject
-      : (metadata.subject || agentSubject);
+    // Rule 3: the plan's `subject` is ALWAYS the originating request's subject — never overwritten
+    // by the agent's plan title, even when the request subject was a fallback. `subject` and `title`
+    // stay distinct: `subject` back-links to the request, `agentTitle` is the plan's own name.
+    const finalSubject = metadata.subject;
     sections.push(this.generateFrontmatter({ ...metadata, subject: finalSubject }, tokenSummary));
 
     // Log successful parsing
@@ -247,6 +250,7 @@ export class PlanWriter {
     return {
       content: sections.join("\n"),
       subject: finalSubject,
+      title: agentTitle,
     };
   }
 
