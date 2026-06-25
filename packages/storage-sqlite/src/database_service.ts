@@ -13,12 +13,40 @@ import { ensureDirSync } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";
 import { DB_MAX_RETRY_DELAY_MS, DEFAULT_QUERY_LIMIT } from "@exaix/core";
+import { isTestMode } from "@exaix/core/config";
 import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService, IJournalFilterOptions } from "@exaix/core/types";
 import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
 export type SqliteParam = string | number | boolean | null;
+
+/**
+ * The `activity` journal table DDL — mirrors migrations/001_init.sql. Applied by the constructor
+ * ONLY in test mode (production creates it via migrations). All statements are IF NOT EXISTS so it
+ * is idempotent and safe to run against an already-migrated DB.
+ */
+const ACTIVITY_TABLE_DDL = `
+  CREATE TABLE IF NOT EXISTS activity (
+    id TEXT PRIMARY KEY,
+    trace_id TEXT NOT NULL,
+    actor TEXT NOT NULL,
+    actor_type TEXT,
+    identity_id TEXT,
+    agent_kind TEXT,
+    action_type TEXT NOT NULL,
+    target TEXT,
+    payload TEXT NOT NULL,
+    prompt_tokens INTEGER DEFAULT 0,
+    completion_tokens INTEGER DEFAULT 0,
+    cost_usd REAL DEFAULT 0.0,
+    timestamp DATETIME DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_activity_trace ON activity(trace_id);
+  CREATE INDEX IF NOT EXISTS idx_activity_time ON activity(timestamp);
+  CREATE INDEX IF NOT EXISTS idx_activity_actor ON activity(actor);
+  CREATE INDEX IF NOT EXISTS idx_activity_identity ON activity(identity_id);
+`;
 
 /**
  * Columns of the `activity` table that may be used as a SQL identifier (e.g. the
@@ -117,9 +145,21 @@ export class DatabaseService implements IDatabaseService {
     ensureDirSync(dbDir);
 
     this.db = new Database(dbPath);
+    // Set busy_timeout FIRST: switching journal_mode acquires a write lock, and on a daemon
+    // restart the previous process's WAL lock can linger for a beat. Without a busy timeout the
+    // very first `PRAGMA journal_mode` fails immediately with "database is locked" and the daemon
+    // dies on boot. With it, the switch waits out the transient lock instead.
+    this.db.exec(`PRAGMA busy_timeout = ${config.database.sqlite.busy_timeout_ms};`);
     this.db.exec(`PRAGMA journal_mode = ${config.database.sqlite.journal_mode};`);
     this.db.exec(`PRAGMA foreign_keys = ${config.database.sqlite.foreign_keys ? "ON" : "OFF"};`);
-    this.db.exec(`PRAGMA busy_timeout = ${config.database.sqlite.busy_timeout_ms};`);
+
+    // In test mode, ensure the production-shaped `activity` table exists. Production creates it
+    // via migrations (setup_db) before the daemon starts; test-mode journals have no such step,
+    // so without this a fresh test DB / test-mode daemon hits "no such table: activity". Gated on
+    // isTestMode() so production still relies on migrations (no silent schema creation in prod).
+    if (isTestMode()) {
+      this.db.exec(ACTIVITY_TABLE_DDL);
+    }
 
     this.FLUSH_INTERVAL_MS = config.database.batch_flush_ms;
     this.MAX_BATCH_SIZE = config.database.batch_max_size;

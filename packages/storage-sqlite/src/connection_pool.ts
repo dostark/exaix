@@ -128,11 +128,12 @@ export class DatabaseConnectionPool {
     const dbPath = join(this.config.system.root, this.config.paths.runtime, "journal.db");
     const db = new Database(dbPath);
 
+    // Set busy_timeout FIRST so the journal_mode switch (which takes a write lock) waits out a
+    // transient lock from another connection instead of failing immediately with "database is locked".
+    await db.exec(`PRAGMA busy_timeout = ${DEFAULT_DATABASE_BUSY_TIMEOUT_MS};`);
     // Enable WAL mode for concurrency
     await db.exec("PRAGMA journal_mode = WAL;");
     await db.exec("PRAGMA foreign_keys = ON;");
-    // Set busy timeout to 5000ms to handle concurrency
-    await db.exec(`PRAGMA busy_timeout = ${DEFAULT_DATABASE_BUSY_TIMEOUT_MS};`);
 
     return await new SQLiteConnection(db, this.config);
   }

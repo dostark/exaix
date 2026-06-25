@@ -58,6 +58,29 @@ sequenceDiagram
     PA->>P: Write _plan.md
 ```
 
+## Plan Naming: `subject` vs `title`
+
+A plan carries **two distinct, independent name fields**. They are deliberately not merged — each answers a different question, and one must never silently overwrite the other.
+
+| Field     | Meaning                                             | Owner / source                              |
+| --------- | --------------------------------------------------- | ------------------------------------------- |
+| `title`   | The plan's **own name** (what the plan _is_)        | The agent/LLM (the plan candidate it emits) |
+| `subject` | The **originating request's** subject (a back-link) | The request — carried onto the plan, as-is  |
+
+### Rules
+
+1. **Schema** (`@exaix/schemas` `PlanSchema`, `packages/schemas/src/plan_schema.ts`): both `title` and `subject` are **optional — neither is required**. A plan candidate may omit a name entirely. As a convenience, when only the legacy `subject` is supplied, it is surfaced onto `title`; a present `title` is preserved as-is, and a distinct `subject` is never clobbered.
+2. **`title` is preserved** exactly as the plan candidate produced it.
+3. **`subject` is always the originating request's subject** (`PlanWriter`, `@exaix/core/src/planning/plan_writer.ts:formatPlan`). It is **never** "upgraded" to the agent's plan title — not even when the request's subject was auto-derived from the description. The request subject is authoritative and is never rewritten by the processor (`src/processor.ts:writePlanAndReturnPath`).
+
+When the request has no explicit subject, one is derived from the first line of the description at request-creation time (`src/service.ts`); that derived value then behaves like any other request subject (authoritative, never overwritten).
+
+### Rendering
+
+The plan markdown H1 uses `title`, falling back to `subject`, then to `Untitled Plan` (`@exaix/core/src/planning/plan_adapter.ts:renderPlanHeader`) — so a nameless plan never renders `# undefined`. UI/printouts that want a human-readable label should read `title` (with the same fallback), not mutate `subject`.
+
+> Historical note: an earlier model carried a `subject_is_fallback` flag that "upgraded" a fallback request subject to the agent's plan title. That cross-contamination has been removed — `subject` and `title` are now strictly independent.
+
 ## Request Analysis Layer
 
 ### Analysis Modes
