@@ -10,7 +10,7 @@
  */
 
 /** SemVer of the exactl binary and Exaix daemon. */
-export const BINARY_VERSION = "1.0.3";
+export const BINARY_VERSION = "1.0.4";
 
 /**
  * SemVer of the deployed workspace structure (config schema, SQLite tables, folder layout).
