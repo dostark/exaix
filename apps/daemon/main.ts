@@ -124,6 +124,24 @@ if (import.meta.main) {
     // Initialize GracefulShutdown service
     const gracefulShutdown = new GracefulShutdown(logger);
 
+    // Register signal handlers EARLY so SIGTERM during slow startup (e.g. CI)
+    // goes through graceful shutdown (which flushes the journal queue) instead of
+    // the default handler (immediate exit, queue lost). Cleanup tasks registered
+    // later (watchers, auto-approval) are no-ops if their services haven't started.
+    gracefulShutdown.registerSignalHandlers();
+    gracefulShutdown.registerErrorHandlers();
+
+    // Register DB close early so it runs even if SIGTERM arrives during startup.
+    // The handler is idempotent — calling close() a second time is a no-op.
+    gracefulShutdown.registerCleanup("close_database", async () => {
+      dbService.close();
+      await logger.info(
+        DomainEventType.ShutdownDatabaseClosed,
+        "journal.db",
+        {},
+      );
+    });
+
     await logger.log({
       action: DomainEventType.DaemonStarting,
       target: "exaix",
@@ -858,21 +876,6 @@ if (import.meta.main) {
         {},
       );
     });
-
-    gracefulShutdown.registerCleanup("close_database", async () => {
-      dbService.close();
-      await logger.info(
-        DomainEventType.ShutdownDatabaseClosed,
-        "journal.db",
-        {},
-      );
-    });
-
-    // Register signal handlers
-    gracefulShutdown.registerSignalHandlers();
-
-    // Register error handlers
-    gracefulShutdown.registerErrorHandlers();
 
     // Establish all watchers (start() returns once each FS watch is open and watcher.started is
     // journalled — it does NOT block on the consume-loop). Awaiting these confirms every watcher
