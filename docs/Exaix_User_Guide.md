@@ -1100,7 +1100,7 @@ $ exactl review approve implement-auth
 When you run `exactl review list`, reviews whose execution trace contains
 anomaly-relevant events display a severity badge:
 
-```
+```text
 ⚠️ 1 anomaly (0 high, 1 medium, 0 low)
 ```
 
@@ -1120,7 +1120,7 @@ at the list level.
 When you run `exactl review show`, an "Execution anomalies" section lists each
 individual finding with its severity, target, and event type:
 
-```
+```text
 📋 Review: implement-auth
 
 ...
@@ -1130,7 +1130,7 @@ Execution anomalies:
 
 A recovered failure is annotated with `recovered: true`:
 
-```
+```text
 medium  build-step  (execution.action_failed, recovered: true)
 ```
 

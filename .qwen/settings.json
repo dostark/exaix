@@ -2,6 +2,7 @@
   "skills": [
     ".qwen/skills/clean-codebase",
     ".qwen/skills/commit",
+    ".qwen/skills/comparative-analysis",
     ".qwen/skills/coverage",
     ".qwen/skills/doc",
     ".qwen/skills/edition-development",

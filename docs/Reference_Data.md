@@ -657,7 +657,7 @@ The `exactl watch` command renders milestone events (`type: "milestone"`) with:
 
 Example output:
 
-```
+```text
 [14:30:00] ★ milestone: flow.started — Flow started
 [14:30:01] ★ milestone: flow.step.started — Step 1 started [0/2 Step 1]
 [14:30:02] ★ milestone: flow.step.completed — Step 1 completed [1/2 Step 1]

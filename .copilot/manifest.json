@@ -147,6 +147,13 @@
       ]
     },
     {
+      "path": ".copilot/prompts/comparative-analysis.prompt.md",
+      "short_summary": "",
+      "chunks": [
+        ".copilot/chunks/comparative-analysis.prompt.md.chunk0.txt"
+      ]
+    },
+    {
       "path": ".copilot/prompts/coverage.prompt.md",
       "short_summary": "",
       "chunks": [
@@ -897,6 +904,32 @@
         ".copilot/chunks/SKILL.md.chunk2.txt",
         ".copilot/chunks/SKILL.md.chunk3.txt",
         ".copilot/chunks/SKILL.md.chunk4.txt"
+      ]
+    },
+    {
+      "path": ".copilot/skills/comparative-analysis/SKILL.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Comparative Analysis Skill (#comparative-analysis)",
+      "short_summary": "Systematic comparative analysis of Exaix vs any competitor/product — differentiator identification, feature matrix, gap analysis, positioning recommendations. Requires mandatory pre-analysis comprehension of ARCHITECTURE.md, GLOSSARY.md, White Paper, and System Architecture Diagram.",
+      "version": "1.0.0",
+      "topics": [
+        "comparative-analysis",
+        "competitive-intelligence",
+        "gap-analysis",
+        "positioning",
+        "strategy"
+      ],
+      "qwen_skill": "comparative-analysis",
+      "chunks": [
+        ".copilot/chunks/SKILL.md.chunk0.txt",
+        ".copilot/chunks/SKILL.md.chunk1.txt",
+        ".copilot/chunks/SKILL.md.chunk2.txt",
+        ".copilot/chunks/SKILL.md.chunk3.txt",
+        ".copilot/chunks/SKILL.md.chunk4.txt",
+        ".copilot/chunks/SKILL.md.chunk5.txt",
+        ".copilot/chunks/SKILL.md.chunk6.txt",
+        ".copilot/chunks/SKILL.md.chunk7.txt"
       ]
     },
     {

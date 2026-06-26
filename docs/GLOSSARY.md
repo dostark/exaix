@@ -309,7 +309,7 @@ event `target` field and is defined by the `RECOVERY_PAIRINGS` constant in
 Shown by `exactl review list` when a review's trace has live anomalies
 (high + medium + low > 0). Format:
 
-```
+```text
 ⚠️ N anomalies (X high, Y medium, Z low)
 ```
 

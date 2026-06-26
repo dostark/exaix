@@ -625,6 +625,42 @@ For the security features table (runtime supervision, permission boundaries, tra
 
 For core interfaces, tool confirmation interceptor flow, blueprint schema extensions, and flow step configuration, see `packages/mcp/README.md`.
 
+### Container Sandbox
+
+Because the runtime requires `--allow-ffi` (for `@db/sqlite`'s native library), the Deno permission model cannot provide OS-level process containment — an in-process escape via FFI bypasses language-level permissions. The **container sandbox** is the authoritative containment boundary for agent execution. Three artifacts ship with the repo:
+
+| Artifact            | Location                          | Purpose                                                                                                                    |
+| ------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **Dockerfile**      | `Dockerfile`                      | Multi-stage build that produces the hardened runtime image                                                                 |
+| **Dev container**   | `.devcontainer/devcontainer.json` | Development sandbox with VS Code integration, delegate CLIs, and the `builder` stage                                       |
+| **Compose sandbox** | `compose.sandbox.yaml`            | Hardened runtime profile: read-only rootfs, `cap_drop: ALL`, `no-new-privileges`, resource limits, isolated bridge network |
+
+**Dockerfile structure** — two stages:
+
+- **`builder`** (`denoland/deno:2.8.2`): vendors the module graph via `deno cache`, warms the SQLite FFI native library so the runtime container can run with restricted egress (no GitHub access needed at startup), and installs Node.js + delegate CLI tools (`@anthropic-ai/claude-code`, `opencode`) for headless agent integration tests and dogfooding.
+- **`runtime`** (`denoland/deno:2.8.2`): minimal toolset (git, ca-certificates; no node/npm), dedicated non-root user (uid/gid 10001), scoped Deno permissions as defense-in-depth only, and the SQLite native lib pre-warmed from the builder stage.
+
+**Compose sandbox hardening:**
+
+```yaml
+user: "10001:10001"
+read_only: true
+cap_drop: [ALL]
+security_opt: [no-new-privileges:true]
+tmpfs: [/tmp:rw, noexec, nosuid, size=256m]
+pids_limit: 512
+mem_limit: 2g
+cpus: 2.0
+```
+
+The container mounts only the workspace and portal directories needed for agent execution, and attaches to an isolated `exaix-egress` bridge network. Even a full in-process escape (e.g. via the SQLite FFI) is confined to these mounts and the allowlisted egress — it cannot reach the host or other containers.
+
+**Dev container** (`devcontainer.json`) targets the `builder` stage so developers get the full toolchain (Deno, delegate CLIs, VS Code deno extension). It runs as the `deno` user with `--cap-drop=ALL` and `--security-opt=no-new-privileges:true`. The `postCreateCommand` verifies Deno, Claude Code, and OpenCode are all available.
+
+**Relationship to the architecture:** The container sandbox is **orthogonal** to portal isolation (invariant 4). Portal isolation controls _which files_ an agent can read/write via Deno permissions and `PathResolver`. The container sandbox controls _what OS-level resources_ the process can access. Together they provide defense in depth: portal isolation handles path-level access control, the container handles process-level containment.
+
+For installation and usage instructions, see `exaix-dev-docs/dev/Exaix_Developer_Setup.md`. For the vulnerability analysis that motivated this design, see `exaix-dev-docs/dev/Exaix_Security_Vulnerability_Analysis.md` §Security Fix 2.
+
 ---
 
 ## Tool Result Validation & Discovery

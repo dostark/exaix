@@ -23,12 +23,13 @@ Each wrapper contains only `name` and `description` frontmatter, plus a routing 
 
 ## 1-to-1 skill ↔ prompt contract
 
-Every file in this directory must have a corresponding `.copilot/skills/<name>/SKILL.md`. There are currently 21 prompts, one per skill:
+Every file in this directory must have a corresponding `.copilot/skills/<name>/SKILL.md`. There are currently 22 prompts, one per skill:
 
 | Prompt                           | Canonical skill                         |
 | -------------------------------- | --------------------------------------- |
 | `clean-codebase.prompt.md`       | `.copilot/skills/clean-codebase/`       |
 | `commit.prompt.md`               | `.copilot/skills/commit/`               |
+| `comparative-analysis.prompt.md` | `.copilot/skills/comparative-analysis/` |
 | `coverage.prompt.md`             | `.copilot/skills/coverage/`             |
 | `doc.prompt.md`                  | `.copilot/skills/doc/`                  |
 | `edition-development.prompt.md`  | `.copilot/skills/edition-development/`  |
