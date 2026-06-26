@@ -19,6 +19,8 @@ import { checkScope } from "./scope_checker.ts";
 export interface IOpencodePermissionConfig {
   config: OpencodeConfig;
   configPath: string;
+  /** The agent key used in the generated config. */
+  agentKey: string;
 }
 
 export function buildOpencodePermissionConfig(
@@ -74,5 +76,5 @@ export async function generateOpencodePermissionConfig(
   await Deno.writeTextFile(tmpPath, JSON.stringify(config, null, 2));
   await Deno.rename(tmpPath, resolvedPath);
 
-  return { config, configPath: resolvedPath };
+  return { config, configPath: resolvedPath, agentKey: DOGFOOD_CODER_IDENTITY_ID };
 }

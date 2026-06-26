@@ -194,5 +194,13 @@ export const SessionDelegateConfigSchema = z.object({
   bin_overrides: z.array(z.string()).optional(),
   /** Declarative delegate provider block: routes the tool through a specific API gateway. */
   provider: SessionDelegateProviderSchema.optional(),
+  /**
+   * Enable delegate permission hardening (Phase 128 R3). When true:
+   * - OpenCode: generates a confined opencode.jsonc agent permission block
+   * - Claude Code: derives --permission-mode + --allowedTools flags
+   * - Version probe warns on unsupported tool versions
+   * Default false (opt-in). Feature is gated behind this flag.
+   */
+  harden_permissions: z.boolean().default(false),
 });
 export type SessionDelegateConfig = z.infer<typeof SessionDelegateConfigSchema>;

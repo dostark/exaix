@@ -67,6 +67,9 @@ export class HeadlessSessionLauncher {
     const parentEnv = Deno.env.toObject();
     const sanitizedEnv = sanitizeChildEnv(launch.env, parentEnv);
     const childEnv = delegateProviderEnv ? mergeDelegateEnv(sanitizedEnv, delegateProviderEnv) : sanitizedEnv;
+    if (launch.configPath) {
+      childEnv.OPENCODE_CONFIG = launch.configPath;
+    }
     assertBinaryAllowed(launch.command, this.deps.allowlist);
 
     const spawn = this.deps.spawn ?? ((args: ISpawnArgs) =>

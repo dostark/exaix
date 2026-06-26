@@ -40,3 +40,6 @@ tool = "opencode"
 model = "deepseek-v4-flash"
 gates = ["code_changes"]
 launch_mode = "headless"
+# Phase 128 R3: auto-generate a confined opencode.jsonc agent permission block
+# derived from SessionBrief.permitted_paths.
+harden_permissions = true

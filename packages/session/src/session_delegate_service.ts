@@ -12,6 +12,9 @@
 
 import { dirname, join } from "@std/path";
 import {
+  DOGFOOD_CODER_IDENTITY_ID,
+  MINIMUM_VERSION_CLAUDE_CODE,
+  MINIMUM_VERSION_OPENCODE,
   PROVIDER_ANTHROPIC,
   PROVIDER_OLLAMA,
   PROVIDER_OPENROUTER,
@@ -26,14 +29,19 @@ import type {
   SessionTool,
 } from "@exaix/schemas/session_delegate.ts";
 import { PathSecurity } from "@exaix/tool-runtime";
+import type { PathResolver } from "@exaix/portal";
 import type { ISessionLaunch } from "./i_session_adapter.ts";
 import type { SessionAdapterRegistry } from "./session_adapter_registry.ts";
 import type {
+  IHardenedLaunchResult,
   IPrepareBriefInput,
   ISessionClock,
   ISessionDelegateService,
   ISessionPathSafety,
 } from "./i_session_delegate.ts";
+import { deriveClaudeToolFlags } from "./claude_permission_flags.ts";
+import { generateOpencodePermissionConfig } from "./opencode_permission_generator.ts";
+import { probeDelegateVersion } from "./delegate_version_probe.ts";
 
 /** Dependencies for SessionDelegateService (constructor DI, all Config-free). */
 export interface ISessionDelegateServiceDeps {
@@ -43,6 +51,13 @@ export interface ISessionDelegateServiceDeps {
   sessionDir: string;
   /** Defaults to defaultSessionPathSafety. */
   pathSafety?: ISessionPathSafety;
+  /**
+   * PathResolver for resolving @Runtime paths for generated permission configs
+   * (Phase 128 R3 Step 5). Required when harden_permissions is true.
+   * Optional to avoid breaking existing callers that don't use permission
+   * hardening.
+   */
+  pathResolver?: PathResolver;
 }
 
 const BRIEF_FILE = "brief.json";
@@ -128,6 +143,41 @@ export class SessionDelegateService implements ISessionDelegateService {
     return this.deps.registry
       .resolve(brief.tool)
       .buildLaunch(brief, mode, this.briefPathFor(brief.trace_id));
+  }
+
+  async resolveHardenedLaunch(
+    brief: SessionBrief,
+    mode: SessionLaunchMode,
+    _config: SessionDelegateConfig,
+  ): Promise<IHardenedLaunchResult> {
+    const adapter = this.deps.registry.resolve(brief.tool);
+    const launch = adapter.buildLaunch(brief, mode, this.briefPathFor(brief.trace_id));
+
+    const minVersion = brief.tool === TOOL_OPENCODE ? MINIMUM_VERSION_OPENCODE : MINIMUM_VERSION_CLAUDE_CODE;
+    await probeDelegateVersion(launch.command, minVersion);
+
+    let agentNameMismatch = false;
+
+    if (brief.tool === TOOL_OPENCODE) {
+      if (!this.deps.pathResolver) {
+        throw new Error(
+          "resolveHardenedLaunch requires pathResolver in deps for OpenCode permission config generation",
+        );
+      }
+      const permConfig = await generateOpencodePermissionConfig(
+        brief.permitted_paths,
+        brief.worktree_path ?? dirname(this.briefPathFor(brief.trace_id)),
+        this.deps.pathResolver,
+        brief.trace_id,
+      );
+      launch.configPath = permConfig.configPath;
+      agentNameMismatch = permConfig.agentKey !== DOGFOOD_CODER_IDENTITY_ID;
+    } else if (brief.tool === TOOL_CLAUDE_CODE) {
+      const flags = deriveClaudeToolFlags(brief);
+      launch.args.push(...flags);
+    }
+
+    return { launch, agentNameMismatch };
   }
 
   resolveDelegateEnv(

@@ -80,6 +80,9 @@ export const DomainEventType = {
   SessionDelegateExpired: "session.delegate.expired", // Phase 111: wait-state deadline sweep
   SessionDelegateCancelled: "session.delegate.cancelled", // Phase 111: exactl session cancel
 
+  // Phase 128: delegate permission-hardening events
+  SessionDelegateAgentMismatch: "session.delegate.agent_mismatch", // R3: generated agent.<name> key diverges from delegate identity
+
   // Phase 121: net allowlist instrumentation
   NetAllowlist: "net.allowlist",
   // Phase 121: crash recovery for orphaned delegations

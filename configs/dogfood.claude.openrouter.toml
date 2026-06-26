@@ -48,6 +48,7 @@ tool = "claude-code"
 model = "claude-sonnet-4-20250514"
 gates = ["code_changes"]
 launch_mode = "headless"
+harden_permissions = true
 
 [session_delegate.provider]
 name = "openrouter"

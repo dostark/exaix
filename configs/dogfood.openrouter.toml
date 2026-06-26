@@ -38,6 +38,7 @@ tool = "opencode"
 model = "deepseek-v4-flash"
 gates = ["code_changes"]
 launch_mode = "headless"
+harden_permissions = true
 
 [session_delegate.provider]
 name = "openrouter"
