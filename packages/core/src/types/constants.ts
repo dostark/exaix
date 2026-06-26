@@ -1615,6 +1615,12 @@ export const SESSION_OUTPUT_FORMAT_JSON = "json";
 /** Headless model selector: `claude --model <m>` / `opencode run --model <m>` (Phase 122 Step 0b). */
 export const SESSION_FLAG_MODEL = "--model";
 
+/** Claude Code permission-mode flag (Phase 128 R3 Step 3). */
+export const SESSION_FLAG_PERMISSION_MODE = "--permission-mode";
+
+/** Claude Code allowed-tools flag (Phase 128 R3 Step 3). */
+export const SESSION_FLAG_ALLOWED_TOOLS = "--allowedTools";
+
 /** Default binary names per built-in session adapter (override via config). */
 export const SESSION_BIN_CLAUDE_CODE = "claude";
 export const SESSION_BIN_OPENCODE = "opencode";
@@ -1623,7 +1629,6 @@ export const SESSION_BIN_VSCODE = "code";
 
 /** Dogfood-coder identity ID — source of truth for the machine name used in OpenCode agent config keys (Phase 128 R3 Step 4). Must match `Blueprints/Identities/dogfood-coder.md:identity_id`. */
 export const DOGFOOD_CODER_IDENTITY_ID = "dogfood-coder";
-
 /**
  * Minimum supported versions for delegate tool permission-hardening features
  * (Phase 128 R3). Below these, the tool may not support --permission-mode /

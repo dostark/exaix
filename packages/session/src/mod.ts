@@ -54,6 +54,7 @@ import { sessionReturnToCostRecord } from "./cost_mapping.ts";
 import type { ISessionCostInput } from "./cost_mapping.ts";
 import { buildOpencodePermissionConfig, generateOpencodePermissionConfig } from "./opencode_permission_generator.ts";
 import type { IOpencodePermissionConfig } from "./opencode_permission_generator.ts";
+import { deriveClaudeToolFlags } from "./claude_permission_flags.ts";
 import { resolveSessionDelegateConfig } from "./config_resolver.ts";
 import type { ISessionDelegateScopes } from "./config_resolver.ts";
 import type { ISessionDelegateEventPayload } from "./event_payload.ts";
@@ -85,6 +86,7 @@ export {
 export type { IAmendmentDecisionInput, IRefinementClarificationInput, IReviewDecisionPatch };
 export { assertBinaryAllowed, sanitizeChildEnv };
 export { defaultSpawnVersion, probeDelegateVersion };
+export { deriveClaudeToolFlags };
 export type { IDelegateVersionProbeDeps, IDelegateVersionResult };
 export { parseDelegateStdout };
 export type { IDelegateParsedReturn };
