@@ -5,7 +5,7 @@
  * Used for E2E test verification and debugging milestone streams (Phase 92).
  * @architectural-layer Services
  * @dependencies [@exaix/schemas]
- * @related-files [packages/core/src/observability/milestone_emitter.ts, tests/integration/46_milestone_streaming_e2e_test.ts]
+ * @related-files [packages/core/src/observability/milestone_emitter.ts, tests/integration/flow_milestone_streaming_e2e_test.ts]
  */
 
 import type { IExecutionMilestone } from "@exaix/schemas";

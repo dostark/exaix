@@ -4,6 +4,35 @@ Integration tests exercise multiple Exaix packages with real wiring. They live
 under `tests/integration/` and **must** use the shared `TestEnvironment` helper
 at `tests/integration/helpers/test_environment.ts`.
 
+## File Naming Convention
+
+Test file names follow this structure:
+
+```
+{domain}_{feature}_{type}_test.ts
+```
+
+- **domain** — the system or area under test (e.g. `dogfood`, `delegation`, `portal`, `daemon`, `quality_gate`)
+- **feature** — the specific scenario or capability (e.g. `smoke`, `e2e`, `crash_recovery`, `net_policy_enforcement`)
+- **type** (optional) — distinguishes files that would otherwise collide (e.g. `e2e`, `smoke`, `regression`)
+
+**Rules:**
+
+1. **No number prefixes.** The deprecated `NN_description_test.ts` pattern (`01_happy_path_test.ts`) is replaced by descriptive names. Number prefixes do not indicate ordering or priority; use the name itself to convey purpose.
+2. **Domain first, then specificity.** Start with the broad area, narrow down. This groups related files together alphabetically.
+3. **Lowercase with underscores** (`_`). No hyphens, no mixed case.
+
+**Examples:**
+
+| ✅ Good                                   | ❌ Bad                               |
+| ----------------------------------------- | ------------------------------------ |
+| `dogfood_smoke_test.ts`                   | `01_happy_path_test.ts`              |
+| `portal_multilang_extraction_e2e_test.ts` | `NN_description_test.ts`             |
+| `quality_gate_e2e_test.ts`                | `description_without_domain_test.ts` |
+| `daemon_net_policy_enforcement_test.ts`   | `misc_test.ts`                       |
+
+All existing files have been renamed to follow this convention. New tests **must not** use number prefixes.
+
 ## Mandatory Rule: Use `TestEnvironment`
 
 Every integration test **must** scaffold its workspace through
