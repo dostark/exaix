@@ -113,7 +113,7 @@ async function readJournalOrdered(configPath: string): Promise<IOrderedEvent[]> 
 
 Deno.test({
   name: "[daemon_readiness] watcher.started is persisted to the journal DB (Bug 1)",
-  ignore: Deno.env.get("EXA_RUN_DAEMON_TESTS") !== "1",
+  ignore: Deno.env.get("CI") === "true",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -139,7 +139,7 @@ Deno.test({
 Deno.test({
   name:
     "[daemon_readiness] the daemon emits daemon.ready (not daemon.started) AFTER watcher.started — a true readiness signal (Bug 2)",
-  ignore: Deno.env.get("EXA_RUN_DAEMON_TESTS") !== "1",
+  ignore: Deno.env.get("CI") === "true",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
