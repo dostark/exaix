@@ -82,6 +82,7 @@ export const DomainEventType = {
 
   // Phase 128: delegate permission-hardening events
   SessionDelegateAgentMismatch: "session.delegate.agent_mismatch", // R3: generated agent.<name> key diverges from delegate identity
+  SessionDelegateVersionWarning: "session.delegate.version_warning", // R3 post-gap: version probe below minimum
 
   // Phase 121: net allowlist instrumentation
   NetAllowlist: "net.allowlist",

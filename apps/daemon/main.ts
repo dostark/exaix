@@ -628,6 +628,12 @@ if (import.meta.main) {
                   tool: sd.tool,
                 });
               }
+              if (hardened.versionWarning) {
+                await logger.warn(DomainEventType.SessionDelegateVersionWarning, traceId, {
+                  warning: hardened.versionWarning,
+                  tool: sd.tool,
+                });
+              }
               launch = hardened.launch;
             } else {
               launch = _sessionDelegateService!.resolveLaunch(brief, LAUNCH_MODE_HEADLESS);
@@ -742,6 +748,12 @@ if (import.meta.main) {
               );
               if (hardened.agentNameMismatch) {
                 await logger.info(DomainEventType.SessionDelegateAgentMismatch, traceId, {
+                  tool: sd.tool,
+                });
+              }
+              if (hardened.versionWarning) {
+                await logger.warn(DomainEventType.SessionDelegateVersionWarning, traceId, {
+                  warning: hardened.versionWarning,
                   tool: sd.tool,
                 });
               }

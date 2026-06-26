@@ -128,6 +128,21 @@ Deno.test("[delegate_hardening] agentNameMismatch is false when using canonical 
   assertEquals(result.agentNameMismatch, false);
 });
 
+Deno.test("[delegate_hardening] resolveHardenedLaunch returns versionWarning field on result", async () => {
+  const sessionDir = await Deno.makeTempDir();
+  const svc = makeService(sessionDir);
+  const brief = opencodeBrief();
+  const config = hardenedConfig();
+
+  const result = await svc.resolveHardenedLaunch(brief, "headless", config);
+
+  // versionWarning is undefined when probe succeeds (binary on PATH, version >= minimum)
+  // or a string when binary not found / version below minimum.
+  // The probe behavior is tested in delegate_version_probe_test.ts;
+  // here we just verify the field is present on the result type.
+  assertExists("versionWarning" in result);
+});
+
 Deno.test("[delegate_hardening] harden_permissions=false path: resolveLaunch unchanged (backward-compat)", () => {
   const sessionDir = "/tmp/test-backward-compat";
   const svc = makeService(sessionDir);

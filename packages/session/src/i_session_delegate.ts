@@ -58,6 +58,11 @@ export interface IHardenedLaunchResult {
   launch: ISessionLaunch;
   /** If true, the generated agent.<name> key mismatches the delegate identity. */
   agentNameMismatch: boolean;
+  /**
+   * Warning from the version probe when the delegate binary is below the
+   * minimum supported version. Undefined when the probe is clean.
+   */
+  versionWarning?: string;
 }
 
 /** Package-pure orchestration of the brief/launch half of the contract. */
