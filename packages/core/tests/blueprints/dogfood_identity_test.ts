@@ -12,7 +12,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { BlueprintLoader } from "@exaix/core/blueprint";
-import { McpToolName } from "@exaix/core/types";
+import { DOGFOOD_CODER_IDENTITY_ID, McpToolName } from "@exaix/core/types";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
 const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Identities");
@@ -89,4 +89,15 @@ Deno.test("[dogfood-identity] loads without Zod error through BlueprintLoader", 
   assertEquals(typeof blueprint.identityId, "string");
   assertEquals(typeof blueprint.name, "string");
   assertEquals(typeof blueprint.frontmatter.model, "string");
+});
+
+Deno.test("[dogfood_identity] OpenCode agent key equals the dogfood-coder identity name", async () => {
+  const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const blueprint = await loader.load("dogfood-coder");
+  assertExists(blueprint);
+  assertEquals(
+    DOGFOOD_CODER_IDENTITY_ID,
+    blueprint.frontmatter.identity_id,
+    "DOGFOOD_CODER_IDENTITY_ID must match Blueprints/Identities/dogfood-coder.md:identity_id",
+  );
 });
