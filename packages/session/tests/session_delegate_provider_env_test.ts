@@ -26,6 +26,7 @@ function configWithProvider(
     tool: "opencode" as SessionTool,
     gates: ["code_changes"],
     launch_mode: "headless" as const,
+    harden_permissions: false,
     provider: { name: overrides.name, key_env: overrides.key_env, base_url: overrides.base_url },
   } as SessionDelegateConfig;
 }
@@ -37,6 +38,7 @@ Deno.test("[session_delegate_env] no provider block returns empty env", () => {
     tool: "opencode",
     gates: ["code_changes"],
     launch_mode: "headless",
+    harden_permissions: false,
   };
   const env = svc.resolveDelegateEnv(config, "opencode", "my-key");
   assertEquals(env, {});

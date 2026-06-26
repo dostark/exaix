@@ -66,6 +66,7 @@ import { createOnReconciledHandler } from "./src/on_reconciled_dispatcher.ts";
 import { SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
 import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adapter_registry.ts";
 import type { SessionGate, SessionTool } from "@exaix/schemas/session_delegate.ts";
+import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
 import {
   SESSION_BIN_CLAUDE_CODE,
   SESSION_BIN_CURSOR,
@@ -414,17 +415,22 @@ if (import.meta.main) {
           s === "refinement" || s === "plan_review" || s === "code_changes" || s === "review"
         )
         : [GATE_REFINEMENT, GATE_PLAN_REVIEW];
+      const envHardenRaw = Deno.env.get("EXA_SESSION_DELEGATE_HARDEN_PERMISSIONS");
+      const envHarden = envHardenRaw === "true";
+
       if (!config.session_delegate) {
         config.session_delegate = {
           enabled: true,
           tool: (envTool as SessionTool) ?? "claude-code",
           gates: envGates,
           launch_mode: LAUNCH_MODE_HEADLESS,
+          harden_permissions: envHarden,
           bin_overrides: Deno.env.get("EXA_SESSION_DELEGATE_BIN_OVERRIDES")?.split(",").map((s) => s.trim()) ?? [],
         };
       } else {
         config.session_delegate.enabled = true;
         config.session_delegate.gates = envGates;
+        config.session_delegate.harden_permissions = envHarden;
         if (envTool) {
           config.session_delegate.tool = envTool as SessionTool;
         }
@@ -610,7 +616,22 @@ if (import.meta.main) {
           if (state.status !== "pending") throw new Error("failed to park refinement wait state");
 
           if (sd.launch_mode === LAUNCH_MODE_HEADLESS && _headlessLauncher) {
-            const launch = _sessionDelegateService!.resolveLaunch(brief, LAUNCH_MODE_HEADLESS);
+            let launch: ISessionLaunch;
+            if (sd.harden_permissions) {
+              const hardened = await _sessionDelegateService!.resolveHardenedLaunch(
+                brief,
+                LAUNCH_MODE_HEADLESS,
+                sd,
+              );
+              if (hardened.agentNameMismatch) {
+                await logger.info(DomainEventType.SessionDelegateAgentMismatch, traceId, {
+                  tool: sd.tool,
+                });
+              }
+              launch = hardened.launch;
+            } else {
+              launch = _sessionDelegateService!.resolveLaunch(brief, LAUNCH_MODE_HEADLESS);
+            }
             let delegateProviderEnv: Record<string, string> | undefined;
             if (sd.provider) {
               const apiKey = Deno.env.get(sd.provider.key_env);
@@ -712,7 +733,22 @@ if (import.meta.main) {
           }
 
           if (sd.launch_mode === LAUNCH_MODE_HEADLESS) {
-            const launch = _sessionDelegateService!.resolveLaunch(brief, LAUNCH_MODE_HEADLESS);
+            let launch: ISessionLaunch;
+            if (sd.harden_permissions) {
+              const hardened = await _sessionDelegateService!.resolveHardenedLaunch(
+                brief,
+                LAUNCH_MODE_HEADLESS,
+                sd,
+              );
+              if (hardened.agentNameMismatch) {
+                await logger.info(DomainEventType.SessionDelegateAgentMismatch, traceId, {
+                  tool: sd.tool,
+                });
+              }
+              launch = hardened.launch;
+            } else {
+              launch = _sessionDelegateService!.resolveLaunch(brief, LAUNCH_MODE_HEADLESS);
+            }
             let delegateProviderEnv: Record<string, string> | undefined;
             if (sd.provider) {
               const apiKey = Deno.env.get(sd.provider.key_env);

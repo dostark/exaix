@@ -536,6 +536,48 @@ Per-cell requirements — a cell **skips** unless **all** of its predicates hold
 > in the Phase 127 plan). A clean cell journals `session.delegate.reconciled`; an out-of-scope edit
 > journals `session.delegate.scope_violation` (asserted by the negative scenario).
 
+### 6.6 Delegate Permission Hardening (Phase 128)
+
+When `[session_delegate].harden_permissions = true`, the daemon generates a per-tool pre-flight
+permission config from the brief's `permitted_paths` before launching the delegate:
+
+**OpenCode** — generates an `opencode.jsonc` at runtime with an `agent.<dogfood-coder>`
+permission block:
+
+```jsonc
+{
+  "agent": {
+    "dogfood-coder": {
+      "permission": {
+        "edit": { "*": "deny", "src/**": "allow" },
+        "external_directory": { "**": "deny" },
+        "bash": { "*": "deny" }
+      }
+    }
+  }
+}
+```
+
+The config path is injected via the `OPENCODE_CONFIG` environment variable. The delegate can
+only edit paths in its `permitted_paths` — the tool enforces this pre-flight, before the
+post-hoc `checkScope` runs.
+
+**Claude Code** — appends `--permission-mode acceptEdits` and a scoped `--allowedTools` list
+(e.g. `Read,Edit,Bash(git *)`) to the launch args. Path confinement for Claude Code relies on
+the worktree checkout boundary + post-hoc `checkScope` — Claude Code has no per-path edit
+allowlist flag, so the pre-flight grant is weaker than OpenCode's.
+
+**Version probe:** `probeDelegateVersion` checks the binary version before launch and warns
+if below the minimum (OpenCode ≥ 1.0.0, Claude Code ≥ 2.0.0).
+
+**Identity reconciliation:** the agent key in the generated config (`dogfood-coder`) is asserted
+against `Blueprints/Identities/dogfood-coder.md:identity_id` by a drift test, so the two cannot
+diverge.
+
+**E2E scenario:** `session-delegate-hardening-active-live` in `tests/scenario_framework/scenarios/provider_live/`
+validates the pre-flight guard structurally. Source wiring is complete; run against a real daemon
+on demand (requires sandbox deployment, tagged `provider-live`).
+
 ---
 
 ## 7. Configuration

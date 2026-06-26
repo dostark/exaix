@@ -18,6 +18,7 @@ import type {
   SessionTokenBudget,
   SessionTool,
 } from "@exaix/schemas/session_delegate.ts";
+import type { PathResolver } from "@exaix/portal";
 import type { ISessionLaunch } from "./i_session_adapter.ts";
 
 /** Monotonic clock seam so deadlines are deterministic under test. */
@@ -52,12 +53,31 @@ export interface IPrepareBriefInput {
   deadline?: string;
 }
 
+/** Result of a hardened-launch resolution (Phase 128 R3 Step 5). */
+export interface IHardenedLaunchResult {
+  launch: ISessionLaunch;
+  /** If true, the generated agent.<name> key mismatches the delegate identity. */
+  agentNameMismatch: boolean;
+}
+
 /** Package-pure orchestration of the brief/launch half of the contract. */
 export interface ISessionDelegateService {
   /** Materialize Session/{traceId}/brief.json atomically and return the brief. */
   prepareBrief(input: IPrepareBriefInput): Promise<SessionBrief>;
   /** Resolve the per-tool adapter and build a launch for the brief. */
   resolveLaunch(brief: SessionBrief, mode: SessionLaunchMode): ISessionLaunch;
+  /**
+   * Resolve a hardened launch with permission hardening (Phase 128 R3).
+   * Only supported for headless mode. Uses the version probe + per-tool
+   * permission generator when brief.tool is opencode or claude-code.
+   * Returns the launch descriptor and any agent-name mismatch info.
+   */
+  resolveHardenedLaunch(
+    brief: SessionBrief,
+    mode: SessionLaunchMode,
+    config: SessionDelegateConfig,
+    pathResolver: PathResolver,
+  ): Promise<IHardenedLaunchResult>;
   /**
    * Resolve the delegate provider env for a given config + tool combo.
    * Reads no env vars itself (package-pure); the caller (main.ts) resolves

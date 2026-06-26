@@ -28,7 +28,7 @@ function ret(model?: string): SessionReturn {
 }
 
 function cfg(tool: SessionDelegateConfig["tool"]): SessionDelegateConfig {
-  return { enabled: true, tool, gates: ["code_changes"], launch_mode: "advisory" };
+  return { enabled: true, tool, gates: ["code_changes"], launch_mode: "advisory", harden_permissions: false };
 }
 
 Deno.test("[cost_mapping] GAP-6 — maps token_stats to a session cost record with a USD sentinel", () => {

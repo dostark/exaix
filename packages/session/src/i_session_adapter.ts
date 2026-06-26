@@ -26,6 +26,12 @@ export interface ISessionLaunch {
   cwd: string;
   /** Additive token-budget env vars only — provider secrets are never included. */
   env: Record<string, string>;
+  /**
+   * Optional path to a generated OpenCode permission config (opencode.jsonc).
+   * When set (OpenCode tool), HeadlessSessionLauncher injects OPENCODE_CONFIG
+   * env var pointing to this path. Phase 128 R3.
+   */
+  configPath?: string;
 }
 
 /** Per-tool launch strategy, registered in the SessionAdapterRegistry. */

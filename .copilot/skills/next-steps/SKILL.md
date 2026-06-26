@@ -26,6 +26,7 @@ Key points
 - Never skip ahead — complete and commit each step before starting the next
 - If interrupted mid-step, re-read the RED/GREEN evidence in the chat to determine which phase you are in before proceeding
 - Use focused, file-scoped test commands by default; reserve full-suite commands for massive changes or explicit user requests
+- **All tests implemented in a step MUST be executed and pass before the step can be reported as completed.** This applies to unit tests, integration tests, and scenario/E2E tests alike. Scenario YAML or test files that have only been written (parsed, type-checked) but not run against a real environment do NOT count as passing tests. A step that introduces tests cannot claim completion until those tests are run and green.
 - When reading plan references across more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue
 - **Reachability ledger (lives IN THE PLANNING DOC)**: a step that adds a symbol with NO production importer appends a row to a **Reachability Ledger** table kept in the planning doc itself — not just chat/commit, so the debt survives context compaction and is visible to anyone reading the plan. Each later step that wires an item closes its row in the same commit. The PHASE cannot be marked complete while any row is still ⏳ — see VERIFY step 11, the ledger template (step 24a), and the Phase-completion gate. A green package-unit test proves correctness, NOT that production calls the code; the test is the only caller.
 
@@ -134,9 +135,21 @@ REFACTOR + CI gates
   21. (exception only) See Validation policy above for when a full-suite command is warranted.
 
 Planning doc update
-  22. In the step's "Success criteria" block change `- [ ]` → `- [x]` for each
-      criterion now met.
-  23. Change each planned-test bullet `- \`...\`` → `- ✅ \`...\``
+   21a. **Run every test the step implements.** Before marking any success criterion or
+        planned test as completed, execute every test file written or modified in this
+        step and verify it passes. For unit tests: `deno test --allow-all <file>`.
+        For scenario/E2E YAML tests: run the scenario against a real environment
+        (daemon + real tool binaries) and assert all steps pass. A test that has only
+        been parsed, type-checked, or structurally validated (e.g. "YAML parses correctly")
+        but not executed against a live runtime does NOT satisfy this gate.
+        If the environment required to run an E2E test is unavailable (missing provider
+        keys, missing binary, no daemon), the success criteria that depend on that test
+        remain `[ ]` and the step status must reflect the gap — do NOT mark criteria as
+        completed based on source-level validation alone.
+   22. In the step's "Success criteria" block change `- [ ]` → `- [x]` for each
+       criterion now met (only after ALL its tests have been run and pass).
+   23. Change each planned-test bullet `- \`...\`` → `- ✅ \`...\`` (only after the
+       test has been executed and passes).
   24. Add a status line immediately after the test list, using the marker that
       reflects REACHABILITY (not merely "I wrote the code"):
         - **✅ WIRED** — `<src path>`, N/N tests passing, reached by `<production call-site file:Symbol>`
@@ -196,8 +209,14 @@ PHASE-COMPLETION GATE (run ONCE, after the last step, BEFORE declaring the phase
       a unit test of the gated component in isolation. "Enabling the flag does nothing"
       is a blocking failure.
   G4. If G1–G3 fail: do NOT close the phase. Either implement the missing wiring as
-      additional steps in this phase, or pause and surface the production-dead set to
-      the user with the explicit statement that the feature would ship non-functional.
+       additional steps in this phase, or pause and surface the production-dead set to
+       the user with the explicit statement that the feature would ship non-functional.
+  G5. **Every test the phase implemented must have been executed and passed.** For each
+      step in the phase, verify that every test file written or modified in that step
+      was actually run (not just parsed) and produced a passing result. Scenario/E2E
+      tests that exist only as structurally-validated YAML but were never executed
+      against a real daemon are BLOCKING — the phase cannot be closed until they pass
+      or are explicitly waived by the user.
 
 Do / Don't
 - ✅ Do write the test file BEFORE the source file (RED must come first)
@@ -225,6 +244,8 @@ Do / Don't
 - ❌ Don't accept a green package-unit test as evidence a runtime success criterion is met — the test is the only caller; it proves correctness, not reachability
 - ❌ Don't defer wiring to "follow-ups" or an unnamed future step — re-sequence so it lands in this phase, or surface it to the user
 - ❌ Don't put a bare "✅ IMPLEMENTED" on a runtime-claiming step — it is ✅ WIRED or it is not done
+- ❌ Don't mark a planned test as completed (`✅ \`...\``) if the test has only been written and type-checked but not executed against a live runtime — unit tests must be `deno test`-ed, scenario/E2E YAML must be run against a real daemon environment
+- ❌ Don't close the gap on a success criterion whose only validating test is an E2E/scenario test that was structurally parsed but never run — document the untested criterion as `[ ]` with a note about the required environment
 - ❌ Don't commit without running deno fmt first
 - ❌ Don't run full-suite commands for a narrow step — see Validation policy above
 

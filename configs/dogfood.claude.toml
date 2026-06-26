@@ -62,3 +62,6 @@ tool = "claude-code"
 model = "claude-haiku-4-5-20251001"
 gates = ["code_changes"]
 launch_mode = "headless"
+# Phase 128 R3: derive --permission-mode + scoped --allowedTools flags
+# from SessionBrief.permitted_paths.
+harden_permissions = true

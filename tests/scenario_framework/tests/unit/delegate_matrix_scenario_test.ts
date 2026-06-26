@@ -1,15 +1,17 @@
 /**
  * @module DelegateMatrixScenarioTest
  * @path tests/scenario_framework/tests/unit/delegate_matrix_scenario_test.ts
- * @description Phase 127 Step 4 — RED-first tests for the parametrized
- *   session_delegate_matrix_live.yaml. Asserts the YAML parses against ScenarioSchema,
- *   enumerates exactly 4 cells, each cell selects the intended (tool, provider) pair
- *   via config preset + EXA_SESSION_DELEGATE_TOOL, and every cell terminates in
- *   journal-assert steps asserting session.delegate.reconciled (positive) with no
- *   session.delegate.scope_violation assertion. The live runtime assertions run in
- *   the Step 5 cutover against real delegates; this test proves the scenario structure.
+ * @description Phase 127 Step 4 / Phase 128 Step 5 — RED-first tests for the
+ *   parametrized session_delegate_matrix_live.yaml and the dedicated permission-
+ *   hardening scenario session_delegate_hardening_active_live.yaml. Asserts the
+ *   YAML parses against ScenarioSchema, enumerates exactly 4 cells, each cell
+ *   selects the intended (tool, provider) pair via config preset +
+ *   EXA_SESSION_DELEGATE_TOOL, and every cell terminates in journal-assert steps
+ *   asserting session.delegate.reconciled (positive) with no
+ *   session.delegate.scope_violation assertion. The hardening scenario proves the
+ *   pre-flight guard structure: reconciled without scope_violation.
  * @architectural-layer Test
- * @related-files [tests/scenario_framework/scenarios/provider_live/session_delegate_matrix_live.yaml, tests/scenario_framework/runner/matrix_expander.ts]
+ * @related-files [tests/scenario_framework/scenarios/provider_live/session_delegate_matrix_live.yaml, tests/scenario_framework/scenarios/provider_live/session_delegate_hardening_active_live.yaml, tests/scenario_framework/runner/matrix_expander.ts]
  */
 
 import { assert, assertEquals } from "@std/assert";
@@ -23,6 +25,10 @@ const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
 const MATRIX_SCENARIO = join(
   REPO_ROOT,
   "tests/scenario_framework/scenarios/provider_live/session_delegate_matrix_live.yaml",
+);
+const HARDENING_SCENARIO = join(
+  REPO_ROOT,
+  "tests/scenario_framework/scenarios/provider_live/session_delegate_hardening_active_live.yaml",
 );
 
 /**
@@ -118,6 +124,40 @@ Deno.test("[delegate_matrix] dry parse: every cell terminates in journal-assert 
   assert(
     !events.includes("session.delegate.scope_violation"),
     "matrix steps must NOT assert scope_violation (absence is proven by the negative scenario; the matrix asserts only reconciled present)",
+  );
+});
+
+/**
+ * Read and parse the hardening scenario YAML.
+ */
+async function parseHardeningScenario(): Promise<ReturnType<typeof ScenarioSchema.parse>> {
+  const raw = await Deno.readTextFile(HARDENING_SCENARIO);
+  return ScenarioSchema.parse(parseYaml(raw));
+}
+
+Deno.test("[delegate_hardening] the hardening scenario parses and has correct tags", async () => {
+  const scenario = await parseHardeningScenario();
+  assertEquals(scenario.id, "session-delegate-hardening-active-live");
+  const tags = new Set(scenario.tags);
+  assert(tags.has("provider-live"), "must be tagged provider-live");
+  assert(tags.has("safety-gate"), "must be tagged safety-gate");
+  assert(tags.has("session-delegation"), "must be tagged session-delegation");
+});
+
+Deno.test("[delegate_hardening] the hardening scenario asserts reconciled WITHOUT scope_violation (pre-flight proof)", async () => {
+  const scenario = await parseHardeningScenario();
+  const events = journalEventTypes(scenario.steps);
+  assert(
+    events.includes("session.delegate.reconciled"),
+    `hardening scenario must assert session.delegate.reconciled; found ${JSON.stringify(events)}`,
+  );
+  assert(
+    !events.includes("session.delegate.scope_violation"),
+    "hardening scenario must NOT assert scope_violation (pre-flight guard prevents it)",
+  );
+  assert(
+    !events.includes("session.delegate.agent_mismatch"),
+    "hardening scenario must NOT assert agent_mismatch (identity matches by construction)",
   );
 });
 
