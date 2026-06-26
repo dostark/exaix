@@ -407,6 +407,7 @@ Deno.test("[RequestProcessor] refinement-delegation fires onDelegateRefinement w
           tool: "claude-code",
           gates: ["refinement"],
           launch_mode: "advisory",
+          harden_permissions: false,
         } satisfies SessionDelegateConfig,
       },
       onDelegateRefinement: (traceId: string, _requestId: string, _body: string) => {

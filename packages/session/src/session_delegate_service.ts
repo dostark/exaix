@@ -154,7 +154,8 @@ export class SessionDelegateService implements ISessionDelegateService {
     const launch = adapter.buildLaunch(brief, mode, this.briefPathFor(brief.trace_id));
 
     const minVersion = brief.tool === TOOL_OPENCODE ? MINIMUM_VERSION_OPENCODE : MINIMUM_VERSION_CLAUDE_CODE;
-    await probeDelegateVersion(launch.command, minVersion);
+    const probeResult = await probeDelegateVersion(launch.command, minVersion);
+    const versionWarning = probeResult.supported ? undefined : probeResult.warning;
 
     let agentNameMismatch = false;
 
@@ -177,7 +178,7 @@ export class SessionDelegateService implements ISessionDelegateService {
       launch.args.push(...flags);
     }
 
-    return { launch, agentNameMismatch };
+    return { launch, agentNameMismatch, versionWarning };
   }
 
   resolveDelegateEnv(
