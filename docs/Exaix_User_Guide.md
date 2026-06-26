@@ -294,6 +294,30 @@ provider = "openrouter"
 model = "anthropic/claude-3-opus"   # any model from openrouter.ai/models
 ```
 
+#### 2.4.5 Provider Strategy
+
+Exaix's provider strategy system enables intelligent, configuration-driven provider selection based on cost, performance, health, and task requirements. Configured in `exa.config.toml` under `[provider_strategy]`:
+
+```toml
+[provider_strategy]
+prefer_free = true          # prefer free/local providers when possible
+allow_local = true          # allow Ollama and other local providers
+max_daily_cost_usd = 5.00   # cap total daily spend across all providers
+health_check_enabled = true # skip unhealthy providers
+fallback_enabled = true     # try fallback chain on failure
+```
+
+**Task routing** directs work to the most suitable provider by task type:
+
+```toml
+[provider_strategy.task_routing]
+simple = ["small"]     # fast, cheap models
+complex = ["large"]    # best available models
+code_review = ["large"]
+```
+
+The model names (`small`, `medium`, `large`) reference preset blocks defined in the `[models]` section. See `templates/exa.config.sample.toml` for the full set of available options, including budgets, fallback chains, and per-provider metadata overrides.
+
 ### 2.4 Advanced Deployment Options
 
 ```bash
@@ -421,7 +445,13 @@ Memory/
 │   │   ├── patterns.md
 │   │   ├── decisions.md
 │   │   └── references.md
-└── Index/              # Search indices
+├── Tasks/              # Active and historical tasks
+│   ├── active/         # Currently executing (symlinks to Workspace/Active/)
+│   ├── completed/      # Successfully completed tasks
+│   └── failed/         # Failed tasks with error analysis
+└── Index/              # Search indices (generated)
+    ├── files.json
+    ├── patterns.json
     ├── tags.json
     └── embeddings/     # Semantic search vectors
 ```
@@ -471,7 +501,7 @@ exactl memory rebuild-index
 - **Global + Project Scope**: Learnings can be global or project-specific
 - **Tag-Based Search**: Filter by tags for precise results
 - **Keyword Search**: Full-text search with frequency ranking
-- **Embedding Search**: Semantic similarity search (deterministic mock vectors)
+- **Embedding Search**: Semantic similarity search via embedding service
 - **Structured Data**: JSON metadata alongside human-readable markdown
 - **CLI Integration**: Direct access without external dependencies
 
@@ -3067,7 +3097,29 @@ exactl daemon start
 
 **Best Practice:** Use `exa.config.toml` for persistent configuration. Use environment variables for temporary overrides or testing different providers.
 
-#### 5.3.3 Troubleshooting Environment Variables
+#### 5.3.3 Test Environment Variables
+
+Three environment variables control cost-safe LLM testing:
+
+| Variable                   | Purpose                                      | Validation       | Example                                 |
+| -------------------------- | -------------------------------------------- | ---------------- | --------------------------------------- |
+| `EXA_TEST_ENABLE_PAID_LLM` | Opt-in to real LLM calls (mock by default)   | `"1"` to enable  | `export EXA_TEST_ENABLE_PAID_LLM=1`     |
+| `EXA_TEST_OPENAI_API_KEY`  | API key for OpenAI-compatible test endpoints | Non-empty string | `export EXA_TEST_OPENAI_API_KEY="sk-…"` |
+| `EXA_TEST_LLM_MODEL`       | Default model for paid LLM tests             | Model ID string  | `export EXA_TEST_LLM_MODEL=gpt-5-mini`  |
+
+**CI Safety:** When `CI` is set and `EXA_TEST_ENABLE_PAID_LLM` is not `"1"`, the `ModelFactory` returns a `MockProvider` for cost-friendly model aliases. Never set `EXA_TEST_ENABLE_PAID_LLM=1` in CI jobs unless the run is on a trusted branch with properly stored secrets.
+
+**Usage Example:**
+
+```bash
+# Manual paid-LLM integration test
+export EXA_TEST_ENABLE_PAID_LLM=1
+export EXA_TEST_OPENAI_API_KEY="sk-..."
+export EXA_TEST_LLM_MODEL="gpt-5-mini"
+deno test tests/integration/19_llm_free_provider_test.ts --allow-env --allow-net --allow-read
+```
+
+#### 5.3.4 Troubleshooting Environment Variables
 
 **Invalid environment variable warnings:**
 
@@ -3085,6 +3137,25 @@ If you see warnings like "Invalid EXA_LLM_TIMEOUT_MS: must be ≥ 1000", check:
 1.
 
 For more details, see `templates/exa.config.sample.toml` and [Technical Specification](./dev/Exaix_Technical_Spec.md).
+
+### 5.4 Testing & CI Model Aliases
+
+Exaix provides two predefined model configurations for testing and CI workflows via `exa.config.toml`:
+
+```toml
+[models.ci_safe]
+provider = "mock"
+model = "mock"
+
+[models.local_cheaper]
+provider = "openai"
+model = "gpt-5-mini"
+```
+
+- **`ci_safe`** — Always returns a `MockProvider` (no API calls, no costs). Used automatically when `CI` is set and `EXA_TEST_ENABLE_PAID_LLM` is not `"1"`. Safe for automated CI pipelines.
+- **`local_cheaper`** — Uses the `OpenAIShim` adapter with the `gpt-5-mini` model alias. Enables manual testing against real OpenAI-compatible endpoints at reduced cost.
+
+The `ModelFactory` provides these convenience aliases and automatically selects `ci_safe` in CI environments unless explicitly opted out via `EXA_TEST_ENABLE_PAID_LLM=1`.
 
 ## 8. Model Context Protocol (MCP) Server
 

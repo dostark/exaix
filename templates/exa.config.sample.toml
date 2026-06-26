@@ -41,6 +41,7 @@
 # EXA_TEST_ENABLE_OLLAMA     : Set to "1" to run Ollama integration tests
 # EXA_TEST_ENABLE_LLAMA      : Set to "1" to run Llama provider specific tests
 # EXA_TEST_OPENAI_API_KEY    : API key for OpenAI integration tests
+# EXA_TEST_LLM_MODEL         : Default model for paid LLM tests (default: gpt-5-mini)
 # EXA_CI_MODE                : Set to "1" to enforce CI behaviors (mock providers, etc.)
 # CI                         : Standard CI flag (fallback if EXA_CI_MODE not set)
 #

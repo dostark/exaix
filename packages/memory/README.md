@@ -6,7 +6,7 @@ Memory bank and vector memory abstractions for Exaix.
 
 `@exaix/memory` owns **structured long-term knowledge storage** — project context, execution history, cross-project learnings, and pending memory proposals. It provides both programmatic access (via `MemoryBankService`) and CLI access (via `exactl memory` commands).
 
-For the full directory structure, schemas, CLI commands, and usage guide, see [`docs/Memory_Banks.md`](../../docs/Memory_Banks.md).
+For CLI usage, see `docs/Exaix_User_Guide.md` §3.2 (Memory Banks). For schema definitions, see `packages/schemas/src/memory_bank.ts`.
 
 ## Data Schemas
 
@@ -22,14 +22,14 @@ Schemas are defined in `@exaix/schemas`:
 
 ## Key Services
 
-| Service                  | Purpose                             | Source                                           |
-| ------------------------ | ----------------------------------- | ------------------------------------------------ |
-| `MemoryBankService`      | Core memory operations              | `packages/core/src/services/memory_bank.ts`      |
-| `MemoryExtractor`        | Learning extraction from executions | `packages/core/src/services/memory_extractor.ts` |
-| `MemoryEmbeddingService` | Embedding generation                | `packages/core/src/services/memory_embedding.ts` |
+| Service                  | Purpose                             | Source                                                       |
+| ------------------------ | ----------------------------------- | ------------------------------------------------------------ |
+| `MemoryBankService`      | Core memory operations              | `packages/memory/src/bank/memory_bank_service.ts`            |
+| `MemoryExtractor`        | Learning extraction from executions | `packages/memory/src/extraction/memory_extractor.ts`         |
+| `MemoryEmbeddingService` | Embedding generation                | `packages/memory/src/embeddings/memory_embedding_service.ts` |
 
 ## See Also
 
-- [`docs/Memory_Banks.md`](../../docs/Memory_Banks.md) — Comprehensive architecture, usage, and migration guide
+- [`docs/Exaix_User_Guide.md`](../../docs/Exaix_User_Guide.md) §3.2 — CLI usage and directory structure
 - [@exaix/schemas](../../packages/schemas/) — Validation schemas for all memory data types
 - [@exaix/portal](../../packages/portal/) — Knowledge gathering pipeline for portals
