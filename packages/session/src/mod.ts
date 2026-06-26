@@ -41,11 +41,19 @@ import {
   sessionDecisionToReviewStatus,
 } from "./gate_mappers.ts";
 import type { IAmendmentDecisionInput, IRefinementClarificationInput, IReviewDecisionPatch } from "./gate_mappers.ts";
+import {
+  defaultSpawnVersion,
+  type IDelegateVersionProbeDeps,
+  type IDelegateVersionResult,
+  probeDelegateVersion,
+} from "./delegate_version_probe.ts";
 import { assertBinaryAllowed, sanitizeChildEnv } from "./supervised_launch.ts";
 import { parseDelegateStdout } from "./delegate_return_parser.ts";
 import type { IDelegateParsedReturn } from "./delegate_return_parser.ts";
 import { sessionReturnToCostRecord } from "./cost_mapping.ts";
 import type { ISessionCostInput } from "./cost_mapping.ts";
+import { buildOpencodePermissionConfig, generateOpencodePermissionConfig } from "./opencode_permission_generator.ts";
+import type { IOpencodePermissionConfig } from "./opencode_permission_generator.ts";
 import { resolveSessionDelegateConfig } from "./config_resolver.ts";
 import type { ISessionDelegateScopes } from "./config_resolver.ts";
 import type { ISessionDelegateEventPayload } from "./event_payload.ts";
@@ -76,10 +84,14 @@ export {
 };
 export type { IAmendmentDecisionInput, IRefinementClarificationInput, IReviewDecisionPatch };
 export { assertBinaryAllowed, sanitizeChildEnv };
+export { defaultSpawnVersion, probeDelegateVersion };
+export type { IDelegateVersionProbeDeps, IDelegateVersionResult };
 export { parseDelegateStdout };
 export type { IDelegateParsedReturn };
 export { sessionReturnToCostRecord };
 export type { ISessionCostInput };
+export { buildOpencodePermissionConfig, generateOpencodePermissionConfig };
+export type { IOpencodePermissionConfig };
 export { resolveSessionDelegateConfig };
 export type { ISessionDelegateScopes };
 export type { ISessionDelegateEventPayload };
