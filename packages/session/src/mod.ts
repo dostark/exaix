@@ -41,6 +41,12 @@ import {
   sessionDecisionToReviewStatus,
 } from "./gate_mappers.ts";
 import type { IAmendmentDecisionInput, IRefinementClarificationInput, IReviewDecisionPatch } from "./gate_mappers.ts";
+import {
+  defaultSpawnVersion,
+  type IDelegateVersionProbeDeps,
+  type IDelegateVersionResult,
+  probeDelegateVersion,
+} from "./delegate_version_probe.ts";
 import { assertBinaryAllowed, sanitizeChildEnv } from "./supervised_launch.ts";
 import { parseDelegateStdout } from "./delegate_return_parser.ts";
 import type { IDelegateParsedReturn } from "./delegate_return_parser.ts";
@@ -76,6 +82,8 @@ export {
 };
 export type { IAmendmentDecisionInput, IRefinementClarificationInput, IReviewDecisionPatch };
 export { assertBinaryAllowed, sanitizeChildEnv };
+export { defaultSpawnVersion, probeDelegateVersion };
+export type { IDelegateVersionProbeDeps, IDelegateVersionResult };
 export { parseDelegateStdout };
 export type { IDelegateParsedReturn };
 export { sessionReturnToCostRecord };

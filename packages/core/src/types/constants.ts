@@ -1621,6 +1621,15 @@ export const SESSION_BIN_OPENCODE = "opencode";
 export const SESSION_BIN_CURSOR = "cursor";
 export const SESSION_BIN_VSCODE = "code";
 
+/**
+ * Minimum supported versions for delegate tool permission-hardening features
+ * (Phase 128 R3). Below these, the tool may not support --permission-mode /
+ * --allowedTools (Claude Code) or agent-level permission blocks (OpenCode).
+ * The probe warns but does not block, allowing users to upgrade at their own pace.
+ */
+export const MINIMUM_VERSION_OPENCODE = "1.0.0";
+export const MINIMUM_VERSION_CLAUDE_CODE = "2.0.0";
+
 /** Filesystem event kinds that indicate a (re)written file worth processing. */
 export const FS_WRITE_EVENT_KINDS: ReadonlySet<string> = new Set(["create", "modify", "rename"]);
 
