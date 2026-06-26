@@ -130,7 +130,7 @@ Deno.test("[delegate_hardening] agentNameMismatch is false when using canonical 
   assertEquals(result.agentNameMismatch, false);
 });
 
-Deno.test("[delegate_hardening] agentNameMismatch comparison logic is structurally correct", async () => {
+Deno.test("[delegate_hardening] agentNameMismatch comparison logic is structurally correct", () => {
   // Verify the generator always uses DOGFOOD_CODER_IDENTITY_ID as the agent key.
   // If this changes, agentNameMismatch will become true until the daemon-side
   // event emission is updated.
