@@ -8,7 +8,7 @@ at `tests/integration/helpers/test_environment.ts`.
 
 Test file names follow this structure:
 
-```
+```text
 {domain}_{feature}_{type}_test.ts
 ```
 

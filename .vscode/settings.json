@@ -47,5 +47,6 @@
     "true": true,
     "tee": true,
     "npx jscpd": true
-  }
+  },
+  "js/ts.experimental.useTsgo": false
 }
