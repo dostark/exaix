@@ -11,6 +11,10 @@
 # Claude Code local settings (machine-specific)
 # --------------------------------------------
 .copilot/settings.local.json
+# Harness-written session/scheduler runtime state (carries a live PID + session id).
+# A stale .lock left behind is a useful signal of an unclean shutdown, so we ignore it
+# rather than auto-delete it — inspect it, then remove it manually if it's truly orphaned.
+.copilot/scheduled_tasks.lock
 
 # --------------------------------------------
 # Build & Cache
