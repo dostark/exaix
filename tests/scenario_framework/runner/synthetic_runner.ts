@@ -103,16 +103,24 @@ export async function runSyntheticScenario(
   const firstRunnable = runnableGroups.find((g) => g.status === "run");
   let stepsToRun = firstRunnable?.steps ?? loadedScenario.steps;
 
-  // Phase 127 Step 8 (LIVE-RT): a runnable matrix cell boots the daemon on a dogfood preset
-  // carrying deploy-time sentinels. Materialize a sentinel-resolved copy into the workspace
-  // (root → workspace, worktree → the mounted portal) so the daemon roots where the runner
-  // submits requests. In-repo topology mounts the repo (frameworkHome/../..) as the portal.
-  if (firstRunnable?.cell) {
-    stepsToRun = await materializeCellConfig(stepsToRun, {
-      workspaceRoot: options.workspaceRoot,
-      worktreePath: join(options.frameworkHome, "..", ".."),
-    });
-  }
+  // Phase 127 Step 8 (LIVE-RT) + Phase 128: a scenario that boots a daemon on a dogfood preset
+  // carrying deploy-time sentinels needs a sentinel-resolved copy materialized into the workspace
+  // (root → workspace, worktree → the mounted portal) so the daemon roots where the runner submits
+  // requests. This applies to BOTH matrix cells (preset from the cell `config:`) AND non-matrix
+  // provider-live scenarios whose `start-daemon` step carries an EXA_CONFIG_PATH preset directly
+  // (e.g. the Phase 128 hardening scenario). A matrix cell's preset path is already absolute (the
+  // expander overlay resolved it); a non-matrix YAML preset path may contain $FRAMEWORK_HOME, so
+  // expand the start-daemon step's EXA_CONFIG_PATH against the run env first. materializeCellConfig
+  // is keyed on the start-daemon step and safely no-ops when no such step / EXA_CONFIG_PATH exists.
+  stepsToRun = stepsToRun.map((step) =>
+    step.id === MATRIX_START_DAEMON_STEP_ID && step.env?.EXA_CONFIG_PATH
+      ? { ...step, env: { ...step.env, EXA_CONFIG_PATH: expandInString(step.env.EXA_CONFIG_PATH, envForExpansion) } }
+      : step
+  );
+  stepsToRun = await materializeCellConfig(stepsToRun, {
+    workspaceRoot: options.workspaceRoot,
+    worktreePath: join(options.frameworkHome, "..", ".."),
+  });
 
   const runResult = await runScenarioInMode({
     scenarioId: loadedScenario.scenario.id,

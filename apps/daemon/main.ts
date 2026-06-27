@@ -44,6 +44,7 @@ import {
   type ISymbolExtractorRegistry,
   PortalKnowledgeService,
 } from "@exaix/portal/knowledge";
+import { PathResolver } from "@exaix/portal";
 import type { IPortalKnowledgeConfig, PortalAnalysisMode } from "@exaix/core/types";
 import { createConfigReloadHandler } from "@exaix/core/config";
 import { GracefulShutdown } from "./src/graceful_shutdown.ts";
@@ -460,6 +461,10 @@ if (import.meta.main) {
         registry: createDefaultSessionAdapterRegistry(),
         sessionDir,
         clock: { now: () => new Date() },
+        // pathResolver is REQUIRED for the OpenCode hardening path (resolveHardenedLaunch generates
+        // the per-path opencode.jsonc permission config). Without it, harden_permissions=true +
+        // tool=opencode throws at launch — the Phase 128 feature was unreachable in production.
+        pathResolver: new PathResolver(config),
       });
       const processor = new SessionReturnProcessor({
         sessionDir,

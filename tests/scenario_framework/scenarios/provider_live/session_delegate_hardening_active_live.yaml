@@ -50,27 +50,20 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
-  - id: "setup-clean-portal"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "grep -q 'alias.*test-project' \"$WORKSPACE_ROOT/exa.config.toml\" && python3 -c \"import re;p='$WORKSPACE_ROOT/exa.config.toml';c=open(p).read();c=re.sub(r'\\\\n\\\\[\\\\[portals\\\\]\\\\]\\\\n(?:alias|target_path|created)[^\\\\n]*\\\\n(?:alias|target_path|created)[^\\\\n]*\\\\n(?:alias|target_path|created)[^\\\\n]*\\\\n','',c);open(p,'w').write(c)\" && echo 'removed' || echo 'not-found'",
-      ]
-    output_criteria:
-      - id: "portal-checked"
-        score_weight: 0.1
-        kind: "command-exit-code"
-        equals: 0
-
-  # Daemon started WITH harden_permissions enabled (env var for the
-  # inline config AND the tool set to opencode for pre-flight per-path guard).
+  # Daemon started WITH harden_permissions enabled. EXA_CONFIG_PATH points at the dogfood.claude
+  # preset (Claude analysis + portal/root sentinels); the runner materializes a sentinel-resolved
+  # copy into the workspace (root → workspace, worktree → portal) before any step runs. The
+  # EXA_SESSION_DELEGATE_* env vars override the preset's [session_delegate] block (daemon supports
+  # this for E2E): tool=opencode, gates=code_changes, headless, harden_permissions=true — so the
+  # delegate launches OpenCode with the generated permission config (Phase 128 pre-flight guard).
+  # A fresh per-run sandbox (sibling exaix-sandboxes/<run-id>) means no stale portal persists across
+  # runs, so a plain `add-portal` succeeds — the former setup-clean-portal workaround is gone.
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"
     args: ["start"]
     env:
+      EXA_CONFIG_PATH: "$FRAMEWORK_HOME/../../configs/dogfood.claude.toml"
       EXA_SESSION_DELEGATE_ENABLED: "true"
       EXA_SESSION_DELEGATE_TOOL: "opencode"
       EXA_SESSION_DELEGATE_GATES: "code_changes"
@@ -86,17 +79,28 @@ steps:
     type: "exactl"
     command: "portal"
     args: ["add", "$WORKSPACE_ROOT/test-portal", "test-project"]
-    continue_on_failure: true
     output_criteria:
       - id: "portal-added"
         score_weight: 0.5
         kind: "command-exit-code"
         equals: 0
 
+  # restart-daemon MUST re-apply the delegate overrides: the restarted daemon is a fresh process that
+  # re-reads the EXA_SESSION_DELEGATE_* env. Without these it falls back to the materialized config's
+  # [session_delegate] (tool=claude-code) and the hardening (opencode) path is silently NOT exercised
+  # — the run would pass but prove nothing. NOTE: do NOT set EXA_CONFIG_PATH here — the runner's
+  # default already points every step at the materialized <workspace>/exa.config.toml; pointing it at
+  # the raw preset would re-introduce the unresolved __DOGFOOD_ROOT__ sentinel.
   - id: "restart-daemon"
     type: "exactl"
     command: "daemon"
     args: ["restart"]
+    env:
+      EXA_SESSION_DELEGATE_ENABLED: "true"
+      EXA_SESSION_DELEGATE_TOOL: "opencode"
+      EXA_SESSION_DELEGATE_GATES: "code_changes"
+      EXA_SESSION_DELEGATE_LAUNCH_MODE: "headless"
+      EXA_SESSION_DELEGATE_HARDEN_PERMISSIONS: "true"
     output_criteria:
       - id: "daemon-restarted"
         score_weight: 0.5
