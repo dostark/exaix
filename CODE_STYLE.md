@@ -491,6 +491,22 @@ runtime bugs.
   1. **Functional Code:** Classes, functions, and variable initializations.
 - **Top-of-module placement:** Imports and exported interfaces must appear at the top of the file, before any functional code.
 
+### Filesystem Watching (`Deno.watchFs`) {#fs-watching}
+
+`Deno.watchFs` has **no built-in idempotency**: it emits multiple/duplicate `FsEvent`s for a single
+change, and event ordering varies by OS ([denoland/deno#12874](https://github.com/denoland/deno/issues/12874)).
+A naive `for await (const e of watcher)` loop therefore **double-processes** every change, and an
+uncaught throw inside the loop **tears down the whole watcher** (and often the daemon — this was the
+Phase 128 reconcile crash).
+
+- **Consume `Deno.watchFs` via `consumeFsEvents` / `watchFsDebounced` from `@exaix/core/fs`** rather
+  than hand-rolling a `for await` loop. The helper provides per-path debounce, write-kind filtering,
+  per-event error isolation (`onError`), and an optional `shouldProcess` dedup/content guard.
+- If you must hand-roll a loop, it **must** at minimum: debounce (or otherwise collapse) duplicate
+  events, make the per-event action **idempotent** (compare content/state before acting — never call
+  an operation that throws on re-entry, e.g. a state-machine `resume()`), and wrap the body so a
+  single event's failure cannot escape the loop.
+
 ---
 
 ## 8. Module Boundaries & TUI Isolation {#tui-boundaries}

@@ -76,6 +76,9 @@ export class GitHeadResolver implements IGitHeadResolver {
 
     const headPath = join(portalPath, ".git", "HEAD");
     try {
+      // Hand-rolled loop below already debounces + compares HEAD hashes (idempotent by content) +
+      // isolates errors, so it is safe. Adopt @exaix/core/fs `consumeFsEvents` (CODE_STYLE §7
+      // Filesystem Watching) when next refactored, to converge on the shared pattern.
       this._watcher = Deno.watchFs(headPath);
       this._watchLoop(portalPath, onHeadChange, this._abortController.signal);
     } catch {

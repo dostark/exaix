@@ -12,6 +12,7 @@
     "@exaix/core": "./mod.ts",
     "@exaix/core/events": "./src/events/mod.ts",
     "@exaix/core/triggers": "./src/triggers/mod.ts",
+    "@exaix/core/fs": "./src/fs/mod.ts",
     "@exaix/core/": "./src/",
     "@exaix/core/types": "./src/types/mod.ts",
     "@exaix/core/status": "./src/status/mod.ts",

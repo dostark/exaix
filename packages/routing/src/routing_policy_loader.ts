@@ -8,6 +8,7 @@
 
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
+import { consumeFsEvents } from "@exaix/core/fs";
 import { type IRoutingPolicy, ZRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 
@@ -31,7 +32,6 @@ export class RoutingPolicyLoader {
   private cachedMtimeMs: number | null = null;
   private watcher: Deno.FsWatcher | null = null;
   private abortController: AbortController | null = null;
-  private debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(options: IRoutingPolicyLoaderOptions) {
     const routingConfig = options.config.routing;
@@ -48,35 +48,23 @@ export class RoutingPolicyLoader {
     this.abortController = new AbortController();
     try {
       this.watcher = Deno.watchFs(this.policyPath);
-      this.watchLoop(this.abortController.signal);
+      // Consume via the canonical helper: debounce collapses Deno.watchFs's duplicate events, and
+      // per-event error isolation keeps a transient failure from tearing down the loop. The action is
+      // idempotent (cache invalidation), so re-firing across windows is harmless.
+      void consumeFsEvents(
+        this.watcher,
+        () => {
+          this.cachedMtimeMs = null;
+        },
+        { debounceMs: DEFAULT_DEBOUNCE_MS, signal: this.abortController.signal },
+      );
     } catch {
       // File may not exist yet; watching is best-effort
     }
   }
 
-  private async watchLoop(signal: AbortSignal): Promise<void> {
-    try {
-      for await (const event of this.watcher!) {
-        if (signal.aborted) break;
-        if (event.kind === "modify" || event.kind === "create") {
-          if (this.debounceTimer) clearTimeout(this.debounceTimer);
-          this.debounceTimer = setTimeout(() => {
-            this.debounceTimer = null;
-            this.cachedMtimeMs = null;
-          }, DEFAULT_DEBOUNCE_MS);
-        }
-      }
-    } catch {
-      // Watcher closed
-    }
-  }
-
   /** Close the file watcher if active. */
   close(): void {
-    if (this.debounceTimer) {
-      clearTimeout(this.debounceTimer);
-      this.debounceTimer = null;
-    }
     if (this.abortController) {
       this.abortController.abort();
       this.abortController = null;

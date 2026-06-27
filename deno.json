@@ -199,6 +199,7 @@
     "@exaix/core/events": "./packages/core/src/events/mod.ts",
     "@exaix/core/triggers": "./packages/core/src/triggers/mod.ts",
     "@exaix/core/security": "./packages/core/src/security/mod.ts",
+    "@exaix/core/fs": "./packages/core/src/fs/mod.ts",
     "@exaix/core/": "./packages/core/src/",
     "@exaix/core/func": "./packages/core/src/func/mod.ts",
     "@exaix/core/parsing": "./packages/core/src/parsing/mod.ts",
