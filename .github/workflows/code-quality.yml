@@ -45,7 +45,7 @@ jobs:
         if: always() && steps.checkout.outcome == 'success'
         run: |
           git log -1 --pretty=%B > .git/COMMIT_EDITMSG
-          deno task check-commit-msg .git/COMMIT_EDITMSG
+          deno task check:commit-msg .git/COMMIT_EDITMSG
 
       # --- GATE 1: Format Check (includes packages-team/ via deno task config) ---
       - name: "Gate 1: Formatting"
