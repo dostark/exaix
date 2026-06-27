@@ -343,9 +343,11 @@ The `text-matches` criterion supports multiple patterns with custom flags:
 ```text
 scenario_framework/
 ├── bin/              # Wrappers (exactl, run-scenarios) + e2e debug helpers
-│   ├── debug-scenario  # run ONE scenario verbosely, capture, point at evidence (§6 Debugging)
+│   ├── debug-scenario  # run ONE scenario verbosely, capture, print manifest verdict (§6 Debugging)
+│   ├── verdict         # authoritative per-step pass/fail from the manifest (not stdout Outcome:)
 │   ├── sandbox         # locate sandboxes (latest | list | base)
 │   ├── journal         # query a sandbox's activity journal (tail/grep/errors/delegate/trace)
+│   ├── daemon-log      # daemon log: crashes/fatals not visible in the journal (tail/errors/grep)
 │   └── delegate-inspect # dump a sandbox's brief.json + return.json
 ├── runner/           # Core execution (loader, executor, assertions, modes)
 │   ├── main.ts       # CLI entry point
@@ -515,15 +517,17 @@ Every daemon-backed run deploys an isolated **sandbox** _outside_ the repo tree
 
 #### The helper scripts (`bin/`)
 
-Four scripts in `tests/scenario_framework/bin/` encode the debugging loop. Run them from anywhere; they
+Six scripts in `tests/scenario_framework/bin/` encode the debugging loop. Run them from anywhere; they
 default to the **most recent** sandbox (pass `--sandbox <dir>` to target a specific one).
 
-| Script                    | Purpose                                                                          |
-| ------------------------- | -------------------------------------------------------------------------------- |
-| `bin/debug-scenario <id>` | run ONE scenario verbosely, capture the log, print outcome + failing step        |
-| `bin/sandbox`             | locate sandboxes — `sandbox` (latest), `sandbox list`, `sandbox base`            |
-| `bin/journal`             | query the journal — `tail [N]`, `grep <pat>`, `errors`, `delegate`, `trace <id>` |
-| `bin/delegate-inspect`    | dump `brief.json` + `return.json`; flags "reconciled but `paths_touched: []`"    |
+| Script                    | Purpose                                                                                  |
+| ------------------------- | ---------------------------------------------------------------------------------------- |
+| `bin/debug-scenario <id>` | run ONE scenario verbosely, capture the log, print the **manifest verdict** + next steps |
+| `bin/verdict`             | **authoritative** per-step pass/fail from the manifest (NOT the stdout `Outcome:` line)  |
+| `bin/sandbox`             | locate sandboxes — `sandbox` (latest), `sandbox list`, `sandbox base`                    |
+| `bin/journal`             | query the journal — `tail [N]`, `grep <pat>`, `errors`, `delegate`, `trace <id>`         |
+| `bin/daemon-log`          | the daemon log — `tail`, `errors`, `grep` (crashes/fatals that never reach the journal)  |
+| `bin/delegate-inspect`    | dump `brief.json` + `return.json`; flags "reconciled but `paths_touched: []`"            |
 
 #### The loop
 
@@ -532,23 +536,39 @@ cd tests/scenario_framework
 
 # 1. Run the one scenario you're debugging (verbose; output is teed to a log).
 #    For provider-live scenarios, export the binary + key first (e.g. claude + ANTHROPIC_API_KEY).
+#    debug-scenario ends with the MANIFEST verdict (not the stdout 'Outcome:' line) and exits
+#    non-zero if any criterion failed — so a false 'Outcome: success' cannot fool you.
 ./bin/debug-scenario session-delegate-matrix-live
 
-# 2. Read the ordered event sequence — the failing step usually shows up as the last real event
+# 2. Confirm the AUTHORITATIVE pass/fail — per step, with the failed-criterion messages.
+#    This is the single most important check for safety-gate/assertion scenarios.
+./bin/verdict
+
+# 3. Read the ordered event sequence — the failing step usually shows up as the last real event
 #    before an error or a timeout.
 ./bin/journal tail 30
+./bin/journal errors            # journal events whose payload carries an error/rejected field
 
-# 3. Go straight to the failures: events whose payload carries an error/rejected field.
-./bin/journal errors
+# 4. If a step times out or an event never journals, the cause is often a daemon-side crash that
+#    NEVER reaches the journal or the runner stdout — it lands in the daemon log.
+./bin/daemon-log errors
 
-# 4. If a delegate ran, read both the launched/reconciled events AND the artifacts.
+# 5. If a delegate ran, read both the launched/reconciled events AND the artifacts.
 ./bin/journal delegate
 ./bin/delegate-inspect          # brief.json (the ask) vs return.json (the result)
 ```
 
 #### Tips learned the hard way
 
-- **Read `Outcome:`, not the exit code.** `bin/debug-scenario` prints the real outcome and the failing step for you; the runner process can exit 0 on a failed scenario.
+- **The stdout `Outcome: success` is NOT a pass signal — read the manifest.** `journal-assert`
+  criterion failures are recorded for scoring but do **not** flip the `Outcome:` string, so a
+  safety-gate scenario can print `Outcome: success` while its decisive assertion FAILED. (This exact
+  trap produced a false "pass" during Phase 128 debugging.) Always confirm with `bin/verdict`, which
+  reads the manifest's per-step `criterionResults` and exits non-zero on any failed criterion.
+- **A daemon crash hides in the daemon log, not the journal.** If a step times out or an expected
+  event never appears, run `bin/daemon-log errors`. The Phase 128 reconcile-race crash
+  (`Fatal Error: wait state is resumed, not pending`) was visible ONLY there — the daemon died before
+  the event reached the journal DB.
 - **A green scenario is permission to start reading, not to stop.** A `code_changes` delegate can
   `reconcile → accepted` while `paths_touched` is `[]` (it edited nothing). `bin/delegate-inspect`
   flags this loudly — then read `return.json.summary`: it's usually a stale `model` id the CLI
@@ -561,6 +581,39 @@ cd tests/scenario_framework
 - **Two same-named events hide bugs.** `journal grep daemon` makes duplicate/ambiguous lifecycle
   events (e.g. a CLI `daemon.started` vs a process `daemon.ready`) obvious.
 - **Sandboxes accumulate.** `bin/sandbox list` shows them newest-first; each failed run leaves its full evidence intact for post-mortem. They live outside the repo, so they never dirty `git status`.
+
+#### Raw commands (when the helpers aren't handy)
+
+The helpers are thin wrappers; these are the underlying commands they run. Useful on a deployed sandbox
+that doesn't carry `bin/`, in CI, or just to see what's happening underneath. Set `SBX` to the sandbox
+(e.g. `SBX="$(./bin/sandbox)"`, or the path from the runner output):
+
+```bash
+# --- the authoritative verdict (what bin/verdict reads) ---
+# Per-step status; trust this over the stdout 'Outcome:' line.
+jq '{outcome, failed: [.steps[]|select(.executionStatus=="failed")|.stepId]}' "$SBX/output/run-manifest.json"
+# The decisive assertion step + why it failed:
+jq '.steps[]|select(.stepId=="assert-reconciled-clean")|{executionStatus, criterionResults}' "$SBX/output/run-manifest.json"
+
+# --- the journal (what bin/journal reads) — the activity table is the daemon's real event log ---
+sqlite3 -readonly "$SBX/.exa/journal.db" \
+  "SELECT rowid, action_type, substr(payload,1,160) FROM activity ORDER BY rowid DESC LIMIT 30;"
+# delegate events / failures / one trace:
+sqlite3 -readonly "$SBX/.exa/journal.db" "SELECT rowid, action_type, payload FROM activity WHERE action_type LIKE '%delegate%' ORDER BY rowid;"
+sqlite3 -readonly "$SBX/.exa/journal.db" "SELECT count(*) FROM activity WHERE action_type LIKE '%scope_violation%';"
+
+# --- the daemon log (what bin/daemon-log reads) — crashes that never reach the journal ---
+rg -in "fatal|error|wait state is|uncaught" "$SBX/.exa/daemon.log"
+
+# --- the delegate artifacts (what bin/delegate-inspect reads) ---
+cat "$SBX/Session/"*/brief.json     # what the daemon ASKED (objective, tool, worktree_path, model)
+cat "$SBX/Session/"*/return.json    # what the delegate DID (decision, paths_touched, summary)
+cat "$SBX/.exa/"*/opencode_config.json   # generated OpenCode permission config (hardening runs)
+
+# --- run a single scenario directly (what bin/debug-scenario wraps) ---
+deno run --allow-all tests/scenario_framework/runner/main.ts \
+  --scenario <id> --mode auto --verbose
+```
 
 ### Framework's Own Tests
 

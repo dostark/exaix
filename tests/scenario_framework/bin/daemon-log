@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# daemon-log — show the daemon's log for a scenario sandbox (where crashes and lifecycle live).
+#
+# When a scenario "fails mysteriously" — a step times out, an event never journals, the daemon dies
+# mid-run — the cause is often a daemon-side error that never reaches the runner's stdout or the
+# journal DB. It lands in `<sandbox>/.exa/daemon.log`. (The Phase 128 reconcile-race crash —
+# `❌ Fatal Error: wait state is resumed, not pending` — was ONLY visible here, not in the journal or
+# the manifest.) This helper surfaces that log.
+#
+# Usage (defaults to the MOST RECENT sandbox):
+#   daemon-log              # tail the daemon log
+#   daemon-log full         # the whole daemon log
+#   daemon-log errors       # only error/fatal/crash lines (the fast path to a cause)
+#   daemon-log grep <pat>   # lines matching <pat>
+#   daemon-log --sandbox <dir> [subcommand]
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SANDBOX=""
+args=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --sandbox) SANDBOX="$2"; shift 2 ;;
+    *) args+=("$1"); shift ;;
+  esac
+done
+set -- "${args[@]:-}"
+[ -z "$SANDBOX" ] && SANDBOX="$("$SCRIPT_DIR/sandbox" latest)"
+
+LOG="$SANDBOX/.exa/daemon.log"
+if [ ! -f "$LOG" ]; then
+  echo "No daemon log at $LOG" >&2
+  echo "(the daemon may not have started; also check '$SANDBOX/logs/event-viewer/' for structured output)" >&2
+  exit 1
+fi
+
+cmd="${1:-tail}"
+case "$cmd" in
+  tail) echo "# tail $LOG" >&2; tail -40 "$LOG" ;;
+  full) cat "$LOG" ;;
+  errors)
+    echo "# error/fatal/crash lines in $LOG" >&2
+    rg -in "fatal|error|panic|uncaught|unhandled|crash|exception|wait state is" "$LOG" || echo "  (no error lines — daemon ran clean)"
+    ;;
+  grep)
+    pat="${2:?usage: daemon-log grep <pattern>}"
+    rg -in "$pat" "$LOG"
+    ;;
+  *) echo "usage: daemon-log [--sandbox <dir>] {tail|full|errors|grep <pat>}" >&2; exit 2 ;;
+esac

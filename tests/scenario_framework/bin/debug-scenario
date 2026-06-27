@@ -46,30 +46,34 @@ rc="${PIPESTATUS[0]}"
 
 echo
 echo "════════════════════════════════════════════════════════════"
-echo " RESULT"
+echo " RESULT (authoritative — from the manifest, NOT the 'Outcome:' line)"
 echo "════════════════════════════════════════════════════════════"
-grep -E "^Outcome:|scenario-failure|All scenarios completed" "$LOG" | sed 's/^/  /' || true
-
-# The runner exit code can be 0 even when the scenario failed — read the Outcome line, not $rc.
-if grep -q "Outcome: success" "$LOG"; then
-  echo "  ✅ scenario passed — but if it involves a delegate, still check 'delegate-inspect' for real edits."
+# The runner's stdout `Outcome: success` does NOT reflect journal-assert criterion failures, so it is
+# unreliable. Delegate to `verdict`, which reads the manifest's per-step criterionResults — the real
+# pass/fail. Its exit code (0 = genuine pass) becomes this script's signal.
+newest="$("$SCRIPT_DIR/sandbox" latest 2>/dev/null || true)"
+verdict_rc=0
+if [ -n "$newest" ]; then
+  "$SCRIPT_DIR/verdict" --sandbox "$newest" | sed 's/^/  /' || true
+  "$SCRIPT_DIR/verdict" --sandbox "$newest" >/dev/null 2>&1 || verdict_rc=1
 else
-  echo "  ❌ scenario did NOT succeed (runner rc=$rc). Failing step:"
-  grep -E "Step Failed:|Timeout after|Stderr:" "$LOG" | sed 's/^/     /' | head -6 || true
+  echo "  (no sandbox found — the run may have failed before deploying one; see the log above)"
+  verdict_rc=1
 fi
 
-# Identify the sandbox this run created (newest not present before).
-newest="$("$SCRIPT_DIR/sandbox" latest 2>/dev/null || true)"
 echo
 if [ -n "$newest" ]; then
   echo "  sandbox: $newest"
   echo
-  echo "  Next — read the real evidence (not the exit code):"
+  echo "  Next — read the real evidence:"
+  echo "    $SCRIPT_DIR/verdict                         # authoritative per-step pass/fail (manifest)"
   echo "    $SCRIPT_DIR/journal tail 30                 # ordered event sequence"
-  echo "    $SCRIPT_DIR/journal errors                  # events with an error/rejected payload"
+  echo "    $SCRIPT_DIR/journal errors                  # journal events with an error/rejected payload"
   echo "    $SCRIPT_DIR/journal delegate                # session.delegate.* events (if a delegate ran)"
+  echo "    $SCRIPT_DIR/daemon-log errors               # daemon crashes/fatals (NOT in the journal)"
   echo "    $SCRIPT_DIR/delegate-inspect                # brief.json + return.json (decision/paths_touched)"
-  echo "    less '$newest/logs/event-viewer'/*          # daemon structured log"
 fi
 rm -f "$before"
-exit "$rc"
+# Exit non-zero if the manifest verdict failed, even when the runner printed 'Outcome: success'.
+[ "$verdict_rc" -eq 0 ] && [ "$rc" -eq 0 ] && exit 0
+exit 1

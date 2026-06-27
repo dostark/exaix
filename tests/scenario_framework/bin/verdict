@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# verdict — the AUTHORITATIVE pass/fail of a scenario run, read from the run manifest.
+#
+# CRITICAL: the runner's stdout `Outcome: success` is NOT a reliable pass signal. `journal-assert`
+# criterion failures are recorded for scoring but do NOT flip the outcome string — so a safety-gate
+# scenario can print `Outcome: success` while its decisive assertion FAILED. (This exact trap produced
+# a false "pass" during Phase 128 debugging.) The truth lives in the run manifest's per-step
+# `criterionResults`. This helper reads that and tells you, per step, whether it really passed —
+# and prints the failed criteria messages so you know WHY.
+#
+# Usage (defaults to the MOST RECENT sandbox):
+#   verdict                  # per-step pass/fail + overall verdict for the latest run
+#   verdict --sandbox <dir>  # a specific sandbox
+#
+# Exit code: 0 only if NO step has a failed criterion (a genuine pass); 1 otherwise.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SANDBOX=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --sandbox) SANDBOX="$2"; shift 2 ;;
+    *) echo "usage: verdict [--sandbox <dir>]" >&2; exit 2 ;;
+  esac
+done
+[ -z "$SANDBOX" ] && SANDBOX="$("$SCRIPT_DIR/sandbox" latest)"
+
+MANIFEST="$SANDBOX/output/run-manifest.json"
+if [ ! -f "$MANIFEST" ]; then
+  echo "No run manifest at $MANIFEST" >&2
+  echo "(the run may not have reached manifest-writing; check '$SCRIPT_DIR/daemon-log' and the runner output)" >&2
+  exit 1
+fi
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "verdict needs jq. Raw fallback:" >&2
+  echo "  cat '$MANIFEST' | grep -o '\"executionStatus\":\"[^\"]*\"'" >&2
+  exit 2
+fi
+
+echo "# manifest: $MANIFEST"
+echo "# NOTE: this is the manifest verdict — trust it over the runner's stdout 'Outcome:' line."
+echo
+
+# Per-step status; mark failed steps and list their failed criteria messages.
+jq -r '
+  .steps[] |
+  "\(if (.criterionResults // [] | map(select(.status=="failed")) | length) > 0 or .executionStatus=="failed"
+      then "❌" else "✅" end)  \(.stepId)  [\(.executionStatus)]" +
+  ( (.criterionResults // [] | map(select(.status=="failed")) | map("\n      ↳ FAILED " + .criterion_id + ": " + (.message // "")) | join("")) )
+' "$MANIFEST"
+
+echo
+# Overall verdict: a real pass requires zero failed steps AND zero failed criteria.
+failed_steps="$(jq -r '[.steps[] | select(.executionStatus=="failed" or ((.criterionResults // []) | map(select(.status=="failed")) | length) > 0) | .stepId] | join(", ")' "$MANIFEST")"
+runner_outcome="$(jq -r '.outcome // "?"' "$MANIFEST")"
+echo "runner-reported outcome: $runner_outcome"
+if [ -z "$failed_steps" ]; then
+  echo "VERDICT: ✅ PASS — every step and criterion passed."
+  exit 0
+else
+  echo "VERDICT: ❌ FAIL — failed step(s): $failed_steps"
+  echo "  (the runner's outcome above may say 'success' anyway — that is the trap; this verdict is authoritative.)"
+  exit 1
+fi
