@@ -9,7 +9,7 @@
  * explicit absolute path always wins, and a resolved root equal to the repo root
  * is rejected as a guard against runtime-state contamination of the repo tree.
  * @architectural-layer Test
- * @related-files [tests/scenario_framework/runner/config.ts]
+ * @related-files [tests/scenario_framework/runner/config.ts, tests/scenario_framework/README.md]
  */
 
 import { assert, assertEquals, assertNotEquals, assertStringIncludes, assertThrows } from "@std/assert";

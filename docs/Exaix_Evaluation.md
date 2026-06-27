@@ -527,6 +527,14 @@ exactl eval run --pack agent_flows \
 For the full sandbox setup reference, see
 `tests/scenario_framework/README.md` §2 (Validation).
 
+> **Sandbox location.** The CI job above deploys a sandbox at an explicit path
+> (`EXAIX_VALIDATION_ROOT`). When you instead run scenarios through the framework runner without
+> passing `--workspace`, the runner creates an **isolated sandbox per run** at a **sibling of the
+> repo** by default — `<parent-of-repo>/exaix-sandboxes/<run-id>/` — never inside the repo tree (so it
+> can't leak `.exa/journal.db` or `logs/` into your working copy). Override the base directory with
+> **`EXA_SANDBOX_BASE`**. Locate run sandboxes with `tests/scenario_framework/bin/sandbox` and inspect
+> a failed run's journal with `tests/scenario_framework/bin/journal` (see README §2.4 and §6).
+
 ### 11.3 Nightly Regression
 
 ```bash

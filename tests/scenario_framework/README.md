@@ -200,6 +200,34 @@ a sandbox deploy:
 | `blueprint-eval`     | None            | 2         |
 | `eval-smoke`         | None            | 1         |
 
+### 2.4 Where Sandboxes Are Created
+
+There are **two** ways a sandbox comes into being, and they live in different places:
+
+- **Manual deploy (§2.1 / §2.2):** you choose the location explicitly via `EXAIX_VALIDATION_ROOT`
+  (e.g. `$HOME/exa-validation-sandbox`) and run `setup_sandbox.ts` / `deploy_workspace.ts`.
+- **Automatic, per-run (the runner):** when you run a scenario without passing `--workspace`, the
+  runner deploys an **isolated sandbox per run** and chooses the location for you. The default is a
+  **sibling of the repo**, never inside it:
+
+  ```text
+  <parent-of-repo>/exaix-sandboxes/<run-id>/
+  # e.g.  ~/git/exaix-sandboxes/mqtm02qu-796ce28f/
+  ```
+
+  - The base directory is **`EXA_SANDBOX_BASE`** if set, otherwise the **parent directory of the repo
+    root**. Override it to put sandboxes anywhere: `export EXA_SANDBOX_BASE=/var/exa-sandboxes`.
+  - The runner **refuses to use the repo root** as a sandbox — this guard stops a run from leaking
+    `.exa/journal.db`, `logs/`, and worktrees into your working tree (a real bug this default fixed).
+  - Each run gets its own `<run-id>` directory, so failed runs are preserved side-by-side for
+    post-mortem. List them with `./bin/sandbox list`; find the latest with `./bin/sandbox`.
+
+> Why a sibling, not `/tmp` or `.dogfood/`? It stays outside the repo tree (clean `git status`, no
+> interference with `deno test`/watchers), it's trivial to find for debugging, and it needs only a
+> single predictable path added to the daemon's least-privilege `--allow-write` allow-list. This is
+> the same default the debug helpers in §6 assume. Defined in
+> `tests/scenario_framework/runner/config.ts` (`defaultSandboxRoot`).
+
 ---
 
 ## 3. Architecture & Extension
@@ -314,7 +342,11 @@ The `text-matches` criterion supports multiple patterns with custom flags:
 
 ```text
 scenario_framework/
-├── bin/              # Shell wrappers for runner and deployer
+├── bin/              # Wrappers (exactl, run-scenarios) + e2e debug helpers
+│   ├── debug-scenario  # run ONE scenario verbosely, capture, point at evidence (§6 Debugging)
+│   ├── sandbox         # locate sandboxes (latest | list | base)
+│   ├── journal         # query a sandbox's activity journal (tail/grep/errors/delegate/trace)
+│   └── delegate-inspect # dump a sandbox's brief.json + return.json
 ├── runner/           # Core execution (loader, executor, assertions, modes)
 │   ├── main.ts       # CLI entry point
 │   ├── synthetic_runner.ts
@@ -333,15 +365,16 @@ scenario_framework/
 
 ## 5. Quick Reference
 
-| Task                                          | Command / Document                                        |
-| --------------------------------------------- | --------------------------------------------------------- |
-| Run eval (self-contained packs)               | `exactl eval run --pack blueprint-eval`                   |
-| Run eval (with sandbox)                       | `exactl eval run --pack agent_flows`                      |
-| Run validation scenarios (deployed framework) | `./bin/run-scenarios --profile ci-core`                   |
-| Deploy sandbox (automated)                    | `scripts/setup_sandbox.ts` (see §2.1)                     |
-| Deploy framework to sandbox                   | `./bin/deploy-framework` (see §2.2)                       |
-| Full CLI reference                            | [`docs/Exaix_Evaluation.md`](../docs/Exaix_Evaluation.md) |
-| Schema contracts                              | `schema/step_schema.ts`, `schema/scenario_schema.ts`      |
+| Task                                          | Command / Document                                                                      |
+| --------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Run eval (self-contained packs)               | `exactl eval run --pack blueprint-eval`                                                 |
+| Run eval (with sandbox)                       | `exactl eval run --pack agent_flows`                                                    |
+| Run validation scenarios (deployed framework) | `./bin/run-scenarios --profile ci-core`                                                 |
+| Deploy sandbox (automated)                    | `scripts/setup_sandbox.ts` (see §2.1)                                                   |
+| Deploy framework to sandbox                   | `./bin/deploy-framework` (see §2.2)                                                     |
+| Debug a failing e2e scenario                  | `./bin/debug-scenario <id>` → `./bin/journal` / `./bin/delegate-inspect` (§6 Debugging) |
+| Full CLI reference                            | [`docs/Exaix_Evaluation.md`](../docs/Exaix_Evaluation.md)                               |
+| Schema contracts                              | `schema/step_schema.ts`, `schema/scenario_schema.ts`                                    |
 
 ---
 
@@ -459,6 +492,75 @@ done
 
 For a full daemon-required run, deploy a sandbox first (see §2.1), then use
 `./bin/run-scenarios` from the deployed directory.
+
+### Debugging a Failing e2e Scenario
+
+A failing e2e scenario is almost never explained by the runner's exit code. The runner can report
+`exit 0` while the scenario itself failed, and a scenario can report `Outcome: success` while the
+delegate it drove did nothing useful. **The evidence lives in the sandbox the run created — its
+journal and its delegate artifacts — and the only reliable method is to read that evidence one honest line at a time.**
+
+#### The mental model
+
+Every daemon-backed run deploys an isolated **sandbox** _outside_ the repo tree
+(`<parent-of-repo>/exaix-sandboxes/<run-id>/`, or under `EXA_SANDBOX_BASE`). That sandbox holds:
+
+| Path                          | What it tells you                                                        |
+| ----------------------------- | ------------------------------------------------------------------------ |
+| `.exa/journal.db`             | the **production event log** (`activity` table) — what the daemon did    |
+| `logs/event-viewer/`          | the daemon's structured log output                                       |
+| `Workspace/Plans/`, `Active/` | the plan the analysis produced and the approved/executing copy           |
+| `Session/<trace>/brief.json`  | what the daemon **asked** a `code_changes` delegate to do                |
+| `Session/<trace>/return.json` | what the delegate **actually did** (`decision`, `paths_touched`, errors) |
+
+#### The helper scripts (`bin/`)
+
+Four scripts in `tests/scenario_framework/bin/` encode the debugging loop. Run them from anywhere; they
+default to the **most recent** sandbox (pass `--sandbox <dir>` to target a specific one).
+
+| Script                    | Purpose                                                                          |
+| ------------------------- | -------------------------------------------------------------------------------- |
+| `bin/debug-scenario <id>` | run ONE scenario verbosely, capture the log, print outcome + failing step        |
+| `bin/sandbox`             | locate sandboxes — `sandbox` (latest), `sandbox list`, `sandbox base`            |
+| `bin/journal`             | query the journal — `tail [N]`, `grep <pat>`, `errors`, `delegate`, `trace <id>` |
+| `bin/delegate-inspect`    | dump `brief.json` + `return.json`; flags "reconciled but `paths_touched: []`"    |
+
+#### The loop
+
+```bash
+cd tests/scenario_framework
+
+# 1. Run the one scenario you're debugging (verbose; output is teed to a log).
+#    For provider-live scenarios, export the binary + key first (e.g. claude + ANTHROPIC_API_KEY).
+./bin/debug-scenario session-delegate-matrix-live
+
+# 2. Read the ordered event sequence — the failing step usually shows up as the last real event
+#    before an error or a timeout.
+./bin/journal tail 30
+
+# 3. Go straight to the failures: events whose payload carries an error/rejected field.
+./bin/journal errors
+
+# 4. If a delegate ran, read both the launched/reconciled events AND the artifacts.
+./bin/journal delegate
+./bin/delegate-inspect          # brief.json (the ask) vs return.json (the result)
+```
+
+#### Tips learned the hard way
+
+- **Read `Outcome:`, not the exit code.** `bin/debug-scenario` prints the real outcome and the failing step for you; the runner process can exit 0 on a failed scenario.
+- **A green scenario is permission to start reading, not to stop.** A `code_changes` delegate can
+  `reconcile → accepted` while `paths_touched` is `[]` (it edited nothing). `bin/delegate-inspect`
+  flags this loudly — then read `return.json.summary`: it's usually a stale `model` id the CLI
+  rejected, or a `brief.objective` with no step content so the delegate had nothing to act on.
+- **`No such cwd` on spawn = a worktree-path mismatch**, not a missing binary. Compare the brief's
+  `worktree_path` against where the execution loop actually created the worktree.
+- **Stalls at `pending`/no `request.created`** usually mean a watcher race or a not-yet-ready daemon.
+  Look for `watcher.started` and `daemon.ready` in `journal grep` — and have scenarios
+  `wait-for-journal-event: daemon.ready` before submitting work.
+- **Two same-named events hide bugs.** `journal grep daemon` makes duplicate/ambiguous lifecycle
+  events (e.g. a CLI `daemon.started` vs a process `daemon.ready`) obvious.
+- **Sandboxes accumulate.** `bin/sandbox list` shows them newest-first; each failed run leaves its full evidence intact for post-mortem. They live outside the repo, so they never dirty `git status`.
 
 ### Framework's Own Tests
 

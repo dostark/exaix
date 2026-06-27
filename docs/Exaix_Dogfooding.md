@@ -95,6 +95,22 @@ deno run -A apps/exactl/main.ts plan approve <plan-id>
 deno task dogfood:stop
 ```
 
+### Where the sandbox lives
+
+A sandbox is always created **outside the repo tree** so it never leaks runtime state
+(`.exa/journal.db`, `logs/`, git worktrees) into your working copy:
+
+- **Dogfooding (`dogfood_bootstrap.ts`, above):** the sandbox location is **always explicit** — you
+  pass `--dir` (e.g. `~/exa-dogfood`), which is **required** (the script errors if omitted). Dogfooding
+  does **not** auto-pick a sibling directory and does not read `EXA_SANDBOX_BASE`.
+- **Scenario-framework runs** (`tests/scenario_framework/`, used for e2e validation and
+  `exactl eval run`): this is a **separate mechanism**. When no `--workspace` is passed, the runner
+  deploys a fresh per-run sandbox at a **sibling of the repo** by default —
+  `<parent-of-repo>/exaix-sandboxes/<run-id>/` (e.g. `~/git/exaix-sandboxes/<run-id>/`). Override the
+  base with `EXA_SANDBOX_BASE`; the runner refuses to use the repo root itself. Locate these with
+  `tests/scenario_framework/bin/sandbox` (`list` for all, no arg for the latest). See the Scenario
+  Framework README §2.4 and §6 (Debugging) for details.
+
 ---
 
 ## 3. The Dogfooding Loop

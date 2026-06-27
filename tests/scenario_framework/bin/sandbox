@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# sandbox — locate scenario-framework / dogfood sandboxes.
+#
+# Scenario runs deploy an isolated sandbox OUTSIDE the repo tree (the sibling-of-repo default,
+# `<parent-of-repo>/exaix-sandboxes/<run-id>/`, or wherever EXA_SANDBOX_BASE points). Each sandbox
+# holds the live `.exa/journal.db`, the daemon `logs/`, the `Workspace/` plans, and the delegate
+# `Session/` artifacts — i.e. everything you need to debug a failed e2e run. This helper finds them.
+#
+# Usage:
+#   sandbox                 # absolute path of the MOST RECENT sandbox (use: cd "$(sandbox)")
+#   sandbox latest          # same as above
+#   sandbox list            # all sandboxes, newest first, with mtime
+#   sandbox base            # the sandbox base dir these live under
+#
+# Honours EXA_SANDBOX_BASE (the same override the runner uses); otherwise defaults to the repo's
+# parent directory, matching tests/scenario_framework/runner/config.ts.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+SANDBOX_DIR_NAME="exaix-sandboxes"
+BASE="${EXA_SANDBOX_BASE:-$(dirname "$REPO_ROOT")}/$SANDBOX_DIR_NAME"
+
+cmd="${1:-latest}"
+case "$cmd" in
+  base)
+    echo "$BASE"
+    ;;
+  list)
+    if [ ! -d "$BASE" ]; then
+      echo "No sandbox base yet: $BASE" >&2
+      exit 1
+    fi
+    # Newest first, with human mtime; one sandbox dir per line.
+    find "$BASE" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' 2>/dev/null \
+      | sort -rn | cut -d' ' -f2- \
+      | while read -r d; do printf '%s  %s\n' "$(date -r "$d" '+%Y-%m-%d %H:%M:%S')" "$d"; done
+    ;;
+  latest)
+    if [ ! -d "$BASE" ]; then
+      echo "No sandbox base yet: $BASE (run a scenario first)" >&2
+      exit 1
+    fi
+    latest="$(find "$BASE" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)"
+    if [ -z "$latest" ]; then
+      echo "No sandboxes under $BASE" >&2
+      exit 1
+    fi
+    echo "$latest"
+    ;;
+  *)
+    echo "usage: sandbox [latest|list|base]" >&2
+    exit 2
+    ;;
+esac

@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# debug-scenario — run ONE scenario verbosely, capture everything, and point you at the evidence.
+#
+# This is the entry point for debugging a failing e2e scenario. It runs a single scenario in AUTO mode
+# with --verbose, tees the full output to a log, then prints: the outcome, the failing step (if any),
+# the sandbox the run created, and the exact follow-up commands (journal / delegate-inspect) to read
+# the real evidence. It encodes the LIVE-RT debugging loop: run one scenario, read the failing step,
+# then go to the journal and the delegate artifacts — never trust the runner's exit code alone.
+#
+# Usage:
+#   debug-scenario <scenario-id> [extra runner flags...]
+#   debug-scenario session-delegate-matrix-live
+#   debug-scenario plan-amendment-lifecycle --trials 1
+#
+# Output log: written to <sandbox-base>/debug-<scenario>-<timestamp>.log (and path printed at the end).
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FRAMEWORK_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+
+SCENARIO="${1:-}"
+if [ -z "$SCENARIO" ]; then
+  echo "usage: debug-scenario <scenario-id> [extra runner flags...]" >&2
+  echo "  list ids:  deno run --allow-all $FRAMEWORK_ROOT/runner/main.ts --dry-run --pack <pack>" >&2
+  exit 2
+fi
+shift || true
+
+BASE="$("$SCRIPT_DIR/sandbox" base)"
+mkdir -p "$BASE"
+LOG="$BASE/debug-${SCENARIO}-$(date '+%Y%m%d-%H%M%S').log"
+
+echo "▶ Running scenario '$SCENARIO' (verbose, AUTO mode) …"
+echo "  log: $LOG"
+echo "  tip: a provider-live scenario needs its binary + API key on the env (e.g. claude + ANTHROPIC_API_KEY)."
+echo
+
+# Snapshot existing sandboxes so we can identify the one THIS run creates.
+before="$(mktemp)"
+"$SCRIPT_DIR/sandbox" list 2>/dev/null | awk '{print $3}' > "$before" || true
+
+deno run --allow-all "$FRAMEWORK_ROOT/runner/main.ts" \
+  --scenario "$SCENARIO" --mode auto --verbose "$@" 2>&1 | tee "$LOG"
+rc="${PIPESTATUS[0]}"
+
+echo
+echo "════════════════════════════════════════════════════════════"
+echo " RESULT"
+echo "════════════════════════════════════════════════════════════"
+grep -E "^Outcome:|scenario-failure|All scenarios completed" "$LOG" | sed 's/^/  /' || true
+
+# The runner exit code can be 0 even when the scenario failed — read the Outcome line, not $rc.
+if grep -q "Outcome: success" "$LOG"; then
+  echo "  ✅ scenario passed — but if it involves a delegate, still check 'delegate-inspect' for real edits."
+else
+  echo "  ❌ scenario did NOT succeed (runner rc=$rc). Failing step:"
+  grep -E "Step Failed:|Timeout after|Stderr:" "$LOG" | sed 's/^/     /' | head -6 || true
+fi
+
+# Identify the sandbox this run created (newest not present before).
+newest="$("$SCRIPT_DIR/sandbox" latest 2>/dev/null || true)"
+echo
+if [ -n "$newest" ]; then
+  echo "  sandbox: $newest"
+  echo
+  echo "  Next — read the real evidence (not the exit code):"
+  echo "    $SCRIPT_DIR/journal tail 30                 # ordered event sequence"
+  echo "    $SCRIPT_DIR/journal errors                  # events with an error/rejected payload"
+  echo "    $SCRIPT_DIR/journal delegate                # session.delegate.* events (if a delegate ran)"
+  echo "    $SCRIPT_DIR/delegate-inspect                # brief.json + return.json (decision/paths_touched)"
+  echo "    less '$newest/logs/event-viewer'/*          # daemon structured log"
+fi
+rm -f "$before"
+exit "$rc"

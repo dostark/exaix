@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# journal — query the activity journal of a scenario sandbox (the daemon's real event log).
+#
+# The journal (`<sandbox>/.exa/journal.db`, table `activity`) is the production source of truth for
+# what the daemon actually did — it is what you read line-by-line when a scenario fails. The single
+# most useful debugging move is reading the ordered event sequence and the error payloads, NOT the
+# runner's exit code. This helper wraps the sqlite3 queries used to debug LIVE-RT.
+#
+# Usage (defaults to the MOST RECENT sandbox; pass --sandbox <dir> to target a specific one):
+#   journal tail [N]           # last N events (default 30), oldest→newest, with timestamp
+#   journal grep <pattern>     # events whose action_type LIKE %pattern% (e.g. delegate, error, watcher)
+#   journal errors             # events whose payload contains an "error" field (the failures)
+#   journal delegate           # all session.delegate.* events with their payloads (delegate debugging)
+#   journal trace <trace_id>   # every event for one trace, in order
+#   journal types              # action_type histogram (what happened, how often)
+#   journal payload <rowid>    # the full payload JSON of one event
+#
+# Tip: pipe payloads through `jq` if installed, e.g. `journal delegate | jq .`
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SANDBOX=""
+
+# Optional --sandbox <dir> override (anywhere before the subcommand).
+args=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --sandbox) SANDBOX="$2"; shift 2 ;;
+    *) args+=("$1"); shift ;;
+  esac
+done
+set -- "${args[@]:-}"
+
+if [ -z "$SANDBOX" ]; then
+  SANDBOX="$("$SCRIPT_DIR/sandbox" latest)"
+fi
+DB="$SANDBOX/.exa/journal.db"
+if [ ! -f "$DB" ]; then
+  echo "No journal db at $DB" >&2
+  exit 1
+fi
+
+q() { sqlite3 -readonly "$DB" "$1"; }
+
+cmd="${1:-tail}"
+case "$cmd" in
+  tail)
+    n="${2:-30}"
+    echo "# last $n events in $SANDBOX" >&2
+    q "SELECT rowid, timestamp, action_type, target FROM activity ORDER BY rowid DESC LIMIT $n;" \
+      | tac | column -t -s '|'
+    ;;
+  grep)
+    pat="${2:?usage: journal grep <pattern>}"
+    q "SELECT rowid, action_type, substr(payload,1,160) FROM activity WHERE action_type LIKE '%$pat%' ORDER BY rowid;"
+    ;;
+  errors)
+    # Any event whose payload carries an error/failure field — the lines that explain a failed run.
+    q "SELECT rowid, action_type, payload FROM activity WHERE payload LIKE '%\"error\"%' OR payload LIKE '%rejected%' OR action_type LIKE '%fail%' ORDER BY rowid;"
+    ;;
+  delegate)
+    q "SELECT rowid, action_type, payload FROM activity WHERE action_type LIKE '%delegate%' ORDER BY rowid;"
+    ;;
+  trace)
+    tid="${2:?usage: journal trace <trace_id>}"
+    q "SELECT rowid, timestamp, action_type, substr(payload,1,120) FROM activity WHERE trace_id='$tid' ORDER BY rowid;" | column -t -s '|'
+    ;;
+  types)
+    q "SELECT count(*) AS n, action_type FROM activity GROUP BY action_type ORDER BY n DESC;" | column -t -s '|'
+    ;;
+  payload)
+    rid="${2:?usage: journal payload <rowid>}"
+    q "SELECT payload FROM activity WHERE rowid=$rid;"
+    ;;
+  *)
+    echo "usage: journal [--sandbox <dir>] {tail [N]|grep <pat>|errors|delegate|trace <id>|types|payload <rowid>}" >&2
+    exit 2
+    ;;
+esac

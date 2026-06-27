@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# delegate-inspect — dump the session-delegate artifacts of a scenario sandbox.
+#
+# When a `code_changes` delegate scenario fails (or "passes" but does nothing), the decisive evidence
+# is the pair of files the delegate cycle writes under `<sandbox>/Session/<trace>/`:
+#   - brief.json   — what the daemon ASKED the delegate to do (objective, worktree_path, model, gates)
+#   - return.json  — what the delegate ACTUALLY did (decision, paths_touched, summary, token_stats)
+# Reading these is how LIVE-RT's two subtle bugs were caught: a brief with a stale model id, and a
+# brief whose objective ("Execute step 1") carried no step content so the delegate edited nothing
+# (`paths_touched: []`) even though it "reconciled". The runner's exit code never shows any of this.
+#
+# Usage (defaults to the MOST RECENT sandbox):
+#   delegate-inspect                 # brief + return for every Session/ in the latest sandbox
+#   delegate-inspect --sandbox <dir> # target a specific sandbox
+#
+# Tip: pair with `journal delegate` to see the launched/reconciled events alongside these artifacts.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SANDBOX=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --sandbox) SANDBOX="$2"; shift 2 ;;
+    *) echo "usage: delegate-inspect [--sandbox <dir>]" >&2; exit 2 ;;
+  esac
+done
+[ -z "$SANDBOX" ] && SANDBOX="$("$SCRIPT_DIR/sandbox" latest)"
+
+SESSION_DIR="$SANDBOX/Session"
+if [ ! -d "$SESSION_DIR" ]; then
+  echo "No Session/ dir in $SANDBOX — the delegate gate may never have fired." >&2
+  echo "Check 'journal delegate' and 'journal grep gate' to see how far execution got." >&2
+  exit 1
+fi
+
+pretty() { if command -v jq >/dev/null 2>&1; then jq . "$1" 2>/dev/null || cat "$1"; else cat "$1"; fi; }
+
+found=0
+for d in "$SESSION_DIR"/*/; do
+  [ -d "$d" ] || continue
+  found=1
+  echo "════════════════════════════════════════════════════════════"
+  echo "Session: ${d#"$SANDBOX/"}"
+  echo "════════════════════════════════════════════════════════════"
+  if [ -f "$d/brief.json" ]; then
+    echo "── brief.json (what the daemon asked) ──────────────────────"
+    pretty "$d/brief.json"
+  else
+    echo "(no brief.json — delegate was not briefed)"
+  fi
+  echo
+  if [ -f "$d/return.json" ]; then
+    echo "── return.json (what the delegate did) ─────────────────────"
+    pretty "$d/return.json"
+    # Loud heads-up for the classic "reconciled but did nothing" trap.
+    if grep -q '"paths_touched": *\[\]' "$d/return.json" 2>/dev/null \
+       || grep -q '"paths_touched":\[\]' "$d/return.json" 2>/dev/null; then
+      echo
+      echo "⚠️  paths_touched is EMPTY — the delegate reconciled but edited no files."
+      echo "   Read return.json.summary: usually a stale model id or a brief objective with no step content."
+    fi
+  else
+    echo "(no return.json — delegate launched but never returned; check 'journal delegate' for a spawn error)"
+  fi
+  echo
+done
+
+[ "$found" -eq 1 ] || { echo "No Session/<trace>/ subdirectories found in $SESSION_DIR" >&2; exit 1; }
