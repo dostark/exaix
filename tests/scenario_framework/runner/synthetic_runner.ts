@@ -60,6 +60,13 @@ export interface IRunSyntheticScenarioResult {
 export async function runSyntheticScenario(
   options: IRunSyntheticScenarioOptions,
 ): Promise<IRunSyntheticScenarioResult> {
+  // Ensure the sandbox workspace exists before ANY step runs. With the sibling-of-repo default
+  // (config.ts: <base>/exaix-sandboxes/<run-id>), workspace_path points at a directory that does
+  // not exist yet, and the step executor spawns commands with it as cwd — a missing dir fails with
+  // ENOENT ("No such cwd"). Matrix cells were covered by materializeCellConfig's ensureDir, but
+  // non-matrix scenarios were not; create it here unconditionally so every run mode is covered.
+  await ensureDir(options.workspaceRoot);
+
   const loadedScenario = await loadScenarioFromYamlFile({
     frameworkHome: options.frameworkHome,
     scenarioPath: options.scenarioPath,

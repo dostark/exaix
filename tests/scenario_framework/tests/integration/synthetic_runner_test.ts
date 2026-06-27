@@ -66,6 +66,52 @@ Deno.test("[ScenarioFrameworkSyntheticRunner] synthetic scenario completes succe
   });
 });
 
+Deno.test("[ScenarioFrameworkSyntheticRunner] creates the workspace dir when it does not yet exist (sibling-default sandbox)", async () => {
+  // Regression: the sibling-of-repo sandbox default produces a workspace_path that does NOT exist
+  // yet (`<base>/exaix-sandboxes/<run-id>`). A non-matrix scenario must still create it before the
+  // first step runs — otherwise the step executor spawns with a non-existent cwd and fails ENOENT
+  // ("No such cwd"). Earlier tests always passed a pre-created makeTempDir, hiding this path.
+  await withSyntheticTestEnv(async ({ frameworkHome, outputDir }) => {
+    // A workspace path that is intentionally NOT created up front.
+    const uncreatedWorkspace = await Deno.makeTempDir({ prefix: "scenario-uncreated-" });
+    await Deno.remove(uncreatedWorkspace, { recursive: true }); // ensure it does not exist
+
+    const scenarioPath = await writeSyntheticScenario({
+      frameworkHome,
+      scenarioId: "synthetic-uncreated-workspace",
+      tags: ["smoke", "synthetic"],
+      schemaVersion: SCHEMA_VERSION,
+      steps: [
+        {
+          id: "echo-step",
+          type: ScenarioStepType.SHELL,
+          command: Deno.execPath(),
+          args: ["eval", 'console.log("ran-in-workspace");'],
+          outputCriteriaLines: [
+            '    - id: "ran"',
+            '      kind: "command-exit-code"',
+            "      equals: 0",
+          ],
+        },
+      ],
+    });
+
+    const run = await runSyntheticScenario({
+      frameworkHome,
+      scenarioPath,
+      workspaceRoot: uncreatedWorkspace,
+      outputDir,
+      mode: ScenarioExecutionMode.AUTO,
+    });
+
+    // The run must succeed (no ENOENT on cwd) AND the workspace dir must now exist.
+    assertEquals(run.manifest.outcome, "success");
+    assertEquals((await Deno.stat(uncreatedWorkspace)).isDirectory, true);
+
+    await Deno.remove(uncreatedWorkspace, { recursive: true }).catch(() => {});
+  });
+});
+
 Deno.test("[ScenarioFrameworkSyntheticRunner] synthetic failing scenario emits the expected criterion-level manifest", async () => {
   await withSyntheticTestEnv(async ({ frameworkHome, workspaceRoot, outputDir }) => {
     const scenarioPath = await writeSyntheticScenario({
