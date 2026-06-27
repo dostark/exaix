@@ -7,14 +7,61 @@
  * @related-files [packages/eval-history/src/history_schema.ts, tests/scenario_framework/tests/unit/history_writer_test.ts]
  */
 
-import { dirname, resolve } from "@std/path";
-import { EvalHistoryEntrySchema, getDefaultComponentVersions, type IEvalHistoryEntry } from "@exaix/eval-history";
+import { dirname, fromFileUrl, resolve } from "@std/path";
+import {
+  EvalHistoryEntrySchema,
+  getDefaultComponentVersions,
+  type IComponentVersions,
+  type IEvalHistoryEntry,
+} from "@exaix/eval-history";
 import type { IRunManifest } from "./evidence_collector.ts";
 
 export interface IWriteEvalHistoryOptions {
   outputDir: string;
   scenarioId: string;
   manifest: IRunManifest;
+}
+
+// The scenario framework lives at <repo>/tests/scenario_framework; this file is under runner/.
+const FRAMEWORK_DIR = resolve(fromFileUrl(new URL(".", import.meta.url)), "..");
+const GIT_UNKNOWN_COMMIT = "unknown";
+
+/**
+ * Capture the scenario-framework's git provenance for an eval run: the HEAD commit and whether the
+ * working tree has uncommitted changes. This records WHICH framework code produced a result (the
+ * runner/executor/assertion logic, which evolves independently of the declarative schema version).
+ * Resolution failures (no git, detached, CI without .git) degrade to `unknown`/`false` rather than
+ * failing the run — provenance is best-effort metadata, never a gate.
+ */
+async function captureFrameworkGitProvenance(): Promise<{ commit: string; dirty: boolean }> {
+  async function git(args: string[]): Promise<{ ok: boolean; out: string }> {
+    try {
+      const output = await new Deno.Command("git", {
+        args: ["-C", FRAMEWORK_DIR, ...args],
+        stdout: "piped",
+        stderr: "null",
+      }).output();
+      return { ok: output.success, out: new TextDecoder().decode(output.stdout).trim() };
+    } catch {
+      return { ok: false, out: "" };
+    }
+  }
+  const head = await git(["rev-parse", "HEAD"]);
+  // `git status --porcelain` of the framework subtree: any output = uncommitted changes present.
+  const status = await git(["status", "--porcelain", "--", FRAMEWORK_DIR]);
+  return {
+    commit: head.ok && head.out.length > 0 ? head.out : GIT_UNKNOWN_COMMIT,
+    dirty: status.ok ? status.out.length > 0 : false,
+  };
+}
+
+async function buildComponentVersions(): Promise<IComponentVersions> {
+  const provenance = await captureFrameworkGitProvenance();
+  return {
+    ...getDefaultComponentVersions(),
+    framework_commit: provenance.commit,
+    framework_dirty: provenance.dirty,
+  };
 }
 
 const GLOBAL_HISTORY_DIR = "history";
@@ -25,7 +72,8 @@ const HISTORY_FILE = "eval-history.jsonl";
  * Uses atomic append: writes to a temp file in the same directory, then renames.
  */
 export async function writeEvalHistoryEntry(options: IWriteEvalHistoryOptions): Promise<IEvalHistoryEntry> {
-  const entry = buildEvalHistoryEntry(options.manifest);
+  const componentVersions = await buildComponentVersions();
+  const entry = buildEvalHistoryEntry(options.manifest, componentVersions);
 
   const parsed = EvalHistoryEntrySchema.parse(entry);
 
@@ -40,7 +88,7 @@ export async function writeEvalHistoryEntry(options: IWriteEvalHistoryOptions): 
   return parsed;
 }
 
-function buildEvalHistoryEntry(manifest: IRunManifest): IEvalHistoryEntry {
+function buildEvalHistoryEntry(manifest: IRunManifest, componentVersions: IComponentVersions): IEvalHistoryEntry {
   return {
     run_id: crypto.randomUUID(),
     scenario_id: manifest.scenarioId,
@@ -60,7 +108,7 @@ function buildEvalHistoryEntry(manifest: IRunManifest): IEvalHistoryEntry {
     })),
     passed: manifest.outcome === "success",
     timestamp: new Date().toISOString(),
-    component_versions: getDefaultComponentVersions(),
+    component_versions: componentVersions,
   };
 }
 

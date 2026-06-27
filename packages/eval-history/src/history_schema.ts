@@ -11,6 +11,18 @@
 import { z } from "zod";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 
+/**
+ * Component versions stamped onto each eval-history entry for provenance. `binary_version` +
+ * `schema_version` pin the exactl binary and the declarative scenario contract; `framework_commit`
+ * + `framework_dirty` pin the scenario-framework SOURCE revision that actually produced the run.
+ */
+export interface IComponentVersions {
+  binary_version: string;
+  schema_version: string;
+  framework_commit?: string;
+  framework_dirty?: boolean;
+}
+
 export const StepResultSchema = z.object({
   step_id: z.string().min(1),
   score: z.number().min(0).max(1),
@@ -43,12 +55,18 @@ export const EvalHistoryEntrySchema = z.object({
   component_versions: z.object({
     binary_version: z.string(),
     schema_version: z.string(),
+    // Scenario-framework code provenance: the git revision of the framework that produced this run.
+    // `schema_version` pins the declarative scenario contract; these pin the actual runner/executor
+    // source, so a result is attributable to (and reproducible from) a specific framework version.
+    // Both optional for backward compatibility with entries written before provenance was recorded.
+    framework_commit: z.string().optional(),
+    framework_dirty: z.boolean().optional(),
   }).optional(),
 });
 
 export type IEvalHistoryEntry = z.infer<typeof EvalHistoryEntrySchema>;
 
-export function getDefaultComponentVersions(): { binary_version: string; schema_version: string } {
+export function getDefaultComponentVersions(): IComponentVersions {
   return {
     binary_version: BINARY_VERSION,
     schema_version: WORKSPACE_SCHEMA_VERSION,

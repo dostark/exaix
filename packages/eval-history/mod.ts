@@ -10,4 +10,4 @@
 
 export { EvalSqliteStore } from "./src/history_sqlite.ts";
 export { EvalHistoryEntrySchema, getDefaultComponentVersions, StepResultSchema } from "./src/history_schema.ts";
-export type { IEvalHistoryEntry, IStepResult } from "./src/history_schema.ts";
+export type { IComponentVersions, IEvalHistoryEntry, IStepResult } from "./src/history_schema.ts";

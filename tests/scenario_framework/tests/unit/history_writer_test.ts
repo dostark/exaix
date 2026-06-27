@@ -139,6 +139,25 @@ Deno.test("[ScenarioFrameworkHistoryWriter] component_versions include binary_ve
   }
 });
 
+Deno.test("[ScenarioFrameworkHistoryWriter] component_versions record the scenario-framework git provenance", async () => {
+  // Provenance: an eval result must record WHICH scenario-framework code produced it. schema_version
+  // is the declarative contract; framework_commit + framework_dirty pin the actual runner/executor
+  // source revision, so two runs with the same schema can still be distinguished and reproduced.
+  const outputDir = await Deno.makeTempDir({ prefix: "scenario-framework-history-" });
+  try {
+    const manifest = makeTestManifest();
+    const entry = await writeEvalHistoryEntry({ outputDir, scenarioId: "test-scenario", manifest });
+
+    // framework_commit: a git short/long sha (or "unknown" when not resolvable), always a string.
+    assertEquals(typeof entry.component_versions!.framework_commit, "string");
+    assertEquals(entry.component_versions!.framework_commit!.length > 0, true);
+    // framework_dirty: whether uncommitted framework changes were present (non-reproducible run).
+    assertEquals(typeof entry.component_versions!.framework_dirty, "boolean");
+  } finally {
+    await Deno.remove(outputDir, { recursive: true });
+  }
+});
+
 Deno.test("[ScenarioFrameworkHistoryWriter] passed is false when outcome is not success", async () => {
   const outputDir = await Deno.makeTempDir({ prefix: "scenario-framework-history-" });
 
