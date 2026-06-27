@@ -66,6 +66,14 @@ export class SessionReturnProcessor {
     const sessionReturn = await readParsed(join(dir, RETURN_FILE), (raw) => SessionReturnSchema.parse(JSON.parse(raw)));
     if (!sessionReturn) return NOT_PROCESSED;
 
+    // Idempotency guard: Deno.watchFs fires multiple write events for one return.json, so the
+    // watcher calls processReturn more than once per trace. Once the wait state has left `pending`
+    // (resumed/expired/cancelled) the return is already resolved — re-processing is a benign no-op.
+    // Without this, the second call's waitStore.resume() throws `wait state is resumed, not pending`,
+    // which (uncaught in the watch loop) crashed the daemon BEFORE the reconciled event persisted.
+    const waitState = await this.deps.waitStore.get(traceId);
+    if (waitState && waitState.status !== "pending") return NOT_PROCESSED;
+
     const worktreeRoot = brief.worktree_path ?? this.deps.workspaceRoot;
     const result = reconcile({ brief, sessionReturn, worktreeRoot });
 

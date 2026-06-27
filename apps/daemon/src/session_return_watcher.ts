@@ -102,7 +102,17 @@ export class SessionReturnWatcher {
       if (!FS_WRITE_EVENT_KINDS.has(event.kind)) continue;
       for (const path of event.paths) {
         if (basename(path) === RETURN_FILE) {
-          await this.handleReturnPath(path);
+          // Error isolation: a failure handling one return.json must never tear down the watch loop
+          // (and with it the daemon). Journal the error and keep watching. processReturn is
+          // idempotent, so a transient failure followed by a later fs event re-processes safely.
+          try {
+            await this.handleReturnPath(path);
+          } catch (error) {
+            await this.journal(DomainEventType.SessionDelegateReconciled, basename(dirname(path)), {
+              rejected: true,
+              reason: error instanceof Error ? error.message : String(error),
+            });
+          }
         }
       }
     }
