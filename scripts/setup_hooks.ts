@@ -171,6 +171,13 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# 14b. Runtime skill index in sync (Memory/Skills generated from Blueprints/Skills)
+deno task check:skill-index
+if [ $? -ne 0 ]; then
+  echo "❌ Error: Memory/Skills is out of sync with Blueprints/Skills (run: deno task check:skill-index without --check, or regenerate)."
+  exit 1
+fi
+
 # 15. Step Manifest Validity (every phase-NN step, NN >= 130, must have a valid manifest)
 deno task check:manifests
 if [ $? -ne 0 ]; then

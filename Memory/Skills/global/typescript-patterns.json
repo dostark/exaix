@@ -1,0 +1,76 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440007",
+  "created_at": "2026-01-05T00:00:00.000Z",
+  "source": "user",
+  "scope": "global",
+  "status": "active",
+  "skill_id": "typescript-patterns",
+  "name": "TypeScript Best Practices",
+  "version": "1.0.0",
+  "description": "Modern TypeScript patterns for type-safe, maintainable code",
+  "triggers": {
+    "keywords": [
+      "typescript",
+      "types",
+      "interface",
+      "type",
+      "generic",
+      "strict",
+      "typing"
+    ],
+    "task_types": [
+      "feature",
+      "refactor",
+      "typescript"
+    ],
+    "file_patterns": [
+      "*.ts",
+      "*.tsx"
+    ],
+    "tags": [
+      "typescript",
+      "types",
+      "patterns"
+    ]
+  },
+  "instructions": "# TypeScript Best Practices\n\nWrite type-safe, maintainable TypeScript code:\n\n## 1. Strict Mode Configuration\n\nAlways use strict mode:\n\n```json\n// tsconfig.json\n{\n  \"compilerOptions\": {\n    \"strict\": true,\n    \"noUncheckedIndexedAccess\": true,\n    \"noImplicitOverride\": true,\n    \"exactOptionalPropertyTypes\": true\n  }\n}\n```\n\n## 2. Type Definitions\n\n### Rule: Always Annotate, Never Use `any`, Never Use `unknown` as a Stored Type\n\n```typescript\n// ❌ Bad: missing annotation (implicit any)\nfunction process(data) {\n  return data.value;\n}\n\n// ❌ Bad: explicit any\nfunction process(data: any) {\n  return data.value;\n}\n\n// ❌ Bad: unknown as a parameter type (lazy fallback)\nfunction process(data: unknown) {\n  return (data as MyType).value;\n}\n\n// ❌ Bad: double casting to bypass checks\nconst bad = source as unknown as Target;\n\n// ✅ Good: named interface, fully annotated\ninterface ProcessInput {\n  value: string;\n}\nfunction process(data: ProcessInput): string {\n  return data.value;\n}\n\n// ✅ Good: unknown is only permitted in catch clauses and transient narrowing guards\ntry {\n  await riskyOperation();\n} catch (e: unknown) {\n  if (e instanceof Error) console.error(e.message); // narrowed to Error\n}\n```\n\n**If the type does not exist yet — create it.** Do not reach for `any` or `unknown` as a shortcut.\n\n### Prefer Interfaces for Object Shapes\n\n```typescript\n// ✅ Good: Interface for object shapes\ninterface User {\n  id: string;\n  email: string;\n  name: string;\n  createdAt: Date;\n}\n\n// Use type for unions, intersections, mapped types\ntype Status = \"pending\" | \"active\" | \"inactive\";\ntype UserWithRole = User & { role: string };\n```\n\n### Define Function Types Clearly\n\n```typescript\n// ✅ Good: Clear function signatures\ninterface UserService {\n  getById(id: string): Promise<User | null>;\n  create(input: CreateUserInput): Promise<User>;\n  update(id: string, input: UpdateUserInput): Promise<User>;\n  delete(id: string): Promise<void>;\n}\n\n// Type for callbacks\ntype OnUserCreated = (user: User) => void;\n```\n\n## 3. Generics\n\n### Use Generics for Reusable Functions\n\n```typescript\n// ✅ Good: Generic function\nasync function fetchById<T>(\n  url: string,\n  id: string,\n): Promise<T | null> {\n  const response = await fetch(`${url}/${id}`);\n  if (!response.ok) return null;\n  return response.json() as Promise<T>;\n}\n\n// Usage\nconst user = await fetchById<User>(\"/api/users\", \"123\");\n```\n\n### Constrain Generics When Appropriate\n\n```typescript\n// ✅ Good: Constrained generic\ninterface HasId {\n  id: string;\n}\n\nfunction findById<T extends HasId>(\n  items: T[],\n  id: string,\n): T | undefined {\n  return items.find((item) => item.id === id);\n}\n```\n\n## 4. Type Guards\n\n### Custom Type Guards\n\n```typescript\n// ✅ Good: Type guard function\ninterface ApiError {\n  code: string;\n  message: string;\n}\n\nfunction isApiError(error: unknown): error is ApiError {\n  return (\n    typeof error === \"object\" &&\n    error !== null &&\n    \"code\" in error &&\n    \"message\" in error\n  );\n}\n\n// Usage\ntry {\n  await riskyOperation();\n} catch (error) {\n  if (isApiError(error)) {\n    console.log(error.code); // TypeScript knows it's ApiError\n  }\n}\n```\n\n### Discriminated Unions\n\n```typescript\n// ✅ Good: Discriminated union\ntype Result<T> =\n  | { success: true; data: T }\n  | { success: false; error: string };\n\nfunction handleResult<T>(result: Result<T>) {\n  if (result.success) {\n    console.log(result.data); // TypeScript knows data exists\n  } else {\n    console.log(result.error); // TypeScript knows error exists\n  }\n}\n```\n\n## 5. Utility Types\n\nUse built-in utility types:\n\n```typescript\n// Partial - all properties optional\ntype UpdateUser = Partial<User>;\n\n// Pick - select specific properties\ntype UserCredentials = Pick<User, \"email\" | \"password\">;\n\n// Omit - exclude properties\ntype UserWithoutPassword = Omit<User, \"password\">;\n\n// Record - object with known keys\ntype UserRoles = Record<string, Role>;\n\n// Required - make all properties required\ntype RequiredConfig = Required<Config>;\n\n// Readonly - make all properties readonly\ntype ImmutableUser = Readonly<User>;\n```\n\n## 6. Null/Undefined Handling\n\n### Use Optional Chaining and Nullish Coalescing\n\n```typescript\n// ✅ Good: Safe property access\nconst email = user?.profile?.email ?? \"default@example.com\";\n\n// ✅ Good: Explicit null checks\nfunction processUser(user: User | null) {\n  if (!user) {\n    throw new Error(\"User is required\");\n  }\n  // TypeScript knows user is User here\n  return user.email;\n}\n```\n\n### Avoid Non-Null Assertions Unless Certain\n\n```typescript\n// ❌ Avoid: Non-null assertion\nconst email = user!.email;\n\n// ✅ Better: Explicit check\nif (!user) throw new Error(\"User required\");\nconst email = user.email;\n```\n\n## 7. Enums vs Union Types\n\nPrefer union types over enums:\n\n```typescript\n// ✅ Preferred: Union type\ntype Status = \"pending\" | \"active\" | \"inactive\";\n\n// ❌ Avoid: Enum (adds runtime code)\nenum StatusEnum {\n  Pending = \"pending\",\n  Active = \"active\",\n  Inactive = \"inactive\",\n}\n\n// If you need runtime values, use const object\nconst STATUS = {\n  Pending: \"pending\",\n  Active: \"active\",\n  Inactive: \"inactive\",\n} as const;\n\ntype Status = typeof STATUS[keyof typeof STATUS];\n```\n\n## 8. Module Organization\n\n```typescript\n// Export types separately\nexport type { CreateUserInput, User };\n\n// Export implementation\nexport { UserService };\n\n// Re-export from index\nexport * from \"./user.ts\";\nexport type * from \"./types.ts\";\n```",
+  "constraints": [
+    "Enable strict mode in tsconfig",
+    "Never use `any` — not even implicitly through missing annotations",
+    "Never use `unknown` as a parameter type, return type, or field type — define a named interface or type alias instead",
+    "Every variable, parameter, return value, and data structure must have an explicit type annotation",
+    "Never use double casting (`... as unknown as ...`) to bypass the compiler",
+    "Prefer interfaces for object shapes",
+    "Use type guards for narrowing"
+  ],
+  "output_requirements": [
+    "No implicit any",
+    "No explicit any",
+    "No unknown as a stored/parameter/return type",
+    "Proper null/undefined handling",
+    "Type-safe function signatures"
+  ],
+  "quality_criteria": [
+    {
+      "name": "Type Safety",
+      "description": "Code is properly typed — all vars, params, and return values have explicit annotations",
+      "weight": 40
+    },
+    {
+      "name": "Type Clarity",
+      "description": "Types are clear, named, and documented",
+      "weight": 30
+    },
+    {
+      "name": "No Any / No Unknown fallback",
+      "description": "Avoids any and unknown as lazy fallbacks; uses named types instead",
+      "weight": 30
+    }
+  ],
+  "compatible_with": {
+    "agents": [
+      "*"
+    ]
+  },
+  "usage_count": 0
+}

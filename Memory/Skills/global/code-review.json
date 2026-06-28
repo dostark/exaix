@@ -1,0 +1,70 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440003",
+  "created_at": "2026-01-05T00:00:00.000Z",
+  "source": "user",
+  "scope": "global",
+  "status": "active",
+  "skill_id": "code-review",
+  "name": "Code Review Checklist",
+  "version": "1.0.0",
+  "description": "Comprehensive checklist for thorough code reviews",
+  "triggers": {
+    "keywords": [
+      "review",
+      "code-review",
+      "pr",
+      "pull-request",
+      "merge",
+      "feedback",
+      "critique",
+      "evaluate"
+    ],
+    "task_types": [
+      "review",
+      "code-review",
+      "pull-request"
+    ],
+    "file_patterns": [
+      "*"
+    ],
+    "tags": [
+      "review",
+      "quality"
+    ]
+  },
+  "instructions": "# Code Review Checklist\n\nFollow this systematic approach for thorough code reviews:\n\n## 1. Understand the Context\n\nBefore reviewing code:\n\n- [ ] Read the PR description and linked issues\n- [ ] Understand the requirements being addressed\n- [ ] Consider the broader system context\n\n## 2. Functionality Review\n\n- [ ] **Does it work?** - Logic correctly implements requirements\n- [ ] **Edge cases** - Are boundary conditions handled?\n- [ ] **Error handling** - Are errors caught and handled appropriately?\n- [ ] **Input validation** - Are inputs validated before use?\n\n````typescript\n// Check for edge cases like:\n// - Empty arrays/strings\n// - Null/undefined values\n// - Maximum/minimum values\n// - Concurrent access\n```text\n\n## 3. Code Quality\n\n- [ ] **Readability** - Is the code easy to understand?\n- [ ] **Naming** - Are variables, functions, classes well-named?\n- [ ] **Complexity** - Is the code unnecessarily complex?\n- [ ] **DRY** - Is there code duplication that should be extracted?\n- [ ] **SOLID** - Does it follow SOLID principles where applicable?\n\n## 4. Architecture & Design\n\n- [ ] **Design patterns** - Are appropriate patterns used?\n- [ ] **Separation of concerns** - Is responsibility properly distributed?\n- [ ] **Dependencies** - Are dependencies appropriate and minimal?\n- [ ] **Coupling** - Is coupling appropriately loose?\n\n## 5. Performance\n\n- [ ] **Efficiency** - Any obvious performance issues?\n- [ ] **Database queries** - N+1 queries? Missing indexes?\n- [ ] **Memory usage** - Any memory leaks or excessive allocations?\n- [ ] **Caching** - Should results be cached?\n\n## 6. Security\n\n- [ ] **Input validation** - All user inputs validated?\n- [ ] **Authentication/Authorization** - Proper access controls?\n- [ ] **Data protection** - Sensitive data handled correctly?\n- [ ] **Injection risks** - SQL, XSS, command injection protected?\n\n## 7. Testing\n\n- [ ] **Test coverage** - Are new features tested?\n- [ ] **Test quality** - Do tests verify behavior, not implementation?\n- [ ] **Edge cases** - Are edge cases tested?\n- [ ] **Test independence** - Do tests run independently?\n\n## 8. Documentation\n\n- [ ] **Code comments** - Complex logic explained?\n- [ ] **API documentation** - Public interfaces documented?\n- [ ] **README updates** - Setup/usage docs current?\n- [ ] **Changelog** - Notable changes documented?\n\n## Feedback Guidelines\n\n**Be Specific:**\n\n```text\n// ❌ Vague\n\"This could be better\"\n\n// ✅ Specific\n\"Consider using a Map instead of Array.find() here for O(1) lookup\"\n```text\n\n**Be Constructive:**\n\n```text\n// ❌ Critical without solution\n\"This is wrong\"\n\n// ✅ Constructive\n\"This might throw if users is empty. Consider adding a guard clause\"\n```text\n\n**Prioritize Issues:**\n\n- 🔴 **Critical** - Must fix (security, data loss, crashes)\n- 🟠 **Major** - Should fix (bugs, significant issues)\n- 🟡 **Minor** - Nice to fix (style, minor improvements)\n- 💭 **Suggestion** - Optional (alternative approaches)\n````",
+  "constraints": [
+    "Be constructive and specific in feedback",
+    "Suggest improvements, not just identify problems",
+    "Consider the context and constraints",
+    "Focus on important issues, not style nitpicks"
+  ],
+  "output_requirements": [
+    "Clear summary of findings",
+    "Categorized issues (critical, major, minor)",
+    "Specific suggestions for improvement"
+  ],
+  "quality_criteria": [
+    {
+      "name": "Thoroughness",
+      "description": "All aspects of the code are reviewed",
+      "weight": 30
+    },
+    {
+      "name": "Actionability",
+      "description": "Feedback is specific and actionable",
+      "weight": 40
+    },
+    {
+      "name": "Constructiveness",
+      "description": "Feedback is helpful and respectful",
+      "weight": 30
+    }
+  ],
+  "compatible_with": {
+    "agents": [
+      "*"
+    ]
+  },
+  "usage_count": 0
+}

@@ -1,0 +1,69 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440006",
+  "created_at": "2026-01-05T00:00:00.000Z",
+  "source": "user",
+  "scope": "global",
+  "status": "active",
+  "skill_id": "commit-message",
+  "name": "Conventional Commit Messages",
+  "version": "1.0.0",
+  "description": "Write clear, conventional commit messages for readable history",
+  "triggers": {
+    "keywords": [
+      "commit",
+      "message",
+      "git",
+      "changelog",
+      "version",
+      "release"
+    ],
+    "task_types": [
+      "commit",
+      "version"
+    ],
+    "tags": [
+      "git",
+      "commits",
+      "versioning"
+    ]
+  },
+  "instructions": "# Conventional Commit Messages\n\nFollow the Conventional Commits specification for consistent, parseable commit history:\n\n## Format\n\n```text\n<type>(<scope>): <subject>\n\n[optional body]\n\n[optional footer(s)]\n```\n\nFor medium/large commits, prefer this body shape:\n\n````text\nContext:\n<why this change is needed>\n\nChanges:\n\n- <important change 1>\n- <important change 2>\n\nValidation:\n\n- <checks run>\n\nReferences:\n\n- <issue/plan step/breaking change note>\n\nWhen committing from CLI, avoid chained `-m` usage. Prefer one multiline message:\n\n```bash\ngit commit -F - <<'COMMIT_MSG'\n<type>(<scope>): <subject>\n\nContext:\n<why this change is needed>\n\nChanges:\n\n- <important change 1>\n- <important change 2>\n\nValidation:\n\n- <checks run>\n\nReferences:\n\n- <issue/plan step/breaking change note>\n````\n\n## Types\n\n| Type       | When to Use                             | Bumps |\n| ---------- | --------------------------------------- | ----- |\n| `feat`     | New feature                             | MINOR |\n| `fix`      | Bug fix                                 | PATCH |\n| `docs`     | Documentation only                      | -     |\n| `style`    | Code style (formatting, semicolons)     | -     |\n| `refactor` | Code change that neither fixes nor adds | -     |\n| `perf`     | Performance improvement                 | PATCH |\n| `test`     | Adding or correcting tests              | -     |\n| `build`    | Build system or dependencies            | -     |\n| `ci`       | CI configuration                        | -     |\n| `chore`    | Other changes (e.g., .gitignore)        | -     |\n\n## Examples\n\n### Simple Fix\n\n```text\nfix(auth): prevent race condition in token refresh\n\nToken refresh could fire multiple times if multiple requests\nfailed simultaneously. Added mutex to ensure single refresh.\n\nFixes #123\n```\n\n### New Feature\n\n```text\nfeat(api): add user profile endpoints\n\n- GET /api/users/:id/profile\n- PUT /api/users/:id/profile\n- Added profile image upload support\n\nCloses #456\n```\n\n### Breaking Change\n\n```text\nfeat(api)!: change authentication to JWT\n\nBREAKING CHANGE: Session-based auth removed.\nAll clients must now use JWT tokens.\n\nMigration guide: docs/migration-v2.md\n```\n\n### Documentation\n\n```text\ndocs(readme): add installation instructions for Windows\n```\n\n### Refactor\n\n```text\nrefactor(core): extract validation logic to separate module\n\nNo functional changes. Moved validation functions from\nUserService to new ValidationService for reuse.\n```\n\n## Subject Line Rules\n\n1. **Use imperative mood**: \"Add feature\" not \"Added feature\"\n\n1.\n1.\n\n```text\n✅ feat(cart): add quantity validation\n❌ feat(cart): Added quantity validation.\n❌ feat(Cart): Add Quantity Validation\n```\n\n## Body Guidelines\n\n- Wrap at 72 characters\n- Explain **what** and **why**, not **how**\n- Use bullet points for multiple changes\n- Leave blank line between subject and body\n\n## Footer Guidelines\n\n```text\n# Reference issues\nFixes #123\nCloses #456\nRefs #789\n\n# Breaking changes (required for major version bumps)\nBREAKING CHANGE: description of what breaks\n\n# Co-authors\nCo-authored-by: Name <email@example.com>\n```\n\n## Scope Suggestions\n\nUse consistent scopes across your project:\n\n- `(api)` - API changes\n- `(ui)` - User interface\n- `(auth)` - Authentication\n- `(db)` - Database\n- `(core)` - Core functionality\n- `(deps)` - Dependencies\n- `(config)` - Configuration\n\n## Tools\n\n- **commitlint**: Enforce commit conventions\n- **husky**: Git hooks for validation\n- **standard-version**: Automatic versioning and changelog\n- **semantic-release**: Automated releases based on commits",
+  "constraints": [
+    "Follow conventional commit format",
+    "Keep subject line under 72 characters",
+    "Use imperative mood (Add, Fix, not Added, Fixed)",
+    "Reference issues when applicable",
+    "For non-trivial commits, use structured body sections: Context, Changes, Validation, References",
+    "Do not chain multiple -m flags; use one multiline commit message",
+    "NEVER use --no-verify; all pre-commit hooks must pass before committing"
+  ],
+  "output_requirements": [
+    "Type prefix (feat, fix, docs, etc.)",
+    "Clear, concise subject line",
+    "Body for complex changes",
+    "Structured body with Context/Changes/Validation (and optional References)"
+  ],
+  "quality_criteria": [
+    {
+      "name": "Format Compliance",
+      "description": "Follows conventional commit format",
+      "weight": 40
+    },
+    {
+      "name": "Clarity",
+      "description": "Message clearly describes the change",
+      "weight": 40
+    },
+    {
+      "name": "Completeness",
+      "description": "Includes necessary context",
+      "weight": 20
+    }
+  ],
+  "compatible_with": {
+    "agents": [
+      "*"
+    ]
+  },
+  "usage_count": 0
+}

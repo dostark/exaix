@@ -1,0 +1,187 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440002",
+  "created_at": "2026-01-05T00:00:00.000Z",
+  "source": "user",
+  "scope": "global",
+  "status": "active",
+  "skill_id": "security-first",
+  "name": "Security-First Development",
+  "version": "2.0.0",
+  "description": "Integrates secure-by-default practices across the full development lifecycle — input validation, injection prevention, path safety, auth, secrets, dependency hygiene, and security testing — applicable to any portal language or framework",
+  "triggers": {
+    "keywords": [
+      "auth",
+      "authentication",
+      "authorization",
+      "login",
+      "logout",
+      "session",
+      "token",
+      "jwt",
+      "oauth",
+      "saml",
+      "permission",
+      "role",
+      "access",
+      "password",
+      "secret",
+      "api-key",
+      "apikey",
+      "credential",
+      "encryption",
+      "decrypt",
+      "certificate",
+      "private-key",
+      "database",
+      "query",
+      "sql",
+      "nosql",
+      "redis",
+      "migration",
+      "sensitive",
+      "pii",
+      "file",
+      "path",
+      "upload",
+      "download",
+      "directory",
+      "subprocess",
+      "command",
+      "exec",
+      "spawn",
+      "http",
+      "api",
+      "endpoint",
+      "webhook",
+      "cors",
+      "header",
+      "cookie",
+      "request",
+      "url",
+      "security",
+      "vulnerability",
+      "audit",
+      "sanitize",
+      "validate",
+      "injection"
+    ],
+    "task_types": [
+      "feature",
+      "bugfix",
+      "security",
+      "security-review",
+      "audit",
+      "authentication",
+      "implementation",
+      "refactor"
+    ],
+    "file_patterns": [
+      "**/auth/**",
+      "**/security/**",
+      "**/login/**",
+      "**/session/**",
+      "**/handlers/**",
+      "**/routes/**",
+      "**/api/**",
+      "**/middleware/**",
+      "**/db/**",
+      "**/database/**",
+      "**/models/**",
+      "**/upload/**",
+      "**/*auth*.ts",
+      "**/*security*.ts",
+      "**/*handler*.ts",
+      "**/*route*.ts",
+      "**/*middleware*.ts",
+      "**/*query*.ts",
+      "**/*command*.ts",
+      "**/*exec*.ts",
+      "**/*.env*",
+      "**/Dockerfile*",
+      "**/docker-compose*.yml"
+    ],
+    "tags": [
+      "security",
+      "authentication",
+      "authorization",
+      "injection",
+      "validation"
+    ]
+  },
+  "instructions": "# Security-First Development\n\nSecurity is a design constraint, not a post-hoc audit. Apply each section below\nto every feature that touches input, files, databases, subprocesses, network, or\nauthentication. The threat model for agent-authored code is **LLM output reaches\nan attack sink** — validate and constrain at every boundary.\n\n---\n\n## 0. Threat Modelling (do this first)\n\nBefore writing a line of code, answer:\n\n1. **What are the entry points?** (HTTP body, query params, CLI args, file content, env vars, webhook payload, inter-service calls)\n1. **What are the sinks?** (database writes, filesystem writes, subprocesses, network calls, rendered output)\n1. **What is the blast radius if this path is exploited?** (data exfiltration, remote code execution, privilege escalation, DoS)\n1. **Which OWASP 2021 items apply?** (see §8 checklist)\n\nDocument the answers in a `<!-- security: -->` comment on the relevant function or\nmodule when the risk is non-obvious.\n\n---\n\n## 1. Input Validation\n\nValidate at the system **boundary** — the first place untrusted data enters your\ncode. Never re-validate deep in business logic; never skip validation in \"internal\"\npaths that could be reached via an indirect call.\n\n```typescript\n// ✅ Validate with a schema at the entry point\nimport { z } from \"zod\";\nconst CreateUserSchema = z.object({\n  email: z.string().email().max(254),\n  role: z.enum([\"viewer\", \"editor\"]), // allowlist, not free string\n});\nconst body = CreateUserSchema.parse(await request.json());\n\n// ❌ Trust the shape of external data\nconst { email, role } = await request.json();\n```\n\n**Rules:**\n\n- Validate data type, length, format, and range.\n- Use **allowlists** for enumerations (roles, statuses, column names); reject anything not in the list.\n- Strip or reject unknown fields — do not forward them to downstream systems.\n- For file uploads: validate MIME type by content inspection, not extension; cap file size; sanitize filenames.\n- Re-validate after any transformation that could change the trust level.\n\n---\n\n## 2. Path Traversal & Filesystem Safety\n\nString-only checks (`startsWith`, `includes(\"..\"), replace`) are bypassable via\nURL encoding, Unicode normalization, and symlinks. Always resolve to the real\nabsolute path first, then check containment.\n\n```typescript\n// ✅ Resolve symlinks, then verify containment\nimport { relative, resolve } from \"node:path\";\nimport { realpath } from \"node:fs/promises\";\n\nasync function safeRead(root: string, userInput: string): Promise<string> {\n  const realRoot = await realpath(resolve(root));\n  const target = resolve(realRoot, userInput);\n  const realTarget = await realpath(target).catch(() => target); // non-existent → use resolved\n  if (!realTarget.startsWith(realRoot + \"/\") && realTarget !== realRoot) {\n    throw new Error(\"Access denied\"); // generic — never echo the paths\n  }\n  return readFile(realTarget, \"utf8\");\n}\n\n// ❌ String-only check is bypassable\nif (userInput.includes(\"..\")) throw new Error(\"bad path\"); // symlinks bypass this\nconst content = readFileSync(join(root, userInput));\n```\n\n**Rules:**\n\n- Resolve symlinks (`realpath`) on **both** the root and the target before comparison.\n- Use the resolved path for all subsequent operations — do not re-derive from the original input.\n- For non-existent targets, resolve the nearest existing ancestor.\n- Error messages must be **generic** — never echo the denied path back to the caller.\n- Apply the same check to archive extraction (zip-slip), URL-based path segments, and redirect targets.\n\n---\n\n## 3. Injection Prevention\n\n### 3a. SQL / NoSQL\n\n```typescript\n// ✅ Parameterized query\nconst user = await db.query(\n  \"SELECT * FROM users WHERE id = $1 AND tenant = $2\",\n  [userId, tenantId],\n);\n\n// ❌ String interpolation — trivially injectable\nconst user = await db.query(`SELECT * FROM users WHERE id = ${userId}`);\n```\n\nFor **identifiers** (column names, table names, ORDER BY targets) — which cannot\nbe parameterized — allowlist them explicitly:\n\n```typescript\nconst SORTABLE_COLUMNS = new Set([\"created_at\", \"name\", \"email\"] as const);\nif (!SORTABLE_COLUMNS.has(sortBy)) throw new Error(\"Invalid sort field\");\nconst rows = await db.query(`SELECT * FROM items ORDER BY ${sortBy}`);\n// ✅ safe only because sortBy was allowlisted above\n```\n\n### 3b. Command injection\n\n```typescript\n// ✅ Argument array — the OS never invokes a shell\nimport { spawn } from \"node:child_process\";\nconst proc = spawn(\"git\", [\"log\", \"--oneline\", \"-n\", \"10\"], { cwd: repoPath });\n\n// ❌ Shell string — user input can inject commands\nexec(`git log ${userBranch}`); // userBranch = \"; rm -rf /\"\n```\n\n**Additional rules:**\n\n- Never pass `shell: true` (Node.js) or equivalent when arguments include user data.\n- Allowlist accepted subcommands and flags; reject `--allow-*`, `-c`, `-C`, and code-executing runtimes (`eval`, `exec`) passed as arguments.\n- Validate and restrict the working directory to an authorized path.\n\n### 3c. Expression / template injection\n\n```typescript\n// ✅ Parse and evaluate in a sandboxed evaluator\nimport { evaluateExpression } from \"./safe_expression.ts\"; // allowlisted roots only\nconst result = evaluateExpression(condition, { results, request });\n\n// ❌ Dynamic code execution\nconst result = new Function(\"results\", \"request\", `return ${condition}`)(results, request);\n```\n\n- Never use `eval`, `new Function()`, or dynamic `import()` with a user-supplied specifier.\n- For template engines: use auto-escaping engines; never pass raw user data into unescaped template slots.\n\n---\n\n## 4. Authentication & Authorization\n\n```typescript\n// ✅ Explicit permission check after resource resolution\nconst resource = await resolveResource(request.params.id, session.tenantId);\nif (!session.permissions.includes(\"resource:write\")) {\n  throw new ForbiddenError(\"Insufficient permissions\"); // generic, no resource detail\n}\nawait resource.update(body);\n\n// ❌ Security through obscurity or order\n// \"Only admins know this URL, so we don't check\"\n```\n\n**Rules:**\n\n- **Fail closed** — deny by default; a missing or misconfigured check must block, not allow.\n- Perform the authorization check **after** resource resolution (so the resolved identity is checked, not the raw input).\n- Never rely on route ordering, URL obscurity, or client-side state for access control.\n- For multi-tenant systems, always scope every query to the authenticated tenant's ID.\n- For sensitive mutations (delete, privilege changes), require re-authentication or a confirmation token.\n- Session tokens: use `HttpOnly; Secure; SameSite=Strict` cookies or short-lived signed JWTs; invalidate on logout.\n\n---\n\n## 5. Secret Management\n\n```typescript\n// ✅ Load from environment; never log\nconst apiKey = process.env.PAYMENTS_API_KEY;\nif (!apiKey) throw new Error(\"PAYMENTS_API_KEY is not configured\");\n// Use apiKey — do not log it, do not include in error messages\n\n// ❌ Hardcoded\nconst apiKey = \"sk-prod-1234abcd\";\n\n// ❌ Logged by accident\nlogger.info(`Calling payments API with key=${apiKey}`);\n```\n\n**Rules:**\n\n- Load secrets from environment variables or a secret manager (Vault, AWS Secrets Manager, etc.) — never from source code, config files committed to VCS, or CLI arguments (process lists are world-readable).\n- Minimize the lifetime of a secret value in memory; clear it after use where the language allows.\n- Rotate secrets on a schedule and on any suspected exposure.\n- Never include secrets in error messages, log lines, HTTP responses, or serialized state.\n- Use `.gitignore` + pre-commit hooks to prevent accidental `.env` commits; add secret-scanning to CI.\n\n---\n\n## 6. Secure Data Handling\n\n```typescript\n// ✅ Key derivation for passwords (Argon2id preferred; bcrypt acceptable)\nimport { hash, verify } from \"@node-rs/argon2\";\nconst stored = await hash(plainPassword); // store this\nconst ok = await verify(stored, candidatePassword); // verify this\n\n// ❌ Reversible or weak\nconst stored = Buffer.from(password).toString(\"base64\"); // trivially reversible\nconst stored = createHash(\"md5\").update(password).digest(\"hex\"); // rainbow-table vulnerable\n```\n\n**Rules:**\n\n- Passwords: use a memory-hard KDF (Argon2id > bcrypt > scrypt). Never SHA-1/MD5/plain.\n- Data at rest: AES-256-GCM for symmetric encryption; store IV alongside ciphertext, never reuse IVs.\n- Data in transit: enforce TLS 1.2+; disable deprecated cipher suites; use HSTS.\n- PII minimization: collect only what is necessary; define retention periods; anonymize or delete on schedule.\n- For cryptographic randomness use the platform's CSPRNG (`crypto.getRandomValues`, `secrets.token_bytes`, etc.) — never `Math.random()`.\n\n---\n\n## 7. Error Handling & Audit Logging\n\n```typescript\n// ✅ Generic external message; detailed internal log; audit event\ntry {\n  const result = await performSensitiveOperation(userId, resourceId);\n  auditLog.emit(\"resource.accessed\", { userId, resourceId, outcome: \"success\" });\n  return result;\n} catch (err) {\n  auditLog.emit(\"resource.access.failed\", { userId, resourceId, reason: err.message });\n  logger.error(\"Sensitive operation failed\", { err, userId, resourceId }); // server-side only\n  throw new Error(\"Operation failed\"); // generic to caller — no internal detail\n}\n\n// ❌ Leaks internal structure\nthrow new Error(`Query failed: SELECT * FROM users WHERE id='${userId}' — ${err.message}`);\n```\n\n**Rules:**\n\n- Log the detail server-side; return a generic message to the caller.\n- Never expose stack traces, SQL queries, internal file paths, or user-enumeration hints (e.g. \"email not found\" vs. \"password incorrect\" — use the same message for both).\n- Emit a structured **audit event** for: authentication decisions, permission denials, sensitive data reads, configuration changes, and unusual volume/rate patterns.\n- Never swallow errors silently — uncaught failures may leave the system in an inconsistent state.\n\n---\n\n## 8. Transport & HTTP Security\n\n```typescript\n// ✅ Security headers on every response\nresponse.headers.set(\"Strict-Transport-Security\", \"max-age=63072000; includeSubDomains\");\nresponse.headers.set(\"Content-Security-Policy\", \"default-src 'self'\");\nresponse.headers.set(\"X-Frame-Options\", \"DENY\");\nresponse.headers.set(\"X-Content-Type-Options\", \"nosniff\");\nresponse.headers.set(\"Referrer-Policy\", \"strict-origin-when-cross-origin\");\n```\n\n**Rules:**\n\n- Validate the `Host` header on local/loopback HTTP endpoints to prevent DNS-rebinding.\n- Validate `Origin` on state-changing requests (POST/PUT/DELETE) to prevent CSRF.\n- Set `SameSite=Strict` on session cookies or use the `Double Submit Cookie` pattern.\n- Enforce a strict CSP; avoid `unsafe-inline` and `unsafe-eval`.\n- For external webhooks: verify a shared HMAC-SHA256 signature before processing the payload — fail closed (no signature configured → reject every payload).\n- Rate-limit authentication endpoints and sensitive operations.\n\n---\n\n## 9. Dependency Security\n\n**Rules:**\n\n- Pin every dependency to an **exact version** in the lock file; commit the lock file.\n- Before adding a new dependency, evaluate: Does it have native/FFI code? What permissions does it need? Does it have a security history?\n- Run a vulnerability scanner (`npm audit`, `pip audit`, `deno task audit`, Snyk, etc.) in CI; fail the build on high-severity CVEs.\n- Prefer well-maintained packages with a clear security disclosure process.\n- Minimize the dependency tree: prefer a built-in or a small focused package over a large framework dependency for security-sensitive operations.\n- For native/FFI dependencies: assess whether the build-time or runtime download is verified (checksums, provenance); prefer zero-native-dep alternatives.\n\n---\n\n## 10. Security Testing\n\nA control without a test is as good as no control. Every security boundary needs\na test that verifies **rejection by validation**, not rejection by runtime failure.\n\n```typescript\n// ✅ Tests validation fires — not that a file happens to be missing\nDeno.test(\"file handler rejects path traversal attempt\", async () => {\n  const result = await handler({ path: \"../../etc/passwd\" });\n  assertEquals(result.status, 403);\n  assertStringIncludes(result.body, \"Access denied\"); // validation message, not OS error\n});\n\n// ❌ This test is green even if the control never runs\nDeno.test(\"file handler fails on bad path\", async () => {\n  await assertRejects(() => handler({ path: \"../../etc/passwd\" })); // any throw passes\n});\n```\n\n**Required test types per control:**\n\n| Control              | Required test                                                                     |\n| -------------------- | --------------------------------------------------------------------------------- |\n| Input validation     | Rejects schema violations (wrong type, over-length, invalid enum value)           |\n| Path traversal guard | Rejects `../` traversal; rejects symlink escape; allows valid path                |\n| SQL parameterization | Injection payload stored literally, not executed (check DB state)                 |\n| Command allowlist    | Rejects blocked subcommands/flags; allows permitted ones                          |\n| Auth boundary        | Unauthenticated request → 401; unauthorized identity → 403; authorized → succeeds |\n| HMAC / webhook       | No secret configured → reject; bad signature → reject; valid signature → accept   |\n| Error messages       | Denied response body does not contain internal paths or stack traces              |\n\nTag security tests so the dedicated CI job picks them up: use `[security]` in the\ntest name for test runners that filter by name pattern.\n\n---\n\n## 11. OWASP Top 10:2021 Checklist\n\nRun through this before marking a feature complete:\n\n- [ ] **A01 Broken Access Control** — every resource enforces authorization; fail-closed; no IDOR\n- [ ] **A02 Cryptographic Failures** — PII/secrets encrypted at rest and in transit; no MD5/SHA-1 for passwords; no reused IVs\n- [ ] **A03 Injection** — parameterized queries; argument arrays for subprocesses; no `eval`/`new Function`; output escaped for context\n- [ ] **A04 Insecure Design** — threat model documented; principle of least privilege applied; defense in depth\n- [ ] **A05 Security Misconfiguration** — security headers set; debug/verbose modes disabled in production; default credentials changed; unnecessary features disabled\n- [ ] **A06 Vulnerable & Outdated Components** — all dependencies pinned; CVE scan in CI; no abandoned packages\n- [ ] **A07 Identification & Authentication Failures** — strong password policy (or passkeys/SSO); session invalidated on logout; brute-force protection; MFA for privileged actions\n- [ ] **A08 Software & Data Integrity Failures** — dependency lock file committed; CI pipeline integrity validated; deserialized data validated before use; no unsigned auto-update\n- [ ] **A09 Security Logging & Monitoring Failures** — audit trail for auth events, permission denials, config changes; anomaly alerting; logs retained per policy\n- [ ] **A10 Server-Side Request Forgery (SSRF)** — outbound URLs allowlisted; internal network segments blocked; redirects validated",
+  "constraints": [
+    "Validate all external input (HTTP body, query params, CLI args, env vars, file content) at the entry boundary with a schema validator — never deep in business logic",
+    "Use allowlists over denylists; reject unknown fields",
+    "Resolve all filesystem paths to their real absolute path before any permission or boundary check; never compare with string startsWith or indexOf alone",
+    "Reject any path that escapes the intended root after resolution",
+    "Use parameterized queries or an ORM for all database operations — never build SQL by string concatenation",
+    "Use argument arrays (never shell strings) for subprocess commands; never pass user input as part of a shell command string",
+    "Never call eval, new Function(), exec(string), or dynamically import a specifier derived from user input",
+    "Escape output for the target context (HTML, JSON, SQL, shell) before rendering",
+    "Fail closed: deny by default; a missing or invalid permission check must block, not allow",
+    "Perform the authorization check AFTER path/resource resolution, not before",
+    "Verify authentication on every request to a protected resource — never rely on route ordering alone",
+    "Never log, print, include in error messages, or serialize secrets (API keys, passwords, tokens) to disk in readable form",
+    "Load secrets from environment variables or a dedicated secret manager — never hardcode them",
+    "Keep secret values alive in memory for the shortest possible lifetime",
+    "Return generic error messages to callers; log detailed diagnostics server-side only",
+    "Never expose stack traces, internal paths, database schema, or user enumeration hints in responses",
+    "Emit an audit-trail event for every authentication decision, permission denial, and sensitive data access",
+    "Pin every dependency to an exact version; do not use @latest or floating ranges in production",
+    "Audit new dependencies for native/FFI code, excessive permissions, or known CVEs before adding them",
+    "Enforce TLS for all network communication; never fall back to plain HTTP for sensitive data",
+    "Set security-relevant HTTP response headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options)"
+  ],
+  "output_requirements": [
+    "All user-controlled inputs validated with a schema (Zod, Joi, pydantic, etc.) at the entry point",
+    "No hardcoded secrets, credentials, or API keys anywhere in source or config files",
+    "SQL / NoSQL queries use parameterized form; no string-interpolated identifiers from input",
+    "Subprocess invocations use argument arrays; no shell=true with user-derived strings",
+    "Access-denied error messages are generic; details go to server-side logs only",
+    "At least one security test per control, asserting rejection-by-validation (not rejection-by-runtime-failure)",
+    "All new dependencies pinned to exact versions"
+  ],
+  "quality_criteria": [
+    {
+      "name": "OWASP 2021 Coverage",
+      "description": "Code addresses all relevant OWASP Top 10:2021 items for the feature's surface",
+      "weight": 25
+    },
+    {
+      "name": "Input Validation",
+      "description": "All external inputs schema-validated at the boundary; allowlist-based",
+      "weight": 20
+    },
+    {
+      "name": "Injection Prevention",
+      "description": "SQL, command, template, and expression injection vectors closed",
+      "weight": 20
+    },
+    {
+      "name": "Path & Filesystem Safety",
+      "description": "realPath-resolved boundary checks; no string-only traversal guards",
+      "weight": 10
+    },
+    {
+      "name": "Auth Boundary",
+      "description": "Every side-effect checks permissions after resolution; fail-closed",
+      "weight": 10
+    },
+    {
+      "name": "Secret Management",
+      "description": "Secrets never in source, logs, errors, or plain-text serialization",
+      "weight": 10
+    },
+    {
+      "name": "Security Tests",
+      "description": "Controls are verified by tests asserting validation rejection, not runtime error",
+      "weight": 5
+    }
+  ],
+  "compatible_with": {
+    "agents": [
+      "*"
+    ]
+  },
+  "usage_count": 0
+}

@@ -1,0 +1,76 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440001",
+  "created_at": "2026-01-05T00:00:00.000Z",
+  "source": "user",
+  "scope": "global",
+  "status": "active",
+  "skill_id": "tdd-methodology",
+  "name": "Test-Driven Development Methodology",
+  "version": "1.0.0",
+  "description": "Enforces the Red-Green-Refactor cycle for reliable, well-tested code",
+  "triggers": {
+    "keywords": [
+      "implement",
+      "feature",
+      "add",
+      "create",
+      "build",
+      "fix",
+      "bugfix",
+      "develop"
+    ],
+    "task_types": [
+      "feature",
+      "bugfix",
+      "refactor",
+      "implementation"
+    ],
+    "file_patterns": [
+      "*.ts",
+      "*.js",
+      "*.py",
+      "*.go",
+      "*.rs"
+    ],
+    "tags": [
+      "development",
+      "testing",
+      "tdd"
+    ]
+  },
+  "instructions": "# Test-Driven Development Methodology\n\nYou MUST follow the Red-Green-Refactor cycle for all code changes:\n\n## Phase 1: Red (Write Failing Test)\n\n1. **Understand the requirement** - What behavior needs to be implemented?\n\n1.\n1.\n\n````typescript\n// ✅ Good test name\nDeno.test(\"calculateTotal returns sum of items when cart has products\");\n\n// ❌ Bad test name\nDeno.test(\"test1\");\n```text\n\n## Phase 2: Green (Make It Pass)\n\n1. **Write ONLY enough code** to make the test pass\n\n1.\n1.\n\n```typescript\n// ✅ Minimal implementation to pass\nfunction calculateTotal(items: Item[]): number {\n  return items.reduce((sum, item) => sum + item.price, 0);\n}\n\n// ❌ Over-engineering before tests pass\nfunction calculateTotal(items: Item[]): number {\n  // Don't add caching, discounts, etc. until needed\n}\n```text\n\n## Phase 3: Refactor (Clean Up)\n\n1. **Improve code structure** while tests stay green\n\n1.\n1.\n\n## Key Rules\n\n- **Never write production code without a failing test**\n- **Keep tests fast** - Unit tests should run in milliseconds\n- **Test behavior, not implementation** - Tests shouldn't break when refactoring\n- **One logical assertion per test** - Makes failures clear\n- **Test edge cases** - Empty inputs, nulls, boundaries\n\n## Example Workflow\n\n```text\n\n1. Write test: \"should return empty array when no items match\"\n\n1.\n1.\n1.\n1.\n1.\n```text\n````",
+  "constraints": [
+    "Never write implementation code before tests",
+    "Run tests after each change",
+    "Keep tests focused on behavior, not implementation",
+    "One logical assertion per test"
+  ],
+  "output_requirements": [
+    "Test file must exist before implementation",
+    "All tests must pass before completion",
+    "Test names describe expected behavior"
+  ],
+  "quality_criteria": [
+    {
+      "name": "Test Coverage",
+      "description": "New code has corresponding test coverage",
+      "weight": 40
+    },
+    {
+      "name": "Test-First Evidence",
+      "description": "Tests were written before implementation",
+      "weight": 30
+    },
+    {
+      "name": "Refactor Quality",
+      "description": "Code is clean and well-structured",
+      "weight": 30
+    }
+  ],
+  "compatible_with": {
+    "agents": [
+      "*"
+    ]
+  },
+  "usage_count": 0
+}

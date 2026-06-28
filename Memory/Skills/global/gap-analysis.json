@@ -9,8 +9,12 @@
   "version": "1.0.0",
   "description": "Validates a phase planning document against the codebase before implementation — checks symbol existence, file paths, schema contracts, and the Reachability Ledger.",
   "triggers": {
-    "tags": ["pre-gap", "plan-review"]
+    "tags": [
+      "pre-gap",
+      "plan-review"
+    ]
   },
+  "instructions": "# Pre-Gap Analysis Methodology\n\nYou are performing a pre-implementation gap analysis on a phase planning document. Your goal is to catch ambiguities, missing contracts, and security risks before any code is written.\n\n## Workflow\n\n1. Read the phase planning document in full.\n2. For each step, verify every behavioural claim against the actual codebase:\n   - Grep for referenced symbols, types, and file paths.\n   - Verify that schema field names, enum values, and file paths match the real code.\n3. Check the Reachability Ledger:\n   - Every symbol marked as having a production consumer must have a real importer.\n   - If a symbol is marked as pending, verify the later step that wires it actually exists.\n4. Flag underspecified fields:\n   - Enums without per-component values.\n   - Tests described in prose without concrete file names.\n   - Architecture notes that reference non-existent paths.\n5. Report gaps only — do not modify any files.\n6. Append findings to the plan document under a \"Gap Resolution\" section.",
   "constraints": [
     "Validate every behavioural claim against the codebase (grep for symbols, check file existence)",
     "Check Reachability Ledger for missing production consumers",
@@ -37,9 +41,10 @@
       "weight": 30
     }
   ],
-  "usage_count": 0,
   "compatible_with": {
-    "agents": ["*"]
+    "agents": [
+      "*"
+    ]
   },
-  "instructions": "You are performing a pre-implementation gap analysis on a phase planning document. Your goal is to catch ambiguities, missing contracts, and security risks before any code is written.\n\n## Workflow\n\n1. Read the phase planning document in full.\n2. For each step, verify every behavioural claim against the actual codebase:\n   - Grep for referenced symbols, types, and file paths.\n   - Verify that schema field names, enum values, and file paths match the real code.\n3. Check the Reachability Ledger:\n   - Every symbol marked as having a production consumer must have a real importer.\n   - If a symbol is marked as pending, verify the later step that wires it actually exists.\n4. Flag underspecified fields:\n   - Enums without per-component values.\n   - Tests described in prose without concrete file names.\n   - Architecture notes that reference non-existent paths.\n5. Report gaps only — do not modify any files.\n6. Append findings to the plan document under a 'Gap Resolution' section."
+  "usage_count": 0
 }

@@ -1,0 +1,76 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440004",
+  "created_at": "2026-01-05T00:00:00.000Z",
+  "source": "user",
+  "scope": "global",
+  "status": "active",
+  "skill_id": "error-handling",
+  "name": "Robust Error Handling",
+  "version": "1.0.0",
+  "description": "Patterns for comprehensive error handling and recovery",
+  "triggers": {
+    "keywords": [
+      "error",
+      "exception",
+      "catch",
+      "throw",
+      "handle",
+      "fail",
+      "crash",
+      "recover",
+      "retry",
+      "fallback"
+    ],
+    "task_types": [
+      "bugfix",
+      "error-handling",
+      "reliability"
+    ],
+    "file_patterns": [
+      "*.ts",
+      "*.js",
+      "*.py",
+      "*.go"
+    ],
+    "tags": [
+      "error-handling",
+      "reliability",
+      "robustness"
+    ]
+  },
+  "instructions": "# Robust Error Handling\n\nImplement comprehensive error handling for reliable applications:\n\n## 1. Error Types\n\nDefine custom error types for different error categories:\n\n```typescript\n// Define error hierarchy\nclass AppError extends Error {\n  constructor(\n    message: string,\n    public code: string,\n    public statusCode: number = 500,\n    public isOperational: boolean = true,\n  ) {\n    super(message);\n    this.name = this.constructor.name;\n  }\n}\n\nclass ValidationError extends AppError {\n  constructor(message: string, public field?: string) {\n    super(message, \"VALIDATION_ERROR\", 400);\n  }\n}\n\nclass NotFoundError extends AppError {\n  constructor(resource: string, id?: string) {\n    super(`${resource}${id ? ` with id ${id}` : \"\"} not found`, \"NOT_FOUND\", 404);\n  }\n}\n\nclass AuthorizationError extends AppError {\n  constructor(message = \"Not authorized\") {\n    super(message, \"UNAUTHORIZED\", 403);\n  }\n}\n```\n\n## 2. Try-Catch Patterns\n\n**Do:**\n\n```typescript\n// ✅ Specific error handling\ntry {\n  const result = await riskyOperation();\n  return result;\n} catch (error) {\n  if (error instanceof ValidationError) {\n    // Handle validation errors specifically\n    return { error: error.message, field: error.field };\n  }\n  if (error instanceof NotFoundError) {\n    // Handle not found errors\n    return { error: \"Resource not found\" };\n  }\n  // Re-throw unknown errors\n  throw error;\n}\n```\n\n**Don't:**\n\n```typescript\n// ❌ Silent error swallowing\ntry {\n  await riskyOperation();\n} catch (error) {\n  // Error lost forever\n}\n\n// ❌ Catching and ignoring\ntry {\n  await riskyOperation();\n} catch {\n  return null; // Caller has no idea something failed\n}\n```\n\n## 3. Error Boundaries\n\nEstablish clear error boundaries:\n\n```typescript\n// Application-level error handler\nasync function handleRequest(req: Request): Promise<Response> {\n  try {\n    return await router.handle(req);\n  } catch (error) {\n    // Log the full error internally\n    logger.error(\"Request failed\", {\n      error,\n      path: req.url,\n      method: req.method,\n    });\n\n    // Return safe error to client\n    if (error instanceof AppError && error.isOperational) {\n      return new Response(\n        JSON.stringify({ error: error.message, code: error.code }),\n        { status: error.statusCode },\n      );\n    }\n\n    // Generic error for unexpected failures\n    return new Response(\n      JSON.stringify({ error: \"Internal server error\" }),\n      { status: 500 },\n    );\n  }\n}\n```\n\n## 4. Async Error Handling\n\nHandle promise rejections:\n\n```typescript\n// ✅ Proper async error handling\nasync function processItems(items: Item[]) {\n  const results = await Promise.allSettled(\n    items.map((item) => processItem(item)),\n  );\n\n  const succeeded = results.filter((r) => r.status === \"fulfilled\");\n  const failed = results.filter((r) => r.status === \"rejected\");\n\n  if (failed.length > 0) {\n    logger.warn(`${failed.length} items failed processing`, {\n      errors: failed.map((f) => f.reason),\n    });\n  }\n\n  return succeeded.map((s) => s.value);\n}\n```\n\n## 5. Error Logging\n\nInclude sufficient context:\n\n```typescript\n// ✅ Good error logging\nlogger.error(\"Failed to process order\", {\n  error: error.message,\n  stack: error.stack,\n  orderId: order.id,\n  userId: user.id,\n  timestamp: new Date().toISOString(),\n  requestId: context.requestId,\n});\n\n// ❌ Bad error logging\nconsole.log(error); // Missing context\nconsole.log(\"Error\"); // No details at all\n```\n\n## 6. Retry Strategies\n\nImplement retries for transient failures:\n\n```typescript\nasync function withRetry<T>(\n  operation: () => Promise<T>,\n  options: {\n    maxRetries: number;\n    backoffMs: number;\n    retryCondition?: (error: unknown) => boolean;\n  },\n): Promise<T> {\n  let lastError: unknown;\n\n  for (let attempt = 1; attempt <= options.maxRetries; attempt++) {\n    try {\n      return await operation();\n    } catch (error) {\n      lastError = error;\n\n      if (options.retryCondition && !options.retryCondition(error)) {\n        throw error; // Don't retry non-retryable errors\n      }\n\n      if (attempt < options.maxRetries) {\n        const delay = options.backoffMs * Math.pow(2, attempt - 1);\n        await new Promise((resolve) => setTimeout(resolve, delay));\n      }\n    }\n  }\n\n  throw lastError;\n}\n```\n\n## 7. Graceful Degradation\n\nProvide fallbacks when possible:\n\n```typescript\nasync function getRecommendations(userId: string): Promise<Item[]> {\n  try {\n    return await recommendationService.getPersonalized(userId);\n  } catch (error) {\n    logger.warn(\"Personalized recommendations failed, using fallback\", { error });\n    // Fall back to popular items\n    return await itemService.getPopular();\n  }\n}\n```",
+  "constraints": [
+    "Never swallow errors silently",
+    "Always log errors with sufficient context",
+    "Provide meaningful error messages to users",
+    "Don't expose internal details in production errors"
+  ],
+  "output_requirements": [
+    "Errors are caught at appropriate boundaries",
+    "Error messages are actionable",
+    "Logging includes context for debugging"
+  ],
+  "quality_criteria": [
+    {
+      "name": "Error Coverage",
+      "description": "All error paths are handled",
+      "weight": 35
+    },
+    {
+      "name": "User Experience",
+      "description": "Errors don't crash the application",
+      "weight": 35
+    },
+    {
+      "name": "Debuggability",
+      "description": "Errors are logged with context",
+      "weight": 30
+    }
+  ],
+  "compatible_with": {
+    "agents": [
+      "*"
+    ]
+  },
+  "usage_count": 0
+}

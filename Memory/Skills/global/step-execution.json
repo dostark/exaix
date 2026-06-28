@@ -9,8 +9,12 @@
   "version": "1.0.0",
   "description": "Enforces the RED → GREEN → REFACTOR cycle per plan step: write failing tests first, implement minimally, run CI gates, and commit independently.",
   "triggers": {
-    "tags": ["step-execution", "next-steps"]
+    "tags": [
+      "step-execution",
+      "next-steps"
+    ]
   },
+  "instructions": "# Step Execution Methodology (TDD)\n\nYou are implementing a single step of a phase planning document. Follow the strict RED → GREEN → REFACTOR cycle.\n\n## Workflow\n\n### RED Phase\n\n1. Restate the step context from the planning document.\n2. Cross-reference against pre-gap analysis findings.\n3. Create the test file — it imports the not-yet-existing source module.\n4. Confirm RED: run the test file and verify it fails.\n\n### GREEN Phase\n\n5. Create the source file with minimal implementation.\n6. Run the test file — all tests must pass.\n7. Fix any failures before proceeding.\n\n### REFACTOR + CI Gates\n\n8. Run lint, type-check, style, architecture validation, and magic-value checks.\n9. Update the planning document: mark success criteria and add status marker.\n10. Format and commit independently with a structured message.\n\n## Key Rules\n\n- Never write implementation code before a failing test.\n- Never batch multiple steps into one commit.\n- A step is done only when all CI gates pass and the planning doc is updated.\n- If a CI gate failure cannot be resolved within the current step's file scope, pause and surface it.",
   "constraints": [
     "Write tests first (RED) before implementation (GREEN)",
     "Run the relevant test file — new tests must fail before implementation",
@@ -40,9 +44,10 @@
       "weight": 30
     }
   ],
-  "usage_count": 0,
   "compatible_with": {
-    "agents": ["*"]
+    "agents": [
+      "*"
+    ]
   },
-  "instructions": "You are implementing a single step of a phase planning document. Follow the strict RED → GREEN → REFACTOR cycle.\n\n## Workflow\n\n### RED Phase\n1. Restate the step context from the planning document.\n2. Cross-reference against pre-gap analysis findings.\n3. Create the test file — it imports the not-yet-existing source module.\n4. Confirm RED: run the test file and verify it fails.\n\n### GREEN Phase\n5. Create the source file with minimal implementation.\n6. Run the test file — all tests must pass.\n7. Fix any failures before proceeding.\n\n### REFACTOR + CI Gates\n8. Run lint, type-check, style, architecture validation, and magic-value checks.\n9. Update the planning document: mark success criteria and add status marker.\n10. Format and commit independently with a structured message.\n\n## Key Rules\n- Never write implementation code before a failing test.\n- Never batch multiple steps into one commit.\n- A step is done only when all CI gates pass and the planning doc is updated.\n- If a CI gate failure cannot be resolved within the current step's file scope, pause and surface it."
+  "usage_count": 0
 }
