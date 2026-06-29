@@ -11,7 +11,6 @@ import { basename, join } from "@std/path";
 import { exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
-import { DataFormat } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_IDENTITIES_PATH, McpToolName } from "@exaix/core";
 
@@ -79,6 +78,21 @@ const HitlRuleSchema = z.object({
 const HitlPolicySchema = z.object({
   require_secondary_approval: z.array(HitlRuleSchema).default([]),
 });
+
+/**
+ * Inline session-delegate schema — avoids the runtime cross-package import from
+ * @exaix/schemas (mirrors the HITL inlining above). The runtime loader only needs
+ * to ACCEPT and PRESERVE the block (the CLI `BlueprintFrontmatterSchema` validates
+ * it strictly at create time), so unknown sub-keys pass through (W4 fix: the fork
+ * previously dropped session_delegate entirely).
+ */
+const SessionDelegateConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  tool: z.string().min(1),
+  model: z.string().min(1).optional(),
+  gates: z.array(z.string()).optional(),
+  launch_mode: z.string().optional(),
+}).passthrough();
 
 /**
  * Extended schema for runtime blueprint usage
@@ -155,7 +169,61 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
 
   /** Per-action HITL governance rules for this blueprint. */
   hitl: HitlPolicySchema.optional(),
+
+  // === Phase 111 Session Delegation (W4: previously dropped by the fork) ===
+
+  /** Session delegation configuration; preserved on load so the daemon can act on it. */
+  session_delegate: SessionDelegateConfigSchema.optional(),
 });
+
+/**
+ * The set of frontmatter keys the unified runtime schema recognizes. Used by
+ * {@link validateRuntimeFrontmatter} to warn (not reject) on unknown keys
+ * (Phase 131 Step 2, GAP-2 — hard `.strict()` rejection lands in Step 8 once the
+ * inert template fields are stripped).
+ */
+const KNOWN_FRONTMATTER_KEYS: ReadonlySet<string> = new Set(
+  Object.keys((RuntimeBlueprintFrontmatterSchema as z.ZodObject<z.ZodRawShape>).shape),
+);
+
+/** A single unknown-frontmatter-field warning (GAP-2). */
+export interface IUnknownFieldWarning {
+  field: string;
+}
+
+/** Result of {@link validateRuntimeFrontmatter}: parsed data + non-fatal warnings. */
+export interface IRuntimeFrontmatterValidation {
+  ok: boolean;
+  data: RuntimeBlueprintFrontmatter | null;
+  warnings: IUnknownFieldWarning[];
+  errors: string[];
+}
+
+/**
+ * Validates frontmatter against the unified runtime schema and surfaces unknown
+ * top-level keys as **warnings** rather than rejecting them (GAP-2 warn-path).
+ * Legacy runtime-only fields (provider/reflexive/memory_enabled/…) are part of
+ * the schema and are NOT flagged. A future step (131 Step 8) flips this to hard
+ * rejection once inert template fields are removed.
+ */
+export function validateRuntimeFrontmatter(
+  frontmatter: Record<string, JSONValue>,
+): IRuntimeFrontmatterValidation {
+  const warnings: IUnknownFieldWarning[] = [];
+  for (const key of Object.keys(frontmatter)) {
+    if (!KNOWN_FRONTMATTER_KEYS.has(key)) warnings.push({ field: key });
+  }
+  const parsed = RuntimeBlueprintFrontmatterSchema.safeParse(frontmatter);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      data: null,
+      warnings,
+      errors: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`),
+    };
+  }
+  return { ok: true, data: parsed.data, warnings, errors: [] };
+}
 
 export type RuntimeBlueprintFrontmatter = z.infer<typeof RuntimeBlueprintFrontmatterSchema>;
 
@@ -252,19 +320,18 @@ export class BlueprintLoader {
         content.slice(yamlMatch[0].length),
         identityId,
         path,
-        DataFormat.YAML,
       );
     }
 
-    // Try TOML frontmatter
-    const tomlMatch = content.match(/^\+\+\+\n([\s\S]*?)\n\+\+\+\n?/);
-    if (tomlMatch) {
-      return this.parseWithFrontmatter(
-        tomlMatch[1],
-        content.slice(tomlMatch[0].length),
+    // TOML frontmatter (+++) is retired (Phase 131 Step 2): YAML (---) is the
+    // canonical, migrated-to format and the CLI now emits it. A legacy +++ file
+    // is reported as an explicit, actionable error rather than silently treated
+    // as a frontmatter-less system prompt.
+    if (content.startsWith("+++\n")) {
+      throw new BlueprintLoadError(
+        `Blueprint '${identityId}' uses retired TOML (+++) frontmatter; convert it to YAML (--- ... ---).`,
         identityId,
         path,
-        DataFormat.TOML,
       );
     }
 
@@ -280,20 +347,14 @@ export class BlueprintLoader {
     body: string,
     identityId: string,
     path: string,
-    format: DataFormat.YAML | DataFormat.TOML,
   ): ILoadedBlueprint {
     let parsed: Record<string, JSONValue>;
 
     try {
-      if (format === DataFormat.YAML) {
-        parsed = parseYaml(frontmatterRaw) as Record<string, JSONValue>;
-      } else {
-        // TOML parsing - use dynamic import to avoid bundling if not needed
-        throw new Error("TOML frontmatter not yet implemented");
-      }
+      parsed = parseYaml(frontmatterRaw) as Record<string, JSONValue>;
     } catch (error) {
       throw new BlueprintLoadError(
-        `Invalid ${String(format).toUpperCase()} frontmatter in blueprint '${identityId}': ${
+        `Invalid YAML frontmatter in blueprint '${identityId}': ${
           error instanceof Error ? error.message : String(error)
         }`,
         identityId,
@@ -301,12 +362,17 @@ export class BlueprintLoader {
       );
     }
 
-    // Validate frontmatter with Zod
-    const validation = RuntimeBlueprintFrontmatterSchema.safeParse(parsed);
-    if (!validation.success) {
-      const errors = validation.error.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ");
+    // Validate frontmatter with the unified schema; unknown top-level keys are
+    // surfaced as warnings (GAP-2 warn-path) rather than rejected — hard
+    // `.strict()` rejection lands in Phase 131 Step 8 once inert template fields
+    // are stripped.
+    const validation = validateRuntimeFrontmatter(parsed);
+    for (const w of validation.warnings) {
+      console.warn(`Unknown frontmatter field '${w.field}' in blueprint '${identityId}' (ignored)`);
+    }
+    if (!validation.ok || validation.data === null) {
       throw new BlueprintLoadError(
-        `Invalid frontmatter in blueprint '${identityId}': ${errors}`,
+        `Invalid frontmatter in blueprint '${identityId}': ${validation.errors.join(", ")}`,
         identityId,
         path,
       );

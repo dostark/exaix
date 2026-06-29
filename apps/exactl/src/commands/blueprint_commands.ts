@@ -8,7 +8,8 @@
 
 import { ensureDir, exists } from "@std/fs";
 import { join } from "@std/path";
-import { parse as parseToml, stringify as stringifyToml } from "@std/toml";
+import { parse as parseToml } from "@std/toml";
+import { stringify as stringifyYaml } from "@std/yaml";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { BlueprintStatus, ProviderType } from "@exaix/core";
 import { ValidationChain } from "@exaix/cli/validation/validation_chain.ts";
@@ -694,8 +695,10 @@ export class BlueprintCommands extends BaseCommand {
     model: string,
     options: BlueprintCreateOptions,
   ): Promise<void> {
-    const content = `+++
-${stringifyToml(frontmatter)}+++
+    // YAML (---) is the canonical frontmatter format (Phase 131 Step 2: the
+    // TOML→YAML migration is finished and the runtime loader no longer parses +++).
+    const content = `---
+${stringifyYaml(frontmatter)}---
 
 ${systemPrompt}
 `;
