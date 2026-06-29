@@ -75,6 +75,8 @@ export class CapabilityMatcher {
     language: string;
     taskType: string;
     portalType: string;
+    description: string;
+    routingHint: string;
   } {
     const frontmatter = blueprint.frontmatter as BlueprintFrontmatterMap;
     const languageField = typeof frontmatter.language === "string"
@@ -93,11 +95,42 @@ export class CapabilityMatcher {
       ? frontmatter.portalType
       : undefined;
 
+    const descriptionField = typeof frontmatter.description === "string" ? frontmatter.description : undefined;
+    const routingHintField = typeof frontmatter.routing_hint === "string" ? frontmatter.routing_hint : undefined;
+
     return {
       language: normalize([languageField])[0] ?? "",
       taskType: normalize([taskTypeField])[0] ?? "",
       portalType: normalize([portalTypeField])[0] ?? "",
+      description: descriptionField?.toLowerCase() ?? "",
+      routingHint: routingHintField?.toLowerCase() ?? "",
     };
+  }
+
+  /**
+   * Score how well a blueprint's description/routing_hint matches the request text.
+   * Uses simple word overlap: shared unique words / total unique words in both.
+   */
+  private computeTextScore(
+    requestText: string,
+    description: string,
+    routingHint: string,
+  ): number {
+    const textTokens = new Set(
+      requestText.toLowerCase().split(/[\W_]+/).filter((t) => t.length > 2),
+    );
+    const hintTokens = new Set(
+      (routingHint + " " + description).toLowerCase().split(/[\W_]+/).filter((t) => t.length > 2),
+    );
+
+    if (textTokens.size === 0 || hintTokens.size === 0) return 0;
+
+    let overlapCount = 0;
+    for (const token of textTokens) {
+      if (hintTokens.has(token)) overlapCount++;
+    }
+
+    return overlapCount / textTokens.size;
   }
 
   /**
@@ -105,6 +138,8 @@ export class CapabilityMatcher {
    * Returns the closest-matching blueprint rather than throwing.
    * Scores all blueprints by capability overlap and returns the best,
    * or null if the list is empty.
+   * When requestText is available, boosts candidates whose description
+   * or routing_hint matches the request text (Phase 131 Step 8).
    */
   fallback(
     blueprints: ILoadedBlueprint[],
@@ -131,7 +166,13 @@ export class CapabilityMatcher {
       const capabilityScore = totalRequested > 0 ? uniqueMatches.length / totalRequested : 1;
 
       const metadata = this.extractBlueprintMetadata(bp);
-      const overallScore = this.computeOverallScore(capabilityScore, criteria, metadata);
+      let overallScore = this.computeOverallScore(capabilityScore, criteria, metadata);
+
+      // Boost score when requestText matches description or routing_hint
+      if (criteria.requestText && overallScore > 0) {
+        const textScore = this.computeTextScore(criteria.requestText, metadata.description, metadata.routingHint);
+        overallScore = overallScore * 0.8 + textScore * 0.2;
+      }
 
       if (capabilityScore <= 0) continue;
 

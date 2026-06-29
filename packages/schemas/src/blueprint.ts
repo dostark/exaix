@@ -105,6 +105,9 @@ export const BlueprintFrontmatterSchema = z.object({
   /** Optional description */
   description: z.string().optional(),
 
+  /** Routing hint for NL task matching (Phase 131 Step 8) — short action-oriented phrase consumed by routing policy */
+  routing_hint: z.string().optional(),
+
   /** Default skills to apply to all requests for this agent (Phase 17) */
   default_skills: z.array(z.string()).optional(),
 

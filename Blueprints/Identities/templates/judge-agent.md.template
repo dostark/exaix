@@ -3,9 +3,6 @@ identity_id: "{{agent_id}}"
 name: "{{name}}"
 model: "google:gemini-2.0-flash-exp"
 capabilities: ["read_file"]
-judge_mode: true
-criteria_version: "1.0"
-verdict_threshold: 70
 created: "{{timestamp}}"
 created_by: "{{author}}"
 version: "1.0.0"

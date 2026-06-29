@@ -134,6 +134,9 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
   /** Description */
   description: z.string().optional(),
 
+  /** Routing hint for NL task matching (Phase 131 Step 8) */
+  routing_hint: z.string().optional(),
+
   /** Language or locale this agent primarily supports */
   language: z.string().min(1).optional(),
 

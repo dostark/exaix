@@ -91,6 +91,7 @@ export class RoutingPolicyService {
       taskType: explicitCriteria?.taskType ?? analysis?.taskType,
       portalType: explicitCriteria?.portalType,
       tags: explicitCriteria?.tags ?? analysis?.tags ?? [],
+      requestText: context.requestText,
     };
   }
 

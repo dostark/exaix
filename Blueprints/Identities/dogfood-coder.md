@@ -16,6 +16,14 @@ permitted_tools:
   - run_command
   - list_directory
   - create_directory
+hitl:
+  require_secondary_approval:
+    - tool: "write_file"
+      reason: "Writing files modifies portal source — confirm before write"
+    - tool: "patch_file"
+      reason: "Patching files modifies portal source — confirm before patch"
+    - tool: "run_command"
+      reason: "Running commands has system-level side effects — confirm before execute"
 session_delegate:
   enabled: true
   tool: opencode

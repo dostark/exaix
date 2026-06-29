@@ -3,10 +3,6 @@ identity_id: "{{agent_id}}"
 name: "{{name}}"
 model: "google:gemini-2.0-flash-exp"
 capabilities: ["read_file", "write_file"]
-conversational: true
-max_turns: 20
-memory_enabled: true
-context_window: 10
 created: "{{timestamp}}"
 created_by: "{{author}}"
 version: "1.0.0"

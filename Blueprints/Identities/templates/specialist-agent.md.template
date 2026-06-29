@@ -3,8 +3,6 @@ identity_id: "{{agent_id}}"
 name: "{{name}} Specialist"
 model: "google:gemini-2.0-flash-exp"
 capabilities: ["read_file", "write_file", "list_directory", "run_command"]
-domain: "{{domain}}"
-expertise_level: "expert"
 created: "{{timestamp}}"
 created_by: "{{author}}"
 version: "1.0.0"
@@ -193,6 +191,7 @@ Follow your `response-contract` skill for the mandatory `<thought>`/`<content>` 
     }
   }
 }
+```
 
 ## Specialist Personas
 

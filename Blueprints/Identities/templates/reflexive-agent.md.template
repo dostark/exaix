@@ -3,9 +3,6 @@ identity_id: "{{agent_id}}"
 name: "{{name}}"
 model: "google:gemini-2.0-flash-exp"
 capabilities: ["read_file", "write_file", "list_directory"]
-reflexive: true
-max_reflexion_iterations: 3
-confidence_required: 80
 created: "{{timestamp}}"
 created_by: "{{author}}"
 version: "1.0.0"

@@ -80,6 +80,20 @@ interface BlueprintTemplate {
   systemPrompt: string;
 }
 
+/**
+ * Maps CLI template names to their corresponding .template filenames.
+ * This is the single source of truth for template resolution (Phase 131 Step 8).
+ */
+const TEMPLATE_NAME_MAP: Record<string, string> = {
+  default: "pipeline-agent",
+  coder: "specialist-agent",
+  reviewer: "judge-agent",
+  architect: "collaborative-agent",
+  researcher: "research-agent",
+  gemini: "conversational-agent",
+  mock: "reflexive-agent",
+};
+
 const TEMPLATES: Record<string, BlueprintTemplate> = {
   default: {
     model: "ollama:codellama:13b",
@@ -585,7 +599,51 @@ export class BlueprintCommands extends BaseCommand {
   }
 
   /**
-   * Apply template settings to options
+   * Read a .template file from disk and parse it into a BlueprintTemplate.
+   * Returns null if the template name is unknown or the file does not exist.
+   */
+  private readTemplateFile(templateName: string): BlueprintTemplate | null {
+    const fileName = TEMPLATE_NAME_MAP[templateName];
+    if (!fileName) return null;
+
+    const templatesDir = join(this.getBlueprintsDir(), "templates");
+    const filePath = join(templatesDir, `${fileName}.md.template`);
+    try {
+      const content = Deno.readTextFileSync(filePath);
+      // Extract frontmatter and body
+      const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+      if (!match) return null;
+
+      const frontmatterLines = match[1].split("\n");
+      const body = match[2].trim();
+
+      const frontmatter: Record<string, string> = {};
+      for (const line of frontmatterLines) {
+        const colonIdx = line.indexOf(":");
+        if (colonIdx === -1) continue;
+        const key = line.slice(0, colonIdx).trim();
+        const value = line.slice(colonIdx + 1).trim().replace(/^["']|["']$/g, "");
+        frontmatter[key] = value;
+      }
+
+      const model = (frontmatter.model as string) || "";
+      const caps = frontmatter.capabilities;
+      const capabilities = Array.isArray(caps)
+        ? caps.map((c: string) => c.trim())
+        : typeof caps === "string"
+        ? caps.replace(/^\[|\]$/g, "").split(",").map((c: string) => c.trim())
+        : [];
+
+      return { model, capabilities, systemPrompt: body };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Apply template settings to options.
+   * Phase 131 Step 8: tries to read from a .template file on disk first
+   * (via the name map), falling back to the hardcoded TEMPLATES map.
    */
   private applyTemplate(
     options: BlueprintCreateOptions,
@@ -594,11 +652,20 @@ export class BlueprintCommands extends BaseCommand {
     let capabilities = options.capabilities?.split(",").map((s) => s.trim()) || [];
     let systemPrompt = options.systemPrompt;
 
-    if (options.template && TEMPLATES[options.template]) {
-      const template = TEMPLATES[options.template];
-      model = model || template.model;
-      capabilities = capabilities.length > 0 ? capabilities : template.capabilities;
-      systemPrompt = systemPrompt || template.systemPrompt;
+    if (options.template) {
+      // Try reading from .template file on disk first (Option A reconciliation)
+      const fileTemplate = this.readTemplateFile(options.template);
+      if (fileTemplate) {
+        model = model || fileTemplate.model;
+        capabilities = capabilities.length > 0 ? capabilities : fileTemplate.capabilities;
+        systemPrompt = systemPrompt || fileTemplate.systemPrompt;
+      } else if (TEMPLATES[options.template]) {
+        // Fallback to hardcoded map
+        const template = TEMPLATES[options.template];
+        model = model || template.model;
+        capabilities = capabilities.length > 0 ? capabilities : template.capabilities;
+        systemPrompt = systemPrompt || template.systemPrompt;
+      }
     }
 
     if (!model) {
@@ -641,9 +708,17 @@ export class BlueprintCommands extends BaseCommand {
       finalPrompt = await Deno.readTextFile(options.systemPromptFile);
     }
 
-    // Use default if no prompt provided
+    // Use template body or default if no prompt provided
     if (!finalPrompt) {
-      finalPrompt = TEMPLATES.default.systemPrompt;
+      if (options.template) {
+        const fileTemplate = this.readTemplateFile(options.template);
+        if (fileTemplate) {
+          finalPrompt = fileTemplate.systemPrompt;
+        }
+      }
+      if (!finalPrompt) {
+        finalPrompt = TEMPLATES.default.systemPrompt;
+      }
     }
 
     // Validate required tags
