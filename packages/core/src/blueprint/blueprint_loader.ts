@@ -111,6 +111,20 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
   /** Provider name (legacy field, prefer model with provider prefix) */
   provider: z.string().optional(),
 
+  // === Phase 131 Step 6 — declarative model preferences (W5/W20) ===
+
+  /** Preferred provider hint (resolved by resolveIdentityModel; `model` overrides). */
+  preferred_provider: z.string().min(1).optional(),
+
+  /** Size tier mapped onto task complexity for provider selection. */
+  model_size: z.enum(["S", "M", "L", "XL"]).optional(),
+
+  /** Extended-thinking hint; ignored by providers that do not support it. */
+  thinking: z.boolean().optional(),
+
+  /** Reasoning-effort hint; ignored by providers that do not support it. */
+  effort: z.string().min(1).optional(),
+
   /** Agent capabilities */
   capabilities: z.array(z.string()).default([]),
 

@@ -2,12 +2,20 @@
 identity_id: "security-expert"
 name: "Security Expert"
 model: "google:gemini-2.0-flash-exp"
-capabilities: ["read_file", "list_directory", "grep_search", "fetch_url", "git_info", "deno_task", "patch_file"]
+capabilities: ["security_audit", "code_review", "vulnerability_analysis"]
 created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"
 version: "1.0.0"
 description: "Security specialist for in-depth vulnerability analysis and remediation"
 default_skills: ["security-first", "code-review", "portal-grounding"]
+permitted_tools:
+  - read_file
+  - list_directory
+  - grep_search
+  - fetch_url
+  - git_info
+  - deno_task
+  - patch_file
 ---
 
 # Security Expert Agent

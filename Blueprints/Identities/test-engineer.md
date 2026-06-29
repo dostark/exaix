@@ -2,21 +2,21 @@
 identity_id: "test-engineer"
 name: "Test Engineer"
 model: "google:gemini-2.0-flash-exp"
-capabilities: [
-  "read_file",
-  "write_file",
-  "list_directory",
-  "run_command",
-  "grep_search",
-  "deno_task",
-  "patch_file",
-  "git_info",
-]
+capabilities: ["testing", "code_review"]
 created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"
 version: "1.1.0"
 description: "Testing specialist for comprehensive test design and implementation"
 default_skills: ["response-contract", "tdd-methodology", "error-handling", "portal-grounding"]
+permitted_tools:
+  - read_file
+  - write_file
+  - list_directory
+  - run_command
+  - grep_search
+  - deno_task
+  - patch_file
+  - git_info
 ---
 
 # Test Engineer Agent

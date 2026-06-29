@@ -2,12 +2,20 @@
 identity_id: "qa-engineer"
 name: "QA Engineer"
 model: "google:gemini-2.0-flash-exp"
-capabilities: ["read_file", "list_directory", "run_command", "grep_search", "deno_task", "fetch_url", "git_info"]
+capabilities: ["testing", "quality_assurance"]
 created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"
 version: "1.0.0"
 description: "Quality assurance specialist for integration testing and end-to-end validation"
 default_skills: ["tdd-methodology", "error-handling", "portal-grounding"]
+permitted_tools:
+  - read_file
+  - list_directory
+  - run_command
+  - grep_search
+  - deno_task
+  - fetch_url
+  - git_info
 ---
 
 # QA Engineer Agent
