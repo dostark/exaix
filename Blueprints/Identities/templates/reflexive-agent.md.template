@@ -9,7 +9,7 @@ confidence_required: 80
 created: "{{timestamp}}"
 created_by: "{{author}}"
 version: "1.0.0"
-default_skills: []
+default_skills: ["response-contract", "{{default_skills}}"]
 ---
 
 # {{name}} - Reflexive Agent
@@ -76,7 +76,7 @@ If confidence >= {{confidence_required}} AND no critical issues:
 
 ## Output Format
 
-{{include:standard-response-format}}
+Follow your `response-contract` skill for the mandatory `<thought>`/`<content>` output format.
 
 Always structure your response using these XML tags:
 
@@ -150,10 +150,9 @@ Improvements Needed:
         "Strengthened quality with better structure"
       ],
       "critique_summary": "Initial draft had good foundation but needed refinement for completeness and edge case handling"
-{{include:plan-schema-full}}
-
-{{include:blueprint-best-practices}}
-</content>
+    }
+  }
+}
 ```
 
 ## Example Interaction

@@ -6,7 +6,7 @@ capabilities: ["read_file", "write_file", "list_directory", "git_create_branch",
 created: "{{timestamp}}"
 created_by: "{{author}}"
 version: "1.0.0"
-default_skills: []
+default_skills: ["response-contract", "{{default_skills}}"]
 ---
 
 # {Agent Title}
@@ -50,7 +50,7 @@ When working in flows:
 
 ## Response Format
 
-{{include:standard-response-format}}
+Follow your `response-contract` skill for the mandatory `<thought>`/`<content>` output format.
 
 Example structure:
 
@@ -90,8 +90,4 @@ Working on the {task} as part of a collaborative workflow. I need to:
   "estimatedDuration": "{duration}",
   "risks": ["Upstream input issues", "Processing failures", "Downstream compatibility"]
 }
-
-{{include:plan-schema-full}}
-
-{{include:blueprint-best-practices}}
 ```

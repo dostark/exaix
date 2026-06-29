@@ -150,32 +150,25 @@ version = "1.0.0"
 
 Identity description and persona...
 
-## Shared fragments (new)
+## Skills (new)
 
-To reduce code duplication in identities, use the `{{include:fragment_name}}` syntax. This will inject the contents of `Blueprints/Fragments/fragment_name.md` into the identity's system prompt during loading.
+To reduce code duplication across identities, use `default_skills` to reference shared skills. Skills are versioned, typed, and criticality-aware — the modern replacement for fragment includes.
 
 ### Example Usage:
 
-```markdown
-## Response Format
+```yaml
+default_skills: ["response-contract", "code-review", "portal-grounding"]
+```
 
-{{include:standard-response-format}}
+### Key Skills:
 
-### Plan JSON Schema
+- `response-contract`: Mandatory `<thought>`/`<content>` output contract with JSON schema.
+- `code-review`: Comprehensive code review checklist.
+- `security-first`: Secure coding and vulnerability assessment.
+- `tdd-methodology`: Red-Green-Refactor cycle and test design.
+- `portal-grounding`: Grounding responses in portal context.
 
-{{include:plan-schema-full}}
-```text
-````text
-
-### Key Fragments:
-
-- `standard-response-format`: Unified instructions for `<thought>` and `<content>` tags.
-- `plan-schema-full`: The complete, authoritative JSON schema for executable plans.
-- `blueprint-best-practices`: Tips for prompt engineering and plan quality.
-
-Fragments are resolved recursively, allowing fragments to include other fragments.
-
-````text
+Skills are loaded at runtime by the skill service. Every identity should include `response-contract` in its `default_skills`.
 ## Validation
 
 The system will:

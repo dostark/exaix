@@ -8,7 +8,7 @@ expertise_level: "expert"
 created: "{{timestamp}}"
 created_by: "{{author}}"
 version: "1.0.0"
-default_skills: []
+default_skills: ["response-contract", "{{default_skills}}"]
 ---
 
 # {{name}} - Domain Specialist Agent
@@ -73,7 +73,7 @@ Provide actionable recommendations:
 
 ## Output Format
 
-{{include:standard-response-format}}
+Follow your `response-contract` skill for the mandatory `<thought>`/`<content>` output format.
 
 ```xml
 <thought>
@@ -193,11 +193,6 @@ Provide actionable recommendations:
     }
   }
 }
-
-{{include:plan-schema-full}}
-
-{{include:blueprint-best-practices}}
-```
 
 ## Specialist Personas
 

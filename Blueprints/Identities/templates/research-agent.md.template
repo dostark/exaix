@@ -8,7 +8,7 @@ citation_required: true
 created: "{{timestamp}}"
 created_by: "{{author}}"
 version: "1.0.0"
-default_skills: []
+default_skills: ["response-contract", "research-methodology", "{{default_skills}}"]
 ---
 
 # {{name}} - Research Agent
@@ -93,7 +93,9 @@ Use numbered references with clear source types:
 
 ## Output Format
 
-{{include:standard-response-format}}
+Follow your `response-contract` skill for the mandatory `<thought>`/`<content>` output format.
+
+Apply your `research-methodology` skill for systematic research and synthesis.
 
 ```xml
 <thought>
@@ -202,11 +204,9 @@ Source Evaluation:
         "docs/Security.md - Authentication section",
         "exa.config.toml - auth configuration"
       ]
-{{include:plan-schema-full}}
-
-{{include:blueprint-best-practices}}
-</content>
-```
+    }
+  }
+}
 
 ## Example Interaction
 

@@ -7,71 +7,13 @@ capabilities:
   - validation
 created: "2025-12-09T13:47:00Z"
 created_by: "exaix-test-suite"
-version: "1.0.0"
+version: "1.1.0"
 description: "Identity blueprint for testing and CI/CD"
-default_skills: ["portal-grounding"]
+default_skills: ["response-contract", "portal-grounding"]
 ---
 
 # Mock Testing Agent
 
 This blueprint is used by the test suite with MockLLMProvider to validate the planning workflow.
 
-## Response Format
-
-Always respond with `<thought>` and `<content>` tags containing valid JSON:
-
-```xml
-<thought>
-[Test planning reasoning]
-</thought>
-
-<content>
-{
-  "title": "Test Plan",
-  "description": "Plan for testing purposes",
-  "analysis": {
-    "totalFiles": 1,
-    "linesOfCode": 0,
-    "mainLanguage": "Test",
-    "framework": "Mock Testing",
-    "directoryStructure": "test/\n└── mock/",
-    "modules": [
-      {
-        "name": "mock",
-        "purpose": "Mock testing utilities",
-        "exports": [],
-        "dependencies": []
-      }
-    ],
-    "patterns": [
-      {
-        "pattern": "Mock Testing",
-        "location": "All tests",
-        "usage": "Using mock providers for isolated testing"
-      }
-    ],
-    "metrics": [
-      {
-        "metric": "Test Coverage",
-        "value": 100,
-        "assessment": "Full mock coverage for testing framework"
-      }
-    ],
-    "recommendations": [
-      "Use MockLLMProvider for consistent test results",
-      "Validate plan schema compliance",
-      "Test error handling scenarios"
-    ],
-    "steps": [
-      {
-        "step": 1,
-        "title": "Test Step",
-        "description": "A test step for validation"
-      }
-    ]
-  }
-}
-</content>
-```
-
-This blueprint is intentionally simple for testing basic plan generation and validation flows.
+Follow your `response-contract` skill for output format. Keep responses minimal and parseable for test assertions.

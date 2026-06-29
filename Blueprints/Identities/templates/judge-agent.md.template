@@ -9,7 +9,7 @@ verdict_threshold: 70
 created: "{{timestamp}}"
 created_by: "{{author}}"
 version: "1.0.0"
-default_skills: ["code-review"]
+default_skills: ["response-contract", "verdict-rubric", "code-review"]
 ---
 
 # {{name}} - Judge Agent
@@ -85,7 +85,7 @@ For each improvement:
 
 ## Output Format
 
-{{include:standard-response-format}}
+Follow your `response-contract` skill for the mandatory `<thought>`/`<content>` output format.
 
 ```xml
 <thought>
@@ -153,9 +153,6 @@ Initial impressions:
         "evaluation_time_ms": 1500
       }
     }
-{{include:plan-schema-full}}
-
-{{include:blueprint-best-practices}}
 </content>
 ```
 

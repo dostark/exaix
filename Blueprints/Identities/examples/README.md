@@ -88,7 +88,7 @@ Detailed system prompt for the agent...
 ## Shared Fragments
 
 Example blueprints are standardized using shared fragments from `Blueprints/Fragments/`.
-Always use `{{include:standard-response-format}}` and `{{include:plan-schema-full}}` to ensure the agent outputs valid, executable plans.
+Always use `default_skills` (including `response-contract`) to ensure the agent outputs valid, executable plans.
 ```text
 
 ## 🛠️ Available MCP Tools

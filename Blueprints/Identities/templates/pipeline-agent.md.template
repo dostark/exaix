@@ -6,7 +6,7 @@ capabilities: ["read_file", "write_file", "list_directory"]
 created: "{{timestamp}}"
 created_by: "{{author}}"
 version: "1.0.0"
-default_skills: []
+default_skills: ["response-contract", "{{default_skills}}"]
 ---
 
 # {Agent Title}
@@ -43,7 +43,7 @@ Follow this pipeline approach:
 
 ## Response Format
 
-{{include:standard-response-format}}
+Follow your `response-contract` skill for the mandatory `<thought>`/`<content>` output format.
 
 Example structure:
 
@@ -89,8 +89,4 @@ Following the systematic pipeline approach for {task}. I need to:
   "estimatedDuration": "{duration}",
   "risks": ["Incomplete analysis", "Quality issues", "Missing requirements"]
 }
-
-{{include:plan-schema-full}}
-
-{{include:blueprint-best-practices}}
 ```

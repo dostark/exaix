@@ -10,7 +10,7 @@ context_window: 10
 created: "{{timestamp}}"
 created_by: "{{author}}"
 version: "1.0.0"
-default_skills: []
+default_skills: ["response-contract", "{{default_skills}}"]
 ---
 
 # {{name}} - Conversational Agent
@@ -76,7 +76,7 @@ Track and manage these conversation states:
 
 ## Output Format
 
-{{include:standard-response-format}}
+Follow your `response-contract` skill for the mandatory `<thought>`/`<content>` output format.
 
 Structure your conversational responses using JSON format:
 
@@ -139,10 +139,6 @@ Open questions:
     }
   }
 }
-
-{{include:plan-schema-full}}
-
-{{include:blueprint-best-practices}}
 
 <response>
 [Your natural conversational response to the user]

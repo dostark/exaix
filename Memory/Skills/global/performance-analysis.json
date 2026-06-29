@@ -1,0 +1,55 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440022",
+  "created_at": "2026-06-29T00:00:00.000Z",
+  "source": "user",
+  "scope": "global",
+  "status": "active",
+  "skill_id": "performance-analysis",
+  "name": "Performance Analysis & Optimization",
+  "version": "1.0.0",
+  "description": "Framework for identifying performance bottlenecks and recommending optimizations across algorithm, database, memory, I/O, and concurrency domains",
+  "triggers": {
+    "tags": [
+      "performance",
+      "optimization",
+      "profiling",
+      "bottleneck",
+      "scalability"
+    ]
+  },
+  "instructions": "# Performance Analysis & Optimization\n\n## 1. Algorithmic Efficiency\n- Identify O(n²) or worse loops\n- Check for unnecessary iterations\n- Review data structure choices\n- Assess recursion-depth risks\n\n## 2. Database Performance\n- Identify N+1 query patterns\n- Review index usage\n- Check for missing pagination\n- Assess query complexity\n\n## 3. Memory Management\n- Detect memory leaks\n- Review object lifecycle\n- Check for excessive allocations\n- Assess buffer sizing\n\n## 4. I/O Efficiency\n- Identify blocking operations\n- Review async/await usage\n- Check for unnecessary network calls\n- Assess file handling\n\n## 5. Concurrency\n- Review thread safety\n- Check for race conditions\n- Assess parallelisation opportunities\n- Evaluate connection pooling\n\n## Impact Definitions\n\n| Impact | Description            | Performance Gain |\n|--------|------------------------|------------------|\n| HIGH   | Critical path opt.     | >50% improvement   |\n| MEDIUM | Noticeable improvement | 10-50% improvement |\n| LOW    | Minor optimisation     | <10% improvement   |",
+  "constraints": [
+    "Always profile before optimizing — never guess at bottlenecks",
+    "Recommend regression benchmarks alongside every optimisation",
+    "Prefer algorithmic improvements over micro-optimisations"
+  ],
+  "output_requirements": [
+    "Bottleneck identification with impact severity (HIGH/MEDIUM/LOW)",
+    "Current-behaviour vs expected-improvement for each finding",
+    "Prioritised recommendation list with estimated effort"
+  ],
+  "quality_criteria": [
+    {
+      "name": "Evidence-Based",
+      "description": "Every bottleneck claim is supported by profiler data, benchmarks, or code analysis",
+      "weight": 40
+    },
+    {
+      "name": "Actionability",
+      "description": "Each recommendation includes a concrete code- or config-level change",
+      "weight": 30
+    },
+    {
+      "name": "Regression Safety",
+      "description": "Optimisations are paired with regression benchmarks to prevent silent regressions",
+      "weight": 30
+    }
+  ],
+  "compatible_with": {
+    "agents": [
+      "performance-engineer",
+      "*"
+    ]
+  },
+  "usage_count": 0
+}

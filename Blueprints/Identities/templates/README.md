@@ -6,17 +6,16 @@ This directory contains **abstract agent patterns** designed to be used as start
 
 Unlike **Examples** (which are fully defined personas like "Code Reviewer"), **Templates** are structural skeletons. They define _how_ an agent thinks or interacts (e.g., "Pipeline Step", "Collaborator", "Judge") but leave the _who_ (persona) and _what_ (specific task) to you.
 
-## Shared Fragments 🆕
+## Skills Integration 🆕
 
-To reduce redundancy and ensure consistent behavior across all agents, templates use the `{{include:fragment_name}}` syntax.
+To reduce redundancy and ensure consistent behavior across all agents, templates use `default_skills` to reference shared skills. Every template includes `response-contract` as a critical skill for the mandatory output contract.
 
-Key fragments include:
+Key skills include:
 
-- `standard-response-format`: Standardizes the `<thought>` and `<content>` response structure.
-- `plan-schema-full`: Provides the authoritative JSON schema for executable plans.
-- `blueprint-best-practices`: Shared instructions for generating high-quality plans.
-
-Fragments are located in `Blueprints/Fragments/`.
+- `response-contract`: Standardizes the `<thought>` and `<content>` response structure with JSON schema.
+- `code-review`: Comprehensive code review checklist.
+- `security-first`: Secure coding and vulnerability assessment.
+- `verdict-rubric`: Structured evaluation criteria for LLM-as-a-Judge agents.
 
 ## Available Templates
 
