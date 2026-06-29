@@ -33,6 +33,17 @@ output_requirements:
   - "Reasoning must explicitly mention items from the File List when applicable"
   - "Proposed actions must target existing paths or clearly defined new paths"
 
+quality_criteria:
+  - name: "Path Reality"
+    description: "Every referenced path exists in the File List or is an explicitly-justified new path"
+    weight: 50
+  - name: "Evidence Citation"
+    description: "Claims about existing logic cite the specific file they come from"
+    weight: 30
+  - name: "Uncertainty Honesty"
+    description: "Missing/unknown files are flagged in <thought>, not assumed present"
+    weight: 20
+
 compatible_with:
   agents:
     - "*"
@@ -75,3 +86,25 @@ When generating a `<content>` block:
 - **Paths**: Ensure all `path` parameters in `actions` correspond to the reality of the portal.
 - **Context**: If your plan relies on existing logic, cite the specific file from the `File List` where that logic resides.
 - **Creation**: When proposing new files, ensure they follow the established naming conventions and directory structure seen in the `File List`.
+
+## 4. Verification Workflow
+
+Before finalizing any plan that touches the portal, run this quick check:
+
+1. **List the files you will read or modify** and confirm each appears in the
+   `File List`. If one is missing, either remove the reference or add an explicit
+   discovery step (`list_directory` / `search_files`) before the action that uses it.
+2. **Confirm new-file placement** matches a sibling pattern already in the tree
+   (e.g. tests mirror their source package; a package's public API lives in its
+   `mod.ts`).
+3. **Re-read before patching.** For an edit to a large existing file, read the
+   relevant region first so the patch targets real line content rather than an
+   assumed shape.
+
+## 5. Common Hallucination Traps
+
+- Inferring a directory exists because a sibling does (`packages/core/` present
+  does not imply `packages/controllers/`).
+- Assuming a config file (`.env`, a lint config) is present when it is not listed.
+- Citing a function or export that "should" exist by convention without having
+  seen it in the File List or read it. When in doubt, grep first.

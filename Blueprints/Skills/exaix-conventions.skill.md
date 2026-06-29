@@ -81,12 +81,13 @@ apps/
 ├── exactl/src/      # exactl CLI commands
 └── tui/src/         # Concrete TUI views
 
-tests/               # Mirror of packages/apps/ structure
-tests_infra/         # Test infrastructure helpers
+tests/               # Cross-cutting integration/scenario/security tests
+packages/testing/    # Shared test helpers (initTestDbService, fixtures)
 
 Blueprints/          # Agent and Flow definitions
-├── Identities/          # Identity blueprints (markdown)
-└── Flows/           # Flow definitions (TypeScript)
+├── Identities/      # Identity blueprints (YAML frontmatter + persona)
+├── Skills/          # Skill definitions (*.skill.md → Memory/Skills JSON)
+└── Flows/           # Flow definitions
 
 Memory/              # Memory Banks
 ├── Projects/        # Project-specific memory
@@ -160,9 +161,9 @@ Use Deno.test with initTestDbService():
 ```typescript
 // tests/services/example_test.ts
 
-import { assertEquals, assertExists } from "jsr:@std/assert@1";
-import { initTestDbService } from "../../tests_infra/db_test_utils.ts";
-import { ExampleService } from "../../packages/core/src/services/example.ts";
+import { assertEquals, assertExists } from "@std/assert";
+import { initTestDbService } from "@exaix/testing";
+import { ExampleService } from "@exaix/core";
 
 Deno.test("ExampleService", async (t) => {
   // Setup test database
