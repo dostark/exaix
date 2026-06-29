@@ -119,14 +119,49 @@ function calculateTotal(items: Item[]): number {
 
 ## Example Workflow
 
-```text
+1. Write the failing test: "should return an empty array when no items match".
+2. Run it and confirm it fails for the right reason (RED).
+3. Implement the minimal code to pass (GREEN).
+4. Refactor with the test green, then re-run.
 
-1. Write test: "should return empty array when no items match"
+## Test design reference
 
-1.
-1.
-1.
-1.
-1.
+### Test Pyramid
+
 ```text
+      /\
+     /  \     E2E Tests (few)
+    /────\
+   /      \   Integration Tests (some)
+  /────────\
+ /          \ Unit Tests (many)
+/────────────\
+```
+
+### FIRST principles
+
+- **F**ast: tests run quickly.
+- **I**ndependent: no test depends on another's state.
+- **R**epeatable: same result every run.
+- **S**elf-validating: a clear pass/fail with no manual inspection.
+- **T**imely: written alongside (ideally before) the code.
+
+### Arrange-Act-Assert
+
+```typescript
+Deno.test("should do something", () => {
+  // Arrange: set up test data
+  const input = createTestInput();
+  // Act: execute the code under test
+  const result = functionUnderTest(input);
+  // Assert: verify the outcome
+  assertEquals(result, expectedOutput);
+});
+```
+
+### Test categories
+
+- **Unit** — single functions/methods; mock external deps; fast (<100ms); high coverage.
+- **Integration** — component interactions; real deps where feasible (DB, FS, network).
+- **Edge case** — boundary values, empty/null inputs, error conditions, concurrency.
 ````

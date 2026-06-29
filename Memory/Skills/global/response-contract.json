@@ -1,0 +1,46 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440012",
+  "created_at": "2026-06-29T00:00:00.000Z",
+  "source": "user",
+  "scope": "global",
+  "status": "active",
+  "skill_id": "response-contract",
+  "name": "Response Output Contract",
+  "version": "1.0.0",
+  "description": "The mandatory <thought>/<content> response format and executable-plan JSON contract every agent must emit.",
+  "triggers": {
+    "tags": [
+      "response-contract",
+      "output-format"
+    ]
+  },
+  "instructions": "# Response Output Contract\n\nYou MUST respond with exactly two sections, each wrapped in XML-like tags. Any\ntext outside these tags is ignored.\n\n1. `<thought>` — Your internal analysis: reasoning, plan breakdown, architectural\n   decisions, and tool-selection logic. Not parsed as structured data.\n\n2. `<content>` — Your deliverable. For a plan this MUST be a single valid JSON\n   object matching the executable-plan schema; for an analysis or evaluation, the\n   structured object the task asks for. The `<content>` block is extracted and\n   parsed by the runtime, so it must be valid, self-contained, and free of\n   commentary.\n\n## Executable-plan JSON schema\n\n```json\n{\n  \"title\": \"Short descriptive title (required)\",\n  \"description\": \"What this plan accomplishes (required)\",\n  \"steps\": [\n    {\n      \"step\": 1,\n      \"title\": \"Step name (required)\",\n      \"description\": \"What this step performs (required)\",\n      \"tools\": [\"read_file\", \"write_file\"],\n      \"actions\": [\n        { \"tool\": \"write_file\", \"params\": { \"path\": \"src/...\", \"content\": \"...\" } }\n      ],\n      \"successCriteria\": [\"A verifiable check\"],\n      \"dependencies\": [],\n      \"rollback\": \"How to undo this step\"\n    }\n  ],\n  \"estimatedDuration\": \"e.g. 2-3 hours\",\n  \"risks\": [\"Potential issue\"]\n}\n```\n\n## Minimal example\n\n```xml\n<thought>\nThe request asks to add input validation. I will add a boundary schema check and\na rejection test.\n</thought>\n\n<content>\n{\n  \"title\": \"Add input validation to the request handler\",\n  \"description\": \"Validate the request body with a schema at the entry point.\",\n  \"steps\": [\n    {\n      \"step\": 1,\n      \"title\": \"Add boundary validation\",\n      \"description\": \"Parse and reject malformed input before business logic.\",\n      \"tools\": [\"read_file\", \"write_file\"],\n      \"successCriteria\": [\"Invalid input is rejected\", \"A rejection test passes\"]\n    }\n  ]\n}\n</content>\n```",
+  "constraints": [
+    "Respond with exactly a <thought> block and a <content> block; ignore everything outside them",
+    "<content> must be a single valid, self-contained JSON object with no surrounding commentary",
+    "A plan's content must match the executable-plan JSON schema (title, description, steps[])"
+  ],
+  "output_requirements": [
+    "A <thought> block with reasoning and tool-selection logic",
+    "A <content> block containing valid JSON for the requested deliverable"
+  ],
+  "quality_criteria": [
+    {
+      "name": "Contract Compliance",
+      "description": "Output has both tags and a valid JSON content block",
+      "weight": 60
+    },
+    {
+      "name": "Self-Containment",
+      "description": "The content JSON parses standalone with no extra prose",
+      "weight": 40
+    }
+  ],
+  "critical": true,
+  "compatible_with": {
+    "agents": [
+      "*"
+    ]
+  },
+  "usage_count": 0
+}
