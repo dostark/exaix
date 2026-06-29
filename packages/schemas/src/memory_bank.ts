@@ -374,6 +374,16 @@ export const SkillSchema = z.object({
   output_requirements: z.array(z.string()).optional().describe("Expected output format/content"),
   quality_criteria: z.array(SkillQualityCriterionSchema).optional().describe("Evaluation criteria"),
 
+  /**
+   * Criticality (Phase 131 W16). When true, the skill is rendered as a PROTECTED,
+   * non-compactable prompt segment that survives context-budget pressure (the same
+   * `isProtected` guarantee the system prompt gets). Reserve for the output
+   * contract and a few hard constraints; ordinary methodology stays droppable.
+   */
+  critical: z.boolean().optional().describe(
+    "Render as a protected, non-droppable prompt segment (treated as false when absent)",
+  ),
+
   // === Compatibility ===
   compatible_with: SkillCompatibilitySchema.optional().describe("Compatibility constraints"),
 

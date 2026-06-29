@@ -8,29 +8,60 @@
 
 import type { ISkillsContext } from "@exaix/core/types";
 
-export function renderSkillsSection(context: ISkillsContext | null): string {
-  if (!context || context.matched.length === 0) {
-    return "";
-  }
+/** A single matched-skill entry (element of `ISkillsContext.matched`). */
+type ISkillMatchEntry = ISkillsContext["matched"][number];
 
-  let output = "### APPLICABLE SKILLS & PROCEDURES\n";
-  output += "The following specialized procedures should be applied to this task:\n\n";
+/** Renders a heading + the supplied skill matches as a markdown block. */
+function renderSkillBlock(heading: string, intro: string, skills: ISkillMatchEntry[]): string {
+  if (skills.length === 0) return "";
 
-  for (const skill of context.matched) {
+  let output = `### ${heading}\n${intro}\n\n`;
+  for (const skill of skills) {
     output += `#### ${skill.title}\n`;
     output += `${skill.description}\n\n`;
     output += `**Instructions:**\n${skill.content}\n\n`;
-
     if (skill.tags.length > 0) {
       output += `*Tags: ${skill.tags.join(", ")}*\n\n`;
     }
   }
+  return output;
+}
 
-  if (context.matched.length < context.totalAvailable) {
+/**
+ * Renders the **ordinary** (non-critical) applicable skills (Phase 131 W16).
+ * Critical skills are rendered separately by {@link renderCriticalSkillsSection}
+ * so the prompt assembler can place them in a protected, non-droppable segment.
+ */
+export function renderSkillsSection(context: ISkillsContext | null): string {
+  if (!context || context.matched.length === 0) return "";
+
+  const ordinary = context.matched.filter((s) => !s.critical);
+  let output = renderSkillBlock(
+    "APPLICABLE SKILLS & PROCEDURES",
+    "The following specialized procedures should be applied to this task:",
+    ordinary,
+  );
+
+  if (output && context.matched.length < context.totalAvailable) {
     output += `*(Note: ${
       context.totalAvailable - context.matched.length
     } additional skills were matched but omitted due to context budget)*\n`;
   }
 
   return output.trim();
+}
+
+/**
+ * Renders the **critical** applicable skills (Phase 131 W16). The prompt
+ * assembler places this block in a protected, non-compactable segment so the
+ * output contract and hard constraints survive context-budget pressure. Returns
+ * an empty string when no matched skill is critical.
+ */
+export function renderCriticalSkillsSection(context: ISkillsContext | null): string {
+  if (!context || context.matched.length === 0) return "";
+  return renderSkillBlock(
+    "REQUIRED SKILLS & CONTRACT",
+    "The following procedures are MANDATORY and must be applied in full:",
+    context.matched.filter((s) => s.critical),
+  ).trim();
 }

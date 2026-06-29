@@ -29,7 +29,7 @@ import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import { createLLMRetryPolicy, createRetryPolicy } from "@exaix/core/request";
 import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "@exaix/tool-runtime";
 import { extractKeywords } from "@exaix/core/func";
-import { renderSkillsSection } from "@exaix/core/func";
+import { renderCriticalSkillsSection, renderSkillsSection } from "@exaix/core/func";
 import {
   ACTIVITY_ACTOR_AGENT,
   AGENT_EVENT_EXECUTION_COMPLETED,
@@ -296,9 +296,17 @@ export class AgentRunner implements IAgentRunner {
     // Log agent execution start
     this.logExecutionStart(request, identityId, traceId, requestId, skillIds);
 
-    // Step 1: Construct the combined prompt (with skill context) (Phase 70)
+    // Step 1: Construct the combined prompt (with skill context) (Phase 70).
+    // Critical skills (W16) render into a separate, protected segment so the
+    // output contract and hard constraints survive context-budget pressure.
     const skillContextString = renderSkillsSection(skillsContext);
-    const combinedPrompt = await this.constructPrompt(blueprint, request, skillContextString);
+    const criticalSkillContext = renderCriticalSkillsSection(skillsContext);
+    const combinedPrompt = await this.constructPrompt(
+      blueprint,
+      request,
+      skillContextString,
+      criticalSkillContext,
+    );
 
     // Phase 70: Log prompt assembled event for observability
     this.logActivity(
@@ -488,6 +496,7 @@ export class AgentRunner implements IAgentRunner {
         content: s.instructions,
         matchScore: matchScores.get(s.id) ?? 0.5,
         tags: s.triggers.tags || [],
+        critical: s.critical ?? false,
       })),
       totalAvailable,
       retrievalLatencyMs: Date.now() - startTime,
@@ -639,6 +648,7 @@ export class AgentRunner implements IAgentRunner {
     blueprint: IBlueprint,
     request: IParsedRequest,
     skillContext?: Opt<string, Reason.OptionalContext>,
+    criticalSkillContext?: Opt<string, Reason.OptionalContext>,
   ): Promise<string> {
     const k = ContextSegmentKindSchema.enum;
     type SegmentEntry = { content: string; kind: IContextSegment["kind"]; priority: number; nonCompactable: boolean };
@@ -646,6 +656,12 @@ export class AgentRunner implements IAgentRunner {
 
     if (blueprint.systemPrompt.trim()) {
       entries.push({ content: blueprint.systemPrompt, kind: k.system, priority: 100, nonCompactable: true });
+    }
+    // Critical skills (W16) — protected, non-droppable segment (same tier as the
+    // schema/acceptance-criteria instructions) so the contract + hard constraints
+    // survive budget pressure. Ordinary skills stay droppable below.
+    if (criticalSkillContext?.trim()) {
+      entries.push({ content: criticalSkillContext, kind: k.acceptance_criteria, priority: 90, nonCompactable: true });
     }
     if (skillContext?.trim()) {
       entries.push({ content: skillContext, kind: k.request, priority: 50, nonCompactable: false });
