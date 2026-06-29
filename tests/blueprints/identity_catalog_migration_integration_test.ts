@@ -1,6 +1,6 @@
 /**
  * @module IdentityCatalogStep7IntegrationTest
- * @path tests/blueprints/identity_catalog_step7_integration_test.ts
+ * @path tests/blueprints/identity_catalog_migration_integration_test.ts
  * @description Phase 131 Step 7 deferred integration test — loads every active
  *   identity through BlueprintLoader and asserts contract-valid output:
  *   loads successfully, default_skills includes response-contract,

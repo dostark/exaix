@@ -1,6 +1,6 @@
 /**
  * @module IdentityCatalogStep7Test
- * @path tests/blueprints/identity_catalog_step7_test.ts
+ * @path tests/blueprints/identity_catalog_migration_test.ts
  * @description Phase 131 Step 7 — validates the catalog-wide skill migration.
  *   After Step 7:
  *   - every active identity has response-contract in default_skills
