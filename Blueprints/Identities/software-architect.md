@@ -7,7 +7,13 @@ created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"
 version: "1.1.0"
 description: "Architecture design specialist for scalable, maintainable system design"
-default_skills: ["response-contract", "exaix-conventions", "architecture-review", "typescript-patterns", "portal-grounding"]
+default_skills: [
+  "response-contract",
+  "exaix-conventions",
+  "architecture-review",
+  "typescript-patterns",
+  "portal-grounding",
+]
 permitted_tools:
   - read_file
   - list_directory

@@ -45,9 +45,11 @@ compatible_with:
     - product-manager
     - "*"
 ---
+
 # Requirements Analysis & Specification
 
 ## Requirements Gathering
+
 - Identify the core problem being solved
 - Determine who benefits (user personas)
 - Define success metrics
@@ -55,6 +57,7 @@ compatible_with:
 - Identify constraints and limitations
 
 ## User Story Format
+
 ```text
 As a [user type],
 I want [capability/feature],
@@ -62,6 +65,7 @@ So that [benefit/value].
 ```
 
 ## Acceptance Criteria (Given-When-Then)
+
 ```text
 Given [precondition],
 When [action],
@@ -69,6 +73,7 @@ Then [expected result].
 ```
 
 ## Quality Checklist
+
 - [ ] All user stories follow standard format
 - [ ] Acceptance criteria are testable
 - [ ] Scope is clearly defined

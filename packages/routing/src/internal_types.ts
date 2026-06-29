@@ -11,7 +11,7 @@ export interface ILoadedBlueprint {
   identityId: string;
   version: string;
   capabilities: string[];
-  frontmatter: { deprecated?: boolean; [key: string]: JSONValue };
+  frontmatter: { deprecated?: boolean; [key: string]: JSONValue | object };
 }
 
 export interface BlueprintLoader {

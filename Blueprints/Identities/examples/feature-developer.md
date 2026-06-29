@@ -7,7 +7,6 @@ created: "2025-12-20T22:37:31Z"
 created_by: "system"
 version: "1.0.0"
 description: "Full-cycle feature development from requirements to implementation"
-version: "1.1.0"
 default_skills: ["response-contract", "typescript-patterns", "tdd-methodology", "commit-message"]
 ---
 

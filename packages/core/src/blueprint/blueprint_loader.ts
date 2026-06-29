@@ -12,7 +12,7 @@ import { exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 import type { JSONValue } from "@exaix/core";
-import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_IDENTITIES_PATH, McpToolName } from "@exaix/core";
+import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_IDENTITIES_PATH, McpToolName, ToolName } from "@exaix/core";
 
 /**
  * Fully loaded and validated blueprint
@@ -173,8 +173,8 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
 
   // === Phase 58 Dynamic Execution Extension ===
 
-  /** Tools the agent is permitted to use in DYNAMIC execution mode */
-  permitted_tools: z.array(z.nativeEnum(McpToolName)).optional(),
+  /** Tools this identity is permitted to use (from McpToolName or ToolName). */
+  permitted_tools: z.array(z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)])).optional(),
 
   /** Deprecation flag for outdated blueprints; consumed by routing/capability matching */
   deprecated: z.boolean().default(false),

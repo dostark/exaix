@@ -13,6 +13,7 @@ import { FlowSchema } from "@exaix/schemas/flow.ts";
 import { FlowStepExecutionMode } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { WRITE_TOOLS } from "@exaix/mcp";
+import type { McpToolName } from "@exaix/mcp";
 
 function validateDynamicStepTools(steps: IFlowStep[]): string[] {
   const errors: string[] = [];
@@ -22,7 +23,7 @@ function validateDynamicStepTools(steps: IFlowStep[]): string[] {
     if (!step.permitted_tools || step.permitted_tools.length === 0) continue;
 
     for (const tool of step.permitted_tools) {
-      if (WRITE_TOOLS.has(tool)) {
+      if (WRITE_TOOLS.has(tool as McpToolName)) {
         errors.push(
           `Step "${step.id}": tool "${tool}" is a write tool and cannot be ` +
             `used in execution_mode: "dynamic". Move to a declared step.`,

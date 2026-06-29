@@ -7,7 +7,14 @@ created: "2026-06-18T00:00:00Z"
 created_by: "opencode"
 version: "1.1.0"
 description: "Solo developer identity for self-hosted dogfooding — plans with its own model, delegates code-changes to headless OpenCode"
-default_skills: ["response-contract", "tdd-methodology", "exaix-conventions", "portal-grounding", "security-first", "code-review"]
+default_skills: [
+  "response-contract",
+  "tdd-methodology",
+  "exaix-conventions",
+  "portal-grounding",
+  "security-first",
+  "code-review",
+]
 permitted_tools:
   - read_file
   - write_file

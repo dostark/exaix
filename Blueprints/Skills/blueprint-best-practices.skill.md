@@ -46,6 +46,7 @@ compatible_with:
   agents:
     - "*"
 ---
+
 # Blueprint Best Practices
 
 1. **Precision**: Use `patch_file` for targeted edits to large files; reserve `write_file` for new or small files so you never overwrite unrelated changes.

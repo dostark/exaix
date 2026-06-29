@@ -1,0 +1,136 @@
+schema_version: "1.0.0"
+id: "high-prio-identity-e2e"
+title: "High-Priority Identity E2E — each identity completes request→plan with real provider"
+pack: "provider_live"
+tags: ["provider-live", "identity-catalog", "safety-gate"]
+request_fixture: "fixtures/requests/provider_live/senior_coder.md"
+mode_support: ["auto"]
+portals: []
+
+steps:
+  # --- Setup ---
+  - id: "setup-db"
+    type: "shell"
+    command: "deno"
+    args:
+      [
+        "run",
+        "-A",
+        "--config",
+        "$FRAMEWORK_HOME/../../deno.json",
+        "$FRAMEWORK_HOME/../../scripts/setup_db.ts",
+      ]
+    env:
+      EXA_MIGRATIONS_DIR: "$FRAMEWORK_HOME/../../migrations"
+    output_criteria:
+      - id: "setup-done"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "setup-blueprints"
+    type: "shell"
+    command: "cp"
+    args: ["-r", "$FRAMEWORK_HOME/../../Blueprints", "$WORKSPACE_ROOT/Blueprints"]
+    output_criteria:
+      - id: "blueprints-copied"
+        kind: "command-exit-code"
+        equals: 0
+
+  # --- Start daemon with real Claude provider ---
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon start"
+    env:
+      EXA_CONFIG_PATH: "$FRAMEWORK_HOME/../../configs/dogfood.claude.toml"
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "wait-for-daemon-ready"
+    type: "wait-for-journal-event"
+    event_type: "daemon.ready"
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+
+  # --- Submit all 7 high-prio identities ---
+  - id: "submit-all"
+    type: "shell"
+    command: "sh"
+    args:
+      - "-c"
+      - |
+          set -e
+          for spec in senior-coder:senior_coder software-architect:software_architect quality-judge:quality_judge security-expert:security_expert dogfood-coder:dogfood_coder voting-judge:voting_judge default:default; do
+            id="${spec%%:*}"
+            fixture="${spec#*:}"
+            echo "=== Submitting request for $id ==="
+            exactl request --file "$FRAMEWORK_HOME/fixtures/requests/provider_live/${fixture}.md" --identity "$id"
+            echo "=== Submitted $id ==="
+          done
+    output_criteria:
+      - id: "all-submitted"
+        kind: "command-exit-code"
+        equals: 0
+
+  # --- Wait for all 7 plans to appear ---
+  - id: "wait-for-all-plans"
+    type: "shell"
+    command: "sh"
+    args:
+      - "-c"
+      - |
+          echo "=== Waiting for 7 plans ==="
+          for i in $(seq 1 150); do
+            count=$(ls "$WORKSPACE_ROOT/Workspace/Plans/"*_plan.md 2>/dev/null | wc -l)
+            if [ "$count" -ge 7 ]; then
+              echo "Found $count plans"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Timeout: only $(ls "$WORKSPACE_ROOT/Workspace/Plans/"*_plan.md 2>/dev/null | wc -l) plans after 300s"
+          exit 1
+    output_criteria:
+      - id: "plans-created"
+        kind: "command-exit-code"
+        equals: 0
+
+  # --- Assert each plan has the correct identity_id and request_analysis ---
+  - id: "assert-plan-frontmatter"
+    type: "shell"
+    command: "sh"
+    args:
+      - "-c"
+      - |
+          failures=0
+          plans_dir="$WORKSPACE_ROOT/Workspace/Plans"
+          for id in senior-coder software-architect quality-judge security-expert dogfood-coder voting-judge default; do
+            plan=$(grep -rl "identity_id: $id" "$plans_dir/"*_plan.md 2>/dev/null | head -1)
+            if [ -z "$plan" ]; then
+              echo "FAIL: No plan found for $id"
+              failures=$((failures + 1))
+              continue
+            fi
+            if grep -q "request_analysis" "$plan"; then
+              echo "OK: $id plan has identity_id and request_analysis"
+            else
+              echo "FAIL: $id plan missing request_analysis"
+              failures=$((failures + 1))
+            fi
+          done
+          [ "$failures" -eq 0 ] || exit 1
+    output_criteria:
+      - id: "all-plans-valid"
+        kind: "command-exit-code"
+        equals: 0
+
+  # --- Stop daemon ---
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon stop"
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-output-contains"
+        contains: ["daemon.stopped"]

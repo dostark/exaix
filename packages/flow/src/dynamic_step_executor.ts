@@ -310,8 +310,9 @@ export class DynamicStepExecutor {
 
     const stepTools = step.permitted_tools?.length ? step.permitted_tools : [...identityTools];
 
-    return stepTools.filter((tool: McpToolName) => {
-      const isAllowed = allowedDynamicTools.has(tool) && identityTools.has(tool);
+    return stepTools.filter((tool) => {
+      const mcpTool = tool as McpToolName;
+      const isAllowed = allowedDynamicTools.has(mcpTool) && identityTools.has(mcpTool);
       if (!isAllowed) {
         console.warn(
           `Dynamic step "${step.id}": tool "${tool}" filtered out at runtime ` +
@@ -319,7 +320,7 @@ export class DynamicStepExecutor {
         );
       }
       return isAllowed;
-    });
+    }) as McpToolName[];
   }
 
   private appendObservation(

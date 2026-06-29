@@ -7,7 +7,6 @@ created: "2025-12-20T22:37:31Z"
 created_by: "system"
 version: "1.0.0"
 description: "Security assessment specialist for vulnerability detection and remediation"
-version: "1.1.0"
 default_skills: ["response-contract", "security-first", "code-review"]
 ---
 

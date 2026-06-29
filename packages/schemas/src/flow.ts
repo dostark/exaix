@@ -21,6 +21,7 @@ import {
   StepAttemptClass,
   StepExecutionDisposition,
   StepSideEffectClass,
+  ToolName,
 } from "@exaix/core";
 import { JSONValueSchema } from "@exaix/core";
 import { VotingGroupConfigSchema } from "./voting.ts";
@@ -178,7 +179,8 @@ export const FlowStepSchema = z.object({
   /** Execution mode: DECLARED (default) or DYNAMIC (ReAct-style tool selection) */
   execution_mode: z.nativeEnum(FlowStepExecutionMode).optional().default(FlowStepExecutionMode.DECLARED),
   /** For DYNAMIC mode: tools the model may select from at runtime (read-only tools only) */
-  permitted_tools: z.array(z.nativeEnum(McpToolName)).optional(),
+  /** Tools this step is permitted to use (from McpToolName or ToolName). */
+  permitted_tools: z.array(z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)])).optional(),
   dependsOn: z.array(z.string()).default([]),
   input: z.object({
     source: z.nativeEnum(FlowInputSource).default(FlowInputSource.REQUEST),

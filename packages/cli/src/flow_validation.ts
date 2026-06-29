@@ -29,7 +29,7 @@ export function validateFlowForCli(flow: IFlow): ICliValidationReport {
 
     const permittedTools = step.permitted_tools ?? [];
     for (const tool of permittedTools) {
-      if (WRITE_TOOLS.has(tool)) {
+      if ((WRITE_TOOLS as Set<string>).has(tool)) {
         const readOnlyToolsList = [...READ_ONLY_TOOLS].join(", ");
         errors.push(
           `Step "${step.id}": "${tool}" is a write tool. ` +

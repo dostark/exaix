@@ -44,6 +44,7 @@ compatible_with:
     - software-architect
     - "*"
 ---
+
 # Architecture Review & Design
 
 ## SOLID Principles
@@ -66,12 +67,14 @@ compatible_with:
 ## Analysis Framework
 
 ### Current State Assessment
+
 - Identify existing components and their responsibilities
 - Map dependencies and data flows
 - Evaluate current pain points
 - Assess technical debt
 
 ### Future State Design
+
 - Define target architecture
 - Identify required changes
 - Plan migration path

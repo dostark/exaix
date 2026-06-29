@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 import { DEFAULT_BLUEPRINT_VERSION } from "@exaix/core";
-import { ActivityActor, type BlueprintStatus, McpToolName, TaskType } from "@exaix/core";
+import { ActivityActor, type BlueprintStatus, McpToolName, TaskType, ToolName } from "@exaix/core";
 import { HitlPolicySchema } from "./hitl.ts";
 import { SessionDelegateConfigSchema } from "./session_delegate.ts";
 
@@ -116,7 +116,8 @@ export const BlueprintFrontmatterSchema = z.object({
    * Flow steps may narrow but not expand this set.
    * Omitting this field means the identity has no dynamic tool permissions.
    */
-  permitted_tools: z.array(z.nativeEnum(McpToolName)).optional(),
+  /** Tools this identity is permitted to use (from McpToolName or ToolName). */
+  permitted_tools: z.array(z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)])).optional(),
 
   /** Per-action HITL governance rules (Phase 118). Optional; absent means no per-action HITL policy. */
   hitl: HitlPolicySchema.optional(),
