@@ -114,24 +114,46 @@ Deno.test("[build_skills_index] --check passes when generated JSON matches sourc
   }
 });
 
+/** Count the authored `.skill.md` files on disk — the catalog's source of truth. */
+function countSkillSourceFiles(skillsDir: string): number {
+  let n = 0;
+  for (const e of Deno.readDirSync(skillsDir)) {
+    if (e.isFile && e.name.endsWith(".skill.md")) n++;
+  }
+  return n;
+}
+
 Deno.test(
-  "[build_skills_index][integration] real Blueprints/Skills generate and SkillsService loads all 11 (incl. project-scoped + previously-JSON-only)",
+  "[build_skills_index][integration] every Blueprints/Skills source generates and SkillsService loads them all (incl. project-scoped + previously-JSON-only)",
   { sanitizeOps: false, sanitizeResources: false },
   async () => {
     const repoRoot = resolve(new URL("../../", import.meta.url).pathname);
     const realSkillsDir = join(repoRoot, "Blueprints", "Skills");
+    // Derive the expected count from the filesystem so the test tracks the catalog
+    // automatically (mirrors the dynamic `check:skill-index` gate; no magic literal).
+    const expectedCount = countSkillSourceFiles(realSkillsDir);
+    assert(expectedCount > 0, "expected at least one .skill.md source file");
+
     const { db, config, cleanup } = await initTestDbService();
     try {
       const memoryDir = join(config.system.root, config.paths.memory);
       const targetDir = join(memoryDir, "Skills");
       const result = await buildSkillsIndex(realSkillsDir, targetDir, config.system.root);
       assert(result.success, `generation failed: ${result.errors.join("; ")}`);
-      assertEquals(result.generated.length, 11, "all 11 curated skills must generate");
+      assertEquals(
+        result.generated.length,
+        expectedCount,
+        `every .skill.md must generate (expected ${expectedCount} from disk, got ${result.generated.length})`,
+      );
 
       const svc = new SkillsService({ memoryDir, portal: "Exaix" }, db);
       const skills = await svc.listSkills();
       const ids = skills.map((s) => s.skill_id).sort();
-      assertEquals(skills.length, 11, `SkillsService should load 11 skills, got ${ids.join(", ")}`);
+      assertEquals(
+        skills.length,
+        expectedCount,
+        `SkillsService should load ${expectedCount} skills, got ${skills.length}: ${ids.join(", ")}`,
+      );
       // The two previously JSON-only skills still load (now from generated JSON).
       assert(ids.includes("gap-analysis"), "gap-analysis must still load");
       assert(ids.includes("step-execution"), "step-execution must still load");
