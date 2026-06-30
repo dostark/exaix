@@ -758,9 +758,9 @@ For full cleanup behavior details, see `packages/portal/README.md#review-cleanup
 
 ## Blueprint Management System
 
-Blueprints define agent identities, each stored as `Workspace/Blueprints/Identities/{agent_id}.md` with TOML frontmatter specifying provider, model, capabilities, and persona instructions.
+Blueprints define agent identities, each stored as `Blueprints/Identities/{identity_id}.md` with YAML frontmatter specifying provider/model, behavioural capabilities, least-privilege `permitted_tools`, `default_skills`, and persona instructions. The catalog is a flat set of concrete identities — the former `examples/` and `templates/` subdirectories were retired in Phase 131 (examples merged into concrete identities, templates converted to skills). Shared "how to work" knowledge lives in `Blueprints/Skills/`, referenced via `default_skills`.
 
-For the built-in template list, blueprint CLI commands, and runtime usage flow diagram, see `docs/Reference_Data.md#blueprint-management`.
+For the blueprint CLI commands (including `create --from <identity-id>` to clone a prototype) and the runtime usage flow diagram, see `docs/Reference_Data.md#blueprint-management`.
 
 ---
 

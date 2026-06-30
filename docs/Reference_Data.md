@@ -139,17 +139,35 @@ exactl memory
 
 ---
 
-## Blueprint Management — Built-in Templates
+## Blueprint Management — Creating Identities
 
-| Template ID  | Model            |
-| ------------ | ---------------- |
-| `default`    | Ollama llama3.2  |
-| `coder`      | Claude Sonnet    |
-| `reviewer`   | GPT-4            |
-| `architect`  | Claude Opus      |
-| `researcher` | GPT-4 Turbo      |
-| `mock`       | MockLLMProvider  |
-| `gemini`     | Gemini 2.0 Flash |
+The identity catalog is a flat set of concrete identities under
+`Blueprints/Identities/*.md` (the former `examples/` and `templates/`
+subdirectories were retired in Phase 131 — examples merged into concrete
+identities, templates converted to skills in `Blueprints/Skills/`).
+
+`exactl blueprint create <id>` (alias: `exactl blueprint identity create <id>`)
+creates an identity. There is no separate template library; instead, scaffold a
+new identity by cloning an existing one as a prototype:
+
+| Flag                     | Purpose                                                              |
+| ------------------------ | -------------------------------------------------------------------- |
+| `--name`                 | Identity display name (required)                                     |
+| `--model`                | `provider:model` (required unless `--from` supplies one)             |
+| `--from <identity-id>`   | Clone an existing identity's model, capabilities, and body as a base |
+| `--capabilities`         | Comma-separated behavioural tags                                     |
+| `--description`          | Brief description                                                    |
+| `--system-prompt[-file]` | Inline / file system prompt (else a default scaffold is used)        |
+
+```bash
+# Clone senior-coder as a starting point, then customise:
+exactl blueprint create my-coder --name "My Coder" --from senior-coder
+
+# Or define from scratch:
+exactl blueprint create my-coder --name "My Coder" --model "anthropic:claude-sonnet-4-20250514"
+```
+
+> The previous `--template <name>` flag was removed in Phase 131; use `--from`.
 
 ---
 

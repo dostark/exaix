@@ -1,23 +1,38 @@
 # Blueprints/Skills/
 
-This directory contains **skill blueprints** - predefined templates for capabilities, patterns, and behaviors that agents can use.
+This directory holds the **authored skill blueprints** — the curated, versioned
+procedural knowledge ("how to work") that identities reference via
+`default_skills`. A skill describes _how_ to do something; an identity (under
+`Blueprints/Identities/`) describes _who_ the agent is.
 
-## Purpose
+## Source of truth vs. runtime store
 
-Skills in this directory are **blueprints** (templates) rather than learned knowledge:
+- **`Blueprints/Skills/*.skill.md`** (this directory) — the **source of truth**.
+  Human-authored skill definitions: YAML frontmatter (id, triggers, constraints,
+  quality criteria, `critical` flag) plus markdown instructions.
+- **`Memory/Skills/`** — the **runtime store** the skill service actually reads.
+  It holds the generated JSON form of these skills (under `global/` and
+  `project/<project>/`) **plus** learned/adapted skills derived from real usage.
 
-- **Blueprints**: Predefined, curated capabilities (this directory)
-- **Memory/Skills/**: Learned and adapted knowledge from actual usage
+The `.skill.md` files here are **not** loaded directly at runtime. They are
+compiled into `Memory/Skills/**.json` by `scripts/build_skills_index.ts`; the
+`check:skill-index` gate (run in pre-commit and CI) fails if the two drift, so
+editing a `.skill.md` requires regenerating the index:
+
+```bash
+deno run -A scripts/build_skills_index.ts Memory/Skills .
+```
 
 ## Structure
 
-- `*.skill.md`: Skill definition files with YAML frontmatter and markdown instructions
-- Each skill contains triggers, constraints, and procedural instructions
-
-## Migration
-
-Core skills have been migrated from `Memory/Skills/core/` to this location to properly separate blueprints from learned memory.
+- `*.skill.md` — a skill definition: YAML frontmatter + markdown instructions.
+- Each skill declares `triggers` (tags), `constraints`, `quality_criteria`, and an
+  optional `critical` flag (critical skills render into a protected, non-droppable
+  prompt segment).
 
 ## Usage
 
-Skills in this directory are loaded by the SkillsService and can be referenced by agents and flows for automatic capability injection.
+Identities reference skills by `skill_id` in their `default_skills` list, e.g.
+`default_skills: ["response-contract", "code-review", "portal-grounding"]`. At
+request time the skill service loads the matching runtime JSON from
+`Memory/Skills/` and injects each skill's instructions into the agent's prompt.

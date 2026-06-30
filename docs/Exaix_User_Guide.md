@@ -1422,10 +1422,10 @@ exactl blueprint create security-auditor \
   --capabilities code_review,vulnerability_scanning \
   --system-prompt-file ~/prompts/security.txt
 
-# Create from template (faster setup)
-exactl blueprint create my-coder --name "My Coder" --template coder
-exactl blueprint create my-reviewer --name "My Reviewer" --template reviewer
-exactl blueprint create test-agent --name "Test Agent" --template mock
+# Clone an existing identity as a prototype (faster setup)
+exactl blueprint create my-coder --name "My Coder" --from senior-coder
+exactl blueprint create my-reviewer --name "My Reviewer" --from code-analyst
+exactl blueprint create test-agent --name "Test Agent" --from mock-agent
 
 # List all available blueprints
 exactl blueprint list
@@ -1575,15 +1575,16 @@ step:
 **Blueprint File Structure:**
 
 ```markdown
-+++
-agent_id = "senior-coder"
-name = "Senior Coder"
-model = "anthropic:claude-3-sonnet"
-capabilities = ["code_generation", "debugging"]
-created = "2025-12-02T10:00:00Z"
-created_by = "user@example.com"
-version = "1.0.0"
-+++
+---
+identity_id: "senior-coder"
+name: "Senior Coder"
+model: "anthropic:claude-3-sonnet"
+capabilities: ["code_generation", "debugging"]
+default_skills: ["response-contract", "code-review", "portal-grounding"]
+created: "2025-12-02T10:00:00Z"
+created_by: "user@example.com"
+version: "1.0.0"
+---
 
 # Senior Coder Agent
 
@@ -2741,16 +2742,18 @@ The Reflexion pattern enables agents to critique and improve their own outputs i
 
 Enable reflexion in identity blueprint frontmatter:
 
-```toml
-+++
-agent_id = "quality-reviewer"
-name = "Quality Reviewer"
-model = "anthropic:claude-opus-4.5"
-capabilities = ["read_file", "search_files"]
-reflexive = true
-max_reflexion_iterations = 3
-confidence_required = 80
-+++
+```yaml
+---
+identity_id: "quality-reviewer"
+name: "Quality Reviewer"
+model: "anthropic:claude-opus-4.5"
+capabilities: ["review", "evaluation"]
+default_skills: ["response-contract", "reflexive-critique", "portal-grounding"]
+permitted_tools: ["read_file", "grep_search"]
+reflexive: true
+max_reflexion_iterations: 3
+confidence_required: 80
+---
 ```
 
 | Field                      | Default | Description                          |
@@ -2916,36 +2919,32 @@ When validation fails, you'll see detailed errors:
   - steps[0].tools[1]: Unknown tool "invalid_tool"
 ```
 
-### 6.6 Agent Templates
+### 6.6 Scaffolding Identities and Behavioural Patterns
 
-Exaix provides templates for common agent patterns:
-
-| Template               | Pattern                  | Best For                     |
-| ---------------------- | ------------------------ | ---------------------------- |
-| `pipeline-agent`       | Sequential processing    | Transformations in workflows |
-| `collaborative-agent`  | Multi-agent coordination | Handoffs and consensus       |
-| `reflexive-agent`      | Self-critique            | Quality-critical tasks       |
-| `research-agent`       | Information gathering    | Exploration, documentation   |
-| `judge-agent`          | LLM-as-Judge             | Quality gates, approvals     |
-| `specialist-agent`     | Domain expertise         | Security, architecture       |
-| `conversational-agent` | Multi-turn dialogue      | Interactive sessions         |
-
-#### Using Templates
+The catalog is a flat set of concrete identities (no separate template
+directory). To create a new identity, clone an existing one as a prototype with
+`--from`, then attach the skills that give it the behaviour you want:
 
 ```bash
-# Copy template
-cp Blueprints/Identities/templates/reflexive-agent.md.template \
-   Blueprints/Identities/my-agent.md
-
-# Edit placeholders
-# Validate
+# Clone a prototype, then validate and use
+exactl blueprint create my-agent --name "My Agent" --from senior-coder
 exactl blueprint validate my-agent
-
-# Use
-exactl request "Task" --agent my-agent
+exactl request "Task" --identity my-agent
 ```
 
-See `Blueprints/Identities/templates/README.md` for detailed template documentation.
+The behavioural patterns that used to be templates are now **skills** in
+`Blueprints/Skills/` — add them to your identity's `default_skills`:
+
+| Pattern                  | Skill                                                  | Best for                   |
+| ------------------------ | ------------------------------------------------------ | -------------------------- |
+| Self-critique            | `reflexive-critique`                                   | Quality-critical tasks     |
+| Multi-turn dialogue      | `conversational-dialogue`                              | Interactive sessions       |
+| Multi-agent coordination | `collaborative-flow`                                   | Handoffs and consensus     |
+| LLM-as-Judge             | `verdict-rubric`                                       | Quality gates, approvals   |
+| Information gathering    | `research-methodology`                                 | Exploration, documentation |
+| Domain review            | `code-review`, `architecture-review`, `security-first` | Security, architecture     |
+
+See `Blueprints/Skills/README.md` for the full skill library.
 
 ### 6.7 Troubleshooting
 
