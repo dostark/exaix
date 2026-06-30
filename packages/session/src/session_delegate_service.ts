@@ -154,7 +154,10 @@ export class SessionDelegateService implements ISessionDelegateService {
     const launch = adapter.buildLaunch(brief, mode, this.briefPathFor(brief.trace_id));
 
     const minVersion = brief.tool === TOOL_OPENCODE ? MINIMUM_VERSION_OPENCODE : MINIMUM_VERSION_CLAUDE_CODE;
-    const probeResult = await probeDelegateVersion(launch.command, minVersion);
+    // Pass the (empty) default deps explicitly: deps is a test-injection seam, so
+    // naming it here keeps the optional-params check satisfied without changing
+    // behaviour (the default is `{}`).
+    const probeResult = await probeDelegateVersion(launch.command, minVersion, {});
     const versionWarning = probeResult.supported ? undefined : probeResult.warning;
 
     let agentNameMismatch = false;

@@ -22,21 +22,26 @@ export interface IOpencodePermissionConfig {
   /** The agent key used in the generated config. */
   agentKey: string;
 }
-export function buildOpencodePermissionConfig(
-  permittedPaths: string[],
-  worktreeRoot?: string,
-): OpencodeConfig {
-  if (worktreeRoot) {
-    for (const p of permittedPaths) {
-      const result = checkScope([p], [p], worktreeRoot);
-      if (result.violations.length > 0) {
-        throw new Error(
-          `Permitted path "${p}" escapes worktree root "${worktreeRoot}"`,
-        );
-      }
+/**
+ * Assert that every permitted path stays within the worktree root. Throws on the
+ * first escaping path. Extracted from the config builder so the builder stays a
+ * pure shape function and the worktree guard runs at the production call-site
+ * (which always has a worktree root).
+ */
+export function assertPathsWithinWorktree(permittedPaths: string[], worktreeRoot: string): void {
+  for (const p of permittedPaths) {
+    const result = checkScope([p], [p], worktreeRoot);
+    if (result.violations.length > 0) {
+      throw new Error(
+        `Permitted path "${p}" escapes worktree root "${worktreeRoot}"`,
+      );
     }
   }
+}
 
+export function buildOpencodePermissionConfig(
+  permittedPaths: string[],
+): OpencodeConfig {
   const editPermissions: Record<string, OpencodePermissionValue> = { "*": "deny" };
   for (const p of permittedPaths) {
     editPermissions[p] = "allow";
@@ -59,7 +64,8 @@ export async function generateOpencodePermissionConfig(
   pathResolver: PathResolver,
   traceId: string,
 ): Promise<IOpencodePermissionConfig> {
-  const config = buildOpencodePermissionConfig(permittedPaths, worktreeRoot);
+  assertPathsWithinWorktree(permittedPaths, worktreeRoot);
+  const config = buildOpencodePermissionConfig(permittedPaths);
 
   const parsed = OpencodeConfigSchema.safeParse(config);
   if (!parsed.success) {

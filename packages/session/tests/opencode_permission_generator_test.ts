@@ -10,6 +10,7 @@ import { assertEquals, assertThrows } from "@std/assert";
 import { join } from "@std/path";
 import { OpencodeConfigSchema } from "@exaix/schemas/opencode_config.ts";
 import {
+  assertPathsWithinWorktree,
   buildOpencodePermissionConfig,
   generateOpencodePermissionConfig,
 } from "@exaix/session/opencode_permission_generator.ts";
@@ -60,7 +61,7 @@ Deno.test(
   "[opencode_perm][security] a permitted_paths entry escaping the worktree is rejected",
   () => {
     assertThrows(
-      () => buildOpencodePermissionConfig(["../etc/passwd"], "/workspace"),
+      () => assertPathsWithinWorktree(["../etc/passwd"], "/workspace"),
       Error,
       "escapes worktree root",
     );
@@ -71,7 +72,7 @@ Deno.test(
   "[opencode_perm][security] absolute permitted_paths entry is rejected",
   () => {
     assertThrows(
-      () => buildOpencodePermissionConfig(["/etc/passwd"], "/workspace"),
+      () => assertPathsWithinWorktree(["/etc/passwd"], "/workspace"),
       Error,
       "escapes worktree root",
     );
@@ -82,7 +83,7 @@ Deno.test(
   "[opencode_perm][security] null-byte path is rejected",
   () => {
     assertThrows(
-      () => buildOpencodePermissionConfig(["src/\x00evil.ts"], "/workspace"),
+      () => assertPathsWithinWorktree(["src/\x00evil.ts"], "/workspace"),
       Error,
     );
   },
