@@ -27,6 +27,10 @@ interface IFixtureIdentity {
 interface IFixtureFlow {
   id: string;
   identities: string[];
+  /** Optional subdirectory under Flows/ (tests recursive walk). */
+  subdir?: string;
+  /** Write as a `.flow.template.yaml` pattern template instead of `.flow.yaml`. */
+  template?: boolean;
 }
 
 async function buildCatalog(opts: {
@@ -58,8 +62,11 @@ async function buildCatalog(opts: {
     const steps = f.identities
       .map((id, i) => `  - id: step-${i}\n    type: agent\n    identity: ${id}`)
       .join("\n");
+    const dir = f.subdir ? join(flowDir, f.subdir) : flowDir;
+    await ensureDir(dir);
+    const ext = f.template ? "flow.template.yaml" : "flow.yaml";
     await Deno.writeTextFile(
-      join(flowDir, `${f.id}.flow.yaml`),
+      join(dir, `${f.id}.${ext}`),
       `id: ${f.id}\nname: ${f.id}\ndescription: ${f.id}\nsteps:\n${steps}\noutput:\n  from: step-0\n`,
     );
   }
@@ -155,6 +162,61 @@ Deno.test("[integrity] a skill used by no identity FAILS (orphan skill)", async 
     const r = checkBlueprintIntegrity(root);
     assertEquals(r.ok, false);
     assert(r.violations.some((v) => v.kind === "orphan-skill" && v.detail.includes("unused-skill")));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[integrity] a dangling identity ref in a SUBDIRECTORY flow FAILS (recursive walk)", async () => {
+  const root = await buildCatalog({
+    identities: [{ id: "coder", skills: ["review"] }],
+    skills: ["review"],
+    flows: [
+      { id: "f", identities: ["coder"] },
+      { id: "nested", identities: ["ghost"], subdir: "examples/dev" },
+    ],
+  });
+  try {
+    const r = checkBlueprintIntegrity(root);
+    assertEquals(r.ok, false);
+    assert(r.violations.some((v) => v.kind === "dangling-identity" && v.detail.includes("ghost")));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[integrity] a dangling identity ref in a .flow.template.yaml FAILS", async () => {
+  const root = await buildCatalog({
+    identities: [{ id: "coder", skills: ["review"] }],
+    skills: ["review"],
+    flows: [
+      { id: "f", identities: ["coder"] },
+      { id: "pattern", identities: ["ghost"], template: true, subdir: "templates" },
+    ],
+  });
+  try {
+    const r = checkBlueprintIntegrity(root);
+    assertEquals(r.ok, false);
+    assert(r.violations.some((v) => v.kind === "dangling-identity" && v.detail.includes("ghost")));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[integrity] {{placeholder}} agent slots in templates are skipped (not treated as identities)", async () => {
+  const root = await buildCatalog({
+    identities: [{ id: "coder", skills: ["review"] }],
+    skills: ["review"],
+    flows: [
+      { id: "f", identities: ["coder"] },
+      // A template whose agent slots are {{placeholder}} tokens — must NOT count
+      // as dangling identity references.
+      { id: "pipeline", identities: ['"{{coordinator}}"', '"{{processor}}"'], template: true, subdir: "templates" },
+    ],
+  });
+  try {
+    const r = checkBlueprintIntegrity(root);
+    assertEquals(r.ok, true, JSON.stringify(r.violations));
   } finally {
     await Deno.remove(root, { recursive: true });
   }

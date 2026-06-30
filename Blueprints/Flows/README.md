@@ -1,128 +1,102 @@
 # Exaix Flows
 
-This directory contains Flow definitions and templates for multi-agent orchestration.
+This directory contains **flow definitions** for multi-agent orchestration. A flow
+is a YAML file (`*.flow.yaml`) that wires together identity steps with
+dependencies, inputs, and an aggregated output.
 
-## Directory Structure
+## Catalog model
 
-- `examples/`: **Reference Implementations**. Comprehensive, educational examples demonstrating complex patterns (e.g., fan-out/fan-in) and specialized agent usage. Use these to learn and as a base for complex custom flows.
-- `templates/`: **Abstract Patterns**. Generic, reusable structures (e.g., Pipeline, Staged) with placeholders. Use these as a starting point for new flows when you know the structure but need to define the logic.
-- `*.flow.yaml`: **Active Flows**. Ready-to-use flows available in your workspace. These typically use standard agents and are simpler than examples.
+The catalog is a **flat set of concrete flows** (`*.flow.yaml` in this directory)
+plus a small **pattern-template library** under `templates/`. There is no separate
+`examples/` tier — example flows that duplicated concretes were retired in Phase
+131 (one distinct flow, API documentation, was promoted to a concrete flow).
 
-## Skills Integration (Phase 17)
+- `*.flow.yaml` — **concrete, runnable flows** that reference real identities.
+- `templates/*.flow.template.yaml` — **abstract structural patterns** (pipeline,
+  fan-out/fan-in, self-correcting) whose agent slots are `{{placeholder}}` tokens
+  you fill in when you copy one into a new flow.
 
-Flows support `defaultSkills` at the flow level and `skills` at the step level:
+Every concrete flow — and every real (non-`{{placeholder}}`) `identity:` in a
+template — must resolve to an identity under `Blueprints/Identities/`. This is
+enforced by `deno task check:blueprint-integrity` (recursive, all flows; `{{…}}`
+slots are skipped).
 
-```typescript
-export default defineFlow({
-  id: "my-flow",
-  name: "My Flow",
-  defaultSkills: ["typescript-patterns"], // Applied to all steps
-  steps: [
-    {
-      id: "step-1",
-      agent: "senior-coder",
-      skills: ["security-first"], // Override for this step only
-      // ...
-    },
-  ],
-});
+## Flow frontmatter (top-level keys)
+
+```yaml
+id: my-flow
+name: My Flow
+description: What this flow accomplishes.
+version: 1.0.0
+defaultSkills: # optional — applied to every step
+  - code-review
+steps:
+  - id: analyze
+    name: Analyze
+    type: agent
+    identity: code-analyst # must be a real identity (or {{placeholder}} in a template)
+    dependsOn: []
+    input:
+      source: request
+      transform: passthrough
+  - id: review
+    name: Review
+    type: agent
+    identity: quality-judge
+    dependsOn: [analyze]
+    input:
+      source: step
+      stepId: analyze
+      transform: passthrough
+output:
+  from: review
+  format: markdown
+settings:
+  maxParallelism: 2
+  failFast: false
 ```
 
-**Skill Priority:**
+`defaultSkills` apply to all steps; a step may add its own `skills` (step-level
+takes priority over flow-level).
 
-1. Step-level `skills` (highest)
-
-1.
-
-## Usage Guide
-
-### Running Active Flows
-
-Active flows in this directory can be run immediately:
+## Using flows
 
 ```bash
-exactl flow run --id code-review
+exactl flow list            # list available flows
+exactl flow show <id>       # show a flow's definition
+exactl flow validate <id>   # validate a flow against the schema
+exactl request "…" --flow <id>   # run a request through a flow
 ```
 
-### Using Examples
+## Creating a new flow
 
-Examples in `examples/` are for learning. To use one:
+Flows are authored as YAML files in this directory. Start either from a concrete
+flow (copy a similar `*.flow.yaml` and edit it) or from a structural template:
 
-1. Copy it to this directory: `cp examples/development/code-review.flow.yaml .`
-
-1.
-1.
-
-### Using Templates
-
-Templates in `templates/` are for building new flows:
-
-1. Copy a template: `cp templates/pipeline.flow.template.yaml my-new-flow.flow.yaml`
-
-1.
-1.
-
-## Available Flows
-
-### Core Development Flows
-
-| Flow                  | Description                       | Steps | Agents Used                                                                             | Default Skills         |
-| --------------------- | --------------------------------- | ----- | --------------------------------------------------------------------------------------- | ---------------------- |
-| `code-review`         | Multi-agent code review           | 4     | `senior-coder`, `security-expert`, `performance-engineer`, `technical-writer`           | `code-review`          |
-| `feature-development` | End-to-end feature development    | 6     | `product-manager`, `software-architect`, `senior-coder`, `test-engineer`, `qa-engineer` | `typescript-patterns`  |
-| `documentation`       | Documentation generation          | 4     | `code-analyst`, `technical-writer`, `software-architect`                                | `documentation-driven` |
-| `refactoring`         | Safe, systematic code refactoring | 7     | `code-analyst`, `software-architect`, `senior-coder`, `test-engineer`, `quality-judge`  | `clean-code`           |
-
-### Investigation & Analysis Flows
-
-| Flow                | Description                                           | Steps | Agents Used                                                                                                    | Default Skills   |
-| ------------------- | ----------------------------------------------------- | ----- | -------------------------------------------------------------------------------------------------------------- | ---------------- |
-| `bug-investigation` | Systematic bug diagnosis and fix proposal             | 7     | `code-analyst`, `senior-coder`, `security-expert`, `test-engineer`, `technical-writer`                         | `debugging`      |
-| `security-audit`    | Comprehensive security audit with parallel analysis   | 8     | `security-expert`, `software-architect`, `senior-coder`, `technical-writer`                                    | `security-first` |
-| `pr-review`         | Thorough pull request review with 5 parallel analyses | 8     | `code-analyst`, `senior-coder`, `security-expert`, `performance-engineer`, `test-engineer`, `technical-writer` | `code-review`    |
-
-### Design & Planning Flows
-
-| Flow                 | Description                               | Steps | Agents Used                                                                                                                     | Default Skills    |
-| -------------------- | ----------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `api-design`         | Complete API design workflow              | 8     | `product-manager`, `software-architect`, `senior-coder`, `security-expert`, `performance-engineer`, `technical-writer`          | `api-first`       |
-| `migration-planning` | Comprehensive migration strategy planning | 9     | `product-manager`, `code-analyst`, `software-architect`, `security-expert`, `senior-coder`, `test-engineer`, `technical-writer` | `planning-driven` |
-
-### Testing & Quality Flows
-
-| Flow              | Description                     | Steps | Agents Used                                                     | Default Skills  |
-| ----------------- | ------------------------------- | ----- | --------------------------------------------------------------- | --------------- |
-| `test-generation` | Automated test suite generation | 8     | `code-analyst`, `test-engineer`, `qa-engineer`, `quality-judge` | `testing-first` |
-
-### Documentation Flows
-
-| Flow              | Description                                   | Steps | Agents Used                                              | Default Skills         |
-| ----------------- | --------------------------------------------- | ----- | -------------------------------------------------------- | ---------------------- |
-| `onboarding-docs` | Developer onboarding documentation generation | 8     | `code-analyst`, `software-architect`, `technical-writer` | `documentation-driven` |
-
-- Staged workflows
-
-## Blueprint Fragments
-
-While Agent Blueprints (`.md`) use a fragment inclusion system (`{{include:fragment}}`), **Flows** (`.flow.yaml`) do not.
-
-Since flows are TypeScript files, they should use standard ES module imports to share logic, schemas, or prompt strings if needed. However, the _agents_ called by flows will still benefit from the fragment system defined in their respective blueprints.
-
-## Creating New Flows
-
-Flows are defined in TypeScript using the `defineFlow` helper.
-
-```typescript
-import { defineFlow } from "exaix/flows";
-
-export default defineFlow({
-  id: "my-flow",
-  name: "My Custom Flow",
-  defaultSkills: ["error-handling"], // Applied to all steps
-  steps: [
-    // ...
-  ],
-});
+```bash
+cp templates/pipeline.flow.template.yaml my-new-flow.flow.yaml
+# replace each {{placeholder}} agent slot with a real identity id, then:
+exactl flow validate my-new-flow
 ```
 
-See `examples/` for detailed usage patterns.
+When you fill a template's `{{placeholder}}` slots with real identity ids and save
+it as a `*.flow.yaml`, the integrity gate will require those identities to exist.
+
+## Available flows
+
+Concrete flows include: `code_review`, `feature_development`, `documentation`,
+`api_documentation`, `refactoring`, `bug_investigation`, `security_audit`,
+`pr_review`, `api_design`, `migration_planning`, `test_generation`,
+`onboarding_docs`, `analyze-codebase`, `research_synthesis`, `consensus_review`,
+and `dogfood_loop`. Use `exactl flow list` for the authoritative, current set.
+
+## Templates
+
+`templates/` holds reusable **structural patterns**, not runnable flows — their
+agent slots are `{{placeholder}}` tokens:
+
+- `pipeline.flow.template.yaml` — linear sequence (step 1 → step 2 → …).
+- `fan-out-fan-in.flow.template.yaml` — parallel specialists → a synthesizer.
+- `self-correcting.flow.template.yaml` — generate → judge → refine loop.
+
+See `templates/README.md` for the pattern details.

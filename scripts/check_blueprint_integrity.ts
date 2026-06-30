@@ -79,22 +79,37 @@ function loadSkillIds(skillsDir: string): Set<string> {
   return ids;
 }
 
-/** Identities referenced by any top-level production flow (`*.flow.yaml`). */
+/**
+ * Real identities referenced by ANY flow file (recursively): both runnable
+ * `*.flow.yaml` and `*.flow.template.yaml` pattern templates. `{{placeholder}}`
+ * agent slots in templates are NOT identity references and are skipped (the
+ * `identity:` regex only matches bare identifiers, never `{{…}}`).
+ */
 function loadFlowIdentityRefs(flowsDir: string): Set<string> {
   const refs = new Set<string>();
-  let entries: Iterable<Deno.DirEntry>;
-  try {
-    entries = Deno.readDirSync(flowsDir);
-  } catch {
-    return refs; // no flows directory
-  }
-  for (const e of entries) {
-    if (!e.isFile || !e.name.endsWith(".flow.yaml")) continue;
-    const text = Deno.readTextFileSync(join(flowsDir, e.name));
-    for (const m of text.matchAll(/^\s*identity:\s*["']?([A-Za-z0-9_-]+)["']?\s*$/gm)) {
-      refs.add(m[1]);
+
+  function walk(dir: string): void {
+    let entries: Iterable<Deno.DirEntry>;
+    try {
+      entries = Deno.readDirSync(dir);
+    } catch {
+      return; // missing directory
+    }
+    for (const e of entries) {
+      const path = join(dir, e.name);
+      if (e.isDirectory) {
+        walk(path);
+      } else if (e.isFile && (e.name.endsWith(".flow.yaml") || e.name.endsWith(".flow.template.yaml"))) {
+        const text = Deno.readTextFileSync(path);
+        // Bare identity identifier only; `{{placeholder}}` slots never match.
+        for (const m of text.matchAll(/^\s*identity:\s*["']?([A-Za-z0-9_-]+)["']?\s*$/gm)) {
+          refs.add(m[1]);
+        }
+      }
     }
   }
+
+  walk(flowsDir);
   return refs;
 }
 

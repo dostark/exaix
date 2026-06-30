@@ -1,104 +1,50 @@
 # Flow Templates
 
-This directory contains **abstract flow patterns** designed to be used as starting points for creating new flows.
+This directory contains **abstract flow patterns** — structural starting points
+for authoring new concrete flows. They are not runnable as-is: each agent slot is
+a `{{placeholder}}` token you replace with a real identity id.
 
-## What are Templates?
-
-Unlike **Examples** (which are concrete, runnable use cases), **Templates** are generic structures with placeholders. They define the _shape_ of the workflow but leave the _logic_ to you.
-
-## Available Templates
+## Available templates
 
 ### 1. Pipeline (`pipeline.flow.template.yaml`)
 
-**Pattern:** Linear sequence (Step 1 → Step 2 → Step 3).
-**Use Case:** Data processing, multi-stage validation.
-**Key Features:**
-
-- Sequential dependencies
-- Data passing between steps
+**Pattern:** Linear sequence (step 1 → step 2 → step 3 → …).
+**Use case:** Data processing, multi-stage transformation/validation.
+**Slots:** `{{coordinator}}`, `{{processor}}`, `{{refiner}}`, `{{summarizer}}`.
 
 ### 2. Fan-out/Fan-in (`fan-out-fan-in.flow.template.yaml`)
 
-**Pattern:** Parallel execution followed by aggregation.
-**Use Case:** Comprehensive reviews, multi-perspective analysis.
-**Key Features:**
+**Pattern:** Parallel specialists followed by a synthesis step.
+**Use case:** Comprehensive reviews, multi-perspective analysis.
+**Slots:** `{{coordinator}}`, `{{specialist_1..3}}`, `{{synthesizer}}` — fan out
+via `dependsOn`, aggregate with `input.source: aggregate`.
 
-- Parallel step execution (`maxParallelism`)
-- Aggregation step using `input.source: "aggregate"`
+### 3. Self-Correcting (`self-correcting.flow.template.yaml`)
 
-### 3. Staged Workflow (`staged.flow.template.yaml`)
+**Pattern:** Generate → judge → refine (the Reflexion loop).
+**Use case:** High-quality generation that must meet a quality bar.
+**Slots:** `{{generator}}`, `{{refiner}}` (the judge slot uses the real
+`quality-judge` identity). Pair with the `reflexive-critique` skill on the
+generator/refiner identities.
 
-**Pattern:** Grouped steps with dependencies between groups.
-**Use Case:** Complex processes with distinct phases (e.g., Plan → Execute → Verify).
-**Key Features:**
+## How to use
 
-- Dependencies on multiple previous steps
-- Checkpoints between stages
-
-### 4. LLM-as-a-Judge (`llm-judge-code-review.flow.template.yaml`)
-
-**Pattern:** Multi-perspective analysis with judge evaluation.
-**Use Case:** Code review, content evaluation, quality assessment.
-**Key Features:**
-
-- Parallel specialized reviewers
-- Judge agent evaluates all reviews
-- Structured JSON output for quality gates
-- Designed for future feedback loops
-
-**Required Agents:**
-
-- `code-analyzer` - Initial analysis
-- `security-reviewer` - Security-focused review
-- `quality-reviewer` - Code quality review
-- `quality-judge` - Final evaluation (see `Blueprints/Identities/quality-judge.md`)
-- `technical-writer` - Report generation
-
-### 5. Self-Correcting (`self-correcting.flow.template.yaml`) ✨ NEW
-
-**Pattern:** Iterative improvement with feedback loops (Phase 15).
-**Use Case:** High-quality code generation, documentation that must meet standards.
-**Key Features:**
-
-- LLM-as-a-Judge evaluation with built-in criteria
-- Feedback loops using Reflexion pattern
-- Quality gates for automated checkpoints
-- Conditional branching based on quality scores
-- Iterative refinement until quality threshold met
-
-**Required Agents:**
-
-- `generator-agent` - Initial content generation
-- `quality-judge` - Quality evaluation
-- `refiner-agent` - Improvement based on feedback
-
-**Built-in Criteria Used:**
-
-- `CODE_CORRECTNESS` - Syntax and semantic validation
-- `CODE_COMPLETENESS` - Requirements coverage
-- `FOLLOWS_CONVENTIONS` - Style compliance
-- `ERROR_HANDLING` - Error handling presence
-
-**Configuration Options:**
-
-- `maxIterations` - Maximum refinement cycles (default: 3)
-- `targetScore` - Quality threshold (default: 0.85)
-- `minImprovement` - Stop if improvement < threshold (default: 0.05)
-
-## How to Use
-
-1. **Choose a pattern** that matches your needs.
+1. Copy a template into the flows directory and rename it to a `*.flow.yaml`:
 
    ```bash
    cp templates/pipeline.flow.template.yaml ../my-process.flow.yaml
    ```
 
-1. **Customize the template:**
-   - **Update Metadata:** Change `id`, `name`, and `description`.
-   - **Assign Agents:** Replace placeholder agent names (e.g., `coordinator-agent`) with your actual agents (e.g., `senior-coder`).
-   - **Define Inputs:** Configure how data flows into each step.
+1. Customize it:
+   - Update `id`, `name`, `description`.
+   - Replace every `{{placeholder}}` agent slot with a real identity id (see
+     `Blueprints/Identities/`).
+   - Configure each step's `input` (how data flows in).
 
-1. **Validate your flow:**
+1. Validate — once the placeholders are real identities, the integrity gate
+   requires them to exist:
+
    ```bash
-   exactl flow validate ../my-process.flow.yaml
+   exactl flow validate my-process
+   deno task check:blueprint-integrity
    ```
