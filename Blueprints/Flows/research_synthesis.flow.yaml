@@ -1,0 +1,40 @@
+id: research-synthesis
+name: Research Synthesis Flow
+description: Gather and synthesise information from multiple sources, then assess the synthesis quality.
+version: 1.0.0
+defaultSkills:
+  - research-methodology
+steps:
+  - id: synthesize
+    name: Research and Synthesize
+    type: agent
+    identity: research-synthesizer
+    dependsOn: []
+    input:
+      source: request
+      transform: passthrough
+    retry:
+      maxAttempts: 2
+      backoffMs: 1000
+  - id: assess-quality
+    name: Assess Synthesis Quality
+    type: agent
+    identity: quality-judge
+    dependsOn:
+      - synthesize
+    input:
+      source: step
+      stepId: synthesize
+      transform: passthrough
+    timeout: 30000
+    retry:
+      maxAttempts: 1
+      backoffMs: 1000
+output:
+  from: assess-quality
+  format: markdown
+settings:
+  maxParallelism: 1
+  failFast: false
+  timeout: 300000
+  includeRequestCriteria: false

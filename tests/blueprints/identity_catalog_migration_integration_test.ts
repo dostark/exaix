@@ -24,7 +24,7 @@ const MEMORY_SKILLS_GLOBAL = join(REPO_ROOT, "Memory", "Skills", "global");
 const ACTIVE_IDENTITY_IDS = [
   "code-analyst",
   "default",
-  "dogfood-coder",
+  "dogfood-developer",
   "mock-agent",
   "performance-engineer",
   "product-manager",

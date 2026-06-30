@@ -1,7 +1,7 @@
 /**
  * @module DogfoodCoderHitlTest
- * @path tests/blueprints/dogfood_coder_hitl_test.ts
- * @description Phase 131 Step 8 — Verifies dogfood-coder declares a HITL policy gating destructive tools.
+ * @path tests/blueprints/dogfood_developer_hitl_test.ts
+ * @description Phase 131 Step 8 — Verifies dogfood-developer declares a HITL policy gating destructive tools.
  * @architectural-layer Integration
  * @dependencies [@std/assert, @exaix/schemas]
  */
@@ -9,7 +9,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { HitlPolicySchema } from "@exaix/schemas/hitl.ts";
 
-const FILE_PATH = "Blueprints/Identities/dogfood-coder.md";
+const FILE_PATH = "Blueprints/Identities/dogfood-developer.md";
 
 interface ParsedHitlField {
   require_secondary_approval: Array<{
@@ -55,10 +55,10 @@ function parseHitlFromFile(filePath: string): ParsedHitlField {
 }
 
 Deno.test({
-  name: "[step8/hitl] dogfood-coder has HITL policy block",
+  name: "[step8/hitl] dogfood-developer has HITL policy block",
   fn: () => {
     const content = Deno.readTextFileSync(FILE_PATH);
-    assertExists(content.includes("hitl:"), "dogfood-coder should declare a hitl: block");
+    assertExists(content.includes("hitl:"), "dogfood-developer should declare a hitl: block");
     assertExists(
       content.includes("require_secondary_approval"),
       "hitl block should include require_secondary_approval",

@@ -82,7 +82,7 @@ Deno.test("[step2][GAP-1] identity_id required; created/created_by optional-with
 
 Deno.test("[step2] session_delegate survives a runtime load round-trip (was dropped by the fork)", () => {
   const fm = {
-    identity_id: "dogfood-coder",
+    identity_id: "dogfood-developer",
     name: "Dogfooding Engineer",
     model: "openrouter:deepseek/deepseek-chat",
     session_delegate: { enabled: true, tool: "opencode", gates: ["code_changes"], launch_mode: "headless" },

@@ -1627,8 +1627,8 @@ export const SESSION_BIN_OPENCODE = "opencode";
 export const SESSION_BIN_CURSOR = "cursor";
 export const SESSION_BIN_VSCODE = "code";
 
-/** Dogfood-coder identity ID — source of truth for the machine name used in OpenCode agent config keys (Phase 128 R3 Step 4). Must match `Blueprints/Identities/dogfood-coder.md:identity_id`. */
-export const DOGFOOD_CODER_IDENTITY_ID = "dogfood-coder";
+/** Dogfood-developer identity ID — source of truth for the machine name used in OpenCode agent config keys (Phase 128 R3 Step 4). Must match `Blueprints/Identities/dogfood-developer.md:identity_id`. */
+export const DOGFOOD_DEVELOPER_IDENTITY_ID = "dogfood-developer";
 /**
  * Minimum supported versions for delegate tool permission-hardening features
  * (Phase 128 R3). Below these, the tool may not support --permission-mode /

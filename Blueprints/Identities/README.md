@@ -63,7 +63,7 @@ for the authoritative field reference.
 | `research-synthesizer` | Multi-source research analysis and synthesis    |
 | `quality-judge`        | LLM-as-a-Judge quality evaluation               |
 | `voting-judge`         | LLM-as-a-Judge multi-candidate voting consensus |
-| `dogfood-coder`        | Self-hosted dogfooding (TDD loop)               |
+| `dogfood-developer`    | Self-hosted dogfooding (TDD loop)               |
 | `mock-agent`           | Deterministic identity for tests/CI             |
 
 ## Using an identity

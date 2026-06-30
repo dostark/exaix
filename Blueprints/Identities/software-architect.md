@@ -13,6 +13,7 @@ default_skills: [
   "architecture-review",
   "typescript-patterns",
   "portal-grounding",
+  "blueprint-best-practices",
 ]
 permitted_tools:
   - read_file

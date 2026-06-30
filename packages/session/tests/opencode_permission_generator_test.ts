@@ -21,7 +21,7 @@ Deno.test(
   "[opencode_perm] generator allows each permitted_paths glob under edit, denies '*'",
   () => {
     const config = buildOpencodePermissionConfig(["src/**", "tests/**"]);
-    const agent = config.agent["dogfood-coder"];
+    const agent = config.agent["dogfood-developer"];
     assertEquals(agent.edit["*"], "deny");
     assertEquals(agent.edit["src/**"], "allow");
     assertEquals(agent.edit["tests/**"], "allow");
@@ -33,7 +33,7 @@ Deno.test(
   () => {
     const config = buildOpencodePermissionConfig(["src/**"]);
     assertEquals(
-      config.agent["dogfood-coder"].external_directory["**"],
+      config.agent["dogfood-developer"].external_directory["**"],
       "deny",
     );
   },
@@ -43,7 +43,7 @@ Deno.test(
   "[opencode_perm] generator sets bash to deny by default",
   () => {
     const config = buildOpencodePermissionConfig(["src/**"]);
-    assertEquals(config.agent["dogfood-coder"].bash["*"], "deny");
+    assertEquals(config.agent["dogfood-developer"].bash["*"], "deny");
   },
 );
 
@@ -102,8 +102,8 @@ Deno.test(
         "test-trace-01",
       );
 
-      assertEquals(result.config.agent["dogfood-coder"].edit["*"], "deny");
-      assertEquals(result.config.agent["dogfood-coder"].edit["src/**"], "allow");
+      assertEquals(result.config.agent["dogfood-developer"].edit["*"], "deny");
+      assertEquals(result.config.agent["dogfood-developer"].edit["src/**"], "allow");
       assertEquals(result.configPath.length > 0, true);
 
       const stat = await Deno.stat(result.configPath);

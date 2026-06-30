@@ -62,7 +62,7 @@ steps:
       - "-c"
       - |
           set -e
-          for spec in senior-coder:senior_coder software-architect:software_architect quality-judge:quality_judge security-expert:security_expert dogfood-coder:dogfood_coder voting-judge:voting_judge default:default; do
+          for spec in senior-coder:senior_coder software-architect:software_architect quality-judge:quality_judge security-expert:security_expert dogfood-developer:dogfood_coder voting-judge:voting_judge default:default; do
             id="${spec%%:*}"
             fixture="${spec#*:}"
             echo "=== Submitting request for $id ==="
@@ -135,7 +135,7 @@ steps:
           software-architect:architect|scalab|system design|architecture
           quality-judge:quality (judge|assess)|evaluat|do not generate|rubric
           security-expert:security|vulnerab|owasp|threat|remediation
-          dogfood-coder:dogfood|tdd|red.*green|ci gate
+          dogfood-developer:dogfood|tdd|red.*green|ci gate
           voting-judge:voting|consensus|rank|select the best|do not generate
           default:coding assistant|implementation plan|implement"
           printf '%s\n' "$specs" | while IFS=: read -r id signal; do

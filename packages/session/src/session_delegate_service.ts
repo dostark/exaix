@@ -12,7 +12,7 @@
 
 import { dirname, join } from "@std/path";
 import {
-  DOGFOOD_CODER_IDENTITY_ID,
+  DOGFOOD_DEVELOPER_IDENTITY_ID,
   MINIMUM_VERSION_CLAUDE_CODE,
   MINIMUM_VERSION_OPENCODE,
   PROVIDER_ANTHROPIC,
@@ -172,7 +172,7 @@ export class SessionDelegateService implements ISessionDelegateService {
         brief.trace_id,
       );
       launch.configPath = permConfig.configPath;
-      agentNameMismatch = permConfig.agentKey !== DOGFOOD_CODER_IDENTITY_ID;
+      agentNameMismatch = permConfig.agentKey !== DOGFOOD_DEVELOPER_IDENTITY_ID;
     } else if (brief.tool === TOOL_CLAUDE_CODE) {
       const flags = deriveClaudeToolFlags(brief);
       launch.args.push(...flags);

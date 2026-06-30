@@ -1,0 +1,41 @@
+id: dogfood-loop
+name: Dogfood Development Loop
+description: Self-hosted development loop — the dogfood-developer implements a planned change with rigorous TDD, then a quality judge reviews the result.
+version: 1.0.0
+defaultSkills:
+  - tdd-methodology
+  - step-execution
+steps:
+  - id: implement
+    name: Implement Step (TDD)
+    type: agent
+    identity: dogfood-developer
+    dependsOn: []
+    input:
+      source: request
+      transform: passthrough
+    retry:
+      maxAttempts: 2
+      backoffMs: 1000
+  - id: review
+    name: Review the Implementation
+    type: agent
+    identity: quality-judge
+    dependsOn:
+      - implement
+    input:
+      source: step
+      stepId: implement
+      transform: passthrough
+    timeout: 30000
+    retry:
+      maxAttempts: 1
+      backoffMs: 1000
+output:
+  from: review
+  format: markdown
+settings:
+  maxParallelism: 1
+  failFast: true
+  timeout: 300000
+  includeRequestCriteria: false

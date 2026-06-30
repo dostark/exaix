@@ -1,5 +1,5 @@
 ---
-identity_id: "dogfood-coder"
+identity_id: "dogfood-developer"
 name: "Dogfooding Engineer"
 model: "openrouter:deepseek/deepseek-chat"
 capabilities: ["code_generation", "testing", "code_review", "planning", "execution", "debugging"]
@@ -14,6 +14,8 @@ default_skills: [
   "portal-grounding",
   "security-first",
   "code-review",
+  "step-execution",
+  "commit-message",
 ]
 permitted_tools:
   - read_file

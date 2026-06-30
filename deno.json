@@ -99,6 +99,7 @@
     "check:optional-params": "deno run -A scripts/check_optional_params.ts",
     "check:skill-envelopes": "deno run -A scripts/generate_skill_json.ts /tmp/skill-env-check-target /tmp/skill-env-check-root --check",
     "check:skill-index": "deno run -A scripts/build_skills_index.ts Memory/Skills . --check",
+    "check:blueprint-integrity": "deno run -A scripts/check_blueprint_integrity.ts Blueprints",
     "check:manifests": "deno run -A scripts/check_step_manifests.ts exaix-dev-docs/planning/ --since 130",
     "check:duplication": "deno run --allow-run --allow-read --allow-write scripts/measure_duplication.ts",
     "measure:duplication": "deno run --allow-run --allow-read --allow-write scripts/measure_duplication.ts",

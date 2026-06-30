@@ -7,7 +7,7 @@ created: "2026-06-16T00:00:00Z"
 created_by: "exaix-system"
 version: "1.1.0"
 description: "LLM-as-a-Judge for multi-agent voting consensus — selects the best response from N candidates"
-default_skills: ["response-contract", "verdict-rubric", "code-review", "portal-grounding"]
+default_skills: ["response-contract", "verdict-rubric", "code-review", "portal-grounding", "reflexive-critique"]
 ---
 
 # Voting Consensus Judge Agent

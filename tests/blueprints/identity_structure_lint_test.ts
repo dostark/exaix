@@ -17,7 +17,7 @@ const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Identities");
 const ACTIVE_FILES = [
   "code-analyst.md",
   "default.md",
-  "dogfood-coder.md",
+  "dogfood-developer.md",
   "mock-agent.md",
   "performance-engineer.md",
   "product-manager.md",

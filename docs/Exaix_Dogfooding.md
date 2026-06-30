@@ -400,7 +400,7 @@ The daemon can spawn `opencode run` as a headless agent inside the worktree:
 ```bash
 opencode run --format json \
   --dir /path/to/worktree \
-  --agent dogfood-coder \
+  --agent dogfood-developer \
   "Implement the health endpoint as specified in Session/abc-123/brief.json"
 ```
 
@@ -421,7 +421,7 @@ opencode run --format json \
 ```jsonc
 {
   "agent": {
-    "dogfood-coder": {
+    "dogfood-developer": {
       "permission": {
         "*": "deny",
         "read": "allow",
@@ -557,13 +557,13 @@ Per-cell requirements — a cell **skips** unless **all** of its predicates hold
 When `[session_delegate].harden_permissions = true`, the daemon generates a per-tool pre-flight
 permission config from the brief's `permitted_paths` before launching the delegate:
 
-**OpenCode** — generates an `opencode.jsonc` at runtime with an `agent.<dogfood-coder>`
+**OpenCode** — generates an `opencode.jsonc` at runtime with an `agent.<dogfood-developer>`
 permission block:
 
 ```jsonc
 {
   "agent": {
-    "dogfood-coder": {
+    "dogfood-developer": {
       "permission": {
         "edit": { "*": "deny", "src/**": "allow" },
         "external_directory": { "**": "deny" },
@@ -586,8 +586,8 @@ allowlist flag, so the pre-flight grant is weaker than OpenCode's.
 **Version probe:** `probeDelegateVersion` checks the binary version before launch and warns
 if below the minimum (OpenCode ≥ 1.0.0, Claude Code ≥ 2.0.0).
 
-**Identity reconciliation:** the agent key in the generated config (`dogfood-coder`) is asserted
-against `Blueprints/Identities/dogfood-coder.md:identity_id` by a drift test, so the two cannot
+**Identity reconciliation:** the agent key in the generated config (`dogfood-developer`) is asserted
+against `Blueprints/Identities/dogfood-developer.md:identity_id` by a drift test, so the two cannot
 diverge.
 
 **E2E scenario:** `session-delegate-hardening-active-live` in `tests/scenario_framework/scenarios/provider_live/`

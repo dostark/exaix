@@ -8,7 +8,7 @@
 
 import { assertEquals, assertExists, assertMatch } from "@std/assert";
 import type { SessionBrief, SessionDelegateConfig } from "@exaix/schemas/session_delegate.ts";
-import { DOGFOOD_CODER_IDENTITY_ID } from "@exaix/core/types";
+import { DOGFOOD_DEVELOPER_IDENTITY_ID } from "@exaix/core/types";
 import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adapter_registry.ts";
 import { buildOpencodePermissionConfig } from "@exaix/session/opencode_permission_generator.ts";
 import { SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
@@ -119,7 +119,7 @@ Deno.test("[delegate_hardening] resolveHardenedLaunch appends permission flags f
   assertMatch(argsJoined, /--allowedTools/);
 });
 
-Deno.test("[delegate_hardening] agentNameMismatch is false when using canonical DOGFOOD_CODER_IDENTITY_ID", async () => {
+Deno.test("[delegate_hardening] agentNameMismatch is false when using canonical DOGFOOD_DEVELOPER_IDENTITY_ID", async () => {
   const sessionDir = await Deno.makeTempDir();
   const svc = makeService(sessionDir);
   const brief = opencodeBrief();
@@ -131,12 +131,12 @@ Deno.test("[delegate_hardening] agentNameMismatch is false when using canonical 
 });
 
 Deno.test("[delegate_hardening] agentNameMismatch comparison logic is structurally correct", () => {
-  // Verify the generator always uses DOGFOOD_CODER_IDENTITY_ID as the agent key.
+  // Verify the generator always uses DOGFOOD_DEVELOPER_IDENTITY_ID as the agent key.
   // If this changes, agentNameMismatch will become true until the daemon-side
   // event emission is updated.
   const config = buildOpencodePermissionConfig(["src/**"]);
-  assertExists(config.agent[DOGFOOD_CODER_IDENTITY_ID], "agent key must match canonical identity");
-  assertEquals(config.agent[DOGFOOD_CODER_IDENTITY_ID].edit, { "*": "deny", "src/**": "allow" });
+  assertExists(config.agent[DOGFOOD_DEVELOPER_IDENTITY_ID], "agent key must match canonical identity");
+  assertEquals(config.agent[DOGFOOD_DEVELOPER_IDENTITY_ID].edit, { "*": "deny", "src/**": "allow" });
 
   // Verify that a non-canonical key would NOT match — proving the mismatch
   // detection logic would trigger if the generator diverged.

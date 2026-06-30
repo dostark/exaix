@@ -178,6 +178,13 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# 14c. Blueprint catalog integrity (identities ↔ flows, skills ↔ identities all resolve)
+deno task check:blueprint-integrity
+if [ $? -ne 0 ]; then
+  echo "❌ Error: Blueprint catalog has integrity violations (dangling or orphan identity/skill). See output above."
+  exit 1
+fi
+
 # 15. Step Manifest Validity (every phase-NN step, NN >= 130, must have a valid manifest)
 deno task check:manifests
 if [ $? -ne 0 ]; then

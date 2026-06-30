@@ -3,13 +3,13 @@
  * @path packages/session/src/opencode_permission_generator.ts
  * @description Phase 128 Step 2 — builds the OpenCode opencode.jsonc permission
  *   config from a brief's permitted_paths. Pure builder + async disk writer.
- *   The agent key uses DOGFOOD_CODER_IDENTITY_ID from @exaix/core/types.
+ *   The agent key uses DOGFOOD_DEVELOPER_IDENTITY_ID from @exaix/core/types.
  * @architectural-layer Services
  * @related-files [packages/schemas/src/opencode_config.ts, packages/session/src/scope_checker.ts, packages/session/src/mod.ts]
  */
 
 import { dirname } from "@std/path";
-import { DOGFOOD_CODER_IDENTITY_ID } from "@exaix/core/types";
+import { DOGFOOD_DEVELOPER_IDENTITY_ID } from "@exaix/core/types";
 import { OpencodeConfigSchema } from "@exaix/schemas/opencode_config.ts";
 import type { OpencodeConfig } from "@exaix/schemas/opencode_config.ts";
 import type { PathResolver } from "@exaix/portal";
@@ -44,7 +44,7 @@ export function buildOpencodePermissionConfig(
 
   return {
     agent: {
-      [DOGFOOD_CODER_IDENTITY_ID]: {
+      [DOGFOOD_DEVELOPER_IDENTITY_ID]: {
         edit: editPermissions,
         external_directory: { "**": "deny" },
         bash: { "*": "deny" },
@@ -75,5 +75,5 @@ export async function generateOpencodePermissionConfig(
   await Deno.writeTextFile(tmpPath, JSON.stringify(config, null, 2));
   await Deno.rename(tmpPath, resolvedPath);
 
-  return { config, configPath: resolvedPath, agentKey: DOGFOOD_CODER_IDENTITY_ID };
+  return { config, configPath: resolvedPath, agentKey: DOGFOOD_DEVELOPER_IDENTITY_ID };
 }

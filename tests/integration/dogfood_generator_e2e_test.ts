@@ -2,7 +2,7 @@
  * @module DogfoodGeneratorE2eTest
  * @path tests/integration/dogfood_generator_e2e_test.ts
  * @description Phase 122 Step 5 — full identity → skills → generator E2E test.
- *   Proves the dogfood-coder identity, gap-analysis/step-execution skills,
+ *   Proves the dogfood-developer identity, gap-analysis/step-execution skills,
  *   and plan_to_requests generator work together on a real plan file.
  *   GAP-12/GAP-13 remediation: uses SkillsService.getSkill for runtime loading
  *   and asserts dogfood metadata line in generated files.
@@ -28,12 +28,12 @@ const PHASE_120_PLAN = join(REPO_ROOT, "exaix-dev-docs", "planning", "phase-120-
 
 const DOGFOOD_META_RE = /> Dogfood metadata — portal: `([^`]+)`; target_branch: `([^`]+)`/;
 
-Deno.test("[dogfood-e2e] dogfood-coder identity loads through BlueprintLoader", async () => {
+Deno.test("[dogfood-e2e] dogfood-developer identity loads through BlueprintLoader", async () => {
   const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
-  const blueprint = await loader.load("dogfood-coder");
+  const blueprint = await loader.load("dogfood-developer");
 
-  assertExists(blueprint, "dogfood-coder must load");
-  assertEquals(blueprint.identityId, "dogfood-coder");
+  assertExists(blueprint, "dogfood-developer must load");
+  assertEquals(blueprint.identityId, "dogfood-developer");
   const skills = blueprint.frontmatter.default_skills ?? [];
   assertEquals(skills.length, 5, "must have 5 rigor skills");
   assertEquals(skills.includes("tdd-methodology"), true);
