@@ -18,7 +18,6 @@ import { McpToolName } from "@exaix/core";
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
 const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Identities");
 const SKILLS_DIR = join(REPO_ROOT, "Blueprints", "Skills");
-const EXAMPLES_DIR = join(IDENTITIES_DIR, "examples");
 
 // ── Const helpers ───────────────────────────────────────────────────
 
@@ -56,6 +55,7 @@ const ROLE_REQUIRED_SKILLS: Record<string, string[]> = {
   "technical-writer": ["documentation-driven", "portal-grounding"],
   "quality-judge": ["code-review", "portal-grounding"],
   "voting-judge": ["code-review", "portal-grounding"],
+  "research-synthesizer": ["research-methodology", "portal-grounding"],
 };
 
 /** Identities whose role is analysis/evaluation — no destructive tools. */
@@ -131,22 +131,6 @@ Deno.test({
           Deno.statSync(skillPath);
         } catch {
           dangling.push({ id, skill: s });
-        }
-      }
-    }
-
-    // Also check examples
-    for (const e of Deno.readDirSync(EXAMPLES_DIR)) {
-      if (!e.isFile || !e.name.endsWith(".md") || e.name === "README.md") continue;
-      const fm = readRawFrontmatter(join(EXAMPLES_DIR, e.name));
-      if (!fm) continue;
-      const skills = (fm.default_skills ?? []) as string[];
-      for (const s of skills) {
-        const skillPath = join(SKILLS_DIR, `${s}.skill.md`);
-        try {
-          Deno.statSync(skillPath);
-        } catch {
-          dangling.push({ id: `examples/${e.name.replace(/\.md$/, "")}`, skill: s });
         }
       }
     }

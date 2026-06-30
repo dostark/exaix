@@ -2,7 +2,7 @@
  * @module IdentityStructureLintTest
  * @path tests/blueprints/identity_structure_lint_test.ts
  * @description Phase 131 Step 8 — structure lint for all active identities,
- *   examples, and templates: balanced thought/content tags, terminated fences,
+ *   active identities: balanced thought/content tags, terminated fences,
  *   no empty numbered list markers.
  * @architectural-layer Integration
  * @dependencies [@std/path, @std/assert]
@@ -23,30 +23,13 @@ const ACTIVE_FILES = [
   "product-manager.md",
   "qa-engineer.md",
   "quality-judge.md",
+  "research-synthesizer.md",
   "security-expert.md",
   "senior-coder.md",
   "software-architect.md",
   "technical-writer.md",
   "test-engineer.md",
   "voting-judge.md",
-];
-
-const EXAMPLE_FILES = [
-  "code-reviewer.md",
-  "security-auditor.md",
-  "feature-developer.md",
-  "api-documenter.md",
-  "research-synthesizer.md",
-];
-
-const TEMPLATE_FILES = [
-  "pipeline-agent.md.template",
-  "judge-agent.md.template",
-  "reflexive-agent.md.template",
-  "conversational-agent.md.template",
-  "specialist-agent.md.template",
-  "collaborative-agent.md.template",
-  "research-agent.md.template",
 ];
 
 interface LintIssue {
@@ -143,36 +126,7 @@ Deno.test({
   },
 });
 
-Deno.test({
-  name: "[step8] example identities pass structure lint",
-  fn() {
-    const allIssues: LintIssue[] = [];
-    for (const f of EXAMPLE_FILES) {
-      const issues = lintFile(filePath("examples", f), `examples/${f}`);
-      allIssues.push(...issues);
-    }
-    if (allIssues.length > 0) {
-      const report = allIssues
-        .map((i) => `  ${i.file}: ${i.kind} — ${i.detail}`)
-        .join("\n");
-      assertEquals(allIssues.length, 0, `Structure lint issues found in examples:\n${report}`);
-    }
-  },
-});
-
-Deno.test({
-  name: "[step8] template identities pass structure lint",
-  fn() {
-    const allIssues: LintIssue[] = [];
-    for (const f of TEMPLATE_FILES) {
-      const issues = lintFile(filePath("templates", f), `templates/${f}`);
-      allIssues.push(...issues);
-    }
-    if (allIssues.length > 0) {
-      const report = allIssues
-        .map((i) => `  ${i.file}: ${i.kind} — ${i.detail}`)
-        .join("\n");
-      assertEquals(allIssues.length, 0, `Structure lint issues found in templates:\n${report}`);
-    }
-  },
-});
+// (Example and template structure-lint tests were removed in the Phase 131
+// catalog reconciliation — the examples/ and templates/ directories no longer
+// exist; example content was merged/promoted into concrete identities and
+// templates were converted to skills.)

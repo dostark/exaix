@@ -27,7 +27,6 @@ import {
 
 const REPO_ROOT = resolve(new URL("../../", import.meta.url).pathname);
 const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Identities");
-const EXAMPLES_DIR = join(IDENTITIES_DIR, "examples");
 
 /** YAML-parsed frontmatter — validated by the schema, so structurally permissive. */
 interface IParsedFrontmatter {
@@ -41,15 +40,12 @@ function parseFrontmatter(content: string): IParsedFrontmatter | null {
   return parseYaml(match[1]) as IParsedFrontmatter;
 }
 
-Deno.test("[step2] unified schema accepts all existing identities + examples (pre-strict)", async () => {
+Deno.test("[step2] unified schema accepts every active identity (pre-strict)", async () => {
   const files: string[] = [];
   for await (const e of Deno.readDir(IDENTITIES_DIR)) {
     if (e.isFile && e.name.endsWith(".md") && e.name !== "README.md") files.push(join(IDENTITIES_DIR, e.name));
   }
-  for await (const e of Deno.readDir(EXAMPLES_DIR)) {
-    if (e.isFile && e.name.endsWith(".md") && e.name !== "README.md") files.push(join(EXAMPLES_DIR, e.name));
-  }
-  assert(files.length >= 18, `expected the full catalog, found ${files.length}`);
+  assert(files.length >= 14, `expected the full identity catalog, found ${files.length}`);
 
   for (const file of files) {
     const content = await Deno.readTextFile(file);

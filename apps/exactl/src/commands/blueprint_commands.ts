@@ -9,7 +9,7 @@
 import { ensureDir, exists } from "@std/fs";
 import { join } from "@std/path";
 import { parse as parseToml } from "@std/toml";
-import { stringify as stringifyYaml } from "@std/yaml";
+import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { BlueprintStatus, ProviderType } from "@exaix/core";
 import { ValidationChain } from "@exaix/cli/validation/validation_chain.ts";
@@ -63,284 +63,34 @@ export interface BlueprintCreateOptions {
   capabilities?: string;
   systemPrompt?: string;
   systemPromptFile?: string;
-  template?: string;
+  /** Clone an existing identity by id as a prototype (replaces the retired --template). */
+  from?: string;
 }
 
 export interface BlueprintRemoveOptions {
   force?: boolean;
 }
 
-// ============================================================================
-// Template Definitions
-// ============================================================================
-
-interface BlueprintTemplate {
-  model: string;
-  capabilities: string[];
-  systemPrompt: string;
-}
-
 /**
- * Maps CLI template names to their corresponding .template filenames.
- * This is the single source of truth for template resolution (Phase 131 Step 8).
+ * Minimal default system prompt used when `create` is given neither an explicit
+ * prompt nor a `--from` prototype. Includes the mandatory contract tags so the
+ * generated blueprint passes validation.
  */
-const TEMPLATE_NAME_MAP: Record<string, string> = {
-  default: "pipeline-agent",
-  coder: "specialist-agent",
-  reviewer: "judge-agent",
-  architect: "collaborative-agent",
-  researcher: "research-agent",
-  gemini: "conversational-agent",
-  mock: "reflexive-agent",
-};
+const DEFAULT_SYSTEM_PROMPT = `# Agent
 
-const TEMPLATES: Record<string, BlueprintTemplate> = {
-  default: {
-    model: "ollama:codellama:13b",
-    capabilities: ["general"],
-    systemPrompt: `# Default Agent
+You are a helpful AI agent. Analyse the request and respond using the required
+output contract.
 
-You are a helpful assistant that follows instructions carefully.
+Follow your \`response-contract\` skill for the mandatory \`<thought>\`/\`<content>\` format:
 
-## Output Format
-
-Always structure your response as:
-
-\`\`\`xml
 <thought>
-Your reasoning and approach
+Your reasoning.
 </thought>
 
 <content>
-Your response or solution
+{ "description": "What you produced" }
 </content>
-\`\`\`
-`,
-  },
-  coder: {
-    model: "anthropic:claude-sonnet",
-    capabilities: ["code_generation", "debugging", "testing"],
-    systemPrompt: `# Software Development Agent
-
-You are a senior software engineer with expertise in multiple programming languages.
-
-## Capabilities
-
-- Code generation following best practices
-- Debugging complex issues
-- Test-driven development
-- Code refactoring
-
-## Guidelines
-
-1. Always write tests before implementation
-2. Follow language-specific style guides
-3. Prioritize readability and maintainability
-4. Explain reasoning in <thought> tags
-5. Provide code in <content> tags
-
-## Output Format
-
-\`\`\`xml
-<thought>
-Your reasoning about the problem and approach
-</thought>
-
-<content>
-The code, tests, or solution
-</content>
-\`\`\`
-`,
-  },
-  reviewer: {
-    model: "openai:gpt-5",
-    capabilities: ["code_review", "security_analysis"],
-    systemPrompt: `# Code Review Agent
-
-You are a code review specialist focusing on quality, security, and best practices.
-
-## Capabilities
-
-- Code review and quality assessment
-- Security vulnerability detection
-- Performance analysis
-- Best practice recommendations
-
-## Guidelines
-
-1. Check for security vulnerabilities
-2. Assess code maintainability
-3. Verify test coverage
-4. Review error handling
-5. Suggest improvements
-
-## Output Format
-
-\`\`\`xml
-<thought>
-Your analysis of the code
-</thought>
-
-<content>
-Review feedback and recommendations
-</content>
-\`\`\`
-`,
-  },
-  architect: {
-    model: "anthropic:claude-opus",
-    capabilities: ["system_design", "documentation"],
-    systemPrompt: `# System Architecture Agent
-
-You are a system architect with expertise in designing scalable, maintainable systems.
-
-## Capabilities
-
-- System design and architecture
-- Technical documentation
-- Performance optimization
-- Technology selection
-
-## Guidelines
-
-1. Consider scalability and maintainability
-2. Document architectural decisions
-3. Analyze trade-offs
-4. Provide clear diagrams and explanations
-
-## Output Format
-
-\`\`\`xml
-<thought>
-Your architectural analysis and reasoning
-</thought>
-
-<content>
-Design proposals and documentation
-</content>
-\`\`\`
-`,
-  },
-  researcher: {
-    model: "openai:gpt-5",
-    capabilities: ["research", "analysis", "summarization"],
-    systemPrompt: `# Research and Analysis Agent
-
-You are a research specialist who analyzes information and provides comprehensive insights.
-
-## Capabilities
-
-- Research and information gathering
-- Data analysis
-- Summarization
-- Insight extraction
-
-## Guidelines
-
-1. Provide thorough analysis
-2. Cite sources when possible
-3. Summarize key findings
-4. Identify patterns and trends
-
-## Output Format
-
-\`\`\`xml
-<thought>
-Your research approach and analysis
-</thought>
-
-<content>
-Research findings and insights
-</content>
-\`\`\`
-`,
-  },
-  gemini: {
-    model: "google:gemini-3-flash",
-    capabilities: ["general", "multimodal", "reasoning"],
-    systemPrompt: `# Google Gemini Agent
-
-You are powered by Google's Gemini 2.0, a multimodal AI with strong reasoning capabilities.
-
-## Capabilities
-
-- General-purpose assistance
-- Multimodal understanding (text, images, code)
-- Advanced reasoning
-- Fast response generation
-
-## Guidelines
-
-1. Leverage multimodal understanding when applicable
-2. Provide clear, reasoned responses
-3. Balance speed with quality
-4. Explain complex concepts clearly
-
-## Output Format
-
-\`\`\`xml
-<thought>
-Your reasoning and approach
-</thought>
-
-<content>
-Your response or solution
-</content>
-\`\`\`
-`,
-  },
-  mock: {
-    model: "mock:test-model",
-    capabilities: ["testing", "development"],
-    systemPrompt: `# Mock Agent (Testing Only)
-
-You are a mock agent used for testing and development. This blueprint uses the MockLLMProvider
-which returns deterministic responses without making actual API calls.
-
-## Purpose
-
-- Enable fast, deterministic unit and integration tests
-- Avoid API costs during development
-- Test error handling and edge cases
-- Validate request → plan → execution flow without real LLM
-
-## Mock Provider Strategies
-
-This agent can use different mock strategies (configured in test setup):
-
-1. **recorded** - Replay pre-recorded LLM responses
-2. **scripted** - Return specific responses based on test scenarios
-3. **pattern** - Match request patterns and return templated responses
-4. **failing** - Simulate LLM failures for error handling tests
-5. **slow** - Simulate slow responses for timeout tests
-
-## Output Format
-
-\`\`\`xml
-<thought>
-Mock reasoning based on test scenario
-</thought>
-
-<content>
-Mock content based on test scenario
-</content>
-\`\`\`
-
-## Usage
-
-\`\`\`text
-# Create test request using mock identity
-exactl request "Test request" --identity mock
-\`\`\`
-
-## Notes
-
-- **Do not use in production** - This agent does not perform real AI reasoning
-- Responses are deterministic and controlled by test fixtures
-- Useful for CI/CD pipelines where real LLM calls are not desired
-`,
-  },
-};
+`;
 
 // ============================================================================
 // BlueprintCommands Implementation
@@ -577,7 +327,7 @@ export class BlueprintCommands extends BaseCommand {
       )
       .addRule("identityId", (val) => isReservedAgentId(String(val)) ? `reserved name: ${val}` : null)
       .addRule("name", (_val) => (!options.name) ? "--name is required" : null)
-      .addRule("model", (_val) => (!options.model && !options.template) ? "--model is required" : null)
+      .addRule("model", (_val) => (!options.model && !options.from) ? "--model is required" : null)
       .validate({ identityId, ...options });
 
     if (!validation.isValid) {
@@ -599,77 +349,49 @@ export class BlueprintCommands extends BaseCommand {
   }
 
   /**
-   * Read a .template file from disk and parse it into a BlueprintTemplate.
-   * Returns null if the template name is unknown or the file does not exist.
+   * Load an existing identity by id as a creation prototype (the `--from` source).
+   * Returns its model, capabilities, and body, or null if the identity does not
+   * exist. Replaces the retired separate `.template` library (Phase 131 cutover):
+   * a concrete identity is the single source of truth for scaffolding a new one.
    */
-  private readTemplateFile(templateName: string): BlueprintTemplate | null {
-    const fileName = TEMPLATE_NAME_MAP[templateName];
-    if (!fileName) return null;
-
-    const templatesDir = join(this.getBlueprintsDir(), "templates");
-    const filePath = join(templatesDir, `${fileName}.md.template`);
+  private loadPrototype(identityId: string): { model: string; capabilities: string[]; systemPrompt: string } | null {
+    const filePath = join(this.getBlueprintsDir(), `${identityId}.md`);
     try {
       const content = Deno.readTextFileSync(filePath);
-      // Extract frontmatter and body
       const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
       if (!match) return null;
 
-      const frontmatterLines = match[1].split("\n");
-      const body = match[2].trim();
-
-      const frontmatter: Record<string, string> = {};
-      for (const line of frontmatterLines) {
-        const colonIdx = line.indexOf(":");
-        if (colonIdx === -1) continue;
-        const key = line.slice(0, colonIdx).trim();
-        const value = line.slice(colonIdx + 1).trim().replace(/^["']|["']$/g, "");
-        frontmatter[key] = value;
-      }
-
-      const model = (frontmatter.model as string) || "";
-      const caps = frontmatter.capabilities;
-      const capabilities = Array.isArray(caps)
-        ? caps.map((c: string) => c.trim())
-        : typeof caps === "string"
-        ? caps.replace(/^\[|\]$/g, "").split(",").map((c: string) => c.trim())
-        : [];
-
-      return { model, capabilities, systemPrompt: body };
+      const frontmatter = parseYaml(match[1]) as { model?: string; capabilities?: string[] };
+      const capabilities = Array.isArray(frontmatter.capabilities) ? frontmatter.capabilities.map(String) : [];
+      return { model: frontmatter.model ?? "", capabilities, systemPrompt: match[2].trim() };
     } catch {
       return null;
     }
   }
 
   /**
-   * Apply template settings to options.
-   * Phase 131 Step 8: tries to read from a .template file on disk first
-   * (via the name map), falling back to the hardcoded TEMPLATES map.
+   * Resolve the effective model / capabilities / system prompt for `create`,
+   * seeding any unset field from the `--from` prototype identity when given.
    */
-  private applyTemplate(
+  private applyPrototype(
     options: BlueprintCreateOptions,
   ): { model: string; capabilities: string[]; systemPrompt?: string } {
     let model = options.model;
     let capabilities = options.capabilities?.split(",").map((s) => s.trim()) || [];
     let systemPrompt = options.systemPrompt;
 
-    if (options.template) {
-      // Try reading from .template file on disk first (Option A reconciliation)
-      const fileTemplate = this.readTemplateFile(options.template);
-      if (fileTemplate) {
-        model = model || fileTemplate.model;
-        capabilities = capabilities.length > 0 ? capabilities : fileTemplate.capabilities;
-        systemPrompt = systemPrompt || fileTemplate.systemPrompt;
-      } else if (TEMPLATES[options.template]) {
-        // Fallback to hardcoded map
-        const template = TEMPLATES[options.template];
-        model = model || template.model;
-        capabilities = capabilities.length > 0 ? capabilities : template.capabilities;
-        systemPrompt = systemPrompt || template.systemPrompt;
+    if (options.from) {
+      const proto = this.loadPrototype(options.from);
+      if (!proto) {
+        throw new Error(`--from identity not found: ${options.from}`);
       }
+      model = model || proto.model;
+      capabilities = capabilities.length > 0 ? capabilities : proto.capabilities;
+      systemPrompt = systemPrompt || proto.systemPrompt;
     }
 
     if (!model) {
-      throw new Error("--model is required");
+      throw new Error("--model is required (or pass --from <identity-id> to clone one)");
     }
 
     return { model, capabilities, systemPrompt };
@@ -708,17 +430,10 @@ export class BlueprintCommands extends BaseCommand {
       finalPrompt = await Deno.readTextFile(options.systemPromptFile);
     }
 
-    // Use template body or default if no prompt provided
+    // Fall back to a minimal scaffold (with the required contract tags) when no
+    // prompt is supplied and no --from prototype provided one.
     if (!finalPrompt) {
-      if (options.template) {
-        const fileTemplate = this.readTemplateFile(options.template);
-        if (fileTemplate) {
-          finalPrompt = fileTemplate.systemPrompt;
-        }
-      }
-      if (!finalPrompt) {
-        finalPrompt = TEMPLATES.default.systemPrompt;
-      }
+      finalPrompt = DEFAULT_SYSTEM_PROMPT;
     }
 
     // Validate required tags
@@ -783,7 +498,7 @@ ${systemPrompt}
 
     await this.display.info("blueprint.created", identityId, {
       model,
-      template: options.template ?? null,
+      from: options.from ?? null,
       via: "cli",
     });
   }
@@ -802,8 +517,8 @@ ${systemPrompt}
       // Check if blueprint already exists
       const blueprintPath = await this.checkBlueprintExists(identityId);
 
-      // Apply template settings
-      const { model, capabilities, systemPrompt } = this.applyTemplate(options);
+      // Resolve model/capabilities/prompt, seeding from --from prototype if given
+      const { model, capabilities, systemPrompt } = this.applyPrototype(options);
 
       // Validate model provider
       this.validateModelProvider(model);

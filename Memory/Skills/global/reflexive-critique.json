@@ -1,0 +1,53 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440026",
+  "created_at": "2026-06-30T00:00:00.000Z",
+  "source": "user",
+  "scope": "global",
+  "status": "active",
+  "skill_id": "reflexive-critique",
+  "name": "Reflexive Self-Critique",
+  "version": "1.0.0",
+  "description": "The Reflexion pattern — generate, critique your own draft against accuracy/completeness/quality/safety, then refine until a confidence threshold is met",
+  "triggers": {
+    "tags": [
+      "reflexion",
+      "self-critique",
+      "quality",
+      "refinement"
+    ]
+  },
+  "instructions": "# Reflexive Self-Critique\n\nApply the **Reflexion pattern**: never return your first draft unreviewed.\nGenerate, critique your own work, and refine until a quality threshold is met.\n\n## Step 1 — Generate a draft\n\nProduce your best initial response to the request.\n\n## Step 2 — Self-critique the draft\n\nEvaluate the draft against four lenses, noting concrete defects, not vague unease:\n\n1. **Accuracy**: Are all facts and claims verifiable? Any hallucinations or\n   unstated assumptions? Is the logic sound and internally consistent?\n2. **Completeness**: Did you address every requirement? Any missed edge cases? Is\n   enough context provided for the reader to act?\n3. **Quality**: Is the output well-structured, clearly worded, and in the\n   requested format?\n4. **Safety** (when applicable): Any security, privacy, or data-handling issues?\n\n## Step 3 — Assess confidence\n\nRate confidence 0-100 from the critique findings:\n\n- **90-100**: High — no significant issues remain.\n- **70-89**: Moderate — minor improvements still possible.\n- **Below 70**: Low — a material defect remains; refine before emitting.\n\n## Step 4 — Refine and repeat\n\nFix the defects the critique named, then re-critique. Stop when confidence clears\nthe threshold or further passes stop changing anything material. State any concern\nyou could not resolve under the plan's risks rather than dropping it silently.",
+  "constraints": [
+    "Always critique the draft before emitting it; never return an unreviewed first draft",
+    "Stop refining once the confidence threshold is met or improvements stop being material",
+    "Surface residual low-confidence areas explicitly rather than hiding them"
+  ],
+  "output_requirements": [
+    "A refined response that has passed at least one critique pass",
+    "A confidence assessment (0-100) with the reasoning behind it",
+    "Any unresolved concerns the critique surfaced but could not fix"
+  ],
+  "quality_criteria": [
+    {
+      "name": "Critique Rigor",
+      "description": "The self-critique checks accuracy, completeness, quality, and safety, not just surface polish",
+      "weight": 40
+    },
+    {
+      "name": "Material Improvement",
+      "description": "Each refinement pass measurably improves the draft against a named criterion",
+      "weight": 35
+    },
+    {
+      "name": "Honest Confidence",
+      "description": "The final confidence score reflects the actual residual risk, with caveats stated",
+      "weight": 25
+    }
+  ],
+  "compatible_with": {
+    "agents": [
+      "*"
+    ]
+  },
+  "usage_count": 0
+}

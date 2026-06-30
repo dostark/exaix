@@ -76,12 +76,13 @@ Deno.test("[blueprint] create - generates valid blueprint file", async () => {
     );
     assertEquals(await exists(blueprintPath), true);
 
-    // Verify file content
+    // Verify file content (YAML frontmatter — the TOML→YAML migration completed
+    // in Phase 131 Step 2; the writer emits `---` blocks).
     const content = await Deno.readTextFile(blueprintPath);
-    assertStringIncludes(content, "+++");
-    assertStringIncludes(content, `identity_id = "${identityId}"`);
-    assertStringIncludes(content, 'name = "Test Agent"');
-    assertStringIncludes(content, 'model = "ollama:codellama:13b"');
+    assertStringIncludes(content, "---");
+    assertStringIncludes(content, `identity_id: ${identityId}`);
+    assertStringIncludes(content, "name: Test Agent");
+    assertStringIncludes(content, "model: 'ollama:codellama:13b'");
   } finally {
     await teardownTest();
   }
@@ -107,18 +108,61 @@ Deno.test("[blueprint] create - validates against schema", async () => {
   }
 });
 
-Deno.test("[blueprint] create - applies template defaults", async () => {
+Deno.test("[blueprint] create - clones an existing identity with --from", async () => {
   await setupTest();
   try {
-    const result = await commands.create("coder-agent", {
-      name: "Coder Agent",
-      template: "coder",
+    // Seed a prototype identity, then clone it via --from.
+    await commands.create("proto-agent", {
+      name: "Proto Agent",
+      model: "anthropic:claude-sonnet",
+      capabilities: "code_generation,review",
     });
 
-    // Verify template defaults applied
+    const result = await commands.create("cloned-agent", {
+      name: "Cloned Agent",
+      from: "proto-agent",
+    });
+
+    // The prototype's model and capabilities are inherited.
     assertEquals(result.model, "anthropic:claude-sonnet");
     assertExists(result.capabilities);
     assertEquals(result.capabilities?.includes("code_generation"), true);
+  } finally {
+    await teardownTest();
+  }
+});
+
+Deno.test("[blueprint] create - --from with explicit overrides wins", async () => {
+  await setupTest();
+  try {
+    await commands.create("proto2", {
+      name: "Proto2",
+      model: "anthropic:claude-sonnet",
+      capabilities: "a,b",
+    });
+
+    const result = await commands.create("cloned2", {
+      name: "Cloned2",
+      from: "proto2",
+      model: "openai:gpt-4o", // explicit override beats the prototype
+    });
+
+    assertEquals(result.model, "openai:gpt-4o");
+  } finally {
+    await teardownTest();
+  }
+});
+
+Deno.test("[blueprint] create - --from a missing identity errors", async () => {
+  await setupTest();
+  try {
+    let threw = false;
+    try {
+      await commands.create("orphan", { name: "Orphan", from: "does-not-exist" });
+    } catch {
+      threw = true;
+    }
+    assertEquals(threw, true, "cloning a non-existent identity must throw");
   } finally {
     await teardownTest();
   }
@@ -361,8 +405,8 @@ Deno.test("[blueprint] show - displays full blueprint", async () => {
     assertExists(details);
     assertEquals(details.identity_id, "show-test");
     assertExists(details.content);
-    assertStringIncludes(details.content, "+++");
-    assertStringIncludes(details.content, 'identity_id = "show-test"');
+    assertStringIncludes(details.content, "---");
+    assertStringIncludes(details.content, "identity_id: show-test");
   } finally {
     await teardownTest();
   }
@@ -522,85 +566,6 @@ Deno.test("[blueprint] remove - rejects non-existent blueprint", async () => {
       Error,
       "not found",
     );
-  } finally {
-    await teardownTest();
-  }
-});
-
-// ============================================================================
-// Test Suite: Template System
-// ============================================================================
-
-Deno.test("[blueprint] template - default template", async () => {
-  await setupTest();
-  try {
-    const result = await commands.create("default-template", {
-      name: "Default Template Test",
-      template: "default",
-    });
-
-    assertEquals(result.model, "ollama:codellama:13b");
-    assertEquals(result.capabilities?.includes("general"), true);
-  } finally {
-    await teardownTest();
-  }
-});
-
-Deno.test("[blueprint] template - coder template", async () => {
-  await setupTest();
-  try {
-    const result = await commands.create("coder-template", {
-      name: "Coder Template Test",
-      template: "coder",
-    });
-
-    assertEquals(result.model, "anthropic:claude-sonnet");
-    assertEquals(result.capabilities?.includes("code_generation"), true);
-  } finally {
-    await teardownTest();
-  }
-});
-
-Deno.test("[blueprint] template - reviewer template", async () => {
-  await setupTest();
-  try {
-    const result = await commands.create("reviewer-template", {
-      name: "Reviewer Template Test",
-      template: "reviewer",
-    });
-
-    assertEquals(result.model, "openai:gpt-5");
-    assertEquals(result.capabilities?.includes("code_review"), true);
-  } finally {
-    await teardownTest();
-  }
-});
-
-Deno.test("[blueprint] template - mock template", async () => {
-  await setupTest();
-  try {
-    const result = await commands.create("mock-template", {
-      name: "Mock Template Test",
-      template: "mock",
-    });
-
-    assertEquals(result.model, "mock:test-model");
-    assertEquals(result.capabilities?.includes("testing"), true);
-  } finally {
-    await teardownTest();
-  }
-});
-
-Deno.test("[blueprint] template - gemini template", async () => {
-  await setupTest();
-  try {
-    const result = await commands.create("gemini-template", {
-      name: "Gemini Template Test",
-      template: "gemini",
-    });
-
-    assertEquals(result.model, "google:gemini-3-flash");
-    assertEquals(result.capabilities?.includes("multimodal"), true);
   } finally {
     await teardownTest();
   }

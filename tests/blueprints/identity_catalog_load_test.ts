@@ -2,10 +2,11 @@
  * @module IdentityCatalogLoadTest
  * @path tests/blueprints/identity_catalog_load_test.ts
  * @description Phase 131 Step 9 — catalog-wide load+validate integration test.
- *   Walks every active identity, example, and template under Blueprints/Identities/,
- *   loads through BlueprintLoader (or raw-parse for templates), and validates:
- *   schema passes, default_skills resolve, permitted_tools are valid McpToolName,
- *   capabilities are behavioral-only, no unresolved {{include:}}.
+ *   Walks every active identity under Blueprints/Identities/ (the separate
+ *   examples/ and templates/ directories were retired in the catalog
+ *   reconciliation), loads through BlueprintLoader, and validates: schema passes,
+ *   default_skills resolve, permitted_tools are valid McpToolName, capabilities
+ *   are behavioral-only, no unresolved {{include:}}.
  * @architectural-layer Integration
  * @dependencies [@std/assert, @std/path, @std/yaml, @exaix/core/blueprint]
  */
@@ -18,8 +19,6 @@ import { BlueprintLoader } from "@exaix/core/blueprint";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..");
 const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Identities");
-const EXAMPLES_DIR = join(IDENTITIES_DIR, "examples");
-const TEMPLATES_DIR = join(IDENTITIES_DIR, "templates");
 const SKILLS_DIR = join(REPO_ROOT, "Blueprints", "Skills");
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -66,30 +65,6 @@ function listActiveIdentities(): string[] {
   return ids.sort();
 }
 
-/**
- * List example identity filenames (all .md files under examples/ except README.md).
- */
-function listExampleIdentities(): string[] {
-  const ids: string[] = [];
-  for (const e of Deno.readDirSync(EXAMPLES_DIR)) {
-    if (!e.isFile || !e.name.endsWith(".md") || e.name === "README.md") continue;
-    ids.push(basename(e.name, ".md"));
-  }
-  return ids.sort();
-}
-
-/**
- * List template filenames (all .md.template files under templates/).
- */
-function listTemplateNames(): string[] {
-  const names: string[] = [];
-  for (const e of Deno.readDirSync(TEMPLATES_DIR)) {
-    if (!e.isFile || !e.name.endsWith(".md.template")) continue;
-    names.push(e.name.replace(/\.md\.template$/, ""));
-  }
-  return names.sort();
-}
-
 // ── 1. Active identity load via BlueprintLoader ──────────────────────
 
 Deno.test({
@@ -123,76 +98,13 @@ Deno.test({
   },
 });
 
-// ── 2. Example identity load via BlueprintLoader ─────────────────────
+// (The separate examples/ and templates/ directories were retired in the
+// Phase 131 catalog reconciliation: example stubs were merged into / promoted to
+// concrete identities, and templates were converted to skills + the --from CLI.
+// The catalog is now a flat set of concrete identities, covered by the tests above
+// and below.)
 
-Deno.test({
-  name: "[step9/catalog-load] every example identity loads through BlueprintLoader",
-  sanitizeOps: false,
-  sanitizeResources: false,
-  async fn() {
-    // Point blueprintsPath to the Blueprints root so resolvePath appends
-    // Identities/ and the identityId's subdirectory (e.g. "examples/api-documenter")
-    // resolves to Blueprints/Identities/examples/api-documenter.md.
-    const loader = new BlueprintLoader({ blueprintsPath: join(REPO_ROOT, "Blueprints") });
-    const exampleIds = listExampleIdentities();
-    const failures: Array<{ id: string; error: string }> = [];
-
-    for (const id of exampleIds) {
-      try {
-        const bp = await loader.load(`examples/${id}`);
-        if (!bp) {
-          failures.push({ id, error: "blueprint returned null" });
-        }
-      } catch (e) {
-        failures.push({ id, error: String(e) });
-      }
-    }
-
-    if (failures.length > 0) {
-      console.log("\nExample load failures:");
-      for (const f of failures) {
-        console.log(`  ${f.id}: ${f.error}`);
-      }
-    }
-
-    assertEquals(failures.length, 0, `${failures.length} example(s) failed to load via BlueprintLoader`);
-  },
-});
-
-// ── 3. Template frontmatter validity ─────────────────────────────────
-
-Deno.test({
-  name: "[step9/catalog-load] every template has valid YAML frontmatter with required fields",
-  fn() {
-    const templateNames = listTemplateNames();
-    const issues: Array<{ name: string; problem: string }> = [];
-
-    for (const name of templateNames) {
-      const filePath = join(TEMPLATES_DIR, `${name}.md.template`);
-      const fm = readRawFrontmatter(filePath);
-      if (!fm) {
-        issues.push({ name, problem: "no YAML frontmatter" });
-        continue;
-      }
-      // Templates don't require identity_id/created/created_by (they are
-      // instantiated by the CLI which injects those). But they should have
-      // at minimum: name, model, capabilities.
-      if (!fm.name) issues.push({ name, problem: "missing name" });
-      if (!fm.model) issues.push({ name, problem: "missing model" });
-    }
-
-    if (issues.length > 0) {
-      console.log("\nTemplate frontmatter issues:");
-      for (const i of issues) {
-        console.log(`  ${i.name}: ${i.problem}`);
-      }
-    }
-
-    assertEquals(issues.length, 0, `${issues.length} template(s) have frontmatter issues`);
-  },
-});
-
-// ── 4. default_skills resolve to loadable .skill.md files ────────────
+// ── default_skills resolve to loadable .skill.md files ───────────────
 
 Deno.test({
   name: "[step9/catalog-load] all identity default_skills resolve to existing .skill.md files",
@@ -328,11 +240,3 @@ Deno.test({
 });
 
 // ── 8. Template count consistency ────────────────────────────────────
-
-Deno.test({
-  name: "[step9/catalog-load] all .template files have corresponding CLI names (consistency with Step 8)",
-  fn() {
-    const diskFiles = new Set(listTemplateNames());
-    assertEquals(diskFiles.size > 0, true, "at least one .template file must exist");
-  },
-});

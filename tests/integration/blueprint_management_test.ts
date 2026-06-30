@@ -26,11 +26,12 @@ Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
     // ========================================================================
     // Test 1: Create Blueprint from Scratch
     // ========================================================================
-    await t.step("Test 1: Create blueprint with valid TOML frontmatter", async () => {
+    await t.step("Test 1: Create blueprint with valid YAML frontmatter", async () => {
       const result = await blueprintCommands.create(testAgentId, {
         name: "Integration Test Agent",
         model: "ollama:codellama:13b",
         description: "Test agent for integration testing",
+        capabilities: "code_generation,debugging",
       });
 
       assertExists(result.path, "Blueprint path should be returned");
@@ -41,13 +42,13 @@ Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
       const fileExists = await exists(blueprintPath);
       assertEquals(fileExists, true, "Blueprint file should exist");
 
-      // Verify TOML frontmatter format
+      // Verify YAML frontmatter format (TOML→YAML migration completed in Step 2).
       const content = await Deno.readTextFile(blueprintPath);
-      assertStringIncludes(content, "+++", "Should use TOML delimiters");
-      assertStringIncludes(content, `identity_id = "${testAgentId}"`);
-      assertStringIncludes(content, `name = "Integration Test Agent"`);
-      assertStringIncludes(content, `model = "ollama:codellama:13b"`);
-      assertStringIncludes(content, "capabilities = [");
+      assertStringIncludes(content, "---", "Should use YAML delimiters");
+      assertStringIncludes(content, `identity_id: ${testAgentId}`);
+      assertStringIncludes(content, "name: Integration Test Agent");
+      assertStringIncludes(content, "model: 'ollama:codellama:13b'");
+      assertStringIncludes(content, "capabilities:");
 
       // Verify IActivity Journal
       await env.db.waitForFlush();
@@ -58,26 +59,23 @@ Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
     });
 
     // ========================================================================
-    // Test 2: Create Blueprint from Template
+    // Test 2: Create Blueprint by cloning an existing one (--from)
     // ========================================================================
-    await t.step("Test 2: Template applies correct model and capabilities", async () => {
+    await t.step("Test 2: --from clones model and capabilities from a prototype identity", async () => {
+      // Clone the identity created in Test 1.
       const result = await blueprintCommands.create(coderAgentId, {
         name: "Integration Coder",
-        template: "coder",
+        from: testAgentId,
       });
 
       const blueprintPath = result.path;
       const content = await Deno.readTextFile(blueprintPath);
 
-      // Verify template defaults
-      assertStringIncludes(content, `model = "anthropic:claude-sonnet"`);
-      assertStringIncludes(content, `"code_generation"`);
-      assertStringIncludes(content, `"debugging"`);
-      assertStringIncludes(content, `"testing"`);
-      assertStringIncludes(content, "# Software Development Agent");
-
-      // Verify system prompt contains coder-specific content
-      assertStringIncludes(content, "multiple programming languages");
+      // The prototype's model and capabilities are inherited.
+      assertStringIncludes(content, "model: 'ollama:codellama:13b'");
+      assertStringIncludes(content, "code_generation");
+      assertStringIncludes(content, "debugging");
+      assertEquals(result.model, "ollama:codellama:13b");
     });
 
     // ========================================================================
@@ -112,10 +110,10 @@ Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
     await t.step("Test 4: Validation detects missing fields", async () => {
       // Create invalid blueprint manually
       const invalidPath = join(env.tempDir, "Blueprints", "Identities", "invalid-test.md");
-      const invalidContent = `+++
-name = "Missing identity_id"
-model = "ollama:llama3.2"
-+++
+      const invalidContent = `---
+name: Missing identity_id
+model: ollama:llama3.2
+---
 
 Invalid blueprint without identity_id field
 `;
@@ -178,10 +176,10 @@ Invalid blueprint without identity_id field
       const blueprintPath = join(env.tempDir, "Blueprints", "Identities", `${testAgentId}.md`);
       const originalContent = await Deno.readTextFile(blueprintPath);
 
-      // Modify blueprint directly (simulating manual edit)
+      // Modify blueprint directly (simulating manual edit) — YAML frontmatter.
       const modifiedContent = originalContent.replace(
-        `model = "ollama:codellama:13b"`,
-        `model = "ollama:llama3.2:latest"`,
+        "model: 'ollama:codellama:13b'",
+        "model: 'ollama:llama3.2:latest'",
       );
       await Deno.writeTextFile(blueprintPath, modifiedContent);
 
@@ -191,7 +189,7 @@ Invalid blueprint without identity_id field
 
       // Verify change persisted
       const updatedContent = await Deno.readTextFile(blueprintPath);
-      assertStringIncludes(updatedContent, `model = "ollama:llama3.2:latest"`);
+      assertStringIncludes(updatedContent, "model: 'ollama:llama3.2:latest'");
     });
 
     // ========================================================================

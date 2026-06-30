@@ -1234,8 +1234,8 @@ export const __test_command = new Command()
           .option("-p, --system-prompt <prompt:string>", "Inline system prompt")
           .option("-f, --system-prompt-file <file:string>", "Load system prompt from file")
           .option(
-            "-t, --template <template:string>",
-            "Template (default, coder, reviewer, architect, researcher, gemini, mock)",
+            "--from <identity-id:string>",
+            "Clone an existing identity as a prototype (seeds model, capabilities, and body)",
           )
           .action(async (options, ...args: string[]) => {
             const identityId = args[0];
@@ -1247,7 +1247,7 @@ export const __test_command = new Command()
                 capabilities: options.capabilities,
                 systemPrompt: options.systemPrompt,
                 systemPromptFile: options.systemPromptFile,
-                template: options.template,
+                from: options.from,
               });
               display.info("blueprint.created", result.identity_id, {
                 name: result.name,
@@ -1467,8 +1467,8 @@ export const __test_command = new Command()
               .option("-p, --system-prompt <prompt:string>", "Inline system prompt")
               .option("-f, --system-prompt-file <file:string>", "Load system prompt from file")
               .option(
-                "-t, --template <template:string>",
-                "Template (default, coder, reviewer, architect, researcher, gemini, mock)",
+                "--from <identity-id:string>",
+                "Clone an existing identity as a prototype (seeds model, capabilities, and body)",
               )
               .action(async (options, ...args: string[]) => {
                 const identityId = args[0];
@@ -1480,7 +1480,7 @@ export const __test_command = new Command()
                     capabilities: options.capabilities,
                     systemPrompt: options.systemPrompt,
                     systemPromptFile: options.systemPromptFile,
-                    template: options.template,
+                    from: options.from,
                   });
                   display.info("blueprint.created", result.identity_id, {
                     name: result.name,

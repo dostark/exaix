@@ -79,6 +79,7 @@ const ROLE_REQUIRED_SKILLS: Record<string, string[]> = {
   "technical-writer": ["documentation-driven", "portal-grounding"],
   "quality-judge": ["code-review", "portal-grounding"],
   "voting-judge": ["code-review", "portal-grounding"],
+  "research-synthesizer": ["research-methodology", "portal-grounding"],
 };
 
 /** Identities whose role is analysis/evaluation — no destructive tools. */

@@ -1,120 +1,36 @@
 /**
- * @module TemplateSchemaComplianceTest
+ * @module IdentitySchemaComplianceTest
  * @path tests/blueprints/template_schema_compliance_test.ts
- * @description Phase 131 Step 8 — Template schema compliance (#5) + .strict() flip (#6).
+ * @description Phase 131 — strict-schema compliance for the active identity
+ *   catalog. After the catalog reconciliation the separate examples/ and
+ *   templates/ directories are retired (their content moved to concrete
+ *   identities and skills), so this asserts every active identity parses under a
+ *   `.strict()` frontmatter schema and that an unknown field is rejected.
  * @architectural-layer Integration
- * @dependencies [@std/assert, zod]
+ * @dependencies [@std/assert, @std/yaml, zod]
  */
 
 import { assertEquals } from "@std/assert";
+import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 
 const IDENTITIES_DIR = "Blueprints/Identities";
-type FrontmatterMap = { [key: string]: string | string[] | undefined };
 
-function collectTemplateFiles(): string[] {
+/** Active identities are the top-level `*.md` files (no subdirectories remain). */
+function collectActiveIdentities(): string[] {
   const files: string[] = [];
-  for (const dir of ["active", "examples", "templates"]) {
-    const dirPath = `${IDENTITIES_DIR}/${dir}`;
-    try {
-      for (const entry of Deno.readDirSync(dirPath)) {
-        if (entry.isFile && entry.name.endsWith(".md.template")) {
-          files.push(`${dirPath}/${entry.name}`);
-        }
-      }
-    } catch {
-      // directory may not exist
-    }
+  for (const entry of Deno.readDirSync(IDENTITIES_DIR)) {
+    if (!entry.isFile || !entry.name.endsWith(".md") || entry.name === "README.md") continue;
+    files.push(`${IDENTITIES_DIR}/${entry.name}`);
   }
   return files.sort();
 }
 
-function collectActiveAndExamples(): string[] {
-  const files: string[] = [];
-  for (const dir of ["active", "examples"]) {
-    const dirPath = `${IDENTITIES_DIR}/${dir}`;
-    try {
-      for (const entry of Deno.readDirSync(dirPath)) {
-        if (!entry.isFile) continue;
-        if (!entry.name.endsWith(".md") && !entry.name.endsWith(".md.template")) continue;
-        // Skip non-identity files (README, etc.)
-        if (entry.name === "README.md") continue;
-        const filePath = `${dirPath}/${entry.name}`;
-        const content = Deno.readTextFileSync(filePath);
-        // Only include files with identity frontmatter
-        if (/^---\nidentity_id:/.test(content)) {
-          files.push(filePath);
-        }
-      }
-    } catch {
-      // skip
-    }
-  }
-  return files.sort();
-}
-
-function parseFrontmatter(content: string): FrontmatterMap {
+function parseFrontmatter(content: string): Record<string, string | string[] | boolean | undefined> {
   const match = content.match(/^---\n([\s\S]*?)\n---\n/);
   if (!match) return {};
-  const lines = match[1].split("\n");
-  const result: FrontmatterMap = {};
-  for (const line of lines) {
-    const colonIdx = line.indexOf(":");
-    if (colonIdx === -1) continue;
-    const key = line.slice(0, colonIdx).trim();
-    const rawValue = line.slice(colonIdx + 1).trim();
-    let value: string | string[] = rawValue;
-    if (rawValue.startsWith("[") && rawValue.endsWith("]")) {
-      value = rawValue.slice(1, -1).split(",").map((s: string) => s.trim().replace(/^["']|["']$/g, ""));
-    } else {
-      value = rawValue.replace(/^["']|["']$/g, "");
-    }
-    result[key] = value;
-  }
-  return result;
+  return parseYaml(match[1]) as Record<string, string | string[] | boolean | undefined>;
 }
-
-const knownKeys = new Set([
-  "identity_id",
-  "name",
-  "model",
-  "capabilities",
-  "deprecated",
-  "created",
-  "created_by",
-  "version",
-  "description",
-  "default_skills",
-  "permitted_tools",
-  "hitl",
-  "session_delegate",
-]);
-
-Deno.test({
-  name: "[step8/template-schema] no .template file declares unknown frontmatter fields",
-  fn: () => {
-    const templates = collectTemplateFiles();
-    assertEquals(templates.length > 0, true, "expected at least one .template file");
-
-    const offenders: string[] = [];
-    for (const file of templates) {
-      const content = Deno.readTextFileSync(file);
-      const frontmatter = parseFrontmatter(content);
-      const unknownKeys = Object.keys(frontmatter).filter((k) => !knownKeys.has(k));
-      if (unknownKeys.length > 0) {
-        offenders.push(`${file}: unknown keys [${unknownKeys.join(", ")}]`);
-      }
-    }
-
-    assertEquals(
-      offenders.length,
-      0,
-      offenders.length > 0
-        ? `Template files with unknown frontmatter fields:\n  ${offenders.join("\n  ")}`
-        : "All template frontmatter fields are known",
-    );
-  },
-});
 
 const StrictBlueprintFrontmatterSchema = z.object({
   identity_id: z.string().min(1),
@@ -128,20 +44,23 @@ const StrictBlueprintFrontmatterSchema = z.object({
   description: z.string().optional(),
   default_skills: z.array(z.string()).optional(),
   permitted_tools: z.array(z.string()).optional(),
+  preferred_provider: z.string().optional(),
+  model_size: z.string().optional(),
+  thinking: z.boolean().optional(),
+  effort: z.string().optional(),
   hitl: z.unknown().optional(),
   session_delegate: z.unknown().optional(),
 }).strict();
 
 Deno.test({
-  name: "[step8/strict-schema] active + example identities parse under .strict()",
+  name: "[catalog/strict-schema] every active identity parses under .strict()",
   fn: () => {
-    const files = collectActiveAndExamples();
+    const files = collectActiveIdentities();
     assertEquals(files.length > 0, true, "expected at least one identity file");
 
     const failures: string[] = [];
     for (const file of files) {
-      const content = Deno.readTextFileSync(file);
-      const frontmatter = parseFrontmatter(content);
+      const frontmatter = parseFrontmatter(Deno.readTextFileSync(file));
       const result = StrictBlueprintFrontmatterSchema.safeParse(frontmatter);
       if (!result.success) {
         failures.push(`${file}: ${result.error.message}`);
@@ -152,14 +71,14 @@ Deno.test({
       failures.length,
       0,
       failures.length > 0
-        ? `Files failing .strict() validation:\n  ${failures.join("\n  ")}`
+        ? `Identities failing .strict() validation:\n  ${failures.join("\n  ")}`
         : "All identities pass .strict()",
     );
   },
 });
 
 Deno.test({
-  name: "[step8/strict-schema] unknown frontmatter field rejects under .strict()",
+  name: "[catalog/strict-schema] unknown frontmatter field rejects under .strict()",
   fn: () => {
     const result = StrictBlueprintFrontmatterSchema.safeParse({
       identity_id: "test-agent",

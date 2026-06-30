@@ -10,7 +10,6 @@ import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 
 const BLUEPRINTS_DIR = "./Blueprints/Identities";
-const EXAMPLES_DIR = "./Blueprints/Identities/examples";
 const FLOWS_DIR = "./Blueprints/Flows";
 
 interface BlueprintFrontmatter {
@@ -32,7 +31,7 @@ function parseFrontmatter(content: string): BlueprintFrontmatter | null {
 async function getAllAgentIds(): Promise<Set<string>> {
   const identityIds = new Set<string>();
 
-  const dirs = [BLUEPRINTS_DIR, EXAMPLES_DIR];
+  const dirs = [BLUEPRINTS_DIR];
 
   for (const dir of dirs) {
     try {

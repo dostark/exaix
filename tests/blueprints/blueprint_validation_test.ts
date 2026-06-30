@@ -11,7 +11,6 @@ import { parse as parseYaml } from "@std/yaml";
 import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
 
 const BLUEPRINTS_DIR = "./Blueprints/Identities";
-const EXAMPLES_DIR = "./Blueprints/Identities/examples";
 
 interface BlueprintFrontmatter {
   identity_id: string;
@@ -110,50 +109,17 @@ Deno.test("Blueprint validation: quality-judge.md passes schema", async () => {
 // Example Blueprint Tests
 // ============================================================================
 
-Deno.test("Blueprint validation: examples/code-reviewer.md passes schema", async () => {
+// The separate examples/ directory was retired in the Phase 131 catalog
+// reconciliation: 4 example stubs duplicated concrete identities and were
+// deleted, and research-synthesizer was promoted to a concrete identity.
+Deno.test("Blueprint validation: research-synthesizer.md (promoted from examples) passes schema", async () => {
   const content = await Deno.readTextFile(
-    join(EXAMPLES_DIR, "code-reviewer.md"),
+    join(BLUEPRINTS_DIR, "research-synthesizer.md"),
   );
   const frontmatter = parseFrontmatter(content);
 
   assertExists(frontmatter, "Should have frontmatter");
-  assertEquals(frontmatter!.identity_id, "code-reviewer");
-  assertExists(frontmatter!.default_skills, "Should have default_skills");
-
-  const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
-  assertEquals(
-    result.success,
-    true,
-    `Schema errors: ${!result.success ? result.error?.message : ""}`,
-  );
-});
-
-Deno.test("Blueprint validation: examples/feature-developer.md passes schema", async () => {
-  const content = await Deno.readTextFile(
-    join(EXAMPLES_DIR, "feature-developer.md"),
-  );
-  const frontmatter = parseFrontmatter(content);
-
-  assertExists(frontmatter, "Should have frontmatter");
-  assertEquals(frontmatter!.identity_id, "feature-developer");
-  assertExists(frontmatter!.default_skills, "Should have default_skills");
-
-  const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
-  assertEquals(
-    result.success,
-    true,
-    `Schema errors: ${!result.success ? result.error?.message : ""}`,
-  );
-});
-
-Deno.test("Blueprint validation: examples/security-auditor.md passes schema", async () => {
-  const content = await Deno.readTextFile(
-    join(EXAMPLES_DIR, "security-auditor.md"),
-  );
-  const frontmatter = parseFrontmatter(content);
-
-  assertExists(frontmatter, "Should have frontmatter");
-  assertEquals(frontmatter!.identity_id, "security-auditor");
+  assertEquals(frontmatter!.identity_id, "research-synthesizer");
   assertExists(frontmatter!.default_skills, "Should have default_skills");
 
   const result = BlueprintFrontmatterSchema.safeParse(frontmatter);
@@ -262,7 +228,6 @@ Deno.test("Blueprint validation: all agents have valid model format", async () =
   const modelRegex = /^[a-z]+:[a-z0-9-.:/]+$/;
   const allFiles = [
     ...await getMarkdownFiles(BLUEPRINTS_DIR),
-    ...await getMarkdownFiles(EXAMPLES_DIR),
   ];
 
   for (const file of allFiles) {
@@ -287,7 +252,6 @@ Deno.test("Blueprint validation: all agents have valid model format", async () =
 Deno.test("Blueprint validation: all agents use YAML frontmatter (not TOML)", async () => {
   const allFiles = [
     ...await getMarkdownFiles(BLUEPRINTS_DIR),
-    ...await getMarkdownFiles(EXAMPLES_DIR),
   ];
 
   for (const file of allFiles) {
@@ -329,10 +293,10 @@ Deno.test("Blueprint validation: voting-judge.md passes schema", async () => {
   assertEquals(parsed.name, "Voting Consensus Judge");
 });
 
-Deno.test("Blueprint validation: all example agents have default_skills", async () => {
-  const exampleFiles = await getMarkdownFiles(EXAMPLES_DIR);
+Deno.test("Blueprint validation: every active identity declares default_skills", async () => {
+  const files = await getMarkdownFiles(BLUEPRINTS_DIR);
 
-  for (const file of exampleFiles) {
+  for (const file of files) {
     const content = await Deno.readTextFile(file);
     const frontmatter = parseFrontmatter(content);
 

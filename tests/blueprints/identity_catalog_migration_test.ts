@@ -135,32 +135,15 @@ Deno.test({
   },
 });
 
-// ─────────────────────────────────────────────
-// Test 4: Every example/template declares default_skills incl. response-contract
-// ─────────────────────────────────────────────
-Deno.test({
-  name: "[step7] examples and templates declare default_skills including response-contract",
-  fn() {
-    const subdirs = ["examples", "templates"];
-    const missing: string[] = [];
-    for (const sub of subdirs) {
-      const dir = join(IDENTITIES_DIR, sub);
-      for (const e of Deno.readDirSync(dir)) {
-        if (e.name === "README.md" || !e.name.endsWith(".md") && !e.name.endsWith(".template")) continue;
-        const fp = join(dir, e.name);
-        const fm = parseFrontmatter(fp);
-        const skills = fm.default_skills;
-        if (!skills || !skills.some((s) => s === "response-contract")) {
-          missing.push(fp);
-        }
-      }
-    }
-    assertEquals(missing, [], `files missing default_skills with response-contract: ${missing.join(", ")}`);
-  },
-});
+// (The examples/ and templates/ subdirectories were retired in the Phase 131
+// catalog reconciliation — example stubs were merged/promoted into concrete
+// identities and templates were converted to skills — so the former
+// "examples and templates declare default_skills" test no longer applies.
+// Active-identity default_skills coverage lives in referential_integrity_gate
+// and identity_catalog_load tests.)
 
 // ─────────────────────────────────────────────
-// Test 5: New skills exist on disk
+// Test: New skills exist on disk
 // ─────────────────────────────────────────────
 Deno.test({
   name:
