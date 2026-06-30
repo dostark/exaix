@@ -16,6 +16,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { join, resolve } from "@std/path";
+import { parse as parseYaml } from "@std/yaml";
 
 const ROOT = resolve(new URL("../../", import.meta.url).pathname);
 const IDENTITIES_DIR = join(ROOT, "Blueprints/Identities");
@@ -38,29 +39,19 @@ interface IFrontmatter {
   default_skills?: string[];
 }
 
-/** Extract frontmatter fields from a markdown file. */
+/**
+ * Extract frontmatter fields from a markdown file using a real YAML parser, so
+ * both single-line (`[a, b]`) and multi-line block-array `default_skills`
+ * declarations are handled identically (a hand-rolled line parser mis-read the
+ * multi-line form as a string).
+ */
 function parseFrontmatter(filePath: string): IFrontmatter {
   const content = Deno.readTextFileSync(filePath);
   const m = content.match(/^---\n([\s\S]*?)\n---\n/);
   if (!m) throw new Error(`malformed frontmatter in ${filePath}`);
-  const fm: Record<string, string | string[]> = {};
-  for (const line of m[1].split("\n")) {
-    const kv = line.match(/^(\w[\w_]*):\s*(.*)$/);
-    if (!kv) continue;
-    const raw = kv[2].replace(/^["']|["']$/g, "");
-    if (raw === "[]" || raw === "") {
-      fm[kv[1]] = [] as string[];
-    } else if (raw.startsWith("[")) {
-      try {
-        fm[kv[1]] = JSON.parse(raw.replace(/'/g, '"'));
-      } catch {
-        fm[kv[1]] = raw;
-      }
-    } else {
-      fm[kv[1]] = raw;
-    }
-  }
-  return { default_skills: fm.default_skills as string[] | undefined };
+  const fm = parseYaml(m[1]) as Record<string, string[] | string | undefined>;
+  const ds = fm.default_skills;
+  return { default_skills: Array.isArray(ds) ? ds.map(String) : undefined };
 }
 
 /** List all active identity files (non-example, non-template, non-README). */

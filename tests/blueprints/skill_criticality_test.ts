@@ -20,7 +20,7 @@ import { MemoryBankSource, MemoryScope, SkillStatus, ZSkillMatch } from "@exaix/
 import { renderCriticalSkillsSection, renderSkillsSection } from "@exaix/core/func";
 
 const REPO_ROOT = resolve(new URL("../../", import.meta.url).pathname);
-const FRAGMENTS_DIR = join(REPO_ROOT, "Blueprints", "Fragments");
+const SKILLS_DIR = join(REPO_ROOT, "Blueprints", "Skills");
 
 function makeSkill(over: Partial<{ id: string; name: string; instructions: string; critical: boolean }>) {
   return {
@@ -107,12 +107,15 @@ Deno.test("[step3] renderer returns empty critical section when no critical skil
   assertStringIncludes(renderSkillsSection(ctx), "B");
 });
 
-Deno.test("[step3] repaired shared fragments define the output contract and are non-empty", async () => {
-  const responseFormat = await Deno.readTextFile(join(FRAGMENTS_DIR, "standard-response-format.md"));
-  assertStringIncludes(responseFormat, "<thought>");
-  assertStringIncludes(responseFormat, "<content>");
+Deno.test("[step3] the output contract and best-practices content live in skills (fragments retired in Step 7)", async () => {
+  // Step 7 retired the shared Fragments; their content was migrated into skills.
+  // The output contract now lives in the response-contract skill, and the
+  // best-practices guidance in the blueprint-best-practices skill.
+  const responseContract = await Deno.readTextFile(join(SKILLS_DIR, "response-contract.skill.md"));
+  assertStringIncludes(responseContract, "<thought>");
+  assertStringIncludes(responseContract, "<content>");
 
-  const bestPractices = await Deno.readTextFile(join(FRAGMENTS_DIR, "blueprint-best-practices.md"));
+  const bestPractices = await Deno.readTextFile(join(SKILLS_DIR, "blueprint-best-practices.skill.md"));
   // At least 4 real bullets, no empty "1." / "-" placeholder markers.
   const bullets = bestPractices.split("\n").filter((l) => /^\s*([0-9]+\.|[-*])\s+\S/.test(l));
   assert(bullets.length >= 4, `best-practices must have >=4 real bullets, found ${bullets.length}`);
