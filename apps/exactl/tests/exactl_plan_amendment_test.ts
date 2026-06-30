@@ -1,6 +1,6 @@
 /**
- * @module ExoctlPlanAmendmentTest
- * @path apps/exactl/tests/exoctl_plan_amendment_test.ts
+ * @module ExactlPlanAmendmentTest
+ * @path apps/exactl/tests/exactl_plan_amendment_test.ts
  * @architectural-layer CLI
  * @description CLI tests for plan amendment management commands (list, show, approve, reject).
  * @related-files [apps/exactl/src/commands/plan_commands.ts, @exaix/core/planning]
