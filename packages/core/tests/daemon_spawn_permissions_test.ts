@@ -30,6 +30,14 @@ Deno.test("[daemon_perms] run allowlist includes git, deno, opencode, claude", (
   assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes("claude"), true);
 });
 
+Deno.test("[daemon_perms] run allowlist names the real exactl binary, not the phantom 'exoctl'", () => {
+  // The Exaix CLI binary is `exactl`. A historical typo (`exoctl`) leaked into
+  // the daemon --allow-run set, so the daemon could never spawn the real CLI and
+  // any attempt produced an 'unknown command' failure (Phase 131 Step 8 e2e).
+  assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes("exactl"), true, "must allow the real `exactl` binary");
+  assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes("exoctl"), false, "must not list the non-existent `exoctl`");
+});
+
 Deno.test("[daemon_perms] DAEMON_SPAWN_PERMISSIONS.run is the same reference as DAEMON_SPAWN_RUN_BINARIES (single source — GAP-6)", () => {
   assertEquals(DAEMON_SPAWN_PERMISSIONS.run, DAEMON_SPAWN_RUN_BINARIES);
 });

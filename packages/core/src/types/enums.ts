@@ -165,7 +165,7 @@ export enum SystemCommand {
   GIT = "git",
   NPM = "npm",
   NODE = "node",
-  EXOCTL = "exoctl",
+  EXACTL = "exactl",
   LS = "ls",
   GREP = "grep",
 }

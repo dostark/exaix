@@ -137,3 +137,49 @@ Do flow work.
     await env.cleanup();
   }
 });
+
+Deno.test("RequestProcessor: rejected draft carries identity_id for attribution (parity with accepted plans)", async () => {
+  const env = await setupPlanValidationEnv(
+    `---
+trace_id: "{traceId}"
+created: "${new Date().toISOString()}"
+status: pending
+priority: normal
+identity: security-expert
+source: cli
+created_by: "test@example.com"
+---
+
+Audit this code.
+`,
+  );
+
+  try {
+    env.setTestPipelineFactory(() => {
+      const pipeline = new MiddlewarePipeline<IRequestProcessingContext>();
+      pipeline.use(() => {
+        throw new PlanValidationError("Plan structure is invalid", {
+          rawContent: "I am operating as the security expert. (not valid JSON)",
+          fullRawResponse: "raw",
+        });
+      });
+      return pipeline;
+    });
+
+    await env.processor.process(env.requestPath);
+
+    const rejectedPath = join(
+      env.tempDir,
+      env.config.paths.workspace,
+      env.config.paths.rejected,
+      `${env.requestId}_rejected.md`,
+    );
+    const content = await Deno.readTextFile(rejectedPath);
+    const frontmatter = parseFrontmatter(content);
+    // The identity that produced the rejected output must be recorded, so the
+    // identity e2e (and any reviewer) can attribute the draft to its persona.
+    assertEquals(frontmatter.identity_id, "security-expert");
+  } finally {
+    await env.cleanup();
+  }
+});

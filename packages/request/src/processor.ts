@@ -244,6 +244,12 @@ export class RequestProcessor {
       failureThreshold: 3,
       resetTimeout: DEFAULT_AI_TIMEOUT_MS,
       halfOpenSuccessThreshold: 2,
+      // The I/O breaker guards plan-writing against genuine filesystem/I/O faults.
+      // A PlanValidationError means the LLM produced bad content for THIS request —
+      // it is per-request, retried locally, and must never count toward opening a
+      // cross-request breaker (which would starve every following identity). Only
+      // infrastructure failures should trip it.
+      isCountableFailure: (error: Error) => !(error instanceof PlanValidationError),
     });
   }
 
@@ -1056,10 +1062,14 @@ ${result.content}`,
     rawDetails: string;
     validationError: PlanValidationError;
   }): string {
+    // Record the identity that produced this rejected draft so it has the same
+    // attribution an accepted plan carries (identity_id) — reviewers and the
+    // identity e2e can trace the draft back to its persona.
+    const identityLine = args.frontmatter?.identity ? `identity_id: ${args.frontmatter.identity}\n` : "";
     return `---
 trace_id: "${args.traceId ?? "unknown"}"
 request_id: "${args.requestId}"
-status: ${PlanStatus.REJECTED}
+${identityLine}status: ${PlanStatus.REJECTED}
 error: "${args.errorMessage.replace(/"/g, '\\"')}"
 ---
 

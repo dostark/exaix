@@ -33,6 +33,21 @@ timeout_ms = 60000
 [agents]
 default_model = "default"
 
+# The high-prio identity e2e submits 7 requests in a tight burst, and each may
+# retry plan generation locally on bad LLM output — so the default 60 calls/min
+# throttle can be tripped by the burst itself. This is an identity-behavior test,
+# not a throughput test: raise the per-minute ceiling so self-throttling does not
+# distort the run. (Genuine provider faults still flow through the circuit breaker.)
+[rate_limiting]
+enabled = true
+max_calls_per_minute = 300
+
+# Plan JSON for a multi-step request can exceed the 4096-token default, truncating
+# the <content> block and failing schema validation (missing fields). Give the
+# analysis/planning model headroom so plans complete in one response.
+[ai_anthropic]
+max_tokens_default = 8192
+
 [[portals]]
 alias = "exaix-self"
 target_path = "__WORKTREE_PATH__"

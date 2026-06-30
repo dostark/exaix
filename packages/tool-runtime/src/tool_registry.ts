@@ -97,7 +97,7 @@ const ALLOWED_COMMANDS = new Set([
   SystemCommand.NPM,
   SystemCommand.NODE,
   SystemCommand.DENO,
-  SystemCommand.EXOCTL,
+  SystemCommand.EXACTL,
   SystemCommand.GREP,
 ]);
 
@@ -139,7 +139,7 @@ function validateCommandArguments(command: string, args: string[]): { valid: boo
     case SystemCommand.NPM:
     case SystemCommand.NODE:
     case SystemCommand.DENO:
-    case SystemCommand.EXOCTL:
+    case SystemCommand.EXACTL:
       return validateRuntimeArguments(command, args);
     case SystemCommand.LS:
       return validateLsArguments(args);
@@ -214,7 +214,7 @@ function validateGitArguments(args: string[]): { valid: boolean; reason?: string
 }
 
 /**
- * Validate runtime command arguments (npm, node, deno, exoctl).
+ * Validate runtime command arguments (npm, node, deno, exactl).
  *
  * Security (Finding 4): only inert, non-code-executing subcommands are permitted,
  * and the WHOLE argument vector is checked. Code-executing subcommands

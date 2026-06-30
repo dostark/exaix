@@ -1660,7 +1660,7 @@ export const DAEMON_SPAWN_RUN_BINARIES: readonly string[] = [
   "deno",
   "npm",
   "node",
-  "exoctl",
+  "exactl",
   SESSION_BIN_OPENCODE,
   SESSION_BIN_CLAUDE_CODE,
   "ls",
