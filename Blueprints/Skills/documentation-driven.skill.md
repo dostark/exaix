@@ -237,6 +237,7 @@ Documentation debt is technical debt:
 ## Benefits of Documentation-First
 
 1. **Clarifies thinking** - Writing docs forces you to think through design
-1. **Surfaces gaps early** - Ambiguities and edge cases appear before code is written
-1. **Aligns stakeholders** - Everyone agrees on the contract before implementation
-1. **Serves as living reference** - The docs double as onboarding and API documentation
+2. **Catches issues early** - Easier to spot problems in docs than code
+3. **Better APIs** - User-facing docs lead to user-friendly APIs
+4. **Communication** - Docs serve as specifications for teams
+5. **Onboarding** - New team members can ramp up faster

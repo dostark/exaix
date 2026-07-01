@@ -132,9 +132,10 @@ A **behavior change** is any edit that affects runtime output, observable state,
 
 For changes that modify behavior:
 
-1. Write failing tests first and run them to confirm they fail (RED).
-1. Implement the minimal code needed to make the tests pass (GREEN).
-1. Refactor for clarity while keeping the tests green, then run the fast CI gates.
+1. Write failing tests first
+2. Run the test and confirm it fails
+3. Implement the minimum code to make it pass
+4. Refactor, keeping tests green
 
 ### Coding Standards
 
@@ -151,24 +152,26 @@ Use the phase checklists below before claiming the task is complete or creating 
 Use this checklist while implementing:
 
 1. For changes that modify behavior, follow TDD by adding or updating the relevant test first, running it to confirm failure, then implementing the minimal fix.
-1. Keep changes surgical: touch only what the task requires and match the surrounding code's naming, imports, and idioms.
-1. Add or update module-header JSDoc (`@module`, `@path`, `@description`, `@architectural-layer`, `@dependencies`, `@related-files`) on every new or changed file so `check:arch` stays grounded.
-1. Extract magic values into named constants and log all side effects to the Activity Journal via `EventLogger`.
+2. Place tests in the owning boundary: package-owned code goes in `packages/<package>/tests/`, app-owned code goes in `apps/<app>/tests/`, and cross-cutting integration, scenario, security, and system checks stay in root `tests/`.
+3. Do not add new `*_test.ts` files next to source files or under retired legacy test directories.
+4. Use established test helpers (`initTestDbService`, `createCliTestContext`, etc.) when project helpers already cover the setup.
+5. Rerun the failing or behavior-scoped test for the changed slice; if the changed code belongs to a package or app with its own test command, run that package- or app-scoped test command next.
 
 ## PHASE 3: DONE / CI
 
 Complete this sequence in order before claiming any task is complete:
 
 1. Ensure `deno check packages/ apps/ tests/` is clean before finishing.
-1. Run `deno lint` and fix every violation (prefer root-cause fixes over suppressions).
-1. Run `deno fmt` so formatting is clean.
-1. Run `deno task check:style` and resolve all style/boundary violations (0 errors).
-1. Run `deno task check:arch` — every file must be GROUNDED (0 UNGROUNDED).
-1. Run `deno task check:magic` and extract any new magic values into named constants.
-1. Run the relevant tests (`deno task test`, or focused `deno test --allow-all <file>`) and confirm they pass.
-1. Verify the remaining pre-commit gates (test placement, tool-result parity, event strings, optional params) are green.
-1. Update the relevant planning-doc success criteria and mark completed steps only after their tests have been run and pass.
-1. Only then create the commit using the commit skill's structured message.
+2. Do not use raw SQL table creation in tests when project helpers already cover the setup.
+3. Do not bypass failing checks or ignore pre-commit failures.
+4. Do not introduce magic numbers or strings without following project guidance in `CONTRIBUTING.md`.
+5. Do not place imports anywhere other than the top of the file.
+6. If you modified any MCP tool handler in `packages/mcp/src/handlers/`, run `deno task docs-sync-schemas` and stage the result.
+7. After each discrete implementation step, run the quick verification command below.
+8. Before any PR handoff or completion claim, run `deno run -A scripts/ci.ts all`.
+9. If `deno run -A scripts/ci.ts all` fails without a clear cause, run the manual workflow commands listed below to replicate CI behavior.
+10. If you cannot execute shell commands in the current environment, state which validation steps were skipped, why they were skipped, and that the task remains unverified. A task with skipped CI steps must NOT be marked complete. Mark it as `PENDING VERIFICATION` and list the exact commands a human reviewer must run to close it.
+11. If CI fails, do not claim completion; identify the root cause, fix it without bypass flags, and rerun the failing check until it passes.
 
 ### Quick CI Verification
 
@@ -240,8 +243,9 @@ deno run -A scripts/ci.ts test --quick
 If CI fails, follow this sequence:
 
 1. **DO NOT** claim the task is complete.
-1. Read the failing gate's output, identify the root cause, and fix it (see Common CI Failures below).
-1. Re-run the failing gate to confirm it passes, then re-run the full CI sequence before proceeding.
+2. Read the full error output to identify the root cause.
+3. Fix the issue (do not bypass checks with `--no-verify` or similar flags).
+4. Re-run the failing check to confirm it passes before continuing.
 
 **Common CI Failures:**
 

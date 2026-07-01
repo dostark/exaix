@@ -84,24 +84,26 @@ All agent `<thought>` sections MUST follow this structured format:
 ### Benefits
 
 1. **Consistency**: All agents follow the same reasoning structure
-1. **Reviewability**: Structured reasoning is easier for humans to audit
-1. **Completeness**: The sections prompt agents to cover analysis, context, and risks
-1. **Quality**: Explicit reasoning surfaces gaps before they reach the implementation
+2. **Clarity**: Easier to understand agent decision-making process
+3. **Debugging**: Structured format helps identify reasoning flaws
+4. **Automation**: Consistent structure enables better parsing and analysis
+5. **Quality**: Forces comprehensive consideration of all aspects
 
 ### Migration Plan
 
 #### Phase 31.5: Thought Section Standardization
 
 1. **Update all agent blueprints** to use the standardized `<thought>` structure
-1. **Regenerate** the derived artifacts (manifest/chunks) after editing the blueprints
-1. **Validate** that every updated blueprint still parses and passes the agent-docs checks
+2. **Update agent-content-schema.md** to reference this standardization
+3. **Create examples** showing before/after for each agent type
+4. **Validate** that all agents produce consistent reasoning patterns
 
 #### Implementation Steps
 
 1. Review current `<thought>` sections across all 18+ agent files
-
-1. Define the standardized section headers to apply consistently
-1. Apply the structure to each blueprint and verify with the agent-docs validator
+2. Update each agent blueprint to use the new structure
+3. Test agent outputs to ensure reasoning quality is maintained
+4. Update documentation and examples
 
 ### Examples
 
@@ -135,9 +137,9 @@ Add structured logging with different levels (info, warn, error) throughout the 
 ## Implementation Strategy
 
 1. Review existing logger utility
-
-1. Add structured log levels (info, warn, error)
-1. Apply logging throughout the application with contextual fields
+2. Add logging to error handlers
+3. Add request logging middleware
+4. Update configuration for log levels
 
 ## Risk Assessment
 Risk: Performance impact from excessive logging. Mitigation: Use async logging and configurable levels.

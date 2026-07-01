@@ -20,8 +20,9 @@ Key points
 ## Long-Context Thinking Protocol
 
 1. **Saturate**: Identify and load all primary and secondary docs related to the task.
-1. **Analyze holistically**: Read across the full window to find architecture-wide inconsistencies before proposing anything.
-1. **Synthesize**: Produce a plan grounded in the whole context, not just the immediately relevant files.
+2. **Synthesize**: Analyze how the requested change affects the entire system across module boundaries.
+3. **Plan**: Formulate a plan that addresses systemic risks identified during synthesis.
+4. **Verify**: Use citations to specific lines in the provided context to justify the plan.
 
 ```text
 Canonical prompt (short):

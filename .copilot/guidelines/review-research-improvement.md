@@ -214,8 +214,9 @@ This phase should update:
 **Tasks:**
 
 1. Document new features with examples
-1. Update the subsystem README and cross-references
-1. Update the user-facing guides where behavior changed
+2. Update CLI reference
+3. Add troubleshooting section
+4. Update configuration reference
 
 **Success Criteria:**
 
@@ -317,11 +318,11 @@ Before completing the pattern:
 **Process:**
 
 1. **Review:** Read `Blueprints/Flows/`, `packages/flow/src/`, examples, templates
-
-1. **Research & Plan:** Compared to state-of-the-art orchestration patterns
+2. **Research:** Multi-agent patterns, LLM-as-a-Judge, DAG orchestration
+3. **Plan:** Created `phase-15-flow-orchestration-improvements.md`
    - Identified 8 weaknesses (dead fields, no quality gates, etc.)
    - Proposed 6 sub-phases
-1. **Artifacts:** Created concrete deliverables
+4. **Artifacts:**
    - `llm-judge-code-review.flow.template.ts`
    - `quality-judge.md` agent blueprint
    - Updated templates README
@@ -333,11 +334,11 @@ Before completing the pattern:
 **Process:**
 
 1. **Review:** Read `Blueprints/Agents/`, `AgentRunner`, `AgentExecutor`, templates
-
-1. **Research & Plan:** Compared to modern agent patterns (ReAct, Reflexion)
+2. **Research:** Reflexion, ReAct, tool-use patterns, confidence scoring
+3. **Plan:** Created `phase-16-agent-orchestration-improvements.md`
    - Identified 8 weaknesses (no self-reflection, weak validation, etc.)
    - Proposed 8 sub-phases
-1. **Artifacts:** Created concrete deliverables
+4. **Artifacts:**
    - `reflexive-agent.md.template`
    - `research-agent.md.template`
    - `judge-agent.md.template`
@@ -365,8 +366,9 @@ Before completing the pattern:
 "Perform a Review-Research-Improvement analysis on [subsystem]:
 
 1. Review: Read all docs, implementation, templates
-1. Research: Compare to state-of-the-art patterns; list weaknesses with code evidence
-1. Plan & Artifacts: Create a phased improvement plan, templates, and README updates
+2. Research: Compare to state-of-the-art patterns
+3. Plan: Create agents/planning/phase-N document with weaknesses and improvement phases
+4. Artifacts: Create templates/examples that encode best practices
 Commit all artifacts with descriptive commit message."
 ```text
 `````

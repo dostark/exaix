@@ -56,9 +56,10 @@ Process: read error → reproduce → diagnose root cause → implement minimal 
 Claude excels when given space to plan before acting. For multi-step work:
 
 1. **Analyze** dependencies and risks in `<thinking>` tags
-1. **Plan** the sequence of changes before touching any file
-1. **Execute** the steps, gathering context in parallel where possible
-1. **Verify** by running the relevant tests and CI checks
+2. **Plan** tool calls (read files, search patterns, check tests)
+3. **Execute** tool calls in parallel where possible
+4. **Synthesize** results and propose next steps
+5. **Verify** against Implementation Plan success criteria
 
 ## Example: Multi-file refactoring
 
@@ -80,8 +81,9 @@ Risks:
 Plan:
 
 1. Parallel reads: grep for "initTestDbService", read test helpers
-1. Design the shared helper's location and signature
-1. Implement, then update each call site and re-run the tests
+2. Propose new helper location (tests/helpers/db.ts)
+3. Show migration for 2-3 representative files
+4. Verify tests still pass
    </thinking>
 
 [Execute tool calls for reading files, then provide implementation]
@@ -125,8 +127,9 @@ Use `manage_todo_list` to track progress:
 ### Efficient Context Gathering
 
 1. **Parallelize** independent searches (grep_search + file_search + semantic_search)
-1. **Batch** related file reads into a single round of tool calls
-1. **Synthesize** the gathered context before proposing changes
+2. **Read results**, deduplicate file paths
+3. **Batch read** unique files in one parallel call
+4. **Synthesize** and proceed with implementation
 
 ## Token Budget Strategies
 

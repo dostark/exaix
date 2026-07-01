@@ -183,8 +183,9 @@ UserService to new ValidationService for reuse.
 ## Subject Line Rules
 
 1. **Use imperative mood**: "Add feature" not "Added feature"
-1. **Use lowercase**: lowercase the type, scope, and description ("add", not "Add")
-1. **No trailing period**: don't end the subject line with a full stop
+2. **Don't capitalize first letter** after type
+3. **No period at the end**
+4. **Max 72 characters** (50 is better)
 
 ```text
 ✅ feat(cart): add quantity validation
