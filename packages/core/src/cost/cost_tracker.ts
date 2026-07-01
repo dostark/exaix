@@ -77,7 +77,7 @@ export class CostTracker implements ICostTracker {
       completionTokens?: number;
     } = {},
   ): Promise<void> {
-    const cost = this.estimateCost(provider, tokens);
+    const cost = this.estimateCost(provider, tokens, options.model);
     const record: Omit<IProviderCostRecord, "id"> & { requests: number } = {
       provider,
       model: options.model ?? "unknown",
@@ -114,7 +114,7 @@ export class CostTracker implements ICostTracker {
     traceId?: Opt<string, Reason.TraceAbsent>,
     portal?: Opt<string, Reason.OptionalContext>,
   ): Promise<number> {
-    const cost = this.estimateCost(provider, usage.totalTokens);
+    const cost = this.estimateCost(provider, usage.totalTokens, model);
     await this.trackRequest(provider, usage.totalTokens, {
       model,
       traceId,
@@ -263,9 +263,10 @@ export class CostTracker implements ICostTracker {
     }));
   }
 
-  private estimateCost(provider: string, tokens: number): number {
-    const rates = CostTracker.getCostRates();
-    const rate = rates[provider] ?? 0;
+  private estimateCost(provider: string, tokens: number, model?: string): number {
+    const rates = CostTracker.getCostRates(this.config);
+    const modelKey = model ? `${provider}:${model}` : provider;
+    const rate = rates[modelKey] ?? rates[provider] ?? 0;
     return rate * (tokens / TOKENS_PER_COST_UNIT);
   }
 

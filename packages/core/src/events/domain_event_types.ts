@@ -9,6 +9,7 @@
  * typos and establish a single source of truth for the event taxonomy.
  */
 
+import type { EffortTier, ModelResolutionReason } from "@exaix/schemas";
 import type { HitlRuleSource, HitlSurface, VotingStrategy } from "../types/enums.ts";
 
 /** Guardrail verdict type. */
@@ -36,6 +37,24 @@ export interface IHitlPolicyMatchedPayload {
   ruleSource: HitlRuleSource;
   reason?: string;
   surface: HitlSurface;
+}
+
+/** Typed payload for model.resolved events (Phase 132). */
+export interface IModelResolutionTraceEventPayload {
+  intent: {
+    model_size?: string;
+    thinking?: boolean;
+    effort?: EffortTier;
+    characteristics?: string[];
+    required_capabilities?: string[];
+    preferred_provider?: string;
+    model?: string;
+  };
+  candidate_providers: string[];
+  scores: Record<string, number>;
+  selected: { provider: string; model: string; attempt: number };
+  reason: ModelResolutionReason;
+  duration_ms: number;
 }
 
 /** Typed payload for guardrail.* events. */
@@ -317,6 +336,9 @@ export const DomainEventType = {
   LlmCallStarted: "llm.call.started",
   LlmCallCompleted: "llm.call.completed",
   LlmCallFailed: "llm.call.failed",
+
+  // Model resolution events (Phase 132)
+  ModelResolved: "model.resolved",
 
   // Reserved for future use (Phase 85 — postponed)
   ChildRunSpawned: "child_run.spawned",

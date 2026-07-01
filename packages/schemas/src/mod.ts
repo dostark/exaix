@@ -41,6 +41,7 @@ export * from "./voting.ts";
 export * from "./opencode_config.ts";
 export * from "./streaming_event.ts";
 export * from "./milestone_event.ts";
+export * from "./model_intent.ts";
 export * from "./execution/context_budget.ts";
 export {
   AgentIdSchema,

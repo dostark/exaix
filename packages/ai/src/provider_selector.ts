@@ -37,6 +37,10 @@ export interface ISelectionCriteria {
   requiredCapabilities?: string[];
   /** Allow local providers */
   allowLocal?: boolean;
+  /** Scoring hints — "cheapest", "fastest", etc. Weighted blend in ModelResolver. */
+  characteristics?: string[];
+  /** Phase 132 — rate-limit headroom influence weight (0-1). 0=disabled. */
+  rateLimitWeight?: number;
 }
 
 /**

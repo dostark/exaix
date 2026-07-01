@@ -416,6 +416,26 @@ export const MODEL_PRICING_MAP: Record<string, number> = {
   "google:gemini-2.5-flash": 0.00035,
 };
 
+/**
+ * Temporary allowlist of known hardcoded model references in non-test TS source.
+ * Long-term goal is zero as presets replace all hardcoded references.
+ * Added entries must include a comment identifying the file that uses them.
+ */
+export const HARDCODED_MODEL_ALLOWLIST = [
+  // packages/schemas/src/constants.ts
+  "openai:gpt-4o-mini",
+  // packages/execution/src/prompt_budget_allocator.ts
+  "openai:gpt-4o-mini",
+  // apps/daemon/main.ts — boot default
+  "anthropic:claude-sonnet-4-20250514",
+  // packages/core/src/types/constants.ts — MODEL_CONTEXT_WINDOWS keys
+  "openai:gpt-4o",
+  "anthropic:claude-3-5-sonnet",
+  "anthropic:claude-3-7-sonnet",
+  "google:gemini-2.5-flash",
+  // packages/core/src/types/constants.ts — MODEL_PRICING_MAP keys (same models)
+] as const;
+
 // Tokenizer backend modes
 export const TOKENIZER_BACKEND_AUTO = "auto" as const;
 export const TOKENIZER_BACKEND_LOCAL = "local" as const;
