@@ -1287,11 +1287,9 @@ For worktree executions, Exaix also writes a discoverability pointer at `Memory/
 **What happens when adding a portal:**
 
 1. Creates symlink: `~/Exaix/Portals/<alias>` → `<target-path>`
-
-1.
-1.
-1.
-1.
+1. Verifies the target directory exists and is readable.
+1. Records the portal entry so it appears in `exactl portal list`.
+1. Logs the operation to the Activity Journal for audit.
 
 **Portal verification checks:**
 
@@ -2508,9 +2506,8 @@ Portals enable agents to work directly in external project repositories (e.g., `
 When you submit a request targeting a portal:
 
 1. **Execution Environment**: Agent runs in portal workspace (e.g., `~/git/MyProject`)
-
-1.
-1.
+1. **Isolation**: Some runs execute in an isolated Git worktree checkout, with a pointer recorded at `Memory/Execution/{trace-id}/worktree`.
+1. **Review & Cleanup**: Results are captured as a review record; on approve/reject the worktree checkout and pointer are cleaned up (see lifecycle notes below).
 
 #### Cleanup & lifecycle notes
 
@@ -2734,9 +2731,8 @@ The Reflexion pattern enables agents to critique and improve their own outputs i
 #### How It Works
 
 1. Agent generates initial response
-
-1.
-1.
+1. Agent critiques its own response against the task's success criteria
+1. Agent revises the response based on the critique, repeating up to the configured number of rounds
 
 #### Configuration
 
@@ -2812,10 +2808,9 @@ Session Memory automatically provides relevant context from past interactions to
 #### How It Works
 
 1. **Request received**: User submits a request
-
-1.
-1.
-1.
+1. **Retrieval**: Relevant past interactions are retrieved by semantic similarity
+1. **Selection**: The top-K most relevant memories are selected (configurable via `topK`)
+1. **Injection**: The selected memories are injected into the agent's prompt context
 
 #### Configuration
 
@@ -2894,9 +2889,8 @@ Agent outputs are validated against JSON schemas with automatic repair.
 #### Validation Process
 
 1. **Extract JSON**: Parse JSON from agent response
-
-1.
-1.
+1. **Auto-Repair**: Apply the auto-repair fixes below for recoverable JSON issues
+1. **Validate**: Check the parsed JSON against the plan schema and report any errors
 
 #### Auto-Repair Capabilities
 
@@ -2953,36 +2947,32 @@ See `Blueprints/Skills/README.md` for the full skill library.
 If agent responses are slow:
 
 1. **Check reflexion settings**: Reduce `max_reflexion_iterations`
-
-1.
-1.
+1. **Check the model**: Use a faster model for latency-sensitive tasks
+1. **Check memory injection**: Lower `topK` to reduce prompt size
 
 #### Low Confidence Outputs
 
 If agents consistently produce low-confidence outputs:
 
 1. **Check prompt clarity**: Ensure request is specific
-
-1.
-1.
+1. **Check available context**: Confirm relevant memories and portal knowledge are being injected
+1. **Check the model**: A more capable model may improve confidence
 
 #### Retry Exhaustion
 
 If agents fail after max retries:
 
 1. **Check service status**: Provider may be down
-
-1.
-1.
+1. **Check the circuit breaker**: A tripped breaker will short-circuit requests until it recovers
+1. **Check credentials and quota**: Verify API keys and rate limits
 
 #### Memory Not Found
 
 If relevant memories aren't being injected:
 
 1. **Check threshold**: Lower `threshold` value (e.g., 0.1)
-
-1.
-1.
+1. **Check that memory is enabled**: Confirm `[agents.memory] enabled = true`
+1. **Check that memories exist**: Prior interactions must have been recorded to be retrieved
 
 ---
 
@@ -3042,8 +3032,7 @@ proceed = 70    # at or above → proceed immediately
 **Best Practices:**
 
 1. **Never modify `packages/core/src/constants.ts` directly** - All magic values are defined in `exa.config.toml`
-
-1.
+1. **Override via `exa.config.toml`** - Copy `exa.config.sample.toml` and change only the values you need
 
 ### 5.3 Environment Variable Reference
 
@@ -3125,15 +3114,13 @@ deno test tests/integration/19_llm_free_provider_test.ts --allow-env --allow-net
 If you see warnings like "Invalid EXA_LLM_TIMEOUT_MS: must be ≥ 1000", check:
 
 1. **Value is within valid range** (timeout: 1000-300000ms)
-
-1.
-1.
+1. **Variable name is spelled correctly** (see the reference tables above)
+1. **Value has the expected type** (numbers for timeouts/limits, not strings)
 
 **Environment variables not taking effect:**
 
 1. **Restart the daemon** after setting env vars: `exactl daemon restart`
-
-1.
+1. **Export the variable** in the same shell that launches the daemon (not just the current session)
 
 For more details, see `templates/exa.config.sample.toml` and [Technical Specification](./dev/Exaix_Technical_Spec.md).
 
@@ -3276,8 +3263,7 @@ started:
 ### 9.2 Best Practices
 
 1. **Review Plans:** Always inspect the diffs in the TUI (`exactl plan show`) before approving.
-
-1.
+1. **Grant least privilege:** Run agents in the most restrictive security mode that still allows the task (sandboxed by default; hybrid only when portal read access is required).
 
 ---
 
@@ -3568,9 +3554,8 @@ Exaix provides comprehensive cost tracking and budget management for AI provider
 Cost tracking operates at multiple levels:
 
 1. **Per-Request Tracking**: Each agent execution logs token usage and estimated cost
-
-1.
-1.
+1. **Per-Day Aggregation**: Costs are summed per day for budget enforcement
+1. **Journal Recording**: Usage is recorded in the Activity Journal for later querying
 
 ### 11.2 Configuration
 
@@ -3606,8 +3591,7 @@ final prompt.
 Before each agent execution, Exaix checks:
 
 1. **Daily Budget**: Current day's spending vs `max_daily_cost_usd`
-
-1.
+1. **Per-Request Estimate**: The estimated cost of the pending request against the remaining budget
 
 If a request would exceed your budget, it's rejected with a clear error message.
 

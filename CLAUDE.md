@@ -132,10 +132,9 @@ A **behavior change** is any edit that affects runtime output, observable state,
 
 For changes that modify behavior:
 
-1. Write failing tests first
-
-1.
-1.
+1. Write failing tests first and run them to confirm they fail (RED).
+1. Implement the minimal code needed to make the tests pass (GREEN).
+1. Refactor for clarity while keeping the tests green, then run the fast CI gates.
 
 ### Coding Standards
 
@@ -152,26 +151,24 @@ Use the phase checklists below before claiming the task is complete or creating 
 Use this checklist while implementing:
 
 1. For changes that modify behavior, follow TDD by adding or updating the relevant test first, running it to confirm failure, then implementing the minimal fix.
-
-1.
-1.
-1.
+1. Keep changes surgical: touch only what the task requires and match the surrounding code's naming, imports, and idioms.
+1. Add or update module-header JSDoc (`@module`, `@path`, `@description`, `@architectural-layer`, `@dependencies`, `@related-files`) on every new or changed file so `check:arch` stays grounded.
+1. Extract magic values into named constants and log all side effects to the Activity Journal via `EventLogger`.
 
 ## PHASE 3: DONE / CI
 
 Complete this sequence in order before claiming any task is complete:
 
 1. Ensure `deno check packages/ apps/ tests/` is clean before finishing.
-
-1.
-1.
-1.
-1.
-1.
-1.
-1.
-1.
-1.
+1. Run `deno lint` and fix every violation (prefer root-cause fixes over suppressions).
+1. Run `deno fmt` so formatting is clean.
+1. Run `deno task check:style` and resolve all style/boundary violations (0 errors).
+1. Run `deno task check:arch` — every file must be GROUNDED (0 UNGROUNDED).
+1. Run `deno task check:magic` and extract any new magic values into named constants.
+1. Run the relevant tests (`deno task test`, or focused `deno test --allow-all <file>`) and confirm they pass.
+1. Verify the remaining pre-commit gates (test placement, tool-result parity, event strings, optional params) are green.
+1. Update the relevant planning-doc success criteria and mark completed steps only after their tests have been run and pass.
+1. Only then create the commit using the commit skill's structured message.
 
 ### Quick CI Verification
 
@@ -243,9 +240,8 @@ deno run -A scripts/ci.ts test --quick
 If CI fails, follow this sequence:
 
 1. **DO NOT** claim the task is complete.
-
-1.
-1.
+1. Read the failing gate's output, identify the root cause, and fix it (see Common CI Failures below).
+1. Re-run the failing gate to confirm it passes, then re-run the full CI sequence before proceeding.
 
 **Common CI Failures:**
 
