@@ -729,7 +729,7 @@ Exaix TUI includes accessibility support:
 
 For complete keyboard shortcuts, see [TUI Keyboard Reference](../apps/tui/README.md#keyboard-shortcuts).
 
-For technical details, see the [Implementation Plan](./Exaix_Implementation_Plan.md#step-95-tui-cockpit-implementation-plan).
+For technical details, see the [Implementation Plan](../exaix-dev-docs/not_actual/Exaix_Implementation_Plan.md#step-95-tui-cockpit-implementation-plan).
 
 ### 4.2 Command Groups
 
@@ -785,7 +785,7 @@ $ exactl dashboard
 - If the dashboard fails to launch, ensure your terminal supports ANSI escape codes and your workspace is initialized.
 - For accessibility or theming issues, see the dashboard settings panel (press `?` in the TUI).
 
-See the [Implementation Plan](./Exaix_Implementation_Plan.md#step-95-tui-cockpit-implementation-plan) for technical details and roadmap.
+See the [Implementation Plan](../exaix-dev-docs/not_actual/Exaix_Implementation_Plan.md#step-95-tui-cockpit-implementation-plan) for technical details and roadmap.
 
 Exaix CLI is organized into ten main command groups:
 
@@ -3135,7 +3135,7 @@ If you see warnings like "Invalid EXA_LLM_TIMEOUT_MS: must be ≥ 1000", check:
 2. **Check the daemon logs** to see which values were loaded: `exactl daemon logs`
 3. **Verify the variable is set** in the daemon's environment: `env | grep EXA_LLM`
 
-For more details, see `templates/exa.config.sample.toml` and [Technical Specification](./dev/Exaix_Technical_Spec.md).
+For more details, see `templates/exa.config.sample.toml` and [Technical Specification](../exaix-dev-docs/dev/Exaix_Technical_Spec.md).
 
 ### 5.4 Testing & CI Model Aliases
 
