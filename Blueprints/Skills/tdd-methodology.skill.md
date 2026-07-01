@@ -71,9 +71,8 @@ You MUST follow the Red-Green-Refactor cycle for all code changes:
 ## Phase 1: Red (Write Failing Test)
 
 1. **Understand the requirement** - What behavior needs to be implemented?
-
-1.
-1.
+1. **Write a descriptive test** that asserts the expected behavior with a clear, intention-revealing name
+1. **Run the test and confirm it fails** for the right reason (the behavior doesn't exist yet)
 
 ````typescript
 // ✅ Good test name
@@ -86,9 +85,8 @@ Deno.test("test1");
 ## Phase 2: Green (Make It Pass)
 
 1. **Write ONLY enough code** to make the test pass
-
-1.
-1.
+1. **Run the test and confirm it passes** (GREEN)
+1. **Avoid over-engineering** - don't add features the tests don't require yet
 
 ```typescript
 // ✅ Minimal implementation to pass
@@ -105,9 +103,8 @@ function calculateTotal(items: Item[]): number {
 ## Phase 3: Refactor (Clean Up)
 
 1. **Improve code structure** while tests stay green
-
-1.
-1.
+1. **Remove duplication** and clarify names without changing behavior
+1. **Re-run the tests after every change** to confirm they stay green
 
 ## Key Rules
 

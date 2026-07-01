@@ -213,6 +213,7 @@ Domain Events → Event Handlers
 - Audit trail requirements
 - Easy to reconstruct state at any point
 - Supports complex workflows
+```
 
 ## 5. Keep Docs Updated
 
@@ -236,8 +237,6 @@ Documentation debt is technical debt:
 ## Benefits of Documentation-First
 
 1. **Clarifies thinking** - Writing docs forces you to think through design
-
-1.
-1.
-1.
-```
+1. **Surfaces gaps early** - Ambiguities and edge cases appear before code is written
+1. **Aligns stakeholders** - Everyone agrees on the contract before implementation
+1. **Serves as living reference** - The docs double as onboarding and API documentation
