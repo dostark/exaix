@@ -322,7 +322,7 @@ function applySafeFixes(original: string): { fixed: string; changed: boolean } {
   return { fixed: text, changed: text !== original };
 }
 
-function applySpecificFixes(content: string, findings: IFinding[]): { fixed: string; changed: boolean } {
+export function applySpecificFixes(content: string, findings: IFinding[]): { fixed: string; changed: boolean } {
   let text = content;
   let changed = false;
 
@@ -373,12 +373,13 @@ function applySpecificFixes(content: string, findings: IFinding[]): { fixed: str
     const newLines: string[] = [];
 
     for (const line of lines) {
-      const match = /^\s*(?<num>\d+)[.)]\s+/.exec(line);
+      const match = /^(?<indent>\s*)(?<num>\d+)(?<after>[.)]\s+)/.exec(line);
       if (match && match.groups && match.groups.num !== "1") {
-        const num = match.groups.num;
-        const indent = match[0].slice(0, match[0].indexOf(num));
-        const rest = match[0].slice(match[0].indexOf(num) + num.length);
-        newLines.push((indent + "1" + rest).trimEnd());
+        const { indent, num, after } = match.groups;
+        // Replace ONLY the leading number with "1", preserving the delimiter,
+        // whitespace, and — crucially — the rest of the line (the item body).
+        const body = line.slice(indent.length + num.length + after.length);
+        newLines.push(indent + "1" + after + body);
         changed = true;
       } else {
         newLines.push(line);
