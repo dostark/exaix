@@ -87,7 +87,7 @@ Key facts about the Exaix system:
 - **AI providers**: concrete providers live in `@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix-team/ai-vertex`, `@exaix/ai-openrouter`, `@exaix/ai-ollama`; selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory`; registered at bootstrap by `apps/common/registry_bootstrap.ts`
 - **Architecture invariant**: read the `AGENT_LOGIC` YAML comment in ARCHITECTURE.md's `Request Processing Flow` section before modifying any core flow
 - **Boundary rules**: TUI (`apps/tui/src/`) and CLI (`apps/exactl/src/commands/`) must not import directly from services — use interfaces in shared packages under `packages/`
-- **MCP tools**: all agent-accessible tools are listed in [TOOLS.md](./TOOLS.md#agent-tools) and implemented in `packages/mcp/src/handlers/`
+- **MCP tools**: all agent-accessible tools are listed in [TOOLS.md](./TOOLS.md#agent-tools) and implemented under `packages/mcp/server/` (e.g. `tool_handler.ts`, `domain_tools.ts`)
 
 ### Runtime & Tooling
 
@@ -166,7 +166,7 @@ Complete this sequence in order before claiming any task is complete:
 3. Do not bypass failing checks or ignore pre-commit failures.
 4. Do not introduce magic numbers or strings without following project guidance in `CONTRIBUTING.md`.
 5. Do not place imports anywhere other than the top of the file.
-6. If you modified any MCP tool handler in `packages/mcp/src/handlers/`, run `deno task docs-sync-schemas` and stage the result.
+6. If you modified any MCP tool handler under `packages/mcp/server/`, run `deno task docs-sync-schemas` and stage the result.
 7. After each discrete implementation step, run the quick verification command below.
 8. Before any PR handoff or completion claim, run `deno run -A scripts/ci.ts all`.
 9. If `deno run -A scripts/ci.ts all` fails without a clear cause, run the manual workflow commands listed below to replicate CI behavior.

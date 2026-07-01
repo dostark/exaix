@@ -3041,7 +3041,7 @@ proceed = 70    # at or above → proceed immediately
 
 **Best Practices:**
 
-1. **Never modify `packages/core/src/constants.ts` directly** - All magic values are defined in `exa.config.toml`
+1. **Never modify `packages/core/src/types/constants.ts` directly** - All magic values are defined in `exa.config.toml`
 2. **Use `exa.config.sample.toml` as reference** - Contains documented examples for all settings
 3. **Validate after changes** - Run `exactl daemon restart` to ensure config is valid
 

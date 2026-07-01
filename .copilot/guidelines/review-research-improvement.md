@@ -139,7 +139,7 @@ const result = this.parseResponse(rawResponse); // Direct return
 
 ### 3.1 Planning Document Structure
 
-Create `agents/planning/phase-N-<subsystem>-improvements.md`:
+Create `exaix-dev-docs/planning/phase-N-<subsystem>-improvements.md`:
 
 ```markdown
 # Phase N: <Subsystem> Improvements
@@ -300,7 +300,7 @@ Update relevant READMEs with:
 
 Before completing the pattern:
 
-- [ ] Planning document committed to `agents/planning/`
+- [ ] Planning document committed to `exaix-dev-docs/planning/`
 - [ ] Weaknesses have code evidence (not speculation)
 - [ ] Improvement phases have clear success criteria
 - [ ] **Documentation Update phase included** (updates `docs/` folder)
@@ -367,7 +367,7 @@ Before completing the pattern:
 
 1. Review: Read all docs, implementation, templates
 2. Research: Compare to state-of-the-art patterns
-3. Plan: Create agents/planning/phase-N document with weaknesses and improvement phases
+3. Plan: Create exaix-dev-docs/planning/phase-N document with weaknesses and improvement phases
 4. Artifacts: Create templates/examples that encode best practices
 Commit all artifacts with descriptive commit message."
 ```text

@@ -60,8 +60,6 @@ Use this at the start of a session or before a multi-step change.
      - `deno run --allow-read --allow-write scripts/build_agents_index.ts`
    - Verify freshness:
      - `deno run --allow-read scripts/verify_manifest_fresh.ts`
-   - Rebuild embeddings (baseline):
-     - `deno run --allow-read --allow-write scripts/build_agents_embeddings.ts --mode mock`
    - Validate agent docs:
      - `deno run --allow-read scripts/validate_agents_docs.ts`
 
@@ -84,7 +82,7 @@ Do / Don’t
 
 - ✅ Do keep doc updates minimal and scoped to the current task.
 - ✅ Do ask 1–3 clarifying questions if the requirement is ambiguous before changing docs.
-- ✅ Do rebuild `.copilot/manifest.json`, chunks, and embeddings after agent doc edits.
+- ✅ Do rebuild `.copilot/manifest.json` and chunks after agent doc edits.
 - ✅ Do add a regression test when a missing instruction caused a real failure.
 - ❌ Don’t broaden scope into “general best practices” unrelated to Exaix.
 - ❌ Don’t update many docs at once without a clear gap list.
@@ -97,7 +95,7 @@ Examples
 - Example: Missing test helper guidance
   - Task: “Add regression tests for a CLI config edge case.”
   - Gap: no mention of the correct test context helper.
-  - Patch: add a small section to `.copilot/tests/testing.md` pointing to `createCliTestContext()` usage for CLI tests; add one focused test under `tests/agents/` to ensure the section exists.
+  - Patch: add a small section to `.copilot/guidelines/testing.md` pointing to `createCliTestContext()` usage for CLI tests; add one focused test under `tests/agents/` to ensure the section exists.
 
 - Example: Missing provider-specific output contract
   - Task: “Perform a multi-file refactor with OpenAI.”
