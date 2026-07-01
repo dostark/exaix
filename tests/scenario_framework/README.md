@@ -4,7 +4,7 @@ The Scenario Framework is the execution engine behind **`exactl eval`** (primary
 and the Exaix integration test runner (secondary). This document covers both roles.
 
 For **user-facing evaluation workflow, CLI reference, scoring model, and tutorials**,
-see **[`docs/Exaix_Evaluation.md`](../docs/Exaix_Evaluation.md)**.
+see **[`docs/Exaix_Evaluation.md`](../../docs/Exaix_Evaluation.md)**.
 
 ---
 
@@ -55,7 +55,7 @@ They work in any workspace, including CI pre-push hooks.
 - **Multi-trial metrics**: `--trials N` reports mean, min, max, stdev, Pass@k.
 - **History**: SQLite (default) + JSONL dual-write per run.
 
-See **[`docs/Exaix_Evaluation.md`](../docs/Exaix_Evaluation.md)** for the full
+See **[`docs/Exaix_Evaluation.md`](../../docs/Exaix_Evaluation.md)** for the full
 CLI reference, scoring formulas, scenario authoring guide, and CI integration.
 
 ### LLM Provider Configuration
@@ -375,7 +375,7 @@ scenario_framework/
 | Deploy sandbox (automated)                    | `scripts/setup_sandbox.ts` (see §2.1)                                                   |
 | Deploy framework to sandbox                   | `./bin/deploy-framework` (see §2.2)                                                     |
 | Debug a failing e2e scenario                  | `./bin/debug-scenario <id>` → `./bin/journal` / `./bin/delegate-inspect` (§6 Debugging) |
-| Full CLI reference                            | [`docs/Exaix_Evaluation.md`](../docs/Exaix_Evaluation.md)                               |
+| Full CLI reference                            | [`docs/Exaix_Evaluation.md`](../../docs/Exaix_Evaluation.md)                            |
 | Schema contracts                              | `schema/step_schema.ts`, `schema/scenario_schema.ts`                                    |
 
 ---

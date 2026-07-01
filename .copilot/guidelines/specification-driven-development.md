@@ -185,11 +185,11 @@ See the "Flow Request Coverage" sections in each phase document for detailed int
 
 ## References
 
-- Phase 45: [Request Intent Analysis](../planning/phase-45-request-intent-analysis.md)
-- Phase 119: [Portal Codebase Knowledge Gathering](../planning/phase-119-multi-language-portal-extraction.md)
-- Phase 47: [Request Quality Gate & Clarification](../planning/phase-47-request-quality-gate.md)
-- Phase 48: [Acceptance Criteria Propagation](../planning/phase-48-acceptance-criteria-propagation.md)
-- Phase 49: [Quality Pipeline Hardening](../planning/phase-49-quality-pipeline-hardening.md)
+- Phase 45: [Request Intent Analysis](../../exaix-dev-docs/planning/phase-45-request-intent-analysis.md)
+- Phase 119: [Portal Codebase Knowledge Gathering](../../exaix-dev-docs/planning/phase-119-multi-language-portal-extraction.md)
+- Phase 47: [Request Quality Gate & Clarification](../../exaix-dev-docs/planning/phase-47-request-quality-gate.md)
+- Phase 48: [Acceptance Criteria Propagation](../../exaix-dev-docs/planning/phase-48-acceptance-criteria-propagation.md)
+- Phase 49: [Quality Pipeline Hardening](../../exaix-dev-docs/planning/phase-49-quality-pipeline-hardening.md)
 ````
 
 ## Canonical Prompt (Short)

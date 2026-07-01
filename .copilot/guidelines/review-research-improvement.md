@@ -357,8 +357,8 @@ Before completing the pattern:
 ## Related Documents
 
 - [Self-improvement loop](./self-improvement.md) - For instruction gaps
-- [Phase 15: Flow Improvements](../planning/phase-15-flow-orchestration-improvements.md)
-- [Phase 16: Agent Improvements](../planning/phase-16-agent-orchestration-improvements.md)
+- [Phase 15: Flow Improvements](../../exaix-dev-docs/planning/phase-15-flow-orchestration-improvements.md)
+- [Phase 16: Agent Improvements](../../exaix-dev-docs/planning/phase-16-agent-orchestration-improvements.md)
 
 ## Canonical Prompt
 

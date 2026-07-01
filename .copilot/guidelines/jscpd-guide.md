@@ -202,13 +202,13 @@ npx jscpd packages/ai/src/ --threshold 3
   - `tests/ai/anthropic_provider_test.ts` (91%)
   - `tests/services/request_router_test.ts` (78%)
 
-See [phase-14-code-deduplication.md](../planning/phase-14-code-deduplication.md) for refactoring plan.
+See [phase-14-code-deduplication.md](../../exaix-dev-docs/planning/phase-14-code-deduplication.md) for refactoring plan.
 
 ## References
 
 - [jscpd GitHub](https://github.com/kucherenko/jscpd)
 - [Testing Guidelines](testing.md)
-- [Phase 14 Refactoring Plan](../planning/phase-14-code-deduplication.md)
+- [Phase 14 Refactoring Plan](../../exaix-dev-docs/planning/phase-14-code-deduplication.md)
 ````
 
 ## Canonical Prompt (Short)

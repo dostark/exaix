@@ -1,0 +1,289 @@
+/**
+ * @module CheckMdPathsTest
+ * @path tests/scripts/check_md_paths_test.ts
+ * @description Tests for scripts/check_md_paths.ts — the stale-path gate that scans
+ *   markdown files across the repo (and submodules) for filesystem path references
+ *   that no longer resolve. Each candidate path is validated MD-relative first
+ *   (relative to the markdown file's own directory) then repo-root as a fallback.
+ *   Covers all three path forms (markdown links, backticked code paths, bare prose
+ *   paths), external-URL/anchor skipping, and the single-match auto-fix in --fix mode
+ *   (rewrite only when the stale basename resolves to exactly one repo location).
+ * @architectural-layer Script (test)
+ * @dependencies [@std/assert, @std/fs, @std/path]
+ * @related-files [scripts/check_md_paths.ts]
+ */
+
+import { assert, assertEquals } from "@std/assert";
+import { ensureDir } from "@std/fs";
+import { join } from "@std/path";
+import { applyFix, checkMdPaths } from "../../scripts/check_md_paths.ts";
+
+async function sandbox(): Promise<{ root: string; cleanup: () => void }> {
+  const root = await Deno.makeTempDir({ prefix: "md_paths_" });
+  return { root, cleanup: () => Deno.removeSync(root, { recursive: true }) };
+}
+
+Deno.test("[md-paths] a markdown link resolving MD-relative passes", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "docs"));
+    await Deno.writeTextFile(join(root, "docs", "target.md"), "# target\n");
+    await Deno.writeTextFile(join(root, "docs", "index.md"), "See [t](./target.md).\n");
+    const r = await checkMdPaths(root);
+    assertEquals(r.violations.length, 0, JSON.stringify(r.violations));
+    assertEquals(r.ok, true);
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-paths] a markdown link to a repo-root path passes via the root fallback", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "packages", "core"));
+    await Deno.writeTextFile(join(root, "packages", "core", "x.ts"), "export const x = 1;\n");
+    await ensureDir(join(root, "deep", "nested"));
+    // A deeply-nested doc referencing a repo-root-style path.
+    await Deno.writeTextFile(
+      join(root, "deep", "nested", "README.md"),
+      "See `packages/core/x.ts` for details.\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.violations.length, 0, JSON.stringify(r.violations));
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-paths] a broken markdown link is flagged", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "docs"));
+    await Deno.writeTextFile(join(root, "docs", "index.md"), "See [gone](./missing.md).\n");
+    const r = await checkMdPaths(root);
+    assertEquals(r.ok, false);
+    assert(r.violations.some((v) => v.reference === "./missing.md"));
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-paths] a broken backticked code path is flagged", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      "Edit `packages/core/src/constants.ts` to change it.\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.ok, false);
+    assert(r.violations.some((v) => v.reference === "packages/core/src/constants.ts"));
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-paths] a broken bare-prose path is flagged", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      "The handler lives in packages/mcp/src/handlers/foo_tool.ts today.\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.ok, false);
+    assert(r.violations.some((v) => v.reference.includes("packages/mcp/src/handlers/foo_tool.ts")));
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-paths] external URLs and anchors are ignored", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      "[web](https://example.com/x.md) and [anchor](#section) and [mail](mailto:a@b.co)\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.violations.length, 0, JSON.stringify(r.violations));
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-paths] --fix rewrites a stale path when its basename has exactly one repo match", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    // Real file lives at the NEW location.
+    await ensureDir(join(root, "packages", "core", "src", "types"));
+    await Deno.writeTextFile(
+      join(root, "packages", "core", "src", "types", "constants.ts"),
+      "export const C = 1;\n",
+    );
+    // Doc references the OLD (moved) location via a markdown LINK (fixable).
+    const doc = join(root, "README.md");
+    await Deno.writeTextFile(doc, "Never edit [constants](packages/core/src/constants.ts) directly.\n");
+
+    const r = await checkMdPaths(root);
+    assertEquals(r.ok, false);
+    const v = r.violations.find((x) => x.reference === "packages/core/src/constants.ts");
+    assert(v, "expected the stale ref to be flagged");
+    assertEquals(v!.suggestion, "packages/core/src/types/constants.ts", "single unambiguous match");
+
+    const fixed = await applyFix(root, r.violations);
+    assertEquals(fixed, 1, "one path rewritten");
+    const after = await Deno.readTextFile(doc);
+    assert(after.includes("packages/core/src/types/constants.ts"), `rewritten: ${after}`);
+    assert(!after.includes("(packages/core/src/constants.ts)"), "old path gone");
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-paths] a relative markdown link's suggestion stays relative-correct from the MD file", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    // Real file at repo root.
+    await Deno.writeTextFile(join(root, "CODE_STYLE.md"), "# style\n");
+    // A deeply-nested doc with a WRONG relative link (`../../` doesn't reach root).
+    await ensureDir(join(root, "a", "b", "c"));
+    const doc = join(root, "a", "b", "c", "SKILL.md");
+    await Deno.writeTextFile(doc, "See [style](../../CODE_STYLE.md).\n");
+
+    const r = await checkMdPaths(root);
+    const v = r.violations.find((x) => x.reference === "../../CODE_STYLE.md");
+    assert(v, "the broken relative link is flagged");
+    // The suggestion must be the correct RELATIVE path from a/b/c/ → ../../../CODE_STYLE.md,
+    // NOT the repo-root path CODE_STYLE.md (which would render as a broken link).
+    assertEquals(v!.suggestion, "../../../CODE_STYLE.md");
+
+    await applyFix(root, r.violations);
+    const after = await Deno.readTextFile(doc);
+    assert(after.includes("(../../../CODE_STYLE.md)"), `relative-correct: ${after}`);
+    // And the fix genuinely resolves now.
+    const r2 = await checkMdPaths(root);
+    assertEquals(r2.violations.length, 0, JSON.stringify(r2.violations));
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-paths] a repo-root-style reference's suggestion stays repo-root", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "packages", "core", "src", "types"));
+    await Deno.writeTextFile(join(root, "packages", "core", "src", "types", "constants.ts"), "1");
+    const doc = join(root, "deep", "README.md");
+    await ensureDir(join(root, "deep"));
+    await Deno.writeTextFile(doc, "Edit `packages/core/src/constants.ts`.\n");
+    const r = await checkMdPaths(root);
+    const v = r.violations.find((x) => x.reference === "packages/core/src/constants.ts");
+    assert(v);
+    // Was written repo-root-style (no ./ or ../) → suggestion stays repo-root.
+    assertEquals(v!.suggestion, "packages/core/src/types/constants.ts");
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-paths] --fix does NOT rewrite when the basename has multiple repo matches (ambiguous)", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "a"));
+    await ensureDir(join(root, "b"));
+    await Deno.writeTextFile(join(root, "a", "constants.ts"), "1");
+    await Deno.writeTextFile(join(root, "b", "constants.ts"), "2");
+    const doc = join(root, "README.md");
+    await Deno.writeTextFile(doc, "See `src/constants.ts`.\n");
+
+    const r = await checkMdPaths(root);
+    const v = r.violations.find((x) => x.reference === "src/constants.ts");
+    assert(v, "flagged");
+    assertEquals(v!.suggestion, undefined, "ambiguous → no suggestion");
+
+    const fixed = await applyFix(root, r.violations);
+    assertEquals(fixed, 0, "ambiguous refs are not auto-rewritten");
+    assertEquals(await Deno.readTextFile(doc), "See `src/constants.ts`.\n", "unchanged");
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-paths] @-prefixed package import specifiers are NOT treated as filesystem paths", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      "Import from `@exaix/core/config/env_schema.ts` and `@exaix/ai/src/llm_client.ts`.\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.violations.length, 0, JSON.stringify(r.violations));
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-paths] a valid script path inside a `deno run ...` command line is not a false positive", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "scripts"));
+    await Deno.writeTextFile(join(root, "scripts", "build.ts"), "1");
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      "Run `deno run --allow-read scripts/build.ts` to rebuild.\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.violations.length, 0, JSON.stringify(r.violations));
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-paths] --fix rewrites link-style refs but NOT bare-prose example paths", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    // A single real file whose basename matches BOTH the link and the prose ref.
+    await ensureDir(join(root, "sub"));
+    await Deno.writeTextFile(join(root, "sub", "memory.ts"), "1");
+    const doc = join(root, "index.md");
+    // A real relative LINK to the moved file (should be fixed) + a prose EXAMPLE path
+    // with the same basename (should NOT be fixed — it's an illustrative placeholder).
+    await Deno.writeTextFile(
+      doc,
+      "See [m](./old/memory.ts). Example: add the new mcp/handlers/memory.ts handler.\n",
+    );
+
+    const r = await checkMdPaths(root);
+    const link = r.violations.find((v) => v.reference === "./old/memory.ts");
+    const prose = r.violations.find((v) => v.reference === "mcp/handlers/memory.ts");
+    assert(link, "the broken link is flagged");
+    assert(link!.suggestion, "the link has an unambiguous suggestion");
+    assert(prose, "the prose example path is flagged (report), too");
+    // applyFix only touches the link-style one.
+    const fixed = await applyFix(root, r.violations);
+    assertEquals(fixed, 1, "only the link-style ref is auto-rewritten");
+    const after = await Deno.readTextFile(doc);
+    assert(after.includes("./sub/memory.ts"), `link fixed: ${after}`);
+    assert(after.includes("mcp/handlers/memory.ts"), "prose example path left untouched");
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-paths] scans nested markdown and resolves relative to each file's own dir", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "packages", "foo"));
+    await Deno.writeTextFile(join(root, "packages", "foo", "sibling.md"), "# s\n");
+    // Relative link that is only valid from THIS file's directory.
+    await Deno.writeTextFile(
+      join(root, "packages", "foo", "README.md"),
+      "See [s](./sibling.md).\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.violations.length, 0, JSON.stringify(r.violations));
+  } finally {
+    cleanup();
+  }
+});

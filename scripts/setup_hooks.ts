@@ -192,6 +192,14 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# 16. Stale Markdown Path Check (ratchet: only STAGED markdown files must resolve)
+deno task check:md-path:staged
+if [ $? -ne 0 ]; then
+  echo "❌ Error: A staged markdown file references a filesystem path that does not resolve."
+  echo "    Fix the path, or run: deno task check:md-path:fix (rewrites unambiguous link renames)."
+  exit 1
+fi
+
 echo "✅ Pre-commit checks passed!\n"
 `;
 
