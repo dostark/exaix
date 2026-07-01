@@ -25,9 +25,17 @@
  * With `--fix`, a reference is rewritten ONLY when it is a navigational LINK (a
  * markdown link target or a `./`/`../` relative path) AND its basename resolves to
  * exactly one location in the repo. Bare-prose/backtick example paths and ambiguous
- * or zero-match references are reported but never auto-rewritten. `--staged`
- * restricts enforcement to git-staged markdown (the pre-commit ratchet); repo-wide
- * runs cover the full tree including submodules.
+ * or zero-match references are reported but never auto-rewritten.
+ *
+ * A second (style) facet flags a path that appears un-backticked and un-linked in
+ * PROSE yet resolves to a real file — it should be wrapped in backticks; `--fix`
+ * wraps those. This facet exempts YAML frontmatter, the trailing `exaix:` skill
+ * envelope, HTML comments, fenced code blocks, and unfenced shell-command lines
+ * (where wrapping would break the command). Only resolvable bare paths are flagged,
+ * so illustrative/placeholder example paths are never nagged.
+ *
+ * `--staged` restricts enforcement to git-staged markdown (the pre-commit ratchet);
+ * repo-wide runs cover the full tree including submodules.
  */
 
 import { walk } from "@std/fs";
@@ -52,9 +60,22 @@ export interface IMdPathViolation {
   isLink: boolean;
 }
 
+/** A bare (un-backticked, un-linked) prose path that resolves to a real file. */
+export interface IMdStyleViolation {
+  /** Repo-relative path of the markdown file containing the reference. */
+  file: string;
+  /** 1-based line number of the reference. */
+  line: number;
+  /** The bare path token as written in prose (to be wrapped in backticks). */
+  reference: string;
+}
+
 export interface IMdPathResult {
   ok: boolean;
+  /** Path references that do not resolve (broken links / stale paths). */
   violations: IMdPathViolation[];
+  /** Resolvable bare prose paths that should be wrapped in backticks (style facet). */
+  styleViolations: IMdStyleViolation[];
 }
 
 /** Directories never worth scanning or indexing. */
@@ -122,6 +143,24 @@ function looksLikeRepoPath(token: string): boolean {
   return hasReferableExt(token);
 }
 
+/**
+ * True when a line looks like an (unfenced) shell command, where a bare path is part
+ * of the command and must NOT be flagged/wrapped — backticks would change its meaning
+ * (in shells backticks are command substitution) and break copy-paste.
+ */
+function looksLikeShellCommandLine(line: string): boolean {
+  const t = line.trim();
+  return (
+    /(^|\s)(cat|ls|cd|cp|mv|rm|deno|npx|npm|node|git|jq|grep|rg|fd|find|sed|awk|echo|curl|chmod|mkdir|source)\s/.test(
+      " " + t,
+    ) ||
+    t.includes("|") || // pipe
+    t.includes("&&") || // command chaining
+    t.startsWith("$") || // prompt
+    t.startsWith("#") // shell comment / heading-ish command comment
+  );
+}
+
 /** Pull path-like tokens out of a backtick span, which may be a whole command line. */
 function pathTokensFromSpan(span: string): string[] {
   const tokens: string[] = [];
@@ -150,34 +189,76 @@ interface IExtractedRef {
   line: number;
   /** A markdown-link target or a `./`/`../` relative path (fixable); else false. */
   isLink: boolean;
+  /** A path token that appears un-backticked, un-linked in prose (backtick-facet input). */
+  isBareProse: boolean;
 }
 
 /** Extract candidate references (with line numbers) from one markdown file's text. */
 function extractReferences(text: string): IExtractedRef[] {
   const out: IExtractedRef[] = [];
   const lines = text.split("\n");
-  let inFence = false;
+  // Fence tracking, CommonMark-style: an OPENING fence may carry an info string
+  // (language), e.g. ```bash; a CLOSING fence must be the marker alone (only the
+  // fence chars + optional whitespace). This is robust against the repo's malformed
+  // ```text "closers" that would otherwise invert a naive open/close toggle counter.
+  let fenceMarker = ""; // "" when outside a fence; otherwise the exact ``` / ~~~ run.
+  // YAML frontmatter: a leading `---` opens it, the next `---` closes it. Its keys
+  // (description, links, @path…) legitimately hold paths but are not rendered prose.
+  let inFrontmatter = lines[0]?.trim() === "---";
+  let inHtmlComment = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const fence = /^\s*(```|~~~|````|`````)/.exec(line);
-    if (fence) {
-      inFence = !inFence;
-      continue; // the fence line itself carries no reference
+
+    if (inFrontmatter) {
+      if (i > 0 && line.trim() === "---") inFrontmatter = false;
+      continue; // frontmatter carries no rendered references
     }
-    // Skip fenced code block bodies entirely to keep noise low (example output,
-    // command samples, and illustrative snippets are not doc cross-references).
-    if (inFence) continue;
+
+    // Trailing metadata block: a `---` opening a section whose first content line is
+    // `exaix:` (the .copilot/skills SKILL.md envelope) is structured YAML, not prose —
+    // its paths are validated by check:skill-envelopes, so skip to EOF.
+    if (line.trim() === "---" && lines[i + 1]?.trim() === "exaix:") break;
+
+    const fence = /^\s*(`{3,}|~{3,})(.*)$/.exec(line);
+    if (fenceMarker) {
+      // Inside a fence: it closes only on a line that is exactly the marker
+      // (same fence char, length ≥ opener) with nothing after it but whitespace.
+      if (fence && fence[1][0] === fenceMarker[0] && fence[1].length >= fenceMarker.length && fence[2].trim() === "") {
+        fenceMarker = "";
+      }
+      continue; // fenced body (and the fence lines) carry no references
+    }
+    if (fence) {
+      // Opening fence (may have an info string / language after the marker).
+      fenceMarker = fence[1];
+      continue;
+    }
+
+    // HTML comments (`<!-- ... -->`, possibly multi-line) are not rendered prose.
+    let commentStripped = line;
+    if (inHtmlComment) {
+      const end = line.indexOf("-->");
+      if (end < 0) continue; // still inside the comment
+      inHtmlComment = false;
+      commentStripped = line.slice(end + 3);
+    }
+    // Strip inline `<!-- ... -->` and open an unterminated one.
+    commentStripped = commentStripped.replace(/<!--[\s\S]*?-->/g, " ");
+    if (/<!--/.test(commentStripped)) {
+      commentStripped = commentStripped.replace(/<!--.*$/, " ");
+      inHtmlComment = true;
+    }
 
     const seen = new Set<string>();
-    const add = (ref: string, isLink: boolean) => {
+    const add = (ref: string, isLink: boolean, isBareProse = false) => {
       if (seen.has(ref)) return;
       seen.add(ref);
-      out.push({ ref, line: i + 1, isLink });
+      out.push({ ref, line: i + 1, isLink, isBareProse });
     };
 
     // 1) Markdown links: [text](target) — always link-style.
-    for (const m of line.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
+    for (const m of commentStripped.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
       const target = cleanTarget(m[1]);
       if (!target || isExternalOrAnchor(target) || target.startsWith("@")) continue;
       add(target, true);
@@ -185,20 +266,27 @@ function extractReferences(text: string): IExtractedRef[] {
 
     // 2) Backticked code spans: may be a bare path OR a whole command line —
     // extract every path-like token within the span. A `./`/`../` token is link-style.
-    for (const m of line.matchAll(/`([^`]+)`/g)) {
+    for (const m of commentStripped.matchAll(/`([^`]+)`/g)) {
       for (const token of pathTokensFromSpan(m[1])) {
         add(token, isRelativeReference(token));
       }
     }
 
-    // 3) Bare prose paths: unquoted path-like tokens (report-only; not auto-fixable
-    // unless they are `./`/`../` relative links).
-    const stripped = line
+    // 3) Bare prose paths: unquoted, un-linked path-like tokens. These feed the
+    // backtick facet (resolvable ⇒ "wrap in backticks") and are only fixable as
+    // navigational refs when they are `./`/`../` relative links. Lines that look like
+    // an unfenced shell command are skipped: wrapping a path there would break the
+    // command (backticks = command substitution).
+    const isShellLine = looksLikeShellCommandLine(commentStripped);
+    const stripped = commentStripped
       .replace(/`[^`]+`/g, " ")
       .replace(/\[[^\]]*\]\([^)]+\)/g, " ");
     for (const m of stripped.matchAll(/(?:^|[\s(])((?:\.\.?\/)?[A-Za-z0-9_.\-]+\/[A-Za-z0-9_./\-]+)/g)) {
       const token = m[1].replace(/[.,;:)]+$/, "");
-      if (looksLikeRepoPath(token)) add(token, isRelativeReference(token));
+      if (!looksLikeRepoPath(token)) continue;
+      // Still record it as a (report-only) reference for stale-path detection, but
+      // do NOT mark it as a bare-prose backtick candidate when on a shell-command line.
+      add(token, isRelativeReference(token), !isShellLine);
     }
   }
   return out;
@@ -309,6 +397,7 @@ export async function checkMdPaths(root: string, options: ICheckOptions = {}): P
   const absRoot = resolve(root);
   const index = await buildBasenameIndex(absRoot);
   const violations: IMdPathViolation[] = [];
+  const styleViolations: IMdStyleViolation[] = [];
 
   for await (
     const entry of walk(absRoot, {
@@ -323,13 +412,53 @@ export async function checkMdPaths(root: string, options: ICheckOptions = {}): P
     if (options.parentOnly && rel.startsWith("exaix-dev-docs/")) continue;
     if (options.onlyFiles && !options.onlyFiles.has(rel)) continue;
     const text = await Deno.readTextFile(entry.path);
-    for (const { ref, line, isLink } of extractReferences(text)) {
-      if (referenceResolves(absRoot, entry.path, ref)) continue;
-      violations.push({ file: rel, line, reference: ref, isLink, suggestion: suggestFor(ref, rel, index) });
+    for (const { ref, line, isLink, isBareProse } of extractReferences(text)) {
+      const resolves = referenceResolves(absRoot, entry.path, ref);
+      if (!resolves) {
+        violations.push({ file: rel, line, reference: ref, isLink, suggestion: suggestFor(ref, rel, index) });
+        continue;
+      }
+      // Resolvable + bare-in-prose ⇒ style nag: it should be wrapped in backticks.
+      if (isBareProse) styleViolations.push({ file: rel, line, reference: ref });
     }
   }
   violations.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
-  return { ok: violations.length === 0, violations };
+  styleViolations.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
+  return { ok: violations.length === 0 && styleViolations.length === 0, violations, styleViolations };
+}
+
+/**
+ * Wrap each resolvable bare prose path in backticks. Returns the number wrapped.
+ * Only touches the exact bare-token occurrence (not already-backticked or linked
+ * ones, which are never emitted as style violations).
+ */
+export async function applyBacktickFix(root: string, styleViolations: IMdStyleViolation[]): Promise<number> {
+  const absRoot = resolve(root);
+  const byFile = new Map<string, IMdStyleViolation[]>();
+  for (const v of styleViolations) {
+    const list = byFile.get(v.file) ?? [];
+    list.push(v);
+    byFile.set(v.file, list);
+  }
+
+  let wrapped = 0;
+  for (const [file, vs] of byFile) {
+    const abs = join(absRoot, file);
+    let text = await Deno.readTextFile(abs);
+    // Longest-first so a path that is a prefix of another isn't half-wrapped.
+    const uniqueRefs = [...new Set(vs.map((v) => v.reference))].sort((a, b) => b.length - a.length);
+    for (const ref of uniqueRefs) {
+      const escaped = ref.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      // Match the bare token only when NOT already inside backticks or a link target:
+      // require a boundary that is not a backtick, `(`, `/`, or path char on either side.
+      const re = new RegExp(`(?<![\`(A-Za-z0-9_./\\-])${escaped}(?![\`A-Za-z0-9_./\\-])`, "g");
+      const before = text;
+      text = text.replace(re, `\`${ref}\``);
+      if (text !== before) wrapped++;
+    }
+    await Deno.writeTextFile(abs, text);
+  }
+  return wrapped;
 }
 
 /**
@@ -379,6 +508,18 @@ function formatViolation(v: IMdPathViolation): string {
   return `  ${v.file}:${v.line}  ${v.reference}${suffix}`;
 }
 
+function reportViolations(r: IMdPathResult): void {
+  if (r.violations.length > 0) {
+    console.error(`❌ ${r.violations.length} stale markdown path reference(s):`);
+    for (const v of r.violations) console.error(formatViolation(v));
+  }
+  if (r.styleViolations.length > 0) {
+    console.error(`\n❌ ${r.styleViolations.length} bare path(s) in prose that should be backticked:`);
+    for (const v of r.styleViolations) console.error(`  ${v.file}:${v.line}  ${v.reference}`);
+  }
+  console.error(`\nRun with --fix to rewrite unambiguous renames and wrap bare prose paths in backticks.`);
+}
+
 if (import.meta.main) {
   const args = [...Deno.args];
   const fix = args.includes("--fix");
@@ -396,25 +537,26 @@ if (import.meta.main) {
   const result = await checkMdPaths(root, opts);
 
   if (result.ok) {
-    console.log("✅ Markdown path check: all path references resolve.");
+    console.log("✅ Markdown path check: all path references resolve and bare prose paths are backticked.");
     Deno.exit(0);
   }
 
   if (fix) {
     const fixed = await applyFix(root, result.violations);
+    const wrapped = await applyBacktickFix(root, result.styleViolations);
     const rechecked = await checkMdPaths(root, opts);
-    console.log(`🔧 Rewrote ${fixed} unambiguous stale path(s).`);
+    console.log(`🔧 Rewrote ${fixed} stale path(s); wrapped ${wrapped} bare prose path(s) in backticks.`);
     if (rechecked.ok) {
-      console.log("✅ All remaining path references resolve after --fix.");
+      console.log("✅ All path references resolve and bare prose paths are backticked after --fix.");
       Deno.exit(0);
     }
-    console.error(`\n❌ ${rechecked.violations.length} stale path(s) remain (ambiguous/no match):`);
-    for (const v of rechecked.violations) console.error(formatViolation(v));
+    console.error(
+      `\n❌ ${rechecked.violations.length} stale + ${rechecked.styleViolations.length} bare-path issue(s) remain:`,
+    );
+    reportViolations(rechecked);
     Deno.exit(1);
   }
 
-  console.error(`❌ ${result.violations.length} stale markdown path reference(s):`);
-  for (const v of result.violations) console.error(formatViolation(v));
-  console.error(`\nRun with --fix to rewrite the unambiguous single-match renames.`);
+  reportViolations(result);
   Deno.exit(1);
 }

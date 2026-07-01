@@ -108,7 +108,7 @@ PR and review guidance
 
 Validation
 
-- Parent repo CI: scripts/build_agents_index.ts and scripts/validate_agents_docs.ts
+- Parent repo CI: `scripts/build_agents_index.ts` and `scripts/validate_agents_docs.ts`
 - If submodule content is missing in CI, fail fast rather than accept an incomplete pointer update
 
 Do / Don't

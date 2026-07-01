@@ -16,7 +16,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
-import { applyFix, checkMdPaths } from "../../scripts/check_md_paths.ts";
+import { applyBacktickFix, applyFix, checkMdPaths } from "../../scripts/check_md_paths.ts";
 
 async function sandbox(): Promise<{ root: string; cleanup: () => void }> {
   const root = await Deno.makeTempDir({ prefix: "md_paths_" });
@@ -282,6 +282,170 @@ Deno.test("[md-paths] --fix rewrites link-style refs but NOT bare-prose example 
     const after = await Deno.readTextFile(doc);
     assert(after.includes("./sub/memory.ts"), `link fixed: ${after}`);
     assert(after.includes("mcp/handlers/memory.ts"), "prose example path left untouched");
+  } finally {
+    cleanup();
+  }
+});
+
+// ── Bare-path-in-prose backtick facet ──────────────────────────────────────
+
+Deno.test("[md-backtick] a RESOLVABLE bare prose path is reported as a style violation", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "packages", "core", "src"));
+    await Deno.writeTextFile(join(root, "packages", "core", "src", "config.ts"), "1");
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      "The config lives in packages/core/src/config.ts today.\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.ok, false, "style violations make it not-ok");
+    assert(
+      r.styleViolations.some((v) => v.reference === "packages/core/src/config.ts"),
+      JSON.stringify(r.styleViolations),
+    );
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-backtick] an UNRESOLVABLE bare prose path is NOT a style violation (no backtick nag)", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    // A hypothetical/example path that does not resolve — must not be nagged to backtick.
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      "Example: add the new mcp/handlers/memory.ts handler.\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(
+      r.styleViolations.length,
+      0,
+      "unresolvable bare paths are not style violations",
+    );
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-backtick] backticked, linked, and fenced paths are NOT style violations", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "pkg"));
+    await Deno.writeTextFile(join(root, "pkg", "a.ts"), "1");
+    await Deno.writeTextFile(join(root, "pkg", "b.ts"), "1");
+    await Deno.writeTextFile(join(root, "pkg", "c.ts"), "1");
+    await Deno.writeTextFile(join(root, "target.md"), "# t\n");
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      [
+        "Already good: `pkg/a.ts`.",
+        "A link: [b](pkg/b.ts).",
+        "```bash",
+        "cat pkg/c.ts   # inside a fence — exempt",
+        "```",
+        "",
+      ].join("\n"),
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.styleViolations.length, 0, JSON.stringify(r.styleViolations));
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-backtick] applyBacktickFix wraps only resolvable bare prose paths", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "packages", "core", "src"));
+    await Deno.writeTextFile(join(root, "packages", "core", "src", "config.ts"), "1");
+    const doc = join(root, "README.md");
+    // One resolvable bare path (fix) + one unresolvable example (leave).
+    await Deno.writeTextFile(
+      doc,
+      "See packages/core/src/config.ts and also the example foo/bar/missing.ts here.\n",
+    );
+
+    const r = await checkMdPaths(root);
+    const wrapped = await applyBacktickFix(root, r.styleViolations);
+    assertEquals(wrapped, 1, "only the resolvable bare path is wrapped");
+    const after = await Deno.readTextFile(doc);
+    assert(after.includes("`packages/core/src/config.ts`"), `wrapped: ${after}`);
+    assert(after.includes("foo/bar/missing.ts"), "unresolvable example left as-is");
+    assert(!after.includes("`foo/bar/missing.ts`"), "unresolvable example not wrapped");
+
+    // Re-check: no more style violations for the wrapped path.
+    const r2 = await checkMdPaths(root);
+    assert(!r2.styleViolations.some((v) => v.reference === "packages/core/src/config.ts"));
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-backtick] a bare path inside an UNFENCED shell command line is exempt (wrapping would break the command)", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "scripts"));
+    await Deno.writeTextFile(join(root, "scripts", "gen.ts"), "1");
+    await ensureDir(join(root, ".copilot"));
+    await Deno.writeTextFile(join(root, ".copilot", "manifest.json"), "[]");
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      [
+        "Run these:",
+        "  cat .copilot/manifest.json | jq '.'", // pipe → shell command
+        "  deno run -A scripts/gen.ts", // deno run → shell command
+        "  ls && scripts/gen.ts", // && → shell command
+        "",
+      ].join("\n"),
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.styleViolations.length, 0, JSON.stringify(r.styleViolations));
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-backtick] bare paths in YAML frontmatter and HTML comments are exempt", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "scripts"));
+    await Deno.writeTextFile(join(root, "scripts", "gen.ts"), "1");
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      [
+        "---",
+        "description: generated by scripts/gen.ts",
+        "links:",
+        "  - scripts/gen.ts",
+        "---",
+        "",
+        "<!-- This file is generated by scripts/gen.ts -->",
+        "",
+        "# Title",
+        "",
+        "Real prose mentioning scripts/gen.ts here.",
+        "",
+      ].join("\n"),
+    );
+    const r = await checkMdPaths(root);
+    // Only the ONE real-prose mention is flagged; frontmatter + comment are exempt.
+    assertEquals(r.styleViolations.length, 1, JSON.stringify(r.styleViolations));
+    assertEquals(r.styleViolations[0].line, 11);
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-backtick] wrapping does not double-backtick or corrupt a path already in a table cell link", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await ensureDir(join(root, "pkg"));
+    await Deno.writeTextFile(join(root, "pkg", "x.ts"), "1");
+    const doc = join(root, "README.md");
+    await Deno.writeTextFile(doc, "| Comp | `pkg/x.ts` | ok |\n");
+    const r = await checkMdPaths(root);
+    assertEquals(r.styleViolations.length, 0, "already backticked in a table → no violation");
   } finally {
     cleanup();
   }
