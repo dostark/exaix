@@ -17,6 +17,8 @@ import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { ModelResolver } from "@exaix/ai";
+import type { IModelCallOptions, ModelIntent } from "@exaix/schemas";
 import type { ITokenizer } from "@exaix/core/func";
 import { SafeError } from "@exaix/core/errors";
 import { ProviderFactory } from "@exaix/ai/provider_factory.ts";
@@ -94,6 +96,17 @@ export interface IPromptBudgetAllocator {
   allocate(modelId: string, hints?: object, analysis?: IRequestAnalysis): Promise<IPromptBudget>;
 }
 
+/** All model-related fields from blueprint YAML frontmatter. */
+interface BlueprintInput {
+  model: string;
+  provider?: string;
+  model_size?: ModelIntent["model_size"];
+  characteristics?: string[];
+  preferred_provider?: string;
+  thinking?: boolean;
+  effort?: ModelIntent["effort"];
+}
+
 /**
  * Agent blueprint loaded from file
  */
@@ -162,6 +175,9 @@ export class AgentExecutor {
 
   private readonly _tokenizer?: ITokenizer;
 
+  /** Resolved per-call options from ModelResolver, forwarded to generate(). */
+  private _resolvedCallOptions?: IModelCallOptions;
+
   /** Exposes current prompt budget to IReActLoopExecutor (Phase 83). */
   public get currentPromptBudget(): IPromptBudget | undefined {
     return this._currentPromptBudget;
@@ -207,6 +223,7 @@ export class AgentExecutor {
     snapshotStore?: ISnapshotStore,
     private _guardrailRunner?: IGuardrailRunner,
     options?: IAgentExecutorOptions,
+    private modelResolver?: ModelResolver,
   ) {
     this.promptBudgetAllocator = promptBudgetAllocator ??
       new PromptBudgetAllocator(this.config.budget_enforcement, undefined, this.logger);
@@ -289,9 +306,8 @@ export class AgentExecutor {
         }
       }
       if (summarizationProvider) {
-        const result = await summarizationProvider.generate(summaryPrompt, {
-          max_tokens: COMPACT_SUMMARY_MAX_TOKENS,
-        });
+        const genOptions = { max_tokens: COMPACT_SUMMARY_MAX_TOKENS, ...this._resolvedCallOptions };
+        const result = await summarizationProvider.generate(summaryPrompt, genOptions);
         summary = result.content.trim();
       }
     } catch {
@@ -518,20 +534,8 @@ export class AgentExecutor {
 
       const sanitizedPrompt = AgentExecutor.sanitizePrompt(systemPrompt);
 
-      // 6. Handle model/provider splitting if using canonical format (provider:model)
-      let model = validatedFrontmatter.model;
-      let provider = validatedFrontmatter.provider;
-
-      if (!provider && model.includes(":")) {
-        const parts = model.split(":");
-        provider = parts[0];
-        model = parts.slice(1).join(":"); // Handle gpt-4:2024-08-06
-      }
-
-      // Final fallback for required fields
-      if (!provider) {
-        provider = DEFAULT_MCP_IDENTITY_ID;
-      }
+      // 6. Resolve model via ModelResolver or fall back to inline split
+      const { model, provider } = await this.resolveModelFromBlueprint(validatedFrontmatter);
 
       // 7. Return validated blueprint
       return {
@@ -591,6 +595,40 @@ export class AgentExecutor {
         this.logger,
       );
     }
+  }
+
+  private async resolveModelFromBlueprint(
+    validatedFrontmatter: z.infer<typeof BlueprintSchema>,
+  ): Promise<{ model: string; provider: string }> {
+    let model = validatedFrontmatter.model;
+    let provider = validatedFrontmatter.provider;
+    this._resolvedCallOptions = undefined;
+
+    if (this.modelResolver) {
+      const extras = validatedFrontmatter as BlueprintInput;
+      const intent: ModelIntent = {
+        model: validatedFrontmatter.model,
+        model_size: extras.model_size,
+        characteristics: extras.characteristics,
+        preferred_provider: extras.preferred_provider,
+        thinking: extras.thinking,
+        effort: extras.effort,
+      };
+      const resolved = await this.modelResolver.resolve(intent);
+      provider = resolved.provider;
+      model = resolved.model;
+      if (resolved.options) {
+        this._resolvedCallOptions = resolved.options as IModelCallOptions;
+      }
+    } else if (!provider && model.includes(":")) {
+      const parts = model.split(":");
+      provider = parts[0];
+      model = parts.slice(1).join(":");
+    }
+    if (!provider) {
+      provider = DEFAULT_MCP_IDENTITY_ID;
+    }
+    return { model, provider };
   }
 
   private resolveBlueprintPath(agentName: string): string {
