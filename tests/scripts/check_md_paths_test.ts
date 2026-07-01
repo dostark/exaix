@@ -98,6 +98,22 @@ Deno.test("[md-paths] a broken bare-prose path is flagged", async () => {
   }
 });
 
+Deno.test("[md-paths] a reference to an existing file with a #anchor is NOT flagged", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await Deno.writeTextFile(join(root, "Reference.md"), "# ref\n");
+    // Both a backticked and a bare reference with a trailing #section on a real file.
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      "See `Reference.md#some-section` and also Reference.md#other-section here.\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.violations.length, 0, JSON.stringify(r.violations));
+  } finally {
+    cleanup();
+  }
+});
+
 Deno.test("[md-paths] external URLs and anchors are ignored", async () => {
   const { root, cleanup } = await sandbox();
   try {

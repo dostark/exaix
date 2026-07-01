@@ -31,7 +31,7 @@ contract; runtime wiring (daemon watcher, gate hooks, CLI/TUI) lives in `apps/`.
   resume token) and `resolveLaunch`.
 - `reconcile.ts` / `scope_checker.ts` — constant-time token binding, two-stage
   path-scope enforcement, gate/decision legality, non-blocking budget overage.
-- `wait/session_wait_store.ts` — durable wait-state shim (`ISessionWaitStore`),
+- `packages/session/src/wait/session_wait_store.ts` — durable wait-state shim (`ISessionWaitStore`),
   swappable for Phase 84's `WaitStateService`.
 - `session_return_processor.ts` — reads brief+return, reconciles, resumes (the
   partial/forged/out-of-scope-safe core the daemon `SessionReturnWatcher` calls).

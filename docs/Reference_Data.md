@@ -132,7 +132,7 @@ exactl memory
 | Memory Extractor       | `packages/memory/src/extraction/memory_extractor.ts` | Learning extraction               | ✅ Complete |
 | Memory Embedding       | `packages/memory/src/embedding/memory_embedding.ts`  | Vector embeddings for search      | ✅ Complete |
 | Memory CLI             | `apps/exactl/src/commands/`                          | CLI interface                     | ✅ Complete |
-| Integration Tests      | `tests/integration/memory_integration_test.ts`       | End-to-end tests                  | ✅ Complete |
+| Integration Tests      | `apps/tui/tests/memory_integration_test.ts`          | End-to-end tests                  | ✅ Complete |
 | PortalKnowledgeService | `packages/portal/src/`                               | Codebase analysis pipeline        | ✅ Complete |
 | PortalKnowledgeSchema  | `packages/schemas/src/portal_knowledge.ts`           | Zod validation for knowledge.json | ✅ Complete |
 | KnowledgePersistence   | `packages/portal/src/`                               | knowledge.json read/write         | ✅ Complete |
@@ -300,7 +300,7 @@ Core infrastructure modules for architecture validation:
 | **Request Analyzer**          | Intent, requirements & complexity extraction                  | `packages/request/src/analysis/`                                              | 🟢 All   |
 | **Request Quality Gate**      | Pre-execution quality scoring and Q&A refinement              | `packages/quality-gate/src/request_quality_gate.ts`                           | 🟢 All   |
 | **Clarification Engine**      | Multi-turn Q&A loop for request refinement                    | `packages/quality-gate/src/clarification_engine.ts`                           | 🟢 All   |
-| **Plan Executor**             | Execute approved plans                                        | `packages/execution/src/plan_executor.ts`                                     | 🟢 All   |
+| **Plan Executor**             | Execute approved plans                                        | `packages/core/src/planning/plan_executor.ts`                                 | 🟢 All   |
 | **Agent Runner**              | Execute agent logic with LLM                                  | `packages/execution/src/agent_runner.ts:AgentRunner`                          | 🟢 All   |
 | **Flow Runner**               | Execute multi-agent flows                                     | `packages/flow/src/flow_runner.ts:FlowRunner`                                 | 🟢 All   |
 | **Flow Checkpoint Service**   | Persist and resume completed flow steps                       | `packages/flow/src/checkpoint_service.ts:FlowCheckpointService`               | 🟢 All   |

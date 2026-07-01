@@ -204,8 +204,16 @@ function extractReferences(text: string): IExtractedRef[] {
   return out;
 }
 
+/** Drop a trailing `#anchor` from a path reference (the file part is what resolves). */
+function stripAnchor(ref: string): string {
+  const hash = ref.indexOf("#");
+  return hash < 0 ? ref : ref.slice(0, hash);
+}
+
 /** Resolve a reference MD-relative first, then repo-root. Returns true if it exists. */
-function referenceResolves(root: string, mdFileAbs: string, ref: string): boolean {
+function referenceResolves(root: string, mdFileAbs: string, refWithAnchor: string): boolean {
+  const ref = stripAnchor(refWithAnchor);
+  if (ref === "") return true; // pure `#anchor` (same-file) — handled/skipped upstream
   const candidates = isAbsolute(ref) ? [ref] : [resolve(dirname(mdFileAbs), ref), resolve(root, ref)];
   for (const c of candidates) {
     try {
@@ -253,7 +261,7 @@ function suggestFor(
   mdFileRel: string,
   index: Map<string, string[]>,
 ): string | undefined {
-  const matches = index.get(basename(ref));
+  const matches = index.get(basename(stripAnchor(ref)));
   if (!matches || matches.length !== 1) return undefined;
   const onlyRepoRel = matches[0]; // repo-relative path of the real file
   // Do NOT suggest an edition-crossing rewrite: a Solo `packages/...` reference must
