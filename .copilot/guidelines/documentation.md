@@ -36,7 +36,7 @@ topics: ["docs", "process", "publishing"]
 deno run --allow-read scripts/inject_agent_context.ts --query "fix tests" --agent copilot
 ```
 
-1.
+1. Inject the matching `.copilot/` context into your prompt using the command above before asking Copilot to work on a task.
 
 ### Copilot Labs / Prompt Template (short)
 

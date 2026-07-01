@@ -84,9 +84,8 @@ Package-owned tests live under `packages/<package>/tests/`. Integration and scen
 Deduplication checklist:
 
 1. Search for similar test file names
-
-1.
-1.
+1. Check for an existing shared helper before writing new setup/teardown
+1. Reuse `initTestDbService()` / `createCliTestContext()` instead of duplicating fixtures
 
 ### Security Tests as First-Class Citizens
 

@@ -212,7 +212,8 @@
         ".copilot/chunks/agent-thought-standardization.md.chunk3.txt",
         ".copilot/chunks/agent-thought-standardization.md.chunk4.txt",
         ".copilot/chunks/agent-thought-standardization.md.chunk5.txt",
-        ".copilot/chunks/agent-thought-standardization.md.chunk6.txt"
+        ".copilot/chunks/agent-thought-standardization.md.chunk6.txt",
+        ".copilot/chunks/agent-thought-standardization.md.chunk7.txt"
       ]
     },
     {
@@ -1180,7 +1181,8 @@
       ],
       "chunks": [
         ".copilot/chunks/google-long-context.md.chunk0.txt",
-        ".copilot/chunks/google-long-context.md.chunk1.txt"
+        ".copilot/chunks/google-long-context.md.chunk1.txt",
+        ".copilot/chunks/google-long-context.md.chunk2.txt"
       ]
     },
     {

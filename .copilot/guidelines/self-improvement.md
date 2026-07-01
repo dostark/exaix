@@ -23,7 +23,7 @@ Use this at the start of a session or before a multi-step change.
 1. **Classify the task**
    - TDD / bugfix / refactor / docs / CI / security / portal permissions / RAG usage
 
-1.
+1. **Identify the relevant docs**
    - Start with `.copilot/cross-reference.md` to find the primary docs.
    - Read the provider guide for the active model:
      - Claude: `.copilot/providers/claude.md`
@@ -31,7 +31,7 @@ Use this at the start of a session or before a multi-step change.
      - Google: `.copilot/providers/google.md`
    - Inject additional docs via `scripts/inject_agent_context.ts` when needed.
 
-1.
+1. **Assess adequacy**
    - ✅ Adequate if the docs specify:
      - what files/patterns to use (Exaix-specific)
      - what invariants to preserve
@@ -46,16 +46,16 @@ Use this at the start of a session or before a multi-step change.
      - “No canonical command for validating manifest/chunks after .copilot/ edits.”
      - “No example of the required output format for this provider in this scenario.”
 
-1.
+1. **Choose the patch type**
    - Add a section to an existing doc when the topic clearly belongs there.
    - Add a prompt template when the goal is reliable behavior (format/budgets/checklists).
    - Add a cross-reference row/topic when discovery is the main problem.
 
-1.
+1. **Keep the patch minimal**
    - Keep changes directly relevant to the current user request.
    - Prefer checklists + examples over long narrative.
 
-1.
+1. **Rebuild and validate artifacts**
    - Rebuild manifest/chunks:
      - `deno run --allow-read --allow-write scripts/build_agents_index.ts`
    - Verify freshness:
@@ -65,10 +65,10 @@ Use this at the start of a session or before a multi-step change.
    - Validate agent docs:
      - `deno run --allow-read scripts/validate_agents_docs.ts`
 
-1.
+1. **Add a regression test if warranted**
    - If a gap caused real friction, add/extend a focused test under `tests/agents/`.
 
-1.
+1. **Resume the primary task**
    - Re-run context injection if needed (docs changed).
 
 ## Gap taxonomy (what to look for)

@@ -138,28 +138,28 @@ assertSuccessResult(result, { dataLength: 3 });
    npx jscpd packages/ apps/ tests/ --reporters json --output ./jscpd-report
    ```text
 
-1.
+1. **Rank the highest-impact clones** by duplicated tokens
    ```bash
    grep -o '"duplicatedTokens": [0-9]*' jscpd-report/jscpd-report.json | sort -t: -k2 -nr | head -20
    ```text
 
-1.
+1. **Inspect a specific clone** to understand the duplicated code
    ```bash
    grep -B15 'filename.ts' jscpd-report/jscpd-report.json
    ```text
 
-1.
+1. **Categorize the duplication** to choose an extraction strategy
    - Same file duplication → Extract method
    - Cross-file duplication → Extract helper/utility
    - Test duplication → Create test helper or fixture
 
-1.
+1. **Extract incrementally with TDD**
    - Create helper with tests
    - Refactor one usage
    - Verify tests pass
    - Refactor remaining usages
 
-1.
+1. **Re-measure** to confirm the reduction
    ```bash
    npx jscpd packages/ apps/ tests/ --reporters json --output ./jscpd-report-after
    ```text
@@ -189,9 +189,8 @@ npx jscpd packages/ai/src/ --threshold 3
 ### When NOT to Deduplicate
 
 1. **Intentional isolation** - Security tests should be standalone
-
-1.
-1.
+1. **Readability over DRY** - Don't extract when it makes tests harder to follow
+1. **Coincidental similarity** - Similar-looking code with different intent should stay separate
 
 ## Current Status (2026-01-04)
 

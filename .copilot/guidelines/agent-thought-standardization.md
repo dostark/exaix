@@ -84,26 +84,24 @@ All agent `<thought>` sections MUST follow this structured format:
 ### Benefits
 
 1. **Consistency**: All agents follow the same reasoning structure
-
-1.
-1.
-1.
+1. **Reviewability**: Structured reasoning is easier for humans to audit
+1. **Completeness**: The sections prompt agents to cover analysis, context, and risks
+1. **Quality**: Explicit reasoning surfaces gaps before they reach the implementation
 
 ### Migration Plan
 
 #### Phase 31.5: Thought Section Standardization
 
 1. **Update all agent blueprints** to use the standardized `<thought>` structure
-
-1.
-1.
+1. **Regenerate** the derived artifacts (manifest/chunks) after editing the blueprints
+1. **Validate** that every updated blueprint still parses and passes the agent-docs checks
 
 #### Implementation Steps
 
 1. Review current `<thought>` sections across all 18+ agent files
 
-1.
-1.
+1. Define the standardized section headers to apply consistently
+1. Apply the structure to each blueprint and verify with the agent-docs validator
 
 ### Examples
 
@@ -138,8 +136,8 @@ Add structured logging with different levels (info, warn, error) throughout the 
 
 1. Review existing logger utility
 
-1.
-1.
+1. Add structured log levels (info, warn, error)
+1. Apply logging throughout the application with contextual fields
 
 ## Risk Assessment
 Risk: Performance impact from excessive logging. Mitigation: Use async logging and configurable levels.
