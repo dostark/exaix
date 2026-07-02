@@ -28,6 +28,7 @@ Key points
   Never include implementation-specific file paths or module locations there.
   Move those details into the relevant package README (e.g.,
   packages/<name>/README.md) and reference the package from ARCHITECTURE.md.
+- docs/CHANGELOG.md is for user-facing changes only (CLI flags, config, deprecations, behavior changes). Never list internal refactors, test additions, or internal file paths. Each entry must be a single sentence, no internal module paths. Follow Keep a Changelog conventions. See the header in docs/CHANGELOG.md for the full format guide.
 
 Canonical prompt (short):
 "Create/update documentation for {component/feature}.
