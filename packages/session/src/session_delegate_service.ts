@@ -106,6 +106,13 @@ export class SessionDelegateService implements ISessionDelegateService {
   }
 
   async prepareBrief(input: IPrepareBriefInput): Promise<SessionBrief> {
+    // Model must be a resolved provider:model string — model_size is not accepted
+    if (input.model && !input.model.includes(":")) {
+      throw new Error(
+        `model must be pre-resolved provider:model string, got "${input.model}"`,
+      );
+    }
+
     const artifactRef = this.pathSafety.normalize(input.artifactRef);
     const permittedPaths = input.permittedPaths.map((p) => this.pathSafety.normalize(p));
     if (input.contextCardRef !== undefined) {

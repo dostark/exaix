@@ -111,15 +111,40 @@ export class RequestListHandler extends BaseCommand {
       source: String(frontmatter.source || "unknown") as IRequestEntry["source"],
     };
 
+    this.mapOptionalStringFields(entry, frontmatter);
+    this.mapModelIntentFields(entry, frontmatter);
+    this.mapParsedArrayFields(entry, frontmatter);
+
+    return entry;
+  }
+
+  private mapOptionalStringFields(
+    entry: IRequestEntry & { agent: string },
+    frontmatter: Record<string, string | boolean | number>,
+  ): void {
     if (frontmatter[PORTAL_LABEL]) entry.portal = String(frontmatter[PORTAL_LABEL]);
     if (frontmatter.target_branch) entry.target_branch = String(frontmatter.target_branch);
     if (frontmatter.model) entry.model = String(frontmatter.model);
     if (frontmatter[RequestKind.FLOW]) entry.flow = String(frontmatter[RequestKind.FLOW]);
     if (frontmatter.rejected_path) entry.rejected_path = String(frontmatter.rejected_path);
     if (frontmatter.subject) entry.subject = String(frontmatter.subject);
+  }
 
+  private mapModelIntentFields(
+    entry: IRequestEntry & { agent: string },
+    frontmatter: Record<string, string | boolean | number>,
+  ): void {
+    if (frontmatter.model_size) entry.model_size = String(frontmatter.model_size);
+    if (frontmatter.preferred_provider) entry.preferred_provider = String(frontmatter.preferred_provider);
+    if (frontmatter.thinking !== undefined) entry.thinking = Boolean(frontmatter.thinking);
+    if (frontmatter.effort) entry.effort = String(frontmatter.effort);
+    if (frontmatter.characteristics) entry.characteristics = JSON.parse(String(frontmatter.characteristics));
+  }
+
+  private mapParsedArrayFields(
+    entry: IRequestEntry & { agent: string },
+    frontmatter: Record<string, string | boolean | number>,
+  ): void {
     if (frontmatter.skills) entry.skills = JSON.parse(String(frontmatter.skills));
-
-    return entry;
   }
 }

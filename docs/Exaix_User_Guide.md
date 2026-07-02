@@ -837,22 +837,27 @@ exactl request analyze "Existing Request Subject" --engine llm
 
 **Options:**
 
-| Option                  | Short | Description                                                                      |
-| ----------------------- | ----- | -------------------------------------------------------------------------------- |
-| `--agent`               | `-a`  | Target identity blueprint (default: `default`, mutually exclusive with --flow)   |
-| `--flow`                |       | Target multi-agent flow (mutually exclusive with --agent)                        |
-| `--priority`            | `-p`  | Priority: `low`, `normal`, `high`, `critical`                                    |
-| `--portal`              |       | Portal alias for project context                                                 |
-| `--target-branch`       |       | Target/base branch when working inside a portal (stored as `target_branch`)      |
-| `--skills`              |       | Comma-separated list of skills to inject (e.g., `documentation-driven,file-ops`) |
-| `--file`                | `-f`  | Read description from file                                                       |
-| `--acceptance-criteria` |       | Repeatable acceptance criterion; stored in frontmatter as `acceptance_criteria`  |
-| `--expected-outcome`    |       | Repeatable expected outcome; stored in frontmatter as `expected_outcomes`        |
-| `--interactive`         | `-i`  | Interactive mode with prompts                                                    |
-| `--dry-run`             |       | Preview without creating                                                         |
-| `--json`                |       | Machine-readable output                                                          |
-| `--analyze`             |       | Trigger immediate intent analysis (Phase 45)                                     |
-| `--engine`              | `-e`  | Analysis engine: `heuristic` (default), `llm`                                    |
+| Option                  | Short | Description                                                                                               |
+| ----------------------- | ----- | --------------------------------------------------------------------------------------------------------- |
+| `--agent`               | `-a`  | Target identity blueprint (default: `default`, mutually exclusive with --flow)                            |
+| `--flow`                |       | Target multi-agent flow (mutually exclusive with --agent)                                                 |
+| `--priority`            | `-p`  | Priority: `low`, `normal`, `high`, `critical`                                                             |
+| `--portal`              |       | Portal alias for project context                                                                          |
+| `--target-branch`       |       | Target/base branch when working inside a portal (stored as `target_branch`)                               |
+| `--skills`              |       | Comma-separated list of skills to inject (e.g., `documentation-driven,file-ops`)                          |
+| `--file`                | `-f`  | Read description from file                                                                                |
+| `--acceptance-criteria` |       | Repeatable acceptance criterion; stored in frontmatter as `acceptance_criteria`                           |
+| `--expected-outcome`    |       | Repeatable expected outcome; stored in frontmatter as `expected_outcomes`                                 |
+| `--interactive`         | `-i`  | Interactive mode with prompts                                                                             |
+| `--dry-run`             |       | Preview without creating                                                                                  |
+| `--json`                |       | Machine-readable output                                                                                   |
+| `--analyze`             |       | Trigger immediate intent analysis (Phase 45)                                                              |
+| `--engine`              | `-e`  | Analysis engine: `heuristic` (default), `llm`                                                             |
+| `--model-size`          |       | Capability tier: `S`, `M`, `L`, `XL` — maps to context/cost preset via ModelResolver (Phase 132)          |
+| `--thinking`            |       | Require extended reasoning (thinking-capable model, Phase 132)                                            |
+| `--effort`              |       | Reasoning token budget: `low`, `medium`, `high` (only with `--thinking`, Phase 132)                       |
+| `--characteristic`      |       | Soft ranking hint — `cheapest` or `fastest`. Scores providers, does not eliminate. Repeatable (Phase 132) |
+| `--preferred-provider`  |       | Narrow candidate pool to a specific provider, skips cross-provider scoring (Phase 132)                    |
 
 **Example workflow:**
 
@@ -895,6 +900,22 @@ exactl request "Implement file upload validation" \
 ```
 
 Explicit criteria improve request quality in three ways: they raise the analyzer's confidence about what success looks like, they feed directly into downstream evaluation, and they reduce clarification churn for borderline requests.
+
+**Model intent examples (Phase 132):**
+
+```bash
+# Large model with extended reasoning for complex tasks
+exactl request "Design authentication architecture" --model-size L --thinking --effort high
+
+# Quick, cheap task — small model, no thinking
+exactl request "Format all files" --model-size S --characteristic cheapest
+
+# Balanced: medium model, some reasoning, speed priority
+exactl request "Refactor utils module" --model-size M --thinking --effort low --characteristic fastest
+
+# Pin to a specific provider but let ModelResolver pick the model
+exactl request "Audit dependencies" --model-size XL --preferred-provider anthropic
+```
 
 **Why CLI instead of manual files?**
 
@@ -1561,6 +1582,9 @@ step:
 ```
 
 **Available Templates:**
+
+> **Phase 132:** Hardcoded `model:` in blueprints is deprecated. Use `model_size:` + `characteristics:` instead.
+> See [§6.2 Model Intent](#62-model-intent-phase-132) for the replacement system.
 
 | Template     | Model                   | Best For                          |
 | ------------ | ----------------------- | --------------------------------- |
@@ -2746,7 +2770,10 @@ Enable reflexion in identity blueprint frontmatter:
 ---
 identity_id: "quality-reviewer"
 name: "Quality Reviewer"
-model: "anthropic:claude-opus-4.5"
+model: ""                  # deprecated — use model_size + characteristics instead
+model_size: L              # large model for thorough evaluation
+thinking: true             # extended reasoning for critique
+effort: high               # high token budget for deep analysis
 capabilities: ["review", "evaluation"]
 default_skills: ["response-contract", "reflexive-critique", "portal-grounding"]
 permitted_tools: ["read_file", "grep_search"]
@@ -2762,7 +2789,7 @@ confidence_required: 80
 | `max_reflexion_iterations` | `3`     | Maximum refinement passes            |
 | `confidence_required`      | `80`    | Minimum confidence (0-100) to accept |
 
-#### When to Use
+#### When to Use Reflexion
 
 - **Code review agents**: Catch issues the first pass might miss
 - **Technical writing**: Ensure accuracy and completeness
@@ -2774,6 +2801,135 @@ confidence_required: 80
 - **Higher quality**: More thorough analysis
 - **Increased latency**: 2-4x longer response time
 - **Higher cost**: Multiple LLM calls per request
+
+### 6.2 Model Intent (Phase 132)
+
+Model Intent lets you describe the model you want by **capability requirements**
+rather than hardcoding a specific `provider:model` ID. Instead of saying
+"use claude-sonnet-4", you say "give me a size L model with thinking" — and
+`ModelResolver` picks the best available provider+model that matches.
+
+This decouples your request/identity from any single provider. The same intent
+works locally with Ollama, in the cloud with Anthropic, or in an air-gapped
+environment — without editing blueprints.
+
+#### Available intent fields in blueprint frontmatter
+
+| Field                   | Values                                                | Behavior                                                                   |
+| ----------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------- |
+| `model_size`            | `S`, `M`, `L`, `XL`                                   | Maps to capability profile (context window, cost, thinking support)        |
+| `thinking`              | `true`, `false`                                       | Require extended reasoning model                                           |
+| `effort`                | `low`, `medium`, `high`                               | Reasoning token budget (only meaningful with `thinking: true`)             |
+| `characteristics`       | `["cheapest"]`, `["fastest"]`                         | Soft ranking hint — scores providers, does not eliminate                   |
+| `preferred_provider`    | provider name                                         | Narrow candidate pool, skip cross-provider scoring                         |
+| `required_capabilities` | `chat`, `streaming`, `vision`, `tools`, `multi-model` | Hard filter — providers lacking ALL listed values are excluded             |
+| `model`                 | `provider:model`                                      | **Deprecated** — bypasses ModelResolver, ties identity to a specific model |
+
+`required_capabilities` is a **hard filter** — providers that don't support
+every listed value are excluded. Supported values per provider:
+
+| Value         | Supported by                      |
+| ------------- | --------------------------------- |
+| `chat`        | All providers                     |
+| `streaming`   | Anthropic, Google, Ollama, OpenAI |
+| `vision`      | Anthropic, Google, OpenAI         |
+| `tools`       | OpenAI                            |
+| `multi-model` | OpenRouter                        |
+
+`characteristics` is a **soft ranking hint** — no providers are excluded,
+only scored higher or lower:
+
+| Value      | Effect                                                                      |
+| ---------- | --------------------------------------------------------------------------- |
+| `cheapest` | Higher score for lower `costPerMtok`. Best for batch/non-urgent work        |
+| `fastest`  | Scores all candidates equally. Typically selects the first healthy provider |
+
+#### Preset Configuration
+
+Size tiers map to capability profiles in `exa.config.toml`:
+
+```toml
+[model_presets]
+S = { max_cost_per_mtok = 0.5,  min_context_window = 8192,   supports_thinking = false }
+M = { max_cost_per_mtok = 3,    min_context_window = 32000,  supports_thinking = true  }
+L = { max_cost_per_mtok = 15,   min_context_window = 128000, supports_thinking = true  }
+XL = { max_cost_per_mtok = 75,  min_context_window = 200000, supports_thinking = true  }
+```
+
+Override individual fields per tier:
+
+```toml
+[model_presets.M]
+max_cost_per_mtok = 5
+```
+
+Restrict eligible providers for a tier with `candidates`:
+
+```toml
+[model_presets.L]
+candidates = ["anthropic:claude-sonnet", "openai:gpt-4o"]
+```
+
+#### Resolution Precedence
+
+1. `model: "provider:model"` — explicit override (bypasses resolver)
+2. `model_size` + `characteristics` — preset lookup with soft ranking
+3. `model_size` only — preset default
+4. `fallbacks[]` — fallback chain iteration
+5. Context-window overflow — auto-bump to next size tier
+
+Every resolution emits a `model_resolved` trace event visible via
+`exactl logs --filter model_resolved`.
+
+#### CLI Flags
+
+Available on `exactl request`:
+
+| Flag                   | Values                  | Description                    |
+| ---------------------- | ----------------------- | ------------------------------ |
+| `--model-size`         | `S`, `M`, `L`, `XL`     | Capability tier                |
+| `--thinking`           | (flag)                  | Require extended reasoning     |
+| `--effort`             | `low`, `medium`, `high` | Reasoning token budget         |
+| `--characteristic`     | `cheapest`, `fastest`   | Soft ranking hint (repeatable) |
+| `--preferred-provider` | provider name           | Narrow to one provider         |
+
+#### Migration: Identity Blueprints
+
+**Hardcoded `model:` in identity blueprints is deprecated.** Replace with
+declarative fields:
+
+```diff
+  ---
+- model: "anthropic:claude-sonnet-4"
++ model: ""                # preserved empty for schema compat
++ model_size: "L"
++ characteristics: ["fastest"]
+  ---
+```
+
+Supported frontmatter fields:
+
+| Field                | Type    | Values                            |
+| -------------------- | ------- | --------------------------------- |
+| `model_size`         | string  | `S`, `M`, `L`, `XL`               |
+| `preferred_provider` | string  | Provider name (e.g. `anthropic`)  |
+| `thinking`           | boolean | `true`, `false`                   |
+| `effort`             | string  | `low`, `medium`, `high`           |
+| `characteristics`    | array   | `["cheapest"]`, `["fastest"]`     |
+| `model`              | string  | **Deprecated** — `provider:model` |
+
+The `model` field continues to work, but it short-circuits the resolver and
+ties the identity to a specific provider+model, defeating portability.
+
+#### Future: Phase 134 Model Registry
+
+Phase 134 will introduce the `IModelRegistry` plugin system, enabling:
+
+- Registration of custom model sizes beyond `S`/`M`/`L`/`XL`
+- A `fastest` simplification — `--model-size fastest` resolves to the cheapest
+  model meeting minimal quality thresholds, removing the need to choose a tier
+- Dynamic provider capability discovery at startup
+- End-user model aliases in config
 
 ### 6.2 Confidence Scoring
 

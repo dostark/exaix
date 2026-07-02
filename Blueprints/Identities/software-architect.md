@@ -1,7 +1,10 @@
 ---
 identity_id: "software-architect"
 name: "Software Architect"
-model: "google:gemini-2.0-flash-exp"
+model: ""
+model_size: L
+thinking: true
+effort: high
 capabilities: ["architecture", "planning", "code_review"]
 created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"

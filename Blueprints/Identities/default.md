@@ -1,7 +1,8 @@
 ---
 identity_id: "default"
 name: "Default Agent"
-model: "google:gemini-2.0-flash-exp"
+model: ""
+model_size: M
 capabilities: ["code_generation", "planning", "debugging", "research", "execution", "refactoring"]
 created: "2025-12-09T13:47:00Z"
 created_by: "exaix-setup"

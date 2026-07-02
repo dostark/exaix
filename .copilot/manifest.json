@@ -665,7 +665,7 @@
       "scope": "dev",
       "title": "Plan Skill (#plan)",
       "short_summary": "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy.",
-      "version": "1.8.0",
+      "version": "1.9.0",
       "topics": [
         "planning",
         "architecture",
@@ -1070,7 +1070,7 @@
       "scope": "dev",
       "title": "Pre-Gap Analysis Skill (#pre-gap-analysis)",
       "short_summary": "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against.",
-      "version": "1.6.0",
+      "version": "1.7.0",
       "topics": [
         "planning",
         "gap-analysis",

@@ -84,41 +84,9 @@ export class RequestShowHandler extends BaseCommand {
       source: String(matchingFrontmatter.source || "unknown") as IRequestShowResult["metadata"]["source"],
     };
 
-    type OptionalMetadataStringKey =
-      | "portal"
-      | "target_branch"
-      | "model"
-      | "flow"
-      | "error"
-      | "rejected_path"
-      | "subject";
-
-    const optionalFields: Array<{
-      sourceKey: string;
-      targetKey: OptionalMetadataStringKey;
-    }> = [
-      { sourceKey: PORTAL_LABEL, targetKey: "portal" },
-      { sourceKey: "target_branch", targetKey: "target_branch" },
-      { sourceKey: "model", targetKey: "model" },
-      { sourceKey: RequestKind.FLOW, targetKey: "flow" },
-      { sourceKey: PlanStatus.ERROR, targetKey: "error" },
-      { sourceKey: "rejected_path", targetKey: "rejected_path" },
-      { sourceKey: "subject", targetKey: "subject" },
-    ];
-
-    for (const { sourceKey, targetKey } of optionalFields) {
-      const value = matchingFrontmatter[sourceKey];
-      if (value) {
-        (metadata as IRequestShowResult["metadata"] & Record<OptionalMetadataStringKey, string>)[targetKey] = String(
-          value,
-        );
-      }
-    }
-
-    const skills = matchingFrontmatter.skills;
-    if (skills) {
-      metadata.skills = JSON.parse(String(skills));
-    }
+    this.mapOptionalStringFields(metadata, matchingFrontmatter);
+    this.mapModelIntentFields(metadata, matchingFrontmatter);
+    this.mapParsedArrayFields(metadata, matchingFrontmatter);
 
     if (planTokens) {
       Object.assign(metadata, planTokens);
@@ -164,6 +132,73 @@ export class RequestShowHandler extends BaseCommand {
     }
 
     return { matchingFile, matchingFrontmatter };
+  }
+
+  private mapOptionalStringFields(
+    metadata: IRequestShowResult["metadata"] & { agent: string },
+    frontmatter: Record<string, string | boolean | number>,
+  ): void {
+    type OptionalMetadataStringKey =
+      | "portal"
+      | "target_branch"
+      | "model"
+      | "model_size"
+      | "preferred_provider"
+      | "effort"
+      | "flow"
+      | "error"
+      | "rejected_path"
+      | "subject";
+
+    const optionalFields: Array<{
+      sourceKey: string;
+      targetKey: OptionalMetadataStringKey;
+    }> = [
+      { sourceKey: PORTAL_LABEL, targetKey: "portal" },
+      { sourceKey: "target_branch", targetKey: "target_branch" },
+      { sourceKey: "model", targetKey: "model" },
+      { sourceKey: "model_size", targetKey: "model_size" },
+      { sourceKey: "preferred_provider", targetKey: "preferred_provider" },
+      { sourceKey: "effort", targetKey: "effort" },
+      { sourceKey: RequestKind.FLOW, targetKey: "flow" },
+      { sourceKey: PlanStatus.ERROR, targetKey: "error" },
+      { sourceKey: "rejected_path", targetKey: "rejected_path" },
+      { sourceKey: "subject", targetKey: "subject" },
+    ];
+
+    for (const { sourceKey, targetKey } of optionalFields) {
+      const value = frontmatter[sourceKey];
+      if (value) {
+        (metadata as IRequestShowResult["metadata"] & Record<OptionalMetadataStringKey, string>)[targetKey] = String(
+          value,
+        );
+      }
+    }
+  }
+
+  private mapModelIntentFields(
+    metadata: IRequestShowResult["metadata"] & { agent: string },
+    frontmatter: Record<string, string | boolean | number>,
+  ): void {
+    const thinking = frontmatter.thinking;
+    if (thinking !== undefined) {
+      metadata.thinking = Boolean(thinking);
+    }
+
+    const characteristics = frontmatter.characteristics;
+    if (characteristics) {
+      metadata.characteristics = JSON.parse(String(characteristics));
+    }
+  }
+
+  private mapParsedArrayFields(
+    metadata: IRequestShowResult["metadata"] & { agent: string },
+    frontmatter: Record<string, string | boolean | number>,
+  ): void {
+    const skills = frontmatter.skills;
+    if (skills) {
+      metadata.skills = JSON.parse(String(skills));
+    }
   }
 
   private async findPlanTokenStats(requestId: string): Promise<Record<string, string> | null> {

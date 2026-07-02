@@ -51,6 +51,7 @@ Phase 1 — Baseline measurement
        deno task check:tool-result-parity                → tool manifest ↔ handler parity
        deno task check:skill-envelopes                   → exaix block validity in .copilot/skills/
        deno task check:manifests                         → step-manifest validity in phase plan docs
+       deno task check:hardcoded-models                  → hardcoded provider:model strings in TS + Blueprints
        deno task check:event-strings                     → inline event string literals
        deno task check:optional-params                   → optional parameter conventions
        deno task check:leak-guard                        → edition leak guard
@@ -150,6 +151,14 @@ Phase 14 — Step-manifest CI gate
      has a valid step-manifest fenced YAML block.
   30. Add missing or fix invalid manifests, re-run until 0 errors.
 
+Phase 14b — Hardcoded model strings
+
+  31. Run `deno task check:hardcoded-models` — scans non-test TS source and Blueprints `.md` files for
+      hardcoded `provider:model` strings outside the allowlist.
+  32. Fix violations by either adding the model to `HARDCODED_MODEL_ALLOWLIST` or replacing with a
+      `ModelResolver` call / config reference.
+  33. Re-run `deno task check:hardcoded-models` — must exit 0.
+
 Phase 15 — Event string hygiene
   31. Run `deno task check:event-strings` — verifies no inline event string literals exist.
   32. Extract any inline event strings into named constants, re-run until 0 violations.
@@ -206,6 +215,7 @@ Phase 21 — Final full-suite validation
          deno task check:tool-result-parity &&
          deno task check:skill-envelopes &&
          deno task check:manifests &&
+         deno task check:hardcoded-models &&
          deno task check:event-strings &&
          deno task check:optional-params &&
          deno task check:leak-guard &&

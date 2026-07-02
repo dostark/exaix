@@ -15,6 +15,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
+import { writeDaemonConfig } from "./helpers/daemon_config.ts";
 
 async function runScript(
   script: string,
@@ -37,55 +38,7 @@ async function runScript(
 
 /** A minimal dogfood config with an explicit allow_net allowlist. */
 function writeConfig(configPath: string, root: string): void {
-  const cfg = [
-    "[system]",
-    'version = "1.0.0"',
-    'log_level = "info"',
-    `root = "${root}"`,
-    'allow_net = ["api.anthropic.com"]',
-    "",
-    "[paths]",
-    'workspace = "./Workspace"',
-    'blueprints = "./Blueprints"',
-    'runtime = "./.exa"',
-    'memory = "./Memory"',
-    'portals = "./Portals"',
-    'active = "Active"',
-    'plans = "Plans"',
-    'requests = "Requests"',
-    "",
-    "[watcher]",
-    "debounce_ms = 100",
-    "stability_check = false",
-    "",
-    "[database]",
-    "batch_flush_ms = 50",
-    "batch_max_size = 100",
-    "",
-    "[database.sqlite]",
-    'journal_mode = "WAL"',
-    "foreign_keys = true",
-    "busy_timeout_ms = 5000",
-    "",
-    "[agents]",
-    'default_model = "default"',
-    "",
-    "[models.default]",
-    'provider = "mock"',
-    'model = "gpt-5.2-pro"',
-    "timeout_ms = 30000",
-    "",
-    "[quality_gate]",
-    "enabled = false",
-    "",
-    "[mcp]",
-    "enabled = false",
-    'transport = "stdio"',
-    'server_name = "exaix"',
-    'version = "1.0.0"',
-    "",
-  ].join("\n");
-  Deno.writeTextFileSync(configPath, cfg);
+  writeDaemonConfig(configPath, root, 'allow_net = ["api.anthropic.com"]');
 }
 
 Deno.test({

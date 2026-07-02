@@ -175,6 +175,7 @@ export class DefaultRoutingStrategy implements IProviderRoutingStrategy {
       maxCostUsd: strategy.max_daily_cost_usd,
       allowLocal: strategy.allow_local,
       requiredCapabilities: ["chat"],
+      rateLimitWeight: strategy.rate_limit_weight,
     };
   }
 

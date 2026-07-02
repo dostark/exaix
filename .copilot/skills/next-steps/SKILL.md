@@ -21,14 +21,15 @@ qwen_skill: next-steps
 ```text
 Key points
 - Work through .copilot/planning/phase-XX-*.md steps one-by-one
-- Each step follows strict RED → GREEN → REFACTOR cycle
-- After each step: mark success criteria ✅, run fast CI gates, commit
+- Each step follows strict RED → GREEN → VERIFY → REFACTOR → CI → DOC cycle
+- After each step: run the Success Criterion Verification Gate (step 14), mark success criteria ✅, run fast CI gates, commit
 - Never skip ahead — complete and commit each step before starting the next
 - If interrupted mid-step, re-read the RED/GREEN evidence in the chat to determine which phase you are in before proceeding
 - Use focused, file-scoped test commands by default; reserve full-suite commands for massive changes or explicit user requests
 - **All tests implemented in a step MUST be executed and pass before the step can be reported as completed.** This applies to unit tests, integration tests, and scenario/E2E tests alike. Scenario YAML or test files that have only been written (parsed, type-checked) but not run against a real environment do NOT count as passing tests. A step that introduces tests cannot claim completion until those tests are run and green.
 - When reading plan references across more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue
 - **Reachability ledger (lives IN THE PLANNING DOC)**: a step that adds a symbol with NO production importer appends a row to a **Reachability Ledger** table kept in the planning doc itself — not just chat/commit, so the debt survives context compaction and is visible to anyone reading the plan. Each later step that wires an item closes its row in the same commit. The PHASE cannot be marked complete while any row is still ⏳ — see VERIFY step 11, the ledger template (step 24a), and the Phase-completion gate. A green package-unit test proves correctness, NOT that production calls the code; the test is the only caller.
+- **Success criteria are NOT the same as tests.** A passing test proves a function works correctly in isolation. A success criterion proves a system behaviour is observable at the right level. Every criterion must be verified independently — do not assume a green test suite means all criteria are met.
 
 Canonical prompt (short):
 "Continue with implementation of next steps one-by-one in TDD red-green-refactor
@@ -51,6 +52,17 @@ RED phase
    1. Restate the step context: read the step's "Architecture notes", "Success criteria",
       and "Planned tests" from the .copilot/planning/ doc. Briefly confirm what will be
       built (e.g. "Implementing Step 3.2: Add user authentication validation").
+   1a. **Verify previous step's completion before starting this one.** Do NOT trust
+       the planning doc's status markers alone — re-read the previous step's "Success
+       criteria" block and confirm every criterion is either:
+       - marked ✅ in the doc AND verifiable by a passing test or production-code grep
+         (re-run the test if needed — do not assume it still passes after subsequent changes),
+         OR
+       - explicitly acknowledged as a known gap (e.g. tracked in a Post-Implementation
+         Gap Register with ⏳ status).
+       If a previous-step criterion is marked ✅ but cannot be demonstrated, stop, flag
+       it, and do not proceed. A gap in a previous step inevitably contaminates every
+       step built on top of it.
    2. Cross-reference against pre-gap analysis: if the plan document has a
       Pre-Gap Analysis section with findings for this step number, read each relevant
       gap entry and confirm the step's Planned Tests and Architecture Notes address
@@ -122,20 +134,41 @@ SECURITY gate (apply when the step touches portal code or any of: input parsing,
        (tagged [security]).
   13c. Run deno task test:security if any security-relevant file was touched.
 
+SUCCESS CRITERION VERIFICATION GATE — mandatory, IMMEDIATELY before the Planning doc update section
+  14. **Read this step's full "Success criteria" block from the planning doc.**
+      For each criterion, do ONE of the following:
+      - **Point to a passing test that directly asserts the behaviour** — include the test
+        name and file path. The test must go beyond type-checking and actually exercise
+        the runtime behaviour the criterion describes.
+      - **Demonstrate the behaviour with a grep/rg of production code** — show the exact
+        line(s) where the behaviour is implemented. This is acceptable only when no
+        dedicated test exists AND the behaviour is trivially visible from reading the
+        source (e.g. "model_size:"L" resolved to matching profile" → grep for the call
+        to `resolvePresetFromSize` inside `resolve`).
+      - **Flag as NOT MET if neither applies.** A criterion with no passing test AND no
+        direct production-code evidence is a blocking gap — the step cannot be committed.
+        Do not mark it as met. Pause and surface the gap to the user.
+   14a. **Close the loop: re-read the Success criteria AFTER implementation** — do not
+        rely on your pre-implementation reading of them. The gap between "what I planned
+        to build" and "what I actually built" is invisible until you re-read the criteria
+        with the finished code in front of you. Copy each criterion into a comment or
+        scratch buffer and annotate it with your evidence (test path:line or source path:line)
+        before moving on. If you cannot annotate all criteria, the step is not done.
+
 REFACTOR + CI gates
-  14. deno lint <src-file> <test-file>
-  15. deno check <src-file>
-  16. deno task check:style   → fix any errors (interface naming I*, no magic unions)
-  17. deno task check:arch    → all files must be GROUNDED, 0 UNGROUNDED
-  18. deno fmt <src-file> <test-file>  (run before commit, not after)
-  19. deno task check:magic   → if new string/number literals were added, reduce violations
+  15. deno lint <src-file> <test-file>
+  16. deno check <src-file>
+  17. deno task check:style   → fix any errors (interface naming I*, no magic unions)
+  18. deno task check:arch    → all files must be GROUNDED, 0 UNGROUNDED
+  19. deno fmt <src-file> <test-file>  (run before commit, not after)
+  20. deno task check:magic   → if new string/number literals were added, reduce violations
       (use #refactor-check-magic if the count is non-trivial)
-  20. (optional) deno task check:complexity  if implementation is non-trivial
+  21. (optional) deno task check:complexity  if implementation is non-trivial
       (complexity threshold: 15 — refactor any function breaching it)
-  21. (exception only) See Validation policy above for when a full-suite command is warranted.
+  22. (exception only) See Validation policy above for when a full-suite command is warranted.
 
 Planning doc update
-   21a. **Run every test the step implements.** Before marking any success criterion or
+   22a. **Run every test the step implements.** Before marking any success criterion or
         planned test as completed, execute every test file written or modified in this
         step and verify it passes. For unit tests: `deno test --allow-all <file>`.
         For scenario/E2E YAML tests: run the scenario against a real environment
@@ -146,9 +179,10 @@ Planning doc update
         keys, missing binary, no daemon), the success criteria that depend on that test
         remain `[ ]` and the step status must reflect the gap — do NOT mark criteria as
         completed based on source-level validation alone.
-   22. In the step's "Success criteria" block change `- [ ]` → `- [x]` for each
-       criterion now met (only after ALL its tests have been run and pass).
-   23. Change each planned-test bullet `- \`...\`` → `- ✅ \`...\`` (only after the
+   23. In the step's "Success criteria" block change `- [ ]` → `- [x]` for each
+       criterion now met (only after ALL its tests have been run and pass AND the
+       Success Criterion Verification Gate (step 14) has been passed for that criterion).
+   24. Change each planned-test bullet `- \`...\`` → `- ✅ \`...\`` (only after the
        test has been executed and passes).
   24. Add a status line immediately after the test list, using the marker that
       reflects REACHABILITY (not merely "I wrote the code"):
@@ -229,12 +263,14 @@ Do / Don't
 - ✅ Do verify field values are correct given the component's dependencies, not just present (step 10)
 - ✅ Do verify new services and classes are wired into production code, not just tests (step 11)
 - ✅ Do treat "no production importer" as a blocking debt on the pending-consumer ledger — never as "done" (step 11)
+- ✅ Do run the Success Criterion Verification Gate (step 14) AFTER implementation, not just before — re-read the criteria with finished code in front of you
 - ✅ Do keep the Reachability Ledger current IN THE PLANNING DOC every step — append a ⏳ row when a symbol is production-dead, flip it to ✅ when wired, stage the doc edit in that step's commit (step 24a)
 - ✅ Do run the Phase-completion gate (integration-surface audit) before declaring the phase complete — production-dead runtime code blocks closure (G1–G4)
 - ✅ Do mark runtime steps **✅ WIRED** only when a production caller exists; use **✅ CORE** (naming the wiring step) otherwise (step 24)
 - ✅ Do trace new output fields to their consumers — dead fields with no readers are gaps (step 12)
 - ✅ Do check new code against existing module conventions — inconsistency within a file is a gap (step 12)
 - ✅ Do cross-reference the step's tests against pre-gap analysis findings for the same step number (step 2)
+- ✅ Do verify the previous step's success criteria before starting the current step — re-run its tests if needed; a gap in the foundation contaminates everything built on it (step 1a)
 - ✅ Do document any edge cases handled and any deviations from the plan in the commit body
 - ❌ Don't implement source code before writing the failing test
 - ❌ Don't batch multiple steps into one commit
@@ -246,6 +282,8 @@ Do / Don't
 - ❌ Don't put a bare "✅ IMPLEMENTED" on a runtime-claiming step — it is ✅ WIRED or it is not done
 - ❌ Don't mark a planned test as completed (`✅ \`...\``) if the test has only been written and type-checked but not executed against a live runtime — unit tests must be `deno test`-ed, scenario/E2E YAML must be run against a real daemon environment
 - ❌ Don't close the gap on a success criterion whose only validating test is an E2E/scenario test that was structurally parsed but never run — document the untested criterion as `[ ]` with a note about the required environment
+- ❌ Don't assume a green test suite means all success criteria are met — a passing test proves function-level correctness, not system-level behaviour. Run step 14 (Success Criterion Verification Gate) explicitly before marking any criterion as met.
+- ❌ Don't start implementing the current step without verifying the previous step's criteria — a gap in the foundation will silently propagate and compound (step 1a)
 - ❌ Don't commit without running deno fmt first
 - ❌ Don't run full-suite commands for a narrow step — see Validation policy above
 

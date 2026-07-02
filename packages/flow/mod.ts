@@ -33,6 +33,7 @@ export type { IStepReplayPolicy } from "./src/contracts/step_durability.ts";
 export { DefaultStepReplayPolicy } from "./src/contracts/step_durability.ts";
 
 export * from "./src/wait_states/mod.ts";
+export { mapPresetToSize } from "./src/preset_mapper.ts";
 export { FlowCheckpointService } from "./src/checkpoint_service.ts";
 export { FlowNamespaceService, NamespaceQuotaExceededError } from "./src/namespace_service.ts";
 export { FlowReporter } from "./src/reporter.ts";

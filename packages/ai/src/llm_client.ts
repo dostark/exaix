@@ -6,12 +6,13 @@
  * @related-files [packages/flow/src/dynamic_step_executor.ts, packages/ai/src/providers.ts]
  */
 import type { ILlmClient, ToolArgs } from "./types.ts";
-import type { IBlueprintFrontmatter } from "@exaix/schemas";
+import type { IBlueprintFrontmatter, IModelCallOptions } from "@exaix/schemas";
 import { type Config, ConfigSchema } from "@exaix/schemas";
 
 import { McpToolName, ReActActionType } from "@exaix/core";
 import { ProviderFactory } from "./provider_factory.ts";
 import type { IModelProvider } from "./types.ts";
+import type { ModelResolver } from "./model_resolver.ts";
 
 import { z } from "zod";
 import type { JSONValue } from "@exaix/core";
@@ -72,6 +73,7 @@ export class LlmClient implements ILlmClient {
     private readonly config?: Config,
     private readonly testProvider?: IModelProvider,
     private readonly defaultModel: string = "default",
+    private readonly resolver?: ModelResolver,
   ) {}
 
   /**
@@ -102,23 +104,16 @@ export class LlmClient implements ILlmClient {
   private async resolveProvider(
     model?: Opt<string, Reason.AbstractBoundary>,
   ): Promise<IModelProvider> {
-    const overrides = LlmClient.parseModelString(model);
-
-    // Scoped env var override so blueprint model takes priority
-    const oldProvider = Deno.env.get("EXA_LLM_PROVIDER");
-    const oldModel = Deno.env.get("EXA_LLM_MODEL");
-    if (overrides.provider) Deno.env.set("EXA_LLM_PROVIDER", overrides.provider);
-    if (overrides.model) Deno.env.set("EXA_LLM_MODEL", overrides.model);
-
-    try {
-      const config = this.config ?? ConfigSchema.parse({});
-      return await ProviderFactory.createByName(config, this.defaultModel);
-    } finally {
-      if (oldProvider !== undefined) Deno.env.set("EXA_LLM_PROVIDER", oldProvider);
-      else Deno.env.delete("EXA_LLM_PROVIDER");
-      if (oldModel !== undefined) Deno.env.set("EXA_LLM_MODEL", oldModel);
-      else Deno.env.delete("EXA_LLM_MODEL");
+    // When resolver is available, use it directly — no env var mutation needed
+    if (this.resolver && model) {
+      const resolved = await this.resolver.resolve({ model });
+      return ProviderFactory.createByName(this.config ?? ConfigSchema.parse({}), resolved.model);
     }
+    // Fallback: direct factory call (backward compat)
+    const overrides = LlmClient.parseModelString(model);
+    const config = this.config ?? ConfigSchema.parse({});
+    const effectiveModel = overrides.model || this.defaultModel;
+    return await ProviderFactory.createByName(config, effectiveModel);
   }
 
   async reasonNextAction(params: {
@@ -132,13 +127,14 @@ export class LlmClient implements ILlmClient {
     }>;
     iteration: number;
     maxIterations: number;
+    options?: IModelCallOptions;
   }): Promise<{
     done: boolean;
     tool?: McpToolName;
     args?: ToolArgs;
     output?: string;
   }> {
-    const { identity, stepObjective, accumulatedContext, availableTools, iteration, maxIterations } = params;
+    const { identity, stepObjective, accumulatedContext, availableTools, iteration, maxIterations, options } = params;
 
     const provider = this.testProvider ?? await this.resolveProvider(identity.model);
 
@@ -157,7 +153,7 @@ export class LlmClient implements ILlmClient {
       .replace("{iteration}", iteration.toString())
       .replace("{max_iterations}", maxIterations.toString());
 
-    const result = await provider.generate(prompt);
+    const result = await provider.generate(prompt, options);
     const responseStr = result.content;
 
     // Attempt multiple parsing strategies

@@ -28,6 +28,14 @@ const AGENT_NAME_TOML = "TOML Format Agent";
 
 const AGENT_ID_SHOW = "show-yaml-test";
 const AGENT_NAME_SHOW = "Show YAML Test";
+
+function createBlueprintCommands(tempDir: string): { commands: BlueprintCommands; config: Config } {
+  const config = createTestConfig(tempDir);
+  const commands = new BlueprintCommands(
+    createStubContext({ config: createStubConfig(config), db: stubDb }),
+  );
+  return { commands, config };
+}
 const AGENT_MODEL_OLLAMA = "ollama:llama3.2";
 const AGENT_CAP_CODE = "code_generation";
 
@@ -85,10 +93,7 @@ This agent uses YAML frontmatter format.
 `;
     await Deno.writeTextFile(join(blueprintsDir, `${AGENT_ID_YAML}.md`), yamlBlueprint);
 
-    const config = createTestConfig(tempDir);
-    const blueprintCommands = new BlueprintCommands(
-      createStubContext({ config: createStubConfig(config), db: stubDb }),
-    );
+    const { commands: blueprintCommands } = createBlueprintCommands(tempDir);
 
     // List should find the YAML-format blueprint
     const blueprints = await blueprintCommands.list();
@@ -126,10 +131,7 @@ description = "Agent with TOML frontmatter"
 This agent uses TOML frontmatter format.
 `;
     await Deno.writeTextFile(join(blueprintsDir, `${AGENT_ID_TOML}.md`), tomlBlueprint);
-    const config = createTestConfig(tempDir);
-    const blueprintCommands = new BlueprintCommands(
-      createStubContext({ config: createStubConfig(config), db: stubDb }),
-    );
+    const { commands: blueprintCommands } = createBlueprintCommands(tempDir);
 
     // List should find the TOML-format blueprint
     const blueprints = await blueprintCommands.list();

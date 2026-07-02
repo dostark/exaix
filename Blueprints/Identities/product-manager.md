@@ -1,7 +1,9 @@
 ---
 identity_id: "product-manager"
 name: "Product Manager"
-model: "google:gemini-2.0-flash-exp"
+model: ""
+model_size: S
+characteristics: [fastest]
 capabilities: ["planning", "requirements_analysis"]
 created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"

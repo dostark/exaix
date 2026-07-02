@@ -17,6 +17,8 @@ import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { ModelResolver } from "@exaix/ai";
+import type { IModelCallOptions, ModelIntent } from "@exaix/schemas";
 import type { ITokenizer } from "@exaix/core/func";
 import { SafeError } from "@exaix/core/errors";
 import { ProviderFactory } from "@exaix/ai/provider_factory.ts";
@@ -94,6 +96,17 @@ export interface IPromptBudgetAllocator {
   allocate(modelId: string, hints?: object, analysis?: IRequestAnalysis): Promise<IPromptBudget>;
 }
 
+/** All model-related fields from blueprint YAML frontmatter. */
+interface BlueprintInput {
+  model: string;
+  provider?: string;
+  model_size?: ModelIntent["model_size"];
+  characteristics?: string[];
+  preferred_provider?: string;
+  thinking?: boolean;
+  effort?: ModelIntent["effort"];
+}
+
 /**
  * Agent blueprint loaded from file
  */
@@ -145,6 +158,8 @@ const BlueprintSchema = z.object({
 /** Optional configuration for AgentExecutor. */
 export interface IAgentExecutorOptions {
   guardrailRunner?: IGuardrailRunner;
+  /** Request-level ModelIntent fields override blueprint values (Phase 132). */
+  requestIntent?: Partial<ModelIntent>;
 }
 
 /**
@@ -161,6 +176,9 @@ export class AgentExecutor {
   private _snapshotStore?: ISnapshotStore;
 
   private readonly _tokenizer?: ITokenizer;
+
+  /** Resolved per-call options from ModelResolver, forwarded to generate(). */
+  private _resolvedCallOptions?: IModelCallOptions;
 
   /** Exposes current prompt budget to IReActLoopExecutor (Phase 83). */
   public get currentPromptBudget(): IPromptBudget | undefined {
@@ -206,7 +224,8 @@ export class AgentExecutor {
     contextBudgetManager?: IContextBudgetManager,
     snapshotStore?: ISnapshotStore,
     private _guardrailRunner?: IGuardrailRunner,
-    options?: IAgentExecutorOptions,
+    private readonly options?: IAgentExecutorOptions,
+    private modelResolver?: ModelResolver,
   ) {
     this.promptBudgetAllocator = promptBudgetAllocator ??
       new PromptBudgetAllocator(this.config.budget_enforcement, undefined, this.logger);
@@ -289,9 +308,8 @@ export class AgentExecutor {
         }
       }
       if (summarizationProvider) {
-        const result = await summarizationProvider.generate(summaryPrompt, {
-          max_tokens: COMPACT_SUMMARY_MAX_TOKENS,
-        });
+        const genOptions = { max_tokens: COMPACT_SUMMARY_MAX_TOKENS, ...this._resolvedCallOptions };
+        const result = await summarizationProvider.generate(summaryPrompt, genOptions);
         summary = result.content.trim();
       }
     } catch {
@@ -518,20 +536,8 @@ export class AgentExecutor {
 
       const sanitizedPrompt = AgentExecutor.sanitizePrompt(systemPrompt);
 
-      // 6. Handle model/provider splitting if using canonical format (provider:model)
-      let model = validatedFrontmatter.model;
-      let provider = validatedFrontmatter.provider;
-
-      if (!provider && model.includes(":")) {
-        const parts = model.split(":");
-        provider = parts[0];
-        model = parts.slice(1).join(":"); // Handle gpt-4:2024-08-06
-      }
-
-      // Final fallback for required fields
-      if (!provider) {
-        provider = DEFAULT_MCP_IDENTITY_ID;
-      }
+      // 6. Resolve model via ModelResolver or fall back to inline split
+      const { model, provider } = await this.resolveModelFromBlueprint(validatedFrontmatter);
 
       // 7. Return validated blueprint
       return {
@@ -591,6 +597,43 @@ export class AgentExecutor {
         this.logger,
       );
     }
+  }
+
+  private async resolveModelFromBlueprint(
+    validatedFrontmatter: z.infer<typeof BlueprintSchema>,
+  ): Promise<{ model: string; provider: string }> {
+    let model = validatedFrontmatter.model;
+    let provider = validatedFrontmatter.provider;
+    this._resolvedCallOptions = undefined;
+
+    if (this.modelResolver) {
+      const extras = validatedFrontmatter as BlueprintInput;
+      const requestIntent = this.options?.requestIntent;
+      const intent: ModelIntent = {
+        model: validatedFrontmatter.model,
+        model_size: extras.model_size ?? requestIntent?.model_size,
+        characteristics: extras.characteristics ?? requestIntent?.characteristics,
+        preferred_provider: extras.preferred_provider ?? requestIntent?.preferred_provider,
+        thinking: extras.thinking ?? requestIntent?.thinking,
+        effort: extras.effort ?? requestIntent?.effort,
+      };
+      const resolved = await this.modelResolver.resolve(intent);
+      provider = resolved.provider;
+      model = resolved.model;
+      if (resolved.options) {
+        this._resolvedCallOptions = resolved.options as IModelCallOptions;
+      }
+    } else if (!provider) {
+      const colonIdx = model.indexOf(":");
+      if (colonIdx !== -1) {
+        provider = model.substring(0, colonIdx);
+        model = model.substring(colonIdx + 1);
+      }
+    }
+    if (!provider) {
+      provider = DEFAULT_MCP_IDENTITY_ID;
+    }
+    return { model, provider };
   }
 
   private resolveBlueprintPath(agentName: string): string {
@@ -682,6 +725,10 @@ export class AgentExecutor {
 
     try {
       const strategy = this.strategyRegistry!.resolve(strategyName);
+      // Forward resolved per-call options (thinking/effort) to the strategy
+      if (this._resolvedCallOptions && "callOptions" in strategy) {
+        (strategy as { callOptions?: IModelCallOptions }).callOptions = this._resolvedCallOptions;
+      }
       const validated = await strategy.execute(_blueprint, context, options);
 
       // Prioritize real usage from strategy if available, fallback to estimate

@@ -530,6 +530,32 @@ All five mechanisms can be combined for dual-mode operation:
 
 For env var reference, see `packages/flow/README.md#session-tool-integration` and `docs/Reference_Data.md#environment-variables`.
 
+#### 6. ModelResolver — Policy-driven Model Resolution
+
+**File:** `packages/ai/src/model_resolver.ts` (line 56)
+
+Accepts a `ModelIntent` and returns an `IResolvedModel` (provider + model + per-call options). Resolution follows a strict precedence chain:
+
+```text
+ModelIntent ──→ tryResolveOverride (EXA_MODEL_PRESET_OVERRIDE env var)
+             └─→ tryResolveExplicit  (model: "provider:model" string)
+                └─→ tryResolveFromPreset (model_size → preset profile)
+                   └─→ fallback iteration (intent.fallbacks[])
+                         for each attempt:
+                           IProviderRoutingStrategy.selectProvider()
+                           → ProviderRegistry metadata → selectModelForProvider
+                           → thinking constraint re-resolution
+                           → context-window overflow detection & model-size bump
+```
+
+**Dependencies:** delegates provider selection to `IProviderRoutingStrategy` (`packages/ai/src/routing/provider_routing_strategy.ts`); resolves model names within each provider via `ProviderRegistry` metadata.
+
+**Trace events:** every `resolve()` call emits a `model.resolved` (`DomainEventType.ModelResolved`) journal event with the intent, candidates, scores, selection, reason, attempt count, and duration.
+
+**Testing determinism:** `EXA_MODEL_PRESET_OVERRIDE` env var pins all model sizes to `mock:mock-model` for any registered preset name (e.g., `test`), enabling hermetic CI tests.
+
+**CLI integration:** `--model-size <S|M|L|XL>`, `--thinking`, and `--effort <low|medium|high>` flags feed directly into the `ModelIntent` fields (`model_size`, `thinking`, `effort`) in `apps/exactl/src/exactl.ts:366-369` and are serialized into request frontmatter by `request_create_handler.ts:133`.
+
 ---
 
 ## Agent Orchestration Architecture

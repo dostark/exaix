@@ -12,59 +12,10 @@
 
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
+import { writeDaemonConfig } from "./helpers/daemon_config.ts";
 
 function writeConfig(configPath: string, root: string, allowNetLine: string): void {
-  Deno.writeTextFileSync(
-    configPath,
-    [
-      "[system]",
-      'version = "1.0.0"',
-      'log_level = "info"',
-      `root = "${root}"`,
-      allowNetLine,
-      "",
-      "[paths]",
-      'workspace = "./Workspace"',
-      'blueprints = "./Blueprints"',
-      'runtime = "./.exa"',
-      'memory = "./Memory"',
-      'portals = "./Portals"',
-      'active = "Active"',
-      'plans = "Plans"',
-      'requests = "Requests"',
-      "",
-      "[watcher]",
-      "debounce_ms = 100",
-      "stability_check = false",
-      "",
-      "[database]",
-      "batch_flush_ms = 50",
-      "batch_max_size = 100",
-      "",
-      "[database.sqlite]",
-      'journal_mode = "WAL"',
-      "foreign_keys = true",
-      "busy_timeout_ms = 5000",
-      "",
-      "[agents]",
-      'default_model = "default"',
-      "",
-      "[models.default]",
-      'provider = "mock"',
-      'model = "gpt-5.2-pro"',
-      "timeout_ms = 30000",
-      "",
-      "[quality_gate]",
-      "enabled = false",
-      "",
-      "[mcp]",
-      "enabled = false",
-      'transport = "stdio"',
-      'server_name = "exaix"',
-      'version = "1.0.0"',
-      "",
-    ].join("\n"),
-  );
+  writeDaemonConfig(configPath, root, allowNetLine);
 }
 
 /** Run apps/daemon/main.ts directly with the given net flag; return exit + stderr. */

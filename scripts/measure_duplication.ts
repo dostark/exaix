@@ -123,21 +123,21 @@ async function runDuplicationCheck() {
     ["packages/", "apps/"],
     SOURCE_THRESHOLD,
     ".duplication_report_src",
-    ["**/*.d.ts", "**/tests/**"],
+    ["**/*.d.ts", "**/*.md", "**/tests/**"],
   );
   const testsTotals = await runJscpdScan(
     "Tests",
     ["tests/"],
     TEST_THRESHOLD,
     ".duplication_report_tests",
-    ["**/*.d.ts", "tests/integration/**", "tests/scenario_framework/**"],
+    ["**/*.d.ts", "**/*.md", "tests/integration/**", "tests/scenario_framework/**"],
   );
   const integrationTestsTotals = await runJscpdScan(
     "Integration Tests",
     ["tests/integration", "tests/scenario_framework"],
     INTEGRATION_TEST_THRESHOLD,
     ".duplication_report_integration_tests",
-    ["**/*.d.ts", "**/*.yaml", "**/*.yml"],
+    ["**/*.d.ts", "**/*.md", "**/*.yaml", "**/*.yml"],
   );
 
   const sourcePassed = logTotals("Source", sourceTotals, SOURCE_THRESHOLD);

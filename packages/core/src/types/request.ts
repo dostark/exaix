@@ -46,6 +46,16 @@ export interface IRequestOptions {
   portal?: string;
   target_branch?: string;
   model?: string;
+  /** Model size intent: S|M|L|XL (Phase 132) */
+  model_size?: string;
+  /** Provider preference hint (Phase 132) */
+  preferred_provider?: string;
+  /** Enable extended thinking (Phase 132) */
+  thinking?: boolean;
+  /** Reasoning effort tier: low|medium|high (Phase 132) */
+  effort?: string;
+  /** Soft hints: cheapest|fastest, repeatable (Phase 132) */
+  characteristics?: string[];
   flow?: string;
   skills?: string[];
   skipSkills?: string[];
@@ -75,6 +85,16 @@ export interface IRequestMetadata {
   portal?: string;
   target_branch?: string;
   model?: string;
+  /** Model size intent: S|M|L|XL (Phase 132) */
+  model_size?: string;
+  /** Provider preference hint (Phase 132) */
+  preferred_provider?: string;
+  /** Enable extended thinking (Phase 132) */
+  thinking?: boolean;
+  /** Reasoning effort tier: low|medium|high (Phase 132) */
+  effort?: string;
+  /** Soft hints: cheapest|fastest, repeatable (Phase 132) */
+  characteristics?: string[];
   flow?: string;
   skills?: string[] | IRequestSkills;
   input_tokens?: string;

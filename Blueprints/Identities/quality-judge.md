@@ -1,7 +1,10 @@
 ---
 identity_id: "quality-judge"
 name: "Quality Judge"
-model: "google:gemini-2.0-flash-exp"
+model: ""
+model_size: L
+thinking: true
+effort: high
 capabilities: ["evaluation", "quality_assessment", "structured_output", "code_review"]
 created: "2026-01-04T10:00:00Z"
 created_by: "exaix-system"
