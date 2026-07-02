@@ -1,7 +1,8 @@
 ---
 identity_id: "technical-writer"
 name: "Technical Writer"
-model: "google:gemini-2.0-flash-exp"
+model: ""
+model_size: S
 capabilities: ["documentation", "technical_writing"]
 created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"

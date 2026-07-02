@@ -436,6 +436,8 @@ export const HARDCODED_MODEL_ALLOWLIST = [
   // packages/core/src/types/constants.ts — MODEL_PRICING_MAP keys (same models)
   // apps/exactl/src/init.ts — mock test default
   "mock:test",
+  // Blueprints/Identities/mock-agent.md — deliberate test identity model
+  "mock:test-model",
 ] as const;
 
 // Tokenizer backend modes

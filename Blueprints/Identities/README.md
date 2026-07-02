@@ -19,7 +19,12 @@ describes _who_ the agent is; a skill describes _how_ it works.
 ---
 identity_id: "my-identity"
 name: "My Identity"
-model: "google:gemini-2.0-flash-exp"
+model: ""             # deprecated — use model_size + characteristics instead
+model_size: "M"       # S, M, L, XL — maps to capability profile via ModelResolver
+thinking: true         # enable extended reasoning
+effort: "high"         # reasoning token budget (low, medium, high)
+characteristics: []    # ["fastest", "cheapest"] — soft ranking hints
+preferred_provider: "" # narrow candidate pool to a specific provider
 capabilities: ["analysis", "review"] # behavioural tags, NOT tool names
 default_skills: ["response-contract", "code-review", "portal-grounding"]
 permitted_tools: ["read_file", "grep_search"] # least-privilege tool allowlist

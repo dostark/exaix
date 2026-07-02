@@ -2,8 +2,9 @@
 /**
  * @module CheckHardcodedModels
  * @path scripts/check_hardcoded_models.ts
- * @description Scans non-test TS source for hardcoded provider:model strings not
- *   in the HARDCODED_MODEL_ALLOWLIST. Exits 0 if clean, 1 if violations found.
+ * @description Scans non-test TS source and Blueprint .md files for hardcoded
+ *   provider:model strings not in HARDCODED_MODEL_ALLOWLIST. Exits 0 if clean,
+ *   1 if violations found.
  * @related-files [packages/core/src/types/constants.ts, tests/scripts/check_hardcoded_models_test.ts]
  * @dependencies [@std/fs, @exaix/core]
  *
@@ -89,8 +90,8 @@ export function findModelViolations(
 }
 
 /**
- * Walk packages/, apps/, and packages-team/ directories and scan every non-test
- * TS file for hardcoded model violations.
+ * Walk packages/, apps/, packages-team/, and Blueprints/ directories and scan
+ * TS source files + Blueprint .md files for hardcoded model violations.
  */
 export async function checkAllFiles(
   allowlistArg?: Set<string>,
@@ -118,6 +119,20 @@ export async function checkAllFiles(
       const violations = findModelViolations(content, fp, list);
       allViolations.push(...violations);
     }
+  }
+
+  // Scan Blueprints/ for .md files
+  try {
+    await Deno.stat("Blueprints");
+    for await (const _entry of walk("Blueprints", { exts: [".md"], followSymlinks: false })) {
+      const fp = relative(".", entry.path);
+      const content = await Deno.readTextFile(entry.path);
+      scannedFiles.push(1);
+      const violations = findModelViolations(content, fp, list);
+      allViolations.push(...violations);
+    }
+  } catch {
+    // Blueprints/ doesn't exist
   }
 
   return allViolations;
@@ -154,6 +169,14 @@ async function countFiles(): Promise<number> {
     } catch {
       // dir doesn't exist
     }
+  }
+  try {
+    await Deno.stat("Blueprints");
+    for await (const _entry of walk("Blueprints", { exts: [".md"], followSymlinks: false })) {
+      count++;
+    }
+  } catch {
+    // Blueprints/ doesn't exist
   }
   return count;
 }
