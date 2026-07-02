@@ -23,7 +23,7 @@ import type {
   ModelSize,
 } from "@exaix/schemas";
 import { DEFAULT_MODEL_PRESETS, getDefaultModels } from "@exaix/schemas";
-import { MODEL_CONTEXT_WINDOWS } from "@exaix/schemas/constants.ts";
+import { MODEL_CONTEXT_WINDOWS } from "@exaix/core/types";
 import { isRetryable } from "./providers/common.ts";
 import type { IProviderHealthChecker, ISelectionCriteria } from "./provider_selector.ts";
 import type { IProviderMetadata } from "./provider_registry.ts";

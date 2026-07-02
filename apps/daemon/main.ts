@@ -94,6 +94,10 @@ import type { TeamComposer } from "@exaix-team/team-composer";
 import type { GuardrailRunner } from "@exaix-team/guardrail";
 import type { HitlPolicyEvaluator } from "@exaix-team/hitl";
 
+/** LRU cache for traceId → resolved model string (PG-6 remediation). */
+const traceModelCache = new Map<string, string>();
+const TRACE_CACHE_MAX = 100;
+
 /**
  * Read a request file, parse its frontmatter, build a ModelIntent from any CLI
  * flags present (model_size, thinking, effort, etc.), and resolve through
@@ -127,12 +131,16 @@ async function resolveRequestModel(
 
 /**
  * Find a request file by traceId and resolve its model.
+ * Uses an in-memory LRU cache to avoid repeated filesystem scans (PG-6).
  */
 async function resolveModelFromTrace(
   traceId: string,
   requestsDir: string,
   resolver: ModelResolver,
 ): Promise<string | undefined> {
+  const cached = traceModelCache.get(traceId);
+  if (cached) return cached;
+
   try {
     for await (const entry of Deno.readDir(requestsDir)) {
       if (!entry.name.endsWith(".md")) continue;
@@ -141,7 +149,15 @@ async function resolveModelFromTrace(
       if (!yamlMatch) continue;
       const fm = parseYaml(yamlMatch[1]) as Record<string, JSONValue>;
       if (fm.trace_id === traceId) {
-        return resolveRequestModel(join(requestsDir, entry.name), resolver);
+        const result = await resolveRequestModel(join(requestsDir, entry.name), resolver);
+        if (result) {
+          if (traceModelCache.size >= TRACE_CACHE_MAX) {
+            const firstKey = traceModelCache.keys().next().value;
+            if (firstKey) traceModelCache.delete(firstKey);
+          }
+          traceModelCache.set(traceId, result);
+        }
+        return result;
       }
     }
   } catch {

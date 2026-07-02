@@ -68,13 +68,6 @@ export const DEFAULT_KNOWLEDGE_STALENESS_HOURS = 168;
 export const DEFAULT_PORTAL_KNOWLEDGE_MODE = "quick";
 
 export const TOKEN_ESTIMATION_CHARS_PER_TOKEN = 4;
-export const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
-  "openai:gpt-4o-mini": 128_000,
-  "openai:gpt-4o": 128_000,
-  "anthropic:claude-3-5-sonnet": 200_000,
-  "anthropic:claude-3-7-sonnet": 200_000,
-  "google:gemini-2.5-flash": 1_000_000,
-};
 export const LOCAL_PROVIDER_PREFIXES = ["ollama:", "lmstudio:", "local:"] as const;
 export const LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK = 32_768;
 export const MODEL_PRICING_MAP: Record<string, number> = {
