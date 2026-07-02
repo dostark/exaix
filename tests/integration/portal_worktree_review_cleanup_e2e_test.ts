@@ -19,23 +19,7 @@ import {
   setupWorktreePortalRepo,
   withSingleWorktreePortal,
 } from "../helpers/portal_test_utils.ts";
-
-const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";
-
-function parallelSafeTest(
-  nameOrDef: string | Deno.TestDefinition,
-  fn?: () => Promise<void> | void,
-): void {
-  if (typeof nameOrDef === "string") {
-    Deno.test({ name: nameOrDef, ignore: skipInParallel, fn: fn! });
-    return;
-  }
-
-  Deno.test({
-    ...nameOrDef,
-    ignore: skipInParallel || !!nameOrDef.ignore,
-  });
-}
+import { parallelSafeTest } from "./helpers/parallel_safe_test.ts";
 
 async function ensurePortalSymlink(portalsDir: string, alias: string, targetPath: string): Promise<void> {
   await ensureDir(portalsDir);

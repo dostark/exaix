@@ -29,23 +29,7 @@ import {
 import type { setupGitRepo as _setupGitRepo } from "@exaix/git/testing";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { readFixtureTextSync } from "@exaix/testing";
-
-const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";
-
-function parallelSafeTest(
-  nameOrDef: string | Deno.TestDefinition,
-  fn?: () => Promise<void> | void,
-): void {
-  if (typeof nameOrDef === "string") {
-    Deno.test({ name: nameOrDef, ignore: skipInParallel, fn: fn! });
-    return;
-  }
-
-  Deno.test({
-    ...nameOrDef,
-    ignore: skipInParallel || !!nameOrDef.ignore,
-  });
-}
+import { parallelSafeTest } from "./helpers/parallel_safe_test.ts";
 
 interface IPortalWorkflowTestContext {
   env: TestEnvironment;

@@ -178,22 +178,26 @@ Deno.test({
 
 const SKILL_MD_DIR = join(REPO_ROOT, "Blueprints", "Skills");
 
+/** Collect default_skills from all loadable identity blueprints. */
+async function collectReferencedSkills(): Promise<Set<string>> {
+  const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const results = await tryLoadAll(loader);
+  const allReferenced = new Set<string>();
+  for (const { identityId, blueprint } of results) {
+    if (PRE_EXISTING_SCHEMA_ISSUES.has(identityId)) continue;
+    if (!blueprint) continue;
+    const skills = blueprint.frontmatter.default_skills ?? [];
+    for (const s of skills) allReferenced.add(s);
+  }
+  return allReferenced;
+}
+
 Deno.test({
   name: "[step7] referenced skills in default_skills (from loadable identities) have .skill.md files on disk",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
-    const results = await tryLoadAll(loader);
-
-    const allReferenced = new Set<string>();
-    for (const { identityId, blueprint } of results) {
-      if (PRE_EXISTING_SCHEMA_ISSUES.has(identityId)) continue;
-      if (!blueprint) continue;
-      const skills = blueprint.frontmatter.default_skills ?? [];
-      for (const s of skills) allReferenced.add(s);
-    }
-
+    const allReferenced = await collectReferencedSkills();
     const referencedSlugs = [...allReferenced].sort();
     assertExists(referencedSlugs.length > 0, "must reference at least one skill");
 
@@ -238,20 +242,10 @@ Deno.test({
       const globalDir = join(memoryDir, "Skills", MemoryScope.GLOBAL);
       await Deno.mkdir(globalDir, { recursive: true });
 
-      const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
-      const results = await tryLoadAll(loader);
-
-      const allReferenced = new Set<string>();
-      for (const { identityId, blueprint } of results) {
-        if (PRE_EXISTING_SCHEMA_ISSUES.has(identityId)) continue;
-        if (!blueprint) continue;
-        const skills = blueprint.frontmatter.default_skills ?? [];
-        for (const s of skills) {
-          if (SKILL_IDS_WITH_MEMORY_JSON.has(s)) allReferenced.add(s);
-        }
-      }
-
-      const withJson = [...allReferenced].sort();
+      const allReferenced = await collectReferencedSkills();
+      const withJson = [...allReferenced]
+        .filter((s) => SKILL_IDS_WITH_MEMORY_JSON.has(s))
+        .sort();
       assertExists(withJson.length > 0, "must have at least one skill with Memory JSON");
 
       for (const slug of withJson) {

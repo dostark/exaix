@@ -105,8 +105,8 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
   /** Human-readable name */
   name: z.string().min(1).optional(),
 
-  /** Model in provider:model format */
-  model: z.string().min(1).optional(),
+  /** Model in provider:model format. Empty string means "resolve via ModelResolver". */
+  model: z.string().optional(),
 
   /** Provider name (legacy field, prefer model with provider prefix) */
   provider: z.string().optional(),
@@ -124,6 +124,9 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
 
   /** Reasoning-effort hint; ignored by providers that do not support it. */
   effort: z.string().min(1).optional(),
+
+  /** Soft ranking hints: cheapest, fastest (Phase 132) */
+  characteristics: z.array(z.string()).optional(),
 
   /** Agent capabilities */
   capabilities: z.array(z.string()).default([]),
