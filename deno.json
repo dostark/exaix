@@ -91,6 +91,7 @@
     "dep:graph": "deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint apps/daemon/main.ts --format text",
     "check:arch": "deno run --allow-read scripts/validate_architecture.ts",
     "check:magic": "deno run -A scripts/check_magic_values.ts",
+    "check:hardcoded-models": "deno run -A scripts/check_hardcoded_models.ts",
     "check:event-strings": "deno run --allow-read scripts/check_event_strings.ts",
     "check:leak-guard": "deno run -A scripts/leak_guard.ts",
     "check:no-edition-conditionals": "deno run -A scripts/check_no_edition_conditionals.ts",

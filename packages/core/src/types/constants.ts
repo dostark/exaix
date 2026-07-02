@@ -434,6 +434,8 @@ export const HARDCODED_MODEL_ALLOWLIST = [
   "anthropic:claude-3-7-sonnet",
   "google:gemini-2.5-flash",
   // packages/core/src/types/constants.ts — MODEL_PRICING_MAP keys (same models)
+  // apps/exactl/src/init.ts — mock test default
+  "mock:test",
 ] as const;
 
 // Tokenizer backend modes
