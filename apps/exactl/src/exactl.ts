@@ -363,11 +363,18 @@ export const __test_command = new Command()
       .option("--portal <portal:string>", "Portal alias for context")
       .option("--target-branch <branch:string>", "Target branch for this request (portal-aware)")
       .option(CLI_OPTION_MODEL, "Named model configuration")
-      .option("--model-size <size:string>", "Model size: S|M|L|XL")
-      .option("--characteristic <value:string>", "Soft hint: cheapest|fastest (repeatable)", { collect: true })
-      .option("--thinking", "Enable extended thinking")
-      .option("--effort <tier:string>", "Reasoning effort: low|medium|high")
-      .option("--preferred-provider <provider:string>", "Preferred provider hint")
+      .option("--model-size <size:string>", "Capability tier: S|M|L|XL (maps to context/cost preset via ModelResolver)")
+      .option(
+        "--characteristic <value:string>",
+        "Soft ranking hint — cheapest|fastest. Scores providers, does not eliminate (repeatable)",
+        { collect: true },
+      )
+      .option("--thinking", "Require extended reasoning model")
+      .option("--effort <tier:string>", "Reasoning token budget: low|medium|high (only with --thinking)")
+      .option(
+        "--preferred-provider <provider:string>",
+        "Narrow candidates to specific provider (skips cross-provider scoring)",
+      )
       .option("--flow <flow:string>", "Target multi-agent flow (mutually exclusive with --identity)")
       .option("--skills <skills:string>", "Comma-separated list of skills to inject")
       .option("-s, --subject <subject:string>", "Human-readable subject for the request")
