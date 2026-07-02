@@ -2789,11 +2789,29 @@ confidence_required: 80
 | `max_reflexion_iterations` | `3`     | Maximum refinement passes            |
 | `confidence_required`      | `80`    | Minimum confidence (0-100) to accept |
 
+#### When to Use Reflexion
+
+- **Code review agents**: Catch issues the first pass might miss
+- **Technical writing**: Ensure accuracy and completeness
+- **Security audits**: Multi-pass vulnerability analysis
+- **Quality-critical tasks**: Any output requiring high confidence
+
+#### Trade-offs
+
+- **Higher quality**: More thorough analysis
+- **Increased latency**: 2-4x longer response time
+- **Higher cost**: Multiple LLM calls per request
+
 ### 6.2 Model Intent (Phase 132)
 
 Model Intent lets you describe the model you want by **capability requirements**
-rather than hardcoding a specific `provider:model` ID. The `ModelResolver` picks
-the best available provider+model that matches.
+rather than hardcoding a specific `provider:model` ID. Instead of saying
+"use claude-sonnet-4", you say "give me a size L model with thinking" — and
+`ModelResolver` picks the best available provider+model that matches.
+
+This decouples your request/identity from any single provider. The same intent
+works locally with Ollama, in the cloud with Anthropic, or in an air-gapped
+environment — without editing blueprints.
 
 #### Available intent fields in blueprint frontmatter
 
@@ -2807,7 +2825,52 @@ the best available provider+model that matches.
 | `required_capabilities` | `chat`, `streaming`, `vision`, `tools`, `multi-model` | Hard filter — providers lacking ALL listed values are excluded             |
 | `model`                 | `provider:model`                                      | **Deprecated** — bypasses ModelResolver, ties identity to a specific model |
 
-#### Resolution precedence
+`required_capabilities` is a **hard filter** — providers that don't support
+every listed value are excluded. Supported values per provider:
+
+| Value         | Supported by                      |
+| ------------- | --------------------------------- |
+| `chat`        | All providers                     |
+| `streaming`   | Anthropic, Google, Ollama, OpenAI |
+| `vision`      | Anthropic, Google, OpenAI         |
+| `tools`       | OpenAI                            |
+| `multi-model` | OpenRouter                        |
+
+`characteristics` is a **soft ranking hint** — no providers are excluded,
+only scored higher or lower:
+
+| Value      | Effect                                                                      |
+| ---------- | --------------------------------------------------------------------------- |
+| `cheapest` | Higher score for lower `costPerMtok`. Best for batch/non-urgent work        |
+| `fastest`  | Scores all candidates equally. Typically selects the first healthy provider |
+
+#### Preset Configuration
+
+Size tiers map to capability profiles in `exa.config.toml`:
+
+```toml
+[model_presets]
+S = { max_cost_per_mtok = 0.5,  min_context_window = 8192,   supports_thinking = false }
+M = { max_cost_per_mtok = 3,    min_context_window = 32000,  supports_thinking = true  }
+L = { max_cost_per_mtok = 15,   min_context_window = 128000, supports_thinking = true  }
+XL = { max_cost_per_mtok = 75,  min_context_window = 200000, supports_thinking = true  }
+```
+
+Override individual fields per tier:
+
+```toml
+[model_presets.M]
+max_cost_per_mtok = 5
+```
+
+Restrict eligible providers for a tier with `candidates`:
+
+```toml
+[model_presets.L]
+candidates = ["anthropic:claude-sonnet", "openai:gpt-4o"]
+```
+
+#### Resolution Precedence
 
 1. `model: "provider:model"` — explicit override (bypasses resolver)
 2. `model_size` + `characteristics` — preset lookup with soft ranking
@@ -2815,7 +2878,10 @@ the best available provider+model that matches.
 4. `fallbacks[]` — fallback chain iteration
 5. Context-window overflow — auto-bump to next size tier
 
-#### CLI flags
+Every resolution emits a `model_resolved` trace event visible via
+`exactl logs --filter model_resolved`.
+
+#### CLI Flags
 
 Available on `exactl request`:
 
@@ -2827,28 +2893,43 @@ Available on `exactl request`:
 | `--characteristic`     | `cheapest`, `fastest`   | Soft ranking hint (repeatable) |
 | `--preferred-provider` | provider name           | Narrow to one provider         |
 
-#### Examples
+#### Migration: Identity Blueprints
 
-```bash
-# CLI: declare intent at request time
-exactl request "Refactor auth" --model-size L --thinking --effort high
+**Hardcoded `model:` in identity blueprints is deprecated.** Replace with
+declarative fields:
 
-# Blueprint: declare intent in identity frontmatter
-# (see any file in Blueprints/Identities/ for real examples)
+```diff
+  ---
+- model: "anthropic:claude-sonnet-4"
++ model: ""                # preserved empty for schema compat
++ model_size: "L"
++ characteristics: ["fastest"]
+  ---
 ```
 
-#### When to Use
+Supported frontmatter fields:
 
-- **Code review agents**: Catch issues the first pass might miss
-- **Technical writing**: Ensure accuracy and completeness
-- **Security audits**: Multi-pass vulnerability analysis
-- **Quality-critical tasks**: Any output requiring high confidence
+| Field                | Type    | Values                            |
+| -------------------- | ------- | --------------------------------- |
+| `model_size`         | string  | `S`, `M`, `L`, `XL`               |
+| `preferred_provider` | string  | Provider name (e.g. `anthropic`)  |
+| `thinking`           | boolean | `true`, `false`                   |
+| `effort`             | string  | `low`, `medium`, `high`           |
+| `characteristics`    | array   | `["cheapest"]`, `["fastest"]`     |
+| `model`              | string  | **Deprecated** — `provider:model` |
 
-#### Trade-offs
+The `model` field continues to work, but it short-circuits the resolver and
+ties the identity to a specific provider+model, defeating portability.
 
-- **Higher quality**: More thorough analysis
-- **Increased latency**: 2-4x longer response time
-- **Higher cost**: Multiple LLM calls per request
+#### Future: Phase 134 Model Registry
+
+Phase 134 will introduce the `IModelRegistry` plugin system, enabling:
+
+- Registration of custom model sizes beyond `S`/`M`/`L`/`XL`
+- A `fastest` simplification — `--model-size fastest` resolves to the cheapest
+  model meeting minimal quality thresholds, removing the need to choose a tier
+- Dynamic provider capability discovery at startup
+- End-user model aliases in config
 
 ### 6.2 Confidence Scoring
 

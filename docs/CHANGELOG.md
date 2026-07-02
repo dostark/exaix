@@ -5,7 +5,7 @@
 ### Deprecations
 
 - **Hardcoded `model:` in identity blueprints is deprecated.** Replace with
-  `model_size:` + `characteristics:` frontmatter fields. See `docs/Model_Intent.md`
+  `model_size:` + `characteristics:` frontmatter fields. See `Exaix_User_Guide.md §6.2`
   for migration guide.
 
 ### Added
