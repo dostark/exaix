@@ -101,7 +101,56 @@ input intent, provider scores, selected model, reason code, and duration.
 
 ---
 
-## 5. Migration: Identity Blueprints
+## 5. Intent Field Reference
+
+### `required_capabilities` — hard filter
+
+Eliminates providers that cannot support a feature. Only providers whose
+`capabilities` array contains **all** listed values are considered.
+
+| Value         | Meaning                 | Supported by                      |
+| ------------- | ----------------------- | --------------------------------- |
+| `chat`        | General chat/completion | All providers                     |
+| `streaming`   | Token-level streaming   | Anthropic, Google, Ollama, OpenAI |
+| `vision`      | Image input             | Anthropic, Google, OpenAI         |
+| `tools`       | Function/tool calling   | OpenAI                            |
+| `multi-model` | Multiple model backends | OpenRouter                        |
+
+Example — require streaming and tools, excluding providers without both:
+
+```yaml
+required_capabilities: ["streaming", "tools"]
+```
+
+### `characteristics` — soft ranking hint
+
+Does not eliminate any provider. Assigns weighted scores to candidates to
+bias selection toward a preferred profile. Repeatable — multiple values
+accumulate.
+
+| Value      | Effect                                                                       |
+| ---------- | ---------------------------------------------------------------------------- |
+| `cheapest` | Higher score for lower `costPerMtok`. Best for batch/non-urgent work.        |
+| `fastest`  | Scores all candidates equally. Typically selects the first healthy provider. |
+
+Use `characteristics` when multiple providers are capable and you want a
+preference:
+
+```yaml
+characteristics: ["cheapest"]
+```
+
+### `preferred_provider` — narrows the candidate pool
+
+If set, only the named provider is evaluated. Skips cross-provider scoring.
+
+```yaml
+preferred_provider: "anthropic"
+```
+
+---
+
+## 6. Migration: Identity Blueprints
 
 **Hardcoded `model:` in identity blueprints is deprecated.** Replace it with
 declarative fields:
@@ -129,7 +178,7 @@ ties the identity to a specific provider+model, defeating portability.
 
 ---
 
-## 6. Future: Phase 134 Model Registry
+## 7. Future: Phase 134 Model Registry
 
 Phase 134 will introduce the `IModelRegistry` plugin system, enabling:
 
