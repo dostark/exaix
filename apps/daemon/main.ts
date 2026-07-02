@@ -61,6 +61,9 @@ import { recoverOrphanedDelegations } from "./src/recovery.ts";
 import { ensureDir } from "@std/fs";
 import { WaitStateSchema } from "@exaix/flow";
 import { join } from "@std/path";
+import { parse as parseYaml } from "@std/yaml";
+import type { EffortTier, ModelSize } from "@exaix/schemas";
+import type { JSONValue } from "@exaix/core/types";
 import { GitService } from "@exaix/git";
 import type { IApplicationContext } from "@exaix/core/types";
 import { type LogMetadata, toSafeJson } from "@exaix/core/types";
@@ -75,6 +78,7 @@ import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adap
 import type { SessionGate, SessionTool } from "@exaix/schemas/session_delegate.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
 import {
+  DEFAULT_REQUESTS_PATH,
   SESSION_BIN_CLAUDE_CODE,
   SESSION_BIN_CURSOR,
   SESSION_BIN_OPENCODE,
@@ -89,6 +93,62 @@ import { SoloComposer } from "@exaix/core/composer";
 import type { TeamComposer } from "@exaix-team/team-composer";
 import type { GuardrailRunner } from "@exaix-team/guardrail";
 import type { HitlPolicyEvaluator } from "@exaix-team/hitl";
+
+/**
+ * Read a request file, parse its frontmatter, build a ModelIntent from any CLI
+ * flags present (model_size, thinking, effort, etc.), and resolve through
+ * ModelResolver. Returns "provider:model" string or undefined if the request
+ * has no ModelIntent fields or the file cannot be read.
+ */
+async function resolveRequestModel(
+  filePath: string,
+  resolver: ModelResolver,
+): Promise<string | undefined> {
+  try {
+    const content = await Deno.readTextFile(filePath);
+    const yamlMatch = content.match(/^---\n([\s\S]*?)\n---/);
+    if (!yamlMatch) return undefined;
+    const fm = parseYaml(yamlMatch[1]) as Record<string, JSONValue>;
+    if (!fm.model_size && !fm.model) return undefined;
+    const intent: Parameters<ModelResolver["resolve"]>[0] = {
+      model: fm.model as string | undefined,
+      model_size: fm.model_size as ModelSize | undefined,
+      thinking: fm.thinking as boolean | undefined,
+      effort: fm.effort as EffortTier | undefined,
+      characteristics: fm.characteristics as string[] | undefined,
+      preferred_provider: fm.preferred_provider as string | undefined,
+    };
+    const resolved = await resolver.resolve(intent);
+    return `${resolved.provider}:${resolved.model}`;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Find a request file by traceId and resolve its model.
+ */
+async function resolveModelFromTrace(
+  traceId: string,
+  requestsDir: string,
+  resolver: ModelResolver,
+): Promise<string | undefined> {
+  try {
+    for await (const entry of Deno.readDir(requestsDir)) {
+      if (!entry.name.endsWith(".md")) continue;
+      const content = await Deno.readTextFile(join(requestsDir, entry.name));
+      const yamlMatch = content.match(/^---\n([\s\S]*?)\n---/);
+      if (!yamlMatch) continue;
+      const fm = parseYaml(yamlMatch[1]) as Record<string, JSONValue>;
+      if (fm.trace_id === traceId) {
+        return resolveRequestModel(join(requestsDir, entry.name), resolver);
+      }
+    }
+  } catch {
+    // requests directory doesn't exist or not accessible
+  }
+  return undefined;
+}
 
 if (import.meta.main) {
   // Simple argument handling for the compiled binary
@@ -619,12 +679,15 @@ if (import.meta.main) {
       onDelegateRefinement: _sessionDelegateService && _sessionWaitStore
         ? async (traceId: string, _requestId: string, body: string) => {
           const sd = config.session_delegate!;
+          const requestPath = join(config.system.root, "Workspace", DEFAULT_REQUESTS_PATH, `${_requestId}.md`);
+          const resolvedModel = await resolveRequestModel(requestPath, modelResolver);
           // Use optional chaining for obj access instead of type-assertion cast
           const brief = await _sessionDelegateService!.prepareBrief({
             traceId,
             gate: GATE_REFINEMENT,
             tool: sd.tool,
             objective: body,
+            ...(resolvedModel && { model: resolvedModel }),
             artifactRef: `Workspace/Requests/${_requestId}.md`,
             permittedPaths: [`Workspace/Requests/${_requestId}.md`],
             tokenBudget: sd.token_budget ??
@@ -732,12 +795,14 @@ if (import.meta.main) {
         config.session_delegate?.gates?.includes(GATE_CODE_CHANGES)
       ? async (traceId: string, stepId: string, worktreePath: string): Promise<string> => {
         const sd = config.session_delegate!;
+        const requestsDir = join(config.system.root, "Workspace", DEFAULT_REQUESTS_PATH);
+        const resolvedModel = await resolveModelFromTrace(traceId, requestsDir, modelResolver);
         try {
           const brief = await _sessionDelegateService!.prepareBrief({
             traceId,
             gate: GATE_CODE_CHANGES,
             tool: sd.tool,
-            model: sd.model,
+            ...(resolvedModel ? { model: resolvedModel } : sd.model ? { model: sd.model } : {}),
             objective: `Execute step ${stepId}`,
             artifactRef: `trace:${traceId}/step:${stepId}`,
             permittedPaths: [`Workspace/**`],
