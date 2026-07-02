@@ -158,6 +158,8 @@ const BlueprintSchema = z.object({
 /** Optional configuration for AgentExecutor. */
 export interface IAgentExecutorOptions {
   guardrailRunner?: IGuardrailRunner;
+  /** Request-level ModelIntent fields override blueprint values (Phase 132). */
+  requestIntent?: Partial<ModelIntent>;
 }
 
 /**
@@ -222,7 +224,7 @@ export class AgentExecutor {
     contextBudgetManager?: IContextBudgetManager,
     snapshotStore?: ISnapshotStore,
     private _guardrailRunner?: IGuardrailRunner,
-    options?: IAgentExecutorOptions,
+    private readonly options?: IAgentExecutorOptions,
     private modelResolver?: ModelResolver,
   ) {
     this.promptBudgetAllocator = promptBudgetAllocator ??
@@ -606,13 +608,14 @@ export class AgentExecutor {
 
     if (this.modelResolver) {
       const extras = validatedFrontmatter as BlueprintInput;
+      const requestIntent = this.options?.requestIntent;
       const intent: ModelIntent = {
         model: validatedFrontmatter.model,
-        model_size: extras.model_size,
-        characteristics: extras.characteristics,
-        preferred_provider: extras.preferred_provider,
-        thinking: extras.thinking,
-        effort: extras.effort,
+        model_size: extras.model_size ?? requestIntent?.model_size,
+        characteristics: extras.characteristics ?? requestIntent?.characteristics,
+        preferred_provider: extras.preferred_provider ?? requestIntent?.preferred_provider,
+        thinking: extras.thinking ?? requestIntent?.thinking,
+        effort: extras.effort ?? requestIntent?.effort,
       };
       const resolved = await this.modelResolver.resolve(intent);
       provider = resolved.provider;
