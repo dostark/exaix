@@ -452,5 +452,6 @@ export function resolvePresetFromSize(
   }
 
   const chosen = thinkingFiltered[0];
-  return { provider: chosen.metadata.name, model: chosen.metadata.name, attempt: 1 };
+  const defaults = getDefaultModels();
+  return { provider: chosen.metadata.name, model: defaults[chosen.metadata.name] ?? chosen.metadata.name, attempt: 1 };
 }

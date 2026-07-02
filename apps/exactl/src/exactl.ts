@@ -2098,7 +2098,7 @@ const journalCommand = new Command()
     collect: true,
   })
   .option("-n, --tail <n:number>", "Show last N entries", { default: 50 })
-  .option("--format <format:string>", "Output format (text, table, json)", { default: "text" })
+  .option("--format <format:string>", "Output format (text, table, json)", { default: CLI_OUTPUT_FORMATS.TEXT })
   .option("--distinct <field:string>", "Return distinct values for specified field")
   .option("--count", "Return count aggregation by action_type")
   .option("--payload <pattern:string>", "Filter by payload LIKE pattern")

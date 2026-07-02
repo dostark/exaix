@@ -125,8 +125,8 @@ export async function checkAllFiles(
   try {
     await Deno.stat("Blueprints");
     for await (const _entry of walk("Blueprints", { exts: [".md"], followSymlinks: false })) {
-      const fp = relative(".", entry.path);
-      const content = await Deno.readTextFile(entry.path);
+      const fp = relative(".", _entry.path);
+      const content = await Deno.readTextFile(_entry.path);
       scannedFiles.push(1);
       const violations = findModelViolations(content, fp, list);
       allViolations.push(...violations);

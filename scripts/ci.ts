@@ -80,6 +80,7 @@ const checkCommand = new Command()
       { cmd: ["deno", "task", "check:skill-index"], desc: "Runtime Skill Index Sync" },
       { cmd: ["deno", "task", "check:blueprint-integrity"], desc: "Blueprint Catalog Integrity" },
       { cmd: ["deno", "task", "check:manifests"], desc: "Step Manifest Validity" },
+      { cmd: ["deno", "task", "check:hardcoded-models"], desc: "Hardcoded Model CI Gate" },
       { cmd: ["deno", "task", "check"], desc: "Type Checking" },
     ]);
 
@@ -416,6 +417,7 @@ const allCommand = new Command()
         { cmd: ["deno", "task", "check:skill-index"], desc: "Runtime Skill Index Sync" },
         { cmd: ["deno", "task", "check:blueprint-integrity"], desc: "Blueprint Catalog Integrity" },
         { cmd: ["deno", "task", "check:manifests"], desc: "Step Manifest Validity" },
+        { cmd: ["deno", "task", "check:hardcoded-models"], desc: "Hardcoded Model CI Gate" },
         { cmd: ["deno", "task", "check"], desc: "Type Checking" },
       ])
     ) Deno.exit(1);
