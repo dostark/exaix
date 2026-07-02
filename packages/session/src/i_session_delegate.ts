@@ -38,7 +38,11 @@ export interface IPrepareBriefInput {
   gate: SessionGate;
   tool: SessionTool;
   objective: string;
-  /** Model the delegate tool should use (headless `--model <model>`). Optional. */
+  /**
+   * Model the delegate tool should use (headless `--model <model>`). Optional.
+   * **Must be a pre-resolved `provider:model` string** — pass through `ModelResolver.resolve()`
+   * first. Raw `model_size` values (e.g. "M", "L") will be rejected by `prepareBrief()`.
+   */
   model?: string;
   /** Artifact under work (request / plan / diff), worktree-relative. */
   artifactRef: string;

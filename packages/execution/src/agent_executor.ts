@@ -620,10 +620,12 @@ export class AgentExecutor {
       if (resolved.options) {
         this._resolvedCallOptions = resolved.options as IModelCallOptions;
       }
-    } else if (!provider && model.includes(":")) {
-      const parts = model.split(":");
-      provider = parts[0];
-      model = parts.slice(1).join(":");
+    } else if (!provider) {
+      const colonIdx = model.indexOf(":");
+      if (colonIdx !== -1) {
+        provider = model.substring(0, colonIdx);
+        model = model.substring(colonIdx + 1);
+      }
     }
     if (!provider) {
       provider = DEFAULT_MCP_IDENTITY_ID;
@@ -720,6 +722,10 @@ export class AgentExecutor {
 
     try {
       const strategy = this.strategyRegistry!.resolve(strategyName);
+      // Forward resolved per-call options (thinking/effort) to the strategy
+      if (this._resolvedCallOptions && "callOptions" in strategy) {
+        (strategy as { callOptions?: IModelCallOptions }).callOptions = this._resolvedCallOptions;
+      }
       const validated = await strategy.execute(_blueprint, context, options);
 
       // Prioritize real usage from strategy if available, fallback to estimate

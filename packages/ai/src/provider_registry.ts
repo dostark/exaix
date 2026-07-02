@@ -42,6 +42,8 @@ export interface IProviderMetadata {
   strengths: readonly string[];
   /** Whether this provider supports extended reasoning (thinking) mode */
   supportsThinking?: boolean;
+  /** Whether this provider supports reasoning effort tiers (low/medium/high) */
+  supportsEffort?: boolean;
   /** Cost per million tokens in USD (used for characteristic scoring) */
   costPerMtok?: number;
   /** Context window size in tokens (used for model size matching) */

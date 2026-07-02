@@ -36,6 +36,11 @@ export interface RequestCreateOptions {
   portal?: string;
   targetBranch?: string;
   model?: string;
+  modelSize?: string;
+  preferredProvider?: string;
+  thinking?: boolean;
+  effort?: string;
+  characteristic?: string[];
   flow?: string;
   skills?: string;
   subject?: string;
@@ -122,6 +127,11 @@ export async function handleRequestCreate(
       portal: options.portal,
       target_branch: options.targetBranch,
       model: options.model,
+      model_size: options.modelSize,
+      preferred_provider: options.preferredProvider,
+      thinking: options.thinking,
+      effort: options.effort,
+      characteristics: options.characteristic,
       flow: options.flow,
       skills: options.skills ? options.skills.split(",").map((s: string) => s.trim()) : undefined,
       subject: options.subject,
@@ -241,6 +251,12 @@ export async function handleRequestShow(
       displayData.error = metadata.error;
     }
 
+    if (metadata.model_size) displayData.model_size = metadata.model_size;
+    if (metadata.thinking !== undefined) displayData.thinking = metadata.thinking;
+    if (metadata.effort) displayData.effort = metadata.effort;
+    if (metadata.characteristics) displayData.characteristics = metadata.characteristics;
+    if (metadata.preferred_provider) displayData.preferred_provider = metadata.preferred_provider;
+
     display.info("request.show", metadata.trace_id.slice(0, 8), toSafeJson(displayData) as Record<string, JSONValue>);
 
     const { analysis } = await requestCommands.show(id);
@@ -279,6 +295,11 @@ function printRequestResult(
     flow?: string;
     status: string;
     subject?: string;
+    model_size?: string;
+    thinking?: boolean;
+    effort?: string;
+    characteristics?: string[];
+    preferred_provider?: string;
     analysis?: IRequestAnalysis;
   },
   json: boolean,
@@ -298,6 +319,11 @@ function printRequestResult(
         filename: result.filename,
         priority: `${priorityIcon} ${result.priority}`,
         subject: result.subject,
+        model_size: result.model_size,
+        thinking: result.thinking,
+        effort: result.effort,
+        characteristics: result.characteristics,
+        preferred_provider: result.preferred_provider,
         identity: result.flow ? undefined : result.identity,
         flow: result.flow,
         status: result.status,

@@ -7,7 +7,7 @@
  */
 import type { ConfigSource, JSONValue, McpToolName, MockStrategy, ProviderType } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
-import type { Config, EffortTier, IBlueprintFrontmatter } from "@exaix/schemas";
+import type { Config, EffortTier, IBlueprintFrontmatter, IModelCallOptions } from "@exaix/schemas";
 
 /**
  * Options for model generation requests.
@@ -115,6 +115,7 @@ export interface ILlmClient {
     }>;
     iteration: number;
     maxIterations: number;
+    options?: IModelCallOptions;
   }): Promise<{
     done: boolean;
     tool?: McpToolName;

@@ -47,7 +47,15 @@ export interface ModelIntent {
   model?: string;
   fallbacks?: Partial<ModelIntent>[];
   context_window_fallback?: boolean;
+  /** Estimated input tokens for context-window overflow detection. Used when context_window_fallback is true. */
+  estimated_input_tokens?: number;
 }
+
+/** @deprecated Use ModelIntent instead. Backward-compat alias for Phase 131 migration. */
+export type IModelPreferences = ModelIntent;
+
+/** @deprecated Use ModelIntent instead. Backward-compat alias for Phase 131 migration. */
+export type ISelectionCriteria = ModelIntent;
 
 /**
  * Full resolution result from ModelResolver.

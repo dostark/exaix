@@ -20,8 +20,11 @@ import type {
   ModelIntent,
   ModelPreset,
   ModelResolutionReason,
+  ModelSize,
 } from "@exaix/schemas";
 import { DEFAULT_MODEL_PRESETS, getDefaultModels } from "@exaix/schemas";
+import { MODEL_CONTEXT_WINDOWS } from "@exaix/schemas/constants.ts";
+import { isRetryable } from "./providers/common.ts";
 import type { IProviderHealthChecker, ISelectionCriteria } from "./provider_selector.ts";
 import type { IProviderMetadata } from "./provider_registry.ts";
 import { ProviderRegistry } from "./provider_registry.ts";
@@ -56,27 +59,109 @@ export class ModelResolver {
   async resolve(intent: ModelIntent): Promise<IResolvedModel> {
     const startTime = Date.now();
 
-    if (intent.model && intent.model.includes(":")) {
-      const [provider, ...rest] = intent.model.split(":");
-      const model = rest.join(":");
-      const resolved: IResolvedModel = { provider, model, options: this.buildCallOptions(intent), attempt: 1 };
-      await this.emitTrace(intent, resolved, [provider], {}, "explicit_override", Date.now() - startTime);
-      return resolved;
-    }
+    const explicitResult = await this.tryResolveExplicit(intent, startTime);
+    if (explicitResult) return explicitResult;
+
+    const presetResult = await this.tryResolveFromPreset(intent, startTime);
+    if (presetResult) return presetResult;
 
     const fallbacks = intent.fallbacks ?? [];
     const maxAttempts = fallbacks.length + 1;
+    const hadExplicitModelSize = !!intent.model_size;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       const currentIntent = attempt === 1 ? intent : this.mergeFallback(intent, fallbacks[attempt - 2]);
-      const resolved = await this.resolveOnce(currentIntent, attempt, startTime);
-      if (resolved) return resolved;
+      try {
+        const resolved = await this.resolveOnce(currentIntent, attempt, startTime);
+        if (resolved) {
+          const overflowResult = await this.tryResolveOverflow(
+            intent,
+            currentIntent,
+            resolved,
+            hadExplicitModelSize,
+            attempt,
+            startTime,
+          );
+          if (overflowResult) return overflowResult;
+          return resolved;
+        }
+      } catch (error) {
+        if (error instanceof Error && isRetryable(error)) {
+          continue;
+        }
+        throw error;
+      }
     }
 
     throw new Error(
       `Model resolution failed: no suitable model found after ${maxAttempts} attempt(s). ` +
         `Intent: ${JSON.stringify(intent)}`,
     );
+  }
+
+  private async tryResolveExplicit(intent: ModelIntent, startTime: number): Promise<IResolvedModel | null> {
+    if (!intent.model || !intent.model.includes(":")) return null;
+    const [provider, ...rest] = intent.model.split(":");
+    const model = rest.join(":");
+    const resolved: IResolvedModel = { provider, model, options: this.buildCallOptions(intent), attempt: 1 };
+    await this.emitTrace(intent, resolved, [provider], {}, "explicit_override", Date.now() - startTime);
+    return resolved;
+  }
+
+  private async tryResolveFromPreset(intent: ModelIntent, startTime: number): Promise<IResolvedModel | null> {
+    if (!intent.model_size) return null;
+    const presets = this.config.model_presets ?? DEFAULT_MODEL_PRESETS;
+    const resolved = resolvePresetFromSize(intent.model_size, presets);
+    resolved.options = this.buildCallOptions(intent);
+    resolved.attempt = 1;
+    const providers = ProviderRegistry.getAllProviders();
+    await this.emitTrace(
+      intent,
+      resolved,
+      providers.map((p) => p.metadata.name),
+      {},
+      "preset_default",
+      Date.now() - startTime,
+    );
+    return resolved;
+  }
+
+  private async tryResolveOverflow(
+    intent: ModelIntent,
+    currentIntent: ModelIntent,
+    resolved: IResolvedModel,
+    hadExplicitModelSize: boolean,
+    attempt: number,
+    startTime: number,
+  ): Promise<IResolvedModel | null> {
+    if (
+      !intent.context_window_fallback || hadExplicitModelSize ||
+      !intent.estimated_input_tokens || !intent.model_size
+    ) {
+      return null;
+    }
+
+    const windowKey = `${resolved.provider}:${resolved.model}`;
+    const contextWindow = MODEL_CONTEXT_WINDOWS[windowKey];
+    if (!contextWindow || intent.estimated_input_tokens <= contextWindow) return null;
+
+    const bumped = this.bumpModelSize(intent.model_size);
+    if (!bumped) return null;
+
+    const overflowIntent = { ...currentIntent, model_size: bumped };
+    const reResolved = await this.resolveOnce(overflowIntent, attempt, startTime);
+    if (!reResolved) return null;
+
+    const providers = ProviderRegistry.getAllProviders();
+    await this.emitTrace(
+      overflowIntent,
+      reResolved,
+      providers.map((p) => p.metadata.name),
+      {},
+      "context_window_overflow",
+      Date.now() - startTime,
+    );
+    return reResolved;
   }
 
   private async resolveOnce(
@@ -263,6 +348,21 @@ export class ModelResolver {
 
   private mergeFallback(base: ModelIntent, fallback: Partial<ModelIntent>): ModelIntent {
     return { ...base, ...fallback };
+  }
+
+  private bumpModelSize(size: ModelSize): ModelSize | null {
+    switch (size) {
+      case "S":
+        return "M";
+      case "M":
+        return "L";
+      case "L":
+        return "XL";
+      case "XL":
+        return null;
+      default:
+        return null;
+    }
   }
 
   private async emitTrace(

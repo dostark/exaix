@@ -20,7 +20,13 @@ import { ConfigService } from "@exaix/core/config";
 import { evaluateNetPolicy } from "@exaix/core/security";
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
-import { ProviderFactory } from "@exaix/ai";
+import {
+  DefaultRoutingStrategy,
+  type IProviderHealthChecker,
+  ModelResolver,
+  ProviderFactory,
+  ProviderRegistry,
+} from "@exaix/ai";
 import { RequestProcessor } from "@exaix/request";
 import { ReviewRegistry } from "@exaix/core/artifact";
 import { EventLogger, EventLoggerStructuredOutput } from "@exaix/core/logger";
@@ -535,6 +541,13 @@ if (import.meta.main) {
       },
     };
 
+    // Phase 132.4: Create ModelResolver for policy-driven model routing
+    const healthChecker: IProviderHealthChecker = {
+      checkProvider: (_providerName: string) => Promise.resolve(true),
+    };
+    const routingStrategy = new DefaultRoutingStrategy(ProviderRegistry, costTracker, healthChecker);
+    const modelResolver = new ModelResolver(routingStrategy, config, healthChecker, logger);
+
     // Create FlowRunner for multi-agent flow execution
     const blueprintsPath = join(
       config.system.root,
@@ -551,6 +564,7 @@ if (import.meta.main) {
       config,
       eventLogger: flowLogger,
       hitlPolicyEvaluator,
+      modelResolver,
     });
 
     // Wire Team-edition capability modules through the edition-composer seam.
