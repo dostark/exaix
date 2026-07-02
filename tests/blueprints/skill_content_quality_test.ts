@@ -12,10 +12,9 @@
  */
 
 import { assert } from "@std/assert";
-import { join, resolve } from "@std/path";
+import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
-
-const SKILLS_DIR = resolve(new URL("../../Blueprints/Skills/", import.meta.url).pathname);
+import { SKILLS_DIR } from "./test_helpers.ts";
 
 /** YAML-parsed skill frontmatter (structurally permissive — fields are asserted in-test). */
 interface ISkillFrontmatter {

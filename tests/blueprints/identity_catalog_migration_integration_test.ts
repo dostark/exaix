@@ -90,23 +90,42 @@ const PRE_EXISTING_SCHEMA_ISSUES = new Set([
   "test-engineer",
 ]);
 
+interface ILoadedIdentityView {
+  identityId: string;
+  frontmatter: { default_skills?: string[] };
+  systemPrompt: string;
+}
+
+/**
+ * Run an assertion callback for each loaded identity that passes the
+ * PRE_EXISTING_SCHEMA_ISSUES gate. Eliminates the load + skip boilerplate
+ * from individual tests.
+ */
+async function forEachLoadedIdentity(
+  fn: (identityId: string, blueprint: ILoadedIdentityView) => void | Promise<void>,
+): Promise<void> {
+  const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const results = await tryLoadAll(loader);
+
+  for (const { identityId, blueprint, loadError } of results) {
+    if (PRE_EXISTING_SCHEMA_ISSUES.has(identityId)) {
+      console.log(
+        `[SKIP] ${identityId}: pre-existing permitted_tools schema issue (${loadError?.message.slice(0, 60)}...)`,
+      );
+      continue;
+    }
+    assertExists(blueprint, `${identityId} must load`);
+    await fn(identityId, blueprint!);
+  }
+}
+
 Deno.test({
   name:
     "[step7] every active identity with valid frontmatter loads through BlueprintLoader with response-contract in default_skills",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
-    const results = await tryLoadAll(loader);
-
-    for (const { identityId, blueprint, loadError } of results) {
-      if (PRE_EXISTING_SCHEMA_ISSUES.has(identityId)) {
-        console.log(
-          `[SKIP] ${identityId}: pre-existing permitted_tools schema issue (${loadError?.message.slice(0, 60)}...)`,
-        );
-        continue;
-      }
-      assertExists(blueprint, `${identityId} must load through BlueprintLoader`);
+    await forEachLoadedIdentity((identityId, blueprint) => {
       assertEquals(
         blueprint.identityId,
         identityId,
@@ -119,7 +138,7 @@ Deno.test({
         true,
         `${identityId}: default_skills must include "response-contract"`,
       );
-    }
+    });
   },
 });
 
@@ -128,25 +147,14 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
-    const results = await tryLoadAll(loader);
-
-    for (const { identityId, blueprint, loadError } of results) {
-      if (PRE_EXISTING_SCHEMA_ISSUES.has(identityId)) {
-        console.log(
-          `[SKIP] ${identityId}: pre-existing permitted_tools schema issue (${loadError?.message.slice(0, 60)}...)`,
-        );
-        continue;
-      }
-      assertExists(blueprint, `${identityId} must load`);
-
+    await forEachLoadedIdentity((identityId, blueprint) => {
       const hasInclude = blueprint.systemPrompt.includes("{{include:");
       assertEquals(
         hasInclude,
         false,
         `${identityId}: systemPrompt must not contain unresolved {{include:}}`,
       );
-    }
+    });
   },
 });
 
@@ -155,18 +163,7 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
-    const results = await tryLoadAll(loader);
-
-    for (const { identityId, blueprint, loadError } of results) {
-      if (PRE_EXISTING_SCHEMA_ISSUES.has(identityId)) {
-        console.log(
-          `[SKIP] ${identityId}: pre-existing permitted_tools schema issue (${loadError?.message.slice(0, 60)}...)`,
-        );
-        continue;
-      }
-      assertExists(blueprint, `${identityId} must load`);
-
+    await forEachLoadedIdentity((identityId, blueprint) => {
       for (const keyword of METHODOLOGY_KEYWORDS) {
         const hasKeyword = blueprint.systemPrompt.includes(keyword);
         assertEquals(
@@ -175,7 +172,7 @@ Deno.test({
           `${identityId}: systemPrompt must not contain "${keyword}" methodology section`,
         );
       }
-    }
+    });
   },
 });
 

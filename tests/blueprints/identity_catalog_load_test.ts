@@ -13,13 +13,9 @@
 
 import { assertEquals } from "@std/assert";
 import { basename, join } from "@std/path";
-import { parse as parseYaml } from "@std/yaml";
 import { McpToolName, ToolName } from "@exaix/core";
 import { BlueprintLoader } from "@exaix/core/blueprint";
-
-const REPO_ROOT = join(import.meta.dirname!, "..", "..");
-const IDENTITIES_DIR = join(REPO_ROOT, "Blueprints", "Identities");
-const SKILLS_DIR = join(REPO_ROOT, "Blueprints", "Skills");
+import { IDENTITIES_DIR, readRawFrontmatter, SKILLS_DIR } from "./test_helpers.ts";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -28,30 +24,6 @@ const VALID_TOOL_NAMES = new Set([
   ...Object.values(McpToolName) as string[],
   ...Object.values(ToolName) as string[],
 ]);
-
-/**
- * Read and return the raw YAML frontmatter object from a blueprint file.
- * Returns null if the file has no YAML frontmatter.
- */
-interface IRawFrontmatter {
-  identity_id?: string;
-  name?: string;
-  model?: string;
-  capabilities?: string[];
-  default_skills?: string[];
-  permitted_tools?: string[];
-  created?: string;
-  created_by?: string;
-  version?: string;
-  description?: string;
-}
-
-function readRawFrontmatter(filePath: string): IRawFrontmatter | null {
-  const content = Deno.readTextFileSync(filePath);
-  const m = content.match(/^---\n([\s\S]*?)\n---\n/);
-  if (!m) return null;
-  return parseYaml(m[1]) as IRawFrontmatter;
-}
 
 /**
  * List active identity filenames (non-example, non-template, non-README .md files).

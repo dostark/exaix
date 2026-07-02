@@ -12,10 +12,15 @@
  */
 
 import { assert } from "@std/assert";
-import { join, resolve } from "@std/path";
+import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
-
-const IDENTITIES_DIR = resolve(new URL("../../Blueprints/Identities/", import.meta.url).pathname);
+import {
+  DESTRUCTIVE_TOOLS,
+  IDENTITIES_DIR,
+  type IIdentityFrontmatter,
+  READ_ONLY_IDENTITIES,
+  ROLE_REQUIRED_SKILLS,
+} from "./test_helpers.ts";
 
 /** All known tool name values from McpToolName and ToolName enums. */
 const KNOWN_TOOL_NAMES = new Set([
@@ -48,55 +53,6 @@ const KNOWN_TOOL_NAMES = new Set([
   "git_pull",
   "git_stash",
 ]);
-
-/** Destructive tool names that read-only identities must not carry. */
-const DESTRUCTIVE_TOOLS = new Set([
-  "write_file",
-  "delete_file",
-  "run_command",
-  "patch_file",
-  "move_file",
-  "create_directory",
-]);
-
-/**
- * Identity-role matrix: maps identity_id → role-required default_skills.
- * Every identity must have at least one role-specific skill listed here
- * (beyond the universal response-contract added in Step 7).
- */
-const ROLE_REQUIRED_SKILLS: Record<string, string[]> = {
-  "default": ["portal-grounding"],
-  "mock-agent": ["portal-grounding"],
-  "code-analyst": ["code-review", "typescript-patterns", "portal-grounding"],
-  "product-manager": ["portal-grounding"],
-  "software-architect": ["exaix-conventions", "typescript-patterns", "portal-grounding"],
-  "senior-coder": ["typescript-patterns", "error-handling", "code-review", "portal-grounding"],
-  "dogfood-developer": ["tdd-methodology", "exaix-conventions", "portal-grounding"],
-  "qa-engineer": ["tdd-methodology", "error-handling", "portal-grounding"],
-  "test-engineer": ["response-contract", "tdd-methodology", "error-handling", "portal-grounding"],
-  "security-expert": ["security-first", "code-review", "portal-grounding"],
-  "performance-engineer": ["code-review", "portal-grounding"],
-  "technical-writer": ["documentation-driven", "portal-grounding"],
-  "quality-judge": ["code-review", "portal-grounding"],
-  "voting-judge": ["code-review", "portal-grounding"],
-  "research-synthesizer": ["research-methodology", "portal-grounding"],
-};
-
-/** Identities whose role is analysis/evaluation — no destructive tools. */
-const READ_ONLY_IDENTITIES = new Set([
-  "code-analyst",
-  "product-manager",
-  "performance-engineer",
-  "quality-judge",
-  "voting-judge",
-]);
-
-interface IIdentityFrontmatter {
-  identity_id?: string;
-  capabilities?: string[];
-  default_skills?: string[];
-  permitted_tools?: string[];
-}
 
 /** Load all active identity files (non-example, non-template, non-README). */
 function loadActiveIdentities(): Array<{ id: string; fm: IIdentityFrontmatter }> {
