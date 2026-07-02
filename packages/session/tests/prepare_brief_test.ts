@@ -48,12 +48,12 @@ Deno.test("[prepare_brief] carries the optional model from input into the brief 
   const dir = await Deno.makeTempDir();
   try {
     const service = makeService(dir);
-    const brief = await service.prepareBrief(baseInput({ tool: "opencode", model: "deepseek-v4-flash" }));
-    assertEquals(brief.model, "deepseek-v4-flash");
+    const brief = await service.prepareBrief(baseInput({ tool: "opencode", model: "deepseek:deepseek-v4-flash" }));
+    assertEquals(brief.model, "deepseek:deepseek-v4-flash");
 
     const launch = service.resolveLaunch(brief, "headless");
     const modelIdx = launch.args.indexOf("--model");
-    assertEquals(launch.args[modelIdx + 1], "deepseek-v4-flash");
+    assertEquals(launch.args[modelIdx + 1], "deepseek:deepseek-v4-flash");
   } finally {
     await Deno.remove(dir, { recursive: true });
   }

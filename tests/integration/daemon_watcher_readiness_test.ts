@@ -18,47 +18,21 @@ import { assert } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService } from "@exaix/core/config";
+import { daemonConfigSections } from "./helpers/daemon_config.ts";
 
 // The daemon boots with EXA_TEST_MODE=1, so DatabaseService auto-ensures the `activity` table
 // (mirroring a migrated production workspace) — no manual schema seeding needed here.
 
 function writeDaemonConfig(configPath: string, root: string): void {
   const cfg = [
-    "[system]",
-    'version = "1.0.0"',
-    'log_level = "info"',
-    `root = "${root}"`,
-    "",
-    "[paths]",
-    'workspace = "./Workspace"',
-    'blueprints = "./Blueprints"',
-    'runtime = "./.exa"',
-    'memory = "./Memory"',
-    'portals = "./Portals"',
-    'active = "Active"',
-    'plans = "Plans"',
-    'requests = "Requests"',
-    "",
-    "[watcher]",
-    "debounce_ms = 100",
-    "stability_check = false",
-    "",
-    "[database]",
-    "batch_flush_ms = 50",
-    "batch_max_size = 100",
+    ...daemonConfigSections(root, ""),
     "",
     "[ai]",
     'provider = "mock"',
     'model = "test"',
     "",
     "[ai.mock]",
-    'strategy = "pattern"',
-    "",
-    "[quality_gate]",
-    "enabled = false",
-    "",
-    "[mcp]",
-    "enabled = false",
+    "timeout_ms = 30000",
     "",
   ].join("\n");
   Deno.writeTextFileSync(configPath, cfg);

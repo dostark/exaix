@@ -1,7 +1,9 @@
 ---
 identity_id: "code-analyst"
 name: "Code Analyst"
-model: "google:gemini-2.0-flash-exp"
+model: ""
+model_size: M
+characteristics: [fastest]
 capabilities: ["analysis", "code_review"]
 created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"

@@ -1,7 +1,10 @@
 ---
 identity_id: "voting-judge"
 name: "Voting Consensus Judge"
-model: "google:gemini-2.0-flash-exp"
+model: ""
+model_size: L
+thinking: true
+effort: high
 capabilities: ["evaluation", "consensus", "structured_output"]
 created: "2026-06-16T00:00:00Z"
 created_by: "exaix-system"

@@ -1,7 +1,10 @@
 ---
 identity_id: "research-synthesizer"
 name: "Research Synthesizer"
-model: "google:gemini-2.0-flash-exp"
+model: ""
+model_size: XL
+thinking: true
+effort: high
 capabilities: ["research", "synthesis", "analysis"]
 created: "2026-06-30T00:00:00Z"
 created_by: "phase-131-catalog-reconciliation"

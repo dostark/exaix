@@ -108,6 +108,14 @@ export interface IParsedRequest {
 
   /** Optional: Enable dynamic routing for this request */
   allowDynamicRouting?: boolean;
+
+  /** Optional: Model intent fields from request frontmatter (Phase 132) */
+  model?: string;
+  model_size?: string;
+  preferred_provider?: string;
+  thinking?: boolean;
+  effort?: string;
+  characteristics?: string[];
 }
 
 /**

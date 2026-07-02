@@ -15,13 +15,9 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { join, resolve } from "@std/path";
+import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
-
-const ROOT = resolve(new URL("../../", import.meta.url).pathname);
-const IDENTITIES_DIR = join(ROOT, "Blueprints/Identities");
-const FRAGMENTS_DIR = join(ROOT, "Blueprints/Fragments");
-const SKILLS_DIR = join(ROOT, "Blueprints/Skills");
+import { FRAGMENTS_DIR, IDENTITIES_DIR, SKILLS_DIR } from "./test_helpers.ts";
 
 const CONTRACT_FRAGMENTS = new Set([
   "standard-response-format.md",

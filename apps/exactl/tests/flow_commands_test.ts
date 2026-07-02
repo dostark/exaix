@@ -69,7 +69,7 @@ Deno.test("FlowCommands: listFlows returns empty when no flows", async () => {
   });
 });
 
-Deno.test.ignore("FlowCommands: listFlows outputs table for valid flows", async () => {
+Deno.test("FlowCommands: listFlows outputs table for valid flows", async () => {
   const ctx = await createMockContext();
   await withFlowsDir(ctx, async (flowDir) => {
     const validFlow = `
@@ -89,7 +89,7 @@ output: { from: "s1", format: "markdown" }
   });
 });
 
-Deno.test.ignore("FlowCommands: listFlows outputs JSON when requested", async () => {
+Deno.test("FlowCommands: listFlows outputs JSON when requested", async () => {
   const ctx = await createMockContext();
   await withFlowsDir(ctx, async (flowDir) => {
     const flowModule = `

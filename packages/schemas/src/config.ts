@@ -77,6 +77,7 @@ export interface IPortalConfig {
   target_path: string;
   description?: string;
   default_branch?: string;
+  execution_strategy?: string;
   identities_allowed?: string[];
   operations?: PortalOperation[];
   created?: string;
@@ -130,6 +131,25 @@ const RoutingConfigSchema = z.object({
   experiment_salt: z.string().min(1).default("exaix-routing-experiments"),
   enable_dynamic_routing: z.boolean().default(false),
 }).optional().default({});
+
+/**
+ * Phase 132 ModelPreset — capability profile for model_size-based selection.
+ */
+export const ModelPresetSchema = z.object({
+  max_cost_per_mtok: z.number().min(0),
+  min_context_window: z.number().int().min(1),
+  supports_thinking: z.boolean(),
+  candidates: z.array(z.string()).optional(),
+});
+
+export type ModelPreset = z.infer<typeof ModelPresetSchema>;
+
+export const DEFAULT_MODEL_PRESETS: Record<string, ModelPreset> = {
+  S: { max_cost_per_mtok: 0.5, min_context_window: 8_192, supports_thinking: false },
+  M: { max_cost_per_mtok: 3, min_context_window: 32_000, supports_thinking: true },
+  L: { max_cost_per_mtok: 15, min_context_window: 128_000, supports_thinking: true },
+  XL: { max_cost_per_mtok: 75, min_context_window: 200_000, supports_thinking: true },
+};
 
 export const ToolsConfigSchema = z.object({
   // Network capability control
@@ -314,7 +334,7 @@ export const ConfigSchema = z.object({
   ai: AiConfigSchema.optional(),
   /** Named model configurations (default, fast, local, etc.) */
   models: z.record(z.object({
-    provider: ProviderTypeSchema, // Use ProviderTypeSchema directly instead of AiConfigSchema.shape.provider
+    provider: ProviderTypeSchema,
     model: z.string(),
     timeout_ms: z.number().positive().optional(),
     max_tokens: z.number().positive().optional(),
@@ -340,6 +360,8 @@ export const ConfigSchema = z.object({
       timeout_ms: 120000,
     },
   }),
+  /** Phase 132 — capability presets keyed by model_size (S/M/L/XL). */
+  model_presets: z.record(ModelPresetSchema).default(DEFAULT_MODEL_PRESETS),
   /** AI provider endpoints configuration */
   ai_endpoints: z.record(z.string(), z.string()).optional().default({}),
   /** AI retry configuration */
@@ -635,12 +657,15 @@ export const ConfigSchema = z.object({
       .default(DEFAULTS.DEFAULT_PROVIDER_STRATEGY_FALLBACK_CHAINS),
     budgets: z.record(z.number().min(DEFAULTS.PROVIDER_STRATEGY_BUDGETS_MIN)).optional(),
     task_routing: z.record(z.array(z.string())).optional(),
+    /** Phase 132 — rate-limit headroom weight for provider scoring. 0=disabled, 1=max influence. */
+    rate_limit_weight: z.number().min(0).max(1).default(0),
   }).optional().default({
     prefer_free: DEFAULTS.DEFAULT_PROVIDER_STRATEGY_PREFER_FREE,
     allow_local: DEFAULTS.DEFAULT_PROVIDER_STRATEGY_ALLOW_LOCAL,
     max_daily_cost_usd: DEFAULTS.DEFAULT_PROVIDER_STRATEGY_MAX_DAILY_COST_USD,
     health_check_enabled: DEFAULTS.DEFAULT_PROVIDER_STRATEGY_HEALTH_CHECK_ENABLED,
     fallback_enabled: DEFAULTS.DEFAULT_PROVIDER_STRATEGY_FALLBACK_ENABLED,
+    rate_limit_weight: 0,
   }),
   routing: RoutingConfigSchema,
   /** Phase 106 — optional session-delegation block (global scope). */

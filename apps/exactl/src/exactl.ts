@@ -17,7 +17,7 @@ import { BlueprintCommands } from "./commands/blueprint_commands.ts";
 import { FlowCommands } from "./commands/flow_commands.ts";
 import { DashboardCommands } from "./commands/dashboard_commands.ts";
 import { MemoryCommands } from "./commands/memory_commands.ts";
-import { type IJournalCommandOptions, JournalCommands } from "./commands/journal_commands.ts";
+import { type IJournalCommandOptions, JournalCommands, normalizeLogsFilter } from "./commands/journal_commands.ts";
 import { CostCommands } from "./commands/cost_commands.ts";
 import { RoutingCommands } from "./commands/routing_commands.ts";
 import { WaitStateCommands } from "./commands/wait_state_commands.ts";
@@ -37,7 +37,7 @@ import {
 import { UIOutputFormat } from "@exaix/tui";
 import { AnalysisMode } from "@exaix/core/request";
 import { ReviewStatus } from "@exaix/core/status";
-import { CLI_DEFAULTS } from "@exaix/cli/config.ts";
+import { CLI_DEFAULTS, CLI_OUTPUT_FORMATS } from "@exaix/cli/config.ts";
 import { McpCommands } from "./commands/mcp_commands.ts";
 import { initializeServices, isTestMode as isTestModeImport } from "./init.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
@@ -363,6 +363,18 @@ export const __test_command = new Command()
       .option("--portal <portal:string>", "Portal alias for context")
       .option("--target-branch <branch:string>", "Target branch for this request (portal-aware)")
       .option(CLI_OPTION_MODEL, "Named model configuration")
+      .option("--model-size <size:string>", "Capability tier: S|M|L|XL (maps to context/cost preset via ModelResolver)")
+      .option(
+        "--characteristic <value:string>",
+        "Soft ranking hint — cheapest|fastest. Scores providers, does not eliminate (repeatable)",
+        { collect: true },
+      )
+      .option("--thinking", "Require extended reasoning model")
+      .option("--effort <tier:string>", "Reasoning token budget: low|medium|high (only with --thinking)")
+      .option(
+        "--preferred-provider <provider:string>",
+        "Narrow candidates to specific provider (skips cross-provider scoring)",
+      )
       .option("--flow <flow:string>", "Target multi-agent flow (mutually exclusive with --identity)")
       .option("--skills <skills:string>", "Comma-separated list of skills to inject")
       .option("-s, --subject <subject:string>", "Human-readable subject for the request")
@@ -2086,7 +2098,7 @@ const journalCommand = new Command()
     collect: true,
   })
   .option("-n, --tail <n:number>", "Show last N entries", { default: 50 })
-  .option("--format <format:string>", "Output format (text, table, json)", { default: "text" })
+  .option("--format <format:string>", "Output format (text, table, json)", { default: CLI_OUTPUT_FORMATS.TEXT })
   .option("--distinct <field:string>", "Return distinct values for specified field")
   .option("--count", "Return count aggregation by action_type")
   .option("--payload <pattern:string>", "Filter by payload LIKE pattern")
@@ -2113,7 +2125,26 @@ const logCommand = new Command()
   .command("journal", journalCommand)
   .command("cost", costCommand);
 
+const logsCommand = new Command()
+  .description("Query system activity logs (alias for 'log journal')")
+  .option("-f, --filter <filter:string>", "Filter by key=value or bare event name (e.g., model_resolved)", {
+    collect: true,
+  })
+  .option("-n, --tail <n:number>", "Show last N entries", { default: 50 })
+  .option("--format <format:string>", "Output format (text, table, json)", { default: CLI_OUTPUT_FORMATS.TEXT })
+  .option("--payload <pattern:string>", "Filter by payload LIKE pattern")
+  .option("--actor <actor:string>", "Filter by actor")
+  .option("--target <target:string>", "Filter by target")
+  .action(async (options) => {
+    if (options.filter) {
+      options.filter = normalizeLogsFilter(options.filter);
+    }
+    const cmd = new JournalCommands(context);
+    await cmd.show(options as IJournalCommandOptions);
+  });
+
 __test_command.command("log", logCommand);
+__test_command.command("logs", logsCommand);
 __test_command.command("journal", journalCommand);
 
 // ---------------------------------------------------------------------------

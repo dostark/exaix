@@ -10,6 +10,7 @@
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { ModelIntent } from "@exaix/schemas/model_intent.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
@@ -69,6 +70,8 @@ export interface IPlanExecutorOptions {
   amendmentService?: IPlanAmendmentService;
   /** Optional guardrail runner. When provided, built in createAgentExecutor. */
   guardrailRunner?: IGuardrailRunner;
+  /** Request-level ModelIntent fields that override blueprint values (Phase 132). */
+  requestIntent?: Partial<ModelIntent>;
   /**
    * Optional callback invoked when a code-changes delegation result is
    * reconciled. PlanExecutor calls this to delegate code-change steps to a
@@ -244,6 +247,9 @@ export class PlanExecutor {
     const options: IAgentExecutorOptions = {};
     if (this.options.guardrailRunner) {
       options.guardrailRunner = this.options.guardrailRunner;
+    }
+    if (this.options.requestIntent) {
+      options.requestIntent = this.options.requestIntent;
     }
 
     return new AgentExecutor(

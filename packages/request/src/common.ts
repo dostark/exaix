@@ -69,6 +69,12 @@ export function buildParsedRequest(
     requestId,
     traceId,
     skills,
+    model: frontmatter.model,
+    model_size: frontmatter.model_size,
+    preferred_provider: frontmatter.preferred_provider,
+    thinking: frontmatter.thinking,
+    effort: frontmatter.effort,
+    characteristics: frontmatter.characteristics,
   };
 }
 

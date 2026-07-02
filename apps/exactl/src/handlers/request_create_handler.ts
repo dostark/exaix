@@ -130,6 +130,11 @@ export class RequestCreateHandler extends BaseCommand {
         portal,
         target_branch: options.target_branch,
         model: options.model,
+        model_size: options.model_size,
+        preferred_provider: options.preferred_provider,
+        thinking: options.thinking,
+        effort: options.effort,
+        characteristics: options.characteristics,
         flow: options.flow,
         skills: options.skills,
         created,
@@ -186,31 +191,35 @@ export class RequestCreateHandler extends BaseCommand {
     options: IRequestOptions,
     portal: string | undefined,
   ): void {
-    if (portal) {
-      frontmatterFields.portal = portal;
-    }
+    if (portal) frontmatterFields.portal = portal;
+    if (options.target_branch) frontmatterFields.target_branch = options.target_branch;
+    if (options.model) frontmatterFields.model = options.model;
+    if (options.flow) frontmatterFields.flow = options.flow;
 
-    if (options.target_branch) {
-      frontmatterFields.target_branch = options.target_branch;
-    }
+    this.addModelIntentFrontmatterFields(frontmatterFields, options);
+    this.addArrayFrontmatterFields(frontmatterFields, options);
+  }
 
-    if (options.model) {
-      frontmatterFields.model = options.model;
-    }
+  private addModelIntentFrontmatterFields(
+    frontmatterFields: Record<string, string | boolean | number>,
+    options: IRequestOptions,
+  ): void {
+    if (options.model_size) frontmatterFields.model_size = options.model_size;
+    if (options.preferred_provider) frontmatterFields.preferred_provider = options.preferred_provider;
+    if (options.thinking !== undefined) frontmatterFields.thinking = options.thinking;
+    if (options.effort) frontmatterFields.effort = options.effort;
+    if (options.characteristics?.length) frontmatterFields.characteristics = JSON.stringify(options.characteristics);
+  }
 
-    if (options.flow) {
-      frontmatterFields.flow = options.flow;
-    }
-
-    if (options.skills && options.skills.length > 0) {
-      frontmatterFields.skills = JSON.stringify(options.skills);
-    }
-
-    if (options.acceptanceCriteria && options.acceptanceCriteria.length > 0) {
+  private addArrayFrontmatterFields(
+    frontmatterFields: Record<string, string | boolean | number>,
+    options: IRequestOptions,
+  ): void {
+    if (options.skills?.length) frontmatterFields.skills = JSON.stringify(options.skills);
+    if (options.acceptanceCriteria?.length) {
       frontmatterFields.acceptance_criteria = JSON.stringify(options.acceptanceCriteria);
     }
-
-    if (options.expectedOutcomes && options.expectedOutcomes.length > 0) {
+    if (options.expectedOutcomes?.length) {
       frontmatterFields.expected_outcomes = JSON.stringify(options.expectedOutcomes);
     }
   }

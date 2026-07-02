@@ -10,6 +10,7 @@ import type { IExecutionStrategy } from "./execution_strategy.ts";
 import { AgentExecutionError, type AgentExecutor, type IAgentFileBlueprint } from "../agent_executor.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { IModelCallOptions } from "@exaix/schemas";
 import { parse as parseToml } from "@std/toml";
 import type { JSONValue } from "@exaix/core";
 import {
@@ -27,6 +28,8 @@ import { WRITE_TOOLS } from "@exaix/mcp";
  */
 export class LegacyAgentStrategy implements IExecutionStrategy {
   public readonly name = "legacy";
+  /** Per-call options (thinking/effort/max_tokens) set by agent_executor before execute(). */
+  public callOptions?: IModelCallOptions;
 
   constructor(
     private executor: AgentExecutor,
@@ -48,6 +51,7 @@ export class LegacyAgentStrategy implements IExecutionStrategy {
     const result = await this.provider.generate(prompt, {
       temperature: LEGACY_EXECUTION_TEMPERATURE,
       max_tokens: LEGACY_EXECUTION_MAX_TOKENS,
+      ...this.callOptions,
     });
 
     // Log individual generation metrics (Phase 69)

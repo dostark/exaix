@@ -1,7 +1,10 @@
 ---
 identity_id: "dogfood-developer"
 name: "Dogfooding Engineer"
-model: "openrouter:deepseek/deepseek-chat"
+model: ""
+model_size: M
+thinking: true
+effort: medium
 capabilities: ["code_generation", "testing", "code_review", "planning", "execution", "debugging"]
 created: "2026-06-18T00:00:00Z"
 created_by: "opencode"

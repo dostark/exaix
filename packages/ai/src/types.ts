@@ -7,7 +7,7 @@
  */
 import type { ConfigSource, JSONValue, McpToolName, MockStrategy, ProviderType } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
-import type { Config, IBlueprintFrontmatter } from "@exaix/schemas";
+import type { Config, EffortTier, IBlueprintFrontmatter, IModelCallOptions } from "@exaix/schemas";
 
 /**
  * Options for model generation requests.
@@ -24,6 +24,12 @@ export interface IModelOptions {
    * Non-Anthropic providers ignore this field.
    */
   cachedSections?: number[];
+  /** Enable extended/chain-of-thought reasoning. Provider-specific mapping. */
+  thinking?: boolean;
+  /** Reasoning effort tier — low, medium, or high (EffortTier). Normalized across providers. */
+  effort?: EffortTier;
+  /** Provider-specific thinking budget cap (e.g. Anthropic max_tokens for thinking). */
+  thinking_budget?: number;
 }
 
 import type { IGenerateResult } from "./providers/common.ts";
@@ -109,6 +115,7 @@ export interface ILlmClient {
     }>;
     iteration: number;
     maxIterations: number;
+    options?: IModelCallOptions;
   }): Promise<{
     done: boolean;
     tool?: McpToolName;

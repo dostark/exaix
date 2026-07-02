@@ -235,6 +235,8 @@ Deno.test("Blueprint validation: all agents have valid model format", async () =
     const frontmatter = parseFrontmatter(content);
 
     if (frontmatter) {
+      // Empty model is valid — means resolve via ModelResolver using model_size
+      if (!frontmatter.model) continue;
       const isValid = modelRegex.test(frontmatter.model);
       assertEquals(
         isValid,

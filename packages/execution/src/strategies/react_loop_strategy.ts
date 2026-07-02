@@ -37,6 +37,7 @@ import {
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
+import type { IModelCallOptions } from "@exaix/schemas";
 import type { IContextBudgetManager, IContextBudgetManagerInput } from "../context/context_budget_manager.ts";
 import type { IContextSegment } from "../context/context_segment.ts";
 import type { IEventLogger } from "@exaix/core/logger";
@@ -90,6 +91,8 @@ enum ReActRole {
  */
 export class ReActLoopStrategy implements IExecutionStrategy {
   public readonly name = ExecutionStrategyName.REACT;
+  /** Per-call options (thinking/effort/max_tokens) set by agent_executor before execute(). */
+  public callOptions?: IModelCallOptions;
   private readonly MAX_ITERATIONS = DEFAULT_AGENT_MAX_ITERATIONS;
 
   constructor(
@@ -153,6 +156,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
           this.provider!.generate(prompt, {
             temperature: REACT_DEFAULT_TEMPERATURE,
             max_tokens: REACT_DEFAULT_MAX_TOKENS,
+            ...this.callOptions,
           }),
       );
 

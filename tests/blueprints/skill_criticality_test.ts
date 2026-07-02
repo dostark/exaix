@@ -14,13 +14,11 @@
  */
 
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
-import { join, resolve } from "@std/path";
+import { join } from "@std/path";
 import { SkillSchema } from "@exaix/schemas/memory_bank.ts";
 import { MemoryBankSource, MemoryScope, SkillStatus, ZSkillMatch } from "@exaix/core/types";
 import { renderCriticalSkillsSection, renderSkillsSection } from "@exaix/core/func";
-
-const REPO_ROOT = resolve(new URL("../../", import.meta.url).pathname);
-const SKILLS_DIR = join(REPO_ROOT, "Blueprints", "Skills");
+import { SKILLS_DIR } from "./test_helpers.ts";
 
 function makeSkill(over: Partial<{ id: string; name: string; instructions: string; critical: boolean }>) {
   return {

@@ -128,3 +128,10 @@ export class JournalCommands extends BaseCommand {
     return filterOptions;
   }
 }
+
+/** Converts bare event names (e.g., `model_resolved`) to `action_type=<name>`
+ *  for the `exactl logs` command. Passes through existing `key=value` pairs.
+ */
+export function normalizeLogsFilter(filters: string[]): string[] {
+  return filters.map((f) => f.includes("=") ? f : `action_type=${f}`);
+}

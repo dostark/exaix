@@ -1,7 +1,10 @@
 ---
 identity_id: "security-expert"
 name: "Security Expert"
-model: "google:gemini-2.0-flash-exp"
+model: ""
+model_size: L
+thinking: true
+effort: high
 capabilities: ["security_audit", "code_review", "vulnerability_analysis"]
 created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"

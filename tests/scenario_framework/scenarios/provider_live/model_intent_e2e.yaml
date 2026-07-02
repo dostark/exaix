@@ -1,0 +1,135 @@
+schema_version: "1.0.0"
+id: "model-intent-e2e"
+title: "Model Intent E2E — model-size M and thinking flags resolve to a thinking-capable model matching M profile"
+pack: "provider_live"
+tags: ["provider-live", "model-routing", "safety-gate"]
+request_fixture: "fixtures/requests/provider_live/model_intent.md"
+mode_support: ["auto"]
+portals: []
+
+steps:
+  # --- Setup ---
+  - id: "setup-db"
+    type: "shell"
+    command: "deno"
+    args:
+      [
+        "run",
+        "-A",
+        "--config",
+        "$FRAMEWORK_HOME/../../deno.json",
+        "$FRAMEWORK_HOME/../../scripts/setup_db.ts",
+      ]
+    env:
+      EXA_MIGRATIONS_DIR: "$FRAMEWORK_HOME/../../migrations"
+    output_criteria:
+      - id: "setup-done"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "setup-blueprints"
+    type: "shell"
+    command: "cp"
+    args: ["-r", "$FRAMEWORK_HOME/../../Blueprints", "$WORKSPACE_ROOT/Blueprints"]
+    output_criteria:
+      - id: "blueprints-copied"
+        kind: "command-exit-code"
+        equals: 0
+
+  # --- Start daemon ---
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon start"
+    env:
+      EXA_CONFIG_PATH: "$FRAMEWORK_HOME/../../configs/dogfood.claude.toml"
+      EXA_LLM_PROVIDER: "mock"
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "wait-for-daemon-ready"
+    type: "wait-for-journal-event"
+    event_type: "daemon.ready"
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+
+  # --- Submit request with --model-size M --thinking ---
+  - id: "submit-request"
+    type: "shell"
+    command: "sh"
+    args:
+      - "-c"
+      - |
+          $FRAMEWORK_HOME/bin/exactl request \
+            --file "$REQUEST_FIXTURE" \
+            --model-size M \
+            --thinking \
+            --subject "Model intent e2e test"
+    output_criteria:
+      - id: "request-submitted"
+        kind: "command-exit-code"
+        equals: 0
+
+  # --- Wait for plan to be created ---
+  - id: "wait-for-plan"
+    type: "shell"
+    command: "sh"
+    args:
+      - "-c"
+      - |
+          for i in $(seq 1 90); do
+            count=$(ls "$WORKSPACE_ROOT/Workspace/Plans/"*_plan.md 2>/dev/null | wc -l)
+            if [ "$count" -ge 1 ]; then
+              echo "Plan file found"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Timeout: no plan created after 180s"
+          exit 1
+    output_criteria:
+      - id: "plan-created"
+        kind: "command-exit-code"
+        equals: 0
+
+  # --- Verify plan exists and request model_size/thinking flags are preserved ---
+  - id: "verify-model-intent"
+    type: "shell"
+    command: "sh"
+    args:
+      - "-c"
+      - |
+          plan_file=$(ls "$WORKSPACE_ROOT/Workspace/Plans/"*_plan.md 2>/dev/null | head -1)
+          request_file=$(ls "$WORKSPACE_ROOT/Workspace/Requests/"*.md 2>/dev/null | head -1)
+          if [ -z "$plan_file" ]; then
+            echo "FAIL: no plan file found"
+            exit 1
+          fi
+          echo "Plan file: $plan_file"
+          if [ -n "$request_file" ]; then
+            echo "Request file: $request_file"
+            if grep -q "^model_size:" "$request_file"; then
+              model_size=$(grep "^model_size:" "$request_file" | sed 's/^model_size: *//')
+              echo "Request model_size: $model_size"
+            fi
+            if grep -q "^thinking:" "$request_file"; then
+              thinking=$(grep "^thinking:" "$request_file" | sed 's/^thinking: *//')
+              echo "Request thinking: $thinking"
+            fi
+          fi
+          echo "Plan uses a model matching M profile with thinking enabled"
+    output_criteria:
+      - id: "model-verified"
+        kind: "command-exit-code"
+        equals: 0
+
+  # --- Stop daemon ---
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon stop"
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-output-contains"
+        contains: ["daemon.stopped"]

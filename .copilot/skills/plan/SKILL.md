@@ -10,7 +10,7 @@ scope: dev
 title: "Plan Skill (#plan)"
 description: Draft a new Phase Planning Document for a feature, refactor, or architectural change — follows Exaix standards for TDD, security, and traceability. Produces plans that are machine-convertible to dogfood requests (step-manifests for automated request extraction). Grounds any third-party service/provider integration in deep web research of the provider's real, current capability surface so integrations are first-class, not hacks.
 short_summary: "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy."
-version: "1.8.0"
+version: "1.9.0"
 topics: [
   "planning",
   "architecture",
@@ -42,6 +42,7 @@ Key points
 - **Trace every output to its consumer**: For every new interface field or event payload name a consuming component and verify the data flow reaches it. Fields with no readers are dead data.
 - **Survey module conventions**: Before committing to a pattern choice (event naming, error handling, DI style), read 5–10 existing examples in the affected module and document the dominant convention. Divergence requires justification in Architecture Notes.
 - **Ground third-party integrations in web research**: When a plan integrates an external service, provider, API, or CLI (an LLM provider, a coding-agent tool, a cloud/SaaS API, a binary), do deep web research on the provider's CURRENT official capability surface FIRST — supported endpoints, auth model, config/routing knobs, limits, versioning — and design to its real first-class mechanism. A wrapper/proxy/scrape/undocumented-flag "integration" is a hack that breaks on the next provider update: flag it and prefer the documented path. Record the doc URLs + research date. See §2F.
+- **Ground every code-facing claim in real source**: Before writing any step that extends an existing interface, calls an existing method, or modifies an existing code path, grep the symbol and read the call site first. The plan must be drafted against real signatures and real behaviour, not memory. See §2G.
 - **Map prose claims to named tests**: Every behavioural claim made in the prose (e.g., "checkpoint preserves data", "service Y calls service Z") must have a named test in Planned Tests. Claims without test names are gaps.
 - **Reachability over layering**: structure the plan as a VERTICAL end-to-end slice (one complete path entry-point → … → output) BEFORE breadth. A horizontal, layer-by-layer plan (all schemas, then all services, then "wire it") is the classic setup for "every component exists, nothing works" — flag it and re-sequence. See §E.
 - **Integration anchor per runtime-claiming step**: any step whose Success Criteria assert runtime/observable behaviour MUST name (a) the exact production call-site/constructor (`file:Symbol`) that invokes the new code, and (b) a named integration or scenario test that exercises that call-site. A runtime claim backed only by package-unit tests is a pre-gap.
@@ -66,6 +67,7 @@ Do / Don't
 - ✅ Do trace every new output field to a named consumer — verify the data flow has a destination before writing it.
 - ✅ Do survey the affected module's existing conventions before choosing a pattern — document divergence in Architecture Notes.
 - ✅ Do ground every third-party/provider integration in deep web research of the provider's current official docs — design to the supported first-class endpoint/auth/config surface, and cite the URLs + research date (§2F).
+- ✅ Do ground every code-facing claim in real source before writing it — grep interfaces, read call sites, audit side effects per §2G before drafting any step that references existing code.
 - ✅ Do map every prose behavioural claim to a named test in the step's Planned Tests section.
 - ✅ Do anchor every runtime-claiming step to a named production call-site AND an integration/scenario test (not just a unit test).
 - ✅ Do include one terminal, non-deferrable "Integration & cutover" step proving the feature is reachable from a real run.
@@ -84,7 +86,9 @@ Do / Don't
 - ❌ Don't defer documentation updates; implement them as the last step of the phase.
 
 Prototypes & Validation:
-- Use #pre-gap-analysis to validate this plan against the codebase before starting.
+- Use #pre-gap-analysis to validate this plan against the codebase before starting. The plan's §2G
+  Codebase Grounding should have already caught interface mismatches, call-site surprises, and
+  side-effect omissions — pre-gap-analysis re-verifies them as a second pass, not a first discovery.
 - Use #post-gap-analysis to verify the final implementation against the plan's promises.
 
 Workflow chain (typical):
@@ -244,6 +248,59 @@ real, supported, first-class mechanism:
   in a **Sources** block in the plan, marking each as official vs community/unofficial;
   re-verify if the plan is implemented much later.
 
+#### G. Codebase Grounding — Pre-Draft Verification (§2G)
+
+**Goal:** Before writing a single line of the plan, verify every existing symbol, interface, call
+site, and side-effect assumption against real source code. Pre-gap-analysis will later do a deeper
+pass; this step prevents the plan from being drafted against phantom interfaces or wrong mental
+models in the first place.
+
+Run this as a **pre-draft checklist** after reading the Executive Summary / Goal and before
+writing any step's Actions or Architecture Notes. Treat it as mandatory — the same way §2F
+(web research) is mandatory for integrations.
+
+1. **Interface verification — pre-draft.** For every existing interface the plan proposes to
+   extend (add a field, add a method), grep the codebase for the symbol BEFORE writing the step.
+   Classify:
+   - **EXISTS-MATCH** — symbol and its current shape match the plan's assumption. Safe to proceed.
+   - **EXISTS-MISMATCH** — symbol exists but has a different shape than assumed. Read the real
+     signature, update the plan's mental model, and design the extension against the real interface.
+   - **NOT-FOUND** — symbol does not exist. The plan's "extend existing" claim is impossible.
+     Either the plan meant to create a new interface, or it references the wrong name. Fix before
+     drafting.
+
+2. **Call-site tracing — pre-draft.** For every method the plan claims a component calls, or
+   every data-flow the plan asserts, read the actual call site BEFORE describing it in the plan:
+   - Does the method accept the parameters the plan assumes?
+   - Does the return type match what the plan expects?
+   - Is there a hidden indirection (wrapper, adapter, delegation) the plan didn't account for?
+   - If the plan says "pass options to generate()", confirm generate() actually takes options.
+     Write the real call-site behaviour into the Architecture Notes, not the assumed behaviour.
+
+3. **Side-effect audit — pre-draft.** For every method the plan's step will invoke or modify,
+   scan for impure patterns before describing the change:
+   - `Deno.env.get/set/delete` — env var mutation in request-time code is always a gap.
+   - `static` mutable state — registry writes, global caches. Is this boot-time or request-time?
+   - Module-level `let` variables that accumulate state across calls.
+   - If a side effect exists but the plan's step doesn't mention removing or preserving it,
+     the plan's model of the code is incomplete. Add an Architecture Note about the side effect
+     and whether the step eliminates or preserves it.
+
+4. **Record what was checked.** After completing the pre-draft checks, add a **Codebase Grounding
+   Summary** paragraph in the plan's Technical Architecture section listing:
+   - Every interface checked + result (MATCH / MISMATCH / NOT-FOUND).
+   - Every call site read + what was learned.
+   - Every side effect found + disposition (eliminated / preserved with note).
+     This creates an audit trail and prevents the next reader from wondering whether the plan
+     was grounded or written from memory.
+
+> **Why this exists:** Pre-gap analysis commonly finds gaps that are invisible to
+> document-level review — interfaces that don't have fields the plan assumed, methods that
+> work differently than described, env var side effects the plan never knew existed. Adding
+> these checks to the plan skill means those gaps are caught at draft time, not later. The
+> pre-gap-analysis skill's equivalent phases (2A–2C) become a verification pass over grounded
+> work rather than the first discovery of mismatches.
+
 ### 3. Documentation Update Protocol (§3D)
 
 Include a final **Step N (§3D): Update Documentation** that covers:
@@ -286,6 +343,12 @@ coverage:
   daemon request schema — validating early ensures the step is representable as a request. The
   manifest is additive and backward-compatible: existing tools read the prose, `plan_to_requests.ts`
   prefers the manifest.
+- **Codebase-ground every claim before writing it**: Do not design interfaces, describe call flows,
+  or assert side-effect safety from memory. Before writing any step that references an existing
+  symbol, method, or code path: grep the symbol to confirm its real signature exists, read the call
+  site to verify the plan's behavioural model matches reality, and audit the method for hidden side
+  effects (env var mutation, static state, concurrent-unsafe caching). A plan drafted from memory
+  will be contradicted by the codebase — catch it at draft time, not in pre-gap-analysis. See §2G.
 
 ---
 

@@ -10,7 +10,7 @@ scope: dev
 title: "Pre-Gap Analysis Skill (#pre-gap-analysis)"
 description: Pre-implementation gap analysis of a phase planning document — finds ambiguities, missing contracts, and security risks before coding starts
 short_summary: "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against."
-version: "1.6.0"
+version: "1.7.0"
 topics: [
   "planning",
   "gap-analysis",
@@ -260,7 +260,96 @@ gaps.
 
 ---
 
+### Phase 2A — Interface Verification (codebase-level)
+
+**Goal:** Verify every interface, type, and schema the plan proposes to create or extend actually exists (or provably doesn't) in current source, and that its real shape matches what the plan assumes.
+
+Run this phase after Phase 2 (architectural alignment) and before Phase 3 (detailed source verification). It is a lighter, targeted check that catches the most common plan-vs-reality mismatches in a single pass.
+
+1. **Catalogue every interface/type/schema the plan references.**
+   From Phase 1 notes, extract:
+   - Interfaces the plan proposes to **create** (e.g. `IModelRegistry`, `IResolvedModel`)
+   - Interfaces the plan proposes to **extend** (e.g. add `thinking`/`effort` to `IModelOptions`)
+   - Constants or enums the plan proposes to **add to** (e.g. `DomainEventType`)
+   - Zod schemas the plan proposes to **extend** (e.g. `RoutingConfigSchema`)
+
+1. **Resolve each against real source.**
+   For each entry, grep the codebase for the symbol name. Classify the result:
+   - **🟢 EXISTS-MATCH** — symbol found with the exact shape the plan assumes. No gap.
+   - **🟡 EXISTS-MISMATCH** — symbol found but differs from the plan's assumption (wrong field name, different signature, optional vs required). Flag as a gap with the real signature.
+   - **🔴 NOT-FOUND-NEW** — symbol does not exist and the plan says it's new. Expected; note it for Phase 3 verification of the plan's creation actions.
+   - **🔴 NOT-FOUND-EXTEND** — symbol does not exist but the plan says "extend existing". The plan assumes something exists that doesn't — 🔴 Critical gap. The plan must either create it or correct the reference.
+   - **⚪ NOT-FOUND-DELETED** — symbol does not exist and the plan says to replace/retire it. Expected; note it for Phase 3.
+
+1. **Check barrel exports.**
+   For each new or extended interface, verify the plan names the barrel/index file it will be exported from. If multiple packages share the type, confirm the plan specifies which package owns the canonical definition.
+
+**Rationale:** Catches the pattern where a plan says "extend IModelOptions with thinking/effort" but IModelOptions doesn't exist, or says "add ModelResolved to DomainEventType" but DomainEventType doesn't use that event registration pattern. Phase 3 cannot catch these — it verifies the files the plan names, not the files the plan assumes.
+
+---
+
+### Phase 2B — Call-Site Tracing (codebase-level)
+
+**Goal:** For every code path, method, or call chain the plan claims to modify or rely on, read the actual call site and verify the plan's mental model matches reality. Catches the most common implementation blocker: the plan describes how a component works, but the real component works differently.
+
+Run this phase after Phase 2A (interface verification). It is an independent audit — do not re-use Phase 3 file reads; read the call sites specifically to test the plan's claims.
+
+1. **Extract every behavioural claim from the plan.**
+   From each step's Actions and Architecture Notes, list claims like:
+   - "Component X calls service Y with parameter Z" — read Y's actual method signature.
+   - "The resolver passes options to every generate() call" — read the call site; does generate() accept options?
+   - "ProviderFactory.createByName() resolves the provider" — read the method; does it create one or multiple?
+   - "FlowRunner creates a new LlmClient with dynamicModel" — read the constructor; what does the third param actually do?
+
+1. **Read each call site and classify.**
+   - **🟢 CLAIM-MATCHES** — the real call site matches the plan's description. No gap.
+   - **🟡 CLAIM-OMISSION** — the real call site has behaviour the plan doesn't mention (e.g. env var mutation, error handling, caching). The plan's model is incomplete; flag what was missed.
+   - **🔴 CLAIM-CONTRADICTS** — the real call site flatly contradicts the plan's claim (e.g. plan says "generate() accepts options" but the method takes only a prompt string). The plan is wrong about how a core dependency works — requires a plan revision.
+   - **⚪ CLAIM-AMBIGUOUS** — the plan's wording is vague enough that multiple interpretations are valid. Flag for clarification.
+
+1. **Trace constructor-injection chains.**
+   For every service the plan says "X receives Y via constructor injection":
+   - Read X's constructor signature.
+   - Read every production call-site that constructs X (grep `new X`).
+   - Verify the parameter order, type, and optionality match at every call-site.
+   - Flag any call-site where Y would be `undefined` or the types don't align.
+
+**Rationale:** Phase 3 confirms `files exist and symbols resolve`. Phase 2B confirms `the code the plan describes works the way the plan thinks it does`. These are different guarantees — a plan can name every real file and still be wrong about how those files behave.
+
+---
+
+### Phase 2C — Side-Effect Audit (codebase-level)
+
+**Goal:** Flag impure patterns (env var mutation, global state modification, concurrent-unsafe caching) that the plan assumes don't exist, or that the plan proposes to remove without explicitly naming and eliminating them.
+
+Run this phase after Phase 2B. It is a targeted scan for side-effect patterns in every method or code path the plan touches.
+
+1. **Scan each touched method for impure patterns.**
+   For every method the plan references or would call, search for:
+   - `Deno.env.get/set/delete` — env var reads/writes. Non-const env reads at module init are acceptable (config bootstrap); env writes inside request handlers or resolution logic are gaps.
+   - `static mutable state` — `static` fields that are mutated after construction (e.g. `ProviderRegistry.metadata` as a `Map` with `register()` calls). Not inherently a gap, but the plan must account for the timeliness of registration (at boot, not lazily).
+   - `global singletons with mutable state` — module-level `let` variables, `Map`s, `Set`s that accumulate state across calls.
+   - `concurrent-unsafe patterns` — shared mutable state without synchronization. (Deno is single-threaded in practice, but future Workers or isolate sharing would break.)
+
+1. **Classify each finding.**
+   - **🟢 SIDE-EFFECT-ACCEPTABLE** — side effect is scoped to boot/init (e.g. registering providers at startup). The plan may or may not mention it; if it doesn't, note as optional documentation gap.
+   - **🟡 SIDE-EFFECT-UNMENTIONED** — side effect exists in a method the plan modifies but the plan does not mention it. The plan's model of the method is incomplete; flag what was missed so the implementation step can choose to preserve, remove, or document it.
+   - **🔴 SIDE-EFFECT-RETAINED** — the plan says "replace X with Y" but a side effect in X (env var mutation, global cache write) is not mentioned in the replacement step. The plan will ship a broken or leaking abstraction if the side effect survives unnoticed.
+   - **🔴 SIDE-EFFECT-VESTIGIAL** — a method that only exists to perform a side effect (e.g. `resolveProvider()` which exists only to set env vars before calling `ProviderFactory.createByName()`). The plan must explicitly delete or replace the method; otherwise the vestigial path is a bypass around the new routing.
+
+1. **Check the plan's own side-effect proposal.**
+   If the plan itself proposes a new impure pattern (e.g. writing to a global registry, caching resolved models in a static Map), evaluate it against the architecture:
+   - Is this a boot-time registration or a request-time mutation?
+   - If request-time, is there a clear lifecycle (initialized when, cleared when)?
+   - Is concurrent access possible (or planned for a future phase)?
+
+**Rationale:** Phase 2B catches "the method signature is different." Phase 2C catches "the method looks right but has a hidden side effect the plan didn't account for" — a method the plan would keep but never knew was impure. Without Phase 2C, an implementer would preserve the env var mutation alongside new routing, creating a silent bypass.
+
+---
+
 ### Phase 3 — Source Verification
+
+> **Note:** Phases 2A–2C already verified interfaces, call-sites, and side effects for the plan's core claims. This phase is the exhaustive file-by-file read of every source file the plan references — including files not covered by the targeted checks above (e.g. test files, config schemas, constants files, barrel exports).
 
 1. **Locate every referenced source file and read it.**
    For each file the plan mentions: confirm it exists, and that the symbols the

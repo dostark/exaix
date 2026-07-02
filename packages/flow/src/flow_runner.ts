@@ -39,6 +39,9 @@ import { DynamicStepExecutor } from "./dynamic_step_executor.ts";
 import { ActivityJournal } from "./activity_journal.ts";
 import { McpClient } from "@exaix/mcp/server";
 import { LlmClient } from "@exaix/ai/llm_client.ts";
+import type { ModelResolver } from "@exaix/ai";
+import type { ModelIntent } from "@exaix/schemas";
+import { mapPresetToSize } from "./preset_mapper.ts";
 import type { ToolHandler } from "@exaix/mcp/server";
 import type { McpToolName } from "@exaix/mcp";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -179,10 +182,10 @@ export interface IFlowRunnerConfig {
   /**
    * Model preset name for dynamic steps (e.g. "small", "medium", "large").
    * When omitted, LlmClient defaults to "default" (models.default).
-   * Set this to match the preset chosen by ProviderSelector for consistency
-   * between declared and dynamic step provider resolution.
    */
   dynamicModel?: string;
+  /** Optional ModelResolver for resolving dynamicModel presets to provider:model. */
+  modelResolver?: ModelResolver;
   /** Optional Phase 118 HITL policy evaluator for per-action governance. No-op (Solo) when omitted. */
   hitlPolicyEvaluator?: IHitlPolicyEvaluator;
 }
@@ -694,6 +697,7 @@ export class FlowRunner implements IFlowRunner {
   private waitStateService?: IWaitStateService;
   private readonly pendingWaitStateRef: IPendingWaitStateRef = { current: undefined };
   private eventRegistry?: IEventRegistry;
+  private modelResolver?: ModelResolver;
 
   private createNoOpDurabilityStore(): IStepDurabilityStore {
     return {
@@ -722,83 +726,20 @@ export class FlowRunner implements IFlowRunner {
     this.db = options.context?.db || options.db;
     this.gateEvaluator = options.context?.gateEvaluator || options.gateEvaluator;
     this.config = options.context?.config.get() || options.config;
-    if (options.checkpointService) {
-      this.checkpointService = options.checkpointService;
-    } else if (this.config) {
-      this.checkpointService = new FlowCheckpointService(this.config);
-    }
-    if (this.config) {
-      this.namespaceService = new FlowNamespaceService(this.config);
-    }
+    this.initCoreServices();
 
     this.stepDurabilityStore = options.stepDurabilityStore ?? this.createNoOpDurabilityStore();
     this.stepReplayPolicy = options.stepReplayPolicy ?? new DefaultStepReplayPolicy();
     this.waitStateService = options.waitStateService;
+    this.modelResolver = options.modelResolver;
 
-    if (options.eventRegistry) {
-      this.eventRegistry = options.eventRegistry;
-      options.eventRegistry.registerPublisher("flow_runner", [
-        DomainEventType.WaitStateCreated,
-        DomainEventType.WaitStateResolved,
-        DomainEventType.FlowStepReplayed,
-        DomainEventType.FlowStepInvalidated,
-      ]);
-    }
+    this.registerEventPublisher(options);
 
     const config = this.config;
     const db = this.db;
     const dynamicHandlers = options.dynamicHandlers;
     const mcpHandlers = options.mcpHandlers;
-    const hasDynamicTools = dynamicHandlers !== undefined || mcpHandlers !== undefined;
-
-    if (config && hasDynamicTools && this.eventLogger) {
-      const activityJournal = new ActivityJournal(this.eventLogger);
-
-      // Use existing context if available, otherwise build a minimal one for McpClient
-      const context = (options.context || {
-        config: {
-          get: () => config,
-          getAll: () => config,
-          getConfigPath: () => "",
-          reload: () => config,
-          getSchemaVersion: () => "1.0.0",
-          getPortals: () => [],
-          getPortal: (_alias: string) => undefined,
-          addPortal: (_alias: string, _path: string) => Promise.resolve(),
-          removePortal: (_alias: string) => Promise.resolve(),
-        },
-        db: db!,
-        provider: createProviderStub(),
-        display: {
-          info: () => Promise.resolve(),
-          warn: () => Promise.resolve(),
-          error: () => Promise.resolve(),
-          debug: () => Promise.resolve(),
-          fatal: () => Promise.resolve(),
-        },
-        git: createGitServiceStub(),
-      }) as IApplicationContext;
-
-      // Prefer the canonical Map from buildDynamicHandlers(); fall back to legacy array.
-      const mcpClient = dynamicHandlers
-        ? new McpClient(context, dynamicHandlers)
-        : new McpClient(context, mcpHandlers!);
-      this.mcpClient = mcpClient;
-      const llmClient = new LlmClient(config, undefined, this.options.dynamicModel);
-      const confirmationTimeoutMs = (config.tools?.confirmation_timeout_s ?? DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S) *
-        1000;
-      const confirmationInterceptor = context.notificationService
-        ? new NotificationQueueConfirmationInterceptor(context.db, context.notificationService, activityJournal)
-        : new CliConfirmationInterceptor(activityJournal, confirmationTimeoutMs);
-      this.dynamicStepExecutor = new DynamicStepExecutor(
-        mcpClient,
-        llmClient,
-        activityJournal,
-        confirmationInterceptor,
-        this.options.milestoneEmitter,
-        this.options.hitlPolicyEvaluator,
-      );
-    }
+    this.initDynamicTools(config, db, dynamicHandlers, mcpHandlers, options);
 
     this.stepHandlerRegistry.register(
       new GateStepHandler({
@@ -819,6 +760,143 @@ export class FlowRunner implements IFlowRunner {
     this.stepHandlerRegistry.registerWithKey(FlowStepType.BRANCH, agentHandler);
     this.stepHandlerRegistry.registerWithKey(FlowStepType.CONSENSUS, agentHandler);
     this.eventLogger.log("flow.deprecation.consensus", { step_type: FlowStepType.CONSENSUS });
+  }
+
+  private initCoreServices(): void {
+    if (this.options.checkpointService) {
+      this.checkpointService = this.options.checkpointService;
+    } else if (this.config) {
+      this.checkpointService = new FlowCheckpointService(this.config);
+    }
+    if (this.config) {
+      this.namespaceService = new FlowNamespaceService(this.config);
+    }
+  }
+
+  private registerEventPublisher(options: IFlowRunnerConfig): void {
+    if (!options.eventRegistry) return;
+    this.eventRegistry = options.eventRegistry;
+    options.eventRegistry.registerPublisher("flow_runner", [
+      DomainEventType.WaitStateCreated,
+      DomainEventType.WaitStateResolved,
+      DomainEventType.FlowStepReplayed,
+      DomainEventType.FlowStepInvalidated,
+    ]);
+  }
+
+  private initDynamicTools(
+    config: Config | undefined,
+    db: IDatabaseService | undefined,
+    dynamicHandlers: Map<McpToolName, ToolHandler> | undefined,
+    mcpHandlers: ToolHandler[] | undefined,
+    options: IFlowRunnerConfig,
+  ): void {
+    const hasDynamicTools = dynamicHandlers !== undefined || mcpHandlers !== undefined;
+    if (!config || !hasDynamicTools || !this.eventLogger) return;
+
+    const activityJournal = new ActivityJournal(this.eventLogger);
+    const context = (options.context || this.buildFallbackContext(config, db)) as IApplicationContext;
+    const mcpClient = dynamicHandlers ? new McpClient(context, dynamicHandlers) : new McpClient(context, mcpHandlers!);
+    this.mcpClient = mcpClient;
+
+    if (this.modelResolver) return;
+
+    const llmClient = new LlmClient(config, undefined, this.options.dynamicModel);
+    const confirmationTimeoutMs = (config.tools?.confirmation_timeout_s ?? DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S) * 1000;
+    const confirmationInterceptor = context.notificationService
+      ? new NotificationQueueConfirmationInterceptor(context.db, context.notificationService, activityJournal)
+      : new CliConfirmationInterceptor(activityJournal, confirmationTimeoutMs);
+    this.dynamicStepExecutor = new DynamicStepExecutor(
+      mcpClient,
+      llmClient,
+      activityJournal,
+      confirmationInterceptor,
+      this.options.milestoneEmitter,
+      this.options.hitlPolicyEvaluator,
+    );
+  }
+
+  private buildFallbackContext(config: Config, db: IDatabaseService | undefined): object {
+    return {
+      config: {
+        get: () => config,
+        getAll: () => config,
+        getConfigPath: () => "",
+        reload: () => config,
+        getSchemaVersion: () => "1.0.0",
+        getPortals: () => [],
+        getPortal: (_alias: string) => undefined,
+        addPortal: (_alias: string, _path: string) => Promise.resolve(),
+        removePortal: (_alias: string) => Promise.resolve(),
+      },
+      db: db!,
+      provider: createProviderStub(),
+      display: {
+        info: () => Promise.resolve(),
+        warn: () => Promise.resolve(),
+        error: () => Promise.resolve(),
+        debug: () => Promise.resolve(),
+        fatal: () => Promise.resolve(),
+      },
+      git: createGitServiceStub(),
+    };
+  }
+
+  /**
+   * Lazily initialise the dynamic step executor when a modelResolver is configured.
+   * Called at the start of execute() — not in the constructor — because model
+   * resolution is async.
+   */
+  private async ensureDynamicExecutor(
+    _flow: IFlow,
+    _flowRunId: string,
+  ): Promise<void> {
+    if (this.dynamicStepExecutor || !this.modelResolver || !this.config || !this.eventLogger) {
+      return;
+    }
+    const intent: ModelIntent = {
+      model_size: mapPresetToSize(this.options.dynamicModel),
+    };
+    const resolved = await this.modelResolver.resolve(intent);
+    const activityJournal = new ActivityJournal(this.eventLogger);
+    const config = this.config;
+    const db = this.db;
+    const context = (this.options.context || {
+      config: {
+        get: () => config,
+        getAll: () => config,
+        getConfigPath: () => "",
+        reload: () => config,
+        getSchemaVersion: () => "1.0.0",
+        getPortals: () => [],
+        getPortal: (_alias: string) => undefined,
+        addPortal: (_alias: string, _path: string) => Promise.resolve(),
+        removePortal: (_alias: string) => Promise.resolve(),
+      },
+      db: db!,
+      provider: createProviderStub(),
+      display: {
+        info: () => Promise.resolve(),
+        warn: () => Promise.resolve(),
+        error: () => Promise.resolve(),
+        debug: () => Promise.resolve(),
+        fatal: () => Promise.resolve(),
+      },
+      git: createGitServiceStub(),
+    }) as IApplicationContext;
+    const llmClient = new LlmClient(config, undefined, resolved.model);
+    const confirmationTimeoutMs = (config.tools?.confirmation_timeout_s ?? DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S) * 1000;
+    const confirmationInterceptor = context.notificationService
+      ? new NotificationQueueConfirmationInterceptor(context.db, context.notificationService, activityJournal)
+      : new CliConfirmationInterceptor(activityJournal, confirmationTimeoutMs);
+    this.dynamicStepExecutor = new DynamicStepExecutor(
+      this.mcpClient!,
+      llmClient,
+      activityJournal,
+      confirmationInterceptor,
+      this.options.milestoneEmitter,
+      this.options.hitlPolicyEvaluator,
+    );
   }
 
   /**
@@ -890,6 +968,9 @@ export class FlowRunner implements IFlowRunner {
     const flowRunId = crypto.randomUUID();
     const startedAt = new Date();
     const flowContentHash = await this.computeFlowContentHash(flow);
+
+    // Ensure dynamic step executor is initialized (deferred async init for modelResolver path)
+    await this.ensureDynamicExecutor(flow, flowRunId);
 
     // Validate flow
     await this.validateIFlow(flow, request, flowRunId);
