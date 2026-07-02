@@ -17,7 +17,7 @@ import { BlueprintCommands } from "./commands/blueprint_commands.ts";
 import { FlowCommands } from "./commands/flow_commands.ts";
 import { DashboardCommands } from "./commands/dashboard_commands.ts";
 import { MemoryCommands } from "./commands/memory_commands.ts";
-import { type IJournalCommandOptions, JournalCommands } from "./commands/journal_commands.ts";
+import { type IJournalCommandOptions, JournalCommands, normalizeLogsFilter } from "./commands/journal_commands.ts";
 import { CostCommands } from "./commands/cost_commands.ts";
 import { RoutingCommands } from "./commands/routing_commands.ts";
 import { WaitStateCommands } from "./commands/wait_state_commands.ts";
@@ -37,7 +37,7 @@ import {
 import { UIOutputFormat } from "@exaix/tui";
 import { AnalysisMode } from "@exaix/core/request";
 import { ReviewStatus } from "@exaix/core/status";
-import { CLI_DEFAULTS } from "@exaix/cli/config.ts";
+import { CLI_DEFAULTS, CLI_OUTPUT_FORMATS } from "@exaix/cli/config.ts";
 import { McpCommands } from "./commands/mcp_commands.ts";
 import { initializeServices, isTestMode as isTestModeImport } from "./init.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
@@ -2118,7 +2118,26 @@ const logCommand = new Command()
   .command("journal", journalCommand)
   .command("cost", costCommand);
 
+const logsCommand = new Command()
+  .description("Query system activity logs (alias for 'log journal')")
+  .option("-f, --filter <filter:string>", "Filter by key=value or bare event name (e.g., model_resolved)", {
+    collect: true,
+  })
+  .option("-n, --tail <n:number>", "Show last N entries", { default: 50 })
+  .option("--format <format:string>", "Output format (text, table, json)", { default: CLI_OUTPUT_FORMATS.TEXT })
+  .option("--payload <pattern:string>", "Filter by payload LIKE pattern")
+  .option("--actor <actor:string>", "Filter by actor")
+  .option("--target <target:string>", "Filter by target")
+  .action(async (options) => {
+    if (options.filter) {
+      options.filter = normalizeLogsFilter(options.filter);
+    }
+    const cmd = new JournalCommands(context);
+    await cmd.show(options as IJournalCommandOptions);
+  });
+
 __test_command.command("log", logCommand);
+__test_command.command("logs", logsCommand);
 __test_command.command("journal", journalCommand);
 
 // ---------------------------------------------------------------------------

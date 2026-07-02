@@ -30,8 +30,19 @@ import type { IProviderMetadata } from "./provider_registry.ts";
 import { ProviderRegistry } from "./provider_registry.ts";
 import type { IProviderRoutingStrategy } from "./routing/provider_routing_strategy.ts";
 import type { IModelRegistry } from "@exaix/core/types";
+import { DEFAULT_MOCK_MODEL, ProviderType } from "@exaix/core/types";
 
 const CHARACTERISTIC_WEIGHT = 1;
+
+/** @internal Map of preset override name → { model_size → resolved model } */
+const OVERRIDE_MODEL_MAP: Record<string, Record<ModelSize, { provider: string; model: string }>> = {
+  test: {
+    S: { provider: ProviderType.MOCK, model: DEFAULT_MOCK_MODEL },
+    M: { provider: ProviderType.MOCK, model: DEFAULT_MOCK_MODEL },
+    L: { provider: ProviderType.MOCK, model: DEFAULT_MOCK_MODEL },
+    XL: { provider: ProviderType.MOCK, model: DEFAULT_MOCK_MODEL },
+  },
+};
 
 const EFFORT_MAX_TOKENS: Record<EffortTier, number> = {
   low: 1024,
@@ -58,6 +69,9 @@ export class ModelResolver {
    */
   async resolve(intent: ModelIntent): Promise<IResolvedModel> {
     const startTime = Date.now();
+
+    const overrideResult = this.tryResolveOverride(intent);
+    if (overrideResult) return overrideResult;
 
     const explicitResult = await this.tryResolveExplicit(intent, startTime);
     if (explicitResult) return explicitResult;
@@ -97,6 +111,16 @@ export class ModelResolver {
       `Model resolution failed: no suitable model found after ${maxAttempts} attempt(s). ` +
         `Intent: ${JSON.stringify(intent)}`,
     );
+  }
+
+  private tryResolveOverride(intent: ModelIntent): IResolvedModel | null {
+    const overridePreset = Deno.env.get("EXA_MODEL_PRESET_OVERRIDE");
+    if (!overridePreset || !intent.model_size) return null;
+    const overrideMap = OVERRIDE_MODEL_MAP[overridePreset];
+    if (!overrideMap) return null;
+    const resolved = overrideMap[intent.model_size];
+    if (!resolved) return null;
+    return { ...resolved, options: this.buildCallOptions(intent), attempt: 1 };
   }
 
   private async tryResolveExplicit(intent: ModelIntent, startTime: number): Promise<IResolvedModel | null> {
