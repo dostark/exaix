@@ -23,7 +23,6 @@ Deno.test("Claude enhancements: verify cross-reference.md structure", async () =
 
   assert(crossRefMd.includes("## Task → Agent Doc Quick Reference"), "Should have task mapping table");
   assert(crossRefMd.includes("## Search by Topic"), "Should have topic search section");
-  assert(crossRefMd.includes("## Workflow Examples"), "Should have workflow examples section");
 });
 
 Deno.test("Claude enhancements: verify manifest includes docs", async () => {

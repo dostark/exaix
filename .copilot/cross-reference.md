@@ -193,33 +193,6 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`wrappers`** → [prompts/README.md](prompts/README.md)
 - **`writing`** → [skills/doc/SKILL.md](skills/doc/SKILL.md)
 
-## Workflow Examples
 
-- **New feature**: `#plan` → `#pre-gap-analysis` → `#next-steps` → `#commit`
-- **Package migration**: `#explore` → `#package-extraction` → `#next-steps` → `#doc` → `#commit`
-- **Bug fix**: `#fix-bug` → `#regression` → `#commit`
-- **Code quality**: `#clean-codebase` → `#refactor-check-magic` → `#commit`
-- **Review**: `#post-gap-analysis` → `#review-code` → `#commit`
 
-## Canonical Paths
-
-- Testing guidelines: [docs/testing.md](docs/testing.md)
-- Development guidelines: [docs/exaix-development.md](docs/exaix-development.md)
-- Self-improvement process: [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)
-- Tool confirmation / human-in-loop: [exaix-dev-docs/planning/phase-79-tool-confirmation-interceptor.md](../exaix-dev-docs/planning/phase-79-tool-confirmation-interceptor.md), `packages/tool-runtime/src/cli_confirmation_interceptor.ts`, `packages/tool-runtime/src/notification_queue_confirmation_interceptor.ts`
-- Concurrent guardrail runner (Phase 107): [exaix-dev-docs/planning/phase-107-concurrent-guardrail-runner.md](../exaix-dev-docs/planning/phase-107-concurrent-guardrail-runner.md), `packages-team/guardrail/src/guardrail_runner.ts`, `packages/execution/src/guardrail_runner.ts`
-- Multi-agent voting consensus (Phase 113): [exaix-dev-docs/planning/phase-113-agent-voting-consensus.md](../exaix-dev-docs/planning/phase-113-agent-voting-consensus.md), `packages-team/voting/src/voting_consensus_service.ts`
-
-## Directory Structure
-
-```text
-.copilot/
-├── prompts/       # Slash commands — short invocation prompts with description: field
-├── skills/        # Multi-step autonomous workflows (SKILL.md files)
-├── docs/          # On-demand reference documents (agent-oriented)
-├── references/    # Symlink → docs/ (backward-compatible alias)
-├── planning/      # Phase planning documents
-├── cross-reference.md  # Task → document quick reference (start here)
-├── manifest.json  # Auto-generated index of all agent docs
-└── chunks/        # Auto-generated pre-chunked text for RAG retrieval
-```
+> See [.copilot/README.md](./README.md) for the directory layout.
