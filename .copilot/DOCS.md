@@ -11,7 +11,6 @@ topics: ["reference", "docs", "catalog"]
 
 | Task Type | Primary Doc |
 | --- | --- |
-| Specification-Driven Development in Exaix | [docs/specification-driven-development.md](docs/specification-driven-development.md) |
 | Agent Reference Corpus | [docs/README.md](docs/README.md) |
 | MCP Agent Tool Index | [docs/TOOLS.md](docs/TOOLS.md) |
 | Exaix Developer Glossary | [docs/GLOSSARY.md](docs/GLOSSARY.md) |
@@ -56,7 +55,7 @@ topics: ["reference", "docs", "catalog"]
 
 - **`agent-tools`** → [docs/TOOLS.md](docs/TOOLS.md)
 - **`agents`** → [docs/README.md](docs/README.md), [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)
-- **`architecture`** → [docs/specification-driven-development.md](docs/specification-driven-development.md), [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md), [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md), [skills/review-code/SKILL.md](skills/review-code/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/exaix-development/SKILL.md](skills/exaix-development/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/explore/SKILL.md](skills/explore/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
+- **`architecture`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md), [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md), [skills/review-code/SKILL.md](skills/review-code/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/exaix-development/SKILL.md](skills/exaix-development/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/explore/SKILL.md](skills/explore/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`architecture-review`** → [skills/review-research/SKILL.md](skills/review-research/SKILL.md)
 - **`audit`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`auth`** → [skills/security/SKILL.md](skills/security/SKILL.md)
@@ -111,7 +110,6 @@ topics: ["reference", "docs", "catalog"]
 - **`magic-values`** → [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md)
 - **`maintenance`** → [skills/refactor/SKILL.md](skills/refactor/SKILL.md), [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md), [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md)
 - **`mcp`** → [docs/TOOLS.md](docs/TOOLS.md), [skills/security/SKILL.md](skills/security/SKILL.md)
-- **`methodology`** → [docs/specification-driven-development.md](docs/specification-driven-development.md)
 - **`migration`** → [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md)
 - **`naming-conventions`** → [docs/GLOSSARY.md](docs/GLOSSARY.md)
 - **`navigation`** → [skills/explore/SKILL.md](skills/explore/SKILL.md)
@@ -127,7 +125,7 @@ topics: ["reference", "docs", "catalog"]
 - **`positioning`** → [skills/comparative-analysis/SKILL.md](skills/comparative-analysis/SKILL.md)
 - **`prompts`** → [prompts/README.md](prompts/README.md)
 - **`qa`** → [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)
-- **`quality`** → [docs/specification-driven-development.md](docs/specification-driven-development.md), [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
+- **`quality`** → [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`quality-assurance`** → [skills/review-code/SKILL.md](skills/review-code/SKILL.md)
 - **`rag`** → [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)
 - **`reachability`** → [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
@@ -137,14 +135,12 @@ topics: ["reference", "docs", "catalog"]
 - **`reference`** → [docs/README.md](docs/README.md), [DOCS.md](DOCS.md)
 - **`regression`** → [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md), [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md)
 - **`remediation`** → [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md), [skills/remediate-code-gaps/SKILL.md](skills/remediate-code-gaps/SKILL.md)
-- **`request-processing`** → [docs/specification-driven-development.md](docs/specification-driven-development.md)
 - **`review`** → [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md)
 - **`risk`** → [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`root-cause`** → [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md)
 - **`routing`** → [prompts/README.md](prompts/README.md)
 - **`run-command`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`sandbox`** → [skills/security/SKILL.md](skills/security/SKILL.md)
-- **`sdd`** → [docs/specification-driven-development.md](docs/specification-driven-development.md)
 - **`seam`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`secrets`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`security`** → [skills/review-code/SKILL.md](skills/review-code/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/security/SKILL.md](skills/security/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)

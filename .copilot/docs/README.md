@@ -15,7 +15,7 @@ The directory mirrors the Claude Code `docs/` convention and is reachable as `.a
 
 - [TOOLS.md](TOOLS.md): MCP tool index (moved from root).
 - [GLOSSARY.md](GLOSSARY.md): Developer glossary — implementation-level definitions, journal field maps, code identifiers, naming conventions (moved from `docs/`).
-- [specification-driven-development.md](specification-driven-development.md): Specification-driven development methodology.
+
 
 ### Symlinked root docs
 

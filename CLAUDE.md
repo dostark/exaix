@@ -57,26 +57,26 @@ links:
 
 ## Quick Reference
 
-| Need                      | Location                                                                                               |
-| ------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Behavioral guidelines     | [CLAUDE.md](./CLAUDE.md#behavioral-guidelines)                                                         |
-| Doc catalog               | [.copilot/DOCS.md](.copilot/DOCS.md) — all docs by task + topic                                        |
-| Doc index (by topic)      | [.copilot/manifest.json](.copilot/manifest.json)                                                       |
-| Architecture              | [.copilot/docs/ARCHITECTURE.md](.copilot/docs/ARCHITECTURE.md)                                         |
-| Source patterns           | [.copilot/skills/exaix-development/SKILL.md](.copilot/skills/exaix-development/SKILL.md)               |
-| Test development          | [.copilot/skills/test-development/SKILL.md](.copilot/skills/test-development/SKILL.md)                 |
-| Documentation skill       | [.copilot/skills/doc/SKILL.md](.copilot/skills/doc/SKILL.md)                                           |
-| Spec-driven development   | [.copilot/docs/specification-driven-development.md](.copilot/docs/specification-driven-development.md) |
-| Dev glossary              | [.copilot/docs/GLOSSARY.md](.copilot/docs/GLOSSARY.md)                                                 |
-| Coding standards          | [CODE_STYLE.md](./CODE_STYLE.md)                                                                       |
-| Magic numbers / constants | [CODE_STYLE.md](./CODE_STYLE.md) §2                                                                    |
-| MCP tool index            | [.copilot/docs/TOOLS.md](.copilot/docs/TOOLS.md)                                                       |
-| Commit skill              | [.copilot/skills/commit/SKILL.md](.copilot/skills/commit/SKILL.md)                                     |
-| Plan skill                | [.copilot/skills/plan/SKILL.md](.copilot/skills/plan/SKILL.md)                                         |
-| Next-steps skill          | [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md)                             |
-| Slash commands            | [.copilot/prompts/](.copilot/prompts/)                                                                 |
-| Planning documents        | [exaix-dev-docs/planning/](exaix-dev-docs/planning/)                                                   |
-| All agent docs index      | [.copilot/manifest.json](.copilot/manifest.json)                                                       |
+| Need                      | Location                                                                                 |
+| ------------------------- | ---------------------------------------------------------------------------------------- |
+| Behavioral guidelines     | [CLAUDE.md](./CLAUDE.md#behavioral-guidelines)                                           |
+| Doc catalog               | [.copilot/DOCS.md](.copilot/DOCS.md) — all docs by task + topic                          |
+| Doc index (by topic)      | [.copilot/manifest.json](.copilot/manifest.json)                                         |
+| Architecture              | [.copilot/docs/ARCHITECTURE.md](.copilot/docs/ARCHITECTURE.md)                           |
+| Source patterns           | [.copilot/skills/exaix-development/SKILL.md](.copilot/skills/exaix-development/SKILL.md) |
+| Test development          | [.copilot/skills/test-development/SKILL.md](.copilot/skills/test-development/SKILL.md)   |
+| Documentation skill       | [.copilot/skills/doc/SKILL.md](.copilot/skills/doc/SKILL.md)                             |
+| Spec-driven development   | [docs/Exaix_SDD.md](docs/Exaix_SDD.md)                                                   |
+| Dev glossary              | [.copilot/docs/GLOSSARY.md](.copilot/docs/GLOSSARY.md)                                   |
+| Coding standards          | [CODE_STYLE.md](./CODE_STYLE.md)                                                         |
+| Magic numbers / constants | [CODE_STYLE.md](./CODE_STYLE.md) §2                                                      |
+| MCP tool index            | [.copilot/docs/TOOLS.md](.copilot/docs/TOOLS.md)                                         |
+| Commit skill              | [.copilot/skills/commit/SKILL.md](.copilot/skills/commit/SKILL.md)                       |
+| Plan skill                | [.copilot/skills/plan/SKILL.md](.copilot/skills/plan/SKILL.md)                           |
+| Next-steps skill          | [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md)               |
+| Slash commands            | [.copilot/prompts/](.copilot/prompts/)                                                   |
+| Planning documents        | [exaix-dev-docs/planning/](exaix-dev-docs/planning/)                                     |
+| All agent docs index      | [.copilot/manifest.json](.copilot/manifest.json)                                         |
 
 ## Behavioral Guidelines
 
