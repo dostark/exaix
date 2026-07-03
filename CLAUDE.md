@@ -114,7 +114,7 @@ Key facts about the Exaix system:
 
 - **Runtime:** Deno (strict TypeScript)
 - **Config:** `deno.json` (tasks, imports)
-- **Pre-commit:** Auto-runs gates 0-17. Gate 0 blocks direct commits to `main`. Gates 1-17:
+- **Pre-commit:** Auto-runs gates 0-18. Gate 0 blocks direct commits to `main`. Gates 1-18:
 
   | Gate | Check                | Task                                           |
   | ---- | -------------------- | ---------------------------------------------- |
@@ -135,6 +135,7 @@ Key facts about the Exaix system:
   | 15   | Markdown paths       | `deno task check:md-path:staged`               |
   | 16   | Agent docs integrity | `deno task check:agent-docs-integrity`         |
   | 17   | Agent docs integrity | `deno task check:agent-docs-integrity`         |
+  | 18   | Qwen skills sync     | `deno task check:qwen-skills-sync`             |
 
 > Gate 12 (`docs-bench`, filter `[hallucination-bench]`) also runs `tests/docs/positioning_consistency_test.ts`, which enforces Phase 91's positioning/glossary/weaknesses cross-document consistency (no-vaporware phase claims, three-tier narrative, differentiation material, GLOSSARY.md split, stale-path regressions).
 
