@@ -7,7 +7,6 @@ version: 1.1
 capabilities: [task_routing, cross_reference, process_validation]
 links:
   - ".copilot/manifest.json"
-  - ".copilot/manifest.json"
 ---
 
 ## 🤖 Agent Instructions — Required Reading for All AI Agents
@@ -15,7 +14,7 @@ links:
 > **⚠️ CRITICAL:** This document and `.copilot/` are **MANDATORY** context for all code tasks.
 > _Note: `.copilot/` is the canonical directory. Symlinks like `.claude/`, `.agents/`, `.cursor/`, and `AGENTS.md` exist intentionally to support various agents. They all point to `.copilot/`. For Qwen agents, `.qwen/skills/` contains auto-generated routing wrappers that redirect to the canonical skills in `.copilot/skills/`._
 > Read this file first, then use the `.copilot/` documents it points you to as task-specific extensions. If you find a conflict between this file and a `.copilot/` document, or between two `.copilot/` documents, stop and report the conflict instead of guessing.
-> A missing entry in `.copilot/manifest.json` is not a conflict; follow the documented fallback path.
+> A missing topic match in `.copilot/manifest.json` is not a conflict; follow the documented fallback path.
 > If a project instruction conflicts with a known security risk or language/runtime constraint (not merely a stylistic preference), flag it inline as `WARNING: <description>` and proceed with the project instruction unless it would introduce a critical vulnerability.
 >
 > **Conflict reporting format:** State the conflict explicitly in your response in the form: `CONFLICT: "<file-a>" says X, "<file-b>" says Y — cannot proceed without resolution.` Do not attempt to resolve the conflict yourself.
@@ -39,9 +38,9 @@ links:
 
 - [ ] Read this file completely
 - [ ] Read `## Behavioral Guidelines` (below) — think before coding, simplicity, surgical changes, goal-driven execution
-- [ ] Use `.copilot/manifest.json` to identify every required `.copilot/` document for the task type(s) involved, then read all of them before implementation
-- [ ] If the task type is not listed in `.copilot/manifest.json`, fall back to `.copilot/docs/exaix-development.md` and note that fallback in your implementation plan
-- [ ] If a required document listed in `.copilot/manifest.json` is missing on disk, stop and report the missing path instead of inferring its contents
+- [ ] Use `.copilot/manifest.json` to find relevant `.copilot/` documents by topic, then read all of them before implementation
+- [ ] If no matching topic is found in `.copilot/manifest.json`, fall back to `.copilot/docs/exaix-development.md` and note that fallback in your implementation plan
+- [ ] If a required document referenced in `.copilot/manifest.json` is missing on disk, stop and report the missing path instead of inferring its contents
 - [ ] If a required document exists on disk but cannot be read or is empty, stop and report: `UNREADABLE: "<path>" exists but could not be read — cannot proceed without resolution.`
 - [ ] Read frontmatter of root `.md` files whenever you are selecting which `.copilot/` documents to consult for a task; the first 20 lines identify `copilot_knowledge_base: true` and relevant `capabilities` for that document
 - [ ] Read `ARCHITECTURE.md` before modifying any core flow
@@ -61,7 +60,7 @@ links:
 | Need                      | Location                                                                   |
 | ------------------------- | -------------------------------------------------------------------------- |
 | Behavioral guidelines     | [CLAUDE.md](./CLAUDE.md#behavioral-guidelines)                             |
-| Task → Doc mapping        | [.copilot/manifest.json](.copilot/manifest.json)                           |
+| Doc index (by topic)      | [.copilot/manifest.json](.copilot/manifest.json)                           |
 | Source patterns           | [.copilot/docs/exaix-development.md](.copilot/docs/exaix-development.md)   |
 | Testing patterns          | [.copilot/docs/testing.md](.copilot/docs/testing.md)                       |
 | Documentation guide       | [.copilot/docs/documentation.md](.copilot/docs/documentation.md)           |
@@ -320,7 +319,6 @@ The `.copilot/` folder contains **machine-readable guidance** for AI assistants:
 
 ```text
 .copilot/
-├── manifest.json       # Index of all agent docs (auto-generated)
 ├── manifest.json       # Index of all agent docs (auto-generated)
 ├── prompts/            # Chat routing wrappers — one .prompt.md per skill
 ├── skills/             # Multi-step autonomous skills (SKILL.md per skill)
