@@ -1,6 +1,25 @@
 {
   "docs": [
     {
+      "path": ".copilot/docs/README.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Agent Reference Corpus",
+      "short_summary": "On-demand reference documents for agents — the Claude Code `docs/` convention, reachable as `.agents/references/`.",
+      "version": "1.0",
+      "topics": [
+        "reference",
+        "docs",
+        "corpus",
+        "agents"
+      ],
+      "chunks": [
+        ".copilot/chunks/README.md.chunk0.txt",
+        ".copilot/chunks/README.md.chunk1.txt",
+        ".copilot/chunks/README.md.chunk2.txt"
+      ]
+    },
+    {
       "path": ".copilot/prompts/infra.prompt.md",
       "short_summary": "",
       "chunks": [
