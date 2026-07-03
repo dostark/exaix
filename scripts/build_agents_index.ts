@@ -2,7 +2,7 @@
 /**
  * @module BuildAgentsIndex
  * @path scripts/build_agents_index.ts
- * @description Build a simple manifest.json and pre-chunk files for fast retrieval.
+ * @description Build manifest.json and cross-reference.md for developer-agent tooling.
  *
  * Usage:
  *   deno run -A scripts/build_agents_index.ts
@@ -16,33 +16,14 @@ import type { JSONObject } from "@exaix/core/types";
 const AGENTS_DIR = ".copilot";
 const SUBMODULE_DIR = "exaix-dev-docs";
 const OUT_MANIFEST = `${AGENTS_DIR}/manifest.json`;
-const CHUNKS_DIR = `${AGENTS_DIR}/chunks`;
 
 function extractFrontmatter(md: string): string | null {
   const match = md.match(/^---\n([\s\S]*?)\n---/);
   return match ? match[1] : null;
 }
 
-function chunkText(text: string, size = 800): string[] {
-  // naive chunking by whole paragraphs
-  const paragraphs = text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
-  const chunks: string[] = [];
-  let current = "";
-  for (const p of paragraphs) {
-    if ((current + "\n\n" + p).length > size) {
-      if (current) chunks.push(current);
-      current = p;
-    } else {
-      current = current ? `${current}\n\n${p}` : p;
-    }
-  }
-  if (current) chunks.push(current);
-  return chunks;
-}
-
 export async function generateManifestObject(includeSubmodule = false) {
   const docs = [] as JSONObject[];
-  await Deno.mkdir(CHUNKS_DIR, { recursive: true });
 
   const scanDirs = [AGENTS_DIR];
   if (includeSubmodule) {
@@ -61,25 +42,16 @@ export async function generateManifestObject(includeSubmodule = false) {
       const fmRaw = extractFrontmatter(md);
       if (!fmRaw) continue;
       const fm = parse(fmRaw) as JSONObject;
-      const short_summary = String(fm["short_summary"] ?? "");
-      const chunks = chunkText(md.replace(/^---[\s\S]*?---/, ""));
-      const chunkPaths: string[] = [];
-      chunks.slice(0, 8).forEach((c, idx) => {
-        const p = `${CHUNKS_DIR}/${entry.name}.chunk${idx}.txt`;
-        Deno.writeTextFileSync(p, c);
-        chunkPaths.push(p);
-      });
 
       docs.push({
         path: entry.path,
         agent: fm["agent"],
         scope: fm["scope"],
         title: fm["title"],
-        short_summary,
+        short_summary: String(fm["short_summary"] ?? ""),
         version: fm["version"],
         topics: fm["topics"],
         qwen_skill: fm["qwen_skill"],
-        chunks: chunkPaths,
       });
     }
   }
@@ -93,25 +65,16 @@ export async function generateManifestObject(includeSubmodule = false) {
     if (!fmRaw) continue;
     const fm = parse(fmRaw) as JSONObject;
     if (!fm["copilot_knowledge_base"]) continue;
-    const short_summary = String(fm["short_summary"] ?? fm["description"] ?? "");
-    const chunks = chunkText(md.replace(/^---[\s\S]*?---/, ""));
-    const chunkPaths: string[] = [];
-    chunks.slice(0, 8).forEach((c, idx) => {
-      const p = `${CHUNKS_DIR}/${entry.name}.chunk${idx}.txt`;
-      Deno.writeTextFileSync(p, c);
-      chunkPaths.push(p);
-    });
 
     docs.push({
       path: entry.path,
       agent: fm["agent"],
       scope: fm["scope"],
       title: fm["title"],
-      short_summary,
+      short_summary: String(fm["short_summary"] ?? fm["description"] ?? ""),
       version: fm["version"],
       topics: fm["topics"],
       qwen_skill: fm["qwen_skill"],
-      chunks: chunkPaths,
     });
   }
 
@@ -170,7 +133,7 @@ export async function updateCrossReference(docs: JSONObject[]) {
       `## Task → Agent Doc Quick Reference\n\n${taskTable}`,
     )
     .replace(
-      /## Search by Topic\n\n[\s\S]*?(?=\n## Workflow Examples)/,
+      /## Search by Topic\n\n[\s\S]*?(?=\n> See|\n## |$)/,
       `## Search by Topic\n\n${topicList}`,
     );
 
@@ -226,4 +189,4 @@ if (import.meta.main) {
   await buildIndex(includeSubmodule);
 }
 
-export { chunkText, extractFrontmatter };
+export { extractFrontmatter };

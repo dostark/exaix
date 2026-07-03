@@ -4,7 +4,7 @@
  * @description Verifies agent documentation structural integrity.
  */
 
-import { assert, assertExists } from "@std/assert";
+import { assert, assertEquals, assertExists } from "@std/assert";
 
 Deno.test("Claude enhancements: verify required files exist", async () => {
   const files = [
@@ -37,20 +37,7 @@ Deno.test("Claude enhancements: verify manifest includes docs", async () => {
 
   const crossRefDoc = manifest.docs.find((d: { path: string }) => d.path === ".copilot/cross-reference.md");
   assertExists(crossRefDoc, "cross-reference.md should be in manifest");
-  assert(Array.isArray(crossRefDoc.chunks), "cross-reference.md should have chunks array");
-  assert(crossRefDoc.chunks.length > 0, "cross-reference.md should have at least 1 chunk");
-});
-
-Deno.test("Claude enhancements: verify chunks were generated", async () => {
-  let found = false;
-  for await (const entry of Deno.readDir(".copilot/chunks")) {
-    if (entry.name.startsWith("cross-reference.md.chunk")) {
-      found = true;
-      const content = await Deno.readTextFile(`.copilot/chunks/${entry.name}`);
-      assert(content.length > 0, `Chunk file ${entry.name} should not be empty`);
-    }
-  }
-  assert(found, "Should have at least one chunk file for cross-reference.md");
+  assertEquals(crossRefDoc.short_summary.length > 0, true, "cross-reference.md should have short_summary");
 });
 
 Deno.test("Claude enhancements: verify no sensitive data in docs", async () => {

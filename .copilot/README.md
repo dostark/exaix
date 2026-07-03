@@ -26,8 +26,7 @@ Content is organized by **role**, not by provider.
 ├── references/     # Symlink → docs/ (backward-compatible alias)
 ├── planning/       # Reserved — active phase docs live in exaix-dev-docs/planning/
 ├── cross-reference.md  # Task → document quick reference (start here)
-├── manifest.json   # Auto-generated index of all agent docs
-└── chunks/         # Auto-generated pre-chunked text for RAG retrieval
+└── manifest.json   # Auto-generated index of all agent docs
 ```
 
 ## Role Distinction
@@ -65,7 +64,6 @@ Content is organized by **role**, not by provider.
 | `.qwen/skills/pre-gap-analysis/`     | ✓       | `.copilot/skills/pre-gap-analysis/SKILL.md`     |
 | `.qwen/skills/refactor/`             | ✓       | `.copilot/skills/refactor/SKILL.md`             |
 | `.qwen/skills/refactor-check-magic/` | ✓       | `.copilot/skills/refactor-check-magic/SKILL.md` |
-| `.qwen/skills/review/`               | ✓       | `.copilot/skills/review/SKILL.md`               |
 | `.qwen/skills/review-research/`      | ✓       | `.copilot/skills/review-research/SKILL.md`      |
 | `.qwen/skills/security/`             | ✓       | `.copilot/skills/security/SKILL.md`             |
 | `.qwen/skills/submodule-workflow/`   | ✓       | `.copilot/skills/submodule-workflow/SKILL.md`   |

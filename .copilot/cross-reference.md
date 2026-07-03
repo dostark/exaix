@@ -193,6 +193,4 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`wrappers`** → [prompts/README.md](prompts/README.md)
 - **`writing`** → [skills/doc/SKILL.md](skills/doc/SKILL.md)
 
-
-
 > See [.copilot/README.md](./README.md) for the directory layout.

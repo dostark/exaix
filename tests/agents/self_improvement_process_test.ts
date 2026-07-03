@@ -6,11 +6,7 @@
  */
 
 import { assert, assertExists } from "@std/assert";
-import {
-  assertChunksWereGenerated,
-  assertFilesExist,
-  assertFrontmatterSchemaAndShortSummary,
-} from "../helpers/copilot_assertions.ts";
+import { assertFilesExist, assertFrontmatterSchemaAndShortSummary } from "../helpers/copilot_assertions.ts";
 
 const REQUIRED_FILES = [
   ".copilot/skills/self-improvement/SKILL.md",
@@ -76,14 +72,4 @@ Deno.test("Self-improvement loop: verify manifest includes self-improvement doc"
     d.path === ".copilot/skills/self-improvement/SKILL.md"
   );
   assertExists(processDoc, "self-improvement.md should be in manifest");
-  assert(Array.isArray(processDoc.chunks), "self-improvement.md should have chunks array");
-  assert(processDoc.chunks.length > 0, "self-improvement.md should have at least 1 chunk");
-});
-
-Deno.test("Self-improvement loop: verify chunks were generated", async () => {
-  const patterns = [
-    "self-improvement.md.chunk",
-  ];
-
-  await assertChunksWereGenerated(patterns);
 });
