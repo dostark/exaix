@@ -1072,7 +1072,7 @@
       "agent": "general",
       "scope": "dev",
       "title": "Cross Reference Guide",
-      "short_summary": "Mapping of common agent tasks to .copilot docs by role: skills, commands, guidelines, and providers.",
+      "short_summary": "Mapping of common agent tasks to .copilot docs by role: skills, prompts, and docs.",
       "version": "0.2",
       "topics": [
         "cross-reference",

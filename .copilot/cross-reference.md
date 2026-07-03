@@ -2,7 +2,7 @@
 agent: general
 scope: dev
 title: "Cross Reference Guide"
-short_summary: "Mapping of common agent tasks to .copilot docs by role: skills, commands, guidelines, and providers."
+short_summary: "Mapping of common agent tasks to .copilot docs by role: skills, prompts, and docs."
 version: "0.2"
 identity: documentation
 topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
@@ -214,9 +214,12 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 
 ```text
 .copilot/
-├── commands/    # Slash commands — short invocation prompts with description: field
-├── skills/      # Multi-step autonomous workflows (SKILL.md files)
-├── docs/         # On-demand reference documents (agent-oriented)
-├── docs/         # On-demand reference documents (agent-oriented)
-└── planning/    # Phase planning documents
+├── prompts/       # Slash commands — short invocation prompts with description: field
+├── skills/        # Multi-step autonomous workflows (SKILL.md files)
+├── docs/          # On-demand reference documents (agent-oriented)
+├── references/    # Symlink → docs/ (backward-compatible alias)
+├── planning/      # Phase planning documents
+├── cross-reference.md  # Task → document quick reference (start here)
+├── manifest.json  # Auto-generated index of all agent docs
+└── chunks/        # Auto-generated pre-chunked text for RAG retrieval
 ```
