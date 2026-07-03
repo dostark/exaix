@@ -46,7 +46,6 @@ links:
 - [ ] Read frontmatter of root `.md` files whenever you are selecting which `.copilot/` documents to consult for a task; the first 20 lines identify `copilot_knowledge_base: true` and relevant `capabilities` for that document
 - [ ] Read `ARCHITECTURE.md` before modifying any core flow
 - [ ] Use symbol-based links (for example `packages/core/src/types.ts:MyServiceConfig`) when referencing code locations
-- [ ] Identify your LLM provider and read the matching file in `.copilot/providers/` before starting (available: `claude.md`, `openai.md`, `google.md`, `google-long-context.md`). If no file exists for your provider, skip this step.
 - [ ] **Acknowledge** which `.copilot/` docs guided your approach in your implementation plan
 
 **Example acknowledgment format:**
@@ -69,7 +68,6 @@ links:
 | Coding standards          | [CODE_STYLE.md](./CODE_STYLE.md)                                                     |
 | Magic numbers / constants | [CODE_STYLE.md](./CODE_STYLE.md) §2                                                  |
 | MCP tool index            | [TOOLS.md](./TOOLS.md)                                                               |
-| Provider-specific notes   | [.copilot/providers/](.copilot/providers/)                                           |
 | Commit skill              | [.copilot/skills/commit/SKILL.md](.copilot/skills/commit/SKILL.md)                   |
 | Plan skill                | [.copilot/skills/plan/SKILL.md](.copilot/skills/plan/SKILL.md)                       |
 | Next-steps skill          | [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md)           |
@@ -304,8 +302,7 @@ The `.copilot/` folder contains **machine-readable guidance** for AI assistants:
 ├── cross-reference.md  # Task → Document quick reference
 ├── prompts/            # Chat routing wrappers — one .prompt.md per skill
 ├── skills/             # Multi-step autonomous skills (SKILL.md per skill)
-├── guidelines/         # Reference guidelines and process documents
-├── providers/          # Provider-specific guidance (Claude, OpenAI, Google)
+├── docs/               # On-demand reference documents (agent-oriented)
 ├── planning/           # (reserved — active phase docs live in exaix-dev-docs/planning/)
 └── chunks/             # Pre-chunked docs for RAG (auto-generated)
 ```
@@ -314,10 +311,9 @@ The `.copilot/` folder contains **machine-readable guidance** for AI assistants:
 
 > For the full task→doc map, use the **Quick Reference** table at the top of this file. The rows below cover `.copilot/`-specific lookups not listed there.
 
-| Task              | Consult                                                 |
-| ----------------- | ------------------------------------------------------- |
-| Security audit    | `.copilot/skills/security/SKILL.md`                     |
-| Provider-specific | `.copilot/providers/` (claude.md, openai.md, google.md) |
+| Task           | Consult                             |
+| -------------- | ----------------------------------- |
+| Security audit | `.copilot/skills/security/SKILL.md` |
 
 ## Key Patterns & Constraints
 

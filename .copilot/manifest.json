@@ -309,25 +309,6 @@
       ]
     },
     {
-      "path": ".copilot/guidelines/README.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Exaix Development Guidelines",
-      "short_summary": "Reference guidelines and process documents for Exaix development — source patterns, testing, documentation, security, and self-improvement.",
-      "version": "2.0",
-      "topics": [
-        "guidelines",
-        "methodology",
-        "best-practices",
-        "testing",
-        "security"
-      ],
-      "chunks": [
-        ".copilot/chunks/README.md.chunk0.txt",
-        ".copilot/chunks/README.md.chunk1.txt"
-      ]
-    },
-    {
       "path": ".copilot/guidelines/agent-content-schema.md",
       "agent": "general",
       "scope": "dev",
@@ -376,26 +357,6 @@
       ]
     },
     {
-      "path": ".copilot/guidelines/process-README.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Project Governance & Methodology",
-      "short_summary": "Strategic guidelines for SDD, project lifecycle, and systemic improvement patterns.",
-      "version": "1.1",
-      "topics": [
-        "governance",
-        "methodology",
-        "sdd",
-        "self-improvement"
-      ],
-      "chunks": [
-        ".copilot/chunks/process-README.md.chunk0.txt",
-        ".copilot/chunks/process-README.md.chunk1.txt",
-        ".copilot/chunks/process-README.md.chunk2.txt",
-        ".copilot/chunks/process-README.md.chunk3.txt"
-      ]
-    },
-    {
       "path": ".copilot/guidelines/exaix-development.md",
       "agent": "copilot",
       "scope": "dev",
@@ -441,31 +402,6 @@
         ".copilot/chunks/jscpd-guide.md.chunk5.txt",
         ".copilot/chunks/jscpd-guide.md.chunk6.txt",
         ".copilot/chunks/jscpd-guide.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/guidelines/review-research-improvement.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Review-Research-Improvement Pattern",
-      "short_summary": "Systematic approach to evaluate Exaix subsystems, identify weaknesses, and create actionable improvement plans.",
-      "version": "1.1",
-      "topics": [
-        "architecture-review",
-        "improvement-planning",
-        "patterns",
-        "refactoring",
-        "quality"
-      ],
-      "chunks": [
-        ".copilot/chunks/review-research-improvement.md.chunk0.txt",
-        ".copilot/chunks/review-research-improvement.md.chunk1.txt",
-        ".copilot/chunks/review-research-improvement.md.chunk2.txt",
-        ".copilot/chunks/review-research-improvement.md.chunk3.txt",
-        ".copilot/chunks/review-research-improvement.md.chunk4.txt",
-        ".copilot/chunks/review-research-improvement.md.chunk5.txt",
-        ".copilot/chunks/review-research-improvement.md.chunk6.txt",
-        ".copilot/chunks/review-research-improvement.md.chunk7.txt"
       ]
     },
     {
@@ -1135,98 +1071,6 @@
         ".copilot/chunks/cross-reference.md.chunk4.txt",
         ".copilot/chunks/cross-reference.md.chunk5.txt",
         ".copilot/chunks/cross-reference.md.chunk6.txt"
-      ]
-    },
-    {
-      "path": ".copilot/providers/claude.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Claude provider adaptation notes",
-      "short_summary": "Comprehensive Claude usage guide with task-specific prompts, thinking protocols, and tool-use patterns.",
-      "version": "0.2",
-      "topics": [
-        "provider-adaptations",
-        "prompts",
-        "tdd",
-        "refactoring",
-        "debugging",
-        "tool-use"
-      ],
-      "chunks": [
-        ".copilot/chunks/claude.md.chunk0.txt",
-        ".copilot/chunks/claude.md.chunk1.txt",
-        ".copilot/chunks/claude.md.chunk2.txt",
-        ".copilot/chunks/claude.md.chunk3.txt",
-        ".copilot/chunks/claude.md.chunk4.txt",
-        ".copilot/chunks/claude.md.chunk5.txt",
-        ".copilot/chunks/claude.md.chunk6.txt",
-        ".copilot/chunks/claude.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/providers/google.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Google Gemini Provider Adaptation Guide",
-      "short_summary": "Optimized guidance for Google Gemini 1.5 Pro, focusing on 2M context window usage and parallel tool calls.",
-      "version": "0.2",
-      "topics": [
-        "provider-adaptations",
-        "prompts",
-        "parallel-tool-calls",
-        "long-context"
-      ],
-      "chunks": [
-        ".copilot/chunks/google.md.chunk0.txt",
-        ".copilot/chunks/google.md.chunk1.txt",
-        ".copilot/chunks/google.md.chunk2.txt",
-        ".copilot/chunks/google.md.chunk3.txt",
-        ".copilot/chunks/google.md.chunk4.txt",
-        ".copilot/chunks/google.md.chunk5.txt"
-      ]
-    },
-    {
-      "path": ".copilot/providers/google-long-context.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Gemini Long-Context Reasoning Guide",
-      "short_summary": "Strategies for utilizing Gemini's 1.5 Pro's 2M context window for holistic repository reasoning.",
-      "version": "0.1",
-      "topics": [
-        "long-context",
-        "reasoning",
-        "gemini",
-        "context-saturation"
-      ],
-      "chunks": [
-        ".copilot/chunks/google-long-context.md.chunk0.txt",
-        ".copilot/chunks/google-long-context.md.chunk1.txt",
-        ".copilot/chunks/google-long-context.md.chunk2.txt"
-      ]
-    },
-    {
-      "path": ".copilot/providers/openai.md",
-      "agent": "openai",
-      "scope": "dev",
-      "title": "OpenAI adaptation notes",
-      "short_summary": "OpenAI usage guide with quick-start, RAG steps, prompt templates, and tool-use guardrails for gpt-4o family.",
-      "version": "0.2",
-      "topics": [
-        "provider-adaptations",
-        "prompts",
-        "rag",
-        "tooling",
-        "thinking-protocol"
-      ],
-      "chunks": [
-        ".copilot/chunks/openai.md.chunk0.txt",
-        ".copilot/chunks/openai.md.chunk1.txt",
-        ".copilot/chunks/openai.md.chunk2.txt",
-        ".copilot/chunks/openai.md.chunk3.txt",
-        ".copilot/chunks/openai.md.chunk4.txt",
-        ".copilot/chunks/openai.md.chunk5.txt",
-        ".copilot/chunks/openai.md.chunk6.txt",
-        ".copilot/chunks/openai.md.chunk7.txt"
       ]
     },
     {

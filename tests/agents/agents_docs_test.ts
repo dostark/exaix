@@ -12,7 +12,6 @@ Deno.test("agent docs validate", async () => {
   // Find at least one doc and validate it
   const files = [
     ".copilot/guidelines/exaix-development.md",
-    ".copilot/providers/openai.md",
   ];
   for (const f of files) {
     const errors = await validateFile(f);

@@ -16,9 +16,6 @@ const REQUIRED_FILES = [
   ".copilot/guidelines/self-improvement.md",
   ".copilot/cross-reference.md",
   ".copilot/prompts/README.md",
-  ".copilot/providers/claude.md",
-  ".copilot/providers/openai.md",
-  ".copilot/providers/google.md",
 ];
 
 Deno.test("Self-improvement loop: verify required files exist", async () => {
@@ -44,22 +41,6 @@ Deno.test("Self-improvement loop: verify frontmatter schema + short_summary limi
   await assertFrontmatterSchemaAndShortSummary(files);
 });
 
-Deno.test("Self-improvement loop: verify provider docs reference the self-improvement guide", async () => {
-  const providers = [
-    ".copilot/providers/claude.md",
-    ".copilot/providers/openai.md",
-    ".copilot/providers/google.md",
-  ];
-
-  for (const providerPath of providers) {
-    const md = await Deno.readTextFile(providerPath);
-    assert(
-      md.includes("self-improvement"),
-      `${providerPath} should reference the self-improvement guide`,
-    );
-  }
-});
-
 Deno.test("Self-improvement loop: verify discovery docs mention the process", async () => {
   const crossRef = await Deno.readTextFile(".copilot/cross-reference.md");
   assert(
@@ -68,8 +49,9 @@ Deno.test("Self-improvement loop: verify discovery docs mention the process", as
     "cross-reference should include self-improvement reference",
   );
   assert(
-    crossRef.includes("guidelines/self-improvement.md"),
-    "cross-reference should link to guidelines/self-improvement.md",
+    crossRef.includes("guidelines/self-improvement.md") ||
+      crossRef.includes("skills/self-improvement"),
+    "cross-reference should link to self-improvement docs",
   );
 
   const commandsReadme = await Deno.readTextFile(".copilot/prompts/README.md");
