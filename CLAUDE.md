@@ -58,22 +58,22 @@ links:
 
 ## Quick Reference
 
-| Need                      | Location                                                                             |
-| ------------------------- | ------------------------------------------------------------------------------------ |
-| Behavioral guidelines     | [CLAUDE.md](./CLAUDE.md#behavioral-guidelines)                                       |
-| Task → Doc mapping        | [.copilot/cross-reference.md](.copilot/cross-reference.md)                           |
-| Source patterns           | [.copilot/docs/exaix-development.md](.copilot/docs/exaix-development.md) |
-| Testing patterns          | [.copilot/docs/testing.md](.copilot/docs/testing.md)                     |
-| Documentation guide       | [.copilot/docs/documentation.md](.copilot/docs/documentation.md)         |
-| Coding standards          | [CODE_STYLE.md](./CODE_STYLE.md)                                                     |
-| Magic numbers / constants | [CODE_STYLE.md](./CODE_STYLE.md) §2                                                  |
-| MCP tool index            | [.copilot/docs/TOOLS.md](.copilot/docs/TOOLS.md)                                     |
-| Commit skill              | [.copilot/skills/commit/SKILL.md](.copilot/skills/commit/SKILL.md)                   |
-| Plan skill                | [.copilot/skills/plan/SKILL.md](.copilot/skills/plan/SKILL.md)                       |
-| Next-steps skill          | [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md)           |
-| Slash commands            | [.copilot/prompts/](.copilot/prompts/)                                               |
-| Planning documents        | [exaix-dev-docs/planning/](exaix-dev-docs/planning/)                                 |
-| All agent docs index      | [.copilot/manifest.json](.copilot/manifest.json)                                     |
+| Need                      | Location                                                                   |
+| ------------------------- | -------------------------------------------------------------------------- |
+| Behavioral guidelines     | [CLAUDE.md](./CLAUDE.md#behavioral-guidelines)                             |
+| Task → Doc mapping        | [.copilot/cross-reference.md](.copilot/cross-reference.md)                 |
+| Source patterns           | [.copilot/docs/exaix-development.md](.copilot/docs/exaix-development.md)   |
+| Testing patterns          | [.copilot/docs/testing.md](.copilot/docs/testing.md)                       |
+| Documentation guide       | [.copilot/docs/documentation.md](.copilot/docs/documentation.md)           |
+| Coding standards          | [CODE_STYLE.md](./CODE_STYLE.md)                                           |
+| Magic numbers / constants | [CODE_STYLE.md](./CODE_STYLE.md) §2                                        |
+| MCP tool index            | [.copilot/docs/TOOLS.md](.copilot/docs/TOOLS.md)                           |
+| Commit skill              | [.copilot/skills/commit/SKILL.md](.copilot/skills/commit/SKILL.md)         |
+| Plan skill                | [.copilot/skills/plan/SKILL.md](.copilot/skills/plan/SKILL.md)             |
+| Next-steps skill          | [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md) |
+| Slash commands            | [.copilot/prompts/](.copilot/prompts/)                                     |
+| Planning documents        | [exaix-dev-docs/planning/](exaix-dev-docs/planning/)                       |
+| All agent docs index      | [.copilot/manifest.json](.copilot/manifest.json)                           |
 
 ## Behavioral Guidelines
 

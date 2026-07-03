@@ -217,6 +217,6 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 ├── commands/    # Slash commands — short invocation prompts with description: field
 ├── skills/      # Multi-step autonomous workflows (SKILL.md files)
 ├── docs/         # On-demand reference documents (agent-oriented)
-├── providers/   # Provider-specific adaptation notes (Claude, OpenAI, Google)
+├── docs/         # On-demand reference documents (agent-oriented)
 └── planning/    # Phase planning documents
 ```

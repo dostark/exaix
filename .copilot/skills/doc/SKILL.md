@@ -23,7 +23,7 @@ Key points
   deno task docs-sync-schemas to keep TOOLS.md in sync
 - exaix-dev-docs is a git submodule — follow .copilot/skills/submodule-workflow/SKILL.md
   for any changes that span the parent repo and the submodule
-- Consult .copilot/guidelines/documentation.md for full structure and publishing protocol
+- Consult .copilot/docs/documentation.md for full structure and publishing protocol
 - ARCHITECTURE.md is a strategic document — describe what and why, not where.
   Never include implementation-specific file paths or module locations there.
   Move those details into the relevant package README (e.g.,
@@ -41,7 +41,7 @@ Doc target map
   Developer setup              →  docs/dev/Exaix_Developer_Setup.md
   Tool quick-reference         →  TOOLS.md  (MCP section auto-managed by docs-sync-schemas)
   API / implementation plan    →  docs/Exaix_Implementation_Plan.md
-  Agent guidance               →  .copilot/guidelines/<topic>.md
+  Agent guidance               →  .copilot/docs/<topic>.md
   Submodule docs               →  exaix-dev-docs/ (see submodule-workflow skill)
 
 Special sync commands

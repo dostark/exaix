@@ -72,7 +72,9 @@ Deno.test("Self-improvement loop: verify manifest includes self-improvement doc"
     "Manifest should include self-improvement skill",
   );
 
-  const processDoc = manifest.docs.find((d: { path: string }) => d.path === ".copilot/skills/self-improvement/SKILL.md");
+  const processDoc = manifest.docs.find((d: { path: string }) =>
+    d.path === ".copilot/skills/self-improvement/SKILL.md"
+  );
   assertExists(processDoc, "self-improvement.md should be in manifest");
   assert(Array.isArray(processDoc.chunks), "self-improvement.md should have chunks array");
   assert(processDoc.chunks.length > 0, "self-improvement.md should have at least 1 chunk");

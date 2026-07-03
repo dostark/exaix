@@ -539,7 +539,7 @@ I want to work on [feature/fix].
 3. IMPLEMENT:
    - Follow TDD if code changes (see #tdd-workflow)
    - Update docs if needed
-   - Follow patterns from .copilot/guidelines/
+   - Follow patterns from .copilot/docs/
 
 4. VERIFY:
    - Check all success criteria met [x]

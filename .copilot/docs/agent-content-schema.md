@@ -464,4 +464,4 @@ When migrating from markdown to JSON format:
 
 ## Examples
 
-- Example prompt: "Validate the frontmatter of .copilot/guidelines/new-doc.md."
+- Example prompt: "Validate the frontmatter of .copilot/docs/new-doc.md."

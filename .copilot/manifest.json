@@ -384,7 +384,7 @@
       "agent": "general",
       "scope": "dev",
       "title": ".copilot/ — AI Agent Knowledge Base",
-      "short_summary": "Overview of the .copilot/ directory: prompts, skills, guidelines, and providers for multi-agent Exaix development.",
+      "short_summary": "Overview of the .copilot/ directory: prompts, skills, and docs for multi-agent Exaix development.",
       "version": "2.0",
       "chunks": [
         ".copilot/chunks/README.md.chunk0.txt",

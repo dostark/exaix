@@ -97,7 +97,7 @@ Do / Don't
 - **Example: Missing test helper guidance**
   - Task: "Add regression tests for a CLI config edge case."
   - Gap: no mention of the correct test context helper.
-  - Patch: add a small section to `.copilot/guidelines/testing.md` pointing to `createCliTestContext()` usage for CLI tests; add one focused test under `tests/agents/` to ensure the section exists.
+  - Patch: add a small section to `.copilot/docs/testing.md` pointing to `createCliTestContext()` usage for CLI tests; add one focused test under `tests/agents/` to ensure the section exists.
 
 - **Example: Missing provider-specific output contract**
   - Task: "Perform a multi-file refactor with OpenAI."
