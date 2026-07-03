@@ -39,7 +39,7 @@ links:
 - [ ] Read this file completely
 - [ ] Read `## Behavioral Guidelines` (below) — think before coding, simplicity, surgical changes, goal-driven execution
 - [ ] Use `.copilot/manifest.json` or `.copilot/DOCS.md` to find relevant `.copilot/` documents by topic, then read all of them before implementation
-- [ ] If no matching topic is found in `.copilot/DOCS.md`, fall back to `.copilot/docs/exaix-development.md` and note that fallback in your implementation plan
+- [ ] If no matching topic is found in `.copilot/DOCS.md`, fall back to `.copilot/skills/exaix-development/SKILL.md` and note that fallback in your implementation plan
 - [ ] If a required document referenced in `.copilot/DOCS.md` is missing on disk, stop and report the missing path instead of inferring its contents
 - [ ] If a required document exists on disk but cannot be read or is empty, stop and report: `UNREADABLE: "<path>" exists but could not be read — cannot proceed without resolution.`
 - [ ] Read frontmatter of root `.md` files whenever you are selecting which `.copilot/` documents to consult for a task; the first 20 lines identify `copilot_knowledge_base: true` and relevant `capabilities` for that document
@@ -49,7 +49,7 @@ links:
 
 **Example acknowledgment format:**
 
-> "I consulted `.copilot/skills/test-development/SKILL.md` for test patterns and `.copilot/docs/exaix-development.md` for source architecture before implementing this feature."
+> "I consulted `.copilot/skills/test-development/SKILL.md` for test patterns and `.copilot/skills/exaix-development/SKILL.md` for source architecture before implementing this feature."
 
 **Failure to consult `.copilot/` documentation is considered a violation of project standards.**
 
@@ -63,7 +63,7 @@ links:
 | Doc catalog               | [.copilot/DOCS.md](.copilot/DOCS.md) — all docs by task + topic                                        |
 | Doc index (by topic)      | [.copilot/manifest.json](.copilot/manifest.json)                                                       |
 | Architecture              | [.copilot/docs/ARCHITECTURE.md](.copilot/docs/ARCHITECTURE.md)                                         |
-| Source patterns           | [.copilot/docs/exaix-development.md](.copilot/docs/exaix-development.md)                               |
+| Source patterns           | [.copilot/skills/exaix-development/SKILL.md](.copilot/skills/exaix-development/SKILL.md)               |
 | Test development          | [.copilot/skills/test-development/SKILL.md](.copilot/skills/test-development/SKILL.md)                 |
 | Documentation skill       | [.copilot/skills/doc/SKILL.md](.copilot/skills/doc/SKILL.md)                                           |
 | Spec-driven development   | [.copilot/docs/specification-driven-development.md](.copilot/docs/specification-driven-development.md) |

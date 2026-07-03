@@ -57,20 +57,6 @@
       ]
     },
     {
-      "path": ".copilot/docs/exaix-development.md",
-      "agent": "copilot",
-      "scope": "dev",
-      "title": "Exaix Source Development Guidelines",
-      "short_summary": "Guidance for developing Exaix source code: TDD-first, patterns, project structure, and best practices.",
-      "version": "0.1",
-      "topics": [
-        "source",
-        "development",
-        "tdd",
-        "patterns"
-      ]
-    },
-    {
       "path": ".copilot/prompts/infra.prompt.md",
       "short_summary": ""
     },
@@ -333,6 +319,22 @@
         "integrations"
       ],
       "qwen_skill": "plan"
+    },
+    {
+      "path": ".copilot/skills/exaix-development/SKILL.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Exaix Development Skill (#exaix-development)",
+      "short_summary": "Develop Exaix source code — TDD-first, DI patterns, config philosophy, code conventions.",
+      "version": "1.0.0",
+      "topics": [
+        "source",
+        "development",
+        "tdd",
+        "patterns",
+        "architecture"
+      ],
+      "qwen_skill": "exaix-development"
     },
     {
       "path": ".copilot/skills/refactor/SKILL.md",
