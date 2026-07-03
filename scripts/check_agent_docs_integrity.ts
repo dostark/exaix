@@ -18,7 +18,7 @@
 import { join, resolve } from "@std/path";
 
 export interface IIntegrityViolation {
-  kind: "dangling-readme-link" | "dangling-manifest-path" | "dangling-docs-symlink";
+  kind: "dangling-readme-link" | "dangling-docs-index-link" | "dangling-manifest-path" | "dangling-docs-symlink";
   file: string;
   detail: string;
 }
@@ -72,7 +72,26 @@ export function checkAgentDocsIntegrity(copilotDir: string): IIntegrityResult {
     });
   }
 
-  // --- (b) dangling-manifest-path ---
+  // --- (b) dangling-docs-index-link ---
+  const indexPath = join(copilotDir, "DOCS.md");
+  try {
+    const indexContent = Deno.readTextFileSync(indexPath);
+    const links = extractMdLinks(indexContent);
+    for (const link of links) {
+      const resolved = resolve(copilotDir, link);
+      if (!existsSync(resolved)) {
+        violations.push({
+          kind: "dangling-docs-index-link",
+          file: indexPath,
+          detail: `DOCS.md links to "${link}" (resolved: ${resolved}) but file does not exist`,
+        });
+      }
+    }
+  } catch {
+    // DOCS.md may not exist yet — non-fatal
+  }
+
+  // --- (c) dangling-manifest-path ---
   try {
     const manifestRaw = Deno.readTextFileSync(manifestPath);
     const manifest = JSON.parse(manifestRaw);

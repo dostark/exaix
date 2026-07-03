@@ -1,9 +1,9 @@
 /**
  * @module CheckAgentDocsIntegrityTest
  * @path tests/scripts/check_agent_docs_integrity_test.ts
- * @description Tests for check:agent-docs-integrity gate — 5 cases covering
- *   dangling-readme-link, dangling-manifest-path, dangling-docs-symlink,
- *   consistent corpus, and live corpus.
+ * @description Tests for check:agent-docs-integrity gate — 6 cases covering
+ *   dangling-readme-link, dangling-docs-index-link, dangling-manifest-path,
+ *   dangling-docs-symlink, consistent corpus, and live corpus.
  */
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { dirname, join } from "@std/path";
@@ -61,7 +61,20 @@ Deno.test({
 });
 
 Deno.test({
-  name: "check:agent-docs-integrity — (b) manifest.json path → deleted file → FAIL",
+  name: "check:agent-docs-integrity — (b) DOCS.md links a missing file → FAIL",
+  fn: async () => {
+    const copilotDir = createTempCorpus({
+      "DOCS.md": "- [ghost.md](docs/ghost.md): does not exist",
+    });
+    const result = await runCheck(copilotDir);
+    assertEquals(result.code, 1, "should exit 1 on dangling DOCS.md link");
+    assertStringIncludes(result.output, "dangling-docs-index-link");
+    Deno.removeSync(join(copilotDir, ".."), { recursive: true });
+  },
+});
+
+Deno.test({
+  name: "check:agent-docs-integrity — (c) manifest.json path → deleted file → FAIL",
   fn: async () => {
     const copilotDir = createTempCorpus({
       "manifest.json": JSON.stringify({
@@ -76,7 +89,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "check:agent-docs-integrity — (c) docs/ symlink → missing target → FAIL",
+  name: "check:agent-docs-integrity — (d) docs/ symlink → missing target → FAIL",
   fn: async () => {
     const copilotDir = createTempCorpus(
       { "docs/README.md": "# placeholder" },
@@ -90,7 +103,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "check:agent-docs-integrity — (d) consistent corpus → PASS",
+  name: "check:agent-docs-integrity — (e) consistent corpus → PASS",
   fn: async () => {
     const copilotDir = createTempCorpus({
       "docs/README.md": "- [real.md](real.md): exists",
@@ -106,7 +119,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "check:agent-docs-integrity — (e) live .copilot/ → PASS",
+  name: "check:agent-docs-integrity — (f) live .copilot/ → PASS",
   fn: async () => {
     const result = await runCheck(join(REPO_ROOT, ".copilot"));
     assertEquals(result.code, 0, "live .copilot/ should pass integrity check");

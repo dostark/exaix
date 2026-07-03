@@ -25,7 +25,8 @@ Content is organized by **role**, not by provider.
 ├── docs/           # On-demand reference documents (agent-oriented; reachable as .agents/references/)
 ├── references/     # Symlink → docs/ (backward-compatible alias)
 ├── planning/       # Reserved — active phase docs live in exaix-dev-docs/planning/
-├── manifest.json   # Auto-generated index of all agent docs
+├── DOCS.md         # Auto-generated doc catalog (tasks + topics)
+└── manifest.json   # Auto-generated index of all agent docs
 ```
 
 ## Role Distinction

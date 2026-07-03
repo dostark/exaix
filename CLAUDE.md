@@ -14,7 +14,7 @@ links:
 > **⚠️ CRITICAL:** This document and `.copilot/` are **MANDATORY** context for all code tasks.
 > _Note: `.copilot/` is the canonical directory. Symlinks like `.claude/`, `.agents/`, `.cursor/`, and `AGENTS.md` exist intentionally to support various agents. They all point to `.copilot/`. For Qwen agents, `.qwen/settings.json` references `.copilot/skills/` directly._
 > Read this file first, then use the `.copilot/` documents it points you to as task-specific extensions. If you find a conflict between this file and a `.copilot/` document, or between two `.copilot/` documents, stop and report the conflict instead of guessing.
-> A missing topic match in `.copilot/manifest.json` is not a conflict; follow the documented fallback path.
+> A missing topic match in `.copilot/DOCS.md` or `.copilot/manifest.json` is not a conflict; follow the documented fallback path.
 > If a project instruction conflicts with a known security risk or language/runtime constraint (not merely a stylistic preference), flag it inline as `WARNING: <description>` and proceed with the project instruction unless it would introduce a critical vulnerability.
 >
 > **Conflict reporting format:** State the conflict explicitly in your response in the form: `CONFLICT: "<file-a>" says X, "<file-b>" says Y — cannot proceed without resolution.` Do not attempt to resolve the conflict yourself.
@@ -38,9 +38,9 @@ links:
 
 - [ ] Read this file completely
 - [ ] Read `## Behavioral Guidelines` (below) — think before coding, simplicity, surgical changes, goal-driven execution
-- [ ] Use `.copilot/manifest.json` to find relevant `.copilot/` documents by topic, then read all of them before implementation
-- [ ] If no matching topic is found in `.copilot/manifest.json`, fall back to `.copilot/docs/exaix-development.md` and note that fallback in your implementation plan
-- [ ] If a required document referenced in `.copilot/manifest.json` is missing on disk, stop and report the missing path instead of inferring its contents
+- [ ] Use `.copilot/manifest.json` or `.copilot/DOCS.md` to find relevant `.copilot/` documents by topic, then read all of them before implementation
+- [ ] If no matching topic is found in `.copilot/DOCS.md`, fall back to `.copilot/docs/exaix-development.md` and note that fallback in your implementation plan
+- [ ] If a required document referenced in `.copilot/DOCS.md` is missing on disk, stop and report the missing path instead of inferring its contents
 - [ ] If a required document exists on disk but cannot be read or is empty, stop and report: `UNREADABLE: "<path>" exists but could not be read — cannot proceed without resolution.`
 - [ ] Read frontmatter of root `.md` files whenever you are selecting which `.copilot/` documents to consult for a task; the first 20 lines identify `copilot_knowledge_base: true` and relevant `capabilities` for that document
 - [ ] Read `ARCHITECTURE.md` before modifying any core flow
@@ -57,22 +57,28 @@ links:
 
 ## Quick Reference
 
-| Need                      | Location                                                                   |
-| ------------------------- | -------------------------------------------------------------------------- |
-| Behavioral guidelines     | [CLAUDE.md](./CLAUDE.md#behavioral-guidelines)                             |
-| Doc index (by topic)      | [.copilot/manifest.json](.copilot/manifest.json)                           |
-| Source patterns           | [.copilot/docs/exaix-development.md](.copilot/docs/exaix-development.md)   |
-| Testing patterns          | [.copilot/docs/testing.md](.copilot/docs/testing.md)                       |
-| Documentation guide       | [.copilot/docs/documentation.md](.copilot/docs/documentation.md)           |
-| Coding standards          | [CODE_STYLE.md](./CODE_STYLE.md)                                           |
-| Magic numbers / constants | [CODE_STYLE.md](./CODE_STYLE.md) §2                                        |
-| MCP tool index            | [.copilot/docs/TOOLS.md](.copilot/docs/TOOLS.md)                           |
-| Commit skill              | [.copilot/skills/commit/SKILL.md](.copilot/skills/commit/SKILL.md)         |
-| Plan skill                | [.copilot/skills/plan/SKILL.md](.copilot/skills/plan/SKILL.md)             |
-| Next-steps skill          | [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md) |
-| Slash commands            | [.copilot/prompts/](.copilot/prompts/)                                     |
-| Planning documents        | [exaix-dev-docs/planning/](exaix-dev-docs/planning/)                       |
-| All agent docs index      | [.copilot/manifest.json](.copilot/manifest.json)                           |
+| Need                      | Location                                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Behavioral guidelines     | [CLAUDE.md](./CLAUDE.md#behavioral-guidelines)                                                         |
+| Doc catalog               | [.copilot/DOCS.md](.copilot/DOCS.md) — all docs by task + topic                                        |
+| Doc index (by topic)      | [.copilot/manifest.json](.copilot/manifest.json)                                                       |
+| Architecture              | [.copilot/docs/ARCHITECTURE.md](.copilot/docs/ARCHITECTURE.md)                                         |
+| Source patterns           | [.copilot/docs/exaix-development.md](.copilot/docs/exaix-development.md)                               |
+| Testing patterns          | [.copilot/docs/testing.md](.copilot/docs/testing.md)                                                   |
+| Documentation guide       | [.copilot/docs/documentation.md](.copilot/docs/documentation.md)                                       |
+| Spec-driven development   | [.copilot/docs/specification-driven-development.md](.copilot/docs/specification-driven-development.md) |
+| Agent content schema      | [.copilot/docs/agent-content-schema.md](.copilot/docs/agent-content-schema.md)                         |
+| Agent reasoning           | [.copilot/docs/agent-thought-standardization.md](.copilot/docs/agent-thought-standardization.md)       |
+| Dev glossary              | [.copilot/docs/GLOSSARY.md](.copilot/docs/GLOSSARY.md)                                                 |
+| Coding standards          | [CODE_STYLE.md](./CODE_STYLE.md)                                                                       |
+| Magic numbers / constants | [CODE_STYLE.md](./CODE_STYLE.md) §2                                                                    |
+| MCP tool index            | [.copilot/docs/TOOLS.md](.copilot/docs/TOOLS.md)                                                       |
+| Commit skill              | [.copilot/skills/commit/SKILL.md](.copilot/skills/commit/SKILL.md)                                     |
+| Plan skill                | [.copilot/skills/plan/SKILL.md](.copilot/skills/plan/SKILL.md)                                         |
+| Next-steps skill          | [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md)                             |
+| Slash commands            | [.copilot/prompts/](.copilot/prompts/)                                                                 |
+| Planning documents        | [exaix-dev-docs/planning/](exaix-dev-docs/planning/)                                                   |
+| All agent docs index      | [.copilot/manifest.json](.copilot/manifest.json)                                                       |
 
 ## Behavioral Guidelines
 

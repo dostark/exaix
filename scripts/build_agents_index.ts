@@ -84,10 +84,60 @@ export async function generateManifestObject(includeSubmodule = false) {
   return { docs };
 }
 
+export async function generateDocsIndex(docs: JSONObject[]) {
+  const indexPath = `.copilot/DOCS.md`;
+  function toRelPath(raw: string): string {
+    if (raw.startsWith(".copilot/")) return raw.replace(".copilot/", "");
+    if (!raw.startsWith(".") && !raw.startsWith("/")) return `../${raw}`;
+    return raw;
+  }
+  let taskTable = "| Task Type | Primary Doc |\n| --- | --- |\n";
+  for (const doc of docs) {
+    if (!doc.title) continue;
+    const relPath = toRelPath(String(doc.path));
+    taskTable += `| ${doc.title} | [${relPath}](${relPath}) |\n`;
+  }
+
+  const topicMap: Record<string, string[]> = {};
+  for (const doc of docs) {
+    if (!doc.topics || !Array.isArray(doc.topics)) continue;
+    const relPath = toRelPath(String(doc.path));
+    for (const topic of doc.topics) {
+      if (!topicMap[String(topic)]) topicMap[String(topic)] = [];
+      topicMap[String(topic)].push(`[${relPath}](${relPath})`);
+    }
+  }
+  let topicList = "";
+  for (const topic of Object.keys(topicMap).sort()) {
+    topicList += `- **\`${topic}\`** → ${topicMap[topic].join(", ")}\n`;
+  }
+
+  const content = `---
+agent: general
+scope: dev
+title: Doc Catalog
+short_summary: "Complete index of agent docs by task and topic."
+version: "1.0"
+topics: ["reference", "docs", "catalog"]
+---
+
+## Task → Doc
+
+${taskTable}
+## Search by Topic
+
+${topicList}
+`;
+  await Deno.writeTextFile(indexPath, content);
+  console.log(`Wrote ${indexPath}`);
+}
+
 export async function buildIndex(includeSubmodule = false) {
   const manifest = await generateManifestObject(includeSubmodule);
   await Deno.writeTextFile(OUT_MANIFEST, JSON.stringify(manifest, null, 2));
   console.log(`Wrote manifest to ${OUT_MANIFEST}`);
+
+  await generateDocsIndex(manifest.docs);
 }
 
 if (import.meta.main) {

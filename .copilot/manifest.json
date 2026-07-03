@@ -666,6 +666,19 @@
       "qwen_skill": "pre-gap-analysis"
     },
     {
+      "path": ".copilot/DOCS.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Doc Catalog",
+      "short_summary": "Complete index of agent docs by task and topic.",
+      "version": "1.0",
+      "topics": [
+        "reference",
+        "docs",
+        "catalog"
+      ]
+    },
+    {
       "path": "ARCHITECTURE.md",
       "title": "ARCHITECTURE.md",
       "short_summary": "Exaix system architecture — component boundaries, dependency invariants, and design rationale",
