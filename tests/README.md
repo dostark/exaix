@@ -2,7 +2,7 @@
 
 This directory contains tests, test utilities, and testing infrastructure for the Exaix project.
 
-> **Post-migration status (2026-05-24):** The `src/` directory has been fully removed. Package-level unit tests now live in `packages/<name>/tests/` and app-level tests in `apps/<name>/tests/`. Root `tests/` is being migrated from ~267 files to ~70 cross-package integration and infrastructure tests (see [`dev/Exaix_Packages.md §Test migration plan`](../exaix-dev-docs/dev/Exaix_Packages.md#test-migration-plan)). The directory structure below reflects the **target end state** after migration.
+> **Post-migration status (2026-05-24):** The `src/` directory has been fully removed. Package-level unit tests now live in `packages/<name>/tests/` and app-level tests in `apps/<name>/tests/`. Root `tests/` is being migrated from ~267 files to ~70 cross-package integration and infrastructure tests (see [`exaix-dev-docs/dev/Exaix_Packages.md §Test migration plan`](../exaix-dev-docs/dev/Exaix_Packages.md#test-migration-plan)). The directory structure below reflects the **target end state** after migration.
 
 ## Quick Start
 
@@ -110,7 +110,7 @@ Each package owns its unit tests. Key locations:
 
 ## Migration Status
 
-Test migration from root `tests/` to package directories is **in progress** (~267 files to move). See [`dev/Exaix_Packages.md §Test migration plan`](../exaix-dev-docs/dev/Exaix_Packages.md#test-migration-plan) for:
+Test migration from root `tests/` to package directories is **in progress** (~267 files to move). See [`exaix-dev-docs/dev/Exaix_Packages.md §Test migration plan`](../exaix-dev-docs/dev/Exaix_Packages.md#test-migration-plan) for:
 
 - **Per-folder migration map** — every `tests/services/` subfolder mapped to its target package
 - **Sequencing** — helpers first → leaf packages → orchestration → apps → flows split → cleanup
@@ -154,7 +154,7 @@ Test migration from root `tests/` to package directories is **in progress** (~26
 - Test placement is enforced by `deno task check:test-placement`.
 - New files matching `*_test.ts` under root `tests/` are checked for valid placement.
 - New service tests must live under `packages/<name>/tests/` or `apps/<name>/tests/`, not under root `tests/services/`.
-- The authoritative agent-facing placement rules live in `.copilot/guidelines/testing.md`.
+- The authoritative agent-facing placement rules live in `.copilot/skills/test-development/SKILL.md`.
 
 ### Deterministic Source-To-Test Mapping
 
@@ -413,5 +413,5 @@ EXA_TEST_ENABLE_PAID_LLM=1 deno task test
 - [CODE_STYLE.md](../CODE_STYLE.md) — General coding style
 - [CONTRIBUTING.md](../CONTRIBUTING.md) — Contribution guidelines
 - [ARCHITECTURE.md](../ARCHITECTURE.md) — System architecture
-- [`dev/Exaix_Packages.md`](../exaix-dev-docs/dev/Exaix_Packages.md) — Package boundaries + test migration plan
-- [`dev/Exaix_Testing_and_CI_Strategy.md`](../exaix-dev-docs/dev/Exaix_Testing_and_CI_Strategy.md) — Full testing strategy
+- [`exaix-dev-docs/dev/Exaix_Packages.md`](../exaix-dev-docs/dev/Exaix_Packages.md) — Package boundaries + test migration plan
+- [`exaix-dev-docs/dev/Exaix_Testing_and_CI_Strategy.md`](../exaix-dev-docs/dev/Exaix_Testing_and_CI_Strategy.md) — Full testing strategy

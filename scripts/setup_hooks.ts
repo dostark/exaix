@@ -18,7 +18,7 @@ const PRE_COMMIT_CONTENT = `#!/bin/sh
 # ============================================
 # Gate 0: Block direct commits on 'main'
 #         Bypass: HOOK_BYPASS_MAIN=1 git commit ...
-# Gates 1-13: Format, lint, style, magic, docs, complexity, parity, arch, event-strings
+# Gates 1-18: Format, lint, style, magic, docs, complexity, parity, arch, event-strings, skill, manifest, md-path, agent-docs-integrity, qwen-skills-sync
 # ============================================
 
 # --- Gate 0: Main branch guard ---
@@ -197,6 +197,20 @@ deno task check:md-path:staged
 if [ $? -ne 0 ]; then
   echo "❌ Error: A staged markdown file references a filesystem path that does not resolve."
   echo "    Fix the path, or run: deno task check:md-path:fix (rewrites unambiguous link renames)."
+  exit 1
+fi
+
+# 17. Agent Docs Integrity Check
+deno task check:agent-docs-integrity
+if [ $? -ne 0 ]; then
+  echo "❌ Error: Agent docs integrity check failed (dangling reference in .copilot/ corpus)."
+  exit 1
+fi
+
+# 18. Qwen Skills Sync Check
+deno task check:qwen-skills-sync
+if [ $? -ne 0 ]; then
+  echo "❌ Error: .qwen/settings.json is out of sync with .copilot/skills/ qwen_skill declarations."
   exit 1
 fi
 

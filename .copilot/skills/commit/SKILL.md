@@ -143,6 +143,11 @@ Expected Response Pattern:
 
 - [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
 
+
+## See also
+
+- [next-steps](../next-steps/SKILL.md) — step-based workflow that commits per step
+- [exaix-development](../exaix-development/SKILL.md) — CI gate conventions, branch rules
 ---
 exaix:
   skill_id: commit

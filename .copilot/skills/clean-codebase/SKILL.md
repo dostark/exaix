@@ -135,15 +135,26 @@ Phase 11 — Tool result parity
   24. Run `deno task check:tool-result-parity` — verifies that TOOL_MANIFEST metadata
      is consistent with the actual tool handler schemas across all edition layers.
 
-Phase 12 — Test placement
-  25. Run `deno task check:test-placement` — verifies every test file is in its owning
-     boundary (package-owned, app-owned, or cross-cutting root tests/).
-  26. Fix mislocated test files, then re-run `deno task check:test-placement` — 0 violations.
+Phase 12 — Stale markdown paths
+   25. Run `deno task check:md-path` — scans all markdown files for references to
+      files that do not exist (stale paths) and bare prose paths that should be
+      backtick-wrapped.
+   26. Fix stale paths (repoint or wrap in backticks), then re-run `deno task check:md-path` — 0 violations.
 
-Phase 13 — Skill envelope validity
+Phase 13 — Test placement
+   27. Run `deno task check:test-placement` — verifies every test file is in its owning
+      boundary (package-owned, app-owned, or cross-cutting root tests/).
+   28. Fix mislocated test files, then re-run `deno task check:test-placement` — 0 violations.
+
+Phase 14 — Skill envelope validity
   27. Run `deno task check:skill-envelopes` — validates that every `.copilot/skills/` SKILL.md
      has a valid `exaix:` block matching `SkillEnvelopeSchema`.
-  28. Fix invalid envelopes (missing `---` separator, malformed YAML, missing fields),
+  28. Fix invalid envelopes (missing `
+## See also
+
+- [exaix-development](../exaix-development/SKILL.md) — code patterns, config constants, anti-patterns
+- [test-development](../test-development/SKILL.md) — test placement, helpers for integration tests
+---` separator, malformed YAML, missing fields),
      then re-run until 0 errors.
 
 Phase 14 — Step-manifest CI gate
@@ -273,7 +284,7 @@ Workflow chain (typical):
 
 ## Related
 
-- [LLM_GUIDE.md](../../../LLM_GUIDE.md) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
+- [CLAUDE.md](../../../CLAUDE.md#behavioral-guidelines) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
 - [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
 
 ## Output format

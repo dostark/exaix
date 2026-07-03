@@ -30,7 +30,7 @@ Key points
 
 Canonical prompt (short):
 "Produce a comparative analysis of Exaix vs {competitor/topic}.
-Phase 0: Read ARCHITECTURE.md, docs/GLOSSARY.md, exaix-dev-docs/dev/Exaix_White_Paper.md,
+Phase 0: Read ARCHITECTURE.md, .copilot/docs/GLOSSARY.md, exaix-dev-docs/dev/Exaix_White_Paper.md,
          and exaix-dev-docs/dev/System_Architecture_Diagram.md first.
 Reference: {existing analysis docs if any}.
 Cover: positioning, feature matrix, gaps, improvement suggestions, rejected patterns."
@@ -62,7 +62,7 @@ MANDATORY — Phase 0: Comprehend Exaix's Own Architecture
       → Extract the anomaly classification system (severity levels, recovered failures)
       → Extract the guardrail runner architecture (concurrent, non-blocking)
 
-  0b. docs/GLOSSARY.md — precise terminology definitions
+  0b. .copilot/docs/GLOSSARY.md — precise terminology definitions
       → Extract the Actor/Agent/Identity distinction:
         - Actor = who initiated (user, service, mcp-client, identity)
         - Agent = runtime execution unit (agent-runner, flow-runner, etc.)

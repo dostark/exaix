@@ -51,6 +51,10 @@ Workflow chain (typical):
   #plan → #pre-gap-analysis → **#remediate-plan-gaps** → #next-steps → #post-gap-analysis → #remediate-code-gaps → #commit
 ```
 
+## See also
+
+- [plan](../plan/SKILL.md) — plan creation, step format, success criteria
+
 ---
 
 ## Instructions for Agent

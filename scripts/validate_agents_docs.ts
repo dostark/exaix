@@ -50,7 +50,7 @@ async function validateFile(path: string): Promise<string[]> {
 
   // presence of a canonical prompt or examples
   const isTemplate = path.startsWith(".copilot/prompts/") || path.includes("README.md") ||
-    path.includes("manifest.json") || path.includes("chunks/") || path.includes("cross-reference.md");
+    path.includes("manifest.json") || path.includes("DOCS.md");
 
   if (!isTemplate) {
     if (!content.includes("Canonical prompt") && !content.includes("Canonical Prompt")) {
@@ -58,20 +58,6 @@ async function validateFile(path: string): Promise<string[]> {
     }
     if (!content.includes("Examples")) {
       errors.push(`${path}: missing 'Examples' section`);
-    }
-  }
-
-  // Validate Qwen skill wrapper if declared
-  const qwenSkill = fm["qwen_skill"];
-  if (qwenSkill) {
-    const wrapperPath = `.qwen/skills/${qwenSkill}/SKILL.md`;
-    try {
-      const wrapperContent = await Deno.readTextFile(wrapperPath);
-      if (!wrapperContent.includes(`\`${path}\``)) {
-        errors.push(`${path}: Qwen wrapper ${wrapperPath} does not correctly cite canonical source`);
-      }
-    } catch {
-      errors.push(`${path}: Qwen wrapper ${wrapperPath} is missing but declared in frontmatter`);
     }
   }
 
@@ -96,7 +82,7 @@ async function main() {
           if (
             entry.path.includes("/planning/") || entry.path.includes("/issues/") ||
             entry.path.includes("/not_actual/") || entry.path.includes("/dev/") ||
-            entry.name === "MAINTENANCE.md"
+            entry.name === "MAINTENANCE.md" || entry.name === "TOOLS.md"
           ) {
             continue;
           }

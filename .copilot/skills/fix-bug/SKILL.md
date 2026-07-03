@@ -95,6 +95,11 @@ Related skills:
 - #refactor-check-magic — If the fix introduced new literals, reduce magic violations
 ```
 
+## See also
+
+- [test-development](../test-development/SKILL.md) — regression test patterns, test helpers
+- [exaix-development](../exaix-development/SKILL.md) — source patterns, DI, config conventions
+
 ---
 
 ## Instructions for Agent
@@ -159,7 +164,7 @@ in the `tests:` field.
 
 ## Related
 
-- [LLM_GUIDE.md](../../../LLM_GUIDE.md) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
+- [CLAUDE.md](../../../CLAUDE.md#behavioral-guidelines) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
 - [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
 
 ---

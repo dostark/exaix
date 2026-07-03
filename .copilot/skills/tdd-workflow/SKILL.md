@@ -120,7 +120,7 @@ Workflow chain (typical):
 
 ## Related
 
-- [LLM_GUIDE.md](../../../LLM_GUIDE.md) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
+- [CLAUDE.md](../../../CLAUDE.md#behavioral-guidelines) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
 - [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
 
 ## Output format
@@ -138,6 +138,11 @@ Workflow chain (typical):
 - `#tdd-workflow Add unit tests for PlanService.createPlan() then implement`
 - `#tdd-workflow Cover validatePath() with edge cases (missing dir, symlink, escape)`
 - `#tdd-workflow Implement EventLogger structured output — red-green-refactor cycle`
+
+## See also
+
+- [test-development](../test-development/SKILL.md) — test helpers, placement rules, patterns
+- [exaix-development](../exaix-development/SKILL.md) — DI patterns, config constants, coding conventions
 
 ---
 exaix:

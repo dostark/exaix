@@ -2,7 +2,7 @@
 agent: general
 scope: dev
 title: .copilot/ — AI Agent Knowledge Base
-short_summary: "Overview of the .copilot/ directory: prompts, skills, guidelines, and providers for multi-agent Exaix development."
+short_summary: "Overview of the .copilot/ directory: prompts, skills, and docs for multi-agent Exaix development."
 version: "2.0"
 ---
 
@@ -22,57 +22,31 @@ Content is organized by **role**, not by provider.
 .copilot/
 ├── prompts/        # Chat routing wrappers — one .prompt.md per skill (symlinked from .github/prompts/)
 ├── skills/         # Multi-step autonomous workflows (one SKILL.md per skill)
-├── guidelines/     # Reference guidelines and process documents
-├── providers/      # Provider-specific adaptation notes
+├── docs/           # On-demand reference documents (agent-oriented; reachable as .agents/references/)
+├── references/     # Symlink → docs/ (backward-compatible alias)
 ├── planning/       # Reserved — active phase docs live in exaix-dev-docs/planning/
-├── cross-reference.md  # Task → document quick reference (start here)
-├── manifest.json   # Auto-generated index of all agent docs
-└── chunks/         # Auto-generated pre-chunked text for RAG retrieval
+├── DOCS.md         # Auto-generated doc catalog (tasks + topics)
+└── manifest.json   # Auto-generated index of all agent docs
 ```
 
 ## Role Distinction
 
-| Directory     | Role             | Format                                 | When to use                                        |
-| ------------- | ---------------- | -------------------------------------- | -------------------------------------------------- |
-| `prompts/`    | Routing wrapper  | `.prompt.md`, `name:` + `description:` | Thin wrappers that route to canonical skill source |
-| `skills/`     | Autonomous skill | `SKILL.md` per skill                   | Multi-step workflows that run autonomously         |
-| `guidelines/` | Reference doc    | Markdown                               | Consult for patterns, standards, processes         |
-| `providers/`  | Adaptation notes | Markdown                               | Provider-specific tips for Claude/OpenAI/Gemini    |
+| Directory  | Role             | Format                                 | When to use                                        |
+| ---------- | ---------------- | -------------------------------------- | -------------------------------------------------- |
+| `prompts/` | Routing wrapper  | `.prompt.md`, `name:` + `description:` | Thin wrappers that route to canonical skill source |
+| `skills/`  | Autonomous skill | `SKILL.md` per skill                   | Multi-step workflows that run autonomously         |
+| `docs/`    | Reference doc    | Markdown                               | Consult for patterns, standards, processes         |
 
 ## Quick Navigation
 
-- **Find the right doc for a task**: [cross-reference.md](cross-reference.md)
+- **Find the right doc for a task**: [manifest.json](manifest.json)
 - **Skills**: [skills/](skills/) — commit, plan, review, fix-bug, clean-codebase, coverage, security, package-extraction, and more
 - **Prompts**: [prompts/](prompts/) — thin routing wrappers, one per skill (also at `.github/prompts/`)
-- **Guidelines**: [guidelines/](guidelines/) — exaix-development, testing, documentation, security-review, self-improvement, etc.
-- **Providers**: [providers/claude.md](providers/claude.md), [providers/openai.md](providers/openai.md), [providers/google.md](providers/google.md)
+- **Reference docs**: [docs/](docs/) — user guide, SDD methodology, evaluation, reference data, and more
 
 ## Qwen Integration
 
-`.qwen/skills/` contains thin routing wrappers that point to `.copilot/skills/<name>/SKILL.md`. The `Enabled` column reflects whether the skill's `SKILL.md` has a `qwen_skill: <name>` frontmatter key. To enable a new skill, add that key and run `deno run -A scripts/build_agents_index.ts`.
-
-| Qwen Skill                           | Enabled | Canonical Source                                |
-| ------------------------------------ | ------- | ----------------------------------------------- |
-| `.qwen/skills/clean-codebase/`       | ✓       | `.copilot/skills/clean-codebase/SKILL.md`       |
-| `.qwen/skills/commit/`               | ✓       | `.copilot/skills/commit/SKILL.md`               |
-| `.qwen/skills/coverage/`             | ✓       | `.copilot/skills/coverage/SKILL.md`             |
-| `.qwen/skills/doc/`                  | ✓       | `.copilot/skills/doc/SKILL.md`                  |
-| `.qwen/skills/explore/`              | ✓       | `.copilot/skills/explore/SKILL.md`              |
-| `.qwen/skills/fix-bug/`              | ✓       | `.copilot/skills/fix-bug/SKILL.md`              |
-| `.qwen/skills/infra/`                | ✓       | `.copilot/skills/infra/SKILL.md`                |
-| `.qwen/skills/next-steps/`           | ✓       | `.copilot/skills/next-steps/SKILL.md`           |
-| `.qwen/skills/package-extraction/`   | ✓       | `.copilot/skills/package-extraction/SKILL.md`   |
-| `.qwen/skills/plan/`                 | ✓       | `.copilot/skills/plan/SKILL.md`                 |
-| `.qwen/skills/post-gap-analysis/`    | ✓       | `.copilot/skills/post-gap-analysis/SKILL.md`    |
-| `.qwen/skills/pre-gap-analysis/`     | ✓       | `.copilot/skills/pre-gap-analysis/SKILL.md`     |
-| `.qwen/skills/refactor/`             | ✓       | `.copilot/skills/refactor/SKILL.md`             |
-| `.qwen/skills/refactor-check-magic/` | ✓       | `.copilot/skills/refactor-check-magic/SKILL.md` |
-| `.qwen/skills/review/`               | ✓       | `.copilot/skills/review/SKILL.md`               |
-| `.qwen/skills/review-research/`      | ✓       | `.copilot/skills/review-research/SKILL.md`      |
-| `.qwen/skills/security/`             | ✓       | `.copilot/skills/security/SKILL.md`             |
-| `.qwen/skills/submodule-workflow/`   | ✓       | `.copilot/skills/submodule-workflow/SKILL.md`   |
-| `.qwen/skills/tdd-workflow/`         | ✓       | `.copilot/skills/tdd-workflow/SKILL.md`         |
-| `.qwen/skills/upgrade/`              | ✓       | `.copilot/skills/upgrade/SKILL.md`              |
+`.qwen/settings.json` references `.copilot/skills/` directly — no routing wrappers needed. Skills are registered manually in that file.
 
 ## GitHub Copilot Integration
 
@@ -96,7 +70,7 @@ deno run --allow-read scripts/validate_agents_docs.ts
 
 ### 1. Create File in Appropriate Subfolder
 
-- Use `providers/` for model-specific notes, `guidelines/` for reference docs, and `skills/` for autonomous workflows.
+- Use `docs/` for on-demand reference docs, `skills/` for autonomous workflows, and `prompts/` for routing wrappers.
 - To add a new skill, also run `scripts/generate_prompt.ts --skill <name>` to create the corresponding `.copilot/prompts/<name>.prompt.md` wrapper, add the matching `.qwen/skills/<name>/` routing wrapper, and register it in `.qwen/settings.json`.
 
 ### 2. Add YAML Frontmatter

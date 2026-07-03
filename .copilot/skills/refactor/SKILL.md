@@ -89,7 +89,7 @@ Related
 - #tdd-workflow         — when refactor requires adding tests first
 - #security             — full security audit when refactor exposes 3+ control gaps
 - [Blueprints/Skills/security-first.skill.md](../../../Blueprints/Skills/security-first.skill.md) — secure coding checklist for portal code; consult when refactor touches input, path, injection, or auth boundaries
-- [LLM_GUIDE.md](../../../LLM_GUIDE.md) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
+- [CLAUDE.md](../../../CLAUDE.md#behavioral-guidelines) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
 - CODE_STYLE.md         — authoritative naming, type, import, and constants rules
 ```
 
@@ -107,6 +107,11 @@ Related
 - `#refactor Extract IEventLogger interface from EventLogger class`
 - `#refactor Replace module-level DatabaseService singleton with constructor DI`
 - `#refactor Move hardcoded 30000 timeout to DEFAULT_TIMEOUT_MS constant`
+
+## See also
+
+- [test-development](../test-development/SKILL.md) — test patterns, helpers, coverage verification
+- [exaix-development](../exaix-development/SKILL.md) — required patterns, prohibited anti-patterns
 
 ---
 exaix:

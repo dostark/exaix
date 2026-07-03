@@ -11,8 +11,7 @@ import { validateFile } from "../../scripts/validate_agents_docs.ts";
 Deno.test("agent docs validate", async () => {
   // Find at least one doc and validate it
   const files = [
-    ".copilot/guidelines/exaix-development.md",
-    ".copilot/providers/openai.md",
+    ".copilot/skills/exaix-development/SKILL.md",
   ];
   for (const f of files) {
     const errors = await validateFile(f);

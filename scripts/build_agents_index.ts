@@ -2,7 +2,7 @@
 /**
  * @module BuildAgentsIndex
  * @path scripts/build_agents_index.ts
- * @description Build a simple manifest.json and pre-chunk files for fast retrieval.
+ * @description Build manifest.json for developer-agent tooling.
  *
  * Usage:
  *   deno run -A scripts/build_agents_index.ts
@@ -16,33 +16,14 @@ import type { JSONObject } from "@exaix/core/types";
 const AGENTS_DIR = ".copilot";
 const SUBMODULE_DIR = "exaix-dev-docs";
 const OUT_MANIFEST = `${AGENTS_DIR}/manifest.json`;
-const CHUNKS_DIR = `${AGENTS_DIR}/chunks`;
 
 function extractFrontmatter(md: string): string | null {
   const match = md.match(/^---\n([\s\S]*?)\n---/);
   return match ? match[1] : null;
 }
 
-function chunkText(text: string, size = 800): string[] {
-  // naive chunking by whole paragraphs
-  const paragraphs = text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
-  const chunks: string[] = [];
-  let current = "";
-  for (const p of paragraphs) {
-    if ((current + "\n\n" + p).length > size) {
-      if (current) chunks.push(current);
-      current = p;
-    } else {
-      current = current ? `${current}\n\n${p}` : p;
-    }
-  }
-  if (current) chunks.push(current);
-  return chunks;
-}
-
 export async function generateManifestObject(includeSubmodule = false) {
   const docs = [] as JSONObject[];
-  await Deno.mkdir(CHUNKS_DIR, { recursive: true });
 
   const scanDirs = [AGENTS_DIR];
   if (includeSubmodule) {
@@ -61,25 +42,16 @@ export async function generateManifestObject(includeSubmodule = false) {
       const fmRaw = extractFrontmatter(md);
       if (!fmRaw) continue;
       const fm = parse(fmRaw) as JSONObject;
-      const short_summary = String(fm["short_summary"] ?? "");
-      const chunks = chunkText(md.replace(/^---[\s\S]*?---/, ""));
-      const chunkPaths: string[] = [];
-      chunks.slice(0, 8).forEach((c, idx) => {
-        const p = `${CHUNKS_DIR}/${entry.name}.chunk${idx}.txt`;
-        Deno.writeTextFileSync(p, c);
-        chunkPaths.push(p);
-      });
 
       docs.push({
         path: entry.path,
         agent: fm["agent"],
         scope: fm["scope"],
         title: fm["title"],
-        short_summary,
+        short_summary: String(fm["short_summary"] ?? ""),
         version: fm["version"],
         topics: fm["topics"],
         qwen_skill: fm["qwen_skill"],
-        chunks: chunkPaths,
       });
     }
   }
@@ -93,25 +65,16 @@ export async function generateManifestObject(includeSubmodule = false) {
     if (!fmRaw) continue;
     const fm = parse(fmRaw) as JSONObject;
     if (!fm["copilot_knowledge_base"]) continue;
-    const short_summary = String(fm["short_summary"] ?? fm["description"] ?? "");
-    const chunks = chunkText(md.replace(/^---[\s\S]*?---/, ""));
-    const chunkPaths: string[] = [];
-    chunks.slice(0, 8).forEach((c, idx) => {
-      const p = `${CHUNKS_DIR}/${entry.name}.chunk${idx}.txt`;
-      Deno.writeTextFileSync(p, c);
-      chunkPaths.push(p);
-    });
 
     docs.push({
       path: entry.path,
       agent: fm["agent"],
       scope: fm["scope"],
       title: fm["title"],
-      short_summary,
+      short_summary: String(fm["short_summary"] ?? fm["description"] ?? ""),
       version: fm["version"],
       topics: fm["topics"],
       qwen_skill: fm["qwen_skill"],
-      chunks: chunkPaths,
     });
   }
 
@@ -121,95 +84,52 @@ export async function generateManifestObject(includeSubmodule = false) {
   return { docs };
 }
 
-export async function updateCrossReference(docs: JSONObject[]) {
-  const crossRefPath = ".copilot/cross-reference.md";
-  const crossRefMd = await Deno.readTextFile(crossRefPath);
-
-  // Build task quick reference
-  let taskTable = "| Task Type | Primary Doc | Secondary Docs |\n| --- | --- | --- |\n";
+export async function generateDocsIndex(docs: JSONObject[]) {
+  const indexPath = `.copilot/DOCS.md`;
+  function toRelPath(raw: string): string {
+    if (raw.startsWith(".copilot/")) return raw.replace(".copilot/", "");
+    if (!raw.startsWith(".") && !raw.startsWith("/")) return `../${raw}`;
+    return raw;
+  }
+  let taskTable = "| Task Type | Primary Doc |\n| --- | --- |\n";
   for (const doc of docs) {
-    if (!doc.title || doc.path === ".copilot/cross-reference.md") continue;
-    const rawPath = String(doc.path);
-    const relPath = rawPath.startsWith(".copilot/")
-      ? rawPath.replace(".copilot/", "")
-      : rawPath.startsWith("exaix-dev-docs/")
-      ? `../${rawPath}`
-      : rawPath.startsWith("./")
-      ? `../${rawPath.slice(2)}`
-      : `../${rawPath}`;
-    const title = String(doc.title);
-    taskTable += `| ${title} | [${relPath}](${relPath}) | |\n`;
+    if (!doc.title) continue;
+    const relPath = toRelPath(String(doc.path));
+    taskTable += `| ${doc.title} | [${relPath}](${relPath}) |\n`;
   }
 
-  // Build topic search
   const topicMap: Record<string, string[]> = {};
   for (const doc of docs) {
-    if (!doc.topics || !Array.isArray(doc.topics) || doc.path === ".copilot/cross-reference.md") continue;
-    const rawPath = String(doc.path);
-    const relPath = rawPath.startsWith(".copilot/")
-      ? rawPath.replace(".copilot/", "")
-      : rawPath.startsWith("exaix-dev-docs/")
-      ? `../${rawPath}`
-      : rawPath.startsWith("./")
-      ? `../${rawPath.slice(2)}`
-      : `../${rawPath}`;
+    if (!doc.topics || !Array.isArray(doc.topics)) continue;
+    const relPath = toRelPath(String(doc.path));
     for (const topic of doc.topics) {
       if (!topicMap[String(topic)]) topicMap[String(topic)] = [];
       topicMap[String(topic)].push(`[${relPath}](${relPath})`);
     }
   }
-
   let topicList = "";
   for (const topic of Object.keys(topicMap).sort()) {
     topicList += `- **\`${topic}\`** → ${topicMap[topic].join(", ")}\n`;
   }
 
-  const updatedMd = crossRefMd
-    .replace(
-      /## Task → Agent Doc Quick Reference\n\n[\s\S]*?(?=\n## Search by Topic)/,
-      `## Task → Agent Doc Quick Reference\n\n${taskTable}`,
-    )
-    .replace(
-      /## Search by Topic\n\n[\s\S]*?(?=\n## Workflow Examples)/,
-      `## Search by Topic\n\n${topicList}`,
-    );
-
-  await Deno.writeTextFile(crossRefPath, updatedMd);
-  console.log(`Updated cross-reference.md`);
-}
-
-export async function generateQwenSkills(docs: JSONObject[]) {
-  for (const doc of docs) {
-    // Only generate wrappers if qwen_skill frontmatter exists
-    const qwenSkill = doc["qwen_skill"];
-    if (qwenSkill) {
-      const skillName = String(qwenSkill);
-      const skillDir = `.qwen/skills/${skillName}`;
-      await Deno.mkdir(skillDir, { recursive: true });
-      const relPath = `../../../` + String(doc.path);
-      const wrapperContent = `---
-name: ${skillName}
-description: Automatically generated routing wrapper for ${skillName} skill.
+  const content = `---
+agent: general
+scope: dev
+title: Doc Catalog
+short_summary: "Complete index of agent docs by task and topic."
+version: "1.0"
+topics: ["reference", "docs", "catalog"]
 ---
 
-# ⚠️ AUTOMATIC ROUTING WRAPPER
+## Task → Doc
 
-> **CRITICAL**: This is an auto-generated routing skill.
-> The true canonical source for this skill is located at:
-> \`${String(doc.path)}\`
+${taskTable}
+## Search by Topic
 
-## INSTRUCTIONS FOR QWEN:
-
-1. **DO NOT** execute based on this file.
-2. **MUST** read the canonical source file before proceeding.
-3. Use the \`view_file\` tool to read \`${relPath}\`
-4. Follow the strict instructions and constraints defined in the canonical source.
-5. If the canonical source instructs you to read additional files or blueprints, you MUST read those as well.
+${topicList}
 `;
-      await Deno.writeTextFile(`${skillDir}/SKILL.md`, wrapperContent);
-      console.log(`Generated Qwen skill wrapper for ${skillName}`);
-    }
-  }
+  await Deno.writeTextFile(indexPath, content);
+  console.log(`Wrote ${indexPath}`);
 }
 
 export async function buildIndex(includeSubmodule = false) {
@@ -217,8 +137,7 @@ export async function buildIndex(includeSubmodule = false) {
   await Deno.writeTextFile(OUT_MANIFEST, JSON.stringify(manifest, null, 2));
   console.log(`Wrote manifest to ${OUT_MANIFEST}`);
 
-  await updateCrossReference(manifest.docs);
-  await generateQwenSkills(manifest.docs);
+  await generateDocsIndex(manifest.docs);
 }
 
 if (import.meta.main) {
@@ -226,4 +145,4 @@ if (import.meta.main) {
   await buildIndex(includeSubmodule);
 }
 
-export { chunkText, extractFrontmatter };
+export { extractFrontmatter };

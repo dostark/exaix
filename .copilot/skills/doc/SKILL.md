@@ -23,7 +23,6 @@ Key points
   deno task docs-sync-schemas to keep TOOLS.md in sync
 - exaix-dev-docs is a git submodule — follow .copilot/skills/submodule-workflow/SKILL.md
   for any changes that span the parent repo and the submodule
-- Consult .copilot/guidelines/documentation.md for full structure and publishing protocol
 - ARCHITECTURE.md is a strategic document — describe what and why, not where.
   Never include implementation-specific file paths or module locations there.
   Move those details into the relevant package README (e.g.,
@@ -41,7 +40,7 @@ Doc target map
   Developer setup              →  docs/dev/Exaix_Developer_Setup.md
   Tool quick-reference         →  TOOLS.md  (MCP section auto-managed by docs-sync-schemas)
   API / implementation plan    →  docs/Exaix_Implementation_Plan.md
-  Agent guidance               →  .copilot/guidelines/<topic>.md
+  Agent guidance               →  .copilot/docs/<topic>.md
   Submodule docs               →  exaix-dev-docs/ (see submodule-workflow skill)
 
 Special sync commands
@@ -70,6 +69,33 @@ Do / Don't
 - ❌ Don't create new docs/ files without matching entries in the implementation plan
 ```
 
+## Structure & Role
+
+- **`docs/`** — Source of Truth for Humans. User guides, architecture docs, API references, security policies.
+- **`.copilot/`** — Source of Truth for Agents. Context, prompts, workflows, manifests, schemas.
+- **`exaix-dev-docs/`** — Git submodule for planning docs and dev-only content. Follow [submodule-workflow](../submodule-workflow/SKILL.md) for changes.
+
+> Agents should read `.copilot/` for coding patterns and prompts, `docs/` for architectural understanding. If a conflict exists between `docs/` and source code, follow `docs/` but verify with the user.
+
+## ARCHITECTURE.md vs Package READMEs
+
+**ARCHITECTURE.md** is a strategic document — describe what and why, not where. Never include implementation-specific file paths or module locations. Reference packages by name (e.g. "the `@exaix-team/voting` package") and point to ARCHITECTURE.md sections by anchor.
+
+**Package READMEs** (`packages/<name>/README.md`) are the home for implementation details: key files, module paths, contracts, and wiring diagrams. Reference the corresponding ARCHITECTURE.md section from the README so readers can find the strategic context.
+
+## Style Guide
+
+- Headers must include version, release date, status, and references
+- Use fenced code blocks with language identifiers
+- Use consistent table formatting
+- Use relative paths for internal links; include file paths when referencing code
+- Keep documentation changes minimal and tied to Implementation Plan steps
+- Maintain consistent capitalization; add new terms to the Terminology Reference
+
+## Version Synchronization
+
+Documents that share version numbers MUST be updated together. Add a checklist for updating versions and release dates.
+
 ## Output Format
 
 1. **Target file** — which file was created or updated.
@@ -82,7 +108,12 @@ Do / Don't
 
 - `#doc Document the new PlanService.createPlan() API in ARCHITECTURE.md`
 - `#doc Update Building_with_AI_Agents.md with Phase 13 TUI patterns`
-- `#doc Sync TOOLS.md after adding the new mcp/handlers/memory.ts handler`
+- `#doc Sync TOOLS.md after adding a new MCP handler`
+
+## See also
+
+- [exaix-development](../exaix-development/SKILL.md) — service patterns, code conventions for docs
+- [submodule-workflow](../submodule-workflow/SKILL.md) — exaix-dev-docs submodule changes
 
 ---
 exaix:

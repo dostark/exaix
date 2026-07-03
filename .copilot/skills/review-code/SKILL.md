@@ -34,7 +34,7 @@ Canonical prompt (short):
 Exaix architecture compliance. Report findings as Critical / Major / Minor."
 
 Examples
-- "#review-code packages/core/src/vault_service.ts and packages/core/tests/vault_service_test.ts"
+- "#review-code `packages/core/src/vault_service.ts` and `packages/core/tests/vault_service_test.ts`"
 - "#review-code — review all staged changes before merging to main"
 
 Do / Don't
@@ -67,6 +67,11 @@ Related skills:
 Workflow chain:
   #next-steps (implement) → **#review-code** → #fix-bug (if needed) → #commit
 ```
+
+## See also
+
+- [exaix-development](../exaix-development/SKILL.md) — required patterns, prohibited anti-patterns
+- [security](../security/SKILL.md) — OWASP checklist, security boundaries
 
 ---
 
@@ -328,7 +333,7 @@ Severity scale:
 
 ## Related
 
-- [LLM_GUIDE.md](../../../LLM_GUIDE.md) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
+- [CLAUDE.md](../../../CLAUDE.md#behavioral-guidelines) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
 - [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
 
 ## Output Format
@@ -342,7 +347,7 @@ Severity scale:
 
 ## Examples
 
-- `#review-code packages/core/src/vault_service.ts and packages/core/tests/vault_service_test.ts`
+- `#review-code `packages/core/src/vault_service.ts` and `packages/core/tests/vault_service_test.ts``
 - `#review-code — review all staged changes before merging to main`
 
 ---

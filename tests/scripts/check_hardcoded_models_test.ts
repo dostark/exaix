@@ -65,35 +65,44 @@ Deno.test("[check-hardcoded-models] test files are skipped", () => {
 // --- .md / Blueprint file tests ---
 
 Deno.test("[check-hardcoded-models] .md blueprint with hardcoded model is flagged", () => {
-  const content = `---
-identity_id: "test-agent"
-model: "google:gemini-2.0-flash-exp"
----
-description`;
+  const lines = [
+    "---",
+    'identity_id: "test-agent"',
+    'model: "google:gemini-2.0-flash-exp"',
+    "---",
+    "description",
+  ];
+  const content = lines.join("\n");
   const violations = findModelViolations(content, "Blueprints/Identities/test-agent.md", ALLOWLIST);
   assertEquals(violations.length, 1);
   assertEquals(violations[0].model, "google:gemini-2.0-flash-exp");
 });
 
 Deno.test("[check-hardcoded-models] .md blueprint with empty model is clean", () => {
-  const content = `---
-identity_id: "test-agent"
-model:
-model_size: M
----
-description`;
+  const lines = [
+    "---",
+    'identity_id: "test-agent"',
+    "model:",
+    "model_size: M",
+    "---",
+    "description",
+  ];
+  const content = lines.join("\n");
   const violations = findModelViolations(content, "Blueprints/Identities/test-agent.md", ALLOWLIST);
   assertEquals(violations, []);
 });
 
 Deno.test("[check-hardcoded-models] .md blueprint with model_size only is clean", () => {
-  const content = `---
-identity_id: "test-agent"
-model:
-model_size: L
-thinking: true
----
-description`;
+  const lines = [
+    "---",
+    'identity_id: "test-agent"',
+    "model:",
+    "model_size: L",
+    "thinking: true",
+    "---",
+    "description",
+  ];
+  const content = lines.join("\n");
   const violations = findModelViolations(content, "Blueprints/Identities/test-agent.md", ALLOWLIST);
   assertEquals(violations, []);
 });

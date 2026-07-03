@@ -90,8 +90,7 @@ exa.config.toml
 # Qwen Code runtime state
 .qwen/settings.json
 
-# Agent doc pre-chunks (auto-generated)
-.copilot/chunks/
+
 .copilot/manifest.json
 /Memory/*
 !/Memory/**/.gitkeep

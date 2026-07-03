@@ -97,6 +97,43 @@ If any test fails after a refactor batch, revert the batch and narrow scope befo
 - Residual high-score literals: reason not addressed yet.
 - Next best 3 candidates for follow-up.
 
+## Duplication Detection
+
+In addition to magic-value violations, run `scripts/measure_duplication.ts` (task
+`deno task check:duplication`, Gate 9) to detect code duplication:
+
+```bash
+deno run --allow-run --allow-read --allow-write scripts/measure_duplication.ts --threshold 2.0
+```
+
+### Duplication Thresholds
+
+| Level | Percentage | Action |
+|
+
+## See also
+
+- [exaix-development](../exaix-development/SKILL.md) — config constants guide, DEFAULT_/TEST_ prefix convention
+- [test-development](../test-development/SKILL.md) — test helpers for validating constant changes
+  ----------- | ---------- | --------------------------------- |
+  | 🟢 Good | < 2% | No action needed |
+  | 🟡 Warning | 2-5% | Monitor, refactor when convenient |
+  | 🟠 High | 5-10% | Plan refactoring phase |
+  | 🔴 Critical | > 10% | Immediate attention required |
+
+### Common Duplication Patterns
+
+1. **Test setup duplication** — Repeated test fixtures across files → extract to test helpers.
+2. **Provider pattern duplication** — Same constructor patterns in multiple providers → base class.
+3. **Test assertion patterns** — Repeated assertion blocks → custom assertion helpers.
+
+### When NOT to Deduplicate
+
+1. **Intentional isolation** — Security tests should be standalone.
+2. **Test clarity** — Some repetition improves test readability.
+3. **Evolution** — Tests that may diverge should stay separate.
+4. **Small clones** — < 50 tokens rarely worth extracting.
+
 ## Notes for Exaix Conventions
 
 - Prefer symbols from `packages/core/src/types/constants.ts` and package-owned enums.
@@ -128,7 +165,7 @@ If any test fails after a refactor batch, revert the batch and narrow scope befo
 ## Examples
 
 - `#refactor-check-magic` — address all current check:magic violations
-- `#refactor-check-magic packages/request/src/plan_service.ts` — fix magic values in one file
+- `#refactor-check-magic `packages/request/src/plan_service.ts`` — fix magic values in one file
 - `#refactor-check-magic — top 10 highest-score literals only`
 
 ---

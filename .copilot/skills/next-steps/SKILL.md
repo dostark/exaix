@@ -200,7 +200,13 @@ Planning doc update
          ## Reachability Ledger (pending production consumers)
 
          | Symbol                 | Added in | Wiring step | Production call-site   | Status |
-         | ---------------------- | -------- | ----------- | --------------------- | ------ |
+         |
+## See also
+
+- [plan](../plan/SKILL.md) — plan structure, step format, success criteria
+- [tdd-workflow](../tdd-workflow/SKILL.md) — RED-GREEN-VERIFY-REFACTOR cycle per step
+- [commit](../commit/SKILL.md) — structured commit message format per step
+---------------------- | -------- | ----------- | --------------------- | ------ |
          | `SessionReturnWatcher` | Step 6   | Step 9      | `apps/daemon/main.ts` | ⏳     |
 
        Append a ⏳ row when VERIFY step 11 finds a production-dead symbol; flip Status
@@ -304,7 +310,7 @@ Workflow chain (typical):
 
 ## Related
 
-- [LLM_GUIDE.md](../../../LLM_GUIDE.md) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
+- [CLAUDE.md](../../../CLAUDE.md#behavioral-guidelines) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
 - [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
 
 ## Output format
@@ -317,7 +323,7 @@ Workflow chain (typical):
 
 ## Examples
 
-- `#next-steps .copilot/planning/phase-14-caching.md` — execute the next unstarted step
+- `#next-steps `.copilot/planning/phase-14-caching.md`` — execute the next unstarted step
 - `#next-steps Step 3: Add ICache interface and inject into LLMProvider`
 - `#next-steps Continue phase-76 — pick up from last completed step`
 

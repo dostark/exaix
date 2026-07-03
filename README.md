@@ -183,7 +183,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_STYLE.md](CODE_STYLE.md), [AGENTS.
 ## Documentation
 
 - **Glossary**: [GLOSSARY.md](./GLOSSARY.md)
-- **Tools**: [TOOLS.md](./TOOLS.md)
+- **Tools**: [.copilot/docs/TOOLS.md](./.copilot/docs/TOOLS.md)
 - **Architecture**: [ARCHITECTURE.md](./ARCHITECTURE.md)
 
 ## License

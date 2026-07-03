@@ -54,6 +54,11 @@ Workflow chain:
   #next-steps (phase complete) → **#coverage** → #commit
 ```
 
+## See also
+
+- [test-development](../test-development/SKILL.md) — test helpers, coverage targets, placement rules
+- [tdd-workflow](../tdd-workflow/SKILL.md) — TDD red-green-refactor cycle
+
 ---
 
 ## Instructions for Agent

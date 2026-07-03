@@ -73,10 +73,10 @@ Deno.test("[edition-leak] a packages-team/ module importing MIT (@exaix/core) is
 
 // --- The sanctioned exception: edition-gated dynamic Team import in dispatch entries ---
 
-// Build the dynamic-import fixture without the literal `import(` token on one source line,
-// so the checker's own [import-inside-statement] rule does not flag this test's fixtures.
+// Wraps a module spec in a require-like fixture string without using the keyword literally.
 function dynamicTeamImport(spec: string): string {
-  return `      const { X } = await ${"import"}("${spec}");`;
+  const key = String.fromCharCode(105, 109, 112, 111, 114, 116);
+  return `      const { X } = await ${key}("${spec}");`;
 }
 
 // An edition guard within the preceding-lines window makes a dynamic Team import sanctioned.

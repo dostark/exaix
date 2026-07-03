@@ -52,7 +52,7 @@ Key points
 - When reading existing source files to understand context, work in batches of 5–10 files: read a batch, record findings, then continue.
 
 Canonical prompt (short):
-"Draft a new Phase Planning Document for <FEATURE>. Follow .copilot/planning/README.md structure. Include §3B Security and §3C Traceability/Configurability checks in the design. Ensure a §3D Documentation Update step is included."
+"Draft a new Phase Planning Document for <FEATURE>. Follow `.copilot/planning/README.md` structure. Include §3B Security and §3C Traceability/Configurability checks in the design. Ensure a §3D Documentation Update step is included."
 
 Example prompt:
 "#plan Implement a new 'vault' service for secure encrypted secret storage in .exa/vault.db. Ensure full audit logging and config-driven rotation intervals."
@@ -98,6 +98,12 @@ Dogfooding chain (alternative, once Phase E tooling ships):
   #plan (produces step-manifests) → #plan_to_requests (generates request queue) → daemon executes via dogfood sandbox
 ```
 
+## See also
+
+- [next-steps](../next-steps/SKILL.md) — step-by-step execution of a plan
+- [pre-gap-analysis](../pre-gap-analysis/SKILL.md) — plan validation before implementation
+- [post-gap-analysis](../post-gap-analysis/SKILL.md) — post-implementation review against plan
+
 ---
 
 ## Instructions for Agent
@@ -106,7 +112,7 @@ Refine the goal into a formal planning document in `.copilot/planning/phase-NN-*
 
 ### 1. Structure Requirements (Mandatory)
 
-Follow the structure defined in `.copilot/planning/README.md`:
+Follow the structure defined in ``.copilot/planning/README.md``:
 
 1. **Executive Summary**: Problem, Solution, Goal.
 1. **Current State Analysis**: Key Files table, Constraints, Affected Interfaces.
@@ -354,7 +360,7 @@ coverage:
 
 ## Related
 
-- [LLM_GUIDE.md](../../../LLM_GUIDE.md) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
+- [CLAUDE.md](../../../CLAUDE.md#behavioral-guidelines) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
 
 ## Output format
 

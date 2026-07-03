@@ -14,7 +14,7 @@ links:
 
 ## Exaix Glossary
 
-Plain-language definitions of the concepts you need to read the rest of Exaix's documentation and operate the system. For implementation-level detail — code identifiers, journal field maps, and naming conventions that keep code, journal payloads, and schemas consistent — contributors should consult the [Developer Glossary](docs/GLOSSARY.md), this document's contributor-facing companion.
+Plain-language definitions of the concepts you need to read the rest of Exaix's documentation and operate the system. For implementation-level detail — code identifiers, journal field maps, and naming conventions that keep code, journal payloads, and schemas consistent — contributors should consult the [Developer Glossary](.copilot/docs/GLOSSARY.md), this document's contributor-facing companion.
 
 ---
 
@@ -38,7 +38,7 @@ The code-level execution unit that orchestrates one or more identities to comple
 
 ### Tool
 
-A discrete capability — reading or writing files, running git operations, querying external systems — that an agent invokes on an identity's behalf to act on the world beyond LLM reasoning. Tools are implemented as handlers under `packages/mcp/server/handlers/` (see [TOOLS.md](TOOLS.md) for the full agent-accessible index), validated and executed by the `ToolRegistry` within an identity's permitted capabilities and a portal's security boundaries, and exposed to MCP clients through the MCP Server.
+A discrete capability — reading or writing files, running git operations, querying external systems — that an agent invokes on an identity's behalf to act on the world beyond LLM reasoning. Tools are implemented as handlers under `packages/mcp/server/handlers/` (see [.copilot/docs/TOOLS.md](.copilot/docs/TOOLS.md) for the full agent-accessible index), validated and executed by the `ToolRegistry` within an identity's permitted capabilities and a portal's security boundaries, and exposed to MCP clients through the MCP Server.
 
 ### Model Intent (Phase 132)
 

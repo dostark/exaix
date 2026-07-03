@@ -7,15 +7,14 @@ version: 1.1
 capabilities: [task_routing, cross_reference, process_validation]
 links:
   - ".copilot/manifest.json"
-  - ".copilot/cross-reference.md"
 ---
 
 ## 🤖 Agent Instructions — Required Reading for All AI Agents
 
 > **⚠️ CRITICAL:** This document and `.copilot/` are **MANDATORY** context for all code tasks.
-> _Note: `.copilot/` is the canonical directory. Symlinks like `.claude/`, `.agents/`, `.cursor/`, and `AGENTS.md` exist intentionally to support various agents. They all point to `.copilot/`. For Qwen agents, `.qwen/skills/` contains auto-generated routing wrappers that redirect to the canonical skills in `.copilot/skills/`._
+> _Note: `.copilot/` is the canonical directory. Symlinks like `.claude/`, `.agents/`, `.cursor/`, and `AGENTS.md` exist intentionally to support various agents. They all point to `.copilot/`. For Qwen agents, `.qwen/settings.json` references `.copilot/skills/` directly._
 > Read this file first, then use the `.copilot/` documents it points you to as task-specific extensions. If you find a conflict between this file and a `.copilot/` document, or between two `.copilot/` documents, stop and report the conflict instead of guessing.
-> A missing task-type entry in `.copilot/cross-reference.md` is not a conflict; follow the documented fallback path.
+> A missing topic match in `.copilot/DOCS.md` or `.copilot/manifest.json` is not a conflict; follow the documented fallback path.
 > If a project instruction conflicts with a known security risk or language/runtime constraint (not merely a stylistic preference), flag it inline as `WARNING: <description>` and proceed with the project instruction unless it would introduce a critical vulnerability.
 >
 > **Conflict reporting format:** State the conflict explicitly in your response in the form: `CONFLICT: "<file-a>" says X, "<file-b>" says Y — cannot proceed without resolution.` Do not attempt to resolve the conflict yourself.
@@ -38,20 +37,19 @@ links:
 **Before beginning ANY code modification task, you MUST:**
 
 - [ ] Read this file completely
-- [ ] Read `LLM_GUIDE.md` — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
-- [ ] Use `.copilot/cross-reference.md` to identify every required `.copilot/` document for the task type(s) involved, then read all of them before implementation
-- [ ] If the task type is not listed in `.copilot/cross-reference.md`, fall back to `.copilot/guidelines/exaix-development.md` and note that fallback in your implementation plan
-- [ ] If a required document listed in `.copilot/cross-reference.md` is missing on disk, stop and report the missing path instead of inferring its contents
+- [ ] Read `## Behavioral Guidelines` (below) — think before coding, simplicity, surgical changes, goal-driven execution
+- [ ] Use `.copilot/manifest.json` or `.copilot/DOCS.md` to find relevant `.copilot/` documents by topic, then read all of them before implementation
+- [ ] If no matching topic is found in `.copilot/DOCS.md`, fall back to `.copilot/skills/exaix-development/SKILL.md` and note that fallback in your implementation plan
+- [ ] If a required document referenced in `.copilot/DOCS.md` is missing on disk, stop and report the missing path instead of inferring its contents
 - [ ] If a required document exists on disk but cannot be read or is empty, stop and report: `UNREADABLE: "<path>" exists but could not be read — cannot proceed without resolution.`
 - [ ] Read frontmatter of root `.md` files whenever you are selecting which `.copilot/` documents to consult for a task; the first 20 lines identify `copilot_knowledge_base: true` and relevant `capabilities` for that document
 - [ ] Read `ARCHITECTURE.md` before modifying any core flow
 - [ ] Use symbol-based links (for example `packages/core/src/types.ts:MyServiceConfig`) when referencing code locations
-- [ ] Identify your LLM provider and read the matching file in `.copilot/providers/` before starting (available: `claude.md`, `openai.md`, `google.md`, `google-long-context.md`). If no file exists for your provider, skip this step.
 - [ ] **Acknowledge** which `.copilot/` docs guided your approach in your implementation plan
 
 **Example acknowledgment format:**
 
-> "I consulted `.copilot/guidelines/testing.md` for test patterns and `.copilot/guidelines/exaix-development.md` for source architecture before implementing this feature."
+> "I consulted `.copilot/skills/test-development/SKILL.md` for test patterns and `.copilot/skills/exaix-development/SKILL.md` for source architecture before implementing this feature."
 
 **Failure to consult `.copilot/` documentation is considered a violation of project standards.**
 
@@ -59,23 +57,47 @@ links:
 
 ## Quick Reference
 
-| Need                      | Location                                                                             |
-| ------------------------- | ------------------------------------------------------------------------------------ |
-| Behavioral guidelines     | [LLM_GUIDE.md](./LLM_GUIDE.md)                                                       |
-| Task → Doc mapping        | [.copilot/cross-reference.md](.copilot/cross-reference.md)                           |
-| Source patterns           | [.copilot/guidelines/exaix-development.md](.copilot/guidelines/exaix-development.md) |
-| Testing patterns          | [.copilot/guidelines/testing.md](.copilot/guidelines/testing.md)                     |
-| Documentation guide       | [.copilot/guidelines/documentation.md](.copilot/guidelines/documentation.md)         |
-| Coding standards          | [CODE_STYLE.md](./CODE_STYLE.md)                                                     |
-| Magic numbers / constants | [CODE_STYLE.md](./CODE_STYLE.md) §2                                                  |
-| MCP tool index            | [TOOLS.md](./TOOLS.md)                                                               |
-| Provider-specific notes   | [.copilot/providers/](.copilot/providers/)                                           |
-| Commit skill              | [.copilot/skills/commit/SKILL.md](.copilot/skills/commit/SKILL.md)                   |
-| Plan skill                | [.copilot/skills/plan/SKILL.md](.copilot/skills/plan/SKILL.md)                       |
-| Next-steps skill          | [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md)           |
-| Slash commands            | [.copilot/prompts/](.copilot/prompts/)                                               |
-| Planning documents        | [exaix-dev-docs/planning/](exaix-dev-docs/planning/)                                 |
-| All agent docs index      | [.copilot/manifest.json](.copilot/manifest.json)                                     |
+| Need                      | Location                                                                                     |
+| ------------------------- | -------------------------------------------------------------------------------------------- |
+| Behavioral guidelines     | [CLAUDE.md](./CLAUDE.md#behavioral-guidelines)                                               |
+| Dogfood development       | [.copilot/skills/dogfood-development/SKILL.md](.copilot/skills/dogfood-development/SKILL.md) |
+| Doc catalog               | [.copilot/DOCS.md](.copilot/DOCS.md) — all docs by task + topic                              |
+| Doc index (by topic)      | [.copilot/manifest.json](.copilot/manifest.json)                                             |
+| Architecture              | [.copilot/docs/ARCHITECTURE.md](.copilot/docs/ARCHITECTURE.md)                               |
+| Source patterns           | [.copilot/skills/exaix-development/SKILL.md](.copilot/skills/exaix-development/SKILL.md)     |
+| Test development          | [.copilot/skills/test-development/SKILL.md](.copilot/skills/test-development/SKILL.md)       |
+| Documentation skill       | [.copilot/skills/doc/SKILL.md](.copilot/skills/doc/SKILL.md)                                 |
+| Spec-driven development   | [docs/Exaix_SDD.md](docs/Exaix_SDD.md)                                                       |
+| Dev glossary              | [.copilot/docs/GLOSSARY.md](.copilot/docs/GLOSSARY.md)                                       |
+| Coding standards          | [CODE_STYLE.md](./CODE_STYLE.md)                                                             |
+| Magic numbers / constants | [CODE_STYLE.md](./CODE_STYLE.md) §2                                                          |
+| MCP tool index            | [.copilot/docs/TOOLS.md](.copilot/docs/TOOLS.md)                                             |
+| Commit skill              | [.copilot/skills/commit/SKILL.md](.copilot/skills/commit/SKILL.md)                           |
+| Plan skill                | [.copilot/skills/plan/SKILL.md](.copilot/skills/plan/SKILL.md)                               |
+| Next-steps skill          | [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md)                   |
+| Slash commands            | [.copilot/prompts/](.copilot/prompts/)                                                       |
+| Planning documents        | [exaix-dev-docs/planning/](exaix-dev-docs/planning/)                                         |
+| All agent docs index      | [.copilot/manifest.json](.copilot/manifest.json)                                             |
+
+## Behavioral Guidelines
+
+Four universal rules to reduce common LLM coding mistakes. These bias toward caution over speed; for trivial tasks, use judgment.
+
+### 1. Think Before Coding
+
+Before implementing: state assumptions, surface tradeoffs, and ask when uncertain. If multiple interpretations exist, present them — don't pick silently. If a simpler approach exists, say so.
+
+### 2. Simplicity First
+
+Minimum code that solves the problem. Nothing speculative. No features beyond what was asked, no abstractions for single-use code, no "flexibility" that wasn't requested. If 200 lines can be 50, rewrite it.
+
+### 3. Surgical Changes
+
+Touch only what you must. Don't "improve" adjacent code, comments, or formatting. Don't refactor things that aren't broken. Match existing style even if you'd do it differently.
+
+### 4. Goal-Driven Execution
+
+Ask "what exactly am I being asked to deliver?" before starting. Build exactly that. Don't deliver a solution to a problem no one asked about. If scope creeps, flag it — don't implement it.
 
 ## Agent Quick Facts
 
@@ -87,31 +109,34 @@ Key facts about the Exaix system:
 - **AI providers**: concrete providers live in `@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix-team/ai-vertex`, `@exaix/ai-openrouter`, `@exaix/ai-ollama`; selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory`; registered at bootstrap by `apps/common/registry_bootstrap.ts`
 - **Architecture invariant**: read the `AGENT_LOGIC` YAML comment in ARCHITECTURE.md's `Request Processing Flow` section before modifying any core flow
 - **Boundary rules**: TUI (`apps/tui/src/`) and CLI (`apps/exactl/src/commands/`) must not import directly from services — use interfaces in shared packages under `packages/`
-- **MCP tools**: all agent-accessible tools are listed in [TOOLS.md](./TOOLS.md#agent-tools) and implemented under `packages/mcp/server/` (e.g. `tool_handler.ts`, `domain_tools.ts`)
+- **MCP tools**: all agent-accessible tools are listed in [.copilot/docs/TOOLS.md](.copilot/docs/TOOLS.md#agent-tools) and implemented under `packages/mcp/server/` (e.g. `tool_handler.ts`, `domain_tools.ts`)
 
 ### Runtime & Tooling
 
 - **Runtime:** Deno (strict TypeScript)
 - **Config:** `deno.json` (tasks, imports)
-- **Pre-commit:** Auto-runs gates 0-13. Gate 0 blocks direct commits to `main`. Gates 1-13:
+- **Pre-commit:** Auto-runs gates 0-18. Gate 0 blocks direct commits to `main`. Gates 1-18:
 
-  | Gate | Check               | Task                                           |
-  | ---- | ------------------- | ---------------------------------------------- |
-  | 1    | Format              | `deno task fmt:check`                          |
-  | 2    | Lint                | `deno task lint`                               |
-  | 3    | Style / boundaries  | `deno task check:style`                        |
-  | 4    | Test placement      | `deno task check:test-placement`               |
-  | 5    | Magic values        | `deno task check:magic`                        |
-  | 6    | Manifest auto-sync  | `scripts/build_agents_index.ts` + `check:docs` |
-  | 7    | Markdown lint       | `scripts/markdown_lint.ts` (staged `.md` only) |
-  | 8    | Complexity          | `deno task check:complexity`                   |
-  | 9    | Tool-result parity  | `deno task check:tool-result-parity`           |
-  | 10   | Architecture        | `deno task check:arch`                         |
-  | 11   | Docs nervous system | `deno task docs-agent-validate`                |
-  | 12   | Hallucination bench | `deno task docs-bench`                         |
-  | 13   | Event strings       | `deno task check:event-strings`                |
-  | 14   | Optional params     | `deno task check:optional-params --fail`       |
-  | 15   | Markdown paths      | `deno task check:md-path:staged`               |
+  | Gate | Check                | Task                                           |
+  | ---- | -------------------- | ---------------------------------------------- |
+  | 1    | Format               | `deno task fmt:check`                          |
+  | 2    | Lint                 | `deno task lint`                               |
+  | 3    | Style / boundaries   | `deno task check:style`                        |
+  | 4    | Test placement       | `deno task check:test-placement`               |
+  | 5    | Magic values         | `deno task check:magic`                        |
+  | 6    | Manifest auto-sync   | `scripts/build_agents_index.ts` + `check:docs` |
+  | 7    | Markdown lint        | `scripts/markdown_lint.ts` (staged `.md` only) |
+  | 8    | Complexity           | `deno task check:complexity`                   |
+  | 9    | Tool-result parity   | `deno task check:tool-result-parity`           |
+  | 10   | Architecture         | `deno task check:arch`                         |
+  | 11   | Docs nervous system  | `deno task docs-agent-validate`                |
+  | 12   | Hallucination bench  | `deno task docs-bench`                         |
+  | 13   | Event strings        | `deno task check:event-strings`                |
+  | 14   | Optional params      | `deno task check:optional-params --fail`       |
+  | 15   | Markdown paths       | `deno task check:md-path:staged`               |
+  | 16   | Agent docs integrity | `deno task check:agent-docs-integrity`         |
+  | 17   | Agent docs integrity | `deno task check:agent-docs-integrity`         |
+  | 18   | Qwen skills sync     | `deno task check:qwen-skills-sync`             |
 
 > Gate 12 (`docs-bench`, filter `[hallucination-bench]`) also runs `tests/docs/positioning_consistency_test.ts`, which enforces Phase 91's positioning/glossary/weaknesses cross-document consistency (no-vaporware phase claims, three-tier narrative, differentiation material, GLOSSARY.md split, stale-path regressions).
 
@@ -301,11 +326,9 @@ The `.copilot/` folder contains **machine-readable guidance** for AI assistants:
 ```text
 .copilot/
 ├── manifest.json       # Index of all agent docs (auto-generated)
-├── cross-reference.md  # Task → Document quick reference
 ├── prompts/            # Chat routing wrappers — one .prompt.md per skill
 ├── skills/             # Multi-step autonomous skills (SKILL.md per skill)
-├── guidelines/         # Reference guidelines and process documents
-├── providers/          # Provider-specific guidance (Claude, OpenAI, Google)
+├── docs/               # On-demand reference documents (agent-oriented)
 ├── planning/           # (reserved — active phase docs live in exaix-dev-docs/planning/)
 └── chunks/             # Pre-chunked docs for RAG (auto-generated)
 ```
@@ -314,10 +337,9 @@ The `.copilot/` folder contains **machine-readable guidance** for AI assistants:
 
 > For the full task→doc map, use the **Quick Reference** table at the top of this file. The rows below cover `.copilot/`-specific lookups not listed there.
 
-| Task              | Consult                                                 |
-| ----------------- | ------------------------------------------------------- |
-| Security audit    | `.copilot/skills/security/SKILL.md`                     |
-| Provider-specific | `.copilot/providers/` (claude.md, openai.md, google.md) |
+| Task           | Consult                             |
+| -------------- | ----------------------------------- |
+| Security audit | `.copilot/skills/security/SKILL.md` |
 
 ## Key Patterns & Constraints
 
@@ -366,7 +388,7 @@ An `apps/` or runtime-wiring module orchestrates the running Exaix process. It c
 
 ### Test Guidance
 
-> For full test placement and helper conventions see `.copilot/guidelines/testing.md`. The rules below apply across all test types.
+> For full test placement and helper conventions see `.copilot/skills/test-development/SKILL.md`. The rules below apply across all test types.
 
 - Place tests in the owning boundary: package-owned tests in `packages/<package>/tests/`, app-owned tests in `apps/<app>/tests/`, and cross-cutting integration/scenario/security/system tests in root `tests/`.
 - Do not place new tests next to source files unless the project testing guideline explicitly requires it.

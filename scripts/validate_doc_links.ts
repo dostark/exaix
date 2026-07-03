@@ -16,7 +16,6 @@ const ROOT_DOCS = [
   "CODE_STYLE.md",
   "CLAUDE.md",
   "CONTRIBUTING.md",
-  "TOOLS.md",
 ];
 
 async function validateSymbol(filePath: string, symbol: string): Promise<boolean> {

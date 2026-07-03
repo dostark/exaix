@@ -259,4 +259,4 @@ tables.
 - `tests/integration/dogfood_smoke_test.ts` — example: in-process request→plan
 - `tests/integration/dogfood_e2e_test.ts` — example: daemon subprocess→plan
 - `tests/README.md` — overall test structure and placement rules
-- `.copilot/guidelines/testing.md` — agent‑facing test patterns
+- `.copilot/skills/test-development/SKILL.md` — agent‑facing test patterns

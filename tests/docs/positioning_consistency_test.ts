@@ -38,7 +38,7 @@ const POSITIONING_DOC_PATHS = [
   "ARCHITECTURE.md",
   "exaix-dev-docs/dev/Exaix_White_Paper.md",
   "GLOSSARY.md",
-  "docs/GLOSSARY.md",
+  ".copilot/docs/GLOSSARY.md",
   "exaix-dev-docs/dev/Exaix_Weaknesses.md",
 ];
 
@@ -141,10 +141,9 @@ Deno.test("[hallucination-bench] Differentiation material — README, white pape
 
 Deno.test("[hallucination-bench] GLOSSARY.md split — concept and implementation definitions stay disjoint and complete", async () => {
   const rootGlossary = await readDoc("GLOSSARY.md");
-  // Relocated out of the exaix-dev-docs submodule to docs/GLOSSARY.md after this
-  // plan was written (the plan assumes exaix-dev-docs/dev/GLOSSARY.md — see commit
-  // body for the path-discrepancy note).
-  const devGlossary = await readDoc("docs/GLOSSARY.md");
+  // Package-extracted from docs/ to .copilot/docs/ during Phase 133's
+  // bucket unification.
+  const devGlossary = await readDoc(".copilot/docs/GLOSSARY.md");
 
   const rootHeadings = extractTermHeadings(rootGlossary);
   const devHeadings = extractTermHeadings(devGlossary);
@@ -154,7 +153,7 @@ Deno.test("[hallucination-bench] GLOSSARY.md split — concept and implementatio
   assertEquals(
     overlap,
     [],
-    `GLOSSARY.md and docs/GLOSSARY.md both define a heading for: ${overlap.join(", ")} ` +
+    `GLOSSARY.md and .copilot/docs/GLOSSARY.md both define a heading for: ${overlap.join(", ")} ` +
       `— Step 7's no-duplication mandate requires each term be defined exactly once`,
   );
 
