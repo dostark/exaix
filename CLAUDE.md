@@ -49,7 +49,7 @@ links:
 
 **Example acknowledgment format:**
 
-> "I consulted `.copilot/docs/testing.md` for test patterns and `.copilot/docs/exaix-development.md` for source architecture before implementing this feature."
+> "I consulted `.copilot/skills/test-development/SKILL.md` for test patterns and `.copilot/docs/exaix-development.md` for source architecture before implementing this feature."
 
 **Failure to consult `.copilot/` documentation is considered a violation of project standards.**
 
@@ -64,7 +64,7 @@ links:
 | Doc index (by topic)      | [.copilot/manifest.json](.copilot/manifest.json)                                                       |
 | Architecture              | [.copilot/docs/ARCHITECTURE.md](.copilot/docs/ARCHITECTURE.md)                                         |
 | Source patterns           | [.copilot/docs/exaix-development.md](.copilot/docs/exaix-development.md)                               |
-| Testing patterns          | [.copilot/docs/testing.md](.copilot/docs/testing.md)                                                   |
+| Test development          | [.copilot/skills/test-development/SKILL.md](.copilot/skills/test-development/SKILL.md)                 |
 | Documentation skill       | [.copilot/skills/doc/SKILL.md](.copilot/skills/doc/SKILL.md)                                           |
 | Spec-driven development   | [.copilot/docs/specification-driven-development.md](.copilot/docs/specification-driven-development.md) |
 | Dev glossary              | [.copilot/docs/GLOSSARY.md](.copilot/docs/GLOSSARY.md)                                                 |
@@ -386,7 +386,7 @@ An `apps/` or runtime-wiring module orchestrates the running Exaix process. It c
 
 ### Test Guidance
 
-> For full test placement and helper conventions see `.copilot/docs/testing.md`. The rules below apply across all test types.
+> For full test placement and helper conventions see `.copilot/skills/test-development/SKILL.md`. The rules below apply across all test types.
 
 - Place tests in the owning boundary: package-owned tests in `packages/<package>/tests/`, app-owned tests in `apps/<app>/tests/`, and cross-cutting integration/scenario/security/system tests in root `tests/`.
 - Do not place new tests next to source files unless the project testing guideline explicitly requires it.

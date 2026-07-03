@@ -1,19 +1,6 @@
 {
   "docs": [
     {
-      "path": ".copilot/docs/testing.md",
-      "agent": "copilot",
-      "scope": "dev",
-      "title": "Exaix Test Development Guidelines",
-      "short_summary": "Testing patterns and unified test context for Exaix (initTestDbService, createCliTestContext, withEnv, etc.).",
-      "version": "0.1",
-      "topics": [
-        "tests",
-        "tdd",
-        "helpers"
-      ]
-    },
-    {
       "path": ".copilot/docs/specification-driven-development.md",
       "agent": "general",
       "scope": "dev",
@@ -473,6 +460,21 @@
         "webhook"
       ],
       "qwen_skill": "security"
+    },
+    {
+      "path": ".copilot/skills/test-development/SKILL.md",
+      "agent": "general",
+      "scope": "test",
+      "title": "Test Development Skill (#test-development)",
+      "short_summary": "Write tests for Exaix using the right helpers, placement rules, and patterns.",
+      "version": "1.0.0",
+      "topics": [
+        "testing",
+        "tdd",
+        "coverage",
+        "test-helpers"
+      ],
+      "qwen_skill": "test-development"
     },
     {
       "path": ".copilot/skills/explore/SKILL.md",

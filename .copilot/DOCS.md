@@ -11,7 +11,6 @@ topics: ["reference", "docs", "catalog"]
 
 | Task Type | Primary Doc |
 | --- | --- |
-| Exaix Test Development Guidelines | [docs/testing.md](docs/testing.md) |
 | Specification-Driven Development in Exaix | [docs/specification-driven-development.md](docs/specification-driven-development.md) |
 | Agent Reference Corpus | [docs/README.md](docs/README.md) |
 | MCP Agent Tool Index | [docs/TOOLS.md](docs/TOOLS.md) |
@@ -35,6 +34,7 @@ topics: ["reference", "docs", "catalog"]
 | Refactor-Check-Magic Skill (#refactor-check-magic) | [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md) |
 | Commit Skill (#commit) | [skills/commit/SKILL.md](skills/commit/SKILL.md) |
 | Security Skill (#security) | [skills/security/SKILL.md](skills/security/SKILL.md) |
+| Test Development Skill (#test-development) | [skills/test-development/SKILL.md](skills/test-development/SKILL.md) |
 | Codebase Exploration (#explore) | [skills/explore/SKILL.md](skills/explore/SKILL.md) |
 | Comparative Analysis Skill (#comparative-analysis) | [skills/comparative-analysis/SKILL.md](skills/comparative-analysis/SKILL.md) |
 | Self-Improvement Loop (#self-improvement) | [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md) |
@@ -82,7 +82,7 @@ topics: ["reference", "docs", "catalog"]
 - **`constants`** → [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md)
 - **`copilot`** → [prompts/README.md](prompts/README.md)
 - **`corpus`** → [docs/README.md](docs/README.md)
-- **`coverage`** → [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md)
+- **`coverage`** → [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/test-development/SKILL.md](skills/test-development/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md)
 - **`deno-permissions`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`dependencies`** → [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md)
 - **`deployment`** → [skills/infra/SKILL.md](skills/infra/SKILL.md)
@@ -98,7 +98,7 @@ topics: ["reference", "docs", "catalog"]
 - **`gap-analysis`** → [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md), [skills/comparative-analysis/SKILL.md](skills/comparative-analysis/SKILL.md), [skills/remediate-code-gaps/SKILL.md](skills/remediate-code-gaps/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`git`** → [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md), [skills/commit/SKILL.md](skills/commit/SKILL.md)
 - **`glossary`** → [docs/GLOSSARY.md](docs/GLOSSARY.md), [../GLOSSARY.md](../GLOSSARY.md)
-- **`helpers`** → [docs/testing.md](docs/testing.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md)
+- **`helpers`** → [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md)
 - **`implementation`** → [docs/GLOSSARY.md](docs/GLOSSARY.md)
 - **`improvement-planning`** → [skills/review-research/SKILL.md](skills/review-research/SKILL.md)
 - **`infrastructure`** → [skills/infra/SKILL.md](skills/infra/SKILL.md)
@@ -158,11 +158,11 @@ topics: ["reference", "docs", "catalog"]
 - **`structured-logging`** → [skills/commit/SKILL.md](skills/commit/SKILL.md)
 - **`style`** → [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)
 - **`submodule`** → [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md)
-- **`tdd`** → [docs/testing.md](docs/testing.md), [docs/exaix-development.md](docs/exaix-development.md), [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md), [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md), [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md), [skills/security/SKILL.md](skills/security/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md), [skills/remediate-code-gaps/SKILL.md](skills/remediate-code-gaps/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
+- **`tdd`** → [docs/exaix-development.md](docs/exaix-development.md), [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md), [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md), [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md), [skills/security/SKILL.md](skills/security/SKILL.md), [skills/test-development/SKILL.md](skills/test-development/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md), [skills/remediate-code-gaps/SKILL.md](skills/remediate-code-gaps/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`team`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`terminology`** → [../GLOSSARY.md](../GLOSSARY.md)
-- **`testing`** → [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/review-code/SKILL.md](skills/review-code/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md)
-- **`tests`** → [docs/testing.md](docs/testing.md)
+- **`test-helpers`** → [skills/test-development/SKILL.md](skills/test-development/SKILL.md)
+- **`testing`** → [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/review-code/SKILL.md](skills/review-code/SKILL.md), [skills/test-development/SKILL.md](skills/test-development/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md)
 - **`tool-selection`** → [docs/TOOLS.md](docs/TOOLS.md)
 - **`tool-use`** → [docs/TOOLS.md](docs/TOOLS.md)
 - **`tools`** → [docs/TOOLS.md](docs/TOOLS.md)
