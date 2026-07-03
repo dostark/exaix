@@ -1,3 +1,12 @@
+---
+agent: general
+scope: dev
+title: "Exaix Developer Glossary"
+short_summary: "Implementation-level glossary: journal field maps, code identifiers, naming conventions, and code-identifier tables."
+version: "1.0"
+topics: ["glossary", "implementation", "code-identifiers", "naming-conventions"]
+---
+
 # Exaix Developer Glossary
 
 Single source of truth for **kernel** and other critical names used in Exaix,
@@ -352,3 +361,11 @@ single source of truth for identities.
 
 Directory containing flow blueprints. Each flow step references identities by
 `identity` name or `identity_id`.
+
+## Canonical Prompt (Short)
+
+"Use the Exaix Developer Glossary as the single source of truth for kernel names, journal field maps, and code identifiers."
+
+## Examples
+
+- Example prompt: "Look up `identity_id` in the glossary to verify the journal field name."

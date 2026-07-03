@@ -21,7 +21,7 @@ import { join } from "@std/path";
 import { TOOL_MANIFEST } from "@exaix/mcp";
 import { ToolCategory, ToolKind } from "@exaix/core";
 
-const TOOLS_MD = "TOOLS.md";
+const TOOLS_MD = ".copilot/docs/TOOLS.md";
 const SYNC_START = "<!-- AGENT_TOOLS_START -->";
 const SYNC_END = "<!-- AGENT_TOOLS_END -->";
 

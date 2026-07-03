@@ -113,7 +113,7 @@
     "docs-bench": "deno test -A --filter \"[hallucination-bench]\" tests/docs/",
     "workspace:check": "deno check --unstable ./packages/** ./packages-team/**",
     "workspace:test": "deno test --allow-all ./packages/** ./packages-team/**",
-    "docs-sync-schemas": "deno run -A scripts/sync_tool_schemas.ts && deno fmt TOOLS.md",
+    "docs-sync-schemas": "deno run -A scripts/sync_tool_schemas.ts && deno fmt .copilot/docs/TOOLS.md",
     "build:solo": "deno run -A scripts/ci.ts build --edition solo",
     "build:team": "deno run -A scripts/ci.ts build --edition team",
     "build:enterprise": "deno run -A scripts/ci.ts build --edition enterprise",

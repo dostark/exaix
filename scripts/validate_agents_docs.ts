@@ -96,7 +96,7 @@ async function main() {
           if (
             entry.path.includes("/planning/") || entry.path.includes("/issues/") ||
             entry.path.includes("/not_actual/") || entry.path.includes("/dev/") ||
-            entry.name === "MAINTENANCE.md"
+            entry.name === "MAINTENANCE.md" || entry.name === "TOOLS.md"
           ) {
             continue;
           }

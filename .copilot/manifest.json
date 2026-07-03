@@ -25,6 +25,54 @@
       ]
     },
     {
+      "path": ".copilot/docs/testing.md",
+      "agent": "copilot",
+      "scope": "dev",
+      "title": "Exaix Test Development Guidelines",
+      "short_summary": "Testing patterns and unified test context for Exaix (initTestDbService, createCliTestContext, withEnv, etc.).",
+      "version": "0.1",
+      "topics": [
+        "tests",
+        "tdd",
+        "helpers"
+      ],
+      "chunks": [
+        ".copilot/chunks/testing.md.chunk0.txt",
+        ".copilot/chunks/testing.md.chunk1.txt",
+        ".copilot/chunks/testing.md.chunk2.txt",
+        ".copilot/chunks/testing.md.chunk3.txt",
+        ".copilot/chunks/testing.md.chunk4.txt",
+        ".copilot/chunks/testing.md.chunk5.txt",
+        ".copilot/chunks/testing.md.chunk6.txt",
+        ".copilot/chunks/testing.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/docs/specification-driven-development.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Specification-Driven Development in Exaix",
+      "short_summary": "Analysis of how Exaix's request-clarification-planning-execution pipeline implements Specification-Driven Development (SDD) principles for AI agent orchestration.",
+      "version": "1.0",
+      "topics": [
+        "methodology",
+        "sdd",
+        "quality",
+        "request-processing",
+        "architecture"
+      ],
+      "chunks": [
+        ".copilot/chunks/specification-driven-development.md.chunk0.txt",
+        ".copilot/chunks/specification-driven-development.md.chunk1.txt",
+        ".copilot/chunks/specification-driven-development.md.chunk2.txt",
+        ".copilot/chunks/specification-driven-development.md.chunk3.txt",
+        ".copilot/chunks/specification-driven-development.md.chunk4.txt",
+        ".copilot/chunks/specification-driven-development.md.chunk5.txt",
+        ".copilot/chunks/specification-driven-development.md.chunk6.txt",
+        ".copilot/chunks/specification-driven-development.md.chunk7.txt"
+      ]
+    },
+    {
       "path": ".copilot/docs/README.md",
       "agent": "general",
       "scope": "dev",
@@ -41,6 +89,120 @@
         ".copilot/chunks/README.md.chunk0.txt",
         ".copilot/chunks/README.md.chunk1.txt",
         ".copilot/chunks/README.md.chunk2.txt"
+      ]
+    },
+    {
+      "path": ".copilot/docs/TOOLS.md",
+      "title": "MCP Agent Tool Index",
+      "short_summary": "Full MCP agent tool index with descriptions, categories, dynamic/approval flags, and source refs. Auto-generated from the canonical manifest.",
+      "version": 1.3,
+      "topics": [
+        "mcp",
+        "tools",
+        "tool-selection",
+        "agent-tools",
+        "tool-use"
+      ],
+      "chunks": [
+        ".copilot/chunks/TOOLS.md.chunk0.txt",
+        ".copilot/chunks/TOOLS.md.chunk1.txt",
+        ".copilot/chunks/TOOLS.md.chunk2.txt"
+      ]
+    },
+    {
+      "path": ".copilot/docs/GLOSSARY.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Exaix Developer Glossary",
+      "short_summary": "Implementation-level glossary: journal field maps, code identifiers, naming conventions, and code-identifier tables.",
+      "version": "1.0",
+      "topics": [
+        "glossary",
+        "implementation",
+        "code-identifiers",
+        "naming-conventions"
+      ],
+      "chunks": [
+        ".copilot/chunks/GLOSSARY.md.chunk0.txt",
+        ".copilot/chunks/GLOSSARY.md.chunk1.txt",
+        ".copilot/chunks/GLOSSARY.md.chunk2.txt",
+        ".copilot/chunks/GLOSSARY.md.chunk3.txt",
+        ".copilot/chunks/GLOSSARY.md.chunk4.txt",
+        ".copilot/chunks/GLOSSARY.md.chunk5.txt",
+        ".copilot/chunks/GLOSSARY.md.chunk6.txt",
+        ".copilot/chunks/GLOSSARY.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/docs/agent-content-schema.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Agent Content Schema Reference",
+      "short_summary": "Standardized JSON schema for agent <content> responses with Zod validation requirements.",
+      "version": "1.0",
+      "topics": [
+        "agents",
+        "schema",
+        "json",
+        "validation",
+        "blueprints"
+      ],
+      "chunks": [
+        ".copilot/chunks/agent-content-schema.md.chunk0.txt",
+        ".copilot/chunks/agent-content-schema.md.chunk1.txt",
+        ".copilot/chunks/agent-content-schema.md.chunk2.txt",
+        ".copilot/chunks/agent-content-schema.md.chunk3.txt",
+        ".copilot/chunks/agent-content-schema.md.chunk4.txt",
+        ".copilot/chunks/agent-content-schema.md.chunk5.txt",
+        ".copilot/chunks/agent-content-schema.md.chunk6.txt",
+        ".copilot/chunks/agent-content-schema.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/docs/documentation.md",
+      "agent": "copilot",
+      "scope": "dev",
+      "title": "Exaix Documentation Development Guidelines",
+      "short_summary": "Guidance for producing and maintaining docs in the docs/ directory and cross-referencing the Implementation Plan.",
+      "version": "0.1",
+      "topics": [
+        "docs",
+        "process",
+        "publishing"
+      ],
+      "chunks": [
+        ".copilot/chunks/documentation.md.chunk0.txt",
+        ".copilot/chunks/documentation.md.chunk1.txt",
+        ".copilot/chunks/documentation.md.chunk2.txt",
+        ".copilot/chunks/documentation.md.chunk3.txt",
+        ".copilot/chunks/documentation.md.chunk4.txt",
+        ".copilot/chunks/documentation.md.chunk5.txt",
+        ".copilot/chunks/documentation.md.chunk6.txt",
+        ".copilot/chunks/documentation.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/docs/exaix-development.md",
+      "agent": "copilot",
+      "scope": "dev",
+      "title": "Exaix Source Development Guidelines",
+      "short_summary": "Guidance for developing Exaix source code: TDD-first, patterns, project structure, and best practices.",
+      "version": "0.1",
+      "topics": [
+        "source",
+        "development",
+        "tdd",
+        "patterns"
+      ],
+      "chunks": [
+        ".copilot/chunks/exaix-development.md.chunk0.txt",
+        ".copilot/chunks/exaix-development.md.chunk1.txt",
+        ".copilot/chunks/exaix-development.md.chunk2.txt",
+        ".copilot/chunks/exaix-development.md.chunk3.txt",
+        ".copilot/chunks/exaix-development.md.chunk4.txt",
+        ".copilot/chunks/exaix-development.md.chunk5.txt",
+        ".copilot/chunks/exaix-development.md.chunk6.txt",
+        ".copilot/chunks/exaix-development.md.chunk7.txt"
       ]
     },
     {
@@ -233,126 +395,6 @@
         ".copilot/chunks/README.md.chunk5.txt",
         ".copilot/chunks/README.md.chunk6.txt",
         ".copilot/chunks/README.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/guidelines/testing.md",
-      "agent": "copilot",
-      "scope": "dev",
-      "title": "Exaix Test Development Guidelines",
-      "short_summary": "Testing patterns and unified test context for Exaix (initTestDbService, createCliTestContext, withEnv, etc.).",
-      "version": "0.1",
-      "topics": [
-        "tests",
-        "tdd",
-        "helpers"
-      ],
-      "chunks": [
-        ".copilot/chunks/testing.md.chunk0.txt",
-        ".copilot/chunks/testing.md.chunk1.txt",
-        ".copilot/chunks/testing.md.chunk2.txt",
-        ".copilot/chunks/testing.md.chunk3.txt",
-        ".copilot/chunks/testing.md.chunk4.txt",
-        ".copilot/chunks/testing.md.chunk5.txt",
-        ".copilot/chunks/testing.md.chunk6.txt",
-        ".copilot/chunks/testing.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/guidelines/specification-driven-development.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Specification-Driven Development in Exaix",
-      "short_summary": "Analysis of how Exaix's request-clarification-planning-execution pipeline implements Specification-Driven Development (SDD) principles for AI agent orchestration.",
-      "version": "1.0",
-      "topics": [
-        "methodology",
-        "sdd",
-        "quality",
-        "request-processing",
-        "architecture"
-      ],
-      "chunks": [
-        ".copilot/chunks/specification-driven-development.md.chunk0.txt",
-        ".copilot/chunks/specification-driven-development.md.chunk1.txt",
-        ".copilot/chunks/specification-driven-development.md.chunk2.txt",
-        ".copilot/chunks/specification-driven-development.md.chunk3.txt",
-        ".copilot/chunks/specification-driven-development.md.chunk4.txt",
-        ".copilot/chunks/specification-driven-development.md.chunk5.txt",
-        ".copilot/chunks/specification-driven-development.md.chunk6.txt",
-        ".copilot/chunks/specification-driven-development.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/guidelines/agent-content-schema.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Agent Content Schema Reference",
-      "short_summary": "Standardized JSON schema for agent <content> responses with Zod validation requirements.",
-      "version": "1.0",
-      "topics": [
-        "agents",
-        "schema",
-        "json",
-        "validation",
-        "blueprints"
-      ],
-      "chunks": [
-        ".copilot/chunks/agent-content-schema.md.chunk0.txt",
-        ".copilot/chunks/agent-content-schema.md.chunk1.txt",
-        ".copilot/chunks/agent-content-schema.md.chunk2.txt",
-        ".copilot/chunks/agent-content-schema.md.chunk3.txt",
-        ".copilot/chunks/agent-content-schema.md.chunk4.txt",
-        ".copilot/chunks/agent-content-schema.md.chunk5.txt",
-        ".copilot/chunks/agent-content-schema.md.chunk6.txt",
-        ".copilot/chunks/agent-content-schema.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/guidelines/documentation.md",
-      "agent": "copilot",
-      "scope": "dev",
-      "title": "Exaix Documentation Development Guidelines",
-      "short_summary": "Guidance for producing and maintaining docs in the docs/ directory and cross-referencing the Implementation Plan.",
-      "version": "0.1",
-      "topics": [
-        "docs",
-        "process",
-        "publishing"
-      ],
-      "chunks": [
-        ".copilot/chunks/documentation.md.chunk0.txt",
-        ".copilot/chunks/documentation.md.chunk1.txt",
-        ".copilot/chunks/documentation.md.chunk2.txt",
-        ".copilot/chunks/documentation.md.chunk3.txt",
-        ".copilot/chunks/documentation.md.chunk4.txt",
-        ".copilot/chunks/documentation.md.chunk5.txt",
-        ".copilot/chunks/documentation.md.chunk6.txt",
-        ".copilot/chunks/documentation.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/guidelines/exaix-development.md",
-      "agent": "copilot",
-      "scope": "dev",
-      "title": "Exaix Source Development Guidelines",
-      "short_summary": "Guidance for developing Exaix source code: TDD-first, patterns, project structure, and best practices.",
-      "version": "0.1",
-      "topics": [
-        "source",
-        "development",
-        "tdd",
-        "patterns"
-      ],
-      "chunks": [
-        ".copilot/chunks/exaix-development.md.chunk0.txt",
-        ".copilot/chunks/exaix-development.md.chunk1.txt",
-        ".copilot/chunks/exaix-development.md.chunk2.txt",
-        ".copilot/chunks/exaix-development.md.chunk3.txt",
-        ".copilot/chunks/exaix-development.md.chunk4.txt",
-        ".copilot/chunks/exaix-development.md.chunk5.txt",
-        ".copilot/chunks/exaix-development.md.chunk6.txt",
-        ".copilot/chunks/exaix-development.md.chunk7.txt"
       ]
     },
     {
@@ -1050,24 +1092,6 @@
       ]
     },
     {
-      "path": "LLM_GUIDE.md",
-      "title": "LLM Behavioral Guidelines",
-      "short_summary": "Four universal rules for any LLM agent: think before coding, simplicity first, surgical changes, goal-driven execution.",
-      "version": "1.0",
-      "topics": [
-        "guidelines",
-        "behavior",
-        "discipline",
-        "coding-standards"
-      ],
-      "chunks": [
-        ".copilot/chunks/LLM_GUIDE.md.chunk0.txt",
-        ".copilot/chunks/LLM_GUIDE.md.chunk1.txt",
-        ".copilot/chunks/LLM_GUIDE.md.chunk2.txt",
-        ".copilot/chunks/LLM_GUIDE.md.chunk3.txt"
-      ]
-    },
-    {
       "path": "ARCHITECTURE.md",
       "title": "ARCHITECTURE.md",
       "short_summary": "Exaix system architecture — component boundaries, dependency invariants, and design rationale",
@@ -1113,25 +1137,6 @@
         ".copilot/chunks/README.md.chunk5.txt",
         ".copilot/chunks/README.md.chunk6.txt",
         ".copilot/chunks/README.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": "TOOLS.md",
-      "title": "MCP Agent Tool Index",
-      "short_summary": "Full MCP agent tool index with descriptions, categories, dynamic/approval flags, and source refs. Auto-generated from the canonical manifest.",
-      "version": 1.3,
-      "topics": [
-        "mcp",
-        "tools",
-        "tool-selection",
-        "agent-tools",
-        "tool-use"
-      ],
-      "chunks": [
-        ".copilot/chunks/TOOLS.md.chunk0.txt",
-        ".copilot/chunks/TOOLS.md.chunk1.txt",
-        ".copilot/chunks/TOOLS.md.chunk2.txt",
-        ".copilot/chunks/TOOLS.md.chunk3.txt"
       ]
     },
     {

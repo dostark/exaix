@@ -38,7 +38,7 @@ links:
 **Before beginning ANY code modification task, you MUST:**
 
 - [ ] Read this file completely
-- [ ] Read `LLM_GUIDE.md` — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
+- [ ] Read `## Behavioral Guidelines` (below) — think before coding, simplicity, surgical changes, goal-driven execution
 - [ ] Use `.copilot/cross-reference.md` to identify every required `.copilot/` document for the task type(s) involved, then read all of them before implementation
 - [ ] If the task type is not listed in `.copilot/cross-reference.md`, fall back to `.copilot/guidelines/exaix-development.md` and note that fallback in your implementation plan
 - [ ] If a required document listed in `.copilot/cross-reference.md` is missing on disk, stop and report the missing path instead of inferring its contents
@@ -60,20 +60,40 @@ links:
 
 | Need                      | Location                                                                             |
 | ------------------------- | ------------------------------------------------------------------------------------ |
-| Behavioral guidelines     | [LLM_GUIDE.md](./LLM_GUIDE.md)                                                       |
+| Behavioral guidelines     | [CLAUDE.md](./CLAUDE.md#behavioral-guidelines)                                       |
 | Task → Doc mapping        | [.copilot/cross-reference.md](.copilot/cross-reference.md)                           |
 | Source patterns           | [.copilot/guidelines/exaix-development.md](.copilot/guidelines/exaix-development.md) |
 | Testing patterns          | [.copilot/guidelines/testing.md](.copilot/guidelines/testing.md)                     |
 | Documentation guide       | [.copilot/guidelines/documentation.md](.copilot/guidelines/documentation.md)         |
 | Coding standards          | [CODE_STYLE.md](./CODE_STYLE.md)                                                     |
 | Magic numbers / constants | [CODE_STYLE.md](./CODE_STYLE.md) §2                                                  |
-| MCP tool index            | [TOOLS.md](./TOOLS.md)                                                               |
+| MCP tool index            | [.copilot/docs/TOOLS.md](.copilot/docs/TOOLS.md)                                     |
 | Commit skill              | [.copilot/skills/commit/SKILL.md](.copilot/skills/commit/SKILL.md)                   |
 | Plan skill                | [.copilot/skills/plan/SKILL.md](.copilot/skills/plan/SKILL.md)                       |
 | Next-steps skill          | [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md)           |
 | Slash commands            | [.copilot/prompts/](.copilot/prompts/)                                               |
 | Planning documents        | [exaix-dev-docs/planning/](exaix-dev-docs/planning/)                                 |
 | All agent docs index      | [.copilot/manifest.json](.copilot/manifest.json)                                     |
+
+## Behavioral Guidelines
+
+Four universal rules to reduce common LLM coding mistakes. These bias toward caution over speed; for trivial tasks, use judgment.
+
+### 1. Think Before Coding
+
+Before implementing: state assumptions, surface tradeoffs, and ask when uncertain. If multiple interpretations exist, present them — don't pick silently. If a simpler approach exists, say so.
+
+### 2. Simplicity First
+
+Minimum code that solves the problem. Nothing speculative. No features beyond what was asked, no abstractions for single-use code, no "flexibility" that wasn't requested. If 200 lines can be 50, rewrite it.
+
+### 3. Surgical Changes
+
+Touch only what you must. Don't "improve" adjacent code, comments, or formatting. Don't refactor things that aren't broken. Match existing style even if you'd do it differently.
+
+### 4. Goal-Driven Execution
+
+Ask "what exactly am I being asked to deliver?" before starting. Build exactly that. Don't deliver a solution to a problem no one asked about. If scope creeps, flag it — don't implement it.
 
 ## Agent Quick Facts
 
@@ -85,7 +105,7 @@ Key facts about the Exaix system:
 - **AI providers**: concrete providers live in `@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix-team/ai-vertex`, `@exaix/ai-openrouter`, `@exaix/ai-ollama`; selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory`; registered at bootstrap by `apps/common/registry_bootstrap.ts`
 - **Architecture invariant**: read the `AGENT_LOGIC` YAML comment in ARCHITECTURE.md's `Request Processing Flow` section before modifying any core flow
 - **Boundary rules**: TUI (`apps/tui/src/`) and CLI (`apps/exactl/src/commands/`) must not import directly from services — use interfaces in shared packages under `packages/`
-- **MCP tools**: all agent-accessible tools are listed in [TOOLS.md](./TOOLS.md#agent-tools) and implemented under `packages/mcp/server/` (e.g. `tool_handler.ts`, `domain_tools.ts`)
+- **MCP tools**: all agent-accessible tools are listed in [.copilot/docs/TOOLS.md](.copilot/docs/TOOLS.md#agent-tools) and implemented under `packages/mcp/server/` (e.g. `tool_handler.ts`, `domain_tools.ts`)
 
 ### Runtime & Tooling
 

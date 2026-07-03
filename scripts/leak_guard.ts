@@ -101,6 +101,7 @@ export async function runLeakGuard(options: ILeakGuardOptions = {}): Promise<ILe
       // Skip known-safe files (tests that test the guard, docs, config, skills)
       if (relativePath === "scripts/leak_guard.ts") continue;
       if (relativePath.startsWith("exaix-dev-docs/")) continue;
+      if (relativePath.startsWith(".copilot/docs/")) continue;
       if (relativePath === "tests/scripts/check_edition_leak_import_test.ts") continue;
       if (relativePath === "tests/scripts/check_prod_tests_import_test.ts") continue;
       if (relativePath === ".copilot/skills/edition-development/SKILL.md") continue;
