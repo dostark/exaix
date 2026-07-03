@@ -6,6 +6,7 @@
     ".copilot/skills/coverage",
     ".copilot/skills/doc",
     ".copilot/skills/edition-development",
+    ".copilot/skills/exaix-development",
     ".copilot/skills/explore",
     ".copilot/skills/fix-bug",
     ".copilot/skills/infra",
@@ -16,10 +17,14 @@
     ".copilot/skills/pre-gap-analysis",
     ".copilot/skills/refactor",
     ".copilot/skills/refactor-check-magic",
+    ".copilot/skills/remediate-code-gaps",
+    ".copilot/skills/remediate-plan-gaps",
+    ".copilot/skills/review-code",
     ".copilot/skills/review-research",
     ".copilot/skills/security",
     ".copilot/skills/submodule-workflow",
     ".copilot/skills/tdd-workflow",
+    ".copilot/skills/test-development",
     ".copilot/skills/upgrade"
   ],
   "permissions": {
