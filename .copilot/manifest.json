@@ -1,20 +1,6 @@
 {
   "docs": [
     {
-      "path": ".copilot/docs/agent-thought-standardization.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Agent Thought Section Standardization",
-      "short_summary": "Standardized structure for agent <thought> sections to ensure consistent reasoning patterns across all blueprints.",
-      "version": "0.1",
-      "topics": [
-        "agents",
-        "reasoning",
-        "standardization",
-        "thought-structure"
-      ]
-    },
-    {
       "path": ".copilot/docs/testing.md",
       "agent": "copilot",
       "scope": "dev",

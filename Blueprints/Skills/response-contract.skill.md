@@ -53,7 +53,42 @@ text outside these tags is ignored.
 parsed by the runtime, so it must be valid, self-contained, and free of
 commentary.
 
-> **See also:** [Agent Thought Standardization](../../.copilot/docs/agent-thought-standardization.md) — standardized reasoning structure for the `<thought>` block.
+## Agent Thought Standardization
+
+The `<thought>` block must follow this structured format — not free-form prose:
+
+```xml
+<thought>
+## Problem Analysis
+[Brief summary of the user's request and core problem to solve]
+
+## Context Assessment
+[Relevant context from codebase, requirements, constraints]
+
+## Solution Approach
+[High-level strategy and methodology to address the problem]
+
+## Key Considerations
+[Important factors: technical constraints, edge cases, dependencies]
+
+## Implementation Strategy
+[Step-by-step reasoning for how to execute the solution]
+
+## Risk Assessment
+[Potential issues, failure modes, mitigation strategies]
+</thought>
+```
+
+### Section details
+
+| Section | Purpose | Content |
+|---|---|---|
+| Problem Analysis | Confirm understanding | 1-3 sentences summarizing the core problem |
+| Context Assessment | Identify relevant context | Reference existing code, patterns, constraints |
+| Solution Approach | Outline strategy | Methodology, frameworks, patterns |
+| Key Considerations | Highlight factors | Security, performance, compatibility |
+| Implementation Strategy | Detail execution | Specific steps, tools, order |
+| Risk Assessment | Identify issues | Failure scenarios, mitigation |
 
 ## Executable-plan JSON schema
 
