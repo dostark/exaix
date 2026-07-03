@@ -14,7 +14,7 @@ import { join } from "@std/path";
 import { TOOL_MANIFEST } from "@exaix/mcp";
 import { ToolCategory, ToolKind } from "@exaix/core";
 
-const TOOLS_MD_PATH = join(Deno.cwd(), "TOOLS.md");
+const TOOLS_MD_PATH = join(Deno.cwd(), ".copilot/docs/TOOLS.md");
 const AGENT_TOOLS_START = "<!-- AGENT_TOOLS_START -->";
 const AGENT_TOOLS_END = "<!-- AGENT_TOOLS_END -->";
 
