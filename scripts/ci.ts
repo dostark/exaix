@@ -81,6 +81,7 @@ const checkCommand = new Command()
       { cmd: ["deno", "task", "check:blueprint-integrity"], desc: "Blueprint Catalog Integrity" },
       { cmd: ["deno", "task", "check:manifests"], desc: "Step Manifest Validity" },
       { cmd: ["deno", "task", "check:hardcoded-models"], desc: "Hardcoded Model CI Gate" },
+      { cmd: ["deno", "task", "check:md-path"], desc: "Stale Markdown Path Check" },
       { cmd: ["deno", "task", "check:agent-docs-integrity"], desc: "Agent Docs Integrity Check" },
       { cmd: ["deno", "task", "check:qwen-skills-sync"], desc: "Qwen Skills Sync Check" },
       { cmd: ["deno", "task", "check"], desc: "Type Checking" },
@@ -420,8 +421,8 @@ const allCommand = new Command()
         { cmd: ["deno", "task", "check:blueprint-integrity"], desc: "Blueprint Catalog Integrity" },
         { cmd: ["deno", "task", "check:manifests"], desc: "Step Manifest Validity" },
         { cmd: ["deno", "task", "check:hardcoded-models"], desc: "Hardcoded Model CI Gate" },
+        { cmd: ["deno", "task", "check:md-path"], desc: "Stale Markdown Path Check" },
         { cmd: ["deno", "task", "check:agent-docs-integrity"], desc: "Agent Docs Integrity Check" },
-        { cmd: ["deno", "task", "check:qwen-skills-sync"], desc: "Qwen Skills Sync Check" },
         { cmd: ["deno", "task", "check"], desc: "Type Checking" },
       ])
     ) Deno.exit(1);
