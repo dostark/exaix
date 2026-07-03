@@ -67,7 +67,6 @@ links:
 | Testing patterns          | [.copilot/docs/testing.md](.copilot/docs/testing.md)                                                   |
 | Documentation guide       | [.copilot/docs/documentation.md](.copilot/docs/documentation.md)                                       |
 | Spec-driven development   | [.copilot/docs/specification-driven-development.md](.copilot/docs/specification-driven-development.md) |
-| Agent content schema      | [.copilot/docs/agent-content-schema.md](.copilot/docs/agent-content-schema.md)                         |
 | Agent reasoning           | [.copilot/docs/agent-thought-standardization.md](.copilot/docs/agent-thought-standardization.md)       |
 | Dev glossary              | [.copilot/docs/GLOSSARY.md](.copilot/docs/GLOSSARY.md)                                                 |
 | Coding standards          | [CODE_STYLE.md](./CODE_STYLE.md)                                                                       |

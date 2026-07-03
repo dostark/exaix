@@ -53,7 +53,7 @@ text outside these tags is ignored.
 parsed by the runtime, so it must be valid, self-contained, and free of
 commentary.
 
-> **See also:** [Agent Thought Standardization](/.copilot/docs/agent-thought-standardization.md) — standardized reasoning structure for the `<thought>` block.
+> **See also:** [Agent Thought Standardization](../../.copilot/docs/agent-thought-standardization.md) — standardized reasoning structure for the `<thought>` block.
 
 ## Executable-plan JSON schema
 
@@ -77,6 +77,131 @@ commentary.
   ],
   "estimatedDuration": "e.g. 2-3 hours",
   "risks": ["Potential issue"]
+}
+```
+
+## Additional response-type templates
+
+### Code Analysis Template
+
+```json
+{
+  "title": "Codebase Analysis Report",
+  "description": "Comprehensive analysis of project structure and patterns",
+  "analysis": {
+    "totalFiles": 42,
+    "linesOfCode": 1250,
+    "mainLanguage": "TypeScript",
+    "framework": "Deno",
+    "directoryStructure": "src/\\n├── services/\\n├── routes/\\n└── utils/",
+    "modules": [
+      { "name": "auth.ts", "purpose": "Authentication service", "exports": ["login", "logout"], "dependencies": ["jwt", "users"] }
+    ],
+    "patterns": [
+      { "pattern": "Repository", "location": "src/repos/", "usage": "Data access abstraction" }
+    ],
+    "metrics": [
+      { "metric": "Cyclomatic Complexity (avg)", "value": 3.2, "assessment": "Good" }
+    ],
+    "recommendations": [
+      "Consider adding more unit tests",
+      "Refactor large functions into smaller ones"
+    ]
+  }
+}
+```
+
+### Security Analysis Template
+
+```json
+{
+  "title": "Security Analysis Report",
+  "description": "Security assessment and vulnerability analysis",
+  "security": {
+    "executiveSummary": "Overall security posture is good with minor issues",
+    "findings": [
+      {
+        "title": "SQL Injection Vulnerability",
+        "severity": "HIGH",
+        "location": "src/database.ts:45",
+        "description": "User input not properly sanitized",
+        "impact": "Potential data breach",
+        "remediation": "Use parameterized queries",
+        "codeExample": "// Before: query('SELECT * FROM users WHERE id = ' + userId)\\n// After: query('SELECT * FROM users WHERE id = ?', [userId])"
+      }
+    ],
+    "recommendations": [
+      "Implement input validation middleware",
+      "Add security headers",
+      "Regular security audits"
+    ],
+    "compliance": [
+      "OWASP Top 10 compliance: 8/10",
+      "GDPR considerations addressed"
+    ]
+  }
+}
+```
+
+### QA/Testing Template
+
+```json
+{
+  "title": "QA Assessment Report",
+  "description": "Quality assurance and testing strategy analysis",
+  "qa": {
+    "testSummary": [
+      { "category": "Integration", "planned": 15, "executed": 15, "passed": 13, "failed": 2 }
+    ],
+    "coverage": {
+      "integration": [
+        {
+          "scenario": "User registration flow", "setup": "Clean database",
+          "steps": ["Navigate to register", "Fill form", "Submit"],
+          "expectedResult": "User created successfully", "status": "PASS"
+        }
+      ]
+    },
+    "issues": [
+      {
+        "title": "Form validation bypass", "severity": "High",
+        "component": "RegistrationForm",
+        "stepsToReproduce": ["Submit empty form", "Check if error shown"],
+        "description": "Client-side validation can be bypassed"
+      }
+    ]
+  }
+}
+```
+
+### Performance Analysis Template
+
+```json
+{
+  "title": "Performance Analysis Report",
+  "description": "Performance optimization and scalability assessment",
+  "performance": {
+    "executiveSummary": "Application performance is adequate with optimization opportunities",
+    "findings": [
+      {
+        "title": "N+1 Query Problem", "impact": "HIGH", "category": "Database",
+        "location": "src/userService.ts:78",
+        "currentBehavior": "Multiple individual queries in loop",
+        "expectedImprovement": "50% reduction in query time",
+        "recommendation": "Use batch queries or eager loading"
+      }
+    ],
+    "priorities": [
+      "Fix N+1 query issues",
+      "Implement caching for frequently accessed data",
+      "Optimize database indexes"
+    ],
+    "scalability": {
+      "currentCapacity": "100 concurrent users",
+      "bottleneckPoints": ["Database connection pool", "Memory usage"],
+      "scalingStrategy": "Horizontal scaling with load balancer"
+    }
+  }
 }
 ```
 

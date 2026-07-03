@@ -9,62 +9,60 @@ topics: ["reference", "docs", "catalog"]
 
 ## Task → Doc
 
-| Task Type                                            | Primary Doc                                                                          |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Agent Thought Section Standardization                | [docs/agent-thought-standardization.md](docs/agent-thought-standardization.md)       |
-| Exaix Test Development Guidelines                    | [docs/testing.md](docs/testing.md)                                                   |
-| Specification-Driven Development in Exaix            | [docs/specification-driven-development.md](docs/specification-driven-development.md) |
-| Agent Reference Corpus                               | [docs/README.md](docs/README.md)                                                     |
-| MCP Agent Tool Index                                 | [docs/TOOLS.md](docs/TOOLS.md)                                                       |
-| Exaix Developer Glossary                             | [docs/GLOSSARY.md](docs/GLOSSARY.md)                                                 |
-| Agent Content Schema Reference                       | [docs/agent-content-schema.md](docs/agent-content-schema.md)                         |
-| Exaix Documentation Development Guidelines           | [docs/documentation.md](docs/documentation.md)                                       |
-| Exaix Source Development Guidelines                  | [docs/exaix-development.md](docs/exaix-development.md)                               |
-| .copilot/prompts/ — Chat Routing Wrappers            | [prompts/README.md](prompts/README.md)                                               |
-| .copilot/ — AI Agent Knowledge Base                  | [README.md](README.md)                                                               |
-| Documentation Skill (#doc)                           | [skills/doc/SKILL.md](skills/doc/SKILL.md)                                           |
-| Coverage Skill (#coverage)                           | [skills/coverage/SKILL.md](skills/coverage/SKILL.md)                                 |
-| Edition Development Skill (#edition-development)     | [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)           |
-| Package Extraction Skill (#package-extraction)       | [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md)             |
-| Submodule Workflow Skill (#submodule-workflow)       | [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md)             |
-| Fix Bug Skill (#fix-bug)                             | [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md)                                   |
-| Review-Code Skill (#review-code)                     | [skills/review-code/SKILL.md](skills/review-code/SKILL.md)                           |
-| Infrastructure/Config Skill (#infra)                 | [skills/infra/SKILL.md](skills/infra/SKILL.md)                                       |
-| Plan Skill (#plan)                                   | [skills/plan/SKILL.md](skills/plan/SKILL.md)                                         |
-| Refactoring Skill (#refactor)                        | [skills/refactor/SKILL.md](skills/refactor/SKILL.md)                                 |
-| Clean Codebase Skill (#clean-codebase)               | [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)                     |
-| Post-Gap Analysis Skill (#post-gap-analysis)         | [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md)               |
-| Remediate Plan Gaps Skill (#remediate-plan-gaps)     | [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md)           |
-| Refactor-Check-Magic Skill (#refactor-check-magic)   | [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md)         |
-| Commit Skill (#commit)                               | [skills/commit/SKILL.md](skills/commit/SKILL.md)                                     |
-| Security Skill (#security)                           | [skills/security/SKILL.md](skills/security/SKILL.md)                                 |
-| Codebase Exploration (#explore)                      | [skills/explore/SKILL.md](skills/explore/SKILL.md)                                   |
-| Comparative Analysis Skill (#comparative-analysis)   | [skills/comparative-analysis/SKILL.md](skills/comparative-analysis/SKILL.md)         |
-| Self-Improvement Loop (#self-improvement)            | [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)                 |
-| Upgrade Skill (#upgrade)                             | [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md)                                   |
-| TDD Workflow Skill (#tdd-workflow)                   | [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md)                         |
-| Remediate Code Gaps Skill (#remediate-code-gaps)     | [skills/remediate-code-gaps/SKILL.md](skills/remediate-code-gaps/SKILL.md)           |
-| Review-Research-Improvement Skill (#review-research) | [skills/review-research/SKILL.md](skills/review-research/SKILL.md)                   |
-| Next-Steps Skill (#next-steps)                       | [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md)                             |
-| Pre-Gap Analysis Skill (#pre-gap-analysis)           | [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)                 |
-| Doc Catalog                                          | [DOCS.md](DOCS.md)                                                                   |
-| ARCHITECTURE.md                                      | [../ARCHITECTURE.md](../ARCHITECTURE.md)                                             |
-| Agent Instructions                                   | [../CLAUDE.md](../CLAUDE.md)                                                         |
-| Exaix Overview & Quickstart                          | [../README.md](../README.md)                                                         |
-| Exaix Glossary                                       | [../GLOSSARY.md](../GLOSSARY.md)                                                     |
-| Code Style & Standards                               | [../CODE_STYLE.md](../CODE_STYLE.md)                                                 |
-| CONTRIBUTING.md                                      | [../CONTRIBUTING.md](../CONTRIBUTING.md)                                             |
+| Task Type | Primary Doc |
+| --- | --- |
+| Agent Thought Section Standardization | [docs/agent-thought-standardization.md](docs/agent-thought-standardization.md) |
+| Exaix Test Development Guidelines | [docs/testing.md](docs/testing.md) |
+| Specification-Driven Development in Exaix | [docs/specification-driven-development.md](docs/specification-driven-development.md) |
+| Agent Reference Corpus | [docs/README.md](docs/README.md) |
+| MCP Agent Tool Index | [docs/TOOLS.md](docs/TOOLS.md) |
+| Exaix Developer Glossary | [docs/GLOSSARY.md](docs/GLOSSARY.md) |
+| Exaix Documentation Development Guidelines | [docs/documentation.md](docs/documentation.md) |
+| Exaix Source Development Guidelines | [docs/exaix-development.md](docs/exaix-development.md) |
+| .copilot/prompts/ — Chat Routing Wrappers | [prompts/README.md](prompts/README.md) |
+| .copilot/ — AI Agent Knowledge Base | [README.md](README.md) |
+| Documentation Skill (#doc) | [skills/doc/SKILL.md](skills/doc/SKILL.md) |
+| Coverage Skill (#coverage) | [skills/coverage/SKILL.md](skills/coverage/SKILL.md) |
+| Edition Development Skill (#edition-development) | [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md) |
+| Package Extraction Skill (#package-extraction) | [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md) |
+| Submodule Workflow Skill (#submodule-workflow) | [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md) |
+| Fix Bug Skill (#fix-bug) | [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md) |
+| Review-Code Skill (#review-code) | [skills/review-code/SKILL.md](skills/review-code/SKILL.md) |
+| Infrastructure/Config Skill (#infra) | [skills/infra/SKILL.md](skills/infra/SKILL.md) |
+| Plan Skill (#plan) | [skills/plan/SKILL.md](skills/plan/SKILL.md) |
+| Refactoring Skill (#refactor) | [skills/refactor/SKILL.md](skills/refactor/SKILL.md) |
+| Clean Codebase Skill (#clean-codebase) | [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md) |
+| Post-Gap Analysis Skill (#post-gap-analysis) | [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md) |
+| Remediate Plan Gaps Skill (#remediate-plan-gaps) | [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md) |
+| Refactor-Check-Magic Skill (#refactor-check-magic) | [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md) |
+| Commit Skill (#commit) | [skills/commit/SKILL.md](skills/commit/SKILL.md) |
+| Security Skill (#security) | [skills/security/SKILL.md](skills/security/SKILL.md) |
+| Codebase Exploration (#explore) | [skills/explore/SKILL.md](skills/explore/SKILL.md) |
+| Comparative Analysis Skill (#comparative-analysis) | [skills/comparative-analysis/SKILL.md](skills/comparative-analysis/SKILL.md) |
+| Self-Improvement Loop (#self-improvement) | [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md) |
+| Upgrade Skill (#upgrade) | [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md) |
+| TDD Workflow Skill (#tdd-workflow) | [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md) |
+| Remediate Code Gaps Skill (#remediate-code-gaps) | [skills/remediate-code-gaps/SKILL.md](skills/remediate-code-gaps/SKILL.md) |
+| Review-Research-Improvement Skill (#review-research) | [skills/review-research/SKILL.md](skills/review-research/SKILL.md) |
+| Next-Steps Skill (#next-steps) | [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md) |
+| Pre-Gap Analysis Skill (#pre-gap-analysis) | [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md) |
+| Doc Catalog | [DOCS.md](DOCS.md) |
+| ARCHITECTURE.md | [../ARCHITECTURE.md](../ARCHITECTURE.md) |
+| Agent Instructions | [../CLAUDE.md](../CLAUDE.md) |
+| Exaix Overview & Quickstart | [../README.md](../README.md) |
+| Exaix Glossary | [../GLOSSARY.md](../GLOSSARY.md) |
+| Code Style & Standards | [../CODE_STYLE.md](../CODE_STYLE.md) |
+| CONTRIBUTING.md | [../CONTRIBUTING.md](../CONTRIBUTING.md) |
 
 ## Search by Topic
 
 - **`agent-tools`** → [docs/TOOLS.md](docs/TOOLS.md)
-- **`agents`** → [docs/agent-thought-standardization.md](docs/agent-thought-standardization.md), [docs/README.md](docs/README.md), [docs/agent-content-schema.md](docs/agent-content-schema.md), [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)
+- **`agents`** → [docs/agent-thought-standardization.md](docs/agent-thought-standardization.md), [docs/README.md](docs/README.md), [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)
 - **`architecture`** → [docs/specification-driven-development.md](docs/specification-driven-development.md), [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md), [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md), [skills/review-code/SKILL.md](skills/review-code/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/explore/SKILL.md](skills/explore/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`architecture-review`** → [skills/review-research/SKILL.md](skills/review-research/SKILL.md)
 - **`audit`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`auth`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`best-practices`** → [skills/review-code/SKILL.md](skills/review-code/SKILL.md), [skills/commit/SKILL.md](skills/commit/SKILL.md)
-- **`blueprints`** → [docs/agent-content-schema.md](docs/agent-content-schema.md)
 - **`bug-fix`** → [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md)
 - **`build`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`catalog`** → [DOCS.md](DOCS.md)
@@ -110,7 +108,6 @@ topics: ["reference", "docs", "catalog"]
 - **`instruction-adequacy`** → [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)
 - **`integration`** → [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`integrations`** → [skills/plan/SKILL.md](skills/plan/SKILL.md)
-- **`json`** → [docs/agent-content-schema.md](docs/agent-content-schema.md)
 - **`leak-guard`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`linting`** → [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)
 - **`magic-values`** → [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md)
@@ -152,7 +149,6 @@ topics: ["reference", "docs", "catalog"]
 - **`routing`** → [prompts/README.md](prompts/README.md)
 - **`run-command`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`sandbox`** → [skills/security/SKILL.md](skills/security/SKILL.md)
-- **`schema`** → [docs/agent-content-schema.md](docs/agent-content-schema.md)
 - **`sdd`** → [docs/specification-driven-development.md](docs/specification-driven-development.md)
 - **`seam`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`secrets`** → [skills/security/SKILL.md](skills/security/SKILL.md)
@@ -180,10 +176,11 @@ topics: ["reference", "docs", "catalog"]
 - **`traceability`** → [skills/plan/SKILL.md](skills/plan/SKILL.md)
 - **`typescript`** → [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md)
 - **`upgrade`** → [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md)
-- **`validation`** → [docs/agent-content-schema.md](docs/agent-content-schema.md), [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)
+- **`validation`** → [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)
 - **`version`** → [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md)
 - **`webhook`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`workflow`** → [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md)
 - **`workspace`** → [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md)
 - **`wrappers`** → [prompts/README.md](prompts/README.md)
 - **`writing`** → [skills/doc/SKILL.md](skills/doc/SKILL.md)
+

@@ -15,7 +15,6 @@ The directory mirrors the Claude Code `docs/` convention and is reachable as `.a
 
 - [TOOLS.md](TOOLS.md): MCP tool index (moved from root).
 - [GLOSSARY.md](GLOSSARY.md): Developer glossary — implementation-level definitions, journal field maps, code identifiers, naming conventions (moved from `docs/`).
-- [agent-content-schema.md](agent-content-schema.md): Standardized JSON schema for agent `<content>` responses.
 - [agent-thought-standardization.md](agent-thought-standardization.md): Agent reasoning structure guidance.
 - [exaix-development.md](exaix-development.md): Exaix source development patterns and service architecture.
 - [documentation.md](documentation.md): Documentation guidelines and update protocol.

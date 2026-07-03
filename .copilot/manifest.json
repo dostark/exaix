@@ -84,21 +84,6 @@
       ]
     },
     {
-      "path": ".copilot/docs/agent-content-schema.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Agent Content Schema Reference",
-      "short_summary": "Standardized JSON schema for agent <content> responses with Zod validation requirements.",
-      "version": "1.0",
-      "topics": [
-        "agents",
-        "schema",
-        "json",
-        "validation",
-        "blueprints"
-      ]
-    },
-    {
       "path": ".copilot/docs/documentation.md",
       "agent": "copilot",
       "scope": "dev",
