@@ -33,20 +33,15 @@ type TestReporter = typeof SUPPORTED_REPORTERS[number];
  * sub-processes that are sensitive to environment variable cross-contamination.
  */
 const SEQUENTIAL_FILES: string[] = [
-  "tests/scenario_framework/tests/plan_amendment_scenario_test.ts",
-  "tests/scenario_framework/tests/portal_knowledge_phase105_scenario_test.ts",
-  "tests/integration/cli_commands_test.ts",
-  "tests/integration/portal_e2e_workflow_test.ts",
-  "tests/integration/portal_worktree_review_cleanup_e2e_test.ts",
-  "tests/migrations/migrate_db_test.ts",
+  // Tests that launch daemon subprocesses or heavy I/O — these do not
+  // parallelize safely due to Deno cache races on direct `deno run` calls
+  // and resource contention from multiple concurrent daemon instances.
+  "tests/scenario_framework/tests/portal_knowledge_strategies_scenario_test.ts",
   "apps/daemon/tests/deploy_workspace_test.ts",
-  "packages/execution/tests/agent_executor_test.ts",
-  "apps/exactl/tests/review_commands_test.ts",
-  "apps/exactl/tests/exactl_all_test.ts",
-  "packages/ai/tests/providers/free_providers_test.ts",
-  "packages/ai/tests/providers/openai_shim_retry_test.ts",
-  "packages/ai/tests/provider_factory_test.ts",
-  "tests/integration/agent/mcp_real_execution_test.ts",
+  "tests/integration/cli_commands_test.ts",
+  // MCP handshake test — `mock_agent.ts` hardcodes branch "feat/test" which
+  // conflicts when parallel tests create branches with different names.
+  "tests/integration/agent/mcp_handshake_test.ts",
 ];
 
 interface TestStats {
@@ -583,11 +578,20 @@ export async function main(args: string[]): Promise<number> {
   // ---------------------------------------------------------------------------
   // Batch 1: full test suite in parallel (use TAP reporter for error capture)
   // ---------------------------------------------------------------------------
-  const batch1Env: Record<string, string> = { ...Deno.env.toObject(), DENO_JOBS: "8" };
-  const batch1IgnoreArg = `--ignore=${SEQUENTIAL_FILES.join(",")}`;
+  const batch1Env: Record<string, string> = {
+    ...Deno.env.toObject(),
+    DENO_JOBS: "8",
+    EXA_TEST_FORCE_CLI_PARALLEL: "1",
+  };
+  const batch1IgnoreArg = SEQUENTIAL_FILES.length > 0 ? `--ignore=${SEQUENTIAL_FILES.join(",")}` : "";
+
+  const batch1Args = ["--parallel", "tests/", "packages/", ...teamPaths, "apps/", ...forwardedArgs];
+  if (batch1IgnoreArg) {
+    batch1Args.splice(1, 0, batch1IgnoreArg);
+  }
 
   const batch1Stats = await runAndCapture(
-    ["--parallel", batch1IgnoreArg, "tests/", "packages/", ...teamPaths, "apps/", ...forwardedArgs],
+    batch1Args,
     "Batch 1 – Parallel suite",
     batch1Env,
     "tap",

@@ -467,10 +467,7 @@ cliTest("[regression] CLI: portal add persists default_branch and execution_stra
   }
 });
 
-// TODO: Fix implementation bug - execution_strategy not being persisted in portal config
-// Test disabled until bug is fixed: portal show displays execution_strategy: null
-// even when --execution-strategy worktree is passed to portal add
-Deno.test.ignore("[regression] CLI: portal show includes default_branch and execution_strategy", async () => {
+Deno.test("[regression] CLI: portal show includes default_branch and execution_strategy", async () => {
   const env = await TestEnvironment.create();
   try {
     const { portalAlias, defaultBranch, executionStrategy } = await addWorktreePortal(env);

@@ -35,7 +35,7 @@ function parseFrontmatter(content: string): Record<string, string | string[] | b
 const StrictBlueprintFrontmatterSchema = z.object({
   identity_id: z.string().min(1),
   name: z.string().min(1).max(100),
-  model: z.string().min(1),
+  model: z.string().optional(),
   capabilities: z.array(z.string()).optional().default([]),
   deprecated: z.boolean().optional(),
   created: z.string(),
@@ -46,6 +46,7 @@ const StrictBlueprintFrontmatterSchema = z.object({
   permitted_tools: z.array(z.string()).optional(),
   preferred_provider: z.string().optional(),
   model_size: z.string().optional(),
+  characteristics: z.array(z.string()).optional(),
   thinking: z.boolean().optional(),
   effort: z.string().optional(),
   hitl: z.unknown().optional(),

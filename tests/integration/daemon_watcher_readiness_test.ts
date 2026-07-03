@@ -25,7 +25,7 @@ import { daemonConfigSections } from "./helpers/daemon_config.ts";
 
 function writeDaemonConfig(configPath: string, root: string): void {
   const cfg = [
-    ...daemonConfigSections(root),
+    ...daemonConfigSections(root, ""),
     "",
     "[ai]",
     'provider = "mock"',

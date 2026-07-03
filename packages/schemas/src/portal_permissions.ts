@@ -7,7 +7,13 @@
  */
 
 import { z } from "zod";
-import { DEFAULT_PORTAL_DEFAULT_BRANCH, PermissionAction, PortalOperation, SecurityMode } from "@exaix/core";
+import {
+  DEFAULT_PORTAL_DEFAULT_BRANCH,
+  PermissionAction,
+  PortalExecutionStrategy,
+  PortalOperation,
+  SecurityMode,
+} from "@exaix/core";
 import { SessionDelegateConfigSchema } from "./session_delegate.ts";
 
 // ============================================================================
@@ -141,6 +147,7 @@ export const PortalPermissionsSchema = z.object({
   target_path: z.string(),
   description: z.string().optional(),
   default_branch: z.string().default(DEFAULT_PORTAL_DEFAULT_BRANCH),
+  execution_strategy: z.nativeEnum(PortalExecutionStrategy).optional(),
   created: z.string().optional(),
 
   // Legacy permission controls (for backward compatibility)

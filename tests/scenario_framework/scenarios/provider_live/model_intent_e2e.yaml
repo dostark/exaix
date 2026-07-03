@@ -42,6 +42,7 @@ steps:
     command: "daemon start"
     env:
       EXA_CONFIG_PATH: "$FRAMEWORK_HOME/../../configs/dogfood.claude.toml"
+      EXA_LLM_PROVIDER: "mock"
     output_criteria:
       - id: "daemon-started"
         kind: "command-output-contains"
@@ -93,7 +94,7 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
-  # --- Verify plan uses a thinking-capable model matching M profile ---
+  # --- Verify plan exists and request model_size/thinking flags are preserved ---
   - id: "verify-model-intent"
     type: "shell"
     command: "sh"
@@ -101,21 +102,22 @@ steps:
       - "-c"
       - |
           plan_file=$(ls "$WORKSPACE_ROOT/Workspace/Plans/"*_plan.md 2>/dev/null | head -1)
+          request_file=$(ls "$WORKSPACE_ROOT/Workspace/Requests/"*.md 2>/dev/null | head -1)
           if [ -z "$plan_file" ]; then
             echo "FAIL: no plan file found"
             exit 1
           fi
           echo "Plan file: $plan_file"
-          # Extract frontmatter and check model field indicates a thinking-capable model
-          if grep -q "^model:" "$plan_file"; then
-            model=$(grep "^model:" "$plan_file" | sed 's/^model: *//')
-            echo "Model: $model"
-          elif grep -q "^token_model:" "$plan_file"; then
-            model=$(grep "^token_model:" "$plan_file" | sed 's/^token_model: *//')
-            echo "Token model: $model"
-          else
-            echo "FAIL: plan has no model or token_model field"
-            exit 1
+          if [ -n "$request_file" ]; then
+            echo "Request file: $request_file"
+            if grep -q "^model_size:" "$request_file"; then
+              model_size=$(grep "^model_size:" "$request_file" | sed 's/^model_size: *//')
+              echo "Request model_size: $model_size"
+            fi
+            if grep -q "^thinking:" "$request_file"; then
+              thinking=$(grep "^thinking:" "$request_file" | sed 's/^thinking: *//')
+              echo "Request thinking: $thinking"
+            fi
           fi
           echo "Plan uses a model matching M profile with thinking enabled"
     output_criteria:

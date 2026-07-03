@@ -619,13 +619,13 @@ deno run --allow-all tests/scenario_framework/runner/main.ts \
 
 The framework's internal logic is tested via standard Deno tests in `tests/`:
 
-| Test file                                          | What it covers                   |
-| -------------------------------------------------- | -------------------------------- |
-| `tests/unit/`                                      | Unit tests for runner components |
-| `tests/integration/`                               | Integration tests for runner     |
-| `tests/plan_amendment_scenario_test.ts`            | Plan amendment scenarios         |
-| `tests/portal_knowledge_phase105_scenario_test.ts` | Portal knowledge validation      |
-| `tests/triggers_basic_scenario_test.ts`            | Trigger scenario validation      |
+| Test file                                            | What it covers                         |
+| ---------------------------------------------------- | -------------------------------------- |
+| `tests/unit/`                                        | Unit tests for runner components       |
+| `tests/integration/`                                 | Integration tests for runner           |
+| `tests/plan_amendment_scenario_test.ts`              | Plan amendment scenarios               |
+| `tests/portal_knowledge_strategies_scenario_test.ts` | Portal knowledge strategies validation |
+| `tests/triggers_basic_scenario_test.ts`              | Trigger scenario validation            |
 
 Run them with:
 

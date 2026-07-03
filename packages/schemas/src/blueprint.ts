@@ -76,10 +76,33 @@ export const BlueprintFrontmatterSchema = z.object({
   /** Human-readable agent name */
   name: z.string().min(1).max(100),
 
-  /** Model in provider:model format */
-  model: z.string()
-    .min(1)
-    .regex(/^[a-z]+:[a-z0-9-.:/]+$/, "model must be in provider:model format"),
+  /**
+   * Model in provider:model format.
+   * Optional — use model_size + characteristics for routing-based model resolution.
+   * Empty string or absent means "resolve via ModelResolver".
+   */
+  model: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.string()
+      .min(1)
+      .regex(/^[a-z]+:[a-z0-9-.:/]+$/, "model must be in provider:model format")
+      .optional(),
+  ),
+
+  /** Size tier mapped onto task complexity for provider selection (Phase 132). */
+  model_size: z.enum(["S", "M", "L", "XL"]).optional(),
+
+  /** Soft ranking hints: cheapest, fastest (Phase 132). */
+  characteristics: z.array(z.string()).optional(),
+
+  /** Extended-thinking hint (Phase 132). */
+  thinking: z.boolean().optional(),
+
+  /** Reasoning-effort hint (Phase 132). */
+  effort: z.string().optional(),
+
+  /** Preferred provider hint (Phase 131). */
+  preferred_provider: z.string().optional(),
 
   /** Agent capabilities */
   capabilities: z.array(z.string()).optional().default([]),

@@ -25,7 +25,7 @@ import { initActivityTableSchema } from "@exaix/testing";
 import { writeDaemonConfig as writeConfig } from "./helpers/daemon_config.ts";
 
 function writeDaemonConfig(configPath: string, root: string): void {
-  writeConfig(configPath, root);
+  writeConfig(configPath, root, "");
 }
 
 /** Boot the real daemon, wait for it to settle, then stop it. Returns once stopped. */

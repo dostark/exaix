@@ -1,6 +1,7 @@
 [submodule "exaix-dev-docs"]
 	path = exaix-dev-docs
 	url = https://github.com/dostark/exaix-dev-docs.git
+	branch = feat/phase133-docs-reconciliation-docs
 [submodule "exaix-enterprise"]
 	path = exaix-enterprise
 	url = git@github.com:dostark/exaix-enterprise.git
