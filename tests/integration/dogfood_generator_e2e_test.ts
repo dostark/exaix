@@ -35,7 +35,7 @@ Deno.test("[dogfood-e2e] dogfood-developer identity loads through BlueprintLoade
   assertExists(blueprint, "dogfood-developer must load");
   assertEquals(blueprint.identityId, "dogfood-developer");
   const skills = blueprint.frontmatter.default_skills ?? [];
-  assertEquals(skills.length, 5, "must have 5 rigor skills");
+  assertEquals(skills.length, 8, "must have 8 rigor skills");
   assertEquals(skills.includes("tdd-methodology"), true);
 });
 

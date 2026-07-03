@@ -1,11 +1,11 @@
 /**
- * @module PortalKnowledgePhase105ScenarioTest
- * @path tests/scenario_framework/tests/portal_knowledge_phase105_scenario_test.ts
- * @description Integration test for the Phase 105 Portal Knowledge scenario —
+ * @module PortalKnowledgeStrategiesScenarioTest
+ * @path tests/scenario_framework/tests/portal_knowledge_strategies_scenario_test.ts
+ * @description Integration test for the Portal Knowledge Strategies scenario —
  * validates all 11 knowledge collection strategies produce correct output for
  * a portal mounted to the Exaix repo itself.
  * @architectural-layer Test
- * @related-files [tests/scenario_framework/scenarios/portal_knowledge/portal-knowledge-phase105.yaml]
+ * @related-files [tests/scenario_framework/scenarios/portal_knowledge/portal-knowledge-strategies.yaml]
  */
 
 import { assert, assertEquals } from "@std/assert";
@@ -15,14 +15,14 @@ import { withRepoRoot } from "@exaix/testing";
 import { bootstrapWorkspace, logOutput, skipInCI, stopDaemon } from "./helpers/scenario_test_utils.ts";
 
 Deno.test({
-  name: "Scenario: Portal Knowledge Phase 105 — all 11 strategies",
+  name: "Scenario: Portal Knowledge Strategies — all 11 strategies",
   ignore: skipInCI,
   sanitizeOps: false,
   sanitizeResources: false,
   async fn(_t) {
     await withRepoRoot(async () => {
       const runnerPath = join(Deno.cwd(), "tests/scenario_framework/runner/main.ts");
-      const tempRoot = await Deno.makeTempDir({ prefix: "exaix-scenario-ph105-" });
+      const tempRoot = await Deno.makeTempDir({ prefix: "exaix-scenario-strategies-" });
       const workspacePath = tempRoot;
 
       await stopDaemon();
@@ -30,7 +30,7 @@ Deno.test({
 
       const outputDir = join(
         Deno.cwd(),
-        "tests/scenario_framework/output/portal-knowledge-phase105",
+        "tests/scenario_framework/output/portal-knowledge-strategies",
       );
       await ensureDir(outputDir);
 
@@ -40,7 +40,7 @@ Deno.test({
           "-A",
           runnerPath,
           "--scenario",
-          "portal-knowledge-phase105",
+          "portal-knowledge-strategies",
           "--output",
           outputDir,
           "--workspace",
@@ -65,7 +65,7 @@ Deno.test({
 
       assertEquals(code, 0, `Scenario should pass successfully. Output: ${output.substring(0, 500)}`);
       assert(
-        output.includes("portal-knowledge-phase105") ||
+        output.includes("portal-knowledge-strategies") ||
           output.includes("PASSED") ||
           output.includes("success"),
         "Output should contain scenario name or success indicator",
