@@ -1,20 +1,25 @@
 ---
+name: self-improvement
 agent: general
 scope: dev
-title: Self-improvement loop for agent instructions
+title: "Self-Improvement Loop (#self-improvement)"
+description: "Detect instruction gaps during work and patch .copilot/ docs safely with minimal, test-backed updates"
 short_summary: "How to detect instruction gaps during work and patch .copilot/ docs safely with minimal, test-backed updates."
-version: "0.1"
+version: "1.0.0"
 topics: ["self-improvement", "instruction-adequacy", "agents", "maintenance", "rag"]
 ---
 
-## Self-improvement loop for `.copilot/` instructions
-
+```text
 Key points
 
 - Before non-trivial work, run an **Instruction Adequacy Check**: do we have enough Exaix-specific guidance to act and verify?
 - If guidance is missing, do a **Doc Patch Loop**: add the smallest, task-scoped update to `.copilot/`, then rebuild/validate, then continue the primary task.
-- Keep updates grounded: add checklists, examples, and commands; avoid speculative “nice-to-have” prose.
+- Keep updates grounded: add checklists, examples, and commands; avoid speculative "nice-to-have" prose.
 - Treat doc changes like code changes: minimal diff, clear success criteria, and a regression test when appropriate.
+
+Canonical prompt (short):
+"Before implementing changes, run an Instruction Adequacy Check against .copilot/. If instructions are insufficient, patch .copilot/ with the smallest update needed (doc/template/cross-reference), rebuild/validate artifacts, then proceed with the primary task using the improved instructions."
+```
 
 ## Instruction adequacy check
 
@@ -26,9 +31,9 @@ Use this at the start of a session or before a multi-step change.
 2. **Retrieve relevant instructions**
    - Start with `.copilot/cross-reference.md` to find the primary docs.
    - Read the provider guide for the active model:
-     - Claude: `.copilot/providers/claude.md`
-     - OpenAI: `.copilot/providers/openai.md`
-     - Google: `.copilot/providers/google.md`
+     - Claude: `.copilot/docs/claude.md`
+     - OpenAI: `.copilot/docs/openai.md`
+     - Google: `.copilot/docs/google.md`
    - Inject additional docs via `scripts/inject_agent_context.ts` when needed.
 
 3. **Adequacy verdict**
@@ -42,9 +47,9 @@ Use this at the start of a session or before a multi-step change.
 
 1. **List the gaps** (actionable, not vague)
    - Examples:
-     - “No guidance on which test helper to use for this subsystem.”
-     - “No canonical command for validating manifest/chunks after .copilot/ edits.”
-     - “No example of the required output format for this provider in this scenario.”
+     - "No guidance on which test helper to use for this subsystem."
+     - "No canonical command for validating manifest/chunks after .copilot/ edits."
+     - "No example of the required output format for this provider in this scenario."
 
 2. **Choose the smallest fix**
    - Add a section to an existing doc when the topic clearly belongs there.
@@ -72,36 +77,57 @@ Use this at the start of a session or before a multi-step change.
 ## Gap taxonomy (what to look for)
 
 - **Missing examples**: no concrete Exaix-specific snippet for the task.
-- **Missing commands**: no “what to run” for verification/build/validation.
+- **Missing commands**: no "what to run" for verification/build/validation.
 - **Missing invariants**: unclear what behavior must not change.
 - **Missing cross-links**: docs exist but are hard to discover.
-- **Missing provider mapping**: advice exists but doesn’t translate to Claude/OpenAI/Gemini workflow.
+- **Missing provider mapping**: advice exists but doesn't translate to Claude/OpenAI/Gemini workflow.
 - **Missing tests**: doc changes not guarded; regressions likely.
 
-Do / Don’t
+Do / Don't
 
 - ✅ Do keep doc updates minimal and scoped to the current task.
 - ✅ Do ask 1–3 clarifying questions if the requirement is ambiguous before changing docs.
 - ✅ Do rebuild `.copilot/manifest.json` and chunks after agent doc edits.
 - ✅ Do add a regression test when a missing instruction caused a real failure.
-- ❌ Don’t broaden scope into “general best practices” unrelated to Exaix.
-- ❌ Don’t update many docs at once without a clear gap list.
+- ❌ Don't broaden scope into "general best practices" unrelated to Exaix.
+- ❌ Don't update many docs at once without a clear gap list.
 
-Canonical prompt (short)
-"Before implementing changes, run an Instruction Adequacy Check against .copilot/. If instructions are insufficient, patch .copilot/ with the smallest update needed (doc/template/cross-reference), rebuild/validate artifacts, then proceed with the primary task using the improved instructions."
+## Examples
 
-Examples
-
-- Example: Missing test helper guidance
-  - Task: “Add regression tests for a CLI config edge case.”
+- **Example: Missing test helper guidance**
+  - Task: "Add regression tests for a CLI config edge case."
   - Gap: no mention of the correct test context helper.
   - Patch: add a small section to `.copilot/guidelines/testing.md` pointing to `createCliTestContext()` usage for CLI tests; add one focused test under `tests/agents/` to ensure the section exists.
 
-- Example: Missing provider-specific output contract
-  - Task: “Perform a multi-file refactor with OpenAI.”
-  - Gap: provider doc doesn’t enforce diff-first structure.
+- **Example: Missing provider-specific output contract**
+  - Task: "Perform a multi-file refactor with OpenAI."
+  - Gap: provider doc doesn't enforce diff-first structure.
   - Patch: add/update a skill under `.copilot/skills/` requiring Files → Plan → Diffs → Verification, and regenerate the prompt wrapper with `scripts/generate_prompt.ts --skill <name>`.
 
-## Related Documents
-
-- [Review-Research-Improvement Pattern](./review-research-improvement.md) - For architectural reviews and improvement planning (larger scope than instruction gaps)
+---
+exaix:
+  skill_id: self-improvement
+  triggers:
+    keywords: [self-improvement, instruction-adequacy, doc-patch, gap-detection]
+    task_types: [docs, maintenance]
+    tags: [self-improvement, documentation]
+  constraints:
+    - "Run Instruction Adequacy Check before non-trivial work"
+    - "Prefer minimal diffs over full rewrites"
+    - "Rebuild manifest and chunks after agent doc edits"
+    - "Add regression tests when a missing instruction caused real friction"
+  output_requirements:
+    - "Gap list with actionable fixes"
+    - "Minimal doc patch applied"
+    - "Rebuilt manifest/chunks validated"
+  quality_criteria:
+    - name: minimality
+      description: Doc changes are scoped to the current task, not speculative
+      weight: 40
+    - name: testability
+      description: Regression tests guard against repeated gaps
+      weight: 30
+    - name: completeness
+      description: Patch covers all identified gaps
+      weight: 30
+---

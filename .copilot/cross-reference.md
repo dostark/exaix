@@ -24,11 +24,9 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 | Agent Thought Section Standardization | [guidelines/agent-thought-standardization.md](guidelines/agent-thought-standardization.md) | |
 | Exaix Test Development Guidelines | [guidelines/testing.md](guidelines/testing.md) | |
 | Specification-Driven Development in Exaix | [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md) | |
-| Self-improvement loop for agent instructions | [guidelines/self-improvement.md](guidelines/self-improvement.md) | |
 | Agent Content Schema Reference | [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md) | |
 | Exaix Documentation Development Guidelines | [guidelines/documentation.md](guidelines/documentation.md) | |
 | Exaix Source Development Guidelines | [guidelines/exaix-development.md](guidelines/exaix-development.md) | |
-| jscpd Code Duplication Detection Guide | [guidelines/jscpd-guide.md](guidelines/jscpd-guide.md) | |
 | Documentation Skill (#doc) | [skills/doc/SKILL.md](skills/doc/SKILL.md) | |
 | Coverage Skill (#coverage) | [skills/coverage/SKILL.md](skills/coverage/SKILL.md) | |
 | Edition Development Skill (#edition-development) | [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md) | |
@@ -47,6 +45,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 | Security Skill (#security) | [skills/security/SKILL.md](skills/security/SKILL.md) | |
 | Codebase Exploration (#explore) | [skills/explore/SKILL.md](skills/explore/SKILL.md) | |
 | Comparative Analysis Skill (#comparative-analysis) | [skills/comparative-analysis/SKILL.md](skills/comparative-analysis/SKILL.md) | |
+| Self-Improvement Loop (#self-improvement) | [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md) | |
 | Upgrade Skill (#upgrade) | [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md) | |
 | TDD Workflow Skill (#tdd-workflow) | [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md) | |
 | Remediate Code Gaps Skill (#remediate-code-gaps) | [skills/remediate-code-gaps/SKILL.md](skills/remediate-code-gaps/SKILL.md) | |
@@ -65,7 +64,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 ## Search by Topic
 
 - **`agent-tools`** → [../TOOLS.md](../TOOLS.md)
-- **`agents`** → [docs/README.md](docs/README.md), [guidelines/agent-thought-standardization.md](guidelines/agent-thought-standardization.md), [guidelines/self-improvement.md](guidelines/self-improvement.md), [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md)
+- **`agents`** → [docs/README.md](docs/README.md), [guidelines/agent-thought-standardization.md](guidelines/agent-thought-standardization.md), [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md), [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)
 - **`architecture`** → [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md), [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md), [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md), [skills/review-code/SKILL.md](skills/review-code/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/explore/SKILL.md](skills/explore/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`architecture-review`** → [skills/review-research/SKILL.md](skills/review-research/SKILL.md)
 - **`audit`** → [skills/security/SKILL.md](skills/security/SKILL.md)
@@ -115,15 +114,14 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`improvement-planning`** → [skills/review-research/SKILL.md](skills/review-research/SKILL.md)
 - **`infrastructure`** → [skills/infra/SKILL.md](skills/infra/SKILL.md)
 - **`injection`** → [skills/security/SKILL.md](skills/security/SKILL.md)
-- **`instruction-adequacy`** → [guidelines/self-improvement.md](guidelines/self-improvement.md)
+- **`instruction-adequacy`** → [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)
 - **`integration`** → [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`integrations`** → [skills/plan/SKILL.md](skills/plan/SKILL.md)
-- **`jscpd`** → [guidelines/jscpd-guide.md](guidelines/jscpd-guide.md)
 - **`json`** → [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md)
 - **`leak-guard`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`linting`** → [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)
 - **`magic-values`** → [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md)
-- **`maintenance`** → [guidelines/self-improvement.md](guidelines/self-improvement.md), [skills/refactor/SKILL.md](skills/refactor/SKILL.md), [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md)
+- **`maintenance`** → [skills/refactor/SKILL.md](skills/refactor/SKILL.md), [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md), [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md)
 - **`mcp`** → [skills/security/SKILL.md](skills/security/SKILL.md), [../TOOLS.md](../TOOLS.md)
 - **`methodology`** → [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md)
 - **`migration`** → [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md)
@@ -142,14 +140,14 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`prompts`** → [prompts/README.md](prompts/README.md)
 - **`publishing`** → [guidelines/documentation.md](guidelines/documentation.md)
 - **`qa`** → [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)
-- **`quality`** → [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md), [guidelines/jscpd-guide.md](guidelines/jscpd-guide.md), [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
+- **`quality`** → [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md), [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`quality-assurance`** → [skills/review-code/SKILL.md](skills/review-code/SKILL.md)
-- **`rag`** → [guidelines/self-improvement.md](guidelines/self-improvement.md)
+- **`rag`** → [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)
 - **`reachability`** → [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`reasoning`** → [guidelines/agent-thought-standardization.md](guidelines/agent-thought-standardization.md)
 - **`red-green-refactor`** → [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md)
 - **`refactor`** → [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md)
-- **`refactoring`** → [guidelines/jscpd-guide.md](guidelines/jscpd-guide.md), [skills/refactor/SKILL.md](skills/refactor/SKILL.md), [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md)
+- **`refactoring`** → [skills/refactor/SKILL.md](skills/refactor/SKILL.md), [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md)
 - **`reference`** → [docs/README.md](docs/README.md)
 - **`regression`** → [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md), [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md)
 - **`remediation`** → [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md), [skills/remediate-code-gaps/SKILL.md](skills/remediate-code-gaps/SKILL.md)
@@ -165,7 +163,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`seam`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`secrets`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`security`** → [skills/review-code/SKILL.md](skills/review-code/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/security/SKILL.md](skills/security/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
-- **`self-improvement`** → [guidelines/self-improvement.md](guidelines/self-improvement.md)
+- **`self-improvement`** → [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)
 - **`setup`** → [skills/infra/SKILL.md](skills/infra/SKILL.md)
 - **`skills`** → [prompts/README.md](prompts/README.md)
 - **`solo`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
@@ -184,7 +182,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`thought-structure`** → [guidelines/agent-thought-standardization.md](guidelines/agent-thought-standardization.md)
 - **`tool-selection`** → [../TOOLS.md](../TOOLS.md)
 - **`tool-use`** → [../TOOLS.md](../TOOLS.md)
-- **`tools`** → [guidelines/jscpd-guide.md](guidelines/jscpd-guide.md), [../TOOLS.md](../TOOLS.md)
+- **`tools`** → [../TOOLS.md](../TOOLS.md)
 - **`traceability`** → [skills/plan/SKILL.md](skills/plan/SKILL.md)
 - **`typescript`** → [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md)
 - **`upgrade`** → [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md)
@@ -208,7 +206,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 
 - Testing guidelines: [guidelines/testing.md](guidelines/testing.md)
 - Development guidelines: [guidelines/exaix-development.md](guidelines/exaix-development.md)
-- Self-improvement process: [guidelines/self-improvement.md](guidelines/self-improvement.md)
+- Self-improvement process: [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)
 - Tool confirmation / human-in-loop: [exaix-dev-docs/planning/phase-79-tool-confirmation-interceptor.md](../exaix-dev-docs/planning/phase-79-tool-confirmation-interceptor.md), `packages/tool-runtime/src/cli_confirmation_interceptor.ts`, `packages/tool-runtime/src/notification_queue_confirmation_interceptor.ts`
 - Concurrent guardrail runner (Phase 107): [exaix-dev-docs/planning/phase-107-concurrent-guardrail-runner.md](../exaix-dev-docs/planning/phase-107-concurrent-guardrail-runner.md), `packages-team/guardrail/src/guardrail_runner.ts`, `packages/execution/src/guardrail_runner.ts`
 - Multi-agent voting consensus (Phase 113): [exaix-dev-docs/planning/phase-113-agent-voting-consensus.md](../exaix-dev-docs/planning/phase-113-agent-voting-consensus.md), `packages-team/voting/src/voting_consensus_service.ts`

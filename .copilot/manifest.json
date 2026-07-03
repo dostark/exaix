@@ -284,31 +284,6 @@
       ]
     },
     {
-      "path": ".copilot/guidelines/self-improvement.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Self-improvement loop for agent instructions",
-      "short_summary": "How to detect instruction gaps during work and patch .copilot/ docs safely with minimal, test-backed updates.",
-      "version": "0.1",
-      "topics": [
-        "self-improvement",
-        "instruction-adequacy",
-        "agents",
-        "maintenance",
-        "rag"
-      ],
-      "chunks": [
-        ".copilot/chunks/self-improvement.md.chunk0.txt",
-        ".copilot/chunks/self-improvement.md.chunk1.txt",
-        ".copilot/chunks/self-improvement.md.chunk2.txt",
-        ".copilot/chunks/self-improvement.md.chunk3.txt",
-        ".copilot/chunks/self-improvement.md.chunk4.txt",
-        ".copilot/chunks/self-improvement.md.chunk5.txt",
-        ".copilot/chunks/self-improvement.md.chunk6.txt",
-        ".copilot/chunks/self-improvement.md.chunk7.txt"
-      ]
-    },
-    {
       "path": ".copilot/guidelines/agent-content-schema.md",
       "agent": "general",
       "scope": "dev",
@@ -378,30 +353,6 @@
         ".copilot/chunks/exaix-development.md.chunk5.txt",
         ".copilot/chunks/exaix-development.md.chunk6.txt",
         ".copilot/chunks/exaix-development.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/guidelines/jscpd-guide.md",
-      "agent": "copilot",
-      "scope": "dev",
-      "title": "jscpd Code Duplication Detection Guide",
-      "short_summary": "Using jscpd to detect and track code duplication in Exaix codebase",
-      "version": "0.1",
-      "topics": [
-        "refactoring",
-        "quality",
-        "tools",
-        "jscpd"
-      ],
-      "chunks": [
-        ".copilot/chunks/jscpd-guide.md.chunk0.txt",
-        ".copilot/chunks/jscpd-guide.md.chunk1.txt",
-        ".copilot/chunks/jscpd-guide.md.chunk2.txt",
-        ".copilot/chunks/jscpd-guide.md.chunk3.txt",
-        ".copilot/chunks/jscpd-guide.md.chunk4.txt",
-        ".copilot/chunks/jscpd-guide.md.chunk5.txt",
-        ".copilot/chunks/jscpd-guide.md.chunk6.txt",
-        ".copilot/chunks/jscpd-guide.md.chunk7.txt"
       ]
     },
     {
@@ -877,6 +828,31 @@
         "strategy"
       ],
       "qwen_skill": "comparative-analysis",
+      "chunks": [
+        ".copilot/chunks/SKILL.md.chunk0.txt",
+        ".copilot/chunks/SKILL.md.chunk1.txt",
+        ".copilot/chunks/SKILL.md.chunk2.txt",
+        ".copilot/chunks/SKILL.md.chunk3.txt",
+        ".copilot/chunks/SKILL.md.chunk4.txt",
+        ".copilot/chunks/SKILL.md.chunk5.txt",
+        ".copilot/chunks/SKILL.md.chunk6.txt",
+        ".copilot/chunks/SKILL.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/skills/self-improvement/SKILL.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Self-Improvement Loop (#self-improvement)",
+      "short_summary": "How to detect instruction gaps during work and patch .copilot/ docs safely with minimal, test-backed updates.",
+      "version": "1.0.0",
+      "topics": [
+        "self-improvement",
+        "instruction-adequacy",
+        "agents",
+        "maintenance",
+        "rag"
+      ],
       "chunks": [
         ".copilot/chunks/SKILL.md.chunk0.txt",
         ".copilot/chunks/SKILL.md.chunk1.txt",
