@@ -33,6 +33,7 @@ topics: ["reference", "docs", "catalog"]
 | Refactor-Check-Magic Skill (#refactor-check-magic) | [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md) |
 | Commit Skill (#commit) | [skills/commit/SKILL.md](skills/commit/SKILL.md) |
 | Security Skill (#security) | [skills/security/SKILL.md](skills/security/SKILL.md) |
+| Dogfood Development Skill (#dogfood-development) | [skills/dogfood-development/SKILL.md](skills/dogfood-development/SKILL.md) |
 | Test Development Skill (#test-development) | [skills/test-development/SKILL.md](skills/test-development/SKILL.md) |
 | Codebase Exploration (#explore) | [skills/explore/SKILL.md](skills/explore/SKILL.md) |
 | Comparative Analysis Skill (#comparative-analysis) | [skills/comparative-analysis/SKILL.md](skills/comparative-analysis/SKILL.md) |
@@ -82,6 +83,7 @@ topics: ["reference", "docs", "catalog"]
 - **`copilot`** → [prompts/README.md](prompts/README.md)
 - **`corpus`** → [docs/README.md](docs/README.md)
 - **`coverage`** → [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/test-development/SKILL.md](skills/test-development/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md)
+- **`delegation`** → [skills/dogfood-development/SKILL.md](skills/dogfood-development/SKILL.md)
 - **`deno-permissions`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`dependencies`** → [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md)
 - **`deployment`** → [skills/infra/SKILL.md](skills/infra/SKILL.md)
@@ -89,7 +91,7 @@ topics: ["reference", "docs", "catalog"]
 - **`discovery`** → [skills/explore/SKILL.md](skills/explore/SKILL.md)
 - **`docs`** → [docs/README.md](docs/README.md), [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md), [DOCS.md](DOCS.md)
 - **`documentation`** → [skills/doc/SKILL.md](skills/doc/SKILL.md), [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md), [skills/commit/SKILL.md](skills/commit/SKILL.md)
-- **`dogfooding`** → [skills/plan/SKILL.md](skills/plan/SKILL.md)
+- **`dogfooding`** → [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/dogfood-development/SKILL.md](skills/dogfood-development/SKILL.md)
 - **`edition`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`enterprise`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`enums`** → [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md)
@@ -140,7 +142,7 @@ topics: ["reference", "docs", "catalog"]
 - **`root-cause`** → [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md)
 - **`routing`** → [prompts/README.md](prompts/README.md)
 - **`run-command`** → [skills/security/SKILL.md](skills/security/SKILL.md)
-- **`sandbox`** → [skills/security/SKILL.md](skills/security/SKILL.md)
+- **`sandbox`** → [skills/security/SKILL.md](skills/security/SKILL.md), [skills/dogfood-development/SKILL.md](skills/dogfood-development/SKILL.md)
 - **`seam`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`secrets`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`security`** → [skills/review-code/SKILL.md](skills/review-code/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/security/SKILL.md](skills/security/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
@@ -168,7 +170,7 @@ topics: ["reference", "docs", "catalog"]
 - **`validation`** → [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)
 - **`version`** → [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md)
 - **`webhook`** → [skills/security/SKILL.md](skills/security/SKILL.md)
-- **`workflow`** → [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md)
+- **`workflow`** → [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md), [skills/dogfood-development/SKILL.md](skills/dogfood-development/SKILL.md)
 - **`workspace`** → [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md)
 - **`wrappers`** → [prompts/README.md](prompts/README.md)
 - **`writing`** → [skills/doc/SKILL.md](skills/doc/SKILL.md)

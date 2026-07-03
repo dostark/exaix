@@ -449,6 +449,21 @@
       "qwen_skill": "security"
     },
     {
+      "path": ".copilot/skills/dogfood-development/SKILL.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Dogfood Development Skill (#dogfood-development)",
+      "short_summary": "Dogfood development cycle: bootstrap sandbox, write requests, review plans, execute, close loop.",
+      "version": "1.0.0",
+      "topics": [
+        "dogfooding",
+        "workflow",
+        "sandbox",
+        "delegation"
+      ],
+      "qwen_skill": "dogfood-development"
+    },
+    {
       "path": ".copilot/skills/test-development/SKILL.md",
       "agent": "general",
       "scope": "test",

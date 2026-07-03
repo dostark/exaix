@@ -1,6 +1,7 @@
 {
   "skills": [
     ".copilot/skills/clean-codebase",
+    ".copilot/skills/dogfood-development",
     ".copilot/skills/commit",
     ".copilot/skills/comparative-analysis",
     ".copilot/skills/coverage",
