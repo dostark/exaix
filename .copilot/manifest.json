@@ -1,6 +1,30 @@
 {
   "docs": [
     {
+      "path": ".copilot/docs/agent-thought-standardization.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Agent Thought Section Standardization",
+      "short_summary": "Standardized structure for agent <thought> sections to ensure consistent reasoning patterns across all blueprints.",
+      "version": "0.1",
+      "topics": [
+        "agents",
+        "reasoning",
+        "standardization",
+        "thought-structure"
+      ],
+      "chunks": [
+        ".copilot/chunks/agent-thought-standardization.md.chunk0.txt",
+        ".copilot/chunks/agent-thought-standardization.md.chunk1.txt",
+        ".copilot/chunks/agent-thought-standardization.md.chunk2.txt",
+        ".copilot/chunks/agent-thought-standardization.md.chunk3.txt",
+        ".copilot/chunks/agent-thought-standardization.md.chunk4.txt",
+        ".copilot/chunks/agent-thought-standardization.md.chunk5.txt",
+        ".copilot/chunks/agent-thought-standardization.md.chunk6.txt",
+        ".copilot/chunks/agent-thought-standardization.md.chunk7.txt"
+      ]
+    },
+    {
       "path": ".copilot/docs/README.md",
       "agent": "general",
       "scope": "dev",
@@ -209,30 +233,6 @@
         ".copilot/chunks/README.md.chunk5.txt",
         ".copilot/chunks/README.md.chunk6.txt",
         ".copilot/chunks/README.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/guidelines/agent-thought-standardization.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Agent Thought Section Standardization",
-      "short_summary": "Standardized structure for agent <thought> sections to ensure consistent reasoning patterns across all blueprints.",
-      "version": "0.1",
-      "topics": [
-        "agents",
-        "reasoning",
-        "standardization",
-        "thought-structure"
-      ],
-      "chunks": [
-        ".copilot/chunks/agent-thought-standardization.md.chunk0.txt",
-        ".copilot/chunks/agent-thought-standardization.md.chunk1.txt",
-        ".copilot/chunks/agent-thought-standardization.md.chunk2.txt",
-        ".copilot/chunks/agent-thought-standardization.md.chunk3.txt",
-        ".copilot/chunks/agent-thought-standardization.md.chunk4.txt",
-        ".copilot/chunks/agent-thought-standardization.md.chunk5.txt",
-        ".copilot/chunks/agent-thought-standardization.md.chunk6.txt",
-        ".copilot/chunks/agent-thought-standardization.md.chunk7.txt"
       ]
     },
     {

@@ -18,10 +18,10 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 
 | Task Type | Primary Doc | Secondary Docs |
 | --- | --- | --- |
+| Agent Thought Section Standardization | [docs/agent-thought-standardization.md](docs/agent-thought-standardization.md) | |
 | Agent Reference Corpus | [docs/README.md](docs/README.md) | |
 | .copilot/prompts/ — Chat Routing Wrappers | [prompts/README.md](prompts/README.md) | |
 | .copilot/ — AI Agent Knowledge Base | [README.md](README.md) | |
-| Agent Thought Section Standardization | [guidelines/agent-thought-standardization.md](guidelines/agent-thought-standardization.md) | |
 | Exaix Test Development Guidelines | [guidelines/testing.md](guidelines/testing.md) | |
 | Specification-Driven Development in Exaix | [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md) | |
 | Agent Content Schema Reference | [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md) | |
@@ -64,7 +64,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 ## Search by Topic
 
 - **`agent-tools`** → [../TOOLS.md](../TOOLS.md)
-- **`agents`** → [docs/README.md](docs/README.md), [guidelines/agent-thought-standardization.md](guidelines/agent-thought-standardization.md), [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md), [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)
+- **`agents`** → [docs/agent-thought-standardization.md](docs/agent-thought-standardization.md), [docs/README.md](docs/README.md), [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md), [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)
 - **`architecture`** → [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md), [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md), [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md), [skills/review-code/SKILL.md](skills/review-code/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/explore/SKILL.md](skills/explore/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`architecture-review`** → [skills/review-research/SKILL.md](skills/review-research/SKILL.md)
 - **`audit`** → [skills/security/SKILL.md](skills/security/SKILL.md)
@@ -144,7 +144,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`quality-assurance`** → [skills/review-code/SKILL.md](skills/review-code/SKILL.md)
 - **`rag`** → [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)
 - **`reachability`** → [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
-- **`reasoning`** → [guidelines/agent-thought-standardization.md](guidelines/agent-thought-standardization.md)
+- **`reasoning`** → [docs/agent-thought-standardization.md](docs/agent-thought-standardization.md)
 - **`red-green-refactor`** → [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md)
 - **`refactor`** → [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md)
 - **`refactoring`** → [skills/refactor/SKILL.md](skills/refactor/SKILL.md), [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md)
@@ -168,7 +168,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`skills`** → [prompts/README.md](prompts/README.md)
 - **`solo`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
 - **`source`** → [guidelines/exaix-development.md](guidelines/exaix-development.md)
-- **`standardization`** → [guidelines/agent-thought-standardization.md](guidelines/agent-thought-standardization.md)
+- **`standardization`** → [docs/agent-thought-standardization.md](docs/agent-thought-standardization.md)
 - **`steps`** → [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md)
 - **`strategy`** → [skills/comparative-analysis/SKILL.md](skills/comparative-analysis/SKILL.md)
 - **`structured-logging`** → [skills/commit/SKILL.md](skills/commit/SKILL.md)
@@ -179,7 +179,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`terminology`** → [../GLOSSARY.md](../GLOSSARY.md)
 - **`testing`** → [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/review-code/SKILL.md](skills/review-code/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md)
 - **`tests`** → [guidelines/testing.md](guidelines/testing.md)
-- **`thought-structure`** → [guidelines/agent-thought-standardization.md](guidelines/agent-thought-standardization.md)
+- **`thought-structure`** → [docs/agent-thought-standardization.md](docs/agent-thought-standardization.md)
 - **`tool-selection`** → [../TOOLS.md](../TOOLS.md)
 - **`tool-use`** → [../TOOLS.md](../TOOLS.md)
 - **`tools`** → [../TOOLS.md](../TOOLS.md)

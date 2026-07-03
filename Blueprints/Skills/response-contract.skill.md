@@ -50,8 +50,10 @@ text outside these tags is ignored.
 2. `<content>` — Your deliverable. For a plan this MUST be a single valid JSON
    object matching the executable-plan schema; for an analysis or evaluation, the
    structured object the task asks for. The `<content>` block is extracted and
-   parsed by the runtime, so it must be valid, self-contained, and free of
-   commentary.
+parsed by the runtime, so it must be valid, self-contained, and free of
+commentary.
+
+> **See also:** [Agent Thought Standardization](/.copilot/docs/agent-thought-standardization.md) — standardized reasoning structure for the `<thought>` block.
 
 ## Executable-plan JSON schema
 
