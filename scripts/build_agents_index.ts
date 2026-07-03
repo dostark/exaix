@@ -2,7 +2,7 @@
 /**
  * @module BuildAgentsIndex
  * @path scripts/build_agents_index.ts
- * @description Build manifest.json and cross-reference.md for developer-agent tooling.
+ * @description Build manifest.json and Qwen wrappers for developer-agent tooling.
  *
  * Usage:
  *   deno run -A scripts/build_agents_index.ts
@@ -84,66 +84,8 @@ export async function generateManifestObject(includeSubmodule = false) {
   return { docs };
 }
 
-export async function updateCrossReference(docs: JSONObject[]) {
-  const crossRefPath = ".copilot/cross-reference.md";
-  const crossRefMd = await Deno.readTextFile(crossRefPath);
-
-  // Build task quick reference
-  let taskTable = "| Task Type | Primary Doc | Secondary Docs |\n| --- | --- | --- |\n";
-  for (const doc of docs) {
-    if (!doc.title || doc.path === ".copilot/cross-reference.md") continue;
-    const rawPath = String(doc.path);
-    const relPath = rawPath.startsWith(".copilot/")
-      ? rawPath.replace(".copilot/", "")
-      : rawPath.startsWith("exaix-dev-docs/")
-      ? `../${rawPath}`
-      : rawPath.startsWith("./")
-      ? `../${rawPath.slice(2)}`
-      : `../${rawPath}`;
-    const title = String(doc.title);
-    taskTable += `| ${title} | [${relPath}](${relPath}) | |\n`;
-  }
-
-  // Build topic search
-  const topicMap: Record<string, string[]> = {};
-  for (const doc of docs) {
-    if (!doc.topics || !Array.isArray(doc.topics) || doc.path === ".copilot/cross-reference.md") continue;
-    const rawPath = String(doc.path);
-    const relPath = rawPath.startsWith(".copilot/")
-      ? rawPath.replace(".copilot/", "")
-      : rawPath.startsWith("exaix-dev-docs/")
-      ? `../${rawPath}`
-      : rawPath.startsWith("./")
-      ? `../${rawPath.slice(2)}`
-      : `../${rawPath}`;
-    for (const topic of doc.topics) {
-      if (!topicMap[String(topic)]) topicMap[String(topic)] = [];
-      topicMap[String(topic)].push(`[${relPath}](${relPath})`);
-    }
-  }
-
-  let topicList = "";
-  for (const topic of Object.keys(topicMap).sort()) {
-    topicList += `- **\`${topic}\`** → ${topicMap[topic].join(", ")}\n`;
-  }
-
-  const updatedMd = crossRefMd
-    .replace(
-      /## Task → Agent Doc Quick Reference\n\n[\s\S]*?(?=\n## Search by Topic)/,
-      `## Task → Agent Doc Quick Reference\n\n${taskTable}`,
-    )
-    .replace(
-      /## Search by Topic\n\n[\s\S]*?(?=\n> See|\n## |$)/,
-      `## Search by Topic\n\n${topicList}`,
-    );
-
-  await Deno.writeTextFile(crossRefPath, updatedMd);
-  console.log(`Updated cross-reference.md`);
-}
-
 export async function generateQwenSkills(docs: JSONObject[]) {
   for (const doc of docs) {
-    // Only generate wrappers if qwen_skill frontmatter exists
     const qwenSkill = doc["qwen_skill"];
     if (qwenSkill) {
       const skillName = String(qwenSkill);
@@ -180,7 +122,6 @@ export async function buildIndex(includeSubmodule = false) {
   await Deno.writeTextFile(OUT_MANIFEST, JSON.stringify(manifest, null, 2));
   console.log(`Wrote manifest to ${OUT_MANIFEST}`);
 
-  await updateCrossReference(manifest.docs);
   await generateQwenSkills(manifest.docs);
 }
 

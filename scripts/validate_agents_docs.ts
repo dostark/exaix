@@ -50,7 +50,7 @@ async function validateFile(path: string): Promise<string[]> {
 
   // presence of a canonical prompt or examples
   const isTemplate = path.startsWith(".copilot/prompts/") || path.includes("README.md") ||
-    path.includes("manifest.json") || path.includes("chunks/") || path.includes("cross-reference.md");
+    path.includes("manifest.json");
 
   if (!isTemplate) {
     if (!content.includes("Canonical prompt") && !content.includes("Canonical Prompt")) {

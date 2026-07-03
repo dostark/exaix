@@ -110,7 +110,7 @@
     "measure:duplication": "deno run --allow-run --allow-read --allow-write scripts/measure_duplication.ts",
     "compile": "deno compile --allow-read --allow-write --allow-net --allow-env --allow-ffi --allow-import --allow-run=git,deno,npm,node,exoctl,ls,grep,echo,printf,pwd,whoami,id,date,uptime,which,type,command,hash,alias --output exaix apps/daemon/main.ts",
     "compile:unsafe": "deno compile --allow-all --output exaix apps/daemon/main.ts",
-    "docs-agent-validate": "deno fmt --check *.md && deno run -A scripts/validate_doc_links.ts && deno run -A scripts/validate_cross_reference.ts && grep -q 'copilot_knowledge_base: true' *.md && deno run -A scripts/validate_agents_docs.ts",
+    "docs-agent-validate": "deno fmt --check *.md && deno run -A scripts/validate_doc_links.ts && grep -q 'copilot_knowledge_base: true' *.md && deno run -A scripts/validate_agents_docs.ts",
     "docs-bench": "deno test -A --filter \"[hallucination-bench]\" tests/docs/",
     "workspace:check": "deno check --unstable ./packages/** ./packages-team/**",
     "workspace:test": "deno test --allow-all ./packages/** ./packages-team/**",

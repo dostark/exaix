@@ -5,7 +5,7 @@
  * @description Validates referential integrity of the .copilot/ agent corpus:
  *   - dangling-readme-link: .copilot/docs/README.md references a non-existent file
  *   - dangling-manifest-path: manifest.json entry points to a deleted file
- *   - dangling-crossref-link: cross-reference.md row points to a non-existent doc
+
  *   - dangling-docs-symlink: a symlink in .copilot/docs/ points to a missing target
  *
  * Usage:
@@ -18,7 +18,7 @@
 import { join, resolve } from "@std/path";
 
 export interface IIntegrityViolation {
-  kind: "dangling-readme-link" | "dangling-manifest-path" | "dangling-crossref-link" | "dangling-docs-symlink";
+  kind: "dangling-readme-link" | "dangling-manifest-path" | "dangling-docs-symlink";
   file: string;
   detail: string;
 }
@@ -48,7 +48,6 @@ export function checkAgentDocsIntegrity(copilotDir: string): IIntegrityResult {
   const docsDir = join(copilotDir, "docs");
   const readmePath = join(docsDir, "README.md");
   const manifestPath = join(copilotDir, "manifest.json");
-  const crossrefPath = join(copilotDir, "cross-reference.md");
 
   // --- (a) dangling-readme-link ---
   try {
@@ -96,29 +95,6 @@ export function checkAgentDocsIntegrity(copilotDir: string): IIntegrityResult {
       kind: "dangling-manifest-path",
       file: manifestPath,
       detail: "Cannot read or parse manifest.json",
-    });
-  }
-
-  // --- (c) dangling-crossref-link ---
-  try {
-    const crossrefContent = Deno.readTextFileSync(crossrefPath);
-    const links = extractMdLinks(crossrefContent);
-    for (const link of links) {
-      // Resolve relative to .copilot/ directory
-      const resolved = resolve(copilotDir, link);
-      if (!existsSync(resolved)) {
-        violations.push({
-          kind: "dangling-crossref-link",
-          file: crossrefPath,
-          detail: `cross-reference.md links to "${link}" (resolved: ${resolved}) but file does not exist`,
-        });
-      }
-    }
-  } catch {
-    violations.push({
-      kind: "dangling-crossref-link",
-      file: crossrefPath,
-      detail: "Cannot read or parse cross-reference.md",
     });
   }
 

@@ -25,8 +25,7 @@ Content is organized by **role**, not by provider.
 ├── docs/           # On-demand reference documents (agent-oriented; reachable as .agents/references/)
 ├── references/     # Symlink → docs/ (backward-compatible alias)
 ├── planning/       # Reserved — active phase docs live in exaix-dev-docs/planning/
-├── cross-reference.md  # Task → document quick reference (start here)
-└── manifest.json   # Auto-generated index of all agent docs
+├── manifest.json   # Auto-generated index of all agent docs
 ```
 
 ## Role Distinction
@@ -39,7 +38,7 @@ Content is organized by **role**, not by provider.
 
 ## Quick Navigation
 
-- **Find the right doc for a task**: [cross-reference.md](cross-reference.md)
+- **Find the right doc for a task**: [manifest.json](manifest.json)
 - **Skills**: [skills/](skills/) — commit, plan, review, fix-bug, clean-codebase, coverage, security, package-extraction, and more
 - **Prompts**: [prompts/](prompts/) — thin routing wrappers, one per skill (also at `.github/prompts/`)
 - **Reference docs**: [docs/](docs/) — exaix-development, testing, documentation, agent-content-schema, and more

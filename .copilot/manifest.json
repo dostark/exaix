@@ -666,21 +666,6 @@
       "qwen_skill": "pre-gap-analysis"
     },
     {
-      "path": ".copilot/cross-reference.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Cross Reference Guide",
-      "short_summary": "Mapping of common agent tasks to .copilot docs by role: skills, prompts, and docs.",
-      "version": "0.2",
-      "topics": [
-        "cross-reference",
-        "workflow",
-        "testing",
-        "agents",
-        "self-improvement"
-      ]
-    },
-    {
       "path": "ARCHITECTURE.md",
       "title": "ARCHITECTURE.md",
       "short_summary": "Exaix system architecture — component boundaries, dependency invariants, and design rationale",

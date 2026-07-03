@@ -4,11 +4,11 @@
  * @description Verifies agent documentation structural integrity.
  */
 
-import { assert, assertEquals, assertExists } from "@std/assert";
+import { assert } from "@std/assert";
 
 Deno.test("Claude enhancements: verify required files exist", async () => {
   const files = [
-    ".copilot/cross-reference.md",
+    ".copilot/manifest.json",
     ".copilot/README.md",
   ];
 
@@ -18,26 +18,13 @@ Deno.test("Claude enhancements: verify required files exist", async () => {
   }
 });
 
-Deno.test("Claude enhancements: verify cross-reference.md structure", async () => {
-  const crossRefMd = await Deno.readTextFile(".copilot/cross-reference.md");
-
-  assert(crossRefMd.includes("## Task → Agent Doc Quick Reference"), "Should have task mapping table");
-  assert(crossRefMd.includes("## Search by Topic"), "Should have topic search section");
-});
-
 Deno.test("Claude enhancements: verify manifest includes docs", async () => {
   const manifestText = await Deno.readTextFile(".copilot/manifest.json");
   const manifest = JSON.parse(manifestText);
 
   assert(manifest.docs, "Manifest should have 'docs' array");
   assert(Array.isArray(manifest.docs), "Manifest 'docs' should be an array");
-
-  const paths = manifest.docs.map((d: { path: string }) => d.path);
-  assert(paths.includes(".copilot/cross-reference.md"), "Manifest should include cross-reference.md");
-
-  const crossRefDoc = manifest.docs.find((d: { path: string }) => d.path === ".copilot/cross-reference.md");
-  assertExists(crossRefDoc, "cross-reference.md should be in manifest");
-  assertEquals(crossRefDoc.short_summary.length > 0, true, "cross-reference.md should have short_summary");
+  assert(manifest.docs.length > 0, "Manifest should have at least one doc entry");
 });
 
 Deno.test("Claude enhancements: verify no sensitive data in docs", async () => {

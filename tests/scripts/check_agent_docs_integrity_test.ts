@@ -1,9 +1,9 @@
 /**
  * @module CheckAgentDocsIntegrityTest
  * @path tests/scripts/check_agent_docs_integrity_test.ts
- * @description Tests for check:agent-docs-integrity gate — 6 cases covering
- *   dangling-readme-link, dangling-manifest-path, dangling-crossref-link,
- *   dangling-docs-symlink, consistent corpus, and live corpus.
+ * @description Tests for check:agent-docs-integrity gate — 5 cases covering
+ *   dangling-readme-link, dangling-manifest-path, dangling-docs-symlink,
+ *   consistent corpus, and live corpus.
  */
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { dirname, join } from "@std/path";
@@ -76,21 +76,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "check:agent-docs-integrity — (c) cross-reference.md row → non-existent doc → FAIL",
-  fn: async () => {
-    const copilotDir = createTempCorpus({
-      "cross-reference.md": `| Ghost | [docs/ghost.md](docs/ghost.md) |`,
-      "docs/README.md": "# placeholder",
-    });
-    const result = await runCheck(copilotDir);
-    assertEquals(result.code, 1, "should exit 1 on dangling crossref link");
-    assertStringIncludes(result.output, "dangling-crossref-link");
-    Deno.removeSync(join(copilotDir, ".."), { recursive: true });
-  },
-});
-
-Deno.test({
-  name: "check:agent-docs-integrity — (d) docs/ symlink → missing target → FAIL",
+  name: "check:agent-docs-integrity — (c) docs/ symlink → missing target → FAIL",
   fn: async () => {
     const copilotDir = createTempCorpus(
       { "docs/README.md": "# placeholder" },
@@ -104,7 +90,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "check:agent-docs-integrity — (e) consistent corpus → PASS",
+  name: "check:agent-docs-integrity — (d) consistent corpus → PASS",
   fn: async () => {
     const copilotDir = createTempCorpus({
       "docs/README.md": "- [real.md](real.md): exists",
@@ -112,7 +98,6 @@ Deno.test({
       "manifest.json": JSON.stringify({
         docs: [{ path: ".copilot/docs/real.md", short_summary: "real" }],
       }),
-      "cross-reference.md": "| Real | [docs/real.md](docs/real.md) |",
     });
     const result = await runCheck(copilotDir);
     assertEquals(result.code, 0, "should exit 0 on consistent corpus");
@@ -121,7 +106,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "check:agent-docs-integrity — (f) live .copilot/ → PASS",
+  name: "check:agent-docs-integrity — (e) live .copilot/ → PASS",
   fn: async () => {
     const result = await runCheck(join(REPO_ROOT, ".copilot"));
     assertEquals(result.code, 0, "live .copilot/ should pass integrity check");

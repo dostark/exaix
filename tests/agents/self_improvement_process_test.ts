@@ -10,7 +10,7 @@ import { assertFilesExist, assertFrontmatterSchemaAndShortSummary } from "../hel
 
 const REQUIRED_FILES = [
   ".copilot/skills/self-improvement/SKILL.md",
-  ".copilot/cross-reference.md",
+  ".copilot/manifest.json",
   ".copilot/prompts/README.md",
 ];
 
@@ -35,25 +35,6 @@ Deno.test("Self-improvement loop: verify frontmatter schema + short_summary limi
   ];
 
   await assertFrontmatterSchemaAndShortSummary(files);
-});
-
-Deno.test("Self-improvement loop: verify discovery docs mention the process", async () => {
-  const crossRef = await Deno.readTextFile(".copilot/cross-reference.md");
-  assert(
-    crossRef.includes("Self-Improvement Loop") ||
-      crossRef.includes("self-improvement"),
-    "cross-reference should include self-improvement reference",
-  );
-  assert(
-    crossRef.includes("skills/self-improvement"),
-    "cross-reference should link to self-improvement skill",
-  );
-
-  const commandsReadme = await Deno.readTextFile(".copilot/prompts/README.md");
-  assert(
-    commandsReadme.includes("#commit") || commandsReadme.includes("commit"),
-    "prompts README should reference the commit workflow",
-  );
 });
 
 Deno.test("Self-improvement loop: verify manifest includes self-improvement doc", async () => {
