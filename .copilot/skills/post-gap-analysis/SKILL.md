@@ -122,6 +122,12 @@ Workflow chain (typical):
   #plan → #pre-gap-analysis → #next-steps → **#post-gap-analysis** → #commit
 ```
 
+## See also
+
+- [plan](../plan/SKILL.md) — plan structure, remediation step format
+- [pre-gap-analysis](../pre-gap-analysis/SKILL.md) — complementary pre-implementation analysis
+- [remediate-code-gaps](../remediate-code-gaps/SKILL.md) — closing code-level remediation steps
+
 ---
 
 ## Instructions for Agent

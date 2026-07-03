@@ -51,6 +51,11 @@ Workflow chain (typical):
   #plan → #pre-gap-analysis → #remediate-plan-gaps → #next-steps → #post-gap-analysis → **#remediate-code-gaps** → #commit
 ```
 
+## See also
+
+- [test-development](../test-development/SKILL.md) — test helpers, placement rules
+- [exaix-development](../exaix-development/SKILL.md) — source patterns, DI, coding conventions
+
 ---
 
 ## Instructions for Agent

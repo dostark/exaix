@@ -139,6 +139,11 @@ Workflow chain (typical):
 - `#tdd-workflow Cover validatePath() with edge cases (missing dir, symlink, escape)`
 - `#tdd-workflow Implement EventLogger structured output — red-green-refactor cycle`
 
+## See also
+
+- [test-development](../test-development/SKILL.md) — test helpers, placement rules, patterns
+- [exaix-development](../exaix-development/SKILL.md) — DI patterns, config constants, coding conventions
+
 ---
 exaix:
   skill_id: tdd-methodology

@@ -95,6 +95,11 @@ Related skills:
 - #refactor-check-magic — If the fix introduced new literals, reduce magic violations
 ```
 
+## See also
+
+- [test-development](../test-development/SKILL.md) — regression test patterns, test helpers
+- [exaix-development](../exaix-development/SKILL.md) — source patterns, DI, config conventions
+
 ---
 
 ## Instructions for Agent

@@ -110,6 +110,11 @@ Documents that share version numbers MUST be updated together. Add a checklist f
 - `#doc Update Building_with_AI_Agents.md with Phase 13 TUI patterns`
 - `#doc Sync TOOLS.md after adding a new MCP handler`
 
+## See also
+
+- [exaix-development](../exaix-development/SKILL.md) — service patterns, code conventions for docs
+- [submodule-workflow](../submodule-workflow/SKILL.md) — exaix-dev-docs submodule changes
+
 ---
 exaix:
   skill_id: doc

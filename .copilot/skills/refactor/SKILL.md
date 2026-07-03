@@ -108,6 +108,11 @@ Related
 - `#refactor Replace module-level DatabaseService singleton with constructor DI`
 - `#refactor Move hardcoded 30000 timeout to DEFAULT_TIMEOUT_MS constant`
 
+## See also
+
+- [test-development](../test-development/SKILL.md) — test patterns, helpers, coverage verification
+- [exaix-development](../exaix-development/SKILL.md) — required patterns, prohibited anti-patterns
+
 ---
 exaix:
   skill_id: refactor

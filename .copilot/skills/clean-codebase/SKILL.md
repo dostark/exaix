@@ -143,7 +143,12 @@ Phase 12 — Test placement
 Phase 13 — Skill envelope validity
   27. Run `deno task check:skill-envelopes` — validates that every `.copilot/skills/` SKILL.md
      has a valid `exaix:` block matching `SkillEnvelopeSchema`.
-  28. Fix invalid envelopes (missing `---` separator, malformed YAML, missing fields),
+  28. Fix invalid envelopes (missing `
+## See also
+
+- [exaix-development](../exaix-development/SKILL.md) — code patterns, config constants, anti-patterns
+- [test-development](../test-development/SKILL.md) — test placement, helpers for integration tests
+---` separator, malformed YAML, missing fields),
      then re-run until 0 errors.
 
 Phase 14 — Step-manifest CI gate

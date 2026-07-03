@@ -108,12 +108,18 @@ deno run --allow-run --allow-read --allow-write scripts/measure_duplication.ts -
 
 ### Duplication Thresholds
 
-| Level       | Percentage | Action                            |
-| ----------- | ---------- | --------------------------------- |
-| 🟢 Good     | < 2%       | No action needed                  |
-| 🟡 Warning  | 2-5%       | Monitor, refactor when convenient |
-| 🟠 High     | 5-10%      | Plan refactoring phase            |
-| 🔴 Critical | > 10%      | Immediate attention required      |
+| Level | Percentage | Action |
+|
+
+## See also
+
+- [exaix-development](../exaix-development/SKILL.md) — config constants guide, DEFAULT_/TEST_ prefix convention
+- [test-development](../test-development/SKILL.md) — test helpers for validating constant changes
+  ----------- | ---------- | --------------------------------- |
+  | 🟢 Good | < 2% | No action needed |
+  | 🟡 Warning | 2-5% | Monitor, refactor when convenient |
+  | 🟠 High | 5-10% | Plan refactoring phase |
+  | 🔴 Critical | > 10% | Immediate attention required |
 
 ### Common Duplication Patterns
 
@@ -159,7 +165,7 @@ deno run --allow-run --allow-read --allow-write scripts/measure_duplication.ts -
 ## Examples
 
 - `#refactor-check-magic` — address all current check:magic violations
-- `#refactor-check-magic packages/request/src/plan_service.ts` — fix magic values in one file
+- `#refactor-check-magic `packages/request/src/plan_service.ts`` — fix magic values in one file
 - `#refactor-check-magic — top 10 highest-score literals only`
 
 ---

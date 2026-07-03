@@ -16,7 +16,7 @@ topics: ["testing", "tdd", "coverage", "test-helpers"]
 qwen_skill: test-development
 ---
 
-````text
+```text
 Key points
 
 See also
@@ -124,7 +124,7 @@ Examples
   #test-development Add unit tests for PlanWriter error handling
   #test-development Write security tests for file path validation
   #test-development Create integration test for workspace bootstrap flow
-````
+```
 
 ```
 ---

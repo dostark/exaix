@@ -16,7 +16,7 @@ topics: ["source", "development", "tdd", "patterns", "architecture"]
 qwen_skill: exaix-development
 ---
 
-````text
+```text
 Key points
 
 - Strict TDD-first: write failing tests before implementation
@@ -181,7 +181,7 @@ Examples
   #exaix-development Add input validation to the request handler
   #exaix-development Refactor provider selection to CircuitBreaker pattern
   #exaix-development Security audit for file path handling
-````
+```
 
 ```
 ---
