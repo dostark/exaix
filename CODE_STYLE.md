@@ -648,7 +648,7 @@ This file is the single authoritative source for code style. The following docum
 - [`CLAUDE.md`](CLAUDE.md) — delegates to this file for all style rules
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — links to this file for coding standards
 - [`scripts/check_code_style.md`](scripts/check_code_style.md) — companion reference for the code-style checker and boundary-oriented import rules
-- [`.copilot/guidelines/exaix-development.md`](.copilot/guidelines/exaix-development.md)
+- [`.copilot/docs/exaix-development.md`](.copilot/docs/exaix-development.md)
 - [`.copilot/README.md`](.copilot/README.md)
 
 ---
@@ -938,7 +938,7 @@ feedback during development.
 
 > ⚠️ Keep this file short and focused. Architectural patterns such as timeout
 > protection, file locking, or error classification belong in other guides
-> (e.g. `.copilot/guidelines/exaix-development.md`) and **are not** repeated here unless they
+> (e.g. `.copilot/docs/exaix-development.md`) and **are not** repeated here unless they
 > directly impact the way code is written.
 
 ---

@@ -154,7 +154,7 @@ Test migration from root `tests/` to package directories is **in progress** (~26
 - Test placement is enforced by `deno task check:test-placement`.
 - New files matching `*_test.ts` under root `tests/` are checked for valid placement.
 - New service tests must live under `packages/<name>/tests/` or `apps/<name>/tests/`, not under root `tests/services/`.
-- The authoritative agent-facing placement rules live in `.copilot/guidelines/testing.md`.
+- The authoritative agent-facing placement rules live in `.copilot/docs/testing.md`.
 
 ### Deterministic Source-To-Test Mapping
 

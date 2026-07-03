@@ -40,7 +40,7 @@ links:
 - [ ] Read this file completely
 - [ ] Read `## Behavioral Guidelines` (below) — think before coding, simplicity, surgical changes, goal-driven execution
 - [ ] Use `.copilot/cross-reference.md` to identify every required `.copilot/` document for the task type(s) involved, then read all of them before implementation
-- [ ] If the task type is not listed in `.copilot/cross-reference.md`, fall back to `.copilot/guidelines/exaix-development.md` and note that fallback in your implementation plan
+- [ ] If the task type is not listed in `.copilot/cross-reference.md`, fall back to `.copilot/docs/exaix-development.md` and note that fallback in your implementation plan
 - [ ] If a required document listed in `.copilot/cross-reference.md` is missing on disk, stop and report the missing path instead of inferring its contents
 - [ ] If a required document exists on disk but cannot be read or is empty, stop and report: `UNREADABLE: "<path>" exists but could not be read — cannot proceed without resolution.`
 - [ ] Read frontmatter of root `.md` files whenever you are selecting which `.copilot/` documents to consult for a task; the first 20 lines identify `copilot_knowledge_base: true` and relevant `capabilities` for that document
@@ -50,7 +50,7 @@ links:
 
 **Example acknowledgment format:**
 
-> "I consulted `.copilot/guidelines/testing.md` for test patterns and `.copilot/guidelines/exaix-development.md` for source architecture before implementing this feature."
+> "I consulted `.copilot/docs/testing.md` for test patterns and `.copilot/docs/exaix-development.md` for source architecture before implementing this feature."
 
 **Failure to consult `.copilot/` documentation is considered a violation of project standards.**
 
@@ -62,9 +62,9 @@ links:
 | ------------------------- | ------------------------------------------------------------------------------------ |
 | Behavioral guidelines     | [CLAUDE.md](./CLAUDE.md#behavioral-guidelines)                                       |
 | Task → Doc mapping        | [.copilot/cross-reference.md](.copilot/cross-reference.md)                           |
-| Source patterns           | [.copilot/guidelines/exaix-development.md](.copilot/guidelines/exaix-development.md) |
-| Testing patterns          | [.copilot/guidelines/testing.md](.copilot/guidelines/testing.md)                     |
-| Documentation guide       | [.copilot/guidelines/documentation.md](.copilot/guidelines/documentation.md)         |
+| Source patterns           | [.copilot/docs/exaix-development.md](.copilot/docs/exaix-development.md) |
+| Testing patterns          | [.copilot/docs/testing.md](.copilot/docs/testing.md)                     |
+| Documentation guide       | [.copilot/docs/documentation.md](.copilot/docs/documentation.md)         |
 | Coding standards          | [CODE_STYLE.md](./CODE_STYLE.md)                                                     |
 | Magic numbers / constants | [CODE_STYLE.md](./CODE_STYLE.md) §2                                                  |
 | MCP tool index            | [.copilot/docs/TOOLS.md](.copilot/docs/TOOLS.md)                                     |
@@ -382,7 +382,7 @@ An `apps/` or runtime-wiring module orchestrates the running Exaix process. It c
 
 ### Test Guidance
 
-> For full test placement and helper conventions see `.copilot/guidelines/testing.md`. The rules below apply across all test types.
+> For full test placement and helper conventions see `.copilot/docs/testing.md`. The rules below apply across all test types.
 
 - Place tests in the owning boundary: package-owned tests in `packages/<package>/tests/`, app-owned tests in `apps/<app>/tests/`, and cross-cutting integration/scenario/security/system tests in root `tests/`.
 - Do not place new tests next to source files unless the project testing guideline explicitly requires it.
