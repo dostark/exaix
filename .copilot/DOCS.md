@@ -16,7 +16,6 @@ topics: ["reference", "docs", "catalog"]
 | Agent Reference Corpus | [docs/README.md](docs/README.md) |
 | MCP Agent Tool Index | [docs/TOOLS.md](docs/TOOLS.md) |
 | Exaix Developer Glossary | [docs/GLOSSARY.md](docs/GLOSSARY.md) |
-| Exaix Documentation Development Guidelines | [docs/documentation.md](docs/documentation.md) |
 | Exaix Source Development Guidelines | [docs/exaix-development.md](docs/exaix-development.md) |
 | .copilot/prompts/ — Chat Routing Wrappers | [prompts/README.md](prompts/README.md) |
 | .copilot/ — AI Agent Knowledge Base | [README.md](README.md) |
@@ -89,7 +88,7 @@ topics: ["reference", "docs", "catalog"]
 - **`deployment`** → [skills/infra/SKILL.md](skills/infra/SKILL.md)
 - **`development`** → [docs/exaix-development.md](docs/exaix-development.md)
 - **`discovery`** → [skills/explore/SKILL.md](skills/explore/SKILL.md)
-- **`docs`** → [docs/README.md](docs/README.md), [docs/documentation.md](docs/documentation.md), [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md), [DOCS.md](DOCS.md)
+- **`docs`** → [docs/README.md](docs/README.md), [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md), [DOCS.md](DOCS.md)
 - **`documentation`** → [skills/doc/SKILL.md](skills/doc/SKILL.md), [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md), [skills/commit/SKILL.md](skills/commit/SKILL.md)
 - **`dogfooding`** → [skills/plan/SKILL.md](skills/plan/SKILL.md)
 - **`edition`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md)
@@ -126,9 +125,7 @@ topics: ["reference", "docs", "catalog"]
 - **`planning`** → [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md), [skills/remediate-code-gaps/SKILL.md](skills/remediate-code-gaps/SKILL.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`portal`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`positioning`** → [skills/comparative-analysis/SKILL.md](skills/comparative-analysis/SKILL.md)
-- **`process`** → [docs/documentation.md](docs/documentation.md)
 - **`prompts`** → [prompts/README.md](prompts/README.md)
-- **`publishing`** → [docs/documentation.md](docs/documentation.md)
 - **`qa`** → [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)
 - **`quality`** → [docs/specification-driven-development.md](docs/specification-driven-development.md), [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`quality-assurance`** → [skills/review-code/SKILL.md](skills/review-code/SKILL.md)

@@ -65,7 +65,7 @@ links:
 | Architecture              | [.copilot/docs/ARCHITECTURE.md](.copilot/docs/ARCHITECTURE.md)                                         |
 | Source patterns           | [.copilot/docs/exaix-development.md](.copilot/docs/exaix-development.md)                               |
 | Testing patterns          | [.copilot/docs/testing.md](.copilot/docs/testing.md)                                                   |
-| Documentation guide       | [.copilot/docs/documentation.md](.copilot/docs/documentation.md)                                       |
+| Documentation skill       | [.copilot/skills/doc/SKILL.md](.copilot/skills/doc/SKILL.md)                                           |
 | Spec-driven development   | [.copilot/docs/specification-driven-development.md](.copilot/docs/specification-driven-development.md) |
 | Dev glossary              | [.copilot/docs/GLOSSARY.md](.copilot/docs/GLOSSARY.md)                                                 |
 | Coding standards          | [CODE_STYLE.md](./CODE_STYLE.md)                                                                       |

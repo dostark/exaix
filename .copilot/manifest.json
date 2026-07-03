@@ -70,19 +70,6 @@
       ]
     },
     {
-      "path": ".copilot/docs/documentation.md",
-      "agent": "copilot",
-      "scope": "dev",
-      "title": "Exaix Documentation Development Guidelines",
-      "short_summary": "Guidance for producing and maintaining docs in the docs/ directory and cross-referencing the Implementation Plan.",
-      "version": "0.1",
-      "topics": [
-        "docs",
-        "process",
-        "publishing"
-      ]
-    },
-    {
       "path": ".copilot/docs/exaix-development.md",
       "agent": "copilot",
       "scope": "dev",
