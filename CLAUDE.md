@@ -12,7 +12,7 @@ links:
 ## 🤖 Agent Instructions — Required Reading for All AI Agents
 
 > **⚠️ CRITICAL:** This document and `.copilot/` are **MANDATORY** context for all code tasks.
-> _Note: `.copilot/` is the canonical directory. Symlinks like `.claude/`, `.agents/`, `.cursor/`, and `AGENTS.md` exist intentionally to support various agents. They all point to `.copilot/`. For Qwen agents, `.qwen/skills/` contains auto-generated routing wrappers that redirect to the canonical skills in `.copilot/skills/`._
+> _Note: `.copilot/` is the canonical directory. Symlinks like `.claude/`, `.agents/`, `.cursor/`, and `AGENTS.md` exist intentionally to support various agents. They all point to `.copilot/`. For Qwen agents, `.qwen/settings.json` references `.copilot/skills/` directly._
 > Read this file first, then use the `.copilot/` documents it points you to as task-specific extensions. If you find a conflict between this file and a `.copilot/` document, or between two `.copilot/` documents, stop and report the conflict instead of guessing.
 > A missing topic match in `.copilot/manifest.json` is not a conflict; follow the documented fallback path.
 > If a project instruction conflicts with a known security risk or language/runtime constraint (not merely a stylistic preference), flag it inline as `WARNING: <description>` and proceed with the project instruction unless it would introduce a critical vulnerability.

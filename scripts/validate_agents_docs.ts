@@ -61,20 +61,6 @@ async function validateFile(path: string): Promise<string[]> {
     }
   }
 
-  // Validate Qwen skill wrapper if declared
-  const qwenSkill = fm["qwen_skill"];
-  if (qwenSkill) {
-    const wrapperPath = `.qwen/skills/${qwenSkill}/SKILL.md`;
-    try {
-      const wrapperContent = await Deno.readTextFile(wrapperPath);
-      if (!wrapperContent.includes(`\`${path}\``)) {
-        errors.push(`${path}: Qwen wrapper ${wrapperPath} does not correctly cite canonical source`);
-      }
-    } catch {
-      errors.push(`${path}: Qwen wrapper ${wrapperPath} is missing but declared in frontmatter`);
-    }
-  }
-
   return errors;
 }
 

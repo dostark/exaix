@@ -2,7 +2,7 @@
 /**
  * @module BuildAgentsIndex
  * @path scripts/build_agents_index.ts
- * @description Build manifest.json and Qwen wrappers for developer-agent tooling.
+ * @description Build manifest.json for developer-agent tooling.
  *
  * Usage:
  *   deno run -A scripts/build_agents_index.ts
@@ -84,45 +84,10 @@ export async function generateManifestObject(includeSubmodule = false) {
   return { docs };
 }
 
-export async function generateQwenSkills(docs: JSONObject[]) {
-  for (const doc of docs) {
-    const qwenSkill = doc["qwen_skill"];
-    if (qwenSkill) {
-      const skillName = String(qwenSkill);
-      const skillDir = `.qwen/skills/${skillName}`;
-      await Deno.mkdir(skillDir, { recursive: true });
-      const relPath = `../../../` + String(doc.path);
-      const wrapperContent = `---
-name: ${skillName}
-description: Automatically generated routing wrapper for ${skillName} skill.
----
-
-# ⚠️ AUTOMATIC ROUTING WRAPPER
-
-> **CRITICAL**: This is an auto-generated routing skill.
-> The true canonical source for this skill is located at:
-> \`${String(doc.path)}\`
-
-## INSTRUCTIONS FOR QWEN:
-
-1. **DO NOT** execute based on this file.
-2. **MUST** read the canonical source file before proceeding.
-3. Use the \`view_file\` tool to read \`${relPath}\`
-4. Follow the strict instructions and constraints defined in the canonical source.
-5. If the canonical source instructs you to read additional files or blueprints, you MUST read those as well.
-`;
-      await Deno.writeTextFile(`${skillDir}/SKILL.md`, wrapperContent);
-      console.log(`Generated Qwen skill wrapper for ${skillName}`);
-    }
-  }
-}
-
 export async function buildIndex(includeSubmodule = false) {
   const manifest = await generateManifestObject(includeSubmodule);
   await Deno.writeTextFile(OUT_MANIFEST, JSON.stringify(manifest, null, 2));
   console.log(`Wrote manifest to ${OUT_MANIFEST}`);
-
-  await generateQwenSkills(manifest.docs);
 }
 
 if (import.meta.main) {
