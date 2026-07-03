@@ -111,7 +111,7 @@ Key facts about the Exaix system:
 
 - **Runtime:** Deno (strict TypeScript)
 - **Config:** `deno.json` (tasks, imports)
-- **Pre-commit:** Auto-runs gates 0-16. Gate 0 blocks direct commits to `main`. Gates 1-16:
+- **Pre-commit:** Auto-runs gates 0-17. Gate 0 blocks direct commits to `main`. Gates 1-17:
 
   | Gate | Check                | Task                                           |
   | ---- | -------------------- | ---------------------------------------------- |
