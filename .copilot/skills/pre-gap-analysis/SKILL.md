@@ -412,7 +412,7 @@ Run this phase after Phase 2B. It is a targeted scan for side-effect patterns in
 
 ### Phase 4 — Standards Compliance Check
 
-1. **Check plan structure against ``.copilot/planning/README.md``.**
+1. **Check plan structure against `exaix-dev-docs/planning/README.md`.**
    For every step, verify it contains all four §F sub-sections:
    - `Actions` — explicit file paths and the changes to make
    - `Architecture Notes` — DI / constructor / pattern rationale

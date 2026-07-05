@@ -347,7 +347,7 @@ Severity scale:
 
 ## Examples
 
-- `#review-code `packages/core/src/vault_service.ts` and `packages/core/tests/vault_service_test.ts``
+- `#review-code` scoped to a specific source file and its test — review just that pair
 - `#review-code — review all staged changes before merging to main`
 
 ---

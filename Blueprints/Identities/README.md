@@ -19,11 +19,11 @@ describes _who_ the agent is; a skill describes _how_ it works.
 ---
 identity_id: "my-identity"
 name: "My Identity"
-model: ""             # deprecated — use model_size + characteristics instead
-model_size: "M"       # S, M, L, XL — maps to capability profile via ModelResolver
-thinking: true         # enable extended reasoning
-effort: "high"         # reasoning token budget (low, medium, high)
-characteristics: []    # ["fastest", "cheapest"] — soft ranking hints
+model: "" # deprecated — use model_size + characteristics instead
+model_size: "M" # S, M, L, XL — maps to capability profile via ModelResolver
+thinking: true # enable extended reasoning
+effort: "high" # reasoning token budget (low, medium, high)
+characteristics: [] # ["fastest", "cheapest"] — soft ranking hints
 preferred_provider: "" # narrow candidate pool to a specific provider
 capabilities: ["analysis", "review"] # behavioural tags, NOT tool names
 default_skills: ["response-contract", "code-review", "portal-grounding"]
@@ -118,6 +118,6 @@ keeps the two in sync).
 ## Plan output
 
 A plan's `<content>` block is a single JSON object matching the executable-plan
-schema (`title`, `description`, `steps[]`, …). See `docs/Plan_Format_Reference.md`
+schema (`title`, `description`, `steps[]`, …). See `packages/schemas/src/plan_schema.ts`
 for the complete schema, and the `response-contract` skill for the contract every
 identity must emit. Generated plans land in `Workspace/Plans/`.

@@ -16,7 +16,7 @@ topics: ["dogfooding", "workflow", "sandbox", "delegation"]
 qwen_skill: dogfood-development
 ---
 
-````text
+```text
 Key points
 
 - Dogfooding means using Exaix to develop Exaix itself
@@ -92,7 +92,7 @@ Examples
   #dogfood-development Bootstrap sandbox for Phase 134
   #dogfood-development Write request for Phase 134 Step 3.2
   #dogfood-development Review plan and approve execution
-````
+```
 
 ```
 ---

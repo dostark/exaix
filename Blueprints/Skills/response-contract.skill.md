@@ -50,8 +50,8 @@ text outside these tags is ignored.
 2. `<content>` — Your deliverable. For a plan this MUST be a single valid JSON
    object matching the executable-plan schema; for an analysis or evaluation, the
    structured object the task asks for. The `<content>` block is extracted and
-parsed by the runtime, so it must be valid, self-contained, and free of
-commentary.
+   parsed by the runtime, so it must be valid, self-contained, and free of
+   commentary.
 
 ## Agent Thought Standardization
 
@@ -81,14 +81,14 @@ The `<thought>` block must follow this structured format — not free-form prose
 
 ### Section details
 
-| Section | Purpose | Content |
-|---|---|---|
-| Problem Analysis | Confirm understanding | 1-3 sentences summarizing the core problem |
-| Context Assessment | Identify relevant context | Reference existing code, patterns, constraints |
-| Solution Approach | Outline strategy | Methodology, frameworks, patterns |
-| Key Considerations | Highlight factors | Security, performance, compatibility |
-| Implementation Strategy | Detail execution | Specific steps, tools, order |
-| Risk Assessment | Identify issues | Failure scenarios, mitigation |
+| Section                 | Purpose                   | Content                                        |
+| ----------------------- | ------------------------- | ---------------------------------------------- |
+| Problem Analysis        | Confirm understanding     | 1-3 sentences summarizing the core problem     |
+| Context Assessment      | Identify relevant context | Reference existing code, patterns, constraints |
+| Solution Approach       | Outline strategy          | Methodology, frameworks, patterns              |
+| Key Considerations      | Highlight factors         | Security, performance, compatibility           |
+| Implementation Strategy | Detail execution          | Specific steps, tools, order                   |
+| Risk Assessment         | Identify issues           | Failure scenarios, mitigation                  |
 
 ## Executable-plan JSON schema
 
@@ -130,7 +130,12 @@ The `<thought>` block must follow this structured format — not free-form prose
     "framework": "Deno",
     "directoryStructure": "src/\\n├── services/\\n├── routes/\\n└── utils/",
     "modules": [
-      { "name": "auth.ts", "purpose": "Authentication service", "exports": ["login", "logout"], "dependencies": ["jwt", "users"] }
+      {
+        "name": "auth.ts",
+        "purpose": "Authentication service",
+        "exports": ["login", "logout"],
+        "dependencies": ["jwt", "users"]
+      }
     ],
     "patterns": [
       { "pattern": "Repository", "location": "src/repos/", "usage": "Data access abstraction" }
@@ -191,15 +196,18 @@ The `<thought>` block must follow this structured format — not free-form prose
     "coverage": {
       "integration": [
         {
-          "scenario": "User registration flow", "setup": "Clean database",
+          "scenario": "User registration flow",
+          "setup": "Clean database",
           "steps": ["Navigate to register", "Fill form", "Submit"],
-          "expectedResult": "User created successfully", "status": "PASS"
+          "expectedResult": "User created successfully",
+          "status": "PASS"
         }
       ]
     },
     "issues": [
       {
-        "title": "Form validation bypass", "severity": "High",
+        "title": "Form validation bypass",
+        "severity": "High",
         "component": "RegistrationForm",
         "stepsToReproduce": ["Submit empty form", "Check if error shown"],
         "description": "Client-side validation can be bypassed"
@@ -219,7 +227,9 @@ The `<thought>` block must follow this structured format — not free-form prose
     "executiveSummary": "Application performance is adequate with optimization opportunities",
     "findings": [
       {
-        "title": "N+1 Query Problem", "impact": "HIGH", "category": "Database",
+        "title": "N+1 Query Problem",
+        "impact": "HIGH",
+        "category": "Database",
         "location": "src/userService.ts:78",
         "currentBehavior": "Multiple individual queries in loop",
         "expectedImprovement": "50% reduction in query time",

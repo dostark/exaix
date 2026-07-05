@@ -52,7 +52,7 @@ Key points
 - When reading existing source files to understand context, work in batches of 5–10 files: read a batch, record findings, then continue.
 
 Canonical prompt (short):
-"Draft a new Phase Planning Document for <FEATURE>. Follow `.copilot/planning/README.md` structure. Include §3B Security and §3C Traceability/Configurability checks in the design. Ensure a §3D Documentation Update step is included."
+"Draft a new Phase Planning Document for <FEATURE>. Follow `exaix-dev-docs/planning/README.md` structure. Include §3B Security and §3C Traceability/Configurability checks in the design. Ensure a §3D Documentation Update step is included."
 
 Example prompt:
 "#plan Implement a new 'vault' service for secure encrypted secret storage in .exa/vault.db. Ensure full audit logging and config-driven rotation intervals."
@@ -112,7 +112,7 @@ Refine the goal into a formal planning document in `.copilot/planning/phase-NN-*
 
 ### 1. Structure Requirements (Mandatory)
 
-Follow the structure defined in ``.copilot/planning/README.md``:
+Follow the structure defined in `exaix-dev-docs/planning/README.md`:
 
 1. **Executive Summary**: Problem, Solution, Goal.
 1. **Current State Analysis**: Key Files table, Constraints, Affected Interfaces.

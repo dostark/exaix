@@ -16,7 +16,6 @@ The directory mirrors the Claude Code `docs/` convention and is reachable as `.a
 - [TOOLS.md](TOOLS.md): MCP tool index (moved from root).
 - [GLOSSARY.md](GLOSSARY.md): Developer glossary — implementation-level definitions, journal field maps, code identifiers, naming conventions (moved from `docs/`).
 
-
 ### Symlinked root docs
 
 These files stay canonical at the repo root but are discoverable here via symlink:

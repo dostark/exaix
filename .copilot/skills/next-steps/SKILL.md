@@ -323,7 +323,7 @@ Workflow chain (typical):
 
 ## Examples
 
-- `#next-steps `.copilot/planning/phase-14-caching.md`` — execute the next unstarted step
+- `#next-steps phase-14-caching` — execute the next unstarted step of that plan
 - `#next-steps Step 3: Add ICache interface and inject into LLMProvider`
 - `#next-steps Continue phase-76 — pick up from last completed step`
 

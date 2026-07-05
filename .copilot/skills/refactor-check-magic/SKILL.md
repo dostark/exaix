@@ -165,7 +165,7 @@ deno run --allow-run --allow-read --allow-write scripts/measure_duplication.ts -
 ## Examples
 
 - `#refactor-check-magic` — address all current check:magic violations
-- `#refactor-check-magic `packages/request/src/plan_service.ts`` — fix magic values in one file
+- `#refactor-check-magic` scoped to a single file — fix magic values in just that file
 - `#refactor-check-magic — top 10 highest-score literals only`
 
 ---
