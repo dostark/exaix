@@ -113,9 +113,13 @@ function readExistingSkill(path: string): ISkill | null {
   }
 }
 
-/** Serializes a skill deterministically for write + drift comparison. */
+/** Serializes a skill deterministically for write + drift comparison.
+ * Ends with a trailing newline so the written JSON is `deno fmt`-clean (the
+ * formatter otherwise reports the file dirty and fights this generator). Both
+ * the write and the `--check` drift comparison route through here, so the
+ * newline is applied symmetrically and the comparison stays correct. */
 function serializeSkill(skill: ISkill): string {
-  return JSON.stringify(skill, null, 2);
+  return JSON.stringify(skill, null, 2) + "\n";
 }
 
 async function resolveRealPathAncestor(path: string): Promise<string> {

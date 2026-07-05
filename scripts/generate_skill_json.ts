@@ -304,7 +304,9 @@ export async function generateSkillJson(
       continue;
     }
 
-    const jsonContent = JSON.stringify(finalObject, null, 2);
+    // Trailing newline keeps the written JSON `deno fmt`-clean (the formatter
+    // otherwise flags a missing final newline and fights this generator).
+    const jsonContent = JSON.stringify(finalObject, null, 2) + "\n";
 
     await ensureDir(scopeDir);
 

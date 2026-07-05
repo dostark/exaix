@@ -58,6 +58,21 @@ Deno.test("[build_skills_index] generates one valid SkillSchema JSON per .skill.
   }
 });
 
+Deno.test("[build_skills_index] generated JSON ends with a trailing newline (deno fmt-clean)", async () => {
+  const { skillsDir, targetDir, sandboxRoot, cleanup } = await makeFixture();
+  try {
+    await buildSkillsIndex(skillsDir, targetDir, sandboxRoot);
+    const raw = Deno.readTextFileSync(join(targetDir, "global", "test-global-skill.json"));
+    assert(
+      raw.endsWith("}\n"),
+      "generated skill JSON must end with a trailing newline so deno fmt does not report it dirty",
+    );
+    assertEquals(raw.endsWith("}\n\n"), false, "must have exactly one trailing newline, not two");
+  } finally {
+    cleanup();
+  }
+});
+
 Deno.test("[build_skills_index] routes scope:project skills under project/<project>/ (GAP-4)", async () => {
   const { skillsDir, targetDir, sandboxRoot, cleanup } = await makeFixture();
   try {
