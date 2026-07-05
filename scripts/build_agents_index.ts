@@ -134,10 +134,26 @@ ${topicList}
 
 export async function buildIndex(includeSubmodule = false) {
   const manifest = await generateManifestObject(includeSubmodule);
-  await Deno.writeTextFile(OUT_MANIFEST, JSON.stringify(manifest, null, 2));
+  await Deno.writeTextFile(OUT_MANIFEST, JSON.stringify(manifest, null, 2) + "\n");
   console.log(`Wrote manifest to ${OUT_MANIFEST}`);
 
   await generateDocsIndex(manifest.docs);
+
+  // Normalize the generated markdown/JSON to exactly what `deno fmt` produces,
+  // so the formatter never reports these generated files dirty (the generator
+  // and `deno fmt` would otherwise disagree on table alignment / trailing
+  // newline and drift forever). Non-fatal if `deno fmt` is unavailable.
+  await formatGenerated([`${AGENTS_DIR}/DOCS.md`, OUT_MANIFEST]);
+}
+
+/** Runs `deno fmt` over the given generated files; ignores failures. */
+async function formatGenerated(paths: string[]): Promise<void> {
+  try {
+    await new Deno.Command("deno", { args: ["fmt", ...paths], stdout: "null", stderr: "null" })
+      .output();
+  } catch {
+    // deno fmt not available in this environment — generated files stay as-written.
+  }
 }
 
 if (import.meta.main) {
