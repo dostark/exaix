@@ -20,7 +20,7 @@ import { Database } from "@db/sqlite";
 import { DomainEventType } from "@exaix/core/events";
 import {
   ConfigService,
-  createConfigAdapter,
+  DaemonConfigAdapter,
   ensureConfigDb,
   getAllEffectiveValues,
   getRegisteredDefaults,
@@ -109,6 +109,13 @@ import type { HitlPolicyEvaluator } from "@exaix-team/hitl";
 /** LRU cache for traceId → resolved model string (PG-6 remediation). */
 const traceModelCache = new Map<string, string>();
 const TRACE_CACHE_MAX = 100;
+
+/**
+ * Representative migrated config key the daemon resolves through `configAdapter` at boot
+ * (Phase 137 Step 11 / GAP-17). Its journalled provenance proves the cutover read path is
+ * live end-to-end. `ai.timeout_ms` is registered via `configurable()` in Step 10.
+ */
+const CONFIG_CUTOVER_PROBE_KEY = "ai.timeout_ms";
 
 /**
  * Read a request file, parse its frontmatter, build a ModelIntent from any CLI
@@ -255,12 +262,26 @@ if (import.meta.main) {
       const swap = getRegisteredDefaults().get(key)?.opts?.swap ?? SwapClass.HOT;
       configStore.set(key, value, swap);
     }
-    const configAdapter = createConfigAdapter(configDbPath, undefined, logger, {
-      store: configStore,
-      db: configDb,
-    });
+    // The daemon IS the daemon — construct DaemonConfigAdapter directly rather than
+    // going through createConfigAdapter's PID-file detection (that factory is for
+    // CLI/MCP callers detecting whether a daemon is up; at boot the daemon has not
+    // written its PID yet, so detection would wrongly fall back to DirectConfigAdapter).
+    const configAdapter = new DaemonConfigAdapter(configStore, configDb, logger);
     logger.info(DomainEventType.ConfigUpdated, "config_db_store", {
       keys: effectiveValues.size,
+      adapterMode: configAdapter.mode,
+    });
+
+    // Phase 137 Step 11 (GAP-17): prove the cutover is live — resolve a representative
+    // migrated key through the adapter (Config DB → registry → schema) and journal the
+    // result with its provenance. This is the daemon's first production read through
+    // `configAdapter`; the value + source are observable in the journal so the cutover is
+    // verifiable end-to-end (tests/integration/config_cutover_daemon_boot_test.ts).
+    const cutoverProvenance = configAdapter.getProvenance(CONFIG_CUTOVER_PROBE_KEY);
+    logger.info(DomainEventType.ConfigCutoverResolved, "config_db", {
+      key: CONFIG_CUTOVER_PROBE_KEY,
+      value: cutoverProvenance.value,
+      source: cutoverProvenance.source,
       adapterMode: configAdapter.mode,
     });
 
@@ -520,6 +541,7 @@ if (import.meta.main) {
     // Create central application context
     const context: IApplicationContext = {
       config: configService,
+      configAdapter,
       db: dbService,
       provider: llmProvider,
       git: gitService,
