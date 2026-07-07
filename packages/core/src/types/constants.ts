@@ -6,7 +6,17 @@
  * @related-files ["packages/core/src/types/enums.ts", "packages/schemas/src/config.ts"]
  */
 
-import { LogLevel, McpTransportType, MockStrategy, ProviderType, RequestPriority, TaskType } from "./enums.ts";
+import {
+  ConfigValueType,
+  LogLevel,
+  McpTransportType,
+  MockStrategy,
+  ProviderType,
+  RequestPriority,
+  SwapClass,
+  TaskType,
+} from "./enums.ts";
+import { configurable } from "../config/registry.ts";
 
 // ============================================================================
 // HTTP Status Codes
@@ -140,14 +150,27 @@ export const DEFAULT_DATABASE_BATCH_FLUSH_MS = 1000;
 export const DEFAULT_DATABASE_BATCH_MAX_SIZE = 100;
 export const DEFAULT_DATABASE_JOURNAL_MODE = "WAL";
 export const DEFAULT_DATABASE_FOREIGN_KEYS = true;
-export const DEFAULT_DATABASE_BUSY_TIMEOUT_MS = 5000;
+export const DEFAULT_DATABASE_BUSY_TIMEOUT_MS = configurable({
+  key: "database.busy_timeout_ms",
+  default: 5000,
+  type: ConfigValueType.NUMBER,
+  description: "Default SQLite busy timeout in milliseconds",
+  min: DATABASE_BUSY_TIMEOUT_MS_MIN,
+  max: DATABASE_BUSY_TIMEOUT_MS_MAX,
+  swap: SwapClass.RESTART,
+});
 export const DEFAULT_DATABASE_FAILURE_THRESHOLD = 5;
 export const DEFAULT_DATABASE_RESET_TIMEOUT_MS = 60000;
 export const DEFAULT_DATABASE_HALF_OPEN_SUCCESS_THRESHOLD = 2;
 
 // ============================================================================
-// Config DB — dynamic key namespaces
+// Config DB — polling and dynamic key namespaces
 // ============================================================================
+/**
+ * Polling interval (ms) for the Config DB watcher that detects external
+ * overrides via MAX(id) change. Used in the daemon's polling loop.
+ */
+export const DEFAULT_CONFIG_DB_POLL_INTERVAL_MS = 5_000;
 /**
  * Key prefix for profile-scoped config keys (`profile.<name>.<base>`). A key
  * under this prefix validates against its stripped base key's registry metadata
@@ -266,11 +289,71 @@ export const MCP_CONTENT_TYPE_STRUCTURED_DATA = "exaix_structured_data";
 // ============================================================================
 // AI Provider Defaults and Limits
 // ============================================================================
-export const DEFAULT_AI_TIMEOUT_MS = 30000;
-export const DEFAULT_AI_RETRY_MAX_ATTEMPTS = 3;
-export const DEFAULT_AI_RETRY_BACKOFF_BASE_MS = 1000;
+export const DEFAULT_AI_TIMEOUT_MS = configurable({
+  key: "ai.timeout_ms",
+  default: 30000,
+  type: ConfigValueType.NUMBER,
+  description: "Default AI provider request timeout in milliseconds",
+  min: 1000,
+  max: 300_000,
+  swap: SwapClass.HOT,
+});
+export const DEFAULT_AI_RETRY_MAX_ATTEMPTS = configurable({
+  key: "ai.retry.max_attempts",
+  default: 3,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum retry attempts for AI provider requests",
+  min: 1,
+  max: 10,
+  swap: SwapClass.HOT,
+});
+export const DEFAULT_AI_RETRY_BACKOFF_BASE_MS = configurable({
+  key: "ai.retry.backoff_base_ms",
+  default: 1000,
+  type: ConfigValueType.NUMBER,
+  description: "Base backoff delay in milliseconds for AI retries",
+  min: 100,
+  max: 10_000,
+  swap: SwapClass.HOT,
+});
 export const DEFAULT_AI_RETRY_TIMEOUT_PER_REQUEST_MS = 30000;
-export const DEFAULT_AI_MODEL = "gemini-flash-latest";
+export const DEFAULT_AI_MODEL = configurable({
+  key: "ai.model",
+  default: "gemini-flash-latest",
+  type: ConfigValueType.STRING,
+  description: "Default AI model identifier",
+  swap: SwapClass.RESTART,
+});
+// Convenience keys for Step 7 commands
+configurable({
+  key: "ai.provider",
+  default: "google",
+  type: ConfigValueType.STRING,
+  description: "Active AI provider",
+  enum: Object.values(ProviderType) as readonly string[],
+  swap: SwapClass.RESTART,
+});
+configurable({
+  key: "system.active_profile",
+  default: "",
+  type: ConfigValueType.STRING,
+  description: "Active profile name for profile-scoped config resolution",
+  swap: SwapClass.RESTART,
+});
+configurable({
+  key: "models.*.model",
+  default: "",
+  type: ConfigValueType.STRING,
+  description: "Per-name model override pattern (models.<name>.model)",
+  swap: SwapClass.RESTART,
+});
+configurable({
+  key: "paths.*",
+  default: "",
+  type: ConfigValueType.STRING,
+  description: "Per-key path pattern (paths.<key>)",
+  swap: SwapClass.RESTART,
+});
 export const DEFAULT_AI_TEMPERATURE_MIN = 0;
 export const DEFAULT_AI_TEMPERATURE_MAX = 2;
 export const AI_RETRY_MAX_ATTEMPTS_MIN = 1;
