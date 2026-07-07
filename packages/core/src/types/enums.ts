@@ -1430,3 +1430,11 @@ export enum ConfigAdapterMode {
   DIRECT = "direct",
   DAEMON = "daemon",
 }
+
+/**
+ * Output format for config CLI commands.
+ */
+export enum ConfigOutputFormat {
+  HUMAN = "human",
+  JSON = "json",
+}
