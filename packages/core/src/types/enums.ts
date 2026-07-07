@@ -1393,3 +1393,22 @@ export enum StepAttemptClass {
   RESUME = "resume",
   REPLAY = "replay",
 }
+
+/**
+ * Types of values that can be stored in the config registry.
+ */
+export enum ConfigValueType {
+  STRING = "string",
+  NUMBER = "number",
+  BOOLEAN = "boolean",
+  OBJECT = "object",
+  ARRAY = "array",
+}
+
+/**
+ * Whether a config change applies immediately or requires a restart.
+ */
+export enum SwapClass {
+  HOT = "hot",
+  RESTART = "restart",
+}
