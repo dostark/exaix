@@ -656,13 +656,13 @@ export function createConfigAdapter(
  */
 export async function createConfigAdapterAsync(
   configDbPath: string,
-  options?: {
+  options?: Opt<{
     daemonPidPath?: string;
     store?: InMemoryConfigStore;
     db?: Database;
     mode?: ConfigAdapterMode;
     logger?: Opt<IEventLogger, Reason.OptionalDependency>;
-  },
+  }, Reason.ExecutionConfig>,
 ): Promise<IConfigAdapter> {
   if (options?.store && options?.db) {
     const pid = readPidFile(options.daemonPidPath ?? DEFAULT_DAEMON_PID_PATH);

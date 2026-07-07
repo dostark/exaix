@@ -1336,9 +1336,9 @@ export const __test_command = new Command()
         CONFIG_DIFF_LABEL,
         new Command()
           .description("Show uncommitted config changes")
-          .action(() => {
+          .action(async () => {
             try {
-              console.log(configCommands.diff());
+              console.log(await configCommands.diff());
             } catch (error) {
               display.error("cli.error", "config diff", {
                 message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -1419,9 +1419,9 @@ export const __test_command = new Command()
         "list-profiles",
         new Command()
           .description("List all profiles")
-          .action(() => {
+          .action(async () => {
             try {
-              const profiles = configCommands.listProfiles();
+              const profiles = await configCommands.listProfiles();
               for (const p of profiles) {
                 console.log(`  ${p}`);
               }

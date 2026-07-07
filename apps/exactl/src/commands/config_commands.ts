@@ -8,7 +8,7 @@
  */
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { join } from "@std/path";
-import { createConfigAdapter, getRegisteredDefaults } from "@exaix/core/config";
+import { createConfigAdapterAsync, getRegisteredDefaults } from "@exaix/core/config";
 import type { IConfigAdapter, IConfigValidationReport } from "@exaix/core/config";
 import { ConfigKeyNotFoundError } from "@exaix/core/config";
 import type { ConfigValue } from "@exaix/core/config";
@@ -38,10 +38,16 @@ export class ConfigCommands extends BaseCommand {
     super(context);
   }
 
-  private getAdapter(): IConfigAdapter {
+  /**
+   * Resolve (and cache) the config adapter. Uses the liveness-checked async factory
+   * `createConfigAdapterAsync` so that, once the CLI can attach to a running daemon's
+   * live store, a stale daemon PID correctly falls back to DirectConfigAdapter. Today
+   * the CLI passes no store/db, so this always resolves to a DirectConfigAdapter.
+   */
+  private async ensureAdapter(): Promise<IConfigAdapter> {
     if (!this.adapter) {
       const dbPath = join(this.config.system.root, ".exa", "config.db");
-      this.adapter = createConfigAdapter(dbPath);
+      this.adapter = await createConfigAdapterAsync(dbPath);
     }
     return this.adapter;
   }
@@ -56,44 +62,45 @@ export class ConfigCommands extends BaseCommand {
     return profile ? `${CONFIG_PROFILE_KEY_PREFIX}${profile}.${path}` : path;
   }
 
-  get(path: string, profile?: Opt<string, Reason.OptionalInput>): Promise<unknown> {
+  async get(path: string, profile?: Opt<string, Reason.OptionalInput>): Promise<unknown> {
     const scoped = this.scopeKey(path, profile);
-    const value = this.getAdapter().get(scoped);
+    const value = (await this.ensureAdapter()).get(scoped);
     if (value === undefined) {
-      return Promise.reject(new ConfigKeyNotFoundError(scoped));
+      throw new ConfigKeyNotFoundError(scoped);
     }
-    return Promise.resolve(value);
+    return value;
   }
 
   async set(path: string, valueStr: string, profile?: Opt<string, Reason.OptionalInput>): Promise<void> {
     const parsed = parseValue(valueStr);
-    await this.getAdapter().set(this.scopeKey(path, profile), parsed);
+    await (await this.ensureAdapter()).set(this.scopeKey(path, profile), parsed);
   }
 
   async unset(path: string): Promise<void> {
-    await this.getAdapter().unset(path);
+    await (await this.ensureAdapter()).unset(path);
   }
 
-  validate(path?: string): Promise<IConfigValidationReport> {
+  async validate(path?: string): Promise<IConfigValidationReport> {
+    const adapter = await this.ensureAdapter();
     if (path) {
-      const value = this.getAdapter().get(path);
-      return Promise.resolve(this.getAdapter().validateAtPath(path, value as ConfigValue ?? null));
+      const value = adapter.get(path);
+      return adapter.validateAtPath(path, value as ConfigValue ?? null);
     }
-    return Promise.resolve(this.getAdapter().validate());
+    return adapter.validate();
   }
 
-  show(
+  async show(
     format: ConfigOutputFormat = ConfigOutputFormat.HUMAN,
     sources?: boolean,
   ): Promise<string> {
-    const adapter = this.getAdapter();
+    const adapter = await this.ensureAdapter();
     if (sources) {
       const overrides = adapter.listOverrides();
       const lines = overrides.map((o) => {
         const provenance = adapter.getProvenance(o.key);
         return `${o.key} = ${o.value}  (source: ${provenance.source})`;
       });
-      return Promise.resolve(lines.join("\n"));
+      return lines.join("\n");
     }
 
     const effective: NestedConfigTree = {};
@@ -114,14 +121,14 @@ export class ConfigCommands extends BaseCommand {
     }
 
     if (format === ConfigOutputFormat.JSON) {
-      return Promise.resolve(JSON.stringify(effective, null, 2));
+      return JSON.stringify(effective, null, 2);
     }
 
-    return Promise.resolve(formatTree(effective, 0));
+    return formatTree(effective, 0);
   }
 
-  diff(): string {
-    const report = this.getAdapter().diff();
+  async diff(): Promise<string> {
+    const report = (await this.ensureAdapter()).diff();
     if (report.overridden.length === 0) {
       return "  No overridden keys.";
     }
@@ -131,11 +138,12 @@ export class ConfigCommands extends BaseCommand {
   }
 
   async setModel(name: string, model: string): Promise<void> {
-    await this.getAdapter().set(`models.${name}.model`, model);
+    await (await this.ensureAdapter()).set(`models.${name}.model`, model);
   }
 
   async setProvider(provider: string): Promise<void> {
-    await this.getAdapter().set("ai.provider", provider);
+    const adapter = await this.ensureAdapter();
+    await adapter.set("ai.provider", provider);
     const modelMap: Record<string, string> = {
       openai: "gpt-5-mini",
       anthropic: "claude-sonnet-4",
@@ -143,20 +151,20 @@ export class ConfigCommands extends BaseCommand {
       ollama: "llama3.2",
     };
     if (modelMap[provider]) {
-      await this.getAdapter().set(`models.default.model`, modelMap[provider]);
+      await adapter.set(`models.default.model`, modelMap[provider]);
     }
   }
 
   async setPath(key: string, dir: string): Promise<void> {
-    await this.getAdapter().set(`paths.${key}`, dir);
+    await (await this.ensureAdapter()).set(`paths.${key}`, dir);
   }
 
   async useProfile(name: string): Promise<void> {
-    await this.getAdapter().set("system.active_profile", name);
+    await (await this.ensureAdapter()).set("system.active_profile", name);
   }
 
-  listProfiles(): string[] {
-    const overrides = this.getAdapter().listOverrides();
+  async listProfiles(): Promise<string[]> {
+    const overrides = (await this.ensureAdapter()).listOverrides();
     return overrides
       .filter((o) => o.key.startsWith("profile."))
       .map((o) => o.key.replace("profile.", ""));
