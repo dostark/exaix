@@ -190,11 +190,19 @@ if (import.meta.main) {
     const config = configService.get();
     const checksum = configService.getChecksum();
 
-    // Initialize Config DB (dedicated SQLite connection — not journal DB)
+    // Initialize Config DB (dedicated SQLite connection — not journal DB).
+    // Boot-time init is a one-shot migrate + seed; close the connection once done
+    // so no SQLite/WAL handle is leaked for the daemon's lifetime. Phase 137 Step 3
+    // re-opens Config DB access via the shared DatabaseService + InMemoryConfigStore.
+    // configDbPath stays in scope for that later wiring.
     const configDbPath = ensureConfigDb(config.system.root);
     const configDb = new Database(configDbPath);
-    migrateConfigDb(configDb);
-    seedConfigDb(configDb);
+    try {
+      migrateConfigDb(configDb);
+      seedConfigDb(configDb);
+    } finally {
+      configDb.close();
+    }
 
     // Initialize Database Service first (needed for EventLogger)
     const dbService = new DatabaseService(config);

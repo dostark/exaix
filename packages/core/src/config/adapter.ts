@@ -15,6 +15,9 @@ import { getAllEffectiveValues, getEffectiveValue, getOverrideHistory, insertOve
 import { getRegisteredDefaults } from "./registry.ts";
 import type { IConfigurableOpts } from "./registry.ts";
 import { ConfigKeyNotFoundError, ConfigValidationError, EDITION_GATED_PATHS } from "./errors.ts";
+import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
+import type { Opt, Reason } from "../types/optional_marker.ts";
 
 /**
  * Report returned by validate() and validateAtPath().
@@ -213,14 +216,17 @@ function validateAgainstMetadata(
  */
 export class DirectConfigAdapter implements IConfigAdapter {
   private db: Database;
+  private logger?: IEventLogger;
   readonly mode: ConfigAdapterMode;
 
   constructor(
     dbPath: string,
     mode?: ConfigAdapterMode,
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
     this.db = new Database(dbPath);
     this.mode = mode ?? ConfigAdapterMode.DIRECT;
+    this.logger = logger;
   }
 
   get<T = ConfigValue>(key: string): T | undefined {
@@ -242,10 +248,10 @@ export class DirectConfigAdapter implements IConfigAdapter {
     return undefined;
   }
 
-  set(
+  async set(
     key: string,
     value: ConfigValue,
-    options: { swap_class?: string } = {},
+    options: Opt<{ swap_class?: string }, Reason.SensibleDefault> = {},
   ): Promise<void> {
     // Validate key exists in registry
     const registered = getRegisteredDefaults().get(key);
@@ -264,12 +270,24 @@ export class DirectConfigAdapter implements IConfigAdapter {
 
     const swapClass = options?.swap_class ?? "hot";
     insertOverride(this.db, key, value, "cli", swapClass);
-    return Promise.resolve();
+    await this.logger?.info(DomainEventType.ConfigUpdated, key, {
+      value,
+      source: "cli",
+      swap_class: swapClass,
+    });
   }
 
-  unset(key: string): Promise<void> {
+  async unset(key: string): Promise<void> {
+    // Enforce the same registry-existence contract as set()
+    if (!getRegisteredDefaults().has(key)) {
+      throw new ConfigKeyNotFoundError(key);
+    }
     insertOverride(this.db, key, null, "cli", "hot");
-    return Promise.resolve();
+    await this.logger?.info(DomainEventType.ConfigUpdated, key, {
+      value: null,
+      source: "cli",
+      swap_class: "hot",
+    });
   }
 
   listOverrides(): IOverrideEntry[] {
@@ -348,8 +366,9 @@ export class DirectConfigAdapter implements IConfigAdapter {
     // 1. Check DB for override
     const dbValue = getEffectiveValue(this.db, path);
     if (dbValue !== null) {
+      const registered = getRegisteredDefaults().get(path);
       return {
-        value: dbValue,
+        value: coerceDbValue(dbValue, registered?.opts),
         source: ConfigProvenanceSource.DB,
       };
     }
@@ -389,7 +408,8 @@ export class DirectConfigAdapter implements IConfigAdapter {
  */
 export function createConfigAdapter(
   configDbPath: string,
-  mode: ConfigAdapterMode = ConfigAdapterMode.DIRECT,
+  mode: Opt<ConfigAdapterMode, Reason.SensibleDefault> = ConfigAdapterMode.DIRECT,
+  logger?: Opt<IEventLogger, Reason.OptionalDependency>,
 ): IConfigAdapter {
-  return new DirectConfigAdapter(configDbPath, mode);
+  return new DirectConfigAdapter(configDbPath, mode, logger);
 }
