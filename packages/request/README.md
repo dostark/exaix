@@ -13,7 +13,7 @@ Request parsing, analysis, routing, and plan materialization for Exaix.
 | Step | Component          | Source                                                       |
 | ---- | ------------------ | ------------------------------------------------------------ |
 | 1    | `RequestProcessor` | `src/processor.ts:RequestProcessor.process()`                |
-| 2    | `RequestAnalyzer`  | `src/request_analysis/request_analyzer.ts`                   |
+| 2    | `RequestAnalyzer`  | `packages/request/src/analysis/analyzer.ts`                  |
 | 3    | `RequestRouter`    | `src/request_router.ts:RequestRouter.route()`                |
 | 4    | `AgentRunner`      | `@exaix/execution/src/agent_runner.ts:AgentRunner.execute()` |
 | 5    | `PlanAdapter`      | `src/plan_adapter.ts:PlanAdapter.write()`                    |

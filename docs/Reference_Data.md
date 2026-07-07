@@ -207,7 +207,7 @@ exactl blueprint create my-coder --name "My Coder" --model "anthropic:claude-son
 ### CI, Scaffolding, and Database Tooling
 
 - `scripts/ci.ts`: orchestrates repository checks and tests in CI-like environments
-- `scripts/scaffold.sh`: scaffolds a new Exaix workspace folder structure and templates
+- `scripts/scaffold.ts`: scaffolds a new Exaix workspace folder structure and templates
 - `scripts/setup_db.ts`: initializes `journal.db` schema
 - `scripts/migrate_db.ts` + `migrations/*.sql`: applies incremental database migrations
 
@@ -272,7 +272,7 @@ Core infrastructure modules for architecture validation:
 | **EventBusService**          | In-memory pub/sub routed by `traceId`        | `packages/core/src/observability/event_bus_service.ts`     |
 | **EventLogger**              | Publishes `IStreamingEvent` to event bus     | `packages/core/src/logger/event_logger.ts`                 |
 | **ReActLoopStrategy**        | Emits heartbeat via `setInterval` during LLM | `packages/execution/src/strategies/react_loop_strategy.ts` |
-| **SseHandler**               | Bridges HTTP SSE to `EventBusService`        | `packages/mcp/server/sse_handler.ts`                       |
+| **SseHandler**               | Bridges HTTP SSE to `EventBusService`        | `packages-team/mcp-server/sse_handler.ts`                  |
 | **WatchCommand**             | CLI `exactl watch <trace_id>` with colors    | `apps/exactl/src/commands/watch.ts`                        |
 | **MilestoneEventBusEmitter** | Bridges IMilestoneEmitter to EventBusService | `packages/core/src/observability/milestone_emitter.ts`     |
 
@@ -324,8 +324,8 @@ Core infrastructure modules for architecture validation:
 | **Parsers**                   | Parse markdown + frontmatter                                  | `packages/core/src/parsing/*.ts`                                              | 🟢 All   |
 | **Plan Parser**               | Shared structured plan parsing utility                        | `packages/core/src/planning/`                                                 | 🟢 All   |
 | **Schemas**                   | Zod validation layer                                          | `packages/schemas/src/*.ts`                                                   | 🟢 All   |
-| **MCP Client**                | Connect to external MCP servers                               | `packages/mcp/src/client.ts`                                                  | 🟢 All   |
-| **MCP Server**                | JSON-RPC server for tool execution                            | `packages/mcp/server/server.ts`                                               | 🔵 Team+ |
+| **MCP Client**                | Connect to external MCP servers                               | `packages/mcp/server/mcp_client.ts`                                           | 🟢 All   |
+| **MCP Server**                | JSON-RPC server for tool execution                            | `packages-team/mcp-server/server.ts`                                          | 🔵 Team+ |
 | **Blueprint Loader**          | Unified blueprint parsing                                     | `packages/core/src/blueprint/blueprint_loader.ts`                             | 🟢 All   |
 | **Output Validator**          | Schema validation with JSON repair                            | `packages/tool-runtime/src/output_validator.ts`                               | 🟢 All   |
 | **Retry Policy**              | Exponential backoff with jitter                               | `packages/core/src/request/retry_policy.ts`                                   | 🟢 All   |
@@ -683,7 +683,7 @@ Example output:
 [14:30:04] ★ milestone: flow.completed — Flow completed successfully [2/2]
 ```
 
-The SSE endpoint is served by `packages/mcp/server/sse_handler.ts` on the MCP HTTP server (default port `8765`, binds to `127.0.0.1` only). When the SSE server is unavailable, the command falls back to querying the Activity Journal via `queryActivity`.
+The SSE endpoint is served by `packages-team/mcp-server/sse_handler.ts` on the MCP HTTP server (default port `8765`, binds to `127.0.0.1` only). When the SSE server is unavailable, the command falls back to querying the Activity Journal via `queryActivity`.
 
 ---
 

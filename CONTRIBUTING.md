@@ -230,7 +230,7 @@ _Claude Code shorthand: `/commit`_
 
 - [ ] All items in the [AGENTS.md Task Checklist](AGENTS.md#task-checklist) are satisfied.
 - [ ] New configuration options added to `exa.config.sample.toml`.
-- [ ] Zod schema updated in `packages/core/src/config/schema.ts`.
+- [ ] Zod schema updated in `packages/schemas/src/config.ts`.
 - [ ] **Type Safety:** No `any`, no `unknown` as stored type, no `as any` casting (see `CODE_STYLE.md` §1).
 - [ ] **Dependency Injection:** Injectable services expose an `IFoo` interface; constructors accept `IFoo`, not `Foo`; test mocks implement the full interface (see `CODE_STYLE.md` §5).
 - [ ] **Environment Variables:** If using `EXA_LLM_*` vars, validated via `getValidatedEnvOverrides()` (no direct `Deno.env.get()`).

@@ -245,7 +245,7 @@ export class DirectConfigAdapter implements IConfigAdapter {
   set(
     key: string,
     value: ConfigValue,
-    options?: { swap_class?: string },
+    options: { swap_class?: string } = {},
   ): Promise<void> {
     // Validate key exists in registry
     const registered = getRegisteredDefaults().get(key);
@@ -389,7 +389,7 @@ export class DirectConfigAdapter implements IConfigAdapter {
  */
 export function createConfigAdapter(
   configDbPath: string,
-  mode?: ConfigAdapterMode,
+  mode: ConfigAdapterMode = ConfigAdapterMode.DIRECT,
 ): IConfigAdapter {
   return new DirectConfigAdapter(configDbPath, mode);
 }

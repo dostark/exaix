@@ -416,10 +416,9 @@ export class ModelResolver {
  */
 export function resolvePresetFromSize(
   size: string,
-  configPresets?: Record<string, ModelPreset>,
+  configPresets: Record<string, ModelPreset> = DEFAULT_MODEL_PRESETS,
 ): IResolvedModel {
-  const presets = configPresets ?? DEFAULT_MODEL_PRESETS;
-  const profile = presets[size];
+  const profile = configPresets[size];
   if (!profile) {
     throw new Error(`No preset profile found for model_size "${size}"`);
   }

@@ -29,11 +29,11 @@ Use this at the start of a session or before a multi-step change.
    - TDD / bugfix / refactor / docs / CI / security / portal permissions / RAG usage
 
 2. **Retrieve relevant instructions**
-   - Start with `.copilot/cross-reference.md` to find the primary docs.
-   - Read the provider guide for the active model:
-     - Claude: `.copilot/docs/claude.md`
-     - OpenAI: `.copilot/docs/openai.md`
-     - Google: `.copilot/docs/google.md`
+   - Start with `.copilot/DOCS.md` to find the primary docs.
+   - Read the appropriate provider skill for the active model:
+     - Claude: `.copilot/prompts/`
+     - OpenAI: `.copilot/prompts/`
+     - Google: `.copilot/prompts/`
    - Inject additional docs via `scripts/inject_agent_context.ts` when needed.
 
 3. **Adequacy verdict**
@@ -97,7 +97,7 @@ Do / Don't
 - **Example: Missing test helper guidance**
   - Task: "Add regression tests for a CLI config edge case."
   - Gap: no mention of the correct test context helper.
-  - Patch: add a small section to `.copilot/docs/testing.md` pointing to `createCliTestContext()` usage for CLI tests; add one focused test under `tests/agents/` to ensure the section exists.
+  - Patch: add a small section to `.copilot/skills/test-development/SKILL.md` pointing to `createCliTestContext()` usage for CLI tests; add one focused test under `tests/agents/` to ensure the section exists.
 
 - **Example: Missing provider-specific output contract**
   - Task: "Perform a multi-file refactor with OpenAI."

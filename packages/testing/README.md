@@ -38,9 +38,9 @@ import { createLoggingTestDb } from "@exaix/testing/helpers/db.ts";
 As root `tests/` shrinks from ~267 files to ~70, remaining helpers from `tests/helpers/`
 (and `tests/services/helpers/`) are being migrated into `@exaix/testing`:
 
-- `tests/helpers/config.ts` → `@exaix/testing`
-- `tests/helpers/mock_provider.ts` → `@exaix/testing`
-- `tests/helpers/test_helpers.ts` → `@exaix/testing`
+- `packages/testing/src/helpers/config.ts` → `@exaix/testing`
+- `packages/testing/src/helpers/mock_provider.ts` → `@exaix/testing`
+- `packages/testing/src/helpers/test_helpers.ts` → `@exaix/testing`
 - `tests/services/helpers/` → `@exaix/testing`
 
 This avoids deep imports from root `tests/` into package-local tests.
@@ -56,5 +56,5 @@ This avoids deep imports from root `tests/` into package-local tests.
 ## See Also
 
 - [`tests/README.md`](../../tests/README.md) — Full test directory structure, package-local test mapping, and writing-new-tests guide
-- [`dev/Exaix_Testing_and_CI_Strategy.md`](../../exaix-dev-docs/dev/Exaix_Testing_and_CI_Strategy.md) — Full testing strategy document
-- [`dev/Exaix_Packages.md`](../../exaix-dev-docs/dev/Exaix_Packages.md#test-migration-plan) — Test migration plan with per-folder migration map
+- [`exaix-dev-docs/dev/Exaix_Testing_and_CI_Strategy.md`](../../exaix-dev-docs/dev/Exaix_Testing_and_CI_Strategy.md) — Full testing strategy document
+- [`exaix-dev-docs/dev/Exaix_Packages.md`](../../exaix-dev-docs/dev/Exaix_Packages.md#test-migration-plan) — Test migration plan with per-folder migration map

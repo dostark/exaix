@@ -140,7 +140,7 @@ deno run -A scripts/check_code_style.ts --convert-warnings-to-errors
 | Tag                           | Severity | Rule | What it detects                                                                     |
 | ----------------------------- | -------- | ---- | ----------------------------------------------------------------------------------- |
 | `[cli-boundary-services]`     | error    | §9   | CLI command/handler/formatter importing from retired `src/services/` (not adapters) |
-| `[cli-boundary-config]`       | error    | §9   | CLI command/handler/formatter importing from retired `src/config/service.ts`        |
+| `[cli-boundary-config]`       | error    | §9   | CLI command/handler/formatter importing from `packages/core/src/config/service.ts`        |
 | `[core-boundary-cli-helpers]` | error    | §9   | Non-CLI module importing from `apps/exactl/src/helpers/`                            |
 
 ---
@@ -155,7 +155,7 @@ module purity rules.
 | Tag                                   | Severity | What it detects                                                                                    |
 | ------------------------------------- | -------- | -------------------------------------------------------------------------------------------------- |
 | `[package-boundary]`                  | error    | Package file importing from `src/`, `tests/`, or another package via relative path                 |
-| `[package-src-boundary]`              | error    | Package file importing a retired root implementation path (e.g., legacy `src/services/core/db.ts`) |
+| `[package-src-boundary]`              | error    | Package file importing a retired root implementation path                                        |
 | `[package-related-files-boundary]`    | error    | Package module `@related-files` header pointing at a retired root path                             |
 | `[package-subpath-promotion]`         | error    | Parent package entrypoint (`mod.ts`) re-exporting a canonical subpackage surface                   |
 | `[package-testing-import]`            | error    | Test file deep-importing from `packages/<name>/tests/` when `@exaix/<name>/testing` exists         |
@@ -190,5 +190,4 @@ The following locations are permanently exempt from specific package boundary ru
 | ------------------------- | ---------------------------------------------------------------------------------------------- |
 | `packages/core/`          | Defines the runtime entities (`EventLogger`, `ConfigService`) that other packages must not use |
 | `packages/mcp/server/`    | Declared bridge zone — concrete runtime wiring between package contracts and the MCP server    |
-| `packages/core/src/db.ts` | Legacy compatibility shim — exempt from `re-export-imported` rule                              |
 | `tests/helpers/`          | Root testing compatibility shims — exempt from `re-export-imported` rule                       |
