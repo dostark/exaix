@@ -8,9 +8,17 @@
  * ensuring stable behavior across AI, database, and infrastructure tests.
  */
 
+import { Database } from "@db/sqlite";
 import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
 import { join } from "@std/path";
-import { getDefaultPaths } from "@exaix/core/config";
+import {
+  createConfigAdapter,
+  ensureConfigDb,
+  getDefaultPaths,
+  migrateConfigDb,
+  seedConfigDb,
+} from "@exaix/core/config";
+import type { IConfigAdapter } from "@exaix/core/config";
 import { SqliteJournalMode } from "@exaix/core";
 import { ExaPathDefaults } from "@exaix/core";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
@@ -190,4 +198,27 @@ allowed_prefixes = ["feat", "fix", "docs", "chore", "refactor", "test"]
 
   await Deno.writeTextFile(configPath, configContent);
   return configPath;
+}
+
+export function createTestConfigDb(root: string): string {
+  const dbPath = ensureConfigDb(root);
+  const db = new Database(dbPath);
+  migrateConfigDb(db);
+  seedConfigDb(db);
+  db.close();
+  return dbPath;
+}
+
+export function createTestAdapter(root: string): IConfigAdapter {
+  const dbPath = createTestConfigDb(root);
+  return createConfigAdapter(dbPath);
+}
+
+export function simulateDaemonBoot(tempDir: string): IConfigAdapter {
+  const configPath = join(tempDir, "exa.config.toml");
+  Deno.writeTextFileSync(
+    configPath,
+    `[system]\nroot = "${tempDir}"\nschema_version = "1.0.0"\n`,
+  );
+  return createTestAdapter(tempDir);
 }

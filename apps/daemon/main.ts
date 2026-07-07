@@ -15,8 +15,9 @@ import {
   EDITION_TEAM,
   ProviderType,
 } from "@exaix/core";
+import { Database } from "@db/sqlite";
 import { DomainEventType } from "@exaix/core/events";
-import { ConfigService } from "@exaix/core/config";
+import { ConfigService, ensureConfigDb, migrateConfigDb, seedConfigDb } from "@exaix/core/config";
 import { evaluateNetPolicy } from "@exaix/core/security";
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -188,6 +189,12 @@ if (import.meta.main) {
     const configService = new ConfigService(configPath);
     const config = configService.get();
     const checksum = configService.getChecksum();
+
+    // Initialize Config DB (dedicated SQLite connection — not journal DB)
+    const configDbPath = ensureConfigDb(config.system.root);
+    const configDb = new Database(configDbPath);
+    migrateConfigDb(configDb);
+    seedConfigDb(configDb);
 
     // Initialize Database Service first (needed for EventLogger)
     const dbService = new DatabaseService(config);
