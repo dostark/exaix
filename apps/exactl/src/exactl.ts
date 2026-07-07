@@ -12,6 +12,7 @@ import { RequestCommands } from "./commands/request_commands.ts";
 import { type IReviewMetadata, ReviewCommands, type ReviewDetails } from "./commands/review_commands.ts";
 import { GitCommands } from "./commands/git_commands.ts";
 import { DaemonCommands } from "./commands/daemon_commands.ts";
+import { ConfigCommands } from "./commands/config_commands.ts";
 import { PortalCommands } from "./commands/portal_commands.ts";
 import { BlueprintCommands } from "./commands/blueprint_commands.ts";
 import { FlowCommands } from "./commands/flow_commands.ts";
@@ -46,6 +47,7 @@ import type { OutputFormat } from "@exaix/cli/types/memory_types.ts";
 import {
   BINARY_VERSION,
   type BlueprintStatus,
+  ConfigOutputFormat,
   DAEMON_IDENTITY_ID,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   PORTAL_LABEL,
@@ -92,6 +94,7 @@ const CLI_OUTPUT_FORMAT_OPTION = "--format <format:string>";
 const CLI_OUTPUT_FORMAT_HELP = "Output format: table, json, md";
 const CLI_OUTPUT_FORMAT_DEFAULT = { default: UIOutputFormat.TABLE };
 const CLI_OPTION_JSON_HELP = "Output in JSON format";
+const CONFIG_LABEL = "config";
 const DEFAULT_CAPABILITIES_LABEL = "general";
 const CLI_LIMIT_OPTION = "-l, --limit <limit:number>";
 const CLI_LIMIT_HELP = "Maximum results";
@@ -116,6 +119,7 @@ const planCommands = new PlanCommands(fullContext);
 const reviewCommands = new ReviewCommands(fullContext);
 const gitCommands = new GitCommands(fullContext);
 const daemonCommands = new DaemonCommands(fullContext);
+const configCommands = new ConfigCommands(fullContext);
 const portalCommands = new PortalCommands(fullContext);
 const blueprintCommands = new BlueprintCommands(fullContext);
 const routingCommands = new RoutingCommands(fullContext);
@@ -1223,6 +1227,101 @@ export const __test_command = new Command()
               console.log(output);
             } catch (error) {
               display.error("cli.error", "portal knowledge", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      ),
+  )
+  // Config commands
+  .command(
+    CONFIG_LABEL,
+    new Command()
+      .description("View and modify Exaix configuration")
+      .command(
+        "get <path>",
+        new Command()
+          .description("Print effective value at path")
+          .action(async (_options, ...args: string[]) => {
+            try {
+              const value = await configCommands.get(args[0]);
+              display.info("config.get", args[0], { value: String(value) });
+            } catch (error) {
+              display.error("cli.error", "config get", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "set <path> <value>",
+        new Command()
+          .description("Set value, validate, write, reload")
+          .action(async (_options, ...args: string[]) => {
+            try {
+              await configCommands.set(args[0], args[1]);
+              display.info("config.set", args[0], { value: args[1] });
+            } catch (error) {
+              display.error("cli.error", "config set", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "unset <path>",
+        new Command()
+          .description("Reset key to default")
+          .action(async (_options, ...args: string[]) => {
+            try {
+              await configCommands.unset(args[0]);
+              display.info("config.unset", args[0], {});
+            } catch (error) {
+              display.error("cli.error", "config unset", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "validate",
+        new Command()
+          .description("Validate entire config or specific path")
+          .arguments("[path:string]")
+          .action(async (_options, path?: string) => {
+            try {
+              const report = await configCommands.validate(path);
+              if (report.valid) {
+                display.info("config.validate", "config", { valid: true });
+              } else {
+                for (const issue of report.issues) {
+                  display.warn("config.validate", issue.path, { message: issue.message, code: issue.code });
+                }
+              }
+            } catch (error) {
+              display.error("cli.error", "config validate", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "show",
+        new Command()
+          .description("Show effective config")
+          .option("--json", CLI_OPTION_JSON_HELP)
+          .action(async (options) => {
+            try {
+              const format = options.json ? ConfigOutputFormat.JSON : ConfigOutputFormat.HUMAN;
+              const output = await configCommands.show(format);
+              console.log(output);
+            } catch (error) {
+              display.error("cli.error", "config show", {
                 message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
