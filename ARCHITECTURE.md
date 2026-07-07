@@ -273,17 +273,17 @@ The `.exa/config.db` SQLite database stores configuration overrides for keys reg
 - `DirectConfigAdapter` — opens its own `@db/sqlite` connection for offline read/write (CLI mode, daemon not running).
 - `DaemonConfigAdapter` extends `DirectConfigAdapter` — shares the daemon's `@db/sqlite` handle, reads from `InMemoryConfigStore` (daemon's live cache), writes through to Config DB. For hot-swappable (`swap: "hot"`) keys, applies changes to the in-memory store immediately. Warns on auth-secret plaintext writes.
 
-**Factory:** `createConfigAdapter()` auto-detects daemon state via PID file and returns the appropriate adapter.
+**Factory:** For external callers (CLI/MCP), `createConfigAdapter()` (sync) selects the daemon adapter when both a store+db handle are supplied and a PID file EXISTS — it does not verify liveness. `createConfigAdapterAsync()` additionally verifies the PID is a live process (`kill -0`, via the core-local `isPidAlive`) and falls back to `DirectConfigAdapter` on a stale PID; prefer it when attaching to a possibly-dead daemon. The **daemon process itself does not use the factory for self-detection** — it constructs `DaemonConfigAdapter` directly at boot (`apps/daemon/main.ts`).
 
-**In-memory store:** At daemon boot, `InMemoryConfigStore` is populated from `getAllEffectiveValues()` + registry defaults. The daemon reads from the store for all non-bootstrap keys.
+**Cutover (daemon read path):** At boot the daemon populates `InMemoryConfigStore` from `getAllEffectiveValues()` + registry defaults, constructs a `DaemonConfigAdapter`, and wires it into `IApplicationContext.configAdapter` (the narrow `IConfigAdapter` types-only surface). The daemon resolves non-bootstrap keys through the adapter (bootstrap keys — `system.root`, `schema_version` — stay on TOML). Boot journals a `config.cutover.resolved` event carrying a representative migrated key's resolved value + provenance, so the read path is observable end-to-end (`tests/integration/config_cutover_daemon_boot_test.ts`).
 
-**DB watcher:** A polling loop (`DEFAULT_CONFIG_DB_POLL_INTERVAL_MS` = 5s) compares `MAX(id)` in `config_overrides`. When a new override is detected, `createDbWatcherHandler()` hot-applies `swap: "hot"` keys to the in-memory store. Restart-required keys are skipped (applied on next boot).
+**DB watcher:** A polling loop (`DEFAULT_CONFIG_DB_POLL_INTERVAL_MS` = 5s; overridable via `EXA_CONFIG_DB_POLL_INTERVAL_MS` for tests) compares `MAX(id)` in `config_overrides`. When a new override is detected, `createDbWatcherHandler()` hot-applies `swap: "hot"` keys to the in-memory store and journals a `config.db_watcher.change_detected` event (distinct from the `config.updated` used for direct writes). Restart-required keys are skipped (applied on next boot).
 
-**Resolution order** for `get(key)`: (1) Config DB override → (2) registry default (from `configurable()`) → (3) ConfigSchema default → (4) undefined.
+**Resolution order** for `get(key)`: (1) Config DB override → (2) registry default (from `configurable()`) → (3) ConfigSchema default → (4) undefined. Profile-scoped keys (`profile.<name>.<key>`) validate against their unscoped base key's metadata via `resolveValidationKey()`; global reads do not fall through to the active profile (explicit `--profile` scoping only).
 
-**MCP config tools:** 6 domain tools registered at `packages-team/mcp-server/config_tools.ts`: `ConfigGet`, `ConfigSet` (staging), `ConfigValidate`, `ConfigDiff`, `ConfigGetProvenance`, `ConfigApply`. The 4 read-only tools are auto-approved; mutation tools require human approval.
+**MCP config tools:** 6 domain tools registered at `packages-team/mcp-server/config_tools.ts`: `ConfigGet`, `ConfigSet` (staging), `ConfigValidate`, `ConfigDiff`, `ConfigGetProvenance`, `ConfigApply`. The 4 read-only tools are auto-approved; mutation tools require human approval. `ConfigApply` awaits each staged `set()` and records per-key applied/error results.
 
-**CLI surface:** `exactl config {get,set,unset,validate,show,diff,set-model,set-provider,set-path,use-profile,list-profiles}` with `--json`, `--sources` flags.
+**CLI surface:** `exactl config {get,set,unset,validate,show,diff,set-model,set-provider,set-path,use-profile,list-profiles}` with `--json`, `--sources`, and `--profile <name>` (scopes `get`/`set` to `profile.<name>.<key>`) flags.
 
 **Validation bounds:** Zod schemas use `resolveConfigurableBounds(key)` from `@exaix/core/config` (via `c()`/`cBounds()` helpers at `packages/schemas/src/config.ts`) to derive min/max/default from the registry — no separate MIN/MAX constants needed.
 
