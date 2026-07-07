@@ -6,13 +6,51 @@
  * @architectural-layer AI
  */
 
+import { configurable } from "@exaix/core/config";
+import { ConfigValueType, SwapClass } from "@exaix/core";
 import { type IProviderDefaults, ProviderCostTier, ProviderType } from "@exaix/core";
 
-export const DEFAULT_GOOGLE_MODEL = "gemini-flash-latest";
-export const DEFAULT_GOOGLE_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
-export const DEFAULT_GOOGLE_TIMEOUT_MS = 30000;
-export const DEFAULT_GOOGLE_RETRY_MAX_ATTEMPTS = 3;
-export const DEFAULT_GOOGLE_RETRY_BACKOFF_MS = 1000;
+export const DEFAULT_GOOGLE_MODEL = configurable({
+  key: "google.model",
+  default: "gemini-flash-latest",
+  type: ConfigValueType.STRING,
+  description: "Default model identifier for google provider",
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_GOOGLE_ENDPOINT = configurable({
+  key: "google.endpoint",
+  default: "https://generativelanguage.googleapis.com/v1beta/models",
+  type: ConfigValueType.STRING,
+  description: "API endpoint URL for google provider",
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_GOOGLE_TIMEOUT_MS = configurable({
+  key: "google.timeout_ms",
+  default: 30000,
+  type: ConfigValueType.NUMBER,
+  description: "Request timeout in milliseconds for google provider",
+  min: 1000,
+  max: 600_000,
+  swap: SwapClass.HOT,
+});
+export const DEFAULT_GOOGLE_RETRY_MAX_ATTEMPTS = configurable({
+  key: "google.retry_max_attempts",
+  default: 3,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum retry attempts for google provider requests",
+  min: 1,
+  max: 10,
+  swap: SwapClass.HOT,
+});
+export const DEFAULT_GOOGLE_RETRY_BACKOFF_MS = configurable({
+  key: "google.retry_backoff_ms",
+  default: 1000,
+  type: ConfigValueType.NUMBER,
+  description: "Backoff delay in milliseconds for google retries",
+  min: 100,
+  max: 60_000,
+  swap: SwapClass.HOT,
+});
 
 export const PROVIDER_GOOGLE = ProviderType.GOOGLE;
 export const PROVIDER_GOOGLE_DESCRIPTION = "Google's Gemini models for multimodal AI";

@@ -6,14 +6,52 @@
  * @architectural-layer AI
  */
 
+import { configurable } from "@exaix/core/config";
+import { ConfigValueType, SwapClass } from "@exaix/core";
 import { type IProviderDefaults, ProviderCostTier, ProviderType } from "@exaix/core";
 
 export const DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434";
-export const DEFAULT_OLLAMA_ENDPOINT = "http://localhost:11434/api/generate";
-export const DEFAULT_OLLAMA_MODEL = "llama3.2";
-export const DEFAULT_OLLAMA_TIMEOUT_MS = 120000;
-export const DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS = 3;
-export const DEFAULT_OLLAMA_RETRY_BACKOFF_MS = 1000;
+export const DEFAULT_OLLAMA_ENDPOINT = configurable({
+  key: "ollama.endpoint",
+  default: "http://localhost:11434/api/generate",
+  type: ConfigValueType.STRING,
+  description: "API endpoint URL for ollama provider",
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_OLLAMA_MODEL = configurable({
+  key: "ollama.model",
+  default: "llama3.2",
+  type: ConfigValueType.STRING,
+  description: "Default model identifier for ollama provider",
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_OLLAMA_TIMEOUT_MS = configurable({
+  key: "ollama.timeout_ms",
+  default: 120000,
+  type: ConfigValueType.NUMBER,
+  description: "Request timeout in milliseconds for ollama provider",
+  min: 1000,
+  max: 600_000,
+  swap: SwapClass.HOT,
+});
+export const DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS = configurable({
+  key: "ollama.retry_max_attempts",
+  default: 3,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum retry attempts for ollama provider requests",
+  min: 1,
+  max: 10,
+  swap: SwapClass.HOT,
+});
+export const DEFAULT_OLLAMA_RETRY_BACKOFF_MS = configurable({
+  key: "ollama.retry_backoff_ms",
+  default: 1000,
+  type: ConfigValueType.NUMBER,
+  description: "Backoff delay in milliseconds for ollama retries",
+  min: 100,
+  max: 60_000,
+  swap: SwapClass.HOT,
+});
 export const DEFAULT_OLLAMA_EMBED_CHUNK_SIZE = 1000;
 export const OLLAMA_EMBED_CACHE_MAX_ENTRIES = 512;
 

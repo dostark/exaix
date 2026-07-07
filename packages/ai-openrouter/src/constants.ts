@@ -7,14 +7,52 @@
  * @description OpenRouter-specific defaults and provider metadata owned by @exaix/ai-openrouter.
  */
 
+import { configurable } from "@exaix/core/config";
+import { ConfigValueType, SwapClass } from "@exaix/core";
 import { type IProviderDefaults, ProviderCostTier, ProviderType } from "@exaix/core";
 
-export const DEFAULT_OPENROUTER_MODEL = "openai/gpt-4o-mini";
+export const DEFAULT_OPENROUTER_MODEL = configurable({
+  key: "openrouter.model",
+  default: "openai/gpt-4o-mini",
+  type: ConfigValueType.STRING,
+  description: "Default model identifier for openrouter provider",
+  swap: SwapClass.RESTART,
+});
 export const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
-export const DEFAULT_OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
-export const DEFAULT_OPENROUTER_TIMEOUT_MS = 60000;
-export const DEFAULT_OPENROUTER_RETRY_MAX_ATTEMPTS = 3;
-export const DEFAULT_OPENROUTER_RETRY_BACKOFF_MS = 1000;
+export const DEFAULT_OPENROUTER_ENDPOINT = configurable({
+  key: "openrouter.endpoint",
+  default: "https://openrouter.ai/api/v1/chat/completions",
+  type: ConfigValueType.STRING,
+  description: "API endpoint URL for openrouter provider",
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_OPENROUTER_TIMEOUT_MS = configurable({
+  key: "openrouter.timeout_ms",
+  default: 60000,
+  type: ConfigValueType.NUMBER,
+  description: "Request timeout in milliseconds for openrouter provider",
+  min: 1000,
+  max: 600_000,
+  swap: SwapClass.HOT,
+});
+export const DEFAULT_OPENROUTER_RETRY_MAX_ATTEMPTS = configurable({
+  key: "openrouter.retry_max_attempts",
+  default: 3,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum retry attempts for openrouter provider requests",
+  min: 1,
+  max: 10,
+  swap: SwapClass.HOT,
+});
+export const DEFAULT_OPENROUTER_RETRY_BACKOFF_MS = configurable({
+  key: "openrouter.retry_backoff_ms",
+  default: 1000,
+  type: ConfigValueType.NUMBER,
+  description: "Backoff delay in milliseconds for openrouter retries",
+  min: 100,
+  max: 60_000,
+  swap: SwapClass.HOT,
+});
 
 /** OpenRouter ranking/analytics headers (optional but recommended). */
 export const HTTP_REFERER_HEADER = "HTTP-Referer";

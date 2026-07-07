@@ -27,6 +27,7 @@ import type { IPlanService } from "./i_plan_service.ts";
 import type { IPlanAmendmentService } from "./i_plan_amendment_service.ts";
 import type { IToolRegistry } from "./i_tool_registry.ts";
 import type { IGateEvaluator } from "./i_gate_evaluator.ts";
+import type { IConfigAdapter } from "./i_config_adapter.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "./i_portal_knowledge_service.ts";
 import type { ICostTracker } from "./i_cost_tracker.ts";
 import type { INotificationService } from "./i_notification_service.ts";
@@ -103,6 +104,9 @@ export interface IApplicationContext {
 
   /** Optional notification service for human-in-the-loop and TUI/daemon flows */
   notificationService?: INotificationService;
+
+  /** Optional config adapter for reading/writing config via the daemon's in-memory store */
+  configAdapter?: IConfigAdapter;
 }
 
 // Re-export types for convenience

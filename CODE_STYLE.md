@@ -89,9 +89,11 @@ checklists (pre‑commit, CI, etc.).
 
 - Never hardcode numeric literals or string constants in production or test code
   (timeouts, status values, provider names, etc.).
-- **User‑configurable values** — every tunable `DEFAULT_*` constant in
-  `packages/core/src/types/constants.ts` **must** be wrapped with
+- **User‑configurable values** — every tunable `DEFAULT_*` constant,
+  regardless of which package it lives in, **must** be wrapped with
   `configurable({key, default, type, description, min?, max?, enum?, swap?})`.
+  Import `configurable` from `@exaix/core/config` (or from `../config/registry.ts`
+  for code inside `packages/core/src/`). Example:
   The `configurable()` call registers the constant in the runtime registry,
   making it visible to `exactl config get/set`, MCP config tools, and the
   daemon's in-memory store. See `packages/core/src/config/registry.ts` for

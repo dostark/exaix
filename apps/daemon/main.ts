@@ -14,10 +14,20 @@ import {
   EDITION_SOLO,
   EDITION_TEAM,
   ProviderType,
+  SwapClass,
 } from "@exaix/core";
 import { Database } from "@db/sqlite";
 import { DomainEventType } from "@exaix/core/events";
-import { ConfigService, ensureConfigDb, migrateConfigDb, seedConfigDb } from "@exaix/core/config";
+import {
+  ConfigService,
+  createConfigAdapter,
+  ensureConfigDb,
+  getAllEffectiveValues,
+  getRegisteredDefaults,
+  InMemoryConfigStore,
+  migrateConfigDb,
+  seedConfigDb,
+} from "@exaix/core/config";
 import { evaluateNetPolicy } from "@exaix/core/security";
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -191,18 +201,12 @@ if (import.meta.main) {
     const checksum = configService.getChecksum();
 
     // Initialize Config DB (dedicated SQLite connection — not journal DB).
-    // Boot-time init is a one-shot migrate + seed; close the connection once done
-    // so no SQLite/WAL handle is leaked for the daemon's lifetime. Phase 137 Step 3
-    // re-opens Config DB access via the shared DatabaseService + InMemoryConfigStore.
-    // configDbPath stays in scope for that later wiring.
+    // Phase 137 Step 3: keep the handle open for the daemon lifetime so the
+    // InMemoryConfigStore and DB watcher can share it. Close on graceful shutdown.
     const configDbPath = ensureConfigDb(config.system.root);
     const configDb = new Database(configDbPath);
-    try {
-      migrateConfigDb(configDb);
-      seedConfigDb(configDb);
-    } finally {
-      configDb.close();
-    }
+    migrateConfigDb(configDb);
+    seedConfigDb(configDb);
 
     // Initialize Database Service first (needed for EventLogger)
     const dbService = new DatabaseService(config);
@@ -239,6 +243,32 @@ if (import.meta.main) {
         "journal.db",
         {},
       );
+    });
+
+    // ── Config DB: populate in-memory store and create adapter ────────────
+    // Phase 137 Step 3: populate InMemoryConfigStore from Config DB +
+    // registry defaults, then wire DaemonConfigAdapter into the context.
+    const configStore = new InMemoryConfigStore();
+    const effectiveValues = getAllEffectiveValues(configDb);
+    for (const [key, value] of effectiveValues) {
+      const swap = getRegisteredDefaults().get(key)?.opts?.swap ?? SwapClass.HOT;
+      configStore.set(key, value, swap);
+    }
+    const configAdapter = createConfigAdapter(configDbPath, undefined, logger, {
+      store: configStore,
+      db: configDb,
+    });
+    logger.info(DomainEventType.ConfigUpdated, "config_db_store", {
+      keys: effectiveValues.size,
+      adapterMode: configAdapter.mode,
+    });
+
+    // Register configDb.close() on graceful shutdown (kept open for the
+    // watcher's lifetime). The DB-watcher's own teardown (Step 4) will be
+    // registered separately and must not double-close.
+    gracefulShutdown.registerCleanup("close_config_db", () => {
+      configDb.close();
+      return Promise.resolve();
     });
 
     await logger.log({

@@ -350,7 +350,15 @@ export const DEFAULT_WATCHER_STABILITY_MIN_FILE_SIZE = configurable({
 // Session Delegate (Phase 111/123)
 // ============================================================================
 /** Maximum time (ms) to drain a headless delegate's stdout stream. */
-export const DELEGATE_STDOUT_DRAIN_MS = 5_000;
+export const DELEGATE_STDOUT_DRAIN_MS = configurable({
+  key: "delegate.stdout_drain_ms",
+  default: 5_000,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum time in milliseconds to drain a headless delegate's stdout stream",
+  min: 100,
+  max: 300_000,
+  swap: SwapClass.RESTART,
+});
 
 // ============================================================================
 // Service Limits and Batch Sizes
@@ -471,7 +479,15 @@ export const MEMORY_MIN_VECTORS_FOR_LOCAL_SEARCH = configurable({
 });
 
 /** Example execution time used in AgentExecutor response-shape examples. */
-export const AGENT_EXECUTION_EXAMPLE_TIME_MS = 2_000;
+export const AGENT_EXECUTION_EXAMPLE_TIME_MS = configurable({
+  key: "agent.execution_example_time_ms",
+  default: 2_000,
+  type: ConfigValueType.NUMBER,
+  description: "Example execution time in milliseconds for response-shape examples",
+  min: 100,
+  max: 60_000,
+  swap: SwapClass.RESTART,
+});
 
 // ReAct loop constants
 export const REACT_THOUGHT_PREFIX = "THOUGHT: ";
@@ -678,8 +694,24 @@ export const PROMPT_PREVIEW_EXTENDED_MIN = 50;
 export const PROMPT_PREVIEW_EXTENDED_MAX = 1000;
 
 // UI defaults
-export const PROMPT_PREVIEW_LENGTH = 100;
-export const PROMPT_PREVIEW_EXTENDED = 500;
+export const PROMPT_PREVIEW_LENGTH = configurable({
+  key: "ui.prompt_preview_length",
+  default: 100,
+  type: ConfigValueType.NUMBER,
+  description: "Default prompt preview length in characters",
+  min: PROMPT_PREVIEW_LENGTH_MIN,
+  max: PROMPT_PREVIEW_LENGTH_MAX,
+  swap: SwapClass.RESTART,
+});
+export const PROMPT_PREVIEW_EXTENDED = configurable({
+  key: "ui.prompt_preview_extended",
+  default: 500,
+  type: ConfigValueType.NUMBER,
+  description: "Extended prompt preview length in characters",
+  min: PROMPT_PREVIEW_EXTENDED_MIN,
+  max: PROMPT_PREVIEW_EXTENDED_MAX,
+  swap: SwapClass.RESTART,
+});
 
 // ============================================================================
 // MCP Defaults
@@ -1106,21 +1138,93 @@ export const DEFAULT_COST_TRACKING_BATCH_DELAY_MS = 5000;
 export const DEFAULT_COST_TRACKING_MAX_BATCH_SIZE = 50;
 // Rates per 1K tokens. Based on 2025-2026 output pricing:
 // OpenAI gpt-5-mini: $2.00/1M output → $0.002/1K
-export const COST_RATE_OPENAI = 0.002;
+export const COST_RATE_OPENAI = configurable({
+  key: "cost_tracking.rate_openai",
+  default: 0.002,
+  type: ConfigValueType.NUMBER,
+  description: "USD cost per 1K tokens for openai provider",
+  min: 0,
+  max: 1,
+  swap: SwapClass.RESTART,
+});
 // Anthropic claude-haiku-4-5: $5.00/1M output → $0.005/1K
-export const COST_RATE_ANTHROPIC = 0.005;
+export const COST_RATE_ANTHROPIC = configurable({
+  key: "cost_tracking.rate_anthropic",
+  default: 0.005,
+  type: ConfigValueType.NUMBER,
+  description: "USD cost per 1K tokens for anthropic provider",
+  min: 0,
+  max: 1,
+  swap: SwapClass.RESTART,
+});
 // Google gemini-2.5-flash (Vertex AI): $2.50/1M output → $0.0025/1K
-export const COST_RATE_GOOGLE = 0.0025;
+export const COST_RATE_GOOGLE = configurable({
+  key: "cost_tracking.rate_google",
+  default: 0.0025,
+  type: ConfigValueType.NUMBER,
+  description: "USD cost per 1K tokens for google provider",
+  min: 0,
+  max: 1,
+  swap: SwapClass.RESTART,
+});
 // Vertex AI bills Gemini at the same output rate as the Google AI API.
-export const COST_RATE_VERTEX = 0.0025;
+export const COST_RATE_VERTEX = configurable({
+  key: "cost_tracking.rate_vertex",
+  default: 0.0025,
+  type: ConfigValueType.NUMBER,
+  description: "USD cost per 1K tokens for vertex provider",
+  min: 0,
+  max: 1,
+  swap: SwapClass.RESTART,
+});
 // OpenRouter pricing varies per underlying sub-model; 0 is an unmetered
 // sentinel — usage token counts are still recorded for auditing.
-export const COST_RATE_OPENROUTER = 0.0;
-export const COST_RATE_OLLAMA = 0.0;
+export const COST_RATE_OPENROUTER = configurable({
+  key: "cost_tracking.rate_openrouter",
+  default: 0.0,
+  type: ConfigValueType.NUMBER,
+  description: "USD cost per 1K tokens for openrouter provider",
+  min: 0,
+  max: 1,
+  swap: SwapClass.RESTART,
+});
+export const COST_RATE_OLLAMA = configurable({
+  key: "cost_tracking.rate_ollama",
+  default: 0.0,
+  type: ConfigValueType.NUMBER,
+  description: "USD cost per 1K tokens for ollama provider",
+  min: 0,
+  max: 1,
+  swap: SwapClass.RESTART,
+});
 // llama.cpp runs locally and incurs no provider cost.
-export const COST_RATE_LLAMACPP = 0.0;
-export const COST_RATE_MOCK = 0.0;
-export const TOKENS_PER_COST_UNIT = 1000;
+export const COST_RATE_LLAMACPP = configurable({
+  key: "cost_tracking.rate_llamacpp",
+  default: 0.0,
+  type: ConfigValueType.NUMBER,
+  description: "USD cost per 1K tokens for llamacpp provider",
+  min: 0,
+  max: 1,
+  swap: SwapClass.RESTART,
+});
+export const COST_RATE_MOCK = configurable({
+  key: "cost_tracking.rate_mock",
+  default: 0.0,
+  type: ConfigValueType.NUMBER,
+  description: "USD cost per 1K tokens for mock provider",
+  min: 0,
+  max: 1,
+  swap: SwapClass.RESTART,
+});
+export const TOKENS_PER_COST_UNIT = configurable({
+  key: "cost_tracking.tokens_per_unit",
+  default: 1000,
+  type: ConfigValueType.NUMBER,
+  description: "Number of tokens per cost calculation unit",
+  min: 1,
+  max: 1_000_000,
+  swap: SwapClass.RESTART,
+});
 
 // ============================================================================
 // Health Check Validation Limits
@@ -2104,7 +2208,15 @@ export const DEFAULT_QG_MODE = configurable({
  * Score below which a request requires clarification or is rejected.
  * Requests scoring below this are not actionable without human input.
  */
-export const DEFAULT_QG_MINIMUM_THRESHOLD = 20;
+export const DEFAULT_QG_MINIMUM_THRESHOLD = configurable({
+  key: "quality_gate.minimum_threshold",
+  default: 20,
+  type: ConfigValueType.NUMBER,
+  description: "Score below which a request requires clarification or is rejected",
+  min: 0,
+  max: 100,
+  swap: SwapClass.RESTART,
+});
 
 /**
  * Score below which auto-enrichment is applied (but above minimum).
@@ -2134,7 +2246,15 @@ export const DEFAULT_QG_PROCEED_THRESHOLD = configurable({
 });
 
 /** Maximum clarification rounds before forcing proceed-with-best-effort. */
-export const DEFAULT_MAX_CLARIFICATION_ROUNDS = 5;
+export const DEFAULT_MAX_CLARIFICATION_ROUNDS = configurable({
+  key: "quality_gate.max_clarification_rounds",
+  default: 5,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum clarification rounds before forcing proceed-with-best-effort",
+  min: 1,
+  max: 20,
+  swap: SwapClass.RESTART,
+});
 
 // --- Heuristic signal thresholds ---
 

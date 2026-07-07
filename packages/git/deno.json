@@ -11,6 +11,7 @@
     "@exaix/git/testing": "./testing/mod.ts",
     "@exaix/git/testing/": "./testing/",
     "@exaix/core": "../core/mod.ts",
+    "@exaix/core/config": "../core/src/config/mod.ts",
     "@exaix/core/events": "../core/src/events/mod.ts",
     "@exaix/core/logger": "../core/src/logger/mod.ts",
     "@exaix/core/": "../core/src/",

@@ -69,10 +69,10 @@ deno run -A scripts/check_code_style.ts --convert-warnings-to-errors
 | `[magic-union-type]` | error    | §2   | Inline string literal union (e.g. `"a" \| "b"`) in production code |
 
 > **Related:** [CODE_STYLE.md §2](../CODE_STYLE.md#no-magic-values) also covers
-> `configurable()` wrapping guidelines for tunable `DEFAULT_*` constants and the
-> `check:config-keys` CI gate that prevents duplicate config keys. Use
-> `resolveConfigurableBounds(key)` in schemas instead of importing separate
-> MIN/MAX named constants.
+> `configurable()` wrapping guidelines for tunable `DEFAULT_*` constants (in any
+> package) and the `check:config-keys` CI gate that prevents duplicate config
+> keys across all packages. Use `resolveConfigurableBounds(key)` in schemas
+> instead of importing separate MIN/MAX named constants.
 
 ---
 

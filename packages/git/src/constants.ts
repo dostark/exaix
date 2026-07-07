@@ -5,24 +5,20 @@
  * @architectural-layer Services
  * @ungrounded
  * @description Git-related constants for repository operations and validation.
+ *   Duplicate constants are re-exported from @exaix/core to avoid conflicting
+ *   sources of truth — the central configurable() registry in core is authoritative.
  */
+
+import { configurable } from "@exaix/core/config";
+import { ConfigValueType, SwapClass } from "@exaix/core";
 
 export const GIT_EMPTY_SHA = "0000000000000000000000000000000000000000";
 
+// Imported from @exaix/core (configurable in core's constants.ts — see check:config-keys)
 export const GIT_TIMEOUT_MS_MIN = 1000;
 export const GIT_TIMEOUT_MS_MAX = 60000;
-export const GIT_MAX_RETRIES_MIN = 1;
-export const GIT_MAX_RETRIES_MAX = 10;
-export const GIT_RETRY_BACKOFF_BASE_MS_MIN = 100;
-export const GIT_RETRY_BACKOFF_BASE_MS_MAX = 10000;
-export const GIT_BRANCH_NAME_COLLISION_MAX_RETRIES_MIN = 1;
-export const GIT_BRANCH_NAME_COLLISION_MAX_RETRIES_MAX = 10;
-export const GIT_TRACE_ID_SHORT_LENGTH_MIN = 4;
-export const GIT_TRACE_ID_SHORT_LENGTH_MAX = 16;
-export const GIT_BRANCH_SUFFIX_LENGTH_MIN = 4;
-export const GIT_BRANCH_SUFFIX_LENGTH_MAX = 16;
-
 export const DEFAULT_GIT_BRANCH_PREFIX_PATTERN = "^(feature|bugfix|hotfix|chore)/";
+
 export const DEFAULT_GIT_ALLOWED_PREFIXES = ["feature/", "bugfix/", "hotfix/", "chore/"];
 export {
   DEFAULT_GIT_BRANCH_NAME_COLLISION_MAX_RETRIES,
@@ -38,9 +34,25 @@ export {
   DEFAULT_GIT_STATUS_TIMEOUT_MS,
   DEFAULT_GIT_TRACE_ID_SHORT_LENGTH,
 } from "@exaix/core";
-export const DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT = 1;
+export const DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT = configurable({
+  key: "git.revert_concurrency_limit",
+  default: 1,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum concurrent git revert operations",
+  min: 1,
+  max: 10,
+  swap: SwapClass.RESTART,
+});
 export const DEFAULT_GIT_EXIT_CODE_FATAL = 128;
-export const DEFAULT_GIT_REV_PARSE_TIMEOUT_MS = 2000;
+export const DEFAULT_GIT_REV_PARSE_TIMEOUT_MS = configurable({
+  key: "git.rev_parse_timeout_ms",
+  default: 2000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for git rev-parse operations",
+  min: 100,
+  max: 60_000,
+  swap: SwapClass.RESTART,
+});
 
 /** Git subcommand constants */
 export const GIT_CMD_REV_PARSE = "rev-parse";
