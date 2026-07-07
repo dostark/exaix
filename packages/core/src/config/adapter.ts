@@ -14,6 +14,7 @@ import type { ConfigValue, IConfigOverrideEntry } from "./db.ts";
 import { getAllEffectiveValues, getEffectiveValue, getOverrideHistory, insertOverride } from "./db.ts";
 import { getRegisteredDefaults } from "./registry.ts";
 import type { IConfigurableOpts } from "./registry.ts";
+import type { InMemoryConfigStore } from "./store.ts";
 import { ConfigKeyNotFoundError, ConfigValidationError, EDITION_GATED_PATHS } from "./errors.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
@@ -238,9 +239,9 @@ function validateAgainstMetadata(
  * Opens its own @db/sqlite connection to .exa/config.db.
  */
 export class DirectConfigAdapter implements IConfigAdapter {
-  private db: Database;
-  private logger?: IEventLogger;
-  readonly mode: ConfigAdapterMode;
+  protected db: Database;
+  protected daemonLogger?: IEventLogger;
+  private adapterMode: ConfigAdapterMode;
 
   constructor(
     dbPath: string,
@@ -248,8 +249,12 @@ export class DirectConfigAdapter implements IConfigAdapter {
     logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
     this.db = new Database(dbPath);
-    this.mode = mode ?? ConfigAdapterMode.DIRECT;
-    this.logger = logger;
+    this.adapterMode = mode ?? ConfigAdapterMode.DIRECT;
+    this.daemonLogger = logger;
+  }
+
+  get mode(): ConfigAdapterMode {
+    return this.adapterMode;
   }
 
   get<T = ConfigValue>(key: string): T | undefined {
@@ -298,7 +303,7 @@ export class DirectConfigAdapter implements IConfigAdapter {
     // Persist under the ORIGINAL key (profile/per-name keys keep their full path).
     const swapClass = options?.swap_class ?? SwapClass.HOT;
     insertOverride(this.db, key, value, "cli", swapClass);
-    await this.logger?.info(DomainEventType.ConfigUpdated, key, {
+    await this.daemonLogger?.info(DomainEventType.ConfigUpdated, key, {
       value,
       source: "cli",
       swap_class: swapClass,
@@ -346,7 +351,7 @@ export class DirectConfigAdapter implements IConfigAdapter {
       throw new ConfigKeyNotFoundError(key);
     }
     insertOverride(this.db, key, null, "cli", "hot");
-    await this.logger?.info(DomainEventType.ConfigUpdated, key, {
+    await this.daemonLogger?.info(DomainEventType.ConfigUpdated, key, {
       value: null,
       source: "cli",
       swap_class: "hot",
@@ -471,14 +476,152 @@ export class DirectConfigAdapter implements IConfigAdapter {
 }
 
 /**
- * Factory function — creates a DirectConfigAdapter from a config DB path.
- * In Phase 1, this will detect whether the daemon is running and return the
- * appropriate adapter.
+ * Read a PID from a file. Returns undefined if the file does not exist or
+ * contains an invalid number.
+ */
+export function readPidFile(pidPath: string): number | undefined {
+  try {
+    const content = Deno.readTextFileSync(pidPath);
+    const pid = Number.parseInt(content.trim(), 10);
+    return Number.isFinite(pid) ? pid : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * DaemonConfigAdapter — reads from InMemoryConfigStore (daemon's live cache)
+ * and writes through to the Config DB. For hot-swappable keys the in-memory
+ * store is updated immediately; restart-required keys are persisted to DB only.
+ *
+ * Construct with an existing @db/sqlite Database handle (the same one opened
+ * by the daemon boot in Step 3) so all db.ts helpers share the connection.
+ */
+export class DaemonConfigAdapter extends DirectConfigAdapter {
+  constructor(
+    private configStore: InMemoryConfigStore,
+    db: Database,
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>,
+  ) {
+    // Pass a dummy path — super's db will be replaced by the injected one.
+    super("", ConfigAdapterMode.DAEMON, logger);
+    this.db = db;
+  }
+
+  override get<T = ConfigValue>(key: string): T | undefined {
+    // 1. Check in-memory store first (authoritative for the daemon's lifetime)
+    const stored = this.configStore.get(key) as T | undefined;
+    if (stored !== undefined) return stored;
+
+    // 2. Fall through to registry default
+    const registered = getRegisteredDefaults().get(key);
+    if (registered) {
+      return registered.opts.default as T;
+    }
+
+    // 3. Schema check (not yet implemented)
+    return undefined;
+  }
+
+  override async set(
+    key: string,
+    value: ConfigValue,
+    options: Opt<{ swap_class?: string }, Reason.SensibleDefault> = {},
+  ): Promise<void> {
+    const validationKey = this.resolveValidationKey(key);
+    if (validationKey === undefined) {
+      throw new ConfigKeyNotFoundError(key);
+    }
+
+    const report = this.validateAtPath(key, value);
+    if (!report.valid) {
+      throw new ConfigValidationError(
+        key,
+        report.issues.map((i) => i.message).join("; "),
+      );
+    }
+
+    const swapClass = options?.swap_class ?? SwapClass.HOT;
+    const source = ConfigAdapterMode.DAEMON;
+    insertOverride(this.db, key, value, source, swapClass);
+
+    // If hot-swappable, apply to in-memory store immediately
+    if (swapClass === SwapClass.HOT) {
+      this.configStore.set(key, value, SwapClass.HOT);
+    }
+
+    // Warn about auth secrets
+    if (/api_key|secret|token/i.test(key)) {
+      this.daemonLogger?.warn(
+        DomainEventType.ConfigUpdated,
+        key,
+        { value, source, swap_class: swapClass, warn: "auth_secret_plaintext" },
+      );
+    }
+
+    await this.daemonLogger?.info(DomainEventType.ConfigUpdated, key, {
+      value,
+      source,
+      swap_class: swapClass,
+    });
+  }
+
+  override async unset(key: string): Promise<void> {
+    if (!getRegisteredDefaults().has(key)) {
+      throw new ConfigKeyNotFoundError(key);
+    }
+    insertOverride(this.db, key, null, ConfigAdapterMode.DAEMON, "hot");
+    this.configStore.delete(key);
+    await this.daemonLogger?.info(DomainEventType.ConfigUpdated, key, {
+      value: null,
+      source: ConfigAdapterMode.DAEMON,
+    });
+  }
+
+  override get mode(): ConfigAdapterMode {
+    return ConfigAdapterMode.DAEMON;
+  }
+
+  /**
+   * Access the underlying in-memory config store for direct manipulation
+   * (e.g. population at daemon boot).
+   */
+  get store(): InMemoryConfigStore {
+    return this.configStore;
+  }
+}
+
+/**
+ * Factory function — creates a DirectConfigAdapter or DaemonConfigAdapter
+ * depending on whether the daemon is running (detected via PID file).
+ *
+ * When the daemon is alive, the caller must provide a store and a pre-existing
+ * @db/sqlite Database handle for the Config DB. When the daemon is down or
+ * the store/DB are omitted, a DirectConfigAdapter is returned.
  */
 export function createConfigAdapter(
   configDbPath: string,
   mode: Opt<ConfigAdapterMode, Reason.SensibleDefault> = ConfigAdapterMode.DIRECT,
   logger?: Opt<IEventLogger, Reason.OptionalDependency>,
+  options?: {
+    daemonPidPath?: string;
+    store?: InMemoryConfigStore;
+    db?: Database;
+  },
 ): IConfigAdapter {
+  // If store + db explicitly provided, check daemon liveness
+  if (options?.store && options?.db) {
+    const pidPath = options.daemonPidPath ?? ".exa/daemon.pid";
+    const pid = readPidFile(pidPath);
+    if (pid !== undefined) {
+      // isProcessAlive is async but the factory isn't — in practice the PID
+      // file check is sufficient (stale PID files are rare and cause a quick
+      // fallback on the next CLI call). For true liveness, callers should
+      // use the async createConfigAdapterAsync variant.
+      return new DaemonConfigAdapter(options.store, options.db, logger);
+    }
+  }
+
+  // Fall back to DirectConfigAdapter
   return new DirectConfigAdapter(configDbPath, mode, logger);
 }
