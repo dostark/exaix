@@ -110,94 +110,23 @@ export function createMockConfig(root: string, overrides: Partial<Config> = {}):
  * Creates a test config file for testing.
  * Returns the path to the written config file.
  *
- * Note: Phase 137 moves most settings to Config DB via configurable().
- * Only system.root and schema_version are strictly needed. The sections
- * below exist for backward compatibility with tests that parse the TOML
- * directly. New tests should use createTestConfigDb() + the adapter.
+ * Phase 137: TOML is bootstrap-only. Most settings live in .exa/config.db
+ * and are overridable via `exactl config set`. This helper writes only
+ * the essential bootstrap sections. Tests that need specific overrides
+ * should use DirectConfigAdapter.set() or seedConfigDb() instead.
  */
 export async function writeTestConfigFile(root: string): Promise<string> {
   const configPath = join(root, "exa.config.toml");
 
   const configContent = `[system]
-schema_version = "1.0.0"
 root = "${root}"
 
 [paths]
-memory = "${ExaPathDefaults.memory}"
-blueprints = "${ExaPathDefaults.blueprints}"
 runtime = "${ExaPathDefaults.runtime}"
-portals = "${ExaPathDefaults.portals}"
 workspace = "${ExaPathDefaults.workspace}"
-active = "${ExaPathDefaults.active}"
-archive = "${ExaPathDefaults.archive}"
-plans = "${ExaPathDefaults.plans}"
-requests = "${ExaPathDefaults.requests}"
-rejected = "${ExaPathDefaults.rejected}"
-agents = "${ExaPathDefaults.identities}"
-flows = "${ExaPathDefaults.flows}"
-memoryProjects = "${ExaPathDefaults.memoryProjects}"
-memoryExecution = "${ExaPathDefaults.memoryExecution}"
-memoryIndex = "${ExaPathDefaults.memoryIndex}"
-memorySkills = "${ExaPathDefaults.memorySkills}"
-memoryPending = "${ExaPathDefaults.memoryPending}"
-memoryTasks = "${ExaPathDefaults.memoryTasks}"
-memoryGlobal = "${ExaPathDefaults.memoryGlobal}"
-
-[database]
-batch_flush_ms = 100
-batch_max_size = 100
-
-[database.sqlite]
-journal_mode = "WAL"
-foreign_keys = true
-busy_timeout_ms = 5000
-
-[watcher]
-debounce_ms = 200
-stability_check = true
-
-[agents]
-default_model = "default"
-timeout_sec = 60
-  max_iterations = 10
-
-[models.default]
-provider = "mock"
-model = "gpt-5.2-pro"
-
-[models.fast]
-provider = "mock"
-model = "gpt-5.2-pro-mini"
-
-[models.local]
-provider = "ollama"
-model = "llama3.2"
-
-[ai_endpoints]
-ollama = ""
-anthropic = ""
-openai = ""
-google = ""
-
-[ai_retry]
-max_attempts = 3
-backoff_base_ms = 1000
-timeout_per_request_ms = 30000
-
-[ai_anthropic]
-api_version = "2023-06-01"
-default_model = "claude-opus-4-6"
-max_tokens_default = 4096
-
-[mcp_defaults]
-identity_id = "system"
-
-[git]
-branch_prefix_pattern = "^(feat|fix|docs|chore|refactor|test)/"
-allowed_prefixes = ["feat", "fix", "docs", "chore", "refactor", "test"]
-
-[provider_strategy.fallback_chains]
-# Empty to avoid validation errors with default chains referencing non-existent models
+memory = "${ExaPathDefaults.memory}"
+portals = "${ExaPathDefaults.portals}"
+blueprints = "${ExaPathDefaults.blueprints}"
 `;
 
   await Deno.writeTextFile(configPath, configContent);
