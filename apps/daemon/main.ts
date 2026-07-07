@@ -295,7 +295,13 @@ if (import.meta.main) {
 
     // ── Config DB polling watcher ────────────────────────────────────────
     // Phase 137 Step 4: poll for new MAX(id) in config_overrides and
-    // hot-apply swap:hot keys detected from external CLI writes.
+    // hot-apply swap:hot keys detected from external CLI writes. The interval
+    // defaults to DEFAULT_CONFIG_DB_POLL_INTERVAL_MS; EXA_CONFIG_DB_POLL_INTERVAL_MS
+    // overrides it so integration tests can drive the watcher within a short boot.
+    const pollIntervalOverride = Number(Deno.env.get("EXA_CONFIG_DB_POLL_INTERVAL_MS"));
+    const configDbPollIntervalMs = Number.isFinite(pollIntervalOverride) && pollIntervalOverride > 0
+      ? pollIntervalOverride
+      : DEFAULT_CONFIG_DB_POLL_INTERVAL_MS;
     let lastMaxId = getMaxOverrideId(configDb);
     const pollHandle = setInterval(async () => {
       const currentMaxId = getMaxOverrideId(configDb);
@@ -303,10 +309,10 @@ if (import.meta.main) {
         await createDbWatcherHandler(configStore, configDb, logger)();
         lastMaxId = currentMaxId;
       }
-    }, DEFAULT_CONFIG_DB_POLL_INTERVAL_MS);
+    }, configDbPollIntervalMs);
 
     logger.info(DomainEventType.ConfigDbWatcherStarted, "config_db", {
-      pollIntervalMs: DEFAULT_CONFIG_DB_POLL_INTERVAL_MS,
+      pollIntervalMs: configDbPollIntervalMs,
     });
 
     // Clear pollHandle on graceful shutdown.
