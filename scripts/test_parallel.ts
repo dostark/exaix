@@ -45,6 +45,9 @@ const SEQUENTIAL_FILES: string[] = [
   // MCP handshake test — `mock_agent.ts` hardcodes branch "feat/test" which
   // conflicts when parallel tests create branches with different names.
   "tests/integration/agent/mcp_handshake_test.ts",
+  // Plan amendment scenario — starts a real daemon; port contention with
+  // other daemon-launching tests in the parallel batch causes failures.
+  "tests/scenario_framework/tests/plan_amendment_scenario_test.ts",
 ];
 
 interface TestStats {
