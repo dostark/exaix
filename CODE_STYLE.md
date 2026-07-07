@@ -89,9 +89,29 @@ checklists (pre‑commit, CI, etc.).
 
 - Never hardcode numeric literals or string constants in production or test code
   (timeouts, status values, provider names, etc.).
-- **User‑configurable values** belong in `exa.config.sample.toml` with a
-  comment, the matching Zod schema (`packages/schemas/src/config.ts`), and a default in
-  `packages/core/src/types/constants.ts` (the config service handles loading).
+- **User‑configurable values** — every tunable `DEFAULT_*` constant in
+  `packages/core/src/types/constants.ts` **must** be wrapped with
+  `configurable({key, default, type, description, min?, max?, enum?, swap?})`.
+  The `configurable()` call registers the constant in the runtime registry,
+  making it visible to `exactl config get/set`, MCP config tools, and the
+  daemon's in-memory store. See `packages/core/src/config/registry.ts` for
+  the `configurable()` signature and `packages/core/src/types/constants.ts`
+  for existing examples.
+  - **Required fields:** `key` (dotted path), `default` (value, byte-identical to
+    the old `= value`), `type` (`ConfigValueType.NUMBER`/`STRING`/`BOOLEAN`),
+    `description` (agent-facing), `swap` (`SwapClass.HOT` or `SwapClass.RESTART`).
+  - **Optional fields:** `min`, `max` (validation bounds), `enum` (allowed values).
+  - **Exclusions:** Do NOT wrap structual enums whose TypeScript literal type
+    must be preserved for Zod schema compatibility (e.g. `MockStrategy`,
+    `McpTransportType`). Do NOT wrap array/object values, sentinel placeholders
+    (`"default"`, `"Unknown"`), or structural event-name strings.
+  - **Verification:** `deno task check:config-keys` (pre-commit Gate 6) detects
+    duplicate keys and prints the total count.
+- **Schema validation bounds** — when a Zod schema needs min/max validation for a
+  configurable key, use `resolveConfigurableBounds(key)` from
+  `@exaix/core/config` (or the `c(key)`/`cBounds(key)` helpers in
+  `packages/schemas/src/config.ts`) instead of importing separate MIN/MAX named
+  constants. This keeps the registry as the single source of truth for bounds.
 - **Internal constants** belong in a module‑scoped `constants.ts` file within the relevant package. Use descriptive names and group related values.
 - **CLI/TUI defaults** go in `packages/cli/src/config.ts` or
   `packages/tui/src/config.ts` respectively.

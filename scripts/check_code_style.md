@@ -68,6 +68,12 @@ deno run -A scripts/check_code_style.ts --convert-warnings-to-errors
 | -------------------- | -------- | ---- | ------------------------------------------------------------------ |
 | `[magic-union-type]` | error    | §2   | Inline string literal union (e.g. `"a" \| "b"`) in production code |
 
+> **Related:** [CODE_STYLE.md §2](../CODE_STYLE.md#no-magic-values) also covers
+> `configurable()` wrapping guidelines for tunable `DEFAULT_*` constants and the
+> `check:config-keys` CI gate that prevents duplicate config keys. Use
+> `resolveConfigurableBounds(key)` in schemas instead of importing separate
+> MIN/MAX named constants.
+
 ---
 
 ## Module Structure
@@ -140,7 +146,7 @@ deno run -A scripts/check_code_style.ts --convert-warnings-to-errors
 | Tag                           | Severity | Rule | What it detects                                                                     |
 | ----------------------------- | -------- | ---- | ----------------------------------------------------------------------------------- |
 | `[cli-boundary-services]`     | error    | §9   | CLI command/handler/formatter importing from retired `src/services/` (not adapters) |
-| `[cli-boundary-config]`       | error    | §9   | CLI command/handler/formatter importing from `packages/core/src/config/service.ts`        |
+| `[cli-boundary-config]`       | error    | §9   | CLI command/handler/formatter importing from `packages/core/src/config/service.ts`  |
 | `[core-boundary-cli-helpers]` | error    | §9   | Non-CLI module importing from `apps/exactl/src/helpers/`                            |
 
 ---
@@ -152,17 +158,17 @@ See [CODE_STYLE.md §4](../CODE_STYLE.md#package-test-boundaries) for the test
 boundary rules and [§13](../CODE_STYLE.md#package-module-purity) for the
 module purity rules.
 
-| Tag                                   | Severity | What it detects                                                                                    |
-| ------------------------------------- | -------- | -------------------------------------------------------------------------------------------------- |
-| `[package-boundary]`                  | error    | Package file importing from `src/`, `tests/`, or another package via relative path                 |
-| `[package-src-boundary]`              | error    | Package file importing a retired root implementation path                                        |
-| `[package-related-files-boundary]`    | error    | Package module `@related-files` header pointing at a retired root path                             |
-| `[package-subpath-promotion]`         | error    | Parent package entrypoint (`mod.ts`) re-exporting a canonical subpackage surface                   |
-| `[package-testing-import]`            | error    | Test file deep-importing from `packages/<name>/tests/` when `@exaix/<name>/testing` exists         |
-| `[package-canonical-import]`          | error    | File importing a package path that should use a declared `@exaix/...` alias instead                |
-| `[package-instantiates-event-logger]` | error    | Package `src/` file calling `new EventLogger(` (see §13 — package module purity)                   |
-| `[package-concrete-logger-type]`      | warn     | Package `src/` file importing concrete `EventLogger` class instead of `IEventLogger` (see §13)     |
-| `[package-uses-config-reader]`        | warn     | Package `src/` file calling `getValidatedEnvOverrides()` or `new ConfigService(` (see §13)         |
+| Tag                                   | Severity | What it detects                                                                                |
+| ------------------------------------- | -------- | ---------------------------------------------------------------------------------------------- |
+| `[package-boundary]`                  | error    | Package file importing from `src/`, `tests/`, or another package via relative path             |
+| `[package-src-boundary]`              | error    | Package file importing a retired root implementation path                                      |
+| `[package-related-files-boundary]`    | error    | Package module `@related-files` header pointing at a retired root path                         |
+| `[package-subpath-promotion]`         | error    | Parent package entrypoint (`mod.ts`) re-exporting a canonical subpackage surface               |
+| `[package-testing-import]`            | error    | Test file deep-importing from `packages/<name>/tests/` when `@exaix/<name>/testing` exists     |
+| `[package-canonical-import]`          | error    | File importing a package path that should use a declared `@exaix/...` alias instead            |
+| `[package-instantiates-event-logger]` | error    | Package `src/` file calling `new EventLogger(` (see §13 — package module purity)               |
+| `[package-concrete-logger-type]`      | warn     | Package `src/` file importing concrete `EventLogger` class instead of `IEventLogger` (see §13) |
+| `[package-uses-config-reader]`        | warn     | Package `src/` file calling `getValidatedEnvOverrides()` or `new ConfigService(` (see §13)     |
 
 ---
 
@@ -186,8 +192,8 @@ on the line immediately above the flagged line. Valid codes are listed in
 
 The following locations are permanently exempt from specific package boundary rules:
 
-| Exempt path               | Reason                                                                                         |
-| ------------------------- | ---------------------------------------------------------------------------------------------- |
-| `packages/core/`          | Defines the runtime entities (`EventLogger`, `ConfigService`) that other packages must not use |
-| `packages/mcp/server/`    | Declared bridge zone — concrete runtime wiring between package contracts and the MCP server    |
-| `tests/helpers/`          | Root testing compatibility shims — exempt from `re-export-imported` rule                       |
+| Exempt path            | Reason                                                                                         |
+| ---------------------- | ---------------------------------------------------------------------------------------------- |
+| `packages/core/`       | Defines the runtime entities (`EventLogger`, `ConfigService`) that other packages must not use |
+| `packages/mcp/server/` | Declared bridge zone — concrete runtime wiring between package contracts and the MCP server    |
+| `tests/helpers/`       | Root testing compatibility shims — exempt from `re-export-imported` rule                       |
