@@ -43,7 +43,10 @@ export function createDbWatcherHandler(
       }
     }
     if (changes > 0 && logger) {
-      await logger.info(DomainEventType.ConfigUpdated, "db_watcher", { changes });
+      // Emit the purpose-built watcher event so a hot-apply triggered by an external
+      // write is distinguishable in the journal from a direct CLI/adapter write
+      // (which uses ConfigUpdated).
+      await logger.info(DomainEventType.ConfigDbWatcherChangeDetected, "db_watcher", { changes });
     }
   };
 }

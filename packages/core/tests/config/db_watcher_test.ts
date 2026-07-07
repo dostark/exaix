@@ -18,6 +18,29 @@ import {
 import { SwapClass } from "../../src/types/enums.ts";
 import { configurable } from "../../src/config/registry.ts";
 import { ConfigValueType } from "../../src/types/enums.ts";
+import { DomainEventType } from "../../src/events/domain_event_types.ts";
+import type { IEventLogger } from "@exaix/core/logger";
+import type { LogMetadata } from "../../src/types/json.ts";
+
+/** A minimal IEventLogger that records info() calls for event assertions. */
+function makeTrackedLogger(
+  sink: Array<{ action: string; payload?: LogMetadata }>,
+): IEventLogger {
+  const noop = () => Promise.resolve();
+  const logger: IEventLogger = {
+    log: noop,
+    info: (action: string, _target: string | null, payload?: LogMetadata) => {
+      sink.push({ action, payload });
+      return Promise.resolve();
+    },
+    warn: noop,
+    error: noop,
+    fatal: noop,
+    debug: noop,
+    child: () => logger,
+  };
+  return logger;
+}
 
 // Register test keys
 configurable({
@@ -107,6 +130,50 @@ Deno.test({
       // Run the handler
       await createDbWatcherHandler(store, db)();
       assertEquals(store.get("db_watcher_test.timeout_ms"), "45000");
+    } finally {
+      cleanUp(dir, db);
+    }
+  },
+});
+
+Deno.test({
+  name: "[configuring] createDbWatcherHandler emits ConfigDbWatcherChangeDetected on hot-apply",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const { store, db, dir } = setup();
+    const events: Array<{ action: string; payload?: LogMetadata }> = [];
+    const logger = makeTrackedLogger(events);
+    try {
+      insertOverride(db, "db_watcher_test.timeout_ms", "45000", "cli", "hot");
+      await createDbWatcherHandler(store, db, logger)();
+      const change = events.find((e) => e.action === DomainEventType.ConfigDbWatcherChangeDetected);
+      assertEquals(
+        change !== undefined,
+        true,
+        `watcher must emit ConfigDbWatcherChangeDetected; got: ${events.map((e) => e.action).join(", ")}`,
+      );
+      assertEquals(change?.payload?.changes, 1);
+    } finally {
+      cleanUp(dir, db);
+    }
+  },
+});
+
+Deno.test({
+  name: "[configuring] createDbWatcherHandler emits no change event when nothing changes",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const { store, db, dir } = setup();
+    const events: Array<{ action: string; payload?: LogMetadata }> = [];
+    const logger = makeTrackedLogger(events);
+    try {
+      await createDbWatcherHandler(store, db, logger)();
+      assertEquals(
+        events.some((e) => e.action === DomainEventType.ConfigDbWatcherChangeDetected),
+        false,
+      );
     } finally {
       cleanUp(dir, db);
     }
