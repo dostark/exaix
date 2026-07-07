@@ -47,10 +47,12 @@ async function main(): Promise<void> {
   const entries: string[] = [];
 
   for (const dir of sourceDirs) {
-    for await (const entry of walk(join(ROOT, dir), {
-      exts: [".ts"],
-      skip: EXCLUDE_PATTERNS,
-    })) {
+    for await (
+      const entry of walk(join(ROOT, dir), {
+        exts: [".ts"],
+        skip: EXCLUDE_PATTERNS,
+      })
+    ) {
       if (entry.isFile && !entry.name.endsWith("_test.ts")) {
         entries.push(entry.path);
       }

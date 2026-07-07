@@ -10,7 +10,7 @@ import { z } from "zod";
 import { AiConfigSchema, ProviderTypeSchema } from "./ai_config.ts";
 import { MCPConfigSchema } from "./mcp.ts";
 import * as DEFAULTS from "@exaix/core";
-import { TokenizerBackend, ProviderType } from "@exaix/core";
+import { ProviderType, TokenizerBackend } from "@exaix/core";
 import {
   DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
   DEFAULT_AI_RETRY_MAX_ATTEMPTS,

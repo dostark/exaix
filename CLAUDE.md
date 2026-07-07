@@ -182,6 +182,13 @@ Use this checklist while implementing:
 3. Do not add new `*_test.ts` files next to source files or under retired legacy test directories.
 4. Use established test helpers (`initTestDbService`, `createCliTestContext`, etc.) when project helpers already cover the setup.
 5. Rerun the failing or behavior-scoped test for the changed slice; if the changed code belongs to a package or app with its own test command, run that package- or app-scoped test command next.
+6. **Configurable constants:** When adding a new `DEFAULT_*` constant (in any
+   package), determine if it is a tunable user-facing default. If yes, wrap it
+   with `configurable()` from `@exaix/core/config`. Import the function and
+   wrap the declaration at the definition site — the exported value stays
+   byte-identical. See [CODE_STYLE.md §2](./CODE_STYLE.md#no-magic-values) for
+   required fields and exclusions. Run `deno task check:config-keys` to verify
+   no duplicate keys across all packages.
 
 ## PHASE 3: DONE / CI
 

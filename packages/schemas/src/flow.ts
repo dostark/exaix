@@ -55,8 +55,8 @@ export const ZFlowStepOnError = z.object({
     .min(resolveConfigurableBounds("flow.max_retries").min!)
     .max(resolveConfigurableBounds("flow.max_retries").max!)
     .optional().default(
-    DEFAULT_FLOW_MAX_RETRIES,
-  ),
+      DEFAULT_FLOW_MAX_RETRIES,
+    ),
   backoffMs: z.number().int().positive().optional().default(DEFAULT_FLOW_STEP_BACKOFF_MS),
   compensate: z.array(ZToolCall).optional(),
 });
