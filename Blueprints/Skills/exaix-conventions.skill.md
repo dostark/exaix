@@ -271,18 +271,16 @@ export default defineFlow({
 
 ## 7. Configuration
 
-Use exa.config.toml for settings:
+Settings are managed through the Config DB. Use `exactl config set`:
 
-```toml
-# exa.config.toml
-[system]
-root = "."
+```bash
+exactl config set skills.enabled true
+exactl config set skills.auto_match true
+exactl config set skills.max_per_request 5
+```
 
-[skills]
-enabled = true
-auto_match = true
-max_skills_per_request = 5
-```text
+Run `exactl config --help` for all subcommands.
+The sample bootstrap config lives at `templates/exa.config.sample.toml` (only `system.root`).
 
 ## 8. Common Imports
 

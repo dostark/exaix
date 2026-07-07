@@ -32,7 +32,7 @@ Key points
 - Enforce Exaix Core Principles:
   1. Traceability: Every state change MUST emit a typed EventLogger event.
   2. Durability: Plans must result in atomic changesets or journaled DB state.
-  3. Configurability: Avoid magic numbers; use exa.config.toml or named constants.
+   3. Configurability: Avoid magic numbers; wrap tunable defaults with `configurable()` from `@exaix/core/config` and override via `exactl config set`.
   4. Security: Proactively perform 'Phase 3b' checks (traversal, injection, auth).
 - Documentation (§3D): Every interface/schema change REQUIRES a matching doc update step.
 - Name the planning document `.copilot/planning/phase-NN-<kebab-slug>.md` (NN = next sequential phase number).
@@ -163,7 +163,7 @@ For every step, verify:
 
 - **Event Logging**: Every state transition must have a named `EventLogger` event (e.g., `vault.secret.rotated`).
 - **Typing**: Event payloads must use named interfaces, never `Record<string, unknown>`.
-- **Config**: Timeouts, thresholds, and feature toggles must be in `exa.config.toml` or `packages/core/src/types/constants.ts`.
+- **Config**: Timeouts, thresholds, and feature toggles must be wrapped with `configurable()` in `packages/core/src/types/constants.ts` and overridable via `exactl config set`.
 
 #### C. Durability & Atomic Changes
 

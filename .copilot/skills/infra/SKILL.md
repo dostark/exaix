@@ -18,7 +18,8 @@ qwen_skill: infra
 
 ```text
 Key points
-- Config lives in exa.config.toml; sections map to Zod schemas in @exaix/core/config/
+- Config DB (.exa/config.db) is the canonical store; TOML (exa.config.toml) is bootstrap-only (system.root)
+- Tunable DEFAULT_* constants use `configurable()` from `@exaix/core/config` — override via `exactl config set`
 - Always validate new env vars via Zod: use getValidatedEnvOverrides() for EXA_LLM_* overrides
 - All new file paths MUST go through PathResolver / PathSecurity.resolveAndValidate() — never raw concatenation
 - Run deno check packages/ apps/ tests/ after any config-schema change to catch type propagation errors early
@@ -26,19 +27,24 @@ Key points
 
 Canonical prompt (short):
 "Implement infrastructure/config change: {goal}.
-Update TOML schema + Zod validation, add PathResolver for any new paths,
+Register new configurable() key + add Zod validation, add PathResolver for any new paths,
 write tests, run deno check + deno task check:style, document rollback."
 
 Exaix config patterns
-  # TOML section → Zod schema → typed config object
-  # exa.config.toml
-  [quality_gate]
-  mode = "hybrid"
-
-  # @exaix/core/config/schemas.ts
-  export const QualityGateConfigSchema = z.object({
-    mode: z.enum(["heuristic", "llm", "hybrid"]).default("hybrid"),
+  # configurable() registry → Config DB → exactl config set
+  # packages/core/src/types/constants.ts
+  export const MY_SETTING: number = configurable({
+    key: "my.setting",
+    default: 42,
+    type: ConfigValueType.NUMBER,
+    description: "Description of the setting",
+    min: 1,
+    max: 100,
+    swap: SwapClass.RESTART,
   });
+
+  # Override at runtime:
+  exactl config set my.setting 50
 
   # Never use direct Deno.env.get() for EXA_LLM_* without validation
   # ✅ GOOD:
