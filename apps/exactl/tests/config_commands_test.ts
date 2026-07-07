@@ -5,10 +5,13 @@
  *   set-provider, set-path, diff, show --sources, and profile support.
  */
 import { Database } from "@db/sqlite";
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import { createConfigAdapter, ensureConfigDb, migrateConfigDb, seedConfigDb } from "@exaix/core/config";
+import { ConfigValidationError } from "@exaix/core/config";
 
 import type { IConfigAdapter } from "@exaix/core/config";
+import { createMockConfig, createStubConfig, createStubContext, createTestConfigDb } from "@exaix/testing";
+import { ConfigCommands } from "../src/commands/config_commands.ts";
 
 function withTempConfigDb(fn: (adapter: IConfigAdapter) => void): void {
   const dir = Deno.makeTempDirSync({ prefix: "config-cmd-" });
@@ -79,5 +82,50 @@ Deno.test("[configuring-cli] getProvenance returns source for overridden keys", 
     const provenance = adapter.getProvenance("ai.timeout_ms");
     assertEquals(provenance.source, "db");
     assertEquals(provenance.value, 45000);
+  });
+});
+
+// ── Step 12 (GAP-18): --profile scoping on ConfigCommands.get/set ──────────
+
+/** Build a ConfigCommands wired to a seeded temp Config DB (matches config_cli_test). */
+function withProfileCommands(fn: (commands: ConfigCommands) => Promise<void> | void): Promise<void> {
+  const dir = Deno.makeTempDirSync({ prefix: "config-profile-" });
+  return (async () => {
+    try {
+      createTestConfigDb(dir);
+      const configService = createStubConfig(createMockConfig(dir));
+      const context = createStubContext({ config: configService });
+      const commands = new ConfigCommands(context);
+      await fn(commands);
+    } finally {
+      Deno.removeSync(dir, { recursive: true });
+    }
+  })();
+}
+
+Deno.test("[configuring-cli] set --profile persists profile.<name>.<key>", async () => {
+  await withProfileCommands(async (commands) => {
+    await commands.set("ai.timeout_ms", "60000", "dev");
+    // Reads back through the same profile-scoped key.
+    assertEquals(await commands.get("ai.timeout_ms", "dev"), 60000);
+  });
+});
+
+Deno.test("[configuring-cli] set --profile rejects a value below the base-key min", async () => {
+  await withProfileCommands(async (commands) => {
+    // ai.timeout_ms has min 1000; a profile-scoped write validates against that.
+    await assertRejects(
+      () => commands.set("ai.timeout_ms", "500", "dev"),
+      ConfigValidationError,
+    );
+  });
+});
+
+Deno.test("[configuring-cli] get --profile returns the profile-scoped value, not the global", async () => {
+  await withProfileCommands(async (commands) => {
+    await commands.set("ai.timeout_ms", "70000", "dev");
+    await commands.set("ai.timeout_ms", "20000"); // global (no profile)
+    assertEquals(await commands.get("ai.timeout_ms", "dev"), 70000);
+    assertEquals(await commands.get("ai.timeout_ms"), 20000);
   });
 });

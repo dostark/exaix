@@ -12,7 +12,7 @@ import { createConfigAdapter, getRegisteredDefaults } from "@exaix/core/config";
 import type { IConfigAdapter, IConfigValidationReport } from "@exaix/core/config";
 import { ConfigKeyNotFoundError } from "@exaix/core/config";
 import type { ConfigValue } from "@exaix/core/config";
-import { ConfigOutputFormat } from "@exaix/core/types";
+import { CONFIG_PROFILE_KEY_PREFIX, ConfigOutputFormat, type Opt, type Reason } from "@exaix/core/types";
 
 interface NestedConfigTree {
   [key: string]: ConfigValue | NestedConfigTree;
@@ -46,17 +46,28 @@ export class ConfigCommands extends BaseCommand {
     return this.adapter;
   }
 
-  get(path: string): Promise<unknown> {
-    const value = this.getAdapter().get(path);
+  /**
+   * Scope a key to a named profile when `--profile` is supplied. `--profile dev`
+   * transforms `<key>` → `profile.dev.<key>`. Profile writes validate against the
+   * unscoped base key's metadata via the adapter's resolveValidationKey() (Step 1).
+   * Global reads/writes (no profile) are unchanged.
+   */
+  private scopeKey(path: string, profile?: Opt<string, Reason.OptionalInput>): string {
+    return profile ? `${CONFIG_PROFILE_KEY_PREFIX}${profile}.${path}` : path;
+  }
+
+  get(path: string, profile?: Opt<string, Reason.OptionalInput>): Promise<unknown> {
+    const scoped = this.scopeKey(path, profile);
+    const value = this.getAdapter().get(scoped);
     if (value === undefined) {
-      return Promise.reject(new ConfigKeyNotFoundError(path));
+      return Promise.reject(new ConfigKeyNotFoundError(scoped));
     }
     return Promise.resolve(value);
   }
 
-  async set(path: string, valueStr: string): Promise<void> {
+  async set(path: string, valueStr: string, profile?: Opt<string, Reason.OptionalInput>): Promise<void> {
     const parsed = parseValue(valueStr);
-    await this.getAdapter().set(path, parsed);
+    await this.getAdapter().set(this.scopeKey(path, profile), parsed);
   }
 
   async unset(path: string): Promise<void> {

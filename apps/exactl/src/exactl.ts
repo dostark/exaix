@@ -1244,10 +1244,11 @@ export const __test_command = new Command()
         "get <path>",
         new Command()
           .description("Print effective value at path")
-          .action(async (_options, ...args: string[]) => {
+          .option("--profile <name:string>", "Target a named profile (reads profile.<name>.<path>)")
+          .action(async (options, ...args: string[]) => {
             try {
-              const value = await configCommands.get(args[0]);
-              display.info("config.get", args[0], { value: String(value) });
+              const value = await configCommands.get(args[0], options.profile);
+              display.info("config.get", args[0], { value: String(value), profile: options.profile });
             } catch (error) {
               display.error("cli.error", "config get", {
                 message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -1260,10 +1261,11 @@ export const __test_command = new Command()
         "set <path> <value>",
         new Command()
           .description("Set value, validate, write, reload")
-          .action(async (_options, ...args: string[]) => {
+          .option("--profile <name:string>", "Target a named profile (writes profile.<name>.<path>)")
+          .action(async (options, ...args: string[]) => {
             try {
-              await configCommands.set(args[0], args[1]);
-              display.info("config.set", args[0], { value: args[1] });
+              await configCommands.set(args[0], args[1], options.profile);
+              display.info("config.set", args[0], { value: args[1], profile: options.profile });
             } catch (error) {
               display.error("cli.error", "config set", {
                 message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
