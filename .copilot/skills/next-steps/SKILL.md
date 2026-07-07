@@ -193,6 +193,9 @@ Planning doc update
           this plan that wires it).
       A bare **✅ IMPLEMENTED** is forbidden on any step whose Success Criteria assert
       runtime/observable behaviour — such a step is either ✅ WIRED or it is not done.
+      Never write **✅ WIRED** while this step's Reachability Ledger row is still ⏳ — the
+      label and the ledger must agree in the same commit. If the production call-site
+      does not exist yet, the correct marker is **✅ CORE** and the ledger row stays ⏳.
   24a. Maintain the **Reachability Ledger** section of the planning doc — create it
        once (if #plan did not seed it), then keep it current EVERY step. One row per
        symbol not yet reached by production:
@@ -234,6 +237,14 @@ Commit
        refs: <planning-doc-slug> step N
 
 PHASE-COMPLETION GATE (run ONCE, after the last step, BEFORE declaring the phase complete)
+  This gate is MANDATORY and cannot be skipped. A "finalize", "commit remaining
+  changes", "wrap up", or "close the phase" instruction does NOT waive G1–G5 — it is the
+  trigger to RUN them. Green unit tests, a green build, and "no open 🔴 in the plan"
+  (which describes plan-health from #pre-gap-analysis, not implementation completeness)
+  are NOT evidence the gate passed. If you are about to declare a phase complete without
+  having run G1–G5 in this session, stop and run them first. (Phase 137 was finalized on
+  green tests + "no open 🔴" while four ledger rows were still ⏳ and the daemon never
+  read the Config DB — the gate existed but was never run.)
   G1. Integration-surface audit across EVERY symbol the phase added: for each new
       exported class / service / function, grep the production codebase (excluding
       tests + test helpers) for a real importer or caller. ANY runtime-claiming symbol
@@ -243,7 +254,13 @@ PHASE-COMPLETION GATE (run ONCE, after the last step, BEFORE declaring the phase
   G2. The planning doc's **Reachability Ledger** MUST have every row at ✅ (or be
       empty). Any ⏳ row is a BLOCKING failure — drain it (wire the symbol; that is
       the terminal cutover step's job) before closing the phase. Read the ledger as
-      the residual to-do list.
+      the residual to-do list. Also reconcile the ledger against the step status labels:
+      a step marked `✅ WIRED`/`✅ IMPLEMENTED` whose ledger row is still ⏳ is a
+      self-contradiction and a BLOCKING failure — trust the ⏳ row (the symbol is NOT
+      wired) and either wire it or correct the label to `✅ CORE (wired in Step M)`.
+      Confirm each ✅ row's "Production call-site" column names a real file:Symbol that a
+      G1 grep actually found — a row flipped to ✅ with no verifiable call-site is
+      treated as ⏳.
   G3. For every opt-in flag the phase introduced, confirm a test flips the REAL config
       (e.g. `config.feature.enabled = true`) and asserts the observable behaviour — not
       a unit test of the gated component in isolation. "Enabling the flag does nothing"

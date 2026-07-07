@@ -207,6 +207,15 @@ in the plan itself:
 - **Terminal cutover step (non-deferrable).** The phase MUST include an
   "Integration & cutover" step whose Success Criterion is reachability from a real
   daemon/CLI run with the feature enabled, and which may not defer to a future phase.
+  The cutover Success Criterion MUST be phrased as an **executable daemon-boot or
+  CLI-invocation test** that observes the feature working through its real entry point —
+  e.g. "a booted daemon service resolves value X through `context.configAdapter`" or
+  "`exactl <cmd>` prints Y". A criterion satisfiable by a registration check, a
+  `buildHandlers()` enumeration, a manifest-count assertion, or a hand-constructed
+  adapter/store inside a unit test is INVALID — those are the exact green signals that
+  ship on production-dead code (Phase 137's Step 8 passed on all of them while the
+  daemon never read the Config DB). At least one named integration test must drive the
+  production entry point, not the component in isolation.
 - **Opt-in proof.** For every `enabled`-style flag, a Success Metric must read "with
   `feature.enabled=true`, observable behaviour B occurs", backed by a test that flips
   the REAL config — not a unit test of the gated component in isolation.
@@ -216,7 +225,14 @@ in the plan itself:
   appends a ⏳ row whenever a step ships a symbol with no production caller and flips
   it to ✅ when a later step wires it; the phase cannot close while any row is ⏳. The
   ledger is the durable, doc-resident to-do list that prevents production-dead code
-  from being silently forgotten between steps.
+  from being silently forgotten between steps. A row is flipped to ✅ ONLY in the same
+  commit that adds the production call-site — never pre-emptively because the wiring is
+  "planned" for that step. A step whose ledger row is still ⏳ may not simultaneously
+  carry a `✅ WIRED`/`✅ IMPLEMENTED` status label; that combination is a
+  self-contradiction (Phase 137 marked steps `✅ WIRED` while their ledger rows read
+  `⏳ Step 3`, and the phase was finalized anyway). The ledger is the authority — if the
+  row says ⏳, the symbol is not wired, regardless of any status prose elsewhere in the
+  doc.
 
 > If the feature is genuinely too large to wire end-to-end within one 8–10 step phase,
 > split it so that **each** phase delivers a reachable vertical slice — never a phase
