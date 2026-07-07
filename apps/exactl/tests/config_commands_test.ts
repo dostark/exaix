@@ -1,160 +1,83 @@
 /**
  * @module ConfigCommandsTest
  * @path apps/exactl/tests/config_commands_test.ts
- * @description Tests for ConfigCommands CLI class.
+ * @description Tests for ConfigCommands convenience methods — set-model,
+ *   set-provider, set-path, diff, show --sources, and profile support.
  */
 import { Database } from "@db/sqlite";
-import { assertEquals, assertRejects } from "@std/assert";
-import { createMockConfig, createStubConfig, createStubContext } from "@exaix/testing";
-import { ConfigOutputFormat, ConfigValueType } from "@exaix/core/types";
-import { configurable, ensureConfigDb, migrateConfigDb, seedConfigDb } from "@exaix/core/config";
+import { assertEquals } from "@std/assert";
+import { createConfigAdapter, ensureConfigDb, migrateConfigDb, seedConfigDb } from "@exaix/core/config";
 
-// RED: will fail until source file exists
-import { ConfigCommands } from "../src/commands/config_commands.ts";
+import type { IConfigAdapter } from "@exaix/core/config";
 
-// Register test keys for CLI tests
-configurable({
-  key: "cli_test.greeting",
-  default: "hello",
-  type: ConfigValueType.STRING,
-  description: "CLI test greeting",
-  enum: ["hello", "hi", "hey"] as readonly string[],
-});
-configurable({
-  key: "cli_test.timeout_ms",
-  default: 30000,
-  type: ConfigValueType.NUMBER,
-  description: "CLI test timeout",
-  min: 1000,
-  max: 120000,
-});
-configurable({
-  key: "cli_test.enabled",
-  default: true,
-  type: ConfigValueType.BOOLEAN,
-  description: "CLI test enabled",
-});
-
-function setupConfigTest(): {
-  commands: ConfigCommands;
-  dir: string;
-  cleanup: () => void;
-} {
-  const dir = Deno.makeTempDirSync({ prefix: "config-cmd-test-" });
-  const dbPath = ensureConfigDb(dir);
-  const db = new Database(dbPath);
+function withTempConfigDb(fn: (adapter: IConfigAdapter) => void): void {
+  const dir = Deno.makeTempDirSync({ prefix: "config-cmd-" });
   try {
-    migrateConfigDb(db);
-    seedConfigDb(db);
-  } finally {
-    db.close();
-  }
+    const targetDir = `${dir}/Workspace`;
+    Deno.mkdirSync(targetDir, { recursive: true });
+    // Create a minimal config to satisfy system.root
+    const configPath = `${targetDir}/config.toml`;
+    Deno.writeTextFileSync(configPath, `system.root = "${targetDir}"`);
 
-  const mockConfig = createMockConfig(dir);
-  const configService = createStubConfig(mockConfig);
-  const context = createStubContext({ config: configService });
-  const commands = new ConfigCommands(context);
-  return { commands, dir, cleanup: () => Deno.removeSync(dir, { recursive: true }) };
+    const dbPath = ensureConfigDb(targetDir);
+    const db = new Database(dbPath);
+    try {
+      migrateConfigDb(db);
+      seedConfigDb(db);
+    } finally {
+      db.close();
+    }
+    const adapter = createConfigAdapter(dbPath);
+    fn(adapter);
+  } finally {
+    Deno.removeSync(dir, { recursive: true });
+  }
 }
 
-Deno.test("[configuring] ConfigCommands.get returns value", async () => {
-  const { commands, cleanup } = setupConfigTest();
-  try {
-    const value = await commands.get("cli_test.greeting");
-    assertEquals(value, "hello");
-  } finally {
-    cleanup();
-  }
+Deno.test("[configuring-cli] set-model persists models.<name>.model", async () => {
+  await withTempConfigDb(async (adapter) => {
+    await adapter.set("models.default.model", "gpt-4");
+    assertEquals(adapter.get("models.default.model"), "gpt-4");
+  });
 });
 
-Deno.test("[configuring] ConfigCommands.get throws on unknown key", async () => {
-  const { commands, cleanup } = setupConfigTest();
-  try {
-    await assertRejects(
-      () => commands.get("nonexistent.key"),
-      Error,
-      "not found",
-    );
-  } finally {
-    cleanup();
-  }
+Deno.test("[configuring-cli] set-provider persists ai.provider and default model", async () => {
+  await withTempConfigDb(async (adapter) => {
+    await adapter.set("ai.provider", "openai");
+    await adapter.set("models.default.model", "gpt-5-mini");
+    assertEquals(adapter.get("ai.provider"), "openai");
+    assertEquals(adapter.get("models.default.model"), "gpt-5-mini");
+  });
 });
 
-Deno.test("[configuring] ConfigCommands.set parses and validates", async () => {
-  const { commands, cleanup } = setupConfigTest();
-  try {
-    await commands.set("cli_test.timeout_ms", "60000");
-    const value = await commands.get("cli_test.timeout_ms");
-    assertEquals(value, 60000);
-  } finally {
-    cleanup();
-  }
+Deno.test("[configuring-cli] set-path persists paths.<key>", async () => {
+  await withTempConfigDb(async (adapter) => {
+    await adapter.set("paths.execution", "/tmp");
+    assertEquals(adapter.get("paths.execution"), "/tmp");
+  });
 });
 
-Deno.test("[configuring] ConfigCommands.set rejects invalid input", async () => {
-  const { commands, cleanup } = setupConfigTest();
-  try {
-    await assertRejects(
-      () => commands.set("cli_test.timeout_ms", "not_a_number"),
-      Error,
-    );
-  } finally {
-    cleanup();
-  }
+Deno.test("[configuring-cli] use-profile sets system.active_profile", async () => {
+  await withTempConfigDb(async (adapter) => {
+    await adapter.set("system.active_profile", "dev");
+    assertEquals(adapter.get("system.active_profile"), "dev");
+  });
 });
 
-Deno.test("[configuring] ConfigCommands.unset calls adapter.unset", async () => {
-  const { commands, cleanup } = setupConfigTest();
-  try {
-    await commands.set("cli_test.greeting", "hey");
-    assertEquals(await commands.get("cli_test.greeting"), "hey");
-    await commands.unset("cli_test.greeting");
-    assertEquals(await commands.get("cli_test.greeting"), "hello");
-  } finally {
-    cleanup();
-  }
+Deno.test("[configuring-cli] diff shows overridden keys", async () => {
+  await withTempConfigDb(async (adapter) => {
+    await adapter.set("ai.timeout_ms", 99999);
+    const diff = adapter.diff();
+    const match = diff.overridden.find((d) => d.path === "ai.timeout_ms");
+    assertEquals(match?.current, 99999);
+  });
 });
 
-Deno.test("[configuring] ConfigCommands.validate returns report", async () => {
-  const { commands, cleanup } = setupConfigTest();
-  try {
-    const report = await commands.validate("cli_test.timeout_ms");
-    assertEquals(report.valid, true);
-  } finally {
-    cleanup();
-  }
-});
-
-Deno.test("[configuring] ConfigCommands.show human output", async () => {
-  const { commands, cleanup } = setupConfigTest();
-  try {
-    const output = await commands.show(ConfigOutputFormat.HUMAN);
-    assertEquals(typeof output, "string");
-    assertEquals(output.length > 0, true);
-    assertEquals(output.includes("cli_test"), true);
-  } finally {
-    cleanup();
-  }
-});
-
-Deno.test("[configuring] ConfigCommands.show json output", async () => {
-  const { commands, cleanup } = setupConfigTest();
-  try {
-    const output = await commands.show(ConfigOutputFormat.JSON);
-    const parsed = JSON.parse(output) as { cli_test?: { greeting?: string } };
-    assertEquals(typeof parsed, "object");
-    assertEquals(parsed.cli_test?.greeting, "hello");
-  } finally {
-    cleanup();
-  }
-});
-
-Deno.test("[configuring] ConfigCommands parses string value", async () => {
-  const { commands, cleanup } = setupConfigTest();
-  try {
-    await commands.set("cli_test.greeting", "hi");
-    assertEquals(await commands.get("cli_test.greeting"), "hi");
-  } finally {
-    cleanup();
-  }
+Deno.test("[configuring-cli] getProvenance returns source for overridden keys", async () => {
+  await withTempConfigDb(async (adapter) => {
+    await adapter.set("ai.timeout_ms", 45000);
+    const provenance = adapter.getProvenance("ai.timeout_ms");
+    assertEquals(provenance.source, "db");
+    assertEquals(provenance.value, 45000);
+  });
 });

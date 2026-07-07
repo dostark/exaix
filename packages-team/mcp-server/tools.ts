@@ -32,6 +32,14 @@ import { RunCommandTool } from "./handlers/run_command_tool.ts";
 import { SearchFilesTool } from "./handlers/search_files_tool.ts";
 import { WriteFileTool } from "./handlers/write_file_tool.ts";
 import { ApprovePlanTool, CreateRequestTool, ListPlansTool, QueryJournalTool } from "./domain_tools.ts";
+import {
+  ConfigApplyTool,
+  ConfigDiffTool,
+  ConfigGetProvenanceTool,
+  ConfigGetTool,
+  ConfigSetTool,
+  ConfigValidateTool,
+} from "./config_tools.ts";
 
 interface IMcpToolFactory {
   (context: ICliApplicationContext, permissions: IPortalPermissionsChecker, logger?: IEventLogger): ToolHandler;
@@ -64,6 +72,16 @@ export const LIVE_MCP_TOOL_FACTORIES: ReadonlyMap<McpToolName, IMcpToolFactory> 
   [McpToolName.LIST_PLANS, (context, permissions, logger) => new ListPlansTool(context, permissions, logger)],
   [McpToolName.APPROVE_PLAN, (context, permissions, logger) => new ApprovePlanTool(context, permissions, logger)],
   [McpToolName.QUERY_JOURNAL, (context, permissions, logger) => new QueryJournalTool(context, permissions, logger)],
+  // Config tools (Phase 137)
+  [McpToolName.CONFIG_GET, (context, permissions, logger) => new ConfigGetTool(context, permissions, logger)],
+  [McpToolName.CONFIG_VALIDATE, (context, permissions, logger) => new ConfigValidateTool(context, permissions, logger)],
+  [McpToolName.CONFIG_DIFF, (context, permissions, logger) => new ConfigDiffTool(context, permissions, logger)],
+  [
+    McpToolName.CONFIG_GET_PROVENANCE,
+    (context, permissions, logger) => new ConfigGetProvenanceTool(context, permissions, logger),
+  ],
+  [McpToolName.CONFIG_SET, (context, permissions, logger) => new ConfigSetTool(context, permissions, logger)],
+  [McpToolName.CONFIG_APPLY, (context, permissions, logger) => new ConfigApplyTool(context, permissions, logger)],
 ]);
 
 function liveMcpManifestNames(): McpToolName[] {

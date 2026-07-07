@@ -489,6 +489,13 @@ export enum McpToolName {
   LIST_PLANS = "exaix_list_plans",
   APPROVE_PLAN = "exaix_approve_plan",
   QUERY_JOURNAL = "exaix_query_journal",
+  // Config tools (Phase 137)
+  CONFIG_GET = "exaix_config_get",
+  CONFIG_SET = "exaix_config_set",
+  CONFIG_VALIDATE = "exaix_config_validate",
+  CONFIG_DIFF = "exaix_config_diff",
+  CONFIG_GET_PROVENANCE = "exaix_config_get_provenance",
+  CONFIG_APPLY = "exaix_config_apply",
 }
 
 /**

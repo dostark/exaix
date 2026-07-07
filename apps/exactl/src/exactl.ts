@@ -95,6 +95,7 @@ const CLI_OUTPUT_FORMAT_HELP = "Output format: table, json, md";
 const CLI_OUTPUT_FORMAT_DEFAULT = { default: UIOutputFormat.TABLE };
 const CLI_OPTION_JSON_HELP = "Output in JSON format";
 const CONFIG_LABEL = "config";
+const CONFIG_DIFF_LABEL = "diff";
 const DEFAULT_CAPABILITIES_LABEL = "general";
 const CLI_LIMIT_OPTION = "-l, --limit <limit:number>";
 const CLI_LIMIT_HELP = "Maximum results";
@@ -1315,13 +1316,118 @@ export const __test_command = new Command()
         new Command()
           .description("Show effective config")
           .option("--json", CLI_OPTION_JSON_HELP)
+          .option("--sources", "Include provenance source for each key")
           .action(async (options) => {
             try {
               const format = options.json ? ConfigOutputFormat.JSON : ConfigOutputFormat.HUMAN;
-              const output = await configCommands.show(format);
+              const output = await configCommands.show(format, options.sources);
               console.log(output);
             } catch (error) {
               display.error("cli.error", "config show", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        CONFIG_DIFF_LABEL,
+        new Command()
+          .description("Show uncommitted config changes")
+          .action(() => {
+            try {
+              configCommands.diff();
+            } catch (error) {
+              display.error("cli.error", "config diff", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "set-model",
+        new Command()
+          .description("Set model for a named configuration")
+          .arguments("<name:string> <model:string>")
+          .action(async (_options, ...args) => {
+            try {
+              await configCommands.setModel(args[0], args[1]);
+              display.info("config.set-model", args[0], { model: args[1] });
+            } catch (error) {
+              display.error("cli.error", "config set-model", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "set-provider",
+        new Command()
+          .description("Set provider and configure default model")
+          .arguments("<provider:string>")
+          .action(async (_options, ...args) => {
+            try {
+              await configCommands.setProvider(args[0]);
+              display.info("config.set-provider", args[0], {});
+            } catch (error) {
+              display.error("cli.error", "config set-provider", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "set-path",
+        new Command()
+          .description("Set a path configuration")
+          .arguments("<key:string> <dir:string>")
+          .action(async (_options, ...args) => {
+            try {
+              await configCommands.setPath(args[0], args[1]);
+              display.info("config.set-path", args[0], { dir: args[1] });
+            } catch (error) {
+              display.error("cli.error", "config set-path", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "use-profile",
+        new Command()
+          .description("Set active profile")
+          .arguments("<name:string>")
+          .action(async (_options, ...args) => {
+            try {
+              await configCommands.useProfile(args[0]);
+              display.info("config.use-profile", args[0], {});
+            } catch (error) {
+              display.error("cli.error", "config use-profile", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "list-profiles",
+        new Command()
+          .description("List all profiles")
+          .action(() => {
+            try {
+              const profiles = configCommands.listProfiles();
+              for (const p of profiles) {
+                console.log(`  ${p}`);
+              }
+              if (profiles.length === 0) {
+                console.log("  No profiles configured.");
+              }
+            } catch (error) {
+              display.error("cli.error", "config list-profiles", {
                 message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);

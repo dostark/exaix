@@ -213,6 +213,61 @@ Deno.test(
 );
 
 Deno.test(
+  "[configuring] database.batch_flush_ms is registered",
+  () => {
+    const entry = getRegisteredDefaults().get("database.batch_flush_ms");
+    assertNotEquals(entry, undefined);
+    assertEquals(entry!.opts.default, 1000);
+  },
+);
+
+Deno.test(
+  "[configuring] git.status_timeout_ms is registered with bounds",
+  () => {
+    const entry = getRegisteredDefaults().get("git.status_timeout_ms");
+    assertNotEquals(entry, undefined);
+    assertEquals(entry!.opts.min, 1000);
+    assertEquals(entry!.opts.max, 60000);
+  },
+);
+
+Deno.test(
+  "[configuring] rate_limit.enabled is registered as boolean",
+  () => {
+    const entry = getRegisteredDefaults().get("rate_limit.enabled");
+    assertNotEquals(entry, undefined);
+    assertEquals(entry!.opts.type, ConfigValueType.BOOLEAN);
+  },
+);
+
+Deno.test(
+  "[configuring] mcp.enabled is registered",
+  () => {
+    const entry = getRegisteredDefaults().get("mcp.enabled");
+    assertNotEquals(entry, undefined);
+    assertEquals(entry!.opts.default, true);
+  },
+);
+
+Deno.test(
+  "[configuring] health.check_timeout_ms is registered",
+  () => {
+    const entry = getRegisteredDefaults().get("health.check_timeout_ms");
+    assertNotEquals(entry, undefined);
+    assertEquals(entry!.opts.default, 30000);
+  },
+);
+
+Deno.test(
+  "[configuring] provider_strategy.max_daily_cost_usd is registered",
+  () => {
+    const entry = getRegisteredDefaults().get("provider_strategy.max_daily_cost_usd");
+    assertNotEquals(entry, undefined);
+    assertEquals(entry!.opts.default, 5.0);
+  },
+);
+
+Deno.test(
   "[configuring] createConfigAdapter returns a working adapter with real keys",
   () => {
     withTempDb((dbPath) => {

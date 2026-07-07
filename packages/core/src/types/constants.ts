@@ -146,8 +146,24 @@ export const DATABASE_BUSY_TIMEOUT_MS_MIN = 0;
 export const DATABASE_BUSY_TIMEOUT_MS_MAX = 30000;
 
 // Database defaults
-export const DEFAULT_DATABASE_BATCH_FLUSH_MS = 1000;
-export const DEFAULT_DATABASE_BATCH_MAX_SIZE = 100;
+export const DEFAULT_DATABASE_BATCH_FLUSH_MS = configurable({
+  key: "database.batch_flush_ms",
+  default: 1000,
+  type: ConfigValueType.NUMBER,
+  description: "Interval in milliseconds for flushing batched DB writes",
+  min: DATABASE_BATCH_FLUSH_MS_MIN,
+  max: DATABASE_BATCH_FLUSH_MS_MAX,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_DATABASE_BATCH_MAX_SIZE = configurable({
+  key: "database.batch_max_size",
+  default: 100,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum number of operations per batch flush",
+  min: DATABASE_BATCH_MAX_SIZE_MIN,
+  max: DATABASE_BATCH_MAX_SIZE_MAX,
+  swap: SwapClass.RESTART,
+});
 export const DEFAULT_DATABASE_JOURNAL_MODE = "WAL";
 export const DEFAULT_DATABASE_FOREIGN_KEYS = true;
 export const DEFAULT_DATABASE_BUSY_TIMEOUT_MS = configurable({
@@ -159,9 +175,33 @@ export const DEFAULT_DATABASE_BUSY_TIMEOUT_MS = configurable({
   max: DATABASE_BUSY_TIMEOUT_MS_MAX,
   swap: SwapClass.RESTART,
 });
-export const DEFAULT_DATABASE_FAILURE_THRESHOLD = 5;
-export const DEFAULT_DATABASE_RESET_TIMEOUT_MS = 60000;
-export const DEFAULT_DATABASE_HALF_OPEN_SUCCESS_THRESHOLD = 2;
+export const DEFAULT_DATABASE_FAILURE_THRESHOLD = configurable({
+  key: "database.failure_threshold",
+  default: 5,
+  type: ConfigValueType.NUMBER,
+  description: "Number of failures before circuit breaker opens",
+  min: 1,
+  max: 100,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_DATABASE_RESET_TIMEOUT_MS = configurable({
+  key: "database.reset_timeout_ms",
+  default: 60000,
+  type: ConfigValueType.NUMBER,
+  description: "Time in milliseconds before circuit breaker resets",
+  min: 1000,
+  max: 300000,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_DATABASE_HALF_OPEN_SUCCESS_THRESHOLD = configurable({
+  key: "database.half_open_success_threshold",
+  default: 2,
+  type: ConfigValueType.NUMBER,
+  description: "Successful probes needed to close circuit breaker",
+  min: 1,
+  max: 10,
+  swap: SwapClass.RESTART,
+});
 
 // ============================================================================
 // Config DB — polling and dynamic key namespaces
@@ -192,11 +232,41 @@ export const WATCHER_DEBOUNCE_MS_MIN = 50;
 export const WATCHER_DEBOUNCE_MS_MAX = 5000;
 
 // Watcher defaults
-export const DEFAULT_WATCHER_DEBOUNCE_MS = 200;
-export const DEFAULT_WATCHER_STABILITY_CHECK = true;
+export const DEFAULT_WATCHER_DEBOUNCE_MS = configurable({
+  key: "watcher.debounce_ms",
+  default: 200,
+  type: ConfigValueType.NUMBER,
+  description: "Debounce interval in milliseconds for file watcher events",
+  min: WATCHER_DEBOUNCE_MS_MIN,
+  max: WATCHER_DEBOUNCE_MS_MAX,
+  swap: SwapClass.HOT,
+});
+export const DEFAULT_WATCHER_STABILITY_CHECK = configurable({
+  key: "watcher.stability_check",
+  default: true,
+  type: ConfigValueType.BOOLEAN,
+  description: "Whether to wait for file stability before processing change events",
+  swap: SwapClass.HOT,
+});
 export const DEFAULT_WATCHER_STABILITY_BACKOFF_MS = [50, 100, 200, 500, 1000];
-export const DEFAULT_WATCHER_STABILITY_MAX_ATTEMPTS = 5;
-export const DEFAULT_WATCHER_STABILITY_MIN_FILE_SIZE = 1;
+export const DEFAULT_WATCHER_STABILITY_MAX_ATTEMPTS = configurable({
+  key: "watcher.stability_max_attempts",
+  default: 5,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum stability check attempts for a changed file",
+  min: 1,
+  max: 20,
+  swap: SwapClass.HOT,
+});
+export const DEFAULT_WATCHER_STABILITY_MIN_FILE_SIZE = configurable({
+  key: "watcher.stability_min_file_size",
+  default: 1,
+  type: ConfigValueType.NUMBER,
+  description: "Minimum file size in bytes to consider a file stable",
+  min: 1,
+  max: 1_000_000,
+  swap: SwapClass.HOT,
+});
 
 // ============================================================================
 
@@ -228,8 +298,24 @@ export const DEFAULT_AGENT_MODEL = "default";
 export const DEFAULT_IDENTITY_ID = "default";
 export const DEFAULT_UNKNOWN_LABEL = "Unknown";
 export const DEFAULT_UNKNOWN_ERROR_MESSAGE = "Unknown error";
-export const DEFAULT_AGENT_TIMEOUT_SEC = 60;
-export const DEFAULT_AGENT_MAX_ITERATIONS = 10;
+export const DEFAULT_AGENT_TIMEOUT_SEC = configurable({
+  key: "agent.timeout_sec",
+  default: 60,
+  type: ConfigValueType.NUMBER,
+  description: "Default agent execution timeout in seconds",
+  min: AGENT_TIMEOUT_SEC_MIN,
+  max: AGENT_TIMEOUT_SEC_MAX,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_AGENT_MAX_ITERATIONS = configurable({
+  key: "agent.max_iterations",
+  default: 10,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum iterations per agent execution",
+  min: AGENT_MAX_ITERATIONS_MIN,
+  max: AGENT_MAX_ITERATIONS_MAX,
+  swap: SwapClass.RESTART,
+});
 export const DEFAULT_REFLEXIVE_CONVERGENCE_QUALITY_EXIT_THRESHOLD = 85;
 export const DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA = 3;
 export const DEFAULT_REFLEXIVE_CONVERGENCE_OSCILLATION_WINDOW = 2;
@@ -275,7 +361,15 @@ export const REACT_DEFAULT_TEMPERATURE = 0.1;
 export const REACT_DEFAULT_MAX_TOKENS = 4000;
 
 // General Agent & MCP constants
-export const DEFAULT_AGENT_HANDSHAKE_TIMEOUT_MS = 30000;
+export const DEFAULT_AGENT_HANDSHAKE_TIMEOUT_MS = configurable({
+  key: "agent.handshake_timeout_ms",
+  default: 30000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for agent handshake with child processes",
+  min: 1000,
+  max: 300000,
+  swap: SwapClass.RESTART,
+});
 export const PORTAL_ALIAS_WORKSPACE = "workspace";
 
 // Environment variables for MCP agents
@@ -316,7 +410,15 @@ export const DEFAULT_AI_RETRY_BACKOFF_BASE_MS = configurable({
   max: 10_000,
   swap: SwapClass.HOT,
 });
-export const DEFAULT_AI_RETRY_TIMEOUT_PER_REQUEST_MS = 30000;
+export const DEFAULT_AI_RETRY_TIMEOUT_PER_REQUEST_MS = configurable({
+  key: "ai.retry.timeout_per_request_ms",
+  default: 30000,
+  type: ConfigValueType.NUMBER,
+  description: "Per-request timeout in milliseconds for AI retries",
+  min: 1000,
+  max: 300_000,
+  swap: SwapClass.HOT,
+});
 export const DEFAULT_AI_MODEL = configurable({
   key: "ai.model",
   default: "gemini-flash-latest",
@@ -354,8 +456,24 @@ configurable({
   description: "Per-key path pattern (paths.<key>)",
   swap: SwapClass.RESTART,
 });
-export const DEFAULT_AI_TEMPERATURE_MIN = 0;
-export const DEFAULT_AI_TEMPERATURE_MAX = 2;
+export const DEFAULT_AI_TEMPERATURE_MIN = configurable({
+  key: "ai.temperature_min",
+  default: 0,
+  type: ConfigValueType.NUMBER,
+  description: "Minimum allowed temperature for AI provider requests",
+  min: 0,
+  max: 2,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_AI_TEMPERATURE_MAX = configurable({
+  key: "ai.temperature_max",
+  default: 2,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum allowed temperature for AI provider requests",
+  min: 0,
+  max: 5,
+  swap: SwapClass.RESTART,
+});
 export const AI_RETRY_MAX_ATTEMPTS_MIN = 1;
 export const AI_RETRY_MAX_ATTEMPTS_MAX = 10;
 export const AI_RETRY_BACKOFF_BASE_MS_MIN = 100;
@@ -370,13 +488,55 @@ export const MOCK_INPUT_TOKENS_MIN = 1;
 export const MOCK_INPUT_TOKENS_MAX = 10000;
 export const MOCK_OUTPUT_TOKENS_MIN = 1;
 export const MOCK_OUTPUT_TOKENS_MAX = 10000;
-export const MOCK_DELAY_MS = 100;
-export const MOCK_INPUT_TOKENS = 100;
-export const MOCK_OUTPUT_TOKENS = 200;
-export const DEFAULT_MOCK_MODEL = "mock-model";
+export const MOCK_DELAY_MS = configurable({
+  key: "mock.delay_ms",
+  default: 100,
+  type: ConfigValueType.NUMBER,
+  description: "Simulated delay in milliseconds for mock provider responses",
+  min: MOCK_DELAY_MS_MIN,
+  max: MOCK_DELAY_MS_MAX,
+  swap: SwapClass.HOT,
+});
+export const MOCK_INPUT_TOKENS = configurable({
+  key: "mock.input_tokens",
+  default: 100,
+  type: ConfigValueType.NUMBER,
+  description: "Simulated input token count for mock provider billing",
+  min: MOCK_INPUT_TOKENS_MIN,
+  max: MOCK_INPUT_TOKENS_MAX,
+  swap: SwapClass.HOT,
+});
+export const MOCK_OUTPUT_TOKENS = configurable({
+  key: "mock.output_tokens",
+  default: 200,
+  type: ConfigValueType.NUMBER,
+  description: "Simulated output token count for mock provider billing",
+  min: MOCK_OUTPUT_TOKENS_MIN,
+  max: MOCK_OUTPUT_TOKENS_MAX,
+  swap: SwapClass.HOT,
+});
+export const DEFAULT_MOCK_MODEL = configurable({
+  key: "mock.model",
+  default: "mock-model",
+  type: ConfigValueType.STRING,
+  description: "Model identifier used in mock provider responses",
+  swap: SwapClass.RESTART,
+});
 export const DEFAULT_MOCK_STRATEGY = MockStrategy.RECORDED;
-export const DEFAULT_FAST_MODEL_NAME = "gemini-flash-latest";
-export const DEFAULT_LOCAL_MODEL_NAME = "llama3.2";
+export const DEFAULT_FAST_MODEL_NAME = configurable({
+  key: "ai.fast_model",
+  default: "gemini-flash-latest",
+  type: ConfigValueType.STRING,
+  description: "Model name used for fast inference provider requests",
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_LOCAL_MODEL_NAME = configurable({
+  key: "ai.local_model",
+  default: "llama3.2",
+  type: ConfigValueType.STRING,
+  description: "Model name used for local/self-hosted provider requests",
+  swap: SwapClass.RESTART,
+});
 export const PROVIDER_MOCK = ProviderType.MOCK;
 export const PROVIDER_OLLAMA = ProviderType.OLLAMA;
 export const PROVIDER_OPENAI = ProviderType.OPENAI;
@@ -400,12 +560,26 @@ export const PROMPT_PREVIEW_EXTENDED = 500;
 // ============================================================================
 // MCP Defaults
 // ============================================================================
-export const DEFAULT_MCP_ENABLED = true;
+export const DEFAULT_MCP_ENABLED = configurable({
+  key: "mcp.enabled",
+  default: true,
+  type: ConfigValueType.BOOLEAN,
+  description: "Whether the MCP server is enabled",
+  swap: SwapClass.RESTART,
+});
 export const DEFAULT_MCP_TRANSPORT = McpTransportType.STDIO;
 export const DEFAULT_MCP_SERVER_NAME = "exaix";
 export const DEFAULT_MCP_VERSION = "1.0.0";
 export const DEFAULT_MCP_IDENTITY_ID = "system";
-export const DEFAULT_MCP_HTTP_PORT = 3000;
+export const DEFAULT_MCP_HTTP_PORT = configurable({
+  key: "mcp.http_port",
+  default: 3000,
+  type: ConfigValueType.NUMBER,
+  description: "HTTP port for the MCP server when using HTTP transport",
+  min: 1024,
+  max: 65535,
+  swap: SwapClass.RESTART,
+});
 
 // ============================================================================
 // Git Defaults
@@ -424,18 +598,114 @@ export const GIT_BRANCH_SUFFIX_LENGTH_MIN = 4;
 export const GIT_BRANCH_SUFFIX_LENGTH_MAX = 16;
 export const DEFAULT_GIT_BRANCH_PREFIX_PATTERN = "^(feature|bugfix|hotfix|chore)/";
 export const DEFAULT_GIT_ALLOWED_PREFIXES = ["feature/", "bugfix/", "hotfix/", "chore/"];
-export const DEFAULT_GIT_STATUS_TIMEOUT_MS = 10000;
-export const DEFAULT_GIT_LS_FILES_TIMEOUT_MS = 15000;
-export const DEFAULT_GIT_CHECKOUT_TIMEOUT_MS = 30000;
-export const DEFAULT_GIT_CLEAN_TIMEOUT_MS = 20000;
-export const DEFAULT_GIT_LOG_TIMEOUT_MS = 20000;
-export const DEFAULT_GIT_DIFF_TIMEOUT_MS = 30000;
-export const DEFAULT_GIT_COMMAND_TIMEOUT_MS = 60000;
-export const DEFAULT_GIT_MAX_RETRIES = 3;
-export const DEFAULT_GIT_RETRY_BACKOFF_BASE_MS = 1000;
-export const DEFAULT_GIT_BRANCH_NAME_COLLISION_MAX_RETRIES = 5;
-export const DEFAULT_GIT_TRACE_ID_SHORT_LENGTH = 8;
-export const DEFAULT_GIT_BRANCH_SUFFIX_LENGTH = 8;
+export const DEFAULT_GIT_STATUS_TIMEOUT_MS = configurable({
+  key: "git.status_timeout_ms",
+  default: 10000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for git status operations",
+  min: GIT_TIMEOUT_MS_MIN,
+  max: GIT_TIMEOUT_MS_MAX,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_GIT_LS_FILES_TIMEOUT_MS = configurable({
+  key: "git.ls_files_timeout_ms",
+  default: 15000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for git ls-files operations",
+  min: GIT_TIMEOUT_MS_MIN,
+  max: GIT_TIMEOUT_MS_MAX,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_GIT_CHECKOUT_TIMEOUT_MS = configurable({
+  key: "git.checkout_timeout_ms",
+  default: 30000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for git checkout operations",
+  min: GIT_TIMEOUT_MS_MIN,
+  max: GIT_TIMEOUT_MS_MAX,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_GIT_CLEAN_TIMEOUT_MS = configurable({
+  key: "git.clean_timeout_ms",
+  default: 20000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for git clean operations",
+  min: GIT_TIMEOUT_MS_MIN,
+  max: GIT_TIMEOUT_MS_MAX,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_GIT_LOG_TIMEOUT_MS = configurable({
+  key: "git.log_timeout_ms",
+  default: 20000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for git log operations",
+  min: GIT_TIMEOUT_MS_MIN,
+  max: GIT_TIMEOUT_MS_MAX,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_GIT_DIFF_TIMEOUT_MS = configurable({
+  key: "git.diff_timeout_ms",
+  default: 30000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for git diff operations",
+  min: GIT_TIMEOUT_MS_MIN,
+  max: GIT_TIMEOUT_MS_MAX,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_GIT_COMMAND_TIMEOUT_MS = configurable({
+  key: "git.command_timeout_ms",
+  default: 60000,
+  type: ConfigValueType.NUMBER,
+  description: "Default timeout in milliseconds for general git operations",
+  min: GIT_TIMEOUT_MS_MIN,
+  max: GIT_TIMEOUT_MS_MAX,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_GIT_MAX_RETRIES = configurable({
+  key: "git.max_retries",
+  default: 3,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum retry attempts for git operations",
+  min: GIT_MAX_RETRIES_MIN,
+  max: GIT_MAX_RETRIES_MAX,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_GIT_RETRY_BACKOFF_BASE_MS = configurable({
+  key: "git.retry_backoff_base_ms",
+  default: 1000,
+  type: ConfigValueType.NUMBER,
+  description: "Base backoff delay in milliseconds for git retries",
+  min: GIT_RETRY_BACKOFF_BASE_MS_MIN,
+  max: GIT_RETRY_BACKOFF_BASE_MS_MAX,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_GIT_BRANCH_NAME_COLLISION_MAX_RETRIES = configurable({
+  key: "git.branch_collision_max_retries",
+  default: 5,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum retries for branch name collision resolution",
+  min: GIT_BRANCH_NAME_COLLISION_MAX_RETRIES_MIN,
+  max: GIT_BRANCH_NAME_COLLISION_MAX_RETRIES_MAX,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_GIT_TRACE_ID_SHORT_LENGTH = configurable({
+  key: "git.trace_id_short_length",
+  default: 8,
+  type: ConfigValueType.NUMBER,
+  description: "Length in characters for truncated trace IDs in branch names",
+  min: GIT_TRACE_ID_SHORT_LENGTH_MIN,
+  max: GIT_TRACE_ID_SHORT_LENGTH_MAX,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_GIT_BRANCH_SUFFIX_LENGTH = configurable({
+  key: "git.branch_suffix_length",
+  default: 8,
+  type: ConfigValueType.NUMBER,
+  description: "Length in characters for generated branch name suffixes",
+  min: GIT_BRANCH_SUFFIX_LENGTH_MIN,
+  max: GIT_BRANCH_SUFFIX_LENGTH_MAX,
+  swap: SwapClass.RESTART,
+});
 
 // ============================================================================
 // Rate Limiting Validation Limits
@@ -450,11 +720,49 @@ export const RATE_LIMIT_COST_PER_1K_TOKENS_MIN = 0.001;
 export const RATE_LIMIT_COST_PER_1K_TOKENS_MAX = 1;
 
 // Rate limiting defaults
-export const DEFAULT_RATE_LIMIT_ENABLED = true;
-export const DEFAULT_RATE_LIMIT_MAX_CALLS_PER_MINUTE = 60;
-export const DEFAULT_RATE_LIMIT_MAX_TOKENS_PER_HOUR = 100000;
-export const DEFAULT_RATE_LIMIT_MAX_COST_PER_DAY = 10.0;
-export const DEFAULT_RATE_LIMIT_COST_PER_1K_TOKENS = 0.002;
+export const DEFAULT_RATE_LIMIT_ENABLED = configurable({
+  key: "rate_limit.enabled",
+  default: true,
+  type: ConfigValueType.BOOLEAN,
+  description: "Whether rate limiting is enabled for AI provider requests",
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_RATE_LIMIT_MAX_CALLS_PER_MINUTE = configurable({
+  key: "rate_limit.max_calls_per_minute",
+  default: 60,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum API calls allowed per minute",
+  min: RATE_LIMIT_MAX_CALLS_PER_MINUTE_MIN,
+  max: RATE_LIMIT_MAX_CALLS_PER_MINUTE_MAX,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_RATE_LIMIT_MAX_TOKENS_PER_HOUR = configurable({
+  key: "rate_limit.max_tokens_per_hour",
+  default: 100000,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum tokens allowed per hour across all providers",
+  min: RATE_LIMIT_MAX_TOKENS_PER_HOUR_MIN,
+  max: RATE_LIMIT_MAX_TOKENS_PER_HOUR_MAX,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_RATE_LIMIT_MAX_COST_PER_DAY = configurable({
+  key: "rate_limit.max_cost_per_day",
+  default: 10.0,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum USD cost allowed per day across all providers",
+  min: RATE_LIMIT_MAX_COST_PER_DAY_MIN,
+  max: RATE_LIMIT_MAX_COST_PER_DAY_MAX,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_RATE_LIMIT_COST_PER_1K_TOKENS = configurable({
+  key: "rate_limit.cost_per_1k_tokens",
+  default: 0.002,
+  type: ConfigValueType.NUMBER,
+  description: "Estimated USD cost per 1K tokens for rate limit budgeting",
+  min: RATE_LIMIT_COST_PER_1K_TOKENS_MIN,
+  max: RATE_LIMIT_COST_PER_1K_TOKENS_MAX,
+  swap: SwapClass.RESTART,
+});
 
 // Rate limiting time windows (in milliseconds)
 export const RATE_LIMIT_WINDOW_MINUTE_MS = 60_000; // 1 minute
@@ -653,10 +961,42 @@ export const HEALTH_MEMORY_CRITICAL_PERCENT_MIN = 1;
 export const HEALTH_MEMORY_CRITICAL_PERCENT_MAX = 99;
 
 // Health check defaults
-export const DEFAULT_HEALTH_CHECK_TIMEOUT_MS = 30000;
-export const DEFAULT_HEALTH_CACHE_TTL_MS = 300000;
-export const DEFAULT_MEMORY_WARN_PERCENT = 80;
-export const DEFAULT_MEMORY_CRITICAL_PERCENT = 95;
+export const DEFAULT_HEALTH_CHECK_TIMEOUT_MS = configurable({
+  key: "health.check_timeout_ms",
+  default: 30000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for health check probes",
+  min: HEALTH_CHECK_TIMEOUT_MS_MIN,
+  max: HEALTH_CHECK_TIMEOUT_MS_MAX,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_HEALTH_CACHE_TTL_MS = configurable({
+  key: "health.cache_ttl_ms",
+  default: 300000,
+  type: ConfigValueType.NUMBER,
+  description: "Time-to-live in milliseconds for health check cache entries",
+  min: HEALTH_CACHE_TTL_MS_MIN,
+  max: HEALTH_CACHE_TTL_MS_MAX,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_MEMORY_WARN_PERCENT = configurable({
+  key: "health.memory_warn_percent",
+  default: 80,
+  type: ConfigValueType.NUMBER,
+  description: "Memory usage percentage that triggers a warning health state",
+  min: HEALTH_MEMORY_WARN_PERCENT_MIN,
+  max: HEALTH_MEMORY_WARN_PERCENT_MAX,
+  swap: SwapClass.HOT,
+});
+export const DEFAULT_MEMORY_CRITICAL_PERCENT = configurable({
+  key: "health.memory_critical_percent",
+  default: 95,
+  type: ConfigValueType.NUMBER,
+  description: "Memory usage percentage that triggers a critical health state",
+  min: HEALTH_MEMORY_CRITICAL_PERCENT_MIN,
+  max: HEALTH_MEMORY_CRITICAL_PERCENT_MAX,
+  swap: SwapClass.HOT,
+});
 
 // ============================================================================
 // Provider Strategy Validation Limits
@@ -666,13 +1006,61 @@ export const PROVIDER_STRATEGY_MAX_DAILY_COST_USD_MAX = 1000;
 export const PROVIDER_STRATEGY_BUDGETS_MIN = 0;
 
 // Provider strategy defaults
-export const DEFAULT_PROVIDER_STRATEGY_PREFER_FREE = true;
-export const DEFAULT_PROVIDER_STRATEGY_ALLOW_LOCAL = true;
-export const DEFAULT_PROVIDER_STRATEGY_MAX_DAILY_COST_USD = 5.0;
-export const DEFAULT_PROVIDER_STRATEGY_HEALTH_CHECK_ENABLED = true;
-export const DEFAULT_HEALTH_POLL_INTERVAL_MS = 60_000;
-export const DEFAULT_MEMORY_REMOTE_BUDGET_USD = 2.0;
-export const DEFAULT_PROVIDER_STRATEGY_FALLBACK_ENABLED = true;
+export const DEFAULT_PROVIDER_STRATEGY_PREFER_FREE = configurable({
+  key: "provider_strategy.prefer_free",
+  default: true,
+  type: ConfigValueType.BOOLEAN,
+  description: "Whether to prefer free tier providers when available",
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_PROVIDER_STRATEGY_ALLOW_LOCAL = configurable({
+  key: "provider_strategy.allow_local",
+  default: true,
+  type: ConfigValueType.BOOLEAN,
+  description: "Whether to allow local/self-hosted providers in the strategy",
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_PROVIDER_STRATEGY_MAX_DAILY_COST_USD = configurable({
+  key: "provider_strategy.max_daily_cost_usd",
+  default: 5.0,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum USD spending per day across all providers",
+  min: PROVIDER_STRATEGY_MAX_DAILY_COST_USD_MIN,
+  max: PROVIDER_STRATEGY_MAX_DAILY_COST_USD_MAX,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_PROVIDER_STRATEGY_HEALTH_CHECK_ENABLED = configurable({
+  key: "provider_strategy.health_check_enabled",
+  default: true,
+  type: ConfigValueType.BOOLEAN,
+  description: "Whether to check provider health before selecting",
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_HEALTH_POLL_INTERVAL_MS = configurable({
+  key: "health.poll_interval_ms",
+  default: 60_000,
+  type: ConfigValueType.NUMBER,
+  description: "Interval in milliseconds between health poll cycles",
+  min: 1000,
+  max: 600_000,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_MEMORY_REMOTE_BUDGET_USD = configurable({
+  key: "memory.remote_budget_usd",
+  default: 2.0,
+  type: ConfigValueType.NUMBER,
+  description: "USD budget cap for remote memory operations per billing cycle",
+  min: 0,
+  max: 100,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_PROVIDER_STRATEGY_FALLBACK_ENABLED = configurable({
+  key: "provider_strategy.fallback_enabled",
+  default: true,
+  type: ConfigValueType.BOOLEAN,
+  description: "Whether to fall back to alternative providers on failure",
+  swap: SwapClass.RESTART,
+});
 export const DEFAULT_PROVIDER_STRATEGY_FALLBACK_CHAINS = {
   "balanced": ["openai", "anthropic", "google"],
   "fast": ["google", "openai"],

@@ -71,8 +71,20 @@ export class ConfigCommands extends BaseCommand {
     return Promise.resolve(this.getAdapter().validate());
   }
 
-  show(format: ConfigOutputFormat = ConfigOutputFormat.HUMAN): Promise<string> {
+  show(
+    format: ConfigOutputFormat = ConfigOutputFormat.HUMAN,
+    sources?: boolean,
+  ): Promise<string> {
     const adapter = this.getAdapter();
+    if (sources) {
+      const overrides = adapter.listOverrides();
+      const lines = overrides.map((o) => {
+        const provenance = adapter.getProvenance(o.key);
+        return `${o.key} = ${o.value}  (source: ${provenance.source})`;
+      });
+      return Promise.resolve(lines.join("\n"));
+    }
+
     const effective: NestedConfigTree = {};
 
     for (const [key] of getRegisteredDefaults()) {
@@ -95,6 +107,48 @@ export class ConfigCommands extends BaseCommand {
     }
 
     return Promise.resolve(formatTree(effective, 0));
+  }
+
+  diff(): void {
+    const report = this.getAdapter().diff();
+    for (const item of report.overridden) {
+      console.log(`  ${item.path}: ${item.default} → ${item.current}`);
+    }
+    if (report.overridden.length === 0) {
+      console.log("  No overridden keys.");
+    }
+  }
+
+  async setModel(name: string, model: string): Promise<void> {
+    await this.getAdapter().set(`models.${name}.model`, model);
+  }
+
+  async setProvider(provider: string): Promise<void> {
+    await this.getAdapter().set("ai.provider", provider);
+    const modelMap: Record<string, string> = {
+      openai: "gpt-5-mini",
+      anthropic: "claude-sonnet-4",
+      google: "gemini-flash-latest",
+      ollama: "llama3.2",
+    };
+    if (modelMap[provider]) {
+      await this.getAdapter().set(`models.default.model`, modelMap[provider]);
+    }
+  }
+
+  async setPath(key: string, dir: string): Promise<void> {
+    await this.getAdapter().set(`paths.${key}`, dir);
+  }
+
+  async useProfile(name: string): Promise<void> {
+    await this.getAdapter().set("system.active_profile", name);
+  }
+
+  listProfiles(): string[] {
+    const overrides = this.getAdapter().listOverrides();
+    return overrides
+      .filter((o) => o.key.startsWith("profile."))
+      .map((o) => o.key.replace("profile.", ""));
   }
 }
 
