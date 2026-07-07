@@ -275,6 +275,8 @@ export const DomainEventType = {
   // Config events
   ConfigLoaded: "config.loaded",
   ConfigUpdated: "config.updated",
+  ConfigDbWatcherStarted: "config.db_watcher.started",
+  ConfigDbWatcherChangeDetected: "config.db_watcher.change_detected",
 
   // Security events
   SecurityFileValidationFilteredAll: "security.file_validation_filtered_all",

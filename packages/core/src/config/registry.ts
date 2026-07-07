@@ -30,7 +30,12 @@ export interface IRegisteredConfig {
 const registry = new Map<string, IRegisteredConfig>();
 
 export function configurable<T>(opts: IConfigurableOpts<T>): T {
-  const strict = Deno.env.get("EXA_STRICT_CONFIG") === "1";
+  let strict = false;
+  try {
+    strict = Deno.env.get("EXA_STRICT_CONFIG") === "1";
+  } catch {
+    // Permission denied for env access — default to non-strict.
+  }
   if (strict && registry.has(opts.key)) {
     throw new Error(`Config key already registered: ${opts.key}`);
   }

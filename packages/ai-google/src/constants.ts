@@ -10,21 +10,21 @@ import { configurable } from "@exaix/core/config";
 import { ConfigValueType, SwapClass } from "@exaix/core";
 import { type IProviderDefaults, ProviderCostTier, ProviderType } from "@exaix/core";
 
-export const DEFAULT_GOOGLE_MODEL = configurable({
+export const DEFAULT_GOOGLE_MODEL: string = configurable({
   key: "google.model",
   default: "gemini-flash-latest",
   type: ConfigValueType.STRING,
   description: "Default model identifier for google provider",
   swap: SwapClass.RESTART,
 });
-export const DEFAULT_GOOGLE_ENDPOINT = configurable({
+export const DEFAULT_GOOGLE_ENDPOINT: string = configurable({
   key: "google.endpoint",
   default: "https://generativelanguage.googleapis.com/v1beta/models",
   type: ConfigValueType.STRING,
   description: "API endpoint URL for google provider",
   swap: SwapClass.RESTART,
 });
-export const DEFAULT_GOOGLE_TIMEOUT_MS = configurable({
+export const DEFAULT_GOOGLE_TIMEOUT_MS: number = configurable({
   key: "google.timeout_ms",
   default: 30000,
   type: ConfigValueType.NUMBER,
@@ -33,7 +33,7 @@ export const DEFAULT_GOOGLE_TIMEOUT_MS = configurable({
   max: 600_000,
   swap: SwapClass.HOT,
 });
-export const DEFAULT_GOOGLE_RETRY_MAX_ATTEMPTS = configurable({
+export const DEFAULT_GOOGLE_RETRY_MAX_ATTEMPTS: number = configurable({
   key: "google.retry_max_attempts",
   default: 3,
   type: ConfigValueType.NUMBER,
@@ -42,7 +42,7 @@ export const DEFAULT_GOOGLE_RETRY_MAX_ATTEMPTS = configurable({
   max: 10,
   swap: SwapClass.HOT,
 });
-export const DEFAULT_GOOGLE_RETRY_BACKOFF_MS = configurable({
+export const DEFAULT_GOOGLE_RETRY_BACKOFF_MS: number = configurable({
   key: "google.retry_backoff_ms",
   default: 1000,
   type: ConfigValueType.NUMBER,

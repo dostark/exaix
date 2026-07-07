@@ -95,6 +95,17 @@ export function insertOverride(
   ).run(key, strValue, source, swapClass);
 }
 
+/**
+ * Get the maximum override ID from the config_overrides table.
+ * Used by the polling DB watcher to detect new overrides.
+ */
+export function getMaxOverrideId(db: Database): number {
+  const row = db.prepare(
+    "SELECT MAX(id) AS max_id FROM config_overrides",
+  ).get<{ max_id: number | null }>();
+  return row?.max_id ?? 0;
+}
+
 export function getOverrideHistory(
   db: Database,
   key: string,

@@ -63,7 +63,7 @@ import {
 } from "@exaix/portal/knowledge";
 import { PathResolver } from "@exaix/portal";
 import type { IPortalKnowledgeConfig, PortalAnalysisMode } from "@exaix/core/types";
-import { createConfigReloadHandler } from "@exaix/core/config";
+import { createConfigReloadHandler, createDbWatcherHandler, getMaxOverrideId } from "@exaix/core/config";
 import { GracefulShutdown } from "./src/graceful_shutdown.ts";
 import { recoverOrphanedDelegations } from "./src/recovery.ts";
 // registerTeamCapabilities is loaded dynamically inside the Team branch only —
@@ -89,6 +89,7 @@ import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adap
 import type { SessionGate, SessionTool } from "@exaix/schemas/session_delegate.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
 import {
+  DEFAULT_CONFIG_DB_POLL_INTERVAL_MS,
   DEFAULT_REQUESTS_PATH,
   SESSION_BIN_CLAUDE_CODE,
   SESSION_BIN_CURSOR,
@@ -268,6 +269,28 @@ if (import.meta.main) {
     // registered separately and must not double-close.
     gracefulShutdown.registerCleanup("close_config_db", () => {
       configDb.close();
+      return Promise.resolve();
+    });
+
+    // ── Config DB polling watcher ────────────────────────────────────────
+    // Phase 137 Step 4: poll for new MAX(id) in config_overrides and
+    // hot-apply swap:hot keys detected from external CLI writes.
+    let lastMaxId = getMaxOverrideId(configDb);
+    const pollHandle = setInterval(async () => {
+      const currentMaxId = getMaxOverrideId(configDb);
+      if (currentMaxId > lastMaxId) {
+        await createDbWatcherHandler(configStore, configDb, logger)();
+        lastMaxId = currentMaxId;
+      }
+    }, DEFAULT_CONFIG_DB_POLL_INTERVAL_MS);
+
+    logger.info(DomainEventType.ConfigDbWatcherStarted, "config_db", {
+      pollIntervalMs: DEFAULT_CONFIG_DB_POLL_INTERVAL_MS,
+    });
+
+    // Clear pollHandle on graceful shutdown.
+    gracefulShutdown.registerCleanup("clear_config_db_poll", () => {
+      clearInterval(pollHandle);
       return Promise.resolve();
     });
 

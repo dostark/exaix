@@ -10,12 +10,7 @@ import { assertEquals, assertThrows } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import { FlowSchema, ZFlowCheckpoint, ZFlowStepOnError } from "@exaix/schemas/flow.ts";
-import {
-  DEFAULT_FLOW_MAX_RETRIES,
-  DEFAULT_FLOW_STEP_BACKOFF_MS,
-  FLOW_CHECKPOINT_SCHEMA_VERSION,
-  FLOW_MAX_RETRIES_MAX,
-} from "@exaix/core";
+import { DEFAULT_FLOW_MAX_RETRIES, DEFAULT_FLOW_STEP_BACKOFF_MS, FLOW_CHECKPOINT_SCHEMA_VERSION } from "@exaix/core";
 
 Deno.test("ZFlowStepOnError parses all recovery action variants", () => {
   const retryResult = ZFlowStepOnError.parse({ action: "retry", maxRetries: 2 });
@@ -45,7 +40,7 @@ Deno.test("ZFlowStepOnError parses all recovery action variants", () => {
   const abortResult = ZFlowStepOnError.parse({ action: "abort" });
   assertEquals(abortResult.action, "abort");
   assertEquals(abortResult.maxRetries, DEFAULT_FLOW_MAX_RETRIES);
-  assertThrows(() => ZFlowStepOnError.parse({ action: "retry", maxRetries: FLOW_MAX_RETRIES_MAX + 1 }));
+  assertThrows(() => ZFlowStepOnError.parse({ action: "retry", maxRetries: 6 }));
 });
 
 Deno.test("FlowSchema keeps onError optional for existing flow definitions", () => {

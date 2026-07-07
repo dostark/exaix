@@ -379,6 +379,11 @@ export class DirectConfigAdapter implements IConfigAdapter {
     }> = [];
 
     for (const [key] of getRegisteredDefaults()) {
+      // Skip edition-gated keys during validation — the gate is a write-time
+      // authorization check, not a schema validity concern.
+      const rootSegment = key.split(".")[0];
+      if (rootSegment && EDITION_GATED_PATHS.has(rootSegment)) continue;
+
       const value = this.get(key);
       if (value !== undefined) {
         const report = this.validateAtPath(key, value as ConfigValue);

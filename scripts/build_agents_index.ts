@@ -22,7 +22,7 @@ function extractFrontmatter(md: string): string | null {
   return match ? match[1] : null;
 }
 
-export async function generateManifestObject(includeSubmodule = false) {
+export async function generateManifestObject(includeSubmodule = false): Promise<{ docs: JSONObject[] }> {
   const docs = [] as JSONObject[];
 
   const scanDirs = [AGENTS_DIR];
@@ -84,7 +84,7 @@ export async function generateManifestObject(includeSubmodule = false) {
   return { docs };
 }
 
-export async function generateDocsIndex(docs: JSONObject[]) {
+export async function generateDocsIndex(docs: JSONObject[]): Promise<void> {
   const indexPath = `.copilot/DOCS.md`;
   function toRelPath(raw: string): string {
     if (raw.startsWith(".copilot/")) return raw.replace(".copilot/", "");
@@ -132,7 +132,7 @@ ${topicList}
   console.log(`Wrote ${indexPath}`);
 }
 
-export async function buildIndex(includeSubmodule = false) {
+export async function buildIndex(includeSubmodule = false): Promise<void> {
   const manifest = await generateManifestObject(includeSubmodule);
   await Deno.writeTextFile(OUT_MANIFEST, JSON.stringify(manifest, null, 2) + "\n");
   console.log(`Wrote manifest to ${OUT_MANIFEST}`);

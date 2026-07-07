@@ -10,21 +10,21 @@ import { configurable } from "@exaix/core/config";
 import { ConfigValueType, SwapClass } from "@exaix/core";
 import { type IProviderDefaults, ProviderCostTier, ProviderType } from "@exaix/core";
 
-export const DEFAULT_ANTHROPIC_MODEL = configurable({
+export const DEFAULT_ANTHROPIC_MODEL: string = configurable({
   key: "anthropic.model",
   default: "claude-haiku-4-5-20251001",
   type: ConfigValueType.STRING,
   description: "Default model identifier for anthropic provider",
   swap: SwapClass.RESTART,
 });
-export const DEFAULT_ANTHROPIC_ENDPOINT = configurable({
+export const DEFAULT_ANTHROPIC_ENDPOINT: string = configurable({
   key: "anthropic.endpoint",
   default: "https://api.anthropic.com/v1/messages",
   type: ConfigValueType.STRING,
   description: "API endpoint URL for anthropic provider",
   swap: SwapClass.RESTART,
 });
-export const DEFAULT_ANTHROPIC_TIMEOUT_MS = configurable({
+export const DEFAULT_ANTHROPIC_TIMEOUT_MS: number = configurable({
   key: "anthropic.timeout_ms",
   default: 60000,
   type: ConfigValueType.NUMBER,
@@ -33,7 +33,7 @@ export const DEFAULT_ANTHROPIC_TIMEOUT_MS = configurable({
   max: 600_000,
   swap: SwapClass.HOT,
 });
-export const DEFAULT_ANTHROPIC_RETRY_MAX_ATTEMPTS = configurable({
+export const DEFAULT_ANTHROPIC_RETRY_MAX_ATTEMPTS: number = configurable({
   key: "anthropic.retry_max_attempts",
   default: 5,
   type: ConfigValueType.NUMBER,
@@ -42,7 +42,7 @@ export const DEFAULT_ANTHROPIC_RETRY_MAX_ATTEMPTS = configurable({
   max: 10,
   swap: SwapClass.HOT,
 });
-export const DEFAULT_ANTHROPIC_RETRY_BACKOFF_MS = configurable({
+export const DEFAULT_ANTHROPIC_RETRY_BACKOFF_MS: number = configurable({
   key: "anthropic.retry_backoff_ms",
   default: 2000,
   type: ConfigValueType.NUMBER,

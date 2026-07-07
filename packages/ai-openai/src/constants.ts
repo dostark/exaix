@@ -10,7 +10,7 @@ import { configurable } from "@exaix/core/config";
 import { ConfigValueType, SwapClass } from "@exaix/core";
 import { type IProviderDefaults, ProviderCostTier, ProviderType } from "@exaix/core";
 
-export const DEFAULT_OPENAI_MODEL = configurable({
+export const DEFAULT_OPENAI_MODEL: string = configurable({
   key: "openai.model",
   default: "gpt-5-mini",
   type: ConfigValueType.STRING,
@@ -18,7 +18,7 @@ export const DEFAULT_OPENAI_MODEL = configurable({
   swap: SwapClass.RESTART,
 });
 export const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com";
-export const DEFAULT_OPENAI_ENDPOINT = configurable({
+export const DEFAULT_OPENAI_ENDPOINT: string = configurable({
   key: "openai.endpoint",
   default: "https://api.openai.com/v1/chat/completions",
   type: ConfigValueType.STRING,
@@ -27,7 +27,7 @@ export const DEFAULT_OPENAI_ENDPOINT = configurable({
 });
 export const DEFAULT_OPENAI_EMBED_BASE_URL = "https://api.openai.com/v1";
 export const DEFAULT_OPENAI_EMBED_CHUNK_SIZE = 8000;
-export const DEFAULT_OPENAI_TIMEOUT_MS = configurable({
+export const DEFAULT_OPENAI_TIMEOUT_MS: number = configurable({
   key: "openai.timeout_ms",
   default: 30000,
   type: ConfigValueType.NUMBER,
@@ -36,7 +36,7 @@ export const DEFAULT_OPENAI_TIMEOUT_MS = configurable({
   max: 600_000,
   swap: SwapClass.HOT,
 });
-export const DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS = configurable({
+export const DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS: number = configurable({
   key: "openai.retry_max_attempts",
   default: 3,
   type: ConfigValueType.NUMBER,
@@ -45,7 +45,7 @@ export const DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS = configurable({
   max: 10,
   swap: SwapClass.HOT,
 });
-export const DEFAULT_OPENAI_RETRY_BACKOFF_MS = configurable({
+export const DEFAULT_OPENAI_RETRY_BACKOFF_MS: number = configurable({
   key: "openai.retry_backoff_ms",
   default: 1000,
   type: ConfigValueType.NUMBER,

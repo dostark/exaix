@@ -118,7 +118,7 @@ const ROOT = Deno.cwd();
 const DEFAULT_ENTRYPOINT = "apps/daemon/main.ts";
 const DEFAULT_FORMAT: PackageDependencyFormat = "text";
 
-export async function main() {
+export async function main(): Promise<void> {
   const args = parse(Deno.args, {
     string: ["entrypoint", "format", "candidatePackage", "explain-boundary"],
     boolean: ["help"],

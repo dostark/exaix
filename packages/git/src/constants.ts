@@ -34,7 +34,7 @@ export {
   DEFAULT_GIT_STATUS_TIMEOUT_MS,
   DEFAULT_GIT_TRACE_ID_SHORT_LENGTH,
 } from "@exaix/core";
-export const DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT = configurable({
+export const DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT: number = configurable({
   key: "git.revert_concurrency_limit",
   default: 1,
   type: ConfigValueType.NUMBER,
@@ -44,7 +44,7 @@ export const DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT = configurable({
   swap: SwapClass.RESTART,
 });
 export const DEFAULT_GIT_EXIT_CODE_FATAL = 128;
-export const DEFAULT_GIT_REV_PARSE_TIMEOUT_MS = configurable({
+export const DEFAULT_GIT_REV_PARSE_TIMEOUT_MS: number = configurable({
   key: "git.rev_parse_timeout_ms",
   default: 2000,
   type: ConfigValueType.NUMBER,

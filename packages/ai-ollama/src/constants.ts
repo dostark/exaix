@@ -11,21 +11,21 @@ import { ConfigValueType, SwapClass } from "@exaix/core";
 import { type IProviderDefaults, ProviderCostTier, ProviderType } from "@exaix/core";
 
 export const DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434";
-export const DEFAULT_OLLAMA_ENDPOINT = configurable({
+export const DEFAULT_OLLAMA_ENDPOINT: string = configurable({
   key: "ollama.endpoint",
   default: "http://localhost:11434/api/generate",
   type: ConfigValueType.STRING,
   description: "API endpoint URL for ollama provider",
   swap: SwapClass.RESTART,
 });
-export const DEFAULT_OLLAMA_MODEL = configurable({
+export const DEFAULT_OLLAMA_MODEL: string = configurable({
   key: "ollama.model",
   default: "llama3.2",
   type: ConfigValueType.STRING,
   description: "Default model identifier for ollama provider",
   swap: SwapClass.RESTART,
 });
-export const DEFAULT_OLLAMA_TIMEOUT_MS = configurable({
+export const DEFAULT_OLLAMA_TIMEOUT_MS: number = configurable({
   key: "ollama.timeout_ms",
   default: 120000,
   type: ConfigValueType.NUMBER,
@@ -34,7 +34,7 @@ export const DEFAULT_OLLAMA_TIMEOUT_MS = configurable({
   max: 600_000,
   swap: SwapClass.HOT,
 });
-export const DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS = configurable({
+export const DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS: number = configurable({
   key: "ollama.retry_max_attempts",
   default: 3,
   type: ConfigValueType.NUMBER,
@@ -43,7 +43,7 @@ export const DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS = configurable({
   max: 10,
   swap: SwapClass.HOT,
 });
-export const DEFAULT_OLLAMA_RETRY_BACKOFF_MS = configurable({
+export const DEFAULT_OLLAMA_RETRY_BACKOFF_MS: number = configurable({
   key: "ollama.retry_backoff_ms",
   default: 1000,
   type: ConfigValueType.NUMBER,

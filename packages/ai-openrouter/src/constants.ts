@@ -11,7 +11,7 @@ import { configurable } from "@exaix/core/config";
 import { ConfigValueType, SwapClass } from "@exaix/core";
 import { type IProviderDefaults, ProviderCostTier, ProviderType } from "@exaix/core";
 
-export const DEFAULT_OPENROUTER_MODEL = configurable({
+export const DEFAULT_OPENROUTER_MODEL: string = configurable({
   key: "openrouter.model",
   default: "openai/gpt-4o-mini",
   type: ConfigValueType.STRING,
@@ -19,14 +19,14 @@ export const DEFAULT_OPENROUTER_MODEL = configurable({
   swap: SwapClass.RESTART,
 });
 export const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
-export const DEFAULT_OPENROUTER_ENDPOINT = configurable({
+export const DEFAULT_OPENROUTER_ENDPOINT: string = configurable({
   key: "openrouter.endpoint",
   default: "https://openrouter.ai/api/v1/chat/completions",
   type: ConfigValueType.STRING,
   description: "API endpoint URL for openrouter provider",
   swap: SwapClass.RESTART,
 });
-export const DEFAULT_OPENROUTER_TIMEOUT_MS = configurable({
+export const DEFAULT_OPENROUTER_TIMEOUT_MS: number = configurable({
   key: "openrouter.timeout_ms",
   default: 60000,
   type: ConfigValueType.NUMBER,
@@ -35,7 +35,7 @@ export const DEFAULT_OPENROUTER_TIMEOUT_MS = configurable({
   max: 600_000,
   swap: SwapClass.HOT,
 });
-export const DEFAULT_OPENROUTER_RETRY_MAX_ATTEMPTS = configurable({
+export const DEFAULT_OPENROUTER_RETRY_MAX_ATTEMPTS: number = configurable({
   key: "openrouter.retry_max_attempts",
   default: 3,
   type: ConfigValueType.NUMBER,
@@ -44,7 +44,7 @@ export const DEFAULT_OPENROUTER_RETRY_MAX_ATTEMPTS = configurable({
   max: 10,
   swap: SwapClass.HOT,
 });
-export const DEFAULT_OPENROUTER_RETRY_BACKOFF_MS = configurable({
+export const DEFAULT_OPENROUTER_RETRY_BACKOFF_MS: number = configurable({
   key: "openrouter.retry_backoff_ms",
   default: 1000,
   type: ConfigValueType.NUMBER,

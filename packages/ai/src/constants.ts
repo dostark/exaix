@@ -31,7 +31,7 @@ export {
 } from "@exaix/core";
 
 // AI-package-local tunable defaults (not duplicated in core)
-export const DEFAULT_MODEL_TIMEOUT_MS = configurable({
+export const DEFAULT_MODEL_TIMEOUT_MS: number = configurable({
   key: "ai.model_timeout_ms",
   default: 30000,
   type: ConfigValueType.NUMBER,
@@ -40,7 +40,7 @@ export const DEFAULT_MODEL_TIMEOUT_MS = configurable({
   max: 300_000,
   swap: SwapClass.HOT,
 });
-export const DEFAULT_FAST_MODEL_TIMEOUT_MS = configurable({
+export const DEFAULT_FAST_MODEL_TIMEOUT_MS: number = configurable({
   key: "ai.fast_model_timeout_ms",
   default: 15000,
   type: ConfigValueType.NUMBER,
@@ -49,7 +49,7 @@ export const DEFAULT_FAST_MODEL_TIMEOUT_MS = configurable({
   max: 300_000,
   swap: SwapClass.HOT,
 });
-export const DEFAULT_LOCAL_MODEL_TIMEOUT_MS = configurable({
+export const DEFAULT_LOCAL_MODEL_TIMEOUT_MS: number = configurable({
   key: "ai.local_model_timeout_ms",
   default: 60000,
   type: ConfigValueType.NUMBER,

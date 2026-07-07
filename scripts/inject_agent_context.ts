@@ -105,7 +105,11 @@ async function findBest(agent: string, query: string) {
   return best;
 }
 
-export async function inject(agent: string, query: string, _maxChunks = 2) {
+export async function inject(
+  agent: string,
+  query: string,
+  _maxChunks = 2,
+): Promise<{ found: boolean; path?: string; title?: string; short_summary?: string; snippet?: string }> {
   const best = await findBest(agent, query);
   if (!best.path) return { found: false };
   const mdBody = best.md!.replace(/^---[\s\S]*?---/, "");

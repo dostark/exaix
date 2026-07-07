@@ -264,20 +264,32 @@ flowchart TB
 
 ### Config DB (.exa/config.db)
 
-The `.exa/config.db` SQLite database stores configuration overrides for keys registered via `configurable()`. It complements the TOML bootstrap (`exa.config.toml`) which supplies only `system.root` and boot-time paths. As of Phase 136 the registry infrastructure ships but no production constant is wrapped yet; the first batch of `DEFAULT_*` constants is migrated to `configurable()` in Phase 137 Step 10.
+The `.exa/config.db` SQLite database stores configuration overrides for keys registered via `configurable()`. It complements the TOML bootstrap (`exa.config.toml`) which supplies only `system.root` and boot-time paths. As of Phase 137, **180+ `configurable()` keys** are registered across all packages (core, AI providers, git, etc.).
 
 **Schema:** Append-only `config_overrides` table (`id`, `key`, `value`, `source`, `swap_class`, `created_at`) with no UPDATE path — every override creates a new row. The latest row per key (by max id) is the effective value; a NULL value means "use registry default."
 
-**Adapter pattern:** `IConfigAdapter` interface (defined at `packages/core/src/config/adapter.ts`) provides `get`, `set`, `unset`, `validate`, `validateAtPath`, `diff`, `getProvenance`, `getHistory`, and `listOverrides`. Two implementations:
+**Adapter pattern:** `IConfigAdapter` interface (`packages/core/src/config/adapter.ts`) provides `get`, `set`, `unset`, `validate`, `diff`, `getProvenance`, etc. Two implementations:
 
-- `DirectConfigAdapter` — opens its own `@db/sqlite` connection to `.exa/config.db` for offline read/write (used when the daemon is not running). `set()` and `unset()` emit a `config.updated` (`DomainEventType.ConfigUpdated`) audit event when constructed with an optional `IEventLogger`.
-- `DaemonConfigAdapter` — Phase 1 (replaces direct DB access with daemon-mediated reads for live-apply).
+- `DirectConfigAdapter` — opens its own `@db/sqlite` connection for offline read/write (CLI mode, daemon not running).
+- `DaemonConfigAdapter` extends `DirectConfigAdapter` — shares the daemon's `@db/sqlite` handle, reads from `InMemoryConfigStore` (daemon's live cache), writes through to Config DB. For hot-swappable (`swap: "hot"`) keys, applies changes to the in-memory store immediately. Warns on auth-secret plaintext writes.
 
-**Resolution order** for `get(key)`: (1) Config DB override → (2) registry default (from `configurable()` calls) → (3) ConfigSchema default → (4) undefined.
+**Factory:** `createConfigAdapter()` auto-detects daemon state via PID file and returns the appropriate adapter.
 
-**CLI surface:** `exactl config {get,set,unset,validate,show}` — all commands are wired in `apps/exactl/src/commands/config_commands.ts` using `DirectConfigAdapter`. The CI gate `deno task check:config-keys` ensures no two source files register the same `configurable()` key.
+**In-memory store:** At daemon boot, `InMemoryConfigStore` is populated from `getAllEffectiveValues()` + registry defaults. The daemon reads from the store for all non-bootstrap keys.
 
-Design doc: `exaix-dev-docs/planning/phase-136-configuring.md`
+**DB watcher:** A polling loop (`DEFAULT_CONFIG_DB_POLL_INTERVAL_MS` = 5s) compares `MAX(id)` in `config_overrides`. When a new override is detected, `createDbWatcherHandler()` hot-applies `swap: "hot"` keys to the in-memory store. Restart-required keys are skipped (applied on next boot).
+
+**Resolution order** for `get(key)`: (1) Config DB override → (2) registry default (from `configurable()`) → (3) ConfigSchema default → (4) undefined.
+
+**MCP config tools:** 6 domain tools registered at `packages-team/mcp-server/config_tools.ts`: `ConfigGet`, `ConfigSet` (staging), `ConfigValidate`, `ConfigDiff`, `ConfigGetProvenance`, `ConfigApply`. The 4 read-only tools are auto-approved; mutation tools require human approval.
+
+**CLI surface:** `exactl config {get,set,unset,validate,show,diff,set-model,set-provider,set-path,use-profile,list-profiles}` with `--json`, `--sources` flags.
+
+**Validation bounds:** Zod schemas use `resolveConfigurableBounds(key)` from `@exaix/core/config` (via `c()`/`cBounds()` helpers at `packages/schemas/src/config.ts`) to derive min/max/default from the registry — no separate MIN/MAX constants needed.
+
+**CI gate:** `deno task check:config-keys` ensures no duplicate keys.
+
+Design docs: `exaix-dev-docs/planning/phase-136-configuring.md`, `exaix-dev-docs/planning/phase-137-configuring-cutover.md`
 
 ---
 

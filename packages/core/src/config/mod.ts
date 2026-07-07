@@ -16,3 +16,4 @@ export * from "./errors.ts";
 export * from "./db.ts";
 export * from "./adapter.ts";
 export * from "./store.ts";
+export * from "./db_watcher_handler.ts";
