@@ -6,7 +6,7 @@
  */
 import { Database } from "@db/sqlite";
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
-import { dirname, fromFileUrl, join } from "@std/path";
+import { join } from "@std/path";
 import { ConfigOutputFormat, ConfigValueType } from "@exaix/core/types";
 import { configurable, createConfigAdapter, insertOverride } from "@exaix/core/config";
 import {
@@ -16,7 +16,7 @@ import {
   createTestConfigDb,
   writeTestConfigFile,
 } from "@exaix/testing";
-import { withCliProcessMutex } from "../helpers/cli_process_mutex.ts";
+import { runExactl } from "../helpers/portal_test_utils.ts";
 import { ConfigCommands } from "../../apps/exactl/src/commands/config_commands.ts";
 
 configurable({
@@ -53,42 +53,6 @@ function setupTest(): {
   const context = createStubContext({ config: configService });
   const commands = new ConfigCommands(context);
   return { commands, dir, cleanup: () => Deno.removeSync(dir, { recursive: true }) };
-}
-
-async function runExactl(
-  args: string[],
-  cwd: string,
-): Promise<{ code: number; stdout: string; stderr: string }> {
-  const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
-  const exactlPath = join(repoRoot, "apps", "exactl", "main.ts");
-  const configPath = join(cwd, "exa.config.toml");
-
-  const parentEnv = Deno.env.toObject();
-  const env: Record<string, string> = {
-    PATH: parentEnv.PATH ?? "",
-    HOME: parentEnv.HOME ?? "",
-    TMPDIR: parentEnv.TMPDIR ?? "/tmp",
-    TERM: parentEnv.TERM ?? "xterm",
-  };
-  env.EXA_CONFIG_PATH = configPath;
-  env.EXA_LLM_PROVIDER = "mock";
-
-  const { code, stdout, stderr } = await withCliProcessMutex(async () => {
-    const command = new Deno.Command(Deno.execPath(), {
-      args: ["run", "--allow-all", exactlPath, ...args],
-      cwd,
-      stdout: "piped",
-      stderr: "piped",
-      env,
-    });
-    return await command.output();
-  });
-
-  return {
-    code,
-    stdout: new TextDecoder().decode(stdout),
-    stderr: new TextDecoder().decode(stderr),
-  };
 }
 
 Deno.test("[configuring] end-to-end: set then get returns same value", async () => {

@@ -633,11 +633,11 @@ export function createConfigAdapter(
   configDbPath: string,
   mode: Opt<ConfigAdapterMode, Reason.SensibleDefault> = ConfigAdapterMode.DIRECT,
   logger?: Opt<IEventLogger, Reason.OptionalDependency>,
-  options?: {
+  options?: Opt<{
     daemonPidPath?: string;
     store?: InMemoryConfigStore;
     db?: Database;
-  },
+  }, Reason.ExecutionConfig>,
 ): IConfigAdapter {
   if (options?.store && options?.db) {
     const pid = readPidFile(options.daemonPidPath ?? DEFAULT_DAEMON_PID_PATH);

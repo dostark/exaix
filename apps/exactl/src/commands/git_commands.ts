@@ -248,7 +248,7 @@ export class GitCommands extends BaseCommand {
    * @param compare Optional comparison ref (default: parent commit)
    * @returns Diff output
    */
-  async diff(ref: string, compare?: string): Promise<string> {
+  async diff(ref: string, compare?: Opt<string, Reason.OptionalInput>): Promise<string> {
     const workspaceRoot = this.config.system.root;
 
     const args = ["-C", workspaceRoot, "diff"];

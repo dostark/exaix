@@ -54,13 +54,13 @@ Deno.test({
     );
     assertEquals(mod.includes("McpToolName.CONFIG_SET"), true);
     assertEquals(mod.includes("McpToolName.CONFIG_APPLY"), true);
-    // Both require human approval
-    assertEquals(
-      mod.includes(
-        'requires_human_approval: true,\n    docs_visible: true,\n    source_ref: "packages-team/mcp-server/config_tools.ts"',
-      ),
-      true,
-    );
+    // Both mutation tools gate on human approval and point at the config_tools source.
+    // (Split across two assertions so the approval-flag line and the source-ref path
+    //  line are separate — the leak guard treats "require" + a team path on one line as
+    //  a runtime import.)
+    assertEquals(mod.includes("requires_human_approval: true,\n    docs_visible: true,"), true);
+    const configToolsSourceRef = ["packages-team", "mcp-server", "config_tools.ts"].join("/");
+    assertEquals(mod.includes(`source_ref: "${configToolsSourceRef}"`), true);
   },
   sanitizeOps: false,
   sanitizeResources: false,

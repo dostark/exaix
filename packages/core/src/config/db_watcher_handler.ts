@@ -12,6 +12,7 @@ import type { Database } from "@db/sqlite";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import { SwapClass } from "../types/enums.ts";
+import type { Opt, Reason } from "../types/optional_marker.ts";
 import { getAllEffectiveValues } from "./db.ts";
 
 /**
@@ -26,7 +27,7 @@ import { getAllEffectiveValues } from "./db.ts";
 export function createDbWatcherHandler(
   store: InMemoryConfigStore,
   db: Database,
-  logger?: IEventLogger,
+  logger?: Opt<IEventLogger, Reason.OptionalDependency>,
 ): () => Promise<void> {
   return async () => {
     const effective = getAllEffectiveValues(db);

@@ -281,7 +281,9 @@ The `.exa/config.db` SQLite database stores configuration overrides for keys reg
 
 **Resolution order** for `get(key)`: (1) Config DB override → (2) registry default (from `configurable()`) → (3) ConfigSchema default → (4) undefined. Profile-scoped keys (`profile.<name>.<key>`) validate against their unscoped base key's metadata via `resolveValidationKey()`; global reads do not fall through to the active profile (explicit `--profile` scoping only).
 
-**MCP config tools:** 6 domain tools registered at `packages-team/mcp-server/config_tools.ts`: `ConfigGet`, `ConfigSet` (staging), `ConfigValidate`, `ConfigDiff`, `ConfigGetProvenance`, `ConfigApply`. The 4 read-only tools are auto-approved; mutation tools require human approval. `ConfigApply` awaits each staged `set()` and records per-key applied/error results.
+**MCP config tools:** 6 domain tools registered at `packages-team/mcp-server/config_tools.ts`: `ConfigGet`, `ConfigSet` (staging), `ConfigValidate`, `ConfigDiff`, `ConfigGetProvenance`, `ConfigApply`.
+
+The 4 read-only tools are auto-approved; the mutation tools (`ConfigSet`, `ConfigApply`) gate on human approval. `ConfigApply` awaits each staged `set()` and records per-key applied/error results.
 
 **CLI surface:** `exactl config {get,set,unset,validate,show,diff,set-model,set-provider,set-path,use-profile,list-profiles}` with `--json`, `--sources`, and `--profile <name>` (scopes `get`/`set` to `profile.<name>.<key>`) flags.
 

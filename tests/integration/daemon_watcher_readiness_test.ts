@@ -18,46 +18,10 @@ import { assert } from "@std/assert";
 import { join } from "@std/path";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService } from "@exaix/core/config";
-import { daemonConfigSections } from "./helpers/daemon_config.ts";
+import { bootRealDaemon, writeDaemonConfigWithMockAi } from "./helpers/daemon_config.ts";
 
 // The daemon boots with EXA_TEST_MODE=1, so DatabaseService auto-ensures the `activity` table
 // (mirroring a migrated production workspace) — no manual schema seeding needed here.
-
-function writeDaemonConfig(configPath: string, root: string): void {
-  const cfg = [
-    ...daemonConfigSections(root, ""),
-    "",
-    "[ai]",
-    'provider = "mock"',
-    'model = "test"',
-    "",
-    "[ai.mock]",
-    "timeout_ms = 30000",
-    "",
-  ].join("\n");
-  Deno.writeTextFileSync(configPath, cfg);
-}
-
-/** Boot the real daemon, let it settle so its watchers come up, then SIGTERM it. */
-async function bootDaemonOnce(configPath: string, settleMs: number): Promise<void> {
-  const proc = new Deno.Command("deno", {
-    args: ["run", "--allow-all", "apps/daemon/main.ts"],
-    stdin: "null",
-    stdout: "null",
-    stderr: "null",
-    env: { EXA_CONFIG_PATH: configPath, EXA_TEST_MODE: "1" },
-  }).spawn();
-  try {
-    await new Promise((r) => setTimeout(r, settleMs));
-  } finally {
-    try {
-      Deno.kill(proc.pid, "SIGTERM");
-    } catch { /* already dead */ }
-    try {
-      await proc.status;
-    } catch { /* already finished */ }
-  }
-}
 
 interface IOrderedEvent {
   seq: number;
@@ -93,9 +57,9 @@ Deno.test({
   async fn() {
     const tempDir = await Deno.makeTempDir({ prefix: "daemon-readiness-b1-" });
     const configPath = join(tempDir, "exa.config.toml");
-    writeDaemonConfig(configPath, tempDir);
+    writeDaemonConfigWithMockAi(configPath, tempDir);
     try {
-      await bootDaemonOnce(configPath, 5000);
+      await bootRealDaemon(configPath, 5000);
       const events = await readJournalOrdered(configPath);
       const types = events.map((e) => e.action_type);
       assert(
@@ -119,11 +83,11 @@ Deno.test({
   async fn() {
     const tempDir = await Deno.makeTempDir({ prefix: "daemon-readiness-b2-" });
     const configPath = join(tempDir, "exa.config.toml");
-    writeDaemonConfig(configPath, tempDir);
+    writeDaemonConfigWithMockAi(configPath, tempDir);
     try {
-      // bootDaemonOnce runs apps/daemon/main.ts directly (no CLI), so the journal here carries only
+      // bootRealDaemon runs apps/daemon/main.ts directly (no CLI), so the journal here carries only
       // the daemon-process emissions — which must be daemon.ready, never the CLI's daemon.started.
-      await bootDaemonOnce(configPath, 5000);
+      await bootRealDaemon(configPath, 5000);
       const events = await readJournalOrdered(configPath);
       const firstWatcherStarted = events.find((e) => e.action_type === "watcher.started")?.seq;
       const daemonReadyRows = events.filter((e) => e.action_type === "daemon.ready").map((e) => e.seq);

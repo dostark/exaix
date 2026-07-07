@@ -22,59 +22,36 @@ import { PortalAnalysisMode } from "@exaix/core";
 import { getPortalsDir } from "@exaix/testing";
 
 /**
- * Helper class for config-based portal tests
+ * Build an empty portal-knowledge snapshot for a portal, used by the mock
+ * PortalKnowledgeService below. Extracted so the three producing methods
+ * (analyze / getOrAnalyze / updateKnowledge) share one shape.
  */
+function emptyKnowledge(portal: string, mode: PortalAnalysisMode = PortalAnalysisMode.QUICK) {
+  return {
+    portal,
+    gatheredAt: new Date().toISOString(),
+    version: 1,
+    architectureOverview: "",
+    layers: [],
+    keyFiles: [],
+    conventions: [],
+    dependencies: [],
+    techStack: { primaryLanguage: "typescript" },
+    symbolMap: [],
+    stats: { totalFiles: 0, totalDirectories: 0, extensionDistribution: {} },
+    metadata: { mode, durationMs: 0, filesScanned: 0, filesRead: 0 },
+  };
+}
+
 /**
  * Create a mock PortalKnowledgeService for testing
  */
 export function createMockKnowledgeService(): IPortalKnowledgeService {
   return {
-    analyze: (p1, _p2, p3) =>
-      Promise.resolve({
-        portal: p1,
-        gatheredAt: new Date().toISOString(),
-        version: 1,
-        architectureOverview: "",
-        layers: [],
-        keyFiles: [],
-        conventions: [],
-        dependencies: [],
-        techStack: { primaryLanguage: "typescript" },
-        symbolMap: [],
-        stats: { totalFiles: 0, totalDirectories: 0, extensionDistribution: {} },
-        metadata: { mode: p3 || PortalAnalysisMode.QUICK, durationMs: 0, filesScanned: 0, filesRead: 0 },
-      }),
-    getOrAnalyze: (p1, _p2) =>
-      Promise.resolve({
-        portal: p1,
-        gatheredAt: new Date().toISOString(),
-        version: 1,
-        architectureOverview: "",
-        layers: [],
-        keyFiles: [],
-        conventions: [],
-        dependencies: [],
-        techStack: { primaryLanguage: "typescript" },
-        symbolMap: [],
-        stats: { totalFiles: 0, totalDirectories: 0, extensionDistribution: {} },
-        metadata: { mode: PortalAnalysisMode.QUICK, durationMs: 0, filesScanned: 0, filesRead: 0 },
-      }),
+    analyze: (p1, _p2, p3) => Promise.resolve(emptyKnowledge(p1, p3 || PortalAnalysisMode.QUICK)),
+    getOrAnalyze: (p1, _p2) => Promise.resolve(emptyKnowledge(p1)),
     isStale: () => Promise.resolve(false),
-    updateKnowledge: (p1, _p2) =>
-      Promise.resolve({
-        portal: p1,
-        gatheredAt: new Date().toISOString(),
-        version: 1,
-        architectureOverview: "",
-        layers: [],
-        keyFiles: [],
-        conventions: [],
-        dependencies: [],
-        techStack: { primaryLanguage: "typescript" },
-        symbolMap: [],
-        stats: { totalFiles: 0, totalDirectories: 0, extensionDistribution: {} },
-        metadata: { mode: PortalAnalysisMode.QUICK, durationMs: 0, filesScanned: 0, filesRead: 0 },
-      }),
+    updateKnowledge: (p1, _p2) => Promise.resolve(emptyKnowledge(p1)),
     getRelevantContext: () => Promise.resolve(undefined),
   };
 }

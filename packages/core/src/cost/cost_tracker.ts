@@ -263,7 +263,7 @@ export class CostTracker implements ICostTracker {
     }));
   }
 
-  private estimateCost(provider: string, tokens: number, model?: string): number {
+  private estimateCost(provider: string, tokens: number, model?: Opt<string, Reason.OptionalInput>): number {
     const rates = CostTracker.getCostRates(this.config);
     const modelKey = model ? `${provider}:${model}` : provider;
     const rate = rates[modelKey] ?? rates[provider] ?? 0;
