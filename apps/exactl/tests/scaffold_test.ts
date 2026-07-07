@@ -118,7 +118,8 @@ Deno.test("scaffold.ts copies exa.config.sample.toml template", async () => {
 
     // Verify it has expected content
     const content = await Deno.readTextFile(configPath);
-    assertStringIncludes(content, "[paths]");
+    assertStringIncludes(content, "[system]");
+    assertStringIncludes(content, "Bootstrap Only");
   } finally {
     await Deno.remove(tmp, { recursive: true }).catch(() => {});
   }

@@ -854,8 +854,9 @@ Deno.test("ConfigSchema accepts provider_strategy.task_routing", () => {
   }
 });
 
-// Regression: ensure sample config includes production-critical sections
-Deno.test("[regression] Sample config includes required provider strategy entries", () => {
+// Regression: ensure sample config includes bootstrap entries
+// Phase 137: most settings moved to Config DB; sample TOML is bootstrap-only.
+Deno.test("[regression] Sample config includes bootstrap entries", () => {
   const samplePath = "templates/exa.config.sample.toml";
   const sampleContent = Deno.readTextFileSync(samplePath);
   interface ConfigToml {
@@ -875,161 +876,11 @@ Deno.test("[regression] Sample config includes required provider strategy entrie
     return current;
   };
 
-  const requiredPaths: Array<string[]> = [
-    ["system", "version"],
-    ["system", "log_level"],
-    ["system", "root"],
-    ["paths", "workspace"],
-    ["paths", "runtime"],
-    ["paths", "memory"],
-    ["paths", "portals"],
-    ["paths", "blueprints"],
-    ["database", "batch_flush_ms"],
-    ["database", "batch_max_size"],
-    ["database", "path"],
-    ["database", "sqlite", "journal_mode"],
-    ["database", "sqlite", "foreign_keys"],
-    ["database", "sqlite", "busy_timeout_ms"],
-    ["watcher", "debounce_ms"],
-    ["watcher", "stability_check"],
-    ["agents", "default_model"],
-    ["agents", "timeout_sec"],
-    ["agents", "max_iterations"],
-    ["portals", "0", "alias"],
-    ["portals", "0", "target_path"],
-    ["ai", "provider"],
-    ["ai", "model"],
-    ["ai", "base_url"],
-    ["ai", "timeout_ms"],
-    ["ai", "max_tokens"],
-    ["ai", "temperature"],
-    ["ai", "mock", "strategy"],
-    ["ai", "mock", "fixtures_dir"],
-    ["models", "default", "provider"],
-    ["models", "default", "model"],
-    ["models", "default", "timeout_ms"],
-    ["models", "default", "max_tokens"],
-    ["models", "default", "temperature"],
-    ["models", "fast", "provider"],
-    ["models", "fast", "model"],
-    ["models", "fast", "timeout_ms"],
-    ["models", "local", "provider"],
-    ["models", "local", "model"],
-    ["models", "local", "timeout_ms"],
-    ["models", "local", "base_url"],
-    ["mcp", "enabled"],
-    ["mcp", "transport"],
-    ["mcp", "server_name"],
-    ["mcp", "version"],
-    ["git", "branch_prefix_pattern"],
-    ["git", "allowed_prefixes"],
-    ["rate_limiting", "enabled"],
-    ["rate_limiting", "max_calls_per_minute"],
-    ["rate_limiting", "max_tokens_per_hour"],
-    ["rate_limiting", "max_cost_per_day"],
-    ["rate_limiting", "cost_per_1k_tokens"],
-    ["cost_tracking", "batch_delay_ms"],
-    ["cost_tracking", "max_batch_size"],
-    ["cost_tracking", "rates", "openai"],
-    ["cost_tracking", "rates", "anthropic"],
-    ["cost_tracking", "rates", "google"],
-    ["cost_tracking", "rates", "ollama"],
-    ["cost_tracking", "rates", "mock"],
-    ["provider_strategy", "fallback_chains", "balanced"],
-    ["provider_strategy", "fallback_chains", "fast"],
-    ["provider_strategy", "fallback_chains", "local_first"],
-    ["mock", "delay_ms"],
-    ["mock", "input_tokens"],
-    ["mock", "output_tokens"],
-    ["ui", "prompt_preview_length"],
-    ["ui", "prompt_preview_extended"],
-    ["provider_strategy", "task_routing", "simple"],
-    ["provider_strategy", "task_routing", "medium"],
-    ["provider_strategy", "task_routing", "complex"],
-    ["provider_strategy", "task_routing", "code_generation"],
-    ["provider_strategy", "budgets", "anthropic_daily_usd"],
-    ["provider_strategy", "budgets", "openai_daily_usd"],
-    ["ai_endpoints", "ollama"],
-    ["ai_endpoints", "anthropic"],
-    ["ai_endpoints", "openai"],
-    ["ai_endpoints", "google"],
-    ["ai_retry", "max_attempts"],
-    ["ai_retry", "backoff_base_ms"],
-    ["ai_retry", "timeout_per_request_ms"],
-    ["ai_retry", "providers", "ollama", "max_attempts"],
-    ["ai_retry", "providers", "ollama", "backoff_base_ms"],
-    ["ai_retry", "providers", "anthropic", "max_attempts"],
-    ["ai_retry", "providers", "anthropic", "backoff_base_ms"],
-    ["ai_retry", "providers", "openai", "max_attempts"],
-    ["ai_retry", "providers", "openai", "backoff_base_ms"],
-    ["ai_retry", "providers", "google", "max_attempts"],
-    ["ai_retry", "providers", "google", "backoff_base_ms"],
-    ["ai_timeout", "default_ms"],
-    ["ai_timeout", "providers", "google"],
-    ["ai_timeout", "providers", "openai"],
-    ["ai_timeout", "providers", "anthropic"],
-    ["ai_timeout", "providers", "ollama"],
-    ["ai_timeout", "providers", "mock"],
-    ["ai_anthropic", "api_version"],
-    ["ai_anthropic", "default_model"],
-    ["ai_anthropic", "max_tokens_default"],
-    ["mcp_defaults", "identity_id"],
-    ["providers", "google", "cost_tier"],
-    ["providers", "google", "free_quota_requests_per_day"],
-    ["providers", "google", "timeout_ms"],
-    ["providers", "ollama", "cost_tier"],
-    ["providers", "ollama", "base_url"],
-    ["providers", "ollama", "timeout_ms"],
-    ["providers", "anthropic", "cost_tier"],
-    ["providers", "anthropic", "timeout_ms"],
-    ["providers", "anthropic", "rate_limit_rpm"],
-    ["health", "check_timeout_ms"],
-    ["health", "cache_ttl_ms"],
-    ["health", "memory_warn_percent"],
-    ["health", "memory_critical_percent"],
-    ["git", "operations", "ls_files_timeout_ms"],
-  ];
-
-  const missingPaths: string[] = [];
-  for (const path of requiredPaths) {
-    if (getPath(path) === undefined) {
-      missingPaths.push(path.join("."));
-    }
-  }
-
-  assertEquals(
-    missingPaths.length,
-    0,
-    `Missing required entries in templates/exa.config.sample.toml: ${missingPaths.join(", ")}`,
-  );
-
-  const simpleRouting = getPath(["provider_strategy", "task_routing", "simple"]);
-  const mediumRouting = getPath(["provider_strategy", "task_routing", "medium"]);
-  const complexRouting = getPath(["provider_strategy", "task_routing", "complex"]);
-  const allowedPrefixes = getPath(["git", "allowed_prefixes"]);
-
-  assertEquals(Array.isArray(simpleRouting), true);
-  assertEquals(Array.isArray(mediumRouting), true);
-  assertEquals(Array.isArray(complexRouting), true);
-  assertEquals(Array.isArray(allowedPrefixes), true);
-
-  if (Array.isArray(simpleRouting)) {
-    assertEquals(simpleRouting.includes("small"), true);
-    assertEquals(simpleRouting.includes("ollama"), true);
-  }
-
-  if (Array.isArray(mediumRouting)) {
-    assertEquals(mediumRouting.includes("medium"), true);
-  }
-
-  if (Array.isArray(complexRouting)) {
-    assertEquals(complexRouting.includes("large"), true);
-  }
-
-  if (Array.isArray(allowedPrefixes)) {
-    assertEquals(allowedPrefixes.includes("feat"), true);
-    assertEquals(allowedPrefixes.includes("fix"), true);
-  }
+  // Bootstrap-only: system.root, schema_version, and portal entries
+  assertEquals(getPath(["system", "schema_version"]), "1.0.0");
+  assertEquals(typeof getPath(["system", "root"]), "string");
+  assertEquals(getPath(["portals", "0", "alias"]), "my-repo");
+  assertEquals(getPath(["portals", "0", "target_path"]), "/home/me/projects/my-repo");
 });
 
 Deno.test("ConfigSchema accepts providers.* overrides", () => {

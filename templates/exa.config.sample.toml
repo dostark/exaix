@@ -1,509 +1,63 @@
 # ===========================================================================
-# Exaix Configuration File
+# Exaix Configuration File — Bootstrap Only
 # ===========================================================================
 #
-# IMPORTANT: This is the ONLY file users should edit to customize Exaix behavior.
-# NEVER modify src/config/constants.ts directly - those are internal defaults.
+# As of Phase 137, most settings are managed through the Config DB via
+# `exactl config set <key> <value>`. This file now serves only as a
+# bootstrap — providing `system.root`, `schema_version`, and portal entries.
 #
-# All timing values (timeouts, delays, intervals) are in milliseconds (ms)
-# unless otherwise specified.
+# Run `exactl config show` to see all effective settings.
+# Run `exactl config set <key> <value>` to override any of the ~180
+# configurable defaults (AI timeouts, retries, rate limits, health checks,
+# cost tracking, quality gates, git operations, etc.).
 #
-# Configurable Magic Numbers Reference:
-# - Database batch_flush_ms: 100 (how often to flush journal writes)
-# - Database batch_max_size: 100 (max records before forced flush)
-# - Database busy_timeout_ms: 5000 (SQLite lock wait time)
-# - Watcher debounce_ms: 200 (file change stabilization delay)
-# - Agent timeout_sec: 60 (max time for agent task completion)
-# - Agent max_iterations: 10 (max flow execution loops)
-# - AI timeout_ms: 30000 (per-model API request timeout)
-# - AI retry max_attempts: 3 (number of retry attempts)
-# - AI retry backoff_base_ms: 1000 (exponential backoff base delay)
+# Configurable keys (partial list — run `exactl config get <key>`):
+#   ai.timeout_ms, ai.retry.max_attempts, ai.model, ai.provider
+#   agent.timeout_sec, agent.max_iterations, agent.timeout_ms
+#   database.batch_flush_ms, database.busy_timeout_ms
+#   git.status_timeout_ms, git.max_retries, rate_limit.*
+#   health.*, provider_strategy.*, logging.*, quality_gate.*
+#   skills.*, session.*, mcp.*, watcher.*, and many more
 #
 # ===========================================================================
-# Environment Variable Reference
+# Environment Variables (bootstrap + provider secrets only)
 # ===========================================================================
 #
-# Exaix supports the following environment variables for runtime flexibility.
-# Environment variables take precedence over config file values where applicable.
+# EXAIX_EDITION            : Edition: "solo" | "team" (default: solo)
+# EXAIX_AGENT_ENTRYPOINT   : Path to agent entrypoint for MCP strategy
+# ANTHROPIC_API_KEY        : API key for Anthropic provider
+# OPENAI_API_KEY            : API key for OpenAI provider
+# OPENROUTER_API_KEY        : API key for OpenRouter provider
+# VERTEX_AI_SERVICE_ACCOUNT : Service account JSON for Vertex AI
 #
-# Production Variables (Runtime):
-# ---------------------------------------------------------------------------
-# EXA_LLM_PROVIDER    : Override AI provider (default: mock; e.g. "anthropic", "openai", "google", "ollama")
-# EXA_LLM_MODEL       : Override AI model name (e.g. "llama3.2", "gpt-4")
-# EXA_LLM_BASE_URL    : Override provider base URL (e.g. "http://localhost:11434")
-# EXA_LLM_TIMEOUT_MS  : Override AI request timeout (1000 - 300000 ms)
+# Testing:
+#   EXA_TEST_MODE          : Set to "1" to enable test mode
+#   EXA_CI_MODE            : Set to "1" to enforce CI behaviors
 #
-# Testing Variables (Development/CI):
-# ---------------------------------------------------------------------------
-# EXA_TEST_MODE              : Set to "1" or "true" to enable test mode
-# EXA_TEST_CLI_MODE          : Set to "1" to enable CLI test mode (stubs services)
-# EXA_TEST_ENABLE_PAID_LLM   : Set to "1" to enable paid LLM tests (requires API keys)
-# EXA_TEST_ENABLE_OLLAMA     : Set to "1" to run Ollama integration tests
-# EXA_TEST_ENABLE_LLAMA      : Set to "1" to run Llama provider specific tests
-# EXA_TEST_OPENAI_API_KEY    : API key for OpenAI integration tests
-# EXA_TEST_LLM_MODEL         : Default model for paid LLM tests (default: gpt-5-mini)
-# EXA_CI_MODE                : Set to "1" to enforce CI behaviors (mock providers, etc.)
-# CI                         : Standard CI flag (fallback if EXA_CI_MODE not set)
+# All other env vars (EXA_LLM_PROVIDER, EXA_LLM_MODEL, etc.) are
+# deprecated. Use `exactl config set` instead.
 #
 # ===========================================================================
 
 [system]
-# Human-readable config version (optional)
-version = "1.0.0"
-# Workspace schema version (defaults to current WORKSPACE_SCHEMA_VERSION if omitted)
 schema_version = "1.0.0"
-# Log level: debug | info | warn | error
-log_level = "info"
-# Root directory for deployed workspaces (can be absolute or relative)
 root = "./"
 
-[paths]
-# Top-level workspace directory name under the deployed root
-workspace = "Workspace"
-# Runtime directory for DB, logs, pid files (formerly System/)
-runtime = ".exa"
-# Memory banks directory (copied to deployed workspaces)
-memory = "Memory"
-# Portals directory (symlinks to external project repos)
-portals = "Portals"
-# Blueprints directory for agent definitions/templates
-blueprints = "Blueprints"
-
-[database]
-# Activity Journal batching configuration
-# Flush interval in milliseconds for batched writes
-batch_flush_ms = 100
-# Maximum batch size before immediate flush
-batch_max_size = 100
-# Optional explicit path for the Activity Journal DB (overrides runtime path)
-# If unspecified, code resolves to <root>/<paths.runtime>/journal.db
-path = "./.exa/journal.db"
-
-[database.sqlite]
-# SQLite-specific performance tuning
-journal_mode = "WAL"       # Write-Ahead Logging for concurrency
-foreign_keys = true        # Enforce foreign key constraints
-busy_timeout_ms = 5000     # Wait time when DB is locked
-
-[watcher]
-# Debounce time in ms after file events before processing
-debounce_ms = 200
-# Enable stability_check to verify file size/stability after debounce
-stability_check = true
-
-[agents]
-# Default model preset name from [models]
-default_model = "default"
-# Per-agent timeout in seconds (max time for agent to complete task)
-timeout_sec = 60
-# Max iterations for agent flow execution
-max_iterations = 10
-
-# Example portals entries — add one [[portals]] block per portal
+# ── Example portals ────────────────────────────────────────────────────
+# Portals bootstrap is handled through this file. Add one [[portals]] per repo.
 [[portals]]
 alias = "my-repo"
 target_path = "/home/me/projects/my-repo"
-
-# Optional: default base branch for this portal when requests don't specify `target_branch`
 # default_branch = "main"
-
-# Optional: execution strategy for write-capable changes
-# - "branch"   : create feature branches in the portal checkout (default)
-# - "worktree" : create per-request worktrees under .exa/worktrees (opt-in)
-#               : Exaix also creates a discoverability pointer under Memory/Execution/<traceId>/worktree/
 # execution_strategy = "branch"
 
-# ---------------------------------------------------------------------------
-# AI / LLM provider configuration
-# Supported providers: mock | ollama | anthropic | openai | google
+# ── Notes ──────────────────────────────────────────────────────────────
+# Run `exactl config show` to see all ~180 configurable settings.
+# Run `exactl config set <key> <value>` to override any setting.
+# Run `exactl config --help` for all subcommands (get, set, unset,
+# validate, show, diff, set-model, set-provider, set-path, use-profile).
 #
-# Recommended Models (2026 Tightened List):
-# OpenAI:
-#   - gpt-5-mini (Fast & Low-cost)
-#   - gpt-5 (Premium Reasoning)
-#   - gpt-5-pro (Top Tier)
-# Anthropic:
-#   - claude-haiku-4-5-20251001 (Fast - Oct 2025)
-#   - claude-sonnet-4-5-20250929 (Balanced - Sep 2025)
-#   - claude-opus-4-5-20251101 (Premium - Nov 2025)
-# Google:
-#   - gemini-flash-latest (Recommended - Always latest Flash model)
-#   - gemini-2.5-flash (Stable 2025 release)
-# ---------------------------------------------------------------------------
-[ai]
-provider = "mock"          # Overridden by EXA_LLM_PROVIDER
-# Provider-specific model name (optional)
-model = "gpt-5.2-pro"      # Overridden by EXA_LLM_MODEL
-# Base URL for custom provider endpoints (optional)
-base_url = ""           # Overridden by EXA_LLM_BASE_URL
-# Request timeout (ms)
-timeout_ms = 30000      # Overridden by EXA_LLM_TIMEOUT_MS
-# Max output tokens (provider-specific)
-max_tokens = 2048
-# Sampling temperature (0.0 - 2.0)
-temperature = 0.2
-
-[ai.mock]
-# Mock strategy: recorded | scripted | pattern | failing | slow
-strategy = "recorded"
-# Directory for recorded fixtures used by the mock provider
-fixtures_dir = "./tests/fixtures/ai"
-
-[ai_endpoints]
-# Override default provider API endpoints (optional)
-# Useful for self-hosted instances, proxies, or custom deployments
-ollama = "http://localhost:11434/api/generate"
-anthropic = "https://api.anthropic.com/v1/messages"
-openai = "https://api.openai.com/v1/chat/completions"
-google = "https://generativelanguage.googleapis.com/v1/models"
-
-[ai_retry]
-# HTTP retry configuration for LLM API calls (all providers)
-max_attempts = 3           # Maximum retry attempts for transient failures
-backoff_base_ms = 1000     # Base delay between retries (exponential backoff)
-timeout_per_request_ms = 30000  # Timeout for individual HTTP requests
-
-[ai_retry.providers.ollama]
-max_attempts = 3
-backoff_base_ms = 1000
-
-[ai_retry.providers.anthropic]
-max_attempts = 5
-backoff_base_ms = 2000
-
-[ai_retry.providers.openai]
-max_attempts = 3
-backoff_base_ms = 1000
-
-[ai_retry.providers.google]
-max_attempts = 3
-backoff_base_ms = 1000
-
-[ai_timeout]
-# Default timeout for LLM calls in milliseconds
-default_ms = 30000
-
-[ai_timeout.providers]
-google = 30000
-openai = 30000
-anthropic = 30000
-ollama = 60000
-mock = 1000
-
-[ai_anthropic]
-# Anthropic Claude-specific configuration
-api_version = "2023-06-01"
-default_model = "claude-haiku-4-5-20251001"
-max_tokens_default = 4096
-
-[ai_vertex]
-# Google Vertex AI (service-account auth for project-based quotas).
-# Provide the service-account JSON (single line) in the named env var.
-service_account_env = "VERTEX_AI_SERVICE_ACCOUNT"
-region = "us-central1"   # e.g. europe-west4, asia-southeast1
-
-[ai_openrouter]
-# OpenRouter unified gateway (single API key to many models).
-api_key_env = "OPENROUTER_API_KEY"
-site_name = "Exaix"
-site_url = "https://exaix.dev"
-
-# ---------------------------------------------------------------------------
-# Model-specific defaults
-# Override timeout and other settings per model configuration
-# ---------------------------------------------------------------------------
-
-[models.default]
-provider = "mock"
-model = "gpt-5.2-pro"
-timeout_ms = 30000
-max_tokens = 2048
-temperature = 0.2
-
-# Three-size model presets for complexity-based routing via
-# [provider_strategy.task_routing].
-#
-# Provider   Small              Medium               Large
-# ────────   ─────              ──────               ─────
-# Anthropic  claude-haiku-*     claude-sonnet-*      claude-opus-*
-# OpenAI     gpt-5-mini         gpt-5                gpt-5-pro
-# Google     gemini-flash-*     gemini-pro-*         gemini-ultra-*
-#
-# For OpenRouter, each size maps to a router model ID:
-#   e.g. "openrouter" + "qwen-2.5-7b" (small) / "deepseek-v3" (medium) /
-#        "anthropic/claude-opus-*" (large)
-#
-# Note [models.fast] below serves a different purpose — it is used by
-# RequestAnalyzer for request clarification calls (DEFAULT_CLARIFICATION_MODEL_KEY).
-# It happens to match [models.small] here for simplicity but is independently
-# configurable.
-
-[models.small]
-provider = "anthropic"
-model = "claude-haiku-4-5-20251001"
-timeout_ms = 15000
-
-[models.medium]
-provider = "anthropic"
-model = "claude-sonnet-4-5-20250929"
-timeout_ms = 30000
-
-[models.large]
-provider = "anthropic"
-model = "claude-opus-4-5-20251101"
-timeout_ms = 60000
-
-[models.fast]
-provider = "anthropic"
-model = "claude-haiku-4-5-20251001"
-timeout_ms = 15000         # Faster timeout for quick responses
-
-[models.local]
-provider = "ollama"
-model = "llama3.2"
-timeout_ms = 60000         # Longer timeout for local models
-base_url = "http://localhost:11434/api/generate"
-
-# ---------------------------------------------------------------------------
-# MCP (Model Context Protocol) server configuration
-# ---------------------------------------------------------------------------
-[mcp]
-enabled = true
-transport = "stdio" # allowed: stdio, sse
-server_name = "exaix"
-version = "1.0.0"
-
-[mcp_defaults]
-# Default identity ID for MCP tool operations when not explicitly specified
-identity_id = "system"
-
-# ---------------------------------------------------------------------------
-# Prompt budget enforcement configuration
-# Cloud providers default to strict budget enforcement. Local providers default
-# to relaxed mode unless you explicitly opt in.
-# ---------------------------------------------------------------------------
-[budget_enforcement]
-cloud = true
-local = false
-
-[git]
-# Git operations constraints for MCP tools
-branch_prefix_pattern = "^(feat|fix|docs|chore|refactor|test)/"
-allowed_prefixes = ["feat", "fix", "docs", "chore", "refactor", "test"]
-
-# ---------------------------------------------------------------------------
-# Rate limiting configuration
-# ---------------------------------------------------------------------------
-[rate_limiting]
-# Enable rate limiting for AI provider calls
-enabled = true
-# Maximum API calls per minute across all providers
-max_calls_per_minute = 60
-# Maximum tokens per hour across all providers
-max_tokens_per_hour = 100000
-# Maximum cost per day in USD across all providers
-max_cost_per_day = 50.00
-# Cost per 1K tokens (used for rate limiting calculations)
-cost_per_1k_tokens = 0.03
-
-# ---------------------------------------------------------------------------
-# Provider strategy configuration
-# ---------------------------------------------------------------------------
-[provider_strategy]
-# Prefer free/local providers over paid ones when available
-prefer_free = true
-# Allow local providers (Ollama) in selection
-allow_local = true
-# Maximum daily cost budget in USD
-max_daily_cost_usd = 5.00
-# Enable health checks before provider selection
-health_check_enabled = true
-# Enable automatic fallback to alternative providers on failure
-fallback_enabled = true
-
-[provider_strategy.task_routing]
-# Route tasks by complexity/type (optional).
-# Values reference model preset names ([models.small], [models.medium], [models.large])
-# or provider names ("mock", "ollama") for direct routing.
-simple = ["small", "ollama"]
-medium = ["medium"]
-complex = ["large"]
-code_generation = ["medium", "large"]
-
-[provider_strategy.budgets]
-# Per-provider daily budgets in USD (optional)
-anthropic_daily_usd = 3.00
-openai_daily_usd = 2.00
-
-# ---------------------------------------------------------------------------
-# Mock provider configuration (for testing/development)
-# ---------------------------------------------------------------------------
-[mock]
-# Delay in milliseconds for mock responses
-delay_ms = 500
-# Default input tokens for mock responses
-input_tokens = 100
-# Default output tokens for mock responses
-output_tokens = 50
-
-# ---------------------------------------------------------------------------
-# Provider-specific overrides
-# ---------------------------------------------------------------------------
-[providers.google]
-cost_tier = "freemium"
-free_quota_requests_per_day = 1500
-timeout_ms = 30000
-
-[providers.ollama]
-cost_tier = "free"
-base_url = "http://localhost:11434"
-timeout_ms = 60000
-
-[providers.anthropic]
-cost_tier = "paid"
-timeout_ms = 30000
-rate_limit_rpm = 50
-
-# ---------------------------------------------------------------------------
-# UI and display configuration
-# ---------------------------------------------------------------------------
-[ui]
-# Maximum length for prompt previews in logs/debugging
-prompt_preview_length = 50
-# Extended preview length for detailed debugging
-prompt_preview_extended = 100
-
-# ---------------------------------------------------------------------------
-# Health check configuration
-# ---------------------------------------------------------------------------
-[health]
-check_timeout_ms = 30000
-cache_ttl_ms = 300000
-memory_warn_percent = 80
-memory_critical_percent = 95
-
-# ---------------------------------------------------------------------------
-# Git operations configuration
-# ---------------------------------------------------------------------------
-[git.operations]
-# Timeout for git status operations (ms)
-status_timeout_ms = 10000
-# Timeout for git ls-files operations (ms)
-ls_files_timeout_ms = 10000
-# Timeout for git checkout operations (ms)
-checkout_timeout_ms = 10000
-# Timeout for git clean operations (ms)
-clean_timeout_ms = 5000
-# Timeout for git log operations (ms)
-log_timeout_ms = 5000
-# Timeout for git diff operations (ms)
-diff_timeout_ms = 10000
-# Timeout for general git commands (ms)
-command_timeout_ms = 30000
-# Maximum retries for git operations
-max_retries = 3
-# Base backoff delay for git retries (ms)
-retry_backoff_base_ms = 100
-# Maximum retries for branch name collisions
-branch_name_collision_max_retries = 5
-# Length of trace ID suffix for branches
-trace_id_short_length = 8
-# Length of random suffix for branches
-branch_suffix_length = 6
-
-# ---------------------------------------------------------------------------
-# Cost tracking configuration (extended)
-# ---------------------------------------------------------------------------
-[cost_tracking]
-# Batch delay in milliseconds for cost tracking writes
-batch_delay_ms = 5000
-# Maximum batch size before immediate flush
-max_batch_size = 50
-
-# Cost rates per 1K tokens (based on output pricing for conservative estimates)
-# Prices as of 2025-2026 API releases
-[cost_tracking.rates]
-openai = 0.002     # $2.00 per 1M output tokens (gpt-5-mini)
-anthropic = 0.005  # $5.00 per 1M output tokens (claude-haiku-4-5)
-google = 0.0025    # $2.50 per 1M output tokens (gemini-2.5-flash, Vertex AI)
-ollama = 0.0       # Local free
-mock = 0.0         # Mock free
-
-[provider_strategy.fallback_chains]
-balanced = ["openai", "anthropic", "google"]
-fast = ["google", "openai"]
-local_first = ["local", "default"]
-
-# ---------------------------------------------------------------------------
-# Routing policy configuration
-# ---------------------------------------------------------------------------
-[routing]
-# Relative path to the YAML routing policy manifest.
-policy_path = ".exaix/routing.policy.yaml"
-
-
-[quality_gate]
-enabled = true
-mode = "hybrid"                  # heuristic | llm | hybrid
-auto_enrich = true               # enrich requests that score between enrichment and proceed thresholds
-block_unactionable = false       # hard-block requests below the minimum threshold
-max_clarification_rounds = 5     # maximum Q&A rounds before auto-proceeding
-
-[quality_gate.thresholds]
-minimum = 20                     # 0–100; below this the request is rejected or blocked
-enrichment = 50                  # 0–100; below this the request is enriched before execution
-proceed = 70                     # 0–100; at or above this the request proceeds immediately
-
-[request_analysis]
-enabled = true
-mode = "hybrid"                  # heuristic | llm | hybrid
-actionability_threshold = 60     # 0–100; below this hybrid mode escalates to LLM
-infer_acceptance_criteria = true
-persist_analysis = true          # write _analysis.json alongside each request file
-
-# ---------------------------------------------------------------------------
-# Portal codebase knowledge gathering (Phase 46)
-# Analyzes portal repositories to extract architecture, conventions, and symbols
-# for injection into agent prompts.
-# ---------------------------------------------------------------------------
-[memory.embedding]
-# Embedding model configuration for memory bank vectorization
-# Model name for generating embeddings
-model = "nomic-embed-text"
-# Dimension of the embedding vectors (must match model output)
-dimension = 768
-
-[portal_knowledge]
-# Automatically trigger quick analysis after `exactl portal add`
-auto_analyze_on_mount = true
-# Default analysis depth: quick | standard | deep
-# quick   — directory + config + key files only, no LLM (< 5 s)
-# standard — all 6 strategies, 1 LLM call + deno doc for TS portals
-# deep     — all 6 strategies with higher file read caps + 2–3 LLM calls
-default_mode = "quick"
-# Maximum files to stat/list during quick scan
-quick_scan_limit = 200
-# Maximum files to read content from during analysis (all modes)
-max_files_to_read = 50
-# Hours before cached knowledge is considered stale and background re-analysis fires
-staleness_hours = 168
-# Whether to call the LLM for architecture inference (standard/deep modes)
-use_llm_inference = true
-# File/directory patterns to skip during analysis
-ignore_patterns = [
-  "node_modules", ".git", "dist", "build", ".next", ".nuxt",
-  "coverage", "cov_profile", ".cache", "__pycache__",
-  "target", "vendor", ".venv", "venv", ".DS_Store",
-]
-
-# ---------------------------------------------------------------------------
-# Notes
-# - Copy this file to the repository root as `exa.config.toml` or pass a path
-#   to the CLI with `--config` when starting the daemon.
-# - The `paths.runtime` directory is where runtime artifacts live (DB, logs).
-# - Portals should point at real git repositories to enable blueprint/changeset
-#   operations across projects.
-# - DO NOT edit src/config/constants.ts directly - all user configuration
-#   should be done through this exa.config.toml file.
-# ---------------------------------------------------------------------------
-
+# All settings not listed here (AI timeouts, retries, rate limits,
+# health checks, cost tracking, quality gates, git operations, etc.)
+# are registered via configurable() and visible through the Config DB.
+# Use `exactl config set` to override them — no TOML editing needed.
