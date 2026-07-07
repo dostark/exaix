@@ -109,13 +109,17 @@ export function createMockConfig(root: string, overrides: Partial<Config> = {}):
 /**
  * Creates a test config file for testing.
  * Returns the path to the written config file.
+ *
+ * Note: Phase 137 moves most settings to Config DB via configurable().
+ * Only system.root and schema_version are strictly needed. The sections
+ * below exist for backward compatibility with tests that parse the TOML
+ * directly. New tests should use createTestConfigDb() + the adapter.
  */
 export async function writeTestConfigFile(root: string): Promise<string> {
   const configPath = join(root, "exa.config.toml");
 
   const configContent = `[system]
-version = "1.0.0"
-log_level = "info"
+schema_version = "1.0.0"
 root = "${root}"
 
 [paths]

@@ -1,42 +1,29 @@
-# Exaix - Deployed Workspace
-
-This directory is a runtime workspace created from the Exaix repository.
-
-## Quick Start
-
-1. **Configure Exaix:**
-   ```bash
-   cp exa.config.sample.toml exa.config.toml
-   # Edit exa.config.toml to customize paths and settings
-   ```
-
-````markdown
 # Exaix — Deployed Workspace
 
-This directory represents a deployed runtime workspace created from the Exaix repository. It contains the runtime layout that agents operate against.
+This directory represents a deployed runtime workspace created from the Exaix repository.
 
 ## Quick Start
 
-1. Copy the sample config and edit as needed:
+1. Configure settings via `exactl config set`:
 
 ```bash
-cp exa.config.sample.toml exa.config.toml
-# edit exa.config.toml to customize paths and settings
+exactl config set ai.provider ollama
+exactl config set ai.model llama3.2
 ```
 
-2. Start the daemon
+2. Start the daemon:
 
 ```bash
 exactl daemon start
 ```
 
-3. Verify status
+3. Verify status:
 
 ```bash
 exactl daemon status
 ```
 
-4. Create your first request
+4. Create your first request:
 
 ```bash
 exactl request "Add a hello world function"
@@ -56,16 +43,16 @@ exactl daemon restart  # Restart daemon
 - `Blueprints/` — Agent definitions and templates
 - `Workspace/` — Requests, Plans, and Changesets
 - `Memory/` — Persistent memory banks (copied during deploy)
-- `.exa/` — Runtime state: DB, logs, active tasks (replaces former `System/`)
+- `.exa/` — Runtime state: DB, logs, active tasks
 - `Portals/` — Symlinks to external project repositories
+- `exa.config.toml` — Bootstrap config (system.root, schema_version; all other settings via `exactl config set`)
 
 ## Getting Help
 
 ```bash
 exactl --help
+exactl config --help
 exactl request --help
 exactl plan --help
-exactl blueprint --help
 exactl portal --help
 ```
-````

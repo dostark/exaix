@@ -3,6 +3,10 @@
  * @path tests/integration/helpers/daemon_config.ts
  * @description Shared daemon TOML config builder for integration tests.
  *   Extracted to eliminate duplication across daemon_* and dogfood_* tests.
+ *
+ * Note: Phase 137 moves most settings to Config DB via configurable().
+ * Only system.root is strictly required here. The additional sections
+ * exist for backward compatibility; new tests should use the adapter.
  */
 
 export function writeDaemonConfig(
@@ -17,10 +21,10 @@ export function writeDaemonConfig(
 export function daemonConfigSections(root: string, allowNetLine = "allow_net = []"): string[] {
   return [
     "[system]",
-    'version = "1.0.0"',
-    'log_level = "info"',
     `root = "${root}"`,
     allowNetLine,
+    // Note: remaining sections are legacy — all settings are overridable
+    // via `exactl config set` and persisted in .exa/config.db.
     "",
     "[paths]",
     'workspace = "./Workspace"',

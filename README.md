@@ -100,8 +100,10 @@ git clone https://github.com/dostark/exaix.git
 cd exaix
 deno task compile  # or use `deno task start` to run without compiling
 
-# 2. Configure LLM (edit exa.config.toml)
-# See LLM Configuration below
+# 2. Configure LLM
+exactl config set ai.provider ollama
+exactl config set ai.model llama3.2
+# See LLM Configuration below for advanced setup
 
 # 3. Start daemon + submit example request
 deno task start &
@@ -132,26 +134,23 @@ The current workspace package set includes all 21 packages and 6 app wrappers, d
 
 ## LLM Configuration
 
-Exaix auto-selects providers by cost/performance through a circuit-breaker-backed selection layer. Edit `exa.config.toml`:
+Exaix auto-selects providers by cost/performance through a circuit-breaker-backed selection layer. Configure via `exactl config set`:
 
 **Basic**:
 
-```toml
-[ai]
-provider = "ollama"
-model = "llama3.2"
+```bash
+exactl config set ai.provider ollama
+exactl config set ai.model llama3.2
+exactl config set ai.timeout_ms 120000
 ```
 
 **Advanced Multi-Provider**:
 
-```toml
-[models.default]
-provider = "anthropic"
-model = "claude-3.5-sonnet"
-
-[models.fast]
-provider = "openai"
-model = "gpt-4o-mini"
+```bash
+exactl config set-model default anthropic claude-3.5-sonnet
+exactl config set-model fast openai gpt-4o-mini
+exactl config set ai.fast_model gpt-4o-mini
+exactl config set ai.timeout_ms 30000
 
 [models.local]
 provider = "ollama"
