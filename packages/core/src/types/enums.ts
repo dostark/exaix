@@ -1412,3 +1412,21 @@ export enum SwapClass {
   HOT = "hot",
   RESTART = "restart",
 }
+
+/**
+ * Provenance source for a config value — where it was resolved from.
+ */
+export enum ConfigProvenanceSource {
+  DB = "db",
+  REGISTRY = "registry",
+  SCHEMA_DEFAULT = "schema_default",
+  BOOTSTRAP = "bootstrap",
+}
+
+/**
+ * Operating mode of a config adapter.
+ */
+export enum ConfigAdapterMode {
+  DIRECT = "direct",
+  DAEMON = "daemon",
+}

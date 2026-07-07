@@ -14,3 +14,4 @@ export * from "./env_schema.ts";
 export * from "./registry.ts";
 export * from "./errors.ts";
 export * from "./db.ts";
+export * from "./adapter.ts";
