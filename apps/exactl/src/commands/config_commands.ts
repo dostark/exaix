@@ -120,14 +120,14 @@ export class ConfigCommands extends BaseCommand {
     return Promise.resolve(formatTree(effective, 0));
   }
 
-  diff(): void {
+  diff(): string {
     const report = this.getAdapter().diff();
-    for (const item of report.overridden) {
-      console.log(`  ${item.path}: ${item.default} → ${item.current}`);
-    }
     if (report.overridden.length === 0) {
-      console.log("  No overridden keys.");
+      return "  No overridden keys.";
     }
+    return report.overridden
+      .map((item) => `  ${item.path}: ${item.default} → ${item.current}`)
+      .join("\n");
   }
 
   async setModel(name: string, model: string): Promise<void> {

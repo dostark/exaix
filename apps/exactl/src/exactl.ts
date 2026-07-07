@@ -1338,7 +1338,7 @@ export const __test_command = new Command()
           .description("Show uncommitted config changes")
           .action(() => {
             try {
-              configCommands.diff();
+              console.log(configCommands.diff());
             } catch (error) {
               display.error("cli.error", "config diff", {
                 message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,

@@ -129,3 +129,23 @@ Deno.test("[configuring-cli] get --profile returns the profile-scoped value, not
     assertEquals(await commands.get("ai.timeout_ms"), 20000);
   });
 });
+
+// ── Step 15 (GAP-22): diff() returns a string (display convention, no console.log) ──
+
+Deno.test("[configuring-cli] diff() returns a formatted string of overridden keys", async () => {
+  await withProfileCommands(async (commands) => {
+    await commands.set("ai.timeout_ms", "99999");
+    const out = commands.diff();
+    assertEquals(typeof out, "string");
+    assertEquals(out.includes("ai.timeout_ms"), true);
+    assertEquals(out.includes("99999"), true);
+  });
+});
+
+Deno.test("[configuring-cli] diff() returns a no-overrides message when nothing is overridden", async () => {
+  await withProfileCommands((commands) => {
+    const out = commands.diff();
+    assertEquals(typeof out, "string");
+    assertEquals(out.toLowerCase().includes("no overridden"), true);
+  });
+});

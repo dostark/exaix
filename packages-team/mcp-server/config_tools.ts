@@ -379,24 +379,26 @@ export class ConfigSetTool extends ToolHandler {
  * and calls adapter.set() for each entry. Requires human approval.
  */
 export class ConfigApplyTool extends ToolHandler {
-  execute(_args: Record<string, JSONValue>): Promise<MCPToolResponse> {
+  async execute(_args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     try {
       const pending = drainPendingChanges();
       if (pending.length === 0) {
-        return Promise.resolve({
+        return {
           content: [{ type: "text", text: "No pending config changes to apply." }],
-        });
+        };
       }
 
       const root = this.context.config.getAll().system?.root ?? ".";
       const configDbPath = join(root, ".exa", "config.db");
       const adapter = createConfigAdapter(configDbPath);
 
-      // Apply each pending change
+      // Apply each pending change. set() is async and may reject on value
+      // validation (e.g. out-of-bounds) — await it inside the per-key try/catch so
+      // failures are recorded as errors instead of escaping as unhandled rejections.
       const results: Array<{ key: string; status: string; error?: string }> = [];
       for (const { key, value } of pending) {
         try {
-          adapter.set(key, value as (string | number | boolean | null));
+          await adapter.set(key, value as (string | number | boolean | null));
           results.push({ key, status: CONFIG_APPLY_STATUS_APPLIED });
         } catch (err) {
           results.push({
@@ -410,7 +412,7 @@ export class ConfigApplyTool extends ToolHandler {
       const applied = results.filter((r) => r.status === CONFIG_APPLY_STATUS_APPLIED).length;
       const failed = results.filter((r) => r.status === CONFIG_APPLY_STATUS_ERROR).length;
 
-      return Promise.resolve({
+      return {
         content: [
           {
             type: "text",
@@ -418,17 +420,17 @@ export class ConfigApplyTool extends ToolHandler {
           },
           { type: MCP_CONTENT_TYPE_STRUCTURED_DATA, data: serializeStructuredData(results) },
         ],
-      });
+      };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      return Promise.resolve(this.formatToolError(
+      return this.formatToolError(
         "config_apply",
         DEFAULT_MCP_IDENTITY_ID,
         DEFAULT_MCP_IDENTITY_ID,
         classifyConfigError(error instanceof Error ? error : String(error)),
         msg,
         {},
-      ));
+      );
     }
   }
 

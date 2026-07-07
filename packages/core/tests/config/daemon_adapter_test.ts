@@ -7,7 +7,7 @@
 import { Database } from "@db/sqlite";
 import { assertEquals, assertRejects } from "@std/assert";
 import { InMemoryConfigStore } from "../../src/config/store.ts";
-import { createConfigAdapter, DaemonConfigAdapter } from "../../src/config/adapter.ts";
+import { createConfigAdapter, createConfigAdapterAsync, DaemonConfigAdapter } from "../../src/config/adapter.ts";
 import { configurable } from "../../src/config/registry.ts";
 import { ensureConfigDb, migrateConfigDb, seedConfigDb } from "../../src/config/db.ts";
 import { ConfigValueType, SwapClass } from "../../src/types/enums.ts";
@@ -251,6 +251,59 @@ Deno.test("[configuring] createConfigAdapter returns DirectConfigAdapter when no
     // No PID file exists, should return DirectConfigAdapter
     assertEquals(adapter.mode, "direct");
     assertEquals(adapter.get("daemon_test.timeout_ms"), 30000);
+  } finally {
+    Deno.removeSync(dir, { recursive: true });
+  }
+});
+
+// ── Step 15 (GAP-21): createConfigAdapterAsync verifies process liveness ──────
+
+Deno.test("[configuring] createConfigAdapterAsync returns DirectConfigAdapter for a STALE pid", async () => {
+  const dir = Deno.makeTempDirSync({ prefix: "daemon-adapter-stale-" });
+  try {
+    const dbPath = ensureConfigDb(dir);
+    const db = new Database(dbPath);
+    migrateConfigDb(db);
+    seedConfigDb(db);
+
+    const store = new InMemoryConfigStore();
+    // Write a PID file pointing at an almost-certainly-dead pid.
+    const pidPath = `${dir}/daemon.pid`;
+    Deno.writeTextFileSync(pidPath, "2147483646");
+
+    const adapter = await createConfigAdapterAsync(dbPath, {
+      store,
+      db,
+      daemonPidPath: pidPath,
+    });
+    // Stale PID → not alive → must fall back to DirectConfigAdapter.
+    assertEquals(adapter.mode, "direct");
+    db.close();
+  } finally {
+    Deno.removeSync(dir, { recursive: true });
+  }
+});
+
+Deno.test("[configuring] createConfigAdapterAsync returns DaemonConfigAdapter for a LIVE pid (self)", async () => {
+  const dir = Deno.makeTempDirSync({ prefix: "daemon-adapter-live-" });
+  try {
+    const dbPath = ensureConfigDb(dir);
+    const db = new Database(dbPath);
+    migrateConfigDb(db);
+    seedConfigDb(db);
+
+    const store = new InMemoryConfigStore();
+    const pidPath = `${dir}/daemon.pid`;
+    // Use this test process's own pid — guaranteed alive.
+    Deno.writeTextFileSync(pidPath, String(Deno.pid));
+
+    const adapter = await createConfigAdapterAsync(dbPath, {
+      store,
+      db,
+      daemonPidPath: pidPath,
+    });
+    assertEquals(adapter.mode, "daemon");
+    db.close();
   } finally {
     Deno.removeSync(dir, { recursive: true });
   }

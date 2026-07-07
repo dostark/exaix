@@ -597,12 +597,37 @@ export class DaemonConfigAdapter extends DirectConfigAdapter {
 }
 
 /**
- * Factory function — creates a DirectConfigAdapter or DaemonConfigAdapter
- * depending on whether the daemon is running (detected via PID file).
+ * Check whether a process is alive via `kill -0` (sends no signal, only checks
+ * existence/permission). Core-local so the config layer does not depend on the
+ * CLI package. Returns false on any error (dead pid, no permission, no `kill`).
+ */
+export async function isPidAlive(pid: number): Promise<boolean> {
+  try {
+    const result = await new Deno.Command("kill", {
+      args: ["-0", pid.toString()],
+      stdout: "null",
+      stderr: "null",
+    }).output();
+    return result.success;
+  } catch {
+    return false;
+  }
+}
+
+const DEFAULT_DAEMON_PID_PATH = ".exa/daemon.pid";
+
+/**
+ * Factory — creates a DirectConfigAdapter or DaemonConfigAdapter.
  *
- * When the daemon is alive, the caller must provide a store and a pre-existing
- * @db/sqlite Database handle for the Config DB. When the daemon is down or
- * the store/DB are omitted, a DirectConfigAdapter is returned.
+ * SYNCHRONOUS contract (this function): the daemon branch is selected only when
+ * the caller explicitly supplies both `store` and `db` AND a PID file EXISTS.
+ * It does NOT verify the PID is alive (liveness needs an async `kill -0`); a stale
+ * PID file therefore still selects the daemon adapter. Callers that need true
+ * liveness (e.g. a CLI attaching to a possibly-dead daemon) must use the async
+ * {@link createConfigAdapterAsync}. When `store`/`db` are omitted or no PID file
+ * exists, a DirectConfigAdapter is returned. NOTE: the daemon process itself does
+ * NOT use this factory for self-detection — it constructs DaemonConfigAdapter
+ * directly at boot (apps/daemon/main.ts), so this path only serves external callers.
  */
 export function createConfigAdapter(
   configDbPath: string,
@@ -614,19 +639,36 @@ export function createConfigAdapter(
     db?: Database;
   },
 ): IConfigAdapter {
-  // If store + db explicitly provided, check daemon liveness
   if (options?.store && options?.db) {
-    const pidPath = options.daemonPidPath ?? ".exa/daemon.pid";
-    const pid = readPidFile(pidPath);
+    const pid = readPidFile(options.daemonPidPath ?? DEFAULT_DAEMON_PID_PATH);
     if (pid !== undefined) {
-      // isProcessAlive is async but the factory isn't — in practice the PID
-      // file check is sufficient (stale PID files are rare and cause a quick
-      // fallback on the next CLI call). For true liveness, callers should
-      // use the async createConfigAdapterAsync variant.
       return new DaemonConfigAdapter(options.store, options.db, logger);
     }
   }
-
-  // Fall back to DirectConfigAdapter
   return new DirectConfigAdapter(configDbPath, mode, logger);
+}
+
+/**
+ * Async factory — like {@link createConfigAdapter} but VERIFIES the PID is a live
+ * process (`kill -0`) before selecting the daemon adapter. A stale PID file falls
+ * back to DirectConfigAdapter. Use this from external callers (CLI/MCP) that may be
+ * attaching to a daemon that has since exited.
+ */
+export async function createConfigAdapterAsync(
+  configDbPath: string,
+  options?: {
+    daemonPidPath?: string;
+    store?: InMemoryConfigStore;
+    db?: Database;
+    mode?: ConfigAdapterMode;
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>;
+  },
+): Promise<IConfigAdapter> {
+  if (options?.store && options?.db) {
+    const pid = readPidFile(options.daemonPidPath ?? DEFAULT_DAEMON_PID_PATH);
+    if (pid !== undefined && await isPidAlive(pid)) {
+      return new DaemonConfigAdapter(options.store, options.db, options.logger);
+    }
+  }
+  return new DirectConfigAdapter(configDbPath, options?.mode ?? ConfigAdapterMode.DIRECT, options?.logger);
 }
