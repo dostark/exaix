@@ -90,15 +90,15 @@ checklists (pre‑commit, CI, etc.).
 - Never hardcode numeric literals or string constants in production or test code
   (timeouts, status values, provider names, etc.).
 - **User‑configurable values** belong in `exa.config.sample.toml` with a
-  comment, the matching Zod schema (`packages/core/src/config/schema.ts`), and a default in
-  `packages/core/src/config/constants.ts` (the config service handles loading).
+  comment, the matching Zod schema (`packages/schemas/src/config.ts`), and a default in
+  `packages/core/src/types/constants.ts` (the config service handles loading).
 - **Internal constants** belong in a module‑scoped `constants.ts` file within the relevant package. Use descriptive names and group related values.
-- **CLI/TUI defaults** go in `apps/exactl/src/cli.config.ts` or
+- **CLI/TUI defaults** go in `packages/cli/src/config.ts` or
   `packages/tui/src/config.ts` respectively.
-- **Test‑specific constants** belong in `tests/config/constants.ts` (e.g.
+- **Test‑specific constants** belong in `packages/testing/src/constants.ts` (e.g.
   prompts, mock keys, environment variable names).
 - **Enums.** Whenever a set of fixed strings is used (statuses, types,
-  providers), define a TypeScript `enum` in the appropriate package (e.g. `packages/core/src/enums.ts`) and reference it.
+  providers), define a TypeScript `enum` in the appropriate package (e.g. `packages/core/src/types/enums.ts`) and reference it.
   Compare against `RequestStatus.PENDING`, never the literal string.
 
 ### Automated Enforcement
@@ -329,8 +329,8 @@ Package-local tests under `packages/<package>/tests/` must remain self-contained
 - **Package root aliases are not a license for arbitrary source imports:** `@exaix/<package>` is only valid for the symbols exported by that package root barrel. Use only explicitly declared canonical subpath barrels for narrower public surfaces.
 - **Avoid inline multiline structured text in tests:** It is highly recommended to avoid embedding YAML frontmatter, markdown documents, JSON payloads, or other multiline fixture text directly in a test file using backtick template literals. Move this content into a package-local fixture and load it from the test instead to keep test files readable.
 - **Package tests may depend on package source code only:** They may import from `packages/<package>/src/` and from shared runtime dependencies, but not from external test infrastructure.
-- **Package-owned modules must not import retired root implementation paths:** Files under package-owned runtime or support surfaces such as `packages/<package>/server/`, `packages/<package>/testing/`, or `packages/<package>/src/` must not import retired root implementation modules such as `src/services/core/db.ts`. Use the package-owned source-of-truth path or canonical package alias instead.
-- **Package headers must not point at retired root ownership paths:** In package-owned modules, `@related-files` must not reference retired root compatibility modules such as `src/services/core/db.ts`. Header metadata must point at the package-owned source-of-truth path, not the old root shim or legacy runtime location.
+- **Package-owned modules must not import retired root implementation paths:** Files under package-owned runtime or support surfaces such as `packages/<package>/server/`, `packages/<package>/testing/`, or `packages/<package>/src/` must not import retired root implementation modules. Use the package-owned source-of-truth path or canonical package alias instead.
+- **Package headers must not point at retired root ownership paths:** In package-owned modules, `@related-files` must not reference retired root compatibility modules. Header metadata must point at the package-owned source-of-truth path, not the old root shim or legacy runtime location.
 - **Boundary enforcement:** This prevents one package's test setup from leaking into another package or into repository-wide test fixtures, preserving package portability and isolation.
 
 **Prohibited when a testing subpath exists:**
@@ -599,7 +599,7 @@ Solo. Only `apps/daemon/` and `apps/exactl/` may host these guarded dynamic impo
 > contains compiled Team code. The static rule cannot change this — no source discipline keeps code
 > out of a `deno compile` artifact. Making the **binary** Team-free requires a Solo-specific import
 > map pointing `@exaix-team/*` at stub modules (not yet implemented). Until then, prefer the
-> source-run deploy for a genuinely Team-free Solo distribution. See `dev/Exaix_Edition_Architecture.md`.
+> source-run deploy for a genuinely Team-free Solo distribution. See `exaix-dev-docs/dev/Exaix_Edition_Architecture.md`.
 
 #### Graph gate: a defense-in-depth double-check {#edition-graph-gate}
 
@@ -648,7 +648,7 @@ This file is the single authoritative source for code style. The following docum
 - [`CLAUDE.md`](CLAUDE.md) — delegates to this file for all style rules
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — links to this file for coding standards
 - [`scripts/check_code_style.md`](scripts/check_code_style.md) — companion reference for the code-style checker and boundary-oriented import rules
-- [`.copilot/docs/exaix-development.md`](.copilot/docs/exaix-development.md)
+- [`.copilot/skills/exaix-development/SKILL.md`](.copilot/skills/exaix-development/SKILL.md)
 - [`.copilot/README.md`](.copilot/README.md)
 
 ---
@@ -674,7 +674,7 @@ This file is the single authoritative source for code style. The following docum
   - `@module [Name]`: The logical name of the utility.
   - `@path scripts/[filename].ts`: The relative path to the script.
   - `@description [Text]`: A concise summary of the script's purpose.
-- **Usage Context**: Following the metadata, a script must include a clear `Usage:` section providing at least one example command (e.g., `deno run -A scripts/foo.ts`). For complex utilities, also include `Options:` and `Commands:` blocks.
+- **Usage Context**: Following the metadata, a script must include a clear `Usage:` section providing at least one example command (e.g., `deno run -A scripts/ci.ts`). For complex utilities, also include `Options:` and `Commands:` blocks.
 - **Temporary & Debug Scripts**: All scripts intended for one-off debugging or temporary use must be created outside of the `scripts/` directory (e.g., in the repository root or a dedicated `tmp/` folder) and must clearly indicate their ephemeral purpose in the filename (e.g., `debug_test_failure.ts` or `tmp_fix_metadata.ts`). The `scripts/` directory is reserved for permanent, well-documented repository utilities that are integrated into the project's quality gates.
 
 Example:
@@ -938,14 +938,11 @@ feedback during development.
 
 > ⚠️ Keep this file short and focused. Architectural patterns such as timeout
 > protection, file locking, or error classification belong in other guides
-> (e.g. `.copilot/docs/exaix-development.md`) and **are not** repeated here unless they
+> (e.g. `.copilot/skills/exaix-development/SKILL.md`) and **are not** repeated here unless they
 > directly impact the way code is written.
 
 ---
 
 ## Footer — Agent Knowledge Base
 
-- **Copilot Rules**: [.copilot/rules.md](./.copilot/rules.md)
-- **Blueprints**: [.copilot/blueprints/](./.copilot/blueprints/)
-- **Planning**: [.copilot/planning/](./.copilot/planning/)
 - **Manifest**: [.copilot/manifest.json](./.copilot/manifest.json)

@@ -22,11 +22,11 @@ Schemas are defined in `@exaix/schemas`:
 
 ## Key Services
 
-| Service                  | Purpose                             | Source                                                       |
-| ------------------------ | ----------------------------------- | ------------------------------------------------------------ |
-| `MemoryBankService`      | Core memory operations              | `packages/memory/src/bank/memory_bank_service.ts`            |
-| `MemoryExtractor`        | Learning extraction from executions | `packages/memory/src/extraction/memory_extractor.ts`         |
-| `MemoryEmbeddingService` | Embedding generation                | `packages/memory/src/embeddings/memory_embedding_service.ts` |
+| Service                  | Purpose                             | Source                                               |
+| ------------------------ | ----------------------------------- | ---------------------------------------------------- |
+| `MemoryBankService`      | Core memory operations              | `packages/memory/src/bank/memory_bank.ts`            |
+| `MemoryExtractor`        | Learning extraction from executions | `packages/memory/src/extraction/memory_extractor.ts` |
+| `MemoryEmbeddingService` | Embedding generation                | `packages/memory/src/embedding/memory_embedding.ts`  |
 
 ## See Also
 

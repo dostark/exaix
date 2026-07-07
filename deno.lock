@@ -346,6 +346,7 @@
       },
       "packages/core": {
         "dependencies": [
+          "jsr:@db/sqlite@0.13",
           "jsr:@std/assert@^1.0.19",
           "jsr:@std/crypto@^1.1.0",
           "jsr:@std/encoding@^1.0.10",

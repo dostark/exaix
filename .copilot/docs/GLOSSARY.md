@@ -15,7 +15,7 @@ surface, and naming conventions that keep code, journal records, and schemas
 consistent with each other.
 
 > **Why a second glossary?** Exaix splits its terminology across two documents
-> by audience. **[`../GLOSSARY.md`](../GLOSSARY.md)**, at the repo root, is the
+> by audience. **[`../../GLOSSARY.md`](../../GLOSSARY.md)**, at the repo root, is the
 > public, concept-level glossary — plain-language definitions of Identity,
 > Identity Blueprint, Actor, Agent, Tool, Artifact, Trigger, Request, Request
 > Frontmatter, Plan, Plan Amendment, Changeset, Review, Blueprint, Flow, Flow

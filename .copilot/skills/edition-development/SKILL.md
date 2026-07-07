@@ -347,7 +347,7 @@ consumer** of `ICapabilityModule.registerFlowStepHandlers`. Follow this pattern 
 3. In the daemon, construct the service, construct the module, register with `TeamComposer`,
    then iterate modules and invoke hooks against the FlowRunner's registry.
 4. Handler-level tests prove the module registers correctly.
-5. Integration tests (`tests/integration/voting_flow_test.ts`) prove the full path with `EXAIX_EDITION=team`.
+5. Integration tests (`packages-team/voting/tests/voting_capability_module_test.ts`) prove the full path with `EXAIX_EDITION=team`.
 
 Key files to reference:
 

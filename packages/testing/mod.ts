@@ -10,7 +10,8 @@ export * from "./src/constants.ts";
 export { TestEnvironment } from "../../tests/integration/helpers/test_environment.ts";
 export type { ILoggedActivity, TestDatabaseService } from "./src/helpers/db.ts";
 export { createLoggingTestDb } from "./src/helpers/db.ts";
-export { createMockConfig, writeTestConfigFile } from "./src/helpers/config.ts";
+// deno-fmt-ignore
+export { createMockConfig, createTestAdapter, createTestConfigDb, simulateDaemonBoot, writeTestConfigFile } from "./src/helpers/config.ts";
 export { createMockLogger } from "./src/helpers/services/graceful_shutdown_test_helpers.ts";
 export type { IMockEventLogger } from "./src/helpers/services/graceful_shutdown_test_helpers.ts";
 export { createMockProvider } from "./src/helpers/mock_provider.ts";

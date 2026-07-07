@@ -89,9 +89,9 @@ For the full compaction policy and segment kind table, see
 | Tool enums                      | `@exaix/core/types/enums.ts` | `McpToolName`, `ToolName`               |
 | Tool classifications            | `src/constants.ts`           | `READ_ONLY_TOOLS`, `DYNAMIC_MODE_TOOLS` |
 | Error taxonomy                  | `@exaix/core/types/enums.ts` | `ToolErrorCode`                         |
-| Handler assembly                | `server/tools.ts`            | `buildHandlers`, `buildDynamicHandlers` |
+| Handler assembly                | `@exaix-team/mcp-server`     | `buildHandlers`, `buildDynamicHandlers` |
 | Concrete handlers               | `src/handlers/*.ts`          | Individual tool implementations         |
-| MCP server transport            | `server/server.ts`           | JSON-RPC (stdio + HTTP/SSE)             |
+| MCP server transport            | `@exaix-team/mcp-server`     | JSON-RPC (stdio + HTTP/SSE)             |
 | ToolRegistry (internal)         | `@exaix/tool-runtime`        | Internal tool execution                 |
 
 ## See Also

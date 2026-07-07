@@ -103,7 +103,7 @@ Vertex AI (`@exaix-team/ai-vertex`) is Team+ only. **OpenRouter ships in Solo (a
 
 ## Provider Configuration
 
-Provider selection is configured in `exa.config.toml`. See the [Provider Strategy Guide](../../docs/Provider_Strategy_Guide.md) for detailed configuration options, cost-based routing, and health-aware fallback chains.
+Provider selection is configured in `exa.config.toml`. See the Provider Strategy Guide for detailed configuration options, cost-based routing, and health-aware fallback chains.
 
 ### Vertex AI & OpenRouter notes
 
@@ -114,7 +114,7 @@ Provider selection is configured in `exa.config.toml`. See the [Provider Strateg
 
 ## See Also
 
-- [Provider Strategy Guide](../../docs/Provider_Strategy_Guide.md) — Cost, performance, and health-based provider selection
+- Provider Strategy Guide — Cost, performance, and health-based provider selection
 - [@exaix/ai-anthropic](../../packages/ai-anthropic/) — Anthropic/Claude provider implementation
 - [@exaix/ai-openai](../../packages/ai-openai/) — OpenAI/GPT provider implementation
 - [@exaix/ai-google](../../packages/ai-google/) — Google/Gemini provider implementation

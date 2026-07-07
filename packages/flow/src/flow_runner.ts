@@ -855,7 +855,7 @@ export class FlowRunner implements IFlowRunner {
       return;
     }
     const intent: ModelIntent = {
-      model_size: mapPresetToSize(this.options.dynamicModel),
+      model_size: this.options.dynamicModel ? mapPresetToSize(this.options.dynamicModel) : undefined,
     };
     const resolved = await this.modelResolver.resolve(intent);
     const activityJournal = new ActivityJournal(this.eventLogger);

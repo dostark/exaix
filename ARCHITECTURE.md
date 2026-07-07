@@ -262,6 +262,23 @@ flowchart TB
     class DB,Event,Config,Git service
 ```
 
+### Config DB (.exa/config.db)
+
+The `.exa/config.db` SQLite database stores configuration overrides for keys registered via `configurable()`. It complements the TOML bootstrap (`exa.config.toml`) which supplies only `system.root` and boot-time paths. As of Phase 136 the registry infrastructure ships but no production constant is wrapped yet; the first batch of `DEFAULT_*` constants is migrated to `configurable()` in Phase 137 Step 10.
+
+**Schema:** Append-only `config_overrides` table (`id`, `key`, `value`, `source`, `swap_class`, `created_at`) with no UPDATE path — every override creates a new row. The latest row per key (by max id) is the effective value; a NULL value means "use registry default."
+
+**Adapter pattern:** `IConfigAdapter` interface (defined at `packages/core/src/config/adapter.ts`) provides `get`, `set`, `unset`, `validate`, `validateAtPath`, `diff`, `getProvenance`, `getHistory`, and `listOverrides`. Two implementations:
+
+- `DirectConfigAdapter` — opens its own `@db/sqlite` connection to `.exa/config.db` for offline read/write (used when the daemon is not running). `set()` and `unset()` emit a `config.updated` (`DomainEventType.ConfigUpdated`) audit event when constructed with an optional `IEventLogger`.
+- `DaemonConfigAdapter` — Phase 1 (replaces direct DB access with daemon-mediated reads for live-apply).
+
+**Resolution order** for `get(key)`: (1) Config DB override → (2) registry default (from `configurable()` calls) → (3) ConfigSchema default → (4) undefined.
+
+**CLI surface:** `exactl config {get,set,unset,validate,show}` — all commands are wired in `apps/exactl/src/commands/config_commands.ts` using `DirectConfigAdapter`. The CI gate `deno task check:config-keys` ensures no two source files register the same `configurable()` key.
+
+Design doc: `exaix-dev-docs/planning/phase-136-configuring.md`
+
 ---
 
 ## Parsing & Schema Layer

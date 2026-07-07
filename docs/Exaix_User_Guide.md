@@ -50,7 +50,7 @@ The **Actionability Score** is a measure of how "grounded" and "specified" your 
 #### Strategies for High-Score Requests
 
 1. **Define Explicit Goals:** Instead of "Fix the bug," use "Fix the null pointer exception in `handler.ts` when the user ID is missing."
-2. **Reference Specific Files:** Use absolute paths or workspace-relative paths (e.g., `src/services/db.ts`). This allows the analyzer to verify the context exists.
+2. **Reference Specific Files:** Use absolute paths or workspace-relative paths (e.g., `packages/storage-sqlite/src/database_service.ts`). This allows the analyzer to verify the context exists.
 3. **Provide Acceptance Criteria:** Use phrases like "The task is complete when..." or "Must pass all unit tests in `tests/`."
 4. **Specify Constraints:** Mention any library versions, style guides, or performance requirements (e.g., "Must use Deno.test and maintain < 100ms latency").
 5. **Use Markdown Requests:** For complex tasks, create a `.md` file in `Workspace/Active/` with headers for "Goal," "Context," and "Constraints" instead of a one-line CLI string.
@@ -1002,7 +1002,7 @@ Every request passes through a three-tier quality assessment before the agent ru
 
 Review and approve plans before agents execute them:
 
-> **⚠️ IMPLEMENTATION STATUS:** Plan approval moves plans to `Workspace/Active/` where they are detected and parsed (Steps 5.12.1-5.12.2 ✅). Automatic agent-driven execution (Steps 5.12.3-5.12.6) is in development. In the agent-driven model, LLM agents will have direct portal access through scoped tools (read_file, write_file, git_create_branch, git_commit) and will create reviews themselves. See [Exaix Architecture](./Exaix_Architecture.md#plan-execution-flow-step-512) for details.
+> **⚠️ IMPLEMENTATION STATUS:** Plan approval moves plans to `Workspace/Active/` where they are detected and parsed (Steps 5.12.1-5.12.2 ✅). Automatic agent-driven execution (Steps 5.12.3-5.12.6) is in development. In the agent-driven model, LLM agents will have direct portal access through scoped tools (read_file, write_file, git_create_branch, git_commit) and will create reviews themselves. See [ARCHITECTURE.md](../ARCHITECTURE.md#plan-execution-flow-step-512) for details.
 
 ```bash
 # List all plans awaiting review
@@ -1502,7 +1502,7 @@ exactl routing policy validate
 
 `exactl routing explain` evaluates the request frontmatter and policy rules without creating a plan. It prints the selected identity/version, matched rule, routing strategy, and top candidate scores.
 
-`exactl routing policy validate` checks a YAML policy file against the current schema. When omitted, it validates the configured default routing policy file, typically `.exaix/routing.policy.yaml`.
+`exactl routing policy validate` checks a YAML policy file against the current schema. When omitted, it validates the configured default routing policy file.
 
 ##### Flow Step Types
 

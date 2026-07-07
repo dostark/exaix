@@ -17,7 +17,7 @@ import type { ModelSize } from "@exaix/schemas";
  * @param preset - The preset name ("small", "medium", "large", "xl", or undefined)
  * @returns The corresponding ModelSize, or undefined
  */
-export function mapPresetToSize(preset?: string): ModelSize | undefined {
+export function mapPresetToSize(preset: string): ModelSize | undefined {
   switch (preset) {
     case "small":
       return "S";

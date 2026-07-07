@@ -1393,3 +1393,48 @@ export enum StepAttemptClass {
   RESUME = "resume",
   REPLAY = "replay",
 }
+
+/**
+ * Types of values that can be stored in the config registry.
+ */
+export enum ConfigValueType {
+  STRING = "string",
+  NUMBER = "number",
+  BOOLEAN = "boolean",
+  OBJECT = "object",
+  ARRAY = "array",
+}
+
+/**
+ * Whether a config change applies immediately or requires a restart.
+ */
+export enum SwapClass {
+  HOT = "hot",
+  RESTART = "restart",
+}
+
+/**
+ * Provenance source for a config value — where it was resolved from.
+ */
+export enum ConfigProvenanceSource {
+  DB = "db",
+  REGISTRY = "registry",
+  SCHEMA_DEFAULT = "schema_default",
+  BOOTSTRAP = "bootstrap",
+}
+
+/**
+ * Operating mode of a config adapter.
+ */
+export enum ConfigAdapterMode {
+  DIRECT = "direct",
+  DAEMON = "daemon",
+}
+
+/**
+ * Output format for config CLI commands.
+ */
+export enum ConfigOutputFormat {
+  HUMAN = "human",
+  JSON = "json",
+}

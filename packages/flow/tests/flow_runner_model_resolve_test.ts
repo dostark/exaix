@@ -32,6 +32,6 @@ Deno.test("[step132.4] mapPresetToSize returns undefined for unknown preset", ()
   assertEquals<ModelSize | undefined>(mapPresetToSize("unknown"), undefined);
 });
 
-Deno.test("[step132.4] mapPresetToSize returns undefined for undefined input", () => {
-  assertEquals<ModelSize | undefined>(mapPresetToSize(undefined), undefined);
+Deno.test("[step132.4] mapPresetToSize returns undefined for unknown input", () => {
+  assertEquals<ModelSize | undefined>(mapPresetToSize("nonexistent"), undefined);
 });
