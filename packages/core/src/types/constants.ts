@@ -146,6 +146,23 @@ export const DEFAULT_DATABASE_RESET_TIMEOUT_MS = 60000;
 export const DEFAULT_DATABASE_HALF_OPEN_SUCCESS_THRESHOLD = 2;
 
 // ============================================================================
+// Config DB — dynamic key namespaces
+// ============================================================================
+/**
+ * Key prefix for profile-scoped config keys (`profile.<name>.<base>`). A key
+ * under this prefix validates against its stripped base key's registry metadata
+ * rather than requiring its own `configurable()` registration. Used by
+ * DirectConfigAdapter.resolveValidationKey().
+ */
+export const CONFIG_PROFILE_KEY_PREFIX = "profile.";
+/**
+ * Wildcard segment used in `configurable()` pattern keys (e.g. `models.*.model`,
+ * `paths.*`). A concrete key like `models.default.model` validates against the
+ * matching pattern key's metadata.
+ */
+export const CONFIG_PATTERN_WILDCARD = "*";
+
+// ============================================================================
 // File Watcher Validation Limits
 // ============================================================================
 export const WATCHER_DEBOUNCE_MS_MIN = 50;

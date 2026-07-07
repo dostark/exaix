@@ -9,7 +9,7 @@
  */
 
 import { Database } from "@db/sqlite";
-import { ConfigAdapterMode, ConfigProvenanceSource, ConfigValueType } from "../types/enums.ts";
+import { ConfigAdapterMode, ConfigProvenanceSource, ConfigValueType, SwapClass } from "../types/enums.ts";
 import type { ConfigValue, IConfigOverrideEntry } from "./db.ts";
 import { getAllEffectiveValues, getEffectiveValue, getOverrideHistory, insertOverride } from "./db.ts";
 import { getRegisteredDefaults } from "./registry.ts";
@@ -18,6 +18,7 @@ import { ConfigKeyNotFoundError, ConfigValidationError, EDITION_GATED_PATHS } fr
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { Opt, Reason } from "../types/optional_marker.ts";
+import { CONFIG_PATTERN_WILDCARD, CONFIG_PROFILE_KEY_PREFIX } from "../types/constants.ts";
 
 /**
  * Report returned by validate() and validateAtPath().
@@ -98,6 +99,13 @@ export interface IConfigAdapter {
   /** Validate a single path against registry metadata and/or ConfigSchema. */
   validateAtPath(path: string, value: ConfigValue): IConfigValidationReport;
 
+  /**
+   * Resolve the registry key whose metadata governs validation of `key`
+   * (exact, `profile.<name>.<base>` → base, or a matching pattern key), or
+   * undefined for genuinely unknown keys.
+   */
+  resolveValidationKey(key: string): string | undefined;
+
   /** Compare effective values against registry defaults. */
   diff(): IConfigDiffReport;
 
@@ -154,6 +162,21 @@ function checkType(
       break;
   }
   return null;
+}
+
+/**
+ * Whether a concrete key matches a registered pattern key. A pattern key
+ * contains the wildcard segment (`*`) which matches exactly one dot-delimited
+ * segment — e.g. `models.*.model` matches `models.default.model` but not
+ * `models.default.foo.model`.
+ */
+function matchesPatternKey(patternKey: string, key: string): boolean {
+  const patternParts = patternKey.split(".");
+  const keyParts = key.split(".");
+  if (patternParts.length !== keyParts.length) return false;
+  return patternParts.every(
+    (part, i) => part === CONFIG_PATTERN_WILDCARD || part === keyParts[i],
+  );
 }
 
 function checkEditionGate(path: string): { path: string; message: string; code: string } | null {
@@ -230,10 +253,12 @@ export class DirectConfigAdapter implements IConfigAdapter {
   }
 
   get<T = ConfigValue>(key: string): T | undefined {
-    // 1. Check DB for override
+    // 1. Check DB for override. Coerce using the key that owns the type metadata
+    //    — for profile/pattern keys that is the resolved base/pattern key.
     const dbValue = getEffectiveValue(this.db, key);
     if (dbValue !== null) {
-      const registered = getRegisteredDefaults().get(key);
+      const metadataKey = this.resolveValidationKey(key) ?? key;
+      const registered = getRegisteredDefaults().get(metadataKey);
       return coerceDbValue(dbValue, registered?.opts) as T;
     }
 
@@ -253,13 +278,15 @@ export class DirectConfigAdapter implements IConfigAdapter {
     value: ConfigValue,
     options: Opt<{ swap_class?: string }, Reason.SensibleDefault> = {},
   ): Promise<void> {
-    // Validate key exists in registry
-    const registered = getRegisteredDefaults().get(key);
-    if (!registered) {
+    // Resolve the key that owns the validation metadata: the exact key if
+    // registered, the base key for a profile-scoped key, or a matching pattern
+    // key. Genuinely unknown keys resolve to undefined → reject.
+    const validationKey = this.resolveValidationKey(key);
+    if (validationKey === undefined) {
       throw new ConfigKeyNotFoundError(key);
     }
 
-    // Validate value against metadata
+    // Validate value against the resolved key's metadata.
     const report = this.validateAtPath(key, value);
     if (!report.valid) {
       throw new ConfigValidationError(
@@ -268,13 +295,49 @@ export class DirectConfigAdapter implements IConfigAdapter {
       );
     }
 
-    const swapClass = options?.swap_class ?? "hot";
+    // Persist under the ORIGINAL key (profile/per-name keys keep their full path).
+    const swapClass = options?.swap_class ?? SwapClass.HOT;
     insertOverride(this.db, key, value, "cli", swapClass);
     await this.logger?.info(DomainEventType.ConfigUpdated, key, {
       value,
       source: "cli",
       swap_class: swapClass,
     });
+  }
+
+  /**
+   * Resolve the registry key whose metadata governs validation of `key`:
+   * 1. Exact registered key → itself.
+   * 2. `profile.<name>.<base>` → `<base>` if registered.
+   * 3. A concrete key matching a registered pattern key (`a.*.b` / `a.*`) →
+   *    that pattern key.
+   * 4. Otherwise `undefined` (caller rejects with ConfigKeyNotFoundError).
+   */
+  resolveValidationKey(key: string): string | undefined {
+    const registry = getRegisteredDefaults();
+
+    // 1. Exact match.
+    if (registry.has(key)) return key;
+
+    // 2. profile.<name>.<base> → base key.
+    if (key.startsWith(CONFIG_PROFILE_KEY_PREFIX)) {
+      const rest = key.slice(CONFIG_PROFILE_KEY_PREFIX.length);
+      const dotIdx = rest.indexOf(".");
+      if (dotIdx > 0) {
+        const baseKey = rest.slice(dotIdx + 1);
+        if (registry.has(baseKey)) return baseKey;
+      }
+      return undefined;
+    }
+
+    // 3. Pattern key match (registered key contains the wildcard segment).
+    for (const [registeredKey] of registry) {
+      if (registeredKey.includes(CONFIG_PATTERN_WILDCARD) && matchesPatternKey(registeredKey, key)) {
+        return registeredKey;
+      }
+    }
+
+    return undefined;
   }
 
   async unset(key: string): Promise<void> {
@@ -327,9 +390,15 @@ export class DirectConfigAdapter implements IConfigAdapter {
     path: string,
     value: ConfigValue,
   ): IConfigValidationReport {
-    const registered = getRegisteredDefaults().get(path);
-    if (registered) {
-      return validateAgainstMetadata(path, value, registered.opts);
+    // Resolve namespaced keys (profile.*, pattern keys) to the key that owns
+    // the validation metadata; genuinely unknown keys have no metadata.
+    const validationKey = this.resolveValidationKey(path);
+    if (validationKey !== undefined) {
+      const registered = getRegisteredDefaults().get(validationKey);
+      if (registered) {
+        // Report issues against the caller's original path, not the metadata key.
+        return validateAgainstMetadata(path, value, registered.opts);
+      }
     }
 
     return {

@@ -73,6 +73,14 @@ configurable({
   type: ConfigValueType.NUMBER,
   description: "Adapter test port",
 });
+// Pattern key for namespaced-validation tests (GAP-11/12): matches
+// `adapter_test.models.<name>.model`.
+configurable({
+  key: "adapter_test.models.*.model",
+  default: "",
+  type: ConfigValueType.STRING,
+  description: "Adapter test per-name model pattern",
+});
 
 function setupAdapter(): {
   adapter: DirectConfigAdapter;
@@ -372,6 +380,124 @@ Deno.test(
       await adapter.set("adapter_test.greeting", "hey");
       await adapter.unset("adapter_test.greeting");
       assertEquals(adapter.get("adapter_test.greeting"), "hello");
+    } finally {
+      cleanUp(dir);
+    }
+  },
+);
+
+// --- Step 1 (GAP-11/GAP-12): namespaced dynamic-key validation ---
+
+Deno.test(
+  "[configuring] resolveValidationKey returns exact key for a registered key",
+  () => {
+    const { adapter, dir } = setupAdapter();
+    try {
+      assertEquals(
+        adapter.resolveValidationKey("adapter_test.timeout_ms"),
+        "adapter_test.timeout_ms",
+      );
+    } finally {
+      cleanUp(dir);
+    }
+  },
+);
+
+Deno.test(
+  "[configuring] resolveValidationKey maps profile.<name>.<base> to the base key",
+  () => {
+    const { adapter, dir } = setupAdapter();
+    try {
+      assertEquals(
+        adapter.resolveValidationKey("profile.dev.adapter_test.timeout_ms"),
+        "adapter_test.timeout_ms",
+      );
+    } finally {
+      cleanUp(dir);
+    }
+  },
+);
+
+Deno.test(
+  "[configuring] resolveValidationKey maps a per-name key to its pattern key",
+  () => {
+    const { adapter, dir } = setupAdapter();
+    try {
+      assertEquals(
+        adapter.resolveValidationKey("adapter_test.models.default.model"),
+        "adapter_test.models.*.model",
+      );
+    } finally {
+      cleanUp(dir);
+    }
+  },
+);
+
+Deno.test(
+  "[configuring] resolveValidationKey returns undefined for a genuinely unknown key",
+  () => {
+    const { adapter, dir } = setupAdapter();
+    try {
+      assertEquals(adapter.resolveValidationKey("totally.unknown.key"), undefined);
+    } finally {
+      cleanUp(dir);
+    }
+  },
+);
+
+Deno.test(
+  "[configuring] set() persists a profile-scoped key and validates against its base key",
+  async () => {
+    const { adapter, dir } = setupAdapter();
+    try {
+      await adapter.set("profile.dev.adapter_test.timeout_ms", 70000);
+      // Stored under the ORIGINAL profile key, not the base key.
+      assertEquals(adapter.get("profile.dev.adapter_test.timeout_ms"), 70000);
+      // Base key remains at its registry default (unaffected).
+      assertEquals(adapter.get("adapter_test.timeout_ms"), 30000);
+    } finally {
+      cleanUp(dir);
+    }
+  },
+);
+
+Deno.test(
+  "[configuring] set() rejects a profile-scoped value that violates the base key's bounds",
+  async () => {
+    const { adapter, dir } = setupAdapter();
+    try {
+      await assertRejects(
+        () => adapter.set("profile.dev.adapter_test.timeout_ms", 500),
+        Error, // ConfigValidationError — below adapter_test.timeout_ms min (1000)
+      );
+    } finally {
+      cleanUp(dir);
+    }
+  },
+);
+
+Deno.test(
+  "[configuring] set() persists a pattern-matched per-name key",
+  async () => {
+    const { adapter, dir } = setupAdapter();
+    try {
+      await adapter.set("adapter_test.models.default.model", "gemini-flash");
+      assertEquals(adapter.get("adapter_test.models.default.model"), "gemini-flash");
+    } finally {
+      cleanUp(dir);
+    }
+  },
+);
+
+Deno.test(
+  "[configuring] set() still throws ConfigKeyNotFoundError for a genuinely unknown key",
+  async () => {
+    const { adapter, dir } = setupAdapter();
+    try {
+      await assertRejects(
+        () => adapter.set("totally.unknown.key", 1),
+        ConfigKeyNotFoundError,
+      );
     } finally {
       cleanUp(dir);
     }
