@@ -7,6 +7,7 @@
  */
 
 import {
+  AmendmentTimeoutAction,
   ConfigValueType,
   LogLevel,
   McpTransportType,
@@ -37,7 +38,15 @@ export const EDITION_ENTERPRISE = "enterprise";
 // Guardrail (Phase 107)
 // ============================================================================
 /** Maximum time (ms) to wait for a guardrail policy evaluation before timing out. */
-export const GUARDRAIL_SCREEN_TIMEOUT_MS = 10_000;
+export const GUARDRAIL_SCREEN_TIMEOUT_MS = configurable({
+  key: "guardrail.screen_timeout_ms",
+  default: 10_000,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum time in milliseconds to wait for guardrail policy evaluation",
+  min: 100,
+  max: 60_000,
+  swap: SwapClass.RESTART,
+});
 
 /** Maximum characters to include in the flagged_excerpt field of a GuardrailIncident. */
 export const GUARDRAIL_FLAGGED_EXCERPT_MAX_CHARS = 500;
@@ -46,7 +55,15 @@ export const GUARDRAIL_FLAGGED_EXCERPT_MAX_CHARS = 500;
 // HITL / Governance (Phase 118)
 // ============================================================================
 /** Maximum time (ms) for a HitlPolicyEvaluator.evaluate() call to stay within. */
-export const HITL_EVAL_BUDGET_MS = 5;
+export const HITL_EVAL_BUDGET_MS = configurable({
+  key: "hitl.eval_budget_ms",
+  default: 5,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum time in milliseconds for HITL policy evaluation",
+  min: 1,
+  max: 1000,
+  swap: SwapClass.RESTART,
+});
 
 // ============================================================================
 // Path Configuration Defaults
@@ -100,10 +117,41 @@ export const ExaPathDefaults = {
 
 // Plan amendment constants (Phase 66)
 export const AMENDMENT_ARTIFACTS_DIR = "amendments";
-export const DEFAULT_AMENDMENT_EXPIRY_MS = 86_400_000; // 24 hours
-export const DEFAULT_AMENDMENT_THRESHOLD = 60; // ConfidenceScorer 0-100
-export const DEFAULT_AMENDMENT_HITL_TIMEOUT_MS = 300_000; // 5 minutes
-export const DEFAULT_AMENDMENT_ON_TIMEOUT = "abort";
+export const DEFAULT_AMENDMENT_EXPIRY_MS = configurable({
+  key: "amendment.expiry_ms",
+  default: 86_400_000,
+  type: ConfigValueType.NUMBER,
+  description: "Time-to-live in milliseconds for plan amendments",
+  min: 60_000,
+  max: 7_776_000_000,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_AMENDMENT_THRESHOLD = configurable({
+  key: "amendment.threshold",
+  default: 60,
+  type: ConfigValueType.NUMBER,
+  description: "Minimum confidence score for auto-approved amendments (0-100)",
+  min: 0,
+  max: 100,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_AMENDMENT_HITL_TIMEOUT_MS = configurable({
+  key: "amendment.hitl_timeout_ms",
+  default: 300_000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for HITL amendment approval",
+  min: 10_000,
+  max: 3_600_000,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_AMENDMENT_ON_TIMEOUT = configurable({
+  key: "amendment.on_timeout",
+  default: AmendmentTimeoutAction.ABORT as AmendmentTimeoutAction,
+  type: ConfigValueType.STRING,
+  description: "Action when amendment review times out (abort, approve, reject)",
+  enum: Object.values(AmendmentTimeoutAction) as readonly string[],
+  swap: SwapClass.RESTART,
+});
 
 // Live execution streaming constants (Phase 67)
 export const STREAMING_EVENT_HEARTBEAT = "agent.heartbeat";
@@ -112,8 +160,24 @@ export const STREAMING_EVENT_TOOL_END = "tool.end";
 export const STREAMING_EVENT_LLM_STREAM = "llm.stream";
 export const STREAMING_EVENT_FLOW_STATUS = "flow.status";
 export const STREAMING_EVENT_MILESTONE = "milestone";
-export const EXECUTION_HEARTBEAT_INTERVAL_MS = 5000; // 5 seconds
-export const EVENT_BUS_MAX_SUBSCRIBER_QUEUE = 1000; // events before backpressure drop
+export const EXECUTION_HEARTBEAT_INTERVAL_MS = configurable({
+  key: "execution.heartbeat_interval_ms",
+  default: 5000,
+  type: ConfigValueType.NUMBER,
+  description: "Interval in milliseconds between execution heartbeat events",
+  min: 100,
+  max: 60_000,
+  swap: SwapClass.HOT,
+});
+export const EVENT_BUS_MAX_SUBSCRIBER_QUEUE = configurable({
+  key: "execution.event_bus_max_queue",
+  default: 1000,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum subscriber queue size before backpressure drops events",
+  min: 10,
+  max: 100_000,
+  swap: SwapClass.RESTART,
+});
 
 // Milestone type constants (Phase 92)
 export const MILESTONE_FLOW_STARTED = "flow.started";
@@ -138,12 +202,6 @@ export const MILESTONE_FLOW_FAILED = "flow.failed";
 // ============================================================================
 // Database Validation Limits
 // ============================================================================
-export const DATABASE_BATCH_FLUSH_MS_MIN = 10;
-export const DATABASE_BATCH_FLUSH_MS_MAX = 10000;
-export const DATABASE_BATCH_MAX_SIZE_MIN = 1;
-export const DATABASE_BATCH_MAX_SIZE_MAX = 1000;
-export const DATABASE_BUSY_TIMEOUT_MS_MIN = 0;
-export const DATABASE_BUSY_TIMEOUT_MS_MAX = 30000;
 
 // Database defaults
 export const DEFAULT_DATABASE_BATCH_FLUSH_MS = configurable({
@@ -151,8 +209,8 @@ export const DEFAULT_DATABASE_BATCH_FLUSH_MS = configurable({
   default: 1000,
   type: ConfigValueType.NUMBER,
   description: "Interval in milliseconds for flushing batched DB writes",
-  min: DATABASE_BATCH_FLUSH_MS_MIN,
-  max: DATABASE_BATCH_FLUSH_MS_MAX,
+  min: 10,
+  max: 10000,
   swap: SwapClass.RESTART,
 });
 export const DEFAULT_DATABASE_BATCH_MAX_SIZE = configurable({
@@ -160,19 +218,31 @@ export const DEFAULT_DATABASE_BATCH_MAX_SIZE = configurable({
   default: 100,
   type: ConfigValueType.NUMBER,
   description: "Maximum number of operations per batch flush",
-  min: DATABASE_BATCH_MAX_SIZE_MIN,
-  max: DATABASE_BATCH_MAX_SIZE_MAX,
+  min: 1,
+  max: 1000,
   swap: SwapClass.RESTART,
 });
-export const DEFAULT_DATABASE_JOURNAL_MODE = "WAL";
-export const DEFAULT_DATABASE_FOREIGN_KEYS = true;
+export const DEFAULT_DATABASE_JOURNAL_MODE = configurable({
+  key: "database.journal_mode",
+  default: "WAL",
+  type: ConfigValueType.STRING,
+  description: "SQLite journal mode (WAL, DELETE, MEMORY)",
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_DATABASE_FOREIGN_KEYS = configurable({
+  key: "database.foreign_keys",
+  default: true,
+  type: ConfigValueType.BOOLEAN,
+  description: "Whether SQLite foreign key enforcement is enabled",
+  swap: SwapClass.RESTART,
+});
 export const DEFAULT_DATABASE_BUSY_TIMEOUT_MS = configurable({
   key: "database.busy_timeout_ms",
   default: 5000,
   type: ConfigValueType.NUMBER,
   description: "Default SQLite busy timeout in milliseconds",
-  min: DATABASE_BUSY_TIMEOUT_MS_MIN,
-  max: DATABASE_BUSY_TIMEOUT_MS_MAX,
+  min: 0,
+  max: 30000,
   swap: SwapClass.RESTART,
 });
 export const DEFAULT_DATABASE_FAILURE_THRESHOLD = configurable({
@@ -210,7 +280,15 @@ export const DEFAULT_DATABASE_HALF_OPEN_SUCCESS_THRESHOLD = configurable({
  * Polling interval (ms) for the Config DB watcher that detects external
  * overrides via MAX(id) change. Used in the daemon's polling loop.
  */
-export const DEFAULT_CONFIG_DB_POLL_INTERVAL_MS = 5_000;
+export const DEFAULT_CONFIG_DB_POLL_INTERVAL_MS = configurable({
+  key: "config_db.poll_interval_ms",
+  default: 5_000,
+  type: ConfigValueType.NUMBER,
+  description: "Polling interval in milliseconds for Config DB change detection",
+  min: 100,
+  max: 60_000,
+  swap: SwapClass.HOT,
+});
 /**
  * Key prefix for profile-scoped config keys (`profile.<name>.<base>`). A key
  * under this prefix validates against its stripped base key's registry metadata
@@ -228,8 +306,6 @@ export const CONFIG_PATTERN_WILDCARD = "*";
 // ============================================================================
 // File Watcher Validation Limits
 // ============================================================================
-export const WATCHER_DEBOUNCE_MS_MIN = 50;
-export const WATCHER_DEBOUNCE_MS_MAX = 5000;
 
 // Watcher defaults
 export const DEFAULT_WATCHER_DEBOUNCE_MS = configurable({
@@ -237,8 +313,8 @@ export const DEFAULT_WATCHER_DEBOUNCE_MS = configurable({
   default: 200,
   type: ConfigValueType.NUMBER,
   description: "Debounce interval in milliseconds for file watcher events",
-  min: WATCHER_DEBOUNCE_MS_MIN,
-  max: WATCHER_DEBOUNCE_MS_MAX,
+  min: 50,
+  max: 5000,
   swap: SwapClass.HOT,
 });
 export const DEFAULT_WATCHER_STABILITY_CHECK = configurable({
@@ -279,8 +355,24 @@ export const DELEGATE_STDOUT_DRAIN_MS = 5_000;
 // ============================================================================
 // Service Limits and Batch Sizes
 // ============================================================================
-export const DEFAULT_LOG_BUFFER_SIZE = 10000;
-export const DEFAULT_COST_PRECISION_FACTOR = 10000;
+export const DEFAULT_LOG_BUFFER_SIZE = configurable({
+  key: "logging.buffer_size",
+  default: 10000,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum number of log entries held in the in-memory buffer",
+  min: 100,
+  max: 1_000_000,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_COST_PRECISION_FACTOR = configurable({
+  key: "cost_tracking.precision_factor",
+  default: 10000,
+  type: ConfigValueType.NUMBER,
+  description: "Decimal precision factor for cost rounding calculations",
+  min: 1,
+  max: 1000000,
+  swap: SwapClass.RESTART,
+});
 export const DEFAULT_TITLE_PLACEHOLDER = "Untitled";
 export const DEFAULT_NONE_LABEL = "None";
 export const DEFAULT_NONE_VALUE = "none";
@@ -288,8 +380,6 @@ export const DEFAULT_DESCRIPTION_PLACEHOLDER = "(no description)";
 
 // Agent Validation Limits
 // ============================================================================
-export const AGENT_TIMEOUT_SEC_MIN = 1;
-export const AGENT_TIMEOUT_SEC_MAX = 300;
 export const AGENT_MAX_ITERATIONS_MIN = 1;
 export const AGENT_MAX_ITERATIONS_MAX = 100;
 
@@ -303,8 +393,8 @@ export const DEFAULT_AGENT_TIMEOUT_SEC = configurable({
   default: 60,
   type: ConfigValueType.NUMBER,
   description: "Default agent execution timeout in seconds",
-  min: AGENT_TIMEOUT_SEC_MIN,
-  max: AGENT_TIMEOUT_SEC_MAX,
+  min: 1,
+  max: 300,
   swap: SwapClass.RESTART,
 });
 export const DEFAULT_AGENT_MAX_ITERATIONS = configurable({
@@ -316,11 +406,35 @@ export const DEFAULT_AGENT_MAX_ITERATIONS = configurable({
   max: AGENT_MAX_ITERATIONS_MAX,
   swap: SwapClass.RESTART,
 });
-export const DEFAULT_REFLEXIVE_CONVERGENCE_QUALITY_EXIT_THRESHOLD = 85;
+export const DEFAULT_REFLEXIVE_CONVERGENCE_QUALITY_EXIT_THRESHOLD = configurable({
+  key: "agent.convergence_quality_exit_threshold",
+  default: 85,
+  type: ConfigValueType.NUMBER,
+  description: "Quality score threshold (0-100) for early convergence exit",
+  min: 0,
+  max: 100,
+  swap: SwapClass.RESTART,
+});
 export const DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA = 3;
-export const DEFAULT_REFLEXIVE_CONVERGENCE_OSCILLATION_WINDOW = 2;
+export const DEFAULT_REFLEXIVE_CONVERGENCE_OSCILLATION_WINDOW = configurable({
+  key: "agent.convergence_oscillation_window",
+  default: 2,
+  type: ConfigValueType.NUMBER,
+  description: "Number of iterations to detect oscillation in convergence",
+  min: 1,
+  max: 10,
+  swap: SwapClass.RESTART,
+});
 export const DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS = 12;
-export const DEFAULT_REFLEXIVE_CONVERGENCE_SCORE_EVERY_N_ITERATIONS = 1;
+export const DEFAULT_REFLEXIVE_CONVERGENCE_SCORE_EVERY_N_ITERATIONS = configurable({
+  key: "agent.convergence_score_interval",
+  default: 1,
+  type: ConfigValueType.NUMBER,
+  description: "Score convergence quality every N iterations",
+  min: 1,
+  max: 10,
+  swap: SwapClass.RESTART,
+});
 
 // Agent event names
 export const AGENT_EVENT_EXECUTION_STARTED = "agent.execution_started";
@@ -346,7 +460,15 @@ export const SKILL_EVENT_RETRIEVAL_TIMEOUT = "skills.retrieval_timeout";
 export const SKILL_EVENT_RETRIEVAL_FAILED = "skills.retrieval_failed";
 export const MEMORY_EVENT_AUTO_APPROVED = "memory.auto_approved";
 export const MEMORY_EVENT_TIER_SELECTED = "memory.tier_selected";
-export const MEMORY_MIN_VECTORS_FOR_LOCAL_SEARCH = 5;
+export const MEMORY_MIN_VECTORS_FOR_LOCAL_SEARCH = configurable({
+  key: "memory.min_vectors_local_search",
+  default: 5,
+  type: ConfigValueType.NUMBER,
+  description: "Minimum vectors required to perform local memory search",
+  min: 1,
+  max: 1000,
+  swap: SwapClass.RESTART,
+});
 
 /** Example execution time used in AgentExecutor response-shape examples. */
 export const AGENT_EXECUTION_EXAMPLE_TIME_MS = 2_000;
@@ -357,8 +479,24 @@ export const REACT_STATUS_COMPLETE = "STATUS: COMPLETE";
 export const REACT_SUMMARY_PREFIX = "SUMMARY: ";
 export const REACT_CALLING_TOOL_PREFIX = "CALLING TOOL: ";
 export const REACT_TOOL_ERROR_PREFIX = "TOOL ERROR: ";
-export const REACT_DEFAULT_TEMPERATURE = 0.1;
-export const REACT_DEFAULT_MAX_TOKENS = 4000;
+export const REACT_DEFAULT_TEMPERATURE = configurable({
+  key: "react.temperature",
+  default: 0.1,
+  type: ConfigValueType.NUMBER,
+  description: "Default temperature for ReAct loop LLM calls",
+  min: 0,
+  max: 2,
+  swap: SwapClass.RESTART,
+});
+export const REACT_DEFAULT_MAX_TOKENS = configurable({
+  key: "react.max_tokens",
+  default: 4000,
+  type: ConfigValueType.NUMBER,
+  description: "Default maximum tokens for ReAct loop LLM calls",
+  min: 100,
+  max: 100_000,
+  swap: SwapClass.RESTART,
+});
 
 // General Agent & MCP constants
 export const DEFAULT_AGENT_HANDSHAKE_TIMEOUT_MS = configurable({
@@ -474,27 +612,13 @@ export const DEFAULT_AI_TEMPERATURE_MAX = configurable({
   max: 5,
   swap: SwapClass.RESTART,
 });
-export const AI_RETRY_MAX_ATTEMPTS_MIN = 1;
-export const AI_RETRY_MAX_ATTEMPTS_MAX = 10;
-export const AI_RETRY_BACKOFF_BASE_MS_MIN = 100;
-export const AI_RETRY_BACKOFF_BASE_MS_MAX = 10000;
-export const AI_RETRY_TIMEOUT_PER_REQUEST_MS_MIN = 1000;
-export const AI_RETRY_TIMEOUT_PER_REQUEST_MS_MAX = 300000;
-export const AI_TIMEOUT_MS_MIN = 1000;
-export const AI_TIMEOUT_MS_MAX = 300000;
-export const MOCK_DELAY_MS_MIN = 0;
-export const MOCK_DELAY_MS_MAX = 5000;
-export const MOCK_INPUT_TOKENS_MIN = 1;
-export const MOCK_INPUT_TOKENS_MAX = 10000;
-export const MOCK_OUTPUT_TOKENS_MIN = 1;
-export const MOCK_OUTPUT_TOKENS_MAX = 10000;
 export const MOCK_DELAY_MS = configurable({
   key: "mock.delay_ms",
   default: 100,
   type: ConfigValueType.NUMBER,
   description: "Simulated delay in milliseconds for mock provider responses",
-  min: MOCK_DELAY_MS_MIN,
-  max: MOCK_DELAY_MS_MAX,
+  min: 0,
+  max: 5000,
   swap: SwapClass.HOT,
 });
 export const MOCK_INPUT_TOKENS = configurable({
@@ -502,8 +626,8 @@ export const MOCK_INPUT_TOKENS = configurable({
   default: 100,
   type: ConfigValueType.NUMBER,
   description: "Simulated input token count for mock provider billing",
-  min: MOCK_INPUT_TOKENS_MIN,
-  max: MOCK_INPUT_TOKENS_MAX,
+  min: 1,
+  max: 10000,
   swap: SwapClass.HOT,
 });
 export const MOCK_OUTPUT_TOKENS = configurable({
@@ -511,8 +635,8 @@ export const MOCK_OUTPUT_TOKENS = configurable({
   default: 200,
   type: ConfigValueType.NUMBER,
   description: "Simulated output token count for mock provider billing",
-  min: MOCK_OUTPUT_TOKENS_MIN,
-  max: MOCK_OUTPUT_TOKENS_MAX,
+  min: 1,
+  max: 10000,
   swap: SwapClass.HOT,
 });
 export const DEFAULT_MOCK_MODEL = configurable({
@@ -568,7 +692,13 @@ export const DEFAULT_MCP_ENABLED = configurable({
   swap: SwapClass.RESTART,
 });
 export const DEFAULT_MCP_TRANSPORT = McpTransportType.STDIO;
-export const DEFAULT_MCP_SERVER_NAME = "exaix";
+export const DEFAULT_MCP_SERVER_NAME = configurable({
+  key: "mcp.server_name",
+  default: "exaix",
+  type: ConfigValueType.STRING,
+  description: "MCP server name identifier",
+  swap: SwapClass.RESTART,
+});
 export const DEFAULT_MCP_VERSION = "1.0.0";
 export const DEFAULT_MCP_IDENTITY_ID = "system";
 export const DEFAULT_MCP_HTTP_PORT = configurable({
@@ -586,17 +716,13 @@ export const DEFAULT_MCP_HTTP_PORT = configurable({
 // ============================================================================
 export const GIT_TIMEOUT_MS_MIN = 1000;
 export const GIT_TIMEOUT_MS_MAX = 60000;
-export const GIT_MAX_RETRIES_MIN = 1;
-export const GIT_MAX_RETRIES_MAX = 10;
-export const GIT_RETRY_BACKOFF_BASE_MS_MIN = 100;
-export const GIT_RETRY_BACKOFF_BASE_MS_MAX = 10000;
-export const GIT_BRANCH_NAME_COLLISION_MAX_RETRIES_MIN = 1;
-export const GIT_BRANCH_NAME_COLLISION_MAX_RETRIES_MAX = 10;
-export const GIT_TRACE_ID_SHORT_LENGTH_MIN = 4;
-export const GIT_TRACE_ID_SHORT_LENGTH_MAX = 16;
-export const GIT_BRANCH_SUFFIX_LENGTH_MIN = 4;
-export const GIT_BRANCH_SUFFIX_LENGTH_MAX = 16;
-export const DEFAULT_GIT_BRANCH_PREFIX_PATTERN = "^(feature|bugfix|hotfix|chore)/";
+export const DEFAULT_GIT_BRANCH_PREFIX_PATTERN = configurable({
+  key: "git.branch_prefix_pattern",
+  default: "^(feature|bugfix|hotfix|chore)/",
+  type: ConfigValueType.STRING,
+  description: "Regex pattern for allowed git branch prefixes",
+  swap: SwapClass.RESTART,
+});
 export const DEFAULT_GIT_ALLOWED_PREFIXES = ["feature/", "bugfix/", "hotfix/", "chore/"];
 export const DEFAULT_GIT_STATUS_TIMEOUT_MS = configurable({
   key: "git.status_timeout_ms",
@@ -666,8 +792,8 @@ export const DEFAULT_GIT_MAX_RETRIES = configurable({
   default: 3,
   type: ConfigValueType.NUMBER,
   description: "Maximum retry attempts for git operations",
-  min: GIT_MAX_RETRIES_MIN,
-  max: GIT_MAX_RETRIES_MAX,
+  min: 1,
+  max: 10,
   swap: SwapClass.RESTART,
 });
 export const DEFAULT_GIT_RETRY_BACKOFF_BASE_MS = configurable({
@@ -675,8 +801,8 @@ export const DEFAULT_GIT_RETRY_BACKOFF_BASE_MS = configurable({
   default: 1000,
   type: ConfigValueType.NUMBER,
   description: "Base backoff delay in milliseconds for git retries",
-  min: GIT_RETRY_BACKOFF_BASE_MS_MIN,
-  max: GIT_RETRY_BACKOFF_BASE_MS_MAX,
+  min: 100,
+  max: 10000,
   swap: SwapClass.RESTART,
 });
 export const DEFAULT_GIT_BRANCH_NAME_COLLISION_MAX_RETRIES = configurable({
@@ -684,8 +810,8 @@ export const DEFAULT_GIT_BRANCH_NAME_COLLISION_MAX_RETRIES = configurable({
   default: 5,
   type: ConfigValueType.NUMBER,
   description: "Maximum retries for branch name collision resolution",
-  min: GIT_BRANCH_NAME_COLLISION_MAX_RETRIES_MIN,
-  max: GIT_BRANCH_NAME_COLLISION_MAX_RETRIES_MAX,
+  min: 1,
+  max: 10,
   swap: SwapClass.RESTART,
 });
 export const DEFAULT_GIT_TRACE_ID_SHORT_LENGTH = configurable({
@@ -693,8 +819,8 @@ export const DEFAULT_GIT_TRACE_ID_SHORT_LENGTH = configurable({
   default: 8,
   type: ConfigValueType.NUMBER,
   description: "Length in characters for truncated trace IDs in branch names",
-  min: GIT_TRACE_ID_SHORT_LENGTH_MIN,
-  max: GIT_TRACE_ID_SHORT_LENGTH_MAX,
+  min: 4,
+  max: 16,
   swap: SwapClass.RESTART,
 });
 export const DEFAULT_GIT_BRANCH_SUFFIX_LENGTH = configurable({
@@ -702,22 +828,14 @@ export const DEFAULT_GIT_BRANCH_SUFFIX_LENGTH = configurable({
   default: 8,
   type: ConfigValueType.NUMBER,
   description: "Length in characters for generated branch name suffixes",
-  min: GIT_BRANCH_SUFFIX_LENGTH_MIN,
-  max: GIT_BRANCH_SUFFIX_LENGTH_MAX,
+  min: 4,
+  max: 16,
   swap: SwapClass.RESTART,
 });
 
 // ============================================================================
 // Rate Limiting Validation Limits
 // ============================================================================
-export const RATE_LIMIT_MAX_CALLS_PER_MINUTE_MIN = 1;
-export const RATE_LIMIT_MAX_CALLS_PER_MINUTE_MAX = 1000;
-export const RATE_LIMIT_MAX_TOKENS_PER_HOUR_MIN = 1000;
-export const RATE_LIMIT_MAX_TOKENS_PER_HOUR_MAX = 1000000;
-export const RATE_LIMIT_MAX_COST_PER_DAY_MIN = 0.01;
-export const RATE_LIMIT_MAX_COST_PER_DAY_MAX = 1000;
-export const RATE_LIMIT_COST_PER_1K_TOKENS_MIN = 0.001;
-export const RATE_LIMIT_COST_PER_1K_TOKENS_MAX = 1;
 
 // Rate limiting defaults
 export const DEFAULT_RATE_LIMIT_ENABLED = configurable({
@@ -732,8 +850,8 @@ export const DEFAULT_RATE_LIMIT_MAX_CALLS_PER_MINUTE = configurable({
   default: 60,
   type: ConfigValueType.NUMBER,
   description: "Maximum API calls allowed per minute",
-  min: RATE_LIMIT_MAX_CALLS_PER_MINUTE_MIN,
-  max: RATE_LIMIT_MAX_CALLS_PER_MINUTE_MAX,
+  min: 1,
+  max: 1000,
   swap: SwapClass.RESTART,
 });
 export const DEFAULT_RATE_LIMIT_MAX_TOKENS_PER_HOUR = configurable({
@@ -741,8 +859,8 @@ export const DEFAULT_RATE_LIMIT_MAX_TOKENS_PER_HOUR = configurable({
   default: 100000,
   type: ConfigValueType.NUMBER,
   description: "Maximum tokens allowed per hour across all providers",
-  min: RATE_LIMIT_MAX_TOKENS_PER_HOUR_MIN,
-  max: RATE_LIMIT_MAX_TOKENS_PER_HOUR_MAX,
+  min: 1000,
+  max: 1000000,
   swap: SwapClass.RESTART,
 });
 export const DEFAULT_RATE_LIMIT_MAX_COST_PER_DAY = configurable({
@@ -750,8 +868,8 @@ export const DEFAULT_RATE_LIMIT_MAX_COST_PER_DAY = configurable({
   default: 10.0,
   type: ConfigValueType.NUMBER,
   description: "Maximum USD cost allowed per day across all providers",
-  min: RATE_LIMIT_MAX_COST_PER_DAY_MIN,
-  max: RATE_LIMIT_MAX_COST_PER_DAY_MAX,
+  min: 0.01,
+  max: 1000,
   swap: SwapClass.RESTART,
 });
 export const DEFAULT_RATE_LIMIT_COST_PER_1K_TOKENS = configurable({
@@ -759,8 +877,8 @@ export const DEFAULT_RATE_LIMIT_COST_PER_1K_TOKENS = configurable({
   default: 0.002,
   type: ConfigValueType.NUMBER,
   description: "Estimated USD cost per 1K tokens for rate limit budgeting",
-  min: RATE_LIMIT_COST_PER_1K_TOKENS_MIN,
-  max: RATE_LIMIT_COST_PER_1K_TOKENS_MAX,
+  min: 0.001,
+  max: 1,
   swap: SwapClass.RESTART,
 });
 
@@ -796,18 +914,74 @@ export const LOCAL_PROVIDER_PREFIXES = ["ollama:", "lmstudio:", "local:"] as con
 export const LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK = 32_768;
 
 /** Default budget enforcement policy by provider category. */
-export const DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED = true;
-export const DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED = true;
+export const DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED = configurable({
+  key: "budget.cloud_enforcement_enabled",
+  default: true,
+  type: ConfigValueType.BOOLEAN,
+  description: "Whether budget enforcement is active for cloud AI providers",
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED = configurable({
+  key: "budget.local_enforcement_enabled",
+  default: true,
+  type: ConfigValueType.BOOLEAN,
+  description: "Whether budget enforcement is active for local AI providers",
+  swap: SwapClass.RESTART,
+});
 
 /** Default maximum character budget for formatted session memory context. */
-export const DEFAULT_MEMORY_CONTEXT_CHAR_LIMIT = 4_000;
+export const DEFAULT_MEMORY_CONTEXT_CHAR_LIMIT = configurable({
+  key: "budget.memory_context_char_limit",
+  default: 4_000,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum characters for formatted session memory context in prompt",
+  min: 100,
+  max: 100_000,
+  swap: SwapClass.RESTART,
+});
 
 /** Default maximum character budget for formatted skills context. */
-export const DEFAULT_SKILL_CONTEXT_CHAR_BUDGET = 2_000;
-export const DEFAULT_SKILLS_MAX_PER_REQUEST = 5;
-export const DEFAULT_SKILLS_MATCH_THRESHOLD = 0.3;
-export const DEFAULT_SKILLS_INJECT_IN_PROMPT = true;
-export const DEFAULT_SKILLS_LOG_MATCHED_IDS = true;
+export const DEFAULT_SKILL_CONTEXT_CHAR_BUDGET = configurable({
+  key: "budget.skills_context_char_budget",
+  default: 2_000,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum characters for formatted skills context in prompt",
+  min: 100,
+  max: 50_000,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_SKILLS_MAX_PER_REQUEST = configurable({
+  key: "skills.max_per_request",
+  default: 5,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum number of skills to inject per agent request",
+  min: 0,
+  max: 50,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_SKILLS_MATCH_THRESHOLD = configurable({
+  key: "skills.match_threshold",
+  default: 0.3,
+  type: ConfigValueType.NUMBER,
+  description: "Minimum similarity score (0-1) for skill matching",
+  min: 0,
+  max: 1,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_SKILLS_INJECT_IN_PROMPT = configurable({
+  key: "skills.inject_in_prompt",
+  default: true,
+  type: ConfigValueType.BOOLEAN,
+  description: "Whether matched skills are injected into the agent prompt",
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_SKILLS_LOG_MATCHED_IDS = configurable({
+  key: "skills.log_matched_ids",
+  default: true,
+  type: ConfigValueType.BOOLEAN,
+  description: "Whether matched skill IDs are logged for audit",
+  swap: SwapClass.RESTART,
+});
 
 /** Maximum allowed length for a saved session-memory insight description. */
 export const SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS = 2_000;
@@ -951,10 +1125,6 @@ export const TOKENS_PER_COST_UNIT = 1000;
 // ============================================================================
 // Health Check Validation Limits
 // ============================================================================
-export const HEALTH_CHECK_TIMEOUT_MS_MIN = 1000;
-export const HEALTH_CHECK_TIMEOUT_MS_MAX = 300000;
-export const HEALTH_CACHE_TTL_MS_MIN = 1000;
-export const HEALTH_CACHE_TTL_MS_MAX = 3600000;
 export const HEALTH_MEMORY_WARN_PERCENT_MIN = 1;
 export const HEALTH_MEMORY_WARN_PERCENT_MAX = 99;
 export const HEALTH_MEMORY_CRITICAL_PERCENT_MIN = 1;
@@ -966,8 +1136,8 @@ export const DEFAULT_HEALTH_CHECK_TIMEOUT_MS = configurable({
   default: 30000,
   type: ConfigValueType.NUMBER,
   description: "Timeout in milliseconds for health check probes",
-  min: HEALTH_CHECK_TIMEOUT_MS_MIN,
-  max: HEALTH_CHECK_TIMEOUT_MS_MAX,
+  min: 1000,
+  max: 300000,
   swap: SwapClass.RESTART,
 });
 export const DEFAULT_HEALTH_CACHE_TTL_MS = configurable({
@@ -975,8 +1145,8 @@ export const DEFAULT_HEALTH_CACHE_TTL_MS = configurable({
   default: 300000,
   type: ConfigValueType.NUMBER,
   description: "Time-to-live in milliseconds for health check cache entries",
-  min: HEALTH_CACHE_TTL_MS_MIN,
-  max: HEALTH_CACHE_TTL_MS_MAX,
+  min: 1000,
+  max: 3600000,
   swap: SwapClass.RESTART,
 });
 export const DEFAULT_MEMORY_WARN_PERCENT = configurable({
@@ -1001,8 +1171,6 @@ export const DEFAULT_MEMORY_CRITICAL_PERCENT = configurable({
 // ============================================================================
 // Provider Strategy Validation Limits
 // ============================================================================
-export const PROVIDER_STRATEGY_MAX_DAILY_COST_USD_MIN = 0;
-export const PROVIDER_STRATEGY_MAX_DAILY_COST_USD_MAX = 1000;
 export const PROVIDER_STRATEGY_BUDGETS_MIN = 0;
 
 // Provider strategy defaults
@@ -1025,8 +1193,8 @@ export const DEFAULT_PROVIDER_STRATEGY_MAX_DAILY_COST_USD = configurable({
   default: 5.0,
   type: ConfigValueType.NUMBER,
   description: "Maximum USD spending per day across all providers",
-  min: PROVIDER_STRATEGY_MAX_DAILY_COST_USD_MIN,
-  max: PROVIDER_STRATEGY_MAX_DAILY_COST_USD_MAX,
+  min: 0,
+  max: 1000,
   swap: SwapClass.RESTART,
 });
 export const DEFAULT_PROVIDER_STRATEGY_HEALTH_CHECK_ENABLED = configurable({
@@ -1071,7 +1239,13 @@ export const DEFAULT_PROVIDER_STRATEGY_FALLBACK_CHAINS = {
 // Milestone Streaming Defaults
 // ============================================================================
 /** Whether milestone streaming is enabled by default (Phase 92) */
-export const DEFAULT_MILESTONE_STREAMING_ENABLED = true;
+export const DEFAULT_MILESTONE_STREAMING_ENABLED = configurable({
+  key: "execution.milestone_streaming_enabled",
+  default: true,
+  type: ConfigValueType.BOOLEAN,
+  description: "Whether milestone streaming events are enabled for execution tracking",
+  swap: SwapClass.RESTART,
+});
 
 // ============================================================================
 // Provider Validation Limits
@@ -1085,7 +1259,15 @@ export const PROVIDER_RATE_LIMIT_RPM_MAX = 1000;
 // ============================================================================
 // API Endpoint Defaults
 // ============================================================================
-export const DEFAULT_SUBPROCESS_TIMEOUT_MS = 30000;
+export const DEFAULT_SUBPROCESS_TIMEOUT_MS = configurable({
+  key: "execution.subprocess_timeout_ms",
+  default: 30000,
+  type: ConfigValueType.NUMBER,
+  description: "Default timeout in milliseconds for spawned subprocesses",
+  min: 1000,
+  max: 600_000,
+  swap: SwapClass.RESTART,
+});
 
 // ============================================================================
 // Keyboard Key Constants - DEPRECATED: Use KEYS from src/t../helpers/keyboard.ts
@@ -1096,9 +1278,31 @@ export const DEFAULT_SUBPROCESS_TIMEOUT_MS = 30000;
 // ============================================================================
 // Logging Defaults
 // ============================================================================
-export const DEFAULT_LOG_LEVEL = LogLevel.INFO;
-export const DEFAULT_LOG_MAX_SIZE_MB = 10;
-export const DEFAULT_LOG_MAX_FILES = 5;
+export const DEFAULT_LOG_LEVEL = configurable({
+  key: "logging.level",
+  default: LogLevel.INFO as string,
+  type: ConfigValueType.STRING,
+  description: "Default log level (DEBUG, INFO, WARN, ERROR, FATAL)",
+  swap: SwapClass.HOT,
+});
+export const DEFAULT_LOG_MAX_SIZE_MB = configurable({
+  key: "logging.max_size_mb",
+  default: 10,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum log file size in megabytes before rotation",
+  min: 1,
+  max: 1000,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_LOG_MAX_FILES = configurable({
+  key: "logging.max_files",
+  default: 5,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum number of rotated log files to retain",
+  min: 1,
+  max: 100,
+  swap: SwapClass.RESTART,
+});
 export const LOG_FILE_PREFIX = "structured-log";
 export const LOG_FILE_EXTENSION = ".jsonl";
 
@@ -1168,13 +1372,29 @@ export const MAX_NAME_LENGTH = 50;
 export const MAX_ID_LENGTH = 50;
 
 /** Default limit for database and service queries */
-export const DEFAULT_QUERY_LIMIT = 50;
+export const DEFAULT_QUERY_LIMIT = configurable({
+  key: "system.query_limit",
+  default: 50,
+  type: ConfigValueType.NUMBER,
+  description: "Default limit for database and service query results",
+  min: 1,
+  max: 10_000,
+  swap: SwapClass.RESTART,
+});
 
 /** Minimum length threshold for meaningful content (summary, prompt, etc.) */
 export const MIN_CONTENT_THRESHOLD = 50;
 
 /** Default refresh interval for TUI views */
-export const DEFAULT_REFRESH_INTERVAL_MS = 5000;
+export const DEFAULT_REFRESH_INTERVAL_MS = configurable({
+  key: "ui.refresh_interval_ms",
+  default: 5000,
+  type: ConfigValueType.NUMBER,
+  description: "Default refresh interval in milliseconds for TUI views",
+  min: 100,
+  max: 60_000,
+  swap: SwapClass.HOT,
+});
 
 /** Seconds in one hour, used for time formatting calculations */
 export const SECONDS_PER_HOUR = 3600;
@@ -1183,16 +1403,40 @@ export const SECONDS_PER_HOUR = 3600;
 export const BYTES_PER_KB = 1024;
 
 /** Timeout for acquiring file locks */
-export const LOCK_ACQUIRE_TIMEOUT_MS = 5000;
+export const LOCK_ACQUIRE_TIMEOUT_MS = configurable({
+  key: "system.lock_acquire_timeout_ms",
+  default: 5000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for acquiring file locks",
+  min: 100,
+  max: 60_000,
+  swap: SwapClass.RESTART,
+});
 
 /** Timeout for stopping the daemon */
-export const DAEMON_STOP_TIMEOUT_MS = 5000;
+export const DAEMON_STOP_TIMEOUT_MS = configurable({
+  key: "daemon.stop_timeout_ms",
+  default: 5000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for graceful daemon shutdown",
+  min: 100,
+  max: 120_000,
+  swap: SwapClass.RESTART,
+});
 
 /** Identity ID used for the daemon actor in logs and permission checks */
 export const DAEMON_IDENTITY_ID = "daemon";
 
 /** Max delay for database retries */
-export const DB_MAX_RETRY_DELAY_MS = 5000;
+export const DB_MAX_RETRY_DELAY_MS = configurable({
+  key: "database.max_retry_delay_ms",
+  default: 5000,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum delay in milliseconds between database retry attempts",
+  min: 10,
+  max: 60_000,
+  swap: SwapClass.RESTART,
+});
 
 /** Maximum length for blueprint names */
 export const BLUEPRINT_NAME_MAX_LENGTH = 100;
@@ -1213,7 +1457,15 @@ export const FILENAME_MAX_LENGTH = 255;
 export const PATH_MAX_LENGTH = 4096;
 
 /** Default timeout for agent execution in milliseconds */
-export const DEFAULT_AGENT_TIMEOUT_MS = 300000;
+export const DEFAULT_AGENT_TIMEOUT_MS = configurable({
+  key: "agent.timeout_ms",
+  default: 300000,
+  type: ConfigValueType.NUMBER,
+  description: "Default timeout in milliseconds for agent execution",
+  min: 1000,
+  max: 3_600_000,
+  swap: SwapClass.RESTART,
+});
 
 /** Maximum length for system prompts */
 export const MAX_PROMPT_LENGTH = 50000;
@@ -1280,8 +1532,24 @@ export const EXECUTION_ARTIFACT_PLAN_SECTION_TITLE = "## Plan Output";
 export const EXECUTION_ARTIFACT_ANALYSIS_SECTION_TITLE = "## Analysis Output";
 
 export const EXECUTION_REPORT_FILENAME = "analysis.md";
-export const EXECUTION_REPORT_TOOL_OUTPUT_MAX_CHARS = 4000;
-export const EXECUTION_REPORT_PROMPT_MAX_CHARS = 20000;
+export const EXECUTION_REPORT_TOOL_OUTPUT_MAX_CHARS = configurable({
+  key: "execution.report_tool_output_max_chars",
+  default: 4000,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum characters from tool output included in execution reports",
+  min: 100,
+  max: 100_000,
+  swap: SwapClass.RESTART,
+});
+export const EXECUTION_REPORT_PROMPT_MAX_CHARS = configurable({
+  key: "execution.report_prompt_max_chars",
+  default: 20000,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum characters from prompts included in execution reports",
+  min: 100,
+  max: 500_000,
+  swap: SwapClass.RESTART,
+});
 export const EXECUTION_REPORT_TEMPERATURE = 0.2;
 export const EXECUTION_REPORT_MAX_TOKENS = 2000;
 
@@ -1313,10 +1581,24 @@ export const SHARED_DEFAULT_ICONS: Record<string, string> = {
 // === Request Analysis ===
 
 /** Actionability score below which hybrid mode escalates to LLM analysis. */
-export const DEFAULT_ACTIONABILITY_THRESHOLD = 60;
+export const DEFAULT_ACTIONABILITY_THRESHOLD = configurable({
+  key: "analysis.actionability_threshold",
+  default: 60,
+  type: ConfigValueType.NUMBER,
+  description: "Score below which hybrid analysis escalates to LLM",
+  min: 0,
+  max: 100,
+  swap: SwapClass.RESTART,
+});
 
 /** Default analysis mode when not configured. */
-export const DEFAULT_ANALYZER_MODE = "hybrid";
+export const DEFAULT_ANALYZER_MODE = configurable({
+  key: "analysis.analyzer_mode",
+  default: "hybrid",
+  type: ConfigValueType.STRING,
+  description: "Default analysis mode (hybrid, heuristic, llm)",
+  swap: SwapClass.RESTART,
+});
 
 /** Semantic version of the request analyzer. Bump on breaking schema changes. */
 export const ANALYZER_VERSION = "1.0.0";
@@ -1331,16 +1613,30 @@ export const DEFAULT_SKILL_INDEX_VERSION = "1.0.0";
 export const DEFAULT_FLOW_VERSION = "1.0.0";
 
 /** Default backoff for flow step retries and onError retry recovery. */
-export const DEFAULT_FLOW_STEP_BACKOFF_MS = 1000;
+export const DEFAULT_FLOW_STEP_BACKOFF_MS = configurable({
+  key: "flow.step_backoff_ms",
+  default: 1000,
+  type: ConfigValueType.NUMBER,
+  description: "Backoff delay in milliseconds for flow step retries",
+  min: 100,
+  max: 60_000,
+  swap: SwapClass.RESTART,
+});
 
 /** Lower bound for configurable flow retry counts. */
-export const FLOW_MAX_RETRIES_MIN = 1;
 
 /** Upper bound for configurable flow retry counts. */
-export const FLOW_MAX_RETRIES_MAX = 5;
 
 /** Default retry count for flow onError retry recovery. */
-export const DEFAULT_FLOW_MAX_RETRIES = 1;
+export const DEFAULT_FLOW_MAX_RETRIES = configurable({
+  key: "flow.max_retries",
+  default: 1,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum retry attempts for flow step onError recovery",
+  min: 1,
+  max: 5,
+  swap: SwapClass.RESTART,
+});
 
 /** Schema version for flow checkpoints. Bump on breaking checkpoint shape changes. */
 export const FLOW_CHECKPOINT_SCHEMA_VERSION = "1";
@@ -1480,16 +1776,46 @@ export const ANALYSIS_TASK_TYPE_VERBS: Record<string, string> = {
 // === Portal Knowledge ===
 
 /** Maximum files to scan in quick mode. */
-export const DEFAULT_QUICK_SCAN_LIMIT = 200;
+export const DEFAULT_QUICK_SCAN_LIMIT = configurable({
+  key: "portal_knowledge.quick_scan_limit",
+  default: 200,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum files to scan in quick portal analysis mode",
+  min: 10,
+  max: 10_000,
+  swap: SwapClass.RESTART,
+});
 
 /** Maximum files whose content is read during analysis. */
-export const DEFAULT_MAX_FILES_TO_READ = 50;
+export const DEFAULT_MAX_FILES_TO_READ = configurable({
+  key: "portal_knowledge.max_files_to_read",
+  default: 50,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum files whose content is read during portal analysis",
+  min: 1,
+  max: 1000,
+  swap: SwapClass.RESTART,
+});
 
 /** Hours before portal knowledge is considered stale (1 week). */
-export const DEFAULT_KNOWLEDGE_STALENESS_HOURS = 168;
+export const DEFAULT_KNOWLEDGE_STALENESS_HOURS = configurable({
+  key: "portal_knowledge.staleness_hours",
+  default: 168,
+  type: ConfigValueType.NUMBER,
+  description: "Hours before cached portal knowledge is considered stale",
+  min: 1,
+  max: 8760,
+  swap: SwapClass.RESTART,
+});
 
 /** Default analysis mode applied when not overridden. */
-export const DEFAULT_PORTAL_KNOWLEDGE_MODE = "quick";
+export const DEFAULT_PORTAL_KNOWLEDGE_MODE = configurable({
+  key: "portal_knowledge.analysis_mode",
+  default: "quick",
+  type: ConfigValueType.STRING,
+  description: "Default portal knowledge analysis mode (quick, full)",
+  swap: SwapClass.RESTART,
+});
 
 /** Max total assembled prompt tokens sent to LLM in ArchitectureInferrer. */
 export const ARCHITECTURE_INFERRER_TOKEN_BUDGET = 8_000;
@@ -1513,16 +1839,48 @@ export const ARCHITECTURE_INFERRER_BACKOFF_MS = 1_000;
 export const ARCHITECTURE_INFERRER_BACKOFF_MULTIPLIER = 2;
 
 /** Subprocess timeout for deno check in AstAnalyzer (ms). */
-export const AST_ANALYZER_TIMEOUT_MS = 30_000;
+export const AST_ANALYZER_TIMEOUT_MS = configurable({
+  key: "tools.ast_analyzer_timeout_ms",
+  default: 30_000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for AST analysis subprocess calls",
+  min: 1000,
+  max: 300_000,
+  swap: SwapClass.RESTART,
+});
 
 /** Subprocess timeout for deno test --dry-run in TestRunner (ms). */
-export const TEST_RUNNER_TIMEOUT_MS = 30_000;
+export const TEST_RUNNER_TIMEOUT_MS = configurable({
+  key: "tools.test_runner_timeout_ms",
+  default: 30_000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for test runner subprocess calls",
+  min: 1000,
+  max: 300_000,
+  swap: SwapClass.RESTART,
+});
 
 /** Subprocess timeout for deno audit / npm audit in VulnerabilityScanner (ms). */
-export const VULN_SCANNER_TIMEOUT_MS = 60_000;
+export const VULN_SCANNER_TIMEOUT_MS = configurable({
+  key: "tools.vuln_scanner_timeout_ms",
+  default: 60_000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for vulnerability scanner subprocess",
+  min: 1000,
+  max: 600_000,
+  swap: SwapClass.RESTART,
+});
 
 /** Subprocess timeout for git queries in GitHistoryAnalyzer (ms). */
-export const GIT_HISTORY_TIMEOUT_MS = 30_000;
+export const GIT_HISTORY_TIMEOUT_MS = configurable({
+  key: "tools.git_history_timeout_ms",
+  default: 30_000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for git history analysis",
+  min: 1000,
+  max: 300_000,
+  swap: SwapClass.RESTART,
+});
 
 /** Default max commits to analyze in GitHistoryAnalyzer. */
 export const GIT_HISTORY_COMMIT_LIMIT = 500;
@@ -1534,13 +1892,37 @@ export const GIT_HISTORY_SINCE = "1.year";
 export const GIT_HISTORY_SUFFICIENT_COMMITS = 10;
 
 /** Max lines in the portal knowledge Markdown summary injected into agent prompts. */
-export const PORTAL_KNOWLEDGE_PROMPT_MAX_LINES = 60;
+export const PORTAL_KNOWLEDGE_PROMPT_MAX_LINES = configurable({
+  key: "portal_knowledge.prompt_max_lines",
+  default: 60,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum lines of portal knowledge injected into agent prompts",
+  min: 5,
+  max: 500,
+  swap: SwapClass.RESTART,
+});
 
 /** Max ISymbolEntry records stored in symbolMap. */
-export const DEFAULT_SYMBOL_MAP_LIMIT = 100;
+export const DEFAULT_SYMBOL_MAP_LIMIT = configurable({
+  key: "tools.symbol_map_limit",
+  default: 100,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum ISymbolEntry records stored in symbol map",
+  min: 10,
+  max: 10_000,
+  swap: SwapClass.RESTART,
+});
 
 /** Subprocess timeout for `deno doc --json` call in milliseconds. */
-export const DENO_DOC_TIMEOUT_MS = 15_000;
+export const DENO_DOC_TIMEOUT_MS = configurable({
+  key: "tools.deno_doc_timeout_ms",
+  default: 15_000,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in milliseconds for deno doc --json subprocess",
+  min: 1000,
+  max: 120_000,
+  swap: SwapClass.RESTART,
+});
 
 // ---------------------------------------------------------------------------
 // Multi-language symbol extraction (Phase 119)
@@ -1560,16 +1942,40 @@ export const LANGUAGE_SOURCE_EXTENSIONS: Record<string, readonly string[]> = {
 export const TS_JS_EXTENSIONS: readonly string[] = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
 
 /** Per-file byte cap for tree-sitter symbol extraction; larger files are skipped (DoS bound). */
-export const SYMBOL_EXTRACT_MAX_FILE_BYTES = 1_000_000;
+export const SYMBOL_EXTRACT_MAX_FILE_BYTES = configurable({
+  key: "symbol_extraction.max_file_bytes",
+  default: 1_000_000,
+  type: ConfigValueType.NUMBER,
+  description: "Per-file byte cap for tree-sitter symbol extraction (DoS bound)",
+  min: 10_000,
+  max: 100_000_000,
+  swap: SwapClass.RESTART,
+});
 
 /** Per-zone cap on source files scanned by a single symbol-extraction pass (DoS bound). */
-export const SYMBOL_EXTRACT_MAX_FILES = 2_000;
+export const SYMBOL_EXTRACT_MAX_FILES = configurable({
+  key: "symbol_extraction.max_files",
+  default: 2_000,
+  type: ConfigValueType.NUMBER,
+  description: "Per-zone cap on source files scanned per pass (DoS bound)",
+  min: 10,
+  max: 100_000,
+  swap: SwapClass.RESTART,
+});
 
 /** Per-file syntax-tree node cap; files exceeding it are skipped (WASM-memory DoS bound). */
 export const SYMBOL_EXTRACT_MAX_NODES = 200_000;
 
 /** Total wall-clock budget for one symbol-extraction pass, in milliseconds. */
-export const SYMBOL_EXTRACT_TIMEOUT_MS = 15_000;
+export const SYMBOL_EXTRACT_TIMEOUT_MS = configurable({
+  key: "symbol_extraction.timeout_ms",
+  default: 15_000,
+  type: ConfigValueType.NUMBER,
+  description: "Total wall-clock budget in milliseconds for one symbol extraction pass",
+  min: 1000,
+  max: 300_000,
+  swap: SwapClass.RESTART,
+});
 
 /** The deno CLI executable name used when spawning subprocesses. */
 export const DENO_COMMAND = "deno";
@@ -1686,7 +2092,13 @@ export const PORTAL_KNOWLEDGE_ARCH_LAYER_DIRS: Record<string, string> = {
 // === Request Quality Gate ===
 
 /** Default quality gate assessment mode. */
-export const DEFAULT_QG_MODE = "hybrid";
+export const DEFAULT_QG_MODE = configurable({
+  key: "quality_gate.mode",
+  default: "hybrid",
+  type: ConfigValueType.STRING,
+  description: "Quality gate assessment mode (hybrid, heuristic, llm)",
+  swap: SwapClass.RESTART,
+});
 
 /**
  * Score below which a request requires clarification or is rejected.
@@ -1698,12 +2110,28 @@ export const DEFAULT_QG_MINIMUM_THRESHOLD = 20;
  * Score below which auto-enrichment is applied (but above minimum).
  * Requests in the [minimum, enrichment) band are auto-enriched via LLM.
  */
-export const DEFAULT_QG_ENRICHMENT_THRESHOLD = 50;
+export const DEFAULT_QG_ENRICHMENT_THRESHOLD = configurable({
+  key: "quality_gate.enrichment_threshold",
+  default: 50,
+  type: ConfigValueType.NUMBER,
+  description: "Score threshold below which auto-enrichment is applied",
+  min: 0,
+  max: 100,
+  swap: SwapClass.RESTART,
+});
 
 /**
  * Score above which a request proceeds to execution without intervention.
  */
-export const DEFAULT_QG_PROCEED_THRESHOLD = 70;
+export const DEFAULT_QG_PROCEED_THRESHOLD = configurable({
+  key: "quality_gate.proceed_threshold",
+  default: 70,
+  type: ConfigValueType.NUMBER,
+  description: "Score above which request proceeds without intervention",
+  min: 0,
+  max: 100,
+  swap: SwapClass.RESTART,
+});
 
 /** Maximum clarification rounds before forcing proceed-with-best-effort. */
 export const DEFAULT_MAX_CLARIFICATION_ROUNDS = 5;
@@ -1812,7 +2240,13 @@ export const REQUEST_QUALITY_ASSESSMENT_KEY = "qualityAssessment";
  * Config model-alias key for the Q&A clarification planning agent.
  * Resolved against the provider's model map; falls back to the fast/cheap model.
  */
-export const DEFAULT_CLARIFICATION_MODEL_KEY = "fast";
+export const DEFAULT_CLARIFICATION_MODEL_KEY = configurable({
+  key: "quality_gate.clarification_model",
+  default: "fast",
+  type: ConfigValueType.STRING,
+  description: "Model key used for request clarification generation",
+  swap: SwapClass.RESTART,
+});
 
 // === Acceptance Criteria Propagation ===
 
@@ -1828,7 +2262,15 @@ export const MAX_DYNAMIC_CRITERIA = 10;
  * Default weight assigned to goal-derived criteria when the goal does not
  * hold priority === 1.
  */
-export const DEFAULT_GOAL_WEIGHT = 1.0;
+export const DEFAULT_GOAL_WEIGHT = configurable({
+  key: "agent.goal_weight",
+  default: 1.0,
+  type: ConfigValueType.NUMBER,
+  description: "Default weight for agent execution goals",
+  min: 0,
+  max: 10,
+  swap: SwapClass.RESTART,
+});
 
 /**
  * Weight assigned to criteria derived from priority-1 goals. Higher than
@@ -1957,7 +2399,15 @@ export const LOOP_HISTORY_COMPRESSION_RATIO = 0.3;
 export const COMPACT_SUMMARY_MAX_TOKENS = 200;
 
 /** Number of most recent steps preserved in full during compaction. */
-export const DEFAULT_KEEP_LAST_N_STEPS = 2;
+export const DEFAULT_KEEP_LAST_N_STEPS = configurable({
+  key: "agent.loop_history_steps",
+  default: 2,
+  type: ConfigValueType.NUMBER,
+  description: "Number of recent loop iteration steps retained in history",
+  min: 1,
+  max: 50,
+  swap: SwapClass.RESTART,
+});
 
 /**
  * Event name emitted after initial budget allocation with full breakdown.
@@ -2051,7 +2501,15 @@ export const JsonSchemaType = {
 // ============================================================================
 
 /** Maximum retries for schema validation failures — applies only to idempotent, side-effect-free tools. */
-export const TOOL_RESULT_VALIDATION_MAX_RETRIES = 3;
+export const TOOL_RESULT_VALIDATION_MAX_RETRIES = configurable({
+  key: "tools.validation_max_retries",
+  default: 3,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum retries for tool result schema validation failures",
+  min: 0,
+  max: 20,
+  swap: SwapClass.RESTART,
+});
 
 /** Semantic version for tool result schema descriptors returned via exaix/tools/result_schema. */
 export const TOOL_RESULT_SCHEMA_VERSION = "1.0.0";
@@ -2061,10 +2519,26 @@ export const TOOL_RESULT_SCHEMA_VERSION = "1.0.0";
 // ============================================================================
 
 /** Default timeout in seconds for human tool confirmation requests. Auto-deny on expiry. */
-export const DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S = 120;
+export const DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S = configurable({
+  key: "tools.confirmation_timeout_s",
+  default: 120,
+  type: ConfigValueType.NUMBER,
+  description: "Timeout in seconds for human tool confirmation before auto-deny",
+  min: 5,
+  max: 3600,
+  swap: SwapClass.RESTART,
+});
 
 /** Polling interval in milliseconds for NotificationQueueConfirmationInterceptor. */
-export const TOOL_CONFIRMATION_POLL_INTERVAL_MS = 1000;
+export const TOOL_CONFIRMATION_POLL_INTERVAL_MS = configurable({
+  key: "tools.confirmation_poll_interval_ms",
+  default: 1000,
+  type: ConfigValueType.NUMBER,
+  description: "Polling interval in ms for tool confirmation interceptor",
+  min: 100,
+  max: 60_000,
+  swap: SwapClass.RESTART,
+});
 
 /** Sentinel value for `decidedBy` when the confirmation interceptor auto-denies on timeout. */
 export const TOOL_CONFIRMATION_DECIDED_BY_TIMEOUT = "system:timeout";
@@ -2087,7 +2561,15 @@ export function sleep(ms: number): Promise<void> {
 }
 
 /** Maximum parallel deno doc --json processes for SymbolExtractor. */
-export const SYMBOL_EXTRACTOR_CONCURRENCY = 4;
+export const SYMBOL_EXTRACTOR_CONCURRENCY = configurable({
+  key: "symbol_extraction.concurrency",
+  default: 4,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum parallel processes for symbol extraction",
+  min: 1,
+  max: 16,
+  swap: SwapClass.RESTART,
+});
 
 /** Directory name for session-delegation handoffs under the workspace root. */
 export const SESSION_DELEGATE_DIR = "Session";
@@ -2096,12 +2578,44 @@ export const SESSION_DELEGATE_DIR = "Session";
 export const SESSION_WAIT_STATE_DIR = "Memory/Execution";
 
 /** Default delegation deadline in hours from brief creation. */
-export const SESSION_DEFAULT_DEADLINE_HOURS = 24;
+export const SESSION_DEFAULT_DEADLINE_HOURS = configurable({
+  key: "session.default_deadline_hours",
+  default: 24,
+  type: ConfigValueType.NUMBER,
+  description: "Default delegation deadline in hours from brief creation",
+  min: 1,
+  max: 720,
+  swap: SwapClass.RESTART,
+});
 
 /** Default token budget bounds passed in every brief. */
-export const SESSION_DEFAULT_MAX_INPUT_TOKENS = 50_000;
-export const SESSION_DEFAULT_MAX_OUTPUT_TOKENS = 50_000;
-export const SESSION_DEFAULT_MAX_TOTAL_TOKENS = 100_000;
+export const SESSION_DEFAULT_MAX_INPUT_TOKENS = configurable({
+  key: "session.max_input_tokens",
+  default: 50_000,
+  type: ConfigValueType.NUMBER,
+  description: "Default maximum input tokens for session briefs",
+  min: 100,
+  max: 1_000_000,
+  swap: SwapClass.RESTART,
+});
+export const SESSION_DEFAULT_MAX_OUTPUT_TOKENS = configurable({
+  key: "session.max_output_tokens",
+  default: 50_000,
+  type: ConfigValueType.NUMBER,
+  description: "Default maximum output tokens for session briefs",
+  min: 100,
+  max: 1_000_000,
+  swap: SwapClass.RESTART,
+});
+export const SESSION_DEFAULT_MAX_TOTAL_TOKENS = configurable({
+  key: "session.max_total_tokens",
+  default: 100_000,
+  type: ConfigValueType.NUMBER,
+  description: "Default maximum total tokens for session briefs",
+  min: 1000,
+  max: 2_000_000,
+  swap: SwapClass.RESTART,
+});
 
 /**
  * Token-budget environment variables injected into a delegated session tool's
@@ -2112,7 +2626,15 @@ export const SESSION_ENV_MAX_OUTPUT_TOKENS = "EXA_SESSION_MAX_OUTPUT_TOKENS";
 export const SESSION_ENV_MAX_TOTAL_TOKENS = "EXA_SESSION_MAX_TOTAL_TOKENS";
 
 /** Lookback window for crash recovery (24h) — delegations older than this are considered stale. */
-export const CRASH_RECOVERY_LOOKBACK_MS = 86_400_000;
+export const CRASH_RECOVERY_LOOKBACK_MS = configurable({
+  key: "session.crash_recovery_lookback_ms",
+  default: 86_400_000,
+  type: ConfigValueType.NUMBER,
+  description: "Lookback window in ms for crash recovery (delegations older than this are stale)",
+  min: 3_600_000,
+  max: 7_776_000_000,
+  swap: SwapClass.RESTART,
+});
 
 /** CLI-adapter argv flags pointing the tool at the brief and its token ceiling. */
 export const SESSION_FLAG_BRIEF = "--brief";

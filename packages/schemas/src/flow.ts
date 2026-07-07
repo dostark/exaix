@@ -32,9 +32,8 @@ import {
   DEFAULT_FLOW_VERSION,
   DEFAULT_NAMESPACE_MAX_BYTES,
   FLOW_CHECKPOINT_SCHEMA_VERSION,
-  FLOW_MAX_RETRIES_MAX,
-  FLOW_MAX_RETRIES_MIN,
 } from "@exaix/core";
+import { resolveConfigurableBounds } from "@exaix/core/config";
 
 const DateOrStringSchema = z.union([z.string().datetime(), z.date()]).transform((value) => {
   return value instanceof Date ? value.toISOString() : value;
@@ -52,7 +51,10 @@ export const ZToolCall = z.object({
 export const ZFlowStepOnError = z.object({
   action: z.nativeEnum(FlowStepOnErrorAction),
   fallbackStep: z.string().optional(),
-  maxRetries: z.number().int().min(FLOW_MAX_RETRIES_MIN).max(FLOW_MAX_RETRIES_MAX).optional().default(
+  maxRetries: z.number().int()
+    .min(resolveConfigurableBounds("flow.max_retries").min!)
+    .max(resolveConfigurableBounds("flow.max_retries").max!)
+    .optional().default(
     DEFAULT_FLOW_MAX_RETRIES,
   ),
   backoffMs: z.number().int().positive().optional().default(DEFAULT_FLOW_STEP_BACKOFF_MS),
