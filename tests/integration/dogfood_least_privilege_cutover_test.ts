@@ -41,6 +41,34 @@ function writeConfig(configPath: string, root: string): void {
   writeDaemonConfig(configPath, root, 'allow_net = ["api.anthropic.com"]');
 }
 
+/** Poll cadence while waiting for the daemon status to report running. */
+const STATUS_POLL_INTERVAL_MS = 500;
+/**
+ * Upper bound on the wait for `status` to report running. The poll returns the
+ * moment the daemon is healthy, so this ceiling only matters on a cold/slow CI
+ * runner — a fixed 2s sleep raced daemon boot there (status still reported not
+ * running → code 1).
+ */
+const STATUS_READY_CEILING_MS = 30_000;
+
+/**
+ * Poll `dogfood_daemon.ts status` until it exits 0 with "running" in stdout, or
+ * the ceiling elapses. Returns the last status result either way so the caller
+ * asserts on real output.
+ */
+async function waitForStatusRunning(
+  env: Record<string, string>,
+): Promise<{ code: number; stdout: string; stderr: string }> {
+  const deadline = Date.now() + STATUS_READY_CEILING_MS;
+  let last = await runScript("scripts/dogfood_daemon.ts", ["status"], env);
+  while (Date.now() < deadline) {
+    if (last.code === 0 && last.stdout.toLowerCase().includes("running")) return last;
+    await new Promise((r) => setTimeout(r, STATUS_POLL_INTERVAL_MS));
+    last = await runScript("scripts/dogfood_daemon.ts", ["status"], env);
+  }
+  return last;
+}
+
 Deno.test({
   name:
     "[daemon_least_privilege] real daemon boots under narrowed --allow-net + scoped flags, then dogfood:clean removes the temp root after stop",
@@ -66,9 +94,10 @@ Deno.test({
       });
 
       await t.step("daemon is healthy (status reports running)", async () => {
-        // Give the daemon a moment to come up.
-        await new Promise((r) => setTimeout(r, 2000));
-        const status = await runScript("scripts/dogfood_daemon.ts", ["status"], env);
+        // Poll status until the daemon reports running rather than sleeping a
+        // fixed 2s — on cold CI boot took longer than the fixed budget, so status
+        // still reported not-running (code 1) and the step flaked.
+        const status = await waitForStatusRunning(env);
         assertEquals(status.code, 0, status.stderr);
         assertStringIncludes(status.stdout.toLowerCase(), "running");
       });

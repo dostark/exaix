@@ -24,12 +24,35 @@ import { DomainEventType } from "@exaix/core/events";
 import { initActivityTableSchema } from "@exaix/testing";
 import { writeDaemonConfig as writeConfig } from "./helpers/daemon_config.ts";
 
+/** Poll cadence while waiting for the booted daemon to satisfy a condition. */
+const BOOT_POLL_INTERVAL_MS = 500;
+/**
+ * Upper bound on the boot+recover+flush wait. The poll exits early the moment the
+ * condition holds, so a high ceiling only ever matters on a cold/slow CI runner —
+ * it never slows a warm machine.
+ */
+const BOOT_RECOVER_CEILING_MS = 30_000;
+
 function writeDaemonConfig(configPath: string, root: string): void {
   writeConfig(configPath, root, "");
 }
 
 /** Boot the real daemon, wait for it to settle, then stop it. Returns once stopped. */
-async function bootDaemonOnce(configPath: string, settleMs: number): Promise<void> {
+/**
+ * Boot the real daemon subprocess, then wait until `until()` reports success
+ * (polling every {@link BOOT_POLL_INTERVAL_MS}) OR the `ceilingMs` deadline
+ * elapses — whichever comes first — before sending SIGTERM. Condition-polling
+ * (rather than a single fixed sleep) removes the cold-CI race: on a warm machine
+ * the daemon is torn down as soon as the recovery event lands (~seconds), while a
+ * slow CI runner is given the full ceiling to compile+boot+flush the batched
+ * `crash_recovered` write. `until()` defaults to "always true" so callers that
+ * only need the daemon to run for `ceilingMs` keep the old fixed-settle behaviour.
+ */
+async function bootDaemonOnce(
+  configPath: string,
+  ceilingMs: number,
+  until: () => Promise<boolean> = () => Promise.resolve(true),
+): Promise<void> {
   const proc = new Deno.Command("deno", {
     args: ["run", "--allow-all", "apps/daemon/main.ts"],
     stdin: "null",
@@ -38,7 +61,11 @@ async function bootDaemonOnce(configPath: string, settleMs: number): Promise<voi
     env: { EXA_CONFIG_PATH: configPath, EXA_TEST_MODE: "1" },
   }).spawn();
   try {
-    await new Promise((r) => setTimeout(r, settleMs));
+    const deadline = Date.now() + ceilingMs;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, BOOT_POLL_INTERVAL_MS));
+      if (await until()) break;
+    }
   } finally {
     try {
       Deno.kill(proc.pid, "SIGTERM");
@@ -111,29 +138,35 @@ Deno.test({
         }
       });
 
-      await t.step("booting a real daemon recovers the orphan", async () => {
-        // 8s settle: on cold CI runners the daemon subprocess must compile
-        // apps/daemon/main.ts, boot to recoverOrphanedDelegations (early in
-        // startup), write the re-queued request file, AND let EventLogger's
-        // batched crash_recovered write flush to the journal before SIGTERM.
-        // 4s is comfortable locally but marginal on shared CI (cold deno cache),
-        // which is why this step intermittently failed at step 3's event re-read.
-        await bootDaemonOnce(configPath, 8000);
-      });
-
-      await t.step("journal has crash_recovered + a re-queued request file exists", async () => {
+      // Read the journal for this trace and report whether the daemon has emitted
+      // the crash_recovered event yet. Used both as the boot poll predicate and by
+      // the final assertion, so "booted enough" means exactly "event is present".
+      const hasRecoveredEvent = async (): Promise<boolean> => {
         const configService = new ConfigService(configPath);
         const db = new DatabaseService(configService.getAll());
         try {
           const events = await db.getActivitiesByTraceSafe(traceId);
-          const hasRecovered = events.some(
+          return events.some(
             (e) => e.action_type === DomainEventType.SessionDelegateCrashRecovered,
           );
-          assert(hasRecovered, "daemon startup must emit session.delegate.crash_recovered");
-          assertEquals(await exists(requestPath), true, "a re-queued crash-recovery request must be written");
         } finally {
           await db.close();
         }
+      };
+
+      await t.step("booting a real daemon recovers the orphan", async () => {
+        // Poll the journal until the daemon has compiled apps/daemon/main.ts, run
+        // recoverOrphanedDelegations (early in startup), written the re-queued
+        // request file, AND flushed EventLogger's batched crash_recovered write —
+        // then SIGTERM immediately. A fixed sleep raced cold CI (slow deno cache);
+        // condition-polling exits early on a warm machine and gives a slow runner
+        // up to BOOT_RECOVER_CEILING_MS instead of a fixed marginal budget.
+        await bootDaemonOnce(configPath, BOOT_RECOVER_CEILING_MS, hasRecoveredEvent);
+      });
+
+      await t.step("journal has crash_recovered + a re-queued request file exists", async () => {
+        assert(await hasRecoveredEvent(), "daemon startup must emit session.delegate.crash_recovered");
+        assertEquals(await exists(requestPath), true, "a re-queued crash-recovery request must be written");
       });
     } finally {
       await Deno.remove(tempDir, { recursive: true });
