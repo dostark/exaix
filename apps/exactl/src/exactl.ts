@@ -1349,6 +1349,23 @@ export const __test_command = new Command()
               }),
           ),
       )
+      // Phase 138 Step 3: compaction recovery (hard-limit escape hatch).
+      .command(
+        "compact",
+        new Command()
+          .description("Compact config_overrides to one row per key (recovers DB headroom)")
+          .action(async () => {
+            try {
+              const removed = await configCommands.compact();
+              display.info("config.compact", CONFIG_LABEL, { removed });
+            } catch (error) {
+              display.error("cli.error", "config compact", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
       .command(
         "validate",
         new Command()

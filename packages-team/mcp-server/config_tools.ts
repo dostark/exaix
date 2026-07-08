@@ -9,11 +9,16 @@
  */
 import { ToolHandler } from "@exaix/mcp/server";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
-import { type JSONValue, MCP_CONTENT_TYPE_STRUCTURED_DATA, ToolErrorCode } from "@exaix/core";
+import {
+  type JSONValue,
+  MCP_CONFIG_SET_MAX_PENDING,
+  MCP_CONTENT_TYPE_STRUCTURED_DATA,
+  ToolErrorCode,
+} from "@exaix/core";
 import type { ICliApplicationContext } from "@exaix/core/types";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
 import type { IEventLogger } from "@exaix/core/logger";
-import { ConfigPathBlockedError, createConfigAdapter, resolveTier } from "@exaix/core/config";
+import { ConfigPathBlockedError, ConfigRateLimitedError, createConfigAdapter, resolveTier } from "@exaix/core/config";
 import type { ConfigValue, IConfigAdapter } from "@exaix/core/config";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 import { join } from "@std/path";
@@ -37,6 +42,14 @@ const CONFIG_APPLY_STATUS_ERROR = "error";
 const CONFIG_SET_TOOL_NAME = "config_set";
 
 function addPendingChange(key: string, value: JSONValue): void {
+  // Phase 138 Step 3: cap pending changes per session (in-process guard). Added
+  // at the top so the existing auto-discard timer + record shape are untouched.
+  if (pendingChanges.length >= MCP_CONFIG_SET_MAX_PENDING) {
+    throw new ConfigRateLimitedError(
+      "mcp",
+      `max ${MCP_CONFIG_SET_MAX_PENDING} pending changes per session`,
+    );
+  }
   const timeoutId = setTimeout(() => {
     const idx = pendingChanges.findIndex((c) => c.key === key && c.value === value);
     if (idx >= 0) pendingChanges.splice(idx, 1);

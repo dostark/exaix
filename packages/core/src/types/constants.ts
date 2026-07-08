@@ -304,6 +304,21 @@ export const CONFIG_PROFILE_KEY_PREFIX = "profile.";
 export const CONFIG_PATTERN_WILDCARD = "*";
 
 // ============================================================================
+// Config Rate Limiting (Phase 138 Step 3)
+// ============================================================================
+
+/** Sliding window (ms) over which CLI `config set` writes are counted. */
+export const CLI_CONFIG_SET_DEBOUNCE_WINDOW_MS = 5_000;
+/** Max CLI `config set` writes permitted within the debounce window. */
+export const CLI_CONFIG_SET_MAX_WRITES_PER_WINDOW = 10;
+/** Max pending (staged, un-applied) MCP config changes per session. */
+export const MCP_CONFIG_SET_MAX_PENDING = 50;
+/** config_overrides row count at which a warning is logged. */
+export const CONFIG_DB_OVERRIDE_WARN_THRESHOLD = 100_000;
+/** config_overrides row count at which non-recovery writes are hard-blocked. */
+export const CONFIG_DB_OVERRIDE_HARD_LIMIT = 1_000_000;
+
+// ============================================================================
 // File Watcher Validation Limits
 // ============================================================================
 

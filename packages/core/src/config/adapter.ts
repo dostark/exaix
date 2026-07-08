@@ -13,6 +13,8 @@ import { ConfigAdapterMode, ConfigProvenanceSource, ConfigValueType, SwapClass }
 import type { ConfigValue, IBlocklistEntry, IConfigOverrideEntry } from "./db.ts";
 import {
   addBlocklistPattern,
+  compactOverrides,
+  countRecentCliWrites,
   getAllEffectiveValues,
   getEffectiveValue,
   getOverrideHistory,
@@ -143,6 +145,18 @@ export interface IConfigAdapter {
 
   /** List all blocklist patterns, newest first. */
   listBlocks(): IBlocklistEntry[];
+
+  /**
+   * Count `cli`-source writes within the last `windowMs` ms (Phase 138 Step 3 —
+   * DB-backed CLI debounce, survives across separate CLI processes).
+   */
+  countRecentWrites(windowMs: number): number;
+
+  /**
+   * Compact config_overrides to one row per key (latest), preserving effective
+   * values. Returns rows removed (Phase 138 Step 3 — hard-limit escape hatch).
+   */
+  compact(): number;
 
   /** Whether the adapter is in direct (offline) or daemon mode. */
   readonly mode: ConfigAdapterMode;
@@ -330,7 +344,7 @@ export class DirectConfigAdapter implements IConfigAdapter {
 
     // Persist under the ORIGINAL key (profile/per-name keys keep their full path).
     const swapClass = options?.swap_class ?? SwapClass.HOT;
-    insertOverride(this.db, key, value, "cli", swapClass);
+    insertOverride(this.db, key, value, "cli", swapClass, { logger: this.daemonLogger });
     await this.daemonLogger?.info(DomainEventType.ConfigUpdated, key, {
       value,
       source: "cli",
@@ -378,7 +392,7 @@ export class DirectConfigAdapter implements IConfigAdapter {
     if (!getRegisteredDefaults().has(key)) {
       throw new ConfigKeyNotFoundError(key);
     }
-    insertOverride(this.db, key, null, "cli", "hot");
+    insertOverride(this.db, key, null, "cli", "hot", { logger: this.daemonLogger });
     await this.daemonLogger?.info(DomainEventType.ConfigUpdated, key, {
       value: null,
       source: "cli",
@@ -532,6 +546,14 @@ export class DirectConfigAdapter implements IConfigAdapter {
   listBlocks(): IBlocklistEntry[] {
     return listBlocklistPatterns(this.db);
   }
+
+  countRecentWrites(windowMs: number): number {
+    return countRecentCliWrites(this.db, windowMs);
+  }
+
+  compact(): number {
+    return compactOverrides(this.db);
+  }
 }
 
 /**
@@ -602,7 +624,7 @@ export class DaemonConfigAdapter extends DirectConfigAdapter {
 
     const swapClass = options?.swap_class ?? SwapClass.HOT;
     const source = ConfigAdapterMode.DAEMON;
-    insertOverride(this.db, key, value, source, swapClass);
+    insertOverride(this.db, key, value, source, swapClass, { logger: this.daemonLogger });
 
     // If hot-swappable, apply to in-memory store immediately
     if (swapClass === SwapClass.HOT) {
@@ -629,7 +651,7 @@ export class DaemonConfigAdapter extends DirectConfigAdapter {
     if (!getRegisteredDefaults().has(key)) {
       throw new ConfigKeyNotFoundError(key);
     }
-    insertOverride(this.db, key, null, ConfigAdapterMode.DAEMON, "hot");
+    insertOverride(this.db, key, null, ConfigAdapterMode.DAEMON, "hot", { logger: this.daemonLogger });
     this.configStore.delete(key);
     await this.daemonLogger?.info(DomainEventType.ConfigUpdated, key, {
       value: null,

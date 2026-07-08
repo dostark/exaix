@@ -9,7 +9,7 @@ import { configurable } from "../../src/config/registry.ts";
 import { ConfigProvenanceSource, ConfigValueType } from "../../src/types/enums.ts";
 import { addBlocklistPattern, ensureConfigDb, migrateConfigDb, seedConfigDb } from "../../src/config/db.ts";
 import { createConfigAdapter, DirectConfigAdapter } from "../../src/config/adapter.ts";
-import { ConfigKeyNotFoundError } from "../../src/config/errors.ts";
+import { ConfigKeyNotFoundError, ConfigRateLimitedError } from "../../src/config/errors.ts";
 import { DomainEventType } from "../../src/events/domain_event_types.ts";
 import type { IEventLogger } from "../../src/logger/event_logger.ts";
 import type { ILogEvent } from "../../src/types/i_log_event.ts";
@@ -527,4 +527,39 @@ Deno.test("[configuring] adapter.isPathBlocked delegates to DAO", () => {
   } finally {
     cleanUp(dir);
   }
+});
+
+// ── Phase 138 Step 3: adapter rate-limit delegation + error ─────────────────
+
+Deno.test("[configuring] adapter.countRecentWrites delegates to DAO", async () => {
+  const { adapter, dir } = setupAdapter();
+  try {
+    await adapter.set("adapter_test.timeout_ms", 45000);
+    await adapter.set("adapter_test.greeting", "hi");
+    // Both are cli writes within the window.
+    assertEquals(adapter.countRecentWrites(5000) >= 2, true);
+  } finally {
+    cleanUp(dir);
+  }
+});
+
+Deno.test("[configuring] adapter.compact delegates to DAO and preserves values", async () => {
+  const { adapter, dir } = setupAdapter();
+  try {
+    await adapter.set("adapter_test.timeout_ms", 40000);
+    await adapter.set("adapter_test.timeout_ms", 41000);
+    await adapter.set("adapter_test.timeout_ms", 42000);
+    const removed = adapter.compact();
+    assertEquals(removed >= 2, true);
+    assertEquals(adapter.get("adapter_test.timeout_ms"), 42000);
+  } finally {
+    cleanUp(dir);
+  }
+});
+
+Deno.test("[configuring] ConfigRateLimitedError has correct surface and limit fields", () => {
+  const err = new ConfigRateLimitedError("cli", "max 10 writes per 5s");
+  assertEquals(err.name, "ConfigRateLimitedError");
+  assertEquals(err.message.includes("cli"), true);
+  assertEquals(err.message.includes("max 10 writes per 5s"), true);
 });

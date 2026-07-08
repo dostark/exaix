@@ -10,7 +10,13 @@ import type { Database } from "@db/sqlite";
 import { join } from "@std/path";
 import { ensureDirSync } from "@std/fs";
 import { getRegisteredDefaults } from "./registry.ts";
-import { CONFIG_PATTERN_WILDCARD } from "../types/constants.ts";
+import {
+  CONFIG_DB_OVERRIDE_HARD_LIMIT,
+  CONFIG_DB_OVERRIDE_WARN_THRESHOLD,
+  CONFIG_PATTERN_WILDCARD,
+} from "../types/constants.ts";
+import { ConfigRateLimitedError } from "./errors.ts";
+import type { IEventLogger } from "../logger/event_logger.ts";
 
 export type ConfigValue = string | number | boolean | null;
 
@@ -28,6 +34,19 @@ export interface IBlocklistEntry {
   key_pattern: string;
   reason: string | null;
   created_at: string;
+}
+
+/**
+ * Optional insertOverride settings (Phase 138 Step 3). `hardLimit`/`warnThreshold`
+ * overrides exist ONLY so the security test can exercise the DB page-limit
+ * rejection branch at a tiny scale (the guard is an anti-DoS control — no
+ * legitimate use approaches 1M rows, so seeding 1M real rows would test SQLite,
+ * not this logic). Production omits them and uses the real constants.
+ */
+export interface IInsertOverrideOpts {
+  logger?: IEventLogger;
+  hardLimit?: number;
+  warnThreshold?: number;
 }
 
 const CONFIG_DB_FILE = "config.db";
@@ -104,17 +123,71 @@ export function getAllEffectiveValues(db: Database): Map<string, ConfigValue> {
   return result;
 }
 
+const CONFIG_SOURCE_INIT = "init";
+const CONFIG_DB_OVERRIDE_WARN_EVENT = "config.db.override_threshold";
+
 export function insertOverride(
   db: Database,
   key: string,
   value: ConfigValue,
   source: string,
   swapClass: string,
+  opts?: IInsertOverrideOpts,
 ): void {
+  const logger = opts?.logger;
+  const hardLimit = opts?.hardLimit ?? CONFIG_DB_OVERRIDE_HARD_LIMIT;
+  const warnThreshold = opts?.warnThreshold ?? CONFIG_DB_OVERRIDE_WARN_THRESHOLD;
+  // Phase 138 Step 3: DB page limit (anti-DoS guard). Tombstone (unset) and init
+  // writes are exempt so the operator can always recover (unset/rollback/re-seed)
+  // even at the hard limit.
+  const isRecoveryWrite = value === null || source === CONFIG_SOURCE_INIT;
+  const count = db.prepare("SELECT COUNT(*) AS cnt FROM config_overrides")
+    .get<{ cnt: number }>()?.cnt ?? 0;
+  if (!isRecoveryWrite && count >= hardLimit) {
+    throw new ConfigRateLimitedError(
+      "db",
+      `config_overrides has ${count} rows (hard limit ${hardLimit}); run 'exactl config compact'`,
+    );
+  }
+  if (count >= warnThreshold) {
+    logger?.warn(CONFIG_DB_OVERRIDE_WARN_EVENT, null, {
+      rows: count,
+      threshold: warnThreshold,
+    });
+  }
   const strValue = value === null ? null : String(value);
   db.prepare(
     "INSERT INTO config_overrides (key, value, source, swap_class) VALUES (?, ?, ?, ?)",
   ).run(key, strValue, source, swapClass);
+}
+
+/**
+ * Count `cli`-source config_overrides rows written within the last `windowMs`
+ * milliseconds (Phase 138 Step 3 — DB-backed CLI debounce, survives across
+ * separate CLI processes).
+ */
+export function countRecentCliWrites(db: Database, windowMs: number): number {
+  const seconds = Math.ceil(windowMs / 1000);
+  const row = db.prepare(
+    "SELECT COUNT(*) AS cnt FROM config_overrides WHERE source = 'cli' AND created_at >= datetime('now', ?)",
+  ).get<{ cnt: number }>(`-${seconds} seconds`);
+  return row?.cnt ?? 0;
+}
+
+/**
+ * Compact config_overrides to one row per key (the latest, MAX(id)), preserving
+ * every effective value. Returns the number of superseded rows removed. The
+ * escape hatch referenced by the hard-limit error (Phase 138 Step 3).
+ */
+export function compactOverrides(db: Database): number {
+  const before = db.prepare("SELECT COUNT(*) AS cnt FROM config_overrides")
+    .get<{ cnt: number }>()?.cnt ?? 0;
+  db.exec(
+    "DELETE FROM config_overrides WHERE id NOT IN (SELECT MAX(id) FROM config_overrides GROUP BY key)",
+  );
+  const after = db.prepare("SELECT COUNT(*) AS cnt FROM config_overrides")
+    .get<{ cnt: number }>()?.cnt ?? 0;
+  return before - after;
 }
 
 /**

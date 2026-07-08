@@ -7,7 +7,7 @@
 import { Database } from "@db/sqlite";
 import { assertEquals, assertRejects } from "@std/assert";
 import { createConfigAdapter, ensureConfigDb, migrateConfigDb, seedConfigDb } from "@exaix/core/config";
-import { ConfigValidationError } from "@exaix/core/config";
+import { ConfigRateLimitedError, ConfigValidationError } from "@exaix/core/config";
 
 import type { IConfigAdapter } from "@exaix/core/config";
 import { createMockConfig, createStubConfig, createStubContext, createTestConfigDb } from "@exaix/testing";
@@ -15,6 +15,7 @@ import { ConfigCommands } from "../src/commands/config_commands.ts";
 import { buildHandlers } from "@exaix-team/mcp-server";
 import { McpToolName } from "@exaix/mcp";
 import { AllowAllPermissionsService } from "@exaix/mcp/testing";
+import { CLI_CONFIG_SET_MAX_WRITES_PER_WINDOW } from "@exaix/core";
 
 function withTempConfigDb(fn: (adapter: IConfigAdapter) => void): void {
   const dir = Deno.makeTempDirSync({ prefix: "config-cmd-" });
@@ -189,4 +190,40 @@ Deno.test({
       Deno.removeSync(dir, { recursive: true });
     }
   },
+});
+
+// ── Phase 138 Step 3: CLI debounce + compact ────────────────────────────────
+
+Deno.test({
+  name: "[configuring-cli][security] set debounce rejects writes over the DB-backed window limit",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    await withProfileCommands(async (commands) => {
+      // Fill the window up to the limit with in-window cli writes.
+      for (let i = 0; i < CLI_CONFIG_SET_MAX_WRITES_PER_WINDOW; i++) {
+        await commands.set("ai.timeout_ms", String(30000 + i));
+      }
+      // The next set must be rate-limited.
+      let threw = false;
+      try {
+        await commands.set("ai.timeout_ms", "45000");
+      } catch (e) {
+        threw = e instanceof ConfigRateLimitedError;
+      }
+      assertEquals(threw, true, "the (limit+1)th CLI set must throw ConfigRateLimitedError");
+    });
+  },
+});
+
+Deno.test("[configuring-cli] compact collapses config_overrides to one row per key", async () => {
+  await withProfileCommands(async (commands) => {
+    await commands.set("ai.timeout_ms", "40000");
+    await commands.set("ai.timeout_ms", "41000");
+    await commands.set("ai.timeout_ms", "42000");
+    const removed = await commands.compact();
+    assertEquals(removed >= 2, true, "superseded ai.timeout_ms rows must be removed");
+    // Effective value preserved.
+    assertEquals(await commands.get("ai.timeout_ms"), 42000);
+  });
 });

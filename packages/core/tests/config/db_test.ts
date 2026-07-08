@@ -14,6 +14,8 @@ import { ConfigValueType } from "../../src/types/enums.ts";
 // Import source (will fail until db.ts exists)
 import {
   addBlocklistPattern,
+  compactOverrides,
+  countRecentCliWrites,
   ensureConfigDb,
   getAllEffectiveValues,
   getEffectiveValue,
@@ -347,6 +349,146 @@ Deno.test("[configuring] isPathBlocked respects agent scope", () => {
     addBlocklistPattern(db, "system.root");
     assertEquals(isPathBlocked(db, "system.root", "agent-y"), true);
     assertEquals(isPathBlocked(db, "system.root"), true);
+  } finally {
+    cleanUp(dir, db);
+  }
+});
+
+// ── Phase 138 Step 3: rate limiting (countRecentCliWrites, hard limit, compact) ──
+
+import { ConfigRateLimitedError } from "../../src/config/errors.ts";
+import type { IEventLogger } from "../../src/logger/event_logger.ts";
+
+/** Insert `n` config_overrides rows (small counts; used to cross an injected test threshold). */
+function seedRows(db: Database, n: number, source = "cli"): void {
+  const stmt = db.prepare(
+    "INSERT INTO config_overrides (key, value, source, swap_class) VALUES ('bulk.key', 'v', ?, 'hot')",
+  );
+  for (let i = 0; i < n; i++) stmt.run(source);
+}
+
+Deno.test("[configuring] countRecentCliWrites counts only in-window cli rows", () => {
+  const { db, dir } = createTestDb();
+  try {
+    migrateConfigDb(db);
+    insertOverride(db, "rl.a", "1", "cli", "hot");
+    insertOverride(db, "rl.b", "2", "cli", "hot");
+    insertOverride(db, "rl.c", "3", "init", "hot"); // not cli — excluded
+    const count = countRecentCliWrites(db, 5_000);
+    assertEquals(count, 2);
+  } finally {
+    cleanUp(dir, db);
+  }
+});
+
+Deno.test("[configuring] countRecentCliWrites excludes rows older than the window", () => {
+  const { db, dir } = createTestDb();
+  try {
+    migrateConfigDb(db);
+    // An old cli row (created_at well in the past).
+    db.prepare(
+      "INSERT INTO config_overrides (key, value, source, swap_class, created_at) VALUES ('rl.old', 'x', 'cli', 'hot', datetime('now','-1 hour'))",
+    ).run();
+    insertOverride(db, "rl.new", "y", "cli", "hot");
+    assertEquals(countRecentCliWrites(db, 5_000), 1);
+  } finally {
+    cleanUp(dir, db);
+  }
+});
+
+// The DB hard-limit is an anti-DoS guard against a runaway/malicious agent
+// flooding the append-only log — no legitimate use approaches it (~10 writes
+// per month). These are [security] tests that exercise the rejection branch at
+// a tiny injected threshold; production uses the real 1M/100K constants.
+const TEST_HARD_LIMIT = 3;
+const TEST_WARN_THRESHOLD = 2;
+
+Deno.test("[configuring][security] insertOverride rejects a normal cli write at the hard limit", () => {
+  const { db, dir } = createTestDb();
+  try {
+    migrateConfigDb(db);
+    seedRows(db, TEST_HARD_LIMIT, "cli");
+    let threw = false;
+    try {
+      insertOverride(db, "rl.blocked", "v", "cli", "hot", { hardLimit: TEST_HARD_LIMIT });
+    } catch (e) {
+      threw = e instanceof ConfigRateLimitedError;
+    }
+    assertEquals(threw, true, "cli write at hard limit must throw ConfigRateLimitedError");
+  } finally {
+    cleanUp(dir, db);
+  }
+});
+
+Deno.test("[configuring][security] insertOverride exempts tombstone and init writes at the hard limit", () => {
+  const { db, dir } = createTestDb();
+  try {
+    migrateConfigDb(db);
+    seedRows(db, TEST_HARD_LIMIT, "cli");
+    // Tombstone (value === null) write — must succeed even at the hard limit.
+    insertOverride(db, "rl.unset", null, "cli", "hot", { hardLimit: TEST_HARD_LIMIT });
+    // init write — must succeed.
+    insertOverride(db, "rl.seed", "v", "init", "hot", { hardLimit: TEST_HARD_LIMIT });
+    // A normal cli write is still blocked (proves the exemption is targeted).
+    let threw = false;
+    try {
+      insertOverride(db, "rl.norm", "v", "cli", "hot", { hardLimit: TEST_HARD_LIMIT });
+    } catch (e) {
+      threw = e instanceof ConfigRateLimitedError;
+    }
+    assertEquals(threw, true);
+  } finally {
+    cleanUp(dir, db);
+  }
+});
+
+Deno.test("[configuring] insertOverride warns at the threshold via injected logger", () => {
+  const { db, dir } = createTestDb();
+  try {
+    migrateConfigDb(db);
+    seedRows(db, TEST_WARN_THRESHOLD, "cli");
+    let warned = false;
+    const noop = (): Promise<void> => Promise.resolve();
+    const logger: IEventLogger = {
+      log: noop,
+      info: noop,
+      warn: () => {
+        warned = true;
+        return Promise.resolve();
+      },
+      error: noop,
+      fatal: noop,
+      debug: noop,
+      child: () => logger,
+    };
+    insertOverride(db, "rl.warn", "v", "cli", "hot", {
+      logger,
+      hardLimit: 1000,
+      warnThreshold: TEST_WARN_THRESHOLD,
+    });
+    assertEquals(warned, true, "insertOverride must warn once at/over the threshold");
+  } finally {
+    cleanUp(dir, db);
+  }
+});
+
+Deno.test("[configuring] compactOverrides collapses to one row per key preserving values", () => {
+  const { db, dir } = createTestDb();
+  try {
+    migrateConfigDb(db);
+    insertOverride(db, "c.a", "a1", "cli", "hot");
+    insertOverride(db, "c.a", "a2", "cli", "hot");
+    insertOverride(db, "c.a", "a3", "cli", "hot");
+    insertOverride(db, "c.b", "b1", "cli", "hot");
+
+    const removed = compactOverrides(db);
+    assertEquals(removed, 2, "two superseded c.a rows removed");
+
+    // One row per key, latest values preserved.
+    assertEquals(getEffectiveValue(db, "c.a"), "a3");
+    assertEquals(getEffectiveValue(db, "c.b"), "b1");
+    const total = db.prepare("SELECT COUNT(*) AS cnt FROM config_overrides").get<{ cnt: number }>();
+    assertEquals(total?.cnt, 2);
   } finally {
     cleanUp(dir, db);
   }
