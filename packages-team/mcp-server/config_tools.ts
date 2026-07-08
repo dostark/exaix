@@ -139,7 +139,7 @@ export class ConfigGetTool extends ToolHandler {
     return {
       name: "exaix_config_get",
       description:
-        "Read the current effective value of a single Exaix configuration key. Read-only; safe for dynamic execution. Returns the resolved value (override to registry default). Use to inspect current config without starting the daemon.",
+        "Read the current effective value of a single Exaix configuration key. Read-only; safe for dynamic execution. Use to inspect current config without starting the daemon. Returns the resolved value (override → registry default).",
       inputSchema: {
         type: "object",
         properties: {
@@ -210,7 +210,7 @@ export class ConfigValidateTool extends ToolHandler {
     return {
       name: "exaix_config_validate",
       description:
-        "Validate all registered configuration keys against their registry metadata (type, min, max, enum). Read-only; safe for dynamic execution. Returns a validation report indicating whether all values are within their declared constraints.",
+        "Validate all registered configuration keys against their registry metadata (type, min, max, enum). Read-only; safe for dynamic execution. Use to confirm config is well-formed before applying changes or starting the daemon. Returns a validation report with any constraint violations.",
       inputSchema: {
         type: "object",
         properties: {},
@@ -356,7 +356,7 @@ export class ConfigSetTool extends ToolHandler {
     return {
       name: "exaix_config_set",
       description:
-        "Stage a configuration change for later activation. The change is held in a per-session pending list and is NOT written until exaix_config_apply is called. Unapplied changes auto-discard after 60 seconds. Requires human approval before execution.",
+        "Stage a configuration change for later activation. Use to propose a config mutation; the change is held in a per-session pending list and is NOT written until exaix_config_apply is called. Unapplied changes auto-discard after 60 seconds. Requires human approval before execution. Returns the staged key and status.",
       inputSchema: {
         type: "object",
         properties: {
@@ -438,7 +438,7 @@ export class ConfigApplyTool extends ToolHandler {
     return {
       name: "exaix_config_apply",
       description:
-        "Apply all staged configuration changes from exaix_config_set. Drains the pending list and writes each change through the config adapter. Requires human approval before execution. Returns a summary of applied and failed changes.",
+        "Apply all staged configuration changes from exaix_config_set. Use after staging one or more changes to commit them. Drains the pending list and writes each change through the config adapter. Requires human approval before execution. Returns a summary of applied and failed changes.",
       inputSchema: {
         type: "object",
         properties: {},
@@ -516,7 +516,7 @@ export class ConfigGetProvenanceTool extends ToolHandler {
     return {
       name: "exaix_config_get_provenance",
       description:
-        "Trace the origin of a configuration key's value — whether it comes from a DB override, registry default, schema default, or bootstrap. Read-only; safe for dynamic execution. Returns provenance source and resolved value.",
+        "Trace the origin of a configuration key's value — whether it comes from a DB override, registry default, schema default, or bootstrap. Read-only; safe for dynamic execution. Use to explain why a key has its current value or debug unexpected config. Returns provenance source and resolved value.",
       inputSchema: {
         type: "object",
         properties: {

@@ -506,7 +506,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     docs_visible: true,
     source_ref: "packages-team/mcp-server/config_tools.ts",
     description:
-      "Validate all registered configuration keys against their registry metadata (type, min, max, enum). Read-only; safe for dynamic execution. Returns a validation report with any constraint violations.",
+      "Validate all registered configuration keys against their registry metadata (type, min, max, enum). Read-only; safe for dynamic execution. Use to confirm config is well-formed before applying changes or starting the daemon. Returns a validation report with any constraint violations.",
     output_schema: {
       type: "object",
       description: "Validation report with valid flag and issues array.",
@@ -555,7 +555,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     docs_visible: true,
     source_ref: "packages-team/mcp-server/config_tools.ts",
     description:
-      "Trace the origin of a configuration key's value — whether it comes from a DB override, registry default, schema default, or bootstrap. Read-only; safe for dynamic execution. Returns provenance source and resolved value.",
+      "Trace the origin of a configuration key's value — whether it comes from a DB override, registry default, schema default, or bootstrap. Read-only; safe for dynamic execution. Use to explain why a key has its current value or debug unexpected config. Returns provenance source and resolved value.",
     output_schema: {
       type: "object",
       description: "Provenance entry with source and value.",
@@ -580,7 +580,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     docs_visible: true,
     source_ref: "packages-team/mcp-server/config_tools.ts",
     description:
-      "Stage a configuration change for later activation. The change is held in a per-session pending list and is NOT written until exaix_config_apply is called. Unapplied changes auto-discard after 60 seconds. Requires human approval before execution.",
+      "Stage a configuration change for later activation. Use to propose a config mutation; the change is held in a per-session pending list and is NOT written until exaix_config_apply is called. Unapplied changes auto-discard after 60 seconds. Requires human approval before execution. Returns the staged key and status.",
     output_schema: {
       type: "object",
       description: "Staging result.",
@@ -604,7 +604,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     docs_visible: true,
     source_ref: "packages-team/mcp-server/config_tools.ts",
     description:
-      "Apply all staged configuration changes from exaix_config_set. Drains the pending list and writes each change through the config adapter. Requires human approval before execution. Returns a summary of applied and failed changes.",
+      "Apply all staged configuration changes from exaix_config_set. Use after staging one or more changes to commit them. Drains the pending list and writes each change through the config adapter. Requires human approval before execution. Returns a summary of applied and failed changes.",
     output_schema: {
       type: "object",
       description: "Apply results summary.",

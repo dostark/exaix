@@ -112,7 +112,13 @@ Deno.test({
       });
 
       await t.step("booting a real daemon recovers the orphan", async () => {
-        await bootDaemonOnce(configPath, 4000);
+        // 8s settle: on cold CI runners the daemon subprocess must compile
+        // apps/daemon/main.ts, boot to recoverOrphanedDelegations (early in
+        // startup), write the re-queued request file, AND let EventLogger's
+        // batched crash_recovered write flush to the journal before SIGTERM.
+        // 4s is comfortable locally but marginal on shared CI (cold deno cache),
+        // which is why this step intermittently failed at step 3's event re-read.
+        await bootDaemonOnce(configPath, 8000);
       });
 
       await t.step("journal has crash_recovered + a re-queued request file exists", async () => {
