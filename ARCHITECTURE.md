@@ -285,7 +285,13 @@ The `.exa/config.db` SQLite database stores configuration overrides for keys reg
 
 The 4 read-only tools are auto-approved; the mutation tools (`ConfigSet`, `ConfigApply`) gate on human approval. `ConfigApply` awaits each staged `set()` and records per-key applied/error results.
 
-**CLI surface:** `exactl config {get,set,unset,validate,show,diff,set-model,set-provider,set-path,use-profile,list-profiles}` with `--json`, `--sources`, and `--profile <name>` (scopes `get`/`set` to `profile.<name>.<key>`) flags.
+**Security controls (Phase 138):**
+
+- **Three-tier MCP authorization** — `ConfigSet.execute()` routes by the key's tier, **derived** (not hand-annotated) from existing metadata via `resolveTier(key)` (`packages/core/src/config/registry.ts`): `swap: "restart"` or `edition: "team"` → `"dangerous"` (stage + human approval + a `requires_confirmation: true` marker in the response for a future approval-UI phase); otherwise → `"leaf"` (stage + human approval); an explicit `tier: "safe"` override on the `configurable()` opts → `"safe"` (writes through immediately, no staging). The own-portal auto-approve tier is deferred (no own-portal context on the MCP tool yet). `requires_confirmation` on `IToolManifestEntry` is metadata-only this phase.
+- **Deny-permanently blocklist** — a `config_mcp_blocklist` table (`agent_id` nullable = all-agents; `key_pattern` glob) blocks MCP config writes. `ConfigSet`/`ConfigApply` refuse blocked paths through `IConfigAdapter.isPathBlocked()` (the adapter owns the private config `Database`; MCP tools never touch a raw handle), returning a `ConfigPathBlockedError` via `formatToolError`. Managed by `exactl config block {add,remove,list}`.
+- **Rate limiting** — CLI debounce (max `CLI_CONFIG_SET_MAX_WRITES_PER_WINDOW` per `CLI_CONFIG_SET_DEBOUNCE_WINDOW_MS`) is **DB-backed** via `IConfigAdapter.countRecentWrites()` so it survives across separate CLI processes; MCP staging is capped at `MCP_CONFIG_SET_MAX_PENDING` (in-process); the append-only log has a `CONFIG_DB_OVERRIDE_HARD_LIMIT` anti-DoS page-limit that **exempts tombstone (`unset`) and `init` writes** so recovery always works, with `exactl config compact` (`IConfigAdapter.compact()`, collapses to one row per key) as the escape hatch. All three throw/surface `ConfigRateLimitedError`.
+
+**CLI surface:** `exactl config {get,set,unset,validate,show,diff,set-model,set-provider,set-path,use-profile,list-profiles,block {add,remove,list},compact}` with `--json`, `--sources`, and `--profile <name>` (scopes `get`/`set` to `profile.<name>.<key>`) flags.
 
 **Validation bounds:** Zod schemas use `resolveConfigurableBounds(key)` from `@exaix/core/config` (via `c()`/`cBounds()` helpers at `packages/schemas/src/config.ts`) to derive min/max/default from the registry — no separate MIN/MAX constants needed.
 
