@@ -132,16 +132,20 @@ export interface IConfigAdapter {
    * True if `key` is in the MCP deny-permanently blocklist for `agentId`
    * (Phase 138 Step 2). A NULL-agent block applies to all agents.
    */
-  isPathBlocked(key: string, agentId?: string): boolean;
+  isPathBlocked(key: string, agentId?: Opt<string, Reason.QueryFilter>): boolean;
 
   /** The block reason for a blocked `key`, if any (undefined when not blocked). */
-  getBlockReason(key: string, agentId?: string): string | undefined;
+  getBlockReason(key: string, agentId?: Opt<string, Reason.QueryFilter>): string | undefined;
 
   /** Add a deny-permanently blocklist pattern (admin/CLI). */
-  addBlock(pattern: string, reason?: string, agentId?: string): void;
+  addBlock(
+    pattern: string,
+    reason?: Opt<string, Reason.OptionalInput>,
+    agentId?: Opt<string, Reason.QueryFilter>,
+  ): void;
 
   /** Remove a blocklist pattern (admin/CLI). */
-  removeBlock(pattern: string, agentId?: string): void;
+  removeBlock(pattern: string, agentId?: Opt<string, Reason.QueryFilter>): void;
 
   /** List all blocklist patterns, newest first. */
   listBlocks(): IBlocklistEntry[];
@@ -521,11 +525,14 @@ export class DirectConfigAdapter implements IConfigAdapter {
     return getOverrideHistory(this.db, key);
   }
 
-  isPathBlocked(key: string, agentId?: string): boolean {
+  isPathBlocked(key: string, agentId?: Opt<string, Reason.QueryFilter>): boolean {
     return dbIsPathBlocked(this.db, key, agentId);
   }
 
-  getBlockReason(key: string, agentId?: string): string | undefined {
+  getBlockReason(
+    key: string,
+    agentId?: Opt<string, Reason.QueryFilter>,
+  ): string | undefined {
     if (!dbIsPathBlocked(this.db, key, agentId)) return undefined;
     // Return the reason of the first matching pattern (NULL-agent or this agent).
     for (const entry of listBlocklistPatterns(this.db)) {
@@ -535,11 +542,15 @@ export class DirectConfigAdapter implements IConfigAdapter {
     return undefined;
   }
 
-  addBlock(pattern: string, reason?: string, agentId?: string): void {
+  addBlock(
+    pattern: string,
+    reason?: Opt<string, Reason.OptionalInput>,
+    agentId?: Opt<string, Reason.QueryFilter>,
+  ): void {
     addBlocklistPattern(this.db, pattern, reason, agentId);
   }
 
-  removeBlock(pattern: string, agentId?: string): void {
+  removeBlock(pattern: string, agentId?: Opt<string, Reason.QueryFilter>): void {
     removeBlocklistPattern(this.db, pattern, agentId);
   }
 

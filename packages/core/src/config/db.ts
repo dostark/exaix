@@ -17,6 +17,7 @@ import {
 } from "../types/constants.ts";
 import { ConfigRateLimitedError } from "./errors.ts";
 import type { IEventLogger } from "../logger/event_logger.ts";
+import type { Opt, Reason } from "../types/optional_marker.ts";
 
 export type ConfigValue = string | number | boolean | null;
 
@@ -132,7 +133,7 @@ export function insertOverride(
   value: ConfigValue,
   source: string,
   swapClass: string,
-  opts?: IInsertOverrideOpts,
+  opts?: Opt<IInsertOverrideOpts, Reason.OptionalContext>,
 ): void {
   const logger = opts?.logger;
   const hardLimit = opts?.hardLimit ?? CONFIG_DB_OVERRIDE_HARD_LIMIT;
@@ -229,8 +230,8 @@ export function getOverrideHistory(
 export function addBlocklistPattern(
   db: Database,
   pattern: string,
-  reason?: string,
-  agentId?: string,
+  reason?: Opt<string, Reason.OptionalInput>,
+  agentId?: Opt<string, Reason.QueryFilter>,
 ): void {
   db.prepare(
     "INSERT OR IGNORE INTO config_mcp_blocklist (agent_id, key_pattern, reason) VALUES (?, ?, ?)",
@@ -241,7 +242,7 @@ export function addBlocklistPattern(
 export function removeBlocklistPattern(
   db: Database,
   pattern: string,
-  agentId?: string,
+  agentId?: Opt<string, Reason.QueryFilter>,
 ): void {
   if (agentId === undefined) {
     db.prepare(
@@ -288,7 +289,11 @@ export function globMatches(pattern: string, key: string): boolean {
  * agents; a row with a matching `agent_id` blocks that agent. Patterns are glob
  * matched via {@link globMatches}.
  */
-export function isPathBlocked(db: Database, key: string, agentId?: string): boolean {
+export function isPathBlocked(
+  db: Database,
+  key: string,
+  agentId?: Opt<string, Reason.QueryFilter>,
+): boolean {
   const rows = db.prepare(
     "SELECT agent_id, key_pattern FROM config_mcp_blocklist WHERE agent_id IS NULL OR agent_id = ?",
   ).all<{ agent_id: string | null; key_pattern: string }>(agentId ?? null);

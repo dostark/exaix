@@ -184,7 +184,7 @@ export class ConfigCommands extends BaseCommand {
 
   // ── Phase 138 Step 2: MCP deny-permanently blocklist management ────────────
 
-  async blockAdd(pattern: string, reason?: string): Promise<void> {
+  async blockAdd(pattern: string, reason?: Opt<string, Reason.OptionalInput>): Promise<void> {
     (await this.ensureAdapter()).addBlock(pattern, reason);
   }
 
