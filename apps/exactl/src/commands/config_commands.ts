@@ -10,9 +10,10 @@ import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { join } from "@std/path";
 import { createConfigAdapterAsync, getRegisteredDefaults } from "@exaix/core/config";
 import type { IConfigAdapter, IConfigValidationReport } from "@exaix/core/config";
-import { ConfigKeyNotFoundError } from "@exaix/core/config";
+import { ConfigKeyNotFoundError, ConfigRateLimitedError } from "@exaix/core/config";
 import type { ConfigValue } from "@exaix/core/config";
 import { CONFIG_PROFILE_KEY_PREFIX, ConfigOutputFormat, type Opt, type Reason } from "@exaix/core/types";
+import { CLI_CONFIG_SET_DEBOUNCE_WINDOW_MS, CLI_CONFIG_SET_MAX_WRITES_PER_WINDOW } from "@exaix/core";
 
 interface NestedConfigTree {
   [key: string]: ConfigValue | NestedConfigTree;
@@ -72,8 +73,19 @@ export class ConfigCommands extends BaseCommand {
   }
 
   async set(path: string, valueStr: string, profile?: Opt<string, Reason.OptionalInput>): Promise<void> {
+    const adapter = await this.ensureAdapter();
+    // Phase 138 Step 3: DB-backed debounce — survives across separate CLI
+    // processes (state lives in config_overrides timestamps, not process memory).
+    if (
+      adapter.countRecentWrites(CLI_CONFIG_SET_DEBOUNCE_WINDOW_MS) >= CLI_CONFIG_SET_MAX_WRITES_PER_WINDOW
+    ) {
+      throw new ConfigRateLimitedError(
+        "cli",
+        `max ${CLI_CONFIG_SET_MAX_WRITES_PER_WINDOW} writes per ${CLI_CONFIG_SET_DEBOUNCE_WINDOW_MS / 1000}s`,
+      );
+    }
     const parsed = parseValue(valueStr);
-    await (await this.ensureAdapter()).set(this.scopeKey(path, profile), parsed);
+    await adapter.set(this.scopeKey(path, profile), parsed);
   }
 
   async unset(path: string): Promise<void> {
@@ -168,6 +180,29 @@ export class ConfigCommands extends BaseCommand {
     return overrides
       .filter((o) => o.key.startsWith("profile."))
       .map((o) => o.key.replace("profile.", ""));
+  }
+
+  // ── Phase 138 Step 2: MCP deny-permanently blocklist management ────────────
+
+  async blockAdd(pattern: string, reason?: Opt<string, Reason.OptionalInput>): Promise<void> {
+    (await this.ensureAdapter()).addBlock(pattern, reason);
+  }
+
+  async blockRemove(pattern: string): Promise<void> {
+    (await this.ensureAdapter()).removeBlock(pattern);
+  }
+
+  async blockList(): Promise<Array<{ pattern: string; reason: string | null; created_at: string }>> {
+    const blocks = (await this.ensureAdapter()).listBlocks();
+    return blocks.map((b) => ({ pattern: b.key_pattern, reason: b.reason, created_at: b.created_at }));
+  }
+
+  /**
+   * Phase 138 Step 3: compact config_overrides to one row per key (hard-limit
+   * escape hatch). Returns the number of superseded rows removed.
+   */
+  async compact(): Promise<number> {
+    return (await this.ensureAdapter()).compact();
   }
 }
 

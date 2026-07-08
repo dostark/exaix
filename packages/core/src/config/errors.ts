@@ -33,4 +33,26 @@ export class ConfigWriteError extends Error {
   }
 }
 
+/**
+ * Thrown / surfaced when an MCP config write targets a path in the
+ * config_mcp_blocklist (Phase 138 Step 2).
+ */
+export class ConfigPathBlockedError extends Error {
+  constructor(key: string, reason?: string) {
+    super(`Config path "${key}" is blocked from MCP writes${reason ? `: ${reason}` : ""}`);
+    this.name = "ConfigPathBlockedError";
+  }
+}
+
+/**
+ * Thrown / surfaced when a config write exceeds a rate limit (Phase 138 Step 3):
+ * CLI debounce, MCP pending cap, or DB page hard-limit.
+ */
+export class ConfigRateLimitedError extends Error {
+  constructor(surface: string, limit: string) {
+    super(`Config rate limit exceeded on ${surface}: ${limit}`);
+    this.name = "ConfigRateLimitedError";
+  }
+}
+
 export const EDITION_GATED_PATHS: ReadonlySet<string> = new Set(["guardrail", "hitl", "voting"]);

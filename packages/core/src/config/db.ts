@@ -10,6 +10,14 @@ import type { Database } from "@db/sqlite";
 import { join } from "@std/path";
 import { ensureDirSync } from "@std/fs";
 import { getRegisteredDefaults } from "./registry.ts";
+import {
+  CONFIG_DB_OVERRIDE_HARD_LIMIT,
+  CONFIG_DB_OVERRIDE_WARN_THRESHOLD,
+  CONFIG_PATTERN_WILDCARD,
+} from "../types/constants.ts";
+import { ConfigRateLimitedError } from "./errors.ts";
+import type { IEventLogger } from "../logger/event_logger.ts";
+import type { Opt, Reason } from "../types/optional_marker.ts";
 
 export type ConfigValue = string | number | boolean | null;
 
@@ -19,6 +27,27 @@ export interface IConfigOverrideEntry {
   source: string;
   swap_class: string;
   created_at: string;
+}
+
+/** A row in the config_mcp_blocklist table (Phase 138 Step 2). */
+export interface IBlocklistEntry {
+  agent_id: string | null;
+  key_pattern: string;
+  reason: string | null;
+  created_at: string;
+}
+
+/**
+ * Optional insertOverride settings (Phase 138 Step 3). `hardLimit`/`warnThreshold`
+ * overrides exist ONLY so the security test can exercise the DB page-limit
+ * rejection branch at a tiny scale (the guard is an anti-DoS control — no
+ * legitimate use approaches 1M rows, so seeding 1M real rows would test SQLite,
+ * not this logic). Production omits them and uses the real constants.
+ */
+export interface IInsertOverrideOpts {
+  logger?: IEventLogger;
+  hardLimit?: number;
+  warnThreshold?: number;
 }
 
 const CONFIG_DB_FILE = "config.db";
@@ -46,6 +75,19 @@ export function migrateConfigDb(db: Database): void {
   db.exec(
     "CREATE INDEX IF NOT EXISTS idx_config_overrides_key ON config_overrides(key, id)",
   );
+  // Phase 138 Step 2: deny-permanently blocklist for MCP config writes.
+  // agent_id IS NULL means the pattern applies to all agents (admin lock);
+  // a non-null agent_id scopes the block to one agent ("deny permanently").
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS config_mcp_blocklist (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      agent_id    TEXT,
+      key_pattern TEXT NOT NULL,
+      created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+      reason      TEXT,
+      UNIQUE (agent_id, key_pattern)
+    )
+  `);
 }
 
 export function seedConfigDb(db: Database): void {
@@ -82,17 +124,71 @@ export function getAllEffectiveValues(db: Database): Map<string, ConfigValue> {
   return result;
 }
 
+const CONFIG_SOURCE_INIT = "init";
+const CONFIG_DB_OVERRIDE_WARN_EVENT = "config.db.override_threshold";
+
 export function insertOverride(
   db: Database,
   key: string,
   value: ConfigValue,
   source: string,
   swapClass: string,
+  opts?: Opt<IInsertOverrideOpts, Reason.OptionalContext>,
 ): void {
+  const logger = opts?.logger;
+  const hardLimit = opts?.hardLimit ?? CONFIG_DB_OVERRIDE_HARD_LIMIT;
+  const warnThreshold = opts?.warnThreshold ?? CONFIG_DB_OVERRIDE_WARN_THRESHOLD;
+  // Phase 138 Step 3: DB page limit (anti-DoS guard). Tombstone (unset) and init
+  // writes are exempt so the operator can always recover (unset/rollback/re-seed)
+  // even at the hard limit.
+  const isRecoveryWrite = value === null || source === CONFIG_SOURCE_INIT;
+  const count = db.prepare("SELECT COUNT(*) AS cnt FROM config_overrides")
+    .get<{ cnt: number }>()?.cnt ?? 0;
+  if (!isRecoveryWrite && count >= hardLimit) {
+    throw new ConfigRateLimitedError(
+      "db",
+      `config_overrides has ${count} rows (hard limit ${hardLimit}); run 'exactl config compact'`,
+    );
+  }
+  if (count >= warnThreshold) {
+    logger?.warn(CONFIG_DB_OVERRIDE_WARN_EVENT, null, {
+      rows: count,
+      threshold: warnThreshold,
+    });
+  }
   const strValue = value === null ? null : String(value);
   db.prepare(
     "INSERT INTO config_overrides (key, value, source, swap_class) VALUES (?, ?, ?, ?)",
   ).run(key, strValue, source, swapClass);
+}
+
+/**
+ * Count `cli`-source config_overrides rows written within the last `windowMs`
+ * milliseconds (Phase 138 Step 3 — DB-backed CLI debounce, survives across
+ * separate CLI processes).
+ */
+export function countRecentCliWrites(db: Database, windowMs: number): number {
+  const seconds = Math.ceil(windowMs / 1000);
+  const row = db.prepare(
+    "SELECT COUNT(*) AS cnt FROM config_overrides WHERE source = 'cli' AND created_at >= datetime('now', ?)",
+  ).get<{ cnt: number }>(`-${seconds} seconds`);
+  return row?.cnt ?? 0;
+}
+
+/**
+ * Compact config_overrides to one row per key (the latest, MAX(id)), preserving
+ * every effective value. Returns the number of superseded rows removed. The
+ * escape hatch referenced by the hard-limit error (Phase 138 Step 3).
+ */
+export function compactOverrides(db: Database): number {
+  const before = db.prepare("SELECT COUNT(*) AS cnt FROM config_overrides")
+    .get<{ cnt: number }>()?.cnt ?? 0;
+  db.exec(
+    "DELETE FROM config_overrides WHERE id NOT IN (SELECT MAX(id) FROM config_overrides GROUP BY key)",
+  );
+  const after = db.prepare("SELECT COUNT(*) AS cnt FROM config_overrides")
+    .get<{ cnt: number }>()?.cnt ?? 0;
+  return before - after;
 }
 
 /**
@@ -122,4 +218,84 @@ export function getOverrideHistory(
     ...row,
     value: row.value ?? null,
   }));
+}
+
+// ── Phase 138 Step 2: config_mcp_blocklist DAO ──────────────────────────────
+
+/**
+ * Add a deny-permanently blocklist pattern. `agentId` scopes the block to one
+ * agent; omit it (NULL) to block the pattern for all agents. Idempotent on the
+ * `(agent_id, key_pattern)` unique key.
+ */
+export function addBlocklistPattern(
+  db: Database,
+  pattern: string,
+  reason?: Opt<string, Reason.OptionalInput>,
+  agentId?: Opt<string, Reason.QueryFilter>,
+): void {
+  db.prepare(
+    "INSERT OR IGNORE INTO config_mcp_blocklist (agent_id, key_pattern, reason) VALUES (?, ?, ?)",
+  ).run(agentId ?? null, pattern, reason ?? null);
+}
+
+/** Remove a blocklist pattern (optionally scoped to one agent). */
+export function removeBlocklistPattern(
+  db: Database,
+  pattern: string,
+  agentId?: Opt<string, Reason.QueryFilter>,
+): void {
+  if (agentId === undefined) {
+    db.prepare(
+      "DELETE FROM config_mcp_blocklist WHERE key_pattern = ? AND agent_id IS NULL",
+    ).run(pattern);
+  } else {
+    db.prepare(
+      "DELETE FROM config_mcp_blocklist WHERE key_pattern = ? AND agent_id = ?",
+    ).run(pattern, agentId);
+  }
+}
+
+/** List all blocklist patterns, newest first. */
+export function listBlocklistPatterns(db: Database): Array<IBlocklistEntry> {
+  return db.prepare(
+    "SELECT agent_id, key_pattern, reason, created_at FROM config_mcp_blocklist ORDER BY id DESC",
+  ).all<{
+    agent_id: string | null;
+    key_pattern: string;
+    reason: string | null;
+    created_at: string;
+  }>().map((row) => ({
+    agent_id: row.agent_id ?? null,
+    key_pattern: row.key_pattern,
+    reason: row.reason ?? null,
+    created_at: row.created_at,
+  }));
+}
+
+/**
+ * Minimal glob match: split the pattern on `*` and require the key to start with
+ * the prefix and end with the suffix. A pattern without `*` matches only an equal
+ * key. No full wildcard engine — one `*` is the supported form.
+ */
+export function globMatches(pattern: string, key: string): boolean {
+  if (!pattern.includes(CONFIG_PATTERN_WILDCARD)) return pattern === key;
+  const [prefix, suffix = ""] = pattern.split(CONFIG_PATTERN_WILDCARD);
+  return key.startsWith(prefix) && key.endsWith(suffix) &&
+    key.length >= prefix.length + suffix.length;
+}
+
+/**
+ * True if `key` is blocked for `agentId`. A row with NULL `agent_id` blocks all
+ * agents; a row with a matching `agent_id` blocks that agent. Patterns are glob
+ * matched via {@link globMatches}.
+ */
+export function isPathBlocked(
+  db: Database,
+  key: string,
+  agentId?: Opt<string, Reason.QueryFilter>,
+): boolean {
+  const rows = db.prepare(
+    "SELECT agent_id, key_pattern FROM config_mcp_blocklist WHERE agent_id IS NULL OR agent_id = ?",
+  ).all<{ agent_id: string | null; key_pattern: string }>(agentId ?? null);
+  return rows.some((row) => globMatches(row.key_pattern, key));
 }

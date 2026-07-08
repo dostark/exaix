@@ -45,6 +45,11 @@ export interface IToolManifestEntry {
    *  Phase 77: treated as a static exclusion from dynamic selection.
    *  Phase 79 upgrades this to a runtime confirmation interceptor. */
   requires_human_approval: boolean;
+  /** Phase 138: metadata-only hint that a write to this tool warrants an extra
+   *  confirmation prompt beyond approval (dangerous-tier config writes). No
+   *  confirmation-dialog runtime consumes this yet; it is a seam for a future
+   *  approval-UI phase. */
+  requires_confirmation?: boolean;
   /** True if this tool should appear in TOOLS.md and tools/list catalog. */
   docs_visible: boolean;
   /** Current source ownership reference used by docs generation. This is an ownership hint, not a permanence guarantee. */

@@ -7,11 +7,15 @@
 import { Database } from "@db/sqlite";
 import { assertEquals, assertRejects } from "@std/assert";
 import { createConfigAdapter, ensureConfigDb, migrateConfigDb, seedConfigDb } from "@exaix/core/config";
-import { ConfigValidationError } from "@exaix/core/config";
+import { ConfigRateLimitedError, ConfigValidationError } from "@exaix/core/config";
 
 import type { IConfigAdapter } from "@exaix/core/config";
 import { createMockConfig, createStubConfig, createStubContext, createTestConfigDb } from "@exaix/testing";
 import { ConfigCommands } from "../src/commands/config_commands.ts";
+import { buildHandlers } from "@exaix-team/mcp-server";
+import { McpToolName } from "@exaix/mcp";
+import { AllowAllPermissionsService } from "@exaix/mcp/testing";
+import { CLI_CONFIG_SET_MAX_WRITES_PER_WINDOW } from "@exaix/core";
 
 function withTempConfigDb(fn: (adapter: IConfigAdapter) => void): void {
   const dir = Deno.makeTempDirSync({ prefix: "config-cmd-" });
@@ -147,5 +151,79 @@ Deno.test("[configuring-cli] diff() returns a no-overrides message when nothing 
     const out = await commands.diff();
     assertEquals(typeof out, "string");
     assertEquals(out.toLowerCase().includes("no overridden"), true);
+  });
+});
+
+// ── Phase 138 Step 2: config block CLI + MCP enforcement integration ─────────
+
+Deno.test({
+  name: "[configuring-cli] config_block_cli: CLI add/list wires the blocklist and MCP enforcement rejects",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const dir = Deno.makeTempDirSync({ prefix: "config-block-int-" });
+    try {
+      createTestConfigDb(dir);
+      const configService = createStubConfig(createMockConfig(dir));
+      const context = createStubContext({ config: configService });
+
+      // 1. CLI: add a blocklist pattern, then list shows it.
+      const commands = new ConfigCommands(context);
+      await commands.blockAdd("ai.*", "provider locked by admin");
+      const listed = await commands.blockList();
+      assertEquals(listed.some((b) => b.pattern === "ai.*"), true);
+      assertEquals(listed.find((b) => b.pattern === "ai.*")?.reason, "provider locked by admin");
+
+      // 2. MCP: ConfigSetTool via the live handler map refuses the blocked key.
+      const handlers = buildHandlers(context, new AllowAllPermissionsService());
+      const setTool = handlers.get(McpToolName.CONFIG_SET);
+      assertEquals(setTool !== undefined, true);
+      const response = await setTool!.execute({ key: "ai.provider", value: "openai" });
+      const text = response.content.find((c) => c.type === "text");
+      const blocked = text && text.type === "text" ? text.text.includes("blocked") : false;
+      assertEquals(blocked, true, "MCP write to a CLI-blocked key must be rejected");
+
+      // 3. CLI: remove clears the block.
+      await commands.blockRemove("ai.*");
+      assertEquals((await commands.blockList()).some((b) => b.pattern === "ai.*"), false);
+    } finally {
+      Deno.removeSync(dir, { recursive: true });
+    }
+  },
+});
+
+// ── Phase 138 Step 3: CLI debounce + compact ────────────────────────────────
+
+Deno.test({
+  name: "[configuring-cli][security] set debounce rejects writes over the DB-backed window limit",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    await withProfileCommands(async (commands) => {
+      // Fill the window up to the limit with in-window cli writes.
+      for (let i = 0; i < CLI_CONFIG_SET_MAX_WRITES_PER_WINDOW; i++) {
+        await commands.set("ai.timeout_ms", String(30000 + i));
+      }
+      // The next set must be rate-limited.
+      let threw = false;
+      try {
+        await commands.set("ai.timeout_ms", "45000");
+      } catch (e) {
+        threw = e instanceof ConfigRateLimitedError;
+      }
+      assertEquals(threw, true, "the (limit+1)th CLI set must throw ConfigRateLimitedError");
+    });
+  },
+});
+
+Deno.test("[configuring-cli] compact collapses config_overrides to one row per key", async () => {
+  await withProfileCommands(async (commands) => {
+    await commands.set("ai.timeout_ms", "40000");
+    await commands.set("ai.timeout_ms", "41000");
+    await commands.set("ai.timeout_ms", "42000");
+    const removed = await commands.compact();
+    assertEquals(removed >= 2, true, "superseded ai.timeout_ms rows must be removed");
+    // Effective value preserved.
+    assertEquals(await commands.get("ai.timeout_ms"), 42000);
   });
 });

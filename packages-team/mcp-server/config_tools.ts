@@ -9,12 +9,17 @@
  */
 import { ToolHandler } from "@exaix/mcp/server";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
-import { type JSONValue, MCP_CONTENT_TYPE_STRUCTURED_DATA, ToolErrorCode } from "@exaix/core";
+import {
+  type JSONValue,
+  MCP_CONFIG_SET_MAX_PENDING,
+  MCP_CONTENT_TYPE_STRUCTURED_DATA,
+  ToolErrorCode,
+} from "@exaix/core";
 import type { ICliApplicationContext } from "@exaix/core/types";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
 import type { IEventLogger } from "@exaix/core/logger";
-import { createConfigAdapter } from "@exaix/core/config";
-import type { IConfigAdapter } from "@exaix/core/config";
+import { ConfigPathBlockedError, ConfigRateLimitedError, createConfigAdapter, resolveTier } from "@exaix/core/config";
+import type { ConfigValue, IConfigAdapter } from "@exaix/core/config";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 import { join } from "@std/path";
 
@@ -33,8 +38,18 @@ const pendingChanges: IPendingChange[] = [];
 const AUTO_DISCARD_TIMEOUT_MS = 60_000;
 const CONFIG_APPLY_STATUS_APPLIED = "applied";
 const CONFIG_APPLY_STATUS_ERROR = "error";
+/** Tool-name label passed to formatToolError for ConfigSetTool error responses. */
+const CONFIG_SET_TOOL_NAME = "config_set";
 
 function addPendingChange(key: string, value: JSONValue): void {
+  // Phase 138 Step 3: cap pending changes per session (in-process guard). Added
+  // at the top so the existing auto-discard timer + record shape are untouched.
+  if (pendingChanges.length >= MCP_CONFIG_SET_MAX_PENDING) {
+    throw new ConfigRateLimitedError(
+      "mcp",
+      `max ${MCP_CONFIG_SET_MAX_PENDING} pending changes per session`,
+    );
+  }
   const timeoutId = setTimeout(() => {
     const idx = pendingChanges.findIndex((c) => c.key === key && c.value === value);
     if (idx >= 0) pendingChanges.splice(idx, 1);
@@ -56,6 +71,11 @@ export function _resetPendingChangesForTest(): void {
   for (const change of pendingChanges.splice(0)) {
     clearTimeout(change.timeoutId);
   }
+}
+
+/** Exposed for tests only — drains and returns the staged changes (clears timers). */
+export function _drainPendingChangesForTest(): Array<{ key: string; value: JSONValue }> {
+  return drainPendingChanges();
 }
 
 function classifyConfigError(error: Error | string | JSONValue): ToolErrorCode {
@@ -301,54 +321,87 @@ export class ConfigSetTool extends ToolHandler {
     return this.adapter;
   }
 
-  execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
+  async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     const key = args.key as string;
     const value = args.value;
 
     if (!key) {
-      return Promise.resolve(this.formatToolError(
-        "config_set",
+      return this.formatToolError(
+        CONFIG_SET_TOOL_NAME,
         DEFAULT_MCP_IDENTITY_ID,
         DEFAULT_MCP_IDENTITY_ID,
         ToolErrorCode.INVALID_ARGS,
         "Missing required argument: key",
         {},
-      ));
+      );
     }
 
     try {
       // Validate the key exists in registry
       const validationKey = this.getAdapter().resolveValidationKey(key);
       if (validationKey === undefined) {
-        return Promise.resolve(this.formatToolError(
-          "config_set",
+        return this.formatToolError(
+          CONFIG_SET_TOOL_NAME,
           DEFAULT_MCP_IDENTITY_ID,
           DEFAULT_MCP_IDENTITY_ID,
           ToolErrorCode.INVALID_ARGS,
           `Unknown config key: ${key}`,
           { key },
-        ));
+        );
       }
 
+      // Phase 138 Step 2: refuse writes to deny-permanently blocked paths.
+      if (this.getAdapter().isPathBlocked(key)) {
+        const reason = this.getAdapter().getBlockReason(key);
+        return this.formatToolError(
+          CONFIG_SET_TOOL_NAME,
+          DEFAULT_MCP_IDENTITY_ID,
+          DEFAULT_MCP_IDENTITY_ID,
+          ToolErrorCode.PERMISSION_DENIED,
+          new ConfigPathBlockedError(key, reason).message,
+          { key },
+        );
+      }
+
+      // Phase 138 Step 1: route by the key's three-tier authorization tier.
+      const tier = resolveTier(validationKey);
+
+      if (tier === "safe") {
+        // Auto-approve: write through immediately, no staging.
+        await this.getAdapter().set(key, value as ConfigValue);
+        return {
+          content: [
+            { type: "text", text: `Applied (safe tier): ${key} → ${JSON.stringify(value)}.` },
+          ],
+        };
+      }
+
+      // leaf + dangerous: stage for later apply (requires human approval).
       addPendingChange(key, value);
-      return Promise.resolve({
+      const requiresConfirmation = tier === "dangerous";
+      return {
         content: [
           {
             type: "text",
-            text: `Staged: ${key} → ${JSON.stringify(value)}. Run exaix_config_apply to activate.`,
+            text: `Staged: ${key} → ${JSON.stringify(value)}. Run exaix_config_apply to activate.` +
+              (requiresConfirmation ? " ⚠️ Dangerous change — confirmation required." : ""),
+          },
+          {
+            type: MCP_CONTENT_TYPE_STRUCTURED_DATA,
+            data: serializeStructuredData({ key, staged: true, tier, requires_confirmation: requiresConfirmation }),
           },
         ],
-      });
+      };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      return Promise.resolve(this.formatToolError(
-        "config_set",
+      return this.formatToolError(
+        CONFIG_SET_TOOL_NAME,
         DEFAULT_MCP_IDENTITY_ID,
         DEFAULT_MCP_IDENTITY_ID,
         classifyConfigError(error instanceof Error ? error : String(error)),
         msg,
         { key },
-      ));
+      );
     }
   }
 
@@ -397,6 +450,15 @@ export class ConfigApplyTool extends ToolHandler {
       // failures are recorded as errors instead of escaping as unhandled rejections.
       const results: Array<{ key: string; status: string; error?: string }> = [];
       for (const { key, value } of pending) {
+        // Phase 138 Step 2: a key blocked between staging and apply is refused.
+        if (adapter.isPathBlocked(key)) {
+          results.push({
+            key,
+            status: CONFIG_APPLY_STATUS_ERROR,
+            error: new ConfigPathBlockedError(key, adapter.getBlockReason(key)).message,
+          });
+          continue;
+        }
         try {
           await adapter.set(key, value as (string | number | boolean | null));
           results.push({ key, status: CONFIG_APPLY_STATUS_APPLIED });

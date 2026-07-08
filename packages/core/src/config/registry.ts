@@ -7,8 +7,17 @@
  * @architectural-layer Core
  * @related-files ["packages/core/src/config/errors.ts"]
  */
-import type { ConfigValueType, SwapClass } from "../types/enums.ts";
+import { SwapClass } from "../types/enums.ts";
+import type { ConfigValueType } from "../types/enums.ts";
 import type { ConfigValue } from "./db.ts";
+
+/**
+ * MCP three-tier authorization classification for a configurable key.
+ * - `"safe"`      — no security impact; MCP writes are auto-approved.
+ * - `"leaf"`      — tunable, affects behaviour; MCP writes require human approval.
+ * - `"dangerous"` — security-critical/destructive; approval + confirmation marker.
+ */
+export type ConfigTier = "safe" | "leaf" | "dangerous";
 
 export interface IConfigurableOpts<T = unknown> {
   key: string;
@@ -20,6 +29,13 @@ export interface IConfigurableOpts<T = unknown> {
   enum?: readonly (string | number)[];
   swap?: SwapClass;
   edition?: readonly string[];
+  /**
+   * Optional explicit MCP authorization tier override (Phase 138). When set,
+   * {@link resolveTier} returns it verbatim; otherwise the tier is derived from
+   * `swap`/`edition`. Use only for the rare no-impact `swap: "hot"` key (e.g.
+   * `ui.theme`) that should auto-approve.
+   */
+  tier?: ConfigTier;
 }
 
 export interface IRegisteredConfig {
@@ -45,6 +61,27 @@ export function configurable<T>(opts: IConfigurableOpts<T>): T {
 
 export function getRegisteredDefaults(): ReadonlyMap<string, IRegisteredConfig> {
   return registry;
+}
+
+/**
+ * Resolve the MCP three-tier authorization tier for a registered config key
+ * (Phase 138 Step 1). Precedence:
+ * 1. explicit `tier` override on the opts → returned verbatim;
+ * 2. `swap === RESTART` or `edition` includes `"team"` → `"dangerous"`;
+ * 3. otherwise → `"leaf"` (the common `swap: "hot"` / unregistered case).
+ *
+ * The own-portal `"safe"` auto-approve tier from design §11.3 is deferred to a
+ * future phase (the MCP tool has no own-portal context today); `"safe"` is
+ * reachable this phase only via an explicit `tier: "safe"` override.
+ */
+export function resolveTier(key: string): ConfigTier {
+  const entry = registry.get(key);
+  if (!entry) return "leaf";
+  const { tier, swap, edition } = entry.opts;
+  if (tier) return tier;
+  if (swap === SwapClass.RESTART) return "dangerous";
+  if (edition?.includes("team")) return "dangerous";
+  return "leaf";
 }
 
 /**

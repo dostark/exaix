@@ -10,8 +10,20 @@
 
 import { Database } from "@db/sqlite";
 import { ConfigAdapterMode, ConfigProvenanceSource, ConfigValueType, SwapClass } from "../types/enums.ts";
-import type { ConfigValue, IConfigOverrideEntry } from "./db.ts";
-import { getAllEffectiveValues, getEffectiveValue, getOverrideHistory, insertOverride } from "./db.ts";
+import type { ConfigValue, IBlocklistEntry, IConfigOverrideEntry } from "./db.ts";
+import {
+  addBlocklistPattern,
+  compactOverrides,
+  countRecentCliWrites,
+  getAllEffectiveValues,
+  getEffectiveValue,
+  getOverrideHistory,
+  globMatches,
+  insertOverride,
+  isPathBlocked as dbIsPathBlocked,
+  listBlocklistPatterns,
+  removeBlocklistPattern,
+} from "./db.ts";
 import { getRegisteredDefaults } from "./registry.ts";
 import type { IConfigurableOpts } from "./registry.ts";
 import type { InMemoryConfigStore } from "./store.ts";
@@ -115,6 +127,40 @@ export interface IConfigAdapter {
 
   /** Full override history for a key (append-only log, DESC by id). */
   getHistory(key: string): IConfigOverrideEntry[];
+
+  /**
+   * True if `key` is in the MCP deny-permanently blocklist for `agentId`
+   * (Phase 138 Step 2). A NULL-agent block applies to all agents.
+   */
+  isPathBlocked(key: string, agentId?: Opt<string, Reason.QueryFilter>): boolean;
+
+  /** The block reason for a blocked `key`, if any (undefined when not blocked). */
+  getBlockReason(key: string, agentId?: Opt<string, Reason.QueryFilter>): string | undefined;
+
+  /** Add a deny-permanently blocklist pattern (admin/CLI). */
+  addBlock(
+    pattern: string,
+    reason?: Opt<string, Reason.OptionalInput>,
+    agentId?: Opt<string, Reason.QueryFilter>,
+  ): void;
+
+  /** Remove a blocklist pattern (admin/CLI). */
+  removeBlock(pattern: string, agentId?: Opt<string, Reason.QueryFilter>): void;
+
+  /** List all blocklist patterns, newest first. */
+  listBlocks(): IBlocklistEntry[];
+
+  /**
+   * Count `cli`-source writes within the last `windowMs` ms (Phase 138 Step 3 —
+   * DB-backed CLI debounce, survives across separate CLI processes).
+   */
+  countRecentWrites(windowMs: number): number;
+
+  /**
+   * Compact config_overrides to one row per key (latest), preserving effective
+   * values. Returns rows removed (Phase 138 Step 3 — hard-limit escape hatch).
+   */
+  compact(): number;
 
   /** Whether the adapter is in direct (offline) or daemon mode. */
   readonly mode: ConfigAdapterMode;
@@ -302,7 +348,7 @@ export class DirectConfigAdapter implements IConfigAdapter {
 
     // Persist under the ORIGINAL key (profile/per-name keys keep their full path).
     const swapClass = options?.swap_class ?? SwapClass.HOT;
-    insertOverride(this.db, key, value, "cli", swapClass);
+    insertOverride(this.db, key, value, "cli", swapClass, { logger: this.daemonLogger });
     await this.daemonLogger?.info(DomainEventType.ConfigUpdated, key, {
       value,
       source: "cli",
@@ -350,7 +396,7 @@ export class DirectConfigAdapter implements IConfigAdapter {
     if (!getRegisteredDefaults().has(key)) {
       throw new ConfigKeyNotFoundError(key);
     }
-    insertOverride(this.db, key, null, "cli", "hot");
+    insertOverride(this.db, key, null, "cli", "hot", { logger: this.daemonLogger });
     await this.daemonLogger?.info(DomainEventType.ConfigUpdated, key, {
       value: null,
       source: "cli",
@@ -478,6 +524,47 @@ export class DirectConfigAdapter implements IConfigAdapter {
   getHistory(key: string): IConfigOverrideEntry[] {
     return getOverrideHistory(this.db, key);
   }
+
+  isPathBlocked(key: string, agentId?: Opt<string, Reason.QueryFilter>): boolean {
+    return dbIsPathBlocked(this.db, key, agentId);
+  }
+
+  getBlockReason(
+    key: string,
+    agentId?: Opt<string, Reason.QueryFilter>,
+  ): string | undefined {
+    if (!dbIsPathBlocked(this.db, key, agentId)) return undefined;
+    // Return the reason of the first matching pattern (NULL-agent or this agent).
+    for (const entry of listBlocklistPatterns(this.db)) {
+      if (entry.agent_id !== null && entry.agent_id !== agentId) continue;
+      if (globMatches(entry.key_pattern, key)) return entry.reason ?? undefined;
+    }
+    return undefined;
+  }
+
+  addBlock(
+    pattern: string,
+    reason?: Opt<string, Reason.OptionalInput>,
+    agentId?: Opt<string, Reason.QueryFilter>,
+  ): void {
+    addBlocklistPattern(this.db, pattern, reason, agentId);
+  }
+
+  removeBlock(pattern: string, agentId?: Opt<string, Reason.QueryFilter>): void {
+    removeBlocklistPattern(this.db, pattern, agentId);
+  }
+
+  listBlocks(): IBlocklistEntry[] {
+    return listBlocklistPatterns(this.db);
+  }
+
+  countRecentWrites(windowMs: number): number {
+    return countRecentCliWrites(this.db, windowMs);
+  }
+
+  compact(): number {
+    return compactOverrides(this.db);
+  }
 }
 
 /**
@@ -548,7 +635,7 @@ export class DaemonConfigAdapter extends DirectConfigAdapter {
 
     const swapClass = options?.swap_class ?? SwapClass.HOT;
     const source = ConfigAdapterMode.DAEMON;
-    insertOverride(this.db, key, value, source, swapClass);
+    insertOverride(this.db, key, value, source, swapClass, { logger: this.daemonLogger });
 
     // If hot-swappable, apply to in-memory store immediately
     if (swapClass === SwapClass.HOT) {
@@ -575,7 +662,7 @@ export class DaemonConfigAdapter extends DirectConfigAdapter {
     if (!getRegisteredDefaults().has(key)) {
       throw new ConfigKeyNotFoundError(key);
     }
-    insertOverride(this.db, key, null, ConfigAdapterMode.DAEMON, "hot");
+    insertOverride(this.db, key, null, ConfigAdapterMode.DAEMON, "hot", { logger: this.daemonLogger });
     this.configStore.delete(key);
     await this.daemonLogger?.info(DomainEventType.ConfigUpdated, key, {
       value: null,
