@@ -41,8 +41,8 @@ Deno.test("[McpManifest] tool names are unique across the manifest", () => {
   );
 });
 
-Deno.test("[McpManifest] total entry count is 23", () => {
-  assertEquals(TOOL_MANIFEST.length, 23, "Expected 23 total tool entries in TOOL_MANIFEST");
+Deno.test("[McpManifest] total entry count is 29", () => {
+  assertEquals(TOOL_MANIFEST.length, 29, "Expected 29 total tool entries in TOOL_MANIFEST");
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -53,9 +53,9 @@ Deno.test("[McpManifest] 14 MCP_HANDLER entries exist", () => {
   assertEquals(handlers.length, 14, `Expected 14 MCP_HANDLER entries, got ${handlers.length}`);
 });
 
-Deno.test("[McpManifest] 4 MCP_DOMAIN entries exist", () => {
+Deno.test("[McpManifest] 10 MCP_DOMAIN entries exist", () => {
   const domain = TOOL_MANIFEST.filter((e) => e.kind === ToolKind.MCP_DOMAIN);
-  assertEquals(domain.length, 4, `Expected 4 MCP_DOMAIN entries, got ${domain.length}`);
+  assertEquals(domain.length, 10, `Expected 10 MCP_DOMAIN entries, got ${domain.length}`);
 });
 
 Deno.test("[McpManifest] 5 INTERNAL_ONLY entries exist", () => {
@@ -146,7 +146,7 @@ Deno.test("[McpManifest] DYNAMIC_MODE_TOOLS matches manifest filter", () => {
   );
 });
 
-Deno.test("[McpManifest] DYNAMIC_MODE_TOOLS contains expected 6 tools", () => {
+Deno.test("[McpManifest] DYNAMIC_MODE_TOOLS contains expected 10 tools", () => {
   const expected = [
     "read_file",
     "list_directory",
@@ -154,10 +154,15 @@ Deno.test("[McpManifest] DYNAMIC_MODE_TOOLS contains expected 6 tools", () => {
     "search_files",
     "exaix_list_plans",
     "exaix_query_journal",
+    // Read-only config tools (Phase 137) — side-effect-free, safe for dynamic execution.
+    "exaix_config_get",
+    "exaix_config_validate",
+    "exaix_config_diff",
+    "exaix_config_get_provenance",
   ];
   assertEquals(
     [...DYNAMIC_MODE_TOOLS].sort(),
     expected.sort(),
-    "DYNAMIC_MODE_TOOLS must contain exactly the 6 approved dynamic tools",
+    "DYNAMIC_MODE_TOOLS must contain exactly the 10 approved dynamic tools",
   );
 });
