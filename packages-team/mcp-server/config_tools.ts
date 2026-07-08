@@ -13,8 +13,8 @@ import { type JSONValue, MCP_CONTENT_TYPE_STRUCTURED_DATA, ToolErrorCode } from 
 import type { ICliApplicationContext } from "@exaix/core/types";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
 import type { IEventLogger } from "@exaix/core/logger";
-import { createConfigAdapter } from "@exaix/core/config";
-import type { IConfigAdapter } from "@exaix/core/config";
+import { createConfigAdapter, resolveTier } from "@exaix/core/config";
+import type { ConfigValue, IConfigAdapter } from "@exaix/core/config";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 import { join } from "@std/path";
 
@@ -56,6 +56,11 @@ export function _resetPendingChangesForTest(): void {
   for (const change of pendingChanges.splice(0)) {
     clearTimeout(change.timeoutId);
   }
+}
+
+/** Exposed for tests only — drains and returns the staged changes (clears timers). */
+export function _drainPendingChangesForTest(): Array<{ key: string; value: JSONValue }> {
+  return drainPendingChanges();
 }
 
 function classifyConfigError(error: Error | string | JSONValue): ToolErrorCode {
@@ -301,54 +306,74 @@ export class ConfigSetTool extends ToolHandler {
     return this.adapter;
   }
 
-  execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
+  async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
     const key = args.key as string;
     const value = args.value;
 
     if (!key) {
-      return Promise.resolve(this.formatToolError(
+      return this.formatToolError(
         "config_set",
         DEFAULT_MCP_IDENTITY_ID,
         DEFAULT_MCP_IDENTITY_ID,
         ToolErrorCode.INVALID_ARGS,
         "Missing required argument: key",
         {},
-      ));
+      );
     }
 
     try {
       // Validate the key exists in registry
       const validationKey = this.getAdapter().resolveValidationKey(key);
       if (validationKey === undefined) {
-        return Promise.resolve(this.formatToolError(
+        return this.formatToolError(
           "config_set",
           DEFAULT_MCP_IDENTITY_ID,
           DEFAULT_MCP_IDENTITY_ID,
           ToolErrorCode.INVALID_ARGS,
           `Unknown config key: ${key}`,
           { key },
-        ));
+        );
       }
 
+      // Phase 138 Step 1: route by the key's three-tier authorization tier.
+      const tier = resolveTier(validationKey);
+
+      if (tier === "safe") {
+        // Auto-approve: write through immediately, no staging.
+        await this.getAdapter().set(key, value as ConfigValue);
+        return {
+          content: [
+            { type: "text", text: `Applied (safe tier): ${key} → ${JSON.stringify(value)}.` },
+          ],
+        };
+      }
+
+      // leaf + dangerous: stage for later apply (requires human approval).
       addPendingChange(key, value);
-      return Promise.resolve({
+      const requiresConfirmation = tier === "dangerous";
+      return {
         content: [
           {
             type: "text",
-            text: `Staged: ${key} → ${JSON.stringify(value)}. Run exaix_config_apply to activate.`,
+            text: `Staged: ${key} → ${JSON.stringify(value)}. Run exaix_config_apply to activate.` +
+              (requiresConfirmation ? " ⚠️ Dangerous change — confirmation required." : ""),
+          },
+          {
+            type: MCP_CONTENT_TYPE_STRUCTURED_DATA,
+            data: serializeStructuredData({ key, staged: true, tier, requires_confirmation: requiresConfirmation }),
           },
         ],
-      });
+      };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      return Promise.resolve(this.formatToolError(
+      return this.formatToolError(
         "config_set",
         DEFAULT_MCP_IDENTITY_ID,
         DEFAULT_MCP_IDENTITY_ID,
         classifyConfigError(error instanceof Error ? error : String(error)),
         msg,
         { key },
-      ));
+      );
     }
   }
 
