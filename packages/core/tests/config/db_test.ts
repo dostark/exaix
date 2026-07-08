@@ -13,12 +13,16 @@ import { ConfigValueType } from "../../src/types/enums.ts";
 
 // Import source (will fail until db.ts exists)
 import {
+  addBlocklistPattern,
   ensureConfigDb,
   getAllEffectiveValues,
   getEffectiveValue,
   getOverrideHistory,
   insertOverride,
+  isPathBlocked,
+  listBlocklistPatterns,
   migrateConfigDb,
+  removeBlocklistPattern,
   seedConfigDb,
 } from "../../src/config/db.ts";
 
@@ -233,6 +237,116 @@ Deno.test("[configuring] getOverrideHistory returns ordered history", () => {
     assertEquals(history[0].source, "cli");
     assertEquals(history[0].swap_class, "hot");
     assertNotEquals(history[0].created_at, undefined);
+  } finally {
+    cleanUp(dir, db);
+  }
+});
+
+// ── Phase 138 Step 2: config_mcp_blocklist DAO ──────────────────────────────
+
+Deno.test("[configuring] addBlocklistPattern inserts row", () => {
+  const { db, dir } = createTestDb();
+  try {
+    migrateConfigDb(db);
+    addBlocklistPattern(db, "system.*", "admin lock");
+    const rows = listBlocklistPatterns(db);
+    assertEquals(rows.length, 1);
+    assertEquals(rows[0].key_pattern, "system.*");
+    assertEquals(rows[0].reason, "admin lock");
+    assertEquals(rows[0].agent_id, null);
+  } finally {
+    cleanUp(dir, db);
+  }
+});
+
+Deno.test("[configuring] addBlocklistPattern with agentId inserts agent-scoped row", () => {
+  const { db, dir } = createTestDb();
+  try {
+    migrateConfigDb(db);
+    addBlocklistPattern(db, "ai.provider", "no provider swap", "agent-x");
+    const rows = listBlocklistPatterns(db);
+    assertEquals(rows.length, 1);
+    assertEquals(rows[0].agent_id, "agent-x");
+    assertEquals(rows[0].key_pattern, "ai.provider");
+  } finally {
+    cleanUp(dir, db);
+  }
+});
+
+Deno.test("[configuring] removeBlocklistPattern deletes row", () => {
+  const { db, dir } = createTestDb();
+  try {
+    migrateConfigDb(db);
+    addBlocklistPattern(db, "system.*");
+    assertEquals(listBlocklistPatterns(db).length, 1);
+    removeBlocklistPattern(db, "system.*");
+    assertEquals(listBlocklistPatterns(db).length, 0);
+  } finally {
+    cleanUp(dir, db);
+  }
+});
+
+Deno.test("[configuring] isPathBlocked matches exact key", () => {
+  const { db, dir } = createTestDb();
+  try {
+    migrateConfigDb(db);
+    addBlocklistPattern(db, "system.root");
+    assertEquals(isPathBlocked(db, "system.root"), true);
+    assertEquals(isPathBlocked(db, "system.roots"), false);
+  } finally {
+    cleanUp(dir, db);
+  }
+});
+
+Deno.test("[configuring] isPathBlocked matches glob prefix", () => {
+  const { db, dir } = createTestDb();
+  try {
+    migrateConfigDb(db);
+    addBlocklistPattern(db, "system.*");
+    assertEquals(isPathBlocked(db, "system.root"), true);
+    assertEquals(isPathBlocked(db, "system.active_profile"), true);
+    assertEquals(isPathBlocked(db, "ai.timeout_ms"), false);
+  } finally {
+    cleanUp(dir, db);
+  }
+});
+
+Deno.test("[configuring] isPathBlocked matches glob suffix", () => {
+  const { db, dir } = createTestDb();
+  try {
+    migrateConfigDb(db);
+    addBlocklistPattern(db, "*.api_key");
+    assertEquals(isPathBlocked(db, "providers.openai.api_key"), true);
+    assertEquals(isPathBlocked(db, "ai.timeout_ms"), false);
+  } finally {
+    cleanUp(dir, db);
+  }
+});
+
+Deno.test("[configuring] isPathBlocked returns false for non-matching key", () => {
+  const { db, dir } = createTestDb();
+  try {
+    migrateConfigDb(db);
+    addBlocklistPattern(db, "system.*");
+    assertEquals(isPathBlocked(db, "ai.provider"), false);
+  } finally {
+    cleanUp(dir, db);
+  }
+});
+
+Deno.test("[configuring] isPathBlocked respects agent scope", () => {
+  const { db, dir } = createTestDb();
+  try {
+    migrateConfigDb(db);
+    // Agent-scoped block: only blocks agent-x.
+    addBlocklistPattern(db, "ai.provider", undefined, "agent-x");
+    assertEquals(isPathBlocked(db, "ai.provider", "agent-x"), true);
+    assertEquals(isPathBlocked(db, "ai.provider", "agent-y"), false);
+    assertEquals(isPathBlocked(db, "ai.provider"), false);
+    // NULL-agent block: blocks everyone.
+    addBlocklistPattern(db, "system.root");
+    assertEquals(isPathBlocked(db, "system.root", "agent-y"), true);
+    assertEquals(isPathBlocked(db, "system.root"), true);
   } finally {
     cleanUp(dir, db);
   }

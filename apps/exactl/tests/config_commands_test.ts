@@ -12,6 +12,9 @@ import { ConfigValidationError } from "@exaix/core/config";
 import type { IConfigAdapter } from "@exaix/core/config";
 import { createMockConfig, createStubConfig, createStubContext, createTestConfigDb } from "@exaix/testing";
 import { ConfigCommands } from "../src/commands/config_commands.ts";
+import { buildHandlers } from "@exaix-team/mcp-server";
+import { McpToolName } from "@exaix/mcp";
+import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 
 function withTempConfigDb(fn: (adapter: IConfigAdapter) => void): void {
   const dir = Deno.makeTempDirSync({ prefix: "config-cmd-" });
@@ -148,4 +151,42 @@ Deno.test("[configuring-cli] diff() returns a no-overrides message when nothing 
     assertEquals(typeof out, "string");
     assertEquals(out.toLowerCase().includes("no overridden"), true);
   });
+});
+
+// ── Phase 138 Step 2: config block CLI + MCP enforcement integration ─────────
+
+Deno.test({
+  name: "[configuring-cli] config_block_cli: CLI add/list wires the blocklist and MCP enforcement rejects",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const dir = Deno.makeTempDirSync({ prefix: "config-block-int-" });
+    try {
+      createTestConfigDb(dir);
+      const configService = createStubConfig(createMockConfig(dir));
+      const context = createStubContext({ config: configService });
+
+      // 1. CLI: add a blocklist pattern, then list shows it.
+      const commands = new ConfigCommands(context);
+      await commands.blockAdd("ai.*", "provider locked by admin");
+      const listed = await commands.blockList();
+      assertEquals(listed.some((b) => b.pattern === "ai.*"), true);
+      assertEquals(listed.find((b) => b.pattern === "ai.*")?.reason, "provider locked by admin");
+
+      // 2. MCP: ConfigSetTool via the live handler map refuses the blocked key.
+      const handlers = buildHandlers(context, new AllowAllPermissionsService());
+      const setTool = handlers.get(McpToolName.CONFIG_SET);
+      assertEquals(setTool !== undefined, true);
+      const response = await setTool!.execute({ key: "ai.provider", value: "openai" });
+      const text = response.content.find((c) => c.type === "text");
+      const blocked = text && text.type === "text" ? text.text.includes("blocked") : false;
+      assertEquals(blocked, true, "MCP write to a CLI-blocked key must be rejected");
+
+      // 3. CLI: remove clears the block.
+      await commands.blockRemove("ai.*");
+      assertEquals((await commands.blockList()).some((b) => b.pattern === "ai.*"), false);
+    } finally {
+      Deno.removeSync(dir, { recursive: true });
+    }
+  },
 });

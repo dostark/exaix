@@ -13,11 +13,12 @@ import {
 import { createMockConfig, createStubConfig, createStubContext } from "@exaix/testing";
 import { createTestConfigDb } from "@exaix/testing";
 import { type JSONValue, MCP_CONTENT_TYPE_STRUCTURED_DATA } from "@exaix/core";
-import { configurable, createConfigAdapter } from "@exaix/core/config";
+import { addBlocklistPattern, configurable, createConfigAdapter } from "@exaix/core/config";
 import { ConfigValueType, SwapClass } from "@exaix/core";
 import { buildHandlers } from "../tools.ts";
 import { McpToolName } from "@exaix/mcp";
 import { AllowAllPermissionsService } from "@exaix/mcp/testing";
+import { Database } from "@db/sqlite";
 
 Deno.test({
   name: "[configuring-mcp] pending changes start empty",
@@ -237,6 +238,40 @@ Deno.test({
         "dracula",
         "safe-tier write must reach the config DB through the wired handler",
       );
+    } finally {
+      Deno.removeSync(dir, { recursive: true });
+    }
+  },
+});
+
+Deno.test({
+  name: "[configuring-mcp] ConfigSetTool returns ConfigPathBlockedError for blocked key",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    _resetPendingChangesForTest();
+    const dir = Deno.makeTempDirSync({ prefix: "config-block-mcp-" });
+    try {
+      const dbPath = createTestConfigDb(dir);
+      // Seed a blocklist entry directly on the config DB.
+      const adapterForSeed = createConfigAdapter(dbPath);
+      const seedDb = new Database(dbPath);
+      try {
+        addBlocklistPattern(seedDb, "ai.*", "provider locked");
+      } finally {
+        seedDb.close();
+      }
+      assertEquals(adapterForSeed.isPathBlocked("ai.provider"), true);
+
+      const context = createStubContext({ config: createStubConfig(createMockConfig(dir)) });
+      const setTool = new ConfigSetTool(context);
+      const response = await setTool.execute({ key: "ai.provider", value: "openai" });
+
+      // Blocked writes are surfaced as a tool error, not staged.
+      const text = response.content.find((c) => c.type === "text");
+      const isErrorText = text && text.type === "text" ? text.text.includes("blocked") : false;
+      assertEquals(isErrorText, true, "blocked key must return a ConfigPathBlockedError message");
+      assertEquals(_drainPendingChangesForTest().length, 0, "blocked key must NOT stage");
     } finally {
       Deno.removeSync(dir, { recursive: true });
     }

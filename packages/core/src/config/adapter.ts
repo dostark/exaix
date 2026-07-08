@@ -10,8 +10,18 @@
 
 import { Database } from "@db/sqlite";
 import { ConfigAdapterMode, ConfigProvenanceSource, ConfigValueType, SwapClass } from "../types/enums.ts";
-import type { ConfigValue, IConfigOverrideEntry } from "./db.ts";
-import { getAllEffectiveValues, getEffectiveValue, getOverrideHistory, insertOverride } from "./db.ts";
+import type { ConfigValue, IBlocklistEntry, IConfigOverrideEntry } from "./db.ts";
+import {
+  addBlocklistPattern,
+  getAllEffectiveValues,
+  getEffectiveValue,
+  getOverrideHistory,
+  globMatches,
+  insertOverride,
+  isPathBlocked as dbIsPathBlocked,
+  listBlocklistPatterns,
+  removeBlocklistPattern,
+} from "./db.ts";
 import { getRegisteredDefaults } from "./registry.ts";
 import type { IConfigurableOpts } from "./registry.ts";
 import type { InMemoryConfigStore } from "./store.ts";
@@ -115,6 +125,24 @@ export interface IConfigAdapter {
 
   /** Full override history for a key (append-only log, DESC by id). */
   getHistory(key: string): IConfigOverrideEntry[];
+
+  /**
+   * True if `key` is in the MCP deny-permanently blocklist for `agentId`
+   * (Phase 138 Step 2). A NULL-agent block applies to all agents.
+   */
+  isPathBlocked(key: string, agentId?: string): boolean;
+
+  /** The block reason for a blocked `key`, if any (undefined when not blocked). */
+  getBlockReason(key: string, agentId?: string): string | undefined;
+
+  /** Add a deny-permanently blocklist pattern (admin/CLI). */
+  addBlock(pattern: string, reason?: string, agentId?: string): void;
+
+  /** Remove a blocklist pattern (admin/CLI). */
+  removeBlock(pattern: string, agentId?: string): void;
+
+  /** List all blocklist patterns, newest first. */
+  listBlocks(): IBlocklistEntry[];
 
   /** Whether the adapter is in direct (offline) or daemon mode. */
   readonly mode: ConfigAdapterMode;
@@ -477,6 +505,32 @@ export class DirectConfigAdapter implements IConfigAdapter {
 
   getHistory(key: string): IConfigOverrideEntry[] {
     return getOverrideHistory(this.db, key);
+  }
+
+  isPathBlocked(key: string, agentId?: string): boolean {
+    return dbIsPathBlocked(this.db, key, agentId);
+  }
+
+  getBlockReason(key: string, agentId?: string): string | undefined {
+    if (!dbIsPathBlocked(this.db, key, agentId)) return undefined;
+    // Return the reason of the first matching pattern (NULL-agent or this agent).
+    for (const entry of listBlocklistPatterns(this.db)) {
+      if (entry.agent_id !== null && entry.agent_id !== agentId) continue;
+      if (globMatches(entry.key_pattern, key)) return entry.reason ?? undefined;
+    }
+    return undefined;
+  }
+
+  addBlock(pattern: string, reason?: string, agentId?: string): void {
+    addBlocklistPattern(this.db, pattern, reason, agentId);
+  }
+
+  removeBlock(pattern: string, agentId?: string): void {
+    removeBlocklistPattern(this.db, pattern, agentId);
+  }
+
+  listBlocks(): IBlocklistEntry[] {
+    return listBlocklistPatterns(this.db);
   }
 }
 

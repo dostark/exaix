@@ -169,6 +169,21 @@ export class ConfigCommands extends BaseCommand {
       .filter((o) => o.key.startsWith("profile."))
       .map((o) => o.key.replace("profile.", ""));
   }
+
+  // ── Phase 138 Step 2: MCP deny-permanently blocklist management ────────────
+
+  async blockAdd(pattern: string, reason?: string): Promise<void> {
+    (await this.ensureAdapter()).addBlock(pattern, reason);
+  }
+
+  async blockRemove(pattern: string): Promise<void> {
+    (await this.ensureAdapter()).removeBlock(pattern);
+  }
+
+  async blockList(): Promise<Array<{ pattern: string; reason: string | null; created_at: string }>> {
+    const blocks = (await this.ensureAdapter()).listBlocks();
+    return blocks.map((b) => ({ pattern: b.key_pattern, reason: b.reason, created_at: b.created_at }));
+  }
 }
 
 function formatTree(obj: NestedConfigTree, depth: number): string {

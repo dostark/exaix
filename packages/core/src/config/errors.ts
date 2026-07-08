@@ -33,4 +33,15 @@ export class ConfigWriteError extends Error {
   }
 }
 
+/**
+ * Thrown / surfaced when an MCP config write targets a path in the
+ * config_mcp_blocklist (Phase 138 Step 2).
+ */
+export class ConfigPathBlockedError extends Error {
+  constructor(key: string, reason?: string) {
+    super(`Config path "${key}" is blocked from MCP writes${reason ? `: ${reason}` : ""}`);
+    this.name = "ConfigPathBlockedError";
+  }
+}
+
 export const EDITION_GATED_PATHS: ReadonlySet<string> = new Set(["guardrail", "hitl", "voting"]);

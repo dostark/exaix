@@ -10,6 +10,7 @@ import type { Database } from "@db/sqlite";
 import { join } from "@std/path";
 import { ensureDirSync } from "@std/fs";
 import { getRegisteredDefaults } from "./registry.ts";
+import { CONFIG_PATTERN_WILDCARD } from "../types/constants.ts";
 
 export type ConfigValue = string | number | boolean | null;
 
@@ -18,6 +19,14 @@ export interface IConfigOverrideEntry {
   value: ConfigValue;
   source: string;
   swap_class: string;
+  created_at: string;
+}
+
+/** A row in the config_mcp_blocklist table (Phase 138 Step 2). */
+export interface IBlocklistEntry {
+  agent_id: string | null;
+  key_pattern: string;
+  reason: string | null;
   created_at: string;
 }
 
@@ -46,6 +55,19 @@ export function migrateConfigDb(db: Database): void {
   db.exec(
     "CREATE INDEX IF NOT EXISTS idx_config_overrides_key ON config_overrides(key, id)",
   );
+  // Phase 138 Step 2: deny-permanently blocklist for MCP config writes.
+  // agent_id IS NULL means the pattern applies to all agents (admin lock);
+  // a non-null agent_id scopes the block to one agent ("deny permanently").
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS config_mcp_blocklist (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      agent_id    TEXT,
+      key_pattern TEXT NOT NULL,
+      created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+      reason      TEXT,
+      UNIQUE (agent_id, key_pattern)
+    )
+  `);
 }
 
 export function seedConfigDb(db: Database): void {
@@ -122,4 +144,80 @@ export function getOverrideHistory(
     ...row,
     value: row.value ?? null,
   }));
+}
+
+// ── Phase 138 Step 2: config_mcp_blocklist DAO ──────────────────────────────
+
+/**
+ * Add a deny-permanently blocklist pattern. `agentId` scopes the block to one
+ * agent; omit it (NULL) to block the pattern for all agents. Idempotent on the
+ * `(agent_id, key_pattern)` unique key.
+ */
+export function addBlocklistPattern(
+  db: Database,
+  pattern: string,
+  reason?: string,
+  agentId?: string,
+): void {
+  db.prepare(
+    "INSERT OR IGNORE INTO config_mcp_blocklist (agent_id, key_pattern, reason) VALUES (?, ?, ?)",
+  ).run(agentId ?? null, pattern, reason ?? null);
+}
+
+/** Remove a blocklist pattern (optionally scoped to one agent). */
+export function removeBlocklistPattern(
+  db: Database,
+  pattern: string,
+  agentId?: string,
+): void {
+  if (agentId === undefined) {
+    db.prepare(
+      "DELETE FROM config_mcp_blocklist WHERE key_pattern = ? AND agent_id IS NULL",
+    ).run(pattern);
+  } else {
+    db.prepare(
+      "DELETE FROM config_mcp_blocklist WHERE key_pattern = ? AND agent_id = ?",
+    ).run(pattern, agentId);
+  }
+}
+
+/** List all blocklist patterns, newest first. */
+export function listBlocklistPatterns(db: Database): Array<IBlocklistEntry> {
+  return db.prepare(
+    "SELECT agent_id, key_pattern, reason, created_at FROM config_mcp_blocklist ORDER BY id DESC",
+  ).all<{
+    agent_id: string | null;
+    key_pattern: string;
+    reason: string | null;
+    created_at: string;
+  }>().map((row) => ({
+    agent_id: row.agent_id ?? null,
+    key_pattern: row.key_pattern,
+    reason: row.reason ?? null,
+    created_at: row.created_at,
+  }));
+}
+
+/**
+ * Minimal glob match: split the pattern on `*` and require the key to start with
+ * the prefix and end with the suffix. A pattern without `*` matches only an equal
+ * key. No full wildcard engine — one `*` is the supported form.
+ */
+export function globMatches(pattern: string, key: string): boolean {
+  if (!pattern.includes(CONFIG_PATTERN_WILDCARD)) return pattern === key;
+  const [prefix, suffix = ""] = pattern.split(CONFIG_PATTERN_WILDCARD);
+  return key.startsWith(prefix) && key.endsWith(suffix) &&
+    key.length >= prefix.length + suffix.length;
+}
+
+/**
+ * True if `key` is blocked for `agentId`. A row with NULL `agent_id` blocks all
+ * agents; a row with a matching `agent_id` blocks that agent. Patterns are glob
+ * matched via {@link globMatches}.
+ */
+export function isPathBlocked(db: Database, key: string, agentId?: string): boolean {
+  const rows = db.prepare(
+    "SELECT agent_id, key_pattern FROM config_mcp_blocklist WHERE agent_id IS NULL OR agent_id = ?",
+  ).all<{ agent_id: string | null; key_pattern: string }>(agentId ?? null);
+  return rows.some((row) => globMatches(row.key_pattern, key));
 }

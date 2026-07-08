@@ -7,7 +7,7 @@ import { Database } from "@db/sqlite";
 import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
 import { configurable } from "../../src/config/registry.ts";
 import { ConfigProvenanceSource, ConfigValueType } from "../../src/types/enums.ts";
-import { ensureConfigDb, migrateConfigDb, seedConfigDb } from "../../src/config/db.ts";
+import { addBlocklistPattern, ensureConfigDb, migrateConfigDb, seedConfigDb } from "../../src/config/db.ts";
 import { createConfigAdapter, DirectConfigAdapter } from "../../src/config/adapter.ts";
 import { ConfigKeyNotFoundError } from "../../src/config/errors.ts";
 import { DomainEventType } from "../../src/events/domain_event_types.ts";
@@ -503,3 +503,28 @@ Deno.test(
     }
   },
 );
+
+// ── Phase 138 Step 2: adapter blocklist delegation ──────────────────────────
+
+Deno.test("[configuring] adapter.isPathBlocked delegates to DAO", () => {
+  const { adapter, dir } = setupAdapter();
+  try {
+    // Not blocked initially.
+    assertEquals(adapter.isPathBlocked("system.root"), false);
+
+    // Seed a block directly via the DAO on the same config DB.
+    const db = new Database(ensureConfigDb(dir));
+    try {
+      addBlocklistPattern(db, "system.*", "admin lock");
+    } finally {
+      db.close();
+    }
+
+    assertEquals(adapter.isPathBlocked("system.root"), true);
+    assertEquals(adapter.getBlockReason("system.root"), "admin lock");
+    assertEquals(adapter.isPathBlocked("ai.timeout_ms"), false);
+    assertEquals(adapter.getBlockReason("ai.timeout_ms"), undefined);
+  } finally {
+    cleanUp(dir);
+  }
+});

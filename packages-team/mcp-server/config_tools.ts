@@ -13,7 +13,7 @@ import { type JSONValue, MCP_CONTENT_TYPE_STRUCTURED_DATA, ToolErrorCode } from 
 import type { ICliApplicationContext } from "@exaix/core/types";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
 import type { IEventLogger } from "@exaix/core/logger";
-import { createConfigAdapter, resolveTier } from "@exaix/core/config";
+import { ConfigPathBlockedError, createConfigAdapter, resolveTier } from "@exaix/core/config";
 import type { ConfigValue, IConfigAdapter } from "@exaix/core/config";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 import { join } from "@std/path";
@@ -33,6 +33,8 @@ const pendingChanges: IPendingChange[] = [];
 const AUTO_DISCARD_TIMEOUT_MS = 60_000;
 const CONFIG_APPLY_STATUS_APPLIED = "applied";
 const CONFIG_APPLY_STATUS_ERROR = "error";
+/** Tool-name label passed to formatToolError for ConfigSetTool error responses. */
+const CONFIG_SET_TOOL_NAME = "config_set";
 
 function addPendingChange(key: string, value: JSONValue): void {
   const timeoutId = setTimeout(() => {
@@ -312,7 +314,7 @@ export class ConfigSetTool extends ToolHandler {
 
     if (!key) {
       return this.formatToolError(
-        "config_set",
+        CONFIG_SET_TOOL_NAME,
         DEFAULT_MCP_IDENTITY_ID,
         DEFAULT_MCP_IDENTITY_ID,
         ToolErrorCode.INVALID_ARGS,
@@ -326,11 +328,24 @@ export class ConfigSetTool extends ToolHandler {
       const validationKey = this.getAdapter().resolveValidationKey(key);
       if (validationKey === undefined) {
         return this.formatToolError(
-          "config_set",
+          CONFIG_SET_TOOL_NAME,
           DEFAULT_MCP_IDENTITY_ID,
           DEFAULT_MCP_IDENTITY_ID,
           ToolErrorCode.INVALID_ARGS,
           `Unknown config key: ${key}`,
+          { key },
+        );
+      }
+
+      // Phase 138 Step 2: refuse writes to deny-permanently blocked paths.
+      if (this.getAdapter().isPathBlocked(key)) {
+        const reason = this.getAdapter().getBlockReason(key);
+        return this.formatToolError(
+          CONFIG_SET_TOOL_NAME,
+          DEFAULT_MCP_IDENTITY_ID,
+          DEFAULT_MCP_IDENTITY_ID,
+          ToolErrorCode.PERMISSION_DENIED,
+          new ConfigPathBlockedError(key, reason).message,
           { key },
         );
       }
@@ -367,7 +382,7 @@ export class ConfigSetTool extends ToolHandler {
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       return this.formatToolError(
-        "config_set",
+        CONFIG_SET_TOOL_NAME,
         DEFAULT_MCP_IDENTITY_ID,
         DEFAULT_MCP_IDENTITY_ID,
         classifyConfigError(error instanceof Error ? error : String(error)),
@@ -422,6 +437,15 @@ export class ConfigApplyTool extends ToolHandler {
       // failures are recorded as errors instead of escaping as unhandled rejections.
       const results: Array<{ key: string; status: string; error?: string }> = [];
       for (const { key, value } of pending) {
+        // Phase 138 Step 2: a key blocked between staging and apply is refused.
+        if (adapter.isPathBlocked(key)) {
+          results.push({
+            key,
+            status: CONFIG_APPLY_STATUS_ERROR,
+            error: new ConfigPathBlockedError(key, adapter.getBlockReason(key)).message,
+          });
+          continue;
+        }
         try {
           await adapter.set(key, value as (string | number | boolean | null));
           results.push({ key, status: CONFIG_APPLY_STATUS_APPLIED });

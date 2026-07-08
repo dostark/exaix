@@ -101,6 +101,7 @@ const CLI_LIMIT_OPTION = "-l, --limit <limit:number>";
 const CLI_LIMIT_HELP = "Maximum results";
 const DISPLAY_CATEGORY_BLUEPRINTS = "blueprints";
 const CLI_CMD_SHOW_ID = "show <id>";
+const CLI_CMD_LIST = "list";
 const CLI_OPTION_REASON = "-r, --reason <reason:string>";
 const CLI_OPTION_MODEL = "-m, --model <model:string>";
 const CLI_OPTION_PORTAL = "-p, --portal <portal:string>";
@@ -514,7 +515,7 @@ export const __test_command = new Command()
         new Command()
           .description("Manage plan amendments for paused executions")
           .command(
-            "list",
+            CLI_CMD_LIST,
             new Command()
               .description("List plans awaiting amendment approval")
               .action(async () => {
@@ -624,7 +625,7 @@ export const __test_command = new Command()
     new Command()
       .description("Manage durable wait states for human-in-the-loop approvals")
       .command(
-        "list",
+        CLI_CMD_LIST,
         new Command()
           .description("List pending wait states")
           .option(CLI_OPTION_WAIT_STATUS, "Filter by status")
@@ -1289,6 +1290,64 @@ export const __test_command = new Command()
               Deno.exit(1);
             }
           }),
+      )
+      // Phase 138 Step 2: MCP deny-permanently blocklist management.
+      .command(
+        "block",
+        new Command()
+          .description("Manage the MCP config-write deny-permanently blocklist")
+          .command(
+            "add <pattern>",
+            new Command()
+              .description("Block a config path pattern from MCP writes (glob: system.*)")
+              .option("--reason <text:string>", "Optional admin note for the block")
+              .action(async (options, ...args: string[]) => {
+                try {
+                  await configCommands.blockAdd(args[0], options.reason);
+                  display.info("config.block.add", args[0], { reason: options.reason });
+                } catch (error) {
+                  display.error("cli.error", "config block add", {
+                    message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+                  });
+                  Deno.exit(1);
+                }
+              }),
+          )
+          .command(
+            "remove <pattern>",
+            new Command()
+              .description("Remove a blocklist pattern")
+              .action(async (_options, ...args: string[]) => {
+                try {
+                  await configCommands.blockRemove(args[0]);
+                  display.info("config.block.remove", args[0], {});
+                } catch (error) {
+                  display.error("cli.error", "config block remove", {
+                    message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+                  });
+                  Deno.exit(1);
+                }
+              }),
+          )
+          .command(
+            CLI_CMD_LIST,
+            new Command()
+              .description("List all blocklist patterns")
+              .action(async () => {
+                try {
+                  const blocks = await configCommands.blockList();
+                  for (const b of blocks) {
+                    console.log(`${b.pattern}${b.reason ? `  (${b.reason})` : ""}`);
+                  }
+                  display.info("config.block.list", CONFIG_LABEL, { count: blocks.length });
+                } catch (error) {
+                  display.error("cli.error", "config block list", {
+                    message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+                  });
+                  Deno.exit(1);
+                }
+              }),
+          ),
       )
       .command(
         "validate",
@@ -2497,7 +2556,7 @@ const skillsCommand = new Command()
     console.log(result);
   })
   .command(
-    "list",
+    CLI_CMD_LIST,
     new Command()
       .description("List all skills")
       .option("-c, --category <category:string>", "Filter by category: core, project, learned")
