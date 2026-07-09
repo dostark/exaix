@@ -362,6 +362,43 @@ single source of truth for identities.
 Directory containing flow blueprints. Each flow step references identities by
 `identity` name or `identity_id`.
 
+## Model Registry (Solo, Phase 134)
+
+### Floor
+
+The Solo edition's model registry: a static, no-network catalog of provider/model
+capabilities and pricing (`DefaultModelRegistry`). It is the baseline the resolver
+consults when no live catalog (a Team+ capability) is attached. "Floor" because it is
+the minimum guaranteed knowledge — always present, never fetched.
+
+### Provenance
+
+The trust label on a model's pricing: `static` (a known, dated price shipped with the
+floor) or `unknown` (no price on record). An `unknown`-priced model is never treated as
+"cheapest"; only a genuinely known price can win a cost comparison.
+
+### Curated list
+
+A user-defined, per-size ordered list of preferred providers
+(`model_presets.<SIZE>.candidates`). The resolver tries it before any scoring; the first
+healthy, registered provider wins and the resolution is journalled with
+`reason: preferred_list`. An optional `characteristics` sub-map reorders the list for a
+given `--characteristic` (e.g. `cheapest`).
+
+### Cost exemption
+
+The rule that a genuinely local or free provider (Ollama, or any provider whose endpoint
+cost is truly $0 by explicit cost tier) bypasses budget filtering and scores as $0 for
+`cheapest`. It never applies to `unknown`-priced providers, so a paid provider cannot be
+misclassified as free.
+
+### Edition seam
+
+The attach point (`IModelRegistryProvider`, on `IEditionComposer`) by which a Team+
+module supplies a live model registry. Solo returns none, so the resolver falls back to
+the [Floor](#floor); behaviour is byte-identical whether or not a Team module is present
+until Phase 135 registers one.
+
 ## Canonical Prompt (Short)
 
 "Use the Exaix Developer Glossary as the single source of truth for kernel names, journal field maps, and code identifiers."

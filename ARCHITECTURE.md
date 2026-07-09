@@ -163,6 +163,7 @@ into the request body alongside `model` and `messages`.
 - Enterprise providers: Azure OpenAI, AWS Bedrock (🟣 Enterprise)
 - Provider factory pattern for extensibility; concrete providers register at bootstrap via `apps/common/registry_bootstrap.ts` (Solo) or `packages-team/team-composer/src/team_bootstrap.ts` (Team)
 - Cost management with edition-tiered capabilities
+- **Model registry (Solo tier, Phase 134):** the model resolver consults an `IModelRegistry` when selecting a concrete model for an intent. Solo ships a lightweight **floor** — a static, no-network catalog of provider/model capabilities and pricing provenance — so resolution stays offline and deterministic. Resolution honours a user-**curated list** first (per-size preferred providers, `preferred_list` reason), exempts genuinely local/free providers from cost filtering, and never fabricates a price for an unknown-priced model. A live catalog and routing rigor are Team+ capabilities, attached through the edition seam (`IModelRegistryProvider`); when no Team module is present the Solo floor is used and behaviour is unchanged. See `packages/model-registry/README.md` and the User Guide's model-intent section.
 
 ### 5. **Portal System**
 

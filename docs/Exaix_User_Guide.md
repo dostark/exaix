@@ -239,6 +239,34 @@ provider = "ollama"
 model = "llama3.2"
 ```
 
+**Curated model lists per size (Phase 134, Solo).** When a request specifies a `--model-size`
+(S/M/L/XL) rather than a named model, the resolver picks a provider for that size. You can
+curate a **preferred list** per size so your favourite providers win before any scoring:
+
+```toml
+[model_presets.M]
+max_cost_per_mtok = 3
+min_context_window = 32000
+supports_thinking = true
+# Try these providers first, in order, for a size-M request (reason: preferred_list).
+candidates = ["anthropic", "ollama"]
+
+# Optional intra-list reorder hints for a given --characteristic.
+[model_presets.M.characteristics]
+cheapest = ["ollama"]
+```
+
+- Entries are **provider names** (e.g. `anthropic`), not `provider:model` pairs — the resolver
+  picks the model for that provider.
+- A **local or free** provider (Ollama, or any provider whose endpoint is genuinely $0) is
+  **exempt from cost filtering**, so it can win even under a tight budget. An unknown-priced
+  model is never treated as "cheapest" — only a genuinely known price qualifies.
+- Curate these lists from the CLI instead of editing TOML by hand — see
+  [`exactl config model` and `exactl models`](#exactl-config-model--exactl-models--solo-model-curation-phase-134).
+- **Editions:** the Solo floor is a static, offline catalog. A live, always-current catalog and
+  stricter routing rigor arrive with the Team edition (Phase 135); Solo behaviour is unchanged
+  when no Team module is present.
+
 #### 2.4.3 Provider Comparison
 
 | Provider      | Best For                         | Recommended Model | Cost |
@@ -916,6 +944,55 @@ exactl request "Refactor utils module" --model-size M --thinking --effort low --
 # Pin to a specific provider but let ModelResolver pick the model
 exactl request "Audit dependencies" --model-size XL --preferred-provider anthropic
 ```
+
+**Resolution precedence (Solo, Phase 134).** For a `--model-size` request the resolver tries, in order:
+
+1. An explicit `provider:model` (e.g. `--model anthropic:claude-opus-4.5`) — passed through as-is
+   (`explicit_override`). Solo does not validate the model name against a catalog, so a typo
+   surfaces as a provider error at call time.
+2. A **curated list** for the size (`model_presets.<SIZE>.candidates`) — the first healthy,
+   registered provider wins (`preferred_list`).
+3. Capability/cost **scoring** across registered providers (`preset_default` /
+   `characteristics_scored`), with local/free providers exempt from budget filtering.
+
+The chosen provider, model, and the reason are journalled as `model.resolved`. Inspect them with:
+
+```bash
+exactl logs --filter action_type=model.resolved --format json
+```
+
+##### `exactl config model` & `exactl models` — Solo model curation (Phase 134)
+
+Curate the per-size preferred lists and inspect the Solo model floor without editing TOML by hand.
+Curated lists are written back to `exa.config.toml` (`model_presets.<SIZE>.candidates`) — the same
+surface the resolver reads — so there is no separate database.
+
+```bash
+# Inspect the Solo model floor: provider:model, pricing provenance, and staleness
+exactl models list
+exactl models pricing
+
+# Curate the preferred providers for size M (order matters — first healthy provider wins)
+exactl config model --size M anthropic ollama
+
+# Add a characteristic reorder hint (promotes ollama when --characteristic cheapest is used)
+exactl config model --size M --characteristic cheapest ollama
+
+# Show the current curated lists (unregistered providers are flagged "unconfigured")
+exactl config model --list
+
+# Clear a size's curated list (falls back to scoring)
+exactl config model --size M --clear
+```
+
+Notes:
+
+- Entries are **provider names**, not `provider:model` pairs. An ambiguous bare name that matches a
+  model owned by more than one provider is rejected with the qualifying options; an unknown
+  provider is stored but flagged `unconfigured` (a pre-curation allowance).
+- Pricing **provenance** is shown as `static` (a known, dated price) or `unknown`. A price older
+  than 90 days is marked `(stale)`. The Solo floor is offline — there is **no `models refresh`**;
+  a live, auto-refreshed catalog arrives with the Team edition (Phase 135).
 
 **Why CLI instead of manual files?**
 

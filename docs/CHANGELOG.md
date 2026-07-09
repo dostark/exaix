@@ -18,6 +18,18 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 134 (Model Registry)
+
+### Added
+
+- `exactl models list` and `exactl models pricing` — inspect the Solo model floor's provider/model list, pricing provenance (`static`/`unknown`), and verified-at staleness (see `Exaix_User_Guide.md §2.4.2`).
+- `exactl config model --size <S|M|L|XL> <providers…>` — curate a per-size preferred provider list (with `--characteristic`, `--list`, and `--clear`), written back to `model_presets.<SIZE>.candidates` in `exa.config.toml`.
+- Curated `model_presets.<SIZE>.candidates` and `model_presets.<SIZE>.characteristics` config keys — a size request resolves via this preferred list first (journalled `reason: preferred_list`).
+
+### Changed
+
+- A local or free provider (e.g. Ollama) is now exempt from cost/budget filtering during model-size resolution, and an unknown-priced model is never selected as "cheapest".
+
 ## Unreleased — Phase 132 (Model Routing)
 
 ### Deprecations
