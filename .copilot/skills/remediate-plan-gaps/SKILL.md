@@ -46,6 +46,7 @@ Related skills:
 - #pre-gap-analysis — Produces the gaps this skill closes
 - #next-steps — Executes the plan after gaps are remediated
 - #commit — Structured commit after remediation
+- #test-development — Edge case coverage requirements, test helpers, placement rules
 
 Workflow chain (typical):
   #plan → #pre-gap-analysis → **#remediate-plan-gaps** → #next-steps → #post-gap-analysis → #remediate-code-gaps → #commit

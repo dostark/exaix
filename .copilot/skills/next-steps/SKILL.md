@@ -316,6 +316,7 @@ Related skills
 - #post-gap-analysis — Deep review when all steps are complete (follows this skill)
 - #commit            — Create a structured commit message (used at end of each step)
 - #tdd-workflow      — Full TDD red-green-refactor reference for individual components (used within each step)
+- #test-development  — Edge case coverage requirements, test helpers, placement rules
 - #refactor-check-magic — Run when check:magic violations are non-trivial
 - #fix-bug           — Fix a bug discovered during implementation (branches off this skill)
 - #security          — Full security audit skill for Exaix internals (use when 3+ security findings exist)

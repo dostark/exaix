@@ -103,6 +103,7 @@ Dogfooding chain (alternative, once Phase E tooling ships):
 - [next-steps](../next-steps/SKILL.md) — step-by-step execution of a plan
 - [pre-gap-analysis](../pre-gap-analysis/SKILL.md) — plan validation before implementation
 - [post-gap-analysis](../post-gap-analysis/SKILL.md) — post-implementation review against plan
+- [test-development](../test-development/SKILL.md) — edge case coverage requirements, test helpers
 
 ---
 
