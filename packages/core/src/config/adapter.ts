@@ -14,6 +14,7 @@ import type { ConfigValue, IBlocklistEntry, IConfigOverrideEntry, ILockedKeyEntr
 import {
   addBlocklistPattern,
   compactOverrides,
+  CONFIG_SOURCE_INTEGRITY,
   CONFIG_SOURCE_ROLLBACK,
   countRecentCliWrites,
   getAllEffectiveValues,
@@ -30,6 +31,8 @@ import {
   removeBlocklistPattern,
   unlockKey,
 } from "./db.ts";
+import { encodeHex } from "@std/encoding/hex";
+import { crypto } from "@std/crypto";
 import { getRegisteredDefaults } from "./registry.ts";
 import type { IConfigurableOpts } from "./registry.ts";
 import type { InMemoryConfigStore } from "./store.ts";
@@ -37,7 +40,7 @@ import { ConfigKeyLockedError, ConfigKeyNotFoundError, ConfigValidationError, ED
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { Opt, Reason } from "../types/optional_marker.ts";
-import { CONFIG_PATTERN_WILDCARD, CONFIG_PROFILE_KEY_PREFIX } from "../types/constants.ts";
+import { CONFIG_CHECKSUM_KEY, CONFIG_PATTERN_WILDCARD, CONFIG_PROFILE_KEY_PREFIX } from "../types/constants.ts";
 
 /**
  * Report returned by validate() and validateAtPath().
@@ -101,6 +104,16 @@ export interface IConfigIntegrityPayload {
   stored?: string;
   /** Present on a mismatch (the freshly computed value). */
   computed?: string;
+}
+
+/** Result of verifyIntegrity() (Phase 139 Step 5, §11.7). */
+export interface IIntegrityResult {
+  /** True when the stored checksum matches a fresh compute (or on first-run seed). */
+  ok: boolean;
+  /** The previously stored checksum (undefined on first-run seed). */
+  stored?: string;
+  /** The freshly computed checksum. */
+  computed: string;
 }
 
 /**
@@ -181,6 +194,20 @@ export interface IConfigAdapter {
 
   /** List all locked keys, newest first. (Phase 139 Step 4) */
   listLocks(): ILockedKeyEntry[];
+
+  /**
+   * SHA-256 over the sorted effective config (DB-sourced, excluding the
+   * synthetic `_checksum` key). Deterministic for a given config state.
+   * (Phase 139 Step 5, §11.7)
+   */
+  computeIntegrityChecksum(): string;
+
+  /**
+   * Compare the stored `_checksum` to a fresh compute. Seeds and returns
+   * `ok:true` on first run; emits ConfigIntegrityVerified on match and
+   * ConfigIntegrityMismatch on an out-of-band edit. (Phase 139 Step 5)
+   */
+  verifyIntegrity(): Promise<IIntegrityResult>;
 
   /**
    * True if `key` is in the MCP deny-permanently blocklist for `agentId`
@@ -407,6 +434,7 @@ export class DirectConfigAdapter implements IConfigAdapter {
     // Persist under the ORIGINAL key (profile/per-name keys keep their full path).
     const swapClass = options?.swap_class ?? SwapClass.HOT;
     insertOverride(this.db, key, value, "cli", swapClass, { logger: this.daemonLogger });
+    this.persistChecksum();
     await this.daemonLogger?.info(DomainEventType.ConfigUpdated, key, {
       value,
       source: "cli",
@@ -455,6 +483,7 @@ export class DirectConfigAdapter implements IConfigAdapter {
       throw new ConfigKeyNotFoundError(key);
     }
     insertOverride(this.db, key, null, "cli", "hot", { logger: this.daemonLogger });
+    this.persistChecksum();
     await this.daemonLogger?.info(DomainEventType.ConfigUpdated, key, {
       value: null,
       source: "cli",
@@ -466,6 +495,8 @@ export class DirectConfigAdapter implements IConfigAdapter {
     const allValues = getAllEffectiveValues(this.db);
     const result: IOverrideEntry[] = [];
     for (const [key, rawValue] of allValues) {
+      // The synthetic integrity checksum is never a user override (Step 5, GAP-4).
+      if (key === CONFIG_CHECKSUM_KEY) continue;
       if (rawValue !== null) {
         const registered = getRegisteredDefaults().get(key);
         const coerced = coerceDbValue(rawValue, registered?.opts);
@@ -530,6 +561,8 @@ export class DirectConfigAdapter implements IConfigAdapter {
     const added: Array<{ path: string; value: ConfigValue }> = [];
     const missing: Array<{ path: string; default: ConfigValue }> = [];
 
+    // Iterates registered keys only; the synthetic `_checksum` is unregistered
+    // so it is structurally excluded from diff (Step 5, GAP-4) — no filter needed.
     for (const [key, registered] of getRegisteredDefaults()) {
       const effective = this.get(key);
       const defaultValue = registered.opts.default;
@@ -594,6 +627,7 @@ export class DirectConfigAdapter implements IConfigAdapter {
     insertOverride(this.db, key, row.value, CONFIG_SOURCE_ROLLBACK, row.swap_class, {
       logger: this.daemonLogger,
     });
+    this.persistChecksum();
     const payload: IConfigRollbackPayload = { key, to_id: id, restored_value: row.value };
     await this.daemonLogger?.info(DomainEventType.ConfigRolledBack, key, { ...payload });
     return row.value;
@@ -627,6 +661,58 @@ export class DirectConfigAdapter implements IConfigAdapter {
 
   listLocks(): ILockedKeyEntry[] {
     return listLockedKeys(this.db);
+  }
+
+  // ── Phase 139 Step 5: integrity checksum (§11.7) ──────────────────────────
+
+  /**
+   * SHA-256 over the sorted effective config. DB-sourced via
+   * getAllEffectiveValues(this.db) — never the in-memory store, so on a
+   * DaemonConfigAdapter (whose get() is store-backed) the checksum still
+   * reflects the persisted DB an out-of-band edit mutates (GAP-6). The
+   * synthetic `_checksum` key is excluded so the checksum never hashes its own
+   * previous value (a fixed-point/instability bug if omitted).
+   */
+  computeIntegrityChecksum(): string {
+    const effective = getAllEffectiveValues(this.db);
+    const keys = [...effective.keys()].filter((k) => k !== CONFIG_CHECKSUM_KEY).sort();
+    const parts: string[] = [];
+    for (const key of keys) {
+      const value = effective.get(key);
+      if (value === null || value === undefined) continue;
+      parts.push(`${key}||${String(value)}`);
+    }
+    const data = new TextEncoder().encode(parts.join("\n"));
+    return encodeHex(crypto.subtle.digestSync("SHA-256", data));
+  }
+
+  /**
+   * Refresh the stored `_checksum` row from the current DB state. Called at the
+   * end of every adapter write path so legitimate writes never trip a mismatch.
+   */
+  protected persistChecksum(): void {
+    insertOverride(this.db, CONFIG_CHECKSUM_KEY, this.computeIntegrityChecksum(), CONFIG_SOURCE_INTEGRITY, "hot");
+  }
+
+  async verifyIntegrity(): Promise<IIntegrityResult> {
+    const computed = this.computeIntegrityChecksum();
+    const stored = getEffectiveValue(this.db, CONFIG_CHECKSUM_KEY);
+    // First run: no stored checksum yet — seed it and report ok.
+    if (stored === null) {
+      this.persistChecksum();
+      const payload: IConfigIntegrityPayload = { checksum: computed };
+      await this.daemonLogger?.info(DomainEventType.ConfigIntegrityVerified, CONFIG_CHECKSUM_KEY, { ...payload });
+      return { ok: true, computed };
+    }
+    const ok = stored === computed;
+    if (ok) {
+      const payload: IConfigIntegrityPayload = { checksum: computed };
+      await this.daemonLogger?.info(DomainEventType.ConfigIntegrityVerified, CONFIG_CHECKSUM_KEY, { ...payload });
+    } else {
+      const payload: IConfigIntegrityPayload = { stored: String(stored), computed };
+      await this.daemonLogger?.warn(DomainEventType.ConfigIntegrityMismatch, CONFIG_CHECKSUM_KEY, { ...payload });
+    }
+    return { ok, stored: String(stored), computed };
   }
 
   isPathBlocked(key: string, agentId?: Opt<string, Reason.QueryFilter>): boolean {
@@ -745,6 +831,7 @@ export class DaemonConfigAdapter extends DirectConfigAdapter {
     const swapClass = options?.swap_class ?? SwapClass.HOT;
     const source = ConfigAdapterMode.DAEMON;
     insertOverride(this.db, key, value, source, swapClass, { logger: this.daemonLogger });
+    this.persistChecksum();
 
     // If hot-swappable, apply to in-memory store immediately
     if (swapClass === SwapClass.HOT) {
@@ -772,6 +859,7 @@ export class DaemonConfigAdapter extends DirectConfigAdapter {
       throw new ConfigKeyNotFoundError(key);
     }
     insertOverride(this.db, key, null, ConfigAdapterMode.DAEMON, "hot", { logger: this.daemonLogger });
+    this.persistChecksum();
     this.configStore.delete(key);
     await this.daemonLogger?.info(DomainEventType.ConfigUpdated, key, {
       value: null,

@@ -327,3 +327,25 @@ Deno.test("[configuring] DaemonConfigAdapter.set throws ConfigKeyLockedError for
     cleanUp(dir, db);
   }
 });
+
+// ── Phase 139 Step 5 (GAP-6): the daemon checksum reads the DB, not the store ─
+
+Deno.test("[configuring] DaemonConfigAdapter.verifyIntegrity detects a raw db.prepare write", async () => {
+  const { adapter, dir, db } = setupDaemonAdapter();
+  try {
+    // Seed the checksum from the current DB state.
+    const seeded = await adapter.verifyIntegrity();
+    assertEquals(seeded.ok, true);
+    // Mutate the DB directly (not the store, not the adapter). Because
+    // computeIntegrityChecksum() reads getAllEffectiveValues(this.db) — never
+    // the store — this out-of-band edit must be detected as a mismatch. If the
+    // checksum hashed the store instead, this would silently pass.
+    db.prepare(
+      "INSERT INTO config_overrides (key, value, source, swap_class) VALUES (?, ?, ?, ?)",
+    ).run("daemon_test.timeout_ms", "77777", "manual", "hot");
+    const result = await adapter.verifyIntegrity();
+    assertEquals(result.ok, false);
+  } finally {
+    cleanUp(dir, db);
+  }
+});

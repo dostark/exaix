@@ -7,6 +7,7 @@ import { Database } from "@db/sqlite";
 import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
 import { configurable } from "../../src/config/registry.ts";
 import { ConfigProvenanceSource, ConfigValueType } from "../../src/types/enums.ts";
+import { CONFIG_CHECKSUM_KEY } from "../../src/types/constants.ts";
 import { addBlocklistPattern, ensureConfigDb, migrateConfigDb, seedConfigDb } from "../../src/config/db.ts";
 import { createConfigAdapter, DirectConfigAdapter } from "../../src/config/adapter.ts";
 import { ConfigKeyLockedError, ConfigKeyNotFoundError, ConfigRateLimitedError } from "../../src/config/errors.ts";
@@ -30,7 +31,10 @@ function createSpyLogger(): { logger: IEventLogger; events: ICapturedEvent[] } {
       events.push({ action, target, payload });
       return Promise.resolve();
     },
-    warn: () => Promise.resolve(),
+    warn: (action, target, payload) => {
+      events.push({ action, target, payload });
+      return Promise.resolve();
+    },
     error: () => Promise.resolve(),
     fatal: () => Promise.resolve(),
     debug: () => Promise.resolve(),
@@ -672,6 +676,104 @@ Deno.test("[configuring] adapter.lock/unlock emit ConfigKeyLocked/ConfigKeyUnloc
       events.find((e) => e.action === DomainEventType.ConfigKeyUnlocked),
       undefined,
       "ConfigKeyUnlocked must be emitted",
+    );
+  } finally {
+    cleanUp(dir);
+  }
+});
+
+// ── Phase 139 Step 5: integrity checksum ────────────────────────────────────
+
+Deno.test("[configuring] computeIntegrityChecksum is stable across calls on unchanged config", () => {
+  const { adapter, dir } = setupAdapter();
+  try {
+    const a = adapter.computeIntegrityChecksum();
+    const b = adapter.computeIntegrityChecksum();
+    assertEquals(a, b);
+  } finally {
+    cleanUp(dir);
+  }
+});
+
+Deno.test("[configuring] computeIntegrityChecksum excludes the _checksum key itself", async () => {
+  const { adapter, dir } = setupAdapter();
+  try {
+    const before = adapter.computeIntegrityChecksum();
+    // Persisting the checksum inserts a _checksum override; recomputing must
+    // ignore it (self-exclusion) so the value is a fixed point, not unstable.
+    await adapter.verifyIntegrity(); // seeds the _checksum row
+    const after = adapter.computeIntegrityChecksum();
+    assertEquals(after, before);
+  } finally {
+    cleanUp(dir);
+  }
+});
+
+Deno.test("[configuring] computeIntegrityChecksum changes when an override changes", async () => {
+  const { adapter, dir } = setupAdapter();
+  try {
+    const before = adapter.computeIntegrityChecksum();
+    await adapter.set("adapter_test.timeout_ms", 61000);
+    const after = adapter.computeIntegrityChecksum();
+    assertNotEquals(after, before);
+  } finally {
+    cleanUp(dir);
+  }
+});
+
+Deno.test("[configuring] verifyIntegrity returns ok on first run and persists the checksum", async () => {
+  const { adapter, dir } = setupAdapter();
+  try {
+    const first = await adapter.verifyIntegrity();
+    assertEquals(first.ok, true);
+    // Stored checksum now present — a second verify still matches.
+    const second = await adapter.verifyIntegrity();
+    assertEquals(second.ok, true);
+  } finally {
+    cleanUp(dir);
+  }
+});
+
+Deno.test("[configuring] verifyIntegrity detects an out-of-band edit and emits ConfigIntegrityMismatch", async () => {
+  const { adapter, events, dir } = setupAdapterWithLogger();
+  try {
+    await adapter.verifyIntegrity(); // seed
+    // Write a config_overrides row directly, bypassing the adapter (and thus
+    // its checksum refresh) — simulating an out-of-band DB edit.
+    const dbPath = ensureConfigDb(dir);
+    const raw = new Database(dbPath);
+    try {
+      raw.prepare(
+        "INSERT INTO config_overrides (key, value, source, swap_class) VALUES (?, ?, ?, ?)",
+      ).run("adapter_test.timeout_ms", "99999", "manual", "hot");
+    } finally {
+      raw.close();
+    }
+    const result = await adapter.verifyIntegrity();
+    assertEquals(result.ok, false);
+    assertNotEquals(
+      events.find((e) => e.action === DomainEventType.ConfigIntegrityMismatch),
+      undefined,
+      "ConfigIntegrityMismatch must be emitted on mismatch",
+    );
+  } finally {
+    cleanUp(dir);
+  }
+});
+
+Deno.test("[configuring] listOverrides/diff exclude the _checksum synthetic key", async () => {
+  const { adapter, dir } = setupAdapter();
+  try {
+    await adapter.verifyIntegrity(); // seeds _checksum
+    assertEquals(
+      adapter.listOverrides().some((o) => o.key === CONFIG_CHECKSUM_KEY),
+      false,
+      "_checksum must not appear in listOverrides",
+    );
+    assertEquals(
+      adapter.diff().overridden.some((o) => o.path === CONFIG_CHECKSUM_KEY),
+      false,
+      "_checksum must not appear in diff",
     );
   } finally {
     cleanUp(dir);
