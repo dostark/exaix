@@ -31,8 +31,13 @@ Key points
 - This is a POST-implementation review, not a pre-implementation gap analysis.
   Verify what was actually built against what the plan promised.
 - Read the planning document first, then read every source file it references.
-- Check every step marked ✅ IMPLEMENTED or [x] against the real code,
-  not against the plan's description of the code.
+- Check every step whose criteria/tests are marked done (`- ✅ <text> → ` `` `path` ``)
+  or that carries a `✅ WIRED`/`✅ CORE` status label against the real
+  code, not against the plan's description. A criterion/test marked `✅ → path` whose
+  named path does not actually implement it (or is not the file that was changed) is a
+  gap. A `- ⚠️ deferred <text> → ` `` `token` `` item must have a live Reachability
+  Ledger row for that token — a deferral with no ledger row (or a ledger row silently
+  dropped) is a gap.
 - Any additionally supplied documents (architecture references, prior phase
   plans, design specs) must be used as context — not ignored.
 - Gaps must be classified by severity and written INTO the planning document
@@ -361,8 +366,14 @@ Append at end of planning document using the exact format below.
 
 **Success Criteria:**
 
-- <measurable criterion>
+- [ ] <measurable criterion>
 ```
+
+Author criteria as `- [ ] <text>` and tests as `` `<name>` `` (aspirational, no `→` path — the
+implementing module is decided during execution). When #next-steps implements the remediation
+step it rewrites each met item to `- ✅ <text> → ` `` `<staged-path>` `` (or `- ⚠️ deferred
+<text> → ` `` `<LedgerSymbol>` ``), and the plan-step commit gate blocks any `- [ ]` left in the
+committed step. See #next-steps steps 23–26.
 
 ---
 
@@ -380,7 +391,15 @@ Append at end of planning document using the exact format below.
 1. Gap summary table — one row per gap (step, severity, description).
 1. Confirmation that the planning document was updated with remediation steps in §F TDD-First format.
 1. Any blocking critical or security gap requiring immediate attention.
-1. Commit payload — use `#commit` after all remediation steps are written into the document.
+1. Commit payload — after all remediation steps are written into the document, use
+   `#commit` for the structured message. If the commit only appends gap findings /
+   remediation-step definitions to the plan doc (no code implementing a step, no
+   criterion/test flipped to `✅`), commit it as a normal docs commit (submodule-first per
+   the submodule-workflow skill). But if a remediation commit ALSO implements a step —
+   marking any criterion/test `- ✅ <text> → ` `` `path` `` or `- ⚠️ deferred → ` `` `token` `` —
+   it is a plan-step commit: it MUST carry a `plan: <doc>#<step>` field and be committed via
+   `scripts/commit_plan_step.ts <msg> --commit` so the plan-step gate runs (paths staged +
+   backticked + added diff lines, ledger rows, no lingering `- [ ]`). See #next-steps step 26.
 
 ---
 exaix:

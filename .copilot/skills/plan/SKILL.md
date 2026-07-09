@@ -75,8 +75,9 @@ Do / Don't
 - ✅ Do name the planning document `phase-NN-<kebab-slug>.md` for consistent slugs.
 - ✅ Do keep phases to 8–10 steps maximum — split larger features into two sequential phases.
 - ✅ Do assess scenario framework coverage (§3E) for any change to the end-to-end flow.
-- ✅ Do use `[ ]` for all success criteria and success metric checkboxes in planning documents — these represent aspirational targets, not completion status. Reserve `[x]` (or ✅) for actual implementation progress tracked during execution (e.g., in todo lists or step-manifests).
-- ✅ Do use plain descriptive prose to summarize a step's outputs and consumers — never status-like labels such as `**✅ CORE**` or `**✅ WIRED**` that could be mistaken for implementation status.
+- ✅ Do author all success criteria and success metric checkboxes as `- [ ] <text>` (no `→` path) at plan-authoring time — these are aspirational targets whose implementing module is not yet known. During execution #next-steps rewrites each done item to the completion form the commit gate requires: `- ✅ <text> → ` `` `<path>` `` (backtick-wrapped, staged file) for a met criterion/test, or `- ⚠️ deferred <text> → ` `` `<LedgerSymbol>` `` for one pushed to the Reachability Ledger. The commit gate (`scripts/check_commit_msg.ts` via `commit_plan_step.ts`) BLOCKS any `- [ ]` item left in a step whose commit claims it — so a committed step must have every criterion/test either `✅ → path` or `⚠️ deferred → token`; `[ ]` may only remain on steps not yet implemented.
+- ✅ Do keep success-metric checkboxes (the `## Success Metrics` section, which are phase-level aspirational targets not tied to one step) as `- [ ]` — the commit gate only scopes the per-step Success Criteria / Planned Tests blocks, not the Success Metrics section.
+- ✅ Do use plain descriptive prose to summarize a step's outputs at authoring time — never pre-write execution status labels such as `**✅ CORE**` or `**✅ WIRED**`. (#next-steps ADDS those reachability labels during execution once proven; they are execution artifacts, not plan-authoring content.)
 - ✅ Do ensure every h2 section carries its own descriptive content that fulfills the section's stated purpose. A section that is only a heading followed immediately by sub-headings (e.g., `## Current State Analysis` with no prose before `### Key Files`) is a **blank container** — it reads as an unfinished outline placeholder, not a written plan. Every h2 must contain at least one paragraph of content at its own level that introduces, summarizes, or frames the sub-sections below it. This is especially critical for `## Executive Summary`, `## Current State Analysis`, `## Technical Architecture`, and `## Security Constraints` — sections whose heading promises information that must not be deferred entirely to sub-sections.
 - ❌ Don't use 'any' or vague types; use Zod schemas and TypeScript interfaces.
 - ❌ Don't skip the 'Planned Tests' section for any implementation step.
@@ -229,11 +230,14 @@ in the plan itself:
   from being silently forgotten between steps. A row is flipped to ✅ ONLY in the same
   commit that adds the production call-site — never pre-emptively because the wiring is
   "planned" for that step. A step whose ledger row is still ⏳ may not simultaneously
-  carry a `✅ WIRED`/`✅ IMPLEMENTED` status label; that combination is a
+  carry a `✅ WIRED` status label; that combination is a
   self-contradiction (Phase 137 marked steps `✅ WIRED` while their ledger rows read
   `⏳ Step 3`, and the phase was finalized anyway). The ledger is the authority — if the
   row says ⏳, the symbol is not wired, regardless of any status prose elsewhere in the
-  doc.
+  doc. A criterion/test that a step defers (rather than completes) is written
+  `- ⚠️ deferred <text> → ` `` `<LedgerSymbol>` `` and MUST have a matching Reachability
+  Ledger row naming that symbol — the commit gate blocks a deferred item whose token has
+  no ledger row.
 
 > If the feature is genuinely too large to wire end-to-end within one 8–10 step phase,
 > split it so that **each** phase delivers a reachable vertical slice — never a phase

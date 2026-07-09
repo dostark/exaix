@@ -22,7 +22,7 @@ qwen_skill: next-steps
 Key points
 - Work through .copilot/planning/phase-XX-*.md steps one-by-one
 - Each step follows strict RED → GREEN → VERIFY → REFACTOR → CI → DOC cycle
-- After each step: run the Success Criterion Verification Gate (step 14), mark success criteria ✅, run fast CI gates, commit
+- After each step: run the Success Criterion Verification Gate (step 14), rewrite each met criterion/test to `- ✅ <text> → ` `` `<staged-path>` `` (or `- ⚠️ deferred <text> → ` `` `<LedgerSymbol>` `` with a ledger row), run fast CI gates, then commit BOTH the submodule plan doc and the parent code via `scripts/commit_plan_step.ts <msg> --commit` (message carries a `plan:` field). No `- [ ]` may remain in a committed step
 - Never skip ahead — complete and commit each step before starting the next
 - If interrupted mid-step, re-read the RED/GREEN evidence in the chat to determine which phase you are in before proceeding
 - Use focused, file-scoped test commands by default; reserve full-suite commands for massive changes or explicit user requests
@@ -176,14 +176,30 @@ Planning doc update
         been parsed, type-checked, or structurally validated (e.g. "YAML parses correctly")
         but not executed against a live runtime does NOT satisfy this gate.
         If the environment required to run an E2E test is unavailable (missing provider
-        keys, missing binary, no daemon), the success criteria that depend on that test
-        remain `[ ]` and the step status must reflect the gap — do NOT mark criteria as
-        completed based on source-level validation alone.
-   23. In the step's "Success criteria" block change `- [ ]` → `- [x]` for each
-       criterion now met (only after ALL its tests have been run and pass AND the
-       Success Criterion Verification Gate (step 14) has been passed for that criterion).
-   24. Change each planned-test bullet `- \`...\`` → `- ✅ \`...\`` (only after the
-       test has been executed and passes).
+        keys, missing binary, no daemon), do NOT mark the dependent criteria as completed
+        on source-level validation alone. Because the commit gate forbids a `- [ ]`
+        criterion in a committed step, you have two honest options: (a) DEFER the criterion
+        — rewrite it `- ⚠️ deferred <text> → ` `` `<LedgerSymbol>` `` and add a Reachability
+        Ledger row naming the step/environment that will verify it; or (b) do NOT commit
+        the step yet. Never flip an unverified criterion to `✅` to get past the gate.
+   23. In the step's "Success criteria" block, rewrite each criterion now met from
+       `- [ ] <text>` to the completion form the commit gate requires:
+       `- ✅ <text> → ` `` `<path>` `` — where `<path>` is the actual source/test
+       module that meets it, **backtick-wrapped** and a **staged file of this commit**.
+       Multiple modules: `→ ` `` `a.ts` `` `, ` `` `b.ts` ``. Do this ONLY after ALL the
+       criterion's tests have run and pass AND the Success Criterion Verification Gate
+       (step 14) passed for it. A criterion you are DEFERRING (not completing) this step
+       becomes `- ⚠️ deferred <text> → ` `` `<LedgerSymbol>` `` and MUST get a matching
+       Reachability Ledger row (step 24a) in the same commit. **No `- [ ]` criterion may
+       remain in a step this commit claims** — the gate (`check_commit_msg.ts` via
+       `commit_plan_step.ts`) blocks it; either complete it (`✅ → path`), defer it
+       (`⚠️ deferred → token` + ledger row), or the step is not ready to commit.
+   24. Change each planned-test bullet to `- ✅ <name> → ` `` `<test-path>` `` (the test
+       file that implements it, backtick-wrapped + staged), ONLY after the test has been
+       executed and passes. The done-mark is `✅` for both criteria and tests; the `→`
+       path is what the gate verifies is (a) backticked, (b) a staged file, and (c) an
+       added line of the plan doc's staged diff for this commit — so mark the item in the
+       SAME change that implements it (stale/pre-existing marks are rejected).
   24. Add a status line immediately after the test list, using the marker that
       reflects REACHABILITY (not merely "I wrote the code"):
         - **✅ WIRED** — `<src path>`, N/N tests passing, reached by `<production call-site file:Symbol>`
@@ -191,8 +207,10 @@ Planning doc update
         - **✅ CORE** — `<src path>`, N/N tests passing; NOT yet reached by production
           (use when the symbol is on the pending-consumer ledger; NAME the later step in
           this plan that wires it).
-      A bare **✅ IMPLEMENTED** is forbidden on any step whose Success Criteria assert
-      runtime/observable behaviour — such a step is either ✅ WIRED or it is not done.
+      The only two reachability labels are **✅ WIRED** and **✅ CORE** — there is no
+      generic "implemented" label. A step whose Success Criteria assert runtime/observable
+      behaviour is either ✅ WIRED (a production caller exists) or it is not done; use
+      ✅ CORE only when the symbol is on the ledger awaiting a named later wiring step.
       Never write **✅ WIRED** while this step's Reachability Ledger row is still ⏳ — the
       label and the ledger must agree in the same commit. If the production call-site
       does not exist yet, the correct marker is **✅ CORE** and the ledger row stays ⏳.
@@ -218,12 +236,21 @@ Planning doc update
        remaining steps (and the terminal cutover step) must drain — the phase is done
        only when every row is ✅ (or the ledger is empty).
 
-Commit
-  25. Stage: src file, test file, planning doc (including any Reachability Ledger
-      row added or closed this step — step 24a).
-  26. Use #commit for the full structured commit body. At minimum the subject line must
-     follow conventional commits and the body must include what:, rationale:, tests:,
-     who:, and impact: fields. A concise per-step shorthand is acceptable:
+Commit (plan-step commit — spans the submodule plan doc + the parent code)
+  25. Stage BOTH repos (the plan doc lives in the exaix-dev-docs submodule, the code in
+      the parent):
+        - In the submodule: `git -C exaix-dev-docs add <planning-doc>` — this stages the
+          step's `✅ … → ` `` `path` `` `/ `⚠️ deferred … → ` `` `token` `` lines and any
+          Reachability Ledger row added/closed this step (step 24a). These lines MUST be
+          added lines of this diff (the gate verifies it).
+        - In the parent: stage the src file(s), test file(s), and any other code — every
+          `→ path` you wrote on a done item MUST be among these staged files.
+  26. Do NOT run a bare `git commit`. Write the structured message to a file with a `plan:`
+      field naming the doc + step, then commit BOTH repos via the orchestrator, which runs
+      the plan-step gate and commits the submodule then the parent pointer bump in sync:
+        `deno run -A scripts/commit_plan_step.ts <commit-msg-file> --commit`
+      The message body still follows #commit's schema (what/rationale/tests/who/impact)
+      plus the mandatory `plan:` field:
        feat(<scope>): implement <What> (Step N)
 
        what: <implementation summary>
@@ -231,10 +258,16 @@ Commit
        tests: <test file>, N/N passing
        who: <your agent identity>
        impact: <ARCHITECTURE.md component>: <detail>
+       plan: exaix-dev-docs/planning/<phase>.md#<N>
 
        CI gates: lint OK, type-check OK, style 0 errors, arch N GROUNDED, magic OK
-
-       refs: <planning-doc-slug> step N
+  26a. If the orchestrator BLOCKS with "roll back the submodule's last commit", you
+      committed the plan doc separately (breaking the commit-together flow): run
+      `git -C exaix-dev-docs reset --soft HEAD~1` to restage those lines, then re-run
+      step 26 so the phase file and the parent land together. If it blocks on a missing
+      `→ path` / un-backticked path / a lingering `- [ ]` / a deferred token with no
+      ledger row, fix the plan-doc line (step 23–24 / 24a) and re-stage before retrying.
+      See the submodule-workflow and commit skills.
 
 PHASE-COMPLETION GATE (run ONCE, after the last step, BEFORE declaring the phase complete)
   This gate is MANDATORY and cannot be skipped. A "finalize", "commit remaining
@@ -255,7 +288,7 @@ PHASE-COMPLETION GATE (run ONCE, after the last step, BEFORE declaring the phase
       empty). Any ⏳ row is a BLOCKING failure — drain it (wire the symbol; that is
       the terminal cutover step's job) before closing the phase. Read the ledger as
       the residual to-do list. Also reconcile the ledger against the step status labels:
-      a step marked `✅ WIRED`/`✅ IMPLEMENTED` whose ledger row is still ⏳ is a
+      a step marked `✅ WIRED` whose ledger row is still ⏳ is a
       self-contradiction and a BLOCKING failure — trust the ⏳ row (the symbol is NOT
       wired) and either wire it or correct the label to `✅ CORE (wired in Step M)`.
       Confirm each ✅ row's "Production call-site" column names a real file:Symbol that a
@@ -279,7 +312,7 @@ Do / Don't
 - ✅ Do write the test file BEFORE the source file (RED must come first)
 - ✅ Do add module-header JSDoc to every new file (src and test)
 - ✅ Do run deno fmt before git add (avoid fmt pre-hook failures)
-- ✅ Do mark planning doc checkboxes and add ✅ IMPLEMENTED before commit (include in the step's staged files)
+- ✅ Do rewrite each met criterion/test to `- ✅ <text> → ` `` `<staged-path>` `` (or `- ⚠️ deferred <text> → ` `` `<token>` `` + ledger row) and add the ✅ WIRED/✅ CORE reachability label before commit — stage the plan-doc edit in the submodule as part of the plan-step commit (step 26)
 - ✅ Do use IFoo interface naming (not Foo) — enforced by check:style
 - ✅ Do use ICodeConvention["confidence"] instead of "low"|"medium"|"high" literal union
 - ✅ Do keep test execution proportional to scope; prefer focused tests for a single-step cycle
@@ -302,7 +335,7 @@ Do / Don't
 - ❌ Don't use Record<string, unknown> — define a specific interface instead
 - ❌ Don't accept a green package-unit test as evidence a runtime success criterion is met — the test is the only caller; it proves correctness, not reachability
 - ❌ Don't defer wiring to "follow-ups" or an unnamed future step — re-sequence so it lands in this phase, or surface it to the user
-- ❌ Don't put a bare "✅ IMPLEMENTED" on a runtime-claiming step — it is ✅ WIRED or it is not done
+- ❌ Don't invent status labels beyond ✅ WIRED / ✅ CORE — a runtime-claiming step is ✅ WIRED (production caller exists) or it is not done; there is no generic "implemented" label
 - ❌ Don't mark a planned test as completed (`✅ \`...\``) if the test has only been written and type-checked but not executed against a live runtime — unit tests must be `deno test`-ed, scenario/E2E YAML must be run against a real daemon environment
 - ❌ Don't close the gap on a success criterion whose only validating test is an E2E/scenario test that was structurally parsed but never run — document the untested criterion as `[ ]` with a note about the required environment
 - ❌ Don't assume a green test suite means all success criteria are met — a passing test proves function-level correctness, not system-level behaviour. Run step 14 (Success Criterion Verification Gate) explicitly before marking any criterion as met.
