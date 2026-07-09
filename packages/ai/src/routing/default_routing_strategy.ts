@@ -185,13 +185,20 @@ export class DefaultRoutingStrategy implements IProviderRoutingStrategy {
     return undefined;
   }
 
-  /** Filter providers by budget constraints. */
+  /** Filter providers by budget constraints. D7 exempt providers skip budget check. */
   private async filterByBudget(
     providers: ProviderEntry[],
     maxCost: number,
   ): Promise<ProviderEntry[]> {
     const results = [];
     for (const p of providers) {
+      if (
+        p.metadata.costTier === ProviderCostTier.LOCAL ||
+        p.metadata.costTier === ProviderCostTier.FREE
+      ) {
+        results.push(p);
+        continue;
+      }
       const dailyCost = await this.costTracker.getDailyCost(p.metadata.name);
       if (dailyCost < maxCost) {
         results.push(p);
