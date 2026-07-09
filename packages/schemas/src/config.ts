@@ -149,6 +149,7 @@ export const ModelPresetSchema = z.object({
   min_context_window: z.number().int().min(1),
   supports_thinking: z.boolean(),
   candidates: z.array(z.string()).optional(),
+  characteristics: z.record(z.string(), z.array(z.string())).optional(),
 });
 
 export type ModelPreset = z.infer<typeof ModelPresetSchema>;

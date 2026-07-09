@@ -78,7 +78,8 @@ export type ModelResolutionReason =
   | "preset_default"
   | "fallback"
   | "thinking_constrained"
-  | "context_window_overflow";
+  | "context_window_overflow"
+  | "preferred_list";
 
 /**
  * Trace payload emitted on every ModelResolver.resolve() call.

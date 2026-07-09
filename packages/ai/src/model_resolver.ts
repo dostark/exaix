@@ -76,6 +76,12 @@ export class ModelResolver {
     const explicitResult = await this.tryResolveExplicit(intent, startTime);
     if (explicitResult) return explicitResult;
 
+    const bareNameResult = await this.tryResolveBareName(intent, startTime);
+    if (bareNameResult) return bareNameResult;
+
+    const curatedResult = await this.tryResolveCurated(intent, startTime);
+    if (curatedResult) return curatedResult;
+
     const presetResult = await this.tryResolveFromPreset(intent, startTime);
     if (presetResult) return presetResult;
 
@@ -130,6 +136,103 @@ export class ModelResolver {
     const resolved: IResolvedModel = { provider, model, options: this.buildCallOptions(intent), attempt: 1 };
     await this.emitTrace(intent, resolved, [provider], {}, "explicit_override", Date.now() - startTime);
     return resolved;
+  }
+
+  private async tryResolveBareName(intent: ModelIntent, startTime: number): Promise<IResolvedModel | null> {
+    if (!intent.model || intent.model.includes(":")) return null;
+
+    const bareName = intent.model;
+    const matches: Array<{ provider: string; model: string }> = [];
+
+    const providerMetadata = ProviderRegistry.getProviderMetadata(bareName);
+    if (providerMetadata) {
+      const defaults = getDefaultModels();
+      matches.push({ provider: bareName, model: defaults[bareName] ?? bareName });
+    }
+
+    const presets = this.config.model_presets ?? DEFAULT_MODEL_PRESETS;
+    for (const preset of Object.values(presets)) {
+      if (preset.candidates?.includes(bareName)) {
+        const defaults = getDefaultModels();
+        matches.push({ provider: bareName, model: defaults[bareName] ?? bareName });
+        break;
+      }
+    }
+
+    const unique = matches.filter(
+      (m, i, arr) => arr.findIndex((x) => x.provider === m.provider && x.model === m.model) === i,
+    );
+
+    if (unique.length === 0) {
+      throw new Error(
+        `Unknown model "${bareName}". No registered provider or curated entry matches this name.`,
+      );
+    }
+    if (unique.length > 1) {
+      const candidates = unique.map((m) => `${m.provider}:${m.model}`).join(", ");
+      throw new Error(
+        `Ambiguous model name "${bareName}". Did you mean one of: ${candidates}?`,
+      );
+    }
+
+    const match = unique[0];
+    const resolved: IResolvedModel = {
+      provider: match.provider,
+      model: match.model,
+      options: this.buildCallOptions(intent),
+      attempt: 1,
+    };
+    await this.emitTrace(intent, resolved, [match.provider], {}, "explicit_override", Date.now() - startTime);
+    return resolved;
+  }
+
+  private async tryResolveCurated(intent: ModelIntent, startTime: number): Promise<IResolvedModel | null> {
+    if (!intent.model_size) return null;
+    const presets = this.config.model_presets ?? DEFAULT_MODEL_PRESETS;
+    const preset = presets[intent.model_size];
+    if (!preset?.candidates?.length) return null;
+
+    let ordered = [...preset.candidates];
+
+    if (intent.characteristics?.length && preset.characteristics) {
+      for (const char of intent.characteristics) {
+        const subList = preset.characteristics[char];
+        if (subList?.length) {
+          const promoted = subList.filter((p) => ordered.includes(p));
+          const remaining = ordered.filter((p) => !subList.includes(p));
+          ordered = [...promoted, ...remaining];
+        }
+      }
+    }
+
+    const allProviders = ProviderRegistry.getAllProviders();
+    for (const providerName of ordered) {
+      const metadata = ProviderRegistry.getProviderMetadata(providerName);
+      if (!metadata) continue;
+      const healthy = await this.healthChecker.checkProvider(providerName);
+      if (!healthy) continue;
+
+      const model = this.selectModelForProvider(providerName, intent);
+      if (!model) continue;
+
+      const resolved: IResolvedModel = {
+        provider: providerName,
+        model,
+        options: this.buildCallOptions(intent),
+        attempt: 1,
+      };
+      await this.emitTrace(
+        intent,
+        resolved,
+        allProviders.map((p) => p.metadata.name),
+        {},
+        "preferred_list",
+        Date.now() - startTime,
+      );
+      return resolved;
+    }
+
+    return null;
   }
 
   private async tryResolveFromPreset(intent: ModelIntent, startTime: number): Promise<IResolvedModel | null> {
