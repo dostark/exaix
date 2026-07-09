@@ -402,6 +402,12 @@
           "jsr:@std/testing@^1.0.18"
         ]
       },
+      "packages/model-registry": {
+        "dependencies": [
+          "jsr:@std/assert@^1.0.19",
+          "jsr:@std/testing@^1.0.18"
+        ]
+      },
       "packages/portal": {
         "dependencies": [
           "jsr:@std/fs@^1.0.23",

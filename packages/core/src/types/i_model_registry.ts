@@ -40,6 +40,18 @@ export interface IModelEntry {
   costPer1kTokens: number;
 }
 
+export type PricingProvenance = "endpoint" | "static" | "remote_static" | "unknown";
+
+export interface IModelPricing {
+  provider: string;
+  model: string;
+  inputPerMtok?: number;
+  outputPerMtok?: number;
+  provenance: PricingProvenance;
+  verifiedAt?: number;
+  sourceUrl?: string;
+}
+
 export interface IModelRegistry {
   getModelsByCapability(profile: ICapabilityProfile): Promise<IModelEntry[]>;
   getModelCapability(provider: string, model: string): Promise<ICapabilityProfile>;
@@ -53,4 +65,5 @@ export interface IModelRegistry {
   recordCall(provider: string): Promise<void>;
   getRateLimit(provider: string): Promise<IRateLimitStatus>;
   getProviderHealth(provider: string): Promise<HealthStatus>;
+  getModelPricing(provider: string, model: string): Promise<IModelPricing>;
 }

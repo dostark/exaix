@@ -977,6 +977,7 @@ For the full 60+ entry component responsibilities table with file paths and edit
   - `packages/request/README.md` — Request processing, analysis, routing
   - `packages/execution/README.md` — Plan execution, tool paths, events, tool result validation
   - `packages/quality-gate/README.md` — Quality assessment pipeline, evaluation criteria
+  - `packages/model-registry/README.md` — Solo-tier model registry floor, static overlay, cost units
   - `packages/ai/README.md` — AI provider contracts, component table, edition availability
   - `packages/portal/README.md` — Portal analysis, persistence, architecture diagram
   - `packages/mcp/README.md` — MCP tool handlers, ReAct engine, security
