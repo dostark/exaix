@@ -138,35 +138,40 @@ Deno.test({
         }
       });
 
-      // Read the journal for this trace and report whether the daemon has emitted
-      // the crash_recovered event yet. Used both as the boot poll predicate and by
-      // the final assertion, so "booted enough" means exactly "event is present".
-      const hasRecoveredEvent = async (): Promise<boolean> => {
+      // Poll for the RE-QUEUED REQUEST FILE (a filesystem side effect written by
+      // recoverOrphanedDelegations early in daemon startup before EventLogger
+      // flushes its batched crash_recovered write). This decouples "recovery
+      // happened" from "journal flush completed" — the file appears as soon as
+      // the recovery write is issued, while the journal event may lag behind
+      // EventLogger's internal batching. Polling the file is faster and avoids
+      // the flush-vs-read race that made the test flaky on cold CI runners.
+      const requestAppeared = (): Promise<boolean> => exists(requestPath);
+
+      await t.step("booting a real daemon recovers the orphan", async () => {
+        // Poll for the re-queued request file. Once it exists, the daemon has
+        // run recoverOrphanedDelegations (early startup). A fixed sleep raced
+        // cold CI (slow deno cache); condition-polling exits early on a warm
+        // machine and gives a slow runner up to BOOT_RECOVER_CEILING_MS.
+        await bootDaemonOnce(configPath, BOOT_RECOVER_CEILING_MS, requestAppeared);
+      });
+
+      await t.step("journal has crash_recovered + a re-queued request file exists", async () => {
+        // After the daemon exits, EventLogger's shutdown flush guarantees all
+        // pending writes are persisted. Polling the journal post-shutdown (rather
+        // than mid-flight) removes the flush-vs-read race entirely.
+        assertEquals(await exists(requestPath), true, "a re-queued crash-recovery request must be written");
+        // Read the journal directly (new connection — the daemon's handle is closed).
         const configService = new ConfigService(configPath);
         const db = new DatabaseService(configService.getAll());
         try {
           const events = await db.getActivitiesByTraceSafe(traceId);
-          return events.some(
-            (e) => e.action_type === DomainEventType.SessionDelegateCrashRecovered,
+          assert(
+            events.some((e) => e.action_type === DomainEventType.SessionDelegateCrashRecovered),
+            "daemon startup must emit session.delegate.crash_recovered",
           );
         } finally {
           await db.close();
         }
-      };
-
-      await t.step("booting a real daemon recovers the orphan", async () => {
-        // Poll the journal until the daemon has compiled apps/daemon/main.ts, run
-        // recoverOrphanedDelegations (early in startup), written the re-queued
-        // request file, AND flushed EventLogger's batched crash_recovered write —
-        // then SIGTERM immediately. A fixed sleep raced cold CI (slow deno cache);
-        // condition-polling exits early on a warm machine and gives a slow runner
-        // up to BOOT_RECOVER_CEILING_MS instead of a fixed marginal budget.
-        await bootDaemonOnce(configPath, BOOT_RECOVER_CEILING_MS, hasRecoveredEvent);
-      });
-
-      await t.step("journal has crash_recovered + a re-queued request file exists", async () => {
-        assert(await hasRecoveredEvent(), "daemon startup must emit session.delegate.crash_recovered");
-        assertEquals(await exists(requestPath), true, "a re-queued crash-recovery request must be written");
       });
     } finally {
       await Deno.remove(tempDir, { recursive: true });
