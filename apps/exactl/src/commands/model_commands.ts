@@ -9,6 +9,7 @@
  * @architectural-layer CLI
  * @dependencies ["@exaix/core/types", "@std/toml"]
  * @related-files ["apps/exactl/src/exactl.ts", "apps/exactl/src/init.ts", "packages/ai/src/model_resolver.ts", "packages/model-registry/src/default_model_registry.ts"]
+ * @phase-134 Step 6 — Solo curation CLI; no `models refresh` surface (that is Team/Phase 135).
  */
 
 import { parse, stringify } from "@std/toml";

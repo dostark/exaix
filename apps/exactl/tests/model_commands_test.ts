@@ -8,6 +8,7 @@
  *   Solo validation semantics (G10), dedup, clear idempotency, and unconfigured flags.
  *   Curated lists persist to exa.config.toml (TOML write-back) — the surface the
  *   resolver reads (config.model_presets) — honoring the phase's zero-DB constraint.
+ *   Phase 134 Step 6 — models list/pricing + config model curation, provenance/staleness display.
  */
 
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";

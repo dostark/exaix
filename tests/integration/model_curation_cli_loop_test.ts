@@ -8,6 +8,7 @@
  *   surface are the same (config.model_presets) with zero DB.
  * @architectural-layer Integration
  * @related-files [apps/exactl/src/commands/model_commands.ts, packages/ai/src/model_resolver.ts, packages/core/src/config/service.ts]
+ * @phase-134 Step 6 integration — full Solo curation loop reaching preferred_list.
  */
 
 import { assertEquals } from "@std/assert";
