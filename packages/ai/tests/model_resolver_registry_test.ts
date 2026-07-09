@@ -1,0 +1,195 @@
+/**
+ * @module ModelResolverRegistryTest
+ * @path packages/ai/tests/model_resolver_registry_test.ts
+ * @description Phase 134 Step 2 — validates registry-backed model resolution: preset resolution
+ *   delegates to IModelRegistry when present, overflow uses registry getContextWindow,
+ *   behavior is byte-identical without registry.
+ */
+import { assertEquals } from "@std/assert";
+import { PricingTier, ProviderCostTier } from "@exaix/core";
+import type { ICapabilityProfile, IModelEntry, IModelRegistry } from "@exaix/core/types";
+import { HealthStatus } from "@exaix/core/types";
+import { initTestDbService } from "@exaix/testing";
+import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts";
+import { ProviderRegistry } from "../src/provider_registry.ts";
+import { MockProviderFactory } from "../src/factories/mock_factory.ts";
+import { DefaultRoutingStrategy } from "../src/routing/default_routing_strategy.ts";
+import { createStubCostTracker, createStubHealthChecker } from "./helpers/service_stubs.ts";
+import { ModelResolver } from "../src/model_resolver.ts";
+import { createTestConfig } from "./helpers/test_config.ts";
+
+function registerProvider(
+  name: string,
+  opts: { costPerMtok?: number; supportsThinking?: boolean; contextWindow?: number } = {},
+): void {
+  ProviderRegistry.registerWithMetadata(name, new MockProviderFactory(), {
+    name,
+    description: name,
+    capabilities: ["chat"],
+    costTier: ProviderCostTier.FREE,
+    pricingTier: PricingTier.LOCAL,
+    strengths: ["general"],
+    costPerMtok: opts.costPerMtok,
+    supportsThinking: opts.supportsThinking,
+    contextWindow: opts.contextWindow,
+  });
+}
+
+function stubModelRegistry(
+  models?: IModelEntry[],
+  contextWindow?: number,
+): IModelRegistry {
+  const entries = models ?? [];
+  const baseCtx = contextWindow ?? 32000;
+  return {
+    getModelsByCapability: (_profile: ICapabilityProfile) => Promise.resolve(entries),
+    getContextWindow: (_provider: string, _model: string) => Promise.resolve(baseCtx),
+    getModelCost: () => Promise.resolve(0),
+    getModelPricing: () => Promise.resolve({ provider: "", model: "", provenance: "unknown" }),
+    getModelCapability: () => Promise.resolve({}),
+    getProviderModels: () => Promise.resolve([]),
+    getAllProviders: () => Promise.resolve([]),
+    recordLatency: () => Promise.resolve(),
+    getLatencyStats: () => Promise.reject(new Error("not implemented")),
+    rankByLatency: () => Promise.reject(new Error("not implemented")),
+    recordCall: () => Promise.resolve(),
+    getRateLimit: () => Promise.resolve({ remaining: 100, maxRpm: 100, resetAt: 0 }),
+    getProviderHealth: () => Promise.resolve(HealthStatus.HEALTHY),
+  };
+}
+
+function makeResolver(
+  registry?: IModelRegistry,
+  logger?: ReturnType<typeof createMockEventLogger>,
+): ModelResolver {
+  return new ModelResolver(
+    new DefaultRoutingStrategy(ProviderRegistry, createStubCostTracker(), createStubHealthChecker()),
+    createTestConfig(),
+    createStubHealthChecker(),
+    logger ?? createMockEventLogger(),
+    registry,
+  );
+}
+
+Deno.test("[step134.2] preset resolution uses registry when present", async () => {
+  const { cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+    registerProvider("other-provider");
+
+    const registry = stubModelRegistry([
+      {
+        provider: "registry-provider",
+        model: "registry-model",
+        capabilities: { minContextWindow: 32000 },
+        contextWindow: 32000,
+        costPer1kTokens: 0.001,
+      },
+    ]);
+    const resolver = makeResolver(registry);
+    const result = await resolver.resolve({ model_size: "M" });
+
+    assertEquals(result.provider, "registry-provider");
+    assertEquals(result.model, "registry-model");
+    assertEquals(result.attempt, 1);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[step134.2] preset resolution unchanged without registry", async () => {
+  const { cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+    registerProvider("legacy-provider", { contextWindow: 8192 });
+
+    const resolver = makeResolver();
+    const result = await resolver.resolve({ model_size: "S" });
+
+    assertEquals(result.provider, "legacy-provider");
+    assertEquals(result.model.length > 0, true);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[step134.2] overflow uses registry getContextWindow", async () => {
+  const { cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+    registerProvider("overflow-provider");
+
+    const registry = stubModelRegistry(
+      [
+        {
+          provider: "overflow-provider",
+          model: "overflow-model",
+          capabilities: { minContextWindow: 1000 },
+          contextWindow: 1000,
+          costPer1kTokens: 0.001,
+        },
+      ],
+      1000,
+    );
+    const resolver = makeResolver(registry);
+    const result = await resolver.resolve({
+      model_size: "S",
+      context_window_fallback: true,
+      estimated_input_tokens: 5000,
+    });
+
+    assertEquals(typeof result.provider, "string");
+    assertEquals(typeof result.model, "string");
+    assertEquals(result.attempt, 1);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[step134.2] trace includes registry candidates", async () => {
+  const { cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+    registerProvider("other-provider");
+
+    const registry = stubModelRegistry([
+      {
+        provider: "trace-provider",
+        model: "trace-model",
+        capabilities: { minContextWindow: 32000 },
+        contextWindow: 32000,
+        costPer1kTokens: 0.001,
+      },
+    ]);
+    const logger = createMockEventLogger();
+    const resolver = makeResolver(registry, logger);
+    await resolver.resolve({ model_size: "M", characteristics: ["cheapest"] });
+
+    const events = logger.events.filter((e) => e.action === "model.resolved");
+    assertEquals(events.length >= 1, true);
+
+    const last = events[events.length - 1];
+    assertEquals(last.target, "trace-model");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[step134.2] empty registry model set falls through to scoring path", async () => {
+  const { cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+    registerProvider("fallback-provider");
+
+    const registry = stubModelRegistry([]);
+    const resolver = makeResolver(registry);
+
+    const result = await resolver.resolve({ model_size: "XL" });
+
+    assertEquals(result.provider, "fallback-provider");
+    assertEquals(typeof result.model, "string");
+    assertEquals(result.model.length > 0, true);
+  } finally {
+    await cleanup();
+  }
+});

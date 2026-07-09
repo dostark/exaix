@@ -38,6 +38,7 @@ import {
   ProviderFactory,
   ProviderRegistry,
 } from "@exaix/ai";
+import { DefaultModelRegistry } from "@exaix/model-registry";
 import { RequestProcessor } from "@exaix/request";
 import { ReviewRegistry } from "@exaix/core/artifact";
 import { EventLogger, EventLoggerStructuredOutput } from "@exaix/core/logger";
@@ -739,7 +740,8 @@ if (import.meta.main) {
       checkProvider: (_providerName: string) => Promise.resolve(true),
     };
     const routingStrategy = new DefaultRoutingStrategy(ProviderRegistry, costTracker, healthChecker);
-    const modelResolver = new ModelResolver(routingStrategy, config, healthChecker, logger);
+    const modelRegistry = new DefaultModelRegistry(healthChecker);
+    const modelResolver = new ModelResolver(routingStrategy, config, healthChecker, logger, modelRegistry);
 
     // Create FlowRunner for multi-agent flow execution
     const blueprintsPath = join(

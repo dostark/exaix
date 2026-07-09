@@ -29,7 +29,7 @@ import type { IProviderHealthChecker, ISelectionCriteria } from "./provider_sele
 import type { IProviderMetadata } from "./provider_registry.ts";
 import { ProviderRegistry } from "./provider_registry.ts";
 import type { IProviderRoutingStrategy } from "./routing/provider_routing_strategy.ts";
-import type { IModelRegistry } from "@exaix/core/types";
+import type { ICapabilityProfile, IModelRegistry } from "@exaix/core/types";
 import { DEFAULT_MOCK_MODEL, ProviderType } from "@exaix/core/types";
 
 const CHARACTERISTIC_WEIGHT = 1;
@@ -134,6 +134,30 @@ export class ModelResolver {
 
   private async tryResolveFromPreset(intent: ModelIntent, startTime: number): Promise<IResolvedModel | null> {
     if (!intent.model_size) return null;
+
+    if (this.modelRegistry) {
+      const profile = this.profileFor(intent.model_size);
+      const models = await this.modelRegistry.getModelsByCapability(profile);
+      if (models.length === 0) return null;
+      const first = models[0];
+      const resolved: IResolvedModel = {
+        provider: first.provider,
+        model: first.model,
+        options: this.buildCallOptions(intent),
+        attempt: 1,
+      };
+      const providers = ProviderRegistry.getAllProviders();
+      await this.emitTrace(
+        intent,
+        resolved,
+        providers.map((p) => p.metadata.name),
+        {},
+        "preset_default",
+        Date.now() - startTime,
+      );
+      return resolved;
+    }
+
     const presets = this.config.model_presets ?? DEFAULT_MODEL_PRESETS;
     const resolved = resolvePresetFromSize(intent.model_size, presets);
     resolved.options = this.buildCallOptions(intent);
@@ -165,8 +189,13 @@ export class ModelResolver {
       return null;
     }
 
-    const windowKey = `${resolved.provider}:${resolved.model}`;
-    const contextWindow = MODEL_CONTEXT_WINDOWS[windowKey];
+    let contextWindow: number | undefined;
+    if (this.modelRegistry) {
+      contextWindow = await this.modelRegistry.getContextWindow(resolved.provider, resolved.model);
+    } else {
+      const windowKey = `${resolved.provider}:${resolved.model}`;
+      contextWindow = MODEL_CONTEXT_WINDOWS[windowKey];
+    }
     if (!contextWindow || intent.estimated_input_tokens <= contextWindow) return null;
 
     const bumped = this.bumpModelSize(intent.model_size);
@@ -203,8 +232,19 @@ export class ModelResolver {
     const providerMetadata = ProviderRegistry.getProviderMetadata(providerName);
     if (!providerMetadata) return null;
 
-    const model = this.selectModelForProvider(providerName, intent);
+    let model = this.selectModelForProvider(providerName, intent);
     if (!model) return null;
+
+    if (this.modelRegistry && intent.model_size) {
+      const profile = this.profileFor(intent.model_size);
+      const entries = await this.modelRegistry.getModelsByCapability(profile);
+      if (entries.length > 0) {
+        const match = entries.find((e) => e.provider === providerName);
+        if (match) {
+          model = match.model;
+        }
+      }
+    }
 
     if (intent.thinking && !providerMetadata.supportsThinking) {
       return this.resolveWithThinkingConstraint(
@@ -290,6 +330,17 @@ export class ModelResolver {
     );
 
     return resolved;
+  }
+
+  private profileFor(size: ModelSize): ICapabilityProfile {
+    const presets = this.config.model_presets ?? DEFAULT_MODEL_PRESETS;
+    const profile = presets[size];
+    if (!profile) return {};
+    return {
+      minContextWindow: profile.min_context_window,
+      maxCostPerMillionTokens: profile.max_cost_per_mtok,
+      supportsThinking: profile.supports_thinking,
+    };
   }
 
   private buildSelectionCriteria(intent: ModelIntent): ISelectionCriteria {
