@@ -1,7 +1,8 @@
 /**
  * @module CostExemptionTest
  * @path packages/model-registry/tests/cost_exemption_test.ts
- * @description Tests for the D7 cost-exemption predicate in model-registry.
+ * @description Tests for the D7 cost-exemption predicate in model-registry (Phase 134 Step 4 —
+ *   isCostExempt: LOCAL/FREE/endpoint-$0 exempt, unknown/paid not; null/undefined-safe).
  * @architectural-layer ModelRegistry
  * @related-files [packages/model-registry/src/cost_exemption.ts]
  */

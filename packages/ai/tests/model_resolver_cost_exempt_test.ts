@@ -3,7 +3,8 @@
  * @path packages/ai/tests/model_resolver_cost_exempt_test.ts
  * @description Phase 134 Step 4 — validates D7 local/free cost-exemption behavior:
  *   exempt models skip budget filtering in the routing strategy, get $0 cheapest score,
- *   and don't short-circuit precedence.
+ *   and don't short-circuit precedence (curated/explicit still win). e2e: a LOCAL provider
+ *   resolves through the resolver despite a high daily cost; a PAID one is disqualified.
  */
 import { assertEquals, assertRejects } from "@std/assert";
 import { PricingTier, ProviderCostTier } from "@exaix/core";
