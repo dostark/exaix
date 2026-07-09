@@ -37,6 +37,14 @@ export interface IBlocklistEntry {
   created_at: string;
 }
 
+/** A row in the config_locked_keys table (Phase 139 Step 4). */
+export interface ILockedKeyEntry {
+  key: string;
+  locked_at: string;
+  locked_by: string;
+  reason: string | null;
+}
+
 /**
  * Optional insertOverride settings (Phase 138 Step 3). `hardLimit`/`warnThreshold`
  * overrides exist ONLY so the security test can exercise the DB page-limit
@@ -98,6 +106,16 @@ export function migrateConfigDb(db: Database): void {
       created_at  TEXT NOT NULL DEFAULT (datetime('now')),
       reason      TEXT,
       UNIQUE (agent_id, key_pattern)
+    )
+  `);
+  // Phase 139 Step 4: per-key write lock. A locked key is refused by
+  // adapter.set() (via assertWritable) across every write surface until unlocked.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS config_locked_keys (
+      key        TEXT PRIMARY KEY,
+      locked_at  TEXT NOT NULL DEFAULT (datetime('now')),
+      locked_by  TEXT NOT NULL,
+      reason     TEXT
     )
   `);
 }
@@ -331,4 +349,47 @@ export function isPathBlocked(
     "SELECT agent_id, key_pattern FROM config_mcp_blocklist WHERE agent_id IS NULL OR agent_id = ?",
   ).all<{ agent_id: string | null; key_pattern: string }>(agentId ?? null);
   return rows.some((row) => globMatches(row.key_pattern, key));
+}
+
+// ── Phase 139 Step 4: config_locked_keys DAO ────────────────────────────────
+
+/** Lock `key` against writes. Idempotent on the `key` PRIMARY KEY (re-lock updates the row). */
+export function lockKey(
+  db: Database,
+  key: string,
+  lockedBy: string,
+  reason?: Opt<string, Reason.OptionalInput>,
+): void {
+  db.prepare(
+    "INSERT INTO config_locked_keys (key, locked_by, reason) VALUES (?, ?, ?) " +
+      "ON CONFLICT(key) DO UPDATE SET locked_by = excluded.locked_by, reason = excluded.reason",
+  ).run(key, lockedBy, reason ?? null);
+}
+
+/** Remove the lock on `key` (idempotent — no-op if not locked). */
+export function unlockKey(db: Database, key: string): void {
+  db.prepare("DELETE FROM config_locked_keys WHERE key = ?").run(key);
+}
+
+/** True if `key` is in config_locked_keys. */
+export function isKeyLocked(db: Database, key: string): boolean {
+  const row = db.prepare("SELECT 1 AS one FROM config_locked_keys WHERE key = ?").get<{ one: number }>(key);
+  return row !== undefined;
+}
+
+/** List all locked keys, newest lock first. */
+export function listLockedKeys(db: Database): Array<ILockedKeyEntry> {
+  return db.prepare(
+    "SELECT key, locked_at, locked_by, reason FROM config_locked_keys ORDER BY locked_at DESC",
+  ).all<{
+    key: string;
+    locked_at: string;
+    locked_by: string;
+    reason: string | null;
+  }>().map((row) => ({
+    key: row.key,
+    locked_at: row.locked_at,
+    locked_by: row.locked_by,
+    reason: row.reason ?? null,
+  }));
 }

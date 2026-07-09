@@ -10,7 +10,7 @@
 
 import { Database } from "@db/sqlite";
 import { ConfigAdapterMode, ConfigProvenanceSource, ConfigValueType, SwapClass } from "../types/enums.ts";
-import type { ConfigValue, IBlocklistEntry, IConfigOverrideEntry } from "./db.ts";
+import type { ConfigValue, IBlocklistEntry, IConfigOverrideEntry, ILockedKeyEntry } from "./db.ts";
 import {
   addBlocklistPattern,
   compactOverrides,
@@ -22,14 +22,18 @@ import {
   getOverrideHistory,
   globMatches,
   insertOverride,
+  isKeyLocked as dbIsKeyLocked,
   isPathBlocked as dbIsPathBlocked,
   listBlocklistPatterns,
+  listLockedKeys,
+  lockKey,
   removeBlocklistPattern,
+  unlockKey,
 } from "./db.ts";
 import { getRegisteredDefaults } from "./registry.ts";
 import type { IConfigurableOpts } from "./registry.ts";
 import type { InMemoryConfigStore } from "./store.ts";
-import { ConfigKeyNotFoundError, ConfigValidationError, EDITION_GATED_PATHS } from "./errors.ts";
+import { ConfigKeyLockedError, ConfigKeyNotFoundError, ConfigValidationError, EDITION_GATED_PATHS } from "./errors.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { Opt, Reason } from "../types/optional_marker.ts";
@@ -165,6 +169,18 @@ export interface IConfigAdapter {
    * if the (key, id) pair is absent. Returns the restored value (Phase 139 Step 3).
    */
   rollback(key: string, id: number): Promise<ConfigValue>;
+
+  /** Lock a key against all writes (CLI/MCP/daemon). Idempotent. (Phase 139 Step 4) */
+  lock(key: string, lockedBy: string, reason?: string): void;
+
+  /** Unlock a previously locked key. Idempotent. (Phase 139 Step 4) */
+  unlock(key: string): void;
+
+  /** True if `key` is in config_locked_keys — checked inside set(). (Phase 139 Step 4) */
+  isLocked(key: string): boolean;
+
+  /** List all locked keys, newest first. (Phase 139 Step 4) */
+  listLocks(): ILockedKeyEntry[];
 
   /**
    * True if `key` is in the MCP deny-permanently blocklist for `agentId`
@@ -375,6 +391,10 @@ export class DirectConfigAdapter implements IConfigAdapter {
       throw new ConfigKeyNotFoundError(key);
     }
 
+    // Phase 139 Step 4 (GAP-1/GAP-2): refuse writes to a locked key. Shared
+    // guard — no blocklist dependency.
+    this.assertWritable(key);
+
     // Validate value against the resolved key's metadata.
     const report = this.validateAtPath(key, value);
     if (!report.valid) {
@@ -579,6 +599,36 @@ export class DirectConfigAdapter implements IConfigAdapter {
     return row.value;
   }
 
+  /**
+   * Shared pre-write guard (Phase 139 Step 4, GAP-1). Called at the top of BOTH
+   * DirectConfigAdapter.set() and the DaemonConfigAdapter.set() override so a
+   * locked key is un-writable through every surface — CLI, MCP (which builds a
+   * DirectConfigAdapter), and the live daemon. Throws ConfigKeyLockedError.
+   */
+  protected assertWritable(key: string): void {
+    if (dbIsKeyLocked(this.db, key)) {
+      throw new ConfigKeyLockedError(key);
+    }
+  }
+
+  lock(key: string, lockedBy: string, reason?: string): void {
+    lockKey(this.db, key, lockedBy, reason);
+    this.daemonLogger?.info(DomainEventType.ConfigKeyLocked, key, { key, locked_by: lockedBy, reason });
+  }
+
+  unlock(key: string): void {
+    unlockKey(this.db, key);
+    this.daemonLogger?.info(DomainEventType.ConfigKeyUnlocked, key, { key, locked_by: "unlock" });
+  }
+
+  isLocked(key: string): boolean {
+    return dbIsKeyLocked(this.db, key);
+  }
+
+  listLocks(): ILockedKeyEntry[] {
+    return listLockedKeys(this.db);
+  }
+
   isPathBlocked(key: string, agentId?: Opt<string, Reason.QueryFilter>): boolean {
     return dbIsPathBlocked(this.db, key, agentId);
   }
@@ -678,6 +728,11 @@ export class DaemonConfigAdapter extends DirectConfigAdapter {
     if (validationKey === undefined) {
       throw new ConfigKeyNotFoundError(key);
     }
+
+    // Phase 139 Step 4 (GAP-1): the daemon's set() is a full override, so the
+    // shared lock guard must run here too — inheriting DirectConfigAdapter.set()
+    // does NOT cover this path.
+    this.assertWritable(key);
 
     const report = this.validateAtPath(key, value);
     if (!report.valid) {

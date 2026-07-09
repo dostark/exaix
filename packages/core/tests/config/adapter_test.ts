@@ -9,7 +9,7 @@ import { configurable } from "../../src/config/registry.ts";
 import { ConfigProvenanceSource, ConfigValueType } from "../../src/types/enums.ts";
 import { addBlocklistPattern, ensureConfigDb, migrateConfigDb, seedConfigDb } from "../../src/config/db.ts";
 import { createConfigAdapter, DirectConfigAdapter } from "../../src/config/adapter.ts";
-import { ConfigKeyNotFoundError, ConfigRateLimitedError } from "../../src/config/errors.ts";
+import { ConfigKeyLockedError, ConfigKeyNotFoundError, ConfigRateLimitedError } from "../../src/config/errors.ts";
 import { DomainEventType } from "../../src/events/domain_event_types.ts";
 import type { IEventLogger } from "../../src/logger/event_logger.ts";
 import type { ILogEvent } from "../../src/types/i_log_event.ts";
@@ -611,6 +611,68 @@ Deno.test("[configuring] adapter.rollback emits ConfigRolledBack with to_id + re
     assertNotEquals(ev, undefined, "ConfigRolledBack must be emitted");
     assertEquals(ev!.payload?.to_id, target.id);
     assertEquals(ev!.payload?.restored_value, "40000");
+  } finally {
+    cleanUp(dir);
+  }
+});
+
+// ── Phase 139 Step 4: key locking enforced in DirectConfigAdapter.set() ──────
+
+Deno.test("[configuring] adapter.lock/unlock round-trip + isLocked/listLocks", () => {
+  const { adapter, dir } = setupAdapter();
+  try {
+    assertEquals(adapter.isLocked("adapter_test.timeout_ms"), false);
+    adapter.lock("adapter_test.timeout_ms", "cli", "test lock");
+    assertEquals(adapter.isLocked("adapter_test.timeout_ms"), true);
+    const locks = adapter.listLocks();
+    assertEquals(locks.some((l) => l.key === "adapter_test.timeout_ms"), true);
+    adapter.unlock("adapter_test.timeout_ms");
+    assertEquals(adapter.isLocked("adapter_test.timeout_ms"), false);
+  } finally {
+    cleanUp(dir);
+  }
+});
+
+Deno.test("[configuring] DirectConfigAdapter.set throws ConfigKeyLockedError for a locked key", async () => {
+  const { adapter, dir } = setupAdapter();
+  try {
+    adapter.lock("adapter_test.timeout_ms", "cli");
+    await assertRejects(
+      () => adapter.set("adapter_test.timeout_ms", 55000),
+      ConfigKeyLockedError,
+    );
+  } finally {
+    cleanUp(dir);
+  }
+});
+
+Deno.test("[configuring] DirectConfigAdapter.set succeeds after unlock", async () => {
+  const { adapter, dir } = setupAdapter();
+  try {
+    adapter.lock("adapter_test.timeout_ms", "cli");
+    adapter.unlock("adapter_test.timeout_ms");
+    await adapter.set("adapter_test.timeout_ms", 55000);
+    assertEquals(adapter.get("adapter_test.timeout_ms"), 55000);
+  } finally {
+    cleanUp(dir);
+  }
+});
+
+Deno.test("[configuring] adapter.lock/unlock emit ConfigKeyLocked/ConfigKeyUnlocked", () => {
+  const { adapter, events, dir } = setupAdapterWithLogger();
+  try {
+    adapter.lock("adapter_test.timeout_ms", "cli", "why");
+    adapter.unlock("adapter_test.timeout_ms");
+    assertNotEquals(
+      events.find((e) => e.action === DomainEventType.ConfigKeyLocked),
+      undefined,
+      "ConfigKeyLocked must be emitted",
+    );
+    assertNotEquals(
+      events.find((e) => e.action === DomainEventType.ConfigKeyUnlocked),
+      undefined,
+      "ConfigKeyUnlocked must be emitted",
+    );
   } finally {
     cleanUp(dir);
   }

@@ -5,7 +5,7 @@
  *   set-provider, set-path, diff, show --sources, and profile support.
  */
 import { Database } from "@db/sqlite";
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertNotEquals, assertRejects } from "@std/assert";
 import { createConfigAdapter, ensureConfigDb, migrateConfigDb, seedConfigDb } from "@exaix/core/config";
 import { ConfigRateLimitedError, ConfigValidationError } from "@exaix/core/config";
 
@@ -186,6 +186,49 @@ Deno.test({
       // 3. CLI: remove clears the block.
       await commands.blockRemove("ai.*");
       assertEquals((await commands.blockList()).some((b) => b.pattern === "ai.*"), false);
+    } finally {
+      Deno.removeSync(dir, { recursive: true });
+    }
+  },
+});
+
+// ── Phase 139 Step 4: config lock CLI + MCP enforcement integration ──────────
+
+Deno.test({
+  name: "[configuring-cli] config_lock_cli: CLI lock refuses a write through the MCP apply path, unlock re-enables",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const dir = Deno.makeTempDirSync({ prefix: "config-lock-int-" });
+    try {
+      createTestConfigDb(dir);
+      const configService = createStubConfig(createMockConfig(dir));
+      const context = createStubContext({ config: configService });
+
+      // 1. CLI: lock ai.provider; lock-list shows it.
+      const commands = new ConfigCommands(context);
+      await commands.lock("ai.provider", "provider locked by admin");
+      assertEquals((await commands.listLocks()).some((l) => l.key === "ai.provider"), true);
+
+      // 2. MCP: stage the locked key via ConfigSet, then apply via ConfigApply
+      //    through the live handler map — apply calls adapter.set(), which the
+      //    lock guard (assertWritable) refuses.
+      const handlers = buildHandlers(context, new AllowAllPermissionsService());
+      const setTool = handlers.get(McpToolName.CONFIG_SET);
+      const applyTool = handlers.get(McpToolName.CONFIG_APPLY);
+      assertEquals(setTool !== undefined && applyTool !== undefined, true);
+      await setTool!.execute({ key: "ai.provider", value: "openai" });
+      const applyResp = await applyTool!.execute({});
+      const applyText = applyResp.content.find((c) => c.type === "text");
+      const refused = applyText && applyText.type === "text" ? applyText.text.includes("failed") : false;
+      assertEquals(refused, true, "applying a locked key through MCP must fail (lock funnel)");
+      // The staged value was NOT written (still the pre-lock default, not "openai").
+      assertNotEquals(await commands.get("ai.provider"), "openai");
+
+      // 3. CLI: unlock re-enables writes.
+      await commands.unlock("ai.provider");
+      await commands.set("ai.provider", "anthropic");
+      assertEquals(await commands.get("ai.provider"), "anthropic");
     } finally {
       Deno.removeSync(dir, { recursive: true });
     }

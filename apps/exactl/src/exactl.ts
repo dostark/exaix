@@ -1334,6 +1334,59 @@ export const __test_command = new Command()
             }
           }),
       )
+      // Phase 139 Step 4: per-key write lock (refused by adapter.set across surfaces).
+      .command(
+        "lock <path>",
+        new Command()
+          .description("Lock a config key against all writes (CLI/MCP/daemon)")
+          .option("--reason <text:string>", "Optional note for the lock")
+          .action(async (options, ...args: string[]) => {
+            try {
+              await configCommands.lock(args[0], options.reason);
+              display.info("config.lock", args[0], { reason: options.reason });
+            } catch (error) {
+              display.error("cli.error", "config lock", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "unlock <path>",
+        new Command()
+          .description("Unlock a previously locked config key")
+          .action(async (_options, ...args: string[]) => {
+            try {
+              await configCommands.unlock(args[0]);
+              display.info("config.unlock", args[0], {});
+            } catch (error) {
+              display.error("cli.error", "config unlock", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "lock-list",
+        new Command()
+          .description("List all locked config keys")
+          .action(async () => {
+            try {
+              const locks = await configCommands.listLocks();
+              for (const l of locks) {
+                display.info("config.lock.entry", l.key, { locked_by: l.locked_by, reason: l.reason });
+              }
+              display.info("config.lock.list", CONFIG_LABEL, { count: locks.length });
+            } catch (error) {
+              display.error("cli.error", "config lock-list", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
       // Phase 138 Step 2: MCP deny-permanently blocklist management.
       .command(
         "block",

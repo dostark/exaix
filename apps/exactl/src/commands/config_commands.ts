@@ -11,7 +11,7 @@ import { join } from "@std/path";
 import { createConfigAdapterAsync, getRegisteredDefaults } from "@exaix/core/config";
 import type { IConfigAdapter, IConfigValidationReport } from "@exaix/core/config";
 import { ConfigKeyNotFoundError, ConfigRateLimitedError } from "@exaix/core/config";
-import type { ConfigValue, IConfigOverrideEntry } from "@exaix/core/config";
+import type { ConfigValue, IConfigOverrideEntry, ILockedKeyEntry } from "@exaix/core/config";
 import { CONFIG_PROFILE_KEY_PREFIX, ConfigOutputFormat, type Opt, type Reason } from "@exaix/core/types";
 import { CLI_CONFIG_SET_DEBOUNCE_WINDOW_MS, CLI_CONFIG_SET_MAX_WRITES_PER_WINDOW } from "@exaix/core";
 
@@ -31,6 +31,9 @@ function parseValue(input: string): ConfigValue {
   if (input === "false") return false;
   return input;
 }
+
+/** `locked_by` recorded for a CLI-initiated lock (no per-user identity at the CLI). */
+const CONFIG_LOCKED_BY_CLI = "cli";
 
 export class ConfigCommands extends BaseCommand {
   private adapter: IConfigAdapter | undefined;
@@ -219,6 +222,20 @@ export class ConfigCommands extends BaseCommand {
    */
   async rollback(path: string, id: number): Promise<ConfigValue> {
     return (await this.ensureAdapter()).rollback(path, id);
+  }
+
+  // ── Phase 139 Step 4: key locking ──────────────────────────────────────────
+
+  async lock(path: string, reason?: Opt<string, Reason.OptionalInput>): Promise<void> {
+    (await this.ensureAdapter()).lock(path, CONFIG_LOCKED_BY_CLI, reason);
+  }
+
+  async unlock(path: string): Promise<void> {
+    (await this.ensureAdapter()).unlock(path);
+  }
+
+  async listLocks(): Promise<ILockedKeyEntry[]> {
+    return (await this.ensureAdapter()).listLocks();
   }
 }
 

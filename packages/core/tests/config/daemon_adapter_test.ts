@@ -11,7 +11,7 @@ import { createConfigAdapter, createConfigAdapterAsync, DaemonConfigAdapter } fr
 import { configurable } from "../../src/config/registry.ts";
 import { ensureConfigDb, migrateConfigDb, seedConfigDb } from "../../src/config/db.ts";
 import { ConfigValueType, SwapClass } from "../../src/types/enums.ts";
-import { ConfigKeyNotFoundError } from "../../src/config/errors.ts";
+import { ConfigKeyLockedError, ConfigKeyNotFoundError } from "../../src/config/errors.ts";
 
 // Register test keys needed for this test file
 configurable({
@@ -306,5 +306,24 @@ Deno.test("[configuring] createConfigAdapterAsync returns DaemonConfigAdapter fo
     db.close();
   } finally {
     Deno.removeSync(dir, { recursive: true });
+  }
+});
+
+// ── Phase 139 Step 4 (GAP-1): the daemon set() override runs assertWritable ──
+
+Deno.test("[configuring] DaemonConfigAdapter.set throws ConfigKeyLockedError for a locked key", async () => {
+  const { adapter, dir, db } = setupDaemonAdapter();
+  try {
+    adapter.lock("daemon_test.timeout_ms", "cli");
+    await assertRejects(
+      () => adapter.set("daemon_test.timeout_ms", 60000),
+      ConfigKeyLockedError,
+    );
+    // After unlock the daemon write succeeds.
+    adapter.unlock("daemon_test.timeout_ms");
+    await adapter.set("daemon_test.timeout_ms", 60000);
+    assertEquals(adapter.get("daemon_test.timeout_ms"), 60000);
+  } finally {
+    cleanUp(dir, db);
   }
 });

@@ -22,11 +22,15 @@ import {
   getOverrideById,
   getOverrideHistory,
   insertOverride,
+  isKeyLocked,
   isPathBlocked,
   listBlocklistPatterns,
+  listLockedKeys,
+  lockKey,
   migrateConfigDb,
   removeBlocklistPattern,
   seedConfigDb,
+  unlockKey,
 } from "../../src/config/db.ts";
 
 function createTestDb(): { db: Database; dbPath: string; dir: string } {
@@ -511,6 +515,33 @@ Deno.test("[configuring] getOverrideById returns the matching row / undefined", 
     // Wrong key for a real id → undefined; unknown id → undefined.
     assertEquals(getOverrideById(db, "other.key", first.id), undefined);
     assertEquals(getOverrideById(db, "r.key", 999999), undefined);
+  } finally {
+    cleanUp(dir, db);
+  }
+});
+
+// ── Phase 139 Step 4: config_locked_keys DAO ────────────────────────────────
+
+Deno.test("[configuring] lockKey/unlockKey/isKeyLocked/listLockedKeys DAO round-trip", () => {
+  const { db, dir } = createTestDb();
+  try {
+    migrateConfigDb(db);
+    assertEquals(isKeyLocked(db, "system.root"), false);
+
+    lockKey(db, "system.root", "cli", "compromised");
+    assertEquals(isKeyLocked(db, "system.root"), true);
+    // Idempotent on the `key` PRIMARY KEY — a re-lock updates the row in place
+    // (one row, latest reason wins) rather than inserting a duplicate.
+    lockKey(db, "system.root", "cli", "again");
+    const locks = listLockedKeys(db);
+    assertEquals(locks.length, 1);
+    assertEquals(locks[0].key, "system.root");
+    assertEquals(locks[0].locked_by, "cli");
+    assertEquals(locks[0].reason, "again");
+
+    unlockKey(db, "system.root");
+    assertEquals(isKeyLocked(db, "system.root"), false);
+    assertEquals(listLockedKeys(db).length, 0);
   } finally {
     cleanUp(dir, db);
   }
