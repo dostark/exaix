@@ -68,6 +68,35 @@ export interface IOverrideEntry {
   swap_class: string;
 }
 
+// ── Typed config event payloads (Phase 139 Step 1, GAP-3) ───────────────────
+// The first named config event-payload interfaces — existing config events
+// (ConfigUpdated) pass inline literals; these are introduced so the Phase 139
+// audit-chain tests can assert on payload fields by type.
+
+/** Payload for DomainEventType.ConfigRolledBack. */
+export interface IConfigRollbackPayload {
+  key: string;
+  to_id: number;
+  restored_value: ConfigValue;
+}
+
+/** Payload for DomainEventType.ConfigKeyLocked / ConfigKeyUnlocked. */
+export interface IConfigLockPayload {
+  key: string;
+  locked_by: string;
+  reason?: string | null;
+}
+
+/** Payload for DomainEventType.ConfigIntegrityVerified / ConfigIntegrityMismatch. */
+export interface IConfigIntegrityPayload {
+  /** Present on a verified match (the confirmed checksum). */
+  checksum?: string;
+  /** Present on a mismatch (the previously stored value). */
+  stored?: string;
+  /** Present on a mismatch (the freshly computed value). */
+  computed?: string;
+}
+
 /**
  * Config adapter that wraps the Config DB and registry.
  *

@@ -55,4 +55,16 @@ export class ConfigRateLimitedError extends Error {
   }
 }
 
+/**
+ * Thrown by adapter.set() (via assertWritable) when a write targets a key in
+ * config_locked_keys (Phase 139 Step 4). A locked key is refused by every write
+ * surface — CLI, MCP, and the daemon adapter — until `config unlock`.
+ */
+export class ConfigKeyLockedError extends Error {
+  constructor(key: string, reason?: string) {
+    super(`Config key "${key}" is locked${reason ? `: ${reason}` : ""}`);
+    this.name = "ConfigKeyLockedError";
+  }
+}
+
 export const EDITION_GATED_PATHS: ReadonlySet<string> = new Set(["guardrail", "hitl", "voting"]);

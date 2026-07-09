@@ -53,6 +53,18 @@ export interface IInsertOverrideOpts {
 const CONFIG_DB_FILE = "config.db";
 const CONFIG_DB_DIR = ".exa";
 
+// ── Config `source` vocabulary (Phase 139 Step 1, GAP-5) ────────────────────
+// All values the `source` column of config_overrides may take, co-located here
+// (the Config-DB layer owns the column) rather than split across constants.ts.
+/** Seed rows written by seedConfigDb (NULL value, registry default resolves). */
+export const CONFIG_SOURCE_INIT = "init";
+/** Direct CLI/adapter write. */
+export const CONFIG_SOURCE_CLI = "cli";
+/** A rollback append restoring a historical value (Phase 139 Step 3). */
+export const CONFIG_SOURCE_ROLLBACK = "rollback";
+/** The synthetic _checksum row (Phase 139 Step 5). */
+export const CONFIG_SOURCE_INTEGRITY = "integrity";
+
 export function ensureConfigDb(rootPath: string): string {
   const dir = join(rootPath, CONFIG_DB_DIR);
   ensureDirSync(dir);
@@ -92,16 +104,16 @@ export function migrateConfigDb(db: Database): void {
 
 export function seedConfigDb(db: Database): void {
   const insert = db.prepare(
-    "INSERT INTO config_overrides (key, value, source, swap_class) VALUES (?, NULL, 'init', 'hot')",
+    "INSERT INTO config_overrides (key, value, source, swap_class) VALUES (?, NULL, ?, 'hot')",
   );
   const checkExists = db.prepare(
-    "SELECT COUNT(*) as cnt FROM config_overrides WHERE key = ? AND value IS NULL AND source = 'init'",
+    "SELECT COUNT(*) as cnt FROM config_overrides WHERE key = ? AND value IS NULL AND source = ?",
   );
 
   for (const [key] of getRegisteredDefaults()) {
-    const existing = checkExists.get<{ cnt: number }>(key);
+    const existing = checkExists.get<{ cnt: number }>(key, CONFIG_SOURCE_INIT);
     if (!existing || existing.cnt === 0) {
-      insert.run(key);
+      insert.run(key, CONFIG_SOURCE_INIT);
     }
   }
 }
@@ -124,7 +136,6 @@ export function getAllEffectiveValues(db: Database): Map<string, ConfigValue> {
   return result;
 }
 
-const CONFIG_SOURCE_INIT = "init";
 const CONFIG_DB_OVERRIDE_WARN_EVENT = "config.db.override_threshold";
 
 export function insertOverride(
@@ -170,8 +181,8 @@ export function insertOverride(
 export function countRecentCliWrites(db: Database, windowMs: number): number {
   const seconds = Math.ceil(windowMs / 1000);
   const row = db.prepare(
-    "SELECT COUNT(*) AS cnt FROM config_overrides WHERE source = 'cli' AND created_at >= datetime('now', ?)",
-  ).get<{ cnt: number }>(`-${seconds} seconds`);
+    "SELECT COUNT(*) AS cnt FROM config_overrides WHERE source = ? AND created_at >= datetime('now', ?)",
+  ).get<{ cnt: number }>(CONFIG_SOURCE_CLI, `-${seconds} seconds`);
   return row?.cnt ?? 0;
 }
 
