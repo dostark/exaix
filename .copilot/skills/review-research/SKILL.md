@@ -89,8 +89,12 @@ Phase 3 — PLAN (Create Improvement Roadmap)
  11. Use the prioritization matrix:
      Critical (blocking/security/integrity) > High (quality/reliability) >
      Medium (features/moderate) > Low (polish/minor) > Documentation (always last)
- 12. The final sub-phase MUST be a Documentation Update:
-     docs/Exaix_User_Guide.md, docs/Building_with_AI_Agents.md, subsystem README.
+ 12. The final sub-phase MUST be a Documentation Update that covers every user-facing
+     surface touched by earlier phases. At minimum:
+     - **CLI/config/env changes** → `docs/Exaix_User_Guide.md` (grep for each new flag/key
+       to confirm coverage; missing entries block phase-close)
+     - **Architecture changes** → `ARCHITECTURE.md`
+     - **Agent patterns** → `docs/Building_with_AI_Agents.md` or subsystem README.
 
 Phase 4 — ARTIFACTS (Create Concrete Deliverables)
  13. Templates: create reusable templates in appropriate templates/ directories.
