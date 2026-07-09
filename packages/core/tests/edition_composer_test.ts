@@ -1,7 +1,9 @@
 /**
  * @module EditionComposerTest
  * @path packages/core/tests/edition_composer_test.ts
- * @description Unit tests for IEditionComposer, ICapabilityModule, and SoloComposer (Phase 115 Step 6b).
+ * @description Unit tests for IEditionComposer, ICapabilityModule, and SoloComposer (Phase 115 Step 6b;
+ *   Phase 134 Step 5 — the model-registry-provider hook: Solo yields undefined, register-then-get
+ *   returns the provider, twice-last-wins, query idempotency).
  */
 
 import { assertEquals } from "@std/assert";

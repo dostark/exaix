@@ -1,7 +1,9 @@
 /**
  * @module CapabilitiesTest
  * @path packages/core/tests/capabilities_test.ts
- * @description Unit tests for edition capability constants.
+ * @description Unit tests for edition capability constants (incl. Phase 134 Step 5 —
+ *   CAP_MODEL_REGISTRY_LIVE/ROUTING_RIGOR to EDITION_TEAM, CAP_MODEL_REGISTRY_GOVERNANCE
+ *   to EDITION_ENTERPRISE reserved per D11).
  */
 
 import { assertEquals } from "@std/assert";
