@@ -8,6 +8,40 @@
  *   deno run -A scripts/check_commit_msg.ts <commit_msg_file>
  */
 
+/** A reference to a plan doc + step, parsed from the commit's `plan:` field. */
+export interface IPlanRef {
+  docPath: string;
+  step: number;
+}
+
+/**
+ * The paths a plan step declares as its success-criteria source modules and
+ * planned-test modules, the ledger tokens of any ⚠️ deferred items, plus any structural
+ * errors found while parsing the step.
+ */
+export interface IPlanStepPaths {
+  criteriaPaths: string[];
+  testPaths: string[];
+  /** `→ <token>` of each `⚠️ deferred` criterion/test (must have a Reachability Ledger row). */
+  deferredTokens: string[];
+  errors: string[];
+}
+
+/**
+ * Everything the pure validator needs to enforce plan-step traceability, resolved
+ * by the CLI entry point (doc read + git diff done there, matching stays pure/testable).
+ */
+export interface IPlanValidation {
+  criteriaPaths: string[];
+  testPaths: string[];
+  planErrors: string[];
+  changedFiles: string[];
+  /** Ledger tokens of the step's `⚠️ deferred` items (optional; default none). */
+  deferredTokens?: string[];
+  /** Symbols found in the plan doc's Reachability Ledger table (optional; default none). */
+  ledgerSymbols?: string[];
+}
+
 /** Standard conventional commit types. */
 const VALID_TYPES = [
   "feat",
@@ -37,6 +71,181 @@ const VALID_MODELS = [
 ];
 
 /**
+ * Extract the `plan:` field from a commit message, if present. The field references
+ * the plan doc and step this commit implements, e.g.
+ *   `plan: exaix-dev-docs/planning/phase-134.md#6`
+ * The step suffix accepts `#6`, `#step-6`, or `#step 6` (case-insensitive).
+ * Returns undefined when no `plan:` field is present (normal, non-plan commits).
+ */
+export function parsePlanField(text: string): IPlanRef | undefined {
+  const match = text.match(/^plan:\s*(.+?)#\s*(?:step[-\s]*)?(\d+)\s*$/im);
+  if (!match) return undefined;
+  return { docPath: match[1].trim(), step: Number(match[2]) };
+}
+
+/** Extract every path after a `→` on a plan bullet line (comma/space separated). */
+function extractArrowPaths(line: string): string[] {
+  const arrowIdx = line.indexOf("→");
+  if (arrowIdx === -1) return [];
+  return line
+    .slice(arrowIdx + 1)
+    .split(/[,\s]+/)
+    .map((p) => p.trim())
+    // Keep only tokens that look like repo paths (contain a slash and a dot-extension
+    // or a directory separator) — drops trailing prose accidentally after the arrow.
+    .filter((p) => p.length > 0 && p.includes("/"));
+}
+
+/**
+ * Parse a single `### Step N:` section of a plan doc and collect the source paths
+ * declared on **done** success criteria and **done** planned tests, both marked with a
+ * leading `✅` (`- ✅ … → path`). Not-yet-done items (unchecked `- [ ]` criteria, or
+ * bullets without a ✅) are intentionally ignored so partial-step commits are allowed.
+ *
+ * A ✅-marked criterion or test WITHOUT a `→ path` is a structural error (the whole point
+ * of the convention is that a claimed item names where it is met).
+ */
+export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
+  const lines = docText.split("\n");
+  const errors: string[] = [];
+  const criteriaPaths = new Set<string>();
+  const testPaths = new Set<string>();
+  const deferredTokens = new Set<string>();
+
+  // Locate the step's line range: from its `### Step N:` header to the next `### `.
+  const headerRe = new RegExp(`^###\\s+Step\\s+${step}\\b`, "i");
+  let start = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (headerRe.test(lines[i])) {
+      start = i;
+      break;
+    }
+  }
+  if (start === -1) {
+    return {
+      criteriaPaths: [],
+      testPaths: [],
+      deferredTokens: [],
+      errors: [`Step ${step} not found in plan doc.`],
+    };
+  }
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i++) {
+    if (/^###\s+/.test(lines[i])) {
+      end = i;
+      break;
+    }
+  }
+
+  // Walk the section, tracking whether we're under Planned Tests or Success Criteria.
+  type Section = "tests" | "criteria" | null;
+  let section: Section = null;
+  for (let i = start + 1; i < end; i++) {
+    const line = lines[i];
+    if (/^\*\*Planned Tests\*\*/i.test(line)) {
+      section = "tests";
+      continue;
+    }
+    if (/^\*\*Success Criteria\*\*/i.test(line)) {
+      section = "criteria";
+      continue;
+    }
+    // A new bold heading (e.g. **Architecture Notes**) ends the current list section.
+    if (/^\*\*[^*]+\*\*/.test(line) && !/Planned Tests|Success Criteria/i.test(line)) {
+      section = null;
+      continue;
+    }
+    if (section === null) continue;
+
+    // ⚠️ deferred criteria/tests (either section): must carry a `→ <ledger-token>` that a
+    // Reachability Ledger row references. They are exempt from the changed-file check.
+    const deferred = line.match(/^\s*-\s*⚠️\s*deferred\b\s*(.*)$/i);
+    if (deferred) {
+      const tokens = extractArrowTokens(line);
+      if (tokens.length === 0) {
+        errors.push(
+          `Step ${step} deferred item "${truncateForError(deferred[1])}" has no → ledger token ` +
+            `(a deferral must name the Reachability Ledger symbol it is tracked by).`,
+        );
+      }
+      tokens.forEach((t) => deferredTokens.add(t));
+      continue;
+    }
+
+    if (section === "criteria") {
+      // Done criteria are marked with a leading ✅ (the completion mark, same as tests).
+      const done = line.match(/^\s*-\s*✅\s*(.*)$/);
+      if (done) {
+        const paths = extractArrowPaths(line);
+        if (paths.length === 0) {
+          errors.push(
+            `Step ${step} criterion "${truncateForError(done[1])}" is marked ✅ but has no → source path.`,
+          );
+        }
+        paths.forEach((p) => criteriaPaths.add(p));
+      }
+    } else if (section === "tests") {
+      // Done tests are marked with a leading ✅ (optionally after "- ").
+      const done = line.match(/^\s*-\s*✅\s*(.*)$/);
+      if (done) {
+        const paths = extractArrowPaths(line);
+        if (paths.length === 0) {
+          errors.push(
+            `Step ${step} planned test "${truncateForError(done[1])}" is done ✅ but has no → test path.`,
+          );
+        }
+        paths.forEach((p) => testPaths.add(p));
+      }
+    }
+  }
+
+  return {
+    criteriaPaths: [...criteriaPaths],
+    testPaths: [...testPaths],
+    deferredTokens: [...deferredTokens],
+    errors,
+  };
+}
+
+/**
+ * Extract the `→ <token…>` tokens of a deferred line. Unlike source paths these need not
+ * contain a slash (a ledger symbol like `IModelRegistryProvider` is a bare identifier),
+ * so any non-empty whitespace/comma-separated token after the arrow is kept.
+ */
+function extractArrowTokens(line: string): string[] {
+  const arrowIdx = line.indexOf("→");
+  if (arrowIdx === -1) return [];
+  return line
+    .slice(arrowIdx + 1)
+    .split(/[,\s]+/)
+    .map((t) => t.replace(/`/g, "").trim())
+    .filter((t) => t.length > 0);
+}
+
+/**
+ * Extract the Symbol column (first cell, backtick-wrapped) of every data row in a
+ * Reachability Ledger table. A ledger row is a `| … |` table line whose first cell is a
+ * backtick-quoted symbol; header/separator rows and non-table lines are skipped.
+ */
+export function parseLedgerSymbols(docText: string): string[] {
+  const symbols: string[] = [];
+  for (const line of docText.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("|")) continue;
+    const firstCell = trimmed.split("|")[1]?.trim() ?? "";
+    const backticked = firstCell.match(/^`([^`]+)`$/);
+    if (backticked) symbols.push(backticked[1].trim());
+  }
+  return symbols;
+}
+
+/** Trim a criterion/test label for a readable error message. */
+function truncateForError(s: string): string {
+  const clean = s.replace(/`/g, "").trim();
+  return clean.length > 60 ? `${clean.slice(0, 57)}...` : clean;
+}
+
+/**
  * Validates a commit message string.
  * @param text The full commit message.
  * @param options Validation options including changed file count for metrics.
@@ -44,7 +253,11 @@ const VALID_MODELS = [
  */
 export function validateCommitMsg(
   text: string,
-  options: { changedFileCount?: number; isMergeCommit?: boolean } = {},
+  options: {
+    changedFileCount?: number;
+    isMergeCommit?: boolean;
+    planValidation?: IPlanValidation;
+  } = {},
 ): { success: boolean; errors: string[] } {
   const errors: string[] = [];
   const lines = text.split("\n");
@@ -181,7 +394,94 @@ export function validateCommitMsg(
     );
   }
 
+  // 8. Plan-step traceability (only when a `plan:` field resolved to a step).
+  //    Every checked success criterion and every done planned test in the referenced
+  //    step must name a source/test module, and that module must be a changed file of
+  //    THIS commit — otherwise the item is claimed without proof and the commit is blocked.
+  if (options.planValidation) {
+    const pv = options.planValidation;
+    // Surface any structural errors from parsing the plan step verbatim.
+    for (const e of pv.planErrors) errors.push(`Plan traceability: ${e}`);
+
+    const changed = new Set(pv.changedFiles);
+    for (const path of pv.criteriaPaths) {
+      if (!changed.has(path)) {
+        errors.push(
+          `Plan traceability: success-criterion module "${path}" is not among this commit's changed files — ` +
+            `either it is not actually implemented here or the criterion is unfairly marked done.`,
+        );
+      }
+    }
+    for (const path of pv.testPaths) {
+      if (!changed.has(path)) {
+        errors.push(
+          `Plan traceability: planned-test module "${path}" is not among this commit's changed files — ` +
+            `the test is marked done ✅ but its file was not committed.`,
+        );
+      }
+    }
+    // Deferred items are exempt from the changed-file check (intentionally not done here)
+    // but MUST be tracked by a Reachability Ledger row naming the same token.
+    const ledger = new Set(pv.ledgerSymbols ?? []);
+    for (const token of pv.deferredTokens ?? []) {
+      if (!ledger.has(token)) {
+        errors.push(
+          `Plan traceability: deferred item "${token}" has no matching Reachability Ledger row — ` +
+            `a ⚠️ deferred criterion/test must be tracked by a ledger entry naming that symbol.`,
+        );
+      }
+    }
+  }
+
   return { success: errors.length === 0, errors };
+}
+
+/** The staged (`--cached`) changed-file paths, repo-root-relative, or [] on failure. */
+async function getStagedFiles(): Promise<string[]> {
+  try {
+    const output = await new Deno.Command("git", {
+      args: ["diff", "--cached", "--name-only"],
+      stdout: "piped",
+      stderr: "null",
+    }).output();
+    const text = new TextDecoder().decode(output.stdout).trim();
+    return text ? text.split("\n").map((f) => f.trim()).filter((f) => f.length > 0) : [];
+  } catch (_e) {
+    return [];
+  }
+}
+
+/**
+ * Resolve the plan-step validation payload for a commit whose `plan:` field names a
+ * doc + step. Reads the plan doc, extracts the step's checked-criterion source paths and
+ * done-test paths, and pairs them with the staged files. Returns a payload whose
+ * `planErrors` carries a doc-read failure (so the commit is blocked, not silently passed)
+ * when the referenced doc cannot be read.
+ */
+function resolvePlanValidation(planRef: IPlanRef, stagedFiles: string[]): IPlanValidation {
+  let docText: string;
+  try {
+    docText = Deno.readTextFileSync(planRef.docPath);
+  } catch (_e) {
+    return {
+      criteriaPaths: [],
+      testPaths: [],
+      planErrors: [
+        `plan doc "${planRef.docPath}" (from the plan: field) could not be read — ` +
+        `check the path is repo-root-relative and committed.`,
+      ],
+      changedFiles: stagedFiles,
+    };
+  }
+  const parsed = parsePlanStep(docText, planRef.step);
+  return {
+    criteriaPaths: parsed.criteriaPaths,
+    testPaths: parsed.testPaths,
+    planErrors: parsed.errors,
+    changedFiles: stagedFiles,
+    deferredTokens: parsed.deferredTokens,
+    ledgerSymbols: parseLedgerSymbols(docText),
+  };
 }
 
 async function isGitMergeCommit(): Promise<boolean> {
@@ -209,24 +509,18 @@ if (import.meta.main) {
   try {
     const text = Deno.readTextFileSync(commitMsgFile);
 
-    // Try to get changed file count from git if available
-    let changedFileCount = 0;
-    try {
-      const process = new Deno.Command("git", {
-        args: ["diff", "--cached", "--name-only"],
-        stdout: "piped",
-      });
-      const output = await process.output();
-      const files = new TextDecoder().decode(output.stdout).trim();
-      changedFileCount = files ? files.split("\n").length : 0;
-    } catch (_e) {
-      // Not in a git repo or git not found, default to 0
-    }
+    const stagedFiles = await getStagedFiles();
+    const changedFileCount = stagedFiles.length;
+
+    // Plan-step traceability: only engaged when the commit carries a `plan:` field.
+    const planRef = parsePlanField(text);
+    const planValidation = planRef ? resolvePlanValidation(planRef, stagedFiles) : undefined;
 
     const mergeCommit = await isGitMergeCommit();
     const { success, errors } = validateCommitMsg(text, {
       changedFileCount,
       isMergeCommit: mergeCommit,
+      planValidation,
     });
 
     if (!success) {
@@ -239,7 +533,10 @@ if (import.meta.main) {
       console.error("  tests: summary status");
       console.error("  who: agent or user name");
       console.error("  impact: ArchitectureComponent: brief details");
-      console.error("\nOptional: conversation_id, links, prompt, tool_audit, model\n");
+      console.error(
+        "\nOptional: conversation_id, links, prompt, tool_audit, model, " +
+          "plan (e.g. plan: path/to/phase.md#6 — enforces plan-step criterion/test traceability)\n",
+      );
       Deno.exit(1);
     }
 
