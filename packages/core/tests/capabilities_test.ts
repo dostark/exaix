@@ -5,11 +5,14 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { EDITION_TEAM } from "../mod.ts";
+import { EDITION_ENTERPRISE, EDITION_TEAM } from "../mod.ts";
 import {
   CAP_EXTENDED_LANG_EXTRACTION,
   CAP_GUARDRAIL_ADVANCED,
   CAP_HITL_GOVERNANCE,
+  CAP_MODEL_REGISTRY_GOVERNANCE,
+  CAP_MODEL_REGISTRY_LIVE,
+  CAP_MODEL_ROUTING_RIGOR,
   CAP_VOTING,
   CAPABILITY_EDITION,
 } from "../src/composer/mod.ts";
@@ -19,6 +22,9 @@ Deno.test("capabilities: all expected capability IDs are defined", () => {
   assertEquals(CAP_HITL_GOVERNANCE, "hitl_governance");
   assertEquals(CAP_GUARDRAIL_ADVANCED, "guardrail_advanced");
   assertEquals(CAP_EXTENDED_LANG_EXTRACTION, "extended_lang_extraction");
+  assertEquals(CAP_MODEL_REGISTRY_LIVE, "model_registry_live");
+  assertEquals(CAP_MODEL_ROUTING_RIGOR, "model_routing_rigor");
+  assertEquals(CAP_MODEL_REGISTRY_GOVERNANCE, "model_registry_governance");
 });
 
 Deno.test("capabilities: each capability maps to the correct edition tier", () => {
@@ -26,6 +32,9 @@ Deno.test("capabilities: each capability maps to the correct edition tier", () =
   assertEquals(CAPABILITY_EDITION[CAP_HITL_GOVERNANCE], EDITION_TEAM);
   assertEquals(CAPABILITY_EDITION[CAP_GUARDRAIL_ADVANCED], EDITION_TEAM);
   assertEquals(CAPABILITY_EDITION[CAP_EXTENDED_LANG_EXTRACTION], EDITION_TEAM);
+  assertEquals(CAPABILITY_EDITION[CAP_MODEL_REGISTRY_LIVE], EDITION_TEAM);
+  assertEquals(CAPABILITY_EDITION[CAP_MODEL_ROUTING_RIGOR], EDITION_TEAM);
+  assertEquals(CAPABILITY_EDITION[CAP_MODEL_REGISTRY_GOVERNANCE], EDITION_ENTERPRISE);
 });
 
 Deno.test("capabilities: OpenRouter is NOT a Team-gated capability (Solo per D5b)", () => {

@@ -7,9 +7,11 @@
 import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
 import type { IAuthorizer } from "../mod.ts";
+import type { IModelRegistry } from "../src/types/i_model_registry.ts";
 import {
   type ICapabilityModule,
   type IEditionComposer,
+  type IModelRegistryProvider,
   type ISeamRegistryPlaceholder,
   SoloComposer,
 } from "../src/composer/mod.ts";
@@ -49,6 +51,53 @@ describe("SoloComposer", () => {
     const module: ICapabilityModule = {};
     composer.registerCapabilityModule(module);
     // interface contract satisfied — no crash
+  });
+
+  it("getModelRegistryProvider returns undefined without registration (Solo default)", () => {
+    const composer = new SoloComposer();
+    assertEquals(composer.getModelRegistryProvider(), undefined);
+  });
+
+  it("register then getModelRegistryProvider returns the registered provider", () => {
+    const composer = new SoloComposer();
+    const stubRegistry = {} as IModelRegistry;
+    let created = false;
+    const stubProvider: IModelRegistryProvider = {
+      createModelRegistry: () => {
+        created = true;
+        return stubRegistry;
+      },
+    };
+    composer.registerModelRegistryProvider(stubProvider);
+    const retrieved = composer.getModelRegistryProvider();
+    assertEquals(retrieved, stubProvider);
+    // Verify the factory actually works
+    retrieved!.createModelRegistry({
+      providerRegistry: {},
+      healthChecker: { checkProvider: () => Promise.resolve(true) },
+    });
+    assertEquals(created, true);
+  });
+
+  it("registerModelRegistryProvider called twice — last wins", () => {
+    const composer = new SoloComposer();
+    const stub = {} as IModelRegistry;
+    const p1: IModelRegistryProvider = { createModelRegistry: () => stub };
+    const p2: IModelRegistryProvider = { createModelRegistry: () => stub };
+    composer.registerModelRegistryProvider(p1);
+    composer.registerModelRegistryProvider(p2);
+    assertEquals(composer.getModelRegistryProvider(), p2);
+  });
+
+  it("getModelRegistryProvider called multiple times consistently returns the same value", () => {
+    const composer = new SoloComposer();
+    assertEquals(composer.getModelRegistryProvider(), undefined);
+    assertEquals(composer.getModelRegistryProvider(), undefined);
+    const stub = {} as IModelRegistry;
+    const stubProvider: IModelRegistryProvider = { createModelRegistry: () => stub };
+    composer.registerModelRegistryProvider(stubProvider);
+    assertEquals(composer.getModelRegistryProvider(), stubProvider);
+    assertEquals(composer.getModelRegistryProvider(), stubProvider);
   });
 });
 

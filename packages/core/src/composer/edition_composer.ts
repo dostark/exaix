@@ -67,6 +67,27 @@ export interface ICapabilityModule {
   registerEntitlement?(authorizer: IAuthorizer): void;
 }
 
+import type { IModelRegistry } from "../types/i_model_registry.ts";
+
+/**
+ * Dependencies passed to IModelRegistryProvider.createModelRegistry.
+ * The concrete provider registry shape is owned by @exaix/ai; the edition
+ * seam passes it as a plain object reference.
+ */
+export interface IModelRegistryProviderDeps {
+  providerRegistry: object;
+  healthChecker: { checkProvider(name: string): Promise<boolean> };
+}
+
+/**
+ * Factory interface for creating IModelRegistry instances.
+ * Used by the edition seam — Team composer provides a live registry provider;
+ * Solo composer always returns undefined.
+ */
+export interface IModelRegistryProvider {
+  createModelRegistry(deps: IModelRegistryProviderDeps): IModelRegistry;
+}
+
 /**
  * Edition composer — the single attach point for paid-edition capabilities.
  * Each runtime entry (daemon, exactl, agent-entrypoint) creates the appropriate
@@ -75,4 +96,10 @@ export interface ICapabilityModule {
 export interface IEditionComposer {
   /** Register a capability module. Order is not significant. */
   registerCapabilityModule(module: ICapabilityModule): void;
+
+  /** Register a model registry provider factory (Team, Phase 135). */
+  registerModelRegistryProvider(provider: IModelRegistryProvider): void;
+
+  /** Get the registered model registry provider, or undefined (Solo). */
+  getModelRegistryProvider(): IModelRegistryProvider | undefined;
 }

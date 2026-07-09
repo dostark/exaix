@@ -740,7 +740,15 @@ if (import.meta.main) {
       checkProvider: (_providerName: string) => Promise.resolve(true),
     };
     const routingStrategy = new DefaultRoutingStrategy(ProviderRegistry, costTracker, healthChecker);
-    const modelRegistry = new DefaultModelRegistry(healthChecker);
+    // Phase 134 D8: Select model registry via edition-composer seam.
+    // Solo -> DefaultModelRegistry; Team -> live registry via registered provider.
+    const modelRegistryProvider = _editionComposer.getModelRegistryProvider();
+    const modelRegistry = modelRegistryProvider
+      ? modelRegistryProvider.createModelRegistry({
+        providerRegistry: ProviderRegistry,
+        healthChecker,
+      })
+      : new DefaultModelRegistry(healthChecker);
     const modelResolver = new ModelResolver(routingStrategy, config, healthChecker, logger, modelRegistry);
 
     // Create FlowRunner for multi-agent flow execution

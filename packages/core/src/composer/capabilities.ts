@@ -16,7 +16,7 @@
  * @related-files ["packages/core/src/types/constants.ts", "packages/ai/README.md", "apps/common/registry_bootstrap.ts"]
  */
 
-import { EDITION_TEAM } from "../types/constants.ts";
+import { EDITION_ENTERPRISE, EDITION_TEAM } from "../types/constants.ts";
 
 // ============================================================================
 // Capability IDs
@@ -35,6 +35,15 @@ export const CAP_GUARDRAIL_ADVANCED = "guardrail_advanced";
  *  Python and TS/JS ship un-gated in Solo; this capability gates only the extended-language extractors. */
 export const CAP_EXTENDED_LANG_EXTRACTION = "extended_lang_extraction";
 
+/** P134: Live model registry (DB-backed, refreshable) — Team only */
+export const CAP_MODEL_REGISTRY_LIVE = "model_registry_live";
+
+/** P134: Multi-provider routing rigor (cost-aware, latency-aware) — Team only */
+export const CAP_MODEL_ROUTING_RIGOR = "model_routing_rigor";
+
+/** P134/draft: Enterprise model governance (admission, audit) — Enterprise only, reserved */
+export const CAP_MODEL_REGISTRY_GOVERNANCE = "model_registry_governance";
+
 // ============================================================================
 // Edition tier map
 // ============================================================================
@@ -47,4 +56,7 @@ export const CAPABILITY_EDITION: Record<string, string> = {
   // OpenRouter intentionally omitted: it ships in Solo (all editions) per edition decision
   // D5b/D-providers (2026-06-13) — a BYO-key, independently-free aggregator, not a Team gate.
   [CAP_EXTENDED_LANG_EXTRACTION]: EDITION_TEAM,
+  [CAP_MODEL_REGISTRY_LIVE]: EDITION_TEAM,
+  [CAP_MODEL_ROUTING_RIGOR]: EDITION_TEAM,
+  [CAP_MODEL_REGISTRY_GOVERNANCE]: EDITION_ENTERPRISE,
 };

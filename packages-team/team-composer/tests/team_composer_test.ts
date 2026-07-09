@@ -6,7 +6,8 @@
 
 import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
-import type { ICapabilityModule } from "@exaix/core/composer";
+import type { ICapabilityModule, IModelRegistryProvider } from "@exaix/core/composer";
+import type { IModelRegistry } from "@exaix/core/types";
 import { TeamComposer } from "../src/team_composer.ts";
 
 describe("TeamComposer", () => {
@@ -42,5 +43,40 @@ describe("TeamComposer", () => {
     // None of the optional hooks are defined — must not throw
     composer.registerCapabilityModule(module);
     assertEquals(composer.getModules().length, 1);
+  });
+
+  it("getModelRegistryProvider returns undefined without registration", () => {
+    const composer = new TeamComposer();
+    assertEquals(composer.getModelRegistryProvider(), undefined);
+  });
+
+  it("register then getModelRegistryProvider returns the registered provider", () => {
+    const composer = new TeamComposer();
+    const stubRegistry: IModelRegistry = {} as IModelRegistry;
+    let created = false;
+    const stubProvider: IModelRegistryProvider = {
+      createModelRegistry: () => {
+        created = true;
+        return stubRegistry;
+      },
+    };
+    composer.registerModelRegistryProvider(stubProvider);
+    assertEquals(composer.getModelRegistryProvider(), stubProvider);
+    const registry = composer.getModelRegistryProvider()!.createModelRegistry({
+      providerRegistry: {},
+      healthChecker: { checkProvider: () => Promise.resolve(true) },
+    });
+    assertEquals(created, true);
+    assertEquals(registry, stubRegistry);
+  });
+
+  it("registerModelRegistryProvider called twice — last wins", () => {
+    const composer = new TeamComposer();
+    const stub: IModelRegistry = {} as IModelRegistry;
+    const p1: IModelRegistryProvider = { createModelRegistry: () => stub };
+    const p2: IModelRegistryProvider = { createModelRegistry: () => stub };
+    composer.registerModelRegistryProvider(p1);
+    composer.registerModelRegistryProvider(p2);
+    assertEquals(composer.getModelRegistryProvider(), p2);
   });
 });

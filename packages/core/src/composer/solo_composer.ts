@@ -14,7 +14,7 @@
  * @ungrounded — solo composition is the default, not a standalone feature.
  */
 
-import type { ICapabilityModule, IEditionComposer } from "./edition_composer.ts";
+import type { ICapabilityModule, IEditionComposer, IModelRegistryProvider } from "./edition_composer.ts";
 import type { IAuthorizer } from "../authorizer/authorizer.ts";
 import { AllowAllAuthorizer } from "../authorizer/authorizer.ts";
 
@@ -24,9 +24,14 @@ import { AllowAllAuthorizer } from "../authorizer/authorizer.ts";
  * Holds a concrete AllowAllAuthorizer as the default entitlement seam.
  * Team/Enterprise composers will iterate registered modules and invoke each
  * hook with concrete registries.
+ *
+ * D8 seam: Solo stores a registry provider but always returns undefined from
+ * getModelRegistryProvider. The Team composer (Phase 135) returns the provider
+ * registered via registerModelRegistryProvider.
  */
 export class SoloComposer implements IEditionComposer {
   private readonly modules: ICapabilityModule[] = [];
+  private modelRegistryProvider?: IModelRegistryProvider;
   /** Default Solo authorizer — permits every action. */
   readonly authorizer: IAuthorizer = new AllowAllAuthorizer();
 
@@ -40,5 +45,13 @@ export class SoloComposer implements IEditionComposer {
    */
   getModules(): readonly ICapabilityModule[] {
     return this.modules;
+  }
+
+  registerModelRegistryProvider(provider: IModelRegistryProvider): void {
+    this.modelRegistryProvider = provider;
+  }
+
+  getModelRegistryProvider(): IModelRegistryProvider | undefined {
+    return this.modelRegistryProvider;
   }
 }

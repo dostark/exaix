@@ -13,10 +13,11 @@
  * seam are wired here.
  */
 
-import type { ICapabilityModule, IEditionComposer } from "@exaix/core/composer";
+import type { ICapabilityModule, IEditionComposer, IModelRegistryProvider } from "@exaix/core/composer";
 
 export class TeamComposer implements IEditionComposer {
   private readonly modules: ICapabilityModule[] = [];
+  private modelRegistryProvider?: IModelRegistryProvider;
 
   registerCapabilityModule(module: ICapabilityModule): void {
     this.modules.push(module);
@@ -24,5 +25,13 @@ export class TeamComposer implements IEditionComposer {
 
   getModules(): readonly ICapabilityModule[] {
     return this.modules;
+  }
+
+  registerModelRegistryProvider(provider: IModelRegistryProvider): void {
+    this.modelRegistryProvider = provider;
+  }
+
+  getModelRegistryProvider(): IModelRegistryProvider | undefined {
+    return this.modelRegistryProvider;
   }
 }

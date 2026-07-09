@@ -7,6 +7,12 @@
  * @description Barrel export for edition-composition types (Phase 115 Step 6b).
  */
 
-export type { ICapabilityModule, IEditionComposer, ISeamRegistryPlaceholder } from "./edition_composer.ts";
 export { SoloComposer } from "./solo_composer.ts";
 export * from "./capabilities.ts";
+export type {
+  ICapabilityModule,
+  IEditionComposer,
+  IModelRegistryProvider,
+  IModelRegistryProviderDeps,
+  ISeamRegistryPlaceholder,
+} from "./edition_composer.ts";
