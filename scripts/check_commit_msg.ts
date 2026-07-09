@@ -83,17 +83,32 @@ export function parsePlanField(text: string): IPlanRef | undefined {
   return { docPath: match[1].trim(), step: Number(match[2]) };
 }
 
-/** Extract every path after a `→` on a plan bullet line (comma/space separated). */
-function extractArrowPaths(line: string): string[] {
+/**
+ * Extract the source/test paths after a `→` on a plan bullet line. Paths MUST be
+ * backtick-wrapped (`` `apps/x/foo.ts` ``) so plan docs stay clean under check:md-path,
+ * which flags un-backticked real paths in prose. Returns the backticked paths plus
+ * `hasBarePath` — true when a non-backticked path-like token (contains a `/`) appears
+ * after the arrow, which the caller treats as an error.
+ */
+function extractArrowPaths(line: string): { paths: string[]; hasBarePath: boolean } {
   const arrowIdx = line.indexOf("→");
-  if (arrowIdx === -1) return [];
-  return line
-    .slice(arrowIdx + 1)
+  if (arrowIdx === -1) return { paths: [], hasBarePath: false };
+  const tail = line.slice(arrowIdx + 1);
+
+  const paths: string[] = [];
+  for (const m of tail.matchAll(/`([^`]+)`/g)) {
+    const inner = m[1].trim();
+    if (inner.length > 0) paths.push(inner);
+  }
+
+  // Detect an un-backticked path-like token: strip the backticked spans, then look for a
+  // leftover token containing a slash.
+  const withoutBackticked = tail.replace(/`[^`]+`/g, " ");
+  const hasBarePath = withoutBackticked
     .split(/[,\s]+/)
-    .map((p) => p.trim())
-    // Keep only tokens that look like repo paths (contain a slash and a dot-extension
-    // or a directory separator) — drops trailing prose accidentally after the arrow.
-    .filter((p) => p.length > 0 && p.includes("/"));
+    .some((t) => t.trim().includes("/"));
+
+  return { paths, hasBarePath };
 }
 
 /**
@@ -189,8 +204,14 @@ export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
       // Done criteria are marked with a leading ✅ (the completion mark, same as tests).
       const done = line.match(/^\s*-\s*✅\s*(.*)$/);
       if (done) {
-        const paths = extractArrowPaths(line);
-        if (paths.length === 0) {
+        const { paths, hasBarePath } = extractArrowPaths(line);
+        if (hasBarePath) {
+          errors.push(
+            `Step ${step} criterion "${truncateForError(done[1])}" has an un-backticked → source path — ` +
+              `wrap paths in backticks (e.g. → \`apps/x/foo.ts\`) so the plan stays check:md-path-clean.`,
+          );
+        }
+        if (paths.length === 0 && !hasBarePath) {
           errors.push(
             `Step ${step} criterion "${truncateForError(done[1])}" is marked ✅ but has no → source path.`,
           );
@@ -201,8 +222,14 @@ export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
       // Done tests are marked with a leading ✅ (optionally after "- ").
       const done = line.match(/^\s*-\s*✅\s*(.*)$/);
       if (done) {
-        const paths = extractArrowPaths(line);
-        if (paths.length === 0) {
+        const { paths, hasBarePath } = extractArrowPaths(line);
+        if (hasBarePath) {
+          errors.push(
+            `Step ${step} planned test "${truncateForError(done[1])}" has an un-backticked → test path — ` +
+              `wrap paths in backticks (e.g. → \`apps/x/foo_test.ts\`) so the plan stays check:md-path-clean.`,
+          );
+        }
+        if (paths.length === 0 && !hasBarePath) {
           errors.push(
             `Step ${step} planned test "${truncateForError(done[1])}" is done ✅ but has no → test path.`,
           );

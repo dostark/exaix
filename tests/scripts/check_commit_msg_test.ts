@@ -264,23 +264,23 @@ const PLAN_DOC = `## Implementation Plan
 
 **Planned Tests**:
 
-- ✅ \`earlier test\` → packages/x/tests/earlier_test.ts
+- ✅ \`earlier test\` → \`packages/x/tests/earlier_test.ts\`
 
 **Success Criteria**:
 
-- ✅ earlier criterion → packages/x/src/earlier.ts
+- ✅ earlier criterion → \`packages/x/src/earlier.ts\`
 
 ### Step 6: Solo curation CLI
 
 **Planned Tests**:
 
-- ✅ \`config model writes candidates\` → apps/exactl/tests/model_commands_test.ts
-- ✅ Integration: \`loop honoured\` → tests/integration/model_curation_cli_loop_test.ts
+- ✅ \`config model writes candidates\` → \`apps/exactl/tests/model_commands_test.ts\`
+- ✅ Integration: \`loop honoured\` → \`tests/integration/model_curation_cli_loop_test.ts\`
 
 **Success Criteria**:
 
-- ✅ Full curation loop → apps/exactl/src/commands/model_commands.ts
-- ✅ Registry wired → apps/exactl/src/init.ts, apps/exactl/src/exactl.ts
+- ✅ Full curation loop → \`apps/exactl/src/commands/model_commands.ts\`
+- ✅ Registry wired → \`apps/exactl/src/init.ts\`, \`apps/exactl/src/exactl.ts\`
 
 \`\`\`yaml
 # step-manifest
@@ -291,7 +291,7 @@ step: 6
 
 **Success Criteria**:
 
-- ✅ later criterion → tests/scenario/x_test.ts
+- ✅ later criterion → \`tests/scenario/x_test.ts\`
 `;
 
 describe("parsePlanField", () => {
@@ -372,7 +372,7 @@ describe("parsePlanStep", () => {
 
 **Success Criteria**:
 
-- ✅ done → packages/x/src/a.ts
+- ✅ done → \`packages/x/src/a.ts\`
 - [ ] still unimplemented criterion
 `;
     const parsed = parsePlanStep(doc, 6);
@@ -384,11 +384,36 @@ describe("parsePlanStep", () => {
 
 **Planned Tests**:
 
-- ✅ \`done test\` → packages/x/tests/a_test.ts
+- ✅ \`done test\` → \`packages/x/tests/a_test.ts\`
 - [ ] \`not written yet\`
 `;
     const parsed = parsePlanStep(doc, 6);
     assertEquals(parsed.errors.some((e) => e.includes("[ ]") || e.toLowerCase().includes("unchecked")), true);
+  });
+
+  it("errors when a ✅ criterion's → path is not backtick-wrapped (check:md-path parity)", () => {
+    const doc = `### Step 6: x
+
+**Success Criteria**:
+
+- ✅ bare path criterion → packages/x/src/a.ts
+`;
+    const parsed = parsePlanStep(doc, 6);
+    assertEquals(parsed.errors.some((e) => e.toLowerCase().includes("backtick")), true);
+    // A bare (un-backticked) path is not accepted as a valid source path.
+    assertEquals(parsed.criteriaPaths, []);
+  });
+
+  it("accepts a backtick-wrapped → path and strips the backticks", () => {
+    const doc = `### Step 6: x
+
+**Success Criteria**:
+
+- ✅ good criterion → \`packages/x/src/a.ts\`
+`;
+    const parsed = parsePlanStep(doc, 6);
+    assertEquals(parsed.errors, []);
+    assertEquals(parsed.criteriaPaths, ["packages/x/src/a.ts"]);
   });
 });
 
@@ -400,7 +425,7 @@ const PLAN_DOC_DEFERRED = `## Implementation Plan
 
 **Success Criteria**:
 
-- ✅ Done criterion → apps/exactl/src/commands/model_commands.ts
+- ✅ Done criterion → \`apps/exactl/src/commands/model_commands.ts\`
 - ⚠️ deferred Team live registry wiring → IModelRegistryProvider
 
 ## Reachability Ledger (pending production consumers)
