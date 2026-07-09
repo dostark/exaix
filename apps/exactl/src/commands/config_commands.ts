@@ -8,6 +8,7 @@
  */
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { join } from "@std/path";
+import { STDIO_INHERIT } from "./constants.ts";
 import { createConfigAdapterAsync, getRegisteredDefaults } from "@exaix/core/config";
 import type { IConfigAdapter, IConfigValidationReport } from "@exaix/core/config";
 import { ConfigKeyNotFoundError, ConfigRateLimitedError } from "@exaix/core/config";
@@ -236,6 +237,58 @@ export class ConfigCommands extends BaseCommand {
 
   async listLocks(): Promise<ILockedKeyEntry[]> {
     return (await this.ensureAdapter()).listLocks();
+  }
+
+  // ── Phase 139 Step 6: config edit ($EDITOR) ────────────────────────────────
+
+  /**
+   * Render the current overrides to a temp file (`key = value` lines), open it
+   * in `$EDITOR`, and apply any changed lines back through `adapter.set()` — so
+   * the editor stays inside the security funnel (lock + validation + debounce
+   * all still apply; blocklist enforcement remains MCP-only, per design GAP-2).
+   * A non-zero editor exit discards all changes.
+   */
+  async edit(): Promise<void> {
+    const adapter = await this.ensureAdapter();
+    const overrides = adapter.listOverrides();
+    // Snapshot original key→value (rendered form) so we only re-apply changes.
+    const original = new Map<string, string>();
+    for (const o of overrides) {
+      original.set(o.key, String(o.value));
+    }
+    const rendered = overrides.map((o) => `${o.key} = ${o.value}`).join("\n");
+
+    const tmpPath = await Deno.makeTempFile({ prefix: "exactl-config-edit-", suffix: ".conf" });
+    try {
+      await Deno.writeTextFile(tmpPath, rendered === "" ? "" : `${rendered}\n`);
+
+      const editor = Deno.env.get("EDITOR") || Deno.env.get("VISUAL") || "vi";
+      const { code } = await new Deno.Command(editor, {
+        args: [tmpPath],
+        stdin: STDIO_INHERIT,
+        stdout: STDIO_INHERIT,
+        stderr: STDIO_INHERIT,
+      }).output();
+      if (code !== 0) {
+        throw new Error(`Editor exited with code ${code}; no changes applied.`);
+      }
+
+      const edited = await Deno.readTextFile(tmpPath);
+      for (const line of edited.split("\n")) {
+        const trimmed = line.trim();
+        if (trimmed === "" || trimmed.startsWith("#")) continue;
+        const eq = trimmed.indexOf("=");
+        if (eq < 0) continue;
+        const key = trimmed.slice(0, eq).trim();
+        const valueStr = trimmed.slice(eq + 1).trim();
+        // Only apply lines whose rendered value changed (or new keys).
+        if (original.get(key) === valueStr) continue;
+        // Route through set() so lock/validation/debounce all still apply.
+        await adapter.set(key, parseValue(valueStr));
+      }
+    } finally {
+      await Deno.remove(tmpPath);
+    }
   }
 }
 

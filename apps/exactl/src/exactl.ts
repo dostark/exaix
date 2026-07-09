@@ -1387,6 +1387,24 @@ export const __test_command = new Command()
             }
           }),
       )
+      // Phase 139 Step 6: open the current overrides in $EDITOR; changed lines
+      // are applied through adapter.set() (lock + validation funnel preserved).
+      .command(
+        "edit",
+        new Command()
+          .description("Edit config overrides in $EDITOR (changes applied through the set() funnel)")
+          .action(async () => {
+            try {
+              await configCommands.edit();
+              display.info("config.edit", CONFIG_LABEL, { applied: true });
+            } catch (error) {
+              display.error("cli.error", "config edit", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
       // Phase 138 Step 2: MCP deny-permanently blocklist management.
       .command(
         "block",
