@@ -20,6 +20,8 @@ import { DashboardCommands } from "./commands/dashboard_commands.ts";
 import { MemoryCommands } from "./commands/memory_commands.ts";
 import { type IJournalCommandOptions, JournalCommands, normalizeLogsFilter } from "./commands/journal_commands.ts";
 import { CostCommands } from "./commands/cost_commands.ts";
+import { ModelCommands } from "./commands/model_commands.ts";
+import { DefaultModelRegistry } from "@exaix/model-registry";
 import { RoutingCommands } from "./commands/routing_commands.ts";
 import { WaitStateCommands } from "./commands/wait_state_commands.ts";
 import { ToolCommands } from "./commands/tool_commands.ts";
@@ -132,6 +134,13 @@ const memoryCommands = new MemoryCommands(fullContext);
 const watchCommandInstance = new WatchCommand(fullContext);
 const waitStateCommands = new WaitStateCommands(fullContext);
 const evalCommands = new EvalCommands(fullContext);
+// Phase 134 Step 6: Solo model curation CLI. Reads the model registry floor for
+// display and writes curated lists to exa.config.toml (the resolver's read surface).
+const modelCommands = new ModelCommands(
+  fullContext.modelRegistry ??
+    new DefaultModelRegistry({ checkProvider: () => Promise.resolve(true) }),
+  fullContext.config.getConfigPath(),
+);
 
 // Export test helper for unit tests to inspect module-internal context when running in test mode.
 export function __test_getContext(): {
@@ -1625,6 +1634,54 @@ export const __test_command = new Command()
               Deno.exit(1);
             }
           }),
+      )
+      // Phase 134 Step 6: Solo curation of per-size candidate lists (model_presets).
+      .command(
+        "model",
+        new Command()
+          .description("Curate the per-size model candidate list the resolver reads")
+          .option("--size <size:string>", "Capability tier: S|M|L|XL")
+          .option("--characteristic <name:string>", "Write a characteristic sub-list instead of the base list")
+          .option("--clear", "Reset the size's candidate list to empty")
+          .option("--list", "Show curated lists per size with unconfigured flags")
+          .arguments("[entries...:string]")
+          .action(async (options, ...entries: string[]) => {
+            try {
+              if (options.list) {
+                const lists = await modelCommands.listCandidates();
+                for (const [size, view] of Object.entries(lists)) {
+                  console.log(`  ${size}:`);
+                  for (const e of view.entries) {
+                    console.log(`    ${e.entry}${e.unconfigured ? "  (unconfigured)" : ""}`);
+                  }
+                }
+                return;
+              }
+              if (!options.size) {
+                throw new Error("--size <S|M|L|XL> is required (or use --list).");
+              }
+              if (options.clear) {
+                await modelCommands.clearCandidates(options.size);
+                display.info("config.model.clear", options.size, {});
+                return;
+              }
+              if (options.characteristic) {
+                await modelCommands.setCharacteristic(options.size, options.characteristic, entries);
+                display.info("config.model.characteristic", options.size, {
+                  characteristic: options.characteristic,
+                  count: entries.length,
+                });
+                return;
+              }
+              await modelCommands.setCandidates(options.size, entries);
+              display.info("config.model.set", options.size, { count: entries.length });
+            } catch (error) {
+              display.error("cli.error", "config model", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
       ),
   )
   // Blueprint commands
@@ -2543,6 +2600,45 @@ const logsCommand = new Command()
 __test_command.command("log", logCommand);
 __test_command.command("logs", logsCommand);
 __test_command.command("journal", journalCommand);
+
+// ---------------------------------------------------------------------------
+// models subcommand (Phase 134 Step 6 — Solo model registry display)
+// ---------------------------------------------------------------------------
+
+const modelsCommand = new Command()
+  .description("Inspect the Solo model registry floor (models list/pricing)")
+  .command(
+    "list",
+    new Command()
+      .description("List registry models with provenance and verified_at staleness")
+      .action(async () => {
+        try {
+          await modelCommands.listModels();
+        } catch (error) {
+          display.error("cli.error", "models list", {
+            message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+          });
+          Deno.exit(1);
+        }
+      }),
+  )
+  .command(
+    "pricing",
+    new Command()
+      .description("Show per-Mtok model prices with provenance")
+      .action(async () => {
+        try {
+          await modelCommands.showPricing();
+        } catch (error) {
+          display.error("cli.error", "models pricing", {
+            message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+          });
+          Deno.exit(1);
+        }
+      }),
+  );
+
+__test_command.command("models", modelsCommand);
 
 // ---------------------------------------------------------------------------
 // version subcommand

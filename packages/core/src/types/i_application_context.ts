@@ -31,6 +31,7 @@ import type { IConfigAdapter } from "./i_config_adapter.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "./i_portal_knowledge_service.ts";
 import type { ICostTracker } from "./i_cost_tracker.ts";
 import type { INotificationService } from "./i_notification_service.ts";
+import type { IModelRegistry } from "./i_model_registry.ts";
 
 /**
  * Generic application context for dependency injection
@@ -107,6 +108,9 @@ export interface IApplicationContext {
 
   /** Optional config adapter for reading/writing config via the daemon's in-memory store */
   configAdapter?: IConfigAdapter;
+
+  /** Optional model registry (Solo floor) for CLI model display + curation commands */
+  modelRegistry?: IModelRegistry;
 }
 
 // Re-export types for convenience

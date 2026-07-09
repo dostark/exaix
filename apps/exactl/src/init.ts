@@ -38,6 +38,8 @@ import { PlanService } from "@exaix/core/planning";
 import { PlanAmendmentService } from "@exaix/core/planning";
 import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstrap.ts";
 import { SoloComposer } from "@exaix/core/composer";
+import { DefaultModelRegistry } from "@exaix/model-registry";
+import type { IProviderHealthChecker } from "@exaix/ai";
 // Team modules are loaded dynamically ONLY inside the editionType !== "solo" branches
 // below, so a Solo build/binary never references @exaix-team/* at all (a static top-level
 // dependency would be bundled by `deno compile` even in Solo — defeating edition
@@ -213,6 +215,15 @@ export async function initializeServices(
       hitlPolicyEvaluator,
     });
 
+    // Phase 134 Step 6: Solo model registry floor for the model CLI (models
+    // list/pricing display + config-model curation validation). Created after
+    // bootstrapProviderRegistry() so ProviderRegistry is populated. The health
+    // checker mirrors the daemon pre-wiring stub (all providers reported healthy).
+    const modelRegistryHealthChecker: IProviderHealthChecker = {
+      checkProvider: (_providerName: string) => Promise.resolve(true),
+    };
+    const modelRegistry = new DefaultModelRegistry(modelRegistryHealthChecker);
+
     const context: ICliApplicationContext = {
       db: dbLocal,
       git: gitLocal,
@@ -220,6 +231,7 @@ export async function initializeServices(
       display: displayAdapter,
       config: configAdapter,
       toolRegistry,
+      modelRegistry,
     };
 
     const portals = new PortalService(
