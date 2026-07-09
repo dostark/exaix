@@ -80,3 +80,12 @@ launch_mode = "headless"
 # Phase 128 R3: derive --permission-mode + scoped --allowedTools flags
 # from SessionBrief.permitted_paths.
 harden_permissions = true
+
+# Phase 134 Solo curated list: a size-M request resolves via this preferred list
+# (reason: preferred_list) instead of scoring. anthropic is the real live provider the
+# dogfood daemon reaches, so the curated resolution is genuinely exercised end-to-end.
+[model_presets.M]
+max_cost_per_mtok = 3
+min_context_window = 32000
+supports_thinking = true
+candidates = ["anthropic"]

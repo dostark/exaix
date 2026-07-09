@@ -1,6 +1,6 @@
 schema_version: "1.0.0"
 id: "model-intent-e2e"
-title: "Model Intent E2E — model-size M and thinking flags resolve to a thinking-capable model matching M profile"
+title: "Model Intent E2E — model-size M + thinking routing, plus Phase 134 Solo curated-list resolution (preferred_list)"
 pack: "provider_live"
 tags: ["provider-live", "model-routing", "safety-gate"]
 request_fixture: "fixtures/requests/provider_live/model_intent.md"
@@ -37,6 +37,11 @@ steps:
         equals: 0
 
   # --- Start daemon ---
+  # Phase 134 Solo curation: the dogfood config carries model_presets.M.candidates =
+  # ["anthropic"] (the curated list). The runner materializes that config into the
+  # workspace's exa.config.toml the daemon reads, so the size-M request below resolves
+  # via the preferred list (reason: preferred_list) instead of scoring — the Solo
+  # curation loop proven on the real daemon path, no separate seeding step needed.
   - id: "start-daemon"
     type: "exactl"
     command: "daemon start"
@@ -124,6 +129,32 @@ steps:
       - id: "model-verified"
         kind: "command-exit-code"
         equals: 0
+
+  # --- Phase 134 Step 7 Solo checkpoints: model.resolved journalled via the curated list ---
+  # The production resolver (agent_executor.resolveModelFromBlueprint -> ModelResolver.resolve)
+  # journals model.resolved. With the curated list (model_presets.M.candidates = ["anthropic"])
+  # materialized into the workspace config, the reason must be preferred_list — the Solo
+  # curation loop reached from the real daemon run. Queried via the journal CLI (the
+  # `exactl logs --filter model.resolved` trace surface the plan names), asserted with
+  # json-query over its JSON output.
+  - id: "verify-model-resolved-preferred-list"
+    type: "exactl"
+    name: "model.resolved journalled with reason preferred_list (Solo curated list won)"
+    command: "journal"
+    args: ["--filter", "action_type=model.resolved", "--format", "json"]
+    output_criteria:
+      - id: "model-resolved-present"
+        score_weight: 1.0
+        kind: "json-query"
+        query: ".[].action_type"
+        contains: ["model.resolved"]
+      # The journal CLI serializes each record's payload as a JSON string, so the reason
+      # is asserted as a substring of the payload text rather than a nested object path.
+      - id: "reason-is-preferred-list"
+        score_weight: 1.0
+        kind: "json-query"
+        query: ".[].payload"
+        contains: ["preferred_list"]
 
   # --- Stop daemon ---
   - id: "stop-daemon"
