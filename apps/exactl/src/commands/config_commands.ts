@@ -222,6 +222,9 @@ export class ConfigCommands extends BaseCommand {
    * a rollback row. Returns the restored value.
    */
   async rollback(path: string, id: number): Promise<ConfigValue> {
+    if (!Number.isInteger(id) || id < 1) {
+      throw new Error(`rollback id must be a positive integer, got ${id}`);
+    }
     return (await this.ensureAdapter()).rollback(path, id);
   }
 
@@ -274,6 +277,9 @@ export class ConfigCommands extends BaseCommand {
       }
 
       const edited = await Deno.readTextFile(tmpPath);
+      // Pre-validate all changed lines before applying any (GAP-3).
+      const pending: Array<{ key: string; value: ConfigValue }> = [];
+      const errors: string[] = [];
       for (const line of edited.split("\n")) {
         const trimmed = line.trim();
         if (trimmed === "" || trimmed.startsWith("#")) continue;
@@ -281,10 +287,23 @@ export class ConfigCommands extends BaseCommand {
         if (eq < 0) continue;
         const key = trimmed.slice(0, eq).trim();
         const valueStr = trimmed.slice(eq + 1).trim();
-        // Only apply lines whose rendered value changed (or new keys).
         if (original.get(key) === valueStr) continue;
-        // Route through set() so lock/validation/debounce all still apply.
-        await adapter.set(key, parseValue(valueStr));
+        const parsed = parseValue(valueStr);
+        const report = adapter.validateAtPath(key, parsed);
+        if (!report.valid) {
+          errors.push(...report.issues.map((i) => `${key}: ${i.message}`));
+        } else {
+          pending.push({ key, value: parsed });
+        }
+      }
+      if (errors.length > 0) {
+        throw new Error(
+          `Config edit aborted — ${errors.length} validation error(s):\n${errors.join("\n")}`,
+        );
+      }
+      // Apply all changes atomically (pre-validated — no failures expected).
+      for (const { key, value } of pending) {
+        await adapter.set(key, value);
       }
     } finally {
       await Deno.remove(tmpPath);

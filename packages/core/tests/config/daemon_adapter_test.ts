@@ -328,6 +328,19 @@ Deno.test("[configuring] DaemonConfigAdapter.set throws ConfigKeyLockedError for
   }
 });
 
+Deno.test("[configuring] DaemonConfigAdapter.set refuses a locked key via a profile-scoped path (GAP-1)", async () => {
+  const { adapter, dir, db } = setupDaemonAdapter();
+  try {
+    adapter.lock("daemon_test.timeout_ms", "cli");
+    await assertRejects(
+      () => adapter.set("profile.dev.daemon_test.timeout_ms", 60000),
+      ConfigKeyLockedError,
+    );
+  } finally {
+    cleanUp(dir, db);
+  }
+});
+
 // ── Phase 139 Step 5 (GAP-6): the daemon checksum reads the DB, not the store ─
 
 Deno.test("[configuring] DaemonConfigAdapter.verifyIntegrity detects a raw db.prepare write", async () => {

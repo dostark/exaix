@@ -301,6 +301,28 @@ Deno.test("[configuring-cli] config_history_cli lists both values newest-first",
 
 // ── Phase 139 Step 3: config rollback CLI ───────────────────────────────────
 
+Deno.test("[configuring-cli] config_rollback_cli rejects a non-numeric id with a clear error (GAP-4)", async () => {
+  const dir = Deno.makeTempDirSync({ prefix: "config-rollback-nan-" });
+  try {
+    createTestConfigDb(dir);
+    const configService = createStubConfig(createMockConfig(dir));
+    const context = createStubContext({ config: configService });
+    const commands = new ConfigCommands(context);
+
+    await commands.set("ai.timeout_ms", "40000");
+    await commands.set("ai.timeout_ms", "50000");
+
+    // Calling rollback with NaN id must surface a clear error, not ConfigKeyNotFoundError.
+    await assertRejects(
+      () => commands.rollback("ai.timeout_ms", NaN),
+      Error,
+      "positive integer",
+    );
+  } finally {
+    Deno.removeSync(dir, { recursive: true });
+  }
+});
+
 Deno.test("[configuring-cli] config_rollback_cli restores the original value", async () => {
   await withProfileCommands(async (commands) => {
     await commands.set("ai.timeout_ms", "40000");
@@ -334,6 +356,47 @@ Deno.writeTextFileSync(p, out);
   Deno.chmodSync(shPath, 0o755);
   return shPath;
 }
+
+Deno.test({
+  name: "[configuring-cli] config edit with an invalid first value aborts and applies NO changes (GAP-3)",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const dir = Deno.makeTempDirSync({ prefix: "config-edit-first-invalid-" });
+    try {
+      createTestConfigDb(dir);
+      const configService = createStubConfig(createMockConfig(dir));
+      const context = createStubContext({ config: configService });
+      const commands = new ConfigCommands(context);
+
+      // Seed two overrides so both appear in the rendered file.
+      await commands.set("ai.timeout_ms", "40000");
+      await commands.set("ai.provider", "openai");
+
+      // Stub editor: set ai.timeout_ms to out-of-bounds (invalid),
+      // and change ai.provider to "anthropic" (valid).
+      const editor = writeStubEditor(
+        dir,
+        `const lines = text.split("\\n");
+         const out = lines.map((l) => {
+           if (l.startsWith("ai.timeout_ms ")) return "ai.timeout_ms = 1";
+           if (l.startsWith("ai.provider ")) return "ai.provider = anthropic";
+           return l;
+         }).join("\\n");`,
+      );
+      // Must abort — the invalid first line should prevent ALL changes.
+      await assertRejects(
+        () => withEnv({ EDITOR: editor }, () => commands.edit()),
+      );
+      // If pre-validation works, NEITHER key is changed despite ai.provider
+      // being a valid value — the invalid ai.timeout_ms blocks the whole edit.
+      assertEquals(await commands.get("ai.timeout_ms"), 40000, "unchanged on validation failure");
+      assertEquals(await commands.get("ai.provider"), "openai", "unchanged on validation failure");
+    } finally {
+      Deno.removeSync(dir, { recursive: true });
+    }
+  },
+});
 
 Deno.test({
   name: "[configuring-cli] ConfigCommands.edit applies changed lines via adapter.set (unchanged untouched)",

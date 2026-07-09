@@ -419,8 +419,10 @@ export class DirectConfigAdapter implements IConfigAdapter {
     }
 
     // Phase 139 Step 4 (GAP-1/GAP-2): refuse writes to a locked key. Shared
-    // guard — no blocklist dependency.
-    this.assertWritable(key);
+    // guard — no blocklist dependency. Use the resolved validation key so a
+    // lock on the base key also covers profile-scoped and pattern-keyed writes
+    // (post-gap analysis GAP-1).
+    this.assertWritable(validationKey);
 
     // Validate value against the resolved key's metadata.
     const report = this.validateAtPath(key, value);
@@ -817,8 +819,9 @@ export class DaemonConfigAdapter extends DirectConfigAdapter {
 
     // Phase 139 Step 4 (GAP-1): the daemon's set() is a full override, so the
     // shared lock guard must run here too — inheriting DirectConfigAdapter.set()
-    // does NOT cover this path.
-    this.assertWritable(key);
+    // does NOT cover this path. Use validationKey so profile-scoped writes are
+    // also covered (post-gap analysis GAP-1).
+    this.assertWritable(validationKey);
 
     const report = this.validateAtPath(key, value);
     if (!report.valid) {

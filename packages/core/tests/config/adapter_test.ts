@@ -650,6 +650,22 @@ Deno.test("[configuring] DirectConfigAdapter.set throws ConfigKeyLockedError for
   }
 });
 
+Deno.test("[configuring] DirectConfigAdapter.set refuses a locked key via a profile-scoped path (GAP-1)", async () => {
+  const { adapter, dir } = setupAdapter();
+  try {
+    adapter.lock("adapter_test.timeout_ms", "cli");
+    // A profile-scoped write must be rejected because resolveValidationKey
+    // resolves "profile.dev.adapter_test.timeout_ms" to the base key
+    // "adapter_test.timeout_ms", and the lock is on the base key.
+    await assertRejects(
+      () => adapter.set("profile.dev.adapter_test.timeout_ms", 50000),
+      ConfigKeyLockedError,
+    );
+  } finally {
+    cleanUp(dir);
+  }
+});
+
 Deno.test("[configuring] DirectConfigAdapter.set succeeds after unlock", async () => {
   const { adapter, dir } = setupAdapter();
   try {
