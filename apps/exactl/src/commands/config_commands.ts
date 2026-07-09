@@ -11,7 +11,7 @@ import { join } from "@std/path";
 import { createConfigAdapterAsync, getRegisteredDefaults } from "@exaix/core/config";
 import type { IConfigAdapter, IConfigValidationReport } from "@exaix/core/config";
 import { ConfigKeyNotFoundError, ConfigRateLimitedError } from "@exaix/core/config";
-import type { ConfigValue } from "@exaix/core/config";
+import type { ConfigValue, IConfigOverrideEntry } from "@exaix/core/config";
 import { CONFIG_PROFILE_KEY_PREFIX, ConfigOutputFormat, type Opt, type Reason } from "@exaix/core/types";
 import { CLI_CONFIG_SET_DEBOUNCE_WINDOW_MS, CLI_CONFIG_SET_MAX_WRITES_PER_WINDOW } from "@exaix/core";
 
@@ -203,6 +203,14 @@ export class ConfigCommands extends BaseCommand {
    */
   async compact(): Promise<number> {
     return (await this.ensureAdapter()).compact();
+  }
+
+  /**
+   * Phase 139 Step 2: the append-only override history for `key`, newest-first
+   * (DESC by id). Read-only — a thin wrapper over IConfigAdapter.getHistory.
+   */
+  async history(path: string): Promise<IConfigOverrideEntry[]> {
+    return (await this.ensureAdapter()).getHistory(path);
   }
 }
 

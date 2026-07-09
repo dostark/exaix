@@ -1291,6 +1291,31 @@ export const __test_command = new Command()
             }
           }),
       )
+      // Phase 139 Step 2: append-only override history (read-only audit).
+      .command(
+        "history <path>",
+        new Command()
+          .description("Show the append-only override history for a key (newest first)")
+          .action(async (_options, ...args: string[]) => {
+            try {
+              const rows = await configCommands.history(args[0]);
+              for (const row of rows) {
+                display.info("config.history.entry", args[0], {
+                  id: row.id,
+                  value: row.value,
+                  source: row.source,
+                  created_at: row.created_at,
+                });
+              }
+              display.info("config.history", args[0], { count: rows.length });
+            } catch (error) {
+              display.error("cli.error", "config history", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
       // Phase 138 Step 2: MCP deny-permanently blocklist management.
       .command(
         "block",

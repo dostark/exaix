@@ -227,3 +227,31 @@ Deno.test("[configuring-cli] compact collapses config_overrides to one row per k
     assertEquals(await commands.get("ai.timeout_ms"), 42000);
   });
 });
+
+// ── Phase 139 Step 2: config history CLI (read-only vertical slice) ──────────
+
+Deno.test("[configuring-cli] ConfigCommands.history returns override rows DESC by id", async () => {
+  await withProfileCommands(async (commands) => {
+    await commands.set("ai.timeout_ms", "40000");
+    await commands.set("ai.timeout_ms", "41000");
+    const rows = await commands.history("ai.timeout_ms");
+    // Newest-first (DESC by id): [41000, 40000] (the seed NULL row may precede).
+    const values = rows.filter((r) => r.value !== null).map((r) => r.value);
+    assertEquals(values[0], "41000", "newest write first");
+    assertEquals(values[1], "40000");
+    // Each row carries the append-only fields.
+    assertEquals(typeof rows[0].id, "number");
+    assertEquals(typeof rows[0].source, "string");
+    assertEquals(typeof rows[0].created_at, "string");
+  });
+});
+
+Deno.test("[configuring-cli] config_history_cli lists both values newest-first", async () => {
+  await withProfileCommands(async (commands) => {
+    await commands.set("ai.provider", "openai");
+    await commands.set("ai.provider", "anthropic");
+    const rows = await commands.history("ai.provider");
+    const values = rows.filter((r) => r.value !== null).map((r) => r.value);
+    assertEquals(values, ["anthropic", "openai"], "history returns both writes newest-first");
+  });
+});
