@@ -40,6 +40,18 @@ Default commit scope and batching
 - Only bypass the guard when main is already broken: `HOOK_BYPASS_MAIN=1 git commit -m "..."`
 - Always merge feature branches with `--no-ff` to preserve branch topology: `git checkout main && git merge --no-ff <branch>`. Do NOT use fast-forward merges — a merge commit must mark every feature boundary.
 
+Plan-step commits (phase-plan implementation)
+- A commit that implements a step of a phase plan doc MUST carry a `plan:` field in its
+  message: `plan: exaix-dev-docs/planning/<phase>.md#<step>` (e.g. `…#6`).
+- Do NOT run a bare `git commit` for these. Stage the plan-doc changes in the submodule
+  AND the implementing code/tests in the parent, then commit both via
+  `deno run -A scripts/commit_plan_step.ts <commit-msg-file> --commit`. It enforces
+  plan-step traceability + cross-repo sync: every `✅ … → \`path\`` / `⚠️ deferred … →
+  \`token\`` step line must be an added line of the staged plan diff, each `→` path must be
+  a staged parent file, deferrals need a Reachability Ledger row, and no `- [ ]` items may
+  remain open. It commits the submodule first, bumps the parent pointer, and commits the
+  parent — keeping the phase file and the parent in sync. See the submodule-workflow skill.
+
 Required validation before commit
 - Run the relevant quality gates for the touched changes before finalizing a commit proposal.
 - At minimum, include applicable formatting, linting, type-checking, and tests required by the repository or touched area.

@@ -24,6 +24,20 @@ export interface IPlanStepPaths {
   testPaths: string[];
   /** `→ <token>` of each `⚠️ deferred` criterion/test (must have a Reachability Ledger row). */
   deferredTokens: string[];
+  /**
+   * The raw text of every ✅ / ⚠️ deferred item line in the step (trimmed). Used to verify
+   * these lines actually appear as added lines in the plan doc's diff for this commit.
+   */
+  itemLines: string[];
+  errors: string[];
+}
+
+/** Whether the parent's staged submodule pointer matches the submodule's plan-doc state. */
+export type PlanSyncStatus = "in_sync" | "out_of_sync" | "unknown";
+
+/** Result of cross-repo plan-step diff consistency validation (pure; git done by caller). */
+export interface IPlanDiffResult {
+  ok: boolean;
   errors: string[];
 }
 
@@ -126,6 +140,7 @@ export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
   const criteriaPaths = new Set<string>();
   const testPaths = new Set<string>();
   const deferredTokens = new Set<string>();
+  const itemLines = new Set<string>();
 
   // Locate the step's line range: from its `### Step N:` header to the next `### `.
   const headerRe = new RegExp(`^###\\s+Step\\s+${step}\\b`, "i");
@@ -141,6 +156,7 @@ export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
       criteriaPaths: [],
       testPaths: [],
       deferredTokens: [],
+      itemLines: [],
       errors: [`Step ${step} not found in plan doc.`],
     };
   }
@@ -176,6 +192,7 @@ export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
     // Reachability Ledger row references. They are exempt from the changed-file check.
     const deferred = line.match(/^\s*-\s*⚠️\s*deferred\b\s*(.*)$/i);
     if (deferred) {
+      itemLines.add(line.trim());
       const tokens = extractArrowTokens(line);
       if (tokens.length === 0) {
         errors.push(
@@ -204,6 +221,7 @@ export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
       // Done criteria are marked with a leading ✅ (the completion mark, same as tests).
       const done = line.match(/^\s*-\s*✅\s*(.*)$/);
       if (done) {
+        itemLines.add(line.trim());
         const { paths, hasBarePath } = extractArrowPaths(line);
         if (hasBarePath) {
           errors.push(
@@ -222,6 +240,7 @@ export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
       // Done tests are marked with a leading ✅ (optionally after "- ").
       const done = line.match(/^\s*-\s*✅\s*(.*)$/);
       if (done) {
+        itemLines.add(line.trim());
         const { paths, hasBarePath } = extractArrowPaths(line);
         if (hasBarePath) {
           errors.push(
@@ -243,6 +262,7 @@ export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
     criteriaPaths: [...criteriaPaths],
     testPaths: [...testPaths],
     deferredTokens: [...deferredTokens],
+    itemLines: [...itemLines],
     errors,
   };
 }
@@ -283,6 +303,53 @@ export function parseLedgerSymbols(docText: string): string[] {
 function truncateForError(s: string): string {
   const clean = s.replace(/`/g, "").trim();
   return clean.length > 60 ? `${clean.slice(0, 57)}...` : clean;
+}
+
+/**
+ * Pure cross-repo consistency check for a plan-step commit. Verifies that every ✅ /
+ * ⚠️ deferred item line of the claimed step appears among the plan doc's **added** diff
+ * lines (proving this commit actually authored/changed them), and that the parent's
+ * submodule pointer is in sync with the plan doc's state. Git plumbing (reading the
+ * staged diffs + pointer) is done by the caller; this function is pure and testable.
+ *
+ * @param itemLines     Trimmed ✅ / deferred item lines parsed from the step.
+ * @param addedDiffLines Trimmed added lines (`+` stripped) of the plan doc's diff.
+ * @param sync          Whether the parent pointer matches the submodule plan-doc state.
+ */
+export function validatePlanStepDiff(
+  itemLines: string[],
+  addedDiffLines: string[],
+  sync: PlanSyncStatus,
+): IPlanDiffResult {
+  const errors: string[] = [];
+
+  if (sync === "out_of_sync") {
+    errors.push(
+      "Plan sync: the parent's staged submodule pointer does not match the plan doc's " +
+        "committed state — roll back the submodule's last commit and re-stage the plan " +
+        "changes together with the code so the phase file and the parent stay in sync.",
+    );
+  } else if (sync === "unknown") {
+    errors.push(
+      "Plan sync: could not resolve the plan doc's diff (submodule state unavailable) — " +
+        "roll back the submodule's last commit and stage the plan changes alongside the " +
+        "code, then retry so the check can verify the step.",
+    );
+  }
+
+  // Every claimed step item line must be an added line of the plan doc's diff.
+  const added = new Set(addedDiffLines.map((l) => l.trim()));
+  for (const item of itemLines) {
+    if (!added.has(item.trim())) {
+      errors.push(
+        `Plan diff: step item "${truncateForError(item)}" is not an added line in the ` +
+          `plan doc's diff for this commit — a ✅/⚠️ deferred item must be marked in the ` +
+          `same change that implements it (stale/pre-existing marks are not accepted).`,
+      );
+    }
+  }
+
+  return { ok: errors.length === 0, errors };
 }
 
 /**

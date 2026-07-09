@@ -13,6 +13,7 @@ import {
   parsePlanField,
   parsePlanStep,
   validateCommitMsg,
+  validatePlanStepDiff,
 } from "../../scripts/check_commit_msg.ts";
 
 describe("validateCommitMsg", () => {
@@ -350,6 +351,16 @@ describe("parsePlanStep", () => {
     assertEquals(parsed.criteriaPaths.includes("packages/x/src/earlier.ts"), false);
   });
 
+  it("captures the raw ✅ item lines for diff verification", () => {
+    const parsed = parsePlanStep(PLAN_DOC, 6);
+    assertEquals(
+      parsed.itemLines.includes("- ✅ Full curation loop → `apps/exactl/src/commands/model_commands.ts`"),
+      true,
+    );
+    // Step 6 has 2 tests + 2 criteria = 4 item lines.
+    assertEquals(parsed.itemLines.length, 4);
+  });
+
   it("errors when a ✅ criterion is missing its → path", () => {
     const doc = `### Step 6: x
 
@@ -602,5 +613,46 @@ impact: ReqProc: update`;
       result.errors.some((e) => e.includes("IModelRegistryProvider") && e.toLowerCase().includes("ledger")),
       true,
     );
+  });
+});
+
+describe("validatePlanStepDiff", () => {
+  const items = [
+    "- ✅ Full curation loop → `apps/exactl/src/commands/model_commands.ts`",
+    "- ✅ Registry wired → `apps/exactl/src/init.ts`, `apps/exactl/src/exactl.ts`",
+  ];
+
+  it("passes when every item line is an added diff line and the pointer is in sync", () => {
+    const added = [
+      "- ✅ Full curation loop → `apps/exactl/src/commands/model_commands.ts`",
+      "- ✅ Registry wired → `apps/exactl/src/init.ts`, `apps/exactl/src/exactl.ts`",
+      "some other added prose line",
+    ];
+    const result = validatePlanStepDiff(items, added, "in_sync");
+    assertEquals(result.ok, true, result.errors.join(", "));
+  });
+
+  it("blocks when an item line is not among the plan doc's added diff lines (stale mark)", () => {
+    // Only the first item was actually changed in this commit's plan diff.
+    const added = ["- ✅ Full curation loop → `apps/exactl/src/commands/model_commands.ts`"];
+    const result = validatePlanStepDiff(items, added, "in_sync");
+    assertEquals(result.ok, false);
+    assertEquals(result.errors.some((e) => e.includes("Registry wired") && e.includes("not an added line")), true);
+  });
+
+  it("blocks and asks to roll back the submodule when the pointer is out of sync", () => {
+    const added = items.slice();
+    const result = validatePlanStepDiff(items, added, "out_of_sync");
+    assertEquals(result.ok, false);
+    assertEquals(
+      result.errors.some((e) => e.toLowerCase().includes("roll back") && e.toLowerCase().includes("sync")),
+      true,
+    );
+  });
+
+  it("blocks and asks to roll back when the plan diff is unresolvable (unknown)", () => {
+    const result = validatePlanStepDiff(items, [], "unknown");
+    assertEquals(result.ok, false);
+    assertEquals(result.errors.some((e) => e.toLowerCase().includes("roll back")), true);
   });
 });

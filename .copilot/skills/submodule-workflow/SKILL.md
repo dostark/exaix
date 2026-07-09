@@ -22,7 +22,10 @@ Key points
 - exaix-dev-docs is a real Git submodule, not a normal nested folder
 - The parent repository only stores a pointer to the submodule commit
 - A broken workflow can leave the parent repo pointing at a detached or uncommitted submodule state
-- ALWAYS commit submodule changes first, then update the parent pointer
+- ALWAYS commit submodule changes first, then update the parent pointer — **except for
+  plan-step commits** (a parent commit whose message carries a `plan:` field), which use
+  the commit-together flow below so `scripts/commit_plan_step.ts` can verify the phase
+  file and the parent stay in sync
 
 Canonical prompt (short):
 "Update exaix-dev-docs submodule for {goal}: commit submodule change first, push it,
@@ -35,6 +38,28 @@ Core policy
 3. In the parent repo, run git add exaix-dev-docs after the submodule commit exists
 4. Commit the pointer update in the parent repo with a clear message referencing the submodule SHA
 5. Keep matching or related branch names across repos (feat/<feature> + feat/<feature>-docs)
+
+Plan-step commits (exception — commit both together, staged)
+
+A plan-step commit implements a step of a phase plan doc (which lives in
+exaix-dev-docs/planning/). Its parent commit message carries a `plan:` field, e.g.
+`plan: exaix-dev-docs/planning/phase-134-model-registry.md#6`. For these, do NOT
+commit the submodule first. Instead:
+
+1. Stage the plan-doc changes in the submodule (`git -C exaix-dev-docs add planning/<phase>.md`)
+   — the step's `✅ … → \`path\`` / `⚠️ deferred … → \`token\`` lines must be staged there.
+2. Stage the implementing code + tests in the parent (the `→` paths must be staged files).
+3. Run `deno run -A scripts/commit_plan_step.ts <commit-msg-file> --commit`. It validates
+   cross-repo consistency (every ✅/deferred step line is an added line of the staged plan
+   diff; the `→` paths are staged in the parent; no open `- [ ]` items; ledger rows for
+   deferrals) and only then commits the submodule, stages the pointer bump, and commits the
+   parent — keeping the two in sync.
+4. If it blocks with a **roll back the submodule's last commit** message, the submodule was
+   committed separately (breaking the commit-together flow): run
+   `git -C exaix-dev-docs reset --soft HEAD~1` to restage those changes, then re-run the
+   orchestrator so the phase file and the parent land together.
+
+The general "submodule first" rule still governs all NON-plan-step submodule changes.
 
 Recommended local workflow
 
@@ -113,7 +138,8 @@ Validation
 
 Do / Don't
 
-- ✅ Do always commit submodule changes first before updating the parent pointer
+- ✅ Do always commit submodule changes first before updating the parent pointer — EXCEPT
+  plan-step commits (`plan:` field), which stage both and use `scripts/commit_plan_step.ts --commit`
 - ✅ Do use git status --submodule=summary to verify pointer state
 - ✅ Do document the submodule SHA in the parent PR description
 - ✅ Do push submodule main BEFORE pushing parent main (CI must resolve the pointer)
