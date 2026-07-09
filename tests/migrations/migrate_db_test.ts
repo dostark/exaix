@@ -21,10 +21,14 @@ async function runMigrate(
   args: string[],
 ): Promise<{ code: number; stdout: string; stderr: string }> {
   const scriptPath = join(REPO_ROOT, "scripts", "migrate_db.ts");
+  // NOTE: no `--reload`. This test exercises migration behaviour, not module freshness.
+  // `--reload` forced a full re-download of the module graph on every invocation, and
+  // under the parallel test runner those concurrent downloads raced — occasionally
+  // yielding a partial `@exaix/core` module (missing `DEFAULT_AI_MODEL`) and a spurious
+  // failure. Using the warm cache removes the race without changing what is tested.
   const cmd = new Deno.Command("deno", {
     args: [
       "run",
-      "--reload",
       "--config",
       join(REPO_ROOT, "deno.json"),
       "--allow-read",
