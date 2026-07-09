@@ -54,6 +54,15 @@ export interface IPlanValidation {
   deferredTokens?: string[];
   /** Symbols found in the plan doc's Reachability Ledger table (optional; default none). */
   ledgerSymbols?: string[];
+  /**
+   * Cross-repo diff/sync inputs (optional). When present, `validateCommitMsg` also runs
+   * `validatePlanStepDiff`: every step item line must be an added line of the plan doc's
+   * diff, and the submodule/parent must be in sync. Omit to skip the diff/sync facet
+   * (e.g. in unit tests of the path/ledger facet alone).
+   */
+  itemLines?: string[];
+  addedPlanLines?: string[];
+  planSync?: PlanSyncStatus;
 }
 
 /** Standard conventional commit types. */
@@ -538,6 +547,14 @@ export function validateCommitMsg(
         );
       }
     }
+
+    // Cross-repo diff/sync facet (only when the caller supplied the plan-doc diff inputs):
+    // every step item line must be an added line of the plan doc's diff, and the
+    // submodule/parent pointer must be in sync.
+    if (pv.itemLines !== undefined && pv.addedPlanLines !== undefined && pv.planSync !== undefined) {
+      const diff = validatePlanStepDiff(pv.itemLines, pv.addedPlanLines, pv.planSync);
+      errors.push(...diff.errors);
+    }
   }
 
   return { success: errors.length === 0, errors };
@@ -558,14 +575,89 @@ async function getStagedFiles(): Promise<string[]> {
   }
 }
 
+/** Run git in `cwd` (or the repo root); trimmed stdout, or "" on failure. */
+async function gitOut(args: string[], cwd?: string): Promise<string> {
+  try {
+    const out = await new Deno.Command("git", {
+      args: cwd ? ["-C", cwd, ...args] : args,
+      stdout: "piped",
+      stderr: "null",
+    }).output();
+    return out.success ? new TextDecoder().decode(out.stdout).trim() : "";
+  } catch (_e) {
+    return "";
+  }
+}
+
+/** The configured submodule paths (from .gitmodules), longest-first for prefix matching. */
+async function submodulePaths(): Promise<string[]> {
+  const raw = await gitOut(["config", "--file", ".gitmodules", "--get-regexp", "path"]);
+  return raw
+    .split("\n")
+    .map((l) => l.trim().split(/\s+/)[1])
+    .filter((p): p is string => Boolean(p))
+    .sort((a, b) => b.length - a.length);
+}
+
+/** Owning repo of a plan-doc path: the submodule dir + in-submodule path, or the parent. */
+export interface IOwningRepo {
+  submodule?: string;
+  relPath: string;
+}
+
+export async function resolveOwningRepo(docPath: string): Promise<IOwningRepo> {
+  for (const sub of await submodulePaths()) {
+    if (docPath === sub || docPath.startsWith(`${sub}/`)) {
+      return { submodule: sub, relPath: docPath.slice(sub.length).replace(/^\//, "") };
+    }
+  }
+  return { relPath: docPath };
+}
+
+/** Added lines (`+` stripped, trimmed) of a diff `range` for `relPath` in the owning repo. */
+async function addedLinesFor(repo: IOwningRepo, range: string[]): Promise<string[]> {
+  const diff = await gitOut(["diff", ...range, "--unified=0", "--", repo.relPath], repo.submodule);
+  return diff
+    .split("\n")
+    .filter((l) => l.startsWith("+") && !l.startsWith("+++"))
+    .map((l) => l.slice(1).trim())
+    .filter((l) => l.length > 0);
+}
+
+/**
+ * Added plan-doc lines this commit contributes = the STAGED diff UNION the last commit's
+ * diff (HEAD~1..HEAD). The union covers both flows: (a) plan doc staged together with the
+ * code (this hook fires before the commit — staged shows the lines), and (b) the
+ * submodule was committed first by `commit_plan_step.ts` (its lines are in HEAD~1..HEAD).
+ */
+async function planAddedLines(repo: IOwningRepo): Promise<string[]> {
+  const staged = await addedLinesFor(repo, ["--cached"]);
+  const lastCommit = await addedLinesFor(repo, ["HEAD~1", "HEAD"]);
+  return [...new Set([...staged, ...lastCommit])];
+}
+
+/**
+ * Sync status of the plan doc's owning repo. `unknown` when a submodule is unresolvable
+ * (not checked out / no HEAD); `out_of_sync` when neither the staged nor the last-commit
+ * diff carries any plan-doc change (nothing to prove this step was authored here);
+ * otherwise `in_sync`.
+ */
+async function planSyncStatus(repo: IOwningRepo, addedLines: string[]): Promise<PlanSyncStatus> {
+  if (repo.submodule) {
+    const head = await gitOut(["rev-parse", "HEAD"], repo.submodule);
+    if (!head) return "unknown";
+  }
+  return addedLines.length > 0 ? "in_sync" : "out_of_sync";
+}
+
 /**
  * Resolve the plan-step validation payload for a commit whose `plan:` field names a
- * doc + step. Reads the plan doc, extracts the step's checked-criterion source paths and
- * done-test paths, and pairs them with the staged files. Returns a payload whose
- * `planErrors` carries a doc-read failure (so the commit is blocked, not silently passed)
- * when the referenced doc cannot be read.
+ * doc + step. Reads the plan doc, extracts the step's source/test paths + item lines, the
+ * ledger symbols, and the plan-doc diff/sync (staged ∪ last-commit) so `validateCommitMsg`
+ * enforces the full plan-step gate — including cross-repo consistency — from the hook.
+ * A doc-read failure blocks the commit rather than silently passing.
  */
-function resolvePlanValidation(planRef: IPlanRef, stagedFiles: string[]): IPlanValidation {
+async function resolvePlanValidation(planRef: IPlanRef, stagedFiles: string[]): Promise<IPlanValidation> {
   let docText: string;
   try {
     docText = Deno.readTextFileSync(planRef.docPath);
@@ -581,6 +673,9 @@ function resolvePlanValidation(planRef: IPlanRef, stagedFiles: string[]): IPlanV
     };
   }
   const parsed = parsePlanStep(docText, planRef.step);
+  const repo = await resolveOwningRepo(planRef.docPath);
+  const addedPlanLines = await planAddedLines(repo);
+  const planSync = await planSyncStatus(repo, addedPlanLines);
   return {
     criteriaPaths: parsed.criteriaPaths,
     testPaths: parsed.testPaths,
@@ -588,6 +683,9 @@ function resolvePlanValidation(planRef: IPlanRef, stagedFiles: string[]): IPlanV
     changedFiles: stagedFiles,
     deferredTokens: parsed.deferredTokens,
     ledgerSymbols: parseLedgerSymbols(docText),
+    itemLines: parsed.itemLines,
+    addedPlanLines,
+    planSync,
   };
 }
 
@@ -621,7 +719,7 @@ if (import.meta.main) {
 
     // Plan-step traceability: only engaged when the commit carries a `plan:` field.
     const planRef = parsePlanField(text);
-    const planValidation = planRef ? resolvePlanValidation(planRef, stagedFiles) : undefined;
+    const planValidation = planRef ? await resolvePlanValidation(planRef, stagedFiles) : undefined;
 
     const mergeCommit = await isGitMergeCommit();
     const { success, errors } = validateCommitMsg(text, {

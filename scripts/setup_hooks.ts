@@ -475,7 +475,11 @@ async function installHooks() {
   );
   console.log("   - pre-push: regenerate .copilot/manifest.json, type-check, security tests");
   console.log("   - pre-merge-commit: regenerate .copilot/manifest.json for merge commits");
-  console.log("   - commit-msg: structured commit message validation");
+  console.log(
+    "   - commit-msg: structured commit message validation + plan-step gate " +
+      "(when a `plan:` field is present: ✅/deferred paths staged+backticked, ledger rows, " +
+      "no open `- [ ]`, item lines in the plan-doc diff, submodule/parent in sync)",
+  );
   console.log("   - pre-rebase: blocks rebase with dirty working tree");
 }
 

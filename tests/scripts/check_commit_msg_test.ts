@@ -614,6 +614,55 @@ impact: ReqProc: update`;
       true,
     );
   });
+
+  it("integrates the diff/sync facet: blocks a stale item line via planValidation", () => {
+    const result = validateCommitMsg(baseMsg, {
+      changedFileCount: 6,
+      planValidation: {
+        criteriaPaths: ["apps/exactl/src/commands/model_commands.ts"],
+        testPaths: [],
+        planErrors: [],
+        changedFiles: ["apps/exactl/src/commands/model_commands.ts"],
+        // Diff facet inputs: the item line is NOT among the plan doc's added lines.
+        itemLines: ["- ✅ Full loop → `apps/exactl/src/commands/model_commands.ts`"],
+        addedPlanLines: ["some unrelated added line"],
+        planSync: "in_sync",
+      },
+    });
+    assertEquals(result.success, false);
+    assertEquals(result.errors.some((e) => e.includes("not an added line")), true);
+  });
+
+  it("integrates the diff/sync facet: passes when item lines are added and in sync", () => {
+    const line = "- ✅ Full loop → `apps/exactl/src/commands/model_commands.ts`";
+    const result = validateCommitMsg(baseMsg, {
+      changedFileCount: 6,
+      planValidation: {
+        criteriaPaths: ["apps/exactl/src/commands/model_commands.ts"],
+        testPaths: [],
+        planErrors: [],
+        changedFiles: ["apps/exactl/src/commands/model_commands.ts"],
+        itemLines: [line],
+        addedPlanLines: [line, "other added line"],
+        planSync: "in_sync",
+      },
+    });
+    assertEquals(result.success, true, result.errors?.join(", "));
+  });
+
+  it("skips the diff/sync facet when its inputs are absent (path facet still runs)", () => {
+    const result = validateCommitMsg(baseMsg, {
+      changedFileCount: 6,
+      planValidation: {
+        criteriaPaths: ["apps/exactl/src/commands/model_commands.ts"],
+        testPaths: [],
+        planErrors: [],
+        changedFiles: ["apps/exactl/src/commands/model_commands.ts"],
+        // No itemLines/addedPlanLines/planSync → diff facet skipped.
+      },
+    });
+    assertEquals(result.success, true, result.errors?.join(", "));
+  });
 });
 
 describe("validatePlanStepDiff", () => {
