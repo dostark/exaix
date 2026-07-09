@@ -1748,6 +1748,17 @@ exactl daemon logs --lines 100           # Show last 100 lines
 exactl daemon logs --follow              # Stream logs (like tail -f)
 ```
 
+#### **Eval Commands** - Run and compare evaluation scenarios
+
+Run predefined scenario packs, score results, and compare runs. Full documentation
+in `docs/Exaix_Evaluation.md`.
+
+```bash
+exactl eval run --pack smoke --trials 5
+exactl eval history --last 10
+exactl eval compare --run-a <id> --run-b <id>
+```
+
 #### **Skill Commands** - Manage Procedural Skills
 
 Skills are reusable procedural knowledge that agents can learn and apply. They represent patterns, techniques, and best practices that improve agent performance over time.
@@ -1793,6 +1804,14 @@ Authentication Implementation (87% match)
 
 # Use a skill in a request
 $ exactl request "Build a REST API for user management" --skill api-design-patterns
+```
+
+#### **Log & Journal Commands** - Inspect the Activity Journal and cost reports
+
+```bash
+exactl journal                    # Show last 20 events
+exactl journal --action config.updated
+exactl log cost                   # Aggregated cost report
 ```
 
 #### **MCP Commands** - Model Context Protocol Server
@@ -1944,6 +1963,16 @@ $ exactl daemon logs --follow
 
 #### **Config Commands** - View and manage configuration (get/set/diff/history/rollback/lock/unlock/edit/compact)
 
+#### **Log & Journal Commands** - Inspect the Activity Journal and cost reports
+
+#### **Migrate Command** - Check workspace schema compatibility
+
+#### **Skills Command** - Quick alias for `memory skill`
+
+#### **Tool Commands** - Manage pending tool confirmations
+
+#### **Version Command** - Display version information
+
 #### **Wait Commands** - Resolve durable wait states
 
 When a flow execution reaches a quality gate that fails below the configured
@@ -1985,9 +2014,9 @@ and can be inspected manually if needed.
 
 ---
 
-#### **Config Commands** — Manage Configuration Overrides (Phase 136–139)
+#### **Config Commands** — Manage Configuration Overrides
 
-As of Phase 137, Exaix manages runtime configuration through the **Config DB** (`.exa/config.db`)
+Exaix manages runtime configuration through the **Config DB** (`.exa/config.db`)
 instead of TOML files. The `exactl config` command group provides full CRUD, audit, and security
 control over config keys registered via `configurable()`. **180+ keys** are registered across all
 packages; run `exactl config list` to see them all.
@@ -2019,7 +2048,7 @@ exactl config history ai.provider
 exactl config rollback ai.provider 3
 ```
 
-**Key locking (security control, Phase 139):**
+**Key locking (security control):**
 
 Prevents any further writes to a compromised key through every surface (CLI, MCP, daemon).
 
@@ -2034,7 +2063,7 @@ exactl config unlock ai.provider
 exactl config lock-list
 ```
 
-**Integrity checksum (Phase 139):**
+**Integrity checksum:**
 
 The daemon computes a SHA-256 checksum of the effective Config DB at boot and periodically
 (default every 60s). A tampered DB (e.g. `sqlite3 .exa/config.db` outside Exaix) journals
@@ -2048,7 +2077,7 @@ exactl config validate --integrity
 exactl journal --action config.integrity_verified
 ```
 
-**Bulk editing (Phase 139):**
+**Bulk editing:**
 
 Open the current overrides in `$EDITOR`, edit key=value lines, and apply changes through the
 same security funnel (lock check + validation + debounce all apply).
@@ -2057,7 +2086,7 @@ same security funnel (lock check + validation + debounce all apply).
 exactl config edit
 ```
 
-**Blocklist management (Phase 138):**
+**Blocklist management:**
 
 Persistently deny specific key patterns to one or all MCP agents.
 
@@ -2067,7 +2096,7 @@ exactl config block list
 exactl config block remove "ai.api_key"
 ```
 
-**Profiles (Phase 137):**
+**Profiles:**
 
 Group overrides into named profiles and switch between them.
 
@@ -2084,6 +2113,132 @@ exactl config get --profile workstation ai.timeout_ms
 # Compact the append-only log (collapses to one row per key)
 exactl config compact
 ```
+
+---
+
+#### **Eval Commands** - Run and compare evaluation scenarios
+
+The evaluation framework runs predefined scenarios against your workspace, scores
+results, and compares runs over time. Full documentation is in `docs/Exaix_Evaluation.md`.
+
+```bash
+# Run an evaluation scenario pack
+exactl eval run --pack smoke
+exactl eval run --tag smoke --trials 5 --score-threshold 0.7
+
+# Query evaluation history
+exactl eval history --last 10
+exactl eval history --pack smoke --since 2026-06-01 --format json
+
+# Compare two evaluation runs side-by-side
+exactl eval compare --run-a <run-id> --run-b <run-id>
+```
+
+---
+
+#### **Log & Journal Commands** - Query the Activity Journal
+
+Every action in Exaix is recorded in the append-only Activity Journal. The `journal`
+and `log journal` commands let you inspect this audit trail. The `log cost` command
+aggregates cost data across runs.
+
+```bash
+# Query the journal (default: last 20 events, newest first)
+exactl journal
+exactl log journal
+
+# Filter by action type
+exactl journal --action config.updated
+exactl journal --action config.integrity_mismatch
+
+# Filter by trace id
+exactl journal --trace-id <uuid>
+
+# Filter by agent
+exactl journal --agent my-agent
+
+# Time range queries
+exactl journal --since "2026-06-01" --until "2026-06-07"
+
+# Aggregation
+exactl journal --action-type plan.approved --count
+
+# Display cost reports
+exactl log cost
+exactl log cost --period monthly
+```
+
+The journal is the primary audit surface — every `config.set`, `plan.approved`,
+`tool.confirmed`, and integrity check produces a typed event entry visible here.
+
+---
+
+#### **Migrate Command** - Check workspace schema compatibility
+
+When upgrading Exaix, the workspace schema version may change. `exactl migrate check`
+compares the binary's expected schema version against the workspace's stored version.
+
+```bash
+# Check schema compatibility
+exactl migrate check
+```
+
+If versions mismatch, the command reports the expected and actual versions and
+recommends migration steps. This is also checked automatically at daemon start.
+
+---
+
+#### **Skills Command** - Quick alias for `memory skill`
+
+The `skills` command is a top-level alias for the most common `memory skill`
+subcommands. See the **Skill Commands** section above for full documentation.
+
+```bash
+# List all skills (same as memory skill list)
+exactl skills list
+
+# Show a specific skill (same as memory skill show)
+exactl skills show <skill-id>
+
+# Find skills matching a request description
+exactl skills match "Refactor authentication module"
+```
+
+---
+
+#### **Tool Commands** - Manage pending tool confirmations
+
+When a tool requires human approval (e.g., writing to a file outside the workspace,
+or a dangerous config change), it enters a pending confirmation state. Use `tool`
+commands to review and resolve these.
+
+```bash
+# List all pending tool confirmations
+exactl tool pending
+
+# Approve a pending confirmation by id
+exactl tool confirm <confirmation-id>
+
+# Deny a pending confirmation by id
+exactl tool deny <confirmation-id>
+```
+
+Pending confirmations are also visible through the journal (`exactl journal --action tool.confirmation_pending`).
+
+---
+
+#### **Version Command** - Display version information
+
+Shows the Exaix binary version and workspace schema version.
+
+```bash
+# Show version info
+exactl version
+```
+
+The output includes `binary_version` (the daemon/CLI release) and
+`workspace_schema_version` (the data schema expected by the current workspace).
+If these mismatch, run `exactl migrate check` for details.
 
 ---
 
@@ -2151,6 +2306,12 @@ exactl mcp status                          # Check MCP server status
 exactl journal --tail 20                  # View recent activity
 exactl journal --filter action_type=error # Find errors
 exactl journal --count                    # Count activities by type
+
+# System info and evaluation
+exactl version                            # Show binary and schema version
+exactl migrate check                      # Check schema compatibility
+exactl tool pending                       # List pending tool confirmations
+exactl eval run --pack smoke              # Run an evaluation scenario
 ```
 
 ### 4.4 Activity Logging
