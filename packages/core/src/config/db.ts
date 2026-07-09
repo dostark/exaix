@@ -37,6 +37,14 @@ export interface IBlocklistEntry {
   created_at: string;
 }
 
+/** A row in the config_locked_keys table (Phase 139 Step 4). */
+export interface ILockedKeyEntry {
+  key: string;
+  locked_at: string;
+  locked_by: string;
+  reason: string | null;
+}
+
 /**
  * Optional insertOverride settings (Phase 138 Step 3). `hardLimit`/`warnThreshold`
  * overrides exist ONLY so the security test can exercise the DB page-limit
@@ -52,6 +60,18 @@ export interface IInsertOverrideOpts {
 
 const CONFIG_DB_FILE = "config.db";
 const CONFIG_DB_DIR = ".exa";
+
+// ── Config `source` vocabulary (Phase 139 Step 1, GAP-5) ────────────────────
+// All values the `source` column of config_overrides may take, co-located here
+// (the Config-DB layer owns the column) rather than split across constants.ts.
+/** Seed rows written by seedConfigDb (NULL value, registry default resolves). */
+export const CONFIG_SOURCE_INIT = "init";
+/** Direct CLI/adapter write. */
+export const CONFIG_SOURCE_CLI = "cli";
+/** A rollback append restoring a historical value (Phase 139 Step 3). */
+export const CONFIG_SOURCE_ROLLBACK = "rollback";
+/** The synthetic _checksum row (Phase 139 Step 5). */
+export const CONFIG_SOURCE_INTEGRITY = "integrity";
 
 export function ensureConfigDb(rootPath: string): string {
   const dir = join(rootPath, CONFIG_DB_DIR);
@@ -88,20 +108,30 @@ export function migrateConfigDb(db: Database): void {
       UNIQUE (agent_id, key_pattern)
     )
   `);
+  // Phase 139 Step 4: per-key write lock. A locked key is refused by
+  // adapter.set() (via assertWritable) across every write surface until unlocked.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS config_locked_keys (
+      key        TEXT PRIMARY KEY,
+      locked_at  TEXT NOT NULL DEFAULT (datetime('now')),
+      locked_by  TEXT NOT NULL,
+      reason     TEXT
+    )
+  `);
 }
 
 export function seedConfigDb(db: Database): void {
   const insert = db.prepare(
-    "INSERT INTO config_overrides (key, value, source, swap_class) VALUES (?, NULL, 'init', 'hot')",
+    "INSERT INTO config_overrides (key, value, source, swap_class) VALUES (?, NULL, ?, 'hot')",
   );
   const checkExists = db.prepare(
-    "SELECT COUNT(*) as cnt FROM config_overrides WHERE key = ? AND value IS NULL AND source = 'init'",
+    "SELECT COUNT(*) as cnt FROM config_overrides WHERE key = ? AND value IS NULL AND source = ?",
   );
 
   for (const [key] of getRegisteredDefaults()) {
-    const existing = checkExists.get<{ cnt: number }>(key);
+    const existing = checkExists.get<{ cnt: number }>(key, CONFIG_SOURCE_INIT);
     if (!existing || existing.cnt === 0) {
-      insert.run(key);
+      insert.run(key, CONFIG_SOURCE_INIT);
     }
   }
 }
@@ -124,7 +154,6 @@ export function getAllEffectiveValues(db: Database): Map<string, ConfigValue> {
   return result;
 }
 
-const CONFIG_SOURCE_INIT = "init";
 const CONFIG_DB_OVERRIDE_WARN_EVENT = "config.db.override_threshold";
 
 export function insertOverride(
@@ -170,8 +199,8 @@ export function insertOverride(
 export function countRecentCliWrites(db: Database, windowMs: number): number {
   const seconds = Math.ceil(windowMs / 1000);
   const row = db.prepare(
-    "SELECT COUNT(*) AS cnt FROM config_overrides WHERE source = 'cli' AND created_at >= datetime('now', ?)",
-  ).get<{ cnt: number }>(`-${seconds} seconds`);
+    "SELECT COUNT(*) AS cnt FROM config_overrides WHERE source = ? AND created_at >= datetime('now', ?)",
+  ).get<{ cnt: number }>(CONFIG_SOURCE_CLI, `-${seconds} seconds`);
   return row?.cnt ?? 0;
 }
 
@@ -200,6 +229,28 @@ export function getMaxOverrideId(db: Database): number {
     "SELECT MAX(id) AS max_id FROM config_overrides",
   ).get<{ max_id: number | null }>();
   return row?.max_id ?? 0;
+}
+
+/**
+ * Point lookup of a single override row by (key, id) — the rollback target
+ * (Phase 139 Step 3). Returns undefined if no row with that id belongs to `key`.
+ */
+export function getOverrideById(
+  db: Database,
+  key: string,
+  id: number,
+): IConfigOverrideEntry | undefined {
+  const row = db.prepare(
+    "SELECT id, value, source, swap_class, created_at FROM config_overrides WHERE key = ? AND id = ?",
+  ).get<{
+    id: number;
+    value: string | null;
+    source: string;
+    swap_class: string;
+    created_at: string;
+  }>(key, id);
+  if (!row) return undefined;
+  return { ...row, value: row.value ?? null };
 }
 
 export function getOverrideHistory(
@@ -298,4 +349,47 @@ export function isPathBlocked(
     "SELECT agent_id, key_pattern FROM config_mcp_blocklist WHERE agent_id IS NULL OR agent_id = ?",
   ).all<{ agent_id: string | null; key_pattern: string }>(agentId ?? null);
   return rows.some((row) => globMatches(row.key_pattern, key));
+}
+
+// ── Phase 139 Step 4: config_locked_keys DAO ────────────────────────────────
+
+/** Lock `key` against writes. Idempotent on the `key` PRIMARY KEY (re-lock updates the row). */
+export function lockKey(
+  db: Database,
+  key: string,
+  lockedBy: string,
+  reason?: Opt<string, Reason.OptionalInput>,
+): void {
+  db.prepare(
+    "INSERT INTO config_locked_keys (key, locked_by, reason) VALUES (?, ?, ?) " +
+      "ON CONFLICT(key) DO UPDATE SET locked_by = excluded.locked_by, reason = excluded.reason, locked_at = datetime('now')",
+  ).run(key, lockedBy, reason ?? null);
+}
+
+/** Remove the lock on `key` (idempotent — no-op if not locked). */
+export function unlockKey(db: Database, key: string): void {
+  db.prepare("DELETE FROM config_locked_keys WHERE key = ?").run(key);
+}
+
+/** True if `key` is in config_locked_keys. */
+export function isKeyLocked(db: Database, key: string): boolean {
+  const row = db.prepare("SELECT 1 AS one FROM config_locked_keys WHERE key = ?").get<{ one: number }>(key);
+  return row !== undefined;
+}
+
+/** List all locked keys, newest lock first. */
+export function listLockedKeys(db: Database): Array<ILockedKeyEntry> {
+  return db.prepare(
+    "SELECT key, locked_at, locked_by, reason FROM config_locked_keys ORDER BY locked_at DESC",
+  ).all<{
+    key: string;
+    locked_at: string;
+    locked_by: string;
+    reason: string | null;
+  }>().map((row) => ({
+    key: row.key,
+    locked_at: row.locked_at,
+    locked_by: row.locked_by,
+    reason: row.reason ?? null,
+  }));
 }

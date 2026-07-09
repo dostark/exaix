@@ -18,6 +18,7 @@ import {
 import { SwapClass } from "../../src/types/enums.ts";
 import { configurable } from "../../src/config/registry.ts";
 import { ConfigValueType } from "../../src/types/enums.ts";
+import { CONFIG_CHECKSUM_KEY } from "../../src/types/constants.ts";
 import { DomainEventType } from "../../src/events/domain_event_types.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "../../src/types/json.ts";
@@ -173,6 +174,31 @@ Deno.test({
       assertEquals(
         events.some((e) => e.action === DomainEventType.ConfigDbWatcherChangeDetected),
         false,
+      );
+    } finally {
+      cleanUp(dir, db);
+    }
+  },
+});
+
+Deno.test({
+  name: "[configuring] db watcher ignores the _checksum synthetic key (GAP-4)",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const { store, db, dir } = setup();
+    const events: Array<{ action: string; payload?: LogMetadata }> = [];
+    const logger = makeTrackedLogger(events);
+    try {
+      // A persistChecksum() append writes a hot _checksum row. The watcher must
+      // NOT treat it as a user change — no store mutation, no change event.
+      insertOverride(db, CONFIG_CHECKSUM_KEY, "deadbeef", "integrity", "hot");
+      await createDbWatcherHandler(store, db, logger)();
+      assertEquals(store.get(CONFIG_CHECKSUM_KEY), undefined);
+      assertEquals(
+        events.some((e) => e.action === DomainEventType.ConfigDbWatcherChangeDetected),
+        false,
+        "checksum-only write must not trigger ConfigDbWatcherChangeDetected",
       );
     } finally {
       cleanUp(dir, db);

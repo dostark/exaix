@@ -8,10 +8,11 @@
  */
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { join } from "@std/path";
+import { STDIO_INHERIT } from "./constants.ts";
 import { createConfigAdapterAsync, getRegisteredDefaults } from "@exaix/core/config";
 import type { IConfigAdapter, IConfigValidationReport } from "@exaix/core/config";
 import { ConfigKeyNotFoundError, ConfigRateLimitedError } from "@exaix/core/config";
-import type { ConfigValue } from "@exaix/core/config";
+import type { ConfigValue, IConfigOverrideEntry, ILockedKeyEntry } from "@exaix/core/config";
 import { CONFIG_PROFILE_KEY_PREFIX, ConfigOutputFormat, type Opt, type Reason } from "@exaix/core/types";
 import { CLI_CONFIG_SET_DEBOUNCE_WINDOW_MS, CLI_CONFIG_SET_MAX_WRITES_PER_WINDOW } from "@exaix/core";
 
@@ -31,6 +32,9 @@ function parseValue(input: string): ConfigValue {
   if (input === "false") return false;
   return input;
 }
+
+/** `locked_by` recorded for a CLI-initiated lock (no per-user identity at the CLI). */
+const CONFIG_LOCKED_BY_CLI = "cli";
 
 export class ConfigCommands extends BaseCommand {
   private adapter: IConfigAdapter | undefined;
@@ -203,6 +207,107 @@ export class ConfigCommands extends BaseCommand {
    */
   async compact(): Promise<number> {
     return (await this.ensureAdapter()).compact();
+  }
+
+  /**
+   * Phase 139 Step 2: the append-only override history for `key`, newest-first
+   * (DESC by id). Read-only — a thin wrapper over IConfigAdapter.getHistory.
+   */
+  async history(path: string): Promise<IConfigOverrideEntry[]> {
+    return (await this.ensureAdapter()).getHistory(path);
+  }
+
+  /**
+   * Phase 139 Step 3: revert `path` to the value at history row `id` by appending
+   * a rollback row. Returns the restored value.
+   */
+  async rollback(path: string, id: number): Promise<ConfigValue> {
+    if (!Number.isInteger(id) || id < 1) {
+      throw new Error(`rollback id must be a positive integer, got ${id}`);
+    }
+    return (await this.ensureAdapter()).rollback(path, id);
+  }
+
+  // ── Phase 139 Step 4: key locking ──────────────────────────────────────────
+
+  async lock(path: string, reason?: Opt<string, Reason.OptionalInput>): Promise<void> {
+    (await this.ensureAdapter()).lock(path, CONFIG_LOCKED_BY_CLI, reason);
+  }
+
+  async unlock(path: string): Promise<void> {
+    (await this.ensureAdapter()).unlock(path);
+  }
+
+  async listLocks(): Promise<ILockedKeyEntry[]> {
+    return (await this.ensureAdapter()).listLocks();
+  }
+
+  // ── Phase 139 Step 6: config edit ($EDITOR) ────────────────────────────────
+
+  /**
+   * Render the current overrides to a temp file (`key = value` lines), open it
+   * in `$EDITOR`, and apply any changed lines back through `adapter.set()` — so
+   * the editor stays inside the security funnel (lock + validation + debounce
+   * all still apply; blocklist enforcement remains MCP-only, per design GAP-2).
+   * A non-zero editor exit discards all changes.
+   */
+  async edit(): Promise<void> {
+    const adapter = await this.ensureAdapter();
+    const overrides = adapter.listOverrides();
+    // Snapshot original key→value (rendered form) so we only re-apply changes.
+    const original = new Map<string, string>();
+    for (const o of overrides) {
+      original.set(o.key, String(o.value));
+    }
+    const rendered = overrides.map((o) => `${o.key} = ${o.value}`).join("\n");
+
+    const tmpPath = await Deno.makeTempFile({ prefix: "exactl-config-edit-", suffix: ".conf" });
+    try {
+      await Deno.writeTextFile(tmpPath, rendered === "" ? "" : `${rendered}\n`);
+
+      const editor = Deno.env.get("EDITOR") || Deno.env.get("VISUAL") || "vi";
+      const { code } = await new Deno.Command(editor, {
+        args: [tmpPath],
+        stdin: STDIO_INHERIT,
+        stdout: STDIO_INHERIT,
+        stderr: STDIO_INHERIT,
+      }).output();
+      if (code !== 0) {
+        throw new Error(`Editor exited with code ${code}; no changes applied.`);
+      }
+
+      const edited = await Deno.readTextFile(tmpPath);
+      // Pre-validate all changed lines before applying any (GAP-3).
+      const pending: Array<{ key: string; value: ConfigValue }> = [];
+      const errors: string[] = [];
+      for (const line of edited.split("\n")) {
+        const trimmed = line.trim();
+        if (trimmed === "" || trimmed.startsWith("#")) continue;
+        const eq = trimmed.indexOf("=");
+        if (eq < 0) continue;
+        const key = trimmed.slice(0, eq).trim();
+        const valueStr = trimmed.slice(eq + 1).trim();
+        if (original.get(key) === valueStr) continue;
+        const parsed = parseValue(valueStr);
+        const report = adapter.validateAtPath(key, parsed);
+        if (!report.valid) {
+          errors.push(...report.issues.map((i) => `${key}: ${i.message}`));
+        } else {
+          pending.push({ key, value: parsed });
+        }
+      }
+      if (errors.length > 0) {
+        throw new Error(
+          `Config edit aborted — ${errors.length} validation error(s):\n${errors.join("\n")}`,
+        );
+      }
+      // Apply all changes atomically (pre-validated — no failures expected).
+      for (const { key, value } of pending) {
+        await adapter.set(key, value);
+      }
+    } finally {
+      await Deno.remove(tmpPath);
+    }
   }
 }
 

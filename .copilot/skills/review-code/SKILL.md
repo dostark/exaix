@@ -302,11 +302,12 @@ For every new code path:
 If the change introduces or modifies:
 
 - A public interface or schema → `ARCHITECTURE.md` should be updated.
-- A CLI flag or user-facing behaviour → `docs/Exaix_User_Guide.md` should be updated.
+- A CLI flag or user-facing behaviour → `docs/Exaix_User_Guide.md` MUST be updated in the
+  same commit. Grep the file for the feature name to verify coverage — absent means blocked.
 - An MCP tool handler → `TOOLS.md` should be updated (`deno task docs-sync-schemas`).
 - A new pattern or convention → `CODE_STYLE.md` should mention it.
 
-Flag missing doc updates as 🟡 Major.
+Flag missing User Guide updates as 🔴 Critical (blocking). Flag other missing doc updates as 🟡 Major.
 
 ---
 

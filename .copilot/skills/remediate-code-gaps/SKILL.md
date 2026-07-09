@@ -46,6 +46,7 @@ Related skills:
 - #post-gap-analysis — Produces the remediation steps this skill executes
 - #fix-bug — Fix a specific finding discovered during remediation
 - #commit — Structured commit after remediation
+- #test-development — Edge case coverage requirements, test helpers, placement rules
 
 Workflow chain (typical):
   #plan → #pre-gap-analysis → #remediate-plan-gaps → #next-steps → #post-gap-analysis → **#remediate-code-gaps** → #commit

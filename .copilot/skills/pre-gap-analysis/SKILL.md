@@ -150,6 +150,7 @@ Related skills:
 - #next-steps       — Execute the plan step-by-step after analysis is clean (follows this skill)
 - #post-gap-analysis — Deep post-implementation review (code already written)
 - #commit           — Create a structured commit after gap fixes
+- #test-development — Edge case coverage requirements, test helpers, placement rules
 
 Workflow chain (typical):
   #plan → **#pre-gap-analysis** → #next-steps → #post-gap-analysis → #commit

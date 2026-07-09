@@ -278,6 +278,12 @@ export const DomainEventType = {
   ConfigDbWatcherStarted: "config.db_watcher.started",
   ConfigDbWatcherChangeDetected: "config.db_watcher.change_detected",
   ConfigCutoverResolved: "config.cutover.resolved",
+  // Phase 139 (configuring Phase 3): rollback, key locking, integrity checksum
+  ConfigRolledBack: "config.rolled_back",
+  ConfigKeyLocked: "config.key_locked",
+  ConfigKeyUnlocked: "config.key_unlocked",
+  ConfigIntegrityVerified: "config.integrity_verified",
+  ConfigIntegrityMismatch: "config.integrity_mismatch",
 
   // Security events
   SecurityFileValidationFilteredAll: "security.file_validation_filtered_all",

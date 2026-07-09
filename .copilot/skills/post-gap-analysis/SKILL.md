@@ -117,6 +117,7 @@ Related skills:
 - #commit            — Create a structured commit after remediation
 - #review-code       — Code quality review (style, TS idiomacy, defensive,
                        performance, deps) — Phase 7 delegates here
+- #test-development  — Edge case coverage requirements, test helpers, placement rules
 
 Workflow chain (typical):
   #plan → #pre-gap-analysis → #next-steps → **#post-gap-analysis** → #commit

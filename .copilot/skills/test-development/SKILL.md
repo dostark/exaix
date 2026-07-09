@@ -18,6 +18,10 @@ qwen_skill: test-development
 
 ```text
 Key points
+- Happy-path-only tests miss integration bypasses, partial-failure states,
+  and malformed-input crashes — cover the 6 edge case dimensions (§Edge case
+  coverage requirements) for every feature that takes input, crosses subsystem
+  boundaries, or composes multiple operations.
 
 See also
   Test directory structure   →  [tests/README.md](../../tests/README.md)
@@ -62,6 +66,52 @@ Mandatory placement rules
 
 Coverage-Driven TDD
   Target ≥70% branch coverage on new features. Run deno task test:coverage.
+
+Edge case coverage requirements — mandatory test dimensions
+
+  Every feature that accepts user input, crosses subsystem boundaries, or
+  composes multiple operations MUST include tests for each applicable dimension
+  below. A plan step whose Planned Tests cover only the happy path is
+  incomplete — missing edge case dimensions are 🟠 Testing gaps.
+
+  1. **Invalid / malformed input**
+     Test every CLI argument, config value, and data field with values at the
+     boundary of its type: NaN and negative numbers for numeric fields, empty
+     strings for text fields, out-of-bounds values for constrained fields,
+     missing required fields. Assert the error is surfaced clearly, not as a
+     silent NaN or confusing internal message.
+
+  2. **Integration paths (features A + B together)**
+     When two features interact (e.g. key locking + profile-scoped keys, or
+     integrity checksum + rollback), write at least one test that exercises
+     the combined path. A test that proves each feature works in isolation
+     does NOT prove they work together — the integration surface is where
+     bypasses and data-flow gaps hide.
+
+  3. **Partial-failure / mid-operation failure**
+     For multi-step operations (e.g. config edit applies N lines, batch
+     import, staged apply), test the case where step K of N fails. Assert
+     that preceding steps are either rolled back or clearly reported to the
+     user, and that no silent partial state remains.
+
+  4. **Round-trip fidelity**
+     For any serialisation path (config value → rendered string → parsed
+     value, or object → JSON → deserialised), test that a value survives
+     a full round-trip unchanged. Special attention to types that lose
+     fidelity on serialisation (numbers vs strings, null vs undefined, JSON
+     strings with embedded quotes).
+
+  5. **Idempotency / stability**
+     For operations that should be stable or idempotent (checksum computation,
+     sorting, diff generation), assert that repeated calls with identical
+     input produce identical output. A test that only checks "changed when
+     input changed" misses the "unchanged when input unchanged" guarantee.
+
+  6. **Resource cleanup**
+     For any operation that creates temporary files, subprocesses, or DB
+     transactions, verify cleanup on both success and failure paths (including
+     exceptions). Use `try/finally` or `using` — a missing cleanup is a
+     resource leak regardless of whether the happy path test passes.
 
 Advanced testing patterns
   - Refactoring & Duplication: use npx jscpd packages apps tests to find duplicated
@@ -147,12 +197,17 @@ exaix:
   quality_criteria:
     - name: placement_compliance
       description: Test placement follows boundaries
-      weight: 40
+      weight: 25
     - name: helper_usage
       description: Shared helpers used instead of bespoke setup
-      weight: 30
+      weight: 20
     - name: coverage_target
       description: Coverage met or verified
-      weight: 30
+      weight: 20
+    - name: edge_case_coverage
+      description: Edge case dimensions (invalid input, integration paths,
+        partial failure, round-trip, idempotency, cleanup) tested per
+        mandatory dimensions section
+      weight: 35
 ---
 ```

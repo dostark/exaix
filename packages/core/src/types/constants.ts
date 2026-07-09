@@ -319,6 +319,31 @@ export const CONFIG_DB_OVERRIDE_WARN_THRESHOLD = 100_000;
 export const CONFIG_DB_OVERRIDE_HARD_LIMIT = 1_000_000;
 
 // ============================================================================
+// Config Integrity Checksum (Phase 139 Step 5, §11.7)
+// ============================================================================
+
+/**
+ * Synthetic config_overrides key under which the Config-DB integrity checksum is
+ * stored. Excluded from the checksum computation, from listOverrides/diff, and
+ * from the DB watcher so it never surfaces as a user override.
+ */
+export const CONFIG_CHECKSUM_KEY = "_checksum";
+/**
+ * How often (ms) the daemon re-verifies the Config-DB integrity checksum on its
+ * existing DB-watcher poll loop (§11.7 "every 60s"). Tunable via
+ * `exactl config set config.integrity.poll_interval_ms`.
+ */
+export const CONFIG_INTEGRITY_POLL_INTERVAL_MS: number = configurable({
+  key: "config.integrity.poll_interval_ms",
+  default: 60_000,
+  type: ConfigValueType.NUMBER,
+  description: "Interval (ms) between daemon Config-DB integrity checksum verifications",
+  min: 1_000,
+  max: 3_600_000,
+  swap: SwapClass.RESTART,
+});
+
+// ============================================================================
 // File Watcher Validation Limits
 // ============================================================================
 

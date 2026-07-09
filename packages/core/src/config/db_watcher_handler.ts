@@ -14,6 +14,7 @@ import { DomainEventType } from "@exaix/core/events";
 import { SwapClass } from "../types/enums.ts";
 import type { Opt, Reason } from "../types/optional_marker.ts";
 import { getAllEffectiveValues } from "./db.ts";
+import { CONFIG_CHECKSUM_KEY } from "../types/constants.ts";
 
 /**
  * Create a handler function that hot-applies new Config DB overrides to
@@ -33,6 +34,10 @@ export function createDbWatcherHandler(
     const effective = getAllEffectiveValues(db);
     let changes = 0;
     for (const [key, value] of effective) {
+      // The synthetic integrity checksum (Step 5, GAP-4) refreshes on every
+      // write; it is not a user override and must not trigger a hot-apply or a
+      // spurious ConfigDbWatcherChangeDetected.
+      if (key === CONFIG_CHECKSUM_KEY) continue;
       if (value === null) continue; // skip seed/init rows (no user override)
       const current = store.get(key);
       if (current !== value) {

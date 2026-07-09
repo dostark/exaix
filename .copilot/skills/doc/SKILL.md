@@ -43,6 +43,12 @@ Doc target map
   Agent guidance               →  .copilot/docs/<topic>.md
   Submodule docs               →  exaix-dev-docs/ (see submodule-workflow skill)
 
+Doc update gate: BEFORE declaring any step complete that adds a user-visible CLI flag, config
+key, or behavioural change, grep `docs/Exaix_User_Guide.md` for the command or feature name.
+If absent, the User Guide MUST be updated in the same step's commit — "not documented yet" is a
+blocking gap. This affects CLI subcommands, config keys, env vars, flag changes, and any output
+format change a user might rely on.
+
 Special sync commands
   # After changing MCP handler schemas in packages/mcp/src/handlers/
   deno task docs-sync-schemas

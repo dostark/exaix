@@ -103,6 +103,7 @@ Dogfooding chain (alternative, once Phase E tooling ships):
 - [next-steps](../next-steps/SKILL.md) — step-by-step execution of a plan
 - [pre-gap-analysis](../pre-gap-analysis/SKILL.md) — plan validation before implementation
 - [post-gap-analysis](../post-gap-analysis/SKILL.md) — post-implementation review against plan
+- [test-development](../test-development/SKILL.md) — edge case coverage requirements, test helpers
 
 ---
 
@@ -328,7 +329,10 @@ writing any step's Actions or Architecture Notes. Treat it as mandatory — the 
 Include a final **Step N (§3D): Update Documentation** that covers:
 
 - `ARCHITECTURE.md`: If new components/flows are added.
-- `docs/Exaix_User_Guide.md`: For user-facing CLI/config changes.
+- `docs/Exaix_User_Guide.md`: **Required** for every user-facing CLI/config/env change. The
+  step's Planned Tests section MUST include "User Guide updated" as a bullet, and the commit
+  MUST include the User Guide edit. Missing User Guide coverage is a blocking gap —
+  grep `docs/Exaix_User_Guide.md` for the feature name to confirm before closing the step.
 - `TOOLS.md`: If MCP tool schemas changed (`deno task docs-sync-schemas`).
 - `CODE_STYLE.md`: If new patterns (e.g., specific error handling) are established.
 

@@ -1291,6 +1291,120 @@ export const __test_command = new Command()
             }
           }),
       )
+      // Phase 139 Step 2: append-only override history (read-only audit).
+      .command(
+        "history <path>",
+        new Command()
+          .description("Show the append-only override history for a key (newest first)")
+          .action(async (_options, ...args: string[]) => {
+            try {
+              const rows = await configCommands.history(args[0]);
+              for (const row of rows) {
+                display.info("config.history.entry", args[0], {
+                  id: row.id,
+                  value: row.value,
+                  source: row.source,
+                  created_at: row.created_at,
+                });
+              }
+              display.info("config.history", args[0], { count: rows.length });
+            } catch (error) {
+              display.error("cli.error", "config history", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      // Phase 139 Step 3: revert a key to a historical value (append rollback row).
+      .command(
+        "rollback <path> <id>",
+        new Command()
+          .description("Revert a key to the value at a history id (appends a rollback row)")
+          .action(async (_options, ...args: string[]) => {
+            try {
+              const id = Number(args[1]);
+              const restored = await configCommands.rollback(args[0], id);
+              display.info("config.rollback", args[0], { to_id: id, restored_value: restored });
+            } catch (error) {
+              display.error("cli.error", "config rollback", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      // Phase 139 Step 4: per-key write lock (refused by adapter.set across surfaces).
+      .command(
+        "lock <path>",
+        new Command()
+          .description("Lock a config key against all writes (CLI/MCP/daemon)")
+          .option("--reason <text:string>", "Optional note for the lock")
+          .action(async (options, ...args: string[]) => {
+            try {
+              await configCommands.lock(args[0], options.reason);
+              display.info("config.lock", args[0], { reason: options.reason });
+            } catch (error) {
+              display.error("cli.error", "config lock", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "unlock <path>",
+        new Command()
+          .description("Unlock a previously locked config key")
+          .action(async (_options, ...args: string[]) => {
+            try {
+              await configCommands.unlock(args[0]);
+              display.info("config.unlock", args[0], {});
+            } catch (error) {
+              display.error("cli.error", "config unlock", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "lock-list",
+        new Command()
+          .description("List all locked config keys")
+          .action(async () => {
+            try {
+              const locks = await configCommands.listLocks();
+              for (const l of locks) {
+                display.info("config.lock.entry", l.key, { locked_by: l.locked_by, reason: l.reason });
+              }
+              display.info("config.lock.list", CONFIG_LABEL, { count: locks.length });
+            } catch (error) {
+              display.error("cli.error", "config lock-list", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      // Phase 139 Step 6: open the current overrides in $EDITOR; changed lines
+      // are applied through adapter.set() (lock + validation funnel preserved).
+      .command(
+        "edit",
+        new Command()
+          .description("Edit config overrides in $EDITOR (changes applied through the set() funnel)")
+          .action(async () => {
+            try {
+              await configCommands.edit();
+              display.info("config.edit", CONFIG_LABEL, { applied: true });
+            } catch (error) {
+              display.error("cli.error", "config edit", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
       // Phase 138 Step 2: MCP deny-permanently blocklist management.
       .command(
         "block",

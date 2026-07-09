@@ -11,7 +11,7 @@ import { createConfigAdapter, createConfigAdapterAsync, DaemonConfigAdapter } fr
 import { configurable } from "../../src/config/registry.ts";
 import { ensureConfigDb, migrateConfigDb, seedConfigDb } from "../../src/config/db.ts";
 import { ConfigValueType, SwapClass } from "../../src/types/enums.ts";
-import { ConfigKeyNotFoundError } from "../../src/config/errors.ts";
+import { ConfigKeyLockedError, ConfigKeyNotFoundError } from "../../src/config/errors.ts";
 
 // Register test keys needed for this test file
 configurable({
@@ -306,5 +306,59 @@ Deno.test("[configuring] createConfigAdapterAsync returns DaemonConfigAdapter fo
     db.close();
   } finally {
     Deno.removeSync(dir, { recursive: true });
+  }
+});
+
+// ── Phase 139 Step 4 (GAP-1): the daemon set() override runs assertWritable ──
+
+Deno.test("[configuring] DaemonConfigAdapter.set throws ConfigKeyLockedError for a locked key", async () => {
+  const { adapter, dir, db } = setupDaemonAdapter();
+  try {
+    adapter.lock("daemon_test.timeout_ms", "cli");
+    await assertRejects(
+      () => adapter.set("daemon_test.timeout_ms", 60000),
+      ConfigKeyLockedError,
+    );
+    // After unlock the daemon write succeeds.
+    adapter.unlock("daemon_test.timeout_ms");
+    await adapter.set("daemon_test.timeout_ms", 60000);
+    assertEquals(adapter.get("daemon_test.timeout_ms"), 60000);
+  } finally {
+    cleanUp(dir, db);
+  }
+});
+
+Deno.test("[configuring] DaemonConfigAdapter.set refuses a locked key via a profile-scoped path (GAP-1)", async () => {
+  const { adapter, dir, db } = setupDaemonAdapter();
+  try {
+    adapter.lock("daemon_test.timeout_ms", "cli");
+    await assertRejects(
+      () => adapter.set("profile.dev.daemon_test.timeout_ms", 60000),
+      ConfigKeyLockedError,
+    );
+  } finally {
+    cleanUp(dir, db);
+  }
+});
+
+// ── Phase 139 Step 5 (GAP-6): the daemon checksum reads the DB, not the store ─
+
+Deno.test("[configuring] DaemonConfigAdapter.verifyIntegrity detects a raw db.prepare write", async () => {
+  const { adapter, dir, db } = setupDaemonAdapter();
+  try {
+    // Seed the checksum from the current DB state.
+    const seeded = await adapter.verifyIntegrity();
+    assertEquals(seeded.ok, true);
+    // Mutate the DB directly (not the store, not the adapter). Because
+    // computeIntegrityChecksum() reads getAllEffectiveValues(this.db) — never
+    // the store — this out-of-band edit must be detected as a mismatch. If the
+    // checksum hashed the store instead, this would silently pass.
+    db.prepare(
+      "INSERT INTO config_overrides (key, value, source, swap_class) VALUES (?, ?, ?, ?)",
+    ).run("daemon_test.timeout_ms", "77777", "manual", "hot");
+    const result = await adapter.verifyIntegrity();
+    assertEquals(result.ok, false);
+  } finally {
+    cleanUp(dir, db);
   }
 });
