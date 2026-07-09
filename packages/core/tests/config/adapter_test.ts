@@ -563,3 +563,55 @@ Deno.test("[configuring] ConfigRateLimitedError has correct surface and limit fi
   assertEquals(err.message.includes("cli"), true);
   assertEquals(err.message.includes("max 10 writes per 5s"), true);
 });
+
+// ── Phase 139 Step 3: config rollback (append restoring a historical value) ──
+// Reuses the existing setupAdapterWithLogger() helper (spy logger).
+
+Deno.test("[configuring] adapter.rollback appends a row restoring the historical value with source=rollback", async () => {
+  const { adapter, dir } = setupAdapterWithLogger();
+  try {
+    await adapter.set("adapter_test.timeout_ms", 40000);
+    await adapter.set("adapter_test.timeout_ms", 41000);
+    // History is DESC by id: [41000, 40000, seed-null]. Roll back to the 40000 row.
+    const history = adapter.getHistory("adapter_test.timeout_ms");
+    const target = history.find((r) => r.value === "40000")!;
+    const restored = await adapter.rollback("adapter_test.timeout_ms", target.id);
+    assertEquals(restored, "40000", "rollback returns the restored value");
+    // Effective value is now the restored one (a NEW appended row).
+    assertEquals(adapter.get("adapter_test.timeout_ms"), 40000);
+    // The newest history row is source=rollback.
+    const newest = adapter.getHistory("adapter_test.timeout_ms")[0];
+    assertEquals(newest.source, "rollback");
+    assertEquals(newest.value, "40000");
+  } finally {
+    cleanUp(dir);
+  }
+});
+
+Deno.test("[configuring] adapter.rollback throws ConfigKeyNotFoundError for an unknown (key,id)", async () => {
+  const { adapter, dir } = setupAdapterWithLogger();
+  try {
+    await adapter.set("adapter_test.timeout_ms", 40000);
+    await assertRejects(
+      () => adapter.rollback("adapter_test.timeout_ms", 999999),
+      ConfigKeyNotFoundError,
+    );
+  } finally {
+    cleanUp(dir);
+  }
+});
+
+Deno.test("[configuring] adapter.rollback emits ConfigRolledBack with to_id + restored_value", async () => {
+  const { adapter, events, dir } = setupAdapterWithLogger();
+  try {
+    await adapter.set("adapter_test.timeout_ms", 40000);
+    const target = adapter.getHistory("adapter_test.timeout_ms").find((r) => r.value === "40000")!;
+    await adapter.rollback("adapter_test.timeout_ms", target.id);
+    const ev = events.find((e) => e.action === DomainEventType.ConfigRolledBack);
+    assertNotEquals(ev, undefined, "ConfigRolledBack must be emitted");
+    assertEquals(ev!.payload?.to_id, target.id);
+    assertEquals(ev!.payload?.restored_value, "40000");
+  } finally {
+    cleanUp(dir);
+  }
+});

@@ -14,9 +14,11 @@ import type { ConfigValue, IBlocklistEntry, IConfigOverrideEntry } from "./db.ts
 import {
   addBlocklistPattern,
   compactOverrides,
+  CONFIG_SOURCE_ROLLBACK,
   countRecentCliWrites,
   getAllEffectiveValues,
   getEffectiveValue,
+  getOverrideById,
   getOverrideHistory,
   globMatches,
   insertOverride,
@@ -156,6 +158,13 @@ export interface IConfigAdapter {
 
   /** Full override history for a key (append-only log, DESC by id). */
   getHistory(key: string): IConfigOverrideEntry[];
+
+  /**
+   * Append a row reverting `key` to the value at history row `id`
+   * (source="rollback"), emitting ConfigRolledBack. Throws ConfigKeyNotFoundError
+   * if the (key, id) pair is absent. Returns the restored value (Phase 139 Step 3).
+   */
+  rollback(key: string, id: number): Promise<ConfigValue>;
 
   /**
    * True if `key` is in the MCP deny-permanently blocklist for `agentId`
@@ -552,6 +561,22 @@ export class DirectConfigAdapter implements IConfigAdapter {
 
   getHistory(key: string): IConfigOverrideEntry[] {
     return getOverrideHistory(this.db, key);
+  }
+
+  async rollback(key: string, id: number): Promise<ConfigValue> {
+    const row = getOverrideById(this.db, key, id);
+    if (row === undefined) {
+      throw new ConfigKeyNotFoundError(`${key}#${id}`);
+    }
+    // Append a new row restoring the historical value (append-only, not a
+    // mutation). Preserve the historical swap_class so a restart-key rollback
+    // stays a restart key.
+    insertOverride(this.db, key, row.value, CONFIG_SOURCE_ROLLBACK, row.swap_class, {
+      logger: this.daemonLogger,
+    });
+    const payload: IConfigRollbackPayload = { key, to_id: id, restored_value: row.value };
+    await this.daemonLogger?.info(DomainEventType.ConfigRolledBack, key, { ...payload });
+    return row.value;
   }
 
   isPathBlocked(key: string, agentId?: Opt<string, Reason.QueryFilter>): boolean {

@@ -212,6 +212,14 @@ export class ConfigCommands extends BaseCommand {
   async history(path: string): Promise<IConfigOverrideEntry[]> {
     return (await this.ensureAdapter()).getHistory(path);
   }
+
+  /**
+   * Phase 139 Step 3: revert `path` to the value at history row `id` by appending
+   * a rollback row. Returns the restored value.
+   */
+  async rollback(path: string, id: number): Promise<ConfigValue> {
+    return (await this.ensureAdapter()).rollback(path, id);
+  }
 }
 
 function formatTree(obj: NestedConfigTree, depth: number): string {

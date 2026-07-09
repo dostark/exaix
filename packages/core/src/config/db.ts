@@ -213,6 +213,28 @@ export function getMaxOverrideId(db: Database): number {
   return row?.max_id ?? 0;
 }
 
+/**
+ * Point lookup of a single override row by (key, id) — the rollback target
+ * (Phase 139 Step 3). Returns undefined if no row with that id belongs to `key`.
+ */
+export function getOverrideById(
+  db: Database,
+  key: string,
+  id: number,
+): IConfigOverrideEntry | undefined {
+  const row = db.prepare(
+    "SELECT id, value, source, swap_class, created_at FROM config_overrides WHERE key = ? AND id = ?",
+  ).get<{
+    id: number;
+    value: string | null;
+    source: string;
+    swap_class: string;
+    created_at: string;
+  }>(key, id);
+  if (!row) return undefined;
+  return { ...row, value: row.value ?? null };
+}
+
 export function getOverrideHistory(
   db: Database,
   key: string,

@@ -255,3 +255,16 @@ Deno.test("[configuring-cli] config_history_cli lists both values newest-first",
     assertEquals(values, ["anthropic", "openai"], "history returns both writes newest-first");
   });
 });
+
+// ── Phase 139 Step 3: config rollback CLI ───────────────────────────────────
+
+Deno.test("[configuring-cli] config_rollback_cli restores the original value", async () => {
+  await withProfileCommands(async (commands) => {
+    await commands.set("ai.timeout_ms", "40000");
+    await commands.set("ai.timeout_ms", "41000");
+    const original = (await commands.history("ai.timeout_ms")).find((r) => r.value === "40000")!;
+    const restored = await commands.rollback("ai.timeout_ms", original.id);
+    assertEquals(restored, "40000");
+    assertEquals(await commands.get("ai.timeout_ms"), 40000, "get() returns the rolled-back value");
+  });
+});
