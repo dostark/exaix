@@ -172,6 +172,19 @@ export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
       continue;
     }
 
+    // No unimplemented escape hatch: a `- [ ]` (unchecked) criterion/test may not remain in
+    // a step the commit claims. Every item must be ✅ (done) or ⚠️ deferred (ledger-tracked).
+    const unchecked = line.match(/^\s*-\s*\[\s\]\s*(.*)$/);
+    if (unchecked) {
+      const kind = section === "tests" ? "planned test" : "criterion";
+      errors.push(
+        `Step ${step} ${kind} "${truncateForError(unchecked[1])}" is still unchecked "- [ ]" — ` +
+          `every item must be ✅ (done, with → path) or ⚠️ deferred (with a Reachability Ledger row); ` +
+          `unimplemented requirements cannot be left open in a committed step.`,
+      );
+      continue;
+    }
+
     if (section === "criteria") {
       // Done criteria are marked with a leading ✅ (the completion mark, same as tests).
       const done = line.match(/^\s*-\s*✅\s*(.*)$/);

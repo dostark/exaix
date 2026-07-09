@@ -276,13 +276,11 @@ const PLAN_DOC = `## Implementation Plan
 
 - ✅ \`config model writes candidates\` → apps/exactl/tests/model_commands_test.ts
 - ✅ Integration: \`loop honoured\` → tests/integration/model_curation_cli_loop_test.ts
-- [ ] \`not done yet\` → apps/exactl/tests/future_test.ts
 
 **Success Criteria**:
 
 - ✅ Full curation loop → apps/exactl/src/commands/model_commands.ts
 - ✅ Registry wired → apps/exactl/src/init.ts, apps/exactl/src/exactl.ts
-- [ ] deferred criterion → apps/exactl/src/later.ts
 
 \`\`\`yaml
 # step-manifest
@@ -334,7 +332,7 @@ describe("parsePlanStep", () => {
   it("collects checked-criterion and done-test paths for the named step only", () => {
     const parsed = parsePlanStep(PLAN_DOC, 6);
     assertEquals(parsed.errors, []);
-    // Only step 6 ✅ criteria + ✅ tests, deduped, ignoring [ ] and other steps.
+    // Only step 6 ✅ criteria + ✅ tests, deduped, not bleeding into other steps.
     assertEquals(parsed.testPaths.sort(), [
       "apps/exactl/tests/model_commands_test.ts",
       "tests/integration/model_curation_cli_loop_test.ts",
@@ -368,6 +366,30 @@ describe("parsePlanStep", () => {
     const parsed = parsePlanStep(PLAN_DOC, 99);
     assertEquals(parsed.errors.some((e) => e.includes("Step 99")), true);
   });
+
+  it("errors on any remaining unchecked '- [ ]' criterion (no unimplemented escape hatch)", () => {
+    const doc = `### Step 6: x
+
+**Success Criteria**:
+
+- ✅ done → packages/x/src/a.ts
+- [ ] still unimplemented criterion
+`;
+    const parsed = parsePlanStep(doc, 6);
+    assertEquals(parsed.errors.some((e) => e.includes("[ ]") || e.toLowerCase().includes("unchecked")), true);
+  });
+
+  it("errors on any remaining unchecked '- [ ]' planned test", () => {
+    const doc = `### Step 6: x
+
+**Planned Tests**:
+
+- ✅ \`done test\` → packages/x/tests/a_test.ts
+- [ ] \`not written yet\`
+`;
+    const parsed = parsePlanStep(doc, 6);
+    assertEquals(parsed.errors.some((e) => e.includes("[ ]") || e.toLowerCase().includes("unchecked")), true);
+  });
 });
 
 // A plan whose step 6 has a ✅ item AND a ⚠️ deferred item, plus a Reachability Ledger.
@@ -380,7 +402,6 @@ const PLAN_DOC_DEFERRED = `## Implementation Plan
 
 - ✅ Done criterion → apps/exactl/src/commands/model_commands.ts
 - ⚠️ deferred Team live registry wiring → IModelRegistryProvider
-- [ ] untouched criterion → apps/exactl/src/later.ts
 
 ## Reachability Ledger (pending production consumers)
 
