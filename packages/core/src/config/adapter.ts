@@ -484,12 +484,12 @@ export class DirectConfigAdapter implements IConfigAdapter {
     if (!getRegisteredDefaults().has(key)) {
       throw new ConfigKeyNotFoundError(key);
     }
-    insertOverride(this.db, key, null, "cli", "hot", { logger: this.daemonLogger });
+    insertOverride(this.db, key, null, "cli", SwapClass.HOT, { logger: this.daemonLogger });
     this.persistChecksum();
     await this.daemonLogger?.info(DomainEventType.ConfigUpdated, key, {
       value: null,
       source: "cli",
-      swap_class: "hot",
+      swap_class: SwapClass.HOT,
     });
   }
 
@@ -502,7 +502,7 @@ export class DirectConfigAdapter implements IConfigAdapter {
       if (rawValue !== null) {
         const registered = getRegisteredDefaults().get(key);
         const coerced = coerceDbValue(rawValue, registered?.opts);
-        result.push({ key, value: coerced, swap_class: "hot" });
+        result.push({ key, value: coerced, swap_class: SwapClass.HOT });
       }
     }
     return result;
@@ -654,7 +654,7 @@ export class DirectConfigAdapter implements IConfigAdapter {
 
   unlock(key: string): void {
     unlockKey(this.db, key);
-    this.daemonLogger?.info(DomainEventType.ConfigKeyUnlocked, key, { key, locked_by: "unlock" });
+    this.daemonLogger?.info(DomainEventType.ConfigKeyUnlocked, key, { key, locked_by: "cli" });
   }
 
   isLocked(key: string): boolean {
@@ -693,7 +693,13 @@ export class DirectConfigAdapter implements IConfigAdapter {
    * end of every adapter write path so legitimate writes never trip a mismatch.
    */
   protected persistChecksum(): void {
-    insertOverride(this.db, CONFIG_CHECKSUM_KEY, this.computeIntegrityChecksum(), CONFIG_SOURCE_INTEGRITY, "hot");
+    insertOverride(
+      this.db,
+      CONFIG_CHECKSUM_KEY,
+      this.computeIntegrityChecksum(),
+      CONFIG_SOURCE_INTEGRITY,
+      SwapClass.HOT,
+    );
   }
 
   async verifyIntegrity(): Promise<IIntegrityResult> {
@@ -861,7 +867,7 @@ export class DaemonConfigAdapter extends DirectConfigAdapter {
     if (!getRegisteredDefaults().has(key)) {
       throw new ConfigKeyNotFoundError(key);
     }
-    insertOverride(this.db, key, null, ConfigAdapterMode.DAEMON, "hot", { logger: this.daemonLogger });
+    insertOverride(this.db, key, null, ConfigAdapterMode.DAEMON, SwapClass.HOT, { logger: this.daemonLogger });
     this.persistChecksum();
     this.configStore.delete(key);
     await this.daemonLogger?.info(DomainEventType.ConfigUpdated, key, {

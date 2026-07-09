@@ -362,7 +362,7 @@ export function lockKey(
 ): void {
   db.prepare(
     "INSERT INTO config_locked_keys (key, locked_by, reason) VALUES (?, ?, ?) " +
-      "ON CONFLICT(key) DO UPDATE SET locked_by = excluded.locked_by, reason = excluded.reason",
+      "ON CONFLICT(key) DO UPDATE SET locked_by = excluded.locked_by, reason = excluded.reason, locked_at = datetime('now')",
   ).run(key, lockedBy, reason ?? null);
 }
 
