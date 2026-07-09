@@ -386,6 +386,7 @@ and the `impact:` component before `:` must appear verbatim in `what:`.
 ---
 exaix:
   skill_id: security
+  related_skills: [exaix-development, test-development]
   triggers:
     keywords: [security, audit, OWASP, vulnerability, exploit]
     task_types: [feature, bugfix, security]

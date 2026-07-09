@@ -46,7 +46,7 @@ Related skills:
 - #post-gap-analysis — Produces the remediation steps this skill executes
 - #fix-bug — Fix a specific finding discovered during remediation
 - #commit — Structured commit after remediation
-- #test-development — Edge case coverage requirements, test helpers, placement rules
+- [test-development](../test-development/SKILL.md) — Edge case coverage requirements, test helpers, placement rules
 
 Workflow chain (typical):
   #plan → #pre-gap-analysis → #remediate-plan-gaps → #next-steps → #post-gap-analysis → **#remediate-code-gaps** → #commit
@@ -54,7 +54,6 @@ Workflow chain (typical):
 
 ## See also
 
-- [test-development](../test-development/SKILL.md) — test helpers, placement rules
 - [exaix-development](../exaix-development/SKILL.md) — source patterns, DI, coding conventions
 
 ---
@@ -97,6 +96,7 @@ Use `#commit` for a structured commit. Type: `fix`. Include the gap number in th
 ---
 exaix:
   skill_id: remediate-code-gaps
+  related_skills: [post-gap-analysis, test-development, exaix-development]
   triggers:
     keywords: [remediate-code, code-gaps, close-code-gaps, fix-code]
     task_types: [bugfix, refactor]

@@ -124,6 +124,7 @@ Documents that share version numbers MUST be updated together. Add a checklist f
 ---
 exaix:
   skill_id: doc
+  related_skills: [exaix-development, submodule-workflow]
   triggers:
     keywords: [doc, documentation, docs, readme, guide]
     task_types: [docs]

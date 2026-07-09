@@ -171,6 +171,7 @@ deno run --allow-run --allow-read --allow-write scripts/measure_duplication.ts -
 ---
 exaix:
   skill_id: refactor-check-magic
+  related_skills: [exaix-development, test-development]
   triggers:
     keywords: [refactor-check-magic, magic-numbers, magic-values, constants, literal]
     task_types: [refactor]

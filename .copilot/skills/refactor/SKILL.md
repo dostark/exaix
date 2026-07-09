@@ -116,6 +116,7 @@ Related
 ---
 exaix:
   skill_id: refactor
+  related_skills: [test-development, exaix-development]
   triggers:
     keywords: [refactor, restructure, rename, extract, interface, di]
     task_types: [refactor]

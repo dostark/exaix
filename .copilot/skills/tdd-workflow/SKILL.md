@@ -147,6 +147,7 @@ Workflow chain (typical):
 ---
 exaix:
   skill_id: tdd-methodology
+  related_skills: [test-development, exaix-development]
   triggers:
     keywords: [tdd, test, red-green-refactor]
     task_types: [feature, bugfix, refactor]

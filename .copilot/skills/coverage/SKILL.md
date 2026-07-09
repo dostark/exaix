@@ -175,6 +175,7 @@ Confirm no new UNGROUNDED files and no lint errors.
 ---
 exaix:
   skill_id: coverage
+  related_skills: [test-development, tdd-workflow]
   triggers:
     keywords: [coverage, test-coverage, uncovered, untested, threshold]
     task_types: [testing]

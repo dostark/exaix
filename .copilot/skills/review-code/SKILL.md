@@ -354,6 +354,7 @@ Severity scale:
 ---
 exaix:
   skill_id: review-code
+  related_skills: [exaix-development, security]
   triggers:
     keywords: [review, code-review, pr-review, cr]
     task_types: [feature, bugfix, refactor]

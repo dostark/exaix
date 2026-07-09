@@ -150,7 +150,7 @@ Related skills:
 - #next-steps       — Execute the plan step-by-step after analysis is clean (follows this skill)
 - #post-gap-analysis — Deep post-implementation review (code already written)
 - #commit           — Create a structured commit after gap fixes
-- #test-development — Edge case coverage requirements, test helpers, placement rules
+- [test-development](../test-development/SKILL.md) — Edge case coverage requirements, test helpers, placement rules
 
 Workflow chain (typical):
   #plan → **#pre-gap-analysis** → #next-steps → #post-gap-analysis → #commit
@@ -659,6 +659,7 @@ are written. Format with grep outcome annotations:
 ---
 exaix:
   skill_id: pre-gap-analysis
+  related_skills: [test-development]
   triggers:
     keywords: [pre-gap, plan-review, gap-analysis, gap]
     task_types: [planning]

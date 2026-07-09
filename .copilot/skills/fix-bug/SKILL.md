@@ -170,6 +170,7 @@ in the `tests:` field.
 ---
 exaix:
   skill_id: fix-bug
+  related_skills: [test-development, exaix-development]
   triggers:
     keywords: [fix, bug, bugfix, failing-test, defect, regression]
     task_types: [bugfix]

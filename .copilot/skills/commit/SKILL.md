@@ -151,6 +151,7 @@ Expected Response Pattern:
 ---
 exaix:
   skill_id: commit
+  related_skills: [exaix-development]
   triggers:
     keywords: [commit, git, stage, message]
     task_types: [feature, bugfix, refactor, docs, chore]

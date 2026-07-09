@@ -304,6 +304,7 @@ Workflow chain (typical):
 ---
 exaix:
   skill_id: clean-codebase
+  related_skills: [exaix-development, test-development]
   triggers:
     keywords: [clean-codebase, ci-green, cleanup, fix-all, sweep]
     task_types: [chore, refactor]
