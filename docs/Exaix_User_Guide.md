@@ -1942,6 +1942,8 @@ $ exactl daemon logs --follow
 ...
 ```
 
+#### **Config Commands** - View and manage configuration (get/set/diff/history/rollback/lock/unlock/edit/compact)
+
 #### **Wait Commands** - Resolve durable wait states
 
 When a flow execution reaches a quality gate that fails below the configured
@@ -1983,6 +1985,108 @@ and can be inspected manually if needed.
 
 ---
 
+#### **Config Commands** — Manage Configuration Overrides (Phase 136–139)
+
+As of Phase 137, Exaix manages runtime configuration through the **Config DB** (`.exa/config.db`)
+instead of TOML files. The `exactl config` command group provides full CRUD, audit, and security
+control over config keys registered via `configurable()`. **180+ keys** are registered across all
+packages; run `exactl config list` to see them all.
+
+```bash
+# Get the effective value of a key (Config DB → registry → schema default)
+exactl config get ai.provider
+
+# Set an override with validation and rate limiting
+exactl config set ai.timeout_ms 45000
+
+# Remove an override (falls back to registry default)
+exactl config unset ai.provider
+
+# Compare effective values against registry defaults
+exactl config diff --sources
+
+# Validate a key against its registered schema bounds without writing
+exactl config validate ai.timeout_ms 999999
+```
+
+**Audit & rollback:**
+
+```bash
+# Show the full append-only history for a key (newest-first)
+exactl config history ai.provider
+
+# Roll back to a previous value by history id
+exactl config rollback ai.provider 3
+```
+
+**Key locking (security control, Phase 139):**
+
+Prevents any further writes to a compromised key through every surface (CLI, MCP, daemon).
+
+```bash
+# Lock a key — no surface can modify it until unlocked
+exactl config lock ai.provider --reason "compromised"
+
+# Unlock
+exactl config unlock ai.provider
+
+# List all locked keys
+exactl config lock-list
+```
+
+**Integrity checksum (Phase 139):**
+
+The daemon computes a SHA-256 checksum of the effective Config DB at boot and periodically
+(default every 60s). A tampered DB (e.g. `sqlite3 .exa/config.db` outside Exaix) journals
+`config.integrity_mismatch`.
+
+```bash
+# Verify manually
+exactl config validate --integrity
+
+# Check the journal for integrity events
+exactl journal --action config.integrity_verified
+```
+
+**Bulk editing (Phase 139):**
+
+Open the current overrides in `$EDITOR`, edit key=value lines, and apply changes through the
+same security funnel (lock check + validation + debounce all apply).
+
+```bash
+exactl config edit
+```
+
+**Blocklist management (Phase 138):**
+
+Persistently deny specific key patterns to one or all MCP agents.
+
+```bash
+exactl config block add "ai.api_key" --reason "never expose"
+exactl config block list
+exactl config block remove "ai.api_key"
+```
+
+**Profiles (Phase 137):**
+
+Group overrides into named profiles and switch between them.
+
+```bash
+exactl config set --profile workstation ai.timeout_ms 60000
+exactl config use-profile workstation
+exactl config list-profiles
+exactl config get --profile workstation ai.timeout_ms
+```
+
+**Hygiene:**
+
+```bash
+# Compact the append-only log (collapses to one row per key)
+exactl config compact
+```
+
+---
+
 ### 4.3 Quick Reference
 
 **Most Common Operations:**
@@ -1998,6 +2102,14 @@ exactl plan list                           # See pending plans
 exactl plan show <id>                      # Review plan details
 exactl plan approve <id>                   # Approve for execution
 exactl plan reject <id> --reason "..."     # Reject with feedback
+
+# Configuration management
+exactl config get ai.provider           # Show effective config value
+exactl config set ai.timeout_ms 45000   # Set override (validated)
+exactl config history ai.provider       # View audit trail
+exactl config rollback ai.provider 3    # Revert to historical value
+exactl config lock ai.provider          # Protect a key from writes
+exactl config edit                      # Bulk edit in $EDITOR
 
 # Code review workflow
 exactl review list                      # See agent-created branches
