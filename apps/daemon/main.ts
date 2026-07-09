@@ -89,6 +89,7 @@ import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adap
 import type { SessionGate, SessionTool } from "@exaix/schemas/session_delegate.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
 import {
+  CONFIG_INTEGRITY_POLL_INTERVAL_MS,
   DEFAULT_CONFIG_DB_POLL_INTERVAL_MS,
   DEFAULT_REQUESTS_PATH,
   SESSION_BIN_CLAUDE_CODE,
@@ -285,6 +286,11 @@ if (import.meta.main) {
       adapterMode: configAdapter.mode,
     });
 
+    // Phase 139 Step 7: verify config integrity at boot — journal the result so
+    // an operator can see whether the Config DB was tampered with while the daemon
+    // was down. This runs after the store is populated and the adapter is wired.
+    await configAdapter.verifyIntegrity();
+
     // Register configDb.close() on graceful shutdown (kept open for the
     // watcher's lifetime). The DB-watcher's own teardown (Step 4) will be
     // registered separately and must not double-close.
@@ -303,11 +309,26 @@ if (import.meta.main) {
       ? pollIntervalOverride
       : DEFAULT_CONFIG_DB_POLL_INTERVAL_MS;
     let lastMaxId = getMaxOverrideId(configDb);
+    // Phase 139 Step 7: gate periodic integrity verify so independent of the
+    // shorter DB-watcher poll interval. Env override allows integration tests
+    // to drive the check within a test-length boot.
+    const integrityPollIntervalOverride = Number(Deno.env.get("EXA_INTEGRITY_POLL_INTERVAL_MS"));
+    const integrityPollIntervalMs = Number.isFinite(integrityPollIntervalOverride) &&
+        integrityPollIntervalOverride > 0
+      ? integrityPollIntervalOverride
+      : CONFIG_INTEGRITY_POLL_INTERVAL_MS;
+    let lastIntegrityCheckAt = Date.now();
     const pollHandle = setInterval(async () => {
       const currentMaxId = getMaxOverrideId(configDb);
       if (currentMaxId > lastMaxId) {
         await createDbWatcherHandler(configStore, configDb, logger)();
         lastMaxId = currentMaxId;
+      }
+      // Periodic integrity verify — gated by its own interval so the poll
+      // tick rate and the verify rate are decoupled.
+      if (Date.now() - lastIntegrityCheckAt >= integrityPollIntervalMs) {
+        await configAdapter.verifyIntegrity();
+        lastIntegrityCheckAt = Date.now();
       }
     }, configDbPollIntervalMs);
 
