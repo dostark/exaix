@@ -5,7 +5,8 @@
  * and component lifecycle management. Handles configuration loading, database connection,
  * and signal handling for graceful shutdown.
  * @architectural-layer Application
- * @related-files ["packages/execution/src/execution_loop.ts", "../../apps/daemon/src/watcher.ts", "../../apps/exactl/src/commands/daemon_commands.ts"]
+ * @related-files ["packages/execution/src/execution_loop.ts", "../../apps/daemon/src/watcher.ts", "../../apps/exactl/src/commands/daemon_commands.ts", "packages/ai/src/model_resolver.ts"]
+ * @phase-134 Step 2 production call-site: injects the edition-selected IModelRegistry (DefaultModelRegistry floor in Solo) into ModelResolver.
  */
 import {
   DAEMON_IDENTITY_ID,

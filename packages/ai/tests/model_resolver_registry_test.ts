@@ -9,7 +9,7 @@ import { assertEquals } from "@std/assert";
 import { PricingTier, ProviderCostTier } from "@exaix/core";
 import type { ICapabilityProfile, IModelEntry, IModelRegistry } from "@exaix/core/types";
 import { HealthStatus } from "@exaix/core/types";
-import { initTestDbService } from "@exaix/testing";
+import { initTestDbService, withEnv } from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts";
 import { ProviderRegistry } from "../src/provider_registry.ts";
 import { MockProviderFactory } from "../src/factories/mock_factory.ts";
@@ -189,6 +189,114 @@ Deno.test("[step134.2] empty registry model set falls through to scoring path", 
     assertEquals(result.provider, "fallback-provider");
     assertEquals(typeof result.model, "string");
     assertEquals(result.model.length > 0, true);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[step134.2] EXA_MODEL_PRESET_OVERRIDE still wins over the registry path (G2 step 0)", async () => {
+  const { cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+    registerProvider("other-provider");
+    const registry = stubModelRegistry([
+      {
+        provider: "registry-provider",
+        model: "registry-model",
+        capabilities: { minContextWindow: 32000 },
+        contextWindow: 32000,
+        costPer1kTokens: 0.001,
+      },
+    ]);
+    const resolver = makeResolver(registry);
+    await withEnv({ EXA_MODEL_PRESET_OVERRIDE: "test" }, async () => {
+      const result = await resolver.resolve({ model_size: "M" });
+      // The override map wins over the registry — never resolves to the registry model.
+      assertEquals(result.provider !== "registry-provider", true);
+      assertEquals(result.model !== "registry-model", true);
+    });
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[step134.2] registry getModelsByCapability throwing falls through to Phase 132 scoring (resilience)", async () => {
+  const { cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+    registerProvider("resilient-provider");
+
+    const throwing = stubModelRegistry();
+    throwing.getModelsByCapability = () => Promise.reject(new Error("registry unavailable"));
+    const resolver = makeResolver(throwing);
+
+    // A throwing registry must NOT crash resolution — it degrades to Phase 132 scoring.
+    const result = await resolver.resolve({ model_size: "M" });
+    assertEquals(result.provider, "resilient-provider");
+    assertEquals(result.model.length > 0, true);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[step134.2] same intent resolved twice returns the same provider:model (re-resolution stability)", async () => {
+  const { cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+    registerProvider("stable-provider");
+    const registry = stubModelRegistry([
+      {
+        provider: "stable-registry",
+        model: "stable-model",
+        capabilities: { minContextWindow: 32000 },
+        contextWindow: 32000,
+        costPer1kTokens: 0.001,
+      },
+    ]);
+    const resolver = makeResolver(registry);
+    const a = await resolver.resolve({ model_size: "M" });
+    const b = await resolver.resolve({ model_size: "M" });
+    assertEquals(a.provider, b.provider);
+    assertEquals(a.model, b.model);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[step134.2] cheapest prefers a known-priced registry model over an unknown-priced one (F1)", async () => {
+  const { cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+    registerProvider("f1-provider");
+    // First entry is unknown-priced; second is genuinely $0-known. F1: the unknown-priced
+    // model must not win `cheapest` — a known price is required to rank cheapest.
+    const registry = stubModelRegistry([
+      {
+        provider: "unknown-priced",
+        model: "unknown-model",
+        capabilities: { minContextWindow: 32000 },
+        contextWindow: 32000,
+        costPer1kTokens: 0,
+      },
+      {
+        provider: "known-cheap",
+        model: "known-model",
+        capabilities: { minContextWindow: 32000 },
+        contextWindow: 32000,
+        costPer1kTokens: 0,
+      },
+    ]);
+    registry.getModelPricing = (provider: string, model: string) =>
+      Promise.resolve(
+        provider === "known-cheap"
+          ? { provider, model, inputPerMtok: 0, provenance: "static" as const }
+          : { provider, model, provenance: "unknown" as const },
+      );
+    const resolver = makeResolver(registry);
+    const result = await resolver.resolve({ model_size: "M", characteristics: ["cheapest"] });
+    // The unknown-priced first entry is excluded from cheapest → the known-priced one wins.
+    assertEquals(result.provider, "known-cheap");
+    assertEquals(result.model, "known-model");
   } finally {
     await cleanup();
   }

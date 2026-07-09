@@ -29,7 +29,7 @@ import type { IProviderHealthChecker, ISelectionCriteria } from "./provider_sele
 import type { IProviderMetadata } from "./provider_registry.ts";
 import { ProviderRegistry } from "./provider_registry.ts";
 import type { IProviderRoutingStrategy } from "./routing/provider_routing_strategy.ts";
-import type { ICapabilityProfile, IModelRegistry } from "@exaix/core/types";
+import type { ICapabilityProfile, IModelEntry, IModelRegistry } from "@exaix/core/types";
 import { DEFAULT_MOCK_MODEL, ProviderType } from "@exaix/core/types";
 
 const CHARACTERISTIC_WEIGHT = 1;
@@ -239,10 +239,32 @@ export class ModelResolver {
     if (!intent.model_size) return null;
 
     if (this.modelRegistry) {
-      const profile = this.profileFor(intent.model_size);
-      const models = await this.modelRegistry.getModelsByCapability(profile);
+      const registry = this.modelRegistry;
+      // Resilience: a throwing registry must not crash resolution — return null so the
+      // caller falls through to the Phase 132 scoring path (graceful degrade).
+      let models: IModelEntry[];
+      try {
+        models = await registry.getModelsByCapability(this.profileFor(intent.model_size));
+      } catch (_error) {
+        return null;
+      }
       if (models.length === 0) return null;
-      const first = models[0];
+
+      // F1: for a `cheapest` intent, exclude unknown-priced models from the ranking —
+      // only a genuinely known price may win cheapest. If every candidate is unknown-priced,
+      // keep the full list (fall back to floor order rather than resolving nothing).
+      let ordered = models;
+      if (intent.characteristics?.includes("cheapest")) {
+        const priced = await Promise.all(
+          models.map(async (m) => ({
+            entry: m,
+            provenance: (await registry.getModelPricing(m.provider, m.model)).provenance,
+          })),
+        );
+        const known = priced.filter((p) => p.provenance !== "unknown").map((p) => p.entry);
+        if (known.length > 0) ordered = known;
+      }
+      const first = ordered[0];
       const resolved: IResolvedModel = {
         provider: first.provider,
         model: first.model,
@@ -339,8 +361,14 @@ export class ModelResolver {
     if (!model) return null;
 
     if (this.modelRegistry && intent.model_size) {
-      const profile = this.profileFor(intent.model_size);
-      const entries = await this.modelRegistry.getModelsByCapability(profile);
+      // Resilience: a throwing registry must not crash resolution — keep the
+      // metadata-selected model and continue via the Phase 132 scoring path.
+      let entries: IModelEntry[] = [];
+      try {
+        entries = await this.modelRegistry.getModelsByCapability(this.profileFor(intent.model_size));
+      } catch (_error) {
+        entries = [];
+      }
       if (entries.length > 0) {
         const match = entries.find((e) => e.provider === providerName);
         if (match) {
