@@ -200,10 +200,10 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# 16b. Bare-Undefined-Union Gate (file-level ratchet: every T-pipe-undefined param in a STAGED .ts must use Opt)
+# 16b. Bare-Optional Gate (file-level ratchet: every bare-optional param (? or | undefined) in a STAGED .ts must use Opt)
 deno task check:optional-params:staged
 if [ $? -ne 0 ]; then
-  echo "❌ Error: A staged file has a T | undefined parameter (incl. pre-existing ones — file-level ratchet)."
+  echo "❌ Error: A staged file has a bare-optional parameter — a ? or a | undefined (incl. pre-existing ones — file-level ratchet)."
   echo "    Wrap each in Opt<T, Reason.*> (import from @exaix/core/types) so optionality carries a codified reason."
   exit 1
 fi

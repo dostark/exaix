@@ -5,8 +5,9 @@
  * @description Finds optional parameters whose optionality doesn't match actual usage:
  *   - UNUSED_OPTIONAL: param is marked ? but never passed by any caller (wiring gap / dead param)
  *   - REDUNDANT_OPTIONAL: param is marked ? but ALL callers pass it (should be required)
- *   - BARE_UNDEFINED_UNION: param typed `T | undefined` without the Opt<T, Reason> wrapper —
- *     optionality must be codified via Opt, never a bare `?` or a bare `| undefined` union
+ *   - BARE_OPTIONAL: param optional via a bare `?` token OR a bare `| undefined` union
+ *     (the two are equivalent) without the Opt<T, Reason> wrapper — optionality must be
+ *     codified via Opt, never a bare `?` or a bare `| undefined`
  *
  * Uses heuristic name-based matching (no full type resolution), so results are
  * advisory — rename-matches only within the source tree.
@@ -38,13 +39,13 @@ Options:
    --include-tests    Include test files in scan (default: false)
    --verbose          Show per-call-site breakdown
    --fail             Exit non-zero when violations found (default: advisory).
-                      NOTE: BARE_UNDEFINED_UNION is advisory in full-repo mode —
-                      the pre-existing bare-union params are grandfathered; only
-                      --staged enforces it (file-level ratchet on staged files).
-   --staged           Scan only staged .ts files and enforce ONLY the
-                      BARE_UNDEFINED_UNION rule (file-level: every bare union in a
-                      staged file must be Opt<T, Reason>, incl. pre-existing ones).
-                      Drives cleanup — touching a file obliges converting its unions.
+                      NOTE: BARE_OPTIONAL is advisory in full-repo mode — the
+                      pre-existing bare-optional params (? or | undefined) are
+                      grandfathered; only --staged enforces it (file-level ratchet).
+   --staged           Scan only staged .ts files and enforce ONLY the BARE_OPTIONAL
+                      rule (file-level: every bare ?/| undefined param in a staged
+                      file must be Opt<T, Reason>, incl. pre-existing ones).
+                      Drives cleanup — touching a file obliges converting its optionals.
    --fix              Remove ? from REDUNDANT_OPTIONAL params (makes them required)
    --help, -h         Show this help message
 `);
@@ -63,7 +64,7 @@ interface FuncParam {
   qTokenPos: number; // -1 if no ? token, else position in source file
   typeEndPos: number; // position after the last char of the type annotation
   intentional: boolean; // true if param type is wrapped with Opt<T>
-  bareUndefinedUnion: boolean; // true if type is a `T | undefined` union without Opt
+  bareOptional: boolean; // true if optional via bare `?` or bare `| undefined` (not Opt)
   typeText: string; // rendered type annotation (for the hint message)
 }
 
@@ -89,7 +90,7 @@ enum ViolationKind {
   REDUNDANT_OPTIONAL = "REDUNDANT_OPTIONAL",
   UNUSED_OPTIONAL = "UNUSED_OPTIONAL",
   MARKED_NOT_OPTIONAL = "MARKED_NOT_OPTIONAL",
-  BARE_UNDEFINED_UNION = "BARE_UNDEFINED_UNION",
+  BARE_OPTIONAL = "BARE_OPTIONAL",
 }
 
 interface Violation {
@@ -124,17 +125,38 @@ export function isOptType(param: ts.ParameterDeclaration): boolean {
 }
 
 /**
- * Check if a parameter's type is a bare union that includes the `undefined` keyword
- * (e.g. `string | undefined`, `string | null | undefined`) and is NOT the Opt<T, Reason>
- * wrapper. Such a shape declares optionality without a codified reason and must be
- * rewritten as `Opt<T, Reason.*>`. Opt-wrapped params (whose first type argument may itself
- * contain `undefined`) are not flagged.
+ * Check if a parameter declares optionality "bare" — i.e. WITHOUT the Opt<T, Reason>
+ * wrapper — in either of the two semantically-equivalent forms:
+ *   1. a `?` token:            `param?: T`
+ *   2. a `| undefined` union:  `param: T | undefined` (incl. `T | null | undefined`)
+ * Both mean "optional, no codified reason" and must be rewritten as `param?: Opt<T, Reason.*>`.
+ * Opt-wrapped params (even `param?: Opt<T, R>` or an Opt whose inner type contains `undefined`)
+ * are compliant and never flagged. A default-valued param (`param = x`) is a distinct,
+ * intentional form and is out of scope here.
  */
-export function hasBareUndefinedUnion(param: ts.ParameterDeclaration): boolean {
-  if (!param.type) return false;
+export function hasBareOptional(param: ts.ParameterDeclaration): boolean {
   if (isOptType(param)) return false;
-  if (!ts.isUnionTypeNode(param.type)) return false;
-  return param.type.types.some((t) => t.kind === ts.SyntaxKind.UndefinedKeyword);
+  if (param.questionToken) return true;
+  if (param.type && ts.isUnionTypeNode(param.type)) {
+    return param.type.types.some((t) => t.kind === ts.SyntaxKind.UndefinedKeyword);
+  }
+  return false;
+}
+
+/**
+ * Build the BARE_OPTIONAL hint for a param, showing the exact Opt<T, Reason> rewrite for
+ * whichever bare form it uses (`?` or `| undefined`). `typeText` is the rendered annotation
+ * ("" when a `?`-param has no explicit type, e.g. `param?`).
+ */
+function bareOptionalMessage(p: { name: string; typeText: string; hasQuestionToken: boolean }): string {
+  const inner = p.typeText.replace(/\s*\|\s*undefined\b/, "").trim();
+  const q = p.hasQuestionToken ? "?" : "";
+  const shown = p.typeText.length > 0 ? `\`${p.name}${q}: ${p.typeText}\`` : `\`${p.name}?\` (implicit type)`;
+  const innerHint = inner.length > 0 ? inner : "T";
+  return `'${p.name}' is optional without a codified reason (${shown}) — declare it with the Opt ` +
+    `wrapper: \`${p.name}?: Opt<${innerHint}, Reason.*>\` (import Opt + Reason from @exaix/core/types; ` +
+    `pick a Reason that fits, e.g. TraceAbsent / OptionalInput / OptionalContext). ` +
+    `A bare \`?\` and a bare \`| undefined\` are equivalent and both require Opt.`;
 }
 
 /** Check if a parameter is intentionally optional via type wrapper. */
@@ -176,7 +198,7 @@ function collectFunctions(
       // Constructors and anonymous function-expressions have no matchable call-name; give
       // them a unique synthetic name so the caller-dependent rules (REDUNDANT/UNUSED) see
       // zero callers and skip, while the caller-independent type-shape rules
-      // (BARE_UNDEFINED_UNION, MARKED_NOT_OPTIONAL) still run on their params.
+      // (BARE_OPTIONAL, MARKED_NOT_OPTIONAL) still run on their params.
       const declaredName = node.name && ts.isIdentifier(node.name) ? node.name.text : null;
       const line = sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1;
       const name = declaredName ?? `__anon@${sourceFile.fileName}:${line}`;
@@ -195,17 +217,17 @@ function collectFunctions(
           qTokenPos: p.questionToken ? p.questionToken.pos : -1,
           typeEndPos: p.type ? p.type.end : -1,
           intentional: isOpt(p),
-          bareUndefinedUnion: hasBareUndefinedUnion(p),
+          bareOptional: hasBareOptional(p),
           typeText: p.type ? p.type.getText(sourceFile) : "",
         });
       }
 
       const optionalCount = params.filter((p) => p.isOptional).length;
-      const bareUnionCount = params.filter((p) => p.bareUndefinedUnion).length;
+      const bareOptionalCount = params.filter((p) => p.bareOptional).length;
       // Skip only when the function has no optionality signal at all — neither a `?`/default
-      // optional nor a bare `T | undefined` union param that the BARE_UNDEFINED_UNION rule
-      // must flag (such params carry no `?`, so `optionalCount` alone would miss them).
-      if (optionalCount === 0 && bareUnionCount === 0) {
+      // optional nor a bare-optional param the BARE_OPTIONAL rule must flag (a bare
+      // `| undefined` union carries no `?`, so `optionalCount` alone would miss it).
+      if (optionalCount === 0 && bareOptionalCount === 0) {
         ts.forEachChild(node, visit);
         return;
       }
@@ -300,51 +322,59 @@ function matchCallsToFuncs(
   return matched;
 }
 
+/**
+ * Caller-INDEPENDENT type-shape rules, run once over EVERY collected declaration (not the
+ * call-matched representative). This matters because `matchCallsToFuncs` keeps only one decl
+ * per function name; iterating that deduped set would silently miss same-named methods across
+ * classes. These rules only inspect a param's own type shape, so they need no call sites.
+ *   BARE_OPTIONAL — optional via a bare `?` or a bare `| undefined` union, not Opt<T, Reason>.
+ *   MARKED_NOT_OPTIONAL — an Opt<T, Reason> wrapper on a param that is not actually optional.
+ */
+function collectTypeShapeViolations(funcs: Map<string, FuncDecl[]>): Violation[] {
+  const violations: Violation[] = [];
+  for (const decls of funcs.values()) {
+    for (const decl of decls) {
+      for (const p of decl.params) {
+        if (p.bareOptional) {
+          violations.push({
+            kind: ViolationKind.BARE_OPTIONAL,
+            message: bareOptionalMessage(p),
+            funcFile: decl.file,
+            funcLine: decl.line,
+            optionalParam: p.name,
+            callerCount: 0,
+            callersPassing: 0,
+            callersOmitting: 0,
+            qTokenPos: p.qTokenPos,
+            typeEndPos: p.typeEndPos,
+          });
+        }
+        if (p.intentional && !p.isOptional) {
+          violations.push({
+            kind: ViolationKind.MARKED_NOT_OPTIONAL,
+            message:
+              `'${p.name}' uses Opt<${p.name}, R> but is not optional — add ? or a default value to match the marker's intent`,
+            funcFile: decl.file,
+            funcLine: decl.line,
+            optionalParam: p.name,
+            callerCount: 0,
+            callersPassing: 0,
+            callersOmitting: 0,
+            qTokenPos: p.qTokenPos,
+            typeEndPos: p.typeEndPos,
+          });
+        }
+      }
+    }
+  }
+  return violations;
+}
+
+/** Caller-DEPENDENT rules (REDUNDANT_OPTIONAL, UNUSED_OPTIONAL) over the call-matched set. */
 function analyze(matched: MatchedFunc[]): Violation[] {
   const violations: Violation[] = [];
 
-  // Build a set of all public API exported names to reduce noise
-  const _publicApiNames = new Set<string>();
-
   for (const { decl, calls } of matched) {
-    // Type-shape rules (caller-independent): one pass per param.
-    // BARE_UNDEFINED_UNION — a `T | undefined` param not wrapped in Opt<T, Reason>.
-    // MARKED_NOT_OPTIONAL — an Opt<T, Reason> wrapper on a param that is not actually optional.
-    for (const p of decl.params) {
-      if (p.bareUndefinedUnion) {
-        const inner = p.typeText.replace(/\s*\|\s*undefined\b/, "").trim();
-        violations.push({
-          kind: ViolationKind.BARE_UNDEFINED_UNION,
-          message: `'${p.name}' is typed \`${p.typeText}\` — declare optionality with the Opt wrapper: ` +
-            `\`${p.name}?: Opt<${inner}, Reason.*>\` (import Opt + Reason from @exaix/core/types; ` +
-            `pick a Reason that fits, e.g. TraceAbsent / OptionalInput / OptionalContext).`,
-          funcFile: decl.file,
-          funcLine: decl.line,
-          optionalParam: p.name,
-          callerCount: 0,
-          callersPassing: 0,
-          callersOmitting: 0,
-          qTokenPos: p.qTokenPos,
-          typeEndPos: p.typeEndPos,
-        });
-      }
-      if (p.intentional && !p.isOptional) {
-        violations.push({
-          kind: ViolationKind.MARKED_NOT_OPTIONAL,
-          message:
-            `'${p.name}' uses Opt<${p.name}, R> but is not optional — add ? or a default value to match the marker's intent`,
-          funcFile: decl.file,
-          funcLine: decl.line,
-          optionalParam: p.name,
-          callerCount: 0,
-          callersPassing: 0,
-          callersOmitting: 0,
-          qTokenPos: p.qTokenPos,
-          typeEndPos: p.typeEndPos,
-        });
-      }
-    }
-
     if (decl.optionalCount === 0) continue;
 
     // Count how many callers pass each optional param position
@@ -411,13 +441,13 @@ function report(violations: Violation[]): void {
   const redundant = violations.filter((v) => v.kind === ViolationKind.REDUNDANT_OPTIONAL);
   const unused = violations.filter((v) => v.kind === ViolationKind.UNUSED_OPTIONAL);
   const markedNotOptional = violations.filter((v) => v.kind === ViolationKind.MARKED_NOT_OPTIONAL);
-  const bareUnion = violations.filter((v) => v.kind === ViolationKind.BARE_UNDEFINED_UNION);
+  const bareOptional = violations.filter((v) => v.kind === ViolationKind.BARE_OPTIONAL);
 
-  if (bareUnion.length > 0) {
+  if (bareOptional.length > 0) {
     console.error(
-      "🟣 BARE_UNDEFINED_UNION — param typed `T | undefined` without the Opt<T, Reason> wrapper:\n",
+      "🟣 BARE_OPTIONAL — param optional via bare `?` or `| undefined` (not Opt<T, Reason>):\n",
     );
-    for (const v of bareUnion) {
+    for (const v of bareOptional) {
       const shortPath = relative(REPO_ROOT, v.funcFile);
       console.error(`  ${shortPath}:${v.funcLine}`);
       console.error(`    ${v.message}`);
@@ -462,7 +492,7 @@ function report(violations: Violation[]): void {
   }
 }
 
-// ── Staged mode (BARE_UNDEFINED_UNION enforcement on new code) ──────────────────
+// ── Staged mode (BARE_OPTIONAL enforcement on new code) ─────────────────────────
 
 /** Repo-root-relative paths of staged (added/copied/modified) `.ts`/`.tsx` files. */
 async function stagedTsFiles(): Promise<string[]> {
@@ -483,51 +513,32 @@ async function stagedTsFiles(): Promise<string[]> {
 }
 
 /**
- * Enforce ONLY the BARE_UNDEFINED_UNION rule on the staged file set — a FILE-level ratchet.
- * Whenever a `.ts` file is staged (added or modified), every `T | undefined` param in it must
- * adopt Opt<T, Reason>, including ones that pre-date this change. This deliberately drives
- * cleanup of the grandfathered set: touching a file obliges you to convert its bare unions.
- * The full-repo run reports all bare unions as advisory (never fails), so untouched files are
- * not forced; only files you are already editing are held to the rule.
+ * Enforce ONLY the BARE_OPTIONAL rule on the staged file set — a FILE-level ratchet.
+ * Whenever a `.ts` file is staged (added or modified), every bare-optional param in it must
+ * adopt Opt<T, Reason> — where "bare-optional" is a `?` token OR a `| undefined` union (the two
+ * are semantically equivalent), including ones that pre-date this change. This deliberately
+ * drives cleanup of the grandfathered set: touching a file obliges converting its bare optionals.
+ * The full-repo run reports them all as advisory (never fails), so untouched files are not
+ * forced; only files you are already editing are held to the rule.
  */
 async function runStaged(): Promise<void> {
   const files = await stagedTsFiles();
-  const bareUnion: Violation[] = [];
+  const funcs = new Map<string, FuncDecl[]>();
   for (const filePath of files) {
     const source = await Deno.readTextFile(filePath);
     const sf = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true);
-    const funcs = new Map<string, FuncDecl[]>();
     collectFunctions(sf, funcs);
-    for (const decls of funcs.values()) {
-      for (const decl of decls) {
-        for (const p of decl.params) {
-          if (!p.bareUndefinedUnion) continue;
-          bareUnion.push({
-            kind: ViolationKind.BARE_UNDEFINED_UNION,
-            message: `'${p.name}' is typed \`${p.typeText}\` — declare optionality with the Opt wrapper: ` +
-              `\`${p.name}?: Opt<${p.typeText.replace(/\s*\|\s*undefined\b/, "").trim()}, Reason.*>\` ` +
-              `(import Opt + Reason from @exaix/core/types; pick a Reason that fits).`,
-            funcFile: decl.file,
-            funcLine: decl.line,
-            optionalParam: p.name,
-            callerCount: 0,
-            callersPassing: 0,
-            callersOmitting: 0,
-            qTokenPos: p.qTokenPos,
-            typeEndPos: p.typeEndPos,
-          });
-        }
-      }
-    }
   }
-  if (bareUnion.length === 0) {
-    console.log("✅ No bare `T | undefined` params in staged files.");
+  const bareOptional = collectTypeShapeViolations(funcs)
+    .filter((v) => v.kind === ViolationKind.BARE_OPTIONAL);
+  if (bareOptional.length === 0) {
+    console.log("✅ No bare-optional (`?` or `| undefined`) params in staged files.");
     Deno.exit(0);
   }
-  report(bareUnion);
+  report(bareOptional);
   console.error(
-    `${bareUnion.length} bare-undefined-union param(s) in staged file(s) — ` +
-      `staging a file obliges converting all of its bare unions. Wrap each in Opt<T, Reason.*> ` +
+    `${bareOptional.length} bare-optional param(s) in staged file(s) — ` +
+      `staging a file obliges converting all of its bare optionals. Wrap each in Opt<T, Reason.*> ` +
       `(import Opt + Reason from @exaix/core/types). Untouched files are exempt (advisory in the full-repo run).`,
   );
   Deno.exit(1);
@@ -576,9 +587,10 @@ async function main(): Promise<void> {
     collectCallSites(sourceFile, calls);
   }
 
-  // Third pass: match and analyze
+  // Third pass: match and analyze. Type-shape rules run over ALL decls (not the deduped
+  // call-matched set); caller-dependent rules run over the matched set.
   const matched = matchCallsToFuncs(funcs, calls);
-  const violations = analyze(matched);
+  const violations = [...collectTypeShapeViolations(funcs), ...analyze(matched)];
 
   if (verbose && violations.length > 0) {
     // Detailed per-function breakdown
@@ -628,17 +640,17 @@ async function main(): Promise<void> {
     }
   }
 
-  // BARE_UNDEFINED_UNION is advisory in the full-repo run: the pre-existing bare-union
-  // params are grandfathered. Only --staged enforces it (on newly-touched files), so the
-  // full-repo --fail gate counts only the caller-dependent rules.
-  const enforceable = violations.filter((v) => v.kind !== ViolationKind.BARE_UNDEFINED_UNION);
-  const bareUnionCount = violations.length - enforceable.length;
+  // BARE_OPTIONAL is advisory in the full-repo run: the pre-existing bare-optional params
+  // (bare `?` or `| undefined`) are grandfathered. Only --staged enforces it (on newly-touched
+  // files), so the full-repo --fail gate counts only the caller-dependent rules.
+  const enforceable = violations.filter((v) => v.kind !== ViolationKind.BARE_OPTIONAL);
+  const bareOptionalCount = violations.length - enforceable.length;
 
   if (violations.length > 0) {
     report(violations);
-    if (bareUnionCount > 0) {
+    if (bareOptionalCount > 0) {
       console.error(
-        `${bareUnionCount} BARE_UNDEFINED_UNION (advisory — grandfathered; enforced on staged ` +
+        `${bareOptionalCount} BARE_OPTIONAL (advisory — grandfathered; enforced on staged ` +
           `files via \`check:optional-params --staged\`. Wrap new ones in Opt<T, Reason.*>).`,
       );
     }

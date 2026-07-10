@@ -76,7 +76,10 @@ const checkCommand = new Command()
       { cmd: ["deno", "task", "check:test-placement"], desc: "Test Placement Validation" },
       { cmd: ["deno", "task", "check:tool-result-parity"], desc: "Tool Result Parity Check" },
       { cmd: ["deno", "task", "check:optional-params", "--fail"], desc: "Optional Param Usage Check" },
-      { cmd: ["deno", "task", "check:optional-params:staged"], desc: "Bare-Undefined-Union Gate (staged files)" },
+      {
+        cmd: ["deno", "task", "check:optional-params:staged"],
+        desc: "Bare-Optional Gate (staged files: ? / | undefined must use Opt)",
+      },
       { cmd: ["deno", "task", "check:config-keys"], desc: "Config Key Uniqueness Gate" },
       { cmd: ["deno", "task", "check:skill-envelopes"], desc: "Skill Envelope Validity" },
       { cmd: ["deno", "task", "check:skill-index"], desc: "Runtime Skill Index Sync" },
@@ -418,7 +421,10 @@ const allCommand = new Command()
         { cmd: ["deno", "task", "check:test-placement"], desc: "Test Placement Validation" },
         { cmd: ["deno", "task", "check:tool-result-parity"], desc: "Tool Result Parity Check" },
         { cmd: ["deno", "task", "check:optional-params", "--fail"], desc: "Optional Param Usage Check" },
-        { cmd: ["deno", "task", "check:optional-params:staged"], desc: "Bare-Undefined-Union Gate (staged files)" },
+        {
+          cmd: ["deno", "task", "check:optional-params:staged"],
+          desc: "Bare-Optional Gate (staged files: ? / | undefined must use Opt)",
+        },
         { cmd: ["deno", "task", "check:config-keys"], desc: "Config Key Uniqueness Gate" },
         { cmd: ["deno", "task", "check:skill-envelopes"], desc: "Skill Envelope Validity" },
         { cmd: ["deno", "task", "check:skill-index"], desc: "Runtime Skill Index Sync" },
