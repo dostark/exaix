@@ -16,7 +16,7 @@ export { createMockLogger } from "./src/helpers/services/graceful_shutdown_test_
 export type { IMockEventLogger } from "./src/helpers/services/graceful_shutdown_test_helpers.ts";
 export { createMockProvider } from "./src/helpers/mock_provider.ts";
 export { getFixturePath, readFixtureTextSync } from "./src/helpers/fixtures.ts";
-export { initActivityTableSchema, initTestDbService } from "./src/helpers/init_db.ts";
+export { initActivityTableSchema, initTestDbService, REGISTRY_TABLES_SQL } from "./src/helpers/init_db.ts";
 export { isCi, withEnv } from "./src/helpers/env.ts";
 export { REPO_ROOT, withRepoRoot } from "./src/helpers/repo_root.ts";
 export { setupPortalWorkspaceTestDirs } from "./src/helpers/services/portal_workspace_test_helper.ts";

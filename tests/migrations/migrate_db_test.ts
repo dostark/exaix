@@ -150,6 +150,40 @@ Deno.test("migrate_db.ts up creates database and applies migrations", async () =
   }
 });
 
+Deno.test("[phase135] migrate_db.ts up applies 002_model_registry after 001 (five registry tables)", async () => {
+  const tmp = await setupTestWorkspace();
+  try {
+    const result = await runMigrate(tmp, ["up"]);
+    assertEquals(result.code, 0, `migrate up failed: ${result.stderr}`);
+
+    const dbPath = join(getRuntimeDir(tmp), "journal.db");
+
+    // 002 is recorded in schema_migrations (after 001).
+    const migrations = await queryDb(dbPath, "SELECT version FROM schema_migrations ORDER BY id;");
+    assertStringIncludes(migrations, "001_init.sql");
+    assertStringIncludes(migrations, "002_model_registry.sql");
+
+    // All five §5.2 registry tables exist.
+    const tables = await queryDb(
+      dbPath,
+      "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;",
+    );
+    for (
+      const t of [
+        "model_catalog",
+        "model_pricing",
+        "model_latency",
+        "provider_rate_limit",
+        "registry_refresh_audit",
+      ]
+    ) {
+      assertStringIncludes(tables, t);
+    }
+  } finally {
+    await Deno.remove(tmp, { recursive: true }).catch(() => {});
+  }
+});
+
 Deno.test("migrate_db.ts up is idempotent", async () => {
   const tmp = await setupTestWorkspace();
   try {
@@ -161,13 +195,18 @@ Deno.test("migrate_db.ts up is idempotent", async () => {
     assertEquals(result2.code, 0, `Second migrate up failed: ${result2.stderr}`);
     assertStringIncludes(result2.stdout, "All migrations up to date");
 
-    // Should not have duplicate migrations
+    // Should not have duplicate migrations: applied count equals the number of
+    // .sql migration files (migration-count-agnostic — survives new migrations).
     const dbPath = join(getRuntimeDir(tmp), "journal.db");
     const count = await queryDb(
       dbPath,
       "SELECT COUNT(*) FROM schema_migrations;",
     );
-    assertEquals(count.trim(), "1", "Should have exactly 1 migration applied");
+    let fileCount = 0;
+    for await (const entry of Deno.readDir(join(tmp, "migrations"))) {
+      if (entry.isFile && entry.name.endsWith(".sql")) fileCount++;
+    }
+    assertEquals(count.trim(), String(fileCount), "No duplicate migrations after re-running up");
   } finally {
     await Deno.remove(tmp, { recursive: true }).catch(() => {});
   }
@@ -180,18 +219,25 @@ Deno.test("migrate_db.ts down reverts last migration", async () => {
     const upResult = await runMigrate(tmp, ["up"]);
     assertEquals(upResult.code, 0, `migrate up failed: ${upResult.stderr}`);
 
-    // Then revert
+    // Count applied migrations before reverting.
+    const dbPath = join(getRuntimeDir(tmp), "journal.db");
+    const before = Number(
+      (await queryDb(dbPath, "SELECT COUNT(*) FROM schema_migrations;")).trim(),
+    );
+
+    // Then revert the LAST migration only.
     const downResult = await runMigrate(tmp, ["down"]);
     assertEquals(downResult.code, 0, `migrate down failed: ${downResult.stderr}`);
     assertStringIncludes(downResult.stdout, "Reverted");
 
-    // Verify migration was removed from tracking table
-    const dbPath = join(getRuntimeDir(tmp), "journal.db");
-    const count = await queryDb(
-      dbPath,
-      "SELECT COUNT(*) FROM schema_migrations;",
+    // Exactly one migration (the most recent) was removed from tracking.
+    const after = Number(
+      (await queryDb(dbPath, "SELECT COUNT(*) FROM schema_migrations;")).trim(),
     );
-    assertEquals(count.trim(), "0", "Should have 0 migrations after reverting last one");
+    assertEquals(after, before - 1, "down should revert exactly the last migration");
+    // The most recent migration reverted is 002; 001 remains.
+    const remaining = await queryDb(dbPath, "SELECT version FROM schema_migrations;");
+    assertStringIncludes(remaining, "001_init.sql");
   } finally {
     await Deno.remove(tmp, { recursive: true }).catch(() => {});
   }
@@ -261,9 +307,10 @@ DROP TABLE IF EXISTS test_order_table;
       "SELECT version FROM schema_migrations ORDER BY id;",
     );
     const versions = migrations.trim().split("\n");
-    assertEquals(versions.length, 2);
+    // Real migrations (001, 002, …) apply first in filename order, then 999.
     assertEquals(versions[0], "001_init.sql");
-    assertEquals(versions[1], "999_test_order.sql");
+    assertEquals(versions[1], "002_model_registry.sql");
+    assertEquals(versions[versions.length - 1], "999_test_order.sql");
 
     // Verify test table was created
     const tables = await queryDb(
@@ -300,13 +347,18 @@ DROP TABLE IF EXISTS good_table;
     assertEquals(result.code, 1);
     assertStringIncludes(result.stderr, "Failed to apply");
 
-    // Verify first migration was applied
+    // Verify the good baseline migrations remain applied (all real .sql files
+    // except the injected bad one, which rolled back).
     const dbPath = join(getRuntimeDir(tmp), "journal.db");
     const count = await queryDb(
       dbPath,
       "SELECT COUNT(*) FROM schema_migrations;",
     );
-    assertEquals(count.trim(), "1", "Baseline migrations should remain applied after rollback");
+    let goodCount = 0;
+    for await (const entry of Deno.readDir(join(tmp, "migrations"))) {
+      if (entry.isFile && entry.name.endsWith(".sql") && entry.name !== "999_bad_sql.sql") goodCount++;
+    }
+    assertEquals(count.trim(), String(goodCount), "Baseline migrations should remain applied after rollback");
   } finally {
     await Deno.remove(tmp, { recursive: true }).catch(() => {});
   }

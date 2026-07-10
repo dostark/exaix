@@ -11,7 +11,12 @@
 import { VotingCapabilityModule, VotingConsensusService } from "@exaix-team/voting";
 import { HitlCapabilityModule } from "@exaix-team/hitl";
 import { PortalExtractorsModule } from "@exaix-team/portal-extractors";
-import type { IExecutor, IHitlPolicyEvaluator } from "@exaix/core/types";
+import { ModelRegistryService } from "@exaix-team/model-registry-live";
+import { DefaultModelRegistry } from "@exaix/model-registry";
+import type { IDatabaseService, IExecutor, IHitlPolicyEvaluator, IModelRegistry } from "@exaix/core/types";
+import type { IModelRegistryProvider, IModelRegistryProviderDeps } from "@exaix/core/composer";
+import type { IProviderHealthChecker } from "@exaix/ai";
+import type { Config } from "@exaix/schemas";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { AgentExecutorAdapter, FlowRunner } from "@exaix/flow";
 import type { TeamComposer } from "@exaix-team/team-composer";
@@ -20,6 +25,38 @@ import type { ISeamRegistryPlaceholder } from "@exaix/core/composer";
 import type { ISymbolExtractorRegistry } from "@exaix/portal/knowledge";
 import { EDITION_TEAM } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
+
+/** Runtime dependencies the Team model-registry provider closes over (Phase 135, GAP-3). */
+export interface ITeamModelRegistryDeps {
+  db: IDatabaseService;
+  config: Config;
+  logger: IEventLogger;
+}
+
+/**
+ * Register the Team live model-registry provider on the edition composer
+ * (Phase 135 Step 1, GAP-2/GAP-3).
+ *
+ * MUST be called BEFORE main.ts selects the registry via
+ * `getModelRegistryProvider()` — otherwise selection resolves to the Solo floor
+ * and the Team catalog is never reached. The provider closes over db/config/logger
+ * (which the seam's `createModelRegistry(deps)` does not carry) and builds the floor
+ * from the seam-supplied `deps.healthChecker`, so the shared
+ * `IModelRegistryProviderDeps` contract stays frozen.
+ */
+export function registerTeamModelRegistry(
+  composer: TeamComposer,
+  deps: ITeamModelRegistryDeps,
+): void {
+  const provider: IModelRegistryProvider = {
+    createModelRegistry(seamDeps: IModelRegistryProviderDeps): IModelRegistry {
+      const healthChecker = seamDeps.healthChecker as IProviderHealthChecker;
+      const floor = new DefaultModelRegistry(healthChecker);
+      return new ModelRegistryService(deps.db, deps.logger, deps.config, floor, healthChecker);
+    },
+  };
+  composer.registerModelRegistryProvider(provider);
+}
 
 /**
  * Register all Team-edition capability modules and invoke their

@@ -57,6 +57,16 @@ export interface IModelResolutionTraceEventPayload {
   duration_ms: number;
 }
 
+/** Typed payload for model.pricing.stale events (Phase 135). */
+export interface IModelPricingStalePayload {
+  provider: string;
+  model: string;
+  provenance: string;
+  verified_at: number;
+  age_days: number;
+  staleness_max_days: number;
+}
+
 /** Typed payload for guardrail.* events. */
 export interface IGuardrailEventPayload {
   policy_id: string;
@@ -348,6 +358,9 @@ export const DomainEventType = {
 
   // Model resolution events (Phase 132)
   ModelResolved: "model.resolved",
+
+  // Model registry events (Phase 135)
+  ModelPricingStale: "model.pricing.stale",
 
   // Reserved for future use (Phase 85 — postponed)
   ChildRunSpawned: "child_run.spawned",

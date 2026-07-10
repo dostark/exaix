@@ -16,6 +16,7 @@ export * from "./src/provider_registry.ts";
 export * from "./src/provider_selector.ts";
 export * from "./src/routing/provider_routing_strategy.ts";
 export * from "./src/routing/default_routing_strategy.ts";
+export * from "./src/i_resolution_strategy.ts";
 export * from "./src/provider_common_utils.ts";
 export * from "./src/provider_api_key.ts";
 export * from "./src/llm_client.ts";

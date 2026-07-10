@@ -311,6 +311,11 @@
           "jsr:@std/assert@^1.0.19"
         ]
       },
+      "packages-team/model-registry-live": {
+        "dependencies": [
+          "jsr:@std/assert@^1.0.19"
+        ]
+      },
       "packages/ai": {
         "dependencies": [
           "jsr:@std/assert@^1.0.19",

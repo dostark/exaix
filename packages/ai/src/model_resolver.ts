@@ -29,7 +29,8 @@ import type { IProviderHealthChecker, ISelectionCriteria } from "./provider_sele
 import type { IProviderMetadata } from "./provider_registry.ts";
 import { ProviderRegistry } from "./provider_registry.ts";
 import type { IProviderRoutingStrategy } from "./routing/provider_routing_strategy.ts";
-import type { ICapabilityProfile, IModelEntry, IModelRegistry } from "@exaix/core/types";
+import type { IResolutionStrategy } from "./i_resolution_strategy.ts";
+import type { ICapabilityProfile, IModelEntry, IModelRegistry, Opt, Reason } from "@exaix/core/types";
 import { DEFAULT_MOCK_MODEL, ProviderType } from "@exaix/core/types";
 
 const CHARACTERISTIC_WEIGHT = 1;
@@ -60,7 +61,8 @@ export class ModelResolver {
     private config: Config,
     private healthChecker: IProviderHealthChecker,
     private eventLogger: IEventLogger,
-    private modelRegistry?: IModelRegistry,
+    private modelRegistry?: Opt<IModelRegistry, Reason.OptionalDependency>,
+    private strategy?: Opt<IResolutionStrategy, Reason.OptionalDependency>,
   ) {}
 
   /**
@@ -131,10 +133,20 @@ export class ModelResolver {
 
   private async tryResolveExplicit(intent: ModelIntent, startTime: number): Promise<IResolvedModel | null> {
     if (!intent.model || !intent.model.includes(":")) return null;
-    const [provider, ...rest] = intent.model.split(":");
-    const model = rest.join(":");
-    const resolved: IResolvedModel = { provider, model, options: this.buildCallOptions(intent), attempt: 1 };
-    await this.emitTrace(intent, resolved, [provider], {}, "explicit_override", Date.now() - startTime);
+    const [rawProvider, ...rest] = intent.model.split(":");
+    const rawModel = rest.join(":");
+    // Team seam (GAP-1): validate/auto-admit the explicit choice against the live
+    // catalog. Absent (Solo) ⇒ pass the explicit choice through unchanged (134).
+    const route = this.strategy?.validateExplicit
+      ? await this.strategy.validateExplicit(rawProvider, rawModel)
+      : { provider: rawProvider, model: rawModel };
+    const resolved: IResolvedModel = {
+      provider: route.provider,
+      model: route.model,
+      options: this.buildCallOptions(intent),
+      attempt: 1,
+    };
+    await this.emitTrace(intent, resolved, [route.provider], {}, "explicit_override", Date.now() - startTime);
     return resolved;
   }
 
@@ -506,7 +518,7 @@ export class ModelResolver {
 
   private scoreCandidates(
     candidates: Array<{ metadata: IProviderMetadata }>,
-    characteristics?: string[],
+    characteristics?: Opt<string[], Reason.OptionalInput>,
   ): Record<string, number> {
     const scores: Record<string, number> = {};
     if (!characteristics?.length) return scores;

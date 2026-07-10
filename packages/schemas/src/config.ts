@@ -142,6 +142,22 @@ const RoutingConfigSchema = z.object({
 }).optional().default({});
 
 /**
+ * Phase 135 — Team live model-registry block. Opt-in (`enabled` master gate);
+ * absent by default so a Solo daemon is byte-identical to Phase 134. Later steps
+ * (5/6/7/8) extend this block with route-policy, benchmark, and task-type fields
+ * as their features land. Stays `.optional()`: Solo reads of nested fields use a
+ * constant fallback (GAP-6, wired in Step 2).
+ */
+export const ModelRegistryConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  catalog_refresh_cron: z.string().default("0 */6 * * *"),
+  pricing_refresh_cron: z.string().default("0 3 * * *"),
+  price_staleness_max_days: z.number().int().positive().default(90),
+  refresh_timeout_ms: z.number().int().positive().default(15000),
+  refresh_on_start: z.boolean().default(false),
+}).optional();
+
+/**
  * Phase 132 ModelPreset — capability profile for model_size-based selection.
  */
 export const ModelPresetSchema = z.object({
@@ -612,6 +628,8 @@ export const ConfigSchema = z.object({
     rate_limit_weight: 0,
   }),
   routing: RoutingConfigSchema,
+  /** Phase 135 — optional Team live model-registry block. Disabled by default. */
+  model_registry: ModelRegistryConfigSchema,
   /** Phase 106 — optional session-delegation block (global scope). */
   session_delegate: SessionDelegateConfigSchema.optional(),
   /** Phase 107 — optional guardrail block. Disabled by default (enabled: false). */

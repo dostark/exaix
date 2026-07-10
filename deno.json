@@ -37,7 +37,8 @@
     "./packages-team/team-placeholder",
     "./packages-team/team-composer",
     "./packages-team/ai-vertex",
-    "./packages-team/mcp-server"
+    "./packages-team/mcp-server",
+    "./packages-team/model-registry-live"
   ],
   "lock": true,
   "exports": "./apps/daemon/main.ts",
@@ -255,7 +256,9 @@
     "@exaix-team/portal-extractors": "./packages-team/portal-extractors/mod.ts",
     "@exaix-team/portal-extractors/": "./packages-team/portal-extractors/src/",
     "@exaix-team/team-composer": "./packages-team/team-composer/mod.ts",
-    "@exaix-team/team-composer/": "./packages-team/team-composer/"
+    "@exaix-team/team-composer/": "./packages-team/team-composer/",
+    "@exaix-team/model-registry-live": "./packages-team/model-registry-live/mod.ts",
+    "@exaix-team/model-registry-live/": "./packages-team/model-registry-live/src/"
   },
   "exclude": [
     "cov_profile",

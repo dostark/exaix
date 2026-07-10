@@ -211,6 +211,64 @@ export const ARTIFACTS_TABLE_SQL = `
 `;
 
 /**
+ * SQL for the Phase 135 Team model-registry tables (from migration
+ * 002_model_registry.sql, §5.2). Lets tests set up the registry schema without
+ * hand-writing DDL or running the migration runner.
+ */
+export const REGISTRY_TABLES_SQL = `
+  CREATE TABLE IF NOT EXISTS model_catalog (
+    provider          TEXT    NOT NULL,
+    model             TEXT    NOT NULL,
+    display_name      TEXT,
+    context_window    INTEGER,
+    max_output_tokens INTEGER,
+    supports_thinking INTEGER NOT NULL DEFAULT 0,
+    supports_effort   INTEGER NOT NULL DEFAULT 0,
+    capabilities_json TEXT,
+    source            TEXT    NOT NULL,
+    refreshed_at      REAL    NOT NULL,
+    released_at       REAL,
+    PRIMARY KEY (provider, model)
+  );
+  CREATE TABLE IF NOT EXISTS model_pricing (
+    provider          TEXT    NOT NULL,
+    model             TEXT    NOT NULL,
+    input_per_mtok    REAL,
+    output_per_mtok   REAL,
+    cache_read_per_mtok  REAL,
+    cache_write_per_mtok REAL,
+    provenance        TEXT    NOT NULL,
+    verified_at       REAL,
+    source_url        TEXT,
+    PRIMARY KEY (provider, model)
+  );
+  CREATE TABLE IF NOT EXISTS model_latency (
+    provider   TEXT    NOT NULL,
+    model      TEXT    NOT NULL,
+    latency_ms INTEGER NOT NULL,
+    recorded_at REAL    NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_latency_lookup ON model_latency (provider, model, recorded_at);
+  CREATE TABLE IF NOT EXISTS provider_rate_limit (
+    provider   TEXT    NOT NULL PRIMARY KEY,
+    remaining  INTEGER NOT NULL,
+    max_rpm    INTEGER NOT NULL,
+    reset_at   REAL    NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS registry_refresh_audit (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    provider      TEXT    NOT NULL,
+    kind          TEXT    NOT NULL,
+    outcome       TEXT    NOT NULL,
+    models_added  INTEGER NOT NULL DEFAULT 0,
+    models_removed INTEGER NOT NULL DEFAULT 0,
+    started_at    REAL    NOT NULL,
+    duration_ms   INTEGER NOT NULL,
+    detail        TEXT
+  );
+`;
+
+/**
  * Initialize full database schema for integration tests
  */
 export function initFullSchema(db: DatabaseService): void {

@@ -420,7 +420,13 @@ if (import.meta.main) {
     if (editionType === EDITION_TEAM) {
       const { bootstrapTeamProviders, TeamComposer } = await import("@exaix-team/team-composer");
       bootstrapTeamProviders();
-      _editionComposer = new TeamComposer();
+      const teamComposer = new TeamComposer();
+      // Phase 135 Step 1 (GAP-2): register the live model-registry provider BEFORE
+      // the registry is selected below (getModelRegistryProvider()), so a Team
+      // daemon resolves through ModelRegistryService rather than the Solo floor.
+      const { registerTeamModelRegistry } = await import("./src/bootstrap_team.ts");
+      registerTeamModelRegistry(teamComposer, { db: dbService, config, logger });
+      _editionComposer = teamComposer;
     } else {
       _editionComposer = new SoloComposer();
     }
