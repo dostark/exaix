@@ -15,7 +15,7 @@
 import { parse, stringify } from "@std/toml";
 import * as colors from "@std/fmt/colors";
 import { Table } from "@cliffy/table";
-import type { IModelRegistry } from "@exaix/core/types";
+import type { IModelRegistry, Opt, Reason } from "@exaix/core/types";
 import { DEFAULT_MODEL_PRESETS } from "@exaix/schemas/config.ts";
 
 /** A curated entry annotated with whether its provider is registered (Solo G10). */
@@ -296,14 +296,14 @@ export class ModelCommands {
 
   // ── Rendering helpers ─────────────────────────────────────────────────────────
 
-  private renderVerifiedAt(verifiedAt?: number): string {
+  private renderVerifiedAt(verifiedAt?: Opt<number, Reason.OptionalInput>): string {
     if (verifiedAt === undefined) return "-";
     const age = Date.now() - verifiedAt;
     const date = new Date(verifiedAt).toISOString().slice(0, 10);
     return age > STALENESS_THRESHOLD_MS ? `${date} (stale)` : date;
   }
 
-  private renderPrice(price?: number): string {
+  private renderPrice(price?: Opt<number, Reason.OptionalInput>): string {
     return price === undefined ? "-" : `$${price}`;
   }
 }
