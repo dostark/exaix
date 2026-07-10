@@ -12,7 +12,14 @@
 
 import { assert, assertEquals } from "@std/assert";
 import ts from "typescript";
-import { hasBareOptional, isOptType } from "../../scripts/check_optional_params.ts";
+import {
+  collectFunctions,
+  collectTypeShapeViolations,
+  type FuncDecl,
+  hasBareOptional,
+  isOptType,
+  ViolationKind,
+} from "../../scripts/check_optional_params.ts";
 
 /** Parse a single function's first parameter from a source snippet. */
 function firstParam(src: string): ts.ParameterDeclaration {
@@ -94,4 +101,32 @@ Deno.test("[bare-optional] does NOT flag a default-valued param `x = 5` (distinc
 
 Deno.test("[bare-optional] does NOT flag a union WITHOUT undefined", () => {
   assertEquals(hasBareOptional(firstParam("function f(x: string | number) {}")), false);
+});
+
+// ── MARKED_NOT_OPTIONAL exemption for non-trailing Opt params ─────────────────────
+
+/** Collect type-shape violations for a source snippet. */
+function shapeViolations(src: string): ReturnType<typeof collectTypeShapeViolations> {
+  const sf = ts.createSourceFile("t.ts", src, ts.ScriptTarget.Latest, true);
+  const funcs = new Map<string, FuncDecl[]>();
+  collectFunctions(sf, funcs);
+  return collectTypeShapeViolations(funcs);
+}
+
+// Note: a function whose params carry NO optionality signal at all (no `?`, no default, no
+// bare `| undefined`) is skipped by the collector before these rules run — so each snippet
+// below includes a `?` param to ensure the function is collected, then asserts on the Opt param.
+
+Deno.test("[marked-not-optional] flags a TRAILING Opt param with no `?`/default (the marker is a lie)", () => {
+  // `y?` makes the function collectable; `x` (Opt, no `?`) is trailing-eligible → flagged.
+  const v = shapeViolations("function f(y?: number, x: Opt<string, Reason.TraceAbsent>) {}");
+  assertEquals(v.filter((x) => x.kind === ViolationKind.MARKED_NOT_OPTIONAL).length, 1);
+});
+
+Deno.test("[marked-not-optional] does NOT flag a NON-trailing Opt param (a required param follows; `?` is illegal there)", () => {
+  // `x` (Opt, no `?`) is followed by required `after` → `?` is illegal there → exempt.
+  const v = shapeViolations(
+    "function f(y?: number, x: Opt<string, Reason.TraceAbsent>, after: string) {}",
+  );
+  assertEquals(v.filter((x) => x.kind === ViolationKind.MARKED_NOT_OPTIONAL).length, 0);
 });

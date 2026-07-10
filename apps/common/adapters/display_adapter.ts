@@ -7,16 +7,27 @@
 import type { IDisplayService } from "@exaix/core/types";
 import type { EventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 
 export class DisplayAdapter implements IDisplayService {
   constructor(private logger: EventLogger) {}
 
-  async info(action: string, target: string | null = null, payload: LogMetadata = {}, traceId?: string): Promise<void> {
+  async info(
+    action: string,
+    target: string | null = null,
+    payload: LogMetadata = {},
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): Promise<void> {
     return await this.logger.info(action, target ?? DEFAULT_MCP_IDENTITY_ID, payload, traceId);
   }
 
-  async warn(action: string, target: string | null = null, payload: LogMetadata = {}, traceId?: string): Promise<void> {
+  async warn(
+    action: string,
+    target: string | null = null,
+    payload: LogMetadata = {},
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): Promise<void> {
     return await this.logger.warn(action, target ?? DEFAULT_MCP_IDENTITY_ID, payload, traceId);
   }
 
@@ -24,7 +35,7 @@ export class DisplayAdapter implements IDisplayService {
     action: string,
     target: string | null = null,
     payload: LogMetadata = {},
-    traceId?: string,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<void> {
     return await this.logger.error(action, target ?? DEFAULT_MCP_IDENTITY_ID, payload, traceId);
   }
@@ -33,7 +44,7 @@ export class DisplayAdapter implements IDisplayService {
     action: string,
     target: string | null = null,
     payload: LogMetadata = {},
-    traceId?: string,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<void> {
     return await this.logger.debug(action, target ?? DEFAULT_MCP_IDENTITY_ID, payload, traceId);
   }
@@ -42,7 +53,7 @@ export class DisplayAdapter implements IDisplayService {
     action: string,
     target: string | null = null,
     payload: LogMetadata = {},
-    traceId?: string,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<void> {
     return await this.logger.fatal(action, target ?? DEFAULT_MCP_IDENTITY_ID, payload, traceId);
   }

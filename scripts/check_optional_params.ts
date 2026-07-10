@@ -68,7 +68,7 @@ interface FuncParam {
   typeText: string; // rendered type annotation (for the hint message)
 }
 
-interface FuncDecl {
+export interface FuncDecl {
   name: string;
   params: FuncParam[];
   optionalCount: number;
@@ -86,7 +86,7 @@ interface CallSite {
   line: number;
 }
 
-enum ViolationKind {
+export enum ViolationKind {
   REDUNDANT_OPTIONAL = "REDUNDANT_OPTIONAL",
   UNUSED_OPTIONAL = "UNUSED_OPTIONAL",
   MARKED_NOT_OPTIONAL = "MARKED_NOT_OPTIONAL",
@@ -185,7 +185,7 @@ function paramNameUsedInBody(body: ts.FunctionBody, paramName: string, _sourceFi
 
 // ── Collectors ────────────────────────────────────────────────────────────────
 
-function collectFunctions(
+export function collectFunctions(
   sourceFile: ts.SourceFile,
   funcs: Map<string, FuncDecl[]>,
 ): void {
@@ -330,10 +330,15 @@ function matchCallsToFuncs(
  *   BARE_OPTIONAL — optional via a bare `?` or a bare `| undefined` union, not Opt<T, Reason>.
  *   MARKED_NOT_OPTIONAL — an Opt<T, Reason> wrapper on a param that is not actually optional.
  */
-function collectTypeShapeViolations(funcs: Map<string, FuncDecl[]>): Violation[] {
+export function collectTypeShapeViolations(funcs: Map<string, FuncDecl[]>): Violation[] {
   const violations: Violation[] = [];
   for (const decls of funcs.values()) {
     for (const decl of decls) {
+      // A param is "non-trailing" if any later param in the same signature is required
+      // (no `?`, no default). TypeScript forbids a `?` before a required param, so an
+      // Opt<T, Reason> in that position CANNOT carry a `?` — it is written bare and is the
+      // only valid form. Such params are exempt from MARKED_NOT_OPTIONAL below.
+      const lastRequiredIndex = decl.params.reduce((acc, p, i) => (p.isOptional ? acc : i), -1);
       for (const p of decl.params) {
         if (p.bareOptional) {
           violations.push({
@@ -349,7 +354,11 @@ function collectTypeShapeViolations(funcs: Map<string, FuncDecl[]>): Violation[]
             typeEndPos: p.typeEndPos,
           });
         }
-        if (p.intentional && !p.isOptional) {
+        // MARKED_NOT_OPTIONAL: an Opt<T, Reason> marker on a param that is not actually
+        // optional — a lie — UNLESS the param is non-trailing (a required param follows it),
+        // where a bare Opt is the only TS-legal way to express "accepts undefined".
+        const isNonTrailing = p.index < lastRequiredIndex;
+        if (p.intentional && !p.isOptional && !isNonTrailing) {
           violations.push({
             kind: ViolationKind.MARKED_NOT_OPTIONAL,
             message:

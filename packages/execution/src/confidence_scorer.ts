@@ -230,7 +230,7 @@ export class ConfidenceScorer {
   async assess(
     request: string,
     response: string,
-    traceId?: string,
+    traceId?: Opt<string, Reason.TraceAbsent>,
     critique?: Opt<ICritique, Reason.OptionalInput>,
   ): Promise<IConfidenceResult> {
     const assessmentPrompt = this.config.extractionPromptTemplate

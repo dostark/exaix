@@ -441,7 +441,7 @@ export class ToolReflector {
     actionType: string,
     target: string,
     payload: Record<string, JSONValue>,
-    traceId?: string,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): void {
     if (this.config.logger) {
       this.config.logger.info(
