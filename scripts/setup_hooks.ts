@@ -93,7 +93,7 @@ fi
 STAGED_COPILOT=$(git diff --cached --name-only --diff-filter=ACMRD | grep -E '^.copilot/' | grep -v 'manifest.json' || true)
 if [ -n "$STAGED_COPILOT" ]; then
   echo "🔄 .copilot/ sources changed; regenerating manifest.json..."
-  deno run --allow-read --allow-write scripts/build_agents_index.ts
+  deno run --allow-read --allow-write --allow-run=deno scripts/build_agents_index.ts
   if [ $? -ne 0 ]; then
     echo "❌ Error: Failed to regenerate .copilot/manifest.json."
     exit 1
@@ -243,7 +243,7 @@ MANIFEST_BACKUP=$(mktemp)
 cp .copilot/manifest.json "$MANIFEST_BACKUP" 2>/dev/null || true
 
 echo "🔄 Regenerating .copilot/manifest.json before push..."
-deno run --allow-read --allow-write scripts/build_agents_index.ts
+deno run --allow-read --allow-write --allow-run=deno scripts/build_agents_index.ts
 if [ $? -ne 0 ]; then
   echo "❌ Error: Failed to regenerate .copilot/manifest.json."
   rm -f "$MANIFEST_BACKUP"
@@ -396,7 +396,7 @@ const PRE_MERGE_COMMIT_CONTENT = `#!/bin/sh
 echo "
 🔄 Running Pre-merge-commit hook..."
 
-deno run --allow-read --allow-write scripts/build_agents_index.ts
+deno run --allow-read --allow-write --allow-run=deno scripts/build_agents_index.ts
 if [ $? -ne 0 ]; then
   echo "❌ Error: Failed to regenerate .copilot/manifest.json for merge commit."
   exit 1
