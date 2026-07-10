@@ -12,6 +12,7 @@
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { DomainEventType } from "@exaix/core/events";
+import type { CostSource } from "@exaix/core/types";
 import { SessionBriefSchema, SessionGateSchema, SessionReturnSchema } from "@exaix/schemas/session_delegate.ts";
 import type { IReviewStatus } from "@exaix/core/status";
 import {
@@ -41,7 +42,13 @@ export interface IOnReconciledDeps {
     trackGeneration(
       provider: string,
       model: string,
-      usage: { promptTokens: number; completionTokens: number; totalTokens: number },
+      usage: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+        costUsd?: number;
+        costSource?: CostSource;
+      },
       traceId?: string,
     ): Promise<number>;
   };
@@ -147,6 +154,9 @@ export function createOnReconciledHandler(
             promptTokens: costRecord.promptTokens,
             completionTokens: costRecord.completionTokens,
             totalTokens: costRecord.tokens,
+            // Phase 135: the delegate's reported session cost is authoritative.
+            costUsd: sessionReturn.cost_usd,
+            costSource: sessionReturn.cost_usd !== undefined ? "provider_reported" : undefined,
           },
           costRecord.traceId,
         );

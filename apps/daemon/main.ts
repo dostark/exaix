@@ -756,6 +756,11 @@ if (import.meta.main) {
         healthChecker,
       })
       : new DefaultModelRegistry(healthChecker);
+    // Phase 135 Step 2 (GAP-4, D9): late-bind the edition-selected registry as the
+    // CostTracker's pricing lookup — the tracker was constructed earlier (line ~517),
+    // before the registry existed. IModelRegistry satisfies IModelPricingLookup
+    // (getModelPricing). Edition-agnostic: floor in Solo, live service in Team.
+    costTracker.setPricingLookup(modelRegistry);
     const modelResolver = new ModelResolver(routingStrategy, config, healthChecker, logger, modelRegistry);
 
     // Create FlowRunner for multi-agent flow execution

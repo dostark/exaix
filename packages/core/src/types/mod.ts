@@ -36,6 +36,7 @@ export * from "./i_log_service.ts";
 export * from "./i_memory_bank_service.ts";
 export * from "./i_memory_embedding_service.ts";
 export * from "./i_model_registry.ts";
+export * from "./i_model_pricing_lookup.ts";
 export * from "./i_memory_extractor_service.ts";
 export * from "./i_memory_service.ts";
 export * from "./i_notification_service.ts";

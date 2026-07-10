@@ -155,6 +155,9 @@ export const ModelRegistryConfigSchema = z.object({
   price_staleness_max_days: z.number().int().positive().default(90),
   refresh_timeout_ms: z.number().int().positive().default(15000),
   refresh_on_start: z.boolean().default(false),
+  // §5.5.2 (Solo-read, D9): tolerance (percent) for reported-vs-computed cost
+  // divergence before emitting model.cost.divergence.
+  cost_divergence_tolerance_pct: z.number().min(0).default(5),
 }).optional();
 
 /**

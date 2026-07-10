@@ -184,6 +184,24 @@ Deno.test("[phase135] migrate_db.ts up applies 002_model_registry after 001 (fiv
   }
 });
 
+Deno.test("[phase135] migrate_db.ts up applies 003_cost_source after 002 (provider_costs.cost_source, nullable)", async () => {
+  const tmp = await setupTestWorkspace();
+  try {
+    const result = await runMigrate(tmp, ["up"]);
+    assertEquals(result.code, 0, `migrate up failed: ${result.stderr}`);
+    const dbPath = join(getRuntimeDir(tmp), "journal.db");
+
+    const migrations = await queryDb(dbPath, "SELECT version FROM schema_migrations ORDER BY id;");
+    assertStringIncludes(migrations, "003_cost_source.sql");
+
+    // provider_costs gained a cost_source column (nullable — pre-existing rows stay valid).
+    const cols = await queryDb(dbPath, "SELECT name FROM pragma_table_info('provider_costs');");
+    assertStringIncludes(cols, "cost_source");
+  } finally {
+    await Deno.remove(tmp, { recursive: true }).catch(() => {});
+  }
+});
+
 Deno.test("migrate_db.ts up is idempotent", async () => {
   const tmp = await setupTestWorkspace();
   try {

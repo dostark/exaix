@@ -9,7 +9,7 @@ import type { SqliteParam } from "../types/mod.ts";
 import type { IDatabaseService } from "../types/mod.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ICostTracker } from "../types/mod.ts";
-import type { ICostFilter, IProviderCostRecord } from "../types/mod.ts";
+import type { CostSource, ICostFilter, IModelPricingLookup, IProviderCostRecord } from "../types/mod.ts";
 import {
   COST_RATE_ANTHROPIC,
   COST_RATE_GOOGLE,
@@ -19,12 +19,20 @@ import {
   COST_RATE_OPENAI,
   COST_RATE_OPENROUTER,
   COST_RATE_VERTEX,
+  DEFAULT_COST_DIVERGENCE_TOLERANCE_PCT,
   DEFAULT_COST_TRACKING_BATCH_DELAY_MS,
   DEFAULT_COST_TRACKING_MAX_BATCH_SIZE,
   TOKENS_PER_COST_UNIT,
 } from "../../mod.ts";
 import { ProviderType } from "../../mod.ts";
-import type { Opt, Reason } from "../types/mod.ts";
+import type { IEventLogger } from "../logger/mod.ts";
+import { DomainEventType, type IModelCostDivergencePayload } from "../events/mod.ts";
+import type { LogMetadata, Opt, Reason } from "../types/mod.ts";
+
+/** USD-per-Mtok → USD-per-token divisor (pricing is quoted per 1M tokens). */
+const TOKENS_PER_MTOK = 1_000_000;
+/** Percent → fraction divisor. */
+const PERCENT = 100;
 
 /**
  * Service for tracking and managing LLM provider costs.
@@ -49,10 +57,33 @@ export class CostTracker implements ICostTracker {
     return { ...defaultRates, ...configuredRates };
   }
 
-  private pendingRecords: Array<Omit<IProviderCostRecord, "id"> & { requests: number }> = [];
+  private pendingRecords: Array<
+    Omit<IProviderCostRecord, "id"> & { requests: number; costSource: CostSource | null }
+  > = [];
   private batchTimeout: ReturnType<typeof setTimeout> | null = null;
+  private pricingLookup?: IModelPricingLookup;
 
-  constructor(private db: IDatabaseService, private config?: Config) {}
+  constructor(
+    private db: IDatabaseService,
+    private config?: Opt<Config, Reason.SensibleDefault>,
+    private eventLogger?: Opt<IEventLogger, Reason.OptionalDependency>,
+  ) {}
+
+  /**
+   * Late-bind the edition-selected pricing lookup (Phase 135 GAP-4). Called by the
+   * daemon AFTER the registry is selected — the tracker is constructed earlier, so a
+   * constructor param alone cannot carry it. When set, trackGeneration prices
+   * split-per-Mtok (cost_source "registry_computed"); when unset, the legacy blended
+   * estimate is used (cost_source null).
+   */
+  setPricingLookup(lookup: IModelPricingLookup): void {
+    this.pricingLookup = lookup;
+  }
+
+  private get divergenceTolerancePct(): number {
+    return this.config?.model_registry?.cost_divergence_tolerance_pct ??
+      DEFAULT_COST_DIVERGENCE_TOLERANCE_PCT;
+  }
 
   private get batchDelayMs(): number {
     return this.config?.cost_tracking?.batch_delay_ms ?? DEFAULT_COST_TRACKING_BATCH_DELAY_MS;
@@ -75,17 +106,22 @@ export class CostTracker implements ICostTracker {
       portal?: string;
       promptTokens?: number;
       completionTokens?: number;
+      costUsd?: number;
+      costSource?: CostSource;
+      /** Pre-resolved cost/source (avoids recomputing + double divergence emission). */
+      resolved?: { cost: number; source: CostSource | null };
     } = {},
   ): Promise<void> {
-    const cost = this.estimateCost(provider, tokens, options.model);
-    const record: Omit<IProviderCostRecord, "id"> & { requests: number } = {
+    const priced = options.resolved ?? await this.resolveCost(provider, tokens, options);
+    const record: Omit<IProviderCostRecord, "id"> & { requests: number; costSource: CostSource | null } = {
       provider,
       model: options.model ?? "unknown",
       requests: 1,
       tokens,
       promptTokens: options.promptTokens ?? 0,
       completionTokens: options.completionTokens ?? 0,
-      estimatedCostUsd: cost,
+      estimatedCostUsd: priced.cost,
+      costSource: priced.source,
       traceId: options.traceId,
       portal: options.portal,
       timestamp: new Date(),
@@ -110,19 +146,114 @@ export class CostTracker implements ICostTracker {
   async trackGeneration(
     provider: string,
     model: string,
-    usage: { promptTokens: number; completionTokens: number; totalTokens: number },
+    usage: {
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+      costUsd?: number;
+      costSource?: CostSource;
+    },
     traceId?: Opt<string, Reason.TraceAbsent>,
     portal?: Opt<string, Reason.OptionalContext>,
   ): Promise<number> {
-    const cost = this.estimateCost(provider, usage.totalTokens, model);
+    const priced = await this.resolveCost(provider, usage.totalTokens, {
+      model,
+      promptTokens: usage.promptTokens,
+      completionTokens: usage.completionTokens,
+      costUsd: usage.costUsd,
+      costSource: usage.costSource,
+    });
     await this.trackRequest(provider, usage.totalTokens, {
       model,
       traceId,
       portal,
       promptTokens: usage.promptTokens,
       completionTokens: usage.completionTokens,
+      resolved: priced, // reuse the resolved cost — do not recompute (avoids double divergence)
     });
-    return cost;
+    return priced.cost;
+  }
+
+  /**
+   * §5.5 reconciliation. Precedence: caller-supplied provider-reported cost →
+   * split-priced from the injected lookup (registry_computed) → legacy blended
+   * estimate (cost_source null). When both a reported and a computed cost exist and
+   * differ beyond the tolerance, emits model.cost.divergence.
+   */
+  private async resolveCost(
+    provider: string,
+    tokens: number,
+    options: {
+      model?: string;
+      promptTokens?: number;
+      completionTokens?: number;
+      costUsd?: number;
+      costSource?: CostSource;
+    },
+  ): Promise<{ cost: number; source: CostSource | null }> {
+    const reported = typeof options.costUsd === "number" && Number.isFinite(options.costUsd) &&
+        options.costUsd >= 0
+      ? options.costUsd
+      : undefined;
+
+    const computed = await this.computeSplitPrice(
+      provider,
+      options.model,
+      options.promptTokens ?? 0,
+      options.completionTokens ?? 0,
+    );
+
+    if (reported !== undefined && computed !== undefined) {
+      await this.emitDivergence(provider, options.model, reported, computed);
+    }
+    if (reported !== undefined) {
+      return { cost: reported, source: options.costSource ?? "provider_reported" };
+    }
+    if (computed !== undefined) {
+      return { cost: computed, source: "registry_computed" };
+    }
+    // Legacy blended estimate (library-compat path).
+    return { cost: this.estimateCost(provider, tokens, options.model), source: null };
+  }
+
+  /** Split input/output per-Mtok price from the injected lookup, or undefined. */
+  private async computeSplitPrice(
+    provider: string,
+    model: Opt<string, Reason.OptionalInput>,
+    promptTokens: number,
+    completionTokens: number,
+  ): Promise<number | undefined> {
+    if (!this.pricingLookup || !model) return undefined;
+    const pricing = await this.pricingLookup.getModelPricing(provider, model);
+    if (pricing.inputPerMtok === undefined && pricing.outputPerMtok === undefined) return undefined;
+    const inputCost = ((pricing.inputPerMtok ?? 0) * promptTokens) / TOKENS_PER_MTOK;
+    const outputCost = ((pricing.outputPerMtok ?? 0) * completionTokens) / TOKENS_PER_MTOK;
+    return inputCost + outputCost;
+  }
+
+  private async emitDivergence(
+    provider: string,
+    model: Opt<string, Reason.OptionalInput>,
+    reported: number,
+    computed: number,
+  ): Promise<void> {
+    if (!this.eventLogger || computed === 0) return;
+    const deltaPct = Math.abs(reported - computed) / computed * PERCENT;
+    if (deltaPct <= this.divergenceTolerancePct) return;
+    const payload: IModelCostDivergencePayload = {
+      provider,
+      model: model ?? "unknown",
+      reported,
+      computed,
+      delta_pct: deltaPct,
+    };
+    // IModelCostDivergencePayload is all string/number → a valid LogMetadata (JSONObject).
+    const metadata: LogMetadata = { ...payload };
+    await this.eventLogger.info(
+      DomainEventType.ModelCostDivergence,
+      `${provider}:${model ?? "unknown"}`,
+      metadata,
+    );
   }
 
   async persistEntry(record: IProviderCostRecord): Promise<void> {
@@ -188,7 +319,10 @@ export class CostTracker implements ICostTracker {
     }));
   }
 
-  getTotalCost(_provider?: string, _model?: string): number {
+  getTotalCost(
+    _provider?: Opt<string, Reason.QueryFilter>,
+    _model?: Opt<string, Reason.QueryFilter>,
+  ): number {
     return 0;
   }
 
@@ -226,7 +360,7 @@ export class CostTracker implements ICostTracker {
   async getCostSummary(
     startDate: Date,
     endDate: Date,
-    provider?: string,
+    provider?: Opt<string, Reason.QueryFilter>,
   ): Promise<IProviderCostRecord[]> {
     const query = `
       SELECT id, provider, requests, tokens, estimated_cost_usd as estimatedCostUsd, timestamp
@@ -271,15 +405,15 @@ export class CostTracker implements ICostTracker {
   }
 
   private async insertCostRecordsBatch(
-    records: Array<Omit<IProviderCostRecord, "id"> & { requests: number }>,
+    records: Array<Omit<IProviderCostRecord, "id"> & { requests: number; costSource: CostSource | null }>,
   ): Promise<void> {
     if (records.length === 0) {
       return;
     }
 
-    const placeholders = records.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
+    const placeholders = records.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
     const query = `
-      INSERT INTO provider_costs (id, provider, model, requests, tokens, prompt_tokens, completion_tokens, estimated_cost_usd, trace_id, portal, timestamp)
+      INSERT INTO provider_costs (id, provider, model, requests, tokens, prompt_tokens, completion_tokens, estimated_cost_usd, cost_source, trace_id, portal, timestamp)
       VALUES ${placeholders}
     `;
 
@@ -294,6 +428,7 @@ export class CostTracker implements ICostTracker {
         record.promptTokens,
         record.completionTokens,
         record.estimatedCostUsd,
+        record.costSource,
         record.traceId ?? null,
         record.portal ?? null,
         record.timestamp.toISOString(),

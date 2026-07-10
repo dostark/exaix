@@ -1192,6 +1192,13 @@ export const DEFAULT_COST_TRACKING_MAX_BATCH_SIZE: number = configurable({
   max: COST_TRACKING_MAX_BATCH_SIZE_MAX,
   swap: SwapClass.RESTART,
 });
+/**
+ * Phase 135 (§5.5.2, GAP-6) — fallback tolerance (percent) for reported-vs-computed
+ * cost divergence when `config.model_registry.cost_divergence_tolerance_pct` is absent
+ * (e.g. a Solo daemon with no `model_registry` block). The configurable value lives on
+ * the `model_registry` config schema; this constant is the nullish-read default.
+ */
+export const DEFAULT_COST_DIVERGENCE_TOLERANCE_PCT = 5;
 // Rates per 1K tokens. Based on 2025-2026 output pricing:
 // OpenAI gpt-5-mini: $2.00/1M output → $0.002/1K
 export const COST_RATE_OPENAI: number = configurable({

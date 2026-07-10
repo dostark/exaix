@@ -67,6 +67,15 @@ export interface IModelPricingStalePayload {
   staleness_max_days: number;
 }
 
+/** Typed payload for model.cost.divergence events (Phase 135, §5.5.2). */
+export interface IModelCostDivergencePayload {
+  provider: string;
+  model: string;
+  reported: number;
+  computed: number;
+  delta_pct: number;
+}
+
 /** Typed payload for guardrail.* events. */
 export interface IGuardrailEventPayload {
   policy_id: string;
@@ -361,6 +370,7 @@ export const DomainEventType = {
 
   // Model registry events (Phase 135)
   ModelPricingStale: "model.pricing.stale",
+  ModelCostDivergence: "model.cost.divergence",
 
   // Reserved for future use (Phase 85 — postponed)
   ChildRunSpawned: "child_run.spawned",

@@ -179,6 +179,7 @@ export const PROVIDER_COSTS_TABLE_SQL = `
     trace_id TEXT,
     portal TEXT,
     estimated_cost_usd REAL NOT NULL DEFAULT 0.0,
+    cost_source TEXT,
     timestamp DATETIME DEFAULT (datetime('now'))
   );
   CREATE INDEX IF NOT EXISTS idx_provider_costs_provider ON provider_costs(provider);

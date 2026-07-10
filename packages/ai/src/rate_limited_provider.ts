@@ -8,7 +8,7 @@
 
 import type { IModelProvider } from "./types.ts";
 import type { IGenerateResult } from "./providers/common.ts";
-import type { ICostTracker } from "@exaix/core/types";
+import type { ICostTracker, Opt, Reason } from "@exaix/core/types";
 import {
   RATE_LIMIT_WINDOW_DAY_MS,
   RATE_LIMIT_WINDOW_HOUR_MS,
@@ -63,7 +63,10 @@ export class RateLimitedProvider implements IModelProvider {
     this.id = `rate-limited-${inner.id}`;
   }
 
-  async generate(prompt: string, options?: { max_tokens?: number }): Promise<IGenerateResult> {
+  async generate(
+    prompt: string,
+    options?: Opt<{ max_tokens?: number }, Reason.OptionalInput>,
+  ): Promise<IGenerateResult> {
     this.resetWindowsIfNeeded();
 
     // Check rate limits
@@ -112,6 +115,9 @@ export class RateLimitedProvider implements IModelProvider {
             promptTokens: result.usage.promptTokens,
             completionTokens: result.usage.completionTokens,
             totalTokens: result.usage.totalTokens,
+            // Phase 135: pass provider-reported cost through (e.g. OpenRouter usage.cost).
+            costUsd: result.cost_usd,
+            costSource: result.cost_usd !== undefined ? "provider_reported" : undefined,
           },
         );
       }
@@ -156,7 +162,10 @@ export class RateLimitedProvider implements IModelProvider {
    * Rough estimation: 1 token ≈ 4 characters (English text)
    * But cap the estimation to be more conservative for very large prompts
    */
-  private estimateTokens(prompt: string, _options?: { max_tokens?: number }): number {
+  private estimateTokens(
+    prompt: string,
+    _options?: Opt<{ max_tokens?: number }, Reason.OptionalInput>,
+  ): number {
     // For rate limiting, only count input tokens (prompt), not output tokens
     // This prevents over-estimation that would block legitimate requests
     return Math.min(Math.ceil(prompt.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN), TOKEN_ESTIMATION_MAX_TOKENS);

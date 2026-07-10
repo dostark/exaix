@@ -6,7 +6,7 @@
  * @related-files [packages/core/src/cost/cost_tracker.ts, packages/storage-sqlite/src/database_service.ts]
  */
 
-import type { ICostFilter, IProviderCostRecord } from "@exaix/core/types";
+import type { CostSource, ICostFilter, IProviderCostRecord } from "@exaix/core/types";
 
 export interface ICostTracker {
   /**
@@ -15,7 +15,15 @@ export interface ICostTracker {
   trackGeneration(
     provider: string,
     model: string,
-    usage: { promptTokens: number; completionTokens: number; totalTokens: number },
+    usage: {
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+      /** Provider-reported cost (Phase 135) — recorded verbatim as provider_reported. */
+      costUsd?: number;
+      /** Explicit cost_source override (Phase 135). */
+      costSource?: CostSource;
+    },
     traceId?: string,
     portal?: string,
   ): Promise<number>;

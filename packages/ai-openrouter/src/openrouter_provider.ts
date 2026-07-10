@@ -8,12 +8,8 @@
  * OpenAI request/response helpers and adds OpenRouter's HTTP-Referer / X-Title ranking headers.
  */
 
-import {
-  extractOpenAIContent,
-  type OpenAIResponse,
-  performProviderCall,
-  tokenMapperOpenAI,
-} from "@exaix/ai/provider_common_utils.ts";
+import { extractOpenAIContent, performProviderCall } from "@exaix/ai/provider_common_utils.ts";
+import { type IOpenRouterResponse, tokenMapperOpenRouter } from "./openrouter_reported_cost.ts";
 import { BaseProvider, type IBaseProviderOptions, type IGenerateResult } from "@exaix/ai/providers";
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import {
@@ -62,6 +58,8 @@ interface OpenRouterRequestBody {
   stop?: string[];
   models?: string[];
   provider?: OpenRouterProviderBody;
+  /** Phase 135: request OpenRouter's reported usage.cost in the response. */
+  usage?: { include: boolean };
 }
 
 interface OpenRouterProviderBody {
@@ -113,6 +111,8 @@ export class OpenRouterProvider extends BaseProvider {
     const body: OpenRouterRequestBody = {
       model: this.model,
       messages: [{ role: "user", content: prompt }],
+      // Phase 135 (F6/G9): ask OpenRouter to report the authoritative cost.
+      usage: { include: true },
     };
     if (options?.max_tokens !== undefined) body.max_tokens = options.max_tokens;
     if (options?.temperature !== undefined) body.temperature = options.temperature;
@@ -146,7 +146,7 @@ export class OpenRouterProvider extends BaseProvider {
       [X_TITLE_HEADER]: this.siteName,
     };
 
-    return await performProviderCall<OpenAIResponse>(this.baseUrl, {
+    return await performProviderCall<IOpenRouterResponse>(this.baseUrl, {
       method: "POST",
       headers,
       body: JSON.stringify(body),
@@ -156,7 +156,7 @@ export class OpenRouterProvider extends BaseProvider {
       backoffBaseMs: this.retryDelayMs,
       timeoutMs: this.timeoutMs,
       logger: this.logger,
-      tokenMapper: tokenMapperOpenAI(this.model),
+      tokenMapper: tokenMapperOpenRouter(this.model),
       extractor: extractOpenAIContent,
     });
   }
