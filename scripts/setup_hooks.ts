@@ -98,7 +98,7 @@ if [ -n "$STAGED_COPILOT" ]; then
     echo "❌ Error: Failed to regenerate .copilot/manifest.json."
     exit 1
   fi
-  git add .copilot/manifest.json
+  git add .copilot/manifest.json .copilot/DOCS.md
 fi
 
 # Verify manifest is now consistent (covers the case where manifest was
@@ -284,7 +284,7 @@ if [ "$MANIFEST_SUBSTANTIVE_CHANGED" = "0" ]; then
   git restore --staged .copilot/manifest.json 2>/dev/null || true
   echo "ℹ️ Only .copilot/manifest.json generated_at changed; skipping amend."
 else
-  git add .copilot/manifest.json
+  git add .copilot/manifest.json .copilot/DOCS.md
   echo "🔁 .copilot/manifest.json changed; amending current commit to include the updated manifest..."
   git commit --amend --no-edit
   if [ $? -ne 0 ]; then
@@ -402,7 +402,7 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-git add .copilot/manifest.json
+git add .copilot/manifest.json .copilot/DOCS.md
 
 echo "✅ .copilot/manifest.json regenerated and staged for merge commit.\n"
 `;
