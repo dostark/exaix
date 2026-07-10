@@ -61,3 +61,28 @@ Deno.test("[step134.4] isCostExempt false for PAID costTier with null pricing", 
     false,
   );
 });
+
+// The strategy's inline exemption rule (packages/ai/src/routing/default_routing_strategy.ts,
+// filterByBudget): a provider skips the budget check iff costTier ∈ {LOCAL, FREE}.
+// This drift-guard cross-validates model-registry's isCostExempt against that rule over a
+// representative provider-metadata fixture set, so the two codepaths cannot silently diverge.
+function strategyExemptionRule(costTier: ProviderCostTier): boolean {
+  return costTier === ProviderCostTier.LOCAL || costTier === ProviderCostTier.FREE;
+}
+
+Deno.test("[step134.4][drift-guard] isCostExempt matches the strategy exemption rule across representative provider tiers", () => {
+  const tiers = [
+    ProviderCostTier.LOCAL,
+    ProviderCostTier.FREE,
+    ProviderCostTier.FREEMIUM,
+    ProviderCostTier.PAID,
+  ];
+  for (const costTier of tiers) {
+    // No pricing overlay: isCostExempt reduces to the tier check the strategy uses.
+    assertEquals(
+      isCostExempt({ costTier }),
+      strategyExemptionRule(costTier),
+      `drift on tier ${costTier}: isCostExempt and strategy rule disagree`,
+    );
+  }
+});

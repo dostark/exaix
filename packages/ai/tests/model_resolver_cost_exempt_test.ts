@@ -117,6 +117,21 @@ function makeEmptyRegistry(): IModelRegistry {
   };
 }
 
+/** A registry that counts every getModelPricing call so a test can assert zero. */
+interface ISpyRegistry extends IModelRegistry {
+  pricingCalls: number;
+}
+
+function makePricingSpyRegistry(): ISpyRegistry {
+  const spy = { pricingCalls: 0 } as ISpyRegistry;
+  return Object.assign(spy, makeEmptyRegistry(), {
+    getModelPricing: () => {
+      spy.pricingCalls++;
+      return Promise.resolve({ provider: "", model: "", inputPerMtok: 0, outputPerMtok: 0, provenance: "unknown" });
+    },
+  });
+}
+
 //
 // Routing strategy tests (direct)
 //
@@ -209,6 +224,34 @@ Deno.test({
       characteristics: ["cheapest"],
     });
     assertEquals(result.provider, name);
+  },
+});
+
+Deno.test({
+  name: "[step134.4] exempt resolution performs zero getModelPricing lookups (spy counter)",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    ProviderRegistry.clear();
+    const name = uniqueName("local-spy");
+    registerProvider(name, {
+      costTier: ProviderCostTier.LOCAL,
+      costPerMtok: 1,
+      contextWindow: 128_000,
+    });
+    const config = {
+      ...createTestConfig(),
+      model_presets: { S: presetForSize("S"), M: presetForSize("M") },
+    } as Config;
+    const registry = makePricingSpyRegistry();
+    const resolver = makeResolver(undefined, config, registry);
+    const result = await resolver.resolve({
+      model_size: "M",
+      max_cost_usd: 1,
+      characteristics: ["cheapest"],
+    });
+    assertEquals(result.provider, name);
+    assertEquals(registry.pricingCalls, 0);
   },
 });
 
