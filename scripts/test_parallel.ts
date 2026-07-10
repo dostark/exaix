@@ -48,6 +48,9 @@ const SEQUENTIAL_FILES: string[] = [
   // Plan amendment scenario — starts a real daemon; port contention with
   // other daemon-launching tests in the parallel batch causes failures.
   "tests/scenario_framework/tests/plan_amendment_scenario_test.ts",
+  // Config cutover daemon boot — boots a real daemon; the poll-watcher test
+  // (1500ms settle + 1500ms post-inject) times out under DENO_JOBS contention.
+  "tests/integration/config_cutover_daemon_boot_test.ts",
 ];
 
 interface TestStats {
