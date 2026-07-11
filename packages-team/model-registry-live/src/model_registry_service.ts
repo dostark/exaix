@@ -113,6 +113,19 @@ export class ModelRegistryService implements IModelRegistry {
     return entries.filter((e) => this.matchesProfile(e, profile));
   }
 
+  /**
+   * All providers offering `model` in the live catalog — the route inventory for the
+   * §5.7 multi-route policy. Reads model_catalog by model (no floor fallback: routes are
+   * a live-catalog concept; an empty catalog has no multi-route decision to make).
+   */
+  async getModelRoutes(model: string): Promise<Array<{ provider: string; model: string }>> {
+    const rows = await this.db.preparedAll<{ provider: string }>(
+      "SELECT provider FROM model_catalog WHERE model = ? ORDER BY provider ASC",
+      [model],
+    );
+    return rows.map((r) => ({ provider: r.provider, model }));
+  }
+
   async getModelCapability(provider: string, model: string): Promise<ICapabilityProfile> {
     const row = await this.catalogRow(provider, model);
     if (!row) return this.floor.getModelCapability(provider, model);

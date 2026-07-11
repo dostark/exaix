@@ -20,7 +20,14 @@ export { admit } from "./src/adapters/admission.ts";
 export { TeamResolutionStrategy } from "./src/team_resolution_strategy.ts";
 export { RegistryRefreshScheduler } from "./src/registry_refresh_scheduler.ts";
 export { cronIntervalMs, maybeCreateRefreshScheduler } from "./src/registry_refresh_scheduler.ts";
+export { routeHealthScore, RoutePolicy } from "./src/route_policy.ts";
 export type { AdmissionReason, IAdmissionInputs, IAdmittedEntry } from "./src/adapters/admission.ts";
 export type { ITeamStrategyDeps } from "./src/team_resolution_strategy.ts";
 export type { IRefreshDeps } from "./src/registry_refresh_scheduler.ts";
 export type { IRefreshAuditRow, IRefreshDiff } from "./src/model_registry_service.ts";
+export type {
+  IRouteHealthProvider,
+  IRouteHealthSignals,
+  IRoutePolicyDeps,
+  IRouteSelection,
+} from "./src/route_policy.ts";

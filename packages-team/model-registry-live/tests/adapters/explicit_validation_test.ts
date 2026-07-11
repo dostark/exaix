@@ -41,6 +41,11 @@ function harness(
     getAdapter: (p) => adapters.find((a) => a.provider === p),
     buildContext: () => ({ baseUrl: "https://x.test", fetch, timeoutMs: 1000 }),
     isAggregator: (p) => p === "openrouter",
+    costExempt: () => false,
+    routeHealth: () => ({}),
+    routePolicy: "cheapest",
+    routePriceTolerance: 0.05,
+    routeOrder: {},
   });
   return { svc, logger, strategy };
 }

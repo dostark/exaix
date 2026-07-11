@@ -61,11 +61,26 @@ export type ISelectionCriteria = ModelIntent;
  * Full resolution result from ModelResolver.
  * Extends the Phase 131 IResolvedModel with per-call options and fallback attempt count.
  */
+/**
+ * Why a particular route (provider) was chosen for a model with 1+ routes (Phase 135
+ * Step 6, §5.7.4). `single_route` / `pinned` are the no-policy cases; the rest name the
+ * policy that decided. Additive to IResolvedModel — absent in Solo (no route sub-step).
+ */
+export type IRouteReason =
+  | "single_route"
+  | "cheapest"
+  | "reliability"
+  | "native_first"
+  | "user_order"
+  | "pinned";
+
 export interface IResolvedModel {
   provider: string;
   model: string;
   options?: IModelCallOptions;
   attempt?: number;
+  /** Phase 135 Step 6: which route policy chose this provider (absent in Solo). */
+  route_reason?: IRouteReason;
 }
 
 /**

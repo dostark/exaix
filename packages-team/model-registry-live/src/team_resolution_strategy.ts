@@ -11,9 +11,13 @@
  * @dependencies [@exaix/ai, @exaix/model-registry, @exaix/core]
  * @related-files [packages/ai/src/i_resolution_strategy.ts, packages-team/model-registry-live/src/model_registry_service.ts]
  */
-import type { IResolutionStrategy, IResolvedRoute } from "@exaix/ai";
+import type { IResolutionStrategy, IResolvedRoute, IRouteSelectionResult } from "@exaix/ai";
 import type { IAdapterContext, ICatalogEntry, IProviderCatalogAdapter } from "@exaix/model-registry";
 import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType, type IModelRouteSelectedPayload } from "@exaix/core/events";
+import type { IRouteReason } from "@exaix/schemas";
+import { RoutePolicy } from "./route_policy.ts";
+import type { IRouteHealthSignals } from "./route_policy.ts";
 import type { ModelRegistryService } from "./model_registry_service.ts";
 
 /** Adapter-lookup + context-build seam the strategy uses to verify explicit choices. */
@@ -22,6 +26,16 @@ export interface ITeamStrategyDeps {
   buildContext(provider: string): IAdapterContext;
   /** True when the provider is an aggregator reseller (§5.7.2 isAggregator metadata). */
   isAggregator(provider: string): boolean;
+  /** Per-route health sub-signals for the §5.7 route policy (Step 6). */
+  routeHealth(provider: string): IRouteHealthSignals;
+  /** D7: true when the provider is cost-exempt by metadata (LOCAL/FREE) — Step 6. */
+  costExempt(provider: string): boolean;
+  /** Configured route policy (Step 6). */
+  routePolicy: IRouteReason;
+  /** Configured near-tie price tolerance for cheapest (Step 6). */
+  routePriceTolerance: number;
+  /** Configured per-model provider order for user_order (G4, Step 6). */
+  routeOrder: Record<string, string[]>;
 }
 
 const ADMISSION_TOP_N = 25;
@@ -70,5 +84,53 @@ export class TeamResolutionStrategy implements IResolutionStrategy {
       topN: ADMISSION_TOP_N,
     });
     return { provider, model };
+  }
+
+  /**
+   * Route sub-step (§5.7, Step 6): apply the configured policy over all catalog routes
+   * for the chosen model. A model with one route short-circuits with `single_route` and
+   * emits no event; a multi-route decision emits model.route.selected and carries the
+   * considered routes back for the trace payload.
+   */
+  async selectRoute(resolved: IResolvedRoute): Promise<IRouteSelectionResult> {
+    const policy = new RoutePolicy(this.registry, { routeHealth: (p) => this.deps.routeHealth(p) }, {
+      isAggregator: (p) => this.deps.isAggregator(p),
+      costExempt: (p) => this.deps.costExempt(p),
+    });
+    const routes = await policy.routesFor(resolved.model);
+    if (routes.length <= 1) {
+      // 0 routes: keep the scored provider (catalog has no route inventory for it).
+      return { provider: resolved.provider, model: resolved.model, route_reason: "single_route" };
+    }
+
+    const selection = await policy.select(resolved.model, this.deps.routePolicy, {
+      priceTolerance: this.deps.routePriceTolerance,
+      routeOrder: this.deps.routeOrder,
+    });
+    const consideredRoutes = selection.considered.map((c) => ({
+      provider: c.provider,
+      price: c.price,
+      health_score: c.healthScore,
+    }));
+    const payload: IModelRouteSelectedPayload = {
+      model: resolved.model,
+      chosen_provider: selection.route.provider,
+      policy: selection.reason,
+      considered: consideredRoutes,
+    };
+    // The nested `considered` array is serialised for the flat LogMetadata surface.
+    await this.logger.info(DomainEventType.ModelRouteSelected, resolved.model, {
+      model: payload.model,
+      chosen_provider: payload.chosen_provider,
+      policy: payload.policy,
+      considered: JSON.stringify(payload.considered),
+    });
+
+    return {
+      provider: selection.route.provider,
+      model: resolved.model,
+      route_reason: selection.reason,
+      considered_routes: consideredRoutes,
+    };
   }
 }

@@ -161,6 +161,12 @@ export const ModelRegistryConfigSchema = z.object({
     top_n: z.number().int().positive().default(25),
     keep_native_whole: z.boolean().default(true),
   }).default({}),
+  // §5.7 (F9 + G4) multi-route selection — read by the Step 6 route sub-step (Team).
+  route_policy: z.enum(["cheapest", "reliability", "native_first", "user_order"]).default("cheapest"),
+  // Near-tie fraction under `cheapest`: routes within this of the cheapest are health-broken.
+  route_policy_price_tolerance: z.number().min(0).default(0.05),
+  // G4: per-model provider order for `user_order` (model → provider list). Empty ⇒ cheapest.
+  route_order: z.record(z.string(), z.array(z.string())).default({}),
   // §5.5.2 (Solo-read, D9): tolerance (percent) for reported-vs-computed cost
   // divergence before emitting model.cost.divergence.
   cost_divergence_tolerance_pct: z.number().min(0).default(5),

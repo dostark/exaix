@@ -9,7 +9,7 @@
  * typos and establish a single source of truth for the event taxonomy.
  */
 
-import type { EffortTier, ModelResolutionReason } from "@exaix/schemas";
+import type { EffortTier, IRouteReason, ModelResolutionReason } from "@exaix/schemas";
 import type { HitlRuleSource, HitlSurface, VotingStrategy } from "../types/enums.ts";
 
 /** Guardrail verdict type. */
@@ -55,6 +55,25 @@ export interface IModelResolutionTraceEventPayload {
   selected: { provider: string; model: string; attempt: number };
   reason: ModelResolutionReason;
   duration_ms: number;
+  /** Phase 135 Step 6 (GAP-9): the route policy that chose the provider (>1 route). */
+  route_reason?: IRouteReason;
+  /** Phase 135 Step 6 (GAP-9): the routes weighed, with price + health, for the journal. */
+  considered_routes?: IConsideredRoute[];
+}
+
+/** One weighed route in a multi-route decision (Phase 135 Step 6, §5.7.4). */
+export interface IConsideredRoute {
+  provider: string;
+  price?: number;
+  health_score: number;
+}
+
+/** Typed payload for model.route.selected events (Phase 135 Step 6, §5.7.4). */
+export interface IModelRouteSelectedPayload {
+  model: string;
+  chosen_provider: string;
+  policy: IRouteReason;
+  considered: IConsideredRoute[];
 }
 
 /** Typed payload for model.pricing.stale events (Phase 135). */
@@ -427,6 +446,7 @@ export const DomainEventType = {
   ModelCatalogRefreshed: "model.catalog.refreshed",
   ModelPricingRefreshed: "model.pricing.refreshed",
   ModelRegistryRefreshFailed: "model.registry.refresh.failed",
+  ModelRouteSelected: "model.route.selected",
 
   // Reserved for future use (Phase 85 — postponed)
   ChildRunSpawned: "child_run.spawned",

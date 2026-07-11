@@ -14,11 +14,28 @@
  * @dependencies [@exaix/schemas]
  * @related-files [packages/ai/src/model_resolver.ts, packages-team/model-registry-live/mod.ts]
  */
+import type { IRouteReason } from "@exaix/schemas";
 
 /** A concrete (provider, model) route the strategy resolved an explicit choice to. */
 export interface IResolvedRoute {
   provider: string;
   model: string;
+}
+
+/** One weighed route surfaced back to the resolver for the trace payload (Step 6). */
+export interface IConsideredRouteInput {
+  provider: string;
+  price?: number;
+  health_score: number;
+}
+
+/** The strategy's route decision for a non-pinned model choice (Phase 135 Step 6). */
+export interface IRouteSelectionResult {
+  provider: string;
+  model: string;
+  route_reason: IRouteReason;
+  /** The routes weighed; present (and journalled) only when >1 route existed. */
+  considered_routes?: IConsideredRouteInput[];
 }
 
 export interface IResolutionStrategy {
@@ -28,4 +45,12 @@ export interface IResolutionStrategy {
    * When absent (Solo), the resolver passes the explicit choice through unchanged.
    */
   validateExplicit?(provider: string, model: string): Promise<IResolvedRoute>;
+
+  /**
+   * Apply the route policy to a non-pinned model choice (Phase 135 Step 6). The resolver
+   * calls this after a scored/preset model pick; the strategy looks up all catalog routes
+   * for the model and returns the chosen provider + reason. When absent (Solo), the
+   * resolver keeps the scored provider and emits no route_reason.
+   */
+  selectRoute?(resolved: IResolvedRoute): Promise<IRouteSelectionResult>;
 }

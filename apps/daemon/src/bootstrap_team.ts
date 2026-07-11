@@ -24,13 +24,13 @@ import {
   type RegistryRefreshScheduler,
   TeamResolutionStrategy,
 } from "@exaix-team/model-registry-live";
-import { DefaultModelRegistry } from "@exaix/model-registry";
+import { DefaultModelRegistry, isCostExempt } from "@exaix/model-registry";
 import type { IAdapterContext } from "@exaix/model-registry";
 import { type IResolutionStrategy, ProviderRegistry } from "@exaix/ai";
 import type { IDatabaseService, IExecutor, IHitlPolicyEvaluator, IModelRegistry } from "@exaix/core/types";
 import type { IModelRegistryProvider, IModelRegistryProviderDeps } from "@exaix/core/composer";
 import type { IProviderHealthChecker } from "@exaix/ai";
-import type { Config } from "@exaix/schemas";
+import type { Config, IRouteReason } from "@exaix/schemas";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { AgentExecutorAdapter, FlowRunner } from "@exaix/flow";
 import type { TeamComposer } from "@exaix-team/team-composer";
@@ -160,8 +160,22 @@ export function buildTeamResolutionStrategy(
     getAdapter: (p) => adapters.get(p),
     buildContext,
     isAggregator: (p) => ProviderRegistry.getProviderMetadata(p)?.isAggregator === true,
+    // D7: cost-exempt by provider metadata (LOCAL/FREE tier) — Step 6 route policy.
+    costExempt: (p) => isCostExempt(ProviderRegistry.getProviderMetadata(p)),
+    // §5.7.3 route health (Step 6): the daemon's health checker reports a boolean per
+    // provider (all-healthy stub pre-wiring); map it to the circuit sub-signal. Failure
+    // headroom / latency / rate-limit sub-signals are omitted here and renormalise (F3 —
+    // no per-route health state; the real CircuitBreaker binds where the checker is).
+    routeHealth: () => ({ circuitState: 1 }),
+    routePolicy: config.model_registry?.route_policy ?? DEFAULT_ROUTE_POLICY,
+    routePriceTolerance: config.model_registry?.route_policy_price_tolerance ?? DEFAULT_ROUTE_PRICE_TOLERANCE,
+    routeOrder: config.model_registry?.route_order ?? {},
   });
 }
+
+/** Route-policy defaults mirroring the ModelRegistryConfigSchema fallbacks (§5.7). */
+const DEFAULT_ROUTE_POLICY: IRouteReason = "cheapest";
+const DEFAULT_ROUTE_PRICE_TOLERANCE = 0.05;
 
 /**
  * Build the opt-in registry refresh scheduler (Phase 135 Step 5). Returns undefined when

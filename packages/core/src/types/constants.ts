@@ -2973,6 +2973,18 @@ export const EXACTL_CLI_SPAWN_FLAGS: readonly string[] = [
 export const MAX_PLAN_FILE_BYTES = 1_048_576; // 1 MB — safety bound for check_step_manifests.ts
 
 /**
+ * Phase 135 Step 6 (§5.7.3, GAP-7) — composite route_health_score sub-signal weights.
+ * The score is Σ(wᵢ·sᵢ) / Σ(wᵢ) over the sub-signals that have data: a sub-signal with
+ * no value drops out and its weight is redistributed across the remaining ones (the
+ * denominator is the sum of only the present weights), so the score stays well-defined
+ * (and meaningful) before the latency / rate-limit data planes are populated. Only the
+ * two circuit-breaker sub-signals are active in Step 6; latency (0.2) and rate-limit
+ * (0.1) weights are omitted until those data planes are read (§10 / F4, out of scope).
+ */
+export const ROUTE_HEALTH_WEIGHT_CIRCUIT = 0.4;
+export const ROUTE_HEALTH_WEIGHT_FAILURE_COUNT = 0.3;
+
+/**
  * Run async tasks with bounded concurrency.
  * Processes items in batches of `concurrency`, ensuring at most `concurrency`
  * promises are in-flight at any time.

@@ -29,9 +29,22 @@ import type { IProviderHealthChecker, ISelectionCriteria } from "./provider_sele
 import type { IProviderMetadata } from "./provider_registry.ts";
 import { ProviderRegistry } from "./provider_registry.ts";
 import type { IProviderRoutingStrategy } from "./routing/provider_routing_strategy.ts";
-import type { IResolutionStrategy } from "./i_resolution_strategy.ts";
+import type { IConsideredRouteInput, IResolutionStrategy } from "./i_resolution_strategy.ts";
 import type { ICapabilityProfile, IModelEntry, IModelRegistry, Opt, Reason } from "@exaix/core/types";
 import { DEFAULT_MOCK_MODEL, ProviderType } from "@exaix/core/types";
+import type { IRouteReason } from "@exaix/schemas";
+
+/** The route-decision fields the route sub-step adds to the trace payload (Step 6). */
+interface IRouteTraceInfo {
+  route_reason?: IRouteReason;
+  considered_routes?: IConsideredRouteInput[];
+}
+
+/** Trailing trace metadata for emitTrace (keeps the parameter count within bounds). */
+interface ITraceMeta {
+  durationMs: number;
+  routeInfo?: IRouteTraceInfo;
+}
 
 const CHARACTERISTIC_WEIGHT = 1;
 
@@ -146,7 +159,9 @@ export class ModelResolver {
       options: this.buildCallOptions(intent),
       attempt: 1,
     };
-    await this.emitTrace(intent, resolved, [route.provider], {}, "explicit_override", Date.now() - startTime);
+    await this.emitTrace(intent, resolved, [route.provider], {}, "explicit_override", {
+      durationMs: Date.now() - startTime,
+    });
     return resolved;
   }
 
@@ -194,7 +209,9 @@ export class ModelResolver {
       options: this.buildCallOptions(intent),
       attempt: 1,
     };
-    await this.emitTrace(intent, resolved, [match.provider], {}, "explicit_override", Date.now() - startTime);
+    await this.emitTrace(intent, resolved, [match.provider], {}, "explicit_override", {
+      durationMs: Date.now() - startTime,
+    });
     return resolved;
   }
 
@@ -233,13 +250,14 @@ export class ModelResolver {
         options: this.buildCallOptions(intent),
         attempt: 1,
       };
+      const routeInfo = await this.applyRouteSubStep(resolved);
       await this.emitTrace(
         intent,
         resolved,
         allProviders.map((p) => p.metadata.name),
         {},
         "preferred_list",
-        Date.now() - startTime,
+        { durationMs: Date.now() - startTime, routeInfo },
       );
       return resolved;
     }
@@ -284,13 +302,14 @@ export class ModelResolver {
         attempt: 1,
       };
       const providers = ProviderRegistry.getAllProviders();
+      const routeInfo = await this.applyRouteSubStep(resolved);
       await this.emitTrace(
         intent,
         resolved,
         providers.map((p) => p.metadata.name),
         {},
         "preset_default",
-        Date.now() - startTime,
+        { durationMs: Date.now() - startTime, routeInfo },
       );
       return resolved;
     }
@@ -300,13 +319,14 @@ export class ModelResolver {
     resolved.options = this.buildCallOptions(intent);
     resolved.attempt = 1;
     const providers = ProviderRegistry.getAllProviders();
+    const routeInfo = await this.applyRouteSubStep(resolved);
     await this.emitTrace(
       intent,
       resolved,
       providers.map((p) => p.metadata.name),
       {},
       "preset_default",
-      Date.now() - startTime,
+      { durationMs: Date.now() - startTime, routeInfo },
     );
     return resolved;
   }
@@ -349,7 +369,7 @@ export class ModelResolver {
       providers.map((p) => p.metadata.name),
       {},
       "context_window_overflow",
-      Date.now() - startTime,
+      { durationMs: Date.now() - startTime },
     );
     return reResolved;
   }
@@ -410,13 +430,16 @@ export class ModelResolver {
       attempt,
     };
 
+    // Phase 135 Step 6: non-pinned scored choice → apply the route policy (Team seam).
+    const routeInfo = await this.applyRouteSubStep(resolved);
+
     await this.emitTrace(
       intent,
       resolved,
       candidates.map((p) => p.metadata.name),
       scores,
       reason,
-      Date.now() - startTime,
+      { durationMs: Date.now() - startTime, routeInfo },
     );
 
     return resolved;
@@ -438,7 +461,7 @@ export class ModelResolver {
         allProviders.map((p) => p.metadata.name),
         {},
         "thinking_constrained",
-        Date.now() - startTime,
+        { durationMs: Date.now() - startTime },
       );
       return null;
     }
@@ -469,7 +492,7 @@ export class ModelResolver {
       allProviders.map((p) => p.metadata.name),
       {},
       "thinking_constrained",
-      Date.now() - startTime,
+      { durationMs: Date.now() - startTime },
     );
 
     return resolved;
@@ -589,8 +612,9 @@ export class ModelResolver {
     candidateProviders: string[],
     scores: Record<string, number>,
     reason: ModelResolutionReason,
-    durationMs: number,
+    meta: ITraceMeta,
   ): Promise<void> {
+    const routeInfo = meta.routeInfo;
     await this.eventLogger.info(DomainEventType.ModelResolved, resolved.model, {
       intent: JSON.stringify(intent),
       candidate_providers: candidateProviders.join(","),
@@ -598,8 +622,26 @@ export class ModelResolver {
       selected: `${resolved.provider}:${resolved.model}`,
       reason,
       attempt: String(resolved.attempt ?? 1),
-      duration_ms: String(durationMs),
+      duration_ms: String(meta.durationMs),
+      // Phase 135 Step 6 (GAP-9): route decision on the journalled trace payload.
+      ...(routeInfo?.route_reason ? { route_reason: routeInfo.route_reason } : {}),
+      ...(routeInfo?.considered_routes ? { considered_routes: JSON.stringify(routeInfo.considered_routes) } : {}),
     });
+  }
+
+  /**
+   * Phase 135 Step 6 route sub-step: apply the Team seam's selectRoute to a non-pinned
+   * scored choice. Mutates `resolved` in place (provider + route_reason) and returns the
+   * trace info. No strategy / no selectRoute hook (Solo) ⇒ inert: returns empty info and
+   * leaves `resolved` untouched.
+   */
+  private async applyRouteSubStep(resolved: IResolvedModel): Promise<IRouteTraceInfo> {
+    if (!this.strategy?.selectRoute) return {};
+    const selection = await this.strategy.selectRoute({ provider: resolved.provider, model: resolved.model });
+    resolved.provider = selection.provider;
+    resolved.model = selection.model;
+    resolved.route_reason = selection.route_reason;
+    return { route_reason: selection.route_reason, considered_routes: selection.considered_routes };
   }
 }
 
