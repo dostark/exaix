@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "imports": {
     "@std/assert": "jsr:@std/assert@^1.0.19",
+    "zod": "https://deno.land/x/zod@v3.22.4/mod.ts",
     "@exaix/core": "../../packages/core/mod.ts",
     "@exaix/core/logger": "../../packages/core/src/logger/mod.ts",
     "@exaix/core/types": "../../packages/core/src/types/mod.ts",
     "@exaix/core/events": "../../packages/core/src/events/mod.ts",
+    "@exaix/ai": "../../packages/ai/mod.ts",
     "@exaix/model-registry": "../../packages/model-registry/mod.ts",
     "@exaix/schemas": "../../packages/schemas/mod.ts",
     "@exaix/testing": "../../packages/testing/mod.ts"

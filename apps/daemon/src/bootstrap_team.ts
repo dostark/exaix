@@ -11,8 +11,15 @@
 import { VotingCapabilityModule, VotingConsensusService } from "@exaix-team/voting";
 import { HitlCapabilityModule } from "@exaix-team/hitl";
 import { PortalExtractorsModule } from "@exaix-team/portal-extractors";
-import { ModelRegistryService } from "@exaix-team/model-registry-live";
+import {
+  AdapterRegistry,
+  ModelRegistryService,
+  OpenRouterCatalogAdapter,
+  TeamResolutionStrategy,
+} from "@exaix-team/model-registry-live";
 import { DefaultModelRegistry } from "@exaix/model-registry";
+import type { IAdapterContext } from "@exaix/model-registry";
+import type { IResolutionStrategy } from "@exaix/ai";
 import type { IDatabaseService, IExecutor, IHitlPolicyEvaluator, IModelRegistry } from "@exaix/core/types";
 import type { IModelRegistryProvider, IModelRegistryProviderDeps } from "@exaix/core/composer";
 import type { IProviderHealthChecker } from "@exaix/ai";
@@ -56,6 +63,43 @@ export function registerTeamModelRegistry(
     },
   };
   composer.registerModelRegistryProvider(provider);
+}
+
+/** OpenRouter host root; the adapter appends /api/v1/models (§6.3). */
+const OPENROUTER_BASE_URL = "https://openrouter.ai";
+/** Fallback adapter timeout when model_registry.refresh_timeout_ms is unset. */
+const DEFAULT_ADAPTER_TIMEOUT_MS = 15_000;
+
+/**
+ * Build the Team resolution strategy (Phase 135 Step 3, GAP-1 consumer) that wires the
+ * live registry's explicit-validation / auto-admit behaviour into ModelResolver via the
+ * IResolutionStrategy seam. Returns undefined when the selected registry is not the Team
+ * live service (defensive — Solo never reaches this call). The strategy's buildContext
+ * resolves each provider's already-configured key + base URL (no new secret surface).
+ */
+export function buildTeamResolutionStrategy(
+  modelRegistry: IModelRegistry,
+  config: Config,
+  logger: IEventLogger,
+): Opt<IResolutionStrategy, Reason.OptionalDependency> {
+  if (!(modelRegistry instanceof ModelRegistryService)) return undefined;
+
+  const adapters = new AdapterRegistry();
+  adapters.register(new OpenRouterCatalogAdapter());
+
+  const timeoutMs = config.model_registry?.refresh_timeout_ms ?? DEFAULT_ADAPTER_TIMEOUT_MS;
+  const buildContext = (provider: string): IAdapterContext => {
+    if (provider === "openrouter") {
+      const keyEnv = config.ai_openrouter?.api_key_env ?? "OPENROUTER_API_KEY";
+      return { apiKey: Deno.env.get(keyEnv), baseUrl: OPENROUTER_BASE_URL, fetch, timeoutMs };
+    }
+    return { baseUrl: OPENROUTER_BASE_URL, fetch, timeoutMs };
+  };
+
+  return new TeamResolutionStrategy(modelRegistry, logger, {
+    getAdapter: (p) => adapters.get(p),
+    buildContext,
+  });
 }
 
 /**

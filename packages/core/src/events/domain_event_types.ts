@@ -76,6 +76,23 @@ export interface IModelCostDivergencePayload {
   delta_pct: number;
 }
 
+/** Reason a model cleared the §5.9 admission bar (Phase 135 Step 3). */
+export type ModelAdmittedReason = "curated" | "native" | "explicit_use" | "benchmark_topn";
+
+/** Typed payload for model.admitted events (Phase 135 Step 3, F12). */
+export interface IModelAdmittedPayload {
+  provider: string;
+  model: string;
+  reason: ModelAdmittedReason;
+}
+
+/** Typed payload for model.retired events (Phase 135 Step 3 — removed at refresh). */
+export interface IModelRetiredPayload {
+  provider: string;
+  model: string;
+  last_seen_at: number;
+}
+
 /** Typed payload for guardrail.* events. */
 export interface IGuardrailEventPayload {
   policy_id: string;
@@ -371,6 +388,8 @@ export const DomainEventType = {
   // Model registry events (Phase 135)
   ModelPricingStale: "model.pricing.stale",
   ModelCostDivergence: "model.cost.divergence",
+  ModelAdmitted: "model.admitted",
+  ModelRetired: "model.retired",
 
   // Reserved for future use (Phase 85 — postponed)
   ChildRunSpawned: "child_run.spawned",

@@ -23,8 +23,15 @@ import {
   type PricingProvenance,
 } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
-import { DomainEventType, type IModelPricingStalePayload } from "@exaix/core/events";
+import {
+  DomainEventType,
+  type IModelAdmittedPayload,
+  type IModelPricingStalePayload,
+  type IModelRetiredPayload,
+} from "@exaix/core/events";
+import type { ICatalogEntry } from "@exaix/model-registry";
 import type { Config } from "@exaix/schemas";
+import { admit, type IAdmissionInputs } from "./adapters/admission.ts";
 
 const DEFAULT_PRICE_STALENESS_MAX_DAYS = 90;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -279,4 +286,87 @@ export class ModelRegistryService implements IModelRegistry {
     const idx = Math.min(sortedAsc.length - 1, Math.floor(q * sortedAsc.length));
     return sortedAsc[idx];
   }
+
+  /**
+   * Admit a provider's freshly-fetched catalog and persist it (§5.9, F12). The adapter
+   * returns the FULL list; admission keeps only curated ∪ native ∪ previously-used
+   * (top-N benchmark is inert until Step 7). Persistence is all-or-nothing per provider
+   * via BEGIN IMMEDIATE / COMMIT — a mid-write failure rolls back and preserves the
+   * previous catalog. Emits model.admitted per admitted row and model.retired for rows
+   * present before but absent now.
+   */
+  async applyRefresh(
+    provider: string,
+    entries: ICatalogEntry[],
+    inputs: IAdmissionInputs,
+  ): Promise<void> {
+    const admitted = admit(entries, inputs);
+    const previous = await this.db.preparedAll<{ model: string; refreshed_at: number }>(
+      "SELECT model, refreshed_at FROM model_catalog WHERE provider = ?",
+      [provider],
+    );
+    const now = Date.now();
+
+    await this.db.preparedRun("BEGIN IMMEDIATE");
+    try {
+      await this.db.preparedRun("DELETE FROM model_catalog WHERE provider = ?", [provider]);
+      for (const { entry } of admitted) {
+        await this.db.preparedRun(
+          `INSERT INTO model_catalog
+             (provider, model, display_name, context_window, max_output_tokens,
+              supports_thinking, supports_effort, capabilities_json, source, refreshed_at, released_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            provider,
+            requireModel(entry.model),
+            entry.displayName ?? null,
+            entry.contextWindow ?? null,
+            entry.maxOutputTokens ?? null,
+            entry.supportsThinking ? 1 : 0,
+            entry.supportsEffort ? 1 : 0,
+            entry.rawCapabilities !== undefined ? JSON.stringify(entry.rawCapabilities) : null,
+            "endpoint",
+            now,
+            entry.releasedAt ?? null,
+          ],
+        );
+      }
+      await this.db.preparedRun("COMMIT");
+    } catch (e) {
+      await this.db.preparedRun("ROLLBACK").catch(() => {});
+      throw e;
+    }
+
+    const admittedModels = new Set(admitted.map((a) => a.entry.model));
+    for (const { entry, reason } of admitted) {
+      await this.emitAdmitted(provider, entry.model, reason);
+    }
+    for (const prev of previous) {
+      if (!admittedModels.has(prev.model)) {
+        await this.emitRetired(provider, prev.model, prev.refreshed_at);
+      }
+    }
+  }
+
+  private async emitAdmitted(
+    provider: string,
+    model: string,
+    reason: IModelAdmittedPayload["reason"],
+  ): Promise<void> {
+    const payload: IModelAdmittedPayload = { provider, model, reason };
+    await this.eventLogger.info(DomainEventType.ModelAdmitted, `${provider}:${model}`, { ...payload });
+  }
+
+  private async emitRetired(provider: string, model: string, lastSeenAt: number): Promise<void> {
+    const payload: IModelRetiredPayload = { provider, model, last_seen_at: lastSeenAt };
+    await this.eventLogger.info(DomainEventType.ModelRetired, `${provider}:${model}`, { ...payload });
+  }
+}
+
+/** Guard against a null/empty model slipping into a catalog write (all-or-nothing). */
+function requireModel(model: string): string {
+  if (typeof model !== "string" || model.length === 0) {
+    throw new Error("catalog entry has an invalid (null/empty) model id");
+  }
+  return model;
 }

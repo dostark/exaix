@@ -10,3 +10,9 @@
  *   edition-composer hook.
  */
 export { ModelRegistryService } from "./src/model_registry_service.ts";
+export { OpenRouterCatalogAdapter } from "./src/adapters/openrouter_catalog_adapter.ts";
+export { AdapterRegistry } from "./src/adapters/adapter_registry.ts";
+export { admit } from "./src/adapters/admission.ts";
+export type { AdmissionReason, IAdmissionInputs, IAdmittedEntry } from "./src/adapters/admission.ts";
+export { TeamResolutionStrategy } from "./src/team_resolution_strategy.ts";
+export type { ITeamStrategyDeps } from "./src/team_resolution_strategy.ts";

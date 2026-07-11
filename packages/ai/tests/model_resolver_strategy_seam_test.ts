@@ -75,3 +75,20 @@ Deno.test("[gap1] validateExplicit hook is invoked when a strategy is registered
     await cleanup();
   }
 });
+
+Deno.test("[gap1][step3] Solo (no strategy) passes an unvalidated explicit provider:model through (G10 regression)", async () => {
+  const { cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+    registerProvider("openrouter");
+    // No strategy registered ⇒ the resolver must NOT validate/auto-admit; an arbitrary
+    // (even unadmitted / non-real) explicit choice resolves verbatim, exactly as 134.
+    const resolver = makeResolver();
+    const resolved = await resolver.resolve({ model: "openrouter:vendor/never-admitted" });
+    assertEquals(resolved.provider, "openrouter");
+    assertEquals(resolved.model, "vendor/never-admitted");
+  } finally {
+    ProviderRegistry.clear();
+    await cleanup();
+  }
+});

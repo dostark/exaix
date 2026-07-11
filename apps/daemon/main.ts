@@ -35,10 +35,12 @@ import { DatabaseService } from "@exaix/storage-sqlite";
 import {
   DefaultRoutingStrategy,
   type IProviderHealthChecker,
+  type IResolutionStrategy,
   ModelResolver,
   ProviderFactory,
   ProviderRegistry,
 } from "@exaix/ai";
+import type { Opt, Reason } from "@exaix/core/types";
 import { DefaultModelRegistry } from "@exaix/model-registry";
 import { RequestProcessor } from "@exaix/request";
 import { ReviewRegistry } from "@exaix/core/artifact";
@@ -761,7 +763,22 @@ if (import.meta.main) {
     // before the registry existed. IModelRegistry satisfies IModelPricingLookup
     // (getModelPricing). Edition-agnostic: floor in Solo, live service in Team.
     costTracker.setPricingLookup(modelRegistry);
-    const modelResolver = new ModelResolver(routingStrategy, config, healthChecker, logger, modelRegistry);
+    // Phase 135 Step 3 (GAP-1 consumer): in Team edition, wire the live registry's
+    // explicit-validation / auto-admit behaviour into the resolver via the
+    // IResolutionStrategy seam. Solo passes no strategy → byte-identical 134 behaviour.
+    let resolutionStrategy: Opt<IResolutionStrategy, Reason.OptionalDependency>;
+    if (editionType === EDITION_TEAM) {
+      const { buildTeamResolutionStrategy } = await import("./src/bootstrap_team.ts");
+      resolutionStrategy = buildTeamResolutionStrategy(modelRegistry, config, logger);
+    }
+    const modelResolver = new ModelResolver(
+      routingStrategy,
+      config,
+      healthChecker,
+      logger,
+      modelRegistry,
+      resolutionStrategy,
+    );
 
     // Create FlowRunner for multi-agent flow execution
     const blueprintsPath = join(
