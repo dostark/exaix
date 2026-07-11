@@ -20,11 +20,23 @@ const STATIC_PROVENANCE: BenchmarkProvenance = "static";
 // Epoch-ms floor timestamp for the curated set (2025-06-01); a fixed value keeps the
 // upsert idempotent across re-applies rather than stamping Date.now() each load.
 const CURATED_MEASURED_AT = 1_748_736_000_000;
-const SWE_BENCH_URL = "https://www.swebench.com/";
+// Each row cites the VENDOR's own model-card/announcement — the "public, citable
+// publication" the design's Tier-2 curation requires (§5.8.1). Leaderboard products
+// (swebench.com, llm-stats, …) are human references only, NOT eligible data sources.
+const ANTHROPIC_MODELS_URL = "https://www.anthropic.com/news";
+const OPENAI_MODELS_URL = "https://openai.com/index/";
+const GOOGLE_MODELS_URL = "https://blog.google/technology/google-deepmind/";
 
 /**
- * Curated SWE-bench Verified pass-rates from public provider/vendor announcements,
- * normalised to [0,1]. Kept intentionally small — this is a floor, not a leaderboard.
+ * Curated SWE-bench Verified pass-rates cited from each vendor's own published model
+ * announcement (Tier-2 offline floor, §5.8.1), normalised to [0,1]. Kept intentionally
+ * small — this is a floor, not a leaderboard.
+ *
+ * NOTE (provisional): these scores are placeholders pending per-model verification against
+ * the dated vendor publication. The Tier-1 EEE ingest (benchmark_ingest.ts) is the
+ * primary, actualised source once the G8 data-license clears; this floor exists only so
+ * the registry is non-empty offline. A maintainer MUST verify each (model, score, date)
+ * against the cited source before treating these numbers as authoritative.
  */
 export const STATIC_BENCHMARKS: IBenchmarkEntry[] = [
   {
@@ -34,7 +46,7 @@ export const STATIC_BENCHMARKS: IBenchmarkEntry[] = [
     score: 0.749,
     provenance: STATIC_PROVENANCE,
     measuredAt: CURATED_MEASURED_AT,
-    sourceUrl: SWE_BENCH_URL,
+    sourceUrl: ANTHROPIC_MODELS_URL,
   },
   {
     provider: PROVIDER_ANTHROPIC,
@@ -43,7 +55,7 @@ export const STATIC_BENCHMARKS: IBenchmarkEntry[] = [
     score: 0.727,
     provenance: STATIC_PROVENANCE,
     measuredAt: CURATED_MEASURED_AT,
-    sourceUrl: SWE_BENCH_URL,
+    sourceUrl: ANTHROPIC_MODELS_URL,
   },
   {
     provider: PROVIDER_OPENAI,
@@ -52,7 +64,7 @@ export const STATIC_BENCHMARKS: IBenchmarkEntry[] = [
     score: 0.749,
     provenance: STATIC_PROVENANCE,
     measuredAt: CURATED_MEASURED_AT,
-    sourceUrl: SWE_BENCH_URL,
+    sourceUrl: OPENAI_MODELS_URL,
   },
   {
     provider: PROVIDER_GOOGLE,
@@ -61,6 +73,6 @@ export const STATIC_BENCHMARKS: IBenchmarkEntry[] = [
     score: 0.638,
     provenance: STATIC_PROVENANCE,
     measuredAt: CURATED_MEASURED_AT,
-    sourceUrl: SWE_BENCH_URL,
+    sourceUrl: GOOGLE_MODELS_URL,
   },
 ];

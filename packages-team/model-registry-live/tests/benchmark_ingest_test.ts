@@ -48,6 +48,11 @@ function eeeResult(model: string, benchmark: string, score: number): IEeeResultF
   };
 }
 
+/** One EEE_datastore tree entry path: {benchmark}/{developer}/{model}/{uuid}.json (§5.8.6). */
+function treeEntry(benchmark: string, developer: string, model: string): string {
+  return `${benchmark}/${developer}/${model}/00000000-0000-0000-0000-000000000000.json`;
+}
+
 Deno.test("[step7] migration 004 model_benchmark PK enforces one score per (provider, model, benchmark)", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
@@ -89,11 +94,14 @@ Deno.test("[step7] curated static_benchmarks loads idempotently with provenance 
   }
 });
 
-Deno.test("[step7] EEE aggregate-result JSON validates and normalises to 0..1 with provenance remote_static", async () => {
+Deno.test("[step7] EEE tree-walk validates a per-result JSON and normalises to 0..1 with provenance remote_static", async () => {
   const { db, config, cleanup } = await initTestDbService();
   try {
     db.instance.exec(REGISTRY_TABLES_SQL);
     const { svc } = mkService(db, config);
+    // The lister enumerates the {benchmark}/{developer}/{model}/{uuid}.json tree (§5.8.6);
+    // fetch returns the per-result aggregate JSON at each entry path.
+    const listTree = (benchmark: string) => Promise.resolve([treeEntry(benchmark, "openai", "gpt-5")]);
     const fetchStub = (_url: string) =>
       Promise.resolve(new Response(JSON.stringify(eeeResult("gpt-5", "swe_bench_verified", 0.734))));
     const written = await ingestBenchmarks(svc, {
@@ -102,6 +110,7 @@ Deno.test("[step7] EEE aggregate-result JSON validates and normalises to 0..1 wi
       trackedBenchmarks: ["swe_bench_verified"],
       fetchTimeoutMs: 1000,
       fetch: fetchStub as typeof fetch,
+      listTree,
     });
     assertEquals(written, 1);
     const row = db.instance.prepare(
@@ -147,12 +156,17 @@ Deno.test("[step7][edge][roundtrip] boundary scores survive write→read; out-of
   }
 });
 
-Deno.test("[step7] only tracked_benchmarks paths fetched; instance-level JSONL never requested", async () => {
+Deno.test("[step7] only tracked-benchmark tree paths fetched; instance-level JSONL never requested", async () => {
   const { db, config, cleanup } = await initTestDbService();
   try {
     db.instance.exec(REGISTRY_TABLES_SQL);
     const { svc } = mkService(db, config);
     const requested: string[] = [];
+    const listed: string[] = [];
+    const listTree = (benchmark: string) => {
+      listed.push(benchmark);
+      return Promise.resolve([treeEntry(benchmark, "anthropic", "m")]);
+    };
     const fetchStub = (url: string) => {
       requested.push(url);
       return Promise.resolve(new Response(JSON.stringify(eeeResult("m", "swe_bench_verified", 0.5))));
@@ -163,9 +177,13 @@ Deno.test("[step7] only tracked_benchmarks paths fetched; instance-level JSONL n
       trackedBenchmarks: ["swe_bench_verified"],
       fetchTimeoutMs: 1000,
       fetch: fetchStub as typeof fetch,
+      listTree,
     });
-    assertEquals(requested.every((u) => u.includes("swe_bench_verified")), true);
-    // No instance-level per-run JSONL path is ever requested.
+    // The tree is listed only for the tracked benchmark, and every fetched path is an
+    // aggregate-result JSON under that benchmark's {developer}/{model}/{uuid}.json tree.
+    assertEquals(listed, ["swe_bench_verified"]);
+    assertEquals(requested.every((u) => u.includes("swe_bench_verified") && u.endsWith(".json")), true);
+    // No instance-level per-run JSONL path is ever requested (§5.8.1 governance).
     assertEquals(requested.some((u) => u.endsWith(".jsonl")), false);
   } finally {
     await cleanup();
@@ -185,6 +203,7 @@ Deno.test("[step7] malformed EEE payload → parse_error audit, previous scores 
       provenance: "static",
       measuredAt: 1,
     }]);
+    const listTree = (benchmark: string) => Promise.resolve([treeEntry(benchmark, "anthropic", "keep")]);
     const fetchStub = (_url: string) => Promise.resolve(new Response("{not json"));
     await ingestBenchmarks(svc, {
       enabled: true,
@@ -192,6 +211,7 @@ Deno.test("[step7] malformed EEE payload → parse_error audit, previous scores 
       trackedBenchmarks: ["swe_bench_verified"],
       fetchTimeoutMs: 1000,
       fetch: fetchStub as typeof fetch,
+      listTree,
     });
     // Previous curated score is untouched.
     assertEquals(await svc.getBenchmark("p", "keep", "swe_bench_verified"), 0.6);
@@ -210,9 +230,14 @@ Deno.test("[step7] double gate: benchmark_source.enabled=false (default) fetches
     db.instance.exec(REGISTRY_TABLES_SQL);
     const { svc } = mkService(db, config);
     let fetched = 0;
+    let listed = 0;
     const fetchStub = (_url: string) => {
       fetched++;
       return Promise.resolve(new Response("{}"));
+    };
+    const listTree = (_benchmark: string) => {
+      listed++;
+      return Promise.resolve([] as string[]);
     };
     const written = await ingestBenchmarks(svc, {
       enabled: false, // gate closed
@@ -220,7 +245,9 @@ Deno.test("[step7] double gate: benchmark_source.enabled=false (default) fetches
       trackedBenchmarks: ["swe_bench_verified"],
       fetchTimeoutMs: 1000,
       fetch: fetchStub as typeof fetch,
+      listTree,
     });
+    assertEquals(listed, 0); // the tree is not even enumerated behind the closed gate
     assertEquals(fetched, 0);
     assertEquals(written, 0);
   } finally {
