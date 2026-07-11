@@ -13,6 +13,7 @@ import { assertEquals, assertExists, assertRejects, assertStringIncludes } from 
 
 import { join } from "@std/path";
 
+import { DEFAULT_AI_MODEL } from "@exaix/core";
 import { BlueprintLoader, BlueprintLoadError, createBlueprintLoader, loadBlueprint } from "@exaix/core/blueprint";
 import { readFixtureTextSync, TEST_MODEL_OPENAI } from "@exaix/testing";
 
@@ -57,7 +58,7 @@ Deno.test("[BlueprintLoader] loads blueprint with YAML frontmatter", async () =>
     assertExists(blueprint);
     assertEquals(blueprint.identityId, "code-reviewer");
     assertEquals(blueprint.name, "Code Reviewer Agent");
-    assertEquals(blueprint.model, "anthropic:claude-sonnet-4-20250514");
+    assertEquals(blueprint.model, "anthropic:claude-sonnet-5");
     assertEquals(blueprint.capabilities, [McpToolName.READ_FILE, McpToolName.WRITE_FILE]);
     assertEquals(blueprint.version, "1.0.0");
     assertStringIncludes(blueprint.systemPrompt, "You are a code reviewer");
@@ -83,7 +84,7 @@ You are a simple agent with no frontmatter.
     assertExists(blueprint);
     assertEquals(blueprint.identityId, "simple-agent");
     assertEquals(blueprint.name, "Simple Agent"); // Derived from ID
-    assertEquals(blueprint.model, "anthropic:claude-sonnet-4-20250514"); // Default
+    assertEquals(blueprint.model, DEFAULT_AI_MODEL); // Falls through when no model specified
     assertEquals(blueprint.capabilities, []);
     assertStringIncludes(blueprint.systemPrompt, "# Simple Agent");
   } finally {

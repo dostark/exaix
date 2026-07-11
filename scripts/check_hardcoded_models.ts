@@ -18,7 +18,6 @@
 
 import { walk } from "@std/fs";
 import { relative } from "@std/path";
-import { HARDCODED_MODEL_ALLOWLIST } from "@exaix/core";
 
 export interface IViolation {
   file: string;
@@ -32,6 +31,8 @@ const MODEL_PATTERN = /"([a-z][a-z0-9_]*:[a-z][-a-z0-9._/]+)"/gi;
 const COMMENT_PATTERN = /^\s*\/\//;
 const TEST_PATTERNS = [/_test\.ts$/, /\/tests\//, /\/testing\//, /^tests\//];
 
+const SKIP_PATTERNS = [/\/static_overlay\.ts$/];
+
 const KNOWN_PROVIDER_PREFIXES = new Set([
   "anthropic",
   "openai",
@@ -43,7 +44,13 @@ const KNOWN_PROVIDER_PREFIXES = new Set([
   "mock",
 ]);
 
-const allowlist = new Set<string>(HARDCODED_MODEL_ALLOWLIST);
+// Allowlist covers only mock/test identities — all business logic resolves models
+// through IModelRegistry/IModelPricingLookup. The curated data file (static_overlay.ts)
+// is exempted via SKIP_PATTERNS above. No new provider:model entries should be added.
+const allowlist = new Set<string>([
+  "mock:test",
+  "mock:test-model",
+]);
 
 /**
  * Scan a single file's content for hardcoded provider:model strings not in the
@@ -60,6 +67,7 @@ export function findModelViolations(
   const lines = content.split("\n");
 
   if (TEST_PATTERNS.some((p) => p.test(filePath))) return violations;
+  if (SKIP_PATTERNS.some((p) => p.test(filePath))) return violations;
 
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
@@ -113,6 +121,7 @@ export async function checkAllFiles(
       const fp = relative(".", entry.path);
 
       if (TEST_PATTERNS.some((p) => p.test(fp))) continue;
+      if (SKIP_PATTERNS.some((p) => p.test(fp))) continue;
 
       const content = await Deno.readTextFile(entry.path);
       scannedFiles.push(1);

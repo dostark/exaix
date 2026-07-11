@@ -6,7 +6,7 @@
  *   against Phase 132 inline constants.
  */
 import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
-import { MODEL_CONTEXT_WINDOWS, ProviderCostTier } from "@exaix/core/types";
+import { ProviderCostTier } from "@exaix/core/types";
 import { type IProviderHealthChecker, type IProviderMetadata, ProviderRegistry } from "@exaix/ai";
 import { DefaultModelRegistry, mtokToPer1k, RegistryNotImplementedError } from "@exaix/model-registry";
 
@@ -82,7 +82,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "getContextWindow prefers overlay, then MODEL_CONTEXT_WINDOWS, then metadata, else 0",
+  name: "getContextWindow prefers overlay, then metadata, else 0",
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async () => {
@@ -91,9 +91,6 @@ Deno.test({
 
     const overlayWindow = await registry.getContextWindow("openai", "gpt-4o-mini");
     assertEquals(overlayWindow, 128_000);
-
-    const constantsWindow = await registry.getContextWindow("anthropic", "claude-3-5-sonnet");
-    assertEquals(constantsWindow, MODEL_CONTEXT_WINDOWS["anthropic:claude-3-5-sonnet"]);
 
     const unknownWindow = await registry.getContextWindow("unknown", "nonexistent");
     assertEquals(unknownWindow, 0);
@@ -178,14 +175,22 @@ Deno.test({
 });
 
 Deno.test({
-  name: "overlay values match Phase 132 inline constants for every known provider:model pair (regression)",
+  name: "overlay values provide correct context windows for every known provider:model pair (regression)",
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async () => {
     setupProviders();
     const registry = new DefaultModelRegistry(stubHealthChecker());
 
-    for (const [key, window] of Object.entries(MODEL_CONTEXT_WINDOWS)) {
+    const expectedWindows: Record<string, number> = {
+      "openai:gpt-4o-mini": 128_000,
+      "openai:gpt-4o": 128_000,
+      "anthropic:claude-sonnet-5": 1_000_000,
+      "anthropic:claude-3-7-sonnet": 200_000,
+      "google:gemini-2.5-flash": 1_000_000,
+    };
+
+    for (const [key, window] of Object.entries(expectedWindows)) {
       const [provider, model] = key.split(":");
       const contextWindow = await registry.getContextWindow(provider, model);
       assertEquals(contextWindow, window, `Context window mismatch for ${key}`);

@@ -44,13 +44,13 @@ Deno.test("[step132.1] ModelIntent type accepts all fields", () => {
 Deno.test("[step132.1] IResolvedModel shape is correct", () => {
   const resolved: IResolvedModel = {
     provider: "anthropic",
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-5",
     options: { thinking: true, effort: "medium", max_tokens: 4096 } as IModelCallOptions,
     attempt: 1,
   };
 
   assertEquals(resolved.provider, "anthropic");
-  assertEquals(resolved.model, "claude-sonnet-4-20250514");
+  assertEquals(resolved.model, "claude-sonnet-5");
   assertEquals(resolved.options!.thinking, true);
   assertEquals(resolved.options!.effort, "medium");
   assertEquals(resolved.options!.max_tokens, 4096);

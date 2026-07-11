@@ -41,9 +41,9 @@ Deno.test("[step6][GAP-3] explicit model preference wins and returns a concrete 
   try {
     ProviderRegistry.clear();
     registerOne("anthropic", PricingTier.MEDIUM);
-    const got = await resolveIdentityModel({ model: "anthropic:claude-sonnet-4-20250514" }, makeSelector());
+    const got = await resolveIdentityModel({ model: "anthropic:claude-sonnet-5" }, makeSelector());
     assertEquals(got.provider, "anthropic");
-    assertEquals(got.model, "claude-sonnet-4-20250514");
+    assertEquals(got.model, "claude-sonnet-5");
   } finally {
     await cleanup();
   }

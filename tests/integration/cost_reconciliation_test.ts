@@ -22,9 +22,9 @@ Deno.test("[d9] Solo floor injected as pricing lookup prices from static overlay
     // The edition-selected registry in Solo IS the DefaultModelRegistry floor.
     tracker.setPricingLookup(new DefaultModelRegistry(HEALTHY));
 
-    // claude-3-5-sonnet overlay: input 3.00/Mtok, output 15.00/Mtok.
+    // claude-sonnet-5 overlay: input 3.00/Mtok, output 15.00/Mtok.
     // 2000 prompt @ 3.00 + 1000 completion @ 15.00 = 0.006 + 0.015 = 0.021
-    await tracker.trackGeneration("anthropic", "claude-3-5-sonnet", {
+    await tracker.trackGeneration("anthropic", "claude-sonnet-5", {
       promptTokens: 2000,
       completionTokens: 1000,
       totalTokens: 3000,
@@ -51,7 +51,7 @@ Deno.test("[gap6] Solo tracker with no model_registry config block still resolve
     tracker.setPricingLookup(new DefaultModelRegistry(HEALTHY));
     // Reported == computed → no divergence regardless of tolerance; asserts no throw
     // on the nullish-config read path.
-    await tracker.trackGeneration("anthropic", "claude-3-5-sonnet", {
+    await tracker.trackGeneration("anthropic", "claude-sonnet-5", {
       promptTokens: 2000,
       completionTokens: 1000,
       totalTokens: 3000,

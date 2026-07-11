@@ -1,7 +1,7 @@
 ---
 identity_id: "skilled-agent"
 name: "Skilled Agent"
-model: "anthropic:claude-sonnet-4-20250514"
+model: "anthropic:claude-sonnet-5"
 memory_enabled: true
 default_skills:
   - tdd-methodology

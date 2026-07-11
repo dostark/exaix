@@ -2,7 +2,7 @@
  * @module DefaultModelRegistry
  * @path packages/model-registry/src/default_model_registry.ts
  * @description Solo-tier floor implementation of IModelRegistry. Resolves all 13 methods
- *   using the ProviderRegistry, MODEL_CONTEXT_WINDOWS constants, the static overlay, and
+ *   using the ProviderRegistry, the static overlay, and
  *   zero network/DB access. Methods that belong to the Team+ tier throw RegistryNotImplementedError.
  * @architectural-layer ModelRegistry
  * @dependencies [@exaix/core/types, @exaix/ai, @exaix/schemas]
@@ -15,7 +15,6 @@ import {
   type IModelPricing,
   type IModelRegistry,
   type IRateLimitStatus,
-  MODEL_CONTEXT_WINDOWS,
 } from "@exaix/core/types";
 import type { IProviderHealthChecker } from "@exaix/ai";
 import { ProviderRegistry } from "@exaix/ai";
@@ -78,9 +77,6 @@ export class DefaultModelRegistry implements IModelRegistry {
     const overlayKey = `${provider}:${model}`;
     const overlay = STATIC_OVERLAY[overlayKey];
     if (overlay?.contextWindow !== undefined) return Promise.resolve(overlay.contextWindow);
-    const windowKey = `${provider}:${model}`;
-    const fromConstants = MODEL_CONTEXT_WINDOWS[windowKey];
-    if (fromConstants !== undefined) return Promise.resolve(fromConstants);
     const meta = ProviderRegistry.getProviderMetadata(provider);
     return Promise.resolve(meta?.contextWindow ?? 0);
   }
@@ -156,7 +152,6 @@ export class DefaultModelRegistry implements IModelRegistry {
     const meta = ProviderRegistry.getProviderMetadata(provider);
 
     const contextWindow = overlay?.contextWindow ??
-      MODEL_CONTEXT_WINDOWS[overlayKey] ??
       meta?.contextWindow ??
       0;
 

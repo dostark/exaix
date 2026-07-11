@@ -22,11 +22,11 @@ export { RegistryRefreshScheduler } from "./src/registry_refresh_scheduler.ts";
 export { cronIntervalMs, maybeCreateRefreshScheduler } from "./src/registry_refresh_scheduler.ts";
 export { routeHealthScore, RoutePolicy } from "./src/route_policy.ts";
 export { STATIC_BENCHMARKS } from "./src/static_benchmarks.ts";
-export { ingestBenchmarks } from "./src/benchmark_ingest.ts";
+export { fetchModelsDevBenchmarks } from "./src/modelsdev_ingest.ts";
 export type { AdmissionReason, IAdmissionInputs, IAdmittedEntry } from "./src/adapters/admission.ts";
 export type { ITeamStrategyDeps } from "./src/team_resolution_strategy.ts";
 export type { IRefreshDeps } from "./src/registry_refresh_scheduler.ts";
-export type { IBenchmarkIngestOptions } from "./src/benchmark_ingest.ts";
+export type { IModelsDevIngestOptions } from "./src/modelsdev_ingest.ts";
 export type {
   BenchmarkProvenance,
   IBenchmarkEntry,

@@ -22,6 +22,7 @@ import type { IModelCallOptions, ModelIntent } from "@exaix/schemas";
 import type { ITokenizer } from "@exaix/core/func";
 import { SafeError } from "@exaix/core/errors";
 import { ProviderFactory } from "@exaix/ai/provider_factory.ts";
+import type { IModelPricingLookup } from "@exaix/core/types";
 import { PromptBudgetAllocator, SafeSubprocess, SubprocessTimeoutError } from "@exaix/core";
 import {
   AGENT_EVENT_EXECUTION_COMPLETED,
@@ -36,7 +37,6 @@ import {
   MAX_NAME_LENGTH,
   MAX_PROMPT_LENGTH,
   MAX_USER_INPUT_LENGTH,
-  MODEL_PRICING_MAP,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
 import {
@@ -226,6 +226,7 @@ export class AgentExecutor {
     private _guardrailRunner?: IGuardrailRunner,
     private readonly options?: IAgentExecutorOptions,
     private modelResolver?: ModelResolver,
+    private pricingLookup?: IModelPricingLookup,
   ) {
     this.promptBudgetAllocator = promptBudgetAllocator ??
       new PromptBudgetAllocator(this.config.budget_enforcement, undefined, this.logger);
@@ -739,7 +740,7 @@ export class AgentExecutor {
           prompt_tokens: validated.usage.prompt_tokens,
           completion_tokens: validated.usage.completion_tokens,
         }
-        : this.estimateExecutionUsage(_blueprint, context, validated);
+        : await this.estimateExecutionUsage(_blueprint, context, validated);
 
       // Step 61.3/61.4: Real SHA and Audit
       const portalPath = portal.target_path;
@@ -975,18 +976,29 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
     return `${blueprint.provider}:${blueprint.model}`;
   }
 
-  private estimateExecutionUsage(
+  private async estimateExecutionUsage(
     blueprint: IAgentFileBlueprint,
     context: IExecutionContext,
     result: IChangesetResult,
-  ): { tokens: number; cost_usd_estimate: number } {
+  ): Promise<{ tokens: number; cost_usd_estimate: number }> {
     const modelId = this.resolveModelId(blueprint);
     const totalChars = blueprint.systemPrompt.length +
       context.request.length +
       context.plan.length +
       result.description.length;
     const tokens = Math.max(1, Math.ceil(totalChars / TOKEN_ESTIMATION_CHARS_PER_TOKEN));
-    const pricePer1k = MODEL_PRICING_MAP[modelId] ?? 0;
+
+    let pricePer1k = 0;
+    if (this.pricingLookup) {
+      const colonIdx = modelId.indexOf(":");
+      if (colonIdx !== -1) {
+        const provider = modelId.slice(0, colonIdx);
+        const model = modelId.slice(colonIdx + 1);
+        const pricing = await this.pricingLookup.getModelPricing(provider, model);
+        pricePer1k = (pricing.inputPerMtok ?? 0) / 1000;
+      }
+    }
+
     const cost = (tokens / 1000) * pricePer1k;
 
     return {

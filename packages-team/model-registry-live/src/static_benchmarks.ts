@@ -33,9 +33,7 @@ const GOOGLE_MODELS_URL = "https://blog.google/technology/google-deepmind/";
  * small — this is a floor, not a leaderboard.
  *
  * NOTE (provisional): these scores are placeholders pending per-model verification against
- * the dated vendor publication. The Tier-1 EEE ingest (benchmark_ingest.ts) is the
- * primary, actualised source once the G8 data-license clears; this floor exists only so
- * the registry is non-empty offline. A maintainer MUST verify each (model, score, date)
+ * the dated vendor publication. A maintainer MUST verify each (model, score, date)
  * against the cited source before treating these numbers as authoritative.
  */
 export const STATIC_BENCHMARKS: IBenchmarkEntry[] = [

@@ -1,7 +1,7 @@
 ---
 identity_id: "reflexive-agent"
 name: "Reflexive Agent"
-model: "anthropic:claude-sonnet-4-20250514"
+model: "anthropic:claude-sonnet-5"
 reflexive: true
 max_reflexion_iterations: 5
 confidence_required: 80

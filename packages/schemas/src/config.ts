@@ -148,7 +148,7 @@ const RoutingConfigSchema = z.object({
  * as their features land. Stays `.optional()`: Solo reads of nested fields use a
  * constant fallback (GAP-6, wired in Step 2).
  */
-/** §5.8 benchmark ingest fetch timeout — the EEE dataset is larger than a catalog GET. */
+/** §5.8 benchmark ingest fetch timeout — models.dev is larger than a catalog GET. */
 const DEFAULT_BENCHMARK_FETCH_TIMEOUT_MS = 30_000;
 
 export const ModelRegistryConfigSchema = z.object({
@@ -170,12 +170,12 @@ export const ModelRegistryConfigSchema = z.object({
   route_policy_price_tolerance: z.number().min(0).default(0.05),
   // G4: per-model provider order for `user_order` (model → provider list). Empty ⇒ cheapest.
   route_order: z.record(z.string(), z.array(z.string())).default({}),
-  // §5.8 (F13/G8) benchmark data plane — opt-in EEE ingest read by the Step 7
+  // §5.8 (F13/G8) benchmark data plane — opt-in models.dev ingest read by the Step 7
   // scheduler benchmark pass. Double-gated: enabled AND model_registry.enabled.
-  // Ships disabled pending the G8 data-license verification (curated floor only).
+  // G8 data-license: models.dev is MIT-licensed, community-maintained.
   benchmark_source: z.object({
-    enabled: z.boolean().default(false),
-    dataset_url: z.string().default("https://huggingface.co/datasets/evaleval/EEE_datastore"),
+    enabled: z.boolean().default(true),
+    dataset_url: z.string().default("https://models.dev/models.json"),
     tracked_benchmarks: z.array(z.string()).default(["swe_bench_verified"]),
     refresh_cron: z.string().default("0 5 * * 0"), // weekly
     fetch_timeout_ms: z.number().int().positive().default(DEFAULT_BENCHMARK_FETCH_TIMEOUT_MS),

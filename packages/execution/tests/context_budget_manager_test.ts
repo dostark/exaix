@@ -46,7 +46,7 @@ function makeSegment(
 /** IPromptBudget stub with a generous loopHistory budget. */
 function makePromptBudget(loopHistoryTokens = 10_000) {
   return {
-    model: "anthropic:claude-3-5-sonnet",
+    model: "anthropic:claude-sonnet-5",
     totalBudgetTokens: 200_000,
     safetyBufferTokens: 20_000,
     sections: {
@@ -72,7 +72,7 @@ Deno.test("[ContextBudgetManager] returns all segments unchanged when total toke
   const { segments: out, snapshot } = await manager.prepare({
     traceId: "trace-1",
     stepId: "step-1",
-    model: "anthropic:claude-3-5-sonnet",
+    model: "anthropic:claude-sonnet-5",
     promptBudget: makePromptBudget(),
     segments,
   });
@@ -105,7 +105,7 @@ Deno.test("[ContextBudgetManager] drops lowest-priority segments first when over
   const { segments: out, snapshot } = await manager.prepare({
     traceId: "trace-2",
     stepId: "step-1",
-    model: "anthropic:claude-3-5-sonnet",
+    model: "anthropic:claude-sonnet-5",
     promptBudget: makePromptBudget(0), // zero loopHistory budget forces tool_result drop
     segments,
   });
@@ -134,7 +134,7 @@ Deno.test("[ContextBudgetManager] never drops segments with priority >= CONTEXT_
   const { segments: out } = await manager.prepare({
     traceId: "trace-3",
     stepId: "step-1",
-    model: "anthropic:claude-3-5-sonnet",
+    model: "anthropic:claude-sonnet-5",
     promptBudget: makePromptBudget(10), // very tight
     segments,
   });
@@ -158,7 +158,7 @@ Deno.test("[ContextBudgetManager] snapshot.decisions count equals number of segm
   const { snapshot } = await manager.prepare({
     traceId: "trace-4",
     stepId: "step-1",
-    model: "anthropic:claude-3-5-sonnet",
+    model: "anthropic:claude-sonnet-5",
     promptBudget: makePromptBudget(),
     segments,
   });
@@ -172,7 +172,7 @@ Deno.test("[ContextBudgetManager] snapshot.overflowRecovered is false when sync 
   const { snapshot } = await manager.prepare({
     traceId: "trace-5",
     stepId: "step-1",
-    model: "anthropic:claude-3-5-sonnet",
+    model: "anthropic:claude-sonnet-5",
     promptBudget: makePromptBudget(),
     segments: [
       makeSegment({ kind: "system", priority: CONTEXT_PRIORITY_SYSTEM, tokenEstimate: 10 }),
@@ -188,7 +188,7 @@ Deno.test("[ContextBudgetManager] empty segment list is valid input — returns 
   const { segments: out, snapshot } = await manager.prepare({
     traceId: "trace-6",
     stepId: "step-1",
-    model: "anthropic:claude-3-5-sonnet",
+    model: "anthropic:claude-sonnet-5",
     promptBudget: makePromptBudget(),
     segments: [],
   });
@@ -206,14 +206,14 @@ Deno.test("[ContextBudgetManager] concurrent prepare() calls for same traceId pr
     manager.prepare({
       traceId: "trace-concurrent",
       stepId: "step-A",
-      model: "anthropic:claude-3-5-sonnet",
+      model: "anthropic:claude-sonnet-5",
       promptBudget: makePromptBudget(),
       segments: [seg],
     }),
     manager.prepare({
       traceId: "trace-concurrent",
       stepId: "step-B",
-      model: "anthropic:claude-3-5-sonnet",
+      model: "anthropic:claude-sonnet-5",
       promptBudget: makePromptBudget(),
       segments: [seg],
     }),
@@ -229,7 +229,7 @@ Deno.test("[ContextBudgetManager] snapshot.durationMs is a non-negative integer"
   const { snapshot } = await manager.prepare({
     traceId: "trace-7",
     stepId: "step-1",
-    model: "anthropic:claude-3-5-sonnet",
+    model: "anthropic:claude-sonnet-5",
     promptBudget: makePromptBudget(),
     segments: [
       makeSegment({ kind: "system", priority: CONTEXT_PRIORITY_SYSTEM, tokenEstimate: 5 }),
@@ -259,7 +259,7 @@ Deno.test("[ContextBudgetManager] drops low-priority tool_result before portal_k
   const { snapshot } = await manager.prepare({
     traceId: "trace-ordering",
     stepId: "step-1",
-    model: "anthropic:claude-3-5-sonnet",
+    model: "anthropic:claude-sonnet-5",
     promptBudget: makePromptBudget(0), // zero loopHistory forces tool_result drop
     segments: [tool, portal],
   });
@@ -284,7 +284,7 @@ Deno.test("[ContextBudgetManager] never drops system or acceptance_criteria segm
   const { segments: out } = await manager.prepare({
     traceId: "trace-protected",
     stepId: "step-1",
-    model: "anthropic:claude-3-5-sonnet",
+    model: "anthropic:claude-sonnet-5",
     promptBudget: budget,
     segments: [
       makeSegment({ kind: "system", priority: CONTEXT_PRIORITY_SYSTEM, tokenEstimate: 999 }),
@@ -316,7 +316,7 @@ Deno.test("[ContextBudgetManager] synchronous tier completes within CONTEXT_BUDG
   await manager.prepare({
     traceId: "trace-timing",
     stepId: "step-1",
-    model: "anthropic:claude-3-5-sonnet",
+    model: "anthropic:claude-sonnet-5",
     promptBudget: makePromptBudget(),
     segments,
   });
@@ -333,7 +333,7 @@ Deno.test("[ContextBudgetManager] snapshot.overflowRecovered is true when async 
   const { snapshot } = await manager.prepare({
     traceId: "trace-overflow",
     stepId: "step-1",
-    model: "anthropic:claude-3-5-sonnet",
+    model: "anthropic:claude-sonnet-5",
     promptBudget: makePromptBudget(0),
     segments: [
       makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 50 }),
@@ -354,7 +354,7 @@ Deno.test("[ContextBudgetManager] protected segments with nonCompactable=true ar
   const { segments: out } = await manager.prepare({
     traceId: "trace-noncompactable",
     stepId: "step-1",
-    model: "anthropic:claude-3-5-sonnet",
+    model: "anthropic:claude-sonnet-5",
     promptBudget: budget,
     segments: [
       makeSegment({
@@ -393,7 +393,7 @@ Deno.test(
     await manager.prepare({
       traceId: "trace-event",
       stepId: "step-1",
-      model: "anthropic:claude-3-5-sonnet",
+      model: "anthropic:claude-sonnet-5",
       promptBudget: makePromptBudget(0), // zero loopHistory forces drop → overflowRecovered = true
       segments: [
         makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 50 }),
@@ -432,7 +432,7 @@ Deno.test("[ContextBudgetManager] request + plan_step sharing sections.plan resp
   const { segments: out, snapshot } = await manager.prepare({
     traceId: "trace-section-plan",
     stepId: "step-1",
-    model: "anthropic:claude-3-5-sonnet",
+    model: "anthropic:claude-sonnet-5",
     promptBudget: tightBudget,
     segments: [
       makeSegment({
@@ -483,7 +483,7 @@ Deno.test(
     await manager.prepare({
       traceId: "trace-provider-wiring",
       stepId: "step-1",
-      model: "anthropic:claude-3-5-sonnet",
+      model: "anthropic:claude-sonnet-5",
       promptBudget: makePromptBudget(0),
       segments: [
         makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 50 }),
@@ -514,7 +514,7 @@ Deno.test(
     await manager.prepare({
       traceId: "trace-no-provider",
       stepId: "step-1",
-      model: "anthropic:claude-3-5-sonnet",
+      model: "anthropic:claude-sonnet-5",
       promptBudget: makePromptBudget(0),
       segments: [
         makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 50 }),
@@ -548,7 +548,7 @@ Deno.test("[ContextBudgetManager] tool_result + summary share sections.loopHisto
   const { snapshot } = await manager.prepare({
     traceId: "trace-section-loop",
     stepId: "step-1",
-    model: "anthropic:claude-3-5-sonnet",
+    model: "anthropic:claude-sonnet-5",
     promptBudget: tightBudget,
     segments: [
       makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 30 }),

@@ -12,8 +12,6 @@ import {
   DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED,
   LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK,
   LOCAL_PROVIDER_PREFIXES,
-  MODEL_CONTEXT_WINDOWS,
-  MODEL_PRICING_MAP,
   SECTION_FLOORS,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
@@ -58,9 +56,7 @@ Deno.test("[PromptBudgetSchema] exports loopHistory section enum", () => {
   assertEquals(PromptBudgetSection.LOOP_HISTORY, "loopHistory");
 });
 
-Deno.test("[PromptBudgetConstants] exports model windows, pricing, and floors", () => {
-  assertEquals(typeof MODEL_CONTEXT_WINDOWS, "object");
-  assertEquals(typeof MODEL_PRICING_MAP, "object");
+Deno.test("[PromptBudgetConstants] exports section floors", () => {
   assertEquals(typeof SECTION_FLOORS, "object");
   assertEquals(SECTION_FLOORS.system > 0, true);
   assertEquals(SECTION_FLOORS.plan > 0, true);

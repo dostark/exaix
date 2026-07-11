@@ -967,18 +967,6 @@ export const TOKEN_ESTIMATION_MAX_TOKENS = 2000;
 // Prompt Budgeting (Phase 62)
 // ============================================================================
 
-/**
- * Model context windows (tokens) used for prompt budget allocation.
- * Keys are provider:model identifiers.
- */
-export const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
-  "openai:gpt-4o-mini": 128_000,
-  "openai:gpt-4o": 128_000,
-  "anthropic:claude-3-5-sonnet": 200_000,
-  "anthropic:claude-3-7-sonnet": 200_000,
-  "google:gemini-2.5-flash": 1_000_000,
-};
-
 /** Provider ID prefixes that identify local/self-hosted LLM providers. */
 export const LOCAL_PROVIDER_PREFIXES = ["ollama:", "lmstudio:", "local:"] as const;
 
@@ -1058,41 +1046,10 @@ export const DEFAULT_SKILLS_LOG_MATCHED_IDS: boolean = configurable({
 /** Maximum allowed length for a saved session-memory insight description. */
 export const SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS = 2_000;
 
-/**
- * Model pricing map in USD per 1K tokens for cost estimation.
- * Keys are provider:model identifiers.
- */
-export const MODEL_PRICING_MAP: Record<string, number> = {
-  "openai:gpt-4o-mini": 0.0003,
-  "openai:gpt-4o": 0.005,
-  "anthropic:claude-3-5-sonnet": 0.003,
-  "anthropic:claude-3-7-sonnet": 0.003,
-  "google:gemini-2.5-flash": 0.00035,
-};
-
-/**
- * Temporary allowlist of known hardcoded model references in non-test TS source.
- * Long-term goal is zero as presets replace all hardcoded references.
- * Added entries must include a comment identifying the file that uses them.
- */
-export const HARDCODED_MODEL_ALLOWLIST = [
-  // packages/schemas/src/constants.ts
-  "openai:gpt-4o-mini",
-  // packages/execution/src/prompt_budget_allocator.ts
-  "openai:gpt-4o-mini",
-  // apps/daemon/main.ts — boot default
-  "anthropic:claude-sonnet-4-20250514",
-  // packages/core/src/types/constants.ts — MODEL_CONTEXT_WINDOWS keys
-  "openai:gpt-4o",
-  "anthropic:claude-3-5-sonnet",
-  "anthropic:claude-3-7-sonnet",
-  "google:gemini-2.5-flash",
-  // packages/core/src/types/constants.ts — MODEL_PRICING_MAP keys (same models)
-  // apps/exactl/src/init.ts — mock test default
-  "mock:test",
-  // Blueprints/Identities/mock-agent.md — deliberate test identity model
-  "mock:test-model",
-] as const;
+// HARDCODED_MODEL_ALLOWLIST removed in Step 7b — the gate served its transition purpose.
+// All business logic now resolves models through IModelRegistry/IModelPricingLookup.
+// The curated data file (packages/model-registry/src/static_overlay.ts) is intentionally
+// exempt — it IS the Solo-tier data source, not an ad-hoc reference.
 
 // Tokenizer backend modes
 export const TOKENIZER_BACKEND_AUTO = "auto" as const;

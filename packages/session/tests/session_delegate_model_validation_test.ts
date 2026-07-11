@@ -43,7 +43,7 @@ Deno.test("[step132.5] prepareBrief accepts resolved provider:model string", asy
     gate: "refinement" as never,
     tool: "opencode",
     objective: "test",
-    model: "anthropic:claude-sonnet-4-20250514",
+    model: "anthropic:claude-sonnet-5",
     artifactRef: "/tmp/test",
     permittedPaths: [],
     acceptanceCriteria: [],

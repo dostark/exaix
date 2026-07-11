@@ -33,7 +33,7 @@ import { castAny, makeGenerateResult } from "@exaix/testing";
 
 type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
 
-const TEST_MODEL = "anthropic:claude-3-5-sonnet";
+const TEST_MODEL = "anthropic:claude-sonnet-5";
 
 const testBlueprint: IAgentFileBlueprint = {
   name: "budget-test-agent",

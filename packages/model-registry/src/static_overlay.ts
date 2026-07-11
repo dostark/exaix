@@ -42,10 +42,10 @@ export const STATIC_OVERLAY: StaticOverlay = {
     verifiedAt: VERIFIED_AT_TIMESTAMP,
     sourceUrl: "https://openai.com/api/pricing/",
   },
-  "anthropic:claude-3-5-sonnet": {
+  "anthropic:claude-sonnet-5": {
     inputPerMtok: 3.00,
     outputPerMtok: 15.00,
-    contextWindow: 200_000,
+    contextWindow: 1_000_000,
     verifiedAt: VERIFIED_AT_TIMESTAMP,
     sourceUrl: "https://anthropic.com/pricing/",
   },

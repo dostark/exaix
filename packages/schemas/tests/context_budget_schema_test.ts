@@ -23,7 +23,7 @@ const validDecision = {
 const validSnapshot = {
   traceId: "trace-abc",
   stepId: "step-1",
-  model: "anthropic:claude-3-5-sonnet",
+  model: "anthropic:claude-sonnet-5",
   maxContextTokens: 200_000,
   usedInputTokens: 1_500,
 };

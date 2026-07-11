@@ -23,7 +23,6 @@ import type {
   ModelSize,
 } from "@exaix/schemas";
 import { DEFAULT_MODEL_PRESETS, getDefaultModels } from "@exaix/schemas";
-import { MODEL_CONTEXT_WINDOWS } from "@exaix/core/types";
 import { isRetryable } from "./providers/common.ts";
 import type { IProviderHealthChecker, ISelectionCriteria } from "./provider_selector.ts";
 import type { IProviderMetadata } from "./provider_registry.ts";
@@ -349,9 +348,6 @@ export class ModelResolver {
     let contextWindow: number | undefined;
     if (this.modelRegistry) {
       contextWindow = await this.modelRegistry.getContextWindow(resolved.provider, resolved.model);
-    } else {
-      const windowKey = `${resolved.provider}:${resolved.model}`;
-      contextWindow = MODEL_CONTEXT_WINDOWS[windowKey];
     }
     if (!contextWindow || intent.estimated_input_tokens <= contextWindow) return null;
 

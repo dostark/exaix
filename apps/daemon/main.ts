@@ -772,7 +772,7 @@ if (import.meta.main) {
       const { buildTeamResolutionStrategy, buildRefreshScheduler, loadBenchmarkFloor } = bt;
       resolutionStrategy = buildTeamResolutionStrategy(modelRegistry, config, logger);
       // Phase 135 Step 7: populate the benchmark data plane. Curated floor loads
-      // unconditionally; EEE ingest runs only behind the double gate. Feeds top-N
+      // unconditionally; models.dev ingest runs only behind the double gate. Feeds top-N
       // admission (G6) and the Step 8 `best` scorer.
       await loadBenchmarkFloor(modelRegistry, config);
       // Phase 135 Step 5: opt-in registry refresh scheduler. buildRefreshScheduler

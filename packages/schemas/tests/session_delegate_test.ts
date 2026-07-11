@@ -152,7 +152,7 @@ Deno.test("[session_delegate] dogfood.claude.toml preset parses via ConfigSchema
     session_delegate: {
       enabled: true,
       tool: "claude-code",
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-5",
       gates: ["code_changes"],
       launch_mode: "headless",
     },

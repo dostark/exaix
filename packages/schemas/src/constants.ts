@@ -70,13 +70,6 @@ export const DEFAULT_PORTAL_KNOWLEDGE_MODE = "quick";
 export const TOKEN_ESTIMATION_CHARS_PER_TOKEN = 4;
 export const LOCAL_PROVIDER_PREFIXES = ["ollama:", "lmstudio:", "local:"] as const;
 export const LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK = 32_768;
-export const MODEL_PRICING_MAP: Record<string, number> = {
-  "openai:gpt-4o-mini": 0.0003,
-  "openai:gpt-4o": 0.005,
-  "anthropic:claude-3-5-sonnet": 0.003,
-  "anthropic:claude-3-7-sonnet": 0.003,
-  "google:gemini-2.5-flash": 0.00035,
-};
 export const SECTION_FLOORS = {
   system: 1_000,
   plan: 2_000,

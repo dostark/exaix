@@ -1,7 +1,7 @@
 ---
 identity_id: "code-reviewer"
 name: "Code Reviewer Agent"
-model: "anthropic:claude-sonnet-4-20250514"
+model: "anthropic:claude-sonnet-5"
 capabilities:
   - read_file
   - write_file

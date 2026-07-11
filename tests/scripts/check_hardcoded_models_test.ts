@@ -13,28 +13,27 @@ import { assertEquals } from "@std/assert";
 import { findModelViolations } from "../../scripts/check_hardcoded_models.ts";
 
 const ALLOWLIST = new Set([
-  "openai:gpt-4o-mini",
-  "openai:gpt-4o",
-  "anthropic:claude-3-5-sonnet",
+  "mock:test",
+  "mock:test-model",
 ]);
 
 Deno.test("[check-hardcoded-models] allowlisted model string produces no violation", () => {
-  const content = `const model = "openai:gpt-4o-mini";`;
+  const content = `const model = "mock:test";`;
   const violations = findModelViolations(content, "packages/foo/src/bar.ts", ALLOWLIST);
   assertEquals(violations, []);
 });
 
 Deno.test("[check-hardcoded-models] non-allowlisted model string is flagged", () => {
-  const content = `const model = "anthropic:claude-sonnet-4-20250514";`;
+  const content = `const model = "anthropic:claude-3-5-sonnet";`;
   const violations = findModelViolations(content, "packages/foo/src/bar.ts", ALLOWLIST);
   assertEquals(violations.length, 1);
-  assertEquals(violations[0].model, "anthropic:claude-sonnet-4-20250514");
+  assertEquals(violations[0].model, "anthropic:claude-3-5-sonnet");
   assertEquals(violations[0].line, 1);
 });
 
 Deno.test("[check-hardcoded-models] multiple non-allowlisted strings all flagged", () => {
   const content = [
-    'const a = "openai:gpt-4o-mini";',
+    'const a = "mock:test";',
     'const b = "anthropic:claude-unknown";',
     'const c = "google:gemini-experimental";',
   ].join("\n");

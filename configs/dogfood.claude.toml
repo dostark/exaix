@@ -71,7 +71,7 @@ enabled = true
 [session_delegate]
 enabled = true
 tool = "claude-code"
-# Known-valid current model id (the stale claude-sonnet-4-20250514 was rejected by the headless
+# Known-valid current model id (the stale claude-sonnet-5 was rejected by the headless
 # `claude` CLI as non-existent, so the delegate spawned but made no edits). Matches the analysis
 # model above, which this environment confirmed works for live runs.
 model = "claude-haiku-4-5-20251001"

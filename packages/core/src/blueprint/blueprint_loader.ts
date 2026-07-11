@@ -12,7 +12,13 @@ import { exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 import type { JSONValue } from "@exaix/core";
-import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_IDENTITIES_PATH, McpToolName, ToolName } from "@exaix/core";
+import {
+  DEFAULT_AI_MODEL,
+  DEFAULT_BLUEPRINT_VERSION,
+  DEFAULT_IDENTITIES_PATH,
+  McpToolName,
+  ToolName,
+} from "@exaix/core";
 
 /**
  * Fully loaded and validated blueprint
@@ -407,7 +413,7 @@ export class BlueprintLoader {
     return {
       identityId: frontmatter.identity_id || identityId,
       name: frontmatter.name || this.deriveNameFromId(identityId),
-      model: frontmatter.model || this.options.defaultModel || "anthropic:claude-sonnet-4-20250514",
+      model: frontmatter.model || this.options.defaultModel || DEFAULT_AI_MODEL,
       provider: frontmatter.provider,
       capabilities: frontmatter.capabilities,
       systemPrompt,
@@ -471,7 +477,7 @@ export class BlueprintLoader {
     return {
       identityId,
       name: this.deriveNameFromId(identityId),
-      model: this.options.defaultModel || "anthropic:claude-sonnet-4-20250514",
+      model: this.options.defaultModel || DEFAULT_AI_MODEL,
       capabilities: [],
       systemPrompt: content.trim(),
       version: "1.0.0",

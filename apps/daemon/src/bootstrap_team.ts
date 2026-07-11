@@ -14,9 +14,9 @@ import { PortalExtractorsModule } from "@exaix-team/portal-extractors";
 import {
   AdapterRegistry,
   AnthropicCatalogAdapter,
+  fetchModelsDevBenchmarks,
   GoogleCatalogAdapter,
   type IAdmissionInputs,
-  ingestBenchmarks,
   maybeCreateRefreshScheduler,
   ModelRegistryService,
   OllamaCatalogAdapter,
@@ -134,7 +134,7 @@ async function admissionInputsFor(
   const existing = await registry.getProviderModels(provider);
   const topN = config.model_registry?.admission?.top_n ?? DEFAULT_ADMISSION_TOP_N;
   // G6 (Step 7): the top-N benchmark set from model_benchmark. Empty until the curated
-  // floor / EEE ingest populates it, so the benchmark_topn admission path stays inert.
+  // floor / models.dev ingest populates it, so the benchmark_topn admission path stays inert.
   const tracked = config.model_registry?.benchmark_source?.tracked_benchmarks ?? DEFAULT_TRACKED_BENCHMARKS;
   const benchmarkTopN = await registry.getBenchmarkTopN(tracked, topN);
   return {
@@ -207,12 +207,11 @@ export function buildRefreshScheduler(
 }
 
 /**
- * Populate the benchmark data plane at Team startup (Phase 135 Step 7, §5.8). The curated
+ * Populate the benchmark data plane at Team startup (Phase 135 Step 7/7a, §5.8). The curated
  * Tier-2 floor (static_benchmarks.ts) is applied UNCONDITIONALLY on a Team daemon so the
- * top-N admission path and the Step 8 `best` scorer always have data. The EEE ingest is
- * DOUBLY gated — it runs only when model_registry.enabled AND benchmark_source.enabled;
- * ingestBenchmarks itself short-circuits on the inner gate, so the outer gate here only
- * avoids the outbound call setup. A no-op on Solo (registry is not the Team service).
+ * top-N admission path and the Step 8 `best` scorer always have data. The models.dev ingest
+ * is DOUBLY gated — it runs only when model_registry.enabled AND benchmark_source.enabled.
+ * A no-op on Solo (registry is not the Team service).
  */
 export async function loadBenchmarkFloor(
   modelRegistry: IModelRegistry,
@@ -222,9 +221,8 @@ export async function loadBenchmarkFloor(
   await modelRegistry.applyBenchmarks(STATIC_BENCHMARKS);
   const source = config.model_registry?.benchmark_source;
   if (config.model_registry?.enabled === true && source?.enabled === true) {
-    await ingestBenchmarks(modelRegistry, {
-      enabled: source.enabled,
-      datasetUrl: source.dataset_url,
+    await fetchModelsDevBenchmarks(modelRegistry, {
+      endpoint: source.dataset_url,
       trackedBenchmarks: source.tracked_benchmarks,
       fetchTimeoutMs: source.fetch_timeout_ms,
       fetch,

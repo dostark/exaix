@@ -47,7 +47,7 @@ function makeSegment(overrides: Partial<IContextSegment> & { kind: IContextSegme
 
 function makePromptBudget(loopHistoryTokens = 10_000) {
   return {
-    model: "anthropic:claude-3-5-sonnet",
+    model: "anthropic:claude-sonnet-5",
     totalBudgetTokens: 200_000,
     safetyBufferTokens: 20_000,
     sections: {
@@ -90,7 +90,7 @@ Deno.test(
     await manager.prepare({
       traceId: "trace-compaction-milestone",
       stepId: "step-1",
-      model: "anthropic:claude-3-5-sonnet",
+      model: "anthropic:claude-sonnet-5",
       promptBudget: makePromptBudget(0),
       segments: [
         makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 50 }),
@@ -123,7 +123,7 @@ Deno.test(
     await manager.prepare({
       traceId: "trace-no-compaction",
       stepId: "step-1",
-      model: "anthropic:claude-3-5-sonnet",
+      model: "anthropic:claude-sonnet-5",
       promptBudget: makePromptBudget(100_000),
       segments: [
         makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 50 }),
@@ -153,7 +153,7 @@ Deno.test(
     const { snapshot } = await manager.prepare({
       traceId: "trace-no-emitter",
       stepId: "step-1",
-      model: "anthropic:claude-3-5-sonnet",
+      model: "anthropic:claude-sonnet-5",
       promptBudget: makePromptBudget(0),
       segments: [
         makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 50 }),

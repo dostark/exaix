@@ -17,7 +17,7 @@ function makeSnapshot(traceId: string, stepId = "step-1"): IContextBudgetSnapsho
   return {
     traceId,
     stepId,
-    model: "anthropic:claude-3-5-sonnet",
+    model: "anthropic:claude-sonnet-5",
     maxContextTokens: 200_000,
     usedInputTokens: 500,
     decisions: [],

@@ -19,7 +19,6 @@ import {
   LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK,
   LOCAL_PROVIDER_PREFIXES,
   MINIMUM_HINT_THRESHOLD,
-  MODEL_CONTEXT_WINDOWS,
   SAFETY_BUFFER_RATIO,
   SECTION_BASE_WEIGHTS,
   SECTION_FLOORS,
@@ -36,7 +35,7 @@ import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IEventLogger } from "./logger/event_logger.ts";
 import { DomainEventType } from "@exaix/core/events";
 import { TaskType } from "./types/enums.ts";
-import type { Opt, Reason } from "@exaix/core/types";
+import type { IModelRegistry, Opt, Reason } from "@exaix/core/types";
 
 export interface IAllocationHints {
   memoryUsedTokens?: number;
@@ -71,20 +70,27 @@ export class PromptBudgetAllocator {
   private readonly policy: IBudgetPolicy;
   private readonly tokenizer: ITokenizer;
   private readonly logger?: IEventLogger;
+  private readonly modelRegistry?: IModelRegistry;
 
-  constructor(policy?: Partial<IBudgetPolicy>, tokenizer?: ITokenizer, logger?: IEventLogger) {
+  constructor(
+    policy?: Partial<IBudgetPolicy>,
+    tokenizer?: ITokenizer,
+    logger?: IEventLogger,
+    modelRegistry?: IModelRegistry,
+  ) {
     this.policy = normalizeBudgetPolicy(policy);
     this.tokenizer = tokenizer ?? new AiTokenEstimatorTokenizer();
     this.logger = logger;
+    this.modelRegistry = modelRegistry;
   }
 
-  allocate(
+  async allocate(
     modelId: string,
     hints?: Opt<IAllocationHints, Reason.OptionalInput>,
     analysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
   ): Promise<IPromptBudget> {
     const isLocalModel = this._isLocalModel(modelId);
-    const totalTokens = this._resolveTotalTokens(modelId, isLocalModel);
+    const totalTokens = await this._resolveTotalTokens(modelId, isLocalModel);
 
     const enforcementEnabled = this.policy.enabled ??
       (isLocalModel ? this.policy.local : this.policy.cloud);
@@ -173,17 +179,22 @@ export class PromptBudgetAllocator {
     return LOCAL_PROVIDER_PREFIXES.some((prefix) => modelId.startsWith(prefix));
   }
 
-  private _resolveTotalTokens(modelId: string, isLocalModel: boolean): number {
-    const configuredWindow = MODEL_CONTEXT_WINDOWS[modelId as keyof typeof MODEL_CONTEXT_WINDOWS];
-    if (configuredWindow !== undefined) {
-      return configuredWindow;
+  private async _resolveTotalTokens(modelId: string, isLocalModel: boolean): Promise<number> {
+    if (this.modelRegistry) {
+      const colonIdx = modelId.indexOf(":");
+      if (colonIdx !== -1) {
+        const provider = modelId.slice(0, colonIdx);
+        const model = modelId.slice(colonIdx + 1);
+        const window = await this.modelRegistry.getContextWindow(provider, model);
+        if (window > 0) return window;
+      }
     }
 
     if (isLocalModel) {
       return LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK;
     }
 
-    return MODEL_CONTEXT_WINDOWS["openai:gpt-4o-mini"] ?? 128_000;
+    return 128_000;
   }
 
   private _buildRelaxedBudget(modelId: string, totalTokens: number): IPromptBudget {

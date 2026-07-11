@@ -14,12 +14,7 @@ import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { ITokenizer } from "@exaix/core/func";
 import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
-import {
-  LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK,
-  MODEL_CONTEXT_WINDOWS,
-  SECTION_BASE_WEIGHTS,
-  SECTION_FLOORS,
-} from "@exaix/core";
+import { LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK, SECTION_BASE_WEIGHTS, SECTION_FLOORS } from "@exaix/core";
 
 // ============================================================================
 // Test 1: Base allocation respects model windows and safety buffer
@@ -30,7 +25,7 @@ Deno.test("[PromptBudgetAllocator] allocates budgets respecting model context wi
   const budget = await allocator.allocate("openai:gpt-4o-mini");
 
   assertEquals(budget.model, "openai:gpt-4o-mini");
-  assertEquals(budget.totalBudgetTokens, MODEL_CONTEXT_WINDOWS["openai:gpt-4o-mini"]);
+  assertEquals(budget.totalBudgetTokens, 128_000);
 
   // 10% safety buffer
   const expectedSafetyBuffer = Math.floor(budget.totalBudgetTokens * 0.1);
@@ -151,7 +146,7 @@ Deno.test("[PromptBudgetAllocator] unknown non-local model uses cloud strict fal
   const allocator = new PromptBudgetAllocator();
   const budget = await allocator.allocate("custom: any-cloud-model");
 
-  assertEquals(budget.totalBudgetTokens, MODEL_CONTEXT_WINDOWS["openai:gpt-4o-mini"]);
+  assertEquals(budget.totalBudgetTokens, 128_000);
   assertGreater(budget.safetyBufferTokens, 0);
   assertGreater(budget.sections.plan, 0);
 });
@@ -168,10 +163,10 @@ Deno.test("[PromptBudgetAllocator] cloud model can run relaxed mode when cloud p
 
   const budget = await allocator.allocate("openai:gpt-4o-mini");
 
-  assertEquals(budget.totalBudgetTokens, MODEL_CONTEXT_WINDOWS["openai:gpt-4o-mini"]);
+  assertEquals(budget.totalBudgetTokens, 128_000);
   assertEquals(budget.safetyBufferTokens, 0);
-  assertEquals(budget.sections.system, MODEL_CONTEXT_WINDOWS["openai:gpt-4o-mini"]);
-  assertEquals(budget.sections.plan, MODEL_CONTEXT_WINDOWS["openai:gpt-4o-mini"]);
+  assertEquals(budget.sections.system, 128_000);
+  assertEquals(budget.sections.plan, 128_000);
 });
 
 // ============================================================================
