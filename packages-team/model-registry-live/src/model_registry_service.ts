@@ -28,10 +28,30 @@ import {
   type IModelAdmittedPayload,
   type IModelPricingStalePayload,
   type IModelRetiredPayload,
+  type RegistryRefreshKind,
+  type RegistryRefreshOutcome,
 } from "@exaix/core/events";
-import type { ICatalogEntry } from "@exaix/model-registry";
+import type { ICatalogEntry, IPricingEntry } from "@exaix/model-registry";
 import type { Config } from "@exaix/schemas";
 import { admit, type IAdmissionInputs } from "./adapters/admission.ts";
+
+/** Per-provider catalog diff returned by applyRefresh (feeds the refresh audit + event). */
+export interface IRefreshDiff {
+  added: number;
+  removed: number;
+}
+
+/** One refresh-audit row. `detail` MUST be credential-scrubbed by the caller (§8.2). */
+export interface IRefreshAuditRow {
+  provider: string;
+  kind: RegistryRefreshKind;
+  outcome: RegistryRefreshOutcome;
+  modelsAdded: number;
+  modelsRemoved: number;
+  startedAt: number;
+  durationMs: number;
+  detail?: string;
+}
 
 const DEFAULT_PRICE_STALENESS_MAX_DAYS = 90;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -299,12 +319,13 @@ export class ModelRegistryService implements IModelRegistry {
     provider: string,
     entries: ICatalogEntry[],
     inputs: IAdmissionInputs,
-  ): Promise<void> {
+  ): Promise<IRefreshDiff> {
     const admitted = admit(entries, inputs);
     const previous = await this.db.preparedAll<{ model: string; refreshed_at: number }>(
       "SELECT model, refreshed_at FROM model_catalog WHERE provider = ?",
       [provider],
     );
+    const previousModels = new Set(previous.map((p) => p.model));
     const now = Date.now();
 
     await this.db.preparedRun("BEGIN IMMEDIATE");
@@ -338,14 +359,67 @@ export class ModelRegistryService implements IModelRegistry {
     }
 
     const admittedModels = new Set(admitted.map((a) => a.entry.model));
+    let removed = 0;
     for (const { entry, reason } of admitted) {
       await this.emitAdmitted(provider, entry.model, reason);
     }
     for (const prev of previous) {
       if (!admittedModels.has(prev.model)) {
         await this.emitRetired(provider, prev.model, prev.refreshed_at);
+        removed++;
       }
     }
+    // "added" = admitted models not present before this refresh.
+    const added = [...admittedModels].filter((m) => !previousModels.has(m)).length;
+    return { added, removed };
+  }
+
+  /**
+   * Persist a provider's fetched pricing (§7 pricing refresh), atomic per-provider swap
+   * with the same all-or-nothing discipline as applyRefresh. Rows are stamped
+   * provenance 'endpoint' with verifiedAt = now. Returns the number of prices written.
+   */
+  async applyPricing(provider: string, entries: IPricingEntry[]): Promise<number> {
+    const now = Date.now();
+    await this.db.preparedRun("BEGIN IMMEDIATE");
+    try {
+      await this.db.preparedRun("DELETE FROM model_pricing WHERE provider = ?", [provider]);
+      for (const entry of entries) {
+        await this.db.preparedRun(
+          `INSERT INTO model_pricing
+             (provider, model, input_per_mtok, output_per_mtok, provenance, verified_at, source_url)
+           VALUES (?, ?, ?, ?, 'endpoint', ?, ?)`,
+          [provider, requireModel(entry.model), entry.inputPerMtok, entry.outputPerMtok, now, entry.sourceUrl],
+        );
+      }
+      await this.db.preparedRun("COMMIT");
+    } catch (e) {
+      await this.db.preparedRun("ROLLBACK").catch(() => {});
+      throw e;
+    }
+    return entries.length;
+  }
+
+  /**
+   * Write one refresh-audit row (§7 — every attempt is audited). `detail` is
+   * caller-scrubbed and MUST NOT contain credentials (the column comment is binding).
+   */
+  async recordRefreshAudit(row: IRefreshAuditRow): Promise<void> {
+    await this.db.preparedRun(
+      `INSERT INTO registry_refresh_audit
+         (provider, kind, outcome, models_added, models_removed, started_at, duration_ms, detail)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        row.provider,
+        row.kind,
+        row.outcome,
+        row.modelsAdded,
+        row.modelsRemoved,
+        row.startedAt,
+        row.durationMs,
+        row.detail ?? null,
+      ],
+    );
   }
 
   private async emitAdmitted(

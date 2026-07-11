@@ -55,6 +55,8 @@ export interface IPresetMap {
  */
 export interface IConfigToml {
   model_presets?: IPresetMap;
+  /** Phase 135 Step 5: the Team live-registry block; only `enabled` is read by the CLI. */
+  model_registry?: { enabled?: boolean };
 }
 
 /** Valid capability tiers for curated lists (mirrors ModelSize / DEFAULT_MODEL_PRESETS keys). */
@@ -71,7 +73,7 @@ const STALENESS_THRESHOLD_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
 export class ModelCommands {
   constructor(
     private readonly registry: IModelRegistry,
-    private readonly configPath?: string,
+    private readonly configPath?: Opt<string, Reason.OptionalInput>,
   ) {}
 
   // ── Display: models list / models pricing ──────────────────────────────────
@@ -126,6 +128,34 @@ export class ModelCommands {
     console.log(colors.cyan(colors.bold("\nModel Pricing (Solo floor)")));
     table.render();
     console.log("");
+  }
+
+  // ── Team: models refresh ────────────────────────────────────────────────────
+
+  /**
+   * `models refresh` (Team surface, Phase 135 Step 5). The refresh itself runs inside the
+   * daemon's RegistryRefreshScheduler (cron-driven, or one immediate pass when
+   * `refresh_on_start`) — the CLI process holds only the Solo floor and cannot reach the
+   * live registry. So this command reads `model_registry.enabled`: when disabled/absent
+   * (Solo default) it refuses with guidance to enable the block; when enabled it points
+   * the operator at the daemon's refresh lifecycle.
+   */
+  // deno-lint-ignore require-await -- async so the guard's synchronous throw rejects the promise
+  async refreshModels(): Promise<void> {
+    const cfg = this.readConfig();
+    if (cfg.model_registry?.enabled !== true) {
+      throw new Error(
+        "models refresh requires the Team live registry: set `model_registry.enabled = true` " +
+          "in exa.config.toml and run a Team daemon (EXAIX_EDITION=team). It is a no-op in Solo.",
+      );
+    }
+    console.log(
+      colors.cyan(
+        "The Team daemon refreshes the model catalog on its configured cron " +
+          "(`model_registry.catalog_refresh_cron`). To refresh immediately, set " +
+          "`model_registry.refresh_on_start = true` and restart the daemon.",
+      ),
+    );
   }
 
   // ── Curation: config model ──────────────────────────────────────────────────

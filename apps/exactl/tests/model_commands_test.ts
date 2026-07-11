@@ -251,3 +251,29 @@ Deno.test("[model-cli] config model rejects an unknown size", async () => {
     );
   });
 });
+
+Deno.test("[model-cli][step5] models refresh refuses when model_registry is disabled/absent (Solo default)", async () => {
+  await withTomlConfig(async (configPath) => {
+    const cmd = new ModelCommands(createPopulatedRegistry(), configPath);
+    await assertRejects(
+      () => cmd.refreshModels(),
+      Error,
+      "model_registry.enabled",
+    );
+  });
+});
+
+Deno.test("[model-cli][step5] models refresh with model_registry.enabled=true prints daemon-refresh guidance", async () => {
+  await withTomlConfig(async (configPath, _read) => {
+    Deno.writeTextFileSync(configPath, `[system]\nroot = "/tmp"\n\n[model_registry]\nenabled = true\n`);
+    const cmd = new ModelCommands(createPopulatedRegistry(), configPath);
+    const cap = captureLog();
+    try {
+      await cmd.refreshModels();
+    } finally {
+      cap.restore();
+    }
+    const out = cap.lines.join("\n");
+    assertStringIncludes(out, "daemon");
+  });
+});

@@ -24,10 +24,12 @@ export interface IScheduleInput {
 
 // Matches exactly 5 whitespace-separated fields where each field is a valid
 // cron token: *, number, range (n-m), list (a,b), or step (*/n, n-m/n).
-const CRON_FIELD_PATTERN =
+// Phase 135 Step 5 (GAP-5): exported so the registry refresh scheduler reuses this
+// canonical validator instead of duplicating the regex. Behaviour is unchanged.
+export const CRON_FIELD_PATTERN =
   /^(\*|[0-9]+(-[0-9]+)?(\/[0-9]+)?|(\*\/[0-9]+))(,(\*|[0-9]+(-[0-9]+)?(\/[0-9]+)?|(\*\/[0-9]+)))*$/;
 
-function validateCronExpression(expr: string): void {
+export function validateCronExpression(expr: string): void {
   if (!expr || expr.trim().length === 0) {
     throw new Error("Invalid cron expression: expression is empty");
   }

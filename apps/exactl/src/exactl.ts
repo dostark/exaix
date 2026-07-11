@@ -55,6 +55,7 @@ import {
   PORTAL_LABEL,
   WORKSPACE_SCHEMA_VERSION,
 } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 import type { IReviewStatus } from "@exaix/core/status";
 import { GIT_CMD_STATUS } from "@exaix/git";
 import { WatchCommand } from "./commands/watch.ts";
@@ -198,7 +199,7 @@ export type ExaCtlTestContext = ReturnType<typeof __test_getContext>;
 // Test helper: initialize the heavy services path (same logic used in non-test runtime)
 // Returns an object describing whether initialization succeeded and the constructed services.
 export function __test_initializeServices(
-  opts?: { simulateFail?: boolean; instantiateDb?: boolean; configPath?: string },
+  opts?: Opt<{ simulateFail?: boolean; instantiateDb?: boolean; configPath?: string }, Reason.TestOverride>,
 ): ReturnType<typeof initializeServices> {
   return initializeServices(opts);
 }
@@ -260,13 +261,13 @@ function logReviewListItem(cs: IReviewMetadata) {
   });
 }
 
-function getReviewStatusEmoji(status: IReviewStatus | undefined): string {
+function getReviewStatusEmoji(status: Opt<IReviewStatus, Reason.OptionalInput>): string {
   if (status === ReviewStatus.APPROVED) return "✅";
   if (status === ReviewStatus.REJECTED) return "❌";
   return "📌";
 }
 
-function formatTraceShort(traceId: string | undefined): string | null {
+function formatTraceShort(traceId: Opt<string, Reason.TraceAbsent>): string | null {
   if (!traceId) return null;
   return `${traceId.substring(0, 8)}...`;
 }
@@ -410,7 +411,7 @@ export const __test_command = new Command()
       .option("-e, --engine <engine:string>", "Analysis engine: heuristic, llm, hybrid", {
         default: AnalysisMode.HEURISTIC,
       })
-      .action(async (options, description?: string) => {
+      .action(async (options, description?: Opt<string, Reason.OptionalInput>) => {
         await handleRequestCreate({ requestCommands, display }, options as RequestCreateOptions, description);
       })
       .example(
@@ -1163,7 +1164,7 @@ export const __test_command = new Command()
         new Command()
           .description("Verify portal integrity")
           .arguments("[alias:string]")
-          .action(async (_options, alias?: string) => {
+          .action(async (_options, alias?: Opt<string, Reason.OptionalInput>) => {
             try {
               const results = await portalCommands.verify(alias);
               let healthy = 0;
@@ -1494,7 +1495,7 @@ export const __test_command = new Command()
         new Command()
           .description("Validate entire config or specific path")
           .arguments("[path:string]")
-          .action(async (_options, path?: string) => {
+          .action(async (_options, path?: Opt<string, Reason.OptionalInput>) => {
             try {
               const report = await configCommands.validate(path);
               if (report.valid) {
@@ -2631,6 +2632,21 @@ const modelsCommand = new Command()
           await modelCommands.showPricing();
         } catch (error) {
           display.error("cli.error", "models pricing", {
+            message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+          });
+          Deno.exit(1);
+        }
+      }),
+  )
+  .command(
+    "refresh",
+    new Command()
+      .description("Trigger a Team live-registry catalog refresh (Team + model_registry.enabled only)")
+      .action(async () => {
+        try {
+          await modelCommands.refreshModels();
+        } catch (error) {
+          display.error("cli.error", "models refresh", {
             message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
           });
           Deno.exit(1);

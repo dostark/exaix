@@ -93,6 +93,40 @@ export interface IModelRetiredPayload {
   last_seen_at: number;
 }
 
+/** Typed payload for model.catalog.refreshed events (Phase 135 Step 5, §7). */
+export interface IModelCatalogRefreshedPayload {
+  provider: string;
+  models_added: number;
+  models_removed: number;
+  duration_ms: number;
+}
+
+/** Typed payload for model.pricing.refreshed events (Phase 135 Step 5, §7). */
+export interface IModelPricingRefreshedPayload {
+  provider: string;
+  prices_updated: number;
+  duration_ms: number;
+}
+
+/** Outcome of one refresh attempt — mirrors the registry_refresh_audit.outcome column. */
+export type RegistryRefreshOutcome =
+  | "success"
+  | "skipped_offline"
+  | "auth_error"
+  | "http_error"
+  | "parse_error";
+
+/** Which refresh pass an audit row / failure describes — mirrors registry_refresh_audit.kind. */
+export type RegistryRefreshKind = "catalog" | "pricing";
+
+/** Typed payload for model.registry.refresh.failed events (Phase 135 Step 5, §7.2). */
+export interface IModelRegistryRefreshFailedPayload {
+  provider: string;
+  kind: RegistryRefreshKind;
+  outcome: RegistryRefreshOutcome;
+  detail: string;
+}
+
 /** Typed payload for guardrail.* events. */
 export interface IGuardrailEventPayload {
   policy_id: string;
@@ -390,6 +424,9 @@ export const DomainEventType = {
   ModelCostDivergence: "model.cost.divergence",
   ModelAdmitted: "model.admitted",
   ModelRetired: "model.retired",
+  ModelCatalogRefreshed: "model.catalog.refreshed",
+  ModelPricingRefreshed: "model.pricing.refreshed",
+  ModelRegistryRefreshFailed: "model.registry.refresh.failed",
 
   // Reserved for future use (Phase 85 — postponed)
   ChildRunSpawned: "child_run.spawned",

@@ -768,8 +768,20 @@ if (import.meta.main) {
     // IResolutionStrategy seam. Solo passes no strategy → byte-identical 134 behaviour.
     let resolutionStrategy: Opt<IResolutionStrategy, Reason.OptionalDependency>;
     if (editionType === EDITION_TEAM) {
-      const { buildTeamResolutionStrategy } = await import("./src/bootstrap_team.ts");
+      const { buildTeamResolutionStrategy, buildRefreshScheduler } = await import("./src/bootstrap_team.ts");
       resolutionStrategy = buildTeamResolutionStrategy(modelRegistry, config, logger);
+      // Phase 135 Step 5: opt-in registry refresh scheduler. buildRefreshScheduler
+      // returns undefined unless model_registry.enabled === true, so a disabled Team
+      // daemon makes zero outbound calls. start() honours refresh_on_start; the single
+      // timer is skipped under DENO_TEST=1 and cleared on graceful shutdown.
+      const refreshScheduler = buildRefreshScheduler(modelRegistry, config, logger);
+      if (refreshScheduler) {
+        refreshScheduler.start();
+        gracefulShutdown.registerCleanup("stop_registry_refresh_scheduler", () => {
+          refreshScheduler.stop();
+          return Promise.resolve();
+        });
+      }
     }
     const modelResolver = new ModelResolver(
       routingStrategy,

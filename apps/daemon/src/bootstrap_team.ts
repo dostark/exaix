@@ -15,10 +15,13 @@ import {
   AdapterRegistry,
   AnthropicCatalogAdapter,
   GoogleCatalogAdapter,
+  type IAdmissionInputs,
+  maybeCreateRefreshScheduler,
   ModelRegistryService,
   OllamaCatalogAdapter,
   OpenAiCatalogAdapter,
   OpenRouterCatalogAdapter,
+  type RegistryRefreshScheduler,
   TeamResolutionStrategy,
 } from "@exaix-team/model-registry-live";
 import { DefaultModelRegistry } from "@exaix/model-registry";
@@ -86,14 +89,64 @@ const PROVIDER_CATALOG_DESCRIPTORS: Record<string, IProviderCatalogDescriptor> =
   ollama: { baseUrl: "http://localhost:11434" }, // local, no credential
 };
 
+/** Register all five provider catalog adapters (OpenRouter + the four natives, §6.3). */
+function createTeamAdapterRegistry(): AdapterRegistry {
+  const adapters = new AdapterRegistry();
+  adapters.register(new OpenRouterCatalogAdapter());
+  adapters.register(new AnthropicCatalogAdapter());
+  adapters.register(new GoogleCatalogAdapter());
+  adapters.register(new OpenAiCatalogAdapter());
+  adapters.register(new OllamaCatalogAdapter());
+  return adapters;
+}
+
+/**
+ * Build the per-provider adapter-context factory: resolves each provider's configured
+ * key env + host root (no new secret surface). The OpenRouter key env honours the config
+ * override; the natives use the standard envs. Shared by the resolution strategy (Step 3)
+ * and the refresh scheduler (Step 5).
+ */
+function createBuildContext(config: Config): (provider: string) => IAdapterContext {
+  const timeoutMs = config.model_registry?.refresh_timeout_ms ?? DEFAULT_ADAPTER_TIMEOUT_MS;
+  const openrouterKeyEnv = config.ai_openrouter?.api_key_env ?? PROVIDER_CATALOG_DESCRIPTORS.openrouter.keyEnv;
+  return (provider: string): IAdapterContext => {
+    const descriptor = PROVIDER_CATALOG_DESCRIPTORS[provider];
+    const baseUrl = descriptor?.baseUrl ?? PROVIDER_CATALOG_DESCRIPTORS.openrouter.baseUrl;
+    const keyEnv = provider === "openrouter" ? openrouterKeyEnv : descriptor?.keyEnv;
+    return { apiKey: keyEnv ? Deno.env.get(keyEnv) : undefined, baseUrl, fetch, timeoutMs };
+  };
+}
+
+/**
+ * Admission inputs per provider for a scheduled refresh (Step 5). Curated ∪ used are
+ * derived from live state: curated = the provider's current catalog rows (curation-by-
+ * usage is retained); the aggregator flag comes from provider metadata (§5.7.2). The
+ * top-N benchmark path stays inert until Step 7 populates model_benchmark.
+ */
+async function admissionInputsFor(
+  registry: ModelRegistryService,
+  config: Config,
+  provider: string,
+): Promise<IAdmissionInputs> {
+  const isAggregator = ProviderRegistry.getProviderMetadata(provider)?.isAggregator === true;
+  const existing = await registry.getProviderModels(provider);
+  return {
+    curatedModels: new Set(existing.map((m) => m.model)),
+    usedModels: new Set(),
+    isAggregator,
+    keepNativeWhole: config.model_registry?.admission?.keep_native_whole ?? true,
+    topN: config.model_registry?.admission?.top_n ?? DEFAULT_ADMISSION_TOP_N,
+  };
+}
+
+const DEFAULT_ADMISSION_TOP_N = 25;
+
 /**
  * Build the Team resolution strategy (Phase 135 Step 3 seam consumer, extended in
  * Step 4 with the four native adapters) that wires the live registry's
  * explicit-validation / auto-admit behaviour into ModelResolver via the
  * IResolutionStrategy seam. Returns undefined when the selected registry is not the Team
- * live service (defensive — Solo never reaches this call). buildContext resolves each
- * provider's already-configured key env + host root (no new secret surface); the
- * OpenRouter key env honours the config override, the natives use the standard envs.
+ * live service (defensive — Solo never reaches this call).
  */
 export function buildTeamResolutionStrategy(
   modelRegistry: IModelRegistry,
@@ -101,27 +154,32 @@ export function buildTeamResolutionStrategy(
   logger: IEventLogger,
 ): Opt<IResolutionStrategy, Reason.OptionalDependency> {
   if (!(modelRegistry instanceof ModelRegistryService)) return undefined;
-
-  const adapters = new AdapterRegistry();
-  adapters.register(new OpenRouterCatalogAdapter());
-  adapters.register(new AnthropicCatalogAdapter());
-  adapters.register(new GoogleCatalogAdapter());
-  adapters.register(new OpenAiCatalogAdapter());
-  adapters.register(new OllamaCatalogAdapter());
-
-  const timeoutMs = config.model_registry?.refresh_timeout_ms ?? DEFAULT_ADAPTER_TIMEOUT_MS;
-  const openrouterKeyEnv = config.ai_openrouter?.api_key_env ?? PROVIDER_CATALOG_DESCRIPTORS.openrouter.keyEnv;
-  const buildContext = (provider: string): IAdapterContext => {
-    const descriptor = PROVIDER_CATALOG_DESCRIPTORS[provider];
-    const baseUrl = descriptor?.baseUrl ?? PROVIDER_CATALOG_DESCRIPTORS.openrouter.baseUrl;
-    const keyEnv = provider === "openrouter" ? openrouterKeyEnv : descriptor?.keyEnv;
-    return { apiKey: keyEnv ? Deno.env.get(keyEnv) : undefined, baseUrl, fetch, timeoutMs };
-  };
-
+  const adapters = createTeamAdapterRegistry();
+  const buildContext = createBuildContext(config);
   return new TeamResolutionStrategy(modelRegistry, logger, {
     getAdapter: (p) => adapters.get(p),
     buildContext,
     isAggregator: (p) => ProviderRegistry.getProviderMetadata(p)?.isAggregator === true,
+  });
+}
+
+/**
+ * Build the opt-in registry refresh scheduler (Phase 135 Step 5). Returns undefined when
+ * the selected registry is not the Team live service OR model_registry.enabled !== true
+ * (the opt-in gate — a disabled/Solo daemon never constructs it, zero outbound calls).
+ * The caller starts it (honouring refresh_on_start) and stops it on shutdown.
+ */
+export function buildRefreshScheduler(
+  modelRegistry: IModelRegistry,
+  config: Config,
+  logger: IEventLogger,
+): Opt<RegistryRefreshScheduler, Reason.OptionalDependency> {
+  if (!(modelRegistry instanceof ModelRegistryService)) return undefined;
+  const adapters = createTeamAdapterRegistry();
+  const buildContext = createBuildContext(config);
+  return maybeCreateRefreshScheduler(modelRegistry, adapters, config, logger, {
+    buildContext,
+    admissionInputsFor: (p) => admissionInputsFor(modelRegistry, config, p),
   });
 }
 

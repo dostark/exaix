@@ -9,6 +9,7 @@
     "@exaix/core/types": "../../packages/core/src/types/mod.ts",
     "@exaix/core/events": "../../packages/core/src/events/mod.ts",
     "@exaix/ai": "../../packages/ai/mod.ts",
+    "@exaix/triggers": "../../packages/triggers/mod.ts",
     "@exaix/model-registry": "../../packages/model-registry/mod.ts",
     "@exaix/schemas": "../../packages/schemas/mod.ts",
     "@exaix/testing": "../../packages/testing/mod.ts"

@@ -155,6 +155,12 @@ export const ModelRegistryConfigSchema = z.object({
   price_staleness_max_days: z.number().int().positive().default(90),
   refresh_timeout_ms: z.number().int().positive().default(15000),
   refresh_on_start: z.boolean().default(false),
+  // §5.9 (F12) admission bounds — read by the Step 5 refresh scheduler when it builds
+  // per-provider admission inputs. top_n is defined but inert until Step 7's benchmarks.
+  admission: z.object({
+    top_n: z.number().int().positive().default(25),
+    keep_native_whole: z.boolean().default(true),
+  }).default({}),
   // §5.5.2 (Solo-read, D9): tolerance (percent) for reported-vs-computed cost
   // divergence before emitting model.cost.divergence.
   cost_divergence_tolerance_pct: z.number().min(0).default(5),
