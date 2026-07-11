@@ -146,6 +146,17 @@ export interface IModelRegistryRefreshFailedPayload {
   detail: string;
 }
 
+/**
+ * Typed payload for model.benchmark.refreshed events (Phase 135 Step 7, §5.8).
+ * `outcome` reuses the refresh-outcome union: success for a completed ingest pass,
+ * parse_error / http_error for a source that failed (previous scores stay intact).
+ */
+export interface IModelBenchmarkRefreshedPayload {
+  benchmark: string;
+  scores_written: number;
+  outcome: RegistryRefreshOutcome;
+}
+
 /** Typed payload for guardrail.* events. */
 export interface IGuardrailEventPayload {
   policy_id: string;
@@ -447,6 +458,7 @@ export const DomainEventType = {
   ModelPricingRefreshed: "model.pricing.refreshed",
   ModelRegistryRefreshFailed: "model.registry.refresh.failed",
   ModelRouteSelected: "model.route.selected",
+  ModelBenchmarkRefreshed: "model.benchmark.refreshed",
 
   // Reserved for future use (Phase 85 — postponed)
   ChildRunSpawned: "child_run.spawned",

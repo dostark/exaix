@@ -82,6 +82,9 @@ export class TeamResolutionStrategy implements IResolutionStrategy {
       isAggregator,
       keepNativeWhole: !isAggregator,
       topN: ADMISSION_TOP_N,
+      // Auto-admit re-presents only the current union; the benchmark top-N path is not
+      // re-derived here (the scheduled refresh owns it), so an empty set is correct.
+      benchmarkTopN: new Set(),
     });
     return { provider, model };
   }

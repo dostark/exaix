@@ -16,12 +16,14 @@ import {
   AnthropicCatalogAdapter,
   GoogleCatalogAdapter,
   type IAdmissionInputs,
+  ingestBenchmarks,
   maybeCreateRefreshScheduler,
   ModelRegistryService,
   OllamaCatalogAdapter,
   OpenAiCatalogAdapter,
   OpenRouterCatalogAdapter,
   type RegistryRefreshScheduler,
+  STATIC_BENCHMARKS,
   TeamResolutionStrategy,
 } from "@exaix-team/model-registry-live";
 import { DefaultModelRegistry, isCostExempt } from "@exaix/model-registry";
@@ -130,16 +132,23 @@ async function admissionInputsFor(
 ): Promise<IAdmissionInputs> {
   const isAggregator = ProviderRegistry.getProviderMetadata(provider)?.isAggregator === true;
   const existing = await registry.getProviderModels(provider);
+  const topN = config.model_registry?.admission?.top_n ?? DEFAULT_ADMISSION_TOP_N;
+  // G6 (Step 7): the top-N benchmark set from model_benchmark. Empty until the curated
+  // floor / EEE ingest populates it, so the benchmark_topn admission path stays inert.
+  const tracked = config.model_registry?.benchmark_source?.tracked_benchmarks ?? DEFAULT_TRACKED_BENCHMARKS;
+  const benchmarkTopN = await registry.getBenchmarkTopN(tracked, topN);
   return {
     curatedModels: new Set(existing.map((m) => m.model)),
     usedModels: new Set(),
     isAggregator,
     keepNativeWhole: config.model_registry?.admission?.keep_native_whole ?? true,
-    topN: config.model_registry?.admission?.top_n ?? DEFAULT_ADMISSION_TOP_N,
+    topN,
+    benchmarkTopN,
   };
 }
 
 const DEFAULT_ADMISSION_TOP_N = 25;
+const DEFAULT_TRACKED_BENCHMARKS = ["swe_bench_verified"];
 
 /**
  * Build the Team resolution strategy (Phase 135 Step 3 seam consumer, extended in
@@ -195,6 +204,32 @@ export function buildRefreshScheduler(
     buildContext,
     admissionInputsFor: (p) => admissionInputsFor(modelRegistry, config, p),
   });
+}
+
+/**
+ * Populate the benchmark data plane at Team startup (Phase 135 Step 7, §5.8). The curated
+ * Tier-2 floor (static_benchmarks.ts) is applied UNCONDITIONALLY on a Team daemon so the
+ * top-N admission path and the Step 8 `best` scorer always have data. The EEE ingest is
+ * DOUBLY gated — it runs only when model_registry.enabled AND benchmark_source.enabled;
+ * ingestBenchmarks itself short-circuits on the inner gate, so the outer gate here only
+ * avoids the outbound call setup. A no-op on Solo (registry is not the Team service).
+ */
+export async function loadBenchmarkFloor(
+  modelRegistry: IModelRegistry,
+  config: Config,
+): Promise<void> {
+  if (!(modelRegistry instanceof ModelRegistryService)) return;
+  await modelRegistry.applyBenchmarks(STATIC_BENCHMARKS);
+  const source = config.model_registry?.benchmark_source;
+  if (config.model_registry?.enabled === true && source?.enabled === true) {
+    await ingestBenchmarks(modelRegistry, {
+      enabled: source.enabled,
+      datasetUrl: source.dataset_url,
+      trackedBenchmarks: source.tracked_benchmarks,
+      fetchTimeoutMs: source.fetch_timeout_ms,
+      fetch,
+    });
+  }
 }
 
 /**

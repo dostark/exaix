@@ -24,6 +24,7 @@ function nativeInputs(over: Partial<IAdmissionInputs> = {}): IAdmissionInputs {
     isAggregator: false,
     keepNativeWhole: true,
     topN: 25,
+    benchmarkTopN: new Set(),
     ...over,
   };
 }

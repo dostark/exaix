@@ -26,6 +26,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 import {
   DomainEventType,
   type IModelAdmittedPayload,
+  type IModelBenchmarkRefreshedPayload,
   type IModelPricingStalePayload,
   type IModelRetiredPayload,
   type RegistryRefreshKind,
@@ -39,6 +40,21 @@ import { admit, type IAdmissionInputs } from "./adapters/admission.ts";
 export interface IRefreshDiff {
   added: number;
   removed: number;
+}
+
+/** Provenance of a benchmark score row (§5.10 exact values). */
+export type BenchmarkProvenance = "static" | "remote_static";
+
+/** One benchmark score to persist (§5.8.2). `score` MUST be normalised to [0,1]. */
+export interface IBenchmarkEntry {
+  provider: string;
+  model: string;
+  benchmark: string;
+  score: number;
+  provenance: BenchmarkProvenance;
+  measuredAt: number;
+  harnessVersion?: string;
+  sourceUrl?: string;
 }
 
 /** One refresh-audit row. `detail` MUST be credential-scrubbed by the caller (§8.2). */
@@ -55,6 +71,8 @@ export interface IRefreshAuditRow {
 
 const DEFAULT_PRICE_STALENESS_MAX_DAYS = 90;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const BENCHMARK_SCORE_MIN = 0;
+const BENCHMARK_SCORE_MAX = 1;
 
 interface IHealthCheckerLike {
   checkProvider(providerName: string): Promise<boolean>;
@@ -433,6 +451,78 @@ export class ModelRegistryService implements IModelRegistry {
         row.detail ?? null,
       ],
     );
+  }
+
+  /**
+   * Upsert benchmark scores (§5.8.2). Idempotent on the (provider, model, benchmark) PK
+   * so re-applying the curated floor writes no duplicates. Every score is validated to
+   * [0,1] BEFORE any write — an out-of-range score is rejected (invalid input, not
+   * clamped-and-stored-raw), leaving existing rows untouched. Returns the row count.
+   */
+  async applyBenchmarks(entries: IBenchmarkEntry[]): Promise<number> {
+    for (const e of entries) {
+      if (!(e.score >= BENCHMARK_SCORE_MIN && e.score <= BENCHMARK_SCORE_MAX)) {
+        throw new Error(`benchmark score out of range [0,1]: ${e.model}/${e.benchmark}=${e.score}`);
+      }
+    }
+    for (const e of entries) {
+      await this.db.preparedRun(
+        `INSERT INTO model_benchmark
+           (provider, model, benchmark, score, harness_version, provenance, measured_at, source_url)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(provider, model, benchmark) DO UPDATE SET
+           score = excluded.score, harness_version = excluded.harness_version,
+           provenance = excluded.provenance, measured_at = excluded.measured_at,
+           source_url = excluded.source_url`,
+        [
+          e.provider,
+          requireModel(e.model),
+          e.benchmark,
+          e.score,
+          e.harnessVersion ?? null,
+          e.provenance,
+          e.measuredAt,
+          e.sourceUrl ?? null,
+        ],
+      );
+    }
+    return entries.length;
+  }
+
+  /** Read one benchmark score, or undefined when unscored. */
+  async getBenchmark(provider: string, model: string, benchmark: string): Promise<number | undefined> {
+    const row = await this.db.preparedGet<{ score: number }>(
+      "SELECT score FROM model_benchmark WHERE provider = ? AND model = ? AND benchmark = ?",
+      [provider, model, benchmark],
+    );
+    return row?.score;
+  }
+
+  /**
+   * The set of models in the top-`topN` of ANY tracked benchmark (§5.9 G6). Feeds the
+   * admission filter's benchmark_topn path. Ranks by score DESC per benchmark and unions
+   * the leaders across all trackedBenchmarks.
+   */
+  async getBenchmarkTopN(trackedBenchmarks: string[], topN: number): Promise<Set<string>> {
+    const top = new Set<string>();
+    for (const benchmark of trackedBenchmarks) {
+      const rows = await this.db.preparedAll<{ model: string }>(
+        "SELECT model FROM model_benchmark WHERE benchmark = ? ORDER BY score DESC LIMIT ?",
+        [benchmark, topN],
+      );
+      for (const r of rows) top.add(r.model);
+    }
+    return top;
+  }
+
+  /** Emit model.benchmark.refreshed for one ingest pass (Step 7, §5.8). */
+  async emitBenchmarkRefreshed(
+    benchmark: string,
+    scoresWritten: number,
+    outcome: RegistryRefreshOutcome,
+  ): Promise<void> {
+    const payload: IModelBenchmarkRefreshedPayload = { benchmark, scores_written: scoresWritten, outcome };
+    await this.eventLogger.info(DomainEventType.ModelBenchmarkRefreshed, benchmark, { ...payload });
   }
 
   private async emitAdmitted(

@@ -60,6 +60,7 @@ Deno.test("explicit admitted model resolves verbatim", async () => {
       isAggregator: true,
       keepNativeWhole: true,
       topN: 25,
+      benchmarkTopN: new Set(),
     });
     const route = await strategy.validateExplicit("openrouter", "vendor/x");
     assertEquals(route, { provider: "openrouter", model: "vendor/x" });
@@ -112,6 +113,7 @@ Deno.test("[edge][integration] auto-admitting an unadmitted-but-real model does 
       isAggregator: true,
       keepNativeWhole: true,
       topN: 25,
+      benchmarkTopN: new Set(),
     });
     await strategy.validateExplicit("openrouter", "vendor/rare");
     const rows = await svc.getProviderModels("openrouter");
@@ -132,6 +134,7 @@ Deno.test("[step4] native-provider auto-admit reads isAggregator=false and keeps
       isAggregator: false,
       keepNativeWhole: true,
       topN: 25,
+      benchmarkTopN: new Set(),
     });
     const route = await strategy.validateExplicit("anthropic", "claude-new");
     assertEquals(route, { provider: "anthropic", model: "claude-new" });

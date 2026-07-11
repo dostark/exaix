@@ -31,7 +31,14 @@ function countingAdapter(provider: string, catalog: ICatalogEntry[]): IProviderC
 }
 
 function nativeInputs(): IAdmissionInputs {
-  return { curatedModels: new Set(), usedModels: new Set(), isAggregator: false, keepNativeWhole: true, topN: 25 };
+  return {
+    curatedModels: new Set(),
+    usedModels: new Set(),
+    isAggregator: false,
+    keepNativeWhole: true,
+    topN: 25,
+    benchmarkTopN: new Set(),
+  };
 }
 
 function buildScheduler(

@@ -148,6 +148,9 @@ const RoutingConfigSchema = z.object({
  * as their features land. Stays `.optional()`: Solo reads of nested fields use a
  * constant fallback (GAP-6, wired in Step 2).
  */
+/** §5.8 benchmark ingest fetch timeout — the EEE dataset is larger than a catalog GET. */
+const DEFAULT_BENCHMARK_FETCH_TIMEOUT_MS = 30_000;
+
 export const ModelRegistryConfigSchema = z.object({
   enabled: z.boolean().default(false),
   catalog_refresh_cron: z.string().default("0 */6 * * *"),
@@ -167,6 +170,16 @@ export const ModelRegistryConfigSchema = z.object({
   route_policy_price_tolerance: z.number().min(0).default(0.05),
   // G4: per-model provider order for `user_order` (model → provider list). Empty ⇒ cheapest.
   route_order: z.record(z.string(), z.array(z.string())).default({}),
+  // §5.8 (F13/G8) benchmark data plane — opt-in EEE ingest read by the Step 7
+  // scheduler benchmark pass. Double-gated: enabled AND model_registry.enabled.
+  // Ships disabled pending the G8 data-license verification (curated floor only).
+  benchmark_source: z.object({
+    enabled: z.boolean().default(false),
+    dataset_url: z.string().default("https://huggingface.co/datasets/evaleval/EEE_datastore"),
+    tracked_benchmarks: z.array(z.string()).default(["swe_bench_verified"]),
+    refresh_cron: z.string().default("0 5 * * 0"), // weekly
+    fetch_timeout_ms: z.number().int().positive().default(DEFAULT_BENCHMARK_FETCH_TIMEOUT_MS),
+  }).default({}),
   // §5.5.2 (Solo-read, D9): tolerance (percent) for reported-vs-computed cost
   // divergence before emitting model.cost.divergence.
   cost_divergence_tolerance_pct: z.number().min(0).default(5),

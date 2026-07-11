@@ -267,6 +267,18 @@ export const REGISTRY_TABLES_SQL = `
     duration_ms   INTEGER NOT NULL,
     detail        TEXT
   );
+  CREATE TABLE IF NOT EXISTS model_benchmark (
+    provider        TEXT    NOT NULL,
+    model           TEXT    NOT NULL,
+    benchmark       TEXT    NOT NULL,
+    score           REAL    NOT NULL,
+    harness_version TEXT,
+    provenance      TEXT    NOT NULL,
+    measured_at     REAL    NOT NULL,
+    source_url      TEXT,
+    PRIMARY KEY (provider, model, benchmark)
+  );
+  CREATE INDEX IF NOT EXISTS idx_benchmark_rank ON model_benchmark (benchmark, score DESC);
 `;
 
 /**

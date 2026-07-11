@@ -30,6 +30,7 @@ function nativeInputs(): IAdmissionInputs {
     isAggregator: false,
     keepNativeWhole: true,
     topN: 25,
+    benchmarkTopN: new Set(),
   };
 }
 

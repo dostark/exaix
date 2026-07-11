@@ -768,8 +768,13 @@ if (import.meta.main) {
     // IResolutionStrategy seam. Solo passes no strategy → byte-identical 134 behaviour.
     let resolutionStrategy: Opt<IResolutionStrategy, Reason.OptionalDependency>;
     if (editionType === EDITION_TEAM) {
-      const { buildTeamResolutionStrategy, buildRefreshScheduler } = await import("./src/bootstrap_team.ts");
+      const bt = await import("./src/bootstrap_team.ts");
+      const { buildTeamResolutionStrategy, buildRefreshScheduler, loadBenchmarkFloor } = bt;
       resolutionStrategy = buildTeamResolutionStrategy(modelRegistry, config, logger);
+      // Phase 135 Step 7: populate the benchmark data plane. Curated floor loads
+      // unconditionally; EEE ingest runs only behind the double gate. Feeds top-N
+      // admission (G6) and the Step 8 `best` scorer.
+      await loadBenchmarkFloor(modelRegistry, config);
       // Phase 135 Step 5: opt-in registry refresh scheduler. buildRefreshScheduler
       // returns undefined unless model_registry.enabled === true, so a disabled Team
       // daemon makes zero outbound calls. start() honours refresh_on_start; the single

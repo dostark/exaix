@@ -4,10 +4,10 @@
  * @description Phase 135 Step 3 (§5.9, F12) — the registry-write admission filter.
  *   An adapter's fetchCatalog returns the FULL provider list; the registry admits only
  *   the worthwhile subset before the atomic swap. A model is admitted if ANY path
- *   holds: native (a first-party non-aggregator provider kept whole), user-curated, or
- *   previously-used. The top-N benchmark path is defined here but inert until Step 7
- *   populates model_benchmark. Each admitted model carries the reason it was admitted,
- *   emitted as model.admitted for auditability.
+ *   holds: native (a first-party non-aggregator provider kept whole), user-curated,
+ *   previously-used, or top-N of a tracked benchmark (Step 7, G6 — the caller resolves
+ *   the top-N set from model_benchmark). Each admitted model carries the reason it was
+ *   admitted, emitted as model.admitted for auditability.
  * @architectural-layer Team-ModelRegistry
  * @dependencies [@exaix/model-registry]
  * @related-files [packages-team/model-registry-live/src/model_registry_service.ts]
@@ -27,8 +27,10 @@ export interface IAdmissionInputs {
   isAggregator: boolean;
   /** Admit all first-party models of native (non-aggregator) providers. */
   keepNativeWhole: boolean;
-  /** Top-N benchmark bound (inert until Step 7 populates model_benchmark). */
+  /** Top-N benchmark bound (the caller resolves the actual top-N set into benchmarkTopN). */
   topN: number;
+  /** Models in the top-`topN` of any tracked benchmark (Step 7, G6) — always admitted. */
+  benchmarkTopN: Set<string>;
 }
 
 /** An admitted catalog entry paired with the reason it cleared the bar. */
@@ -55,6 +57,8 @@ function admissionReason(model: string, inputs: IAdmissionInputs): AdmissionReas
   if (inputs.curatedModels.has(model)) return "curated";
   if (inputs.usedModels.has(model)) return "explicit_use";
   if (!inputs.isAggregator && inputs.keepNativeWhole) return "native";
-  // The top-N benchmark path is inert until Step 7 populates model_benchmark.
+  // G6 (Step 7): a model in the top-N of any tracked benchmark clears the bar even on
+  // an aggregator with no curation/prior-use. Empty set (no benchmarks) ⇒ inert.
+  if (inputs.benchmarkTopN.has(model)) return "benchmark_topn";
   return null;
 }
