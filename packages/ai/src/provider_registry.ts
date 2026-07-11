@@ -48,6 +48,13 @@ export interface IProviderMetadata {
   costPerMtok?: number;
   /** Context window size in tokens (used for model size matching) */
   contextWindow?: number;
+  /**
+   * True when this provider is an aggregator reseller (e.g. OpenRouter) rather than a
+   * first-party model host. Absent for native providers. Read by F12 native admission
+   * (keep-native-whole skips aggregators) and the Step 6 `native_first` route policy
+   * (§5.7.2).
+   */
+  isAggregator?: boolean;
 }
 
 // ============================================================================

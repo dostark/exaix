@@ -12,22 +12,12 @@
  * @related-files [packages/model-registry/src/adapters/i_provider_catalog_adapter.ts]
  */
 import { z } from "zod";
-import type { JSONValue } from "@exaix/core";
-import {
-  CatalogAuthError,
-  CatalogHttpError,
-  CatalogParseError,
-  type IAdapterContext,
-  type ICatalogEntry,
-  type IPricingEntry,
-  type IProviderCatalogAdapter,
-} from "@exaix/model-registry";
+import type { IAdapterContext, ICatalogEntry, IPricingEntry, IProviderCatalogAdapter } from "@exaix/model-registry";
+import { fetchAndParse } from "./catalog_fetch.ts";
 
 const OPENROUTER_PROVIDER = "openrouter";
 const MODELS_PATH = "/api/v1/models";
 const PER_TOKEN_TO_PER_MTOK = 1_000_000;
-const HTTP_UNAUTHORIZED = 401;
-const HTTP_FORBIDDEN = 403;
 
 const OpenRouterModelSchema = z.object({
   id: z.string(),
@@ -75,35 +65,8 @@ export class OpenRouterCatalogAdapter implements IProviderCatalogAdapter {
   }
 
   private async fetchModels(ctx: IAdapterContext): Promise<OpenRouterModel[]> {
-    const url = `${ctx.baseUrl}${MODELS_PATH}`;
-    const headers: Record<string, string> = { accept: "application/json" };
-    if (ctx.apiKey) headers.authorization = `Bearer ${ctx.apiKey}`;
-
-    const res = await ctx.fetch(url, {
-      method: "GET",
-      headers,
-      signal: AbortSignal.timeout(ctx.timeoutMs),
-    });
-
-    if (res.status === HTTP_UNAUTHORIZED || res.status === HTTP_FORBIDDEN) {
-      throw new CatalogAuthError(this.provider, res.status);
-    }
-    if (!res.ok) {
-      throw new CatalogHttpError(this.provider, res.status);
-    }
-
-    let body: JSONValue;
-    try {
-      body = await res.json();
-    } catch (e) {
-      throw new CatalogParseError(this.provider, e instanceof Error ? e.message : "invalid JSON");
-    }
-
-    const parsed = OpenRouterModelsResponseSchema.safeParse(body);
-    if (!parsed.success) {
-      throw new CatalogParseError(this.provider, parsed.error.issues[0]?.message ?? "schema mismatch");
-    }
-    return parsed.data.data;
+    const parsed = await fetchAndParse(this.provider, ctx, MODELS_PATH, "bearer", OpenRouterModelsResponseSchema);
+    return parsed.data;
   }
 
   private toCatalogEntry(m: OpenRouterModel): ICatalogEntry {

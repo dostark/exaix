@@ -14,6 +14,11 @@ export interface IOverlayEntry {
   inputPerMtok?: number;
   outputPerMtok?: number;
   contextWindow?: number;
+  /** Max output tokens where the provider's list endpoint omits it (§6.3 thin lists). */
+  maxOutputTokens?: number;
+  /** Capability flags for thin endpoints (OpenAI list, Ollama tags) — §9 mandatory overlay. */
+  supportsThinking?: boolean;
+  supportsEffort?: boolean;
   verifiedAt: number;
   sourceUrl: string;
 }
@@ -59,3 +64,12 @@ export const STATIC_OVERLAY: StaticOverlay = {
     sourceUrl: "https://cloud.google.com/vertex-ai/generative-ai/pricing/",
   },
 };
+
+/**
+ * Look up a "provider:model" overlay entry — the §9 source for fields a provider's
+ * list endpoint omits (OpenAI capabilities, Ollama windows). Returns undefined when no
+ * curated row exists, so a caller must not stamp overlay-sourced fields as `endpoint`.
+ */
+export function getOverlayEntry(provider: string, model: string): IOverlayEntry | undefined {
+  return STATIC_OVERLAY[`${provider}:${model}`];
+}

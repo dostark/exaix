@@ -34,3 +34,16 @@ Deno.test("bootstrapProviderRegistry registers Solo-tier providers (incl. OpenRo
 
   assertEquals(ProviderRegistry.getSupportedProviders(), supported);
 });
+
+Deno.test("[step4] isAggregator: openrouter true; anthropic/openai/google/ollama absent (§5.7.2)", () => {
+  ProviderRegistry.clear();
+  bootstrapProviderRegistry();
+
+  assertEquals(ProviderRegistry.getProviderMetadata("openrouter")?.isAggregator, true);
+  assertEquals(ProviderRegistry.getProviderMetadata("anthropic")?.isAggregator, undefined);
+  assertEquals(ProviderRegistry.getProviderMetadata("openai")?.isAggregator, undefined);
+  assertEquals(ProviderRegistry.getProviderMetadata("google")?.isAggregator, undefined);
+  assertEquals(ProviderRegistry.getProviderMetadata("ollama")?.isAggregator, undefined);
+
+  ProviderRegistry.clear();
+});

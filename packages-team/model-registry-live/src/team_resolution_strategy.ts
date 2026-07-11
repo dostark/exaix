@@ -20,6 +20,8 @@ import type { ModelRegistryService } from "./model_registry_service.ts";
 export interface ITeamStrategyDeps {
   getAdapter(provider: string): IProviderCatalogAdapter | undefined;
   buildContext(provider: string): IAdapterContext;
+  /** True when the provider is an aggregator reseller (§5.7.2 isAggregator metadata). */
+  isAggregator(provider: string): boolean;
 }
 
 const ADMISSION_TOP_N = 25;
@@ -59,11 +61,12 @@ export class TeamResolutionStrategy implements IResolutionStrategy {
       model: m.model,
       contextWindow: m.contextWindow,
     }));
+    const isAggregator = this.deps.isAggregator(provider);
     await this.registry.applyRefresh(provider, [...existingEntries, liveEntry], {
       curatedModels: new Set(admittedModels.map((m) => m.model)),
       usedModels: new Set([model]),
-      isAggregator: true,
-      keepNativeWhole: false,
+      isAggregator,
+      keepNativeWhole: !isAggregator,
       topN: ADMISSION_TOP_N,
     });
     return { provider, model };

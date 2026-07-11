@@ -13,13 +13,17 @@ import { HitlCapabilityModule } from "@exaix-team/hitl";
 import { PortalExtractorsModule } from "@exaix-team/portal-extractors";
 import {
   AdapterRegistry,
+  AnthropicCatalogAdapter,
+  GoogleCatalogAdapter,
   ModelRegistryService,
+  OllamaCatalogAdapter,
+  OpenAiCatalogAdapter,
   OpenRouterCatalogAdapter,
   TeamResolutionStrategy,
 } from "@exaix-team/model-registry-live";
 import { DefaultModelRegistry } from "@exaix/model-registry";
 import type { IAdapterContext } from "@exaix/model-registry";
-import type { IResolutionStrategy } from "@exaix/ai";
+import { type IResolutionStrategy, ProviderRegistry } from "@exaix/ai";
 import type { IDatabaseService, IExecutor, IHitlPolicyEvaluator, IModelRegistry } from "@exaix/core/types";
 import type { IModelRegistryProvider, IModelRegistryProviderDeps } from "@exaix/core/composer";
 import type { IProviderHealthChecker } from "@exaix/ai";
@@ -65,17 +69,31 @@ export function registerTeamModelRegistry(
   composer.registerModelRegistryProvider(provider);
 }
 
-/** OpenRouter host root; the adapter appends /api/v1/models (§6.3). */
-const OPENROUTER_BASE_URL = "https://openrouter.ai";
 /** Fallback adapter timeout when model_registry.refresh_timeout_ms is unset. */
 const DEFAULT_ADAPTER_TIMEOUT_MS = 15_000;
 
+/** Per-provider host root (adapters append their own path) + credential env (§6.3). */
+interface IProviderCatalogDescriptor {
+  baseUrl: string;
+  keyEnv?: string;
+}
+
+const PROVIDER_CATALOG_DESCRIPTORS: Record<string, IProviderCatalogDescriptor> = {
+  openrouter: { baseUrl: "https://openrouter.ai", keyEnv: "OPENROUTER_API_KEY" },
+  anthropic: { baseUrl: "https://api.anthropic.com", keyEnv: "ANTHROPIC_API_KEY" },
+  google: { baseUrl: "https://generativelanguage.googleapis.com", keyEnv: "GEMINI_API_KEY" },
+  openai: { baseUrl: "https://api.openai.com", keyEnv: "OPENAI_API_KEY" },
+  ollama: { baseUrl: "http://localhost:11434" }, // local, no credential
+};
+
 /**
- * Build the Team resolution strategy (Phase 135 Step 3, GAP-1 consumer) that wires the
- * live registry's explicit-validation / auto-admit behaviour into ModelResolver via the
+ * Build the Team resolution strategy (Phase 135 Step 3 seam consumer, extended in
+ * Step 4 with the four native adapters) that wires the live registry's
+ * explicit-validation / auto-admit behaviour into ModelResolver via the
  * IResolutionStrategy seam. Returns undefined when the selected registry is not the Team
- * live service (defensive — Solo never reaches this call). The strategy's buildContext
- * resolves each provider's already-configured key + base URL (no new secret surface).
+ * live service (defensive — Solo never reaches this call). buildContext resolves each
+ * provider's already-configured key env + host root (no new secret surface); the
+ * OpenRouter key env honours the config override, the natives use the standard envs.
  */
 export function buildTeamResolutionStrategy(
   modelRegistry: IModelRegistry,
@@ -86,19 +104,24 @@ export function buildTeamResolutionStrategy(
 
   const adapters = new AdapterRegistry();
   adapters.register(new OpenRouterCatalogAdapter());
+  adapters.register(new AnthropicCatalogAdapter());
+  adapters.register(new GoogleCatalogAdapter());
+  adapters.register(new OpenAiCatalogAdapter());
+  adapters.register(new OllamaCatalogAdapter());
 
   const timeoutMs = config.model_registry?.refresh_timeout_ms ?? DEFAULT_ADAPTER_TIMEOUT_MS;
+  const openrouterKeyEnv = config.ai_openrouter?.api_key_env ?? PROVIDER_CATALOG_DESCRIPTORS.openrouter.keyEnv;
   const buildContext = (provider: string): IAdapterContext => {
-    if (provider === "openrouter") {
-      const keyEnv = config.ai_openrouter?.api_key_env ?? "OPENROUTER_API_KEY";
-      return { apiKey: Deno.env.get(keyEnv), baseUrl: OPENROUTER_BASE_URL, fetch, timeoutMs };
-    }
-    return { baseUrl: OPENROUTER_BASE_URL, fetch, timeoutMs };
+    const descriptor = PROVIDER_CATALOG_DESCRIPTORS[provider];
+    const baseUrl = descriptor?.baseUrl ?? PROVIDER_CATALOG_DESCRIPTORS.openrouter.baseUrl;
+    const keyEnv = provider === "openrouter" ? openrouterKeyEnv : descriptor?.keyEnv;
+    return { apiKey: keyEnv ? Deno.env.get(keyEnv) : undefined, baseUrl, fetch, timeoutMs };
   };
 
   return new TeamResolutionStrategy(modelRegistry, logger, {
     getAdapter: (p) => adapters.get(p),
     buildContext,
+    isAggregator: (p) => ProviderRegistry.getProviderMetadata(p)?.isAggregator === true,
   });
 }
 

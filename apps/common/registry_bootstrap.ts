@@ -97,6 +97,9 @@ function registerConcreteProviders(): void {
       costTier: OPENROUTER_PROVIDER_METADATA.costTier,
       pricingTier: PricingTier.MEDIUM,
       strengths: [...OPENROUTER_PROVIDER_METADATA.strengths],
+      // Phase 135 Step 4 (§5.7.2): OpenRouter is an aggregator reseller — the native
+      // admission path and the native_first route policy read this flag.
+      isAggregator: true,
     };
     ProviderRegistry.registerWithMetadata(
       PROVIDER_OPENROUTER,

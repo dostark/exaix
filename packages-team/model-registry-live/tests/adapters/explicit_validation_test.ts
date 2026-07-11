@@ -40,6 +40,7 @@ function harness(
   const strategy = new TeamResolutionStrategy(svc, logger, {
     getAdapter: (p) => adapters.find((a) => a.provider === p),
     buildContext: () => ({ baseUrl: "https://x.test", fetch, timeoutMs: 1000 }),
+    isAggregator: (p) => p === "openrouter",
   });
   return { svc, logger, strategy };
 }
@@ -110,6 +111,27 @@ Deno.test("[edge][integration] auto-admitting an unadmitted-but-real model does 
     await strategy.validateExplicit("openrouter", "vendor/rare");
     const rows = await svc.getProviderModels("openrouter");
     assertEquals(rows.map((r) => r.model).sort(), ["vendor/curated", "vendor/rare"]);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[step4] native-provider auto-admit reads isAggregator=false and keeps native rows whole", async () => {
+  const { db, config, cleanup } = await initTestDbService();
+  try {
+    const { svc, strategy } = harness(db, config, [stubAdapter("anthropic", ["claude-new"])]);
+    // Seed an existing native row, then auto-admit a second real native model.
+    await svc.applyRefresh("anthropic", [{ model: "claude-existing" }], {
+      curatedModels: new Set(),
+      usedModels: new Set(),
+      isAggregator: false,
+      keepNativeWhole: true,
+      topN: 25,
+    });
+    const route = await strategy.validateExplicit("anthropic", "claude-new");
+    assertEquals(route, { provider: "anthropic", model: "claude-new" });
+    const rows = await svc.getProviderModels("anthropic");
+    assertEquals(rows.map((r) => r.model).sort(), ["claude-existing", "claude-new"]);
   } finally {
     await cleanup();
   }
