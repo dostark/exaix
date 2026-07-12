@@ -73,10 +73,10 @@ export class PromptBudgetAllocator {
   private readonly modelRegistry?: IModelRegistry;
 
   constructor(
-    policy?: Partial<IBudgetPolicy>,
-    tokenizer?: ITokenizer,
-    logger?: IEventLogger,
-    modelRegistry?: IModelRegistry,
+    policy?: Opt<Partial<IBudgetPolicy>, Reason.FactoryPreset>,
+    tokenizer?: Opt<ITokenizer, Reason.OptionalContext>,
+    logger?: Opt<IEventLogger, Reason.OptionalContext>,
+    modelRegistry?: Opt<IModelRegistry, Reason.OptionalContext>,
   ) {
     this.policy = normalizeBudgetPolicy(policy);
     this.tokenizer = tokenizer ?? new AiTokenEstimatorTokenizer();
