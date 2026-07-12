@@ -1,0 +1,71 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+log_level = "info"
+allow_net = ["api.anthropic.com", "api.openai.com", "localhost:11434"]
+
+[paths]
+workspace = "Workspace"
+portals = "Portals"
+memory = "Memory"
+
+# Analysis/planning model (the daemon's own in-process LLM, distinct from the delegate below).
+# A "claude" preset plans with Claude: routes the request -> plan step through the Anthropic API
+# (ANTHROPIC_API_KEY), so the whole flow runs on Claude, with no dependency on an auto-detected
+# Google/Ollama provider.
+[ai]
+provider = "anthropic"
+model = "claude-haiku-4-5-20251001"
+
+# The daemon resolves its analysis provider via `agents.default_model` -> `[models.<name>]`, NOT the
+# `[ai]` block above (which is only a fallback). The config schema DEFAULTS `[models].default` to
+# Google, so a preset without an explicit [models] silently plans on Google regardless of [ai].
+# Pin the named models to Anthropic here so this Claude preset truly plans with Claude.
+[models.default]
+provider = "anthropic"
+model = "claude-haiku-4-5-20251001"
+timeout_ms = 60000
+
+[models.fast]
+provider = "anthropic"
+model = "claude-haiku-4-5-20251001"
+timeout_ms = 60000
+
+[agents]
+default_model = "default"
+
+[rate_limiting]
+enabled = true
+max_calls_per_minute = 300
+
+[ai_anthropic]
+max_tokens_default = 8192
+
+[[portals]]
+alias = "exaix-self"
+target_path = "__WORKTREE_PATH__"
+execution_strategy = "worktree"
+default_branch = "main"
+
+[portal_knowledge]
+auto_analyze_on_mount = true
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = true
+
+# No [session_delegate] block (unlike dogfood.claude.toml): this preset is for scenarios that
+# need an APPROVED plan to reach real execution (AgentExecutor/ModelResolver) rather than being
+# intercepted by the code_changes delegate, which routes EVERY plan step to the headless
+# `claude -p` delegate once session_delegate.gates includes "code_changes", regardless of the
+# step's actual content (apps/daemon/main.ts's onCodeChangesDelegate wiring).
+
+# Phase 134 Solo curated list: a size-M request resolves via this preferred list
+# (reason: preferred_list) instead of scoring. anthropic is the real live provider the
+# dogfood daemon reaches, so the curated resolution is genuinely exercised end-to-end.
+[model_presets.M]
+max_cost_per_mtok = 3
+min_context_window = 32000
+supports_thinking = true
+candidates = ["anthropic"]

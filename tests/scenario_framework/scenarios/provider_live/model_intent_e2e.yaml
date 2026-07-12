@@ -42,11 +42,17 @@ steps:
   # workspace's exa.config.toml the daemon reads, so the size-M request below resolves
   # via the preferred list (reason: preferred_list) instead of scoring — the Solo
   # curation loop proven on the real daemon path, no separate seeding step needed.
+  # Uses the no-delegate variant of the dogfood.claude preset (identical otherwise):
+  # dogfood.claude.toml's session_delegate.gates = ["code_changes"] intercepts EVERY
+  # plan step unconditionally once a plan is approved (apps/daemon/main.ts's
+  # onCodeChangesDelegate wiring has no step-content filter), routing it to the headless
+  # `claude -p` delegate instead of AgentExecutor/ModelResolver — so model.resolved would
+  # never fire for this scenario's approved plan.
   - id: "start-daemon"
     type: "exactl"
     command: "daemon start"
     env:
-      EXA_CONFIG_PATH: "$FRAMEWORK_HOME/../../configs/dogfood.claude.toml"
+      EXA_CONFIG_PATH: "$FRAMEWORK_HOME/../../configs/dogfood.claude.no-delegate.toml"
       EXA_LLM_PROVIDER: "mock"
     output_criteria:
       - id: "daemon-started"
@@ -61,6 +67,11 @@ steps:
     output_criteria: []
 
   # --- Submit request with --model-size M --thinking ---
+  # --portal exaix-self: the request fixture carries no portal frontmatter, so
+  # resolvePortalName (packages/core/src/planning/plan_executor.ts) would otherwise fall
+  # back to the "workspace" alias, which no dogfood config registers — executeStep would
+  # error "Portal not found: workspace" once the plan is approved and executed. exaix-self
+  # is the portal the dogfood.claude.no-delegate.toml preset already registers.
   - id: "submit-request"
     type: "shell"
     command: "sh"
@@ -71,6 +82,7 @@ steps:
             --file "$REQUEST_FIXTURE" \
             --model-size M \
             --thinking \
+            --portal exaix-self \
             --subject "Model intent e2e test"
     output_criteria:
       - id: "request-submitted"
@@ -127,6 +139,24 @@ steps:
           echo "Plan uses a model matching M profile with thinking enabled"
     output_criteria:
       - id: "model-verified"
+        kind: "command-exit-code"
+        equals: 0
+
+  # --- Approve the plan, moving it to Workspace/Active so ExecutionLoop picks it up ---
+  # Without this, the plan sits in Workspace/Plans/ (review status) forever — ExecutionLoop
+  # never sees it, ModelResolver never runs, and model.resolved never fires. verify-model-intent
+  # above only checks the plan FILE exists, not that it was ever executed.
+  - id: "approve-plan"
+    type: "shell"
+    command: "sh"
+    args:
+      - "-c"
+      - |
+          plan_file=$(ls "$WORKSPACE_ROOT/Workspace/Plans/"*_plan.md 2>/dev/null | head -1)
+          plan_id=$(basename "$plan_file" .md)
+          $FRAMEWORK_HOME/bin/exactl plan approve "$plan_id"
+    output_criteria:
+      - id: "plan-approved"
         kind: "command-exit-code"
         equals: 0
 
