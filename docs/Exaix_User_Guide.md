@@ -265,7 +265,9 @@ cheapest = ["ollama"]
   [`exactl config model` and `exactl models`](#exactl-config-model--exactl-models--solo-model-curation-phase-134).
 - **Editions:** the Solo floor is a static, offline catalog. A live, always-current catalog and
   stricter routing rigor arrive with the Team edition (Phase 135); Solo behaviour is unchanged
-  when no Team module is present.
+  when no Team module is present. For the full precedence chain, characteristic scoring
+  (including Team's benchmark-driven `best`), the live catalog, multi-route pricing, and
+  cost-accuracy semantics, see **[`docs/Model_Resolution.md`](Model_Resolution.md)**.
 
 #### 2.4.3 Provider Comparison
 
@@ -954,6 +956,10 @@ exactl request "Audit dependencies" --model-size XL --preferred-provider anthrop
    registered provider wins (`preferred_list`).
 3. Capability/cost **scoring** across registered providers (`preset_default` /
    `characteristics_scored`), with local/free providers exempt from budget filtering.
+
+(Team adds catalog validation for step 1, benchmark-driven `best` ranking and a usage
+tiebreak to step 3, and a multi-route pricing decision on top of any winner — see
+[`docs/Model_Resolution.md`](Model_Resolution.md) for the full picture.)
 
 The chosen provider, model, and the reason are journalled as `model.resolved`. Inspect them with:
 
