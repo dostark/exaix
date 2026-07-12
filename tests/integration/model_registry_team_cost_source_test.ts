@@ -10,18 +10,20 @@
  *   (b) MockLLMProvider always self-reported `cost_usd: 0`, which forced
  *   `cost_source: "provider_reported"` upstream of CostTracker's own precedence logic
  *   (fixed: the mock no longer reports a cost at all).
- *   `cost_source: "registry_computed"` is NOT asserted here: it requires the Team
- *   registry to hold priced catalog data for the RESOLVED provider, but the standard
- *   identity-request path resolves via `agents.default_model`/`ai.provider`, which is
- *   tied to the `mock` provider TYPE — not one of the five real catalog providers the
- *   Team registry prices. Reaching `registry_computed` end-to-end needs a network-free
- *   provider identity registered under a REAL priced provider name (see the
- *   Reachability Ledger row this step adds) — tracked as follow-up, not lost work.
+ *
+ *   Reachability Ledger follow-up (closed 2026-07-12): the second test below proves
+ *   `cost_source: "registry_computed"` itself. The standard identity-request path
+ *   resolves via `agents.default_model`/`ai.provider`, tied to the `mock` provider TYPE —
+ *   `setPricingLookup`'s `getModelPricing(provider, model)` lookup is a pure parameterized
+ *   `SELECT ... WHERE provider = ? AND model = ?` with no provider-type filtering, so a
+ *   `model_pricing` row seeded for `("mock", "mock-model")` — the exact
+ *   provider/model string the mock provider always reports — resolves through it on a
+ *   real `EXAIX_EDITION=team` boot without needing a real (non-mock) provider identity.
  * @architectural-layer Test
- * @related-files [apps/daemon/main.ts, packages/core/src/cost/cost_tracker.ts, packages/ai/src/providers/mock_llm_provider.ts, packages/ai/src/rate_limited_provider.ts]
+ * @related-files [apps/daemon/main.ts, packages/core/src/cost/cost_tracker.ts, packages/ai/src/providers/mock_llm_provider.ts, packages/ai/src/rate_limited_provider.ts, packages-team/model-registry-live/src/model_registry_service.ts]
  */
 
-import { assertNotEquals } from "@std/assert";
+import { assertEquals, assertNotEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -72,17 +74,72 @@ function writeMockDaemonConfig(configPath: string, root: string): void {
   Deno.writeTextFileSync(configPath, cfg);
 }
 
-async function readCostSource(configPath: string, traceId: string): Promise<string | null | undefined> {
+/**
+ * RateLimitedProvider.generate (packages/ai/src/rate_limited_provider.ts) calls
+ * CostTracker.trackGeneration with NO traceId argument on the standard identity-request
+ * path — every provider_costs row it inserts has trace_id = NULL. Filtering by traceId
+ * here would silently match zero rows and return `undefined`, making both this test and
+ * the sibling registry_computed test pass vacuously regardless of the real cost_source.
+ * Read the single most-recent row instead — safe because each test uses its own fresh
+ * tempDir/daemon and submits exactly one request.
+ */
+async function readCostSource(configPath: string): Promise<string | null | undefined> {
   const configService = new ConfigService(configPath);
   const db = new DatabaseService(configService.getAll());
   try {
     const rows = await db.preparedAll<{ cost_source: string | null }>(
-      "SELECT cost_source FROM provider_costs WHERE trace_id = ? ORDER BY rowid DESC LIMIT 1",
-      [traceId],
+      "SELECT cost_source FROM provider_costs ORDER BY rowid DESC LIMIT 1",
     );
     return rows[0]?.cost_source;
   } catch {
     return undefined;
+  } finally {
+    await db.close();
+  }
+}
+
+/** Team config: model_registry enabled (wires the live pricing lookup), no adapter stubs needed
+ * (refresh_on_start left false — this test seeds model_pricing directly rather than fetching). */
+function writeTeamDaemonConfig(configPath: string, root: string): void {
+  const cfg = [
+    ...daemonConfigSections(root, ""),
+    "",
+    "[ai]",
+    'provider = "mock"',
+    'model = "test"',
+    "",
+    "[quality_gate]",
+    "enabled = false",
+    "",
+    "[request_analysis]",
+    "enabled = false",
+    "",
+    "[model_registry]",
+    "enabled = true",
+    "",
+  ].join("\n");
+  Deno.writeTextFileSync(configPath, cfg);
+}
+
+/**
+ * Seed a model_pricing row directly (no network fetch) — mirrors
+ * model_route_selection_test.ts's seedRoute helper, against the file-based sqlite DB a
+ * real daemon subprocess reads. ("mock", "mock-model") matches exactly what
+ * MockLLMProvider always reports (mock_llm_provider.ts) and what
+ * config.agents.default_model resolves to on the standard identity-request path — so
+ * ModelRegistryService.getModelPricing's parameterized provider/model lookup (no
+ * provider-type filtering) finds this row for a real request without needing a
+ * non-mock provider identity.
+ */
+async function seedMockPricing(configPath: string): Promise<void> {
+  const configService = new ConfigService(configPath);
+  const db = new DatabaseService(configService.getAll());
+  try {
+    await db.preparedRun(
+      `INSERT INTO model_pricing (provider, model, input_per_mtok, output_per_mtok, provenance, verified_at)
+       VALUES (?, ?, ?, ?, 'endpoint', ?)`,
+      ["mock", "mock-model", 1, 2, Date.now()],
+    );
   } finally {
     await db.close();
   }
@@ -111,13 +168,74 @@ Deno.test({
         afterInjectMs: 3000,
       });
 
-      const costSource = await readCostSource(configPath, TRACE_ID);
+      const costSource = await readCostSource(configPath);
       assertNotEquals(
         costSource,
         "provider_reported",
         "MockLLMProvider no longer self-reports cost_usd, so its generation must not force " +
           "cost_source=provider_reported — it must fall through to CostTracker's own precedence " +
           "(registry_computed if a pricing lookup is set and has data, else the legacy null estimate)",
+      );
+    } finally {
+      await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+const REGISTRY_COMPUTED_TRACE_ID = "step135-ledger-cost-source-live-trace";
+const REGISTRY_COMPUTED_REQUEST_MARKDOWN = [
+  "---",
+  `trace_id: "${REGISTRY_COMPUTED_TRACE_ID}"`,
+  `created: "${new Date().toISOString()}"`,
+  "status: pending",
+  "priority: 5",
+  "identity: stub-agent",
+  "source: test",
+  "created_by: model_registry_team_cost_source_test",
+  "tags: []",
+  "---",
+  "",
+  "# Request",
+  "",
+  "Add a short docstring to the isOdd helper function.",
+  "",
+].join("\n");
+
+Deno.test({
+  name:
+    "[reachability-ledger] real Team daemon: a standard request's provider_costs row is cost_source=registry_computed when the resolved provider:model is priced",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const tempDir = await Deno.makeTempDir({ prefix: "model-registry-team-cost-source-live-" });
+    const configPath = join(tempDir, "exa.config.toml");
+    try {
+      await runMigrationsIn(tempDir);
+      writeStubIdentity(tempDir);
+      writeTeamDaemonConfig(configPath, tempDir);
+      await seedMockPricing(configPath);
+
+      await bootRealDaemon(configPath, 6000, {
+        extraEnv: { EXA_LLM_PROVIDER: "mock", EXAIX_EDITION: "team" },
+        midFlight: () => {
+          Deno.mkdirSync(join(tempDir, "Workspace", "Requests"), { recursive: true });
+          Deno.writeTextFileSync(
+            join(tempDir, "Workspace", "Requests", `${REGISTRY_COMPUTED_TRACE_ID}.md`),
+            REGISTRY_COMPUTED_REQUEST_MARKDOWN,
+          );
+        },
+        afterInjectMs: 3000,
+      });
+
+      const costSource = await readCostSource(configPath);
+      assertEquals(
+        costSource,
+        "registry_computed",
+        "with EXAIX_EDITION=team (live ModelRegistryService pricing lookup wired) and a seeded " +
+          "model_pricing row for mock:mock-model (the exact provider/model the standard request " +
+          "path resolves to and MockLLMProvider always reports), CostTracker.resolveCost's " +
+          "computeSplitPrice branch must find a priced model and win over the legacy null estimate",
       );
     } finally {
       await Deno.remove(tempDir, { recursive: true }).catch(() => {});
