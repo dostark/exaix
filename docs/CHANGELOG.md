@@ -18,6 +18,23 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 135 (Model Registry — Team Rigor)
+
+### Added
+
+- Team edition: a live, self-updating model catalog — enable with `model_registry.enabled = true` (see `Model_Resolution.md`). Off by default; Solo behavior is unchanged when disabled.
+- `best` characteristic (Team) — ranks providers by independent benchmark performance for the kind of task you're requesting, instead of a flat preference.
+- Opt-in usage-based tiebreak (Team) — `model_registry.usage_tiebreak = true` breaks ties between equally-preferred providers using your own usage history instead of an arbitrary pick.
+- Multi-route pricing (Team) — when a model is offered by more than one provider, `model_registry.route_policy` (`cheapest`, `reliability`, `native_first`, or `user_order`) decides which one is used.
+- `exactl models refresh` — trigger/inspect the Team live catalog's refresh cycle.
+- `exactl models list --benchmark <name>` — append an advisory benchmark-score column (Team) to the model list.
+- `config model` now validates an explicit model against the Team live catalog and auto-admits a real-but-previously-unused model on first use, instead of only Solo's pass-through.
+- Cost records now carry a `cost_source` (`provider_reported` or, on Team, `registry_computed`), and a mismatch beyond tolerance is now flagged instead of silently picked.
+
+### Changed
+
+- Cost accuracy (D9): Solo behavior is otherwise unchanged from Phase 134 except that cost records now carry the `cost_source` field above — expect reported cost totals to shift slightly toward more accurate figures where Team is enabled.
+
 ## Unreleased — Phase 134 (Model Registry)
 
 ### Added

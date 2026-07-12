@@ -362,7 +362,7 @@ single source of truth for identities.
 Directory containing flow blueprints. Each flow step references identities by
 `identity` name or `identity_id`.
 
-## Model Registry (Solo, Phase 134)
+## Model Registry (Solo Phase 134 + Team Phase 135)
 
 ### Floor
 
@@ -396,8 +396,55 @@ misclassified as free.
 
 The attach point (`IModelRegistryProvider`, on `IEditionComposer`) by which a Team+
 module supplies a live model registry. Solo returns none, so the resolver falls back to
-the [Floor](#floor); behaviour is byte-identical whether or not a Team module is present
-until Phase 135 registers one.
+the [Floor](#floor); behaviour is byte-identical whether or not a Team module is present.
+Phase 135 registers the concrete Team implementation (`ModelRegistryService`) behind
+this seam.
+
+### Admission
+
+The Team live registry's filter over a provider's fetched catalog (§5.9): only a
+`curated`, `native` (first-party provider kept whole), `explicit_use` (previously named
+by an explicit `provider:model` choice), or `benchmark_topn` (top-N of a tracked
+benchmark) model is admitted and persisted — a full vendor catalog is never blindly
+ingested. Each admission/retirement is journalled with its reason.
+
+### Route policy
+
+The Team live registry's decision rule (`cheapest` / `reliability` / `native_first` /
+`user_order`) for which provider serves a model offered by 2+ providers (e.g. a
+first-party API and a marketplace reseller like OpenRouter). A model with exactly one
+route short-circuits with `route_reason: single_route` and no routing event.
+
+### Benchmark provenance
+
+The trust label on a Team-ingested benchmark score: which tracked benchmark
+(`swe_bench_verified`, `swe_bench_pro`, `gpqa`, etc.) produced it, and when it was last
+verified. Feeds the `best` characteristic's ranking and the `benchmark_topn` admission
+path; a model with no score for any relevant benchmark is skipped for `best`, not
+penalized to zero.
+
+### Task-type derivation
+
+The precedence chain (`deriveTaskType`, Phase 135 Step 8) that resolves a request's
+`TaskType` for the Team `best` scorer's benchmark lookup: request frontmatter beats
+identity blueprint declaration beats the highest-confidence matched skill's trigger
+beats a static entity-name soft-match beats the request analyzer's inferred intent. An
+entity's own declaration is never silently overridden by the static map.
+
+### Cost source
+
+The provenance label on a `provider_costs` record: `provider_reported` (the provider
+itself reported a real cost, trusted verbatim), `registry_computed` (Team only — no
+reported cost, but the live registry has a price for the exact resolved `provider:model`,
+computed from real token counts), or a null legacy blended estimate (neither source
+available). A reported-vs-computed divergence beyond tolerance emits
+`model.cost.divergence`.
+
+### Usage tiebreak
+
+An opt-in Team setting (`model_registry.usage_tiebreak`) that breaks a no-characteristics
+resolution tie by the candidate pool's usage history (most/least frequently used)
+instead of an arbitrary pick, journalled with `reason: usage_ranked`. Off by default.
 
 ## Canonical Prompt (Short)
 

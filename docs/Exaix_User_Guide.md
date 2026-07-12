@@ -1000,6 +1000,63 @@ Notes:
   than 90 days is marked `(stale)`. The Solo floor is offline — there is **no `models refresh`**;
   a live, auto-refreshed catalog arrives with the Team edition (Phase 135).
 
+##### Team: live model catalog (Phase 135)
+
+Enable a self-updating model catalog with the `[model_registry]` config block. Top-level keys
+must come before any `[model_registry.*]` sub-table (standard TOML ordering):
+
+```toml
+[model_registry]
+enabled = true                       # off by default — false/absent is byte-identical to Solo
+refresh_on_start = false             # true = one immediate refresh at daemon boot
+catalog_refresh_cron = "0 */6 * * *" # how often the catalog is checked (default: every 6h)
+pricing_refresh_cron = "0 3 * * *"   # how often prices are checked (default: daily)
+route_policy = "cheapest"            # cheapest | reliability | native_first | user_order
+route_policy_price_tolerance = 0.05  # 5% near-tie band under "cheapest"
+usage_tiebreak = false               # opt-in: break no-characteristics ties by usage history
+cost_divergence_tolerance_pct = 5    # flag a reported-vs-computed cost mismatch beyond this
+
+[model_registry.admission]
+keep_native_whole = true   # keep your main providers' full catalogs (not just curated entries)
+top_n = 25                 # for large marketplace catalogs (e.g. OpenRouter): admit only the top N benchmarked models
+
+[model_registry.route_order]
+# only read when route_policy = "user_order" — explicit per-model provider order
+"claude-opus-4.5" = ["anthropic", "openrouter"]
+
+[model_registry.benchmark_source]
+enabled = true                       # on by default once model_registry.enabled = true
+tracked_benchmarks = ["swe_bench_verified", "swe_bench_pro", "gpqa"]
+
+[model_registry.benchmark_map]
+# which tracked benchmark(s) inform the "best" characteristic for each kind of task
+feature = ["swe_bench_verified", "swe_bench_pro"]
+```
+
+With the catalog enabled, `exactl config model` validates an explicit entry against the live
+catalog (and auto-admits a real-but-unused model on first use, instead of Solo's pass-through),
+and two more commands become available:
+
+```bash
+# Trigger/inspect the live refresh cycle
+exactl models refresh
+
+# Append an advisory benchmark-score column to the model list
+exactl models list --benchmark swe_bench_verified
+```
+
+See [`docs/Model_Resolution.md`](Model_Resolution.md) for the full explanation of what each
+setting does — curation, characteristics (including the benchmark-driven `best`), the live
+catalog, multi-route pricing, and cost accuracy.
+
+> **Data license note (Team benchmark ingest):** `model_registry.benchmark_source` pulls
+> community-maintained scores from [models.dev](https://models.dev/), which is MIT-licensed —
+> confirmed safe to ingest and redistribute as advisory scoring data.
+
+See the **Model Registry** row of the edition comparison table in
+[`docs/Reference_Data.md`](Reference_Data.md#edition-model--component-availability) for how
+this fits into the overall Solo / Team / Enterprise split.
+
 **Why CLI instead of manual files?**
 
 | Aspect         | Manual File Creation     | `exactl request`           |

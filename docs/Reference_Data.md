@@ -6,16 +6,17 @@ Implementation reference data — edition tables, component status, scenario pac
 
 ## Edition Model — Component Availability
 
-| Component Category  | Solo 🟢                                                  | Team 🔵                  | Enterprise 🟣                       |
-| ------------------- | -------------------------------------------------------- | ------------------------ | ----------------------------------- |
-| **Interface**       | CLI + TUI (7 views)                                      | + Web UI                 | + Enhanced TUI (9 views)            |
-| **Audit Database**  | SQLite (embedded)                                        | PostgreSQL (append-only) | PostgreSQL + immudb (WORM)          |
-| **MCP Support**     | Client only                                              | + Server mode            | + Custom tool development           |
-| **LLM Providers**   | Ollama, OpenAI, Anthropic, Google, Vertex AI, OpenRouter | OpenRouter (Team+ tier)  | + Azure OpenAI, AWS Bedrock         |
-| **Memory Banks**    | Basic (file-based)                                       | + Full-text search       | + Vector search, knowledge graphs   |
-| **Collaboration**   | Single user                                              | Multi-user (unlimited)   | + RBAC, department isolation        |
-| **Compliance**      | ❌                                                       | ❌                       | ✅ EU AI Act, HIPAA, SOX, ISO 27001 |
-| **Cost Management** | Basic logs                                               | Per-user budgets, alerts | Forecasting, anomaly detection      |
+| Component Category  | Solo 🟢                                                                   | Team 🔵                                                                                                                                               | Enterprise 🟣                                        |
+| ------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| **Interface**       | CLI + TUI (7 views)                                                       | + Web UI                                                                                                                                              | + Enhanced TUI (9 views)                             |
+| **Audit Database**  | SQLite (embedded)                                                         | PostgreSQL (append-only)                                                                                                                              | PostgreSQL + immudb (WORM)                           |
+| **MCP Support**     | Client only                                                               | + Server mode                                                                                                                                         | + Custom tool development                            |
+| **LLM Providers**   | Ollama, OpenAI, Anthropic, Google, Vertex AI, OpenRouter                  | OpenRouter (Team+ tier)                                                                                                                               | + Azure OpenAI, AWS Bedrock                          |
+| **Memory Banks**    | Basic (file-based)                                                        | + Full-text search                                                                                                                                    | + Vector search, knowledge graphs                    |
+| **Collaboration**   | Single user                                                               | Multi-user (unlimited)                                                                                                                                | + RBAC, department isolation                         |
+| **Compliance**      | ❌                                                                        | ❌                                                                                                                                                    | ✅ EU AI Act, HIPAA, SOX, ISO 27001                  |
+| **Cost Management** | Basic logs                                                                | Per-user budgets, alerts                                                                                                                              | Forecasting, anomaly detection                       |
+| **Model Registry**  | Static offline model list, per-size curated lists (`exactl config model`) | + Live self-updating catalog, benchmark-driven `best` ranking, multi-route pricing, admission control, cost-source accuracy (`exactl models refresh`) | Inherits Team unchanged (planned) + governance layer |
 
 ---
 

@@ -579,27 +579,41 @@ For env var reference, see `packages/flow/README.md#session-tool-integration` an
 
 **File:** `packages/ai/src/model_resolver.ts` (line 56)
 
-Accepts a `ModelIntent` and returns an `IResolvedModel` (provider + model + per-call options). Resolution follows a strict precedence chain:
+Accepts a `ModelIntent` and returns an `IResolvedModel` (provider + model + per-call options). Resolution follows a strict precedence chain, unchanged in shape since Phase 132 but extended per-step by the Team `IResolutionStrategy` seam (below) where present:
 
 ```text
 ModelIntent ──→ tryResolveOverride (EXA_MODEL_PRESET_OVERRIDE env var)
              └─→ tryResolveExplicit  (model: "provider:model" string)
-                └─→ tryResolveFromPreset (model_size → preset profile)
-                   └─→ fallback iteration (intent.fallbacks[])
-                         for each attempt:
-                           IProviderRoutingStrategy.selectProvider()
-                           → ProviderRegistry metadata → selectModelForProvider
-                           → thinking constraint re-resolution
-                           → context-window overflow detection & model-size bump
+                   [Team: IResolutionStrategy.validateExplicit — live-catalog
+                    validation + auto-admit on first use; Solo: pass-through]
+                └─→ tryResolveBareName (bare model name — provider or curated match)
+                   └─→ tryResolveCurated (Phase 134: model_presets.<SIZE>.candidates —
+                       first healthy registered provider in the list wins)
+                      └─→ tryResolveFromPreset (model_size → preset profile)
+                         └─→ fallback iteration (intent.fallbacks[])
+                               for each attempt:
+                                 IProviderRoutingStrategy.selectProvider()
+                                 → ProviderRegistry metadata → selectModelForProvider
+                                 → scoreCandidates (characteristics: cheapest/fastest/best)
+                                   [Team: IResolutionStrategy.scoreBest — benchmark_map
+                                    lookup keyed by derived TaskType, Phase 135 Step 8]
+                                 → decideWinner (+ IResolutionStrategy.rankUsage
+                                   opt-in usage tiebreak when no characteristics given)
+                                 → IResolutionStrategy.selectRoute — multi-route pricing
+                                   policy when 2+ providers offer the same model
+                                 → thinking constraint re-resolution
+                                 → context-window overflow detection & model-size bump
 ```
 
-**Dependencies:** delegates provider selection to `IProviderRoutingStrategy` (`packages/ai/src/routing/provider_routing_strategy.ts`); resolves model names within each provider via `ProviderRegistry` metadata.
+**Team seam (`IResolutionStrategy`, `packages/ai/src/i_resolution_strategy.ts`):** four optional hooks (`validateExplicit`, `selectRoute`, `scoreBest`, `rankUsage`) a strategy may implement; an absent hook is a Solo-identical no-op, never an error. `apps/daemon/src/bootstrap_team.ts:buildTeamResolutionStrategy` constructs the concrete `TeamResolutionStrategy` (`packages-team/model-registry-live/src/team_resolution_strategy.ts`) only in Team edition; Solo passes no strategy at all. `packages/core/src/planning/plan_executor.ts:createAgentExecutor` threads the resolver (and, for `best`, the skill-derived task type via `deriveTopSkillTaskTypes`) into `AgentExecutor` per plan execution.
 
-**Trace events:** every `resolve()` call emits a `model.resolved` (`DomainEventType.ModelResolved`) journal event with the intent, candidates, scores, selection, reason, attempt count, and duration.
+**Team live model registry (`packages-team/model-registry-live/`, `model_registry.enabled` config gate):** a `RegistryRefreshScheduler` periodically fetches each provider's catalog through a per-provider adapter (`packages-team/model-registry-live/src/adapters/`) and admits a filtered subset — curated, first-party/native, previously-used, or top-N of a tracked benchmark — persisting to SQLite (`model_catalog`, `model_pricing`, `model_benchmark` tables). `validateExplicit` re-fetches and auto-admits a real-but-unadmitted explicit model on first use rather than rejecting it. `selectRoute` applies a configurable route policy (`cheapest`/`reliability`/`native_first`/`user_order`) when a model has 2+ provider routes. `scoreBest` looks up each candidate's benchmark score for the request's derived `TaskType` (`packages/execution/src/task_type_derivation.ts:deriveTaskType`, a 5-tier precedence: frontmatter > identity > skill > static map > analyzer). Cost records (`packages/core/src/cost/cost_tracker.ts:CostTracker.resolveCost`) carry `cost_source: "registry_computed"` when the resolved `provider:model` has a live-registry price and no provider-reported cost exists, replacing the legacy blended estimate; a reported-vs-computed divergence beyond `model_registry.cost_divergence_tolerance_pct` emits `model.cost.divergence`. Solo's `DefaultModelRegistry` (`packages/model-registry/`) is a static offline floor with no scheduler and no live hooks — selected instead of the Team service via the edition-composer seam (`apps/daemon/main.ts:getModelRegistryProvider`) whenever `model_registry.enabled` is `false` or the Team module isn't present.
 
-**Testing determinism:** `EXA_MODEL_PRESET_OVERRIDE` env var pins all model sizes to `mock:mock-model` for any registered preset name (e.g., `test`), enabling hermetic CI tests.
+**Trace events:** every `resolve()` call emits a `model.resolved` (`DomainEventType.ModelResolved`) journal event with the intent, candidates, scores, selection, reason (`explicit_override`/`preferred_list`/`preset_default`/`characteristics_scored`/`best_ranked`/`usage_ranked`/`fallback`/…), attempt count, and duration; Team additionally journals `model.admitted`/`model.retired` (catalog changes), `model.route.selected` (multi-route decisions), `model.catalog.refreshed`/`model.pricing.refreshed`/`model.benchmark.refreshed` (scheduler cycles), and `model.cost.divergence`.
 
-**CLI integration:** `--model-size <S|M|L|XL>`, `--thinking`, and `--effort <low|medium|high>` flags feed directly into the `ModelIntent` fields (`model_size`, `thinking`, `effort`) in `apps/exactl/src/exactl.ts:366-369` and are serialized into request frontmatter by `request_create_handler.ts:133`.
+**Testing determinism:** `EXA_MODEL_PRESET_OVERRIDE` env var pins all model sizes to `mock:mock-model` for any registered preset name (e.g., `test`), enabling hermetic CI tests. `model_registry.adapter_base_urls` (Team, test-only) lets a real daemon subprocess point its catalog adapters at local stub HTTP servers instead of vendor hosts.
+
+**CLI integration:** `--model-size <S|M|L|XL>`, `--thinking`, and `--effort <low|medium|high>` flags feed directly into the `ModelIntent` fields (`model_size`, `thinking`, `effort`) in `apps/exactl/src/exactl.ts:366-369` and are serialized into request frontmatter by `request_create_handler.ts:133`. `exactl models list` / `exactl models pricing` / `exactl config model` (Solo and Team) and `exactl models refresh` / `exactl models list --benchmark` (Team-only) are implemented in `apps/exactl/src/commands/model_commands.ts`. See `docs/Model_Resolution.md` for the user-facing guide.
 
 ---
 
