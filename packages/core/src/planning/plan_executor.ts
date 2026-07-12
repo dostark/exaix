@@ -40,6 +40,7 @@ import {
 import type { JSONValue } from "@exaix/core";
 import type { IApplicationContext, IPlanAmendmentService } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";
+import { TaskType } from "@exaix/core/types";
 import { AgentExecutor, type IAgentExecutorOptions, type IGuardrailRunner } from "@exaix/execution";
 import { PlanAmendmentService } from "./plan_amendment_service.ts";
 import type { IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
@@ -178,7 +179,7 @@ export class PlanExecutor {
 
       const initialHeadSha = git ? await this.getPortalHeadSha(this.repoPath) : null;
       const portalName = this.resolvePortalName(context.frontmatter.portal);
-      const agentExecutor = this.createAgentExecutor(traceId);
+      const agentExecutor = await this.createAgentExecutor(traceId, context);
 
       try {
         const lastCommitSha = await this.executeSteps(
@@ -247,7 +248,7 @@ export class PlanExecutor {
   /**
    * Create an AgentExecutor instance with proper dependencies.
    */
-  private createAgentExecutor(traceId: string): AgentExecutor {
+  private async createAgentExecutor(traceId: string, context: IPlanContext): Promise<AgentExecutor> {
     const pathResolver = new PathResolver(this.config, {
       traceId,
     });
@@ -259,6 +260,10 @@ export class PlanExecutor {
     }
     if (this.options.requestIntent) {
       options.requestIntent = this.options.requestIntent;
+    }
+    const topSkillTaskTypes = await this.deriveTopSkillTaskTypes(context);
+    if (topSkillTaskTypes.length > 0) {
+      options.topSkillTaskTypes = topSkillTaskTypes;
     }
 
     return new AgentExecutor(
@@ -279,6 +284,32 @@ export class PlanExecutor {
       options,
       this.options.modelResolver,
     );
+  }
+
+  /**
+   * Reachability Ledger (Phase 135): resolve the skill-trigger tier of
+   * deriveTaskType's precedence chain by re-running the same skill match the request
+   * already went through — using the plan's originating request subject (frontmatter.subject,
+   * carried through from RequestProcessor) against the application context's SkillsService,
+   * which is available here via IPlanExecutorOptions.context but was previously never called
+   * from PlanExecutor's path. Returns [] (not populated on options) when no skills service is
+   * configured, no match is found, or a match's triggers carry no recognised TaskType value.
+   */
+  private async deriveTopSkillTaskTypes(context: IPlanContext): Promise<TaskType[]> {
+    const skills = this.options.context?.skills;
+    const requestText = context.frontmatter.subject;
+    if (!skills || typeof requestText !== "string" || requestText.length === 0) {
+      return [];
+    }
+
+    const { matches } = await skills.matchSkills({
+      requestText,
+      identityId: context.identity,
+    });
+    const topMatch = matches[0];
+    const candidateTaskTypes = topMatch?.matchedTriggers.task_types ?? [];
+    const knownTaskTypes = new Set<string>(Object.values(TaskType));
+    return candidateTaskTypes.filter((value): value is TaskType => knownTaskTypes.has(value));
   }
 
   /**
