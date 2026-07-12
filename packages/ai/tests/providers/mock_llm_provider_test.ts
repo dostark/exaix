@@ -80,6 +80,13 @@ Deno.test("Scripted: uses default response when no responses configured", async 
   assertEquals(typeof result, "string");
 });
 
+Deno.test("[step135.9] generate() omits cost_usd — a mock has no real invoice; CostTracker's registry_computed branch must be reachable, not pre-empted", async () => {
+  const provider = new MockLLMProvider(MockStrategy.SCRIPTED, { responses: ["hi"] });
+
+  const result = await provider.generate("prompt");
+  assertEquals(result.cost_usd, undefined);
+});
+
 Deno.test("Scripted: tracks call count", async () => {
   const provider = new MockLLMProvider(MockStrategy.SCRIPTED, {
     responses: ["response"],

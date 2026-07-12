@@ -10,11 +10,13 @@
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { ModelResolver } from "@exaix/ai";
 import type { ModelIntent } from "@exaix/schemas/model_intent.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import { SafeSubprocess } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { ConfidenceScorer } from "@exaix/execution";
 import { DEFAULT_AMENDMENT_THRESHOLD, ExecutionStatus, SecurityMode } from "@exaix/core";
@@ -73,6 +75,13 @@ export interface IPlanExecutorOptions {
   /** Request-level ModelIntent fields that override blueprint values (Phase 132). */
   requestIntent?: Partial<ModelIntent>;
   /**
+   * Phase 135 Step 9 (GAP-C9): the resolver threaded into AgentExecutor so
+   * resolveModelFromBlueprint's ModelResolver.resolve() branch is reachable during real
+   * plan execution — without it, best/route/auto-admit/task_type derivation is
+   * unreachable regardless of identity blueprint content.
+   */
+  modelResolver?: ModelResolver;
+  /**
    * Optional callback invoked when a code-changes delegation result is
    * reconciled. PlanExecutor calls this to delegate code-change steps to a
    * foreign agent without importing the concrete launcher (layer-boundary seam).
@@ -123,7 +132,7 @@ export class PlanExecutor {
     private llmProvider: IModelProvider,
     db: IDatabaseService,
     private repoPath: string,
-    logger?: IEventLogger,
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>,
     private options: IPlanExecutorOptions = {},
   ) {
     const ctx = options.context;
@@ -224,7 +233,7 @@ export class PlanExecutor {
   /**
    * Resolve portal name from frontmatter or default to workspace.
    */
-  private resolvePortalName(frontmatterPortal: JSONValue | undefined): string {
+  private resolvePortalName(frontmatterPortal: Opt<JSONValue, Reason.OptionalInput>): string {
     const portalName = frontmatterPortal as string | undefined;
     if (portalName) {
       const portal = this.config.portals.find((p) => p.alias === portalName);
@@ -268,6 +277,7 @@ export class PlanExecutor {
       undefined, // snapshotStore
       undefined, // _guardrailRunner (positional — use options instead)
       options,
+      this.options.modelResolver,
     );
   }
 

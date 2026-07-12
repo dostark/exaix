@@ -8,6 +8,13 @@
  *   > UNKNOWN. An entity's own declaration (frontmatter/identity) is never shadowed by
  *   the static map (anti-drift). Edition-agnostic: the derived task-type rides the
  *   intent/trace in Solo without affecting selection — only the Team `best` scorer reads it.
+ *   Phase 135 Step 9 (GAP-C9): the skill-trigger tier (`topSkillTaskTypes`) is currently
+ *   UNREACHABLE from PlanExecutor's call path — skill matching only happens in the
+ *   unrelated `AgentRunner` one-shot dispatch class, which is a disjoint top-level path
+ *   from `PlanExecutor`/`ExecutionLoop` (no shared context, no caller/callee relation).
+ *   Wiring it requires a design decision (a new cross-cutting skill-matching step in
+ *   plan-execution), not a small wire-up — explicitly descoped from Step 9; see the
+ *   Reachability Ledger in the phase-135 planning doc.
  * @architectural-layer Execution
  * @dependencies [@exaix/core/types]
  * @related-files [packages/execution/src/agent_executor.ts, packages/ai/src/model_resolver.ts]

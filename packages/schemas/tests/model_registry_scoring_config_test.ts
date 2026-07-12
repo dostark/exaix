@@ -55,3 +55,20 @@ Deno.test("[step135.8] usage_tiebreak accepts an explicit true override", () => 
 
   assertEquals(parsed!.usage_tiebreak, true);
 });
+
+Deno.test("[step135.9] adapter_base_urls defaults to empty (test-only override seam, GAP-C9)", () => {
+  const parsed = ModelRegistryConfigSchema.parse({});
+
+  assertEquals(parsed!.adapter_base_urls, {});
+});
+
+Deno.test("[step135.9] adapter_base_urls accepts a per-provider override map", () => {
+  const parsed = ModelRegistryConfigSchema.parse({
+    adapter_base_urls: { anthropic: "http://127.0.0.1:9001", openai: "http://127.0.0.1:9002" },
+  });
+
+  assertEquals(parsed!.adapter_base_urls, {
+    anthropic: "http://127.0.0.1:9001",
+    openai: "http://127.0.0.1:9002",
+  });
+});

@@ -16,6 +16,7 @@ import type { IModelOptions, IModelProvider } from "../types.ts";
 import type { IGenerateResult } from "./common.ts";
 import { MOCK_DELAY_MS, MOCK_INPUT_TOKENS, MOCK_OUTPUT_TOKENS } from "@exaix/ai";
 import { ToolName } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 // ============================================================================
 // Types and Interfaces
@@ -174,7 +175,7 @@ export class MockLLMProvider implements IModelProvider {
    * @param prompt The prompt to generate a response for
    * @param options Optional model options
    */
-  async generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
+  async generate(prompt: string, options?: Opt<IModelOptions, Reason.OptionalInput>): Promise<IGenerateResult> {
     if (this.strategy === "failing") {
       this._callCount++;
       this._callHistory.push({
@@ -223,7 +224,6 @@ export class MockLLMProvider implements IModelProvider {
       },
       model: "mock-model",
       provider: this.id,
-      cost_usd: 0,
     };
   }
 
@@ -957,7 +957,7 @@ ${
  * Create a MockLLMProvider that simulates API failures.
  * @param errorMessage Optional custom error message
  */
-export function createFailingMock(errorMessage?: string): MockLLMProvider {
+export function createFailingMock(errorMessage?: Opt<string, Reason.OptionalInput>): MockLLMProvider {
   return new MockLLMProvider(MockStrategy.FAILING, {
     errorMessage: errorMessage ?? "Simulated API failure",
   });

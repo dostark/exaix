@@ -841,6 +841,10 @@ if (import.meta.main) {
       ),
       includeReasoning: true,
       context, // Support unified DI
+      // Phase 135 Step 9 (GAP-C9): share the daemon's own tracker (pricing lookup
+      // already set at line ~765) — a self-constructed tracker would never split-price
+      // (registry_computed permanently unreachable for standard-request generations).
+      costTracker,
       sessionMemory,
       flowRunner,
       onClarificationCreated: async (traceId: string, _requestId: string) => {
@@ -1100,6 +1104,16 @@ if (import.meta.main) {
       guardrailRunner,
       hitlPolicyEvaluator,
       onCodeChangesDelegate,
+      // Phase 135 Step 9 (GAP-C9): without a logger, ExecutionLoop.logActivity no-ops and
+      // the same unset logger passes through to PlanExecutor — silencing every plan-
+      // execution event (including model.resolved/model.route.selected/model.admitted
+      // emitted deeper in AgentExecutor/ModelResolver) from the Activity Journal.
+      logger,
+      // Phase 135 Step 9 (GAP-C9): threaded to PlanExecutor -> AgentExecutor so
+      // resolveModelFromBlueprint's ModelResolver.resolve() branch (best/route/
+      // auto-admit/task_type) is reachable during real plan execution — previously
+      // createAgentExecutor never received a resolver at all.
+      modelResolver,
     });
 
     // Initialize Memory Auto-Approval Service (reuses memoryExtractor from context setup)

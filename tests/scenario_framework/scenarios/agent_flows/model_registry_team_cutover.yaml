@@ -1,0 +1,169 @@
+schema_version: "1.0.0"
+id: "model-registry-team-cutover"
+title: "Model Registry Team cutover — request-to-plan-approval-to-execution resolves via ModelResolver (best_ranked)"
+pack: "agent_flows"
+tags: ["safety-gate", "model-routing"]
+edition: "team"
+request_fixture: "fixtures/requests/agent_flows/model_registry_team_cutover.md"
+mode_support: ["auto"]
+portals: []
+
+steps:
+  # --- Setup ---
+  - id: "setup-db"
+    type: "shell"
+    command: "deno"
+    args:
+      [
+        "run",
+        "-A",
+        "--config",
+        "$FRAMEWORK_HOME/../../deno.json",
+        "$FRAMEWORK_HOME/../../scripts/setup_db.ts",
+      ]
+    env:
+      EXA_MIGRATIONS_DIR: "$FRAMEWORK_HOME/../../migrations"
+    output_criteria:
+      - id: "setup-done"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "setup-blueprints"
+    type: "shell"
+    command: "cp"
+    args: ["-r", "$FRAMEWORK_HOME/../../Blueprints", "$WORKSPACE_ROOT/Blueprints"]
+    output_criteria:
+      - id: "blueprints-copied"
+        kind: "command-exit-code"
+        equals: 0
+
+  # A best-characteristic identity: extras.characteristics ("best") and extras.task_type
+  # ("feature") on the identity blueprint's OWN frontmatter drive resolveModelFromBlueprint's
+  # ModelIntent — the request never carries these fields (Step 8's precedence).
+  - id: "setup-best-identity"
+    type: "shell"
+    command: "sh"
+    args:
+      - "-c"
+      - |
+          cat > "$WORKSPACE_ROOT/Blueprints/Identities/stub-best.md" <<'IDENTITY'
+          ---
+          identity_id: "stub-best"
+          model: ""
+          characteristics: ["best"]
+          task_type: feature
+          permitted_tools:
+            - write_file
+          ---
+
+          You are a stub agent for testing best-ranked model resolution.
+          IDENTITY
+    output_criteria:
+      - id: "identity-written"
+        kind: "command-exit-code"
+        equals: 0
+
+  # --- Start daemon (Team edition, model_registry disabled — this scenario proves the
+  # ModelResolver wiring reaches best_ranked even with no live catalog data; the daemon-boot
+  # integration tests already cover the live-catalog stub-adapter path exhaustively) ---
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon start"
+    env:
+      EXA_CONFIG_PATH: "$FRAMEWORK_HOME/../../configs/dogfood.toml"
+      EXA_LLM_PROVIDER: "mock"
+      EXAIX_EDITION: "team"
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "wait-for-daemon-ready"
+    type: "wait-for-journal-event"
+    event_type: "daemon.ready"
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+
+  # --- Submit request targeting the best-characteristic identity ---
+  - id: "submit-request"
+    type: "shell"
+    command: "sh"
+    args:
+      - "-c"
+      - |
+          $FRAMEWORK_HOME/bin/exactl request \
+            --file "$REQUEST_FIXTURE" \
+            --identity stub-best \
+            --subject "Model registry Team cutover scenario"
+    output_criteria:
+      - id: "request-submitted"
+        kind: "command-exit-code"
+        equals: 0
+
+  # --- Wait for the plan to reach review status ---
+  - id: "wait-for-plan"
+    type: "shell"
+    command: "sh"
+    args:
+      - "-c"
+      - |
+          for i in $(seq 1 90); do
+            count=$(ls "$WORKSPACE_ROOT/Workspace/Plans/"*_plan.md 2>/dev/null | wc -l)
+            if [ "$count" -ge 1 ]; then
+              echo "Plan file found"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Timeout: no plan created after 180s"
+          exit 1
+    output_criteria:
+      - id: "plan-created"
+        kind: "command-exit-code"
+        equals: 0
+
+  # --- Approve the plan, moving it to Workspace/Active so ExecutionLoop picks it up ---
+  - id: "approve-plan"
+    type: "shell"
+    command: "sh"
+    args:
+      - "-c"
+      - |
+          plan_file=$(ls "$WORKSPACE_ROOT/Workspace/Plans/"*_plan.md 2>/dev/null | head -1)
+          plan_id=$(basename "$plan_file" .md)
+          $FRAMEWORK_HOME/bin/exactl plan approve "$plan_id"
+    output_criteria:
+      - id: "plan-approved"
+        kind: "command-exit-code"
+        equals: 0
+
+  # --- Step 8/9 checkpoint: model.resolved journalled with reason best_ranked ---
+  # The production resolver (agent_executor.resolveModelFromBlueprint -> ModelResolver.resolve,
+  # wired through PlanExecutor's IPlanExecutorOptions.modelResolver — Phase 135 Step 9, GAP-C9)
+  # journals model.resolved once ExecutionLoop picks up the approved plan.
+  - id: "verify-model-resolved-best-ranked"
+    type: "exactl"
+    name: "model.resolved journalled with reason best_ranked (Step 8 scoring reachable from real plan execution)"
+    command: "journal"
+    args: ["--filter", "action_type=model.resolved", "--format", "json"]
+    output_criteria:
+      - id: "model-resolved-present"
+        score_weight: 1.0
+        kind: "json-query"
+        query: ".[].action_type"
+        contains: ["model.resolved"]
+      - id: "reason-is-best-ranked"
+        score_weight: 1.0
+        kind: "json-query"
+        query: ".[].payload"
+        contains: ["best_ranked"]
+
+  # --- Stop daemon ---
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon stop"
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-output-contains"
+        contains: ["daemon.stopped"]

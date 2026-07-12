@@ -1,0 +1,127 @@
+/**
+ * @module PlanExecutorModelResolverTest
+ * @path packages/core/tests/planning/plan_executor_model_resolver_test.ts
+ * @description Phase 135 Step 9 (GAP-C9) — proves PlanExecutor threads a ModelResolver
+ *   through IPlanExecutorOptions into AgentExecutor's constructor, so
+ *   resolveModelFromBlueprint's `if (this.modelResolver)` branch is actually reachable
+ *   during real plan execution. Before this fix, createAgentExecutor never passed
+ *   modelResolver at all — ModelResolver.resolve() (the only path to best/route/
+ *   auto-admit/task_type derivation) was production-dead for every plan execution,
+ *   regardless of identity blueprint content.
+ * @architectural-layer Test
+ * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_executor.ts, packages/ai/src/model_resolver.ts]
+ */
+
+import { assertEquals } from "@std/assert";
+import { createMockConfig } from "@exaix/testing";
+import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts";
+import { DefaultRoutingStrategy, ModelResolver, ProviderRegistry } from "@exaix/ai";
+import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
+import { createStubCostTracker, createStubHealthChecker } from "../../../ai/tests/helpers/service_stubs.ts";
+import { PricingTier, ProviderCostTier } from "@exaix/core";
+import { PlanExecutor } from "../../src/planning/mod.ts";
+
+const stubProvider = {
+  id: "stub",
+  generate: () =>
+    Promise.resolve({
+      content: "",
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      model: "",
+      provider: "",
+    }),
+};
+
+const stubDb = {
+  prepare: () => {},
+  exec: () => {},
+  all: () => [],
+  close: () => Promise.resolve(),
+};
+
+function registerLocalProvider(name: string): void {
+  ProviderRegistry.registerWithMetadata(name, new MockProviderFactory(), {
+    name,
+    description: name,
+    capabilities: ["chat"],
+    costTier: ProviderCostTier.LOCAL,
+    pricingTier: PricingTier.LOCAL,
+    strengths: ["general"],
+    contextWindow: 128_000,
+  });
+}
+
+Deno.test("PlanExecutor accepts modelResolver via IPlanExecutorOptions", () => {
+  const config = createMockConfig("/tmp/test", {});
+  const logger = createMockEventLogger();
+  const resolver = new ModelResolver(
+    new DefaultRoutingStrategy(ProviderRegistry, createStubCostTracker(), createStubHealthChecker()),
+    config,
+    createStubHealthChecker(),
+    logger,
+  );
+
+  const executor = new PlanExecutor(
+    config,
+    stubProvider as never,
+    stubDb as never,
+    "/tmp/test",
+    undefined,
+    { modelResolver: resolver, enableGit: false },
+  );
+
+  assertEquals(executor instanceof PlanExecutor, true);
+});
+
+Deno.test({
+  name: "PlanExecutor's AgentExecutor calls the injected ModelResolver during step execution (GAP-C9)",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    ProviderRegistry.clear();
+    registerLocalProvider("ollama");
+    try {
+      const root = await Deno.makeTempDir();
+      await Deno.mkdir(`${root}/Blueprints/Identities`, { recursive: true });
+      await Deno.writeTextFile(
+        `${root}/Blueprints/Identities/senior-coder.md`,
+        '---\nidentity_id: senior-coder\nmodel: ""\n---\n\nStub identity for testing.\n',
+      );
+      const config = createMockConfig(root, {});
+      const logger = createMockEventLogger();
+      const resolver = new ModelResolver(
+        new DefaultRoutingStrategy(ProviderRegistry, createStubCostTracker(), createStubHealthChecker()),
+        config,
+        createStubHealthChecker(),
+        logger,
+      );
+
+      const executor = new PlanExecutor(
+        config,
+        stubProvider as never,
+        stubDb as never,
+        root,
+        logger,
+        { modelResolver: resolver, enableGit: false, generateReport: true },
+      );
+
+      await executor.execute(`${root}/plan.md`, {
+        trace_id: crypto.randomUUID(),
+        request_id: "test-req",
+        identity: "senior-coder",
+        frontmatter: {},
+        steps: [{ number: 1, title: "Do nothing", content: "No-op step." }],
+      });
+
+      const resolvedEvents = logger.events.filter((e) => e.action === "model.resolved");
+      assertEquals(
+        resolvedEvents.length > 0,
+        true,
+        "AgentExecutor.resolveModelFromBlueprint must call the injected ModelResolver.resolve() " +
+          "(observable via the model.resolved event) — not silently skip to the legacy colon-parse fallback",
+      );
+    } finally {
+      ProviderRegistry.clear();
+    }
+  },
+});

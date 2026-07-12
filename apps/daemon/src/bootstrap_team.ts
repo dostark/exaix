@@ -111,9 +111,11 @@ function createTeamAdapterRegistry(): AdapterRegistry {
 function createBuildContext(config: Config): (provider: string) => IAdapterContext {
   const timeoutMs = config.model_registry?.refresh_timeout_ms ?? DEFAULT_ADAPTER_TIMEOUT_MS;
   const openrouterKeyEnv = config.ai_openrouter?.api_key_env ?? PROVIDER_CATALOG_DESCRIPTORS.openrouter.keyEnv;
+  const baseUrlOverrides = config.model_registry?.adapter_base_urls ?? {};
   return (provider: string): IAdapterContext => {
     const descriptor = PROVIDER_CATALOG_DESCRIPTORS[provider];
-    const baseUrl = descriptor?.baseUrl ?? PROVIDER_CATALOG_DESCRIPTORS.openrouter.baseUrl;
+    const baseUrl = baseUrlOverrides[provider] ?? descriptor?.baseUrl ??
+      PROVIDER_CATALOG_DESCRIPTORS.openrouter.baseUrl;
     const keyEnv = provider === "openrouter" ? openrouterKeyEnv : descriptor?.keyEnv;
     return { apiKey: keyEnv ? Deno.env.get(keyEnv) : undefined, baseUrl, fetch, timeoutMs };
   };

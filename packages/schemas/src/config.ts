@@ -205,6 +205,11 @@ export const ModelRegistryConfigSchema = z.object({
   task_type_map: z.record(z.string(), z.nativeEnum(TaskType)).default({}),
   // F8 opt-in — last-resort MFU/MRU usage tiebreak (IResolutionStrategy.rankUsage).
   usage_tiebreak: z.boolean().default(false),
+  // GAP-C9 (Step 9) — per-provider catalog-adapter base URL override, read by
+  // apps/daemon/src/bootstrap_team.ts:createBuildContext. Test-only seam: lets a real
+  // daemon boot point its adapters at local stub HTTP servers instead of the vendor
+  // hosts. Empty by default — production never overrides a vendor base URL.
+  adapter_base_urls: z.record(z.string(), z.string()).default({}),
 }).optional();
 
 /**

@@ -22,6 +22,7 @@ import type { IDatabaseService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType, type IEventJournalReader } from "@exaix/core/events";
 import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { ModelResolver } from "@exaix/ai";
 import { GIT_CMD_WORKTREE, GitService, type IGitService } from "@exaix/git";
 import { PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
 import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
@@ -72,6 +73,12 @@ export interface IExecutionLoopConfig {
   logger?: IEventLogger;
   identityId: string;
   llmProvider?: IModelProvider;
+  /**
+   * Phase 135 Step 9 (GAP-C9): threaded into PlanExecutor's IPlanExecutorOptions so
+   * AgentExecutor.resolveModelFromBlueprint's ModelResolver.resolve() branch is
+   * reachable during real plan execution.
+   */
+  modelResolver?: ModelResolver;
   reviewRegistry?: ReviewRegistry;
   context?: IApplicationContext;
   sessionMemory?: SessionMemoryService;
@@ -139,6 +146,7 @@ export class ExecutionLoop {
   private context?: IApplicationContext;
   private reviewRegistry?: ReviewRegistry;
   private llmProvider?: IModelProvider;
+  private modelResolver?: ModelResolver;
   private confidenceScorer?: ConfidenceScorer;
   private amendmentService?: PlanAmendmentService;
   private sessionMemory?: SessionMemoryService;
@@ -157,6 +165,7 @@ export class ExecutionLoop {
     this.logger = config.logger;
     this.identityId = config.identityId;
     this.llmProvider = ctx?.provider || config.llmProvider;
+    this.modelResolver = config.modelResolver;
     this.reviewRegistry = config.reviewRegistry;
     this.context = ctx;
     this.sessionMemory = config.sessionMemory;
@@ -178,7 +187,7 @@ export class ExecutionLoop {
     }
   }
 
-  private async isReadOnlyAgentId(identityId: string | undefined): Promise<boolean> {
+  private async isReadOnlyAgentId(identityId: Opt<string, Reason.OptionalInput>): Promise<boolean> {
     if (!identityId) return false;
 
     try {
@@ -822,6 +831,7 @@ export class ExecutionLoop {
       confidenceScorer: this.confidenceScorer,
       amendmentService: this.amendmentService,
       onCodeChangesDelegate: this.onCodeChangesDelegate,
+      modelResolver: this.modelResolver,
     };
     if (this.guardrailRunner) {
       planExecutorOptions.guardrailRunner = this.guardrailRunner;
@@ -855,7 +865,7 @@ export class ExecutionLoop {
   /**
    * Create a safe summary of tool execution result for logging
    */
-  private summarizeResult(result: JSONValue | null | undefined): string {
+  private summarizeResult(result: Opt<JSONValue | null, Reason.OptionalInput>): string {
     if (result === null || result === undefined) {
       return "null";
     }
@@ -1068,10 +1078,10 @@ export class ExecutionLoop {
     requestId: string,
     error: string,
     frontmatter?: Opt<PlanFrontmatter, Reason.OptionalInput>,
-    _cleanup?: {
+    _cleanup?: Opt<{
       portalGitService?: IGitService;
       worktreePath?: string;
-    },
+    }, Reason.OptionalInput>,
   ): Promise<void> {
     // Generate failure report
     await this.generateFailureReport(traceId, requestId, error, frontmatter);
@@ -1303,7 +1313,7 @@ export class ExecutionLoop {
       ? {
         getActivitiesByTrace: (id: string) => this.db!.getActivitiesByTrace(id),
         getActivitiesByTraceSafe: (id: string) => this.db!.getActivitiesByTraceSafe(id),
-        getRecentActivity: (limit?: number) => this.db!.getRecentActivity(limit),
+        getRecentActivity: (limit?: Opt<number, Reason.OptionalInput>) => this.db!.getRecentActivity(limit),
         queryActivity: (filter) => this.db!.queryActivity(filter),
       } as IEventJournalReader
       : undefined;
