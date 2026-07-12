@@ -52,11 +52,19 @@ function anthropicHandler(): (req: Request) => Response {
   };
 }
 
-/** OpenAI GET /v1/models — thin list (id + created only, per adapter's overlay reliance). */
-function openAiHandler(): (req: Request) => Response {
+/**
+ * OpenAI GET /v1/models — thin list (id + created only, per adapter's overlay reliance).
+ * `collidingModel`, if given, additionally serves a second entry sharing that model id —
+ * used to seed a 2-route model_catalog (Reachability Ledger: route-auto-admit-live-proof).
+ */
+function openAiHandler(collidingModel: Opt<string, Reason.OptionalInput>): (req: Request) => Response {
   return (req: Request) => {
     if (new URL(req.url).pathname !== "/v1/models") return new Response("not found", { status: 404 });
-    return jsonResponse({ data: [{ id: "gpt-stub-curated", created: 1_735_689_600 }] });
+    const data = [{ id: "gpt-stub-curated", created: 1_735_689_600 }];
+    if (collidingModel) {
+      data.push({ id: collidingModel, created: 1_735_689_600 });
+    }
+    return jsonResponse({ data });
   };
 }
 
@@ -104,7 +112,7 @@ function openRouterHandler(): (req: Request) => Response {
   };
 }
 
-const HANDLERS: Record<string, () => (req: Request) => Response> = {
+const HANDLERS: Record<string, (collidingModel: Opt<string, Reason.OptionalInput>) => (req: Request) => Response> = {
   anthropic: anthropicHandler,
   openai: openAiHandler,
   google: googleHandler,
@@ -115,10 +123,14 @@ const HANDLERS: Record<string, () => (req: Request) => Response> = {
 const HTTP_INTERNAL_SERVER_ERROR = 500;
 
 /** Start one stub HTTP server for `provider` on an ephemeral port. `fail` forces every request to 500. */
-function startOne(provider: string, fail: boolean): IStubCatalogServer {
+function startOne(
+  provider: string,
+  fail: boolean,
+  collidingModel: Opt<string, Reason.OptionalInput>,
+): IStubCatalogServer {
   const build = HANDLERS[provider];
   if (!build) throw new Error(`no stub handler for provider "${provider}"`);
-  const handler = build();
+  const handler = build(collidingModel);
   let hits = 0;
   const server = Deno.serve({ port: 0, onListen: () => {} }, (req: Request) => {
     hits++;
@@ -137,15 +149,21 @@ function startOne(provider: string, fail: boolean): IStubCatalogServer {
 /**
  * Start all five provider stubs. `failProvider`, if given, forces that one provider's
  * server to return HTTP 500 for every request (adapter-failure isolation testing) —
- * the other four stubs behave normally.
+ * the other four stubs behave normally. `options.collidingModel`, if given, makes the
+ * OpenAI stub additionally serve a model sharing that id — seeding a 2-route
+ * model_catalog once both providers are admitted (Reachability Ledger:
+ * route-auto-admit-live-proof).
  */
 export function startAllStubCatalogServers(
   failProvider?: Opt<string, Reason.OptionalInput>,
+  options?: Opt<{ collidingModel?: string }, Reason.OptionalInput>,
 ): {
   servers: IStubCatalogServer[];
   adapterBaseUrls: Record<string, string>;
 } {
-  const servers = Object.keys(HANDLERS).map((provider) => startOne(provider, provider === failProvider));
+  const servers = Object.keys(HANDLERS).map((provider) =>
+    startOne(provider, provider === failProvider, options?.collidingModel)
+  );
   const adapterBaseUrls = Object.fromEntries(servers.map((s) => [s.provider, s.baseUrl]));
   return { servers, adapterBaseUrls };
 }
