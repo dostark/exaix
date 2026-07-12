@@ -21,7 +21,7 @@ import {
   type IScenarioStep,
   ScenarioStepType,
 } from "../schema/step_schema.ts";
-import type { JSONValue } from "@exaix/core/types";
+import type { JSONValue, Opt, Reason } from "@exaix/core/types";
 import type { IScenarioStepExecutionResult } from "./step_executor.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import { buildEvaluationPrompt, CriterionResultSchema, getCriteriaByNames } from "@exaix/core/evaluation";
@@ -768,7 +768,10 @@ function resolveCriterionPath(workspaceRoot: string, relativePath: string): stri
   return resolvedPath;
 }
 
-function buildEvidenceRefs(workspaceRoot: string, relativePath?: string): string[] {
+function buildEvidenceRefs(
+  workspaceRoot: string,
+  relativePath?: Opt<string, Reason.OptionalInput>,
+): string[] {
   if (!relativePath) {
     return [];
   }
@@ -792,7 +795,7 @@ async function safeReadTextFile(workspaceRoot: string, relativePath: string): Pr
 
 async function loadJsonCriterionDocument(
   workspaceRoot: string,
-  targetFile?: string,
+  targetFile?: Opt<string, Reason.OptionalInput>,
 ): Promise<unknown | null> {
   if (!targetFile) {
     return null;
@@ -804,7 +807,7 @@ async function loadJsonCriterionDocument(
 
 async function loadFrontmatterDocument(
   workspaceRoot: string,
-  targetFile?: string,
+  targetFile?: Opt<string, Reason.OptionalInput>,
 ): Promise<IKeyValueDocument | null> {
   if (!targetFile) {
     return null;
@@ -876,7 +879,11 @@ function readJsonPath(document: any, jsonPath: string): IJsonPathSelection {
   };
 }
 
-function valuesMatch(left: any, right: any, similarityThreshold?: number): boolean {
+function valuesMatch(
+  left: any,
+  right: any,
+  similarityThreshold?: Opt<number, Reason.OptionalInput>,
+): boolean {
   if (similarityThreshold !== undefined && typeof left === "string" && typeof right === "string") {
     return getSimilarityScore(left, right) >= similarityThreshold;
   }
@@ -1030,16 +1037,24 @@ function evaluateJsonQueryCriterion(
   try {
     const data = JSON.parse(outputData);
 
-    // Execute the query using a simple JSON path evaluation
-    const queryParts = criterion.query.split(".");
+    // Execute the query using a simple JSON path evaluation. A leading "." (as in the
+    // conventional ".[].field" array-map syntax) produces an empty first segment —
+    // skip it rather than indexing with key "". After a "[]"/"[*]" map segment, every
+    // subsequent field lookup projects across each array element (not onto the array
+    // itself, which has no such property).
+    const queryParts = criterion.query.split(".").filter((part) => part.length > 0);
     let result: any = data;
+    let mapped = false;
 
     for (const part of queryParts) {
       if (part === "[]" || part === "[*]") {
         result = Array.isArray(result) ? result : [result];
+        mapped = true;
       } else if (part.startsWith("[") && part.endsWith("]")) {
         const index = parseInt(part.slice(1, -1), 10);
         result = Array.isArray(result) ? result[index] : undefined;
+      } else if (mapped && Array.isArray(result)) {
+        result = result.map((item) => (item as Record<string, JSONValue>)?.[part]);
       } else {
         result = (result as Record<string, JSONValue>)?.[part];
       }
@@ -1056,7 +1071,10 @@ function evaluateJsonQueryCriterion(
           JSON.stringify(criterion.equals)
         }`;
     } else if (criterion.contains) {
-      const resultStr = JSON.stringify(result);
+      // JSON.stringify(undefined) returns the JS value undefined (not the string
+      // "undefined"), which would throw on .includes() below — treat a missing result
+      // as the empty string so `contains` cleanly fails instead of erroring.
+      const resultStr = JSON.stringify(result) ?? "";
       passed = criterion.contains.every((v) => resultStr.includes(v));
       message = passed
         ? `JSON query "${criterion.query}" contains all specified values`

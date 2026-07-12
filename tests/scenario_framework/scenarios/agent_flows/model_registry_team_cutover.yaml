@@ -63,14 +63,50 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
-  # --- Start daemon (Team edition, model_registry disabled — this scenario proves the
-  # ModelResolver wiring reaches best_ranked even with no live catalog data; the daemon-boot
-  # integration tests already cover the live-catalog stub-adapter path exhaustively) ---
+  # No EXA_CONFIG_PATH override on start-daemon (see below) means the framework never
+  # materializes $WORKSPACE_ROOT/exa.config.toml — every step falls back to schema
+  # defaults, which have quality_gate/request_analysis enabled (they'd otherwise route
+  # this request into needs-clarification and no plan is ever written). Write the file
+  # ourselves: quality_gate/request_analysis disabled (heuristic-only would still need a
+  # provider round trip we don't want here), model_registry enabled for Team edition.
+  # Deliberately NOT configs/dogfood.toml — its session_delegate.model = "deepseek-v4-flash"
+  # intercepts plan steps before AgentExecutor/ModelResolver ever runs.
+  - id: "write-config"
+    type: "shell"
+    command: "sh"
+    args:
+      - "-c"
+      - |
+          cat > "$WORKSPACE_ROOT/exa.config.toml" <<'CONFIG'
+          [system]
+          root = "$WORKSPACE_ROOT"
+
+          [paths]
+          workspace = "Workspace"
+          blueprints = "Blueprints"
+          runtime = ".exa"
+          memory = "Memory"
+          portals = "Portals"
+
+          [quality_gate]
+          enabled = false
+
+          [request_analysis]
+          enabled = false
+
+          [model_registry]
+          enabled = true
+          CONFIG
+    output_criteria:
+      - id: "config-written"
+        kind: "command-exit-code"
+        equals: 0
+
+  # --- Start daemon (Team edition) ---
   - id: "start-daemon"
     type: "exactl"
     command: "daemon start"
     env:
-      EXA_CONFIG_PATH: "$FRAMEWORK_HOME/../../configs/dogfood.toml"
       EXA_LLM_PROVIDER: "mock"
       EXAIX_EDITION: "team"
     output_criteria:
@@ -84,6 +120,17 @@ steps:
     timeout_sec: 30
     input_criteria: []
     output_criteria: []
+
+  # AgentExecutor.executeStep requires a `workspace`-aliased portal to be registered
+  # (resolvePortalName's fallback default) — the framework's default config has none.
+  - id: "add-workspace-portal"
+    type: "exactl"
+    command: "portal"
+    args: ["add", "$WORKSPACE_ROOT", "workspace"]
+    output_criteria:
+      - id: "portal-added"
+        kind: "command-exit-code"
+        equals: 0
 
   # --- Submit request targeting the best-characteristic identity ---
   - id: "submit-request"

@@ -42,7 +42,11 @@ function createStep(id: string, overrides: Partial<IScenarioStep> = {}): IScenar
 
 function createStepExecutor(
   executedStepIds: string[],
-  options: { exitCode?: (stepId: string) => number; stderr?: (stepId: string) => string } = {},
+  options: {
+    exitCode?: (stepId: string) => number;
+    stderr?: (stepId: string) => string;
+    criteriaFailed?: (stepId: string) => boolean;
+  } = {},
 ): (opts: { step: IScenarioStep }) => Promise<{
   stepId: string;
   stepType: ScenarioStepType;
@@ -53,8 +57,9 @@ function createStepExecutor(
   stdout: string;
   stderr: string;
   combinedOutput: string;
+  criteriaFailed?: boolean;
 }> {
-  const { exitCode = () => 0, stderr = () => "" } = options;
+  const { exitCode = () => 0, stderr = () => "", criteriaFailed = () => false } = options;
   return ({ step }) => {
     executedStepIds.push(step.id);
     return Promise.resolve({
@@ -67,6 +72,7 @@ function createStepExecutor(
       stdout: step.id,
       stderr: stderr(step.id),
       combinedOutput: step.id,
+      criteriaFailed: criteriaFailed(step.id),
     });
   };
 }
@@ -172,6 +178,42 @@ Deno.test("[ScenarioFrameworkExecutionModes] auto mode halts the scenario on the
   assertEquals(result.status, "failed");
   assertEquals(result.outcome, "scenario-failure");
   assertEquals(result.nextStepIndex, 1);
+});
+
+Deno.test("[ScenarioFrameworkExecutionModes] auto mode keeps running every step after a criterion (not execution) failure, but reports scenario-failure", async () => {
+  const executedStepIds: string[] = [];
+  const steps = [createStep("step-1"), createStep("step-2"), createStep("step-3")];
+
+  const result = await runScenarioInMode({
+    scenarioId: "auto-mode-criterion-failure",
+    steps,
+    mode: ScenarioExecutionMode.AUTO,
+    executeStep: createStepExecutor(executedStepIds, {
+      criteriaFailed: (stepId) => stepId === "step-2",
+    }),
+  });
+
+  // Every step ran, including cleanup-style steps after the failing one — process exit
+  // codes were all 0, so this is NOT an execution failure that should halt the run.
+  assertEquals(executedStepIds, ["step-1", "step-2", "step-3"]);
+  assertEquals(result.status, "failed");
+  assertEquals(result.outcome, "scenario-failure");
+});
+
+Deno.test("[ScenarioFrameworkExecutionModes] auto mode reports success when every step's criteria pass, even with zero exit codes throughout", async () => {
+  const executedStepIds: string[] = [];
+  const steps = [createStep("step-1"), createStep("step-2")];
+
+  const result = await runScenarioInMode({
+    scenarioId: "auto-mode-all-pass",
+    steps,
+    mode: ScenarioExecutionMode.AUTO,
+    executeStep: createStepExecutor(executedStepIds),
+  });
+
+  assertEquals(executedStepIds, ["step-1", "step-2"]);
+  assertEquals(result.status, "completed");
+  assertEquals(result.outcome, "success");
 });
 
 Deno.test("[ScenarioFrameworkExecutionModes] CI mode rejects interactive-only scenarios with skip reason interactive-not-allowed", async () => {

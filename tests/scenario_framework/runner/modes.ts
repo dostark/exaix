@@ -120,6 +120,7 @@ export async function runScenarioInMode(
 
   const startStepIndex = options.startStepIndex ?? 0;
   const executedStepIds: string[] = [];
+  let anyCriteriaFailed = false;
 
   for (let stepIndex = startStepIndex; stepIndex < options.steps.length; stepIndex += 1) {
     const step = options.steps[stepIndex];
@@ -128,15 +129,23 @@ export async function runScenarioInMode(
     executedStepIds.push(step.id);
 
     const expectFailure = step.expect_failure ?? false;
-    const isFailed = expectFailure ? executionResult.exitCode === 0 : executionResult.exitCode !== 0;
+    const isExecutionFailed = expectFailure ? executionResult.exitCode === 0 : executionResult.exitCode !== 0;
 
-    if (isFailed) {
+    if (isExecutionFailed) {
       return {
         status: ExecutionStateStatus.FAILED,
         nextStepIndex: stepIndex,
         executedStepIds,
         outcome: ExecutionOutcome.SCENARIO_FAILURE,
       };
+    }
+
+    // A criterion (input/output_criteria) failure does not halt execution — subsequent
+    // steps (e.g. daemon stop cleanup) still run — but it must flip the FINAL outcome
+    // to scenario-failure once the run completes, instead of silently reporting
+    // success at score 1.0 exit code while suite_score/step status disagree.
+    if (executionResult.criteriaFailed) {
+      anyCriteriaFailed = true;
     }
 
     if (options.mode === ScenarioExecutionMode.STEP) {
@@ -161,6 +170,15 @@ export async function runScenarioInMode(
         },
       };
     }
+  }
+
+  if (anyCriteriaFailed) {
+    return {
+      status: ExecutionStateStatus.FAILED,
+      nextStepIndex: options.steps.length,
+      executedStepIds,
+      outcome: ExecutionOutcome.SCENARIO_FAILURE,
+    };
   }
 
   return {

@@ -32,6 +32,14 @@ export interface IScenarioStepExecutionResult {
   stdout: string;
   stderr: string;
   combinedOutput: string;
+  /**
+   * True when this step's own input/output criteria did not all pass, independent of
+   * exitCode. Distinguishes "the process ran fine but the assertions failed" from an
+   * execution failure — the mode engine (modes.ts) continues running subsequent steps
+   * (so cleanup steps like `daemon stop` still execute) but reports the scenario's
+   * final outcome as scenario-failure if this was ever true for any step.
+   */
+  criteriaFailed?: boolean;
 }
 
 const TEXT_DECODER = new TextDecoder();

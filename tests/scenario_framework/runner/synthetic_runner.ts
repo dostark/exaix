@@ -328,7 +328,9 @@ function toModeExecutionResult(
   }
 
   // Only override exit code for execution failures, not criterion failures.
-  // Criterion failures should be recorded for scoring but not halt the scenario.
+  // Criterion failures should be recorded for scoring but not halt the scenario —
+  // instead they set criteriaFailed, which flips the FINAL scenario outcome to
+  // scenario-failure (modes.ts) without stopping subsequent steps (e.g. cleanup).
   if (outcome.failureStage === StepFailureStage.EXECUTION) {
     return {
       ...outcome.executionResult,
@@ -336,7 +338,10 @@ function toModeExecutionResult(
     };
   }
 
-  return outcome.executionResult;
+  return {
+    ...outcome.executionResult,
+    criteriaFailed: outcome.status !== CriterionStatus.PASSED,
+  };
 }
 
 interface IBuildRunManifestOptions {
