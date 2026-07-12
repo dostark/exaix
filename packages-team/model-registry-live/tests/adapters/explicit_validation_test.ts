@@ -42,6 +42,7 @@ function harness(
     buildContext: () => ({ baseUrl: "https://x.test", fetch, timeoutMs: 1000 }),
     isAggregator: (p) => p === "openrouter",
     costExempt: () => false,
+    providerCostMetadata: () => undefined,
     routeHealth: () => ({}),
     routePolicy: "cheapest",
     routePriceTolerance: 0.05,

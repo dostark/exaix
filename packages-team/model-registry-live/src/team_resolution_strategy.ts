@@ -6,7 +6,9 @@
  *   an explicit provider:model in the live catalog resolves verbatim; a real-but-
  *   unadmitted model is verified via the provider's adapter, auto-admitted
  *   (model.admitted{explicit_use}), and resolved; a not-real model throws "unknown
- *   model". Steps 6/8 add selectRoute/scoreBest/rankUsage to the same class.
+ *   model". Step 6 adds selectRoute; Step 8 adds scoreBest (benchmark_map ranking,
+ *   honest degradation via model.benchmark.missing) and rankUsage (opt-in MFU/MRU
+ *   tiebreak, self-gated on the deps.usageTiebreak config flag).
  * @architectural-layer Team-ModelRegistry
  * @dependencies [@exaix/ai, @exaix/model-registry, @exaix/core]
  * @related-files [packages/ai/src/i_resolution_strategy.ts, packages-team/model-registry-live/src/model_registry_service.ts]
@@ -14,10 +16,15 @@
 import type { IResolutionStrategy, IResolvedRoute, IRouteSelectionResult } from "@exaix/ai";
 import type { IAdapterContext, ICatalogEntry, IProviderCatalogAdapter } from "@exaix/model-registry";
 import type { IEventLogger } from "@exaix/core/logger";
-import { DomainEventType, type IModelRouteSelectedPayload } from "@exaix/core/events";
+import {
+  DomainEventType,
+  type IModelBenchmarkMissingPayload,
+  type IModelRouteSelectedPayload,
+} from "@exaix/core/events";
 import type { IRouteReason } from "@exaix/schemas";
+import type { TaskType } from "@exaix/core/types";
 import { RoutePolicy } from "./route_policy.ts";
-import type { IRouteHealthSignals } from "./route_policy.ts";
+import type { IProviderCostMetadata, IRouteHealthSignals } from "./route_policy.ts";
 import type { ModelRegistryService } from "./model_registry_service.ts";
 
 /** Adapter-lookup + context-build seam the strategy uses to verify explicit choices. */
@@ -30,12 +37,18 @@ export interface ITeamStrategyDeps {
   routeHealth(provider: string): IRouteHealthSignals;
   /** D7: true when the provider is cost-exempt by metadata (LOCAL/FREE) — Step 6. */
   costExempt(provider: string): boolean;
+  /** D7 fallback signal: provider cost metadata for the post-pricing-lookup isCostExempt check. */
+  providerCostMetadata(provider: string): IProviderCostMetadata | undefined;
   /** Configured route policy (Step 6). */
   routePolicy: IRouteReason;
   /** Configured near-tie price tolerance for cheapest (Step 6). */
   routePriceTolerance: number;
   /** Configured per-model provider order for user_order (G4, Step 6). */
   routeOrder: Record<string, string[]>;
+  /** §5.8.4 task-type → ranking benchmark(s), canonical TaskType keys (Step 8, GAP-B). */
+  benchmarkMap?: Partial<Record<TaskType, string[]>>;
+  /** F8 opt-in — the strategy's own config gate for rankUsage (Step 8). Default false. */
+  usageTiebreak?: boolean;
 }
 
 const ADMISSION_TOP_N = 25;
@@ -99,6 +112,7 @@ export class TeamResolutionStrategy implements IResolutionStrategy {
     const policy = new RoutePolicy(this.registry, { routeHealth: (p) => this.deps.routeHealth(p) }, {
       isAggregator: (p) => this.deps.isAggregator(p),
       costExempt: (p) => this.deps.costExempt(p),
+      providerCostMetadata: (p) => this.deps.providerCostMetadata(p),
     });
     const routes = await policy.routesFor(resolved.model);
     if (routes.length <= 1) {
@@ -135,5 +149,56 @@ export class TeamResolutionStrategy implements IResolutionStrategy {
       route_reason: selection.reason,
       considered_routes: consideredRoutes,
     };
+  }
+
+  /**
+   * `best` characteristic (§5.8.3, Step 8): rank candidates by the first
+   * `benchmarkMap[taskType]` benchmark with a score, descending. A candidate with no
+   * score on ANY of the task's benchmarks is left OUT of the returned map (honest
+   * degradation — the resolver's blend then ranks it last) and emits
+   * model.benchmark.missing naming the first (primary) benchmark for the task.
+   */
+  async scoreBest(
+    candidates: IResolvedRoute[],
+    taskType: TaskType,
+  ): Promise<Record<string, number>> {
+    const benchmarks = this.deps.benchmarkMap?.[taskType];
+    const scores: Record<string, number> = {};
+    if (!benchmarks?.length) return scores;
+
+    for (const candidate of candidates) {
+      let scored = false;
+      for (const benchmark of benchmarks) {
+        const score = await this.registry.getBenchmark(candidate.provider, candidate.model, benchmark);
+        if (score !== undefined) {
+          scores[candidate.provider] = score;
+          scored = true;
+          break;
+        }
+      }
+      if (!scored) {
+        const payload: IModelBenchmarkMissingPayload = {
+          provider: candidate.provider,
+          model: candidate.model,
+          benchmark: benchmarks[0],
+          task_type: taskType,
+        };
+        await this.logger.info(DomainEventType.ModelBenchmarkMissing, candidate.model, { ...payload });
+      }
+    }
+    return scores;
+  }
+
+  /**
+   * Usage tiebreak (F8, Step 8): MFU then MRU order over provider_costs, restricted to
+   * the offered candidate pool. Self-gated on deps.usageTiebreak — returns undefined
+   * (inert) when the flag is off, regardless of what the resolver offers.
+   */
+  async rankUsage(candidates: IResolvedRoute[]): Promise<string[] | undefined> {
+    if (!this.deps.usageTiebreak) return undefined;
+    const ranked = await this.registry.getUsageRank();
+    const candidateProviders = new Set(candidates.map((c) => c.provider));
+    const order = ranked.filter((r) => candidateProviders.has(r.provider)).map((r) => r.provider);
+    return order.length > 0 ? order : undefined;
   }
 }

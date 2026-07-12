@@ -5,9 +5,10 @@
  *   Callers declare intent (size, thinking, effort, characteristics) and ModelResolver
  *   resolves it to a concrete provider:model with per-call options.
  * @architectural-layer Shared
- * @dependencies [@exaix/schemas]
+ * @dependencies [@exaix/schemas, @exaix/core]
  * @related-files [packages/ai/src/model_resolver.ts, packages/schemas/src/model_intent.ts]
  */
+import type { TaskType } from "@exaix/core";
 
 /**
  * Model size tier — maps to a capability profile (context window, thinking, cost).
@@ -49,7 +50,18 @@ export interface ModelIntent {
   context_window_fallback?: boolean;
   /** Estimated input tokens for context-window overflow detection. Used when context_window_fallback is true. */
   estimated_input_tokens?: number;
+  /**
+   * Phase 135 Step 8 (§5.8.8) — the derived or declared task type driving the `best`
+   * scorer's benchmark_map lookup (Team). Rides the intent/trace in Solo without
+   * affecting selection (edition-agnostic derivation, Team-only consumer).
+   */
+  task_type?: TaskType;
+  /** Phase 135 Step 8 (GAP-9) — how task_type was derived; rides the intent to the trace. */
+  task_type_source?: TaskTypeSource;
 }
+
+/** Phase 135 Step 8 (§5.8.8) — the precedence source that decided the derived task_type. */
+export type TaskTypeSource = "frontmatter" | "identity" | "skill" | "static_map" | "analyzer" | "unknown";
 
 /** @deprecated Use ModelIntent instead. Backward-compat alias for Phase 131 migration. */
 export type IModelPreferences = ModelIntent;
@@ -94,7 +106,11 @@ export type ModelResolutionReason =
   | "fallback"
   | "thinking_constrained"
   | "context_window_overflow"
-  | "preferred_list";
+  | "preferred_list"
+  /** Phase 135 Step 8: `best` characteristic was decisive (benchmark_map ranking). */
+  | "best_ranked"
+  /** Phase 135 Step 8 (F8): the opt-in usage tiebreak decided a formerly-random pick. */
+  | "usage_ranked";
 
 /**
  * Trace payload emitted on every ModelResolver.resolve() call.

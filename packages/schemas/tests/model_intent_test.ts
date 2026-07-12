@@ -4,6 +4,7 @@
  * @description Phase 132 Step 1 — validates ModelIntent, IResolvedModel, and ModelResolutionReason type shapes.
  */
 import { assertEquals } from "@std/assert";
+import { TaskType } from "@exaix/core";
 import type {
   EffortTier,
   IModelCallOptions,
@@ -67,6 +68,18 @@ Deno.test("[step132.1] ModelResolutionReason values are strings", () => {
     "context_window_overflow",
   ];
 
+  for (const reason of reasons) {
+    assertEquals(typeof reason, "string");
+  }
+});
+
+Deno.test("[step135.8] ModelIntent accepts an optional task_type field", () => {
+  const intent: ModelIntent = { model_size: "M" as ModelSize, task_type: TaskType.FEATURE };
+  assertEquals(intent.task_type, TaskType.FEATURE);
+});
+
+Deno.test("[step135.8] ModelResolutionReason includes best_ranked and usage_ranked", () => {
+  const reasons: ModelResolutionReason[] = ["best_ranked", "usage_ranked"];
   for (const reason of reasons) {
     assertEquals(typeof reason, "string");
   }

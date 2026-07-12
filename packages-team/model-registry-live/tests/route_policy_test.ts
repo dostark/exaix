@@ -59,6 +59,7 @@ function makePolicy(
   return new RoutePolicy(svc, health, {
     isAggregator: (p) => p === "openrouter",
     costExempt: (p) => costExemptProviders.includes(p),
+    providerCostMetadata: () => undefined,
   });
 }
 

@@ -9,8 +9,8 @@
  * typos and establish a single source of truth for the event taxonomy.
  */
 
-import type { EffortTier, IRouteReason, ModelResolutionReason } from "@exaix/schemas";
-import type { HitlRuleSource, HitlSurface, VotingStrategy } from "../types/enums.ts";
+import type { EffortTier, IRouteReason, ModelResolutionReason, TaskTypeSource } from "@exaix/schemas";
+import type { HitlRuleSource, HitlSurface, TaskType, VotingStrategy } from "../types/enums.ts";
 
 /** Guardrail verdict type. */
 export type GuardrailVerdict = "pass" | "violation";
@@ -59,6 +59,12 @@ export interface IModelResolutionTraceEventPayload {
   route_reason?: IRouteReason;
   /** Phase 135 Step 6 (GAP-9): the routes weighed, with price + health, for the journal. */
   considered_routes?: IConsideredRoute[];
+  /**
+   * Phase 135 Step 8 (GAP-9): how the intent's task_type was derived — one of
+   * frontmatter|identity|skill|static_map|analyzer|unknown. Lives on the trace payload
+   * (not just IResolvedModel) so it reaches `exactl logs`. Additive/optional.
+   */
+  task_type_source?: TaskTypeSource;
 }
 
 /** One weighed route in a multi-route decision (Phase 135 Step 6, §5.7.4). */
@@ -155,6 +161,19 @@ export interface IModelBenchmarkRefreshedPayload {
   benchmark: string;
   scores_written: number;
   outcome: RegistryRefreshOutcome;
+}
+
+/**
+ * Typed payload for model.benchmark.missing events (Phase 135 Step 8, §5.8.3 honest
+ * degradation — GAP-D). Emitted per candidate the `best` scorer could not rank because
+ * it has no score on the task-relevant benchmark; the candidate is ranked last, never
+ * dropped or errored.
+ */
+export interface IModelBenchmarkMissingPayload {
+  provider: string;
+  model: string;
+  benchmark: string;
+  task_type: TaskType;
 }
 
 /** Typed payload for guardrail.* events. */
@@ -459,6 +478,7 @@ export const DomainEventType = {
   ModelRegistryRefreshFailed: "model.registry.refresh.failed",
   ModelRouteSelected: "model.route.selected",
   ModelBenchmarkRefreshed: "model.benchmark.refreshed",
+  ModelBenchmarkMissing: "model.benchmark.missing",
 
   // Reserved for future use (Phase 85 — postponed)
   ChildRunSpawned: "child_run.spawned",

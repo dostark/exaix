@@ -515,6 +515,20 @@ export class ModelRegistryService implements IModelRegistry {
     return top;
   }
 
+  /**
+   * MFU (most-frequently-used) then MRU (most-recently-used) usage rank over
+   * provider_costs (Phase 135 Step 8, F8) — a read-model, no new persistence. Ranks by
+   * SUM(requests) desc, ties broken by MAX(timestamp) desc.
+   */
+  async getUsageRank(): Promise<Array<{ provider: string; model: string }>> {
+    const rows = await this.db.preparedAll<{ provider: string; model: string }>(
+      `SELECT provider, model FROM provider_costs
+       GROUP BY provider, model
+       ORDER BY SUM(requests) DESC, MAX(timestamp) DESC`,
+    );
+    return rows;
+  }
+
   /** Emit model.benchmark.refreshed for one ingest pass (Step 7, §5.8). */
   async emitBenchmarkRefreshed(
     benchmark: string,

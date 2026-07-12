@@ -123,6 +123,49 @@ Deno.test("[model-cli] models list renders provider:model, provenance and verifi
   assertStringIncludes(out, "unknown");
 });
 
+Deno.test("[step135.8] models list --benchmark <name> shows the advisory score column", async () => {
+  const cmd = new ModelCommands(createPopulatedRegistry(), undefined, {
+    getBenchmark: (p: string, m: string, benchmark: string) =>
+      Promise.resolve(
+        p === "anthropic" && m === "claude-sonnet-4" && benchmark === "swe_bench_verified" ? 0.727 : undefined,
+      ),
+  });
+  const cap = captureLog();
+  try {
+    await cmd.listModels({ benchmark: "swe_bench_verified" });
+  } finally {
+    cap.restore();
+  }
+  const out = cap.lines.join("\n");
+  assertStringIncludes(out, "0.727");
+  assertStringIncludes(out, "swe_bench_verified");
+});
+
+Deno.test("[step135.8] models list --benchmark with no reader wired shows '-' for every row (Solo/CLI-without-Team degrades gracefully)", async () => {
+  const cmd = new ModelCommands(createPopulatedRegistry());
+  const cap = captureLog();
+  try {
+    await cmd.listModels({ benchmark: "swe_bench_verified" });
+  } finally {
+    cap.restore();
+  }
+  const out = cap.lines.join("\n");
+  assertStringIncludes(out, "anthropic:claude-sonnet-4");
+  assertStringIncludes(out, "-");
+});
+
+Deno.test("[step135.8] models list without --benchmark omits the benchmark column entirely (no behavior change)", async () => {
+  const cmd = new ModelCommands(createPopulatedRegistry());
+  const cap = captureLog();
+  try {
+    await cmd.listModels();
+  } finally {
+    cap.restore();
+  }
+  const out = cap.lines.join("\n");
+  assertEquals(out.includes("Benchmark"), false);
+});
+
 Deno.test("[model-cli] models pricing shows per-Mtok prices with static/unknown provenance", async () => {
   const cmd = new ModelCommands(createPopulatedRegistry());
   const cap = captureLog();

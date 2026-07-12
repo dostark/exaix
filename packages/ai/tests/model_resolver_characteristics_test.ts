@@ -84,6 +84,25 @@ Deno.test("[step132.1][characteristics] multiple characteristics blended", async
   }
 });
 
+Deno.test("[step135.8][GAP-C] cheapest characteristic score decides the resolved provider, not just the trace", async () => {
+  const { cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+    // Register in an order where the DEFAULT selector (no scoring influence) would
+    // otherwise pick "expensive" first (registration/filter order), proving the score
+    // — not incidental ordering — decided the outcome.
+    registerProvider("expensive", { costPerMtok: 100 });
+    registerProvider("cheap", { costPerMtok: 1 });
+
+    const resolver = makeResolver();
+    const result = await resolver.resolve({ characteristics: ["cheapest"] });
+
+    assertEquals(result.provider, "cheap");
+  } finally {
+    await cleanup();
+  }
+});
+
 Deno.test("[step132.1][characteristics] unknown characteristic is ignored", async () => {
   const { cleanup } = await initTestDbService();
   try {

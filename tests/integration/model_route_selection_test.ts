@@ -39,6 +39,7 @@ function teamStrategy(svc: ModelRegistryService, logger: ReturnType<typeof creat
     buildContext: () => ({ baseUrl: "https://x.test", fetch, timeoutMs: 1000 }),
     isAggregator: (p) => p === "openrouter",
     costExempt: () => false,
+    providerCostMetadata: () => undefined,
     routeHealth: () => ({ circuitState: 1 }),
     routePolicy: "cheapest",
     routePriceTolerance: 0.05,

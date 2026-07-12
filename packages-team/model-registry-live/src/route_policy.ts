@@ -14,8 +14,9 @@
  * @related-files [packages-team/model-registry-live/src/team_resolution_strategy.ts, packages/core/src/types/constants.ts]
  */
 import { ROUTE_HEALTH_WEIGHT_CIRCUIT, ROUTE_HEALTH_WEIGHT_FAILURE_COUNT } from "@exaix/core/types";
-import type { Opt, Reason } from "@exaix/core/types";
+import type { Opt, ProviderCostTier, Reason } from "@exaix/core/types";
 import type { IRouteReason } from "@exaix/schemas";
+import { isCostExempt } from "@exaix/model-registry";
 import type { ModelRegistryService } from "./model_registry_service.ts";
 
 /** The §5.7.3 sub-signals available for one route (absent fields renormalise). */
@@ -31,11 +32,23 @@ export interface IRouteHealthProvider {
   routeHealth(provider: string): IRouteHealthSignals;
 }
 
+/** The provider-metadata cost fields isCostExempt reads (D7). */
+export interface IProviderCostMetadata {
+  costTier?: ProviderCostTier;
+  costPerMtok?: number;
+}
+
 /** Extra route metadata the policy needs beyond the catalog/pricing/health seams. */
 export interface IRoutePolicyDeps {
   isAggregator(provider: string): boolean;
   /** D7: true when the provider is cost-exempt by metadata (LOCAL/FREE tier) — $0, no lookup. */
   costExempt(provider: string): boolean;
+  /**
+   * D7 fallback signal: the provider's cost metadata, for the post-pricing-lookup
+   * isCostExempt(metadata, pricing) check (endpoint $0 price — costExempt(provider)
+   * alone only catches LOCAL/FREE tier, not a $0 endpoint price on a nominally-paid tier).
+   */
+  providerCostMetadata(provider: string): IProviderCostMetadata | undefined;
 }
 
 /** One weighed route in a decision. */
@@ -135,7 +148,9 @@ export class RoutePolicy {
     }
     const pricing = await this.registry.getModelPricing(provider, model);
     const price = pricing.inputPerMtok; // per-Mtok input price is the comparison key
-    const exemptByPrice = price === 0 && pricing.provenance === "endpoint";
+    // D7 fallback: a $0 endpoint price on a nominally-paid tier is also exempt.
+    const metadata = this.deps.providerCostMetadata(provider);
+    const exemptByPrice = isCostExempt(metadata, { costPerMtok: price, provenance: pricing.provenance });
     return { provider, model, price: price ?? undefined, healthScore, costExempt: exemptByPrice };
   }
 

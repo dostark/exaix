@@ -90,7 +90,8 @@ import {
   LOOP_HISTORY_BUDGET_THRESHOLD,
   LOOP_HISTORY_COMPRESSION_RATIO,
 } from "@exaix/core";
-import type { Opt, Reason } from "@exaix/core/types";
+import type { Opt, Reason, TaskType } from "@exaix/core/types";
+import { deriveTaskType } from "./task_type_derivation.ts";
 
 export interface IPromptBudgetAllocator {
   allocate(modelId: string, hints?: object, analysis?: IRequestAnalysis): Promise<IPromptBudget>;
@@ -105,6 +106,8 @@ interface BlueprintInput {
   preferred_provider?: string;
   thinking?: boolean;
   effort?: ModelIntent["effort"];
+  /** Phase 135 Step 8 (§5.8.8) — explicit identity-level task type declaration. */
+  task_type?: TaskType;
 }
 
 /**
@@ -129,7 +132,7 @@ export class AgentExecutionError extends Error {
   constructor(
     message: string,
     public type: string = AgentExecutionErrorType.EXECUTION_ERROR,
-    public override cause?: Error,
+    public override cause?: Opt<Error, Reason.OptionalDependency>,
   ) {
     super(message);
     this.name = "AgentExecutionError";
@@ -160,6 +163,13 @@ export interface IAgentExecutorOptions {
   guardrailRunner?: IGuardrailRunner;
   /** Request-level ModelIntent fields override blueprint values (Phase 132). */
   requestIntent?: Partial<ModelIntent>;
+  /**
+   * Phase 135 Step 8 (§5.8.8) — the caller's highest-confidence skill match's
+   * triggers.task_types, in priority order (first = most confident). AgentExecutor has
+   * no SkillsService dependency; a caller that already matched skills (e.g. AgentRunner)
+   * may supply this to participate in the derivation precedence chain.
+   */
+  topSkillTaskTypes?: TaskType[];
 }
 
 /**
@@ -215,18 +225,18 @@ export class AgentExecutor {
     private logger: IEventLogger,
     private pathResolver: PathResolver,
     private permissions: PortalPermissionsService,
-    private provider?: IModelProvider,
-    private strategyRegistry?: StrategyRegistry,
-    private _toolRegistry?: IToolRegistry,
-    promptBudgetAllocator?: IPromptBudgetAllocator,
-    contextCache?: ContextCache,
-    tokenizer?: ITokenizer,
-    contextBudgetManager?: IContextBudgetManager,
-    snapshotStore?: ISnapshotStore,
-    private _guardrailRunner?: IGuardrailRunner,
-    private readonly options?: IAgentExecutorOptions,
-    private modelResolver?: ModelResolver,
-    private pricingLookup?: IModelPricingLookup,
+    private provider?: Opt<IModelProvider, Reason.OptionalDependency>,
+    private strategyRegistry?: Opt<StrategyRegistry, Reason.OptionalDependency>,
+    private _toolRegistry?: Opt<IToolRegistry, Reason.OptionalDependency>,
+    promptBudgetAllocator?: Opt<IPromptBudgetAllocator, Reason.OptionalDependency>,
+    contextCache?: Opt<ContextCache, Reason.OptionalDependency>,
+    tokenizer?: Opt<ITokenizer, Reason.OptionalDependency>,
+    contextBudgetManager?: Opt<IContextBudgetManager, Reason.OptionalDependency>,
+    snapshotStore?: Opt<ISnapshotStore, Reason.OptionalDependency>,
+    private _guardrailRunner?: Opt<IGuardrailRunner, Reason.OptionalDependency>,
+    private readonly options?: Opt<IAgentExecutorOptions, Reason.OptionalDependency>,
+    private modelResolver?: Opt<ModelResolver, Reason.OptionalDependency>,
+    private pricingLookup?: Opt<IModelPricingLookup, Reason.OptionalDependency>,
   ) {
     this.promptBudgetAllocator = promptBudgetAllocator ??
       new PromptBudgetAllocator(this.config.budget_enforcement, undefined, this.logger);
@@ -610,6 +620,13 @@ export class AgentExecutor {
     if (this.modelResolver) {
       const extras = validatedFrontmatter as BlueprintInput;
       const requestIntent = this.options?.requestIntent;
+      const derivedTaskType = deriveTaskType({
+        frontmatterTaskType: requestIntent?.task_type,
+        identityTaskType: extras.task_type,
+        topSkillTaskTypes: this.options?.topSkillTaskTypes,
+        identityId: validatedFrontmatter.identity_id,
+        taskTypeMap: this.config.model_registry?.task_type_map,
+      });
       const intent: ModelIntent = {
         model: validatedFrontmatter.model,
         model_size: extras.model_size ?? requestIntent?.model_size,
@@ -617,6 +634,8 @@ export class AgentExecutor {
         preferred_provider: extras.preferred_provider ?? requestIntent?.preferred_provider,
         thinking: extras.thinking ?? requestIntent?.thinking,
         effort: extras.effort ?? requestIntent?.effort,
+        task_type: derivedTaskType.taskType,
+        task_type_source: derivedTaskType.source,
       };
       const resolved = await this.modelResolver.resolve(intent);
       provider = resolved.provider;

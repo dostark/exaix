@@ -14,8 +14,10 @@ import { assertEquals } from "@std/assert";
 import { createTestConfig } from "../../../packages/ai/tests/helpers/test_config.ts";
 import { initTestDbService } from "@exaix/testing";
 import { AgentExecutor } from "@exaix/execution";
+import type { IAgentExecutorOptions } from "@exaix/execution";
 import type { ModelResolver } from "@exaix/ai";
 import type { IResolvedModel, ModelIntent } from "@exaix/schemas";
+import { TaskType } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core/types";
 import { EventLogger } from "@exaix/core/logger";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
@@ -26,6 +28,21 @@ function createMockResolver(expected: IResolvedModel): { resolver: ModelResolver
     resolver: {
       resolve: (_intent: ModelIntent) => Promise.resolve(expected),
     } as ModelResolver,
+  };
+}
+
+function createCapturingResolver(
+  expected: IResolvedModel,
+): { resolver: ModelResolver; captured: ModelIntent[] } {
+  const captured: ModelIntent[] = [];
+  return {
+    resolver: {
+      resolve: (intent: ModelIntent) => {
+        captured.push(intent);
+        return Promise.resolve(expected);
+      },
+    } as ModelResolver,
+    captured,
   };
 }
 
@@ -49,6 +66,7 @@ function makeExecutor(
   config: ReturnType<typeof createTestConfig>,
   db: Awaited<ReturnType<typeof initTestDbService>>["db"],
   resolver?: ModelResolver,
+  options?: IAgentExecutorOptions,
 ): AgentExecutor {
   const logger = new EventLogger({ db });
   const pathResolver = new PathResolver(config);
@@ -68,7 +86,7 @@ function makeExecutor(
     undefined,
     undefined,
     undefined,
-    undefined,
+    options,
     resolver,
   );
 }
@@ -128,6 +146,145 @@ Deno.test("[step132.3][model-resolve] AgentExecutor with explicit model bypasses
     const blueprint = await executor.loadBlueprint("test-agent");
     assertEquals(blueprint.provider, "resolved-provider");
     assertEquals(blueprint.model, "resolved-model");
+
+    executor.dispose();
+    await Deno.remove(testDir, { recursive: true });
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[step135.8] request-level requestIntent.task_type wins as frontmatter-tier precedence", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const testDir = await Deno.makeTempDir();
+    const config = createTestConfig();
+    config.system.root = testDir;
+
+    const mockModel: IResolvedModel = { provider: "p", model: "m", attempt: 1 };
+    const { resolver, captured } = createCapturingResolver(mockModel);
+
+    await writeBlueprint(testDir, "test-agent", { model: "ignored", model_size: "L", capabilities: "[chat]" });
+
+    const executor = makeExecutor(config, db, resolver, { requestIntent: { task_type: TaskType.BUGFIX } });
+    await executor.loadBlueprint("test-agent");
+
+    assertEquals(captured[0]?.task_type, TaskType.BUGFIX);
+    assertEquals(captured[0]?.task_type_source, "frontmatter");
+
+    executor.dispose();
+    await Deno.remove(testDir, { recursive: true });
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[step135.8] blueprint frontmatter task_type field derives with source 'identity'", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const testDir = await Deno.makeTempDir();
+    const config = createTestConfig();
+    config.system.root = testDir;
+
+    const mockModel: IResolvedModel = { provider: "p", model: "m", attempt: 1 };
+    const { resolver, captured } = createCapturingResolver(mockModel);
+
+    await writeBlueprint(testDir, "test-agent", {
+      model: "ignored",
+      model_size: "L",
+      capabilities: "[chat]",
+      task_type: "feature",
+    });
+
+    const executor = makeExecutor(config, db, resolver);
+    await executor.loadBlueprint("test-agent");
+
+    assertEquals(captured[0]?.task_type, TaskType.FEATURE);
+    assertEquals(captured[0]?.task_type_source, "identity");
+
+    executor.dispose();
+    await Deno.remove(testDir, { recursive: true });
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[step135.8] caller-supplied topSkillTaskTypes derives with source 'skill' when no frontmatter/identity task_type", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const testDir = await Deno.makeTempDir();
+    const config = createTestConfig();
+    config.system.root = testDir;
+
+    const mockModel: IResolvedModel = { provider: "p", model: "m", attempt: 1 };
+    const { resolver, captured } = createCapturingResolver(mockModel);
+
+    await writeBlueprint(testDir, "test-agent", { model: "ignored", model_size: "L", capabilities: "[chat]" });
+
+    const executor = makeExecutor(config, db, resolver, { topSkillTaskTypes: [TaskType.TEST] });
+    await executor.loadBlueprint("test-agent");
+
+    assertEquals(captured[0]?.task_type, TaskType.TEST);
+    assertEquals(captured[0]?.task_type_source, "skill");
+
+    executor.dispose();
+    await Deno.remove(testDir, { recursive: true });
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[step135.8] config task_type_map soft-matches the identity_id when no other source present", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const testDir = await Deno.makeTempDir();
+    const config = createTestConfig();
+    config.system.root = testDir;
+    config.model_registry = {
+      ...config.model_registry,
+      task_type_map: { "test-agent": TaskType.ANALYSIS },
+    } as typeof config.model_registry;
+
+    const mockModel: IResolvedModel = { provider: "p", model: "m", attempt: 1 };
+    const { resolver, captured } = createCapturingResolver(mockModel);
+
+    await writeBlueprint(testDir, "test-agent", {
+      model: "ignored",
+      model_size: "L",
+      capabilities: "[chat]",
+      identity_id: "test-agent",
+    });
+
+    const executor = makeExecutor(config, db, resolver);
+    await executor.loadBlueprint("test-agent");
+
+    assertEquals(captured[0]?.task_type, TaskType.ANALYSIS);
+    assertEquals(captured[0]?.task_type_source, "static_map");
+
+    executor.dispose();
+    await Deno.remove(testDir, { recursive: true });
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[step135.8] no task_type source at all leaves task_type/task_type_source unset (UNKNOWN rides as absence, not an error)", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const testDir = await Deno.makeTempDir();
+    const config = createTestConfig();
+    config.system.root = testDir;
+
+    const mockModel: IResolvedModel = { provider: "p", model: "m", attempt: 1 };
+    const { resolver, captured } = createCapturingResolver(mockModel);
+
+    await writeBlueprint(testDir, "test-agent", { model: "ignored", model_size: "L", capabilities: "[chat]" });
+
+    const executor = makeExecutor(config, db, resolver);
+    await executor.loadBlueprint("test-agent");
+
+    assertEquals(captured[0]?.task_type, TaskType.UNKNOWN);
+    assertEquals(captured[0]?.task_type_source, "unknown");
 
     executor.dispose();
     await Deno.remove(testDir, { recursive: true });

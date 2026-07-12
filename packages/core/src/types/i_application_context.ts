@@ -31,7 +31,7 @@ import type { IConfigAdapter } from "./i_config_adapter.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "./i_portal_knowledge_service.ts";
 import type { ICostTracker } from "./i_cost_tracker.ts";
 import type { INotificationService } from "./i_notification_service.ts";
-import type { IModelRegistry } from "./i_model_registry.ts";
+import type { IBenchmarkReader, IModelRegistry } from "./i_model_registry.ts";
 
 /**
  * Generic application context for dependency injection
@@ -111,6 +111,13 @@ export interface IApplicationContext {
 
   /** Optional model registry (Solo floor) for CLI model display + curation commands */
   modelRegistry?: IModelRegistry;
+
+  /**
+   * Phase 135 Step 8 (§5.8.5) — optional advisory benchmark-score reader for
+   * `exactl models list --benchmark`. Wired only for Team editions (init.ts
+   * constructs a ModelRegistryService); absent in Solo (the CLI renders "-").
+   */
+  benchmarkReader?: IBenchmarkReader;
 }
 
 // Re-export types for convenience

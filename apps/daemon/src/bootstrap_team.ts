@@ -148,7 +148,9 @@ async function admissionInputsFor(
 }
 
 const DEFAULT_ADMISSION_TOP_N = 25;
-const DEFAULT_TRACKED_BENCHMARKS = ["swe_bench_verified"];
+// GAP-A (Step 8): kept in sync with ModelRegistryConfigSchema's benchmark_source
+// default so a hand-built Config (bypassing the Zod default) still unions all three.
+const DEFAULT_TRACKED_BENCHMARKS = ["swe_bench_verified", "swe_bench_pro", "gpqa"];
 
 /**
  * Build the Team resolution strategy (Phase 135 Step 3 seam consumer, extended in
@@ -171,6 +173,9 @@ export function buildTeamResolutionStrategy(
     isAggregator: (p) => ProviderRegistry.getProviderMetadata(p)?.isAggregator === true,
     // D7: cost-exempt by provider metadata (LOCAL/FREE tier) — Step 6 route policy.
     costExempt: (p) => isCostExempt(ProviderRegistry.getProviderMetadata(p)),
+    // D7 fallback: cost metadata for the post-pricing-lookup isCostExempt(metadata,
+    // pricing) check (a $0 endpoint price on a nominally-paid tier).
+    providerCostMetadata: (p) => ProviderRegistry.getProviderMetadata(p),
     // §5.7.3 route health (Step 6): the daemon's health checker reports a boolean per
     // provider (all-healthy stub pre-wiring); map it to the circuit sub-signal. Failure
     // headroom / latency / rate-limit sub-signals are omitted here and renormalise (F3 —
@@ -179,6 +184,10 @@ export function buildTeamResolutionStrategy(
     routePolicy: config.model_registry?.route_policy ?? DEFAULT_ROUTE_POLICY,
     routePriceTolerance: config.model_registry?.route_policy_price_tolerance ?? DEFAULT_ROUTE_PRICE_TOLERANCE,
     routeOrder: config.model_registry?.route_order ?? {},
+    // Step 8: benchmark_map feeds scoreBest; usage_tiebreak is the strategy's own
+    // config gate for rankUsage (the resolver has no opinion on the opt-in).
+    benchmarkMap: config.model_registry?.benchmark_map,
+    usageTiebreak: config.model_registry?.usage_tiebreak ?? false,
   });
 }
 

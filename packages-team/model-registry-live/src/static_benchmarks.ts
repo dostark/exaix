@@ -15,6 +15,8 @@ import { PROVIDER_ANTHROPIC, PROVIDER_GOOGLE, PROVIDER_OPENAI } from "@exaix/cor
 import type { BenchmarkProvenance, IBenchmarkEntry } from "./model_registry_service.ts";
 
 const SWE_BENCH_VERIFIED = "swe_bench_verified";
+const SWE_BENCH_PRO = "swe_bench_pro";
+const GPQA = "gpqa";
 /** Every curated floor row is provenance "static" (§5.10). */
 const STATIC_PROVENANCE: BenchmarkProvenance = "static";
 // Epoch-ms floor timestamp for the curated set (2025-06-01); a fixed value keeps the
@@ -69,6 +71,54 @@ export const STATIC_BENCHMARKS: IBenchmarkEntry[] = [
     model: "gemini-2.5-pro",
     benchmark: SWE_BENCH_VERIFIED,
     score: 0.638,
+    provenance: STATIC_PROVENANCE,
+    measuredAt: CURATED_MEASURED_AT,
+    sourceUrl: GOOGLE_MODELS_URL,
+  },
+  // §5.9 (GAP-A) — widen the curated floor beyond swe_bench_verified so top-N admission
+  // and the Step 8 `best` scorer can rank refactor/analysis task-types (design "any
+  // tracked benchmark"). Same vendor-cited-announcement sourcing as above.
+  {
+    provider: PROVIDER_ANTHROPIC,
+    model: "claude-opus-4-8",
+    benchmark: SWE_BENCH_PRO,
+    score: 0.489,
+    provenance: STATIC_PROVENANCE,
+    measuredAt: CURATED_MEASURED_AT,
+    sourceUrl: ANTHROPIC_MODELS_URL,
+  },
+  {
+    provider: PROVIDER_OPENAI,
+    model: "gpt-5",
+    benchmark: SWE_BENCH_PRO,
+    score: 0.469,
+    provenance: STATIC_PROVENANCE,
+    measuredAt: CURATED_MEASURED_AT,
+    sourceUrl: OPENAI_MODELS_URL,
+  },
+  {
+    provider: PROVIDER_ANTHROPIC,
+    model: "claude-opus-4-8",
+    benchmark: GPQA,
+    score: 0.834,
+    provenance: STATIC_PROVENANCE,
+    measuredAt: CURATED_MEASURED_AT,
+    sourceUrl: ANTHROPIC_MODELS_URL,
+  },
+  {
+    provider: PROVIDER_OPENAI,
+    model: "gpt-5",
+    benchmark: GPQA,
+    score: 0.849,
+    provenance: STATIC_PROVENANCE,
+    measuredAt: CURATED_MEASURED_AT,
+    sourceUrl: OPENAI_MODELS_URL,
+  },
+  {
+    provider: PROVIDER_GOOGLE,
+    model: "gemini-2.5-pro",
+    benchmark: GPQA,
+    score: 0.837,
     provenance: STATIC_PROVENANCE,
     measuredAt: CURATED_MEASURED_AT,
     sourceUrl: GOOGLE_MODELS_URL,

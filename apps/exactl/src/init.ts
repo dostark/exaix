@@ -15,7 +15,7 @@ import { FlowLoader } from "@exaix/flow";
 import { ActivityActor, EDITION_SOLO, EDITION_TEAM, ExaPathDefaults } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
-import type { IDatabaseService } from "@exaix/core/types";
+import type { IBenchmarkReader, IDatabaseService, Opt, Reason } from "@exaix/core/types";
 import { OutputValidator, ToolRegistry } from "@exaix/tool-runtime";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ICliApplicationContext, IPortalKnowledgeConfig } from "@exaix/cli/types/cli_context.ts";
@@ -97,10 +97,31 @@ export function isTestMode(): boolean {
   return Deno.env.get("EXA_TEST_MODE") === "1" || Deno.args.includes("--test");
 }
 
+/**
+ * Phase 135 Step 8 (§5.8.5): `models list --benchmark` advisory reader. The CLI process
+ * otherwise holds only the Solo floor (no DB-backed live registry) — for Team editions
+ * with the live registry enabled, construct a ModelRegistryService scoped to reads only
+ * (this CLI process never refreshes/writes the catalog; that is the daemon's
+ * RegistryRefreshScheduler). Dynamic import keeps @exaix-team/model-registry-live out of
+ * the Solo build (edition separation).
+ */
+async function createBenchmarkReader(
+  editionType: string,
+  cfg: Config,
+  db: IDatabaseService,
+  logger: EventLogger,
+  modelRegistry: DefaultModelRegistry,
+  healthChecker: IProviderHealthChecker,
+): Promise<IBenchmarkReader | undefined> {
+  if (editionType === EDITION_SOLO || !cfg.model_registry?.enabled) return undefined;
+  const { ModelRegistryService } = await import("@exaix-team/model-registry-live");
+  return new ModelRegistryService(db, logger, cfg, modelRegistry, healthChecker);
+}
+
 // Test helper: initialize the heavy services path (same logic used in non-test runtime)
 // Returns an object describing whether initialization succeeded and the constructed services.
 export async function initializeServices(
-  opts?: { simulateFail?: boolean; instantiateDb?: boolean; configPath?: string },
+  opts?: Opt<{ simulateFail?: boolean; instantiateDb?: boolean; configPath?: string }, Reason.TestOverride>,
 ): Promise<ServiceContext> {
   try {
     if (opts?.simulateFail) throw new Error("simulate-failure");
@@ -224,6 +245,15 @@ export async function initializeServices(
     };
     const modelRegistry = new DefaultModelRegistry(modelRegistryHealthChecker);
 
+    const benchmarkReader = await createBenchmarkReader(
+      editionType,
+      cfg,
+      dbLocal,
+      displayLogger,
+      modelRegistry,
+      modelRegistryHealthChecker,
+    );
+
     const context: ICliApplicationContext = {
       db: dbLocal,
       git: gitLocal,
@@ -232,6 +262,7 @@ export async function initializeServices(
       config: configAdapter,
       toolRegistry,
       modelRegistry,
+      benchmarkReader,
     };
 
     const portals = new PortalService(

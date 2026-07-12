@@ -30,7 +30,7 @@ import { ProviderRegistry } from "./provider_registry.ts";
 import type { IProviderRoutingStrategy } from "./routing/provider_routing_strategy.ts";
 import type { IConsideredRouteInput, IResolutionStrategy } from "./i_resolution_strategy.ts";
 import type { ICapabilityProfile, IModelEntry, IModelRegistry, Opt, Reason } from "@exaix/core/types";
-import { DEFAULT_MOCK_MODEL, ProviderType } from "@exaix/core/types";
+import { DEFAULT_MOCK_MODEL, ProviderType, TaskType } from "@exaix/core/types";
 import type { IRouteReason } from "@exaix/schemas";
 
 /** The route-decision fields the route sub-step adds to the trace payload (Step 6). */
@@ -43,6 +43,13 @@ interface IRouteTraceInfo {
 interface ITraceMeta {
   durationMs: number;
   routeInfo?: IRouteTraceInfo;
+}
+
+/** The intent fields scoreCandidates reads (Step 8: characteristics + best's task_type). */
+interface IScoreCandidatesIntent {
+  model?: ModelIntent["model"];
+  characteristics?: ModelIntent["characteristics"];
+  task_type?: ModelIntent["task_type"];
 }
 
 const CHARACTERISTIC_WEIGHT = 1;
@@ -416,11 +423,17 @@ export class ModelResolver {
       );
     }
 
-    const scores = this.scoreCandidates(candidates, intent.characteristics);
-    const reason: ModelResolutionReason = intent.characteristics?.length ? "characteristics_scored" : "preset_default";
+    const scores = await this.scoreCandidates(candidates, intent);
+    let { winner, reason } = await this.decideWinner(intent, candidates, providerName, scores);
+
+    if (winner !== providerName) {
+      const winnerModel = this.selectModelForProvider(winner, intent);
+      if (winnerModel) model = winnerModel;
+      else winner = providerName;
+    }
 
     const resolved: IResolvedModel = {
-      provider: providerName,
+      provider: winner,
       model,
       options: this.buildCallOptions(intent),
       attempt,
@@ -439,6 +452,64 @@ export class ModelResolver {
     );
 
     return resolved;
+  }
+
+  /**
+   * Phase 135 Step 8 (GAP-C): the score blend DECIDES the outcome, not just the trace —
+   * the highest-scored candidate overrides the selector's pick when it differs, gated on
+   * a health check so we never override into an unhealthy provider the selector would
+   * have filtered out. With no characteristics (the formerly-arbitrary/"random" pick),
+   * falls to the strategy's last-resort usage tiebreak instead.
+   */
+  private async decideWinner(
+    intent: ModelIntent,
+    candidates: Array<{ metadata: IProviderMetadata }>,
+    providerName: string,
+    scores: Record<string, number>,
+  ): Promise<{ winner: string; reason: ModelResolutionReason }> {
+    let reason: ModelResolutionReason = intent.characteristics?.length ? "characteristics_scored" : "preset_default";
+    let winner = providerName;
+
+    if (intent.characteristics?.length && Object.keys(scores).length > 0) {
+      const topScore = Math.max(...Object.values(scores));
+      const winners = candidates.filter((c) => (scores[c.metadata.name] ?? -1) === topScore).map((c) =>
+        c.metadata.name
+      );
+      if (winners.length === 1 && winners[0] !== providerName && await this.healthChecker.checkProvider(winners[0])) {
+        winner = winners[0];
+      }
+      if (intent.characteristics.includes("best") && intent.task_type && intent.task_type !== TaskType.UNKNOWN) {
+        reason = "best_ranked";
+      }
+      return { winner, reason };
+    }
+
+    const usageWinner = await this.applyUsageTiebreak(intent, candidates);
+    if (usageWinner) {
+      winner = usageWinner;
+      reason = "usage_ranked";
+    }
+    return { winner, reason };
+  }
+
+  /**
+   * Phase 135 Step 8 (F8): offer the strategy's rankUsage hook the no-characteristics
+   * candidate pool as a last-resort tiebreak. Returns the winning provider name, or null
+   * when no strategy/hook is present, the hook opts out (returns undefined — its own
+   * usage_tiebreak config gate), or the winner isn't in the candidate pool.
+   */
+  private async applyUsageTiebreak(
+    intent: ModelIntent,
+    candidates: Array<{ metadata: IProviderMetadata }>,
+  ): Promise<string | null> {
+    if (!this.strategy?.rankUsage) return null;
+    const pool = candidates.map((c) => ({
+      provider: c.metadata.name,
+      model: this.selectModelForProvider(c.metadata.name, intent) ?? "",
+    }));
+    const ranked = await this.strategy.rankUsage(pool);
+    if (!ranked?.length) return null;
+    return ranked.find((p) => candidates.some((c) => c.metadata.name === p)) ?? null;
   }
 
   private async resolveWithThinkingConstraint(
@@ -525,7 +596,7 @@ export class ModelResolver {
 
   private selectModelForProvider(
     providerName: string,
-    intent: ModelIntent,
+    intent: Pick<ModelIntent, "model">,
   ): string | null {
     if (intent.model && !intent.model.includes(":")) {
       return intent.model;
@@ -535,17 +606,39 @@ export class ModelResolver {
     return providerName;
   }
 
-  private scoreCandidates(
+  /**
+   * Phase 135 Step 8 (GAP-C): async so `best` can pull benchmark scores from the Team
+   * seam (`IResolutionStrategy.scoreBest`) into the SAME weighted blend as
+   * `cheapest`/`fastest` — `["best","cheapest"]` produces one weighted order, not a
+   * best-only override pass. `best` is skipped (never mis-ranks) when no strategy/hook
+   * is registered (Solo) or `task_type` is UNKNOWN/absent.
+   */
+  private async scoreCandidates(
     candidates: Array<{ metadata: IProviderMetadata }>,
-    characteristics?: Opt<string[], Reason.OptionalInput>,
-  ): Record<string, number> {
+    intent: IScoreCandidatesIntent,
+  ): Promise<Record<string, number>> {
     const scores: Record<string, number> = {};
+    const characteristics = intent.characteristics;
     if (!characteristics?.length) return scores;
 
     const maxCost = Math.max(
       ...candidates.map((p) => p.metadata.costPerMtok ?? 0),
       1,
     );
+
+    let bestScores: Record<string, number> = {};
+    if (
+      characteristics.includes("best") && this.strategy?.scoreBest &&
+      intent.task_type && intent.task_type !== TaskType.UNKNOWN
+    ) {
+      bestScores = await this.strategy.scoreBest(
+        candidates.map((c) => ({
+          provider: c.metadata.name,
+          model: this.selectModelForProvider(c.metadata.name, intent) ?? "",
+        })),
+        intent.task_type,
+      );
+    }
 
     for (const p of candidates) {
       let totalScore = 0;
@@ -559,6 +652,9 @@ export class ModelResolver {
             break;
           case "fastest":
             totalScore += CHARACTERISTIC_WEIGHT * 1;
+            break;
+          case "best":
+            totalScore += CHARACTERISTIC_WEIGHT * (bestScores[p.metadata.name] ?? 0);
             break;
           default:
             totalScore += CHARACTERISTIC_WEIGHT * 1;
@@ -622,6 +718,8 @@ export class ModelResolver {
       // Phase 135 Step 6 (GAP-9): route decision on the journalled trace payload.
       ...(routeInfo?.route_reason ? { route_reason: routeInfo.route_reason } : {}),
       ...(routeInfo?.considered_routes ? { considered_routes: JSON.stringify(routeInfo.considered_routes) } : {}),
+      // Phase 135 Step 8 (GAP-9): task-type derivation source, additive on the trace.
+      ...(intent.task_type_source ? { task_type_source: intent.task_type_source } : {}),
     });
   }
 

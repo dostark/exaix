@@ -141,6 +141,7 @@ const modelCommands = new ModelCommands(
   fullContext.modelRegistry ??
     new DefaultModelRegistry({ checkProvider: () => Promise.resolve(true) }),
   fullContext.config.getConfigPath(),
+  fullContext.benchmarkReader,
 );
 
 // Export test helper for unit tests to inspect module-internal context when running in test mode.
@@ -2612,9 +2613,10 @@ const modelsCommand = new Command()
     "list",
     new Command()
       .description("List registry models with provenance and verified_at staleness")
-      .action(async () => {
+      .option("--benchmark <benchmark:string>", "Show the advisory score column for a tracked benchmark (Team)")
+      .action(async (options) => {
         try {
-          await modelCommands.listModels();
+          await modelCommands.listModels(options);
         } catch (error) {
           display.error("cli.error", "models list", {
             message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,

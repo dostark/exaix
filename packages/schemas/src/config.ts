@@ -10,7 +10,7 @@ import { z } from "zod";
 import { AiConfigSchema, ProviderTypeSchema } from "./ai_config.ts";
 import { MCPConfigSchema } from "./mcp.ts";
 import * as DEFAULTS from "@exaix/core";
-import { ProviderType, TokenizerBackend } from "@exaix/core";
+import { ProviderType, TaskType, TokenizerBackend } from "@exaix/core";
 import {
   DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
   DEFAULT_AI_RETRY_MAX_ATTEMPTS,
@@ -150,6 +150,18 @@ const RoutingConfigSchema = z.object({
  */
 /** §5.8 benchmark ingest fetch timeout — models.dev is larger than a catalog GET. */
 const DEFAULT_BENCHMARK_FETCH_TIMEOUT_MS = 30_000;
+/** Canonical tracked-benchmark names (§5.8), shared across the defaults below. */
+const SWE_BENCH_VERIFIED = "swe_bench_verified";
+const SWE_BENCH_PRO = "swe_bench_pro";
+const GPQA = "gpqa";
+/** §5.8.4 (GAP-B) default task-type → ranking-benchmark(s) map the `best` scorer reads. */
+const DEFAULT_BENCHMARK_MAP: Record<string, string[]> = {
+  [TaskType.FEATURE]: [SWE_BENCH_VERIFIED],
+  [TaskType.BUGFIX]: [SWE_BENCH_VERIFIED],
+  [TaskType.REFACTOR]: [SWE_BENCH_VERIFIED, SWE_BENCH_PRO],
+  [TaskType.TEST]: [SWE_BENCH_VERIFIED],
+  [TaskType.ANALYSIS]: [GPQA],
+};
 
 export const ModelRegistryConfigSchema = z.object({
   enabled: z.boolean().default(false),
@@ -176,13 +188,23 @@ export const ModelRegistryConfigSchema = z.object({
   benchmark_source: z.object({
     enabled: z.boolean().default(true),
     dataset_url: z.string().default("https://models.dev/models.json"),
-    tracked_benchmarks: z.array(z.string()).default(["swe_bench_verified"]),
+    // §5.9 (GAP-A) widened beyond swe_bench_verified so "any tracked benchmark"
+    // top-N admission and the Step 8 best scorer are genuinely exercisable.
+    tracked_benchmarks: z.array(z.string()).default([SWE_BENCH_VERIFIED, SWE_BENCH_PRO, GPQA]),
     refresh_cron: z.string().default("0 5 * * 0"), // weekly
     fetch_timeout_ms: z.number().int().positive().default(DEFAULT_BENCHMARK_FETCH_TIMEOUT_MS),
   }).default({}),
   // §5.5.2 (Solo-read, D9): tolerance (percent) for reported-vs-computed cost
   // divergence before emitting model.cost.divergence.
   cost_divergence_tolerance_pct: z.number().min(0).default(5),
+  // §5.8.4 (GAP-B) — task-type → ranking benchmark(s), canonical TaskType keys only (G7).
+  // Read by the Step 8 `best` scorer (IResolutionStrategy.scoreBest).
+  benchmark_map: z.record(z.nativeEnum(TaskType), z.array(z.string())).default(DEFAULT_BENCHMARK_MAP),
+  // §5.8.8 — entity name → TaskType soft-match fallback for task-type derivation.
+  // Never shadows an entity's own declaration (anti-drift). Canonical values only (G7).
+  task_type_map: z.record(z.string(), z.nativeEnum(TaskType)).default({}),
+  // F8 opt-in — last-resort MFU/MRU usage tiebreak (IResolutionStrategy.rankUsage).
+  usage_tiebreak: z.boolean().default(false),
 }).optional();
 
 /**

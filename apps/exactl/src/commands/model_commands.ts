@@ -15,7 +15,7 @@
 import { parse, stringify } from "@std/toml";
 import * as colors from "@std/fmt/colors";
 import { Table } from "@cliffy/table";
-import type { IModelRegistry, Opt, Reason } from "@exaix/core/types";
+import type { IBenchmarkReader, IModelRegistry, Opt, Reason } from "@exaix/core/types";
 import { DEFAULT_MODEL_PRESETS } from "@exaix/schemas/config.ts";
 
 /** A curated entry annotated with whether its provider is registered (Solo G10). */
@@ -33,6 +33,11 @@ export interface ISizeCandidates {
 /** Per-characteristic curated sub-lists (e.g. `cheapest` → provider order). */
 export interface ICharacteristicMap {
   [characteristic: string]: string[];
+}
+
+/** Options for `models list` (Phase 135 Step 8 adds the optional `--benchmark` filter). */
+export interface IListModelsOptions {
+  benchmark?: string;
 }
 
 /** The subset of a preset entry this command reads/writes. */
@@ -74,28 +79,40 @@ export class ModelCommands {
   constructor(
     private readonly registry: IModelRegistry,
     private readonly configPath?: Opt<string, Reason.OptionalInput>,
+    private readonly benchmarkReader?: Opt<IBenchmarkReader, Reason.OptionalDependency>,
   ) {}
 
   // ── Display: models list / models pricing ──────────────────────────────────
 
-  /** `models list` — provider:model, provenance, and verified_at staleness from the floor. */
-  async listModels(): Promise<void> {
+  /**
+   * `models list [--benchmark <name>]` — provider:model, provenance, and verified_at
+   * staleness from the floor. With `--benchmark`, appends an advisory score column
+   * (§5.8.5) read via the injected `IBenchmarkReader` (Team only) — "-" when no reader
+   * is wired (Solo) or the model is unscored on that benchmark (honest degradation).
+   */
+  async listModels(options?: Opt<IListModelsOptions, Reason.OptionalInput>): Promise<void> {
     const providers = await this.registry.getAllProviders();
     const rows: string[][] = [];
     for (const provider of providers) {
       const models = await this.registry.getProviderModels(provider);
       for (const m of models) {
         const pricing = await this.registry.getModelPricing(m.provider, m.model);
-        rows.push([
+        const row = [
           `${m.provider}:${m.model}`,
           pricing.provenance,
           this.renderVerifiedAt(pricing.verifiedAt),
-        ]);
+        ];
+        if (options?.benchmark) {
+          row.push(await this.renderBenchmarkScore(m.provider, m.model, options.benchmark));
+        }
+        rows.push(row);
       }
     }
-    const table = new Table()
-      .header([colors.bold("Model"), colors.bold("Provenance"), colors.bold("Verified")])
-      .body(rows);
+    const headers = [colors.bold("Model"), colors.bold("Provenance"), colors.bold("Verified")];
+    if (options?.benchmark) {
+      headers.push(colors.bold(`Benchmark (${options.benchmark})`));
+    }
+    const table = new Table().header(headers).body(rows);
     console.log(colors.cyan(colors.bold("\nModel Registry (Solo floor)")));
     table.render();
     console.log("");
@@ -335,5 +352,12 @@ export class ModelCommands {
 
   private renderPrice(price?: Opt<number, Reason.OptionalInput>): string {
     return price === undefined ? "-" : `$${price}`;
+  }
+
+  /** "-" when no reader is wired (Solo) or the model is unscored on `benchmark`. */
+  private async renderBenchmarkScore(provider: string, model: string, benchmark: string): Promise<string> {
+    if (!this.benchmarkReader) return "-";
+    const score = await this.benchmarkReader.getBenchmark(provider, model, benchmark);
+    return score === undefined ? "-" : score.toFixed(3);
   }
 }

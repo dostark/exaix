@@ -7,6 +7,7 @@
  */
 
 import { ProviderCostTier } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Determine if a provider is cost-exempt.
@@ -14,8 +15,8 @@ import { ProviderCostTier } from "@exaix/core";
  * Returns false for unknown provenance and paid tiers.
  */
 export function isCostExempt(
-  metadata?: { costTier?: ProviderCostTier; costPerMtok?: number } | null,
-  pricing?: { costPerMtok?: number; provenance?: string } | null,
+  metadata?: Opt<{ costTier?: ProviderCostTier; costPerMtok?: number } | null, Reason.OptionalInput>,
+  pricing?: Opt<{ costPerMtok?: number; provenance?: string } | null, Reason.OptionalInput>,
 ): boolean {
   if (!metadata) return false;
 
