@@ -240,6 +240,26 @@ interface IWaveProcessingOutcome {
   waveError?: { stepId: string; error: Error | string };
 }
 
+/** Shared context for wave-level processing (reduces parameter count across wave methods). */
+interface IWaveContext {
+  flow: IFlow;
+  request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis };
+  flowRunId: string;
+  flowContentHash: string;
+  stepResults: Map<string, IStepResult>;
+  failFast: boolean;
+}
+
+/** Shared context for step-level execution (reduces parameter count across step methods). */
+interface IStepContext {
+  flowRunId: string;
+  step: IFlowStep;
+  flow: IFlow;
+  request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis };
+  stepResults: Map<string, IStepResult>;
+  startedAt: Date;
+}
+
 interface IWaveExecutionUnit {
   stepIds: string[];
   groupId?: string;
@@ -1176,7 +1196,7 @@ export class FlowRunner implements IFlowRunner {
     // Execute waves sequentially
     for (let waveIndex = 0; waveIndex < waves.length; waveIndex++) {
       const wave = waves[waveIndex];
-      await this.executeWave(flow, request, flowRunId, flowContentHash, wave, waveIndex, stepResults, failFast);
+      await this.executeWave({ flow, request, flowRunId, flowContentHash, stepResults, failFast }, wave, waveIndex);
 
       // If any step created a wait state in this wave, break the loop so the flow
       // can be paused and resumed later. Checkpoint is saved so state is preserved.
@@ -1210,52 +1230,42 @@ export class FlowRunner implements IFlowRunner {
    * Execute a single wave of steps in parallel
    */
   private async executeWave(
-    flow: IFlow,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
-    flowRunId: string,
-    flowContentHash: string,
+    ctx: IWaveContext,
     wave: string[],
     waveIndex: number,
-    stepResults: Map<string, IStepResult>,
-    failFast: boolean,
   ): Promise<void> {
     const waveNumber = waveIndex + 1;
 
-    await this.logWaveStart(flowRunId, request, waveNumber, wave);
+    await this.logWaveStart(ctx.flowRunId, ctx.request, waveNumber, wave);
 
-    const pendingStepIds = wave.filter((stepId) => !stepResults.has(stepId));
+    const pendingStepIds = wave.filter((stepId) => !ctx.stepResults.has(stepId));
 
     if (pendingStepIds.length !== wave.length) {
-      await this.logSkippedWaveSteps(flowRunId, request, waveNumber, wave, stepResults);
+      await this.logSkippedWaveSteps(ctx.flowRunId, ctx.request, waveNumber, wave, ctx.stepResults);
     }
 
     if (pendingStepIds.length === 0) {
-      await this.logCompletedEmptyWave(flowRunId, request, waveNumber, wave.length);
+      await this.logCompletedEmptyWave(ctx.flowRunId, ctx.request, waveNumber, wave.length);
       return;
     }
 
     const waveResults = await this.collectWaveResults(
-      flow,
-      request,
-      flowRunId,
+      ctx.flow,
+      ctx.request,
+      ctx.flowRunId,
       pendingStepIds,
-      stepResults,
+      ctx.stepResults,
       waveNumber,
     );
 
     const waveFailed = await this.processWaveResults(
-      flow,
-      request,
-      flowRunId,
+      ctx,
       pendingStepIds,
       waveNumber,
       waveResults,
-      flowContentHash,
-      stepResults,
-      failFast,
     );
 
-    this.throwIfWaveCannotContinue(flowRunId, pendingStepIds, waveResults, waveFailed, failFast);
+    this.throwIfWaveCannotContinue(ctx.flowRunId, pendingStepIds, waveResults, waveFailed, ctx.failFast);
   }
 
   private async logWaveStart(
@@ -1501,33 +1511,23 @@ export class FlowRunner implements IFlowRunner {
    * Process results from a completed wave
    */
   private async processWaveResults(
-    flow: IFlow,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
-    flowRunId: string,
+    ctx: IWaveContext,
     wave: string[],
     waveNumber: number,
     waveResults: PromiseSettledResult<IStepResult>[],
-    flowContentHash: string,
-    stepResults: Map<string, IStepResult>,
-    failFast: boolean,
   ): Promise<boolean> {
     let waveFailed = false;
     let waveSuccessCount = 0;
     let waveFailureCount = 0;
     const waveErrors: Array<{ stepId: string; error: Error | string }> = [];
-    const namespaceId = this.getNamespaceId(request, flowRunId);
+    const namespaceId = this.getNamespaceId(ctx.request, ctx.flowRunId);
 
     for (let i = 0; i < wave.length; i++) {
       const outcome = await this.processWaveResultEntry(
-        flow,
-        request,
-        flowRunId,
+        ctx,
         wave[i],
         waveNumber,
         waveResults[i],
-        flowContentHash,
-        stepResults,
-        failFast,
         namespaceId,
       );
 
@@ -1541,28 +1541,28 @@ export class FlowRunner implements IFlowRunner {
 
     // Log wave completion
     await this.eventLogger.log(DomainEventType.FlowWaveCompleted, {
-      flowRunId,
+      flowRunId: ctx.flowRunId,
       waveNumber,
       waveSize: wave.length,
       successCount: waveSuccessCount,
       failureCount: waveFailureCount,
       failed: waveFailed,
-      traceId: request.traceId,
-      requestId: request.requestId,
+      traceId: ctx.request.traceId,
+      requestId: ctx.request.requestId,
     });
 
     // Log any wave-level errors
     if (waveErrors.length > 0) {
       await this.eventLogger.log(DomainEventType.FlowWaveErrors, {
-        flowRunId,
+        flowRunId: ctx.flowRunId,
         waveNumber,
         errorCount: waveErrors.length,
         errors: waveErrors.map(({ stepId, error }) => ({
           stepId,
           error: error instanceof Error ? error.message : String(error),
         })),
-        traceId: request.traceId,
-        requestId: request.requestId,
+        traceId: ctx.request.traceId,
+        requestId: ctx.request.requestId,
       });
     }
 
@@ -1570,70 +1570,55 @@ export class FlowRunner implements IFlowRunner {
   }
 
   private async processWaveResultEntry(
-    flow: IFlow,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
-    flowRunId: string,
+    ctx: IWaveContext,
     stepId: string,
     waveNumber: number,
     promiseResult: PromiseSettledResult<IStepResult>,
-    flowContentHash: string,
-    stepResults: Map<string, IStepResult>,
-    failFast: boolean,
     namespaceId: string,
   ): Promise<IWaveProcessingOutcome> {
     try {
       if (this.isPromiseFulfilledResult(promiseResult)) {
         return await this.handleFulfilledWaveResult(
-          flow,
-          request,
-          flowRunId,
+          ctx,
           stepId,
           waveNumber,
           promiseResult.value,
-          flowContentHash,
-          stepResults,
-          failFast,
           namespaceId,
         );
       }
 
-      return this.handleRejectedWaveResult(stepId, waveNumber, promiseResult, stepResults, failFast);
+      return this.handleRejectedWaveResult(stepId, waveNumber, promiseResult, ctx.stepResults, ctx.failFast);
     } catch (processingError) {
       return await this.handleWaveProcessingError(
-        flowRunId,
-        request,
+        ctx.flowRunId,
+        ctx.request,
         stepId,
         processingError,
-        stepResults,
-        failFast,
+        ctx.stepResults,
+        ctx.failFast,
       );
     }
   }
 
   private async handleFulfilledWaveResult(
-    flow: IFlow,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
-    flowRunId: string,
+    ctx: IWaveContext,
     stepId: string,
     waveNumber: number,
     promiseValue: IStepResult,
-    flowContentHash: string,
-    stepResults: Map<string, IStepResult>,
-    failFast: boolean,
     namespaceId: string,
   ): Promise<IWaveProcessingOutcome> {
     const result = {
       ...promiseValue,
       waveIndex: waveNumber,
     } satisfies IStepResult;
-    stepResults.set(stepId, result);
+    ctx.stepResults.set(stepId, result);
 
     if (!result.success) {
-      return { successCount: 0, failureCount: 1, failed: failFast };
+      return { successCount: 0, failureCount: 1, failed: ctx.failFast };
     }
 
-    await this.persistWaveNamespaceWrites(result, request, stepId, namespaceId, flow.namespace?.enabled === true);
-    await this.saveCheckpointIfEnabled(flow, request, flowRunId, flowContentHash, stepResults);
+    await this.persistWaveNamespaceWrites(result, ctx.request, stepId, namespaceId, ctx.flow.namespace?.enabled === true);
+    await this.saveCheckpointIfEnabled(ctx.flow, ctx.request, ctx.flowRunId, ctx.flowContentHash, ctx.stepResults);
 
     return { successCount: 1, failureCount: 0, failed: false };
   }
@@ -1871,6 +1856,7 @@ export class FlowRunner implements IFlowRunner {
   ): Promise<IStepResult> {
     const step = flow.steps.find((s) => s.id === stepId)!;
     const startedAt = new Date();
+    const stepCtx: IStepContext = { flowRunId, step, flow, request, stepResults, startedAt };
 
     // Evaluate step condition if present
     const conditionResult = await this.evaluateStepCondition(flowRunId, step, flow, stepResults, request, startedAt);
@@ -1903,24 +1889,16 @@ export class FlowRunner implements IFlowRunner {
     });
 
     try {
-      const attemptOutcome = await this.runStepAttempt(flowRunId, step, flow, request, stepResults, startedAt);
+      const attemptOutcome = await this.runStepAttempt(stepCtx);
       return this.formatStepSuccess(
-        flowRunId,
-        step,
-        request,
+        stepCtx,
         attemptOutcome.result,
-        startedAt,
         undefined,
         attemptOutcome.namespaceWrites,
       );
     } catch (error) {
       return await this.handleStepFailureRecovery(
-        flowRunId,
-        step,
-        flow,
-        request,
-        stepResults,
-        startedAt,
+        stepCtx,
         error,
       );
     }
@@ -1930,19 +1908,10 @@ export class FlowRunner implements IFlowRunner {
    * Execute a single step attempt without applying recovery policy.
    */
   private async runStepAttempt(
-    flowRunId: string,
-    step: IFlowStep,
-    flow: IFlow,
-    request: {
-      userPrompt: string;
-      traceId?: Opt<string, Reason.TraceAbsent>;
-      requestId?: Opt<string, Reason.OptionalContext>;
-      requestAnalysis?: Opt<IRequestAnalysis, Reason.OptionalInput>;
-    },
-    stepResults: Map<string, IStepResult>,
-    startedAt: Date,
+    ctx: IStepContext,
     attemptClass: Opt<StepAttemptClass, Reason.SensibleDefault> = StepAttemptClass.INITIAL,
   ): Promise<{ result: IAgentExecutionResult; namespaceWrites?: IStepNamespaceWrites }> {
+    const { flowRunId, step, flow, request, stepResults, startedAt } = ctx;
     const stepRequest = await this.prepareStepRequest(flowRunId, step, flow, request, stepResults);
     const inputHash = await this.computeStepInputHash(stepRequest);
     const stepId = step.id;
@@ -2048,14 +2017,10 @@ export class FlowRunner implements IFlowRunner {
    * Apply retry, fallback, or abort recovery policy after a step failure.
    */
   private async handleStepFailureRecovery(
-    flowRunId: string,
-    step: IFlowStep,
-    flow: IFlow,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
-    stepResults: Map<string, IStepResult>,
-    startedAt: Date,
+    ctx: IStepContext,
     initialError: Error | string | unknown,
   ): Promise<IStepResult> {
+    const { flowRunId, step, flow, request, stepResults, startedAt } = ctx;
     if (!step.onError) {
       return this.formatStepFailure(flowRunId, step, request, initialError, startedAt);
     }
@@ -2083,13 +2048,10 @@ export class FlowRunner implements IFlowRunner {
         await this.applyRetryBackoff(retryBackoffMs, retryAttempt);
 
         try {
-          const retryOutcome = await this.runStepAttempt(flowRunId, step, flow, request, stepResults, startedAt);
+          const retryOutcome = await this.runStepAttempt(ctx);
           return this.formatStepSuccess(
-            flowRunId,
-            step,
-            request,
+            ctx,
             retryOutcome.result,
-            startedAt,
             {
               wasRetried: true,
               retryCount: retryAttempt,
@@ -2186,11 +2148,8 @@ export class FlowRunner implements IFlowRunner {
     }
 
     return this.formatStepSuccess(
-      flowRunId,
-      { ...step, identity: fallbackStep.identity },
-      request,
+      { flowRunId, step: { ...step, identity: fallbackStep.identity }, request, startedAt },
       fallbackResult.result,
-      startedAt,
       {
         fallbackUsed: true,
         wasRetried: fallbackResult.wasRetried,
@@ -2460,19 +2419,12 @@ export class FlowRunner implements IFlowRunner {
    * Format successful step result
    */
   private formatStepSuccess(
-    flowRunId: string,
-    step: IFlowStep,
-    request: {
-      userPrompt: string;
-      traceId?: Opt<string, Reason.TraceAbsent>;
-      requestId?: Opt<string, Reason.OptionalContext>;
-      requestAnalysis?: Opt<IRequestAnalysis, Reason.OptionalInput>;
-    },
+    ctx: Pick<IStepContext, "flowRunId" | "step" | "request" | "startedAt">,
     result: IAgentExecutionResult,
-    startedAt: Date,
     recoveryMetadata?: Opt<IStepRecoveryMetadata, Reason.OptionalInput>,
     namespaceWrites?: Opt<IStepNamespaceWrites, Reason.OptionalInput>,
   ): IStepResult {
+    const { flowRunId, step, request, startedAt } = ctx;
     const completedAt = new Date();
     const duration = completedAt.getTime() - startedAt.getTime();
 
@@ -2751,9 +2703,7 @@ export class FlowRunner implements IFlowRunner {
     const successCount = successfulResults.length;
 
     const mergedOutput = mergeMode === "manual" ? "" : this.buildAutomaticParallelMergeOutput(
-      flowRunId,
-      step,
-      flow,
+      { flowRunId, step, flow },
       groupId,
       mergeMode,
       originalRequest,
@@ -2771,15 +2721,14 @@ export class FlowRunner implements IFlowRunner {
   }
 
   private buildAutomaticParallelMergeOutput(
-    flowRunId: string,
-    step: IFlowStep,
-    flow: IFlow,
+    ctx: Pick<IStepContext, "flowRunId" | "step" | "flow">,
     groupId: string,
     mergeMode: IParallelMergeMode,
     originalRequest: { traceId?: string; requestId?: string },
     memberStepIds: string[],
     successfulResults: Array<{ memberStepId: string; memberResult: IStepResult }>,
   ): string {
+    const { flowRunId, step, flow } = ctx;
     if (successfulResults.length !== memberStepIds.length) {
       return this.throwParallelGroupMergeFailure(
         flowRunId,

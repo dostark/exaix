@@ -142,6 +142,18 @@ export interface IExecuteOptions {
   initGitBranch: boolean;
 }
 
+/** Options for registerReview. */
+interface IRegisterReviewOptions {
+  requestId: string;
+  traceId: string;
+  portal: string;
+  branch: string;
+  commitSha: string;
+  repository: string;
+  baseBranch: string;
+  worktreePath?: string;
+}
+
 export class ExecutionLoop {
   private config: Config;
   private db?: IDatabaseService;
@@ -327,16 +339,16 @@ export class ExecutionLoop {
       if (commitSha) {
         const baseBranch = gitSetup.baseBranch ??
           await this.resolveBaseBranch(frontmatter, portalGitService!, portalRepoRoot);
-        await this.registerReview(
-          requestId!,
-          traceId!,
-          frontmatter.portal || "unknown",
-          gitSetup.branchName || "unknown",
+        await this.registerReview({
+          requestId: requestId!,
+          traceId: traceId!,
+          portal: frontmatter.portal || "unknown",
+          branch: gitSetup.branchName || "unknown",
           commitSha,
-          portalRepoRoot,
+          repository: portalRepoRoot,
           baseBranch,
-          gitSetup.worktreePath,
-        );
+          worktreePath: gitSetup.worktreePath,
+        });
       }
 
       // Handle success
@@ -1393,15 +1405,9 @@ export class ExecutionLoop {
    * Register a new review after successful execution
    */
   private async registerReview(
-    requestId: string,
-    traceId: string,
-    portal: string,
-    branch: string,
-    commitSha: string,
-    repository: string,
-    baseBranch: string,
-    worktreePath?: Opt<string, Reason.OptionalInput>,
+    opts: IRegisterReviewOptions,
   ): Promise<void> {
+    const { requestId, traceId, portal, branch, commitSha, repository, baseBranch, worktreePath } = opts;
     try {
       console.log(`[ExecutionLoop] Registering review for ${requestId} (Branch: ${branch})`);
       if (this.reviewRegistry) {

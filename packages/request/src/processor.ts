@@ -83,6 +83,20 @@ import type { IRequestSpecification } from "@exaix/schemas/request_specification
 import type { EnhancedRequest, SessionMemoryService } from "@exaix/memory";
 import type { Opt, Reason } from "@exaix/core/types";
 
+/** Shared options for internal request-processing methods (reduces max-params). */
+interface IProcessRequestOptions {
+  frontmatter: IRequestFrontmatter;
+  body: string;
+  filePath: string;
+  requestId: string;
+  traceId: string;
+  traceLogger: IEventLogger;
+  analysis?: IRequestAnalysis;
+  portalKnowledge?: IPortalKnowledge;
+  specification?: IRequestSpecification;
+  memoryContext?: EnhancedRequest;
+}
+
 export interface IRequestProcessingContext extends IServiceContext {
   filePath: string;
   parsed: IParsedRequestFile;
@@ -360,19 +374,19 @@ export class RequestProcessor {
 
     try {
       const planPath = await pipeline.execute<string | null>(context, () => {
-        return this.processRequestByKind(
-          requestKind,
+        const opts: IProcessRequestOptions = {
           frontmatter,
-          assessedBody,
+          body: assessedBody,
           filePath,
           requestId,
           traceId,
           traceLogger,
-          context.analysis,
-          context.portalKnowledge,
-          clarificationSpec,
-          context.memoryContext,
-        );
+          analysis: context.analysis,
+          portalKnowledge: context.portalKnowledge,
+          specification: clarificationSpec,
+          memoryContext: context.memoryContext,
+        };
+        return this.processRequestByKind(requestKind, opts);
       });
 
       return planPath;
@@ -584,44 +598,19 @@ export class RequestProcessor {
 
   private processRequestByKind(
     kind: RequestKind,
-    frontmatter: IRequestFrontmatter,
-    body: string,
-    filePath: string,
-    requestId: string,
-    traceId: string,
-    traceLogger: IEventLogger,
-    analysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
-    portalKnowledge?: Opt<IPortalKnowledge, Reason.OptionalInput>,
-    specification?: Opt<IRequestSpecification, Reason.OptionalInput>,
-    memoryContext?: Opt<EnhancedRequest, Reason.OptionalInput>,
+    opts: IProcessRequestOptions,
   ): Promise<string | null> {
     if (kind === RequestKind.FLOW) {
-      return this.processFlowRequest(frontmatter, filePath, requestId, traceId, traceLogger, analysis, portalKnowledge);
+      return this.processFlowRequest(opts);
     }
 
-    return this.processAgentRequest(
-      frontmatter,
-      body,
-      filePath,
-      requestId,
-      traceId,
-      traceLogger,
-      analysis,
-      portalKnowledge,
-      specification,
-      memoryContext,
-    );
+    return this.processAgentRequest(opts);
   }
 
   private async processFlowRequest(
-    frontmatter: IRequestFrontmatter,
-    filePath: string,
-    requestId: string,
-    traceId: string,
-    traceLogger: IEventLogger,
-    analysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
-    _portalKnowledge?: Opt<IPortalKnowledge, Reason.OptionalInput>,
+    opts: IProcessRequestOptions,
   ): Promise<string | null> {
+    const { frontmatter, filePath, traceId, requestId, traceLogger, analysis } = opts;
     if (this.flowValidator) {
       const validation = await this.flowValidator.validateFlow(frontmatter.flow!);
       if (!validation.valid) {
@@ -711,17 +700,9 @@ export class RequestProcessor {
   }
 
   private async processAgentRequest(
-    frontmatter: IRequestFrontmatter,
-    body: string,
-    filePath: string,
-    requestId: string,
-    traceId: string,
-    traceLogger: IEventLogger,
-    analysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
-    portalKnowledge?: Opt<IPortalKnowledge, Reason.OptionalInput>,
-    specification?: Opt<IRequestSpecification, Reason.OptionalInput>,
-    memoryContext?: Opt<EnhancedRequest, Reason.OptionalInput>,
+    opts: IProcessRequestOptions,
   ): Promise<string | null> {
+    const { frontmatter, body, filePath, requestId, traceId, traceLogger, analysis, portalKnowledge, specification, memoryContext } = opts;
     const identityId = frontmatter.identity || frontmatter.identity;
     const loadedBlueprint = await this.loadBlueprintWithFallback(identityId!, traceLogger);
 

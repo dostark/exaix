@@ -102,15 +102,18 @@ function createCompensationStep(
   };
 }
 
-function createCompensationFlow(
-  id: string,
-  name: string,
-  description: string,
-  steps: IFlowInput["steps"],
-  outputFrom: string,
-  maxParallelism: number,
-  failFast: boolean,
-): IFlowInput {
+interface ICreateCompensationFlowOpts {
+  id: string;
+  name: string;
+  description: string;
+  steps: IFlowInput["steps"];
+  outputFrom: string;
+  maxParallelism: number;
+  failFast: boolean;
+}
+
+function createCompensationFlow(opts: ICreateCompensationFlowOpts): IFlowInput {
+  const { id, name, description, steps, outputFrom, maxParallelism, failFast } = opts;
   return {
     id,
     name,
@@ -132,11 +135,11 @@ Deno.test("[Step63.4] FlowRunner executes compensations in LIFO order and contin
     const requestId = "req-flow-compensation-001";
     const portal = "TestPortal";
 
-    const flow = createCompensationFlow(
-      "compensation-flow",
-      "Compensation Flow",
-      "Flow compensation integration coverage",
-      [
+    const flow = createCompensationFlow({
+      id: "compensation-flow",
+      name: "Compensation Flow",
+      description: "Flow compensation integration coverage",
+      steps: [
         createCompensationStep("step1", "Step 1", "agent1", [], ["rollback/step1-success"]),
         createCompensationStep("step2", "Step 2", "agent2", ["step1"], [
           "rollback/step2-fail",
@@ -144,10 +147,10 @@ Deno.test("[Step63.4] FlowRunner executes compensations in LIFO order and contin
         ]),
         createCompensationStep("step3", "Step 3", "agent3", ["step2"], []),
       ],
-      "step3",
-      3,
-      true,
-    );
+      outputFrom: "step3",
+      maxParallelism: 3,
+      failFast: true,
+    });
 
     const executor = new ScriptedAgentExecutor({
       agent1: ["step1-result"],
@@ -206,19 +209,19 @@ Deno.test("[Step63.11] FlowRunner compensates same-wave steps in reverse declara
       }
     }
 
-    const flow = createCompensationFlow(
-      "same-wave-compensation-flow",
-      "Same Wave Compensation Flow",
-      "Ensures tied same-wave completions compensate in reverse declaration order",
-      [
+    const flow = createCompensationFlow({
+      id: "same-wave-compensation-flow",
+      name: "Same Wave Compensation Flow",
+      description: "Ensures tied same-wave completions compensate in reverse declaration order",
+      steps: [
         createCompensationStep("stepA", "Step A", "agentA", [], ["rollback/stepA"]),
         createCompensationStep("stepB", "Step B", "agentB", [], ["rollback/stepB"]),
         createCompensationStep("stepFail", "Failing Step", "agentFail", ["stepA", "stepB"], []),
       ],
-      "stepFail",
-      2,
-      true,
-    );
+      outputFrom: "stepFail",
+      maxParallelism: 2,
+      failFast: true,
+    });
 
     const executor = new ScriptedAgentExecutor({
       agentA: ["stepA-result"],
@@ -260,19 +263,19 @@ Deno.test("[Step63.12] FlowRunner marks compensated steps with recovery metadata
   try {
     RecordingDeleteFileTool.calls = [];
 
-    const flow = createCompensationFlow(
-      "compensation-metadata-flow",
-      "Compensation Metadata Flow",
-      "Tracks runtime compensation metadata on successful steps",
-      [
+    const flow = createCompensationFlow({
+      id: "compensation-metadata-flow",
+      name: "Compensation Metadata Flow",
+      description: "Tracks runtime compensation metadata on successful steps",
+      steps: [
         createCompensationStep("step1", "Step 1", "agent1", [], ["rollback/step1"]),
         createCompensationStep("step2", "Step 2", "agent2", ["step1"], ["rollback/step2"]),
         createCompensationStep("step3", "Step 3", "agent3", ["step2"], []),
       ],
-      "step3",
-      3,
-      false,
-    );
+      outputFrom: "step3",
+      maxParallelism: 3,
+      failFast: false,
+    });
 
     const executor = new ScriptedAgentExecutor({
       agent1: ["step1-result"],

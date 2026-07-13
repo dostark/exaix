@@ -33,15 +33,14 @@ export type GoogleProviderOptions = IBaseProviderOptions;
  */
 export class GoogleProvider extends BaseProvider {
   constructor(options: GoogleProviderOptions) {
-    super(
-      options,
-      DEFAULT_GOOGLE_MODEL,
-      options.config?.ai_endpoints?.google || DEFAULT_GOOGLE_ENDPOINT,
-      options.config?.ai_timeout?.providers?.google || DEFAULT_GOOGLE_TIMEOUT_MS,
-      options.config?.ai_retry?.providers?.["google"]?.backoff_base_ms || DEFAULT_GOOGLE_RETRY_BACKOFF_MS,
-      options.config?.ai_retry?.providers?.["google"]?.max_attempts || DEFAULT_GOOGLE_RETRY_MAX_ATTEMPTS,
-      PROVIDER_GOOGLE,
-    );
+    super({
+      ...options,
+      defaultModel: DEFAULT_GOOGLE_MODEL,
+      defaultEndpoint: options.config?.ai_endpoints?.google || DEFAULT_GOOGLE_ENDPOINT,
+      defaultTimeout: options.config?.ai_timeout?.providers?.google || DEFAULT_GOOGLE_TIMEOUT_MS,
+      defaultRetryDelay: options.config?.ai_retry?.providers?.["google"]?.backoff_base_ms || DEFAULT_GOOGLE_RETRY_BACKOFF_MS,
+      defaultMaxRetries: options.config?.ai_retry?.providers?.["google"]?.max_attempts || DEFAULT_GOOGLE_RETRY_MAX_ATTEMPTS,
+    }, PROVIDER_GOOGLE);
   }
 
   protected override async attemptGenerate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {

@@ -45,15 +45,14 @@ export class VertexProvider extends BaseProvider {
   private readonly projectId: string;
 
   constructor(options: VertexProviderOptions) {
-    super(
-      options,
-      DEFAULT_VERTEX_MODEL,
-      options.baseUrl || DEFAULT_VERTEX_ENDPOINT,
-      options.timeoutMs || DEFAULT_VERTEX_TIMEOUT_MS,
-      options.retryDelayMs || DEFAULT_VERTEX_RETRY_BACKOFF_MS,
-      options.maxRetries || DEFAULT_VERTEX_RETRY_MAX_ATTEMPTS,
-      PROVIDER_VERTEX,
-    );
+    super({
+      ...options,
+      defaultModel: DEFAULT_VERTEX_MODEL,
+      defaultEndpoint: options.baseUrl || DEFAULT_VERTEX_ENDPOINT,
+      defaultTimeout: options.timeoutMs || DEFAULT_VERTEX_TIMEOUT_MS,
+      defaultRetryDelay: options.retryDelayMs || DEFAULT_VERTEX_RETRY_BACKOFF_MS,
+      defaultMaxRetries: options.maxRetries || DEFAULT_VERTEX_RETRY_MAX_ATTEMPTS,
+    }, PROVIDER_VERTEX);
     this.region = options.region;
     this.projectId = options.serviceAccount.project_id;
     this.auth = options.auth ?? new GoogleAuth({ serviceAccount: options.serviceAccount, logger: options.logger });

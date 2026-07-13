@@ -89,15 +89,14 @@ export class OpenRouterProvider extends BaseProvider {
   private readonly routing?: IOpenRouterRouting;
 
   constructor(options: OpenRouterProviderOptions) {
-    super(
-      options,
-      DEFAULT_OPENROUTER_MODEL,
-      options.baseUrl || DEFAULT_OPENROUTER_ENDPOINT,
-      options.timeoutMs || DEFAULT_OPENROUTER_TIMEOUT_MS,
-      options.retryDelayMs || DEFAULT_OPENROUTER_RETRY_BACKOFF_MS,
-      options.maxRetries || DEFAULT_OPENROUTER_RETRY_MAX_ATTEMPTS,
-      PROVIDER_OPENROUTER,
-    );
+    super({
+      ...options,
+      defaultModel: DEFAULT_OPENROUTER_MODEL,
+      defaultEndpoint: options.baseUrl || DEFAULT_OPENROUTER_ENDPOINT,
+      defaultTimeout: options.timeoutMs || DEFAULT_OPENROUTER_TIMEOUT_MS,
+      defaultRetryDelay: options.retryDelayMs || DEFAULT_OPENROUTER_RETRY_BACKOFF_MS,
+      defaultMaxRetries: options.maxRetries || DEFAULT_OPENROUTER_RETRY_MAX_ATTEMPTS,
+    }, PROVIDER_OPENROUTER);
     this.siteName = options.siteName ?? OPENROUTER_DEFAULT_SITE_NAME;
     this.siteUrl = options.siteUrl ?? OPENROUTER_DEFAULT_SITE_URL;
     this.routing = options.routing;

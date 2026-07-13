@@ -25,6 +25,16 @@ export interface IBaseProviderOptions {
   baseUrl?: string;
   config?: Config;
   timeoutMs?: number;
+  /** Provider-specific default model. */
+  defaultModel?: string;
+  /** Provider-specific default endpoint. */
+  defaultEndpoint?: string;
+  /** Provider-specific default timeout. */
+  defaultTimeout?: number;
+  /** Provider-specific default retry delay. */
+  defaultRetryDelay?: number;
+  /** Provider-specific default max retries. */
+  defaultMaxRetries?: number;
 }
 
 /**
@@ -42,21 +52,16 @@ export abstract class BaseProvider implements IModelProvider {
 
   constructor(
     options: IBaseProviderOptions,
-    defaultModel: string,
-    defaultEndpoint: string,
-    defaultTimeout: number,
-    defaultRetryDelay: number,
-    defaultMaxRetries: number,
     idPrefix: string,
   ) {
     this.apiKey = options.apiKey;
-    this.model = options.model || defaultModel;
+    this.model = options.model || options.defaultModel || "default";
     this.id = options.id || `${idPrefix}-${this.model}`;
     this.logger = options.logger;
-    this.baseUrl = options.baseUrl || defaultEndpoint;
-    this.retryDelayMs = options.retryDelayMs || defaultRetryDelay;
-    this.maxRetries = options.maxRetries || defaultMaxRetries;
-    this.timeoutMs = options.timeoutMs || defaultTimeout;
+    this.baseUrl = options.baseUrl || options.defaultEndpoint || "";
+    this.retryDelayMs = options.retryDelayMs || options.defaultRetryDelay || 100;
+    this.maxRetries = options.maxRetries || options.defaultMaxRetries || 3;
+    this.timeoutMs = options.timeoutMs || options.defaultTimeout || 30000;
   }
 
   /**
