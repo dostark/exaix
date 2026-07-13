@@ -180,38 +180,22 @@ module purity rules.
 
 ---
 
-## Layer-Aware Constant Imports (Advisory)
+## Layer-Aware Constant Imports
 
-| Tag                     | Severity | Rule (CODE_STYLE.md) | What it detects                                                                              |
-| ----------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------- |
-| `[layer-constant-leak]` | advisory | §15                  | High-level class imports a low-level implementation constant it should delegate to a service |
+| Tag                     | Severity | Rule (CODE_STYLE.md) | What it detects                                                                                          |
+| ----------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------- |
+| `[layer-constant-leak]` | warn     | §15                  | High-level class imports `SafeSubprocess`, `ToolRegistry` (class), or `TOKEN_ESTIMATION_CHARS_PER_TOKEN` |
 
-**Status: Not yet automated.** Manual review gate — inspect the import section of every
-composition-root class (> 300 lines) for imports from packages that provide concerns the
-class delegates to services. Each such import is a candidate for extraction.
+**Automated via regex** in `check_code_style.ts`. Detects single-line imports of three known
+low-level implementation symbols that should be behind service boundaries:
+`SafeSubprocess` (→ `GitAuditService`), `ToolRegistry` class (→ accept `IToolRegistry` via DI),
+`TOKEN_ESTIMATION_CHARS_PER_TOKEN` (→ `ExecutionContextService.estimateTokensSync()`).
 
-**Detection signals** — flag any of the following in a class that acts as a composition root
-(orchestrator, coordinator, controller):
+**Exempt paths**: Defining packages (`core/src/types/`, `core/src/func/`, `core/src/helpers/`,
+`tool-runtime/`), test files, `apps/` (DI wiring layer), package-service files that own these
+constants, and known bridge zones (`mcp/testing/`, `portal/`).
 
-| Import                                          | Typical source        | Why it's a leak                                         |
-| ----------------------------------------------- | --------------------- | ------------------------------------------------------- |
-| `SafeSubprocess`                                | `@exaix/core`         | Subprocess runner — belongs to the service that runs it |
-| `DEFAULT_GIT_*` or `GIT_CMD_*`                  | `@exaix/git`          | Git command constants — belong to `GitAuditService`     |
-| `ToolRegistry` (class, not `IToolRegistry`)     | `@exaix/tool-runtime` | Concrete class — accept `IToolRegistry` via DI instead  |
-| `TOKEN_ESTIMATION_CHARS_PER_TOKEN`              | `@exaix/core`         | Token heuristic — belongs to `ExecutionContextService`  |
-| `DomainEventType` (when used in git operations) | `@exaix/core/events`  | Audit event — belongs to the service emitting it        |
-| `GIT_EMPTY_SHA`                                 | `@exaix/git`          | Git sentinel — belongs to `GitAuditService`             |
-
-**Counterexamples — acceptable high-level imports:**
-
-| Import                                  | Source              | Why it's fine                             |
-| --------------------------------------- | ------------------- | ----------------------------------------- |
-| `IToolRegistry` (type only)             | `@exaix/core/types` | Interface reference for DI field          |
-| `ExecutionStrategyName`, `SecurityMode` | `@exaix/core`       | Framework enums the class dispatches on   |
-| `AGENT_EVENT_EXECUTION_*`               | `@exaix/core`       | Event names the class itself emits        |
-| `AgentKind`, `ActorType`, `LogLevel`    | `@exaix/core`       | Framework-level types for logging/journal |
-
-**Remediation**: See [CODE_STYLE.md §15 — Remediation](../CODE_STYLE.md#remediation).
+**Full rule and remediation**: [CODE_STYLE.md §15](../CODE_STYLE.md#layer-aware-constant-imports).
 
 ---
 

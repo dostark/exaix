@@ -646,6 +646,37 @@ const rules: Rule[] = [
   // model (MIT < Team < Enterprise) across packages/, apps/, and packages-team/ with
   // type-only + edition-gated-dynamic exemptions. See isEditionLeakImport().
   {
+    name: "layer-constant-leak",
+    // Detects import of concrete low-level classes or subprocess primitives
+    // in a composition-root file that should only reference service interfaces.
+    // Focused on the known worst offenders — not a general-purpose scan.
+    // See CODE_STYLE.md §15 for the full rule and remediation guide.
+    regex:
+      /import\s*\{[^}]*\b(?:SafeSubprocess|(?<!I)ToolRegistry\b|TOKEN_ESTIMATION_CHARS_PER_TOKEN)\b[^}]*\}\s*from\s+/,
+    message: "Low-level implementation symbol imported in a composition-root file. " +
+      "This constant/class belongs to a delegated service, not to the orchestrator. " +
+      "See CODE_STYLE.md §15 — Layer-Aware Constant Imports.",
+    severity: "warn" as const,
+    pathFilter: (path: string) =>
+      !path.startsWith("tests/") &&
+      !path.includes("/tests/") &&
+      !path.endsWith(".test.ts") &&
+      !path.endsWith("_test.ts") &&
+      !path.startsWith("packages/core/src/types/") &&
+      !path.startsWith("packages/core/src/func/") &&
+      !path.startsWith("packages/core/src/helpers/") &&
+      !path.startsWith("packages/tool-runtime/") &&
+      path !== "packages/core/src/planning/plan_executor.ts" &&
+      path !== "packages/execution/src/git_audit_service.ts" &&
+      path !== "packages/execution/src/execution_context_service.ts" &&
+      path !== "packages/execution/src/execution_loop.ts" &&
+      path !== "packages/execution/src/strategies/mcp_agent_strategy.ts" &&
+      path !== "packages/execution/src/context/context_compactor.ts" &&
+      !path.startsWith("apps/") &&
+      !path.startsWith("packages/mcp/testing/") &&
+      !path.startsWith("packages/portal/"),
+  },
+  {
     name: "edition-conditional-outside-composer",
     // Forbid edition conditionals (edition ===, edition !==, EXAIX_EDITION)
     // outside the edition composer. Edition-selection logic must be contained

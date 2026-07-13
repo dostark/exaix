@@ -1071,10 +1071,15 @@ const tokens = Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
 
 ### Automated enforcement
 
-Not yet automated. Manual review gate: inspect the import section of every
-composition-root class (> 300 lines) for imports from packages that provide
-concerns the class delegates to services. Each such import is a candidate for
-extraction.
+`[layer-constant-leak]` (warn) in `scripts/check_code_style.ts`. Detects
+single-line imports of three specific low-level symbols in production
+packages: `SafeSubprocess`, `ToolRegistry` (concrete class), and
+`TOKEN_ESTIMATION_CHARS_PER_TOKEN`. Exempts defining packages, test files,
+`apps/` (DI wiring layer), and package-service files that own these constants.
+The check is **not comprehensive** — it targets the regressions most likely to
+recur. A full manual review should still inspect the import section of every
+composition-root class (> 300 lines) for any import from a package whose concern
+the class delegates to a service.
 
 ---
 
