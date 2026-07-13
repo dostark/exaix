@@ -38,13 +38,7 @@ describe("AgentExecutor Capability Differentiation", () => {
     const pathResolver = new PathResolver(config);
     const permissions = new PortalPermissionsService([]);
 
-    executor = new AgentExecutor(
-      config,
-      dbService.db,
-      logger,
-      pathResolver,
-      permissions,
-    );
+    executor = new AgentExecutor({ config, db: dbService.db, logger, pathResolver, permissions });
   });
 
   afterEach(async () => {

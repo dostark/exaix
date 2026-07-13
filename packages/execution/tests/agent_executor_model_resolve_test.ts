@@ -16,7 +16,7 @@ import { initTestDbService } from "@exaix/testing";
 import { AgentExecutor } from "@exaix/execution";
 import type { IAgentExecutorOptions } from "@exaix/execution";
 import type { ModelResolver } from "@exaix/ai";
-import type { IResolvedModel, IModelIntent } from "@exaix/schemas";
+import type { IModelIntent, IResolvedModel } from "@exaix/schemas";
 import { TaskType } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core/types";
 import { EventLogger } from "@exaix/core/logger";
@@ -71,24 +71,7 @@ function makeExecutor(
   const logger = new EventLogger({ db });
   const pathResolver = new PathResolver(config);
   const permissions = new PortalPermissionsService([]);
-  return new AgentExecutor(
-    config,
-    db,
-    logger,
-    pathResolver,
-    permissions,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    options,
-    resolver,
-  );
+  return new AgentExecutor({ config, db, logger, pathResolver, permissions, options, modelResolver: resolver });
 }
 
 Deno.test("[step132.3][model-resolve] AgentExecutor resolves model_size blueprint through ModelResolver", async () => {

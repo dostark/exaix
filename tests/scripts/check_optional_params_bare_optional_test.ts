@@ -15,8 +15,8 @@ import ts from "typescript";
 import {
   collectFunctions,
   collectTypeShapeViolations,
-  type IFuncDecl,
   hasBareOptional,
+  type IFuncDecl,
   isOptType,
   ViolationKind,
 } from "../../scripts/check_optional_params.ts";

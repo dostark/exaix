@@ -8,7 +8,7 @@
  */
 
 import { DEFAULT_LOG_BUFFER_SIZE } from "@exaix/core";
-import type { IStructuredLogEntry, ILogQueryOptions } from "@exaix/core/types";
+import type { ILogQueryOptions, IStructuredLogEntry } from "@exaix/core/types";
 import type { ILogger } from "@exaix/core/types";
 import type { ILogService } from "@exaix/core/types";
 

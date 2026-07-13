@@ -44,8 +44,10 @@ export class AnthropicProvider extends BaseProvider {
       defaultModel: options.config?.ai_anthropic?.default_model || DEFAULT_ANTHROPIC_MODEL,
       defaultEndpoint: options.config?.ai_endpoints?.anthropic || DEFAULT_ANTHROPIC_ENDPOINT,
       defaultTimeout: options.config?.ai_timeout?.providers?.anthropic || DEFAULT_ANTHROPIC_TIMEOUT_MS,
-      defaultRetryDelay: options.config?.ai_retry?.providers?.anthropic?.backoff_base_ms || DEFAULT_ANTHROPIC_RETRY_BACKOFF_MS,
-      defaultMaxRetries: options.config?.ai_retry?.providers?.anthropic?.max_attempts || DEFAULT_ANTHROPIC_RETRY_MAX_ATTEMPTS,
+      defaultRetryDelay: options.config?.ai_retry?.providers?.anthropic?.backoff_base_ms ||
+        DEFAULT_ANTHROPIC_RETRY_BACKOFF_MS,
+      defaultMaxRetries: options.config?.ai_retry?.providers?.anthropic?.max_attempts ||
+        DEFAULT_ANTHROPIC_RETRY_MAX_ATTEMPTS,
     }, PROVIDER_ANTHROPIC);
 
     this.apiVersion = options.apiVersion ||

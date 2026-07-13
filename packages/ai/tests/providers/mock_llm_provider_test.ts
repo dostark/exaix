@@ -17,10 +17,10 @@ import {
   createFailingMock,
   createPlanGeneratorMock,
   createSlowMock,
+  type IPatternMatcher,
   type IRecordedResponse,
   MockLLMError,
   MockLLMProvider,
-  type IPatternMatcher,
 } from "../../src/providers/mock_llm_provider.ts";
 
 // ============================================================================

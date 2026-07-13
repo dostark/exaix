@@ -102,8 +102,6 @@ export const FeedbackLoopConfigSchema = z.object({
 
 export type FeedbackLoopConfig = z.infer<typeof FeedbackLoopConfigSchema>;
 
-
-
 /**
  * FeedbackLoop - Implements iterative improvement through evaluation
  *

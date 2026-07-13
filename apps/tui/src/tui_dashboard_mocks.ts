@@ -30,7 +30,7 @@ import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/co
 import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types";
 import type { AnalysisMode } from "@exaix/core/types";
 import type { IAgentHealthData, IAgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
-import type { ILogContext, IStructuredLogEntry, ILogQueryOptions } from "@exaix/core/types";
+import type { ILogContext, ILogQueryOptions, IStructuredLogEntry } from "@exaix/core/types";
 import type { LogMetadata } from "@exaix/core/types";
 import type {
   IActivitySummary,

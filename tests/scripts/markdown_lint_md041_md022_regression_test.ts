@@ -4,7 +4,7 @@
  * @description Regression tests for markdown lint rules MD041 and MD022.
  */
 
-import { lintMarkdown, type ILintOptions } from "../../scripts/markdown_lint.ts";
+import { type ILintOptions, lintMarkdown } from "../../scripts/markdown_lint.ts";
 
 const defaultOptions: ILintOptions = { fix: false, strict: false, verbose: false };
 

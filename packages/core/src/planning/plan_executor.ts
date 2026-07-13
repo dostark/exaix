@@ -286,24 +286,17 @@ export class PlanExecutor {
       ? new PromptBudgetAllocator(this.config.budget_enforcement, undefined, this.logger, this.options.modelRegistry)
       : undefined;
 
-    return new AgentExecutor(
-      this.config,
-      this.db as DatabaseService,
-      this.logger,
+    return new AgentExecutor({
+      config: this.config,
+      db: this.db as DatabaseService,
+      logger: this.logger,
       pathResolver,
       permissions,
-      this.llmProvider,
-      undefined, // strategyRegistry
-      undefined, // _toolRegistry
+      provider: this.llmProvider,
       promptBudgetAllocator,
-      undefined, // contextCache
-      undefined, // tokenizer
-      undefined, // contextBudgetManager
-      undefined, // snapshotStore
-      undefined, // _guardrailRunner (positional — use options instead)
       options,
-      this.options.modelResolver,
-    );
+      modelResolver: this.options.modelResolver,
+    });
   }
 
   /**

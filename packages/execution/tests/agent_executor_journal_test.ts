@@ -45,13 +45,13 @@ function createMockConfigForTest(): ReturnType<typeof createMockConfig> {
 
 function createExecutorHarness(): { executor: AgentExecutor; loggedEvents: ILogEvent[] } {
   const loggedEvents: ILogEvent[] = [];
-  const executor = new AgentExecutor(
-    createMockConfigForTest(),
-    {} as Partial<DatabaseService> as DatabaseService,
-    createMockLogger(loggedEvents) as EventLogger,
-    {} as Partial<PathResolver> as PathResolver,
-    {} as Partial<PortalPermissionsService> as PortalPermissionsService,
-  );
+  const executor = new AgentExecutor({
+    config: createMockConfigForTest(),
+    db: {} as Partial<DatabaseService> as DatabaseService,
+    logger: createMockLogger(loggedEvents) as EventLogger,
+    pathResolver: {} as Partial<PathResolver> as PathResolver,
+    permissions: {} as Partial<PortalPermissionsService> as PortalPermissionsService,
+  });
 
   return { executor, loggedEvents };
 }

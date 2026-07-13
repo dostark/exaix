@@ -72,13 +72,13 @@ async function buildExecutor(tempDir: string, portalPath: string) {
     identities_allowed: ["*"],
     operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
   }]);
-  const executor = new AgentExecutor(
+  const executor = new AgentExecutor({
     config,
-    dbService.db,
-    NOOP_LOGGER as EventLogger,
-    new PathResolver(config),
+    db: dbService.db,
+    logger: NOOP_LOGGER as EventLogger,
+    pathResolver: new PathResolver(config),
     permissions,
-  );
+  });
   return { executor, dbService };
 }
 

@@ -37,7 +37,8 @@ export class OpenAIProvider extends BaseProvider {
       defaultModel: DEFAULT_OPENAI_MODEL,
       defaultEndpoint: options.config?.ai_endpoints?.openai || DEFAULT_OPENAI_ENDPOINT,
       defaultTimeout: options.config?.ai_timeout?.providers?.openai || DEFAULT_OPENAI_TIMEOUT_MS,
-      defaultRetryDelay: options.config?.ai_retry?.providers?.openai?.backoff_base_ms || DEFAULT_OPENAI_RETRY_BACKOFF_MS,
+      defaultRetryDelay: options.config?.ai_retry?.providers?.openai?.backoff_base_ms ||
+        DEFAULT_OPENAI_RETRY_BACKOFF_MS,
       defaultMaxRetries: options.config?.ai_retry?.providers?.openai?.max_attempts || DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
     }, "openai");
   }

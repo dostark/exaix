@@ -50,41 +50,28 @@ function makeMockSnapshotStore(): ISnapshotStore {
 
 Deno.test("[AgentExecutor] constructor accepts contextBudgetManager parameter", () => {
   const budgetManager = makeMockBudgetManager();
-  const executor = new AgentExecutor(
-    castAny({}), // config
-    castAny({}), // db
-    castAny({}), // logger
-    castAny({}), // pathResolver
-    castAny({}), // permissions
-    undefined, // provider
-    undefined, // strategyRegistry
-    undefined, // toolRegistry
-    undefined, // promptBudgetAllocator
-    undefined, // contextCache
-    undefined, // tokenizer
-    budgetManager, // contextBudgetManager (12th param)
-  );
+  const executor = new AgentExecutor({
+    config: castAny({}),
+    db: castAny({}),
+    logger: castAny({}),
+    pathResolver: castAny({}),
+    permissions: castAny({}),
+    contextBudgetManager: budgetManager,
+  });
 
   assertEquals(executor.contextBudgetManager, budgetManager);
 });
 
 Deno.test("[AgentExecutor] constructor accepts snapshotStore parameter", () => {
   const snapshotStore = makeMockSnapshotStore();
-  const executor = new AgentExecutor(
-    castAny({}), // config
-    castAny({}), // db
-    castAny({}), // logger
-    castAny({}), // pathResolver
-    castAny({}), // permissions
-    undefined, // provider
-    undefined, // strategyRegistry
-    undefined, // toolRegistry
-    undefined, // promptBudgetAllocator
-    undefined, // contextCache
-    undefined, // tokenizer
-    undefined, // contextBudgetManager
-    snapshotStore, // snapshotStore (13th param)
-  );
+  const executor = new AgentExecutor({
+    config: castAny({}),
+    db: castAny({}),
+    logger: castAny({}),
+    pathResolver: castAny({}),
+    permissions: castAny({}),
+    snapshotStore,
+  });
 
   assertEquals(executor.snapshotStore, snapshotStore);
 });
@@ -92,21 +79,15 @@ Deno.test("[AgentExecutor] constructor accepts snapshotStore parameter", () => {
 Deno.test("[AgentExecutor] both contextBudgetManager and snapshotStore can be passed together", () => {
   const budgetManager = makeMockBudgetManager();
   const snapshotStore = makeMockSnapshotStore();
-  const executor = new AgentExecutor(
-    castAny({}),
-    castAny({}),
-    castAny({}),
-    castAny({}),
-    castAny({}),
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    budgetManager,
+  const executor = new AgentExecutor({
+    config: castAny({}),
+    db: castAny({}),
+    logger: castAny({}),
+    pathResolver: castAny({}),
+    permissions: castAny({}),
+    contextBudgetManager: budgetManager,
     snapshotStore,
-  );
+  });
 
   assertExists(executor.contextBudgetManager);
   assertExists(executor.snapshotStore);

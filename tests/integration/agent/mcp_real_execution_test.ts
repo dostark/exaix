@@ -84,16 +84,15 @@ Deno.test("AgentExecutor Integration - Real MCP Execution & Audit", async () => 
   const strategyRegistry = new StrategyRegistry();
   const logger = new EventLogger({ db: helper.db, defaultActor: "user:test" });
 
-  const executor = new AgentExecutor(
-    registryState.config,
-    helper.db,
+  const executor = new AgentExecutor({
+    config: registryState.config,
+    db: helper.db,
     logger,
     pathResolver,
     permissions,
-    undefined, // provider
     strategyRegistry,
-    helper.registry, // toolRegistry
-  );
+    toolRegistry: helper.registry,
+  });
 
   // Set environment variable for mock agent and register strategy
   Deno.env.set("EXAIX_AGENT_ENTRYPOINT", "tests/integration/agent/mock_agent.ts");

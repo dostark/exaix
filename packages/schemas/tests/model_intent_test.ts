@@ -8,8 +8,8 @@ import { TaskType } from "@exaix/core";
 import type {
   EffortTier,
   IModelCallOptions,
-  IResolvedModel,
   IModelIntent,
+  IResolvedModel,
   ModelResolutionReason,
   ModelSize,
 } from "../src/model_intent.ts";

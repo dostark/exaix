@@ -14,7 +14,7 @@ import { createTestConfig } from "../../../packages/ai/tests/helpers/test_config
 import { initTestDbService } from "@exaix/testing";
 import { AgentExecutor } from "@exaix/execution";
 import type { ModelResolver } from "@exaix/ai";
-import type { IResolvedModel, IModelIntent } from "@exaix/schemas";
+import type { IModelIntent, IResolvedModel } from "@exaix/schemas";
 import { EventLogger } from "@exaix/core/logger";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import { join } from "@std/path";
@@ -70,24 +70,7 @@ Test agent
     const permissions = new PortalPermissionsService([]);
     const { resolver, captured } = createCapturingResolver();
 
-    const executor = new AgentExecutor(
-      config,
-      db,
-      logger,
-      pathResolver,
-      permissions,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      resolver,
-    );
+    const executor = new AgentExecutor({ config, db, logger, pathResolver, permissions, modelResolver: resolver });
 
     const blueprint = await executor.loadBlueprint("test-agent");
     assertEquals(blueprint.provider, "mock-provider");
@@ -136,24 +119,7 @@ Test agent
     const permissions = new PortalPermissionsService([]);
     const { resolver, captured } = createCapturingResolver();
 
-    const executor = new AgentExecutor(
-      config,
-      db,
-      logger,
-      pathResolver,
-      permissions,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      resolver,
-    );
+    const executor = new AgentExecutor({ config, db, logger, pathResolver, permissions, modelResolver: resolver });
 
     await executor.loadBlueprint("test-agent");
     assertEquals(captured.length, 1);
@@ -193,23 +159,7 @@ Test agent
     const pathResolver = new PathResolver(config);
     const permissions = new PortalPermissionsService([]);
 
-    const executor = new AgentExecutor(
-      config,
-      db,
-      logger,
-      pathResolver,
-      permissions,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-    );
+    const executor = new AgentExecutor({ config, db, logger, pathResolver, permissions });
 
     const blueprint = await executor.loadBlueprint("test-agent");
     assertEquals(blueprint.provider, "anthropic");

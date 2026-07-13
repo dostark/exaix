@@ -44,13 +44,7 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
     const pathResolver = new PathResolver(config);
     const permissions = new PortalPermissionsService([portalConfig]);
 
-    executor = new AgentExecutor(
-      config,
-      dbService.db,
-      logger,
-      pathResolver,
-      permissions,
-    );
+    executor = new AgentExecutor({ config, db: dbService.db, logger, pathResolver, permissions });
   });
 
   afterEach(() => {

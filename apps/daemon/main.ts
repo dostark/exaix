@@ -45,7 +45,7 @@ import { DefaultModelRegistry } from "@exaix/model-registry";
 import { RequestProcessor } from "@exaix/request";
 import { ReviewRegistry } from "@exaix/core/artifact";
 import { EventLogger, EventLoggerStructuredOutput } from "@exaix/core/logger";
-import { AgentRunner, IAgentRunner, ExecutionLoop } from "@exaix/execution";
+import { AgentRunner, ExecutionLoop, IAgentRunner } from "@exaix/execution";
 import { AgentExecutorAdapter, FlowRunner, type IFlowEventLogger, type IFlowEventPayload } from "@exaix/flow";
 import {
   initializeMemoryAutoApprovalMaintenance,

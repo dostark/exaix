@@ -9,7 +9,7 @@
 import { Command } from "@cliffy/command";
 import { PlanCommands } from "./commands/plan_commands.ts";
 import { RequestCommands } from "./commands/request_commands.ts";
-import { type IReviewMetadata, ReviewCommands, type IReviewDetails } from "./commands/review_commands.ts";
+import { type IReviewDetails, type IReviewMetadata, ReviewCommands } from "./commands/review_commands.ts";
 import { GitCommands } from "./commands/git_commands.ts";
 import { DaemonCommands } from "./commands/daemon_commands.ts";
 import { ConfigCommands } from "./commands/config_commands.ts";

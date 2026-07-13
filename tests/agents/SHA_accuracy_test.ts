@@ -94,15 +94,14 @@ Deno.test({
       }]);
       const pathResolver = new PathResolver(config);
 
-      const executor = new AgentExecutor(
+      const executor = new AgentExecutor({
         config,
-        dbService.db,
+        db: dbService.db,
         logger,
         pathResolver,
         permissions,
-        undefined,
-        registry,
-      );
+        strategyRegistry: registry,
+      });
 
       // 8. Execute
       const result = await executor.executeStep(

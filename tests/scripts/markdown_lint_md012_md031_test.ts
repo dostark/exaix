@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { lintMarkdown, type ILintOptions } from "../../scripts/markdown_lint.ts";
+import { type ILintOptions, lintMarkdown } from "../../scripts/markdown_lint.ts";
 
 const defaultOptions: ILintOptions = { fix: false, strict: false, verbose: false };
 

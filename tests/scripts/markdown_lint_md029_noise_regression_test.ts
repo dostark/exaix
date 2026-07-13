@@ -5,7 +5,7 @@
  * correct reporting of ordered-list numbering within separate blocks.
  */
 
-import { lintMarkdown, type ILintOptions } from "../../scripts/markdown_lint.ts";
+import { type ILintOptions, lintMarkdown } from "../../scripts/markdown_lint.ts";
 
 /**
  * Regression tests for MD029/ol-prefix output volume.

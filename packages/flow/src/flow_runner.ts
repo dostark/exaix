@@ -1617,7 +1617,13 @@ export class FlowRunner implements IFlowRunner {
       return { successCount: 0, failureCount: 1, failed: ctx.failFast };
     }
 
-    await this.persistWaveNamespaceWrites(result, ctx.request, stepId, namespaceId, ctx.flow.namespace?.enabled === true);
+    await this.persistWaveNamespaceWrites(
+      result,
+      ctx.request,
+      stepId,
+      namespaceId,
+      ctx.flow.namespace?.enabled === true,
+    );
     await this.saveCheckpointIfEnabled(ctx.flow, ctx.request, ctx.flowRunId, ctx.flowContentHash, ctx.stepResults);
 
     return { successCount: 1, failureCount: 0, failed: false };

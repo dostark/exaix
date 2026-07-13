@@ -31,13 +31,13 @@ Deno.test("AgentExecutor Blueprint Loading - Mock Identity resolution", async ()
     portals: [],
   }));
 
-  const executor = new AgentExecutor(
-    mockConfig.get(),
-    createStubDb() as AgentExecutor["db"],
-    createStubDisplay() as AgentExecutor["logger"],
-    {} as AgentExecutor["pathResolver"],
-    {} as AgentExecutor["permissions"],
-  );
+  const executor = new AgentExecutor({
+    config: mockConfig.get(),
+    db: createStubDb() as AgentExecutor["db"],
+    logger: createStubDisplay() as AgentExecutor["logger"],
+    pathResolver: {} as AgentExecutor["pathResolver"],
+    permissions: {} as AgentExecutor["permissions"],
+  });
 
   try {
     const blueprint = await executor.loadBlueprint("designer");
@@ -59,17 +59,17 @@ Deno.test({
   name: "AgentExecutor Blueprint Loading - Path Traversal Prevention",
   sanitizeOps: false,
   fn: async () => {
-    const executor = new AgentExecutor(
-      createStubConfig(ConfigSchema.parse({
+    const executor = new AgentExecutor({
+      config: createStubConfig(ConfigSchema.parse({
         system: { root: "/tmp", log_level: "info", schema_version: "1.0.0" },
         paths: { blueprints: "/tmp" },
         portals: [],
       })).get(),
-      createStubDb() as AgentExecutor["db"],
-      createStubDisplay() as AgentExecutor["logger"],
-      {} as AgentExecutor["pathResolver"],
-      {} as AgentExecutor["permissions"],
-    );
+      db: createStubDb() as AgentExecutor["db"],
+      logger: createStubDisplay() as AgentExecutor["logger"],
+      pathResolver: {} as AgentExecutor["pathResolver"],
+      permissions: {} as AgentExecutor["permissions"],
+    });
 
     await assertRejects(
       () => executor.loadBlueprint("../../../etc/passwd"),

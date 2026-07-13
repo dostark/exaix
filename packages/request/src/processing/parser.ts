@@ -9,7 +9,7 @@ import { parse as parseYaml } from "@std/yaml";
 import { exists } from "@std/fs";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
-import type { IRequestFrontmatter, IParsedRequestFile } from "@exaix/core/request";
+import type { IParsedRequestFile, IRequestFrontmatter } from "@exaix/core/request";
 import { coerceRequestStatus } from "@exaix/core/status";
 
 export class RequestParser {

@@ -10,15 +10,15 @@ Request parsing, analysis, routing, and plan materialization for Exaix.
 
 ### Step Table
 
-| Step | Component          | Source                                                       |
-| ---- | ------------------ | ------------------------------------------------------------ |
-| 1    | `RequestProcessor` | `src/processor.ts:RequestProcessor.process()`                |
-| 2    | `RequestAnalyzer`  | `packages/request/src/analysis/analyzer.ts`                  |
-| 3    | `RequestRouter`    | `src/request_router.ts:RequestRouter.route()`                |
-| 4    | `IAgentRunner`      | `@exaix/execution/src/agent_runner.ts:IAgentRunner.execute()` |
-| 5    | `PlanAdapter`      | `src/plan_adapter.ts:PlanAdapter.write()`                    |
-| 6    | `FlowValidator`    | `@exaix/flow/src/validator.ts`                               |
-| 7    | `RoutingPolicy`    | `@exaix/routing/mod.ts`                                      |
+| Step | Component          | Source                                                        |
+| ---- | ------------------ | ------------------------------------------------------------- |
+| 1    | `RequestProcessor` | `src/processor.ts:RequestProcessor.process()`                 |
+| 2    | `RequestAnalyzer`  | `packages/request/src/analysis/analyzer.ts`                   |
+| 3    | `RequestRouter`    | `src/request_router.ts:RequestRouter.route()`                 |
+| 4    | `IAgentRunner`     | `@exaix/execution/src/agent_runner.ts:IAgentRunner.execute()` |
+| 5    | `PlanAdapter`      | `src/plan_adapter.ts:PlanAdapter.write()`                     |
+| 6    | `FlowValidator`    | `@exaix/flow/src/validator.ts`                                |
+| 7    | `RoutingPolicy`    | `@exaix/routing/mod.ts`                                       |
 
 ### Sequence Diagram
 

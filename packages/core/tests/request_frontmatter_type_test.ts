@@ -9,7 +9,7 @@
  * It exists solely to verify the TypeScript contract at compile time.
  */
 
-import type { IRequestFrontmatter, IParsedRequestFile } from "@exaix/core/request";
+import type { IParsedRequestFile, IRequestFrontmatter } from "@exaix/core/request";
 import type { RequestStatusType } from "@exaix/core/status";
 
 const _frontmatter: IRequestFrontmatter = {

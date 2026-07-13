@@ -58,7 +58,7 @@ import { CostTracker } from "@exaix/core/cost";
 import { CircuitBreaker, CircuitBreakerProvider } from "@exaix/ai/circuit_breaker.ts";
 import { RequestParser } from "./processing/parser.ts";
 import { StatusManager } from "./processing/status.ts";
-import type { IRequestFrontmatter, IParsedRequestFile } from "@exaix/core/request";
+import type { IParsedRequestFile, IRequestFrontmatter } from "@exaix/core/request";
 import { OutputValidator } from "@exaix/tool-runtime";
 import type { LogMetadata } from "@exaix/core/types";
 import { MiddlewarePipeline } from "@exaix/core/func";
@@ -702,7 +702,18 @@ export class RequestProcessor {
   private async processAgentRequest(
     opts: IProcessRequestOptions,
   ): Promise<string | null> {
-    const { frontmatter, body, filePath, requestId, traceId, traceLogger, analysis, portalKnowledge, specification, memoryContext } = opts;
+    const {
+      frontmatter,
+      body,
+      filePath,
+      requestId,
+      traceId,
+      traceLogger,
+      analysis,
+      portalKnowledge,
+      specification,
+      memoryContext,
+    } = opts;
     const identityId = frontmatter.identity || frontmatter.identity;
     const loadedBlueprint = await this.loadBlueprintWithFallback(identityId!, traceLogger);
 

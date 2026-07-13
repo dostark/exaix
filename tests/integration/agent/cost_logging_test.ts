@@ -32,15 +32,7 @@ Deno.test("AgentExecutor integration: logs usage.tokens and usage.cost_usd_estim
         }),
     });
 
-    const executor = new AgentExecutor(
-      config,
-      db,
-      logger,
-      pathResolver,
-      permissions,
-      undefined,
-      strategyRegistry,
-    );
+    const executor = new AgentExecutor({ config, db, logger, pathResolver, permissions, strategyRegistry });
 
     const traceId = crypto.randomUUID();
     const context: IExecutionContext = {
@@ -98,15 +90,7 @@ Deno.test("[regression] AgentExecutor: a step with no strategy-reported usage jo
         }),
     });
 
-    const executor = new AgentExecutor(
-      config,
-      db,
-      logger,
-      pathResolver,
-      permissions,
-      undefined,
-      strategyRegistry,
-    );
+    const executor = new AgentExecutor({ config, db, logger, pathResolver, permissions, strategyRegistry });
 
     const traceId = crypto.randomUUID();
     const context: IExecutionContext = {

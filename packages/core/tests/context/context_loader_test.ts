@@ -10,7 +10,7 @@
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { ContextLoader } from "@exaix/core/context";
-import type { IContextLoadResult, IContextConfig } from "@exaix/core/context";
+import type { IContextConfig, IContextLoadResult } from "@exaix/core/context";
 import type { IActivityRecord } from "@exaix/core/types";
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";

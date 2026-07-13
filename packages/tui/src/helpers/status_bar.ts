@@ -7,7 +7,7 @@
  */
 
 import { colorize, getTheme, type ITuiTheme, padEnd, visibleLength } from "./colors.ts";
-import { renderSpinner, type ISpinnerState } from "./spinner.ts";
+import { type ISpinnerState, renderSpinner } from "./spinner.ts";
 import { TUI_ICON_SUCCESS } from "./constants.ts";
 import { MessageType } from "@exaix/core";
 import { type SpinnerStyle, StatusIndicator } from "../types/enums.ts";

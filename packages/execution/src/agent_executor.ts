@@ -138,6 +138,26 @@ export interface IAgentExecutorOptions {
   topSkillTaskTypes?: TaskType[];
 }
 
+/** Dependencies for AgentExecutor constructor. */
+export interface IAgentExecutorDeps {
+  config: Config;
+  db: IDatabaseService;
+  logger: IEventLogger;
+  pathResolver: PathResolver;
+  permissions: PortalPermissionsService;
+  provider?: IModelProvider;
+  strategyRegistry?: StrategyRegistry;
+  toolRegistry?: IToolRegistry;
+  promptBudgetAllocator?: IPromptBudgetAllocator;
+  contextCache?: ContextCache;
+  tokenizer?: ITokenizer;
+  contextBudgetManager?: IContextBudgetManager;
+  snapshotStore?: ISnapshotStore;
+  guardrailRunner?: IGuardrailRunner;
+  options?: IAgentExecutorOptions;
+  modelResolver?: ModelResolver;
+}
+
 /**
  * Agent execution error class
  */
@@ -183,8 +203,18 @@ export class AgentExecutor {
   private _contextCache?: ContextCache;
   private _contextBudgetManager?: IContextBudgetManager;
   private _snapshotStore?: ISnapshotStore;
-
   private readonly _tokenizer?: ITokenizer;
+  private config: Config;
+  private db: IDatabaseService;
+  private logger: IEventLogger;
+  private pathResolver: PathResolver;
+  private permissions: PortalPermissionsService;
+  private provider?: IModelProvider;
+  private strategyRegistry?: StrategyRegistry;
+  private _toolRegistry?: IToolRegistry;
+  private _guardrailRunner?: IGuardrailRunner;
+  private readonly options?: IAgentExecutorOptions;
+  private modelResolver?: ModelResolver;
 
   /** Resolved per-call options from ModelResolver, forwarded to generate(). */
   private _resolvedCallOptions?: IModelCallOptions;
@@ -218,32 +248,26 @@ export class AgentExecutor {
     return this._guardrailRunner;
   }
 
-  constructor(
-    private config: Config,
-    private db: IDatabaseService,
-    private logger: IEventLogger,
-    private pathResolver: PathResolver,
-    private permissions: PortalPermissionsService,
-    private provider?: Opt<IModelProvider, Reason.OptionalDependency>,
-    private strategyRegistry?: Opt<StrategyRegistry, Reason.OptionalDependency>,
-    private _toolRegistry?: Opt<IToolRegistry, Reason.OptionalDependency>,
-    promptBudgetAllocator?: Opt<IPromptBudgetAllocator, Reason.OptionalDependency>,
-    contextCache?: Opt<ContextCache, Reason.OptionalDependency>,
-    tokenizer?: Opt<ITokenizer, Reason.OptionalDependency>,
-    contextBudgetManager?: Opt<IContextBudgetManager, Reason.OptionalDependency>,
-    snapshotStore?: Opt<ISnapshotStore, Reason.OptionalDependency>,
-    private _guardrailRunner?: Opt<IGuardrailRunner, Reason.OptionalDependency>,
-    private readonly options?: Opt<IAgentExecutorOptions, Reason.OptionalDependency>,
-    private modelResolver?: Opt<ModelResolver, Reason.OptionalDependency>,
-  ) {
-    this.promptBudgetAllocator = promptBudgetAllocator ??
+  constructor(deps: IAgentExecutorDeps) {
+    this.config = deps.config;
+    this.db = deps.db;
+    this.logger = deps.logger;
+    this.pathResolver = deps.pathResolver;
+    this.permissions = deps.permissions;
+    this.provider = deps.provider;
+    this.strategyRegistry = deps.strategyRegistry;
+    this._toolRegistry = deps.toolRegistry;
+    this._guardrailRunner = deps.guardrailRunner;
+    this.options = deps.options;
+    this.modelResolver = deps.modelResolver;
+    this.promptBudgetAllocator = deps.promptBudgetAllocator ??
       new PromptBudgetAllocator(this.config.budget_enforcement, undefined, this.logger);
-    this._contextCache = contextCache;
-    this._tokenizer = tokenizer;
-    this._contextBudgetManager = contextBudgetManager;
-    this._snapshotStore = snapshotStore;
-    if (options?.guardrailRunner) {
-      this._guardrailRunner = options.guardrailRunner;
+    this._contextCache = deps.contextCache;
+    this._tokenizer = deps.tokenizer;
+    this._contextBudgetManager = deps.contextBudgetManager;
+    this._snapshotStore = deps.snapshotStore;
+    if (deps.options?.guardrailRunner) {
+      this._guardrailRunner = deps.options.guardrailRunner;
     }
     // If no registry provided, create one and register core strategies
     if (!this.strategyRegistry) {

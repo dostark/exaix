@@ -203,13 +203,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       executor.dispose();
     } finally {
@@ -240,15 +234,14 @@ Deno.test({
           }),
       });
 
-      const executor = new AgentExecutor(
-        testConfig,
+      const executor = new AgentExecutor({
+        config: testConfig,
         db,
         logger,
         pathResolver,
         permissions,
-        undefined,
         strategyRegistry,
-      );
+      });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
@@ -321,15 +314,14 @@ Deno.test({
           }),
       });
 
-      const executor = new AgentExecutor(
-        testConfig,
+      const executor = new AgentExecutor({
+        config: testConfig,
         db,
         logger,
         pathResolver,
         permissions,
-        undefined,
         strategyRegistry,
-      );
+      });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
@@ -399,13 +391,7 @@ Deno.test({
         blueprintContent,
       );
 
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const blueprint = await executor.loadBlueprint("test-agent");
 
@@ -428,13 +414,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       await assertRejects(
         async () => {
@@ -457,13 +437,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const context: IExecutionContext = {
         trace_id: crypto.randomUUID(),
@@ -503,13 +477,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const context: IExecutionContext = {
         trace_id: crypto.randomUUID(),
@@ -549,13 +517,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const permissions_flags = executor.buildSubprocessPermissions(SecurityMode.SANDBOXED, portalDir);
 
@@ -575,13 +537,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const permissions_flags = executor.buildSubprocessPermissions(SecurityMode.HYBRID, portalDir);
 
@@ -609,13 +565,7 @@ Deno.test({
       const unauthorizedFile = join(portalDir, "unauthorized.txt");
       await Deno.writeTextFile(unauthorizedFile, "Unauthorized change");
 
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const unauthorizedChanges = await executor.auditGitChanges(
         portalDir,
@@ -660,13 +610,7 @@ Deno.test({
       const untrackedFile = join(portalDir, "untracked.txt");
       await Deno.writeTextFile(untrackedFile, "Unauthorized new file");
 
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       // Detect unauthorized changes
       const unauthorizedChanges = await executor.auditGitChanges(
@@ -710,13 +654,7 @@ Deno.test({
     try {
       const { db, logger, pathResolver, permissions } = getServices();
 
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       // Should not throw when given empty array
       await executor.revertUnauthorizedChanges(portalDir, []);
@@ -753,13 +691,7 @@ Deno.test({
       });
       await commitFile.output();
 
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       // Audit should find no unauthorized changes (all committed)
       const unauthorizedChanges = await executor.auditGitChanges(
@@ -782,13 +714,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const trace_id = crypto.randomUUID();
       await executor.logExecutionStart(trace_id, "test-agent", "TestPortal");
@@ -817,13 +743,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const trace_id = crypto.randomUUID();
       await executor.logExecutionComplete(trace_id, "test-agent", {
@@ -859,13 +779,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const trace_id = crypto.randomUUID();
       await executor.logExecutionError(trace_id, "test-agent", {
@@ -902,13 +816,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const options: IAgentExecutionOptions = {
         identity_id: "test-agent",
@@ -942,13 +850,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const validResult = {
         branch: "feat/test-abc123",
@@ -976,13 +878,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const invalidResult = {
         branch: "feat/test",
@@ -1014,13 +910,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       // malicious YAML attempting code execution via constructor hijacking
       const maliciousYaml = readFixtureTextSync(
@@ -1054,13 +944,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const invalidYaml = `---
 name: ${"a".repeat(101)}
@@ -1094,13 +978,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const scriptYaml = readFixtureTextSync(
         import.meta.url,
@@ -1132,13 +1010,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       // Create a huge prompt
       const hugePrompt =
@@ -1167,13 +1039,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const validYaml = `---
 name: test-agent
@@ -1206,13 +1072,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       // Create blueprint without frontmatter
       const noFrontmatter = `This is just content without YAML frontmatter.`;
@@ -1242,13 +1102,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const blueprint: IAgentFileBlueprint = {
         name: "test-agent",
@@ -1295,13 +1149,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const blueprint: IAgentFileBlueprint = {
         name: "test-agent",
@@ -1382,17 +1230,15 @@ Deno.test({
           }),
       });
 
-      const executor = new AgentExecutor(
-        testConfig,
+      const executor = new AgentExecutor({
+        config: testConfig,
         db,
         logger,
         pathResolver,
         permissions,
-        undefined,
         strategyRegistry,
-        undefined,
-        mockBudgetAllocator,
-      );
+        promptBudgetAllocator: mockBudgetAllocator,
+      });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
@@ -1485,15 +1331,14 @@ Deno.test({
           }),
       });
 
-      const executor = new AgentExecutor(
-        configWithBudgetEnforcement,
+      const executor = new AgentExecutor({
+        config: configWithBudgetEnforcement,
         db,
         logger,
         pathResolver,
         permissions,
-        undefined,
         strategyRegistry,
-      );
+      });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
@@ -1537,13 +1382,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const blueprint: IAgentFileBlueprint = {
         name: "test-agent",
@@ -1596,13 +1435,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const originalDir = Deno.cwd();
       const targetDir = testDir;
@@ -1633,13 +1466,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       // Create an unauthorized file
       const unauthorizedFile = join(portalDir, "unauthorized-atomic.txt");
@@ -1673,13 +1500,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const sha = await executor.getLatestCommitSha(portalDir);
       assert(sha.length === 40, "SHA should be 40 characters");
@@ -1697,13 +1518,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       await Deno.writeTextFile(join(portalDir, "README.md"), "New content");
       const changed = await executor.getChangedFiles(portalDir);
@@ -1723,13 +1538,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       assertEquals(executor.checkToolCallLimit(10, 5), true);
       assertEquals(executor.checkToolCallLimit(3, 5), false);
@@ -1747,7 +1556,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(testConfig, db, logger, pathResolver, permissions);
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const portalPath = "/fake/portal";
 
@@ -1777,7 +1586,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(testConfig, db, logger, pathResolver, permissions);
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       // We need a real path for isPathWithinPortal
       const realPortalPath = await Deno.realPath(portalDir);
@@ -1812,7 +1621,7 @@ Deno.test({
   name: "AgentExecutor: requiresGitTracking correctly identifies write capabilities",
   fn: () => {
     const { db, logger, pathResolver, permissions } = getServices();
-    const executor = new AgentExecutor(testConfig, db, logger, pathResolver, permissions);
+    const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
     const writeBlueprint: IAgentFileBlueprint = {
       name: "write-agent",
@@ -1842,7 +1651,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(testConfig, db, logger, pathResolver, permissions);
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       // 1. Invalid YAML
       const badYamlPath = join(testConfig.paths.blueprints, "Identities", "bad-yaml.md");
@@ -1923,19 +1732,15 @@ Deno.test({
         },
       });
 
-      const executor = new AgentExecutor(
-        testConfig,
+      const executor = new AgentExecutor({
+        config: testConfig,
         db,
         logger,
         pathResolver,
         permissions,
-        undefined,
         strategyRegistry,
-        undefined,
-        undefined,
-        undefined,
-        mockTokenizer,
-      );
+        tokenizer: mockTokenizer,
+      });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
@@ -2025,15 +1830,15 @@ Deno.test({
           }),
       });
 
-      const executor = new AgentExecutor(
-        testConfig,
+      const executor = new AgentExecutor({
+        config: testConfig,
         db,
         logger,
         pathResolver,
         permissions,
-        mockProvider,
+        provider: mockProvider,
         strategyRegistry,
-      );
+      });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
@@ -2088,7 +1893,7 @@ Deno.test({
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor(testConfig, db, logger, pathResolver, permissions);
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       Reflect.set(executor, "_currentPromptBudget", {
         model: "openai:gpt-4o-mini",
@@ -2171,14 +1976,14 @@ Deno.test({
         },
       };
 
-      const executor = new AgentExecutor(
-        testConfig,
+      const executor = new AgentExecutor({
+        config: testConfig,
         db,
         logger,
         pathResolver,
         permissions,
-        mockProvider,
-      );
+        provider: mockProvider,
+      });
 
       // Create blueprint file
       const blueprintPath = join(
@@ -2252,13 +2057,7 @@ Deno.test({
     await setup();
     const { db, logger, pathResolver, permissions } = getServices();
     try {
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const fakeContext: IWorkspaceExecutionContext = {
         workingDirectory: Deno.cwd(),
@@ -2299,13 +2098,7 @@ Deno.test({
     await setup();
     const { db, logger, pathResolver, permissions } = getServices();
     try {
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      ); // No provider passed
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions }); // No provider passed
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
@@ -2350,13 +2143,7 @@ Deno.test({
     });
 
     try {
-      const executor = new AgentExecutor(
-        testConfig,
-        db,
-        logger,
-        pathResolver,
-        permissions,
-      );
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       const error = await assertRejects(
         () => executor.loadBlueprint("test-agent"),
@@ -2383,7 +2170,14 @@ Deno.test({
     };
 
     try {
-      const executor = new AgentExecutor(testConfig, db, logger, pathResolver, permissions, mockProvider);
+      const executor = new AgentExecutor({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        provider: mockProvider,
+      });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
@@ -2439,7 +2233,14 @@ Deno.test({
     };
 
     try {
-      const executor = new AgentExecutor(testConfig, db, logger, pathResolver, permissions, mockProvider);
+      const executor = new AgentExecutor({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        provider: mockProvider,
+      });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
@@ -2496,7 +2297,14 @@ Deno.test({
     };
 
     try {
-      const executor = new AgentExecutor(testConfig, db, logger, pathResolver, permissions, mockProvider);
+      const executor = new AgentExecutor({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        provider: mockProvider,
+      });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
@@ -2550,15 +2358,14 @@ Deno.test({
           }),
       });
 
-      const executor = new AgentExecutor(
-        testConfig,
+      const executor = new AgentExecutor({
+        config: testConfig,
         db,
         logger,
         pathResolver,
         permissions,
-        undefined,
         strategyRegistry,
-      );
+      });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
@@ -2642,15 +2449,15 @@ Deno.test({
         },
       };
 
-      const executor = new AgentExecutor(
-        testConfig,
+      const executor = new AgentExecutor({
+        config: testConfig,
         db,
         logger,
         pathResolver,
         permissions,
-        mockProvider,
+        provider: mockProvider,
         strategyRegistry,
-      );
+      });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
@@ -2750,15 +2557,15 @@ Deno.test({
         },
       };
 
-      const executor = new AgentExecutor(
-        testConfig,
+      const executor = new AgentExecutor({
+        config: testConfig,
         db,
         logger,
         pathResolver,
         permissions,
-        mockProvider,
+        provider: mockProvider,
         strategyRegistry,
-      );
+      });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
@@ -2893,17 +2700,16 @@ Deno.test({
           }),
       };
 
-      const executor = new AgentExecutor(
-        testConfig,
+      const executor = new AgentExecutor({
+        config: testConfig,
         db,
         logger,
         pathResolver,
         permissions,
-        mockProvider,
+        provider: mockProvider,
         strategyRegistry,
-        undefined,
-        tinyLoopHistoryAllocator,
-      );
+        promptBudgetAllocator: tinyLoopHistoryAllocator,
+      });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
@@ -2982,15 +2788,14 @@ Deno.test({
         },
       });
 
-      const executor = new AgentExecutor(
-        testConfig,
+      const executor = new AgentExecutor({
+        config: testConfig,
         db,
         logger,
         pathResolver,
         permissions,
-        undefined,
         strategyRegistry,
-      );
+      });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
@@ -3075,17 +2880,15 @@ Deno.test({
           }),
       };
 
-      const executor = new AgentExecutor(
-        testConfig,
+      const executor = new AgentExecutor({
+        config: testConfig,
         db,
         logger,
         pathResolver,
         permissions,
-        undefined,
         strategyRegistry,
-        undefined,
-        tinyMemoryAllocator,
-      );
+        promptBudgetAllocator: tinyMemoryAllocator,
+      });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
@@ -3146,18 +2949,15 @@ Deno.test({
         },
       });
 
-      const executor = new AgentExecutor(
-        testConfig,
+      const executor = new AgentExecutor({
+        config: testConfig,
         db,
         logger,
         pathResolver,
         permissions,
-        undefined,
         strategyRegistry,
-        undefined,
-        undefined,
         contextCache,
-      );
+      });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });

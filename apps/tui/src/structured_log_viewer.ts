@@ -14,7 +14,7 @@ import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { KeyBindingsBase } from "@exaix/tui/base/key_bindings_base.ts";
 import type { ILogger, ILogService } from "@exaix/core/types";
-import type { IStructuredLogEntry, ILogQueryOptions } from "@exaix/core/types";
+import type { ILogQueryOptions, IStructuredLogEntry } from "@exaix/core/types";
 import {
   TUI_ACTION_SEARCH,
   TUI_KEY_LABEL_ENTER,

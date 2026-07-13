@@ -66,14 +66,7 @@ export async function setupStrategyExecutor(
   const logger = new EventLogger({ db });
   const pathResolver = new PathResolver(config);
   const permissions = new PortalPermissionsService(config.portals);
-  const executor = new AgentExecutor(
-    config,
-    db,
-    logger,
-    pathResolver,
-    permissions,
-    provider,
-  );
+  const executor = new AgentExecutor({ config, db, logger, pathResolver, permissions, provider });
 
   return {
     executor,

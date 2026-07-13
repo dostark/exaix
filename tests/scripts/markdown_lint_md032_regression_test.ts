@@ -5,7 +5,7 @@
  * correct enforcement of blank lines around list blocks.
  */
 
-import { lintMarkdown, type ILintOptions } from "../../scripts/markdown_lint.ts";
+import { type ILintOptions, lintMarkdown } from "../../scripts/markdown_lint.ts";
 
 /**
  * Regression tests for MD032/blanks-around-lists.

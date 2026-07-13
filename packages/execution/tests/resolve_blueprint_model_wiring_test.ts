@@ -43,24 +43,7 @@ Deno.test("[step132.3] AgentExecutor with injected ModelResolver calls resolve",
 
     const mockResolver = createMockResolver(mockModel);
 
-    const executor = new AgentExecutor(
-      config,
-      db,
-      logger,
-      pathResolver,
-      permissions,
-      undefined, // provider
-      undefined, // strategyRegistry
-      undefined, // _toolRegistry
-      undefined, // promptBudgetAllocator
-      undefined, // contextCache
-      undefined, // tokenizer
-      undefined, // contextBudgetManager
-      undefined, // snapshotStore
-      undefined, // _guardrailRunner
-      undefined, // options
-      mockResolver, // modelResolver
-    );
+    const executor = new AgentExecutor({ config, db, logger, pathResolver, permissions, modelResolver: mockResolver });
 
     assertExists(executor);
     executor.dispose();
@@ -103,24 +86,7 @@ Test agent
 
     const mockResolver = createMockResolver(mockModel);
 
-    const executor = new AgentExecutor(
-      config,
-      db,
-      logger,
-      pathResolver,
-      permissions,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      mockResolver,
-    );
+    const executor = new AgentExecutor({ config, db, logger, pathResolver, permissions, modelResolver: mockResolver });
 
     const blueprint = await executor.loadBlueprint("test-agent");
     assertEquals(blueprint.provider, "resolved-provider");

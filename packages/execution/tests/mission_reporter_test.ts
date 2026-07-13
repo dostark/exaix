@@ -13,7 +13,7 @@ import { initTestDbService } from "@exaix/testing";
 import { getMemoryExecutionDir } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
-import { type ITraceData, MissionReporter, type IReportConfig } from "@exaix/core/artifact";
+import { type IReportConfig, type ITraceData, MissionReporter } from "@exaix/core/artifact";
 import { join } from "@std/path";
 
 // ============================================================================

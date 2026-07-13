@@ -14,7 +14,7 @@ import { assertEquals, assertExists, assertRejects, assertStringIncludes } from 
 import { join } from "@std/path";
 
 import { DEFAULT_AI_MODEL } from "@exaix/core";
-import { IBlueprintLoader, BlueprintLoadError, createBlueprintLoader, loadBlueprint } from "@exaix/core/blueprint";
+import { BlueprintLoadError, createBlueprintLoader, IBlueprintLoader, loadBlueprint } from "@exaix/core/blueprint";
 import { readFixtureTextSync, TEST_MODEL_OPENAI } from "@exaix/testing";
 
 // Test directory setup

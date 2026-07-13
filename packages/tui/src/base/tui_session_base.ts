@@ -10,8 +10,8 @@
 import { getTheme, type ITuiTheme } from "@exaix/tui/helpers/colors.ts";
 import {
   createSpinnerState,
-  nextFrame,
   type ISpinnerState,
+  nextFrame,
   startSpinner,
   stopSpinner,
 } from "@exaix/tui/helpers/spinner.ts";

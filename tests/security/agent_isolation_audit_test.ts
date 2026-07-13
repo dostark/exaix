@@ -129,15 +129,14 @@ Deno.test({
       }]);
       const pathResolver = new PathResolver(config);
 
-      const executor = new AgentExecutor(
+      const executor = new AgentExecutor({
         config,
-        dbService.db,
+        db: dbService.db,
         logger,
         pathResolver,
         permissions,
-        undefined,
-        registry,
-      );
+        strategyRegistry: registry,
+      });
 
       const err = await assertRejects(
         () =>
@@ -269,15 +268,14 @@ Deno.test({
       }]);
       const pathResolver = new PathResolver(config);
 
-      const executor = new AgentExecutor(
+      const executor = new AgentExecutor({
         config,
-        dbService.db,
+        db: dbService.db,
         logger,
         pathResolver,
         permissions,
-        undefined,
-        registry,
-      );
+        strategyRegistry: registry,
+      });
 
       const result = await executor.executeStep(
         {

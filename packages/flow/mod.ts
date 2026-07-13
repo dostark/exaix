@@ -8,7 +8,7 @@
 
 export type { IFlowCheckpointService } from "./src/checkpoint_service.ts";
 export type { IFlowNamespaceService, IFlowNamespaceSnapshot } from "./src/namespace_service.ts";
-export type { IFlowReportResult, IFlowReportConfig } from "./src/reporter.ts";
+export type { IFlowReportConfig, IFlowReportResult } from "./src/reporter.ts";
 export type { IConditionContext } from "./src/condition_evaluator.ts";
 export type { FeedbackLoopConfig } from "./src/feedback_loop.ts";
 export type { IFeedbackLoopResult } from "./src/feedback_loop.ts";

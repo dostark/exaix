@@ -10,7 +10,7 @@
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { StructuredLogViewer } from "../src/structured_log_viewer.ts";
 import type { ILogger, ILogService } from "@exaix/core/types";
-import type { ILogContext, IStructuredLogEntry, ILogQueryOptions } from "@exaix/core/types";
+import type { ILogContext, ILogQueryOptions, IStructuredLogEntry } from "@exaix/core/types";
 import type { LogMetadata } from "@exaix/core/types";
 import { LogLevel } from "@exaix/core";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";

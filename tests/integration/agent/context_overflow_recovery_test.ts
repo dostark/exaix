@@ -58,17 +58,15 @@ Deno.test("Integration: context overflow recovers by truncating prompt via alloc
       },
     });
 
-    const executor = new AgentExecutor(
+    const executor = new AgentExecutor({
       config,
       db,
       logger,
       pathResolver,
       permissions,
-      undefined,
       strategyRegistry,
-      undefined,
-      tinyBudgetAllocator,
-    );
+      promptBudgetAllocator: tinyBudgetAllocator,
+    });
     holder.executor = executor;
 
     const requestHuge = "X".repeat(9_000);
