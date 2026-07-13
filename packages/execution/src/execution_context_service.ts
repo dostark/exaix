@@ -144,4 +144,13 @@ export class ExecutionContextService {
   estimateMaxChars(tokenBudget: number): number {
     return tokenBudget * TOKEN_ESTIMATION_CHARS_PER_TOKEN;
   }
+
+  /**
+   * Sync character-heuristic token estimation.
+   * Injects `TOKEN_ESTIMATION_CHARS_PER_TOKEN` internally so callers
+   * (e.g. AgentOrchestrator) don't import the constant directly.
+   */
+  estimateTokensSync(input: string): number {
+    return Math.ceil(input.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
+  }
 }

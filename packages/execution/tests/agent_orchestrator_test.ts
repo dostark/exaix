@@ -34,6 +34,7 @@ import {
   type ICompactedEntry,
   type ILoopHistoryEntry,
 } from "@exaix/execution";
+import { GitAuditService } from "../src/git_audit_service.ts";
 import { ContextCache } from "@exaix/core/context";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -271,8 +272,8 @@ Deno.test({
         await executor.executeStep(context, options);
       }
 
-      // compactLoopHistory with default keepLastN=2 should not compact
-      await executor.compactLoopHistory();
+      // compactLoopHistory with keepLastN=2 should not compact
+      await executor.compactLoopHistory(2);
 
       // All entries should still be individual steps
       for (const entry of executor.loopHistory) {
@@ -351,7 +352,7 @@ Deno.test({
         await executor.executeStep(context, options);
       }
 
-      await executor.compactLoopHistory();
+      await executor.compactLoopHistory(2);
 
       const compactedEvents = loggedPayloads.filter(
         (p) => p.tokensBefore !== undefined && p.tokensAfter !== undefined,
@@ -1464,24 +1465,21 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentOrchestrator: auditAndRevertChanges performs atomic rollback",
+  name: "GitAuditService: auditAndRevertChanges performs atomic rollback",
   fn: async () => {
     await setup();
     try {
-      const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
+      const { logger } = getServices();
+      const auditService = new GitAuditService(logger);
 
-      // Create an unauthorized file
       const unauthorizedFile = join(portalDir, "unauthorized-atomic.txt");
       await Deno.writeTextFile(unauthorizedFile, "Hacker was here");
 
-      // Audit and revert
-      const result = await executor.auditAndRevertChanges(portalDir, ["README.md"]);
+      const result = await auditService.auditAndRevertChanges(portalDir, ["README.md"]);
 
       assertEquals(result.reverted.length, 1);
       assertStringIncludes(result.reverted[0], "unauthorized-atomic.txt");
 
-      // Verify file is gone
       let exists = true;
       try {
         await Deno.stat(unauthorizedFile);
@@ -1498,14 +1496,14 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentOrchestrator: getLatestCommitSha returns current HEAD",
+  name: "GitAuditService: getLatestCommitSha returns current HEAD",
   fn: async () => {
     await setup();
     try {
-      const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
+      const { logger } = getServices();
+      const auditService = new GitAuditService(logger);
 
-      const sha = await executor.getLatestCommitSha(portalDir);
+      const sha = await auditService.getLatestCommitSha(portalDir);
       assert(sha.length === 40, "SHA should be 40 characters");
     } finally {
       await cleanup();
@@ -1516,15 +1514,15 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentOrchestrator: getChangedFiles returns list of modifications",
+  name: "GitAuditService: getChangedFiles returns list of modifications",
   fn: async () => {
     await setup();
     try {
-      const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
+      const { logger } = getServices();
+      const auditService = new GitAuditService(logger);
 
       await Deno.writeTextFile(join(portalDir, "README.md"), "New content");
-      const changed = await executor.getChangedFiles(portalDir);
+      const changed = await auditService.getChangedFiles(portalDir);
 
       assert(changed.includes("README.md"));
     } finally {

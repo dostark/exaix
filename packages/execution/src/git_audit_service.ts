@@ -11,6 +11,9 @@ import { join } from "@std/path";
 import { AgentExecutionErrorType, SafeSubprocess, SubprocessTimeoutError } from "@exaix/core";
 import {
   DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
+  DEFAULT_GIT_CLEAN_TIMEOUT_MS,
+  DEFAULT_GIT_DIFF_TIMEOUT_MS,
+  DEFAULT_GIT_LOG_TIMEOUT_MS,
   DEFAULT_GIT_LS_FILES_TIMEOUT_MS,
   DEFAULT_GIT_REV_PARSE_TIMEOUT_MS,
   DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT,
@@ -218,5 +221,155 @@ export class GitAuditService {
       chunks.push(array.slice(i, i + chunkSize));
     }
     return chunks;
+  }
+
+  /**
+   * Atomic audit and revert operation to prevent TOCTOU race conditions.
+   * Performs git status check and file reversion in a single locked operation.
+   */
+  async auditAndRevertChanges(
+    portalPath: string,
+    authorizedFiles: string[],
+  ): Promise<{ reverted: string[]; failed: string[] }> {
+    const lockFile = join(portalPath, ".exa-git-lock");
+    const lock = await this.acquireLock(lockFile);
+
+    try {
+      const result = await SafeSubprocess.run("git", [
+        "ls-files",
+        "--modified",
+        "--others",
+        "--deleted",
+        "--exclude-standard",
+        ".",
+      ], {
+        cwd: portalPath,
+        timeoutMs: DEFAULT_GIT_STATUS_TIMEOUT_MS,
+      });
+
+      if (result.code !== 0) {
+        throw new Error(`Git audit failed: ${result.stderr}`);
+      }
+
+      const fileList = result.stdout;
+      if (!fileList) {
+        return { reverted: [], failed: [] };
+      }
+
+      const results = { reverted: [] as string[], failed: [] as string[] };
+      const _authorizedSet = new Set(authorizedFiles);
+
+      for (const line of fileList.split("\n")) {
+        const filename = line.trim();
+        if (!filename) continue;
+        if (filename === ".exa-git-lock") continue;
+
+        const validated = this.validateFilePath(filename, portalPath);
+        if (!validated) continue;
+
+        if (_authorizedSet.has(filename)) continue;
+
+        results.failed.push(filename);
+
+        try {
+          const stat = await Deno.lstat(join(portalPath, filename));
+          if (stat.isSymlink) {
+            await this.logger.error(DomainEventType.SecuritySymlinkDetected, portalPath, { filename });
+            continue;
+          }
+        } catch {
+          void 0;
+        }
+
+        try {
+          const lsResult = await SafeSubprocess.run("git", ["ls-files", "--error-unmatch", validated], {
+            cwd: portalPath,
+            timeoutMs: DEFAULT_GIT_LS_FILES_TIMEOUT_MS,
+          });
+
+          if (lsResult.code === 0) {
+            await SafeSubprocess.run("git", ["restore", "--source=HEAD", "--", validated], {
+              cwd: portalPath,
+              timeoutMs: DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
+            });
+            results.reverted.push(filename);
+          } else {
+            await SafeSubprocess.run("git", ["clean", "-f", "--", validated], {
+              cwd: portalPath,
+              timeoutMs: DEFAULT_GIT_CLEAN_TIMEOUT_MS,
+            });
+            results.reverted.push(filename);
+          }
+        } catch (error) {
+          console.error(`Failed to revert unauthorized change to ${filename}:`, error);
+        }
+      }
+
+      return results;
+    } finally {
+      await lock.release();
+    }
+  }
+
+  private async acquireLock(lockFile: string): Promise<{ release: () => Promise<void> }> {
+    const maxRetries = 10;
+    const retryDelay = 100;
+
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        await Deno.open(lockFile, {
+          write: true,
+          create: true,
+          createNew: true,
+        });
+
+        return {
+          release: async () => {
+            try {
+              await Deno.remove(lockFile);
+            } catch {
+              void 0;
+            }
+          },
+        };
+      } catch (error) {
+        if (error instanceof Deno.errors.AlreadyExists) {
+          await new Promise((r) => setTimeout(r, retryDelay));
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    throw new Error("Failed to acquire git lock after maximum retries");
+  }
+
+  async getLatestCommitSha(portalPath: string): Promise<string> {
+    const result = await SafeSubprocess.run("git", ["log", "-1", "--format=%H"], {
+      cwd: portalPath,
+      timeoutMs: DEFAULT_GIT_LOG_TIMEOUT_MS,
+    });
+
+    if (result.code !== 0) {
+      throw new AgentExecutionError(`Failed to get latest commit SHA: ${result.stderr}`);
+    }
+
+    return result.stdout.trim();
+  }
+
+  async getChangedFiles(portalPath: string): Promise<string[]> {
+    const result = await SafeSubprocess.run("git", ["diff", "--name-only"], {
+      cwd: portalPath,
+      timeoutMs: DEFAULT_GIT_DIFF_TIMEOUT_MS,
+    });
+
+    if (result.code !== 0) {
+      throw new AgentExecutionError(`Failed to get changed files: ${result.stderr}`);
+    }
+
+    return result.stdout
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
   }
 }

@@ -19,12 +19,10 @@
  * ]
  */
 
-import { join } from "@std/path";
 import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
 import type { HitlPolicy } from "@exaix/schemas/hitl.ts";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
-import { DomainEventType } from "@exaix/core/events";
 import { ActorType, AGENT_GENERATION_COMPLETED, AgentKind, LogLevel } from "@exaix/core";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -55,17 +53,6 @@ import { McpAgentStrategy } from "./strategies/mcp_agent_strategy.ts";
 import { ReActLoopStrategy } from "./strategies/react_loop_strategy.ts";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
 import type { Opt, Reason, TaskType } from "@exaix/core/types";
-import { DEFAULT_KEEP_LAST_N_STEPS, SafeSubprocess, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
-import {
-  DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
-  DEFAULT_GIT_CLEAN_TIMEOUT_MS,
-  DEFAULT_GIT_DIFF_TIMEOUT_MS,
-  DEFAULT_GIT_LOG_TIMEOUT_MS,
-  DEFAULT_GIT_LS_FILES_TIMEOUT_MS,
-  DEFAULT_GIT_STATUS_TIMEOUT_MS,
-} from "@exaix/git";
-import { ToolRegistry } from "@exaix/tool-runtime";
-import { AGENT_EVENT_OUTPUT } from "@exaix/core";
 import type { ICompactedEntry, ILoopHistoryEntry } from "./types.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
@@ -274,13 +261,7 @@ export class AgentOrchestrator {
     }
   }
 
-  /**
-   * Lazily initialize or return the tool registry
-   */
   public get toolRegistry(): IToolRegistry | undefined {
-    if (!this._toolRegistry && this.config?.system?.root) {
-      this._toolRegistry = new ToolRegistry({ config: this.config });
-    }
     return this._toolRegistry;
   }
 
@@ -311,7 +292,7 @@ export class AgentOrchestrator {
   }
 
   compactLoopHistory(
-    keepLastN: Opt<number, Reason.SensibleDefault> = DEFAULT_KEEP_LAST_N_STEPS,
+    keepLastN: Opt<number, Reason.SensibleDefault>,
   ): Promise<void> {
     return this.historyManager.compactLoopHistory(keepLastN);
   }
@@ -591,9 +572,8 @@ export class AgentOrchestrator {
       // shrink to a narrower text source than before.
       const loopHistoryTokens = usage?.tokens ?? Math.max(
         1,
-        Math.ceil(
-          (_blueprint.systemPrompt.length + context.request.length + context.plan.length +
-            validated.description.length) / TOKEN_ESTIMATION_CHARS_PER_TOKEN,
+        this.ctx.estimateTokensSync(
+          _blueprint.systemPrompt + context.request + context.plan + validated.description,
         ),
       );
       this.historyManager.addEntry({
@@ -635,7 +615,7 @@ export class AgentOrchestrator {
    * Log output from an agent subprocess
    */
   public async logAgentOutput(traceId: string, output: string): Promise<void> {
-    await this.logger.info(AGENT_EVENT_OUTPUT, "subprocess", { output }, traceId);
+    await this.logger.info("agent.output", "subprocess", { output }, traceId);
   }
 
   /**
@@ -702,40 +682,8 @@ export class AgentOrchestrator {
    */
 
   /**
-   * Get the current git SHA for a portal
-   */
-
-  /**
-   * Validate file path for security - prevents path traversal and injection attacks
-   * Returns the validated path or null if invalid
-   */
-
-  private isPathWithinPortal(portalPath: string, normalizedPath: string): boolean {
-    const resolvedPortalPath = Deno.realPathSync(portalPath);
-    const fullPath = join(portalPath, normalizedPath);
-
-    try {
-      const resolvedFullPath = Deno.realPathSync(fullPath);
-      return resolvedFullPath === resolvedPortalPath || resolvedFullPath.startsWith(resolvedPortalPath + "/");
-    } catch (_error) {
-      // If the file doesn't exist, we still validate the path structure.
-      for (const part of normalizedPath.split("/")) {
-        if (part === ".." || part.startsWith(".")) return false;
-      }
-
-      const absoluteFullPath = join(resolvedPortalPath, normalizedPath);
-      return absoluteFullPath === resolvedPortalPath || absoluteFullPath.startsWith(resolvedPortalPath + "/");
-    }
-  }
-
-  /**
    * Revert unauthorized changes in hybrid mode
    * Uses git checkout to discard unauthorized modifications
-   */
-
-  /**
-   * Atomic audit and revert operation to prevent TOCTOU race conditions
-   * Performs git status check and file reversion in a single locked operation
    */
   auditGitChanges(portalPath: string, authorizedFiles: string[]): Promise<string[]> {
     return this.gitAuditService.auditGitChanges(portalPath, authorizedFiles);
@@ -751,195 +699,6 @@ export class AgentOrchestrator {
 
   revertUnauthorizedChanges(portalPath: string, unauthorizedFiles: string[]): Promise<void> {
     return this.gitAuditService.revertUnauthorizedChanges(portalPath, unauthorizedFiles);
-  }
-  async auditAndRevertChanges(
-    portalPath: string,
-    authorizedFiles: string[],
-  ): Promise<{ reverted: string[]; failed: string[] }> {
-    // 1. Acquire lock to prevent concurrent access
-    const lockFile = join(portalPath, ".exa-git-lock");
-    const lock = await this.acquireLock(lockFile);
-
-    try {
-      // 2. Get modified, untracked, and deleted files within the portal
-      const result = await SafeSubprocess.run("git", [
-        "ls-files",
-        "--modified",
-        "--others",
-        "--deleted",
-        "--exclude-standard",
-        ".",
-      ], {
-        cwd: portalPath,
-        timeoutMs: DEFAULT_GIT_STATUS_TIMEOUT_MS,
-      });
-
-      if (result.code !== 0) {
-        throw new Error(`Git audit failed: ${result.stderr}`);
-      }
-
-      const fileList = result.stdout;
-      if (!fileList) {
-        return { reverted: [], failed: [] }; // No changes
-      }
-
-      // 3. Process changes immediately (no gap for TOCTOU)
-      const results = { reverted: [] as string[], failed: [] as string[] };
-      const _authorizedSet = new Set(authorizedFiles);
-
-      for (const line of fileList.split("\n")) {
-        const filename = line.trim();
-        if (!filename) continue;
-
-        // Skip the lock file we created
-        if (filename === ".exa-git-lock") continue;
-
-        // Consider any change as potentially unauthorized (modified, added, deleted, untracked)
-        // Untracked files (??) are unauthorized new files
-        const validated = this.validateFilePath(filename, portalPath);
-        if (!validated) {
-          // If the file is outside the portal (e.g. parent repo changes), ignore it rather than failing.
-          // The agent's tools (write_file etc) already prevent modification outside the portal.
-          continue;
-        }
-
-        // Check if file is officially authorized (part of the result object)
-        if (_authorizedSet.has(filename)) {
-          continue;
-        }
-
-        // If we get here, it's an unauthorized change.
-        results.failed.push(filename);
-
-        // Check if file is a symlink (detect potential attacks)
-        try {
-          const stat = await Deno.lstat(join(portalPath, filename));
-          if (stat.isSymlink) {
-            await this.logger.error(DomainEventType.SecuritySymlinkDetected, portalPath, { filename });
-            // Already added to results.failed
-            continue;
-          }
-        } catch {
-          // File might not exist, that's ok for untracked files
-        }
-
-        // Revert immediately (in same atomic section)
-        try {
-          // Check if tracked
-          const lsResult = await SafeSubprocess.run("git", ["ls-files", "--error-unmatch", validated], {
-            cwd: portalPath,
-            timeoutMs: DEFAULT_GIT_LS_FILES_TIMEOUT_MS,
-          });
-
-          if (lsResult.code === 0) {
-            // Tracked file - restore
-            await SafeSubprocess.run("git", ["restore", "--source=HEAD", "--", validated], {
-              cwd: portalPath,
-              timeoutMs: DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
-            });
-            results.reverted.push(filename);
-          } else {
-            // Untracked file - clean
-            await SafeSubprocess.run("git", ["clean", "-f", "--", validated], {
-              cwd: portalPath,
-              timeoutMs: DEFAULT_GIT_CLEAN_TIMEOUT_MS,
-            });
-            results.reverted.push(filename);
-          }
-        } catch (error) {
-          console.error(`Failed to revert unauthorized change to ${filename}:`, error);
-        }
-      }
-
-      return results;
-    } finally {
-      // 4. Always release lock
-      await lock.release();
-    }
-  }
-
-  /**
-   * Acquire exclusive lock for git operations to prevent race conditions
-   */
-  async acquireLock(lockFile: string): Promise<{ release: () => Promise<void> }> {
-    const maxRetries = 10;
-    const retryDelay = 100;
-
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        // Atomic lock file creation
-        await Deno.open(lockFile, {
-          write: true,
-          create: true,
-          createNew: true, // Fails if exists
-        });
-
-        return {
-          release: async () => {
-            try {
-              await Deno.remove(lockFile);
-            } catch {
-              // Ignore removal errors
-            }
-          },
-        };
-      } catch (error) {
-        if (error instanceof Deno.errors.AlreadyExists) {
-          // Lock held by another process
-          await new Promise((r) => setTimeout(r, retryDelay));
-          continue;
-        }
-        throw error;
-      }
-    }
-
-    throw new Error("Failed to acquire git lock after maximum retries");
-  }
-
-  /**
-   * Helper method to chunk array into smaller arrays
-   */
-  private chunkArray<T>(array: T[], chunkSize: number): T[][] {
-    const chunks: T[][] = [];
-    for (let i = 0; i < array.length; i += chunkSize) {
-      chunks.push(array.slice(i, i + chunkSize));
-    }
-    return chunks;
-  }
-
-  /**
-   * Get latest commit SHA from git log
-   */
-  async getLatestCommitSha(portalPath: string): Promise<string> {
-    const result = await SafeSubprocess.run("git", ["log", "-1", "--format=%H"], {
-      cwd: portalPath,
-      timeoutMs: DEFAULT_GIT_LOG_TIMEOUT_MS,
-    });
-
-    if (result.code !== 0) {
-      throw new AgentExecutionError(`Failed to get latest commit SHA: ${result.stderr}`);
-    }
-
-    return result.stdout.trim();
-  }
-
-  /**
-   * Get changed files from git diff
-   */
-  async getChangedFiles(portalPath: string): Promise<string[]> {
-    const result = await SafeSubprocess.run("git", ["diff", "--name-only"], {
-      cwd: portalPath,
-      timeoutMs: DEFAULT_GIT_DIFF_TIMEOUT_MS,
-    });
-
-    if (result.code !== 0) {
-      throw new AgentExecutionError(`Failed to get changed files: ${result.stderr}`);
-    }
-
-    return result.stdout
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
   }
 
   /**
@@ -996,7 +755,7 @@ export class AgentOrchestrator {
     >,
   ): Promise<void> {
     const usagePayload = usage ?? {
-      tokens: Math.max(1, Math.ceil(result.description.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN)),
+      tokens: Math.max(1, this.ctx.estimateTokensSync(result.description)),
       cost_usd_estimate: 0,
       prompt_tokens: 0,
       completion_tokens: 0,

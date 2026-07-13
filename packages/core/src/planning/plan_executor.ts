@@ -48,6 +48,7 @@ import {
   type IGuardrailRunner,
 } from "@exaix/execution";
 import { PromptBudgetAllocator } from "@exaix/core";
+import { ToolRegistry } from "@exaix/tool-runtime";
 import { PlanAmendmentService } from "./plan_amendment_service.ts";
 import type { IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
 import { GuardrailBlockedError, PlanAmendmentPendingError } from "./errors.ts";
@@ -298,6 +299,7 @@ export class PlanExecutor {
       pathResolver,
       permissions,
       provider: this.llmProvider,
+      toolRegistry: new ToolRegistry({ config: this.config }),
       options,
       modelResolver: this.options.modelResolver,
       executionContext: new ExecutionContextService(this.config, this.logger, { promptBudgetAllocator }),

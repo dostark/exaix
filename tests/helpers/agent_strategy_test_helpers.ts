@@ -12,6 +12,7 @@ import { SecurityMode } from "@exaix/core";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import { AgentOrchestrator } from "@exaix/execution";
 import { readFixtureTextSync } from "@exaix/testing";
+import { ToolRegistry } from "@exaix/tool-runtime";
 import type { MockProvider } from "@exaix/ai/providers.ts";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IAgentExecutionOptions } from "@exaix/schemas/agent_orchestrator.ts";
@@ -66,7 +67,15 @@ export async function setupStrategyExecutor(
   const logger = new EventLogger({ db });
   const pathResolver = new PathResolver(config);
   const permissions = new PortalPermissionsService(config.portals);
-  const executor = new AgentOrchestrator({ config, db, logger, pathResolver, permissions, provider });
+  const executor = new AgentOrchestrator({
+    config,
+    db,
+    logger,
+    pathResolver,
+    permissions,
+    provider,
+    toolRegistry: new ToolRegistry({ config }),
+  });
 
   return {
     executor,
