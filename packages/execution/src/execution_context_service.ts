@@ -91,7 +91,7 @@ export class ExecutionContextService {
   /** Allocate prompt budget for the given model and request analysis. */
   async allocateBudget(
     modelId: string,
-    requestAnalysis?: IRequestAnalysis,
+    requestAnalysis: IRequestAnalysis | undefined,
   ): Promise<void> {
     this._currentPromptBudget = await this.promptBudgetAllocator!.allocate(
       modelId,
@@ -136,7 +136,7 @@ export class ExecutionContextService {
   }
 
   /** Returns "bpe" or "heuristic" depending on tokenizer availability. */
-  tokenSource(modelId?: string): TokenSource {
+  tokenSource(modelId: string | undefined): TokenSource {
     return this._tokenizer && modelId ? "bpe" : "heuristic";
   }
 
