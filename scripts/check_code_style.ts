@@ -669,7 +669,6 @@ const rules: Rule[] = [
       path !== "packages/core/src/planning/plan_executor.ts" &&
       path !== "packages/execution/src/git_audit_service.ts" &&
       path !== "packages/execution/src/execution_context_service.ts" &&
-      path !== "packages/execution/src/execution_loop.ts" &&
       path !== "packages/execution/src/strategies/mcp_agent_strategy.ts" &&
       path !== "packages/execution/src/context/context_compactor.ts" &&
       !path.startsWith("apps/") &&
