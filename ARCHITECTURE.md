@@ -575,7 +575,50 @@ All five mechanisms can be combined for dual-mode operation:
 
 For env var reference, see `packages/flow/README.md#session-tool-integration` and `docs/Reference_Data.md#environment-variables`.
 
-#### 6. ModelResolver — Policy-driven Model Resolution
+#### 6. AgentExecutor Decomposition — Service-oriented Architecture
+
+**File:** `packages/execution/src/agent_executor.ts`
+
+AgentExecutor is a **thin orchestrator and strategy dispatcher** — its sole responsibility is routing each execution sub-step to the appropriate injected service. Sub-domain logic lives in dedicated services, not in AgentExecutor itself:
+
+```
+AgentExecutor (dispatcher)
+  ├── loadBlueprint()      → BlueprintService
+  ├── buildExecutionPrompt() → PromptBuilder
+  ├── executeStep()        → StrategyRegistry.select() → IExecutionStrategy
+  ├── budget allocation    → ExecutionContextService
+  ├── guardrail screening  → GuardrailRunner
+  ├── model resolution     → ModelResolver
+  ├── tool registry        → ToolRegistry (lazy-init)
+  └── dispose()            → ExecutionContextService, StrategyRegistry
+```
+
+**Extracted services (completed):**
+
+| Service | File | Responsibility |
+|---------|------|---------------|
+| `ExecutionContextService` | `execution_context_service.ts` | Budget allocation, context cache, token counting, context budget manager, snapshot store |
+| `BlueprintService` | `blueprint_service.ts` | Blueprint loading, YAML parsing, Zod validation, model resolution, prompt sanitization |
+| `PromptBuilder` | `prompt_builder.ts` | Execution prompt assembly, token budget enforcement, input sanitization, context cache marking |
+
+**Decomposition roadmap (planned extractions):**
+
+| Candidate | Lines | Responsibility | Dependencies |
+|-----------|-------|----------------|-------------|
+| `GitAuditService` | ~150 | Git audit, SHA resolution, file path validation, unauthorized change detection | `config`, `logger` |
+| `OutputParser` | ~120 | LLM JSON response parsing, changeset result validation, generation logging | `logger` |
+| `HistoryManager` | ~100 | Loop history ring buffer, compaction, strategy lifecycle signals | `logger`, `provider` |
+
+**Design rationale:**
+
+- Each service is **independently constructable and testable** — no service depends on AgentExecutor or another service.
+- AgentExecutor's remaining ~1400 lines will shrink to ~300 lines of pure orchestration.
+- The `IAgentExecutorDeps` interface (16 fields at peak, now 12) continues to shrink as services bundle their own sub-dependencies.
+- Adding a new execution capability means adding a new service, not growing AgentExecutor.
+
+For the full extraction plan, see `packages/execution/src/agent_executor.ts` class comment.
+
+#### 7. ModelResolver — Policy-driven Model Resolution
 
 **File:** `packages/ai/src/model_resolver.ts` (line 56)
 

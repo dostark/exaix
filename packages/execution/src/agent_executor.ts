@@ -154,7 +154,32 @@ export class AgentExecutionError extends Error {
 }
 
 /**
- * AgentExecutor orchestrates agent execution with MCP
+ * AgentExecutor — orchestrator and strategy dispatcher for agent execution.
+ *
+ * ROLE: Thin coordinator. AgentExecutor does NOT implement sub-domain logic
+ * directly. Instead it delegates each concern to an injected service:
+ *
+ *   BlueprintService      → load, validate, and resolve agent blueprints
+ *   PromptBuilder          → build and sanitize execution prompts
+ *   ExecutionContextService→ budget allocation, context cache, token counting
+ *   StrategyRegistry       → select execution strategy (ReAct, MCP, Legacy)
+ *   GuardrailRunner        → pre-execution safety screening
+ *   ModelResolver          → policy-driven model and provider resolution
+ *   ToolRegistry           → tool registration and lifecycle (lazy-init)
+ *
+ * DECOMPOSITION ROADMAP (remaining extractions):
+ *   GitAuditService        → git audit, SHA resolution, path validation
+ *   OutputParser           → LLM response parsing, changeset validation
+ *   HistoryManager         → loop history compaction, strategy signals
+ *
+ * When all extractions are complete, AgentExecutor should be ~300 lines of
+ * pure orchestration — routing each execution sub-step to the appropriate
+ * service or strategy, with no sub-domain logic of its own.
+ *
+ * @see BlueprintService
+ * @see PromptBuilder
+ * @see ExecutionContextService
+ * @see StrategyRegistry
  */
 export class AgentExecutor {
   private executionContext?: IWorkspaceExecutionContext;
