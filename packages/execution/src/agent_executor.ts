@@ -90,6 +90,7 @@ import { ExecutionContextService, IPromptBudgetAllocator } from "./execution_con
 import { BlueprintService } from "./blueprint_service.ts";
 import { PromptBuilder } from "./prompt_builder.ts";
 import { GitAuditService } from "./git_audit_service.ts";
+import { type IOutputParserContext, OutputParser } from "./output_parser.ts";
 
 /**
  * Agent blueprint loaded from file
@@ -134,6 +135,7 @@ export interface IAgentExecutorDeps {
   blueprintService?: BlueprintService;
   promptBuilder?: PromptBuilder;
   gitAuditService?: GitAuditService;
+  outputParser?: OutputParser;
   guardrailRunner?: IGuardrailRunner;
   options?: IAgentExecutorOptions;
   modelResolver?: ModelResolver;
@@ -199,6 +201,7 @@ export class AgentExecutor {
   private blueprintService: BlueprintService;
   private promptBuilder: PromptBuilder;
   private gitAuditService: GitAuditService;
+  private outputParser: OutputParser;
   private ctx: ExecutionContextService;
 
   /** Resolved per-call options from ModelResolver, forwarded to generate(). */
@@ -256,6 +259,7 @@ export class AgentExecutor {
     });
     this.promptBuilder = deps.promptBuilder ?? new PromptBuilder(this.logger, this.ctx);
     this.gitAuditService = deps.gitAuditService ?? new GitAuditService(this.logger);
+    this.outputParser = deps.outputParser ?? new OutputParser();
     if (deps.options?.guardrailRunner) {
       this._guardrailRunner = deps.options.guardrailRunner;
     }
@@ -730,67 +734,6 @@ export class AgentExecutor {
   /**
    * Parse agent response to extract changeset result
    */
-  public parseAgentResponse(
-    response: string,
-    context: IExecutionContext,
-    startTime: number,
-  ): IChangesetResult {
-    // console.log("[DEBUG] Parsing agent response for trace:", context.trace_id);
-    // Try to extract JSON from response
-    const jsonMatch = response.match(/\`\`\`json\s*([\s\S]*?)\s*\`\`\`/) ||
-      response.match(/\{[\s\S]*\}/);
-
-    if (!jsonMatch) {
-      // If no JSON found, create a default result
-      return {
-        branch: `feat/${context.request_id}-${context.trace_id.slice(0, 8)}`,
-        commit_sha: GIT_EMPTY_SHA,
-        files_changed: [],
-        description: context.plan,
-        tool_calls: 0,
-        execution_time_ms: Math.max(0, Date.now() - startTime),
-      };
-    }
-
-    try {
-      const jsonStr = jsonMatch[1] || jsonMatch[0];
-      const parsed = JSON.parse(jsonStr);
-
-      // Ensure required fields for ChangesetResult are present even if another JSON (like a plan) was matched
-      if (!parsed.branch) {
-        parsed.branch = `feat/${context.request_id}-${context.trace_id.slice(0, 8)}`;
-      }
-      if (!parsed.commit_sha) {
-        parsed.commit_sha = GIT_EMPTY_SHA;
-      }
-      if (!parsed.files_changed) {
-        parsed.files_changed = [];
-      }
-      if (parsed.tool_calls === undefined) {
-        parsed.tool_calls = 0;
-      }
-      if (!parsed.description) {
-        parsed.description = context.plan;
-      }
-
-      // Ensure execution_time_ms is set and non-negative
-      if (!parsed.execution_time_ms) {
-        parsed.execution_time_ms = Math.max(0, Date.now() - startTime);
-      }
-
-      return parsed as IChangesetResult;
-    } catch {
-      // If parsing fails, return default result
-      return {
-        branch: `feat/${context.request_id}-${context.trace_id.slice(0, 8)}`,
-        commit_sha: GIT_EMPTY_SHA,
-        files_changed: [],
-        description: context.plan,
-        tool_calls: 0,
-        execution_time_ms: Math.max(0, Date.now() - startTime),
-      };
-    }
-  }
 
   /**
    * Build subprocess permissions based on security mode
@@ -1082,16 +1025,6 @@ export class AgentExecutor {
   /**
    * Validate review result structure
    */
-  validateReviewResult(result: JSONValue): IChangesetResult {
-    try {
-      return ChangesetResultSchema.parse(result);
-    } catch (error) {
-      console.error("[DEBUG] ChangesetResultSchema validation failed:", error);
-      console.error("[DEBUG] Invalid result object:", JSON.stringify(result, null, 2));
-      throw error;
-    }
-  }
-
   /**
    * Log execution start to IActivity Journal
    */
@@ -1188,6 +1121,17 @@ export class AgentExecutor {
   /**
    * Log LLM generation metrics to IActivity Journal
    */
+  public parseAgentResponse(
+    response: string,
+    context: IOutputParserContext,
+    startTime: number,
+  ): IChangesetResult {
+    return this.outputParser.parseAgentResponse(response, context, startTime);
+  }
+
+  validateReviewResult(result: JSONValue): IChangesetResult {
+    return this.outputParser.validateReviewResult(result);
+  }
   async logGeneration(
     traceId: string,
     identityId: string,
