@@ -2,7 +2,7 @@
  * @module ModelRegistryService
  * @path packages-team/model-registry-live/src/model_registry_service.ts
  * @description Phase 135 Step 1 — Team live model registry over the §5.2 SQLite
- *   tables. Implements the 14-method IModelRegistry contract with a floor fallback:
+ *   tables. Implements the 13-method IModelRegistry contract with a floor fallback:
  *   when a catalog/pricing row is absent, every read delegates to the injected
  *   DefaultModelRegistry so a Team daemon with an empty catalog behaves like Solo.
  *   getProviderHealth delegates to the injected checker (F3 — no health state).

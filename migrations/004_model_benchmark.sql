@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS model_benchmark (
   benchmark       TEXT    NOT NULL,   -- e.g. 'swe_bench_verified'
   score           REAL    NOT NULL,   -- normalised 0..1 (validated at write)
   harness_version TEXT,               -- benchmark harness/version, when published
-  provenance      TEXT    NOT NULL,   -- 'static' (curated) | 'remote_static' (EEE ingest)
+  provenance      TEXT    NOT NULL,   -- 'static' (curated) | 'remote_static' (models.dev ingest)
   measured_at     REAL    NOT NULL,   -- epoch-ms; REAL avoids 32-bit INTEGER read truncation
   source_url      TEXT,               -- citable publication / dataset URL
   PRIMARY KEY (provider, model, benchmark)

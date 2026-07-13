@@ -3,9 +3,8 @@
  * @path packages/model-registry/src/static_overlay.ts
  * @description Per-model pricing and context window overrides for the Solo tier.
  *   Each entry carries a verifiedAt timestamp and sourceUrl for provenance tracking.
- *   Keys are "provider:model" pairs matching MODEL_CONTEXT_WINDOWS keys.
- *   When an overlay entry exists, it takes precedence over IProviderMetadata
- *   and MODEL_CONTEXT_WINDOWS constants.
+ *   Keys are "provider:model" pairs. When an overlay entry exists, it takes
+ *   precedence over IProviderMetadata's own reported contextWindow.
  * @architectural-layer ModelRegistry
  * @related-files [packages/model-registry/src/default_model_registry.ts, packages/core/src/types/constants.ts]
  */
