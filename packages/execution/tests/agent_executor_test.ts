@@ -3090,8 +3090,10 @@ Deno.test({
       const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
-      await Deno.writeTextFile(blueprintPath,
-        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.");
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
       const blueprint = await executor.loadBlueprint("test-agent");
       assertEquals(blueprint.name, "test-agent");
       executor.dispose();

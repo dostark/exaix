@@ -93,6 +93,7 @@
     "dep:graph": "deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint apps/daemon/main.ts --format text",
     "check:arch": "deno run --allow-read scripts/validate_architecture.ts",
     "check:magic": "deno run --allow-read --allow-env scripts/check_magic_values.ts",
+    "check:god-objects": "deno run -A scripts/check_god_objects.ts",
     "check:agent-docs-integrity": "deno run --allow-read scripts/check_agent_docs_integrity.ts",
     "check:qwen-skills-sync": "deno run --allow-read scripts/check_qwen_skills_sync.ts",
     "check:hardcoded-models": "deno run --allow-read scripts/check_hardcoded_models.ts",
