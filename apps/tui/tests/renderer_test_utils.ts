@@ -16,7 +16,6 @@ import type { INotificationService } from "@exaix/core/notification";
 import type { IMemoryNotification } from "@exaix/core/types";
 import type { IPortalDetails, IPortalInfo } from "@exaix/core/types";
 import type { IPortalService } from "@exaix/core/types";
-import { makePane } from "./layout_test_utils.ts";
 
 // ===== Types =====
 
@@ -24,8 +23,6 @@ export type CapturedConsole = {
   logs: string[];
   clears: number;
 };
-
-export { makePane };
 
 export function captureConsole(): { captured: CapturedConsole; restore: () => void } {
   const captured: CapturedConsole = { logs: [], clears: 0 };

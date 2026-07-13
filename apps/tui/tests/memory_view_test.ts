@@ -12,7 +12,7 @@ import { MemoryScope } from "@exaix/core";
 import { MemoryTuiScope } from "../src/memory_view/memory_scope.ts";
 
 import { MemoryView, MemoryViewTuiSession } from "../src/memory_view.ts";
-import type { IMemoryService } from "../src/memory_view/types.ts";
+import type { IMemoryService } from "@exaix/core/types";
 import { MockMemoryService } from "../src/tui_dashboard_mocks.ts";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 

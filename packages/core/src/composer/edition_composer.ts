@@ -24,6 +24,8 @@ import type { IAuthorizer } from "../authorizer/authorizer.ts";
  * `unknown` satisfies the explicit-unknown style rule.
  * @ungrounded — placeholder until concrete registry types are referenced.
  */
+import type { IModelRegistry } from "../types/i_model_registry.ts";
+
 // deno-lint-ignore no-empty-interface
 export interface ISeamRegistryPlaceholder {}
 
@@ -66,8 +68,6 @@ export interface ICapabilityModule {
    */
   registerEntitlement?(authorizer: IAuthorizer): void;
 }
-
-import type { IModelRegistry } from "../types/i_model_registry.ts";
 
 /**
  * Dependencies passed to IModelRegistryProvider.createModelRegistry.

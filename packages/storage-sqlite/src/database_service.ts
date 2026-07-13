@@ -127,8 +127,6 @@ interface ToolConfirmationRow {
   decided_by: string | null;
 }
 
-export type { IDatabaseService };
-
 export class DatabaseService implements IDatabaseService {
   private db: Database;
   private logQueue: LogEntry[] = [];

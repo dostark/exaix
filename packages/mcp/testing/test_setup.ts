@@ -87,8 +87,6 @@ export interface IToolPermissionTestContext {
   cleanup: () => Promise<void>;
 }
 
-export { setupGitRepo };
-
 /**
  * Helper to initialize common test environment (files, git, db, config)
  */

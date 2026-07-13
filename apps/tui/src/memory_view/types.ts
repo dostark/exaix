@@ -7,7 +7,6 @@
  */
 
 import type { TuiNodeType } from "@exaix/tui";
-import type { IMemoryService } from "@exaix/core/types";
 
 export type ITreeNodeType = TuiNodeType;
 
@@ -22,5 +21,3 @@ export interface ITreeNode {
   badge?: number;
   data?: TreeNodeData;
 }
-
-export type { IMemoryService };

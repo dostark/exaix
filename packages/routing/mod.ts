@@ -13,13 +13,13 @@ export { RoutingPolicyLoader } from "./src/routing_policy_loader.ts";
 export { RoutingPolicyService } from "./src/routing_policy_service.ts";
 export type { ICandidateDiscoveryOptions } from "./src/candidate_discovery.ts";
 export type { ICapabilityMatcherOptions } from "./src/capability_matcher.ts";
+export type { IRoutingPolicyLoaderOptions, IRoutingPolicyLoadResult } from "./src/routing_policy_loader.ts";
 export type {
   IBuildSnapshotOptions,
   IIdentityPerformanceRepository,
   IIdentityPerformanceRepositoryOptions,
   IIdentityPerformanceSnapshot,
 } from "./src/identity_performance_repository.ts";
-export type { IRoutingPolicyLoaderOptions, IRoutingPolicyLoadResult } from "./src/routing_policy_loader.ts";
 export type {
   ICandidateDiscovery,
   IIdentityPerformanceProvider,

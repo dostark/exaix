@@ -26,7 +26,7 @@ import type {
   IMemoryUpdateProposal,
   IProjectMemory,
 } from "@exaix/schemas/memory_bank.ts";
-import type { IMemoryService } from "../../src/memory_view/types.ts";
+import type { IMemoryService } from "@exaix/core/types";
 import { MemoryViewTuiSession } from "../../src/memory_view.ts";
 import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";

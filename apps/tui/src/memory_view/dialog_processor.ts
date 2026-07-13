@@ -22,7 +22,7 @@ import {
   TUI_STATUS_MSG_PROPOSAL_APPROVED,
   TUI_STATUS_MSG_PROPOSAL_REJECTED,
 } from "@exaix/tui/helpers/constants.ts";
-import type { IMemoryService } from "./types.ts";
+import type { IMemoryService } from "@exaix/core/types";
 
 export interface IDialogProcessorContext {
   service: IMemoryService;

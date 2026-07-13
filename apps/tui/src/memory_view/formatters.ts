@@ -23,7 +23,8 @@ import {
 import { renderCategoryBadge, renderConfidence, renderMarkdown } from "@exaix/tui/helpers/markdown_renderer.ts";
 import { ConfidenceAssessmentLevel, ConfidenceLevel } from "@exaix/core";
 import { DEFAULT_NONE_VALUE } from "@exaix/core";
-import type { IMemoryService, ITreeNode } from "./types.ts";
+import type { ITreeNode } from "./types.ts";
+import type { IMemoryService } from "@exaix/core/types";
 
 function mapAssessmentConfidenceToConfidenceLevel(
   confidence: ConfidenceAssessmentLevel,

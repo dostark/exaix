@@ -12,7 +12,8 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 
 import { MemoryFormatter } from "../../src/memory_view/formatters.ts";
 import { MemoryTuiScope } from "../../src/memory_view/memory_scope.ts";
-import type { IMemoryService, ITreeNode } from "../../src/memory_view/types.ts";
+import type { ITreeNode } from "../../src/memory_view/types.ts";
+import type { IMemoryService } from "@exaix/core/types";
 import type {
   IExecutionMemory,
   IGlobalMemory,

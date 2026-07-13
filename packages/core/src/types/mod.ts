@@ -59,6 +59,7 @@ export * from "./notification.ts";
 export * from "./optional_marker.ts";
 export * from "./plan.ts";
 export * from "./portal.ts";
+export type { IRequestAnalysis } from "@exaix/schemas";
 export * from "./request.ts";
 export * from "./skill.ts";
 export * from "../evaluation/evaluation_criteria.ts";

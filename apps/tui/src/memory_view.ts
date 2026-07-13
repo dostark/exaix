@@ -14,7 +14,8 @@ import { MemoryFormatter } from "./memory_view/formatters.ts";
 import { TreeBuilder } from "./memory_view/tree_builder.ts";
 import { DialogProcessor } from "./memory_view/dialog_processor.ts";
 import { KeyHandler } from "./memory_view/key_handlers.ts";
-import type { IMemoryService, ITreeNode } from "./memory_view/types.ts";
+import type { ITreeNode } from "./memory_view/types.ts";
+import type { IMemoryService } from "@exaix/core/types";
 import {
   AddLearningDialog,
   BulkApproveDialog,

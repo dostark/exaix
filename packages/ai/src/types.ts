@@ -8,6 +8,7 @@
 import type { ConfigSource, JSONValue, McpToolName, MockStrategy, ProviderType } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { Config, EffortTier, IBlueprintFrontmatter, IModelCallOptions } from "@exaix/schemas";
+import type { IGenerateResult } from "./providers/common.ts";
 
 /**
  * Options for model generation requests.
@@ -31,8 +32,6 @@ export interface IModelOptions {
   /** Provider-specific thinking budget cap (e.g. Anthropic max_tokens for thinking). */
   thinking_budget?: number;
 }
-
-import type { IGenerateResult } from "./providers/common.ts";
 
 /**
  * Standard interface that all model providers must implement.

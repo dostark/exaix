@@ -8,7 +8,7 @@
  */
 
 import type { DialogStatus } from "@exaix/core";
-import type { IMemoryService } from "../../src/memory_view/types.ts";
+import type { IMemoryService } from "@exaix/core/types";
 
 export interface IMemoryViewTestContext {
   statuses: string[];

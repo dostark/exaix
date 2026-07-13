@@ -11,6 +11,7 @@ import { dirname, join } from "@std/path";
 import { DEFAULT_NAMESPACE_MAX_BYTES } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
 import { type IFlowNamespaceEntry, type IFlowNamespaceWrite, ZFlowNamespaceEntry } from "@exaix/schemas/flow.ts";
+import type { JSONValue } from "@exaix/core";
 
 export interface IFlowNamespaceSnapshot {
   traceId: string;
@@ -55,8 +56,6 @@ interface IParsedNamespaceSection {
   updatedAt: string;
   value: string;
 }
-
-import type { JSONValue } from "@exaix/core";
 
 type INamespacePathObject = { [key: string]: JSONValue };
 

@@ -9,7 +9,8 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { makePane, testProdRender } from "../renderer_test_utils.ts";
+import { testProdRender } from "../renderer_test_utils.ts";
+import { makePane } from "../layout_test_utils.ts";
 import type { IPane } from "../../src/tui_dashboard.ts";
 
 Deno.test("prodRender: falls back to 80x24 when consoleSize throws", async () => {

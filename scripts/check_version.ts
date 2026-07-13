@@ -16,8 +16,10 @@
  *   deno run -A scripts/check_version.ts --force-patch # always bump BINARY_VERSION PATCH
  */
 
+import { join } from "@std/path";
+
 // ---------------------------------------------------------------------------
-// Exported Types (must be at top per code style)
+// Exported Types
 // ---------------------------------------------------------------------------
 
 export interface ISemVer {
@@ -42,8 +44,6 @@ export interface VersionMeta {
 // ---------------------------------------------------------------------------
 // Paths (relative to repo root)
 // ---------------------------------------------------------------------------
-
-import { join } from "@std/path";
 
 const REPO_ROOT = new URL("../", import.meta.url).pathname.replace(/\/$/, "");
 const VERSION_FILE = join(REPO_ROOT, "packages", "core", "src", "version.ts");

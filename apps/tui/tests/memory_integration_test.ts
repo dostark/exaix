@@ -28,7 +28,7 @@ import type {
   IMemoryUpdateProposal,
   IProjectMemory,
 } from "@exaix/schemas/memory_bank.ts";
-import type { IMemoryService } from "../src/memory_view/types.ts";
+import type { IMemoryService } from "@exaix/core/types";
 import { MemoryViewTuiSession } from "../src/memory_view.ts";
 import { MinimalMemoryServiceMock } from "./helpers.ts";
 import {

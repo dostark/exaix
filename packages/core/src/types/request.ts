@@ -22,8 +22,6 @@ export enum AnalysisMode {
   HYBRID = "hybrid",
 }
 
-export type { IRequestAnalysis };
-
 /**
  * Detailed skills information for a request.
  */

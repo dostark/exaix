@@ -14,6 +14,7 @@ export * from "./src/tool_validation_reporter.ts";
 export { createOutputValidator, createPlanValidator, OutputSchemas, OutputValidator } from "./src/output_validator.ts";
 export { createPathSecurity, PathSecurity } from "./src/path_security.ts";
 export { PathAccessError, PathTraversalError } from "./src/types.ts";
+export type { IActivityJournal, IMiddlewarePipeline, IPathSecurityOps, IToolAgentExecutor } from "./src/types.ts";
 export type {
   IActionSequence,
   IAnalysis,
@@ -31,4 +32,3 @@ export type {
   OutputSchemaName,
   ValidationError,
 } from "./src/output_validator.ts";
-export type { IActivityJournal, IMiddlewarePipeline, IPathSecurityOps, IToolAgentExecutor } from "./src/types.ts";

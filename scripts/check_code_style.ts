@@ -844,6 +844,9 @@ async function checkFile(path: string) {
       const openers = (trimmed.match(/{/g) || []).length;
       const closers = (trimmed.match(/}/g) || []).length;
       protectedBraceCount += openers - closers;
+      if (protectedBraceCount === 0 && inTypeDeclaration) {
+        inTypeDeclaration = false;
+      }
       continue;
     }
 

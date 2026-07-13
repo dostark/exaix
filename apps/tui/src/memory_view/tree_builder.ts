@@ -19,7 +19,8 @@ import {
   TUI_TREE_PAGINATION_LIMIT,
   TUI_TREE_RECENT_LIMIT,
 } from "@exaix/tui/helpers/constants.ts";
-import type { IMemoryService, ITreeNode } from "./types.ts";
+import type { ITreeNode } from "./types.ts";
+import type { IMemoryService } from "@exaix/core/types";
 import type { IExecutionMemory, IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 
 export class TreeBuilder {
