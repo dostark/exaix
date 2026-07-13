@@ -111,12 +111,15 @@ export class GitAuditService {
     if (!normalizedPath) return null;
 
     const combinedPath = join(portalPath, normalizedPath);
-    const resolved = Deno.realPathSync(combinedPath);
-
-    if (!resolved.startsWith(portalPath)) {
+    try {
+      const resolved = Deno.realPathSync(combinedPath);
+      if (!resolved.startsWith(portalPath)) {
+        return null;
+      }
+      return normalizedPath;
+    } catch {
       return null;
     }
-    return normalizedPath;
   }
 
   /**

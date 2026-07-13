@@ -1591,8 +1591,11 @@ Deno.test({
       const { db, logger, pathResolver, permissions } = getServices();
       const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
-      // We need a real path for isPathWithinPortal
+      // We need a real path and existing files for realPathSync
       const realPortalPath = await Deno.realPath(portalDir);
+      await Deno.writeTextFile(join(realPortalPath, "test.txt"), "content");
+      await Deno.mkdir(join(realPortalPath, "subdir"));
+      await Deno.writeTextFile(join(realPortalPath, "subdir", "test.txt"), "content");
 
       // Valid path
       assertEquals(executor.validateFilePath("test.txt", realPortalPath), "test.txt");
@@ -1898,7 +1901,9 @@ Deno.test({
       const { db, logger, pathResolver, permissions } = getServices();
       const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
-      Reflect.set(executor, "_currentPromptBudget", {
+      // Set budget on the ExecutionContextService (private ctx field)
+      const ctxService = (executor as any).ctx;
+      Reflect.set(ctxService, "_currentPromptBudget", {
         model: "openai:gpt-4o-mini",
         totalBudgetTokens: 1000,
         safetyBufferTokens: 0,
@@ -2996,6 +3001,99 @@ Deno.test({
       const stable = contextCache.getStableSections(stableKeys);
       assert(stable.length > 0, "At least one stable section should be cached after executeStep");
 
+      executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name: "AgentExecutor: constructor defaults services when not provided",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      assertExists(executor);
+      executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name: "AgentExecutor: dispose is safe to call multiple times",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      executor.dispose();
+      executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name: "AgentExecutor: getRecentActivitiesByTraceId returns empty for unknown trace",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const activities = await executor.getRecentActivitiesByTraceId("nonexistent-trace");
+      assertEquals(activities, []);
+      executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name: "AgentExecutor: buildSubprocessPermissions sandboxed mode blocks file access",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const flags = executor.buildSubprocessPermissions(SecurityMode.SANDBOXED, "/tmp/portal");
+      assert(flags.some((f) => f.includes("--allow-read=NONE")));
+      assert(flags.some((f) => f.includes("--allow-write=NONE")));
+      executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name: "AgentExecutor: loadBlueprint delegates to BlueprintService",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.");
+      const blueprint = await executor.loadBlueprint("test-agent");
+      assertEquals(blueprint.name, "test-agent");
       executor.dispose();
     } finally {
       await cleanup();
