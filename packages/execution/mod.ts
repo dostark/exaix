@@ -12,6 +12,7 @@ export * from "./src/agent_executor.ts";
 export * from "./src/execution_context_service.ts";
 export * from "./src/blueprint_service.ts";
 export * from "./src/prompt_builder.ts";
+export * from "./src/git_audit_service.ts";
 export * from "./src/guardrail_runner.ts";
 export * from "./src/strategies/execution_strategy.ts";
 export * from "./src/strategies/strategy_registry.ts";

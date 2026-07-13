@@ -77,7 +77,13 @@ export class PromptBuilder {
 
     if (this.ctx.currentPromptBudget) {
       this.ctx.markSectionsStable(
-        { system: systemPrompt, plan: sanitizedPlan, portalKnowledge: portalContext, memory: sanitizedRequest, skills: skillContext },
+        {
+          system: systemPrompt,
+          plan: sanitizedPlan,
+          portalKnowledge: portalContext,
+          memory: sanitizedRequest,
+          skills: skillContext,
+        },
         this.ctx.currentPromptBudget.sections,
       );
     }

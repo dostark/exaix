@@ -89,8 +89,7 @@ import type { Opt, Reason, TaskType } from "@exaix/core/types";
 import { ExecutionContextService, IPromptBudgetAllocator } from "./execution_context_service.ts";
 import { BlueprintService } from "./blueprint_service.ts";
 import { PromptBuilder } from "./prompt_builder.ts";
-
-
+import { GitAuditService } from "./git_audit_service.ts";
 
 /**
  * Agent blueprint loaded from file
@@ -134,6 +133,7 @@ export interface IAgentExecutorDeps {
   executionContext?: ExecutionContextService;
   blueprintService?: BlueprintService;
   promptBuilder?: PromptBuilder;
+  gitAuditService?: GitAuditService;
   guardrailRunner?: IGuardrailRunner;
   options?: IAgentExecutorOptions;
   modelResolver?: ModelResolver;
@@ -198,6 +198,7 @@ export class AgentExecutor {
   private modelResolver?: ModelResolver;
   private blueprintService: BlueprintService;
   private promptBuilder: PromptBuilder;
+  private gitAuditService: GitAuditService;
   private ctx: ExecutionContextService;
 
   /** Resolved per-call options from ModelResolver, forwarded to generate(). */
@@ -244,7 +245,8 @@ export class AgentExecutor {
     this._guardrailRunner = deps.guardrailRunner;
     this.options = deps.options;
     this.modelResolver = deps.modelResolver;
-    this.blueprintService = deps.blueprintService ?? new BlueprintService(this.config, this.logger, deps.modelResolver, deps.options);
+    this.blueprintService = deps.blueprintService ??
+      new BlueprintService(this.config, this.logger, deps.modelResolver, deps.options);
     this.ctx = deps.executionContext ?? new ExecutionContextService(this.config, this.logger, {
       promptBudgetAllocator: undefined,
       contextCache: undefined,
@@ -253,6 +255,7 @@ export class AgentExecutor {
       snapshotStore: undefined,
     });
     this.promptBuilder = deps.promptBuilder ?? new PromptBuilder(this.logger, this.ctx);
+    this.gitAuditService = deps.gitAuditService ?? new GitAuditService(this.logger);
     if (deps.options?.guardrailRunner) {
       this._guardrailRunner = deps.options.guardrailRunner;
     }
@@ -820,141 +823,15 @@ export class AgentExecutor {
   /**
    * Audit git changes to detect unauthorized modifications
    */
-  async auditGitChanges(
-    portalPath: string,
-    authorizedFiles: string[],
-  ): Promise<string[]> {
-    try {
-      // Step 61.4.1: Ensure we are in a git repository before auditing
-      const checkRepo = await SafeSubprocess.run("git", [GIT_CMD_REV_PARSE, "--is-inside-work-tree"], {
-        cwd: portalPath,
-        timeoutMs: DEFAULT_GIT_REV_PARSE_TIMEOUT_MS,
-      });
-
-      if (checkRepo.code !== 0) {
-        // Not a git repository, skip audit (common in unit tests)
-        return [];
-      }
-
-      // Get git status with timeout protection
-      const result = await SafeSubprocess.run("git", [GIT_CMD_STATUS, "--porcelain"], {
-        cwd: portalPath,
-        timeoutMs: DEFAULT_GIT_STATUS_TIMEOUT_MS, // 10 second timeout for status
-      });
-
-      if (result.code !== 0) {
-        throw new Error(`Git status failed: ${result.stderr}`);
-      }
-
-      const statusText = result.stdout;
-      if (!statusText) {
-        return []; // No changes
-      }
-
-      const unauthorizedChanges: string[] = [];
-      const authorizedSet = new Set(authorizedFiles); // O(1) lookups
-
-      // More robust parsing
-      for (const line of statusText.split("\n")) {
-        if (!line.trim()) continue;
-
-        // Handle filenames with spaces (basic protection)
-        const filename = line.slice(3).trim();
-
-        // O(1) lookup instead of O(n)
-        if (!authorizedSet.has(filename)) {
-          unauthorizedChanges.push(filename);
-        }
-      }
-
-      return unauthorizedChanges;
-    } catch (error) {
-      // If it's literally "not a git repository", we can skip audit gracefully
-      const message = error instanceof Error ? error.message : String(error);
-      if (message.includes("not a git repository")) {
-        return [];
-      }
-
-      if (error instanceof SubprocessTimeoutError) {
-        await this.logger.error(DomainEventType.GitAuditTimeout, portalPath, {
-          error: error.message,
-          timeout_ms: DEFAULT_GIT_STATUS_TIMEOUT_MS,
-        });
-        throw new AgentExecutionError(`Git audit timed out for portal: ${portalPath}`);
-      }
-
-      await this.logger.error(DomainEventType.GitAuditFailed, portalPath, {
-        error: error instanceof Error ? error.message : String(error),
-        stderr: (error instanceof Error && "stderr" in error ? (error as Error & { stderr?: string }).stderr : null) ??
-          null,
-      });
-      throw new AgentExecutionError(
-        `Git audit failed for portal: ${portalPath}`,
-        AgentExecutionErrorType.EXECUTION_ERROR,
-        error as Error,
-      );
-    }
-  }
 
   /**
    * Get the current git SHA for a portal
    */
-  public async getPortalHeadSha(portalPath: string): Promise<string> {
-    try {
-      const result = await SafeSubprocess.run("git", [GIT_CMD_REV_PARSE, "HEAD"], {
-        cwd: portalPath,
-        timeoutMs: DEFAULT_GIT_REV_PARSE_TIMEOUT_MS * 2, // Slightly more for HEAD on large repos
-      });
-
-      if (result.code !== 0) {
-        return GIT_EMPTY_SHA;
-      }
-
-      return result.stdout.trim();
-    } catch {
-      return GIT_EMPTY_SHA;
-    }
-  }
 
   /**
    * Validate file path for security - prevents path traversal and injection attacks
    * Returns the validated path or null if invalid
    */
-  public validateFilePath(filePath: string, portalPath: string): string | null {
-    const normalizedPath = this.normalizeAndPreValidateFilePath(filePath);
-    if (!normalizedPath) return null;
-
-    if (!this.isPathWithinPortal(portalPath, normalizedPath)) {
-      return null;
-    }
-
-    return normalizedPath;
-  }
-
-  private normalizeAndPreValidateFilePath(filePath: string): string | null {
-    if (!filePath || filePath.trim() === "") return null;
-
-    // Reject absolute paths
-    if (filePath.startsWith("/") || filePath.startsWith("\\") || /^[a-zA-Z]:/.test(filePath)) return null;
-
-    // Reject path traversal attempts (keep strict behavior: any ".." substring is invalid)
-    if (filePath.includes("..") || filePath.includes("../") || filePath.includes("..\\")) return null;
-
-    // Reject shell injection characters
-    const injectionChars = [";", "&", "|", "`", "$", "(", ")", "<", ">", '"', "'", "\n", "\r"];
-    if (injectionChars.some((char) => filePath.includes(char))) return null;
-
-    // Reject hidden files/directories (starting with .)
-    if (filePath.startsWith(".") || filePath.includes("/.") || filePath.includes("\\.")) return null;
-
-    // Normalize path separators to forward slashes for consistency
-    const normalizedPath = filePath.replace(/\\/g, "/");
-
-    // Reject paths with consecutive slashes or other suspicious patterns
-    if (normalizedPath.includes("//") || normalizedPath.includes("\0")) return null;
-
-    return normalizedPath;
-  }
 
   private isPathWithinPortal(portalPath: string, normalizedPath: string): boolean {
     const resolvedPortalPath = Deno.realPathSync(portalPath);
@@ -978,114 +855,26 @@ export class AgentExecutor {
    * Revert unauthorized changes in hybrid mode
    * Uses git checkout to discard unauthorized modifications
    */
-  async revertUnauthorizedChanges(
-    portalPath: string,
-    unauthorizedFiles: string[],
-  ): Promise<void> {
-    if (unauthorizedFiles.length === 0) return;
-
-    // Filter and validate file paths for security
-    const validatedFiles = unauthorizedFiles
-      .map((file) => this.validateFilePath(file, portalPath))
-      .filter((file): file is string => file !== null);
-
-    if (validatedFiles.length === 0) {
-      // Log that all files were filtered out as potentially malicious
-      await this.logger.log({
-        action: DomainEventType.SecurityFileValidationFilteredAll,
-        target: portalPath,
-        payload: {
-          original_count: unauthorizedFiles.length,
-          reason: "All files contained potentially malicious paths",
-        },
-      });
-      return;
-    }
-
-    const results = {
-      successful: [] as string[],
-      failed: [] as Array<{ file: string; error: string }>,
-    };
-
-    // Process files concurrently with concurrency limit
-    const concurrencyLimit = DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT; // Configurable
-    const chunks = this.chunkArray(validatedFiles, concurrencyLimit);
-
-    for (const chunk of chunks) {
-      const promises = chunk.map(async (file) => {
-        try {
-          // Check if tracked with timeout
-          const lsResult = await SafeSubprocess.run("git", ["ls-files", "--error-unmatch", file], {
-            cwd: portalPath,
-            timeoutMs: DEFAULT_GIT_LS_FILES_TIMEOUT_MS,
-          });
-
-          if (lsResult.code === 0) {
-            // Tracked file - restore with timeout
-            const restoreResult = await SafeSubprocess.run("git", ["restore", "--source=HEAD", "--", file], {
-              cwd: portalPath,
-              timeoutMs: DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
-            });
-            if (restoreResult.code === 0) {
-              results.successful.push(file);
-            } else {
-              results.failed.push({
-                file,
-                error: `git restore failed: ${restoreResult.stderr.trim() || "unknown error"}`,
-              });
-            }
-          } else {
-            // Untracked file - delete with timeout
-            const cleanResult = await SafeSubprocess.run("git", ["clean", "-f", file], {
-              cwd: portalPath,
-              timeoutMs: DEFAULT_GIT_CLEAN_TIMEOUT_MS,
-            });
-            if (cleanResult.code === 0) {
-              results.successful.push(file);
-            } else {
-              results.failed.push({
-                file,
-                error: `git clean failed: ${cleanResult.stderr.trim() || "unknown error"}`,
-              });
-            }
-          }
-        } catch (error) {
-          results.failed.push({
-            file,
-            error: error instanceof Error ? error.message : String(error),
-          });
-        }
-      });
-
-      // Wait for chunk to complete
-      await Promise.allSettled(promises);
-    }
-
-    // Log results
-    await this.logger.info(DomainEventType.GitRevertCompleted, portalPath, {
-      total_files: unauthorizedFiles.length,
-      successful: results.successful.length,
-      failed: results.failed.length,
-      failed_files: results.failed.map((f) => f.file),
-    });
-
-    // Throw error if any files failed to revert
-    if (results.failed.length > 0) {
-      const errorMsg = `Failed to revert ${results.failed.length} unauthorized files: ${
-        results.failed.map((f) => f.file).join(", ")
-      }`;
-      await this.logger.error(DomainEventType.GitRevertPartialFailure, portalPath, {
-        failed_count: results.failed.length,
-        failed_files: results.failed,
-      });
-      throw new AgentExecutionError(errorMsg);
-    }
-  }
 
   /**
    * Atomic audit and revert operation to prevent TOCTOU race conditions
    * Performs git status check and file reversion in a single locked operation
    */
+  async auditGitChanges(portalPath: string, authorizedFiles: string[]): Promise<string[]> {
+    return this.gitAuditService.auditGitChanges(portalPath, authorizedFiles);
+  }
+
+  public async getPortalHeadSha(portalPath: string): Promise<string> {
+    return this.gitAuditService.getPortalHeadSha(portalPath);
+  }
+
+  public validateFilePath(filePath: string, portalPath: string): string | null {
+    return this.gitAuditService.validateFilePath(filePath, portalPath);
+  }
+
+  async revertUnauthorizedChanges(portalPath: string, unauthorizedFiles: string[]): Promise<void> {
+    return this.gitAuditService.revertUnauthorizedChanges(portalPath, unauthorizedFiles);
+  }
   async auditAndRevertChanges(
     portalPath: string,
     authorizedFiles: string[],

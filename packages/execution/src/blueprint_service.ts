@@ -18,7 +18,7 @@ import type { ModelResolver } from "@exaix/ai";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_IDENTITIES_PATH, MAX_NAME_LENGTH, MAX_PROMPT_LENGTH } from "@exaix/core";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
-import type { IAgentFileBlueprint, IAgentExecutorOptions } from "./agent_executor.ts";
+import type { IAgentExecutorOptions, IAgentFileBlueprint } from "./agent_executor.ts";
 import { InputValidator } from "@exaix/schemas/input_validation.ts";
 import { deriveTaskType } from "./task_type_derivation.ts";
 
@@ -84,7 +84,12 @@ export class BlueprintService {
       const content = await Deno.readTextFile(blueprintPath);
       const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n/);
       if (!frontmatterMatch) {
-        throw new SafeError("Blueprint file is not properly formatted", "INVALID_BLUEPRINT_FORMAT", undefined, this.logger);
+        throw new SafeError(
+          "Blueprint file is not properly formatted",
+          "INVALID_BLUEPRINT_FORMAT",
+          undefined,
+          this.logger,
+        );
       }
 
       const rawFrontmatter = parseYaml(frontmatterMatch[1], { schema: "failsafe" }) as Record<string, JSONValue>;
