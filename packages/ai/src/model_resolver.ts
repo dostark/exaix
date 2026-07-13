@@ -53,6 +53,7 @@ interface IScoreCandidatesIntent {
 }
 
 const CHARACTERISTIC_WEIGHT = 1;
+const CHARACTERISTIC_BEST = "best";
 
 /** @internal Map of preset override name → { model_size → resolved model } */
 const OVERRIDE_MODEL_MAP: Record<string, Record<ModelSize, { provider: string; model: string }>> = {
@@ -478,7 +479,11 @@ export class ModelResolver {
       if (winners.length === 1 && winners[0] !== providerName && await this.healthChecker.checkProvider(winners[0])) {
         winner = winners[0];
       }
-      if (intent.characteristics.includes("best") && intent.task_type && intent.task_type !== TaskType.UNKNOWN) {
+      if (
+        intent.characteristics.includes(CHARACTERISTIC_BEST) && intent.task_type &&
+        intent.task_type !== TaskType.UNKNOWN &&
+        await this.wasBestDecisive(intent, candidates, winner)
+      ) {
         reason = "best_ranked";
       }
       return { winner, reason };
@@ -490,6 +495,31 @@ export class ModelResolver {
       reason = "usage_ranked";
     }
     return { winner, reason };
+  }
+
+  /**
+   * Phase 135 Step 14 (GAP-12): `best_ranked` must reflect that `best`'s score
+   * actually decided the blended winner, not merely that `best` was requested and a
+   * task_type resolved (the prior behaviour — see GAP-12's post-gap-analysis finding).
+   * Re-scores the SAME candidate pool with `best` excluded from the characteristics
+   * list and compares winners: if the top scorer is unchanged, `best` was not decisive
+   * (a `cheapest`/other characteristic already determined the outcome on its own).
+   */
+  private async wasBestDecisive(
+    intent: ModelIntent,
+    candidates: Array<{ metadata: IProviderMetadata }>,
+    winner: string,
+  ): Promise<boolean> {
+    const withoutBest = intent.characteristics!.filter((c) => c !== CHARACTERISTIC_BEST);
+    if (withoutBest.length === 0) return true; // best was the sole characteristic
+    const scoresWithoutBest = await this.scoreCandidates(candidates, { ...intent, characteristics: withoutBest });
+    if (Object.keys(scoresWithoutBest).length === 0) return true;
+    const topScoreWithoutBest = Math.max(...Object.values(scoresWithoutBest));
+    const winnersWithoutBest = candidates
+      .filter((c) => (scoresWithoutBest[c.metadata.name] ?? -1) === topScoreWithoutBest)
+      .map((c) => c.metadata.name);
+    // best was decisive iff the winner changes (or a tie is broken) once best is removed
+    return !(winnersWithoutBest.length === 1 && winnersWithoutBest[0] === winner);
   }
 
   /**
@@ -628,7 +658,7 @@ export class ModelResolver {
 
     let bestScores: Record<string, number> = {};
     if (
-      characteristics.includes("best") && this.strategy?.scoreBest &&
+      characteristics.includes(CHARACTERISTIC_BEST) && this.strategy?.scoreBest &&
       intent.task_type && intent.task_type !== TaskType.UNKNOWN
     ) {
       bestScores = await this.strategy.scoreBest(
@@ -653,7 +683,7 @@ export class ModelResolver {
           case "fastest":
             totalScore += CHARACTERISTIC_WEIGHT * 1;
             break;
-          case "best":
+          case CHARACTERISTIC_BEST:
             totalScore += CHARACTERISTIC_WEIGHT * (bestScores[p.metadata.name] ?? 0);
             break;
           default:

@@ -256,12 +256,72 @@ Deno.test('[step135.8][GAP-C] ["best","cheapest"] blends into one weighted order
         return Promise.resolve(scores);
       },
     };
-    const resolver = makeResolver(strategy);
+    const logger = createMockEventLogger();
+    const resolver = makeResolver(strategy, logger);
     const result = await resolver.resolve({ characteristics: ["best", "cheapest"], task_type: TaskType.FEATURE });
     // A blend: neither pure-best nor pure-cheapest is asserted; only that both
     // characteristics fed one scoring pass (both providers are viable outcomes
     // depending on weighting, but the reason must reflect a blended decision).
     assertEquals(["high-bench", "cheap"].includes(result.provider), true);
+    // GAP-12: with these scores, "high-bench" wins narrowly (0.5 vs 0.495) — best's
+    // maxed score IS what tips the balance (without it, "cheap" would win on price
+    // alone, 0.99 vs 0), so reason correctly reflects best as decisive here.
+    const resolvedEvents = logger.events.filter((e) => e.action === "model.resolved");
+    assertEquals(resolvedEvents[0]?.payload?.reason, "best_ranked");
+  } finally {
+    ProviderRegistry.clear();
+    await cleanup();
+  }
+});
+
+Deno.test('[step135.14][GAP-12] ["best","cheapest"] where cheapest strictly dominates the blend resolves with reason "characteristics_scored", not "best_ranked"', async () => {
+  const { cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+    // A realistic (non-adversarial-binary) benchmark edge for "high-bench" (0.6 vs 0.5)
+    // is swamped by a large price gap (cost 100 vs 1) — cheap wins the blend, but the
+    // old code set reason: "best_ranked" unconditionally whenever "best" was requested
+    // and task_type was known, regardless of whether it actually decided the winner.
+    registerProvider("high-bench", { costPerMtok: 100 });
+    registerProvider("cheap", { costPerMtok: 1 });
+    const strategy: IResolutionStrategy = {
+      scoreBest: (candidates, _taskType) => {
+        const scores: Record<string, number> = {};
+        for (const c of candidates) scores[c.provider] = c.provider === "high-bench" ? 0.6 : 0.5;
+        return Promise.resolve(scores);
+      },
+    };
+    const logger = createMockEventLogger();
+    const resolver = makeResolver(strategy, logger);
+    const result = await resolver.resolve({ characteristics: ["best", "cheapest"], task_type: TaskType.FEATURE });
+    assertEquals(result.provider, "cheap");
+    const resolvedEvents = logger.events.filter((e) => e.action === "model.resolved");
+    assertEquals(resolvedEvents[0]?.payload?.reason, "characteristics_scored");
+  } finally {
+    ProviderRegistry.clear();
+    await cleanup();
+  }
+});
+
+Deno.test('[step135.14][GAP-12][regression] a request with only ["best"] and a resolved task_type still reports reason "best_ranked"', async () => {
+  const { cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+    registerProvider("low-bench");
+    registerProvider("high-bench");
+    const strategy: IResolutionStrategy = {
+      scoreBest: (candidates, _taskType) => {
+        const scores: Record<string, number> = {};
+        for (const c of candidates) scores[c.provider] = c.provider === "high-bench" ? 1 : 0;
+        return Promise.resolve(scores);
+      },
+    };
+    const logger = createMockEventLogger();
+    const resolver = makeResolver(strategy, logger);
+    const result = await resolver.resolve({ characteristics: ["best"], task_type: TaskType.FEATURE });
+    assertEquals(result.provider, "high-bench");
+    const resolvedEvents = logger.events.filter((e) => e.action === "model.resolved");
+    assertEquals(resolvedEvents[0]?.payload?.reason, "best_ranked");
   } finally {
     ProviderRegistry.clear();
     await cleanup();
