@@ -1,15 +1,15 @@
 /**
  * @module PlanExecutorSkillTaskTypeTest
  * @path packages/core/tests/planning/plan_executor_skill_task_type_test.ts
- * @description Phase 135 Reachability Ledger — `IAgentExecutorOptions.topSkillTaskTypes`
+ * @description Phase 135 Reachability Ledger — `IAgentOrchestratorOptions.topSkillTaskTypes`
  *   was previously never populated by any production caller: resolveModelFromBlueprint
- *   read `this.options?.topSkillTaskTypes` (agent_executor.ts), but nothing set it. Proves
+ *   read `this.options?.topSkillTaskTypes` (agent_orchestrator.ts), but nothing set it. Proves
  *   PlanExecutor.createAgentExecutor now calls the application context's SkillsService
  *   (already threaded through IPlanExecutorOptions.context) with the plan's originating
  *   request subject, and maps the top skill match's task_types into topSkillTaskTypes —
  *   making the skill-trigger tier of deriveTaskType's precedence chain reachable.
  * @architectural-layer Test
- * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_executor.ts, packages/execution/src/task_type_derivation.ts]
+ * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_orchestrator.ts, packages/execution/src/task_type_derivation.ts]
  */
 
 import { assertEquals } from "@std/assert";
@@ -82,7 +82,7 @@ function createRecordingSkillsService(
 }
 
 Deno.test({
-  name: "PlanExecutor's AgentExecutor derives task_type from the top skill match (topSkillTaskTypes wiring)",
+  name: "PlanExecutor's AgentOrchestrator derives task_type from the top skill match (topSkillTaskTypes wiring)",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {

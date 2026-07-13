@@ -6,13 +6,13 @@
 
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
-import { AgentExecutor } from "@exaix/execution";
+import { AgentOrchestrator } from "@exaix/execution";
 
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { createStubConfig, createStubDb, createStubDisplay } from "@exaix/testing";
 import { readFixtureTextSync } from "@exaix/testing";
 
-Deno.test("AgentExecutor Blueprint Loading - Mock Identity resolution", async () => {
+Deno.test("AgentOrchestrator Blueprint Loading - Mock Identity resolution", async () => {
   const tempDir = await Deno.makeTempDir();
   const identityDir = join(tempDir, "Identities");
   await Deno.mkdir(identityDir);
@@ -31,12 +31,12 @@ Deno.test("AgentExecutor Blueprint Loading - Mock Identity resolution", async ()
     portals: [],
   }));
 
-  const executor = new AgentExecutor({
+  const executor = new AgentOrchestrator({
     config: mockConfig.get(),
-    db: createStubDb() as AgentExecutor["db"],
-    logger: createStubDisplay() as AgentExecutor["logger"],
-    pathResolver: {} as AgentExecutor["pathResolver"],
-    permissions: {} as AgentExecutor["permissions"],
+    db: createStubDb() as AgentOrchestrator["db"],
+    logger: createStubDisplay() as AgentOrchestrator["logger"],
+    pathResolver: {} as AgentOrchestrator["pathResolver"],
+    permissions: {} as AgentOrchestrator["permissions"],
   });
 
   try {
@@ -56,19 +56,19 @@ Deno.test("AgentExecutor Blueprint Loading - Mock Identity resolution", async ()
 });
 
 Deno.test({
-  name: "AgentExecutor Blueprint Loading - Path Traversal Prevention",
+  name: "AgentOrchestrator Blueprint Loading - Path Traversal Prevention",
   sanitizeOps: false,
   fn: async () => {
-    const executor = new AgentExecutor({
+    const executor = new AgentOrchestrator({
       config: createStubConfig(ConfigSchema.parse({
         system: { root: "/tmp", log_level: "info", schema_version: "1.0.0" },
         paths: { blueprints: "/tmp" },
         portals: [],
       })).get(),
-      db: createStubDb() as AgentExecutor["db"],
-      logger: createStubDisplay() as AgentExecutor["logger"],
-      pathResolver: {} as AgentExecutor["pathResolver"],
-      permissions: {} as AgentExecutor["permissions"],
+      db: createStubDb() as AgentOrchestrator["db"],
+      logger: createStubDisplay() as AgentOrchestrator["logger"],
+      pathResolver: {} as AgentOrchestrator["pathResolver"],
+      permissions: {} as AgentOrchestrator["permissions"],
     });
 
     await assertRejects(

@@ -14,7 +14,7 @@
  *   1. `apps/daemon/main.ts` constructed ExecutionLoop with no `logger` — silencing
  *      every plan-execution event (including model.resolved) from the journal.
  *   2. `packages/core/src/planning/plan_executor.ts`'s `createAgentExecutor` never
- *      passed `modelResolver` to `AgentExecutor` at all — ModelResolver.resolve() (the
+ *      passed `modelResolver` to `AgentOrchestrator` at all — ModelResolver.resolve() (the
  *      only path to best/route/auto-admit/task_type) was production-dead for every
  *      plan execution, independent of identity blueprint content.
  *   3. `model_registry.adapter_base_urls` (this step) — a test-only seam letting a real
@@ -82,7 +82,7 @@ function writeStructuredPlan(root: string): void {
   Deno.writeTextFileSync(join(dir, "cutover-test_plan.md"), content);
 }
 
-/** Team config: adapter stubs, refresh-on-start, and a `workspace` portal (required by AgentExecutor). */
+/** Team config: adapter stubs, refresh-on-start, and a `workspace` portal (required by AgentOrchestrator). */
 function writeTeamConfig(configPath: string, root: string, adapterBaseUrls: Record<string, string>): void {
   const overrideLines = Object.entries(adapterBaseUrls).map(([provider, url]) => `${provider} = "${url}"`);
   const cfg = [

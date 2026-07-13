@@ -265,7 +265,7 @@ Deno.test("Integration Test 15.1: Happy Path - Sandboxed Mode", async () => {
     assertEquals(frontmatter.portal, TEST_PORTAL_NAME);
 
     // Step 3: Verify review can be registered
-    // (In real execution, AgentExecutor would create branch and commit)
+    // (In real execution, AgentOrchestrator would create branch and commit)
     const reviewRegistry = createReviewRegistry(dbService);
 
     const reviewId = await registerReview(

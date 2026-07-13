@@ -7,7 +7,7 @@
 
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
-import { AgentExecutor } from "@exaix/execution";
+import { AgentOrchestrator } from "@exaix/execution";
 import { StrategyRegistry } from "@exaix/execution";
 import { McpAgentStrategy } from "@exaix/execution";
 import { ProcessManager } from "@exaix/core";
@@ -19,7 +19,7 @@ import { ToolRegistryTestHelper } from "../../../packages/tool-runtime/tests/hel
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { readFixtureTextSync } from "@exaix/testing";
 
-Deno.test("AgentExecutor Integration - Real MCP Execution & Audit", async () => {
+Deno.test("AgentOrchestrator Integration - Real MCP Execution & Audit", async () => {
   const helper = await ToolRegistryTestHelper.create("mcp-real-exec");
 
   // Use ToolRegistryTestHelper's config and env to setup portal
@@ -84,7 +84,7 @@ Deno.test("AgentExecutor Integration - Real MCP Execution & Audit", async () => 
   const strategyRegistry = new StrategyRegistry();
   const logger = new EventLogger({ db: helper.db, defaultActor: "user:test" });
 
-  const executor = new AgentExecutor({
+  const executor = new AgentOrchestrator({
     config: registryState.config,
     db: helper.db,
     logger,

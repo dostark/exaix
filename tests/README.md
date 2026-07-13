@@ -94,7 +94,7 @@ Each package owns its unit tests. Key locations:
 | `@exaix/request`        | `packages/request/tests/`        | Request lifecycle (162 tests)                       |
 | `@exaix/routing`        | `packages/routing/tests/`        | Routing policy, capability matching                 |
 | `@exaix/tool-runtime`   | `packages/tool-runtime/tests/`   | ToolRegistry, OutputValidator, ToolReflector        |
-| `@exaix/execution`      | `packages/execution/tests/`      | AgentExecutor, ExecutionLoop, strategies            |
+| `@exaix/execution`      | `packages/execution/tests/`      | AgentOrchestrator, ExecutionLoop, strategies        |
 | `@exaix/flow-storage`   | `packages/flow-storage/tests/`   | Checkpoints, namespaces, validators, reporters      |
 
 ### App-Local Tests — `apps/<name>/tests/`
@@ -337,7 +337,7 @@ Follow [CODE_STYLE.md](../CODE_STYLE.md) for naming conventions, import organiza
 
 ```typescript
 // ✅ DO: Use descriptive test names
-Deno.test("AgentExecutor: logExecutionStart writes correct field separation", () => {});
+Deno.test("AgentOrchestrator: logExecutionStart writes correct field separation", () => {});
 
 // ✅ DO: Use try/finally for cleanup
 const { db, cleanup } = await initTestDbService();

@@ -2,9 +2,9 @@
  * @module AgentExecutorCostEstimationRemovedTest
  * @path packages/execution/tests/agent_executor_cost_estimation_removed_test.ts
  * @description Phase 135 Step 12 (GAP-23/GAP-24/GAP-25) — proves
- *   AgentExecutor.estimateExecutionUsage() and its pricingLookup constructor
+ *   AgentOrchestrator.estimateExecutionUsage() and its pricingLookup constructor
  *   parameter are fully removed, rather than narrowed. Before this step,
- *   AgentExecutor accepted a 16th positional pricingLookup argument
+ *   AgentOrchestrator accepted a 16th positional pricingLookup argument
  *   (packages/core/src/types/i_model_pricing_lookup.ts:IModelPricingLookup) that
  *   fed a heuristic, structurally-inaccurate cost estimate
  *   (GAP-23: prices unmeasurable output tokens at the input rate; GAP-24: ignores
@@ -17,22 +17,22 @@
  *   tests/integration/agent/cost_logging_test.ts, which already owns the
  *   git-initialised-portal fixture this scenario needs.
  * @architectural-layer Test
- * @related-files [packages/execution/src/agent_executor.ts, tests/integration/agent/cost_logging_test.ts]
+ * @related-files [packages/execution/src/agent_orchestrator.ts, tests/integration/agent/cost_logging_test.ts]
  */
 
 import { assertEquals } from "@std/assert";
 
-Deno.test("[regression] AgentExecutor constructor no longer accepts a pricingLookup argument (structural — TS2554 too-many-arguments at compile time if reintroduced)", () => {
-  // AgentExecutor's constructor signature ends at `modelResolver` — there is no
+Deno.test("[regression] AgentOrchestrator constructor no longer accepts a pricingLookup argument (structural — TS2554 too-many-arguments at compile time if reintroduced)", () => {
+  // AgentOrchestrator's constructor signature ends at `modelResolver` — there is no
   // 16th `pricingLookup` slot to pass. This is a structural/compile-time proof:
   // if the removed pricingLookup param or estimateExecutionUsage method were ever
   // reintroduced, this file (and the many call sites across the codebase that
-  // construct AgentExecutor with exactly the parameters below) would need
+  // construct AgentOrchestrator with exactly the parameters below) would need
   // updating, and `deno check` on this file is the actual gate. Checks for the
   // actual declarations, not any textual mention (a comment elsewhere in the
   // file legitimately references the removed method's name for context).
   const source = Deno.readTextFileSync(
-    new URL("../src/agent_executor.ts", import.meta.url),
+    new URL("../src/agent_orchestrator.ts", import.meta.url),
   );
   assertEquals(
     /private\s+async\s+estimateExecutionUsage\s*\(/.test(source),

@@ -3,10 +3,10 @@
  * @path packages/execution/src/execution_context_service.ts
  * @description Bundles budget allocation, context caching, token counting, context
  *   budget management, and snapshot store into a single injectable service. Extracted
- *   from AgentExecutor to reduce constructor parameter count and encapsulate the
+ *   from AgentOrchestrator to reduce constructor parameter count and encapsulate the
  *   context/budget subsystem.
  * @architectural-layer Execution
- * @related-files [packages/execution/src/agent_executor.ts]
+ * @related-files [packages/execution/src/agent_orchestrator.ts]
  */
 
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
@@ -31,7 +31,7 @@ export interface IPromptBudgetAllocator {
 
 /**
  * Bundles budget allocation, context cache, token counting, context budget manager,
- * and snapshot store into a single injectable service. Reduces AgentExecutor's
+ * and snapshot store into a single injectable service. Reduces AgentOrchestrator's
  * constructor parameter count and encapsulates the context/budget subsystem.
  */
 export class ExecutionContextService {

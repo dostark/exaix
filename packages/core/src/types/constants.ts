@@ -518,7 +518,7 @@ export const MEMORY_MIN_VECTORS_FOR_LOCAL_SEARCH: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-/** Example execution time used in AgentExecutor response-shape examples. */
+/** Example execution time used in AgentOrchestrator response-shape examples. */
 export const AGENT_EXECUTION_EXAMPLE_TIME_MS: number = configurable({
   key: "agent.execution_example_time_ms",
   default: 2_000,

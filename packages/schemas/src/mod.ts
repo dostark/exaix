@@ -8,7 +8,7 @@
 
 import * as PortalPermissionsSchemas from "./portal_permissions.ts";
 
-export * from "./agent_executor.ts";
+export * from "./agent_orchestrator.ts";
 export * from "./ai_config.ts";
 export * from "./artifact.ts";
 export * from "./blueprint.ts";

@@ -1,5 +1,5 @@
 /**
- * @module AgentExecutorAdapter
+ * @module AgentOrchestratorAdapter
  * @path packages/flow/src/agent_executor_adapter.ts
  * @description Bridges IAgentRunner into FlowRunner's IAgentExecutor interface.
  * Loads blueprints by identityId and converts IFlowStepRequest to IParsedRequest
@@ -46,7 +46,7 @@ export interface IRunner {
  * Adapter that wraps an IAgentRunner (or compatible IRunner) into FlowRunner's
  * IAgentExecutor interface. Loads blueprints by identityId and maps request types.
  */
-export class AgentExecutorAdapter {
+export class AgentOrchestratorAdapter {
   private loader: IBlueprintLoader;
 
   constructor(

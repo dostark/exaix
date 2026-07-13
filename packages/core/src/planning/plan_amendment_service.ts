@@ -16,7 +16,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import { DEFAULT_AMENDMENT_THRESHOLD } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import { AgentExecutor } from "@exaix/execution";
+import { AgentOrchestrator } from "@exaix/execution";
 import { ZPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import type { JSONObject } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
@@ -117,7 +117,7 @@ RESPONSE FORMAT (JSON):
       ...patch,
       amendmentId: crypto.randomUUID(),
       planId: input.planId,
-      summary: AgentExecutor.sanitizePrompt(patch?.summary || "No summary provided.").slice(0, 500),
+      summary: AgentOrchestrator.sanitizePrompt(patch?.summary || "No summary provided.").slice(0, 500),
       createdAt: new Date().toISOString(),
     });
   }

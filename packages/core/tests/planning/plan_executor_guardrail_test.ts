@@ -2,7 +2,7 @@
  * @module PlanExecutorGuardrailTest
  * @path packages/core/tests/planning/plan_executor_guardrail_test.ts
  * @description Integration tests verifying PlanExecutor passes IGuardrailRunner via
- *   IPlanExecutorOptions.guardrailRunner into AgentExecutor (Phase 107 Step 4).
+ *   IPlanExecutorOptions.guardrailRunner into AgentOrchestrator (Phase 107 Step 4).
  */
 
 import { assertEquals } from "@std/assert";

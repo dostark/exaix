@@ -1,7 +1,7 @@
 /**
  * @module AgentExecutorTest
  * @path packages/execution/tests/agent_executor_test.ts
- * @description Verifies the AgentExecutor service, ensuring stable blueprint loading,
+ * @description Verifies the AgentOrchestrator service, ensuring stable blueprint loading,
  * security sandboxing, activity logging, and protection against prompt injection.
  */
 
@@ -28,7 +28,7 @@ import { join } from "@std/path";
 
 import {
   AgentExecutionError,
-  AgentExecutor,
+  AgentOrchestrator,
   ExecutionContextService,
   type IAgentFileBlueprint,
   type ICompactedEntry,
@@ -47,7 +47,7 @@ import { initTestDbService } from "@exaix/testing";
 import { TEST_MODEL_OPENAI } from "@exaix/testing";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { EventLogger } from "@exaix/core/logger";
-import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
+import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { StrategyRegistry } from "@exaix/execution";
 import { PromptBudgetAllocator } from "@exaix/core/context";
@@ -199,12 +199,12 @@ function getServices() {
 }
 
 Deno.test({
-  name: "AgentExecutor: creates instance with required services",
+  name: "AgentOrchestrator: creates instance with required services",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       executor.dispose();
     } finally {
@@ -216,7 +216,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: compactLoopHistory with < 3 steps does nothing",
+  name: "AgentOrchestrator: compactLoopHistory with < 3 steps does nothing",
   fn: async () => {
     await setup();
     try {
@@ -235,7 +235,7 @@ Deno.test({
           }),
       });
 
-      const executor = new AgentExecutor({
+      const executor = new AgentOrchestrator({
         config: testConfig,
         db,
         logger,
@@ -290,7 +290,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: compactLoopHistory emits context.budget.compacted event",
+  name: "AgentOrchestrator: compactLoopHistory emits context.budget.compacted event",
   fn: async () => {
     await setup();
     try {
@@ -315,7 +315,7 @@ Deno.test({
           }),
       });
 
-      const executor = new AgentExecutor({
+      const executor = new AgentOrchestrator({
         config: testConfig,
         db,
         logger,
@@ -373,7 +373,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: loads blueprint from file",
+  name: "AgentOrchestrator: loads blueprint from file",
   fn: async () => {
     await setup();
     try {
@@ -392,7 +392,7 @@ Deno.test({
         blueprintContent,
       );
 
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const blueprint = await executor.loadBlueprint("test-agent");
 
@@ -410,12 +410,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: throws error for missing blueprint",
+  name: "AgentOrchestrator: throws error for missing blueprint",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       await assertRejects(
         async () => {
@@ -433,12 +433,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: validates portal exists before execution",
+  name: "AgentOrchestrator: validates portal exists before execution",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const context: IExecutionContext = {
         trace_id: crypto.randomUUID(),
@@ -473,12 +473,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: validates agent has portal permissions",
+  name: "AgentOrchestrator: validates agent has portal permissions",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const context: IExecutionContext = {
         trace_id: crypto.randomUUID(),
@@ -513,12 +513,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: sandboxed mode builds subprocess with no file access",
+  name: "AgentOrchestrator: sandboxed mode builds subprocess with no file access",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const permissions_flags = executor.buildSubprocessPermissions(SecurityMode.SANDBOXED, portalDir);
 
@@ -533,12 +533,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: hybrid mode builds subprocess with read-only portal access",
+  name: "AgentOrchestrator: hybrid mode builds subprocess with read-only portal access",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const permissions_flags = executor.buildSubprocessPermissions(SecurityMode.HYBRID, portalDir);
 
@@ -556,7 +556,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: detects unauthorized changes in hybrid mode",
+  name: "AgentOrchestrator: detects unauthorized changes in hybrid mode",
   fn: async () => {
     await setup();
     try {
@@ -566,7 +566,7 @@ Deno.test({
       const unauthorizedFile = join(portalDir, "unauthorized.txt");
       await Deno.writeTextFile(unauthorizedFile, "Unauthorized change");
 
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const unauthorizedChanges = await executor.auditGitChanges(
         portalDir,
@@ -586,7 +586,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: reverts unauthorized changes in hybrid mode",
+  name: "AgentOrchestrator: reverts unauthorized changes in hybrid mode",
   fn: async () => {
     await setup();
     try {
@@ -611,7 +611,7 @@ Deno.test({
       const untrackedFile = join(portalDir, "untracked.txt");
       await Deno.writeTextFile(untrackedFile, "Unauthorized new file");
 
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       // Detect unauthorized changes
       const unauthorizedChanges = await executor.auditGitChanges(
@@ -649,13 +649,13 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: revertUnauthorizedChanges handles empty list gracefully",
+  name: "AgentOrchestrator: revertUnauthorizedChanges handles empty list gracefully",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
 
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       // Should not throw when given empty array
       await executor.revertUnauthorizedChanges(portalDir, []);
@@ -670,7 +670,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: allows authorized changes via MCP tools",
+  name: "AgentOrchestrator: allows authorized changes via MCP tools",
   fn: async () => {
     await setup();
     try {
@@ -692,7 +692,7 @@ Deno.test({
       });
       await commitFile.output();
 
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       // Audit should find no unauthorized changes (all committed)
       const unauthorizedChanges = await executor.auditGitChanges(
@@ -710,12 +710,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: logs execution start to IActivity Journal",
+  name: "AgentOrchestrator: logs execution start to IActivity Journal",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const trace_id = crypto.randomUUID();
       await executor.logExecutionStart(trace_id, "test-agent", "TestPortal");
@@ -739,12 +739,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: logs execution completion to IActivity Journal",
+  name: "AgentOrchestrator: logs execution completion to IActivity Journal",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const trace_id = crypto.randomUUID();
       await executor.logExecutionComplete(trace_id, "test-agent", {
@@ -775,12 +775,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: logs execution errors to IActivity Journal",
+  name: "AgentOrchestrator: logs execution errors to IActivity Journal",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const trace_id = crypto.randomUUID();
       await executor.logExecutionError(trace_id, "test-agent", {
@@ -812,12 +812,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: enforces max tool call limit",
+  name: "AgentOrchestrator: enforces max tool call limit",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const options: IAgentExecutionOptions = {
         identity_id: "test-agent",
@@ -846,12 +846,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: validates review result has required fields",
+  name: "AgentOrchestrator: validates review result has required fields",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const validResult = {
         branch: "feat/test-abc123",
@@ -874,12 +874,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: rejects invalid review result",
+  name: "AgentOrchestrator: rejects invalid review result",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const invalidResult = {
         branch: "feat/test",
@@ -906,12 +906,12 @@ Deno.test({
 // ===== YAML Deserialization Security Tests =====
 
 Deno.test({
-  name: "AgentExecutor: loadBlueprint rejects YAML with code execution",
+  name: "AgentOrchestrator: loadBlueprint rejects YAML with code execution",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       // malicious YAML attempting code execution via constructor hijacking
       const maliciousYaml = readFixtureTextSync(
@@ -940,12 +940,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: loadBlueprint validates blueprint schema",
+  name: "AgentOrchestrator: loadBlueprint validates blueprint schema",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const invalidYaml = `---
 name: ${"a".repeat(101)}
@@ -974,12 +974,12 @@ Test prompt`;
 });
 
 Deno.test({
-  name: "AgentExecutor: loadBlueprint sanitizes system prompts",
+  name: "AgentOrchestrator: loadBlueprint sanitizes system prompts",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const scriptYaml = readFixtureTextSync(
         import.meta.url,
@@ -1006,12 +1006,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: loadBlueprint enforces size limits",
+  name: "AgentOrchestrator: loadBlueprint enforces size limits",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       // Create a huge prompt
       const hugePrompt =
@@ -1035,12 +1035,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: loadBlueprint validates agent name format",
+  name: "AgentOrchestrator: loadBlueprint validates agent name format",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const validYaml = `---
 name: test-agent
@@ -1068,12 +1068,12 @@ Test prompt`;
 });
 
 Deno.test({
-  name: "AgentExecutor: loadBlueprint handles missing frontmatter",
+  name: "AgentOrchestrator: loadBlueprint handles missing frontmatter",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       // Create blueprint without frontmatter
       const noFrontmatter = `This is just content without YAML frontmatter.`;
@@ -1098,12 +1098,12 @@ Deno.test({
 // ===== Prompt Injection Mitigation Tests =====
 
 Deno.test({
-  name: "AgentExecutor: sanitizes inputs in execution prompt",
+  name: "AgentOrchestrator: sanitizes inputs in execution prompt",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const blueprint: IAgentFileBlueprint = {
         name: "test-agent",
@@ -1145,12 +1145,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: handles prompt injection attempts in request",
+  name: "AgentOrchestrator: handles prompt injection attempts in request",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const blueprint: IAgentFileBlueprint = {
         name: "test-agent",
@@ -1192,7 +1192,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: requests prompt budget before strategy execution",
+  name: "AgentOrchestrator: requests prompt budget before strategy execution",
   fn: async () => {
     await setup();
     try {
@@ -1231,7 +1231,7 @@ Deno.test({
           }),
       });
 
-      const executor = new AgentExecutor({
+      const executor = new AgentOrchestrator({
         config: testConfig,
         db,
         logger,
@@ -1281,7 +1281,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: passes budget_enforcement policy to allocator from config",
+  name: "AgentOrchestrator: passes budget_enforcement policy to allocator from config",
   fn: async () => {
     await setup();
     const allocateCalls: string[] = [];
@@ -1334,7 +1334,7 @@ Deno.test({
           }),
       });
 
-      const executor = new AgentExecutor({
+      const executor = new AgentOrchestrator({
         config: configWithBudgetEnforcement,
         db,
         logger,
@@ -1380,12 +1380,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: sanitizes data-like structures in prompt",
+  name: "AgentOrchestrator: sanitizes data-like structures in prompt",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const blueprint: IAgentFileBlueprint = {
         name: "test-agent",
@@ -1433,12 +1433,12 @@ DROP TABLE sensitive_data;
 });
 
 Deno.test({
-  name: "AgentExecutor: withExecutionContext manages directory lifecycle",
+  name: "AgentOrchestrator: withExecutionContext manages directory lifecycle",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const originalDir = Deno.cwd();
       const targetDir = testDir;
@@ -1464,12 +1464,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: auditAndRevertChanges performs atomic rollback",
+  name: "AgentOrchestrator: auditAndRevertChanges performs atomic rollback",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       // Create an unauthorized file
       const unauthorizedFile = join(portalDir, "unauthorized-atomic.txt");
@@ -1498,12 +1498,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: getLatestCommitSha returns current HEAD",
+  name: "AgentOrchestrator: getLatestCommitSha returns current HEAD",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const sha = await executor.getLatestCommitSha(portalDir);
       assert(sha.length === 40, "SHA should be 40 characters");
@@ -1516,12 +1516,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: getChangedFiles returns list of modifications",
+  name: "AgentOrchestrator: getChangedFiles returns list of modifications",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       await Deno.writeTextFile(join(portalDir, "README.md"), "New content");
       const changed = await executor.getChangedFiles(portalDir);
@@ -1536,12 +1536,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: checkToolCallLimit validates threshold",
+  name: "AgentOrchestrator: checkToolCallLimit validates threshold",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       assertEquals(executor.checkToolCallLimit(10, 5), true);
       assertEquals(executor.checkToolCallLimit(3, 5), false);
@@ -1554,12 +1554,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: buildSubprocessPermissions handles various security modes",
+  name: "AgentOrchestrator: buildSubprocessPermissions handles various security modes",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const portalPath = "/fake/portal";
 
@@ -1584,12 +1584,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: validateFilePath prevents path traversal and injection",
+  name: "AgentOrchestrator: validateFilePath prevents path traversal and injection",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       // We need a real path and existing files for realPathSync
       const realPortalPath = await Deno.realPath(portalDir);
@@ -1624,10 +1624,10 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: requiresGitTracking correctly identifies write capabilities",
+  name: "AgentOrchestrator: requiresGitTracking correctly identifies write capabilities",
   fn: () => {
     const { db, logger, pathResolver, permissions } = getServices();
-    const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+    const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
     const writeBlueprint: IAgentFileBlueprint = {
       name: "write-agent",
@@ -1652,12 +1652,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: loadBlueprint handles YAML and Schema errors",
+  name: "AgentOrchestrator: loadBlueprint handles YAML and Schema errors",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       // 1. Invalid YAML
       const badYamlPath = join(testConfig.paths.blueprints, "Identities", "bad-yaml.md");
@@ -1698,7 +1698,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: applyTokenBudget uses tokenizer countTokens when available (GAP-31)",
+  name: "AgentOrchestrator: applyTokenBudget uses tokenizer countTokens when available (GAP-31)",
   fn: async () => {
     await setup();
     try {
@@ -1738,7 +1738,7 @@ Deno.test({
         },
       });
 
-      const executor = new AgentExecutor({
+      const executor = new AgentOrchestrator({
         config: testConfig,
         db,
         logger,
@@ -1790,7 +1790,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: compactLoopHistory includes summarizationModel in event when configured (GAP-32)",
+  name: "AgentOrchestrator: compactLoopHistory includes summarizationModel in event when configured (GAP-32)",
   fn: async () => {
     await setup();
     try {
@@ -1836,7 +1836,7 @@ Deno.test({
           }),
       });
 
-      const executor = new AgentExecutor({
+      const executor = new AgentOrchestrator({
         config: testConfig,
         db,
         logger,
@@ -1894,12 +1894,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: skills block in prompt respects sections.skills budget",
+  name: "AgentOrchestrator: skills block in prompt respects sections.skills budget",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       // Set budget on the ExecutionContextService (private ctx field)
       const ctxService = executor["ctx"];
@@ -1955,7 +1955,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: executeStep with provider parses JSON response",
+  name: "AgentOrchestrator: executeStep with provider parses JSON response",
   fn: async () => {
     await setup();
     try {
@@ -1984,7 +1984,7 @@ Deno.test({
         },
       };
 
-      const executor = new AgentExecutor({
+      const executor = new AgentOrchestrator({
         config: testConfig,
         db,
         logger,
@@ -2060,12 +2060,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: execution context methods and state management",
+  name: "AgentOrchestrator: execution context methods and state management",
   fn: async () => {
     await setup();
     const { db, logger, pathResolver, permissions } = getServices();
     try {
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const fakeContext: IWorkspaceExecutionContext = {
         workingDirectory: Deno.cwd(),
@@ -2101,12 +2101,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: executeStep without provider uses fallback result",
+  name: "AgentOrchestrator: executeStep without provider uses fallback result",
   fn: async () => {
     await setup();
     const { db, logger, pathResolver, permissions } = getServices();
     try {
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions }); // No provider passed
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions }); // No provider passed
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
@@ -2142,7 +2142,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: loadBlueprint throws BLUEPRINT_ACCESS_DENIED when permission denied",
+  name: "AgentOrchestrator: loadBlueprint throws BLUEPRINT_ACCESS_DENIED when permission denied",
   fn: async () => {
     await setup();
     const { db, logger, pathResolver, permissions } = getServices();
@@ -2151,7 +2151,7 @@ Deno.test({
     });
 
     try {
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
 
       const error = await assertRejects(
         () => executor.loadBlueprint("test-agent"),
@@ -2168,7 +2168,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: executeStep logs and reports error when provider.generate throws",
+  name: "AgentOrchestrator: executeStep logs and reports error when provider.generate throws",
   fn: async () => {
     await setup();
     const { db, logger, pathResolver, permissions } = getServices();
@@ -2178,7 +2178,7 @@ Deno.test({
     };
 
     try {
-      const executor = new AgentExecutor({
+      const executor = new AgentOrchestrator({
         config: testConfig,
         db,
         logger,
@@ -2221,7 +2221,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: executeStep parses agent response without JSON blocks securely",
+  name: "AgentOrchestrator: executeStep parses agent response without JSON blocks securely",
   fn: async () => {
     await setup();
     const { db, logger, pathResolver, permissions } = getServices();
@@ -2241,7 +2241,7 @@ Deno.test({
     };
 
     try {
-      const executor = new AgentExecutor({
+      const executor = new AgentOrchestrator({
         config: testConfig,
         db,
         logger,
@@ -2285,7 +2285,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: executeStep handles invalid JSON in provider response by falling back",
+  name: "AgentOrchestrator: executeStep handles invalid JSON in provider response by falling back",
   fn: async () => {
     await setup();
     const { db, logger, pathResolver, permissions } = getServices();
@@ -2305,7 +2305,7 @@ Deno.test({
     };
 
     try {
-      const executor = new AgentExecutor({
+      const executor = new AgentOrchestrator({
         config: testConfig,
         db,
         logger,
@@ -2347,7 +2347,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: tracks loop history after successful executeStep",
+  name: "AgentOrchestrator: tracks loop history after successful executeStep",
   fn: async () => {
     await setup();
     try {
@@ -2366,7 +2366,7 @@ Deno.test({
           }),
       });
 
-      const executor = new AgentExecutor({
+      const executor = new AgentOrchestrator({
         config: testConfig,
         db,
         logger,
@@ -2421,7 +2421,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: compactLoopHistory preserves last 2 steps and compacts older ones",
+  name: "AgentOrchestrator: compactLoopHistory preserves last 2 steps and compacts older ones",
   fn: async () => {
     await setup();
     try {
@@ -2457,7 +2457,7 @@ Deno.test({
         },
       };
 
-      const executor = new AgentExecutor({
+      const executor = new AgentOrchestrator({
         config: testConfig,
         db,
         logger,
@@ -2529,7 +2529,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: compacted originalStepIds match compressed step IDs (GAP-36)",
+  name: "AgentOrchestrator: compacted originalStepIds match compressed step IDs (GAP-36)",
   fn: async () => {
     await setup();
     try {
@@ -2565,7 +2565,7 @@ Deno.test({
         },
       };
 
-      const executor = new AgentExecutor({
+      const executor = new AgentOrchestrator({
         config: testConfig,
         db,
         logger,
@@ -2636,7 +2636,7 @@ Deno.test({
       assertEquals(remaining2.stepId, stepIds[4]);
 
       // NOTE: FlowCheckpointService integration is not yet wired into
-      // AgentExecutor. The originalStepIds field is a forward-compatibility
+      // AgentOrchestrator. The originalStepIds field is a forward-compatibility
       // hook — once FlowCheckpointService is wired into compactLoopHistory(),
       // these IDs can be used to retrieve original checkpoint data.
       // See phase-103 Step 103.14 for the deferred integration plan.
@@ -2656,7 +2656,7 @@ function sumTokens(history: Array<ILoopHistoryEntry | ICompactedEntry>): number 
 }
 
 Deno.test({
-  name: "AgentExecutor: executeStep triggers compaction when loopHistory budget exceeds 80%",
+  name: "AgentOrchestrator: executeStep triggers compaction when loopHistory budget exceeds 80%",
   fn: async () => {
     await setup();
     try {
@@ -2708,7 +2708,7 @@ Deno.test({
           }),
       };
 
-      const executor = new AgentExecutor({
+      const executor = new AgentOrchestrator({
         config: testConfig,
         db,
         logger,
@@ -2767,7 +2767,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: applyTokenBudget emits CONTEXT_BUDGET_CONSUMED per section",
+  name: "AgentOrchestrator: applyTokenBudget emits CONTEXT_BUDGET_CONSUMED per section",
   fn: async () => {
     await setup();
     try {
@@ -2798,7 +2798,7 @@ Deno.test({
         },
       });
 
-      const executor = new AgentExecutor({
+      const executor = new AgentOrchestrator({
         config: testConfig,
         db,
         logger,
@@ -2844,7 +2844,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: applyTokenBudget emits CONTEXT_SECTION_TRUNCATED on overflow",
+  name: "AgentOrchestrator: applyTokenBudget emits CONTEXT_SECTION_TRUNCATED on overflow",
   fn: async () => {
     await setup();
     try {
@@ -2890,7 +2890,7 @@ Deno.test({
           }),
       };
 
-      const executor = new AgentExecutor({
+      const executor = new AgentOrchestrator({
         config: testConfig,
         db,
         logger,
@@ -2939,7 +2939,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: marks stable sections in ContextCache during executeStep",
+  name: "AgentOrchestrator: marks stable sections in ContextCache during executeStep",
   fn: async () => {
     await setup();
     try {
@@ -2961,7 +2961,7 @@ Deno.test({
         },
       });
 
-      const executor = new AgentExecutor({
+      const executor = new AgentOrchestrator({
         config: testConfig,
         db,
         logger,
@@ -3011,12 +3011,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: constructor defaults services when not provided",
+  name: "AgentOrchestrator: constructor defaults services when not provided",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
       assertExists(executor);
       executor.dispose();
     } finally {
@@ -3028,12 +3028,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: dispose is safe to call multiple times",
+  name: "AgentOrchestrator: dispose is safe to call multiple times",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
       executor.dispose();
       executor.dispose();
     } finally {
@@ -3045,12 +3045,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: getRecentActivitiesByTraceId returns empty for unknown trace",
+  name: "AgentOrchestrator: getRecentActivitiesByTraceId returns empty for unknown trace",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
       const activities = await executor.getRecentActivitiesByTraceId("nonexistent-trace");
       assertEquals(activities, []);
       executor.dispose();
@@ -3063,12 +3063,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: buildSubprocessPermissions sandboxed mode blocks file access",
+  name: "AgentOrchestrator: buildSubprocessPermissions sandboxed mode blocks file access",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
       const flags = executor.buildSubprocessPermissions(SecurityMode.SANDBOXED, "/tmp/portal");
       assert(flags.some((f) => f.includes("--allow-read=NONE")));
       assert(flags.some((f) => f.includes("--allow-write=NONE")));
@@ -3082,12 +3082,12 @@ Deno.test({
 });
 
 Deno.test({
-  name: "AgentExecutor: loadBlueprint delegates to BlueprintService",
+  name: "AgentOrchestrator: loadBlueprint delegates to BlueprintService",
   fn: async () => {
     await setup();
     try {
       const { db, logger, pathResolver, permissions } = getServices();
-      const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
+      const executor = new AgentOrchestrator({ config: testConfig, db, logger, pathResolver, permissions });
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
       await Deno.writeTextFile(

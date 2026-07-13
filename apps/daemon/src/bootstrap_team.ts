@@ -34,7 +34,7 @@ import type { IModelRegistryProvider, IModelRegistryProviderDeps } from "@exaix/
 import type { IProviderHealthChecker } from "@exaix/ai";
 import type { Config, IRouteReason } from "@exaix/schemas";
 import type { IEventLogger } from "@exaix/core/logger";
-import type { AgentExecutorAdapter, FlowRunner } from "@exaix/flow";
+import type { AgentOrchestratorAdapter, FlowRunner } from "@exaix/flow";
 import type { TeamComposer } from "@exaix-team/team-composer";
 import { CAP_VOTING, CAPABILITY_EDITION } from "@exaix/core/composer";
 import type { ISeamRegistryPlaceholder } from "@exaix/core/composer";
@@ -249,7 +249,7 @@ export async function loadBenchmarkFloor(
  * `if (editionType === EDITION_TEAM)` guard.
  */
 export function registerTeamCapabilities(
-  agentExecutorAdapter: AgentExecutorAdapter,
+  agentExecutorAdapter: AgentOrchestratorAdapter,
   logger: IEventLogger,
   flowRunner: FlowRunner,
   composer: TeamComposer,

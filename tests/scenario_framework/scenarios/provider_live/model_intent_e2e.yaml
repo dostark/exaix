@@ -46,7 +46,7 @@ steps:
   # dogfood.claude.toml's session_delegate.gates = ["code_changes"] intercepts EVERY
   # plan step unconditionally once a plan is approved (apps/daemon/main.ts's
   # onCodeChangesDelegate wiring has no step-content filter), routing it to the headless
-  # `claude -p` delegate instead of AgentExecutor/ModelResolver — so model.resolved would
+  # `claude -p` delegate instead of AgentOrchestrator/ModelResolver — so model.resolved would
   # never fire for this scenario's approved plan.
   - id: "start-daemon"
     type: "exactl"

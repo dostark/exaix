@@ -54,7 +54,7 @@ Deno.test("recommendTestDirectoryForSource: maps common source folders to test f
 
 Deno.test("validateTestPlacement: ignores non-test files in mixed input", () => {
   const result = validateTestPlacement([
-    "src/services/agent/agent_executor.ts",
+    "src/services/agent/agent_orchestrator.ts",
     "packages/execution/tests/agent_executor_test.ts",
   ]);
 

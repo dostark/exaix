@@ -1,11 +1,11 @@
 /**
  * @module AgentExecutorJournalTest
  * @path packages/execution/tests/agent_executor_journal_test.ts
- * @description Verifies AgentExecutor journal calls use correct Actor/Agent/Identity field separation.
+ * @description Verifies AgentOrchestrator journal calls use correct Actor/Agent/Identity field separation.
  */
 
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
-import { AgentExecutor } from "@exaix/execution";
+import { AgentOrchestrator } from "@exaix/execution";
 import type { EventLogger } from "@exaix/core/logger";
 import type { ILogEvent } from "@exaix/core";
 import { ActorType, AgentKind } from "@exaix/core";
@@ -17,11 +17,11 @@ import {
 } from "@exaix/core";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { PathResolver, PortalPermissionsService } from "@exaix/portal";
-import type { IChangesetResult } from "@exaix/schemas/agent_executor.ts";
+import type { IChangesetResult } from "@exaix/schemas/agent_orchestrator.ts";
 import { createMockConfig } from "@exaix/testing";
 
 /**
- * Tests for Step 55.3: AgentExecutor journal field separation
+ * Tests for Step 55.3: AgentOrchestrator journal field separation
  *
  * Success Criteria:
  * - Test 1: logExecutionStart writes agentId='agent-executor' and identityId=blueprintSlug
@@ -43,9 +43,9 @@ function createMockConfigForTest(): ReturnType<typeof createMockConfig> {
   return createMockConfig("/tmp/test");
 }
 
-function createExecutorHarness(): { executor: AgentExecutor; loggedEvents: ILogEvent[] } {
+function createExecutorHarness(): { executor: AgentOrchestrator; loggedEvents: ILogEvent[] } {
   const loggedEvents: ILogEvent[] = [];
-  const executor = new AgentExecutor({
+  const executor = new AgentOrchestrator({
     config: createMockConfigForTest(),
     db: {} as Partial<DatabaseService> as DatabaseService,
     logger: createMockLogger(loggedEvents) as EventLogger,
@@ -56,7 +56,7 @@ function createExecutorHarness(): { executor: AgentExecutor; loggedEvents: ILogE
   return { executor, loggedEvents };
 }
 
-Deno.test("AgentExecutor: logExecutionStart writes correct field separation", async () => {
+Deno.test("AgentOrchestrator: logExecutionStart writes correct field separation", async () => {
   const { executor, loggedEvents } = createExecutorHarness();
 
   // Act
@@ -77,7 +77,7 @@ Deno.test("AgentExecutor: logExecutionStart writes correct field separation", as
   executor.dispose();
 });
 
-Deno.test("AgentExecutor: logExecutionComplete writes correct field separation", async () => {
+Deno.test("AgentOrchestrator: logExecutionComplete writes correct field separation", async () => {
   const { executor, loggedEvents } = createExecutorHarness();
 
   const mockResult: IChangesetResult = {
@@ -112,7 +112,7 @@ Deno.test("AgentExecutor: logExecutionComplete writes correct field separation",
   executor.dispose();
 });
 
-Deno.test("AgentExecutor: logExecutionError writes correct field separation", async () => {
+Deno.test("AgentOrchestrator: logExecutionError writes correct field separation", async () => {
   const { executor, loggedEvents } = createExecutorHarness();
 
   const errorPayload = {
@@ -138,7 +138,7 @@ Deno.test("AgentExecutor: logExecutionError writes correct field separation", as
   executor.dispose();
 });
 
-Deno.test("AgentExecutor: REGRESSION - agentId must never be identity blueprint slug", async () => {
+Deno.test("AgentOrchestrator: REGRESSION - agentId must never be identity blueprint slug", async () => {
   const { executor, loggedEvents } = createExecutorHarness();
 
   // Act - log with identityId = "senior-coder"

@@ -1,7 +1,7 @@
 /**
  * @module GitAuditParserTest
  * @path tests/agents/git_audit_parser_test.ts
- * @description Step 61.7 (G3): Unit tests for AgentExecutor.auditGitChanges() covering
+ * @description Step 61.7 (G3): Unit tests for AgentOrchestrator.auditGitChanges() covering
  * the full range of git status --porcelain output scenarios.
  *
  * Success Criteria:
@@ -15,7 +15,7 @@
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { AgentExecutor } from "@exaix/execution";
+import { AgentOrchestrator } from "@exaix/execution";
 import type { EventLogger } from "@exaix/core/logger";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import { PortalOperation } from "@exaix/core";
@@ -53,7 +53,7 @@ async function setupGitRepo(
   return dir;
 }
 
-/** Build a minimal AgentExecutor for direct auditGitChanges() calls. */
+/** Build a minimal AgentOrchestrator for direct auditGitChanges() calls. */
 async function buildExecutor(tempDir: string, portalPath: string) {
   const dbService = await initTestDbService();
   const config = createMockConfig(tempDir, {
@@ -72,7 +72,7 @@ async function buildExecutor(tempDir: string, portalPath: string) {
     identities_allowed: ["*"],
     operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
   }]);
-  const executor = new AgentExecutor({
+  const executor = new AgentOrchestrator({
     config,
     db: dbService.db,
     logger: NOOP_LOGGER as EventLogger,

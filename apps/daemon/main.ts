@@ -46,7 +46,7 @@ import { RequestProcessor } from "@exaix/request";
 import { ReviewRegistry } from "@exaix/core/artifact";
 import { EventLogger, EventLoggerStructuredOutput } from "@exaix/core/logger";
 import { AgentRunner, ExecutionLoop } from "@exaix/execution";
-import { AgentExecutorAdapter, FlowRunner, type IFlowEventLogger, type IFlowEventPayload } from "@exaix/flow";
+import { AgentOrchestratorAdapter, FlowRunner, type IFlowEventLogger, type IFlowEventPayload } from "@exaix/flow";
 import {
   initializeMemoryAutoApprovalMaintenance,
   MemoryAutoApprovalService,
@@ -804,7 +804,7 @@ if (import.meta.main) {
       DEFAULT_IDENTITIES_PATH,
     );
     const agentRunner = new AgentRunner(llmProvider);
-    const agentExecutorAdapter = new AgentExecutorAdapter(
+    const agentExecutorAdapter = new AgentOrchestratorAdapter(
       agentRunner,
       blueprintsPath,
     );
@@ -1107,15 +1107,15 @@ if (import.meta.main) {
       // Phase 135 Step 9 (GAP-C9): without a logger, ExecutionLoop.logActivity no-ops and
       // the same unset logger passes through to PlanExecutor — silencing every plan-
       // execution event (including model.resolved/model.route.selected/model.admitted
-      // emitted deeper in AgentExecutor/ModelResolver) from the Activity Journal.
+      // emitted deeper in AgentOrchestrator/ModelResolver) from the Activity Journal.
       logger,
-      // Phase 135 Step 9 (GAP-C9): threaded to PlanExecutor -> AgentExecutor so
+      // Phase 135 Step 9 (GAP-C9): threaded to PlanExecutor -> AgentOrchestrator so
       // resolveModelFromBlueprint's ModelResolver.resolve() branch (best/route/
       // auto-admit/task_type) is reachable during real plan execution — previously
       // createAgentExecutor never received a resolver at all.
       modelResolver,
       // Phase 135 Step 11 (GAP-10, context-window half): threaded to PlanExecutor so
-      // AgentExecutor's internally-constructed PromptBudgetAllocator resolves a step's
+      // AgentOrchestrator's internally-constructed PromptBudgetAllocator resolves a step's
       // real context window (via the same edition-selected registry already used for
       // ModelResolver/CostTracker above) instead of always falling back to the
       // hardcoded 128K default — previously createAgentExecutor never received a

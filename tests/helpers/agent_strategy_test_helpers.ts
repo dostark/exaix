@@ -10,11 +10,11 @@ import { createTestConfig } from "../../packages/ai/tests/helpers/test_config.ts
 import { EventLogger } from "@exaix/core/logger";
 import { SecurityMode } from "@exaix/core";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
-import { AgentExecutor } from "@exaix/execution";
+import { AgentOrchestrator } from "@exaix/execution";
 import { readFixtureTextSync } from "@exaix/testing";
 import type { MockProvider } from "@exaix/ai/providers.ts";
 import type { IAgentFileBlueprint } from "@exaix/execution";
-import type { IAgentExecutionOptions } from "@exaix/schemas/agent_executor.ts";
+import type { IAgentExecutionOptions } from "@exaix/schemas/agent_orchestrator.ts";
 
 export const TEST_OPTIONS: IAgentExecutionOptions = {
   identity_id: "test-agent",
@@ -39,7 +39,7 @@ export async function setupStrategyExecutor(
   provider: MockProvider,
   fixturePath: { group: string; file: string },
 ): Promise<{
-  executor: AgentExecutor;
+  executor: AgentOrchestrator;
   cleanup: () => Promise<void>;
 }> {
   const { db, cleanup: dbCleanup } = await initTestDbService();
@@ -66,7 +66,7 @@ export async function setupStrategyExecutor(
   const logger = new EventLogger({ db });
   const pathResolver = new PathResolver(config);
   const permissions = new PortalPermissionsService(config.portals);
-  const executor = new AgentExecutor({ config, db, logger, pathResolver, permissions, provider });
+  const executor = new AgentOrchestrator({ config, db, logger, pathResolver, permissions, provider });
 
   return {
     executor,

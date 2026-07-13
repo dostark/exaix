@@ -2,7 +2,7 @@
  * @module AgentExecutorFixture
  * @path tests/integration/helpers/agent_executor_fixture.ts
  * @related-files ["tests/integration/agent/cost_logging_test.ts", "tests/integration/agent/context_overflow_recovery_test.ts"]
- * @description Shared fixture for AgentExecutor integration tests: temp DB, a
+ * @description Shared fixture for AgentOrchestrator integration tests: temp DB, a
  * git-initialised TestPortal, a test-agent blueprint, and wired config,
  * logger, path resolver, and portal permissions.
  */
@@ -29,7 +29,7 @@ export interface IAgentExecutorFixture {
 
 /**
  * Creates a temp workspace with a git-initialised TestPortal, a test-agent
- * blueprint, and an AgentExecutor-ready config + service wiring.
+ * blueprint, and an AgentOrchestrator-ready config + service wiring.
  */
 export async function setupAgentExecutorFixture(): Promise<IAgentExecutorFixture> {
   const { db, tempDir, cleanup } = await initTestDbService();

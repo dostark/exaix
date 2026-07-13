@@ -1,6 +1,6 @@
 /**
- * @module AgentExecutor
- * @path packages/execution/src/agent_executor.ts
+ * @module AgentOrchestrator
+ * @path packages/execution/src/agent_orchestrator.ts
  * @description Thin orchestrator that delegates to injected services for
  *   blueprint loading (BlueprintService), prompt building (PromptBuilder),
  *   git audit (GitAuditService), output parsing (OutputParser), history
@@ -43,7 +43,7 @@ import type {
   IAgentExecutionOptionsInput,
   IChangesetResult,
   IExecutionContext,
-} from "@exaix/schemas/agent_executor.ts";
+} from "@exaix/schemas/agent_orchestrator.ts";
 import type { IToolRegistry } from "@exaix/core/types";
 import { AgentExecutionErrorType, ExecutionStrategyName, SecurityMode } from "@exaix/core";
 import { InputValidator } from "@exaix/schemas/input_validation.ts";
@@ -94,22 +94,22 @@ export interface IAgentFileBlueprint {
   hitl?: HitlPolicy;
 }
 
-/** Optional configuration for AgentExecutor. */
-export interface IAgentExecutorOptions {
+/** Optional configuration for AgentOrchestrator. */
+export interface IAgentOrchestratorOptions {
   guardrailRunner?: IGuardrailRunner;
   /** Request-level IModelIntent fields override blueprint values (Phase 132). */
   requestIntent?: Partial<IModelIntent>;
   /**
    * Phase 135 Step 8 (§5.8.8) — the caller's highest-confidence skill match's
-   * triggers.task_types, in priority order (first = most confident). AgentExecutor has
+   * triggers.task_types, in priority order (first = most confident). AgentOrchestrator has
    * no SkillsService dependency; a caller that already matched skills (e.g. AgentRunner)
    * may supply this to participate in the derivation precedence chain.
    */
   topSkillTaskTypes?: TaskType[];
 }
 
-/** Dependencies for AgentExecutor constructor. */
-export interface IAgentExecutorDeps {
+/** Dependencies for AgentOrchestrator constructor. */
+export interface IAgentOrchestratorDeps {
   config: Config;
   db: IDatabaseService;
   logger: IEventLogger;
@@ -125,7 +125,7 @@ export interface IAgentExecutorDeps {
   outputParser?: OutputParser;
   historyManager?: HistoryManager;
   guardrailRunner?: IGuardrailRunner;
-  options?: IAgentExecutorOptions;
+  options?: IAgentOrchestratorOptions;
   modelResolver?: ModelResolver;
 }
 
@@ -144,7 +144,7 @@ export class AgentExecutionError extends Error {
 }
 
 /**
- * AgentExecutor — orchestrator and strategy dispatcher for agent execution.
+ * AgentOrchestrator — orchestrator and strategy dispatcher for agent execution.
  *
  * Delegates each concern to an injected service:
  *
@@ -174,7 +174,7 @@ export class AgentExecutionError extends Error {
  * @see HistoryManager
  * @see ReActLoopAdapter
  */
-export class AgentExecutor {
+export class AgentOrchestrator {
   private executionContext?: IWorkspaceExecutionContext;
   private originalWorkingDirectory?: string;
   private config: Config;
@@ -186,7 +186,7 @@ export class AgentExecutor {
   private strategyRegistry?: StrategyRegistry;
   private _toolRegistry?: IToolRegistry;
   private _guardrailRunner?: IGuardrailRunner;
-  private readonly options?: IAgentExecutorOptions;
+  private readonly options?: IAgentOrchestratorOptions;
   private modelResolver?: ModelResolver;
   private blueprintService: BlueprintService;
   private promptBuilder: PromptBuilder;
@@ -228,7 +228,7 @@ export class AgentExecutor {
     return this._guardrailRunner;
   }
 
-  constructor(deps: IAgentExecutorDeps) {
+  constructor(deps: IAgentOrchestratorDeps) {
     this.config = deps.config;
     this.db = deps.db;
     this.logger = deps.logger;
@@ -409,7 +409,7 @@ export class AgentExecutor {
 
   /**
    * Dispose of all resources (strategy signal listeners, etc.)
-   * Call this when the AgentExecutor is no longer needed
+   * Call this when the AgentOrchestrator is no longer needed
    */
   dispose(): void {
     // Invalidate context cache at end of execution

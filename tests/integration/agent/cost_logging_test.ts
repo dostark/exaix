@@ -2,19 +2,19 @@
  * @module AgentCostLoggingIntegrationTest
  * @path tests/integration/agent/cost_logging_test.ts
  * @description Integration tests for Phase 62 Step 62.4 cost and usage logging in
- *   AgentExecutor. Phase 135 Step 12 (GAP-25) added a regression asserting the
+ *   AgentOrchestrator. Phase 135 Step 12 (GAP-25) added a regression asserting the
  *   no-strategy-usage fallback journals cost_usd_estimate exactly 0 — never a
  *   heuristic-computed figure, now that estimateExecutionUsage() is removed.
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { AgentExecutor } from "@exaix/execution";
+import { AgentOrchestrator } from "@exaix/execution";
 import { StrategyRegistry } from "@exaix/execution";
 import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
-import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
-import { setupAgentExecutorFixture } from "../helpers/agent_executor_fixture.ts";
+import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import { setupAgentExecutorFixture } from "../helpers/agent_orchestrator_fixture.ts";
 
-Deno.test("AgentExecutor integration: logs usage.tokens and usage.cost_usd_estimate", async () => {
+Deno.test("AgentOrchestrator integration: logs usage.tokens and usage.cost_usd_estimate", async () => {
   const { db, config, logger, pathResolver, permissions, cleanup } = await setupAgentExecutorFixture();
 
   try {
@@ -32,7 +32,7 @@ Deno.test("AgentExecutor integration: logs usage.tokens and usage.cost_usd_estim
         }),
     });
 
-    const executor = new AgentExecutor({ config, db, logger, pathResolver, permissions, strategyRegistry });
+    const executor = new AgentOrchestrator({ config, db, logger, pathResolver, permissions, strategyRegistry });
 
     const traceId = crypto.randomUUID();
     const context: IExecutionContext = {
@@ -71,7 +71,7 @@ Deno.test("AgentExecutor integration: logs usage.tokens and usage.cost_usd_estim
   }
 });
 
-Deno.test("[regression] AgentExecutor: a step with no strategy-reported usage journals cost_usd_estimate exactly 0 (Step 12, GAP-25 — no heuristic computation anywhere in the call chain)", async () => {
+Deno.test("[regression] AgentOrchestrator: a step with no strategy-reported usage journals cost_usd_estimate exactly 0 (Step 12, GAP-25 — no heuristic computation anywhere in the call chain)", async () => {
   const { db, config, logger, pathResolver, permissions, cleanup } = await setupAgentExecutorFixture();
 
   try {
@@ -90,7 +90,7 @@ Deno.test("[regression] AgentExecutor: a step with no strategy-reported usage jo
         }),
     });
 
-    const executor = new AgentExecutor({ config, db, logger, pathResolver, permissions, strategyRegistry });
+    const executor = new AgentOrchestrator({ config, db, logger, pathResolver, permissions, strategyRegistry });
 
     const traceId = crypto.randomUUID();
     const context: IExecutionContext = {

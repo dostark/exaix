@@ -5,7 +5,7 @@
  * Stable sections (system prompt, portal context) are cached across execution steps
  * to reduce redundant LLM API calls and costs.
  * @architectural-layer Core
- * @related-files [packages/execution/src/agent_executor.ts]
+ * @related-files [packages/execution/src/agent_orchestrator.ts]
  */
 
 /**

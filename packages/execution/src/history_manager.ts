@@ -2,9 +2,9 @@
  * @module HistoryManager
  * @path packages/execution/src/history_manager.ts
  * @description Manages loop history ring buffer, compaction, and budget checking.
- *   Extracted from AgentExecutor.
+ *   Extracted from AgentOrchestrator.
  * @architectural-layer Execution
- * @related-files [packages/execution/src/agent_executor.ts]
+ * @related-files [packages/execution/src/agent_orchestrator.ts]
  */
 
 import type { IEventLogger } from "@exaix/core/logger";

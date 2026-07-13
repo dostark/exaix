@@ -52,7 +52,7 @@ async function assertPortalGitDirInitialized(): Promise<void> {
 }
 
 Deno.test("[integration] Read-only agent capabilities detected correctly", async () => {
-  // Note: IAgentExecutor as AgentExecutor.requiresGitTracking() and isReadOnlyAgent()
+  // Note: IAgentExecutor as AgentOrchestrator.requiresGitTracking() and isReadOnlyAgent()
   // are tested in unit tests (tests/services/agent_capability_test.ts)
   // This integration test verifies the portal git repo infrastructure is initialized by setupPortal
   await assertPortalGitDirInitialized();

@@ -1,20 +1,20 @@
 /**
  * @module AgentExecutorModelResolveTest
  * @path packages/execution/tests/agent_executor_model_resolve_test.ts
- * @description Phase 132 Step 3 — validates that AgentExecutor correctly resolves
+ * @description Phase 132 Step 3 — validates that AgentOrchestrator correctly resolves
  *   model via ModelResolver using blueprint frontmatter fields (model_size,
  *   thinking, characteristics, preferred_provider) and falls back to inline
  *   split when ModelResolver is not provided.
  * @architectural-layer Test
  * @dependencies [@std/assert, @exaix/testing, @exaix/schemas, @exaix/ai]
- * @related-files [packages/execution/src/agent_executor.ts]
+ * @related-files [packages/execution/src/agent_orchestrator.ts]
  */
 
 import { assertEquals } from "@std/assert";
 import { createTestConfig } from "../../../packages/ai/tests/helpers/test_config.ts";
 import { initTestDbService } from "@exaix/testing";
-import { AgentExecutor } from "@exaix/execution";
-import type { IAgentExecutorOptions } from "@exaix/execution";
+import { AgentOrchestrator } from "@exaix/execution";
+import type { IAgentOrchestratorOptions } from "@exaix/execution";
 import type { ModelResolver } from "@exaix/ai";
 import type { IModelIntent, IResolvedModel } from "@exaix/schemas";
 import { TaskType } from "@exaix/core/types";
@@ -66,15 +66,15 @@ function makeExecutor(
   config: ReturnType<typeof createTestConfig>,
   db: Awaited<ReturnType<typeof initTestDbService>>["db"],
   resolver?: ModelResolver,
-  options?: IAgentExecutorOptions,
-): AgentExecutor {
+  options?: IAgentOrchestratorOptions,
+): AgentOrchestrator {
   const logger = new EventLogger({ db });
   const pathResolver = new PathResolver(config);
   const permissions = new PortalPermissionsService([]);
-  return new AgentExecutor({ config, db, logger, pathResolver, permissions, options, modelResolver: resolver });
+  return new AgentOrchestrator({ config, db, logger, pathResolver, permissions, options, modelResolver: resolver });
 }
 
-Deno.test("[step132.3][model-resolve] AgentExecutor resolves model_size blueprint through ModelResolver", async () => {
+Deno.test("[step132.3][model-resolve] AgentOrchestrator resolves model_size blueprint through ModelResolver", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
     const testDir = await Deno.makeTempDir();
@@ -106,7 +106,7 @@ Deno.test("[step132.3][model-resolve] AgentExecutor resolves model_size blueprin
   }
 });
 
-Deno.test("[step132.3][model-resolve] AgentExecutor with explicit model bypasses ModelResolver", async () => {
+Deno.test("[step132.3][model-resolve] AgentOrchestrator with explicit model bypasses ModelResolver", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
     const testDir = await Deno.makeTempDir();
@@ -276,7 +276,7 @@ Deno.test("[step135.8] no task_type source at all leaves task_type/task_type_sou
   }
 });
 
-Deno.test("[step132.3][model-resolve] AgentExecutor without ModelResolver splits provider:model inline", async () => {
+Deno.test("[step132.3][model-resolve] AgentOrchestrator without ModelResolver splits provider:model inline", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
     const testDir = await Deno.makeTempDir();

@@ -7,7 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
-import { AgentExecutor, type IAgentFileBlueprint } from "@exaix/execution";
+import { AgentOrchestrator, type IAgentFileBlueprint } from "@exaix/execution";
 import { initTestDbService } from "@exaix/testing";
 import { createMockConfig } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
@@ -21,12 +21,12 @@ import { PROVIDER_OPENAI } from "@exaix/ai-openai";
  * TDD Tests for Agent Capability Differentiation
  * Task 4.1: Read-Only Agent Optimization
  *
- * Tests that AgentExecutor can differentiate between read-only and write-capable agents
+ * Tests that AgentOrchestrator can differentiate between read-only and write-capable agents
  */
 
-describe("AgentExecutor Capability Differentiation", () => {
+describe("AgentOrchestrator Capability Differentiation", () => {
   let config: Config;
-  let executor: AgentExecutor;
+  let executor: AgentOrchestrator;
   let cleanup: () => Promise<void>;
 
   beforeEach(async () => {
@@ -38,7 +38,7 @@ describe("AgentExecutor Capability Differentiation", () => {
     const pathResolver = new PathResolver(config);
     const permissions = new PortalPermissionsService([]);
 
-    executor = new AgentExecutor({ config, db: dbService.db, logger, pathResolver, permissions });
+    executor = new AgentOrchestrator({ config, db: dbService.db, logger, pathResolver, permissions });
   });
 
   afterEach(async () => {

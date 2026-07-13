@@ -152,7 +152,7 @@ set to `Number.MAX_SAFE_INTEGER`) when calling `ContextBudgetManager.prepare()`.
 manager invocations from `AgentRunner` therefore apply segment-priority ordering but impose
 no section token limits. Callers that require real section caps should supply a
 pre-computed `IPromptBudget` from `PromptBudgetAllocator.allocate()` via a wrapper, or use
-the `ReActLoopStrategy` path which reads `AgentExecutor.currentPromptBudget` directly.
+the `ReActLoopStrategy` path which reads `AgentOrchestrator.currentPromptBudget` directly.
 
 ### Key Files
 

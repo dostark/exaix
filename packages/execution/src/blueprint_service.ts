@@ -2,9 +2,9 @@
  * @module BlueprintService
  * @path packages/execution/src/blueprint_service.ts
  * @description Loads, validates, and resolves agent blueprints. Extracted from
- *   AgentExecutor to reduce its scope and encapsulate blueprint lifecycle.
+ *   AgentOrchestrator to reduce its scope and encapsulate blueprint lifecycle.
  * @architectural-layer Execution
- * @related-files [packages/execution/src/agent_executor.ts]
+ * @related-files [packages/execution/src/agent_orchestrator.ts]
  */
 
 import { isAbsolute, join } from "@std/path";
@@ -18,7 +18,7 @@ import type { ModelResolver } from "@exaix/ai";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_IDENTITIES_PATH, MAX_NAME_LENGTH, MAX_PROMPT_LENGTH } from "@exaix/core";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
-import type { IAgentExecutorOptions, IAgentFileBlueprint } from "./agent_executor.ts";
+import type { IAgentFileBlueprint, IAgentOrchestratorOptions } from "./agent_orchestrator.ts";
 import { InputValidator } from "@exaix/schemas/input_validation.ts";
 import { deriveTaskType } from "./task_type_derivation.ts";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -70,7 +70,7 @@ export class BlueprintService {
     private config: Config,
     private logger: IEventLogger,
     private modelResolver?: Opt<ModelResolver, Reason.OptionalDependency>,
-    private options?: Opt<IAgentExecutorOptions, Reason.OptionalContext>,
+    private options?: Opt<IAgentOrchestratorOptions, Reason.OptionalContext>,
   ) {}
 
   /**

@@ -2,14 +2,14 @@
  * @module PlanExecutorModelResolverTest
  * @path packages/core/tests/planning/plan_executor_model_resolver_test.ts
  * @description Phase 135 Step 9 (GAP-C9) — proves PlanExecutor threads a ModelResolver
- *   through IPlanExecutorOptions into AgentExecutor's constructor, so
+ *   through IPlanExecutorOptions into AgentOrchestrator's constructor, so
  *   resolveModelFromBlueprint's `if (this.modelResolver)` branch is actually reachable
  *   during real plan execution. Before this fix, createAgentExecutor never passed
  *   modelResolver at all — ModelResolver.resolve() (the only path to best/route/
  *   auto-admit/task_type derivation) was production-dead for every plan execution,
  *   regardless of identity blueprint content.
  * @architectural-layer Test
- * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_executor.ts, packages/ai/src/model_resolver.ts]
+ * @related-files [packages/core/src/planning/plan_executor.ts, packages/execution/src/agent_orchestrator.ts, packages/ai/src/model_resolver.ts]
  */
 
 import { assertEquals } from "@std/assert";
@@ -74,7 +74,7 @@ Deno.test("PlanExecutor accepts modelResolver via IPlanExecutorOptions", () => {
 });
 
 Deno.test({
-  name: "PlanExecutor's AgentExecutor calls the injected ModelResolver during step execution (GAP-C9)",
+  name: "PlanExecutor's AgentOrchestrator calls the injected ModelResolver during step execution (GAP-C9)",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -117,7 +117,7 @@ Deno.test({
       assertEquals(
         resolvedEvents.length > 0,
         true,
-        "AgentExecutor.resolveModelFromBlueprint must call the injected ModelResolver.resolve() " +
+        "AgentOrchestrator.resolveModelFromBlueprint must call the injected ModelResolver.resolve() " +
           "(observable via the model.resolved event) — not silently skip to the legacy colon-parse fallback",
       );
     } finally {

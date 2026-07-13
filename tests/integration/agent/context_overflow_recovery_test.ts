@@ -5,12 +5,12 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { AgentExecutor, ExecutionContextService } from "@exaix/execution";
+import { AgentOrchestrator, ExecutionContextService } from "@exaix/execution";
 import { StrategyRegistry } from "@exaix/execution";
 import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
-import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
+import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
 import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
-import { setupAgentExecutorFixture } from "../helpers/agent_executor_fixture.ts";
+import { setupAgentExecutorFixture } from "../helpers/agent_orchestrator_fixture.ts";
 
 Deno.test("Integration: context overflow recovers by truncating prompt via allocator budget", async () => {
   const { db, config, logger, pathResolver, permissions, cleanup } = await setupAgentExecutorFixture();
@@ -38,7 +38,7 @@ Deno.test("Integration: context overflow recovers by truncating prompt via alloc
       },
     };
 
-    const holder: { executor?: AgentExecutor } = {};
+    const holder: { executor?: AgentOrchestrator } = {};
     const strategyRegistry = new StrategyRegistry();
     strategyRegistry.register({
       name: ExecutionStrategyName.LEGACY,
@@ -58,7 +58,7 @@ Deno.test("Integration: context overflow recovers by truncating prompt via alloc
       },
     });
 
-    const executor = new AgentExecutor({
+    const executor = new AgentOrchestrator({
       config,
       db,
       logger,

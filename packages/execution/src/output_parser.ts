@@ -2,15 +2,15 @@
  * @module OutputParser
  * @path packages/execution/src/output_parser.ts
  * @description Parses LLM responses, validates changeset results, and
- *   logs generation metrics. Extracted from AgentExecutor.
+ *   logs generation metrics. Extracted from AgentOrchestrator.
  * @architectural-layer Execution
- * @related-files [packages/execution/src/agent_executor.ts]
+ * @related-files [packages/execution/src/agent_orchestrator.ts]
  */
 
 import type { JSONValue } from "@exaix/core";
 import { GIT_EMPTY_SHA } from "@exaix/git";
-import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
-import { ChangesetResultSchema } from "@exaix/schemas/agent_executor.ts";
+import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
+import { ChangesetResultSchema } from "@exaix/schemas/agent_orchestrator.ts";
 
 /** Fields from IExecutionContext used by OutputParser. */
 export type IOutputParserContext = Pick<IExecutionContext, "trace_id" | "request_id" | "plan">;

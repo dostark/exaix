@@ -2,10 +2,10 @@
  * @module ReActLoopAdapter
  * @path packages/execution/src/react_loop_adapter.ts
  * @description Adapter that implements IReActLoopExecutor by composing
- *   AgentExecutor's extracted services. Breaks the structural coupling
- *   between AgentExecutor and the ReAct loop strategy.
+ *   AgentOrchestrator's extracted services. Breaks the structural coupling
+ *   between AgentOrchestrator and the ReAct loop strategy.
  * @architectural-layer Execution
- * @related-files [packages/execution/src/agent_executor.ts]
+ * @related-files [packages/execution/src/agent_orchestrator.ts]
  */
 
 import type { JSONValue } from "@exaix/core";
@@ -18,7 +18,7 @@ import {
   AgentKind,
   DEFAULT_MCP_IDENTITY_ID,
 } from "@exaix/core";
-import type { IChangesetResult } from "@exaix/schemas/agent_executor.ts";
+import type { IChangesetResult } from "@exaix/schemas/agent_orchestrator.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IToolRegistry } from "@exaix/core/types";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
@@ -29,7 +29,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Interface that the ReAct loop strategy requires from its executor.
- * Previously used AgentExecutor["methodName"] type-queries, creating
+ * Previously used AgentOrchestrator["methodName"] type-queries, creating
  * structural coupling. Now an independent interface.
  */
 export interface IReActLoopExecutor {
@@ -53,7 +53,7 @@ export interface IReActLoopExecutor {
 }
 
 /**
- * Adapter that implements IReActLoopExecutor by composing AgentExecutor's services.
+ * Adapter that implements IReActLoopExecutor by composing AgentOrchestrator's services.
  */
 export class ReActLoopAdapter implements IReActLoopExecutor {
   constructor(

@@ -75,13 +75,13 @@ export interface IExecutionLoopConfig {
   llmProvider?: IModelProvider;
   /**
    * Phase 135 Step 9 (GAP-C9): threaded into PlanExecutor's IPlanExecutorOptions so
-   * AgentExecutor.resolveModelFromBlueprint's ModelResolver.resolve() branch is
+   * AgentOrchestrator.resolveModelFromBlueprint's ModelResolver.resolve() branch is
    * reachable during real plan execution.
    */
   modelResolver?: ModelResolver;
   /**
    * Phase 135 Step 11 (GAP-10, context-window half): threaded into PlanExecutor's
-   * IPlanExecutorOptions so AgentExecutor's internally-constructed
+   * IPlanExecutorOptions so AgentOrchestrator's internally-constructed
    * PromptBudgetAllocator resolves a step's real context window instead of always
    * falling back to the hardcoded 128K default.
    */

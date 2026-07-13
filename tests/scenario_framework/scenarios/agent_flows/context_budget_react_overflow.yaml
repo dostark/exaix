@@ -9,7 +9,7 @@ description: >-
   tool_result segments to be dropped after the first iteration. The scenario
   asserts that context.budget.compacted is emitted in the journal, proving that
   Phase 83 Step 3 wiring is active. Requires manual checkpoint mode because it
-  depends on a configured ContextBudgetManager injected into AgentExecutor —
+  depends on a configured ContextBudgetManager injected into AgentOrchestrator —
   not auto-wired in the default test runner.
 request_fixture: "fixtures/requests/agent_flows/context_budget_react_overflow.md"
 mode_support: ["manual-checkpoint"]
