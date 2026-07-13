@@ -600,14 +600,12 @@ AgentExecutor (dispatcher)
 | `ExecutionContextService` | `execution_context_service.ts` | Budget allocation, context cache, token counting, context budget manager, snapshot store |
 | `BlueprintService` | `blueprint_service.ts` | Blueprint loading, YAML parsing, Zod validation, model resolution, prompt sanitization |
 | `PromptBuilder` | `prompt_builder.ts` | Execution prompt assembly, token budget enforcement, input sanitization, context cache marking |
+| `GitAuditService` | `git_audit_service.ts` | Git audit, SHA resolution, file path validation, unauthorized change detection |
+| `OutputParser` | `output_parser.ts` | LLM JSON response parsing, changeset result validation |
+| `HistoryManager` | `history_manager.ts` | Loop history ring buffer, compaction, budget checking |
+| `ReActLoopAdapter` | `react_loop_adapter.ts` | IReActLoopExecutor implementation, decouples ReActLoopStrategy from AgentExecutor |
 
-**Decomposition roadmap (planned extractions):**
-
-| Candidate | Lines | Responsibility | Dependencies |
-|-----------|-------|----------------|-------------|
-| `GitAuditService` | ~150 | Git audit, SHA resolution, file path validation, unauthorized change detection | `config`, `logger` |
-| `OutputParser` | ~120 | LLM JSON response parsing, changeset result validation, generation logging | `logger` |
-| `HistoryManager` | ~100 | Loop history ring buffer, compaction, strategy lifecycle signals | `logger`, `provider` |
+**AgentExecutor trajectory:** ~1750 lines → ~950 lines, 16 direct deps → 11 deps.
 
 **Design rationale:**
 
