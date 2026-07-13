@@ -11,6 +11,7 @@
 
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
@@ -91,7 +92,7 @@ export class ExecutionContextService {
   /** Allocate prompt budget for the given model and request analysis. */
   async allocateBudget(
     modelId: string,
-    requestAnalysis: IRequestAnalysis | undefined,
+    requestAnalysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
   ): Promise<void> {
     this._currentPromptBudget = await this.promptBudgetAllocator!.allocate(
       modelId,
@@ -128,7 +129,7 @@ export class ExecutionContextService {
    * Estimate tokens for the given input, using BPE tokenizer if available,
    * falling back to character-heuristic estimation.
    */
-  async estimateTokens(input: string, modelId?: string): Promise<number> {
+  async estimateTokens(input: string, modelId?: Opt<string, Reason.ExecutionConfig>): Promise<number> {
     if (this._tokenizer && modelId) {
       return await this._tokenizer.countTokens(input, modelId);
     }
@@ -136,7 +137,7 @@ export class ExecutionContextService {
   }
 
   /** Returns "bpe" or "heuristic" depending on tokenizer availability. */
-  tokenSource(modelId: string | undefined): TokenSource {
+  tokenSource(modelId?: Opt<string, Reason.ExecutionConfig>): TokenSource {
     return this._tokenizer && modelId ? "bpe" : "heuristic";
   }
 

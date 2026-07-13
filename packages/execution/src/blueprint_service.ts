@@ -21,6 +21,7 @@ import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 import type { IAgentExecutorOptions, IAgentFileBlueprint } from "./agent_executor.ts";
 import { InputValidator } from "@exaix/schemas/input_validation.ts";
 import { deriveTaskType } from "./task_type_derivation.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /** Result of loadBlueprint: the parsed blueprint plus optional resolved call options. */
 export interface IBlueprintLoadResult {
@@ -68,8 +69,8 @@ export class BlueprintService {
   constructor(
     private config: Config,
     private logger: IEventLogger,
-    private modelResolver?: ModelResolver,
-    private options?: IAgentExecutorOptions,
+    private modelResolver?: Opt<ModelResolver, Reason.OptionalDependency>,
+    private options?: Opt<IAgentExecutorOptions, Reason.OptionalContext>,
   ) {}
 
   /**

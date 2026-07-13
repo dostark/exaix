@@ -18,6 +18,8 @@ import type { Opt, Reason } from "@exaix/core/types";
 
 const SANITIZED_MARKER = "[REMOVED]";
 
+const SANITIZED_MARKER = "[REMOVED]";
+
 /**
  * Builds execution prompts for LLM agents. Handles input sanitization, token budget
  * enforcement, context cache integration, and prompt assembly.
@@ -31,7 +33,7 @@ export class PromptBuilder {
   ) {}
 
   /** Set the portal root for portal context block building. */
-  setPortalRoot(root: string | undefined): void {
+  setPortalRoot(root?: Opt<string, Reason.OptionalContext>): void {
     this.portalRoot = root;
   }
 

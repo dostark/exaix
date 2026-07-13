@@ -25,6 +25,7 @@ import type { IContextBudgetManager } from "./context/context_budget_manager.ts"
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
 import type { IOutputParserContext, OutputParser } from "./output_parser.ts";
 import type { ExecutionContextService } from "./execution_context_service.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Interface that the ReAct loop strategy requires from its executor.
@@ -59,9 +60,9 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
     private outputParser: OutputParser,
     private ctx: ExecutionContextService,
     private logger: IEventLogger,
-    public toolRegistry: IToolRegistry | undefined,
-    public eventBus?: IEventBusService,
-    public guardrailRunner?: IGuardrailRunner,
+    public toolRegistry?: Opt<IToolRegistry, Reason.OptionalDependency>,
+    public eventBus?: Opt<IEventBusService, Reason.OptionalDependency>,
+    public guardrailRunner?: Opt<IGuardrailRunner, Reason.OptionalDependency>,
   ) {}
 
   get contextBudgetManager(): IContextBudgetManager | undefined {

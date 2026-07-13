@@ -35,9 +35,9 @@ export class HistoryManager {
   constructor(
     private config: Config,
     private logger: IEventLogger,
-    private provider?: IGenerationProvider,
-    private db?: IDatabaseService,
-    private resolvedCallOptions?: IModelCallOptions,
+    private provider?: Opt<IGenerationProvider, Reason.OptionalDependency>,
+    private db?: Opt<IDatabaseService, Reason.OptionalDependency>,
+    private resolvedCallOptions?: Opt<IModelCallOptions, Reason.OptionalInput>,
   ) {}
 
   /** Current loop history entries. */
