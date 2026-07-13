@@ -654,7 +654,11 @@ Dynamic execution is bounded by a two-layer context budget system:
 
 1. **Section-level allocation** (`PromptBudgetAllocator`, `@exaix/core`):
    resolves token limits per section (system / plan / portalKnowledge / memory / skills / loopHistory)
-   using `SECTION_BASE_WEIGHTS` and `MODEL_CONTEXT_WINDOWS` before the first LLM call.
+   using `SECTION_BASE_WEIGHTS` before the first LLM call. The model's total context window is
+   resolved via an injected `IModelRegistry` (the same edition-selected registry used for
+   `ModelResolver`/`CostTracker`, Phase 135 Step 11), falling back to
+   `LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK` for local models or a hardcoded 128K default when no
+   registry is injected or the model is unresolved.
 
 2. **Segment-level compaction** (`IContextBudgetManager`, `@exaix/execution`):
    runs before each ReAct iteration. It decomposes the accumulated prompt (system prompt, prior
