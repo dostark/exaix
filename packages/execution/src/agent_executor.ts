@@ -90,6 +90,7 @@ import { ExecutionContextService, IPromptBudgetAllocator } from "./execution_con
 import { BlueprintService } from "./blueprint_service.ts";
 import { PromptBuilder } from "./prompt_builder.ts";
 import { GitAuditService } from "./git_audit_service.ts";
+import { HistoryManager } from "./history_manager.ts";
 import { type IOutputParserContext, OutputParser } from "./output_parser.ts";
 
 /**
@@ -136,6 +137,7 @@ export interface IAgentExecutorDeps {
   promptBuilder?: PromptBuilder;
   gitAuditService?: GitAuditService;
   outputParser?: OutputParser;
+  historyManager?: HistoryManager;
   guardrailRunner?: IGuardrailRunner;
   options?: IAgentExecutorOptions;
   modelResolver?: ModelResolver;
@@ -186,7 +188,6 @@ export class AgentExecutionError extends Error {
 export class AgentExecutor {
   private executionContext?: IWorkspaceExecutionContext;
   private originalWorkingDirectory?: string;
-  private _loopHistory: Array<ILoopHistoryEntry | ICompactedEntry> = [];
   private config: Config;
   private db: IDatabaseService;
   private logger: IEventLogger;
@@ -202,6 +203,7 @@ export class AgentExecutor {
   private promptBuilder: PromptBuilder;
   private gitAuditService: GitAuditService;
   private outputParser: OutputParser;
+  private historyManager: HistoryManager;
   private ctx: ExecutionContextService;
 
   /** Resolved per-call options from ModelResolver, forwarded to generate(). */
@@ -260,6 +262,8 @@ export class AgentExecutor {
     this.promptBuilder = deps.promptBuilder ?? new PromptBuilder(this.logger, this.ctx);
     this.gitAuditService = deps.gitAuditService ?? new GitAuditService(this.logger);
     this.outputParser = deps.outputParser ?? new OutputParser();
+    this.historyManager = deps.historyManager ??
+      new HistoryManager(this.config, this.logger, this.provider, this.db, this._resolvedCallOptions);
     if (deps.options?.guardrailRunner) {
       this._guardrailRunner = deps.options.guardrailRunner;
     }
@@ -289,103 +293,35 @@ export class AgentExecutor {
   /**
    * Loop history tracking completed execution steps for summarization.
    */
-  public get loopHistory(): Array<ILoopHistoryEntry | ICompactedEntry> {
-    return this._loopHistory;
-  }
 
   /**
    * Compact older loop history entries to free budget.
    * Preserves the last `keepLastN` entries as individual steps and replaces
    * all older entries with a single compacted summary.
    */
-  public async compactLoopHistory(
-    keepLastN: Opt<number, Reason.SensibleDefault> = DEFAULT_KEEP_LAST_N_STEPS,
-  ): Promise<void> {
-    if (this._loopHistory.length <= keepLastN + 1) return;
-
-    const compressible = this._loopHistory.slice(0, this._loopHistory.length - keepLastN);
-    if (compressible.length < 2) return;
-
-    const stepOnlyEntries = compressible.filter(
-      (e): e is ILoopHistoryEntry => e.type === "step",
-    );
-    if (stepOnlyEntries.length < 2) return;
-
-    const stepDescriptions = stepOnlyEntries.map((e) => `- ${e.description} (files: ${e.filesChanged.join(", ")})`)
-      .join("\n");
-
-    const summaryPrompt =
-      `Summarize the following completed execution steps concisely (2-3 sentences):\n${stepDescriptions}`;
-
-    let summary = `${compressible.length} steps completed`;
-    try {
-      const summarizationModel = this.config.execution?.summarization_model;
-      let summarizationProvider = this.provider;
-      if (summarizationModel && this.config) {
-        try {
-          summarizationProvider = await ProviderFactory.createByName(
-            this.config,
-            summarizationModel,
-            this.db,
-            this.logger,
-          );
-        } catch {
-          // Fall back to executing provider if summarization model resolution fails
-          summarizationProvider = this.provider;
-        }
-      }
-      if (summarizationProvider) {
-        const genOptions = { max_tokens: COMPACT_SUMMARY_MAX_TOKENS, ...this._resolvedCallOptions };
-        const result = await summarizationProvider.generate(summaryPrompt, genOptions);
-        summary = result.content.trim();
-      }
-    } catch {
-      // Use default summary on error
-    }
-
-    const compressedTokens = Math.round(
-      compressible.reduce((sum, e) => sum + e.tokens, 0) * LOOP_HISTORY_COMPRESSION_RATIO,
-    );
-
-    const compressedEntry: ICompactedEntry = {
-      type: "compacted",
-      summary,
-      compressedFrom: stepOnlyEntries.map((e) => e.description),
-      originalStepIds: stepOnlyEntries.map((e) => e.stepId),
-      tokens: compressedTokens,
-      timestamp: Date.now(),
-    };
-
-    const tokensBefore = compressible.reduce((sum, e) => sum + e.tokens, 0);
-    const tokensAfter = compressedEntry.tokens;
-    const preserved = this._loopHistory.slice(this._loopHistory.length - keepLastN);
-    this._loopHistory = [compressedEntry, ...preserved];
-
-    this.logger.info(DomainEventType.ExecutionContextCompacted, "", {
-      tokensBefore,
-      tokensAfter,
-      compressedCount: compressible.length,
-      preservedCount: preserved.length,
-      summarizationModel: this.config.execution?.summarization_model ?? undefined,
-    });
-  }
 
   /**
    * Check if loop history exceeds the budget threshold and trigger compaction.
    */
-  private async _checkLoopHistoryBudget(): Promise<void> {
-    if (!this.ctx.currentPromptBudget) return;
-    const loopBudget = this.ctx.currentPromptBudget.sections.loopHistory;
-    const usedTokens = this._loopHistory.reduce((sum, e) => sum + e.tokens, 0);
-    if (loopBudget > 0 && usedTokens > loopBudget * LOOP_HISTORY_BUDGET_THRESHOLD) {
-      await this.compactLoopHistory();
-    }
-  }
 
   /**
    * Query recent activities for a given trace ID.
    * Used by sub-agents via parent_context_query to understand execution context.
    */
+  public get loopHistory(): Array<ILoopHistoryEntry | ICompactedEntry> {
+    return this.historyManager.loopHistory;
+  }
+
+  public async compactLoopHistory(
+    keepLastN: Opt<number, Reason.SensibleDefault> = DEFAULT_KEEP_LAST_N_STEPS,
+  ): Promise<void> {
+    return this.historyManager.compactLoopHistory(keepLastN);
+  }
+
+  private async _checkLoopHistoryBudget(): Promise<void> {
+    if (!this.ctx.currentPromptBudget) return;
+    await this.historyManager.checkBudget(this.ctx.currentPromptBudget);
+  }
   public async getRecentActivitiesByTraceId(
     traceId: string,
     limit: Opt<number, Reason.SensibleDefault> = 10,
@@ -662,9 +598,9 @@ export class AgentExecutor {
             validated.description.length) / TOKEN_ESTIMATION_CHARS_PER_TOKEN,
         ),
       );
-      this._loopHistory.push({
+      this.historyManager.addEntry({
         type: "step",
-        stepId: `${context.trace_id}-step-${this._loopHistory.length + 1}`,
+        stepId: `${context.trace_id}-step-${this.historyManager.loopHistory.length + 1}`,
         description: validated.description || "executed step",
         filesChanged: validated.files_changed ?? [],
         tokens: loopHistoryTokens,
