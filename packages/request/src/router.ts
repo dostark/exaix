@@ -94,17 +94,6 @@ type RouterRequestFrontmatterMap = IRequestFrontmatter & {
   [key: string]: JSONValue;
 };
 
-function normalizeText(value?: Opt<string, Reason.SensibleDefault>): string | undefined {
-  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
-}
-
-export class RoutingError extends Error {
-  constructor(message: string, public readonly requestId?: string) {
-    super(message);
-    this.name = "RoutingError";
-  }
-}
-
 export interface IFlowValidator {
   validateFlow(flowId: string): Promise<{ valid: boolean; error?: string }>;
 }
@@ -119,6 +108,17 @@ export interface IRequestRouterConfig {
   config: Config;
   routingPolicyService?: IRoutingPolicyService;
   context?: IApplicationContext;
+}
+
+function normalizeText(value?: Opt<string, Reason.SensibleDefault>): string | undefined {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+export class RoutingError extends Error {
+  constructor(message: string, public readonly requestId?: string) {
+    super(message);
+    this.name = "RoutingError";
+  }
 }
 
 /**

@@ -13,6 +13,14 @@
  */
 import type { IBenchmarkEntry, ModelRegistryService } from "./model_registry_service.ts";
 
+/** Options for a models.dev ingest run, threaded from benchmark_source config. */
+export interface IModelsDevIngestOptions {
+  endpoint: string;
+  trackedBenchmarks: string[];
+  fetchTimeoutMs: number;
+  fetch: typeof fetch;
+}
+
 /** Map of models.dev developer slugs to Exaix provider names. */
 const DEVELOPER_PROVIDER_MAP: Record<string, string> = {
   "alibaba": "qwen",
@@ -58,13 +66,6 @@ interface IModelsDevModelEntry {
 }
 
 /** Options for a models.dev ingest run, threaded from benchmark_source config. */
-export interface IModelsDevIngestOptions {
-  endpoint: string;
-  trackedBenchmarks: string[];
-  fetchTimeoutMs: number;
-  fetch: typeof fetch;
-}
-
 const SCORE_MIN = 0;
 const SCORE_MAX = 1;
 const PERCENT_DIVISOR = 100;

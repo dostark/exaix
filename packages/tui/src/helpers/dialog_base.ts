@@ -36,6 +36,35 @@ export interface IDialogRenderOptions {
   height: number;
 }
 
+export interface IConfirmDialogOptions {
+  title: string;
+  message: string | string[];
+  confirmText?: string;
+  cancelText?: string;
+  destructive?: boolean;
+}
+
+export interface IInputDialogOptions {
+  title: string;
+  label: string;
+  placeholder?: string;
+  defaultValue?: string;
+  required?: boolean;
+  maxLength?: number;
+}
+
+export interface ISelectOption<T = string> {
+  value: T;
+  label: string;
+  description?: string;
+}
+
+export interface ISelectDialogOptions<T = string> {
+  title: string;
+  options: ISelectOption<T>[];
+  selectedIndex?: number;
+}
+
 function createDialogResult<T>(state: DialogState, value: T | undefined): DialogResult<T> {
   if (state === DialogStatus.CONFIRMED && value !== undefined) {
     return { type: DialogStatus.CONFIRMED, value };
@@ -141,16 +170,6 @@ export abstract class DialogBase<T = unknown> {
   }
 }
 
-// ===== Confirmation Dialog =====
-
-export interface IConfirmDialogOptions {
-  title: string;
-  message: string | string[];
-  confirmText?: string;
-  cancelText?: string;
-  destructive?: boolean;
-}
-
 /**
  * Simple confirmation dialog (Yes/No)
  */
@@ -224,17 +243,6 @@ export class ConfirmDialog extends DialogBase<boolean> {
   getResult(): DialogResult<boolean> {
     return createDialogResult(this.state, this.state === DialogStatus.CONFIRMED ? true : undefined);
   }
-}
-
-// ===== Input Dialog =====
-
-export interface IInputDialogOptions {
-  title: string;
-  label: string;
-  placeholder?: string;
-  defaultValue?: string;
-  required?: boolean;
-  maxLength?: number;
 }
 
 /**
@@ -387,20 +395,6 @@ export class InputDialog extends DialogBase<string> {
   getResult(): DialogResult<string> {
     return createDialogResult(this.state, this._resultValue);
   }
-}
-
-// ===== Select Dialog =====
-
-export interface ISelectOption<T = string> {
-  value: T;
-  label: string;
-  description?: string;
-}
-
-export interface ISelectDialogOptions<T = string> {
-  title: string;
-  options: ISelectOption<T>[];
-  selectedIndex?: number;
 }
 
 /**

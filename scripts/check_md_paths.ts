@@ -78,6 +78,17 @@ export interface IMdPathResult {
   styleViolations: IMdStyleViolation[];
 }
 
+export interface ICheckOptions {
+  /** Skip the exaix-dev-docs submodule (used by the parent-repo pre-commit gate). */
+  parentOnly?: boolean;
+  /**
+   * Restrict violations to this set of repo-relative markdown files. Used by the
+   * pre-commit "ratchet" so only staged/changed docs block; pre-existing drift in
+   * untouched files is not enforced. The basename index still spans the whole repo.
+   */
+  onlyFiles?: Set<string>;
+}
+
 /** Directories never worth scanning or indexing. */
 const IGNORE_DIRS = new Set([
   "node_modules",
@@ -365,17 +376,6 @@ function suggestFor(
   let rel = relative(mdDir, onlyRepoRel).replaceAll("\\", "/");
   if (!rel.startsWith(".")) rel = `./${rel}`;
   return rel;
-}
-
-export interface ICheckOptions {
-  /** Skip the exaix-dev-docs submodule (used by the parent-repo pre-commit gate). */
-  parentOnly?: boolean;
-  /**
-   * Restrict violations to this set of repo-relative markdown files. Used by the
-   * pre-commit "ratchet" so only staged/changed docs block; pre-existing drift in
-   * untouched files is not enforced. The basename index still spans the whole repo.
-   */
-  onlyFiles?: Set<string>;
 }
 
 /** Repo-relative paths of markdown files currently staged for commit (added/modified). */

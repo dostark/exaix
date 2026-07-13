@@ -124,6 +124,20 @@ export interface IAgentFileBlueprint {
   hitl?: HitlPolicy;
 }
 
+/** Optional configuration for AgentExecutor. */
+export interface IAgentExecutorOptions {
+  guardrailRunner?: IGuardrailRunner;
+  /** Request-level IModelIntent fields override blueprint values (Phase 132). */
+  requestIntent?: Partial<IModelIntent>;
+  /**
+   * Phase 135 Step 8 (§5.8.8) — the caller's highest-confidence skill match's
+   * triggers.task_types, in priority order (first = most confident). AgentExecutor has
+   * no SkillsService dependency; a caller that already matched skills (e.g. AgentRunner)
+   * may supply this to participate in the derivation precedence chain.
+   */
+  topSkillTaskTypes?: TaskType[];
+}
+
 /**
  * Agent execution error class
  */
@@ -156,20 +170,6 @@ const BlueprintSchema = z.object({
   description: z.string().optional(),
   default_skills: z.array(z.string()).optional(),
 }).passthrough(); // Allow extra fields without failing validation
-
-/** Optional configuration for AgentExecutor. */
-export interface IAgentExecutorOptions {
-  guardrailRunner?: IGuardrailRunner;
-  /** Request-level IModelIntent fields override blueprint values (Phase 132). */
-  requestIntent?: Partial<IModelIntent>;
-  /**
-   * Phase 135 Step 8 (§5.8.8) — the caller's highest-confidence skill match's
-   * triggers.task_types, in priority order (first = most confident). AgentExecutor has
-   * no SkillsService dependency; a caller that already matched skills (e.g. AgentRunner)
-   * may supply this to participate in the derivation precedence chain.
-   */
-  topSkillTaskTypes?: TaskType[];
-}
 
 /**
  * AgentExecutor orchestrates agent execution with MCP

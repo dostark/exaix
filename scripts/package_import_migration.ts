@@ -20,6 +20,16 @@
 import { walk } from "@std/fs";
 import { dirname, extname, join, relative } from "@std/path";
 
+export interface IGetBestImportSourceForSymbolOptions {
+  importSource: string;
+  moduleDir: string;
+  imports: ImportMap;
+  oldPackage: string;
+  newPackage: string;
+  symbol: string;
+  cache: Map<string, Set<string>>;
+}
+
 const REPO_ROOT = Deno.cwd();
 const EDIT_MODE = Deno.args.includes("--edit");
 const filteredArgs = Deno.args.filter((arg) => arg !== "--edit");
@@ -38,16 +48,6 @@ interface ImportMap {
 interface ImportSpecifier {
   importedName: string;
   text: string;
-}
-
-export interface IGetBestImportSourceForSymbolOptions {
-  importSource: string;
-  moduleDir: string;
-  imports: ImportMap;
-  oldPackage: string;
-  newPackage: string;
-  symbol: string;
-  cache: Map<string, Set<string>>;
 }
 
 async function readImportMap(): Promise<ImportMap> {

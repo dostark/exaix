@@ -67,15 +67,15 @@ export interface IDynamicStepExecutorOptions {
   config?: { tools?: { confirmation_timeout_s?: number } };
 }
 
+export interface IActivityJournal {
+  log(entry: JournalEntry): Promise<void>;
+}
+
 const DEFAULT_MAX_ITERATIONS = 10;
 
 /**
  * Activity journal interface for audit logging
  */
-export interface IActivityJournal {
-  log(entry: JournalEntry): Promise<void>;
-}
-
 /**
  * Executes a single flow step in dynamic (ReAct) mode.
  * The model iteratively selects tools from step.permitted_tools,

@@ -49,6 +49,12 @@ interface IManagedSkillFields {
   usage_count?: number;
 }
 
+export interface IParsedCliArgs {
+  targetDir: string;
+  sandboxRoot: string;
+  check: boolean;
+}
+
 /**
  * Splits a `.skill.md` file into YAML frontmatter and markdown body.
  * The body (trimmed, with its leading H1 retained) becomes `instructions`.
@@ -251,12 +257,6 @@ export async function buildSkillsIndex(
 }
 
 /** Parsed CLI args; null when fewer than two positionals are supplied. */
-export interface IParsedCliArgs {
-  targetDir: string;
-  sandboxRoot: string;
-  check: boolean;
-}
-
 export function parseCliArgs(args: string[]): IParsedCliArgs | null {
   const positionals = args.filter((a) => !a.startsWith("--"));
   if (positionals.length < 2) return null;

@@ -32,6 +32,12 @@ export interface ITuiViewState {
   activeDialog: string | null;
 }
 
+export interface IRefreshConfig {
+  autoRefreshInterval: number;
+  onRefresh: () => Promise<void>;
+  enabled: boolean;
+}
+
 export function createViewState(
   overrides: Opt<Partial<ITuiViewState>, Reason.UiDefault> = {},
 ): ITuiViewState {
@@ -46,12 +52,6 @@ export function createViewState(
     activeDialog: null,
     ...overrides,
   };
-}
-
-export interface IRefreshConfig {
-  autoRefreshInterval: number;
-  onRefresh: () => Promise<void>;
-  enabled: boolean;
 }
 
 export function createRefreshConfig(

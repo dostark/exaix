@@ -29,26 +29,6 @@ import { ProviderFactory } from "@exaix/ai";
 import { createMockConfig } from "@exaix/testing";
 import "../../../apps/common/registry_bootstrap.ts";
 
-const FRONTMATTER_PATTERN = /^---\n([\s\S]*?)\n---\n?/;
-const JSON_PATH_ROOT = "$";
-
-interface IJournalEvent {
-  event_type?: string;
-  action_type?: string;
-  [key: string]: any;
-}
-
-/** A parsed journal-event payload: an open key→value map (the payload shape is event-specific). */
-interface IJournalPayloadFields {
-  [key: string]: JSONValue;
-}
-
-export enum StepFailureStage {
-  INPUT = "input",
-  EXECUTION = "execution",
-  OUTPUT = "output",
-}
-
 export interface IEvaluateCriterionOptions {
   workspaceRoot: string;
   phase: CriterionPhase;
@@ -75,6 +55,26 @@ export interface IScenarioStepOutcome {
   failureStage: CriterionPhase | StepFailureStage.EXECUTION | null;
   criterionResults: ICriterionResult[];
   executionResult?: IScenarioStepExecutionResult;
+}
+
+const FRONTMATTER_PATTERN = /^---\n([\s\S]*?)\n---\n?/;
+const JSON_PATH_ROOT = "$";
+
+interface IJournalEvent {
+  event_type?: string;
+  action_type?: string;
+  [key: string]: any;
+}
+
+/** A parsed journal-event payload: an open key→value map (the payload shape is event-specific). */
+interface IJournalPayloadFields {
+  [key: string]: JSONValue;
+}
+
+export enum StepFailureStage {
+  INPUT = "input",
+  EXECUTION = "execution",
+  OUTPUT = "output",
 }
 
 type IFileExistsCriterion = Extract<ICriterion, { kind: CriterionKind.FILE_EXISTS }>;

@@ -22,6 +22,17 @@ import ts from "typescript";
 import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join, relative } from "@std/path";
 
+export interface IFuncDecl {
+  name: string;
+  params: FuncParam[];
+  optionalCount: number;
+  requiredCount: number;
+  file: string;
+  line: number;
+  /** Whether each optional param is referenced in the function body */
+  optionalUsedInBody: boolean[];
+}
+
 const args = new Set(Deno.args);
 const includeTests = args.has("--include-tests");
 const verbose = args.has("--verbose");
@@ -66,17 +77,6 @@ interface FuncParam {
   intentional: boolean; // true if param type is wrapped with Opt<T>
   bareOptional: boolean; // true if optional via bare `?` or bare `| undefined` (not Opt)
   typeText: string; // rendered type annotation (for the hint message)
-}
-
-export interface IFuncDecl {
-  name: string;
-  params: FuncParam[];
-  optionalCount: number;
-  requiredCount: number;
-  file: string;
-  line: number;
-  /** Whether each optional param is referenced in the function body */
-  optionalUsedInBody: boolean[];
 }
 
 interface CallSite {

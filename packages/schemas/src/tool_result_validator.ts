@@ -27,6 +27,11 @@ interface IValidationIssue {
   code: string;
 }
 
+export interface IToolResultValidator {
+  validateEnvelope(toolName: string, result: IUnvalidatedPayload): IToolResultValidationFailure | null;
+  validateMCPResponse(toolName: string, response: IUnvalidatedPayload): IToolResultValidationFailure | null;
+}
+
 function buildValidationFailure(
   toolName: string,
   stage: IToolResultValidationFailure["stage"],
@@ -50,11 +55,6 @@ type IUnvalidatedPayload = JSONValue;
 // ============================================================================
 // IToolResultValidator — interface for optional DI
 // ============================================================================
-
-export interface IToolResultValidator {
-  validateEnvelope(toolName: string, result: IUnvalidatedPayload): IToolResultValidationFailure | null;
-  validateMCPResponse(toolName: string, response: IUnvalidatedPayload): IToolResultValidationFailure | null;
-}
 
 // ============================================================================
 // Stateless validation helpers

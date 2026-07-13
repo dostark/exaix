@@ -27,6 +27,18 @@ export interface IEmbeddingSearchResult {
  * Using 64 dimensions for mock embeddings - lightweight but sufficient
  * for demonstrating semantic similarity
  */
+export interface IMemoryEmbeddingService {
+  initializeManifest(): Promise<void>;
+  embedLearning(learning: ILearning): Promise<void>;
+  searchByEmbedding(
+    query: string,
+    options?: { limit?: number; threshold?: number },
+  ): Promise<IEmbeddingSearchResult[]>;
+  getEmbedding(id: string): Promise<number[] | null>;
+  deleteEmbedding(id: string): Promise<void>;
+  getStats(): Promise<{ total: number; generated_at: string }>;
+}
+
 const EMBEDDING_DIM = 64;
 
 /**
@@ -139,21 +151,6 @@ export function generateMockEmbedding(text: string): number[] {
   }
 
   return vector;
-}
-
-/**
- * Memory Embedding Service Interface
- */
-export interface IMemoryEmbeddingService {
-  initializeManifest(): Promise<void>;
-  embedLearning(learning: ILearning): Promise<void>;
-  searchByEmbedding(
-    query: string,
-    options?: { limit?: number; threshold?: number },
-  ): Promise<IEmbeddingSearchResult[]>;
-  getEmbedding(id: string): Promise<number[] | null>;
-  deleteEmbedding(id: string): Promise<void>;
-  getStats(): Promise<{ total: number; generated_at: string }>;
 }
 
 /**

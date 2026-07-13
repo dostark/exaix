@@ -69,6 +69,19 @@ export interface IBlueprintLoaderOptions {
   defaultModel?: string;
 }
 
+/** A single unknown-frontmatter-field warning (GAP-2). */
+export interface IUnknownFieldWarning {
+  field: string;
+}
+
+/** Result of {@link validateRuntimeFrontmatter}: parsed data + non-fatal warnings. */
+export interface IRuntimeFrontmatterValidation {
+  ok: boolean;
+  data: RuntimeBlueprintFrontmatter | null;
+  warnings: IUnknownFieldWarning[];
+  errors: string[];
+}
+
 // ============================================================================
 // Blueprint Schema (Extended for Runtime)
 // ============================================================================
@@ -211,19 +224,6 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
 const KNOWN_FRONTMATTER_KEYS: ReadonlySet<string> = new Set(
   Object.keys((RuntimeBlueprintFrontmatterSchema as z.ZodObject<z.ZodRawShape>).shape),
 );
-
-/** A single unknown-frontmatter-field warning (GAP-2). */
-export interface IUnknownFieldWarning {
-  field: string;
-}
-
-/** Result of {@link validateRuntimeFrontmatter}: parsed data + non-fatal warnings. */
-export interface IRuntimeFrontmatterValidation {
-  ok: boolean;
-  data: RuntimeBlueprintFrontmatter | null;
-  warnings: IUnknownFieldWarning[];
-  errors: string[];
-}
 
 /**
  * Validates frontmatter against the unified runtime schema and surfaces unknown

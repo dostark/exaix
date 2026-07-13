@@ -31,26 +31,6 @@ export interface IAgentRequestContext {
 /**
  * Feedback loop configuration schema
  */
-export const FeedbackLoopConfigSchema = z.object({
-  /** Maximum number of improvement iterations */
-  maxIterations: z.number().int().min(1).max(10).default(3),
-  /** Target score to achieve (0.0 - 1.0) */
-  targetScore: z.number().min(0).max(1).default(0.9),
-  /** Judge agent ID */
-  evaluator: z.string(),
-  /** Criteria to evaluate against */
-  criteria: z.array(z.union([z.string(), EvaluationCriterionSchema])),
-  /** Minimum score improvement to continue looping */
-  minImprovement: z.number().min(0).max(1).default(0.05),
-  /** Whether to include previous attempts in context */
-  includePreviousAttempts: z.boolean().default(true),
-});
-
-export type FeedbackLoopConfig = z.infer<typeof FeedbackLoopConfigSchema>;
-
-/**
- * Result of a single iteration
- */
 export interface IIterationResult {
   iteration: number;
   content: string;
@@ -59,9 +39,6 @@ export interface IIterationResult {
   durationMs: number;
 }
 
-/**
- * Result of the feedback loop
- */
 export interface IFeedbackLoopResult {
   /** Whether target score was achieved */
   success: boolean;
@@ -84,9 +61,6 @@ export interface IFeedbackLoopResult {
     | "error";
 }
 
-/**
- * Interface for improvement agent
- */
 export interface IImprovementAgent {
   improve(
     originalRequest: string,
@@ -95,6 +69,40 @@ export interface IImprovementAgent {
     iteration: number,
   ): Promise<string>;
 }
+
+export interface ISelfCorrectingConfig {
+  /** Agent to generate initial response */
+  generatorAgent: string;
+  /** Agent to evaluate responses (can be same as generator) */
+  evaluatorAgent: string;
+  /** Agent to improve responses (can be same as generator) */
+  improverAgent: string;
+  /** Evaluation criteria */
+  criteria: Array<string | EvaluationCriterion>;
+  /** Target score */
+  targetScore: number;
+  /** Maximum iterations */
+  maxIterations: number;
+}
+
+export const FeedbackLoopConfigSchema = z.object({
+  /** Maximum number of improvement iterations */
+  maxIterations: z.number().int().min(1).max(10).default(3),
+  /** Target score to achieve (0.0 - 1.0) */
+  targetScore: z.number().min(0).max(1).default(0.9),
+  /** Judge agent ID */
+  evaluator: z.string(),
+  /** Criteria to evaluate against */
+  criteria: z.array(z.union([z.string(), EvaluationCriterionSchema])),
+  /** Minimum score improvement to continue looping */
+  minImprovement: z.number().min(0).max(1).default(0.05),
+  /** Whether to include previous attempts in context */
+  includePreviousAttempts: z.boolean().default(true),
+});
+
+export type FeedbackLoopConfig = z.infer<typeof FeedbackLoopConfigSchema>;
+
+
 
 /**
  * FeedbackLoop - Implements iterative improvement through evaluation
@@ -378,24 +386,6 @@ export function createFeedbackLoop(
     improvementAgentId,
   );
   return new FeedbackLoop(gateEvaluator, improvementAgent);
-}
-
-/**
- * Configuration for self-correcting agent pattern
- */
-export interface ISelfCorrectingConfig {
-  /** Agent to generate initial response */
-  generatorAgent: string;
-  /** Agent to evaluate responses (can be same as generator) */
-  evaluatorAgent: string;
-  /** Agent to improve responses (can be same as generator) */
-  improverAgent: string;
-  /** Evaluation criteria */
-  criteria: Array<string | EvaluationCriterion>;
-  /** Target score */
-  targetScore: number;
-  /** Maximum iterations */
-  maxIterations: number;
 }
 
 /**

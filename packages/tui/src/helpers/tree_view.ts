@@ -35,6 +35,14 @@ export interface ITreeRenderOptions {
   focusedId?: string;
 }
 
+export interface IFlatTreeNode<T = unknown> {
+  node: ITreeNode<T>;
+  depth: number;
+  isLast: boolean;
+  prefix: string;
+  index: number;
+}
+
 export const defaultTreeOptions: ITreeRenderOptions = {
   useColors: true,
   showIcons: true,
@@ -73,14 +81,6 @@ export const TREE_ICONS = {
 export type TreeIconType = keyof typeof TREE_ICONS;
 
 // ===== Flat Node (for rendering) =====
-
-export interface IFlatTreeNode<T = unknown> {
-  node: ITreeNode<T>;
-  depth: number;
-  isLast: boolean;
-  prefix: string;
-  index: number;
-}
 
 // ===== Tree Line Characters =====
 

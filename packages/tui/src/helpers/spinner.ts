@@ -19,6 +19,27 @@ export interface ISpinnerConfig {
 
 // ===== Spinner Definitions =====
 
+export interface ISpinnerState {
+  active: boolean;
+  frame: number;
+  message: string;
+  startTime: number;
+}
+
+export interface IProgressState {
+  current: number;
+  total: number;
+  message: string;
+  startTime: number;
+}
+
+export interface ILoadingState {
+  isLoading: boolean;
+  message: string;
+  spinner: ISpinnerState;
+  progress?: IProgressState;
+}
+
 export const SPINNERS: Record<SpinnerStyle, ISpinnerConfig> = {
   [SpinnerStyle.DOTS]: {
     style: SpinnerStyle.DOTS,
@@ -51,15 +72,6 @@ export const SPINNERS: Record<SpinnerStyle, ISpinnerConfig> = {
     interval: 120,
   },
 };
-
-// ===== Spinner State =====
-
-export interface ISpinnerState {
-  active: boolean;
-  frame: number;
-  message: string;
-  startTime: number;
-}
 
 /**
  * Create a new spinner state
@@ -152,15 +164,6 @@ export function renderSpinner(
   }
 
   return result;
-}
-
-// ===== Progress Bar =====
-
-export interface IProgressState {
-  current: number;
-  total: number;
-  message: string;
-  startTime: number;
 }
 
 /**
@@ -310,15 +313,6 @@ export function renderActivityIndicator(
   }
 
   return renderPulsingDot(frame, useColors);
-}
-
-// ===== Loading States =====
-
-export interface ILoadingState {
-  isLoading: boolean;
-  message: string;
-  spinner: ISpinnerState;
-  progress?: IProgressState;
 }
 
 /**

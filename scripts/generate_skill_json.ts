@@ -47,6 +47,12 @@ export interface IGenerateSkillJsonResult {
   warnings: string[];
 }
 
+export interface IParsedCliArgs {
+  targetDir: string;
+  sandboxRoot: string;
+  check: boolean;
+}
+
 /**
  * Resolves the real path of a path that may not exist yet by walking up
  * to the nearest existing ancestor.
@@ -337,12 +343,6 @@ export async function generateSkillJson(
 /**
  * Parsed CLI arguments. Returns null when the required positionals are absent.
  */
-export interface IParsedCliArgs {
-  targetDir: string;
-  sandboxRoot: string;
-  check: boolean;
-}
-
 /**
  * Parses CLI args, requiring exactly two positional arguments
  * (<target-skills-dir> <sandbox-root>) regardless of flag presence.

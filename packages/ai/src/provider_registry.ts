@@ -12,11 +12,6 @@ type ProviderRegistryGlobal = typeof globalThis & {
   __exaixRegisteredProviderTypes?: string[];
 };
 
-function syncRegisteredProviderTypes(providerTypes: Iterable<string>): void {
-  const globalRegistry = globalThis as ProviderRegistryGlobal;
-  globalRegistry.__exaixRegisteredProviderTypes = Array.from(providerTypes);
-}
-
 /**
  * Metadata describing a provider's capabilities and characteristics.
  * Used for intelligent provider selection and cost optimization.
@@ -55,6 +50,11 @@ export interface IProviderMetadata {
    * (§5.7.2).
    */
   isAggregator?: boolean;
+}
+
+function syncRegisteredProviderTypes(providerTypes: Iterable<string>): void {
+  const globalRegistry = globalThis as ProviderRegistryGlobal;
+  globalRegistry.__exaixRegisteredProviderTypes = Array.from(providerTypes);
 }
 
 // ============================================================================

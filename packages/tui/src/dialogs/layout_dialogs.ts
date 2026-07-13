@@ -24,20 +24,6 @@ export interface IViewInfo {
   description: string;
 }
 
-export const AVAILABLE_VIEWS: IViewInfo[] = [
-  {
-    name: "PortalManagerView",
-    icon: TUI_DASHBOARD_ICONS.views.PortalManagerView,
-    description: "Manage project portals",
-  },
-  { name: "PlanReviewerView", icon: TUI_DASHBOARD_ICONS.views.PlanReviewerView, description: "Review agent plans" },
-  { name: "MonitorView", icon: TUI_DASHBOARD_ICONS.views.MonitorView, description: "Real-time logs" },
-  { name: "DaemonControlView", icon: TUI_DASHBOARD_ICONS.views.DaemonControlView, description: "Daemon control" },
-  { name: "AgentStatusView", icon: TUI_DASHBOARD_ICONS.views.AgentStatusView, description: "Agent health" },
-  { name: "RequestManagerView", icon: TUI_DASHBOARD_ICONS.views.RequestManagerView, description: "Manage requests" },
-  { name: "MemoryView", icon: TUI_DASHBOARD_ICONS.views.MemoryView, description: "Memory banks" },
-];
-
 export interface IViewPickerDialogState {
   isOpen: boolean;
   selectedIndex: number;
@@ -71,6 +57,20 @@ export interface IResizeModeState {
   isActive: boolean;
   paneId: string | null;
 }
+
+export const AVAILABLE_VIEWS: IViewInfo[] = [
+  {
+    name: "PortalManagerView",
+    icon: TUI_DASHBOARD_ICONS.views.PortalManagerView,
+    description: "Manage project portals",
+  },
+  { name: "PlanReviewerView", icon: TUI_DASHBOARD_ICONS.views.PlanReviewerView, description: "Review agent plans" },
+  { name: "MonitorView", icon: TUI_DASHBOARD_ICONS.views.MonitorView, description: "Real-time logs" },
+  { name: "DaemonControlView", icon: TUI_DASHBOARD_ICONS.views.DaemonControlView, description: "Daemon control" },
+  { name: "AgentStatusView", icon: TUI_DASHBOARD_ICONS.views.AgentStatusView, description: "Agent health" },
+  { name: "RequestManagerView", icon: TUI_DASHBOARD_ICONS.views.RequestManagerView, description: "Manage requests" },
+  { name: "MemoryView", icon: TUI_DASHBOARD_ICONS.views.MemoryView, description: "Memory banks" },
+];
 
 export function createViewPickerState(): IViewPickerDialogState {
   return {
