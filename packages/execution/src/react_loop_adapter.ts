@@ -18,7 +18,7 @@ import {
   AgentKind,
   DEFAULT_MCP_IDENTITY_ID,
 } from "@exaix/core";
-import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
+import type { IChangesetResult } from "@exaix/schemas/agent_executor.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IToolRegistry } from "@exaix/core/types";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";

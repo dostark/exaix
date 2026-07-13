@@ -25,80 +25,56 @@ import type { HitlPolicy } from "@exaix/schemas/hitl.ts";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
+import { ActorType, AGENT_GENERATION_COMPLETED, AgentKind, LogLevel } from "@exaix/core";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
 import type { IModelCallOptions, IModelIntent } from "@exaix/schemas";
-import type { ITokenizer } from "@exaix/core/func";
-import { SafeError } from "@exaix/core/errors";
-import { ProviderFactory } from "@exaix/ai/provider_factory.ts";
-import { PromptBudgetAllocator, SafeSubprocess, SubprocessTimeoutError } from "@exaix/core";
 import {
   AGENT_EVENT_EXECUTION_COMPLETED,
   AGENT_EVENT_EXECUTION_FAILED,
   AGENT_EVENT_EXECUTION_STARTED,
-  AGENT_EVENT_OUTPUT,
   AGENT_EVENT_SECURITY_VIOLATION,
-  AGENT_EXECUTION_EXAMPLE_TIME_MS,
   AGENT_EXECUTOR_ID,
-  AGENT_GENERATION_COMPLETED,
-  MAX_NAME_LENGTH,
-  MAX_USER_INPUT_LENGTH,
-  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
-import {
-  DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
-  DEFAULT_GIT_CLEAN_TIMEOUT_MS,
-  DEFAULT_GIT_DIFF_TIMEOUT_MS,
-  DEFAULT_GIT_LOG_TIMEOUT_MS,
-  DEFAULT_GIT_LS_FILES_TIMEOUT_MS,
-  DEFAULT_GIT_REV_PARSE_TIMEOUT_MS,
-  DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT,
-  DEFAULT_GIT_STATUS_TIMEOUT_MS,
-  GIT_CMD_REV_PARSE,
-  GIT_CMD_STATUS,
-  GIT_EMPTY_SHA,
-} from "@exaix/git";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 import {
-  ChangesetResultSchema,
   type IAgentExecutionOptions,
   type IAgentExecutionOptionsInput,
   type IChangesetResult,
   type IExecutionContext,
 } from "@exaix/schemas/agent_executor.ts";
 import type { IToolRegistry } from "@exaix/core/types";
-import {
-  ActorType,
-  AgentExecutionErrorType,
-  AgentKind,
-  ExecutionStrategyName,
-  LogLevel,
-  SecurityMode,
-} from "@exaix/core";
+import { AgentExecutionErrorType, ExecutionStrategyName, SecurityMode } from "@exaix/core";
 import { InputValidator } from "@exaix/schemas/input_validation.ts";
-import { buildPortalContextBlock, isReadOnlyAgentCapabilities, requiresGitTracking } from "@exaix/core/func";
+import { isReadOnlyAgentCapabilities, requiresGitTracking } from "@exaix/core/func";
 import type { JSONValue } from "@exaix/core";
 import { StrategyRegistry } from "./strategies/strategy_registry.ts";
 import { LegacyAgentStrategy } from "./strategies/legacy_strategy.ts";
 import { McpAgentStrategy } from "./strategies/mcp_agent_strategy.ts";
 import { ReActLoopStrategy } from "./strategies/react_loop_strategy.ts";
+import type { IGuardrailRunner } from "./guardrail_runner.ts";
+import type { Opt, Reason, TaskType } from "@exaix/core/types";
+import { DEFAULT_KEEP_LAST_N_STEPS, SafeSubprocess, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
+import {
+  DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
+  DEFAULT_GIT_CLEAN_TIMEOUT_MS,
+  DEFAULT_GIT_DIFF_TIMEOUT_MS,
+  DEFAULT_GIT_LOG_TIMEOUT_MS,
+  DEFAULT_GIT_LS_FILES_TIMEOUT_MS,
+  DEFAULT_GIT_STATUS_TIMEOUT_MS,
+  GIT_CMD_REV_PARSE,
+  GIT_CMD_STATUS,
+  GIT_EMPTY_SHA,
+} from "@exaix/git";
 import { ToolRegistry } from "@exaix/tool-runtime";
+import { AGENT_EVENT_OUTPUT } from "@exaix/core";
+import type { ICompactedEntry, ILoopHistoryEntry } from "./types.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import type { ICompactedEntry, ILoopHistoryEntry } from "./types.ts";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
 import type { ISnapshotStore } from "./context/snapshot_store.ts";
-import type { IGuardrailRunner } from "./guardrail_runner.ts";
-import type { ContextCache } from "@exaix/core/context";
-import {
-  COMPACT_SUMMARY_MAX_TOKENS,
-  DEFAULT_KEEP_LAST_N_STEPS,
-  LOOP_HISTORY_BUDGET_THRESHOLD,
-  LOOP_HISTORY_COMPRESSION_RATIO,
-} from "@exaix/core";
-import type { Opt, Reason, TaskType } from "@exaix/core/types";
-import { ExecutionContextService, IPromptBudgetAllocator } from "./execution_context_service.ts";
+import { ExecutionContextService } from "./execution_context_service.ts";
 import { BlueprintService } from "./blueprint_service.ts";
 import { PromptBuilder } from "./prompt_builder.ts";
 import { GitAuditService } from "./git_audit_service.ts";
@@ -337,7 +313,7 @@ export class AgentExecutor {
     return this.historyManager.loopHistory;
   }
 
-  public async compactLoopHistory(
+  compactLoopHistory(
     keepLastN: Opt<number, Reason.SensibleDefault> = DEFAULT_KEEP_LAST_N_STEPS,
   ): Promise<void> {
     return this.historyManager.compactLoopHistory(keepLastN);
@@ -676,7 +652,7 @@ export class AgentExecutor {
    * Build execution prompt for LLM agent.
    * Delegates to PromptBuilder.
    */
-  public async buildExecutionPrompt(
+  buildExecutionPrompt(
     blueprint: IAgentFileBlueprint,
     context: IExecutionContext,
     options: IAgentExecutionOptions,
@@ -764,11 +740,11 @@ export class AgentExecutor {
    * Atomic audit and revert operation to prevent TOCTOU race conditions
    * Performs git status check and file reversion in a single locked operation
    */
-  async auditGitChanges(portalPath: string, authorizedFiles: string[]): Promise<string[]> {
+  auditGitChanges(portalPath: string, authorizedFiles: string[]): Promise<string[]> {
     return this.gitAuditService.auditGitChanges(portalPath, authorizedFiles);
   }
 
-  public async getPortalHeadSha(portalPath: string): Promise<string> {
+  getPortalHeadSha(portalPath: string): Promise<string> {
     return this.gitAuditService.getPortalHeadSha(portalPath);
   }
 
@@ -776,7 +752,7 @@ export class AgentExecutor {
     return this.gitAuditService.validateFilePath(filePath, portalPath);
   }
 
-  async revertUnauthorizedChanges(portalPath: string, unauthorizedFiles: string[]): Promise<void> {
+  revertUnauthorizedChanges(portalPath: string, unauthorizedFiles: string[]): Promise<void> {
     return this.gitAuditService.revertUnauthorizedChanges(portalPath, unauthorizedFiles);
   }
   async auditAndRevertChanges(

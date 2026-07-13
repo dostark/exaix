@@ -8,14 +8,13 @@
  */
 
 import type { IExecutionStrategy } from "./execution_strategy.ts";
-import { AgentExecutionError, type AgentExecutor, type IAgentFileBlueprint } from "../agent_executor.ts";
+import { AgentExecutionError, type IAgentFileBlueprint } from "../agent_executor.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { AgentExecutionErrorType, ExecutionStrategyName, ToolName } from "@exaix/core";
 import { GuardrailBlockedError } from "@exaix/core/planning";
 import { parse as parseToml } from "@std/toml";
 import type { JSONValue } from "@exaix/core";
-import type { IEventBusService } from "@exaix/core/observability";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import { DomainEventType } from "@exaix/core/events";
 import {
@@ -36,9 +35,8 @@ import {
   STREAMING_EVENT_HEARTBEAT,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
-import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IModelCallOptions } from "@exaix/schemas";
-import type { IContextBudgetManager, IContextBudgetManagerInput } from "../context/context_budget_manager.ts";
+import type { IContextBudgetManagerInput } from "../context/context_budget_manager.ts";
 import type { IContextSegment } from "../context/context_segment.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IReActLoopExecutor } from "../react_loop_adapter.ts";

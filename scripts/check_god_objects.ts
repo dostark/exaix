@@ -12,6 +12,7 @@
  *   deno run -A scripts/check_god_objects.ts --threshold 50  # min score to report
  */
 
+// deno-lint-ignore no-import-prefix
 import { Project, SyntaxKind } from "npm:ts-morph@24.0.0";
 
 const ROOT = new URL("../", import.meta.url).pathname.replace(/\/$/, "");

@@ -12,7 +12,7 @@ import { DomainEventType } from "@exaix/core/events";
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import type { IAgentFileBlueprint } from "./agent_executor.ts";
 import { buildPortalContextBlock } from "@exaix/core/func";
-import { ExecutionContextService } from "./execution_context_service.ts";
+import type { ExecutionContextService } from "./execution_context_service.ts";
 import { AGENT_EXECUTION_EXAMPLE_TIME_MS, MAX_USER_INPUT_LENGTH } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 

@@ -14,7 +14,6 @@ import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
-import { DomainEventType } from "@exaix/core/events";
 import { PromptBudgetAllocator } from "@exaix/core";
 import type { ITokenizer } from "@exaix/core/func";
 import type { ContextCache } from "@exaix/core/context";
