@@ -55,6 +55,57 @@ Exaix refactoring patterns
      Before: const p = `${base}/${userInput}`;
      After:  const p = await PathSecurity.resolveAndValidate(userInput, [base]);
 
+  6. God object decomposition — facade extraction
+     When a class has > 500 lines, > 10 deps, or mixed concerns, decompose by
+     extracting cohesive sub-domains into their own services:
+
+     a. **Detect** — run `deno task check:god-objects` to score candidates
+        on 6 metrics: line count, method count, constructor params, max
+        method length, import count, field count.
+
+     b. **Analyze boundaries** — group the class's fields and methods by
+        concern. Each group that reads/writes its own subset of fields and
+        forms a coherent responsibility is an extraction candidate.
+
+     c. **Parameter object (safe first step)** — replace N-positional
+        constructor params with a single deps interface. This satisfies
+        style gates without architectural change:
+        Before: constructor(a: A, b: B, c: C, d: D, e: E, f: F) {}
+        After:  constructor(deps: IFooDeps) {}
+        interface IFooDeps { a: A; b: B; c: C; d: D; e: E; f: F; }
+
+     d. **Extract service** — move one cohesive group to a new class.
+        The new class owns its fields and behavior; the original class
+        delegates to it:
+        Before: class Foo {
+                  private x: X;
+                  private y: Y;
+                  doThing() { /* uses x and y */ }
+                }
+        After:  class Foo { private barService: BarService; }
+                class BarService { private x: X; private y: Y; doThing(): void; }
+
+     e. **Composition root** — the original class's constructor becomes
+        the single place where all services are wired. Each injected
+        service declares its own deps, not the orchestrator's:
+        interface IFooDeps {
+          barService?: BarService;  // defaults created if omitted
+          bazService?: BazService;
+        }
+
+     f. **Interface decoupling** — if the original class implements an
+        interface consumed by another class, extract an adapter that
+        composes the services instead:
+        Before: class Foo implements IFoo { /* 10 methods */ }
+        After:  class Foo { private adapter: FooAdapter; }
+                class FooAdapter implements IFoo { /* composes services */ }
+
+     Example: AgentExecutor was decomposed from ~1750 lines / 16 deps
+     to ~950 lines / 11 deps by extracting 7 services (ExecutionContext,
+     Blueprint, PromptBuilder, GitAudit, OutputParser, HistoryManager,
+     ReActLoopAdapter). Each extraction was done with TDD, removing
+     100-250 lines at a time over a single weekend session.
+
 Security check (apply when the refactor touches portal code or any boundary:
   input parsing, file paths, SQL queries, subprocesses, HTTP handlers, auth, secrets)
   - Before restructuring, verify the existing control routes through the canonical
