@@ -8,6 +8,7 @@
  *   deno run -A scripts/check_code_style.ts [path]
  */
 
+import ts from "typescript";
 import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join, normalize } from "@std/path";
 
@@ -473,6 +474,113 @@ Description:
   Deno.exit(0);
 }
 
+// ── Layer-Aware Constant Imports (AST-based) ────────────────────────────────
+//
+// Detects when a file in package P imports a **value** (non-type) from a
+// domain-implementation package Q — a sign that the orchestrator may be
+// bypassing the service boundary and depending on low-level implementation
+// details that belong inside the service.
+//
+// Domain-implementation packages export concrete classes, command constants,
+// and runtime primitives.  Framework/API packages export interfaces, types,
+// enums, and event names.
+//
+// The check is AST-based (uses the TypeScript compiler API) rather than
+// regex-based, so it correctly handles multi-line imports, type-only imports,
+// and per-binding type annotations.
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Known low-level implementation symbols that should not appear in
+ * composition-root classes.  These are concrete classes or runtime
+ * primitives whose package path already identifies them as implementation
+ * details — unlike shared enums (`McpToolName`), provider metadata
+ * (`PROVIDER_OPENAI`), or framework services (`DatabaseService`).
+ *
+ * Adding a symbol here means: "if someone imports this from a different
+ * package and uses it as a value (not a type), flag it."
+ */
+const LAYER_LEAK_SYMBOLS = new Set([
+  "SafeSubprocess",
+  "ToolRegistry", // concrete class — should accept IToolRegistry
+  "TOKEN_ESTIMATION_CHARS_PER_TOKEN",
+  "GitService", // concrete class — should accept IGitService
+  "MemoryBankService", // concrete class — should accept IMemoryBankService
+  "SessionMemoryService",
+]);
+
+/** Packages that should never be checked (framework / shared contracts). */
+const LAYER_LEAK_FRAMEWORK_PACKAGES = new Set([
+  "@exaix/core",
+  "@exaix/schemas",
+  "@exaix/ai",
+  "@exaix/cli",
+  "@exaix/tui",
+  "@exaix/testing",
+]);
+
+/** Known bridge files that legitimately import implementation symbols. */
+const LAYER_LEAK_EXEMPT_PATHS = new Set([
+  "packages/execution/src/git_audit_service.ts",
+  "packages/execution/src/execution_context_service.ts",
+  "packages/core/src/planning/plan_executor.ts",
+]);
+
+function checkLayerLeaks(filePath: string, sourceText: string, repoPath: string): void {
+  // Only check production package files
+  if (!repoPath.startsWith("packages/")) return;
+  if (repoPath.includes("/tests/") || repoPath.includes("/testing/") || repoPath.endsWith("_test.ts")) return;
+  if (LAYER_LEAK_EXEMPT_PATHS.has(repoPath)) return;
+
+  const sourceFile = ts.createSourceFile(filePath, sourceText, ts.ScriptTarget.Latest, true);
+
+  ts.forEachChild(sourceFile, (node) => {
+    if (!ts.isImportDeclaration(node)) return;
+
+    const specifierNode = node.moduleSpecifier;
+    if (!ts.isStringLiteral(specifierNode)) return;
+    const specifier = specifierNode.text;
+    if (!specifier.startsWith("@exaix/")) return;
+    if (
+      LAYER_LEAK_FRAMEWORK_PACKAGES.has(specifier) ||
+      specifier.startsWith("@exaix/ai-") ||
+      specifier.startsWith("@exaix-team/")
+    ) return;
+
+    // Skip imports from the same package
+    const pkgMatch = repoPath.match(/^packages\/([^/]+)/);
+    if (!pkgMatch) return;
+    const myPackage = pkgMatch[1];
+    const targetPkg = specifier.replace(/^@exaix\//, "");
+    if (targetPkg === myPackage || specifier === `@exaix/${myPackage}`) return;
+
+    const importClause = node.importClause;
+    if (!importClause || importClause.isTypeOnly) return;
+
+    const namedBindings = importClause.namedBindings;
+    if (!namedBindings || !ts.isNamedImports(namedBindings)) return;
+
+    for (const element of namedBindings.elements) {
+      if (element.isTypeOnly) continue;
+      const name = element.name.text;
+      if (!LAYER_LEAK_SYMBOLS.has(name)) continue;
+
+      const line = sourceFile.getLineAndCharacterOfPosition(element.getStart()).line + 1;
+      const location = `${filePath}:${line}`;
+      const prefix = convertWarnings ? "ERROR" : "WARN";
+      console.log(
+        `${prefix} [layer-constant-leak] ${location} – ` +
+          `Low-level implementation symbol '${name}' imported from '${specifier}' ` +
+          `in a package-pure file (${repoPath}). This concrete class / runtime primitive ` +
+          `should be behind a service boundary. ` +
+          `See CODE_STYLE.md §15 — Layer-Aware Constant Imports.`,
+      );
+      if (convertWarnings) errorCount++;
+      else warnCount++;
+    }
+  });
+}
+
 // Rules correspond to the code style guidelines in CODE_STYLE.md.  When a
 // violation is found we print a human-friendly explanation; the script exits
 // with a non-zero status if any errors were detected so it can be used in
@@ -645,36 +753,8 @@ const rules: Rule[] = [
   // is superseded by the [edition-leak] check in checkFile(), which enforces the full tier
   // model (MIT < Team < Enterprise) across packages/, apps/, and packages-team/ with
   // type-only + edition-gated-dynamic exemptions. See isEditionLeakImport().
-  {
-    name: "layer-constant-leak",
-    // Detects import of concrete low-level classes or subprocess primitives
-    // in a composition-root file that should only reference service interfaces.
-    // Focused on the known worst offenders — not a general-purpose scan.
-    // See CODE_STYLE.md §15 for the full rule and remediation guide.
-    regex:
-      /import\s*\{[^}]*\b(?:SafeSubprocess|(?<!I)ToolRegistry\b|TOKEN_ESTIMATION_CHARS_PER_TOKEN)\b[^}]*\}\s*from\s+/,
-    message: "Low-level implementation symbol imported in a composition-root file. " +
-      "This constant/class belongs to a delegated service, not to the orchestrator. " +
-      "See CODE_STYLE.md §15 — Layer-Aware Constant Imports.",
-    severity: "warn" as const,
-    pathFilter: (path: string) =>
-      !path.startsWith("tests/") &&
-      !path.includes("/tests/") &&
-      !path.endsWith(".test.ts") &&
-      !path.endsWith("_test.ts") &&
-      !path.startsWith("packages/core/src/types/") &&
-      !path.startsWith("packages/core/src/func/") &&
-      !path.startsWith("packages/core/src/helpers/") &&
-      !path.startsWith("packages/tool-runtime/") &&
-      path !== "packages/core/src/planning/plan_executor.ts" &&
-      path !== "packages/execution/src/git_audit_service.ts" &&
-      path !== "packages/execution/src/execution_context_service.ts" &&
-      path !== "packages/execution/src/strategies/mcp_agent_strategy.ts" &&
-      path !== "packages/execution/src/context/context_compactor.ts" &&
-      !path.startsWith("apps/") &&
-      !path.startsWith("packages/mcp/testing/") &&
-      !path.startsWith("packages/portal/"),
-  },
+  // NOTE: the former [layer-constant-leak] regex rule is superseded by the AST-based
+  // checkLayerLeaks() called from checkFile(), which uses the TypeScript compiler API.
   {
     name: "edition-conditional-outside-composer",
     // Forbid edition conditionals (edition ===, edition !==, EXAIX_EDITION)
@@ -787,6 +867,9 @@ async function checkFile(path: string) {
   const repoPath = path.startsWith(REPO_ROOT + "/") ? path.slice(REPO_ROOT.length + 1) : path;
   const text = await Deno.readTextFile(path);
   const lines = text.split(/\r?\n/);
+
+  // AST-based layer-aware constant import check (supersedes the old regex rule)
+  checkLayerLeaks(path, text, repoPath);
 
   const templateLiteralLines = new Set<number>();
   let templateLiteralState = false;

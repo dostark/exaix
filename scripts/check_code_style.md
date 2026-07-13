@@ -182,18 +182,25 @@ module purity rules.
 
 ## Layer-Aware Constant Imports
 
-| Tag                     | Severity | Rule (CODE_STYLE.md) | What it detects                                                                                          |
-| ----------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------- |
-| `[layer-constant-leak]` | warn     | §15                  | High-level class imports `SafeSubprocess`, `ToolRegistry` (class), or `TOKEN_ESTIMATION_CHARS_PER_TOKEN` |
+| Tag                     | Severity | Rule (CODE_STYLE.md) | What it detects                                                                        |
+| ----------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------- |
+| `[layer-constant-leak]` | warn     | §15                  | Package‑pure file imports a concrete class / runtime primitive from a different domain |
 
-**Automated via regex** in `check_code_style.ts`. Detects single-line imports of three known
-low-level implementation symbols that should be behind service boundaries:
-`SafeSubprocess` (→ `GitAuditService`), `ToolRegistry` class (→ accept `IToolRegistry` via DI),
-`TOKEN_ESTIMATION_CHARS_PER_TOKEN` (→ `ExecutionContextService.estimateTokensSync()`).
+**Automated via AST** (`check_code_style.ts` → `checkLayerLeaks()`). Uses the TypeScript
+compiler API to parse import declarations structurally (handles multi-line imports,
+`import type { ... }`, per-binding `type` annotations). Checks for a defined set of concrete
+classes and runtime primitives that should be behind service boundaries:
 
-**Exempt paths**: Defining packages (`core/src/types/`, `core/src/func/`, `core/src/helpers/`,
-`tool-runtime/`), test files, `apps/` (DI wiring layer), package-service files that own these
-constants, and known bridge zones (`mcp/testing/`, `portal/`).
+| Symbol                             | Belongs in                     |
+| ---------------------------------- | ------------------------------ |
+| `SafeSubprocess`                   | `GitAuditService`              |
+| `ToolRegistry`                     | inject `IToolRegistry`         |
+| `TOKEN_ESTIMATION_CHARS_PER_TOKEN` | `ExecutionContextService`      |
+| `GitService`                       | inject `IGitService`           |
+| `MemoryBankService`                | inject `IMemoryBankService`    |
+| `SessionMemoryService`             | inject `ISessionMemoryService` |
+
+**Current results**: 3 warnings (all for `ExecutionLoop` — god object, score 88).
 
 **Full rule and remediation**: [CODE_STYLE.md §15](../CODE_STYLE.md#layer-aware-constant-imports).
 

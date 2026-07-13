@@ -1071,15 +1071,23 @@ const tokens = Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
 
 ### Automated enforcement
 
-`[layer-constant-leak]` (warn) in `scripts/check_code_style.ts`. Detects
-single-line imports of three specific low-level symbols in production
-packages: `SafeSubprocess`, `ToolRegistry` (concrete class), and
-`TOKEN_ESTIMATION_CHARS_PER_TOKEN`. Exempts defining packages, test files,
-`apps/` (DI wiring layer), and package-service files that own these constants.
-The check is **not comprehensive** — it targets the regressions most likely to
-recur. A full manual review should still inspect the import section of every
-composition-root class (> 300 lines) for any import from a package whose concern
-the class delegates to a service.
+`[layer-constant-leak]` (warn) in `scripts/check_code_style.ts`. Uses an
+AST-based import analysis (TypeScript compiler API) to detect package-pure
+files importing concrete classes or runtime primitives from different-domain
+packages — handling multi-line imports, `import type`, and per-binding type
+annotations correctly. The checked symbols are:
+
+- `SafeSubprocess` — belongs behind `GitAuditService`
+- `ToolRegistry` — inject `IToolRegistry` via DI
+- `TOKEN_ESTIMATION_CHARS_PER_TOKEN` — belongs behind `ExecutionContextService`
+- `GitService`, `MemoryBankService`, `SessionMemoryService` — inject interfaces
+
+Skips test files, framework packages (`@exaix/core`, `@exaix/schemas`, etc.),
+and known bridge files.
+
+**Current violations**: 3 warnings for `ExecutionLoop` (god object, score 88)
+which directly imports `ToolRegistry`, `GitService`, and `MemoryBankService` from
+three different domain packages.
 
 ---
 

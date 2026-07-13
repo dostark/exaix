@@ -86,7 +86,7 @@
     "check": "deno check packages/ packages-team/ apps/ tests/",
     "check:version": "deno run -A scripts/check_version.ts",
     "check:commit-msg": "deno run --allow-read --allow-run=git scripts/check_commit_msg.ts",
-    "check:style": "deno run --allow-read scripts/check_code_style.ts",
+    "check:style": "deno run --allow-read --allow-env scripts/check_code_style.ts",
     "check:edition-graph": "deno run --allow-read --allow-run=deno scripts/check_edition_graph.ts",
     "check:test-placement": "deno run --allow-read --allow-run=git scripts/check_test_placement.ts --all",
     "check:docs": "deno run --allow-read scripts/verify_manifest_fresh.ts",
