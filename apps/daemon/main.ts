@@ -1114,6 +1114,13 @@ if (import.meta.main) {
       // auto-admit/task_type) is reachable during real plan execution — previously
       // createAgentExecutor never received a resolver at all.
       modelResolver,
+      // Phase 135 Step 11 (GAP-10, context-window half): threaded to PlanExecutor so
+      // AgentExecutor's internally-constructed PromptBudgetAllocator resolves a step's
+      // real context window (via the same edition-selected registry already used for
+      // ModelResolver/CostTracker above) instead of always falling back to the
+      // hardcoded 128K default — previously createAgentExecutor never received a
+      // registry for its allocator at all.
+      modelRegistry,
     });
 
     // Initialize Memory Auto-Approval Service (reuses memoryExtractor from context setup)

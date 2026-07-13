@@ -35,7 +35,7 @@ import { type IPlanExecutorOptions, PlanExecutor } from "@exaix/core/planning";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
 import { ExecutionStatus, PortalExecutionStrategy } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
-import type { IHitlPolicyEvaluator, IToolConfirmationInterceptor } from "@exaix/core/types";
+import type { IHitlPolicyEvaluator, IModelRegistry, IToolConfirmationInterceptor } from "@exaix/core/types";
 import type { HitlRule } from "@exaix/schemas/hitl.ts";
 import { type IStructuredPlan, parseStructuredPlanFromMarkdown } from "@exaix/core/planning";
 import { isReadOnlyAgentCapabilities } from "@exaix/core/func";
@@ -79,6 +79,13 @@ export interface IExecutionLoopConfig {
    * reachable during real plan execution.
    */
   modelResolver?: ModelResolver;
+  /**
+   * Phase 135 Step 11 (GAP-10, context-window half): threaded into PlanExecutor's
+   * IPlanExecutorOptions so AgentExecutor's internally-constructed
+   * PromptBudgetAllocator resolves a step's real context window instead of always
+   * falling back to the hardcoded 128K default.
+   */
+  modelRegistry?: IModelRegistry;
   reviewRegistry?: ReviewRegistry;
   context?: IApplicationContext;
   sessionMemory?: SessionMemoryService;
@@ -147,6 +154,7 @@ export class ExecutionLoop {
   private reviewRegistry?: ReviewRegistry;
   private llmProvider?: IModelProvider;
   private modelResolver?: ModelResolver;
+  private modelRegistry?: IModelRegistry;
   private confidenceScorer?: ConfidenceScorer;
   private amendmentService?: PlanAmendmentService;
   private sessionMemory?: SessionMemoryService;
@@ -166,6 +174,7 @@ export class ExecutionLoop {
     this.identityId = config.identityId;
     this.llmProvider = ctx?.provider || config.llmProvider;
     this.modelResolver = config.modelResolver;
+    this.modelRegistry = config.modelRegistry;
     this.reviewRegistry = config.reviewRegistry;
     this.context = ctx;
     this.sessionMemory = config.sessionMemory;
@@ -832,6 +841,7 @@ export class ExecutionLoop {
       amendmentService: this.amendmentService,
       onCodeChangesDelegate: this.onCodeChangesDelegate,
       modelResolver: this.modelResolver,
+      modelRegistry: this.modelRegistry,
     };
     if (this.guardrailRunner) {
       planExecutorOptions.guardrailRunner = this.guardrailRunner;

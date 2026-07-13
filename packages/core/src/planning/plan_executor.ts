@@ -39,9 +39,10 @@ import {
 } from "@exaix/git";
 import type { JSONValue } from "@exaix/core";
 import type { IApplicationContext, IPlanAmendmentService } from "@exaix/core/types";
-import type { IDatabaseService } from "@exaix/core/types";
+import type { IDatabaseService, IModelRegistry } from "@exaix/core/types";
 import { TaskType } from "@exaix/core/types";
 import { AgentExecutor, type IAgentExecutorOptions, type IGuardrailRunner } from "@exaix/execution";
+import { PromptBudgetAllocator } from "@exaix/core";
 import { PlanAmendmentService } from "./plan_amendment_service.ts";
 import type { IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
 import { GuardrailBlockedError, PlanAmendmentPendingError } from "./errors.ts";
@@ -82,6 +83,15 @@ export interface IPlanExecutorOptions {
    * unreachable regardless of identity blueprint content.
    */
   modelResolver?: ModelResolver;
+  /**
+   * Phase 135 Step 11 (GAP-10, context-window half): the edition-selected registry
+   * threaded into AgentExecutor's internally-constructed PromptBudgetAllocator, so a
+   * step's real context-window resolution reaches production instead of always
+   * falling back to the hardcoded 128K default — without it, PromptBudgetAllocator
+   * never receives a registry and every allocate() call takes the fallback branch
+   * regardless of the resolved model's real context window.
+   */
+  modelRegistry?: IModelRegistry;
   /**
    * Optional callback invoked when a code-changes delegation result is
    * reconciled. PlanExecutor calls this to delegate code-change steps to a
@@ -266,6 +276,16 @@ export class PlanExecutor {
       options.topSkillTaskTypes = topSkillTaskTypes;
     }
 
+    // Phase 135 Step 11 (GAP-10, context-window half): build the allocator here (rather
+    // than leaving it undefined) so AgentExecutor's default construction
+    // (`promptBudgetAllocator ?? new PromptBudgetAllocator(...)`) is bypassed with one
+    // that carries the edition-selected registry. When modelRegistry is absent (e.g.
+    // tests that don't inject one), pass undefined through unchanged — AgentExecutor's
+    // own default still applies, preserving prior behavior exactly.
+    const promptBudgetAllocator = this.options.modelRegistry
+      ? new PromptBudgetAllocator(this.config.budget_enforcement, undefined, this.logger, this.options.modelRegistry)
+      : undefined;
+
     return new AgentExecutor(
       this.config,
       this.db as DatabaseService,
@@ -275,7 +295,7 @@ export class PlanExecutor {
       this.llmProvider,
       undefined, // strategyRegistry
       undefined, // _toolRegistry
-      undefined, // promptBudgetAllocator
+      promptBudgetAllocator,
       undefined, // contextCache
       undefined, // tokenizer
       undefined, // contextBudgetManager
