@@ -491,21 +491,10 @@ Description:
 // ────────────────────────────────────────────────────────────────────────────
 
 /**
- * Low-level implementation primitives that should not appear in
- * composition-root classes.  These are runtime primitives and bare
- * constants — NOT service classes used for DI wiring.
- *
- * Service classes like `GitService`, `ToolRegistry`, `MemoryBankService`
- * are legitimate imports for composition; the anti-pattern is importing
- * their INTERNAL primitives (SafeSubprocess, DEFAULT_GIT_*, etc.).
+ * Framework/API packages that export shared contracts — value imports
+ * from these are always OK.
  */
-const LAYER_LEAK_SYMBOLS = new Set([
-  "SafeSubprocess",
-  "TOKEN_ESTIMATION_CHARS_PER_TOKEN",
-]);
-
-/** Packages that should never be checked (framework / shared contracts). */
-const LAYER_LEAK_FRAMEWORK_PACKAGES = new Set([
+const LAYER_LEAK_FRAMEWORK = new Set([
   "@exaix/core",
   "@exaix/schemas",
   "@exaix/ai",
@@ -514,66 +503,101 @@ const LAYER_LEAK_FRAMEWORK_PACKAGES = new Set([
   "@exaix/testing",
 ]);
 
-/** Known bridge files that legitimately import implementation symbols. */
-const LAYER_LEAK_EXEMPT_PATHS = new Set([
+/** Known bridge files — exempt from layer-leak checks. */
+const LAYER_LEAK_EXEMPT = new Set([
   "packages/execution/src/git_audit_service.ts",
   "packages/execution/src/execution_context_service.ts",
   "packages/core/src/planning/plan_executor.ts",
 ]);
 
+/**
+ * Structural AST analysis: detect when a file in package P value-imports
+ * a class from domain package Q and instantiates it with `new Q(...)`.
+ *
+ * No hardcoded symbol names — the check is purely structural:
+ *  1. Parse all import declarations (AST)
+ *  2. Build a map of imported names → source packages
+ *  3. Walk all NewExpression nodes
+ *  4. If the constructor identifier matches an imported value from a
+ *     different domain package, flag it.
+ */
 function checkLayerLeaks(filePath: string, sourceText: string, repoPath: string): void {
-  // Only check production package files
   if (!repoPath.startsWith("packages/")) return;
   if (repoPath.includes("/tests/") || repoPath.includes("/testing/") || repoPath.endsWith("_test.ts")) return;
-  if (LAYER_LEAK_EXEMPT_PATHS.has(repoPath)) return;
+  if (LAYER_LEAK_EXEMPT.has(repoPath)) return;
+
+  const pkgMatch = repoPath.match(/^packages\/([^/]+)/);
+  if (!pkgMatch) return;
+  const myPackage = pkgMatch[1];
 
   const sourceFile = ts.createSourceFile(filePath, sourceText, ts.ScriptTarget.Latest, true);
 
+  // ── Step 1: collect imported names → { specifier, isInterface } ──
+  const imported = new Map<string, { specifier: string; line: number; isInterface: boolean }>();
+
   ts.forEachChild(sourceFile, (node) => {
     if (!ts.isImportDeclaration(node)) return;
-
-    const specifierNode = node.moduleSpecifier;
-    if (!ts.isStringLiteral(specifierNode)) return;
-    const specifier = specifierNode.text;
+    const specNode = node.moduleSpecifier;
+    if (!ts.isStringLiteral(specNode)) return;
+    const specifier = specNode.text;
     if (!specifier.startsWith("@exaix/")) return;
+
+    // Framework subpaths (@exaix/core/events, @exaix/ai/providers, etc.) — always OK
     if (
-      LAYER_LEAK_FRAMEWORK_PACKAGES.has(specifier) ||
-      specifier.startsWith("@exaix/ai-") ||
-      specifier.startsWith("@exaix-team/")
+      LAYER_LEAK_FRAMEWORK.has(specifier) ||
+      [...LAYER_LEAK_FRAMEWORK].some((p) => specifier.startsWith(p + "/"))
     ) return;
 
-    // Skip imports from the same package
-    const pkgMatch = repoPath.match(/^packages\/([^/]+)/);
-    if (!pkgMatch) return;
-    const myPackage = pkgMatch[1];
-    const targetPkg = specifier.replace(/^@exaix\//, "");
-    if (targetPkg === myPackage || specifier === `@exaix/${myPackage}`) return;
+    // Concrete provider packages are implementation, but their users
+    // legitimately instantiate them — exempt provider packages too
+    if (
+      specifier.startsWith("@exaix/ai-") || specifier.startsWith("@exaix-team/") ||
+      specifier.startsWith("@exaix/tui/") || specifier.startsWith("@exaix/cli/")
+    ) return;
 
-    const importClause = node.importClause;
-    if (!importClause || importClause.isTypeOnly) return;
+    // Skip same-package imports
+    const targetPkg = specifier.match(/^@exaix\/([^/]+)/)?.[1];
+    if (targetPkg === myPackage) return;
 
-    const namedBindings = importClause.namedBindings;
-    if (!namedBindings || !ts.isNamedImports(namedBindings)) return;
+    const clause = node.importClause;
+    if (!clause || clause.isTypeOnly) return;
+    const bindings = clause.namedBindings;
+    if (!bindings || !ts.isNamedImports(bindings)) return;
 
-    for (const element of namedBindings.elements) {
-      if (element.isTypeOnly) continue;
-      const name = element.name.text;
-      if (!LAYER_LEAK_SYMBOLS.has(name)) continue;
-
-      const line = sourceFile.getLineAndCharacterOfPosition(element.getStart()).line + 1;
-      const location = `${filePath}:${line}`;
-      const prefix = convertWarnings ? "ERROR" : "WARN";
-      console.log(
-        `${prefix} [layer-constant-leak] ${location} – ` +
-          `Low-level implementation symbol '${name}' imported from '${specifier}' ` +
-          `in a package-pure file (${repoPath}). This concrete class / runtime primitive ` +
-          `should be behind a service boundary. ` +
-          `See CODE_STYLE.md §15 — Layer-Aware Constant Imports.`,
-      );
-      if (convertWarnings) errorCount++;
-      else warnCount++;
+    for (const el of bindings.elements) {
+      if (el.isTypeOnly) continue;
+      const name = el.name.text;
+      const line = sourceFile.getLineAndCharacterOfPosition(el.getStart()).line + 1;
+      // Heuristic: I-prefixed names are interfaces / abstract contracts
+      const isInterface = /^I[A-Z]/.test(name);
+      imported.set(name, { specifier, line, isInterface });
     }
   });
+
+  if (imported.size === 0) return;
+
+  // ── Step 2: walk NewExpression nodes and cross-check ──
+  function visit(node: ts.Node): void {
+    if (ts.isNewExpression(node) && ts.isIdentifier(node.expression)) {
+      const name = node.expression.text;
+      const info = imported.get(name);
+      if (info && !info.isInterface) {
+        const location = `${filePath}:${info.line}`;
+        const prefix = convertWarnings ? "ERROR" : "WARN";
+        console.log(
+          `${prefix} [layer-constant-leak] ${location} – ` +
+            `'${name}' imported as a value from '${info.specifier}' ` +
+            `and instantiated via \`new ${name}(\` in a different-domain file ` +
+            `(${repoPath}). Accept interfaces via DI instead of importing ` +
+            `concrete classes. See CODE_STYLE.md §15.`,
+        );
+        if (convertWarnings) errorCount++;
+        else warnCount++;
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(sourceFile);
 }
 
 // Rules correspond to the code style guidelines in CODE_STYLE.md.  When a

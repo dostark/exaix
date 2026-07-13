@@ -1071,23 +1071,13 @@ const tokens = Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
 
 ### Automated enforcement
 
-`[layer-constant-leak]` (warn) in `scripts/check_code_style.ts`. Uses an
-AST-based import analysis (TypeScript compiler API) to detect package-pure
-files importing concrete classes or runtime primitives from different-domain
-packages — handling multi-line imports, `import type`, and per-binding type
-annotations correctly. The checked symbols are:
-
-- `SafeSubprocess` — belongs behind `GitAuditService`
-- `ToolRegistry` — inject `IToolRegistry` via DI
-- `TOKEN_ESTIMATION_CHARS_PER_TOKEN` — belongs behind `ExecutionContextService`
-- `GitService`, `MemoryBankService`, `SessionMemoryService` — inject interfaces
-
-Skips test files, framework packages (`@exaix/core`, `@exaix/schemas`, etc.),
-and known bridge files.
-
-**Current violations**: 3 warnings for `ExecutionLoop` (god object, score 88)
-which directly imports `ToolRegistry`, `GitService`, and `MemoryBankService` from
-three different domain packages.
+`[layer-constant-leak]` (warn) in `scripts/check_code_style.ts`. Pure structural
+AST check with no hardcoded symbol names: parses import declarations and walks
+`NewExpression` nodes to detect when a file value-imports a class from a different
+domain package and instantiates it via `new`. Skips framework packages
+(`@exaix/core`, `@exaix/schemas`, `@exaix/ai`, `@exaix/cli`, `@exaix/tui`),
+same-package imports, and test files. See `scripts/check_code_style.md` for
+the full tag reference.
 
 ---
 

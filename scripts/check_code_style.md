@@ -182,25 +182,19 @@ module purity rules.
 
 ## Layer-Aware Constant Imports
 
-| Tag                     | Severity | Rule (CODE_STYLE.md) | What it detects                                                                        |
-| ----------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------- |
-| `[layer-constant-leak]` | warn     | §15                  | Package‑pure file imports a concrete class / runtime primitive from a different domain |
+| Tag                     | Severity | Rule (CODE_STYLE.md) | What it detects                                                                          |
+| ----------------------- | -------- | -------------------- | ---------------------------------------------------------------------------------------- |
+| `[layer-constant-leak]` | warn     | §15                  | File value-imports a class from a different domain package and instantiates it via `new` |
 
-**Automated via AST** (`check_code_style.ts` → `checkLayerLeaks()`). Uses the TypeScript
-compiler API to parse import declarations structurally (handles multi-line imports,
-`import type { ... }`, per-binding `type` annotations). Checks for a defined set of concrete
-classes and runtime primitives that should be behind service boundaries:
+**Pure structural AST check** — no hardcoded symbol names. Uses the TypeScript compiler API to:
 
-| Symbol                             | Belongs in                     |
-| ---------------------------------- | ------------------------------ |
-| `SafeSubprocess`                   | `GitAuditService`              |
-| `ToolRegistry`                     | inject `IToolRegistry`         |
-| `TOKEN_ESTIMATION_CHARS_PER_TOKEN` | `ExecutionContextService`      |
-| `GitService`                       | inject `IGitService`           |
-| `MemoryBankService`                | inject `IMemoryBankService`    |
-| `SessionMemoryService`             | inject `ISessionMemoryService` |
+1. Parse all import declarations; build a map of imported names → source packages
+2. Walk `NewExpression` nodes in the AST
+3. If a constructor call name matches an imported value from a DIFFERENT domain package (not framework, not the file's own package), flag it
 
-**Current results**: 3 warnings (all for `ExecutionLoop` — god object, score 88).
+**Exempt packages**: `@exaix/core/*`, `@exaix/schemas`, `@exaix/ai`, `@exaix/cli`, `@exaix/tui`, `@exaix/testing`.
+
+**Current results**: 17 warnings across 5 files — signals possible concrete-class instantiation across domain boundaries.
 
 **Full rule and remediation**: [CODE_STYLE.md §15](../CODE_STYLE.md#layer-aware-constant-imports).
 
