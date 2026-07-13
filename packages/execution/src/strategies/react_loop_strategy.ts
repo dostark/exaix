@@ -38,7 +38,6 @@ import {
 import type { IModelCallOptions } from "@exaix/schemas";
 import type { IContextBudgetManagerInput } from "../context/context_budget_manager.ts";
 import type { IContextSegment } from "../context/context_segment.ts";
-import type { IEventLogger } from "@exaix/core/logger";
 import type { IReActLoopExecutor } from "../react_loop_adapter.ts";
 
 export interface IReActAction {

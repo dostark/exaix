@@ -9,7 +9,7 @@
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "@exaix/ai/providers.ts";
-import { AgentRunner, IAgentRunner, type IBlueprint, type IParsedRequest } from "@exaix/execution";
+import { AgentRunner, type IBlueprint, type IParsedRequest } from "@exaix/execution";
 import { MEMORY_CONTEXT_KEY, MemoryBankSource, MemoryScope, PORTAL_CONTEXT_KEY, SkillStatus } from "@exaix/core";
 import { buildPortalContextBlock } from "@exaix/core/func";
 import type { ISkillsService } from "@exaix/core/types";

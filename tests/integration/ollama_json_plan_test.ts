@@ -8,7 +8,7 @@
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { OllamaProvider } from "@exaix/ai-ollama";
-import { AgentRunner, IAgentRunner } from "@exaix/execution";
+import { AgentRunner } from "@exaix/execution";
 import { type IRequestMetadata as IRequestMetadata, PlanWriter } from "@exaix/core/planning";
 import { PlanAdapter } from "@exaix/core/planning";
 import { initTestDbService } from "@exaix/testing";

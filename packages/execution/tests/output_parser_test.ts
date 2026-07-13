@@ -17,7 +17,7 @@ Deno.test("OutputParser.parseAgentResponse extracts JSON from triple-backtick bl
     trace_id: "trace-1",
     request_id: "req-1",
     plan: "test plan",
-  } as any, 0);
+  }, 0);
 
   assertEquals(result.branch, "feat/test");
   assertEquals(result.commit_sha, "abc1234");
@@ -34,7 +34,7 @@ Deno.test("OutputParser.parseAgentResponse falls back to bare JSON match", () =>
     trace_id: "trace-2",
     request_id: "req-2",
     plan: "fallback plan",
-  } as any, 0);
+  }, 0);
 
   assertEquals(result.branch, "feat/fallback");
   assertEquals(result.files_changed, ["b.ts"]);
@@ -47,7 +47,7 @@ Deno.test("OutputParser.parseAgentResponse returns default on no JSON match", ()
     trace_id: "trace-3",
     request_id: "req-3",
     plan: "default plan",
-  } as any, startTime);
+  }, startTime);
 
   assertEquals(result.branch, "feat/req-3-trace-3");
   assertEquals(result.files_changed, []);
@@ -62,7 +62,7 @@ Deno.test("OutputParser.parseAgentResponse fills missing fields from context", (
     trace_id: "trace-4",
     request_id: "req-4",
     plan: "partial plan",
-  } as any, 100);
+  }, 100);
 
   assertEquals(result.branch, "feat/partial");
   assertEquals(result.commit_sha, "0000000000000000000000000000000000000000");
@@ -78,7 +78,7 @@ Deno.test("OutputParser.parseAgentResponse handles malformed JSON gracefully", (
     trace_id: "trace-5",
     request_id: "req-5",
     plan: "error plan",
-  } as any, 0);
+  }, 0);
 
   assertEquals(result.description, "error plan");
 });

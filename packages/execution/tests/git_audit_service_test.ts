@@ -6,16 +6,28 @@
  * @architectural-layer Tests
  */
 
-import { assert, assertEquals, assertExists } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { EventLogger } from "@exaix/core/logger";
+
 import { GitAuditService } from "../src/git_audit_service.ts";
 import { MemoryOperation, PortalOperation } from "@exaix/core";
+import type { IEventLogger } from "@exaix/core/logger";
+
+function mockLogger(): IEventLogger {
+  return {
+    info: async () => {},
+    error: async () => {},
+    log: async () => {},
+    warn: async () => {},
+    fatal: async () => {},
+    debug: async () => {},
+    child: () => mockLogger(),
+  };
+}
 
 async function withTempGitDir(fn: (dir: string, service: GitAuditService) => Promise<void>): Promise<void> {
   const dir = await Deno.makeTempDir();
-  const logger = new EventLogger({} as any);
-  const service = new GitAuditService(logger);
+  const service = new GitAuditService(mockLogger());
 
   try {
     await new Deno.Command(PortalOperation.GIT, { args: ["init"], cwd: dir }).output();

@@ -1902,7 +1902,7 @@ Deno.test({
       const executor = new AgentExecutor({ config: testConfig, db, logger, pathResolver, permissions });
 
       // Set budget on the ExecutionContextService (private ctx field)
-      const ctxService = (executor as any).ctx;
+      const ctxService = executor["ctx"];
       Reflect.set(ctxService, "_currentPromptBudget", {
         model: "openai:gpt-4o-mini",
         totalBudgetTokens: 1000,

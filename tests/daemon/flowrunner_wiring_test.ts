@@ -8,7 +8,7 @@
 import { assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { initTestDbService } from "@exaix/testing";
-import { AgentRunner, IAgentRunner } from "@exaix/execution";
+import { AgentRunner } from "@exaix/execution";
 import { AgentExecutorAdapter, FlowRunner, type IFlowEventLogger } from "@exaix/flow";
 import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";

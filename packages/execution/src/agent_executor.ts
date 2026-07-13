@@ -38,11 +38,11 @@ import {
   AGENT_EXECUTOR_ID,
 } from "@exaix/core";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
-import {
-  type IAgentExecutionOptions,
-  type IAgentExecutionOptionsInput,
-  type IChangesetResult,
-  type IExecutionContext,
+import type {
+  IAgentExecutionOptions,
+  IAgentExecutionOptionsInput,
+  IChangesetResult,
+  IExecutionContext,
 } from "@exaix/schemas/agent_executor.ts";
 import type { IToolRegistry } from "@exaix/core/types";
 import { AgentExecutionErrorType, ExecutionStrategyName, SecurityMode } from "@exaix/core";
@@ -63,9 +63,6 @@ import {
   DEFAULT_GIT_LOG_TIMEOUT_MS,
   DEFAULT_GIT_LS_FILES_TIMEOUT_MS,
   DEFAULT_GIT_STATUS_TIMEOUT_MS,
-  GIT_CMD_REV_PARSE,
-  GIT_CMD_STATUS,
-  GIT_EMPTY_SHA,
 } from "@exaix/git";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { AGENT_EVENT_OUTPUT } from "@exaix/core";
@@ -1100,6 +1097,3 @@ export class AgentExecutor {
     });
   }
 }
-
-/** Replacement marker used when sanitizing prompt-injection patterns from user input */
-const SANITIZED_MARKER = "[REMOVED]";
