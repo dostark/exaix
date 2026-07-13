@@ -41,27 +41,7 @@ import type { IModelCallOptions } from "@exaix/schemas";
 import type { IContextBudgetManager, IContextBudgetManagerInput } from "../context/context_budget_manager.ts";
 import type { IContextSegment } from "../context/context_segment.ts";
 import type { IEventLogger } from "@exaix/core/logger";
-import type { IGuardrailRunner } from "../guardrail_runner.ts";
-
-interface IReActLoopExecutor {
-  logAgentOutput: AgentExecutor["logAgentOutput"];
-  validateReviewResult: AgentExecutor["validateReviewResult"];
-  parseAgentResponse: AgentExecutor["parseAgentResponse"];
-  toolRegistry: AgentExecutor["toolRegistry"];
-  logGeneration: AgentExecutor["logGeneration"];
-  eventBus?: IEventBusService;
-  /** Optional segment-level budget manager (Phase 83). */
-  contextBudgetManager?: IContextBudgetManager;
-  /** Current section-level prompt budget from PromptBudgetAllocator; may be undefined. */
-  currentPromptBudget?: IPromptBudget;
-  /** Logger for budget pressure events (Phase 83); optional for backward-compat. */
-  budgetLogger?: IEventLogger;
-  /**
-   * Optional guardrail screening seam (Phase 115 Step 1). Absent in Solo (no-op); paid
-   * editions (P107) inject a concurrent runner via the edition composer.
-   */
-  guardrailRunner?: IGuardrailRunner;
-}
+import type { IReActLoopExecutor } from "../react_loop_adapter.ts";
 
 export interface IReActAction {
   tool: string;

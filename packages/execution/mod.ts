@@ -15,6 +15,7 @@ export * from "./src/prompt_builder.ts";
 export * from "./src/git_audit_service.ts";
 export * from "./src/output_parser.ts";
 export * from "./src/history_manager.ts";
+export * from "./src/react_loop_adapter.ts";
 export * from "./src/guardrail_runner.ts";
 export * from "./src/strategies/execution_strategy.ts";
 export * from "./src/strategies/strategy_registry.ts";

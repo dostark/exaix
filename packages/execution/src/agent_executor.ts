@@ -92,6 +92,7 @@ import { PromptBuilder } from "./prompt_builder.ts";
 import { GitAuditService } from "./git_audit_service.ts";
 import { HistoryManager } from "./history_manager.ts";
 import { type IOutputParserContext, OutputParser } from "./output_parser.ts";
+import { ReActLoopAdapter } from "./react_loop_adapter.ts";
 
 /**
  * Agent blueprint loaded from file
@@ -204,6 +205,7 @@ export class AgentExecutor {
   private gitAuditService: GitAuditService;
   private outputParser: OutputParser;
   private historyManager: HistoryManager;
+  private reActAdapter: ReActLoopAdapter;
   private ctx: ExecutionContextService;
 
   /** Resolved per-call options from ModelResolver, forwarded to generate(). */
@@ -264,6 +266,14 @@ export class AgentExecutor {
     this.outputParser = deps.outputParser ?? new OutputParser();
     this.historyManager = deps.historyManager ??
       new HistoryManager(this.config, this.logger, this.provider, this.db, this._resolvedCallOptions);
+    this.reActAdapter = new ReActLoopAdapter(
+      this.outputParser,
+      this.ctx,
+      this.logger,
+      this._toolRegistry,
+      undefined,
+      deps.guardrailRunner,
+    );
     if (deps.options?.guardrailRunner) {
       this._guardrailRunner = deps.options.guardrailRunner;
     }
@@ -271,7 +281,7 @@ export class AgentExecutor {
     if (!this.strategyRegistry) {
       this.strategyRegistry = new StrategyRegistry();
       this.strategyRegistry.register(new LegacyAgentStrategy(this, this.provider));
-      this.strategyRegistry.register(new ReActLoopStrategy(this, this.provider));
+      this.strategyRegistry.register(new ReActLoopStrategy(this.reActAdapter, this.provider));
       this.strategyRegistry.register(new McpAgentStrategy(this));
     }
   }
