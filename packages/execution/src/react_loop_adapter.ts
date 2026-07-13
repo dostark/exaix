@@ -36,7 +36,7 @@ export interface IReActLoopExecutor {
   logAgentOutput(traceId: string, output: string): Promise<void>;
   validateReviewResult(result: JSONValue): IChangesetResult;
   parseAgentResponse(response: string, context: IOutputParserContext, startTime: number): IChangesetResult;
-  toolRegistry: IToolRegistry | undefined;
+  toolRegistry?: Opt<IToolRegistry, Reason.OptionalDependency>;
   logGeneration(
     traceId: string,
     identityId: string,

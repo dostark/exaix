@@ -18,8 +18,6 @@ import type { Opt, Reason } from "@exaix/core/types";
 
 const SANITIZED_MARKER = "[REMOVED]";
 
-const SANITIZED_MARKER = "[REMOVED]";
-
 /**
  * Builds execution prompts for LLM agents. Handles input sanitization, token budget
  * enforcement, context cache integration, and prompt assembly.
