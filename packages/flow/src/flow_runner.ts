@@ -40,7 +40,7 @@ import { ActivityJournal } from "./activity_journal.ts";
 import { McpClient } from "@exaix/mcp/server";
 import { LlmClient } from "@exaix/ai/llm_client.ts";
 import type { ModelResolver } from "@exaix/ai";
-import type { ModelIntent } from "@exaix/schemas";
+import type { IModelIntent } from "@exaix/schemas";
 import { mapPresetToSize } from "./preset_mapper.ts";
 import type { ToolHandler } from "@exaix/mcp/server";
 import type { McpToolName } from "@exaix/mcp";
@@ -102,7 +102,7 @@ import type { IWaitStateService } from "./wait_states/wait_state_service.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
 /**
- * Interface for agent executors (AgentRunner or similar)
+ * Interface for agent executors (IAgentRunner or similar)
  */
 export interface IAgentExecutor {
   run(identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult>;
@@ -854,7 +854,7 @@ export class FlowRunner implements IFlowRunner {
     if (this.dynamicStepExecutor || !this.modelResolver || !this.config || !this.eventLogger) {
       return;
     }
-    const intent: ModelIntent = {
+    const intent: IModelIntent = {
       model_size: this.options.dynamicModel ? mapPresetToSize(this.options.dynamicModel) : undefined,
     };
     const resolved = await this.modelResolver.resolve(intent);

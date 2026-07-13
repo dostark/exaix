@@ -12,7 +12,7 @@ import { TuiSessionBase } from "@exaix/tui/base/tui_session_base.ts";
 import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
 import { ConfirmDialog, InputDialog } from "@exaix/tui/helpers/dialog_base.ts";
 import type { IKeyBinding } from "@exaix/tui/helpers/keyboard.ts";
-import { nextFrame, renderSpinner, type SpinnerState, startSpinner, stopSpinner } from "@exaix/tui/helpers/spinner.ts";
+import { nextFrame, renderSpinner, type ISpinnerState, startSpinner, stopSpinner } from "@exaix/tui/helpers/spinner.ts";
 import {
   collapseAll,
   expandAll,
@@ -22,14 +22,14 @@ import {
   type ITreeNode,
   renderTree,
   toggleNode,
-  type TreeRenderOptions,
+  type ITreeRenderOptions,
 } from "@exaix/tui/helpers/tree_view.ts";
 import { createTreeViewState, type ITreeViewState } from "@exaix/tui/base/tree_view_state.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
 export abstract class BaseTreeView<T> extends TuiSessionBase {
   public state: ITreeViewState<T>;
-  protected localSpinnerState: SpinnerState;
+  protected localSpinnerState: ISpinnerState;
 
   constructor(useColors = true) {
     super(useColors);
@@ -291,7 +291,7 @@ export abstract class BaseTreeView<T> extends TuiSessionBase {
     this.state.useColors = useColors;
   }
 
-  protected renderTreeView(options: Partial<TreeRenderOptions> = {}): string[] {
+  protected renderTreeView(options: Partial<ITreeRenderOptions> = {}): string[] {
     return renderTree(this.state.tree, {
       useColors: this.state.useColors,
       selectedId: this.state.selectedId || undefined,

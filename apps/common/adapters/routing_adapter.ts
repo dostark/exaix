@@ -9,7 +9,7 @@
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { IRoutingPolicyLoadResult } from "@exaix/routing";
-import { BlueprintLoader } from "@exaix/core/blueprint";
+import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { CandidateDiscovery } from "@exaix/routing";
 import { IdentityPerformanceRepository } from "@exaix/routing";
 import { RoutingPolicyLoader } from "@exaix/routing";
@@ -25,7 +25,7 @@ export interface ICreateRoutingPolicyServiceOptions {
 export function createRoutingPolicyService(
   options: ICreateRoutingPolicyServiceOptions,
 ): RoutingPolicyService {
-  const blueprintLoader = new BlueprintLoader({
+  const blueprintLoader = new IBlueprintLoader({
     blueprintsPath: `${options.root}/${options.config.paths.blueprints}`,
   });
 

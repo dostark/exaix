@@ -42,7 +42,7 @@ export interface IMemoryTestEnvironment {
   cleanup: () => Promise<void>;
 }
 
-export interface EnvironmentOptions {
+export interface IEnvironmentOptions {
   prefix?: string;
   withExtractor?: boolean;
 }
@@ -54,7 +54,7 @@ export class TestEnvironmentFactory {
   /**
    * Creates a complete memory test environment with all required services and directories
    */
-  public static async createMemoryEnvironment(_options: EnvironmentOptions = {}): Promise<IMemoryTestEnvironment> {
+  public static async createMemoryEnvironment(_options: IEnvironmentOptions = {}): Promise<IMemoryTestEnvironment> {
     // Initialize DB and base environment
     const { db, cleanup: dbCleanup, tempDir, config: baseConfig } = await initTestDbService();
 

@@ -6,7 +6,7 @@
  * @architectural-layer Services
  * @related-files ["packages/core/src/logger/structured_event_output.ts", "apps/tui/src/structured_log_service.ts"]
  */
-import type { ILogService, IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types";
+import type { ILogService, IStructuredLogEntry, ILogQueryOptions } from "@exaix/core/types";
 import { EventLoggerStructuredOutput } from "@exaix/core/logger";
 import type { IEventLoggerOutput } from "@exaix/core/logger";
 import { join } from "@std/path";
@@ -44,7 +44,7 @@ function findObservableSource(outputs: IEventLoggerOutput[]): IObservableSource 
 export class LogServiceAdapter implements ILogService {
   constructor(private logger: LoggerWithOutputs) {}
 
-  async getStructuredLogs(options: LogQueryOptions): Promise<IStructuredLogEntry[]> {
+  async getStructuredLogs(options: ILogQueryOptions): Promise<IStructuredLogEntry[]> {
     const source = findStructuredOutputSource(this.logger.getOutputs());
     if (!source) return [];
 
@@ -87,7 +87,7 @@ export class LogServiceAdapter implements ILogService {
 
   private async processLogFile(
     file: string,
-    options: LogQueryOptions,
+    options: ILogQueryOptions,
     logs: IStructuredLogEntry[],
     limit: number,
   ): Promise<void> {
@@ -109,7 +109,7 @@ export class LogServiceAdapter implements ILogService {
     }
   }
 
-  private matchesFilters(entry: IStructuredLogEntry, options: LogQueryOptions): boolean {
+  private matchesFilters(entry: IStructuredLogEntry, options: ILogQueryOptions): boolean {
     if (options.level && !options.level.includes(entry.level)) return false;
     if (options.traceId && entry.context.trace_id !== options.traceId) return false;
     if (options.correlationId && entry.context.correlation_id !== options.correlationId) return false;

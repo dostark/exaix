@@ -63,7 +63,7 @@ export interface IContextConfig {
 /**
  * Metadata about a context file
  */
-export interface ContextFile {
+export interface IContextFile {
   /** Absolute path to file */
   path: string;
 
@@ -86,7 +86,7 @@ export interface ContextFile {
 /**
  * Result of context loading operation
  */
-export interface ContextLoadResult {
+export interface IContextLoadResult {
   /** Combined content ready to inject into prompt */
   content: string;
 
@@ -127,7 +127,7 @@ export class ContextLoader {
    * @param filePaths - Absolute paths to context files
    * @returns Context load result with content and metadata
    */
-  async loadWithLimit(filePaths: string[]): Promise<ContextLoadResult> {
+  async loadWithLimit(filePaths: string[]): Promise<IContextLoadResult> {
     // Short-circuit for local agents with no limits
     if (this.config.isLocalAgent) {
       return await this.loadAllFiles(filePaths);
@@ -154,7 +154,7 @@ export class ContextLoader {
     const sortedFiles = this.applyStrategy(cappedFiles);
 
     // Step 4: Select files that fit within budget
-    const selectedFiles: ContextFile[] = [];
+    const selectedFiles: IContextFile[] = [];
 
     for (const file of sortedFiles) {
       if (totalTokens + file.tokenCount <= limit) {
@@ -217,7 +217,7 @@ export class ContextLoader {
   /**
    * Load all files without limits (for local agents)
    */
-  private async loadAllFiles(filePaths: string[]): Promise<ContextLoadResult> {
+  private async loadAllFiles(filePaths: string[]): Promise<IContextLoadResult> {
     const contextFiles = await this.loadContextFiles(filePaths);
     const content = this.formatContext(contextFiles, [], 0);
 
@@ -236,9 +236,9 @@ export class ContextLoader {
    */
   private async loadContextFiles(
     filePaths: string[],
-  ): Promise<ContextFile[]> {
+  ): Promise<IContextFile[]> {
     const files = await Promise.all(
-      filePaths.map(async (path): Promise<ContextFile | null> => {
+      filePaths.map(async (path): Promise<IContextFile | null> => {
         try {
           const content = await Deno.readTextFile(path);
           const stat = await Deno.stat(path);
@@ -261,17 +261,17 @@ export class ContextLoader {
     );
 
     // Filter out failed loads and return only successful ones
-    return files.filter((f): f is ContextFile => f !== null && f.tokenCount > 0);
+    return files.filter((f): f is IContextFile => f !== null && f.tokenCount > 0);
   }
 
   /**
    * Apply per-file token caps
    */
   private applyPerFileCaps(
-    files: ContextFile[],
+    files: IContextFile[],
     warnings: string[],
     truncatedFiles: string[],
-  ): ContextFile[] {
+  ): IContextFile[] {
     if (!this.config.perFileTokenCap) {
       return files;
     }
@@ -292,7 +292,7 @@ export class ContextLoader {
   /**
    * Apply the configured truncation strategy
    */
-  private applyStrategy(files: ContextFile[]): ContextFile[] {
+  private applyStrategy(files: IContextFile[]): IContextFile[] {
     switch (this.config.truncationStrategy) {
       case "smallest-first":
         return files.sort((a, b) => a.tokenCount - b.tokenCount);
@@ -317,7 +317,7 @@ export class ContextLoader {
   /**
    * Truncate a file to fit within token limit
    */
-  private truncateFile(file: ContextFile, maxTokens: number): ContextFile {
+  private truncateFile(file: IContextFile, maxTokens: number): IContextFile {
     const maxChars = maxTokens * 4; // Reverse the 4:1 approximation
     const truncatedContent = file.content.slice(0, maxChars);
 
@@ -332,7 +332,7 @@ export class ContextLoader {
    * Format context files into a single string for prompt injection
    */
   private formatContext(
-    files: ContextFile[],
+    files: IContextFile[],
     warnings: string[],
     limit: number,
   ): string {

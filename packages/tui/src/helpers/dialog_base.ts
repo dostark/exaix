@@ -143,7 +143,7 @@ export abstract class DialogBase<T = unknown> {
 
 // ===== Confirmation Dialog =====
 
-export interface ConfirmDialogOptions {
+export interface IConfirmDialogOptions {
   title: string;
   message: string | string[];
   confirmText?: string;
@@ -155,9 +155,9 @@ export interface ConfirmDialogOptions {
  * Simple confirmation dialog (Yes/No)
  */
 export class ConfirmDialog extends DialogBase<boolean> {
-  public readonly options: Required<ConfirmDialogOptions>;
+  public readonly options: Required<IConfirmDialogOptions>;
 
-  constructor(options: ConfirmDialogOptions) {
+  constructor(options: IConfirmDialogOptions) {
     super();
     this.options = {
       title: options.title,
@@ -228,7 +228,7 @@ export class ConfirmDialog extends DialogBase<boolean> {
 
 // ===== Input Dialog =====
 
-export interface InputDialogOptions {
+export interface IInputDialogOptions {
   title: string;
   label: string;
   placeholder?: string;
@@ -241,12 +241,12 @@ export interface InputDialogOptions {
  * Single input field dialog
  */
 export class InputDialog extends DialogBase<string> {
-  public readonly options: Required<InputDialogOptions>;
+  public readonly options: Required<IInputDialogOptions>;
   private value: string;
   private editing: boolean = false;
   private cursorPos: number = 0;
 
-  constructor(options: InputDialogOptions) {
+  constructor(options: IInputDialogOptions) {
     super();
     this.options = {
       title: options.title,
@@ -391,15 +391,15 @@ export class InputDialog extends DialogBase<string> {
 
 // ===== Select Dialog =====
 
-export interface SelectOption<T = string> {
+export interface ISelectOption<T = string> {
   value: T;
   label: string;
   description?: string;
 }
 
-export interface SelectDialogOptions<T = string> {
+export interface ISelectDialogOptions<T = string> {
   title: string;
-  options: SelectOption<T>[];
+  options: ISelectOption<T>[];
   selectedIndex?: number;
 }
 
@@ -407,12 +407,12 @@ export interface SelectDialogOptions<T = string> {
  * Single-select dialog with list of options
  */
 export class SelectDialog<T = string> extends DialogBase<T> {
-  public readonly options: SelectDialogOptions<T>;
+  public readonly options: ISelectDialogOptions<T>;
   private selectedIndex: number;
   private scrollOffset: number = 0;
   private maxVisible: number = 8;
 
-  constructor(options: SelectDialogOptions<T>) {
+  constructor(options: ISelectDialogOptions<T>) {
     super();
     this.options = options;
     this.selectedIndex = options.selectedIndex ?? 0;

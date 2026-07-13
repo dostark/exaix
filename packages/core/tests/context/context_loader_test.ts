@@ -10,7 +10,7 @@
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { ContextLoader } from "@exaix/core/context";
-import type { ContextLoadResult, IContextConfig } from "@exaix/core/context";
+import type { IContextLoadResult, IContextConfig } from "@exaix/core/context";
 import type { IActivityRecord } from "@exaix/core/types";
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
@@ -446,7 +446,7 @@ describe("Truncation Strategies", () => {
       "drop-largest",
       "truncate-each",
     ] as const;
-    const results: ContextLoadResult[] = [];
+    const results: IContextLoadResult[] = [];
 
     for (const strategy of strategies) {
       const config: IContextConfig = { ...baseConfig, truncationStrategy: strategy };
@@ -569,7 +569,7 @@ describe("Error Handling", () => {
 // ============================================================================
 
 describe("Result Structure", () => {
-  it("should return complete ContextLoadResult structure", async () => {
+  it("should return complete IContextLoadResult structure", async () => {
     const file = await createTestFile("test.txt", generateContent(1000));
 
     const config: IContextConfig = {

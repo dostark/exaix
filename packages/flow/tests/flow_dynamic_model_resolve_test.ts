@@ -15,7 +15,7 @@ import type { IAgentExecutor, IFlowEventLogger, IFlowStepRequest } from "@exaix/
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
-import type { ModelIntent } from "@exaix/schemas/model_intent.ts";
+import type { IModelIntent } from "@exaix/schemas/model_intent.ts";
 import type { ModelResolver } from "@exaix/ai";
 
 class MockAgentRunner implements IAgentExecutor {
@@ -47,9 +47,9 @@ function createMockFlow(stepId = "step1"): IFlowInput {
 Deno.test("[step132.4][dynamic-model] FlowRunner ensures dynamic executor with ModelResolver on execute", async () => {
   const { db, config, cleanup } = await initTestDbService();
   try {
-    let resolvedIntent: ModelIntent | undefined;
+    let resolvedIntent: IModelIntent | undefined;
     const mockResolver = {
-      resolve: (intent: ModelIntent) => {
+      resolve: (intent: IModelIntent) => {
         resolvedIntent = intent;
         return Promise.resolve({ provider: "mock", model: "mock-model", attempt: 1 });
       },
@@ -78,9 +78,9 @@ Deno.test("[step132.4][dynamic-model] FlowRunner ensures dynamic executor with M
 Deno.test("[step132.4][dynamic-model] FlowRunner with unknown dynamicModel falls through gracefully", async () => {
   const { db, config, cleanup } = await initTestDbService();
   try {
-    let resolvedIntent: ModelIntent | undefined;
+    let resolvedIntent: IModelIntent | undefined;
     const mockResolver = {
-      resolve: (intent: ModelIntent) => {
+      resolve: (intent: IModelIntent) => {
         resolvedIntent = intent;
         return Promise.resolve({ provider: "mock", model: "mock-model", attempt: 1 });
       },

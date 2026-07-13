@@ -9,7 +9,7 @@
 
 import type { IDatabaseService } from "../types/i_database_service.ts";
 import type { JSONValue } from "../types/json.ts";
-import type { ActivityRepository } from "../repositories/activity_repository.ts";
+import type { IActivityRepository } from "../repositories/activity_repository.ts";
 
 import { ActivityActor, LogLevel } from "../types/enums.ts";
 import type { Actor } from "../types/actor.ts";
@@ -40,8 +40,8 @@ import type { Opt, Reason } from "@exaix/core/types";
  * Configuration for EventLogger
  */
 export interface IEventLoggerConfig {
-  /** ActivityRepository instance (optional - allows console-only mode) */
-  activityRepo?: ActivityRepository;
+  /** IActivityRepository instance (optional - allows console-only mode) */
+  activityRepo?: IActivityRepository;
 
   /** DatabaseService instance (optional - allows console-only mode) - DEPRECATED: use activityRepo */
   db?: IDatabaseService;
@@ -248,7 +248,7 @@ class _ObservableOutput implements IEventLoggerOutput {
  * ```
  */
 export class EventLogger implements IEventLogger {
-  private readonly activityRepo?: ActivityRepository;
+  private readonly activityRepo?: IActivityRepository;
   private readonly db?: IDatabaseService; // DEPRECATED
   private readonly eventBus?: IEventBusService;
   private readonly prefix: string;
@@ -540,7 +540,7 @@ export class EventLogger implements IEventLogger {
    * Log event to IActivity Journal database
    */
   private async logToDatabase(event: ILogEvent): Promise<void> {
-    // Prefer ActivityRepository over direct DatabaseService
+    // Prefer IActivityRepository over direct DatabaseService
     if (this.activityRepo) {
       try {
         await this.activityRepo.logActivity({

@@ -1,7 +1,7 @@
 /**
  * @module AgentExecutorAdapterTest
  * @path packages/flow/tests/agent_executor_adapter_test.ts
- * @description Tests for AgentExecutorAdapter — bridges AgentRunner into
+ * @description Tests for AgentExecutorAdapter — bridges IAgentRunner into
  * FlowRunner's IAgentExecutor interface.
  */
 

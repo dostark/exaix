@@ -138,12 +138,12 @@ function extractSql(content: string, type: MigrationDirection): string {
   return sql;
 }
 
-interface ValidationResult {
+interface IValidationResult {
   success: boolean;
   error?: string;
 }
 
-function validateMigration(migrationFile: string, db: Database): ValidationResult {
+function validateMigration(migrationFile: string, db: Database): IValidationResult {
   switch (migrationFile) {
     case "001_init.sql": {
       // Check that all core tables exist (consolidated migration)

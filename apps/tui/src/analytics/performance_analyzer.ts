@@ -9,12 +9,12 @@
 
 import { LogLevel } from "@exaix/core";
 import type { IStructuredLogEntry } from "@exaix/core/types";
-import type { PerformanceStats } from "./types.ts";
+import type { IPerformanceStats } from "./types.ts";
 
 /**
  * Calculate performance statistics for a set of logs
  */
-export function calculatePerformanceStats(entries: IStructuredLogEntry[]): PerformanceStats | null {
+export function calculatePerformanceStats(entries: IStructuredLogEntry[]): IPerformanceStats | null {
   const performanceEntries = entries.filter((e) => e.performance?.duration_ms);
   if (performanceEntries.length === 0) return null;
 

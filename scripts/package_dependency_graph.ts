@@ -45,19 +45,19 @@ export interface IDenoInfoDependency {
   };
 }
 
-export interface DenoInfoModule {
+export interface IDenoInfoModule {
   specifier: string;
   local?: string;
   dependencies?: IDenoInfoDependency[];
 }
 
-export interface DenoInfoJson {
+export interface IDenoInfoJson {
   version: number;
   roots: string[];
-  modules: DenoInfoModule[];
+  modules: IDenoInfoModule[];
 }
 
-export interface PackageInfo {
+export interface IPackageInfo {
   root: string;
   name: string;
   modules: string[];
@@ -65,7 +65,7 @@ export interface PackageInfo {
   incoming: string[];
 }
 
-export interface CandidateReport {
+export interface ICandidateReport {
   targetPackage: string;
   targetRoot: string;
   directSrcModules: string[];
@@ -73,14 +73,14 @@ export interface CandidateReport {
   allSrcModules: string[];
 }
 
-export interface PackageGraph {
-  packages: PackageInfo[];
+export interface IPackageGraph {
+  packages: IPackageInfo[];
   edges: Array<{ from: string; to: string }>;
   externalPackages: string[];
-  candidateReport?: CandidateReport;
+  candidateReport?: ICandidateReport;
 }
 
-export interface PackageGraphOptions {
+export interface IPackageGraphOptions {
   importAliases?: Record<string, string>;
 }
 
@@ -89,20 +89,20 @@ export interface IPackageDiscovery {
   importAliases: Record<string, string>;
 }
 
-export interface BoundaryGroup {
+export interface IBoundaryGroup {
   /** Display name of the owning package (e.g. "@exaix/mcp", "@exaix (retired src/)"). */
   packageName: string;
   /** Repo-relative paths of modules in this group. */
   modules: string[];
 }
 
-export interface BoundaryReport {
+export interface IBoundaryReport {
   /** Repo-relative path of the analysed file. */
   targetPath: string;
   /** Dependencies directly imported by the target, grouped by package. */
-  directGroups: BoundaryGroup[];
+  directGroups: IBoundaryGroup[];
   /** All transitive dependencies (excluding direct), grouped by package. */
-  transitiveGroups: BoundaryGroup[];
+  transitiveGroups: IBoundaryGroup[];
   /** External (jsr:, npm:, https:) specifiers directly imported by the target. */
   externalDirect: string[];
   /**
@@ -201,7 +201,7 @@ Options:
 `);
 }
 
-export async function runDenoInfo(entrypoint: string): Promise<DenoInfoJson> {
+export async function runDenoInfo(entrypoint: string): Promise<IDenoInfoJson> {
   const command = new Deno.Command(Deno.execPath(), {
     args: ["info", "--json", entrypoint],
     stdout: "piped",
@@ -215,7 +215,7 @@ export async function runDenoInfo(entrypoint: string): Promise<DenoInfoJson> {
   }
 
   const raw = new TextDecoder().decode(stdout);
-  return JSON.parse(raw) as DenoInfoJson;
+  return JSON.parse(raw) as IDenoInfoJson;
 }
 
 export async function discoverPackageRoots(): Promise<IPackageDiscovery> {
@@ -251,12 +251,12 @@ export async function discoverPackageRoots(): Promise<IPackageDiscovery> {
 }
 
 export function buildPackageGraph(
-  info: DenoInfoJson,
+  info: IDenoInfoJson,
   packageRoots: string[],
-  options: PackageGraphOptions = {},
-): PackageGraph {
+  options: IPackageGraphOptions = {},
+): IPackageGraph {
   const localModuleToPackage = new Map<string, string>();
-  const packageInfo = new Map<string, PackageInfo>();
+  const packageInfo = new Map<string, IPackageInfo>();
   const packageNames = getPackageNamesByRoot(packageRoots, options.importAliases);
 
   for (const root of packageRoots) {
@@ -271,7 +271,7 @@ export function buildPackageGraph(
 
   const localModules = info.modules
     .map((module) => ({ module, path: toRepoPath(module.specifier) }))
-    .filter((entry): entry is { module: DenoInfoModule; path: string } => entry.path !== undefined);
+    .filter((entry): entry is { module: IDenoInfoModule; path: string } => entry.path !== undefined);
 
   for (const { path } of localModules) {
     const pkg = selectPackageRoot(path, packageRoots);
@@ -349,11 +349,11 @@ export function selectPackageRoot(path: string, packageRoots: string[]): string 
 }
 
 export function findCandidateSrcModules(
-  info: DenoInfoJson,
+  info: IDenoInfoJson,
   packageRoots: string[],
   targetPackage: string,
-  options: PackageGraphOptions = {},
-): CandidateReport | undefined {
+  options: IPackageGraphOptions = {},
+): ICandidateReport | undefined {
   const targetRoot = resolveTargetPackageRoot(targetPackage, packageRoots, options.importAliases);
   if (!targetRoot) {
     return undefined;
@@ -361,10 +361,10 @@ export function findCandidateSrcModules(
 
   const localModules = info.modules
     .map((module) => ({ module, path: toRepoPath(module.specifier) }))
-    .filter((entry): entry is { module: DenoInfoModule; path: string } => entry.path !== undefined);
+    .filter((entry): entry is { module: IDenoInfoModule; path: string } => entry.path !== undefined);
 
   const pathToPackage = new Map<string, string>();
-  const pathToModule = new Map<string, DenoInfoModule>();
+  const pathToModule = new Map<string, IDenoInfoModule>();
   const reverseDeps = new Map<string, Set<string>>();
 
   for (const { module, path } of localModules) {
@@ -458,15 +458,15 @@ const SRC_ROOT = "src";
 const SRC_DISPLAY_NAME = "@exaix (retired src/)";
 
 export function buildBoundaryReport(
-  info: DenoInfoJson,
+  info: IDenoInfoJson,
   targetPath: string,
   packageRoots: string[],
-  options: PackageGraphOptions = {},
-): BoundaryReport {
+  options: IPackageGraphOptions = {},
+): IBoundaryReport {
   const packageNames = getPackageNamesByRoot(packageRoots, options.importAliases);
   const normalizedTarget = normalize(targetPath);
 
-  const pathToModule = new Map<string, DenoInfoModule>();
+  const pathToModule = new Map<string, IDenoInfoModule>();
   for (const module of info.modules) {
     const path = toRepoPath(module.specifier);
     if (path) pathToModule.set(path, module);
@@ -520,7 +520,7 @@ export function buildBoundaryReport(
     }
   }
 
-  function groupByPackage(paths: string[]): BoundaryGroup[] {
+  function groupByPackage(paths: string[]): IBoundaryGroup[] {
     const groups = new Map<string, string[]>();
     for (const path of paths) {
       const name = classifyPath(path);
@@ -551,8 +551,8 @@ export function buildBoundaryReport(
 export async function explainBoundary(
   targetPath: string,
   packageRoots: string[],
-  options: PackageGraphOptions = {},
-): Promise<BoundaryReport> {
+  options: IPackageGraphOptions = {},
+): Promise<IBoundaryReport> {
   const info = await runDenoInfo(targetPath);
   return buildBoundaryReport(info, targetPath, packageRoots, options);
 }
@@ -673,7 +673,7 @@ function isModuleFileTarget(path: string): boolean {
   return extname(path) !== "";
 }
 
-export function renderTextReport(entrypoint: string, graph: PackageGraph): string {
+export function renderTextReport(entrypoint: string, graph: IPackageGraph): string {
   const lines = [
     `Package dependency graph for '${entrypoint}':`,
     "",
@@ -726,8 +726,8 @@ export function renderTextReport(entrypoint: string, graph: PackageGraph): strin
   return lines.join("\n");
 }
 
-export function renderDot(graph: PackageGraph): string {
-  const lines = ["digraph PackageGraph {", "  rankdir=LR;", "  node [shape=box, style=filled, fillcolor=lightgray];"];
+export function renderDot(graph: IPackageGraph): string {
+  const lines = ["digraph IPackageGraph {", "  rankdir=LR;", "  node [shape=box, style=filled, fillcolor=lightgray];"];
   for (const pkg of graph.packages) {
     lines.push(`  "${pkg.name}";`);
   }
@@ -738,13 +738,13 @@ export function renderDot(graph: PackageGraph): string {
   return lines.join("\n");
 }
 
-export function renderBoundaryReport(report: BoundaryReport): string {
+export function renderBoundaryReport(report: IBoundaryReport): string {
   const lines: string[] = [
     `Boundary analysis for '${report.targetPath}':`,
     "",
   ];
 
-  function renderGroups(groups: BoundaryGroup[], label: string, extra?: string[]) {
+  function renderGroups(groups: IBoundaryGroup[], label: string, extra?: string[]) {
     lines.push(`${label}:`);
     if (groups.length === 0 && (!extra || extra.length === 0)) {
       lines.push("  (none)");

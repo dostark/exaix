@@ -14,7 +14,7 @@ import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { KeyBindingsBase } from "@exaix/tui/base/key_bindings_base.ts";
 import type { ILogger, ILogService } from "@exaix/core/types";
-import type { IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types";
+import type { IStructuredLogEntry, ILogQueryOptions } from "@exaix/core/types";
 import {
   TUI_ACTION_SEARCH,
   TUI_KEY_LABEL_ENTER,
@@ -352,7 +352,7 @@ export class StructuredLogViewer extends BaseTreeView<IStructuredLogEntry> {
   async refreshLogs(): Promise<void> {
     try {
       this.setLoading(true, "Refreshing logs...");
-      const options: LogQueryOptions = {
+      const options: ILogQueryOptions = {
         level: this.logViewExtensions.logLevelFilter,
         limit: TUI_LIMIT_LOGS_DEFAULT,
         includePerformance: this.logViewExtensions.showPerformanceMetrics,

@@ -49,14 +49,14 @@ export interface IBlueprintFrontmatterData {
 /**
  * Filters for the blueprint list command (Phase 93 Solo salvage).
  */
-export interface BlueprintListOptions {
+export interface IBlueprintListOptions {
   /** Only return blueprints whose `capabilities` array contains this identifier. */
   capability?: string;
   /** Only return blueprints in this lifecycle status. */
   status?: BlueprintStatus;
 }
 
-export interface BlueprintCreateOptions {
+export interface IBlueprintCreateOptions {
   name?: string;
   model?: string;
   description?: string;
@@ -67,7 +67,7 @@ export interface BlueprintCreateOptions {
   from?: string;
 }
 
-export interface BlueprintRemoveOptions {
+export interface IBlueprintRemoveOptions {
   force?: boolean;
 }
 
@@ -318,7 +318,7 @@ export class BlueprintCommands extends BaseCommand {
   /**
    * Validate blueprint creation inputs
    */
-  private validateCreateInputs(identityId: string, options: BlueprintCreateOptions): void {
+  private validateCreateInputs(identityId: string, options: IBlueprintCreateOptions): void {
     const validation = new ValidationChain()
       .addRule("identityId", ValidationChain.required())
       .addRule(
@@ -374,7 +374,7 @@ export class BlueprintCommands extends BaseCommand {
    * seeding any unset field from the `--from` prototype identity when given.
    */
   private applyPrototype(
-    options: BlueprintCreateOptions,
+    options: IBlueprintCreateOptions,
   ): { model: string; capabilities: string[]; systemPrompt?: string } {
     let model = options.model;
     let capabilities = options.capabilities?.split(",").map((s) => s.trim()) || [];
@@ -417,7 +417,7 @@ export class BlueprintCommands extends BaseCommand {
    * Load and validate system prompt
    */
   private async loadSystemPrompt(
-    options: BlueprintCreateOptions,
+    options: IBlueprintCreateOptions,
     systemPrompt?: Opt<string, Reason.OptionalInput>,
   ): Promise<string> {
     let finalPrompt = systemPrompt;
@@ -451,7 +451,7 @@ export class BlueprintCommands extends BaseCommand {
    */
   private async createFrontmatter(
     identityId: string,
-    options: BlueprintCreateOptions,
+    options: IBlueprintCreateOptions,
     model: string,
     capabilities: string[],
   ): Promise<IBlueprintFrontmatterData> {
@@ -483,7 +483,7 @@ export class BlueprintCommands extends BaseCommand {
     systemPrompt: string,
     identityId: string,
     model: string,
-    options: BlueprintCreateOptions,
+    options: IBlueprintCreateOptions,
   ): Promise<void> {
     // YAML (---) is the canonical frontmatter format (Phase 131 Step 2: the
     // TOML→YAML migration is finished and the runtime loader no longer parses +++).
@@ -508,7 +508,7 @@ ${systemPrompt}
    */
   async create(
     identityId: string,
-    options: BlueprintCreateOptions,
+    options: IBlueprintCreateOptions,
   ): Promise<IBlueprintCreateResult> {
     try {
       // Validate inputs
@@ -556,7 +556,7 @@ ${systemPrompt}
    * List all blueprints, optionally filtered by lifecycle status and/or a
    * declared capability (Phase 93 Solo salvage).
    */
-  async list(options: BlueprintListOptions = {}): Promise<IBlueprintMetadata[]> {
+  async list(options: IBlueprintListOptions = {}): Promise<IBlueprintMetadata[]> {
     const blueprintsDir = this.getBlueprintsDir();
     const results: IBlueprintMetadata[] = [];
 
@@ -590,7 +590,7 @@ ${systemPrompt}
     return results.sort((a, b) => (a.identity_id ?? "").localeCompare(b.identity_id ?? ""));
   }
 
-  private matchesListFilters(metadata: IBlueprintMetadata, options: BlueprintListOptions): boolean {
+  private matchesListFilters(metadata: IBlueprintMetadata, options: IBlueprintListOptions): boolean {
     if (options.status && metadata.status !== options.status) {
       return false;
     }
@@ -850,7 +850,7 @@ ${systemPrompt}
   /**
    * Remove a blueprint
    */
-  async remove(identityId: string, options: BlueprintRemoveOptions = {}): Promise<void> {
+  async remove(identityId: string, options: IBlueprintRemoveOptions = {}): Promise<void> {
     try {
       const blueprintPath = await this.getExistingBlueprintPath(identityId);
 

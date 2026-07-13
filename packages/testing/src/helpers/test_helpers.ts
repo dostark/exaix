@@ -9,7 +9,7 @@
  */
 
 import type { IDatabaseService } from "@exaix/storage-sqlite";
-import type { ActivityRepository } from "@exaix/core/repositories";
+import type { IActivityRepository } from "@exaix/core/repositories";
 import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
 import type { IDisplayService, IGitService, IPortalConfigEntry, PortalExecutionStrategy } from "@exaix/core/types";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
@@ -95,10 +95,10 @@ export function createStubDb(
 }
 
 /**
- * Create a typed ActivityRepository mock for tests.
+ * Create a typed IActivityRepository mock for tests.
  */
-export function createMockRepo(overrides: Partial<ActivityRepository> = {}): ActivityRepository {
-  const base: ActivityRepository = {
+export function createMockRepo(overrides: Partial<IActivityRepository> = {}): IActivityRepository {
+  const base: IActivityRepository = {
     logActivity: () => Promise.resolve(),
     getActivitiesByTraceId: () => Promise.resolve([]),
     getActivitiesByActionType: () => Promise.resolve([]),

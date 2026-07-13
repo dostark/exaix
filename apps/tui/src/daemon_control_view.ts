@@ -7,7 +7,7 @@
  */
 
 import { TuiSessionBase } from "@exaix/tui/base/tui_session_base.ts";
-import { createSpinnerState, type SpinnerState, startSpinner, stopSpinner } from "@exaix/tui/helpers/spinner.ts";
+import { createSpinnerState, type ISpinnerState, startSpinner, stopSpinner } from "@exaix/tui/helpers/spinner.ts";
 import { type IHelpSection, renderHelpScreen } from "@exaix/tui/helpers/help_renderer.ts";
 import { ConfirmDialog, type InputDialog } from "@exaix/tui/helpers/dialog_base.ts";
 import { KeyBindingsBase } from "@exaix/tui/base/key_bindings_base.ts";
@@ -324,7 +324,7 @@ export class MinimalDaemonServiceMock implements IDaemonService {
 export class DaemonControlTuiSession extends TuiSessionBase {
   private readonly daemonView: DaemonControlView;
   private state: IDaemonViewState;
-  private localSpinnerState: SpinnerState;
+  private localSpinnerState: ISpinnerState;
   private autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(daemonView: DaemonControlView, useColors = true) {

@@ -33,7 +33,7 @@ import type { IRequestOptions } from "@exaix/core/types";
 import type { RequestStatusType } from "@exaix/core/status";
 import type { PlanStatusType } from "@exaix/core/status";
 import type { IPlanMetadata } from "@exaix/core/types";
-import type { BlueprintCreateOptions, BlueprintRemoveOptions } from "../src/commands/blueprint_commands.ts";
+import type { IBlueprintCreateOptions, IBlueprintRemoveOptions } from "../src/commands/blueprint_commands.ts";
 
 /*
   Note: This test file exercises the top-level CLI parsing and command
@@ -137,7 +137,7 @@ Deno.test("daemon status prints info (calls daemonCommands.status)", async () =>
 Deno.test("blueprint remove calls blueprintCommands.remove", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;
-    ctx.blueprintCommands.remove = (id: string, opts?: BlueprintRemoveOptions) => {
+    ctx.blueprintCommands.remove = (id: string, opts?: IBlueprintRemoveOptions) => {
       called = true;
       assertEquals(id, "agent-x");
       assertEquals(opts?.force, true);
@@ -632,7 +632,7 @@ Deno.test("daemon logs supports --follow option", async () => {
 
 Deno.test("blueprint create error exits with message", async () => {
   await withTestMod(async (mod, ctx) => {
-    ctx.blueprintCommands.create = (_id: string, _opts: BlueprintCreateOptions) => {
+    ctx.blueprintCommands.create = (_id: string, _opts: IBlueprintCreateOptions) => {
       throw new Error("boom");
     };
     const { errors } = await expectExitWithLogs(async () => {
@@ -718,7 +718,7 @@ Deno.test("portal verify with alias invokes portalCommands.verify", async () => 
 
 Deno.test("blueprint create successful prints created message", async () => {
   await withTestMod(async (mod, ctx) => {
-    ctx.blueprintCommands.create = (id: string, opts: BlueprintCreateOptions) =>
+    ctx.blueprintCommands.create = (id: string, opts: IBlueprintCreateOptions) =>
       Promise.resolve({
         identity_id: id,
         name: opts.name ?? id,

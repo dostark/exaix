@@ -47,7 +47,7 @@ interface CriterionScoresMap {
 /**
  * Interface for running agents
  */
-export interface AgentRunner {
+export interface IAgentRunner {
   run(
     identityId: string,
     request: { userPrompt: string; context?: IAgentContext },
@@ -64,7 +64,7 @@ export interface AgentRunner {
  * - Recovering from malformed JSON
  */
 export class JudgeEvaluator implements IJudgeInvoker {
-  constructor(private agentRunner: AgentRunner) {}
+  constructor(private agentRunner: IAgentRunner) {}
 
   /**
    * Evaluate content using a judge agent
@@ -358,6 +358,6 @@ export class JudgeEvaluator implements IJudgeInvoker {
 /**
  * Create a JudgeEvaluator from an agent runner
  */
-export function createJudgeEvaluator(agentRunner: AgentRunner): JudgeEvaluator {
+export function createJudgeEvaluator(agentRunner: IAgentRunner): JudgeEvaluator {
   return new JudgeEvaluator(agentRunner);
 }

@@ -5,7 +5,7 @@
  * @related-files []
  * @architectural-layer Services
  * @description Verifies the RequestRouter's orchestration logic, ensuring requests are correctly
- * dispatched to FlowRunner, AgentRunner, or default providers based on metadata.
+ * dispatched to FlowRunner, IAgentRunner, or default providers based on metadata.
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
@@ -55,7 +55,7 @@ Deno.test("RequestRouter: routes flow requests to FlowRunner", async () => {
   assertEquals(mockLogger.events[0].action, "request.routing.flow");
 });
 
-Deno.test("RequestRouter: routes agent requests to AgentRunner", async () => {
+Deno.test("RequestRouter: routes agent requests to IAgentRunner", async () => {
   const { mockAgentRunner, mockLogger, router } = createRouterTestContext();
 
   const request = sampleRouterRequest({ frontmatter: { identity: "senior-coder" } });

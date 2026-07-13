@@ -1,7 +1,7 @@
 /**
  * @module AgentRunnerAsyncConstructPromptTest
  * @path packages/execution/tests/agent_runner_async_construct_prompt_test.ts
- * @description Tests for Step 7: AgentRunner.constructPrompt() budget integration.
+ * @description Tests for Step 7: IAgentRunner.constructPrompt() budget integration.
  * Verifies that prepare() is called when contextBudgetManager is configured, that
  * segment kinds are assigned correctly by source (not by index), and that the
  * prompt is returned unchanged when no manager is configured.
@@ -14,7 +14,7 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "@exaix/ai/providers.ts";
-import { AgentRunner, type IBlueprint, type IContextBudgetManagerInput, type IParsedRequest } from "@exaix/execution";
+import { AgentRunner, IAgentRunner, type IBlueprint, type IContextBudgetManagerInput, type IParsedRequest } from "@exaix/execution";
 import { MEMORY_CONTEXT_KEY, PORTAL_KNOWLEDGE_KEY } from "@exaix/core";
 import type { IContextBudgetManager, IContextBudgetManagerOutput } from "@exaix/execution";
 
@@ -86,7 +86,7 @@ function makeDropFirstManager(): IContextBudgetManager {
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
-Deno.test("[AgentRunner] constructPrompt calls contextBudgetManager.prepare() when configured", async () => {
+Deno.test("[IAgentRunner] constructPrompt calls contextBudgetManager.prepare() when configured", async () => {
   const { manager, captured } = makeCapturingManager();
 
   const runner = new AgentRunner(
@@ -100,7 +100,7 @@ Deno.test("[AgentRunner] constructPrompt calls contextBudgetManager.prepare() wh
   assertEquals(captured[0].stepId, "agent-runner");
 });
 
-Deno.test("[AgentRunner] constructPrompt does NOT call prepare() when no manager configured", async () => {
+Deno.test("[IAgentRunner] constructPrompt does NOT call prepare() when no manager configured", async () => {
   const { manager, captured } = makeCapturingManager();
 
   // Pass manager-less config
@@ -116,7 +116,7 @@ Deno.test("[AgentRunner] constructPrompt does NOT call prepare() when no manager
   assertEquals(typeof manager.prepare, "function");
 });
 
-Deno.test("[AgentRunner] system prompt segment gets kind=system", async () => {
+Deno.test("[IAgentRunner] system prompt segment gets kind=system", async () => {
   const { manager, captured } = makeCapturingManager();
   const runner = new AgentRunner(
     new MockProvider(WELL_FORMED_RESPONSE),
@@ -129,7 +129,7 @@ Deno.test("[AgentRunner] system prompt segment gets kind=system", async () => {
   assertEquals(systemSeg?.kind, "system");
 });
 
-Deno.test("[AgentRunner] user prompt segment gets kind=request with priority 75", async () => {
+Deno.test("[IAgentRunner] user prompt segment gets kind=request with priority 75", async () => {
   const { manager, captured } = makeCapturingManager();
   const runner = new AgentRunner(
     new MockProvider(WELL_FORMED_RESPONSE),
@@ -143,7 +143,7 @@ Deno.test("[AgentRunner] user prompt segment gets kind=request with priority 75"
   assertEquals(userSeg?.priority, 75);
 });
 
-Deno.test("[AgentRunner] portal knowledge segment gets kind=portal_knowledge", async () => {
+Deno.test("[IAgentRunner] portal knowledge segment gets kind=portal_knowledge", async () => {
   const { manager, captured } = makeCapturingManager();
   const runner = new AgentRunner(
     new MockProvider(WELL_FORMED_RESPONSE),
@@ -159,7 +159,7 @@ Deno.test("[AgentRunner] portal knowledge segment gets kind=portal_knowledge", a
   assertEquals(pkSeg?.kind, "portal_knowledge");
 });
 
-Deno.test("[AgentRunner] memory context segment gets kind=reflection", async () => {
+Deno.test("[IAgentRunner] memory context segment gets kind=reflection", async () => {
   const { manager, captured } = makeCapturingManager();
   const runner = new AgentRunner(
     new MockProvider(WELL_FORMED_RESPONSE),
@@ -175,7 +175,7 @@ Deno.test("[AgentRunner] memory context segment gets kind=reflection", async () 
   assertEquals(memSeg?.kind, "reflection");
 });
 
-Deno.test("[AgentRunner] system prompt kind=system even when it is not at index 0 (empty system prompt)", async () => {
+Deno.test("[IAgentRunner] system prompt kind=system even when it is not at index 0 (empty system prompt)", async () => {
   const { manager, captured } = makeCapturingManager();
   const runner = new AgentRunner(
     new MockProvider(WELL_FORMED_RESPONSE),
@@ -189,7 +189,7 @@ Deno.test("[AgentRunner] system prompt kind=system even when it is not at index 
   assertEquals(systemSegs.length, 0, "No system segment when systemPrompt is empty");
 });
 
-Deno.test("[AgentRunner] filtered segments produce shorter prompt when manager drops a segment", async () => {
+Deno.test("[IAgentRunner] filtered segments produce shorter prompt when manager drops a segment", async () => {
   // Manager drops the first segment (system prompt)
   const runner = new AgentRunner(
     new MockProvider(WELL_FORMED_RESPONSE),

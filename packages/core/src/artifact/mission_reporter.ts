@@ -76,7 +76,7 @@ export interface ITraceData {
 /**
  * Configuration for the MissionReporter
  */
-export interface ReportConfig {
+export interface IReportConfig {
   /** Directory where reports are written (now Memory/Execution/) */
   reportsDirectory: string;
 }
@@ -84,7 +84,7 @@ export interface ReportConfig {
 /**
  * Result of report generation
  */
-export interface ReportResult {
+export interface IReportResult {
   /** Whether the report generation succeeded */
   success: boolean;
 
@@ -104,13 +104,13 @@ export interface ReportResult {
   fileSize?: number;
 
   /** Git change statistics */
-  gitStats?: GitChangeStats;
+  gitStats?: IGitChangeStats;
 }
 
 /**
  * Git change statistics from diff analysis
  */
-export interface GitChangeStats {
+export interface IGitChangeStats {
   filesCreated: string[];
   filesModified: string[];
   filesDeleted: string[];
@@ -126,14 +126,14 @@ export interface GitChangeStats {
 
 export class MissionReporter {
   private config: Config;
-  private reportConfig: ReportConfig;
+  private reportConfig: IReportConfig;
   private memoryBank: MemoryBankService;
   private logger?: IEventLogger;
   private reader?: IEventJournalReader;
 
   constructor(
     config: Config,
-    reportConfig: ReportConfig,
+    reportConfig: IReportConfig,
     memoryBank: MemoryBankService,
     logger?: IEventLogger,
     reader?: IEventJournalReader,
@@ -148,7 +148,7 @@ export class MissionReporter {
   /**
    * Generate a mission report for a completed trace using Memory Banks
    */
-  async generate(traceData: ITraceData): Promise<ReportResult> {
+  async generate(traceData: ITraceData): Promise<IReportResult> {
     const startTime = Date.now();
 
     try {
@@ -293,9 +293,9 @@ export class MissionReporter {
   /**
    * Get git statistics for the trace's branch
    */
-  private async getGitStats(_branch: string, _traceId: string): Promise<GitChangeStats> {
+  private async getGitStats(_branch: string, _traceId: string): Promise<IGitChangeStats> {
     const repoPath = this.config.system.root;
-    const defaultStats: GitChangeStats = {
+    const defaultStats: IGitChangeStats = {
       filesCreated: [],
       filesModified: [],
       filesDeleted: [],
@@ -325,7 +325,7 @@ export class MissionReporter {
   /**
    * Parse git diff output to categorize changes
    */
-  private parseDiffOutput(output: string, defaults: GitChangeStats): GitChangeStats {
+  private parseDiffOutput(output: string, defaults: IGitChangeStats): IGitChangeStats {
     const stats = { ...defaults };
     const lines = output.trim().split("\\n");
 

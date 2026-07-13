@@ -68,7 +68,7 @@ interface FuncParam {
   typeText: string; // rendered type annotation (for the hint message)
 }
 
-export interface FuncDecl {
+export interface IFuncDecl {
   name: string;
   params: FuncParam[];
   optionalCount: number;
@@ -187,7 +187,7 @@ function paramNameUsedInBody(body: ts.FunctionBody, paramName: string, _sourceFi
 
 export function collectFunctions(
   sourceFile: ts.SourceFile,
-  funcs: Map<string, FuncDecl[]>,
+  funcs: Map<string, IFuncDecl[]>,
 ): void {
   function visit(node: ts.Node): void {
     if (
@@ -242,7 +242,7 @@ export function collectFunctions(
         }
       }
 
-      const decl: FuncDecl = {
+      const decl: IFuncDecl = {
         name,
         params,
         optionalCount,
@@ -298,12 +298,12 @@ function collectCallSites(
 // ── Analysis ──────────────────────────────────────────────────────────────────
 
 interface MatchedFunc {
-  decl: FuncDecl;
+  decl: IFuncDecl;
   calls: CallSite[];
 }
 
 function matchCallsToFuncs(
-  funcs: Map<string, FuncDecl[]>,
+  funcs: Map<string, IFuncDecl[]>,
   calls: CallSite[],
 ): MatchedFunc[] {
   const matched: MatchedFunc[] = [];
@@ -330,7 +330,7 @@ function matchCallsToFuncs(
  *   BARE_OPTIONAL — optional via a bare `?` or a bare `| undefined` union, not Opt<T, Reason>.
  *   MARKED_NOT_OPTIONAL — an Opt<T, Reason> wrapper on a param that is not actually optional.
  */
-export function collectTypeShapeViolations(funcs: Map<string, FuncDecl[]>): Violation[] {
+export function collectTypeShapeViolations(funcs: Map<string, IFuncDecl[]>): Violation[] {
   const violations: Violation[] = [];
   for (const decls of funcs.values()) {
     for (const decl of decls) {
@@ -532,7 +532,7 @@ async function stagedTsFiles(): Promise<string[]> {
  */
 async function runStaged(): Promise<void> {
   const files = await stagedTsFiles();
-  const funcs = new Map<string, FuncDecl[]>();
+  const funcs = new Map<string, IFuncDecl[]>();
   for (const filePath of files) {
     const source = await Deno.readTextFile(filePath);
     const sf = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true);
@@ -561,7 +561,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const funcs = new Map<string, FuncDecl[]>();
+  const funcs = new Map<string, IFuncDecl[]>();
   const calls: CallSite[] = [];
 
   const tsFiles: string[] = [];

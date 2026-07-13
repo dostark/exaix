@@ -1,7 +1,7 @@
 /**
  * @module ModelIntentTest
  * @path packages/schemas/tests/model_intent_test.ts
- * @description Phase 132 Step 1 — validates ModelIntent, IResolvedModel, and ModelResolutionReason type shapes.
+ * @description Phase 132 Step 1 — validates IModelIntent, IResolvedModel, and ModelResolutionReason type shapes.
  */
 import { assertEquals } from "@std/assert";
 import { TaskType } from "@exaix/core";
@@ -9,13 +9,13 @@ import type {
   EffortTier,
   IModelCallOptions,
   IResolvedModel,
-  ModelIntent,
+  IModelIntent,
   ModelResolutionReason,
   ModelSize,
 } from "../src/model_intent.ts";
 
-Deno.test("[step132.1] ModelIntent type accepts all fields", () => {
-  const intent: ModelIntent = {
+Deno.test("[step132.1] IModelIntent type accepts all fields", () => {
+  const intent: IModelIntent = {
     model: "provider:model-name",
     model_size: "M" as ModelSize,
     characteristics: ["cheapest", "fastest"],
@@ -73,8 +73,8 @@ Deno.test("[step132.1] ModelResolutionReason values are strings", () => {
   }
 });
 
-Deno.test("[step135.8] ModelIntent accepts an optional task_type field", () => {
-  const intent: ModelIntent = { model_size: "M" as ModelSize, task_type: TaskType.FEATURE };
+Deno.test("[step135.8] IModelIntent accepts an optional task_type field", () => {
+  const intent: IModelIntent = { model_size: "M" as ModelSize, task_type: TaskType.FEATURE };
   assertEquals(intent.task_type, TaskType.FEATURE);
 });
 

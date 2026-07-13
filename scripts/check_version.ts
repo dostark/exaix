@@ -28,16 +28,16 @@ export interface ISemVer {
   patch: number;
 }
 
-export interface Classification {
+export interface IClassification {
   requiresMinor: boolean;
 }
 
-export interface VersionConstants {
+export interface IVersionConstants {
   BINARY_VERSION: string;
   WORKSPACE_SCHEMA_VERSION: string;
 }
 
-export interface VersionMeta {
+export interface IVersionMeta {
   last_bump_date: string;
 }
 
@@ -95,7 +95,7 @@ export function bumpMinor(v: string): string {
 // File classification (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function classifyChanges(files: string[]): Classification {
+export function classifyChanges(files: string[]): IClassification {
   const requiresMinor = files.some((f) => MINOR_TRIGGER_PATTERNS.some((re) => re.test(f)));
   return { requiresMinor };
 }
@@ -104,7 +104,7 @@ export function classifyChanges(files: string[]): Classification {
 // version.ts I/O (exported for unit testing)
 // ---------------------------------------------------------------------------
 
-export function readVersionFile(path: string = VERSION_FILE): VersionConstants {
+export function readVersionFile(path: string = VERSION_FILE): IVersionConstants {
   const text = Deno.readTextFileSync(path);
   const bvMatch = text.match(/export const BINARY_VERSION\s*=\s*"([^"]+)"/);
   const wsvMatch = text.match(/export const WORKSPACE_SCHEMA_VERSION\s*=\s*"([^"]+)"/);
@@ -138,8 +138,8 @@ export function writeVersionFile(
 // .version_meta.json I/O
 // ---------------------------------------------------------------------------
 
-export function readMetaFile(path: string = META_FILE): VersionMeta {
-  return JSON.parse(Deno.readTextFileSync(path)) as VersionMeta;
+export function readMetaFile(path: string = META_FILE): IVersionMeta {
+  return JSON.parse(Deno.readTextFileSync(path)) as IVersionMeta;
 }
 
 export function writeMetaFile(date: string, path: string = META_FILE): void {

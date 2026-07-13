@@ -8,14 +8,14 @@
 
 export type { IFlowCheckpointService } from "./src/checkpoint_service.ts";
 export type { IFlowNamespaceService, IFlowNamespaceSnapshot } from "./src/namespace_service.ts";
-export type { FlowReportResult, IFlowReportConfig } from "./src/reporter.ts";
+export type { IFlowReportResult, IFlowReportConfig } from "./src/reporter.ts";
 export type { IConditionContext } from "./src/condition_evaluator.ts";
 export type { FeedbackLoopConfig } from "./src/feedback_loop.ts";
-export type { FeedbackLoopResult } from "./src/feedback_loop.ts";
+export type { IFeedbackLoopResult } from "./src/feedback_loop.ts";
 export type { IAgentRequestContext } from "./src/feedback_loop.ts";
 export type { IIterationResult } from "./src/feedback_loop.ts";
-export type { ImprovementAgent } from "./src/feedback_loop.ts";
-export type { SelfCorrectingConfig } from "./src/feedback_loop.ts";
+export type { IImprovementAgent } from "./src/feedback_loop.ts";
+export type { ISelfCorrectingConfig } from "./src/feedback_loop.ts";
 export type { IAgentExecutor } from "./src/flow_runner.ts";
 export type { IFlowEventLogger } from "./src/flow_runner.ts";
 export type { IFlowEventPayload } from "./src/flow_runner.ts";

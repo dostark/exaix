@@ -3,15 +3,15 @@
  * @path packages/core/tests/repositories/activity_repository_identity_fields_test.ts
  * @related-files []
  * @architectural-layer Core
- * @description Integration tests verifying ActivityRepository persists and reads back Actor/Agent/Identity separation fields.
+ * @description Integration tests verifying IActivityRepository persists and reads back Actor/Agent/Identity separation fields.
  */
 
 import { assertEquals, assertNotEquals } from "@std/assert";
-import { DatabaseActivityRepository, type LogActivityRequest } from "@exaix/core/repositories";
+import { DatabaseActivityRepository, type ILogActivityRequest } from "@exaix/core/repositories";
 import { initTestDbService } from "@exaix/testing";
 
 /**
- * Tests for Step 55.2: ActivityRepository field persistence
+ * Tests for Step 55.2: IActivityRepository field persistence
  *
  * Success Criteria:
  * - Test 1: Writes and reads back all separation fields correctly
@@ -21,12 +21,12 @@ import { initTestDbService } from "@exaix/testing";
  * - Test 5: Indexes on actor_type are queryable
  */
 
-Deno.test("ActivityRepository: writes and reads back all separation fields", async () => {
+Deno.test("IActivityRepository: writes and reads back all separation fields", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
     const repo = new DatabaseActivityRepository(db);
     const traceId = crypto.randomUUID();
-    const request: LogActivityRequest = {
+    const request: ILogActivityRequest = {
       actor: "user:test@example.com",
       actorType: "user",
       actionType: "test.action",
@@ -56,7 +56,7 @@ Deno.test("ActivityRepository: writes and reads back all separation fields", asy
   }
 });
 
-Deno.test("ActivityRepository: stores null when separation fields are omitted", async () => {
+Deno.test("IActivityRepository: stores null when separation fields are omitted", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
     const repo = new DatabaseActivityRepository(db);
@@ -83,7 +83,7 @@ Deno.test("ActivityRepository: stores null when separation fields are omitted", 
   }
 });
 
-Deno.test("ActivityRepository: agentKind stores runtime agent category, distinct from identityId", async () => {
+Deno.test("IActivityRepository: agentKind stores runtime agent category, distinct from identityId", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
     const repo = new DatabaseActivityRepository(db);
@@ -112,7 +112,7 @@ Deno.test("ActivityRepository: agentKind stores runtime agent category, distinct
   }
 });
 
-Deno.test("ActivityRepository: indexes on identity_id are queryable", async () => {
+Deno.test("IActivityRepository: indexes on identity_id are queryable", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
     const repo = new DatabaseActivityRepository(db);
@@ -149,7 +149,7 @@ Deno.test("ActivityRepository: indexes on identity_id are queryable", async () =
   }
 });
 
-Deno.test("ActivityRepository: indexes on actor_type are queryable", async () => {
+Deno.test("IActivityRepository: indexes on actor_type are queryable", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
     const repo = new DatabaseActivityRepository(db);

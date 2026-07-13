@@ -2,7 +2,7 @@
  * @module DogfoodIdentityTest
  * @path packages/core/tests/blueprints/dogfood_identity_test.ts
  * @description Phase 122 Step 1 — verifies the dogfood-developer identity blueprint loads
- *   through BlueprintLoader with correct identity_id, default_skills (all 5 rigor
+ *   through IBlueprintLoader with correct identity_id, default_skills (all 5 rigor
  *   skills), and valid McpToolName entries in permitted_tools.
  * @architectural-layer Integration
  * @dependencies [@exaix/core, @std/path]
@@ -11,14 +11,14 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
-import { BlueprintLoader } from "@exaix/core/blueprint";
+import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { DOGFOOD_DEVELOPER_IDENTITY_ID, McpToolName } from "@exaix/core/types";
 
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
 const IDENTITIES_PATH = join(REPO_ROOT, "Blueprints", "Identities");
 
-Deno.test("[dogfood-identity] dogfood-developer loads through BlueprintLoader", async () => {
-  const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+Deno.test("[dogfood-identity] dogfood-developer loads through IBlueprintLoader", async () => {
+  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint, "dogfood-developer identity must load");
@@ -26,7 +26,7 @@ Deno.test("[dogfood-identity] dogfood-developer loads through BlueprintLoader", 
 });
 
 Deno.test("[dogfood-identity] dogfood-developer carries the 5 rigor skills + response-contract", async () => {
-  const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint);
@@ -41,7 +41,7 @@ Deno.test("[dogfood-identity] dogfood-developer carries the 5 rigor skills + res
 });
 
 Deno.test("[dogfood-identity] identity_id is dogfood-developer", async () => {
-  const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint);
@@ -49,7 +49,7 @@ Deno.test("[dogfood-identity] identity_id is dogfood-developer", async () => {
 });
 
 Deno.test("[dogfood-identity] permitted_tools contains file, command, and search tools", async () => {
-  const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint);
@@ -70,7 +70,7 @@ Deno.test("[dogfood-identity] permitted_tools contains file, command, and search
 });
 
 Deno.test("[dogfood-identity] every permitted_tool is a valid McpToolName", async () => {
-  const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint);
@@ -82,8 +82,8 @@ Deno.test("[dogfood-identity] every permitted_tool is a valid McpToolName", asyn
   }
 });
 
-Deno.test("[dogfood-identity] loads without Zod error through BlueprintLoader", async () => {
-  const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+Deno.test("[dogfood-identity] loads without Zod error through IBlueprintLoader", async () => {
+  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint, "identity must load without error");
@@ -93,7 +93,7 @@ Deno.test("[dogfood-identity] loads without Zod error through BlueprintLoader", 
 });
 
 Deno.test("[dogfood_identity] OpenCode agent key equals the dogfood-developer identity name", async () => {
-  const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
   const blueprint = await loader.load("dogfood-developer");
   assertExists(blueprint);
   assertEquals(

@@ -7,7 +7,7 @@
  */
 
 import { colorize, getTheme, type ITuiTheme, padEnd, visibleLength } from "./colors.ts";
-import { renderSpinner, type SpinnerState } from "./spinner.ts";
+import { renderSpinner, type ISpinnerState } from "./spinner.ts";
 import { TUI_ICON_SUCCESS } from "./constants.ts";
 import { MessageType } from "@exaix/core";
 import { type SpinnerStyle, StatusIndicator } from "../types/enums.ts";
@@ -33,7 +33,7 @@ export interface IStatusBarState {
   rightItems: IStatusBarItem[];
   message?: string;
   messageType?: MessageType;
-  spinner?: SpinnerState;
+  spinner?: ISpinnerState;
 }
 
 export interface IMultiLineStatusBarState extends IStatusBarState {
@@ -302,7 +302,7 @@ export function setRightItems(state: IStatusBarState, items: IStatusBarItem[]): 
 /**
  * Set spinner state
  */
-export function setSpinner(state: IStatusBarState, spinner: SpinnerState | undefined): IStatusBarState {
+export function setSpinner(state: IStatusBarState, spinner: ISpinnerState | undefined): IStatusBarState {
   return {
     ...state,
     spinner,

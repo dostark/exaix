@@ -4,7 +4,7 @@
  * @description Phase 131 Step 9 — catalog-wide load+validate integration test.
  *   Walks every active identity under Blueprints/Identities/ (the separate
  *   examples/ and templates/ directories were retired in the catalog
- *   reconciliation), loads through BlueprintLoader, and validates: schema passes,
+ *   reconciliation), loads through IBlueprintLoader, and validates: schema passes,
  *   default_skills resolve, permitted_tools are valid McpToolName, capabilities
  *   are behavioral-only, no unresolved {{include:}}.
  * @architectural-layer Integration
@@ -14,7 +14,7 @@
 import { assertEquals } from "@std/assert";
 import { basename, join } from "@std/path";
 import { McpToolName, ToolName } from "@exaix/core";
-import { BlueprintLoader } from "@exaix/core/blueprint";
+import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { IDENTITIES_DIR, readRawFrontmatter, SKILLS_DIR } from "./test_helpers.ts";
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -37,14 +37,14 @@ function listActiveIdentities(): string[] {
   return ids.sort();
 }
 
-// ── 1. Active identity load via BlueprintLoader ──────────────────────
+// ── 1. Active identity load via IBlueprintLoader ──────────────────────
 
 Deno.test({
-  name: "[step9/catalog-load] every active identity loads through BlueprintLoader with valid frontmatter",
+  name: "[step9/catalog-load] every active identity loads through IBlueprintLoader with valid frontmatter",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_DIR });
+    const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_DIR });
     const activeIds = listActiveIdentities();
     const failures: Array<{ id: string; error: string }> = [];
 
@@ -66,7 +66,7 @@ Deno.test({
       }
     }
 
-    assertEquals(failures.length, 0, `${failures.length} active identity/ies failed to load via BlueprintLoader`);
+    assertEquals(failures.length, 0, `${failures.length} active identity/ies failed to load via IBlueprintLoader`);
   },
 });
 
@@ -185,7 +185,7 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_DIR });
+    const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_DIR });
     const activeIds = listActiveIdentities();
     const unresolved: Array<{ identity: string }> = [];
 

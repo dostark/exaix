@@ -7,11 +7,11 @@
  * @ungrounded
  */
 
-import type { ValidationResult } from "../base/command.ts";
+import type { IValidationResult } from "../base/command.ts";
 import type { JSONObject } from "@exaix/core/types";
 
 export const CommandUtils = {
-  formatValidationErrors(result: ValidationResult): string {
+  formatValidationErrors(result: IValidationResult): string {
     if (result.isValid) return "";
 
     const mapError = (err: string) => {

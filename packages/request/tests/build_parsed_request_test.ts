@@ -1,7 +1,7 @@
 /**
  * @module BuildParsedRequestTest
  * @path packages/request/tests/build_parsed_request_test.ts
- * @description Tests for buildParsedRequest() — validates that ModelIntent fields
+ * @description Tests for buildParsedRequest() — validates that IModelIntent fields
  *   from request frontmatter are forwarded to IParsedRequest (GAP-11 fix).
  * @architectural-layer Test
  * @dependencies [@std/assert, @exaix/request]
@@ -51,7 +51,7 @@ Deno.test("[GAP-11] buildParsedRequest forwards preferred_provider and model fro
   assertEquals(req.model, "anthropic:claude-sonnet");
 });
 
-Deno.test("[GAP-11] buildParsedRequest sets undefined when frontmatter has no ModelIntent fields", () => {
+Deno.test("[GAP-11] buildParsedRequest sets undefined when frontmatter has no IModelIntent fields", () => {
   const fm = makeFrontmatter();
   const req = buildParsedRequest("test body", fm, "req-5", "trace-5");
   assertEquals(req.model_size, undefined);

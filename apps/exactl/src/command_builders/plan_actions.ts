@@ -20,11 +20,11 @@ export interface IPlanActionContext {
   display: IDisplayService;
 }
 
-export interface PlanListOptions {
+export interface IPlanListOptions {
   status?: PlanStatus;
 }
 
-export interface PlanApproveOptions {
+export interface IPlanApproveOptions {
   skills?: string;
 }
 
@@ -33,7 +33,7 @@ export interface PlanApproveOptions {
  */
 export async function handlePlanList(
   context: IPlanActionContext,
-  options: PlanListOptions,
+  options: IPlanListOptions,
 ): Promise<void> {
   const { planCommands, display } = context;
 
@@ -136,7 +136,7 @@ export async function handlePlanShow(
 export async function handlePlanApprove(
   context: IPlanActionContext,
   id: string,
-  options: PlanApproveOptions,
+  options: IPlanApproveOptions,
 ): Promise<void> {
   const { planCommands, display } = context;
 
@@ -158,7 +158,7 @@ export async function handlePlanApprove(
  */
 export async function handlePlanApproveAll(
   context: IPlanActionContext,
-  options: PlanApproveOptions,
+  options: IPlanApproveOptions,
 ): Promise<void> {
   const { planCommands, display } = context;
 

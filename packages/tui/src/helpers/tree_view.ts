@@ -25,7 +25,7 @@ export interface ITreeNode<T = unknown> {
   disabled?: boolean;
 }
 
-export interface TreeRenderOptions {
+export interface ITreeRenderOptions {
   useColors: boolean;
   showIcons: boolean;
   showBadges: boolean;
@@ -35,7 +35,7 @@ export interface TreeRenderOptions {
   focusedId?: string;
 }
 
-export const defaultTreeOptions: TreeRenderOptions = {
+export const defaultTreeOptions: ITreeRenderOptions = {
   useColors: true,
   showIcons: true,
   showBadges: true,
@@ -297,7 +297,7 @@ export function getNodeIndex<T>(nodes: ITreeNode<T>[], id: string): number {
  */
 export function renderTreeLine<T>(
   flat: IFlatTreeNode<T>,
-  options: TreeRenderOptions,
+  options: ITreeRenderOptions,
 ): string {
   const theme = getTheme(options.useColors);
   const { node, depth, isLast, prefix } = flat;
@@ -382,7 +382,7 @@ function truncateLine(line: string, maxLength: number): string {
  */
 export function renderTree<T>(
   nodes: ITreeNode<T>[],
-  options: Partial<TreeRenderOptions> = {},
+  options: Partial<ITreeRenderOptions> = {},
 ): string[] {
   const opts = { ...defaultTreeOptions, ...options };
   const flat = flattenTree(nodes);
@@ -394,7 +394,7 @@ export function renderTree<T>(
  */
 export function renderTreePanel<T>(
   nodes: ITreeNode<T>[],
-  options: Partial<TreeRenderOptions> & {
+  options: Partial<ITreeRenderOptions> & {
     title?: string;
     height?: number;
     scrollOffset?: number;

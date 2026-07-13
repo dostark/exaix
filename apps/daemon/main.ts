@@ -45,7 +45,7 @@ import { DefaultModelRegistry } from "@exaix/model-registry";
 import { RequestProcessor } from "@exaix/request";
 import { ReviewRegistry } from "@exaix/core/artifact";
 import { EventLogger, EventLoggerStructuredOutput } from "@exaix/core/logger";
-import { AgentRunner, ExecutionLoop } from "@exaix/execution";
+import { AgentRunner, IAgentRunner, ExecutionLoop } from "@exaix/execution";
 import { AgentExecutorAdapter, FlowRunner, type IFlowEventLogger, type IFlowEventPayload } from "@exaix/flow";
 import {
   initializeMemoryAutoApprovalMaintenance,
@@ -123,10 +123,10 @@ const TRACE_CACHE_MAX = 100;
 const CONFIG_CUTOVER_PROBE_KEY = "ai.timeout_ms";
 
 /**
- * Read a request file, parse its frontmatter, build a ModelIntent from any CLI
+ * Read a request file, parse its frontmatter, build a IModelIntent from any CLI
  * flags present (model_size, thinking, effort, etc.), and resolve through
  * ModelResolver. Returns "provider:model" string or undefined if the request
- * has no ModelIntent fields or the file cannot be read.
+ * has no IModelIntent fields or the file cannot be read.
  */
 async function resolveRequestModel(
   filePath: string,

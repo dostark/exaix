@@ -9,7 +9,7 @@
 import { Command } from "@cliffy/command";
 import { PlanCommands } from "./commands/plan_commands.ts";
 import { RequestCommands } from "./commands/request_commands.ts";
-import { type IReviewMetadata, ReviewCommands, type ReviewDetails } from "./commands/review_commands.ts";
+import { type IReviewMetadata, ReviewCommands, type IReviewDetails } from "./commands/review_commands.ts";
 import { GitCommands } from "./commands/git_commands.ts";
 import { DaemonCommands } from "./commands/daemon_commands.ts";
 import { ConfigCommands } from "./commands/config_commands.ts";
@@ -67,9 +67,9 @@ import {
   handleRequestCreate,
   handleRequestList,
   handleRequestShow,
-  type RequestAnalyzeOptions,
-  type RequestCreateOptions,
-  type RequestListOptions,
+  type IRequestAnalyzeOptions,
+  type IRequestCreateOptions,
+  type IRequestListOptions,
 } from "./command_builders/request_actions.ts";
 import {
   handlePlanAmendmentApprove,
@@ -84,8 +84,8 @@ import {
   handlePlanReject,
   handlePlanRevise,
   handlePlanShow,
-  type PlanApproveOptions,
-  type PlanListOptions,
+  type IPlanApproveOptions,
+  type IPlanListOptions,
 } from "./command_builders/plan_actions.ts";
 
 // Allow tests to run the CLI entrypoint without initializing heavy services
@@ -289,7 +289,7 @@ async function handleReviewShowAction(options: { diff?: boolean }, id: string) {
   }
 }
 
-function renderReviewShow(cs: ReviewDetails, id: string) {
+function renderReviewShow(cs: IReviewDetails, id: string) {
   renderReviewShowSummary(cs);
   renderReviewShowDecision(cs);
   renderReviewShowAnomalies(cs);
@@ -297,7 +297,7 @@ function renderReviewShow(cs: ReviewDetails, id: string) {
   display.info("review.diff", id, { diff: cs.diff });
 }
 
-function renderReviewShowAnomalies(cs: ReviewDetails) {
+function renderReviewShowAnomalies(cs: IReviewDetails) {
   if (!cs.anomalies || cs.anomalies.length === 0) return;
 
   display.info("review.anomalies", "", { count: cs.anomalies.length });
@@ -313,7 +313,7 @@ function renderReviewShowAnomalies(cs: ReviewDetails) {
   }
 }
 
-function renderReviewShowSummary(cs: ReviewDetails) {
+function renderReviewShowSummary(cs: IReviewDetails) {
   const statusEmoji = getReviewStatusEmoji(cs.status);
   const requestTitle = cs.request_subject ? `"${cs.request_subject}"` : "Untitled Request";
   const planInfo = cs.plan_id ? `${cs.plan_id} (${cs.plan_status})` : "unknown";
@@ -337,7 +337,7 @@ function renderReviewShowSummary(cs: ReviewDetails) {
   });
 }
 
-function renderReviewShowDecision(cs: ReviewDetails) {
+function renderReviewShowDecision(cs: IReviewDetails) {
   if (cs.approved_at) {
     display.info("approved", new Date(cs.approved_at).toLocaleString(), {
       by: cs.approved_by || "unknown",
@@ -353,7 +353,7 @@ function renderReviewShowDecision(cs: ReviewDetails) {
   }
 }
 
-function renderReviewShowCommits(cs: ReviewDetails) {
+function renderReviewShowCommits(cs: IReviewDetails) {
   display.info("commits", "", {});
   for (const commit of cs.commits) {
     display.info("commit", commit.sha.substring(0, 8), {
@@ -413,7 +413,7 @@ export const __test_command = new Command()
         default: AnalysisMode.HEURISTIC,
       })
       .action(async (options, description?: Opt<string, Reason.OptionalInput>) => {
-        await handleRequestCreate({ requestCommands, display }, options as RequestCreateOptions, description);
+        await handleRequestCreate({ requestCommands, display }, options as IRequestCreateOptions, description);
       })
       .example(
         "Create a request for a specific identity",
@@ -435,7 +435,7 @@ export const __test_command = new Command()
           .option("-a, --all", "Include archived and rejected requests")
           .option("--json", CLI_OPTION_JSON_HELP)
           .action(async (options) => {
-            await handleRequestList({ requestCommands, display }, options as RequestListOptions);
+            await handleRequestList({ requestCommands, display }, options as IRequestListOptions);
           }),
       )
       .command(
@@ -455,7 +455,7 @@ export const __test_command = new Command()
           })
           .option("--force", "Force fresh analysis even if results are cached")
           .option("--json", CLI_OPTION_JSON_HELP)
-          .action(async (options: RequestAnalyzeOptions, ...id: string[]) => {
+          .action(async (options: IRequestAnalyzeOptions, ...id: string[]) => {
             await handleRequestAnalyze({ requestCommands, display }, id[0], options);
           }),
       ),
@@ -471,7 +471,7 @@ export const __test_command = new Command()
           .description("List all plans awaiting review")
           .option("-s, --status <status:string>", "Filter by status (review, needs_revision)")
           .action(async (options) => {
-            await handlePlanList({ planCommands, display }, options as PlanListOptions);
+            await handlePlanList({ planCommands, display }, options as IPlanListOptions);
           }),
       )
       .command(
@@ -488,7 +488,7 @@ export const __test_command = new Command()
           .description("Approve a plan and move it to Workspace/Active")
           .option("--skills <skills:string>", "Comma-separated list of skills to inject during execution")
           .action(async (options, ...args: string[]) => {
-            await handlePlanApprove({ planCommands, display }, args[0] as string, options as PlanApproveOptions);
+            await handlePlanApprove({ planCommands, display }, args[0] as string, options as IPlanApproveOptions);
           }),
       )
       .command(
@@ -497,7 +497,7 @@ export const __test_command = new Command()
           .description("Approve all plans awaiting review")
           .option("--skills <skills:string>", "Comma-separated list of skills to inject during execution")
           .action(async (options) => {
-            await handlePlanApproveAll({ planCommands, display }, options as PlanApproveOptions);
+            await handlePlanApproveAll({ planCommands, display }, options as IPlanApproveOptions);
           }),
       )
       .command(

@@ -24,7 +24,7 @@ export interface IMCPResource {
   description?: string;
 }
 
-export interface MCPResourceTemplate {
+export interface IMCPResourceTemplate {
   uriTemplate: string;
   name: string;
   mimeType?: string;
@@ -200,7 +200,7 @@ export async function discoverAllResources(
  *
  * Resource templates describe URI patterns that can be read dynamically.
  */
-export function getResourceTemplates(config: Config): MCPResourceTemplate[] {
+export function getResourceTemplates(config: Config): IMCPResourceTemplate[] {
   return config.portals.map((portal) => ({
     uriTemplate: `portal://${portal.alias}/{path}`,
     name: `${portal.alias} portal files`,

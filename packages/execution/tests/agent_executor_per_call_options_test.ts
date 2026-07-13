@@ -14,13 +14,13 @@ import { createTestConfig } from "../../../packages/ai/tests/helpers/test_config
 import { initTestDbService } from "@exaix/testing";
 import { AgentExecutor } from "@exaix/execution";
 import type { ModelResolver } from "@exaix/ai";
-import type { IResolvedModel, ModelIntent } from "@exaix/schemas";
+import type { IResolvedModel, IModelIntent } from "@exaix/schemas";
 import { EventLogger } from "@exaix/core/logger";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import { join } from "@std/path";
 
 interface ICapturedResolve {
-  intent: ModelIntent;
+  intent: IModelIntent;
   result: IResolvedModel;
 }
 
@@ -33,7 +33,7 @@ function createCapturingResolver(): { resolver: ModelResolver; captured: ICaptur
     attempt: 1,
   };
   const resolver = {
-    resolve: (intent: ModelIntent) => {
+    resolve: (intent: IModelIntent) => {
       captured.push({ intent, result: expected });
       return Promise.resolve(expected);
     },

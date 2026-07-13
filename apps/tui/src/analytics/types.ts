@@ -13,7 +13,7 @@ export interface ITimeRange {
   duration: number;
 }
 
-export interface CorrelationAnalysis {
+export interface ICorrelationAnalysis {
   correlationId: string;
   traceIds: string[];
   identityIds: string[];
@@ -29,7 +29,7 @@ export interface CorrelationAnalysis {
   };
 }
 
-export interface TraceOperation {
+export interface ITraceOperation {
   operation: string;
   timestamp: Date;
   duration?: number;
@@ -38,16 +38,16 @@ export interface TraceOperation {
   message: string;
 }
 
-export interface TraceAnalysis {
+export interface ITraceAnalysis {
   traceId: string;
   correlationId?: string;
-  operations: TraceOperation[];
+  operations: ITraceOperation[];
   timeSpan: ITimeRange;
   errorCount: number;
   success: boolean;
 }
 
-export interface PerformanceStats {
+export interface IPerformanceStats {
   totalOperations: number;
   avgDuration: number;
   maxDuration: number;
@@ -56,7 +56,7 @@ export interface PerformanceStats {
   errorRate: number;
 }
 
-export interface ErrorPattern {
+export interface IErrorPattern {
   pattern: string;
   count: number;
   firstSeen: Date;

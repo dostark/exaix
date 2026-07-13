@@ -6,9 +6,9 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { lintMarkdown, type LintOptions } from "../../scripts/markdown_lint.ts";
+import { lintMarkdown, type ILintOptions } from "../../scripts/markdown_lint.ts";
 
-const defaultOptions: LintOptions = { fix: false, strict: false, verbose: false };
+const defaultOptions: ILintOptions = { fix: false, strict: false, verbose: false };
 
 // ---------------------------------------------------------------------------
 // MD012 — no multiple consecutive blank lines

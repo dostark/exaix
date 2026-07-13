@@ -25,7 +25,7 @@ export async function loadBlueprint(blueprintsPath: string, identityId: string):
   }
 }
 
-/** Build a IParsedRequest used by AgentRunner. */
+/** Build a IParsedRequest used by IAgentRunner. */
 export function buildParsedRequest(
   body: string,
   frontmatter: IRequestFrontmatter,

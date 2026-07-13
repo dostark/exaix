@@ -20,7 +20,7 @@ import {
   type IRequestContextContext,
 } from "@exaix/execution";
 import { applyAnalysisToRequest, buildParsedRequest } from "./common.ts";
-import { BlueprintLoader, type ILoadedBlueprint } from "@exaix/core/blueprint";
+import { IBlueprintLoader, type ILoadedBlueprint } from "@exaix/core/blueprint";
 import { type IRequestMetadata, PlanWriter } from "@exaix/core/planning";
 import { PlanValidationError } from "@exaix/core/planning";
 import { RequestStatus } from "@exaix/core/status";
@@ -58,7 +58,7 @@ import { CostTracker } from "@exaix/core/cost";
 import { CircuitBreaker, CircuitBreakerProvider } from "@exaix/ai/circuit_breaker.ts";
 import { RequestParser } from "./processing/parser.ts";
 import { StatusManager } from "./processing/status.ts";
-import type { IRequestFrontmatter, ParsedRequestFile } from "@exaix/core/request";
+import type { IRequestFrontmatter, IParsedRequestFile } from "@exaix/core/request";
 import { OutputValidator } from "@exaix/tool-runtime";
 import type { LogMetadata } from "@exaix/core/types";
 import { MiddlewarePipeline } from "@exaix/core/func";
@@ -85,7 +85,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IRequestProcessingContext extends IServiceContext {
   filePath: string;
-  parsed: ParsedRequestFile;
+  parsed: IParsedRequestFile;
   frontmatter: IRequestFrontmatter;
   body: string;
   traceLogger: IEventLogger;
@@ -729,7 +729,7 @@ export class RequestProcessor {
       return this.handleBlueprintNotFound(filePath, identityId!, traceLogger);
     }
 
-    const blueprintLoader = new BlueprintLoader({ blueprintsPath: this.processorConfig.blueprintsPath });
+    const blueprintLoader = new IBlueprintLoader({ blueprintsPath: this.processorConfig.blueprintsPath });
     const blueprint = blueprintLoader.toLegacyBlueprint(loadedBlueprint);
 
     const request: IParsedRequest = buildParsedRequest(body, frontmatter, requestId, traceId) as IParsedRequest;
@@ -894,7 +894,7 @@ ${result.content}`,
     identityId: string,
     traceLogger: IEventLogger,
   ): Promise<ILoadedBlueprint | null> {
-    const blueprintLoader = new BlueprintLoader({ blueprintsPath: this.processorConfig.blueprintsPath });
+    const blueprintLoader = new IBlueprintLoader({ blueprintsPath: this.processorConfig.blueprintsPath });
     let loadedBlueprint = await blueprintLoader.load(identityId);
 
     if (!loadedBlueprint) {
@@ -918,7 +918,7 @@ ${result.content}`,
         try {
           const stat = await Deno.stat(candidateFile);
           if (stat && stat.isFile) {
-            const fallbackLoader = new BlueprintLoader({ blueprintsPath: candidatePath });
+            const fallbackLoader = new IBlueprintLoader({ blueprintsPath: candidatePath });
             const loadedBlueprint = await fallbackLoader.load(identityId);
             if (loadedBlueprint) {
               traceLogger.info(DomainEventType.RequestBlueprintLoadedFallback, identityId, { from: candidatePath });
@@ -945,7 +945,7 @@ ${result.content}`,
   ): Promise<ILoadedBlueprint | null> {
     // Try the repository root (cwd) directly
     const repoIdentitiesPath = join(Deno.cwd(), "Blueprints", DEFAULT_IDENTITIES_PATH);
-    const fallbackLoader = new BlueprintLoader({ blueprintsPath: repoIdentitiesPath });
+    const fallbackLoader = new IBlueprintLoader({ blueprintsPath: repoIdentitiesPath });
     const loadedBlueprint = await fallbackLoader.load(identityId);
     if (loadedBlueprint) {
       traceLogger.info(DomainEventType.RequestBlueprintLoadedFallback, identityId, { from: repoIdentitiesPath });
@@ -956,7 +956,7 @@ ${result.content}`,
     try {
       const repoRoot = join(dirname(dirname(dirname(new URL(import.meta.url).pathname))));
       const repoModuleIdentities = join(repoRoot, "Blueprints", DEFAULT_IDENTITIES_PATH);
-      const moduleLoader = new BlueprintLoader({ blueprintsPath: repoModuleIdentities });
+      const moduleLoader = new IBlueprintLoader({ blueprintsPath: repoModuleIdentities });
       const moduleLoaded = await moduleLoader.load(identityId);
       if (moduleLoaded) {
         traceLogger.info(DomainEventType.RequestBlueprintLoadedFallback, identityId, { from: repoModuleIdentities });

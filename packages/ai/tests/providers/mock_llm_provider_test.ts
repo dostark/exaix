@@ -20,7 +20,7 @@ import {
   type IRecordedResponse,
   MockLLMError,
   MockLLMProvider,
-  type PatternMatcher,
+  type IPatternMatcher,
 } from "../../src/providers/mock_llm_provider.ts";
 
 // ============================================================================
@@ -176,7 +176,7 @@ Deno.test("Recorded: hash function is deterministic", () => {
 // ============================================================================
 
 Deno.test("IPattern: matches prompt and returns configured response", async () => {
-  const patterns: PatternMatcher[] = [
+  const patterns: IPatternMatcher[] = [
     {
       pattern: /implement.*authentication/i,
       response: "## Plan: Authentication\n\n1. Create auth module",
@@ -197,7 +197,7 @@ Deno.test("IPattern: matches prompt and returns configured response", async () =
 });
 
 Deno.test("IPattern: uses first matching pattern", async () => {
-  const patterns: PatternMatcher[] = [
+  const patterns: IPatternMatcher[] = [
     { pattern: /test/, response: "First match" },
     { pattern: /test/, response: "Second match" },
   ];
@@ -209,7 +209,7 @@ Deno.test("IPattern: uses first matching pattern", async () => {
 });
 
 Deno.test("IPattern: throws error when no pattern matches", async () => {
-  const patterns: PatternMatcher[] = [
+  const patterns: IPatternMatcher[] = [
     { pattern: /specific/, response: "response" },
   ];
 
@@ -223,7 +223,7 @@ Deno.test("IPattern: throws error when no pattern matches", async () => {
 });
 
 Deno.test("IPattern: supports dynamic response generation", async () => {
-  const patterns: PatternMatcher[] = [
+  const patterns: IPatternMatcher[] = [
     {
       pattern: /add (\w+) function/i,
       response: (match: RegExpMatchArray) => `## Plan: Add ${match[1]} Function\n\n1. Create function`,
@@ -486,7 +486,7 @@ Deno.test("MockLLMProvider supports ModelOptions parameter", async () => {
 // ============================================================================
 
 Deno.test("Recorded: falls back to patterns when no recording found", async () => {
-  const patterns: PatternMatcher[] = [
+  const patterns: IPatternMatcher[] = [
     {
       pattern: /implement/i,
       response: "Fallback plan for implementation",
@@ -515,7 +515,7 @@ Deno.test("Recorded: prefers exact recording over pattern fallback", async () =>
     },
   ];
 
-  const patterns: PatternMatcher[] = [
+  const patterns: IPatternMatcher[] = [
     {
       pattern: /.*/,
       response: "IPattern response",

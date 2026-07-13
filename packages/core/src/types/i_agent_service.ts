@@ -6,7 +6,7 @@
  * @related-files [@exaix/core/types]
  */
 
-import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
+import type { IAgentHealthData, IAgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
 
 export interface IAgentService {
   /**
@@ -19,10 +19,10 @@ export interface IAgentService {
    * @param identityId The ID of the agent to fetch logs for.
    * @param limit Maximum number of log entries to return.
    */
-  getAgentLogs(identityId: string, limit?: number): Promise<AgentLogEntry[]>;
+  getAgentLogs(identityId: string, limit?: number): Promise<IAgentLogEntry[]>;
 
   /**
    * Get real-time health statistics for an agent.
    */
-  getAgentHealth(identityId: string): Promise<AgentHealthData>;
+  getAgentHealth(identityId: string): Promise<IAgentHealthData>;
 }

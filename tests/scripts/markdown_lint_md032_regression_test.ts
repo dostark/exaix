@@ -5,7 +5,7 @@
  * correct enforcement of blank lines around list blocks.
  */
 
-import { lintMarkdown, type LintOptions } from "../../scripts/markdown_lint.ts";
+import { lintMarkdown, type ILintOptions } from "../../scripts/markdown_lint.ts";
 
 /**
  * Regression tests for MD032/blanks-around-lists.
@@ -17,7 +17,7 @@ import { lintMarkdown, type LintOptions } from "../../scripts/markdown_lint.ts";
  * Fix: Treat list-item continuation lines as part of the list context.
  */
 
-const defaultOptions: LintOptions = { fix: false, strict: false, verbose: false };
+const defaultOptions: ILintOptions = { fix: false, strict: false, verbose: false };
 
 Deno.test("[regression] MD032 does not require blank lines between list items", () => {
   const md = [

@@ -1,7 +1,7 @@
 /**
- * @module ModelIntent
+ * @module IModelIntent
  * @path packages/schemas/src/model_intent.ts
- * @description Phase 132 — unified ModelIntent type merging IModelPreferences and ISelectionCriteria.
+ * @description Phase 132 — unified IModelIntent type merging IModelPreferences and ISelectionCriteria.
  *   Callers declare intent (size, thinking, effort, characteristics) and ModelResolver
  *   resolves it to a concrete provider:model with per-call options.
  * @architectural-layer Shared
@@ -36,7 +36,7 @@ export interface IModelCallOptions {
  * Unified intent type for model resolution. Merges IModelPreferences and ISelectionCriteria.
  * All fields are optional; explicit `model` (provider:model) bypasses the resolver entirely.
  */
-export interface ModelIntent {
+export interface IModelIntent {
   preferred_provider?: string;
   model_size?: ModelSize;
   characteristics?: string[];
@@ -46,7 +46,7 @@ export interface ModelIntent {
   max_cost_usd?: number;
   allow_local?: boolean;
   model?: string;
-  fallbacks?: Partial<ModelIntent>[];
+  fallbacks?: Partial<IModelIntent>[];
   context_window_fallback?: boolean;
   /** Estimated input tokens for context-window overflow detection. Used when context_window_fallback is true. */
   estimated_input_tokens?: number;
@@ -63,11 +63,11 @@ export interface ModelIntent {
 /** Phase 135 Step 8 (§5.8.8) — the precedence source that decided the derived task_type. */
 export type TaskTypeSource = "frontmatter" | "identity" | "skill" | "static_map" | "analyzer" | "unknown";
 
-/** @deprecated Use ModelIntent instead. Backward-compat alias for Phase 131 migration. */
-export type IModelPreferences = ModelIntent;
+/** @deprecated Use IModelIntent instead. Backward-compat alias for Phase 131 migration. */
+export type IModelPreferences = IModelIntent;
 
-/** @deprecated Use ModelIntent instead. Backward-compat alias for Phase 131 migration. */
-export type ISelectionCriteria = ModelIntent;
+/** @deprecated Use IModelIntent instead. Backward-compat alias for Phase 131 migration. */
+export type ISelectionCriteria = IModelIntent;
 
 /**
  * Full resolution result from ModelResolver.
@@ -117,7 +117,7 @@ export type ModelResolutionReason =
  * Full audit trail: input intent, candidates considered, scores, selection, duration.
  */
 export interface IModelResolutionTrace {
-  intent: ModelIntent;
+  intent: IModelIntent;
   candidate_providers: string[];
   scores: Record<string, number>;
   selected: { provider: string; model: string; attempt: number };

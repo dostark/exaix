@@ -11,7 +11,7 @@ import { getTheme, type ITuiTheme } from "@exaix/tui/helpers/colors.ts";
 import {
   createSpinnerState,
   nextFrame,
-  type SpinnerState,
+  type ISpinnerState,
   startSpinner,
   stopSpinner,
 } from "@exaix/tui/helpers/spinner.ts";
@@ -68,7 +68,7 @@ export function createRefreshConfig(
 export class TuiSessionBase {
   protected selectedIndex = 0;
   protected statusMessage = "";
-  protected spinnerState: SpinnerState;
+  protected spinnerState: ISpinnerState;
   protected statusBarState: IStatusBarState;
   protected theme: ITuiTheme;
   protected useColors = true;
@@ -155,7 +155,7 @@ export class TuiSessionBase {
     }
   }
 
-  getSpinnerState(): SpinnerState {
+  getSpinnerState(): ISpinnerState {
     return this.spinnerState;
   }
 

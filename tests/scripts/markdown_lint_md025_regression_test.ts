@@ -4,9 +4,9 @@
  * @description Regression tests for Markdown linting rule MD025.
  */
 
-import { lintMarkdown, type LintOptions } from "../../scripts/markdown_lint.ts";
+import { lintMarkdown, type ILintOptions } from "../../scripts/markdown_lint.ts";
 
-const defaultOptions: LintOptions = { fix: false, strict: false, verbose: false };
+const defaultOptions: ILintOptions = { fix: false, strict: false, verbose: false };
 
 Deno.test("[regression] MD025 flags H1 when frontmatter has title", () => {
   const md = [

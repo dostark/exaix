@@ -27,7 +27,7 @@ export interface IFileReadyEvent {
   content: string;
 }
 
-export interface FileWatcherOptions {
+export interface IFileWatcherOptions {
   db?: DatabaseService;
   customWatchPath?: string;
   extensions?: string[];
@@ -50,7 +50,7 @@ export class FileWatcher {
   constructor(
     config: Config,
     onFileReady: (event: IFileReadyEvent) => void | Promise<void>,
-    options: FileWatcherOptions = {},
+    options: IFileWatcherOptions = {},
   ) {
     this.watchPath = options.customWatchPath || join(config.system.root, config.paths.workspace, "Requests");
     this.debounceMs = config.watcher.debounce_ms;

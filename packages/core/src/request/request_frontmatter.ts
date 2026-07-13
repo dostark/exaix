@@ -47,7 +47,7 @@ export interface IRequestFrontmatter {
   scope?: { include?: string[]; exclude?: string[] };
 }
 
-export interface ParsedRequestFile {
+export interface IParsedRequestFile {
   frontmatter: IRequestFrontmatter;
   body: string;
   rawContent: string;

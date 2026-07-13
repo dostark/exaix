@@ -13,7 +13,7 @@ import { initTestDbService } from "@exaix/testing";
 import { getMemoryExecutionDir } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
-import { type ITraceData, MissionReporter, type ReportConfig } from "@exaix/core/artifact";
+import { type ITraceData, MissionReporter, type IReportConfig } from "@exaix/core/artifact";
 import { join } from "@std/path";
 
 // ============================================================================
@@ -90,7 +90,7 @@ async function withMissionReporter(
       }
 
       const config = createMockConfig(tempDir);
-      const reportConfig: ReportConfig = {
+      const reportConfig: IReportConfig = {
         reportsDirectory: getMemoryExecutionDir(tempDir),
       };
       const mockDb = {
@@ -114,7 +114,7 @@ async function withMissionReporter(
     }
 
     const config = createMockConfig(tempDir);
-    const reportConfig: ReportConfig = {
+    const reportConfig: IReportConfig = {
       reportsDirectory: getMemoryExecutionDir(tempDir),
     };
     const memoryBank = new MemoryBankService(config);
@@ -247,7 +247,7 @@ Deno.test("MissionReporter: handles generation errors gracefully", async () => {
 
     // Config and setup
     const config = createMockConfig(tempDir);
-    const reportConfig: ReportConfig = {
+    const reportConfig: IReportConfig = {
       reportsDirectory: getMemoryExecutionDir(tempDir),
     };
 

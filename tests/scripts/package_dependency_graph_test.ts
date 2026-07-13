@@ -18,7 +18,7 @@ import {
   runDenoInfo,
   selectPackageRoot,
 } from "../../scripts/package_dependency_graph.ts";
-import type { BoundaryReport, DenoInfoJson } from "../../scripts/package_dependency_graph.ts";
+import type { IBoundaryReport, IDenoInfoJson } from "../../scripts/package_dependency_graph.ts";
 
 function fileHref(repo: string, path: string): string {
   return toFileUrl(`${repo}/${path}`).href;
@@ -28,8 +28,8 @@ function dep(specifier: string): { specifier: string; code: { specifier: string 
   return { specifier, code: { specifier } };
 }
 
-/** DenoInfoJson fixture: packages/core/mod.ts plus a src module importing the @exaix/core alias. */
-function makeCoreAliasInfo(repo: string, extraModules: DenoInfoJson["modules"] = []): DenoInfoJson {
+/** IDenoInfoJson fixture: packages/core/mod.ts plus a src module importing the @exaix/core alias. */
+function makeCoreAliasInfo(repo: string, extraModules: IDenoInfoJson["modules"] = []): IDenoInfoJson {
   return {
     version: 1,
     roots: [fileHref(repo, "src/main.ts")],
@@ -55,7 +55,7 @@ Deno.test("selectPackageRoot chooses the deepest matching workspace root", () =>
 
 Deno.test("buildPackageGraph assembles package edges from deno info output", () => {
   const repo = Deno.cwd();
-  const info: DenoInfoJson = {
+  const info: IDenoInfoJson = {
     version: 1,
     roots: [toFileUrl(`${repo}/src/main.ts`).href],
     modules: [
@@ -114,7 +114,7 @@ Deno.test("findCandidateSrcModules identifies src modules that import @exaix/cor
 
 Deno.test("buildPackageGraph prefers canonical package aliases when import aliases are available", () => {
   const repo = Deno.cwd();
-  const info: DenoInfoJson = {
+  const info: IDenoInfoJson = {
     version: 1,
     roots: [fileHref(repo, "src/main.ts")],
     modules: [
@@ -161,7 +161,7 @@ Deno.test("resolveAliasPath preserves exact file aliases", () => {
 
 Deno.test("buildPackageGraph ignores repo-local modules outside declared package roots", () => {
   const repo = Deno.cwd();
-  const info: DenoInfoJson = {
+  const info: IDenoInfoJson = {
     version: 1,
     roots: [toFileUrl(`${repo}/packages/schemas/mod.ts`).href],
     modules: [
@@ -192,7 +192,7 @@ Deno.test("buildPackageGraph ignores repo-local modules outside declared package
 
 Deno.test("buildPackageGraph ignores type-only cross-package dependencies", () => {
   const repo = Deno.cwd();
-  const info: DenoInfoJson = {
+  const info: IDenoInfoJson = {
     version: 1,
     roots: [toFileUrl(`${repo}/packages/core/mod.ts`).href],
     modules: [
@@ -234,12 +234,12 @@ Deno.test("package dependency graph reports @exaix/git runtime dependency only o
 });
 
 // ---------------------------------------------------------------------------
-// buildBoundaryReport — unit tests with synthetic DenoInfoJson fixtures
+// buildBoundaryReport — unit tests with synthetic IDenoInfoJson fixtures
 // ---------------------------------------------------------------------------
 
 Deno.test("buildBoundaryReport: file with only package deps is extractable", () => {
   const repo = Deno.cwd();
-  const info: DenoInfoJson = {
+  const info: IDenoInfoJson = {
     version: 1,
     roots: [toFileUrl(`${repo}/src/mcp/tool.ts`).href],
     modules: [
@@ -275,7 +275,7 @@ Deno.test("buildBoundaryReport: file with only package deps is extractable", () 
 
 Deno.test("buildBoundaryReport: direct src/ dep makes file not extractable", () => {
   const repo = Deno.cwd();
-  const info: DenoInfoJson = {
+  const info: IDenoInfoJson = {
     version: 1,
     roots: [toFileUrl(`${repo}/packages/mcp/server/handlers/run_command_tool.ts`).href],
     modules: [
@@ -311,7 +311,7 @@ Deno.test("buildBoundaryReport: direct src/ dep makes file not extractable", () 
 
 Deno.test("buildBoundaryReport: transitive src/ dep is not extractable and split from direct", () => {
   const repo = Deno.cwd();
-  const info: DenoInfoJson = {
+  const info: IDenoInfoJson = {
     version: 1,
     roots: [toFileUrl(`${repo}/packages/mcp/server/handlers/search.ts`).href],
     modules: [
@@ -352,7 +352,7 @@ Deno.test("buildBoundaryReport: transitive src/ dep is not extractable and split
 
 Deno.test("buildBoundaryReport: external specifiers appear in externalDirect", () => {
   const repo = Deno.cwd();
-  const info: DenoInfoJson = {
+  const info: IDenoInfoJson = {
     version: 1,
     roots: [toFileUrl(`${repo}/src/util.ts`).href],
     modules: [
@@ -375,7 +375,7 @@ Deno.test("buildBoundaryReport: external specifiers appear in externalDirect", (
 
 Deno.test("buildBoundaryReport: file with no deps is extractable", () => {
   const repo = Deno.cwd();
-  const info: DenoInfoJson = {
+  const info: IDenoInfoJson = {
     version: 1,
     roots: [toFileUrl(`${repo}/packages/core/src/constants.ts`).href],
     modules: [
@@ -399,7 +399,7 @@ Deno.test("buildBoundaryReport: file with no deps is extractable", () => {
 // ---------------------------------------------------------------------------
 
 Deno.test("renderBoundaryReport: extractable file shows EXTRACTABLE verdict", () => {
-  const report: BoundaryReport = {
+  const report: IBoundaryReport = {
     targetPath: "packages/mcp/src/tool_result_converter.ts",
     directGroups: [{ packageName: "@exaix/core", modules: ["packages/core/mod.ts"] }],
     transitiveGroups: [],
@@ -415,7 +415,7 @@ Deno.test("renderBoundaryReport: extractable file shows EXTRACTABLE verdict", ()
 });
 
 Deno.test("renderBoundaryReport: non-extractable file shows src/ blockers", () => {
-  const report: BoundaryReport = {
+  const report: IBoundaryReport = {
     targetPath: "packages/mcp/server/handlers/run_command_tool.ts",
     directGroups: [
       { packageName: "@exaix (retired src/)", modules: ["packages/git/src/git_service.ts"] },
@@ -434,7 +434,7 @@ Deno.test("renderBoundaryReport: non-extractable file shows src/ blockers", () =
 });
 
 Deno.test("renderBoundaryReport: external deps appear truncated after 5", () => {
-  const report: BoundaryReport = {
+  const report: IBoundaryReport = {
     targetPath: "src/util.ts",
     directGroups: [],
     transitiveGroups: [],

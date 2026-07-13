@@ -7,7 +7,7 @@
  * @ungrounded
  */
 
-import type { ValidationResult } from "../base/command.ts";
+import type { IValidationResult } from "../base/command.ts";
 import type { JSONObject } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 
@@ -24,7 +24,7 @@ export class ValidationChain {
     return this;
   }
 
-  validate(data: JSONObject): ValidationResult {
+  validate(data: JSONObject): IValidationResult {
     const errors: string[] = [];
 
     for (const [field, rules] of this.rules.entries()) {

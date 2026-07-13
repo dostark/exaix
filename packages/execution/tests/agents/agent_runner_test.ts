@@ -3,13 +3,13 @@
  * @path packages/execution/tests/agents/agent_runner_test.ts
  * @related-files []
  * @architectural-layer Services
- * @description Verifies the AgentRunner service, ensuring correct initialization of
+ * @description Verifies the IAgentRunner service, ensuring correct initialization of
  * agent state, prompt assembly, and graceful handling of model provider errors.
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "@exaix/ai/providers.ts";
-import { AgentRunner, type IBlueprint, type IParsedRequest } from "@exaix/execution";
+import { AgentRunner, IAgentRunner, type IBlueprint, type IParsedRequest } from "@exaix/execution";
 import { MEMORY_CONTEXT_KEY, MemoryBankSource, MemoryScope, PORTAL_CONTEXT_KEY, SkillStatus } from "@exaix/core";
 import { buildPortalContextBlock } from "@exaix/core/func";
 import type { ISkillsService } from "@exaix/core/types";
@@ -51,10 +51,10 @@ You can call this function to get the greeting message.
 </content>`;
 
 // ============================================================================
-// Test 1: AgentRunner combines System Prompt and User Request correctly
+// Test 1: IAgentRunner combines System Prompt and User Request correctly
 // ============================================================================
 
-Deno.test("AgentRunner combines System Prompt and User Request correctly", async () => {
+Deno.test("IAgentRunner combines System Prompt and User Request correctly", async () => {
   let capturedPrompt = "";
 
   // Create a mock provider that captures the prompt it receives
@@ -75,7 +75,7 @@ Deno.test("AgentRunner combines System Prompt and User Request correctly", async
   assertStringIncludes(capturedPrompt, sampleRequest.userPrompt);
 });
 
-Deno.test("AgentRunner formats combined prompt correctly", async () => {
+Deno.test("IAgentRunner formats combined prompt correctly", async () => {
   let capturedPrompt = "";
 
   const mockProvider = new MockProvider(wellFormedResponse);
@@ -97,7 +97,7 @@ Deno.test("AgentRunner formats combined prompt correctly", async () => {
   assertEquals(systemIndex < userIndex, true, "System prompt should come before user prompt");
 });
 
-Deno.test("AgentRunner injects portal context when provided", async () => {
+Deno.test("IAgentRunner injects portal context when provided", async () => {
   let capturedPrompt = "";
 
   const mockProvider = new MockProvider(wellFormedResponse);
@@ -123,7 +123,7 @@ Deno.test("AgentRunner injects portal context when provided", async () => {
   assertStringIncludes(capturedPrompt, portalContext);
 });
 
-Deno.test("AgentRunner injects memory context when provided", async () => {
+Deno.test("IAgentRunner injects memory context when provided", async () => {
   let capturedPrompt = "";
 
   const mockProvider = new MockProvider(wellFormedResponse);
@@ -147,10 +147,10 @@ Deno.test("AgentRunner injects memory context when provided", async () => {
 });
 
 // ============================================================================
-// Test 2: AgentRunner calls modelProvider.generate with the combined prompt
+// Test 2: IAgentRunner calls modelProvider.generate with the combined prompt
 // ============================================================================
 
-Deno.test("AgentRunner calls modelProvider.generate", async () => {
+Deno.test("IAgentRunner calls modelProvider.generate", async () => {
   let generateCalled = false;
 
   const mockProvider = new MockProvider(wellFormedResponse);
@@ -166,7 +166,7 @@ Deno.test("AgentRunner calls modelProvider.generate", async () => {
   assertEquals(generateCalled, true, "modelProvider.generate should be called");
 });
 
-Deno.test("AgentRunner passes complete prompt to modelProvider.generate", async () => {
+Deno.test("IAgentRunner passes complete prompt to modelProvider.generate", async () => {
   let receivedPrompt = "";
 
   const mockProvider = new MockProvider(wellFormedResponse);
@@ -189,10 +189,10 @@ Deno.test("AgentRunner passes complete prompt to modelProvider.generate", async 
 });
 
 // ============================================================================
-// Test 3: AgentRunner parses a structured response into thought and content
+// Test 3: IAgentRunner parses a structured response into thought and content
 // ============================================================================
 
-Deno.test("AgentRunner parses well-formed XML response", async () => {
+Deno.test("IAgentRunner parses well-formed XML response", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
   const runner = new AgentRunner(mockProvider);
 
@@ -207,7 +207,7 @@ Deno.test("AgentRunner parses well-formed XML response", async () => {
   assertEquals(result.raw, wellFormedResponse);
 });
 
-Deno.test("AgentRunner extracts thought tag correctly", async () => {
+Deno.test("IAgentRunner extracts thought tag correctly", async () => {
   const response = `<thought>This is my reasoning</thought>
 <content>This is the output</content>`;
 
@@ -219,7 +219,7 @@ Deno.test("AgentRunner extracts thought tag correctly", async () => {
   assertEquals(result.thought.trim(), "This is my reasoning");
 });
 
-Deno.test("AgentRunner extracts content tag correctly", async () => {
+Deno.test("IAgentRunner extracts content tag correctly", async () => {
   const response = `<thought>Reasoning here</thought>
 <content>User-facing content here</content>`;
 
@@ -231,7 +231,7 @@ Deno.test("AgentRunner extracts content tag correctly", async () => {
   assertEquals(result.content.trim(), "User-facing content here");
 });
 
-Deno.test("AgentRunner handles multiline thought and content", async () => {
+Deno.test("IAgentRunner handles multiline thought and content", async () => {
   const response = `<thought>
 Line 1 of thought
 Line 2 of thought
@@ -254,7 +254,7 @@ Line 2 of content
   assertStringIncludes(result.content, "Line 2 of content");
 });
 
-Deno.test("AgentRunner preserves raw response", async () => {
+Deno.test("IAgentRunner preserves raw response", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
   const runner = new AgentRunner(mockProvider);
 
@@ -264,10 +264,10 @@ Deno.test("AgentRunner preserves raw response", async () => {
 });
 
 // ============================================================================
-// Test 4: AgentRunner handles malformed responses
+// Test 4: IAgentRunner handles malformed responses
 // ============================================================================
 
-Deno.test("AgentRunner handles response with no XML tags (fallback)", async () => {
+Deno.test("IAgentRunner handles response with no XML tags (fallback)", async () => {
   const plainResponse = "This is just plain text with no XML tags";
 
   const mockProvider = new MockProvider(plainResponse);
@@ -281,7 +281,7 @@ Deno.test("AgentRunner handles response with no XML tags (fallback)", async () =
   assertEquals(result.raw, plainResponse);
 });
 
-Deno.test("AgentRunner handles response with only thought tag", async () => {
+Deno.test("IAgentRunner handles response with only thought tag", async () => {
   const response = "<thought>Only thought here</thought>";
 
   const mockProvider = new MockProvider(response);
@@ -294,7 +294,7 @@ Deno.test("AgentRunner handles response with only thought tag", async () => {
   assertEquals(result.content, "");
 });
 
-Deno.test("AgentRunner handles response with only content tag", async () => {
+Deno.test("IAgentRunner handles response with only content tag", async () => {
   const response = "<content>Only content here</content>";
 
   const mockProvider = new MockProvider(response);
@@ -306,7 +306,7 @@ Deno.test("AgentRunner handles response with only content tag", async () => {
   assertStringIncludes(result.content, "Only content here");
 });
 
-Deno.test("AgentRunner handles response with unclosed tags", async () => {
+Deno.test("IAgentRunner handles response with unclosed tags", async () => {
   const response = "<thought>Unclosed thought\n<content>Some content</content>";
 
   const mockProvider = new MockProvider(response);
@@ -320,7 +320,7 @@ Deno.test("AgentRunner handles response with unclosed tags", async () => {
   assertEquals(result.raw, response);
 });
 
-Deno.test("AgentRunner handles response with nested tags", async () => {
+Deno.test("IAgentRunner handles response with nested tags", async () => {
   const response = `<thought>
 Analyzing the request which mentions <code>function</code>
 </thought>
@@ -338,7 +338,7 @@ Here's the <strong>solution</strong>
   assertStringIncludes(result.content, "<strong>solution</strong>");
 });
 
-Deno.test("AgentRunner handles empty response", async () => {
+Deno.test("IAgentRunner handles empty response", async () => {
   const mockProvider = new MockProvider("");
   const runner = new AgentRunner(mockProvider);
 
@@ -353,7 +353,7 @@ Deno.test("AgentRunner handles empty response", async () => {
 // Test 5: Handles empty blueprints or requests gracefully
 // ============================================================================
 
-Deno.test("AgentRunner handles empty system prompt", async () => {
+Deno.test("IAgentRunner handles empty system prompt", async () => {
   const emptyBlueprint: IBlueprint = {
     systemPrompt: "",
   };
@@ -367,7 +367,7 @@ Deno.test("AgentRunner handles empty system prompt", async () => {
   assertEquals(result.raw, wellFormedResponse);
 });
 
-Deno.test("AgentRunner handles empty user prompt", async () => {
+Deno.test("IAgentRunner handles empty user prompt", async () => {
   const emptyRequest: IParsedRequest = {
     userPrompt: "",
     context: {},
@@ -382,7 +382,7 @@ Deno.test("AgentRunner handles empty user prompt", async () => {
   assertEquals(result.raw, wellFormedResponse);
 });
 
-Deno.test("AgentRunner handles both empty prompts", async () => {
+Deno.test("IAgentRunner handles both empty prompts", async () => {
   const emptyBlueprint: IBlueprint = { systemPrompt: "" };
   const emptyRequest: IParsedRequest = { userPrompt: "", context: {} };
 
@@ -395,7 +395,7 @@ Deno.test("AgentRunner handles both empty prompts", async () => {
   assertEquals(result.raw, wellFormedResponse);
 });
 
-Deno.test("AgentRunner handles whitespace-only prompts", async () => {
+Deno.test("IAgentRunner handles whitespace-only prompts", async () => {
   const whitespaceBlueprint: IBlueprint = { systemPrompt: "   \n\t  " };
   const whitespaceRequest: IParsedRequest = { userPrompt: "  \n  ", context: {} };
 
@@ -411,7 +411,7 @@ Deno.test("AgentRunner handles whitespace-only prompts", async () => {
 // Additional Edge Cases
 // ============================================================================
 
-Deno.test("AgentRunner handles very long responses", async () => {
+Deno.test("IAgentRunner handles very long responses", async () => {
   const longThought = "a".repeat(10000);
   const longContent = "b".repeat(10000);
   const response = `<thought>${longThought}</thought>
@@ -426,7 +426,7 @@ Deno.test("AgentRunner handles very long responses", async () => {
   assertEquals(result.content.trim(), longContent);
 });
 
-Deno.test("AgentRunner handles special characters in response", async () => {
+Deno.test("IAgentRunner handles special characters in response", async () => {
   const response = `<thought>
 Special chars: <>&"'
 Unicode: 你好 🎉
@@ -446,7 +446,7 @@ More special: <>&"'
   assertStringIncludes(result.content, "More special: <>&\"'");
 });
 
-Deno.test("AgentRunner returns IAgentExecutionResult with correct structure", async () => {
+Deno.test("IAgentRunner returns IAgentExecutionResult with correct structure", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
   const runner = new AgentRunner(mockProvider);
 
@@ -461,7 +461,7 @@ Deno.test("AgentRunner returns IAgentExecutionResult with correct structure", as
   assertEquals(typeof result.raw, "string");
 });
 
-Deno.test("AgentRunner can be reused for multiple runs", async () => {
+Deno.test("IAgentRunner can be reused for multiple runs", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
   const runner = new AgentRunner(mockProvider);
 
@@ -480,7 +480,7 @@ Deno.test("AgentRunner can be reused for multiple runs", async () => {
 // Error Recovery and Handling
 // ============================================================================
 
-Deno.test("AgentRunner handles provider errors gracefully", async () => {
+Deno.test("IAgentRunner handles provider errors gracefully", async () => {
   const errorProvider = new MockProvider(wellFormedResponse);
   errorProvider.generate = (): Promise<IGenerateResult> => {
     return Promise.reject(new Error("API Error: Rate limit exceeded"));
@@ -502,7 +502,7 @@ Deno.test("AgentRunner handles provider errors gracefully", async () => {
   assertStringIncludes(errorMessage, "Rate limit exceeded");
 });
 
-Deno.test("AgentRunner handles network timeout errors", async () => {
+Deno.test("IAgentRunner handles network timeout errors", async () => {
   const timeoutProvider = new MockProvider(wellFormedResponse);
   timeoutProvider.generate = (): Promise<IGenerateResult> => {
     throw new Error("Network timeout");
@@ -522,7 +522,7 @@ Deno.test("AgentRunner handles network timeout errors", async () => {
   assertEquals(errorCaught, true);
 });
 
-Deno.test("AgentRunner handles JSON parse errors", async () => {
+Deno.test("IAgentRunner handles JSON parse errors", async () => {
   const malformedProvider = new MockProvider(wellFormedResponse);
   malformedProvider.generate = (): Promise<IGenerateResult> => {
     throw new SyntaxError("Unexpected token in JSON");
@@ -542,7 +542,7 @@ Deno.test("AgentRunner handles JSON parse errors", async () => {
   assertEquals(errorCaught, true);
 });
 
-Deno.test("AgentRunner handles provider returning null", async () => {
+Deno.test("IAgentRunner handles provider returning null", async () => {
   const nullProvider = new MockProvider(wellFormedResponse);
   nullProvider.generate = (): Promise<IGenerateResult> => {
     return Promise.resolve(null as never as IGenerateResult);
@@ -556,7 +556,7 @@ Deno.test("AgentRunner handles provider returning null", async () => {
   assertExists(result);
 });
 
-Deno.test("AgentRunner handles provider returning undefined", async () => {
+Deno.test("IAgentRunner handles provider returning undefined", async () => {
   const undefinedProvider = new MockProvider(wellFormedResponse);
   undefinedProvider.generate = (): Promise<IGenerateResult> => {
     return Promise.resolve(undefined as never as IGenerateResult);
@@ -574,7 +574,7 @@ Deno.test("AgentRunner handles provider returning undefined", async () => {
 // Context Management
 // ============================================================================
 
-Deno.test("AgentRunner handles request with large context", async () => {
+Deno.test("IAgentRunner handles request with large context", async () => {
   const largeContext: IParsedRequest = {
     userPrompt: "Analyze these files",
     context: {
@@ -593,7 +593,7 @@ Deno.test("AgentRunner handles request with large context", async () => {
   assertEquals(result.raw, wellFormedResponse);
 });
 
-Deno.test("AgentRunner handles request with nested context objects", async () => {
+Deno.test("IAgentRunner handles request with nested context objects", async () => {
   const nestedContext: IParsedRequest = {
     userPrompt: "Process this data",
     context: {
@@ -615,7 +615,7 @@ Deno.test("AgentRunner handles request with nested context objects", async () =>
   assertExists(result);
 });
 
-Deno.test("AgentRunner handles request with empty context", async () => {
+Deno.test("IAgentRunner handles request with empty context", async () => {
   const emptyContext: IParsedRequest = {
     userPrompt: "Simple request",
     context: {},
@@ -629,7 +629,7 @@ Deno.test("AgentRunner handles request with empty context", async () => {
   assertExists(result);
 });
 
-Deno.test("AgentRunner handles request with many context keys", async () => {
+Deno.test("IAgentRunner handles request with many context keys", async () => {
   const manyKeysContext: IParsedRequest = {
     userPrompt: "Process all",
     context: Object.fromEntries(
@@ -649,7 +649,7 @@ Deno.test("AgentRunner handles request with many context keys", async () => {
 // Response Parsing Edge Cases
 // ============================================================================
 
-Deno.test("AgentRunner handles case-insensitive XML tags", async () => {
+Deno.test("IAgentRunner handles case-insensitive XML tags", async () => {
   const response = `<THOUGHT>Uppercase thought</THOUGHT>
 <CONTENT>Uppercase content</CONTENT>`;
 
@@ -663,7 +663,7 @@ Deno.test("AgentRunner handles case-insensitive XML tags", async () => {
   assertStringIncludes(result.content, "Uppercase content");
 });
 
-Deno.test("AgentRunner handles mixed case XML tags", async () => {
+Deno.test("IAgentRunner handles mixed case XML tags", async () => {
   const response = `<Thought>Mixed case thought</Thought>
 <Content>Mixed case content</Content>`;
 
@@ -676,7 +676,7 @@ Deno.test("AgentRunner handles mixed case XML tags", async () => {
   assertStringIncludes(result.content, "Mixed case content");
 });
 
-Deno.test("AgentRunner handles tags with extra whitespace", async () => {
+Deno.test("IAgentRunner handles tags with extra whitespace", async () => {
   const response = `<thought>
   Thought with whitespace
   </thought>
@@ -694,7 +694,7 @@ Deno.test("AgentRunner handles tags with extra whitespace", async () => {
   assertStringIncludes(result.content, "Content with whitespace");
 });
 
-Deno.test("AgentRunner handles CDATA sections in tags", async () => {
+Deno.test("IAgentRunner handles CDATA sections in tags", async () => {
   const response = `<thought><![CDATA[Thought with <special> chars]]></thought>
 <content><![CDATA[Content with <tags>]]></content>`;
 
@@ -708,7 +708,7 @@ Deno.test("AgentRunner handles CDATA sections in tags", async () => {
   assertExists(result.content);
 });
 
-Deno.test("AgentRunner handles self-closing tags", async () => {
+Deno.test("IAgentRunner handles self-closing tags", async () => {
   const response = `<thought/>
 <content>Only content here</content>`;
 
@@ -725,7 +725,7 @@ Deno.test("AgentRunner handles self-closing tags", async () => {
 // IBlueprint and Request Variations
 // ============================================================================
 
-Deno.test("AgentRunner handles blueprint with identityId", async () => {
+Deno.test("IAgentRunner handles blueprint with identityId", async () => {
   const blueprintWithId: IBlueprint = {
     systemPrompt: "You are an assistant",
     identityId: "test-agent-001",
@@ -739,7 +739,7 @@ Deno.test("AgentRunner handles blueprint with identityId", async () => {
   assertExists(result);
 });
 
-Deno.test("AgentRunner handles request with traceId and requestId", async () => {
+Deno.test("IAgentRunner handles request with traceId and requestId", async () => {
   const requestWithIds: IParsedRequest = {
     userPrompt: "Test prompt",
     context: {},
@@ -755,7 +755,7 @@ Deno.test("AgentRunner handles request with traceId and requestId", async () => 
   assertExists(result);
 });
 
-Deno.test("AgentRunner handles very long system prompt", async () => {
+Deno.test("IAgentRunner handles very long system prompt", async () => {
   const longBlueprint: IBlueprint = {
     systemPrompt: "You are an assistant. " + "Rules: ".repeat(10000),
   };
@@ -768,7 +768,7 @@ Deno.test("AgentRunner handles very long system prompt", async () => {
   assertExists(result);
 });
 
-Deno.test("AgentRunner handles very long user prompt", async () => {
+Deno.test("IAgentRunner handles very long user prompt", async () => {
   const longRequest: IParsedRequest = {
     userPrompt: "Please analyze this: " + "data ".repeat(50000),
     context: {},
@@ -900,7 +900,7 @@ class MockSkillsService implements ISkillsService {
   }
 }
 
-Deno.test("AgentRunner: matches skills when skillsService provided", async () => {
+Deno.test("IAgentRunner: matches skills when skillsService provided", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
   const mockSkills = new MockSkillsService();
   mockSkills.setMatchedSkills([
@@ -919,7 +919,7 @@ Deno.test("AgentRunner: matches skills when skillsService provided", async () =>
   assertEquals(result.skillsApplied, ["tdd-methodology"]);
 });
 
-Deno.test("AgentRunner: injects skill context into prompt", async () => {
+Deno.test("IAgentRunner: injects skill context into prompt", async () => {
   let capturedPrompt = "";
   const mockProvider = new MockProvider(wellFormedResponse);
   const originalGenerate = mockProvider.generate.bind(mockProvider);
@@ -945,7 +945,7 @@ Deno.test("AgentRunner: injects skill context into prompt", async () => {
   assertStringIncludes(capturedPrompt, "Mock skill instructions");
 });
 
-Deno.test("AgentRunner: records skill usage after execution", async () => {
+Deno.test("IAgentRunner: records skill usage after execution", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
   const mockSkills = new MockSkillsService();
   mockSkills.setMatchedSkills([
@@ -965,7 +965,7 @@ Deno.test("AgentRunner: records skill usage after execution", async () => {
   assertEquals(mockSkills.usageRecorded.includes("error-handling"), true);
 });
 
-Deno.test("AgentRunner: skips skill matching when disableSkills is true", async () => {
+Deno.test("IAgentRunner: skips skill matching when disableSkills is true", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
   const mockSkills = new MockSkillsService();
   mockSkills.setMatchedSkills([
@@ -984,7 +984,7 @@ Deno.test("AgentRunner: skips skill matching when disableSkills is true", async 
   assertEquals(result.skillsApplied, undefined);
 });
 
-Deno.test("AgentRunner: continues without skills when no skillsService", async () => {
+Deno.test("IAgentRunner: continues without skills when no skillsService", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
   const runner = new AgentRunner(mockProvider);
 
@@ -994,7 +994,7 @@ Deno.test("AgentRunner: continues without skills when no skillsService", async (
   assertEquals(result.skillsApplied, undefined);
 });
 
-Deno.test("AgentRunner: handles skill matching error gracefully", async () => {
+Deno.test("IAgentRunner: handles skill matching error gracefully", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
 
   // Create a skill service that throws
@@ -1015,7 +1015,7 @@ Deno.test("AgentRunner: handles skill matching error gracefully", async () => {
   assertEquals(result.skillsApplied, undefined);
 });
 
-Deno.test("AgentRunner: uses blueprint defaultSkills when no trigger matches", async () => {
+Deno.test("IAgentRunner: uses blueprint defaultSkills when no trigger matches", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
   const mockSkills = new MockSkillsService();
 
@@ -1042,7 +1042,7 @@ Deno.test("AgentRunner: uses blueprint defaultSkills when no trigger matches", a
   assertEquals(mockSkills.contextBuiltForSkills, ["default-skill-1", "default-skill-2"]);
 });
 
-Deno.test("AgentRunner: trigger matches override blueprint defaultSkills", async () => {
+Deno.test("IAgentRunner: trigger matches override blueprint defaultSkills", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
   const mockSkills = new MockSkillsService();
 
@@ -1070,7 +1070,7 @@ Deno.test("AgentRunner: trigger matches override blueprint defaultSkills", async
   assertEquals(result.skillsApplied, ["matched-skill"]);
 });
 
-Deno.test("AgentRunner: request-level skills override trigger matches", async () => {
+Deno.test("IAgentRunner: request-level skills override trigger matches", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
   const mockSkills = new MockSkillsService();
 
@@ -1100,7 +1100,7 @@ Deno.test("AgentRunner: request-level skills override trigger matches", async ()
   assertEquals(mockSkills.matchCallCount, 0);
 });
 
-Deno.test("AgentRunner: skipSkills filters out matched skills", async () => {
+Deno.test("IAgentRunner: skipSkills filters out matched skills", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
   const mockSkills = new MockSkillsService();
 
@@ -1130,7 +1130,7 @@ Deno.test("AgentRunner: skipSkills filters out matched skills", async () => {
   assertEquals(result.skillsApplied, ["skill-a", "skill-c"]);
 });
 
-Deno.test("AgentRunner: skipSkills with explicit skills", async () => {
+Deno.test("IAgentRunner: skipSkills with explicit skills", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
   const mockSkills = new MockSkillsService();
   mockSkills.setSkillContext("## Skills\nInstructions");
@@ -1158,7 +1158,7 @@ Deno.test("AgentRunner: skipSkills with explicit skills", async () => {
 // GAP-6 Remediation: EventLogger Integration Tests
 // ============================================================================
 
-Deno.test("[AgentRunner] routes prompt_assembled through IEventLogger when provided", async () => {
+Deno.test("[IAgentRunner] routes prompt_assembled through IEventLogger when provided", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
   const actions: string[] = [];
   const logger: IEventLogger = {

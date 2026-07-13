@@ -53,7 +53,7 @@ export interface IStepResultContext {
 /**
  * Result of condition evaluation
  */
-export interface ConditionResult {
+export interface IConditionResult {
   /** Whether condition evaluated to true */
   shouldExecute: boolean;
   /** Original condition expression */
@@ -87,9 +87,9 @@ export class ConditionEvaluator {
    *
    * @param condition - JavaScript expression to evaluate
    * @param context - Context containing results, request, and flow info
-   * @returns ConditionResult with shouldExecute boolean
+   * @returns IConditionResult with shouldExecute boolean
    */
-  evaluate(condition: string, context: IConditionContext): ConditionResult {
+  evaluate(condition: string, context: IConditionContext): IConditionResult {
     const startTime = performance.now();
 
     // Empty or whitespace-only conditions default to true
@@ -127,14 +127,14 @@ export class ConditionEvaluator {
    * @param stepResults - Map of completed step results
    * @param request - Original flow request
    * @param flow - IFlow definition
-   * @returns ConditionResult
+   * @returns IConditionResult
    */
   evaluateStepCondition(
     step: IFlowStep,
     stepResults: Map<string, IStepResult>,
     request: { userPrompt: string; traceId?: string; requestId?: string },
     flow: IFlow,
-  ): ConditionResult {
+  ): IConditionResult {
     // No condition means always execute
     if (!step.condition) {
       return {

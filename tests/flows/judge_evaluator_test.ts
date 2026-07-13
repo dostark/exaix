@@ -14,7 +14,7 @@ import { createJudgeEvaluator, JudgeEvaluator } from "@exaix/flow";
 import type { JSONObject } from "@exaix/core/types";
 
 /**
- * Mock AgentRunner for testing JudgeEvaluator
+ * Mock IAgentRunner for testing JudgeEvaluator
  */
 class MockAgentRunner {
   responses: Map<string, string> = new Map();

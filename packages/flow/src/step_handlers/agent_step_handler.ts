@@ -14,7 +14,7 @@ import type { DynamicStepExecutor } from "../dynamic_step_executor.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
 import { FlowStepExecutionMode } from "@exaix/core";
-import { BlueprintLoader } from "@exaix/core/blueprint";
+import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { join } from "@std/path";
 
 export interface IAgentStepHandlerDeps {
@@ -53,7 +53,7 @@ export class AgentStepHandler implements IFlowStepHandler {
     const blueprintsPath = this.#config
       ? join(this.#config.system.root, this.#config.paths.blueprints, this.#config.paths.identities)
       : "";
-    const loader = new BlueprintLoader({ blueprintsPath });
+    const loader = new IBlueprintLoader({ blueprintsPath });
     const loaded = await loader.load(step.identity);
 
     if (!loaded) {

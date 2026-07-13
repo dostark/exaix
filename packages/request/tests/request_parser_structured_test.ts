@@ -11,7 +11,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { RequestParser } from "@exaix/request";
 import type { EventLogger } from "@exaix/core/logger";
 import type { JSONObject } from "@exaix/core/types";
-import type { ParsedRequestFile } from "@exaix/core/request";
+import type { IParsedRequestFile } from "@exaix/core/request";
 // ---------------------------------------------------------------------------
 // Logger helpers
 // ---------------------------------------------------------------------------
@@ -66,7 +66,7 @@ Request body text.
 
 async function parseRequestWithFields(
   extraFields: string,
-): Promise<{ frontmatter: ParsedRequestFile["frontmatter"]; logs: LogEntry[] }> {
+): Promise<{ frontmatter: IParsedRequestFile["frontmatter"]; logs: LogEntry[] }> {
   const logs: LogEntry[] = [];
   const parser = new RequestParser(createLogger(logs));
   const content = buildRequestContent(extraFields);

@@ -258,7 +258,7 @@ export type RuntimeBlueprintFrontmatter = z.infer<typeof RuntimeBlueprintFrontma
 // ============================================================================
 
 // ============================================================================
-// BlueprintLoader Service
+// IBlueprintLoader Service
 // ============================================================================
 
 /**
@@ -270,7 +270,7 @@ export type RuntimeBlueprintFrontmatter = z.infer<typeof RuntimeBlueprintFrontma
  * - Backward compatibility with simple blueprints
  * - Extension fields for Phase 16.4+ features
  */
-export class BlueprintLoader {
+export class IBlueprintLoader {
   private cache = new Map<string, ILoadedBlueprint>();
 
   constructor(private options: IBlueprintLoaderOptions) {}
@@ -603,10 +603,10 @@ export class BlueprintLoadError extends Error {
 // ============================================================================
 
 /**
- * Create a BlueprintLoader with default configuration
+ * Create a IBlueprintLoader with default configuration
  */
-export function createBlueprintLoader(blueprintsPath: string): BlueprintLoader {
-  return new BlueprintLoader({ blueprintsPath });
+export function createBlueprintLoader(blueprintsPath: string): IBlueprintLoader {
+  return new IBlueprintLoader({ blueprintsPath });
 }
 
 /**
@@ -617,7 +617,7 @@ export async function loadBlueprint(
   blueprintsPath: string,
   identityId: string,
 ): Promise<IBlueprint | null> {
-  const loader = new BlueprintLoader({ blueprintsPath });
+  const loader = new IBlueprintLoader({ blueprintsPath });
   const loaded = await loader.load(identityId);
 
   if (!loaded) {

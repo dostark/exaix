@@ -1,7 +1,7 @@
 import { join } from "@std/path";
 import { RequestRouter } from "@exaix/request";
 import { RoutingPolicyService, RoutingPolicyLoader, CandidateDiscovery } from "@exaix/routing";
-import { BlueprintLoader } from "@exaix/core/blueprint";
+import { IBlueprintLoader } from "@exaix/core/blueprint";
 
 const root = Deno.cwd();
 const selectedIdentity = "senior-coder";
@@ -30,7 +30,7 @@ const config = {
 const routingPolicyService = new RoutingPolicyService({
   policyLoader: new RoutingPolicyLoader({ config, root }),
   candidateDiscovery: new CandidateDiscovery(
-    new BlueprintLoader({ blueprintsPath: join(root, "Blueprints", "Identities") }),
+    new IBlueprintLoader({ blueprintsPath: join(root, "Blueprints", "Identities") }),
   ),
   performanceRepository: { getPerformanceByCapability: async () => [] },
   experimentSalt: config.routing?.experiment_salt ?? "scenario-dynamic-routing",

@@ -1,7 +1,7 @@
 /**
  * @module ModelResolver
  * @path packages/ai/src/model_resolver.ts
- * @description Phase 132 — policy-driven model routing service. Accepts ModelIntent and
+ * @description Phase 132 — policy-driven model routing service. Accepts IModelIntent and
  *   returns IResolvedModel with provider, model, and per-call options. Delegates provider
  *   selection to IProviderRoutingStrategy, resolves model within provider via ProviderRegistry
  *   metadata, and handles fallback iteration, thinking constraint re-resolution, and trace events.
@@ -17,7 +17,7 @@ import type {
   EffortTier,
   IModelCallOptions,
   IResolvedModel,
-  ModelIntent,
+  IModelIntent,
   ModelPreset,
   ModelResolutionReason,
   ModelSize,
@@ -47,9 +47,9 @@ interface ITraceMeta {
 
 /** The intent fields scoreCandidates reads (Step 8: characteristics + best's task_type). */
 interface IScoreCandidatesIntent {
-  model?: ModelIntent["model"];
-  characteristics?: ModelIntent["characteristics"];
-  task_type?: ModelIntent["task_type"];
+  model?: IModelIntent["model"];
+  characteristics?: IModelIntent["characteristics"];
+  task_type?: IModelIntent["task_type"];
 }
 
 const CHARACTERISTIC_WEIGHT = 1;
@@ -86,10 +86,10 @@ export class ModelResolver {
   ) {}
 
   /**
-   * Resolve a ModelIntent to a concrete provider:model with per-call options.
+   * Resolve a IModelIntent to a concrete provider:model with per-call options.
    * Precedence: explicit model override > characteristics scoring > preset default.
    */
-  async resolve(intent: ModelIntent): Promise<IResolvedModel> {
+  async resolve(intent: IModelIntent): Promise<IResolvedModel> {
     const startTime = Date.now();
 
     const overrideResult = this.tryResolveOverride(intent);
@@ -141,7 +141,7 @@ export class ModelResolver {
     );
   }
 
-  private tryResolveOverride(intent: ModelIntent): IResolvedModel | null {
+  private tryResolveOverride(intent: IModelIntent): IResolvedModel | null {
     const overridePreset = Deno.env.get("EXA_MODEL_PRESET_OVERRIDE");
     if (!overridePreset || !intent.model_size) return null;
     const overrideMap = OVERRIDE_MODEL_MAP[overridePreset];
@@ -151,7 +151,7 @@ export class ModelResolver {
     return { ...resolved, options: this.buildCallOptions(intent), attempt: 1 };
   }
 
-  private async tryResolveExplicit(intent: ModelIntent, startTime: number): Promise<IResolvedModel | null> {
+  private async tryResolveExplicit(intent: IModelIntent, startTime: number): Promise<IResolvedModel | null> {
     if (!intent.model || !intent.model.includes(":")) return null;
     const [rawProvider, ...rest] = intent.model.split(":");
     const rawModel = rest.join(":");
@@ -172,7 +172,7 @@ export class ModelResolver {
     return resolved;
   }
 
-  private async tryResolveBareName(intent: ModelIntent, startTime: number): Promise<IResolvedModel | null> {
+  private async tryResolveBareName(intent: IModelIntent, startTime: number): Promise<IResolvedModel | null> {
     if (!intent.model || intent.model.includes(":")) return null;
 
     const bareName = intent.model;
@@ -222,7 +222,7 @@ export class ModelResolver {
     return resolved;
   }
 
-  private async tryResolveCurated(intent: ModelIntent, startTime: number): Promise<IResolvedModel | null> {
+  private async tryResolveCurated(intent: IModelIntent, startTime: number): Promise<IResolvedModel | null> {
     if (!intent.model_size) return null;
     const presets = this.config.model_presets ?? DEFAULT_MODEL_PRESETS;
     const preset = presets[intent.model_size];
@@ -272,7 +272,7 @@ export class ModelResolver {
     return null;
   }
 
-  private async tryResolveFromPreset(intent: ModelIntent, startTime: number): Promise<IResolvedModel | null> {
+  private async tryResolveFromPreset(intent: IModelIntent, startTime: number): Promise<IResolvedModel | null> {
     if (!intent.model_size) return null;
 
     if (this.modelRegistry) {
@@ -339,8 +339,8 @@ export class ModelResolver {
   }
 
   private async tryResolveOverflow(
-    intent: ModelIntent,
-    currentIntent: ModelIntent,
+    intent: IModelIntent,
+    currentIntent: IModelIntent,
     resolved: IResolvedModel,
     hadExplicitModelSize: boolean,
     attempt: number,
@@ -379,7 +379,7 @@ export class ModelResolver {
   }
 
   private async resolveOnce(
-    intent: ModelIntent,
+    intent: IModelIntent,
     attempt: number,
     startTime: number,
   ): Promise<IResolvedModel | null> {
@@ -463,7 +463,7 @@ export class ModelResolver {
    * falls to the strategy's last-resort usage tiebreak instead.
    */
   private async decideWinner(
-    intent: ModelIntent,
+    intent: IModelIntent,
     candidates: Array<{ metadata: IProviderMetadata }>,
     providerName: string,
     scores: Record<string, number>,
@@ -506,7 +506,7 @@ export class ModelResolver {
    * (a `cheapest`/other characteristic already determined the outcome on its own).
    */
   private async wasBestDecisive(
-    intent: ModelIntent,
+    intent: IModelIntent,
     candidates: Array<{ metadata: IProviderMetadata }>,
     winner: string,
   ): Promise<boolean> {
@@ -529,7 +529,7 @@ export class ModelResolver {
    * usage_tiebreak config gate), or the winner isn't in the candidate pool.
    */
   private async applyUsageTiebreak(
-    intent: ModelIntent,
+    intent: IModelIntent,
     candidates: Array<{ metadata: IProviderMetadata }>,
   ): Promise<string | null> {
     if (!this.strategy?.rankUsage) return null;
@@ -543,7 +543,7 @@ export class ModelResolver {
   }
 
   private async resolveWithThinkingConstraint(
-    intent: ModelIntent,
+    intent: IModelIntent,
     originalProvider: string,
     originalModel: string,
     attempt: number,
@@ -606,7 +606,7 @@ export class ModelResolver {
     };
   }
 
-  private buildSelectionCriteria(intent: ModelIntent): ISelectionCriteria {
+  private buildSelectionCriteria(intent: IModelIntent): ISelectionCriteria {
     return {
       preferFree: intent.max_cost_usd === 0,
       maxCostUsd: intent.max_cost_usd,
@@ -618,7 +618,7 @@ export class ModelResolver {
 
   private applyCapabilityFilter(
     providers: Array<{ metadata: IProviderMetadata }>,
-    intent: ModelIntent,
+    intent: IModelIntent,
   ): Array<{ metadata: IProviderMetadata }> {
     if (!intent.required_capabilities?.length) return providers;
     return providers.filter((p) => intent.required_capabilities!.every((cap) => p.metadata.capabilities.includes(cap)));
@@ -626,7 +626,7 @@ export class ModelResolver {
 
   private selectModelForProvider(
     providerName: string,
-    intent: Pick<ModelIntent, "model">,
+    intent: Pick<IModelIntent, "model">,
   ): string | null {
     if (intent.model && !intent.model.includes(":")) {
       return intent.model;
@@ -698,7 +698,7 @@ export class ModelResolver {
     return scores;
   }
 
-  private buildCallOptions(intent: ModelIntent): IModelCallOptions | undefined {
+  private buildCallOptions(intent: IModelIntent): IModelCallOptions | undefined {
     if (!intent.thinking && !intent.effort) return undefined;
     const options: IModelCallOptions = {};
     if (intent.thinking) options.thinking = true;
@@ -709,7 +709,7 @@ export class ModelResolver {
     return options;
   }
 
-  private mergeFallback(base: ModelIntent, fallback: Partial<ModelIntent>): ModelIntent {
+  private mergeFallback(base: IModelIntent, fallback: Partial<IModelIntent>): IModelIntent {
     return { ...base, ...fallback };
   }
 
@@ -729,7 +729,7 @@ export class ModelResolver {
   }
 
   private async emitTrace(
-    intent: ModelIntent,
+    intent: IModelIntent,
     resolved: IResolvedModel,
     candidateProviders: string[],
     scores: Record<string, number>,

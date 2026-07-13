@@ -15,7 +15,7 @@ import ts from "typescript";
 import {
   collectFunctions,
   collectTypeShapeViolations,
-  type FuncDecl,
+  type IFuncDecl,
   hasBareOptional,
   isOptType,
   ViolationKind,
@@ -108,7 +108,7 @@ Deno.test("[bare-optional] does NOT flag a union WITHOUT undefined", () => {
 /** Collect type-shape violations for a source snippet. */
 function shapeViolations(src: string): ReturnType<typeof collectTypeShapeViolations> {
   const sf = ts.createSourceFile("t.ts", src, ts.ScriptTarget.Latest, true);
-  const funcs = new Map<string, FuncDecl[]>();
+  const funcs = new Map<string, IFuncDecl[]>();
   collectFunctions(sf, funcs);
   return collectTypeShapeViolations(funcs);
 }

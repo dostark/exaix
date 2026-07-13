@@ -25,7 +25,7 @@ export interface IAgentStatusItem {
 /**
  * Health statistics for an agent.
  */
-export interface AgentHealthData {
+export interface IAgentHealthData {
   status: AgentHealth;
   issues: string[];
   uptime: number; // seconds
@@ -34,7 +34,7 @@ export interface AgentHealthData {
 /**
  * Log entry emitted by an agent.
  */
-export interface AgentLogEntry {
+export interface IAgentLogEntry {
   timestamp: string;
   level: LogLevel;
   message: string;

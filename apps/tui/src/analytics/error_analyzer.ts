@@ -9,12 +9,12 @@
 
 import { LogLevel } from "@exaix/core";
 import type { IStructuredLogEntry } from "@exaix/core/types";
-import type { ErrorPattern } from "./types.ts";
+import type { IErrorPattern } from "./types.ts";
 
 /**
  * Detect error patterns in logs
  */
-export function detectErrorPatterns(entries: IStructuredLogEntry[]): ErrorPattern[] {
+export function detectErrorPatterns(entries: IStructuredLogEntry[]): IErrorPattern[] {
   const errorEntries = entries.filter((e) => e.level === LogLevel.ERROR || e.level === LogLevel.FATAL);
 
   // Group by error message pattern (simplified)

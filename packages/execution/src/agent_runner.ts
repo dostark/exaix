@@ -1,5 +1,5 @@
 /**
- * @module AgentRunner
+ * @module IAgentRunner
  * @path packages/execution/src/agent_runner.ts
  * @description Core orchestrator for agent logic.
  *
@@ -136,7 +136,7 @@ export interface IAgentExecutionResult {
 }
 
 /**
- * Configuration for AgentRunner
+ * Configuration for IAgentRunner
  */
 export interface IAgentRunnerConfig {
   /** Optional: Event logger for activity routing (preferred over db) */
@@ -192,7 +192,7 @@ export interface IPlanAdapter {
 // ============================================================================
 
 /**
- * AgentRunner combines Blueprint (system prompt) with IParsedRequest (user prompt),
+ * IAgentRunner combines Blueprint (system prompt) with IParsedRequest (user prompt),
  * executes via an LLM provider, and parses the structured XML response.
  *
  * Enhanced with retry/recovery (Phase 16.3):
@@ -237,7 +237,7 @@ export class AgentRunner implements IAgentRunner {
       ? (planAdapterOrProvider as IModelProvider)
       : (modelProviderOrConfig as IModelProvider | undefined) || ctx?.provider;
     if (!provider) {
-      throw new Error("AgentRunner requires a model provider");
+      throw new Error("IAgentRunner requires a model provider");
     }
     this.modelProvider = provider;
     this.logger = this.config?.logger;
@@ -416,7 +416,7 @@ export class AgentRunner implements IAgentRunner {
             totalAvailable = skillIds.length;
           }
         } catch (error) {
-          console.warn("[AgentRunner] Skill matching failed or timed out, continuing without skills:", error);
+          console.warn("[IAgentRunner] Skill matching failed or timed out, continuing without skills:", error);
         }
       }
 
@@ -441,7 +441,7 @@ export class AgentRunner implements IAgentRunner {
 
       return { skillIds, skillsContext };
     } catch (error) {
-      console.error("[AgentRunner] Skill management critical failure:", error);
+      console.error("[IAgentRunner] Skill management critical failure:", error);
       return { skillIds: [], skillsContext: null };
     }
   }
@@ -799,6 +799,6 @@ export function createAgentRunner(
   planAdapter?: IPlanAdapter,
   modelProvider?: IModelProvider,
   agentConfig?: IAgentRunnerConfig,
-): AgentRunner {
+): IAgentRunner {
   return new AgentRunner(planAdapter, modelProvider, agentConfig);
 }

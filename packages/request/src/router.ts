@@ -1,7 +1,7 @@
 /**
  * @module RequestRouter
  * @path packages/request/src/router.ts
- * @description Determines whether to route a request to FlowRunner or AgentRunner
+ * @description Determines whether to route a request to FlowRunner or IAgentRunner
  * based on the request schema (flow vs agent fields).
  *
  * Provides a unified entry point for request processing, enabling seamless
@@ -13,7 +13,7 @@
 
 import type { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } from "@exaix/execution";
 import type { IEventLogger } from "@exaix/core/logger";
-import { BlueprintLoader } from "@exaix/core/blueprint";
+import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { type IWorkspaceExecutionContext, WorkspaceExecutionContextBuilder } from "@exaix/portal";
 import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
 import { PORTAL_CONTEXT_KEY, RequestKind } from "@exaix/core";
@@ -70,7 +70,7 @@ export interface IFlowRunner {
  *
  * Routing Priority:
  * 1. flow: <id> → FlowRunner (multi-agent)
- * 2. agent: <id> → AgentRunner (single-agent)
+ * 2. agent: <id> → IAgentRunner (single-agent)
  * 3. Neither → Default agent
  */
 
@@ -404,10 +404,10 @@ export class RequestRouter {
 
   /**
    * Load an agent blueprint from the blueprints directory
-   * Uses unified BlueprintLoader for consistent parsing
+   * Uses unified IBlueprintLoader for consistent parsing
    */
   protected async loadBlueprint(identityId: string): Promise<IBlueprint | null> {
-    const loader = new BlueprintLoader({ blueprintsPath: this.blueprintsPath });
+    const loader = new IBlueprintLoader({ blueprintsPath: this.blueprintsPath });
     const loaded = await loader.load(identityId);
     if (!loaded) {
       return null;

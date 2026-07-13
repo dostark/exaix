@@ -81,13 +81,13 @@ steps:
   }
 });
 
-// Note: Identity-level permitted_tools validation requires BlueprintLoader integration.
+// Note: Identity-level permitted_tools validation requires IBlueprintLoader integration.
 // This is tracked as a future enhancement. The current implementation validates:
 // 1. Write tools are not allowed in dynamic step permitted_tools
 // 2. Read-only tools are allowed in dynamic step permitted_tools
 // 3. Empty permitted_tools arrays are allowed
 
-Deno.test("FlowLoader: skips identity validation (requires BlueprintLoader)", () => {
+Deno.test("FlowLoader: skips identity validation (requires IBlueprintLoader)", () => {
   // Identity-level validation requires loading the identity blueprint
   // and comparing step.permitted_tools against identity.permitted_tools.
   // This is deferred until FlowRunner integration (Task 4).

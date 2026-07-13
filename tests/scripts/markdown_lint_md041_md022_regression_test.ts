@@ -4,9 +4,9 @@
  * @description Regression tests for markdown lint rules MD041 and MD022.
  */
 
-import { lintMarkdown, type LintOptions } from "../../scripts/markdown_lint.ts";
+import { lintMarkdown, type ILintOptions } from "../../scripts/markdown_lint.ts";
 
-const defaultOptions: LintOptions = { fix: false, strict: false, verbose: false };
+const defaultOptions: ILintOptions = { fix: false, strict: false, verbose: false };
 
 Deno.test("[regression] MD041 flags first non-blank line that is not H1", () => {
   const md = [

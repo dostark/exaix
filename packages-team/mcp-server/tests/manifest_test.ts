@@ -64,7 +64,7 @@ Deno.test("[McpManifest] 5 INTERNAL_ONLY entries exist", () => {
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Classification policy
+// IClassification policy
 
 Deno.test("[McpManifest] INTERNAL_ONLY tools are never docs_visible", () => {
   const violations = TOOL_MANIFEST

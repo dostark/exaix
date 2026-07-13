@@ -26,7 +26,7 @@ import type { ModelResolver } from "@exaix/ai";
 import { GIT_CMD_WORKTREE, GitService, type IGitService } from "@exaix/git";
 import { PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
 import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
-import { BlueprintLoader } from "@exaix/core/blueprint";
+import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import type { ReviewRegistry } from "@exaix/core/artifact";
 import { MemoryBankService, type SessionMemoryService } from "@exaix/memory";
@@ -149,7 +149,7 @@ export class ExecutionLoop {
   private identityId: string;
   private plansDir: string;
   private leases = new Map<string, ITaskLease>();
-  private blueprintLoader: BlueprintLoader;
+  private blueprintLoader: IBlueprintLoader;
   private context?: IApplicationContext;
   private reviewRegistry?: ReviewRegistry;
   private llmProvider?: IModelProvider;
@@ -184,7 +184,7 @@ export class ExecutionLoop {
     this.hitlBlueprintRules = config.hitlBlueprintRules;
     this.onCodeChangesDelegate = config.onCodeChangesDelegate;
     this.plansDir = join(this.config.system.root, this.config.paths.workspace, this.config.paths.active);
-    this.blueprintLoader = new BlueprintLoader({
+    this.blueprintLoader = new IBlueprintLoader({
       blueprintsPath: join(this.config.system.root, this.config.paths.blueprints, this.config.paths.identities),
     });
 

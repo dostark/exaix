@@ -18,7 +18,7 @@ import {
   LOG_LEVEL_ICONS,
   MinimalAgentServiceMock,
 } from "../src/agent_status_view.ts";
-import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
+import type { IAgentHealthData, IAgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
 import type { IAgentService } from "@exaix/core/types";
 import { TEST_MODEL_OPENAI } from "@exaix/testing";
 import { AgentStatus } from "@exaix/core/status";
@@ -64,7 +64,7 @@ class MockAgentService implements IAgentService {
     return Promise.resolve([...this.agents]);
   }
 
-  getAgentHealth(_identityId: string): Promise<AgentHealthData> {
+  getAgentHealth(_identityId: string): Promise<IAgentHealthData> {
     return Promise.resolve({
       status: AgentHealth.HEALTHY,
       issues: [],
@@ -72,7 +72,7 @@ class MockAgentService implements IAgentService {
     });
   }
 
-  getAgentLogs(_identityId: string, _limit = 50): Promise<AgentLogEntry[]> {
+  getAgentLogs(_identityId: string, _limit = 50): Promise<IAgentLogEntry[]> {
     return Promise.resolve([
       {
         timestamp: new Date().toISOString(),

@@ -34,13 +34,13 @@ export interface IHealthCheck {
   /** Whether failure of this check should mark the overall service as unhealthy */
   critical: boolean;
   /** Perform the health check */
-  check(): Promise<HealthCheckResult>;
+  check(): Promise<IHealthCheckResult>;
 }
 
 /**
  * Result of a health check operation
  */
-export interface HealthCheckResult {
+export interface IHealthCheckResult {
   /** Status of the check: pass, warn, or fail */
   status: HealthCheckVerdict;
   /** Optional human-readable message */
@@ -54,7 +54,7 @@ export interface HealthCheckResult {
 /**
  * Overall health report of the service
  */
-export interface HealthReport {
+export interface IHealthReport {
   /** Overall status: healthy, degraded, or unhealthy */
   status: HealthStatus;
   /** ISO timestamp when the check was performed */
@@ -64,7 +64,7 @@ export interface HealthReport {
   /** Uptime in seconds since service start */
   uptime_seconds: number;
   /** Results of individual health checks */
-  checks: Record<string, HealthCheckResult>;
+  checks: Record<string, IHealthCheckResult>;
 }
 
 // Local defaults to avoid magic numbers in this module
@@ -77,7 +77,7 @@ const MS_PER_SECOND = 1000;
  * Cached health check result with expiration
  */
 interface CachedHealthResult {
-  result: HealthCheckResult;
+  result: IHealthCheckResult;
   expiresAt: number; // Timestamp when cache expires
 }
 
@@ -147,8 +147,8 @@ export class HealthCheckService {
    * Perform all registered health checks and return overall status
    */
   @LogMethod(new EventLogger({ prefix: "[IHealthCheck]" }), "health.check_all")
-  async checkHealth(): Promise<HealthReport> {
-    const results: Record<string, HealthCheckResult> = {};
+  async checkHealth(): Promise<IHealthReport> {
+    const results: Record<string, IHealthCheckResult> = {};
     let hasFailure = false;
     let hasWarning = false;
 
@@ -252,7 +252,7 @@ export class HealthCheckService {
       return result.status === HealthCheckVerdict.PASS;
     } catch (error) {
       // Cache failed result too to avoid repeated failures
-      const failedResult: HealthCheckResult = {
+      const failedResult: IHealthCheckResult = {
         status: HealthCheckVerdict.FAIL,
         message: error instanceof Error ? error.message : String(error),
       };
@@ -267,7 +267,7 @@ export class HealthCheckService {
   }
 
   /**
-   * Helper to build a HealthCheckResult based on thresholds
+   * Helper to build a IHealthCheckResult based on thresholds
    */
   public static resultWithThreshold(
     status: { warn: number; critical: number },
@@ -278,7 +278,7 @@ export class HealthCheckService {
       durationMs: number;
       metadata: Record<string, JSONValue>;
     },
-  ): HealthCheckResult {
+  ): IHealthCheckResult {
     let verdict = HealthCheckVerdict.PASS;
     let message: string | undefined;
 
@@ -316,7 +316,7 @@ export class DatabaseHealthCheck implements IHealthCheck {
 
   constructor(private db: DatabaseService) {}
 
-  async check(): Promise<HealthCheckResult> {
+  async check(): Promise<IHealthCheckResult> {
     const start = performance.now();
 
     try {
@@ -360,7 +360,7 @@ export class LLMProviderHealthCheck implements IHealthCheck {
 
   constructor(private provider: IModelProvider) {}
 
-  async check(): Promise<HealthCheckResult> {
+  async check(): Promise<IHealthCheckResult> {
     const start = performance.now();
 
     try {
@@ -401,7 +401,7 @@ export class DiskSpaceHealthCheck implements IHealthCheck {
     private thresholds: { warn: number; critical: number },
   ) {}
 
-  async check(): Promise<HealthCheckResult> {
+  async check(): Promise<IHealthCheckResult> {
     const start = performance.now();
 
     try {
@@ -472,7 +472,7 @@ export class MemoryHealthCheck implements IHealthCheck {
 
   constructor(private thresholds: { warn: number; critical: number }) {}
 
-  async check(): Promise<HealthCheckResult> {
+  async check(): Promise<IHealthCheckResult> {
     const start = performance.now();
 
     try {

@@ -20,16 +20,16 @@ import { PORTAL_LABEL } from "@exaix/core";
 export interface IMCPPrompt {
   name: string;
   description: string;
-  arguments?: MCPPromptArgument[];
+  arguments?: IMCPPromptArgument[];
 }
 
-export interface MCPPromptArgument {
+export interface IMCPPromptArgument {
   name: string;
   description: string;
   required: boolean;
 }
 
-export interface MCPPromptMessage {
+export interface IMCPPromptMessage {
   role: MessageRole;
   content: {
     type: "text";
@@ -37,9 +37,9 @@ export interface MCPPromptMessage {
   };
 }
 
-export interface MCPPromptResult {
+export interface IMCPPromptResult {
   description?: string;
-  messages: MCPPromptMessage[];
+  messages: IMCPPromptMessage[];
 }
 
 // ============================================================================
@@ -116,7 +116,7 @@ export function getPrompt(name: string): IMCPPrompt | null {
 export function generateExecutePlanPrompt(
   args: { plan_id: string; portal: string },
   logger?: Opt<IEventLogger, Reason.OptionalDependency>,
-): MCPPromptResult {
+): IMCPPromptResult {
   const { plan_id, portal } = args;
 
   // Log prompt generation
@@ -126,7 +126,7 @@ export function generateExecutePlanPrompt(
     });
   }
 
-  const messages: MCPPromptMessage[] = [
+  const messages: IMCPPromptMessage[] = [
     {
       role: MessageRole.USER,
       content: {
@@ -178,7 +178,7 @@ Begin executing the plan.`,
 export function generateCreateReviewPrompt(
   args: { portal: string; description: string; trace_id: string },
   logger?: Opt<IEventLogger, Reason.OptionalDependency>,
-): MCPPromptResult {
+): IMCPPromptResult {
   const { portal, description, trace_id } = args;
 
   // Log prompt generation
@@ -189,7 +189,7 @@ export function generateCreateReviewPrompt(
     });
   }
 
-  const messages: MCPPromptMessage[] = [
+  const messages: IMCPPromptMessage[] = [
     {
       role: MessageRole.USER,
       content: {
@@ -255,7 +255,7 @@ export function generatePrompt(
   args: PromptArgs,
   _config: Config,
   logger?: Opt<IEventLogger, Reason.OptionalDependency>,
-): MCPPromptResult | null {
+): IMCPPromptResult | null {
   switch (name) {
     case "execute_plan":
       return generateExecutePlanPrompt(
@@ -283,7 +283,7 @@ export function generatePrompt(
 export function generateCommitMessagePrompt(
   args: { portal: string },
   logger?: Opt<IEventLogger, Reason.OptionalDependency>,
-): MCPPromptResult {
+): IMCPPromptResult {
   const { portal } = args;
 
   // Log prompt generation
@@ -293,7 +293,7 @@ export function generateCommitMessagePrompt(
     });
   }
 
-  const messages: MCPPromptMessage[] = [
+  const messages: IMCPPromptMessage[] = [
     {
       role: MessageRole.USER,
       content: {

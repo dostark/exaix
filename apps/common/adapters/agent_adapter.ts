@@ -12,7 +12,7 @@ import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { ActivityActor, AgentHealth, DEFAULT_AGENT_MODEL } from "@exaix/core";
 import { AgentStatus } from "@exaix/core/status";
-import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
+import type { IAgentHealthData, IAgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
 import type { IAgentService } from "@exaix/core/types";
 export class AgentServiceAdapter extends BaseCommand implements IAgentService {
   private identitiesDir: string;
@@ -70,7 +70,7 @@ export class AgentServiceAdapter extends BaseCommand implements IAgentService {
   /**
    * Get health data for a specific agent.
    */
-  getAgentHealth(_identityId: string): Promise<AgentHealthData> {
+  getAgentHealth(_identityId: string): Promise<IAgentHealthData> {
     return Promise.resolve({
       status: AgentHealth.HEALTHY,
       issues: [],
@@ -81,7 +81,7 @@ export class AgentServiceAdapter extends BaseCommand implements IAgentService {
   /**
    * Get logs for a specific agent.
    */
-  getAgentLogs(_identityId: string, _limit: number = 50): Promise<AgentLogEntry[]> {
+  getAgentLogs(_identityId: string, _limit: number = 50): Promise<IAgentLogEntry[]> {
     // Agent-specific log files are not yet standardized in core.
     return Promise.resolve([]);
   }

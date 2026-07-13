@@ -22,7 +22,7 @@ export interface ILoggedActivity {
   costUsd?: number;
 }
 
-export interface TestDatabaseService {
+export interface ITestDatabaseService {
   logActivity(
     actor: string,
     actionType: string,
@@ -40,13 +40,13 @@ export interface TestDatabaseService {
 
 export interface ILoggingTestDb {
   activities: ILoggedActivity[];
-  db: TestDatabaseService;
+  db: ITestDatabaseService;
 }
 
 export function createLoggingTestDb(): ILoggingTestDb {
   const activities: ILoggedActivity[] = [];
 
-  const db: TestDatabaseService = {
+  const db: ITestDatabaseService = {
     logActivity(
       actor,
       actionType,

@@ -5,7 +5,7 @@
  * correct reporting of ordered-list numbering within separate blocks.
  */
 
-import { lintMarkdown, type LintOptions } from "../../scripts/markdown_lint.ts";
+import { lintMarkdown, type ILintOptions } from "../../scripts/markdown_lint.ts";
 
 /**
  * Regression tests for MD029/ol-prefix output volume.
@@ -14,7 +14,7 @@ import { lintMarkdown, type LintOptions } from "../../scripts/markdown_lint.ts";
  * ordered-list block (per indentation level).
  */
 
-const defaultOptions: LintOptions = { fix: false, strict: false, verbose: false };
+const defaultOptions: ILintOptions = { fix: false, strict: false, verbose: false };
 
 Deno.test("[regression] MD029 reports once per ordered-list block", () => {
   const md = [

@@ -9,7 +9,7 @@
  * It exists solely to verify the TypeScript contract at compile time.
  */
 
-import type { IRequestFrontmatter, ParsedRequestFile } from "@exaix/core/request";
+import type { IRequestFrontmatter, IParsedRequestFile } from "@exaix/core/request";
 import type { RequestStatusType } from "@exaix/core/status";
 
 const _frontmatter: IRequestFrontmatter = {
@@ -22,7 +22,7 @@ const _frontmatter: IRequestFrontmatter = {
   identity: "senior-coder",
 };
 
-const _parsedRequest: ParsedRequestFile = {
+const _parsedRequest: IParsedRequestFile = {
   frontmatter: _frontmatter,
   body: "request body",
   rawContent: "---\nstatus: pending\n---\nrequest body",

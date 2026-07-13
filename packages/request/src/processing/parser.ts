@@ -9,7 +9,7 @@ import { parse as parseYaml } from "@std/yaml";
 import { exists } from "@std/fs";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
-import type { IRequestFrontmatter, ParsedRequestFile } from "@exaix/core/request";
+import type { IRequestFrontmatter, IParsedRequestFile } from "@exaix/core/request";
 import { coerceRequestStatus } from "@exaix/core/status";
 
 export class RequestParser {
@@ -18,7 +18,7 @@ export class RequestParser {
   /**
    * Parse a request file and extract frontmatter and body
    */
-  async parse(filePath: string): Promise<ParsedRequestFile | null> {
+  async parse(filePath: string): Promise<IParsedRequestFile | null> {
     // Check file exists
     if (!await exists(filePath)) {
       await this.logger.error(DomainEventType.FrontmatterNotFound, filePath, {});

@@ -15,19 +15,19 @@ export interface IHelperResult {
   data?: JSONValue;
 }
 
-export interface ValidationResult {
+export interface IValidationResult {
   isValid: boolean;
   errors: string[];
 }
 
-export interface CommandArgs {
+export interface ICommandArgs {
   [key: string]: JSONValue;
 }
 
 /**
  * Standard interface for all CLI commands.
  */
-export interface Command<T = void> {
+export interface ICommand<T = void> {
   name: string;
   description: string;
 
@@ -35,25 +35,25 @@ export interface Command<T = void> {
    * Execute the command with the given arguments.
    * @param args Command arguments
    */
-  execute(args: CommandArgs): Promise<T>;
+  execute(args: ICommandArgs): Promise<T>;
 
   /**
    * Validate the command arguments.
    * @param args Command arguments
    */
-  validate(args: CommandArgs): ValidationResult;
+  validate(args: ICommandArgs): IValidationResult;
 }
 
 /**
  * Abstract base class for commands to inherit common functionality.
  */
-export abstract class AbstractCommand<T = void> implements Command<T> {
+export abstract class AbstractCommand<T = void> implements ICommand<T> {
   abstract name: string;
   abstract description: string;
 
-  abstract execute(args: CommandArgs): Promise<T>;
+  abstract execute(args: ICommandArgs): Promise<T>;
 
-  validate(_args: CommandArgs): ValidationResult {
+  validate(_args: ICommandArgs): IValidationResult {
     return { isValid: true, errors: [] };
   }
 }

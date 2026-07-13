@@ -63,7 +63,7 @@ export interface IReviewMetadata {
   subject?: string;
 }
 
-export interface ReviewDetails extends IReviewMetadata {
+export interface IReviewDetails extends IReviewMetadata {
   diff: string;
   commits: Array<{
     sha: string;
@@ -295,7 +295,7 @@ export class ReviewCommands extends BaseCommand {
 
   private async cleanupWorktreeReview(
     portalGitService: Pick<IGitService, "runGitCommand">,
-    review: ReviewDetails,
+    review: IReviewDetails,
   ): Promise<void> {
     const worktreePath = review.worktree_path?.trim();
     if (!worktreePath) return;
@@ -320,7 +320,7 @@ export class ReviewCommands extends BaseCommand {
 
   private async bestEffortCleanupWorktreeCheckout(
     portalGitService: Pick<IGitService, "runGitCommand">,
-    review: ReviewDetails,
+    review: IReviewDetails,
   ): Promise<void> {
     const worktreePath = review.worktree_path?.trim();
     if (!worktreePath) return;
@@ -987,7 +987,7 @@ export class ReviewCommands extends BaseCommand {
    * @param branchName Branch name or request_id
    * @returns Review details
    */
-  async show(branchName: string): Promise<ReviewDetails> {
+  async show(branchName: string): Promise<IReviewDetails> {
     // Artifact-backed review
     if (this.isArtifactId(branchName)) {
       const artifact = await this.getArtifact(branchName);

@@ -59,7 +59,7 @@ export interface IStructuredLogEntry {
 /**
  * Options for querying logs.
  */
-export interface LogQueryOptions {
+export interface ILogQueryOptions {
   level?: LogLevel[];
   context?: Partial<ILogContext>;
   timeRange?: { start: Date; end: Date };

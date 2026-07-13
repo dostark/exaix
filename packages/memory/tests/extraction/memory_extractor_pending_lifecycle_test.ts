@@ -139,11 +139,11 @@ Deno.test("MemoryExtractorService.getPending: returns null for missing or invali
 
 Deno.test("MemoryExtractorService.approvePending: global proposal merges learning and removes file", async () => {
   await withTempRoot(async (root) => {
-    type CallRecord =
+    type ICallRecord =
       | { kind: string; learning: ILearning }
       | { kind: string; project: string; pattern: { examples: string[] } }
       | [string, string, string | null, Record<string, JSONValue>, string?, string?];
-    const calls: CallRecord[] = [];
+    const calls: ICallRecord[] = [];
 
     const { config, svc } = makeService(root, {
       db: {
@@ -163,7 +163,7 @@ Deno.test("MemoryExtractorService.approvePending: global proposal merges learnin
             payload,
             traceId,
             identityId,
-          ] as CallRecord);
+          ] as ICallRecord);
           return Promise.resolve();
         },
       } as Partial<IDatabaseService> as IDatabaseService,

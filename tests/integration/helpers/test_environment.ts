@@ -56,7 +56,7 @@ export interface ITestEnvironmentOptions {
   initGit?: boolean;
 }
 
-export interface ActionParams {
+export interface IActionParams {
   path?: string;
   content?: string;
   [field: string]: string | number | boolean | undefined;
@@ -421,7 +421,7 @@ retry_backoff_base_ms = 1000
       identityId?: string;
       portal?: string;
       targetBranch?: string;
-      actions?: Array<{ tool: string; params: ActionParams }>;
+      actions?: Array<{ tool: string; params: IActionParams }>;
     } = {},
   ): Promise<string> {
     const _shortId = traceId.substring(0, 8);

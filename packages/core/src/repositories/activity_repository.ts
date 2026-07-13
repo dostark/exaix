@@ -1,5 +1,5 @@
 /**
- * @module ActivityRepository
+ * @module IActivityRepository
  * @path packages/core/src/repositories/activity_repository.ts
  * @description Implements the Repository pattern for IActivity Journal data access, abstracting database operations from domain logic.
  * @architectural-layer Repositories
@@ -34,7 +34,7 @@ export interface IActivity {
 /**
  * IActivity logging request (without generated fields)
  */
-export interface LogActivityRequest {
+export interface ILogActivityRequest {
   actor: string;
   actionType: string;
   target: string | null;
@@ -52,11 +52,11 @@ export interface LogActivityRequest {
 /**
  * Repository interface for activity data access
  */
-export interface ActivityRepository {
+export interface IActivityRepository {
   /**
    * Log an activity/event
    */
-  logActivity(request: LogActivityRequest): Promise<void>;
+  logActivity(request: ILogActivityRequest): Promise<void>;
 
   /**
    * Get activities by trace ID
@@ -75,12 +75,12 @@ export interface ActivityRepository {
 }
 
 /**
- * Database implementation of ActivityRepository
+ * Database implementation of IActivityRepository
  */
-export class DatabaseActivityRepository implements ActivityRepository {
+export class DatabaseActivityRepository implements IActivityRepository {
   constructor(private db: IDatabaseService) {}
 
-  async logActivity(request: LogActivityRequest): Promise<void> {
+  async logActivity(request: ILogActivityRequest): Promise<void> {
     this.db.logActivity(
       request.actor,
       request.actionType,

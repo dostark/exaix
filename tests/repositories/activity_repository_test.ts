@@ -1,7 +1,7 @@
 /**
  * @module ActivityRepositoryTest
  * @path tests/repositories/activity_repository_test.ts
- * @description Verifies the ActivityRepository implementation, ensuring stable
+ * @description Verifies the IActivityRepository implementation, ensuring stable
  * persistence and retrieval of system events via the database abstraction.
  */
 
@@ -9,7 +9,7 @@ import { assertEquals } from "@std/assert";
 import { MemoryBankSource } from "@exaix/core";
 import { assertSpyCalls, spy } from "@std/testing/mock";
 import { DatabaseActivityRepository } from "@exaix/core/repositories";
-import type { ActivityRepository } from "@exaix/core/repositories";
+import type { IActivityRepository } from "@exaix/core/repositories";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import { createStubDb } from "@exaix/testing";
 
@@ -31,10 +31,10 @@ interface ActivityPayload {
   [field: string]: string | number | boolean | undefined;
 }
 
-Deno.test("ActivityRepository: interface defines contract", () => {
+Deno.test("IActivityRepository: interface defines contract", () => {
   // This test ensures the interface exists and has the expected methods
   // TypeScript will fail to compile if the interface is missing methods
-  const repo: ActivityRepository = {
+  const repo: IActivityRepository = {
     logActivity: () => Promise.resolve(),
     getActivitiesByTraceId: () => Promise.resolve([]),
     getActivitiesByActionType: () => Promise.resolve([]),
@@ -290,7 +290,7 @@ Deno.test("DatabaseActivityRepository: handles malformed JSON payload gracefully
 });
 
 // Integration test demonstrating service abstraction
-Deno.test("ActivityRepository: enables service testing without database", async () => {
+Deno.test("IActivityRepository: enables service testing without database", async () => {
   // Mock repository for testing services
   const logActivitySpy = spy(() => Promise.resolve());
   const getActivitiesByTraceIdSpy = spy(() => Promise.resolve([]));
@@ -302,7 +302,7 @@ Deno.test("ActivityRepository: enables service testing without database", async 
     getActivitiesByTraceId: getActivitiesByTraceIdSpy,
     getActivitiesByActionType: getActivitiesByActionTypeSpy,
     getRecentActivities: getRecentActivitiesSpy,
-  } as ActivityRepository;
+  } as IActivityRepository;
 
   // This demonstrates how services can be tested with mock repositories
   // without needing actual database setup
@@ -324,7 +324,7 @@ Deno.test("Repository pattern: separates data access from business logic", () =>
   // database operations from business logic
 
   // Verify repository interface exists
-  const repoInterface = "ActivityRepository";
+  const repoInterface = "IActivityRepository";
   assertEquals(typeof repoInterface, "string");
 
   // Verify implementation exists

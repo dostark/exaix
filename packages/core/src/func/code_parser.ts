@@ -16,7 +16,7 @@ export interface IFileChange {
   oldContent?: string;
 }
 
-export interface ParseResult {
+export interface IParseResult {
   changes: IFileChange[];
   invalidPaths: string[];
   errors: string[];
@@ -28,7 +28,7 @@ const CODE_BLOCK_REGEX = /```(?:(\w+)\n)?([\s\S]*?)```/;
 export function parseCodeGeneration(
   llmResponse: string,
   portalRoot: string,
-): ParseResult {
+): IParseResult {
   const changes: IFileChange[] = [];
   const invalidPaths: string[] = [];
   const errors: string[] = [];
@@ -131,7 +131,7 @@ export function validateFilePath(
   return { valid: true };
 }
 
-export function extractFilePaths(result: ParseResult): string[] {
+export function extractFilePaths(result: IParseResult): string[] {
   return result.changes.map((change) => change.path);
 }
 

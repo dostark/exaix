@@ -10,7 +10,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { AgentRunner } from "@exaix/execution";
+import { AgentRunner, IAgentRunner } from "@exaix/execution";
 import type { IBlueprint } from "@exaix/execution";
 
 function makeMockProvider() {
@@ -42,7 +42,7 @@ function makeMockSkillsService() {
   };
 }
 
-function createMinimalRunner(): AgentRunner {
+function createMinimalRunner(): IAgentRunner {
   const provider = makeMockProvider();
   const skillsSvc = makeMockSkillsService();
   const runner = new AgentRunner(provider as any, {

@@ -10,7 +10,7 @@
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { StructuredLogViewer } from "../src/structured_log_viewer.ts";
 import type { ILogger, ILogService } from "@exaix/core/types";
-import type { ILogContext, IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types";
+import type { ILogContext, IStructuredLogEntry, ILogQueryOptions } from "@exaix/core/types";
 import type { LogMetadata } from "@exaix/core/types";
 import { LogLevel } from "@exaix/core";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
@@ -24,7 +24,7 @@ class MockLogService implements ILogService {
     this.logs = initialLogs;
   }
 
-  getStructuredLogs(_options: LogQueryOptions): Promise<IStructuredLogEntry[]> {
+  getStructuredLogs(_options: ILogQueryOptions): Promise<IStructuredLogEntry[]> {
     return Promise.resolve(this.logs);
   }
 

@@ -51,7 +51,7 @@ export interface IFlowReportConfig {
   logger?: IEventLogger;
 }
 
-export interface FlowReportResult {
+export interface IFlowReportResult {
   reportPath: string;
   content: string;
   createdAt: Date;
@@ -70,7 +70,7 @@ export class FlowReporter {
     flow: IFlow,
     flowResult: IFlowResult,
     requestId?: Opt<string, Reason.OptionalContext>,
-  ): Promise<FlowReportResult> {
+  ): Promise<IFlowReportResult> {
     const startTime = Date.now();
 
     try {

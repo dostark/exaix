@@ -384,7 +384,7 @@ Do something
     });
   });
 
-  describe("Task Classification", () => {
+  describe("Task IClassification", () => {
     it("should classify analyzer agents as simple tasks", async () => {
       // Create data-analyzer blueprint
       await Deno.writeTextFile(

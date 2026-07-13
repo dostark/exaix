@@ -8,13 +8,13 @@
  */
 
 import type { IStructuredLogEntry } from "@exaix/core/types";
-import type { TraceAnalysis } from "./types.ts";
+import type { ITraceAnalysis } from "./types.ts";
 import { LogLevel } from "@exaix/core";
 
 /**
  * Analyze a trace through the system
  */
-export function analyzeTrace(entries: IStructuredLogEntry[]): TraceAnalysis | null {
+export function analyzeTrace(entries: IStructuredLogEntry[]): ITraceAnalysis | null {
   if (entries.length === 0) return null;
 
   // Find common trace ID

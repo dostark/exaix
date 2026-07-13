@@ -29,8 +29,8 @@ import type { JSONValue as _JSONValue } from "@exaix/core";
 import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types";
 import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types";
 import type { AnalysisMode } from "@exaix/core/types";
-import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
-import type { ILogContext, IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types";
+import type { IAgentHealthData, IAgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
+import type { ILogContext, IStructuredLogEntry, ILogQueryOptions } from "@exaix/core/types";
 import type { LogMetadata } from "@exaix/core/types";
 import type {
   IActivitySummary,
@@ -414,7 +414,7 @@ export class MockAgentService implements IAgentService {
     ]);
   }
 
-  getAgentHealth(identityId: string): Promise<AgentHealthData> {
+  getAgentHealth(identityId: string): Promise<IAgentHealthData> {
     if (identityId === "agent-2") {
       return Promise.resolve({
         status: AgentHealth.WARNING,
@@ -429,7 +429,7 @@ export class MockAgentService implements IAgentService {
     });
   }
 
-  getAgentLogs(identityId: string, _limit = 50): Promise<AgentLogEntry[]> {
+  getAgentLogs(identityId: string, _limit = 50): Promise<IAgentLogEntry[]> {
     return Promise.resolve([
       {
         timestamp: new Date().toISOString(),
@@ -963,7 +963,7 @@ export class MockStructuredLogger implements IStructuredLogger {
  * MockStructuredLoggerService
  */
 export class MockStructuredLoggerService implements ILogService {
-  getStructuredLogs(_options?: LogQueryOptions): Promise<IStructuredLogEntry[]> {
+  getStructuredLogs(_options?: ILogQueryOptions): Promise<IStructuredLogEntry[]> {
     return Promise.resolve([]);
   }
   subscribeToLogs(_callback: (entry: IStructuredLogEntry) => void): () => void {

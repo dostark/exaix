@@ -7,7 +7,7 @@
  */
 
 import type { LogMetadata } from "@exaix/core";
-import type { ILogContext, IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types";
+import type { ILogContext, IStructuredLogEntry, ILogQueryOptions } from "@exaix/core/types";
 
 /**
  * Core logger interface for emitting logs.
@@ -46,7 +46,7 @@ export interface ILogService {
   /**
    * Get logs based on query options.
    */
-  getStructuredLogs(options: LogQueryOptions): Promise<IStructuredLogEntry[]>;
+  getStructuredLogs(options: ILogQueryOptions): Promise<IStructuredLogEntry[]>;
 
   /**
    * Subscribe to new log entries as they arrive.

@@ -1,16 +1,16 @@
 /**
  * @module AgentExecutorAdapter
  * @path packages/flow/src/agent_executor_adapter.ts
- * @description Bridges AgentRunner into FlowRunner's IAgentExecutor interface.
+ * @description Bridges IAgentRunner into FlowRunner's IAgentExecutor interface.
  * Loads blueprints by identityId and converts IFlowStepRequest to IParsedRequest
- * before delegating to AgentRunner.run().
+ * before delegating to IAgentRunner.run().
  * @architectural-layer Flows
  * @dependencies ["@exaix/execution", "@exaix/core"]
  * @related-files ["packages/flow/src/flow_runner.ts", "packages/execution/src/agent_runner.ts"]
  */
 
 import type { IAgentExecutionResult, IBlueprint } from "@exaix/execution";
-import { BlueprintLoader } from "@exaix/core/blueprint";
+import { IBlueprintLoader } from "@exaix/core/blueprint";
 import type { IFlowStepRequest } from "./flow_runner.ts";
 
 /**
@@ -36,24 +36,24 @@ interface IParsedRequest {
 }
 
 /**
- * Minimal runner interface matching the subset of AgentRunner used by the adapter.
+ * Minimal runner interface matching the subset of IAgentRunner used by the adapter.
  */
 export interface IRunner {
   run(blueprint: IBlueprint, request: IParsedRequest): Promise<IAgentExecutionResult>;
 }
 
 /**
- * Adapter that wraps an AgentRunner (or compatible IRunner) into FlowRunner's
+ * Adapter that wraps an IAgentRunner (or compatible IRunner) into FlowRunner's
  * IAgentExecutor interface. Loads blueprints by identityId and maps request types.
  */
 export class AgentExecutorAdapter {
-  private loader: BlueprintLoader;
+  private loader: IBlueprintLoader;
 
   constructor(
     private runner: IRunner,
     blueprintsPath: string,
   ) {
-    this.loader = new BlueprintLoader({ blueprintsPath });
+    this.loader = new IBlueprintLoader({ blueprintsPath });
   }
 
   async run(identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {

@@ -17,11 +17,11 @@ export interface IErrorContext {
   error: ErrorPayload;
 }
 
-export interface ErrorStrategy {
+export interface IErrorStrategy {
   handle(context: IErrorContext): Promise<void>;
 }
 
-export class FailFastStrategy implements ErrorStrategy {
+export class FailFastStrategy implements IErrorStrategy {
   handle(context: IErrorContext): Promise<void> {
     console.error(`Error executing ${context.commandName}:`);
     if (context.error instanceof Error) {
@@ -33,7 +33,7 @@ export class FailFastStrategy implements ErrorStrategy {
   }
 }
 
-export class SilentStrategy implements ErrorStrategy {
+export class SilentStrategy implements IErrorStrategy {
   async handle(_context: IErrorContext): Promise<void> {
   }
 }

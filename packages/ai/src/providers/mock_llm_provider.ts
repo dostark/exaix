@@ -43,7 +43,7 @@ export interface IRecordedResponse {
 /**
  * Pattern matcher for dynamic responses
  */
-export interface PatternMatcher {
+export interface IPatternMatcher {
   /** Regex pattern to match against prompts */
   pattern: RegExp;
   /** Response string or function that generates response */
@@ -53,7 +53,7 @@ export interface PatternMatcher {
 /**
  * Token tracking
  */
-export interface TokenCount {
+export interface ITokenCount {
   input: number;
   output: number;
 }
@@ -61,7 +61,7 @@ export interface TokenCount {
 /**
  * Record of a call made to the provider
  */
-export interface CallRecord {
+export interface ICallRecord {
   /** The prompt that was sent */
   prompt: string;
   /** Options passed with the call */
@@ -75,7 +75,7 @@ export interface CallRecord {
 /**
  * Options for configuring MockLLMProvider
  */
-export interface MockLLMProviderOptions {
+export interface IMockLLMProviderOptions {
   /** Custom provider ID */
   id?: string;
   /** Responses for scripted/slow strategies */
@@ -85,13 +85,13 @@ export interface MockLLMProviderOptions {
   /** Directory to load recordings from */
   fixtureDir?: string;
   /** Pattern matchers for pattern strategy */
-  patterns?: PatternMatcher[];
+  patterns?: IPatternMatcher[];
   /** Error message for failing strategy */
   errorMessage?: string;
   /** Delay in ms for slow strategy */
   delayMs?: number;
   /** Token counts per response */
-  tokensPerResponse?: TokenCount;
+  tokensPerResponse?: ITokenCount;
 }
 
 // ============================================================================
@@ -122,21 +122,21 @@ export class MockLLMProvider implements IModelProvider {
   private readonly strategy: MockStrategy;
   private readonly responses: string[];
   private readonly recordings: IRecordedResponse[];
-  private readonly patterns: PatternMatcher[];
+  private readonly patterns: IPatternMatcher[];
   private readonly errorMessage: string;
   private readonly delayMs: number;
-  private readonly tokensPerResponse: TokenCount;
+  private readonly tokensPerResponse: ITokenCount;
 
   private responseIndex: number = 0;
   private _callCount: number = 0;
-  private _callHistory: CallRecord[] = [];
-  private _totalTokens: TokenCount = { input: 0, output: 0 };
+  private _callHistory: ICallRecord[] = [];
+  private _totalTokens: ITokenCount = { input: 0, output: 0 };
 
   /**
    * @param strategy Mock strategy to use
    * @param options Configuration options for the mock provider
    */
-  constructor(strategy: MockStrategy, options: MockLLMProviderOptions = {}) {
+  constructor(strategy: MockStrategy, options: IMockLLMProviderOptions = {}) {
     this.id = options.id ?? "mock-llm-provider";
     this.strategy = strategy;
     this.responses = options.responses ?? ["Default mock response"];
@@ -327,21 +327,21 @@ export class MockLLMProvider implements IModelProvider {
   /**
    * Get the history of all calls made
    */
-  get callHistory(): CallRecord[] {
+  get callHistory(): ICallRecord[] {
     return [...this._callHistory];
   }
 
   /**
    * Get total token usage
    */
-  get totalTokens(): TokenCount {
+  get totalTokens(): ITokenCount {
     return { ...this._totalTokens };
   }
 
   /**
    * Get the most recent call made
    */
-  getLastCall(): CallRecord | undefined {
+  getLastCall(): ICallRecord | undefined {
     if (this._callHistory.length === 0) {
       return undefined;
     }
@@ -461,7 +461,7 @@ export class MockLLMProvider implements IModelProvider {
    * Get default pattern matchers for common request types
    * Returns different patterns for planning vs execution prompts
    */
-  private getDefaultPatterns(): PatternMatcher[] {
+  private getDefaultPatterns(): IPatternMatcher[] {
     return [
       // Specialist patterns (hit first)
       {

@@ -54,7 +54,7 @@ export const SPINNERS: Record<SpinnerStyle, ISpinnerConfig> = {
 
 // ===== Spinner State =====
 
-export interface SpinnerState {
+export interface ISpinnerState {
   active: boolean;
   frame: number;
   message: string;
@@ -66,7 +66,7 @@ export interface SpinnerState {
  */
 export function createSpinnerState(
   message: Opt<string, Reason.UiDefault> = "",
-): SpinnerState {
+): ISpinnerState {
   return {
     active: false,
     frame: 0,
@@ -79,9 +79,9 @@ export function createSpinnerState(
  * Start a spinner
  */
 export function startSpinner(
-  state: SpinnerState,
+  state: ISpinnerState,
   message?: Opt<string, Reason.UiDefault>,
-): SpinnerState {
+): ISpinnerState {
   return {
     ...state,
     active: true,
@@ -94,7 +94,7 @@ export function startSpinner(
 /**
  * Stop a spinner
  */
-export function stopSpinner(state: SpinnerState): SpinnerState {
+export function stopSpinner(state: ISpinnerState): ISpinnerState {
   return {
     ...state,
     active: false,
@@ -104,7 +104,7 @@ export function stopSpinner(state: SpinnerState): SpinnerState {
 /**
  * Advance spinner to next frame
  */
-export function nextFrame(state: SpinnerState): SpinnerState {
+export function nextFrame(state: ISpinnerState): ISpinnerState {
   return {
     ...state,
     frame: state.frame + 1,
@@ -128,7 +128,7 @@ export function renderSpinnerFrame(
  * Render spinner with message
  */
 export function renderSpinner(
-  state: SpinnerState,
+  state: ISpinnerState,
   options: {
     style?: SpinnerStyle;
     useColors?: boolean;
@@ -156,7 +156,7 @@ export function renderSpinner(
 
 // ===== Progress Bar =====
 
-export interface ProgressState {
+export interface IProgressState {
   current: number;
   total: number;
   message: string;
@@ -166,7 +166,7 @@ export interface ProgressState {
 /**
  * Create a new progress state
  */
-export function createProgressState(total: number, message: string = ""): ProgressState {
+export function createProgressState(total: number, message: string = ""): IProgressState {
   return {
     current: 0,
     total,
@@ -179,10 +179,10 @@ export function createProgressState(total: number, message: string = ""): Progre
  * Update progress
  */
 export function updateProgress(
-  state: ProgressState,
+  state: IProgressState,
   current: number,
   message?: Opt<string, Reason.UiDefault>,
-): ProgressState {
+): IProgressState {
   return {
     ...state,
     current: Math.min(current, state.total),
@@ -193,7 +193,7 @@ export function updateProgress(
 /**
  * Increment progress by one
  */
-export function incrementProgress(state: ProgressState): ProgressState {
+export function incrementProgress(state: IProgressState): IProgressState {
   return updateProgress(state, state.current + 1);
 }
 
@@ -201,7 +201,7 @@ export function incrementProgress(state: ProgressState): ProgressState {
  * Render a progress bar
  */
 export function renderProgressBar(
-  state: ProgressState,
+  state: IProgressState,
   options: {
     width?: number;
     useColors?: boolean;
@@ -314,17 +314,17 @@ export function renderActivityIndicator(
 
 // ===== Loading States =====
 
-export interface LoadingState {
+export interface ILoadingState {
   isLoading: boolean;
   message: string;
-  spinner: SpinnerState;
-  progress?: ProgressState;
+  spinner: ISpinnerState;
+  progress?: IProgressState;
 }
 
 /**
  * Create a loading state
  */
-export function createLoadingState(): LoadingState {
+export function createLoadingState(): ILoadingState {
   return {
     isLoading: false,
     message: "",
@@ -336,7 +336,7 @@ export function createLoadingState(): LoadingState {
 /**
  * Start loading with a message
  */
-export function startLoading(state: LoadingState, message: string): LoadingState {
+export function startLoading(state: ILoadingState, message: string): ILoadingState {
   return {
     ...state,
     isLoading: true,
@@ -350,10 +350,10 @@ export function startLoading(state: LoadingState, message: string): LoadingState
  * Start loading with progress
  */
 export function startLoadingWithProgress(
-  state: LoadingState,
+  state: ILoadingState,
   message: string,
   total: number,
-): LoadingState {
+): ILoadingState {
   return {
     ...state,
     isLoading: true,
@@ -366,7 +366,7 @@ export function startLoadingWithProgress(
 /**
  * Stop loading
  */
-export function stopLoading(state: LoadingState): LoadingState {
+export function stopLoading(state: ILoadingState): ILoadingState {
   return {
     ...state,
     isLoading: false,
@@ -380,7 +380,7 @@ export function stopLoading(state: LoadingState): LoadingState {
  * Render loading state
  */
 export function renderLoadingState(
-  state: LoadingState,
+  state: ILoadingState,
   options: { useColors?: boolean; width?: number } = {},
 ): string {
   const { useColors = true, width = 30 } = options;

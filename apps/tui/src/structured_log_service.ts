@@ -8,7 +8,7 @@
  */
 
 import { DEFAULT_LOG_BUFFER_SIZE } from "@exaix/core";
-import type { IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types";
+import type { IStructuredLogEntry, ILogQueryOptions } from "@exaix/core/types";
 import type { ILogger } from "@exaix/core/types";
 import type { ILogService } from "@exaix/core/types";
 
@@ -27,7 +27,7 @@ export class StructuredLoggerService implements ILogService {
     });
   }
 
-  getStructuredLogs(options: LogQueryOptions = {}): Promise<IStructuredLogEntry[]> {
+  getStructuredLogs(options: ILogQueryOptions = {}): Promise<IStructuredLogEntry[]> {
     try {
       // For now, return from buffer. In production, this would query a database
       // or read from log files based on the options

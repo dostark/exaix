@@ -10,7 +10,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { AgentHealth, LogLevel } from "@exaix/core";
 import { AgentStatus } from "@exaix/core/status";
-import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
+import type { IAgentHealthData, IAgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
 import type { IAgentService } from "@exaix/core/types";
 import { AgentStatusView } from "../src/agent_status_view.ts";
 
@@ -18,10 +18,10 @@ class EmptyAgentService implements IAgentService {
   listAgents(): Promise<IAgentStatusItem[]> {
     return Promise.resolve([]);
   }
-  getAgentLogs(): Promise<AgentLogEntry[]> {
+  getAgentLogs(): Promise<IAgentLogEntry[]> {
     return Promise.resolve([]);
   }
-  getAgentHealth(): Promise<AgentHealthData> {
+  getAgentHealth(): Promise<IAgentHealthData> {
     return Promise.resolve({ status: AgentHealth.HEALTHY, issues: [], uptime: 0 });
   }
 }
@@ -40,13 +40,13 @@ class DetailedAgentService implements IAgentService {
       },
     ]);
   }
-  getAgentLogs(_identityId: string, _limit = 50): Promise<AgentLogEntry[]> {
+  getAgentLogs(_identityId: string, _limit = 50): Promise<IAgentLogEntry[]> {
     return Promise.resolve([
       { timestamp: new Date().toISOString(), level: LogLevel.ERROR, message: "Boom", traceId: "t1" },
       { timestamp: new Date().toISOString(), level: LogLevel.INFO, message: "Recovered" },
     ]);
   }
-  getAgentHealth(_identityId: string): Promise<AgentHealthData> {
+  getAgentHealth(_identityId: string): Promise<IAgentHealthData> {
     return Promise.resolve({ status: AgentHealth.CRITICAL, issues: ["OOM", "Crash loop"], uptime: 3600 * 5 });
   }
 }

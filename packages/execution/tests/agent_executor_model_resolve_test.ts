@@ -16,7 +16,7 @@ import { initTestDbService } from "@exaix/testing";
 import { AgentExecutor } from "@exaix/execution";
 import type { IAgentExecutorOptions } from "@exaix/execution";
 import type { ModelResolver } from "@exaix/ai";
-import type { IResolvedModel, ModelIntent } from "@exaix/schemas";
+import type { IResolvedModel, IModelIntent } from "@exaix/schemas";
 import { TaskType } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core/types";
 import { EventLogger } from "@exaix/core/logger";
@@ -26,18 +26,18 @@ import { join } from "@std/path";
 function createMockResolver(expected: IResolvedModel): { resolver: ModelResolver } {
   return {
     resolver: {
-      resolve: (_intent: ModelIntent) => Promise.resolve(expected),
+      resolve: (_intent: IModelIntent) => Promise.resolve(expected),
     } as ModelResolver,
   };
 }
 
 function createCapturingResolver(
   expected: IResolvedModel,
-): { resolver: ModelResolver; captured: ModelIntent[] } {
-  const captured: ModelIntent[] = [];
+): { resolver: ModelResolver; captured: IModelIntent[] } {
+  const captured: IModelIntent[] = [];
   return {
     resolver: {
-      resolve: (intent: ModelIntent) => {
+      resolve: (intent: IModelIntent) => {
         captured.push(intent);
         return Promise.resolve(expected);
       },

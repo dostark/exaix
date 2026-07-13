@@ -11,8 +11,8 @@ import {
   createFeedbackLoop,
   FeedbackLoop,
   type FeedbackLoopConfig,
-  type FeedbackLoopResult as _FeedbackLoopResult,
-  type ImprovementAgent,
+  type IFeedbackLoopResult as _FeedbackLoopResult,
+  type IImprovementAgent,
   runSelfCorrectingAgent,
   SimpleImprovementAgent,
 } from "@exaix/flow";
@@ -23,7 +23,7 @@ import type { JSONObject } from "@exaix/core/types";
 /**
  * Mock improvement agent for testing
  */
-class MockImprovementAgent implements ImprovementAgent {
+class MockImprovementAgent implements IImprovementAgent {
   improvementHistory: Array<{
     originalRequest: string;
     currentContent: string;
@@ -64,7 +64,7 @@ class MockImprovementAgent implements ImprovementAgent {
 }
 
 /**
- * Mock AgentRunner for SimpleImprovementAgent tests
+ * Mock IAgentRunner for SimpleImprovementAgent tests
  */
 class MockAgentRunner {
   responses: Map<string, string> = new Map();

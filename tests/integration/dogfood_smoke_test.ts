@@ -2,7 +2,7 @@
  * @module DogfoodSmokeTest
  * @path tests/integration/dogfood_smoke_test.ts
  * @description Verifies the request → plan pipeline using a mock provider,
- * exercising the production RequestProcessor → AgentRunner → PlanWriter path.
+ * exercising the production RequestProcessor → IAgentRunner → PlanWriter path.
  */
 
 import { assert, assertExists, assertStringIncludes } from "@std/assert";

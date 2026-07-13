@@ -29,7 +29,7 @@ export interface IRequestActionContext {
   display: IDisplayService;
 }
 
-export interface RequestCreateOptions {
+export interface IRequestCreateOptions {
   file?: string;
   identity?: string;
   priority?: string | RequestPriority;
@@ -52,13 +52,13 @@ export interface RequestCreateOptions {
   expectedOutcomes?: string[];
 }
 
-export interface RequestListOptions {
+export interface IRequestListOptions {
   status?: RequestStatus;
   all?: boolean;
   json?: boolean;
 }
 
-export interface RequestAnalyzeOptions {
+export interface IRequestAnalyzeOptions {
   engine?: string;
   json?: boolean;
   force?: boolean;
@@ -70,7 +70,7 @@ export interface RequestAnalyzeOptions {
 export async function handleRequestAnalyze(
   context: IRequestActionContext,
   id: string,
-  options: RequestAnalyzeOptions,
+  options: IRequestAnalyzeOptions,
 ): Promise<void> {
   const { requestCommands, display } = context;
 
@@ -112,7 +112,7 @@ export async function handleRequestAnalyze(
  */
 export async function handleRequestCreate(
   context: IRequestActionContext,
-  options: RequestCreateOptions,
+  options: IRequestCreateOptions,
   description?: Opt<string, Reason.OptionalInput>,
 ): Promise<void> {
   const { requestCommands, display } = context;
@@ -178,7 +178,7 @@ export async function handleRequestCreate(
  */
 export async function handleRequestList(
   context: IRequestActionContext,
-  options: RequestListOptions,
+  options: IRequestListOptions,
 ): Promise<void> {
   const { requestCommands, display } = context;
 

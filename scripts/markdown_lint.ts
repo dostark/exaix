@@ -22,7 +22,7 @@ export interface IFinding {
   message: string;
 }
 
-export interface LintOptions {
+export interface ILintOptions {
   fix: boolean;
   strict: boolean;
   verbose: boolean;
@@ -54,8 +54,8 @@ const SKIP_DIRS = new Set([
   "logs",
 ]);
 
-function parseArgs(args: string[]): { options: LintOptions; paths: string[] } {
-  const options: LintOptions = { fix: false, strict: false, verbose: false };
+function parseArgs(args: string[]): { options: ILintOptions; paths: string[] } {
+  const options: ILintOptions = { fix: false, strict: false, verbose: false };
   const paths: string[] = [];
 
   for (const arg of args) {
@@ -681,7 +681,7 @@ export function applySpecificFixes(content: string, findings: IFinding[]): { fix
   return { fixed: text, changed };
 }
 
-export function lintMarkdown(content: string, filePath: string, options: LintOptions): IFinding[] {
+export function lintMarkdown(content: string, filePath: string, options: ILintOptions): IFinding[] {
   const findings: IFinding[] = [];
 
   const normalized = content.replaceAll("\r\n", "\n").replaceAll("\r", "\n");

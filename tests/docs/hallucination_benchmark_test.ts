@@ -51,5 +51,5 @@ Deno.test("[hallucination-bench] Verify Component Responsibilities mapping", asy
     true,
     "RequestProcessor link missing.",
   );
-  assertEquals(content.includes("packages/execution/src/agent_runner.ts"), true, "AgentRunner reference missing.");
+  assertEquals(content.includes("packages/execution/src/agent_runner.ts"), true, "IAgentRunner reference missing.");
 });

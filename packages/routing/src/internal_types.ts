@@ -3,7 +3,7 @@
  * @path packages/routing/src/internal_types.ts
  * @related-files []
  * @architectural-layer Services
- * @description Internal types for routing subpackage consumers (BlueprintLoader, ILoadedBlueprint, IBucketRule).
+ * @description Internal types for routing subpackage consumers (IBlueprintLoader, ILoadedBlueprint, IBucketRule).
  */
 import type { JSONValue } from "@exaix/core";
 
@@ -14,6 +14,6 @@ export interface ILoadedBlueprint {
   frontmatter: { deprecated?: boolean; [key: string]: JSONValue | object };
 }
 
-export interface BlueprintLoader {
+export interface IBlueprintLoader {
   listAll(): Promise<ILoadedBlueprint[]>;
 }

@@ -19,7 +19,7 @@ import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import { ensureDir } from "@std/fs";
 import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
 import {
-  BlueprintLoader,
+  IBlueprintLoader,
   type IUnknownFieldWarning,
   RuntimeBlueprintFrontmatterSchema,
   validateRuntimeFrontmatter,
@@ -93,7 +93,7 @@ Deno.test("[step2] session_delegate survives a runtime load round-trip (was drop
   assertEquals(parsed.data!.session_delegate.enabled, true);
 });
 
-Deno.test("[step2][integration] a CLI-format YAML blueprint round-trips through BlueprintLoader (no TOML)", async () => {
+Deno.test("[step2][integration] a CLI-format YAML blueprint round-trips through IBlueprintLoader (no TOML)", async () => {
   const dir = await Deno.makeTempDir({ prefix: "step2_roundtrip_" });
   try {
     const identitiesDir = join(dir, "Identities");
@@ -112,7 +112,7 @@ Deno.test("[step2][integration] a CLI-format YAML blueprint round-trips through 
     const content = `---\n${stringifyYaml(fm)}---\n\n# Round Trip Agent\n\nBody.\n`;
     await Deno.writeTextFile(join(identitiesDir, "round-trip-agent.md"), content);
 
-    const loader = new BlueprintLoader({ blueprintsPath: identitiesDir });
+    const loader = new IBlueprintLoader({ blueprintsPath: identitiesDir });
     const loaded = await loader.load("round-trip-agent");
     assertExists(loaded, "CLI-format YAML blueprint must load");
     assertEquals(loaded!.identityId, "round-trip-agent");
@@ -132,7 +132,7 @@ Deno.test("[step2] the loader rejects retired TOML (+++) frontmatter with an act
       join(identitiesDir, "legacy-toml.md"),
       `+++\nidentity_id = "legacy-toml"\nname = "Legacy"\nmodel = "mock:test-model"\n+++\n\nBody.\n`,
     );
-    const loader = new BlueprintLoader({ blueprintsPath: identitiesDir });
+    const loader = new IBlueprintLoader({ blueprintsPath: identitiesDir });
     let threw = false;
     try {
       await loader.load("legacy-toml");

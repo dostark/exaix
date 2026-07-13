@@ -3,7 +3,7 @@
  * @path packages/core/tests/blueprint/blueprint_loader_test.ts
  * @related-files []
  * @architectural-layer Core
- * @description Verifies the BlueprintLoader's ability to parse agent definitions from YAML
+ * @description Verifies the IBlueprintLoader's ability to parse agent definitions from YAML
  * frontmatter, ensuring correct schema validation and default value application.
  */
 
@@ -14,7 +14,7 @@ import { assertEquals, assertExists, assertRejects, assertStringIncludes } from 
 import { join } from "@std/path";
 
 import { DEFAULT_AI_MODEL } from "@exaix/core";
-import { BlueprintLoader, BlueprintLoadError, createBlueprintLoader, loadBlueprint } from "@exaix/core/blueprint";
+import { IBlueprintLoader, BlueprintLoadError, createBlueprintLoader, loadBlueprint } from "@exaix/core/blueprint";
 import { readFixtureTextSync, TEST_MODEL_OPENAI } from "@exaix/testing";
 
 // Test directory setup
@@ -38,10 +38,10 @@ async function teardown(dir: string) {
 }
 
 // ============================================================================
-// BlueprintLoader.load() Tests
+// IBlueprintLoader.load() Tests
 // ============================================================================
 
-Deno.test("[BlueprintLoader] loads blueprint with YAML frontmatter", async () => {
+Deno.test("[IBlueprintLoader] loads blueprint with YAML frontmatter", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
@@ -52,7 +52,7 @@ Deno.test("[BlueprintLoader] loads blueprint with YAML frontmatter", async () =>
     );
     await Deno.writeTextFile(join(identitiesDir, "code-reviewer.md"), content);
 
-    const loader = new BlueprintLoader({ blueprintsPath });
+    const loader = new IBlueprintLoader({ blueprintsPath });
     const blueprint = await loader.load("code-reviewer");
 
     assertExists(blueprint);
@@ -68,7 +68,7 @@ Deno.test("[BlueprintLoader] loads blueprint with YAML frontmatter", async () =>
   }
 });
 
-Deno.test("[BlueprintLoader] loads blueprint without frontmatter (backward compatible)", async () => {
+Deno.test("[IBlueprintLoader] loads blueprint without frontmatter (backward compatible)", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
@@ -78,7 +78,7 @@ You are a simple agent with no frontmatter.
 `;
     await Deno.writeTextFile(join(identitiesDir, "simple-agent.md"), content);
 
-    const loader = new BlueprintLoader({ blueprintsPath });
+    const loader = new IBlueprintLoader({ blueprintsPath });
     const blueprint = await loader.load("simple-agent");
 
     assertExists(blueprint);
@@ -92,7 +92,7 @@ You are a simple agent with no frontmatter.
   }
 });
 
-Deno.test("[BlueprintLoader] uses default model when not specified", async () => {
+Deno.test("[IBlueprintLoader] uses default model when not specified", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
@@ -105,7 +105,7 @@ Agent without model specification.
 `;
     await Deno.writeTextFile(join(identitiesDir, "no-model.md"), content);
 
-    const loader = new BlueprintLoader({
+    const loader = new IBlueprintLoader({
       blueprintsPath,
       defaultModel: `${PROVIDER_OPENAI}:${TEST_MODEL_OPENAI}`,
     });
@@ -118,11 +118,11 @@ Agent without model specification.
   }
 });
 
-Deno.test("[BlueprintLoader] returns null for non-existent blueprint", async () => {
+Deno.test("[IBlueprintLoader] returns null for non-existent blueprint", async () => {
   const { blueprintsPath, testDir } = await setup();
 
   try {
-    const loader = new BlueprintLoader({ blueprintsPath });
+    const loader = new IBlueprintLoader({ blueprintsPath });
     const blueprint = await loader.load("non-existent");
 
     assertEquals(blueprint, null);
@@ -131,7 +131,7 @@ Deno.test("[BlueprintLoader] returns null for non-existent blueprint", async () 
   }
 });
 
-Deno.test("[BlueprintLoader] lists all blueprints in Identities path", async () => {
+Deno.test("[IBlueprintLoader] lists all blueprints in Identities path", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
@@ -140,7 +140,7 @@ Deno.test("[BlueprintLoader] lists all blueprints in Identities path", async () 
     await Deno.writeTextFile(join(identitiesDir, "alpha.md"), alpha);
     await Deno.writeTextFile(join(identitiesDir, "beta.md"), beta);
 
-    const loader = new BlueprintLoader({ blueprintsPath });
+    const loader = new IBlueprintLoader({ blueprintsPath });
     const blueprints = await loader.listAll();
 
     assertEquals(blueprints.length, 2);
@@ -150,12 +150,12 @@ Deno.test("[BlueprintLoader] lists all blueprints in Identities path", async () 
   }
 });
 
-Deno.test("[BlueprintLoader] returns empty list when Identities path is missing", async () => {
+Deno.test("[IBlueprintLoader] returns empty list when Identities path is missing", async () => {
   const testDir = await Deno.makeTempDir({ prefix: "exa_blueprint_test_" });
   const blueprintsPath = join(testDir, "Blueprints");
 
   try {
-    const loader = new BlueprintLoader({ blueprintsPath });
+    const loader = new IBlueprintLoader({ blueprintsPath });
     const blueprints = await loader.listAll();
 
     assertEquals(blueprints.length, 0);
@@ -164,11 +164,11 @@ Deno.test("[BlueprintLoader] returns empty list when Identities path is missing"
   }
 });
 
-Deno.test("[BlueprintLoader] loadOrThrow throws for non-existent blueprint", async () => {
+Deno.test("[IBlueprintLoader] loadOrThrow throws for non-existent blueprint", async () => {
   const { blueprintsPath, testDir } = await setup();
 
   try {
-    const loader = new BlueprintLoader({ blueprintsPath });
+    const loader = new IBlueprintLoader({ blueprintsPath });
 
     await assertRejects(
       () => loader.loadOrThrow("non-existent"),
@@ -180,7 +180,7 @@ Deno.test("[BlueprintLoader] loadOrThrow throws for non-existent blueprint", asy
   }
 });
 
-Deno.test("[BlueprintLoader] throws on invalid YAML frontmatter", async () => {
+Deno.test("[IBlueprintLoader] throws on invalid YAML frontmatter", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
@@ -193,7 +193,7 @@ Content
 `;
     await Deno.writeTextFile(join(identitiesDir, "bad-yaml.md"), content);
 
-    const loader = new BlueprintLoader({ blueprintsPath });
+    const loader = new IBlueprintLoader({ blueprintsPath });
 
     await assertRejects(
       () => loader.load("bad-yaml"),
@@ -205,7 +205,7 @@ Content
   }
 });
 
-Deno.test("[BlueprintLoader] validates frontmatter schema", async () => {
+Deno.test("[IBlueprintLoader] validates frontmatter schema", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
@@ -218,7 +218,7 @@ Content
 `;
     await Deno.writeTextFile(join(identitiesDir, "schema-test.md"), content);
 
-    const loader = new BlueprintLoader({ blueprintsPath });
+    const loader = new IBlueprintLoader({ blueprintsPath });
 
     await assertRejects(
       () => loader.load("schema-test"),
@@ -234,7 +234,7 @@ Content
 // Phase 16.4+ Extension Fields Tests
 // ============================================================================
 
-Deno.test("[BlueprintLoader] parses reflexive agent configuration", async () => {
+Deno.test("[IBlueprintLoader] parses reflexive agent configuration", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
@@ -245,7 +245,7 @@ Deno.test("[BlueprintLoader] parses reflexive agent configuration", async () => 
     );
     await Deno.writeTextFile(join(identitiesDir, "reflexive-agent.md"), content);
 
-    const loader = new BlueprintLoader({ blueprintsPath });
+    const loader = new IBlueprintLoader({ blueprintsPath });
     const blueprint = await loader.load("reflexive-agent");
 
     assertExists(blueprint);
@@ -257,7 +257,7 @@ Deno.test("[BlueprintLoader] parses reflexive agent configuration", async () => 
   }
 });
 
-Deno.test("[BlueprintLoader] parses memory and skills configuration", async () => {
+Deno.test("[IBlueprintLoader] parses memory and skills configuration", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
@@ -268,7 +268,7 @@ Deno.test("[BlueprintLoader] parses memory and skills configuration", async () =
     );
     await Deno.writeTextFile(join(identitiesDir, "skilled-agent.md"), content);
 
-    const loader = new BlueprintLoader({ blueprintsPath });
+    const loader = new IBlueprintLoader({ blueprintsPath });
     const blueprint = await loader.load("skilled-agent");
 
     assertExists(blueprint);
@@ -283,7 +283,7 @@ Deno.test("[BlueprintLoader] parses memory and skills configuration", async () =
 // Caching Tests
 // ============================================================================
 
-Deno.test("[BlueprintLoader] caches loaded blueprints", async () => {
+Deno.test("[IBlueprintLoader] caches loaded blueprints", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
@@ -296,7 +296,7 @@ Content
 `;
     await Deno.writeTextFile(join(identitiesDir, "cached-agent.md"), content);
 
-    const loader = new BlueprintLoader({ blueprintsPath });
+    const loader = new IBlueprintLoader({ blueprintsPath });
 
     // First load
     const blueprint1 = await loader.load("cached-agent");
@@ -319,7 +319,7 @@ Content
   }
 });
 
-Deno.test("[BlueprintLoader] invalidate clears specific cache entry", async () => {
+Deno.test("[IBlueprintLoader] invalidate clears specific cache entry", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
@@ -332,7 +332,7 @@ Content
 `;
     await Deno.writeTextFile(join(identitiesDir, "invalidate-test.md"), content);
 
-    const loader = new BlueprintLoader({ blueprintsPath });
+    const loader = new IBlueprintLoader({ blueprintsPath });
 
     // First load
     const blueprint1 = await loader.load("invalidate-test");
@@ -357,7 +357,7 @@ Content
 // Backward Compatibility Tests
 // ============================================================================
 
-Deno.test("[BlueprintLoader] toLegacyBlueprint returns compatible interface", async () => {
+Deno.test("[IBlueprintLoader] toLegacyBlueprint returns compatible interface", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
@@ -370,7 +370,7 @@ System prompt content.
 `;
     await Deno.writeTextFile(join(identitiesDir, "legacy-test.md"), content);
 
-    const loader = new BlueprintLoader({ blueprintsPath });
+    const loader = new IBlueprintLoader({ blueprintsPath });
     const loaded = await loader.load("legacy-test");
 
     assertExists(loaded);
@@ -425,7 +425,7 @@ Deno.test("[createBlueprintLoader] factory function creates loader", async () =>
 // Name Derivation Tests
 // ============================================================================
 
-Deno.test("[BlueprintLoader] derives name from agent ID correctly", async () => {
+Deno.test("[IBlueprintLoader] derives name from agent ID correctly", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
@@ -440,7 +440,7 @@ Deno.test("[BlueprintLoader] derives name from agent ID correctly", async () => 
       const content = `# Agent\n\nPrompt`;
       await Deno.writeTextFile(join(identitiesDir, `${id}.md`), content);
 
-      const loader = new BlueprintLoader({ blueprintsPath });
+      const loader = new IBlueprintLoader({ blueprintsPath });
       loader.clearCache(); // Clear cache between tests
 
       const blueprint = await loader.load(id);
@@ -456,7 +456,7 @@ Deno.test("[BlueprintLoader] derives name from agent ID correctly", async () => 
 // Phase 53: Identities Path Tests
 // ============================================================================
 
-Deno.test("[BlueprintLoader] loads from Identities path (canonical)", async () => {
+Deno.test("[IBlueprintLoader] loads from Identities path (canonical)", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
@@ -467,7 +467,7 @@ Deno.test("[BlueprintLoader] loads from Identities path (canonical)", async () =
     );
     await Deno.writeTextFile(join(identitiesDir, "senior-coder.md"), content);
 
-    const loader = new BlueprintLoader({ blueprintsPath });
+    const loader = new IBlueprintLoader({ blueprintsPath });
     const blueprint = await loader.load("senior-coder");
 
     assertExists(blueprint);
@@ -479,11 +479,11 @@ Deno.test("[BlueprintLoader] loads from Identities path (canonical)", async () =
   }
 });
 
-Deno.test("[BlueprintLoader] returns null when identity not found in Identities path", async () => {
+Deno.test("[IBlueprintLoader] returns null when identity not found in Identities path", async () => {
   const { blueprintsPath, testDir } = await setup();
 
   try {
-    const loader = new BlueprintLoader({ blueprintsPath });
+    const loader = new IBlueprintLoader({ blueprintsPath });
     const blueprint = await loader.load("non-existent");
 
     assertEquals(blueprint, null);

@@ -31,7 +31,7 @@ export interface IProviderResponseConfig {
 }
 
 /** Configuration for a complete provider test suite */
-export interface ProviderTestSuiteConfig<T> {
+export interface IProviderTestSuiteConfig<T> {
   /** Provider name for test descriptions */
   name: string;
   /** Factory to create provider instance */
@@ -350,7 +350,7 @@ export function registerProviderTests<
     id: string;
     generate: (prompt: string, options?: JSONObject) => Promise<IGenerateResult>;
   },
->(config: ProviderTestSuiteConfig<T>): void {
+>(config: IProviderTestSuiteConfig<T>): void {
   testProviderInitialization(config.name, config.createProvider, config.defaultId);
   testProviderGenerateSuccess(config.name, config.createProvider, config.responseConfig, `Hello from ${config.name}`);
   testProviderHeaders(

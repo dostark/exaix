@@ -62,7 +62,7 @@ export interface IIterationResult {
 /**
  * Result of the feedback loop
  */
-export interface FeedbackLoopResult {
+export interface IFeedbackLoopResult {
   /** Whether target score was achieved */
   success: boolean;
   /** Final content after all iterations */
@@ -87,7 +87,7 @@ export interface FeedbackLoopResult {
 /**
  * Interface for improvement agent
  */
-export interface ImprovementAgent {
+export interface IImprovementAgent {
   improve(
     originalRequest: string,
     currentContent: string,
@@ -108,7 +108,7 @@ export interface ImprovementAgent {
 export class FeedbackLoop {
   constructor(
     private gateEvaluator: GateEvaluator,
-    private improvementAgent: ImprovementAgent,
+    private improvementAgent: IImprovementAgent,
   ) {}
 
   /**
@@ -122,7 +122,7 @@ export class FeedbackLoop {
     config: FeedbackLoopConfig,
     initialContent: string,
     originalRequest: string,
-  ): Promise<FeedbackLoopResult> {
+  ): Promise<IFeedbackLoopResult> {
     const startTime = performance.now();
     const iterations: IIterationResult[] = [];
 
@@ -313,7 +313,7 @@ export class FeedbackLoop {
 /**
  * Simple improvement agent that formats feedback into a prompt
  */
-export class SimpleImprovementAgent implements ImprovementAgent {
+export class SimpleImprovementAgent implements IImprovementAgent {
   constructor(
     private agentRunner: {
       run(
@@ -383,7 +383,7 @@ export function createFeedbackLoop(
 /**
  * Configuration for self-correcting agent pattern
  */
-export interface SelfCorrectingConfig {
+export interface ISelfCorrectingConfig {
   /** Agent to generate initial response */
   generatorAgent: string;
   /** Agent to evaluate responses (can be same as generator) */
@@ -406,7 +406,7 @@ export interface SelfCorrectingConfig {
  * 2. Runs feedback loop until target or max iterations
  */
 export async function runSelfCorrectingAgent(
-  config: SelfCorrectingConfig,
+  config: ISelfCorrectingConfig,
   agentRunner: {
     run(
       identityId: string,
@@ -415,7 +415,7 @@ export async function runSelfCorrectingAgent(
   },
   gateEvaluator: GateEvaluator,
   request: string,
-): Promise<FeedbackLoopResult & { initialContent: string }> {
+): Promise<IFeedbackLoopResult & { initialContent: string }> {
   // Generate initial response
   const initialResponse = await agentRunner.run(config.generatorAgent, {
     userPrompt: request,

@@ -18,7 +18,7 @@ import { DomainEventType } from "@exaix/core/events";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
-import type { IModelCallOptions, ModelIntent } from "@exaix/schemas";
+import type { IModelCallOptions, IModelIntent } from "@exaix/schemas";
 import type { ITokenizer } from "@exaix/core/func";
 import { SafeError } from "@exaix/core/errors";
 import { ProviderFactory } from "@exaix/ai/provider_factory.ts";
@@ -100,11 +100,11 @@ export interface IPromptBudgetAllocator {
 interface BlueprintInput {
   model: string;
   provider?: string;
-  model_size?: ModelIntent["model_size"];
+  model_size?: IModelIntent["model_size"];
   characteristics?: string[];
   preferred_provider?: string;
   thinking?: boolean;
-  effort?: ModelIntent["effort"];
+  effort?: IModelIntent["effort"];
   /** Phase 135 Step 8 (§5.8.8) — explicit identity-level task type declaration. */
   task_type?: TaskType;
 }
@@ -160,8 +160,8 @@ const BlueprintSchema = z.object({
 /** Optional configuration for AgentExecutor. */
 export interface IAgentExecutorOptions {
   guardrailRunner?: IGuardrailRunner;
-  /** Request-level ModelIntent fields override blueprint values (Phase 132). */
-  requestIntent?: Partial<ModelIntent>;
+  /** Request-level IModelIntent fields override blueprint values (Phase 132). */
+  requestIntent?: Partial<IModelIntent>;
   /**
    * Phase 135 Step 8 (§5.8.8) — the caller's highest-confidence skill match's
    * triggers.task_types, in priority order (first = most confident). AgentExecutor has
@@ -625,7 +625,7 @@ export class AgentExecutor {
         identityId: validatedFrontmatter.identity_id,
         taskTypeMap: this.config.model_registry?.task_type_map,
       });
-      const intent: ModelIntent = {
+      const intent: IModelIntent = {
         model: validatedFrontmatter.model,
         model_size: extras.model_size ?? requestIntent?.model_size,
         characteristics: extras.characteristics ?? requestIntent?.characteristics,

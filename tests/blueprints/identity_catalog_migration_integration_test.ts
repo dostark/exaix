@@ -2,7 +2,7 @@
  * @module IdentityCatalogStep7IntegrationTest
  * @path tests/blueprints/identity_catalog_migration_integration_test.ts
  * @description Phase 131 Step 7 deferred integration test — loads every active
- *   identity through BlueprintLoader and asserts contract-valid output:
+ *   identity through IBlueprintLoader and asserts contract-valid output:
  *   loads successfully, default_skills includes response-contract,
  *   no unresolved {{include:}} remains, body is role/scope/voice only.
  *   Also loads referenced skills through SkillsService to verify they exist.
@@ -12,7 +12,7 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
-import { BlueprintLoader } from "@exaix/core/blueprint";
+import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { initTestDbService } from "@exaix/testing";
 import { SkillsService } from "@exaix/core/skills";
 import { MemoryScope } from "@exaix/core";
@@ -60,12 +60,12 @@ const METHODOLOGY_KEYWORDS = [
 
 interface LoadResult {
   identityId: string;
-  blueprint: Awaited<ReturnType<BlueprintLoader["load"]>>;
+  blueprint: Awaited<ReturnType<IBlueprintLoader["load"]>>;
   loadError: Error | null;
 }
 
 async function tryLoadAll(
-  loader: BlueprintLoader,
+  loader: IBlueprintLoader,
 ): Promise<LoadResult[]> {
   const results: LoadResult[] = [];
   for (const identityId of ACTIVE_IDENTITY_IDS) {
@@ -104,7 +104,7 @@ interface ILoadedIdentityView {
 async function forEachLoadedIdentity(
   fn: (identityId: string, blueprint: ILoadedIdentityView) => void | Promise<void>,
 ): Promise<void> {
-  const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
   const results = await tryLoadAll(loader);
 
   for (const { identityId, blueprint, loadError } of results) {
@@ -121,7 +121,7 @@ async function forEachLoadedIdentity(
 
 Deno.test({
   name:
-    "[step7] every active identity with valid frontmatter loads through BlueprintLoader with response-contract in default_skills",
+    "[step7] every active identity with valid frontmatter loads through IBlueprintLoader with response-contract in default_skills",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -180,7 +180,7 @@ const SKILL_MD_DIR = join(REPO_ROOT, "Blueprints", "Skills");
 
 /** Collect default_skills from all loadable identity blueprints. */
 async function collectReferencedSkills(): Promise<Set<string>> {
-  const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
   const results = await tryLoadAll(loader);
   const allReferenced = new Set<string>();
   for (const { identityId, blueprint } of results) {

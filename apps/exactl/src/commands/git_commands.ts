@@ -18,7 +18,7 @@ export interface IBranchInfo {
   trace_id?: string;
 }
 
-export interface CommitInfo {
+export interface ICommitInfo {
   sha: string;
   message: string;
   author: string;
@@ -89,7 +89,7 @@ export class GitCommands extends BaseCommand {
    * @param branchName Branch name
    * @returns Branch info with commit history
    */
-  async showBranch(branchName: string): Promise<{ branch: IBranchInfo; commits: CommitInfo[] }> {
+  async showBranch(branchName: string): Promise<{ branch: IBranchInfo; commits: ICommitInfo[] }> {
     const workspaceRoot = this.config.system.root;
 
     // Get branch info
@@ -119,7 +119,7 @@ export class GitCommands extends BaseCommand {
       throw new Error(`Failed to get commit history for ${branchName}`);
     }
 
-    const commits: CommitInfo[] = [];
+    const commits: ICommitInfo[] = [];
     const entries = new TextDecoder().decode(stdout).split("\n\n").filter((e) => e);
 
     for (const entry of entries) {
@@ -202,7 +202,7 @@ export class GitCommands extends BaseCommand {
    * @param traceId Trace ID to search for
    * @returns Commits matching the trace_id
    */
-  async logByTraceId(traceId: string): Promise<CommitInfo[]> {
+  async logByTraceId(traceId: string): Promise<ICommitInfo[]> {
     const workspaceRoot = this.config.system.root;
 
     // Search all commits for trace_id
@@ -226,7 +226,7 @@ export class GitCommands extends BaseCommand {
     }
 
     const lines = new TextDecoder().decode(stdout).trim().split("\n").filter((l) => l);
-    const commits: CommitInfo[] = [];
+    const commits: ICommitInfo[] = [];
 
     for (const line of lines) {
       const [sha, message, author, date] = line.split("|||");

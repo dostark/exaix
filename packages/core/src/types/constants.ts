@@ -2506,7 +2506,7 @@ export const COMPLEXITY_BODY_LENGTH_LOW = 50;
 export const COMPLEXITY_FILE_REF_PATTERN = /(\/[\w.-]+|[a-z0-9_]+\.(ts|js|md|json|py|go|rs|c|cpp|h))/gi;
 
 // ============================================================================
-// Tool Classification for Dynamic Execution (Phase 56)
+// Tool IClassification for Dynamic Execution (Phase 56)
 // ============================================================================
 
 // MCP tool names and related work sets are now owned by @exaix/mcp.

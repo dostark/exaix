@@ -11,7 +11,7 @@ import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
-import type { ModelIntent } from "@exaix/schemas/model_intent.ts";
+import type { IModelIntent } from "@exaix/schemas/model_intent.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
@@ -74,8 +74,8 @@ export interface IPlanExecutorOptions {
   amendmentService?: IPlanAmendmentService;
   /** Optional guardrail runner. When provided, built in createAgentExecutor. */
   guardrailRunner?: IGuardrailRunner;
-  /** Request-level ModelIntent fields that override blueprint values (Phase 132). */
-  requestIntent?: Partial<ModelIntent>;
+  /** Request-level IModelIntent fields that override blueprint values (Phase 132). */
+  requestIntent?: Partial<IModelIntent>;
   /**
    * Phase 135 Step 9 (GAP-C9): the resolver threaded into AgentExecutor so
    * resolveModelFromBlueprint's ModelResolver.resolve() branch is reachable during real

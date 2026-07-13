@@ -39,7 +39,7 @@ steps:
 
   # A best-characteristic identity: extras.characteristics ("best") and extras.task_type
   # ("feature") on the identity blueprint's OWN frontmatter drive resolveModelFromBlueprint's
-  # ModelIntent — the request never carries these fields (Step 8's precedence).
+  # IModelIntent — the request never carries these fields (Step 8's precedence).
   - id: "setup-best-identity"
     type: "shell"
     command: "sh"

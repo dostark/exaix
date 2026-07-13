@@ -20,7 +20,7 @@ import {
   createNode,
   flattenTree,
   type ITreeNode,
-  type TreeRenderOptions,
+  type ITreeRenderOptions,
 } from "@exaix/tui/helpers/tree_view.ts";
 import { DialogStatus, type PortalAnalysisMode, type PortalExecutionStrategy, PortalStatus } from "@exaix/core";
 import { TuiIcon, TuiNodeType } from "@exaix/tui";
@@ -482,7 +482,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
     return `[Enter] Open   [r] Refresh   [d] Remove   [?] Help`;
   }
 
-  renderPortalTree(options: Partial<TreeRenderOptions> = {}): string[] {
+  renderPortalTree(options: Partial<ITreeRenderOptions> = {}): string[] {
     return this.renderTreeView({
       selectedId: this.state.selectedId || undefined,
       ...options,

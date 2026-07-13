@@ -3,12 +3,12 @@
  * @path packages/core/tests/event/event_logger_identity_fields_test.ts
  * @related-files []
  * @architectural-layer Core
- * @description Verifies that EventLogger correctly forwards Actor/Agent/Identity separation fields to ActivityRepository.
+ * @description Verifies that EventLogger correctly forwards Actor/Agent/Identity separation fields to IActivityRepository.
  */
 
 import { assertEquals, assertNotEquals } from "@std/assert";
 import { EventLogger } from "@exaix/core/logger";
-import type { ActivityRepository, LogActivityRequest } from "@exaix/core/repositories";
+import type { IActivityRepository, ILogActivityRequest } from "@exaix/core/repositories";
 import { ActorType, AgentKind } from "@exaix/core";
 
 /**
@@ -22,8 +22,8 @@ import { ActorType, AgentKind } from "@exaix/core";
 
 Deno.test("EventLogger: passes all separation fields through to logActivity", async () => {
   // Arrange
-  const capturedRequests: LogActivityRequest[] = [];
-  const mockRepo: ActivityRepository = {
+  const capturedRequests: ILogActivityRequest[] = [];
+  const mockRepo: IActivityRepository = {
     logActivity: (req) => {
       capturedRequests.push(req);
       return Promise.resolve();
@@ -57,8 +57,8 @@ Deno.test("EventLogger: passes all separation fields through to logActivity", as
 
 Deno.test("EventLogger: passes null for optional fields when not provided", async () => {
   // Arrange
-  const capturedRequests: LogActivityRequest[] = [];
-  const mockRepo: ActivityRepository = {
+  const capturedRequests: ILogActivityRequest[] = [];
+  const mockRepo: IActivityRepository = {
     logActivity: (req) => {
       capturedRequests.push(req);
       return Promise.resolve();
@@ -86,8 +86,8 @@ Deno.test("EventLogger: passes null for optional fields when not provided", asyn
 
 Deno.test("EventLogger: does NOT put blueprint slug into agentKind field", async () => {
   // Arrange
-  const capturedRequests: LogActivityRequest[] = [];
-  const mockRepo: ActivityRepository = {
+  const capturedRequests: ILogActivityRequest[] = [];
+  const mockRepo: IActivityRepository = {
     logActivity: (req) => {
       capturedRequests.push(req);
       return Promise.resolve();

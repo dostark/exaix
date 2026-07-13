@@ -1,7 +1,7 @@
 /**
  * @module MilestoneEmissionAgentRunnerTest
  * @path packages/execution/tests/milestone_emission_agent_runner_test.ts
- * @description Verifies that AgentRunner emits milestones (llm.call.started, llm.call.completed)
+ * @description Verifies that IAgentRunner emits milestones (llm.call.started, llm.call.completed)
  * and respects the milestoneEmitter config field.
  */
 
@@ -33,7 +33,7 @@ const sampleRequest: IParsedRequest = {
 const wellFormedResponse = `<thought>Simple</thought>
 <content>console.log("Hello");</content>`;
 
-Deno.test("AgentRunner: emits llm.call.started before LLM call", async () => {
+Deno.test("IAgentRunner: emits llm.call.started before LLM call", async () => {
   const emitter = new MockMilestoneEmitter();
   const mockProvider = new MockProvider(wellFormedResponse);
   const runner = new AgentRunner(undefined, mockProvider, { milestoneEmitter: emitter });
@@ -44,7 +44,7 @@ Deno.test("AgentRunner: emits llm.call.started before LLM call", async () => {
   assertExists(started, "llm.call.started milestone should be emitted");
 });
 
-Deno.test("AgentRunner: emits llm.call.completed after successful LLM call", async () => {
+Deno.test("IAgentRunner: emits llm.call.completed after successful LLM call", async () => {
   const emitter = new MockMilestoneEmitter();
   const mockProvider = new MockProvider(wellFormedResponse);
   const runner = new AgentRunner(undefined, mockProvider, { milestoneEmitter: emitter });
@@ -55,7 +55,7 @@ Deno.test("AgentRunner: emits llm.call.completed after successful LLM call", asy
   assertExists(completed, "llm.call.completed milestone should be emitted");
 });
 
-Deno.test("AgentRunner: llm.call.started precedes llm.call.completed", async () => {
+Deno.test("IAgentRunner: llm.call.started precedes llm.call.completed", async () => {
   const emitter = new MockMilestoneEmitter();
   const mockProvider = new MockProvider(wellFormedResponse);
   const runner = new AgentRunner(undefined, mockProvider, { milestoneEmitter: emitter });
@@ -69,7 +69,7 @@ Deno.test("AgentRunner: llm.call.started precedes llm.call.completed", async () 
   assertEquals(startedIdx < completedIdx, true, "started should precede completed");
 });
 
-Deno.test("AgentRunner: emits no milestones when milestoneEmitter is not configured", async () => {
+Deno.test("IAgentRunner: emits no milestones when milestoneEmitter is not configured", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
   const runner = new AgentRunner(undefined, mockProvider, {});
 
@@ -78,7 +78,7 @@ Deno.test("AgentRunner: emits no milestones when milestoneEmitter is not configu
   assertEquals(result.content, 'console.log("Hello");');
 });
 
-Deno.test("AgentRunner: sets traceId on milestones when request has traceId", async () => {
+Deno.test("IAgentRunner: sets traceId on milestones when request has traceId", async () => {
   const emitter = new MockMilestoneEmitter();
   const mockProvider = new MockProvider(wellFormedResponse);
   const runner = new AgentRunner(undefined, mockProvider, { milestoneEmitter: emitter });

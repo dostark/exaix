@@ -8,13 +8,13 @@
  */
 
 import type { IStructuredLogEntry } from "@exaix/core/types";
-import type { CorrelationAnalysis } from "./types.ts";
+import type { ICorrelationAnalysis } from "./types.ts";
 import { LogLevel } from "@exaix/core";
 
 /**
  * Analyze correlation across multiple log entries
  */
-export function analyzeCorrelation(entries: IStructuredLogEntry[]): CorrelationAnalysis | null {
+export function analyzeCorrelation(entries: IStructuredLogEntry[]): ICorrelationAnalysis | null {
   if (entries.length === 0) return null;
 
   // Find common correlation ID

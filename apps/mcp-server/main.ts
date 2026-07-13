@@ -31,13 +31,13 @@ export interface IMcpStdioServer {
   handleRequest(request: JSONRPCRequest): Promise<unknown>;
 }
 
-export interface McpStdioIo {
+export interface IMcpStdioIo {
   stdin: ReadableStream<Uint8Array>;
   writeStdout: (data: Uint8Array) => Promise<number> | number;
   onError?: (message: string, error: Error | string | unknown) => void;
 }
 
-export async function runMcpStdioLoop(server: IMcpStdioServer, io: McpStdioIo): Promise<void> {
+export async function runMcpStdioLoop(server: IMcpStdioServer, io: IMcpStdioIo): Promise<void> {
   server.start();
 
   const decoder = new TextDecoder();

@@ -1262,7 +1262,7 @@ export enum JsonRpcErrorCode {
 }
 
 /**
- * Classification of a tool by its exposure kind.
+ * IClassification of a tool by its exposure kind.
  * mcp_handler: live MCP tool backed by a ToolHandler class (portal/file/git tools).
  * mcp_domain: live MCP tool backed by domain logic (exaix_* tools).
  * internal_only: tool available only to ToolRegistry / agent strategies, not exposed via MCP.

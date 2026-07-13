@@ -6,7 +6,7 @@
  * @related-files [packages/routing/src/capability_matcher.ts, packages/routing/src/routing_policy_service.ts]
  */
 
-import type { BlueprintLoader } from "./internal_types.ts";
+import type { IBlueprintLoader } from "./internal_types.ts";
 import { CapabilityMatcher } from "./capability_matcher.ts";
 import type { IRoutingCandidate, IRoutingMatchCriteria } from "@exaix/schemas/routing_policy.ts";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -18,7 +18,7 @@ export interface ICandidateDiscoveryOptions {
 export class CandidateDiscovery {
   private readonly matcher: CapabilityMatcher;
 
-  constructor(private readonly blueprintLoader: BlueprintLoader, options: ICandidateDiscoveryOptions = {}) {
+  constructor(private readonly blueprintLoader: IBlueprintLoader, options: ICandidateDiscoveryOptions = {}) {
     this.matcher = new CapabilityMatcher({ allowDeprecated: options.allowDeprecated });
   }
 

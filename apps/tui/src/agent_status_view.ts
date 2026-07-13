@@ -18,7 +18,7 @@ import {
   MessageType,
   SECONDS_PER_HOUR,
 } from "@exaix/core";
-import { createSpinnerState, type SpinnerState, startSpinner, stopSpinner } from "@exaix/tui/helpers/spinner.ts";
+import { createSpinnerState, type ISpinnerState, startSpinner, stopSpinner } from "@exaix/tui/helpers/spinner.ts";
 import type { ITreeNode } from "@exaix/tui/helpers/tree_view.ts";
 import {
   collapseAll,
@@ -53,7 +53,7 @@ import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "@exaix/tui/config.ts";
 import { MainViewHandler, ViewModeHandler } from "./agent_status/key_handlers.ts";
 import { buildFlatTree, buildTreeByModel, buildTreeByStatus } from "./agent_status/tree_builder.ts";
 import type { IAgentService } from "@exaix/core/types";
-import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
+import type { IAgentHealthData, IAgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
 
 // ===== View State =====
 
@@ -261,12 +261,12 @@ export class AgentStatusView {
   }
 
   /** Get detailed health for an agent. */
-  async getAgentHealth(identityId: string): Promise<AgentHealthData> {
+  async getAgentHealth(identityId: string): Promise<IAgentHealthData> {
     return await this.agentService.getAgentHealth(identityId);
   }
 
   /** Get logs for an agent. */
-  async getAgentLogs(identityId: string, limit = DEFAULT_QUERY_LIMIT): Promise<AgentLogEntry[]> {
+  async getAgentLogs(identityId: string, limit = DEFAULT_QUERY_LIMIT): Promise<IAgentLogEntry[]> {
     return await this.agentService.getAgentLogs(identityId, limit);
   }
 
@@ -362,7 +362,7 @@ export class MinimalAgentServiceMock implements IAgentService {
     return Promise.resolve([...this.agents]);
   }
 
-  getAgentLogs(_identityId: string, _limit = TUI_LIMIT_MEDIUM): Promise<AgentLogEntry[]> {
+  getAgentLogs(_identityId: string, _limit = TUI_LIMIT_MEDIUM): Promise<IAgentLogEntry[]> {
     return Promise.resolve([
       {
         timestamp: new Date().toISOString(),
@@ -372,7 +372,7 @@ export class MinimalAgentServiceMock implements IAgentService {
     ]);
   }
 
-  getAgentHealth(_identityId: string): Promise<AgentHealthData> {
+  getAgentHealth(_identityId: string): Promise<IAgentHealthData> {
     // Mock health data
     return Promise.resolve({
       status: AgentHealth.HEALTHY,
@@ -394,7 +394,7 @@ export class MinimalAgentServiceMock implements IAgentService {
 export class AgentStatusTuiSession extends TuiSessionBase {
   private readonly agentView: AgentStatusView;
   private state: IAgentViewState;
-  private localSpinnerState: SpinnerState;
+  private localSpinnerState: ISpinnerState;
   private autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
   private agents: IAgentStatusItem[] = [];
 
@@ -681,7 +681,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     }
   }
 
-  private formatDetailContent(agent: IAgentStatusItem | undefined, health: AgentHealthData): string {
+  private formatDetailContent(agent: IAgentStatusItem | undefined, health: IAgentHealthData): string {
     if (!agent) return "Identity not found.";
 
     const lines: string[] = [];
@@ -743,7 +743,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     }
   }
 
-  private formatLogContent(logs: AgentLogEntry[]): string {
+  private formatLogContent(logs: IAgentLogEntry[]): string {
     if (logs.length === 0) {
       return "No logs available.";
     }

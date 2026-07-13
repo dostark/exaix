@@ -43,7 +43,7 @@ interface TokenSummary {
   providers: Record<string, { calls: number; inputTokens: number; outputTokens: number; costUsd: number }>;
 }
 
-// Mock AgentRunner for testing
+// Mock IAgentRunner for testing
 class MockAgentRunner implements IAgentExecutor {
   private results: Map<string, IAgentExecutionResult> = new Map();
   private failures: Set<string> = new Set();
@@ -1857,7 +1857,7 @@ Deno.test("FlowRunner: handles condition syntax errors gracefully", async () => 
 // Phase 17: Flow Skills Integration Tests
 // ============================================================================
 
-// Mock AgentRunner that captures requests to verify skills are passed
+// Mock IAgentRunner that captures requests to verify skills are passed
 class CapturingMockAgentRunner implements IAgentExecutor {
   capturedRequests: Array<{ identityId: string; request: IFlowStepRequest }> = [];
 

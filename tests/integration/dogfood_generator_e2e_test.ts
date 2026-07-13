@@ -13,7 +13,7 @@
 
 import { assertEquals, assertExists, assertMatch } from "@std/assert";
 import { join } from "@std/path";
-import { BlueprintLoader } from "@exaix/core/blueprint";
+import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { SkillsService } from "@exaix/core/skills";
 import { RequestSchema } from "@exaix/schemas/request.ts";
 import { SkillSchema } from "@exaix/schemas/memory_bank.ts";
@@ -28,8 +28,8 @@ const PHASE_120_PLAN = join(REPO_ROOT, "exaix-dev-docs", "planning", "phase-120-
 
 const DOGFOOD_META_RE = /> Dogfood metadata — portal: `([^`]+)`; target_branch: `([^`]+)`/;
 
-Deno.test("[dogfood-e2e] dogfood-developer identity loads through BlueprintLoader", async () => {
-  const loader = new BlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
+Deno.test("[dogfood-e2e] dogfood-developer identity loads through IBlueprintLoader", async () => {
+  const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint, "dogfood-developer must load");
