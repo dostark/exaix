@@ -1,10 +1,22 @@
 /**
  * @module AgentExecutor
  * @path packages/execution/src/agent_executor.ts
- * @description Orchestrates LLM agent execution via MCP with security mode enforcement.
- * Handles blueprint loading, subprocess spawning, MCP connection, and git audit.
- * @architectural-layer Services
- * @related-files ["packages/execution/src/agent_runner.ts", "packages/execution/src/execution_loop.ts"]
+ * @description Thin orchestrator that delegates to injected services for
+ *   blueprint loading (BlueprintService), prompt building (PromptBuilder),
+ *   git audit (GitAuditService), output parsing (OutputParser), history
+ *   management (HistoryManager), budget/context (ExecutionContextService),
+ *   and strategy dispatch (StrategyRegistry). ~950 lines after extracting
+ *   6 sub-domain services from the original ~1750.
+ * @architectural-layer Execution
+ * @related-files [
+ *   "packages/execution/src/blueprint_service.ts",
+ *   "packages/execution/src/execution_context_service.ts",
+ *   "packages/execution/src/git_audit_service.ts",
+ *   "packages/execution/src/output_parser.ts",
+ *   "packages/execution/src/history_manager.ts",
+ *   "packages/execution/src/react_loop_adapter.ts",
+ *   "packages/execution/src/agent_runner.ts"
+ * ]
  */
 
 import { join } from "@std/path";
