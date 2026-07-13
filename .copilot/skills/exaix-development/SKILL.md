@@ -128,11 +128,97 @@ Required patterns
      @dependencies, @related-files. Single JSDoc block per method.
   9. EventLogger via constructor injection for domain events.
      BUDGET_EXCEEDED is the sole budget event name.
-  10. Event-driven over polling: prefer event-emitting APIs and signal-based
-      coordination over while-loops or setInterval.
+   10. Event-driven over polling: prefer event-emitting APIs and signal-based
+       coordination over while-loops or setInterval.
+   11. **Early decomposition** — when a class reaches > 300 lines or > 7
+       constructor params, STOP and extract before adding more. Each new
+       responsibility should be a new service, not a new private method on an
+       existing god object. Run `deno task check:god-objects` periodically to
+       detect candidates early.
+
+God object prevention
+
+   A god object is a class that embodies multiple distinct responsibilities.
+   Preventing god objects is cheaper than refactoring them. Follow these rules:
+
+   a. **One service per concern** — before adding a method to an existing class,
+      ask: "does this belong to a different concern?" If yes, create a new service.
+      The AgentExecutor decomposition extracted 7 services from one class:
+      ExecutionContext, Blueprint, PromptBuilder, GitAudit, OutputParser,
+      HistoryManager, and a ReActLoopAdapter — each with a single concern.
+
+   b. **Constructor param limit** — 7 params is a hard style-gate limit. If you
+      reach 7, the design is telling you something. Extract a parameter object
+      or split the class. Never add an 8th param — not even "just this once."
+
+   c. **The composition root pattern** — every class's constructor should be its
+      composition root: all dependencies are declared as typed constructor params
+      with `Opt<T, Reason.*>` fallbacks, and the class delegates to services
+      rather than implementing logic inline:
+
+      ```typescript
+      // GOOD — composition root with delegation
+      class FlowRunner {
+        constructor(
+          private ctx: ExecutionContextService,
+          private blueprintService: BlueprintService,
+          private promptBuilder: PromptBuilder,
+        ) {}
+        async execute(): Promise<void> {
+          await this.blueprintService.loadBlueprint(id);
+          await this.promptBuilder.buildExecutionPrompt(...);
+        }
+      }
+
+      // BAD — god object in the making
+      class FlowRunner {
+        private config: Config;
+        private logger: IEventLogger;
+        // ... 14 more fields
+        async loadBlueprint(id: string): Promise<void> { /* inline logic */ }
+        async buildExecutionPrompt(): Promise<string> { /* inline logic */ }
+        // ... 30 more methods
+      }
+      ```
+
+   d. **Interface-first design** — before writing a class, define its interface.
+      This forces you to think about the boundary before implementation. A class
+      with a 3-method interface is harder to turn into a god object than one
+      with no interface at all.
+
+   e. **Check:god-objects as a health check** — run `deno task check:god-objects`
+      weekly. The script scores every class on 6 metrics and reports candidates.
+      A rising score on an existing class is a warning sign:
+      ```bash
+      deno task check:god-objects -- --threshold=50
+      ```
+
+   f. **Extract adapters at interface boundaries** — when a class implements an
+      interface consumed by another subsystem, extract an adapter class that
+      composes the required services. This prevents the interface from pulling
+      unrelated dependencies into the class:
+
+      ```typescript
+      // GOOD — adapter at boundary
+      class ReActLoopAdapter implements IReActLoopExecutor {
+        constructor(
+          private outputParser: OutputParser,
+          private ctx: ExecutionContextService,
+        ) {}
+        parseAgentResponse(...): IChangesetResult {
+          return this.outputParser.parseAgentResponse(...);
+        }
+      }
+      ```
+
+   See the [refactor skill](../refactor/SKILL.md) for the full decomposition
+   workflow when a god object is already present.
 
 Prohibited anti-patterns
 
+  - **God objects** — classes with > 500 lines, > 10 constructor params, or
+    mixed concerns that should be separate services. Run `deno task check:god-objects`
+    to detect. Decompose via the [refactor skill](../refactor/SKILL.md#god-object-decomposition).
   - Record<string, unknown> — define a specific interface instead.
   - import * from — explicit named imports only.
   - console.log for production logging — use EventLogger or Logger.
@@ -160,6 +246,7 @@ Implementation verification checklist
   [ ] Error handling follows classification patterns
   [ ] Constants used instead of magic numbers
   [ ] Injectable services implement IFoo; constructors accept interfaces, not classes
+  [ ] God object score passes threshold (`deno task check:god-objects -- --threshold=50`)
   [ ] On a feature branch, not main (Gate 0)
   [ ] Working tree clean before rebase/pull
 
