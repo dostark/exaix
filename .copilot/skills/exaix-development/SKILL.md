@@ -16,7 +16,7 @@ topics: ["source", "development", "tdd", "patterns", "architecture"]
 qwen_skill: exaix-development
 ---
 
-```text
+````text
 Key points
 
 - Strict TDD-first: write failing tests before implementation
@@ -219,6 +219,10 @@ Prohibited anti-patterns
   - **God objects** — classes with > 500 lines, > 10 constructor params, or
     mixed concerns that should be separate services. Run `deno task check:god-objects`
     to detect. Decompose via the [refactor skill](../refactor/SKILL.md#god-object-decomposition).
+  - **Layer-violating constant imports** — a high-level class (orchestrator,
+    coordinator) importing low-level implementation constants from packages whose
+    services it delegates to. E.g. `AgentOrchestrator` importing `SafeSubprocess`,
+    `DEFAULT_GIT_*`, or `ToolRegistry`. See [CODE_STYLE.md §15](../docs/CODE_STYLE.md#layer-aware-constant-imports).
   - Record<string, unknown> — define a specific interface instead.
   - import * from — explicit named imports only.
   - console.log for production logging — use EventLogger or Logger.
@@ -268,7 +272,7 @@ Examples
   #exaix-development Add input validation to the request handler
   #exaix-development Refactor provider selection to CircuitBreaker pattern
   #exaix-development Security audit for file path handling
-```
+````
 
 ```
 ---

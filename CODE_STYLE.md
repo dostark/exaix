@@ -957,6 +957,127 @@ feedback during development.
 
 ---
 
+## 15. Layer-Aware Constant Imports {#layer-aware-constant-imports}
+
+A high-level class (orchestrator, coordinator, controller) must not directly
+import low-level implementation constants from packages that provide services it
+delegates to. The constants are implementation details of those services, not of
+the class that orchestrates them.
+
+### Story — the `AgentOrchestrator` cleanup
+
+`AgentOrchestrator` was the composition root for agent execution — it delegated
+blueprint loading, git auditing, prompt building, history management, output
+parsing, and strategy dispatch to seven injected services. Yet it still
+imported constants from four packages it delegated to:
+
+| Imported constant          | Source package        | What it exposed                |
+| -------------------------- | --------------------- | ------------------------------ |
+| `SafeSubprocess`           | `@exaix/core`         | Subprocess execution primitive |
+| `TOKEN_ESTIMATION_...`     | `@exaix/core`         | Token estimation heuristic     |
+| `DEFAULT_GIT_*_TIMEOUT_MS` | `@exaix/git`          | Git operation timeout defaults |
+| `ToolRegistry` (class)     | `@exaix/tool-runtime` | Concrete tool registry class   |
+| `DomainEventType`          | `@exaix/core/events`  | Event type for audit logging   |
+| `AGENT_EVENT_OUTPUT`       | `@exaix/core`         | Agent output event name        |
+
+Each of these constants belongs to a lower-level concern that the orchestrator
+shouldn't know about — they should be encapsulated behind the corresponding
+service boundary (`GitAuditService`, `ExecutionContextService`, etc.).
+
+**Fix pattern:**
+
+```
+Before:                    After:
+  AgentOrchestrator          AgentOrchestrator
+  ├── import SafeSubprocess  └── depends on GitAuditService interface
+  ├── import GIT_CMD_*            └── GitAuditService imports SafeSubprocess
+  └── import ToolRegistry          └── imports ToolRegistry
+```
+
+The rule is simple: if a constant (or class, or primitive) is consumed by a
+service you delegate to, then it must be imported by that service — not by you.
+
+### Rule
+
+When a class `A` delegates a concern to service `S`, any constant `C` that is
+consumed by `S` in fulfilling that concern must be imported by `S`, not by `A`.
+
+**Signal — you have a layer violation if:**
+
+- `AgentOrchestrator` imports `SafeSubprocess` (it's the subprocess runner that
+  `GitAuditService` uses — the orchestrator should never spawn subprocesses
+  directly).
+- A coordinator imports a `DEFAULT_*` timeout for a git command it never invokes
+  (the command lives in `GitAuditService`).
+- A high-level class creates a `new ToolRegistry({...})` instead of accepting
+  `IToolRegistry` via DI.
+- A composition root imports `TOKEN_ESTIMATION_CHARS_PER_TOKEN` to compute
+  token estimates (the `ExecutionContextService` already
+  encapsulates this via `estimateTokensSync()`).
+
+**Examples of acceptable high-level constant usage:**
+
+```ts
+// ✅ Framework-level enums — define the class's own dispatch logic
+import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
+
+// ✅ Event names — the class emits its own events
+import { AGENT_EVENT_EXECUTION_STARTED } from "@exaix/core";
+
+// ✅ Type-only references to service interfaces
+import type { IToolRegistry } from "@exaix/core/types";
+```
+
+**Violations:**
+
+```ts
+// ❌ Concern-specific primitive — belongs in the delegated service
+import { SafeSubprocess } from "@exaix/core";
+async auditAndRevertChanges() {
+  return SafeSubprocess.run("git", ...); // ← belongs in GitAuditService
+}
+
+// ❌ Concern-specific timeout — belongs in the delegated service
+import { DEFAULT_GIT_STATUS_TIMEOUT_MS } from "@exaix/git";
+async auditAndRevertChanges() {
+  await SafeSubprocess.run("git", ["status", ...], {
+    timeoutMs: DEFAULT_GIT_STATUS_TIMEOUT_MS, // ← belongs in GitAuditService
+  });
+}
+
+// ❌ Concrete implementation — accept interface via DI instead
+import { ToolRegistry } from "@exaix/tool-runtime";
+get toolRegistry() {
+  if (!this._toolRegistry) this._toolRegistry = new ToolRegistry({...});
+  return this._toolRegistry;
+}
+
+// ❌ Encapsulated constant — use the service's wrapper method
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
+const tokens = Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
+// → use ctx.estimateTokensSync(text) instead
+```
+
+### Remediation
+
+1. **Move the constant into the service's module** — the service that actually
+   uses it imports it.
+2. **If the service needs to expose a computation**, add a wrapper method
+   (e.g. `estimateTokensSync()` on `ExecutionContextService`) rather than
+   exporting the raw constant.
+3. **For concrete class dependencies**, remove the inline `new` expression and
+   accept the interface via constructor injection. Update the callers that
+   create the high-level class to inject the concrete instance.
+
+### Automated enforcement
+
+Not yet automated. Manual review gate: inspect the import section of every
+composition-root class (> 300 lines) for imports from packages that provide
+concerns the class delegates to services. Each such import is a candidate for
+extraction.
+
+---
+
 > ⚠️ Keep this file short and focused. Architectural patterns such as timeout
 > protection, file locking, or error classification belong in other guides
 > (e.g. `.copilot/skills/exaix-development/SKILL.md`) and **are not** repeated here unless they
