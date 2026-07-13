@@ -57,6 +57,7 @@ Phase 1 — Baseline measurement
        deno task check:leak-guard                        → edition leak guard
        deno task check:docs                              → manifest freshness
        deno task check:version                           → version bump compliance (dry-run: --dry-run)
+       deno task check:god-objects                       → god object candidates (advisory)
        deno task docs-agent-validate                     → agent doc schema validation
   3. Tally totals: N type errors, N lint, N fmt, N style, N edition-conditional,
      N UNGROUNDED, N magic, duplication X/Y/Z%, complexity breaches.
@@ -231,10 +232,25 @@ Phase 21 — Final full-suite validation
          deno task check:optional-params &&
          deno task check:leak-guard &&
          deno task check:docs &&
-         deno task check:version --dry-run &&
-         deno task docs-agent-validate &&
-         deno task test:solo
+       deno task check:version --dry-run &&
+       deno task check:god-objects &&
+       deno task docs-agent-validate &&
+       deno task test:solo
   43. All checks must report zero errors/warnings/violations before committing.
+
+Phase 22 — God object detection (advisory)
+  44. Run `deno task check:god-objects` — scans all classes with > 300 lines
+      and scores them on 6 metrics (line count, method count, constructor params,
+      max method length, import count, field count). Reports candidates without
+      failing CI.
+  45. For each candidate with score ≥ 50, evaluate decomposition using the
+      [refactor skill](../refactor/SKILL.md#god-object-decomposition):
+      - Extract cohesive sub-domains into separate services
+      - Each service gets its own file, its own test suite, and a clear interface
+      - The original class becomes a thin orchestrator that delegates to services
+      - Use TDD: write service tests before implementing the service
+  46. Re-run `deno task check:god-objects` to verify score reduction.
+      Target: score < 50 for all classes.
 
 Commit
   44. Use #commit for the structured commit body. Subject example:
@@ -273,6 +289,7 @@ Do / Don't
 
 Related skills
 - #refactor-check-magic — Run when magic violation count is non-trivial (> 5)
+- #refactor              — God object decomposition via service extraction
 - #fix-bug              — For any regression introduced by a cleanup fix
 - #next-steps           — When cleanup is one gated step in a phase plan
 - #commit               — Create a structured commit message after cleanup
