@@ -1071,13 +1071,18 @@ const tokens = Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
 
 ### Automated enforcement
 
-`[layer-constant-leak]` (warn) in `scripts/check_code_style.ts`. Pure structural
-AST check with no hardcoded symbol names: parses import declarations and walks
-`NewExpression` nodes to detect when a file value-imports a class from a different
-domain package and instantiates it via `new`. Skips framework packages
-(`@exaix/core`, `@exaix/schemas`, `@exaix/ai`, `@exaix/cli`, `@exaix/tui`),
-same-package imports, and test files. See `scripts/check_code_style.md` for
-the full tag reference.
+Two structural AST checks in `scripts/check_code_style.ts`. Both use the
+TypeScript compiler API (no hardcoded symbol names):
+
+| Tag                       | Detects                                                                   |
+| ------------------------- | ------------------------------------------------------------------------- |
+| `[concrete-cross-domain]` | `new ConcreteClass()` — value-importing and instantiating a foreign class |
+| `[layer-constant-leak]`   | Bare constant value imported from another domain package                  |
+
+Both skip framework packages (`@exaix/core`, `@exaix/schemas`, `@exaix/ai`,
+`@exaix/cli`, `@exaix/tui`), same-package imports, and test files. See
+`scripts/check_code_style.md` for the full tag reference, current warning
+counts, and per-file breakdown.
 
 ---
 

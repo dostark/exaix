@@ -180,21 +180,43 @@ module purity rules.
 
 ---
 
-## Layer-Aware Constant Imports
+## Cross-Domain Dependency Analysis
 
-| Tag                     | Severity | Rule (CODE_STYLE.md) | What it detects                                                                          |
-| ----------------------- | -------- | -------------------- | ---------------------------------------------------------------------------------------- |
-| `[layer-constant-leak]` | warn     | §15                  | File value-imports a class from a different domain package and instantiates it via `new` |
+Two structural AST checks — no hardcoded symbol names. Both use the TypeScript compiler API
+to parse imports and walk the AST.
 
-**Pure structural AST check** — no hardcoded symbol names. Uses the TypeScript compiler API to:
+### Concrete class instantiation
+
+| Tag                       | Severity | Rule | What it detects                                                                              |
+| ------------------------- | -------- | ---- | -------------------------------------------------------------------------------------------- |
+| `[concrete-cross-domain]` | warn     | §15  | File value-imports a class from a different domain package and instantiates it via `new X()` |
+
+Detects when a package-pure file bypasses DI by importing and `new`-ing a concrete class from
+another domain package. The fix is to accept an interface via constructor injection instead.
+
+**Current results**: 11 warnings — `ExecutionLoop` (3), `FlowRunner` (3), `RequestProcessor` (3),
+`PortalKnowledgeService` (1), `ToolRegistry` (1).
+
+### Bare constant import
+
+| Tag                     | Severity | Rule | What it detects                                                                                            |
+| ----------------------- | -------- | ---- | ---------------------------------------------------------------------------------------------------------- |
+| `[layer-constant-leak]` | warn     | §15  | File value-imports a constant-like symbol from a different domain package (not used as class, enum, or fn) |
+
+Detects raw constants (`DEFAULT_GIT_*`, `GIT_CMD_*`, `DEFAULT_MCP_*`, etc.) imported across
+domain boundaries — low-level values that belong behind the service that owns them.
+
+**Current results**: 18 warnings across several files.
+
+### How both checks work
 
 1. Parse all import declarations; build a map of imported names → source packages
-2. Walk `NewExpression` nodes in the AST
-3. If a constructor call name matches an imported value from a DIFFERENT domain package (not framework, not the file's own package), flag it
+2. Names used as `new X(...)` → emit `[concrete-cross-domain]`
+3. Names used as `X.Y` (property access) or `X(...)` (function call) → removed from constant set
+4. Remaining names → emit `[layer-constant-leak]`
 
-**Exempt packages**: `@exaix/core/*`, `@exaix/schemas`, `@exaix/ai`, `@exaix/cli`, `@exaix/tui`, `@exaix/testing`.
-
-**Current results**: 17 warnings across 5 files — signals possible concrete-class instantiation across domain boundaries.
+**Exempt packages**: `@exaix/core/*`, `@exaix/schemas`, `@exaix/ai`, `@exaix/cli`, `@exaix/tui`,
+`@exaix/testing`.
 
 **Full rule and remediation**: [CODE_STYLE.md §15](../CODE_STYLE.md#layer-aware-constant-imports).
 

@@ -573,14 +573,33 @@ function checkLayerLeaks(filePath: string, sourceText: string, repoPath: string)
   });
   if (imported.size === 0) return;
 
-  // ── Step 2: remove names used as constructors — classes are not constants ──
-  function removeNewArgs(node: ts.Node): void {
+  // ── Step 2: collect names used as constructors (new X(...)) ──
+  const newNames = new Set<string>();
+  function findNewArgs(node: ts.Node): void {
     if (ts.isNewExpression(node) && ts.isIdentifier(node.expression)) {
-      imported.delete(node.expression.text);
+      newNames.add(node.expression.text);
     }
-    ts.forEachChild(node, removeNewArgs);
+    ts.forEachChild(node, findNewArgs);
   }
-  removeNewArgs(sourceFile);
+  findNewArgs(sourceFile);
+
+  // ── Step 2b: flag concrete instantiation of foreign classes ──
+  for (const name of newNames) {
+    const info = imported.get(name);
+    if (!info) continue;
+    const location = `${filePath}:${info.line}`;
+    const prefix = convertWarnings ? "ERROR" : "WARN";
+    console.log(
+      `${prefix} [concrete-cross-domain] ${location} – ` +
+        `Concrete class '${name}' imported from '${info.specifier}' ` +
+        `and instantiated via \`new ${name}(\` in a different-domain file ` +
+        `(${repoPath}). Accept an interface via DI instead of importing ` +
+        `the concrete class. See CODE_STYLE.md §5 (DI) and §15.`,
+    );
+    if (convertWarnings) errorCount++;
+    else warnCount++;
+  }
+  for (const name of newNames) imported.delete(name);
 
   // ── Step 3: remove names used in property access (X.Y) —
   //   enum members, namespace usage, static method calls
@@ -592,7 +611,7 @@ function checkLayerLeaks(filePath: string, sourceText: string, repoPath: string)
   }
   removePropertyAccess(sourceFile);
 
-  // ── Step 3b: remove names used in function calls (X(...)) —
+  // ── Step 4: remove names used in function calls (X(...)) —
   //   factory functions are shared contracts, not bare constants
   function removeCallExpression(node: ts.Node): void {
     if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
@@ -602,7 +621,7 @@ function checkLayerLeaks(filePath: string, sourceText: string, repoPath: string)
   }
   removeCallExpression(sourceFile);
 
-  // ── Step 4: remaining names are constant-like → flag ──
+  // ── Step 5: remaining names are constant-like → flag ──
   if (imported.size === 0) return;
   for (const [name, info] of imported) {
     const location = `${filePath}:${info.line}`;
