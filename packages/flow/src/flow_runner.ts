@@ -260,6 +260,9 @@ interface IStepContext {
   startedAt: Date;
 }
 
+type IFormatStepSuccessContext = Pick<IStepContext, "flowRunId" | "step" | "request" | "startedAt">;
+type IBuildMergeOutputContext = Pick<IStepContext, "flowRunId" | "step" | "flow">;
+
 interface IWaveExecutionUnit {
   stepIds: string[];
   groupId?: string;
@@ -2425,7 +2428,7 @@ export class FlowRunner implements IFlowRunner {
    * Format successful step result
    */
   private formatStepSuccess(
-    ctx: Pick<IStepContext, "flowRunId" | "step" | "request" | "startedAt">,
+    ctx: IFormatStepSuccessContext,
     result: IAgentExecutionResult,
     recoveryMetadata?: Opt<IStepRecoveryMetadata, Reason.OptionalInput>,
     namespaceWrites?: Opt<IStepNamespaceWrites, Reason.OptionalInput>,
@@ -2727,7 +2730,7 @@ export class FlowRunner implements IFlowRunner {
   }
 
   private buildAutomaticParallelMergeOutput(
-    ctx: Pick<IStepContext, "flowRunId" | "step" | "flow">,
+    ctx: IBuildMergeOutputContext,
     groupId: string,
     mergeMode: IParallelMergeMode,
     originalRequest: { traceId?: string; requestId?: string },
