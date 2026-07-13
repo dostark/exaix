@@ -491,22 +491,17 @@ Description:
 // ────────────────────────────────────────────────────────────────────────────
 
 /**
- * Known low-level implementation symbols that should not appear in
- * composition-root classes.  These are concrete classes or runtime
- * primitives whose package path already identifies them as implementation
- * details — unlike shared enums (`McpToolName`), provider metadata
- * (`PROVIDER_OPENAI`), or framework services (`DatabaseService`).
+ * Low-level implementation primitives that should not appear in
+ * composition-root classes.  These are runtime primitives and bare
+ * constants — NOT service classes used for DI wiring.
  *
- * Adding a symbol here means: "if someone imports this from a different
- * package and uses it as a value (not a type), flag it."
+ * Service classes like `GitService`, `ToolRegistry`, `MemoryBankService`
+ * are legitimate imports for composition; the anti-pattern is importing
+ * their INTERNAL primitives (SafeSubprocess, DEFAULT_GIT_*, etc.).
  */
 const LAYER_LEAK_SYMBOLS = new Set([
   "SafeSubprocess",
-  "ToolRegistry", // concrete class — should accept IToolRegistry
   "TOKEN_ESTIMATION_CHARS_PER_TOKEN",
-  "GitService", // concrete class — should accept IGitService
-  "MemoryBankService", // concrete class — should accept IMemoryBankService
-  "SessionMemoryService",
 ]);
 
 /** Packages that should never be checked (framework / shared contracts). */
