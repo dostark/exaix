@@ -532,8 +532,16 @@ function checkLayerLeaks(filePath: string, sourceText: string, repoPath: string)
 
   const sourceFile = ts.createSourceFile(filePath, sourceText, ts.ScriptTarget.Latest, true);
 
-  // ── Step 1: collect imported names → { specifier, isInterface } ──
-  const imported = new Map<string, { specifier: string; line: number; isInterface: boolean }>();
+  // ── Step 1: collect imported names from domain packages ──
+  const imported = new Map<string, { specifier: string; line: number }>();
+
+  function isFramework(specifier: string): boolean {
+    if (LAYER_LEAK_FRAMEWORK.has(specifier)) return true;
+    for (const p of LAYER_LEAK_FRAMEWORK) {
+      if (specifier.startsWith(p + "/")) return true;
+    }
+    return false;
+  }
 
   ts.forEachChild(sourceFile, (node) => {
     if (!ts.isImportDeclaration(node)) return;
@@ -541,23 +549,14 @@ function checkLayerLeaks(filePath: string, sourceText: string, repoPath: string)
     if (!ts.isStringLiteral(specNode)) return;
     const specifier = specNode.text;
     if (!specifier.startsWith("@exaix/")) return;
-
-    // Framework subpaths (@exaix/core/events, @exaix/ai/providers, etc.) — always OK
-    if (
-      LAYER_LEAK_FRAMEWORK.has(specifier) ||
-      [...LAYER_LEAK_FRAMEWORK].some((p) => specifier.startsWith(p + "/"))
-    ) return;
-
-    // Concrete provider packages are implementation, but their users
-    // legitimately instantiate them — exempt provider packages too
+    if (isFramework(specifier)) return;
     if (
       specifier.startsWith("@exaix/ai-") || specifier.startsWith("@exaix-team/") ||
       specifier.startsWith("@exaix/tui/") || specifier.startsWith("@exaix/cli/")
     ) return;
 
-    // Skip same-package imports
     const targetPkg = specifier.match(/^@exaix\/([^/]+)/)?.[1];
-    if (targetPkg === myPackage) return;
+    if (!targetPkg || targetPkg === myPackage) return;
 
     const clause = node.importClause;
     if (!clause || clause.isTypeOnly) return;
@@ -567,37 +566,58 @@ function checkLayerLeaks(filePath: string, sourceText: string, repoPath: string)
     for (const el of bindings.elements) {
       if (el.isTypeOnly) continue;
       const name = el.name.text;
+      if (/^I[A-Z]/.test(name)) continue; // I-prefixed = interface, not a constant
       const line = sourceFile.getLineAndCharacterOfPosition(el.getStart()).line + 1;
-      // Heuristic: I-prefixed names are interfaces / abstract contracts
-      const isInterface = /^I[A-Z]/.test(name);
-      imported.set(name, { specifier, line, isInterface });
+      imported.set(name, { specifier, line });
     }
   });
-
   if (imported.size === 0) return;
 
-  // ── Step 2: walk NewExpression nodes and cross-check ──
-  function visit(node: ts.Node): void {
+  // ── Step 2: remove names used as constructors — classes are not constants ──
+  function removeNewArgs(node: ts.Node): void {
     if (ts.isNewExpression(node) && ts.isIdentifier(node.expression)) {
-      const name = node.expression.text;
-      const info = imported.get(name);
-      if (info && !info.isInterface) {
-        const location = `${filePath}:${info.line}`;
-        const prefix = convertWarnings ? "ERROR" : "WARN";
-        console.log(
-          `${prefix} [layer-constant-leak] ${location} – ` +
-            `'${name}' imported as a value from '${info.specifier}' ` +
-            `and instantiated via \`new ${name}(\` in a different-domain file ` +
-            `(${repoPath}). Accept interfaces via DI instead of importing ` +
-            `concrete classes. See CODE_STYLE.md §15.`,
-        );
-        if (convertWarnings) errorCount++;
-        else warnCount++;
-      }
+      imported.delete(node.expression.text);
     }
-    ts.forEachChild(node, visit);
+    ts.forEachChild(node, removeNewArgs);
   }
-  visit(sourceFile);
+  removeNewArgs(sourceFile);
+
+  // ── Step 3: remove names used in property access (X.Y) —
+  //   enum members, namespace usage, static method calls
+  function removePropertyAccess(node: ts.Node): void {
+    if (ts.isPropertyAccessExpression(node) && ts.isIdentifier(node.expression)) {
+      imported.delete(node.expression.text);
+    }
+    ts.forEachChild(node, removePropertyAccess);
+  }
+  removePropertyAccess(sourceFile);
+
+  // ── Step 3b: remove names used in function calls (X(...)) —
+  //   factory functions are shared contracts, not bare constants
+  function removeCallExpression(node: ts.Node): void {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+      imported.delete(node.expression.text);
+    }
+    ts.forEachChild(node, removeCallExpression);
+  }
+  removeCallExpression(sourceFile);
+
+  // ── Step 4: remaining names are constant-like → flag ──
+  if (imported.size === 0) return;
+  for (const [name, info] of imported) {
+    const location = `${filePath}:${info.line}`;
+    const prefix = convertWarnings ? "ERROR" : "WARN";
+    console.log(
+      `${prefix} [layer-constant-leak] ${location} – ` +
+        `Constant-like value '${name}' imported from '${info.specifier}' ` +
+        `in a different-domain file (${repoPath}). ` +
+        `Low-level constants belong behind the service that owns them; ` +
+        `avoid importing them in composition-root code. ` +
+        `See CODE_STYLE.md §15.`,
+    );
+    if (convertWarnings) errorCount++;
+    else warnCount++;
+  }
 }
 
 // Rules correspond to the code style guidelines in CODE_STYLE.md.  When a
