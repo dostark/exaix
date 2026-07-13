@@ -87,6 +87,7 @@ function appendConfigOverride(root: string, key: string, value: number): void {
   const configDbPath = ensureConfigDb(root);
   const db = new Database(configDbPath);
   try {
+    migrateConfigDb(db);
     insertOverride(db, key, value, "cli", "hot");
   } finally {
     db.close();

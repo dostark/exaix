@@ -51,6 +51,15 @@ const SEQUENTIAL_FILES: string[] = [
   // Config cutover daemon boot — boots a real daemon; the poll-watcher test
   // (1500ms settle + 1500ms post-inject) times out under DENO_JOBS contention.
   "tests/integration/config_cutover_daemon_boot_test.ts",
+  // Integrity daemon boot — boots a real daemon and writes mid-flight config DB
+  // overrides; races on Deno module cache and SQLite busy-timeout under parallel.
+  "tests/integration/config_integrity_daemon_boot_test.ts",
+  // Dogfood e2e — boots a real daemon and waits for plan generation; daemon
+  // subprocess crashes under parallel Deno cache contention.
+  "tests/integration/dogfood_e2e_test.ts",
+  // DB migration test — runs migrate_db.ts via deno run subprocess; races on
+  // the Deno module cache under parallel, yielding partial @exaix/core exports.
+  "tests/migrations/migrate_db_test.ts",
 ];
 
 interface TestStats {
