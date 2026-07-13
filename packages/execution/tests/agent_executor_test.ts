@@ -29,6 +29,7 @@ import { join } from "@std/path";
 import {
   AgentExecutionError,
   AgentExecutor,
+  ExecutionContextService,
   type IAgentFileBlueprint,
   type ICompactedEntry,
   type ILoopHistoryEntry,
@@ -1237,7 +1238,9 @@ Deno.test({
         pathResolver,
         permissions,
         strategyRegistry,
-        promptBudgetAllocator: mockBudgetAllocator,
+        executionContext: new ExecutionContextService(testConfig, logger, {
+          promptBudgetAllocator: mockBudgetAllocator,
+        }),
       });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
@@ -1739,7 +1742,7 @@ Deno.test({
         pathResolver,
         permissions,
         strategyRegistry,
-        tokenizer: mockTokenizer,
+        executionContext: new ExecutionContextService(testConfig, logger, { tokenizer: mockTokenizer }),
       });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
@@ -2708,7 +2711,9 @@ Deno.test({
         permissions,
         provider: mockProvider,
         strategyRegistry,
-        promptBudgetAllocator: tinyLoopHistoryAllocator,
+        executionContext: new ExecutionContextService(testConfig, logger, {
+          promptBudgetAllocator: tinyLoopHistoryAllocator,
+        }),
       });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
@@ -2887,7 +2892,9 @@ Deno.test({
         pathResolver,
         permissions,
         strategyRegistry,
-        promptBudgetAllocator: tinyMemoryAllocator,
+        executionContext: new ExecutionContextService(testConfig, logger, {
+          promptBudgetAllocator: tinyMemoryAllocator,
+        }),
       });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
@@ -2956,7 +2963,7 @@ Deno.test({
         pathResolver,
         permissions,
         strategyRegistry,
-        contextCache,
+        executionContext: new ExecutionContextService(testConfig, logger, { contextCache }),
       });
 
       const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");

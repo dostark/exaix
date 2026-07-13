@@ -91,10 +91,7 @@ import {
 } from "@exaix/core";
 import type { Opt, Reason, TaskType } from "@exaix/core/types";
 import { deriveTaskType } from "./task_type_derivation.ts";
-
-export interface IPromptBudgetAllocator {
-  allocate(modelId: string, hints?: object, analysis?: IRequestAnalysis): Promise<IPromptBudget>;
-}
+import { ExecutionContextService, IPromptBudgetAllocator } from "./execution_context_service.ts";
 
 /** All model-related fields from blueprint YAML frontmatter. */
 interface BlueprintInput {
@@ -148,11 +145,7 @@ export interface IAgentExecutorDeps {
   provider?: IModelProvider;
   strategyRegistry?: StrategyRegistry;
   toolRegistry?: IToolRegistry;
-  promptBudgetAllocator?: IPromptBudgetAllocator;
-  contextCache?: ContextCache;
-  tokenizer?: ITokenizer;
-  contextBudgetManager?: IContextBudgetManager;
-  snapshotStore?: ISnapshotStore;
+  executionContext?: ExecutionContextService;
   guardrailRunner?: IGuardrailRunner;
   options?: IAgentExecutorOptions;
   modelResolver?: ModelResolver;
@@ -197,13 +190,7 @@ const BlueprintSchema = z.object({
 export class AgentExecutor {
   private executionContext?: IWorkspaceExecutionContext;
   private originalWorkingDirectory?: string;
-  private _currentPromptBudget?: IPromptBudget;
-  private promptBudgetAllocator?: IPromptBudgetAllocator;
   private _loopHistory: Array<ILoopHistoryEntry | ICompactedEntry> = [];
-  private _contextCache?: ContextCache;
-  private _contextBudgetManager?: IContextBudgetManager;
-  private _snapshotStore?: ISnapshotStore;
-  private readonly _tokenizer?: ITokenizer;
   private config: Config;
   private db: IDatabaseService;
   private logger: IEventLogger;
@@ -215,23 +202,24 @@ export class AgentExecutor {
   private _guardrailRunner?: IGuardrailRunner;
   private readonly options?: IAgentExecutorOptions;
   private modelResolver?: ModelResolver;
+  private ctx: ExecutionContextService;
 
   /** Resolved per-call options from ModelResolver, forwarded to generate(). */
   private _resolvedCallOptions?: IModelCallOptions;
 
   /** Exposes current prompt budget to IReActLoopExecutor (Phase 83). */
   public get currentPromptBudget(): IPromptBudget | undefined {
-    return this._currentPromptBudget;
+    return this.ctx.currentPromptBudget;
   }
 
   /** Exposes context budget manager to IReActLoopExecutor (Phase 83). */
   public get contextBudgetManager(): IContextBudgetManager | undefined {
-    return this._contextBudgetManager;
+    return this.ctx.contextBudgetManager;
   }
 
   /** Exposes snapshot store to async compaction tier (Phase 83). */
   public get snapshotStore(): ISnapshotStore | undefined {
-    return this._snapshotStore;
+    return this.ctx.snapshotStore;
   }
 
   /** Budget pressure logger forwarded to IReActLoopExecutor (Phase 83). */
@@ -260,12 +248,13 @@ export class AgentExecutor {
     this._guardrailRunner = deps.guardrailRunner;
     this.options = deps.options;
     this.modelResolver = deps.modelResolver;
-    this.promptBudgetAllocator = deps.promptBudgetAllocator ??
-      new PromptBudgetAllocator(this.config.budget_enforcement, undefined, this.logger);
-    this._contextCache = deps.contextCache;
-    this._tokenizer = deps.tokenizer;
-    this._contextBudgetManager = deps.contextBudgetManager;
-    this._snapshotStore = deps.snapshotStore;
+    this.ctx = deps.executionContext ?? new ExecutionContextService(this.config, this.logger, {
+      promptBudgetAllocator: undefined,
+      contextCache: undefined,
+      tokenizer: undefined,
+      contextBudgetManager: undefined,
+      snapshotStore: undefined,
+    });
     if (deps.options?.guardrailRunner) {
       this._guardrailRunner = deps.options.guardrailRunner;
     }
@@ -380,8 +369,8 @@ export class AgentExecutor {
    * Check if loop history exceeds the budget threshold and trigger compaction.
    */
   private async _checkLoopHistoryBudget(): Promise<void> {
-    if (!this._currentPromptBudget) return;
-    const loopBudget = this._currentPromptBudget.sections.loopHistory;
+    if (!this.ctx.currentPromptBudget) return;
+    const loopBudget = this.ctx.currentPromptBudget.sections.loopHistory;
     const usedTokens = this._loopHistory.reduce((sum, e) => sum + e.tokens, 0);
     if (loopBudget > 0 && usedTokens > loopBudget * LOOP_HISTORY_BUDGET_THRESHOLD) {
       await this.compactLoopHistory();
@@ -484,7 +473,7 @@ export class AgentExecutor {
    */
   dispose(): void {
     // Invalidate context cache at end of execution
-    this._contextCache?.invalidateAll();
+    this.ctx.invalidateCache();
 
     // Dispose all strategies (which cleans up their signal listeners).
     // Uses the IExecutionStrategy.dispose?() optional-chaining contract.
@@ -736,9 +725,8 @@ export class AgentExecutor {
     // Load blueprint — capabilities array drives strategy dispatch (Phase 61: MCP > ReAct > Legacy fallback).
     const _blueprint = await this.loadBlueprint(options.identity_id ?? "");
     const modelId = this.resolveModelId(_blueprint);
-    this._currentPromptBudget = await this.promptBudgetAllocator!.allocate(
+    await this.ctx.allocateBudget(
       modelId,
-      undefined,
       options.request_analysis as IRequestAnalysis | undefined,
     );
 
@@ -860,7 +848,7 @@ export class AgentExecutor {
 
       throw error;
     } finally {
-      this._currentPromptBudget = undefined;
+      this.ctx.clearBudget();
     }
   }
 
@@ -883,43 +871,47 @@ export class AgentExecutor {
     // Sanitize all user-controlled inputs
     const sanitizedRequest = await this.applyTokenBudget(
       this.sanitizeUserInput(context.request),
-      this._currentPromptBudget?.sections.memory,
+      this.ctx.currentPromptBudget?.sections.memory,
       "memory",
       modelId,
     );
     const sanitizedPlan = await this.applyTokenBudget(
       this.sanitizeUserInput(context.plan),
-      this._currentPromptBudget?.sections.plan,
+      this.ctx.currentPromptBudget?.sections.plan,
       "plan",
       modelId,
     );
     const portalContext = await this.applyTokenBudget(
       this.buildPortalContextBlock(options.portal) ?? "",
-      this._currentPromptBudget?.sections.portalKnowledge,
+      this.ctx.currentPromptBudget?.sections.portalKnowledge,
       "portalKnowledge",
       modelId,
     );
     const systemPrompt = await this.applyTokenBudget(
       blueprint.systemPrompt,
-      this._currentPromptBudget?.sections.system,
+      this.ctx.currentPromptBudget?.sections.system,
       "system",
       modelId,
     );
     const skillContext = await this.applyTokenBudget(
       context.skills_context ?? "",
-      this._currentPromptBudget?.sections.skills,
+      this.ctx.currentPromptBudget?.sections.skills,
       "skills",
       modelId,
     );
 
     // Mark stable sections in context cache for potential cache_control
-    if (this._contextCache && this._currentPromptBudget) {
-      const budget = this._currentPromptBudget.sections;
-      this._contextCache.markStable("system", systemPrompt, budget.system);
-      this._contextCache.markStable("plan", sanitizedPlan, budget.plan);
-      this._contextCache.markStable("portalKnowledge", portalContext, budget.portalKnowledge);
-      this._contextCache.markStable("memory", sanitizedRequest, budget.memory);
-      this._contextCache.markStable("skills", skillContext, budget.skills);
+    if (this.ctx.currentPromptBudget) {
+      this.ctx.markSectionsStable(
+        {
+          system: systemPrompt,
+          plan: sanitizedPlan,
+          portalKnowledge: portalContext,
+          memory: sanitizedRequest,
+          skills: skillContext,
+        },
+        this.ctx.currentPromptBudget.sections,
+      );
     }
 
     // Use clear delimiters that prevent injection
@@ -981,14 +973,11 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
     }
 
     const estimateTokens = async (input: string): Promise<number> => {
-      if (this._tokenizer && modelId) {
-        return await this._tokenizer.countTokens(input, modelId);
-      }
-      return Math.ceil(input.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
+      return this.ctx.estimateTokens(input, modelId);
     };
 
-    const tokenSource = this._tokenizer && modelId ? "bpe" : "heuristic";
-    const maxChars = tokenBudget * TOKEN_ESTIMATION_CHARS_PER_TOKEN;
+    const tokenSource = this.ctx.tokenSource(modelId);
+    const maxChars = this.ctx.estimateMaxChars(tokenBudget);
 
     if (text.length <= maxChars) {
       if (sectionName) {

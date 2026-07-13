@@ -41,7 +41,12 @@ import type { JSONValue } from "@exaix/core";
 import type { IApplicationContext, IPlanAmendmentService } from "@exaix/core/types";
 import type { IDatabaseService, IModelRegistry } from "@exaix/core/types";
 import { TaskType } from "@exaix/core/types";
-import { AgentExecutor, type IAgentExecutorOptions, type IGuardrailRunner } from "@exaix/execution";
+import {
+  AgentExecutor,
+  ExecutionContextService,
+  type IAgentExecutorOptions,
+  type IGuardrailRunner,
+} from "@exaix/execution";
 import { PromptBudgetAllocator } from "@exaix/core";
 import { PlanAmendmentService } from "./plan_amendment_service.ts";
 import type { IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
@@ -293,9 +298,9 @@ export class PlanExecutor {
       pathResolver,
       permissions,
       provider: this.llmProvider,
-      promptBudgetAllocator,
       options,
       modelResolver: this.options.modelResolver,
+      executionContext: new ExecutionContextService(this.config, this.logger, { promptBudgetAllocator }),
     });
   }
 

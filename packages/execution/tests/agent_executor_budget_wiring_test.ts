@@ -15,7 +15,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import type { IContextBudgetManager } from "@exaix/execution";
 import type { ISnapshotStore } from "@exaix/execution";
-import { AgentExecutor } from "@exaix/execution";
+import { AgentExecutor, ExecutionContextService } from "@exaix/execution";
 import { castAny } from "@exaix/testing";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -56,7 +56,9 @@ Deno.test("[AgentExecutor] constructor accepts contextBudgetManager parameter", 
     logger: castAny({}),
     pathResolver: castAny({}),
     permissions: castAny({}),
-    contextBudgetManager: budgetManager,
+    executionContext: new ExecutionContextService(castAny({}), castAny({}), {
+      contextBudgetManager: budgetManager,
+    }),
   });
 
   assertEquals(executor.contextBudgetManager, budgetManager);
@@ -70,7 +72,9 @@ Deno.test("[AgentExecutor] constructor accepts snapshotStore parameter", () => {
     logger: castAny({}),
     pathResolver: castAny({}),
     permissions: castAny({}),
-    snapshotStore,
+    executionContext: new ExecutionContextService(castAny({}), castAny({}), {
+      snapshotStore,
+    }),
   });
 
   assertEquals(executor.snapshotStore, snapshotStore);
@@ -85,8 +89,10 @@ Deno.test("[AgentExecutor] both contextBudgetManager and snapshotStore can be pa
     logger: castAny({}),
     pathResolver: castAny({}),
     permissions: castAny({}),
-    contextBudgetManager: budgetManager,
-    snapshotStore,
+    executionContext: new ExecutionContextService(castAny({}), castAny({}), {
+      contextBudgetManager: budgetManager,
+      snapshotStore,
+    }),
   });
 
   assertExists(executor.contextBudgetManager);

@@ -5,7 +5,7 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { AgentExecutor } from "@exaix/execution";
+import { AgentExecutor, ExecutionContextService } from "@exaix/execution";
 import { StrategyRegistry } from "@exaix/execution";
 import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
@@ -65,7 +65,7 @@ Deno.test("Integration: context overflow recovers by truncating prompt via alloc
       pathResolver,
       permissions,
       strategyRegistry,
-      promptBudgetAllocator: tinyBudgetAllocator,
+      executionContext: new ExecutionContextService(config, logger, { promptBudgetAllocator: tinyBudgetAllocator }),
     });
     holder.executor = executor;
 
