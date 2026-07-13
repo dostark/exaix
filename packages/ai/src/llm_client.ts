@@ -9,7 +9,7 @@ import type { ILlmClient, ToolArgs } from "./types.ts";
 import type { IBlueprintFrontmatter, IModelCallOptions } from "@exaix/schemas";
 import { type Config, ConfigSchema } from "@exaix/schemas";
 
-import { McpToolName, ReActActionType } from "@exaix/core";
+import { DEFAULT_MODEL_FALLBACK, McpToolName, ReActActionType } from "@exaix/core";
 import { ProviderFactory } from "./provider_factory.ts";
 import type { IModelProvider } from "./types.ts";
 import type { ModelResolver } from "./model_resolver.ts";
@@ -72,7 +72,7 @@ export class LlmClient implements ILlmClient {
   constructor(
     private readonly config?: Config,
     private readonly testProvider?: IModelProvider,
-    private readonly defaultModel: string = "default",
+    private readonly defaultModel: string = DEFAULT_MODEL_FALLBACK,
     private readonly resolver?: ModelResolver,
   ) {}
 

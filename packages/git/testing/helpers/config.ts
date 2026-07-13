@@ -8,6 +8,7 @@
  */
 
 import { ConfigSchema } from "@exaix/schemas";
+import { DEFAULT_TIMEOUT_MS } from "@exaix/core";
 
 import type { Config } from "@exaix/schemas";
 
@@ -56,7 +57,7 @@ export function createMockConfig(root: string, overrides: Partial<Config> = {}):
       half_open_success_threshold: 2,
     },
     models: overrides.models ?? {
-      default: { provider: "mock", model: "gpt-5.2-pro", timeout_ms: 30000 },
+      default: { provider: "mock", model: "gpt-5.2-pro", timeout_ms: DEFAULT_TIMEOUT_MS },
     },
     provider_strategy: overrides.provider_strategy ?? { fallback_chains: {} },
     quality_gate: overrides.quality_gate ?? { enabled: false },

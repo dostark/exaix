@@ -19,8 +19,7 @@ import {
   seedConfigDb,
 } from "@exaix/core/config";
 import type { IConfigAdapter } from "@exaix/core/config";
-import { SqliteJournalMode } from "@exaix/core";
-import { ExaPathDefaults } from "@exaix/core";
+import { DEFAULT_TIMEOUT_MS, ExaPathDefaults, SqliteJournalMode } from "@exaix/core";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { TEST_PORTAL_ALIAS } from "./constants.ts";
 
@@ -31,9 +30,9 @@ import { TEST_PORTAL_ALIAS } from "./constants.ts";
  */
 export function createMockConfig(root: string, overrides: Partial<Config> = {}): Config {
   const defaultModels = {
-    default: { provider: "mock", model: "gpt-5.2-pro", timeout_ms: 30000 },
-    fast: { provider: "mock", model: "gpt-5.2-pro-mini", timeout_ms: 30000 },
-    local: { provider: "ollama", model: "llama3.2", timeout_ms: 30000 },
+    default: { provider: "mock", model: "gpt-5.2-pro", timeout_ms: DEFAULT_TIMEOUT_MS },
+    fast: { provider: "mock", model: "gpt-5.2-pro-mini", timeout_ms: DEFAULT_TIMEOUT_MS },
+    local: { provider: "ollama", model: "llama3.2", timeout_ms: DEFAULT_TIMEOUT_MS },
   };
 
   // Use getDefaultPaths for consistent path defaults

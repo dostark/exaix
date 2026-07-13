@@ -2525,6 +2525,19 @@ export const MAX_USER_INPUT_LENGTH = 10000;
 /** Regular expression for extracting TOML blocks from model responses */
 export const TOML_BLOCK_PATTERN = /```toml\s*([\s\S]*?)```/g;
 
+/** Generic fallback timeout in milliseconds (30s). */
+export const DEFAULT_TIMEOUT_MS: number = configurable({
+  key: "default.timeout_ms",
+  default: 30000,
+  type: ConfigValueType.NUMBER,
+  description: "Default timeout for operations in milliseconds",
+  min: 1000,
+  max: 300000,
+});
+
+/** Fallback model name when none is configured. */
+export const DEFAULT_MODEL_FALLBACK = "default";
+
 /** Default parameters for legacy agent execution */
 export const LEGACY_EXECUTION_TEMPERATURE = 0.7;
 export const LEGACY_EXECUTION_MAX_TOKENS = 4000;

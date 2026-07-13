@@ -13,6 +13,7 @@
 
 import { join } from "@std/path";
 import { isProcessAlive } from "@exaix/cli/process_utils.ts";
+import { DEFAULT_TIMEOUT_MS } from "@exaix/core";
 
 /** .exa/daemon.pid path for a given daemon root. */
 function pidPath(rootDir: string): string {
@@ -23,7 +24,7 @@ function pidPath(rootDir: string): string {
  * Poll for the daemon PID file and verify the process is alive.
  * Checks every 500ms. Returns true when the daemon is running, false on timeout.
  */
-export async function waitForReadiness(rootDir: string, timeoutMs = 30000): Promise<boolean> {
+export async function waitForReadiness(rootDir: string, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     try {

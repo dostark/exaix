@@ -35,6 +35,7 @@ import {
   AGENT_EVENT_EXECUTION_COMPLETED,
   AGENT_EVENT_EXECUTION_STARTED,
   AGENT_EVENT_PROMPT_ASSEMBLED,
+  DEFAULT_MODEL_FALLBACK,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   DEFAULT_UNKNOWN_LABEL,
   MEMORY_CONTEXT_KEY,
@@ -706,7 +707,7 @@ export class AgentRunner implements IAgentRunner {
     }));
 
     const budget: IPromptBudget = {
-      model: "default",
+      model: DEFAULT_MODEL_FALLBACK,
       totalBudgetTokens: Number.MAX_SAFE_INTEGER,
       safetyBufferTokens: 0,
       sections: {
@@ -722,7 +723,7 @@ export class AgentRunner implements IAgentRunner {
     const { segments: filtered } = await manager.prepare({
       traceId: request.traceId ?? "unknown",
       stepId: "agent-runner",
-      model: "default",
+      model: DEFAULT_MODEL_FALLBACK,
       promptBudget: budget,
       segments,
     });

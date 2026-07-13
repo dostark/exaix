@@ -9,6 +9,7 @@
 import type { IEventLogger } from "@exaix/core/logger";
 
 import type { Config } from "@exaix/schemas";
+import { DEFAULT_MODEL_FALLBACK, DEFAULT_TIMEOUT_MS } from "@exaix/core";
 
 import type { IModelOptions, IModelProvider } from "../types.ts";
 import { type IGenerateResult, withRetry } from "./common.ts";
@@ -55,13 +56,13 @@ export abstract class BaseProvider implements IModelProvider {
     idPrefix: string,
   ) {
     this.apiKey = options.apiKey;
-    this.model = options.model || options.defaultModel || "default";
+    this.model = options.model || options.defaultModel || DEFAULT_MODEL_FALLBACK;
     this.id = options.id || `${idPrefix}-${this.model}`;
     this.logger = options.logger;
     this.baseUrl = options.baseUrl || options.defaultEndpoint || "";
     this.retryDelayMs = options.retryDelayMs || options.defaultRetryDelay || 100;
     this.maxRetries = options.maxRetries || options.defaultMaxRetries || 3;
-    this.timeoutMs = options.timeoutMs || options.defaultTimeout || 30000;
+    this.timeoutMs = options.timeoutMs || options.defaultTimeout || DEFAULT_TIMEOUT_MS;
   }
 
   /**

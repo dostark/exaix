@@ -45,6 +45,7 @@ import { mapPresetToSize } from "./preset_mapper.ts";
 import type { ToolHandler } from "@exaix/mcp/server";
 import type { McpToolName } from "@exaix/mcp";
 import type { Config } from "@exaix/schemas/config.ts";
+import { DEFAULT_TIMEOUT_MS } from "@exaix/core";
 import { RetryPolicy } from "@exaix/core/request";
 import type { IApplicationContext, IGateConfig, IGateEvaluator, IHitlPolicyEvaluator } from "@exaix/core/types";
 import { FlowStepHandlerRegistry } from "./step_handlers/step_handler_registry.ts";
@@ -2171,7 +2172,7 @@ export class FlowRunner implements IFlowRunner {
   private async applyRetryBackoff(backoffMs: number, retryAttempt: number): Promise<void> {
     const retryPolicy = new RetryPolicy({
       initialDelayMs: backoffMs,
-      maxDelayMs: 30000,
+      maxDelayMs: DEFAULT_TIMEOUT_MS,
       backoffMultiplier: 2,
       jitterFactor: 0,
     });
