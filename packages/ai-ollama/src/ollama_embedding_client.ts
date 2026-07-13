@@ -17,6 +17,13 @@ interface IOllamaRawEmbedResponse {
   error?: JSONValue;
 }
 
+export interface IOllamaEmbeddingConfig {
+  model?: string;
+  baseUrl?: string;
+  chunkSize?: number;
+  timeoutMs?: number;
+}
+
 const ZOllamaEmbedResponse = {
   parse: (body: JSONValue): { embeddings: number[][] } => {
     if (typeof body !== "object" || body === null) {
@@ -35,13 +42,6 @@ const ZOllamaEmbedResponse = {
     return { embeddings: embeddings as number[][] };
   },
 };
-
-export interface IOllamaEmbeddingConfig {
-  model?: string;
-  baseUrl?: string;
-  chunkSize?: number;
-  timeoutMs?: number;
-}
 
 export class OllamaEmbeddingClient implements IEmbeddingProvider {
   readonly providerId = "ollama";
