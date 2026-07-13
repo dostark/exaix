@@ -22,7 +22,6 @@ import type { IModelCallOptions, ModelIntent } from "@exaix/schemas";
 import type { ITokenizer } from "@exaix/core/func";
 import { SafeError } from "@exaix/core/errors";
 import { ProviderFactory } from "@exaix/ai/provider_factory.ts";
-import type { IModelPricingLookup } from "@exaix/core/types";
 import { PromptBudgetAllocator, SafeSubprocess, SubprocessTimeoutError } from "@exaix/core";
 import {
   AGENT_EVENT_EXECUTION_COMPLETED,
@@ -236,7 +235,6 @@ export class AgentExecutor {
     private _guardrailRunner?: Opt<IGuardrailRunner, Reason.OptionalDependency>,
     private readonly options?: Opt<IAgentExecutorOptions, Reason.OptionalDependency>,
     private modelResolver?: Opt<ModelResolver, Reason.OptionalDependency>,
-    private pricingLookup?: Opt<IModelPricingLookup, Reason.OptionalDependency>,
   ) {
     this.promptBudgetAllocator = promptBudgetAllocator ??
       new PromptBudgetAllocator(this.config.budget_enforcement, undefined, this.logger);
@@ -751,7 +749,11 @@ export class AgentExecutor {
       }
       const validated = await strategy.execute(_blueprint, context, options);
 
-      // Prioritize real usage from strategy if available, fallback to estimate
+      // Real usage from the strategy, when reported; otherwise undefined —
+      // logExecutionComplete's own default (token count + $0 cost, GAP-25) applies.
+      // No heuristic cost estimation: GAP-23/GAP-24 established it cannot be made
+      // accurate (output tokens are unknowable pre-call; input-side cache-tier
+      // pricing is unpopulated data).
       const usage = validated.usage
         ? {
           tokens: validated.usage.prompt_tokens + validated.usage.completion_tokens,
@@ -759,7 +761,7 @@ export class AgentExecutor {
           prompt_tokens: validated.usage.prompt_tokens,
           completion_tokens: validated.usage.completion_tokens,
         }
-        : await this.estimateExecutionUsage(_blueprint, context, validated);
+        : undefined;
 
       // Step 61.3/61.4: Real SHA and Audit
       const portalPath = portal.target_path;
@@ -790,13 +792,25 @@ export class AgentExecutor {
         );
       }
 
-      // Track step in loop history for potential summarization
+      // Track step in loop history for potential summarization. Falls back to a
+      // char-count heuristic over the full step context (system prompt + request +
+      // plan + description) when no strategy-reported usage exists — the same
+      // sources the removed estimateExecutionUsage() counted (GAP-25). Loop-history
+      // token tracking is unrelated to cost estimation and must not go unset or
+      // shrink to a narrower text source than before.
+      const loopHistoryTokens = usage?.tokens ?? Math.max(
+        1,
+        Math.ceil(
+          (_blueprint.systemPrompt.length + context.request.length + context.plan.length +
+            validated.description.length) / TOKEN_ESTIMATION_CHARS_PER_TOKEN,
+        ),
+      );
       this._loopHistory.push({
         type: "step",
         stepId: `${context.trace_id}-step-${this._loopHistory.length + 1}`,
         description: validated.description || "executed step",
         filesChanged: validated.files_changed ?? [],
-        tokens: usage.tokens,
+        tokens: loopHistoryTokens,
         timestamp: Date.now(),
       });
 
@@ -993,37 +1007,6 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
     }
 
     return `${blueprint.provider}:${blueprint.model}`;
-  }
-
-  private async estimateExecutionUsage(
-    blueprint: IAgentFileBlueprint,
-    context: IExecutionContext,
-    result: IChangesetResult,
-  ): Promise<{ tokens: number; cost_usd_estimate: number }> {
-    const modelId = this.resolveModelId(blueprint);
-    const totalChars = blueprint.systemPrompt.length +
-      context.request.length +
-      context.plan.length +
-      result.description.length;
-    const tokens = Math.max(1, Math.ceil(totalChars / TOKEN_ESTIMATION_CHARS_PER_TOKEN));
-
-    let pricePer1k = 0;
-    if (this.pricingLookup) {
-      const colonIdx = modelId.indexOf(":");
-      if (colonIdx !== -1) {
-        const provider = modelId.slice(0, colonIdx);
-        const model = modelId.slice(colonIdx + 1);
-        const pricing = await this.pricingLookup.getModelPricing(provider, model);
-        pricePer1k = (pricing.inputPerMtok ?? 0) / 1000;
-      }
-    }
-
-    const cost = (tokens / 1000) * pricePer1k;
-
-    return {
-      tokens,
-      cost_usd_estimate: Number(cost.toFixed(6)),
-    };
   }
 
   private buildPortalContextBlock(portalAlias: string): string | null {

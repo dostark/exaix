@@ -170,16 +170,11 @@ Deno.test("JournalFormatter: renders counts in text format", async () => {
   assertStringIncludes(output, String(JOURNAL_COUNT_VALUE));
 });
 
-Deno.test("JournalFormatter: renders estimated cost from usage payload", async () => {
+Deno.test("JournalFormatter: renders cost from the stored activity.cost_usd column", async () => {
   const costActivities: ActivityRecord[] = [
     {
       ...baseActivities[0],
-      payload: JSON.stringify({
-        usage: {
-          tokens: 1200,
-          cost_usd_estimate: 0.42,
-        },
-      }),
+      cost_usd: 0.42,
     },
   ];
 
@@ -195,4 +190,33 @@ Deno.test("JournalFormatter: renders estimated cost from usage payload", async (
     JournalFormatter.render(costActivities, filter, UIOutputFormat.TABLE);
   });
   assertStringIncludes(tableOutput, "$0.420000");
+});
+
+Deno.test("[regression] JournalFormatter: a stray cost_usd_estimate in the payload is never surfaced when activity.cost_usd is absent/zero (Step 12, GAP-25 — the payload-fallback pathway is removed)", async () => {
+  const costActivities: ActivityRecord[] = [
+    {
+      ...baseActivities[0],
+      cost_usd: 0,
+      payload: JSON.stringify({
+        usage: {
+          tokens: 1200,
+          cost_usd_estimate: 0.42,
+        },
+      }),
+    },
+  ];
+
+  const textOutput = await captureConsoleOutput(() => {
+    const filter: IJournalFilterOptions = {};
+    JournalFormatter.render(costActivities, filter, DataFormat.TEXT);
+  });
+  assertEquals(textOutput.includes("cost="), false);
+  assertEquals(textOutput.includes("0.420000"), false);
+
+  const tableOutput = await captureConsoleOutput(() => {
+    const filter: IJournalFilterOptions = {};
+    JournalFormatter.render(costActivities, filter, UIOutputFormat.TABLE);
+  });
+  assertStringIncludes(tableOutput, "-");
+  assertEquals(tableOutput.includes("0.420000"), false);
 });

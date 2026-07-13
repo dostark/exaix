@@ -11,6 +11,7 @@ import { Table } from "@cliffy/table";
 import * as colors from "@std/fmt/colors";
 import type { IActivityRecord } from "@exaix/core/types";
 import type { IJournalFilterOptions } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 import { DataFormat } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
 
@@ -87,7 +88,7 @@ export class JournalFormatter {
             a.identity_id || a.actor || "-",
             colors.gray(a.trace_id.slice(0, 8)),
             this.truncateText(a.target || "-", 30),
-            this.formatCostDisplay(a.cost_usd, a.payload),
+            this.formatCostDisplay(a.cost_usd),
           ];
         }),
       )
@@ -113,7 +114,7 @@ export class JournalFormatter {
       const agent = activity.identity_id || activity.actor || "-";
 
       const action = this.styleAction(activity.action_type);
-      const costText = this.formatCostDisplay(activity.cost_usd, activity.payload);
+      const costText = this.formatCostDisplay(activity.cost_usd);
       const costSuffix = costText === "-" ? "" : ` ${colors.dim("cost=")}${colors.yellow(costText)}`;
 
       const tokens = (activity.prompt_tokens || 0) + (activity.completion_tokens || 0);
@@ -127,26 +128,11 @@ export class JournalFormatter {
     }
   }
 
-  private static formatCostDisplay(costUsd: number | undefined, payload: string): string {
+  private static formatCostDisplay(costUsd: Opt<number, Reason.OptionalInput>): string {
     if (typeof costUsd === "number" && costUsd > 0) {
       return `$${costUsd.toFixed(COST_PRECISION)}`;
     }
-
-    try {
-      const parsed = JSON.parse(payload) as {
-        usage?: { cost_usd_estimate?: number };
-        cost_usd_estimate?: number;
-      };
-
-      const rawCost = parsed.usage?.cost_usd_estimate ?? parsed.cost_usd_estimate;
-      if (typeof rawCost !== "number" || Number.isNaN(rawCost) || rawCost <= 0) {
-        return "-";
-      }
-
-      return `$${rawCost.toFixed(COST_PRECISION)}`;
-    } catch {
-      return "-";
-    }
+    return "-";
   }
 
   private static renderDistinctText(activities: IActivityRecord[], distinctField: string): void {
