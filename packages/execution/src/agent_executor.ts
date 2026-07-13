@@ -161,24 +161,25 @@ export class AgentExecutionError extends Error {
 /**
  * AgentExecutor — orchestrator and strategy dispatcher for agent execution.
  *
- * ROLE: Thin coordinator. AgentExecutor does NOT implement sub-domain logic
- * directly. Instead it delegates each concern to an injected service:
+ * Delegates each concern to an injected service:
  *
  *   BlueprintService        → load, validate, and resolve agent blueprints
  *   PromptBuilder           → build and sanitize execution prompts
  *   ExecutionContextService → budget allocation, context cache, token counting
- *   GitAuditService         → git audit, SHA resolution, path validation
- *   OutputParser            → LLM response parsing, changeset validation
- *   HistoryManager          → loop history compaction, budget checking
- *   ReActLoopAdapter        → IReActLoopExecutor for ReActLoopStrategy
- *   StrategyRegistry        → select execution strategy (ReAct, MCP, Legacy)
- *   GuardrailRunner         → pre-execution safety screening
- *   ModelResolver           → policy-driven model and provider resolution
- *   ToolRegistry            → tool registration and lifecycle (lazy-init)
+ *   GitAuditService         → git audit, SHA resolution, file path validation
+ *   OutputParser            → LLM response parsing, changeset result validation
+ *   HistoryManager          → loop history ring buffer, compaction, budget checking
+ *   ReActLoopAdapter        → IReActLoopExecutor (decouples ReActLoopStrategy)
+ *   StrategyRegistry        → selects IExecutionStrategy (ReAct, MCP, Legacy)
  *
- * AgentExecutor is a thin orchestrator (~950 lines) that routes each execution
- * sub-step to the appropriate service or strategy, with no sub-domain logic
- * of its own.
+ * Remaining concerns handled inline (not yet extracted):
+ *   executeStep             → main execution method with blueprint loading,
+ *                             budget allocation, strategy dispatch,
+ *                             error handling, and result processing
+ *   Public API              → logExecutionStart, logExecutionComplete,
+ *                             getRecentActivitiesByTraceId, etc.
+ *   Security                → buildSubprocessPermissions, auditAndRevertChanges
+ *   Git operations          → auditAndRevertChanges (composite of audit + revert)
  *
  * @see BlueprintService
  * @see PromptBuilder
@@ -187,7 +188,6 @@ export class AgentExecutionError extends Error {
  * @see OutputParser
  * @see HistoryManager
  * @see ReActLoopAdapter
- * @see StrategyRegistry
  */
 export class AgentExecutor {
   private executionContext?: IWorkspaceExecutionContext;
