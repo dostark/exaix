@@ -1,8 +1,9 @@
 -- up
--- Phase 135 Step 1: Team live model-registry catalog (§5.2 — five core tables).
--- Owned by ModelRegistryService (@exaix-team/model-registry-live). All timestamps
--- epoch-ms. Empty tables ⇒ every registry read falls through to the Solo floor
--- (DefaultModelRegistry), so a Team daemon with no refresh behaves like Solo.
+-- Phase 135: Team live model registry — catalog, pricing, cost-source tracking, and
+-- benchmark data plane (§5.2, §5.5/D9, §5.8.2). Owned by ModelRegistryService
+-- (@exaix-team/model-registry-live). All timestamps epoch-ms. Empty tables ⇒ every
+-- registry read falls through to the Solo floor (DefaultModelRegistry), so a Team
+-- daemon with no refresh behaves like Solo.
 
 -- The live model catalog: one row per (provider, model). Model-granular.
 CREATE TABLE IF NOT EXISTS model_catalog (
@@ -67,7 +68,56 @@ CREATE TABLE IF NOT EXISTS registry_refresh_audit (
   detail        TEXT               -- error message / summary (NEVER contains the API key)
 );
 
+-- provider_costs gains a nullable cost_source column so each cost record records HOW
+-- it was priced (§5.5, D9) — 'provider_reported' (OpenRouter response cost / delegate
+-- session cost), 'registry_computed' (split input/output per-Mtok), or NULL (legacy
+-- blended estimate, library-compat path). Nullable so pre-existing rows remain valid.
+ALTER TABLE provider_costs ADD COLUMN cost_source TEXT;
+
+-- Team benchmark data plane (§5.8.2 — the 6th registry table). Scores are
+-- MODEL-properties, not route-properties: keyed on (provider, model, benchmark), so a
+-- model scored once applies to every route offering it. Empty ⇒ the top-N admission
+-- path and the `best` scorer find no scores and no-op.
+CREATE TABLE IF NOT EXISTS model_benchmark (
+  provider        TEXT    NOT NULL,
+  model           TEXT    NOT NULL,
+  benchmark       TEXT    NOT NULL,   -- e.g. 'swe_bench_verified'
+  score           REAL    NOT NULL,   -- normalised 0..1 (validated at write)
+  harness_version TEXT,               -- benchmark harness/version, when published
+  provenance      TEXT    NOT NULL,   -- 'static' (curated) | 'remote_static' (models.dev ingest)
+  measured_at     REAL    NOT NULL,   -- epoch-ms; REAL avoids 32-bit INTEGER read truncation
+  source_url      TEXT,               -- citable publication / dataset URL
+  PRIMARY KEY (provider, model, benchmark)
+);
+CREATE INDEX IF NOT EXISTS idx_benchmark_rank ON model_benchmark (benchmark, score DESC);
+
 -- down
+DROP INDEX IF EXISTS idx_benchmark_rank;
+DROP TABLE IF EXISTS model_benchmark;
+
+-- SQLite has no DROP COLUMN before 3.35; recreate provider_costs without cost_source.
+CREATE TABLE provider_costs_new (
+  id TEXT PRIMARY KEY,
+  provider TEXT NOT NULL,
+  requests INTEGER NOT NULL DEFAULT 0,
+  tokens INTEGER NOT NULL DEFAULT 0,
+  prompt_tokens INTEGER DEFAULT 0,
+  completion_tokens INTEGER DEFAULT 0,
+  model TEXT,
+  trace_id TEXT,
+  portal TEXT,
+  estimated_cost_usd REAL NOT NULL DEFAULT 0.0,
+  timestamp DATETIME DEFAULT (datetime('now'))
+);
+INSERT INTO provider_costs_new (id, provider, requests, tokens, prompt_tokens, completion_tokens, model, trace_id, portal, estimated_cost_usd, timestamp)
+  SELECT id, provider, requests, tokens, prompt_tokens, completion_tokens, model, trace_id, portal, estimated_cost_usd, timestamp FROM provider_costs;
+DROP TABLE provider_costs;
+ALTER TABLE provider_costs_new RENAME TO provider_costs;
+CREATE INDEX IF NOT EXISTS idx_provider_costs_provider ON provider_costs(provider);
+CREATE INDEX IF NOT EXISTS idx_provider_costs_trace ON provider_costs(trace_id);
+CREATE INDEX IF NOT EXISTS idx_provider_costs_portal ON provider_costs(portal);
+CREATE INDEX IF NOT EXISTS idx_provider_costs_timestamp ON provider_costs(timestamp);
+
 DROP INDEX IF EXISTS idx_latency_lookup;
 DROP TABLE IF EXISTS registry_refresh_audit;
 DROP TABLE IF EXISTS provider_rate_limit;

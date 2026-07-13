@@ -150,7 +150,7 @@ Deno.test("migrate_db.ts up creates database and applies migrations", async () =
   }
 });
 
-Deno.test("[phase135] migrate_db.ts up applies 002_model_registry after 001 (five registry tables)", async () => {
+Deno.test("[phase135] migrate_db.ts up applies 002_model_registry after 001 (registry tables, cost_source, benchmark)", async () => {
   const tmp = await setupTestWorkspace();
   try {
     const result = await runMigrate(tmp, ["up"]);
@@ -163,7 +163,7 @@ Deno.test("[phase135] migrate_db.ts up applies 002_model_registry after 001 (fiv
     assertStringIncludes(migrations, "001_init.sql");
     assertStringIncludes(migrations, "002_model_registry.sql");
 
-    // All five §5.2 registry tables exist.
+    // All six §5.2/§5.8.2 registry tables exist.
     const tables = await queryDb(
       dbPath,
       "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;",
@@ -175,24 +175,11 @@ Deno.test("[phase135] migrate_db.ts up applies 002_model_registry after 001 (fiv
         "model_latency",
         "provider_rate_limit",
         "registry_refresh_audit",
+        "model_benchmark",
       ]
     ) {
       assertStringIncludes(tables, t);
     }
-  } finally {
-    await Deno.remove(tmp, { recursive: true }).catch(() => {});
-  }
-});
-
-Deno.test("[phase135] migrate_db.ts up applies 003_cost_source after 002 (provider_costs.cost_source, nullable)", async () => {
-  const tmp = await setupTestWorkspace();
-  try {
-    const result = await runMigrate(tmp, ["up"]);
-    assertEquals(result.code, 0, `migrate up failed: ${result.stderr}`);
-    const dbPath = join(getRuntimeDir(tmp), "journal.db");
-
-    const migrations = await queryDb(dbPath, "SELECT version FROM schema_migrations ORDER BY id;");
-    assertStringIncludes(migrations, "003_cost_source.sql");
 
     // provider_costs gained a cost_source column (nullable — pre-existing rows stay valid).
     const cols = await queryDb(dbPath, "SELECT name FROM pragma_table_info('provider_costs');");
