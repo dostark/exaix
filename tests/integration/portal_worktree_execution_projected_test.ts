@@ -9,7 +9,9 @@ import { assertEquals, assertExists, assertMatch, assertStringIncludes } from "@
 import { join } from "@std/path";
 import { EventLogger } from "@exaix/core/logger";
 import { ExecutionLoop } from "@exaix/execution";
+import { GitService } from "@exaix/git";
 import { ReviewRegistry } from "@exaix/core/artifact";
+import { ToolRegistry } from "@exaix/tool-runtime";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import {
   assertPointerPointsTo,
@@ -32,7 +34,22 @@ async function setupPortalWorktreeExecutionLoop(env: TestEnvironment) {
 
   const logger = new EventLogger({ db: env.db });
   const reviewRegistry = new ReviewRegistry(env.db, logger);
-  const loop = new ExecutionLoop({ config, db: env.db, identityId: "daemon", reviewRegistry });
+  const loop = new ExecutionLoop({
+    config,
+    db: env.db,
+    identityId: "daemon",
+    reviewRegistry,
+    gitServiceFactory: {
+      createGitService(repoPath: string, traceId: string) {
+        return new GitService({ config, traceId, identityId: "daemon", repoPath });
+      },
+    },
+    toolRegistryFactory: {
+      createToolRegistry(traceId: string, baseDir: string) {
+        return new ToolRegistry({ config, traceId, identityId: "daemon", baseDir });
+      },
+    },
+  });
 
   return { portalAlias, portalTargetPath, targetBranch, loop };
 }
