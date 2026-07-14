@@ -31,6 +31,7 @@ import {
 } from "@exaix/core";
 import { DynamicStepExecutor } from "./dynamic_step_executor.ts";
 import { ActivityJournal } from "./activity_journal.ts";
+import { buildConfirmationInterceptor } from "@exaix/tool-runtime";
 import type { IMcpClient } from "@exaix/mcp";
 import type { IToolManifestResolver } from "@exaix/core/types";
 import { LlmClient } from "@exaix/ai/llm_client.ts";
@@ -754,7 +755,8 @@ export class FlowRunner implements IFlowRunner {
     if (this.modelResolver) return;
 
     const llmClient = new LlmClient(config, undefined, this.options.dynamicModel);
-    const confirmationInterceptor = options.confirmationInterceptor;
+    const confirmationInterceptor = options.confirmationInterceptor ??
+      (options.context ? buildConfirmationInterceptor(options.context, config, activityJournal) : undefined);
     this.dynamicStepExecutor = new DynamicStepExecutor(
       this.mcpClient!,
       llmClient,

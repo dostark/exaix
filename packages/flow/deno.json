@@ -30,6 +30,7 @@
     "@exaix/mcp/server": "../mcp/server/mod.ts",
     "@exaix/mcp/server/": "../mcp/server/",
     "@exaix/mcp/": "../mcp/src/",
+    "@exaix/tool-runtime": "../tool-runtime/mod.ts",
     "@exaix-team/voting": "../../packages-team/voting/mod.ts",
     "@exaix-team/voting/": "../../packages-team/voting/src/",
     "@std/fs": "jsr:@std/fs@^1.0.23",

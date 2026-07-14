@@ -9,3 +9,5 @@
 
 export type { IDatabaseService } from "@exaix/core/types";
 export * from "./src/database_service.ts";
+export { DatabaseConnectionPool, SQLiteConnection } from "./src/connection_pool.ts";
+export type { IDatabaseConnection } from "./src/connection_pool.ts";

@@ -6,8 +6,11 @@
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
+import { join } from "@std/path";
 import { DatabaseConnectionPool } from "../../../packages/storage-sqlite/src/connection_pool.ts";
+import { DatabaseService } from "../../../packages/storage-sqlite/src/database_service.ts";
 import { createMockConfig } from "@exaix/testing";
+import { withEnv } from "@exaix/testing";
 
 type IDatabasePoolOptions = ConstructorParameters<typeof DatabaseConnectionPool>[0];
 type ITestConfig = ReturnType<typeof createMockConfig>;
@@ -176,4 +179,42 @@ Deno.test("DatabaseConnectionPool: times out queued requests", async () => {
 
     assertEquals(pool.getWaitingCount(), 0);
   });
+});
+
+Deno.test("DatabaseService: accepts pool connection and persists activity", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "pool-db-svc-" });
+  try {
+    const config = createMockConfig(tempDir);
+    await Deno.mkdir(join(tempDir, config.paths.runtime), { recursive: true });
+
+    const pool = new DatabaseConnectionPool({
+      minConnections: 0,
+      maxConnections: 3,
+      idleTimeoutMs: 30000,
+      acquireTimeoutMs: 5000,
+    }, config);
+
+    try {
+      const conn = await pool.acquire();
+      await withEnv({ EXA_TEST_MODE: "1" }, async () => {
+        const db = new DatabaseService(config, conn);
+
+        try {
+          db.logActivity("test-actor", "test-action", "test-target", { key: "value" }, "trace-1");
+          await db.waitForFlush();
+
+          const rows = db.getActivitiesByTrace("trace-1");
+          assertEquals(rows.length, 1);
+          assertEquals(rows[0].actor, "test-actor");
+          assertEquals(rows[0].action_type, "test-action");
+        } finally {
+          await db.close();
+        }
+      });
+    } finally {
+      await pool.destroy();
+    }
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
 });

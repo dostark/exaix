@@ -18,6 +18,7 @@ import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService, IJournalFilterOptions } from "@exaix/core/types";
 import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 import type { Opt, Reason } from "@exaix/core/types";
+import type { IDatabaseConnection } from "./connection_pool.ts";
 
 export type SqliteParam = string | number | boolean | null;
 
@@ -129,6 +130,7 @@ interface ToolConfirmationRow {
 
 export class DatabaseService implements IDatabaseService {
   private db: Database;
+  private poolConnection: IDatabaseConnection | undefined;
   private logQueue: LogEntry[] = [];
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly FLUSH_INTERVAL_MS: number;
@@ -136,20 +138,19 @@ export class DatabaseService implements IDatabaseService {
   private isClosing = false;
   private readonly dbBreaker: CircuitBreaker;
 
-  constructor(config: Config) {
-    const dbDir = join(config.system.root!, config.paths.runtime!);
-    const dbPath = join(dbDir, "journal.db");
+  constructor(config: Config, poolConnection?: IDatabaseConnection) {
+    this.poolConnection = poolConnection;
 
-    ensureDirSync(dbDir);
-
-    this.db = new Database(dbPath);
-    // Set busy_timeout FIRST: switching journal_mode acquires a write lock, and on a daemon
-    // restart the previous process's WAL lock can linger for a beat. Without a busy timeout the
-    // very first `PRAGMA journal_mode` fails immediately with "database is locked" and the daemon
-    // dies on boot. With it, the switch waits out the transient lock instead.
-    this.db.exec(`PRAGMA busy_timeout = ${config.database.sqlite.busy_timeout_ms};`);
-    this.db.exec(`PRAGMA journal_mode = ${config.database.sqlite.journal_mode};`);
-    this.db.exec(`PRAGMA foreign_keys = ${config.database.sqlite.foreign_keys ? "ON" : "OFF"};`);
+    if (poolConnection) {
+      this.db = poolConnection.instance;
+    } else {
+      const dbDir = join(config.system.root!, config.paths.runtime!);
+      ensureDirSync(dbDir);
+      this.db = new Database(join(dbDir, "journal.db"));
+      this.db.exec(`PRAGMA busy_timeout = ${config.database.sqlite.busy_timeout_ms};`);
+      this.db.exec(`PRAGMA journal_mode = ${config.database.sqlite.journal_mode};`);
+      this.db.exec(`PRAGMA foreign_keys = ${config.database.sqlite.foreign_keys ? "ON" : "OFF"};`);
+    }
 
     // In test mode, ensure the production-shaped `activity` table exists. Production creates it
     // via migrations (setup_db) before the daemon starts; test-mode journals have no such step,
