@@ -26,7 +26,11 @@ import { FlowStepType, MemoryOperation, MockStrategy, PortalOperation } from "@e
 import { McpToolName } from "@exaix/mcp";
 import { RequestProcessor } from "@exaix/request";
 import type { IApplicationContext } from "@exaix/core/types";
-import { ExecutionLoop } from "@exaix/execution";
+import { AgentRunner, ExecutionLoop } from "@exaix/execution";
+import { buildMilestoneEmitterFromConfig } from "@exaix/core/observability";
+import { GitService } from "@exaix/git";
+import { ToolRegistry } from "@exaix/tool-runtime";
+import { MemoryBankService } from "@exaix/memory";
 import { EventLogger } from "@exaix/core/logger";
 import {
   getBlueprintsIdentitiesDir,
@@ -714,11 +718,23 @@ This plan will accomplish the requested task.
    */
   createExecutionLoop(identityId: string = "test-agent"): ExecutionLoop {
     const logger = new EventLogger({ db: this.db });
+    const config = this.config;
     return new ExecutionLoop({
-      config: this.config,
+      config,
       db: this.db,
       logger,
       identityId,
+      memoryBank: new MemoryBankService(config, logger),
+      gitServiceFactory: {
+        createGitService(repoPath: string, traceId: string) {
+          return new GitService({ config, traceId, identityId, repoPath });
+        },
+      },
+      toolRegistryFactory: {
+        createToolRegistry(traceId: string, baseDir: string) {
+          return new ToolRegistry({ config, traceId, identityId, baseDir });
+        },
+      },
     });
   }
 
@@ -813,6 +829,7 @@ Always respond with valid JSON containing a plan with actionable steps.`;
       includeReasoning: options?.includeReasoning ?? true,
       context,
       testProvider: provider,
+      agentRunner: new AgentRunner(provider, { milestoneEmitter: buildMilestoneEmitterFromConfig(this.config) }),
     });
 
     return { provider, processor };

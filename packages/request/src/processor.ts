@@ -60,12 +60,7 @@ import { type IPortalContextBuilder, PortalContextBuilder } from "./portal_conte
 import { ClarificationGateway, type IClarificationGateway } from "./clarification_gateway.ts";
 import { type IRejectedPlanHandler, RejectedPlanHandler } from "./rejected_plan_handler.ts";
 import type { ILogEvent } from "@exaix/core";
-import {
-  CompositeMilestoneEmitter,
-  EventBusService,
-  FileAppendMilestoneEmitter,
-  MilestoneEventBusEmitter,
-} from "@exaix/core/observability";
+import { buildMilestoneEmitterFromConfig } from "@exaix/core/observability";
 import type { IMilestoneEmitter } from "@exaix/core/observability";
 
 import type { AnalysisMode } from "@exaix/core/types";
@@ -181,18 +176,7 @@ export class RequestProcessor {
     this.db = ctx.db;
 
     // Initialize milestone emitter(s): bus streaming + optional journal file (Phase 92)
-    const emitters: IMilestoneEmitter[] = [];
-    if (this.config.execution?.milestone_streaming_enabled) {
-      emitters.push(new MilestoneEventBusEmitter(EventBusService.getInstance()));
-    }
-    if (this.config.execution?.milestone_journal_path) {
-      emitters.push(
-        new FileAppendMilestoneEmitter(
-          join(this.config.system.root, this.config.execution.milestone_journal_path),
-        ),
-      );
-    }
-    this.milestoneEmitter = emitters.length > 0 ? new CompositeMilestoneEmitter(emitters) : undefined;
+    this.milestoneEmitter = buildMilestoneEmitterFromConfig(this.config);
 
     // Initialize services
     this.costTracker = processorConfig.costTracker ?? new CostTracker(this.db, this.config);

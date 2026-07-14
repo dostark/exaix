@@ -12,6 +12,9 @@ import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import type { Config } from "@exaix/schemas/config.ts";
 import { PortalExecutionStrategy, PortalOperation, ToolName } from "@exaix/core";
 import { ExecutionLoop } from "@exaix/execution";
+import { GitService } from "@exaix/git";
+import { MemoryBankService } from "@exaix/memory";
+import { ToolRegistry } from "@exaix/tool-runtime";
 import { EventLogger } from "@exaix/core/logger";
 import { ReviewRegistry } from "@exaix/core/artifact";
 import type { TestEnvironment } from "../integration/helpers/test_environment.ts";
@@ -223,12 +226,24 @@ export async function executePlanForReview<TConfig extends Config>(
   reviewRegistry?: ReviewRegistry,
 ): Promise<{ success: boolean; traceId: string | undefined; error?: string }> {
   const { provider } = env.createRequestProcessor();
+  const logger = new EventLogger({ db: env.db });
   const loop = new ExecutionLoop({
     config,
     db: env.db,
     identityId: "daemon",
     reviewRegistry,
     llmProvider: provider,
+    memoryBank: new MemoryBankService(config, logger),
+    gitServiceFactory: {
+      createGitService(repoPath: string, traceId: string) {
+        return new GitService({ config, traceId, identityId: "daemon", repoPath });
+      },
+    },
+    toolRegistryFactory: {
+      createToolRegistry(traceId: string, baseDir: string) {
+        return new ToolRegistry({ config, traceId, identityId: "daemon", baseDir });
+      },
+    },
   });
   const result = await loop.processTask(activePlanPath);
   return { success: result.success, traceId: result.traceId, error: result.error };

@@ -16,7 +16,7 @@ import type { JSONValue } from "@exaix/core/types";
 import { initTestDbService } from "@exaix/testing";
 import { createStubConfig, createStubContext } from "@exaix/testing";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../../helpers/flow_namespace_test_helper.ts";
-import { ToolHandler } from "@exaix/mcp/server";
+import { McpClient, ToolHandler } from "@exaix/mcp/server";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 
@@ -61,7 +61,7 @@ function makeCompensationRunner(
     agentExecutor: executor,
     eventLogger: logger,
     config,
-    mcpHandlers: [deleteFileTool],
+    mcpClient: new McpClient(compensationContext, [deleteFileTool]),
   });
   return { runner, logger };
 }

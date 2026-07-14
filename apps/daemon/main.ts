@@ -46,6 +46,7 @@ import { RequestProcessor } from "@exaix/request";
 import { ReviewRegistry } from "@exaix/core/artifact";
 import { EventLogger, EventLoggerStructuredOutput } from "@exaix/core/logger";
 import { AgentRunner, ExecutionLoop } from "@exaix/execution";
+import { buildMilestoneEmitterFromConfig } from "@exaix/core/observability";
 import { AgentOrchestratorAdapter, FlowRunner, type IFlowEventLogger, type IFlowEventPayload } from "@exaix/flow";
 import {
   initializeMemoryAutoApprovalMaintenance,
@@ -806,7 +807,9 @@ if (import.meta.main) {
       config.paths.blueprints,
       DEFAULT_IDENTITIES_PATH,
     );
-    const agentRunner = new AgentRunner(llmProvider);
+    const agentRunner = new AgentRunner(llmProvider, {
+      milestoneEmitter: buildMilestoneEmitterFromConfig(config),
+    });
     const agentExecutorAdapter = new AgentOrchestratorAdapter(
       agentRunner,
       blueprintsPath,

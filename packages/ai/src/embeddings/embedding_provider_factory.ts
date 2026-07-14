@@ -14,7 +14,12 @@ import { EmbeddingError } from "./embedding_errors.ts";
 import { OllamaEmbeddingClient } from "@exaix/ai-ollama";
 import type { IOllamaEmbeddingConfig } from "@exaix/ai-ollama";
 import type { IOpenAIEmbeddingConfig } from "../providers/openai_embedding_client.ts";
-import type { ILlamaCppEmbeddingConfig } from "../providers/llamacpp_embedding_client.ts";
+
+interface ILlamaCppEmbeddingConfig {
+  model?: string;
+  baseUrl?: string;
+  chunkSize?: number;
+}
 
 /**
  * Discriminated union of all embedding provider configs.

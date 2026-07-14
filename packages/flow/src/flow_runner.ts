@@ -744,7 +744,8 @@ export class FlowRunner implements IFlowRunner {
     mcpHandlers: Opt<ToolHandler[], Reason.OptionalDependency>,
     options: IFlowRunnerConfig,
   ): void {
-    const hasDynamicTools = dynamicHandlers !== undefined || mcpHandlers !== undefined;
+    const hasDynamicTools = dynamicHandlers !== undefined || mcpHandlers !== undefined ||
+      options.mcpClient !== undefined;
     if (!config || !hasDynamicTools || !this.eventLogger) return;
 
     const activityJournal = new ActivityJournal(this.eventLogger);

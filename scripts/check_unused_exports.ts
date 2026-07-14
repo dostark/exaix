@@ -295,6 +295,8 @@ async function main() {
         if (site.repoPath.startsWith("packages/schemas/")) continue;
         // apps/daemon/src/ and apps/common/ — dynamically imported by edition composer
         if (site.repoPath.startsWith("apps/daemon/src/") || site.repoPath.startsWith("apps/common/")) continue;
+        // CLI commands — registered by string name, used interactively, not imported
+        if (site.repoPath.includes("/commands/") || site.repoPath.includes("/handlers/")) continue;
         if (isPackageEntrypoint(site.repoPath)) continue;
         if (isProviderMetadata(name)) continue;
         if (isTestHelper(name)) continue;

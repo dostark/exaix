@@ -10,7 +10,6 @@ import { ExecutionStatus, MemoryBankSource, PortalOperation } from "@exaix/core"
 import { McpToolName } from "@exaix/mcp";
 import { join as _join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { ExecutionLoop } from "@exaix/execution";
 import { MissionReporter } from "@exaix/core/artifact";
 import { MemoryBankService } from "@exaix/memory";
 import { EventLogger } from "@exaix/core/logger";
@@ -113,11 +112,7 @@ Deno.test("Integration: Happy Path - Request to Report", async (t) => {
     // Test 4 & 5: Execution (creates branch and commits)
     // ========================================================================
     await t.step("Test 4: Execution creates feature branch", async () => {
-      const loop = new ExecutionLoop({
-        config: env.config,
-        db: env.db,
-        identityId: "test-agent",
-      });
+      const loop = env.createExecutionLoop("test-agent");
 
       // Execute the plan
       const result = await loop.processTask(activePlanPath);

@@ -16,6 +16,7 @@ import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import { SecurityMode } from "@exaix/core";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { ToolRegistryTestHelper } from "../../../packages/tool-runtime/tests/helpers/tool_registry_test_helper.ts";
+import { ToolRegistry } from "@exaix/tool-runtime";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { readFixtureTextSync } from "@exaix/testing";
 
@@ -83,6 +84,7 @@ Deno.test("AgentOrchestrator Integration - Real MCP Execution & Audit", async ()
 
   const strategyRegistry = new StrategyRegistry();
   const logger = new EventLogger({ db: helper.db, defaultActor: "user:test" });
+  const toolRegistry = new ToolRegistry({ config: registryState.config, logger, pathResolver });
 
   const executor = new AgentOrchestrator({
     config: registryState.config,
@@ -91,7 +93,7 @@ Deno.test("AgentOrchestrator Integration - Real MCP Execution & Audit", async ()
     pathResolver,
     permissions,
     strategyRegistry,
-    toolRegistry: helper.registry,
+    toolRegistry,
   });
 
   // Set environment variable for mock agent and register strategy
