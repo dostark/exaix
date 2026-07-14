@@ -13,6 +13,7 @@ import { join } from "@std/path";
 import type { IApplicationContext, IRequestAnalysisContext, IRequestAnalyzerService } from "@exaix/core/types";
 import type { ANALYZER_VERSION as _ANALYZER_VERSION } from "@exaix/core";
 import { RequestProcessor } from "@exaix/request";
+import { AgentRunner } from "@exaix/execution";
 import { applyAnalysisToRequest, buildParsedRequest } from "@exaix/request";
 import { loadAnalysis } from "@exaix/request";
 import {
@@ -76,6 +77,7 @@ function makeAnalysisProcessor(
     context,
     testProvider: mockProvider,
     testAnalyzer: analyzer,
+    agentRunner: new AgentRunner(mockProvider),
   });
   return { processor, mockProvider };
 }
@@ -96,6 +98,7 @@ function makeStubAnalysisProcessor(
     ...env.processorConfig,
     context,
     testAnalyzer: analyzer,
+    agentRunner: new AgentRunner(context.provider),
   });
   return { processor };
 }
@@ -275,6 +278,7 @@ Deno.test("[RequestProcessor] plan metadata contains request analysis", async ()
       context,
       testProvider: mockProvider,
       testAnalyzer: fakeAnalyzer,
+      agentRunner: new AgentRunner(mockProvider),
     });
 
     const planPath = await processor.process(filePath);

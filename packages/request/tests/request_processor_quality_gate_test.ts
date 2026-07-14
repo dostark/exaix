@@ -10,6 +10,7 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "@exaix/request";
+import { AgentRunner } from "@exaix/execution";
 import type { IApplicationContext, IRequestQualityGateService } from "@exaix/core/types";
 import {
   type IRequestQualityAssessment,
@@ -152,6 +153,7 @@ function makeTestProcessor(
     ...env.processorConfig,
     context,
     testProvider: mockProvider,
+    agentRunner: new AgentRunner(mockProvider),
     ...(opts.gate !== undefined ? { testQualityGate: opts.gate } : {}),
     ...(opts.onDelegateRefinement !== undefined ? { onDelegateRefinement: opts.onDelegateRefinement } : {}),
   });
@@ -378,6 +380,7 @@ Deno.test("[RequestProcessor] builds quality gate from TOML config when none inj
     // The quality gate (built from config) should have set status to REFINING
     // before the processor reached blueprint lookup.
     const content = await Deno.readTextFile(filePath);
+    console.error("DEBUG content:", content);
     assertEquals(content.includes(RequestStatus.REFINING), true);
   } finally {
     await env.cleanup();

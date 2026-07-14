@@ -7,7 +7,7 @@
  * @related-files [packages/core/src/types/i_request_quality_gate_service.ts]
  */
 
-export { buildQualityGateConfig, RequestQualityGate } from "./src/request_quality_gate.ts";
+export { buildQualityGateConfig, buildRequestQualityGateFromConfig, RequestQualityGate } from "./src/request_quality_gate.ts";
 export { type IQualityGateTomlConfig } from "./src/request_quality_gate.ts";
 export { type IRequestQualityGateConfig } from "@exaix/core/types";
 export { assessHeuristic } from "./src/heuristic_assessor.ts";

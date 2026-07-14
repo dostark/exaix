@@ -71,6 +71,22 @@ export function buildQualityGateConfig(
   };
 }
 
+/**
+ * Builds a RequestQualityGate from the TOML `[quality_gate]` config section
+ * plus the provider/validator/logger a caller already has on hand. Shared by
+ * any caller that constructs RequestProcessor without injecting its own gate
+ * (production bootstrap, tests) so the config-driven default stays in one
+ * place instead of being re-derived ad hoc.
+ */
+export function buildRequestQualityGateFromConfig(
+  cfg: IQualityGateTomlConfig,
+  provider?: IModelProvider,
+  validator?: IOutputValidator,
+  eventLogger?: IEventLogger,
+): RequestQualityGate {
+  return new RequestQualityGate(buildQualityGateConfig(cfg), provider, validator, eventLogger);
+}
+
 // ---------------------------------------------------------------------------
 // RequestQualityGate
 // ---------------------------------------------------------------------------

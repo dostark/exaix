@@ -12,6 +12,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { buildPortalKnowledgeSummary, RequestProcessor } from "@exaix/request";
+import { AgentRunner } from "@exaix/execution";
 import { PORTAL_KNOWLEDGE_PROMPT_MAX_LINES, PortalOperation } from "@exaix/core";
 import { RequestStatus } from "@exaix/core/status";
 import type { IApplicationContext, IPortalKnowledgeService } from "@exaix/core/types";
@@ -113,6 +114,7 @@ async function makeKnowledgeProcessorEnv(opts: {
     context,
     testProvider: activeProvider,
     portalKnowledgeService: opts.knowledgeService,
+    agentRunner: new AgentRunner(activeProvider),
   });
 
   const fullCleanup = async () => {
