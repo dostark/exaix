@@ -32,7 +32,8 @@ import type { MemoryBankService, SessionMemoryService } from "@exaix/memory";
 import { MissionReporter } from "@exaix/core/artifact";
 import { type IPlanExecutorOptions, PlanExecutor } from "@exaix/core/planning";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
-import { ExecutionStatus, PortalExecutionStrategy } from "@exaix/core";
+import { ExecutionStatus } from "@exaix/core";
+import type { PortalExecutionStrategy } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 import type { IHitlPolicyEvaluator, IModelRegistry, IToolConfirmationInterceptor } from "@exaix/core/types";
 import type { HitlRule } from "@exaix/schemas/hitl.ts";
@@ -42,6 +43,7 @@ import { ArtifactRegistry, DatabaseArtifactRepository } from "@exaix/core/artifa
 import { PlanAmendmentPendingError } from "@exaix/core/planning";
 import { ConfidenceScorer } from "./confidence_scorer.ts";
 import { PlanAmendmentService } from "@exaix/core/planning";
+import { GitExecutionSetupService } from "./git_execution_setup_service.ts";
 import {
   DEFAULT_AMENDMENT_EXPIRY_MS,
   DEFAULT_AMENDMENT_ON_TIMEOUT,
@@ -184,6 +186,7 @@ export class ExecutionLoop {
   private gitServiceFactory?: IGitServiceFactory;
   private toolRegistryFactory?: IToolRegistryFactory;
   private memoryBank?: IMemoryBankService;
+  private gitExecutionSetupService: GitExecutionSetupService;
 
   constructor(
     config: IExecutionLoopConfig,
@@ -207,6 +210,7 @@ export class ExecutionLoop {
     this.gitServiceFactory = config.gitServiceFactory;
     this.toolRegistryFactory = config.toolRegistryFactory;
     this.memoryBank = config.memoryBank ?? ctx?.memoryBank;
+    this.gitExecutionSetupService = new GitExecutionSetupService(this.config, this.gitServiceFactory);
     this.plansDir = join(this.config.system.root, this.config.paths.workspace, this.config.paths.active);
     this.blueprintLoader = new IBlueprintLoader({
       blueprintsPath: join(this.config.system.root, this.config.paths.blueprints, this.config.paths.identities),
@@ -233,24 +237,11 @@ export class ExecutionLoop {
     }
   }
 
-  private async resolveBaseBranch(
-    frontmatter: PlanFrontmatter,
-    gitService: IGitService,
-    executionRoot: string,
-  ): Promise<string> {
-    const fromPlan = frontmatter.target_branch?.trim();
-    if (fromPlan) return fromPlan;
-
-    if (frontmatter.portal) {
-      const portalCfg = this.config.portals.find((p) => p.alias === frontmatter.portal);
-      const fromPortal = portalCfg?.default_branch?.trim();
-      if (fromPortal) return fromPortal;
-    }
-
-    return await gitService.getDefaultBranch(executionRoot);
-  }
-
-  private async createWorktreeExecutionPointer(traceId: string, canonicalWorktreePath: string, pointerName: string): Promise<void> {
+  private async createWorktreeExecutionPointer(
+    traceId: string,
+    canonicalWorktreePath: string,
+    pointerName: string,
+  ): Promise<void> {
     const traceDir = join(
       this.config.system.root,
       this.config.paths.memory,
@@ -307,14 +298,14 @@ export class ExecutionLoop {
         plan_path: planPath,
       });
 
-      const portalRepoRoot = this.resolvePortalRepoRoot(frontmatter);
+      const portalRepoRoot = this.gitExecutionSetupService.resolvePortalRepoRoot(frontmatter);
       portalGitService = this.gitServiceFactory?.createGitService(portalRepoRoot, traceId) ??
         missingFactory("gitServiceFactory", "git operations");
 
       const planContent = await this.readPlanContent(planPath);
       const prepared = await this.preparePlanExecution(frontmatter, planContent);
 
-      const gitSetup = await this.setupGitForExecution({
+      const gitSetup = await this.gitExecutionSetupService.setupGitForExecution({
         initGitBranch,
         hasExecutableWork: prepared.hasExecutableWork && !prepared.isReadOnly,
         frontmatter,
@@ -323,6 +314,7 @@ export class ExecutionLoop {
         portalRepoRoot,
         portalGitService: portalGitService!,
         executionStrategy: prepared.executionStrategy,
+        createWorktreeExecutionPointer: this.createWorktreeExecutionPointer.bind(this),
       });
       worktreePath = gitSetup.worktreePath;
 
@@ -345,13 +337,23 @@ export class ExecutionLoop {
       }
 
       const commitSha = workResult.didMutateRepo && gitSetup.branchName
-        ? await this.commitChanges(gitSetup.executionGitService, requestId!, traceId!)
+        ? await this.gitExecutionSetupService.commitChanges(
+          gitSetup.executionGitService,
+          requestId!,
+          traceId!,
+          this.identityId,
+          (noChangesTraceId, noChangesRequestId) => {
+            this.logActivity(DomainEventType.ExecutionNoChanges, noChangesTraceId, {
+              request_id: noChangesRequestId,
+            });
+          },
+        )
         : null;
 
       // Register review
       if (commitSha) {
         const baseBranch = gitSetup.baseBranch ??
-          await this.resolveBaseBranch(frontmatter, portalGitService!, portalRepoRoot);
+          await this.gitExecutionSetupService.resolveBaseBranch(frontmatter, portalGitService!, portalRepoRoot);
         await this.registerReview({
           requestId: requestId!,
           traceId: traceId!,
@@ -392,12 +394,6 @@ export class ExecutionLoop {
     }
   }
 
-  private resolvePortalRepoRoot(frontmatter: PlanFrontmatter): string {
-    if (!frontmatter.portal) return this.config.system.root;
-    const portal = this.config.portals.find((p) => p.alias === frontmatter.portal);
-    return portal ? portal.target_path : this.config.system.root;
-  }
-
   private async readPlanContent(planPath: string): Promise<string> {
     const planContent = await Deno.readTextFile(planPath);
     if (planContent.includes("path traversal: ../../")) {
@@ -407,12 +403,6 @@ export class ExecutionLoop {
       throw new Error("Simulated execution failure");
     }
     return planContent;
-  }
-
-  private getExecutionStrategy(frontmatter: PlanFrontmatter): PortalExecutionStrategy {
-    if (!frontmatter.portal) return PortalExecutionStrategy.BRANCH;
-    // Force WORKTREE for all portal tasks for security and isolation.
-    return PortalExecutionStrategy.WORKTREE;
   }
 
   private async preparePlanExecution(frontmatter: PlanFrontmatter, planContent: string): Promise<{
@@ -433,138 +423,9 @@ export class ExecutionLoop {
     const planAgentId = frontmatter.identity_id || structuredPlan?.agent;
     const isReadOnly = await this.isReadOnlyAgentId(planAgentId);
     const hasExecutableWork = structuredPlan !== null || actions.length > 0;
-    const executionStrategy = this.getExecutionStrategy(frontmatter);
+    const executionStrategy = this.gitExecutionSetupService.getExecutionStrategy(frontmatter);
 
     return { structuredPlan, actions, planAgentId, isReadOnly, hasExecutableWork, executionStrategy };
-  }
-
-  private async setupGitForExecution(args: {
-    initGitBranch: boolean;
-    hasExecutableWork: boolean;
-    frontmatter: PlanFrontmatter;
-    requestId: string;
-    traceId: string;
-    portalRepoRoot: string;
-    portalGitService: IGitService;
-    executionStrategy: PortalExecutionStrategy;
-  }): Promise<{
-    executionRoot: string;
-    executionGitService: IGitService;
-    baseBranch?: string;
-    branchName?: string;
-    worktreePath?: string;
-  }> {
-    const executionRoot = args.portalRepoRoot;
-    const executionGitService = args.portalGitService as IGitService;
-    if (!args.initGitBranch || !args.hasExecutableWork) {
-      return { executionRoot, executionGitService };
-    }
-
-    // Security check: only initialize git if we're not in the system root,
-    // or if we're specifically targeting a portal (which should have its own isolation).
-    // Exception: allow git operations if repository is already initialized (has .git folder).
-    if (args.portalRepoRoot === this.config.system.root && !args.frontmatter.portal) {
-      // Check if git is already initialized
-      try {
-        await Deno.stat(`${args.portalRepoRoot}/.git`);
-        // Git exists, continue with branch creation
-      } catch {
-        // For tasks in the system root that are not portal-assigned and have no .git,
-        // skip git initialization to avoid creating a .git folder in ~/Exaix.
-        return { executionRoot, executionGitService };
-      }
-    }
-
-    await args.portalGitService.ensureRepository();
-    await args.portalGitService.ensureIdentity();
-
-    const baseBranch = await this.resolveBaseBranch(args.frontmatter, args.portalGitService, args.portalRepoRoot);
-
-    if (args.frontmatter.portal && args.executionStrategy === PortalExecutionStrategy.WORKTREE) {
-      return await this.setupPortalWorktreeExecution({
-        portalAlias: args.frontmatter.portal,
-        traceId: args.traceId,
-        requestId: args.requestId,
-        portalGitService: args.portalGitService,
-        baseBranch,
-      });
-    }
-
-    const branchName = await this.setupBranchExecution({
-      portalGitService: args.portalGitService,
-      baseBranch,
-      requestId: args.requestId,
-      traceId: args.traceId,
-    });
-
-    return { executionRoot, executionGitService, baseBranch, branchName };
-  }
-
-  private async setupBranchExecution(args: {
-    portalGitService: IGitService;
-    baseBranch: string;
-    requestId: string;
-    traceId: string;
-  }): Promise<string> {
-    // Checkout base branch to create feature branch from it
-    // allowProtected: true because we're temporarily checking out to create a new branch
-    await args.portalGitService.checkoutBranch(args.baseBranch, { allowProtected: true });
-    return await args.portalGitService.createBranch({ requestId: args.requestId, traceId: args.traceId });
-  }
-
-  private buildPortalWorktreePath(portalAlias: string, traceId: string): string {
-    return join(this.config.system.root, ".exa", "worktrees", portalAlias, traceId);
-  }
-
-  private async addWorktreeOrThrow(
-    portalGitService: IGitService,
-    worktreePath: string,
-    baseBranch: string,
-  ): Promise<void> {
-    try {
-      await portalGitService.addWorktree(worktreePath, baseBranch);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      throw new Error(
-        `Failed to create portal worktree execution checkout (git worktree add)\n` +
-          `worktree_path: ${worktreePath}\n` +
-          `base_branch: ${baseBranch}\n` +
-          `error: ${message}`,
-      );
-    }
-  }
-
-  private async setupPortalWorktreeExecution(args: {
-    portalAlias: string;
-    traceId: string;
-    requestId: string;
-    portalGitService: IGitService;
-    baseBranch: string;
-  }): Promise<{
-    executionRoot: string;
-    executionGitService: IGitService;
-    baseBranch: string;
-    branchName: string;
-    worktreePath: string;
-  }> {
-    const worktreePath = this.buildPortalWorktreePath(args.portalAlias, args.traceId);
-    await Deno.mkdir(join(this.config.system.root, ".exa", "worktrees", args.portalAlias), { recursive: true });
-    await this.createWorktreeExecutionPointer(args.traceId, worktreePath, PortalExecutionStrategy.WORKTREE);
-    await this.addWorktreeOrThrow(args.portalGitService, worktreePath, args.baseBranch);
-
-    const executionRoot = worktreePath;
-    const executionGitService = this.gitServiceFactory?.createGitService(executionRoot, args.traceId) ??
-      missingFactory("gitServiceFactory", "git operations");
-    await executionGitService.ensureIdentity();
-
-    const branchName = await executionGitService.createBranch({ requestId: args.requestId, traceId: args.traceId });
-    return {
-      executionRoot,
-      executionGitService,
-      baseBranch: args.baseBranch,
-      branchName,
-      worktreePath,
-    };
   }
 
   private async executePlanWork(args: {
@@ -1368,34 +1229,6 @@ export class ExecutionLoop {
       }
     } catch (error) {
       console.error("[ExecutionLoop] Failed to extract memory learnings:", error);
-    }
-  }
-
-  /**
-   * Commit changes to git, handling "nothing to commit" gracefully
-   */
-  private async commitChanges(
-    gitService: IGitService,
-    requestId: string,
-    traceId: string,
-  ): Promise<string | null> {
-    try {
-      return await gitService.commit({
-        message: `Execute plan: ${requestId}`,
-        description: `Executed by agent ${this.identityId}`,
-        traceId,
-      });
-    } catch (error) {
-      // If no changes to commit, that's actually a success (nothing needed to be done)
-      if (error instanceof Error && error.message.includes("nothing to commit")) {
-        // Log but don't fail
-        this.logActivity(DomainEventType.ExecutionNoChanges, traceId, {
-          request_id: requestId,
-        });
-        return null;
-      } else {
-        throw error;
-      }
     }
   }
 
