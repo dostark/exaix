@@ -6,12 +6,13 @@
  * @related-files [packages/flow/mod.ts, packages/request/src/router.ts]
  */
 
-import type { IFlow, IFlowNamespaceWrite, IFlowStep, IGateEvaluate, IParallelMergeMode } from "@exaix/schemas/flow.ts";
+import type { IFlow, IFlowNamespaceWrite, IFlowStep, IGateEvaluate } from "@exaix/schemas/flow.ts";
 import { encodeHex } from "@std/encoding/hex";
 import { DependencyResolver } from "@exaix/flow";
+import { FlowRuntimeValidator } from "./flow_runtime_validator.ts";
+import { ParallelGroupMergeService } from "./parallel_group_merge_service.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import { ConditionEvaluator } from "./condition_evaluator.ts";
-import { mergeAsContext } from "@exaix/core/func";
 import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
@@ -70,7 +71,6 @@ import {
   DEFAULT_UNKNOWN_LABEL,
   FLOW_EVENT_COMPLETED,
   FLOW_EVENT_PARALLEL_GROUP_COMPLETED,
-  FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED,
   FLOW_EVENT_PARALLEL_GROUP_STARTED,
   FLOW_EVENT_STEP_COMPENSATED,
   FLOW_EVENT_STEP_COMPENSATION_FAILED,
@@ -260,7 +260,6 @@ interface IStepContext {
 }
 
 type IFormatStepSuccessContext = Pick<IStepContext, "flowRunId" | "step" | "request" | "startedAt">;
-type IBuildMergeOutputContext = Pick<IStepContext, "flowRunId" | "step" | "flow">;
 
 interface IWaveExecutionUnit {
   stepIds: string[];
@@ -665,6 +664,8 @@ export class FlowRunner implements IFlowRunner {
   private readonly pendingWaitStateRef: IPendingWaitStateRef = { current: undefined };
   private eventRegistry?: IEventRegistry;
   private modelResolver?: ModelResolver;
+  private readonly runtimeValidator = new FlowRuntimeValidator();
+  private readonly parallelGroupMergeService: ParallelGroupMergeService;
 
   private createNoOpDurabilityStore(): IStepDurabilityStore {
     return {
@@ -693,6 +694,7 @@ export class FlowRunner implements IFlowRunner {
     this.db = options.context?.db || options.db;
     this.gateEvaluator = options.context?.gateEvaluator || options.gateEvaluator;
     this.config = options.context?.config.get() || options.config;
+    this.parallelGroupMergeService = new ParallelGroupMergeService(this.eventLogger);
     this.initCoreServices();
 
     this.stepDurabilityStore = options.stepDurabilityStore ?? this.createNoOpDurabilityStore();
@@ -1006,7 +1008,7 @@ export class FlowRunner implements IFlowRunner {
       throw new FlowExecutionError("IFlow must have at least one step", flowRunId);
     }
 
-    const fallbackCycle = this.findCyclicFallbackChain(flow);
+    const fallbackCycle = this.runtimeValidator.findCyclicFallbackChain(flow);
     if (fallbackCycle) {
       const errorMessage = `Cyclic fallback chain detected: ${fallbackCycle.join(" -> ")}`;
       await this.eventLogger.log(FLOW_EVENT_VALIDATION_FAILED, {
@@ -1016,7 +1018,7 @@ export class FlowRunner implements IFlowRunner {
       throw new FlowExecutionError(errorMessage, flowRunId);
     }
 
-    const parallelValidationError = this.validateParallelGroups(flow);
+    const parallelValidationError = this.runtimeValidator.validateParallelGroups(flow);
     if (parallelValidationError) {
       await this.eventLogger.log(FLOW_EVENT_VALIDATION_FAILED, {
         error: parallelValidationError,
@@ -1031,83 +1033,6 @@ export class FlowRunner implements IFlowRunner {
       failFast: flow.settings?.failFast ?? true,
       ...this.getIFlowLogBase(flow, request, { includeStepCount: true }),
     });
-  }
-
-  private findCyclicFallbackChain(flow: IFlow): string[] | null {
-    const stepsById = new Map(flow.steps.map((step) => [step.id, step]));
-
-    for (const startStep of flow.steps) {
-      const path: string[] = [];
-      const seenAt = new Map<string, number>();
-      let currentStep: IFlowStep | undefined = startStep;
-
-      while (currentStep?.onError?.action === FlowStepOnErrorAction.FALLBACK && currentStep.onError.fallbackStep) {
-        seenAt.set(currentStep.id, path.length);
-        path.push(currentStep.id);
-
-        const nextStep = stepsById.get(currentStep.onError.fallbackStep);
-        if (!nextStep) {
-          break;
-        }
-
-        const cycleStartIndex = seenAt.get(nextStep.id);
-        if (cycleStartIndex !== undefined) {
-          return [...path.slice(cycleStartIndex), nextStep.id];
-        }
-
-        currentStep = nextStep;
-      }
-    }
-
-    return null;
-  }
-
-  private validateParallelGroups(flow: IFlow): string | null {
-    const stepsById = new Map(flow.steps.map((step) => [step.id, step]));
-    const groupMembers = new Map<string, Set<string>>();
-
-    for (const step of flow.steps) {
-      const groupId = step.parallel?.group;
-      if (!groupId) {
-        continue;
-      }
-
-      const members = groupMembers.get(groupId) ?? new Set<string>();
-      members.add(step.id);
-      groupMembers.set(groupId, members);
-    }
-
-    for (const step of flow.steps) {
-      for (const groupId of step.mergeFromGroups ?? []) {
-        if (!groupMembers.has(groupId)) {
-          return `Step '${step.id}' references unknown parallel group '${groupId}'`;
-        }
-      }
-
-      const order = step.parallel?.order;
-      const groupId = step.parallel?.group;
-      if (groupId && order) {
-        const members = groupMembers.get(groupId) ?? new Set<string>();
-        for (const orderedStepId of order) {
-          if (!members.has(orderedStepId)) {
-            return `Parallel group '${groupId}' order entry '${orderedStepId}' does not match any group member step ID`;
-          }
-        }
-      }
-
-      for (const dependencyId of step.dependsOn ?? []) {
-        const dependency = stepsById.get(dependencyId);
-        if (!dependency?.parallel?.group || !step.parallel?.group) {
-          continue;
-        }
-
-        if (dependency.parallel.group !== step.parallel.group) {
-          return `Steps '${dependency.id}' and '${step.id}' cannot declare different parallel groups across a dependency edge`;
-        }
-      }
-    }
-
-    return null;
   }
 
   /**
@@ -2480,7 +2405,7 @@ export class FlowRunner implements IFlowRunner {
       requestAnalysis: originalRequest.requestAnalysis,
     };
 
-    const stepRequestWithParallelGroups = this.attachParallelGroupResults(
+    const stepRequestWithParallelGroups = this.parallelGroupMergeService.attachParallelGroupResults(
       stepRequest,
       flowRunId,
       step,
@@ -2577,189 +2502,6 @@ export class FlowRunner implements IFlowRunner {
     });
 
     return userPrompt;
-  }
-
-  private attachParallelGroupResults(
-    stepRequest: IFlowStepRequest,
-    flowRunId: string,
-    step: IFlowStep,
-    flow: IFlow,
-    originalRequest: { traceId?: string; requestId?: string },
-    stepResults: Map<string, IStepResult>,
-  ): IFlowStepRequest {
-    if (!step.mergeFromGroups?.length) {
-      return stepRequest;
-    }
-
-    const parallelGroupResults = this.buildParallelGroupSummaries(
-      flowRunId,
-      step,
-      flow,
-      originalRequest,
-      stepResults,
-    );
-
-    return { ...stepRequest, parallelGroupResults };
-  }
-
-  private buildParallelGroupSummaries(
-    flowRunId: string,
-    step: IFlowStep,
-    flow: IFlow,
-    originalRequest: { traceId?: string; requestId?: string },
-    stepResults: Map<string, IStepResult>,
-  ): Record<string, IParallelGroupSummary> {
-    const summaries: Record<string, IParallelGroupSummary> = {};
-
-    for (const groupId of step.mergeFromGroups ?? []) {
-      summaries[groupId] = this.buildParallelGroupSummary(
-        flowRunId,
-        step,
-        flow,
-        groupId,
-        originalRequest,
-        stepResults,
-      );
-    }
-
-    return summaries;
-  }
-
-  private buildParallelGroupSummary(
-    flowRunId: string,
-    step: IFlowStep,
-    flow: IFlow,
-    groupId: string,
-    originalRequest: { traceId?: string; requestId?: string },
-    stepResults: Map<string, IStepResult>,
-  ): IParallelGroupSummary {
-    const memberStepIds = this.getParallelGroupMemberStepIds(flow, groupId);
-    const mergeMode = this.getParallelGroupMergeMode(step, flow, groupId);
-    const memberResults = memberStepIds.map((memberStepId) => {
-      const memberResult = stepResults.get(memberStepId);
-      if (!memberResult) {
-        return this.throwParallelGroupMergeFailure(
-          flowRunId,
-          step,
-          groupId,
-          mergeMode,
-          originalRequest,
-          `Parallel group '${groupId}' is missing result data for step '${memberStepId}'`,
-        );
-      }
-      return { memberStepId, memberResult };
-    });
-
-    const completedAt = new Date(
-      Math.max(...memberResults.map(({ memberResult }) => memberResult.completedAt.getTime())),
-    ).toISOString();
-    const successfulResults = memberResults.filter(({ memberResult }) => {
-      return memberResult.success && !!memberResult.result?.content;
-    });
-    const successCount = successfulResults.length;
-
-    const mergedOutput = mergeMode === "manual" ? "" : this.buildAutomaticParallelMergeOutput(
-      { flowRunId, step, flow },
-      groupId,
-      mergeMode,
-      originalRequest,
-      memberStepIds,
-      successfulResults,
-    );
-
-    return {
-      groupId,
-      mergedOutput,
-      memberCount: memberStepIds.length,
-      successCount,
-      completedAt,
-    };
-  }
-
-  private buildAutomaticParallelMergeOutput(
-    ctx: IBuildMergeOutputContext,
-    groupId: string,
-    mergeMode: IParallelMergeMode,
-    originalRequest: { traceId?: string; requestId?: string },
-    memberStepIds: string[],
-    successfulResults: Array<{ memberStepId: string; memberResult: IStepResult }>,
-  ): string {
-    const { flowRunId, step, flow } = ctx;
-    if (successfulResults.length !== memberStepIds.length) {
-      return this.throwParallelGroupMergeFailure(
-        flowRunId,
-        step,
-        groupId,
-        mergeMode,
-        originalRequest,
-        `Parallel group '${groupId}' cannot be merged automatically because not all members produced successful outputs`,
-      );
-    }
-
-    const orderedStepIds = this.getOrderedParallelGroupMemberStepIds(flow, groupId, memberStepIds);
-    const resultsByStepId = new Map(successfulResults.map((entry) => [entry.memberStepId, entry.memberResult]));
-    const orderedOutputs = orderedStepIds.map((memberStepId) => {
-      const result = resultsByStepId.get(memberStepId);
-      if (!result?.result?.content) {
-        return this.throwParallelGroupMergeFailure(
-          flowRunId,
-          step,
-          groupId,
-          mergeMode,
-          originalRequest,
-          `Parallel group '${groupId}' is missing merged output content for step '${memberStepId}'`,
-        );
-      }
-      return result.result.content;
-    });
-
-    return mergeMode === "concat" ? orderedOutputs.join("\n\n") : mergeAsContext(orderedOutputs);
-  }
-
-  private getParallelGroupMemberStepIds(flow: IFlow, groupId: string): string[] {
-    return flow.steps
-      .filter((candidateStep) => candidateStep.parallel?.group === groupId)
-      .map((candidateStep) => candidateStep.id);
-  }
-
-  private getParallelGroupMergeMode(
-    step: IFlowStep,
-    flow: IFlow,
-    groupId: string,
-  ): IParallelMergeMode {
-    const groupStep = flow.steps.find((candidateStep) => candidateStep.parallel?.group === groupId);
-    return (step.mergeMode ?? groupStep?.parallel?.mergeMode ?? "all") as IParallelMergeMode;
-  }
-
-  private getOrderedParallelGroupMemberStepIds(flow: IFlow, groupId: string, memberStepIds: string[]): string[] {
-    const explicitOrder = flow.steps.find((candidateStep) => candidateStep.parallel?.group === groupId)?.parallel
-      ?.order;
-    if (explicitOrder?.length) {
-      return [...explicitOrder];
-    }
-
-    return [...memberStepIds].sort((left, right) => left.localeCompare(right));
-  }
-
-  private throwParallelGroupMergeFailure(
-    flowRunId: string,
-    step: IFlowStep,
-    groupId: string,
-    mergeMode: string,
-    originalRequest: { traceId?: string; requestId?: string },
-    error: string,
-  ): never {
-    this.eventLogger.log(FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED, {
-      flowRunId,
-      stepId: step.id,
-      groupId,
-      mergeMode,
-      error,
-      traceId: originalRequest.traceId,
-      requestId: originalRequest.requestId,
-    });
-
-    throw new FlowExecutionError(error, flowRunId);
   }
 
   /**
