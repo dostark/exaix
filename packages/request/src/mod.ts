@@ -33,3 +33,5 @@ export {
 } from "./processor.ts";
 
 export { type ITaskComplexityClassifier, TaskComplexityClassifier } from "./task_complexity_classifier.ts";
+
+export { BlueprintResolver, type IBlueprintResolver, type IBlueprintResolverConfig } from "./blueprint_resolver.ts";

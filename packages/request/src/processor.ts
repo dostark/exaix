@@ -8,7 +8,7 @@
  * @architectural-link [ARCHITECTURE.md#request-processing-flow]
  */
 
-import { basename, dirname, join } from "@std/path";
+import { basename, join } from "@std/path";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -19,14 +19,13 @@ import {
   type IRequestContextContext,
 } from "@exaix/execution";
 import { applyAnalysisToRequest, buildParsedRequest } from "./common.ts";
-import { IBlueprintLoader, type ILoadedBlueprint } from "@exaix/core/blueprint";
+import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { type IRequestMetadata, PlanWriter } from "@exaix/core/planning";
 import { PlanValidationError } from "@exaix/core/planning";
 import { RequestStatus } from "@exaix/core/status";
 import { PlanStatus } from "@exaix/core/status";
 import {
   DEFAULT_ANALYZER_MODE,
-  DEFAULT_IDENTITIES_PATH,
   MEMORY_CONTEXT_KEY,
   PORTAL_CONTEXT_KEY,
   PORTAL_KNOWLEDGE_KEY,
@@ -62,6 +61,7 @@ import { RequestAnalyzer, saveAnalysis } from "./analysis/mod.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { ProviderType, RequestKind } from "@exaix/core";
 import { type ITaskComplexityClassifier, TaskComplexityClassifier } from "./task_complexity_classifier.ts";
+import { BlueprintResolver, type IBlueprintResolver } from "./blueprint_resolver.ts";
 import type { ILogEvent } from "@exaix/core";
 import {
   CompositeMilestoneEmitter,
@@ -169,6 +169,7 @@ export class RequestProcessor {
   private readonly flowRunner?: IFlowRunner;
   private readonly milestoneEmitter?: IMilestoneEmitter;
   private readonly taskComplexityClassifier: ITaskComplexityClassifier;
+  private readonly blueprintResolver: IBlueprintResolver;
 
   constructor(private readonly processorConfig: IRequestProcessorConfig) {
     const ctx = processorConfig.context;
@@ -264,6 +265,7 @@ export class RequestProcessor {
     });
 
     this.taskComplexityClassifier = new TaskComplexityClassifier();
+    this.blueprintResolver = new BlueprintResolver({ blueprintsPath: processorConfig.blueprintsPath });
   }
 
   async process(filePath: string): Promise<string | null> {
@@ -714,7 +716,7 @@ export class RequestProcessor {
       memoryContext,
     } = opts;
     const identityId = frontmatter.identity || frontmatter.identity;
-    const loadedBlueprint = await this.loadBlueprintWithFallback(identityId!, traceLogger);
+    const loadedBlueprint = await this.blueprintResolver.resolve(identityId!, traceLogger);
 
     if (!loadedBlueprint) {
       return this.handleBlueprintNotFound(filePath, identityId!, traceLogger);
@@ -878,84 +880,6 @@ ${result.content}`,
     traceLogger.error(DomainEventType.RequestBlueprintNotFound, identityId, { request: filePath });
     await this.statusManager.updateStatus(filePath, RequestStatus.FAILED, `Blueprint not found: ${identityId}`);
     traceLogger.error(DomainEventType.RequestFailed, filePath, { error: `Blueprint not found: ${identityId}` });
-    return null;
-  }
-
-  private async loadBlueprintWithFallback(
-    identityId: string,
-    traceLogger: IEventLogger,
-  ): Promise<ILoadedBlueprint | null> {
-    const blueprintLoader = new IBlueprintLoader({ blueprintsPath: this.processorConfig.blueprintsPath });
-    let loadedBlueprint = await blueprintLoader.load(identityId);
-
-    if (!loadedBlueprint) {
-      loadedBlueprint = await this.findBlueprintInWorktree(identityId, traceLogger);
-    }
-    if (!loadedBlueprint) {
-      loadedBlueprint = await this.findBlueprintInRepoRoots(identityId, traceLogger);
-    }
-    return loadedBlueprint;
-  }
-
-  private async findBlueprintInWorktree(
-    identityId: string,
-    traceLogger: IEventLogger,
-  ): Promise<ILoadedBlueprint | null> {
-    let dir = Deno.cwd();
-    while (true) {
-      const candidatePath = join(dir, "Blueprints", DEFAULT_IDENTITIES_PATH);
-      try {
-        const candidateFile = join(candidatePath, `${identityId}.md`);
-        try {
-          const stat = await Deno.stat(candidateFile);
-          if (stat && stat.isFile) {
-            const fallbackLoader = new IBlueprintLoader({ blueprintsPath: candidatePath });
-            const loadedBlueprint = await fallbackLoader.load(identityId);
-            if (loadedBlueprint) {
-              traceLogger.info(DomainEventType.RequestBlueprintLoadedFallback, identityId, { from: candidatePath });
-              return loadedBlueprint;
-            }
-          }
-        } catch {
-          // File doesn't exist
-        }
-      } catch {
-        // ignore
-      }
-
-      const parent = dir.replace(/\/[^\/]*$/, "");
-      if (!parent || parent === dir) break;
-      dir = parent;
-    }
-    return null;
-  }
-
-  private async findBlueprintInRepoRoots(
-    identityId: string,
-    traceLogger: IEventLogger,
-  ): Promise<ILoadedBlueprint | null> {
-    // Try the repository root (cwd) directly
-    const repoIdentitiesPath = join(Deno.cwd(), "Blueprints", DEFAULT_IDENTITIES_PATH);
-    const fallbackLoader = new IBlueprintLoader({ blueprintsPath: repoIdentitiesPath });
-    const loadedBlueprint = await fallbackLoader.load(identityId);
-    if (loadedBlueprint) {
-      traceLogger.info(DomainEventType.RequestBlueprintLoadedFallback, identityId, { from: repoIdentitiesPath });
-      return loadedBlueprint;
-    }
-
-    // Also try locating Blueprints relative to this module (repo root)
-    try {
-      const repoRoot = join(dirname(dirname(dirname(new URL(import.meta.url).pathname))));
-      const repoModuleIdentities = join(repoRoot, "Blueprints", DEFAULT_IDENTITIES_PATH);
-      const moduleLoader = new IBlueprintLoader({ blueprintsPath: repoModuleIdentities });
-      const moduleLoaded = await moduleLoader.load(identityId);
-      if (moduleLoaded) {
-        traceLogger.info(DomainEventType.RequestBlueprintLoadedFallback, identityId, { from: repoModuleIdentities });
-        return moduleLoaded;
-      }
-    } catch {
-      // ignore
-    }
     return null;
   }
 

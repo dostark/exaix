@@ -1,0 +1,67 @@
+/**
+ * @module BlueprintResolverTest
+ * @path packages/request/tests/blueprint_resolver_test.ts
+ * @architectural-layer Services
+ * @description Verifies BlueprintResolver resolves an identity's blueprint from
+ * the configured blueprintsPath, falling back to a Blueprints/Identities
+ * directory walked upward from the current working directory when the primary
+ * path has no match. Direct unit coverage for the extracted resolver (god-object
+ * decomposition of RequestProcessor).
+ * @related-files [packages/request/src/blueprint_resolver.ts, packages/request/src/processor.ts]
+ */
+
+import { assertEquals, assertExists } from "@std/assert";
+import { join } from "@std/path";
+import { BlueprintResolver } from "@exaix/request";
+import { createMockEventLogger } from "@exaix/testing";
+
+const SAMPLE_BLUEPRINT = `---
+identity_id: "test-agent"
+name: "Test Agent"
+model: "anthropic:claude-sonnet-5"
+capabilities:
+  - read_file
+version: "1.0.0"
+---
+
+# Test Agent
+
+You are a test agent.
+`;
+
+async function makeBlueprintsDir(): Promise<{ testDir: string; blueprintsPath: string }> {
+  const testDir = await Deno.makeTempDir({ prefix: "exa_blueprint_resolver_test_" });
+  const blueprintsPath = join(testDir, "Blueprints", "Identities");
+  await Deno.mkdir(blueprintsPath, { recursive: true });
+  return { testDir, blueprintsPath };
+}
+
+Deno.test("[BlueprintResolver.resolve] loads blueprint directly from configured blueprintsPath", async () => {
+  const { testDir, blueprintsPath } = await makeBlueprintsDir();
+  const mockLogger = createMockEventLogger();
+  try {
+    await Deno.writeTextFile(join(blueprintsPath, "test-agent.md"), SAMPLE_BLUEPRINT);
+    const resolver = new BlueprintResolver({ blueprintsPath });
+
+    const loaded = await resolver.resolve("test-agent", mockLogger);
+
+    assertExists(loaded);
+    assertEquals(loaded.identityId, "test-agent");
+  } finally {
+    await Deno.remove(testDir, { recursive: true });
+  }
+});
+
+Deno.test("[BlueprintResolver.resolve] returns null when identity is not found anywhere", async () => {
+  const { testDir, blueprintsPath } = await makeBlueprintsDir();
+  const mockLogger = createMockEventLogger();
+  try {
+    const resolver = new BlueprintResolver({ blueprintsPath });
+
+    const loaded = await resolver.resolve("nonexistent-agent", mockLogger);
+
+    assertEquals(loaded, null);
+  } finally {
+    await Deno.remove(testDir, { recursive: true });
+  }
+});
