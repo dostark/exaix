@@ -228,5 +228,3 @@ export class ConditionEvaluator {
     return validateExpression(condition);
   }
 }
-
-

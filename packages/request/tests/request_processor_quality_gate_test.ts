@@ -380,7 +380,6 @@ Deno.test("[RequestProcessor] builds quality gate from TOML config when none inj
     // The quality gate (built from config) should have set status to REFINING
     // before the processor reached blueprint lookup.
     const content = await Deno.readTextFile(filePath);
-    console.error("DEBUG content:", content);
     assertEquals(content.includes(RequestStatus.REFINING), true);
   } finally {
     await env.cleanup();

@@ -13,6 +13,7 @@ import { MemoryStatus } from "@exaix/core/status";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { type IRequestProcessorConfig, RequestProcessor } from "@exaix/request";
+import { AgentRunner } from "@exaix/execution";
 
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { ProviderRegistry } from "@exaix/ai";
@@ -146,10 +147,12 @@ describe("RequestProcessor", () => {
     });
 
     createProcessor = (provider?: IModelProvider, flowRunner?: IFlowRunner) => {
+      const resolvedProvider = provider ??
+        createStubProvider('<thought>ok</thought><content>{"description": "Mock plan"}</content>');
       const context: IApplicationContext = {
         config: createStubConfig(config),
         db,
-        provider: provider ?? createStubProvider(),
+        provider: resolvedProvider,
         git: createStubGit(),
         display: createStubDisplay(db),
       };
@@ -159,6 +162,7 @@ describe("RequestProcessor", () => {
         testProvider: provider,
         costTracker,
         flowRunner,
+        agentRunner: new AgentRunner(resolvedProvider),
       });
     };
   });

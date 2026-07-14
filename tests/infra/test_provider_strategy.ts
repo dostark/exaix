@@ -14,7 +14,7 @@ import { HealthCheckVerdict, PricingTier, ProviderCostTier, TaskComplexity } fro
 import { TestEnvironment } from "../integration/helpers/test_environment.ts";
 import { ProviderSelector } from "@exaix/ai/provider_selector.ts";
 import { CostTracker } from "@exaix/core/cost";
-import { HealthCheckService } from "../../packages/core/src/health/health_check_service.ts";
+import { HealthCheckService } from "@exaix/core/health";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import { OllamaProviderFactory } from "@exaix/ai-ollama";
 import { OpenAIProviderFactory } from "@exaix/ai-openai";

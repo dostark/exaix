@@ -52,7 +52,11 @@ import { parseDelegateStdout } from "./delegate_return_parser.ts";
 import type { IDelegateParsedReturn } from "./delegate_return_parser.ts";
 import { sessionReturnToCostRecord } from "./cost_mapping.ts";
 import type { ISessionCostInput } from "./cost_mapping.ts";
-import { assertPathsWithinWorktree, buildOpencodePermissionConfig, generateOpencodePermissionConfig } from "./opencode_permission_generator.ts";
+import {
+  assertPathsWithinWorktree,
+  buildOpencodePermissionConfig,
+  generateOpencodePermissionConfig,
+} from "./opencode_permission_generator.ts";
 import type { IOpencodePermissionConfig } from "./opencode_permission_generator.ts";
 import { deriveClaudeToolFlags } from "./claude_permission_flags.ts";
 import { resolveSessionDelegateConfig } from "./config_resolver.ts";

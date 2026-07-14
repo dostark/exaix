@@ -47,8 +47,9 @@ import { RequestParser } from "./processing/parser.ts";
 import { StatusManager } from "./processing/status.ts";
 import type { IParsedRequestFile, IRequestFrontmatter } from "@exaix/core/request";
 import type { LogMetadata } from "@exaix/core/types";
-import type { IOutputValidator } from "@exaix/tool-runtime";
+import { createOutputValidator, type IOutputValidator } from "@exaix/tool-runtime";
 import type { IAgentRunner } from "@exaix/execution";
+import { buildRequestQualityGateFromConfig } from "@exaix/quality-gate";
 import { MiddlewarePipeline } from "@exaix/core/func";
 import type { IServiceContext } from "@exaix/core/types";
 import { RequestAnalyzer, saveAnalysis } from "./analysis/mod.ts";
@@ -210,10 +211,11 @@ export class RequestProcessor {
       actionabilityThreshold: this.config.request_analysis?.actionability_threshold,
       inferAcceptanceCriteria: this.config.request_analysis?.infer_acceptance_criteria,
     };
+    const outputValidator = processorConfig.outputValidator ?? createOutputValidator();
     this.analyzer = processorConfig.testAnalyzer ?? new RequestAnalyzer(
       analyzerConfig,
       this.testProvider,
-      processorConfig.outputValidator,
+      outputValidator,
       this.db,
     );
 
@@ -221,7 +223,13 @@ export class RequestProcessor {
     this.sessionMemory = processorConfig.sessionMemory;
     this.testProvider = processorConfig.testProvider;
 
-    this.qualityGate = processorConfig.testQualityGate;
+    this.qualityGate = processorConfig.testQualityGate ??
+      buildRequestQualityGateFromConfig(
+        this.config.quality_gate ?? {},
+        this.testProvider,
+        outputValidator,
+        this.logger,
+      );
 
     this.ioBreaker = new CircuitBreaker({
       failureThreshold: 3,
@@ -377,6 +385,7 @@ export class RequestProcessor {
       return planPath;
     } catch (error: Error | unknown) {
       // Read the current content of the file before handling the error
+      console.error("DEBUG pipeline error 2:", error);
 
       await this.rejectedPlanHandler.handleError(error, filePath, requestId, traceLogger, frontmatter);
       return null;

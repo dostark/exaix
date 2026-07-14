@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { HealthCheckService, type IHealthCheck } from "../../../packages/core/src/health/health_check_service.ts";
+import { HealthCheckService, type IHealthCheck } from "@exaix/core/health";
 import { HealthCheckVerdict, HealthStatus } from "@exaix/core";
 import { createTestConfig } from "../../../packages/ai/tests/helpers/test_config.ts";
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";

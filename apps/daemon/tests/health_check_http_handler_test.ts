@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { handleHealthCheck, type HealthCheckService } from "../../../packages/core/src/health/health_check_service.ts";
+import { handleHealthCheck, type HealthCheckService } from "@exaix/core/health";
 import { HealthStatus } from "@exaix/core";
 
 Deno.test("handleHealthCheck: returns 200 with JSON body and response time header", async () => {

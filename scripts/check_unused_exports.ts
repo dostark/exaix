@@ -69,7 +69,8 @@ function isIfaceOrType(node: ts.Node): boolean {
 }
 
 function isNamedReExport(node: ts.Node): node is ts.ExportDeclaration & {
-  moduleSpecifier: ts.StringLiteral; exportClause: ts.NamedExports;
+  moduleSpecifier: ts.StringLiteral;
+  exportClause: ts.NamedExports;
 } {
   return ts.isExportDeclaration(node) &&
     !!node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier) &&
@@ -135,20 +136,28 @@ async function main() {
   const allProdFiles: string[] = [];
 
   // Step 1: collect all production .ts files
-  for await (const entry of walk(REPO_ROOT, {
-    includeDirs: false,
-    exts: [".ts"],
-    followSymlinks: false,
-    skip: [
-      /\.git/, /node_modules/, /\.copilot/, /\.exa/,
-      /Blueprints/, /Memory/, /Workspace/, /Portals/,
-      /coverage/, /exaix-dev-docs/, /exaix-enterprise/,
-      /tests\/scenario_framework/,
-    ],
-  })) {
-    const repoPath = entry.path.startsWith(REPO_ROOT + "/")
-      ? entry.path.slice(REPO_ROOT.length + 1)
-      : entry.path;
+  for await (
+    const entry of walk(REPO_ROOT, {
+      includeDirs: false,
+      exts: [".ts"],
+      followSymlinks: false,
+      skip: [
+        /\.git/,
+        /node_modules/,
+        /\.copilot/,
+        /\.exa/,
+        /Blueprints/,
+        /Memory/,
+        /Workspace/,
+        /Portals/,
+        /coverage/,
+        /exaix-dev-docs/,
+        /exaix-enterprise/,
+        /tests\/scenario_framework/,
+      ],
+    })
+  ) {
+    const repoPath = entry.path.startsWith(REPO_ROOT + "/") ? entry.path.slice(REPO_ROOT.length + 1) : entry.path;
     if (isTestFilePath(repoPath)) continue;
     if (!isProductionRoot(repoPath)) continue;
     allProdFiles.push(repoPath);
@@ -194,7 +203,8 @@ async function main() {
           const line = sourceFile.getLineAndCharacterOfPosition(el.getStart()).line + 1;
           if (!exportMap.has(name)) exportMap.set(name, []);
           exportMap.get(name)!.push({
-            repoPath, line,
+            repoPath,
+            line,
             isBarrelPassThrough: isPackageEntrypoint(repoPath),
             isTypeDecl: false,
           });
@@ -208,7 +218,8 @@ async function main() {
         const line = sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1;
         if (!exportMap.has(name)) exportMap.set(name, []);
         exportMap.get(name)!.push({
-          repoPath, line,
+          repoPath,
+          line,
           isBarrelPassThrough: false,
           isTypeDecl: isIfaceOrType(node),
         });
@@ -305,15 +316,15 @@ async function main() {
 
         console.log(
           `ERROR [unwired-export] ${site.repoPath}:${site.line} – ` +
-          `'${name}' is exported, NOT re-exported through any barrel, and never imported. ` +
-          `This is likely dead code or was never wired. Remove it or wire it.`,
+            `'${name}' is exported, NOT re-exported through any barrel, and never imported. ` +
+            `This is likely dead code or was never wired. Remove it or wire it.`,
         );
         errorCount++;
       } else {
         // Relaxed: report everything
         console.log(
           `WARN [unwired-export] ${site.repoPath}:${site.line} – ` +
-          `'${name}' is exported but never imported by production code.`,
+            `'${name}' is exported but never imported by production code.`,
         );
         errorCount++;
       }
