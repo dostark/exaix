@@ -22,6 +22,7 @@
 /.cache
 dist/
 **/*.log
+node_modules/
 
 # --------------------------------------------
 # Dogfooding workspace (Phase 120)

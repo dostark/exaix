@@ -2,6 +2,7 @@
   "$schema": "./schemas/deno-config.schema.json",
   "name": "@dostark/exaix",
   "version": "0.1.0",
+  "nodeModulesDir": "auto",
   "workspace": [
     "./packages/schemas",
     "./packages/core",

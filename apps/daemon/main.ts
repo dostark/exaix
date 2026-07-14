@@ -596,7 +596,7 @@ if (import.meta.main) {
     };
 
     // Initialize health checks for system monitoring
-    const healthService = initializeHealthChecks(dbService, llmProvider, config);
+    const _healthService = initializeHealthChecks(dbService, llmProvider, config);
 
     // Ensure required directories exist
     const requestsPath = join(

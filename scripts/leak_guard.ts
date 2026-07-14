@@ -73,7 +73,14 @@ export async function runLeakGuard(options: ILeakGuardOptions = {}): Promise<ILe
     scanTargets = [scanRoot];
   }
 
-  const skipDirs = [/^\.git$/, /^dist$/, /^coverage$/, /^node_modules$/, /^\.copilot$/, /^exaix-dev-docs$/];
+  const skipDirs = [
+    /[/\\]\.git[/\\]/,
+    /[/\\]dist[/\\]/,
+    /[/\\]coverage[/\\]/,
+    /[/\\]node_modules[/\\]/,
+    /[/\\]\.copilot[/\\]/,
+    /[/\\]exaix-dev-docs[/\\]/,
+  ];
 
   for (const target of scanTargets) {
     try {

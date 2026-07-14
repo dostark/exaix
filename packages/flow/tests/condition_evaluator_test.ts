@@ -14,6 +14,31 @@ import {
   type IConditionContext,
   parseCondition,
 } from "@exaix/flow";
+import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
+import type { IStepResult } from "@exaix/flow";
+import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
+
+const MOCK_FLOW: IFlow = {
+  id: "f",
+  name: "f",
+  description: "Test flow fixture",
+  version: "1",
+  steps: [],
+  output: { from: "s1", format: FlowOutputFormat.MARKDOWN },
+  settings: { maxParallelism: 3, failFast: true, includeRequestCriteria: false },
+};
+
+const MOCK_STEP: IFlowStep = {
+  id: "s1",
+  name: "s1",
+  type: FlowStepType.AGENT,
+  identity: "test-agent",
+  execution_mode: FlowStepExecutionMode.DECLARED,
+  dependsOn: [],
+  input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+  condition: undefined,
+  retry: { maxAttempts: 1, backoffMs: 0 },
+};
 
 const MOCK_CONTEXT: IConditionContext = {
   results: {
@@ -71,25 +96,31 @@ Deno.test("ConditionEvaluator: returns error for invalid expression", () => {
 
 Deno.test("ConditionEvaluator: evaluateStepCondition handles missing condition", () => {
   const evaluator = new ConditionEvaluator();
-  const step = { condition: undefined } as any;
+  const step: IFlowStep = { ...MOCK_STEP, condition: undefined };
   const result = evaluator.evaluateStepCondition(
     step,
     new Map(),
     { userPrompt: "test" },
-    { id: "f", name: "f", version: "1" } as any,
+    MOCK_FLOW,
   );
   assertEquals(result.shouldExecute, true);
 });
 
 Deno.test("ConditionEvaluator: buildContext maps step results correctly", () => {
   const evaluator = new ConditionEvaluator();
-  const stepResults = new Map([
-    ["s1", { success: true, duration: 10, result: { content: '{"key":"val"}' } } as any],
-  ]);
+  const stepResult: IStepResult = {
+    stepId: "s1",
+    success: true,
+    duration: 10,
+    startedAt: new Date(),
+    completedAt: new Date(),
+    result: { thought: "", content: '{"key":"val"}', raw: '{"key":"val"}' },
+  };
+  const stepResults = new Map([["s1", stepResult]]);
   const ctx = evaluator.buildContext(
     stepResults,
     { userPrompt: "test" },
-    { id: "f", name: "f", version: "1" } as any,
+    MOCK_FLOW,
   );
   assertEquals(ctx.results.s1.success, true);
   assertEquals(ctx.results.s1.content, '{"key":"val"}');

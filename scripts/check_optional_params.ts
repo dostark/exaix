@@ -571,7 +571,7 @@ async function main(): Promise<void> {
       includeDirs: false,
       exts: [".ts", ".tsx"],
       followSymlinks: false,
-      skip: [/^\.git$/, /^node_modules$/, /^dist$/, /^coverage$/],
+      skip: [/[/\\]\.git[/\\]/, /[/\\]node_modules[/\\]/, /[/\\]dist[/\\]/, /[/\\]coverage[/\\]/],
     })
   ) {
     if (entry.path.includes("/.copilot/")) continue;
