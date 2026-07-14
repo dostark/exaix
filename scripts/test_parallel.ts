@@ -57,6 +57,12 @@ const SEQUENTIAL_FILES: string[] = [
   // Dogfood e2e — boots a real daemon and waits for plan generation; daemon
   // subprocess crashes under parallel Deno cache contention.
   "tests/integration/dogfood_e2e_test.ts",
+  // Dogfood crash recovery — boots daemon twice (normal + recovery) and checks
+  // journal; daemon subprocess races on module cache under parallel.
+  "tests/integration/dogfood_crash_recovery_e2e_test.ts",
+  // Daemon watcher readiness — boots a real daemon and asserts watcher.started /
+  // daemon.ready journal events; daemon subprocess crashes under parallel.
+  "tests/integration/daemon_watcher_readiness_test.ts",
   // DB migration test — runs migrate_db.ts via deno run subprocess; races on
   // the Deno module cache under parallel, yielding partial @exaix/core exports.
   "tests/migrations/migrate_db_test.ts",
