@@ -229,7 +229,4 @@ export class ConditionEvaluator {
   }
 }
 
-/**
- * Singleton instance for convenience
- */
-export const conditionEvaluator = new ConditionEvaluator();
+
