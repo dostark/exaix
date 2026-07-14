@@ -148,7 +148,10 @@ describe("RequestProcessor", () => {
 
     createProcessor = (provider?: IModelProvider, flowRunner?: IFlowRunner) => {
       const resolvedProvider = provider ??
-        createStubProvider('<thought>ok</thought><content>{"description": "Mock plan"}</content>');
+        createStubProvider(
+          '<thought>ok</thought><content>{"description": "Mock plan", ' +
+            '"steps": [{"step": 1, "title": "Mock step", "description": "Mock step description"}]}</content>',
+        );
       const context: IApplicationContext = {
         config: createStubConfig(config),
         db,

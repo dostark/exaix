@@ -385,7 +385,6 @@ export class RequestProcessor {
       return planPath;
     } catch (error: Error | unknown) {
       // Read the current content of the file before handling the error
-      console.error("DEBUG pipeline error 2:", error);
 
       await this.rejectedPlanHandler.handleError(error, filePath, requestId, traceLogger, frontmatter);
       return null;
