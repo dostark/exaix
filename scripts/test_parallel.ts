@@ -66,6 +66,9 @@ const SEQUENTIAL_FILES: string[] = [
   // DB migration test — runs migrate_db.ts via deno run subprocess; races on
   // the Deno module cache under parallel, yielding partial @exaix/core exports.
   "tests/migrations/migrate_db_test.ts",
+  // Test-mode schema test — uses withEnv() to delete EXA_TEST_MODE from the
+  // global Deno.env; this leaks across tests under DENO_JOBS parallelism.
+  "packages/storage-sqlite/tests/test_mode_schema_test.ts",
 ];
 
 interface TestStats {
