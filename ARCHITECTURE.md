@@ -577,7 +577,7 @@ For env var reference, see `packages/flow/README.md#session-tool-integration` an
 
 #### 6. AgentExecutor Decomposition — Service-oriented Architecture
 
-**File:** `packages/execution/src/agent_executor.ts`
+**File:** `packages/execution/src/agent_orchestrator.ts`
 
 AgentExecutor is a **thin orchestrator and strategy dispatcher** — its sole responsibility is routing each execution sub-step to the appropriate injected service. Sub-domain logic lives in dedicated services, not in AgentExecutor itself:
 
@@ -595,15 +595,15 @@ AgentExecutor (dispatcher)
 
 **Extracted services (completed):**
 
-| Service | File | Responsibility |
-|---------|------|---------------|
-| `ExecutionContextService` | `execution_context_service.ts` | Budget allocation, context cache, token counting, context budget manager, snapshot store |
-| `BlueprintService` | `blueprint_service.ts` | Blueprint loading, YAML parsing, Zod validation, model resolution, prompt sanitization |
-| `PromptBuilder` | `prompt_builder.ts` | Execution prompt assembly, token budget enforcement, input sanitization, context cache marking |
-| `GitAuditService` | `git_audit_service.ts` | Git audit, SHA resolution, file path validation, unauthorized change detection |
-| `OutputParser` | `output_parser.ts` | LLM JSON response parsing, changeset result validation |
-| `HistoryManager` | `history_manager.ts` | Loop history ring buffer, compaction, budget checking |
-| `ReActLoopAdapter` | `react_loop_adapter.ts` | IReActLoopExecutor implementation, decouples ReActLoopStrategy from AgentExecutor |
+| Service                   | File                           | Responsibility                                                                                 |
+| ------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `ExecutionContextService` | `execution_context_service.ts` | Budget allocation, context cache, token counting, context budget manager, snapshot store       |
+| `BlueprintService`        | `blueprint_service.ts`         | Blueprint loading, YAML parsing, Zod validation, model resolution, prompt sanitization         |
+| `PromptBuilder`           | `prompt_builder.ts`            | Execution prompt assembly, token budget enforcement, input sanitization, context cache marking |
+| `GitAuditService`         | `git_audit_service.ts`         | Git audit, SHA resolution, file path validation, unauthorized change detection                 |
+| `OutputParser`            | `output_parser.ts`             | LLM JSON response parsing, changeset result validation                                         |
+| `HistoryManager`          | `history_manager.ts`           | Loop history ring buffer, compaction, budget checking                                          |
+| `ReActLoopAdapter`        | `react_loop_adapter.ts`        | IReActLoopExecutor implementation, decouples ReActLoopStrategy from AgentExecutor              |
 
 **AgentExecutor trajectory:** ~1750 lines → ~950 lines, 16 direct deps → 11 deps.
 
@@ -614,7 +614,7 @@ AgentExecutor (dispatcher)
 - The `IAgentExecutorDeps` interface (16 fields at peak, now 12) continues to shrink as services bundle their own sub-dependencies.
 - Adding a new execution capability means adding a new service, not growing AgentExecutor.
 
-For the full extraction plan, see `packages/execution/src/agent_executor.ts` class comment.
+For the full extraction plan, see `packages/execution/src/agent_orchestrator.ts` class comment.
 
 #### 7. ModelResolver — Policy-driven Model Resolution
 
