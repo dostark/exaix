@@ -441,9 +441,13 @@ if (import.meta.main) {
       config,
       defaultModelName,
     );
+    const costTracker = new CostTracker(dbService, config);
     const llmProvider = await ProviderFactory.createByName(
       config,
       defaultModelName,
+      undefined,
+      undefined,
+      costTracker,
     );
 
     await logger.info(DomainEventType.LlmProviderInitialized, providerInfo.id, {
@@ -526,7 +530,6 @@ if (import.meta.main) {
         };
     }
     const embeddingProvider = createEmbeddingProvider(providerConfig);
-    const costTracker = new CostTracker(dbService, config);
     const memoryCostRouter = new MemoryCostRouter(costTracker, logger);
     const providerEmbedding = new ProviderEmbeddingService(
       config,
