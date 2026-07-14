@@ -15,7 +15,6 @@ import type { Config } from "@exaix/schemas/config.ts";
 import {
   AgentRunner,
   type IAgentExecutionResult,
-  type IBlueprint,
   type IParsedRequest,
   type IRequestContextContext,
 } from "@exaix/execution";
@@ -26,10 +25,6 @@ import { PlanValidationError } from "@exaix/core/planning";
 import { RequestStatus } from "@exaix/core/status";
 import { PlanStatus } from "@exaix/core/status";
 import {
-  COMPLEXITY_BODY_LENGTH_LOW,
-  COMPLEXITY_BULLET_THRESHOLD_HIGH,
-  COMPLEXITY_FILE_REF_PATTERN,
-  COMPLEXITY_FILE_REF_THRESHOLD_HIGH,
   DEFAULT_ANALYZER_MODE,
   DEFAULT_IDENTITIES_PATH,
   MEMORY_CONTEXT_KEY,
@@ -64,8 +59,9 @@ import type { LogMetadata } from "@exaix/core/types";
 import { MiddlewarePipeline } from "@exaix/core/func";
 import type { IServiceContext } from "@exaix/core/types";
 import { RequestAnalyzer, saveAnalysis } from "./analysis/mod.ts";
-import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
-import { ProviderType, RequestKind, TaskComplexity } from "@exaix/core";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
+import { ProviderType, RequestKind } from "@exaix/core";
+import { type ITaskComplexityClassifier, TaskComplexityClassifier } from "./task_complexity_classifier.ts";
 import type { ILogEvent } from "@exaix/core";
 import {
   CompositeMilestoneEmitter,
@@ -172,6 +168,7 @@ export class RequestProcessor {
   private readonly testProvider?: IModelProvider;
   private readonly flowRunner?: IFlowRunner;
   private readonly milestoneEmitter?: IMilestoneEmitter;
+  private readonly taskComplexityClassifier: ITaskComplexityClassifier;
 
   constructor(private readonly processorConfig: IRequestProcessorConfig) {
     const ctx = processorConfig.context;
@@ -265,6 +262,8 @@ export class RequestProcessor {
       // infrastructure failures should trip it.
       isCountableFailure: (error: Error) => !(error instanceof PlanValidationError),
     });
+
+    this.taskComplexityClassifier = new TaskComplexityClassifier();
   }
 
   async process(filePath: string): Promise<string | null> {
@@ -745,7 +744,7 @@ export class RequestProcessor {
       request.context[MEMORY_CONTEXT_KEY] = memoryContext.memoryContext;
     }
 
-    const taskComplexity = this.classifyTaskComplexity(blueprint, request, analysis);
+    const taskComplexity = this.taskComplexityClassifier.classify(blueprint, request, analysis);
     let selectedProvider: IModelProvider;
 
     if (this.testProvider) {
@@ -848,7 +847,7 @@ ${result.content}`,
    */
   private async _resolveKnowledgeContext(
     body: string,
-    portalAlias: string | undefined,
+    portalAlias: Opt<string, Reason.OptionalInput>,
     portalKnowledge: IPortalKnowledge,
   ): Promise<string> {
     const fallback = buildPortalKnowledgeSummary(portalKnowledge);
@@ -1075,7 +1074,7 @@ Raw Details: ${args.rawDetails}
     metadata: IRequestMetadata,
     filePath: string,
     traceLogger: IEventLogger,
-    extra?: LogMetadata,
+    extra?: Opt<LogMetadata, Reason.OptionalContext>,
   ): Promise<string> {
     const planResult = await this.ioBreaker.execute(() => this.planWriter.writePlan(result, metadata));
 
@@ -1088,58 +1087,6 @@ Raw Details: ${args.rawDetails}
     const logObj: LogMetadata = { plan_path: planResult.planPath, ...(extra ?? {}) };
     traceLogger.info(DomainEventType.RequestPlanned, filePath, logObj);
     return planResult.planPath;
-  }
-
-  private classifyTaskComplexity(
-    blueprint: IBlueprint,
-    request: IParsedRequest,
-    analysis?: Opt<IRequestAnalysis, Reason.OptionalInput>,
-  ): TaskComplexity {
-    if (analysis?.complexity) {
-      return this.mapAnalysisComplexity(analysis.complexity);
-    }
-
-    const bodySignals = this.checkContentHeuristics(request.userPrompt);
-    if (bodySignals) return bodySignals;
-
-    return this.classifyByAgentId(blueprint.identityId);
-  }
-
-  private mapAnalysisComplexity(complexity: RequestAnalysisComplexity): TaskComplexity {
-    switch (complexity) {
-      case RequestAnalysisComplexity.SIMPLE:
-        return TaskComplexity.SIMPLE;
-      case RequestAnalysisComplexity.MEDIUM:
-        return TaskComplexity.MEDIUM;
-      case RequestAnalysisComplexity.COMPLEX:
-      case RequestAnalysisComplexity.EPIC:
-        return TaskComplexity.COMPLEX;
-      default:
-        return TaskComplexity.MEDIUM;
-    }
-  }
-
-  private checkContentHeuristics(
-    body?: Opt<string, Reason.OptionalInput>,
-  ): TaskComplexity | null {
-    if (!body) return null;
-    const fileRefs = body.match(COMPLEXITY_FILE_REF_PATTERN);
-    if (fileRefs && fileRefs.length >= COMPLEXITY_FILE_REF_THRESHOLD_HIGH) return TaskComplexity.COMPLEX;
-    const bulletPoints = (body.match(/\n\s*[-*]\s+/g) || []).length;
-    if (bulletPoints >= COMPLEXITY_BULLET_THRESHOLD_HIGH) return TaskComplexity.COMPLEX;
-    if (body.length < COMPLEXITY_BODY_LENGTH_LOW && !body.includes("\n-")) return TaskComplexity.SIMPLE;
-    return null;
-  }
-
-  private classifyByAgentId(
-    identityId?: Opt<string, Reason.OptionalContext>,
-  ): TaskComplexity {
-    const id = identityId || "";
-    if (id.includes("analyzer") || id.includes("summarizer")) return TaskComplexity.SIMPLE;
-    if (id.includes("coder") || id.includes("planner") || id.includes("architect")) {
-      return TaskComplexity.COMPLEX;
-    }
-    return TaskComplexity.MEDIUM;
   }
 
   private async buildPortalContext(

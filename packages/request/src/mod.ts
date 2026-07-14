@@ -31,3 +31,5 @@ export {
   type IRequestProcessorConfig,
   RequestProcessor,
 } from "./processor.ts";
+
+export { type ITaskComplexityClassifier, TaskComplexityClassifier } from "./task_complexity_classifier.ts";
