@@ -48,3 +48,9 @@ export {
   type IClarificationGatewayDeps,
   type IQualityGateOutcome,
 } from "./clarification_gateway.ts";
+
+export {
+  type IRejectedPlanHandler,
+  type IRejectedPlanHandlerDeps,
+  RejectedPlanHandler,
+} from "./rejected_plan_handler.ts";
