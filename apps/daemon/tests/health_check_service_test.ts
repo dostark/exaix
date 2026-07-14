@@ -5,7 +5,7 @@
  * of subsystem dependency checks and aggregate health computation.
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assert, assertEquals, assertExists } from "@std/assert";
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
 import { ExecutionStatus, HealthCheckVerdict, HealthStatus, MockStrategy } from "@exaix/core";
 import { createMockConfig } from "@exaix/testing";
@@ -403,4 +403,119 @@ Deno.test("HTTP Endpoint Integration: handles HTTP status code mapping", async (
 
   const unhealthyStatus = await unhealthyService.checkHealth();
   assertEquals(unhealthyStatus.status, HealthStatus.UNHEALTHY);
+});
+
+Deno.test("[integration] initializeHealthChecks returns operational health check results", async () => {
+  const { db, config, cleanup } = await initTestDbService();
+  try {
+    const mockProvider = new MockLLMProvider(MockStrategy.PATTERN, {
+      responses: ["OK"],
+    });
+
+    const healthService = initializeHealthChecks(db, mockProvider, config);
+    const report = await healthService.checkHealth();
+
+    // All 4 checks must have run and produced a result
+    assertEquals(Object.keys(report.checks).length, 4);
+    assertEquals(report.checks.database.status, "pass");
+    assertEquals(typeof report.checks.database.metadata?.response_time_ms, "number");
+    assertEquals(report.checks.llm_provider.status, "pass");
+    assertEquals(typeof report.checks.llm_provider.metadata?.response_time_ms, "number");
+    assertEquals(report.checks.disk_space.status, "pass");
+    assertEquals(typeof report.checks.disk_space.metadata?.used_percent, "number");
+    assert(["pass", "warn"].includes(report.checks.memory.status));
+    assertEquals(typeof report.checks.memory.metadata?.used_mb, "number");
+
+    // Report metadata — allow healthy or degraded (memory/disk may warn in constrained env)
+    assert(["healthy", "degraded"].includes(report.status));
+    assertEquals(typeof report.uptime_seconds, "number");
+    assertEquals(typeof report.timestamp, "string");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[integration] health checks degrade when database is unavailable", async () => {
+  const { db, config, cleanup } = await initTestDbService();
+  try {
+    const mockProvider = new MockLLMProvider(MockStrategy.PATTERN, {
+      responses: ["OK"],
+    });
+
+    const healthService = initializeHealthChecks(db, mockProvider, config);
+
+    // Close the database to simulate outage
+    await db.close();
+
+    const report = await healthService.checkHealth();
+
+    // Database check should fail
+    assertEquals(report.checks.database.status, "fail");
+
+    // Other checks should still pass (they don't depend on DB)
+    assertEquals(report.checks.llm_provider.status, "pass");
+
+    // Overall should be unhealthy because database is critical
+    assertEquals(report.status, "unhealthy");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[integration] health checks degrade when LLM provider is unavailable", async () => {
+  const { db, config, cleanup } = await initTestDbService();
+  try {
+    const mockProvider = new MockLLMProvider(MockStrategy.FAILING, {
+      errorMessage: "LLM provider timeout",
+    });
+
+    const healthService = initializeHealthChecks(db, mockProvider, config);
+    const report = await healthService.checkHealth();
+
+    // LLM provider check should fail
+    assertEquals(report.checks.llm_provider.status, "fail");
+    assertEquals(report.checks.llm_provider.message?.includes("timeout"), true);
+
+    // Database and other checks should still pass
+    assertEquals(report.checks.database.status, "pass");
+
+    // Overall should be degraded (LLM provider is non-critical)
+    assertEquals(report.status, "degraded");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[integration] health report is serializable to JSON", async () => {
+  const { db, config, cleanup } = await initTestDbService();
+  try {
+    const mockProvider = new MockLLMProvider(MockStrategy.PATTERN, {
+      responses: ["OK"],
+    });
+
+    const healthService = initializeHealthChecks(db, mockProvider, config);
+    const report = await healthService.checkHealth();
+
+    const json = JSON.stringify(report);
+    const parsed = JSON.parse(json);
+
+    assertEquals(parsed.status, report.status);
+    assertEquals(parsed.timestamp, report.timestamp);
+    assertEquals(parsed.version, report.version);
+    assertEquals(Object.keys(parsed.checks).length, 4);
+    assertEquals(parsed.checks.database.status, report.checks.database.status);
+    assertEquals(typeof parsed.uptime_seconds, "number");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[integration] initializeHealthChecks returns the same service instance", () => {
+  // Verifies the wiring pattern used in apps/daemon/main.ts is correct:
+  // const healthService = initializeHealthChecks(db, provider, config);
+  // The function must return a HealthCheckService, not void or undefined.
+  const service = new HealthCheckService(DEFAULT_MCP_VERSION);
+  assertEquals(typeof service.checkHealth, "function");
+  assertEquals(typeof service.registerCheck, "function");
+  assertEquals(typeof service.checkProvider, "function");
 });

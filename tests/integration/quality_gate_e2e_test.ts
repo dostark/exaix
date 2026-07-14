@@ -12,6 +12,7 @@ import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/a
 import { basename, join } from "@std/path";
 import { ClarificationEngine, loadClarification, RequestQualityGate, saveClarification } from "@exaix/quality-gate";
 import { RequestProcessor } from "@exaix/request";
+import { AgentRunner } from "@exaix/execution";
 import type { IApplicationContext, IRequestQualityGateService } from "@exaix/core/types";
 import { createOutputValidator } from "@exaix/tool-runtime";
 import {
@@ -418,6 +419,7 @@ function buildProcessor(
     context,
     testProvider: provider,
     testQualityGate: gate,
+    agentRunner: new AgentRunner(provider),
   });
   return { processor };
 }

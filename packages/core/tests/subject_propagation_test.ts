@@ -8,6 +8,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "@exaix/request";
+import { AgentRunner } from "@exaix/execution";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -144,6 +145,7 @@ Deno.test("RequestProcessor - Subject Propagation - request subject is never upg
       includeReasoning: true,
       context,
       testProvider: mockProvider,
+      agentRunner: new AgentRunner(mockProvider),
     });
 
     // 1. Create a request whose subject was auto-derived (no explicit user subject)
@@ -220,6 +222,7 @@ Deno.test("RequestProcessor - Subject Propagation - Explicit Subject Wins over A
       includeReasoning: true,
       context,
       testProvider: mockProvider,
+      agentRunner: new AgentRunner(mockProvider),
     });
 
     const requestId = "request-456";
