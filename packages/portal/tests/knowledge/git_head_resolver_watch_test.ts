@@ -9,6 +9,16 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { GitHeadResolver } from "@exaix/portal/knowledge";
 import { delay } from "@exaix/core/func";
+import { GitService } from "@exaix/git";
+import { createMockConfig } from "@exaix/testing";
+import type { IGitServiceFactory } from "@exaix/core/types";
+
+function createTestGitServiceFactory(repoDir: string): IGitServiceFactory {
+  const config = createMockConfig(repoDir);
+  return {
+    createGitService: (repoPath: string, traceId: string) => new GitService({ config, repoPath, traceId }),
+  };
+}
 
 async function setupGitRepo(repoDir: string): Promise<void> {
   await Deno.mkdir(repoDir, { recursive: true });
@@ -55,7 +65,7 @@ Deno.test({
         stderr: "null",
       }).output();
 
-      const resolver = new GitHeadResolver();
+      const resolver = new GitHeadResolver(createTestGitServiceFactory(repoDir));
       const initialSha = await resolver.resolve(repoDir);
       assertExists(initialSha);
 

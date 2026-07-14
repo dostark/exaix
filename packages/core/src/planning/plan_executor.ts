@@ -295,7 +295,16 @@ export class PlanExecutor {
       pathResolver,
       permissions,
       provider: this.llmProvider,
-      toolRegistry: new ToolRegistry({ config: this.config }),
+      toolRegistry: new ToolRegistry({
+        config: this.config,
+        traceId,
+        baseDir: this.repoPath,
+        pathResolver,
+        gitServiceFactory: {
+          createGitService: (repoPath: string, gitTraceId: string) =>
+            new GitService({ config: this.config, repoPath, traceId: gitTraceId }),
+        },
+      }),
       options,
       modelResolver: this.options.modelResolver,
       executionContext: new ExecutionContextService(this.config, this.logger, { promptBudgetAllocator }),

@@ -9,6 +9,16 @@
 import { assertEquals, assertMatch } from "@std/assert";
 import { join } from "@std/path";
 import { GitHeadResolver } from "@exaix/portal/knowledge";
+import { GitService } from "@exaix/git";
+import { createMockConfig } from "@exaix/testing";
+import type { IGitServiceFactory } from "@exaix/core/types";
+
+function createTestGitServiceFactory(repoDir: string): IGitServiceFactory {
+  const config = createMockConfig(repoDir);
+  return {
+    createGitService: (repoPath: string, traceId: string) => new GitService({ config, repoPath, traceId }),
+  };
+}
 
 async function setupGitRepo(repoDir: string): Promise<void> {
   await Deno.mkdir(repoDir, { recursive: true });
@@ -43,7 +53,7 @@ Deno.test("[GitHeadResolver] resolves HEAD SHA in a git repo", async () => {
   try {
     await setupGitRepo(repoDir);
 
-    const resolver = new GitHeadResolver();
+    const resolver = new GitHeadResolver(createTestGitServiceFactory(repoDir));
     const sha = await resolver.resolve(repoDir);
 
     assertMatch(sha ?? "", /^[0-9a-f]{40}$/);
@@ -57,7 +67,7 @@ Deno.test("[GitHeadResolver] returns empty changed files when HEAD has no diff",
   try {
     await setupGitRepo(repoDir);
 
-    const resolver = new GitHeadResolver();
+    const resolver = new GitHeadResolver(createTestGitServiceFactory(repoDir));
     const sha = await resolver.resolve(repoDir);
     assertMatch(sha ?? "", /^[0-9a-f]{40}$/);
 
@@ -72,7 +82,7 @@ Deno.test("[GitHeadResolver] detects changed files since a previous commit", asy
   const repoDir = await Deno.makeTempDir();
   try {
     await setupGitRepo(repoDir);
-    const initialSha = await new GitHeadResolver().resolve(repoDir);
+    const initialSha = await new GitHeadResolver(createTestGitServiceFactory(repoDir)).resolve(repoDir);
 
     await Deno.writeTextFile(join(repoDir, "new-file.txt"), "hello world\n");
     await new Deno.Command("git", {
@@ -88,7 +98,7 @@ Deno.test("[GitHeadResolver] detects changed files since a previous commit", asy
       stderr: "null",
     }).output();
 
-    const resolver = new GitHeadResolver();
+    const resolver = new GitHeadResolver(createTestGitServiceFactory(repoDir));
     const changedFiles = await resolver.changedFilesSince(repoDir, initialSha ?? "");
 
     assertEquals(changedFiles, ["new-file.txt"]);

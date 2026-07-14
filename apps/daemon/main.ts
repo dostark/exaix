@@ -46,6 +46,7 @@ import { RequestProcessor } from "@exaix/request";
 import { ReviewRegistry } from "@exaix/core/artifact";
 import { EventLogger, EventLoggerStructuredOutput } from "@exaix/core/logger";
 import { AgentRunner, ExecutionLoop } from "@exaix/execution";
+import { initializeHealthChecks } from "@exaix/core/health";
 import { buildMilestoneEmitterFromConfig } from "@exaix/core/observability";
 import { AgentOrchestratorAdapter, FlowRunner, type IFlowEventLogger, type IFlowEventPayload } from "@exaix/flow";
 import {
@@ -593,6 +594,9 @@ if (import.meta.main) {
       portalKnowledge,
       embeddings: providerEmbedding,
     };
+
+    // Initialize health checks for system monitoring
+    const healthService = initializeHealthChecks(dbService, llmProvider, config);
 
     // Ensure required directories exist
     const requestsPath = join(

@@ -8,6 +8,7 @@
 import { assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "@exaix/request";
+import { AgentRunner } from "@exaix/execution";
 import { MockLLMProvider } from "@exaix/ai/providers";
 import { MockStrategy, PortalOperation } from "@exaix/core";
 import type { IApplicationContext } from "@exaix/core/types";
@@ -66,6 +67,7 @@ Deno.test("RequestProcessor: Portal context includes file list for grounding", a
       includeReasoning: true,
       context,
       testProvider: mockProvider,
+      agentRunner: new AgentRunner(mockProvider),
     });
 
     // 4. Create request
