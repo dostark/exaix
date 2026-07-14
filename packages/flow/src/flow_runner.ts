@@ -11,6 +11,8 @@ import { encodeHex } from "@std/encoding/hex";
 import { DependencyResolver } from "@exaix/flow";
 import { FlowRuntimeValidator } from "./flow_runtime_validator.ts";
 import { ParallelGroupMergeService } from "./parallel_group_merge_service.ts";
+import { RetryBudgetService } from "./retry_budget_service.ts";
+import { CompensationService } from "./compensation_service.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import { ConditionEvaluator } from "./condition_evaluator.ts";
 import type { JSONValue } from "@exaix/core";
@@ -38,8 +40,6 @@ import { mapPresetToSize } from "./preset_mapper.ts";
 import type { ToolHandler } from "@exaix/mcp/server";
 import type { McpToolName } from "@exaix/mcp";
 import type { Config } from "@exaix/schemas/config.ts";
-import { DEFAULT_TIMEOUT_MS } from "@exaix/core";
-import { RetryPolicy } from "@exaix/core/request";
 import type {
   IApplicationContext,
   IGateConfig,
@@ -72,8 +72,6 @@ import {
   FLOW_EVENT_COMPLETED,
   FLOW_EVENT_PARALLEL_GROUP_COMPLETED,
   FLOW_EVENT_PARALLEL_GROUP_STARTED,
-  FLOW_EVENT_STEP_COMPENSATED,
-  FLOW_EVENT_STEP_COMPENSATION_FAILED,
   FLOW_EVENT_STEP_FALLBACK,
   FLOW_EVENT_STEP_RETRY,
   FLOW_EVENT_STEP_SKIPPED,
@@ -666,6 +664,8 @@ export class FlowRunner implements IFlowRunner {
   private modelResolver?: ModelResolver;
   private readonly runtimeValidator = new FlowRuntimeValidator();
   private readonly parallelGroupMergeService: ParallelGroupMergeService;
+  private readonly retryBudgetService: RetryBudgetService;
+  private compensationService!: CompensationService;
 
   private createNoOpDurabilityStore(): IStepDurabilityStore {
     return {
@@ -695,6 +695,7 @@ export class FlowRunner implements IFlowRunner {
     this.gateEvaluator = options.context?.gateEvaluator || options.gateEvaluator;
     this.config = options.context?.config.get() || options.config;
     this.parallelGroupMergeService = new ParallelGroupMergeService(this.eventLogger);
+    this.retryBudgetService = new RetryBudgetService(this.config, this.db);
     this.initCoreServices();
 
     this.stepDurabilityStore = options.stepDurabilityStore ?? this.createNoOpDurabilityStore();
@@ -718,6 +719,7 @@ export class FlowRunner implements IFlowRunner {
     const dynamicHandlers = options.dynamicHandlers;
     const mcpHandlers = options.mcpHandlers;
     this.initDynamicTools(config, db, dynamicHandlers, mcpHandlers, options);
+    this.compensationService = new CompensationService(this.eventLogger, this.mcpClient);
 
     this.stepHandlerRegistry.register(
       new GateStepHandler({
@@ -1907,7 +1909,7 @@ export class FlowRunner implements IFlowRunner {
       const retryBackoffMs = step.onError.backoffMs ?? DEFAULT_FLOW_STEP_BACKOFF_MS;
 
       for (let retryAttempt = 1; retryAttempt <= maxRetries; retryAttempt++) {
-        await this.enforceRetryCostBudget(flowRunId, request);
+        await this.retryBudgetService.enforceRetryCostBudget(flowRunId, request);
 
         await this.eventLogger.log(FLOW_EVENT_STEP_RETRY, {
           flowRunId,
@@ -1920,7 +1922,7 @@ export class FlowRunner implements IFlowRunner {
           requestId: request.requestId,
         });
 
-        await this.applyRetryBackoff(retryBackoffMs, retryAttempt);
+        await this.retryBudgetService.applyRetryBackoff(retryBackoffMs, retryAttempt);
 
         try {
           const retryOutcome = await this.runStepAttempt(ctx);
@@ -1981,7 +1983,7 @@ export class FlowRunner implements IFlowRunner {
     const failureResult = this.formatStepFailure(flowRunId, step, request, lastError, startedAt);
 
     if (step.onError.action === FlowStepOnErrorAction.COMPENSATE) {
-      await this.executeCompensatingTransactions(flowRunId, step, flow, request, stepResults);
+      await this.compensationService.executeCompensatingTransactions(flowRunId, step, flow, request, stepResults);
     }
 
     if (step.onError.action === FlowStepOnErrorAction.ABORT) {
@@ -2032,158 +2034,6 @@ export class FlowRunner implements IFlowRunner {
       },
       fallbackResult.namespaceWrites,
     );
-  }
-
-  private async applyRetryBackoff(backoffMs: number, retryAttempt: number): Promise<void> {
-    const retryPolicy = new RetryPolicy({
-      initialDelayMs: backoffMs,
-      maxDelayMs: DEFAULT_TIMEOUT_MS,
-      backoffMultiplier: 2,
-      jitterFactor: 0,
-    });
-
-    const delayMs = retryPolicy.calculateDelay(retryAttempt);
-    if (Deno.env.get("DENO_TEST") !== "1") {
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-    }
-  }
-
-  private async enforceRetryCostBudget(
-    flowRunId: string,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
-  ): Promise<void> {
-    const maxFlowRetryCostUsd = this.config?.max_flow_retry_cost_usd;
-    if (!this.db || !request.traceId || !maxFlowRetryCostUsd || maxFlowRetryCostUsd <= 0) {
-      return;
-    }
-
-    const totalCostUsd = await this.getCumulativeFlowCostUsd(request.traceId);
-    if (totalCostUsd > maxFlowRetryCostUsd) {
-      throw new FlowExecutionError("Retry budget exceeded", flowRunId);
-    }
-  }
-
-  private async getCumulativeFlowCostUsd(traceId: string): Promise<number> {
-    const tokenEvents = await this.db!.queryActivity({
-      traceId,
-      actionType: "llm.usage",
-    });
-
-    let totalCostUsd = 0;
-    for (const event of tokenEvents) {
-      try {
-        const payload = JSON.parse(event.payload) as Record<string, JSONValue>;
-        const rawCost = payload.cost_usd;
-        const costUsd = typeof rawCost === "number" ? rawCost : Number(rawCost ?? 0);
-        if (Number.isFinite(costUsd)) {
-          totalCostUsd += costUsd;
-        }
-      } catch {
-        // Ignore malformed activity rows when calculating the retry budget.
-      }
-    }
-
-    return totalCostUsd;
-  }
-
-  private async executeCompensatingTransactions(
-    flowRunId: string,
-    failedStep: IFlowStep,
-    flow: IFlow,
-    request: {
-      userPrompt: string;
-      traceId?: string;
-      requestId?: string;
-      requestAnalysis?: IRequestAnalysis;
-      portal?: string;
-    },
-    stepResults: Map<string, IStepResult>,
-  ): Promise<void> {
-    if (!this.mcpClient) {
-      return;
-    }
-
-    const completedStepIds = Array.from(stepResults.values())
-      .filter((result) => result.success)
-      .sort((left, right) => {
-        const waveDiff = (right.waveIndex ?? -1) - (left.waveIndex ?? -1);
-        if (waveDiff !== 0) {
-          return waveDiff;
-        }
-
-        const completedAtDiff = right.completedAt.getTime() - left.completedAt.getTime();
-        if (completedAtDiff !== 0) {
-          return completedAtDiff;
-        }
-
-        const leftFlowIndex = flow.steps.findIndex((candidate) => candidate.id === left.stepId);
-        const rightFlowIndex = flow.steps.findIndex((candidate) => candidate.id === right.stepId);
-        return rightFlowIndex - leftFlowIndex;
-      })
-      .map((result) => result.stepId);
-
-    for (const completedStepId of completedStepIds) {
-      const completedStep = flow.steps.find((candidate) => candidate.id === completedStepId);
-      const compensations = completedStep?.onError?.compensate ?? [];
-
-      if (compensations.length > 0) {
-        const completedResult = stepResults.get(completedStepId);
-        if (completedResult) {
-          stepResults.set(completedStepId, {
-            ...completedResult,
-            compensationRan: true,
-          });
-        }
-      }
-
-      for (const compensation of compensations) {
-        const compensationArgs = (compensation.args ?? compensation.params ?? {}) as Record<string, JSONValue>;
-        const args: Record<string, JSONValue> = {
-          ...(request.portal ? { portal: request.portal } : {}),
-          identity_id: completedStep?.identity ?? failedStep.identity,
-          ...compensationArgs,
-        };
-
-        try {
-          const result = await this.mcpClient.callTool(compensation.tool, args);
-
-          await this.eventLogger.log(FLOW_EVENT_STEP_COMPENSATED, {
-            flowRunId,
-            failedStepId: failedStep.id,
-            sourceStepId: completedStepId,
-            tool: compensation.tool,
-            args,
-            success: true,
-            result,
-            traceId: request.traceId,
-            requestId: request.requestId,
-          });
-        } catch (error) {
-          await this.eventLogger.log(FLOW_EVENT_STEP_COMPENSATED, {
-            flowRunId,
-            failedStepId: failedStep.id,
-            sourceStepId: completedStepId,
-            tool: compensation.tool,
-            args,
-            success: false,
-            error: error instanceof Error ? error.message : String(error),
-            traceId: request.traceId,
-            requestId: request.requestId,
-          });
-
-          await this.eventLogger.log(FLOW_EVENT_STEP_COMPENSATION_FAILED, {
-            flowRunId,
-            failedStepId: failedStep.id,
-            sourceStepId: completedStepId,
-            tool: compensation.tool,
-            args,
-            error: error instanceof Error ? error.message : String(error),
-            traceId: request.traceId,
-            requestId: request.requestId,
-          });
-        }
-      }
-    }
   }
 
   /**
