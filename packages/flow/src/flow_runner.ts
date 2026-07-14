@@ -28,7 +28,8 @@ import {
 } from "@exaix/core";
 import { DynamicStepExecutor } from "./dynamic_step_executor.ts";
 import { ActivityJournal } from "./activity_journal.ts";
-import { McpClient } from "@exaix/mcp/server";
+import type { IMcpClient } from "@exaix/mcp";
+import type { IToolManifestResolver } from "@exaix/core/types";
 import { LlmClient } from "@exaix/ai/llm_client.ts";
 import type { ModelResolver } from "@exaix/ai";
 import type { IModelIntent } from "@exaix/schemas";
@@ -38,7 +39,13 @@ import type { McpToolName } from "@exaix/mcp";
 import type { Config } from "@exaix/schemas/config.ts";
 import { DEFAULT_TIMEOUT_MS } from "@exaix/core";
 import { RetryPolicy } from "@exaix/core/request";
-import type { IApplicationContext, IGateConfig, IGateEvaluator, IHitlPolicyEvaluator } from "@exaix/core/types";
+import type {
+  IApplicationContext,
+  IGateConfig,
+  IGateEvaluator,
+  IHitlPolicyEvaluator,
+  IToolConfirmationInterceptor,
+} from "@exaix/core/types";
 import { FlowStepHandlerRegistry } from "./step_handlers/step_handler_registry.ts";
 import { GateStepHandler, type IPendingWaitStateRef } from "./step_handlers/gate_step_handler.ts";
 import { AgentStepHandler } from "./step_handlers/agent_step_handler.ts";
@@ -53,14 +60,12 @@ import {
 import { FlowCheckpointCoordinator } from "./flow_checkpoint_coordinator.ts";
 import { StepOutputFormatter } from "./step_output_formatter.ts";
 import { FlowNamespaceCoordinator } from "./flow_namespace_coordinator.ts";
-import { CliConfirmationInterceptor, NotificationQueueConfirmationInterceptor } from "@exaix/tool-runtime";
 import type { IMilestoneEmitter } from "@exaix/core/observability";
 import type { IExecutionMilestone } from "@exaix/schemas";
 import { DomainEventType, type IEventRegistry } from "@exaix/core/events";
 import {
   DEFAULT_COST_PRECISION_FACTOR,
   DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   DEFAULT_UNKNOWN_LABEL,
   FLOW_EVENT_COMPLETED,
@@ -175,6 +180,13 @@ export interface IFlowRunnerConfig {
   modelResolver?: ModelResolver;
   /** Optional Phase 118 HITL policy evaluator for per-action governance. No-op (Solo) when omitted. */
   hitlPolicyEvaluator?: IHitlPolicyEvaluator;
+  /** Dynamic-mode tool sets from the MCP manifest. Required for dynamic step execution. */
+  dynamicModeTools?: ReadonlySet<string>;
+  dynamicModeApprovalTools?: ReadonlySet<string>;
+  /** Pre-built MCP client for dynamic step execution. Overrides dynamicHandlers/mcpHandlers when provided. */
+  mcpClient?: IMcpClient & IToolManifestResolver;
+  /** Pre-built confirmation interceptor for dynamic step execution. Created internally when omitted. */
+  confirmationInterceptor?: IToolConfirmationInterceptor;
 }
 
 /**
@@ -635,7 +647,7 @@ export function toGateConfig(evaluate: IGateEvaluate): IGateConfig {
 export class FlowRunner implements IFlowRunner {
   private conditionEvaluator: ConditionEvaluator;
   protected dynamicStepExecutor?: DynamicStepExecutor;
-  private mcpClient?: McpClient;
+  private mcpClient?: IMcpClient & IToolManifestResolver;
   private agentExecutor: IAgentExecutor;
   private eventLogger: IFlowEventLogger;
   private db?: IDatabaseService;
@@ -750,7 +762,7 @@ export class FlowRunner implements IFlowRunner {
 
   private initDynamicTools(
     config: Opt<Config, Reason.OptionalDependency>,
-    db: Opt<IDatabaseService, Reason.OptionalDependency>,
+    _db: Opt<IDatabaseService, Reason.OptionalDependency>,
     dynamicHandlers: Opt<Map<McpToolName, ToolHandler>, Reason.OptionalDependency>,
     mcpHandlers: Opt<ToolHandler[], Reason.OptionalDependency>,
     options: IFlowRunnerConfig,
@@ -759,24 +771,21 @@ export class FlowRunner implements IFlowRunner {
     if (!config || !hasDynamicTools || !this.eventLogger) return;
 
     const activityJournal = new ActivityJournal(this.eventLogger);
-    const context = (options.context || this.buildFallbackContext(config, db)) as IApplicationContext;
-    const mcpClient = dynamicHandlers ? new McpClient(context, dynamicHandlers) : new McpClient(context, mcpHandlers!);
-    this.mcpClient = mcpClient;
+    this.mcpClient = options.mcpClient;
 
     if (this.modelResolver) return;
 
     const llmClient = new LlmClient(config, undefined, this.options.dynamicModel);
-    const confirmationTimeoutMs = (config.tools?.confirmation_timeout_s ?? DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S) * 1000;
-    const confirmationInterceptor = context.notificationService
-      ? new NotificationQueueConfirmationInterceptor(context.db, context.notificationService, activityJournal)
-      : new CliConfirmationInterceptor(activityJournal, confirmationTimeoutMs);
+    const confirmationInterceptor = options.confirmationInterceptor;
     this.dynamicStepExecutor = new DynamicStepExecutor(
-      mcpClient,
+      this.mcpClient!,
       llmClient,
       activityJournal,
       confirmationInterceptor,
       this.options.milestoneEmitter,
       this.options.hitlPolicyEvaluator,
+      this.options.dynamicModeTools,
+      this.options.dynamicModeApprovalTools,
     );
   }
 
@@ -825,7 +834,7 @@ export class FlowRunner implements IFlowRunner {
     const activityJournal = new ActivityJournal(this.eventLogger);
     const config = this.config;
     const db = this.db;
-    const context = (this.options.context || {
+    const _context = (this.options.context || {
       config: {
         get: () => config,
         getAll: () => config,
@@ -849,10 +858,7 @@ export class FlowRunner implements IFlowRunner {
       git: createGitServiceStub(),
     }) as IApplicationContext;
     const llmClient = new LlmClient(config, undefined, resolved.model);
-    const confirmationTimeoutMs = (config.tools?.confirmation_timeout_s ?? DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S) * 1000;
-    const confirmationInterceptor = context.notificationService
-      ? new NotificationQueueConfirmationInterceptor(context.db, context.notificationService, activityJournal)
-      : new CliConfirmationInterceptor(activityJournal, confirmationTimeoutMs);
+    const confirmationInterceptor = this.options.confirmationInterceptor;
     this.dynamicStepExecutor = new DynamicStepExecutor(
       this.mcpClient!,
       llmClient,
@@ -860,6 +866,8 @@ export class FlowRunner implements IFlowRunner {
       confirmationInterceptor,
       this.options.milestoneEmitter,
       this.options.hitlPolicyEvaluator,
+      this.options.dynamicModeTools,
+      this.options.dynamicModeApprovalTools,
     );
   }
 

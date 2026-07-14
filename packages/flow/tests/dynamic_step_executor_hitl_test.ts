@@ -6,7 +6,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { FlowStepExecutionMode } from "@exaix/core";
-import { McpToolName } from "@exaix/mcp";
+import { DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS, McpToolName } from "@exaix/mcp";
 import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
 import { FlowStepSchema, type IFlowStep } from "@exaix/schemas/flow.ts";
 import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
@@ -122,6 +122,8 @@ function createExecutor(
     interceptor,
     undefined,
     evaluator,
+    DYNAMIC_MODE_TOOLS,
+    DYNAMIC_MODE_APPROVAL_TOOLS,
   );
 }
 

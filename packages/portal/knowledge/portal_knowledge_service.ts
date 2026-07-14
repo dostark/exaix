@@ -27,7 +27,13 @@ import { TestRunner } from "./test_runner.ts";
 import { VulnerabilityScanner } from "./vulnerability_scanner.ts";
 import type { IKnowledgeInvalidationStrategy, KnowledgeAnalysisMode } from "./knowledge_invalidation_strategy.ts";
 import { KnowledgeInvalidationStrategy } from "./knowledge_invalidation_strategy.ts";
-import type { ILogger, IMemoryBankService, IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
+import type {
+  IGitServiceFactory,
+  ILogger,
+  IMemoryBankService,
+  IPortalKnowledgeConfig,
+  IPortalKnowledgeService,
+} from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { IPortalKnowledge } from "@exaix/schemas";
@@ -46,7 +52,7 @@ import {
   TS_JS_EXTENSIONS,
 } from "@exaix/core";
 
-import { HnswVectorIndex, type IVectorIndexSnapshot } from "@exaix/memory";
+import type { IVectorIndexSnapshot } from "@exaix/memory";
 
 export interface IPortalKnowledgeServiceOptions {
   config: IPortalKnowledgeConfig;
@@ -58,10 +64,26 @@ export interface IPortalKnowledgeServiceOptions {
   /** Per-language symbol-extractor registry (Phase 115 Step 4); defaults to TS/JS only. */
   symbolExtractorRegistry?: ISymbolExtractorRegistry;
   gitHeadResolver?: IGitHeadResolver;
+  gitServiceFactory?: IGitServiceFactory;
   invalidationStrategy?: IKnowledgeInvalidationStrategy;
   embeddingProvider?: IEmbeddingProvider;
   projectsDir?: string;
   logger?: ILogger;
+  /** Factory for creating vector index instances. Required when no embeddingProvider is set. */
+  createVectorIndex?: () => IVectorIndex;
+}
+
+// ---------------------------------------------------------------------------
+// Local types
+// ---------------------------------------------------------------------------
+
+/** Minimal interface for vector index operations used by PortalKnowledgeService. */
+interface IVectorIndex {
+  size(): number;
+  insert(id: string, vector: number[]): void;
+  search(query: number[], k: number): Array<{ id: string; similarity: number }>;
+  save(): IVectorIndexSnapshot;
+  load(snapshot: IVectorIndexSnapshot): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -112,6 +134,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
   private readonly _gitHeadResolver: IGitHeadResolver;
   private readonly _invalidationStrategy: IKnowledgeInvalidationStrategy;
   private readonly _embeddingProvider?: IEmbeddingProvider;
+  private readonly _createVectorIndex: () => IVectorIndex;
   private readonly _projectsDir: string;
   private readonly _logger?: ILogger;
   private readonly _astAnalyzer: AstAnalyzer;
@@ -126,7 +149,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
   /** Per-portal HNSW index + chunk text cache for relevance retrieval. */
   private readonly _portalIndices: Map<
     string,
-    { index: HnswVectorIndex; chunks: Map<string, string> }
+    { index: IVectorIndex; chunks: Map<string, string> }
   > = new Map();
 
   constructor(options: IPortalKnowledgeServiceOptions) {
@@ -145,11 +168,15 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     // Default-wire the TS/JS extractor; a paid edition injects a registry with more languages.
     this._symbolExtractorRegistry = optionsWithDefaults.symbolExtractorRegistry ??
       createDefaultSymbolExtractorRegistry(this._symbolRunner);
-    this._gitHeadResolver = optionsWithDefaults.gitHeadResolver ?? new GitHeadResolver();
+    this._gitHeadResolver = optionsWithDefaults.gitHeadResolver ??
+      new GitHeadResolver(optionsWithDefaults.gitServiceFactory);
     this._invalidationStrategy = optionsWithDefaults.invalidationStrategy ?? new KnowledgeInvalidationStrategy(
       this._gitHeadResolver,
     );
     this._embeddingProvider = options.embeddingProvider;
+    this._createVectorIndex = options.createVectorIndex ?? (() => {
+      throw new Error("createVectorIndex is required when embedding is enabled");
+    });
     this._projectsDir = options.projectsDir ?? "";
     this._logger = options.logger;
     this._astAnalyzer = new AstAnalyzer();
@@ -548,7 +575,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
 
     let indexData = this._portalIndices.get(portalAlias);
     if (!indexData) {
-      indexData = { index: new HnswVectorIndex(), chunks: new Map() };
+      indexData = { index: this._createVectorIndex(), chunks: new Map() };
       this._portalIndices.set(portalAlias, indexData);
     }
 
@@ -584,7 +611,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
    */
   private async _loadIndex(
     portalAlias: string,
-  ): Promise<{ index: HnswVectorIndex; chunks: Map<string, string> } | undefined> {
+  ): Promise<{ index: IVectorIndex; chunks: Map<string, string> } | undefined> {
     const cached = this._portalIndices.get(portalAlias);
     if (cached) return cached;
 
@@ -598,7 +625,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
         chunks: Array<[string, string]>;
       };
 
-      const index = new HnswVectorIndex();
+      const index = this._createVectorIndex();
       index.load(data.snapshot);
       const chunks = new Map<string, string>(data.chunks);
 
@@ -615,7 +642,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
    */
   private async _persistIndex(
     portalAlias: string,
-    indexData: { index: HnswVectorIndex; chunks: Map<string, string> },
+    indexData: { index: IVectorIndex; chunks: Map<string, string> },
   ): Promise<void> {
     if (!this._projectsDir) return;
 

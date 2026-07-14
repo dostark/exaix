@@ -35,6 +35,7 @@ export function createGitServiceStub(overrides: Partial<IGitService> = {}): IGit
     pruneWorktrees: () => Promise.resolve(""),
     listWorktrees: () => Promise.resolve([]),
     runGitCommand: () => Promise.resolve({ output: "", exitCode: 0 }),
+    validateArgs: () => ({ valid: true }),
   };
   return { ...base, ...overrides };
 }

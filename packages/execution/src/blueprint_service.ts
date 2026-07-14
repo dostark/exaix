@@ -17,7 +17,7 @@ import { SafeError } from "@exaix/core/errors";
 import type { ModelResolver } from "@exaix/ai";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_IDENTITIES_PATH, MAX_NAME_LENGTH, MAX_PROMPT_LENGTH } from "@exaix/core";
-import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
+import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/core/types";
 import type { IAgentFileBlueprint, IAgentOrchestratorOptions } from "./agent_orchestrator.ts";
 import { InputValidator } from "@exaix/schemas/input_validation.ts";
 import { deriveTaskType } from "./task_type_derivation.ts";

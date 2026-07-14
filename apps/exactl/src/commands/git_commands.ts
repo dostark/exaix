@@ -7,7 +7,7 @@
  */
 
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
-import { GIT_CMD_BRANCH } from "@exaix/git";
+import { GIT_CMD_BRANCH } from "@exaix/git/constants.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IBranchInfo {

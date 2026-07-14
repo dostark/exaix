@@ -10,7 +10,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { cleanupTempDir, createToolRegistryForTests } from "./helpers.ts";
+import { cleanupTempDir, createTestGitServiceFactory, createToolRegistryForTests } from "./helpers.ts";
 import { ToolName } from "@exaix/core";
 
 const BLOCKED_RUNTIME_INVOCATIONS: ReadonlyArray<readonly [string, string[]]> = [
@@ -57,7 +57,9 @@ const BLOCKED_GIT_INVOCATIONS: ReadonlyArray<readonly [string, string[]]> = [
 
 Deno.test("security: run_command blocks git -c / -C config-injection options", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "run-cmd-git-security-" });
-  const registry = createToolRegistryForTests(tempDir);
+  const registry = createToolRegistryForTests(tempDir, {
+    gitServiceFactory: createTestGitServiceFactory(),
+  });
   try {
     for (const [command, args] of BLOCKED_GIT_INVOCATIONS) {
       const result = await registry.execute(ToolName.RUN_COMMAND, { command, args });

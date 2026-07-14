@@ -8,7 +8,7 @@
 
 import { assert, assertEquals, assertFalse } from "@std/assert";
 import type { IToolManifestResolver } from "@exaix/core/types";
-import { DYNAMIC_MODE_TOOLS, McpToolName, TOOL_MANIFEST } from "@exaix/mcp";
+import { DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS, McpToolName, TOOL_MANIFEST } from "@exaix/mcp";
 import type { IMcpClient } from "@exaix/mcp";
 import { FlowStepExecutionMode } from "@exaix/core";
 import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
@@ -107,7 +107,16 @@ Deno.test(
     const mcpClient = new CapturingMcpClient();
     const llmClient = new ImmediateDoneLlmClient();
     const journal = new NoopJournal();
-    const executor = new DynamicStepExecutor(mcpClient, llmClient, journal);
+    const executor = new DynamicStepExecutor(
+      mcpClient,
+      llmClient,
+      journal,
+      undefined,
+      undefined,
+      undefined,
+      DYNAMIC_MODE_TOOLS,
+      DYNAMIC_MODE_APPROVAL_TOOLS,
+    );
 
     const identity = BlueprintFrontmatterSchema.parse({
       identity_id: "test-agent",
@@ -153,7 +162,16 @@ Deno.test(
     const mcpClient = new CapturingMcpClient();
     const llmClient = new ImmediateDoneLlmClient();
     const journal = new NoopJournal();
-    const executor = new DynamicStepExecutor(mcpClient, llmClient, journal);
+    const executor = new DynamicStepExecutor(
+      mcpClient,
+      llmClient,
+      journal,
+      undefined,
+      undefined,
+      undefined,
+      DYNAMIC_MODE_TOOLS,
+      DYNAMIC_MODE_APPROVAL_TOOLS,
+    );
 
     const identity = BlueprintFrontmatterSchema.parse({
       identity_id: "test-agent",

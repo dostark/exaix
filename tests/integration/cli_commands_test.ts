@@ -17,51 +17,6 @@ import { ArtifactRegistry, DatabaseArtifactRepository } from "@exaix/core/artifa
 import { ReviewStatus } from "@exaix/core/status";
 import { withCliProcessMutex } from "../helpers/cli_process_mutex.ts";
 
-function getFallbackConfig(root: string): string {
-  return `
-[system]
-version = "1.0.0"
-log_level = "info"
-root = "${root}"
-
-[paths]
-memory = "./Memory"
-blueprints = "./Blueprints"
-runtime = "./.exa"
-workspace = "./Workspace"
-portals = "./Portals"
-active = "Active"
-archive = "Archive"
-plans = "Plans"
-requests = "Requests"
-rejected = "Rejected"
-identities = "Identities"
-flows = "Flows"
-memoryProjects = "Projects"
-memoryExecution = "Execution"
-memoryIndex = "Index"
-memorySkills = "Skills"
-memoryPending = "Pending"
-memoryTasks = "Tasks"
-memoryGlobal = "Global"
-
-[database.sqlite]
-journal_mode = "WAL"
-foreign_keys = true
-busy_timeout_ms = 5000
-
-[agents]
-default_model = "default"
-timeout_sec = 60
-max_iterations = 10
-
-[models.default]
-provider = "mock"
-model = "gpt-5.2-pro"
-timeout_ms = 30000
-`.trim();
-}
-
 // Helper to run exactl command in a given workspace
 async function runExactl(args: string[], cwd: string) {
   const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
@@ -72,7 +27,7 @@ async function runExactl(args: string[], cwd: string) {
   const configPath = join(cwd, "exa.config.toml");
   const hasConfig = await Deno.stat(configPath).then(() => true).catch(() => false);
   if (!hasConfig) {
-    await Deno.writeTextFile(configPath, getFallbackConfig(cwd));
+    await Deno.writeTextFile(configPath, `[system]\nroot = "${cwd}"\nversion = "1.0.0"\nlog_level = "info"\n`);
   }
 
   const parentEnv = Deno.env.toObject();

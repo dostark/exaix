@@ -80,10 +80,11 @@ import { parse as parseYaml } from "@std/yaml";
 import type { EffortTier, ModelSize } from "@exaix/schemas";
 import type { JSONValue } from "@exaix/core/types";
 import { GitService } from "@exaix/git";
+import { HnswVectorIndex } from "@exaix/memory";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import type { IApplicationContext } from "@exaix/core/types";
 import { type LogMetadata, toSafeJson } from "@exaix/core/types";
-import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
+import { DEFAULT_MCP_IDENTITY_ID, DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS } from "@exaix/mcp";
 import { SessionWaitStore } from "@exaix/session/wait/session_wait_store.ts";
 import { SessionReturnProcessor } from "@exaix/session/session_return_processor.ts";
 import { SessionReturnWatcher } from "./src/session_return_watcher.ts";
@@ -573,6 +574,7 @@ if (import.meta.main) {
       config: portalKnowledgeConfig,
       memoryBank,
       embeddingProvider,
+      createVectorIndex: () => new HnswVectorIndex(),
       symbolExtractorRegistry: symbolRegistry,
     });
 
@@ -815,6 +817,8 @@ if (import.meta.main) {
       eventLogger: flowLogger,
       hitlPolicyEvaluator,
       modelResolver,
+      dynamicModeTools: DYNAMIC_MODE_TOOLS,
+      dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
     });
 
     // Wire Team-edition capability modules through the edition-composer seam.
@@ -842,6 +846,7 @@ if (import.meta.main) {
       ),
       includeReasoning: true,
       context, // Support unified DI
+      agentRunner,
       // Phase 135 Step 9 (GAP-C9): share the daemon's own tracker (pricing lookup
       // already set at line ~765) — a self-constructed tracker would never split-price
       // (registry_computed permanently unreachable for standard-request generations).
@@ -1094,6 +1099,12 @@ if (import.meta.main) {
       }
       : undefined;
 
+    const gitServiceFactory = {
+      createGitService(repoPath: string, traceId: string) {
+        return new GitService({ config, traceId, identityId: DAEMON_IDENTITY_ID, repoPath, context });
+      },
+    };
+
     const executionLoop = new ExecutionLoop({
       context,
       config,
@@ -1106,11 +1117,7 @@ if (import.meta.main) {
       hitlPolicyEvaluator,
       memoryBank,
       onCodeChangesDelegate,
-      gitServiceFactory: {
-        createGitService(repoPath: string, traceId: string) {
-          return new GitService({ config, traceId, identityId: DAEMON_IDENTITY_ID, repoPath, context });
-        },
-      },
+      gitServiceFactory,
       toolRegistryFactory: {
         createToolRegistry(traceId: string, baseDir: string) {
           return new ToolRegistry({
@@ -1120,6 +1127,7 @@ if (import.meta.main) {
             baseDir,
             context,
             hitlPolicyEvaluator,
+            gitServiceFactory,
           });
         },
       },

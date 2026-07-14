@@ -7,9 +7,7 @@
  */
 
 import { join } from "@std/path";
-import { SafeSubprocess } from "@exaix/core";
-import { DEFAULT_GIT_REV_PARSE_TIMEOUT_MS, GIT_CMD_REV_PARSE } from "@exaix/git";
-import type { Opt, Reason } from "@exaix/core/types";
+import type { IGitServiceFactory, Opt, Reason } from "@exaix/core/types";
 
 export interface IGitHeadResolver {
   resolve(portalPath: string): Promise<string | null>;
@@ -25,35 +23,33 @@ export interface IGitHeadResolver {
 const DEFAULT_DEBOUNCE_MS = 100;
 
 export class GitHeadResolver implements IGitHeadResolver {
+  constructor(private readonly gitServiceFactory?: IGitServiceFactory) {}
   private _watcher: Deno.FsWatcher | null = null;
   private _abortController: AbortController | null = null;
   private _debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private _previousHash: string | null = null;
 
   async resolve(portalPath: string): Promise<string | null> {
+    if (!this.gitServiceFactory) return null;
     try {
-      const result = await SafeSubprocess.run("git", [GIT_CMD_REV_PARSE, "HEAD"], {
-        cwd: portalPath,
-        timeoutMs: DEFAULT_GIT_REV_PARSE_TIMEOUT_MS,
-      });
-      return result.code === 0 ? result.stdout.trim() : null;
+      const service = this.gitServiceFactory.createGitService(portalPath, "git-head-resolver");
+      const result = await service.runGitCommand(["rev-parse", "HEAD"], { throwOnError: false });
+      return result.exitCode === 0 ? result.output.trim() : null;
     } catch {
       return null;
     }
   }
 
   async changedFilesSince(portalPath: string, fromSha: string): Promise<string[] | null> {
+    if (!this.gitServiceFactory) return null;
     try {
-      const result = await SafeSubprocess.run("git", ["diff", "--name-only", fromSha, "HEAD"], {
-        cwd: portalPath,
-        timeoutMs: DEFAULT_GIT_REV_PARSE_TIMEOUT_MS,
-      });
-      if (result.code !== 0) return null;
-
-      return result.stdout
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0);
+      const service = this.gitServiceFactory.createGitService(portalPath, "git-head-resolver");
+      const result = await service.runGitCommand(
+        ["diff", "--name-only", fromSha, "HEAD"],
+        { throwOnError: false },
+      );
+      if (result.exitCode !== 0) return null;
+      return result.output.split("\n").map((line) => line.trim()).filter((line) => line.length > 0);
     } catch {
       return null;
     }

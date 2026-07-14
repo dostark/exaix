@@ -8,7 +8,6 @@
  * @ungrounded
  */
 
-import { READ_ONLY_TOOLS, WRITE_TOOLS } from "@exaix/mcp";
 import { FlowStepExecutionMode } from "@exaix/core";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 
@@ -18,7 +17,11 @@ export interface ICliValidationReport {
   valid: boolean;
 }
 
-export function validateFlowForCli(flow: IFlow): ICliValidationReport {
+export function validateFlowForCli(
+  flow: IFlow,
+  writeTools: ReadonlySet<string>,
+  readOnlyTools: ReadonlySet<string>,
+): ICliValidationReport {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -29,8 +32,8 @@ export function validateFlowForCli(flow: IFlow): ICliValidationReport {
 
     const permittedTools = step.permitted_tools ?? [];
     for (const tool of permittedTools) {
-      if ((WRITE_TOOLS as Set<string>).has(tool)) {
-        const readOnlyToolsList = [...READ_ONLY_TOOLS].join(", ");
+      if ((writeTools as Set<string>).has(tool)) {
+        const readOnlyToolsList = [...readOnlyTools].join(", ");
         errors.push(
           `Step "${step.id}": "${tool}" is a write tool. ` +
             `Dynamic steps may only use read-only tools: [${readOnlyToolsList}]`,

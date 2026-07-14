@@ -221,6 +221,11 @@ export async function initializeServices(
       memoryBank,
       provider: providerLocal,
       symbolExtractorRegistry: symbolRegistry,
+      gitServiceFactory: {
+        createGitService(repoPath: string, traceId: string) {
+          return new GitService({ config: cfg, repoPath, traceId });
+        },
+      },
     });
 
     // Phase 118: Create HITL policy evaluator if Team/Enterprise edition.

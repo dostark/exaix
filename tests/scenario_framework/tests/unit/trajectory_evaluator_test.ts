@@ -30,14 +30,16 @@ function makeExpected(overrides: Partial<IExpectedTrajectory>): IExpectedTraject
   };
 }
 
+const EXPECTED_SEQUENCE_SHARED: Array<{ tool: string }> = [
+  { tool: "read_file" },
+  { tool: "edit_file" },
+  { tool: "write_file" },
+];
+
 Deno.test("[TrajectoryEvaluator] exact match with order_matters=true returns score 1.0", () => {
   const observed = makeObserved(["read_file", "edit_file", "write_file"]);
   const expected = makeExpected({
-    expectedSequence: [
-      { tool: "read_file" },
-      { tool: "edit_file" },
-      { tool: "write_file" },
-    ],
+    expectedSequence: EXPECTED_SEQUENCE_SHARED,
     orderMatters: true,
   });
   const results = scoreTrajectory(observed, expected);
@@ -47,11 +49,7 @@ Deno.test("[TrajectoryEvaluator] exact match with order_matters=true returns sco
 Deno.test("[TrajectoryEvaluator] wrong order with order_matters=true returns partial credit", () => {
   const observed = makeObserved(["edit_file", "read_file", "write_file"]);
   const expected = makeExpected({
-    expectedSequence: [
-      { tool: "read_file" },
-      { tool: "edit_file" },
-      { tool: "write_file" },
-    ],
+    expectedSequence: EXPECTED_SEQUENCE_SHARED,
     orderMatters: true,
   });
   const results = scoreTrajectory(observed, expected);
@@ -64,11 +62,7 @@ Deno.test("[TrajectoryEvaluator] wrong order with order_matters=true returns par
 Deno.test("[TrajectoryEvaluator] missing tool with order_matters=false returns proportional score", () => {
   const observed = makeObserved(["read_file", "write_file"]);
   const expected = makeExpected({
-    expectedSequence: [
-      { tool: "read_file" },
-      { tool: "edit_file" },
-      { tool: "write_file" },
-    ],
+    expectedSequence: EXPECTED_SEQUENCE_SHARED,
     orderMatters: false,
   });
   const results = scoreTrajectory(observed, expected);

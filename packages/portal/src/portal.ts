@@ -18,7 +18,6 @@ import {
   VerificationStatus,
 } from "@exaix/core";
 import type { IDisplayService, IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types";
-import { GIT_CMD_BRANCH } from "@exaix/git";
 import { PORTAL_ALIAS_MAX_LENGTH } from "./constants.ts";
 
 import { loadKnowledge, saveKnowledge } from "../knowledge/knowledge_persistence.ts";
@@ -453,9 +452,9 @@ export class PortalService {
 
   private async validateBranchName(
     branch: string,
-    opts?: Opt<{ label?: string }, Reason.OptionalInput>,
+    opts?: Opt<{ label: string }, Reason.OptionalInput>,
   ): Promise<void> {
-    const label = opts?.label ?? GIT_CMD_BRANCH;
+    const label = opts!.label;
     if (typeof branch !== "string" || branch.trim().length === 0) {
       throw new Error(`Invalid ${label}: must be non-empty string`);
     }

@@ -50,4 +50,5 @@ export interface IGitService {
     args: string[],
     options?: IGitCommandOptions,
   ): Promise<{ output: string; exitCode: number }>;
+  validateArgs(args: string[]): { valid: boolean; reason?: string };
 }

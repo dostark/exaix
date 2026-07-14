@@ -12,9 +12,9 @@
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
+import type { IDocCommandRunner, IKnowledgeInvalidationStrategy } from "@exaix/portal/knowledge";
+import { HnswVectorIndex } from "@exaix/memory";
 import {
-  type IDocCommandRunner,
-  type IKnowledgeInvalidationStrategy,
   type ISymbolExtractor,
   type ISymbolExtractorOptions,
   PortalKnowledgeService,
@@ -549,6 +549,7 @@ Deno.test("[PortalKnowledgeService] indexPortalKnowledge then getRelevantContext
       memoryBank: null as never,
       runner: makeMockDocRunner(),
       embeddingProvider: mockEmbedder,
+      createVectorIndex: () => new HnswVectorIndex(),
       projectsDir,
     });
     const portalDir = join(tempDir, "test-portal");
@@ -605,6 +606,7 @@ Deno.test("[PortalKnowledgeService] getRelevantContext respects maxTokens limit"
       memoryBank: null as never,
       runner: makeMockDocRunner(),
       embeddingProvider: mockEmbedder,
+      createVectorIndex: () => new HnswVectorIndex(),
       projectsDir,
     });
     const portalDir2 = join(tempDir, "test-portal-2");
@@ -652,6 +654,7 @@ Deno.test("[PortalKnowledgeService] overlapping sentence groups provide broader 
       memoryBank: null as never,
       runner: makeMockDocRunner(),
       embeddingProvider: mockEmbedder,
+      createVectorIndex: () => new HnswVectorIndex(),
       projectsDir,
     });
 

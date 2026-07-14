@@ -670,6 +670,67 @@ export class GitService implements IGitService {
     }
   }
 
+  /**
+   * Validate git command arguments for security and policy compliance.
+   * Checks for dangerous options, protected branch operations, and destructive commands.
+   */
+  validateArgs(args: string[]): { valid: boolean; reason?: string } {
+    const dangerousGitOptions = [
+      "--exec-path",
+      "--git-dir",
+      "--work-tree",
+      "--namespace",
+      "--config",
+      "--config-env",
+      "--exec",
+      "--html-path",
+    ];
+
+    const fullCommand = args.join(" ").toLowerCase();
+
+    // Prohibit destructive operations
+    const isDestructive = (fullCommand.includes("reset") && fullCommand.includes("--hard")) ||
+      (fullCommand.includes("clean") && (fullCommand.includes("-f") || fullCommand.includes("-d")));
+
+    if (isDestructive) {
+      return {
+        valid: false,
+        reason: `Destructive git operation prohibited: git ${args.join(" ")}`,
+      };
+    }
+
+    // Protect system branches from direct checkout/modification
+    const protectedBranches: string[] = [
+      GitBranchName.MAIN,
+      GitBranchName.MASTER,
+      GitBranchName.DEVELOP,
+      GitBranchName.PROD,
+      GitBranchName.PRODUCTION,
+    ];
+    if (args.includes("checkout") || args.includes(GIT_CMD_BRANCH)) {
+      if (args.some((arg) => protectedBranches.includes(arg.toLowerCase()))) {
+        return {
+          valid: false,
+          reason: `Operations on protected branches (main, master, etc.) are prohibited for safety.`,
+        };
+      }
+    }
+
+    // Exact-match options that enable config-injection / scope-escape RCE primitives.
+    const dangerousExactOptions = ["-c", "-C"];
+
+    for (const arg of args) {
+      if (dangerousExactOptions.includes(arg) || dangerousGitOptions.some((option) => arg.startsWith(option))) {
+        return {
+          valid: false,
+          reason: `Dangerous git option not allowed: ${arg}`,
+        };
+      }
+    }
+
+    return { valid: true };
+  }
+
   public async runGitCommand(
     args: string[],
     options: IGitCommandOptions = {},

@@ -8,7 +8,6 @@
  */
 
 import type { JSONValue } from "@exaix/core";
-import { GIT_EMPTY_SHA } from "@exaix/git";
 import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
 import { ChangesetResultSchema } from "@exaix/schemas/agent_orchestrator.ts";
 
@@ -20,6 +19,8 @@ export type IOutputParserContext = Pick<IExecutionContext, "trace_id" | "request
  * All methods are pure functions with no side effects.
  */
 export class OutputParser {
+  constructor(private readonly emptySha: string = "0000000000000000000000000000000000000000") {}
+
   /**
    * Parse agent response to extract changeset result.
    * Extracts JSON from markdown code blocks or bare JSON.
@@ -44,7 +45,7 @@ export class OutputParser {
         parsed.branch = `feat/${context.request_id}-${context.trace_id.slice(0, 8)}`;
       }
       if (!parsed.commit_sha) {
-        parsed.commit_sha = GIT_EMPTY_SHA;
+        parsed.commit_sha = this.emptySha;
       }
       if (!parsed.files_changed) {
         parsed.files_changed = [];
@@ -78,7 +79,7 @@ export class OutputParser {
   ): IChangesetResult {
     return {
       branch: `feat/${context.request_id}-${context.trace_id.slice(0, 8)}`,
-      commit_sha: GIT_EMPTY_SHA,
+      commit_sha: this.emptySha,
       files_changed: [],
       description: context.plan,
       tool_calls: 0,

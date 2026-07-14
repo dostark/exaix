@@ -15,7 +15,7 @@ import {
   ToolErrorCode,
 } from "@exaix/core";
 import type { IToolConfirmationInterceptor, IToolManifestResolver } from "@exaix/core/types";
-import { McpToolName } from "@exaix/mcp";
+import { DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS, McpToolName } from "@exaix/mcp";
 import type { IMcpClient } from "@exaix/mcp";
 import { BlueprintFrontmatterSchema, type IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
 import { FlowStepSchema, type IFlowStep } from "@exaix/schemas/flow.ts";
@@ -179,7 +179,16 @@ Deno.test("DynamicStepExecutor confirmation: approved approval-required tool exe
     decidedAt: new Date().toISOString(),
   }));
 
-  const executor = new DynamicStepExecutor(mcpClient, llmClient, journal, interceptor);
+  const executor = new DynamicStepExecutor(
+    mcpClient,
+    llmClient,
+    journal,
+    interceptor,
+    undefined,
+    undefined,
+    DYNAMIC_MODE_TOOLS,
+    DYNAMIC_MODE_APPROVAL_TOOLS,
+  );
 
   const result = await executor.execute(createDynamicStep(), createIdentity(), "input", { traceId: "trace-approval" });
 
@@ -213,7 +222,16 @@ Deno.test("DynamicStepExecutor confirmation: denied approval-required tool retur
     decidedAt: new Date().toISOString(),
   }));
 
-  const executor = new DynamicStepExecutor(mcpClient, llmClient, journal, interceptor);
+  const executor = new DynamicStepExecutor(
+    mcpClient,
+    llmClient,
+    journal,
+    interceptor,
+    undefined,
+    undefined,
+    DYNAMIC_MODE_TOOLS,
+    DYNAMIC_MODE_APPROVAL_TOOLS,
+  );
 
   const result = await executor.execute(createDynamicStep(), createIdentity(), "input", { traceId: "trace-denial" });
 
@@ -238,7 +256,16 @@ Deno.test("DynamicStepExecutor confirmation: without interceptor approval-requir
   llmClient.setDecisions([{ done: true, output: "done" }]);
 
   const journal = new MockActivityJournal();
-  const executor = new DynamicStepExecutor(mcpClient, llmClient, journal);
+  const executor = new DynamicStepExecutor(
+    mcpClient,
+    llmClient,
+    journal,
+    undefined,
+    undefined,
+    undefined,
+    DYNAMIC_MODE_TOOLS,
+    DYNAMIC_MODE_APPROVAL_TOOLS,
+  );
 
   await executor.execute(createDynamicStep(), createIdentity(), "input", { traceId: "trace-no-interceptor" });
 
@@ -280,7 +307,16 @@ Deno.test("DynamicStepExecutor confirmation: approval request timeout window use
     decidedAt: new Date().toISOString(),
   }));
 
-  const executor = new DynamicStepExecutor(mcpClient, llmClient, journal, interceptor);
+  const executor = new DynamicStepExecutor(
+    mcpClient,
+    llmClient,
+    journal,
+    interceptor,
+    undefined,
+    undefined,
+    DYNAMIC_MODE_TOOLS,
+    DYNAMIC_MODE_APPROVAL_TOOLS,
+  );
 
   await executor.execute(createDynamicStep(), createIdentity(), "input", { traceId: "trace-timeout-default" });
 
@@ -308,7 +344,16 @@ Deno.test("DynamicStepExecutor confirmation: config override changes approval re
     decidedAt: new Date().toISOString(),
   }));
 
-  const executor = new DynamicStepExecutor(mcpClient, llmClient, journal, interceptor);
+  const executor = new DynamicStepExecutor(
+    mcpClient,
+    llmClient,
+    journal,
+    interceptor,
+    undefined,
+    undefined,
+    DYNAMIC_MODE_TOOLS,
+    DYNAMIC_MODE_APPROVAL_TOOLS,
+  );
 
   await executor.execute(createDynamicStep(), createIdentity(), "input", {
     traceId: "trace-config-timeout",

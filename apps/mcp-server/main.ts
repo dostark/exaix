@@ -95,6 +95,7 @@ function createGitServiceStub(): IGitService {
     pruneWorktrees: () => Promise.resolve(""),
     listWorktrees: () => Promise.resolve([]),
     runGitCommand: () => Promise.resolve({ output: "", exitCode: 0 }),
+    validateArgs: () => ({ valid: true }),
   };
 }
 

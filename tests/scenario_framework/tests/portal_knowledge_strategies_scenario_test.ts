@@ -12,7 +12,7 @@ import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { withRepoRoot } from "@exaix/testing";
-import { bootstrapWorkspace, logOutput, skipInCI, stopDaemon } from "./helpers/scenario_test_utils.ts";
+import { createScenarioContext, runScenario, skipInCI } from "./helpers/scenario_test_utils.ts";
 
 Deno.test({
   name: "Scenario: Portal Knowledge Strategies — all 11 strategies",
@@ -21,43 +21,12 @@ Deno.test({
   sanitizeResources: false,
   async fn(_t) {
     await withRepoRoot(async () => {
-      const runnerPath = join(Deno.cwd(), "tests/scenario_framework/runner/main.ts");
-      const tempRoot = await Deno.makeTempDir({ prefix: "exaix-scenario-strategies-" });
-      const workspacePath = tempRoot;
+      const { runnerPath, workspacePath } = await createScenarioContext();
 
-      await stopDaemon();
-      await bootstrapWorkspace(workspacePath);
-
-      const outputDir = join(
-        Deno.cwd(),
-        "tests/scenario_framework/output/portal-knowledge-strategies",
-      );
+      const outputDir = join(Deno.cwd(), "tests/scenario_framework/output/portal-knowledge-strategies");
       await ensureDir(outputDir);
 
-      const command = new Deno.Command(Deno.execPath(), {
-        args: [
-          "run",
-          "-A",
-          runnerPath,
-          "--scenario",
-          "portal-knowledge-strategies",
-          "--output",
-          outputDir,
-          "--workspace",
-          workspacePath,
-          "--verbose",
-        ],
-        env: {
-          "EXA_BIN_PATH": join(Deno.cwd(), "tests/scenario_framework/bin"),
-        },
-      });
-
-      const { code, stdout, stderr } = await command.output();
-
-      const output = new TextDecoder().decode(stdout);
-      const errorOutput = new TextDecoder().decode(stderr);
-
-      logOutput(output, errorOutput);
+      const { code, output } = await runScenario(runnerPath, "portal-knowledge-strategies", workspacePath, outputDir);
 
       if (code !== 0) {
         console.error("Scenario failed with exit code:", code);
@@ -65,9 +34,7 @@ Deno.test({
 
       assertEquals(code, 0, `Scenario should pass successfully. Output: ${output.substring(0, 500)}`);
       assert(
-        output.includes("portal-knowledge-strategies") ||
-          output.includes("PASSED") ||
-          output.includes("success"),
+        output.includes("portal-knowledge-strategies") || output.includes("PASSED") || output.includes("success"),
         "Output should contain scenario name or success indicator",
       );
     });

@@ -9,6 +9,12 @@
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 
+export interface IRunScenarioResult {
+  code: number;
+  output: string;
+  stderr: string;
+}
+
 export const skipInCI = !!Deno.env.get("CI") || !!Deno.env.get("GITHUB_ACTIONS");
 
 export async function stopDaemon(): Promise<void> {
@@ -50,4 +56,44 @@ export function logOutput(output: string, errorOutput: string): void {
   console.log("=== Scenario stderr ===");
   console.log(errorOutput);
   console.log("=== End output ===");
+}
+
+export async function createScenarioContext(): Promise<{ runnerPath: string; workspacePath: string }> {
+  const runnerPath = join(Deno.cwd(), "tests/scenario_framework/runner/main.ts");
+  const workspacePath = await Deno.makeTempDir({ prefix: "exaix-scenario-test-" });
+  await stopDaemon();
+  await bootstrapWorkspace(workspacePath);
+  return { runnerPath, workspacePath };
+}
+
+export async function runScenario(
+  runnerPath: string,
+  scenarioName: string,
+  workspacePath: string,
+  outputDir: string,
+): Promise<IRunScenarioResult> {
+  const command = new Deno.Command(Deno.execPath(), {
+    args: [
+      "run",
+      "-A",
+      runnerPath,
+      "--scenario",
+      scenarioName,
+      "--output",
+      outputDir,
+      "--workspace",
+      workspacePath,
+      "--verbose",
+    ],
+    env: {
+      "EXA_BIN_PATH": join(Deno.cwd(), "tests/scenario_framework/bin"),
+    },
+  });
+
+  const raw = await command.output();
+  const output = new TextDecoder().decode(raw.stdout);
+
+  logOutput(output, new TextDecoder().decode(raw.stderr));
+
+  return { code: raw.code, output, stderr: new TextDecoder().decode(raw.stderr) };
 }

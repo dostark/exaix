@@ -88,52 +88,6 @@ parallelSafeTest("deploy_workspace.ts --no-run creates deploy files", async () =
   }
 });
 
-// Helper to run exactl command in a workspace
-function getFallbackConfig(root: string): string {
-  return `
-[system]
-version = "1.0.0"
-log_level = "info"
-root = "${root}"
-
-[paths]
-memory = "./Memory"
-blueprints = "./Blueprints"
-runtime = "./.exa"
-workspace = "./Workspace"
-portals = "./Portals"
-active = "Active"
-archive = "Archive"
-plans = "Plans"
-requests = "Requests"
-rejected = "Rejected"
-identities = "Identities"
-flows = "Flows"
-memoryProjects = "Projects"
-memoryExecution = "Execution"
-memoryIndex = "Index"
-memorySkills = "Skills"
-memoryPending = "Pending"
-memoryTasks = "Tasks"
-memoryGlobal = "Global"
-
-[database.sqlite]
-journal_mode = "WAL"
-foreign_keys = true
-busy_timeout_ms = 5000
-
-[agents]
-default_model = "default"
-timeout_sec = 60
-max_iterations = 10
-
-[models.default]
-provider = "mock"
-model = "gpt-5.2-pro"
-timeout_ms = 30000
-`.trim();
-}
-
 async function runExactl(
   workspacePath: string,
   args: string[],
@@ -145,7 +99,10 @@ async function runExactl(
   const configPath = join(workspacePath, "exa.config.toml");
   const hasConfig = await Deno.stat(configPath).then(() => true).catch(() => false);
   if (!hasConfig) {
-    await Deno.writeTextFile(configPath, getFallbackConfig(workspacePath));
+    await Deno.writeTextFile(
+      configPath,
+      `[system]\nroot = "${workspacePath}"\nversion = "1.0.0"\nlog_level = "info"\n`,
+    );
   }
 
   const parentEnv = Deno.env.toObject();
@@ -156,7 +113,6 @@ async function runExactl(
     TERM: parentEnv.TERM ?? "xterm",
     ...env,
   };
-  // Force mock provider unless explicitly overridden by the caller.
   if (!fullEnv.EXA_LLM_PROVIDER) {
     fullEnv.EXA_LLM_PROVIDER = "mock";
   }

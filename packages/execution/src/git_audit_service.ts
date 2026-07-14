@@ -18,10 +18,9 @@ import {
   DEFAULT_GIT_REV_PARSE_TIMEOUT_MS,
   DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT,
   DEFAULT_GIT_STATUS_TIMEOUT_MS,
-  GIT_CMD_REV_PARSE,
-  GIT_CMD_STATUS,
   GIT_EMPTY_SHA,
 } from "@exaix/git";
+import { GIT_CMD_REV_PARSE, GIT_CMD_STATUS } from "@exaix/git/constants.ts";
 import { DomainEventType } from "@exaix/core/events";
 import type { IEventLogger } from "@exaix/core/logger";
 import { AgentExecutionError } from "@exaix/execution";

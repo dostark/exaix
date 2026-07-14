@@ -93,15 +93,17 @@ Deno.test("[scenario_matrix] MatrixSchema accepts the four-cell block", () => {
   assertEquals(parsed.cells.length, 4);
 });
 
+const DEFAULT_MATRIX_ENV = {
+  OPENROUTER_API_KEY: "k",
+  ANTHROPIC_API_KEY: "k",
+  EXA_MATRIX_OPENCODE: "1",
+};
+
 Deno.test("[scenario_matrix] a scenario with a matrix block expands into one run per cell", () => {
   const steps = [startDaemonStep(), otherStep()];
   // All binaries present, all keys/optins present → every cell runs.
   const runs = expandMatrix(steps, FOUR_CELL_MATRIX, {
-    env: {
-      OPENROUTER_API_KEY: "k",
-      ANTHROPIC_API_KEY: "k",
-      EXA_MATRIX_OPENCODE: "1",
-    },
+    env: DEFAULT_MATRIX_ENV,
     binOnPath: () => true,
   });
   assertEquals(runs.length, 4);
@@ -111,7 +113,7 @@ Deno.test("[scenario_matrix] a scenario with a matrix block expands into one run
 Deno.test("[scenario_matrix] a runnable cell overlays EXA_CONFIG_PATH (its preset) + EXA_SESSION_DELEGATE_TOOL + ENABLED onto start-daemon; no EXA_SESSION_DELEGATE_PROVIDER", () => {
   const steps = [startDaemonStep(), otherStep()];
   const runs = expandMatrix(steps, FOUR_CELL_MATRIX, {
-    env: { OPENROUTER_API_KEY: "k", ANTHROPIC_API_KEY: "k", EXA_MATRIX_OPENCODE: "1" },
+    env: DEFAULT_MATRIX_ENV,
     binOnPath: () => true,
   });
 
@@ -136,7 +138,7 @@ Deno.test("[scenario_matrix] a runnable cell overlays EXA_CONFIG_PATH (its prese
 Deno.test("[scenario_matrix] when configBaseDir is given, EXA_CONFIG_PATH is the cell preset resolved to an absolute path (daemon CWD is the workspace, not the repo)", () => {
   const steps = [startDaemonStep(), otherStep()];
   const runs = expandMatrix(steps, FOUR_CELL_MATRIX, {
-    env: { OPENROUTER_API_KEY: "k", ANTHROPIC_API_KEY: "k", EXA_MATRIX_OPENCODE: "1" },
+    env: DEFAULT_MATRIX_ENV,
     binOnPath: () => true,
     configBaseDir: REPO_ROOT,
   });
@@ -159,7 +161,7 @@ Deno.test("[scenario_matrix] a runnable cell whose steps lack a start-daemon ste
   assertThrows(
     () =>
       expandMatrix(stepsWithoutDaemon, FOUR_CELL_MATRIX, {
-        env: { OPENROUTER_API_KEY: "k", ANTHROPIC_API_KEY: "k", EXA_MATRIX_OPENCODE: "1" },
+        env: DEFAULT_MATRIX_ENV,
         binOnPath: () => true,
       }),
     Error,
@@ -182,7 +184,7 @@ Deno.test("[scenario_matrix] a SKIPPED cell does not require a start-daemon step
 Deno.test("[scenario_matrix] the overlay does not mutate non-daemon steps", () => {
   const steps = [startDaemonStep(), otherStep()];
   const runs = expandMatrix(steps, FOUR_CELL_MATRIX, {
-    env: { OPENROUTER_API_KEY: "k", ANTHROPIC_API_KEY: "k", EXA_MATRIX_OPENCODE: "1" },
+    env: DEFAULT_MATRIX_ENV,
     binOnPath: () => true,
   });
   const submit = runs[0].steps.find((s) => s.id === "submit-request");
@@ -193,7 +195,7 @@ Deno.test("[scenario_matrix] the overlay does not mutate non-daemon steps", () =
 Deno.test("[scenario_matrix] a cell whose requires_bin is absent is recorded skipped, not failed", () => {
   const steps = [startDaemonStep()];
   const runs = expandMatrix(steps, FOUR_CELL_MATRIX, {
-    env: { OPENROUTER_API_KEY: "k", ANTHROPIC_API_KEY: "k", EXA_MATRIX_OPENCODE: "1" },
+    env: DEFAULT_MATRIX_ENV,
     binOnPath: (bin) => bin === "claude", // opencode absent
   });
   const opencodeCells = runs.filter((r) => r.cell.tool === "opencode");

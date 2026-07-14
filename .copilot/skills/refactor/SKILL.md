@@ -131,6 +131,8 @@ Do / Don't
 - ✅ Do use IFoo naming for all extracted interfaces
 - ✅ Do place constants in the correct file (prod vs. test)
 - ❌ Don't use `as any` to resolve type errors introduced by the refactor
+- ❌ Don't fix layer-violating constant imports by duplicating constants locally. The correct fix is to inject the service interface that owns the constant — the consumer calls a method on the service, never imports the constant directly. Local duplication creates a maintenance hazard (two sources of truth diverge over time) and is flagged as `[layer-constant-leak]` in style checks.
+- ❌ Don't fix layer-violating constant imports by inlining the raw string/number value. The value IS the constant — inlining creates the exact same maintenance hazard as a named local duplicate (divergence risk, no single source of truth), while also losing the self-documenting name. The fix is to inject the owning service's interface, not to erase the identifier.
 - ❌ Don't refactor and add new features in the same commit
 - ❌ Don't skip #refactor-check-magic when magic violations are the primary goal
 

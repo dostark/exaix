@@ -10,10 +10,8 @@ import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { join, resolve } from "@std/path";
 import { expandGlob } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
-import { PathResolver } from "@exaix/portal";
 import { BYTES_PER_KB, LogLevel, PORTAL_PREFIX_PATTERN, SystemCommand, ToolName } from "@exaix/core";
-import { GIT_CMD_BRANCH, GIT_CMD_REV_PARSE, GIT_CMD_STATUS, GitBranchName } from "@exaix/git";
-import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
+import { DEFAULT_MCP_IDENTITY_ID, type IGitServiceFactory } from "@exaix/core/types";
 import { type IMiddlewarePipeline, type IPathSecurityOps, PathAccessError, PathTraversalError } from "./types.ts";
 import { createPathSecurity } from "./path_security.ts";
 import type { JSONValue } from "@exaix/core";
@@ -41,7 +39,7 @@ import {
 import { lookupRemediationPolicy, lookupRemediationToolMetadata } from "@exaix/mcp";
 import { type IValidationReportContext, logValidationResult } from "./tool_validation_reporter.ts";
 import type { Opt, Reason } from "@exaix/core/types";
-import { CORE_TOOL_SCHEMAS } from "./tool_schemas.ts";
+import { createCoreToolSchemas } from "./tool_schemas.ts";
 
 type RemediationPolicyResolver = (
   toolName: string,
@@ -64,6 +62,8 @@ export interface IToolRegistryConfig {
   confirmationInterceptor?: IToolConfirmationInterceptor;
   hitlPolicyEvaluator?: IHitlPolicyEvaluator;
   hitlBlueprintRules?: HitlRule[];
+  pathResolver?: { resolve(path: string): Promise<string> };
+  gitServiceFactory?: IGitServiceFactory;
 }
 
 interface IToolContext extends IServiceContext {
@@ -72,6 +72,9 @@ interface IToolContext extends IServiceContext {
   result?: IToolResult;
   toolRegistry: ToolRegistry;
 }
+
+/** Fallback trace ID used when no traceId is supplied to ToolRegistry or its operations. */
+const DEFAULT_TOOL_REGISTRY_TRACE_ID = "tool-registry";
 
 // ============================================================================
 // Command Whitelist
@@ -136,7 +139,8 @@ function validateCommandArguments(command: string, args: string[]): { valid: boo
   // Command-specific validations
   switch (command) {
     case SystemCommand.GIT:
-      return validateGitArguments(args);
+      // Git-specific validation is handled via the injected git service
+      return { valid: true };
     case SystemCommand.NPM:
     case SystemCommand.NODE:
     case SystemCommand.DENO:
@@ -150,68 +154,6 @@ function validateCommandArguments(command: string, args: string[]): { valid: boo
       // For safe commands, basic validation is sufficient
       return { valid: true };
   }
-}
-
-/**
- * Validate git command arguments
- */
-function validateGitArguments(args: string[]): { valid: boolean; reason?: string } {
-  const dangerousGitOptions = [
-    "--exec-path",
-    "--git-dir",
-    "--work-tree",
-    "--namespace",
-    "--config",
-    "--config-env",
-    "--exec",
-    "--html-path",
-  ];
-
-  const fullCommand = args.join(" ").toLowerCase();
-
-  // Prohibit destructive operations
-  const isDestructive = (fullCommand.includes("reset") && fullCommand.includes("--hard")) ||
-    (fullCommand.includes("clean") && (fullCommand.includes("-f") || fullCommand.includes("-d")));
-
-  if (isDestructive) {
-    return {
-      valid: false,
-      reason: `Destructive git operation prohibited: git ${args.join(" ")}`,
-    };
-  }
-
-  // Protect system branches from direct checkout/modification
-  const protectedBranches: string[] = [
-    GitBranchName.MAIN,
-    GitBranchName.MASTER,
-    GitBranchName.DEVELOP,
-    GitBranchName.PROD,
-    GitBranchName.PRODUCTION,
-  ];
-  if (args.includes("checkout") || args.includes(GIT_CMD_BRANCH)) {
-    if (args.some((arg) => protectedBranches.includes(arg.toLowerCase()))) {
-      return {
-        valid: false,
-        reason: `Operations on protected branches (main, master, etc.) are prohibited for safety.`,
-      };
-    }
-  }
-
-  // Exact-match options that enable config-injection / scope-escape RCE primitives.
-  // `-c <key>=<val>` injects arbitrary git config (sshCommand, protocol.ext.allow,
-  // fsmonitor, pager, …); `-C <dir>` runs git against an arbitrary directory.
-  const dangerousExactOptions = ["-c", "-C"];
-
-  for (const arg of args) {
-    if (dangerousExactOptions.includes(arg) || dangerousGitOptions.some((option) => arg.startsWith(option))) {
-      return {
-        valid: false,
-        reason: `Dangerous git option not allowed: ${arg}`,
-      };
-    }
-  }
-
-  return { valid: true };
 }
 
 /**
@@ -302,7 +244,8 @@ export class ToolRegistry implements IToolRegistry {
   private logger?: IEventLogger;
   private traceId?: string;
   private identityId?: string;
-  private pathResolver: PathResolver;
+  private pathResolver: { resolve(path: string): Promise<string> } | undefined;
+  private gitServiceFactory: IGitServiceFactory | undefined;
   private tools: Map<string, ITool>;
   private baseDir: string;
   private pipeline: IMiddlewarePipeline<IToolContext>;
@@ -352,11 +295,12 @@ export class ToolRegistry implements IToolRegistry {
 
     this.logger = resolvedOptions?.logger;
 
-    this.traceId = resolvedOptions?.traceId ?? "tool-registry";
+    this.traceId = resolvedOptions?.traceId ?? DEFAULT_TOOL_REGISTRY_TRACE_ID;
     this.identityId = resolvedOptions?.identityId ?? DEFAULT_MCP_IDENTITY_ID;
     this.baseDir = resolvedOptions?.baseDir ? resolve(resolvedOptions.baseDir) : resolve(this.config.system.root);
 
-    this.pathResolver = new PathResolver(this.config);
+    this.pathResolver = resolvedOptions?.pathResolver;
+    this.gitServiceFactory = resolvedOptions?.gitServiceFactory;
     this.tools = new Map();
     this.pipeline = resolvedPipeline ?? createNoopPipeline<IToolContext>();
     this.pathSecurity = resolvedPathSecurity ?? createPathSecurity();
@@ -474,7 +418,7 @@ export class ToolRegistry implements IToolRegistry {
       toolName,
       args: params as Record<string, unknown>,
       stepId: "tool:" + crypto.randomUUID(),
-      traceId: this.traceId ?? "tool-registry",
+      traceId: this.traceId ?? DEFAULT_TOOL_REGISTRY_TRACE_ID,
       reason,
       requestedAt: requestedAt.toISOString(),
       expiresAt: expiresAt.toISOString(),
@@ -485,7 +429,7 @@ export class ToolRegistry implements IToolRegistry {
    * Register all core tools
    */
   private registerCoreTools(): void {
-    for (const tool of CORE_TOOL_SCHEMAS) {
+    for (const tool of createCoreToolSchemas()) {
       this.tools.set(tool.name, tool);
     }
   }
@@ -770,12 +714,13 @@ export class ToolRegistry implements IToolRegistry {
 
   /**
    * Resolve and validate a path
-   * - If path starts with @, use PathResolver (for alias resolution)
+   * - If path starts with @, use injected pathResolver (for alias resolution)
    * - Otherwise, validate it's within allowed roots
    */
   private async resolvePath(path: string): Promise<string> {
-    // Use PathResolver for alias paths
+    // Use injected pathResolver for alias paths
     if (path.startsWith("@")) {
+      if (!this.pathResolver) throw new Error("Path resolution for @-aliases requires a pathResolver in config");
       return await this.pathResolver.resolve(path);
     }
 
@@ -862,7 +807,14 @@ export class ToolRegistry implements IToolRegistry {
       }
 
       // Validate command arguments for security
-      const validation = validateCommandArguments(command, args);
+      let validation = validateCommandArguments(command, args);
+      if (validation.valid && command === SystemCommand.GIT && this.gitServiceFactory) {
+        const service = this.gitServiceFactory.createGitService(
+          this.baseDir,
+          this.traceId ?? DEFAULT_TOOL_REGISTRY_TRACE_ID,
+        );
+        validation = service.validateArgs(args);
+      }
       if (!validation.valid) {
         return {
           success: false,
@@ -1247,7 +1199,7 @@ export class ToolRegistry implements IToolRegistry {
    */
   private async gitInfo(
     repoPath: string,
-    scope: string = GIT_CMD_STATUS,
+    scope: string = "status",
   ): Promise<IToolResult> {
     try {
       const resolvedPath = await this.resolvePath(repoPath);
@@ -1258,59 +1210,104 @@ export class ToolRegistry implements IToolRegistry {
         return { success: false, error: `Path '${repoPath}' is not a directory` };
       }
 
-      // Check if it's a git repo
-      const checkCmd = new Deno.Command("git", {
-        args: [GIT_CMD_REV_PARSE, "--is-inside-work-tree"],
-        cwd: resolvedPath,
-        stderr: "piped",
-      });
-      const checkOutput = await checkCmd.output();
-      if (checkOutput.code !== 0) {
-        return { success: false, error: `Not a git repository: ${repoPath}` };
+      // Use git service when available for git operations
+      if (this.gitServiceFactory) {
+        return await this.runGitInfoViaService(resolvedPath, repoPath, scope);
       }
 
-      let args: string[] = [];
-      let outputParser: (output: string) => JSONValue = (o) => o.trim();
+      // Fallback: run git commands directly
+      return await this.runGitInfoDirect(resolvedPath, repoPath, scope);
+    } catch (error) {
+      return this.formatError(error);
+    }
+  }
 
-      switch (scope) {
-        case GIT_CMD_STATUS:
-          args = [GIT_CMD_STATUS, "--porcelain"];
-          outputParser = (output) => {
+  private async runGitInfoViaService(
+    resolvedPath: string,
+    repoPath: string,
+    scope: string,
+  ): Promise<IToolResult> {
+    const service = this.gitServiceFactory!.createGitService(
+      resolvedPath,
+      this.traceId ?? DEFAULT_TOOL_REGISTRY_TRACE_ID,
+    );
+
+    const checkResult = await service.runGitCommand(["rev-parse", "--is-inside-work-tree"], { throwOnError: false });
+    if (checkResult.exitCode !== 0) {
+      return { success: false, error: `Not a git repository: ${repoPath}` };
+    }
+
+    const { args, outputParser } = this.resolveGitArgs(scope);
+    if (!args) {
+      return { success: false, error: `Invalid scope: ${scope}` };
+    }
+
+    const result = await service.runGitCommand(args, { throwOnError: false });
+    if (result.exitCode !== 0) {
+      return { success: false, error: `Git command failed: ${result.output}` };
+    }
+    return this.formatSuccess(outputParser(result.output));
+  }
+
+  private async runGitInfoDirect(
+    resolvedPath: string,
+    repoPath: string,
+    scope: string,
+  ): Promise<IToolResult> {
+    const checkCmd = new Deno.Command("git", {
+      args: ["rev-parse", "--is-inside-work-tree"],
+      cwd: resolvedPath,
+      stderr: "piped",
+    });
+    const checkOutput = await checkCmd.output();
+    if (checkOutput.code !== 0) {
+      return { success: false, error: `Not a git repository: ${repoPath}` };
+    }
+
+    const { args, outputParser } = this.resolveGitArgs(scope);
+    if (!args) {
+      return { success: false, error: `Invalid scope: ${scope}` };
+    }
+
+    const cmd = new Deno.Command("git", {
+      args,
+      cwd: resolvedPath,
+      stdout: "piped",
+      stderr: "piped",
+    });
+
+    const { code, stdout, stderr } = await cmd.output();
+    if (code !== 0) {
+      const errorOutput = new TextDecoder().decode(stderr);
+      return { success: false, error: `Git command failed: ${errorOutput}` };
+    }
+
+    const textOutput = new TextDecoder().decode(stdout);
+    return this.formatSuccess(outputParser(textOutput));
+  }
+
+  private resolveGitArgs(scope: string): { args: string[] | null; outputParser: (output: string) => JSONValue } {
+    const defaultParser: (output: string) => JSONValue = (o) => o.trim();
+
+    switch (scope) {
+      case "status":
+        return {
+          args: ["status", "--porcelain"],
+          outputParser: (output) => {
             const lines = output.split("\n").filter(Boolean);
             return lines.map((line) => {
               const status = line.substring(0, 2);
               const file = line.substring(3);
               return { status, file };
             });
-          };
-          break;
-        case GIT_CMD_BRANCH:
-          args = [GIT_CMD_BRANCH, "--show-current"];
-          break;
-        case "diff_summary":
-          args = ["diff", "--stat"];
-          break;
-        default:
-          return { success: false, error: `Invalid scope: ${scope}` };
-      }
-
-      const cmd = new Deno.Command("git", {
-        args,
-        cwd: resolvedPath,
-        stdout: "piped",
-        stderr: "piped",
-      });
-
-      const { code, stdout, stderr } = await cmd.output();
-      if (code !== 0) {
-        const errorOutput = new TextDecoder().decode(stderr);
-        return { success: false, error: `Git command failed: ${errorOutput}` };
-      }
-
-      const textOutput = new TextDecoder().decode(stdout);
-      return this.formatSuccess(outputParser(textOutput));
-    } catch (error) {
-      return this.formatError(error);
+          },
+        };
+      case "branch":
+        return { args: ["branch", "--show-current"], outputParser: defaultParser };
+      case "diff_summary":
+        return { args: ["diff", "--stat"], outputParser: defaultParser };
+      default:
+        return { args: null, outputParser: defaultParser };
     }
   }
 

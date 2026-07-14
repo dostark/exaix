@@ -10,7 +10,7 @@ import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { GitCreateBranchToolArgsSchema } from "@exaix/schemas/mcp.ts";
-import { GIT_CMD_CHECKOUT } from "@exaix/git";
+import { GIT_CMD_CHECKOUT } from "@exaix/git/constants.ts";
 
 /**
  * GitCreateBranchTool - Creates feature branches in portal git repositories

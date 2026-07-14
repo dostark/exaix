@@ -25,7 +25,7 @@ import { classifyTraceAnomalies, summarizeAnomalies } from "@exaix/core/events";
 import type { IAnomalyFinding, IAnomalySummary } from "@exaix/core/events";
 import { GitBranchName } from "@exaix/git";
 import { createGitService } from "../../../../apps/common/adapters/git_adapter.ts";
-import { GIT_CMD_BRANCH, GIT_CMD_LIST, GIT_CMD_REV_PARSE, GIT_CMD_WORKTREE } from "@exaix/git";
+import { GIT_CMD_BRANCH, GIT_CMD_LIST, GIT_CMD_REV_PARSE, GIT_CMD_WORKTREE } from "@exaix/git/constants.ts";
 
 export interface IReviewMetadata {
   type?: ReviewType;

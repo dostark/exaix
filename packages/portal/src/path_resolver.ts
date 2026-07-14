@@ -13,7 +13,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_UNKNOWN_LABEL } from "@exaix/core";
-import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
+import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/core/types";
 
 export interface IPathResolverConfig {
   /** Optional: Event logger for activity and security event routing */

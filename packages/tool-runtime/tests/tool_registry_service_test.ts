@@ -12,6 +12,7 @@ import { join } from "@std/path";
 
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { ExaPathDefaults } from "@exaix/core";
+import { createTestGitServiceFactory } from "./helpers.ts";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 // Mock dependencies
 const mockConfig = ConfigSchema.parse({
@@ -53,7 +54,7 @@ function createRegistry(root?: string): ToolRegistry {
     }
   }
 
-  return new ToolRegistry({ config });
+  return new ToolRegistry({ config, gitServiceFactory: createTestGitServiceFactory() });
 }
 
 Deno.test("ToolRegistry: should allow safe commands", async () => {

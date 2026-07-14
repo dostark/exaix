@@ -10,7 +10,7 @@ import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { JsonSchemaType, PortalOperation, ToolErrorCode } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { GitCommitToolArgsSchema } from "@exaix/schemas/mcp.ts";
-import { GIT_CMD_COMMIT } from "@exaix/git";
+import { GIT_CMD_COMMIT } from "@exaix/git/constants.ts";
 
 /**
  * GitCommitTool - Commits changes in portal git repositories

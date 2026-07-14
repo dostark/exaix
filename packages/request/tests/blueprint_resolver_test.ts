@@ -15,19 +15,9 @@ import { join } from "@std/path";
 import { BlueprintResolver } from "@exaix/request";
 import { createMockEventLogger } from "@exaix/testing";
 
-const SAMPLE_BLUEPRINT = `---
-identity_id: "test-agent"
-name: "Test Agent"
-model: "anthropic:claude-sonnet-5"
-capabilities:
-  - read_file
-version: "1.0.0"
----
-
-# Test Agent
-
-You are a test agent.
-`;
+const SAMPLE_BLUEPRINT = await Deno.readTextFile(
+  new URL("./fixtures/sample_blueprint.yaml", import.meta.url),
+);
 
 async function makeBlueprintsDir(): Promise<{ testDir: string; blueprintsPath: string }> {
   const testDir = await Deno.makeTempDir({ prefix: "exa_blueprint_resolver_test_" });

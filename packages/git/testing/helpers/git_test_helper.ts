@@ -11,7 +11,8 @@ import { assert, assertEquals } from "@std/assert";
 import { FlowStepType, MemoryOperation, PortalOperation } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
 import { join } from "@std/path";
-import { GIT_CMD_CONFIG, GitService } from "@exaix/git";
+import { GitService } from "@exaix/git";
+import { GIT_CMD_CONFIG } from "@exaix/git/constants.ts";
 import type { Config } from "@exaix/schemas";
 
 import type { DatabaseService } from "@exaix/storage-sqlite";

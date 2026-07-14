@@ -10,14 +10,8 @@
 
 import { basename, join } from "@std/path";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import { DatabaseService } from "@exaix/storage-sqlite";
 import type { Config } from "@exaix/schemas/config.ts";
-import {
-  AgentRunner,
-  type IAgentExecutionResult,
-  type IParsedRequest,
-  type IRequestContextContext,
-} from "@exaix/execution";
+import type { IAgentExecutionResult, IParsedRequest, IRequestContextContext } from "@exaix/execution";
 import { applyAnalysisToRequest, buildParsedRequest } from "./common.ts";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { type IRequestMetadata, PlanWriter } from "@exaix/core/planning";
@@ -33,6 +27,7 @@ import {
 import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
 import type {
   IApplicationContext,
+  IDatabaseService,
   IPortalKnowledgeService,
   IRequestAnalyzerConfig,
   IRequestAnalyzerService,
@@ -51,8 +46,9 @@ import { CircuitBreaker, CircuitBreakerProvider } from "@exaix/ai/circuit_breake
 import { RequestParser } from "./processing/parser.ts";
 import { StatusManager } from "./processing/status.ts";
 import type { IParsedRequestFile, IRequestFrontmatter } from "@exaix/core/request";
-import { OutputValidator } from "@exaix/tool-runtime";
 import type { LogMetadata } from "@exaix/core/types";
+import type { IOutputValidator } from "@exaix/tool-runtime";
+import type { IAgentRunner } from "@exaix/execution";
 import { MiddlewarePipeline } from "@exaix/core/func";
 import type { IServiceContext } from "@exaix/core/types";
 import { RequestAnalyzer, saveAnalysis } from "./analysis/mod.ts";
@@ -73,7 +69,7 @@ import {
 import type { IMilestoneEmitter } from "@exaix/core/observability";
 
 import type { AnalysisMode } from "@exaix/core/types";
-import { buildQualityGateConfig, RequestQualityGate } from "@exaix/quality-gate";
+
 import type { IRequestSpecification } from "@exaix/schemas/request_specification.ts";
 import type { EnhancedRequest, SessionMemoryService } from "@exaix/memory";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -120,6 +116,8 @@ export interface IRequestProcessorConfig {
   testQualityGate?: IRequestQualityGateService;
   sessionMemory?: SessionMemoryService;
   testPipelineFactory?: () => MiddlewarePipeline<IRequestProcessingContext>;
+  outputValidator?: IOutputValidator;
+  agentRunner?: IAgentRunner;
   healthChecker?: { checkProvider(name: string): Promise<boolean> };
   providerBootstrap?: () => void;
   logger?: IEventLogger;
@@ -161,7 +159,7 @@ export class RequestProcessor {
   private readonly analyzer: IRequestAnalyzerService;
   private readonly qualityGate?: IRequestQualityGateService;
   private readonly config: Config;
-  private readonly db: DatabaseService;
+  private readonly db: IDatabaseService;
   private readonly portalKnowledgeService?: IPortalKnowledgeService;
   private readonly sessionMemory?: SessionMemoryService;
   private readonly testProvider?: IModelProvider;
@@ -180,11 +178,7 @@ export class RequestProcessor {
     }
     this.config = ctx.config.get();
 
-    if (ctx.db instanceof DatabaseService) {
-      this.db = ctx.db;
-    } else {
-      throw new Error("Application context database is not a DatabaseService");
-    }
+    this.db = ctx.db;
 
     // Initialize milestone emitter(s): bus streaming + optional journal file (Phase 92)
     const emitters: IMilestoneEmitter[] = [];
@@ -235,7 +229,7 @@ export class RequestProcessor {
     this.analyzer = processorConfig.testAnalyzer ?? new RequestAnalyzer(
       analyzerConfig,
       this.testProvider,
-      new OutputValidator(),
+      processorConfig.outputValidator,
       this.db,
     );
 
@@ -244,15 +238,6 @@ export class RequestProcessor {
     this.testProvider = processorConfig.testProvider;
 
     this.qualityGate = processorConfig.testQualityGate;
-    if (!this.qualityGate) {
-      const qgConfig = buildQualityGateConfig(this.config.quality_gate ?? {});
-      this.qualityGate = new RequestQualityGate(
-        qgConfig,
-        this.testProvider,
-        new OutputValidator(),
-        this.logger,
-      );
-    }
 
     this.ioBreaker = new CircuitBreaker({
       failureThreshold: 3,
@@ -634,79 +619,25 @@ export class RequestProcessor {
     const blueprintLoader = new IBlueprintLoader({ blueprintsPath: this.processorConfig.blueprintsPath });
     const blueprint = blueprintLoader.toLegacyBlueprint(loadedBlueprint);
 
-    const request: IParsedRequest = buildParsedRequest(body, frontmatter, requestId, traceId) as IParsedRequest;
-    if (analysis) {
-      applyAnalysisToRequest(request, analysis);
-    }
-    if (specification) {
-      // Serialize to a plain record — IRequestSpecification is structurally
-      // compatible with IRequestContextContext (all fields are string/string[]).
-      request.context["specification"] = JSON.parse(JSON.stringify(specification)) as IRequestContextContext;
-    }
-    const portalContext = await this.portalContextBuilder.buildFileContext(frontmatter.portal, traceLogger);
-    if (portalContext) {
-      request.context[PORTAL_CONTEXT_KEY] = portalContext;
-    }
-    if (portalKnowledge) {
-      const summary = await this.portalContextBuilder.resolveKnowledgeContext(
-        body,
-        frontmatter.portal,
-        portalKnowledge,
-      );
-      request.context[PORTAL_KNOWLEDGE_KEY] = summary;
-    }
-    if (memoryContext?.memoryContext) {
-      request.context[MEMORY_CONTEXT_KEY] = memoryContext.memoryContext;
-    }
+    const request = await this.buildRequestContext({
+      body,
+      frontmatter,
+      requestId,
+      traceId,
+      analysis,
+      specification,
+      portalKnowledge,
+      memoryContext,
+      traceLogger,
+    });
 
     const taskComplexity = this.taskComplexityClassifier.classify(blueprint, request, analysis);
-    let selectedProvider: IModelProvider;
 
-    if (this.testProvider) {
-      selectedProvider = this.testProvider;
-      traceLogger.info(DomainEventType.RequestProviderSelected, "test-provider", {
-        taskComplexity,
-        trace_id: traceId,
-      });
-    } else {
-      let selectedProviderName: string;
-      try {
-        selectedProviderName = await this.providerSelector.selectProviderForTask(
-          this.getProviderSelectionConfig(),
-          taskComplexity,
-        );
-      } catch (selErr) {
-        traceLogger.warn(DomainEventType.RequestProviderSelectionFailed, String(selErr), {
-          fallback: ProviderType.MOCK,
-        });
-        selectedProviderName = ProviderType.MOCK;
-      }
-
-      (this.processorConfig.providerBootstrap ?? (() => {}))();
-      const rawProvider = await ProviderFactory.createByName(
-        this.config,
-        selectedProviderName,
-        this.db,
-        traceLogger,
-        this.costTracker,
-      );
-      selectedProvider = new CircuitBreakerProvider(rawProvider, {
-        failureThreshold: 5,
-        resetTimeout: 60_000,
-        halfOpenSuccessThreshold: 2,
-      });
-
-      traceLogger.info(DomainEventType.RequestProviderSelected, selectedProviderName, {
-        taskComplexity,
-        trace_id: traceId,
-        provider_wrapped: selectedProvider.id,
-      });
+    const agentRunner = this.processorConfig.agentRunner;
+    if (agentRunner) {
+      await this.selectProvider(taskComplexity, traceId, traceLogger);
     }
-
-    const agentRunner = new AgentRunner(
-      selectedProvider,
-      { milestoneEmitter: this.milestoneEmitter },
-    );
+    if (!agentRunner) throw new Error("RequestProcessor requires agentRunner in config");
     const metadata: IRequestMetadata = {
       requestId,
       traceId,
@@ -754,6 +685,94 @@ ${result.content}`,
     }
 
     return null; // Should be unreachable
+  }
+
+  private async buildRequestContext(
+    opts: {
+      body: string;
+      frontmatter: IRequestFrontmatter;
+      requestId: string;
+      traceId: string;
+      analysis: IRequestAnalysis | undefined;
+      specification: IRequestSpecification | undefined;
+      portalKnowledge: IPortalKnowledge | undefined;
+      memoryContext: EnhancedRequest | undefined;
+      traceLogger: IEventLogger;
+    },
+  ): Promise<IParsedRequest> {
+    const {
+      body,
+      frontmatter,
+      requestId,
+      traceId,
+      analysis,
+      specification,
+      portalKnowledge,
+      memoryContext,
+      traceLogger,
+    } = opts;
+    const request = buildParsedRequest(body, frontmatter, requestId, traceId) as IParsedRequest;
+    if (analysis) applyAnalysisToRequest(request, analysis);
+    if (specification) {
+      request.context["specification"] = JSON.parse(JSON.stringify(specification)) as IRequestContextContext;
+    }
+    const portalContext = await this.portalContextBuilder.buildFileContext(frontmatter.portal, traceLogger);
+    if (portalContext) request.context[PORTAL_CONTEXT_KEY] = portalContext;
+    if (portalKnowledge) {
+      const summary = await this.portalContextBuilder.resolveKnowledgeContext(
+        body,
+        frontmatter.portal,
+        portalKnowledge,
+      );
+      request.context[PORTAL_KNOWLEDGE_KEY] = summary;
+    }
+    if (memoryContext?.memoryContext) request.context[MEMORY_CONTEXT_KEY] = memoryContext.memoryContext;
+    return request;
+  }
+
+  private async selectProvider(
+    taskComplexity: string,
+    traceId: string,
+    traceLogger: IEventLogger,
+  ): Promise<IModelProvider> {
+    if (this.testProvider) {
+      traceLogger.info(DomainEventType.RequestProviderSelected, "test-provider", {
+        taskComplexity,
+        trace_id: traceId,
+      });
+      return this.testProvider;
+    }
+    let selectedProviderName: string;
+    try {
+      selectedProviderName = await this.providerSelector.selectProviderForTask(
+        this.getProviderSelectionConfig(),
+        taskComplexity,
+      );
+    } catch (selErr) {
+      traceLogger.warn(DomainEventType.RequestProviderSelectionFailed, String(selErr), {
+        fallback: ProviderType.MOCK,
+      });
+      selectedProviderName = ProviderType.MOCK;
+    }
+    (this.processorConfig.providerBootstrap ?? (() => {}))();
+    const rawProvider = await ProviderFactory.createByName(
+      this.config,
+      selectedProviderName,
+      this.db,
+      traceLogger,
+      this.costTracker,
+    );
+    const selectedProvider = new CircuitBreakerProvider(rawProvider, {
+      failureThreshold: 5,
+      resetTimeout: 60_000,
+      halfOpenSuccessThreshold: 2,
+    });
+    traceLogger.info(DomainEventType.RequestProviderSelected, selectedProviderName, {
+      taskComplexity,
+      trace_id: traceId,
+      provider_wrapped: selectedProvider.id,
+    });
+    return selectedProvider;
   }
 
   private async handleBlueprintNotFound(

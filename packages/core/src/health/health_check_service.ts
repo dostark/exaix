@@ -20,7 +20,7 @@ import { HealthCheckVerdict, HealthStatus } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
 import { LogMethod } from "@exaix/core/logger";
 import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";
-import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
+import { DEFAULT_MCP_VERSION } from "@exaix/core/types";
 import { MiddlewarePipeline } from "@exaix/core/func";
 import type { IServiceContext } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";

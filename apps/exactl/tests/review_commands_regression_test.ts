@@ -121,6 +121,7 @@ Deno.test("[regression] Review list shows request and plan context", async () =>
       pruneWorktrees: (_opts) => Promise.resolve(""),
       listWorktrees: () => Promise.resolve([]),
       runGitCommand: (_args, _opts) => Promise.resolve({ output: "", exitCode: 0 }),
+      validateArgs: () => ({ valid: true }),
     };
 
     const context = createStubContext({

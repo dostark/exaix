@@ -10,7 +10,7 @@ import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { GitLogFormat, PortalOperation, ToolErrorCode } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { GitLogToolArgsSchema } from "@exaix/schemas/mcp.ts";
-import { GIT_CMD_LOG } from "@exaix/git";
+import { GIT_CMD_LOG } from "@exaix/git/constants.ts";
 
 /**
  * GitLogTool - Queries git commit history in portals

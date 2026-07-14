@@ -9,7 +9,7 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
-import { McpToolName } from "@exaix/mcp";
+import { McpToolName, READ_ONLY_TOOLS, WRITE_TOOLS } from "@exaix/mcp";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import { DEFAULT_FLOW_VERSION } from "@exaix/core";
 import { validateFlowForCli } from "@exaix/cli/flow_validation.ts";
@@ -48,15 +48,19 @@ function createFlow(overrides: Partial<IFlow> = {}): IFlow {
 }
 
 function validateSingleDynamicStep(overrides: Partial<IFlowStep> = {}) {
-  return validateFlowForCli(createFlow({
-    steps: [
-      createStep({
-        id: "explore",
-        execution_mode: FlowStepExecutionMode.DYNAMIC,
-        ...overrides,
-      }),
-    ],
-  }));
+  return validateFlowForCli(
+    createFlow({
+      steps: [
+        createStep({
+          id: "explore",
+          execution_mode: FlowStepExecutionMode.DYNAMIC,
+          ...overrides,
+        }),
+      ],
+    }),
+    WRITE_TOOLS,
+    READ_ONLY_TOOLS,
+  );
 }
 
 function assertValidationCounts(
@@ -80,7 +84,7 @@ Deno.test("validateFlowForCli: returns valid result for flow with no dynamic ste
     ],
   });
 
-  const result = validateFlowForCli(flow);
+  const result = validateFlowForCli(flow, WRITE_TOOLS, READ_ONLY_TOOLS);
 
   assertEquals(result.valid, true);
   assertEquals(result.errors.length, 0);
@@ -191,7 +195,7 @@ Deno.test("validateFlowForCli: multiple errors and warnings for complex flow", (
     ],
   });
 
-  const result = validateFlowForCli(flow);
+  const result = validateFlowForCli(flow, WRITE_TOOLS, READ_ONLY_TOOLS);
 
   assertValidationCounts(result, false, 1, 2);
   assertStringIncludes(result.errors[0], "bad-step");
@@ -214,7 +218,7 @@ Deno.test("validateFlowForCli: handles mixed declared and dynamic steps", () => 
     ],
   });
 
-  const result = validateFlowForCli(flow);
+  const result = validateFlowForCli(flow, WRITE_TOOLS, READ_ONLY_TOOLS);
 
   assertValidationCounts(result, true, 0, 0);
 });

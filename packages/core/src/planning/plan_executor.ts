@@ -31,12 +31,8 @@ import {
   REPORT_GENERATION_MAX_TOKENS,
   REPORT_GENERATION_TEMPERATURE,
 } from "@exaix/core";
-import {
-  DEFAULT_GIT_REV_PARSE_TIMEOUT_MS,
-  GIT_CMD_REV_PARSE,
-  GIT_ERROR_NOTHING_TO_COMMIT,
-  GitService,
-} from "@exaix/git";
+import { DEFAULT_GIT_REV_PARSE_TIMEOUT_MS, GIT_ERROR_NOTHING_TO_COMMIT, GitService } from "@exaix/git";
+import { GIT_CMD_REV_PARSE } from "@exaix/git/constants.ts";
 import type { JSONValue } from "@exaix/core";
 import type { IApplicationContext, IPlanAmendmentService } from "@exaix/core/types";
 import type { IDatabaseService, IModelRegistry } from "@exaix/core/types";

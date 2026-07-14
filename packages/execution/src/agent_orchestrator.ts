@@ -36,7 +36,7 @@ import {
   AGENT_EVENT_SECURITY_VIOLATION,
   AGENT_EXECUTOR_ID,
 } from "@exaix/core";
-import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
+import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/core/types";
 import type {
   IAgentExecutionOptions,
   IAgentExecutionOptionsInput,

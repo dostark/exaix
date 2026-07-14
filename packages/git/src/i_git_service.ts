@@ -51,6 +51,7 @@ export interface IGitService {
   pruneWorktrees(options?: { dryRun?: boolean; verbose?: boolean; expire?: string }): Promise<string>;
   listWorktrees(): Promise<IWorktreeInfo[]>;
   runGitCommand(args: string[], options?: IGitCommandOptions): Promise<{ output: string; exitCode: number }>;
+  validateArgs(args: string[]): { valid: boolean; reason?: string };
 }
 
 export interface IGitDatabaseService {

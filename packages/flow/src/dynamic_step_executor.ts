@@ -19,7 +19,7 @@ import {
 } from "@exaix/core";
 import type { IHitlPolicyEvaluator, IToolConfirmationInterceptor, IToolManifestResolver } from "@exaix/core/types";
 import { DomainEventType } from "@exaix/core/events";
-import { DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS, type McpToolName } from "@exaix/mcp";
+import type { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 import { MILESTONE_TOOL_CALL_COMPLETED, MILESTONE_TOOL_CALL_STARTED } from "@exaix/core";
 import type { IMilestoneEmitter } from "@exaix/core/observability";
@@ -95,6 +95,8 @@ export class DynamicStepExecutor {
     readonly confirmationInterceptor?: IToolConfirmationInterceptor,
     milestoneEmitter?: IMilestoneEmitter,
     private readonly hitlPolicyEvaluator?: IHitlPolicyEvaluator,
+    private readonly dynamicModeTools: ReadonlySet<string> = new Set(),
+    private readonly dynamicModeApprovalTools: ReadonlySet<string> = new Set(),
   ) {
     this.emitMilestoneFn = milestoneEmitter?.emit.bind(milestoneEmitter);
   }
@@ -303,10 +305,10 @@ export class DynamicStepExecutor {
     const identityTools = new Set(identity.permitted_tools ?? []);
     const allowedDynamicTools = this.confirmationInterceptor
       ? new Set<McpToolName>([
-        ...([...DYNAMIC_MODE_TOOLS] as McpToolName[]),
-        ...([...DYNAMIC_MODE_APPROVAL_TOOLS] as McpToolName[]),
+        ...([...this.dynamicModeTools] as McpToolName[]),
+        ...([...this.dynamicModeApprovalTools] as McpToolName[]),
       ])
-      : new Set<McpToolName>([...DYNAMIC_MODE_TOOLS] as McpToolName[]);
+      : new Set<McpToolName>([...this.dynamicModeTools] as McpToolName[]);
 
     const stepTools = step.permitted_tools?.length ? step.permitted_tools : [...identityTools];
 

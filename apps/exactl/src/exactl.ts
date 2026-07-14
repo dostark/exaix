@@ -57,7 +57,7 @@ import {
 } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IReviewStatus } from "@exaix/core/status";
-import { GIT_CMD_STATUS } from "@exaix/git";
+import { GIT_CMD_STATUS } from "@exaix/git/constants.ts";
 import { WatchCommand } from "./commands/watch.ts";
 import { EvalCommands } from "./commands/eval_commands.ts";
 
