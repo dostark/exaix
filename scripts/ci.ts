@@ -637,13 +637,6 @@ const scenariosCommand = new Command()
 root = "${workspaceDest.replace(/\\/g, "/")}"
 log_level = "info"
 
-[paths]
-workspace = "Workspace"
-runtime = ".exa"
-memory = "Memory"
-portals = "Portals"
-blueprints = "Blueprints"
-
 [agent_flows]
 # Required for some scenarios
 blueprints_path = "${join(resolve("tests/scenario_framework"), "Blueprints").replace(/\\/g, "/")}"

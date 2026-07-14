@@ -291,7 +291,7 @@ export const ConfigSchema = z.object({
     memoryPending: z.string().default(DEFAULTS.DEFAULT_PENDING_MEMORY_PATH),
     memoryTasks: z.string().default(DEFAULTS.DEFAULT_TASKS_MEMORY_PATH),
     memoryGlobal: z.string().default(DEFAULTS.DEFAULT_GLOBAL_MEMORY_PATH),
-  }),
+  }).default({}),
   database: z.object({
     batch_flush_ms: c("database.batch_flush_ms"),
     batch_max_size: c("database.batch_max_size"),

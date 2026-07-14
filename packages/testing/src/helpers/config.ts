@@ -11,15 +11,9 @@
 import { Database } from "@db/sqlite";
 import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
 import { join } from "@std/path";
-import {
-  createConfigAdapter,
-  ensureConfigDb,
-  getDefaultPaths,
-  migrateConfigDb,
-  seedConfigDb,
-} from "@exaix/core/config";
+import { createConfigAdapter, ensureConfigDb, migrateConfigDb, seedConfigDb } from "@exaix/core/config";
 import type { IConfigAdapter } from "@exaix/core/config";
-import { DEFAULT_TIMEOUT_MS, ExaPathDefaults, SqliteJournalMode } from "@exaix/core";
+import { DEFAULT_TIMEOUT_MS, SqliteJournalMode } from "@exaix/core";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { TEST_PORTAL_ALIAS } from "./constants.ts";
 
@@ -34,9 +28,6 @@ export function createMockConfig(root: string, overrides: Partial<Config> = {}):
     fast: { provider: "mock", model: "gpt-5.2-pro-mini", timeout_ms: DEFAULT_TIMEOUT_MS },
     local: { provider: "ollama", model: "llama3.2", timeout_ms: DEFAULT_TIMEOUT_MS },
   };
-
-  // Use getDefaultPaths for consistent path defaults
-  const pathDefaults = getDefaultPaths(root);
 
   // Create default workspace portal for tests that need it
   const defaultPortals = overrides.portals ?? [{
@@ -54,29 +45,8 @@ export function createMockConfig(root: string, overrides: Partial<Config> = {}):
       root,
       version: overrides.system?.version ?? "1.0.0",
     },
-    // Provide explicit path defaults - schema defaults may not apply correctly with empty object
-    paths: {
-      workspace: pathDefaults.workspace,
-      runtime: pathDefaults.runtime,
-      memory: pathDefaults.memory,
-      portals: pathDefaults.portals,
-      blueprints: pathDefaults.blueprints,
-      active: pathDefaults.active,
-      archive: pathDefaults.archive,
-      plans: pathDefaults.plans,
-      requests: pathDefaults.requests,
-      rejected: pathDefaults.rejected,
-      identities: pathDefaults.identities,
-      flows: pathDefaults.flows,
-      memoryProjects: pathDefaults.memoryProjects,
-      memoryExecution: pathDefaults.memoryExecution,
-      memoryIndex: pathDefaults.memoryIndex,
-      memorySkills: pathDefaults.memorySkills,
-      memoryPending: pathDefaults.memoryPending,
-      memoryTasks: pathDefaults.memoryTasks,
-      memoryGlobal: pathDefaults.memoryGlobal,
-      ...(overrides.paths ?? {}),
-    },
+    // ConfigSchema.paths defaults every field when omitted; only pass overrides through.
+    paths: overrides.paths,
     // Provide stable defaults used by many tests, while still allowing overrides.
     database: overrides.database ?? {
       batch_flush_ms: 100,
@@ -119,13 +89,6 @@ export async function writeTestConfigFile(root: string): Promise<string> {
 
   const configContent = `[system]
 root = "${root}"
-
-[paths]
-runtime = "${ExaPathDefaults.runtime}"
-workspace = "${ExaPathDefaults.workspace}"
-memory = "${ExaPathDefaults.memory}"
-portals = "${ExaPathDefaults.portals}"
-blueprints = "${ExaPathDefaults.blueprints}"
 `;
 
   await Deno.writeTextFile(configPath, configContent);

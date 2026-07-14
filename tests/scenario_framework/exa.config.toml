@@ -3,27 +3,6 @@ root = "."
 version = "1.0.0"
 log_level = "info"
 
-[paths]
-memory = "Memory"
-blueprints = "Blueprints"
-runtime = ".exa"
-workspace = "Workspace"
-portals = "Portals"
-active = "Active"
-archive = "Archive"
-plans = "Plans"
-requests = "Requests"
-rejected = "Rejected"
-agents = "Identities"
-flows = "Blueprints/Flows"
-memoryProjects = "Memory/Projects"
-memoryExecution = "Memory/Execution"
-memoryIndex = "Memory/Index"
-memorySkills = "Memory/Skills"
-memoryPending = "Memory/Pending"
-memoryTasks = "Memory/Tasks"
-memoryGlobal = "Memory/Global"
-
 [watcher]
 debounce_ms = 200
 stability_check = true

@@ -201,6 +201,22 @@ Deno.test("ConfigSchema applies defaults for missing watcher section", () => {
   assertEquals(result.watcher.stability_check, true);
 });
 
+Deno.test("ConfigSchema applies defaults for missing paths section", () => {
+  const configWithoutPaths = {
+    system: {
+      version: DEFAULT_MCP_VERSION,
+      log_level: "info",
+    },
+  };
+
+  const result = ConfigSchema.parse(configWithoutPaths);
+  assertEquals(result.paths.workspace, ExaPathDefaults.workspace);
+  assertEquals(result.paths.runtime, ExaPathDefaults.runtime);
+  assertEquals(result.paths.memory, ExaPathDefaults.memory);
+  assertEquals(result.paths.blueprints, ExaPathDefaults.blueprints);
+  assertEquals(result.paths.identities, ExaPathDefaults.identities);
+});
+
 Deno.test("ConfigSchema applies defaults for missing routing section", () => {
   const configWithoutRouting = {
     system: {
@@ -290,10 +306,11 @@ Deno.test("ConfigService handles missing config file", async (t) => {
       const service = new ConfigService(configPath);
       const config = service.get();
 
-      // Verify config has defaults (from the created default file)
+      // Verify config has defaults (log_level from the created bootstrap file;
+      // paths resolve from ConfigSchema defaults since [paths] is not written)
       assertEquals(config.system.log_level, "info");
-      assertEquals(config.paths.memory, ExaPathDefaults.memory); // From file
-      assertEquals(config.paths.blueprints, ExaPathDefaults.blueprints); // From file
+      assertEquals(config.paths.memory, ExaPathDefaults.memory);
+      assertEquals(config.paths.blueprints, ExaPathDefaults.blueprints);
 
       // Verify file was created
       const fileExists = (() => {
@@ -358,12 +375,15 @@ Deno.test("ConfigService handles validation errors", async (t) => {
     await t.step("should exit on missing required fields", () => {
       const configPath = `${tempDir}/test-missing-fields.toml`;
 
-      // Create config missing required system.version
+      // Create config missing the required [system] section entirely. All
+      // other top-level sections (paths, watcher, skills, etc.) now default
+      // to {} when omitted, so [system] is the only field ConfigSchema still
+      // requires — every field inside it has its own default or is optional.
       Deno.writeTextFileSync(
         configPath,
         `
-[system]
-log_level = "info"
+[watcher]
+debounce_ms = 200
       `.trim(),
       );
 

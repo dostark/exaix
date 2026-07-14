@@ -13,7 +13,6 @@ import { encodeHex } from "@std/encoding/hex";
 import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
 import type { PortalExecutionStrategy } from "../types/portal.ts";
 import type { IPortalConfigEntry } from "../types/mod.ts";
-import { ExaPathDefaults } from "../types/constants.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
 export class ConfigService {
@@ -21,7 +20,7 @@ export class ConfigService {
   private config: Config;
   private checksum: string = "";
 
-  constructor(configPath?: string) {
+  constructor(configPath?: Opt<string, Reason.OptionalInput>) {
     const envConfigPath = Deno.env.get("EXA_CONFIG_PATH");
 
     if (configPath) {
@@ -73,54 +72,15 @@ export class ConfigService {
   }
 
   private createDefaultConfig(): void {
+    // Bootstrap-only (Phase 137): every other section (paths, watcher, skills,
+    // agents.convergence, execution, etc.) resolves entirely from ConfigSchema
+    // defaults, so it does not need to be written here. Mirrors
+    // templates/exa.config.sample.toml minus the illustrative [[portals]] entry.
     const defaultConfig = `
 [system]
 root = "."
 version = "1.0.0"
 log_level = "info"
-
-[paths]
-memory = "${ExaPathDefaults.memory}"
-blueprints = "${ExaPathDefaults.blueprints}"
-runtime = "${ExaPathDefaults.runtime}"
-workspace = "${ExaPathDefaults.workspace}"
-portals = "${ExaPathDefaults.portals}"
-active = "${ExaPathDefaults.active}"
-archive = "${ExaPathDefaults.archive}"
-plans = "${ExaPathDefaults.plans}"
-requests = "${ExaPathDefaults.requests}"
-rejected = "${ExaPathDefaults.rejected}"
-identities = "${ExaPathDefaults.identities}"
-flows = "${ExaPathDefaults.flows}"
-memoryProjects = "${ExaPathDefaults.memoryProjects}"
-memoryExecution = "${ExaPathDefaults.memoryExecution}"
-memoryIndex = "${ExaPathDefaults.memoryIndex}"
-memorySkills = "${ExaPathDefaults.memorySkills}"
-memoryPending = "${ExaPathDefaults.memoryPending}"
-memoryTasks = "${ExaPathDefaults.memoryTasks}"
-memoryGlobal = "${ExaPathDefaults.memoryGlobal}"
-
-[watcher]
-debounce_ms = 200
-stability_check = true
-
-[skills]
-max_per_request = 5
-match_threshold = 0.3
-inject_in_prompt = true
-
-[agents.convergence]
-quality_exit_threshold = 85
-min_improvement_delta = 3
-oscillation_window = 2
-base_max_iterations = 10
-complexity_scale_factor = 1.0
-absolute_max_iterations = 12
-score_every_n_iterations = 1
-
-[execution]
-summarization_model = ""
-milestone_streaming_enabled = true
 `;
     Deno.writeTextFileSync(this.configPath, defaultConfig.trim());
     try {

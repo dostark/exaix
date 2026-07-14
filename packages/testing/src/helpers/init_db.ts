@@ -342,27 +342,6 @@ root = "${tempDir}"
 version = "1.0.0"
 log_level = "info"
 
-[paths]
-memory = "./Memory"
-blueprints = "./Blueprints"
-runtime = "./.exa"
-workspace = "./Workspace"
-portals = "./Portals"
-active = "Active"
-archive = "Archive"
-plans = "Plans"
-requests = "Requests"
-rejected = "Rejected"
-identities = "Identities"
-flows = "Flows"
-memoryProjects = "Projects"
-memoryExecution = "Execution"
-memoryIndex = "Index"
-memorySkills = "Skills"
-memoryPending = "Pending"
-memoryTasks = "Tasks"
-memoryGlobal = "Global"
-
 [database.sqlite]
 journal_mode = "WAL"
 foreign_keys = true
