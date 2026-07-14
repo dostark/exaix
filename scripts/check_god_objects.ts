@@ -4,12 +4,13 @@
  * @path scripts/check_god_objects.ts
  * @description Scans all .ts classes for god object indicators — high method
  *   count, constructor parameter count, line count, and longest method.
- *   Reports candidates without failing (advisory only).
+ *   Reports candidates (advisory by default; use --fail to exit non-zero).
  *
  * Usage:
  *   deno run -A scripts/check_god_objects.ts
  *   deno run -A scripts/check_god_objects.ts --json   # machine-readable output
  *   deno run -A scripts/check_god_objects.ts --threshold 50  # min score to report
+ *   deno run -A scripts/check_god_objects.ts --fail        # exit non-zero if candidates found
  */
 
 // deno-lint-ignore no-import-prefix
@@ -17,7 +18,7 @@ import { Project, SyntaxKind } from "npm:ts-morph@24.0.0";
 
 const ROOT = new URL("../", import.meta.url).pathname.replace(/\/$/, "");
 const MIN_CLASS_LINES = 200;
-const DEFAULT_THRESHOLD = 30;
+const DEFAULT_THRESHOLD = 60;
 
 interface GodObjectCandidate {
   file: string;
@@ -49,6 +50,7 @@ async function walkDir(dir: string, files: string[]): Promise<void> {
 
 async function main(): Promise<void> {
   const useJson = Deno.args.includes("--json");
+  const shouldFail = Deno.args.includes("--fail");
   const threshold = parseInt(
     Deno.args.find((a) => a.startsWith("--threshold="))?.split("=")[1] ?? String(DEFAULT_THRESHOLD),
   );
@@ -113,9 +115,10 @@ async function main(): Promise<void> {
       const score = Math.round(
         (methodCount > 30 ? 30 : methodCount) * 1.5 +
           (constructorParamCount > 7 ? constructorParamCount * 3 : 0) +
-          Math.max(0, (lineCount - 500) / 50) +
-          Math.max(0, (maxMethodLines - 100) / 20) +
-          Math.max(0, (importCount - 20) * 1.5),
+          Math.max(0, (lineCount - 200) / 50) +
+          Math.max(0, (maxMethodLines - 100) / 10) +
+          Math.max(0, (importCount - 24) * 1.5) +
+          Math.max(0, fieldCount - 3) * 0.8,
       );
 
       if (score >= threshold) {
@@ -138,6 +141,7 @@ async function main(): Promise<void> {
 
   if (useJson) {
     console.log(JSON.stringify({ candidates, total: candidates.length, threshold }, null, 2));
+    if (shouldFail && candidates.length > 0) Deno.exit(1);
     return;
   }
 
@@ -167,6 +171,7 @@ async function main(): Promise<void> {
 
   console.log(`\n📊 ${candidates.length} candidate(s) found. Threshold: ${threshold}.`);
   console.log("💡 Tip: Run with --threshold=0 to see all classes, or --json for machine output.\n");
+  if (shouldFail) Deno.exit(1);
 }
 
 await main();
