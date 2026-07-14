@@ -1,11 +1,10 @@
----
-trace_id: "{{TRACE_ID}}"
-created: "{{DATE_NOW}}"
-status: pending
-priority: high
-flow: code-review
-source: cli
-created_by: "scenario-test"
----
+# FlowRunner Execution Smoke
 
-Review the latest changes for security issues.
+Review the latest changes for security issues, focusing on injection
+vulnerabilities, unsafe deserialization, and hardcoded secrets.
+
+Acceptance criteria:
+
+- Produce a review plan covering the changed files.
+- Flag any security-relevant findings with file and line references.
+- Preserve the original request text in the plan context.

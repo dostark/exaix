@@ -65,3 +65,27 @@ Deno.test("[BlueprintResolver.resolve] returns null when identity is not found a
     await Deno.remove(testDir, { recursive: true });
   }
 });
+
+Deno.test("[BlueprintResolver.resolve] falls back to the repo-root Blueprints/Identities when cwd is outside the repo (e.g. a sandbox)", async () => {
+  const { testDir, blueprintsPath } = await makeBlueprintsDir();
+  const mockLogger = createMockEventLogger();
+  const originalCwd = Deno.cwd();
+  // A sibling-of-repo directory (like the scenario framework's auto-deployed
+  // sandboxes under <parent-of-repo>/exaix-sandboxes/<run-id>/) has no
+  // Blueprints/ in any cwd-upward-walk ancestor, so only the module-relative
+  // fallback in findInRepoRoots can locate the repo's real "default" identity.
+  const outsideRepoDir = await Deno.makeTempDir({ prefix: "exa_blueprint_resolver_outside_repo_" });
+  try {
+    Deno.chdir(outsideRepoDir);
+    const resolver = new BlueprintResolver({ blueprintsPath });
+
+    const loaded = await resolver.resolve("default", mockLogger);
+
+    assertExists(loaded);
+    assertEquals(loaded.identityId, "default");
+  } finally {
+    Deno.chdir(originalCwd);
+    await Deno.remove(testDir, { recursive: true });
+    await Deno.remove(outsideRepoDir, { recursive: true });
+  }
+});

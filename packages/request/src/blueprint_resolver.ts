@@ -90,7 +90,7 @@ export class BlueprintResolver implements IBlueprintResolver {
 
     // Also try locating Blueprints relative to this module (repo root)
     try {
-      const repoRoot = join(dirname(dirname(dirname(new URL(import.meta.url).pathname))));
+      const repoRoot = join(dirname(dirname(dirname(dirname(new URL(import.meta.url).pathname)))));
       const repoModuleIdentities = join(repoRoot, "Blueprints", DEFAULT_IDENTITIES_PATH);
       const moduleLoader = new IBlueprintLoader({ blueprintsPath: repoModuleIdentities });
       const moduleLoaded = await moduleLoader.load(identityId);
