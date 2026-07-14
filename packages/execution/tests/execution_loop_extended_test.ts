@@ -8,6 +8,10 @@ import { join } from "@std/path";
 
 import { assertEquals } from "@std/assert";
 import { ExecutionLoop } from "@exaix/execution";
+import { GitService } from "@exaix/git";
+import { ToolRegistry } from "@exaix/tool-runtime";
+import { MemoryBankService } from "@exaix/memory";
+import { EventLogger } from "@exaix/core/logger";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -48,7 +52,33 @@ async function runExecutionTest(
       await Deno.mkdir(activeDir, { recursive: true });
     }
 
-    const loop = new ExecutionLoop({ config, db, identityId: options.identityId ?? "test-agent" });
+    const logger = new EventLogger({ db });
+    const loop = new ExecutionLoop({
+      config,
+      db,
+      identityId: options.identityId ?? "test-agent",
+      gitServiceFactory: {
+        createGitService(repoPath: string, traceId: string) {
+          return new GitService({
+            config,
+            traceId,
+            identityId: options.identityId ?? "test-agent",
+            repoPath,
+          });
+        },
+      },
+      toolRegistryFactory: {
+        createToolRegistry(traceId: string, baseDir: string) {
+          return new ToolRegistry({
+            config,
+            traceId,
+            identityId: options.identityId ?? "test-agent",
+            baseDir,
+          });
+        },
+      },
+      memoryBank: new MemoryBankService(config, logger),
+    });
     await fn({ tempDir, config, db, loop, activeDir });
   } finally {
     if (cleanup) await cleanup();

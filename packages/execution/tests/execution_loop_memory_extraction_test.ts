@@ -10,7 +10,11 @@ import type { IApplicationContext, IMemoryExtractorService } from "@exaix/core/t
 import type { IExecutionMemory, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 import { ConfidenceAssessmentLevel, LearningCategory, MemoryBankSource, MemoryScope } from "@exaix/core";
 import { ExecutionLoop } from "@exaix/execution";
+import { GitService } from "@exaix/git";
+import { ToolRegistry } from "@exaix/tool-runtime";
+import { MemoryBankService } from "@exaix/memory";
 import type { Insight, SaveInsightResult, SessionMemoryService } from "@exaix/memory";
+import { EventLogger } from "@exaix/core/logger";
 import { castAny, createMockConfig, initTestDbService } from "@exaix/testing";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
@@ -84,11 +88,23 @@ status: active
         extractor: spyExtractor,
       });
 
+      const logger = new EventLogger({ db });
       const loop = new ExecutionLoop({
         config,
         db,
         identityId: "test-identity",
         context,
+        memoryBank: new MemoryBankService(config, logger),
+        gitServiceFactory: {
+          createGitService(repoPath: string, traceId: string) {
+            return new GitService({ config, traceId, identityId: "test-identity", repoPath });
+          },
+        },
+        toolRegistryFactory: {
+          createToolRegistry(traceId: string, baseDir: string) {
+            return new ToolRegistry({ config, traceId, identityId: "test-identity", baseDir });
+          },
+        },
       });
 
       // Write plan that will succeed (no executable actions)
@@ -200,12 +216,24 @@ status: active
         extractor: spyExtractor,
       });
 
+      const logger = new EventLogger({ db });
       const loop = new ExecutionLoop({
         config,
         db,
         identityId: "test-identity",
         context,
         sessionMemory: spySessionMemory as SessionMemoryService,
+        memoryBank: new MemoryBankService(config, logger),
+        gitServiceFactory: {
+          createGitService(repoPath: string, traceId: string) {
+            return new GitService({ config, traceId, identityId: "test-identity", repoPath });
+          },
+        },
+        toolRegistryFactory: {
+          createToolRegistry(traceId: string, baseDir: string) {
+            return new ToolRegistry({ config, traceId, identityId: "test-identity", baseDir });
+          },
+        },
       });
 
       const planContent = `---

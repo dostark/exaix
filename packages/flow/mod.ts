@@ -47,6 +47,19 @@ export { DynamicStepExecutor } from "./src/dynamic_step_executor.ts";
 export { FeedbackLoop, FeedbackLoopConfigSchema } from "./src/feedback_loop.ts";
 export { createFeedbackLoop, runSelfCorrectingAgent, SimpleImprovementAgent } from "./src/feedback_loop.ts";
 export { FlowAbortError, FlowExecutionError, FlowRunner, toGateConfig } from "./src/flow_runner.ts";
+export {
+  FlowCheckpointCoordinator,
+  type IFlowCheckpointCoordinator,
+  type IFlowCheckpointCoordinatorDeps,
+  type IFlowCheckpointRequest,
+} from "./src/flow_checkpoint_coordinator.ts";
+export { type IStepOutputFormatter, StepOutputFormatter } from "./src/step_output_formatter.ts";
+export {
+  FlowNamespaceCoordinator,
+  type IFlowNamespaceCoordinator,
+  type IFlowNamespaceCoordinatorDeps,
+  type IFlowNamespaceOriginalRequest,
+} from "./src/flow_namespace_coordinator.ts";
 export { AgentOrchestratorAdapter } from "./src/agent_executor_adapter.ts";
 export { GateConfigSchema, GateEvaluator, MockJudgeInvoker } from "./src/gate_evaluator.ts";
 export { createJudgeEvaluator, JudgeEvaluator } from "./src/judge_evaluator.ts";

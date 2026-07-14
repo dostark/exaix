@@ -8,6 +8,9 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { ExecutionLoop } from "@exaix/execution";
+import { GitService } from "@exaix/git";
+import { ToolRegistry } from "@exaix/tool-runtime";
+import { MemoryBankService } from "@exaix/memory";
 import { createMockConfig } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
 import { ReviewRegistry } from "@exaix/core/artifact";
@@ -71,6 +74,17 @@ Deno.test("[regression] ExecutionLoop: targets portal directory and creates revi
       db,
       identityId: "test-agent",
       reviewRegistry,
+      gitServiceFactory: {
+        createGitService(repoPath: string, traceId: string) {
+          return new GitService({ config, traceId, identityId: "test-agent", repoPath });
+        },
+      },
+      toolRegistryFactory: {
+        createToolRegistry(traceId: string, baseDir: string) {
+          return new ToolRegistry({ config, traceId, identityId: "test-agent", baseDir });
+        },
+      },
+      memoryBank: new MemoryBankService(config, logger),
     });
 
     const traceId = crypto.randomUUID();

@@ -80,6 +80,7 @@ import { parse as parseYaml } from "@std/yaml";
 import type { EffortTier, ModelSize } from "@exaix/schemas";
 import type { JSONValue } from "@exaix/core/types";
 import { GitService } from "@exaix/git";
+import { ToolRegistry } from "@exaix/tool-runtime";
 import type { IApplicationContext } from "@exaix/core/types";
 import { type LogMetadata, toSafeJson } from "@exaix/core/types";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
@@ -1103,7 +1104,25 @@ if (import.meta.main) {
       sessionMemory,
       guardrailRunner,
       hitlPolicyEvaluator,
+      memoryBank,
       onCodeChangesDelegate,
+      gitServiceFactory: {
+        createGitService(repoPath: string, traceId: string) {
+          return new GitService({ config, traceId, identityId: DAEMON_IDENTITY_ID, repoPath, context });
+        },
+      },
+      toolRegistryFactory: {
+        createToolRegistry(traceId: string, baseDir: string) {
+          return new ToolRegistry({
+            config,
+            traceId,
+            identityId: DAEMON_IDENTITY_ID,
+            baseDir,
+            context,
+            hitlPolicyEvaluator,
+          });
+        },
+      },
       // Phase 135 Step 9 (GAP-C9): without a logger, ExecutionLoop.logActivity no-ops and
       // the same unset logger passes through to PlanExecutor — silencing every plan-
       // execution event (including model.resolved/model.route.selected/model.admitted

@@ -13,7 +13,10 @@ import { ExecutionLoop } from "@exaix/execution";
 import { createMockConfig } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
+import { GitService } from "@exaix/git";
 import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
+import { ToolRegistry } from "@exaix/tool-runtime";
+import { MemoryBankService } from "@exaix/memory";
 import {
   getMemoryExecutionDir,
   getWorkspaceActiveDir,
@@ -89,6 +92,27 @@ async function withExecutionLoopTestContext(
       logger,
       identityId: options.identityId ?? "test-identity",
       llmProvider: options.llmProvider,
+      gitServiceFactory: {
+        createGitService(repoPath: string, traceId: string) {
+          return new GitService({
+            config,
+            traceId,
+            identityId: options.identityId ?? "test-identity",
+            repoPath,
+          });
+        },
+      },
+      toolRegistryFactory: {
+        createToolRegistry(traceId: string, baseDir: string) {
+          return new ToolRegistry({
+            config,
+            traceId,
+            identityId: options.identityId ?? "test-identity",
+            baseDir,
+          });
+        },
+      },
+      memoryBank: new MemoryBankService(config, logger),
     });
 
     await run({ tempDir, db, config, paths, loop });
@@ -305,11 +329,23 @@ path = "analysis-target.txt"
     const planPath = join(paths.activeDir, "readonly-report.md");
     await Deno.writeTextFile(planPath, planContent);
 
+    const logger = new EventLogger({ db });
     const loop = new ExecutionLoop({
       config,
       db,
       identityId: "daemon",
       llmProvider: new ReadOnlyReportProvider(),
+      gitServiceFactory: {
+        createGitService(repoPath: string, traceId: string) {
+          return new GitService({ config, traceId, identityId: "daemon", repoPath });
+        },
+      },
+      toolRegistryFactory: {
+        createToolRegistry(traceId: string, baseDir: string) {
+          return new ToolRegistry({ config, traceId, identityId: "daemon", baseDir });
+        },
+      },
+      memoryBank: new MemoryBankService(config, logger),
     });
 
     const result = await loop.processTask(planPath);
@@ -545,7 +581,22 @@ Deno.test("ExecutionLoop: handles commit with no changes gracefully", async () =
     const planPath = join(systemActiveDir, "nochanges-test.md");
     await Deno.writeTextFile(planPath, planContent);
 
-    const loop = new ExecutionLoop({ config, db, identityId: "test-identity" });
+    const loop = new ExecutionLoop({
+      config,
+      db,
+      identityId: "test-identity",
+      gitServiceFactory: {
+        createGitService(repoPath: string, traceId: string) {
+          return new GitService({ config, traceId, identityId: "test-identity", repoPath });
+        },
+      },
+      toolRegistryFactory: {
+        createToolRegistry(traceId: string, baseDir: string) {
+          return new ToolRegistry({ config, traceId, identityId: "test-identity", baseDir });
+        },
+      },
+      memoryBank: new MemoryBankService(config, new EventLogger({ db })),
+    });
     const result = await loop.processTask(planPath);
 
     // Should succeed even with no changes to commit

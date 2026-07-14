@@ -6,21 +6,12 @@
  * @related-files [packages/flow/mod.ts, packages/request/src/router.ts]
  */
 
-import type {
-  IFlow,
-  IFlowCheckpoint,
-  IFlowNamespaceWrite,
-  IFlowStep,
-  IFlowStepResultSnapshot,
-  IGateEvaluate,
-  IParallelMergeMode,
-} from "@exaix/schemas/flow.ts";
+import type { IFlow, IFlowNamespaceWrite, IFlowStep, IGateEvaluate, IParallelMergeMode } from "@exaix/schemas/flow.ts";
 import { encodeHex } from "@std/encoding/hex";
 import { DependencyResolver } from "@exaix/flow";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import { ConditionEvaluator } from "./condition_evaluator.ts";
-import { appendToRequest, extractSection, mergeAsContext, passthrough, templateFill } from "@exaix/core/func";
-import { jsonExtract } from "@exaix/core/types";
+import { mergeAsContext } from "@exaix/core/func";
 import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
@@ -59,6 +50,9 @@ import {
   type IFlowCheckpointService,
   type IFlowNamespaceService,
 } from "@exaix/flow";
+import { FlowCheckpointCoordinator } from "./flow_checkpoint_coordinator.ts";
+import { StepOutputFormatter } from "./step_output_formatter.ts";
+import { FlowNamespaceCoordinator } from "./flow_namespace_coordinator.ts";
 import { CliConfirmationInterceptor, NotificationQueueConfirmationInterceptor } from "@exaix/tool-runtime";
 import type { IMilestoneEmitter } from "@exaix/core/observability";
 import type { IExecutionMilestone } from "@exaix/schemas";
@@ -69,15 +63,7 @@ import {
   DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   DEFAULT_UNKNOWN_LABEL,
-  FLOW_CHECKPOINT_SCHEMA_VERSION,
-  FLOW_EVENT_CHECKPOINT_CLEARED,
-  FLOW_EVENT_CHECKPOINT_LOADED,
-  FLOW_EVENT_CHECKPOINT_SAVED,
-  FLOW_EVENT_CHECKPOINT_STALE,
   FLOW_EVENT_COMPLETED,
-  FLOW_EVENT_NAMESPACE_INITIALIZED,
-  FLOW_EVENT_NAMESPACE_READ,
-  FLOW_EVENT_NAMESPACE_WRITE,
   FLOW_EVENT_PARALLEL_GROUP_COMPLETED,
   FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED,
   FLOW_EVENT_PARALLEL_GROUP_STARTED,
@@ -609,7 +595,7 @@ export interface IFlowEventLogger {
  * Error thrown when flow execution fails
  */
 export class FlowExecutionError extends Error {
-  constructor(message: string, public readonly flowRunId?: string) {
+  constructor(message: string, public readonly flowRunId?: Opt<string, Reason.TraceAbsent>) {
     super(message);
     this.name = "FlowExecutionError";
   }
@@ -619,70 +605,13 @@ export class FlowAbortError extends Error {
   constructor(
     public readonly stepId: string,
     message: string,
-    public readonly flowRunId?: string,
-    public readonly failureResult?: IStepResult,
+    public readonly flowRunId?: Opt<string, Reason.TraceAbsent>,
+    public readonly failureResult?: Opt<IStepResult, Reason.OptionalContext>,
   ) {
     super(message);
     this.name = "FlowAbortError";
   }
 }
-
-type BuiltInTransformHandler = (ctx: {
-  input: string;
-  transformArgs?: JSONValue;
-  originalRequest?: string;
-}) => string;
-
-function applyMergeAsContextTransform(input: string, transformArgs: JSONValue | undefined): string {
-  if (Array.isArray(transformArgs)) {
-    // Filter to strings only — mergeAsContext requires string[]
-    const strings = transformArgs.filter((v): v is string => typeof v === "string");
-    return mergeAsContext(strings);
-  }
-
-  try {
-    const inputs = JSON.parse(input);
-    if (Array.isArray(inputs)) {
-      return mergeAsContext(inputs);
-    }
-  } catch {
-    const inputs = input.split("\n\n").filter((s) => s.trim());
-    return mergeAsContext(inputs);
-  }
-
-  throw new Error("mergeAsContext requires an array of strings");
-}
-
-function applyExtractSectionTransform(input: string, transformArgs: JSONValue | undefined): string {
-  if (typeof transformArgs === "string") return extractSection(input, transformArgs);
-  throw new Error("extractSection requires a section name as transformArgs");
-}
-
-function applyAppendToRequestTransform(input: string, originalRequest: string | undefined): string {
-  if (originalRequest) return appendToRequest(originalRequest, input);
-  throw new Error("appendToRequest requires original request to be available");
-}
-
-function applyJsonExtractTransform(input: string, transformArgs: JSONValue | undefined): string {
-  if (typeof transformArgs === "string") return String(jsonExtract(input, transformArgs));
-  throw new Error("jsonExtract requires a field path as transformArgs");
-}
-
-function applyTemplateFillTransform(input: string, transformArgs: JSONValue | undefined): string {
-  if (typeof transformArgs === "object" && transformArgs !== null && !Array.isArray(transformArgs)) {
-    return templateFill(input, transformArgs as Record<string, string | number | boolean>);
-  }
-  throw new Error("templateFill requires a context object as transformArgs");
-}
-
-const BUILT_IN_TRANSFORM_HANDLERS: Record<string, BuiltInTransformHandler> = {
-  passthrough: ({ input }) => passthrough(input),
-  mergeAsContext: ({ input, transformArgs }) => applyMergeAsContextTransform(input, transformArgs),
-  extractSection: ({ input, transformArgs }) => applyExtractSectionTransform(input, transformArgs),
-  appendToRequest: ({ input, originalRequest }) => applyAppendToRequestTransform(input, originalRequest),
-  jsonExtract: ({ input, transformArgs }) => applyJsonExtractTransform(input, transformArgs),
-  templateFill: ({ input, transformArgs }) => applyTemplateFillTransform(input, transformArgs),
-};
 
 /**
  * Convert an IGateEvaluate (YAML-facing gate config) to a GateConfig (evaluator
@@ -716,7 +645,9 @@ export class FlowRunner implements IFlowRunner {
   private namespaceService?: IFlowNamespaceService;
   private stepDurabilityStore: IStepDurabilityStore;
   private stepReplayPolicy: IStepReplayPolicy;
-  private readonly migratedCheckpointTraceIds = new Set<string>();
+  private checkpointCoordinator!: FlowCheckpointCoordinator;
+  private namespaceCoordinator!: FlowNamespaceCoordinator;
+  private readonly stepOutputFormatter: StepOutputFormatter = new StepOutputFormatter();
   private readonly stepHandlerRegistry = new FlowStepHandlerRegistry();
   private waitStateService?: IWaitStateService;
   private readonly pendingWaitStateRef: IPendingWaitStateRef = { current: undefined };
@@ -756,6 +687,15 @@ export class FlowRunner implements IFlowRunner {
     this.stepReplayPolicy = options.stepReplayPolicy ?? new DefaultStepReplayPolicy();
     this.waitStateService = options.waitStateService;
     this.modelResolver = options.modelResolver;
+    this.checkpointCoordinator = new FlowCheckpointCoordinator({
+      checkpointService: this.checkpointService,
+      stepDurabilityStore: this.stepDurabilityStore,
+      eventLogger: this.eventLogger,
+    });
+    this.namespaceCoordinator = new FlowNamespaceCoordinator({
+      namespaceService: this.namespaceService,
+      eventLogger: this.eventLogger,
+    });
 
     this.registerEventPublisher(options);
 
@@ -809,10 +749,10 @@ export class FlowRunner implements IFlowRunner {
   }
 
   private initDynamicTools(
-    config: Config | undefined,
-    db: IDatabaseService | undefined,
-    dynamicHandlers: Map<McpToolName, ToolHandler> | undefined,
-    mcpHandlers: ToolHandler[] | undefined,
+    config: Opt<Config, Reason.OptionalDependency>,
+    db: Opt<IDatabaseService, Reason.OptionalDependency>,
+    dynamicHandlers: Opt<Map<McpToolName, ToolHandler>, Reason.OptionalDependency>,
+    mcpHandlers: Opt<ToolHandler[], Reason.OptionalDependency>,
     options: IFlowRunnerConfig,
   ): void {
     const hasDynamicTools = dynamicHandlers !== undefined || mcpHandlers !== undefined;
@@ -840,7 +780,7 @@ export class FlowRunner implements IFlowRunner {
     );
   }
 
-  private buildFallbackContext(config: Config, db: IDatabaseService | undefined): object {
+  private buildFallbackContext(config: Config, db: Opt<IDatabaseService, Reason.OptionalDependency>): object {
     return {
       config: {
         get: () => config,
@@ -933,11 +873,14 @@ export class FlowRunner implements IFlowRunner {
 
   private async emitMilestone(
     milestoneType: IExecutionMilestone["milestoneType"],
-    traceId: string | undefined,
+    traceId: Opt<string, Reason.TraceAbsent>,
     summary: string,
-    progressHint?: { stepsCompleted?: number; stepsTotal?: number; currentStepLabel?: string },
+    progressHint?: Opt<
+      { stepsCompleted?: number; stepsTotal?: number; currentStepLabel?: string },
+      Reason.OptionalContext
+    >,
     requiresAttention = false,
-    attentionReason?: string,
+    attentionReason?: Opt<string, Reason.OptionalContext>,
   ): Promise<void> {
     const emitter = this.options.milestoneEmitter;
     if (!emitter) return;
@@ -961,7 +904,7 @@ export class FlowRunner implements IFlowRunner {
   private getIFlowLogBase(
     flow: IFlow,
     request: { traceId?: string; requestId?: string },
-    options?: { includeStepCount?: false },
+    options?: Opt<{ includeStepCount?: false }, Reason.SensibleDefault>,
   ): IFlowEventLogBase;
   private getIFlowLogBase(
     flow: IFlow,
@@ -1001,8 +944,11 @@ export class FlowRunner implements IFlowRunner {
 
     const stepResults = new Map<string, IStepResult>();
 
-    await this.loadCheckpointIfAvailable(flow, request, flowRunId, flowContentHash, stepResults);
-    await this.initializeNamespace(this.getNamespaceId(request, flowRunId), flow);
+    await this.checkpointCoordinator.loadCheckpointIfAvailable(flow, request, flowRunId, flowContentHash, stepResults);
+    await this.namespaceCoordinator.initializeNamespace(
+      this.namespaceCoordinator.getNamespaceId(request, flowRunId),
+      flow,
+    );
 
     try {
       // Execute waves and aggregate results
@@ -1224,7 +1170,13 @@ export class FlowRunner implements IFlowRunner {
           request.traceId,
           `Approval gate resolved for flow ${flow.id}`,
         );
-        await this.saveCheckpointIfEnabled(flow, request, flowRunId, flowContentHash, stepResults);
+        await this.checkpointCoordinator.saveCheckpointIfEnabled(
+          flow,
+          request,
+          flowRunId,
+          flowContentHash,
+          stepResults,
+        );
         break;
       }
     }
@@ -1524,7 +1476,7 @@ export class FlowRunner implements IFlowRunner {
     let waveSuccessCount = 0;
     let waveFailureCount = 0;
     const waveErrors: Array<{ stepId: string; error: Error | string }> = [];
-    const namespaceId = this.getNamespaceId(ctx.request, ctx.flowRunId);
+    const namespaceId = this.namespaceCoordinator.getNamespaceId(ctx.request, ctx.flowRunId);
 
     for (let i = 0; i < wave.length; i++) {
       const outcome = await this.processWaveResultEntry(
@@ -1621,42 +1573,22 @@ export class FlowRunner implements IFlowRunner {
       return { successCount: 0, failureCount: 1, failed: ctx.failFast };
     }
 
-    await this.persistWaveNamespaceWrites(
+    await this.namespaceCoordinator.persistWaveNamespaceWrites(
       result,
       ctx.request,
       stepId,
       namespaceId,
       ctx.flow.namespace?.enabled === true,
     );
-    await this.saveCheckpointIfEnabled(ctx.flow, ctx.request, ctx.flowRunId, ctx.flowContentHash, ctx.stepResults);
+    await this.checkpointCoordinator.saveCheckpointIfEnabled(
+      ctx.flow,
+      ctx.request,
+      ctx.flowRunId,
+      ctx.flowContentHash,
+      ctx.stepResults,
+    );
 
     return { successCount: 1, failureCount: 0, failed: false };
-  }
-
-  private async persistWaveNamespaceWrites(
-    result: IStepResult,
-    request: { traceId?: string; requestId?: string },
-    stepId: string,
-    namespaceId: string,
-    namespaceEnabled: boolean,
-  ): Promise<void> {
-    if (!result.namespaceWrites || !this.namespaceService || !namespaceEnabled) {
-      return;
-    }
-
-    await this.namespaceService.writeEntries(
-      namespaceId,
-      stepId,
-      result.namespaceWrites.writes,
-      result.namespaceWrites.stepOutput,
-    );
-    await this.eventLogger.log(FLOW_EVENT_NAMESPACE_WRITE, {
-      namespaceId,
-      stepId,
-      keys: result.namespaceWrites.writes.map((write) => write.key),
-      traceId: request.traceId,
-      requestId: request.requestId,
-    });
   }
 
   private handleRejectedWaveResult(
@@ -1745,7 +1677,7 @@ export class FlowRunner implements IFlowRunner {
       requestId: request.requestId,
     });
 
-    const output = this.aggregateOutput(flow, stepResults);
+    const output = this.stepOutputFormatter.aggregateOutput(flow.output, stepResults);
 
     await this.eventLogger.log(DomainEventType.FlowOutputAggregated, {
       flowRunId,
@@ -1763,7 +1695,7 @@ export class FlowRunner implements IFlowRunner {
     const successfulSteps = Array.from(stepResults.values()).filter((r) => r.success).length;
     const failedSteps = stepResults.size - successfulSteps;
 
-    await this.clearCheckpointOnSuccess(flow, request, flowRunId, success);
+    await this.checkpointCoordinator.clearCheckpointOnSuccess(flow, request, flowRunId, success);
 
     // Log flow completion
     await this.eventLogger.log(FLOW_EVENT_COMPLETED, {
@@ -1794,7 +1726,7 @@ export class FlowRunner implements IFlowRunner {
       ? await this.aggregateAndLogTokenUsage(flowRunId, flow.id, request.traceId, request.requestId)
       : null;
     const namespaceArtifactPath = this.namespaceService && flow.namespace?.enabled
-      ? this.namespaceService.getNamespacePath(this.getNamespaceId(request, flowRunId))
+      ? this.namespaceService.getNamespacePath(this.namespaceCoordinator.getNamespaceId(request, flowRunId))
       : undefined;
 
     return {
@@ -2549,7 +2481,13 @@ export class FlowRunner implements IFlowRunner {
       stepResults,
     );
 
-    return await this.attachSharedNamespace(stepRequestWithParallelGroups, flowRunId, step, flow, originalRequest);
+    return await this.namespaceCoordinator.attachSharedNamespace(
+      stepRequestWithParallelGroups,
+      flowRunId,
+      step,
+      flow,
+      originalRequest,
+    );
   }
 
   private collectStepInputData(
@@ -2574,7 +2512,7 @@ export class FlowRunner implements IFlowRunner {
 
   private getStepResultContent(
     step: IFlowStep,
-    sourceStepId: string | undefined,
+    sourceStepId: Opt<string, Reason.OptionalInput>,
     stepResults: Map<string, IStepResult>,
   ): string {
     if (!sourceStepId) {
@@ -2612,7 +2550,7 @@ export class FlowRunner implements IFlowRunner {
     }
 
     const transformStart = Date.now();
-    const userPrompt = this.applyTransform(
+    const userPrompt = this.stepOutputFormatter.applyTransform(
       inputData,
       step.input.transform as string | ((input: string) => string),
       step.input.transformArgs as JSONValue | undefined,
@@ -2816,119 +2754,6 @@ export class FlowRunner implements IFlowRunner {
     throw new FlowExecutionError(error, flowRunId);
   }
 
-  private async attachSharedNamespace(
-    stepRequest: IFlowStepRequest,
-    flowRunId: string,
-    step: IFlowStep,
-    flow: IFlow,
-    originalRequest: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
-  ): Promise<IFlowStepRequest> {
-    if (!this.namespaceService || !flow.namespace?.enabled || !step.namespace?.reads?.length) {
-      return stepRequest;
-    }
-
-    const namespaceId = this.getNamespaceId(originalRequest, flowRunId);
-    const readKeys = step.namespace.reads.map((read) => read.key);
-    const resolvedNamespace = await this.namespaceService.readKeys(namespaceId, readKeys);
-    const missingRequiredKeys = step.namespace.reads
-      .filter((read) => read.required && resolvedNamespace[read.key] === undefined)
-      .map((read) => read.key);
-
-    if (missingRequiredKeys.length > 0) {
-      throw new Error(
-        `Step ${step.id} is missing required namespace keys: ${missingRequiredKeys.join(", ")}`,
-      );
-    }
-
-    await this.eventLogger.log(FLOW_EVENT_NAMESPACE_READ, {
-      namespaceId,
-      stepId: step.id,
-      keys: readKeys,
-      traceId: originalRequest.traceId,
-      requestId: originalRequest.requestId,
-    });
-
-    const sharedNamespaceEntries = Object.entries(resolvedNamespace)
-      .filter((entry): entry is [string, string] => entry[1] !== undefined);
-    if (sharedNamespaceEntries.length > 0) {
-      stepRequest.sharedNamespace = Object.fromEntries(sharedNamespaceEntries);
-    }
-
-    return stepRequest;
-  }
-
-  /**
-   * Apply a transform function to input data
-   */
-  private applyTransform(
-    input: string,
-    transform: string | ((input: string) => string),
-    transformArgs?: Opt<JSONValue, Reason.OptionalInput>,
-    originalRequest?: Opt<string, Reason.OptionalInput>,
-  ): string {
-    // Handle custom transform functions
-    if (typeof transform === "function") {
-      try {
-        return (transform as (input: string) => string)(input);
-      } catch (error) {
-        throw new Error(`Custom transform failed: ${(error as Error).message}`);
-      }
-    }
-
-    const handler = BUILT_IN_TRANSFORM_HANDLERS[transform];
-    if (!handler) throw new Error(`Unknown transform: ${transform}`);
-    return handler({ input, transformArgs, originalRequest });
-  }
-
-  /**
-   * Aggregate output from the specified steps
-   */
-  private aggregateOutput(flow: IFlow, stepResults: Map<string, IStepResult>): string {
-    const outputFrom = Array.isArray(flow.output.from) ? flow.output.from : [flow.output.from];
-    const format = flow.output.format || "markdown";
-
-    if (outputFrom.length === 0) {
-      return "";
-    }
-
-    if (outputFrom.length === 1) {
-      const stepId = outputFrom[0];
-      const result = stepResults.get(stepId);
-      return result?.result?.content || "";
-    }
-
-    // Multiple outputs - aggregate based on format
-    switch (format) {
-      case "concat": {
-        return outputFrom
-          .map((stepId) => stepResults.get(stepId)?.result?.content || "")
-          .filter((content) => content.length > 0)
-          .join("\n");
-      }
-
-      case "json": {
-        const jsonObj: Record<string, string> = {};
-        for (const stepId of outputFrom) {
-          const result = stepResults.get(stepId);
-          if (result?.result?.content) {
-            jsonObj[stepId] = result.result.content;
-          }
-        }
-        return JSON.stringify(jsonObj);
-      }
-
-      case "markdown":
-      default:
-        return outputFrom
-          .map((stepId) => {
-            const result = stepResults.get(stepId);
-            const content = result?.result?.content || "";
-            return `## ${stepId}\n\n${content}`;
-          })
-          .join("\n\n");
-    }
-  }
-
   /**
    * Safe wrapper around `executeStep` to ensure unexpected throws
    * are converted into a `IStepResult` and do not propagate.
@@ -3013,197 +2838,6 @@ export class FlowRunner implements IFlowRunner {
     }
 
     return StepSideEffectClass.MIXED;
-  }
-
-  private async loadCheckpointIfAvailable(
-    flow: IFlow,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
-    flowRunId: string,
-    flowContentHash: string,
-    stepResults: Map<string, IStepResult>,
-  ): Promise<void> {
-    if (!this.checkpointService || !request.traceId) {
-      return;
-    }
-
-    const checkpoint = await this.checkpointService.load(request.traceId);
-    if (!checkpoint) {
-      return;
-    }
-
-    if (
-      checkpoint.schemaVersion !== FLOW_CHECKPOINT_SCHEMA_VERSION ||
-      checkpoint.flowContentHash !== flowContentHash
-    ) {
-      await this.eventLogger.log(FLOW_EVENT_CHECKPOINT_STALE, {
-        flowRunId,
-        flowId: flow.id,
-        traceId: request.traceId,
-        requestId: request.requestId,
-      });
-      await this.checkpointService.delete(request.traceId);
-      for (const stepId of Object.keys(checkpoint.completedSteps)) {
-        const recordId = `stale:${request.traceId}:${stepId}`;
-        await this.stepDurabilityStore.invalidate(recordId, "stale-checkpoint");
-        this.eventLogger.log(DomainEventType.FlowStepInvalidated, {
-          traceId: request.traceId,
-          requestId: request.requestId,
-          flowRunId,
-          stepId,
-          recordId,
-          reason: "stale-checkpoint",
-        });
-      }
-      return;
-    }
-
-    const restoredSteps = this.restoreStepResultsFromCheckpoint(checkpoint);
-    for (const [stepId, result] of Object.entries(restoredSteps)) {
-      stepResults.set(stepId, result);
-    }
-
-    await this.migrateCheckpointToDurabilityStore(checkpoint, flow.id, request.traceId);
-
-    await this.eventLogger.log(FLOW_EVENT_CHECKPOINT_LOADED, {
-      flowRunId,
-      flowId: flow.id,
-      traceId: request.traceId,
-      requestId: request.requestId,
-      restoredSteps: Object.keys(restoredSteps).length,
-    });
-  }
-
-  private getNamespaceId(
-    request: { traceId?: string },
-    flowRunId: string,
-  ): string {
-    return request.traceId ?? flowRunId;
-  }
-
-  private async initializeNamespace(namespaceId: string, flow: IFlow): Promise<void> {
-    if (!this.namespaceService || !flow.namespace?.enabled) {
-      return;
-    }
-
-    await this.namespaceService.initialize(namespaceId);
-    await this.eventLogger.log(FLOW_EVENT_NAMESPACE_INITIALIZED, {
-      namespaceId,
-      flowId: flow.id,
-    });
-  }
-
-  private async migrateCheckpointToDurabilityStore(
-    checkpoint: IFlowCheckpoint,
-    flowId: string,
-    traceId: string,
-  ): Promise<void> {
-    if (this.migratedCheckpointTraceIds.has(traceId)) {
-      return;
-    }
-    this.migratedCheckpointTraceIds.add(traceId);
-
-    for (const [stepId, snapshot] of Object.entries(checkpoint.completedSteps)) {
-      const record: IStepExecutionRecord = {
-        recordId: crypto.randomUUID(),
-        traceId,
-        flowId,
-        stepId,
-        idempotencyKey: {
-          traceId,
-          flowId,
-          stepId,
-          attemptClass: StepAttemptClass.RESUME,
-          inputHash: "",
-        },
-        disposition: StepExecutionDisposition.EXECUTED,
-        startedAt: snapshot.startedAt as string,
-        completedAt: snapshot.completedAt as string,
-        inputHash: "",
-        sideEffectClass: StepSideEffectClass.MIXED,
-        replayEligible: false,
-      };
-      await this.stepDurabilityStore.save(record);
-    }
-  }
-
-  private restoreStepResultsFromCheckpoint(checkpoint: IFlowCheckpoint): Record<string, IStepResult> {
-    const restored: Record<string, IStepResult> = {};
-    for (const [stepId, snapshot] of Object.entries(checkpoint.completedSteps)) {
-      restored[stepId] = {
-        ...snapshot,
-        result: snapshot.result as IAgentExecutionResult | undefined,
-        startedAt: new Date(snapshot.startedAt),
-        completedAt: new Date(snapshot.completedAt),
-      };
-    }
-    return restored;
-  }
-
-  private buildCheckpointSnapshot(stepResults: Map<string, IStepResult>): Record<string, IFlowStepResultSnapshot> {
-    const snapshot: Record<string, IFlowStepResultSnapshot> = {};
-    for (const [stepId, result] of stepResults.entries()) {
-      if (!result.success) {
-        continue;
-      }
-
-      snapshot[stepId] = {
-        stepId: result.stepId,
-        success: result.success,
-        skipped: result.skipped,
-        skipReason: result.skipReason,
-        result: result.result,
-        error: result.error,
-        duration: result.duration,
-        startedAt: result.startedAt.toISOString(),
-        completedAt: result.completedAt.toISOString(),
-      };
-    }
-    return snapshot;
-  }
-
-  private async saveCheckpointIfEnabled(
-    flow: IFlow,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
-    flowRunId: string,
-    flowContentHash: string,
-    stepResults: Map<string, IStepResult>,
-  ): Promise<void> {
-    if (!this.checkpointService || !request.traceId) {
-      return;
-    }
-
-    const checkpoint = await this.checkpointService.save(
-      request.traceId,
-      flowContentHash,
-      this.buildCheckpointSnapshot(stepResults),
-    );
-
-    await this.eventLogger.log(FLOW_EVENT_CHECKPOINT_SAVED, {
-      flowRunId,
-      flowId: flow.id,
-      traceId: request.traceId,
-      requestId: request.requestId,
-      completedSteps: Object.keys(checkpoint.completedSteps).length,
-    });
-  }
-
-  private async clearCheckpointOnSuccess(
-    flow: IFlow,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
-    flowRunId: string,
-    success: boolean,
-  ): Promise<void> {
-    if (!success || !this.checkpointService || !request.traceId) {
-      return;
-    }
-
-    await this.checkpointService.delete(request.traceId);
-    await this.eventLogger.log(FLOW_EVENT_CHECKPOINT_CLEARED, {
-      flowRunId,
-      flowId: flow.id,
-      traceId: request.traceId,
-      requestId: request.requestId,
-    });
   }
 
   /**

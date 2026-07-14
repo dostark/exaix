@@ -23,13 +23,12 @@ import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType, type IEventJournalReader } from "@exaix/core/events";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
-import { GIT_CMD_WORKTREE, GitService, type IGitService } from "@exaix/git";
+import type { IGitService, IGitServiceFactory, IMemoryBankService, IToolRegistryFactory } from "@exaix/core/types";
 import { PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
 import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
-import { ToolRegistry } from "@exaix/tool-runtime";
 import type { ReviewRegistry } from "@exaix/core/artifact";
-import { MemoryBankService, type SessionMemoryService } from "@exaix/memory";
+import type { MemoryBankService, SessionMemoryService } from "@exaix/memory";
 import { MissionReporter } from "@exaix/core/artifact";
 import { type IPlanExecutorOptions, PlanExecutor } from "@exaix/core/planning";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
@@ -105,6 +104,13 @@ export interface IExecutionLoopConfig {
    * Phase 111 Step 8 wires the actual invocation.
    */
   onCodeChangesDelegate?: (traceId: string, stepId: string, worktreePath: string) => Promise<string>;
+
+  /** Factory for creating per-execution IGitService instances. Required if portal/worktree execution is used. */
+  gitServiceFactory?: IGitServiceFactory;
+  /** Factory for creating per-execution IToolRegistry instances. Required if plan-action execution is used. */
+  toolRegistryFactory?: IToolRegistryFactory;
+  /** Pre-configured IMemoryBankService. Falls back to context.memoryBank. Required if mission reports are used. */
+  memoryBank?: IMemoryBankService;
 }
 
 export interface IExecutionResult {
@@ -175,6 +181,9 @@ export class ExecutionLoop {
   private confirmationInterceptor?: IToolConfirmationInterceptor;
   private hitlBlueprintRules?: HitlRule[];
   private onCodeChangesDelegate?: (traceId: string, stepId: string, worktreePath: string) => Promise<string>;
+  private gitServiceFactory?: IGitServiceFactory;
+  private toolRegistryFactory?: IToolRegistryFactory;
+  private memoryBank?: IMemoryBankService;
 
   constructor(
     config: IExecutionLoopConfig,
@@ -195,6 +204,9 @@ export class ExecutionLoop {
     this.confirmationInterceptor = config.confirmationInterceptor;
     this.hitlBlueprintRules = config.hitlBlueprintRules;
     this.onCodeChangesDelegate = config.onCodeChangesDelegate;
+    this.gitServiceFactory = config.gitServiceFactory;
+    this.toolRegistryFactory = config.toolRegistryFactory;
+    this.memoryBank = config.memoryBank ?? ctx?.memoryBank;
     this.plansDir = join(this.config.system.root, this.config.paths.workspace, this.config.paths.active);
     this.blueprintLoader = new IBlueprintLoader({
       blueprintsPath: join(this.config.system.root, this.config.paths.blueprints, this.config.paths.identities),
@@ -247,7 +259,7 @@ export class ExecutionLoop {
     );
     await Deno.mkdir(traceDir, { recursive: true });
 
-    const pointerPath = join(traceDir, GIT_CMD_WORKTREE);
+    const pointerPath = join(traceDir, "worktree");
 
     // Prefer a symlink for discoverability. Fall back to a directory + PATH.txt if
     // symlinks are unavailable in the current environment.
@@ -296,7 +308,8 @@ export class ExecutionLoop {
       });
 
       const portalRepoRoot = this.resolvePortalRepoRoot(frontmatter);
-      portalGitService = this.createGitService(portalRepoRoot, traceId);
+      portalGitService = this.gitServiceFactory?.createGitService(portalRepoRoot, traceId) ??
+        missingFactory("gitServiceFactory", "git operations");
 
       const planContent = await this.readPlanContent(planPath);
       const prepared = await this.preparePlanExecution(frontmatter, planContent);
@@ -383,16 +396,6 @@ export class ExecutionLoop {
     if (!frontmatter.portal) return this.config.system.root;
     const portal = this.config.portals.find((p) => p.alias === frontmatter.portal);
     return portal ? portal.target_path : this.config.system.root;
-  }
-
-  private createGitService(repoPath: string, traceId: string): IGitService {
-    return new GitService({
-      config: this.config,
-      traceId,
-      identityId: this.identityId,
-      repoPath,
-      context: this.context,
-    });
   }
 
   private async readPlanContent(planPath: string): Promise<string> {
@@ -550,7 +553,8 @@ export class ExecutionLoop {
     await this.addWorktreeOrThrow(args.portalGitService, worktreePath, args.baseBranch);
 
     const executionRoot = worktreePath;
-    const executionGitService = this.createGitService(executionRoot, args.traceId);
+    const executionGitService = this.gitServiceFactory?.createGitService(executionRoot, args.traceId) ??
+      missingFactory("gitServiceFactory", "git operations");
     await executionGitService.ensureIdentity();
 
     const branchName = await executionGitService.createBranch({ requestId: args.requestId, traceId: args.traceId });
@@ -768,16 +772,8 @@ export class ExecutionLoop {
     requestId: string,
     executionRoot: string,
   ): Promise<void> {
-    const toolRegistry = new ToolRegistry({
-      config: this.config,
-      traceId,
-      identityId: this.identityId,
-      baseDir: executionRoot,
-      context: this.context,
-      hitlPolicyEvaluator: this.hitlPolicyEvaluator,
-      confirmationInterceptor: this.confirmationInterceptor,
-      hitlBlueprintRules: this.hitlBlueprintRules,
-    });
+    const toolRegistry = this.toolRegistryFactory?.createToolRegistry(traceId, executionRoot) ??
+      missingFactory("toolRegistryFactory", "action execution");
 
     let actionIndex = 0;
     for (const action of actions) {
@@ -1322,8 +1318,11 @@ export class ExecutionLoop {
    * Create a MissionReporter instance with Memory Bank integration
    */
   private createMissionReporter(): MissionReporter {
-    const memoryBank =
-      (this.context?.memoryBank ?? new MemoryBankService(this.config, this.logger)) as MemoryBankService;
+    if (!this.memoryBank) {
+      throw new Error(
+        "ExecutionLoop: memoryBank is required for mission reports. Provide `memoryBank` in IExecutionLoopConfig or via context.memoryBank.",
+      );
+    }
     const reportConfig = {
       reportsDirectory: join(
         this.config.system.root,
@@ -1339,7 +1338,7 @@ export class ExecutionLoop {
         queryActivity: (filter) => this.db!.queryActivity(filter),
       } as IEventJournalReader
       : undefined;
-    return new MissionReporter(this.config, reportConfig, memoryBank, this.logger, reader);
+    return new MissionReporter(this.config, reportConfig, this.memoryBank as MemoryBankService, this.logger, reader);
   }
 
   /**
@@ -1350,9 +1349,8 @@ export class ExecutionLoop {
     if (!this.context?.extractor) return;
 
     try {
-      const memoryBank =
-        (this.context?.memoryBank ?? new MemoryBankService(this.config, this.logger)) as MemoryBankService;
-      const executionMemory = await memoryBank.getExecutionByTraceId(traceId);
+      if (!this.memoryBank) return;
+      const executionMemory = await this.memoryBank.getExecutionByTraceId(traceId);
       if (!executionMemory) return;
 
       const learnings = this.context.extractor.analyzeExecution(executionMemory);
@@ -1588,6 +1586,12 @@ export class ExecutionLoop {
       console.warn(`Failed to archive request ${requestId} to ${targetDir}:`, error);
     }
   }
+}
+
+function missingFactory(name: string, context: string): never {
+  throw new Error(
+    `ExecutionLoop: ${name} factory is required for ${context}. Provide \`${name}\` in IExecutionLoopConfig.`,
+  );
 }
 
 function mapToConfidenceLevel(
