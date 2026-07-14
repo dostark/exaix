@@ -11,7 +11,7 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { FlowNamespaceCoordinator, type IFlowEventLogger } from "@exaix/flow";
 import type { IFlowNamespaceService, IFlowNamespaceSnapshot } from "@exaix/flow";
-import type { IFlow, IFlowNamespaceWrite, IFlowStep } from "@exaix/schemas/flow.ts";
+import type { IFlow, IFlowNamespaceWrite, IFlowStep, IFlowStepInput } from "@exaix/schemas/flow.ts";
 import type { IFlowStepRequest } from "@exaix/flow";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_FLOW_VERSION, FlowInputSource, FlowOutputFormat } from "@exaix/core";
@@ -68,13 +68,14 @@ class FakeNamespaceService implements IFlowNamespaceService {
   snapshot(traceId: string): Promise<IFlowNamespaceSnapshot> {
     return Promise.resolve({
       traceId,
+      path: this.getNamespacePath(traceId),
       entries: this.store.get(traceId) ?? {},
       updatedAt: new Date().toISOString(),
-    } as unknown as IFlowNamespaceSnapshot);
+    });
   }
 
   restore(traceId: string, snapshot: IFlowNamespaceSnapshot): Promise<void> {
-    this.store.set(traceId, (snapshot as unknown as { entries: Record<string, string> }).entries ?? {});
+    this.store.set(traceId, snapshot.entries);
     return Promise.resolve();
   }
 }
@@ -109,7 +110,7 @@ function buildFlow(namespaceEnabled: boolean): IFlow {
   });
 }
 
-function buildStep(overrides: Record<string, unknown> = {}): IFlowStep {
+function buildStep(overrides: Partial<IFlowStepInput> = {}): IFlowStep {
   return FlowSchema.parse({
     id: "flow-1",
     name: "Test Flow",

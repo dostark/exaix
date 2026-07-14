@@ -18,6 +18,16 @@ import type { IStepResult } from "./flow_runner.ts";
 
 type IFlowOutput = IFlow["output"];
 
+export interface IStepOutputFormatter {
+  applyTransform(
+    input: string,
+    transform: string | ((input: string) => string),
+    transformArgs?: Opt<JSONValue, Reason.OptionalInput>,
+    originalRequest?: Opt<string, Reason.OptionalInput>,
+  ): string;
+  aggregateOutput(output: IFlowOutput, stepResults: Map<string, IStepResult>): string;
+}
+
 type BuiltInTransformHandler = (ctx: {
   input: string;
   transformArgs?: JSONValue;
@@ -80,16 +90,6 @@ const BUILT_IN_TRANSFORM_HANDLERS: Record<string, BuiltInTransformHandler> = {
   jsonExtract: ({ input, transformArgs }) => applyJsonExtractTransform(input, transformArgs),
   templateFill: ({ input, transformArgs }) => applyTemplateFillTransform(input, transformArgs),
 };
-
-export interface IStepOutputFormatter {
-  applyTransform(
-    input: string,
-    transform: string | ((input: string) => string),
-    transformArgs?: Opt<JSONValue, Reason.OptionalInput>,
-    originalRequest?: Opt<string, Reason.OptionalInput>,
-  ): string;
-  aggregateOutput(output: IFlowOutput, stepResults: Map<string, IStepResult>): string;
-}
 
 export class StepOutputFormatter implements IStepOutputFormatter {
   /**
