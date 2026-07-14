@@ -41,7 +41,6 @@ import type {
 } from "@exaix/core/types";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import { buildPortalContextBlock } from "@exaix/core/func";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IFlowRunner } from "@exaix/flow";
 import { DomainEventType } from "@exaix/core/events";
@@ -62,6 +61,7 @@ import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { ProviderType, RequestKind } from "@exaix/core";
 import { type ITaskComplexityClassifier, TaskComplexityClassifier } from "./task_complexity_classifier.ts";
 import { BlueprintResolver, type IBlueprintResolver } from "./blueprint_resolver.ts";
+import { type IPortalContextBuilder, PortalContextBuilder } from "./portal_context_builder.ts";
 import type { ILogEvent } from "@exaix/core";
 import {
   CompositeMilestoneEmitter,
@@ -170,6 +170,7 @@ export class RequestProcessor {
   private readonly milestoneEmitter?: IMilestoneEmitter;
   private readonly taskComplexityClassifier: ITaskComplexityClassifier;
   private readonly blueprintResolver: IBlueprintResolver;
+  private readonly portalContextBuilder: IPortalContextBuilder;
 
   constructor(private readonly processorConfig: IRequestProcessorConfig) {
     const ctx = processorConfig.context;
@@ -266,6 +267,10 @@ export class RequestProcessor {
 
     this.taskComplexityClassifier = new TaskComplexityClassifier();
     this.blueprintResolver = new BlueprintResolver({ blueprintsPath: processorConfig.blueprintsPath });
+    this.portalContextBuilder = new PortalContextBuilder({
+      config: this.config,
+      portalKnowledgeService: this.portalKnowledgeService,
+    });
   }
 
   async process(filePath: string): Promise<string | null> {
@@ -734,12 +739,16 @@ export class RequestProcessor {
       // compatible with IRequestContextContext (all fields are string/string[]).
       request.context["specification"] = JSON.parse(JSON.stringify(specification)) as IRequestContextContext;
     }
-    const portalContext = await this.buildPortalContext(frontmatter.portal, traceLogger);
+    const portalContext = await this.portalContextBuilder.buildFileContext(frontmatter.portal, traceLogger);
     if (portalContext) {
       request.context[PORTAL_CONTEXT_KEY] = portalContext;
     }
     if (portalKnowledge) {
-      const summary = await this._resolveKnowledgeContext(body, frontmatter.portal, portalKnowledge);
+      const summary = await this.portalContextBuilder.resolveKnowledgeContext(
+        body,
+        frontmatter.portal,
+        portalKnowledge,
+      );
       request.context[PORTAL_KNOWLEDGE_KEY] = summary;
     }
     if (memoryContext?.memoryContext) {
@@ -841,35 +850,6 @@ ${result.content}`,
     }
 
     return null; // Should be unreachable
-  }
-
-  /**
-   * Resolve portal knowledge context, trying relevance-based retrieval
-   * and falling back to the full summary.
-   */
-  private async _resolveKnowledgeContext(
-    body: string,
-    portalAlias: Opt<string, Reason.OptionalInput>,
-    portalKnowledge: IPortalKnowledge,
-  ): Promise<string> {
-    const fallback = buildPortalKnowledgeSummary(portalKnowledge);
-    if (!this.portalKnowledgeService || !portalAlias) return fallback;
-
-    const portalPath = (this.config.portals ?? []).find(
-      (p) => p.alias === portalAlias,
-    )?.target_path;
-    if (!portalPath) return fallback;
-
-    try {
-      const relevant = await this.portalKnowledgeService.getRelevantContext(
-        body,
-        portalPath,
-        PORTAL_KNOWLEDGE_PROMPT_MAX_LINES * 50,
-      );
-      return relevant ?? fallback;
-    } catch {
-      return fallback;
-    }
   }
 
   private async handleBlueprintNotFound(
@@ -1011,77 +991,6 @@ Raw Details: ${args.rawDetails}
     const logObj: LogMetadata = { plan_path: planResult.planPath, ...(extra ?? {}) };
     traceLogger.info(DomainEventType.RequestPlanned, filePath, logObj);
     return planResult.planPath;
-  }
-
-  private async buildPortalContext(
-    portalAlias?: Opt<string, Reason.OptionalContext>,
-    traceLogger?: Opt<IEventLogger, Reason.OptionalDependency>,
-  ): Promise<string | null> {
-    if (!portalAlias) return null;
-
-    const portal = this.config.portals.find((p) => p.alias === portalAlias);
-    if (!portal) {
-      traceLogger?.warn("portal.context.not_found", portalAlias, { portal: portalAlias });
-      return null;
-    }
-
-    const fileSummary = await this.getPortalFileSummary(portal.target_path);
-
-    return buildPortalContextBlock({
-      portalAlias,
-      portalRoot: portal.target_path,
-      fileList: fileSummary,
-    });
-  }
-
-  private async getPortalFileSummary(portalPath: string): Promise<string> {
-    const files: string[] = [];
-    const context = { files, MAX_FILES: 200, MAX_DEPTH: 3 };
-
-    try {
-      await this.scanPortalDirectory(portalPath, 0, context);
-    } catch {
-      return "Unable to list portal directory.";
-    }
-
-    if (files.length === 0) return "Portal directory is empty.";
-    return files.join("\n");
-  }
-
-  private async scanPortalDirectory(
-    dir: string,
-    currentDepth: number,
-    context: { files: string[]; MAX_FILES: number; MAX_DEPTH: number },
-  ): Promise<void> {
-    if (currentDepth > context.MAX_DEPTH || context.files.length >= context.MAX_FILES) return;
-
-    try {
-      const entries = [];
-      for await (const entry of Deno.readDir(dir)) {
-        entries.push(entry);
-      }
-
-      // Sort entries: directories first, then files alphabetically
-      entries.sort((a, b) => {
-        if (a.isDirectory && !b.isDirectory) return -1;
-        if (!a.isDirectory && b.isDirectory) return 1;
-        return a.name.localeCompare(b.name);
-      });
-
-      for (const entry of entries) {
-        if (context.files.length >= context.MAX_FILES) break;
-        if (entry.name.startsWith(".")) continue;
-
-        const indent = "  ".repeat(currentDepth);
-        context.files.push(`${indent}${entry.isDirectory ? "[DIR] " : "- "}${entry.name}`);
-
-        if (entry.isDirectory) {
-          await this.scanPortalDirectory(join(dir, entry.name), currentDepth + 1, context);
-        }
-      }
-    } catch {
-      // Ignore read errors for specific directories
-    }
   }
 }
 
