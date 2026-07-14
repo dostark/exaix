@@ -250,7 +250,7 @@ export class ExecutionLoop {
     return await gitService.getDefaultBranch(executionRoot);
   }
 
-  private async createWorktreeExecutionPointer(traceId: string, canonicalWorktreePath: string): Promise<void> {
+  private async createWorktreeExecutionPointer(traceId: string, canonicalWorktreePath: string, pointerName: string): Promise<void> {
     const traceDir = join(
       this.config.system.root,
       this.config.paths.memory,
@@ -259,7 +259,7 @@ export class ExecutionLoop {
     );
     await Deno.mkdir(traceDir, { recursive: true });
 
-    const pointerPath = join(traceDir, "worktree");
+    const pointerPath = join(traceDir, pointerName);
 
     // Prefer a symlink for discoverability. Fall back to a directory + PATH.txt if
     // symlinks are unavailable in the current environment.
@@ -549,7 +549,7 @@ export class ExecutionLoop {
   }> {
     const worktreePath = this.buildPortalWorktreePath(args.portalAlias, args.traceId);
     await Deno.mkdir(join(this.config.system.root, ".exa", "worktrees", args.portalAlias), { recursive: true });
-    await this.createWorktreeExecutionPointer(args.traceId, worktreePath);
+    await this.createWorktreeExecutionPointer(args.traceId, worktreePath, PortalExecutionStrategy.WORKTREE);
     await this.addWorktreeOrThrow(args.portalGitService, worktreePath, args.baseBranch);
 
     const executionRoot = worktreePath;
