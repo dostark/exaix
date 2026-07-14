@@ -41,3 +41,10 @@ export {
   type IPortalContextBuilderConfig,
   PortalContextBuilder,
 } from "./portal_context_builder.ts";
+
+export {
+  ClarificationGateway,
+  type IClarificationGateway,
+  type IClarificationGatewayDeps,
+  type IQualityGateOutcome,
+} from "./clarification_gateway.ts";

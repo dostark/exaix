@@ -62,6 +62,7 @@ import { ProviderType, RequestKind } from "@exaix/core";
 import { type ITaskComplexityClassifier, TaskComplexityClassifier } from "./task_complexity_classifier.ts";
 import { BlueprintResolver, type IBlueprintResolver } from "./blueprint_resolver.ts";
 import { type IPortalContextBuilder, PortalContextBuilder } from "./portal_context_builder.ts";
+import { ClarificationGateway, type IClarificationGateway } from "./clarification_gateway.ts";
 import type { ILogEvent } from "@exaix/core";
 import {
   CompositeMilestoneEmitter,
@@ -72,9 +73,7 @@ import {
 import type { IMilestoneEmitter } from "@exaix/core/observability";
 
 import type { AnalysisMode } from "@exaix/core/types";
-import { buildQualityGateConfig, loadClarification, RequestQualityGate, saveClarification } from "@exaix/quality-gate";
-import { RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
-import { ClarificationSessionStatus } from "@exaix/schemas/clarification_session.ts";
+import { buildQualityGateConfig, RequestQualityGate } from "@exaix/quality-gate";
 import type { IRequestSpecification } from "@exaix/schemas/request_specification.ts";
 import type { EnhancedRequest, SessionMemoryService } from "@exaix/memory";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -171,6 +170,7 @@ export class RequestProcessor {
   private readonly taskComplexityClassifier: ITaskComplexityClassifier;
   private readonly blueprintResolver: IBlueprintResolver;
   private readonly portalContextBuilder: IPortalContextBuilder;
+  private readonly clarificationGateway: IClarificationGateway;
 
   constructor(private readonly processorConfig: IRequestProcessorConfig) {
     const ctx = processorConfig.context;
@@ -271,6 +271,14 @@ export class RequestProcessor {
       config: this.config,
       portalKnowledgeService: this.portalKnowledgeService,
     });
+    this.clarificationGateway = new ClarificationGateway({
+      statusManager: this.statusManager,
+      qualityGate: this.qualityGate,
+      sessionDelegateEnabled: this.config.session_delegate?.enabled,
+      sessionDelegateRefinementGate: this.config.session_delegate?.gates?.includes("refinement"),
+      onDelegateRefinement: processorConfig.onDelegateRefinement,
+      onClarificationCreated: processorConfig.onClarificationCreated,
+    });
   }
 
   async process(filePath: string): Promise<string | null> {
@@ -315,8 +323,8 @@ export class RequestProcessor {
       enrichedBody?: string;
       specification?: IRequestSpecification;
     } = alreadyAssessed
-      ? await this._loadSpecFromClarification(filePath)
-      : await this._runQualityGate(body, filePath, requestId, traceLogger, traceId);
+      ? await this.clarificationGateway.loadSpecFromClarification(filePath)
+      : await this.clarificationGateway.runQualityGate(body, filePath, requestId, traceLogger, traceId);
     if (qgOutcome.earlyReturn) {
       return null;
     }
@@ -407,112 +415,6 @@ export class RequestProcessor {
       } catch {
         // Ignore flush errors during processing
       }
-    }
-  }
-
-  /**
-   * Loads IRequestSpecification from a completed clarification session, bypassing
-   * the quality gate assessment. Used when `assessed_at` is present in frontmatter
-   * (Gap §13: re-assessment bypass for already-assessed requests).
-   */
-  private async _loadSpecFromClarification(
-    filePath: string,
-  ): Promise<{ earlyReturn: false; specification?: IRequestSpecification }> {
-    const completedSession = await loadClarification(filePath).catch(() => null);
-    const specification = completedSession?.refinedBody &&
-        (completedSession.status === ClarificationSessionStatus.AGENT_SATISFIED ||
-          completedSession.status === ClarificationSessionStatus.USER_CONFIRMED)
-      ? completedSession.refinedBody
-      : undefined;
-    return { earlyReturn: false, specification };
-  }
-
-  /** Evaluates quality gate and returns early-return signal or enriched body. */
-  private async _runQualityGate(
-    body: string,
-    filePath: string,
-    requestId: string,
-    traceLogger: IEventLogger,
-    traceId: Opt<string, Reason.TraceAbsent>,
-  ): Promise<
-    { earlyReturn: true } | { earlyReturn: false; enrichedBody?: string; specification?: IRequestSpecification }
-  > {
-    if (!this.qualityGate) {
-      // Load any completed clarification session even without an active gate
-      const completedSession = await loadClarification(filePath).catch(() => null);
-      const specification = completedSession?.refinedBody &&
-          (completedSession.status === ClarificationSessionStatus.AGENT_SATISFIED ||
-            completedSession.status === ClarificationSessionStatus.USER_CONFIRMED)
-        ? completedSession.refinedBody
-        : undefined;
-      return { earlyReturn: false, specification };
-    }
-    try {
-      const qgResult = await this.qualityGate.assess(body, { requestId });
-      if (qgResult.recommendation === RequestQualityRecommendation.REJECT) {
-        await this.statusManager.updateStatus(filePath, RequestStatus.FAILED, "Request rejected by quality gate");
-        return { earlyReturn: true };
-      }
-      if (qgResult.recommendation === RequestQualityRecommendation.NEEDS_CLARIFICATION) {
-        if (await this._tryDelegateRefinement(filePath, requestId, body, traceId)) {
-          return { earlyReturn: true };
-        }
-        await this._startClarificationSession(filePath, requestId, body, traceId);
-        return { earlyReturn: true };
-      }
-      if (qgResult.recommendation === RequestQualityRecommendation.AUTO_ENRICH && qgResult.enrichedBody) {
-        return { earlyReturn: false, enrichedBody: qgResult.enrichedBody };
-      }
-      // Load IRequestSpecification from any completed clarification session
-      const completedSession = await loadClarification(filePath).catch(() => null);
-      const specification = completedSession?.refinedBody &&
-          (completedSession.status === ClarificationSessionStatus.AGENT_SATISFIED ||
-            completedSession.status === ClarificationSessionStatus.USER_CONFIRMED)
-        ? completedSession.refinedBody
-        : undefined;
-      return { earlyReturn: false, specification };
-    } catch {
-      traceLogger.warn(DomainEventType.RequestQualityGateFailed, filePath, { requestId });
-    }
-    return { earlyReturn: false };
-  }
-
-  /**
-   * Phase 111 Step 5: config-gated refinement delegation branch.
-   * Returns true when delegation was initiated (brief prepared, wait parked, launch triggered).
-   */
-  private async _tryDelegateRefinement(
-    filePath: string,
-    requestId: string,
-    body: string,
-    traceId?: Opt<string, Reason.TraceAbsent>,
-  ): Promise<boolean> {
-    const sd = this.config.session_delegate;
-    if (!sd?.enabled || !sd.gates?.includes("refinement") || !this.processorConfig.onDelegateRefinement) {
-      return false;
-    }
-    await this.statusManager.updateStatus(filePath, RequestStatus.REFINING);
-    if (traceId) {
-      await this.processorConfig.onDelegateRefinement(traceId, requestId, body);
-    }
-    return true;
-  }
-
-  private async _startClarificationSession(
-    filePath: string,
-    requestId: string,
-    body: string,
-    traceId?: Opt<string, Reason.TraceAbsent>,
-  ): Promise<void> {
-    await this.statusManager.updateStatus(filePath, RequestStatus.REFINING);
-    try {
-      const session = await this.qualityGate!.startClarification(requestId, body);
-      await saveClarification(filePath, session);
-      if (traceId && this.processorConfig.onClarificationCreated) {
-        await this.processorConfig.onClarificationCreated(traceId, requestId);
-      }
-    } catch {
-      // Session start failed; REFINING status is preserved
     }
   }
 
