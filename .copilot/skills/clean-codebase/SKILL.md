@@ -47,6 +47,7 @@ Phase 1 — Baseline measurement
        deno task check:no-edition-conditionals            → edition-conditional violations outside allowed dirs
        deno task check:arch                              → list UNGROUNDED files (includes packages-team/)
        deno task check:complexity                        → list functions above threshold
+       deno task check:unused-exports:strict              → dead/unwired exports (CI grade)
        deno task check:duplication                       → duplication % per category
        deno task check:tool-result-parity                → tool manifest ↔ handler parity
        deno task check:skill-envelopes                   → exaix block validity in .copilot/skills/
