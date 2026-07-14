@@ -24,6 +24,7 @@ import type { HitlPolicy } from "@exaix/schemas/hitl.ts";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import { ActorType, AGENT_GENERATION_COMPLETED, AgentKind, LogLevel } from "@exaix/core";
+import { DomainEventType } from "@exaix/core/events";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
@@ -615,7 +616,7 @@ export class AgentOrchestrator {
    * Log output from an agent subprocess
    */
   public async logAgentOutput(traceId: string, output: string): Promise<void> {
-    await this.logger.info("agent.output", "subprocess", { output }, traceId);
+    await this.logger.info(DomainEventType.AgentOutput, "subprocess", { output }, traceId);
   }
 
   /**

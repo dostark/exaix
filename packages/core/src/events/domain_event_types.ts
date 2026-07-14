@@ -230,6 +230,9 @@ export const DomainEventType = {
   // Cost tracking events
   LlmUsageRecorded: "llm.usage",
 
+  // Agent orchestrator events (agent_orchestrator.ts)
+  AgentOutput: "agent.output",
+
   // Execution lifecycle events (execution_loop.ts)
   ExecutionSkipped: "execution.skipped",
   ExecutionStarted: "execution.started",
