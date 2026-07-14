@@ -618,6 +618,14 @@ export async function main(args: string[]): Promise<number> {
   // ---------------------------------------------------------------------------
   // Batch 2: sequential files, one per Deno.Command, no DENO_JOBS set
   // ---------------------------------------------------------------------------
+  //
+  // Pre-warm the daemon module cache after the parallel batch. Parallel
+  // compilation can leave partial/corrupted cache entries; this forces a
+  // clean cache build before any daemon subprocess touches it.
+  if (SEQUENTIAL_FILES.some((f) => f.includes("daemon") || f.includes("dogfood"))) {
+    const warmup = new Deno.Command("deno", { args: ["cache", "apps/daemon/main.ts"] }).spawn();
+    await warmup.status;
+  }
   const batch2Env: Record<string, string> = { ...Deno.env.toObject() };
   delete batch2Env["DENO_JOBS"]; // ensures skipInParallel === false inside each file
 
