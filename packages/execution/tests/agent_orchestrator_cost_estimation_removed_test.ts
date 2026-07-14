@@ -1,6 +1,6 @@
 /**
  * @module AgentExecutorCostEstimationRemovedTest
- * @path packages/execution/tests/agent_executor_cost_estimation_removed_test.ts
+ * @path packages/execution/tests/agent_orchestrator_cost_estimation_removed_test.ts
  * @description Phase 135 Step 12 (GAP-23/GAP-24/GAP-25) — proves
  *   AgentOrchestrator.estimateExecutionUsage() and its pricingLookup constructor
  *   parameter are fully removed, rather than narrowed. Before this step,

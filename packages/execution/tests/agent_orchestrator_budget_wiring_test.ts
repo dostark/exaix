@@ -1,6 +1,6 @@
 /**
  * @module AgentExecutorBudgetWiringTest
- * @path packages/execution/tests/agent_executor_budget_wiring_test.ts
+ * @path packages/execution/tests/agent_orchestrator_budget_wiring_test.ts
  * @description Tests for Step 6: AgentOrchestrator constructor injection of
  * contextBudgetManager and snapshotStore. Verifies these parameters are
  * accepted and properly assigned to instance fields.

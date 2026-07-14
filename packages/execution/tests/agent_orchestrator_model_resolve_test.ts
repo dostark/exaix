@@ -1,6 +1,6 @@
 /**
  * @module AgentExecutorModelResolveTest
- * @path packages/execution/tests/agent_executor_model_resolve_test.ts
+ * @path packages/execution/tests/agent_orchestrator_model_resolve_test.ts
  * @description Phase 132 Step 3 — validates that AgentOrchestrator correctly resolves
  *   model via ModelResolver using blueprint frontmatter fields (model_size,
  *   thinking, characteristics, preferred_provider) and falls back to inline

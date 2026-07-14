@@ -1,6 +1,6 @@
 /**
  * @module AgentExecutorTest
- * @path packages/execution/tests/agent_executor_test.ts
+ * @path packages/execution/tests/agent_orchestrator_test.ts
  * @description Verifies the AgentOrchestrator service, ensuring stable blueprint loading,
  * security sandboxing, activity logging, and protection against prompt injection.
  */

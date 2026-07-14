@@ -1,6 +1,6 @@
 /**
  * @module AgentExecutorPerCallOptionsTest
- * @path packages/execution/tests/agent_executor_per_call_options_test.ts
+ * @path packages/execution/tests/agent_orchestrator_per_call_options_test.ts
  * @description Phase 132 Step 3 — validates that AgentOrchestrator passes resolved
  *   call options (thinking, effort, max_tokens) from ModelResolver to the
  *   executing strategy via the callOptions property.

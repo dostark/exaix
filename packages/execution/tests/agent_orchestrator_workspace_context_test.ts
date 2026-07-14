@@ -1,6 +1,6 @@
 /**
  * @module AgentExecutorWorkspaceContextTest
- * @path packages/execution/tests/agent_executor_workspace_context_test.ts
+ * @path packages/execution/tests/agent_orchestrator_workspace_context_test.ts
  * @description Verifies the integration between the AgentOrchestrator and Workspace-bound
  * execution contexts, ensuring trace metadata and environment variables are correctly inherited.
  */

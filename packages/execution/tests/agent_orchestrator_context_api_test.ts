@@ -1,6 +1,6 @@
 /**
  * @module AgentExecutorContextAPITest
- * @path packages/execution/tests/agent_executor_context_api_test.ts
+ * @path packages/execution/tests/agent_orchestrator_context_api_test.ts
  * @description Verifies the Context API within the AgentOrchestrator, ensuring sandboxed tools
  * can securely access and modify approved execution state.
  */
