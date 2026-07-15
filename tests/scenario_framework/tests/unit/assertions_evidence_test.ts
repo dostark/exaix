@@ -8,7 +8,7 @@
  * @related-files [tests/scenario_framework/runner/assertions.ts, tests/scenario_framework/runner/evidence_collector.ts, tests/scenario_framework/schema/step_schema.ts]
  */
 
-import { assertEquals, assertStringIncludes, fail } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes, fail } from "@std/assert";
 import { join } from "@std/path";
 import { callLlmEndpoint, evaluateCriterion, evaluateStepOutcome } from "../../runner/assertions.ts";
 import { copyEvidenceArtifact, writeRunManifest } from "../../runner/evidence_collector.ts";
@@ -589,6 +589,83 @@ Deno.test({
 });
 
 Deno.test({
+  name: "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint resolves with EXA_EVAL_MODEL_SIZE and explicit provider",
+  ...DISABLED_OPTS,
+  fn: async () => {
+    await withEnv({
+      EXA_EVAL_MODEL_SIZE: "S",
+      EXA_LLM_PROVIDER: "anthropic",
+      ANTHROPIC_API_KEY: null,
+      ...NO_BACKWARD_KEYS,
+    }, async () => {
+      try {
+        await callLlmEndpoint("test prompt");
+        fail("Expected API key error from Anthropic resolution");
+      } catch (err) {
+        assertStringIncludes((err as Error).message, "ANTHROPIC_API_KEY");
+      }
+    });
+  },
+});
+
+Deno.test({
+  name:
+    "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint throws when EXA_EVAL_MODEL_SIZE=S without provider (no provider meets size constraints)",
+  ...DISABLED_OPTS,
+  fn: async () => {
+    await withEnv({ EXA_EVAL_MODEL_SIZE: "S", ...NO_BACKWARD_KEYS }, async () => {
+      try {
+        await callLlmEndpoint("test prompt");
+        fail("Expected resolution error — no provider satisfies S context-window constraint");
+      } catch (err) {
+        assert((err as Error).message.includes("Model resolution failed"));
+      }
+    });
+  },
+});
+
+Deno.test({
+  name:
+    "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint throws for invalid EXA_EVAL_MODEL_SIZE when EXA_LLM_PROVIDER is set",
+  ...DISABLED_OPTS,
+  fn: async () => {
+    await withEnv({
+      EXA_EVAL_MODEL_SIZE: "INVALID",
+      EXA_LLM_PROVIDER: "invalid-provider",
+      ...NO_BACKWARD_KEYS,
+    }, async () => {
+      try {
+        await callLlmEndpoint("test prompt");
+        fail("Expected resolution error for invalid provider+size combo");
+      } catch (err) {
+        assert((err as Error).message.includes("Model resolution failed"));
+      }
+    });
+  },
+});
+
+Deno.test({
+  name:
+    "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint explicit EXA_LLM_PROVIDER takes priority over EXA_EVAL_MODEL_SIZE",
+  ...DISABLED_OPTS,
+  fn: async () => {
+    await withEnv({
+      EXA_EVAL_MODEL_SIZE: "S",
+      EXA_LLM_PROVIDER: "anthropic",
+      ANTHROPIC_API_KEY: null,
+      ...NO_BACKWARD_KEYS,
+    }, async () => {
+      try {
+        await callLlmEndpoint("test prompt");
+        fail("Expected missing API key error");
+      } catch (err) {
+        assertStringIncludes((err as Error).message, "ANTHROPIC_API_KEY");
+      }
+    });
+  },
+});
+
+Deno.test({
   name:
     "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint dispatches to OpenRouter when EXA_LLM_PROVIDER=openrouter",
   ...DISABLED_OPTS,
@@ -609,11 +686,10 @@ Deno.test({
 
 Deno.test({
   name:
-    "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint falls back to Mock when ANTHROPIC_API_KEY is set without EXA_LLM_PROVIDER (backward compat removed)",
+    "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint uses Mock provider when EXA_LLM_PROVIDER is unset (ANTHROPIC_API_KEY alone insufficient)",
   ...DISABLED_OPTS,
   fn: async () => {
-    // Without the old backward-compat block in callLlmEndpoint, setting
-    // ANTHROPIC_API_KEY alone no longer routes to Anthropic — it falls through to Mock.
+    // ANTHROPIC_API_KEY without EXA_LLM_PROVIDER — empty intent resolves to Mock via routing strategy
     await withEnv({
       EXA_LLM_PROVIDER: null,
       ANTHROPIC_API_KEY: "sk-test-key",
@@ -626,12 +702,16 @@ Deno.test({
 });
 
 Deno.test({
-  name: "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint falls back to Mock for invalid EXA_LLM_PROVIDER",
+  name: "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint throws for invalid EXA_LLM_PROVIDER",
   ...DISABLED_OPTS,
   fn: async () => {
     await withEnv({ EXA_LLM_PROVIDER: "invalid-provider", ...NO_BACKWARD_KEYS }, async () => {
-      const result = await callLlmEndpoint("test prompt");
-      assertEquals(typeof result, "string");
+      try {
+        await callLlmEndpoint("test prompt");
+        fail("Expected ModelResolver to throw for unknown provider");
+      } catch (err) {
+        assert((err as Error).message.includes("Model resolution failed"));
+      }
     });
   },
 });

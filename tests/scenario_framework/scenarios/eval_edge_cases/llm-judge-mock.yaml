@@ -1,6 +1,6 @@
 schema_version: "1.0.0"
 id: "eval-edge-llm-judge"
-title: "LLM judge in mock mode — verifies llm-judge criterion passes by default"
+title: "LLM judge evaluates binary-search implementation vs request — validates rubric-based scoring with realistic AI-assisted coding output"
 pack: "eval_edge_cases"
 tags: ["eval", "llm-judge", "edge"]
 request_fixture: "fixtures/requests/eval_edge_cases/llm-judge-mock.md"
@@ -13,11 +13,74 @@ steps:
     args:
       - "-c"
       - |
-          echo "test output for LLM judge" > $WORKSPACE_ROOT/llm-judge-input.txt
+          cat > $WORKSPACE_ROOT/llm-judge-input.txt << 'ENDOFCODE'
+          /**
+           * Performs a recursive binary search on a sorted array of integers.
+           * @param arr - The sorted array to search (ascending order).
+           * @param target - The value to locate.
+           * @param left - Left boundary index (default 0).
+           * @param right - Right boundary index (default arr.length - 1).
+           * @returns The index of the first occurrence of target, or -1 if not found.
+           */
+          function binarySearch(
+            arr: readonly number[],
+            target: number,
+            left: number = 0,
+            right: number = arr.length - 1
+          ): number {
+            // Edge case: empty array
+            if (arr.length === 0) return -1;
+            // Base case: search space exhausted
+            if (left > right) return -1;
+
+            const mid = Math.floor((left + right) / 2);
+
+            // Found target — walk left to find first occurrence
+            if (arr[mid] === target) {
+              // Scan backwards for duplicates
+              let first = mid;
+              while (first > left && arr[first - 1] === target) {
+                first--;
+              }
+              return first;
+            }
+
+            // Recurse into the appropriate half
+            if (target < arr[mid]) {
+              return binarySearch(arr, target, left, mid - 1);
+            }
+            return binarySearch(arr, target, mid + 1, right);
+          }
+
+          export default binarySearch;
+          ENDOFCODE
     input_criteria: []
     output_criteria:
       - id: "llm-judge-preset"
         kind: "llm-judge"
         preset: "task_fulfillment"
+        rubric: |
+          Evaluate the code solution against the request below:
+
+          REQUEST:
+          "Implement a function that takes a sorted array of integers and a target value,
+          then returns the index of the target using binary search. Handle edge cases:
+          empty array, target not found (return -1), and duplicate values (return first
+          occurrence). Use TypeScript with proper types. Include JSDoc comments. The
+          function must be recursive."
+
+          Check each requirement:
+          1. Function accepts sorted array + target → returns index (or -1)
+          2. Empty array returns -1
+          3. Target not found returns -1
+          4. Duplicate values return index of first occurrence
+          5. Uses TypeScript with proper types (readonly number[], number return)
+          6. Includes JSDoc comments on the function
+          7. Implementation is recursive (calls itself)
+          8. Algorithm is correct binary search (O(log n))
+
+          Score 0.0 if multiple requirements are missing or the algorithm is wrong.
+          Score 0.5-0.7 if most requirements are met with minor issues.
+          Score 0.8-1.0 if all requirements are met and code follows best practices.
         evidence_path: "llm-judge-input.txt"
         score_threshold: 0.5

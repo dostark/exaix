@@ -21,7 +21,7 @@ export const EvaluationCriterionSchema = z.object({
 export type EvaluationCriterion = z.infer<typeof EvaluationCriterionSchema>;
 
 export const CriterionResultSchema = z.object({
-  name: z.string(),
+  name: z.string().optional(),
   score: z.number().min(0).max(1),
   reasoning: z.string(),
   issues: z.array(z.string()).default([]),
@@ -375,6 +375,7 @@ Then provide an overall assessment.
 Respond with valid JSON only — no markdown fences, no extra text:
 
 {
+  "name": "task_fulfillment",
   "score": 0.85,
   "reasoning": "Brief explanation of the score",
   "issues": ["issue 1", "issue 2"],

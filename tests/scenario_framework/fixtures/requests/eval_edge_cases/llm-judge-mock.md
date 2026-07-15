@@ -1,1 +1,1 @@
-Verify that llm-judge criterion works in mock mode (EXA_EVAL_LLM_MOCK defaults to true).
+Implement a function that takes a sorted array of integers and a target value, then returns the index of the target using binary search. Handle edge cases: empty array, target not found (return -1), and duplicate values (return first occurrence). Use TypeScript with proper types. Include JSDoc comments. The function must be recursive.

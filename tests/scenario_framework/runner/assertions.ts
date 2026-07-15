@@ -25,9 +25,16 @@ import type { JSONValue, Opt, Reason } from "@exaix/core/types";
 import type { IScenarioStepExecutionResult } from "./step_executor.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import { buildEvaluationPrompt, CriterionResultSchema, getCriteriaByNames } from "@exaix/core/evaluation";
-import { ProviderFactory } from "@exaix/ai";
-import { createMockConfig } from "@exaix/testing";
-import "../../../apps/common/registry_bootstrap.ts";
+import { type Config, DEFAULT_MODEL_PRESETS } from "@exaix/schemas";
+import type { IModelIntent, IResolvedModel } from "@exaix/schemas";
+import type { ICostTracker } from "@exaix/core/types";
+import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
+import { ModelResolver } from "../../../packages/ai/src/model_resolver.ts";
+import { DefaultRoutingStrategy } from "../../../packages/ai/src/routing/default_routing_strategy.ts";
+import type { IProviderHealthChecker } from "../../../packages/ai/src/provider_selector.ts";
+import type { ModelSize } from "../../../packages/schemas/src/model_intent.ts";
+import { createMockConfig, createMockEventLogger } from "@exaix/testing";
+import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstrap.ts";
 
 export interface IEvaluateCriterionOptions {
   workspaceRoot: string;
@@ -1251,9 +1258,16 @@ async function evaluateLlmJudgeCriterion(
   // When LLM endpoint is configured, parse the real response
   try {
     const rawLlmResponse = await callLlmEndpoint(promptUsed);
-    const parsed = CriterionResultSchema.parse(JSON.parse(rawLlmResponse));
+    // Strip markdown code fences if present (common LLM behavior)
+    const cleaned = rawLlmResponse.replace(/^```(?:json)?\s*\n?/m, "").replace(/\n?```\s*$/m, "").trim();
+
+    const parsed = CriterionResultSchema.parse(JSON.parse(cleaned));
     const score = parsed.score;
     const passed = score >= threshold;
+
+    const size = Deno.env.get("EXA_EVAL_MODEL_SIZE") ?? "-";
+    const prov = Deno.env.get("EXA_LLM_PROVIDER") ?? "(auto)";
+    console.error(`[eval] size=${size}  provider=${prov}  score=${score.toFixed(2)}  passed=${passed}`);
 
     return {
       criterion_id: criterion.id,
@@ -1280,9 +1294,90 @@ async function evaluateLlmJudgeCriterion(
 }
 
 export async function callLlmEndpoint(prompt: string): Promise<string> {
-  const config = createMockConfig("/tmp/exa-eval");
-  const provider = await ProviderFactory.createByName(config, "default");
-  const result = await provider.generate(prompt);
+  const envProvider = Deno.env.get("EXA_LLM_PROVIDER");
+  const envModel = Deno.env.get("EXA_LLM_MODEL");
+  const envEvalModelSize = Deno.env.get("EXA_EVAL_MODEL_SIZE");
+  const envEvalCharacteristics = Deno.env.get("EXA_EVAL_CHARACTERISTICS");
+  const useRealLlm = Deno.env.get("EXA_EVAL_LLM_MOCK") === "false";
+
+  // Real LLM calls require an explicit provider
+  if (useRealLlm && !envProvider) {
+    throw new Error(
+      "EXA_LLM_PROVIDER is required when EXA_EVAL_LLM_MOCK=false. " +
+        "Set it to a supported provider (e.g. 'ollama', 'anthropic').",
+    );
+  }
+
+  // Ensure provider registry and defaults are initialized
+  bootstrapProviderRegistry();
+
+  // Build the resolution intent from environment variables
+  const intent: IModelIntent = {};
+  if (envProvider) intent.preferred_provider = envProvider;
+  if (envModel) {
+    // Provider:model format or bare name — both handled by ModelResolver
+    intent.model = envModel;
+  } else if (envProvider) {
+    // Bare provider name → ModelResolver resolves via registry metadata
+    intent.model = envProvider;
+  }
+  if (envEvalModelSize) {
+    const valid = ["S", "M", "L", "XL"];
+    if (valid.includes(envEvalModelSize)) {
+      intent.model_size = envEvalModelSize as ModelSize;
+    }
+  }
+  if (envEvalCharacteristics) {
+    intent.characteristics = envEvalCharacteristics.split(",").map((s) => s.trim());
+  }
+  intent.allow_local = true;
+  intent.required_capabilities = ["chat"];
+
+  // Inline stubs — no DB, no daemon dependencies
+  const healthChecker: IProviderHealthChecker = {
+    checkProvider: () => Promise.resolve(true),
+  };
+  const costTracker: ICostTracker = {
+    trackGeneration: () => Promise.resolve(0),
+    persistEntry: () => Promise.resolve(),
+    queryByCriteria: () => Promise.resolve([]),
+    getTotalCost: () => 0,
+    getDailyCost: () => Promise.resolve(0),
+    flush: () => Promise.resolve(),
+    isWithinBudget: () => Promise.resolve(true),
+  };
+  const eventLogger = createMockEventLogger();
+  const config = createMockConfig("/tmp/exa-eval", {
+    model_presets: DEFAULT_MODEL_PRESETS,
+  });
+
+  const resolver = new ModelResolver(
+    new DefaultRoutingStrategy(ProviderRegistry, costTracker, healthChecker),
+    config,
+    healthChecker,
+    eventLogger,
+    undefined, // no modelRegistry — rely on resolvePresetFromSize with actual presets
+    undefined, // Solo — no Team strategy
+  );
+
+  let resolved: IResolvedModel;
+  try {
+    resolved = await resolver.resolve(intent);
+  } catch (err) {
+    throw new Error(
+      `Model resolution failed: ${(err as Error).message}. ` +
+        `Set EXA_LLM_PROVIDER and optionally EXA_EVAL_MODEL_SIZE.`,
+    );
+  }
+
+  const overrides: Partial<Config> = {
+    models: {
+      default: { provider: resolved.provider, model: resolved.model },
+    },
+  };
+  const finalConfig = createMockConfig("/tmp/exa-eval", overrides as Parameters<typeof createMockConfig>[1]);
+  const provider = await ProviderFactory.createByName(finalConfig, "default");
+  const result = await provider.generate(prompt, resolved.options);
   return result.content;
 }
 
