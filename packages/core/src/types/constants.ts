@@ -199,6 +199,9 @@ export const MILESTONE_RESOURCE_LOCK_ACQUIRED = "resource_lock.acquired";
 export const MILESTONE_FLOW_COMPLETED = "flow.completed";
 export const MILESTONE_FLOW_FAILED = "flow.failed";
 
+/** Activity-journal event logged by dynamic_step_executor.ts for every tool call decision. */
+export const ACTIVITY_EVENT_DYNAMIC_TOOL_CALL = "dynamic_tool_call";
+
 // ============================================================================
 // Database Validation Limits
 // ============================================================================

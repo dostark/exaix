@@ -1,0 +1,32 @@
+schema_version: "1.0.0"
+id: "trajectory-tool-order-assert"
+title: "Trajectory eval captures tool order from fixture journal"
+pack: "dynamic_execution"
+tags: ["dynamic", "manual-only", "trajectory"]
+request_fixture: "fixtures/requests/dynamic_execution/explore_codebase.md"
+portals: []
+mode_support: ["manual-checkpoint"]
+steps:
+  - id: "execute-source-step"
+    type: "exactl"
+    name: "Run a daemon flow that generates tool calls"
+    command: "flow"
+    args: ["run", "--request", "fixtures/requests/trajectory/example.md"]
+    output_criteria:
+      - id: "flow-succeeded"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "assert-trajectory-order"
+    type: "trajectory-assert"
+    name: "Verify tool call order matches expected sequence"
+    source_step: "execute-source-step"
+    expected_sequence:
+      - tool: "read_file"
+      - tool: "edit_file"
+      - tool: "bash"
+    order_matters: true
+    allow_extra_tools: false
+    partial_credit: false
+    input_criteria: []
+    output_criteria: []

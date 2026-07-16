@@ -5,6 +5,7 @@
     "@exaix/eval-history": "./mod.ts",
     "@exaix/eval-history/": "./src/",
     "@exaix/core": "../core/mod.ts",
+    "@exaix/core/types": "../core/src/types/mod.ts",
     "@exaix/core/": "../core/src/",
     "@db/sqlite": "jsr:@db/sqlite@^0.13.0",
     "@std/path": "jsr:@std/path@^1.1.4",

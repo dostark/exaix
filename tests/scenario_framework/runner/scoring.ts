@@ -129,14 +129,23 @@ export function computeStepScore(
   let totalWeight = 0;
 
   for (const result of criterionResults) {
+    if (result.status === CriterionStatus.SKIPPED) continue;
+    // ERROR and TIMEOUT unconditionally score 0, regardless of score field
+    if (result.status === CriterionStatus.ERROR || result.status === CriterionStatus.TIMEOUT) {
+      const weight = result.score_weight ?? DEFAULT_CRITERION_WEIGHT;
+      totalWeight += weight;
+      continue;
+    }
+
     const weight = result.score_weight ?? DEFAULT_CRITERION_WEIGHT;
     totalWeight += weight;
-    if (result.status === CriterionStatus.PASSED) {
-      weightedSum += weight;
-    }
+
+    const score = result.score !== undefined ? result.score : (result.status === CriterionStatus.PASSED ? 1 : 0);
+    weightedSum += score * weight;
   }
 
-  if (totalWeight === 0) return 0.0;
+  // All-SKIPPED: vacuously passing
+  if (totalWeight === 0) return 1.0;
   return weightedSum / totalWeight;
 }
 

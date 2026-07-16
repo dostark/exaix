@@ -24,7 +24,11 @@ import {
 import type { JSONValue, Opt, Reason } from "@exaix/core/types";
 import type { IScenarioStepExecutionResult } from "./step_executor.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
-import { buildEvaluationPrompt, CriterionResultSchema, getCriteriaByNames } from "@exaix/core/evaluation";
+import {
+  buildEvaluationPrompt,
+  CriterionResultSchema as JudgeResponseSchema,
+  getCriteriaByNames,
+} from "@exaix/core/evaluation";
 import { type Config, DEFAULT_MODEL_PRESETS } from "@exaix/schemas";
 import type { IModelIntent, IResolvedModel } from "@exaix/schemas";
 import type { ICostTracker } from "@exaix/core/types";
@@ -164,25 +168,15 @@ export async function evaluateCriterion(
 export async function evaluateStepOutcome(
   options: IEvaluateStepOutcomeOptions,
 ): Promise<IScenarioStepOutcome> {
-  // Trajectory-assert steps don't use traditional criteria — results come from the executor
+  // Trajectory-assert steps use criterion results populated by the step executor
   if (options.step.type === ScenarioStepType.TRAJECTORY_ASSERT) {
-    const stdout = options.executionResult?.stdout ?? "";
-    const exitCode = options.executionResult?.exitCode ?? 0;
-    const allPassed = exitCode === 0;
+    const criterionResults = options.executionResult?.criterionResults ?? [];
+    const allPassed = criterionResults.every((r) => r.status === "passed");
     return {
       stepId: options.step.id,
       status: allPassed ? CriterionStatus.PASSED : CriterionStatus.FAILED,
       failureStage: allPassed ? null : StepFailureStage.EXECUTION,
-      criterionResults: [
-        {
-          criterion_id: "trajectory-sequence",
-          kind: CriterionKind.COMMAND_EXIT_CODE,
-          phase: CriterionPhase.OUTPUT,
-          status: allPassed ? CriterionStatus.PASSED : CriterionStatus.FAILED,
-          message: stdout || "trajectory assertion completed",
-          evidence_refs: [],
-        },
-      ],
+      criterionResults,
       executionResult: options.executionResult,
     };
   }
@@ -1261,7 +1255,7 @@ async function evaluateLlmJudgeCriterion(
     // Strip markdown code fences if present (common LLM behavior)
     const cleaned = rawLlmResponse.replace(/^```(?:json)?\s*\n?/m, "").replace(/\n?```\s*$/m, "").trim();
 
-    const parsed = CriterionResultSchema.parse(JSON.parse(cleaned));
+    const parsed = JudgeResponseSchema.parse(JSON.parse(cleaned));
     const score = parsed.score;
     const passed = score >= threshold;
 
@@ -1278,6 +1272,7 @@ async function evaluateLlmJudgeCriterion(
       evidence_refs: criterion.evidence_path ? [criterion.evidence_path] : [],
       observed_value: score,
       expected_value: threshold,
+      score: score,
       score_weight: options.criterion.score_weight,
     };
   } catch {

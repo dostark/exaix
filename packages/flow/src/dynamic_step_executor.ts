@@ -21,7 +21,11 @@ import type { IHitlPolicyEvaluator, IToolConfirmationInterceptor, IToolManifestR
 import { DomainEventType } from "@exaix/core/events";
 import type { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
-import { MILESTONE_TOOL_CALL_COMPLETED, MILESTONE_TOOL_CALL_STARTED } from "@exaix/core";
+import {
+  ACTIVITY_EVENT_DYNAMIC_TOOL_CALL,
+  MILESTONE_TOOL_CALL_COMPLETED,
+  MILESTONE_TOOL_CALL_STARTED,
+} from "@exaix/core";
 import type { IMilestoneEmitter } from "@exaix/core/observability";
 import type { ILlmClient, ToolArgs } from "@exaix/ai";
 import type { IMcpClient } from "@exaix/mcp";
@@ -92,9 +96,9 @@ export class DynamicStepExecutor {
     private readonly mcpClient: IMcpClient & IToolManifestResolver,
     private readonly llmClient: ILlmClient,
     private readonly activityJournal: IActivityJournal,
-    readonly confirmationInterceptor?: IToolConfirmationInterceptor,
-    milestoneEmitter?: IMilestoneEmitter,
-    private readonly hitlPolicyEvaluator?: IHitlPolicyEvaluator,
+    readonly confirmationInterceptor?: Opt<IToolConfirmationInterceptor, Reason.OptionalDependency>,
+    milestoneEmitter?: Opt<IMilestoneEmitter, Reason.OptionalDependency>,
+    private readonly hitlPolicyEvaluator?: Opt<IHitlPolicyEvaluator, Reason.OptionalDependency>,
     private readonly dynamicModeTools: ReadonlySet<string> = new Set(),
     private readonly dynamicModeApprovalTools: ReadonlySet<string> = new Set(),
   ) {
@@ -263,7 +267,7 @@ export class DynamicStepExecutor {
       await this.activityJournal.log({
         traceId: opts.traceId,
         stepId: step.id,
-        event: "dynamic_tool_call",
+        event: ACTIVITY_EVENT_DYNAMIC_TOOL_CALL,
         tool: decision.tool,
         args: decision.args,
         resultSummary: toolResult.substring(0, 200),

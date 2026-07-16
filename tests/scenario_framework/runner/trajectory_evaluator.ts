@@ -7,6 +7,7 @@
  * @related-files [tests/scenario_framework/schema/step_schema.ts, tests/scenario_framework/runner/assertions.ts]
  */
 
+import { Database } from "@db/sqlite";
 import {
   CriterionKind,
   CriterionPhase,
@@ -14,6 +15,9 @@ import {
   type ICriterionResult,
   type IExpectedSequenceEntry,
 } from "../schema/step_schema.ts";
+import { ACTIVITY_EVENT_DYNAMIC_TOOL_CALL } from "@exaix/core";
+import type { JSONValue } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IExpectedTrajectory {
   expectedSequence: IExpectedSequenceEntry[];
@@ -29,19 +33,124 @@ export interface ITrajectoryResult {
   sequence: string[];
 }
 
-const LEVENSHTEIN_MAX_LENGTH = 50;
+export interface IToolCall {
+  tool: string;
+  args: Record<string, JSONValue>;
+}
+
+export interface ITrajectoryCaptureResult {
+  sequence: string[];
+  toolCalls: IToolCall[];
+  matchedCount: number;
+  error?: boolean;
+}
+
+export interface IMatchArgsOptions {
+  minArgs?: number;
+  maxArgs?: number;
+}
+
+const SENSITIVE_KEYS = new Set(["password", "token", "api_key", "secret", "auth", "credential", "private_key"]);
+
+const ARGS_DISPLAY_MAX_LENGTH = 200;
 
 /**
- * Captures tool-call trajectory from journal events.
- * Reads journal entries from the CLI or a pre-loaded list of events.
+ * Captures tool-call trajectory from journal DB directly via SQLite.
+ * Reads only rows within the specified rowid window matching
+ * ACTIVITY_EVENT_DYNAMIC_TOOL_CALL.
  */
-export async function captureTrajectory(options: {
-  workspaceRoot: string;
-  sourceStep: string;
-  exactlExecutable?: string;
-}): Promise<ITrajectoryResult> {
-  const events = await loadJournal(options);
-  return extractToolCalls(events);
+export function captureToolCallsFromJournal(
+  dbPath: string,
+  opts: { sinceRowid: number; untilRowid: number },
+): ITrajectoryCaptureResult {
+  try {
+    const db = new Database(dbPath);
+    const rows = db.prepare<{ tool: string; args: string }>(
+      `SELECT json_extract(payload, '$.tool') AS tool,
+              json_extract(payload, '$.args') AS args
+       FROM activity
+       WHERE action_type = ?
+         AND rowid > ? AND rowid <= ?
+       ORDER BY rowid ASC`,
+    ).all(ACTIVITY_EVENT_DYNAMIC_TOOL_CALL, opts.sinceRowid, opts.untilRowid);
+    db.close();
+
+    const toolCalls: IToolCall[] = [];
+    const sequence: string[] = [];
+
+    for (const row of rows) {
+      if (typeof row.tool !== "string") continue;
+      let args: Record<string, JSONValue> = {};
+      if (typeof row.args === "object" && row.args !== null) {
+        args = row.args as Record<string, JSONValue>;
+      } else if (typeof row.args === "string") {
+        try {
+          args = JSON.parse(row.args) as Record<string, JSONValue>;
+        } catch {
+          args = {};
+        }
+      }
+      toolCalls.push({ tool: row.tool, args });
+      sequence.push(row.tool);
+    }
+
+    return { sequence, toolCalls, matchedCount: toolCalls.length };
+  } catch {
+    return { sequence: [], toolCalls: [], matchedCount: 0, error: true };
+  }
+}
+
+/**
+ * Matches a single tool call's args against expected constraints.
+ */
+export function matchToolCallArgs(
+  call: IToolCall,
+  argsContains: string[],
+  opts?: Opt<IMatchArgsOptions, Reason.OptionalInput>,
+): { passed: boolean; message?: string } {
+  const args = call.args;
+  const argCount = Object.keys(args).length;
+
+  if (opts?.minArgs !== undefined && argCount < opts.minArgs) {
+    return { passed: false, message: `min_args ${opts.minArgs} not met: got ${argCount} args` };
+  }
+  if (opts?.maxArgs !== undefined && argCount > opts.maxArgs) {
+    return { passed: false, message: `max_args ${opts.maxArgs} exceeded: got ${argCount} args` };
+  }
+
+  for (const substring of argsContains) {
+    const found = Object.values(args).some((v) => {
+      if (typeof v === "string") return v.includes(substring);
+      return JSON.stringify(v).includes(substring);
+    });
+    if (!found) {
+      return { passed: false, message: `args_contains "${substring}" not found in args` };
+    }
+  }
+
+  return { passed: true };
+}
+
+/**
+ * Redacts args for display: truncates long values and masks sensitive keys.
+ */
+export function redactArgs(args: Record<string, JSONValue>): string {
+  const redacted: Record<string, JSONValue> = {};
+  for (const [key, value] of Object.entries(args)) {
+    if (SENSITIVE_KEYS.has(key)) {
+      redacted[key] = "***";
+      continue;
+    }
+    if (typeof value === "string" && value.length > ARGS_DISPLAY_MAX_LENGTH) {
+      redacted[key] = value.slice(0, ARGS_DISPLAY_MAX_LENGTH) + "...";
+    } else if (typeof value === "object" && value !== null) {
+      const str = JSON.stringify(value);
+      redacted[key] = str.length > ARGS_DISPLAY_MAX_LENGTH ? str.slice(0, ARGS_DISPLAY_MAX_LENGTH) + "..." : str;
+    } else {
+      redacted[key] = value;
+    }
+  }
+  return JSON.stringify(redacted);
 }
 
 /**
@@ -58,10 +167,11 @@ export function scoreTrajectory(
 
   results.push({
     criterion_id: "trajectory-sequence",
-    kind: CriterionKind.COMMAND_EXIT_CODE,
+    kind: CriterionKind.TRAJECTORY,
     phase: CriterionPhase.OUTPUT,
     status: score >= 1.0 ? CriterionStatus.PASSED : CriterionStatus.FAILED,
     message: `trajectory: matched ${matched}/${matched + unmatched} expected tools (score: ${score.toFixed(2)})`,
+    score,
     evidence_refs: [],
     observed_value: observed.sequence,
     expected_value: expectedToolNames(expected),
@@ -70,10 +180,11 @@ export function scoreTrajectory(
   if (observed.extraCount > 0 && !expected.allowExtraTools) {
     results.push({
       criterion_id: "trajectory-extra-tools",
-      kind: CriterionKind.COMMAND_EXIT_CODE,
+      kind: CriterionKind.TRAJECTORY,
       phase: CriterionPhase.OUTPUT,
       status: CriterionStatus.FAILED,
       message: `trajectory: ${observed.extraCount} unexpected tool calls`,
+      score: 0,
       evidence_refs: [],
       observed_value: observed.extraCount,
       expected_value: 0,
@@ -89,7 +200,7 @@ export function scoreTrajectory(
 export function levenshteinTrajectory(a: string[], b: string[]): number {
   const maxLen = Math.max(a.length, b.length);
   if (maxLen === 0) return 0;
-  if (maxLen > LEVENSHTEIN_MAX_LENGTH) {
+  if (maxLen > 50) {
     return Math.abs(a.length - b.length);
   }
 
@@ -121,57 +232,6 @@ export function levenshteinTrajectory(a: string[], b: string[]): number {
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
-
-interface IJournalEvent {
-  action_type?: string;
-  event_type?: string;
-  tool_name?: string;
-  name?: string;
-}
-
-async function loadJournal(options: {
-  workspaceRoot: string;
-  exactlExecutable?: string;
-}): Promise<IJournalEvent[]> {
-  const exactl = options.exactlExecutable || "exactl";
-  try {
-    const command = new Deno.Command(exactl, {
-      args: ["journal", "--format", "json", "-n", "500"],
-      stdout: "piped",
-      stderr: "piped",
-      cwd: options.workspaceRoot,
-    });
-    const { code, stdout } = await command.output();
-    if (code !== 0) return [];
-    const text = new TextDecoder().decode(stdout);
-    return JSON.parse(text) as IJournalEvent[];
-  } catch {
-    return [];
-  }
-}
-
-function extractToolCalls(events: IJournalEvent[]): ITrajectoryResult {
-  const toolCalls: string[] = [];
-
-  for (const event of events) {
-    const type = event.action_type || event.event_type || "";
-    if (type.includes("tool_call") || type.includes("tool.use") || type.includes("tool_call_start")) {
-      const toolName = typeof event.tool_name === "string"
-        ? event.tool_name
-        : typeof event.name === "string"
-        ? event.name
-        : type;
-      toolCalls.push(toolName);
-    }
-  }
-
-  return {
-    matchedCount: 0,
-    unmatchedCount: 0,
-    extraCount: 0,
-    sequence: toolCalls,
-  };
-}
 
 function expectedToolNames(expected: IExpectedTrajectory): string[] {
   return expected.expectedSequence.map((e) => e.tool);

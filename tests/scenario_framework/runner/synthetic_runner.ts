@@ -12,6 +12,7 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { evaluateCriterion, evaluateStepOutcome, type IScenarioStepOutcome, StepFailureStage } from "./assertions.ts";
 import { type IRunManifest, writeExecutionLog, writeRunManifest } from "./evidence_collector.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 import { computeStepScore, computeSuiteScore, type IStepScoreInput } from "./scoring.ts";
 import { type IRunScenarioInModeResult, runScenarioInMode } from "./modes.ts";
 import { type ILoadedScenario, loadScenarioFromYamlFile } from "./scenario_loader.ts";
@@ -142,7 +143,7 @@ export async function runSyntheticScenario(
 
       stepOutcomes.push(outcome);
 
-      return toModeExecutionResult(outcome);
+      return toModeExecutionResult(outcome, step.step_pass_threshold);
     },
   });
 
@@ -311,6 +312,7 @@ function hasFailedCriterion(results: ICriterionResult[]): boolean {
 
 function toModeExecutionResult(
   outcome: IScenarioStepOutcome,
+  stepPassThreshold?: Opt<number, Reason.OptionalInput>,
 ): IScenarioStepExecutionResult {
   if (outcome.executionResult === undefined) {
     const timestamp = new Date().toISOString();
@@ -338,9 +340,13 @@ function toModeExecutionResult(
     };
   }
 
+  // Use step_pass_threshold when available: criteriaFailed only when step score
+  // falls below the threshold. Default 1.0 preserves current binary semantics.
+  const threshold = stepPassThreshold ?? 1.0;
+  const stepScore = computeStepScore(outcome.criterionResults);
   return {
     ...outcome.executionResult,
-    criteriaFailed: outcome.status !== CriterionStatus.PASSED,
+    criteriaFailed: stepScore < threshold,
   };
 }
 

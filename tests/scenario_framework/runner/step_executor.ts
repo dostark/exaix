@@ -9,10 +9,15 @@
  * @related-files [tests/scenario_framework/runner/config.ts, tests/scenario_framework/tests/unit/scenario_loader_execution_core_test.ts]
  */
 
-import { type IScenarioStep, ScenarioStepType } from "../schema/step_schema.ts";
+import { type ICriterionResult, type IScenarioStep, ScenarioStepType } from "../schema/step_schema.ts";
 import { globToRegExp, join, relative, resolve } from "@std/path";
 import { Database } from "@db/sqlite";
-import { captureTrajectory, type IExpectedTrajectory, scoreTrajectory } from "./trajectory_evaluator.ts";
+import {
+  captureToolCallsFromJournal,
+  type IExpectedTrajectory,
+  type ITrajectoryResult,
+  scoreTrajectory,
+} from "./trajectory_evaluator.ts";
 
 export interface IExecuteScenarioStepOptions {
   step: IScenarioStep;
@@ -40,6 +45,11 @@ export interface IScenarioStepExecutionResult {
    * final outcome as scenario-failure if this was ever true for any step.
    */
   criteriaFailed?: boolean;
+  /**
+   * Criterion results populated by trajectory-assert steps (and potentially
+   * other non-shell step types) for direct forwarding into evaluateStepOutcome.
+   */
+  criterionResults?: ICriterionResult[];
 }
 
 const TEXT_DECODER = new TextDecoder();
@@ -62,13 +72,19 @@ export async function executeScenarioStep(
     return await executeWaitForJournalEventStep(options, startedAt, startedAtEpochMs);
   }
 
-  // Handle trajectory-assert — reads journal instead of executing a command
+  // Handle trajectory-assert — reads journal directly via SQLite instead of executing a command
   if (options.step.type === ScenarioStepType.TRAJECTORY_ASSERT) {
-    const trajectoryObserved = await captureTrajectory({
-      workspaceRoot: options.cwd ?? Deno.cwd(),
-      sourceStep: options.step.source_step ?? options.step.id,
-      exactlExecutable: options.exactlExecutable,
-    });
+    const dbPath = join(options.cwd ?? Deno.cwd(), ".exa", "journal.db");
+    const sinceRowid = options.step.source_step_rowid_start ?? 0;
+    const untilRowid = options.step.source_step_rowid_end ?? 0;
+    const capture = captureToolCallsFromJournal(dbPath, { sinceRowid, untilRowid });
+
+    const trajectoryObserved: ITrajectoryResult = {
+      matchedCount: capture.matchedCount,
+      unmatchedCount: 0,
+      extraCount: 0,
+      sequence: capture.sequence,
+    };
 
     const trajectoryExpected: IExpectedTrajectory = {
       expectedSequence: options.step.expected_sequence ?? [],
@@ -94,6 +110,7 @@ export async function executeScenarioStep(
       stdout,
       stderr: "",
       combinedOutput: stdout,
+      criterionResults: results,
     };
   }
 

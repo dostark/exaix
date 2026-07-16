@@ -58,6 +58,7 @@ export enum CriterionKind {
   DIR_EXISTS = "dir-exists",
   COMMAND_OUTPUT_CONTAINS = "command-output-contains",
   LLM_JUDGE = "llm-judge",
+  TRAJECTORY = "trajectory",
 }
 
 export enum CriterionPhase {
@@ -282,6 +283,14 @@ export const CriterionResultSchema = z.object({
   observed_value: z.unknown().optional(),
   expected_value: z.unknown().optional(),
   score_weight: z.number().min(0).max(1).optional(),
+  /** Continuous criterion score 0-1. Absent ⇒ derive from status (PASSED=1, else 0). */
+  score: z.number().min(0).max(1).optional(),
+  /** Judge provenance — populated only by llm-judge. */
+  judge: z.object({
+    provider: z.string(),
+    model: z.string(),
+    reasoning: z.string().optional(),
+  }).optional(),
 }).strict();
 
 export type ICriterionResult = z.infer<typeof CriterionResultSchema>;
@@ -306,10 +315,13 @@ export const ScenarioStepSchema = z.object({
   output_criteria: z.array(CriterionSchema).optional().default([]),
   step_weight: z.number().min(0).max(1).optional(),
   source_step: z.string().min(1).optional(),
+  source_step_rowid_start: z.number().int().min(0).optional(),
+  source_step_rowid_end: z.number().int().min(0).optional(),
   expected_sequence: z.array(ExpectedSequenceEntrySchema).optional(),
   order_matters: z.boolean().optional(),
   allow_extra_tools: z.boolean().optional(),
   partial_credit: z.boolean().optional(),
+  step_pass_threshold: z.number().min(0).max(1).optional(),
 }).superRefine((step, ctx) => {
   if (step.type === ScenarioStepType.MANUAL_REVIEW && !step.instructions) {
     ctx.addIssue({

@@ -340,18 +340,24 @@ async function writeEvalReport(
 }
 
 function computeStepScoreFromCriterionResults(
-  results: { status: string; score_weight?: number }[],
+  results: { status: string; score_weight?: number; score?: number }[],
   executionStatus?: Opt<string, Reason.OptionalContext>,
 ): number {
-  // Execution failures score 0 regardless of criteria
   if (executionStatus === "execution-failed") return 0;
   if (results.length === 0) return 1.0;
   let weightedSum = 0;
   let totalWeight = 0;
   for (const r of results) {
+    if (r.status === "skipped") continue;
+    if (r.status === "error" || r.status === "timeout") {
+      const w = r.score_weight ?? 1.0;
+      totalWeight += w;
+      continue;
+    }
     const w = r.score_weight ?? 1.0;
     totalWeight += w;
-    if (r.status === "passed") weightedSum += w;
+    const score = r.score !== undefined ? r.score : (r.status === "passed" ? 1 : 0);
+    weightedSum += score * w;
   }
-  return totalWeight > 0 ? weightedSum / totalWeight : 0.0;
+  return totalWeight > 0 ? weightedSum / totalWeight : 1.0;
 }
