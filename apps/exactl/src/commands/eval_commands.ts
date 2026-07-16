@@ -8,7 +8,8 @@
 
 import { resolve } from "@std/path";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
-import { EvalSqliteStore } from "@exaix/eval-history";
+import { EvalSqliteStore, resolveEvalDbPath } from "@exaix/eval-history";
+import type { Opt, Reason } from "@exaix/core/types";
 
 interface IRunManifest {
   scenarioId: string;
@@ -59,24 +60,68 @@ export class EvalCommands extends BaseCommand {
     pack?: string;
     since?: string;
     format?: string;
+    source?: string;
   }): Promise<void> {
-    const historyDir = resolve(Deno.cwd(), "tests", "scenario_framework", "output", "history");
+    // Default: SQLite; --source jsonl falls back to JSONL file
+    const useJsonl = options.source === "jsonl";
 
-    // Read global history file
-    const historyFile = resolve(historyDir, "eval-history.jsonl");
-    let lines: string[] = [];
-    try {
-      const content = await Deno.readTextFile(historyFile);
-      lines = content.trim().split("\n").filter(Boolean);
-    } catch {
-      console.log("No evaluation history found.");
+    if (useJsonl) {
+      // JSONL fallback path (unchanged from before)
+      const historyDir = resolve(Deno.cwd(), "tests", "scenario_framework", "output", "history");
+      const historyFile = resolve(historyDir, "eval-history.jsonl");
+      let lines: string[] = [];
+      try {
+        const content = await Deno.readTextFile(historyFile);
+        lines = content.trim().split("\n").filter(Boolean);
+      } catch {
+        console.log("No evaluation history found.");
+        return;
+      }
+      const entries: IHistoryEntry[] = lines.map((line) => JSON.parse(line));
+      const filtered = this.applyHistoryFilters(entries, options);
+      if (filtered.length === 0) {
+        console.log("No matching history entries found.");
+        return;
+      }
+      this.renderHistory(filtered, options.format);
       return;
     }
 
-    // Parse entries
-    const entries: IHistoryEntry[] = lines.map((line) => JSON.parse(line));
+    // SQLite primary path
+    const dbPath = resolveEvalDbPath();
+    const store = new EvalSqliteStore(dbPath);
+    try {
+      store.initialize();
+      const runs = store.queryRuns({
+        scenario: options.scenario,
+        pack: options.pack,
+        last: options.last,
+        since: options.since,
+      });
+      if (runs.length === 0) {
+        console.log("No evaluation history found in SQLite.");
+        return;
+      }
+      const entries: IHistoryEntry[] = runs.map((r) => ({
+        run_id: r.run_id,
+        scenario_id: r.scenario_id,
+        pack: r.pack,
+        outcome: r.passed ? "success" : "failure",
+        mode: r.mode,
+        suite_score: r.suite_score,
+        passed: r.passed === 1,
+        timestamp: r.run_timestamp,
+      }));
+      this.renderHistory(entries, options.format);
+    } finally {
+      store.close();
+    }
+  }
 
-    // Apply filters
+  private applyHistoryFilters(
+    entries: IHistoryEntry[],
+    options: { last?: number; scenario?: string; pack?: string; since?: string },
+  ): IHistoryEntry[] {
     let filtered = entries;
     if (options.scenario) {
       filtered = filtered.filter((e) => e.scenario_id === options.scenario);
@@ -91,22 +136,20 @@ export class EvalCommands extends BaseCommand {
     if (options.last && options.last > 0) {
       filtered = filtered.slice(-options.last);
     }
+    return filtered;
+  }
 
-    if (filtered.length === 0) {
-      console.log("No matching history entries found.");
-      return;
-    }
-
-    const fmt = options.format ?? "table";
+  private renderHistory(entries: IHistoryEntry[], format?: Opt<string, Reason.OptionalInput>): void {
+    const fmt = format ?? "table";
     if (fmt === "json") {
-      console.log(JSON.stringify(filtered, null, 2));
+      console.log(JSON.stringify(entries, null, 2));
     } else {
-      renderHistoryTable(filtered);
+      renderHistoryTable(entries);
     }
   }
 
   compare(runA: string, runB: string): void {
-    const dbPath = resolve(Deno.cwd(), ".exa", "eval.db");
+    const dbPath = resolveEvalDbPath();
     const store = new EvalSqliteStore(dbPath);
     try {
       store.initialize();

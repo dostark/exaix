@@ -17,7 +17,7 @@ import { reportScenarioFailure, reportSuiteSummary } from "./reporter.ts";
 import { selectScenariosForExecution } from "./modes.ts";
 import { writeEvalHistoryEntry } from "./history_writer.ts";
 import type { Opt, Reason } from "@exaix/core/types";
-import { EvalSqliteStore } from "@exaix/eval-history";
+import { EvalSqliteStore, resolveEvalDbPath } from "@exaix/eval-history";
 import {
   accumulateRunVerdict,
   checkScoreThreshold,
@@ -251,7 +251,7 @@ await new Command()
       const historyFormat = options.historyFormat ?? "sqlite+jsonl";
       let sqliteStore: EvalSqliteStore | undefined;
       if (historyFormat !== "jsonl") {
-        const dbPath = resolve(Deno.cwd(), ".exa", "eval.db");
+        const dbPath = resolveEvalDbPath();
         sqliteStore = new EvalSqliteStore(dbPath);
         try {
           sqliteStore.initialize();

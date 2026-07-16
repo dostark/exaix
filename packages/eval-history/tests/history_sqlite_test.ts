@@ -54,19 +54,26 @@ Deno.test("[ScenarioFrameworkHistorySqlite] initialize creates all tables and ap
     assertEquals(tableNames.includes("eval_criteria_results"), true);
     assertEquals(tableNames.includes("eval_schema_version"), true);
 
-    // Verify both migrations applied
+    // Verify all three migrations applied
     const versions = store["db"].prepare(
       "SELECT version, description FROM eval_schema_version ORDER BY version",
     ).all<{ version: number; description: string }>();
-    assertEquals(versions.length, 2);
+    assertEquals(versions.length, 3);
     assertEquals(versions[0].version, 1);
     assertEquals(versions[1].version, 2);
+    assertEquals(versions[2].version, 3);
 
     // Verify v2 columns exist
     const hasBlueprintId = store["db"].prepare(
       "SELECT blueprint_id FROM eval_runs LIMIT 0",
     );
     hasBlueprintId.run(); // does not throw
+
+    // Verify v3 columns exist on eval_criteria_results
+    const hasScore = store["db"].prepare(
+      "SELECT score FROM eval_criteria_results LIMIT 0",
+    );
+    hasScore.run(); // does not throw
   });
 });
 
@@ -77,8 +84,8 @@ Deno.test("[ScenarioFrameworkHistorySqlite] re-initialization is idempotent", ()
     const versionCount = store["db"].prepare(
       "SELECT COUNT(*) as cnt FROM eval_schema_version",
     ).get<{ cnt: number }>();
-    // Both migrations applied once, second initialize does not duplicate them
-    assertEquals(versionCount?.cnt, 2);
+    // All migrations applied once, second initialize does not duplicate them
+    assertEquals(versionCount?.cnt, 3);
   });
 });
 

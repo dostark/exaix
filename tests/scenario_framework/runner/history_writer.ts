@@ -29,6 +29,11 @@ export interface IWriteEvalHistoryOptions {
   suiteScoreStdev?: number;
   passAt1?: number;
   passPowK?: number;
+  durationMs?: number;
+  traceId?: string;
+  provider?: string;
+  model?: string;
+  cellId?: string;
 }
 
 // The scenario framework lives at <repo>/tests/scenario_framework; this file is under runner/.
@@ -135,28 +140,37 @@ function buildEvalHistoryEntry(
     entry.pass_pow_k = opts.passPowK;
   }
 
+  // Enrichment fields
+  if (opts?.durationMs !== undefined) entry.duration_ms = opts.durationMs;
+  if (opts?.traceId !== undefined) entry.trace_id = opts.traceId;
+  if (opts?.provider !== undefined) entry.provider = opts.provider;
+  if (opts?.model !== undefined) entry.model = opts.model;
+  if (opts?.cellId !== undefined) entry.cell_id = opts.cellId;
+
   return entry;
 }
 
 /**
- * Atomically appends a JSONL line to a file in the given directory.
- * Writes to a temp file first, then renames to avoid partial writes.
+ * Appends a JSONL line to a file using true append mode (O_APPEND).
+ * Deno.open with { append: true, create: true } opens or creates the file
+ * and positions the write cursor at the end, so concurrent writers do not
+ * clobber each other. A single write() syscall appends the line atomically
+ * at the OS level (for lines < PIPE_BUF, typically 4KiB).
+ *
+ * Partial-line risk: if a single write() produces more bytes than the
+ * kernel's atomic-guarantee size (PIPE_BUF on most Unixes), a concurrent
+ * reader could see a partial line. In practice, JSONL entries are
+ * 1–3 KiB, well within the guarantee. Documented for future awareness.
  */
 async function writeJsonlLine(directory: string, entry: IEvalHistoryEntry): Promise<void> {
   const historyPath = resolve(directory, HISTORY_FILE);
   await Deno.mkdir(dirname(historyPath), { recursive: true });
 
   const line = JSON.stringify(entry) + "\n";
-  const tempPath = historyPath + ".tmp";
-
-  // Read existing content if file exists, then write atomically
-  let existing = "";
+  const file = await Deno.open(historyPath, { append: true, create: true, write: true });
   try {
-    existing = await Deno.readTextFile(historyPath);
-  } catch {
-    // File doesn't exist yet — that's fine
+    await file.write(new TextEncoder().encode(line));
+  } finally {
+    file.close();
   }
-
-  await Deno.writeTextFile(tempPath, existing + line);
-  await Deno.rename(tempPath, historyPath);
 }

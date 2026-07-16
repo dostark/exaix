@@ -26,6 +26,11 @@ interface IRunRow {
   trials: number;
   exactl_version: string | null;
   schema_version: string | null;
+  duration_ms: number | null;
+  trace_id: string | null;
+  provider: string | null;
+  model: string | null;
+  cell_id: string | null;
 }
 
 interface IStepRow {
@@ -37,6 +42,28 @@ interface IStepRow {
   execution_status: string | null;
 }
 
+interface ICriterionResultRow {
+  criterion_id: string;
+  kind: string;
+  status: string;
+  score?: number | null;
+  score_weight?: number | null;
+  judge?: { provider?: string; model?: string; reasoning?: string } | null;
+}
+
+/**
+ * Resolve the evaluation database path.
+ * Precedence: EXA_EVAL_DB_PATH env var > <workspaceRoot>/.exa/eval.db
+ */
+export function resolveEvalDbPath(workspaceRoot?: Opt<string, Reason.OptionalInput>): string {
+  const envPath = Deno.env.get("EXA_EVAL_DB_PATH");
+  if (envPath) return envPath;
+  const root = workspaceRoot ?? Deno.cwd();
+  return resolve(root, ".exa", "eval.db");
+}
+
+const SQLITE_DUP_COLUMN_ERR = "duplicate column name";
+
 export class EvalSqliteStore {
   private db: Database;
   private dbPath: string;
@@ -44,14 +71,13 @@ export class EvalSqliteStore {
 
   constructor(dbPath: string) {
     this.dbPath = dbPath;
+    Deno.mkdirSync(dirname(resolve(this.dbPath)), { recursive: true });
     this.db = new Database(dbPath);
     this.db.exec("PRAGMA journal_mode=WAL");
   }
 
   initialize(): void {
     if (this.initialized) return;
-
-    Deno.mkdirSync(dirname(resolve(this.dbPath)), { recursive: true });
 
     // Always create all tables and indexes with latest schema (IF NOT EXISTS for idempotency)
     this.db.exec(`
@@ -116,33 +142,43 @@ export class EvalSqliteStore {
         kind TEXT NOT NULL,
         passed INTEGER NOT NULL,
         score_weight REAL DEFAULT 1.0,
-        message TEXT
+        message TEXT,
+        score REAL,
+        status TEXT,
+        judge TEXT
       )
     `);
 
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_criteria_run ON eval_criteria_results(run_id, step_index)`);
 
-    // ---- Schema migration logic ----
-    // Detect current version from the schema_version table.
-    // v1 was the original release (bare eval_runs: run_id, run_timestamp, scenario_id,
-    //   pack, suite_score, passed, mode).
-    // v2 added: score_threshold, step_count, trials, suite_score_mean/stdev,
-    //   pass_at_1/k, blueprint_id/version, exactl_version, schema_version, trial_scores, metadata.
-    // Because CREATE TABLE IF NOT EXISTS is a no-op when the table already exists,
-    // old databases won't have the v2 columns.  We run ALTER TABLE ADD COLUMN for
-    // each v2 column, tolerating "duplicate column name" (column already added).
+    this.applyMigrations();
+    this.initialized = true;
+  }
 
+  private addColumns(table: string, columns: string[]): void {
+    for (const colDef of columns) {
+      try {
+        this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${colDef}`);
+      } catch (error) {
+        const msg = (error as Error).message;
+        if (msg.includes(SQLITE_DUP_COLUMN_ERR)) continue;
+        throw error;
+      }
+    }
+  }
+
+  private applyMigrations(): void {
     const currentVersion = this.db.prepare(
       "SELECT COALESCE(MAX(version), 0) as v FROM eval_schema_version",
     ).get<{ v: number }>()?.v ?? 0;
 
     if (currentVersion < 2) {
-      // Columns added to eval_runs in v2
-      const v2EvalRunsColumns = [
+      this.addColumns("eval_runs", [
         "step_count INTEGER",
         "suite_score_mean REAL",
         "suite_score_stdev REAL",
         "pass_at_1 REAL",
+        "pass_pow_k REAL",
         "pass_k INTEGER",
         "blueprint_id TEXT",
         "blueprint_version TEXT",
@@ -152,34 +188,13 @@ export class EvalSqliteStore {
         "exactl_version TEXT",
         "schema_version TEXT",
         "metadata TEXT",
-      ];
-      for (const colDef of v2EvalRunsColumns) {
-        try {
-          this.db.exec(`ALTER TABLE eval_runs ADD COLUMN ${colDef}`);
-        } catch (error) {
-          const msg = (error as Error).message;
-          if (msg.includes("duplicate column name")) continue;
-          throw error;
-        }
-      }
-
-      // Columns added to eval_run_steps in v2
-      const v2EvalRunStepsColumns = [
+      ]);
+      this.addColumns("eval_run_steps", [
         "step_type TEXT",
         "criteria_passed INTEGER",
         "criteria_total INTEGER",
         "execution_status TEXT",
-      ];
-      for (const colDef of v2EvalRunStepsColumns) {
-        try {
-          this.db.exec(`ALTER TABLE eval_run_steps ADD COLUMN ${colDef}`);
-        } catch (error) {
-          const msg = (error as Error).message;
-          if (msg.includes("duplicate column name")) continue;
-          throw error;
-        }
-      }
-
+      ]);
       this.db.exec(
         "INSERT OR IGNORE INTO eval_schema_version (version, description) VALUES " +
           "(1, 'Initial eval history schema: runs, steps, criteria'), " +
@@ -187,13 +202,32 @@ export class EvalSqliteStore {
       );
     }
 
-    this.initialized = true;
+    if (currentVersion < 3) {
+      this.addColumns("eval_criteria_results", ["score REAL", "status TEXT", "judge TEXT"]);
+      this.addColumns("eval_runs", [
+        "duration_ms INTEGER",
+        "trace_id TEXT",
+        "provider TEXT",
+        "model TEXT",
+        "cell_id TEXT",
+      ]);
+      this.db.exec(
+        "INSERT OR IGNORE INTO eval_schema_version (version, description) VALUES " +
+          "(3, 'Add score/status/judge to eval_criteria_results, duration_ms/trace_id/provider/model/cell_id to eval_runs')",
+      );
+    }
   }
 
   writeRun(
     entry: IEvalHistoryEntry,
     steps?: Opt<
-      Array<{ stepId: string; stepType?: string; score: number; executionStatus?: string }>,
+      Array<{
+        stepId: string;
+        stepType?: string;
+        score: number;
+        executionStatus?: string;
+        criterionResults?: ICriterionResultRow[];
+      }>,
       Reason.OptionalInput
     >,
   ): void {
@@ -205,14 +239,21 @@ export class EvalSqliteStore {
       `INSERT OR REPLACE INTO eval_runs
         (run_id, run_timestamp, scenario_id, pack, suite_score, passed, mode, score_threshold,
          step_count, trials, suite_score_mean, suite_score_stdev, pass_at_1, pass_pow_k, pass_k,
-         blueprint_id, blueprint_version, exactl_version, schema_version, trial_scores, metadata)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         blueprint_id, blueprint_version, exactl_version, schema_version, trial_scores, metadata,
+         duration_ms, trace_id, provider, model, cell_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
     const insertStep = this.db.prepare(
       `INSERT OR REPLACE INTO eval_run_steps
         (run_id, step_index, step_id, step_type, score, execution_status)
        VALUES (?, ?, ?, ?, ?, ?)`,
+    );
+
+    const insertCriterion = this.db.prepare(
+      `INSERT INTO eval_criteria_results
+        (run_id, step_index, criterion_id, kind, passed, score_weight, message, score, status, judge)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
     const transaction = this.db.transaction(() => {
@@ -238,6 +279,11 @@ export class EvalSqliteStore {
         entry.component_versions?.schema_version ?? null,
         entry.trial_scores ? JSON.stringify(entry.trial_scores) : null,
         null,
+        entry.duration_ms ?? null,
+        entry.trace_id ?? null,
+        entry.provider ?? null,
+        entry.model ?? null,
+        entry.cell_id ?? null,
       );
 
       if (steps) {
@@ -251,6 +297,22 @@ export class EvalSqliteStore {
             step.score,
             step.executionStatus ?? null,
           );
+          if (step.criterionResults) {
+            for (const cr of step.criterionResults) {
+              insertCriterion.run(
+                entry.run_id,
+                i,
+                cr.criterion_id,
+                cr.kind,
+                cr.status === "passed" ? 1 : 0,
+                cr.score_weight ?? null,
+                null,
+                cr.score ?? null,
+                cr.status,
+                cr.judge ? JSON.stringify(cr.judge) : null,
+              );
+            }
+          }
         }
       }
     });

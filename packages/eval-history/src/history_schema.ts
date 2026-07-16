@@ -53,13 +53,14 @@ export const EvalHistoryEntrySchema = z.object({
   trial_scores: z.array(z.number().min(0).max(1)).optional(),
   blueprint_id: z.string().min(1).optional(),
   blueprint_version: z.string().min(1).optional(),
+  duration_ms: z.number().int().min(0).optional(),
+  trace_id: z.string().optional(),
+  provider: z.string().optional(),
+  model: z.string().optional(),
+  cell_id: z.string().optional(),
   component_versions: z.object({
     binary_version: z.string(),
     schema_version: z.string(),
-    // Scenario-framework code provenance: the git revision of the framework that produced this run.
-    // `schema_version` pins the declarative scenario contract; these pin the actual runner/executor
-    // source, so a result is attributable to (and reproducible from) a specific framework version.
-    // Both optional for backward compatibility with entries written before provenance was recorded.
     framework_commit: z.string().optional(),
     framework_dirty: z.boolean().optional(),
   }).optional(),
