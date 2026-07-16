@@ -33,7 +33,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE", "--portal", "$PORTAL_write-tests-uncovered"]
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "write-tests-uncovered"]
     input_criteria: []
     output_criteria:
       - id: "plan-produced"

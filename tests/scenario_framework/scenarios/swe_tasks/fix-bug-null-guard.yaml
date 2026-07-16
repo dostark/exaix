@@ -33,7 +33,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE", "--portal", "$PORTAL_fix-bug-null-guard"]
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "fix-bug-null-guard"]
     input_criteria: []
     output_criteria:
       - id: "plan-produced"
