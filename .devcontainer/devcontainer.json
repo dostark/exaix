@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json",
-  "name": "Exaix Dev Sandbox",
+  "name": "Exaix Dev & Eval Sandbox",
   "build": {
     "context": "..",
     "dockerfile": "../Dockerfile",
@@ -9,25 +9,95 @@
   "remoteUser": "deno",
   "workspaceFolder": "/workspaces/exaix",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/exaix,type=bind,consistency=cached",
+
+  // Host capabilities. `gpu: "optional"` opts this container into GPU access when the
+  // host has one (a GPU Codespace or a GPU VM), enabling the local-LLM (Ollama)
+  // evaluation tier described in exaix-dev-docs/dev/Exaix_Eval_Continuous_Deployment.md §3.
+  // On a laptop without a GPU it is simply ignored — normal development still works.
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb",
+    "storage": "32gb",
+    "gpu": "optional"
+  },
+
+  // Dev-time tooling layered on top of the hardened builder image. `gh` supports the
+  // PR/review workflow. The local-LLM eval tier (CUDA + Ollama) is delivered by the
+  // dedicated deploy/eval image (Phase 149, Step 2); on a GPU host you can also enable
+  // it here by uncommenting the nvidia-cuda feature and adding "--gpus=all" to runArgs.
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+    // "ghcr.io/devcontainers/features/nvidia-cuda:1": { "installToolkit": true }
+  },
+
   "containerEnv": {
     "DENO_DIR": "/deno-dir",
-    "OPENROUTER_API_KEY": "${localEnv:OPENROUTER_API_KEY}"
+    "EXA_HOME": "/exa",
+    // Provider keys — passthrough from the local/Codespaces secret store. Unset ⇒ empty,
+    // which is safe: the evaluation matrix records a skip (not a failure) for any cell
+    // whose `requires_key` is absent (tests/scenario_framework/runner/matrix_expander.ts).
+    "OPENROUTER_API_KEY": "${localEnv:OPENROUTER_API_KEY}",
+    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
+    "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}",
+    "GOOGLE_API_KEY": "${localEnv:GOOGLE_API_KEY}",
+    // Cloud eval-history store (Cloudflare R2) — Phase 149. Unset ⇒ local-only history.
+    "EXA_EVAL_R2_ACCOUNT_ID": "${localEnv:EXA_EVAL_R2_ACCOUNT_ID}",
+    "EXA_EVAL_R2_ACCESS_KEY_ID": "${localEnv:EXA_EVAL_R2_ACCESS_KEY_ID}",
+    "EXA_EVAL_R2_SECRET_ACCESS_KEY": "${localEnv:EXA_EVAL_R2_SECRET_ACCESS_KEY}",
+    "EXA_EVAL_R2_BUCKET": "${localEnv:EXA_EVAL_R2_BUCKET}"
   },
+
   "runArgs": [
     "--cap-drop=ALL",
     "--security-opt=no-new-privileges:true"
+    // GPU host: add "--gpus=all" to expose the GPU to Ollama for the local-LLM eval tier.
   ],
+
+  // Ollama's HTTP API for the local-LLM evaluation tier. Forwarded only when bound.
+  "forwardPorts": [11434],
+  "portsAttributes": {
+    "11434": { "label": "Ollama (local LLM)", "onAutoForward": "silent" }
+  },
+
+  // Persist the Deno module cache across rebuilds (a named volume is seeded from the
+  // image's /deno-dir on first creation), so container rebuilds and Codespaces prebuilds
+  // start warm instead of re-vendoring the module graph.
+  "mounts": [
+    "source=exaix-deno-dir,target=/deno-dir,type=volume"
+  ],
+
   "customizations": {
     "vscode": {
-      "extensions": ["denoland.vscode-deno"],
+      "extensions": [
+        "denoland.vscode-deno",
+        "tamasfe.even-better-toml",
+        "redhat.vscode-yaml",
+        "eamodio.gitlens"
+      ],
       "settings": {
         "deno.enable": true,
         "deno.lint": true,
-        "editor.defaultFormatter": "denoland.vscode-deno"
+        "editor.defaultFormatter": "denoland.vscode-deno",
+        "[markdown]": { "editor.defaultFormatter": "denoland.vscode-deno" },
+        "files.watcherExclude": {
+          "**/.git/**": true,
+          "**/node_modules/**": true,
+          "**/deno-dir/**": true,
+          "**/tests/scenario_framework/output/**": true
+        }
       }
     }
   },
-  "postCreateCommand": "deno --version && deno cache --config deno.json apps/daemon/main.ts && claude --version && opencode --version",
+
+  // Lifecycle split so Codespaces prebuilds cache the expensive image-time work and
+  // attach-time only verifies:
+  //   onCreate       — once at creation (git trust for the bind-mounted repo)
+  //   updateContent  — during prebuild / content refresh (warm the module cache)
+  //   postCreate     — after creation (verify the delegate CLIs are on PATH)
+  "onCreateCommand": "git config --global --add safe.directory /workspaces/exaix",
+  "updateContentCommand": "deno cache --config deno.json apps/daemon/main.ts",
+  "postCreateCommand": "deno --version && claude --version && opencode --version",
+
   "remoteEnv": {
     "PATH": "${containerEnv:PATH}"
   }
