@@ -13,10 +13,21 @@ import { ScenarioExecutionMode } from "../schema/step_schema.ts";
 import { type IScenarioCatalogEntry, loadScenarioCatalog } from "./scenario_catalog.ts";
 import { runSyntheticScenario } from "./synthetic_runner.ts";
 import type { IRunManifest } from "./evidence_collector.ts";
-import { reportScenarioFailure } from "./reporter.ts";
+import { reportScenarioFailure, reportSuiteSummary } from "./reporter.ts";
 import { selectScenariosForExecution } from "./modes.ts";
 import { writeEvalHistoryEntry } from "./history_writer.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 import { EvalSqliteStore } from "@exaix/eval-history";
+import {
+  accumulateRunVerdict,
+  checkScoreThreshold,
+  computeMultiTrialMetrics,
+  DEFAULT_EVAL_SCORE_THRESHOLD,
+  DEFAULT_EVAL_TRIALS,
+  type IRunVerdict,
+  type IScenarioVerdict,
+  RunVerdict,
+} from "./scoring.ts";
 
 const modeType = new EnumType(ScenarioExecutionMode);
 const profileType = new EnumType(ScenarioCiProfile);
@@ -102,49 +113,140 @@ await new Command()
       selectedEntries.forEach((s) => console.log(`- ${s.id} (${s.scenario_path})`));
       Deno.exit(0);
     }
+    // 7. Resolve score threshold and trials (eval-mode only; defaults from configurable constants)
+    const scoreThreshold = options.evalMode ? (options.scoreThreshold ?? DEFAULT_EVAL_SCORE_THRESHOLD) : undefined;
+    const trials = options.evalMode ? (options.trials ?? DEFAULT_EVAL_TRIALS) : 1;
 
-    // 7. Execute scenarios
-    console.log(`Executing ${selectedEntries.length} scenarios...`);
-    let hasFailure = false;
+    // 8. Execute scenarios (with optional trial loop)
+    console.log(`Executing ${selectedEntries.length} scenarios (trials=${trials})...`);
     const manifests = new Map<string, IRunManifest>();
+    const scenarioVerdicts: IScenarioVerdict[] = [];
+    const trialMetricsMap = new Map<string, {
+      trials: number;
+      trialScores: number[];
+      suiteScoreMean: number;
+      suiteScoreStdev: number;
+      passAt1: number;
+      passPowK: number;
+    }>();
+    let infraError = false;
 
     for (const entry of selectedEntries) {
       console.log(`\nScenario: ${entry.id}`);
-      try {
-        const result = await runSyntheticScenario({
-          frameworkHome,
-          scenarioPath: entry.scenario_path,
-          workspaceRoot: runtimeConfig.workspace_path,
-          outputDir: runtimeConfig.output_dir,
-          mode: runtimeConfig.mode,
-          interactiveAllowed: runtimeConfig.mode !== ScenarioExecutionMode.AUTO,
-          verbose: runtimeConfig.verbose,
-          exactlExecutable: Deno.env.get("EXA_BIN_PATH")
-            ? `${Deno.env.get("EXA_BIN_PATH")}/exactl`
-            : resolve(frameworkHome, "bin/exactl"),
-        });
+      const trialScores: number[] = [];
+      let trialInfraError = false;
 
-        manifests.set(entry.id, result.manifest);
+      for (let trial = 0; trial < trials; trial++) {
+        const trialLabel = trials > 1 ? `  [trial ${trial + 1}/${trials}]` : "";
+        const trialOutputDir = trials > 1
+          ? resolve(runtimeConfig.output_dir, `trial-${trial}`)
+          : runtimeConfig.output_dir;
 
-        console.log(`Outcome: ${result.manifest.outcome}`);
-        if (result.manifest.outcome !== "success" && result.manifest.outcome !== "paused") {
-          reportScenarioFailure(result);
-          hasFailure = true;
-          if (runtimeConfig.mode === ScenarioExecutionMode.AUTO && !options.evalMode) {
-            console.error(`Scenario ${entry.id} failed in AUTO mode. Halting.`);
-            break;
+        console.log(`${trialLabel} Running...`);
+
+        try {
+          const result = await runSyntheticScenario({
+            frameworkHome,
+            scenarioPath: entry.scenario_path,
+            workspaceRoot: runtimeConfig.workspace_path,
+            outputDir: trialOutputDir,
+            mode: runtimeConfig.mode,
+            interactiveAllowed: runtimeConfig.mode !== ScenarioExecutionMode.AUTO,
+            verbose: runtimeConfig.verbose,
+            exactlExecutable: Deno.env.get("EXA_BIN_PATH")
+              ? `${Deno.env.get("EXA_BIN_PATH")}/exactl`
+              : resolve(frameworkHome, "bin/exactl"),
+          });
+
+          const suiteScore = result.manifest.suite_score ?? 1.0;
+          trialScores.push(suiteScore);
+
+          if (trial === 0) {
+            manifests.set(entry.id, result.manifest);
           }
+
+          console.log(`${trialLabel} Outcome: ${result.manifest.outcome} (suite_score: ${suiteScore.toFixed(3)})`);
+
+          if (result.manifest.outcome !== "success") {
+            reportScenarioFailure(result);
+          }
+        } catch (error) {
+          console.error(`${trialLabel} Error executing scenario ${entry.id}:`, error);
+          trialInfraError = true;
+          trialScores.push(0);
         }
-      } catch (error) {
-        console.error(`Error executing scenario ${entry.id}:`, error);
-        hasFailure = true;
+      }
+
+      if (trialInfraError) {
+        infraError = true;
         if (runtimeConfig.mode === ScenarioExecutionMode.AUTO) {
           break;
         }
       }
+
+      // Compute aggregate suite score from trial metrics
+      let suiteScore: number;
+      let isPassed: boolean;
+
+      if (trials > 1) {
+        const metrics = computeMultiTrialMetrics(trialScores, scoreThreshold ?? 0.5);
+        suiteScore = metrics.mean;
+        isPassed = scoreThreshold !== undefined ? checkScoreThreshold(suiteScore, scoreThreshold) : false;
+        console.log(
+          `  Aggregate: mean=${metrics.mean.toFixed(3)} pass_at_1=${metrics.pass_at_1.toFixed(3)} pass_pow_k=${
+            metrics.pass_pow_k.toFixed(3)
+          }`,
+        );
+
+        // Store trial metrics for history persistence
+        trialMetricsMap.set(entry.id, {
+          trials,
+          trialScores,
+          suiteScoreMean: metrics.mean,
+          suiteScoreStdev: metrics.stdev,
+          passAt1: metrics.pass_at_1,
+          passPowK: metrics.pass_pow_k,
+        });
+
+        // Update the manifest's suite_score to the trial mean
+        const manifest = manifests.get(entry.id);
+        if (manifest) {
+          manifest.suite_score = suiteScore;
+        }
+      } else {
+        const manifest = manifests.get(entry.id);
+        suiteScore = manifest?.suite_score ?? 1.0;
+        isPassed = scoreThreshold !== undefined
+          ? checkScoreThreshold(suiteScore, scoreThreshold)
+          : (manifest?.outcome === "success");
+      }
+
+      scenarioVerdicts.push({
+        scenarioId: entry.id,
+        pack: "",
+        suiteScore,
+        passed: isPassed,
+      });
+    }
+    // 9. Compute run verdict
+    const runVerdict: IRunVerdict = infraError
+      ? { ...RunVerdict.INFRA_ERROR, scenarios: scenarioVerdicts }
+      : accumulateRunVerdict(scenarioVerdicts);
+
+    // 10. Print suite summary
+    if (selectedEntries.length > 0) {
+      reportSuiteSummary(scenarioVerdicts, scoreThreshold);
     }
 
-    // 8. Write eval history entries if in eval mode
+    // 11. Write eval-report.json
+    if (options.evalMode && manifests.size > 0) {
+      await writeEvalReport(runtimeConfig.output_dir, {
+        threshold: scoreThreshold,
+        runVerdict,
+      });
+    }
+
+    // 12. Write eval history entries if in eval mode
     if (options.evalMode) {
       const historyFormat = options.historyFormat ?? "sqlite+jsonl";
       let sqliteStore: EvalSqliteStore | undefined;
@@ -160,11 +262,16 @@ await new Command()
       }
 
       for (const [scenarioId, manifest] of manifests) {
+        const scenarioVerdict = scenarioVerdicts.find((v) => v.scenarioId === scenarioId);
         try {
+          const trialMetrics = trialMetricsMap.get(scenarioId);
           const entry = await writeEvalHistoryEntry({
             outputDir: runtimeConfig.output_dir,
             scenarioId,
             manifest,
+            scoreThreshold: scenarioVerdict !== undefined ? scoreThreshold : undefined,
+            thresholdPassed: scenarioVerdict?.passed,
+            ...(trialMetrics ?? {}),
           });
 
           if (sqliteStore) {
@@ -192,7 +299,11 @@ await new Command()
       }
     }
 
-    if (hasFailure) {
+    // 13. Exit with appropriate code
+    if (runVerdict.infraError) {
+      console.error("\nInfrastructure error encountered. Exiting with code 2.");
+      Deno.exit(2);
+    } else if (!runVerdict.allPassed) {
       Deno.exit(1);
     } else {
       console.log("\nAll scenarios completed successfully.");
@@ -201,9 +312,36 @@ await new Command()
   })
   .parse(Deno.args);
 
+interface IEvalReport {
+  threshold: number | undefined;
+  runVerdict: IRunVerdict;
+  aggregateScore: number | undefined;
+  timestamp: string;
+}
+
+async function writeEvalReport(
+  outputDir: string,
+  opts: { threshold: number | undefined; runVerdict: IRunVerdict },
+): Promise<string> {
+  const scores = opts.runVerdict.scenarios.map((s) => s.suiteScore);
+  const aggregateScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : undefined;
+
+  const report: IEvalReport = {
+    threshold: opts.threshold,
+    runVerdict: opts.runVerdict,
+    aggregateScore,
+    timestamp: new Date().toISOString(),
+  };
+
+  const reportPath = resolve(outputDir, "eval-report.json");
+  await Deno.writeTextFile(reportPath, JSON.stringify(report, null, 2) + "\n");
+  console.log(`\nEval report written to: ${reportPath}`);
+  return reportPath;
+}
+
 function computeStepScoreFromCriterionResults(
   results: { status: string; score_weight?: number }[],
-  executionStatus?: string,
+  executionStatus?: Opt<string, Reason.OptionalContext>,
 ): number {
   // Execution failures score 0 regardless of criteria
   if (executionStatus === "execution-failed") return 0;

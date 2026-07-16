@@ -8,9 +8,11 @@
  * @architectural-layer Test
  */
 
+import type { Opt, Reason } from "@exaix/core/types";
 import { CriterionStatus } from "../schema/step_schema.ts";
 import { StepFailureStage } from "./assertions.ts";
 import type { IRunSyntheticScenarioResult } from "./synthetic_runner.ts";
+import type { IScenarioVerdict } from "./scoring.ts";
 
 /**
  * Prints detailed failure information for a failed scenario to the console.
@@ -65,6 +67,57 @@ export function reportScenarioFailure(result: IRunSyntheticScenarioResult): void
   }
 
   console.log("%c-----------------------", "color: red; font-weight: bold;");
+}
+
+/**
+ * Prints a suite summary table with per-scenario scores, pass/fail status,
+ * and aggregate mean score.
+ */
+export function reportSuiteSummary(
+  scenarioVerdicts: IScenarioVerdict[],
+  threshold?: Opt<number, Reason.OptionalInput>,
+): void {
+  if (scenarioVerdicts.length === 0) return;
+
+  console.log("\n%c=== SUITE SUMMARY ===", "color: cyan; font-weight: bold;");
+
+  const idPad = Math.max(...scenarioVerdicts.map((v) => v.scenarioId.length), 10);
+  const packPad = Math.max(...scenarioVerdicts.map((v) => v.pack.length), 6);
+  const sep = `${"-".repeat(idPad + 2)}|${"-".repeat(packPad + 2)}|${"-".repeat(10)}|${"-".repeat(10)}`;
+
+  console.log(
+    `  ${padRight("SCENARIO", idPad)}  | ${padRight("PACK", packPad)}  | ${padRight("SCORE", 8)}  | ${
+      padRight("PASSED", 8)
+    }`,
+  );
+  console.log(`  ${sep}`);
+
+  for (const v of scenarioVerdicts) {
+    const scoreStr = v.suiteScore.toFixed(3);
+    const passStr = v.passed ? "✅" : "❌";
+    console.log(
+      `  ${padRight(v.scenarioId, idPad)}  | ${padRight(v.pack, packPad)}  | ${padRight(scoreStr, 8)}  | ${
+        padRight(passStr, 8)
+      }`,
+    );
+  }
+
+  console.log(`  ${sep}`);
+
+  const scores = scenarioVerdicts.map((v) => v.suiteScore);
+  const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+  console.log(`  ${padRight("", idPad)}  | ${padRight("", packPad)}  | ${padRight("MEAN", 8)}  | ${mean.toFixed(3)}`);
+
+  if (threshold !== undefined) {
+    const passedCount = scenarioVerdicts.filter((v) => v.passed).length;
+    console.log(`\n  Threshold: ${threshold.toFixed(2)}  |  Passed: ${passedCount}/${scenarioVerdicts.length}`);
+  }
+
+  console.log("%c========================\n", "color: cyan; font-weight: bold;");
+}
+
+function padRight(s: string, len: number): string {
+  return s.length >= len ? s : s + " ".repeat(len - s.length);
 }
 
 function indent(text: string): string {

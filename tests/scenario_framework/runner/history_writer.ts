@@ -7,6 +7,7 @@
  * @related-files [packages/eval-history/src/history_schema.ts, tests/scenario_framework/tests/unit/history_writer_test.ts]
  */
 
+import type { Opt, Reason } from "@exaix/core/types";
 import { dirname, fromFileUrl, resolve } from "@std/path";
 import {
   EvalHistoryEntrySchema,
@@ -20,6 +21,14 @@ export interface IWriteEvalHistoryOptions {
   outputDir: string;
   scenarioId: string;
   manifest: IRunManifest;
+  scoreThreshold?: number;
+  thresholdPassed?: boolean;
+  trials?: number;
+  trialScores?: number[];
+  suiteScoreMean?: number;
+  suiteScoreStdev?: number;
+  passAt1?: number;
+  passPowK?: number;
 }
 
 // The scenario framework lives at <repo>/tests/scenario_framework; this file is under runner/.
@@ -73,7 +82,7 @@ const HISTORY_FILE = "eval-history.jsonl";
  */
 export async function writeEvalHistoryEntry(options: IWriteEvalHistoryOptions): Promise<IEvalHistoryEntry> {
   const componentVersions = await buildComponentVersions();
-  const entry = buildEvalHistoryEntry(options.manifest, componentVersions);
+  const entry = buildEvalHistoryEntry(options.manifest, componentVersions, options);
 
   const parsed = EvalHistoryEntrySchema.parse(entry);
 
@@ -88,14 +97,19 @@ export async function writeEvalHistoryEntry(options: IWriteEvalHistoryOptions): 
   return parsed;
 }
 
-function buildEvalHistoryEntry(manifest: IRunManifest, componentVersions: IComponentVersions): IEvalHistoryEntry {
-  return {
+function buildEvalHistoryEntry(
+  manifest: IRunManifest,
+  componentVersions: IComponentVersions,
+  opts?: Opt<IWriteEvalHistoryOptions, Reason.OptionalInput>,
+): IEvalHistoryEntry {
+  const entry: IEvalHistoryEntry = {
     run_id: crypto.randomUUID(),
     scenario_id: manifest.scenarioId,
     pack: manifest.pack,
     outcome: manifest.outcome,
     mode: manifest.mode,
     suite_score: manifest.suite_score,
+    score_threshold: opts?.scoreThreshold,
     step_count: manifest.steps.length,
     step_results: manifest.steps.map((s) => ({
       step_id: s.stepId,
@@ -106,10 +120,22 @@ function buildEvalHistoryEntry(manifest: IRunManifest, componentVersions: ICompo
       criteria_passed: s.criterionResults.filter((c) => c.status === "passed").length,
       criteria_total: s.criterionResults.length,
     })),
-    passed: manifest.outcome === "success",
+    passed: opts?.thresholdPassed ?? manifest.outcome === "success",
     timestamp: new Date().toISOString(),
     component_versions: componentVersions,
   };
+
+  // Populate multi-trial fields when provided
+  if (opts?.trials !== undefined && opts.trials > 1) {
+    entry.trials = opts.trials;
+    entry.trial_scores = opts.trialScores;
+    entry.suite_score_mean = opts.suiteScoreMean;
+    entry.suite_score_stdev = opts.suiteScoreStdev;
+    entry.pass_at_1 = opts.passAt1;
+    entry.pass_pow_k = opts.passPowK;
+  }
+
+  return entry;
 }
 
 /**

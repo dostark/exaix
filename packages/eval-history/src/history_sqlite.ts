@@ -11,6 +11,7 @@
 
 import { Database } from "@db/sqlite";
 import { dirname, resolve } from "@std/path";
+import type { Opt, Reason } from "@exaix/core/types";
 import type { IEvalHistoryEntry } from "./history_schema.ts";
 
 interface IRunRow {
@@ -77,6 +78,7 @@ export class EvalSqliteStore {
         suite_score_mean REAL,
         suite_score_stdev REAL,
         pass_at_1 REAL,
+        pass_pow_k REAL,
         pass_k INTEGER,
         blueprint_id TEXT,
         blueprint_version TEXT,
@@ -190,7 +192,10 @@ export class EvalSqliteStore {
 
   writeRun(
     entry: IEvalHistoryEntry,
-    steps?: Array<{ stepId: string; stepType?: string; score: number; executionStatus?: string }>,
+    steps?: Opt<
+      Array<{ stepId: string; stepType?: string; score: number; executionStatus?: string }>,
+      Reason.OptionalInput
+    >,
   ): void {
     if (!this.initialized) {
       this.initialize();
@@ -199,9 +204,9 @@ export class EvalSqliteStore {
     const insertRun = this.db.prepare(
       `INSERT OR REPLACE INTO eval_runs
         (run_id, run_timestamp, scenario_id, pack, suite_score, passed, mode, score_threshold,
-         step_count, trials, suite_score_mean, suite_score_stdev, pass_at_1, pass_k,
+         step_count, trials, suite_score_mean, suite_score_stdev, pass_at_1, pass_pow_k, pass_k,
          blueprint_id, blueprint_version, exactl_version, schema_version, trial_scores, metadata)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
     const insertStep = this.db.prepare(
@@ -225,6 +230,7 @@ export class EvalSqliteStore {
         entry.suite_score_mean ?? null,
         entry.suite_score_stdev ?? null,
         entry.pass_at_1 ?? null,
+        entry.pass_pow_k ?? null,
         entry.pass_k ?? null,
         entry.blueprint_id ?? null,
         entry.blueprint_version ?? null,

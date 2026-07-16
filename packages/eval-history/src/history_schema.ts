@@ -48,6 +48,7 @@ export const EvalHistoryEntrySchema = z.object({
   suite_score_mean: z.number().min(0).max(1).optional(),
   suite_score_stdev: z.number().min(0).optional(),
   pass_at_1: z.number().min(0).max(1).optional(),
+  pass_pow_k: z.number().min(0).max(1).optional(),
   pass_k: z.number().int().min(0).optional(),
   trial_scores: z.array(z.number().min(0).max(1)).optional(),
   blueprint_id: z.string().min(1).optional(),
