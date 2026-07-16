@@ -54,6 +54,8 @@ steps:
 
           export default binarySearch;
           ENDOFCODE
+    env:
+      EXA_EVAL_LLM_MOCK: "pass"
     input_criteria: []
     output_criteria:
       - id: "llm-judge-preset"

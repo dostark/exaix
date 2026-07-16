@@ -26,8 +26,12 @@ import type { IScenarioStepExecutionResult } from "./step_executor.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import {
   buildEvaluationPrompt,
+  calculateWeightedScore,
   CriterionResultSchema as JudgeResponseSchema,
-  getCriteriaByNames,
+  type EvaluationCriterion,
+  type EvaluationResult,
+  EvaluationResultSchema,
+  resolveCriterionPreset,
 } from "@exaix/core/evaluation";
 import { type Config, DEFAULT_MODEL_PRESETS } from "@exaix/schemas";
 import type { IModelIntent, IResolvedModel } from "@exaix/schemas";
@@ -1191,7 +1195,44 @@ function evaluateCommandOutputContainsCriterion(
   };
 }
 
-async function evaluateLlmJudgeCriterion(
+export /**
+ * Resolve judge provenance from step env, process env, or model resolution.
+ * Returns { provider, model } when both are available, undefined otherwise.
+ */
+function resolveEvalJudgeProvenance(
+  env?: Opt<{ [key: string]: string }, Reason.OptionalInput>,
+): { provider: string; model: string } | undefined {
+  const provider = env?.EXA_LLM_PROVIDER ?? Deno.env.get("EXA_LLM_PROVIDER");
+  const model = env?.EXA_LLM_MODEL ?? Deno.env.get("EXA_LLM_MODEL");
+  if (provider && model) return { provider, model };
+  if (provider) {
+    const modelFromSize = env?.EXA_EVAL_MODEL_SIZE ?? Deno.env.get("EXA_EVAL_MODEL_SIZE");
+    return { provider, model: modelFromSize ?? provider };
+  }
+  return undefined;
+}
+
+/**
+ * Build a synthetic structured EvaluationResult for multi-criteria preset sets
+ * in mock mode, used to test the weighted-score composition path.
+ */
+function buildMockMultiCriteriaResult(
+  criteria: EvaluationCriterion[],
+): EvaluationResult {
+  const criteriaScores: Record<string, { score: number; reasoning: string; issues: string[]; passed: boolean }> = {};
+  for (const c of criteria) {
+    criteriaScores[c.name] = { score: 1.0, reasoning: "mock pass", issues: [], passed: true };
+  }
+  return {
+    overallScore: 1.0,
+    criteriaScores,
+    pass: true,
+    feedback: "Mock evaluation: all criteria pass",
+    suggestions: [],
+  };
+}
+
+export async function evaluateLlmJudgeCriterion(
   options: IEvaluateCriterionOptions,
 ): Promise<ICriterionResult> {
   const criterion = options.criterion as ICriterion & {
@@ -1201,7 +1242,6 @@ async function evaluateLlmJudgeCriterion(
     score_threshold?: number;
   };
 
-  // Validate: at least one of preset or rubricequired
   if (!criterion.preset && !criterion.rubric) {
     return {
       criterion_id: criterion.id,
@@ -1214,11 +1254,9 @@ async function evaluateLlmJudgeCriterion(
     };
   }
 
-  // Resolve preset criteria if specified
-  const presetCriteria = criterion.preset ? getCriteriaByNames([criterion.preset]) : [];
-  const effectiveCriteria = presetCriteria;
+  const effectiveCriteria = criterion.preset ? resolveCriterionPreset(criterion.preset) : [];
+  const isMulti = effectiveCriteria.length > 1;
 
-  // Read evidence content
   let content = "";
   if (criterion.evidence_path) {
     const resolvedPath = resolve(options.workspaceRoot, criterion.evidence_path);
@@ -1231,13 +1269,49 @@ async function evaluateLlmJudgeCriterion(
     content = options.executionResult?.stdout ?? "";
   }
 
-  const promptUsed = buildEvaluationPrompt(content, effectiveCriteria, criterion.rubric);
+  const promptUsed = buildEvaluationPrompt(content, effectiveCriteria, criterion.rubric, isMulti);
   const threshold = criterion.score_threshold ?? 0.7;
+  const judgeProvenance = resolveEvalJudgeProvenance(options.env);
 
-  // In test/CI mode without an LLM endpoint, return a mock pass result
-  // Set EXA_EVAL_LLM_MOCK=false to fail when no LLM is configured
-  const useMock = Deno.env.get("EXA_EVAL_LLM_MOCK") !== "false";
-  if (useMock) {
+  const mockSetting = options.env?.EXA_EVAL_LLM_MOCK ?? Deno.env.get("EXA_EVAL_LLM_MOCK");
+
+  // Unset → SKIPPED (no LLM configured)
+  if (mockSetting === undefined || mockSetting === "") {
+    return {
+      criterion_id: criterion.id,
+      kind: CriterionKind.LLM_JUDGE,
+      phase: options.phase,
+      status: CriterionStatus.SKIPPED,
+      message: "LLM judge skipped: no LLM configured. " +
+        "Set EXA_EVAL_LLM_MOCK=pass for auto-pass in self-tests, " +
+        "or set EXA_LLM_PROVIDER for real evaluation.",
+      evidence_refs: criterion.evidence_path ? [criterion.evidence_path] : [],
+      score_weight: options.criterion.score_weight,
+    };
+  }
+
+  // EXA_EVAL_LLM_MOCK=pass → auto-pass (with multi-criteria composition for preset sets)
+  if (mockSetting === "pass") {
+    if (isMulti) {
+      const mockResult = buildMockMultiCriteriaResult(effectiveCriteria);
+      const weightedScore = calculateWeightedScore(mockResult.criteriaScores, effectiveCriteria);
+      const perCriterionSummary = effectiveCriteria.map((c) =>
+        `${c.name}: ${mockResult.criteriaScores[c.name]?.score.toFixed(2) ?? "N/A"}`
+      ).join("; ");
+      return {
+        criterion_id: criterion.id,
+        kind: CriterionKind.LLM_JUDGE,
+        phase: options.phase,
+        status: weightedScore >= threshold ? CriterionStatus.PASSED : CriterionStatus.FAILED,
+        message: `LLM judge preset "${criterion.preset}": mock weighted score ${
+          weightedScore.toFixed(4)
+        } (threshold: ${threshold}) — [${perCriterionSummary}]`,
+        evidence_refs: criterion.evidence_path ? [criterion.evidence_path] : [],
+        score: weightedScore,
+        score_weight: options.criterion.score_weight,
+        ...(judgeProvenance ? { judge: judgeProvenance } : {}),
+      };
+    }
     return {
       criterion_id: criterion.id,
       kind: CriterionKind.LLM_JUDGE,
@@ -1245,23 +1319,50 @@ async function evaluateLlmJudgeCriterion(
       status: CriterionStatus.PASSED,
       message: `LLM judge (${criterion.preset ?? "inline rubric"}): mock pass (threshold: ${threshold})`,
       evidence_refs: criterion.evidence_path ? [criterion.evidence_path] : [],
+      score: 1.0,
       score_weight: options.criterion.score_weight,
+      ...(judgeProvenance ? { judge: judgeProvenance } : {}),
     };
   }
 
-  // When LLM endpoint is configured, parse the real response
+  // EXA_EVAL_LLM_MOCK=false → real LLM call
   try {
     const rawLlmResponse = await callLlmEndpoint(promptUsed);
-    // Strip markdown code fences if present (common LLM behavior)
     const cleaned = rawLlmResponse.replace(/^```(?:json)?\s*\n?/m, "").replace(/\n?```\s*$/m, "").trim();
+
+    if (isMulti) {
+      const parsed = EvaluationResultSchema.parse(JSON.parse(cleaned));
+      const weightedScore = calculateWeightedScore(parsed.criteriaScores, effectiveCriteria);
+      const passed = weightedScore >= threshold;
+      const perCriterionSummary = effectiveCriteria.map((c) =>
+        `${c.name}: ${parsed.criteriaScores[c.name]?.score.toFixed(2) ?? "N/A"}`
+      ).join("; ");
+      console.error(`[eval] preset="${criterion.preset}" weighted=${weightedScore.toFixed(4)} passed=${passed}`);
+      return {
+        criterion_id: criterion.id,
+        kind: CriterionKind.LLM_JUDGE,
+        phase: options.phase,
+        status: passed ? CriterionStatus.PASSED : CriterionStatus.FAILED,
+        message: `LLM judge preset "${criterion.preset}": weighted score ${
+          weightedScore.toFixed(4)
+        } (threshold: ${threshold}) — [${perCriterionSummary}]`,
+        evidence_refs: criterion.evidence_path ? [criterion.evidence_path] : [],
+        observed_value: weightedScore,
+        expected_value: threshold,
+        score: weightedScore,
+        score_weight: options.criterion.score_weight,
+        ...(judgeProvenance ? { judge: judgeProvenance } : {}),
+      };
+    }
 
     const parsed = JudgeResponseSchema.parse(JSON.parse(cleaned));
     const score = parsed.score;
     const passed = score >= threshold;
-
-    const size = Deno.env.get("EXA_EVAL_MODEL_SIZE") ?? "-";
-    const prov = Deno.env.get("EXA_LLM_PROVIDER") ?? "(auto)";
-    console.error(`[eval] size=${size}  provider=${prov}  score=${score.toFixed(2)}  passed=${passed}`);
+    console.error(
+      `[eval] size=${Deno.env.get("EXA_EVAL_MODEL_SIZE") ?? "-"} provider=${
+        judgeProvenance?.provider ?? "(auto)"
+      } score=${score.toFixed(2)} passed=${passed}`,
+    );
 
     return {
       criterion_id: criterion.id,
@@ -1274,14 +1375,15 @@ async function evaluateLlmJudgeCriterion(
       expected_value: threshold,
       score: score,
       score_weight: options.criterion.score_weight,
+      ...(judgeProvenance ? { judge: judgeProvenance } : {}),
     };
-  } catch {
+  } catch (err) {
     return {
       criterion_id: criterion.id,
       kind: CriterionKind.LLM_JUDGE,
       phase: options.phase,
       status: CriterionStatus.ERROR,
-      message: "LLM judge: failed to parse LLM response",
+      message: `LLM judge: failed to parse LLM response: ${(err as Error).message}`,
       evidence_refs: [],
       score_weight: options.criterion.score_weight,
     };

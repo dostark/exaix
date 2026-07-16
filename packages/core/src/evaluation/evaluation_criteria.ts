@@ -289,6 +289,19 @@ export function getCriteriaByNames(names: string[]): EvaluationCriterion[] {
   return criteria;
 }
 
+export function resolveCriterionPreset(preset: string): EvaluationCriterion[] {
+  const upperName = preset.toUpperCase().replace(/-/g, "_");
+
+  const set = CRITERION_SETS[upperName as keyof typeof CRITERION_SETS];
+  if (set) return [...set];
+
+  const single = CRITERIA[upperName as keyof typeof CRITERIA];
+  if (single) return [single];
+
+  console.warn(`Unknown preset: ${preset}`);
+  return [];
+}
+
 export function calculateWeightedScore(
   criteriaResults: Record<string, CriterionResult>,
   criteria: EvaluationCriterion[],
@@ -342,12 +355,42 @@ export function buildEvaluationPrompt(
   content: string,
   criteria: EvaluationCriterion[],
   context?: Opt<string, Reason.OptionalContext>,
+  multi?: Opt<boolean, Reason.OptionalInput>,
 ): string {
   const criteriaList = criteria
     .map((c, i: number) =>
       `${i + 1}. **${c.name}** (weight: ${c.weight}${c.required ? ", REQUIRED" : ""})\n   ${c.description}`
     )
     .join("\n\n");
+
+  const outputFormat = multi
+    ? `{
+  "overallScore": 0.85,
+  "criteriaScores": {
+    "code_correctness": {
+      "score": 0.9,
+      "reasoning": "Brief explanation",
+      "issues": ["minor issue"],
+      "passed": true
+    },
+    "code_completeness": {
+      "score": 0.8,
+      "reasoning": "Brief explanation",
+      "issues": [],
+      "passed": true
+    }
+  },
+  "pass": true,
+  "feedback": "Overall assessment of the content",
+  "suggestions": ["suggestion 1"]
+}`
+    : `{
+  "name": "task_fulfillment",
+  "score": 0.85,
+  "reasoning": "Brief explanation of the score",
+  "issues": ["issue 1", "issue 2"],
+  "passed": true
+}`;
 
   return `## Evaluation Request
 
@@ -374,11 +417,5 @@ Then provide an overall assessment.
 
 Respond with valid JSON only — no markdown fences, no extra text:
 
-{
-  "name": "task_fulfillment",
-  "score": 0.85,
-  "reasoning": "Brief explanation of the score",
-  "issues": ["issue 1", "issue 2"],
-  "passed": true
-}`;
+${outputFormat}`;
 }
