@@ -35,6 +35,14 @@ import {
   ScenarioStepType,
 } from "../schema/step_schema.ts";
 
+export interface IBuildRunManifestOptions {
+  loadedScenario: ILoadedScenario;
+  stepOutcomes: IScenarioStepOutcome[];
+  mode: ScenarioExecutionMode;
+  runResult: IRunScenarioInModeResult;
+  matrixCell?: { cellId?: string; provider?: string; model?: string };
+}
+
 export interface IRunSyntheticScenarioOptions {
   frameworkHome: string;
   scenarioPath: string;
@@ -152,6 +160,12 @@ export async function runSyntheticScenario(
     stepOutcomes,
     mode: options.mode,
     runResult,
+    matrixCell: firstRunnable?.cell
+      ? {
+        cellId: `${firstRunnable.cell.tool}-${firstRunnable.cell.provider}`,
+        provider: firstRunnable.cell.provider,
+      }
+      : undefined,
   });
   const manifestPath = await writeRunManifest({
     outputDir: options.outputDir,
@@ -350,14 +364,7 @@ function toModeExecutionResult(
   };
 }
 
-interface IBuildRunManifestOptions {
-  loadedScenario: ILoadedScenario;
-  stepOutcomes: IScenarioStepOutcome[];
-  mode: ScenarioExecutionMode;
-  runResult: IRunScenarioInModeResult;
-}
-
-function buildRunManifest(options: IBuildRunManifestOptions): IRunManifest {
+export function buildRunManifest(options: IBuildRunManifestOptions): IRunManifest {
   const steps = options.stepOutcomes.map((outcome) => {
     // Execution failures score 0 regardless of input criteria results
     const stepScore = outcome.failureStage === "execution" ? 0 : computeStepScore(outcome.criterionResults);
@@ -394,6 +401,13 @@ function buildRunManifest(options: IBuildRunManifestOptions): IRunManifest {
     outcome: mapScenarioOutcome(options.runResult),
     suite_score: computeSuiteScore(stepScores),
     steps,
+    ...(options.matrixCell
+      ? {
+        cellId: options.matrixCell.cellId,
+        provider: options.matrixCell.provider,
+        model: options.matrixCell.model,
+      }
+      : {}),
   };
 }
 

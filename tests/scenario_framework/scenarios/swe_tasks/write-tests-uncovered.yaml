@@ -1,0 +1,48 @@
+schema_version: "1.0.0"
+id: "swe-write-tests-uncovered"
+title: "Write comprehensive unit tests for uncovered calculator module"
+pack: "swe_tasks"
+tags: ["swe", "write-tests", "ci-extended"]
+request_fixture: "fixtures/requests/swe_tasks/write-tests-uncovered.md"
+portals:
+  - alias: "write-tests-uncovered"
+    source_path: "fixtures/portals/write-tests-uncovered"
+mode_support: ["auto"]
+matrix:
+  cells:
+    - tool: "mock"
+      provider: "mock"
+      config: "configs/mock.toml"
+      requires_bin: "true"
+    - tool: "opencode"
+      provider: "direct"
+      config: "configs/dogfood.toml"
+      requires_bin: "opencode"
+      requires_key: "ANTHROPIC_API_KEY"
+      requires_optin: "EXA_MATRIX_OPENCODE"
+steps:
+  - id: "create-workspace"
+    type: "shell"
+    command: "mkdir -p $WORKSPACE_ROOT/src && cp -r $FRAMEWORK_HOME/../fixtures/portals/write-tests-uncovered/src/* $WORKSPACE_ROOT/src/"
+    input_criteria: []
+    output_criteria:
+      - id: "files-copied"
+        kind: "file-found"
+        path_pattern: "**/calculator.ts"
+        score_weight: 0.2
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "$PORTAL_write-tests-uncovered"]
+    input_criteria: []
+    output_criteria:
+      - id: "plan-produced"
+        kind: "file-found"
+        path_pattern: "**/_plan.md"
+        score_weight: 0.5
+      - id: "llm-judge-quality"
+        kind: "llm-judge"
+        preset: "GOAL_ALIGNED_REVIEW"
+        evidence_path: "llm-judge-input.txt"
+        score_threshold: 0.5
+        score_weight: 0.5

@@ -41,6 +41,7 @@ Deno.test("[ScenarioFrameworkPackGeneralization] runner can load two unrelated p
     "portal_knowledge",
     "provider_live",
     "smoke",
+    "swe_tasks",
     "triggers_basic",
   ]);
   assertEquals(smokePack.map((scenario: IScenario) => scenario.id), ["workspace-health-smoke"]);

@@ -272,6 +272,9 @@ await new Command()
             scoreThreshold: scenarioVerdict !== undefined ? scoreThreshold : undefined,
             thresholdPassed: scenarioVerdict?.passed,
             ...(trialMetrics ?? {}),
+            cellId: manifest.cellId,
+            provider: manifest.provider,
+            model: manifest.model,
           });
 
           if (sqliteStore) {

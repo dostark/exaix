@@ -32,6 +32,9 @@ export interface IRunManifest {
   outcome: string;
   steps: IRunManifestStep[];
   suite_score?: number;
+  cellId?: string;
+  provider?: string;
+  model?: string;
 }
 
 export interface IWriteRunManifestOptions {
