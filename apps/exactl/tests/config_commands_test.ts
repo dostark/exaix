@@ -235,6 +235,24 @@ Deno.test({
   },
 });
 
+Deno.test("[configuring-cli] ConfigCommands.unlock still functions after adapter.unlock gained an actor parameter (GAP-5)", async () => {
+  const dir = Deno.makeTempDirSync({ prefix: "config-unlock-actor-" });
+  try {
+    createTestConfigDb(dir);
+    const configService = createStubConfig(createMockConfig(dir));
+    const context = createStubContext({ config: configService });
+    const commands = new ConfigCommands(context);
+
+    await commands.lock("ai.provider");
+    assertEquals((await commands.listLocks()).some((l) => l.key === "ai.provider"), true);
+
+    await commands.unlock("ai.provider");
+    assertEquals((await commands.listLocks()).some((l) => l.key === "ai.provider"), false);
+  } finally {
+    Deno.removeSync(dir, { recursive: true });
+  }
+});
+
 // ── Phase 138 Step 3: CLI debounce + compact ────────────────────────────────
 
 Deno.test({

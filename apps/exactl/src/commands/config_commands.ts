@@ -96,7 +96,7 @@ export class ConfigCommands extends BaseCommand {
     await (await this.ensureAdapter()).unset(path);
   }
 
-  async validate(path?: string): Promise<IConfigValidationReport> {
+  async validate(path?: Opt<string, Reason.OptionalInput>): Promise<IConfigValidationReport> {
     const adapter = await this.ensureAdapter();
     if (path) {
       const value = adapter.get(path);
@@ -107,7 +107,7 @@ export class ConfigCommands extends BaseCommand {
 
   async show(
     format: ConfigOutputFormat = ConfigOutputFormat.HUMAN,
-    sources?: boolean,
+    sources?: Opt<boolean, Reason.OptionalInput>,
   ): Promise<string> {
     const adapter = await this.ensureAdapter();
     if (sources) {
@@ -235,7 +235,7 @@ export class ConfigCommands extends BaseCommand {
   }
 
   async unlock(path: string): Promise<void> {
-    (await this.ensureAdapter()).unlock(path);
+    (await this.ensureAdapter()).unlock(path, CONFIG_LOCKED_BY_CLI);
   }
 
   async listLocks(): Promise<ILockedKeyEntry[]> {
