@@ -184,10 +184,11 @@ export interface IConfigAdapter {
   rollback(key: string, id: number): Promise<ConfigValue>;
 
   /** Lock a key against all writes (CLI/MCP/daemon). Idempotent. (Phase 139 Step 4) */
-  lock(key: string, lockedBy: string, reason?: string): void;
+  lock(key: string, lockedBy: string, reason?: Opt<string, Reason.OptionalInput>): void;
 
-  /** Unlock a previously locked key. Idempotent. (Phase 139 Step 4) */
-  unlock(key: string): void;
+  /** Unlock a previously locked key. Idempotent. (Phase 139 Step 4; GAP-5: takes the
+   *  caller-supplied actor, mirroring lock(), instead of a hardcoded internal value. */
+  unlock(key: string, unlockedBy: string): void;
 
   /** True if `key` is in config_locked_keys — checked inside set(). (Phase 139 Step 4) */
   isLocked(key: string): boolean;
@@ -252,7 +253,7 @@ export interface IConfigAdapter {
  */
 function coerceDbValue(
   rawValue: ConfigValue,
-  registeredOpts: IConfigurableOpts | undefined,
+  registeredOpts: Opt<IConfigurableOpts, Reason.OptionalInput>,
 ): ConfigValue {
   if (rawValue === null) return null;
   if (typeof rawValue !== "string") return rawValue;
@@ -372,7 +373,7 @@ export class DirectConfigAdapter implements IConfigAdapter {
 
   constructor(
     dbPath: string,
-    mode?: ConfigAdapterMode,
+    mode?: Opt<ConfigAdapterMode, Reason.SensibleDefault>,
     logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
     this.db = new Database(dbPath);
@@ -647,14 +648,14 @@ export class DirectConfigAdapter implements IConfigAdapter {
     }
   }
 
-  lock(key: string, lockedBy: string, reason?: string): void {
+  lock(key: string, lockedBy: string, reason?: Opt<string, Reason.OptionalInput>): void {
     lockKey(this.db, key, lockedBy, reason);
     this.daemonLogger?.info(DomainEventType.ConfigKeyLocked, key, { key, locked_by: lockedBy, reason });
   }
 
-  unlock(key: string): void {
+  unlock(key: string, unlockedBy: string): void {
     unlockKey(this.db, key);
-    this.daemonLogger?.info(DomainEventType.ConfigKeyUnlocked, key, { key, locked_by: "cli" });
+    this.daemonLogger?.info(DomainEventType.ConfigKeyUnlocked, key, { key, locked_by: unlockedBy });
   }
 
   isLocked(key: string): boolean {

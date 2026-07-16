@@ -630,7 +630,7 @@ Deno.test("[configuring] adapter.lock/unlock round-trip + isLocked/listLocks", (
     assertEquals(adapter.isLocked("adapter_test.timeout_ms"), true);
     const locks = adapter.listLocks();
     assertEquals(locks.some((l) => l.key === "adapter_test.timeout_ms"), true);
-    adapter.unlock("adapter_test.timeout_ms");
+    adapter.unlock("adapter_test.timeout_ms", "cli");
     assertEquals(adapter.isLocked("adapter_test.timeout_ms"), false);
   } finally {
     cleanUp(dir);
@@ -670,7 +670,7 @@ Deno.test("[configuring] DirectConfigAdapter.set succeeds after unlock", async (
   const { adapter, dir } = setupAdapter();
   try {
     adapter.lock("adapter_test.timeout_ms", "cli");
-    adapter.unlock("adapter_test.timeout_ms");
+    adapter.unlock("adapter_test.timeout_ms", "cli");
     await adapter.set("adapter_test.timeout_ms", 55000);
     assertEquals(adapter.get("adapter_test.timeout_ms"), 55000);
   } finally {
@@ -682,7 +682,7 @@ Deno.test("[configuring] adapter.lock/unlock emit ConfigKeyLocked/ConfigKeyUnloc
   const { adapter, events, dir } = setupAdapterWithLogger();
   try {
     adapter.lock("adapter_test.timeout_ms", "cli", "why");
-    adapter.unlock("adapter_test.timeout_ms");
+    adapter.unlock("adapter_test.timeout_ms", "cli");
     assertNotEquals(
       events.find((e) => e.action === DomainEventType.ConfigKeyLocked),
       undefined,
@@ -693,6 +693,19 @@ Deno.test("[configuring] adapter.lock/unlock emit ConfigKeyLocked/ConfigKeyUnloc
       undefined,
       "ConfigKeyUnlocked must be emitted",
     );
+  } finally {
+    cleanUp(dir);
+  }
+});
+
+Deno.test("[configuring] adapter.unlock emits ConfigKeyUnlocked with the caller-supplied locked_by (GAP-5)", () => {
+  const { adapter, events, dir } = setupAdapterWithLogger();
+  try {
+    adapter.lock("adapter_test.timeout_ms", "cli");
+    adapter.unlock("adapter_test.timeout_ms", "test-actor");
+    const ev = events.find((e) => e.action === DomainEventType.ConfigKeyUnlocked);
+    assertNotEquals(ev, undefined, "ConfigKeyUnlocked must be emitted");
+    assertEquals(ev!.payload?.locked_by, "test-actor");
   } finally {
     cleanUp(dir);
   }

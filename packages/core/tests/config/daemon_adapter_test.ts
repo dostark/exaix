@@ -320,7 +320,7 @@ Deno.test("[configuring] DaemonConfigAdapter.set throws ConfigKeyLockedError for
       ConfigKeyLockedError,
     );
     // After unlock the daemon write succeeds.
-    adapter.unlock("daemon_test.timeout_ms");
+    adapter.unlock("daemon_test.timeout_ms", "cli");
     await adapter.set("daemon_test.timeout_ms", 60000);
     assertEquals(adapter.get("daemon_test.timeout_ms"), 60000);
   } finally {
