@@ -21,9 +21,19 @@ matrix:
       requires_key: "ANTHROPIC_API_KEY"
       requires_optin: "EXA_MATRIX_OPENCODE"
 steps:
+  - id: "start-daemon"
+    type: "shell"
+    command: "sh"
+    args: ["-c", "echo daemon-ready"]
+    input_criteria: []
+    output_criteria: []
   - id: "create-workspace"
     type: "shell"
-    command: "mkdir -p $WORKSPACE_ROOT/src && cp -r $FRAMEWORK_HOME/../fixtures/portals/write-tests-uncovered/src/* $WORKSPACE_ROOT/src/"
+    command: "sh"
+    args: [
+      "-c",
+      "mkdir -p $WORKSPACE_ROOT/src && cp -r $FRAMEWORK_HOME/../fixtures/portals/write-tests-uncovered/src/* $WORKSPACE_ROOT/src/",
+    ]
     input_criteria: []
     output_criteria:
       - id: "files-copied"
