@@ -17,7 +17,10 @@
  *   Deliberately does not exercise AgentOrchestrator, PlanExecutor, the daemon, or a
  *   portal — the swe_tasks scenario pack already covers that heavier, full-stack path;
  *   this test isolates ReActLoopStrategy's own tool-use, comprehension, and termination
- *   contract against a real model as cheaply and directly as possible.
+ *   contract against a real model as cheaply and directly as possible. Provider and model
+ *   are overridable via EXA_TEST_LLM_PROVIDER/EXA_TEST_LLM_MODEL (@exaix/testing), so this
+ *   same test can be pointed at Anthropic, OpenAI, or Google without editing source —
+ *   defaults to Anthropic, gated on whichever provider's own API key is actually required.
  * @architectural-layer Services (test)
  * @related-files [packages/execution/src/strategies/react_loop_strategy.ts, packages/execution/tests/agents/react_loop_strategy_test.ts, packages/ai/tests/provider_endpoint_regression_test.ts]
  */
@@ -25,10 +28,19 @@
 import { assert, assertEquals } from "@std/assert";
 import { ReActLoopStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
-import { AnthropicProvider, DEFAULT_ANTHROPIC_MODEL } from "@exaix/ai-anthropic";
-import { ExecutionStrategyName, REACT_STATUS_COMPLETE, SecurityMode, ToolName } from "@exaix/core";
+import { AnthropicProvider } from "@exaix/ai-anthropic";
+import { OpenAIProvider } from "@exaix/ai-openai";
+import { GoogleProvider } from "@exaix/ai-google";
+import { ExecutionStrategyName, ProviderType, REACT_STATUS_COMPLETE, SecurityMode, ToolName } from "@exaix/core";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
-import { ENV_ANTHROPIC_API_KEY } from "@exaix/testing";
+import {
+  ENV_ANTHROPIC_API_KEY,
+  ENV_GOOGLE_API_KEY,
+  ENV_OPENAI_API_KEY,
+  getTestLlmModel,
+  getTestLlmProvider,
+} from "@exaix/testing";
 import type { JSONValue } from "@exaix/core/types";
 import { bestSubstringSimilarity } from "../../../../tests/helpers/fuzzy_string_match.ts";
 
@@ -51,10 +63,36 @@ const FILE_STATEMENT_ONE = "The warehouse ships orders every Tuesday.";
 const FILE_STATEMENT_TWO = "The quokka guards the northern vault.";
 const READ_ONLY_FILE_CONTENT = `${FILE_STATEMENT_ONE} ${FILE_STATEMENT_TWO}`;
 
+const testProvider = getTestLlmProvider();
+const testModel = getTestLlmModel();
+
+/** The env var name carrying the real API key for a given provider's own factory/tests. */
+const API_KEY_ENV_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
+  [ProviderType.ANTHROPIC]: ENV_ANTHROPIC_API_KEY,
+  [ProviderType.OPENAI]: ENV_OPENAI_API_KEY,
+  [ProviderType.GOOGLE]: ENV_GOOGLE_API_KEY,
+};
+
+function resolveApiKeyEnvVar(provider: string): string {
+  return API_KEY_ENV_BY_PROVIDER[provider as ProviderType] ?? ENV_ANTHROPIC_API_KEY;
+}
+
+function buildTestProvider(provider: string, model: string, apiKey: string): IModelProvider {
+  switch (provider as ProviderType) {
+    case ProviderType.OPENAI:
+      return new OpenAIProvider({ apiKey, model });
+    case ProviderType.GOOGLE:
+      return new GoogleProvider({ apiKey, model });
+    case ProviderType.ANTHROPIC:
+    default:
+      return new AnthropicProvider({ apiKey, model });
+  }
+}
+
 const testBlueprint = {
   name: "react-live-test-agent",
-  model: "anthropic:" + DEFAULT_ANTHROPIC_MODEL,
-  provider: "anthropic",
+  model: `${testProvider}:${testModel}`,
+  provider: testProvider,
   capabilities: [ExecutionStrategyName.REACT],
   systemPrompt: "",
 } satisfies IAgentFileBlueprint;
@@ -113,17 +151,16 @@ function buildExecutor(toolCalls: Array<{ tool: string; params: TestToolParams }
   } as ReActExecutor;
 }
 
+const testApiKeyEnvVar = resolveApiKeyEnvVar(testProvider);
+
 Deno.test({
   name:
-    "[live] ReActLoopStrategy: a real model uses the AVAILABLE TOOLS list, comprehends the tool result content, and recognizes STATUS: COMPLETE to terminate",
-  ignore: !Deno.env.get(ENV_ANTHROPIC_API_KEY),
+    `[live] ReActLoopStrategy (${testProvider}:${testModel}): a real model uses the AVAILABLE TOOLS list, comprehends the tool result content, and recognizes STATUS: COMPLETE to terminate`,
+  ignore: !Deno.env.get(testApiKeyEnvVar),
   sanitizeResources: false,
   sanitizeOps: false,
   fn: async () => {
-    const provider = new AnthropicProvider({
-      apiKey: Deno.env.get(ENV_ANTHROPIC_API_KEY)!,
-      model: DEFAULT_ANTHROPIC_MODEL,
-    });
+    const provider = buildTestProvider(testProvider, testModel, Deno.env.get(testApiKeyEnvVar)!);
 
     let generateCallCount = 0;
     const countingProvider = {

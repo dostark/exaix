@@ -8,7 +8,7 @@
  * Incorporates test-specific constants (prompts, mock data, test environment variables, etc.).
  */
 
-import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_SKILL_INDEX_VERSION } from "@exaix/core";
+import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_SKILL_INDEX_VERSION, ProviderType } from "@exaix/core";
 
 export const TEST_MODEL_OPENAI = "openai-gpt-4.1";
 
@@ -298,6 +298,42 @@ export const TEST_TOTAL_TOKENS_ANTHROPIC = 40;
 // Test model names for regression testing
 export const TEST_MODEL_GOOGLE = "gemini-pro";
 export const TEST_MODEL_ANTHROPIC = "claude-3-7-sonnet-20250219";
+
+// Env var names for overriding which real provider/model a live-provider test targets.
+// Prefixed EXA_TEST_ (not the production EXA_LLM_PROVIDER/EXA_LLM_MODEL pair) so setting
+// one never accidentally reconfigures a daemon under test in the same process/environment.
+export const ENV_TEST_LLM_PROVIDER = "EXA_TEST_LLM_PROVIDER";
+export const ENV_TEST_LLM_MODEL = "EXA_TEST_LLM_MODEL";
+
+const DEFAULT_TEST_LLM_PROVIDER: string = ProviderType.ANTHROPIC;
+
+// Deliberately NOT TEST_MODEL_ANTHROPIC/TEST_MODEL_GOOGLE/TEST_MODEL_OPENAI above — those
+// are stable placeholder strings for offline/mock tests (registry construction, token-usage
+// mapping, audit logging) allowed to go stale since none of them call a real API. A live
+// call needs a model that actually resolves today, per provider — so overriding
+// EXA_TEST_LLM_PROVIDER alone (without EXA_TEST_LLM_MODEL) still yields a working pair.
+const TEST_LLM_MODEL_BY_PROVIDER: Partial<Record<ProviderType, string>> = {
+  [ProviderType.ANTHROPIC]: "claude-haiku-4-5-20251001",
+  [ProviderType.OPENAI]: "gpt-5-mini",
+  [ProviderType.GOOGLE]: "gemini-flash-latest",
+};
+
+/** The provider a live-provider test should target: EXA_TEST_LLM_PROVIDER, else anthropic. */
+export function getTestLlmProvider(): string {
+  return Deno.env.get(ENV_TEST_LLM_PROVIDER) ?? DEFAULT_TEST_LLM_PROVIDER;
+}
+
+/**
+ * The model a live-provider test should target: EXA_TEST_LLM_MODEL, else a current, valid
+ * model for the resolved provider (getTestLlmProvider() — so overriding just the provider
+ * still produces a working pair, not a mismatched provider/model).
+ */
+export function getTestLlmModel(): string {
+  const envModel = Deno.env.get(ENV_TEST_LLM_MODEL);
+  if (envModel) return envModel;
+  const provider = getTestLlmProvider() as ProviderType;
+  return TEST_LLM_MODEL_BY_PROVIDER[provider] ?? TEST_LLM_MODEL_BY_PROVIDER[ProviderType.ANTHROPIC]!;
+}
 
 // Test provider IDs for regression testing
 export const TEST_PROVIDER_ID_GOOGLE = "google-gemini-pro";
