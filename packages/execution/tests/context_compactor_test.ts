@@ -119,7 +119,7 @@ Deno.test("[ContextCompactor] LlmContextCompactor: summary call requests enough 
   await compactor.summarize(makeToolResultSegment(), trackingProvider);
 
   // On models whose thinking blocks count against max_tokens, a 200-token cap can be
-  // consumed entirely by thinking, yielding an empty summary. 1024 leaves room for
+  // consumed entirely by thinking, yielding an empty summary. 2048 leaves room for
   // thinking plus the short summary the prompt asks for.
-  assertEquals(capturedMaxTokens, 1024);
+  assertEquals(capturedMaxTokens, 2048);
 });

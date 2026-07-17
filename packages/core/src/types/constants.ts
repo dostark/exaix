@@ -2577,7 +2577,15 @@ export const LOOP_HISTORY_COMPRESSION_RATIO = 0.3;
  * max_tokens — a cap sized only for the summary text can be consumed
  * entirely by thinking, yielding an empty summary.
  */
-export const COMPACT_SUMMARY_MAX_TOKENS = 1024;
+export const COMPACT_SUMMARY_MAX_TOKENS: number = configurable({
+  key: "agent.compact_summary_max_tokens",
+  default: 2048,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum output tokens for LLM summarization calls during loop history compaction",
+  min: 100,
+  max: 100_000,
+  swap: SwapClass.RESTART,
+});
 
 /** Number of most recent steps preserved in full during compaction. */
 export const DEFAULT_KEEP_LAST_N_STEPS: number = configurable({
