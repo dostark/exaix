@@ -100,3 +100,26 @@ Deno.test("[ContextCompactor] NoopContextCompactor: returns segment reference-eq
   const result = await compactor.summarize(segment, makeProvider("ignored"));
   assertEquals(result, segment);
 });
+
+Deno.test("[ContextCompactor] LlmContextCompactor: summary call requests enough output tokens for thinking models", async () => {
+  let capturedMaxTokens: number | undefined;
+  const trackingProvider: IModelProvider = {
+    generate(_prompt: string, opts?: IModelOptions): Promise<IGenerateResult> {
+      capturedMaxTokens = opts?.max_tokens;
+      return Promise.resolve({
+        content: "Summarized.",
+        model: "mock",
+        provider: "mock",
+        usage: MOCK_USAGE,
+      });
+    },
+  } as IModelProvider;
+
+  const compactor = new LlmContextCompactor();
+  await compactor.summarize(makeToolResultSegment(), trackingProvider);
+
+  // On models whose thinking blocks count against max_tokens, a 200-token cap can be
+  // consumed entirely by thinking, yielding an empty summary. 1024 leaves room for
+  // thinking plus the short summary the prompt asks for.
+  assertEquals(capturedMaxTokens, 1024);
+});

@@ -19,6 +19,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import { DomainEventType } from "@exaix/core/events";
 import {
+  AGENT_EVENT_RESPONSE_TRUNCATED,
   CONTEXT_PRIORITY_REFLECTION,
   CONTEXT_PRIORITY_SYSTEM,
   CONTEXT_PRIORITY_TOOL_RESULT,
@@ -33,6 +34,7 @@ import {
   REACT_THOUGHT_PREFIX,
   REACT_TOOL_ERROR_PREFIX,
   REACT_TOOL_RESULT_BUDGET_RATIO,
+  RESPONSE_STOP_REASON_MAX_TOKENS,
   STREAMING_EVENT_HEARTBEAT,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
@@ -137,6 +139,24 @@ export class ReActLoopStrategy implements IExecutionStrategy {
             ...this.callOptions,
           }),
       );
+
+      // A max_tokens stop means this turn was cut off mid-generation: the TOML-parse
+      // failure or empty action list that follows must be attributable to truncation,
+      // not treated as a mysteriously malformed model response.
+      if (response.stop_reason === RESPONSE_STOP_REASON_MAX_TOKENS) {
+        void this.executor.budgetLogger?.warn(
+          AGENT_EVENT_RESPONSE_TRUNCATED,
+          context.request_id ?? null,
+          {
+            identity_id: options.identity_id ?? "",
+            iteration: i,
+            stop_reason: response.stop_reason,
+            response_length: response.content.length,
+            completion_tokens: response.usage.completionTokens,
+          },
+          context.trace_id,
+        );
+      }
 
       // Log individual generation metrics (Phase 69)
       await this.executor.logGeneration(

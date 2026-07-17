@@ -559,7 +559,7 @@ export const REACT_DEFAULT_TEMPERATURE: number = configurable({
 });
 export const REACT_DEFAULT_MAX_TOKENS: number = configurable({
   key: "react.max_tokens",
-  default: 4000,
+  default: 8192,
   type: ConfigValueType.NUMBER,
   description: "Default maximum tokens for ReAct loop LLM calls",
   min: 100,
@@ -2571,8 +2571,13 @@ export const LOOP_HISTORY_BUDGET_THRESHOLD = 0.8;
 /** Token compression ratio applied to compacted loop history entries. */
 export const LOOP_HISTORY_COMPRESSION_RATIO = 0.3;
 
-/** Max tokens for LLM summarization prompt during loop history compaction. */
-export const COMPACT_SUMMARY_MAX_TOKENS = 200;
+/**
+ * Max tokens for LLM summarization prompt during loop history compaction.
+ * Must leave headroom for models whose thinking blocks count against
+ * max_tokens — a cap sized only for the summary text can be consumed
+ * entirely by thinking, yielding an empty summary.
+ */
+export const COMPACT_SUMMARY_MAX_TOKENS = 1024;
 
 /** Number of most recent steps preserved in full during compaction. */
 export const DEFAULT_KEEP_LAST_N_STEPS: number = configurable({
