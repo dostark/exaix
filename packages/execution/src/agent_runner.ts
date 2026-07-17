@@ -365,7 +365,7 @@ export class AgentRunner implements IAgentRunner {
     this.logActivityDebug(AGENT_EVENT_LLM_RESPONSE_RECEIVED, requestId || null, {
       identity_id: identityId,
       response_length: rawResponse.length,
-      response_preview: rawResponse.slice(0, 500),
+      full_response: rawResponse,
       prompt_tokens: generateResult?.usage?.promptTokens ?? null,
       completion_tokens: generateResult?.usage?.completionTokens ?? null,
     }, traceId);
@@ -736,7 +736,15 @@ export class AgentRunner implements IAgentRunner {
       entries.push({ content: memoryContext, kind: k.reflection, priority: 40, nonCompactable: false });
     }
     if (request.userPrompt.trim()) {
-      entries.push({ content: request.userPrompt, kind: k.request, priority: 75, nonCompactable: true });
+      // Skills render under their own "### HEADING" markers (prompt_formatter.ts); without an
+      // equally distinct marker here, the user's actual request reads as more trailing
+      // instructional/example text rather than the task to act on now. A markdown heading
+      // (e.g. "### YOUR TASK") is the wrong tool here: request bodies routinely start with
+      // their own "#"/"##" heading (as this codebase's own fixture requests do), which then
+      // outranks a fixed "###" wrapper in document structure. Use an hr-delimited block instead
+      // so the boundary is unambiguous regardless of the request's own internal heading levels.
+      const labeledRequest = `---\nYOUR TASK — this is the actual task to complete now:\n---\n\n${request.userPrompt}`;
+      entries.push({ content: labeledRequest, kind: k.request, priority: 75, nonCompactable: true });
     }
 
     const manager = this.config?.contextBudgetManager;

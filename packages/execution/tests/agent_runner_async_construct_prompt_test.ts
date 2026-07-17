@@ -138,7 +138,10 @@ Deno.test("[IAgentRunner] user prompt segment gets kind=request with priority 75
 
   await runner.run(makeBlueprint(), makeRequest({ userPrompt: "USER_PROMPT_TEXT" }));
 
-  const userSeg = captured[0].segments.find((s) => s.content === "USER_PROMPT_TEXT");
+  // The segment wraps the raw userPrompt with a "### YOUR TASK" heading (agent_runner.ts) so a
+  // real model can't mistake it for trailing skill/example content — assert containment, not
+  // exact equality, since the segment content is no longer the bare userPrompt string.
+  const userSeg = captured[0].segments.find((s) => s.content.includes("USER_PROMPT_TEXT"));
   assertEquals(userSeg?.kind, "request");
   assertEquals(userSeg?.priority, 75);
 });

@@ -97,6 +97,32 @@ Deno.test("IAgentRunner formats combined prompt correctly", async () => {
   assertEquals(systemIndex < userIndex, true, "System prompt should come before user prompt");
 });
 
+Deno.test("IAgentRunner labels the user request with a distinct marker so it cannot be read as trailing skill content", async () => {
+  let capturedPrompt = "";
+
+  const mockProvider = new MockProvider(wellFormedResponse);
+  const originalGenerate = mockProvider.generate.bind(mockProvider);
+  mockProvider.generate = async (prompt: string): Promise<IGenerateResult> => {
+    capturedPrompt = prompt;
+    return await originalGenerate(prompt);
+  };
+
+  const runner = new AgentRunner(mockProvider);
+  await runner.run(sampleBlueprint, sampleRequest);
+
+  // Skills render under their own "### HEADING" markers (prompt_formatter.ts); the user's
+  // actual request must be equally distinguishable, not bare text concatenated after them —
+  // otherwise a real model reading the assembled prompt cannot tell where instructional/example
+  // content ends and the task to actually perform begins. An hr-delimited marker (not a markdown
+  // heading) is used deliberately: request bodies routinely start with their own "#"/"##"
+  // heading, which would outrank a fixed heading level.
+  const markerIndex = capturedPrompt.indexOf("YOUR TASK");
+  const userIndex = capturedPrompt.indexOf(sampleRequest.userPrompt);
+
+  assertEquals(markerIndex >= 0, true, "A 'YOUR TASK' marker should precede the user request");
+  assertEquals(markerIndex < userIndex, true, "The marker should come immediately before the user request");
+});
+
 Deno.test("IAgentRunner injects portal context when provided", async () => {
   let capturedPrompt = "";
 
