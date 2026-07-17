@@ -25,13 +25,14 @@ import {
   COST_RATE_OLLAMA,
   COST_RATE_OPENAI,
   PROVIDER_ANTHROPIC,
+  PROVIDER_EVENT_RESPONSE_DEBUG_DUMP,
   PROVIDER_GOOGLE,
   PROVIDER_OLLAMA,
   PROVIDER_OPENAI,
   TOKENS_PER_COST_UNIT,
 } from "@exaix/core";
 import { HTTP_FORBIDDEN, HTTP_TOO_MANY_REQUESTS, HTTP_UNAUTHORIZED } from "@exaix/core";
-import type { Opt, Reason } from "@exaix/core/types";
+import { type Opt, type Reason, type SafeJsonInput, toSafeJson } from "@exaix/core/types";
 
 export type TokenMap = {
   prompt_tokens?: number;
@@ -402,6 +403,16 @@ export async function performProviderCall<T>(
     logger,
     tokenMapper,
   });
+  // Debug-level dump of the complete raw response body, symmetric with
+  // provider.request_debug_dump: content extraction deliberately strips parts of the
+  // response (e.g. thinking blocks), so follow-up investigation of a live-provider
+  // issue needs the unfiltered body in the journal.
+  if (logger) {
+    void logger.debug(PROVIDER_EVENT_RESPONSE_DEBUG_DUMP, id, {
+      provider: id,
+      response_body: toSafeJson(data as SafeJsonInput) ?? {},
+    });
+  }
   const content = extractor
     ? extractor(data)
     : ((data as OpenAIResponse)?.choices?.[0]?.message?.content ?? (data as OpenAIResponse)?.choices?.[0]?.text ?? "");

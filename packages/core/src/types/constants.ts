@@ -501,6 +501,8 @@ export const AGENT_EVENT_PROMPT_DEBUG_DUMP = "agent.prompt_debug_dump";
 export const AGENT_EVENT_LLM_RESPONSE_RECEIVED = "agent.llm_response_received";
 /** Debug-level: the exact outbound JSON request body sent to a model provider's API. */
 export const PROVIDER_EVENT_REQUEST_DEBUG_DUMP = "provider.request_debug_dump";
+/** Debug-level: the complete raw JSON response body from a model provider's API, before extraction. */
+export const PROVIDER_EVENT_RESPONSE_DEBUG_DUMP = "provider.response_debug_dump";
 /** Warn-level: the provider reported the response was truncated (stop_reason max_tokens). */
 export const AGENT_EVENT_RESPONSE_TRUNCATED = "agent.response_truncated";
 /** Anthropic stop_reason value meaning the generation hit max_tokens and was truncated. */
