@@ -15,6 +15,7 @@ import { AgentExecutionErrorType, ExecutionStrategyName, ToolName } from "@exaix
 import { GuardrailBlockedError } from "@exaix/core/planning";
 import { parse as parseToml } from "@std/toml";
 import type { JSONValue } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import { DomainEventType } from "@exaix/core/events";
 import {
@@ -74,7 +75,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
 
   constructor(
     private executor: IReActLoopExecutor,
-    private provider?: IModelProvider,
+    private provider?: Opt<IModelProvider, Reason.OptionalDependency>,
   ) {}
 
   async execute(
@@ -518,8 +519,12 @@ ${REACT_SUMMARY_PREFIX}[What was done]
   ): { thought?: string; actions: IReActAction[]; isComplete: boolean } {
     const isComplete = response.includes(REACT_STATUS_COMPLETE);
 
-    // Improved thought parsing to handle both prefix and blocks
-    const thoughtPattern = `${REACT_THOUGHT_PREFIX}\\s*(.*?)(?= \`\`\`toml | ${REACT_STATUS_COMPLETE} | $)`;
+    // Capture the text after the THOUGHT: prefix up to the first action block, the
+    // completion marker, or end of response. No literal spaces inside the lookahead
+    // alternatives: the previous pattern required a space-padded " ```toml " / " $",
+    // which never matches fence-on-its-own-line responses — so thought was always
+    // undefined and the model's reasoning never entered the loop history.
+    const thoughtPattern = `${REACT_THOUGHT_PREFIX}\\s*(.*?)(?=\`\`\`toml|${REACT_STATUS_COMPLETE}|$)`;
     const thoughtMatch = response.match(new RegExp(thoughtPattern, "s"));
     const thought = thoughtMatch ? thoughtMatch[1].trim() : undefined;
 

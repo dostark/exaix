@@ -1233,6 +1233,61 @@ Deno.test({
 });
 
 Deno.test({
+  name: "AgentOrchestrator: execution prompt carries no Available Tools section without a tool registry",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const executor = new AgentOrchestrator({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+      });
+
+      const blueprint: IAgentFileBlueprint = {
+        name: "test-agent",
+        model: "gpt-4o-mini",
+        provider: PROVIDER_OPENAI,
+        capabilities: [PortalOperation.READ],
+        systemPrompt: "You are a helpful assistant.",
+      };
+
+      const context: IExecutionContext = {
+        trace_id: "test-trace-123",
+        request_id: "test-request-456",
+        request: "Fix the null-safety bug",
+        plan: "Test plan",
+        portal: "/test/portal",
+      };
+
+      const options: IAgentExecutionOptions = {
+        identity_id: "test-agent",
+        portal: "/test/portal",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+      };
+
+      const prompt = await executor.buildExecutionPrompt(blueprint, context, options);
+
+      // Without a registry there is nothing truthful to advertise — an Available Tools
+      // header over an empty list would invite hallucinated tool calls.
+      assertEquals(prompt.includes("Available Tools"), false);
+      // The rest of the prompt must still be intact.
+      assertStringIncludes(prompt, "Fix the null-safety bug");
+      assertStringIncludes(prompt, "Test plan");
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
   name: "fix(agent-orchestrator): execution prompt's tool list is filtered by options.permitted_tools when set",
   fn: async () => {
     await setup();

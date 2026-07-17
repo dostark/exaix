@@ -821,6 +821,7 @@ class MockSkillsService implements ISkillsService {
   usageRecorded: string[] = [];
   matchCallCount = 0;
   contextBuiltForSkills: string[] = [];
+  criticalSkillIds = new Set<string>();
 
   setMatchedSkills(skills: ISkillMatch[]) {
     this.matchedSkills = skills;
@@ -895,6 +896,7 @@ class MockSkillsService implements ISkillsService {
         tags: [],
       },
       usage_count: 0,
+      critical: this.criticalSkillIds.has(id),
     });
   }
 
@@ -969,6 +971,47 @@ Deno.test("IAgentRunner: injects skill context into prompt", async () => {
   assertStringIncludes(capturedPrompt, "### APPLICABLE SKILLS & PROCEDURES");
   assertStringIncludes(capturedPrompt, "#### Security First");
   assertStringIncludes(capturedPrompt, "Mock skill instructions");
+});
+
+Deno.test("IAgentRunner: assembled prompt orders system, critical skills, ordinary skills, then the task last", async () => {
+  let capturedPrompt = "";
+  const mockProvider = new MockProvider(wellFormedResponse);
+  const originalGenerate = mockProvider.generate.bind(mockProvider);
+  mockProvider.generate = async (prompt: string) => {
+    capturedPrompt = prompt;
+    return await originalGenerate(prompt);
+  };
+
+  const mockSkills = new MockSkillsService();
+  mockSkills.criticalSkillIds.add("security-first");
+  mockSkills.setMatchedSkills([
+    { skillId: "security-first", confidence: 0.9, matchedTriggers: {} },
+    { skillId: "tdd-methodology", confidence: 0.8, matchedTriggers: {} },
+  ]);
+
+  const runner = new AgentRunner(mockProvider, { skillsService: mockSkills });
+  await runner.run(sampleBlueprint, sampleRequest);
+
+  const systemIndex = capturedPrompt.indexOf(sampleBlueprint.systemPrompt);
+  const criticalIndex = capturedPrompt.indexOf("### REQUIRED SKILLS & CONTRACT");
+  const ordinaryIndex = capturedPrompt.indexOf("### APPLICABLE SKILLS & PROCEDURES");
+  const taskIndex = capturedPrompt.indexOf("YOUR TASK");
+  const requestIndex = capturedPrompt.indexOf(sampleRequest.userPrompt);
+
+  assertEquals(systemIndex >= 0, true, "system prompt present");
+  assertEquals(criticalIndex >= 0, true, "critical skills section present");
+  assertEquals(ordinaryIndex >= 0, true, "ordinary skills section present");
+  assertEquals(taskIndex >= 0, true, "task marker present");
+  assertEquals(requestIndex >= 0, true, "user request present");
+  assertEquals(
+    systemIndex < criticalIndex && criticalIndex < ordinaryIndex && ordinaryIndex < taskIndex &&
+      taskIndex < requestIndex,
+    true,
+    "prompt sections must appear as: system, critical skills, ordinary skills, task marker, request",
+  );
+  // The critical section carries the critical skill; the ordinary section the other.
+  assertEquals(capturedPrompt.indexOf("Security First") < ordinaryIndex, true, "critical skill in critical section");
+  assertEquals(capturedPrompt.indexOf("TDD Methodology") > ordinaryIndex, true, "ordinary skill in ordinary section");
 });
 
 Deno.test("IAgentRunner: records skill usage after execution", async () => {
