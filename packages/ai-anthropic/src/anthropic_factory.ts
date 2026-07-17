@@ -24,6 +24,10 @@ export class AnthropicProviderFactory extends AbstractKeyBasedProviderFactory {
       model: options.model,
       id: this.generateId(PROVIDER_ANTHROPIC, options.model, options.id),
       logger: options.logger,
+      // Without this, every config-driven provider default (ai_anthropic.max_tokens_default,
+      // api_version, ai_endpoints.anthropic, retry/timeout blocks) is silently dead on the
+      // factory path — the constructor reads them from options.config.
+      config: options.config,
     });
   }
 }

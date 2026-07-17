@@ -234,12 +234,16 @@ if (import.meta.main) {
     const viewerLogDir = join(logsDir, "event-viewer");
     const viewerOutput = new EventLoggerStructuredOutput(viewerLogDir);
 
-    // Create main EventLogger with database connection and viewer output
+    // Create main EventLogger with database connection and viewer output. Without minLevel,
+    // EventLogger defaults to INFO and config's log_level = "debug" silently never applies —
+    // debug-level diagnostics (prompt dumps, raw LLM responses, provider request bodies)
+    // would be filtered out of the journal no matter what the config says.
     const logger = new EventLogger({
       db: dbService,
       prefix: "",
       defaultActor: DEFAULT_MCP_IDENTITY_ID,
       outputs: [viewerOutput],
+      minLevel: config.system.log_level,
     });
 
     // Initialize GracefulShutdown service
@@ -443,11 +447,13 @@ if (import.meta.main) {
       defaultModelName,
     );
     const costTracker = new CostTracker(dbService, config);
+    // Pass the logger so provider-level diagnostics (token usage at info, outbound request
+    // debug dumps) reach the journal — without it every provider call is a logging black hole.
     const llmProvider = await ProviderFactory.createByName(
       config,
       defaultModelName,
       undefined,
-      undefined,
+      logger,
       costTracker,
     );
 
