@@ -23,7 +23,6 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { levenshteinDistance } from "@std/text/levenshtein-distance";
 import { ReActLoopStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import { AnthropicProvider, DEFAULT_ANTHROPIC_MODEL } from "@exaix/ai-anthropic";
@@ -31,6 +30,7 @@ import { ExecutionStrategyName, REACT_STATUS_COMPLETE, SecurityMode, ToolName } 
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
 import { ENV_ANTHROPIC_API_KEY } from "@exaix/testing";
 import type { JSONValue } from "@exaix/core/types";
+import { bestSubstringSimilarity } from "../../../../tests/helpers/fuzzy_string_match.ts";
 
 type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
 type TestToolParams = Record<string, JSONValue>;
@@ -111,39 +111,6 @@ function buildExecutor(toolCalls: Array<{ tool: string; params: TestToolParams }
       getTools: () => [],
     },
   } as ReActExecutor;
-}
-
-/**
- * Best-effort normalized similarity (0..1, higher = closer) between `needle` and the
- * best-matching substring of `haystack`, tolerant of paraphrase-driven length changes.
- * `needle` is expected to appear embedded in a longer response (e.g. after a THOUGHT:
- * preamble) and possibly reworded, so both a fixed comparison window (dominated by length
- * mismatch) and a whole-string distance (dominated by the unrelated preamble/prefix text)
- * would misjudge it — this slides windows across a 0.6x-1.4x length range of `needle`
- * across `haystack` and keeps the best-scoring one.
- */
-function bestSubstringSimilarity(haystack: string, needle: string): number {
-  const normalizedNeedle = needle.toLowerCase();
-  const normalizedHaystack = haystack.toLowerCase();
-  const minWindowLen = Math.max(1, Math.floor(normalizedNeedle.length * 0.6));
-  const maxWindowLen = Math.min(normalizedHaystack.length, Math.ceil(normalizedNeedle.length * 1.4));
-  const windowStep = Math.max(1, Math.floor(normalizedNeedle.length * 0.1));
-
-  if (normalizedHaystack.length <= minWindowLen) {
-    const distance = levenshteinDistance(normalizedHaystack, normalizedNeedle);
-    return 1 - distance / Math.max(normalizedNeedle.length, normalizedHaystack.length, 1);
-  }
-
-  let best = 0;
-  for (let windowLen = minWindowLen; windowLen <= maxWindowLen; windowLen += windowStep) {
-    for (let i = 0; i <= normalizedHaystack.length - windowLen; i++) {
-      const window = normalizedHaystack.slice(i, i + windowLen);
-      const distance = levenshteinDistance(window, normalizedNeedle);
-      const similarity = 1 - distance / Math.max(normalizedNeedle.length, windowLen);
-      if (similarity > best) best = similarity;
-    }
-  }
-  return best;
 }
 
 Deno.test({
