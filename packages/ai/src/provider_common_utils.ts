@@ -98,7 +98,10 @@ export type AnthropicUsage = {
 export type AnthropicResponse = {
   usage?: AnthropicUsage;
   content?: Array<{
+    /** Block type, e.g. "text" or "thinking". Absent in older response shapes. */
+    type?: string;
     text?: string;
+    thinking?: string;
   }>;
 };
 
@@ -178,7 +181,7 @@ export async function handleProviderResponse<T>(
 
 /** Token mapper for OpenAI response shape */
 export function tokenMapperOpenAI(model: string): ResponseTokenMapper<OpenAIResponse> {
-  return (d: OpenAIResponse, providerId?: string): TokenMap | undefined => {
+  return (d: OpenAIResponse, providerId?: Opt<string, Reason.OptionalContext>): TokenMap | undefined => {
     if (!d.usage) return undefined;
 
     const totalTokens = d.usage.total_tokens ?? (d.usage.prompt_tokens + d.usage.completion_tokens);
@@ -224,7 +227,7 @@ export function createOpenAIChatCompletionsRequestInit(
 
 /** Token mapper for Google response shape */
 export function tokenMapperGoogle(model: string): ResponseTokenMapper<GoogleResponse> {
-  return (d: GoogleResponse, providerId?: string): TokenMap | undefined => {
+  return (d: GoogleResponse, providerId?: Opt<string, Reason.OptionalContext>): TokenMap | undefined => {
     if (!d.usageMetadata) return undefined;
 
     const totalTokens = d.usageMetadata.totalTokenCount ??
@@ -248,7 +251,7 @@ export function extractGoogleContent(d: GoogleResponse): string {
 
 /** Token mapper for Anthropic response shape */
 export function tokenMapperAnthropic(model: string): ResponseTokenMapper<AnthropicResponse> {
-  return (d: AnthropicResponse, providerId?: string): TokenMap | undefined => {
+  return (d: AnthropicResponse, providerId?: Opt<string, Reason.OptionalContext>): TokenMap | undefined => {
     if (!d.usage) return undefined;
 
     const totalTokens = (d.usage.input_tokens ?? 0) + (d.usage.output_tokens ?? 0);
@@ -264,9 +267,18 @@ export function tokenMapperAnthropic(model: string): ResponseTokenMapper<Anthrop
   };
 }
 
-/** Extract textual content from Anthropic response */
+/**
+ * Extract textual content from Anthropic response. Thinking-capable models (Claude 5 family)
+ * prepend a `thinking` content block before the `text` block when adaptive thinking triggers,
+ * so taking content[0] blindly returns "" exactly when the model thought hardest — join every
+ * text-bearing block instead (skipping blocks explicitly typed as something other than text).
+ */
 export function extractAnthropicContent(d: AnthropicResponse): string {
-  return d.content?.[0]?.text ?? "";
+  if (!d.content) return "";
+  return d.content
+    .filter((block) => block.type === undefined || block.type === "text")
+    .map((block) => block.text ?? "")
+    .join("");
 }
 
 /**
