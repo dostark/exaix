@@ -20,6 +20,13 @@ export interface IGenerateResult {
   provider: string;
   cost_usd?: number;
   streamed?: boolean;
+  /**
+   * Why the generation ended, when the provider reports it (Anthropic stop_reason:
+   * "end_turn", "max_tokens", "stop_sequence", ...). "max_tokens" means the content
+   * was truncated mid-generation — callers parsing structured output should treat
+   * that as an incomplete response, not a malformed one.
+   */
+  stop_reason?: string;
 }
 /**
  * Base error class for model provider errors.

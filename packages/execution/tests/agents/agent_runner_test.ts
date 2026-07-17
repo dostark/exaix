@@ -17,6 +17,7 @@ import type { ISkillMatchRequest } from "@exaix/core/types";
 import type { ISkill, ISkillMatch, SkillDefinition } from "@exaix/schemas/memory_bank.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IEventLogger } from "@exaix/core/logger";
+import type { LogMetadata } from "@exaix/core/types";
 // ============================================================================
 // Test Fixtures
 // ============================================================================
@@ -1012,6 +1013,39 @@ Deno.test("IAgentRunner: assembled prompt orders system, critical skills, ordina
   // The critical section carries the critical skill; the ordinary section the other.
   assertEquals(capturedPrompt.indexOf("Security First") < ordinaryIndex, true, "critical skill in critical section");
   assertEquals(capturedPrompt.indexOf("TDD Methodology") > ordinaryIndex, true, "ordinary skill in ordinary section");
+});
+
+Deno.test("IAgentRunner: warns when the provider reports stop_reason max_tokens (truncated response)", async () => {
+  const mockProvider = new MockProvider(wellFormedResponse);
+  const originalGenerate = mockProvider.generate.bind(mockProvider);
+  mockProvider.generate = async (prompt: string): Promise<IGenerateResult> => {
+    const result = await originalGenerate(prompt);
+    return { ...result, stop_reason: "max_tokens" };
+  };
+
+  const warnEvents: Array<{ action: string; payload?: LogMetadata }> = [];
+  const stubLogger: IEventLogger = {
+    log: () => Promise.resolve(),
+    info: () => Promise.resolve(),
+    warn: (action: string, _target: string | null, payload?: LogMetadata) => {
+      warnEvents.push({ action, payload });
+      return Promise.resolve();
+    },
+    error: () => Promise.resolve(),
+    fatal: () => Promise.resolve(),
+    debug: () => Promise.resolve(),
+    child: () => stubLogger,
+  };
+
+  const runner = new AgentRunner(mockProvider, { logger: stubLogger });
+  await runner.run(sampleBlueprint, sampleRequest);
+
+  const truncationWarn = warnEvents.find((e) => e.action === "agent.response_truncated");
+  assertExists(
+    truncationWarn,
+    "a max_tokens stop_reason means the answer was cut off — downstream parse failures are expected and must be attributable",
+  );
+  assertEquals(truncationWarn.payload?.stop_reason, "max_tokens");
 });
 
 Deno.test("IAgentRunner: records skill usage after execution", async () => {

@@ -37,6 +37,7 @@ import {
   AGENT_EVENT_LLM_RESPONSE_RECEIVED,
   AGENT_EVENT_PROMPT_ASSEMBLED,
   AGENT_EVENT_PROMPT_DEBUG_DUMP,
+  AGENT_EVENT_RESPONSE_TRUNCATED,
   DEFAULT_MODEL_FALLBACK,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   DEFAULT_UNKNOWN_LABEL,
@@ -45,6 +46,7 @@ import {
   MILESTONE_LLM_CALL_STARTED,
   PORTAL_CONTEXT_KEY,
   PORTAL_KNOWLEDGE_KEY,
+  RESPONSE_STOP_REASON_MAX_TOKENS,
 } from "@exaix/core";
 import type { IRetryContext, IRetryPolicy, IRetryPolicyConfig, IRetryResult } from "@exaix/core/request";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -366,9 +368,23 @@ export class AgentRunner implements IAgentRunner {
       identity_id: identityId,
       response_length: rawResponse.length,
       full_response: rawResponse,
+      stop_reason: generateResult?.stop_reason ?? null,
       prompt_tokens: generateResult?.usage?.promptTokens ?? null,
       completion_tokens: generateResult?.usage?.completionTokens ?? null,
     }, traceId);
+    // A max_tokens stop means the answer was cut off mid-generation: downstream structured
+    // parsing (plan JSON, <content> extraction) is expected to fail on it, and that failure
+    // must be attributable to truncation, not treated as a mysteriously malformed model
+    // response (observed live: 3 identical "Invalid JSON: Unexpected end of JSON input"
+    // retries against truncated 4096-token plans).
+    if (generateResult?.stop_reason === RESPONSE_STOP_REASON_MAX_TOKENS && this.logger) {
+      void this.logger.warn(AGENT_EVENT_RESPONSE_TRUNCATED, requestId || null, {
+        identity_id: identityId,
+        stop_reason: generateResult.stop_reason,
+        response_length: rawResponse.length,
+        completion_tokens: generateResult?.usage?.completionTokens ?? null,
+      }, traceId);
+    }
     const result = this.parseResponse(rawResponse);
 
     // Log successful execution

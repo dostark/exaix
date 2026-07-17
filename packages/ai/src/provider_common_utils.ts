@@ -97,6 +97,8 @@ export type AnthropicUsage = {
 
 export type AnthropicResponse = {
   usage?: AnthropicUsage;
+  /** Why generation ended: "end_turn", "max_tokens" (truncated), "stop_sequence", ... */
+  stop_reason?: string;
   content?: Array<{
     /** Block type, e.g. "text" or "thinking". Absent in older response shapes. */
     type?: string;
@@ -123,6 +125,46 @@ export function calculateCost(provider: string, totalTokens: number): number {
   return rate * (totalTokens / TOKENS_PER_COST_UNIT);
 }
 
+/**
+ * Map a provider error response to the retry-semantics-bearing error class. The body's
+ * documented error type (docs.anthropic.com/en/api/errors) wins over the HTTP status, so a
+ * transient overloaded_error/rate_limit_error stays retryable even under a surprising
+ * status; status-based mapping remains the fallback for untyped bodies.
+ */
+function classifyProviderError(
+  status: number,
+  errorType: Opt<string, Reason.OptionalContext>,
+  message: string,
+  id: string,
+): Error {
+  if (errorType === "authentication_error" || errorType === "permission_error") {
+    return new AuthenticationError(id, message);
+  }
+  if (errorType === "rate_limit_error") {
+    return new RateLimitError(id, message);
+  }
+  if (errorType === "overloaded_error" || errorType === "api_error") {
+    return new ConnectionError(id, message);
+  }
+  if (
+    errorType === "invalid_request_error" || errorType === "not_found_error" ||
+    errorType === "request_too_large"
+  ) {
+    return new ModelProviderError(message, id);
+  }
+  if (status === HTTP_UNAUTHORIZED || status === HTTP_FORBIDDEN) {
+    return new AuthenticationError(id, message);
+  }
+  if (status === HTTP_TOO_MANY_REQUESTS) {
+    return new RateLimitError(id, message);
+  }
+  if (status >= 500) {
+    // Treat server (5xx) responses as connection-level failures
+    return new ConnectionError(id, message);
+  }
+  return new ModelProviderError(message, id);
+}
+
 export async function handleProviderResponse<T>(
   response: Response,
   id: string,
@@ -132,26 +174,22 @@ export async function handleProviderResponse<T>(
   if (!response.ok) {
     // Include HTTP status code in messages so tests can assert on it (e.g. "HTTP 503").
     let message = `HTTP ${response.status} ${response.statusText}`;
+    let errorType: string | undefined;
     try {
       const error = await response.json();
+      errorType = error.error?.type ?? undefined;
       const remoteMsg = error.error?.message ?? error.message ?? undefined;
       if (remoteMsg) {
-        message = `HTTP ${response.status} ${remoteMsg}`;
+        // Surface the machine-readable error type alongside the human message —
+        // it is the contract the API documents (e.g. "invalid_request_error").
+        message = errorType
+          ? `HTTP ${response.status} ${errorType}: ${remoteMsg}`
+          : `HTTP ${response.status} ${remoteMsg}`;
       }
     } catch {
       // ignore JSON parse errors and fallback to statusText
     }
-    if (response.status === HTTP_UNAUTHORIZED || response.status === HTTP_FORBIDDEN) {
-      throw new AuthenticationError(id, message);
-    }
-    if (response.status === HTTP_TOO_MANY_REQUESTS) {
-      throw new RateLimitError(id, message);
-    }
-    if (response.status >= 500) {
-      // Treat server (5xx) responses as connection-level failures
-      throw new ConnectionError(id, message);
-    }
-    throw new ModelProviderError(message, id);
+    throw classifyProviderError(response.status, errorType, message, id);
   }
 
   const data = await response.json() as T;
@@ -344,6 +382,7 @@ export async function performProviderCall<T>(
     logger,
     tokenMapper,
     extractor,
+    stopReasonExtractor,
   }: {
     id: string;
     maxAttempts?: number;
@@ -352,6 +391,7 @@ export async function performProviderCall<T>(
     logger?: IEventLogger;
     tokenMapper?: (d: T, providerId?: string) => TokenMap | undefined;
     extractor?: (d: T) => string;
+    stopReasonExtractor?: (d: T) => string | undefined;
   },
 ): Promise<IGenerateResult> {
   const data = await fetchJsonWithRetries<T>(url, fetchOptions, {
@@ -377,5 +417,6 @@ export async function performProviderCall<T>(
     cost_usd: tokens?.cost_usd,
     model: tokens?.model ?? "unknown",
     provider: tokens?.provider ?? id,
+    stop_reason: stopReasonExtractor?.(data),
   };
 }

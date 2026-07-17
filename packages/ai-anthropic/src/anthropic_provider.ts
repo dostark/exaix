@@ -142,6 +142,7 @@ export class AnthropicProvider extends BaseProvider {
       logger: this.logger,
       tokenMapper: tokenMapperAnthropic(this.model),
       extractor: extractAnthropicContent,
+      stopReasonExtractor: (d) => d.stop_reason,
     });
   }
 }
