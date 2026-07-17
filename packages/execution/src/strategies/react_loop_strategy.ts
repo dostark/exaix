@@ -64,6 +64,15 @@ enum ReActRole {
   RESULT = "result",
 }
 
+/** Tools that mutate a portal file; their `path` param is a change the audit must authorize. */
+const REACT_WRITE_TOOLS: ReadonlySet<string> = new Set<string>([
+  ToolName.WRITE_FILE,
+  ToolName.PATCH_FILE,
+  ToolName.DELETE_FILE,
+  ToolName.MOVE_FILE,
+  ToolName.CREATE_DIRECTORY,
+]);
+
 /**
  * ReActLoopStrategy implements in-process agentic execution.
  * It uses the LLM to generate actions, executes them via ToolRegistry,
@@ -94,6 +103,11 @@ export class ReActLoopStrategy implements IExecutionStrategy {
 
     const startTime = Date.now();
     const history: Array<{ role: ReActRole; content: string }> = [];
+    // Files this step wrote through a write-type tool. The git audit authorizes
+    // the union of allowed_paths and these paths — a step must be able to keep the
+    // files it legitimately wrote, without that widening authorization to files it
+    // never touched.
+    const writtenFiles = new Set<string>();
     let toolCallCount = 0;
     let totalPromptTokens = 0;
     let totalCompletionTokens = 0;
@@ -214,6 +228,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
           context,
           startTime,
           toolCallCount,
+          writtenFiles,
         );
 
         // Attach accumulated usage (aggregated across all loop iterations)
@@ -261,6 +276,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         );
 
         const result = await this.executeTool(action, options);
+        this.recordWrittenFile(action, result, writtenFiles);
         history.push({
           role: ReActRole.RESULT,
           content: `Tool ${action.tool} result: ${JSON.stringify(result)}`,
@@ -280,6 +296,17 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       `Reached maximum iterations (${this.MAX_ITERATIONS}) without completing task`,
       AgentExecutionErrorType.EXECUTION_ERROR,
     );
+  }
+
+  /** Record a successful write-type tool's target path as a change the audit must authorize. */
+  private recordWrittenFile(
+    action: IReActAction,
+    result: IToolExecutionResult,
+    writtenFiles: Set<string>,
+  ): void {
+    if (!result.success || !REACT_WRITE_TOOLS.has(action.tool)) return;
+    const path = action.params.path;
+    if (typeof path === "string" && path.length > 0) writtenFiles.add(path);
   }
 
   private async executeTool(
@@ -587,6 +614,7 @@ ${REACT_SUMMARY_PREFIX}[What was done]
     context: IExecutionContext,
     startTime: number,
     toolCallCount: number,
+    writtenFiles: ReadonlySet<string>,
   ): IChangesetResult {
     // Try to extract JSON from the response using the executor's parser (Phase 61.2)
     // This allows the agent to provide a summary JSON at the end of the ReAct loop
@@ -598,6 +626,10 @@ ${REACT_SUMMARY_PREFIX}[What was done]
 
     // Always merge tool call count from the loop with any manual count in JSON
     jsonResult.tool_calls = (jsonResult.tool_calls || 0) + toolCallCount;
+
+    // Report the files the loop actually wrote (union with any the parser found), so
+    // the git audit can authorize the step's own changes rather than reverting them.
+    jsonResult.files_changed = [...new Set([...(jsonResult.files_changed ?? []), ...writtenFiles])];
 
     // If we have a summary text but no explicit JSON description, use the summary
     const summaryMatch = response.match(

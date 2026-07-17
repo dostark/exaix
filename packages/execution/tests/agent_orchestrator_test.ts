@@ -588,6 +588,79 @@ Deno.test({
 });
 
 Deno.test({
+  name: "AgentOrchestrator: a step keeps files it reported in files_changed even when allowed_paths is empty",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+
+      // A strategy that writes a real portal file and reports it in files_changed,
+      // mirroring the ReAct loop authorizing its own writes. allowed_paths is empty
+      // (identity declares none), so only files_changed can authorize this change.
+      const writtenPath = "src/step-output.ts";
+      const strategyRegistry = new StrategyRegistry();
+      strategyRegistry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: async () => {
+          await Deno.mkdir(join(portalDir, "src"), { recursive: true });
+          await Deno.writeTextFile(join(portalDir, writtenPath), "export const x = 1;\n");
+          return {
+            branch: "feat/step",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [writtenPath],
+            description: "wrote step-output",
+            tool_calls: 1,
+            execution_time_ms: 10,
+          };
+        },
+      });
+
+      const executor = new AgentOrchestrator({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        strategyRegistry,
+      });
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      const context: IExecutionContext = {
+        trace_id: crypto.randomUUID(),
+        request_id: "authorized-write-req",
+        request: "write step output",
+        plan: "write",
+        portal: "TestPortal",
+      };
+      const options: IAgentExecutionOptions = {
+        portal: "TestPortal",
+        identity_id: "test-agent",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+      };
+
+      // Must NOT throw a security violation: the file is authorized by files_changed.
+      const result = await executor.executeStep(context, options);
+      assertEquals(result.files_changed, [writtenPath]);
+
+      executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
   name: "AgentOrchestrator: reverts unauthorized changes in hybrid mode",
   fn: async () => {
     await setup();

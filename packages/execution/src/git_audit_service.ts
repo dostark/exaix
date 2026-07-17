@@ -20,7 +20,7 @@ import {
   DEFAULT_GIT_STATUS_TIMEOUT_MS,
   GIT_EMPTY_SHA,
 } from "@exaix/git";
-import { GIT_CMD_REV_PARSE, GIT_CMD_STATUS } from "@exaix/git/constants.ts";
+import { GIT_CMD_REV_PARSE, GIT_CMD_STATUS, GIT_FLAG_UNTRACKED_FILES_ALL } from "@exaix/git/constants.ts";
 import { DomainEventType } from "@exaix/core/events";
 import type { IEventLogger } from "@exaix/core/logger";
 import { AgentExecutionError } from "@exaix/execution";
@@ -44,7 +44,7 @@ export class GitAuditService {
       });
       if (checkRepo.code !== 0) return [];
 
-      const result = await SafeSubprocess.run("git", [GIT_CMD_STATUS, "--porcelain"], {
+      const result = await SafeSubprocess.run("git", [GIT_CMD_STATUS, "--porcelain", GIT_FLAG_UNTRACKED_FILES_ALL], {
         cwd: portalPath,
         timeoutMs: DEFAULT_GIT_STATUS_TIMEOUT_MS,
       });

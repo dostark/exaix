@@ -571,10 +571,14 @@ export class AgentOrchestrator {
       // 1. Capture real SHA
       validated.commit_sha = await this.getPortalHeadSha(portalPath);
 
-      // 2. Perform Audit
+      // 2. Perform Audit. Authorize the union of the identity's allowed_paths and the
+      //    files this step actually wrote through legitimate portal-scoped tools — a step
+      //    must be able to keep its own changes. Without files_changed, a multi-step plan's
+      //    audit runs against an empty set and reverts the step's own writes as a violation.
+      const authorizedPaths = [...(options.allowed_paths ?? []), ...(validated.files_changed ?? [])];
       const unauthorizedChanges = await this.auditGitChanges(
         portalPath,
-        options.allowed_paths ?? [],
+        authorizedPaths,
       );
 
       if (unauthorizedChanges.length > 0) {

@@ -60,6 +60,8 @@ export const GIT_CMD_WORKTREE = "worktree";
 export const GIT_CMD_CONFIG = "config";
 export const GIT_CMD_BRANCH = "branch";
 export const GIT_CMD_STATUS = "status";
+/** List every untracked file individually instead of collapsing new directories to the dir name. */
+export const GIT_FLAG_UNTRACKED_FILES_ALL = "--untracked-files=all";
 export const GIT_CMD_LIST = "list";
 export const GIT_CMD_CHECKOUT = "checkout";
 export const GIT_CMD_COMMIT = "commit";
