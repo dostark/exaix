@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-deno run --allow-all -r --config "$REPO_ROOT/deno.json" "$REPO_ROOT/apps/exactl/main.ts" "$@"
+# No -r/--reload: it forced a full re-download of the remote dependency graph on every
+# exactl invocation (6+ per scenario — hundreds of downloads per run) and gained nothing;
+# the shared deno cache already revalidates when the lockfile or versions change.
+deno run --allow-all --config "$REPO_ROOT/deno.json" "$REPO_ROOT/apps/exactl/main.ts" "$@"
