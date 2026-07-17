@@ -96,6 +96,30 @@ Deno.test("AnthropicProviderFactory passes options.config through so provider co
   );
 });
 
+Deno.test("AnthropicProvider marks the prompt block with cache_control by default", async () => {
+  const logger = new EventLogger({ prefix: "[Test]" });
+  const debugSpy = spy(logger, "debug");
+  const provider = new AnthropicProvider({ apiKey: "test-key", logger });
+
+  const fetchStub = stubFetchSuccess(anthropicResponseConfig.wrapResponse("ok"));
+  try {
+    await provider.generate("a repeated analysis prompt");
+  } finally {
+    fetchStub.restore();
+  }
+
+  const dumpCall = debugSpy.calls.find((c) => c.args[0] === PROVIDER_EVENT_REQUEST_DEBUG_DUMP);
+  assertExists(dumpCall);
+  const requestBody = (dumpCall.args[2] as Record<string, JSONValue>).request_body as Record<string, JSONValue>;
+  const messages = requestBody.messages as Array<Record<string, JSONValue>>;
+  const content = messages[0].content as Array<Record<string, JSONValue>>;
+  // Anthropic prompt caching: repeated identical prompts (provider retries, plan-validation
+  // retries, multi-trial eval runs) are billed at ~10% of input cost on cache hits.
+  assertEquals(Array.isArray(content), true, "content must be block-array form to carry cache_control");
+  assertEquals(content[0].cache_control, { type: "ephemeral" });
+  assertEquals(content[0].text, "a repeated analysis prompt");
+});
+
 Deno.test("AnthropicProviderFactory passes options.timeoutMs through to the provider", async () => {
   const factory = new AnthropicProviderFactory();
   const provider = await factory.create({

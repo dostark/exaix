@@ -65,7 +65,11 @@ export class AnthropicProvider extends BaseProvider {
     prompt: string,
     options?: Opt<IModelOptions, Reason.OptionalInput>,
   ): Promise<IGenerateResult> {
-    // Build messages with optional cache_control for cached sections
+    // Build messages with cache_control for cached sections. When the caller specifies no
+    // explicit cachedSections, the whole prompt block is cache-marked by default: repeated
+    // identical prompts (provider-level retries, plan-validation retries, multi-trial eval
+    // runs) then hit Anthropic's prompt cache at ~10% of input cost, far outweighing the
+    // one-time ~25% cache-write surcharge for this workload.
     const cachedSections = options?.cachedSections;
     const messages = (cachedSections && cachedSections.length > 0)
       ? [{
@@ -76,7 +80,14 @@ export class AnthropicProvider extends BaseProvider {
           cachedSections.includes(i) ? { ...block, cache_control: { type: ANTHROPIC_CACHE_CONTROL_EPHEMERAL } } : block
         ),
       }]
-      : [{ role: "user" as const, content: prompt }];
+      : [{
+        role: "user" as const,
+        content: [{
+          type: ANTHROPIC_CONTENT_TYPE_TEXT,
+          text: prompt,
+          cache_control: { type: ANTHROPIC_CACHE_CONTROL_EPHEMERAL },
+        }],
+      }];
 
     const requestBody: AnthropicRequestBody = {
       model: this.model,
