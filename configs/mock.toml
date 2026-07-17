@@ -1,5 +1,0 @@
-[agent]
-identity = "mock-engineer"
-
-[session_delegate]
-enabled = false

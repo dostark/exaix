@@ -1,18 +1,21 @@
 /**
  * @module SweTasksPackE2eTest
  * @path tests/scenario_framework/tests/integration/swe_tasks_pack_e2e_test.ts
- * @description Validates swe_tasks pack scenarios: loads all 4 YAML files,
- * verifies schema metadata, runs through synthetic runner, and confirms
- * cell_id propagation through manifest → history → SQLite.
+ * @description Validates swe_tasks pack scenarios: loads all 4 YAML files, verifies
+ * schema/tag metadata, and confirms the matrix cell is correctly SKIPPED (not run, not
+ * failed) when ANTHROPIC_API_KEY is absent — the pack is provider-live only (no CI-safe
+ * mock cell, per the cutover's design), so this is the CI-safety contract that keeps a
+ * key-less CI run from attempting a real daemon/Anthropic call. cell_id
+ * manifest->history->SQLite propagation is covered generically (no swe_tasks dependency)
+ * by matrix_cell_recording_test.ts; a real end-to-end run against a live Anthropic cell is
+ * exercised manually/nightly per the provider-live convention (README §6.3).
  */
 
 import { assertEquals } from "@std/assert";
-import { join, resolve } from "@std/path";
-import { EvalSqliteStore } from "@exaix/eval-history";
-import { ScenarioExecutionMode } from "../../schema/step_schema.ts";
-import { runSyntheticScenario } from "../../runner/synthetic_runner.ts";
-import { writeEvalHistoryEntry } from "../../runner/history_writer.ts";
+import { resolve } from "@std/path";
 import { loadScenarioCatalog } from "../../runner/scenario_catalog.ts";
+import { loadScenarioFromYamlFile } from "../../runner/scenario_loader.ts";
+import { binIsOnPath, resolveRunnableSteps } from "../../runner/matrix_expander.ts";
 
 const FRAMEWORK_HOME = resolve(new URL(".", import.meta.url).pathname, "../..");
 
@@ -29,63 +32,43 @@ Deno.test("[SweTasksPackE2e] all swe_tasks scenarios load from catalog with corr
     "swe-write-tests-uncovered",
   ]);
 
+  // No CI-safe mock cell in this pack (the cutover dropped mock entirely per design) — every
+  // scenario is provider-live and must carry the tag CI profiles use to exclude it by default.
   for (const s of sweScenarios) {
-    assertEquals(s.tags.includes("ci-extended"), true);
+    assertEquals(s.tags.includes("provider-live"), true);
   }
 });
 
-Deno.test("[SweTasksPackE2e] swe_tasks scenario runs through synthetic runner with cell_id propagation", async () => {
-  const outputDir = Deno.makeTempDirSync({ prefix: "scenario-framework-swe-e2e-" });
-  try {
-    const relPath = "scenarios/swe_tasks/fix-bug-null-guard.yaml";
+Deno.test("[SweTasksPackE2e] the single matrix cell is SKIPPED (not run) when ANTHROPIC_API_KEY is absent", async () => {
+  const loaded = await loadScenarioFromYamlFile({
+    frameworkHome: FRAMEWORK_HOME,
+    scenarioPath: "scenarios/swe_tasks/fix-bug-null-guard.yaml",
+  });
 
-    const run = await runSyntheticScenario({
-      frameworkHome: FRAMEWORK_HOME,
-      scenarioPath: relPath,
-      workspaceRoot: join(outputDir, "workspace"),
-      outputDir,
-      mode: ScenarioExecutionMode.AUTO,
-    });
+  const groups = resolveRunnableSteps(loaded.scenario, {
+    env: {}, // ANTHROPIC_API_KEY absent
+    binOnPath: (bin) => binIsOnPath(bin),
+    configBaseDir: resolve(FRAMEWORK_HOME, "..", ".."),
+  });
 
-    assertEquals(run.manifest.scenarioId, "swe-fix-bug-null-guard");
-    assertEquals(typeof run.manifest.outcome, "string");
-    assertEquals(run.manifest.steps.length >= 0, true);
+  assertEquals(groups.length, 1);
+  assertEquals(groups[0].status, "skip");
+  assertEquals(groups[0].skipReason?.includes("ANTHROPIC_API_KEY"), true);
+});
 
-    // Cell identity would be set from the first runnable matrix cell
-    const manifestWithCell = { ...run.manifest, cellId: "mock-mock", provider: "mock" };
+Deno.test("[SweTasksPackE2e] the single matrix cell is runnable when ANTHROPIC_API_KEY is set", async () => {
+  const loaded = await loadScenarioFromYamlFile({
+    frameworkHome: FRAMEWORK_HOME,
+    scenarioPath: "scenarios/swe_tasks/fix-bug-null-guard.yaml",
+  });
 
-    const dbPath = join(outputDir, ".exa", "eval.db");
-    const store = new EvalSqliteStore(dbPath);
-    try {
-      store.initialize();
-      const entry = await writeEvalHistoryEntry({
-        outputDir,
-        scenarioId: run.manifest.scenarioId,
-        manifest: manifestWithCell,
-        cellId: manifestWithCell.cellId,
-        provider: manifestWithCell.provider,
-      });
-      assertEquals(entry.cell_id, "mock-mock");
-      assertEquals(entry.provider, "mock");
+  const groups = resolveRunnableSteps(loaded.scenario, {
+    env: { ANTHROPIC_API_KEY: "test-key" },
+    binOnPath: (bin) => binIsOnPath(bin),
+    configBaseDir: resolve(FRAMEWORK_HOME, "..", ".."),
+  });
 
-      store.writeRun(
-        entry,
-        run.manifest.steps.map((s) => ({
-          stepId: s.stepId,
-          score: s.score ?? 0,
-          executionStatus: s.executionStatus,
-        })),
-      );
-
-      const rows = store.queryRuns({ scenario: "swe-fix-bug-null-guard" });
-      assertEquals(rows.length, 1);
-      assertEquals(rows[0].cell_id, "mock-mock");
-    } finally {
-      store.close();
-    }
-  } finally {
-    try {
-      Deno.removeSync(outputDir, { recursive: true });
-    } catch { /* ok */ }
-  }
+  assertEquals(groups.length, 1);
+  assertEquals(groups[0].status, "run");
+  assertEquals(groups[0].cell?.provider, "anthropic");
 });

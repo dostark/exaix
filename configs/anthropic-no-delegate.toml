@@ -1,0 +1,56 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+log_level = "info"
+allow_net = ["api.anthropic.com"]
+
+[paths]
+workspace = "Workspace"
+portals = "Portals"
+memory = "Memory"
+
+# swe_tasks provider-live cells: real Anthropic end to end (analysis + execution), no session
+# delegate — so execution runs through the daemon's own AgentExecutor/DynamicStepExecutor,
+# journalling real dynamic_tool_call events (trajectory-assert's source). Mirrors
+# dogfood.claude.no-delegate.toml but carries no [[portals]] entry — swe_tasks scenarios register
+# their own fixture portal via `exactl portal add` rather than mounting exaix-self.
+[ai]
+provider = "anthropic"
+model = "claude-sonnet-5"
+
+[models.default]
+provider = "anthropic"
+model = "claude-sonnet-5"
+timeout_ms = 60000
+
+[agents]
+default_model = "default"
+
+[rate_limiting]
+enabled = true
+max_calls_per_minute = 300
+
+[ai_anthropic]
+max_tokens_default = 8192
+
+[portal_knowledge]
+auto_analyze_on_mount = true
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = true
+
+# Phase 134 Solo curated list: without this, a size-M request resolves via ProviderSelector's
+# scoring path, which picked circuit-breaker-rate-limited Haiku over the [models.default]
+# override above. Pin the curated list to Anthropic (mirrors dogfood.claude.no-delegate.toml) so
+# the request genuinely plans and executes on the pinned model.
+[model_presets.M]
+max_cost_per_mtok = 3
+min_context_window = 32000
+supports_thinking = true
+candidates = ["anthropic"]
+
+# No [session_delegate] block: tool/gates are required once the block is present at all (even
+# with enabled = false), per SessionDelegateConfigSchema. Omitting it entirely defaults
+# session_delegate to disabled — mirrors dogfood.claude.no-delegate.toml.

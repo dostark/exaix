@@ -61,6 +61,7 @@ import { CostTracker, MemoryCostRouter } from "@exaix/core/cost";
 import { createEmbeddingProvider } from "@exaix/ai/embeddings/embedding_provider_factory.ts";
 import type { IEmbeddingProviderConfig } from "@exaix/ai/embeddings/embedding_provider_factory.ts";
 import { NotificationService } from "@exaix/core/notification";
+import { SkillsService } from "@exaix/core/skills";
 import { MemoryBankAdapter } from "../../apps/common/adapters/memory_bank_adapter.ts";
 import {
   createDefaultSymbolExtractorRegistry,
@@ -814,8 +815,19 @@ if (import.meta.main) {
       config.paths.blueprints,
       DEFAULT_IDENTITIES_PATH,
     );
+    // Without this, AgentRunner.matchAndApplySkills short-circuits (skillsService undefined) and
+    // a blueprint's default_skills (e.g. response-contract, the <thought>/<content> format
+    // contract) are never attached to an analysis-phase LLM call, regardless of the identity's
+    // frontmatter. Mirrors apps/exactl/src/init.ts's construction.
+    const skillsService = new SkillsService(
+      { memoryDir: join(config.system.root, config.paths.memory), portal: config.paths.workspace },
+      dbService,
+    );
+    await skillsService.initialize();
     const agentRunner = new AgentRunner(llmProvider, {
       milestoneEmitter: buildMilestoneEmitterFromConfig(config),
+      skillsService,
+      logger,
     });
     const agentExecutorAdapter = new AgentOrchestratorAdapter(
       agentRunner,

@@ -24,7 +24,7 @@ import {
   resolveCellConfig,
   resolveRunnableSteps,
 } from "./matrix_expander.ts";
-import { executeScenarioStep, type IScenarioStepExecutionResult } from "./step_executor.ts";
+import { currentMaxRowid, executeScenarioStep, type IScenarioStepExecutionResult } from "./step_executor.ts";
 import {
   CriterionPhase,
   CriterionStatus,
@@ -131,6 +131,13 @@ export async function runSyntheticScenario(
     worktreePath: join(options.frameworkHome, "..", ".."),
   });
 
+  // A trajectory-assert step declares `source_step: <id>` in YAML rather than a literal rowid
+  // window (author-hostile and non-portable across runs). Track each step's own [start, end]
+  // journal rowid window as it executes so a later trajectory-assert step can be scoped to
+  // exactly its named source_step's execution — not the whole run, which would also capture
+  // unrelated tool calls from prior/later steps.
+  const stepRowidWindows = new Map<string, { start: number; end: number }>();
+
   const runResult = await runScenarioInMode({
     scenarioId: loadedScenario.scenario.id,
     steps: stepsToRun,
@@ -138,8 +145,11 @@ export async function runSyntheticScenario(
     interactiveAllowed: options.interactiveAllowed,
     startStepIndex: options.startStepIndex,
     executeStep: async ({ step }) => {
+      const resolvedStep = resolveTrajectorySourceStep(step, stepRowidWindows);
+
+      const start = await currentMaxRowid(options.workspaceRoot);
       const outcome = await executeSyntheticStep({
-        step,
+        step: resolvedStep,
         workspaceRoot: options.workspaceRoot,
         exactlExecutable: options.exactlExecutable,
         requestFixturePath: loadedScenario.requestFixture.absolutePath,
@@ -148,6 +158,8 @@ export async function runSyntheticScenario(
         portalAliases: options.portalAliases ?? loadedScenario.scenario.portals.map((portal) => portal.alias),
         verbose: options.verbose,
       });
+      const end = await currentMaxRowid(options.workspaceRoot);
+      stepRowidWindows.set(step.id, { start, end });
 
       stepOutcomes.push(outcome);
 
@@ -228,6 +240,25 @@ export async function materializeCellConfig(
       ? { ...step, env: { ...(step.env ?? {}), EXA_CONFIG_PATH: materializedPath } }
       : step
   );
+}
+
+/**
+ * A trajectory-assert step's `source_step` names an earlier step by id; the schema requires it
+ * but nothing previously resolved it into the `source_step_rowid_start`/`_end` fields
+ * `executeScenarioStep` actually reads (step_executor.ts), which silently defaulted to (0, 0) —
+ * scoring against an empty capture on every real run. Fills those fields from the named step's
+ * own tracked rowid window (set in the caller's executeStep loop after that step ran). A
+ * non-trajectory-assert step, or a source_step not yet seen (author error — validated by
+ * scenario_schema.ts, not re-checked here), is returned unchanged.
+ */
+export function resolveTrajectorySourceStep(
+  step: IScenarioStep,
+  stepRowidWindows: Map<string, { start: number; end: number }>,
+): IScenarioStep {
+  if (step.type !== ScenarioStepType.TRAJECTORY_ASSERT || !step.source_step) return step;
+  const window = stepRowidWindows.get(step.source_step);
+  if (!window) return step;
+  return { ...step, source_step_rowid_start: window.start, source_step_rowid_end: window.end };
 }
 
 interface IExecuteSyntheticStepOptions {

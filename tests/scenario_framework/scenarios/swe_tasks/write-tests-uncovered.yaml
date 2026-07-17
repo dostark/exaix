@@ -1,58 +1,226 @@
 schema_version: "1.0.0"
 id: "swe-write-tests-uncovered"
-title: "Write comprehensive unit tests for uncovered calculator module"
+title: "Write unit tests for priority_calculator (provider-live)"
 pack: "swe_tasks"
-tags: ["swe", "write-tests", "ci-extended"]
+tags: ["swe", "write-tests", "provider-live"]
 request_fixture: "fixtures/requests/swe_tasks/write-tests-uncovered.md"
-portals:
-  - alias: "write-tests-uncovered"
-    source_path: "fixtures/portals/write-tests-uncovered"
+portals: []
 mode_support: ["auto"]
+
 matrix:
   cells:
-    - tool: "mock"
-      provider: "mock"
-      config: "configs/mock.toml"
+    - tool: "exactl"
+      provider: "anthropic"
+      config: "configs/anthropic-no-delegate.toml"
       requires_bin: "true"
-    - tool: "opencode"
-      provider: "direct"
-      config: "configs/dogfood.toml"
-      requires_bin: "opencode"
       requires_key: "ANTHROPIC_API_KEY"
-      requires_optin: "EXA_MATRIX_OPENCODE"
+
 steps:
-  - id: "start-daemon"
+  - id: "setup-db"
+    type: "shell"
+    command: "deno"
+    args:
+      [
+        "run",
+        "-A",
+        "--config",
+        "$FRAMEWORK_HOME/../../deno.json",
+        "$FRAMEWORK_HOME/../../scripts/setup_db.ts",
+      ]
+    env:
+      EXA_MIGRATIONS_DIR: "$FRAMEWORK_HOME/../../migrations"
+    output_criteria:
+      - id: "setup-done"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "setup-portal-repo"
     type: "shell"
     command: "sh"
-    args: ["-c", "echo daemon-ready"]
+    args:
+      [
+        "-c",
+        "cp -r \"$FRAMEWORK_HOME/fixtures/portals/todo_app\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'",
+      ]
+    output_criteria:
+      - id: "portal-repo-initialized"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "setup-blueprints"
+    type: "shell"
+    command: "cp"
+    args: ["-r", "$FRAMEWORK_HOME/../../Blueprints", "$WORKSPACE_ROOT/Blueprints"]
+    output_criteria:
+      - id: "blueprints-copied"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "add-portal"
+    type: "exactl"
+    command: "portal"
+    args: ["add", "$WORKSPACE_ROOT/todo-app", "todo-app"]
+    output_criteria:
+      - id: "portal-added"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "restart-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["restart"]
+    output_criteria:
+      - id: "daemon-restarted"
+        kind: "command-output-contains"
+        contains: ["daemon.restarted"]
+
+  - id: "wait-for-daemon-ready"
+    type: "wait-for-journal-event"
+    event_type: "daemon.ready"
+    timeout_sec: 30
     input_criteria: []
     output_criteria: []
-  - id: "create-workspace"
-    type: "shell"
-    command: "sh"
-    args: [
-      "-c",
-      "mkdir -p $WORKSPACE_ROOT/src && cp -r $FRAMEWORK_HOME/../fixtures/portals/write-tests-uncovered/src/* $WORKSPACE_ROOT/src/",
-    ]
-    input_criteria: []
-    output_criteria:
-      - id: "files-copied"
-        kind: "file-found"
-        path_pattern: "**/calculator.ts"
-        score_weight: 0.2
+
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE", "--portal", "write-tests-uncovered"]
-    input_criteria: []
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "todo-app"]
     output_criteria:
+      - id: "request-submitted"
+        kind: "command-output-contains"
+        contains: ["request.created"]
       - id: "plan-produced"
         kind: "file-found"
-        path_pattern: "**/_plan.md"
-        score_weight: 0.5
+        path_pattern: "**/Plans/*_plan.md"
+        score_weight: 0.15
+
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 180
+    input_criteria: []
+    output_criteria: []
+
+  - id: "approve-plan"
+    type: "exactl"
+    command: "plan"
+    args: ["approve-all"]
+    output_criteria:
+      - id: "plan-approved"
+        kind: "command-output-contains"
+        contains: ["approved"]
+
+  - id: "wait-for-execution-completion"
+    type: "wait-for-file"
+    args: ["**/Archive/*_plan.md"]
+    timeout_sec: 300
+    output_criteria:
+      - id: "execution-completed"
+        kind: "file-found"
+        path_pattern: "**/Archive/*_plan.md"
+        score_weight: 0.15
+
+  - id: "locate-worktree"
+    type: "shell"
+    command: "sh"
+    args:
+      [
+        "-c",
+        "find \"$WORKSPACE_ROOT/.exa/worktrees/todo-app\" -mindepth 1 -maxdepth 1 -type d | head -1 > \"$WORKSPACE_ROOT/.exa/worktree-path.txt\"",
+      ]
+    output_criteria:
+      - id: "worktree-located"
+        kind: "command-exit-code"
+        equals: 0
+      - id: "worktree-path-recorded"
+        kind: "file-found"
+        path_pattern: "**/.exa/worktree-path.txt"
+
+  # The task IS writing tests, so the pass signal is two-part: the new test file must exist
+  # (proving the delegate actually wrote it, not just talked about it), and the whole suite —
+  # new tests included — must pass (a delegate that writes a test asserting wrong behavior, or
+  # that breaks under deno check's strict nulls, fails here).
+  - id: "assert-new-test-file-exists"
+    type: "shell"
+    command: "sh"
+    args:
+      [
+        "-c",
+        "WORKTREE=$(cat \"$WORKSPACE_ROOT/.exa/worktree-path.txt\") && test -f \"$WORKTREE/src/priority_calculator_test.ts\"",
+      ]
+    output_criteria:
+      - id: "new-test-file-exists"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.15
+
+  - id: "run-tests"
+    type: "shell"
+    command: "sh"
+    args:
+      [
+        "-c",
+        "WORKTREE=$(cat \"$WORKSPACE_ROOT/.exa/worktree-path.txt\") && cd \"$WORKTREE\" && deno test src/",
+      ]
+    output_criteria:
+      - id: "tests-pass"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.15
+
+  - id: "assert-trajectory"
+    type: "trajectory-assert"
+    source_step: "wait-for-execution-completion"
+    expected_sequence:
+      - tool: "read_file"
+      - tool: "edit_file"
+    order_matters: false
+    allow_extra_tools: true
+    partial_credit: true
+    input_criteria: []
+    output_criteria: []
+
+  - id: "prepare-llm-judge-evidence"
+    type: "shell"
+    command: "sh"
+    args:
+      [
+        "-c",
+        "WORKTREE=$(cat \"$WORKSPACE_ROOT/.exa/worktree-path.txt\") && cat \"$WORKTREE/src/priority_calculator_test.ts\" > \"$WORKSPACE_ROOT/llm-judge-input.txt\" 2>/dev/null || echo 'no test file written' > \"$WORKSPACE_ROOT/llm-judge-input.txt\"",
+      ]
+    output_criteria:
+      - id: "evidence-prepared"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "judge-quality"
+    type: "shell"
+    command: "sh"
+    args: ["-c", "true"]
+    env:
+      EXA_EVAL_LLM_MOCK: "false"
+    output_criteria:
       - id: "llm-judge-quality"
         kind: "llm-judge"
         preset: "GOAL_ALIGNED_REVIEW"
         evidence_path: "llm-judge-input.txt"
         score_threshold: 0.5
-        score_weight: 0.5
+        score_weight: 0.4
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-output-contains"
+        contains: ["daemon.stopped"]

@@ -1,58 +1,241 @@
 schema_version: "1.0.0"
 id: "swe-fix-bug-null-guard"
-title: "Fix null-safety bugs in user service with proper null guards"
+title: "Fix null-safety bugs in todo-app display formatting (provider-live)"
 pack: "swe_tasks"
-tags: ["swe", "fix-bug", "ci-extended"]
+tags: ["swe", "fix-bug", "provider-live"]
 request_fixture: "fixtures/requests/swe_tasks/fix-bug-null-guard.md"
-portals:
-  - alias: "fix-bug-null-guard"
-    source_path: "fixtures/portals/fix-bug-null-guard"
+portals: []
 mode_support: ["auto"]
+
 matrix:
   cells:
-    - tool: "mock"
-      provider: "mock"
-      config: "configs/mock.toml"
+    - tool: "exactl"
+      provider: "anthropic"
+      config: "configs/anthropic-no-delegate.toml"
       requires_bin: "true"
-    - tool: "opencode"
-      provider: "direct"
-      config: "configs/dogfood.toml"
-      requires_bin: "opencode"
       requires_key: "ANTHROPIC_API_KEY"
-      requires_optin: "EXA_MATRIX_OPENCODE"
+
 steps:
-  - id: "start-daemon"
+  - id: "setup-db"
+    type: "shell"
+    command: "deno"
+    args:
+      [
+        "run",
+        "-A",
+        "--config",
+        "$FRAMEWORK_HOME/../../deno.json",
+        "$FRAMEWORK_HOME/../../scripts/setup_db.ts",
+      ]
+    env:
+      EXA_MIGRATIONS_DIR: "$FRAMEWORK_HOME/../../migrations"
+    output_criteria:
+      - id: "setup-done"
+        kind: "command-exit-code"
+        equals: 0
+
+  # The code_changes execution path forces PortalExecutionStrategy.WORKTREE for any plan whose
+  # frontmatter carries a portal (git_execution_setup_service.ts:getExecutionStrategy) — so the
+  # portal MUST be a real git repo. Copy the read-only todo_app fixture into the workspace and
+  # git-init+commit it, then mount THAT (next step), mirroring session_delegate_matrix_live.yaml.
+  - id: "setup-portal-repo"
     type: "shell"
     command: "sh"
-    args: ["-c", "echo daemon-ready"]
+    args:
+      [
+        "-c",
+        "cp -r \"$FRAMEWORK_HOME/fixtures/portals/todo_app\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'",
+      ]
+    output_criteria:
+      - id: "portal-repo-initialized"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "setup-blueprints"
+    type: "shell"
+    command: "cp"
+    args: ["-r", "$FRAMEWORK_HOME/../../Blueprints", "$WORKSPACE_ROOT/Blueprints"]
+    output_criteria:
+      - id: "blueprints-copied"
+        kind: "command-exit-code"
+        equals: 0
+
+  # SkillsService (wired into the daemon's analysis AgentRunner) reads compiled JSON skill
+  # files from <workspace>/Memory/Skills/ — a separate representation from the human-authored
+  # .skill.md files under Blueprints/Skills/. Without this copy, default_skills (e.g.
+  # response-contract, the <thought>/<content> format contract) resolve to nothing and the
+  # request-analysis LLM call never sees the contract instructions.
+  - id: "setup-memory"
+    type: "shell"
+    command: "cp"
+    args: ["-r", "$FRAMEWORK_HOME/../../Memory", "$WORKSPACE_ROOT/Memory"]
+    output_criteria:
+      - id: "memory-copied"
+        kind: "command-exit-code"
+        equals: 0
+
+  # The matrix cell's config (configs/anthropic-no-delegate.toml) is overlaid onto this step's
+  # EXA_CONFIG_PATH by expandMatrix/materializeCellConfig — real Anthropic for analysis AND
+  # execution, session_delegate.enabled = false so execution runs through the daemon's own
+  # AgentExecutor/DynamicStepExecutor, journalling real dynamic_tool_call events
+  # (trajectory-assert's source) instead of routing every step to a headless CLI delegate.
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "add-portal"
+    type: "exactl"
+    command: "portal"
+    args: ["add", "$WORKSPACE_ROOT/todo-app", "todo-app"]
+    output_criteria:
+      - id: "portal-added"
+        kind: "command-exit-code"
+        equals: 0
+
+  # A running daemon does not hot-reload config; restart to pick up the newly-registered portal
+  # (README §2.2: portal add -> daemon stop && daemon start), mirroring session_delegate_matrix_live.yaml.
+  - id: "restart-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["restart"]
+    output_criteria:
+      - id: "daemon-restarted"
+        kind: "command-output-contains"
+        contains: ["daemon.restarted"]
+
+  - id: "wait-for-daemon-ready"
+    type: "wait-for-journal-event"
+    event_type: "daemon.ready"
+    timeout_sec: 30
     input_criteria: []
     output_criteria: []
-  - id: "create-workspace"
-    type: "shell"
-    command: "sh"
-    args: [
-      "-c",
-      "mkdir -p $WORKSPACE_ROOT/src && cp -r $FRAMEWORK_HOME/../fixtures/portals/fix-bug-null-guard/src/* $WORKSPACE_ROOT/src/",
-    ]
-    input_criteria: []
-    output_criteria:
-      - id: "files-copied"
-        kind: "file-found"
-        path_pattern: "**/user_service.ts"
-        score_weight: 0.2
+
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE", "--portal", "fix-bug-null-guard"]
-    input_criteria: []
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "todo-app"]
     output_criteria:
+      - id: "request-submitted"
+        kind: "command-output-contains"
+        contains: ["request.created"]
       - id: "plan-produced"
         kind: "file-found"
-        path_pattern: "**/_plan.md"
-        score_weight: 0.5
+        path_pattern: "**/Plans/*_plan.md"
+        score_weight: 0.15
+
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 180
+    input_criteria: []
+    output_criteria: []
+
+  - id: "approve-plan"
+    type: "exactl"
+    command: "plan"
+    args: ["approve-all"]
+    output_criteria:
+      - id: "plan-approved"
+        kind: "command-output-contains"
+        contains: ["approved"]
+
+  - id: "wait-for-execution-completion"
+    type: "wait-for-file"
+    args: ["**/Archive/*_plan.md"]
+    timeout_sec: 300
+    output_criteria:
+      - id: "execution-completed"
+        kind: "file-found"
+        path_pattern: "**/Archive/*_plan.md"
+        score_weight: 0.15
+
+  # The delegate edits the code_changes gate's git worktree, not the mounted portal directly —
+  # PortalExecutionStrategy.WORKTREE checks it out under
+  # <workspace>/.exa/worktrees/<portalAlias>/<traceId> (git_execution_setup_service.ts). Locate the
+  # single worktree this run created and export it for the following steps via a workspace-relative
+  # marker file (steps do not share shell environment).
+  - id: "locate-worktree"
+    type: "shell"
+    command: "sh"
+    args:
+      [
+        "-c",
+        "find \"$WORKSPACE_ROOT/.exa/worktrees/todo-app\" -mindepth 1 -maxdepth 1 -type d | head -1 > \"$WORKSPACE_ROOT/.exa/worktree-path.txt\"",
+      ]
+    output_criteria:
+      - id: "worktree-located"
+        kind: "command-exit-code"
+        equals: 0
+      - id: "worktree-path-recorded"
+        kind: "file-found"
+        path_pattern: "**/.exa/worktree-path.txt"
+
+  # Deterministic pass signal: run the fixture's own test suite (deno check catches the
+  # null-safety bug at type-check time before any test runs) against the worktree the delegate
+  # actually edited.
+  - id: "run-tests"
+    type: "shell"
+    command: "sh"
+    args:
+      [
+        "-c",
+        "WORKTREE=$(cat \"$WORKSPACE_ROOT/.exa/worktree-path.txt\") && cd \"$WORKTREE\" && deno test src/",
+      ]
+    output_criteria:
+      - id: "tests-pass"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+
+  - id: "assert-trajectory"
+    type: "trajectory-assert"
+    source_step: "wait-for-execution-completion"
+    expected_sequence:
+      - tool: "read_file"
+      - tool: "edit_file"
+    order_matters: false
+    allow_extra_tools: true
+    partial_credit: true
+    input_criteria: []
+    output_criteria: []
+
+  - id: "prepare-llm-judge-evidence"
+    type: "shell"
+    command: "sh"
+    args:
+      [
+        "-c",
+        "WORKTREE=$(cat \"$WORKSPACE_ROOT/.exa/worktree-path.txt\") && cat \"$WORKTREE/src/utils.ts\" > \"$WORKSPACE_ROOT/llm-judge-input.txt\"",
+      ]
+    output_criteria:
+      - id: "evidence-prepared"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "judge-quality"
+    type: "shell"
+    command: "sh"
+    args: ["-c", "true"]
+    env:
+      EXA_EVAL_LLM_MOCK: "false"
+    output_criteria:
       - id: "llm-judge-quality"
         kind: "llm-judge"
         preset: "GOAL_ALIGNED_REVIEW"
         evidence_path: "llm-judge-input.txt"
         score_threshold: 0.5
-        score_weight: 0.5
+        score_weight: 0.4
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-output-contains"
+        contains: ["daemon.stopped"]

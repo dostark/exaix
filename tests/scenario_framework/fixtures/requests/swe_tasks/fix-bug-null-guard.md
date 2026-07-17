@@ -1,9 +1,11 @@
-# Fix null-safety bugs in UserService
+# Fix null-safety bugs in src/utils.ts
 
-The file `src/user_service.ts` has two functions with null-safety bugs:
+Fix the null-safety bugs in `src/utils.ts`: formatAssignee crashes when a task has no
+assignee, and formatDueDate crashes when a task has no due date. Add null checks so both
+functions return an empty string instead of crashing, without changing their signatures.
 
-1. `formatUserName` crashes when `user` is null or undefined
-2. `sendWelcomeEmail` accesses `user.name` without checking if `user` exists
+Acceptance criteria:
 
-Add proper null guards using optional chaining and null checks.
-The function signatures should remain unchanged.
+- formatAssignee returns "" when task.assignee is null
+- formatDueDate returns "" when task.dueDate is null
+- Existing behavior for a present assignee/due date is unchanged

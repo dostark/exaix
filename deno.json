@@ -269,7 +269,8 @@
   "exclude": [
     "cov_profile",
     "exaix",
-    "dist"
+    "dist",
+    "tests/scenario_framework/fixtures/portals/todo_app"
   ],
   "fmt": {
     "useTabs": false,

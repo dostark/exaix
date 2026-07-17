@@ -59,6 +59,8 @@ export interface ILoadedBlueprint {
 export interface IBlueprint {
   systemPrompt: string;
   identityId?: string;
+  /** Default skills to apply for all requests (Phase 17) — from frontmatter.default_skills. */
+  defaultSkills?: string[];
 }
 
 export interface IBlueprintLoaderOptions {
@@ -576,6 +578,7 @@ export class IBlueprintLoader {
     return {
       systemPrompt: loaded.systemPrompt,
       identityId: loaded.identityId,
+      defaultSkills: loaded.frontmatter.default_skills,
     };
   }
 }

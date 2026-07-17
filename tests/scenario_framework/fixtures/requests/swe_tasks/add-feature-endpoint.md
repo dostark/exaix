@@ -1,10 +1,13 @@
-# Add CRUD endpoint for users
+# Add a "complete task" endpoint
 
-The file `src/api.ts` has stub handlers for `GET /users/:id` and `POST /users`.
+The file `src/api.ts` has handlers for creating, listing, and getting tasks, but
+no way to mark a task as done.
 
-Implement:
+Add a `handleCompleteTask(repo, req, res)` handler that:
 
-1. Input validation for userId (must be a positive integer)
-2. Request body validation for create-user
-3. Error responses with appropriate status codes
-4. A GET /users endpoint that returns all users
+1. Looks up the task by `req.params.id` via `repo.update`, setting `done: true`
+2. Responds with the updated task and status 200 on success
+3. Responds with status 404 and an `{ error: "Task not found" }` body when the
+   task id does not exist
+
+Follow the existing handler signatures and error-handling style in the file.
