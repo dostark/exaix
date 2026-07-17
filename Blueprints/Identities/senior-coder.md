@@ -3,7 +3,7 @@ identity_id: "senior-coder"
 name: "Senior Software Engineer"
 model: ""
 model_size: L
-thinking: true
+thinking: false
 effort: high
 capabilities: ["code_generation", "architecture", "debugging", "testing", "code_review", "react"]
 created: "2025-12-09T13:47:00Z"

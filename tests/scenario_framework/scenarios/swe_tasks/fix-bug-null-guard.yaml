@@ -118,7 +118,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE", "--portal", "todo-app"]
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "todo-app", "--identity", "senior-coder"]
     output_criteria:
       - id: "request-submitted"
         kind: "command-output-contains"
