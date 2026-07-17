@@ -1,0 +1,38 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440016",
+  "created_at": "2026-07-16T00:00:00.000Z",
+  "source": "user",
+  "scope": "global",
+  "status": "active",
+  "skill_id": "response-contract-performance",
+  "name": "Response Contract — Performance Analysis",
+  "version": "1.0.0",
+  "description": "The <content> JSON template for a performance/scalability deliverable (findings, priorities, scalability). Applies alongside response-contract, only for performance-analysis requests.",
+  "triggers": {
+    "keywords": [
+      "performance",
+      "optimization",
+      "scalability"
+    ],
+    "task_types": [
+      "performance"
+    ],
+    "tags": [
+      "response-contract",
+      "performance-analysis"
+    ]
+  },
+  "instructions": "# Response Contract — Performance Analysis\n\nWhen the deliverable is a performance/scalability assessment (not an\nexecutable plan), the `<content>` block must match this schema:\n\n```json\n{\n  \"title\": \"Performance Analysis Report\",\n  \"description\": \"Performance optimization and scalability assessment\",\n  \"performance\": {\n    \"executiveSummary\": \"Application performance is adequate with optimization opportunities\",\n    \"findings\": [\n      {\n        \"title\": \"N+1 Query Problem\",\n        \"impact\": \"HIGH\",\n        \"category\": \"Database\",\n        \"location\": \"src/userService.ts:78\",\n        \"currentBehavior\": \"Multiple individual queries in loop\",\n        \"expectedImprovement\": \"50% reduction in query time\",\n        \"recommendation\": \"Use batch queries or eager loading\"\n      }\n    ],\n    \"priorities\": [\n      \"Fix N+1 query issues\",\n      \"Implement caching for frequently accessed data\",\n      \"Optimize database indexes\"\n    ],\n    \"scalability\": {\n      \"currentCapacity\": \"100 concurrent users\",\n      \"bottleneckPoints\": [\"Database connection pool\", \"Memory usage\"],\n      \"scalingStrategy\": \"Horizontal scaling with load balancer\"\n    }\n  }\n}\n```",
+  "constraints": [
+    "A performance-analysis <content> must match this schema, not the executable-plan schema"
+  ],
+  "output_requirements": [
+    "A <content> block containing valid JSON matching the Performance Analysis Report schema"
+  ],
+  "compatible_with": {
+    "agents": [
+      "*"
+    ]
+  },
+  "usage_count": 0
+}

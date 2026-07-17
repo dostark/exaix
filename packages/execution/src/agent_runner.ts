@@ -34,7 +34,9 @@ import {
   ACTIVITY_ACTOR_AGENT,
   AGENT_EVENT_EXECUTION_COMPLETED,
   AGENT_EVENT_EXECUTION_STARTED,
+  AGENT_EVENT_LLM_RESPONSE_RECEIVED,
   AGENT_EVENT_PROMPT_ASSEMBLED,
+  AGENT_EVENT_PROMPT_DEBUG_DUMP,
   DEFAULT_MODEL_FALLBACK,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   DEFAULT_UNKNOWN_LABEL,
@@ -224,9 +226,9 @@ export class AgentRunner implements IAgentRunner {
   private config?: IAgentRunnerConfig;
 
   constructor(
-    planAdapterOrProvider?: IPlanAdapter | IModelProvider,
-    modelProviderOrConfig?: IModelProvider | IAgentRunnerConfig,
-    config?: IAgentRunnerConfig,
+    planAdapterOrProvider?: Opt<IPlanAdapter | IModelProvider, Reason.OptionalDependency>,
+    modelProviderOrConfig?: Opt<IModelProvider | IAgentRunnerConfig, Reason.OptionalDependency>,
+    config?: Opt<IAgentRunnerConfig, Reason.OptionalDependency>,
   ) {
     const isOldStyle = planAdapterOrProvider != null && "generate" in planAdapterOrProvider;
     this.planAdapter = isOldStyle
@@ -269,7 +271,7 @@ export class AgentRunner implements IAgentRunner {
 
   private async emitMilestone(
     milestoneType: IExecutionMilestone["milestoneType"],
-    traceId: string | undefined,
+    traceId: Opt<string, Reason.TraceAbsent>,
     summary: string,
   ): Promise<void> {
     const emitter = this.config?.milestoneEmitter;
@@ -333,6 +335,18 @@ export class AgentRunner implements IAgentRunner {
       identityId,
     );
 
+    // Debug-level dump of the actual assembled prompt text — lets a dry-run diagnosis
+    // (no LLM call needed) confirm the prompt is complete and not truncated, independent
+    // of whatever the model returns. Left in for future debugging, not just this one.
+    this.logActivityDebug(AGENT_EVENT_PROMPT_DEBUG_DUMP, requestId || null, {
+      identity_id: identityId,
+      prompt_length: combinedPrompt.length,
+      system_prompt_length: blueprint.systemPrompt.length,
+      skill_context_length: skillContextString.length,
+      critical_skill_context_length: criticalSkillContext.length,
+      full_prompt: combinedPrompt,
+    }, traceId);
+
     // Step 2: Execute via the model provider (with retry if enabled)
     await this.emitMilestone(MILESTONE_LLM_CALL_STARTED, traceId, `LLM call started for ${identityId}`);
     const retryResult = await this.executeWithRetry(combinedPrompt, startTime);
@@ -348,6 +362,13 @@ export class AgentRunner implements IAgentRunner {
     const generateResult = retryResult.value;
     await this.emitMilestone(MILESTONE_LLM_CALL_COMPLETED, traceId, `LLM call completed for ${identityId}`);
     const rawResponse = generateResult?.content || "";
+    this.logActivityDebug(AGENT_EVENT_LLM_RESPONSE_RECEIVED, requestId || null, {
+      identity_id: identityId,
+      response_length: rawResponse.length,
+      response_preview: rawResponse.slice(0, 500),
+      prompt_tokens: generateResult?.usage?.promptTokens ?? null,
+      completion_tokens: generateResult?.usage?.completionTokens ?? null,
+    }, traceId);
     const result = this.parseResponse(rawResponse);
 
     // Log successful execution
@@ -410,6 +431,19 @@ export class AgentRunner implements IAgentRunner {
             skillIds = result.matches.map((m) => m.skillId);
             result.matches.forEach((m) => matchScores.set(m.skillId, m.confidence));
             totalAvailable = result.totalAvailable;
+
+            // Union in any critical default skills the dynamic match missed (e.g. the
+            // response-contract output-format contract) — a successful dynamic match must
+            // not silently drop a skill the identity always requires.
+            if (blueprint.defaultSkills?.length) {
+              const missing = blueprint.defaultSkills.filter((id) => !skillIds.includes(id));
+              const criticalMissing = await this.filterCriticalSkillIds(missing);
+              for (const id of criticalMissing) {
+                skillIds.push(id);
+                matchScores.set(id, 0.5);
+                totalAvailable++;
+              }
+            }
           } // 3. Fallback to blueprint defaults
           else if (blueprint.defaultSkills?.length) {
             skillIds = blueprint.defaultSkills;
@@ -445,6 +479,17 @@ export class AgentRunner implements IAgentRunner {
       console.error("[IAgentRunner] Skill management critical failure:", error);
       return { skillIds: [], skillsContext: null };
     }
+  }
+
+  /**
+   * Given a list of skill IDs, return only the ones whose skill definition is
+   * marked critical: true. Used to union critical default skills back into a
+   * successful dynamic match without reintroducing every default skill.
+   */
+  private async filterCriticalSkillIds(skillIds: string[]): Promise<string[]> {
+    if (skillIds.length === 0) return [];
+    const skills = await Promise.all(skillIds.map((id) => this.skillsService!.getSkill(id)));
+    return skillIds.filter((_, i) => skills[i]?.critical === true);
   }
 
   /**
@@ -518,8 +563,8 @@ export class AgentRunner implements IAgentRunner {
   private logExecutionStart(
     request: IParsedRequest,
     identityId: string,
-    traceId: string | undefined,
-    requestId: string | undefined,
+    traceId: Opt<string, Reason.TraceAbsent>,
+    requestId: Opt<string, Reason.TraceAbsent>,
     skillsApplied: string[],
   ): void {
     this.logActivity(
@@ -580,9 +625,9 @@ export class AgentRunner implements IAgentRunner {
    */
   private handleExecutionFailure(
     retryResult: IRetryResult<IGenerateResult>,
-    requestId: string | undefined,
+    requestId: Opt<string, Reason.TraceAbsent>,
     identityId: string,
-    traceId: string | undefined,
+    traceId: Opt<string, Reason.TraceAbsent>,
     duration: number,
   ): never {
     this.logActivity(
@@ -781,11 +826,26 @@ export class AgentRunner implements IAgentRunner {
     actionType: string,
     target: string | null,
     payload: Record<string, JSONValue>,
-    traceId?: string,
-    _identityId?: string | null,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+    _identityId?: Opt<string | null, Reason.OptionalContext>,
   ): void {
     if (!this.logger) return;
     void this.logger.info(actionType, target, payload, traceId);
+  }
+
+  /**
+   * Debug-level activity log (filtered out unless the logger's minLevel is DEBUG). Used for
+   * diagnostic dumps (e.g. the full assembled prompt) that are too verbose for INFO but useful
+   * when investigating why a live provider call produced unexpected output.
+   */
+  private logActivityDebug(
+    actionType: string,
+    target: string | null,
+    payload: Record<string, JSONValue>,
+    traceId: Opt<string, Reason.TraceAbsent>,
+  ): void {
+    if (!this.logger) return;
+    void this.logger.debug(actionType, target, payload, traceId);
   }
 }
 
@@ -797,9 +857,9 @@ function createNoopPlanAdapter(): IPlanAdapter {
 }
 
 export function createAgentRunner(
-  planAdapter?: IPlanAdapter,
-  modelProvider?: IModelProvider,
-  agentConfig?: IAgentRunnerConfig,
+  planAdapter?: Opt<IPlanAdapter, Reason.OptionalDependency>,
+  modelProvider?: Opt<IModelProvider, Reason.OptionalDependency>,
+  agentConfig?: Opt<IAgentRunnerConfig, Reason.OptionalDependency>,
 ): IAgentRunner {
   return new AgentRunner(planAdapter, modelProvider, agentConfig);
 }

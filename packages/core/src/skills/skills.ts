@@ -15,6 +15,7 @@ import type { IDatabaseService } from "@exaix/storage-sqlite";
 import {
   DEFAULT_SKILL_CONTEXT_CHAR_BUDGET,
   DEFAULT_SKILL_INDEX_VERSION,
+  DEFAULT_SKILLS_KEYWORD_MATCH_SATURATION,
   type MemoryBankSource,
   MemoryScope,
   SkillStatus,
@@ -57,8 +58,8 @@ export class SkillsService implements ISkillsService {
   constructor(
     private config: { memoryDir: string; portal?: string },
     private db: IDatabaseService,
-    skillsConfig?: Partial<ISkillsConfig>,
-    private logger?: IEventLogger,
+    skillsConfig?: Opt<Partial<ISkillsConfig>, Reason.OptionalInput>,
+    private logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
     this.skillsConfig = { ...DEFAULT_CONFIG, ...skillsConfig };
   }
@@ -331,8 +332,8 @@ export class SkillsService implements ISkillsService {
   }
 
   private scoreKeywordTriggers(
-    triggerKeywords: string[] | undefined,
-    requestKeywords: string[] | undefined,
+    triggerKeywords: Opt<string[], Reason.OptionalInput>,
+    requestKeywords: Opt<string[], Reason.OptionalInput>,
   ): { max: number; score: number; matched?: string[] } {
     if (!triggerKeywords || triggerKeywords.length === 0) return { max: 0, score: 0 };
     const max = 1.0;
@@ -342,13 +343,16 @@ export class SkillsService implements ISkillsService {
 
     if (matches.length === 0) return { max, score: 0 };
 
-    const score = (matches.length / triggerKeywords.length) * 1.0;
+    // Score by matched-keyword count against a saturation cap, not by dividing over the
+    // trigger's total keyword count — a skill with a long trigger list (covering many
+    // possible phrasings) must not be penalized for the keywords a given request doesn't use.
+    const score = Math.min(matches.length / DEFAULT_SKILLS_KEYWORD_MATCH_SATURATION, 1.0) * max;
     return { max, score, matched: matches };
   }
 
   private scoreTaskTypeTriggers(
-    triggerTaskTypes: string[] | undefined,
-    requestTaskType: string | undefined,
+    triggerTaskTypes: Opt<string[], Reason.OptionalInput>,
+    requestTaskType: Opt<string, Reason.OptionalInput>,
   ): { max: number; score: number; matched?: string[] } {
     if (!triggerTaskTypes || triggerTaskTypes.length === 0) return { max: 0, score: 0 };
     const max = 0.8;
@@ -359,8 +363,8 @@ export class SkillsService implements ISkillsService {
   }
 
   private scoreFilePatternTriggers(
-    triggerPatterns: string[] | undefined,
-    requestFilePaths: string[] | undefined,
+    triggerPatterns: Opt<string[], Reason.OptionalInput>,
+    requestFilePaths: Opt<string[], Reason.OptionalInput>,
   ): { max: number; score: number; matched?: string[] } {
     if (!triggerPatterns || triggerPatterns.length === 0) return { max: 0, score: 0 };
     const max = 0.5;
@@ -377,8 +381,8 @@ export class SkillsService implements ISkillsService {
   }
 
   private scoreTagTriggers(
-    triggerTags: string[] | undefined,
-    requestTags: string[] | undefined,
+    triggerTags: Opt<string[], Reason.OptionalInput>,
+    requestTags: Opt<string[], Reason.OptionalInput>,
   ): { max: number; score: number; matched?: string[] } {
     if (!triggerTags || triggerTags.length === 0) return { max: 0, score: 0 };
     const max = 0.3;

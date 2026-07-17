@@ -277,6 +277,10 @@ export class PlanExecutor {
     if (topSkillTaskTypes.length > 0) {
       options.topSkillTaskTypes = topSkillTaskTypes;
     }
+    const matchedSkillTools = await this.deriveMatchedSkillTools(context);
+    if (matchedSkillTools.length > 0) {
+      options.matchedSkillTools = matchedSkillTools;
+    }
 
     // Phase 135 Step 11 (GAP-10, context-window half): build the allocator here (rather
     // than leaving it undefined) so AgentOrchestrator's default construction
@@ -335,6 +339,35 @@ export class PlanExecutor {
     const candidateTaskTypes = topMatch?.matchedTriggers.task_types ?? [];
     const knownTaskTypes = new Set<string>(Object.values(TaskType));
     return candidateTaskTypes.filter((value): value is TaskType => knownTaskTypes.has(value));
+  }
+
+  /**
+   * Re-runs the same skill match as deriveTopSkillTaskTypes (a second matchSkills call —
+   * kept separate rather than sharing one call, to leave deriveTopSkillTaskTypes's existing,
+   * tested behaviour untouched), then fetches each matched skill's full ISkill to read its
+   * `tools` declaration. Returns one array per match (in match order) for
+   * AgentOrchestrator's matchedSkillTools option, which unions and intersects them with the
+   * identity's permitted_tools — see skill_tools_derivation.ts. Returns [] when no skills
+   * service is configured or no request subject is available.
+   */
+  private async deriveMatchedSkillTools(context: IPlanContext): Promise<Array<string[] | undefined>> {
+    const skills = this.options.context?.skills;
+    const requestText = context.frontmatter.subject;
+    if (!skills || typeof requestText !== "string" || requestText.length === 0) {
+      return [];
+    }
+
+    const { matches } = await skills.matchSkills({
+      requestText,
+      identityId: context.identity,
+    });
+
+    return await Promise.all(
+      matches.map(async (match) => {
+        const skill = await skills.getSkill(match.skillId);
+        return skill?.tools;
+      }),
+    );
   }
 
   /**

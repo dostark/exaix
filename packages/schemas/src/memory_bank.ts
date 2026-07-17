@@ -14,6 +14,7 @@ import {
   ConfidenceAssessmentLevel,
   ExecutionStatus,
   LearningCategory,
+  McpToolName,
   MemoryBankSource,
   MemoryOperation,
   MemoryReferenceType,
@@ -23,6 +24,7 @@ import {
   type SkillImmutableField,
   type SkillManagedField,
   SkillStatus,
+  ToolName,
 } from "@exaix/core";
 
 // ===== Project Memory Schemas =====
@@ -382,6 +384,16 @@ export const SkillSchema = z.object({
    */
   critical: z.boolean().optional().describe(
     "Render as a protected, non-droppable prompt segment (treated as false when absent)",
+  ),
+
+  /**
+   * Tools this skill's procedure calls for (e.g. a git-workflow skill needs git_commit,
+   * git_create_branch). When a skill is matched onto a request, these tools are unioned
+   * with every other matched skill's tools, then intersected with the identity's
+   * permitted_tools — a skill can never grant a tool the identity doesn't already permit.
+   */
+  tools: z.array(z.union([z.nativeEnum(McpToolName), z.nativeEnum(ToolName)])).optional().describe(
+    "Tools this skill's procedure calls for; unioned across matched skills, then intersected with the identity's permitted_tools",
   ),
 
   // === Compatibility ===

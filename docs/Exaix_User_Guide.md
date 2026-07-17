@@ -584,6 +584,12 @@ match_threshold = 0.3      # Minimum confidence score (0.0 to 1.0)
 context_budget_chars = 4000 # Max characters for skills context
 ```
 
+#### Skill Tools
+
+A skill can optionally declare a `tools:` list — the MCP tools its own procedure calls for (e.g. `read_file`, `write_file`, `git_commit`). When one or more skills are matched onto a request, their `tools:` lists are combined into a single set (a matched-only tool is added once even if two skills both name it). That combined set is then narrowed to whatever the identity's own `permitted_tools` allowlist already permits — a skill can only restrict which of the identity's tools are shown, never add a tool the identity isn't already allowed to use. If no matched skill declares `tools:`, the identity's `permitted_tools` (or the full registered tool set, if the identity has no allowlist) is used unchanged.
+
+This keeps prompts focused: an identity broadly permitted to use many tools only sees the ones relevant to the skills actually driving a given request, without an author having to hand-tune `permitted_tools` per request.
+
 ## 4. CLI Reference
 
 ### 4.1 Installation
@@ -3514,6 +3520,12 @@ The behavioural patterns that used to be templates are now **skills** in
 | Domain review            | `code-review`, `architecture-review`, `security-first` | Security, architecture     |
 
 See `Blueprints/Skills/README.md` for the full skill library.
+
+Each identity's frontmatter also carries a `permitted_tools` allowlist — the
+least-privilege ceiling on which MCP tools that identity may ever use,
+regardless of which skills get matched onto a request. See
+[§3.3 Skill Tools](#skill-tools) for how a matched skill's own `tools:`
+declaration narrows within that ceiling.
 
 ### 6.7 Troubleshooting
 

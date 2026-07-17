@@ -685,6 +685,12 @@ Exaix implements a ReAct (Reasoning + Acting) reasoning engine for dynamic flow 
 | **Declared** 🟢 | Tools committed during planning phase (ReWOO-style) | Standard execution with full human approval |
 | **Dynamic** 🔵  | Agent selects tools at runtime from permitted set   | Exploratory tasks, codebase analysis        |
 
+### Tool Selection & Resolution
+
+Which tools an execution can see is resolved from three layered sources: **registry discovery** (`AgentOrchestrator` reads `IToolRegistry.getTools()` and `PromptBuilder` renders the resulting `## Available Tools` prompt section plus the TOML action-block calling convention `LegacyAgentStrategy` parses responses against), **identity `permitted_tools`** (a least-privilege allowlist declared in `Blueprints/Identities/*.md` frontmatter — the ceiling every narrower source is bound by), and **matched-skill `tools`** (each `ISkill.tools` declaration, unioned across every skill matched onto the request and then intersected with the identity's `permitted_tools` — a skill can narrow the tool set but can never grant a tool the identity doesn't already permit). `PlanExecutor.deriveMatchedSkillTools()` is the production wiring: it re-runs the same skill match `deriveTopSkillTaskTypes` uses and fetches each match's `.tools`.
+
+For the full resolution order, the fail-closed semantics (`permitted_tools: []` permits nothing regardless of skill declarations; `undefined` means no restriction), and the pure `resolveEffectiveSkillTools()` union+intersect function, see `packages/execution/README.md#tool-selection--resolution`.
+
 ### ReAct Loop Architecture
 
 The ReAct loop runs: step objective → blueprint → MCP client → LLM

@@ -248,6 +248,37 @@ Deno.test("SkillsService: matchSkills returns skills matching keywords", async (
   });
 });
 
+Deno.test("fix(skills): matchSkills does not penalize a partial match against a long trigger keyword list below the match threshold", async () => {
+  await withInitializedSkillsService(async ({ service }) => {
+    // Mirrors the real tdd-methodology skill: 8 keywords, only 2 of which appear in a
+    // genuinely relevant bugfix request. The confidence formula divides by the trigger's
+    // total keyword count, so a broad-but-relevant skill scores below the 0.3 default
+    // matchThreshold and is silently excluded from dynamic matching.
+    await service.createSkill({
+      skill_id: "broad-trigger-list",
+      name: "Broad Trigger List",
+      version: DEFAULT_GLOBAL_MEMORY_VERSION,
+      description: "Has a long keyword trigger list, like tdd-methodology",
+      scope: MemoryScope.GLOBAL,
+      status: SkillStatus.ACTIVE,
+      source: MemoryBankSource.USER,
+      triggers: {
+        keywords: ["implement", "feature", "add", "create", "build", "fix", "bugfix", "develop"],
+      },
+      instructions: "Broad trigger list matching test",
+    });
+
+    const { matches } = await service.matchSkills({
+      requestText:
+        "Fix the null-safety bugs in src/utils.ts: formatAssignee crashes when a task has no assignee. Add null checks so the function returns an empty string instead of crashing.",
+      keywords: ["fix", "null", "safety", "bugs", "crashes", "assignee", "add", "checks", "crashing"],
+    });
+
+    const matched = matches.find((m) => m.skillId === "broad-trigger-list");
+    assertExists(matched, "expected a partial keyword match against a long trigger list to clear matchThreshold");
+  });
+});
+
 Deno.test("SkillsService: matchSkills returns skills matching task types", async () => {
   await withInitializedSkillsService(async ({ service }) => {
     await service.createSkill({

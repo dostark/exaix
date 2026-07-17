@@ -383,6 +383,38 @@ System prompt content.
   }
 });
 
+Deno.test("[IBlueprintLoader] toLegacyBlueprint carries default_skills through as defaultSkills", async () => {
+  // Regression: frontmatter.default_skills (e.g. ["response-contract", "error-handling"]) was
+  // parsed and preserved on ILoadedBlueprint.frontmatter, but toLegacyBlueprint's mapping to
+  // IBlueprint dropped it entirely — so AgentRunner.run() never received defaultSkills for a
+  // plain analysis-phase request, meaning skills like response-contract (the <thought>/<content>
+  // format contract) were never actually attached despite being configured on the identity.
+  const { blueprintsPath, identitiesDir, testDir } = await setup();
+
+  try {
+    // style-exclude:SMALL_FIXTURE_OK - 5-line frontmatter fixture, inline for readability
+    const content = `---
+identity_id: "skills-test"
+name: "Skills Test"
+default_skills: ["response-contract", "error-handling"]
+---
+
+System prompt content.
+`;
+    await Deno.writeTextFile(join(identitiesDir, "skills-test.md"), content);
+
+    const loader = new IBlueprintLoader({ blueprintsPath });
+    const loaded = await loader.load("skills-test");
+
+    assertExists(loaded);
+    const legacy = loader.toLegacyBlueprint(loaded);
+
+    assertEquals(legacy.defaultSkills, ["response-contract", "error-handling"]);
+  } finally {
+    await teardown(testDir);
+  }
+});
+
 Deno.test("[loadBlueprint] standalone function returns legacy Blueprint", async () => {
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 

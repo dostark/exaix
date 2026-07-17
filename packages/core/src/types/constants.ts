@@ -495,6 +495,10 @@ export const AGENT_EVENT_OUTPUT = "agent.output";
 export const AGENT_EVENT_SECURITY_VIOLATION = "security.violation";
 export const AGENT_GENERATION_COMPLETED = "agent.generation_completed";
 export const AGENT_EVENT_PROMPT_ASSEMBLED = "agent.prompt_assembled";
+/** Debug-level: the full assembled prompt text, for diagnosing live-provider response issues. */
+export const AGENT_EVENT_PROMPT_DEBUG_DUMP = "agent.prompt_debug_dump";
+/** Debug-level: the raw LLM response as received, before thought/content extraction. */
+export const AGENT_EVENT_LLM_RESPONSE_RECEIVED = "agent.llm_response_received";
 
 export const AGENT_EXECUTOR_ID = "agent-executor";
 // Plan amendment event names (Phase 66)
@@ -1029,6 +1033,16 @@ export const DEFAULT_SKILLS_MATCH_THRESHOLD: number = configurable({
   description: "Minimum similarity score (0-1) for skill matching",
   min: 0,
   max: 1,
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_SKILLS_KEYWORD_MATCH_SATURATION: number = configurable({
+  key: "skills.keyword_match_saturation",
+  default: 2,
+  type: ConfigValueType.NUMBER,
+  description:
+    "Number of matched trigger keywords that earns full keyword-match score, so a skill with a long trigger keyword list is not penalized for the keywords it doesn't match",
+  min: 1,
+  max: 20,
   swap: SwapClass.RESTART,
 });
 export const DEFAULT_SKILLS_INJECT_IN_PROMPT: boolean = configurable({

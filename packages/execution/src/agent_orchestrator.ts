@@ -62,6 +62,7 @@ import type { ISnapshotStore } from "./context/snapshot_store.ts";
 import { ExecutionContextService } from "./execution_context_service.ts";
 import { BlueprintService } from "./blueprint_service.ts";
 import { PromptBuilder } from "./prompt_builder.ts";
+import { resolveEffectiveSkillTools } from "./skill_tools_derivation.ts";
 import { GitAuditService } from "./git_audit_service.ts";
 import { HistoryManager } from "./history_manager.ts";
 import { type IOutputParserContext, OutputParser } from "./output_parser.ts";
@@ -94,6 +95,13 @@ export interface IAgentOrchestratorOptions {
    * may supply this to participate in the derivation precedence chain.
    */
   topSkillTaskTypes?: TaskType[];
+  /**
+   * The `tools` declared by every skill matched for this execution, one array per matched
+   * skill. AgentOrchestrator has no SkillsService dependency; a caller that already matched
+   * skills (e.g. PlanExecutor) may supply this so executeStep can union them and intersect
+   * with the identity blueprint's permitted_tools — see skill_tools_derivation.ts.
+   */
+  matchedSkillTools?: Array<string[] | undefined>;
 }
 
 /** Dependencies for AgentOrchestrator constructor. */
@@ -458,6 +466,33 @@ export class AgentOrchestrator {
     return BlueprintService.sanitizePrompt(prompt);
   }
   /**
+   * Bridges blueprint-level permitted_tools/allowed_paths onto per-call options
+   * (Phase 56/61), then narrows permitted_tools to the union of matched skills'
+   * tools intersected with the identity's own allowlist — a skill can only
+   * narrow within what the identity already permits, never grant a tool the
+   * identity doesn't allow (see skill_tools_derivation.ts). Only takes effect
+   * when the caller supplied matchedSkillTools; otherwise the identity's own
+   * allowlist is left unfiltered.
+   */
+  private applyBlueprintToolScope(
+    blueprint: IAgentFileBlueprint,
+    options: IAgentExecutionOptions,
+  ): void {
+    if (blueprint.permitted_tools) {
+      options.permitted_tools = blueprint.permitted_tools;
+    }
+    if (blueprint.allowed_paths) {
+      options.allowed_paths = blueprint.allowed_paths;
+    }
+    if (this.options?.matchedSkillTools) {
+      options.permitted_tools = resolveEffectiveSkillTools(
+        this.options.matchedSkillTools,
+        options.permitted_tools,
+      );
+    }
+  }
+
+  /**
    * Execute a plan step using agent via MCP
    */
   async executeStep(
@@ -506,13 +541,7 @@ export class AgentOrchestrator {
       strategyName = ExecutionStrategyName.REACT;
     }
 
-    // Pass identity-level permitted_tools and allowed_paths to options (Phase 56/61 bridge)
-    if (_blueprint.permitted_tools) {
-      options.permitted_tools = _blueprint.permitted_tools;
-    }
-    if (_blueprint.allowed_paths) {
-      options.allowed_paths = _blueprint.allowed_paths;
-    }
+    this.applyBlueprintToolScope(_blueprint, options);
 
     try {
       const strategy = this.strategyRegistry!.resolve(strategyName);
@@ -636,7 +665,8 @@ export class AgentOrchestrator {
     options: IAgentExecutionOptions,
   ): Promise<string> {
     const modelId = this.resolveModelId(blueprint);
-    return this.promptBuilder.buildExecutionPrompt(blueprint, context, options, modelId);
+    const tools = this._toolRegistry?.getTools();
+    return this.promptBuilder.buildExecutionPrompt(blueprint, context, options, modelId, tools);
   }
 
   /**

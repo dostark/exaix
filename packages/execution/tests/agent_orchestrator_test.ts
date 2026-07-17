@@ -40,6 +40,7 @@ import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { type IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { ITokenizer } from "@exaix/core/func";
+import type { ITool, IToolRegistry } from "@exaix/core/types";
 import { stub } from "@std/testing/mock";
 import { SafeError } from "@exaix/core/errors";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -1146,6 +1147,163 @@ Deno.test({
 });
 
 Deno.test({
+  name: "fix(agent-orchestrator): execution prompt lists available tools and the TOML action-block convention",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const fakeTools: ITool[] = [
+        {
+          name: "read_file",
+          description: "Return the full text content of a file inside a portal.",
+          parameters: {
+            type: "object",
+            properties: { path: { type: "string", description: "File path" } },
+            required: ["path"],
+          },
+        },
+        {
+          name: "write_file",
+          description: "Write or overwrite the full content of a file inside a portal.",
+          parameters: {
+            type: "object",
+            properties: {
+              path: { type: "string", description: "File path" },
+              content: { type: "string", description: "File content" },
+            },
+            required: ["path", "content"],
+          },
+        },
+      ];
+      const fakeToolRegistry: IToolRegistry = {
+        getTools: () => fakeTools,
+        execute: () => Promise.resolve({ success: true }),
+      };
+      const executor = new AgentOrchestrator({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        toolRegistry: fakeToolRegistry,
+      });
+
+      const blueprint: IAgentFileBlueprint = {
+        name: "test-agent",
+        model: "gpt-4o-mini",
+        provider: PROVIDER_OPENAI,
+        capabilities: [PortalOperation.READ, PortalOperation.WRITE],
+        systemPrompt: "You are a helpful assistant.",
+      };
+
+      const context: IExecutionContext = {
+        trace_id: "test-trace-123",
+        request_id: "test-request-456",
+        request: "Fix the null-safety bug",
+        plan: "Test plan",
+        portal: "/test/portal",
+      };
+
+      const options: IAgentExecutionOptions = {
+        identity_id: "test-agent",
+        portal: "/test/portal",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+      };
+
+      const prompt = await executor.buildExecutionPrompt(blueprint, context, options);
+
+      // The prompt must name each available tool and describe it, sourced from the real registry.
+      assertStringIncludes(prompt, "read_file");
+      assertStringIncludes(prompt, "Return the full text content of a file inside a portal.");
+      assertStringIncludes(prompt, "write_file");
+      assertStringIncludes(prompt, "Write or overwrite the full content of a file inside a portal.");
+
+      // The prompt must explain the TOML action-block convention the response is parsed against.
+      assertStringIncludes(prompt, "```toml");
+      assertStringIncludes(prompt, "actions");
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name: "fix(agent-orchestrator): execution prompt's tool list is filtered by options.permitted_tools when set",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const fakeTools: ITool[] = [
+        {
+          name: "read_file",
+          description: "Return the full text content of a file inside a portal.",
+          parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+        },
+        {
+          name: "delete_file",
+          description: "Permanently delete a file inside a portal.",
+          parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+        },
+      ];
+      const fakeToolRegistry: IToolRegistry = {
+        getTools: () => fakeTools,
+        execute: () => Promise.resolve({ success: true }),
+      };
+      const executor = new AgentOrchestrator({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        toolRegistry: fakeToolRegistry,
+      });
+
+      const blueprint: IAgentFileBlueprint = {
+        name: "test-agent",
+        model: "gpt-4o-mini",
+        provider: PROVIDER_OPENAI,
+        capabilities: [PortalOperation.READ, PortalOperation.WRITE],
+        systemPrompt: "You are a helpful assistant.",
+      };
+
+      const context: IExecutionContext = {
+        trace_id: "test-trace-123",
+        request_id: "test-request-456",
+        request: "Fix the null-safety bug",
+        plan: "Test plan",
+        portal: "/test/portal",
+      };
+
+      // Only read_file is permitted — e.g. the union of matched skills' tools intersected
+      // with the identity's permitted_tools resolved to read_file alone.
+      const options: IAgentExecutionOptions = {
+        identity_id: "test-agent",
+        portal: "/test/portal",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+        permitted_tools: ["read_file"],
+      };
+
+      const prompt = await executor.buildExecutionPrompt(blueprint, context, options);
+
+      assertStringIncludes(prompt, "read_file");
+      assert(!prompt.includes("delete_file"), "delete_file must not appear when permitted_tools excludes it");
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
   name: "AgentOrchestrator: handles prompt injection attempts in request",
   fn: async () => {
     await setup();
@@ -1944,6 +2102,134 @@ Deno.test({
 
       assertExists(skillMatch);
       assertEquals(skillMatch[1].length <= 10 * TOKEN_ESTIMATION_CHARS_PER_TOKEN, true);
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name:
+    "fix(agent-orchestrator): executeStep unions matchedSkillTools and intersects with the identity's permitted_tools",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const fakeTools: ITool[] = [
+        {
+          name: "read_file",
+          description: "Return the full text content of a file inside a portal.",
+          parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+        },
+        {
+          name: "write_file",
+          description: "Write or overwrite the full content of a file inside a portal.",
+          parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+        },
+        {
+          name: "delete_file",
+          description: "Permanently delete a file inside a portal.",
+          parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+        },
+        {
+          name: "list_directory",
+          description: "List the files and subdirectories at a path inside a portal.",
+          parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+        },
+      ];
+      const fakeToolRegistry: IToolRegistry = {
+        getTools: () => fakeTools,
+        execute: () => Promise.resolve({ success: true }),
+      };
+
+      let capturedPrompt = "";
+      const mockProvider: IModelProvider = {
+        id: "mock",
+        generate: async (prompt: string): Promise<IGenerateResult> => {
+          capturedPrompt = prompt;
+          await Promise.resolve();
+          return {
+            content: `\`\`\`json\n${
+              JSON.stringify({
+                branch: "feat/x",
+                commit_sha: "1234567890123456789012345678901234567890",
+                files_changed: [],
+                description: "done",
+                tool_calls: 0,
+                execution_time_ms: 1,
+              })
+            }\n\`\`\``,
+            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+            model: "mock-model",
+            provider: "mock",
+            cost_usd: 0,
+          };
+        },
+      };
+
+      const executor = new AgentOrchestrator({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        provider: mockProvider,
+        toolRegistry: fakeToolRegistry,
+        options: {
+          // Two matched skills: one contributes read_file+write_file, the other
+          // contributes write_file+delete_file. Union = {read_file, write_file, delete_file}
+          // — deliberately a STRICT SUBSET of the identity's broader permitted_tools below,
+          // so this test can only pass if matchedSkillTools is actually consulted (not just
+          // passed through identity permitted_tools unfiltered).
+          matchedSkillTools: [["read_file", "write_file"], ["write_file", "delete_file"]],
+        },
+      });
+
+      // Identity permits a BROADER set (including list_directory, which no matched skill
+      // declared) — list_directory must be filtered out because no skill's tools union
+      // includes it, and delete_file must survive because it's in both the skill union and
+      // the identity's permitted_tools. "test-agent" is used (rather than a new identity
+      // name) because getServices()'s fixed portal permissions only allow
+      // ["test-agent", "ollama-agent"] to access TestPortal.
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nmodel: gpt\nprovider: mock\ncapabilities: []\n" +
+          'permitted_tools: ["read_file", "write_file", "delete_file", "list_directory"]\n---\nPrompt',
+      );
+
+      const context: IExecutionContext = {
+        trace_id: "8e5c81f3-4236-461d-adcb-bf5741a2c0c8",
+        request_id: "r-skill-tools",
+        request: "Work",
+        plan: "Plan",
+        portal: "TestPortal",
+      };
+      const options: IAgentExecutionOptions = {
+        portal: "TestPortal",
+        identity_id: "test-agent",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+      };
+
+      await executor.executeStep(context, options);
+
+      assertStringIncludes(capturedPrompt, "read_file");
+      assertStringIncludes(capturedPrompt, "write_file");
+      assertStringIncludes(
+        capturedPrompt,
+        "delete_file",
+        "delete_file is in both the skill-tools union and the identity's permitted_tools — must survive the intersection",
+      );
+      assert(
+        !capturedPrompt.includes("list_directory"),
+        "list_directory must be excluded: the identity permits it, but no matched skill's tools union includes it",
+      );
     } finally {
       await cleanup();
     }

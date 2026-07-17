@@ -10,7 +10,7 @@ created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"
 version: "1.1.0"
 description: "Security specialist for in-depth vulnerability analysis and remediation"
-default_skills: ["response-contract", "security-first", "code-review", "portal-grounding"]
+default_skills: ["response-contract", "response-contract-security-analysis", "security-first", "code-review", "portal-grounding"]
 permitted_tools:
   - read_file
   - list_directory

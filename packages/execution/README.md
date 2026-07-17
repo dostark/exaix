@@ -87,6 +87,22 @@ sequenceDiagram
 
 Tool result payloads are validated before crossing runtime boundaries. Read-only tools may use `normalize_then_validate`, `retry_once`, or `retry_with_backoff` when the manifest declares remediation is safe. `fail_closed` is the default terminal behavior. Mutating tools remain fail-closed even when validation fails after execution.
 
+## Tool Selection & Resolution
+
+Which tools an execution can see and call is resolved from three sources, in this order:
+
+1. **Registry discovery** — `AgentOrchestrator.buildExecutionPrompt()` reads `this._toolRegistry?.getTools()` (an `IToolRegistry`, `packages/core/src/types/i_tool_registry.ts`) and passes the full `ITool[]` (name, description, JSON-schema parameters) to `PromptBuilder`, which renders a `## Available Tools` section plus the `` ```toml `` action-block calling convention `LegacyAgentStrategy.executeTomlActions` parses responses against. Without a registered `ToolRegistry`, no tool list is ever included and the execution has no way to know which tools exist. `PlanExecutor.createAgentExecutor` is the production wiring: it constructs a real `ToolRegistry` scoped to the plan's `traceId`/`baseDir` and injects it as `AgentOrchestrator`'s `toolRegistry` dependency.
+
+1. **Identity `permitted_tools`** — each identity blueprint's YAML frontmatter (`Blueprints/Identities/*.md`) declares a least-privilege allowlist, `permitted_tools: [McpToolName | ToolName]` (see `Blueprints/Identities/README.md`). `AgentOrchestrator.executeStep` copies it onto `options.permitted_tools` (the Phase 56/61 bridge). This is the **ceiling** — no narrower source below can ever exceed it, and an identity with no `permitted_tools` declared permits nothing once any restriction is in effect.
+
+1. **Skill `tools`, unioned then intersected with the identity ceiling** — a skill's `tools` field (`ISkill.tools`, `packages/schemas/src/memory_bank.ts`) declares which tools its own procedure needs. When one or more skills are matched onto a request, `PlanExecutor.deriveMatchedSkillTools()` re-runs `SkillsService.matchSkills()` (mirroring `deriveTopSkillTaskTypes`'s existing pattern) and fetches each match's full `ISkill.tools`. These are passed as `IAgentOrchestratorOptions.matchedSkillTools` (one array per matched skill). `resolveEffectiveSkillTools()` (`src/skill_tools_derivation.ts`) unions them — deduplicated — and intersects the union with the identity's `permitted_tools` (the prior source). **A skill can only narrow the tool set within what the identity already permits; it can never grant a tool the identity doesn't already allow.** `matchedSkillTools` undefined (no caller supplied it, or dynamic matching found nothing) leaves the identity's `permitted_tools` as-is, unfiltered.
+
+The final `options.permitted_tools` filters `PromptBuilder`'s `## Available Tools` section (`filterToolsByPermitted`) — when set, only the intersected tools are ever listed in the prompt the model receives.
+
+**Fail-closed semantics** (mirrored from the existing `dynamic_step_executor.ts:resolvePermittedTools` precedent for the ReAct loop): `permitted_tools: undefined` means no restriction is declared and every registry-discovered tool passes through; `permitted_tools: []` means the identity permits nothing, and the result is always empty regardless of what any skill declares.
+
+No shipped skill declares `tools:` yet — the mechanism is fully wired end-to-end but dormant until skill content is curated to use it.
+
 ## Context Budget Manager
 
 `packages/execution/src/context/` provides a segment-level compaction layer (Phase 83) that runs inside the ReAct loop before each LLM call.
