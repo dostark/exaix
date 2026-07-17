@@ -28,6 +28,10 @@ export class AnthropicProviderFactory extends AbstractKeyBasedProviderFactory {
       // api_version, ai_endpoints.anthropic, retry/timeout blocks) is silently dead on the
       // factory path — the constructor reads them from options.config.
       config: options.config,
+      // resolveOptions computed this from [models.<name>].timeout_ms / env / ai_timeout;
+      // dropping it pins every factory-created provider to the 60s package default, which a
+      // thinking model's plan-sized generation routinely exceeds.
+      timeoutMs: options.timeoutMs,
     });
   }
 }

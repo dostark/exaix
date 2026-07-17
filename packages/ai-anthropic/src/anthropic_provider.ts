@@ -28,7 +28,7 @@ import {
 import { BaseProvider, type IBaseProviderOptions, type IGenerateResult } from "@exaix/ai/providers";
 import type { IModelOptions } from "@exaix/ai/types.ts";
 import { PROVIDER_EVENT_REQUEST_DEBUG_DUMP } from "@exaix/core";
-import type { Opt, Reason } from "@exaix/core/types";
+import { type Opt, type Reason, toSafeJson } from "@exaix/core/types";
 
 /**
  * Options for AnthropicProvider.
@@ -78,7 +78,7 @@ export class AnthropicProvider extends BaseProvider {
       }]
       : [{ role: "user" as const, content: prompt }];
 
-    const requestBody = {
+    const requestBody: AnthropicRequestBody = {
       model: this.model,
       max_tokens: options?.max_tokens ?? this.maxTokensDefault,
       messages,
@@ -87,6 +87,21 @@ export class AnthropicProvider extends BaseProvider {
       stop_sequences: options?.stop,
     };
 
+    try {
+      return await this.postMessages(requestBody);
+    } catch (error) {
+      // Newer models reject tuning parameters older models accept (observed live:
+      // HTTP 400 "`temperature` is deprecated for this model." from claude-sonnet-5).
+      // Strip the named parameter and retry once rather than failing the whole call
+      // over a knob — self-healing for future parameter deprecations, no model list.
+      if (!(error instanceof Error)) throw error;
+      const strippedBody = stripRejectedParameter(requestBody, error);
+      if (!strippedBody) throw error;
+      return await this.postMessages(strippedBody);
+    }
+  }
+
+  private async postMessages(requestBody: AnthropicRequestBody): Promise<IGenerateResult> {
     // Debug-level dump of the exact outbound JSON body, validated against the Messages API
     // request contract, so a live-provider failure (malformed request, unexpected 4xx) can be
     // diagnosed from the log without a separate network capture tool.
@@ -94,7 +109,7 @@ export class AnthropicProvider extends BaseProvider {
       const validation = AnthropicMessagesRequestSchema.safeParse(requestBody);
       void this.logger.debug(PROVIDER_EVENT_REQUEST_DEBUG_DUMP, this.id, {
         provider: "anthropic",
-        request_body: requestBody,
+        request_body: toSafeJson(requestBody) ?? {},
         valid: validation.success,
         validation_errors: validation.success ? undefined : validation.error.flatten(),
       });
@@ -118,4 +133,39 @@ export class AnthropicProvider extends BaseProvider {
       extractor: extractAnthropicContent,
     });
   }
+}
+
+type AnthropicRequestMessage = {
+  role: "user";
+  content: string | Array<{ type: string; text: string; cache_control?: Opt<{ type: string }, Reason.OptionalInput> }>;
+};
+
+type AnthropicRequestBody = {
+  model: string;
+  max_tokens: number;
+  messages: AnthropicRequestMessage[];
+  temperature?: Opt<number, Reason.OptionalInput>;
+  top_p?: Opt<number, Reason.OptionalInput>;
+  stop_sequences?: Opt<string[], Reason.OptionalInput>;
+};
+
+/** Matches Anthropic's 400 wording when a request parameter is rejected for the model. */
+const REJECTED_PARAM_PATTERN = /`(\w+)` is (?:deprecated|not supported)/;
+
+/**
+ * If `error` is an HTTP 400 naming a parameter this request actually sent as
+ * deprecated/unsupported, return a copy of the body without that parameter; null otherwise.
+ */
+function stripRejectedParameter(
+  requestBody: AnthropicRequestBody,
+  error: Error,
+): AnthropicRequestBody | null {
+  if (!error.message.includes("HTTP 400")) return null;
+  const match = error.message.match(REJECTED_PARAM_PATTERN);
+  if (!match) return null;
+  const param = match[1] as keyof AnthropicRequestBody;
+  if (requestBody[param] === undefined) return null;
+  const stripped = { ...requestBody };
+  delete stripped[param];
+  return stripped;
 }

@@ -96,6 +96,21 @@ Deno.test("AnthropicProviderFactory passes options.config through so provider co
   );
 });
 
+Deno.test("AnthropicProviderFactory passes options.timeoutMs through to the provider", async () => {
+  const factory = new AnthropicProviderFactory();
+  const provider = await factory.create({
+    provider: ProviderType.ANTHROPIC,
+    model: "claude-sonnet-5",
+    timeoutMs: 240000,
+    apiKey: "test-key",
+  });
+
+  // timeoutMs is resolved by ProviderFactory.resolveOptions from [models.<name>].timeout_ms /
+  // env / ai_timeout config — dropping it here silently pins every factory-created provider to
+  // the 60s package default, which a thinking model's plan-sized generation routinely exceeds.
+  assertEquals((provider as AnthropicProvider).timeoutMs, 240000);
+});
+
 Deno.test("AnthropicProvider honours config.ai_anthropic.max_tokens_default in the request body", async () => {
   const baseConfig = createTestConfig();
   const config = {
