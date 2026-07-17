@@ -3366,6 +3366,90 @@ Deno.test({
 });
 
 Deno.test({
+  name:
+    "fix(agent-orchestrator): executeStep dispatches to ReActLoopStrategy when the blueprint declares react in capabilities",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      let legacyCalled = false;
+      let reactCalled = false;
+      const strategyRegistry = new StrategyRegistry();
+      strategyRegistry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: () => {
+          legacyCalled = true;
+          return Promise.resolve({
+            branch: "feat/legacy",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [],
+            description: "Legacy dispatch",
+            tool_calls: 0,
+            execution_time_ms: 1,
+          });
+        },
+      });
+      strategyRegistry.register({
+        name: ExecutionStrategyName.REACT,
+        execute: () => {
+          reactCalled = true;
+          return Promise.resolve({
+            branch: "feat/react",
+            commit_sha: "1111111111111111111111111111111111111111",
+            files_changed: [],
+            description: "ReAct dispatch",
+            tool_calls: 0,
+            execution_time_ms: 1,
+          });
+        },
+      });
+
+      const executor = new AgentOrchestrator({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        strategyRegistry,
+      });
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        '---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: ["execution", "react"]\n---\nYou are a test agent.',
+      );
+
+      const context: IExecutionContext = {
+        trace_id: crypto.randomUUID(),
+        request_id: "react-dispatch-req",
+        request: "Dispatch check",
+        plan: "Dispatch",
+        portal: "TestPortal",
+      };
+      const options: IAgentExecutionOptions = {
+        portal: "TestPortal",
+        identity_id: "test-agent",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+      };
+      await executor.executeStep(context, options);
+
+      assertEquals(reactCalled, true, "ReActLoopStrategy should have been invoked");
+      assertEquals(legacyCalled, false, "LegacyAgentStrategy should not have been invoked");
+
+      executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
   name: "AgentOrchestrator: loadBlueprint delegates to BlueprintService",
   fn: async () => {
     await setup();

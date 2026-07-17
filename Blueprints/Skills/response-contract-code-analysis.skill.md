@@ -26,6 +26,14 @@ constraints:
 output_requirements:
   - "A <content> block containing valid JSON matching the Code Analysis Report schema"
 
+quality_criteria:
+  - name: "Schema Compliance"
+    description: "The content JSON matches the Code Analysis Report schema, not the executable-plan schema"
+    weight: 60
+  - name: "Analysis Substance"
+    description: "modules, patterns, and recommendations reflect the actual codebase, not placeholders"
+    weight: 40
+
 compatible_with:
   agents:
     - "*"

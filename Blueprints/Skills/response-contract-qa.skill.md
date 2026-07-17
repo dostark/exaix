@@ -27,6 +27,14 @@ constraints:
 output_requirements:
   - "A <content> block containing valid JSON matching the QA Assessment Report schema"
 
+quality_criteria:
+  - name: "Schema Compliance"
+    description: "The content JSON matches the QA Assessment Report schema, not the executable-plan schema"
+    weight: 60
+  - name: "Coverage Substance"
+    description: "testSummary, coverage, and issues reflect real test results, not placeholders"
+    weight: 40
+
 compatible_with:
   agents:
     - "*"

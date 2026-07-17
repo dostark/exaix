@@ -3,7 +3,7 @@ identity_id: "default"
 name: "Default Agent"
 model: ""
 model_size: M
-capabilities: ["code_generation", "planning", "debugging", "research", "execution", "refactoring"]
+capabilities: ["code_generation", "planning", "debugging", "research", "execution", "refactoring", "react"]
 created: "2025-12-09T13:47:00Z"
 created_by: "exaix-setup"
 version: "1.1.0"

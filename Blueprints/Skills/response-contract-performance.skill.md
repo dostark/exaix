@@ -26,6 +26,14 @@ constraints:
 output_requirements:
   - "A <content> block containing valid JSON matching the Performance Analysis Report schema"
 
+quality_criteria:
+  - name: "Schema Compliance"
+    description: "The content JSON matches the Performance Analysis Report schema, not the executable-plan schema"
+    weight: 60
+  - name: "Finding Substance"
+    description: "findings, priorities, and scalability assessment reflect real bottlenecks, not placeholders"
+    weight: 40
+
 compatible_with:
   agents:
     - "*"

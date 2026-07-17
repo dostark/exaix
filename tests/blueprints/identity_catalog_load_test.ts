@@ -143,6 +143,25 @@ Deno.test({
   },
 });
 
+// ── default identity opts into ReActLoopStrategy (Ledger:EXECUTION_STRATEGY_NO_TOOLS) ──
+
+Deno.test({
+  name:
+    "fix(identity-catalog): default identity declares react in capabilities so AgentOrchestrator dispatches to the multi-turn ReActLoopStrategy instead of the single-shot LegacyAgentStrategy",
+  fn() {
+    const fm = readRawFrontmatter(join(IDENTITIES_DIR, "default.md"));
+    const caps = fm?.capabilities ?? [];
+    assertEquals(
+      caps.includes("react"),
+      true,
+      '"default" identity must declare "react" in capabilities — without it, ' +
+        "AgentOrchestrator.executeStep falls through to LegacyAgentStrategy, which makes a " +
+        "single blind provider.generate() call with no tool-result feedback loop " +
+        "(Ledger:EXECUTION_STRATEGY_NO_TOOLS)",
+    );
+  },
+});
+
 // ── 6. permitted_tools are valid tool-name values ────────────────────
 
 Deno.test({
