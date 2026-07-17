@@ -5,7 +5,7 @@ model: ""
 model_size: L
 thinking: true
 effort: high
-capabilities: ["code_generation", "architecture", "debugging", "testing", "code_review"]
+capabilities: ["code_generation", "architecture", "debugging", "testing", "code_review", "react"]
 created: "2025-12-09T13:47:00Z"
 created_by: "exaix-setup"
 version: "1.1.0"

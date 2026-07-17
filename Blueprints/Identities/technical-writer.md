@@ -3,7 +3,7 @@ identity_id: "technical-writer"
 name: "Technical Writer"
 model: ""
 model_size: S
-capabilities: ["documentation", "technical_writing"]
+capabilities: ["documentation", "technical_writing", "react"]
 created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"
 version: "1.1.0"

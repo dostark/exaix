@@ -5,7 +5,7 @@ model: ""
 model_size: M
 thinking: true
 effort: medium
-capabilities: ["code_generation", "testing", "code_review", "planning", "execution", "debugging"]
+capabilities: ["code_generation", "testing", "code_review", "planning", "execution", "debugging", "react"]
 created: "2026-06-18T00:00:00Z"
 created_by: "opencode"
 version: "1.1.0"

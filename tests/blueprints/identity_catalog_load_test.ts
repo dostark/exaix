@@ -143,18 +143,38 @@ Deno.test({
   },
 });
 
-// ── default identity opts into ReActLoopStrategy (Ledger:EXECUTION_STRATEGY_NO_TOOLS) ──
+// ── every active identity opts into ReActLoopStrategy (Ledger:EXECUTION_STRATEGY_NO_TOOLS) ──
+
+/** mock-agent declares no capabilities at all — test-only identity, not a real execution path. */
+const IDENTITIES_EXEMPT_FROM_REACT = new Set(["mock-agent"]);
 
 Deno.test({
   name:
-    "fix(identity-catalog): default identity declares react in capabilities so AgentOrchestrator dispatches to the multi-turn ReActLoopStrategy instead of the single-shot LegacyAgentStrategy",
+    "fix(identity-catalog): every active identity (except mock-agent) declares react in capabilities so AgentOrchestrator dispatches to the multi-turn ReActLoopStrategy instead of the single-shot LegacyAgentStrategy",
   fn() {
-    const fm = readRawFrontmatter(join(IDENTITIES_DIR, "default.md"));
-    const caps = fm?.capabilities ?? [];
+    const activeIds = listActiveIdentities();
+    const missing: string[] = [];
+
+    for (const id of activeIds) {
+      if (IDENTITIES_EXEMPT_FROM_REACT.has(id)) continue;
+      const fm = readRawFrontmatter(join(IDENTITIES_DIR, `${id}.md`));
+      const caps = fm?.capabilities ?? [];
+      if (!caps.includes("react")) {
+        missing.push(id);
+      }
+    }
+
+    if (missing.length > 0) {
+      console.log('\nIdentities missing "react" in capabilities:');
+      for (const id of missing) {
+        console.log(`  ${id}`);
+      }
+    }
+
     assertEquals(
-      caps.includes("react"),
-      true,
-      '"default" identity must declare "react" in capabilities — without it, ' +
+      missing.length,
+      0,
+      `${missing.length} identity/ies missing "react" in capabilities — without it, ` +
         "AgentOrchestrator.executeStep falls through to LegacyAgentStrategy, which makes a " +
         "single blind provider.generate() call with no tool-result feedback loop " +
         "(Ledger:EXECUTION_STRATEGY_NO_TOOLS)",

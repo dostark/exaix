@@ -4,12 +4,19 @@ name: "Code Analyst"
 model: ""
 model_size: M
 characteristics: [fastest]
-capabilities: ["analysis", "code_review"]
+capabilities: ["analysis", "code_review", "react"]
 created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"
 version: "1.1.0"
 description: "Code structure analysis specialist for understanding and documenting codebases"
-default_skills: ["response-contract", "response-contract-code-analysis", "code-review", "typescript-patterns", "portal-grounding", "gap-analysis"]
+default_skills: [
+  "response-contract",
+  "response-contract-code-analysis",
+  "code-review",
+  "typescript-patterns",
+  "portal-grounding",
+  "gap-analysis",
+]
 permitted_tools:
   - read_file
   - list_directory

@@ -5,7 +5,7 @@ model: ""
 model_size: L
 thinking: true
 effort: high
-capabilities: ["architecture", "planning", "code_review"]
+capabilities: ["architecture", "planning", "code_review", "react"]
 created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"
 version: "1.1.0"

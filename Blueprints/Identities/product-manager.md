@@ -4,7 +4,7 @@ name: "Product Manager"
 model: ""
 model_size: S
 characteristics: [fastest]
-capabilities: ["planning", "requirements_analysis"]
+capabilities: ["planning", "requirements_analysis", "react"]
 created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"
 version: "1.1.0"

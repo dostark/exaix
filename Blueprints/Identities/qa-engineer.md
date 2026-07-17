@@ -4,7 +4,7 @@ name: "QA Engineer"
 model: ""
 model_size: M
 characteristics: [fastest]
-capabilities: ["testing", "quality_assurance"]
+capabilities: ["testing", "quality_assurance", "react"]
 created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"
 version: "1.1.0"

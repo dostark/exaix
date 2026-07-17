@@ -5,7 +5,7 @@ model: ""
 model_size: L
 thinking: true
 effort: high
-capabilities: ["evaluation", "consensus", "structured_output"]
+capabilities: ["evaluation", "consensus", "structured_output", "react"]
 created: "2026-06-16T00:00:00Z"
 created_by: "exaix-system"
 version: "1.1.0"

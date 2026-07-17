@@ -4,12 +4,18 @@ name: "Performance Engineer"
 model: ""
 model_size: M
 characteristics: [fastest]
-capabilities: ["analysis", "performance_review"]
+capabilities: ["analysis", "performance_review", "react"]
 created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"
 version: "1.1.0"
 description: "Performance optimization specialist for identifying bottlenecks and improvements"
-default_skills: ["response-contract", "response-contract-performance", "performance-analysis", "code-review", "portal-grounding"]
+default_skills: [
+  "response-contract",
+  "response-contract-performance",
+  "performance-analysis",
+  "code-review",
+  "portal-grounding",
+]
 permitted_tools:
   - read_file
   - list_directory

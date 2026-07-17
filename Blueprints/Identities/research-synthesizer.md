@@ -5,7 +5,7 @@ model: ""
 model_size: XL
 thinking: true
 effort: high
-capabilities: ["research", "synthesis", "analysis"]
+capabilities: ["research", "synthesis", "analysis", "react"]
 created: "2026-06-30T00:00:00Z"
 created_by: "phase-131-catalog-reconciliation"
 version: "1.1.0"
