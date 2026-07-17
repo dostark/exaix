@@ -10,7 +10,11 @@
  */
 
 import { z } from "zod";
-import { ANTHROPIC_CACHE_CONTROL_EPHEMERAL, ANTHROPIC_CONTENT_TYPE_TEXT } from "./constants.ts";
+import {
+  ANTHROPIC_CACHE_CONTROL_EPHEMERAL,
+  ANTHROPIC_CONTENT_TYPE_TEXT,
+  ANTHROPIC_THINKING_DISABLED,
+} from "./constants.ts";
 
 const AnthropicCacheControlSchema = z.object({
   type: z.literal(ANTHROPIC_CACHE_CONTROL_EPHEMERAL),
@@ -35,6 +39,7 @@ export const AnthropicMessagesRequestSchema = z.object({
   temperature: z.number().min(0).max(1).optional(),
   top_p: z.number().min(0).max(1).optional(),
   stop_sequences: z.array(z.string()).optional(),
+  thinking: z.object({ type: z.literal(ANTHROPIC_THINKING_DISABLED) }).optional(),
 });
 
 export type AnthropicMessagesRequest = z.infer<typeof AnthropicMessagesRequestSchema>;

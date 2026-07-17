@@ -459,6 +459,12 @@ export const ConfigSchema = z.object({
     api_version: z.string().default("2023-06-01"),
     default_model: z.string().default("claude-haiku-4-5-20251001"),
     max_tokens_default: z.number().positive().default(4096),
+    /**
+     * When false, disable the model's default adaptive thinking on every call that
+     * does not set a per-call thinking option. Undefined leaves the API default
+     * (adaptive thinking) untouched.
+     */
+    thinking_default: z.boolean().optional(),
   }).optional().default({
     api_version: "2023-06-01",
     default_model: "claude-haiku-4-5-20251001",

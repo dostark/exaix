@@ -81,3 +81,6 @@ export const ANTHROPIC_CONTENT_TYPE_TEXT = "text";
 
 /** Cache control type for ephemeral prompt caching. */
 export const ANTHROPIC_CACHE_CONTROL_EPHEMERAL = "ephemeral";
+
+/** Messages API thinking config value that turns off the model's default adaptive thinking. */
+export const ANTHROPIC_THINKING_DISABLED = "disabled";

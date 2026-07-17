@@ -9,6 +9,7 @@
 import {
   ANTHROPIC_CACHE_CONTROL_EPHEMERAL,
   ANTHROPIC_CONTENT_TYPE_TEXT,
+  ANTHROPIC_THINKING_DISABLED,
   DEFAULT_ANTHROPIC_API_VERSION,
   DEFAULT_ANTHROPIC_ENDPOINT,
   DEFAULT_ANTHROPIC_MAX_TOKENS,
@@ -41,6 +42,7 @@ export type AnthropicProviderOptions = IBaseProviderOptions;
 export class AnthropicProvider extends BaseProvider {
   private readonly apiVersion: string;
   private readonly maxTokensDefault: number;
+  private readonly thinkingDefault?: boolean;
 
   constructor(options: AnthropicProviderOptions & { apiVersion?: string }) {
     super({
@@ -59,6 +61,7 @@ export class AnthropicProvider extends BaseProvider {
       DEFAULT_ANTHROPIC_API_VERSION;
     this.maxTokensDefault = options.config?.ai_anthropic?.max_tokens_default ||
       DEFAULT_ANTHROPIC_MAX_TOKENS;
+    this.thinkingDefault = options.config?.ai_anthropic?.thinking_default;
   }
 
   protected override async attemptGenerate(
@@ -96,6 +99,13 @@ export class AnthropicProvider extends BaseProvider {
       temperature: options?.temperature,
       top_p: options?.top_p,
       stop_sequences: options?.stop,
+      // Only send a thinking field to override the API default (adaptive thinking). An
+      // explicit false — per call, or via ai_anthropic.thinking_default when the call sets
+      // nothing — disables it (needed when the model's default thinking adds latency or
+      // emits empty signed thinking blocks). Absent leaves the default untouched.
+      thinking: (options?.thinking ?? this.thinkingDefault) === false
+        ? { type: ANTHROPIC_THINKING_DISABLED }
+        : undefined,
     };
 
     try {
@@ -159,6 +169,7 @@ type AnthropicRequestBody = {
   temperature?: Opt<number, Reason.OptionalInput>;
   top_p?: Opt<number, Reason.OptionalInput>;
   stop_sequences?: Opt<string[], Reason.OptionalInput>;
+  thinking?: Opt<{ type: string }, Reason.OptionalInput>;
 };
 
 /** Matches Anthropic's 400 wording when a request parameter is rejected for the model. */
