@@ -661,6 +661,94 @@ Deno.test({
 });
 
 Deno.test({
+  name:
+    "AgentOrchestrator: a later read-only step does not flag a file an earlier step wrote (cross-step accumulation)",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+
+      // Step 1 writes src/earlier.ts and reports it. Step 2 (same orchestrator instance,
+      // as in a real plan) writes nothing — a read-only verification step. Step 1's change
+      // is still uncommitted in the worktree when step 2's audit runs, so authorization
+      // must accumulate across steps: step 1's write stays authorized through step 2.
+      const earlierPath = "src/earlier.ts";
+      let stepIndex = 0;
+      const strategyRegistry = new StrategyRegistry();
+      strategyRegistry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: async () => {
+          const isFirst = stepIndex++ === 0;
+          if (isFirst) {
+            await Deno.mkdir(join(portalDir, "src"), { recursive: true });
+            await Deno.writeTextFile(join(portalDir, earlierPath), "export const x = 1;\n");
+          }
+          return {
+            branch: "feat/step",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: isFirst ? [earlierPath] : [],
+            description: isFirst ? "wrote earlier" : "read-only verification",
+            tool_calls: 1,
+            execution_time_ms: 10,
+          };
+        },
+      });
+
+      const executor = new AgentOrchestrator({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        strategyRegistry,
+      });
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      const options: IAgentExecutionOptions = {
+        portal: "TestPortal",
+        identity_id: "test-agent",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+      };
+
+      // Step 1: writes the file. Authorized by its own files_changed.
+      await executor.executeStep({
+        trace_id: crypto.randomUUID(),
+        request_id: "cross-step-1",
+        request: "write earlier",
+        plan: "write",
+        portal: "TestPortal",
+      }, options);
+
+      // Step 2: read-only (files_changed empty). The earlier file is still uncommitted;
+      // it must NOT be flagged, because step 1 legitimately wrote it in this same plan.
+      const secondResult = await executor.executeStep({
+        trace_id: crypto.randomUUID(),
+        request_id: "cross-step-2",
+        request: "verify",
+        plan: "verify",
+        portal: "TestPortal",
+      }, options);
+      assertEquals(secondResult.files_changed, []);
+
+      executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
   name: "AgentOrchestrator: reverts unauthorized changes in hybrid mode",
   fn: async () => {
     await setup();

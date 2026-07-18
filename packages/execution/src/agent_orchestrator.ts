@@ -195,6 +195,16 @@ export class AgentOrchestrator {
   /** Resolved per-call options from ModelResolver, forwarded to generate(). */
   private _resolvedCallOptions?: IModelCallOptions;
 
+  /**
+   * Files written by any step of the current plan through legitimate portal-scoped tools.
+   * The audit runs after every step against the CUMULATIVE worktree, but earlier steps'
+   * changes stay uncommitted until plan completion — so a later read-only step must still
+   * treat those earlier writes as authorized. This instance persists for the whole plan
+   * (one orchestrator per plan in PlanExecutor), accumulating across steps and resetting
+   * only when a new orchestrator is constructed for the next plan.
+   */
+  private readonly planWrittenFiles = new Set<string>();
+
   /** Exposes current prompt budget to IReActLoopExecutor (Phase 83). */
   public get currentPromptBudget(): IPromptBudget | undefined {
     return this.ctx.currentPromptBudget;
@@ -571,11 +581,12 @@ export class AgentOrchestrator {
       // 1. Capture real SHA
       validated.commit_sha = await this.getPortalHeadSha(portalPath);
 
-      // 2. Perform Audit. Authorize the union of the identity's allowed_paths and the
-      //    files this step actually wrote through legitimate portal-scoped tools — a step
-      //    must be able to keep its own changes. Without files_changed, a multi-step plan's
-      //    audit runs against an empty set and reverts the step's own writes as a violation.
-      const authorizedPaths = [...(options.allowed_paths ?? []), ...(validated.files_changed ?? [])];
+      // 2. Perform Audit. Authorize the union of the identity's allowed_paths and every
+      //    file any step of this plan has written through legitimate portal-scoped tools.
+      //    Accumulate this step's writes first, so a later read-only step still authorizes
+      //    an earlier step's still-uncommitted change instead of reverting it.
+      for (const file of validated.files_changed ?? []) this.planWrittenFiles.add(file);
+      const authorizedPaths = [...(options.allowed_paths ?? []), ...this.planWrittenFiles];
       const unauthorizedChanges = await this.auditGitChanges(
         portalPath,
         authorizedPaths,
