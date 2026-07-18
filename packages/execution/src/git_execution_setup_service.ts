@@ -48,16 +48,40 @@ export class GitExecutionSetupService {
     gitService: IGitService,
     executionRoot: string,
   ): Promise<string> {
+    // A configured branch (per-request target_branch or the portal's default_branch)
+    // is only usable if it actually exists in the repo. The portal default_branch
+    // carries a schema fallback ("main"), which a repo created on "master" (or any
+    // other branch) will not have — insisting on it makes `git worktree add` fail with
+    // "invalid reference". Branch creation is Exaix's machinery, resolved from repo
+    // state: honor a configured branch when it exists, otherwise use the repo's own
+    // default branch.
     const fromPlan = frontmatter.target_branch?.trim();
-    if (fromPlan) return fromPlan;
+    if (fromPlan && await this.branchExists(gitService, executionRoot, fromPlan)) {
+      return fromPlan;
+    }
 
     if (frontmatter.portal) {
       const portalCfg = this.config.portals.find((p) => p.alias === frontmatter.portal);
       const fromPortal = portalCfg?.default_branch?.trim();
-      if (fromPortal) return fromPortal;
+      if (fromPortal && await this.branchExists(gitService, executionRoot, fromPortal)) {
+        return fromPortal;
+      }
     }
 
     return await gitService.getDefaultBranch(executionRoot);
+  }
+
+  /** True when `branch` resolves to a real ref in the repo at `executionRoot`. */
+  private async branchExists(
+    gitService: IGitService,
+    executionRoot: string,
+    branch: string,
+  ): Promise<boolean> {
+    const result = await gitService.runGitCommand(
+      ["-C", executionRoot, "rev-parse", "--verify", "--quiet", `refs/heads/${branch}`],
+      { throwOnError: false },
+    );
+    return result.exitCode === 0;
   }
 
   async setupGitForExecution(args: {

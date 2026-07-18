@@ -17,6 +17,7 @@ default_skills: [
   "typescript-patterns",
   "portal-grounding",
   "blueprint-best-practices",
+  "collaborative-flow",
 ]
 permitted_tools:
   - read_file

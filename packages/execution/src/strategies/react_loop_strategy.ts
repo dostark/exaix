@@ -35,6 +35,7 @@ import {
   REACT_THOUGHT_PREFIX,
   REACT_TOOL_ERROR_PREFIX,
   REACT_TOOL_RESULT_BUDGET_RATIO,
+  REACT_TOOL_RESULT_SUMMARY_MAX,
   RESPONSE_STOP_REASON_MAX_TOKENS,
   STREAMING_EVENT_HEARTBEAT,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
@@ -257,9 +258,19 @@ export class ReActLoopStrategy implements IExecutionStrategy {
 
         const result = await this.executeTool(action, options);
         this.recordWrittenFile(action, result, writtenFiles);
+        const resultJson = JSON.stringify(result);
+        // Journal the tool call so trajectory analysis / auditing can see the ReAct
+        // loop's tool use — the same dynamic_tool_call event the flow executor emits.
+        await this.executor.logDynamicToolCall?.(
+          context.trace_id,
+          action.tool,
+          action.params,
+          resultJson.slice(0, REACT_TOOL_RESULT_SUMMARY_MAX),
+          i,
+        );
         history.push({
           role: ReActRole.RESULT,
-          content: `Tool ${action.tool} result: ${JSON.stringify(result)}`,
+          content: `Tool ${action.tool} result: ${resultJson}`,
         });
 
         if (!result.success) {

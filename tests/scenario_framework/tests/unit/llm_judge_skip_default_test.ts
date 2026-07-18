@@ -73,6 +73,33 @@ Deno.test({
 });
 
 Deno.test({
+  name: "[LlmJudgeSkip] EXA_EVAL_LLM_MOCK=false via step env (not process env) reaches the real-LLM path",
+  fn: async () => {
+    // Regression: the step declares EXA_EVAL_LLM_MOCK as step env (options.env), but
+    // callLlmEndpoint used to read only Deno.env — so with the process env unset it silently
+    // fell through to the MockLLMProvider. With the step env honored and no EXA_LLM_PROVIDER
+    // configured, the real-LLM path must be taken and surface the "provider required" error,
+    // NOT quietly mock.
+    const prevMock = Deno.env.get("EXA_EVAL_LLM_MOCK");
+    const prevProvider = Deno.env.get("EXA_LLM_PROVIDER");
+    Deno.env.delete("EXA_EVAL_LLM_MOCK");
+    Deno.env.delete("EXA_LLM_PROVIDER");
+    try {
+      const result = await evaluateLlmJudgeCriterion(
+        makeOptions({ env: { EXA_EVAL_LLM_MOCK: "false" } }),
+      );
+      assertEquals(result.status, CriterionStatus.ERROR);
+      assertStringIncludes(result.message!, "EXA_LLM_PROVIDER is required");
+    } finally {
+      if (prevMock !== undefined) Deno.env.set("EXA_EVAL_LLM_MOCK", prevMock);
+      if (prevProvider !== undefined) Deno.env.set("EXA_LLM_PROVIDER", prevProvider);
+    }
+  },
+  sanitizeOps: false,
+  sanitizeResources: false,
+});
+
+Deno.test({
   name: "[LlmJudgeSkip] EXA_EVAL_LLM_MOCK=pass restores auto-pass",
   fn: async () => {
     const prev = Deno.env.get("EXA_EVAL_LLM_MOCK");

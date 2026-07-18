@@ -7,6 +7,7 @@
  */
 
 import { ToolName } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export const WRITE_CAPABILITIES_REQUIRING_GIT_TRACKING = [
   ToolName.WRITE_FILE,
@@ -16,10 +17,25 @@ export const WRITE_CAPABILITIES_REQUIRING_GIT_TRACKING = [
 
 export type WriteCapabilityRequiringGitTracking = typeof WRITE_CAPABILITIES_REQUIRING_GIT_TRACKING[number];
 
-export function requiresGitTracking(capabilities: readonly string[]): boolean {
-  return capabilities.some((cap) => (WRITE_CAPABILITIES_REQUIRING_GIT_TRACKING as readonly string[]).includes(cap));
+/**
+ * A blueprint is write-capable if EITHER its behavioural `capabilities` (legacy shape,
+ * where tool names were listed as capabilities) OR its `permitted_tools` grant a write
+ * tool. Authored blueprints put behavioural tags ("code_generation", "react", ...) in
+ * `capabilities` and declare tool grants in `permitted_tools`, so a write coder like
+ * senior-coder is only detectable through `permitted_tools`.
+ */
+export function requiresGitTracking(
+  capabilities: readonly string[],
+  permittedTools?: Opt<readonly string[], Reason.OptionalInput>,
+): boolean {
+  const writeTools = WRITE_CAPABILITIES_REQUIRING_GIT_TRACKING as readonly string[];
+  if (capabilities.some((cap) => writeTools.includes(cap))) return true;
+  return permittedTools?.some((tool) => writeTools.includes(tool)) ?? false;
 }
 
-export function isReadOnlyAgentCapabilities(capabilities: readonly string[]): boolean {
-  return !requiresGitTracking(capabilities);
+export function isReadOnlyAgentCapabilities(
+  capabilities: readonly string[],
+  permittedTools?: Opt<readonly string[], Reason.OptionalInput>,
+): boolean {
+  return !requiresGitTracking(capabilities, permittedTools);
 }

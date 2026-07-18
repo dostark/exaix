@@ -424,6 +424,17 @@ Deno.test("buildEvaluationPrompt: includes JSON format instructions", () => {
   assertEquals(prompt.includes("JSON"), true);
 });
 
+Deno.test("buildEvaluationPrompt: forbids the <thought>/<content> wrapper explicitly", () => {
+  // The eval-harness judge path parses the whole response with JSON.parse and injects no
+  // identity/skill, so the prompt itself must forbid the <thought>/<content> response
+  // contract that reasoning-heavy models emit by default.
+  const criteria: EvaluationCriterion[] = [CRITERIA.CODE_CORRECTNESS];
+  const prompt = buildEvaluationPrompt("Content", criteria);
+
+  assertEquals(prompt.includes("<thought>"), true, "prompt must name the wrapper it forbids");
+  assertEquals(prompt.includes("<content>"), true, "prompt must name the wrapper it forbids");
+});
+
 // ============================================================
 // Schema Validation Tests
 // ============================================================

@@ -230,7 +230,7 @@ export class ExecutionLoop {
     try {
       const blueprint = await this.blueprintLoader.load(identityId);
       if (!blueprint) return false;
-      return isReadOnlyAgentCapabilities(blueprint.capabilities);
+      return isReadOnlyAgentCapabilities(blueprint.capabilities, blueprint.frontmatter.permitted_tools);
     } catch {
       // If blueprint can't be loaded for any reason, fall back to executable behavior
       return false;

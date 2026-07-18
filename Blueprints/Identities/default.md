@@ -9,6 +9,12 @@ created_by: "exaix-setup"
 version: "1.1.0"
 description: "General-purpose coding assistant for planning and implementation"
 default_skills: ["response-contract", "error-handling", "portal-grounding", "blueprint-best-practices"]
+permitted_tools:
+  - read_file
+  - list_directory
+  - search_files
+  - patch_file
+  - write_file
 ---
 
 # Default Coding Agent

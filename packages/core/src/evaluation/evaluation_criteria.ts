@@ -415,7 +415,16 @@ Then provide an overall assessment.
 
 ### Required Output Format
 
-Respond with valid JSON only — no markdown fences, no extra text:
+Your entire response is parsed directly with JSON.parse. Respond with a single raw JSON
+object and nothing else. The first character must be \`{\` and the last must be \`}\`.
+
+Do NOT:
+- wrap the JSON in \`<thought>\` / \`<content>\` tags (or any XML-like tags),
+- wrap it in markdown code fences (\`\`\` or \`\`\`json),
+- write any preamble, reasoning, or commentary outside the object.
+
+Put all reasoning INSIDE the JSON's \`reasoning\`/\`feedback\` fields — anything outside the
+object is discarded and breaks parsing.
 
 ${outputFormat}`;
 }

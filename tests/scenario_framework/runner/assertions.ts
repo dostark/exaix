@@ -1327,7 +1327,7 @@ export async function evaluateLlmJudgeCriterion(
 
   // EXA_EVAL_LLM_MOCK=false → real LLM call
   try {
-    const rawLlmResponse = await callLlmEndpoint(promptUsed);
+    const rawLlmResponse = await callLlmEndpoint(promptUsed, options.env);
     const cleaned = rawLlmResponse.replace(/^```(?:json)?\s*\n?/m, "").replace(/\n?```\s*$/m, "").trim();
 
     if (isMulti) {
@@ -1359,7 +1359,7 @@ export async function evaluateLlmJudgeCriterion(
     const score = parsed.score;
     const passed = score >= threshold;
     console.error(
-      `[eval] size=${Deno.env.get("EXA_EVAL_MODEL_SIZE") ?? "-"} provider=${
+      `[eval] size=${options.env?.EXA_EVAL_MODEL_SIZE ?? Deno.env.get("EXA_EVAL_MODEL_SIZE") ?? "-"} provider=${
         judgeProvenance?.provider ?? "(auto)"
       } score=${score.toFixed(2)} passed=${passed}`,
     );
@@ -1390,12 +1390,20 @@ export async function evaluateLlmJudgeCriterion(
   }
 }
 
-export async function callLlmEndpoint(prompt: string): Promise<string> {
-  const envProvider = Deno.env.get("EXA_LLM_PROVIDER");
-  const envModel = Deno.env.get("EXA_LLM_MODEL");
-  const envEvalModelSize = Deno.env.get("EXA_EVAL_MODEL_SIZE");
-  const envEvalCharacteristics = Deno.env.get("EXA_EVAL_CHARACTERISTICS");
-  const useRealLlm = Deno.env.get("EXA_EVAL_LLM_MOCK") === "false";
+export async function callLlmEndpoint(
+  prompt: string,
+  stepEnv?: Opt<{ [key: string]: string }, Reason.OptionalInput>,
+): Promise<string> {
+  // Step env (options.env) takes precedence over the runner's process env, consistent with
+  // the dispatch in evaluateLlmJudgeCriterion and resolveEvalJudgeProvenance. Reading only
+  // Deno.env here silently ignored a step-declared EXA_EVAL_LLM_MOCK/EXA_LLM_PROVIDER and
+  // fell through to the MockLLMProvider.
+  const readEnv = (key: string): string | undefined => stepEnv?.[key] ?? Deno.env.get(key);
+  const envProvider = readEnv("EXA_LLM_PROVIDER");
+  const envModel = readEnv("EXA_LLM_MODEL");
+  const envEvalModelSize = readEnv("EXA_EVAL_MODEL_SIZE");
+  const envEvalCharacteristics = readEnv("EXA_EVAL_CHARACTERISTICS");
+  const useRealLlm = readEnv("EXA_EVAL_LLM_MOCK") === "false";
 
   // Real LLM calls require an explicit provider
   if (useRealLlm && !envProvider) {

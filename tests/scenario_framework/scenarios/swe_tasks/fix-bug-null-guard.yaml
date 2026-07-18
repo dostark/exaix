@@ -179,12 +179,15 @@ steps:
         equals: 0
         score_weight: 0.3
 
+  # The fix-bug skill makes patch_file the primary edit tool for a minimal bug fix
+  # (write_file is only a fallback for full rewrites), so the expected trajectory is
+  # read_file + patch_file. allow_extra_tools tolerates a stray write_file/list_directory.
   - id: "assert-trajectory"
     type: "trajectory-assert"
     source_step: "wait-for-execution-completion"
     expected_sequence:
       - tool: "read_file"
-      - tool: "write_file"
+      - tool: "patch_file"
     order_matters: false
     allow_extra_tools: true
     partial_credit: true
@@ -208,8 +211,12 @@ steps:
     type: "shell"
     command: "sh"
     args: ["-c", "true"]
+    # A real Anthropic judge (not the mock). EXA_LLM_PROVIDER selects the provider the eval
+    # harness resolves; without it, callLlmEndpoint's real-LLM path errors ("provider required").
     env:
       EXA_EVAL_LLM_MOCK: "false"
+      EXA_LLM_PROVIDER: "anthropic"
+      EXA_EVAL_MODEL_SIZE: "M"
     output_criteria:
       - id: "llm-judge-quality"
         kind: "llm-judge"

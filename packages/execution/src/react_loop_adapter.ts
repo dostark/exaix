@@ -12,6 +12,7 @@ import type { JSONValue } from "@exaix/core";
 import type { IEventBusService } from "@exaix/core/observability";
 import type { IEventLogger } from "@exaix/core/logger";
 import {
+  ACTIVITY_EVENT_DYNAMIC_TOOL_CALL,
   ActorType,
   AGENT_EVENT_OUTPUT,
   AGENT_GENERATION_COMPLETED,
@@ -34,6 +35,19 @@ import type { Opt, Reason } from "@exaix/core/types";
  */
 export interface IReActLoopExecutor {
   logAgentOutput(traceId: string, output: string): Promise<void>;
+  /**
+   * Journal an executed tool call as a dynamic_tool_call event (tool + args), matching
+   * the flow-based DynamicStepExecutor so trajectory analysis and tool-call auditing see
+   * the ReAct loop's tool use. Optional so lightweight test doubles need not implement it;
+   * the production adapter always does.
+   */
+  logDynamicToolCall?(
+    traceId: string,
+    tool: string,
+    args: Record<string, JSONValue>,
+    resultSummary: string,
+    iteration: number,
+  ): Promise<void>;
   validateReviewResult(result: JSONValue): IChangesetResult;
   parseAgentResponse(response: string, context: IOutputParserContext, startTime: number): IChangesetResult;
   toolRegistry?: Opt<IToolRegistry, Reason.OptionalDependency>;
@@ -79,6 +93,21 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
 
   async logAgentOutput(traceId: string, output: string): Promise<void> {
     await this.logger.info(AGENT_EVENT_OUTPUT, "subprocess", { output }, traceId);
+  }
+
+  async logDynamicToolCall(
+    traceId: string,
+    tool: string,
+    args: Record<string, JSONValue>,
+    resultSummary: string,
+    iteration: number,
+  ): Promise<void> {
+    await this.logger.info(
+      ACTIVITY_EVENT_DYNAMIC_TOOL_CALL,
+      "subprocess",
+      { tool, args, resultSummary, iteration },
+      traceId,
+    );
   }
 
   validateReviewResult(result: JSONValue): IChangesetResult {

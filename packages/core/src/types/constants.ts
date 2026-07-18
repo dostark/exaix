@@ -552,6 +552,8 @@ export const REACT_STATUS_COMPLETE = "STATUS: COMPLETE";
 export const REACT_SUMMARY_PREFIX = "SUMMARY: ";
 export const REACT_CALLING_TOOL_PREFIX = "CALLING TOOL: ";
 export const REACT_TOOL_ERROR_PREFIX = "TOOL ERROR: ";
+/** Max chars of a serialized tool result kept in the dynamic_tool_call journal summary. */
+export const REACT_TOOL_RESULT_SUMMARY_MAX = 200;
 export const REACT_DEFAULT_TEMPERATURE: number = configurable({
   key: "react.temperature",
   default: 0.1,

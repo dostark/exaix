@@ -12,17 +12,14 @@ version: "1.1.0"
 description: "Expert-level software engineer for complex implementation tasks"
 default_skills: [
   "response-contract",
-  "typescript-patterns",
-  "error-handling",
-  "code-review",
-  "portal-grounding",
-  "collaborative-flow",
   "commit-message",
+  "fix-bug",
 ]
 permitted_tools:
   - read_file
   - list_directory
   - search_files
+  - patch_file
   - write_file
 ---
 

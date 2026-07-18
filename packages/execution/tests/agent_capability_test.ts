@@ -181,4 +181,51 @@ describe("AgentOrchestrator Capability Differentiation", () => {
       assertEquals(result, false);
     });
   });
+
+  // Real authored blueprints (Blueprints/Identities/*.md) carry behavioural tags in
+  // `capabilities` (e.g. "code_generation", "react") and declare tool grants in
+  // `permitted_tools`. The classifier must consult permitted_tools, or every real
+  // write-capable coder (senior-coder, test-engineer, ...) is misclassified read-only
+  // and routed to the git-untracked read-only execution path.
+  describe("permitted_tools as the write-capability source", () => {
+    it("requiresGitTracking is true when write_file is in permitted_tools (senior-coder shape)", () => {
+      const blueprint: IAgentFileBlueprint = {
+        name: "senior-coder",
+        model: TEST_MODEL_OPENAI,
+        provider: PROVIDER_OPENAI,
+        capabilities: ["code_generation", "architecture", "debugging", "testing", "code_review", "react"],
+        permitted_tools: [ToolName.READ_FILE, "list_directory", "search_files", ToolName.WRITE_FILE],
+        systemPrompt: "Senior software engineer",
+      };
+
+      assertEquals(executor.requiresGitTracking(blueprint), true);
+      assertEquals(executor.isReadOnlyAgent(blueprint), false);
+    });
+
+    it("stays read-only when permitted_tools grants only read tools", () => {
+      const blueprint: IAgentFileBlueprint = {
+        name: "code-analyst",
+        model: TEST_MODEL_OPENAI,
+        provider: PROVIDER_OPENAI,
+        capabilities: ["analysis", "code_review", "react"],
+        permitted_tools: [ToolName.READ_FILE, "list_directory", "search_files"],
+        systemPrompt: "Read-only analyst",
+      };
+
+      assertEquals(executor.requiresGitTracking(blueprint), false);
+      assertEquals(executor.isReadOnlyAgent(blueprint), true);
+    });
+
+    it("still detects write tools declared in capabilities (legacy shape)", () => {
+      const blueprint: IAgentFileBlueprint = {
+        name: "legacy-writer",
+        model: TEST_MODEL_OPENAI,
+        provider: PROVIDER_OPENAI,
+        capabilities: [ToolName.READ_FILE, ToolName.WRITE_FILE],
+        systemPrompt: "Legacy write agent",
+      };
+
+      assertEquals(executor.requiresGitTracking(blueprint), true);
+    });
+  });
 });

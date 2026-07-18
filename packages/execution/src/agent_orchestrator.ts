@@ -446,7 +446,7 @@ export class AgentOrchestrator {
    * @returns true if agent has write capabilities requiring git tracking
    */
   requiresGitTracking(blueprint: IAgentFileBlueprint): boolean {
-    return requiresGitTracking(blueprint.capabilities);
+    return requiresGitTracking(blueprint.capabilities, blueprint.permitted_tools);
   }
 
   /**
@@ -457,7 +457,7 @@ export class AgentOrchestrator {
    * @returns true if agent has no write capabilities
    */
   isReadOnlyAgent(blueprint: IAgentFileBlueprint): boolean {
-    return isReadOnlyAgentCapabilities(blueprint.capabilities);
+    return isReadOnlyAgentCapabilities(blueprint.capabilities, blueprint.permitted_tools);
   }
 
   /**

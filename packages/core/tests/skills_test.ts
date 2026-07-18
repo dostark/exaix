@@ -279,6 +279,104 @@ Deno.test("fix(skills): matchSkills does not penalize a partial match against a 
   });
 });
 
+Deno.test("fix-bug skill outranks tdd-methodology for a bugfix request", async () => {
+  await withInitializedSkillsService(async ({ service }) => {
+    // Mirrors the two real global skills. fix-bug declares tight bug-focused triggers;
+    // tdd-methodology declares a broad implement/feature/... keyword list plus task_types
+    // that include bugfix. For a genuine bug-fix request, the bug-specialized skill must
+    // rank first so it — not the generic TDD methodology — is the skill injected into the
+    // execution agent's prompt.
+    await service.createSkill({
+      skill_id: "fix-bug",
+      name: "Bug Fix",
+      version: DEFAULT_GLOBAL_MEMORY_VERSION,
+      description: "Reproduce, isolate root cause, smallest fix, verify",
+      scope: MemoryScope.GLOBAL,
+      status: SkillStatus.ACTIVE,
+      source: MemoryBankSource.USER,
+      triggers: {
+        keywords: [
+          "fix",
+          "bug",
+          "bugs",
+          "bugfix",
+          "defect",
+          "crash",
+          "crashes",
+          "crashing",
+          "error",
+          "fails",
+          "failing",
+          "regression",
+          "broken",
+          "reproduce",
+        ],
+        task_types: ["bugfix"],
+        tags: ["bugfix", "debugging"],
+      },
+      instructions: "Bug fix skill instructions",
+    });
+    await service.createSkill({
+      skill_id: "tdd-methodology",
+      name: "Test-Driven Development Methodology",
+      version: DEFAULT_GLOBAL_MEMORY_VERSION,
+      description: "Red-Green-Refactor",
+      scope: MemoryScope.GLOBAL,
+      status: SkillStatus.ACTIVE,
+      source: MemoryBankSource.USER,
+      triggers: {
+        keywords: ["implement", "feature", "add", "create", "build", "fix", "bugfix", "develop"],
+        task_types: ["feature", "bugfix", "refactor", "implementation"],
+        tags: ["development", "testing", "tdd"],
+      },
+      instructions: "TDD methodology instructions",
+    });
+
+    const { matches } = await service.matchSkills({
+      requestText:
+        "Fix the null-safety bugs in src/utils.ts: formatAssignee crashes when a task has no assignee. Add null checks so the function returns an empty string instead of crashing.",
+      keywords: ["fix", "null", "safety", "bugs", "crashes", "assignee", "add", "checks", "crashing"],
+      taskType: "bugfix",
+      tags: ["bugfix"],
+    });
+
+    const fixBug = matches.find((m) => m.skillId === "fix-bug");
+    const tdd = matches.find((m) => m.skillId === "tdd-methodology");
+    assertExists(fixBug, "fix-bug skill should match a bugfix request");
+    assertExists(tdd, "tdd-methodology should still match (broad triggers)");
+    assertEquals(
+      matches[0].skillId,
+      "fix-bug",
+      `expected fix-bug to rank first, got order: ${
+        matches.map((m) => `${m.skillId}(${m.confidence.toFixed(2)})`).join(", ")
+      }`,
+    );
+    assertEquals(
+      fixBug.confidence > tdd.confidence,
+      true,
+      `fix-bug confidence (${fixBug.confidence.toFixed(2)}) should exceed tdd (${tdd.confidence.toFixed(2)})`,
+    );
+
+    // Analysis-phase realistic match: AgentRunner.performDynamicSkillMatching passes
+    // keywords + taskType + filePaths + tags (not requestText alone). fix-bug must clear
+    // the match threshold and rank first there too, since that is the selection that
+    // routes the skill's context into the plan.
+    const { matches: analysisMatches } = await service.matchSkills({
+      keywords: ["fix", "null", "safety", "bugs", "crashes", "add", "checks"],
+      taskType: "bugfix",
+      filePaths: ["src/utils.ts"],
+      tags: ["bugfix"],
+    });
+    assertEquals(
+      analysisMatches[0]?.skillId,
+      "fix-bug",
+      `analysis-signal match should rank fix-bug first, got: ${
+        analysisMatches.map((m) => `${m.skillId}(${m.confidence.toFixed(2)})`).join(", ")
+      }`,
+    );
+  });
+});
+
 Deno.test("SkillsService: matchSkills returns skills matching task types", async () => {
   await withInitializedSkillsService(async ({ service }) => {
     await service.createSkill({
