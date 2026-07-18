@@ -1,6 +1,6 @@
 /**
  * @module TodoAppBusinessLogic
- * @path tests/scenario_framework/fixtures/portals/todo_app/src/business_logic.ts
+ * @path src/business_logic.ts
  * @description swe_tasks fixture portal: task-submission business rules.
  *   processTaskSubmission is deliberately monolithic — it validates, assigns a
  *   priority, and computes a schedule slot in one function — the

@@ -58,11 +58,16 @@ async function validate() {
     }
   }
 
-  // 1.1 Gather all .ts files in tests/
+  // 1.1 Gather all .ts files in tests/. Portal fixtures under
+  // fixtures/portals/ are sample user projects, not Exaix modules — they must
+  // NOT carry Exaix's @module/@path header convention (a repo-relative @path
+  // header inside fixture code misleads an agent editing the mounted portal into
+  // writing to that outer path), so exclude them from header validation.
   if (await Deno.stat(TESTS_DIR).then((s) => s.isDirectory).catch(() => false)) {
     for await (const entry of walk(TESTS_DIR, { includeDirs: false })) {
       if (!entry.path.endsWith(".ts")) continue;
       const relPath = relative(ROOT, entry.path);
+      if (relPath.includes("fixtures/portals/")) continue;
       testFiles.add(relPath);
     }
   }

@@ -1,6 +1,6 @@
 /**
  * @module TodoAppApi
- * @path tests/scenario_framework/fixtures/portals/todo_app/src/api.ts
+ * @path src/api.ts
  * @description swe_tasks fixture portal: HTTP-style handlers over TaskRepository.
  *   There is no way to mark a task complete — the swe-add-feature-endpoint
  *   scenario's target is adding a PATCH /tasks/:id/complete handler.

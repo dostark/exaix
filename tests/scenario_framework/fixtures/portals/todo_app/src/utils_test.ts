@@ -1,6 +1,6 @@
 /**
  * @module TodoAppUtilsTest
- * @path tests/scenario_framework/fixtures/portals/todo_app/src/utils_test.ts
+ * @path src/utils_test.ts
  * @description swe_tasks fixture portal: proves the null-safety bugs in utils.ts are
  *   fixed. Fails against the unfixed fixture (formatAssignee/formatDueDate crash on
  *   null) — the swe-fix-bug-null-guard scenario's pass signal.

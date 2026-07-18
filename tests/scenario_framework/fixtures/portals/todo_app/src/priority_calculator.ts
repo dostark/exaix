@@ -1,6 +1,6 @@
 /**
  * @module TodoAppPriorityCalculator
- * @path tests/scenario_framework/fixtures/portals/todo_app/src/priority_calculator.ts
+ * @path src/priority_calculator.ts
  * @description swe_tasks fixture portal: due-date-aware priority escalation.
  *   Zero test coverage — the swe-write-tests-uncovered scenario's target.
  */

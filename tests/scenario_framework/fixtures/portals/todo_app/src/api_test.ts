@@ -1,6 +1,6 @@
 /**
  * @module TodoAppApiTest
- * @path tests/scenario_framework/fixtures/portals/todo_app/src/api_test.ts
+ * @path src/api_test.ts
  * @description swe_tasks fixture portal: baseline coverage for the existing API handlers.
  *   The swe-add-feature-endpoint scenario adds a new handler alongside these — must not
  *   break them.

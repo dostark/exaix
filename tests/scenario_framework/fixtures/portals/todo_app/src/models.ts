@@ -1,6 +1,6 @@
 /**
  * @module TodoAppModels
- * @path tests/scenario_framework/fixtures/portals/todo_app/src/models.ts
+ * @path src/models.ts
  * @description swe_tasks fixture portal: shared domain types for the todo-app fixture.
  */
 

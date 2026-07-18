@@ -1,6 +1,6 @@
 /**
  * @module TodoAppStorage
- * @path tests/scenario_framework/fixtures/portals/todo_app/src/storage.ts
+ * @path src/storage.ts
  * @description swe_tasks fixture portal: in-memory task repository.
  */
 

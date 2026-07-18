@@ -1,6 +1,6 @@
 /**
  * @module TodoAppBusinessLogicTest
- * @path tests/scenario_framework/fixtures/portals/todo_app/src/business_logic_test.ts
+ * @path src/business_logic_test.ts
  * @description swe_tasks fixture portal: baseline coverage for processTaskSubmission's
  *   observable behavior. The swe-refactor-extract-function scenario must keep every one
  *   of these green while splitting the function internally.

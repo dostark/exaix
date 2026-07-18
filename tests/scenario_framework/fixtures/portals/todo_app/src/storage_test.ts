@@ -1,6 +1,6 @@
 /**
  * @module TodoAppStorageTest
- * @path tests/scenario_framework/fixtures/portals/todo_app/src/storage_test.ts
+ * @path src/storage_test.ts
  * @description swe_tasks fixture portal: baseline coverage for TaskRepository, kept
  *   green across every scenario so a delegate's change must not break storage.
  */

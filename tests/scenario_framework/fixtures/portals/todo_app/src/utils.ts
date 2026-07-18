@@ -1,6 +1,6 @@
 /**
  * @module TodoAppUtils
- * @path tests/scenario_framework/fixtures/portals/todo_app/src/utils.ts
+ * @path src/utils.ts
  * @description swe_tasks fixture portal: display formatting helpers for tasks.
  *   formatAssignee and formatDueDate crash on the common case of an unassigned
  *   task / a task with no due date — the swe-fix-bug-null-guard scenario's target.
