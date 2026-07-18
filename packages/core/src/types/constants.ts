@@ -505,6 +505,8 @@ export const PROVIDER_EVENT_REQUEST_DEBUG_DUMP = "provider.request_debug_dump";
 export const PROVIDER_EVENT_RESPONSE_DEBUG_DUMP = "provider.response_debug_dump";
 /** Warn-level: the provider reported the response was truncated (stop_reason max_tokens). */
 export const AGENT_EVENT_RESPONSE_TRUNCATED = "agent.response_truncated";
+/** Warn-level: a ReAct action's TOML block failed to parse and the action was dropped. */
+export const REACT_EVENT_ACTION_PARSE_FAILED = "agent.react_action_parse_failed";
 /** Anthropic stop_reason value meaning the generation hit max_tokens and was truncated. */
 export const RESPONSE_STOP_REASON_MAX_TOKENS = "max_tokens";
 

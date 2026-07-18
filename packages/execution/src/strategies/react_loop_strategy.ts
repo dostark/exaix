@@ -29,6 +29,7 @@ import {
   REACT_CALLING_TOOL_PREFIX,
   REACT_DEFAULT_MAX_TOKENS,
   REACT_DEFAULT_TEMPERATURE,
+  REACT_EVENT_ACTION_PARSE_FAILED,
   REACT_STATUS_COMPLETE,
   REACT_SUMMARY_PREFIX,
   REACT_THOUGHT_PREFIX,
@@ -188,9 +189,14 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       totalCostUsd += response.cost_usd ?? 0;
 
       // 3. Parse thought and actions
-      const { thought, actions, isComplete } = this.parseResponse(
+      const { thought, actions, isComplete, parseErrors } = this.parseResponse(
         response.content,
       );
+
+      // A malformed TOML action block is dropped from `actions`; surface it so a
+      // vanished action is attributable instead of looking like the model chose
+      // to do nothing (observed live: a write_file fix lost to a parse failure).
+      this.journalParseErrors(parseErrors, context, i);
 
       if (thought) {
         history.push({ role: ReActRole.THOUGHT, content: thought });
@@ -200,45 +206,19 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         );
       }
 
-      if (isComplete) {
-        // Agent signaled completion
-
-        // Screen the final output before review (Phase 107 Step 5).
-        // Uses FINAL_ITERATION sentinel — the runner honours screen_final_output config.
-        if (response.content) {
-          void this.executor.guardrailRunner?.screen(
-            response.content,
-            context.trace_id,
-            Number.MAX_SAFE_INTEGER,
-          );
-          if (
-            this.executor.guardrailRunner?.hasBlockingViolation(
-              context.trace_id,
-            )
-          ) {
-            throw new GuardrailBlockedError(
-              context.trace_id,
-              "Guardrail blocked final output before review",
-            );
-          }
-        }
-
-        const finalResult = this.createFinalResult(
+      // Complete immediately only when nothing is left to run. When the model bundles
+      // an action with STATUS: COMPLETE in one turn (a common pattern — "apply the fix,
+      // then done"), the action MUST execute before completion, or its work is silently
+      // discarded (observed live: a write_file fix dropped, files_changed empty).
+      if (isComplete && actions.length === 0) {
+        return this.finishLoop(
           response.content,
           context,
           startTime,
           toolCallCount,
           writtenFiles,
+          { promptTokens: totalPromptTokens, completionTokens: totalCompletionTokens, costUsd: totalCostUsd },
         );
-
-        // Attach accumulated usage (aggregated across all loop iterations)
-        finalResult.usage = {
-          prompt_tokens: totalPromptTokens,
-          completion_tokens: totalCompletionTokens,
-          cost_usd: totalCostUsd,
-        };
-
-        return this.executor.validateReviewResult(finalResult);
       }
 
       if (actions.length === 0) {
@@ -290,12 +270,67 @@ export class ReActLoopStrategy implements IExecutionStrategy {
           );
         }
       }
+
+      // The turn bundled actions with STATUS: COMPLETE — now that the actions have
+      // run, honor completion (their writes are already recorded in writtenFiles).
+      if (isComplete) {
+        return this.finishLoop(
+          response.content,
+          context,
+          startTime,
+          toolCallCount,
+          writtenFiles,
+          { promptTokens: totalPromptTokens, completionTokens: totalCompletionTokens, costUsd: totalCostUsd },
+        );
+      }
     }
 
     throw new AgentExecutionError(
       `Reached maximum iterations (${this.MAX_ITERATIONS}) without completing task`,
       AgentExecutionErrorType.EXECUTION_ERROR,
     );
+  }
+
+  /** Screen final output, build the changeset result, and attach accumulated usage. */
+  private finishLoop(
+    content: string,
+    context: IExecutionContext,
+    startTime: number,
+    toolCallCount: number,
+    writtenFiles: ReadonlySet<string>,
+    usage: { promptTokens: number; completionTokens: number; costUsd: number },
+  ): IChangesetResult {
+    // Screen the final output before review (Phase 107 Step 5).
+    // Uses FINAL_ITERATION sentinel — the runner honours screen_final_output config.
+    if (content) {
+      void this.executor.guardrailRunner?.screen(content, context.trace_id, Number.MAX_SAFE_INTEGER);
+      if (this.executor.guardrailRunner?.hasBlockingViolation(context.trace_id)) {
+        throw new GuardrailBlockedError(
+          context.trace_id,
+          "Guardrail blocked final output before review",
+        );
+      }
+    }
+
+    const finalResult = this.createFinalResult(content, context, startTime, toolCallCount, writtenFiles);
+    finalResult.usage = {
+      prompt_tokens: usage.promptTokens,
+      completion_tokens: usage.completionTokens,
+      cost_usd: usage.costUsd,
+    };
+    return this.executor.validateReviewResult(finalResult);
+  }
+
+  /** Journal each dropped-action TOML parse error so a vanished action is attributable. */
+  private journalParseErrors(parseErrors: string[], context: IExecutionContext, iteration: number): void {
+    for (const parseError of parseErrors) {
+      void this.executor.budgetLogger?.warn(
+        REACT_EVENT_ACTION_PARSE_FAILED,
+        context.request_id ?? null,
+        { iteration, error: parseError, trace_id: context.trace_id },
+        context.trace_id,
+      );
+    }
   }
 
   /** Record a successful write-type tool's target path as a change the audit must authorize. */
@@ -563,8 +598,9 @@ ${REACT_SUMMARY_PREFIX}[What was done]
 
   private parseResponse(
     response: string,
-  ): { thought?: string; actions: IReActAction[]; isComplete: boolean } {
+  ): { thought?: string; actions: IReActAction[]; isComplete: boolean; parseErrors: string[] } {
     const isComplete = response.includes(REACT_STATUS_COMPLETE);
+    const parseErrors: string[] = [];
 
     // Capture the text after the THOUGHT: prefix up to the first action block, the
     // completion marker, or end of response. No literal spaces inside the lookahead
@@ -603,10 +639,15 @@ ${REACT_SUMMARY_PREFIX}[What was done]
             }
           }
         }
-      } catch { /* ignore parse errors */ }
+      } catch (error) {
+        // A malformed action block must not vanish silently — a dropped action is how a
+        // fix disappears while the loop reports success. Collect the error for the caller
+        // to journal.
+        parseErrors.push(error instanceof Error ? error.message : String(error));
+      }
     }
 
-    return { thought, actions, isComplete };
+    return { thought, actions, isComplete, parseErrors };
   }
 
   private createFinalResult(

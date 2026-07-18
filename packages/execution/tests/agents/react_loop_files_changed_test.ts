@@ -122,6 +122,33 @@ Deno.test("ReActLoop files_changed: write_file target is reported in the changes
   );
 });
 
+Deno.test("ReActLoop files_changed: an action in the SAME turn as STATUS: COMPLETE is still executed", async () => {
+  // The exact live-failure shape: the model emits a write_file action AND signals
+  // completion in one response. The loop must run the action before honoring
+  // completion — otherwise the fix is silently dropped and files_changed is empty.
+  const provider = new ScriptedProvider([
+    `${REACT_THOUGHT_PREFIX}Applying the fix now, then done.
+\`\`\`toml
+[[actions]]
+tool = "${ToolName.WRITE_FILE}"
+[actions.params]
+path = "src/utils.ts"
+content = "fixed"
+\`\`\`
+${REACT_STATUS_COMPLETE}
+${REACT_SUMMARY_PREFIX}Added null guards.`,
+  ]);
+  const strategy = new ReActLoopStrategy(buildExecutor(), provider);
+
+  const result = await strategy.execute(blueprint, context, options);
+
+  assertArrayIncludes(
+    result.files_changed,
+    ["src/utils.ts"],
+    "a write action bundled with STATUS: COMPLETE must run, not be discarded by early completion",
+  );
+});
+
 Deno.test("ReActLoop files_changed: multiple distinct write targets are all reported, de-duplicated", async () => {
   const provider = new ScriptedProvider([
     writeAction(ToolName.WRITE_FILE, "src/utils_test.ts"),
