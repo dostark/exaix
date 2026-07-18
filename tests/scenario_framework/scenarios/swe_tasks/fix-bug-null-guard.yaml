@@ -123,17 +123,20 @@ steps:
       - id: "request-submitted"
         kind: "command-output-contains"
         contains: ["request.created"]
-      - id: "plan-produced"
-        kind: "file-found"
-        path_pattern: "**/Plans/*_plan.md"
-        score_weight: 0.15
 
+  # The plan file is produced asynchronously by the daemon AFTER submit-request returns,
+  # so the plan-produced score criterion lives here (where the file actually exists) rather
+  # than on submit-request, which would otherwise always fail its file check at submit time.
   - id: "wait-for-plan"
     type: "wait-for-file"
     args: ["**/Plans/*_plan.md"]
     timeout_sec: 180
     input_criteria: []
-    output_criteria: []
+    output_criteria:
+      - id: "plan-produced"
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
+        score_weight: 0.15
 
   - id: "approve-plan"
     type: "exactl"
@@ -154,37 +157,21 @@ steps:
         path_pattern: "**/Archive/*_plan.md"
         score_weight: 0.15
 
-  # The delegate edits the code_changes gate's git worktree, not the mounted portal directly —
-  # PortalExecutionStrategy.WORKTREE checks it out under
-  # <workspace>/.exa/worktrees/<portalAlias>/<traceId> (git_execution_setup_service.ts). Locate the
-  # single worktree this run created and export it for the following steps via a workspace-relative
-  # marker file (steps do not share shell environment).
-  - id: "locate-worktree"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "find \"$WORKSPACE_ROOT/.exa/worktrees/todo-app\" -mindepth 1 -maxdepth 1 -type d | head -1 > \"$WORKSPACE_ROOT/.exa/worktree-path.txt\"",
-      ]
-    output_criteria:
-      - id: "worktree-located"
-        kind: "command-exit-code"
-        equals: 0
-      - id: "worktree-path-recorded"
-        kind: "file-found"
-        path_pattern: "**/.exa/worktree-path.txt"
+  # The daemon's own AgentExecutor/DynamicStepExecutor edits the mounted portal in place
+  # (session_delegate.enabled = false, so no code_changes delegate worktree is created).
+  # The agent's changes land directly under $WORKSPACE_ROOT/todo-app, so the verification
+  # steps run against that portal working tree rather than a non-existent worktree checkout.
 
   # Deterministic pass signal: run the fixture's own test suite (deno check catches the
-  # null-safety bug at type-check time before any test runs) against the worktree the delegate
-  # actually edited.
+  # null-safety bug at type-check time before any test runs) against the mounted portal
+  # the agent actually edited.
   - id: "run-tests"
     type: "shell"
     command: "sh"
     args:
       [
         "-c",
-        "WORKTREE=$(cat \"$WORKSPACE_ROOT/.exa/worktree-path.txt\") && cd \"$WORKTREE\" && deno test src/",
+        "cd \"$WORKSPACE_ROOT/todo-app\" && deno test src/",
       ]
     output_criteria:
       - id: "tests-pass"
@@ -197,7 +184,7 @@ steps:
     source_step: "wait-for-execution-completion"
     expected_sequence:
       - tool: "read_file"
-      - tool: "edit_file"
+      - tool: "write_file"
     order_matters: false
     allow_extra_tools: true
     partial_credit: true
@@ -210,7 +197,7 @@ steps:
     args:
       [
         "-c",
-        "WORKTREE=$(cat \"$WORKSPACE_ROOT/.exa/worktree-path.txt\") && cat \"$WORKTREE/src/utils.ts\" > \"$WORKSPACE_ROOT/llm-judge-input.txt\"",
+        "cat \"$WORKSPACE_ROOT/todo-app/src/utils.ts\" > \"$WORKSPACE_ROOT/llm-judge-input.txt\"",
       ]
     output_criteria:
       - id: "evidence-prepared"
