@@ -9,7 +9,7 @@
  * the repo, not the assumed name.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { GitService } from "@exaix/git";
@@ -83,5 +83,25 @@ describe("GitExecutionSetupService.resolveBaseBranch", () => {
     );
 
     assertEquals(resolved, "release");
+  });
+
+  it("throws an actionable error when an explicit plan target_branch does not exist", async () => {
+    // target_branch is explicit plan/user intent (unlike the portal's default_branch,
+    // which only carries an unreliable schema default) — a missing target_branch must
+    // fail loudly rather than silently substituting a different branch.
+    await setupGitRepo(repoDir, { initialCommit: true, branch: "master" });
+    const service = buildService("main");
+    const gitService = new GitService({ config: { system: { root: repoDir } } as Config, repoPath: repoDir });
+
+    await assertRejects(
+      () =>
+        service.resolveBaseBranch(
+          { portal: "portal-repo", target_branch: "does-not-exist" } as PlanFrontmatter,
+          gitService,
+          repoDir,
+        ),
+      Error,
+      "does-not-exist",
+    );
   });
 });

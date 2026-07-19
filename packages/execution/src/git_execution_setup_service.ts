@@ -48,18 +48,24 @@ export class GitExecutionSetupService {
     gitService: IGitService,
     executionRoot: string,
   ): Promise<string> {
-    // A configured branch (per-request target_branch or the portal's default_branch)
-    // is only usable if it actually exists in the repo. The portal default_branch
-    // carries a schema fallback ("main"), which a repo created on "master" (or any
-    // other branch) will not have — insisting on it makes `git worktree add` fail with
-    // "invalid reference". Branch creation is Exaix's machinery, resolved from repo
-    // state: honor a configured branch when it exists, otherwise use the repo's own
-    // default branch.
+    // frontmatter.target_branch is explicit plan/user intent — if it doesn't exist,
+    // that is a real error to surface, not something to silently substitute away.
     const fromPlan = frontmatter.target_branch?.trim();
-    if (fromPlan && await this.branchExists(gitService, executionRoot, fromPlan)) {
-      return fromPlan;
+    if (fromPlan) {
+      if (await this.branchExists(gitService, executionRoot, fromPlan)) {
+        return fromPlan;
+      }
+      throw new Error(
+        `Cannot prepare worktree: target_branch "${fromPlan}" does not exist in the repo at ${executionRoot}`,
+      );
     }
 
+    // The portal's default_branch is only a config fallback (schema default "main"),
+    // which a repo created on "master" (or any other branch) will not have — insisting
+    // on it would make `git worktree add` fail with "invalid reference" even though the
+    // caller never asked for that specific branch. Honor it when it exists, otherwise
+    // fall back to the repo's own default branch (Exaix did not choose this branch, so
+    // there is nothing to fail loudly about).
     if (frontmatter.portal) {
       const portalCfg = this.config.portals.find((p) => p.alias === frontmatter.portal);
       const fromPortal = portalCfg?.default_branch?.trim();
