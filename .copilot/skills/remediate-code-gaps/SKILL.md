@@ -83,9 +83,9 @@ For each remediation step, in order:
 2. Run `deno task check clean` to confirm no regressions.
 3. Verify the gap's Finding is now resolved by re-reading the source.
 4. In the plan doc's remediation step, rewrite each satisfied Success Criterion / Planned
-   Test to `- ✅ <text> → ` `` `<staged-path>` `` (the source/test module you edited,
+   Test to `- ✅ <text> →` `` `<staged-path>` `` (the source/test module you edited,
    backtick-wrapped and a staged file). If a criterion is being deferred rather than closed,
-   write `- ⚠️ deferred <text> → ` `` `<LedgerSymbol>` `` and add a Reachability Ledger row.
+   write `- ⚠️ deferred <text> →` `` `<LedgerSymbol>` `` and add a Reachability Ledger row.
    Leave no `- [ ]` in a remediation step this commit claims.
 
 ### Phase 4 — Commit (plan-step commit)

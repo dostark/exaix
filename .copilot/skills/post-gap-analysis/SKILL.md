@@ -366,13 +366,13 @@ Append at end of planning document using the exact format below.
 
 **Success Criteria:**
 
-- [ ] <measurable criterion>
+- <measurable criterion>
 ```
 
 Author criteria as `- [ ] <text>` and tests as `` `<name>` `` (aspirational, no `→` path — the
 implementing module is decided during execution). When #next-steps implements the remediation
-step it rewrites each met item to `- ✅ <text> → ` `` `<staged-path>` `` (or `- ⚠️ deferred
-<text> → ` `` `<LedgerSymbol>` ``), and the plan-step commit gate blocks any `- [ ]` left in the
+step it rewrites each met item to `- ✅ <text> →` `` `<staged-path>` `` (or `- ⚠️ deferred
+<text> →` `` `<LedgerSymbol>` ``), and the plan-step commit gate blocks any `- [ ]` left in the
 committed step. See #next-steps steps 23–26.
 
 ---
@@ -396,7 +396,7 @@ committed step. See #next-steps steps 23–26.
    remediation-step definitions to the plan doc (no code implementing a step, no
    criterion/test flipped to `✅`), commit it as a normal docs commit (submodule-first per
    the submodule-workflow skill). But if a remediation commit ALSO implements a step —
-   marking any criterion/test `- ✅ <text> → ` `` `path` `` or `- ⚠️ deferred → ` `` `token` `` —
+   marking any criterion/test `- ✅ <text> →` `` `path` `` or `- ⚠️ deferred →` `` `token` `` —
    it is a plan-step commit: it MUST carry a `plan: <doc>#<step>` field and be committed via
    `scripts/commit_plan_step.ts <msg> --commit` so the plan-step gate runs (paths staged +
    backticked + added diff lines, ledger rows, no lingering `- [ ]`). See #next-steps step 26.

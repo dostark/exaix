@@ -301,5 +301,10 @@
     "strict": true,
     "checkJs": false
   },
-  "allowScripts": ["npm:tree-sitter-go@0.25.0", "npm:tree-sitter-java@0.23.5", "npm:tree-sitter-python@0.25.0", "npm:tree-sitter-rust@0.24.0"]
+  "allowScripts": [
+    "npm:tree-sitter-go@0.25.0",
+    "npm:tree-sitter-java@0.23.5",
+    "npm:tree-sitter-python@0.25.0",
+    "npm:tree-sitter-rust@0.24.0"
+  ]
 }

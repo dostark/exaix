@@ -47,7 +47,7 @@ exaix-dev-docs/planning/). Its parent commit message carries a `plan:` field, e.
 commit the submodule first. Instead:
 
 1. Stage the plan-doc changes in the submodule (`git -C exaix-dev-docs add planning/<phase>.md`)
-   — the step's `✅ … → \`path\`` / `⚠️ deferred … → \`token\`` lines must be staged there.
+   — the step's `✅ … → \`path\``/`⚠️ deferred … → \`token\`` lines must be staged there.
 2. Stage the implementing code + tests in the parent (the `→` paths must be staged files).
 3. Run `deno run -A scripts/commit_plan_step.ts <commit-msg-file> --commit`. It validates
    cross-repo consistency (every ✅/deferred step line is an added line of the staged plan

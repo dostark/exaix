@@ -235,7 +235,7 @@ in the plan itself:
   `⏳ Step 3`, and the phase was finalized anyway). The ledger is the authority — if the
   row says ⏳, the symbol is not wired, regardless of any status prose elsewhere in the
   doc. A criterion/test that a step defers (rather than completes) is written
-  `- ⚠️ deferred <text> → ` `` `<LedgerSymbol>` `` and MUST have a matching Reachability
+  `- ⚠️ deferred <text> →` `` `<LedgerSymbol>` `` and MUST have a matching Reachability
   Ledger row naming that symbol — the commit gate blocks a deferred item whose token has
   no ledger row.
 
