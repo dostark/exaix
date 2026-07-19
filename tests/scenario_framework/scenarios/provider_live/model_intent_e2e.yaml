@@ -160,6 +160,18 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
+  # --- Wait for ExecutionLoop to pick up the approved plan and reach ModelResolver.resolve() ---
+  # approve-plan only moves the plan file to Workspace/Active and returns — it does not wait
+  # for the file watcher to detect it, execute the step, and journal model.resolved. Without
+  # this barrier, verify-model-resolved-preferred-list below ran ~30ms after approval, well
+  # before execution reached ModelResolver, and always observed an empty journal.
+  - id: "wait-for-model-resolved"
+    type: "wait-for-journal-event"
+    event_type: "model.resolved"
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+
   # --- Phase 134 Step 7 Solo checkpoints: model.resolved journalled via the curated list ---
   # The production resolver (agent_executor.resolveModelFromBlueprint -> ModelResolver.resolve)
   # journals model.resolved. With the curated list (model_presets.M.candidates = ["anthropic"])
