@@ -582,11 +582,16 @@ export class AgentOrchestrator {
       validated.commit_sha = await this.getPortalHeadSha(portalPath);
 
       // 2. Perform Audit. Authorize the union of the identity's allowed_paths and every
-      //    file any step of this plan has written through legitimate portal-scoped tools.
-      //    Accumulate this step's writes first, so a later read-only step still authorizes
-      //    an earlier step's still-uncommitted change instead of reverting it.
-      for (const file of validated.files_changed ?? []) this.planWrittenFiles.add(file);
-      const authorizedPaths = [...(options.allowed_paths ?? []), ...this.planWrittenFiles];
+      //    file an EARLIER step of this plan already had audited and written through
+      //    legitimate portal-scoped tools. When the blueprint declares allowed_paths,
+      //    it is a real allowlist — this step's own files_changed must NOT be allowed to
+      //    widen it, or a self-reporting agent could claim any path and have the audit
+      //    rubber-stamp it. When no allowed_paths is declared, the identity has no
+      //    path restriction, so this step's own files_changed is trusted like before.
+      const declaresAllowedPaths = (options.allowed_paths?.length ?? 0) > 0;
+      const authorizedPaths = declaresAllowedPaths
+        ? [...(options.allowed_paths ?? []), ...this.planWrittenFiles]
+        : [...this.planWrittenFiles, ...(validated.files_changed ?? [])];
       const unauthorizedChanges = await this.auditGitChanges(
         portalPath,
         authorizedPaths,
@@ -608,6 +613,13 @@ export class AgentOrchestrator {
           AgentExecutionErrorType.SECURITY_VIOLATION,
         );
       }
+
+      // Audit passed: this step's writes are now legitimate and accumulate for
+      // later steps' audits (see the comment on planWrittenFiles above). Only the
+      // files actually within the declared allowlist accumulate — a self-reported
+      // files_changed entry outside allowed_paths never reaches here since the
+      // audit above would have already thrown for it.
+      for (const file of validated.files_changed ?? []) this.planWrittenFiles.add(file);
 
       // Track step in loop history for potential summarization. Falls back to a
       // char-count heuristic over the full step context (system prompt + request +
