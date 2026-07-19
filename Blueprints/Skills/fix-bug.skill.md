@@ -143,13 +143,13 @@ run, state which one and why.
 
 Reject these shortcuts — each has produced a wrong or absent fix:
 
-| Rationalization | Reality |
-| --- | --- |
-| "I already know the cause, I'll just patch it." | Confirm by reproducing first; a confident guess is wrong often enough to break the fix. |
-| "The failing test is probably wrong." | Verify that claim before touching the test; usually the code is wrong, not the test. Never weaken a test to make it pass. |
-| "I'll note the fix and mark it done." | An intended change that was never written is not a fix. Emit the actual patch_file/write_file edit. |
-| "While I'm here, I'll clean up nearby code." | Out of scope; a larger diff hides the fix and adds risk. Keep the change minimal. |
-| "It's a small change, no test needed." | Small changes regress too; add the guard test. |
+| Rationalization                                 | Reality                                                                                                                   |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| "I already know the cause, I'll just patch it." | Confirm by reproducing first; a confident guess is wrong often enough to break the fix.                                   |
+| "The failing test is probably wrong."           | Verify that claim before touching the test; usually the code is wrong, not the test. Never weaken a test to make it pass. |
+| "I'll note the fix and mark it done."           | An intended change that was never written is not a fix. Emit the actual patch_file/write_file edit.                       |
+| "While I'm here, I'll clean up nearby code."    | Out of scope; a larger diff hides the fix and adds risk. Keep the change minimal.                                         |
+| "It's a small change, no test needed."          | Small changes regress too; add the guard test.                                                                            |
 
 ## Output
 

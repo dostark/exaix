@@ -89,13 +89,13 @@ both well-reasoned and exactly parseable.
 
 ## Scoring scale (per criterion, 0.0–1.0)
 
-| Score     | Meaning                                                                    |
-| --------- | -------------------------------------------------------------------------- |
-| 0.9–1.0   | Fully meets the criterion; correct, complete, handles the relevant cases   |
-| 0.7–0.89  | Meets it with minor gaps that don't affect the core outcome                |
-| 0.4–0.69  | Partially meets it; a real gap, bug, or omission is present                |
-| 0.1–0.39  | Largely fails the criterion; major defect                                  |
-| 0.0       | Does not address the criterion, or is outright wrong                       |
+| Score    | Meaning                                                                  |
+| -------- | ------------------------------------------------------------------------ |
+| 0.9–1.0  | Fully meets the criterion; correct, complete, handles the relevant cases |
+| 0.7–0.89 | Meets it with minor gaps that don't affect the core outcome              |
+| 0.4–0.69 | Partially meets it; a real gap, bug, or omission is present              |
+| 0.1–0.39 | Largely fails the criterion; major defect                                |
+| 0.0      | Does not address the criterion, or is outright wrong                     |
 
 Anchored examples:
 

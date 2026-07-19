@@ -75,7 +75,8 @@ function checkSync(): ICheckResult {
     try {
       const content = Deno.readTextFileSync(skillMd);
       const fm = extractFrontmatter(content);
-      if (!fm || !parseYaml(fm)?.["qwen_skill"]) {
+      const parsed = fm ? (parseYaml(fm) as { qwen_skill?: string }) : null;
+      if (!parsed?.["qwen_skill"]) {
         result.stale.push(name);
       }
     } catch {

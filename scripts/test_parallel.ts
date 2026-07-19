@@ -69,6 +69,25 @@ const SEQUENTIAL_FILES: string[] = [
   // Test-mode schema test — uses withEnv() to delete EXA_TEST_MODE from the
   // global Deno.env; this leaks across tests under DENO_JOBS parallelism.
   "packages/storage-sqlite/tests/test_mode_schema_test.ts",
+  // Rewrites the real .copilot/manifest.json in place (buildIndex() has no
+  // output-path override); races with every test that reads that same file
+  // (google/claude/openai_enhancements_test.ts, agent_retrieval_smoke_test.ts,
+  // etc.) under DENO_JOBS parallelism, producing truncated-JSON reads.
+  "tests/agents/build_agents_index_test.ts",
+];
+
+/**
+ * Non-test paths that Batch 1's directory walk must skip. `deno test --parallel
+ * tests/ …` type-checks every `.ts` it finds — including fixture portal sources
+ * that are broken *on purpose* (e.g. the swe_tasks null-guard fixture, whose bug
+ * is the very thing a scenario fixes). The `deno.json` top-level `exclude` covers
+ * these, but passing an explicit `--ignore` on the CLI overrides that config
+ * exclude for the walk, so the fixture leaks back in and the whole parallel batch
+ * aborts at type-check before a single test runs. Re-list them here so Batch 1's
+ * `--ignore` keeps them out.
+ */
+const PARALLEL_IGNORE_PATHS: string[] = [
+  "tests/scenario_framework/fixtures/",
 ];
 
 interface TestStats {
@@ -610,7 +629,8 @@ export async function main(args: string[]): Promise<number> {
     DENO_JOBS: "8",
     EXA_TEST_FORCE_CLI_PARALLEL: "1",
   };
-  const batch1IgnoreArg = SEQUENTIAL_FILES.length > 0 ? `--ignore=${SEQUENTIAL_FILES.join(",")}` : "";
+  const batch1IgnorePaths = [...SEQUENTIAL_FILES, ...PARALLEL_IGNORE_PATHS];
+  const batch1IgnoreArg = batch1IgnorePaths.length > 0 ? `--ignore=${batch1IgnorePaths.join(",")}` : "";
 
   const batch1Args = ["--parallel", "tests/", "packages/", ...teamPaths, "apps/", ...forwardedArgs];
   if (batch1IgnoreArg) {
