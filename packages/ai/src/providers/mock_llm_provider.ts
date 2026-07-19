@@ -480,7 +480,19 @@ export class MockLLMProvider implements IModelProvider {
 }`,
       },
       {
-        pattern: /SIMULATE_DRIFT_TRIGGER/i,
+        // Each amendment-scenario step's own prompt only carries that ONE step's own
+        // title/content (context.request/context.plan = step.content), not the whole plan
+        // body — so a RESUMED step (rewritten by PlanAmendmentService.applyApprovedAmendment)
+        // may carry none of the SIMULATE_DRIFT_TRIGGER marker text at all. "(amended)" is
+        // step 1's own rewritten content; "Corrected Refactor" / "Verify the fix" are step
+        // 2/3's own (updated or added) title/content — kept specific (not the bare word
+        // "Verification", which collides with an unrelated fixture's request text) to avoid
+        // hijacking other scenarios' mock responses. Without matching on ALL of these here
+        // too, a resumed step's prompt falls through to a later, unrelated pattern (e.g. the
+        // generic "Step \d+" executing-a-plan handler) that returns the legacy
+        // <thought>/<actions> JSON envelope instead of this handler's ReAct-aware response,
+        // which breaks ReActLoopStrategy parsing.
+        pattern: /SIMULATE_DRIFT_TRIGGER|\(amended\)|Corrected Refactor|Verify the fix/i,
         response: (_match, prompt) => {
           // 1. Intent Analysis Phase
           if (prompt.includes("request intent analyzer") || prompt.includes("intent analysis")) {
@@ -510,11 +522,37 @@ I see the drift instructions in the analysis phase.
 </content>`;
           }
 
-          // 2. Execution Phase
-          if (prompt.includes("## Execution Context (SYSTEM CONTROLLED)")) {
-            // If the plan has been amended, the new steps will be present in the prompt's plan body.
-            // In that case, we succeed confidently for all subsequent executions to prevent loops.
-            if (prompt.includes("Corrected Refactor") || prompt.includes("Verification")) {
+          // 2. Execution Phase — identities with capabilities:["react"] (e.g. "default")
+          // dispatch to ReActLoopStrategy, whose own prompt template (buildPrompt) is
+          // "IDENTITY: ...\n...\nAVAILABLE TOOLS:...", NOT the legacy PromptBuilder's
+          // "## Execution Context (SYSTEM CONTROLLED)" template — and its parseResponse()
+          // looks for the literal "THOUGHT: " prefix and "STATUS: COMPLETE" text, not the
+          // <thought>/<content> JSON envelope the legacy strategy expects. A response with
+          // neither STATUS: COMPLETE nor a ```toml action block throws "Agent provided no
+          // actions and did not signal completion", which itself becomes a NEW
+          // (tool_error-sourced) amendment trigger, looping forever regardless of content.
+          const isReActPrompt = prompt.includes("IDENTITY: ") && prompt.includes("AVAILABLE TOOLS:");
+          if (prompt.includes("## Execution Context (SYSTEM CONTROLLED)") || isReActPrompt) {
+            // Each step's prompt only carries that step's own content (context.request /
+            // context.plan = step.content), not the whole plan body — so a later step's
+            // title/content ("Corrected Refactor", "Verify the fix") never appears in an
+            // EARLIER amended step's own prompt. "(amended)" is the marker the amendment
+            // patch above actually writes into step 1's updated content, so it is what a
+            // resumed step 1 execution sees.
+            const isAmendedStep = prompt.includes("Corrected Refactor") || prompt.includes("Verify the fix") ||
+              prompt.includes("(amended)");
+
+            if (isReActPrompt) {
+              return isAmendedStep
+                ? `THOUGHT: Executed the amended step with absolute certainty and high confidence. Everything is perfectly fine.
+STATUS: COMPLETE
+SUMMARY: Executed the amended step with absolute certainty and high confidence. Everything is perfectly fine.`
+                : `THOUGHT: I see some drift in the environment. I am not sure perhaps uncertain maybe. SIMULATE_DRIFT_TRIGGER
+STATUS: COMPLETE
+SUMMARY: I encountered some drift. I am not sure perhaps uncertain maybe. SIMULATE_DRIFT_TRIGGER`;
+            }
+
+            if (isAmendedStep) {
               return `<thought>
 Executing the amended step successfully.
 </thought>

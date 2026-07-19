@@ -377,7 +377,10 @@ export class ExecutionLoop {
       return { success: true, traceId };
     } catch (error) {
       if (error instanceof PlanAmendmentPendingError) {
-        await this.handleAmendmentPending(planPath, traceId!, requestId!, error);
+        await this.handleAmendmentPending(planPath, traceId!, requestId!, error, {
+          portalGitService,
+          worktreePath,
+        });
         return { success: true, traceId };
       }
 
@@ -1056,6 +1059,10 @@ export class ExecutionLoop {
     traceId: string,
     requestId: string,
     error: PlanAmendmentPendingError,
+    _cleanup?: Opt<{
+      portalGitService?: IGitService;
+      worktreePath?: string;
+    }, Reason.OptionalInput>,
   ): Promise<void> {
     try {
       const content = await Deno.readTextFile(planPath);
@@ -1078,6 +1085,19 @@ export class ExecutionLoop {
       await Deno.writeTextFile(planPath, updatedContent);
     } catch (e) {
       console.error("Failed to update plan status for amendment:", e);
+    }
+
+    // The plan stays paused (not archived, not rejected) but its worktree — created
+    // for this same traceId — must not survive the pause: once the amendment is
+    // approved, execution resumes on the SAME traceId and `git worktree add` would
+    // collide with an orphaned worktree from this attempt (see handleFailure's
+    // identical cleanup for the rejected-plan path).
+    if (_cleanup?.worktreePath && _cleanup?.portalGitService) {
+      try {
+        await _cleanup.portalGitService.removeWorktree(_cleanup.worktreePath, { force: true });
+      } catch (removeError) {
+        console.warn(`Failed to cleanup worktree at ${_cleanup.worktreePath}:`, removeError);
+      }
     }
 
     this.logActivity(DomainEventType.ExecutionAmendmentPending, traceId, {
