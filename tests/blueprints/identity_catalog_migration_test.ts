@@ -3,7 +3,8 @@
  * @path tests/blueprints/identity_catalog_migration_test.ts
  * @description Phase 131 Step 7 — validates the catalog-wide skill migration.
  *   After Step 7:
- *   - every active identity has response-contract in default_skills
+ *   - every active identity has response-contract (or the judge-specialized
+ *     response-contract-judge) in default_skills
  *   - no {{include:standard-response-format}} or {{include:plan-schema-full}}
  *     or {{include:blueprint-best-practices}} remains under Blueprints/Identities/**
  *   - Blueprints/Fragments/ contains no contract/methodology fragments
@@ -75,8 +76,11 @@ function walkIdentitiesTree(): string[] {
 }
 
 // ─────────────────────────────────────────────
-// Test 1: Every active identity has response-contract in default_skills
+// Test 1: Every active identity has response-contract (or response-contract-judge)
+// in default_skills
 // ─────────────────────────────────────────────
+const RESPONSE_CONTRACT_SKILLS = new Set(["response-contract", "response-contract-judge"]);
+
 Deno.test({
   name: "[step7] every active identity has response-contract in default_skills",
   fn() {
@@ -86,7 +90,7 @@ Deno.test({
     for (const fp of files) {
       const fm = parseFrontmatter(fp);
       const skills = fm.default_skills;
-      if (!skills || !skills.some((s) => s === "response-contract")) {
+      if (!skills || !skills.some((s) => RESPONSE_CONTRACT_SKILLS.has(s))) {
         missing.push(fp);
       }
     }

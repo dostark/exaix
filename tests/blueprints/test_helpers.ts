@@ -60,7 +60,7 @@ export const ROLE_REQUIRED_SKILLS: Record<string, string[]> = {
   "code-analyst": ["code-review", "typescript-patterns", "portal-grounding"],
   "product-manager": ["portal-grounding"],
   "software-architect": ["exaix-conventions", "typescript-patterns", "portal-grounding"],
-  "senior-coder": ["typescript-patterns", "error-handling", "code-review", "portal-grounding"],
+  "senior-coder": ["fix-bug"],
   "dogfood-developer": ["tdd-methodology", "exaix-conventions", "portal-grounding"],
   "qa-engineer": ["tdd-methodology", "error-handling", "portal-grounding"],
   "test-engineer": ["response-contract", "tdd-methodology", "error-handling", "portal-grounding"],

@@ -134,9 +134,9 @@ Deno.test({
 
       const skills = blueprint.frontmatter.default_skills ?? [];
       assertEquals(
-        skills.includes("response-contract"),
+        skills.includes("response-contract") || skills.includes("response-contract-judge"),
         true,
-        `${identityId}: default_skills must include "response-contract"`,
+        `${identityId}: default_skills must include "response-contract" or "response-contract-judge"`,
       );
     });
   },
@@ -217,8 +217,10 @@ const SKILL_IDS_WITH_MEMORY_JSON = new Set([
   "commit-message",
   "documentation-driven",
   "error-handling",
+  "fix-bug",
   "gap-analysis",
   "response-contract",
+  "response-contract-judge",
   "security-first",
   "step-execution",
   "tdd-methodology",
