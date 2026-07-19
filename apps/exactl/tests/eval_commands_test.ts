@@ -11,6 +11,12 @@ import { join } from "@std/path";
 import { buildRunArgs, EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 
+// history({}) resolves its history paths (JSONL dir and the SQLite eval.db
+// fallback) relative to Deno.cwd(), not the test's tempDir — chdir into
+// tempDir for the duration of each history test so real repo-root eval
+// history (e.g. from live scenario runs) can't leak into these assertions.
+const ORIGINAL_CWD = Deno.cwd();
+
 interface IConsoleArgs extends Array<string | number | boolean | object | undefined | null> {}
 
 function withCapturedOutput<T>(fn: () => T | Promise<T>): Promise<{ output: string[]; result: T }> {
@@ -46,7 +52,8 @@ function createTestHistoryFile(historyDir: string, entries: TestHistoryEntry[]):
 }
 
 Deno.test("[EvalCommands] history renders table with correct columns", async () => {
-  const { context, cleanup } = await createCliTestContext();
+  const { context, tempDir, cleanup } = await createCliTestContext();
+  Deno.chdir(tempDir);
   try {
     const cmds = new EvalCommands(context);
 
@@ -73,7 +80,7 @@ Deno.test("[EvalCommands] history renders table with correct columns", async () 
       },
     ]);
 
-    const { output } = await withCapturedOutput(() => cmds.history({}));
+    const { output } = await withCapturedOutput(() => cmds.history({ source: "jsonl" }));
 
     assertStringIncludes(output.join(" "), "RUN ID");
     assertStringIncludes(output.join(" "), "SCENARIO");
@@ -84,12 +91,14 @@ Deno.test("[EvalCommands] history renders table with correct columns", async () 
     assertStringIncludes(output.join(" "), "test-scenario");
     assertStringIncludes(output.join(" "), "failing-scenario");
   } finally {
+    Deno.chdir(ORIGINAL_CWD);
     await cleanup();
   }
 });
 
 Deno.test("[EvalCommands] history --last 1 shows only the most recent entry", async () => {
-  const { context, cleanup } = await createCliTestContext();
+  const { context, tempDir, cleanup } = await createCliTestContext();
+  Deno.chdir(tempDir);
   try {
     const cmds = new EvalCommands(context);
 
@@ -115,18 +124,20 @@ Deno.test("[EvalCommands] history --last 1 shows only the most recent entry", as
       },
     ]);
 
-    const { output } = await withCapturedOutput(() => cmds.history({ last: 1 }));
+    const { output } = await withCapturedOutput(() => cmds.history({ last: 1, source: "jsonl" }));
     const outputText = output.join(" ");
 
     assertStringIncludes(outputText, "second-scenario");
     assertEquals(outputText.includes("first-scenario"), false);
   } finally {
+    Deno.chdir(ORIGINAL_CWD);
     await cleanup();
   }
 });
 
 Deno.test("[EvalCommands] history --format json outputs valid JSON array", async () => {
-  const { context, cleanup } = await createCliTestContext();
+  const { context, tempDir, cleanup } = await createCliTestContext();
+  Deno.chdir(tempDir);
   try {
     const cmds = new EvalCommands(context);
 
@@ -142,11 +153,12 @@ Deno.test("[EvalCommands] history --format json outputs valid JSON array", async
       },
     ]);
 
-    const { output } = await withCapturedOutput(() => cmds.history({ format: "json" }));
+    const { output } = await withCapturedOutput(() => cmds.history({ format: "json", source: "jsonl" }));
     const parsed = JSON.parse(output.join(" "));
     assertEquals(Array.isArray(parsed), true);
     assertEquals(parsed[0].scenario_id, "test-scenario");
   } finally {
+    Deno.chdir(ORIGINAL_CWD);
     await cleanup();
   }
 });
@@ -183,7 +195,8 @@ Deno.test("[EvalCommands] buildRunArgs omits flags not provided", () => {
 });
 
 Deno.test("[EvalCommands] history with no history file shows empty message", async () => {
-  const { context, cleanup } = await createCliTestContext();
+  const { context, tempDir, cleanup } = await createCliTestContext();
+  Deno.chdir(tempDir);
   try {
     const cmds = new EvalCommands(context);
 
@@ -194,9 +207,10 @@ Deno.test("[EvalCommands] history with no history file shows empty message", asy
       // Directory doesn't exist — fine
     }
 
-    const { output } = await withCapturedOutput(() => cmds.history({}));
+    const { output } = await withCapturedOutput(() => cmds.history({ source: "jsonl" }));
     assertStringIncludes(output.join(" "), "No evaluation history found");
   } finally {
+    Deno.chdir(ORIGINAL_CWD);
     await cleanup();
   }
 });
