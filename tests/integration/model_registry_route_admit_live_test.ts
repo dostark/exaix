@@ -105,6 +105,7 @@ function writeStructuredPlan(
     `trace_id: "${traceId}"`,
     `request_id: "${requestId}"`,
     `identity_id: ${identityId}`,
+    'portal: "workspace"',
     "status: approved",
     `created_at: "${new Date().toISOString()}"`,
     "---",
@@ -138,9 +139,24 @@ function writeStructuredPlan(
  * and replaces the winning provider's default model string with the real catalog entry
  * via `model_registry.getModelsByCapability`.
  */
+/**
+ * `workspace` portal's target_path must be a directory SEPARATE from the daemon's
+ * own root — the git audit runs `git status` at the portal path, and if it aliases
+ * the daemon root, the daemon's own runtime writes (.exa/*.db, logs/, Memory/Skills/
+ * index.json, ...) all show up as "changed" and are flagged as unauthorized, since
+ * they are never in the plan step's files_changed. `ensureRepository()` git-inits
+ * the portal directory itself, so it only needs to exist on disk first.
+ */
+function writePortalDir(root: string): string {
+  const portalDir = join(root, "portal-repo");
+  Deno.mkdirSync(portalDir, { recursive: true });
+  return portalDir;
+}
+
 function writeTeamConfig(
   configPath: string,
   root: string,
+  portalDir: string,
   adapterBaseUrls: Record<string, string>,
   keepNativeWhole: boolean,
   withModelSizePreset?: boolean,
@@ -170,7 +186,7 @@ function writeTeamConfig(
     "",
     "[[portals]]",
     'alias = "workspace"',
-    `target_path = "${root}"`,
+    `target_path = "${portalDir}"`,
     "",
     "[model_registry]",
     "enabled = true",
@@ -225,7 +241,8 @@ Deno.test({
 
       await runMigrationsIn(tempDir);
       writeTwoRouteIdentity(tempDir);
-      writeTeamConfig(configPath, tempDir, started.adapterBaseUrls, true, true);
+      const portalDir = writePortalDir(tempDir);
+      writeTeamConfig(configPath, tempDir, portalDir, started.adapterBaseUrls, true, true);
 
       await bootRealDaemon(configPath, 6000, {
         extraEnv: { EXA_LLM_PROVIDER: "mock", EXAIX_EDITION: "team" },
@@ -285,7 +302,8 @@ Deno.test({
 
       await runMigrationsIn(tempDir);
       writeExplicitIdentity(tempDir);
-      writeTeamConfig(configPath, tempDir, started.adapterBaseUrls, false);
+      const portalDir = writePortalDir(tempDir);
+      writeTeamConfig(configPath, tempDir, portalDir, started.adapterBaseUrls, false);
 
       await bootRealDaemon(configPath, 6000, {
         extraEnv: { EXA_LLM_PROVIDER: "mock", EXAIX_EDITION: "team" },
