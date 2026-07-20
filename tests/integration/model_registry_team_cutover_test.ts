@@ -28,7 +28,7 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
 import { DatabaseService } from "@exaix/storage-sqlite";
-import { bootRealDaemon, daemonConfigSections } from "./helpers/daemon_config.ts";
+import { bootRealDaemon, daemonConfigSections, writePortalDir } from "./helpers/daemon_config.ts";
 import { runMigrationsIn } from "./helpers/migrate_test_db.ts";
 import { type IStubCatalogServer, shutdownAll, startAllStubCatalogServers } from "./helpers/stub_catalog_servers.ts";
 
@@ -81,20 +81,6 @@ function writeStructuredPlan(root: string): void {
     "",
   ].join("\n");
   Deno.writeTextFileSync(join(dir, "cutover-test_plan.md"), content);
-}
-
-/**
- * `workspace` portal's target_path must be a directory SEPARATE from the daemon's
- * own root — the git audit runs `git status` at the portal path, and if it aliases
- * the daemon root, the daemon's own runtime writes (.exa/*.db, logs/, Memory/Skills/
- * index.json, ...) all show up as "changed" and are flagged as unauthorized, since
- * they are never in the plan step's files_changed. `ensureRepository()` git-inits
- * the portal directory itself, so it only needs to exist on disk first.
- */
-function writePortalDir(root: string): string {
-  const portalDir = join(root, "portal-repo");
-  Deno.mkdirSync(portalDir, { recursive: true });
-  return portalDir;
 }
 
 /** Team config: adapter stubs, refresh-on-start, and a `workspace` portal (required by AgentOrchestrator). */

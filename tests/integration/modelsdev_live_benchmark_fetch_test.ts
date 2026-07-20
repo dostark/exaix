@@ -63,17 +63,22 @@ function parseModelId(id: string): { provider: string; model: string } {
   };
 }
 
+/** Fetches and parses the models.dev catalog, shared by every test below. */
+async function fetchModelsDevData(): Promise<Record<string, IModelsDevEntry>> {
+  const res = await fetch(MODELSDEV_URL, {
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  assertEquals(res.ok, true, `HTTP ${res.status} from models.dev`);
+  return await res.json() as Record<string, IModelsDevEntry>;
+}
+
 Deno.test({
   name: "[modelsdev-live] endpoint returns parseable JSON with 150+ models",
   ignore: Deno.env.get("CI") === "true",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    const res = await fetch(MODELSDEV_URL, {
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    assertEquals(res.ok, true, `HTTP ${res.status} from models.dev`);
-    const body = await res.json() as { [key: string]: IModelsDevEntry };
+    const body = await fetchModelsDevData();
     const ids = Object.keys(body);
     assertGreater(ids.length, EXPECTED_MIN_MODELS, `expected >=${EXPECTED_MIN_MODELS} models, got ${ids.length}`);
     // Verify first entry has the expected shape
@@ -90,11 +95,7 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    const res = await fetch(MODELSDEV_URL, {
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    assertEquals(res.ok, true);
-    const models = await res.json() as Record<string, IModelsDevEntry>;
+    const models = await fetchModelsDevData();
 
     const sweBenchEntries: Array<{ model: string; provider: string; score: number; source?: string }> = [];
 
@@ -128,11 +129,7 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    const res = await fetch(MODELSDEV_URL, {
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    assertEquals(res.ok, true);
-    const models = await res.json() as Record<string, IModelsDevEntry>;
+    const models = await fetchModelsDevData();
 
     const filtered: IFilteredEntry[] = [];
 
@@ -167,11 +164,7 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    const res = await fetch(MODELSDEV_URL, {
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    assertEquals(res.ok, true);
-    const models = await res.json() as Record<string, IModelsDevEntry>;
+    const models = await fetchModelsDevData();
 
     const EXCLUDED = "artificialanalysis.ai";
     let benchlmCount = 0;
@@ -214,11 +207,7 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    const res = await fetch(MODELSDEV_URL, {
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    assertEquals(res.ok, true);
-    const models = await res.json() as Record<string, IModelsDevEntry>;
+    const models = await fetchModelsDevData();
 
     const entries = new Map<string, number>(); // benchmark → count
 
@@ -251,11 +240,7 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    const res = await fetch(MODELSDEV_URL, {
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    assertEquals(res.ok, true);
-    const models = await res.json() as Record<string, IModelsDevEntry>;
+    const models = await fetchModelsDevData();
 
     for (const id of Object.keys(models)) {
       const { provider, model } = parseModelId(id);
@@ -279,11 +264,7 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-    const res = await fetch(MODELSDEV_URL, {
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    assertEquals(res.ok, true);
-    const models = await res.json() as Record<string, IModelsDevEntry>;
+    const models = await fetchModelsDevData();
 
     const sweBenchEntries: Array<{ model: string; provider: string; score: number; source?: string }> = [];
 
