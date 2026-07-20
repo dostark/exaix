@@ -30,6 +30,10 @@ class MockFailingRegistry implements IToolRegistry {
   execute(_tool: string, _params: Record<string, JSONValue>): Promise<IToolResult> {
     return Promise.resolve({ success: false, error: this.error });
   }
+
+  getBaseDir(): string {
+    return "/tmp";
+  }
 }
 
 Deno.test("RunCommandTool: execution failure returns isError:true response, not thrown exception", async () => {

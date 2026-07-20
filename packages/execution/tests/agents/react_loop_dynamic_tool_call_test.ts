@@ -100,6 +100,7 @@ function buildExecutor(captured: CapturedToolCall[]): ReActExecutor {
         return { success: true, data: "ok" };
       },
       getTools: () => [],
+      getBaseDir: () => "/nonexistent-test-basedir",
     },
   } as ReActExecutor;
 }

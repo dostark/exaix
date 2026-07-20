@@ -7,6 +7,8 @@
  * @description Safe subprocess execution utilities with timeout protection and error handling.
  */
 
+import type { Opt, Reason } from "../types/optional_marker.ts";
+
 export interface ISubprocessOptions {
   timeoutMs?: number;
   abortSignal?: AbortSignal;
@@ -74,7 +76,11 @@ export class SafeSubprocess {
         throw new SubprocessError(`Permission denied: ${command}`, error);
       }
       if (error instanceof Deno.errors.NotFound) {
-        throw new SubprocessError(`Command not found: ${command}`, error);
+        // Deno.errors.NotFound covers both "binary not on PATH" and "cwd does not
+        // exist" — collapsing both into a generic "Command not found" message hides
+        // which one actually happened. Deno's own error.message already
+        // distinguishes them (e.g. "No such cwd '<path>'" vs "entity not found").
+        throw new SubprocessError(`Command not found: ${command}: ${error.message}`, error);
       }
       if (combinedSignal.aborted) {
         throw new SubprocessTimeoutError(`Command timed out after ${timeoutMs}ms: ${command} ${args.join(" ")}`);
@@ -110,7 +116,7 @@ export class SafeSubprocess {
 }
 
 export class SubprocessError extends Error {
-  constructor(message: string, public override cause?: Error) {
+  constructor(message: string, public override cause?: Opt<Error, Reason.OptionalContext>) {
     super(message);
     this.name = "SubprocessError";
   }

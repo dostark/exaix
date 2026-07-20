@@ -63,6 +63,7 @@ const mockToolRegistry = {
     return { success: true };
   },
   getTools: () => [],
+  getBaseDir: () => "/nonexistent-test-basedir",
 };
 
 function createBaseExecutor(bus?: EventBusService): ReActExecutor {

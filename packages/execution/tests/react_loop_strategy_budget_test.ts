@@ -99,7 +99,11 @@ function makeTrackingExecutor(opts: {
       execution_time_ms: Date.now() - t,
     }),
     logGeneration: () => Promise.resolve(),
-    toolRegistry: { execute: () => Promise.resolve({ success: true }), getTools: () => [] },
+    toolRegistry: {
+      execute: () => Promise.resolve({ success: true }),
+      getTools: () => [],
+      getBaseDir: () => "/nonexistent-test-basedir",
+    },
     contextBudgetManager: opts.budgetManager,
     currentPromptBudget: opts.promptBudget,
     budgetLogger: opts.emittedEvents

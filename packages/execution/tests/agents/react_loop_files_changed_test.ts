@@ -90,6 +90,7 @@ function buildExecutor(): ReActExecutor {
         return { success: true, data: "ok" };
       },
       getTools: () => [],
+      getBaseDir: () => "/nonexistent-test-basedir",
     },
   } as ReActExecutor;
 }

@@ -662,6 +662,207 @@ Deno.test({
 
 Deno.test({
   name:
+    "AgentOrchestrator: a step executing in a git worktree (ToolRegistry.getBaseDir()) audits against the worktree, not the mounted portal",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+
+      // Mirrors PortalExecutionStrategy.WORKTREE (forced whenever a plan's frontmatter
+      // carries a portal): CliDelegateStrategy.resolvePortalPath prefers
+      // _toolRegistry?.getBaseDir() (the worktree) over portal.target_path (the mounted
+      // portal) so the headless CLI runs in the right directory. The security audit must
+      // resolve the SAME worktree-aware path — auditing portal.target_path instead audits
+      // a directory with zero diff (the write never happened there), silently passing
+      // regardless of what files_changed says, or flagging a real write as unauthorized
+      // once files_changed starts reporting real (non-empty) paths — see
+      // CliDelegateStrategy's opencode parsing fix, phase-140.
+      const worktreePath = join(testDir, "worktree-checkout");
+      const addWorktree = new Deno.Command(PortalOperation.GIT, {
+        args: ["worktree", "add", "-b", "feat/worktree-step", worktreePath, "HEAD"],
+        cwd: portalDir,
+      });
+      const worktreeResult = await addWorktree.output();
+      assertEquals(worktreeResult.success, true, new TextDecoder().decode(worktreeResult.stderr));
+
+      const fakeToolRegistry: IToolRegistry = {
+        getTools: () => [],
+        execute: () => Promise.resolve({ success: true }),
+        getBaseDir: () => worktreePath,
+      };
+
+      const seenAuditPortalPaths: string[] = [];
+      class RecordingGitAuditService extends GitAuditService {
+        override auditGitChanges(portalPath: string, authorizedFiles: string[]): Promise<string[]> {
+          seenAuditPortalPaths.push(portalPath);
+          return super.auditGitChanges(portalPath, authorizedFiles);
+        }
+      }
+
+      const writtenPath = "src/worktree-output.ts";
+      const strategyRegistry = new StrategyRegistry();
+      strategyRegistry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: async () => {
+          await Deno.mkdir(join(worktreePath, "src"), { recursive: true });
+          await Deno.writeTextFile(join(worktreePath, writtenPath), "export const x = 1;\n");
+          return {
+            branch: "feat/worktree-step",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [writtenPath],
+            description: "wrote worktree-output",
+            tool_calls: 1,
+            execution_time_ms: 10,
+          };
+        },
+      });
+
+      const executor = new AgentOrchestrator({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        strategyRegistry,
+        toolRegistry: fakeToolRegistry,
+        gitAuditService: new RecordingGitAuditService(logger),
+      });
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      const context: IExecutionContext = {
+        trace_id: crypto.randomUUID(),
+        request_id: "worktree-write-req",
+        request: "write worktree output",
+        plan: "write",
+        portal: "TestPortal",
+      };
+      const options: IAgentExecutionOptions = {
+        portal: "TestPortal",
+        identity_id: "test-agent",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+      };
+
+      // Must NOT throw a security violation: the write is real and reported, and the
+      // audit must find it authorized by checking the worktree (where it actually
+      // happened), not the mounted portal (which has zero diff).
+      const result = await executor.executeStep(context, options);
+      assertEquals(result.files_changed, [writtenPath]);
+      assertEquals(seenAuditPortalPaths, [worktreePath]);
+
+      executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name:
+    "AgentOrchestrator: a ToolRegistry with no explicit baseDir (defaults to config.system.root) does NOT override the audit's portal path",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+
+      // Mirrors McpAgentStrategy/legacy callers that construct `new ToolRegistry({config,
+      // logger, pathResolver})` with no `baseDir` — ToolRegistry.getBaseDir() then falls
+      // back to config.system.root (the daemon root), which is NEVER a valid audit
+      // directory (it usually has no git repo at all, or an unrelated one). Only a
+      // ToolRegistry explicitly scoped to a worktree (baseDir passed at construction,
+      // as PlanExecutor.createAgentExecutor does for a WORKTREE-strategy plan) should
+      // override portal.target_path — an unset/default baseDir must not.
+      const fakeToolRegistry: IToolRegistry = {
+        getTools: () => [],
+        execute: () => Promise.resolve({ success: true }),
+        getBaseDir: () => testConfig.system.root,
+      };
+
+      const seenAuditPortalPaths: string[] = [];
+      class RecordingGitAuditService extends GitAuditService {
+        override auditGitChanges(portalPath: string, authorizedFiles: string[]): Promise<string[]> {
+          seenAuditPortalPaths.push(portalPath);
+          return super.auditGitChanges(portalPath, authorizedFiles);
+        }
+      }
+
+      const writtenPath = "src/mcp-output.ts";
+      const strategyRegistry = new StrategyRegistry();
+      strategyRegistry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: async () => {
+          await Deno.mkdir(join(portalDir, "src"), { recursive: true });
+          await Deno.writeTextFile(join(portalDir, writtenPath), "export const x = 1;\n");
+          return {
+            branch: "feat/mcp-step",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [writtenPath],
+            description: "wrote mcp-output",
+            tool_calls: 1,
+            execution_time_ms: 10,
+          };
+        },
+      });
+
+      const executor = new AgentOrchestrator({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        strategyRegistry,
+        toolRegistry: fakeToolRegistry,
+        gitAuditService: new RecordingGitAuditService(logger),
+      });
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      const context: IExecutionContext = {
+        trace_id: crypto.randomUUID(),
+        request_id: "mcp-write-req",
+        request: "write mcp output",
+        plan: "write",
+        portal: "TestPortal",
+      };
+      const options: IAgentExecutionOptions = {
+        portal: "TestPortal",
+        identity_id: "test-agent",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+      };
+
+      const result = await executor.executeStep(context, options);
+      assertEquals(result.files_changed, [writtenPath]);
+      assertEquals(seenAuditPortalPaths, [portalDir]);
+
+      executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name:
     "AgentOrchestrator: a later read-only step does not flag a file an earlier step wrote (cross-step accumulation)",
   fn: async () => {
     await setup();
@@ -1339,6 +1540,7 @@ Deno.test({
       const fakeToolRegistry: IToolRegistry = {
         getTools: () => fakeTools,
         execute: () => Promise.resolve({ success: true }),
+        getBaseDir: () => "/tmp",
       };
       const executor = new AgentOrchestrator({
         config: testConfig,
@@ -1469,6 +1671,7 @@ Deno.test({
       const fakeToolRegistry: IToolRegistry = {
         getTools: () => fakeTools,
         execute: () => Promise.resolve({ success: true }),
+        getBaseDir: () => "/tmp",
       };
       const executor = new AgentOrchestrator({
         config: testConfig,
@@ -2358,6 +2561,7 @@ Deno.test({
       const fakeToolRegistry: IToolRegistry = {
         getTools: () => fakeTools,
         execute: () => Promise.resolve({ success: true }),
+        getBaseDir: () => "/tmp",
       };
 
       let capturedPrompt = "";

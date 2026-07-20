@@ -19,14 +19,21 @@ export interface IDelegateParsedReturn {
   toolPaths: string[];
 }
 
-/** Shape of a parsed opencode JSONL event line. See <https://littlebearapps.com/help/untether/opencode-stream-json-cheatsheet/>. */
+/**
+ * Shape of a parsed opencode JSONL event line, as actually emitted by
+ * `opencode run --format json` (verified via a live CLI probe, 2026-07-20).
+ * The tool name is `part.tool` and the write target is
+ * `part.state.input.filePath` — not the `part.tool_use.name` /
+ * `part.tool_use.input.file_path` shape this previously assumed.
+ */
 interface IOpencodeEvent {
   type: string;
   part?: {
     text?: string;
     tokens?: { input?: number; output?: number; total?: number };
     cost?: number;
-    tool_use?: { name?: string; input?: { file_path?: string } };
+    tool?: string;
+    state?: { input?: { filePath?: string } };
   };
 }
 
@@ -110,17 +117,15 @@ function handleToolUseEvent(
   event: IOpencodeEvent,
   state: { toolPaths: string[]; seenPaths: Set<string> },
 ): void {
-  const toolUse = event.part?.tool_use;
-  if (!toolUse) return;
-  const name = toolUse.name ?? "";
+  const name = event.part?.tool ?? "";
   if (!WRITE_TOOL_NAMES.has(name)) return;
-  const fp = toolUse.input?.file_path;
+  const fp = event.part?.state?.input?.filePath;
   if (typeof fp !== "string" || !fp || state.seenPaths.has(fp)) return;
   state.seenPaths.add(fp);
   state.toolPaths.push(fp);
 }
 
-const WRITE_TOOL_NAMES = new Set(["create_file", "edit_file", "write_file"]);
+const WRITE_TOOL_NAMES = new Set(["write", "edit"]);
 
 function parseClaudeResult(stdout: string): IDelegateParsedReturn {
   const trimmed = stdout.trim();

@@ -28,27 +28,38 @@ Deno.test("[delegate_return_parser] opencode JSONL across multiple chunks yields
 Deno.test("[delegate_return_parser] opencode tool_use write events contribute file paths", () => {
   const stdout = [
     `{"type":"text","part":{"text":"creating files"}}\n`,
-    `{"type":"tool_use","part":{"tool_use":{"name":"create_file","input":{"file_path":"src/bar.ts"}}}}\n`,
-    `{"type":"tool_use","part":{"tool_use":{"name":"edit_file","input":{"file_path":"src/bar.ts"}}}}\n`,
-    `{"type":"tool_use","part":{"tool_use":{"name":"read_file","input":{"file_path":"src/lib.ts"}}}}\n`,
+    `{"type":"tool_use","part":{"tool":"write","state":{"input":{"filePath":"src/bar.ts"}}}}\n`,
+    `{"type":"tool_use","part":{"tool":"edit","state":{"input":{"filePath":"src/bar.ts"}}}}\n`,
+    `{"type":"tool_use","part":{"tool":"read","state":{"input":{"filePath":"src/lib.ts"}}}}\n`,
     `{"type":"step_finish","part":{"tokens":{"input":200,"output":100,"total":300},"cost":0.004}}\n`,
   ].join("");
 
   const result = parseDelegateStdout(stdout, "opencode");
-  // create_file and edit_file contribute paths; read_file does not
+  // write and edit contribute paths; read does not
   assertEquals(result.toolPaths, ["src/bar.ts"]);
 });
 
-Deno.test("[delegate_return_parser] opencode tool_use write_file and edit_file contribute paths", () => {
+Deno.test("[delegate_return_parser] opencode tool_use write and edit contribute paths", () => {
   const stdout = [
-    `{"type":"tool_use","part":{"tool_use":{"name":"write_file","input":{"file_path":"src/new.ts"}}}}\n`,
-    `{"type":"tool_use","part":{"tool_use":{"name":"edit_file","input":{"file_path":"src/existing.ts"}}}}\n`,
+    `{"type":"tool_use","part":{"tool":"write","state":{"input":{"filePath":"src/new.ts"}}}}\n`,
+    `{"type":"tool_use","part":{"tool":"edit","state":{"input":{"filePath":"src/existing.ts"}}}}\n`,
     `{"type":"step_finish","part":{"tokens":{"input":50,"output":25,"total":75},"cost":0.001}}\n`,
   ].join("");
 
   const result = parseDelegateStdout(stdout, "opencode");
   assertEquals(result.toolPaths, ["src/new.ts", "src/existing.ts"]);
   assertEquals(result.costUsd, 0.001);
+});
+
+Deno.test("[delegate_return_parser] opencode real CLI event shape (tool + state.input.filePath) is parsed, not the legacy tool_use.input.file_path shape", () => {
+  // Captured verbatim from a live `opencode run --format json` probe (2026-07-20):
+  // the real event nests the tool name directly under `part.tool` and the path
+  // under `part.state.input.filePath` — not `part.tool_use.name`/`.input.file_path`.
+  const stdout =
+    `{"type":"tool_use","timestamp":1784539276452,"sessionID":"ses_1","part":{"type":"tool","tool":"edit","callID":"call_1","state":{"status":"completed","input":{"filePath":"/tmp/opencode_probe2/utils.ts","oldString":"x.assignee.name","newString":"x.assignee?.name"},"output":"Edit applied successfully."}}}\n`;
+
+  const result = parseDelegateStdout(stdout, "opencode");
+  assertEquals(result.toolPaths, ["/tmp/opencode_probe2/utils.ts"]);
 });
 
 Deno.test("[delegate_return_parser] claude result object yields result text + usage tokens", () => {
@@ -89,7 +100,7 @@ Deno.test("[delegate_return_parser] claude result with no usage yields zero toke
 Deno.test("[delegate_return_parser] missing step_finish → tokens zero but paths still come from tool_use", () => {
   const stdout = [
     `{"type":"text","part":{"text":"no finish event"}}\n`,
-    `{"type":"tool_use","part":{"tool_use":{"name":"create_file","input":{"file_path":"src/missing.ts"}}}}\n`,
+    `{"type":"tool_use","part":{"tool":"write","state":{"input":{"filePath":"src/missing.ts"}}}}\n`,
   ].join("");
 
   const result = parseDelegateStdout(stdout, "opencode");

@@ -2844,6 +2844,45 @@ export const SESSION_OUTPUT_FORMAT_JSON = "json";
 /** Headless model selector: `claude --model <m>` / `opencode run --model <m>` (Phase 122 Step 0b). */
 export const SESSION_FLAG_MODEL = "--model";
 
+/**
+ * Claude Code headless output-streaming flags: `claude -p <objective>
+ * --output-format stream-json --verbose` emits newline-delimited JSON events
+ * for one turn, then exits — used by CliDelegateStrategy to parse tool-use
+ * and usage out of a single cold-spawn call.
+ */
+export const SESSION_FLAG_INPUT_FORMAT = "--input-format";
+export const SESSION_INPUT_FORMAT_STREAM_JSON = "stream-json";
+export const SESSION_FLAG_VERBOSE = "--verbose";
+
+/** OpenCode session-continuation flag: `opencode run -s <session-id>` — session state lives server-side, resumed on each cold spawn. */
+export const SESSION_FLAG_SESSION_ID = "--session";
+
+/**
+ * Claude Code session-continuation flag: `claude -p <objective> --resume
+ * <session-id>` resumes a prior turn's conversation on a fresh cold spawn —
+ * the officially documented multi-turn mechanism (Claude Code CLI reference),
+ * mirroring opencode's own cold-spawn + session-id-resume shape. Captured
+ * from the first turn's `system`/init event's `session_id` field.
+ */
+export const SESSION_FLAG_RESUME = "--resume";
+
+/**
+ * Maximum time (ms) CliDelegateStrategy waits for ONE cold-spawned claude/
+ * opencode subprocess call to finish. A turn can involve real tool use (file
+ * reads, edits, running the target project's test suite) — this must be much
+ * larger than SafeSubprocess.run's generic 30s default, which a plan step
+ * doing substantive work reliably exceeds.
+ */
+export const CLI_DELEGATE_TURN_TIMEOUT_MS: number = configurable({
+  key: "cli_delegate.turn_timeout_ms",
+  default: 300_000,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum time in milliseconds to wait for one CliDelegateStrategy turn's result event",
+  min: 5_000,
+  max: 1_800_000,
+  swap: SwapClass.HOT,
+});
+
 /** Claude Code permission-mode flag (Phase 128 R3 Step 3). */
 export const SESSION_FLAG_PERMISSION_MODE = "--permission-mode";
 

@@ -36,6 +36,10 @@ class MockToolRegistry implements IToolRegistry {
     return Promise.resolve(this.result);
   }
 
+  getBaseDir(): string {
+    return "/tmp";
+  }
+
   getLastArgs() {
     return this.lastArgs;
   }

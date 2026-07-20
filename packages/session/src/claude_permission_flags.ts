@@ -13,12 +13,13 @@
 
 import type { SessionBrief } from "@exaix/schemas/session_delegate.ts";
 import { SESSION_FLAG_ALLOWED_TOOLS, SESSION_FLAG_PERMISSION_MODE } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 
 const CLAUDE_PERMISSION_MODE_DEFAULT = "acceptEdits";
 const CLAUDE_ALLOWED_TOOLS_DEFAULT = "Read,Edit,Bash(git *)";
 
 export function deriveClaudeToolFlags(
-  _brief: SessionBrief,
+  _brief?: Opt<SessionBrief, Reason.AbstractBoundary>,
 ): string[] {
   return [
     SESSION_FLAG_PERMISSION_MODE,

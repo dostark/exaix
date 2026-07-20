@@ -812,6 +812,7 @@ export enum ExecutionStrategyName {
   LEGACY = "legacy",
   REACT = "react",
   MCP = "mcp",
+  CLI_DELEGATE = "cli_delegate",
 }
 
 /**

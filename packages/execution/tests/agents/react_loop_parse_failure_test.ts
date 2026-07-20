@@ -81,6 +81,7 @@ function buildExecutor(warnSink: ICapturedWarn[]): ReActExecutor {
         return { success: true, data: "ok" };
       },
       getTools: () => [],
+      getBaseDir: () => "/nonexistent-test-basedir",
     },
   } as ReActExecutor;
 }

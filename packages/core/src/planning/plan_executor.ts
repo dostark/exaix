@@ -121,6 +121,19 @@ export interface IPlanAction {
   description?: string;
 }
 
+/**
+ * Concatenate every step's title and content into one document. Passed as
+ * IExecutionContext.full_plan alongside each step's own fragment — a strategy
+ * that drives a whole-task-at-once agent (CliDelegateStrategy) uses this to
+ * orient on the complete plan instead of only the current step's isolated
+ * instruction; ReAct/legacy strategies ignore it.
+ */
+export function buildFullPlanText(steps: IPlanStep[]): string {
+  return steps
+    .map((step) => `${PROMPT_PLAN_STEP_TASK_PREFIX}${step.title}${PROMPT_PLAN_STEP_REASONING_PREFIX}${step.content}`)
+    .join("\n\n---\n\n");
+}
+
 function noopLogger(): IEventLogger {
   return {
     info: () => Promise.resolve(),
@@ -384,6 +397,7 @@ export class PlanExecutor {
     const traceId = context.trace_id;
     const requestId = context.request_id;
     let lastCommitSha: string | null = null;
+    const fullPlan = buildFullPlanText(context.steps);
 
     for (const step of context.steps) {
       try {
@@ -403,6 +417,7 @@ export class PlanExecutor {
               request: step.content,
               plan: `${PROMPT_PLAN_STEP_TASK_PREFIX}${step.title}${PROMPT_PLAN_STEP_REASONING_PREFIX}${step.content}`,
               portal: portalName,
+              full_plan: fullPlan,
             },
             {
               identity_id: context.identity,

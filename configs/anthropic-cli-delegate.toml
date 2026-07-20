@@ -1,0 +1,63 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+log_level = "info"
+allow_net = ["api.anthropic.com"]
+
+[paths]
+workspace = "Workspace"
+portals = "Portals"
+memory = "Memory"
+
+# swe_tasks provider-live cell verifying CliDelegateStrategy (packages/execution/src/strategies/
+# cli_delegate_strategy.ts): real Anthropic analysis/planning AND a real headless `claude -p`
+# subprocess for the code_changes step. Distinct from [session_delegate] (a whole-gate, async,
+# durable-wait delegation) — [cli_delegate] is a synchronous, per-step IExecutionStrategy chosen
+# by the executing identity's blueprint capabilities. Mirrors anthropic-no-delegate.toml, minus
+# the [cli_delegate] block itself and the identity capability, which selects it.
+[ai]
+provider = "anthropic"
+model = "claude-sonnet-5"
+
+[models.default]
+provider = "anthropic"
+model = "claude-sonnet-5"
+timeout_ms = 60000
+
+[agents]
+default_model = "default"
+
+[rate_limiting]
+enabled = true
+max_calls_per_minute = 300
+
+[ai_anthropic]
+max_tokens_default = 8192
+thinking_default = false
+
+[portal_knowledge]
+auto_analyze_on_mount = true
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = true
+
+# Phase 134 Solo curated list: without this, a size-M request resolves via ProviderSelector's
+# scoring path, which picked circuit-breaker-rate-limited Haiku over the [models.default]
+# override above. Pin the curated list to Anthropic so the request genuinely plans and executes
+# on the pinned model.
+[model_presets.M]
+max_cost_per_mtok = 3
+min_context_window = 32000
+supports_thinking = true
+candidates = ["anthropic"]
+
+# Verifies CliDelegateStrategy: AgentOrchestrator registers it only when enabled = true, and
+# dispatches to it only for a blueprint whose capabilities include "cli_delegate" (the scenario
+# patches a SANDBOXED COPY of senior-coder.md, not the real Blueprints/, to add that capability).
+# claude-sonnet-5 is confirmed valid for headless `claude -p --model` in this environment.
+[cli_delegate]
+enabled = true
+tool = "claude-code"
+model = "claude-sonnet-5"

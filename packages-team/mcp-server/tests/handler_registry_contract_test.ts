@@ -28,6 +28,10 @@ class FixedResultRegistry implements IToolRegistry {
   execute(_tool: string, _params: Record<string, JSONValue>): Promise<IToolResult> {
     return Promise.resolve(this.result);
   }
+
+  getBaseDir(): string {
+    return "/tmp";
+  }
 }
 
 Deno.test("toolResultToMcpResponse: identity check — converter output structure is stable", () => {

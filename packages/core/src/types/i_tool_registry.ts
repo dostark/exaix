@@ -39,4 +39,6 @@ export interface IToolResult {
 export interface IToolRegistry {
   getTools(): ITool[];
   execute(toolName: string, params: Record<string, JSONValue>): Promise<IToolResult>;
+  /** The resolved, absolute directory every tool call is rooted at (e.g. a plan's git worktree). */
+  getBaseDir(): string;
 }

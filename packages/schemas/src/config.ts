@@ -53,7 +53,7 @@ import { AnalysisMode } from "@exaix/core/request";
 import { PortalPermissionsSchema } from "./portal_permissions.ts";
 import { ZBudgetPolicy } from "./prompt_budget.ts";
 import { GuardrailConfigSchema } from "./guardrail.ts";
-import { SessionDelegateConfigSchema } from "./session_delegate.ts";
+import { CliDelegateConfigSchema, SessionDelegateConfigSchema } from "./session_delegate.ts";
 import { HitlRuleSchema } from "./hitl.ts";
 
 export interface IPortalConfig {
@@ -693,6 +693,8 @@ export const ConfigSchema = z.object({
   model_registry: ModelRegistryConfigSchema,
   /** Phase 106 — optional session-delegation block (global scope). */
   session_delegate: SessionDelegateConfigSchema.optional(),
+  /** Optional per-step CLI-delegate execution block (headless claude/opencode as an IExecutionStrategy). */
+  cli_delegate: CliDelegateConfigSchema.optional(),
   /** Phase 107 — optional guardrail block. Disabled by default (enabled: false). */
   guardrail: GuardrailConfigSchema.optional(),
   /**

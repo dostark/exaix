@@ -81,6 +81,7 @@ const baseExecutor = {
       return { success: true, data: "ok" };
     },
     getTools: () => [],
+    getBaseDir: () => "/nonexistent-test-basedir",
   },
 };
 

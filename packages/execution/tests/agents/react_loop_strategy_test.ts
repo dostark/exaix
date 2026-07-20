@@ -117,6 +117,7 @@ const mockExecutor = {
       return { success: false, error: "Unknown tool" };
     },
     getTools: () => [],
+    getBaseDir: () => "/nonexistent-test-basedir",
   },
 };
 
@@ -157,6 +158,7 @@ Deno.test("ReActLoopStrategy - Path Prefixing", async () => {
         return { success: true };
       },
       getTools: () => [],
+      getBaseDir: () => "/nonexistent-test-basedir",
     },
   };
 
@@ -237,6 +239,7 @@ content = "world"
         return { success: true, data: "NEW".repeat(40) };
       },
       getTools: () => [],
+      getBaseDir: () => "/nonexistent-test-basedir",
     },
   };
 

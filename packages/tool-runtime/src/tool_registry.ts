@@ -498,6 +498,18 @@ export class ToolRegistry implements IToolRegistry {
   }
 
   /**
+   * The resolved, absolute directory every tool call is rooted at — the
+   * explicit `baseDir` constructor option when given (e.g. a plan's git
+   * worktree), else config.system.root. Lets a caller that bypasses
+   * ToolRegistry.execute() for its own file operations (e.g.
+   * CliDelegateStrategy shelling out to an external CLI) still run in the
+   * same directory ToolRegistry-mediated tool calls do.
+   */
+  getBaseDir(): string {
+    return this.baseDir;
+  }
+
+  /**
    * Execute a tool by name
    */
   async execute(toolName: string, params: Record<string, JSONValue>): Promise<IToolResult> {

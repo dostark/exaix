@@ -156,6 +156,8 @@ export const ExecutionContextSchema = z.object({
   sessionId: z.string().optional(),
   timestamp: z.date().optional(),
   skills_context: z.string().optional(),
+  /** All of the current plan's steps concatenated, set once per plan (PlanExecutor.executeSteps). CliDelegateStrategy uses this on a trace's first turn so a headless CLI session sees the whole task, not just the current step's fragment. */
+  full_plan: z.string().optional(),
 }).strict();
 
 type ExecutionContextInput = z.input<typeof ExecutionContextSchema>;

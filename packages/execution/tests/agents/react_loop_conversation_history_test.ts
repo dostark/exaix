@@ -97,6 +97,7 @@ function buildExecutor(toolResults: Record<string, { success: boolean; data?: st
         return toolResults[tool] ?? { success: false, error: `Unknown tool: ${tool}` };
       },
       getTools: () => [],
+      getBaseDir: () => "/nonexistent-test-basedir",
     },
   } as ReActExecutor;
 }

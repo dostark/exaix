@@ -30,6 +30,9 @@ export const ExecutionContextSchema = z.object({
   step_number: z.number().int().positive().optional().describe(
     "Step number if executing multi-step plan",
   ),
+  full_plan: z.string().optional().describe(
+    "All of the current plan's steps concatenated — lets a strategy orient on the whole task instead of just the current step's fragment",
+  ),
 });
 export type IExecutionContext = z.infer<typeof ExecutionContextSchema>;
 

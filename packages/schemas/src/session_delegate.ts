@@ -204,3 +204,19 @@ export const SessionDelegateConfigSchema = z.object({
   harden_permissions: z.boolean().default(false),
 });
 export type SessionDelegateConfig = z.infer<typeof SessionDelegateConfigSchema>;
+
+/**
+ * TOML config block: [cli_delegate] — per-step execution via a headless CLI tool
+ * (claude/opencode) as an alternative to direct IModelProvider API calls. Distinct
+ * from [session_delegate]: this selects the execution strategy for a single agent
+ * step (Strategy dispatch via IAgentFileBlueprint.capabilities), not a whole gate.
+ */
+export const CliDelegateConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  tool: SessionToolSchema,
+  /** Model the CLI tool should use (headless `--model <model>`). Optional; tool default when absent. */
+  model: z.string().min(1).optional(),
+  /** Absolute paths to additional binaries allowed beyond the built-in claude/opencode bins. */
+  bin_overrides: z.array(z.string()).optional(),
+});
+export type CliDelegateConfig = z.infer<typeof CliDelegateConfigSchema>;

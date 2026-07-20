@@ -33,6 +33,10 @@ class MockToolRegistry implements IToolRegistry {
   execute(_tool: string, _params: Record<string, JSONValue>): Promise<IToolResult> {
     return Promise.resolve(this.result);
   }
+
+  getBaseDir(): string {
+    return "/tmp";
+  }
 }
 
 function createHandler(

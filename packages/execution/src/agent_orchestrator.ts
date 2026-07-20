@@ -36,7 +36,7 @@ import {
   AGENT_EVENT_SECURITY_VIOLATION,
   AGENT_EXECUTOR_ID,
 } from "@exaix/core";
-import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/core/types";
+import { DEFAULT_MCP_IDENTITY_ID, SESSION_BIN_CLAUDE_CODE, SESSION_BIN_OPENCODE } from "@exaix/core/types";
 import type {
   IAgentExecutionOptions,
   IAgentExecutionOptionsInput,
@@ -45,6 +45,7 @@ import type {
 } from "@exaix/schemas/agent_orchestrator.ts";
 import type { IToolRegistry } from "@exaix/core/types";
 import { AgentExecutionErrorType, ExecutionStrategyName, SecurityMode } from "@exaix/core";
+import { SessionToolSchema } from "@exaix/schemas/session_delegate.ts";
 import { InputValidator } from "@exaix/schemas/input_validation.ts";
 import { isReadOnlyAgentCapabilities, requiresGitTracking } from "@exaix/core/func";
 import type { JSONValue } from "@exaix/core";
@@ -52,6 +53,7 @@ import { StrategyRegistry } from "./strategies/strategy_registry.ts";
 import { LegacyAgentStrategy } from "./strategies/legacy_strategy.ts";
 import { McpAgentStrategy } from "./strategies/mcp_agent_strategy.ts";
 import { ReActLoopStrategy } from "./strategies/react_loop_strategy.ts";
+import { CliDelegateStrategy } from "./strategies/cli_delegate_strategy.ts";
 import type { IGuardrailRunner } from "./guardrail_runner.ts";
 import type { Opt, Reason, TaskType } from "@exaix/core/types";
 import type { ICompactedEntry, ILoopHistoryEntry } from "./types.ts";
@@ -277,7 +279,34 @@ export class AgentOrchestrator {
       this.strategyRegistry.register(new LegacyAgentStrategy(this, this.provider));
       this.strategyRegistry.register(new ReActLoopStrategy(this.reActAdapter, this.provider));
       this.strategyRegistry.register(new McpAgentStrategy(this));
+      if (this.config.cli_delegate?.enabled) {
+        this.strategyRegistry.register(this.buildCliDelegateStrategy(this.config.cli_delegate));
+      }
     }
+  }
+
+  /**
+   * Build CliDelegateStrategy from the [cli_delegate] config block (opt-in, disabled
+   * by default). Prefers the ToolRegistry's resolved baseDir over the portal's static
+   * config path — when a plan runs in a git worktree (PortalExecutionStrategy.WORKTREE),
+   * ToolRegistry is the only thing that knows the worktree checkout path (it is
+   * constructed with baseDir = the worktree). Without this, CliDelegateStrategy would
+   * point the headless CLI at the wrong directory whenever a worktree is in play,
+   * matching how ReActLoopStrategy's tool calls are already worktree-scoped via
+   * ToolRegistry.execute().
+   */
+  private buildCliDelegateStrategy(cliDelegateConfig: NonNullable<Config["cli_delegate"]>): CliDelegateStrategy {
+    const bin = cliDelegateConfig.bin_overrides?.[0] ??
+      (cliDelegateConfig.tool === SessionToolSchema.enum["claude-code"]
+        ? SESSION_BIN_CLAUDE_CODE
+        : SESSION_BIN_OPENCODE);
+    return new CliDelegateStrategy({
+      tool: cliDelegateConfig.tool,
+      bin,
+      model: cliDelegateConfig.model,
+      resolvePortalPath: (portalAlias) =>
+        this._toolRegistry?.getBaseDir() ?? this.getPortalConfig(portalAlias)?.target_path,
+    });
   }
 
   public get toolRegistry(): IToolRegistry | undefined {
@@ -543,13 +572,7 @@ export class AgentOrchestrator {
       options.portal,
     );
 
-    // Resolve strategy (Phase 61: prefer MCP or ReAct if specified, fallback to legacy)
-    let strategyName = ExecutionStrategyName.LEGACY;
-    if (_blueprint.capabilities.includes(ExecutionStrategyName.MCP)) {
-      strategyName = ExecutionStrategyName.MCP;
-    } else if (_blueprint.capabilities.includes(ExecutionStrategyName.REACT)) {
-      strategyName = ExecutionStrategyName.REACT;
-    }
+    const strategyName = this.resolveStrategyName(_blueprint);
 
     this.applyBlueprintToolScope(_blueprint, options);
 
@@ -576,7 +599,7 @@ export class AgentOrchestrator {
         : undefined;
 
       // Step 61.3/61.4: Real SHA and Audit
-      const portalPath = portal.target_path;
+      const portalPath = this.resolveAuditPortalPath(portal);
 
       // 1. Capture real SHA
       validated.commit_sha = await this.getPortalHeadSha(portalPath);
@@ -764,6 +787,48 @@ export class AgentOrchestrator {
    */
   public getPortalConfig(alias: string): IPortalConfig | undefined {
     return this.config.portals?.find((p) => p.alias === alias);
+  }
+
+  /**
+   * Resolve the directory executeStep's post-execution security audit checks.
+   * Prefers the ToolRegistry's resolved baseDir (the worktree checkout, when
+   * PortalExecutionStrategy.WORKTREE is in play) over the static config path —
+   * the same worktree-aware resolution CliDelegateStrategy's resolvePortalPath
+   * already uses. A step's real writes land in the worktree; auditing the
+   * mounted portal (portal.target_path) checks a directory with no diff,
+   * which either silently no-ops the audit or flags real writes as
+   * unauthorized once a strategy's files_changed reports actual paths (see
+   * CliDelegateStrategy's opencode integration, phase-140). Excludes the case
+   * where baseDir is just ToolRegistry's own default (config.system.root,
+   * when no explicit baseDir was passed at construction — e.g.
+   * McpAgentStrategy's ToolRegistry) — that is never a valid audit directory
+   * and must not override the real portal path.
+   */
+  private resolveAuditPortalPath(portal: IPortalConfig): string {
+    const toolRegistryBaseDir = this._toolRegistry?.getBaseDir();
+    return toolRegistryBaseDir && toolRegistryBaseDir !== this.config.system.root
+      ? toolRegistryBaseDir
+      : portal.target_path;
+  }
+
+  /**
+   * Resolve executeStep's dispatch strategy (Phase 61: prefer MCP or ReAct if
+   * specified, fallback to legacy). CLI_DELEGATE is an explicit opt-in choice
+   * (blueprint capabilities + [cli_delegate] config enabled) — it never
+   * overrides MCP, and it is never chosen implicitly as a fallback for a
+   * missing CLI binary; a step that names it must have it available.
+   */
+  private resolveStrategyName(blueprint: IAgentFileBlueprint): ExecutionStrategyName {
+    if (blueprint.capabilities.includes(ExecutionStrategyName.MCP)) {
+      return ExecutionStrategyName.MCP;
+    }
+    if (blueprint.capabilities.includes(ExecutionStrategyName.CLI_DELEGATE)) {
+      return ExecutionStrategyName.CLI_DELEGATE;
+    }
+    if (blueprint.capabilities.includes(ExecutionStrategyName.REACT)) {
+      return ExecutionStrategyName.REACT;
+    }
+    return ExecutionStrategyName.LEGACY;
   }
 
   /**

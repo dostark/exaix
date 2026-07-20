@@ -51,6 +51,20 @@ Deno.test("SafeSubprocess: handles command not found", async () => {
   );
 });
 
+Deno.test("SafeSubprocess: a nonexistent cwd surfaces the bad path, not a generic binary-not-found message", async () => {
+  // Deno.Command throws Deno.errors.NotFound for BOTH "binary not on PATH" and "cwd
+  // does not exist" — a caller debugging a wrong-working-directory bug (e.g. a plan
+  // step running against the wrong git worktree) needs the cwd in the message to
+  // tell the two apart, not a message that only ever names the binary.
+  await assertRejects(
+    async () => {
+      await SafeSubprocess.run(getDenoCmd(), ["eval", "1"], { cwd: "/nonexistent-cwd-xyz-abc" });
+    },
+    SubprocessError,
+    "nonexistent-cwd-xyz-abc",
+  );
+});
+
 Deno.test("SafeSubprocess: respects cwd option", async () => {
   const tempDir = await Deno.makeTempDir();
   try {

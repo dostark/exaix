@@ -147,6 +147,7 @@ function buildExecutor(toolCalls: Array<{ tool: string; params: TestToolParams }
         return { success: false, error: `Unknown tool: ${tool}` };
       },
       getTools: () => [],
+      getBaseDir: () => "/nonexistent-test-basedir",
     },
   } as ReActExecutor;
 }
