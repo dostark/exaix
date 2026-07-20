@@ -563,6 +563,8 @@ For each plan step:
 
 Controlled by `EXA_SESSION_DELEGATE_GATES=code_changes` env var.
 
+Inside `AgentExecutor.executeStep()` itself, a **second, independent** routing decision picks which `IExecutionStrategy` runs the step — not the whole-gate delegation above, but a per-step choice among direct-API and headless-CLI execution. See §6a below.
+
 #### 5. Route Decision Matrix
 
 All five mechanisms can be combined for dual-mode operation:
@@ -616,6 +618,29 @@ AgentExecutor (dispatcher)
 - Adding a new execution capability means adding a new service, not growing AgentExecutor.
 
 For the full extraction plan, see `packages/execution/src/agent_orchestrator.ts` class comment.
+
+#### 6a. IExecutionStrategy — Per-Step Direct-API vs Headless-CLI Execution
+
+**File:** `packages/execution/src/strategies/` (`legacy_strategy.ts`, `react_loop_strategy.ts`, `mcp_agent_strategy.ts`, `cli_delegate_strategy.ts`)
+
+`AgentExecutor.executeStep()` resolves one `IExecutionStrategy` per step from a `StrategyRegistry`, selected by the executing identity's `IAgentFileBlueprint.capabilities`:
+
+```text
+capabilities.includes("mcp")          → McpAgentStrategy
+capabilities.includes("cli_delegate") → CliDelegateStrategy   (only if [cli_delegate].enabled)
+capabilities.includes("react")        → ReActLoopStrategy
+(none of the above)                   → LegacyAgentStrategy
+```
+
+`CliDelegateStrategy` drives a **headless `claude`/`opencode` CLI subprocess** in place of a direct `IModelProvider` call — the same effect as `ReActLoopStrategy`'s multi-turn tool-use loop, but executed by the external CLI's own agent loop instead of Exaix's. It never falls back to the direct-API path silently; a missing/unspawnable binary is a hard `AgentExecutionError`, not a degrade. Selection requires both the capability tag and a `[cli_delegate]` config block (`enabled = true`, `tool = "claude-code" | "opencode"`) — an explicit opt-in, not a runtime fallback.
+
+**Why a second CLI-execution path exists (cost):** `claude`/`opencode` headless calls authenticate the same way the interactive CLI does — against a Claude Pro/Max (or equivalent) **subscription** by default, not the metered Anthropic API `ReActLoopStrategy`'s direct `IModelProvider` calls use. `CliDelegateStrategy` deliberately strips `ANTHROPIC_API_KEY`/`ANTHROPIC_AUTH_TOKEN` from the spawned process's environment (`cli_delegate_strategy.ts:buildDelegateEnv`) so the CLI's stored subscription login wins per its own documented auth precedence, even when the daemon's own env carries an API key for its other (direct-API) calls. This makes headless-CLI execution the cost-preferred choice for repeated live evaluation runs (see `tests/scenario_framework/README.md` and `docs/Exaix_User_Guide.md` §2.5a) — flat subscription-rate instead of per-token billing.
+
+**Multi-turn mechanism:** both tools cold-spawn one subprocess per plan step and resume the prior turn's conversation via a captured session id — `claude -p <objective> --resume <session_id>` and `opencode run --session <session_id>` respectively (Claude Code's officially documented multi-turn pattern; opencode's own native session-resume shape). The session id is captured from the first turn's response and kept per `trace_id` for the life of the plan. On a trace's **first** turn only, the objective includes the whole plan (`IExecutionContext.full_plan`, built once by `PlanExecutor.executeSteps` via `buildFullPlanText`) rather than just the current step's isolated fragment — a fresh CLI session needs the full task to act coherently; a resumed session already has it in its own conversation history.
+
+**Permissions:** `--permission-mode acceptEdits` plus a scoped `--allowedTools` (via `packages/session/src/claude_permission_flags.ts:deriveClaudeToolFlags`, shared with `session_delegate`'s hardened launch) let the headless session write files without an interactive approval prompt it can never answer.
+
+**Known limitation:** a plan executing under `PortalExecutionStrategy.WORKTREE` (forced whenever the plan's frontmatter carries a `portal`) commits real changes inside `.exa/worktrees/<portal>/<trace_id>/` — but nothing in the codebase currently merges that worktree branch back into the portal's own working tree. This affects any `WORKTREE`-strategy execution, not `CliDelegateStrategy` specifically; see `exaix-dev-docs/planning/phase-140-evaluation-framework-maturation.md` (`Ledger:CLI_DELEGATE_WORKTREE_MERGE`) for the current investigation.
 
 #### 7. ModelResolver — Policy-driven Model Resolution
 

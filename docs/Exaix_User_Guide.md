@@ -442,6 +442,84 @@ Add it to `bin_overrides` for CI scenarios:
 bin_overrides = ["/path/to/.cache/mock_session_tool_bin"]
 ```
 
+### 2.5a Per-Step CLI Delegate Execution — the Cost-Preferred Path for Live/Eval Runs
+
+`[cli_delegate]` is a **different, narrower** mechanism than `[session_delegate]` above: it
+selects a single per-step execution strategy (`CliDelegateStrategy`) rather than delegating a
+whole pipeline gate. Where `ReActLoopStrategy` calls the configured `IModelProvider` directly
+(Anthropic/OpenAI/Google API — metered, per-token billing), `CliDelegateStrategy` drives the
+same headless `claude`/`opencode` CLI you already use interactively, authenticating the same
+way that CLI does by default: against a **Claude Pro/Max (or equivalent) subscription**, not
+the API.
+
+> [!TIP]
+> **Use `[cli_delegate]` for repeated live evaluation and manual/nightly `swe_tasks` runs.**
+> If you already pay for a Claude Code subscription, every headless call it drives is covered
+> by that flat monthly rate instead of adding to metered API spend — the same work, at no
+> marginal per-run cost. This is the preferred configuration for `exactl eval run` against
+> live provider cells (see `tests/scenario_framework/README.md`).
+
+#### 2.5a.1 Configuration
+
+Add a `[cli_delegate]` section, and grant the identity's blueprint the matching capability tag:
+
+```toml
+[cli_delegate]
+enabled = true
+tool = "claude-code"          # claude-code | opencode
+model = "claude-sonnet-5"     # optional; tool default when absent
+```
+
+```yaml
+# Blueprints/Identities/<identity>.md frontmatter
+capabilities: ["code_generation", "cli_delegate"]
+```
+
+`AgentOrchestrator` only registers `CliDelegateStrategy` when `[cli_delegate].enabled = true`,
+and only dispatches a step to it when the executing identity's `capabilities` includes
+`"cli_delegate"` — both conditions must hold. A step whose identity lacks the tag still runs
+through whichever strategy its own capabilities select (`react`/`mcp`/legacy), even with
+`[cli_delegate]` enabled globally.
+
+#### 2.5a.2 Auth — making sure the subscription is actually used
+
+Claude Code's own auth precedence always prefers an `ANTHROPIC_API_KEY` (or
+`ANTHROPIC_AUTH_TOKEN`) present in the environment over a subscription login, even when
+both exist. `CliDelegateStrategy` handles this for you: it strips both variables from the
+spawned CLI's environment on every call, so your subscription login is used regardless of
+whether the daemon's own environment carries an API key for its other, direct-API calls.
+
+For a daemon or CI environment where an interactive `claude login` session isn't practical,
+generate a long-lived subscription-backed token instead:
+
+```bash
+claude setup-token   # opens a one-time browser approval, prints a 1-year OAuth token
+export CLAUDE_CODE_OAUTH_TOKEN=<token>
+```
+
+This is the credential Claude Code's own docs recommend for headless/CI environments — it
+authenticates against your subscription and does not expire the way an interactive terminal
+login's warning-then-lockout cycle does.
+
+#### 2.5a.3 Prerequisites and multi-turn behavior
+
+Same tool installs as [§2.5.2](#252-prerequisites) (`claude` or `opencode` on `PATH`). Each
+plan step is a fresh, cold-spawned CLI call that resumes the prior step's conversation via a
+captured session id (`claude -p <objective> --resume <session_id>` /
+`opencode run --session <session_id>`) — so a multi-step plan reads as one continuous
+session to the CLI, not N unrelated calls. The first turn of each plan includes the whole
+plan's text so the CLI orients on the complete task; later turns send only the current step.
+
+#### 2.5a.4 Known limitation
+
+A plan that executes inside a git worktree (`PortalExecutionStrategy.WORKTREE`, forced
+whenever the plan targets a real `portal`) commits `CliDelegateStrategy`'s changes inside
+that worktree checkout. Merging the worktree branch back into the portal's own working tree
+is not yet automatic — verify a `cli_delegate` run's actual file changes against the worktree
+under `.exa/worktrees/<portal>/<trace_id>/` if the mounted portal doesn't show them. Track
+status in `exaix-dev-docs/planning/phase-140-evaluation-framework-maturation.md`
+(`Ledger:CLI_DELEGATE_WORKTREE_MERGE`).
+
 ## 3. Workspace Overview
 
 ### 3.1 Directory Structure

@@ -85,6 +85,41 @@ export EXA_LLM_MODEL=gemini-1.5-flash
 exactl eval run --pack eval-smoke
 ```
 
+### Headless CLI execution for `swe_tasks` — the cost-preferred live-eval path
+
+The `swe_tasks` pack's `provider-live` scenarios (see `scenarios/swe_tasks/`) exercise a real
+plan-execution loop against a live provider, so they cost real API spend by default —
+`ReActLoopStrategy` calls the configured `IModelProvider` (e.g. Anthropic) directly, metered
+per token. Each `swe_tasks` scenario has a `-cli-delegate` sibling
+(`fix-bug-null-guard-cli-delegate.yaml`) that runs the identical task through
+`CliDelegateStrategy` instead — a headless `claude`/`opencode` CLI subprocess authenticating
+against a **Claude Pro/Max (or equivalent) subscription** rather than the metered API.
+
+> [!TIP]
+> **Prefer the `-cli-delegate` scenario variant for repeated or nightly live runs** if you
+> already pay for a Claude Code subscription — the work is covered by the flat monthly rate
+> instead of adding to per-token API spend. Use the direct-API variant when you need a
+> specific non-Anthropic provider, or when comparing model behavior across providers (the
+> CLI-delegate path is Anthropic-only today).
+
+```bash
+# Direct-API path (metered): real Anthropic for both analysis and execution
+exactl eval run --scenario tests/scenario_framework/scenarios/swe_tasks/fix-bug-null-guard.yaml
+
+# CLI-delegate path (subscription-billed execution): real Anthropic for analysis,
+# headless `claude` for the code-change step — requires `claude` on PATH and a
+# subscription login (`claude login` or `CLAUDE_CODE_OAUTH_TOKEN`; no ANTHROPIC_API_KEY
+# needed for the delegated step — CliDelegateStrategy strips it from the CLI's own env
+# so the subscription login is used even if ANTHROPIC_API_KEY is set for the daemon's
+# own analysis calls)
+exactl eval run --scenario tests/scenario_framework/scenarios/swe_tasks/fix-bug-null-guard-cli-delegate.yaml
+```
+
+See `docs/Exaix_User_Guide.md` §2.5a for `[cli_delegate]` config, auth setup, and a known
+worktree-merge-back limitation (`exaix-dev-docs/planning/phase-140-evaluation-framework-maturation.md`,
+`Ledger:CLI_DELEGATE_WORKTREE_MERGE`) that currently affects any `PortalExecutionStrategy.WORKTREE`
+run, including these scenarios.
+
 ---
 
 ## 2. Validation (Secondary Role)
