@@ -262,6 +262,96 @@ Deno.test("[ScenarioFrameworkSyntheticRunner] synthetic CI scenario selection ho
   });
 });
 
+Deno.test("[ScenarioFrameworkSyntheticRunner] stops a started daemon even when a later step fails execution before reaching stop-daemon", async () => {
+  await withSyntheticTestEnv(async ({ frameworkHome, workspaceRoot, outputDir }) => {
+    const invocationLog = join(workspaceRoot, "exactl-invocations.log");
+    const fakeExactl = await writeFakeExactl(workspaceRoot, invocationLog);
+
+    const scenarioPath = await writeSyntheticScenario({
+      frameworkHome,
+      scenarioId: "synthetic-daemon-leak-guard",
+      tags: ["synthetic"],
+      schemaVersion: SCHEMA_VERSION,
+      steps: [
+        {
+          id: "start-daemon",
+          type: ScenarioStepType.EXACTL,
+          command: "daemon",
+          args: ["start"],
+          outputCriteriaLines: [
+            '    - id: "started"',
+            '      kind: "command-exit-code"',
+            "      equals: 0",
+          ],
+        },
+        {
+          id: "run-tests",
+          type: ScenarioStepType.SHELL,
+          command: Deno.execPath(),
+          args: ["eval", "Deno.exit(1);"],
+          outputCriteriaLines: [
+            '    - id: "tests-passed"',
+            '      kind: "command-exit-code"',
+            "      equals: 0",
+          ],
+        },
+        {
+          id: "stop-daemon",
+          type: ScenarioStepType.EXACTL,
+          command: "daemon",
+          args: ["stop"],
+          outputCriteriaLines: [
+            '    - id: "stopped"',
+            '      kind: "command-exit-code"',
+            "      equals: 0",
+          ],
+        },
+      ],
+    });
+
+    const run = await runSyntheticScenario({
+      frameworkHome,
+      scenarioPath,
+      workspaceRoot,
+      outputDir,
+      mode: ScenarioExecutionMode.AUTO,
+      exactlExecutable: fakeExactl,
+    });
+
+    // run-tests fails execution, so runScenarioInMode returns before the scenario's own
+    // stop-daemon step ever runs — the run itself must still report the execution failure.
+    assertEquals(run.runResult.status, "failed");
+    assertEquals(run.runResult.executedStepIds, ["start-daemon", "run-tests"]);
+
+    // Teardown must have force-invoked `daemon stop` anyway, so no daemon process leaks
+    // out of this run regardless of where scenario execution stopped.
+    const invocations = (await Deno.readTextFile(invocationLog)).trim().split("\n");
+    assertEquals(invocations.includes("daemon stop"), true);
+  });
+});
+
+async function writeFakeExactl(workspaceRoot: string, invocationLog: string): Promise<string> {
+  const scriptPath = join(workspaceRoot, "fake-exactl.ts");
+  await Deno.writeTextFile(
+    scriptPath,
+    [
+      `const logPath = ${JSON.stringify(invocationLog)};`,
+      'const line = Deno.args.join(" ") + "\\n";',
+      "await Deno.writeTextFile(logPath, line, { append: true, create: true });",
+      'console.log("daemon.started");',
+      'console.log("daemon.stopped");',
+    ].join("\n"),
+  );
+
+  const wrapperPath = join(workspaceRoot, "fake-exactl");
+  await Deno.writeTextFile(
+    wrapperPath,
+    `#!/bin/sh\nexec "${Deno.execPath()}" run --allow-read --allow-write "${scriptPath}" "$@"\n`,
+  );
+  await Deno.chmod(wrapperPath, 0o755);
+  return wrapperPath;
+}
+
 function createNoopStep(id: string): ISyntheticScenarioStepDefinition {
   return {
     id,

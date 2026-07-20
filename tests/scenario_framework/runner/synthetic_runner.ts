@@ -138,34 +138,50 @@ export async function runSyntheticScenario(
   // unrelated tool calls from prior/later steps.
   const stepRowidWindows = new Map<string, { start: number; end: number }>();
 
-  const runResult = await runScenarioInMode({
-    scenarioId: loadedScenario.scenario.id,
-    steps: stepsToRun,
-    mode: options.mode,
-    interactiveAllowed: options.interactiveAllowed,
-    startStepIndex: options.startStepIndex,
-    executeStep: async ({ step }) => {
-      const resolvedStep = resolveTrajectorySourceStep(step, stepRowidWindows);
+  let runResult: IRunScenarioInModeResult;
+  try {
+    runResult = await runScenarioInMode({
+      scenarioId: loadedScenario.scenario.id,
+      steps: stepsToRun,
+      mode: options.mode,
+      interactiveAllowed: options.interactiveAllowed,
+      startStepIndex: options.startStepIndex,
+      executeStep: async ({ step }) => {
+        const resolvedStep = resolveTrajectorySourceStep(step, stepRowidWindows);
 
-      const start = await currentMaxRowid(options.workspaceRoot);
-      const outcome = await executeSyntheticStep({
-        step: resolvedStep,
+        const start = await currentMaxRowid(options.workspaceRoot);
+        const outcome = await executeSyntheticStep({
+          step: resolvedStep,
+          workspaceRoot: options.workspaceRoot,
+          exactlExecutable: options.exactlExecutable,
+          requestFixturePath: loadedScenario.requestFixture.absolutePath,
+          frameworkHome: options.frameworkHome,
+          env: options.env,
+          portalAliases: options.portalAliases ?? loadedScenario.scenario.portals.map((portal) => portal.alias),
+          verbose: options.verbose,
+        });
+        const end = await currentMaxRowid(options.workspaceRoot);
+        stepRowidWindows.set(step.id, { start, end });
+
+        stepOutcomes.push(outcome);
+
+        return toModeExecutionResult(outcome, step.step_pass_threshold);
+      },
+    });
+  } finally {
+    // A step's execution failure (e.g. a failing `run-tests` step) makes runScenarioInMode
+    // return immediately (modes.ts) without ever reaching a later `stop-daemon` cleanup step,
+    // leaking the daemon process this run started. `daemon stop` is idempotent (no-ops as
+    // daemon.not_running when nothing is running), so it is always safe to force-invoke here
+    // as a teardown guarantee whenever this run's steps include a start-daemon step.
+    if (stepsToRun.some((step) => step.id === MATRIX_START_DAEMON_STEP_ID)) {
+      await forceStopDaemon({
         workspaceRoot: options.workspaceRoot,
         exactlExecutable: options.exactlExecutable,
-        requestFixturePath: loadedScenario.requestFixture.absolutePath,
-        frameworkHome: options.frameworkHome,
         env: options.env,
-        portalAliases: options.portalAliases ?? loadedScenario.scenario.portals.map((portal) => portal.alias),
-        verbose: options.verbose,
       });
-      const end = await currentMaxRowid(options.workspaceRoot);
-      stepRowidWindows.set(step.id, { start, end });
-
-      stepOutcomes.push(outcome);
-
-      return toModeExecutionResult(outcome, step.step_pass_threshold);
-    },
-  });
+    }
+  }
 
   const manifest = buildRunManifest({
     loadedScenario,
@@ -198,6 +214,32 @@ export async function runSyntheticScenario(
     manifestPath,
     executionLogPath,
   };
+}
+
+interface IForceStopDaemonOptions {
+  workspaceRoot: string;
+  exactlExecutable?: string;
+  env?: { [key: string]: string };
+}
+
+/**
+ * Best-effort daemon teardown, run unconditionally in a `finally` around scenario execution.
+ * Swallows all errors: this is a leak guard, not a scored scenario step, and `daemon stop`
+ * already no-ops cleanly when no daemon is running for this workspace.
+ */
+async function forceStopDaemon(options: IForceStopDaemonOptions): Promise<void> {
+  try {
+    await new Deno.Command(options.exactlExecutable ?? "exactl", {
+      args: ["daemon", "stop"],
+      cwd: options.workspaceRoot,
+      env: options.env,
+      stdin: "null",
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+  } catch {
+    // Best-effort: nothing more to do if the teardown invocation itself fails to spawn.
+  }
 }
 
 /** Where the runner writes the sentinel-resolved per-cell config (under the workspace `.exa`). */
