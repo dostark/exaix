@@ -207,6 +207,10 @@ export enum ProviderType {
   MOCK = "mock",
   /** Local llama.cpp server for running open-source models */
   LLAMACPP = "llamacpp",
+  /** Headless Claude Code CLI, subscription-billed (no metered API key) */
+  CLAUDE_CLI = "claude-cli",
+  /** Headless opencode CLI, subscription/flat-rate billed (no metered API key) */
+  OPENCODE_CLI = "opencode-cli",
 }
 
 /**

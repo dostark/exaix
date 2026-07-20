@@ -1282,3 +1282,38 @@ Deno.test("[IAgentRunner] routes prompt_assembled through IEventLogger when prov
   assertExists(result);
   assertEquals(actions.includes("agent.prompt_assembled"), true);
 });
+
+// ============================================================================
+// Phase 140: conversationId threading for session-continuity providers
+// ============================================================================
+
+Deno.test("[IAgentRunner] passes request.traceId as options.conversationId to provider.generate()", async () => {
+  const mockProvider = new MockProvider(wellFormedResponse);
+  let capturedOptions: Parameters<typeof mockProvider.generate>[1];
+  const originalGenerate = mockProvider.generate.bind(mockProvider);
+  mockProvider.generate = async (prompt: string, options?: Parameters<typeof mockProvider.generate>[1]) => {
+    capturedOptions = options;
+    return await originalGenerate(prompt, options);
+  };
+
+  const runner = new AgentRunner(mockProvider);
+  const requestWithTrace: IParsedRequest = { ...sampleRequest, traceId: "trace-abc-123" };
+  await runner.run(sampleBlueprint, requestWithTrace);
+
+  assertEquals(capturedOptions?.conversationId, "trace-abc-123");
+});
+
+Deno.test("[IAgentRunner] omits conversationId when request has no traceId", async () => {
+  const mockProvider = new MockProvider(wellFormedResponse);
+  let capturedOptions: Parameters<typeof mockProvider.generate>[1];
+  const originalGenerate = mockProvider.generate.bind(mockProvider);
+  mockProvider.generate = async (prompt: string, options?: Parameters<typeof mockProvider.generate>[1]) => {
+    capturedOptions = options;
+    return await originalGenerate(prompt, options);
+  };
+
+  const runner = new AgentRunner(mockProvider);
+  await runner.run(sampleBlueprint, sampleRequest);
+
+  assertEquals(capturedOptions?.conversationId, undefined);
+});

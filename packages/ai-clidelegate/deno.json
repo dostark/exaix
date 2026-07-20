@@ -1,0 +1,28 @@
+{
+  "name": "@exaix/ai-clidelegate",
+  "version": "0.1.0",
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.19",
+    "@std/path": "jsr:@std/path@^1.1.4",
+    "@exaix/core": "../core/mod.ts",
+    "@exaix/core/config": "../core/src/config/mod.ts",
+    "@exaix/core/logger": "../core/src/logger/mod.ts",
+    "@exaix/ai": "../ai/mod.ts",
+    "@exaix/ai/types.ts": "../ai/src/types.ts",
+    "@exaix/ai/providers": "../ai/src/providers/mod.ts",
+    "@exaix/ai/factories/abstract_provider_factory.ts": "../ai/src/factories/abstract_provider_factory.ts",
+    "@exaix/schemas/session_delegate.ts": "../schemas/src/session_delegate.ts",
+    "@exaix/schemas/opencode_config.ts": "../schemas/src/opencode_config.ts",
+    "@exaix/session/delegate_return_parser.ts": "../session/src/delegate_return_parser.ts"
+  },
+  "exports": {
+    ".": "./mod.ts"
+  },
+  "compilerOptions": {
+    "lib": [
+      "deno.window",
+      "deno.ns",
+      "deno.unstable"
+    ]
+  }
+}

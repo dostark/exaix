@@ -351,7 +351,7 @@ export class AgentRunner implements IAgentRunner {
 
     // Step 2: Execute via the model provider (with retry if enabled)
     await this.emitMilestone(MILESTONE_LLM_CALL_STARTED, traceId, `LLM call started for ${identityId}`);
-    const retryResult = await this.executeWithRetry(combinedPrompt, startTime);
+    const retryResult = await this.executeWithRetry(combinedPrompt, startTime, traceId);
 
     const duration = Date.now() - startTime;
 
@@ -607,11 +607,13 @@ export class AgentRunner implements IAgentRunner {
   private async executeWithRetry(
     combinedPrompt: string,
     startTime: number,
+    conversationId: Opt<string, Reason.TraceAbsent>,
   ): Promise<IRetryResult<IGenerateResult>> {
+    const generateOptions = conversationId ? { conversationId } : undefined;
     if (this.disableRetry) {
       // Direct execution without retry
       try {
-        const rawResponse = await this.modelProvider.generate(combinedPrompt);
+        const rawResponse = await this.modelProvider.generate(combinedPrompt, generateOptions);
         return {
           success: true,
           value: rawResponse,
@@ -631,7 +633,7 @@ export class AgentRunner implements IAgentRunner {
     } else {
       // Execute with retry policy
       return await this.retryPolicy.execute(
-        async () => await this.modelProvider.generate(combinedPrompt),
+        async () => await this.modelProvider.generate(combinedPrompt, generateOptions),
       );
     }
   }

@@ -31,6 +31,16 @@ export interface IModelOptions {
   effort?: EffortTier;
   /** Provider-specific thinking budget cap (e.g. Anthropic max_tokens for thinking). */
   thinking_budget?: number;
+  /**
+   * Conversation/session continuity key. Calls sharing the same id resume the same
+   * underlying session where the provider supports it (e.g. CliDelegateModelProvider's
+   * headless claude/opencode subprocess, via --resume/--session) — mirrors
+   * CliDelegateStrategy's trace_id-keyed multi-turn mechanism, needed because a single
+   * IModelProvider instance is constructed once at daemon startup and reused across
+   * every request, so retries/multi-call flows for the SAME request must not silently
+   * start a brand-new, context-less session each call. Stateless HTTP providers ignore it.
+   */
+  conversationId?: string;
 }
 
 /**

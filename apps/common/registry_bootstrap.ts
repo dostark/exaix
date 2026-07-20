@@ -8,6 +8,7 @@
 
 import { initializeRegistry, type IProviderMetadata, ProviderRegistry, setProviderRegistryBootstrap } from "@exaix/ai";
 import { PricingTier, ProviderDefaultsRegistry } from "@exaix/core";
+import { SessionToolSchema } from "@exaix/schemas/session_delegate.ts";
 import {
   ANTHROPIC_DEFAULTS,
   ANTHROPIC_PROVIDER_METADATA,
@@ -23,6 +24,15 @@ import {
 } from "@exaix/ai-openrouter";
 import { OLLAMA_DEFAULTS, OLLAMA_PROVIDER_METADATA, OllamaProviderFactory, PROVIDER_OLLAMA } from "@exaix/ai-ollama";
 import { OPENAI_DEFAULTS, OPENAI_PROVIDER_METADATA, OpenAIProviderFactory, PROVIDER_OPENAI } from "@exaix/ai-openai";
+import {
+  CLAUDE_CLI_DEFAULTS,
+  CLAUDE_CLI_PROVIDER_METADATA,
+  CliDelegateProviderFactory,
+  OPENCODE_CLI_DEFAULTS,
+  OPENCODE_CLI_PROVIDER_METADATA,
+  PROVIDER_CLAUDE_CLI,
+  PROVIDER_OPENCODE_CLI,
+} from "@exaix/ai-clidelegate";
 
 function registerConcreteProviders(): void {
   const supported = ProviderRegistry.getSupportedProviders();
@@ -107,6 +117,42 @@ function registerConcreteProviders(): void {
       openrouterMetadata,
     );
   }
+
+  // Headless CLI providers (phase-140): drive claude/opencode subprocesses so
+  // planning/analysis calls also bill against a subscription instead of a
+  // metered API key, matching CliDelegateStrategy's auth posture for the
+  // code-editing step.
+  if (!supported.includes(PROVIDER_CLAUDE_CLI)) {
+    const claudeCliMetadata: IProviderMetadata = {
+      name: CLAUDE_CLI_PROVIDER_METADATA.name,
+      description: CLAUDE_CLI_PROVIDER_METADATA.description,
+      capabilities: [...CLAUDE_CLI_PROVIDER_METADATA.capabilities],
+      costTier: CLAUDE_CLI_PROVIDER_METADATA.costTier,
+      pricingTier: PricingTier.LOCAL,
+      strengths: [...CLAUDE_CLI_PROVIDER_METADATA.strengths],
+    };
+    ProviderRegistry.registerWithMetadata(
+      PROVIDER_CLAUDE_CLI,
+      new CliDelegateProviderFactory(SessionToolSchema.enum["claude-code"]),
+      claudeCliMetadata,
+    );
+  }
+
+  if (!supported.includes(PROVIDER_OPENCODE_CLI)) {
+    const opencodeCliMetadata: IProviderMetadata = {
+      name: OPENCODE_CLI_PROVIDER_METADATA.name,
+      description: OPENCODE_CLI_PROVIDER_METADATA.description,
+      capabilities: [...OPENCODE_CLI_PROVIDER_METADATA.capabilities],
+      costTier: OPENCODE_CLI_PROVIDER_METADATA.costTier,
+      pricingTier: PricingTier.LOCAL,
+      strengths: [...OPENCODE_CLI_PROVIDER_METADATA.strengths],
+    };
+    ProviderRegistry.registerWithMetadata(
+      PROVIDER_OPENCODE_CLI,
+      new CliDelegateProviderFactory(SessionToolSchema.enum.opencode),
+      opencodeCliMetadata,
+    );
+  }
 }
 
 function registerProviderDefaults(): void {
@@ -116,6 +162,8 @@ function registerProviderDefaults(): void {
   ProviderDefaultsRegistry.register(PROVIDER_GOOGLE, GOOGLE_DEFAULTS);
   // OpenRouter is Solo (all editions) — see D5b/D-providers.
   ProviderDefaultsRegistry.register(PROVIDER_OPENROUTER, OPENROUTER_DEFAULTS);
+  ProviderDefaultsRegistry.register(PROVIDER_CLAUDE_CLI, CLAUDE_CLI_DEFAULTS);
+  ProviderDefaultsRegistry.register(PROVIDER_OPENCODE_CLI, OPENCODE_CLI_DEFAULTS);
 }
 
 setProviderRegistryBootstrap(registerConcreteProviders);
