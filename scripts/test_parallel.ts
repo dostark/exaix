@@ -26,6 +26,38 @@ const REPO_ROOT = join(fromFileUrl(import.meta.url), "..", "..");
 const SUPPORTED_REPORTERS = ["pretty", "dot", "tap"] as const;
 export const DOT_REPORTER_LEGEND = "dot legend: .=passed ,=ignored !=failed";
 
+/**
+ * PIDs of currently-running `deno test` batch children, spawned `detached` (their own
+ * process group) so a group-wide SIGTERM reaches every subprocess they spawn — including
+ * daemon subprocesses booted by individual test files (bootRealDaemon, dogfood_e2e_test.ts,
+ * etc.) three levels down. Without this, killing test_parallel.ts itself (Ctrl-C, an
+ * external timeout) only ever reaches the immediate `deno test` child on Linux — a child
+ * process's own children are never signaled when its parent is killed — leaving any daemon
+ * subprocess already spawned by that child orphaned indefinitely with no supervisor left to
+ * reap it (observed live: daemons with already-deleted tempdirs still running minutes later).
+ */
+const activeChildPids = new Set<number>();
+
+/**
+ * Best-effort group-wide SIGTERM for every PID in `pids` (each treated as a process-group
+ * leader, per `detached: true` at spawn time); never throws. Both `pids` and `kill` are
+ * injectable — defaulting to the real tracked set and `Deno.kill` — so the "signal every
+ * tracked PID, a throw from one doesn't stop the rest" logic is unit-testable without
+ * spawning real processes.
+ */
+export function killActiveChildGroups(
+  pids: Iterable<number> = activeChildPids,
+  kill: (pid: number) => void = (pid) => Deno.kill(pid, "SIGTERM"),
+): void {
+  for (const pid of pids) {
+    try {
+      kill(-pid);
+    } catch {
+      // already dead, or not a process group leader (e.g. non-Linux) — nothing to signal
+    }
+  }
+}
+
 type TestReporter = typeof SUPPORTED_REPORTERS[number];
 
 /**
@@ -438,9 +470,13 @@ async function runAndCapture(
     stderr: "piped",
     cwd: REPO_ROOT,
     env,
+    // New process group (Linux setsid-equivalent) so killActiveChildGroups's
+    // Deno.kill(-pid, ...) reaches every subprocess this child spawns, not just itself.
+    detached: true,
   });
 
   const child = command.spawn();
+  activeChildPids.add(child.pid);
   const outChunks: Uint8Array[] = [];
   const errChunks: Uint8Array[] = [];
 
@@ -511,6 +547,7 @@ async function runAndCapture(
     drain(child.stdout, outChunks, Deno.stdout),
     drain(child.stderr, errChunks, Deno.stderr),
   ]);
+  activeChildPids.delete(child.pid);
 
   // Combine stdout + stderr to maximise chance of finding the summary line.
   const allText = new TextDecoder().decode(
@@ -743,5 +780,23 @@ export async function main(args: string[]): Promise<number> {
 }
 
 if (import.meta.main) {
-  Deno.exit(await main(Deno.args));
+  // On an external interrupt (Ctrl-C, or a harness/CI timeout sending SIGTERM), kill every
+  // tracked child's process group before exiting — see activeChildPids's doc comment for why
+  // this is required (a plain process exit does not cascade to a child's own children).
+  const onSignal = () => {
+    killActiveChildGroups();
+    Deno.exit(1);
+  };
+  Deno.addSignalListener("SIGINT", onSignal);
+  Deno.addSignalListener("SIGTERM", onSignal);
+
+  let exitCode = 1;
+  try {
+    exitCode = await main(Deno.args);
+  } finally {
+    // Defensive: a thrown error (not a signal) also leaves no further code running to reach
+    // runAndCapture's own post-await cleanup — clear any still-tracked group just in case.
+    killActiveChildGroups();
+  }
+  Deno.exit(exitCode);
 }

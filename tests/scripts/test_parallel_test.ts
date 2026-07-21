@@ -13,6 +13,7 @@ import {
   DOT_REPORTER_LEGEND,
   flushDotReporterState,
   formatRunHeader,
+  killActiveChildGroups,
   parseSummaryLine,
   resolveReporter,
   stripReporterArgs,
@@ -102,6 +103,37 @@ Deno.test("compactDotReporterChunk flushes once it reaches terminal width", () =
 
   assertEquals(compactDotReporterChunk(".\n,\n.\n", state), ".,.\n");
   assertEquals(flushDotReporterState(state), "");
+});
+
+// --- killActiveChildGroups: orphan-prevention on external kill (SIGINT/SIGTERM/timeout) ---
+//
+// Root cause (live-observed, 2026-07-21): killing test_parallel.ts's top-level process does
+// NOT cascade to a `deno test` child's own children on Linux — a daemon subprocess a test
+// file spawned (bootRealDaemon, dogfood_e2e_test.ts) survives indefinitely with no
+// supervisor left to reap it. Proven via a standalone process-tree probe (detached: true +
+// Deno.kill(-pid, "SIGTERM") killed both a child and its independently-spawned grandchild;
+// omitting `detached` made the same call throw ESRCH — not just ineffective, inapplicable).
+// These tests cover the pure "which PIDs get signaled" contract via injectable seams.
+
+Deno.test("[killActiveChildGroups] signals every tracked pid as a negative (process-group) target", () => {
+  const signaled: number[] = [];
+  killActiveChildGroups([111, 222, 333], (pid) => signaled.push(pid));
+  assertEquals(signaled, [-111, -222, -333]);
+});
+
+Deno.test("[killActiveChildGroups] a throw from one pid's kill does not stop the rest", () => {
+  const signaled: number[] = [];
+  killActiveChildGroups([111, 222, 333], (pid) => {
+    signaled.push(pid);
+    if (pid === -222) throw new Error("ESRCH: No such process");
+  });
+  assertEquals(signaled, [-111, -222, -333]);
+});
+
+Deno.test("[killActiveChildGroups] an empty pid set signals nothing (no-op, never throws)", () => {
+  const signaled: number[] = [];
+  killActiveChildGroups([], (pid) => signaled.push(pid));
+  assertEquals(signaled, []);
 });
 
 Deno.test("parseSummaryLine handles failed batch summaries with step counts", () => {

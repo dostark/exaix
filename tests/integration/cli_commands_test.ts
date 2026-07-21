@@ -558,6 +558,12 @@ cliTest("CLI: daemon start/stop/restart/status/logs error handling", async () =>
     result = await runExactl(["daemon", "logs"], env.tempDir);
     assert(result.code === 0 || result.code === 1);
   } finally {
+    // `restart` above leaves a daemon subprocess running (that's its contract) — a final
+    // `stop` is required or the daemon outlives this test. TestEnvironment.cleanup() only
+    // closes the DB and removes tempDir; it has no knowledge of a process this test itself
+    // started via the CLI, so without this the daemon leaks with no supervisor left to
+    // reap it (live-observed: daemon subprocess survives with its tempDir already deleted).
+    await runExactl(["daemon", "stop"], env.tempDir).catch(() => {});
     await env.cleanup();
   }
 });
