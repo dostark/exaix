@@ -180,6 +180,8 @@ export const PROVIDER_COSTS_TABLE_SQL = `
     portal TEXT,
     estimated_cost_usd REAL NOT NULL DEFAULT 0.0,
     cost_source TEXT,
+    cache_read_tokens INTEGER,
+    cache_creation_tokens INTEGER,
     timestamp DATETIME DEFAULT (datetime('now'))
   );
   CREATE INDEX IF NOT EXISTS idx_provider_costs_provider ON provider_costs(provider);

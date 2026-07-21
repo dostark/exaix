@@ -3892,3 +3892,87 @@ Deno.test({
   sanitizeResources: false,
   sanitizeOps: false,
 });
+
+Deno.test({
+  name:
+    "AgentOrchestrator: executeStep's usage re-shape forwards cache_read_tokens/cache_creation_tokens/cost_source into agent.execution_completed (Phase 140a GAP-2)",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const strategyRegistry = new StrategyRegistry();
+      strategyRegistry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: () =>
+          Promise.resolve({
+            branch: "feat/cache-passthrough",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [],
+            description: "Cache passthrough step",
+            tool_calls: 0,
+            execution_time_ms: 10,
+            usage: {
+              prompt_tokens: 100,
+              completion_tokens: 50,
+              cost_usd: 0.005,
+              cache_read_tokens: 20,
+              cache_creation_tokens: 80,
+              cost_source: "tracked" as const,
+            },
+          }),
+      });
+
+      const executor = new AgentOrchestrator({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        strategyRegistry,
+      });
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      const trace_id = crypto.randomUUID();
+      const context: IExecutionContext = {
+        trace_id,
+        request_id: "cache-req-1",
+        request: "Cache passthrough test",
+        plan: "Step 1",
+        portal: "TestPortal",
+      };
+      const options: IAgentExecutionOptions = {
+        portal: "TestPortal",
+        identity_id: "test-agent",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+      };
+      await executor.executeStep(context, options);
+      await db.waitForFlush();
+
+      const activities = db.getActivitiesByTrace(trace_id);
+      const completeActivity = activities.find((a) => a.action_type === "agent.execution_completed");
+      assertExists(completeActivity);
+      const payload = JSON.parse(completeActivity.payload ?? "{}") as {
+        usage?: { cache_read_tokens?: number; cache_creation_tokens?: number; cost_source?: string };
+      };
+
+      assertEquals(payload.usage?.cache_read_tokens, 20);
+      assertEquals(payload.usage?.cache_creation_tokens, 80);
+      assertEquals(payload.usage?.cost_source, "tracked");
+
+      executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});

@@ -72,6 +72,11 @@ export type IAgentExecutionOptionsInput = z.input<
 /**
  * Result from agent execution
  */
+/** Distinguishes a real, provider/tool-reported cost_usd ("tracked") from Exaix's own
+ *  calculateCost() rate-based guess ("predicted"). */
+export const ChangesetCostSourceSchema = z.enum(["tracked", "predicted"]);
+export type IChangesetCostSource = z.infer<typeof ChangesetCostSourceSchema>;
+
 export const ChangesetResultSchema = z.object({
   branch: z.string().describe("Git branch created"),
   commit_sha: z.string().regex(/^[0-9a-f]{7,40}$/).describe(
@@ -92,6 +97,17 @@ export const ChangesetResultSchema = z.object({
     prompt_tokens: z.number().int().nonnegative(),
     completion_tokens: z.number().int().nonnegative(),
     cost_usd: z.number().nonnegative(),
+    /** Prompt-cache read tokens. undefined when caching wasn't used — never 0 for
+     *  "unknown". */
+    cache_read_tokens: z.number().int().nonnegative().optional(),
+    /** Prompt-cache write (creation) tokens, one-time per cache segment. */
+    cache_creation_tokens: z.number().int().nonnegative().optional(),
+    /** Distinguishes a real, provider/tool-reported cost_usd ("tracked") from Exaix's
+     *  own calculateCost() rate-based guess ("predicted"). Defaults to "predicted" so
+     *  every existing direct-API call site that doesn't explicitly set this preserves
+     *  today's exact behavior; CliDelegateStrategy and the session-delegate path
+     *  explicitly set "tracked". */
+    cost_source: ChangesetCostSourceSchema.default("predicted"),
   }).optional().describe("LLM usage metrics (Phase 69)"),
 });
 export type IChangesetResult = z.infer<typeof ChangesetResultSchema>;

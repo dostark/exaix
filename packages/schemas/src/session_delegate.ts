@@ -87,6 +87,11 @@ export const SessionTokenStatsSchema = z.object({
   total_tokens: z.number().int().nonnegative(),
   /** Provider/model the human's tool actually used, for the AI-BOM. */
   model: z.string().optional(),
+  /** Prompt-cache read tokens. undefined when the tool doesn't report cache usage —
+   *  never 0 for "unknown". */
+  cache_read_tokens: z.number().int().nonnegative().optional(),
+  /** Prompt-cache write (creation) tokens, one-time per cache segment. */
+  cache_creation_tokens: z.number().int().nonnegative().optional(),
 });
 export type SessionTokenStats = z.infer<typeof SessionTokenStatsSchema>;
 

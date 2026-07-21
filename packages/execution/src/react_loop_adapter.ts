@@ -56,8 +56,13 @@ export interface IReActLoopExecutor {
     identityId: string,
     model: string,
     providerStr: string,
-    usage: { promptTokens: number; completionTokens: number; totalTokens: number },
-    costUsd: number,
+    usage: {
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+      costUsd: number;
+      durationMs?: Opt<number, Reason.OptionalInput>;
+    },
   ): Promise<void>;
   eventBus?: IEventBusService;
   contextBudgetManager?: IContextBudgetManager;
@@ -127,8 +132,13 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
     identityId: string,
     model: string,
     providerStr: string,
-    usage: { promptTokens: number; completionTokens: number; totalTokens: number },
-    costUsd: number,
+    usage: {
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+      costUsd: number;
+      durationMs?: Opt<number, Reason.OptionalInput>;
+    },
   ): Promise<void> {
     await this.logger.log({
       action: AGENT_GENERATION_COMPLETED,
@@ -141,14 +151,15 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
       identityId,
       promptTokens: usage.promptTokens,
       completionTokens: usage.completionTokens,
-      costUsd,
+      costUsd: usage.costUsd,
       payload: {
         model,
         provider: providerStr,
         prompt_tokens: usage.promptTokens,
         completion_tokens: usage.completionTokens,
         total_tokens: usage.totalTokens,
-        cost_usd: costUsd,
+        cost_usd: usage.costUsd,
+        duration_ms: usage.durationMs,
       },
     });
   }

@@ -41,6 +41,11 @@ export type TokenMap = {
   model?: string;
   cost_usd?: number;
   provider?: string;
+  /** Anthropic prompt-cache read tokens. undefined when the provider doesn't report
+   *  cache usage or no cache_control was set on this call — never 0 for "unknown". */
+  cache_read_tokens?: number;
+  /** Anthropic prompt-cache write (creation) tokens, one-time per cache segment. */
+  cache_creation_tokens?: number;
 };
 
 type ResponseTokenMapper<T> = (data: T, providerId?: string) => TokenMap | undefined;
@@ -94,6 +99,10 @@ export type GoogleResponse = {
 export type AnthropicUsage = {
   input_tokens?: number;
   output_tokens?: number;
+  /** Real, documented Anthropic Messages API fields — populated only when prompt caching
+   *  was used on this call (anthropic_provider.ts sends cache_control on prompt blocks). */
+  cache_creation_input_tokens?: number;
+  cache_read_input_tokens?: number;
 };
 
 export type AnthropicResponse = {
@@ -302,6 +311,8 @@ export function tokenMapperAnthropic(model: string): ResponseTokenMapper<Anthrop
       total_tokens: totalTokens,
       model,
       cost_usd: cost,
+      cache_read_tokens: d.usage.cache_read_input_tokens,
+      cache_creation_tokens: d.usage.cache_creation_input_tokens,
     };
   };
 }
@@ -424,6 +435,8 @@ export async function performProviderCall<T>(
       promptTokens: tokens?.prompt_tokens ?? 0,
       completionTokens: tokens?.completion_tokens ?? 0,
       totalTokens: tokens?.total_tokens ?? 0,
+      cacheReadTokens: tokens?.cache_read_tokens,
+      cacheCreationTokens: tokens?.cache_creation_tokens,
     },
     cost_usd: tokens?.cost_usd,
     model: tokens?.model ?? "unknown",

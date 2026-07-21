@@ -40,6 +40,7 @@ import { DEFAULT_MCP_IDENTITY_ID, SESSION_BIN_CLAUDE_CODE, SESSION_BIN_OPENCODE 
 import type {
   IAgentExecutionOptions,
   IAgentExecutionOptionsInput,
+  IChangesetCostSource,
   IChangesetResult,
   IExecutionContext,
 } from "@exaix/schemas/agent_orchestrator.ts";
@@ -542,7 +543,7 @@ export class AgentOrchestrator {
     const context = InputValidator.validateExecutionContext(rawContext);
     const options: IAgentExecutionOptions = InputValidator.validateAgentExecutionOptions(rawOptions);
 
-    const _startTime = Date.now();
+    const startTime = Date.now();
 
     // Validate portal exists
     const portal = this.config.portals?.find((p) => p.alias === options.portal);
@@ -595,6 +596,9 @@ export class AgentOrchestrator {
           cost_usd_estimate: validated.usage.cost_usd,
           prompt_tokens: validated.usage.prompt_tokens,
           completion_tokens: validated.usage.completion_tokens,
+          cache_read_tokens: validated.usage.cache_read_tokens,
+          cache_creation_tokens: validated.usage.cache_creation_tokens,
+          cost_source: validated.usage.cost_source,
         }
         : undefined;
 
@@ -674,6 +678,7 @@ export class AgentOrchestrator {
         options.identity_id || "unknown",
         validated,
         usage,
+        Date.now() - startTime,
       );
 
       return validated;
@@ -873,15 +878,30 @@ export class AgentOrchestrator {
     identityId: string,
     result: IChangesetResult,
     usage?: Opt<
-      { tokens: number; cost_usd_estimate: number; prompt_tokens?: number; completion_tokens?: number },
+      {
+        tokens: number;
+        cost_usd_estimate: number;
+        prompt_tokens?: number;
+        completion_tokens?: number;
+        cache_read_tokens?: number;
+        cache_creation_tokens?: number;
+        cost_source?: IChangesetCostSource;
+      },
       Reason.OptionalInput
     >,
+    /** Real per-step wall-clock duration around executeStep, distinct from the
+     *  strategy-internal execution_time_ms already on `result`. */
+    durationMs?: Opt<number, Reason.OptionalInput>,
   ): Promise<void> {
     const usagePayload = usage ?? {
       tokens: Math.max(1, this.ctx.estimateTokensSync(result.description)),
       cost_usd_estimate: 0,
       prompt_tokens: 0,
       completion_tokens: 0,
+      // No strategy reported usage at all — consistent with "no real figure was ever
+      // reported", the fallback defaults cost_source to predicted alongside its
+      // existing $0/token-estimate defaults.
+      cost_source: "predicted" as const,
     };
 
     await this.logger.log({
@@ -902,6 +922,7 @@ export class AgentOrchestrator {
         files_changed: result.files_changed.length,
         tool_calls: result.tool_calls,
         execution_time_ms: result.execution_time_ms,
+        duration_ms: durationMs,
         usage: usagePayload,
         completed_at: new Date().toISOString(),
       },
@@ -953,8 +974,14 @@ export class AgentOrchestrator {
     identityId: string,
     model: string,
     providerStr: string,
-    usage: { promptTokens: number; completionTokens: number; totalTokens: number },
-    costUsd: number,
+    usage: {
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+      costUsd: number;
+      /** Real wall-clock duration of this individual provider.generate() call, ms. */
+      durationMs?: Opt<number, Reason.OptionalInput>;
+    },
   ): Promise<void> {
     await this.logger.log({
       action: AGENT_GENERATION_COMPLETED,
@@ -967,14 +994,15 @@ export class AgentOrchestrator {
       identityId: identityId,
       promptTokens: usage.promptTokens,
       completionTokens: usage.completionTokens,
-      costUsd: costUsd,
+      costUsd: usage.costUsd,
       payload: {
         model,
         provider: providerStr,
         prompt_tokens: usage.promptTokens,
         completion_tokens: usage.completionTokens,
         total_tokens: usage.totalTokens,
-        cost_usd: costUsd,
+        cost_usd: usage.costUsd,
+        duration_ms: usage.durationMs,
       },
     });
   }

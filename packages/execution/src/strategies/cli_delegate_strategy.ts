@@ -65,7 +65,13 @@ import { parseCliDelegateStreamTurn } from "./cli_delegate_stream_parser.ts";
 /** The subset of a parsed CLI-delegate outcome execute() actually consumes — satisfied by both claude's ICliDelegateTurnResult and opencode's IDelegateParsedReturn. */
 interface ICliDelegateParsedOutcome {
   lastText: string;
-  tokenStats: { input: number; output: number; total: number };
+  tokenStats: {
+    input: number;
+    output: number;
+    total: number;
+    cacheRead?: number;
+    cacheCreation?: number;
+  };
   costUsd: number | undefined;
   toolPaths: string[];
 }
@@ -185,6 +191,11 @@ export class CliDelegateStrategy implements IExecutionStrategy {
         prompt_tokens: parsed.tokenStats.input,
         completion_tokens: parsed.tokenStats.output,
         cost_usd: parsed.costUsd ?? 0,
+        cache_read_tokens: parsed.tokenStats.cacheRead,
+        cache_creation_tokens: parsed.tokenStats.cacheCreation,
+        // parsed.costUsd here is always the real figure the CLI tool itself reported
+        // (total_cost_usd / part.cost), never an Exaix estimate.
+        cost_source: "tracked",
       },
     };
   }

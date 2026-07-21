@@ -6,6 +6,8 @@
  * @related-files ["packages/storage-sqlite/src/database_service.ts"]
  */
 
+import type { CostSource } from "./i_model_pricing_lookup.ts";
+
 /**
  * Filter options for querying activity journal.
  */
@@ -62,6 +64,14 @@ export interface IProviderCostRecord {
   traceId?: string;
   portal?: string;
   timestamp: Date;
+  /** Prompt-cache read tokens. undefined when the tool doesn't report cache usage —
+   *  never 0 for "unknown". */
+  cacheReadTokens?: number;
+  /** Prompt-cache write (creation) tokens, one-time per cache segment. */
+  cacheCreationTokens?: number;
+  /** How this record's cost was priced (provider_costs.cost_source):
+   *  undefined means the legacy blended estimate (no reported or computed figure). */
+  costSource?: CostSource;
 }
 
 /**

@@ -13,6 +13,7 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IModelCallOptions } from "@exaix/schemas";
 import { parse as parseToml } from "@std/toml";
 import type { JSONValue } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 import {
   AgentExecutionErrorType,
   LEGACY_EXECUTION_MAX_TOKENS,
@@ -33,7 +34,7 @@ export class LegacyAgentStrategy implements IExecutionStrategy {
 
   constructor(
     private executor: AgentOrchestrator,
-    private provider?: IModelProvider,
+    private provider?: Opt<IModelProvider, Reason.OptionalDependency>,
   ) {}
 
   async execute(
@@ -48,11 +49,13 @@ export class LegacyAgentStrategy implements IExecutionStrategy {
     }
 
     const prompt = await this.executor.buildExecutionPrompt(blueprint, context, options);
+    const generateStartTime = Date.now();
     const result = await this.provider.generate(prompt, {
       temperature: LEGACY_EXECUTION_TEMPERATURE,
       max_tokens: LEGACY_EXECUTION_MAX_TOKENS,
       ...this.callOptions,
     });
+    const generateDurationMs = Date.now() - generateStartTime;
 
     // Log individual generation metrics (Phase 69)
     await this.executor.logGeneration(
@@ -60,8 +63,7 @@ export class LegacyAgentStrategy implements IExecutionStrategy {
       options.identity_id ?? "",
       result.model,
       result.provider,
-      result.usage,
-      result.cost_usd ?? 0,
+      { ...result.usage, costUsd: result.cost_usd ?? 0, durationMs: generateDurationMs },
     );
 
     const response = result.content;
@@ -78,6 +80,11 @@ export class LegacyAgentStrategy implements IExecutionStrategy {
       prompt_tokens: result.usage.promptTokens,
       completion_tokens: result.usage.completionTokens,
       cost_usd: result.cost_usd ?? 0,
+      cache_read_tokens: result.usage.cacheReadTokens,
+      cache_creation_tokens: result.usage.cacheCreationTokens,
+      // LegacyAgentStrategy's cost_usd is always a calculateCost() estimate — no
+      // direct-API provider ever returns a real reported figure — so "predicted".
+      cost_source: "predicted",
     };
 
     return this.executor.validateReviewResult(parsedResult);

@@ -15,6 +15,11 @@ export interface IGenerateResult {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
+    /** Anthropic prompt-cache read tokens. undefined when the provider doesn't report
+     *  cache usage or no cache_control was set on this call — never 0 for "unknown". */
+    cacheReadTokens?: number;
+    /** Anthropic prompt-cache write (creation) tokens, one-time per cache segment. */
+    cacheCreationTokens?: number;
   };
   model: string;
   provider: string;

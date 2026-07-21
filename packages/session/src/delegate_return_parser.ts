@@ -14,7 +14,18 @@ import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
 
 export interface IDelegateParsedReturn {
   lastText: string;
-  tokenStats: { input: number; output: number; total: number };
+  tokenStats: {
+    input: number;
+    output: number;
+    total: number;
+    /** Prompt-cache read tokens. undefined when caching wasn't used on this turn —
+     *  never 0 for "unknown". Field shape (part.tokens.cache.read) is best-effort per
+     *  opencode's documented step_finish shape — Ledger:LIVE_CACHE_TOKEN_VERIFICATION
+     *  pending a live probe with active prompt caching. */
+    cacheRead?: number;
+    /** Prompt-cache write (creation) tokens, one-time per cache segment. */
+    cacheCreation?: number;
+  };
   costUsd: number | undefined;
   toolPaths: string[];
 }
@@ -30,7 +41,10 @@ interface IOpencodeEvent {
   type: string;
   part?: {
     text?: string;
-    tokens?: { input?: number; output?: number; total?: number };
+    /** cache: best-effort per opencode's documented step_finish shape — not yet
+     *  confirmed against a live probe with active prompt caching
+     *  (Ledger:LIVE_CACHE_TOKEN_VERIFICATION). */
+    tokens?: { input?: number; output?: number; total?: number; cache?: { read?: number; write?: number } };
     cost?: number;
     tool?: string;
     state?: { input?: { filePath?: string } };
@@ -100,14 +114,20 @@ function handleTextEvent(event: IOpencodeEvent, currentText: string): string {
 }
 
 function handleStepFinishEvent(event: IOpencodeEvent): {
-  tokenStats: { input: number; output: number; total: number };
+  tokenStats: IDelegateParsedReturn["tokenStats"];
   costUsd: number | undefined;
 } {
-  let tokenStats = { input: 0, output: 0, total: 0 };
+  let tokenStats: IDelegateParsedReturn["tokenStats"] = { input: 0, output: 0, total: 0 };
   let costUsd: number | undefined;
   if (event.part?.tokens) {
     const t = event.part.tokens;
-    tokenStats = { input: t.input ?? 0, output: t.output ?? 0, total: t.total ?? 0 };
+    tokenStats = {
+      input: t.input ?? 0,
+      output: t.output ?? 0,
+      total: t.total ?? 0,
+      cacheRead: t.cache?.read,
+      cacheCreation: t.cache?.write,
+    };
   }
   if (event.part && typeof event.part.cost === "number") costUsd = event.part.cost;
   return { tokenStats, costUsd };

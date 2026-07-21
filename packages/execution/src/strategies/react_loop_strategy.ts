@@ -114,6 +114,8 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     let totalPromptTokens = 0;
     let totalCompletionTokens = 0;
     let totalCostUsd = 0;
+    let totalCacheReadTokens = 0;
+    let totalCacheCreationTokens = 0;
 
     for (let i = 0; i < this.MAX_ITERATIONS; i++) {
       // 0. Guardrail seam (Phase 107): halt at the iteration boundary if a prior
@@ -146,6 +148,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       );
 
       // 3. Generate next step with heartbeat during long LLM waits
+      const generateStartTime = Date.now();
       const response = await this.withHeartbeat(
         context,
         () =>
@@ -155,6 +158,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
             ...this.callOptions,
           }),
       );
+      const generateDurationMs = Date.now() - generateStartTime;
 
       // A max_tokens stop means this turn was cut off mid-generation: the TOML-parse
       // failure or empty action list that follows must be attributable to truncation,
@@ -180,14 +184,15 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         options.identity_id ?? "",
         response.model,
         response.provider,
-        response.usage,
-        response.cost_usd ?? 0,
+        { ...response.usage, costUsd: response.cost_usd ?? 0, durationMs: generateDurationMs },
       );
 
       // Accumulate metrics for the final result
       totalPromptTokens += response.usage.promptTokens;
       totalCompletionTokens += response.usage.completionTokens;
       totalCostUsd += response.cost_usd ?? 0;
+      totalCacheReadTokens += response.usage.cacheReadTokens ?? 0;
+      totalCacheCreationTokens += response.usage.cacheCreationTokens ?? 0;
 
       // 3. Parse thought and actions
       const { thought, actions, isComplete, parseErrors } = this.parseResponse(
@@ -218,7 +223,13 @@ export class ReActLoopStrategy implements IExecutionStrategy {
           startTime,
           toolCallCount,
           writtenFiles,
-          { promptTokens: totalPromptTokens, completionTokens: totalCompletionTokens, costUsd: totalCostUsd },
+          {
+            promptTokens: totalPromptTokens,
+            completionTokens: totalCompletionTokens,
+            costUsd: totalCostUsd,
+            cacheReadTokens: totalCacheReadTokens,
+            cacheCreationTokens: totalCacheCreationTokens,
+          },
         );
       }
 
@@ -291,7 +302,13 @@ export class ReActLoopStrategy implements IExecutionStrategy {
           startTime,
           toolCallCount,
           writtenFiles,
-          { promptTokens: totalPromptTokens, completionTokens: totalCompletionTokens, costUsd: totalCostUsd },
+          {
+            promptTokens: totalPromptTokens,
+            completionTokens: totalCompletionTokens,
+            costUsd: totalCostUsd,
+            cacheReadTokens: totalCacheReadTokens,
+            cacheCreationTokens: totalCacheCreationTokens,
+          },
         );
       }
     }
@@ -309,7 +326,13 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     startTime: number,
     toolCallCount: number,
     writtenFiles: ReadonlySet<string>,
-    usage: { promptTokens: number; completionTokens: number; costUsd: number },
+    usage: {
+      promptTokens: number;
+      completionTokens: number;
+      costUsd: number;
+      cacheReadTokens: number;
+      cacheCreationTokens: number;
+    },
   ): IChangesetResult {
     // Screen the final output before review (Phase 107 Step 5).
     // Uses FINAL_ITERATION sentinel — the runner honours screen_final_output config.
@@ -328,6 +351,11 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       prompt_tokens: usage.promptTokens,
       completion_tokens: usage.completionTokens,
       cost_usd: usage.costUsd,
+      cache_read_tokens: usage.cacheReadTokens,
+      cache_creation_tokens: usage.cacheCreationTokens,
+      // ReActLoopStrategy's cost_usd is always a calculateCost() estimate — no direct-API
+      // provider ever returns a real reported figure — so this is always "predicted".
+      cost_source: "predicted",
     };
     return this.executor.validateReviewResult(finalResult);
   }

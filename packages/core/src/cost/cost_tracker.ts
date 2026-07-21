@@ -34,6 +34,12 @@ const TOKENS_PER_MTOK = 1_000_000;
 /** Percent → fraction divisor. */
 const PERCENT = 100;
 
+/** A record pending batch insert into provider_costs, before an id is assigned. */
+type IPendingCostRecord = Omit<IProviderCostRecord, "id" | "costSource"> & {
+  requests: number;
+  costSource: CostSource | null;
+};
+
 /**
  * Service for tracking and managing LLM provider costs.
  * Provides budget enforcement and cost analytics.
@@ -57,9 +63,7 @@ export class CostTracker implements ICostTracker {
     return { ...defaultRates, ...configuredRates };
   }
 
-  private pendingRecords: Array<
-    Omit<IProviderCostRecord, "id"> & { requests: number; costSource: CostSource | null }
-  > = [];
+  private pendingRecords: IPendingCostRecord[] = [];
   private batchTimeout: ReturnType<typeof setTimeout> | null = null;
   private pricingLookup?: IModelPricingLookup;
 
@@ -108,12 +112,14 @@ export class CostTracker implements ICostTracker {
       completionTokens?: number;
       costUsd?: number;
       costSource?: CostSource;
+      cacheReadTokens?: number;
+      cacheCreationTokens?: number;
       /** Pre-resolved cost/source (avoids recomputing + double divergence emission). */
       resolved?: { cost: number; source: CostSource | null };
     } = {},
   ): Promise<void> {
     const priced = options.resolved ?? await this.resolveCost(provider, tokens, options);
-    const record: Omit<IProviderCostRecord, "id"> & { requests: number; costSource: CostSource | null } = {
+    const record: IPendingCostRecord = {
       provider,
       model: options.model ?? "unknown",
       requests: 1,
@@ -125,6 +131,8 @@ export class CostTracker implements ICostTracker {
       traceId: options.traceId,
       portal: options.portal,
       timestamp: new Date(),
+      cacheReadTokens: options.cacheReadTokens,
+      cacheCreationTokens: options.cacheCreationTokens,
     };
 
     this.pendingRecords.push(record);
@@ -263,6 +271,10 @@ export class CostTracker implements ICostTracker {
       portal: record.portal,
       promptTokens: record.promptTokens,
       completionTokens: record.completionTokens,
+      costUsd: record.estimatedCostUsd,
+      costSource: "provider_reported",
+      cacheReadTokens: record.cacheReadTokens,
+      cacheCreationTokens: record.cacheCreationTokens,
     });
   }
 
@@ -291,7 +303,8 @@ export class CostTracker implements ICostTracker {
     const query = `
       SELECT id, provider, model, requests, tokens, prompt_tokens as promptTokens,
              completion_tokens as completionTokens, estimated_cost_usd as estimatedCostUsd,
-             trace_id as traceId, portal, timestamp
+             trace_id as traceId, portal, timestamp, cost_source as costSource,
+             cache_read_tokens as cacheReadTokens, cache_creation_tokens as cacheCreationTokens
       FROM provider_costs
       ${whereClause}
       ORDER BY timestamp DESC
@@ -309,6 +322,9 @@ export class CostTracker implements ICostTracker {
       traceId: string | null;
       portal: string | null;
       timestamp: string;
+      costSource: CostSource | null;
+      cacheReadTokens: number | null;
+      cacheCreationTokens: number | null;
     }>(query, params);
 
     return rows.map((row) => ({
@@ -316,6 +332,9 @@ export class CostTracker implements ICostTracker {
       traceId: row.traceId ?? undefined,
       portal: row.portal ?? undefined,
       timestamp: new Date(row.timestamp),
+      costSource: row.costSource ?? undefined,
+      cacheReadTokens: row.cacheReadTokens ?? undefined,
+      cacheCreationTokens: row.cacheCreationTokens ?? undefined,
     }));
   }
 
@@ -405,15 +424,15 @@ export class CostTracker implements ICostTracker {
   }
 
   private async insertCostRecordsBatch(
-    records: Array<Omit<IProviderCostRecord, "id"> & { requests: number; costSource: CostSource | null }>,
+    records: IPendingCostRecord[],
   ): Promise<void> {
     if (records.length === 0) {
       return;
     }
 
-    const placeholders = records.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
+    const placeholders = records.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
     const query = `
-      INSERT INTO provider_costs (id, provider, model, requests, tokens, prompt_tokens, completion_tokens, estimated_cost_usd, cost_source, trace_id, portal, timestamp)
+      INSERT INTO provider_costs (id, provider, model, requests, tokens, prompt_tokens, completion_tokens, estimated_cost_usd, cost_source, trace_id, portal, timestamp, cache_read_tokens, cache_creation_tokens)
       VALUES ${placeholders}
     `;
 
@@ -432,6 +451,8 @@ export class CostTracker implements ICostTracker {
         record.traceId ?? null,
         record.portal ?? null,
         record.timestamp.toISOString(),
+        record.cacheReadTokens ?? null,
+        record.cacheCreationTokens ?? null,
       );
     }
 

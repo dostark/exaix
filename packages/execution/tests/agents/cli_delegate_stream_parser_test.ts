@@ -24,7 +24,13 @@ Deno.test("parseCliDelegateStreamTurn: text-only turn extracts result text, toke
 
   assertEquals(turn.lastText, "Hello there, friend!");
   assertEquals(turn.isError, false);
-  assertEquals(turn.tokenStats, { input: 2, output: 10, total: 12 });
+  assertEquals(turn.tokenStats, {
+    input: 2,
+    output: 10,
+    total: 12,
+    cacheRead: undefined,
+    cacheCreation: undefined,
+  });
   assertEquals(turn.costUsd, 0.061);
   assertEquals(turn.toolPaths, []);
   assertEquals(turn.sessionId, "s1");

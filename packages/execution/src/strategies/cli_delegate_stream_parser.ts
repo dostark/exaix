@@ -17,7 +17,16 @@
 export interface ICliDelegateTurnResult {
   lastText: string;
   isError: boolean;
-  tokenStats: { input: number; output: number; total: number };
+  tokenStats: {
+    input: number;
+    output: number;
+    total: number;
+    /** Anthropic prompt-cache read tokens, reported by Claude Code CLI's real `result`
+     *  event. undefined when caching wasn't used on this turn — never 0 for "unknown". */
+    cacheRead?: number;
+    /** Anthropic prompt-cache write (creation) tokens, one-time per cache segment. */
+    cacheCreation?: number;
+  };
   costUsd: number | undefined;
   toolPaths: string[];
   /** Captured from the turn's `system`/init event; undefined if absent (older CLI or non-stream-json output). */
@@ -41,7 +50,12 @@ interface IStreamResultEvent {
   is_error?: boolean;
   result?: string;
   total_cost_usd?: number;
-  usage?: { input_tokens?: number; output_tokens?: number };
+  usage?: {
+    input_tokens?: number;
+    output_tokens?: number;
+    cache_creation_input_tokens?: number;
+    cache_read_input_tokens?: number;
+  };
 }
 
 interface IStreamSystemEvent {
@@ -149,6 +163,8 @@ export function parseCliDelegateStreamTurn(lines: string[]): ICliDelegateTurnRes
           input: event.usage?.input_tokens ?? 0,
           output: event.usage?.output_tokens ?? 0,
           total: (event.usage?.input_tokens ?? 0) + (event.usage?.output_tokens ?? 0),
+          cacheRead: event.usage?.cache_read_input_tokens,
+          cacheCreation: event.usage?.cache_creation_input_tokens,
         },
         costUsd: event.total_cost_usd,
         toolPaths,
