@@ -502,6 +502,7 @@ export function buildRunManifest(options: IBuildRunManifestOptions): IRunManifes
       executionStatus: mapExecutionStatus(outcome),
       criterionResults: outcome.criterionResults,
       score: stepScore,
+      durationMs: outcome.executionResult?.durationMs,
     };
   });
 

@@ -124,6 +124,7 @@ function buildEvalHistoryEntry(
           : 1.0),
       criteria_passed: s.criterionResults.filter((c) => c.status === "passed").length,
       criteria_total: s.criterionResults.length,
+      duration_ms: s.durationMs,
     })),
     passed: opts?.thresholdPassed ?? manifest.outcome === "success",
     timestamp: new Date().toISOString(),

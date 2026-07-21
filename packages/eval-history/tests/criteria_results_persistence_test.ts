@@ -147,12 +147,13 @@ Deno.test("[CriteriaResults] v2 database migrates to v3 additively with old data
     assertEquals(oldRows[0].criterion_id, "old-criterion");
     assertEquals(oldRows[0].message, "old message");
 
-    // v3 version recorded
+    // v3 and v4 versions recorded
     const versions = (upgradedStore["db"] as Database).prepare(
       "SELECT version FROM eval_schema_version ORDER BY version",
     ).all<{ version: number }>();
-    assertEquals(versions.length, 3);
+    assertEquals(versions.length, 4);
     assertEquals(versions[2].version, 3);
+    assertEquals(versions[3].version, 4);
   } finally {
     upgradedStore.close();
     try {

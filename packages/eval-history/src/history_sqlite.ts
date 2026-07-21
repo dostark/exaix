@@ -216,6 +216,14 @@ export class EvalSqliteStore {
           "(3, 'Add score/status/judge to eval_criteria_results, duration_ms/trace_id/provider/model/cell_id to eval_runs')",
       );
     }
+
+    if (currentVersion < 4) {
+      this.addColumns("eval_run_steps", ["duration_ms INTEGER"]);
+      this.db.exec(
+        "INSERT OR IGNORE INTO eval_schema_version (version, description) VALUES " +
+          "(4, 'Add duration_ms to eval_run_steps (Phase 140a Step 1)')",
+      );
+    }
   }
 
   writeRun(
@@ -227,6 +235,8 @@ export class EvalSqliteStore {
         score: number;
         executionStatus?: string;
         criterionResults?: ICriterionResultRow[];
+        /** Runner-observed wall-clock duration for this step, ms. Phase 140a Step 1. */
+        durationMs?: number;
       }>,
       Reason.OptionalInput
     >,
@@ -246,8 +256,8 @@ export class EvalSqliteStore {
 
     const insertStep = this.db.prepare(
       `INSERT OR REPLACE INTO eval_run_steps
-        (run_id, step_index, step_id, step_type, score, execution_status)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+        (run_id, step_index, step_id, step_type, score, execution_status, duration_ms)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
     );
 
     const insertCriterion = this.db.prepare(
@@ -296,6 +306,7 @@ export class EvalSqliteStore {
             step.stepType ?? null,
             step.score,
             step.executionStatus ?? null,
+            step.durationMs ?? null,
           );
           if (step.criterionResults) {
             for (const cr of step.criterionResults) {

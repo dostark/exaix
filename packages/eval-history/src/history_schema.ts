@@ -28,6 +28,8 @@ export const StepResultSchema = z.object({
   score: z.number().min(0).max(1),
   criteria_passed: z.number().int().min(0).optional(),
   criteria_total: z.number().int().min(0).optional(),
+  /** Runner-observed wall-clock duration for this step, ms. Phase 140a Step 1. */
+  duration_ms: z.number().int().min(0).optional(),
 });
 
 export type IStepResult = z.infer<typeof StepResultSchema>;

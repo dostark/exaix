@@ -15,9 +15,7 @@ import { runSyntheticScenario } from "./synthetic_runner.ts";
 import type { IRunManifest } from "./evidence_collector.ts";
 import { reportScenarioFailure, reportSuiteSummary } from "./reporter.ts";
 import { selectScenariosForExecution } from "./modes.ts";
-import { writeEvalHistoryEntry } from "./history_writer.ts";
-import type { Opt, Reason } from "@exaix/core/types";
-import { EvalSqliteStore, resolveEvalDbPath } from "@exaix/eval-history";
+import { writeEvalHistoryEntries } from "./history_writer_dispatch.ts";
 import {
   accumulateRunVerdict,
   checkScoreThreshold,
@@ -253,58 +251,14 @@ await new Command()
 
     // 12. Write eval history entries if in eval mode
     if (options.evalMode) {
-      const historyFormat = options.historyFormat ?? "sqlite+jsonl";
-      let sqliteStore: EvalSqliteStore | undefined;
-      if (historyFormat !== "jsonl") {
-        const dbPath = resolveEvalDbPath();
-        sqliteStore = new EvalSqliteStore(dbPath);
-        try {
-          sqliteStore.initialize();
-        } catch (error) {
-          console.error("Failed to initialize SQLite history store:", error);
-          sqliteStore = undefined;
-        }
-      }
-
-      for (const [scenarioId, manifest] of manifests) {
-        const scenarioVerdict = scenarioVerdicts.find((v) => v.scenarioId === scenarioId);
-        try {
-          const trialMetrics = trialMetricsMap.get(scenarioId);
-          const entry = await writeEvalHistoryEntry({
-            outputDir: runtimeConfig.output_dir,
-            scenarioId,
-            manifest,
-            scoreThreshold: scenarioVerdict !== undefined ? scoreThreshold : undefined,
-            thresholdPassed: scenarioVerdict?.passed,
-            ...(trialMetrics ?? {}),
-            cellId: manifest.cellId,
-            provider: manifest.provider,
-            model: manifest.model,
-          });
-
-          if (sqliteStore) {
-            try {
-              sqliteStore.writeRun(
-                entry,
-                manifest.steps.map((s) => ({
-                  stepId: s.stepId,
-                  stepType: s.stepType,
-                  score: s.score ?? computeStepScoreFromCriterionResults(s.criterionResults, s.executionStatus),
-                  executionStatus: s.executionStatus,
-                })),
-              );
-            } catch (error) {
-              console.error(`Failed to write SQLite history for ${scenarioId}:`, error);
-            }
-          }
-        } catch (error) {
-          console.error(`Failed to write eval history for ${scenarioId}:`, error);
-        }
-      }
-
-      if (sqliteStore) {
-        sqliteStore.close();
-      }
+      await writeEvalHistoryEntries({
+        manifests,
+        scenarioVerdicts,
+        trialMetricsMap,
+        outputDir: runtimeConfig.output_dir,
+        historyFormat: options.historyFormat,
+        scoreThreshold,
+      });
     }
 
     // 13. Exit with appropriate code
@@ -345,27 +299,4 @@ async function writeEvalReport(
   await Deno.writeTextFile(reportPath, JSON.stringify(report, null, 2) + "\n");
   console.log(`\nEval report written to: ${reportPath}`);
   return reportPath;
-}
-
-function computeStepScoreFromCriterionResults(
-  results: { status: string; score_weight?: number; score?: number }[],
-  executionStatus?: Opt<string, Reason.OptionalContext>,
-): number {
-  if (executionStatus === "execution-failed") return 0;
-  if (results.length === 0) return 1.0;
-  let weightedSum = 0;
-  let totalWeight = 0;
-  for (const r of results) {
-    if (r.status === "skipped") continue;
-    if (r.status === "error" || r.status === "timeout") {
-      const w = r.score_weight ?? 1.0;
-      totalWeight += w;
-      continue;
-    }
-    const w = r.score_weight ?? 1.0;
-    totalWeight += w;
-    const score = r.score !== undefined ? r.score : (r.status === "passed" ? 1 : 0);
-    weightedSum += score * w;
-  }
-  return totalWeight > 0 ? weightedSum / totalWeight : 1.0;
 }

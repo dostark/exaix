@@ -23,6 +23,8 @@ export interface IRunManifestStep {
   executionStatus: string;
   criterionResults: ICriterionResult[];
   score?: number;
+  /** Runner-observed wall-clock duration for this step, ms. Phase 140a Step 1. */
+  durationMs?: number;
 }
 
 export interface IRunManifest {
