@@ -37,6 +37,8 @@ import { type Config, DEFAULT_MODEL_PRESETS } from "@exaix/schemas";
 import type { IModelIntent, IResolvedModel } from "@exaix/schemas";
 import type { ICostTracker } from "@exaix/core/types";
 import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
+import { ProviderType } from "@exaix/core";
+import { DEFAULT_CLI_DELEGATE_TIMEOUT_MS } from "@exaix/ai-clidelegate";
 import { ModelResolver } from "../../../packages/ai/src/model_resolver.ts";
 import { DefaultRoutingStrategy } from "../../../packages/ai/src/routing/default_routing_strategy.ts";
 import type { IProviderHealthChecker } from "../../../packages/ai/src/provider_selector.ts";
@@ -1232,6 +1234,28 @@ function buildMockMultiCriteriaResult(
   };
 }
 
+/**
+ * Resolves the `context` buildEvaluationPrompt receives: `context_path`'s file content when
+ * set (e.g. the original request fixture — lets a judge actually score "goal_alignment"/
+ * "request_understanding" against a real stated objective instead of guessing from bare code),
+ * else falls back to `rubric` (backward-compatible with rubric-only criteria), else undefined.
+ * A missing/unreadable context_path file falls back the same way rather than erroring — the
+ * judge call should degrade to less-informed scoring, not fail the step outright.
+ */
+export async function resolveEvalJudgeContext(
+  options: { workspaceRoot: string; rubric?: string; contextPath?: string },
+): Promise<string | undefined> {
+  if (options.contextPath) {
+    const resolvedPath = resolve(options.workspaceRoot, options.contextPath);
+    try {
+      return await Deno.readTextFile(resolvedPath);
+    } catch {
+      // fall through to rubric
+    }
+  }
+  return options.rubric;
+}
+
 export async function evaluateLlmJudgeCriterion(
   options: IEvaluateCriterionOptions,
 ): Promise<ICriterionResult> {
@@ -1239,6 +1263,7 @@ export async function evaluateLlmJudgeCriterion(
     evidence_path?: string;
     preset?: string;
     rubric?: string;
+    context_path?: string;
     score_threshold?: number;
   };
 
@@ -1269,7 +1294,12 @@ export async function evaluateLlmJudgeCriterion(
     content = options.executionResult?.stdout ?? "";
   }
 
-  const promptUsed = buildEvaluationPrompt(content, effectiveCriteria, criterion.rubric, isMulti);
+  const evalContext = await resolveEvalJudgeContext({
+    workspaceRoot: options.workspaceRoot,
+    rubric: criterion.rubric,
+    contextPath: criterion.context_path,
+  });
+  const promptUsed = buildEvaluationPrompt(content, effectiveCriteria, evalContext, isMulti);
   const threshold = criterion.score_threshold ?? 0.7;
   const judgeProvenance = resolveEvalJudgeProvenance(options.env);
 
@@ -1390,6 +1420,23 @@ export async function evaluateLlmJudgeCriterion(
   }
 }
 
+/**
+ * CLI-delegate providers (claude-cli, opencode-cli) spawn a headless CLI subprocess, not a
+ * fast HTTP call — CliDelegateProviderFactory's own default timeout is
+ * DEFAULT_CLI_DELEGATE_TIMEOUT_MS (300s), but ProviderFactory.resolveOptionsByName always
+ * resolves a generic `timeoutMs` first (defaulting to DEFAULT_AI_TIMEOUT_MS, 30s, sized for
+ * HTTP APIs) before CliDelegateProviderFactory.create() ever runs — and
+ * `options.timeoutMs ?? DEFAULT_CLI_DELEGATE_TIMEOUT_MS` prefers that already-set 30s value
+ * over its own larger default. Live-observed: a real opencode eval-judge call timed out at
+ * exactly 30000ms. Returns an explicit CLI-appropriate override for claude-cli/opencode-cli,
+ * or undefined (no override — the generic default applies) for every other provider.
+ */
+export function resolveEvalLlmTimeoutMs(provider: string): number | undefined {
+  return provider === ProviderType.CLAUDE_CLI || provider === ProviderType.OPENCODE_CLI
+    ? DEFAULT_CLI_DELEGATE_TIMEOUT_MS
+    : undefined;
+}
+
 export async function callLlmEndpoint(
   prompt: string,
   stepEnv?: Opt<{ [key: string]: string }, Reason.OptionalInput>,
@@ -1475,10 +1522,14 @@ export async function callLlmEndpoint(
     );
   }
 
+  const cliDelegateTimeoutMs = resolveEvalLlmTimeoutMs(resolved.provider);
   const overrides: Partial<Config> = {
     models: {
       default: { provider: resolved.provider, model: resolved.model },
     },
+    ...(cliDelegateTimeoutMs
+      ? { ai_timeout: { default_ms: cliDelegateTimeoutMs, providers: { [resolved.provider]: cliDelegateTimeoutMs } } }
+      : {}),
   };
   const finalConfig = createMockConfig("/tmp/exa-eval", overrides as Parameters<typeof createMockConfig>[1]);
   const provider = await ProviderFactory.createByName(finalConfig, "default");

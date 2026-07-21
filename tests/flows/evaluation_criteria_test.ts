@@ -435,6 +435,39 @@ Deno.test("buildEvaluationPrompt: forbids the <thought>/<content> wrapper explic
   assertEquals(prompt.includes("<content>"), true, "prompt must name the wrapper it forbids");
 });
 
+Deno.test("buildEvaluationPrompt (multi): example JSON shows every criterion name, not a fixed 2-criterion sample", () => {
+  // Live-observed bug: GOAL_ALIGNED_REVIEW has 5 criteria (goal_alignment, task_fulfillment,
+  // request_understanding, code_correctness, code_completeness), but the multi-criteria
+  // example JSON only ever showed 2 fixed criteria names (code_correctness,
+  // code_completeness) with the required "passed" field. A real judge call, following the
+  // example literally, omitted "passed" for the other 3 criteria — CriterionResultSchema
+  // requires it (no default) — and the whole response failed schema validation. The example
+  // must be built from the ACTUAL criteria list so every real criterion name appears with a
+  // "passed" field modeled for it.
+  const criteria: EvaluationCriterion[] = [
+    CRITERIA.CODE_CORRECTNESS,
+    CRITERIA.CODE_COMPLETENESS,
+    CRITERIA.HAS_TESTS,
+  ];
+  const prompt = buildEvaluationPrompt("Content", criteria, undefined, true);
+
+  for (const criterion of criteria) {
+    const marker = `"${criterion.name}"`;
+    assertEquals(
+      prompt.includes(marker),
+      true,
+      `example JSON must include every real criterion name (missing ${marker})`,
+    );
+  }
+  // Every criterion's example object must itself carry "passed" — not just the first two.
+  const passedCount = (prompt.match(/"passed":\s*(?:true|false)/g) ?? []).length;
+  assertEquals(
+    passedCount >= criteria.length,
+    true,
+    `expected at least ${criteria.length} "passed" fields in the example (one per real criterion), found ${passedCount}`,
+  );
+});
+
 // ============================================================
 // Schema Validation Tests
 // ============================================================

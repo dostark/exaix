@@ -242,7 +242,7 @@ export class ProviderFactory {
 
   private static resolveOptions(
     config: Config,
-    rawModelConfig?: JSONValue,
+    rawModelConfig?: Opt<JSONValue, Reason.OptionalInput>,
   ): IResolvedProviderOptions {
     // ✓ Validate model config to prevent type confusion attacks
     const modelConfig = rawModelConfig && this.isModelConfigInput(rawModelConfig)
@@ -295,12 +295,22 @@ export class ProviderFactory {
     // Resolve base url and timeout (env > merged > defaults)
     const baseUrl = envBaseUrl ?? merged.base_url;
 
-    // Resolve timeout with provider-specific fallback from ai_timeout config
+    // Resolve timeout with provider-specific fallback from ai_timeout config.
+    // NOTE: reads modelConfig/config.ai's OWN timeout_ms directly, not merged.timeout_ms —
+    // when config.ai is unset, baseAi falls back to a synthetic { provider: MOCK, timeout_ms:
+    // DEFAULT_AI_TIMEOUT_MS } object, and `merged = {...baseAi, ...modelConfig}` leaves that
+    // fallback's timeout_ms in place whenever modelConfig itself carries none — silently
+    // shadowing the config.ai_timeout.providers[providerType] branch below for every caller
+    // whose config.ai is unset (e.g. createMockConfig-based callers with no explicit
+    // models[name].timeout_ms). Reading modelConfig.timeout_ms and config.ai's real
+    // (pre-fallback) timeout_ms distinguishes a genuine user-set value from the synthetic
+    // default.
+    const explicitTimeoutMs = modelConfig?.timeout_ms ?? (config.ai as AiConfig | undefined)?.timeout_ms;
     let timeoutMs = DEFAULTS.DEFAULT_AI_TIMEOUT_MS;
     if (envTimeout) {
       timeoutMs = parseInt(envTimeout, 10);
-    } else if (merged.timeout_ms) {
-      timeoutMs = merged.timeout_ms;
+    } else if (explicitTimeoutMs) {
+      timeoutMs = explicitTimeoutMs;
     } else if (config.ai_timeout && providerType !== ProviderType.MOCK) {
       const providerTimeout = config.ai_timeout.providers?.[providerType];
       if (providerTimeout) {

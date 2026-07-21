@@ -579,7 +579,24 @@ function mapExecutionStatus(outcome: IScenarioStepOutcome): string {
   return "failed";
 }
 
-type CriterionPathField = "path" | "target_file";
+type CriterionPathField = "path" | "target_file" | "context_path";
+
+function expandCriterionPathFields(criterion: ICriterion, env: Record<string, string>): ICriterion {
+  const updates: Partial<Record<CriterionPathField, string>> = {};
+  if ("path" in criterion && typeof criterion.path === "string") {
+    updates.path = expandInString(criterion.path, env);
+  }
+  if ("target_file" in criterion && typeof criterion.target_file === "string") {
+    updates.target_file = expandInString(criterion.target_file, env);
+  }
+  // llm-judge's context_path (e.g. "$REQUEST_FIXTURE") — the file whose content is passed
+  // as the judge's context, so goal_alignment/request_understanding criteria can be scored
+  // against the real stated objective instead of guessing from bare evidence content alone.
+  if ("context_path" in criterion && typeof criterion.context_path === "string") {
+    updates.context_path = expandInString(criterion.context_path, env);
+  }
+  return { ...criterion, ...updates } as ICriterion;
+}
 
 export function expandVariablesInStep(step: IScenarioStep, env: Record<string, string>): IScenarioStep {
   return {
@@ -592,26 +609,8 @@ export function expandVariablesInStep(step: IScenarioStep, env: Record<string, s
         Object.entries(step.env).map(([k, v]) => [k, expandInString(v, env)]),
       )
       : step.env,
-    input_criteria: step.input_criteria.map((criterion: ICriterion) => {
-      const updates: Partial<Record<CriterionPathField, string>> = {};
-      if ("path" in criterion && typeof criterion.path === "string") {
-        updates.path = expandInString(criterion.path, env);
-      }
-      if ("target_file" in criterion && typeof criterion.target_file === "string") {
-        updates.target_file = expandInString(criterion.target_file, env);
-      }
-      return { ...criterion, ...updates } as ICriterion;
-    }),
-    output_criteria: step.output_criteria.map((criterion: ICriterion) => {
-      const updates: Partial<Record<CriterionPathField, string>> = {};
-      if ("path" in criterion && typeof criterion.path === "string") {
-        updates.path = expandInString(criterion.path, env);
-      }
-      if ("target_file" in criterion && typeof criterion.target_file === "string") {
-        updates.target_file = expandInString(criterion.target_file, env);
-      }
-      return { ...criterion, ...updates } as ICriterion;
-    }),
+    input_criteria: step.input_criteria.map((criterion: ICriterion) => expandCriterionPathFields(criterion, env)),
+    output_criteria: step.output_criteria.map((criterion: ICriterion) => expandCriterionPathFields(criterion, env)),
   } as IScenarioStep;
 }
 

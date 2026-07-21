@@ -12,7 +12,7 @@
 
 import { assertEquals } from "@std/assert";
 import { expandVariablesInStep } from "../../runner/synthetic_runner.ts";
-import { ScenarioStepType } from "../../schema/step_schema.ts";
+import { CriterionKind, ScenarioStepType } from "../../schema/step_schema.ts";
 import type { IScenarioStep } from "../../schema/step_schema.ts";
 
 Deno.test("[step_env] expandVariablesInStep expands $VARS in step.env values", () => {
@@ -74,6 +74,44 @@ Deno.test("[step_env] a longer var is not corrupted by a shorter prefix var (no 
 
   assertEquals(resolved.env?.CFG, "/full/path", "$EXA_CONFIG_PATH must expand to its own value, not /short_PATH");
   assertEquals(resolved.env?.SHORT, "/short");
+});
+
+Deno.test("[step_env] expandVariablesInStep expands $VARS in an llm-judge output_criteria's context_path", () => {
+  // Live-observed bug: expandVariablesInStep's output_criteria mapping only expanded
+  // "path"/"target_file" fields. An llm-judge criterion's context_path: "$REQUEST_FIXTURE"
+  // (pointing at the original request fixture, so the judge can score goal_alignment/
+  // request_understanding against the real stated objective) was left as the literal string
+  // "$REQUEST_FIXTURE" — Deno.readTextFile on that literal always fails, silently degrading
+  // to no context at all.
+  const step = {
+    id: "judge-quality",
+    type: ScenarioStepType.SHELL,
+    command: "sh",
+    args: ["-c", "true"],
+    continue_on_failure: false,
+    input_criteria: [],
+    output_criteria: [
+      {
+        id: "llm-judge-quality",
+        kind: CriterionKind.LLM_JUDGE,
+        preset: "GOAL_ALIGNED_REVIEW",
+        evidence_path: "llm-judge-input.txt",
+        context_path: "$REQUEST_FIXTURE",
+        score_threshold: 0.5,
+      },
+    ],
+  } as IScenarioStep;
+
+  const resolved = expandVariablesInStep(step, {
+    REQUEST_FIXTURE: "/repo/tests/scenario_framework/fixtures/requests/swe_tasks/fix-bug-null-guard.md",
+  });
+
+  const judgeCriterion = resolved.output_criteria[0];
+  assertEquals(
+    judgeCriterion.kind === CriterionKind.LLM_JUDGE ? judgeCriterion.context_path : undefined,
+    "/repo/tests/scenario_framework/fixtures/requests/swe_tasks/fix-bug-null-guard.md",
+    "context_path must be expanded, not left as the literal $REQUEST_FIXTURE string",
+  );
 });
 
 Deno.test("[step_env] an unknown $VAR is left untouched (not blanked)", () => {

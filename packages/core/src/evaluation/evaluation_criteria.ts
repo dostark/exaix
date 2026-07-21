@@ -363,22 +363,27 @@ export function buildEvaluationPrompt(
     )
     .join("\n\n");
 
+  // The example must model EVERY real criterion, not a fixed 2-criterion sample — a judge
+  // following a shorter example literally omits "passed" (CriterionResultSchema requires it,
+  // no default) for any criterion the example didn't show, and the whole response fails
+  // schema validation. Live-observed with GOAL_ALIGNED_REVIEW's 5 criteria against a fixed
+  // 2-name example.
+  const criteriaScoresExample = criteria
+    .map((c) =>
+      `    "${c.name}": {
+      "score": 0.85,
+      "reasoning": "Brief explanation",
+      "issues": [],
+      "passed": true
+    }`
+    )
+    .join(",\n");
+
   const outputFormat = multi
     ? `{
   "overallScore": 0.85,
   "criteriaScores": {
-    "code_correctness": {
-      "score": 0.9,
-      "reasoning": "Brief explanation",
-      "issues": ["minor issue"],
-      "passed": true
-    },
-    "code_completeness": {
-      "score": 0.8,
-      "reasoning": "Brief explanation",
-      "issues": [],
-      "passed": true
-    }
+${criteriaScoresExample}
   },
   "pass": true,
   "feedback": "Overall assessment of the content",

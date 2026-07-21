@@ -265,6 +265,39 @@ Deno.test("CliDelegateStrategy: strips ANTHROPIC_API_KEY and ANTHROPIC_AUTH_TOKE
   }
 });
 
+Deno.test("CliDelegateStrategy: overrides the subprocess PWD env var to match the resolved portal/worktree path, not the daemon's own stale PWD", async () => {
+  // Live-observed root cause: Deno.Command's `cwd` option changes the OS-level working
+  // directory the subprocess is spawned into, but does NOT touch a `PWD` env var inherited
+  // via Deno.env.toObject() (buildDelegateEnv's base) — the daemon's own PWD (wherever it was
+  // originally launched from) leaks through unchanged. opencode's CLI (JS/TS-based) resolves
+  // relative tool-call paths against process.env.PWD rather than the kernel cwd, so a write
+  // meant for a worktree checkout silently landed in the daemon's own launch directory
+  // instead — reproduced via a minimal Deno.Command + real opencode probe before this fix.
+  const originalPwd = Deno.env.get("PWD");
+  Deno.env.set("PWD", "/some/stale/daemon/launch/dir");
+
+  let capturedEnv: Record<string, string> | undefined;
+  const run: IRunCliDelegateProcess = (_command, _args, options) => {
+    capturedEnv = options.env;
+    return Promise.resolve({ code: 0, stdout: resultLine("done"), stderr: "" });
+  };
+
+  try {
+    const strategy = new CliDelegateStrategy({
+      tool: "opencode",
+      bin: "opencode",
+      resolvePortalPath: () => "/tmp/worktree-checkout",
+      run,
+    });
+    await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
+
+    assertEquals(capturedEnv?.PWD, "/tmp/worktree-checkout");
+  } finally {
+    if (originalPwd === undefined) Deno.env.delete("PWD");
+    else Deno.env.set("PWD", originalPwd);
+  }
+});
+
 Deno.test("CliDelegateStrategy: claude's second call for the same trace_id resumes with the captured session id", async () => {
   const capturedArgsPerCall: string[][] = [];
   let call = 0;

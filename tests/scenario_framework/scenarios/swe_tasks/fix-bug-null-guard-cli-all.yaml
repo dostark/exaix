@@ -184,9 +184,44 @@ steps:
         path_pattern: "**/Archive/*_plan.md"
         score_weight: 0.15
 
-  # CliDelegateStrategy edits the mounted portal directly (its resolvePortalPath resolves the
-  # identity's options.portal to the portal's real target_path — no code_changes delegate
-  # worktree, that's session_delegate's mechanism, not cli_delegate's).
+  # PortalExecutionStrategy.WORKTREE (GitExecutionSetupService.getExecutionStrategy) is forced
+  # for every plan whose frontmatter carries a portal — CliDelegateStrategy gets no exemption
+  # from this: its subprocess cwd resolves through AgentOrchestrator's ToolRegistry, whose
+  # baseDir is the worktree checkout for a WORKTREE-strategy plan (PlanExecutor.createAgentExecutor).
+  # So the agent's commit lands only in .exa/worktrees/<portal>/<trace_id>/ until a review is
+  # approved. Discover this run's trace_id from the journal (activity.trace_id, populated
+  # synchronously by request.created — no need to wait for anything execution-time) and approve
+  # via the request_id shorthand ("request-<first 8 chars of trace_id>", matching
+  # RequestCreateHandler's own filename/branch-naming convention) — ReviewCommands.show/approve
+  # accept it directly, no need to know the full feat/<request_id>-<traceSuffix> branch name.
+  # This exercises the same merge-back path already proven end-to-end by
+  # tests/integration/portal_worktree_review_cleanup_e2e_test.ts ("review approve removes
+  # worktree, pointer, and feature branch"). Does not touch session_delegate — neither cell's
+  # config declares a [session_delegate] block.
+  - id: "approve-review"
+    type: "shell"
+    command: "sh"
+    args:
+      [
+        "-c",
+        # This step's "sh" resolves to dash on Debian/Ubuntu (no bash), which does not support
+        # bash's ${var:0:8} substring syntax ("Bad substitution", exit 2) — use `cut` instead.
+        # The daemon journals TWO request.created rows per real request: the CLI's own
+        # submission (request_create_handler.ts) and an independent daemon-side re-detection
+        # (packages/request/src/service.ts) — both can share the same millisecond timestamp,
+        # so ORDER BY timestamp is not deterministic (live-observed: picked the wrong,
+        # unrelated trace_id). rowid is monotonic and tie-free; ASC + LIMIT 1 deterministically
+        # selects the first-inserted (CLI-submitted) row.
+        "trace_id=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT trace_id FROM activity WHERE action_type = 'request.created' ORDER BY rowid ASC LIMIT 1\"); short_id=$(printf '%s' \"$trace_id\" | cut -c1-8); echo \"trace_id: $trace_id\"; \"$FRAMEWORK_HOME/bin/exactl\" review approve \"request-$short_id\"",
+      ]
+    output_criteria:
+      - id: "review-approved"
+        kind: "command-output-contains"
+        contains: ["review.approved"]
+        score_weight: 0.15
+
+  # run-tests now checks the mounted portal only AFTER approve-review has merged the worktree
+  # branch in — before that step existed, this always ran against stale, unfixed code.
   - id: "run-tests"
     type: "shell"
     command: "sh"
@@ -270,6 +305,11 @@ steps:
         kind: "llm-judge"
         preset: "GOAL_ALIGNED_REVIEW"
         evidence_path: "llm-judge-input.txt"
+        # Without context_path the judge sees only the fixed utils.ts content, with zero
+        # information about the original task — goal_alignment/task_fulfillment/
+        # request_understanding can only be guessed, not scored. $REQUEST_FIXTURE (the same
+        # fixture submit-request used) gives the judge the real stated objective.
+        context_path: "$REQUEST_FIXTURE"
         score_threshold: 0.5
         score_weight: 0.4
 

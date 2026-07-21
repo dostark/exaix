@@ -243,6 +243,11 @@ const LlmJudgeCriterionSchema = BaseCriterionSchema.extend({
   evidence_path: z.string().min(1).optional(),
   preset: z.string().min(1).optional(),
   rubric: z.string().min(1).optional(),
+  // Path to a file (relative to workspaceRoot, e.g. the original request fixture) whose
+  // content is passed as buildEvaluationPrompt's context. Without it, a preset like
+  // GOAL_ALIGNED_REVIEW asks the judge to score "goal_alignment"/"request_understanding"
+  // against a stated objective the judge was never shown — it can only guess.
+  context_path: z.string().min(1).optional(),
   score_threshold: z.number().min(0).max(1).default(0.7),
 }).strict();
 

@@ -16,9 +16,17 @@ import { ProviderFactory } from "../src/provider_factory.ts";
 import { TEST_MODEL_ANTHROPIC, TEST_MODEL_OPENAI } from "@exaix/testing";
 import { ProviderFactoryError } from "../src/errors.ts";
 import type { IGenerateResult } from "../src/providers/common.ts";
+import type { IModelProvider } from "../src/types.ts";
 import { RateLimiterError } from "../src/rate_limited_provider.ts";
-import { DaemonStatus, MockStrategy, PricingTier, ProviderType, SecureCredentialStore } from "@exaix/core";
-import { AiConfigSchema } from "@exaix/schemas";
+import {
+  DaemonStatus,
+  MockStrategy,
+  PricingTier,
+  ProviderCostTier,
+  ProviderType,
+  SecureCredentialStore,
+} from "@exaix/core";
+import { AiConfigSchema, type Config } from "@exaix/schemas";
 import { ProviderRegistry } from "../src/provider_registry.ts";
 import { setProviderRegistryBootstrap } from "../src/provider_factory.ts";
 
@@ -380,6 +388,79 @@ Deno.test(
       assertStringIncludes(provider.id, "ollama");
     });
   }),
+);
+
+Deno.test(
+  "ProviderFactory: createByName('default') honors config.ai_timeout.providers when config.ai is unset and config.models.default carries no timeout_ms",
+  async () => {
+    // Live-observed bug: resolveOptions's `merged = {...baseAi, ...modelConfig}` spreads
+    // baseAi's hardcoded MOCK-provider fallback (`{ provider: MOCK, timeout_ms:
+    // DEFAULT_AI_TIMEOUT_MS }`, used whenever config.ai is unset) FIRST — so when
+    // modelConfig (config.models["default"]) has no timeout_ms of its own, the spread
+    // leaves baseAi's 30000ms fallback in merged.timeout_ms, which is truthy and wins over
+    // config.ai_timeout.providers[providerType] at the next `else if` branch. This silently
+    // defeats the ai_timeout.providers per-provider override for exactly the "config.ai
+    // unset, minimal config.models.default" shape createMockConfig-based callers (e.g. the
+    // eval-judge's callLlmEndpoint) use. A real headless-CLI judge call timed out at
+    // 30000ms even with ai_timeout.providers["claude-cli"] set to 300000.
+    ProviderRegistry.clear();
+    let capturedTimeoutMs: number | undefined;
+    ProviderRegistry.registerWithMetadata(
+      "claude-cli",
+      {
+        create: (options) => {
+          capturedTimeoutMs = options.timeoutMs;
+          const provider: IModelProvider = {
+            id: "claude-cli-test",
+            generate: () =>
+              Promise.resolve({
+                content: "",
+                usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+                model: "claude-sonnet-5",
+                provider: "claude-cli",
+              }),
+          };
+          return Promise.resolve(provider);
+        },
+      },
+      {
+        name: "Claude CLI (test double)",
+        description: "test double",
+        capabilities: [],
+        costTier: ProviderCostTier.FREE,
+        pricingTier: PricingTier.FREE,
+        strengths: [],
+      },
+    );
+
+    try {
+      const config: Config = {
+        ...createTestConfig(),
+        ai: undefined,
+        models: {
+          default: { provider: ProviderType.CLAUDE_CLI, model: "claude-sonnet-5" },
+        },
+        ai_timeout: {
+          default_ms: 30000,
+          providers: { [ProviderType.CLAUDE_CLI]: 300000 },
+        },
+      };
+
+      const provider = await ProviderFactory.createByName(config, "default");
+      // The registry returns a LazyProvider for non-key-based factories — the wrapped
+      // factory's create() (and therefore the resolved timeoutMs it received) is only
+      // invoked on first use, not at construction.
+      await provider.generate("probe", {});
+
+      assertEquals(
+        capturedTimeoutMs,
+        300000,
+        "ai_timeout.providers['claude-cli'] must be honored, not shadowed by baseAi's MOCK-fallback timeout_ms",
+      );
+    } finally {
+      ProviderRegistry.clear();
+    }
+  },
 );
 
 // ============================================================================

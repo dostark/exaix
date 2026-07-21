@@ -106,10 +106,20 @@ const defaultRun: IRunCliDelegateProcess = (command, args, options) => SafeSubpr
 /** Env vars stripped from every CLI-delegate spawn so a Claude Pro/Max subscription login wins over metered API billing (see module doc's Auth section). */
 const STRIPPED_AUTH_ENV_KEYS: readonly string[] = ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"];
 
-/** Build the spawn env: the daemon's own env minus the keys that would force API-key billing over a subscription login. */
-function buildDelegateEnv(): Record<string, string> {
+/**
+ * Build the spawn env: the daemon's own env minus the keys that would force API-key billing
+ * over a subscription login, with PWD overridden to match `portalPath`. Deno.Command's `cwd`
+ * option changes the OS-level working directory the subprocess is spawned into, but does NOT
+ * update a `PWD` env var inherited via Deno.env.toObject() — the daemon's own PWD (wherever it
+ * was originally launched from) otherwise leaks through unchanged. opencode's CLI resolves
+ * relative tool-call paths against process.env.PWD rather than the kernel cwd (live-verified:
+ * a write meant for a worktree checkout landed in the daemon's own launch directory instead),
+ * so PWD must always be kept in sync with the real spawn cwd.
+ */
+function buildDelegateEnv(portalPath: string): Record<string, string> {
   const env = Deno.env.toObject();
   for (const key of STRIPPED_AUTH_ENV_KEYS) delete env[key];
+  env.PWD = portalPath;
   return env;
 }
 
@@ -191,7 +201,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     try {
       result = await this.run(this.deps.bin, args, {
         cwd: portalPath,
-        env: buildDelegateEnv(),
+        env: buildDelegateEnv(portalPath),
         timeoutMs: CLI_DELEGATE_TURN_TIMEOUT_MS,
       });
     } catch (error) {
@@ -236,7 +246,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     try {
       result = await this.run(this.deps.bin, args, {
         cwd: portalPath,
-        env: buildDelegateEnv(),
+        env: buildDelegateEnv(portalPath),
         timeoutMs: CLI_DELEGATE_TURN_TIMEOUT_MS,
       });
     } catch (error) {

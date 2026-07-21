@@ -6,10 +6,17 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
+import { join } from "@std/path";
 import { CriterionKind, CriterionPhase, CriterionStatus } from "../../schema/step_schema.ts";
-import { evaluateLlmJudgeCriterion } from "../../runner/assertions.ts";
+import {
+  evaluateLlmJudgeCriterion,
+  resolveEvalJudgeContext,
+  resolveEvalLlmTimeoutMs,
+} from "../../runner/assertions.ts";
 import type { IEvaluateCriterionOptions } from "../../runner/assertions.ts";
 import { computeStepScore } from "../../runner/scoring.ts";
+import { DEFAULT_CLI_DELEGATE_TIMEOUT_MS } from "@exaix/ai-clidelegate";
+import { ProviderType } from "@exaix/core";
 
 function makeOptions(overrides?: Partial<IEvaluateCriterionOptions>): IEvaluateCriterionOptions {
   return {
@@ -93,6 +100,73 @@ Deno.test({
     } finally {
       if (prevMock !== undefined) Deno.env.set("EXA_EVAL_LLM_MOCK", prevMock);
       if (prevProvider !== undefined) Deno.env.set("EXA_LLM_PROVIDER", prevProvider);
+    }
+  },
+  sanitizeOps: false,
+  sanitizeResources: false,
+});
+
+Deno.test({
+  name:
+    "[LlmJudgeSkip] resolveEvalLlmTimeoutMs gives claude-cli/opencode-cli providers the CLI-appropriate timeout, not the generic 30s AI default",
+  fn: () => {
+    // Live-observed: the eval-judge's real-LLM path builds its provider via the generic
+    // ProviderFactory.resolveOptionsByName, which defaults timeoutMs to DEFAULT_AI_TIMEOUT_MS
+    // (30000ms) unless EXA_LLM_TIMEOUT_MS/config.ai_timeout says otherwise — sized for fast
+    // HTTP API calls, not a headless CLI subprocess spawn. A real opencode judge call timed
+    // out at exactly 30000ms even though CliDelegateProviderFactory's own default is 300000ms
+    // (DEFAULT_CLI_DELEGATE_TIMEOUT_MS), because CliDelegateProviderFactory.create() prefers
+    // options.timeoutMs when it is set (`options.timeoutMs ?? DEFAULT_CLI_DELEGATE_TIMEOUT_MS`)
+    // — and the generic factory always sets it, to 30000, before CliDelegateProviderFactory
+    // ever gets a chance to apply its own larger default.
+    assertEquals(resolveEvalLlmTimeoutMs(ProviderType.CLAUDE_CLI), DEFAULT_CLI_DELEGATE_TIMEOUT_MS);
+    assertEquals(resolveEvalLlmTimeoutMs(ProviderType.OPENCODE_CLI), DEFAULT_CLI_DELEGATE_TIMEOUT_MS);
+    // Non-CLI-delegate providers are untouched — no override needed, undefined lets
+    // ProviderFactory's own generic 30s default apply as before.
+    assertEquals(resolveEvalLlmTimeoutMs(ProviderType.ANTHROPIC), undefined);
+    assertEquals(resolveEvalLlmTimeoutMs(ProviderType.OPENAI), undefined);
+  },
+  sanitizeOps: false,
+  sanitizeResources: false,
+});
+
+Deno.test({
+  name:
+    "[LlmJudgeSkip] resolveEvalJudgeContext reads context_path so goal_alignment/task_fulfillment/request_understanding criteria know the actual task",
+  fn: async () => {
+    // Live-observed bug: buildEvaluationPrompt(content, criteria, context, multi)'s `context`
+    // slot was always fed `criterion.rubric` — never populated for preset-based criteria
+    // (GOAL_ALIGNED_REVIEW has no rubric) — so the judge saw a bare code file with ZERO
+    // information about what the original task/request was, while being asked to score
+    // "goal_alignment" (does it accomplish the stated objective) and
+    // "request_understanding" (correct understanding of the task). A real run scored those
+    // two criteria 0.35/0.50 despite code_correctness scoring 0.90 — exactly the pattern of a
+    // judge guessing at criteria it structurally cannot answer without the request text.
+    const tempDir = await Deno.makeTempDir();
+    try {
+      const requestPath = "request.md";
+      await Deno.writeTextFile(
+        join(tempDir, requestPath),
+        "Fix the null-safety bug in formatAssignee.",
+      );
+
+      // No context_path set — falls back to rubric (backward-compat), which is undefined here.
+      const withoutContext = await resolveEvalJudgeContext({
+        workspaceRoot: tempDir,
+        rubric: undefined,
+        contextPath: undefined,
+      });
+      assertEquals(withoutContext, undefined);
+
+      // context_path set — reads the real request file content as context.
+      const withContext = await resolveEvalJudgeContext({
+        workspaceRoot: tempDir,
+        rubric: undefined,
+        contextPath: requestPath,
+      });
+      assertStringIncludes(withContext ?? "", "Fix the null-safety bug in formatAssignee.");
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
     }
   },
   sanitizeOps: false,
