@@ -26,6 +26,7 @@ import {
   resolveRunnableSteps,
 } from "./matrix_expander.ts";
 import { currentMaxRowid, executeScenarioStep, type IScenarioStepExecutionResult } from "./step_executor.ts";
+import { readStepLlmMetrics } from "./step_llm_metrics.ts";
 import {
   CriterionPhase,
   CriterionStatus,
@@ -42,6 +43,10 @@ export interface IBuildRunManifestOptions {
   mode: ScenarioExecutionMode;
   runResult: IRunScenarioInModeResult;
   matrixCell?: { cellId?: string; provider?: string; model?: string };
+  /** The workspace root whose `.exa/journal.db` readStepLlmMetrics reads per step. */
+  workspaceRoot: string;
+  /** Each step's own [start, end] journal rowid window, tracked by the executeStep callback. */
+  stepRowidWindows: Map<string, { start: number; end: number }>;
 }
 
 export interface IRunSyntheticScenarioOptions {
@@ -212,11 +217,13 @@ export async function runSyntheticScenario(
     }
   }
 
-  const manifest = buildRunManifest({
+  const manifest = await buildRunManifest({
     loadedScenario,
     stepOutcomes,
     mode: options.mode,
     runResult,
+    workspaceRoot: options.workspaceRoot,
+    stepRowidWindows,
     matrixCell: firstRunnable?.cell
       ? {
         // Prefer the config-derived provider (materialized.aiProvider) over the cell's own
@@ -492,10 +499,12 @@ function toModeExecutionResult(
   };
 }
 
-export function buildRunManifest(options: IBuildRunManifestOptions): IRunManifest {
-  const steps = options.stepOutcomes.map((outcome) => {
+export async function buildRunManifest(options: IBuildRunManifestOptions): Promise<IRunManifest> {
+  const steps = await Promise.all(options.stepOutcomes.map(async (outcome) => {
     // Execution failures score 0 regardless of input criteria results
     const stepScore = outcome.failureStage === "execution" ? 0 : computeStepScore(outcome.criterionResults);
+    const window = options.stepRowidWindows.get(outcome.stepId);
+    const llmMetrics = window ? await readStepLlmMetrics(options.workspaceRoot, window.start, window.end) : {};
     return {
       stepId: outcome.stepId,
       stepType: resolveStepType(options.loadedScenario.steps, outcome.stepId),
@@ -503,8 +512,11 @@ export function buildRunManifest(options: IBuildRunManifestOptions): IRunManifes
       criterionResults: outcome.criterionResults,
       score: stepScore,
       durationMs: outcome.executionResult?.durationMs,
+      llmDurationMs: llmMetrics.llmDurationMs,
+      tokens: llmMetrics.tokens,
+      trackedCostUsd: llmMetrics.trackedCostUsd,
     };
-  });
+  }));
 
   // Build step-score inputs for suite score computation
   const stepScores: IStepScoreInput[] = steps.map((s) => {

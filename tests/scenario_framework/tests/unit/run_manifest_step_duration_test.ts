@@ -58,12 +58,14 @@ function makeStepOutcome(
 Deno.test({
   name:
     "[RunManifestStepDuration] buildRunManifest carries the runner's own computed durationMs onto the manifest step",
-  fn: () => {
-    const manifest = buildRunManifest({
+  fn: async () => {
+    const manifest = await buildRunManifest({
       loadedScenario: makeLoadedScenario("duration-test", ["step-1"]),
       stepOutcomes: [makeStepOutcome("step-1", 4242)],
       runResult: { scenarioFailed: false, stepOutcomes: [], executionError: null },
       mode: "auto",
+      workspaceRoot: "/tmp/unused-workspace-root",
+      stepRowidWindows: new Map(),
     } as any);
 
     assertEquals(manifest.steps[0].durationMs, 4242);
@@ -75,12 +77,14 @@ Deno.test({
 Deno.test({
   name:
     "[RunManifestStepDuration] a step outcome with no executionResult produces durationMs: undefined, not a thrown error",
-  fn: () => {
-    const manifest = buildRunManifest({
+  fn: async () => {
+    const manifest = await buildRunManifest({
       loadedScenario: makeLoadedScenario("no-exec-result", ["step-1"]),
       stepOutcomes: [makeStepOutcome("step-1", undefined)],
       runResult: { scenarioFailed: false, stepOutcomes: [], executionError: null },
       mode: "auto",
+      workspaceRoot: "/tmp/unused-workspace-root",
+      stepRowidWindows: new Map(),
     } as any);
 
     assertEquals(manifest.steps[0].durationMs, undefined);
@@ -91,12 +95,14 @@ Deno.test({
 
 Deno.test({
   name: "[RunManifestStepDuration] multiple steps each carry their own independent durationMs",
-  fn: () => {
-    const manifest = buildRunManifest({
+  fn: async () => {
+    const manifest = await buildRunManifest({
       loadedScenario: makeLoadedScenario("multi-step", ["step-1", "step-2"]),
       stepOutcomes: [makeStepOutcome("step-1", 100), makeStepOutcome("step-2", 200)],
       runResult: { scenarioFailed: false, stepOutcomes: [], executionError: null },
       mode: "auto",
+      workspaceRoot: "/tmp/unused-workspace-root",
+      stepRowidWindows: new Map(),
     } as any);
 
     assertEquals(manifest.steps[0].durationMs, 100);

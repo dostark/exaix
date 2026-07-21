@@ -25,12 +25,14 @@ function makeLoadedScenario(id: string) {
 
 Deno.test({
   name: "[MatrixCellRecording] buildRunManifest includes cell identity when provided",
-  fn: () => {
-    const manifest = buildRunManifest({
+  fn: async () => {
+    const manifest = await buildRunManifest({
       loadedScenario: makeLoadedScenario("cell-test"),
       stepOutcomes: [],
       runResult: { scenarioFailed: false, stepOutcomes: [], executionError: null },
       mode: "auto",
+      workspaceRoot: "/tmp/unused-workspace-root",
+      stepRowidWindows: new Map(),
       matrixCell: { cellId: "mock-cell-1", provider: "mock", model: "mock-model-v1" },
     } as any);
 
@@ -44,12 +46,14 @@ Deno.test({
 
 Deno.test({
   name: "[MatrixCellRecording] buildRunManifest omits cell identity when not provided",
-  fn: () => {
-    const manifest = buildRunManifest({
+  fn: async () => {
+    const manifest = await buildRunManifest({
       loadedScenario: makeLoadedScenario("no-cell-test"),
       stepOutcomes: [],
       runResult: { scenarioFailed: false, stepOutcomes: [], executionError: null },
       mode: "auto",
+      workspaceRoot: "/tmp/unused-workspace-root",
+      stepRowidWindows: new Map(),
     } as any);
 
     assertEquals(manifest.cellId, undefined);

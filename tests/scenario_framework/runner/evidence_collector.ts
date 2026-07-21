@@ -17,6 +17,14 @@ export interface ICopyEvidenceArtifactOptions {
   relativeDestinationPath: string;
 }
 
+export interface IRunManifestStepTokens {
+  prompt: number;
+  completion: number;
+  cacheRead?: number;
+  cacheCreation?: number;
+  total: number;
+}
+
 export interface IRunManifestStep {
   stepId: string;
   stepType: IScenarioStep["type"];
@@ -25,6 +33,12 @@ export interface IRunManifestStep {
   score?: number;
   /** Runner-observed wall-clock duration for this step, ms. Phase 140a Step 1. */
   durationMs?: number;
+  /** Sum of journaled LLM call duration(s) in this step's rowid window, ms. Phase 140a Step 3. */
+  llmDurationMs?: number;
+  /** Token breakdown summed from this step's journaled LLM calls. Phase 140a Step 3. */
+  tokens?: IRunManifestStepTokens;
+  /** Real tracked cost (cost_source: "tracked" journal rows only) for this step. Phase 140a Step 3. */
+  trackedCostUsd?: number;
 }
 
 export interface IRunManifest {
