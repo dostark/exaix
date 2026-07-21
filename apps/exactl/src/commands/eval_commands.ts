@@ -41,6 +41,7 @@ export class EvalCommands extends BaseCommand {
     scoreThreshold?: number;
     trials?: number;
     historyFormat?: string;
+    cell?: string;
     verbose?: boolean;
   }): Promise<void> {
     const args = buildRunArgs(options);
@@ -207,6 +208,7 @@ export function buildRunArgs(options: {
   scoreThreshold?: number;
   trials?: number;
   historyFormat?: string;
+  cell?: string;
   verbose?: boolean;
 }): string[] {
   const frameworkPath = resolveFrameworkPath();
@@ -229,6 +231,7 @@ export function buildRunArgs(options: {
   if (options.scoreThreshold !== undefined) args.push("--score-threshold", String(options.scoreThreshold));
   if (options.trials !== undefined && options.trials > 1) args.push("--trials", String(options.trials));
   if (options.historyFormat !== undefined) args.push("--history-format", options.historyFormat);
+  if (options.cell !== undefined) args.push("--cell", options.cell);
 
   args.push("--eval-mode");
 

@@ -7,6 +7,10 @@
  *   the runner must write a sentinel-resolved copy into the workspace and rewrite the step's
  *   EXA_CONFIG_PATH to that copy — so the booted daemon roots at the workspace and mounts the
  *   intended portal. Presets without sentinels (or steps without EXA_CONFIG_PATH) are untouched.
+ *   Also extracts the preset's own [ai].provider/[ai].model so scenario YAML steps can
+ *   reference $CELL_PROVIDER/$CELL_MODEL instead of hardcoding a provider/model string that
+ *   must be kept in sync with the config by hand — the config TOML stays the single source
+ *   of truth for which provider/model a cell actually runs.
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/synthetic_runner.ts, tests/scenario_framework/runner/matrix_expander.ts]
  */
@@ -47,12 +51,12 @@ Deno.test("[materialize_cell_config] writes a sentinel-resolved config into the 
     await Deno.writeTextFile(presetPath, PRESET);
 
     const steps = [daemonStep(presetPath)];
-    const resolved = await materializeCellConfig(steps, {
+    const result = await materializeCellConfig(steps, {
       workspaceRoot,
       worktreePath: "/repo-under-test",
     });
 
-    const daemon = resolved.find((s) => s.id === MATRIX_START_DAEMON_STEP_ID);
+    const daemon = result.steps.find((s) => s.id === MATRIX_START_DAEMON_STEP_ID);
     assert(daemon, "start-daemon step survives");
     const newConfigPath = daemon.env?.EXA_CONFIG_PATH;
     assert(
@@ -85,11 +89,13 @@ Deno.test("[materialize_cell_config] a step list without a start-daemon EXA_CONF
       input_criteria: [],
       output_criteria: [],
     } as IScenarioStep;
-    const resolved = await materializeCellConfig([plain], {
+    const result = await materializeCellConfig([plain], {
       workspaceRoot,
       worktreePath: "/repo",
     });
-    assertEquals(resolved, [plain]);
+    assertEquals(result.steps, [plain]);
+    assertEquals(result.aiProvider, undefined);
+    assertEquals(result.aiModel, undefined);
   } finally {
     await Deno.remove(workspaceRoot, { recursive: true });
   }
@@ -100,13 +106,54 @@ Deno.test("[materialize_cell_config] a preset with no sentinels still materializ
   const presetPath = join(workspaceRoot, "clean.toml");
   try {
     await Deno.writeTextFile(presetPath, '[system]\nroot = "."\n');
-    const resolved = await materializeCellConfig([daemonStep(presetPath)], {
+    const result = await materializeCellConfig([daemonStep(presetPath)], {
       workspaceRoot,
       worktreePath: "/repo",
     });
-    const daemon = resolved.find((s) => s.id === MATRIX_START_DAEMON_STEP_ID);
+    const daemon = result.steps.find((s) => s.id === MATRIX_START_DAEMON_STEP_ID);
     const written = await Deno.readTextFile(daemon!.env!.EXA_CONFIG_PATH!);
     assertStringIncludes(written, 'root = "."');
+  } finally {
+    await Deno.remove(workspaceRoot, { recursive: true });
+  }
+});
+
+Deno.test("[materialize_cell_config] extracts [ai].provider and [ai].model from the preset for $CELL_PROVIDER/$CELL_MODEL expansion", async () => {
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "materialize-cell-ai-" });
+  const presetPath = join(workspaceRoot, "preset.toml");
+  try {
+    const presetWithAi = [
+      "[system]",
+      'root = "__DOGFOOD_ROOT__"',
+      "[ai]",
+      'provider = "claude-cli"',
+      'model = "claude-sonnet-5"',
+    ].join("\n");
+    await Deno.writeTextFile(presetPath, presetWithAi);
+
+    const result = await materializeCellConfig([daemonStep(presetPath)], {
+      workspaceRoot,
+      worktreePath: "/repo",
+    });
+
+    assertEquals(result.aiProvider, "claude-cli");
+    assertEquals(result.aiModel, "claude-sonnet-5");
+  } finally {
+    await Deno.remove(workspaceRoot, { recursive: true });
+  }
+});
+
+Deno.test("[materialize_cell_config] a preset without an [ai] block yields undefined aiProvider/aiModel", async () => {
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "materialize-cell-no-ai-" });
+  const presetPath = join(workspaceRoot, "preset.toml");
+  try {
+    await Deno.writeTextFile(presetPath, '[system]\nroot = "."\n');
+    const result = await materializeCellConfig([daemonStep(presetPath)], {
+      workspaceRoot,
+      worktreePath: "/repo",
+    });
+    assertEquals(result.aiProvider, undefined);
+    assertEquals(result.aiModel, undefined);
   } finally {
     await Deno.remove(workspaceRoot, { recursive: true });
   }

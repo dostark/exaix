@@ -191,7 +191,18 @@ Deno.test("[EvalCommands] buildRunArgs omits flags not provided", () => {
   assertEquals(argsStr.includes("--score-threshold"), false, "should NOT include --score-threshold");
   assertEquals(argsStr.includes("--trials"), false, "should NOT include --trials");
   assertEquals(argsStr.includes("--history-format"), false, "should NOT include --history-format");
+  assertEquals(argsStr.includes("--cell"), false, "should NOT include --cell");
   assertEquals(argsStr.includes("--eval-mode"), true, "should always include --eval-mode");
+});
+
+Deno.test("[EvalCommands] buildRunArgs forwards --cell for explicit matrix-cell selection", () => {
+  const args = buildRunArgs({
+    scenario: ["fix-bug-null-guard-cli-all"],
+    cell: "claude-code",
+  });
+  const argsStr = args.join(" ");
+  assertEquals(argsStr.includes("--cell"), true, "should include --cell");
+  assertEquals(argsStr.includes("claude-code"), true, "should include the selected cell's tool");
 });
 
 Deno.test("[EvalCommands] history with no history file shows empty message", async () => {

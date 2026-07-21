@@ -2884,6 +2884,10 @@ const evalCommand = new Command()
       .option("--score-threshold <threshold:number>", "Minimum suite score to pass", { default: 0.5 })
       .option("--trials <n:number>", "Number of trials per scenario", { default: 1 })
       .option("--history-format <format:string>", "History storage: sqlite+jsonl or jsonl", { default: "sqlite+jsonl" })
+      .option(
+        "--cell <tool:string>",
+        "Run only the matrix cell whose tool matches (e.g. claude-code, opencode) — every other cell is skipped, not run",
+      )
       .option("-v, --verbose", "Show detailed output")
       .action(async (options) => {
         try {
@@ -2894,6 +2898,7 @@ const evalCommand = new Command()
             scoreThreshold: options.scoreThreshold,
             trials: options.trials,
             historyFormat: options.historyFormat,
+            cell: options.cell,
             verbose: options.verbose,
           });
         } catch (error) {

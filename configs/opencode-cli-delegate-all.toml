@@ -13,10 +13,6 @@ memory = "Memory"
 # AND the code_changes step all run through the headless `opencode` CLI on
 # opencode/deepseek-v4-flash-free — no ANTHROPIC_API_KEY or any metered HTTP API call
 # is used anywhere in this run (allow_net is empty; the daemon never dials out).
-# Differs from opencode-cli-delegate.toml, which keeps [ai]/[models.default] on real
-# Anthropic and only routes the code_changes step through opencode — this config
-# isolates "does the whole request lifecycle work on one subscription-billed tool",
-# not just the code-editing step.
 [ai]
 provider = "opencode-cli"
 model = "opencode/deepseek-v4-flash-free"

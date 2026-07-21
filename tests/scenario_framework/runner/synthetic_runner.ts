@@ -10,6 +10,7 @@
 
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
+import { parse as parseToml } from "@std/toml";
 import { evaluateCriterion, evaluateStepOutcome, type IScenarioStepOutcome, StepFailureStage } from "./assertions.ts";
 import { type IRunManifest, writeExecutionLog, writeRunManifest } from "./evidence_collector.ts";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -55,6 +56,13 @@ export interface IRunSyntheticScenarioOptions {
   env?: { [key: string]: string };
   portalAliases?: string[];
   verbose?: boolean;
+  /**
+   * Explicit matrix cell selection by `tool` (e.g. "claude-code"), forwarded to
+   * resolveRunnableSteps. Every non-matching cell is recorded skipped rather than run —
+   * see IExpandMatrixOptions.selectedCell for why an explicit selection is required to run
+   * more than one cell of the same matrix scenario (one invocation per --cell).
+   */
+  selectedCell?: string;
 }
 
 export interface IRunSyntheticScenarioResult {
@@ -64,6 +72,14 @@ export interface IRunSyntheticScenarioResult {
   manifest: IRunManifest;
   manifestPath: string;
   executionLogPath?: string;
+}
+
+export interface IMaterializedCellConfig {
+  steps: IScenarioStep[];
+  /** The cell config's [ai].provider, if present — for $CELL_PROVIDER expansion in scenario steps. */
+  aiProvider?: string;
+  /** The cell config's [ai].model, if present — for $CELL_MODEL expansion in scenario steps. */
+  aiModel?: string;
 }
 
 export async function runSyntheticScenario(
@@ -100,7 +116,9 @@ export async function runSyntheticScenario(
   // Phase 127 Step 5 — matrix-aware step resolution. For a `matrix:` scenario this
   // invokes expandMatrix() (closing its reachability ledger row); for a matrix-less
   // scenario it returns a single pass-through group with the original steps. The runner
-  // executes the first runnable group (per-cell provider-live execution is gated/manual).
+  // executes the first runnable group; options.selectedCell narrows a multi-cell matrix
+  // to one cell explicitly (see IExpandMatrixOptions.selectedCell) so a caller that wants
+  // every cell exercised loops over cells itself, one invocation per --cell.
   const runnableGroups: IRunnableStepGroup[] = resolveRunnableSteps(loadedScenario.scenario, {
     env: envForExpansion,
     binOnPath: (bin) => binIsOnPath(bin),
@@ -108,6 +126,7 @@ export async function runSyntheticScenario(
     // not the repo, so the cell's preset must be made absolute against the repo root
     // (frameworkHome/../..) before it is overlaid onto the start-daemon step.
     configBaseDir: join(options.frameworkHome, "..", ".."),
+    selectedCell: options.selectedCell,
   });
   const firstRunnable = runnableGroups.find((g) => g.status === "run");
   let stepsToRun = firstRunnable?.steps ?? loadedScenario.steps;
@@ -126,10 +145,20 @@ export async function runSyntheticScenario(
       ? { ...step, env: { ...step.env, EXA_CONFIG_PATH: expandInString(step.env.EXA_CONFIG_PATH, envForExpansion) } }
       : step
   );
-  stepsToRun = await materializeCellConfig(stepsToRun, {
+  const materialized = await materializeCellConfig(stepsToRun, {
     workspaceRoot: options.workspaceRoot,
     worktreePath: join(options.frameworkHome, "..", ".."),
   });
+  stepsToRun = materialized.steps;
+
+  // The cell config's own [ai].provider/[ai].model (parsed above) becomes $CELL_PROVIDER /
+  // $CELL_MODEL for every step's existing $VAR expansion (executeSyntheticStep's baseEnv) —
+  // so a scenario's judge-quality step can reference the config's real provider/model instead
+  // of hardcoding a value that must be kept in sync with the config by hand.
+  const cellEnv: { [key: string]: string } = { ...(options.env ?? {}) };
+  if (materialized.aiProvider) cellEnv.CELL_PROVIDER = materialized.aiProvider;
+  if (materialized.aiModel) cellEnv.CELL_MODEL = materialized.aiModel;
+  const runEnv = Object.keys(cellEnv).length > 0 ? cellEnv : options.env;
 
   // A trajectory-assert step declares `source_step: <id>` in YAML rather than a literal rowid
   // window (author-hostile and non-portable across runs). Track each step's own [start, end]
@@ -156,7 +185,7 @@ export async function runSyntheticScenario(
           exactlExecutable: options.exactlExecutable,
           requestFixturePath: loadedScenario.requestFixture.absolutePath,
           frameworkHome: options.frameworkHome,
-          env: options.env,
+          env: runEnv,
           portalAliases: options.portalAliases ?? loadedScenario.scenario.portals.map((portal) => portal.alias),
           verbose: options.verbose,
         });
@@ -190,8 +219,11 @@ export async function runSyntheticScenario(
     runResult,
     matrixCell: firstRunnable?.cell
       ? {
-        cellId: `${firstRunnable.cell.tool}-${firstRunnable.cell.provider}`,
-        provider: firstRunnable.cell.provider,
+        // Prefer the config-derived provider (materialized.aiProvider) over the cell's own
+        // `provider:` field — the YAML field may be a $CELL_PROVIDER placeholder today, and
+        // the config's [ai].provider is the actual source of truth for what ran regardless.
+        cellId: `${firstRunnable.cell.tool}-${materialized.aiProvider ?? firstRunnable.cell.provider}`,
+        provider: materialized.aiProvider ?? firstRunnable.cell.provider,
       }
       : undefined,
   });
@@ -247,6 +279,16 @@ async function forceStopDaemon(options: IForceStopDaemonOptions): Promise<void> 
 const WORKSPACE_CONFIG_FILE = "exa.config.toml";
 
 /**
+ * The subset of a cell config's [ai] block this module extracts for $CELL_PROVIDER/$CELL_MODEL.
+ * A parsed TOML document is not statically typed, so provider/model may be absent or (for a
+ * malformed config) a non-string TOML value — the `typeof === "string"` guard at the call site
+ * handles that case by treating it the same as "not present" rather than propagating a wrong type.
+ */
+interface IParsedAiBlock {
+  ai?: { provider?: string; model?: string };
+}
+
+/**
  * Phase 127 Step 8 (LIVE-RT): for a runnable matrix cell, read the dogfood preset that the
  * `start-daemon` step's EXA_CONFIG_PATH points at, resolve its deploy-time sentinels
  * (`__DOGFOOD_ROOT__` → workspace, `__WORKTREE_PATH__` → the mounted portal) via
@@ -261,14 +303,20 @@ const WORKSPACE_CONFIG_FILE = "exa.config.toml";
  * The start-daemon step's EXA_CONFIG_PATH is repointed at the shared file. Runs BEFORE any step, so
  * every step sees one config. Works for BOTH in-repo (portal = repo) and a deployed sandbox with a
  * third-party portal. Steps without a start-daemon EXA_CONFIG_PATH are returned unchanged.
+ *
+ * Also parses the preset's own [ai].provider/[ai].model (the config's single source of truth for
+ * which provider/model a cell runs) and returns them so scenario YAML steps can reference
+ * $CELL_PROVIDER/$CELL_MODEL instead of hardcoding a provider/model string that must be kept in
+ * sync with the config by hand — adding a new provider then means writing one new config file,
+ * not hand-editing every scenario that exercises it.
  */
 export async function materializeCellConfig(
   steps: IScenarioStep[],
   targets: ICellConfigTargets,
-): Promise<IScenarioStep[]> {
+): Promise<IMaterializedCellConfig> {
   const daemon = steps.find((s) => s.id === MATRIX_START_DAEMON_STEP_ID);
   const presetPath = daemon?.env?.EXA_CONFIG_PATH;
-  if (!daemon || !presetPath) return steps;
+  if (!daemon || !presetPath) return { steps };
 
   const presetText = await Deno.readTextFile(presetPath);
   const resolved = resolveCellConfig(presetText, targets);
@@ -277,11 +325,18 @@ export async function materializeCellConfig(
   const materializedPath = join(targets.workspaceRoot, WORKSPACE_CONFIG_FILE);
   await Deno.writeTextFile(materializedPath, resolved);
 
-  return steps.map((step) =>
+  const resolvedSteps = steps.map((step) =>
     step.id === MATRIX_START_DAEMON_STEP_ID
       ? { ...step, env: { ...(step.env ?? {}), EXA_CONFIG_PATH: materializedPath } }
       : step
   );
+
+  const parsedAi = (parseToml(resolved) as IParsedAiBlock).ai;
+  return {
+    steps: resolvedSteps,
+    aiProvider: typeof parsedAi?.provider === "string" ? parsedAi.provider : undefined,
+    aiModel: typeof parsedAi?.model === "string" ? parsedAi.model : undefined,
+  };
 }
 
 /**

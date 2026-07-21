@@ -218,6 +218,48 @@ Deno.test("[scenario_matrix] a cell whose requires_key is unset is recorded skip
   }
 });
 
+Deno.test("[scenario_matrix] selectedCell filters the matrix down to the one cell whose tool matches, skipping the rest", () => {
+  const steps = [startDaemonStep()];
+  const runs = expandMatrix(steps, FOUR_CELL_MATRIX, {
+    env: DEFAULT_MATRIX_ENV,
+    binOnPath: () => true,
+    selectedCell: "claude-code",
+  });
+  const runnable = runs.filter((r) => r.status === "run");
+  assertEquals(runnable.length, 2, "both claude-code cells (direct + openrouter) remain runnable");
+  for (const r of runnable) assertEquals(r.cell.tool, "claude-code");
+
+  const skipped = runs.filter((r) => r.status === "skip");
+  assertEquals(skipped.length, 2);
+  for (const r of skipped) {
+    assertEquals(r.cell.tool, "opencode");
+    assert(
+      r.skipReason?.includes("claude-code"),
+      `skip reason should name the selected cell that excluded this one; got ${r.skipReason}`,
+    );
+  }
+});
+
+Deno.test("[scenario_matrix] selectedCell naming a tool absent from the matrix skips every cell", () => {
+  const steps = [startDaemonStep()];
+  const runs = expandMatrix(steps, FOUR_CELL_MATRIX, {
+    env: DEFAULT_MATRIX_ENV,
+    binOnPath: () => true,
+    selectedCell: "codex",
+  });
+  assertEquals(runs.length, 4);
+  for (const r of runs) assertEquals(r.status, "skip");
+});
+
+Deno.test("[scenario_matrix] no selectedCell (default) runs every prerequisite-satisfied cell, unaffected (backward-compat)", () => {
+  const steps = [startDaemonStep()];
+  const runs = expandMatrix(steps, FOUR_CELL_MATRIX, {
+    env: DEFAULT_MATRIX_ENV,
+    binOnPath: () => true,
+  });
+  for (const r of runs) assertEquals(r.status, "run");
+});
+
 Deno.test("[scenario_matrix] an opencode cell whose requires_optin is unset is recorded skipped", () => {
   const steps = [startDaemonStep()];
   const runs = expandMatrix(steps, FOUR_CELL_MATRIX, {

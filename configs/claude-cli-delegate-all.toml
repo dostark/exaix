@@ -15,10 +15,6 @@ memory = "Memory"
 # or any metered HTTP API call is used anywhere in this run (allow_net is empty; the
 # daemon never dials out; CliDelegateModelProvider/CliDelegateStrategy both strip
 # ANTHROPIC_API_KEY/ANTHROPIC_AUTH_TOKEN from the spawned CLI's env).
-# Differs from anthropic-cli-delegate.toml, which keeps [ai]/[models.default] on the
-# real, metered Anthropic API and only routes the code_changes step through the
-# subscription-billed headless claude — this config isolates "does the whole request
-# lifecycle work with zero API billing", not just the code-editing step.
 [ai]
 provider = "claude-cli"
 model = "claude-sonnet-5"

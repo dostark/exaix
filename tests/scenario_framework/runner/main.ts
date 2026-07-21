@@ -52,6 +52,10 @@ await new Command()
   .option("--score-threshold <threshold:number>", "Minimum suite score to pass (default: 0.5)")
   .option("--trials <n:number>", "Number of trials per scenario (default: 1)")
   .option("--history-format <format:string>", "History storage format: sqlite+jsonl or jsonl (default: sqlite+jsonl)")
+  .option(
+    "--cell <tool:string>",
+    "Run only the matrix cell whose tool matches (e.g. claude-code, opencode) — every other cell is skipped, not run",
+  )
   .action(async (options) => {
     // 1. Resolve framework home (directory containing the runner entry point)
     const frameworkHome = resolve(new URL(".", import.meta.url).pathname, "..");
@@ -156,6 +160,7 @@ await new Command()
             exactlExecutable: Deno.env.get("EXA_BIN_PATH")
               ? `${Deno.env.get("EXA_BIN_PATH")}/exactl`
               : resolve(frameworkHome, "bin/exactl"),
+            selectedCell: options.cell,
           });
 
           const suiteScore = result.manifest.suite_score ?? 1.0;

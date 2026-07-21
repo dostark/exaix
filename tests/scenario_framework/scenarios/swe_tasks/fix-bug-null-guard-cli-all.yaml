@@ -1,18 +1,35 @@
 schema_version: "1.0.0"
-id: "swe-fix-bug-null-guard-opencode-all"
-title: "Fix null-safety bugs in todo-app entirely via headless opencode/deepseek-v4-flash-free (analysis, planning, and code_changes — zero API key)"
+id: "swe-fix-bug-null-guard-cli-all"
+title: "Fix null-safety bugs in todo-app entirely via a headless CLI subscription (analysis, planning, and code_changes — zero API key)"
 pack: "swe_tasks"
-tags: ["swe", "fix-bug", "provider-live", "cli-delegate", "opencode", "no-api-key"]
+tags: ["swe", "fix-bug", "provider-live", "cli-delegate", "no-api-key"]
 request_fixture: "fixtures/requests/swe_tasks/fix-bug-null-guard.md"
 portals: []
 mode_support: ["auto"]
 
+# Two cells, one per supported CLI-delegate tool. The runner only ever executes the FIRST
+# cell with status "run" (synthetic_runner.ts) — a bare invocation with no --cell selection
+# always runs whichever cell's binary happens to be on PATH first, silently never running the
+# other. Select explicitly to exercise a specific tool:
+#   run-scenarios -s swe-fix-bug-null-guard-cli-all --cell claude-code
+#   run-scenarios -s swe-fix-bug-null-guard-cli-all --cell opencode
+# CI (or a local full pass) runs both by invoking once per --cell. Adding a new CLI-delegate
+# tool (Codex, Kimi, GLM, ...) means adding one more cell here + one new config file — no
+# other scenario changes.
 matrix:
   cells:
-    - tool: "exactl"
-      provider: "opencode-cli"
+    # provider is a documentary label only (matrix_expander.ts) — the config's own [ai].provider
+    # is the real source of truth. $CELL_PROVIDER/$CELL_MODEL are resolved from that same
+    # config's [ai] block by materializeCellConfig (synthetic_runner.ts), so this placeholder
+    # never drifts from the config and the scenario never hardcodes a provider/model string.
+    - tool: "claude-code"
+      provider: "$CELL_PROVIDER"
+      config: "configs/claude-cli-delegate-all.toml"
+      requires_bin: "claude"
+    - tool: "opencode"
+      provider: "$CELL_PROVIDER"
       config: "configs/opencode-cli-delegate-all.toml"
-      requires_bin: "true"
+      requires_bin: "opencode"
 
 steps:
   - id: "setup-db"
@@ -34,7 +51,7 @@ steps:
         equals: 0
 
   # code_changes forces PortalExecutionStrategy.WORKTREE for a plan whose frontmatter carries a
-  # portal, so the portal must be a real git repo. Mirrors fix-bug-null-guard-opencode-cli-delegate.yaml.
+  # portal, so the portal must be a real git repo. Mirrors fix-bug-null-guard.yaml.
   - id: "setup-portal-repo"
     type: "shell"
     command: "sh"
@@ -84,10 +101,11 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
-  # configs/opencode-cli-delegate-all.toml: [ai]/[models.default] AND [cli_delegate] all point
-  # at opencode-cli/opencode/deepseek-v4-flash-free — request analysis, plan generation, and the
-  # code_changes step all run through the same headless CLI subprocess. allow_net is empty; no
-  # ANTHROPIC_API_KEY or any metered HTTP call is used anywhere in this run.
+  # The selected cell's config (configs/claude-cli-delegate-all.toml or
+  # configs/opencode-cli-delegate-all.toml): [ai]/[models.default] AND [cli_delegate] all point
+  # at the same tool/model — request analysis, plan generation, and the code_changes step all
+  # run through the same headless CLI subprocess. allow_net is empty; no ANTHROPIC_API_KEY or
+  # any metered HTTP call is used anywhere in this run.
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"
@@ -134,6 +152,11 @@ steps:
   - id: "wait-for-plan"
     type: "wait-for-file"
     args: ["**/Plans/*_plan.md"]
+    # A rejected plan (e.g. the CLI-delegate model using a tool name outside
+    # McpToolName) writes to Workspace/Rejected/ within seconds — fail fast on that
+    # instead of burning the full 180s timeout waiting for a plan that already can't
+    # exist, and surface the real rejection reason instead of a generic timeout.
+    failure_glob: "**/Workspace/Rejected/*_rejected.md"
     timeout_sec: 180
     input_criteria: []
     output_criteria:
@@ -226,16 +249,22 @@ steps:
 
   # The LLM judge itself is a SEPARATE evaluation call (not part of the request/plan/execution
   # loop under test), resolved via ModelResolver against bootstrapProviderRegistry() — the
-  # same registration path opencode-cli went through, so pointing the judge at it too keeps
-  # this scenario's "zero API key" claim true end-to-end (agent AND judge).
+  # same registration path the selected cell's provider went through, so pointing the judge at
+  # it too keeps this scenario's "zero API key" claim true end-to-end (agent AND judge).
+  # $CELL_PROVIDER / $CELL_MODEL come from the selected cell's own config's [ai] block via
+  # materializeCellConfig — never hardcoded here, so a future provider only needs a new config
+  # file plus one new matrix cell above, not an edit to this scenario's steps.
   - id: "judge-quality"
     type: "shell"
     command: "sh"
     args: ["-c", "true"]
+    # step_pass_threshold: a near-perfect (but not 1.0) judge score is still a pass —
+    # only a score below 0.8 flips the scenario outcome to scenario-failure.
+    step_pass_threshold: 0.8
     env:
       EXA_EVAL_LLM_MOCK: "false"
-      EXA_LLM_PROVIDER: "opencode-cli"
-      EXA_LLM_MODEL: "opencode-cli:opencode/deepseek-v4-flash-free"
+      EXA_LLM_PROVIDER: "$CELL_PROVIDER"
+      EXA_LLM_MODEL: "$CELL_PROVIDER:$CELL_MODEL"
     output_criteria:
       - id: "llm-judge-quality"
         kind: "llm-judge"
