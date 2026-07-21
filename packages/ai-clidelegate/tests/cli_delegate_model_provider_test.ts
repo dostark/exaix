@@ -409,6 +409,78 @@ Deno.test("CliDelegateModelProvider: maps opencode JSONL into IGenerateResult (l
   assertEquals(result.cost_usd, 0);
 });
 
+Deno.test("CliDelegateModelProvider: opencode plan JSON using 'edit_file' is normalized to 'patch_file' before being returned", async () => {
+  const planJson = JSON.stringify({
+    title: "Add null guards",
+    description: "d",
+    steps: [{
+      step: 1,
+      title: "t1",
+      description: "d1",
+      tools: ["edit_file"],
+      actions: [{
+        tool: "edit_file",
+        params: { path: "/ws/src/utils.ts", oldString: "a", newString: "b" },
+      }],
+    }],
+  });
+  const run: IRunCliDelegateProcess = () =>
+    Promise.resolve({
+      code: 0,
+      stdout: [
+        JSON.stringify({ type: "text", part: { text: planJson } }),
+        JSON.stringify({ type: "step_finish", part: { tokens: { input: 10, output: 10, total: 20 }, cost: 0 } }),
+      ].join("\n"),
+      stderr: "",
+    });
+
+  const provider = new CliDelegateModelProvider({
+    tool: "opencode",
+    bin: "opencode",
+    model: "opencode/deepseek-v4-flash-free",
+    cwd: "/tmp/portal",
+    run,
+  });
+
+  const result = await provider.generate("prompt");
+  const parsed = JSON.parse(result.content);
+
+  assertEquals(parsed.steps[0].actions[0].tool, "patch_file");
+  assertEquals(parsed.steps[0].actions[0].params, {
+    path: "/ws/src/utils.ts",
+    patches: [{ search: "a", replace: "b" }],
+  });
+});
+
+Deno.test("CliDelegateModelProvider: claude content is never passed through the opencode plan-schema adapter", async () => {
+  // A claude response containing the literal string "edit_file" (e.g. explaining the fix
+  // in prose) must be returned verbatim — the adapter only ever applies to tool: "opencode".
+  const proseWithEditFile = "I used edit_file conceptually to describe the change.";
+  const run: IRunCliDelegateProcess = () =>
+    Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({
+        type: "result",
+        result: proseWithEditFile,
+        usage: { input_tokens: 10, output_tokens: 10 },
+        total_cost_usd: 0,
+      }),
+      stderr: "",
+    });
+
+  const provider = new CliDelegateModelProvider({
+    tool: "claude-code",
+    bin: "claude",
+    model: "claude-sonnet-5",
+    cwd: "/tmp/portal",
+    run,
+  });
+
+  const result = await provider.generate("prompt");
+
+  assertEquals(result.content, proseWithEditFile);
+});
+
 Deno.test("CliDelegateModelProvider: throws ModelProviderError when the subprocess exits non-zero", async () => {
   const run: IRunCliDelegateProcess = () => Promise.resolve({ code: 1, stdout: "", stderr: "authentication failed" });
 

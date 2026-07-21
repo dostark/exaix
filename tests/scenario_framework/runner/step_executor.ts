@@ -154,10 +154,12 @@ async function executeWaitForFileStep(
 ): Promise<IScenarioStepExecutionResult> {
   const timeoutSec = options.step.timeout_sec ?? 120; // Default 2 minutes
   const pathPattern = options.step.args?.[0] || "**/*_analysis.json";
+  const failureGlob = options.step.failure_glob;
   const workspaceRoot = options.cwd || Deno.cwd();
   const timeoutMs = timeoutSec * 1000;
 
   const pattern = globToRegExp(pathPattern);
+  const failurePattern = failureGlob ? globToRegExp(failureGlob) : undefined;
   const startTime = Date.now();
 
   while (Date.now() - startTime < timeoutMs) {
@@ -186,6 +188,36 @@ async function executeWaitForFileStep(
         stderr: "",
         combinedOutput: `File found: ${found[0]}`,
       };
+    }
+
+    // A failure_glob match means the outcome we're waiting for can never happen (e.g. the
+    // request that would have produced a plan was already rejected) — fail immediately
+    // instead of burning the rest of timeout_sec, and surface the failure file's content
+    // so the real error (not a generic timeout) reaches the scenario's failure details.
+    if (failurePattern) {
+      const failureFound = await findMatchingFiles(workspaceRoot, failurePattern);
+      if (failureFound.length > 0) {
+        const completedAtEpochMs = Date.now();
+        const completedAt = new Date(completedAtEpochMs).toISOString();
+        const failureContent = await Deno.readTextFile(failureFound[0]).catch(() => "");
+        const message = `Failure file matched ${failureGlob}: ${failureFound[0]}\n${failureContent}`;
+
+        if (options.verbose) {
+          console.log(`\n%c > ${message}`, "color: red; font-weight: bold;");
+        }
+
+        return {
+          stepId: options.step.id,
+          stepType: options.step.type,
+          startedAt,
+          completedAt,
+          durationMs: completedAtEpochMs - startedAtEpochMs,
+          exitCode: 1,
+          stdout: "",
+          stderr: message,
+          combinedOutput: message,
+        };
+      }
     }
 
     // Wait before next poll

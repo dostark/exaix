@@ -34,8 +34,14 @@
  * call gets an OPENCODE_CONFIG env var pointing at a generated config denying
  * edit/bash/task (verified live: without it, opencode edited a file mid-"analysis"; with
  * it, the identical prompt returned text-only and left the file untouched).
+ *
+ * Plan schema normalization (opencode only): because edit/bash/task are denied, opencode's
+ * planning response has no real tool-calling to anchor it, so its freehand plan JSON can
+ * use tool names outside McpToolName — see opencode_plan_schema_adapter.ts for the
+ * live-traced root cause and the normalization applied to every non-claude response
+ * before it is returned to the caller (RequestAnalyzer/PlanWriter).
  * @architectural-layer AI
- * @related-files [packages/ai-clidelegate/src/cli_delegate_provider_factory.ts, packages/execution/src/strategies/cli_delegate_strategy.ts, packages/session/src/delegate_return_parser.ts]
+ * @related-files [packages/ai-clidelegate/src/cli_delegate_provider_factory.ts, packages/ai-clidelegate/src/opencode_plan_schema_adapter.ts, packages/execution/src/strategies/cli_delegate_strategy.ts, packages/session/src/delegate_return_parser.ts]
  */
 
 import type { IGenerateResult } from "@exaix/ai/providers";
@@ -61,6 +67,7 @@ import {
 } from "@exaix/core";
 import { join } from "@std/path";
 import { DEFAULT_CLI_DELEGATE_TIMEOUT_MS } from "./constants.ts";
+import { adaptOpencodePlanJson } from "./opencode_plan_schema_adapter.ts";
 
 /** Result of running the headless CLI subprocess (subset of SafeSubprocess.run's shape). */
 export interface ICliDelegateProcessResult {
@@ -248,8 +255,14 @@ export class CliDelegateModelProvider implements IModelProvider {
     }
 
     const parsed = parseDelegateStdout(result.stdout, this.options.tool);
+    // opencode's read-only planning calls (edit/bash/task denied above) have no real
+    // tool-calling to anchor their output, so a freehand plan JSON can use tool names
+    // outside McpToolName (see opencode_plan_schema_adapter.ts) — normalize before this
+    // reaches PlanAdapter/plan_schema.ts validation. No-op for claude (not affected) and
+    // for any response that isn't a plan JSON object (adapter leaves it unchanged).
+    const content = this.isClaude ? parsed.lastText : adaptOpencodePlanJson(parsed.lastText).json;
     return {
-      content: parsed.lastText,
+      content,
       usage: {
         promptTokens: parsed.tokenStats.input,
         completionTokens: parsed.tokenStats.output,

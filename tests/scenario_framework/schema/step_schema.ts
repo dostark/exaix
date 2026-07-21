@@ -303,6 +303,11 @@ export const ScenarioStepSchema = z.object({
   args: z.array(z.string()).optional(),
   env: z.record(z.string(), z.string()).optional(),
   timeout_sec: z.number().int().positive().optional(),
+  // wait-for-file: an optional second glob polled alongside args[0]. If it matches before
+  // the success glob does, the step fails immediately (surfacing the matched file's content
+  // in stderr) instead of burning the rest of timeout_sec waiting for a file that a known
+  // failure (e.g. a rejected plan) means will never appear.
+  failure_glob: NON_EMPTY_STRING.optional(),
   // wait-for-journal-event: the action_type to poll the workspace journal for (e.g. daemon.ready).
   event_type: NON_EMPTY_STRING.optional(),
   checkpoint: z.union([NON_EMPTY_STRING, z.boolean()]).optional(),

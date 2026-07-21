@@ -10,3 +10,4 @@
 export * from "./src/cli_delegate_model_provider.ts";
 export * from "./src/cli_delegate_provider_factory.ts";
 export * from "./src/constants.ts";
+export * from "./src/opencode_plan_schema_adapter.ts";

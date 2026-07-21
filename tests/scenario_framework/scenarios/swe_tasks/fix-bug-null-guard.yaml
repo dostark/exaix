@@ -130,6 +130,10 @@ steps:
   - id: "wait-for-plan"
     type: "wait-for-file"
     args: ["**/Plans/*_plan.md"]
+    # A rejected plan writes to Workspace/Rejected/ within seconds — fail fast on that
+    # instead of burning the full 180s timeout waiting for a plan that already can't
+    # exist, and surface the real rejection reason instead of a generic timeout.
+    failure_glob: "**/Workspace/Rejected/*_rejected.md"
     timeout_sec: 180
     input_criteria: []
     output_criteria:
@@ -213,6 +217,9 @@ steps:
     args: ["-c", "true"]
     # A real Anthropic judge (not the mock). EXA_LLM_PROVIDER selects the provider the eval
     # harness resolves; without it, callLlmEndpoint's real-LLM path errors ("provider required").
+    # step_pass_threshold: a near-perfect (but not 1.0) judge score is still a pass —
+    # only a score below 0.8 flips the scenario outcome to scenario-failure.
+    step_pass_threshold: 0.8
     env:
       EXA_EVAL_LLM_MOCK: "false"
       EXA_LLM_PROVIDER: "anthropic"
