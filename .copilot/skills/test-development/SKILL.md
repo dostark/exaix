@@ -11,7 +11,7 @@ scope: test
 title: "Test Development Skill (#test-development)"
 description: Write tests following Exaix conventions — helpers, placement, patterns, CI
 short_summary: "Write tests for Exaix using the right helpers, placement rules, and patterns."
-version: "1.0.0"
+version: "1.1.0"
 topics: ["testing", "tdd", "coverage", "test-helpers"]
 qwen_skill: test-development
 ---
@@ -112,6 +112,71 @@ Edge case coverage requirements — mandatory test dimensions
      transactions, verify cleanup on both success and failure paths (including
      exceptions). Use `try/finally` or `using` — a missing cleanup is a
      resource leak regardless of whether the happy path test passes.
+
+Live-daemon subprocess teardown — mandatory precautions
+
+  Any test that boots a real `apps/daemon/main.ts` subprocess (directly via
+  `Deno.Command`, via `bootRealDaemon()`, or indirectly via `exactl daemon
+  start`/`restart`) MUST guarantee the daemon process is dead before the test
+  function returns — on every exit path, not just the happy path. Two
+  independent orphan-daemon bugs were found and fixed by this exact failure
+  mode (2026-07-21, `scripts/test_parallel.ts` and
+  `tests/integration/cli_commands_test.ts`); both looked identical at the
+  process-list level: a daemon subprocess still running with its own tempDir
+  already deleted (confirmed via `readlink /proc/<pid>/cwd` showing
+  `(deleted)`) — proof the test's `finally` ran and tore down the filesystem
+  state but never touched the daemon process itself.
+
+  - **Every `daemon start`/`restart` call needs a matching `daemon stop`.**
+    `restart` intentionally leaves a daemon running — that's its whole
+    contract. A test that calls `start`/`restart` and then ends (even via a
+    generic `finally { await env.cleanup() }`) leaks a daemon, because
+    `TestEnvironment.cleanup()`/`initTestDbService()`'s cleanup only close
+    the DB and remove the tempDir — neither has any awareness of a process
+    the test itself spawned via the CLI. Add the final stop explicitly:
+    `finally { await runExactl(["daemon", "stop"], env.tempDir).catch(() => {}); await env.cleanup(); }`
+
+  - **A direct `Deno.Command` daemon spawn needs `try/finally` with both a
+    kill AND an awaited status**, not just a kill. Pattern:
+    `const proc = new Deno.Command(...).spawn(); try { /* test body */ }
+    finally { try { Deno.kill(proc.pid, "SIGTERM"); } catch {} try { await
+    proc.status; } catch {} }`
+    Sending the signal without awaiting `proc.status` risks the test
+    function returning (and the next test starting) before the daemon has
+    actually exited — prefer `bootRealDaemon()`
+    (`tests/integration/helpers/daemon_config.ts`) for this pattern; it
+    already implements it correctly.
+
+  - **A timer-based kill (`setTimeout(() => proc.kill(...), ms)`) racing
+    `await proc.output()`/`proc.status` is not a teardown guarantee.** If the
+    awaited promise resolves for any reason other than "the process actually
+    exited" (e.g. its stdio streams closed early), the function can return
+    while the daemon subprocess is still alive with nothing left tracking
+    it. Await the process's own exit status directly, not a proxy for it.
+
+  - **A daemon-booting test's own subprocess tree is not proof against a
+    hostile top-level kill.** On Linux, killing a process does NOT cascade
+    to that process's own children — so a daemon booted by a `deno test`
+    file, which is itself a child of a test-runner script (`test_parallel.ts`
+    → `deno test` batch → daemon subprocess), survives if something kills
+    the runner script from outside (Ctrl-C, a CI/harness timeout) even
+    though the individual test's own `try/finally` is written correctly.
+    This class of gap is fixed once at the runner level, not per-test: see
+    `scripts/test_parallel.ts`'s `detached: true` spawn + `killActiveChildGroups()`
+    (group-wide `SIGTERM` via `Deno.kill(-pid, ...)`) for the pattern, and
+    only replicate it if you're writing a new test-runner/orchestration
+    script, not in individual test files.
+
+  - **Verify with the real diagnostic, not just "tests passed."** A green
+    test run proves nothing about daemon leaks — check directly:
+    `pgrep -af "apps/daemon/main.ts"` before and immediately after the run
+    (a clean baseline first is required, or a pre-existing leak gets
+    misattributed to the run under test). If a daemon survives, confirm
+    it's really orphaned (not mid-teardown) via
+    `readlink /proc/<pid>/cwd` (shows `(deleted)` once its tempDir is gone)
+    and `ps -o pid,ppid,pgid,etime -p <pid>` (`PPID 1` or `PPID` matching
+    the OS init process means it was already reparented — a real orphan,
+    not a race).
 
 Advanced testing patterns
   - Refactoring & Duplication: use npx jscpd packages apps tests to find duplicated
