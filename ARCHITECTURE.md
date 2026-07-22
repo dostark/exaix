@@ -83,7 +83,7 @@ Session tools are treated as **external delegates** — launched via a configura
 
 Session tool integration **must not introduce session state into Exaix's core pipeline**. The pipeline remains file-driven and asynchronous. The session tool is a transient external process that reads from and writes to the same file system — it does not change how Exaix models work.
 
-### Handoff Contract (Phase 106)
+### Handoff Contract (session delegation)
 
 The integration is realized by the `@exaix/session` package as a strict three-part handoff, so the invariant holds by construction (only files + a typed `return.json` cross back):
 
@@ -93,7 +93,7 @@ The integration is realized by the `@exaix/session` package as a strict three-pa
 
 Delegated output is **untrusted** and still flows through the same quality, critique, and review gates as autonomous output. For the pipeline gate diagram with ASCII art and TOML configuration sample, see `packages/flow/README.md#session-tool-integration`.
 
-### Launch Modes (Phase 111)
+### Launch Modes
 
 The session tool can be launched in one of three modes, configured via `session_delegate.launch_mode`:
 
@@ -105,7 +105,7 @@ The session tool can be launched in one of three modes, configured via `session_
 
 Mode 3 requires `bin_overrides` to add the tool binary to the spawn allowlist (see `packages/flow/README.md#session-tool-integration`). The compiled mock tool at `.cache/mock_session_tool_bin` (built via `deno task build:mock-tool`) is used for CI testing.
 
-Mode 3 also supports a `[session_delegate.provider]` block (Phase 123 R9) that
+Mode 3 also supports a `[session_delegate.provider]` block (multi-delegate provider routing) that
 declares which API gateway the delegate should use. When present, the daemon reads
 the key from `key_env` and injects it into the child process **after** environment
 sanitisation, so injected `API_KEY` vars survive the `SECRET_ENV_PATTERN` strip:
@@ -163,7 +163,7 @@ into the request body alongside `model` and `messages`.
 - Enterprise providers: Azure OpenAI, AWS Bedrock (🟣 Enterprise)
 - Provider factory pattern for extensibility; concrete providers register at bootstrap via `apps/common/registry_bootstrap.ts` (Solo) or `packages-team/team-composer/src/team_bootstrap.ts` (Team)
 - Cost management with edition-tiered capabilities
-- **Model registry (Solo tier, Phase 134):** the model resolver consults an `IModelRegistry` when selecting a concrete model for an intent. Solo ships a lightweight **floor** — a static, no-network catalog of provider/model capabilities and pricing provenance — so resolution stays offline and deterministic. Resolution honours a user-**curated list** first (per-size preferred providers, `preferred_list` reason), exempts genuinely local/free providers from cost filtering, and never fabricates a price for an unknown-priced model. A live catalog and routing rigor are Team+ capabilities, attached through the edition seam (`IModelRegistryProvider`); when no Team module is present the Solo floor is used and behaviour is unchanged. See `packages/model-registry/README.md` and the User Guide's model-intent section.
+- **Model registry (Solo tier, the curated model registry):** the model resolver consults an `IModelRegistry` when selecting a concrete model for an intent. Solo ships a lightweight **floor** — a static, no-network catalog of provider/model capabilities and pricing provenance — so resolution stays offline and deterministic. Resolution honours a user-**curated list** first (per-size preferred providers, `preferred_list` reason), exempts genuinely local/free providers from cost filtering, and never fabricates a price for an unknown-priced model. A live catalog and routing rigor are Team+ capabilities, attached through the edition seam (`IModelRegistryProvider`); when no Team module is present the Solo floor is used and behaviour is unchanged. See `packages/model-registry/README.md` and the User Guide's model-intent section.
 
 ### 5. **Portal System**
 
@@ -286,13 +286,13 @@ The `.exa/config.db` SQLite database stores configuration overrides for keys reg
 
 The 4 read-only tools are auto-approved; the mutation tools (`ConfigSet`, `ConfigApply`) gate on human approval. `ConfigApply` awaits each staged `set()` and records per-key applied/error results.
 
-**Security controls (Phase 138):**
+**Security controls (config security hardening):**
 
 - **Three-tier MCP authorization** — `ConfigSet.execute()` routes by the key's tier, **derived** (not hand-annotated) from existing metadata via `resolveTier(key)` (`packages/core/src/config/registry.ts`): `swap: "restart"` or `edition: "team"` → `"dangerous"` (stage + human approval + a `requires_confirmation: true` marker in the response for a future approval-UI phase); otherwise → `"leaf"` (stage + human approval); an explicit `tier: "safe"` override on the `configurable()` opts → `"safe"` (writes through immediately, no staging). The own-portal auto-approve tier is deferred (no own-portal context on the MCP tool yet). `requires_confirmation` on `IToolManifestEntry` is metadata-only this phase.
 - **Deny-permanently blocklist** — a `config_mcp_blocklist` table (`agent_id` nullable = all-agents; `key_pattern` glob) blocks MCP config writes. `ConfigSet`/`ConfigApply` refuse blocked paths through `IConfigAdapter.isPathBlocked()` (the adapter owns the private config `Database`; MCP tools never touch a raw handle), returning a `ConfigPathBlockedError` via `formatToolError`. Managed by `exactl config block {add,remove,list}`.
 - **Rate limiting** — CLI debounce (max `CLI_CONFIG_SET_MAX_WRITES_PER_WINDOW` per `CLI_CONFIG_SET_DEBOUNCE_WINDOW_MS`) is **DB-backed** via `IConfigAdapter.countRecentWrites()` so it survives across separate CLI processes; MCP staging is capped at `MCP_CONFIG_SET_MAX_PENDING` (in-process); the append-only log has a `CONFIG_DB_OVERRIDE_HARD_LIMIT` anti-DoS page-limit that **exempts tombstone (`unset`) and `init` writes** so recovery always works, with `exactl config compact` (`IConfigAdapter.compact()`, collapses to one row per key) as the escape hatch. All three throw/surface `ConfigRateLimitedError`.
 
-**Phase 139 additions (history, rollback, key locking, integrity checksum, config edit):**
+**Config history, rollback, and integrity checksum:**
 
 - **Config history/rollback CLI** — `config history <key>` reads the append-only log via `IConfigAdapter.getHistory(key)` (already on the interface), displaying each entry as `id=<id> <value> <created_at> (source: <source>)` newest-first. `config rollback <key> <id>` looks up the historical row by id, appends a new row restoring that value with `source="rollback"`, and emits `config.rolled_back`. Both leverage the existing `getOverrideHistory` and `insertOverride` DAOs with no schema changes.
 - **Key locking (`config_locked_keys`)** — a `config_locked_keys` SQLite table (`key`, `locked_at`, `locked_by`, `reason`) checked by a shared `assertWritable(validationKey)` guard inside both `DirectConfigAdapter.set()` and `DaemonConfigAdapter.set()`, called with the **resolved** validation key (not the raw caller-supplied key) so a lock on a base key also covers profile-scoped writes to it (GAP-1, closed in post-gap remediation). A locked key is refused by every write surface (CLI `set`, MCP `ConfigApply`, daemon own writes, profile-scoped `set`) with `ConfigKeyLockedError` until `config unlock`. Managed by `config lock/unlock/lock-list` CLI commands; emits `config.key_locked`/`config.key_unlocked` events.
@@ -437,7 +437,7 @@ When a tool is invoked, a single `IHitlPolicyEvaluator` instance is consulted at
 
 1. **`ToolRegistry` pipeline (primary)** — a HITL middleware stage runs before the core executor,
    covering all mutating tools (`write_file`, `git_commit`, `run_command`, etc.).
-2. **`DynamicStepExecutor` (secondary)** — the same evaluator is consulted at the existing Phase 79
+2. **`DynamicStepExecutor` (secondary)** — the same evaluator is consulted at the existing tool confirmation interceptor
    decision point, covering read-biased tools in the ReAct loop.
 
 On a rule match, the pipeline journals a typed `HitlPolicyMatched` event (carrying the matched
@@ -646,7 +646,7 @@ capabilities.includes("react")        → ReActLoopStrategy
 
 **File:** `packages/ai/src/model_resolver.ts` (line 56)
 
-Accepts a `ModelIntent` and returns an `IResolvedModel` (provider + model + per-call options). Resolution follows a strict precedence chain, unchanged in shape since Phase 132 but extended per-step by the Team `IResolutionStrategy` seam (below) where present:
+Accepts a `ModelIntent` and returns an `IResolvedModel` (provider + model + per-call options). Resolution follows a strict precedence chain, unchanged in shape since model resolution and intent but extended per-step by the Team `IResolutionStrategy` seam (below) where present:
 
 ```text
 ModelIntent ──→ tryResolveOverride (EXA_MODEL_PRESET_OVERRIDE env var)
@@ -654,7 +654,7 @@ ModelIntent ──→ tryResolveOverride (EXA_MODEL_PRESET_OVERRIDE env var)
                    [Team: IResolutionStrategy.validateExplicit — live-catalog
                     validation + auto-admit on first use; Solo: pass-through]
                 └─→ tryResolveBareName (bare model name — provider or curated match)
-                   └─→ tryResolveCurated (Phase 134: model_presets.<SIZE>.candidates —
+                   └─→ tryResolveCurated (the curated model registry: model_presets.<SIZE>.candidates —
                        first healthy registered provider in the list wins)
                       └─→ tryResolveFromPreset (model_size → preset profile)
                          └─→ fallback iteration (intent.fallbacks[])
@@ -663,7 +663,7 @@ ModelIntent ──→ tryResolveOverride (EXA_MODEL_PRESET_OVERRIDE env var)
                                  → ProviderRegistry metadata → selectModelForProvider
                                  → scoreCandidates (characteristics: cheapest/fastest/best)
                                    [Team: IResolutionStrategy.scoreBest — benchmark_map
-                                    lookup keyed by derived TaskType, Phase 135 Step 8]
+                                    lookup keyed by derived TaskType, the Team edition model registry Step 8]
                                  → decideWinner (+ IResolutionStrategy.rankUsage
                                    opt-in usage tiebreak when no characteristics given)
                                  → IResolutionStrategy.selectRoute — multi-route pricing
@@ -745,7 +745,7 @@ Dynamic execution is bounded by a two-layer context budget system:
    resolves token limits per section (system / plan / portalKnowledge / memory / skills / loopHistory)
    using `SECTION_BASE_WEIGHTS` before the first LLM call. The model's total context window is
    resolved via an injected `IModelRegistry` (the same edition-selected registry used for
-   `ModelResolver`/`CostTracker`, Phase 135 Step 11), falling back to
+   `ModelResolver`/`CostTracker`, the Team edition model registry Step 11), falling back to
    `LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK` for local models or a hardcoded 128K default when no
    registry is injected or the model is unresolved.
 
@@ -768,7 +768,7 @@ every ReAct iteration. `ReActLoopStrategy` reads both values via `IReActLoopExec
 For segment kinds, priority constants, and the two-tier timing model, see
 `packages/execution/README.md#context-budget-manager`.
 
-### Concurrent Guardrail Runner (Phase 107)
+### Concurrent Guardrail Runner
 
 The guardrail runner is a **side-channel safety screener** that runs in parallel with the primary
 ReAct agent. It screens each iteration's generated output against configurable policies using a
@@ -1096,7 +1096,7 @@ For the full 60+ entry component responsibilities table with file paths and edit
 - **[Test Directory Guide](tests/README.md)** — Test structure and package-local test mapping
 - **[Testing Helpers](packages/testing/README.md)** - Shared test helpers (`@exaix/testing`)
 - **[Dogfooding Guide](docs/Exaix_Dogfooding.md)** — Self-hosted dogfooding workflow: config preset (`configs/dogfood.toml`), daemon lifecycle script (`scripts/dogfood_daemon.ts`), bootstrap workflow (`scripts/dogfood_bootstrap.ts`)
-- **[Phase 122 — Dogfood Identity, Skills & Generator](exaix-dev-docs/planning/phase-122-dogfooding-e.md)** — The `dogfood-developer` identity (`Blueprints/Identities/dogfood-developer.md`, renamed from `dogfood-coder` in Phase 131) bundles 5 rigor skills (tdd-methodology, exaix-conventions, portal-grounding, security-first, code-review) as `default_skills`. Two meta-workflow skills (`gap-analysis`, `step-execution`) are stored as runtime JSON in `Memory/Skills/global/`. The `agent_runner` (`packages/execution/src/agent_runner.ts`) now unions `default_skills` with explicit `request.skills` so identity rigor skills are never bypassed. The `plan_to_requests.ts` script (`scripts/plan_to_requests.ts`) reads a `phase-NN-*.md` document and generates RequestSchema-valid request files, completing the dogfooding loop.
-- **[Phase 125 — Dogfood Meta-Workflow Skills](exaix-dev-docs/planning/phase-125-dogfood-meta-workflow-skills.md)** — Completes the dogfood meta-workflow loop by (a) adding `exaix:` blocks to all 23 `.copilot/skills/` so every dev skill becomes a runtime skill in the dogfood sandbox, (b) wiring the `generate_skill_json.ts` transform into `dogfood_bootstrap.ts`, (c) adding gap-remediation skills (`remediate-plan-gaps`, `remediate-code-gaps`) that consume pre-/post-gap-analysis output, (d) making `/plan` emit step-manifests for every step with a `check_step_manifests.ts` CI gate (`--since 130`), and (e) an E2E cutover test proving a generated skill loads and injects through the real `SkillsService`. Delivers dogfooding roadmap items R5 (skill transform), R6 (gap remediation), and R7 (manifest-first plans).
+- **[Dogfood Identity, Skills & Generator](exaix-dev-docs/planning/phase-122-dogfooding-e.md)** — The `dogfood-developer` identity (`Blueprints/Identities/dogfood-developer.md`, renamed from `dogfood-coder` in Phase 131) bundles 5 rigor skills (tdd-methodology, exaix-conventions, portal-grounding, security-first, code-review) as `default_skills`. Two meta-workflow skills (`gap-analysis`, `step-execution`) are stored as runtime JSON in `Memory/Skills/global/`. The `agent_runner` (`packages/execution/src/agent_runner.ts`) now unions `default_skills` with explicit `request.skills` so identity rigor skills are never bypassed. The `plan_to_requests.ts` script (`scripts/plan_to_requests.ts`) reads a `phase-NN-*.md` document and generates RequestSchema-valid request files, completing the dogfooding loop.
+- **[Dogfood Meta-Workflow Skills](exaix-dev-docs/planning/phase-125-dogfood-meta-workflow-skills.md)** — Completes the dogfood meta-workflow loop by (a) adding `exaix:` blocks to all 23 `.copilot/skills/` so every dev skill becomes a runtime skill in the dogfood sandbox, (b) wiring the `generate_skill_json.ts` transform into `dogfood_bootstrap.ts`, (c) adding gap-remediation skills (`remediate-plan-gaps`, `remediate-code-gaps`) that consume pre-/post-gap-analysis output, (d) making `/plan` emit step-manifests for every step with a `check_step_manifests.ts` CI gate (`--since 130`), and (e) an E2E cutover test proving a generated skill loads and injects through the real `SkillsService`. Delivers dogfooding roadmap items R5 (skill transform), R6 (gap remediation), and R7 (manifest-first plans).
 
 ---

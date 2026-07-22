@@ -486,7 +486,7 @@ export class PlanExecutor {
 
 ## 6. Environment Variables {#env-vars}
 
-Environment‑variable rules were formalised in Phase 28 and are part of the
+Environment‑variable rules were formalised in configuration cleanup and are part of the
 style guide:
 
 - **Production overrides** are limited to the `EXA_LLM_*` family:
@@ -518,7 +518,7 @@ runtime bugs.
 change, and event ordering varies by OS ([denoland/deno#12874](https://github.com/denoland/deno/issues/12874)).
 A naive `for await (const e of watcher)` loop therefore **double-processes** every change, and an
 uncaught throw inside the loop **tears down the whole watcher** (and often the daemon — this was the
-Phase 128 reconcile crash).
+delegate permission hardening reconcile crash).
 
 - **Consume `Deno.watchFs` via `consumeFsEvents` / `watchFsDebounced` from `@exaix/core/fs`** rather
   than hand-rolling a `for await` loop. The helper provides per-path debounce, write-kind filtering,

@@ -138,7 +138,7 @@ Key facts about the Exaix system:
   | 17   | Agent docs integrity | `deno task check:agent-docs-integrity`         |
   | 18   | Qwen skills sync     | `deno task check:qwen-skills-sync`             |
 
-> Gate 12 (`docs-bench`, filter `[hallucination-bench]`) also runs `tests/docs/positioning_consistency_test.ts`, which enforces Phase 91's positioning/glossary/weaknesses cross-document consistency (no-vaporware phase claims, three-tier narrative, differentiation material, GLOSSARY.md split, stale-path regressions).
+> Gate 12 (`docs-bench`, filter `[hallucination-bench]`) also runs `tests/docs/positioning_consistency_test.ts`, which enforces positioning and narrative's positioning/glossary/weaknesses cross-document consistency (no-vaporware phase claims, three-tier narrative, differentiation material, GLOSSARY.md split, stale-path regressions).
 
 ### Key Commands
 

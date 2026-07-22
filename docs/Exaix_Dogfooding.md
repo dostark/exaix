@@ -291,7 +291,7 @@ Instead of writing each request manually, use the `plan_to_requests.ts` generato
 convert a phase planning document into a queue of request files:
 
 ```bash
-# Generate request files for Phase 122 (default: Workspace/Requests/)
+# Generate request files for dogfooding phase E (default: Workspace/Requests/)
 deno run -A scripts/plan_to_requests.ts exaix-dev-docs/planning/phase-122-dogfooding-e.md
 
 # Preview without writing
@@ -475,22 +475,22 @@ When the daemon delegates to a headless agent:
    files were touched), attributes costs, and presents the changeset
    for human review.
 
-This is Phase 111 (shipped — see `exaix-dev-docs/planning/phase-111-session-delegation-runtime-and-e2e.md`).
+This implements session delegation (shipped — see `exaix-dev-docs/planning/phase-111-session-delegation-runtime-and-e2e.md`).
 Without it, the daemon uses its in-process agent (`ReActLoopStrategy`) which works identically
 but runs on the daemon's own provider.
 
-### 6.4 Config Presets (Phase 123)
+### 6.4 Config Presets (multi-delegate provider routing)
 
 The daemon ships four `[session_delegate]` presets:
 
-| Preset                   | Tool          | Provider   | File                                                 |
-| ------------------------ | ------------- | ---------- | ---------------------------------------------------- |
-| OpenCode (default)       | `opencode`    | direct     | `configs/dogfood.toml`                               |
-| Claude Code (direct)     | `claude-code` | direct     | `configs/dogfood.claude.toml`                        |
-| OpenCode + OpenRouter    | `opencode`    | openrouter | `configs/dogfood.openrouter.toml`                    |
-| Claude Code + OpenRouter | `claude-code` | openrouter | `configs/dogfood.claude.openrouter.toml` (Phase 127) |
+| Preset                   | Tool          | Provider   | File                                                                     |
+| ------------------------ | ------------- | ---------- | ------------------------------------------------------------------------ |
+| OpenCode (default)       | `opencode`    | direct     | `configs/dogfood.toml`                                                   |
+| Claude Code (direct)     | `claude-code` | direct     | `configs/dogfood.claude.toml`                                            |
+| OpenCode + OpenRouter    | `opencode`    | openrouter | `configs/dogfood.openrouter.toml`                                        |
+| Claude Code + OpenRouter | `claude-code` | openrouter | `configs/dogfood.claude.openrouter.toml` (delegate provider live matrix) |
 
-The `[session_delegate.provider]` block (Phase 123 R9) declares which API gateway a tool
+The `[session_delegate.provider]` block (multi-delegate provider routing) declares which API gateway a tool
 should use. When present, the daemon reads the key from `key_env` and injects it into
 the child process **after** the default environment sanitisation (so secrets from the
 parent are never leaked, but the delegate gets exactly the keys it needs):
@@ -517,7 +517,7 @@ the Anthropic-compatible endpoint with an auth token rather than the standard
 API-key header. The return is parsed from the single `{type:"result"}` JSON object
 that `claude --output-format json` emits.
 
-### 6.5 Running the `provider_live` delegate matrix (Phase 127)
+### 6.5 Running the `provider_live` delegate matrix (delegate provider live matrix)
 
 The four presets above are exercised end-to-end by a single parametrized scenario,
 `tests/scenario_framework/scenarios/provider_live/session_delegate_matrix_live.yaml`. It iterates the
@@ -549,10 +549,10 @@ Per-cell requirements — a cell **skips** unless **all** of its predicates hold
 > **Live token-spend.** The deterministic matrix (parse + per-cell RUN/SKIP resolution) is proven and
 > CI-safe; a present cell additionally **spends provider tokens** when it boots a real delegate. The
 > end-to-end `session.delegate.reconciled` journal proof is run on demand (tracked as the LIVE-RT item
-> in the Phase 127 plan). A clean cell journals `session.delegate.reconciled`; an out-of-scope edit
+> in the delegate provider live matrix plan). A clean cell journals `session.delegate.reconciled`; an out-of-scope edit
 > journals `session.delegate.scope_violation` (asserted by the negative scenario).
 
-### 6.6 Delegate Permission Hardening (Phase 128)
+### 6.6 Delegate Permission Hardening
 
 When `[session_delegate].harden_permissions = true`, the daemon generates a per-tool pre-flight
 permission config from the brief's `permitted_paths` before launching the delegate:
@@ -689,7 +689,7 @@ final sign-off.
 ## See Also
 
 - `exaix-dev-docs/dev/Exaix_Dogfooding_Analysis.md` — Full analysis of dogfooding readiness, gaps, and future phases
-- `exaix-dev-docs/planning/phase-120-dogfooding-a-c.md` — Phase 120 implementation plan (config, bootstrap, docs)
+- `exaix-dev-docs/planning/phase-120-dogfooding-a-c.md` — dogfood infrastructure implementation plan (config, bootstrap, docs)
 - [Exaix User Guide](Exaix_User_Guide.md) — General usage and deployment
 - [Exaix Evaluation Guide](Exaix_Evaluation.md) — Scenario framework and `exactl eval`
 - `TOOLS.md` — All agent-accessible MCP tools

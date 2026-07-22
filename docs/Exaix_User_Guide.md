@@ -239,7 +239,7 @@ provider = "ollama"
 model = "llama3.2"
 ```
 
-**Curated model lists per size (Phase 134, Solo).** When a request specifies a `--model-size`
+**Curated model lists per size (the curated model registry, Solo).** When a request specifies a `--model-size`
 (S/M/L/XL) rather than a named model, the resolver picks a provider for that size. You can
 curate a **preferred list** per size so your favourite providers win before any scoring:
 
@@ -264,7 +264,7 @@ cheapest = ["ollama"]
 - Curate these lists from the CLI instead of editing TOML by hand — see
   [`exactl config model` and `exactl models`](#exactl-config-model--exactl-models--solo-model-curation-phase-134).
 - **Editions:** the Solo floor is a static, offline catalog. A live, always-current catalog and
-  stricter routing rigor arrive with the Team edition (Phase 135); Solo behaviour is unchanged
+  stricter routing rigor arrive with the Team edition (the Team edition model registry); Solo behaviour is unchanged
   when no Team module is present. For the full precedence chain, characteristic scoring
   (including Team's benchmark-driven `best`), the live catalog, multi-route pricing, and
   cost-accuracy semantics, see **[`docs/Model_Resolution.md`](Model_Resolution.md)**.
@@ -367,7 +367,7 @@ deno task setup
 deno task start
 ```
 
-### 2.5 Session Delegation Configuration (Phase 111)
+### 2.5 Session Delegation Configuration
 
 Exaix can delegate specific pipeline gates to external CLI agent tools (OpenCode, Claude Code)
 instead of using the built-in LLM. This is useful when you want human-in-the-loop review or
@@ -951,27 +951,27 @@ exactl request analyze "Existing Request Subject" --engine llm
 
 **Options:**
 
-| Option                  | Short | Description                                                                                               |
-| ----------------------- | ----- | --------------------------------------------------------------------------------------------------------- |
-| `--agent`               | `-a`  | Target identity blueprint (default: `default`, mutually exclusive with --flow)                            |
-| `--flow`                |       | Target multi-agent flow (mutually exclusive with --agent)                                                 |
-| `--priority`            | `-p`  | Priority: `low`, `normal`, `high`, `critical`                                                             |
-| `--portal`              |       | Portal alias for project context                                                                          |
-| `--target-branch`       |       | Target/base branch when working inside a portal (stored as `target_branch`)                               |
-| `--skills`              |       | Comma-separated list of skills to inject (e.g., `documentation-driven,file-ops`)                          |
-| `--file`                | `-f`  | Read description from file                                                                                |
-| `--acceptance-criteria` |       | Repeatable acceptance criterion; stored in frontmatter as `acceptance_criteria`                           |
-| `--expected-outcome`    |       | Repeatable expected outcome; stored in frontmatter as `expected_outcomes`                                 |
-| `--interactive`         | `-i`  | Interactive mode with prompts                                                                             |
-| `--dry-run`             |       | Preview without creating                                                                                  |
-| `--json`                |       | Machine-readable output                                                                                   |
-| `--analyze`             |       | Trigger immediate intent analysis (Phase 45)                                                              |
-| `--engine`              | `-e`  | Analysis engine: `heuristic` (default), `llm`                                                             |
-| `--model-size`          |       | Capability tier: `S`, `M`, `L`, `XL` — maps to context/cost preset via ModelResolver (Phase 132)          |
-| `--thinking`            |       | Require extended reasoning (thinking-capable model, Phase 132)                                            |
-| `--effort`              |       | Reasoning token budget: `low`, `medium`, `high` (only with `--thinking`, Phase 132)                       |
-| `--characteristic`      |       | Soft ranking hint — `cheapest` or `fastest`. Scores providers, does not eliminate. Repeatable (Phase 132) |
-| `--preferred-provider`  |       | Narrow candidate pool to a specific provider, skips cross-provider scoring (Phase 132)                    |
+| Option                  | Short | Description                                                                                                                 |
+| ----------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------- |
+| `--agent`               | `-a`  | Target identity blueprint (default: `default`, mutually exclusive with --flow)                                              |
+| `--flow`                |       | Target multi-agent flow (mutually exclusive with --agent)                                                                   |
+| `--priority`            | `-p`  | Priority: `low`, `normal`, `high`, `critical`                                                                               |
+| `--portal`              |       | Portal alias for project context                                                                                            |
+| `--target-branch`       |       | Target/base branch when working inside a portal (stored as `target_branch`)                                                 |
+| `--skills`              |       | Comma-separated list of skills to inject (e.g., `documentation-driven,file-ops`)                                            |
+| `--file`                | `-f`  | Read description from file                                                                                                  |
+| `--acceptance-criteria` |       | Repeatable acceptance criterion; stored in frontmatter as `acceptance_criteria`                                             |
+| `--expected-outcome`    |       | Repeatable expected outcome; stored in frontmatter as `expected_outcomes`                                                   |
+| `--interactive`         | `-i`  | Interactive mode with prompts                                                                                               |
+| `--dry-run`             |       | Preview without creating                                                                                                    |
+| `--json`                |       | Machine-readable output                                                                                                     |
+| `--analyze`             |       | Trigger immediate intent analysis                                                                                           |
+| `--engine`              | `-e`  | Analysis engine: `heuristic` (default), `llm`                                                                               |
+| `--model-size`          |       | Capability tier: `S`, `M`, `L`, `XL` — maps to context/cost preset via ModelResolver (model resolution and intent)          |
+| `--thinking`            |       | Require extended reasoning (thinking-capable model, model resolution and intent)                                            |
+| `--effort`              |       | Reasoning token budget: `low`, `medium`, `high` (only with `--thinking`, model resolution and intent)                       |
+| `--characteristic`      |       | Soft ranking hint — `cheapest` or `fastest`. Scores providers, does not eliminate. Repeatable (model resolution and intent) |
+| `--preferred-provider`  |       | Narrow candidate pool to a specific provider, skips cross-provider scoring (model resolution and intent)                    |
 
 **Example workflow:**
 
@@ -1015,7 +1015,7 @@ exactl request "Implement file upload validation" \
 
 Explicit criteria improve request quality in three ways: they raise the analyzer's confidence about what success looks like, they feed directly into downstream evaluation, and they reduce clarification churn for borderline requests.
 
-**Model intent examples (Phase 132):**
+**Model intent examples (model resolution and intent):**
 
 ```bash
 # Large model with extended reasoning for complex tasks
@@ -1031,7 +1031,7 @@ exactl request "Refactor utils module" --model-size M --thinking --effort low --
 exactl request "Audit dependencies" --model-size XL --preferred-provider anthropic
 ```
 
-**Resolution precedence (Solo, Phase 134).** For a `--model-size` request the resolver tries, in order:
+**Resolution precedence (Solo, the curated model registry).** For a `--model-size` request the resolver tries, in order:
 
 1. An explicit `provider:model` (e.g. `--model anthropic:claude-opus-4.5`) — passed through as-is
    (`explicit_override`). Solo does not validate the model name against a catalog, so a typo
@@ -1051,7 +1051,7 @@ The chosen provider, model, and the reason are journalled as `model.resolved`. I
 exactl logs --filter action_type=model.resolved --format json
 ```
 
-##### `exactl config model` & `exactl models` — Solo model curation (Phase 134)
+##### `exactl config model` & `exactl models` — Solo model curation (the curated model registry)
 
 Curate the per-size preferred lists and inspect the Solo model floor without editing TOML by hand.
 Curated lists are written back to `exa.config.toml` (`model_presets.<SIZE>.candidates`) — the same
@@ -1082,9 +1082,9 @@ Notes:
   provider is stored but flagged `unconfigured` (a pre-curation allowance).
 - Pricing **provenance** is shown as `static` (a known, dated price) or `unknown`. A price older
   than 90 days is marked `(stale)`. The Solo floor is offline — there is **no `models refresh`**;
-  a live, auto-refreshed catalog arrives with the Team edition (Phase 135).
+  a live, auto-refreshed catalog arrives with the Team edition (the Team edition model registry).
 
-##### Team: live model catalog (Phase 135)
+##### Team: live model catalog (the Team edition model registry)
 
 Enable a self-updating model catalog with the `[model_registry]` config block. Top-level keys
 must come before any `[model_registry.*]` sub-table (standard TOML ordering):
@@ -1807,7 +1807,7 @@ step:
 
 **Available Templates:**
 
-> **Phase 132:** Hardcoded `model:` in blueprints is deprecated. Use `model_size:` + `characteristics:` instead.
+> **model resolution and intent:** Hardcoded `model:` in blueprints is deprecated. Use `model_size:` + `characteristics:` instead.
 > See [§6.2 Model Intent](#62-model-intent-phase-132) for the replacement system.
 
 | Template     | Model                   | Best For                          |
@@ -3161,7 +3161,7 @@ exactl request --portal my-project "Analyze code"
 # Result: Operates in ~/git/MyProject
 ```
 
-#### Portal Knowledge Gathering (Phase 119)
+#### Portal Knowledge Gathering
 
 Exaix automatically analyzes every portal codebase and stores the results in
 `Memory/Projects/{alias}/knowledge.json`. This gives agents structured, up-to-date
@@ -3299,7 +3299,7 @@ confidence_required: 80
 - **Increased latency**: 2-4x longer response time
 - **Higher cost**: Multiple LLM calls per request
 
-### 6.2 Model Intent (Phase 132)
+### 6.2 Model Intent (model resolution and intent)
 
 Model Intent lets you describe the model you want by **capability requirements**
 rather than hardcoding a specific `provider:model` ID. Instead of saying
@@ -3418,9 +3418,9 @@ Supported frontmatter fields:
 The `model` field continues to work, but it short-circuits the resolver and
 ties the identity to a specific provider+model, defeating portability.
 
-#### Future: Phase 134 Model Registry
+#### Future: the curated model registry Model Registry
 
-Phase 134 will introduce the `IModelRegistry` plugin system, enabling:
+the curated model registry will introduce the `IModelRegistry` plugin system, enabling:
 
 - Registration of custom model sizes beyond `S`/`M`/`L`/`XL`
 - A `fastest` simplification — `--model-size fastest` resolves to the cheapest
@@ -3665,7 +3665,7 @@ The main configuration areas in `exa.config.toml` are:
 - **[models]:** AI provider configurations
 - **[agents]:** Agent blueprint settings
 - **[mcp]:** Model Context Protocol client configuration
-- **[quality_gate]:** Request quality gate thresholds, mode, and enrichment behaviour (Phase 47)
+- **[quality_gate]:** Request quality gate thresholds, mode, and enrichment behaviour
 
 **Example configuration:**
 
@@ -4267,7 +4267,7 @@ anthropic_claude_sonnet = 0.000015  # $15 per million tokens
 openai_gpt4 = 0.00003               # $30 per million tokens
 ```
 
-Prompt-window enforcement is configured separately through the Phase 62
+Prompt-window enforcement is configured separately through the context window management
 `[budget_enforcement]` section. This controls whether Exaix applies strict
 prompt-budget caps before execution; it does not replace monetary cost limits.
 
@@ -4359,7 +4359,7 @@ threshold = 60            # Confidence threshold (0-100) (default: 60)
 expiry_ms = 86400000       # How long an amendment can stay pending (default: 24h)
 ```
 
-### 12.4 Per-Action HITL Governance (Phase 118, Team/Enterprise Edition)
+### 12.4 Per-Action HITL Governance
 
 > **This is a Team/Enterprise Edition feature.** It is off by default and only activates when
 > `EXAIX_EDITION=team` and `config.hitl.enabled=true`.
@@ -4425,7 +4425,7 @@ CI integration, see **[`docs/Exaix_Evaluation.md`](Exaix_Evaluation.md)**.
 
 ---
 
-## Concurrent Guardrail Runner (Phase 107)
+## Concurrent Guardrail Runner
 
 The concurrent guardrail runner screens each ReAct iteration's generated output
 against configurable policies using a fast-slot LLM. It runs **in parallel** with
