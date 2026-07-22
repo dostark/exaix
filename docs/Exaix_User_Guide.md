@@ -3796,6 +3796,27 @@ If you see warnings like "Invalid EXA_LLM_TIMEOUT_MS: must be ≥ 1000", check:
 
 For more details, see `templates/exa.config.sample.toml` and [Technical Specification](../exaix-dev-docs/dev/Exaix_Technical_Spec.md).
 
+### 5.3a Execution Configuration
+
+The `[execution]` section controls how plan steps are executed:
+
+```toml
+[execution]
+# Enable provider-enforced native tool selection (Anthropic + ReActLoopStrategy).
+# When true and the provider supports it, the model selects tools via the API's
+# native tool_choice mechanism instead of embedding tool calls in TOML prose.
+# Default: false.
+native_tools_enabled = true
+```
+
+When `native_tools_enabled = true`, the daemon's `ReActLoopStrategy` sends a real
+`tools[]`/`tool_choice` parameter to the Anthropic Messages API, constraining the model
+to choose from the tools Exaix actually offers. Falls back to the standard TOML-block
+prose path when the provider or strategy does not support native tool selection.
+
+**Current scope:** Anthropic provider only (OpenAI/Google/OpenRouter deferred to a
+future release). ReActLoopStrategy only (LegacyAgentStrategy and LlmClient unchanged).
+
 ### 5.4 Testing & CI Model Aliases
 
 Exaix provides two predefined model configurations for testing and CI workflows via `exa.config.toml`:

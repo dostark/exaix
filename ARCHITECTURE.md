@@ -682,6 +682,22 @@ ModelIntent ──→ tryResolveOverride (EXA_MODEL_PRESET_OVERRIDE env var)
 
 **CLI integration:** `--model-size <S|M|L|XL>`, `--thinking`, and `--effort <low|medium|high>` flags feed directly into the `ModelIntent` fields (`model_size`, `thinking`, `effort`) in `apps/exactl/src/exactl.ts:366-369` and are serialized into request frontmatter by `request_create_handler.ts:133`. `exactl models list` / `exactl models pricing` / `exactl config model` (Solo and Team) and `exactl models refresh` / `exactl models list --benchmark` (Team-only) are implemented in `apps/exactl/src/commands/model_commands.ts`. See `docs/Model_Resolution.md` for the user-facing guide.
 
+#### 8. Native Tool-Calling (`IModelProvider` + `IToolDefinition`)
+
+The `IModelProvider.generate()` interface (`packages/ai/src/types.ts`) accepts an optional `IModelOptions` with `tools?: IToolDefinition[]`, `toolChoice?: IToolChoice`, and `priorTurn?: IProviderTurn` fields. When set, the provider serializes these into a real API-level `tools[]`/`tool_choice` parameter (Anthropic Messages API) instead of relying on prose instructions in the prompt.
+
+**Scope boundary:** Only `AnthropicProvider` (`@exaix/ai-anthropic`) implements native tool serialization; only `ReActLoopStrategy` (`packages/execution/src/strategies/react_loop_strategy.ts`) reads the capability gate (`IProviderMetadata.supportsNativeTools`). OpenAI, Google, OpenRouter, `LegacyAgentStrategy`, and `LlmClient.reasonNextAction()` are explicitly out of scope (deferred to follow-up releases).
+
+**Flow:** `ReActLoopStrategy.execute()` → checks `options.native_tools_enabled` + `ProviderRegistry.getProviderMetadata(provider.id)?.supportsNativeTools` → builds `IToolDefinition[]` from `ToolRegistry.getTools()` → calls `provider.generate(prompt, {tools, toolChoice: {type: "any" | "tool", name?}, priorTurn?})` → `AnthropicProvider` serializes into `AnthropicRequestBody.tools[]`/`tool_choice` → response `tool_use` blocks surfaced as `IGenerateResult.toolCalls[]` → executed via `ToolRegistry.execute()`. Tool results fed back as native `tool_result` content blocks via `priorTurn` on the next iteration.
+
+**Key interfaces:** `IToolDefinition` (name, description, inputSchema, strict?, cache_control?, input_examples?), `IToolChoice` (auto/any/tool/none with disable_parallel_tool_use), `IProviderTurn` (toolUseId, toolName, toolInput, toolResultContent, toolResultIsError), `IProviderToolCall` (id, name, input). All in `packages/ai/src/types.ts` and `packages/ai/src/providers/common.ts`.
+
+**Config:** `[execution] native_tools_enabled = true` in TOML config (`packages/schemas/src/config.ts`), threaded through `PlanExecutor.executeSteps()` to `IAgentExecutionOptions.native_tools_enabled`.
+
+**Post-gap refinements (nativeDescription, prompt guidance, targeted-edit heuristic):** `ITool.nativeDescription` (`packages/core/src/types/i_tool_registry.ts`) provides behavioral-preference signals for the native tool UI (e.g., "PREFERRED for targeted edits"). `ReActLoopStrategy.buildPrompt()` always renders `AVAILABLE TOOLS:` and `TOOL SELECTION GUIDELINES:` (only the `FORMAT:` TOML block is gated). A targeted-edit keyword heuristic (`context.plan` matching fix/patch/null-guard/refactor/edit/bug/repair) sets `tool_choice: {type: "tool", name: "patch_file"}` on the first iteration.
+
+Details: `exaix-dev-docs/planning/phase-152-native-tool-calling.md`.
+
 ---
 
 ## Agent Orchestration Architecture
