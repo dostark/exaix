@@ -140,6 +140,30 @@ exactl eval compare --run-a aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa \
 
 Output shows per-step score differences and overall score delta.
 
+### 3.4 `exactl eval report`
+
+Render a cross-cell timing/token/tracked-cost comparison table, grouped by
+`cell_id`/`provider`/`model`. `--view cost` is the only view in this phase.
+
+**Usage:**
+
+```bash
+exactl eval report --view cost [--scenario <id>] [--last <n>]
+```
+
+**Example:**
+
+```bash
+exactl eval report --view cost --scenario fix-bug-null-guard-cli-all
+```
+
+Output shows, per cell, mean wall-clock `duration_ms`, mean LLM-call
+`llm_duration_ms`, total prompt/completion tokens, and total/mean
+**tracked** cost (`tracked_cost_usd`) — see §9.4 for what "tracked" means. A
+cell whose every run had no tracked cost (e.g. a pure direct-API cell, which
+only ever produces a _predicted_ cost estimate) renders `—` for cost columns,
+never `0` and never a predicted figure relabeled as tracked.
+
 ---
 
 ## 4. Scoring Model
@@ -401,9 +425,27 @@ Each line is a self-contained JSON object:
   "passed": true,
   "step_count": 3,
   "step_results": [
-    { "step_id": "step-1", "score": 1.0, "criteria_passed": 2, "criteria_total": 2 },
+    {
+      "step_id": "step-1",
+      "score": 1.0,
+      "criteria_passed": 2,
+      "criteria_total": 2,
+      "duration_ms": 1200,
+      "llm_duration_ms": 900,
+      "tokens_prompt": 1500,
+      "tokens_completion": 400,
+      "tokens_cache_read": 200,
+      "tokens_cache_creation": 50,
+      "tracked_cost_usd": 0.02
+    },
     { "step_id": "step-2", "score": 0.85, "criteria_passed": 1, "criteria_total": 2 }
   ],
+  "total_llm_duration_ms": 900,
+  "total_tokens_prompt": 1500,
+  "total_tokens_completion": 400,
+  "total_tokens_cache_read": 200,
+  "total_tokens_cache_creation": 50,
+  "total_tracked_cost_usd": 0.02,
   "timestamp": "2026-06-09T12:00:00.000Z",
   "component_versions": {
     "binary_version": "1.0.3",
@@ -411,6 +453,11 @@ Each line is a self-contained JSON object:
   }
 }
 ```
+
+Timing, token, and tracked-cost fields are optional and only present when the
+underlying journal payloads carried them for that step (see §9.4). `step-2`
+above has none — a shell-only step with no LLM call in its execution window
+carries no such fields, not zeroed ones.
 
 ### 9.2 SQLite Storage
 
@@ -439,6 +486,27 @@ exactl eval history --since 2026-06-01
 # Machine-readable output
 exactl eval history --last 10 --format json | jq '[.[] | {id: .run_id, score: .suite_score}]'
 ```
+
+### 9.4 Tracked vs. Predicted Cost
+
+Exaix distinguishes two kinds of `cost_usd` figure:
+
+- **Predicted** — a rate-based estimate Exaix computes itself
+  (`calculateCost()`) from a token count, before any provider or tool has
+  reported a real figure. Used by direct-API strategies (ReAct, legacy).
+- **Tracked** — a real dollar figure a provider or CLI tool actually reported
+  in its own response (e.g. Claude Code's `total_cost_usd`, opencode's
+  `part.cost`). Used by CLI-delegate and session-delegate strategies.
+
+Every journaled usage payload carries a `cost_source: "tracked" | "predicted"`
+tag making this distinction explicit and machine-checkable. **Every
+`tracked_cost_usd`/`total_tracked_cost_usd` field in eval history and the
+`report --view cost` output is sourced exclusively from `cost_source:
+"tracked"` rows** — a step or run whose LLM calls were all predicted-cost
+produces `tracked_cost_usd: undefined` (omitted from JSON, `—` in the report
+table), never a predicted number silently relabeled as tracked spend. Cost
+prediction itself is unaffected by this distinction and remains available via
+the existing `cost_usd` field wherever it was already surfaced.
 
 ---
 

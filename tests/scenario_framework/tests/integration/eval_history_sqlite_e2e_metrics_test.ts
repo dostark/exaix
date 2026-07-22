@@ -1,17 +1,17 @@
 /**
  * @module EvalHistorySqliteE2eMetricsTest
  * @path tests/scenario_framework/tests/integration/eval_history_sqlite_e2e_metrics_test.ts
- * @description Phase 140a Step 1/GAP-1/GAP-5 — RED-first integration test. history_writer.ts's
+ * @description Phase 140a Step 1/4, GAP-1/GAP-5 — RED-first integration test. history_writer.ts's
  * buildEvalHistoryEntry only builds the JSONL-bound IEvalHistoryEntry; the real SQLite write
  * happens via a separate, independent projection in history_writer_dispatch.ts's
  * writeEvalHistoryEntries (extracted out of main.ts's step-12 CLI action, since main.ts's
  * top-level Command().parse(Deno.args) chain runs immediately on import and makes main.ts
  * itself unsafe to import from a test). Widening only history_writer.ts would leave new
- * per-step fields (starting with durationMs in Step 1) visible in JSONL but silently absent
- * from eval_run_steps. This test drives the real, extracted function end-to-end with a
- * fixture manifest carrying a step durationMs, and asserts the resulting eval_run_steps row's
- * duration_ms matches — proving the value survives the actual production call chain, not just
- * a direct EvalSqliteStore.writeRun() unit call.
+ * per-step fields (durationMs in Step 1; llmDurationMs/tokens/trackedCostUsd in Step 4)
+ * visible in JSONL but silently absent from eval_run_steps. This test drives the real,
+ * extracted function end-to-end with a fixture manifest carrying a step's full metric set,
+ * and asserts the resulting eval_run_steps row's columns match — proving the values survive
+ * the actual production call chain, not just a direct EvalSqliteStore.writeRun() unit call.
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/main.ts, tests/scenario_framework/runner/history_writer_dispatch.ts, tests/scenario_framework/runner/history_writer.ts, packages/eval-history/src/history_sqlite.ts]
  */
@@ -44,6 +44,9 @@ Deno.test({
             stepType: ScenarioStepType.SHELL,
             executionStatus: "passed",
             durationMs: 5555,
+            llmDurationMs: 4444,
+            tokens: { prompt: 100, completion: 50, cacheRead: 10, cacheCreation: 5, total: 150 },
+            trackedCostUsd: 0.08,
             criterionResults: [
               {
                 criterion_id: "check-1",
@@ -76,10 +79,35 @@ Deno.test({
       const store = new EvalSqliteStore(dbPath);
       try {
         const row = store["db"].prepare(
-          "SELECT duration_ms FROM eval_run_steps WHERE step_id = ?",
-        ).get<{ duration_ms: number | null }>("step-1");
+          `SELECT duration_ms, llm_duration_ms, tokens_prompt, tokens_completion,
+                  tokens_cache_read, tokens_cache_creation, tracked_cost_usd
+           FROM eval_run_steps WHERE step_id = ?`,
+        ).get<{
+          duration_ms: number | null;
+          llm_duration_ms: number | null;
+          tokens_prompt: number | null;
+          tokens_completion: number | null;
+          tokens_cache_read: number | null;
+          tokens_cache_creation: number | null;
+          tracked_cost_usd: number | null;
+        }>("step-1");
 
         assertEquals(row?.duration_ms, 5555);
+        assertEquals(row?.llm_duration_ms, 4444);
+        assertEquals(row?.tokens_prompt, 100);
+        assertEquals(row?.tokens_completion, 50);
+        assertEquals(row?.tokens_cache_read, 10);
+        assertEquals(row?.tokens_cache_creation, 5);
+        assertEquals(row?.tracked_cost_usd, 0.08);
+
+        const runRow = store["db"].prepare(
+          "SELECT total_llm_duration_ms, total_tracked_cost_usd FROM eval_runs WHERE scenario_id = ?",
+        ).get<{ total_llm_duration_ms: number | null; total_tracked_cost_usd: number | null }>(
+          "e2e-metrics-scenario",
+        );
+
+        assertEquals(runRow?.total_llm_duration_ms, 4444);
+        assertEquals(runRow?.total_tracked_cost_usd, 0.08);
       } finally {
         store.close();
       }

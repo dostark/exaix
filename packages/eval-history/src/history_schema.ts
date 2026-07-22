@@ -30,6 +30,14 @@ export const StepResultSchema = z.object({
   criteria_total: z.number().int().min(0).optional(),
   /** Runner-observed wall-clock duration for this step, ms. Phase 140a Step 1. */
   duration_ms: z.number().int().min(0).optional(),
+  /** LLM-call wall-clock duration summed from journal payloads, ms. Phase 140a Step 3/4. */
+  llm_duration_ms: z.number().int().min(0).optional(),
+  tokens_prompt: z.number().int().min(0).optional(),
+  tokens_completion: z.number().int().min(0).optional(),
+  tokens_cache_read: z.number().int().min(0).optional(),
+  tokens_cache_creation: z.number().int().min(0).optional(),
+  /** Real tracked cost only — never a calculateCost() prediction. Phase 140a Step 3/4. */
+  tracked_cost_usd: z.number().min(0).optional(),
 });
 
 export type IStepResult = z.infer<typeof StepResultSchema>;
@@ -60,6 +68,14 @@ export const EvalHistoryEntrySchema = z.object({
   provider: z.string().optional(),
   model: z.string().optional(),
   cell_id: z.string().optional(),
+  /** Scenario-level aggregates, summed across step_results. Phase 140a Step 4. */
+  total_llm_duration_ms: z.number().int().min(0).optional(),
+  total_tokens_prompt: z.number().int().min(0).optional(),
+  total_tokens_completion: z.number().int().min(0).optional(),
+  total_tokens_cache_read: z.number().int().min(0).optional(),
+  total_tokens_cache_creation: z.number().int().min(0).optional(),
+  /** Sum of only the steps with a defined tracked_cost_usd — never a predicted figure. */
+  total_tracked_cost_usd: z.number().min(0).optional(),
   component_versions: z.object({
     binary_version: z.string(),
     schema_version: z.string(),

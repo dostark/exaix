@@ -15,7 +15,7 @@ import {
   type IComponentVersions,
   type IEvalHistoryEntry,
 } from "@exaix/eval-history";
-import type { IRunManifest } from "./evidence_collector.ts";
+import type { IRunManifest, IRunManifestStep } from "./evidence_collector.ts";
 
 export interface IWriteEvalHistoryOptions {
   outputDir: string;
@@ -125,7 +125,14 @@ function buildEvalHistoryEntry(
       criteria_passed: s.criterionResults.filter((c) => c.status === "passed").length,
       criteria_total: s.criterionResults.length,
       duration_ms: s.durationMs,
+      llm_duration_ms: s.llmDurationMs,
+      tokens_prompt: s.tokens?.prompt,
+      tokens_completion: s.tokens?.completion,
+      tokens_cache_read: s.tokens?.cacheRead,
+      tokens_cache_creation: s.tokens?.cacheCreation,
+      tracked_cost_usd: s.trackedCostUsd,
     })),
+    ...aggregateStepMetrics(manifest.steps),
     passed: opts?.thresholdPassed ?? manifest.outcome === "success",
     timestamp: new Date().toISOString(),
     component_versions: componentVersions,
@@ -149,6 +156,36 @@ function buildEvalHistoryEntry(
   if (opts?.cellId !== undefined) entry.cell_id = opts.cellId;
 
   return entry;
+}
+
+interface IStepMetricAggregates {
+  total_llm_duration_ms?: number;
+  total_tokens_prompt?: number;
+  total_tokens_completion?: number;
+  total_tokens_cache_read?: number;
+  total_tokens_cache_creation?: number;
+  total_tracked_cost_usd?: number;
+}
+
+/**
+ * Scenario-level aggregates summed across step_results. total_tracked_cost_usd sums only the
+ * steps that have a defined trackedCostUsd, omitting (not zeroing) any step whose LLM calls
+ * were all predicted-cost — a scenario with zero tracked steps produces undefined, not 0.
+ */
+function aggregateStepMetrics(steps: IRunManifestStep[]): IStepMetricAggregates {
+  const sumOptional = (values: Array<number | undefined>): number | undefined => {
+    const defined = values.filter((v): v is number => v !== undefined);
+    return defined.length > 0 ? defined.reduce((a, b) => a + b, 0) : undefined;
+  };
+
+  return {
+    total_llm_duration_ms: sumOptional(steps.map((s) => s.llmDurationMs)),
+    total_tokens_prompt: sumOptional(steps.map((s) => s.tokens?.prompt)),
+    total_tokens_completion: sumOptional(steps.map((s) => s.tokens?.completion)),
+    total_tokens_cache_read: sumOptional(steps.map((s) => s.tokens?.cacheRead)),
+    total_tokens_cache_creation: sumOptional(steps.map((s) => s.tokens?.cacheCreation)),
+    total_tracked_cost_usd: sumOptional(steps.map((s) => s.trackedCostUsd)),
+  };
 }
 
 /**

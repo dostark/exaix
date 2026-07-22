@@ -31,6 +31,13 @@ interface IRunRow {
   provider: string | null;
   model: string | null;
   cell_id: string | null;
+  /** Scenario-level aggregates, Phase 140a Step 4. */
+  total_llm_duration_ms: number | null;
+  total_tokens_prompt: number | null;
+  total_tokens_completion: number | null;
+  total_tokens_cache_read: number | null;
+  total_tokens_cache_creation: number | null;
+  total_tracked_cost_usd: number | null;
 }
 
 interface IStepRow {
@@ -218,10 +225,26 @@ export class EvalSqliteStore {
     }
 
     if (currentVersion < 4) {
-      this.addColumns("eval_run_steps", ["duration_ms INTEGER"]);
+      this.addColumns("eval_run_steps", [
+        "duration_ms INTEGER",
+        "llm_duration_ms INTEGER",
+        "tokens_prompt INTEGER",
+        "tokens_completion INTEGER",
+        "tokens_cache_read INTEGER",
+        "tokens_cache_creation INTEGER",
+        "tracked_cost_usd REAL",
+      ]);
+      this.addColumns("eval_runs", [
+        "total_llm_duration_ms INTEGER",
+        "total_tokens_prompt INTEGER",
+        "total_tokens_completion INTEGER",
+        "total_tokens_cache_read INTEGER",
+        "total_tokens_cache_creation INTEGER",
+        "total_tracked_cost_usd REAL",
+      ]);
       this.db.exec(
         "INSERT OR IGNORE INTO eval_schema_version (version, description) VALUES " +
-          "(4, 'Add duration_ms to eval_run_steps (Phase 140a Step 1)')",
+          "(4, 'Add duration_ms to eval_run_steps (Phase 140a Step 1); add llm_duration_ms/tokens/tracked_cost_usd to eval_run_steps and eval_runs (Phase 140a Step 4)')",
       );
     }
   }
@@ -237,6 +260,11 @@ export class EvalSqliteStore {
         criterionResults?: ICriterionResultRow[];
         /** Runner-observed wall-clock duration for this step, ms. Phase 140a Step 1. */
         durationMs?: number;
+        /** LLM-call wall-clock duration summed from journal payloads, ms. Phase 140a Step 4. */
+        llmDurationMs?: number;
+        tokens?: { prompt: number; completion: number; cacheRead?: number; cacheCreation?: number; total: number };
+        /** Real tracked cost only — never a calculateCost() prediction. Phase 140a Step 4. */
+        trackedCostUsd?: number;
       }>,
       Reason.OptionalInput
     >,
@@ -250,14 +278,18 @@ export class EvalSqliteStore {
         (run_id, run_timestamp, scenario_id, pack, suite_score, passed, mode, score_threshold,
          step_count, trials, suite_score_mean, suite_score_stdev, pass_at_1, pass_pow_k, pass_k,
          blueprint_id, blueprint_version, exactl_version, schema_version, trial_scores, metadata,
-         duration_ms, trace_id, provider, model, cell_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         duration_ms, trace_id, provider, model, cell_id,
+         total_llm_duration_ms, total_tokens_prompt, total_tokens_completion,
+         total_tokens_cache_read, total_tokens_cache_creation, total_tracked_cost_usd)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
     const insertStep = this.db.prepare(
       `INSERT OR REPLACE INTO eval_run_steps
-        (run_id, step_index, step_id, step_type, score, execution_status, duration_ms)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        (run_id, step_index, step_id, step_type, score, execution_status, duration_ms,
+         llm_duration_ms, tokens_prompt, tokens_completion, tokens_cache_read,
+         tokens_cache_creation, tracked_cost_usd)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
     const insertCriterion = this.db.prepare(
@@ -294,6 +326,12 @@ export class EvalSqliteStore {
         entry.provider ?? null,
         entry.model ?? null,
         entry.cell_id ?? null,
+        entry.total_llm_duration_ms ?? null,
+        entry.total_tokens_prompt ?? null,
+        entry.total_tokens_completion ?? null,
+        entry.total_tokens_cache_read ?? null,
+        entry.total_tokens_cache_creation ?? null,
+        entry.total_tracked_cost_usd ?? null,
       );
 
       if (steps) {
@@ -307,6 +345,12 @@ export class EvalSqliteStore {
             step.score,
             step.executionStatus ?? null,
             step.durationMs ?? null,
+            step.llmDurationMs ?? null,
+            step.tokens?.prompt ?? null,
+            step.tokens?.completion ?? null,
+            step.tokens?.cacheRead ?? null,
+            step.tokens?.cacheCreation ?? null,
+            step.trackedCostUsd ?? null,
           );
           if (step.criterionResults) {
             for (const cr of step.criterionResults) {

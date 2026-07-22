@@ -83,6 +83,9 @@ export async function writeEvalHistoryEntries(options: IWriteEvalHistoryEntriesO
               score: s.score ?? computeStepScoreFromCriterionResults(s.criterionResults, s.executionStatus),
               executionStatus: s.executionStatus,
               durationMs: s.durationMs,
+              llmDurationMs: s.llmDurationMs,
+              tokens: s.tokens,
+              trackedCostUsd: s.trackedCostUsd,
             })),
           );
         } catch (error) {

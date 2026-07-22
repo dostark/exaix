@@ -27,6 +27,26 @@ interface IHistoryEntry {
   timestamp: string;
 }
 
+interface ICostReportRunRow {
+  cell_id: string | null;
+  provider: string | null;
+  model: string | null;
+  duration_ms: number | null;
+  total_llm_duration_ms: number | null;
+  total_tokens_prompt: number | null;
+  total_tokens_completion: number | null;
+  total_tokens_cache_read: number | null;
+  total_tokens_cache_creation: number | null;
+  total_tracked_cost_usd: number | null;
+}
+
+interface ICostReportCellGroup {
+  cellId: string;
+  provider: string;
+  model: string;
+  runs: ICostReportRunRow[];
+}
+
 const FRAMEWORK_RELATIVE_PATH = "../../../../tests/scenario_framework/runner/main.ts";
 
 export class EvalCommands extends BaseCommand {
@@ -149,6 +169,35 @@ export class EvalCommands extends BaseCommand {
     }
   }
 
+  /**
+   * `--view cost` renders a per-cell (cell_id/provider/model) comparison table of mean
+   * duration_ms, mean llm_duration_ms, total tokens, and total/mean tracked_cost_usd — sourced
+   * exclusively from eval_runs.total_tracked_cost_usd (Phase 140a Step 4). Absent values render
+   * "—", never "0": a cell whose every run had no tracked cost (all direct-API) is unknown
+   * spend, not free spend, and must never be confused with a predicted-cost figure.
+   */
+  report(options: { view?: string; scenario?: string; last?: number }): void {
+    const view = options.view ?? "cost";
+    if (view !== "cost") {
+      console.log(`Unknown report view: ${view}. Supported views: cost`);
+      return;
+    }
+
+    const dbPath = resolveEvalDbPath();
+    const store = new EvalSqliteStore(dbPath);
+    try {
+      store.initialize();
+      const runs = store.queryRuns({ scenario: options.scenario, last: options.last });
+      if (runs.length === 0) {
+        console.log("No evaluation history found for cost report.");
+        return;
+      }
+      renderCostReportTable(groupRunsByCell(runs));
+    } finally {
+      store.close();
+    }
+  }
+
   compare(runA: string, runB: string): void {
     const dbPath = resolveEvalDbPath();
     const store = new EvalSqliteStore(dbPath);
@@ -236,6 +285,71 @@ export function buildRunArgs(options: {
   args.push("--eval-mode");
 
   return args;
+}
+
+const COST_REPORT_UNKNOWN_CELL = "unknown-cell";
+const COST_REPORT_UNKNOWN_PROVIDER = "unknown-provider";
+const COST_REPORT_UNKNOWN_MODEL = "unknown-model";
+const COST_REPORT_ABSENT_VALUE = "—";
+
+/** Groups runs by cell_id/provider/model — absent identity fields fall back to an explicit
+ *  "unknown-*" bucket so ungrouped runs are still visible rather than silently dropped. */
+function groupRunsByCell(runs: ICostReportRunRow[]): ICostReportCellGroup[] {
+  const groups = new Map<string, ICostReportCellGroup>();
+  for (const run of runs) {
+    const cellId = run.cell_id ?? COST_REPORT_UNKNOWN_CELL;
+    const provider = run.provider ?? COST_REPORT_UNKNOWN_PROVIDER;
+    const model = run.model ?? COST_REPORT_UNKNOWN_MODEL;
+    const key = `${cellId} ${provider} ${model}`;
+    const existing = groups.get(key);
+    if (existing) {
+      existing.runs.push(run);
+    } else {
+      groups.set(key, { cellId, provider, model, runs: [run] });
+    }
+  }
+  return Array.from(groups.values());
+}
+
+function mean(values: number[]): number | undefined {
+  return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : undefined;
+}
+
+function sum(values: number[]): number | undefined {
+  return values.length > 0 ? values.reduce((a, b) => a + b, 0) : undefined;
+}
+
+function formatNumberOrAbsent(value: Opt<number, Reason.OptionalInput>, digits = 0): string {
+  return value === undefined ? COST_REPORT_ABSENT_VALUE : value.toFixed(digits);
+}
+
+function renderCostReportTable(groups: ICostReportCellGroup[]): void {
+  const header = `${padRight("CELL", 24)} | ${padRight("PROVIDER", 14)} | ${padRight("MODEL", 18)} | ${
+    padRight("MEAN DURATION_MS", 16)
+  } | ${padRight("MEAN LLM_MS", 12)} | ${padRight("TOKENS (P/C)", 16)} | ${padRight("TOTAL COST", 12)} | MEAN COST`;
+  const sep = "-".repeat(header.length);
+  console.log(header);
+  console.log(sep);
+
+  for (const group of groups) {
+    const durations = group.runs.map((r) => r.duration_ms).filter((v): v is number => v !== null);
+    const llmDurations = group.runs.map((r) => r.total_llm_duration_ms).filter((v): v is number => v !== null);
+    const tokensPrompt = sum(group.runs.map((r) => r.total_tokens_prompt).filter((v): v is number => v !== null));
+    const tokensCompletion = sum(
+      group.runs.map((r) => r.total_tokens_completion).filter((v): v is number => v !== null),
+    );
+    const trackedCosts = group.runs.map((r) => r.total_tracked_cost_usd).filter((v): v is number => v !== null);
+    const totalCost = sum(trackedCosts);
+    const meanCost = mean(trackedCosts);
+
+    console.log(
+      `${padRight(group.cellId, 24)} | ${padRight(group.provider, 14)} | ${padRight(group.model, 18)} | ${
+        padRight(formatNumberOrAbsent(mean(durations)), 16)
+      } | ${padRight(formatNumberOrAbsent(mean(llmDurations)), 12)} | ${
+        padRight(`${tokensPrompt ?? COST_REPORT_ABSENT_VALUE}/${tokensCompletion ?? COST_REPORT_ABSENT_VALUE}`, 16)
+      } | ${padRight(formatNumberOrAbsent(totalCost, 2), 12)} | ${formatNumberOrAbsent(meanCost, 2)}`,
+    );
+  }
 }
 
 function renderHistoryTable(entries: IHistoryEntry[]): void {
