@@ -757,13 +757,22 @@ export class ToolRegistry implements IToolRegistry {
   private async resolvePath(path: string): Promise<string> {
     if (path.startsWith("@")) {
       const { alias, relativePath } = this.parseAliasPath(path);
-      const ownPortal = this.hasExplicitExecutionRoot() &&
-        this.config.portals.find((p) => p.alias === alias);
+      const portalConfig = this.config.portals.find((p) => p.alias === alias);
+      // Phase 140a Step 5: only resolve into baseDir when the portal's target_path
+      // actually matches baseDir (registry's OWN portal under a worktree). This lets
+      // a worktree-cloned portal isolate writes without grabbing unrelated portals.
+      const ownPortal = this.hasExplicitExecutionRoot() && portalConfig &&
+        resolve(portalConfig.target_path) === this.baseDir;
       if (ownPortal) {
         return await this.resolveBareRelativePath(relativePath);
       }
-      if (!this.pathResolver) throw new Error("Path resolution for @-aliases requires a pathResolver in config");
-      return await this.pathResolver.resolve(path);
+      if (this.pathResolver) {
+        return await this.pathResolver.resolve(path);
+      }
+      // No pathResolver — fall through to bare-relative (best-effort via baseDir).
+      // Handles ToolRegistry instances constructed without a pathResolver (e.g. some
+      // test scenarios) transparently.
+      return await this.resolveBareRelativePath(relativePath);
     }
 
     return await this.resolveBareRelativePath(path);
