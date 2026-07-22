@@ -14,7 +14,7 @@ import { z } from "zod";
 import type { JSONValue } from "@exaix/core";
 import { ANALYZER_VERSION, TaskComplexity, TaskType } from "@exaix/core";
 import { AnalysisMode } from "@exaix/core/request";
-import { toJsonSchema } from "./json_schema_adapter.ts";
+import { zodToJsonSchema } from "./json_schema_adapter.ts";
 
 export type RequestAnalysisComplexity = TaskComplexity;
 export const RequestAnalysisComplexity = TaskComplexity;
@@ -184,5 +184,5 @@ export { AnalysisMode };
  * CLI --json-schema flags (e.g. claude-code's --json-schema).
  */
 export function getRequestAnalysisJsonSchema(): Record<string, JSONValue> {
-  return toJsonSchema(RequestAnalysisSchema);
+  return zodToJsonSchema(RequestAnalysisSchema);
 }

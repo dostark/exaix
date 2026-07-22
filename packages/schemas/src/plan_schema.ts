@@ -12,7 +12,7 @@ import { DEFAULT_QUERY_LIMIT, JSONValueSchema, McpToolName } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 
 import { RequestAnalysisSchema } from "./request_analysis.ts";
-import { toJsonSchema } from "./json_schema_adapter.ts";
+import { zodToJsonSchema } from "./json_schema_adapter.ts";
 
 /**
  * Zod schema for plan frontmatter to ensure type safety during parsing.
@@ -319,7 +319,7 @@ export type Plan = z.infer<typeof PlanSchema>;
  * plain object, not cached, so a schema change at runtime is never stale.
  */
 export function getPlanJsonSchema(): Record<string, JSONValue> {
-  return toJsonSchema(PlanSchema);
+  return zodToJsonSchema(PlanSchema);
 }
 
 /** Analysis results for code analysis agents */

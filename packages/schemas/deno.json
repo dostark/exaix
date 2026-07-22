@@ -9,8 +9,7 @@
     "@exaix/core/status": "../core/src/status/mod.ts",
     "@exaix/core/request": "../core/src/request/mod.ts",
     "@exaix/schemas": "./mod.ts",
-    "@exaix/schemas/": "./src/",
-    "zod-to-json-schema": "npm:zod-to-json-schema@3.22.4"
+    "@exaix/schemas/": "./src/"
   },
   "exports": "./mod.ts"
 }

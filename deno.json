@@ -154,7 +154,6 @@
     "@db/sqlite": "jsr:@db/sqlite@^0.13.0",
     "@cliffy/command": "jsr:@cliffy/command@^1.2.1",
     "zod": "https://deno.land/x/zod@v3.22.4/mod.ts",
-    "zod-to-json-schema": "npm:zod-to-json-schema@3.22.4",
     "typescript": "npm:typescript@6.0.3",
     "@babel/parser": "npm:@babel/parser@7.29.3",
     "web-tree-sitter": "npm:web-tree-sitter@0.26.9",
