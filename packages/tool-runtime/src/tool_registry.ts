@@ -725,17 +725,51 @@ export class ToolRegistry implements IToolRegistry {
   }
 
   /**
+   * A `baseDir` other than config.system.root means this registry was constructed for a
+   * specific execution root (e.g. a plan's git worktree, per PlanExecutor's `repoPath` ->
+   * ToolRegistry `baseDir` wiring) — mirrors resolveAuditPortalPath's identical guard in
+   * agent_orchestrator.ts.
+   */
+  private hasExplicitExecutionRoot(): boolean {
+    return this.baseDir !== resolve(this.config.system.root);
+  }
+
+  /**
+   * Splits a `@<alias>/<relativePath>` string, returning the bare alias name (no `@`) and the
+   * remainder. Mirrors PathResolver.resolve's own parsing so both stay in sync.
+   */
+  private parseAliasPath(path: string): { alias: string; relativePath: string } {
+    const parts = path.split("/");
+    return { alias: parts[0].slice(1), relativePath: parts.slice(1).join("/") };
+  }
+
+  /**
    * Resolve and validate a path
-   * - If path starts with @, use injected pathResolver (for alias resolution)
-   * - Otherwise, validate it's within allowed roots
+   * - If path starts with @ and names THIS registry's own portal while an explicit worktree
+   *   baseDir is active, resolve relative to baseDir (the worktree) — matching
+   *   CliDelegateStrategy.resolvePortalPath's established getBaseDir()-first pattern. This is
+   *   the one alias case ToolRegistry itself can resolve correctly, since only it knows which
+   *   worktree the current execution is actually rooted at.
+   * - Otherwise (a non-portal alias, or a portal ToolRegistry has no worktree for), delegate to
+   *   the injected pathResolver, which always resolves a portal alias to its live target_path.
+   * - A bare (non-@) path validates within allowed roots, rooted at baseDir.
    */
   private async resolvePath(path: string): Promise<string> {
-    // Use injected pathResolver for alias paths
     if (path.startsWith("@")) {
+      const { alias, relativePath } = this.parseAliasPath(path);
+      const ownPortal = this.hasExplicitExecutionRoot() &&
+        this.config.portals.find((p) => p.alias === alias);
+      if (ownPortal) {
+        return await this.resolveBareRelativePath(relativePath);
+      }
       if (!this.pathResolver) throw new Error("Path resolution for @-aliases requires a pathResolver in config");
       return await this.pathResolver.resolve(path);
     }
 
+    return await this.resolveBareRelativePath(path);
+  }
+
+  private async resolveBareRelativePath(path: string): Promise<string> {
     const allowedRoots = await this.getAllowedRoots();
 
     try {
