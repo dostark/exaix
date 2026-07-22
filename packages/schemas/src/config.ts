@@ -851,7 +851,11 @@ export const ConfigSchema = z.object({
     milestone_streaming_enabled: z.boolean().default(DEFAULTS.DEFAULT_MILESTONE_STREAMING_ENABLED),
     /** Optional: file path for milestone NDJSON journal (Phase 92 E2E test / debugging). */
     milestone_journal_path: z.string().optional(),
-  }).optional().default({ summarization_model: undefined }),
+    /** Opt in to provider-enforced native tool selection (Anthropic + ReActLoopStrategy).
+     *  When true and the provider supports it, ReActLoopStrategy uses native tool_choice
+     *  instead of TOML-block prose. Defaults to false. */
+    native_tools_enabled: z.boolean().optional().default(false),
+  }).optional().default({ summarization_model: undefined, native_tools_enabled: false }),
 }).superRefine((data, ctx: z.RefinementCtx) => {
   // Type assertion to avoid circular reference
   const configData = data as z.infer<typeof ConfigSchema>;

@@ -424,6 +424,7 @@ export class PlanExecutor {
               portal: portalName,
               security_mode: SecurityMode.HYBRID,
               audit_enabled: true,
+              native_tools_enabled: this.config.execution?.native_tools_enabled ?? false,
             },
           );
         }
