@@ -61,6 +61,9 @@ export const AgentExecutionOptionsSchema = z.object({
   request_analysis: z.any().optional().describe(
     "Request analysis for adaptive budget reallocation",
   ),
+  native_tools_enabled: z.boolean().optional().describe(
+    "Opt in to provider-enforced native tool selection instead of TOML-block prose. Requires a provider with supportsNativeTools: true (Anthropic after Step 2).",
+  ),
 });
 export type IAgentExecutionOptions = z.output<
   typeof AgentExecutionOptionsSchema

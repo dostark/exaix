@@ -12,6 +12,8 @@ import { AgentExecutionError, type IAgentFileBlueprint } from "../agent_orchestr
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
 import type { IModelProvider, IProviderTurn, IToolDefinition } from "@exaix/ai/types.ts";
 import type { IProviderToolCall } from "@exaix/ai/providers";
+import type { IGenerateResult } from "@exaix/ai/providers";
+import { ProviderRegistry } from "@exaix/ai/provider_registry.ts";
 import type { ITool, IToolResult } from "@exaix/core/types";
 import { AgentExecutionErrorType, ExecutionStrategyName, ToolName } from "@exaix/core";
 import { GuardrailBlockedError } from "@exaix/core/planning";
@@ -35,7 +37,6 @@ import {
   REACT_STATUS_COMPLETE,
   REACT_SUMMARY_PREFIX,
   REACT_THOUGHT_PREFIX,
-  REACT_TOOL_ERROR_PREFIX,
   REACT_TOOL_RESULT_BUDGET_RATIO,
   REACT_TOOL_RESULT_SUMMARY_MAX,
   RESPONSE_STOP_REASON_MAX_TOKENS,
@@ -83,6 +84,48 @@ const REACT_WRITE_TOOLS: ReadonlySet<string> = new Set<string>([
  * It uses the LLM to generate actions, executes them via ToolRegistry,
  * and maintains a loop until the task is complete.
  */
+export /** Internal type for dynamically-built provider.generate() options. */
+interface GeneratedOptions {
+  temperature: number;
+  max_tokens: number;
+  tools?: IToolDefinition[];
+  toolChoice?: { type: string; disable_parallel_tool_use: boolean };
+  priorTurn?: IProviderTurn;
+}
+
+/** Parameters for runSingleIteration. */
+interface IIterationParams {
+  i: number;
+  startTime: number;
+  blueprint: IAgentFileBlueprint;
+  context: IExecutionContext;
+  options: IAgentExecutionOptions;
+  history: Array<{ role: ReActRole; content: string }>;
+  writtenFiles: Set<string>;
+  toolCallCount: number;
+  totalPromptTokens: number;
+  totalCompletionTokens: number;
+  totalCostUsd: number;
+  totalCacheReadTokens: number;
+  totalCacheCreationTokens: number;
+  nativeToolsUsed: boolean;
+  nativeToolDefinitions?: Opt<IToolDefinition[], Reason.OptionalInput>;
+  nativeToolsPriorTurn?: Opt<IProviderTurn, Reason.OptionalInput>;
+}
+
+/** Result of a single iteration in execute(). */
+interface IIterationResult {
+  toolCallCount: number;
+  totalPromptTokens: number;
+  totalCompletionTokens: number;
+  totalCostUsd: number;
+  totalCacheReadTokens: number;
+  totalCacheCreationTokens: number;
+  nativeToolsPriorTurn?: IProviderTurn;
+  done: boolean;
+  result?: IChangesetResult;
+}
+
 export class ReActLoopStrategy implements IExecutionStrategy {
   public readonly name = ExecutionStrategyName.REACT;
   /** Per-call options (thinking/effort/max_tokens) set by agent_executor before execute(). */
@@ -108,10 +151,6 @@ export class ReActLoopStrategy implements IExecutionStrategy {
 
     const startTime = Date.now();
     const history: Array<{ role: ReActRole; content: string }> = [];
-    // Files this step wrote through a write-type tool. The git audit authorizes
-    // the union of allowed_paths and these paths — a step must be able to keep the
-    // files it legitimately wrote, without that widening authorization to files it
-    // never touched.
     const writtenFiles = new Set<string>();
     let toolCallCount = 0;
     let totalPromptTokens = 0;
@@ -120,212 +159,46 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     let totalCacheReadTokens = 0;
     let totalCacheCreationTokens = 0;
 
+    // Step 5: native-tools gate — both the opt-in flag AND the provider capability must be true.
+    const useNativeTools = options.native_tools_enabled === true &&
+      ProviderRegistry.getProviderMetadata(this.provider.id)?.supportsNativeTools === true;
+    let nativeToolsPriorTurn: IProviderTurn | undefined;
+    let nativeToolDefinitions: IToolDefinition[] | undefined;
+    let nativeToolsUsed = false;
+    if (useNativeTools) {
+      const tools = this.executor.toolRegistry?.getTools() ?? [];
+      nativeToolDefinitions = this.buildNativeToolDefinitions(tools);
+      nativeToolsUsed = true;
+    }
+
     for (let i = 0; i < this.MAX_ITERATIONS; i++) {
-      // 0. Guardrail seam (Phase 107): halt at the iteration boundary if a prior
-      //    concurrent screen() accumulated a blocking violation. No-op in Solo (no runner).
-      //    The guardrail.block event is already emitted by GuardrailRunner.screen().
-      if (
-        this.executor.guardrailRunner?.hasBlockingViolation(context.trace_id)
-      ) {
-        throw new GuardrailBlockedError(
-          context.trace_id,
-          "Execution halted by a blocking guardrail violation",
-        );
-      }
-
-      // 1. Apply segment-level budget compaction when manager is configured (Phase 83).
-      //    No-op when contextBudgetManager is absent — backward-compatible.
-      const budgetedHistory = await this.applyContextBudget(
-        blueprint,
-        context,
-        history,
+      const iterResult = await this.runSingleIteration({
         i,
-      );
-
-      // 2. Build prompt with (possibly compacted) history
-      const prompt = this.buildPrompt(
+        startTime,
         blueprint,
         context,
         options,
-        budgetedHistory,
-      );
-
-      // 3. Generate next step with heartbeat during long LLM waits
-      const generateStartTime = Date.now();
-      const response = await this.withHeartbeat(
-        context,
-        () =>
-          this.provider!.generate(prompt, {
-            temperature: REACT_DEFAULT_TEMPERATURE,
-            max_tokens: REACT_DEFAULT_MAX_TOKENS,
-            ...this.callOptions,
-          }),
-      );
-      const generateDurationMs = Date.now() - generateStartTime;
-
-      // A max_tokens stop means this turn was cut off mid-generation: the TOML-parse
-      // failure or empty action list that follows must be attributable to truncation,
-      // not treated as a mysteriously malformed model response.
-      if (response.stop_reason === RESPONSE_STOP_REASON_MAX_TOKENS) {
-        void this.executor.budgetLogger?.warn(
-          AGENT_EVENT_RESPONSE_TRUNCATED,
-          context.request_id ?? null,
-          {
-            identity_id: options.identity_id ?? "",
-            iteration: i,
-            stop_reason: response.stop_reason,
-            response_length: response.content.length,
-            completion_tokens: response.usage.completionTokens,
-          },
-          context.trace_id,
-        );
-      }
-
-      // Re-price this call's real, already-measured token counts against the real per-model
-      // split rate (static_overlay.ts), falling back to the flat-rate response.cost_usd
-      // unchanged when the model has no overlay entry. Still a PREDICTED estimate — this only
-      // improves the price multiplier applied to known tokens, never guesses at an unknown
-      // quantity (distinct from the removed pre-call heuristic, GAP-23/24/25).
-      const registryCostUsd = computeRegistryPredictedCost(response.provider, response.model, {
-        promptTokens: response.usage.promptTokens,
-        completionTokens: response.usage.completionTokens,
-        cacheReadTokens: response.usage.cacheReadTokens,
-        cacheCreationTokens: response.usage.cacheCreationTokens,
+        history,
+        writtenFiles,
+        toolCallCount,
+        totalPromptTokens,
+        totalCompletionTokens,
+        totalCostUsd,
+        totalCacheReadTokens,
+        totalCacheCreationTokens,
+        nativeToolsUsed,
+        nativeToolDefinitions,
+        nativeToolsPriorTurn,
       });
-      const costUsd = registryCostUsd ?? response.cost_usd ?? 0;
-
-      // Log individual generation metrics (Phase 69)
-      await this.executor.logGeneration(
-        context.trace_id,
-        options.identity_id ?? "",
-        response.model,
-        response.provider,
-        { ...response.usage, costUsd, durationMs: generateDurationMs },
-      );
-
-      // Accumulate metrics for the final result
-      totalPromptTokens += response.usage.promptTokens;
-      totalCompletionTokens += response.usage.completionTokens;
-      totalCostUsd += costUsd;
-      totalCacheReadTokens += response.usage.cacheReadTokens ?? 0;
-      totalCacheCreationTokens += response.usage.cacheCreationTokens ?? 0;
-
-      // 3. Parse thought and actions
-      const { thought, actions, isComplete, parseErrors } = this.parseResponse(
-        response.content,
-      );
-
-      // A malformed TOML action block is dropped from `actions`; surface it so a
-      // vanished action is attributable instead of looking like the model chose
-      // to do nothing (observed live: a write_file fix lost to a parse failure).
-      this.journalParseErrors(parseErrors, context, i);
-
-      if (thought) {
-        history.push({ role: ReActRole.THOUGHT, content: thought });
-        await this.executor.logAgentOutput(
-          context.trace_id,
-          `${REACT_THOUGHT_PREFIX}${thought}`,
-        );
-      }
-
-      // Complete immediately only when nothing is left to run. When the model bundles
-      // an action with STATUS: COMPLETE in one turn (a common pattern — "apply the fix,
-      // then done"), the action MUST execute before completion, or its work is silently
-      // discarded (observed live: a write_file fix dropped, files_changed empty).
-      if (isComplete && actions.length === 0) {
-        return this.finishLoop(
-          response.content,
-          context,
-          startTime,
-          toolCallCount,
-          writtenFiles,
-          {
-            promptTokens: totalPromptTokens,
-            completionTokens: totalCompletionTokens,
-            costUsd: totalCostUsd,
-            cacheReadTokens: totalCacheReadTokens,
-            cacheCreationTokens: totalCacheCreationTokens,
-          },
-        );
-      }
-
-      if (actions.length === 0) {
-        throw new AgentExecutionError(
-          "Agent provided no actions and did not signal completion",
-          AgentExecutionErrorType.EXECUTION_ERROR,
-        );
-      }
-
-      // 4. Check tool call limit
-      if (toolCallCount + actions.length > (options.max_tool_calls || 100)) {
-        throw new AgentExecutionError(
-          `Tool call limit exceeded (${options.max_tool_calls})`,
-          AgentExecutionErrorType.TOOL_ERROR,
-        );
-      }
-
-      // Guardrail seam (Phase 107): fire-and-forget screening of the agent output.
-      // No-op in Solo (no runner injected); Team edition screens concurrently and
-      // surfaces a verdict via hasBlockingViolation.
-      if (response.content) {
-        void this.executor.guardrailRunner?.screen(
-          response.content,
-          context.trace_id,
-          i,
-        );
-      }
-
-      // 5. Execute actions
-      for (const action of actions) {
-        toolCallCount++;
-        await this.executor.logAgentOutput(
-          context.trace_id,
-          `${REACT_CALLING_TOOL_PREFIX}${action.tool}`,
-        );
-
-        const result = await this.executeTool(action, options);
-        this.recordWrittenFile(action, result, writtenFiles);
-        const resultJson = JSON.stringify(result);
-        // Journal the tool call so trajectory analysis / auditing can see the ReAct
-        // loop's tool use — the same dynamic_tool_call event the flow executor emits.
-        await this.executor.logDynamicToolCall?.(
-          context.trace_id,
-          action.tool,
-          action.params,
-          resultJson.slice(0, REACT_TOOL_RESULT_SUMMARY_MAX),
-          i,
-        );
-        history.push({
-          role: ReActRole.RESULT,
-          content: `Tool ${action.tool} result: ${resultJson}`,
-        });
-
-        if (!result.success) {
-          // Let the agent see the error and decide how to proceed
-          await this.executor.logAgentOutput(
-            context.trace_id,
-            `${REACT_TOOL_ERROR_PREFIX}${result.error}`,
-          );
-        }
-      }
-
-      // The turn bundled actions with STATUS: COMPLETE — now that the actions have
-      // run, honor completion (their writes are already recorded in writtenFiles).
-      if (isComplete) {
-        return this.finishLoop(
-          response.content,
-          context,
-          startTime,
-          toolCallCount,
-          writtenFiles,
-          {
-            promptTokens: totalPromptTokens,
-            completionTokens: totalCompletionTokens,
-            costUsd: totalCostUsd,
-            cacheReadTokens: totalCacheReadTokens,
-            cacheCreationTokens: totalCacheCreationTokens,
-          },
-        );
+      toolCallCount = iterResult.toolCallCount;
+      totalPromptTokens = iterResult.totalPromptTokens;
+      totalCompletionTokens = iterResult.totalCompletionTokens;
+      totalCostUsd = iterResult.totalCostUsd;
+      totalCacheReadTokens = iterResult.totalCacheReadTokens;
+      totalCacheCreationTokens = iterResult.totalCacheCreationTokens;
+      nativeToolsPriorTurn = iterResult.nativeToolsPriorTurn;
+      if (iterResult.done) {
+        return iterResult.result!;
       }
     }
 
@@ -397,6 +270,313 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     if (!result.success || !REACT_WRITE_TOOLS.has(action.tool)) return;
     const path = action.params.path;
     if (typeof path === "string" && path.length > 0) writtenFiles.add(path);
+  }
+
+  /**
+   * Parse a native tool-use response into actions. Returns empty actions and
+   * isComplete=true when the model chose not to use any tool.
+   */
+  private parseNativeToolResponse(response: IGenerateResult): {
+    toolCalls: IProviderToolCall[] | undefined;
+    actions: IReActAction[];
+    isComplete: boolean;
+  } {
+    const toolCalls = response.toolCalls;
+    if (toolCalls && toolCalls.length > 0) {
+      const actions = toolCalls.map((tc) => ({
+        tool: tc.name,
+        params: tc.input as Record<string, JSONValue>,
+      }));
+      return { toolCalls, actions, isComplete: false };
+    }
+    return { toolCalls: undefined, actions: [], isComplete: true };
+  }
+
+  /**
+   * Build the options object for provider.generate() when native tools are active.
+   * Includes tools, toolChoice (any + disable_parallel_tool_use), and priorTurn on
+   * iterations after the first. Returns base options when native tools are inactive.
+   */
+  private buildNativeGenerateOptions(
+    nativeToolDefinitions?: Opt<IToolDefinition[], Reason.OptionalInput>,
+    nativeToolsPriorTurn?: Opt<IProviderTurn, Reason.OptionalInput>,
+    nativeToolsUsed = false,
+  ): GeneratedOptions {
+    const base = Object.assign({
+      temperature: REACT_DEFAULT_TEMPERATURE,
+      max_tokens: REACT_DEFAULT_MAX_TOKENS,
+    }, this.callOptions) as GeneratedOptions;
+    if (nativeToolsUsed && nativeToolDefinitions) {
+      base.tools = nativeToolDefinitions;
+      base.toolChoice = { type: "any", disable_parallel_tool_use: true };
+      if (nativeToolsPriorTurn) {
+        base.priorTurn = nativeToolsPriorTurn;
+      }
+    }
+    return base;
+  }
+
+  /** Log a warning when the response was truncated at max_tokens. */
+  private logMaxTokensTruncation(
+    response: IGenerateResult,
+    options: IAgentExecutionOptions,
+    iteration: number,
+    context: IExecutionContext,
+  ): void {
+    if (response.stop_reason !== RESPONSE_STOP_REASON_MAX_TOKENS) return;
+    void this.executor.budgetLogger?.warn(
+      AGENT_EVENT_RESPONSE_TRUNCATED,
+      context.request_id ?? null,
+      {
+        identity_id: options.identity_id ?? "",
+        iteration,
+        stop_reason: response.stop_reason,
+        response_length: response.content.length,
+        completion_tokens: response.usage.completionTokens,
+      },
+      context.trace_id,
+    );
+  }
+
+  /**
+   * Execute one iteration of the ReAct loop. Returns accumulated metrics and
+   * optionally a finished result when the loop should terminate early.
+   */
+  private async runSingleIteration(
+    params: IIterationParams,
+  ): Promise<IIterationResult> {
+    const {
+      i,
+      startTime,
+      blueprint,
+      context,
+      options,
+      history,
+      writtenFiles,
+      toolCallCount,
+      totalPromptTokens,
+      totalCompletionTokens,
+      totalCostUsd,
+      totalCacheReadTokens,
+      totalCacheCreationTokens,
+      nativeToolsUsed,
+      nativeToolDefinitions,
+      nativeToolsPriorTurn,
+    } = params;
+    if (this.executor.guardrailRunner?.hasBlockingViolation(context.trace_id)) {
+      throw new GuardrailBlockedError(
+        context.trace_id,
+        "Guardrail blocked execution at iteration start",
+      );
+    }
+
+    const budgetedHistory = await this.applyContextBudget(blueprint, context, history, i);
+    const prompt = this.buildPrompt(blueprint, context, options, budgetedHistory, nativeToolsUsed);
+
+    const generateOptions = this.buildNativeGenerateOptions(
+      nativeToolDefinitions,
+      nativeToolsPriorTurn,
+      nativeToolsUsed,
+    );
+    const response = await this.withHeartbeat(context, () => this.provider!.generate(prompt, generateOptions as never));
+
+    this.logMaxTokensTruncation(response, options, i, context);
+
+    const predictedCost = computeRegistryPredictedCost(response.provider, response.model, {
+      promptTokens: response.usage.promptTokens,
+      completionTokens: response.usage.completionTokens,
+      cacheReadTokens: response.usage.cacheReadTokens,
+      cacheCreationTokens: response.usage.cacheCreationTokens,
+    });
+
+    await this.executor.logGeneration(
+      context.trace_id,
+      options.identity_id ?? "",
+      response.model,
+      response.provider,
+      {
+        promptTokens: response.usage.promptTokens,
+        completionTokens: response.usage.completionTokens,
+        totalTokens: response.usage.totalTokens,
+        costUsd: predictedCost ?? 0,
+      },
+    );
+
+    const iterPromptTokens = response.usage.promptTokens;
+    const iterCompletionTokens = response.usage.completionTokens;
+    const iterCostUsd = predictedCost ?? 0;
+    const iterCacheReadTokens = response.usage.cacheReadTokens ?? 0;
+    const iterCacheCreationTokens = response.usage.cacheCreationTokens ?? 0;
+
+    const newTotalPromptTokens = totalPromptTokens + iterPromptTokens;
+    const newTotalCompletionTokens = totalCompletionTokens + iterCompletionTokens;
+    const newTotalCostUsd = totalCostUsd + iterCostUsd;
+    const newTotalCacheReadTokens = totalCacheReadTokens + iterCacheReadTokens;
+    const newTotalCacheCreationTokens = totalCacheCreationTokens + iterCacheCreationTokens;
+
+    const parsed = this.parseIterationResponse(response, nativeToolsUsed);
+
+    if (!nativeToolsUsed) {
+      this.journalParseErrors(parsed.parseErrors, context, i);
+    }
+
+    if (parsed.thought) {
+      history.push({ role: ReActRole.THOUGHT, content: parsed.thought });
+      await this.executor.logAgentOutput(context.trace_id, `${REACT_THOUGHT_PREFIX} ${parsed.thought}`);
+    }
+
+    if (parsed.isComplete && parsed.actions.length === 0) {
+      const result = this.finishLoop(
+        response.content,
+        context,
+        startTime,
+        toolCallCount,
+        writtenFiles,
+        {
+          promptTokens: newTotalPromptTokens,
+          completionTokens: newTotalCompletionTokens,
+          costUsd: newTotalCostUsd,
+          cacheReadTokens: newTotalCacheReadTokens,
+          cacheCreationTokens: newTotalCacheCreationTokens,
+        },
+      );
+      return {
+        toolCallCount,
+        totalPromptTokens: newTotalPromptTokens,
+        totalCompletionTokens: newTotalCompletionTokens,
+        totalCostUsd: newTotalCostUsd,
+        totalCacheReadTokens: newTotalCacheReadTokens,
+        totalCacheCreationTokens: newTotalCacheCreationTokens,
+        done: true,
+        result,
+      };
+    }
+
+    if (parsed.actions.length === 0) {
+      throw new AgentExecutionError(
+        "No actions generated in ReAct iteration",
+        AgentExecutionErrorType.EXECUTION_ERROR,
+      );
+    }
+
+    const maxToolCalls = options.max_tool_calls ?? 100;
+    if (toolCallCount + parsed.actions.length > maxToolCalls) {
+      throw new AgentExecutionError(
+        `Exceeded maximum tool calls (${maxToolCalls})`,
+        AgentExecutionErrorType.EXECUTION_ERROR,
+      );
+    }
+
+    if (response.content) {
+      void this.executor.guardrailRunner?.screen(response.content, context.trace_id, i);
+    }
+
+    let newToolCallCount = toolCallCount;
+    let lastPriorTurn = nativeToolsPriorTurn;
+    for (let a = 0; a < parsed.actions.length; a++) {
+      const action = parsed.actions[a];
+      const execResult = await this.executeTool(action, options);
+      this.recordWrittenFile(action, execResult, writtenFiles);
+
+      const toolResultContent = execResult.success
+        ? JSON.stringify(execResult.data ?? {})
+        : (execResult.error ?? "Unknown error");
+      newToolCallCount++;
+
+      const toolCallLine = `${REACT_CALLING_TOOL_PREFIX}${action.tool}(${JSON.stringify(action.params)})`;
+      history.push({ role: ReActRole.ACTION, content: toolCallLine });
+
+      const truncatedResult = toolResultContent.length > REACT_TOOL_RESULT_SUMMARY_MAX
+        ? toolResultContent.slice(0, REACT_TOOL_RESULT_SUMMARY_MAX) + "..."
+        : toolResultContent;
+      history.push({ role: ReActRole.RESULT, content: truncatedResult });
+
+      await this.executor.logDynamicToolCall?.(
+        context.trace_id,
+        action.tool,
+        action.params,
+        truncatedResult,
+        i,
+      );
+
+      if (nativeToolsUsed && parsed.nativeToolCalls?.[a]) {
+        lastPriorTurn = this.buildPriorTurn(
+          parsed.nativeToolCalls[a],
+          execResult as never,
+        );
+      }
+    }
+
+    if (parsed.isComplete) {
+      const result = this.finishLoop(
+        response.content,
+        context,
+        startTime,
+        newToolCallCount,
+        writtenFiles,
+        {
+          promptTokens: newTotalPromptTokens,
+          completionTokens: newTotalCompletionTokens,
+          costUsd: newTotalCostUsd,
+          cacheReadTokens: newTotalCacheReadTokens,
+          cacheCreationTokens: newTotalCacheCreationTokens,
+        },
+      );
+      return {
+        toolCallCount: newToolCallCount,
+        totalPromptTokens: newTotalPromptTokens,
+        totalCompletionTokens: newTotalCompletionTokens,
+        totalCostUsd: newTotalCostUsd,
+        totalCacheReadTokens: newTotalCacheReadTokens,
+        totalCacheCreationTokens: newTotalCacheCreationTokens,
+        nativeToolsPriorTurn: lastPriorTurn,
+        done: true,
+        result,
+      };
+    }
+
+    return {
+      toolCallCount: newToolCallCount,
+      totalPromptTokens: newTotalPromptTokens,
+      totalCompletionTokens: newTotalCompletionTokens,
+      totalCostUsd: newTotalCostUsd,
+      totalCacheReadTokens: newTotalCacheReadTokens,
+      totalCacheCreationTokens: newTotalCacheCreationTokens,
+      nativeToolsPriorTurn: lastPriorTurn,
+      done: false,
+    };
+  }
+
+  /**
+   * Parse the provider response into thought, actions, and completion state.
+   * Dispatches to either the native-tools branch or the TOML-block branch.
+   */
+  private parseIterationResponse(
+    response: IGenerateResult,
+    nativeToolsUsed: boolean,
+  ): {
+    thought?: string;
+    actions: IReActAction[];
+    isComplete: boolean;
+    parseErrors: string[];
+    nativeToolCalls?: IProviderToolCall[];
+  } {
+    if (nativeToolsUsed) {
+      const nativeResult = this.parseNativeToolResponse(response);
+      return {
+        actions: nativeResult.actions,
+        isComplete: nativeResult.isComplete,
+        parseErrors: [],
+        nativeToolCalls: nativeResult.toolCalls,
+      };
+    }
+    const parsed = this.parseResponse(response.content);
+    return {
+      thought: parsed.thought,
+      actions: parsed.actions,
+      isComplete: parsed.isComplete,
+      parseErrors: parsed.parseErrors,
+    };
   }
 
   private async executeTool(
@@ -566,10 +746,11 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     context: IExecutionContext,
     options: IAgentExecutionOptions,
     history: Array<{ role: ReActRole; content: string }>,
+    skipToolProse = false,
   ): string {
     const historyText = this.buildBudgetedHistoryText(history);
 
-    return `IDENTITY: ${blueprint.name}
+    let prompt = `IDENTITY: ${blueprint.name}
 CAPABILITIES: ${blueprint.capabilities.join(", ")}
 
 CONTEXT:
@@ -582,22 +763,25 @@ ${history.length > 0 ? `HISTORY:\n${historyText}` : ""}
 
 INSTRUCTIONS:
 1. Reason about the current state.
-2. If you need more information or need to make changes, output one or more tool calls in TOML format.
+2. If you need more information or need to make changes, output one or more tool calls.
 3. If the task is finished, output "${REACT_STATUS_COMPLETE}" and provide a summary of changes.
-4. Output your thought process preceded by "${REACT_THOUGHT_PREFIX}".
+4. Output your thought process preceded by "${REACT_THOUGHT_PREFIX}".`;
+
+    if (!skipToolProse) {
+      prompt += `
 
 AVAILABLE TOOLS:
 ${
-      (options.permitted_tools ||
-        [
-          ToolName.READ_FILE,
-          ToolName.WRITE_FILE,
-          ToolName.RUN_COMMAND,
-          ToolName.LIST_DIRECTORY,
-          ToolName.SEARCH_FILES,
-        ])
-        .join(", ")
-    }
+        (options.permitted_tools ||
+          [
+            ToolName.READ_FILE,
+            ToolName.WRITE_FILE,
+            ToolName.RUN_COMMAND,
+            ToolName.LIST_DIRECTORY,
+            ToolName.SEARCH_FILES,
+          ])
+          .join(", ")
+      }
 
 FORMAT:
 ${REACT_THOUGHT_PREFIX}[Your reasoning]
@@ -611,8 +795,10 @@ tool = "[tool_name]"
 OR
 
 ${REACT_STATUS_COMPLETE}
-${REACT_SUMMARY_PREFIX}[What was done]
-`;
+${REACT_SUMMARY_PREFIX}[What was done]`;
+    }
+
+    return prompt;
   }
 
   private buildBudgetedHistoryText(
