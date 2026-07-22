@@ -12,11 +12,12 @@
  * @related-files ["packages/core/src/planning/plan_writer.ts", "packages/tool-runtime/src/output_validator.ts"]
  */
 
-import { type Plan, PlanSchema } from "@exaix/schemas/plan_schema.ts";
-import { createOutputValidator, type OutputValidator } from "@exaix/tool-runtime";
+import { type IPlanAction, type Plan, PlanSchema } from "@exaix/schemas/plan_schema.ts";
+import { createOutputValidator, type IValidationMetrics, type OutputValidator } from "@exaix/tool-runtime";
 import { describeSchema } from "@exaix/schemas/schema_describer.ts";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
+import { extractTomlActionBlocks } from "./toml_action_blocks.ts";
 
 // ============================================================================
 // Types
@@ -38,6 +39,17 @@ interface E2ECase {
   steps: string[];
   verificationPoints: string[];
   status: string;
+}
+
+/** Minimal shape read from a JSON envelope during TOML_BLOCK:N sentinel substitution — the
+ *  envelope is not yet Zod-validated at this point, so fields are read defensively. */
+interface IEnvelopeWithSteps {
+  steps?: JSONValue;
+}
+
+/** A single step entry within IEnvelopeWithSteps.steps, before Zod validation. */
+interface IEnvelopeStep {
+  actions?: JSONValue;
 }
 
 // ============================================================================
@@ -78,6 +90,16 @@ export class PlanAdapter {
    * @throws PlanValidationError if JSON is invalid or doesn't match schema
    */
   parse(content: string): Plan {
+    const { envelope, actionsByBlock } = extractTomlActionBlocks(content);
+
+    if (actionsByBlock.size === 0) {
+      return this.parsePureJson(content);
+    }
+
+    return this.parseWithTomlActionBlocks(envelope, actionsByBlock, content);
+  }
+
+  private parsePureJson(content: string): Plan {
     const result = this.validator.validate(content, PlanSchema);
 
     if (result.success && result.value) {
@@ -93,6 +115,83 @@ export class PlanAdapter {
       repairAttempted: result.repairAttempted,
       repairSucceeded: result.repairSucceeded,
     });
+  }
+
+  /**
+   * Substitutes real IPlanAction[] arrays for every TOML_BLOCK:N sentinel in envelope, then
+   * validates against PlanSchema directly. Bypasses OutputValidator (and its this.metrics
+   * tracking) since envelope is guaranteed free of embedded source code and needs no
+   * repairJSON fallback — a deliberate, documented divergence from the pure-JSON path (Phase
+   * 151 GAP-4): OutputValidator.getMetrics()/AgentRunner.getValidationMetrics() have zero
+   * production consumers today, so this is currently inert.
+   */
+  private parseWithTomlActionBlocks(
+    envelope: string,
+    actionsByBlock: Map<number, IPlanAction[]>,
+    rawContent: string,
+  ): Plan {
+    let parsedEnvelope: JSONValue;
+    try {
+      parsedEnvelope = JSON.parse(envelope);
+    } catch (error) {
+      throw new PlanValidationError(error instanceof Error ? error.message : "Invalid JSON envelope", {
+        zodErrors: null,
+        rawContent,
+        repairAttempted: false,
+        repairSucceeded: false,
+      });
+    }
+
+    this.substituteTomlBlockSentinels(parsedEnvelope, actionsByBlock, rawContent);
+
+    const result = PlanSchema.safeParse(parsedEnvelope);
+    if (result.success) {
+      return result.data;
+    }
+
+    throw new PlanValidationError(result.error.errors[0]?.message ?? "Plan validation failed", {
+      zodErrors: JSON.parse(JSON.stringify(result.error.errors)) as JSONValue,
+      rawContent,
+      repairAttempted: false,
+      repairSucceeded: false,
+    });
+  }
+
+  /** Replaces every `actions: "TOML_BLOCK:N"` sentinel in-place with actionsByBlock.get(N). */
+  private substituteTomlBlockSentinels(
+    parsedEnvelope: JSONValue,
+    actionsByBlock: Map<number, IPlanAction[]>,
+    rawContent: string,
+  ): void {
+    if (parsedEnvelope === null || typeof parsedEnvelope !== "object" || Array.isArray(parsedEnvelope)) {
+      return;
+    }
+    const steps = (parsedEnvelope as IEnvelopeWithSteps).steps;
+    if (!Array.isArray(steps)) {
+      return;
+    }
+    for (const step of steps) {
+      if (step === null || typeof step !== "object") continue;
+      const stepObj = step as IEnvelopeStep;
+      if (typeof stepObj.actions !== "string") continue;
+      const match = stepObj.actions.match(/^TOML_BLOCK:(\d+)$/);
+      if (!match) continue;
+      const markerNumber = Number(match[1]);
+      const actions = actionsByBlock.get(markerNumber);
+      if (!actions) {
+        throw new PlanValidationError(
+          `Plan references TOML_BLOCK:${markerNumber} but no matching fenced TOML block was found.`,
+          { zodErrors: null, rawContent, repairAttempted: false, repairSucceeded: false },
+        );
+      }
+      stepObj.actions = actions;
+    }
+  }
+
+  /** Read-only passthrough to the internal OutputValidator's metrics — mirrors
+   *  AgentRunner.getValidationMetrics()'s existing pattern for the same purpose. */
+  getValidationMetrics(): IValidationMetrics {
+    return this.validator.getMetrics();
   }
 
   /**
