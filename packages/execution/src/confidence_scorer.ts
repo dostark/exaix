@@ -248,7 +248,7 @@ export class ConfidenceScorer {
       traceId,
     };
 
-    const result = await this.agentRunner.run(blueprint, parsedRequest);
+    const result = await this.agentRunner.run(blueprint, parsedRequest, undefined);
 
     const validationResult = this.outputValidator.validate(result.content, ConfidenceSchema);
 
@@ -420,7 +420,7 @@ export class ConfidenceScorer {
     agentRunner: AgentRunner,
   ): (blueprint: IBlueprint, request: IParsedRequest) => Promise<IConfidenceResult> {
     return async (blueprint: IBlueprint, request: IParsedRequest): Promise<IConfidenceResult> => {
-      const result = await agentRunner.run(blueprint, request);
+      const result = await agentRunner.run(blueprint, request, undefined);
       return await this.assess(request.userPrompt, result.content, request.traceId);
     };
   }
