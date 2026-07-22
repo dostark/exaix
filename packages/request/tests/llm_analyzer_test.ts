@@ -74,7 +74,7 @@ Deno.test("[LlmAnalyzer] parses valid LLM JSON response into IRequestAnalysis", 
   const validator = createOutputValidator({ autoRepair: false });
   const analyzer = new LlmAnalyzer(provider, validator);
 
-  const result = await analyzer.analyze("Add unit tests for UserService.");
+  const result = await analyzer.analyze("Add unit tests for UserService.", {});
 
   assertEquals(result.taskType, RequestTaskType.TEST);
   assertEquals(result.actionabilityScore, 80);
@@ -88,7 +88,7 @@ Deno.test("[LlmAnalyzer] handles LLM returning invalid JSON gracefully", async (
   const analyzer = new LlmAnalyzer(provider, validator);
 
   // Should not throw — returns fallback analysis
-  const result = await analyzer.analyze("Fix the authentication bug.");
+  const result = await analyzer.analyze("Fix the authentication bug.", {});
 
   assertExists(result);
   assertExists(result.metadata);
@@ -117,7 +117,7 @@ Deno.test("[LlmAnalyzer] handles LLM returning partial fields", async () => {
   const validator = createOutputValidator({ autoRepair: false });
   const analyzer = new LlmAnalyzer(provider, validator);
 
-  const result = await analyzer.analyze("Do something.");
+  const result = await analyzer.analyze("Do something.", {});
   assertEquals(result.actionabilityScore, 50);
 });
 
@@ -126,7 +126,7 @@ Deno.test("[LlmAnalyzer] passes request text in prompt to provider", async () =>
   const validator = createOutputValidator({ autoRepair: false });
   const analyzer = new LlmAnalyzer(provider, validator);
 
-  await analyzer.analyze("Implement the new cache layer in CacheService.");
+  await analyzer.analyze("Implement the new cache layer in CacheService.", {});
 
   assertStringIncludes(capturedPrompt(), "Implement the new cache layer in CacheService.");
 });
@@ -182,7 +182,7 @@ Deno.test("[LlmAnalyzer] uses OutputValidator for schema validation", async () =
   const provider = new MockProvider(validAnalysisJson);
   const analyzer = new LlmAnalyzer(provider, mockValidator);
 
-  await analyzer.analyze("Fix bug.");
+  await analyzer.analyze("Fix bug.", {});
 
   assertEquals(parseAndValidateCalled, true);
 });
@@ -192,7 +192,7 @@ Deno.test("[LlmAnalyzer] returns fallback analysis on validation failure", async
   const validator = createOutputValidator({ autoRepair: false });
   const analyzer = new LlmAnalyzer(provider, validator);
 
-  const result = await analyzer.analyze("Some vague request.");
+  const result = await analyzer.analyze("Some vague request.", {});
 
   // Fallback must still return a structurally valid IRequestAnalysis
   assertExists(result.metadata);
@@ -210,7 +210,7 @@ Deno.test({
     const validator = createOutputValidator({ autoRepair: false });
     const analyzer = new LlmAnalyzer(provider, validator);
 
-    const result = await analyzer.analyze("Add feature X.");
+    const result = await analyzer.analyze("Add feature X.", {});
 
     assertEquals(typeof result.metadata.durationMs, "number");
     assertEquals(result.metadata.durationMs >= 0, true);
@@ -226,7 +226,7 @@ Deno.test("[LlmAnalyzer] prompt template references type, interpretations, and c
   const validator = createOutputValidator({ autoRepair: false });
   const analyzer = new LlmAnalyzer(provider, validator);
 
-  await analyzer.analyze("Implement the new module.");
+  await analyzer.analyze("Implement the new module.", {});
 
   assertStringIncludes(capturedPrompt(), "type");
   assertStringIncludes(capturedPrompt(), "interpretations");
@@ -242,7 +242,7 @@ Deno.test("[LlmAnalyzer] output includes analyzerVersion in metadata", async () 
   const validator = createOutputValidator({ autoRepair: false });
   const analyzer = new LlmAnalyzer(provider, validator);
 
-  const result = await analyzer.analyze("Add a new feature.");
+  const result = await analyzer.analyze("Add a new feature.", {});
 
   assertExists(result.metadata.analyzerVersion);
   assertEquals(typeof result.metadata.analyzerVersion, "string");
@@ -254,7 +254,7 @@ Deno.test("[LlmAnalyzer] includes high-impact ambiguity in prompt for ambiguous 
   const validator = createOutputValidator({ autoRepair: false });
   const analyzer = new LlmAnalyzer(provider, validator);
 
-  await analyzer.analyze("Maybe fix that thing somehow? AmbiguityImpact?");
+  await analyzer.analyze("Maybe fix that thing somehow? AmbiguityImpact?", {});
 
   // Prompt should reference the IRequestAnalysis schema fields
   assertStringIncludes(capturedPrompt().toLowerCase(), "ambiguit");

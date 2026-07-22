@@ -94,7 +94,7 @@ Deno.test("[IAgentRunner] constructPrompt calls contextBudgetManager.prepare() w
     { contextBudgetManager: manager },
   );
 
-  await runner.run(makeBlueprint(), makeRequest());
+  await runner.run(makeBlueprint(), makeRequest(), undefined);
 
   assertEquals(captured.length, 1);
   assertEquals(captured[0].stepId, "agent-runner");
@@ -109,7 +109,7 @@ Deno.test("[IAgentRunner] constructPrompt does NOT call prepare() when no manage
     {}, // no contextBudgetManager
   );
 
-  await runner.run(makeBlueprint(), makeRequest());
+  await runner.run(makeBlueprint(), makeRequest(), undefined);
 
   assertEquals(captured.length, 0);
   // Suppress unused variable — manager only used to check it was never called
@@ -123,7 +123,7 @@ Deno.test("[IAgentRunner] system prompt segment gets kind=system", async () => {
     { contextBudgetManager: manager },
   );
 
-  await runner.run(makeBlueprint("SYSTEM_TEXT"), makeRequest());
+  await runner.run(makeBlueprint("SYSTEM_TEXT"), makeRequest(), undefined);
 
   const systemSeg = captured[0].segments.find((s) => s.content === "SYSTEM_TEXT");
   assertEquals(systemSeg?.kind, "system");
@@ -136,7 +136,7 @@ Deno.test("[IAgentRunner] user prompt segment gets kind=request with priority 75
     { contextBudgetManager: manager },
   );
 
-  await runner.run(makeBlueprint(), makeRequest({ userPrompt: "USER_PROMPT_TEXT" }));
+  await runner.run(makeBlueprint(), makeRequest({ userPrompt: "USER_PROMPT_TEXT" }), undefined);
 
   // The segment wraps the raw userPrompt with a "### YOUR TASK" heading (agent_runner.ts) so a
   // real model can't mistake it for trailing skill/example content — assert containment, not
@@ -156,6 +156,7 @@ Deno.test("[IAgentRunner] portal knowledge segment gets kind=portal_knowledge", 
   await runner.run(
     makeBlueprint(),
     makeRequest({ context: { [PORTAL_KNOWLEDGE_KEY]: "PORTAL_KNOWLEDGE_TEXT" } }),
+    undefined,
   );
 
   const pkSeg = captured[0].segments.find((s) => s.content === "PORTAL_KNOWLEDGE_TEXT");
@@ -172,6 +173,7 @@ Deno.test("[IAgentRunner] memory context segment gets kind=reflection", async ()
   await runner.run(
     makeBlueprint(),
     makeRequest({ context: { [MEMORY_CONTEXT_KEY]: "MEMORY_TEXT" } }),
+    undefined,
   );
 
   const memSeg = captured[0].segments.find((s) => s.content === "MEMORY_TEXT");
@@ -186,7 +188,7 @@ Deno.test("[IAgentRunner] system prompt kind=system even when it is not at index
   );
 
   // Blueprint with empty systemPrompt — it should NOT be pushed; no segment should get kind=system
-  await runner.run(makeBlueprint(""), makeRequest());
+  await runner.run(makeBlueprint(""), makeRequest(), undefined);
 
   const systemSegs = captured[0].segments.filter((s) => s.kind === "system");
   assertEquals(systemSegs.length, 0, "No system segment when systemPrompt is empty");
@@ -207,7 +209,7 @@ Deno.test("[IAgentRunner] filtered segments produce shorter prompt when manager 
   };
 
   const blueprint = makeBlueprint("SYSTEM_SECTION");
-  await runner.run(blueprint, makeRequest({ userPrompt: "USER_SECTION" }));
+  await runner.run(blueprint, makeRequest({ userPrompt: "USER_SECTION" }), undefined);
 
   // System prompt was dropped by the manager — should not appear in the generated prompt
   assertEquals(capturedPrompt.includes("SYSTEM_SECTION"), false);

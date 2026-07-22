@@ -38,7 +38,7 @@ Deno.test("IAgentRunner: emits llm.call.started before LLM call", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
   const runner = new AgentRunner(undefined, mockProvider, { milestoneEmitter: emitter });
 
-  await runner.run(sampleBlueprint, sampleRequest);
+  await runner.run(sampleBlueprint, sampleRequest, undefined);
 
   const started = emitter.milestones.find((m) => m.milestoneType === MILESTONE_LLM_CALL_STARTED);
   assertExists(started, "llm.call.started milestone should be emitted");
@@ -49,7 +49,7 @@ Deno.test("IAgentRunner: emits llm.call.completed after successful LLM call", as
   const mockProvider = new MockProvider(wellFormedResponse);
   const runner = new AgentRunner(undefined, mockProvider, { milestoneEmitter: emitter });
 
-  await runner.run(sampleBlueprint, sampleRequest);
+  await runner.run(sampleBlueprint, sampleRequest, undefined);
 
   const completed = emitter.milestones.find((m) => m.milestoneType === MILESTONE_LLM_CALL_COMPLETED);
   assertExists(completed, "llm.call.completed milestone should be emitted");
@@ -60,7 +60,7 @@ Deno.test("IAgentRunner: llm.call.started precedes llm.call.completed", async ()
   const mockProvider = new MockProvider(wellFormedResponse);
   const runner = new AgentRunner(undefined, mockProvider, { milestoneEmitter: emitter });
 
-  await runner.run(sampleBlueprint, sampleRequest);
+  await runner.run(sampleBlueprint, sampleRequest, undefined);
 
   const startedIdx = emitter.milestones.findIndex((m) => m.milestoneType === MILESTONE_LLM_CALL_STARTED);
   const completedIdx = emitter.milestones.findIndex((m) => m.milestoneType === MILESTONE_LLM_CALL_COMPLETED);
@@ -73,7 +73,7 @@ Deno.test("IAgentRunner: emits no milestones when milestoneEmitter is not config
   const mockProvider = new MockProvider(wellFormedResponse);
   const runner = new AgentRunner(undefined, mockProvider, {});
 
-  const result = await runner.run(sampleBlueprint, sampleRequest);
+  const result = await runner.run(sampleBlueprint, sampleRequest, undefined);
   assertExists(result);
   assertEquals(result.content, 'console.log("Hello");');
 });
@@ -83,7 +83,7 @@ Deno.test("IAgentRunner: sets traceId on milestones when request has traceId", a
   const mockProvider = new MockProvider(wellFormedResponse);
   const runner = new AgentRunner(undefined, mockProvider, { milestoneEmitter: emitter });
 
-  await runner.run(sampleBlueprint, { ...sampleRequest, traceId: "test-trace-123" });
+  await runner.run(sampleBlueprint, { ...sampleRequest, traceId: "test-trace-123" }, undefined);
 
   const started = emitter.milestones.find((m) => m.milestoneType === MILESTONE_LLM_CALL_STARTED);
   assertEquals(started?.traceId, "test-trace-123", "milestone should carry traceId");

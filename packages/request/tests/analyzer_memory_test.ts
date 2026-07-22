@@ -67,7 +67,7 @@ Deno.test("[LlmAnalyzer] omits memory section from prompt when no memories provi
   });
   const { analyzer } = setupTestLlmAnalyzer(provider);
 
-  await analyzer.analyze("Fix the login bug.");
+  await analyzer.analyze("Fix the login bug.", {});
 
   assertEquals(capturedPrompt.includes("RELEVANT MEMORIES"), false);
 });
@@ -117,7 +117,7 @@ Deno.test("[RequestAnalyzer] works without memory context", async () => {
   const { analyzer } = setupTestAnalyzer(AnalysisMode.LLM, provider);
 
   // Should not throw
-  const result = await analyzer.analyze("Fix the login bug.");
+  const result = await analyzer.analyze("Fix the login bug.", {});
   assertEquals(result.taskType, RequestTaskType.BUGFIX);
 });
 

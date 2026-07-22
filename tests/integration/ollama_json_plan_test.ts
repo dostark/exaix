@@ -107,7 +107,7 @@ Deno.test({
     // Step 1: Generate plan with LLM
     console.log("📝 Generating plan with Ollama...");
     const startTime = Date.now();
-    const agentResult = await runner.run(blueprint, request);
+    const agentResult = await runner.run(blueprint, request, undefined);
     const duration = Date.now() - startTime;
 
     console.log(`\n📄 Raw response:\n${agentResult.raw.substring(0, 1000)}\n`);

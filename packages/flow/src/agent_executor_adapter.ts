@@ -12,6 +12,7 @@
 import type { IAgentExecutionResult, IBlueprint } from "@exaix/execution";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import type { IFlowStepRequest } from "./flow_runner.ts";
+import type { JSONValue } from "@exaix/core";
 
 /**
  * Minimal request context type for converting IFlowStepRequest to IParsedRequest.
@@ -39,7 +40,11 @@ interface IParsedRequest {
  * Minimal runner interface matching the subset of IAgentRunner used by the adapter.
  */
 export interface IRunner {
-  run(blueprint: IBlueprint, request: IParsedRequest): Promise<IAgentExecutionResult>;
+  run(
+    blueprint: IBlueprint,
+    request: IParsedRequest,
+    jsonSchema?: Record<string, JSONValue>,
+  ): Promise<IAgentExecutionResult>;
 }
 
 /**
@@ -73,6 +78,6 @@ export class AgentOrchestratorAdapter {
       traceId: request.traceId,
     };
 
-    return await this.runner.run(blueprint, parsedRequest);
+    return await this.runner.run(blueprint, parsedRequest, undefined);
   }
 }
