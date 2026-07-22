@@ -35,6 +35,7 @@ import {
 } from "@exaix/core/evaluation";
 import { type Config, DEFAULT_MODEL_PRESETS } from "@exaix/schemas";
 import type { IModelIntent, IResolvedModel } from "@exaix/schemas";
+import { getCriterionResultJsonSchema, getEvaluationResultJsonSchema } from "@exaix/schemas/evaluation_json_schema.ts";
 import type { ICostTracker } from "@exaix/core/types";
 import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
 import { ProviderType } from "@exaix/core";
@@ -1357,7 +1358,8 @@ export async function evaluateLlmJudgeCriterion(
 
   // EXA_EVAL_LLM_MOCK=false → real LLM call
   try {
-    const rawLlmResponse = await callLlmEndpoint(promptUsed, options.env);
+    const judgeJsonSchema = isMulti ? getEvaluationResultJsonSchema() : getCriterionResultJsonSchema();
+    const rawLlmResponse = await callLlmEndpoint(promptUsed, options.env, judgeJsonSchema);
     const cleaned = rawLlmResponse.replace(/^```(?:json)?\s*\n?/m, "").replace(/\n?```\s*$/m, "").trim();
 
     if (isMulti) {
@@ -1440,6 +1442,7 @@ export function resolveEvalLlmTimeoutMs(provider: string): number | undefined {
 export async function callLlmEndpoint(
   prompt: string,
   stepEnv?: Opt<{ [key: string]: string }, Reason.OptionalInput>,
+  jsonSchema?: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
 ): Promise<string> {
   // Step env (options.env) takes precedence over the runner's process env, consistent with
   // the dispatch in evaluateLlmJudgeCriterion and resolveEvalJudgeProvenance. Reading only
@@ -1533,7 +1536,7 @@ export async function callLlmEndpoint(
   };
   const finalConfig = createMockConfig("/tmp/exa-eval", overrides as Parameters<typeof createMockConfig>[1]);
   const provider = await ProviderFactory.createByName(finalConfig, "default");
-  const result = await provider.generate(prompt, resolved.options);
+  const result = await provider.generate(prompt, { ...resolved.options, jsonSchema });
   return result.content;
 }
 

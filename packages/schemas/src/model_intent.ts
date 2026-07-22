@@ -8,7 +8,7 @@
  * @dependencies [@exaix/schemas, @exaix/core]
  * @related-files [packages/ai/src/model_resolver.ts, packages/schemas/src/model_intent.ts]
  */
-import type { TaskType } from "@exaix/core";
+import type { JSONValue, TaskType } from "@exaix/core";
 
 /**
  * Model size tier — maps to a capability profile (context window, thinking, cost).
@@ -30,6 +30,9 @@ export interface IModelCallOptions {
   thinking?: boolean;
   effort?: EffortTier;
   max_tokens?: number;
+  /** JSON Schema enforcement for structured output (e.g. claude-code --json-schema).
+   *  Ignored by providers that do not support it. */
+  jsonSchema?: Record<string, JSONValue>;
 }
 
 /**

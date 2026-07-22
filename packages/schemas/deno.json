@@ -8,6 +8,7 @@
     "@exaix/core/config": "../core/src/config/mod.ts",
     "@exaix/core/status": "../core/src/status/mod.ts",
     "@exaix/core/request": "../core/src/request/mod.ts",
+    "@exaix/core/evaluation": "../core/src/evaluation/mod.ts",
     "@exaix/schemas": "./mod.ts",
     "@exaix/schemas/": "./src/"
   },
