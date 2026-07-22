@@ -6,8 +6,8 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { dirname, fromFileUrl, join } from "@std/path";
-import { withCliProcessMutex } from "../helpers/cli_process_mutex.ts";
+import { join } from "@std/path";
+import { runExactl } from "./helpers/cli_test_helpers.ts";
 
 const WAIT_UUID = "550e8400-e29b-41d4-a716-446655440000";
 const TOKEN_UUID = "550e8400-e29b-41d4-a716-446655440001";
@@ -33,42 +33,6 @@ function makeWaitStateJson(overrides: object = {}): string {
   );
 }
 
-async function runExactl(args: string[], cwd: string): Promise<{ code: number; stdout: string; stderr: string }> {
-  const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
-  const exactlPath = join(repoRoot, "apps", "exactl", "main.ts");
-
-  const configPath = join(cwd, "exa.config.toml");
-  const hasConfig = await Deno.stat(configPath).then(() => true).catch(() => false);
-  if (!hasConfig) {
-    await Deno.writeTextFile(configPath, `[system]\nroot = "${cwd}"\nversion = "1.0.0"\nlog_level = "info"\n`);
-  }
-
-  const parentEnv = Deno.env.toObject();
-  const env: Record<string, string> = {
-    PATH: parentEnv.PATH ?? "",
-    HOME: parentEnv.HOME ?? "",
-    TMPDIR: parentEnv.TMPDIR ?? "/tmp",
-    TERM: parentEnv.TERM ?? "xterm",
-  };
-  env.EXA_CONFIG_PATH = configPath;
-  env.EXA_LLM_PROVIDER = "mock";
-
-  return await withCliProcessMutex(async () => {
-    const command = new Deno.Command(Deno.execPath(), {
-      args: ["run", "--allow-all", exactlPath, ...args],
-      cwd,
-      stdout: "piped",
-      stderr: "piped",
-      env,
-    });
-    const { code, stdout, stderr } = await command.output();
-    const stdoutStr = new TextDecoder().decode(stdout);
-    const stderrStr = new TextDecoder().decode(stderr);
-    const effectiveStdout = stdoutStr.trim() ? stdoutStr : stderrStr;
-    return { code, stdout: effectiveStdout, stderr: stderrStr };
-  });
-}
-
 const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";
 
 function cliTest(name: string, fn: () => Promise<void>): void {
@@ -91,7 +55,6 @@ async function withWaitState(
   }
 }
 
-/** Runs `exactl wait <command>` on a pending wait state and asserts the resulting status. */
 async function assertWaitTransition(command: string, message: string, expectedStatus: string): Promise<void> {
   await withWaitState({}, async (tempDir, waitDir) => {
     const result = await runExactl(["wait", command, TOKEN_UUID, "-m", message], tempDir);

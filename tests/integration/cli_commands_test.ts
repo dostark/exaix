@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 /**
  * @module CLICommandsIntegrationTest
  * @path tests/integration/cli_commands_test.ts
@@ -10,107 +9,12 @@
 // Covers: request list, request show, plan list, plan show, review list, review show, portal add/remove/refresh, dashboard
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { FlowInputSource, MemoryOperation, RequestSource } from "@exaix/core";
-import { dirname, fromFileUrl, join } from "@std/path";
+import { FlowInputSource, MemoryOperation } from "@exaix/core";
+import { join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { ArtifactRegistry, DatabaseArtifactRepository } from "@exaix/core/artifact";
 import { ReviewStatus } from "@exaix/core/status";
-import { withCliProcessMutex } from "../helpers/cli_process_mutex.ts";
-
-// Helper to run exactl command in a given workspace
-async function runExactl(args: string[], cwd: string) {
-  const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
-  const exactlPath = join(repoRoot, "apps", "exactl", "main.ts");
-
-  console.log(`Running CLI command: exactl ${args.join(" ")} in ${cwd}`);
-
-  const configPath = join(cwd, "exa.config.toml");
-  const hasConfig = await Deno.stat(configPath).then(() => true).catch(() => false);
-  if (!hasConfig) {
-    await Deno.writeTextFile(configPath, `[system]\nroot = "${cwd}"\nversion = "1.0.0"\nlog_level = "info"\n`);
-  }
-
-  const parentEnv = Deno.env.toObject();
-  const env: Record<string, string> = {
-    PATH: parentEnv.PATH ?? "",
-    HOME: parentEnv.HOME ?? "",
-    TMPDIR: parentEnv.TMPDIR ?? "/tmp",
-    TERM: parentEnv.TERM ?? "xterm",
-  };
-  env.EXA_CONFIG_PATH = configPath;
-  // Prevent cross-test env leakage from selecting paid providers in parallel runs.
-  env.EXA_LLM_PROVIDER = "mock";
-
-  // Run deno directly with cwd set
-  const { code, stdout, stderr } = await withCliProcessMutex(async () => {
-    const command = new Deno.Command(Deno.execPath(), {
-      args: ["run", "--allow-all", exactlPath, ...args],
-      cwd: cwd,
-      stdout: "piped",
-      stderr: "piped",
-      env,
-    });
-    return await command.output();
-  });
-  const stdoutStr = new TextDecoder().decode(stdout);
-  const stderrStr = new TextDecoder().decode(stderr);
-
-  console.log(`CLI command exit code: ${code}`);
-  console.log(`CLI stdout length: ${stdoutStr.length}`);
-  console.log(`CLI stderr length: ${stderrStr.length}`);
-
-  // If CI/runner routes helpful CLI output to stderr, use stderr as a fallback
-  // so test assertions that expect output in stdout still work.
-  const effectiveStdout = stdoutStr.trim() ? stdoutStr : stderrStr;
-
-  if (!stdoutStr.trim() && stderrStr.trim()) {
-    console.warn(`CLI command produced no stdout; using stderr as stdout: ${args.join(" ")}`);
-    console.warn(`stderr: ${stderrStr}`);
-  }
-
-  if (effectiveStdout.trim()) {
-    console.log(`CLI stdout: ${effectiveStdout.substring(0, 500)}${effectiveStdout.length > 500 ? "..." : ""}`);
-  }
-
-  // When running in CI, persist artifacts for post-mortem: stdout, stderr, env, cwd, and metadata.
-  try {
-    const ciActive = Deno.env.get("CI") || Deno.env.get("GITHUB_ACTIONS");
-    if (ciActive) {
-      const artifactsDir = join(cwd, "test-artifacts", RequestSource.CLI);
-      await Deno.mkdir(artifactsDir, { recursive: true });
-      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const meta = {
-        args,
-        cwd,
-        code,
-        timestamp: new Date().toISOString(),
-        trace_id: "",
-        status: "",
-      } as { trace_id: string; status: string; [key: string]: any };
-
-      await Deno.writeTextFile(join(artifactsDir, `cli-${id}.stdout.txt`), stdoutStr);
-      await Deno.writeTextFile(join(artifactsDir, `cli-${id}.stderr.txt`), stderrStr);
-      await Deno.writeTextFile(join(artifactsDir, `cli-${id}.meta.json`), JSON.stringify(meta, null, 2));
-
-      try {
-        const envDump = JSON.stringify(Deno.env.toObject(), null, 2);
-        await Deno.writeTextFile(join(artifactsDir, `cli-${id}.env.json`), envDump);
-      } catch (_envErr) {
-        // Ignore env write failures (some CI environments restrict env access)
-      }
-
-      console.log(`Wrote CI artifacts to ${artifactsDir} for command cli-${id}`);
-    }
-  } catch (err) {
-    console.warn("Failed to write CI artifacts:", String(err));
-  }
-
-  return {
-    code,
-    stdout: effectiveStdout,
-    stderr: stderrStr,
-  };
-}
+import { runExactl } from "./helpers/cli_test_helpers.ts";
 
 const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";
 

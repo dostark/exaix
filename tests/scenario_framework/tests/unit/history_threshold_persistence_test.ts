@@ -39,9 +39,17 @@ function makeTestManifest(overrides: Partial<IRunManifest> = {}): IRunManifest {
   };
 }
 
-Deno.test("[HistoryThreshold] JSONL entry carries score_threshold when provided", async () => {
-  const outputDir = await Deno.makeTempDir({ prefix: "scenario-framework-history-" });
+async function withTempDir<T>(prefix: string, fn: (dir: string) => T | Promise<T>): Promise<T> {
+  const dir = await Deno.makeTempDir({ prefix });
   try {
+    return await fn(dir);
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+}
+
+Deno.test("[HistoryThreshold] JSONL entry carries score_threshold when provided", async () => {
+  await withTempDir("scenario-framework-history-", async (outputDir) => {
     const manifest = makeTestManifest({ suite_score: 0.85 });
     const entry = await writeEvalHistoryEntry({
       outputDir,
@@ -56,14 +64,11 @@ Deno.test("[HistoryThreshold] JSONL entry carries score_threshold when provided"
 
     const parsed = EvalHistoryEntrySchema.parse(entry);
     assertEquals(parsed.score_threshold, 0.7);
-  } finally {
-    await Deno.remove(outputDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[HistoryThreshold] JSONL entry score_threshold is absent when not provided", async () => {
-  const outputDir = await Deno.makeTempDir({ prefix: "scenario-framework-history-" });
-  try {
+  await withTempDir("scenario-framework-history-", async (outputDir) => {
     const manifest = makeTestManifest({ suite_score: 0.85 });
     const entry = await writeEvalHistoryEntry({
       outputDir,
@@ -73,14 +78,11 @@ Deno.test("[HistoryThreshold] JSONL entry score_threshold is absent when not pro
 
     assertEquals(entry.score_threshold, undefined);
     assertEquals(entry.passed, true);
-  } finally {
-    await Deno.remove(outputDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[HistoryThreshold] JSONL entry passed reflects threshold when score below threshold", async () => {
-  const outputDir = await Deno.makeTempDir({ prefix: "scenario-framework-history-" });
-  try {
+  await withTempDir("scenario-framework-history-", async (outputDir) => {
     const manifest = makeTestManifest({ suite_score: 0.3 });
     const entry = await writeEvalHistoryEntry({
       outputDir,
@@ -92,19 +94,15 @@ Deno.test("[HistoryThreshold] JSONL entry passed reflects threshold when score b
 
     assertEquals(entry.score_threshold, 0.5);
     assertEquals(entry.passed, false);
-  } finally {
-    await Deno.remove(outputDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[HistoryThreshold] SQLite store persists score_threshold", async () => {
-  const tmpDir = await Deno.makeTempDir({ prefix: "scenario-framework-sqlite-" });
-  const dbPath = join(tmpDir, "eval.db");
-  try {
+  await withTempDir("scenario-framework-sqlite-", (tmpDir) => {
+    const dbPath = join(tmpDir, "eval.db");
     const store = new EvalSqliteStore(dbPath);
     store.initialize();
 
-    // Write a run with score_threshold via the store
     const runId = crypto.randomUUID();
     store.writeRun({
       run_id: runId,
@@ -118,7 +116,6 @@ Deno.test("[HistoryThreshold] SQLite store persists score_threshold", async () =
       timestamp: new Date().toISOString(),
     });
 
-    // Query it back
     const runs = store.queryRuns({ last: 10 });
     const found = runs.find((r) => r.run_id === runId);
     assertEquals(found !== undefined, true);
@@ -126,15 +123,12 @@ Deno.test("[HistoryThreshold] SQLite store persists score_threshold", async () =
     assertEquals(found!.passed, 1);
 
     store.close();
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[HistoryThreshold] SQLite store persists passed=false with threshold", async () => {
-  const tmpDir = await Deno.makeTempDir({ prefix: "scenario-framework-sqlite-" });
-  const dbPath = join(tmpDir, "eval.db");
-  try {
+  await withTempDir("scenario-framework-sqlite-", (tmpDir) => {
+    const dbPath = join(tmpDir, "eval.db");
     const store = new EvalSqliteStore(dbPath);
     store.initialize();
 
@@ -158,14 +152,11 @@ Deno.test("[HistoryThreshold] SQLite store persists passed=false with threshold"
     assertEquals(found!.passed, 0);
 
     store.close();
-  } finally {
-    await Deno.remove(tmpDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("[HistoryThreshold] historical entry without score_threshold still parses", async () => {
-  const outputDir = await Deno.makeTempDir({ prefix: "scenario-framework-history-" });
-  try {
+  await withTempDir("scenario-framework-history-", async (outputDir) => {
     const manifest = makeTestManifest({ suite_score: 0.5 });
     const entry = await writeEvalHistoryEntry({
       outputDir,
@@ -176,7 +167,5 @@ Deno.test("[HistoryThreshold] historical entry without score_threshold still par
     const parsed = EvalHistoryEntrySchema.parse(entry);
     assertEquals(parsed.score_threshold, undefined);
     assertEquals(parsed.passed, true);
-  } finally {
-    await Deno.remove(outputDir, { recursive: true });
-  }
+  });
 });

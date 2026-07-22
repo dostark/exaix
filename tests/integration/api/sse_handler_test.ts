@@ -136,12 +136,16 @@ Deno.test("SseHandler: handleRequest returns 404 for non-matching route", async 
   bus.close();
 });
 
-Deno.test("SseHandler: handleRequest returns SSE content-type for valid request", async () => {
+function createSseTestContext(): { bus: EventBusService; handler: SseHandler; traceId: string; req: Request } {
   const bus = new EventBusService();
   const handler = new SseHandler(bus);
-
   const traceId = "550e8400-e29b-41d4-a716-446655440000";
   const req = new Request(`http://127.0.0.1:8765/api/v1/traces/${traceId}/stream`);
+  return { bus, handler, traceId, req };
+}
+
+Deno.test("SseHandler: handleRequest returns SSE content-type for valid request", async () => {
+  const { bus, handler, req } = createSseTestContext();
 
   // We can't easily test the streaming body synchronously, but we can verify
   // the response headers are set correctly before streaming begins
@@ -193,11 +197,7 @@ Deno.test(
   "SseHandler: published events appear in SSE stream",
   { sanitizeOps: false, sanitizeResources: false },
   async () => {
-    const bus = new EventBusService();
-    const handler = new SseHandler(bus);
-
-    const traceId = "550e8400-e29b-41d4-a716-446655440000";
-    const req = new Request(`http://127.0.0.1:8765/api/v1/traces/${traceId}/stream`);
+    const { bus, handler, traceId, req } = createSseTestContext();
 
     const response = await handler.handleRequest(req);
     assertEquals(response.status, 200);
