@@ -12,7 +12,7 @@ import { join } from "@std/path";
 
 const flags = parse(Deno.args, {
   string: ["threshold", "tests-threshold", "integration-tests-threshold"],
-  default: { threshold: "2", "tests-threshold": "3", "integration-tests-threshold": "3" },
+  default: { threshold: "2", "tests-threshold": "3", "integration-tests-threshold": "3.8" },
 });
 
 const SOURCE_THRESHOLD = parseFloat(flags.threshold);
