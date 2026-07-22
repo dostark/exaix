@@ -10,7 +10,9 @@
 import type { IExecutionStrategy } from "./execution_strategy.ts";
 import { AgentExecutionError, type IAgentFileBlueprint } from "../agent_orchestrator.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_orchestrator.ts";
-import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { IModelProvider, IProviderTurn, IToolDefinition } from "@exaix/ai/types.ts";
+import type { IProviderToolCall } from "@exaix/ai/providers";
+import type { ITool, IToolResult } from "@exaix/core/types";
 import { AgentExecutionErrorType, ExecutionStrategyName, ToolName } from "@exaix/core";
 import { GuardrailBlockedError } from "@exaix/core/planning";
 import { parse as parseToml } from "@std/toml";
@@ -737,5 +739,31 @@ ${REACT_SUMMARY_PREFIX}[What was done]
     }
 
     return jsonResult;
+  }
+
+  /**
+   * Map ToolRegistry's ITool[] to provider-agnostic IToolDefinition[].
+   * Pure transformation — no I/O, no side effects.
+   */
+  private buildNativeToolDefinitions(tools: ITool[]): IToolDefinition[] {
+    return tools.map((t) => ({
+      name: t.name,
+      description: t.description,
+      inputSchema: t.parameters as never,
+    }));
+  }
+
+  /**
+   * Build an IProviderTurn from a completed tool call and its result.
+   * Pure transformation — no I/O, no side effects.
+   */
+  private buildPriorTurn(toolCall: IProviderToolCall, result: IToolResult): IProviderTurn {
+    return {
+      toolUseId: toolCall.id,
+      toolName: toolCall.name,
+      toolInput: toolCall.input,
+      toolResultContent: JSON.stringify(result.data ?? result.error ?? {}),
+      toolResultIsError: !result.success,
+    };
   }
 }
