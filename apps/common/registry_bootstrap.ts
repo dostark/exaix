@@ -57,6 +57,7 @@ function registerConcreteProviders(): void {
       costTier: ANTHROPIC_PROVIDER_METADATA.costTier,
       pricingTier: PricingTier.HIGH,
       strengths: [...ANTHROPIC_PROVIDER_METADATA.strengths],
+      supportsNativeTools: true,
     };
     ProviderRegistry.registerWithMetadata(
       PROVIDER_ANTHROPIC,

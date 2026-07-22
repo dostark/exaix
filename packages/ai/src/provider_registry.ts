@@ -50,6 +50,13 @@ export interface IProviderMetadata {
    * (§5.7.2).
    */
   isAggregator?: boolean;
+  /**
+   * True when the provider's generate() implementation serializes IModelOptions.tools/
+   * toolChoice into a real API request (Anthropic after Step 2). Step 5's capability
+   * gate reads this to decide whether to use native tool-calling or the TOML-block
+   * prose convention. Absent/undefined is treated identically to false.
+   */
+  supportsNativeTools?: boolean;
 }
 
 function syncRegisteredProviderTypes(providerTypes: Iterable<string>): void {
