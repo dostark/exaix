@@ -60,9 +60,20 @@ function parseActionBlock(markerNumber: number, tomlBody: string): IPlanAction {
     throw new Error(`TOML_BLOCK:${markerNumber} is missing a required "tool" field at its TOML root.`);
   }
 
+  if (root.params !== undefined && Array.isArray(root.params)) {
+    throw new Error(
+      `TOML_BLOCK:${markerNumber} has "params" as an inline array — each fenced ` +
+        `block's [params] must be a TOML table, not an array. Use [params]\\nkey = "value" format.`,
+    );
+  }
+
   const action: IPlanAction = {
     tool: root.tool as IPlanAction["tool"],
-    params: (root.params && typeof root.params === "object" ? root.params : {}) as Record<string, JSONValue>,
+    params:
+      (root.params && typeof root.params === "object" && !Array.isArray(root.params) ? root.params : {}) as Record<
+        string,
+        JSONValue
+      >,
   };
   if (typeof root.description === "string") {
     action.description = root.description;

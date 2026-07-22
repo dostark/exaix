@@ -258,3 +258,20 @@ function checkDuplicateLimit(title: string, existingTasks: ITask[]): boolean {
   assertEquals(actions?.length, 1);
   assertMatch(String(actions?.[0].params.content), /const key = "existingTasks";/);
 });
+
+Deno.test("extractTomlActionBlocks: a block with an inline array as params throws a descriptive Error", () => {
+  const rawContent = `{"steps":[]}
+
+\`\`\`toml
+# TOML_BLOCK:1
+tool = "write_file"
+params = [1, 2, 3]
+\`\`\`
+`;
+
+  assertThrows(
+    () => extractTomlActionBlocks(rawContent),
+    Error,
+    "TOML_BLOCK:1",
+  );
+});
