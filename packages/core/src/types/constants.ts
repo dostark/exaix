@@ -2897,6 +2897,7 @@ export const SESSION_FLAG_PERMISSION_MODE = "--permission-mode";
 
 /** Claude Code allowed-tools flag (Phase 128 R3 Step 3). */
 export const SESSION_FLAG_ALLOWED_TOOLS = "--allowedTools";
+export const SESSION_FLAG_JSON_SCHEMA = "--json-schema";
 
 /** Default binary names per built-in session adapter (override via config). */
 export const SESSION_BIN_CLAUDE_CODE = "claude";
@@ -2914,6 +2915,7 @@ export const DOGFOOD_DEVELOPER_IDENTITY_ID = "dogfood-developer";
  */
 export const MINIMUM_VERSION_OPENCODE = "1.0.0";
 export const MINIMUM_VERSION_CLAUDE_CODE = "2.0.0";
+export const MINIMUM_VERSION_CLAUDE_CODE_JSON_SCHEMA = "2.1.205";
 
 /** Filesystem event kinds that indicate a (re)written file worth processing. */
 export const FS_WRITE_EVENT_KINDS: ReadonlySet<string> = new Set(["create", "modify", "rename"]);

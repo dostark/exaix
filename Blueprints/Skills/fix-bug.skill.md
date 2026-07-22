@@ -123,7 +123,8 @@ the error, patching the caller) leaves the real fault to resurface elsewhere.
 Change as little as possible. Every edited line must be attributable to this bug.
 
 - Prefer `patch_file` — a targeted edit of the specific lines at fault.
-- Use `write_file` only when the change genuinely requires rewriting the whole file.
+- Use `write_file` only when the change genuinely requires rewriting the whole file; when it
+  does, use the `TOML_BLOCK:N` pattern from `response-contract` rather than inline JSON.
 - Do **not**: rewrite unrelated modules, rename unrelated symbols, reformat untouched
   code, add new abstractions, or fix nearby-but-separate issues in the same change.
 

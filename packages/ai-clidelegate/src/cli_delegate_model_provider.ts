@@ -53,10 +53,14 @@ import { SessionToolSchema } from "@exaix/schemas/session_delegate.ts";
 import { OpencodePermissionValueSchema } from "@exaix/schemas/opencode_config.ts";
 import type { OpencodePermissionValue } from "@exaix/schemas/opencode_config.ts";
 import { parseDelegateStdout } from "@exaix/session/delegate_return_parser.ts";
+import { probeDelegateVersion } from "@exaix/session/delegate_version_probe.ts";
+import type { JSONValue } from "@exaix/core";
 import { SafeSubprocess } from "@exaix/core";
 import {
   DEFAULT_RUNTIME_PATH,
+  MINIMUM_VERSION_CLAUDE_CODE_JSON_SCHEMA,
   SESSION_FLAG_FORMAT,
+  SESSION_FLAG_JSON_SCHEMA,
   SESSION_FLAG_MODEL,
   SESSION_FLAG_OUTPUT_FORMAT,
   SESSION_FLAG_PRINT,
@@ -98,6 +102,8 @@ export interface ICliDelegateModelProviderOptions {
   id?: string;
   /** Defaults to SafeSubprocess.run. Overridden in tests to avoid real subprocess execution. */
   run?: IRunCliDelegateProcess;
+  /** Version probe function for --json-schema support. Defaults to probeDelegateVersion. Overridden in tests. */
+  probeVersion?: typeof probeDelegateVersion;
 }
 
 /**
@@ -207,17 +213,24 @@ export class CliDelegateModelProvider implements IModelProvider {
   private opencodeReadOnlyConfigPath: Promise<string> | undefined;
   /** conversationId -> captured session id, for --resume/--session continuity. */
   private readonly sessionIds = new Map<string, string>();
+  /** Cached result of the claude version probe for --json-schema support. null = not yet probed. */
+  private jsonSchemaVersionSupported: boolean | null = null;
+  private readonly probeVersion: typeof probeDelegateVersion;
 
   constructor(private readonly options: ICliDelegateModelProviderOptions) {
     this.id = options.id ?? `${options.tool}-${options.model}`;
     this.run = options.run ?? defaultRun;
     this.isClaude = options.tool === SessionToolSchema.enum["claude-code"];
+    this.probeVersion = options.probeVersion ?? probeDelegateVersion;
   }
 
   async generate(prompt: string, options?: Opt<IModelOptions, Reason.OptionalContext>): Promise<IGenerateResult> {
     const conversationId = options?.conversationId;
     const sessionId = conversationId ? this.sessionIds.get(conversationId) : undefined;
-    const args = this.isClaude ? this.buildClaudeArgs(prompt, sessionId) : this.buildOpencodeArgs(prompt, sessionId);
+    const jsonSchema = options?.jsonSchema;
+    const args = this.isClaude
+      ? await this.buildClaudeArgs(prompt, sessionId, jsonSchema)
+      : this.buildOpencodeArgs(prompt, sessionId);
     const env = buildDelegateEnv();
     if (!this.isClaude) {
       this.opencodeReadOnlyConfigPath ??= writeOpencodeReadOnlyConfig(this.options.cwd);
@@ -274,8 +287,32 @@ export class CliDelegateModelProvider implements IModelProvider {
     };
   }
 
-  private buildClaudeArgs(prompt: string, sessionId: Opt<string, Reason.TraceAbsent>): string[] {
+  private async buildClaudeArgs(
+    prompt: string,
+    sessionId: Opt<string, Reason.TraceAbsent>,
+    jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
+  ): Promise<string[]> {
     const resumeFlag = sessionId ? [SESSION_FLAG_RESUME, sessionId] : [];
+    const jsonSchemaFlag: string[] = [];
+    if (jsonSchema) {
+      if (this.jsonSchemaVersionSupported === null) {
+        const probeResult = await this.probeVersion(
+          this.options.bin,
+          MINIMUM_VERSION_CLAUDE_CODE_JSON_SCHEMA,
+        );
+        this.jsonSchemaVersionSupported = probeResult.supported;
+        if (!probeResult.supported) {
+          console.warn(
+            `[CliDelegateModelProvider] ${this.options.bin} version ${probeResult.version} below ` +
+              `${MINIMUM_VERSION_CLAUDE_CODE_JSON_SCHEMA}; --json-schema not available, falling back to ` +
+              `--output-format json only. ${probeResult.warning ?? ""}`,
+          );
+        }
+      }
+      if (this.jsonSchemaVersionSupported) {
+        jsonSchemaFlag.push(SESSION_FLAG_JSON_SCHEMA, JSON.stringify(jsonSchema));
+      }
+    }
     return [
       SESSION_FLAG_PRINT,
       prompt,
@@ -284,6 +321,7 @@ export class CliDelegateModelProvider implements IModelProvider {
       SESSION_FLAG_MODEL,
       this.options.model,
       ...resumeFlag,
+      ...jsonSchemaFlag,
     ];
   }
 

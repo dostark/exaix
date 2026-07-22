@@ -86,6 +86,7 @@ When generating a `<content>` block:
 - **Paths**: Ensure all `path` parameters in `actions` correspond to the reality of the portal.
 - **Context**: If your plan relies on existing logic, cite the specific file from the `File List` where that logic resides.
 - **Creation**: When proposing new files, ensure they follow the established naming conventions and directory structure seen in the `File List`.
+- **TOML action blocks**: A `TOML_BLOCK:N` action's `path` parameter is grounded the same way as any inline JSON action's `path` — the same File List verification above still applies.
 
 ## 4. Verification Workflow
 

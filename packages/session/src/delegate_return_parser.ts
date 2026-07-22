@@ -164,7 +164,13 @@ function parseClaudeResult(stdout: string): IDelegateParsedReturn {
       total: (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0),
     };
     const costUsd = typeof obj.total_cost_usd === "number" ? obj.total_cost_usd : 0;
-    return { lastText: obj.result, tokenStats, costUsd, toolPaths: [] };
+    // When --json-schema is used, claude returns a structured_output field
+    // that contains the validated schema-conformant object — prefer it over
+    // the free-text result field.
+    const lastText = typeof obj.structured_output === "object" && obj.structured_output !== null
+      ? JSON.stringify(obj.structured_output)
+      : obj.result;
+    return { lastText, tokenStats, costUsd, toolPaths: [] };
   } catch {
     return { lastText: "", tokenStats: { input: 0, output: 0, total: 0 }, costUsd: undefined, toolPaths: [] };
   }

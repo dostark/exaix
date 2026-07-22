@@ -16,6 +16,7 @@ import { applyAnalysisToRequest, buildParsedRequest, buildPlanValidationFeedback
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { type IRequestMetadata, PlanWriter } from "@exaix/core/planning";
 import { PlanValidationError } from "@exaix/core/planning";
+import { getPlanJsonSchema } from "@exaix/schemas/plan_schema.ts";
 import { RequestStatus } from "@exaix/core/status";
 import {
   DEFAULT_ANALYZER_MODE,
@@ -644,7 +645,8 @@ export class RequestProcessor {
       requestAnalysis: analysis,
     };
 
-    let result = await agentRunner.run(blueprint, request);
+    const planJsonSchema = getPlanJsonSchema();
+    let result = await agentRunner.run(blueprint, request, planJsonSchema);
     let attempts = 0;
     const maxRetries = 2;
 
@@ -667,7 +669,7 @@ export class RequestProcessor {
             userPrompt: buildPlanValidationFeedbackPrompt(request.userPrompt, error.message, result.content),
           };
 
-          result = await agentRunner.run(blueprint, feedbackRequest);
+          result = await agentRunner.run(blueprint, feedbackRequest, planJsonSchema);
           continue;
         }
         throw error;

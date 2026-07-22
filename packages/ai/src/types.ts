@@ -41,6 +41,11 @@ export interface IModelOptions {
    * start a brand-new, context-less session each call. Stateless HTTP providers ignore it.
    */
   conversationId?: string;
+  /**
+   * JSON Schema to enforce via the provider's --json-schema mechanism (e.g. claude-code).
+   * Only CliDelegateModelProvider uses this; stateless HTTP providers ignore it.
+   */
+  jsonSchema?: Record<string, JSONValue>;
 }
 
 /**

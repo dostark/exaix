@@ -55,7 +55,9 @@ Apply these five practices to every plan you produce.
 1. **Precision**: Use `patch_file` for targeted edits to large files; reserve
    `write_file` for new or small files so you never overwrite unrelated changes.
    Touching only the lines that must change keeps diffs reviewable and avoids
-   regressions in code you did not intend to modify.
+   regressions in code you did not intend to modify. When `write_file` is
+   genuinely required for a large new file, use the `TOML_BLOCK:N` pattern from
+   `response-contract` rather than inline JSON.
 
 2. **Ground every reference**: Only cite files and symbols that exist in the
    provided portal context; verify with `read_file`/`grep_search` before acting,

@@ -13,7 +13,7 @@
  * @related-files ["packages/request/src/processor.ts", "packages/core/src/blueprint/blueprint_loader.ts"]
  */
 
-import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { toSafeJson } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
@@ -183,6 +183,7 @@ export interface IAgentRunner {
   run(
     blueprint: IBlueprint,
     request: IParsedRequest,
+    jsonSchema?: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
   ): Promise<IAgentExecutionResult>;
 }
 
@@ -297,6 +298,7 @@ export class AgentRunner implements IAgentRunner {
   async run(
     blueprint: IBlueprint,
     request: IParsedRequest,
+    jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
   ): Promise<IAgentExecutionResult> {
     const startTime = Date.now();
     const identityId = blueprint.identityId || "unknown";
@@ -351,7 +353,7 @@ export class AgentRunner implements IAgentRunner {
 
     // Step 2: Execute via the model provider (with retry if enabled)
     await this.emitMilestone(MILESTONE_LLM_CALL_STARTED, traceId, `LLM call started for ${identityId}`);
-    const retryResult = await this.executeWithRetry(combinedPrompt, startTime, traceId);
+    const retryResult = await this.executeWithRetry(combinedPrompt, startTime, traceId, jsonSchema);
 
     const duration = Date.now() - startTime;
 
@@ -608,8 +610,11 @@ export class AgentRunner implements IAgentRunner {
     combinedPrompt: string,
     startTime: number,
     conversationId: Opt<string, Reason.TraceAbsent>,
+    jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
   ): Promise<IRetryResult<IGenerateResult>> {
-    const generateOptions = conversationId ? { conversationId } : undefined;
+    const generateOptions: IModelOptions | undefined = conversationId || jsonSchema
+      ? { ...(conversationId ? { conversationId } : {}), ...(jsonSchema ? { jsonSchema } : {}) }
+      : undefined;
     if (this.disableRetry) {
       // Direct execution without retry
       try {

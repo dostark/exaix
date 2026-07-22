@@ -12,6 +12,7 @@
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IOutputValidator } from "@exaix/tool-runtime";
 import {
+  getRequestAnalysisJsonSchema,
   type IRequestAnalysis,
   RequestAnalysisComplexity,
   RequestAnalysisSchema,
@@ -152,14 +153,18 @@ export class LlmAnalyzer {
 
   async analyze(
     requestText: string,
-    context?: IRequestAnalysisContext,
+    context: Opt<IRequestAnalysisContext, Reason.OptionalContext>,
   ): Promise<IRequestAnalysis> {
     const startMs = Date.now();
     const prompt = buildPrompt(requestText, context);
 
     let raw: string;
     try {
-      const genResult = await this.provider.generate(prompt, { temperature: 0, max_tokens: 1500 });
+      const genResult = await this.provider.generate(prompt, {
+        temperature: 0,
+        max_tokens: 1500,
+        jsonSchema: getRequestAnalysisJsonSchema(),
+      });
       raw = genResult.content;
     } catch {
       const fallback = buildFallback(requestText);
@@ -177,7 +182,11 @@ export class LlmAnalyzer {
         .replace("{CONTEXT_SECTION}", context ? buildContextSection(context) : "");
 
       try {
-        const refinedResult2 = await this.provider.generate(reviewPrompt, { temperature: 0, max_tokens: 1500 });
+        const refinedResult2 = await this.provider.generate(reviewPrompt, {
+          temperature: 0,
+          max_tokens: 1500,
+          jsonSchema: getRequestAnalysisJsonSchema(),
+        });
         const refinedResult = this.validator.parseAndValidate(refinedResult2.content, RequestAnalysisCoreSchema);
         if (refinedResult.success && refinedResult.value) {
           result = refinedResult;

@@ -7,10 +7,12 @@
  */
 
 import { z } from "zod";
+import type { JSONValue } from "@exaix/core";
 import { DEFAULT_QUERY_LIMIT, JSONValueSchema, McpToolName } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 
 import { RequestAnalysisSchema } from "./request_analysis.ts";
+import { toJsonSchema } from "./json_schema_adapter.ts";
 
 /**
  * Zod schema for plan frontmatter to ensure type safety during parsing.
@@ -310,6 +312,15 @@ export type Plan = z.infer<typeof PlanSchema>;
 // ============================================================================
 // Specialized Types
 // ============================================================================
+
+/**
+ * Produce a JSON Schema object derived from PlanSchema for use with
+ * CLI --json-schema flags (e.g. claude-code's --json-schema). Returns a
+ * plain object, not cached, so a schema change at runtime is never stale.
+ */
+export function getPlanJsonSchema(): Record<string, JSONValue> {
+  return toJsonSchema(PlanSchema);
+}
 
 /** Analysis results for code analysis agents */
 export type PlanAnalysis = z.infer<typeof PlanSchema>["analysis"];
