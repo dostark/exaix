@@ -10,8 +10,11 @@
  */
 import { JsonSchemaType, ToolName } from "@exaix/core";
 import type { ITool } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 
-export function createCoreToolSchemas(gitScopeValues?: { status: string; branch: string }): ITool[] {
+export function createCoreToolSchemas(
+  gitScopeValues?: Opt<{ status: string; branch: string }, Reason.OptionalInput>,
+): ITool[] {
   const s = gitScopeValues?.status ?? "status";
   const b = gitScopeValues?.branch ?? "branch";
   return [
@@ -34,6 +37,8 @@ export function createCoreToolSchemas(gitScopeValues?: { status: string; branch:
       name: ToolName.WRITE_FILE,
       description:
         "Write or overwrite a file with the given content. Use when you need to create or replace a file in full; for targeted in-place edits use patch_file. Returns data.path (resolved absolute path) on success. Fails if path is outside allowed roots.",
+      nativeDescription:
+        "PREFERRED for creating NEW files or completely replacing existing ones. For small targeted edits, choose patch_file instead.",
       parameters: {
         type: "object",
         properties: {
@@ -102,6 +107,8 @@ export function createCoreToolSchemas(gitScopeValues?: { status: string; branch:
       name: ToolName.RUN_COMMAND,
       description:
         "Execute a whitelisted shell command (git, deno, npm, grep, ls, etc.) with argument validation. Use when you need to run a CLI tool or build script; for git repo inspection use git_info instead. Returns data.output (stdout string) and data.exitCode. Blocked or failed commands return a descriptive error.",
+      nativeDescription:
+        "Execute shell commands for exploration, testing, and building. For code analysis, prefer grep_search or read_file. For editing, prefer patch_file or write_file.",
       parameters: {
         type: "object",
         properties: {
@@ -250,6 +257,8 @@ export function createCoreToolSchemas(gitScopeValues?: { status: string; branch:
       name: ToolName.PATCH_FILE,
       description:
         "Apply sequential search-and-replace patches to an existing file without full replacement. Use for targeted edits to a file; for complete file replacement use write_file. Returns data.path and data.appliedCount on success. Fails if any search string is not found.",
+      nativeDescription:
+        "PREFERRED for targeted edits (fixing bugs, refactoring, null-guard fixes). Modify specific lines in an existing file without rewriting the whole file. For complete replacements, choose write_file.",
       parameters: {
         type: "object",
         properties: {

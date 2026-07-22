@@ -89,7 +89,7 @@ interface GeneratedOptions {
   temperature: number;
   max_tokens: number;
   tools?: IToolDefinition[];
-  toolChoice?: { type: string; disable_parallel_tool_use: boolean };
+  toolChoice?: { type: string; name?: string; disable_parallel_tool_use: boolean };
   priorTurn?: IProviderTurn;
 }
 
@@ -111,6 +111,7 @@ interface IIterationParams {
   nativeToolsUsed: boolean;
   nativeToolDefinitions?: Opt<IToolDefinition[], Reason.OptionalInput>;
   nativeToolsPriorTurn?: Opt<IProviderTurn, Reason.OptionalInput>;
+  nativePreferredTool?: Opt<string, Reason.OptionalInput>;
 }
 
 /** Result of a single iteration in execute(). */
@@ -170,6 +171,11 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       nativeToolDefinitions = this.buildNativeToolDefinitions(tools);
       nativeToolsUsed = true;
     }
+    // PGAP-3: detect targeted-edit tasks from plan context and prefer patch_file
+    const TARGETED_EDIT_PATTERN = /fix|patch|null.guard|refactor|edit|bug|repair/i;
+    const nativePreferredTool = nativeToolsUsed && TARGETED_EDIT_PATTERN.test(context.plan)
+      ? ("patch_file" satisfies string)
+      : undefined;
 
     for (let i = 0; i < this.MAX_ITERATIONS; i++) {
       const iterResult = await this.runSingleIteration({
@@ -189,6 +195,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         nativeToolsUsed,
         nativeToolDefinitions,
         nativeToolsPriorTurn,
+        nativePreferredTool,
       });
       toolCallCount = iterResult.toolCallCount;
       totalPromptTokens = iterResult.totalPromptTokens;
@@ -301,6 +308,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     nativeToolDefinitions?: Opt<IToolDefinition[], Reason.OptionalInput>,
     nativeToolsPriorTurn?: Opt<IProviderTurn, Reason.OptionalInput>,
     nativeToolsUsed = false,
+    nativePreferredTool?: Opt<string, Reason.OptionalInput>,
   ): GeneratedOptions {
     const base = Object.assign({
       temperature: REACT_DEFAULT_TEMPERATURE,
@@ -308,7 +316,13 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     }, this.callOptions) as GeneratedOptions;
     if (nativeToolsUsed && nativeToolDefinitions) {
       base.tools = nativeToolDefinitions;
-      base.toolChoice = { type: "any", disable_parallel_tool_use: true };
+      // PGAP-3: when a preferred tool is detected (targeted-edit task), force it
+      // via tool_choice: {type: "tool", name: "..."} instead of {type: "any"}.
+      if (nativePreferredTool && !nativeToolsPriorTurn) {
+        base.toolChoice = { type: "tool" as const, name: nativePreferredTool, disable_parallel_tool_use: true };
+      } else {
+        base.toolChoice = { type: "any" as const, disable_parallel_tool_use: true };
+      }
       if (nativeToolsPriorTurn) {
         base.priorTurn = nativeToolsPriorTurn;
       }
@@ -362,6 +376,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       nativeToolsUsed,
       nativeToolDefinitions,
       nativeToolsPriorTurn,
+      nativePreferredTool,
     } = params;
     if (this.executor.guardrailRunner?.hasBlockingViolation(context.trace_id)) {
       throw new GuardrailBlockedError(
@@ -377,6 +392,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       nativeToolDefinitions,
       nativeToolsPriorTurn,
       nativeToolsUsed,
+      nativePreferredTool,
     );
     const generateStartTime = Date.now();
     const response = await this.withHeartbeat(context, () => this.provider!.generate(prompt, generateOptions as never));
@@ -766,21 +782,34 @@ INSTRUCTIONS:
 3. If the task is finished, output "${REACT_STATUS_COMPLETE}" and provide a summary of changes.
 4. Output your thought process preceded by "${REACT_THOUGHT_PREFIX}".`;
 
-    if (!skipToolProse) {
-      prompt += `
+    // Segment 1: Tool listing — always rendered (PGAP-2)
+    prompt += `
 
 AVAILABLE TOOLS:
 ${
-        (options.permitted_tools ||
-          [
-            ToolName.READ_FILE,
-            ToolName.WRITE_FILE,
-            ToolName.RUN_COMMAND,
-            ToolName.LIST_DIRECTORY,
-            ToolName.SEARCH_FILES,
-          ])
-          .join(", ")
-      }
+      (options.permitted_tools ||
+        [
+          ToolName.READ_FILE,
+          ToolName.WRITE_FILE,
+          ToolName.RUN_COMMAND,
+          ToolName.LIST_DIRECTORY,
+          ToolName.SEARCH_FILES,
+        ])
+        .join(", ")
+    }`;
+
+    // Segment 2: Behavioral guidance — always rendered (PGAP-2)
+    prompt += `
+
+TOOL SELECTION GUIDELINES:
+- For reading files or searching code: use read_file, grep_search, or search_files.
+- For creating NEW files or overwriting entire files: use write_file.
+- For small targeted edits (fixing bugs, null-guard fixes): prefer patch_file over write_file.
+- For shell commands: use run_command only when no specialized tool exists for your task.`;
+
+    // Segment 3: Format specification — skipped when native tools are active (PGAP-2)
+    if (!skipToolProse) {
+      prompt += `
 
 FORMAT:
 ${REACT_THOUGHT_PREFIX}[Your reasoning]
@@ -795,6 +824,10 @@ OR
 
 ${REACT_STATUS_COMPLETE}
 ${REACT_SUMMARY_PREFIX}[What was done]`;
+    } else {
+      prompt += `
+
+When you are finished, output "${REACT_STATUS_COMPLETE}" followed by "${REACT_SUMMARY_PREFIX}[summary]".`;
     }
 
     return prompt;
@@ -933,7 +966,7 @@ ${REACT_SUMMARY_PREFIX}[What was done]`;
   private buildNativeToolDefinitions(tools: ITool[]): IToolDefinition[] {
     return tools.map((t) => ({
       name: t.name,
-      description: t.description,
+      description: t.nativeDescription ?? t.description,
       inputSchema: t.parameters as never,
     }));
   }
