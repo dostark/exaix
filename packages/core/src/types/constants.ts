@@ -2554,6 +2554,15 @@ export const MAX_USER_INPUT_LENGTH = 10000;
 /** Regular expression for extracting TOML blocks from model responses */
 export const TOML_BLOCK_PATTERN = /```toml\s*([\s\S]*?)```/g;
 
+/**
+ * Regular expression for extracting step-scoped TOML action blocks from a plan-generation
+ * <content> response (Phase 151) — a fenced ```toml block whose first line is a
+ * `# TOML_BLOCK:N` marker comment, distinct from the unscoped TOML_BLOCK_PATTERN above
+ * (which has no per-step marker requirement and is used for single-turn execution actions,
+ * not multi-step plan generation).
+ */
+export const TOML_ACTION_BLOCK_MARKER_PATTERN = /```toml\n# TOML_BLOCK:(\d+)\n([\s\S]*?)\n```/g;
+
 /** Generic fallback timeout in milliseconds (30s). */
 export const DEFAULT_TIMEOUT_MS: number = configurable({
   key: "default.timeout_ms",
