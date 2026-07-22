@@ -116,15 +116,12 @@ export class AnthropicProvider extends BaseProvider {
           input: options.priorTurn.toolInput,
         }],
       });
-      const toolResultContent = Array.isArray(options.priorTurn.toolResultContent)
-        ? options.priorTurn.toolResultContent
-        : options.priorTurn.toolResultContent;
       messages.push({
         role: ANTHROPIC_MESSAGE_ROLE_USER,
         content: [{
           type: ANTHROPIC_CONTENT_TYPE_TOOL_RESULT,
           tool_use_id: options.priorTurn.toolUseId,
-          content: toolResultContent,
+          content: options.priorTurn.toolResultContent,
           is_error: options.priorTurn.toolResultIsError,
         }],
       });
