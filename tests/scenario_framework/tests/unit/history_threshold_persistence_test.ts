@@ -12,6 +12,15 @@ import { writeEvalHistoryEntry } from "../../runner/history_writer.ts";
 import { CriterionKind, CriterionPhase, CriterionStatus, ScenarioStepType } from "../../schema/step_schema.ts";
 import type { IRunManifest } from "../../runner/evidence_collector.ts";
 
+const PASSED_CRITERION = {
+  criterion_id: "check-1",
+  kind: CriterionKind.FILE_EXISTS,
+  phase: CriterionPhase.OUTPUT,
+  status: CriterionStatus.PASSED,
+  message: "file exists",
+  evidence_refs: [],
+};
+
 function makeTestManifest(overrides: Partial<IRunManifest> = {}): IRunManifest {
   return {
     scenarioId: "threshold-test",
@@ -23,16 +32,7 @@ function makeTestManifest(overrides: Partial<IRunManifest> = {}): IRunManifest {
         stepId: "step-1",
         stepType: ScenarioStepType.SHELL,
         executionStatus: "passed",
-        criterionResults: [
-          {
-            criterion_id: "check-1",
-            kind: CriterionKind.FILE_EXISTS,
-            phase: CriterionPhase.OUTPUT,
-            status: CriterionStatus.PASSED,
-            message: "file exists",
-            evidence_refs: [],
-          },
-        ],
+        criterionResults: [PASSED_CRITERION],
       },
     ],
     ...overrides,
@@ -46,6 +46,32 @@ async function withTempDir<T>(prefix: string, fn: (dir: string) => T | Promise<T
   } finally {
     await Deno.remove(dir, { recursive: true });
   }
+}
+
+async function withSqliteStore(
+  fn: (store: EvalSqliteStore, runId: string) => void,
+): Promise<void> {
+  await withTempDir("scenario-framework-sqlite-", (tmpDir) => {
+    const dbPath = join(tmpDir, "eval.db");
+    const store = new EvalSqliteStore(dbPath);
+    store.initialize();
+    const runId = crypto.randomUUID();
+    fn(store, runId);
+    store.close();
+  });
+}
+
+function assertFoundRun(
+  store: EvalSqliteStore,
+  runId: string,
+  expectedThreshold: number,
+  expectedPassed: number,
+): void {
+  const runs = store.queryRuns({ last: 10 });
+  const found = runs.find((r) => r.run_id === runId);
+  assertEquals(found !== undefined, true);
+  assertEquals(found!.score_threshold, expectedThreshold);
+  assertEquals(found!.passed, expectedPassed);
 }
 
 Deno.test("[HistoryThreshold] JSONL entry carries score_threshold when provided", async () => {
@@ -98,12 +124,7 @@ Deno.test("[HistoryThreshold] JSONL entry passed reflects threshold when score b
 });
 
 Deno.test("[HistoryThreshold] SQLite store persists score_threshold", async () => {
-  await withTempDir("scenario-framework-sqlite-", (tmpDir) => {
-    const dbPath = join(tmpDir, "eval.db");
-    const store = new EvalSqliteStore(dbPath);
-    store.initialize();
-
-    const runId = crypto.randomUUID();
+  await withSqliteStore((store, runId) => {
     store.writeRun({
       run_id: runId,
       scenario_id: "sqlite-threshold",
@@ -115,24 +136,12 @@ Deno.test("[HistoryThreshold] SQLite store persists score_threshold", async () =
       passed: true,
       timestamp: new Date().toISOString(),
     });
-
-    const runs = store.queryRuns({ last: 10 });
-    const found = runs.find((r) => r.run_id === runId);
-    assertEquals(found !== undefined, true);
-    assertEquals(found!.score_threshold, 0.6);
-    assertEquals(found!.passed, 1);
-
-    store.close();
+    assertFoundRun(store, runId, 0.6, 1);
   });
 });
 
 Deno.test("[HistoryThreshold] SQLite store persists passed=false with threshold", async () => {
-  await withTempDir("scenario-framework-sqlite-", (tmpDir) => {
-    const dbPath = join(tmpDir, "eval.db");
-    const store = new EvalSqliteStore(dbPath);
-    store.initialize();
-
-    const runId = crypto.randomUUID();
+  await withSqliteStore((store, runId) => {
     store.writeRun({
       run_id: runId,
       scenario_id: "sqlite-threshold-fail",
@@ -144,14 +153,7 @@ Deno.test("[HistoryThreshold] SQLite store persists passed=false with threshold"
       passed: false,
       timestamp: new Date().toISOString(),
     });
-
-    const runs = store.queryRuns({ last: 10 });
-    const found = runs.find((r) => r.run_id === runId);
-    assertEquals(found !== undefined, true);
-    assertEquals(found!.score_threshold, 0.5);
-    assertEquals(found!.passed, 0);
-
-    store.close();
+    assertFoundRun(store, runId, 0.5, 0);
   });
 });
 

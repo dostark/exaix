@@ -7,7 +7,7 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { runExactl } from "./helpers/cli_test_helpers.ts";
+import { cliTest, runExactl } from "./helpers/cli_test_helpers.ts";
 
 const WAIT_UUID = "550e8400-e29b-41d4-a716-446655440000";
 const TOKEN_UUID = "550e8400-e29b-41d4-a716-446655440001";
@@ -31,12 +31,6 @@ function makeWaitStateJson(overrides: object = {}): string {
     null,
     2,
   );
-}
-
-const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";
-
-function cliTest(name: string, fn: () => Promise<void>): void {
-  Deno.test({ name, ignore: skipInParallel, fn });
 }
 
 /** Creates a temp workspace with one wait-state file, runs fn, and cleans up. */

@@ -9,6 +9,13 @@
 import { dirname, fromFileUrl, join } from "@std/path";
 import { withCliProcessMutex } from "../../helpers/cli_process_mutex.ts";
 
+const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";
+
+/** Wrapper that skips the test when running in parallel CI mode to avoid port conflicts. */
+export function cliTest(name: string, fn: () => Promise<void>): void {
+  Deno.test({ name, ignore: skipInParallel, fn });
+}
+
 /**
  * Run an exactl command in a given workspace directory.
  */

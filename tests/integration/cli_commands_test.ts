@@ -14,13 +14,7 @@ import { join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { ArtifactRegistry, DatabaseArtifactRepository } from "@exaix/core/artifact";
 import { ReviewStatus } from "@exaix/core/status";
-import { runExactl } from "./helpers/cli_test_helpers.ts";
-
-const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";
-
-function cliTest(name: string, fn: () => Promise<void>): void {
-  Deno.test({ name, ignore: skipInParallel, fn });
-}
+import { cliTest, runExactl } from "./helpers/cli_test_helpers.ts";
 
 cliTest("CLI: request list shows created requests", async () => {
   const env = await TestEnvironment.create();

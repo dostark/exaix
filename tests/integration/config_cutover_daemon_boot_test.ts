@@ -18,6 +18,7 @@ import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService } from "@exaix/core/config";
+import { hasJournalEvent } from "./helpers/config_daemon_test_helpers.ts";
 import { ensureConfigDb, insertOverride, migrateConfigDb, seedConfigDb } from "@exaix/core/config";
 import { bootRealDaemon, writeDaemonConfigWithMockAi } from "./helpers/daemon_config.ts";
 
@@ -61,22 +62,6 @@ async function readCutoverEvent(configPath: string): Promise<IJournalEvent | und
     return rows[0];
   } catch {
     return undefined;
-  } finally {
-    await db.close();
-  }
-}
-
-async function hasJournalEvent(configPath: string, action: string): Promise<boolean> {
-  const configService = new ConfigService(configPath);
-  const db = new DatabaseService(configService.getAll());
-  try {
-    const rows = await db.preparedAll<{ n: number }>(
-      "SELECT COUNT(*) AS n FROM activity WHERE action_type = ?",
-      [action],
-    );
-    return (rows[0]?.n ?? 0) > 0;
-  } catch {
-    return false;
   } finally {
     await db.close();
   }
