@@ -6,6 +6,8 @@
  * @related-files [packages/ai/src/providers/base_provider.ts, packages/ai/src/provider_common_utils.ts]
  */
 
+import type { JSONValue } from "@exaix/core";
+
 /**
  * Result of a model provider generate call.
  */
@@ -32,6 +34,23 @@ export interface IGenerateResult {
    * that as an incomplete response, not a malformed one.
    */
   stop_reason?: string;
+  /** Native tool calls the model made. Present only when the provider's response
+   *  included a tool_use block(s) AND the caller requested tools via
+   *  IModelOptions.tools. May contain multiple entries for parallel tool use.
+   *  Absent (undefined) for every response today. */
+  toolCalls?: IProviderToolCall[];
+}
+
+/** A tool call the model made, surfaced from a provider's native tool_use
+ *  response block. Provider-agnostic — Anthropic, OpenAI, and Google all
+ *  produce equivalent shapes. */
+export interface IProviderToolCall {
+  id: string;
+  name: string;
+  input: Record<string, JSONValue>;
+  /** The tool call's type — always "tool_use" for Anthropic, but included
+   *  for forward compatibility with future provider support. */
+  type?: string;
 }
 /**
  * Base error class for model provider errors.

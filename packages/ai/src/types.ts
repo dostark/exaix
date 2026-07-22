@@ -11,6 +11,68 @@ import type { Config, EffortTier, IBlueprintFrontmatter, IModelCallOptions } fro
 import type { IGenerateResult } from "./providers/common.ts";
 
 /**
+ * Cache TTL values for Anthropic prompt caching.
+ */
+export type ToolCacheControlTtl = "5m" | "1h";
+
+/**
+ * Cache control annotation for tool definitions (Anthropic prompt caching).
+ * Defaults to "5m" when omitted.
+ */
+export interface IToolCacheControl {
+  type: "ephemeral";
+  ttl?: ToolCacheControlTtl;
+}
+
+/**
+ * Mirrors Anthropic's Tool object — one tool definition in the tools[] array.
+ * Every field except `name` and `inputSchema` is optional, matching Anthropic's
+ * own schema. Provider-agnostic; future OpenAI/Google support reuses this type.
+ */
+export interface IToolDefinition {
+  /** Must match Anthropic's ^[a-zA-Z0-9_-]{1,64}$ — validated at the
+   *  AnthropicProvider boundary (Step 2), not here. */
+  name: string;
+  /** Strongly recommended. Detailed description of what the tool does and
+   *  when to use it. */
+  description?: string;
+  /** JSON Schema object — the exact shape ToolRegistry.getTools()'s
+   *  ITool.parameters already provides. */
+  inputSchema: Record<string, JSONValue>;
+  /** For user-defined custom tools, should be "custom". Anthropic server
+   *  tools use their own type strings (e.g. "bash_20250124"). */
+  type?: string;
+  /** When true, guarantees schema validation on tool names and inputs
+   *  (Anthropic's strict tool use feature). */
+  strict?: boolean;
+  /** Cache the tool definition for prompt caching efficiency. */
+  cache_control?: IToolCacheControl;
+  /** Optional array of example inputs to help the model understand
+   *  the tool's expected input shape. */
+  input_examples?: Record<string, JSONValue>[];
+}
+
+/** Mirrors Anthropic's four tool_choice values plus the documented
+ *  disable_parallel_tool_use option on auto/any/tool types. */
+export type IToolChoice =
+  | { type: "auto"; disable_parallel_tool_use?: boolean }
+  | { type: "any"; disable_parallel_tool_use?: boolean }
+  | { type: "tool"; name: string; disable_parallel_tool_use?: boolean }
+  | { type: "none" };
+
+/** One already-completed provider exchange, passed to a FOLLOW-UP generate()
+ *  call so the provider sees the real multi-turn shape natively. */
+export interface IProviderTurn {
+  toolUseId: string;
+  toolName: string;
+  toolInput: Record<string, JSONValue>;
+  /** Tool result content. Can be a plain string OR an array of rich content blocks
+   *  (text, image, document, etc.) matching Anthropic's tool_result.content shape. */
+  toolResultContent: string | Array<{ type: string; [key: string]: JSONValue }>;
+  toolResultIsError: boolean;
+}
+
+/**
  * Options for model generation requests.
  */
 export interface IModelOptions {
@@ -46,6 +108,20 @@ export interface IModelOptions {
    * Only CliDelegateModelProvider uses this; stateless HTTP providers ignore it.
    */
   jsonSchema?: Record<string, JSONValue>;
+  /** Native tool definitions for provider-enforced tool selection.
+   *  When set, the provider serializes these into a real API-level tools[]
+   *  parameter instead of relying on prose instructions. Absent for every
+   *  call today — this phase's ReActLoopStrategy code path (Step 5) is the
+   *  first production caller. */
+  tools?: IToolDefinition[];
+  /** Provider-level tool choice constraint. Mirrors Anthropic's four-valued
+   *  tool_choice plus disable_parallel_tool_use on auto/any/tool types.
+   *  Ignored when tools is absent. */
+  toolChoice?: IToolChoice;
+  /** The prior tool-use turn to prepend as a 2-message exchange (assistant
+   *  tool_use + user tool_result) when continuing a native tool-use loop.
+   *  Absent for every call today. */
+  priorTurn?: IProviderTurn;
 }
 
 /**
