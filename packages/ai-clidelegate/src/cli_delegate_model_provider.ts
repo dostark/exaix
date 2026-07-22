@@ -221,7 +221,8 @@ export class CliDelegateModelProvider implements IModelProvider {
     this.id = options.id ?? `${options.tool}-${options.model}`;
     this.run = options.run ?? defaultRun;
     this.isClaude = options.tool === SessionToolSchema.enum["claude-code"];
-    this.probeVersion = options.probeVersion ?? probeDelegateVersion;
+    this.probeVersion = options.probeVersion ??
+      ((...args: Parameters<typeof probeDelegateVersion>) => probeDelegateVersion(...args));
   }
 
   async generate(prompt: string, options?: Opt<IModelOptions, Reason.OptionalContext>): Promise<IGenerateResult> {
