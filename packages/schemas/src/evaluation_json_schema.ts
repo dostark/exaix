@@ -9,7 +9,7 @@
  * @dependencies [@exaix/core/evaluation/evaluation_criteria.ts, zodToJsonSchema]
  * @related-files [packages/schemas/src/json_schema_adapter.ts, tests/scenario_framework/runner/assertions.ts]
  */
-import { CriterionResultSchema, EvaluationResultSchema } from "@exaix/core/evaluation/evaluation_criteria.ts";
+import { CriterionResultSchema, EvaluationResultSchema } from "@exaix/core/evaluation";
 import { zodToJsonSchema } from "./json_schema_adapter.ts";
 import type { JSONValue } from "@exaix/core";
 
