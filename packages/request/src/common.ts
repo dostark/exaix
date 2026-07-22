@@ -79,6 +79,34 @@ export function buildParsedRequest(
 }
 
 /**
+ * Build the retry prompt sent back to the model after a plan-generation response fails
+ * JSON validation. The original task is repeated verbatim (a prior version fully replaced
+ * `userPrompt` with the correction request, leaving the model with no visibility into the
+ * actual task on retry) and the rejected output is explicitly labeled as the model's own
+ * previous attempt — never reusing the generic "YOUR TASK" wrapper `constructPrompt` applies
+ * to `userPrompt`, since that framing caused the model to treat its own invalid prior output
+ * as a fresh human instruction and hallucinate an ongoing multi-turn conversation.
+ */
+export function buildPlanValidationFeedbackPrompt(
+  originalTask: string,
+  validationError: string,
+  invalidContent: string,
+): string {
+  return `${originalTask}
+
+---
+A note on your immediately preceding response to this same task (NOT a new instruction —
+this is feedback on what YOU just generated above): it failed schema validation with the
+error "${validationError}". The <content> section must be valid JSON.
+
+Your rejected previous response, for reference only:
+${invalidContent}
+
+Re-attempt the task above now, returning a single valid JSON object in <content> that
+strictly follows the schema.`;
+}
+
+/**
  * Enrich an IParsedRequest with structured analysis output.
  * Populates `taskType`, `tags`, and `filePaths` from the analysis so downstream
  * services (e.g. skill matching) can use structured intent data.

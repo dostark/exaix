@@ -7,6 +7,7 @@
  * routing, and processing services.
  */
 export { applyAnalysisToRequest, buildParsedRequest, loadBlueprint } from "./common.ts";
+export { buildPlanValidationFeedbackPrompt } from "./common.ts";
 
 export { RequestAnalyzer } from "./analysis/mod.ts";
 export { analyzeHeuristic, deriveAnalysisPath, LlmAnalyzer, loadAnalysis, saveAnalysis } from "./analysis/mod.ts";

@@ -16,6 +16,7 @@ import { type Plan, PlanSchema } from "@exaix/schemas/plan_schema.ts";
 import { createOutputValidator, type OutputValidator } from "@exaix/tool-runtime";
 import { describeSchema } from "@exaix/schemas/schema_describer.ts";
 import type { JSONValue } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
 // ============================================================================
 // Types
@@ -110,6 +111,9 @@ Common Requirements:
 - analysis, security, qa, performance: objects (if this is an analysis report)
 
 Ensure you use valid JSON syntax (no trailing commas, double quotes for keys).
+Do NOT wrap the JSON in a markdown code fence (no \`\`\`json or \`\`\` lines) — the text between
+<content> and </content> is parsed as JSON exactly as written; a fence line is not valid JSON
+and will fail parsing even when the JSON itself is correct.
 `.trim();
   }
 
@@ -387,7 +391,7 @@ Ensure you use valid JSON syntax (no trailing commas, double quotes for keys).
     }
 
     if (plan.qa.coverage) {
-      const renderCoverage = (label: string, items?: (QACase | E2ECase)[]) => {
+      const renderCoverage = (label: string, items?: Opt<(QACase | E2ECase)[], Reason.OptionalInput>) => {
         if (!items || items.length === 0) return;
         sections.push(`### ${label} Coverage`, "");
         items.forEach((entry) => {

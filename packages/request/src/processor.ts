@@ -12,7 +12,7 @@ import { basename, join } from "@std/path";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IAgentExecutionResult, IParsedRequest, IRequestContextContext } from "@exaix/execution";
-import { applyAnalysisToRequest, buildParsedRequest } from "./common.ts";
+import { applyAnalysisToRequest, buildParsedRequest, buildPlanValidationFeedbackPrompt } from "./common.ts";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
 import { type IRequestMetadata, PlanWriter } from "@exaix/core/planning";
 import { PlanValidationError } from "@exaix/core/planning";
@@ -659,14 +659,12 @@ export class RequestProcessor {
             error: error.message,
           });
 
-          // Create a feedback request for self-correction
+          // Create a feedback request for self-correction. `request.userPrompt` (not
+          // `feedbackRequest`'s prior value) is always the ORIGINAL task, so a second retry
+          // still corrects against the real task rather than compounding a previous correction.
           const feedbackRequest: IParsedRequest = {
             ...request,
-            userPrompt: `Your previous output failed validation with the following error: "${error.message}".
-Please fix the JSON in your <content> section and try again. Ensure it strictly follows the schema provided.
-
-Problematic output for reference:
-${result.content}`,
+            userPrompt: buildPlanValidationFeedbackPrompt(request.userPrompt, error.message, result.content),
           };
 
           result = await agentRunner.run(blueprint, feedbackRequest);

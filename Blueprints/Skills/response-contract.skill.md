@@ -18,7 +18,9 @@ triggers:
 constraints:
   - "Respond with exactly a <thought> block and a <content> block; ignore everything outside them"
   - "<content> must be a single valid, self-contained JSON object with no surrounding commentary"
+  - "<content> must contain RAW JSON only — never wrap it in a markdown code fence (```json ... ```); the runtime parses the exact text between the tags"
   - "A plan's content must match the executable-plan JSON schema (title, description, steps[])"
+  - "If a previous attempt was rejected for invalid JSON, do not echo, quote, or reference that rejected text in the new response — write a fresh, complete <thought> and <content> for the original task"
 
 output_requirements:
   - "A <thought> block with reasoning and tool-selection logic"
@@ -52,6 +54,13 @@ text outside these tags is ignored.
    structured object the task asks for. The `<content>` block is extracted and
    parsed by the runtime, so it must be valid, self-contained, and free of
    commentary.
+
+   **Never wrap the JSON in a markdown code fence.** The runtime takes the exact
+   text between `<content>` and `</content>` and passes it directly to a JSON
+   parser — a leading/trailing `` ```json `` or `` ``` `` line is not JSON and
+   causes parsing to fail immediately, even though the JSON itself may be
+   correct. Wrong: `<content>` followed by a fenced `` ```json `` block. Right:
+   `<content>` followed immediately by the raw `{ ... }` object, nothing else.
 
 ## Agent Thought Standardization
 
