@@ -1,8 +1,9 @@
 /**
  * @module SweTasksPackE2eTest
  * @path tests/scenario_framework/tests/integration/swe_tasks_pack_e2e_test.ts
- * @description Validates swe_tasks pack scenarios: loads all 5 YAML files, verifies
- * schema/tag metadata, and confirms the matrix cell(s) are correctly SKIPPED (not run, not
+ * @description Validates swe_tasks pack scenarios: loads all 8 YAML files (4 direct-API +
+ * 4 "-cli-all" CLI-delegate siblings), verifies schema/tag metadata, and confirms the matrix
+ * cell(s) are correctly SKIPPED (not run, not
  * failed) when their prerequisite is absent — the pack is provider-live only (no CI-safe
  * mock cell, per the cutover's design), so this is the CI-safety contract that keeps a
  * key-less/tool-less CI run from attempting a real daemon/provider call. cell_id
@@ -31,15 +32,18 @@ const CLI_ALL_SCENARIO_PATH = "scenarios/swe_tasks/fix-bug-null-guard-cli-all.ya
 Deno.test("[SweTasksPackE2e] all swe_tasks scenarios load from catalog with correct metadata", async () => {
   const catalog = await loadScenarioCatalog({ frameworkHome: FRAMEWORK_HOME });
   const sweScenarios = catalog.filter((s) => s.pack === "swe_tasks");
-  assertEquals(sweScenarios.length, 5);
+  assertEquals(sweScenarios.length, 8);
 
   const ids = sweScenarios.map((s) => s.id).sort();
   assertEquals(ids, [
     "swe-add-feature-endpoint",
+    "swe-add-feature-endpoint-cli-all",
     "swe-fix-bug-null-guard",
     "swe-fix-bug-null-guard-cli-all",
     "swe-refactor-extract-function",
+    "swe-refactor-extract-function-cli-all",
     "swe-write-tests-uncovered",
+    "swe-write-tests-uncovered-cli-all",
   ]);
 
   // No CI-safe mock cell in this pack (the cutover dropped mock entirely per design) — every

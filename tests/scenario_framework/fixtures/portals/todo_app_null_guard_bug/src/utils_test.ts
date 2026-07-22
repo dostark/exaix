@@ -1,8 +1,9 @@
 /**
  * @module TodoAppUtilsTest
  * @path src/utils_test.ts
- * @description swe_tasks fixture portal: baseline tests for utils.ts's null-safe display
- *   formatting helpers, shared across every swe_tasks scenario using this fixture.
+ * @description swe_tasks fixture portal: proves the null-safety bugs in utils.ts are
+ *   fixed. Fails against the unfixed fixture (formatAssignee/formatDueDate crash on
+ *   null) — the swe-fix-bug-null-guard scenario's pass signal.
  */
 
 import { assertEquals } from "jsr:@std/assert@1";

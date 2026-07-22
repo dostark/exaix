@@ -273,7 +273,8 @@
     "cov_profile",
     "exaix",
     "dist",
-    "tests/scenario_framework/fixtures/portals/todo_app"
+    "tests/scenario_framework/fixtures/portals/todo_app",
+    "tests/scenario_framework/fixtures/portals/todo_app_null_guard_bug"
   ],
   "fmt": {
     "useTabs": false,
