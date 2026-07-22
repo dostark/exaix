@@ -366,7 +366,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     if (this.executor.guardrailRunner?.hasBlockingViolation(context.trace_id)) {
       throw new GuardrailBlockedError(
         context.trace_id,
-        "Guardrail blocked execution at iteration start",
+        "Execution halted by a blocking guardrail violation",
       );
     }
 
@@ -378,33 +378,31 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       nativeToolsPriorTurn,
       nativeToolsUsed,
     );
+    const generateStartTime = Date.now();
     const response = await this.withHeartbeat(context, () => this.provider!.generate(prompt, generateOptions as never));
+    const generateDurationMs = Date.now() - generateStartTime;
 
     this.logMaxTokensTruncation(response, options, i, context);
 
-    const predictedCost = computeRegistryPredictedCost(response.provider, response.model, {
+    const registryCostUsd = computeRegistryPredictedCost(response.provider, response.model, {
       promptTokens: response.usage.promptTokens,
       completionTokens: response.usage.completionTokens,
       cacheReadTokens: response.usage.cacheReadTokens,
       cacheCreationTokens: response.usage.cacheCreationTokens,
     });
+    const costUsd = registryCostUsd ?? response.cost_usd ?? 0;
 
     await this.executor.logGeneration(
       context.trace_id,
       options.identity_id ?? "",
       response.model,
       response.provider,
-      {
-        promptTokens: response.usage.promptTokens,
-        completionTokens: response.usage.completionTokens,
-        totalTokens: response.usage.totalTokens,
-        costUsd: predictedCost ?? 0,
-      },
+      { ...response.usage, costUsd, durationMs: generateDurationMs },
     );
 
     const iterPromptTokens = response.usage.promptTokens;
     const iterCompletionTokens = response.usage.completionTokens;
-    const iterCostUsd = predictedCost ?? 0;
+    const iterCostUsd = costUsd;
     const iterCacheReadTokens = response.usage.cacheReadTokens ?? 0;
     const iterCacheCreationTokens = response.usage.cacheCreationTokens ?? 0;
 
@@ -486,16 +484,17 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       const toolCallLine = `${REACT_CALLING_TOOL_PREFIX}${action.tool}(${JSON.stringify(action.params)})`;
       history.push({ role: ReActRole.ACTION, content: toolCallLine });
 
-      const truncatedResult = toolResultContent.length > REACT_TOOL_RESULT_SUMMARY_MAX
-        ? toolResultContent.slice(0, REACT_TOOL_RESULT_SUMMARY_MAX) + "..."
-        : toolResultContent;
+      const resultEntry = `Tool ${action.tool} result: ${toolResultContent}`;
+      const truncatedResult = resultEntry.length > REACT_TOOL_RESULT_SUMMARY_MAX
+        ? resultEntry.slice(0, REACT_TOOL_RESULT_SUMMARY_MAX) + "..."
+        : resultEntry;
       history.push({ role: ReActRole.RESULT, content: truncatedResult });
 
       await this.executor.logDynamicToolCall?.(
         context.trace_id,
         action.tool,
         action.params,
-        truncatedResult,
+        toolResultContent.slice(0, REACT_TOOL_RESULT_SUMMARY_MAX),
         i,
       );
 

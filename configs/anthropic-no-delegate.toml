@@ -39,6 +39,9 @@ auto_analyze_on_mount = true
 [quality_gate]
 enabled = false
 
+[execution]
+native_tools_enabled = true
+
 [request_analysis]
 enabled = true
 
