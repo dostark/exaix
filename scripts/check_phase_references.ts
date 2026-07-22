@@ -29,20 +29,22 @@ const PHASE_PATTERN = /\bPhase\s+\d{1,3}\b/;
 async function main(): Promise<number> {
   let violations = 0;
 
-  for await (const entry of walk(ROOT, {
-    exts: [".md"],
-    includeDirs: false,
-    skip: [
-      /[/\\]exaix-dev-docs[/\\]/,
-      /[/\\]\.copilot[/\\]/,
-      /[/\\]scripts[/\\]/,
-      /[/\\]node_modules[/\\]/,
-      /[/\\]\.git[/\\]/,
-      /[/\\]docs[/\\]api[/\\]/,
-      /[/\\]docs[/\\]planning[/\\]/,
-      /CHANGELOG\.md$/,
-    ],
-  })) {
+  for await (
+    const entry of walk(ROOT, {
+      exts: [".md"],
+      includeDirs: false,
+      skip: [
+        /[/\\]exaix-dev-docs[/\\]/,
+        /[/\\]\.copilot[/\\]/,
+        /[/\\]scripts[/\\]/,
+        /[/\\]node_modules[/\\]/,
+        /[/\\]\.git[/\\]/,
+        /[/\\]docs[/\\]api[/\\]/,
+        /[/\\]docs[/\\]planning[/\\]/,
+        /CHANGELOG\.md$/,
+      ],
+    })
+  ) {
     const relPath = relative(ROOT, entry.path);
 
     // Only check root-level .md files and docs/*.md
@@ -67,8 +69,8 @@ async function main(): Promise<number> {
 
         console.error(
           `ERROR [phase-reference] ${relPath}:${i + 1} – ` +
-          `Concrete phase reference found: "${match[0]}". ` +
-          `Replace with a stable capability description.`,
+            `Concrete phase reference found: "${match[0]}". ` +
+            `Replace with a stable capability description.`,
         );
         violations++;
       }

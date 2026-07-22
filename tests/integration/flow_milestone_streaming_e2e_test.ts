@@ -25,6 +25,7 @@ Deno.test({
           summarization_model: undefined,
           milestone_streaming_enabled: true,
           milestone_journal_path: milestoneJournalPath,
+          native_tools_enabled: false,
         },
       },
     });
