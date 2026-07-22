@@ -40,6 +40,7 @@
     "@exaix/tool-runtime": "../tool-runtime/mod.ts",
     "@exaix/testing": "../testing/mod.ts",
     "@exaix/execution": "../execution/mod.ts",
+    "@exaix/model-registry": "../model-registry/mod.ts",
 
     "zod": "https://deno.land/x/zod@v3.22.4/mod.ts"
   },

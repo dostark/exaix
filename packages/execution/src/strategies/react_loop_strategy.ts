@@ -44,6 +44,7 @@ import type { IModelCallOptions } from "@exaix/schemas";
 import type { IContextBudgetManagerInput } from "../context/context_budget_manager.ts";
 import type { IContextSegment } from "../context/context_segment.ts";
 import type { IReActLoopExecutor } from "../react_loop_adapter.ts";
+import { computeRegistryPredictedCost } from "../registry_computed_cost.ts";
 
 export interface IReActAction {
   tool: string;
@@ -178,19 +179,32 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         );
       }
 
+      // Re-price this call's real, already-measured token counts against the real per-model
+      // split rate (static_overlay.ts), falling back to the flat-rate response.cost_usd
+      // unchanged when the model has no overlay entry. Still a PREDICTED estimate — this only
+      // improves the price multiplier applied to known tokens, never guesses at an unknown
+      // quantity (distinct from the removed pre-call heuristic, GAP-23/24/25).
+      const registryCostUsd = computeRegistryPredictedCost(response.provider, response.model, {
+        promptTokens: response.usage.promptTokens,
+        completionTokens: response.usage.completionTokens,
+        cacheReadTokens: response.usage.cacheReadTokens,
+        cacheCreationTokens: response.usage.cacheCreationTokens,
+      });
+      const costUsd = registryCostUsd ?? response.cost_usd ?? 0;
+
       // Log individual generation metrics (Phase 69)
       await this.executor.logGeneration(
         context.trace_id,
         options.identity_id ?? "",
         response.model,
         response.provider,
-        { ...response.usage, costUsd: response.cost_usd ?? 0, durationMs: generateDurationMs },
+        { ...response.usage, costUsd, durationMs: generateDurationMs },
       );
 
       // Accumulate metrics for the final result
       totalPromptTokens += response.usage.promptTokens;
       totalCompletionTokens += response.usage.completionTokens;
-      totalCostUsd += response.cost_usd ?? 0;
+      totalCostUsd += costUsd;
       totalCacheReadTokens += response.usage.cacheReadTokens ?? 0;
       totalCacheCreationTokens += response.usage.cacheCreationTokens ?? 0;
 

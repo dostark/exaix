@@ -14,6 +14,7 @@ import type { IModelCallOptions } from "@exaix/schemas";
 import { parse as parseToml } from "@std/toml";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
+import { computeRegistryPredictedCost } from "../registry_computed_cost.ts";
 import {
   AgentExecutionErrorType,
   LEGACY_EXECUTION_MAX_TOKENS,
@@ -57,13 +58,24 @@ export class LegacyAgentStrategy implements IExecutionStrategy {
     });
     const generateDurationMs = Date.now() - generateStartTime;
 
+    // Re-price this call's real, already-measured token counts against the real per-model
+    // split rate (static_overlay.ts), falling back to the flat-rate result.cost_usd unchanged
+    // when the model has no overlay entry. Still a PREDICTED estimate.
+    const registryCostUsd = computeRegistryPredictedCost(result.provider, result.model, {
+      promptTokens: result.usage.promptTokens,
+      completionTokens: result.usage.completionTokens,
+      cacheReadTokens: result.usage.cacheReadTokens,
+      cacheCreationTokens: result.usage.cacheCreationTokens,
+    });
+    const costUsd = registryCostUsd ?? result.cost_usd ?? 0;
+
     // Log individual generation metrics (Phase 69)
     await this.executor.logGeneration(
       context.trace_id,
       options.identity_id ?? "",
       result.model,
       result.provider,
-      { ...result.usage, costUsd: result.cost_usd ?? 0, durationMs: generateDurationMs },
+      { ...result.usage, costUsd, durationMs: generateDurationMs },
     );
 
     const response = result.content;
@@ -79,11 +91,12 @@ export class LegacyAgentStrategy implements IExecutionStrategy {
     parsedResult.usage = {
       prompt_tokens: result.usage.promptTokens,
       completion_tokens: result.usage.completionTokens,
-      cost_usd: result.cost_usd ?? 0,
+      cost_usd: costUsd,
       cache_read_tokens: result.usage.cacheReadTokens,
       cache_creation_tokens: result.usage.cacheCreationTokens,
-      // LegacyAgentStrategy's cost_usd is always a calculateCost() estimate — no
-      // direct-API provider ever returns a real reported figure — so "predicted".
+      // LegacyAgentStrategy's cost_usd is always a predicted estimate (registry-computed
+      // per-model split price when available, else the flat-rate fallback) — no direct-API
+      // provider ever returns a real reported figure — so "predicted".
       cost_source: "predicted",
     };
 
