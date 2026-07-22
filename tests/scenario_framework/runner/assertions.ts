@@ -1536,7 +1536,10 @@ export async function callLlmEndpoint(
   };
   const finalConfig = createMockConfig("/tmp/exa-eval", overrides as Parameters<typeof createMockConfig>[1]);
   const provider = await ProviderFactory.createByName(finalConfig, "default");
-  const result = await provider.generate(prompt, { ...resolved.options, jsonSchema });
+  const result = await provider.generate(prompt, {
+    ...resolved.options,
+    ...(jsonSchema !== undefined ? { jsonSchema } : {}),
+  });
   return result.content;
 }
 
