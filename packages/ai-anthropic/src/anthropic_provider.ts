@@ -9,7 +9,14 @@
 import {
   ANTHROPIC_CACHE_CONTROL_EPHEMERAL,
   ANTHROPIC_CONTENT_TYPE_TEXT,
+  ANTHROPIC_CONTENT_TYPE_TOOL_RESULT,
+  ANTHROPIC_CONTENT_TYPE_TOOL_USE,
+  ANTHROPIC_MESSAGE_ROLE_ASSISTANT,
+  ANTHROPIC_MESSAGE_ROLE_USER,
   ANTHROPIC_THINKING_DISABLED,
+  ANTHROPIC_TOOL_CHOICE_ANY,
+  ANTHROPIC_TOOL_CHOICE_NONE,
+  ANTHROPIC_TOOL_CHOICE_TOOL,
   DEFAULT_ANTHROPIC_API_VERSION,
   DEFAULT_ANTHROPIC_ENDPOINT,
   DEFAULT_ANTHROPIC_MAX_TOKENS,
@@ -23,18 +30,35 @@ import { AnthropicMessagesRequestSchema } from "./anthropic_request_schema.ts";
 import {
   type AnthropicResponse,
   extractAnthropicContent,
+  extractAnthropicToolCalls,
   performProviderCall,
   tokenMapperAnthropic,
 } from "@exaix/ai/provider_common_utils.ts";
-import { BaseProvider, type IBaseProviderOptions, type IGenerateResult } from "@exaix/ai/providers";
-import type { IModelOptions } from "@exaix/ai/types.ts";
+import { BaseProvider, type IBaseProviderOptions, type IGenerateResult, ModelProviderError } from "@exaix/ai/providers";
+import type { IModelOptions, IToolChoice, IToolDefinition } from "@exaix/ai/types.ts";
 import { PROVIDER_EVENT_REQUEST_DEBUG_DUMP } from "@exaix/core";
 import { type Opt, type Reason, toSafeJson } from "@exaix/core/types";
+import type { JSONValue } from "@exaix/core";
 
 /**
  * Options for AnthropicProvider.
  */
 export type AnthropicProviderOptions = IBaseProviderOptions;
+
+/**
+ * Error thrown when tool_choice (any/tool) conflicts with extended thinking,
+ * which Anthropic does not support together.
+ */
+export class AnthropicToolChoiceThinkingConflictError extends ModelProviderError {
+  constructor(toolChoiceType: string) {
+    super(
+      `tool_choice type "${toolChoiceType}" is not supported alongside extended thinking`,
+      PROVIDER_ANTHROPIC,
+    );
+    this.name = "AnthropicToolChoiceThinkingConflictError";
+    Object.setPrototypeOf(this, AnthropicToolChoiceThinkingConflictError.prototype);
+  }
+}
 
 /**
  * AnthropicProvider implements IModelProvider for Anthropic's Claude models.
@@ -68,29 +92,64 @@ export class AnthropicProvider extends BaseProvider {
     prompt: string,
     options?: Opt<IModelOptions, Reason.OptionalInput>,
   ): Promise<IGenerateResult> {
-    // Build messages with cache_control for cached sections. When the caller specifies no
-    // explicit cachedSections, the whole prompt block is cache-marked by default: repeated
-    // identical prompts (provider-level retries, plan-validation retries, multi-trial eval
-    // runs) then hit Anthropic's prompt cache at ~10% of input cost, far outweighing the
-    // one-time ~25% cache-write surcharge for this workload.
+    // Guard: tool_choice any/tool + thinking is not supported by Anthropic
+    if (
+      options?.toolChoice &&
+      (options.toolChoice.type === ANTHROPIC_TOOL_CHOICE_ANY || options.toolChoice.type === ANTHROPIC_TOOL_CHOICE_TOOL)
+    ) {
+      const thinkingEnabled = options?.thinking ?? this.thinkingDefault;
+      if (thinkingEnabled) {
+        throw new AnthropicToolChoiceThinkingConflictError(options.toolChoice.type);
+      }
+    }
+
+    // Build messages with priorTurn if present (2-message exchange: assistant tool_use + user tool_result)
+    const messages: AnthropicRequestMessage[] = [];
+
+    if (options?.priorTurn) {
+      messages.push({
+        role: ANTHROPIC_MESSAGE_ROLE_ASSISTANT,
+        content: [{
+          type: ANTHROPIC_CONTENT_TYPE_TOOL_USE,
+          id: options.priorTurn.toolUseId,
+          name: options.priorTurn.toolName,
+          input: options.priorTurn.toolInput,
+        }],
+      });
+      const toolResultContent = Array.isArray(options.priorTurn.toolResultContent)
+        ? options.priorTurn.toolResultContent
+        : options.priorTurn.toolResultContent;
+      messages.push({
+        role: ANTHROPIC_MESSAGE_ROLE_USER,
+        content: [{
+          type: ANTHROPIC_CONTENT_TYPE_TOOL_RESULT,
+          tool_use_id: options.priorTurn.toolUseId,
+          content: toolResultContent,
+          is_error: options.priorTurn.toolResultIsError,
+        }],
+      });
+    }
+
+    // Current user prompt
     const cachedSections = options?.cachedSections;
-    const messages = (cachedSections && cachedSections.length > 0)
-      ? [{
-        role: "user" as const,
+    const currentMessage: AnthropicRequestMessage = (cachedSections && cachedSections.length > 0)
+      ? {
+        role: ANTHROPIC_MESSAGE_ROLE_USER,
         content: [
           { type: ANTHROPIC_CONTENT_TYPE_TEXT, text: prompt },
         ].map((block, i) =>
           cachedSections.includes(i) ? { ...block, cache_control: { type: ANTHROPIC_CACHE_CONTROL_EPHEMERAL } } : block
         ),
-      }]
-      : [{
-        role: "user" as const,
+      }
+      : {
+        role: ANTHROPIC_MESSAGE_ROLE_USER,
         content: [{
           type: ANTHROPIC_CONTENT_TYPE_TEXT,
           text: prompt,
           cache_control: { type: ANTHROPIC_CACHE_CONTROL_EPHEMERAL },
         }],
-      }];
+      };
+    messages.push(currentMessage);
 
     const requestBody: AnthropicRequestBody = {
       model: this.model,
@@ -99,13 +158,11 @@ export class AnthropicProvider extends BaseProvider {
       temperature: options?.temperature,
       top_p: options?.top_p,
       stop_sequences: options?.stop,
-      // Only send a thinking field to override the API default (adaptive thinking). An
-      // explicit false — per call, or via ai_anthropic.thinking_default when the call sets
-      // nothing — disables it (needed when the model's default thinking adds latency or
-      // emits empty signed thinking blocks). Absent leaves the default untouched.
       thinking: (options?.thinking ?? this.thinkingDefault) === false
         ? { type: ANTHROPIC_THINKING_DISABLED }
         : undefined,
+      tools: options?.tools?.map(mapToolDefinition),
+      tool_choice: options?.toolChoice ? mapToolChoice(options.toolChoice) : undefined,
     };
 
     try {
@@ -130,7 +187,7 @@ export class AnthropicProvider extends BaseProvider {
       const validation = AnthropicMessagesRequestSchema.safeParse(requestBody);
       void this.logger.debug(PROVIDER_EVENT_REQUEST_DEBUG_DUMP, this.id, {
         provider: "anthropic",
-        request_body: toSafeJson(requestBody) ?? {},
+        request_body: toSafeJson(requestBody as never) ?? {},
         valid: validation.success,
         validation_errors: validation.success ? undefined : validation.error.flatten(),
       });
@@ -153,13 +210,17 @@ export class AnthropicProvider extends BaseProvider {
       tokenMapper: tokenMapperAnthropic(this.model),
       extractor: extractAnthropicContent,
       stopReasonExtractor: (d) => d.stop_reason,
+      toolCallExtractor: extractAnthropicToolCalls,
     });
   }
 }
 
+/** Anthropic message role literal — "user" or "assistant". */
+type AnthropicMessageRole = "user" | "assistant";
+
 type AnthropicRequestMessage = {
-  role: "user";
-  content: string | Array<{ type: string; text: string; cache_control?: Opt<{ type: string }, Reason.OptionalInput> }>;
+  role: AnthropicMessageRole;
+  content: string | unknown[];
 };
 
 type AnthropicRequestBody = {
@@ -170,7 +231,53 @@ type AnthropicRequestBody = {
   top_p?: Opt<number, Reason.OptionalInput>;
   stop_sequences?: Opt<string[], Reason.OptionalInput>;
   thinking?: Opt<{ type: string }, Reason.OptionalInput>;
+  tools?: AnthropicWireTool[];
+  tool_choice?: AnthropicWireToolChoice;
 };
+
+/** Anthropic wire-format tool definition (snake_case fields). */
+type AnthropicWireTool = {
+  name: string;
+  input_schema: Record<string, JSONValue>;
+  description?: string;
+  type?: string;
+  strict?: boolean;
+  cache_control?: { type: "ephemeral"; ttl?: string };
+  input_examples?: Record<string, JSONValue>[];
+};
+
+/** Anthropic wire-format tool_choice. */
+type AnthropicWireToolChoice =
+  | { type: "auto"; disable_parallel_tool_use?: boolean }
+  | { type: "any"; disable_parallel_tool_use?: boolean }
+  | { type: "tool"; name: string; disable_parallel_tool_use?: boolean }
+  | { type: "none" };
+
+/** Map IToolDefinition to Anthropic's wire-format tool object. */
+function mapToolDefinition(tool: IToolDefinition): AnthropicWireTool {
+  const mapped: AnthropicWireTool = {
+    name: tool.name,
+    input_schema: tool.inputSchema,
+  };
+  if (tool.description !== undefined) mapped.description = tool.description;
+  if (tool.type !== undefined) mapped.type = tool.type;
+  if (tool.strict !== undefined) mapped.strict = tool.strict;
+  if (tool.cache_control !== undefined) mapped.cache_control = tool.cache_control;
+  if (tool.input_examples !== undefined) mapped.input_examples = tool.input_examples;
+  return mapped;
+}
+
+/** Map IToolChoice to Anthropic's wire-format tool_choice. */
+function mapToolChoice(choice: IToolChoice): AnthropicWireToolChoice {
+  if (choice.type === ANTHROPIC_TOOL_CHOICE_NONE) return { type: ANTHROPIC_TOOL_CHOICE_NONE };
+  return {
+    type: choice.type,
+    ...(choice.type === ANTHROPIC_TOOL_CHOICE_TOOL ? { name: choice.name } : {}),
+    ...(choice.disable_parallel_tool_use !== undefined
+      ? { disable_parallel_tool_use: choice.disable_parallel_tool_use }
+      : {}),
+  } as AnthropicWireToolChoice;
+}
 
 /** Matches Anthropic's 400 wording when a request parameter is rejected for the model. */
 const REJECTED_PARAM_PATTERN = /`(\w+)` is (?:deprecated|not supported)/;

@@ -84,3 +84,27 @@ export const ANTHROPIC_CACHE_CONTROL_EPHEMERAL = "ephemeral";
 
 /** Messages API thinking config value that turns off the model's default adaptive thinking. */
 export const ANTHROPIC_THINKING_DISABLED = "disabled";
+
+/** Content block type for tool_use blocks. */
+export const ANTHROPIC_CONTENT_TYPE_TOOL_USE = "tool_use";
+
+/** Content block type for tool_result blocks. */
+export const ANTHROPIC_CONTENT_TYPE_TOOL_RESULT = "tool_result";
+
+/** Tool choice type: allow any tool. */
+export const ANTHROPIC_TOOL_CHOICE_ANY = "any";
+
+/** Tool choice type: allow the model to decide. */
+export const ANTHROPIC_TOOL_CHOICE_AUTO = "auto";
+
+/** Tool choice type: force a specific tool. */
+export const ANTHROPIC_TOOL_CHOICE_TOOL = "tool";
+
+/** Tool choice type: disable tool use. */
+export const ANTHROPIC_TOOL_CHOICE_NONE = "none";
+
+/** Message role value for the user. */
+export const ANTHROPIC_MESSAGE_ROLE_USER = "user";
+
+/** Message role value for the assistant. */
+export const ANTHROPIC_MESSAGE_ROLE_ASSISTANT = "assistant";

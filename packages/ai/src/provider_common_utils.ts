@@ -12,11 +12,13 @@ import {
   AuthenticationError,
   ConnectionError,
   type IGenerateResult,
+  type IProviderToolCall,
   ModelProviderError,
   RateLimitError,
   withRetry,
 } from "./providers/common.ts";
 import type { IModelOptions } from "./types.ts";
+import type { JSONValue } from "@exaix/core";
 import { DEFAULT_AI_RETRY_BACKOFF_BASE_MS, DEFAULT_AI_RETRY_MAX_ATTEMPTS, PROVIDER_MOCK } from "@exaix/ai";
 import {
   COST_RATE_ANTHROPIC,
@@ -110,10 +112,14 @@ export type AnthropicResponse = {
   /** Why generation ended: "end_turn", "max_tokens" (truncated), "stop_sequence", ... */
   stop_reason?: string;
   content?: Array<{
-    /** Block type, e.g. "text" or "thinking". Absent in older response shapes. */
+    /** Block type, e.g. "text", "thinking", "tool_use". Absent in older response shapes. */
     type?: string;
     text?: string;
     thinking?: string;
+    /** tool_use block fields — present only when type === "tool_use". */
+    id?: string;
+    name?: string;
+    input?: Record<string, JSONValue>;
   }>;
 };
 
@@ -332,6 +338,23 @@ export function extractAnthropicContent(d: AnthropicResponse): string {
 }
 
 /**
+ * Extract ALL tool_use blocks from an Anthropic response. Returns the blocks as
+ * IProviderToolCall[] when one or more exist, or undefined when none do.
+ * Does NOT modify extractAnthropicContent's behavior — this is a separate pass.
+ */
+export function extractAnthropicToolCalls(d: AnthropicResponse): IProviderToolCall[] | undefined {
+  if (!d.content) return undefined;
+  const toolUseBlocks = d.content.filter((block) => block.type === "tool_use");
+  if (toolUseBlocks.length === 0) return undefined;
+  return toolUseBlocks.map((block) => ({
+    id: block.id ?? "",
+    name: block.name ?? "",
+    input: block.input ?? {},
+    type: "tool_use",
+  }));
+}
+
+/**
  * Perform fetch with retries/backoff and timeout, and handle provider responses.
  * Centralizes abort handling, retry/backoff, and ensures bodies are consumed.
  */
@@ -395,6 +418,7 @@ export async function performProviderCall<T>(
     tokenMapper,
     extractor,
     stopReasonExtractor,
+    toolCallExtractor,
   }: {
     id: string;
     maxAttempts?: number;
@@ -404,6 +428,11 @@ export async function performProviderCall<T>(
     tokenMapper?: (d: T, providerId?: string) => TokenMap | undefined;
     extractor?: (d: T) => string;
     stopReasonExtractor?: (d: T) => string | undefined;
+    /** Optional extractor for native tool-call blocks in the provider response.
+     *  When present and the response contains tool_use blocks, the result is
+     *  surfaced as IGenerateResult.toolCalls. Absent for every call today —
+     *  AnthropicProvider.postMessages() (Step 2) is the first consumer. */
+    toolCallExtractor?: (d: T) => IProviderToolCall[] | undefined;
   },
 ): Promise<IGenerateResult> {
   const data = await fetchJsonWithRetries<T>(url, fetchOptions, {
@@ -442,5 +471,6 @@ export async function performProviderCall<T>(
     model: tokens?.model ?? "unknown",
     provider: tokens?.provider ?? id,
     stop_reason: stopReasonExtractor?.(data),
+    toolCalls: toolCallExtractor?.(data),
   };
 }
