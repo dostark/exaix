@@ -31,6 +31,7 @@ export interface ISweTaskTemplateOptions {
   title: string;
   requestFixture: string;
   cells: ICellDef[];
+  portal?: string;
   trajectorySequence?: Array<{ tool: string }>;
   scoringWeights?: Record<string, number>;
   judgeContextPath?: string;
@@ -223,6 +224,7 @@ export function renderSweTaskTemplate(
 ): string {
   const hasCliDelegate = task.cells.some((c) => c.requiresBin);
   const scoreWeights = task.scoringWeights ?? {};
+  const portalDir = task.portal ?? "todo_app";
 
   const parts: string[] = [
     `schema_version: "1.0.0"`,
@@ -252,7 +254,7 @@ export function renderSweTaskTemplate(
     `  - id: "setup-portal-repo"`,
     `    type: "shell"`,
     `    command: "sh"`,
-    `    args: ["-c", "cp -r \\"$FRAMEWORK_HOME/fixtures/portals/todo_app\\" \\"$WORKSPACE_ROOT/todo-app\\" && cd \\"$WORKSPACE_ROOT/todo-app\\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'"]`,
+    `    args: ["-c", "cp -r \\"$FRAMEWORK_HOME/fixtures/portals/${portalDir}\\" \\"$WORKSPACE_ROOT/todo-app\\" && cd \\"$WORKSPACE_ROOT/todo-app\\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'"]`,
     `    output_criteria:`,
     `      - id: "portal-repo-initialized"`,
     `        kind: "command-exit-code"`,
