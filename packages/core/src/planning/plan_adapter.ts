@@ -293,49 +293,6 @@ Ensure you use valid JSON syntax (no trailing commas, double quotes for keys).
 Do NOT wrap the JSON in a markdown code fence (no \`\`\`json or \`\`\` lines) — the text between
 <content> and </content> is parsed as JSON exactly as written; a fence line is not valid JSON
 and will fail parsing even when the JSON itself is correct.
-
-Large file content: use a TOML action block instead of inline JSON.
-For a write_file action whose params.content would be more than a few lines of source
-code, OR a patch_file action whose params.search/params.replace would be more than a
-few lines, do NOT JSON-escape that content inline. Instead, set that step's "actions"
-field to the string "TOML_BLOCK:N" (a unique number per step) and, immediately following
-the JSON object inside <content>, add one fenced \`\`\`toml block per action, each
-beginning with "# TOML_BLOCK:N" on its own line (reuse the SAME marker number for every
-action belonging to that step), with "tool", optional "description", and a "[params]"
-table AT THE TOML ROOT — never a [[action]]/[[actions]] wrapper. Use TOML triple-quoted
-'''...''' strings for any multi-line content/search/replace value; this needs no
-backslash-escaping. patch_file has NO "content" field — its params are "search" and
-"replace", an exact-substring match-and-replace, NOT a unified-diff/git-patch format;
-"search" must match the target file's existing text exactly once.
-
-Example (write_file):
-{"steps": [{"step": 1, "title": "...", "description": "...", "actions": "TOML_BLOCK:1"}]}
-
-\`\`\`toml
-# TOML_BLOCK:1
-tool = "write_file"
-description = "Add the handler"
-[params]
-path = "src/api.ts"
-content = '''
-export function handleCompleteTask(): void {}
-'''
-\`\`\`
-
-Example (patch_file, search/replace, not a diff format):
-
-\`\`\`toml
-# TOML_BLOCK:2
-tool = "patch_file"
-[params]
-path = "src/utils.ts"
-search = '''
-existing exact text to find
-'''
-replace = '''
-replacement text
-'''
-\`\`\`
 `.trim();
   }
 

@@ -137,19 +137,19 @@ const defaultRun: IRunCliDelegateProcess = (command, args, options) => SafeSubpr
 const OPENCODE_PERMISSION_DENY = OpencodePermissionValueSchema.enum.deny;
 
 /**
- * Read-only config for plan-generation calls. edit/bash/task are denied
- * (this provider never executes tool actions), but read/grep/glob are
- * allowed so the model stays in its structured ReAct tool-use loop and
- * outputs valid JSON rather than free-form prose. Without these allowed,
- * opencode falls back to plain assistant-text (no `--json-schema` flag).
- * Phase 155 Step 2.
+ * Read-only config for plan-generation calls. edit/bash/task are denied and no
+ * tools are explicitly allowed — opencode falls back to plain text mode (not
+ * ReAct tool loop), so the model outputs a clean plan string instead of getting
+ * confused by read-only tool permissions.
+ *
+ * Phase 155 Step 2 originally added read/grep/glob here to keep opencode in
+ * ReAct mode, but that caused the model to see tools it could use, triggering
+ * prose output instead of structured plans. Reverted: plan generation needs
+ * text output, not tool interaction.
  */
 function buildOpencodeReadOnlyConfig(): IOpencodeReadOnlyPermissionConfig {
   return {
     permission: {
-      read: "allow",
-      grep: "allow",
-      glob: "allow",
       edit: OPENCODE_PERMISSION_DENY,
       bash: OPENCODE_PERMISSION_DENY,
       task: OPENCODE_PERMISSION_DENY,

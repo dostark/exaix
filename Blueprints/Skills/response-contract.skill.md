@@ -21,7 +21,6 @@ constraints:
   - "<content> must contain RAW JSON only — never wrap it in a markdown code fence (```json ... ```); the runtime parses the exact text between the tags"
   - "A plan's content must match the executable-plan JSON schema (title, description, steps[])"
   - "If a previous attempt was rejected for invalid JSON, do not echo, quote, or reference that rejected text in the new response — write a fresh, complete <thought> and <content> for the original task"
-  - "For a write_file action whose params.content, or a patch_file action whose params.search/params.replace, exceeds a few lines, use the TOML_BLOCK:N sentinel + fenced TOML block pattern instead of JSON-escaping it inline"
 
 output_requirements:
   - "A <thought> block with reasoning and tool-selection logic"
@@ -60,57 +59,8 @@ text outside these tags is ignored.
    text between `<content>` and `</content>` and passes it directly to a JSON
    parser — a leading/trailing `` ```json `` or `` ``` `` line is not JSON and
    causes parsing to fail immediately, even though the JSON itself may be
-   correct. Wrong: `<content>` followed by a fenced `` ```json `` block. Right:
-   `<content>` followed immediately by the raw `{ ... }` object, nothing else.
-
-## Large file content: use a TOML action block instead of inline JSON
-
-For a `write_file` action whose `params.content` would be more than a few lines
-of source code, or a `patch_file` action whose `params.search`/`params.replace`
-would be more than a few lines, do NOT JSON-escape that content inline — set
-that step's `actions` field to the string `"TOML_BLOCK:N"` (a unique number per
-step) and, immediately after the JSON object inside `<content>`, add one fenced
-`toml` block per action. Each block starts with `# TOML_BLOCK:N` on its own
-line (reuse the SAME number for every action belonging to that step), with
-`tool`, optional `description`, and a `[params]` table AT THE TOML ROOT — never
-a `[[action]]`/`[[actions]]` wrapper. Use TOML triple-quoted `'''...'''` strings
-for multi-line `content`/`search`/`replace` values; this needs no
-backslash-escaping. `patch_file` has NO `content` field — its params are
-`search` and `replace`, an exact-substring match-and-replace, NOT a
-unified-diff/git-patch format; `search` must match the target file's existing
-text exactly once.
-
-`write_file` example — the JSON envelope's step points at the block by number:
-
-```text
-{"steps": [{"step": 1, "title": "...", "description": "...", "actions": "TOML_BLOCK:1"}]}
-```
-
-```toml
-# TOML_BLOCK:1
-tool = "write_file"
-description = "Add the handler"
-[params]
-path = "src/api.ts"
-content = '''
-export function handleCompleteTask(): void {}
-'''
-```
-
-`patch_file` example (search/replace, not a diff format):
-
-```toml
-# TOML_BLOCK:2
-tool = "patch_file"
-[params]
-path = "src/utils.ts"
-search = '''
-existing exact text to find
-'''
-replace = '''
-replacement text
-'''
-```
+    correct. Wrong: `<content>` followed by a fenced `` ```json `` block. Right:
+    `<content>` followed immediately by the raw `{ ... }` object, nothing else.
 
 ## Agent Thought Standardization
 
