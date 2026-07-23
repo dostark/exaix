@@ -211,7 +211,12 @@ export enum ProviderType {
   CLAUDE_CLI = "claude-cli",
   /** Headless opencode CLI, subscription/flat-rate billed (no metered API key) */
   OPENCODE_CLI = "opencode-cli",
+  /** OpenAI-compatible chat provider (DeepSeek, Together, etc.) via Chat Completions API. Phase 155. */
+  OPENAI_CHAT = "openai-chat",
 }
+
+/** Chat protocol format for provider request/response serialization. Phase 155. */
+export type ChatFormat = "anthropic" | "openai" | "native";
 
 /**
  * Mock strategy types for the mock provider.
