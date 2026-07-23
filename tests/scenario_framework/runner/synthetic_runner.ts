@@ -518,6 +518,26 @@ export async function buildRunManifest(options: IBuildRunManifestOptions): Promi
     };
   }));
 
+  // Phase 141: include unexecuted steps with score 0 so an early failure (e.g.
+  // wait-for-plan) correctly penalises the suite score instead of only scoring
+  // the subset of steps that ran (e.g. 10/11 = 0.909). Build a set of executed
+  // step IDs, then fill in any missing steps with score 0 and "skipped" status.
+  const executedIds = new Set(options.stepOutcomes.map((o: IScenarioStepOutcome) => o.stepId));
+  for (const fullStep of options.loadedScenario.steps) {
+    if (executedIds.has(fullStep.id)) continue;
+    steps.push({
+      stepId: fullStep.id,
+      stepType: fullStep.type,
+      executionStatus: "skipped",
+      score: 0,
+      criterionResults: [],
+      durationMs: undefined,
+      llmDurationMs: undefined,
+      tokens: undefined,
+      trackedCostUsd: undefined,
+    });
+  }
+
   // Build step-score inputs for suite score computation
   const stepScores: IStepScoreInput[] = steps.map((s) => {
     const stepDef = options.loadedScenario.steps.find((st) => st.id === s.stepId);

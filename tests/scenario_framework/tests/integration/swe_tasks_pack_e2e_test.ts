@@ -162,7 +162,7 @@ const CONFIG_AGREEMENT_CASES: IConfigAgreementCase[] = [
     name: "[SweTasksPackE2e] the opencode cell's config resolves $CELL_PROVIDER/$CELL_MODEL to opencode-cli",
     cellTool: "opencode",
     expectedProvider: "opencode-cli",
-    expectedModel: "opencode/deepseek-v4-flash-free",
+    expectedModel: "opencode-go/deepseek-v4-flash",
   },
 ];
 

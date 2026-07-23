@@ -18,6 +18,7 @@ import { describeSchema } from "@exaix/schemas/schema_describer.ts";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import { extractTomlActionBlocks } from "./toml_action_blocks.ts";
+import { tryParseXmlPlan } from "./xml_plan_parser.ts";
 
 // ============================================================================
 // Types
@@ -90,6 +91,31 @@ export class PlanAdapter {
    * @throws PlanValidationError if JSON is invalid or doesn't match schema
    */
   parse(content: string): Plan {
+    const trimmed = content.trim();
+
+    // Phase 141 Step 3a: strip prose around structured spans before parsing.
+    // LLMs commonly wrap structured output in prose ("I've added...\n<plan>...\n</plan>\nDone").
+    // Extract the first <plan>...</plan> span for XML path, or rely on extractJsonObjectSpan
+    // in json_repair.ts for the JSON path.
+
+    // Try to extract <plan>...</plan> span (non-greedy, first occurrence)
+    const planMatch = trimmed.match(/<plan>[\s\S]*?<\/plan>/);
+    const xmlContent = planMatch ? planMatch[0] : null;
+
+    if (xmlContent) {
+      const xmlResult = tryParseXmlPlan(xmlContent);
+      if (xmlResult.success) {
+        const validated = PlanSchema.safeParse(xmlResult.plan);
+        if (validated.success) {
+          return validated.data;
+        }
+        console.error(`[PlanAdapter] XML plan failed PlanSchema validation: ${JSON.stringify(validated.error.issues)}`);
+      } else {
+        console.error(`[PlanAdapter] XML plan parse failed: ${xmlResult.error}`);
+      }
+      // Fall through to JSON parsing if XML fails
+    }
+
     const { envelope, actionsByBlock } = extractTomlActionBlocks(content);
 
     if (actionsByBlock.size === 0) {
@@ -105,6 +131,14 @@ export class PlanAdapter {
     if (result.success && result.value) {
       return result.value;
     }
+
+    // Debug: log full model response when plan validation fails
+    const firstChars = content.length > 500 ? content.substring(0, 500) : content;
+    console.error(
+      `[PlanAdapter] parsePureJson FAILED: error="${
+        result.errors?.[0]?.message ?? "unknown"
+      }", content_length=${content.length}, first_500_chars="${firstChars.replace(/"/g, '\\"').replace(/\n/g, "\\n")}"`,
+    );
 
     // Map ValidationResult errors to PlanValidationError
     const message = result.errors?.[0]?.message || "Plan validation failed";
@@ -134,7 +168,15 @@ export class PlanAdapter {
     try {
       parsedEnvelope = JSON.parse(envelope);
     } catch (error) {
-      throw new PlanValidationError(error instanceof Error ? error.message : "Invalid JSON envelope", {
+      const msg = error instanceof Error ? error.message : "Invalid JSON envelope";
+      // Debug: log full raw content when envelope parse fails
+      const firstChars = rawContent.length > 500 ? rawContent.substring(0, 500) : rawContent;
+      console.error(
+        `[PlanAdapter] parseWithTomlActionBlocks FAILED: error="${msg}", rawContent_length=${rawContent.length}, envelope_length=${envelope.length}, first_500_chars="${
+          firstChars.replace(/"/g, '\\"').replace(/\n/g, "\\n")
+        }"`,
+      );
+      throw new PlanValidationError(msg, {
         zodErrors: null,
         rawContent,
         repairAttempted: false,
@@ -203,9 +245,39 @@ export class PlanAdapter {
   }
 
   /**
-   * Get machine-readable instructions for the required JSON schema
+   * Get machine-readable instructions for the required response format.
+   * @param useXml - When true, returns XML+Markdown format instructions (for providers
+   *   without native JSON enforcement like opencode CLI). Defaults to false (JSON).
    */
-  getSchemaInstructions(): string {
+  getSchemaInstructions(useXml: boolean = false): string {
+    if (useXml) {
+      return `
+Your response in the <content> section MUST be an XML plan with <plan>, <description>, and <step> tags.
+No JSON, no markdown code fences — only raw XML and Markdown text.
+
+<plan>
+  <title>Plan title (optional, 1-80 chars)</title>
+  <description>Plan description (required)</description>
+  <estimatedDuration>e.g. 2-3 hours (optional)</estimatedDuration>
+  <step number="1">
+    <title>Step title</title>
+    <description>Step description (optional, defaults to title)</description>
+    <tool>tool_name</tool>
+    <params>
+      <paramName>param value</paramName>
+    </params>
+    <successCriteria>
+      <item>First criterion</item>
+    </successCriteria>
+  </step>
+</plan>
+
+For steps needing multiple tool calls, repeat <tool> and <params> pairs.
+Do NOT write any prose preamble before or after the <plan> block.
+The first character after <content> MUST be <.
+`.trim();
+    }
+
     const schemaDesc = describeSchema(PlanSchema);
     return `
 Your response in the <content> section MUST be a valid JSON object matching this schema:

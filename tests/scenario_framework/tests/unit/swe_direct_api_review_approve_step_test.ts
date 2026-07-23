@@ -36,24 +36,24 @@ async function parseScenario(): Promise<ReturnType<typeof ScenarioSchema.parse>>
   return ScenarioSchema.parse(parseYaml(raw));
 }
 
-Deno.test("[swe_direct_api_review_approve] an approve-review step exists between wait-for-execution-completion and run-tests", async () => {
+Deno.test("[swe_direct_api_review_approve] an approve-review step exists between wait-for-execution-completion and verify-tests", async () => {
   const scenario = await parseScenario();
   const ids = scenario.steps.map((s) => s.id);
 
   const approveIndex = ids.indexOf("approve-review");
   const waitIndex = ids.indexOf("wait-for-execution-completion");
-  const runTestsIndex = ids.indexOf("run-tests");
+  const verifyTestsIndex = ids.indexOf("verify-tests");
 
   assert(approveIndex !== -1, "an 'approve-review' step must exist");
   assert(waitIndex !== -1, "'wait-for-execution-completion' step must exist");
-  assert(runTestsIndex !== -1, "'run-tests' step must exist");
+  assert(verifyTestsIndex !== -1, "'verify-tests' step must exist");
   assert(
     waitIndex < approveIndex,
     `approve-review (index ${approveIndex}) must come after wait-for-execution-completion (index ${waitIndex})`,
   );
   assert(
-    approveIndex < runTestsIndex,
-    `approve-review (index ${approveIndex}) must come before run-tests (index ${runTestsIndex})`,
+    approveIndex < verifyTestsIndex,
+    `approve-review (index ${approveIndex}) must come before verify-tests (index ${verifyTestsIndex})`,
   );
 });
 

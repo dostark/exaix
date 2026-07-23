@@ -190,7 +190,7 @@ export interface IAgentRunner {
 export interface IPlanAdapter {
   parseAndValidate(blueprint: IBlueprint, request: IParsedRequest): Promise<IAgentExecutionResult>;
   formatForModel?(blueprint: IBlueprint, request: IParsedRequest): string;
-  getSchemaInstructions(): string;
+  getSchemaInstructions(useXml?: boolean): string;
 }
 
 // ============================================================================
@@ -314,13 +314,18 @@ export class AgentRunner implements IAgentRunner {
     // Step 1: Construct the combined prompt (with skill context) (Phase 70).
     // Critical skills (W16) render into a separate, protected segment so the
     // output contract and hard constraints survive context-budget pressure.
+    let criticalSkillContext = renderCriticalSkillsSection(skillsContext);
+    const useXmlFormat = this.modelProvider.id.includes("opencode-cli-");
+    if (useXmlFormat && skillsContext) {
+      criticalSkillContext = await this.injectXmlResponseContract(skillsContext) ?? criticalSkillContext;
+    }
     const skillContextString = renderSkillsSection(skillsContext);
-    const criticalSkillContext = renderCriticalSkillsSection(skillsContext);
     const combinedPrompt = await this.constructPrompt(
       blueprint,
       request,
       skillContextString,
       criticalSkillContext,
+      useXmlFormat,
     );
 
     // Phase 70: Log prompt assembled event for observability
@@ -726,6 +731,7 @@ export class AgentRunner implements IAgentRunner {
     request: IParsedRequest,
     skillContext?: Opt<string, Reason.OptionalContext>,
     criticalSkillContext?: Opt<string, Reason.OptionalContext>,
+    useXmlFormat: boolean = false,
   ): Promise<string> {
     const k = ContextSegmentKindSchema.enum;
     type SegmentEntry = { content: string; kind: IContextSegment["kind"]; priority: number; nonCompactable: boolean };
@@ -743,7 +749,7 @@ export class AgentRunner implements IAgentRunner {
     if (skillContext?.trim()) {
       entries.push({ content: skillContext, kind: k.request, priority: 50, nonCompactable: false });
     }
-    const schemaInstructions = this.planAdapter.getSchemaInstructions();
+    const schemaInstructions = this.planAdapter.getSchemaInstructions(useXmlFormat);
     entries.push({ content: schemaInstructions, kind: k.acceptance_criteria, priority: 90, nonCompactable: true });
 
     const portalContext = request.context?.[PORTAL_CONTEXT_KEY];
@@ -850,6 +856,31 @@ export class AgentRunner implements IAgentRunner {
   }
 
   /**
+   * Phase 141 Step 3a: For opencode CLI providers (no native JSON enforcement),
+   * replace the JSON response-contract skill content with the XML variant.
+   * Returns the re-rendered critical skill context, or undefined if substitution
+   * was not possible.
+   */
+  private async injectXmlResponseContract(
+    skillsContext: ISkillsContext,
+  ): Promise<string | undefined> {
+    const xmlSkillId = "550e8400-e29b-41d4-a716-446655440013";
+    const xmlSkill = await this.skillsService?.getSkill(xmlSkillId).catch(() => null);
+    if (!xmlSkill) return undefined;
+
+    const idx = skillsContext.matched.findIndex(
+      (m) => m.tags.includes("response-contract") && m.tags.includes("output-format"),
+    );
+    if (idx === -1) return undefined;
+
+    skillsContext.matched[idx] = {
+      ...skillsContext.matched[idx],
+      content: typeof xmlSkill.instructions === "string" ? xmlSkill.instructions : skillsContext.matched[idx].content,
+    };
+    return renderCriticalSkillsSection(skillsContext);
+  }
+
+  /**
    * Log activity to IActivity Journal (if database provided)
    */
   private logActivity(
@@ -883,7 +914,7 @@ export class AgentRunner implements IAgentRunner {
 function createNoopPlanAdapter(): IPlanAdapter {
   return {
     parseAndValidate: () => Promise.resolve({ thought: "", content: "", raw: "" }),
-    getSchemaInstructions: () => "",
+    getSchemaInstructions: (_useXml?: boolean) => "",
   };
 }
 

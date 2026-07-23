@@ -15,3 +15,4 @@ export * from "./plan_executor.ts";
 export * from "./plan_writer.ts";
 export * from "./structured_plan_parser.ts";
 export * from "./toml_action_blocks.ts";
+export * from "./xml_plan_parser.ts";

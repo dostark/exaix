@@ -11,20 +11,16 @@ memory = "Memory"
 # swe_tasks provider-live cell verifying CliDelegateStrategy end-to-end with a SINGLE
 # provider/model/tool for every part of the test: request analysis, plan generation,
 # AND the code_changes step all run through the headless `opencode` CLI on
-# opencode/deepseek-v4-flash-free (free tier) — no ANTHROPIC_API_KEY or any metered
+# opencode-go/deepseek-v4-flash (Go tier) — no ANTHROPIC_API_KEY or any metered
 # HTTP API call is used anywhere in this run (allow_net is empty; the daemon never
 # dials out).
-# Note: opencode-go/deepseek-v4-flash (Go tier) was tested (2026-07-23) but regressed
-# on the add-feature scenario (free tier: 1.000; Go tier: 0.909 timeout). The Go tier
-# model takes longer and produces more variable output format. Keep free tier as the
-# default; switch to Go tier only after verifying it doesn't regress simpler scenarios.
 [ai]
 provider = "opencode-cli"
-model = "opencode/deepseek-v4-flash-free"
+model = "opencode-go/deepseek-v4-flash"
 
 [models.default]
 provider = "opencode-cli"
-model = "opencode/deepseek-v4-flash-free"
+model = "opencode-go/deepseek-v4-flash"
 timeout_ms = 300000
 
 [agents]
@@ -59,4 +55,4 @@ candidates = ["opencode-cli"]
 [cli_delegate]
 enabled = true
 tool = "opencode"
-model = "opencode/deepseek-v4-flash-free"
+model = "opencode-go/deepseek-v4-flash"
