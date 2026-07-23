@@ -65,10 +65,17 @@ Deno.test({
     await Deno.mkdir(worktreeDir, { recursive: true });
 
     try {
+      // Phase 140a Step 5: the portal config's target_path MUST point to the worktree dir
+      // (baseDir), not the live mounted portal. This mirrors what GitExecutionSetupService
+      // + PlanExecutor.createAgentExecutor do in a real WORKTREE-strategy plan: the execution
+      // root becomes the worktree path and ToolRegistry is constructed with that same root as
+      // baseDir. Without this, ToolRegistry.resolvePath's ownPortal check
+      // (tool_registry.ts:764-765) fails and the path falls through to PathResolver which
+      // resolves @todo-app aliases to the live mounted portal — bypassing worktree isolation.
       const config = createMockConfig(systemRoot, {
         portals: [{
           alias: PORTAL_ALIAS,
-          target_path: portalDir,
+          target_path: worktreeDir,
           default_branch: "main",
           identities_allowed: ["*"],
           operations: [],
