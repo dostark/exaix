@@ -114,6 +114,9 @@ export interface ICliDelegateModelProviderOptions {
  */
 export interface IOpencodeReadOnlyPermissionConfig {
   permission: {
+    read?: OpencodePermissionValue;
+    grep?: OpencodePermissionValue;
+    glob?: OpencodePermissionValue;
     edit: OpencodePermissionValue;
     bash: OpencodePermissionValue;
     task: OpencodePermissionValue;
