@@ -133,6 +133,7 @@ function buildEvalHistoryEntry(
       tracked_cost_usd: s.trackedCostUsd,
     })),
     ...aggregateStepMetrics(manifest.steps),
+    tags: manifest.tags,
     passed: opts?.thresholdPassed ?? manifest.outcome === "success",
     timestamp: new Date().toISOString(),
     component_versions: componentVersions,

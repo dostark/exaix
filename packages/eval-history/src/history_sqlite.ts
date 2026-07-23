@@ -14,11 +14,15 @@ import { dirname, resolve } from "@std/path";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IEvalHistoryEntry } from "./history_schema.ts";
 
+const EVAL_TABLE_RUNS = "eval_runs";
+const EVAL_SCHEMA_VERSION_INSERT = "INSERT OR IGNORE INTO eval_schema_version (version, description) VALUES ";
+
 interface IRunRow {
   run_id: string;
   run_timestamp: string;
   scenario_id: string;
   pack: string;
+  tags: string | null;
   suite_score: number;
   passed: number;
   mode: string;
@@ -31,7 +35,6 @@ interface IRunRow {
   provider: string | null;
   model: string | null;
   cell_id: string | null;
-  /** Scenario-level aggregates, Phase 140a Step 4. */
   total_llm_duration_ms: number | null;
   total_tokens_prompt: number | null;
   total_tokens_completion: number | null;
@@ -180,7 +183,7 @@ export class EvalSqliteStore {
     ).get<{ v: number }>()?.v ?? 0;
 
     if (currentVersion < 2) {
-      this.addColumns("eval_runs", [
+      this.addColumns(EVAL_TABLE_RUNS, [
         "step_count INTEGER",
         "suite_score_mean REAL",
         "suite_score_stdev REAL",
@@ -203,7 +206,7 @@ export class EvalSqliteStore {
         "execution_status TEXT",
       ]);
       this.db.exec(
-        "INSERT OR IGNORE INTO eval_schema_version (version, description) VALUES " +
+        EVAL_SCHEMA_VERSION_INSERT +
           "(1, 'Initial eval history schema: runs, steps, criteria'), " +
           "(2, 'Add step_count, multi-trial metrics, blueprint fields to eval_runs')",
       );
@@ -211,7 +214,7 @@ export class EvalSqliteStore {
 
     if (currentVersion < 3) {
       this.addColumns("eval_criteria_results", ["score REAL", "status TEXT", "judge TEXT"]);
-      this.addColumns("eval_runs", [
+      this.addColumns(EVAL_TABLE_RUNS, [
         "duration_ms INTEGER",
         "trace_id TEXT",
         "provider TEXT",
@@ -219,7 +222,7 @@ export class EvalSqliteStore {
         "cell_id TEXT",
       ]);
       this.db.exec(
-        "INSERT OR IGNORE INTO eval_schema_version (version, description) VALUES " +
+        EVAL_SCHEMA_VERSION_INSERT +
           "(3, 'Add score/status/judge to eval_criteria_results, duration_ms/trace_id/provider/model/cell_id to eval_runs')",
       );
     }
@@ -234,7 +237,7 @@ export class EvalSqliteStore {
         "tokens_cache_creation INTEGER",
         "tracked_cost_usd REAL",
       ]);
-      this.addColumns("eval_runs", [
+      this.addColumns(EVAL_TABLE_RUNS, [
         "total_llm_duration_ms INTEGER",
         "total_tokens_prompt INTEGER",
         "total_tokens_completion INTEGER",
@@ -243,8 +246,16 @@ export class EvalSqliteStore {
         "total_tracked_cost_usd REAL",
       ]);
       this.db.exec(
-        "INSERT OR IGNORE INTO eval_schema_version (version, description) VALUES " +
+        EVAL_SCHEMA_VERSION_INSERT +
           "(4, 'Add duration_ms to eval_run_steps (Phase 140a Step 1); add llm_duration_ms/tokens/tracked_cost_usd to eval_run_steps and eval_runs (Phase 140a Step 4)')",
+      );
+    }
+
+    if (currentVersion < 5) {
+      this.addColumns(EVAL_TABLE_RUNS, ["tags TEXT"]);
+      this.db.exec(
+        EVAL_SCHEMA_VERSION_INSERT +
+          "(5, 'Add tags column to eval_runs for task-family taxonomy (Phase 141 Step 1)')",
       );
     }
   }
@@ -275,13 +286,13 @@ export class EvalSqliteStore {
 
     const insertRun = this.db.prepare(
       `INSERT OR REPLACE INTO eval_runs
-        (run_id, run_timestamp, scenario_id, pack, suite_score, passed, mode, score_threshold,
+        (run_id, run_timestamp, scenario_id, pack, tags, suite_score, passed, mode, score_threshold,
          step_count, trials, suite_score_mean, suite_score_stdev, pass_at_1, pass_pow_k, pass_k,
          blueprint_id, blueprint_version, exactl_version, schema_version, trial_scores, metadata,
          duration_ms, trace_id, provider, model, cell_id,
          total_llm_duration_ms, total_tokens_prompt, total_tokens_completion,
          total_tokens_cache_read, total_tokens_cache_creation, total_tracked_cost_usd)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
     const insertStep = this.db.prepare(
@@ -304,6 +315,7 @@ export class EvalSqliteStore {
         entry.timestamp,
         entry.scenario_id,
         entry.pack ?? "",
+        entry.tags ? JSON.stringify(entry.tags) : null,
         entry.suite_score ?? 0,
         entry.passed ? 1 : 0,
         entry.mode,

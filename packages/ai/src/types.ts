@@ -5,7 +5,7 @@
  * @architectural-layer AI
  * @related-files [packages/ai/src/providers.ts, packages/ai/src/provider_registry.ts]
  */
-import type { ConfigSource, JSONValue, McpToolName, MockStrategy, ProviderType } from "@exaix/core";
+import type { ChatFormat, ConfigSource, JSONValue, McpToolName, MockStrategy, ProviderType } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { Config, EffortTier, IBlueprintFrontmatter, IModelCallOptions } from "@exaix/schemas";
 import type { IGenerateResult } from "./providers/common.ts";
@@ -122,6 +122,10 @@ export interface IModelOptions {
    *  tool_use + user tool_result) when continuing a native tool-use loop.
    *  Absent for every call today. */
   priorTurn?: IProviderTurn;
+  /** Chat protocol format for the provider. Default "anthropic" (Messages API
+   *  with content_blocks/tool_use). "openai" = Chat Completions API with
+   *  tool_calls/tool_call_id. "native" = Exaix TOML action blocks (Phase 151). */
+  chatFormat?: ChatFormat;
 }
 
 /**

@@ -1,0 +1,45 @@
+# Cell Catalog — maps short tool references to concrete evaluation cell definitions.
+# Scenarios reference tools by name (e.g. tool: "claude-code"); the catalog resolves
+# each name to its config path, provider identity, and required key/binary.
+# Adding a new provider or model tier requires only a new entry here — no YAML edits.
+#
+# Each entry:
+#   [tool.<name>]
+#   config       = path to the daemon config TOML (relative to repo root)
+#   provider     = provider label used in history attribution
+#   model        = model label used in history attribution
+#   requires_bin = (optional) binary that must be on PATH for this cell to be runnable
+#   requires_key = (optional) env var that must be set for this cell to be runnable
+#   native_tools = (optional, default false) whether ReActLoopStrategy uses native tool-calling
+
+[tool.claude-code]
+config = "configs/claude-cli-delegate-all.toml"
+provider = "claude-cli"
+model = "claude-sonnet-5"
+requires_bin = "claude"
+
+[tool.opencode]
+config = "configs/opencode-cli-delegate-all.toml"
+provider = "opencode-cli"
+model = "opencode/deepseek-v4-flash-free"
+requires_bin = "opencode"
+
+[tool.opencode-go]
+config = "configs/opencode-go-delegate-all.toml"
+provider = "opencode-cli"
+model = "opencode-go/deepseek-v4-flash"
+requires_bin = "opencode"
+
+[tool.exactl-native]
+config = "configs/anthropic-no-delegate.toml"
+provider = "anthropic"
+model = "claude-sonnet-5"
+requires_key = "ANTHROPIC_API_KEY"
+native_tools = true
+
+[tool.exactl-generic]
+config = "configs/anthropic-no-delegate.toml"
+provider = "anthropic"
+model = "claude-sonnet-5"
+requires_key = "ANTHROPIC_API_KEY"
+native_tools = false

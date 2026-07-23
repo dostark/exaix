@@ -51,6 +51,8 @@ export interface IRunManifest {
   cellId?: string;
   provider?: string;
   model?: string;
+  /** Task-family tags propagated to eval history. Phase 141 Step 1. */
+  tags?: string[];
 }
 
 export interface IWriteRunManifestOptions {
