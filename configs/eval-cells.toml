@@ -25,7 +25,7 @@ model = "opencode/deepseek-v4-flash-free"
 requires_bin = "opencode"
 
 [tool.opencode-go]
-config = "configs/opencode-cli-delegate-all.toml"
+config = "configs/opencode-go-delegate-all.toml"
 provider = "opencode-cli"
 model = "opencode-go/deepseek-v4-flash"
 requires_bin = "opencode"
