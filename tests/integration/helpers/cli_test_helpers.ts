@@ -23,7 +23,7 @@ export async function runExactl(
   args: string[],
   cwd: string,
 ): Promise<{ code: number; stdout: string; stderr: string }> {
-  const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
+  const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
   const exactlPath = join(repoRoot, "apps", "exactl", "main.ts");
 
   console.log(`Running CLI command: exactl ${args.join(" ")} in ${cwd}`);
