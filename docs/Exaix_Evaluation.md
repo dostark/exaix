@@ -221,7 +221,14 @@ This matches the pre-scoring behaviour exactly.
 
 ### 4.4 Score Threshold
 
-The `--score-threshold` flag gates the exit code:
+The `--score-threshold` flag gates the exit code (eval mode only). Exit codes:
+
+- **0**: All scenarios scored at or above threshold
+- **1**: One or more scenarios scored below threshold or failed
+- **2**: Infrastructure error (catalog load failure, runner exception outside
+  step execution)
+
+Default threshold is `0.5`.
 
 ```bash
 # Exit 1 if any scenario scores below 0.8
@@ -320,14 +327,23 @@ output_criteria:
 ### 6.3 Mock Mode
 
 In test/CI environments without an LLM endpoint, all `llm-judge` criteria return
-`PASSED` by default. To require a real endpoint:
+`SKIPPED` (excluded from scoring) by default. To force the old auto-pass behaviour
+for framework self-tests only:
+
+```bash
+EXA_EVAL_LLM_MOCK=pass exactl eval run --pack my-pack
+```
+
+To require a real endpoint:
 
 ```bash
 EXA_EVAL_LLM_MOCK=false exactl eval run --pack my-pack
 ```
 
-The LLM endpoint defaults to `http://127.0.0.1:11434/api/generate` (Ollama).
-Override via `EXA_LLM_ENDPOINT` and `EXA_LLM_MODEL`.
+The LLM provider is resolved via the `ModelResolver` path (see `ARCHITECTURE.md`).
+Configure via `EXA_LLM_PROVIDER` (e.g. `anthropic`, `openai`, `google`, `openrouter`, `ollama`)
+and `EXA_LLM_MODEL`. Each provider reads its own API key from its standard env var. Unset
+`EXA_LLM_PROVIDER` defaults to the Mock provider (no external call).
 
 ---
 
@@ -338,6 +354,12 @@ during a scenario step. It reads the journal to capture the actual tool calls
 and compares them to an expected sequence.
 
 ### 7.1 Basic Trajectory Assert
+
+Trajectory capture reads the daemon's journal (`activity` table) for
+`action_type = "dynamic_tool_call"` rows within the source step's execution rowid
+window. Each matched row's `payload.tool` and `payload.args` are compared against
+the expected sequence. `arg_contains`/`min_args`/`max_args` are enforced against
+the serialised `args` payload.
 
 ```yaml
 steps:
@@ -387,14 +409,17 @@ exactl eval run --pack smoke --trials 5 --score-threshold 0.7
 
 **Metrics reported:**
 
-| Metric      | Meaning                                 |
-| ----------- | --------------------------------------- |
-| `mean`      | Average score across trials             |
-| `min`       | Worst-case floor                        |
-| `max`       | Best-case ceiling                       |
-| `stdev`     | Consistency measure                     |
-| `pass_at_1` | Fraction of trials passing threshold    |
-| `pass^k`    | Consecutive passes before first failure |
+| Metric       | Meaning                                         |
+| ------------ | ----------------------------------------------- |
+| `mean`       | Average score across trials                     |
+| `min`        | Worst-case floor                                |
+| `max`        | Best-case ceiling                               |
+| `stdev`      | Consistency measure                             |
+| `pass_at_1`  | Fraction of trials passing threshold            |
+| `pass_pow_k` | Probability all N i.i.d. trials pass: `(c/n)^n` |
+
+The legacy `pass_k` column is retained for schema compatibility but is not
+written (always NULL in new runs).
 
 **Example interpretation:**
 
@@ -402,7 +427,7 @@ exactl eval run --pack smoke --trials 5 --score-threshold 0.7
 --trials 5, scores: [0.95, 0.88, 0.45, 0.92, 0.90]
 mean: 0.82, min: 0.45, max: 0.95, stdev: 0.19
 pass_at_1: 0.8 (4/5 passed threshold 0.7)
-pass^k: 2 (first 2 passed, 3rd failed)
+pass_pow_k: 0.32768 ((4/5)^5)
 ```
 
 ---
@@ -461,14 +486,27 @@ carries no such fields, not zeroed ones.
 
 ### 9.2 SQLite Storage
 
-By default, runs are also stored in `.exa/eval.db` with indexed tables
-(`eval_runs`, `eval_run_steps`, `eval_criteria_results`). This enables
-efficient queries and cross-run comparison.
+By default, runs are also stored in SQLite with indexed tables
+(`eval_runs`, `eval_run_steps`, `eval_criteria_results`) — the criteria
+results table is now populated with criterion-level scores, status, and
+judge provenance. This enables efficient queries and cross-run comparison.
+
+The DB path is resolved via `resolveEvalDbPath()`, which uses the workspace
+root by default, overridable via `EXA_EVAL_DB_PATH`. Previously the path was
+a CWD-relative `.exa/eval.db` that could disagree with the runner's own path;
+both the runner and `exactl eval history` now use the same resolution rule.
 
 Opt out of SQLite with:
 
 ```bash
 exactl eval run --pack smoke --history-format jsonl
+```
+
+View history from SQLite (default) or fall back to JSONL:
+
+```bash
+exactl eval history --last 10
+exactl eval history --source jsonl --last 10
 ```
 
 ### 9.3 Querying with `exactl eval history`
@@ -633,3 +671,38 @@ exactl eval compare --run-a $RUN_A --run-b $RUN_B | grep "delta"
 
 See `tests/scenario_framework/README.md` for architectural documentation,
 schema contracts, extension patterns, and validation sandbox setup.
+
+---
+
+## 13. swe_tasks Benchmark Pack
+
+The `swe_tasks` pack (`tests/scenario_framework/scenarios/swe_tasks/`) is a
+repeatable benchmark of typical software tasks (fix-bug, add-feature,
+refactor, write-tests) against the `todo_app` fixture portal. It exercises
+all three criterion families: deterministic weighted criteria
+(`command-exit-code`, `file-found`), trajectory-assert on expected tool
+sequences, and LLM-as-judge (`preset: GOAL_ALIGNED_REVIEW`).
+
+Each scenario has two variants:
+
+- **Provider-live** (e.g. `fix-bug-null-guard.yaml`): runs through the
+  configured `IModelProvider` (e.g. Anthropic) for both request analysis
+  and execution — requires `ANTHROPIC_API_KEY`.
+- **CLI-delegate** (e.g. `fix-bug-null-guard-cli-all.yaml`): runs entirely
+  through a headless `claude`/`opencode` CLI subprocess via
+  `CliDelegateStrategy`, authenticated against a flat-rate subscription.
+  Zero API key needed. Use `--cell claude-code` or `--cell opencode` to
+  select the tool explicitly.
+
+```bash
+# CLI-delegate path (cost-preferred, no API key)
+exactl eval run --scenario scenarios/swe_tasks/fix-bug-null-guard-cli-all.yaml \
+  --cell claude-code --eval-mode --score-threshold 0.6
+
+# Direct-API path (metered, requires ANTHROPIC_API_KEY)
+exactl eval run --scenario scenarios/swe_tasks/fix-bug-null-guard.yaml \
+  --eval-mode --score-threshold 0.6
+```
+
+See `tests/scenario_framework/README.md` §Headless CLI execution for
+`--cell` selection and config setup.

@@ -173,8 +173,16 @@ export class PlanAdapter {
     for (const step of steps) {
       if (step === null || typeof step !== "object") continue;
       const stepObj = step as IEnvelopeStep;
-      if (typeof stepObj.actions !== "string") continue;
-      const match = stepObj.actions.match(/^TOML_BLOCK:(\d+)$/);
+      // Accept both `actions: "TOML_BLOCK:N"` (bare string) and
+      // `actions: ["TOML_BLOCK:N"]` (array wrapping) — the latter is a common
+      // model output when the schema historically expected an array.
+      const actionsStr = typeof stepObj.actions === "string"
+        ? stepObj.actions
+        : Array.isArray(stepObj.actions) && stepObj.actions.length === 1 && typeof stepObj.actions[0] === "string"
+        ? stepObj.actions[0]
+        : undefined;
+      if (actionsStr === undefined) continue;
+      const match = actionsStr.match(/^TOML_BLOCK:(\d+)$/);
       if (!match) continue;
       const markerNumber = Number(match[1]);
       const actions = actionsByBlock.get(markerNumber);

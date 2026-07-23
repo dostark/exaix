@@ -2350,13 +2350,20 @@ results, and compares runs over time. Full documentation is in `docs/Exaix_Evalu
 exactl eval run --pack smoke
 exactl eval run --tag smoke --trials 5 --score-threshold 0.7
 
-# Query evaluation history
+# Run in eval mode (writes history, produces eval-report.json)
+exactl eval run --pack smoke --eval-mode --score-threshold 0.6
+
+# Query evaluation history (SQLite default, --source jsonl to fall back)
 exactl eval history --last 10
 exactl eval history --pack smoke --since 2026-06-01 --format json
+exactl eval history --source jsonl --last 10
 
 # Compare two evaluation runs side-by-side
 exactl eval compare --run-a <run-id> --run-b <run-id>
 ```
+
+Exit codes: `0` all passed, `1` one or more below threshold, `2` infrastructure
+error. Eval reports are written to the output directory as `eval-report.json`.
 
 ---
 

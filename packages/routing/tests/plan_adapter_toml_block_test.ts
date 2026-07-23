@@ -105,6 +105,26 @@ content = "a"
   assertEquals(typeof (error as PlanValidationError).details.rawContent, "string");
 });
 
+Deno.test('PlanAdapter.parse: array-wrapped sentinel ["TOML_BLOCK:1"] is handled (common model output when schema historically expected array)', () => {
+  const adapter = new PlanAdapter();
+  const rawContent =
+    `{"title": "Add endpoint", "description": "Add", "steps": [{"step": 1, "title": "Impl", "description": "Add", "actions": ["TOML_BLOCK:1"]}]}
+
+\`\`\`toml
+# TOML_BLOCK:1
+tool = "write_file"
+description = "Add handler"
+[params]
+path = "src/api.ts"
+content = "export function hc(): void {}"
+\`\`\`
+`;
+
+  const plan = adapter.parse(rawContent);
+  assertEquals(plan.steps?.[0].actions?.length, 1);
+  assertEquals(plan.steps?.[0].actions?.[0].tool, "write_file");
+});
+
 Deno.test("PlanAdapter.parse: metrics divergence — TOML_BLOCK path does not increment OutputValidator totalAttempts, pure-JSON path does", () => {
   const adapter = new PlanAdapter();
 

@@ -11,8 +11,13 @@ memory = "Memory"
 # swe_tasks provider-live cell verifying CliDelegateStrategy end-to-end with a SINGLE
 # provider/model/tool for every part of the test: request analysis, plan generation,
 # AND the code_changes step all run through the headless `opencode` CLI on
-# opencode/deepseek-v4-flash-free — no ANTHROPIC_API_KEY or any metered HTTP API call
-# is used anywhere in this run (allow_net is empty; the daemon never dials out).
+# opencode/deepseek-v4-flash-free (free tier) — no ANTHROPIC_API_KEY or any metered
+# HTTP API call is used anywhere in this run (allow_net is empty; the daemon never
+# dials out).
+# Note: opencode-go/deepseek-v4-flash (Go tier) was tested (2026-07-23) but regressed
+# on the add-feature scenario (free tier: 1.000; Go tier: 0.909 timeout). The Go tier
+# model takes longer and produces more variable output format. Keep free tier as the
+# default; switch to Go tier only after verifying it doesn't regress simpler scenarios.
 [ai]
 provider = "opencode-cli"
 model = "opencode/deepseek-v4-flash-free"
@@ -51,9 +56,6 @@ candidates = ["opencode-cli"]
 # dispatches to it only for a blueprint whose capabilities include "cli_delegate" (the scenario
 # patches a SANDBOXED COPY of senior-coder.md, not the real Blueprints/, to add that capability).
 # Same model as [ai]/[models.default] above — every part of the test uses one tool/model.
-# deepseek-v4-flash-free is used instead of the paid deepseek-v4-flash because the OpenCode Zen
-# account backing this environment has insufficient balance on the paid tier (confirmed via a
-# manual `opencode run --model opencode/deepseek-v4-flash` probe returning "Insufficient balance").
 [cli_delegate]
 enabled = true
 tool = "opencode"

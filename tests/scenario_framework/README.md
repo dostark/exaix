@@ -55,6 +55,15 @@ They work in any workspace, including CI pre-push hooks.
 - **Multi-trial metrics**: `--trials N` reports mean, min, max, stdev, Pass@k.
 - **History**: SQLite (default) + JSONL dual-write per run.
 
+- **LLM-judge SKIPPED behaviour**: When no LLM provider is configured, the judge
+  returns `SKIPPED` (excluded from scoring) rather than fake `PASSED`. Set
+  `EXA_EVAL_LLM_MOCK=pass` to restore the old auto-pass for framework self-tests.
+- **Exit codes**: `0` all passed, `1` one or more below threshold, `2` infrastructure
+  error (catalog load failure, runner exception outside step execution).
+- **History**: `exactl eval history` reads from SQLite by default; `--source jsonl`
+  falls back to JSONL. The DB path is workspace-rooted, overridable via
+  `EXA_EVAL_DB_PATH`.
+
 See **[`docs/Exaix_Evaluation.md`](../../docs/Exaix_Evaluation.md)** for the full
 CLI reference, scoring formulas, scenario authoring guide, and CI integration.
 

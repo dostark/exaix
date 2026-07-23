@@ -610,6 +610,16 @@ AgentExecutor (dispatcher)
 
 **AgentExecutor trajectory:** ~1750 lines → ~950 lines, 16 direct deps → 11 deps.
 
+**Trajectory evaluation contract:** the scenario framework's `trajectory-assert`
+step type reads `action_type = "dynamic_tool_call"` rows from the `activity`
+table (the `ReActLoopStrategy` journals tool calls via `ActivityJournal.log()`
+with `tool`/`args` in the JSON `payload` column). It does NOT read
+`MILESTONE_TOOL_CALL_STARTED`/`COMPLETED` milestone events, which are a separate
+best-effort UX stream (NDJSON + in-memory event bus) and never reach the
+`activity` table. The two event families serve different consumers and must not
+be conflated — see `tests/scenario_framework/tests/unit/trajectory_evaluator_test.ts`
+for the parity guard.
+
 **Design rationale:**
 
 - Each service is **independently constructable and testable** — no service depends on AgentExecutor or another service.

@@ -143,6 +143,9 @@ await new Command()
         const trialOutputDir = trials > 1
           ? resolve(runtimeConfig.output_dir, `trial-${trial}`)
           : runtimeConfig.output_dir;
+        const trialWorkspaceRoot = trials > 1
+          ? resolve(runtimeConfig.workspace_path, `trial-${trial}`)
+          : runtimeConfig.workspace_path;
 
         console.log(`${trialLabel} Running...`);
 
@@ -150,7 +153,7 @@ await new Command()
           const result = await runSyntheticScenario({
             frameworkHome,
             scenarioPath: entry.scenario_path,
-            workspaceRoot: runtimeConfig.workspace_path,
+            workspaceRoot: trialWorkspaceRoot,
             outputDir: trialOutputDir,
             mode: runtimeConfig.mode,
             interactiveAllowed: runtimeConfig.mode !== ScenarioExecutionMode.AUTO,
