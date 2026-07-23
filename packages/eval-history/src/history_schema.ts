@@ -76,6 +76,8 @@ export const EvalHistoryEntrySchema = z.object({
   total_tokens_cache_creation: z.number().int().min(0).optional(),
   /** Sum of only the steps with a defined tracked_cost_usd — never a predicted figure. */
   total_tracked_cost_usd: z.number().min(0).optional(),
+  /** Task-family tags propagated from scenario manifest. Phase 141 Step 1. */
+  tags: z.array(z.string()).optional(),
   component_versions: z.object({
     binary_version: z.string(),
     schema_version: z.string(),
