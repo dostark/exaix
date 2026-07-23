@@ -245,39 +245,9 @@ export class PlanAdapter {
   }
 
   /**
-   * Get machine-readable instructions for the required response format.
-   * @param useXml - When true, returns XML+Markdown format instructions (for providers
-   *   without native JSON enforcement like opencode CLI). Defaults to false (JSON).
+   * Get machine-readable instructions for the required JSON schema
    */
-  getSchemaInstructions(useXml: boolean = false): string {
-    if (useXml) {
-      return `
-Your response in the <content> section MUST be an XML plan with <plan>, <description>, and <step> tags.
-No JSON, no markdown code fences — only raw XML and Markdown text.
-
-<plan>
-  <title>Plan title (optional, 1-80 chars)</title>
-  <description>Plan description (required)</description>
-  <estimatedDuration>e.g. 2-3 hours (optional)</estimatedDuration>
-  <step number="1">
-    <title>Step title</title>
-    <description>Step description (optional, defaults to title)</description>
-    <tool>tool_name</tool>
-    <params>
-      <paramName>param value</paramName>
-    </params>
-    <successCriteria>
-      <item>First criterion</item>
-    </successCriteria>
-  </step>
-</plan>
-
-For steps needing multiple tool calls, repeat <tool> and <params> pairs.
-Do NOT write any prose preamble before or after the <plan> block.
-The first character after <content> MUST be <.
-`.trim();
-    }
-
+  getSchemaInstructions(): string {
     const schemaDesc = describeSchema(PlanSchema);
     return `
 Your response in the <content> section MUST be a valid JSON object matching this schema:
