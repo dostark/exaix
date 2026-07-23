@@ -41,6 +41,9 @@ export interface IIntegrityResult {
 /** Identities exempt from the orphan-identity rule (invoked directly, not via flows). */
 const EXEMPT_IDENTITY_IDS: ReadonlySet<string> = new Set(["default"]);
 
+/** Skills exempt from the orphan-skill rule (loaded dynamically at runtime, not via default_skills). */
+const DYNAMIC_SKILL_IDS: ReadonlySet<string> = new Set(["response-contract-xml"]);
+
 interface IIdentityRecord {
   id: string;
   model: string;
@@ -163,8 +166,9 @@ export function checkBlueprintIntegrity(blueprintsDir: string): IIntegrityResult
   }
 
   // 4. orphan-skill: every skill must be referenced by >=1 identity.
+  //    Skills in DYNAMIC_SKILL_IDS are loaded at runtime by AgentRunner and are exempt.
   for (const id of skillIds) {
-    if (!usedSkills.has(id)) {
+    if (!usedSkills.has(id) && !DYNAMIC_SKILL_IDS.has(id)) {
       violations.push({
         kind: "orphan-skill",
         detail:
