@@ -1,0 +1,30 @@
+diff --git a/src/business_logic.ts b/src/business_logic.ts
+index 14421a2..4461a64 100644
+--- a/src/business_logic.ts
++++ b/src/business_logic.ts
+@@ -64,12 +64,24 @@ export async function processBatchSubmissions(
+   addTask: (task: ITask) => Promise<void>,
+ ): Promise<ITaskSubmissionResult[]> {
+   const results: ITaskSubmissionResult[] = [];
+-  const existing = [...await getExistingTasks()];
++  const existing = await getExistingTasks();
++  const titleCount = new Map<string, number>();
++
++  for (const task of existing) {
++    titleCount.set(task.title, (titleCount.get(task.title) ?? 0) + 1);
++  }
+ 
+   for (const sub of submissions) {
++    const count = titleCount.get(sub.title) ?? 0;
++    if (count >= 3) {
++      results.push({ success: false, errors: ["Too many tasks with this title already exist"] });
++      continue;
++    }
++
+     const result = processTaskSubmission(sub.title, sub.rawPriority, sub.dueDate, sub.assignee, existing);
+     if (result.success && result.task) {
+       await addTask(result.task);
++      titleCount.set(sub.title, count + 1);
+     }
+     results.push(result);
+   }

@@ -1,0 +1,27 @@
+diff --git a/src/storage.ts b/src/storage.ts
+index d02e590..724393e 100644
+--- a/src/storage.ts
++++ b/src/storage.ts
+@@ -1,5 +1,11 @@
+ import type { ITask } from "./models.ts";
+ 
++function isPathSafe(filePath: string, allowedDir: string): boolean {
++  const resolved = Deno.realPathSync(filePath).replace(/\\/g, "/");
++  const allowed = allowedDir.replace(/\\/g, "/");
++  return resolved.startsWith(allowed);
++}
++
+ export class TaskRepository {
+   private tasks = new Map<string, ITask>();
+ 
+@@ -28,6 +34,10 @@ export class TaskRepository {
+   }
+ 
+   async importFromFile(filePath: string): Promise<number> {
++    const allowedDir = Deno.cwd();
++    if (!isPathSafe(filePath, allowedDir)) {
++      throw new Error(`Path traversal blocked: ${filePath}`);
++    }
+     const content = await Deno.readTextFile(filePath);
+     const data = JSON.parse(content);
+     let count = 0;

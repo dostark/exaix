@@ -1,0 +1,10 @@
+{
+  "base_ref": "0bb4b36c9c3ead891178908641e9d82e2cac721d",
+  "scoped_test_cmd": "deno test src/business_logic_test.ts",
+  "expected_fail_tests": ["src/business_logic_test.ts"],
+  "portal": "todo_app_async_bug",
+  "family": "task:bug-fix",
+  "difficulty": "M",
+  "min_turns": 3,
+  "title": "Fix async ordering — processBatchSubmissions must track in-flight duplicates"
+}

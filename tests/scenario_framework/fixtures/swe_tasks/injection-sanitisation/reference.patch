@@ -1,0 +1,18 @@
+diff --git a/src/api.ts b/src/api.ts
+index 80e13e9..158acf5 100644
+--- a/src/api.ts
++++ b/src/api.ts
+@@ -50,6 +50,12 @@ export function handleCompleteTask(repo: TaskRepository, req: IRequest, res: IRe
+ export function handleSearchTasks(repo: TaskRepository, req: IRequest, res: IResponse): void {
+   const query = req.body.query;
+   const tasks = repo.list();
+-  const results = tasks.filter((t) => new Function("t", `return ${query}`)(t));
++  if (typeof query !== "string") {
++    res.status(400).json({ error: "Query must be a string" });
++    return;
++  }
++  const results = tasks.filter((t) =>
++    t.title.toLowerCase().includes(query.toLowerCase())
++  );
+   res.json(results);
+ }

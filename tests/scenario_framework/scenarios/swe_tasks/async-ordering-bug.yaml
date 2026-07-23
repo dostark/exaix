@@ -1,9 +1,9 @@
 schema_version: "1.0.0"
-id: "swe-refactor-extract-function"
-title: "Refactor processTaskSubmission into smaller functions"
+id: "swe-async-ordering-bug"
+title: "Fix async ordering — processBatchSubmissions must track in-flight duplicates"
 pack: "swe_tasks"
 tags: ["swe", "provider-live"]
-request_fixture: "fixtures/requests/swe_tasks/refactor-extract-function.md"
+request_fixture: "fixtures/requests/swe_tasks/async-ordering-bug.md"
 portals: []
 mode_support: ["auto"]
 matrix:
@@ -37,7 +37,7 @@ steps:
     command: "sh"
     args: [
       "-c",
-      "cp -r \"$FRAMEWORK_HOME/fixtures/portals/todo_app\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'",
+      "cp -r \"$FRAMEWORK_HOME/fixtures/portals/todo_app_async_bug\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'",
     ]
     output_criteria:
       - id: "portal-repo-initialized"

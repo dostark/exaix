@@ -2,7 +2,7 @@
  * @module SweCliAllReviewApproveStepTest
  * @path tests/scenario_framework/tests/unit/swe_cli_all_review_approve_step_test.ts
  * @description RED-first tests for the missing approve-review step in
- *   fix-bug-null-guard-cli-all.yaml. PortalExecutionStrategy.WORKTREE (forced for every plan
+ *   fix-bug-null-guard-cli-all-legacy.yaml. PortalExecutionStrategy.WORKTREE (forced for every plan
  *   whose frontmatter carries a portal — packages/execution/src/git_execution_setup_service.ts)
  *   applies to CliDelegateStrategy exactly like every other strategy; without an approve step
  *   between execution and run-tests, the agent's commit lands only in
@@ -13,7 +13,7 @@
  *   worktree" comment (factually wrong — CliDelegateStrategy gets no exemption from the
  *   WORKTREE-forcing rule) is gone.
  * @architectural-layer Test
- * @related-files [tests/scenario_framework/scenarios/swe_tasks/fix-bug-null-guard-cli-all.yaml, tests/integration/portal_worktree_review_cleanup_e2e_test.ts, tests/scenario_framework/tests/unit/delegate_matrix_scenario_test.ts]
+ * @related-files [tests/scenario_framework/scenarios/swe_tasks/fix-bug-null-guard-cli-all-legacy.yaml, tests/integration/portal_worktree_review_cleanup_e2e_test.ts, tests/scenario_framework/tests/unit/delegate_matrix_scenario_test.ts]
  */
 
 import { assert, assertEquals } from "@std/assert";
@@ -26,7 +26,7 @@ import { ScenarioSchema } from "../../schema/scenario_schema.ts";
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
 const SCENARIO_PATH = join(
   REPO_ROOT,
-  "tests/scenario_framework/scenarios/swe_tasks/fix-bug-null-guard-cli-all.yaml",
+  "tests/scenario_framework/scenarios/swe_tasks/fix-bug-null-guard-cli-all-legacy.yaml",
 );
 const FRAMEWORK_HOME = resolve(fromFileUrl(new URL(".", import.meta.url)), "../..");
 

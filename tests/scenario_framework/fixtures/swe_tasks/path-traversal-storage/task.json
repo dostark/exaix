@@ -1,0 +1,10 @@
+{
+  "base_ref": "438a85d3a551553ffa35303acc2b85ef96009125",
+  "scoped_test_cmd": "deno test src/storage_test.ts",
+  "expected_fail_tests": ["src/storage_test.ts"],
+  "portal": "todo_app_path_traversal",
+  "family": "task:security-fix",
+  "difficulty": "S",
+  "min_turns": 2,
+  "title": "Fix path traversal in TaskRepository.importFromFile"
+}

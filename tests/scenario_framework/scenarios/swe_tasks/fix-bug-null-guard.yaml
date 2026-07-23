@@ -1,58 +1,48 @@
 schema_version: "1.0.0"
 id: "swe-fix-bug-null-guard"
-title: "Fix null-safety bugs in todo-app display formatting (provider-live)"
+title: "Fix null-safety bugs in formatAssignee and formatDueDate"
 pack: "swe_tasks"
-tags: ["swe", "fix-bug", "provider-live"]
+tags: ["swe", "provider-live"]
 request_fixture: "fixtures/requests/swe_tasks/fix-bug-null-guard.md"
 portals: []
 mode_support: ["auto"]
-
 matrix:
   cells:
+    - tool: "claude-code"
+      provider: "$CELL_PROVIDER"
+      config: "configs/claude-cli-delegate-all.toml"
+      requires_bin: "claude"
+    - tool: "opencode"
+      provider: "$CELL_PROVIDER"
+      config: "configs/opencode-cli-delegate-all.toml"
+      requires_bin: "opencode"
     - tool: "exactl"
       provider: "anthropic"
       config: "configs/anthropic-no-delegate.toml"
       requires_bin: "true"
       requires_key: "ANTHROPIC_API_KEY"
-
 steps:
   - id: "setup-db"
     type: "shell"
     command: "deno"
-    args:
-      [
-        "run",
-        "-A",
-        "--config",
-        "$FRAMEWORK_HOME/../../deno.json",
-        "$FRAMEWORK_HOME/../../scripts/setup_db.ts",
-      ]
+    args: ["run", "-A", "--config", "$FRAMEWORK_HOME/../../deno.json", "$FRAMEWORK_HOME/../../scripts/setup_db.ts"]
     env:
       EXA_MIGRATIONS_DIR: "$FRAMEWORK_HOME/../../migrations"
     output_criteria:
       - id: "setup-done"
         kind: "command-exit-code"
         equals: 0
-
-  # The code_changes execution path forces PortalExecutionStrategy.WORKTREE for any plan whose
-  # frontmatter carries a portal (git_execution_setup_service.ts:getExecutionStrategy) — so the
-  # portal MUST be a real git repo. Copy the read-only todo_app_null_guard_bug fixture (the only
-  # copy carrying this scenario's deliberate null-safety bug — the shared todo_app fixture used
-  # by other swe_tasks scenarios is null-safe by default) into the workspace and git-init+commit
-  # it, then mount THAT (next step), mirroring session_delegate_matrix_live.yaml.
   - id: "setup-portal-repo"
     type: "shell"
     command: "sh"
-    args:
-      [
-        "-c",
-        "cp -r \"$FRAMEWORK_HOME/fixtures/portals/todo_app_null_guard_bug\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'",
-      ]
+    args: [
+      "-c",
+      "cp -r \"$FRAMEWORK_HOME/fixtures/portals/todo_app_null_guard_bug\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'",
+    ]
     output_criteria:
       - id: "portal-repo-initialized"
         kind: "command-exit-code"
         equals: 0
-
   - id: "setup-blueprints"
     type: "shell"
     command: "cp"
@@ -61,12 +51,17 @@ steps:
       - id: "blueprints-copied"
         kind: "command-exit-code"
         equals: 0
-
-  # SkillsService (wired into the daemon's analysis AgentRunner) reads compiled JSON skill
-  # files from <workspace>/Memory/Skills/ — a separate representation from the human-authored
-  # .skill.md files under Blueprints/Skills/. Without this copy, default_skills (e.g.
-  # response-contract, the <thought>/<content> format contract) resolve to nothing and the
-  # request-analysis LLM call never sees the contract instructions.
+  - id: "patch-blueprint-capability"
+    type: "shell"
+    command: "sh"
+    args: [
+      "-c",
+      "sed -i s/\"react\"/\"react\", \"cli_delegate\"/ $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md && grep -q cli_delegate $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md",
+    ]
+    output_criteria:
+      - id: "capability-patched"
+        kind: "command-exit-code"
+        equals: 0
   - id: "setup-memory"
     type: "shell"
     command: "cp"
@@ -75,12 +70,6 @@ steps:
       - id: "memory-copied"
         kind: "command-exit-code"
         equals: 0
-
-  # The matrix cell's config (configs/anthropic-no-delegate.toml) is overlaid onto this step's
-  # EXA_CONFIG_PATH by expandMatrix/materializeCellConfig — real Anthropic for analysis AND
-  # execution, session_delegate.enabled = false so execution runs through the daemon's own
-  # AgentExecutor/DynamicStepExecutor, journalling real dynamic_tool_call events
-  # (trajectory-assert's source) instead of routing every step to a headless CLI delegate.
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"
@@ -89,7 +78,6 @@ steps:
       - id: "daemon-started"
         kind: "command-output-contains"
         contains: ["daemon.started"]
-
   - id: "add-portal"
     type: "exactl"
     command: "portal"
@@ -98,9 +86,6 @@ steps:
       - id: "portal-added"
         kind: "command-exit-code"
         equals: 0
-
-  # A running daemon does not hot-reload config; restart to pick up the newly-registered portal
-  # (README §2.2: portal add -> daemon stop && daemon start), mirroring session_delegate_matrix_live.yaml.
   - id: "restart-daemon"
     type: "exactl"
     command: "daemon"
@@ -109,14 +94,12 @@ steps:
       - id: "daemon-restarted"
         kind: "command-output-contains"
         contains: ["daemon.restarted"]
-
   - id: "wait-for-daemon-ready"
     type: "wait-for-journal-event"
     event_type: "daemon.ready"
     timeout_sec: 30
     input_criteria: []
     output_criteria: []
-
   - id: "submit-request"
     type: "exactl"
     command: "request"
@@ -125,25 +108,17 @@ steps:
       - id: "request-submitted"
         kind: "command-output-contains"
         contains: ["request.created"]
-
-  # The plan file is produced asynchronously by the daemon AFTER submit-request returns,
-  # so the plan-produced score criterion lives here (where the file actually exists) rather
-  # than on submit-request, which would otherwise always fail its file check at submit time.
-  - id: "wait-for-plan"
-    type: "wait-for-file"
-    args: ["**/Plans/*_plan.md"]
-    # A rejected plan writes to Workspace/Rejected/ within seconds — fail fast on that
-    # instead of burning the full 180s timeout waiting for a plan that already can't
-    # exist, and surface the real rejection reason instead of a generic timeout.
-    failure_glob: "**/Workspace/Rejected/*_rejected.md"
-    timeout_sec: 180
-    input_criteria: []
-    output_criteria:
       - id: "plan-produced"
         kind: "file-found"
         path_pattern: "**/Plans/*_plan.md"
         score_weight: 0.15
-
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 180
+    failure_glob: "**/Workspace/Rejected/*_rejected.md"
+    input_criteria: []
+    output_criteria: []
   - id: "approve-plan"
     type: "exactl"
     command: "plan"
@@ -152,7 +127,6 @@ steps:
       - id: "plan-approved"
         kind: "command-output-contains"
         contains: ["approved"]
-
   - id: "wait-for-execution-completion"
     type: "wait-for-file"
     args: ["**/Archive/*_plan.md"]
@@ -162,108 +136,74 @@ steps:
         kind: "file-found"
         path_pattern: "**/Archive/*_plan.md"
         score_weight: 0.15
-
-  # PortalExecutionStrategy.WORKTREE (GitExecutionSetupService.getExecutionStrategy) is forced
-  # for every plan whose frontmatter carries a portal — the direct-API path (ReActLoopStrategy/
-  # LegacyAgentStrategy, session_delegate.enabled = false) gets no exemption from this: its tool
-  # calls resolve through ToolRegistry, whose baseDir is the worktree checkout for a
-  # WORKTREE-strategy plan (PlanExecutor.createAgentExecutor). So the agent's fix lands only in
-  # .exa/worktrees/<portal>/<trace_id>/ until a review is approved. Discover this run's trace_id
-  # from the journal (activity.trace_id, populated synchronously by request.created — no need to
-  # wait for anything execution-time) and approve via the request_id shorthand
-  # ("request-<first 8 chars of trace_id>", matching RequestCreateHandler's own
-  # filename/branch-naming convention) — ReviewCommands.show/approve accept it directly, no need
-  # to know the full feat/<request_id>-<traceSuffix> branch name. This exercises the same
-  # merge-back path already proven end-to-end by
-  # tests/integration/portal_worktree_review_cleanup_e2e_test.ts ("review approve removes
-  # worktree, pointer, and feature branch"). Does not touch session_delegate — this cell's
-  # config declares no [session_delegate] block.
   - id: "approve-review"
     type: "shell"
     command: "sh"
-    args:
-      [
-        "-c",
-        # This step's "sh" resolves to dash on Debian/Ubuntu (no bash), which does not support
-        # bash's ${var:0:8} substring syntax ("Bad substitution", exit 2) — use `cut` instead.
-        # The daemon journals TWO request.created rows per real request: the CLI's own
-        # submission (request_create_handler.ts) and an independent daemon-side re-detection
-        # (packages/request/src/service.ts) — both can share the same millisecond timestamp,
-        # so ORDER BY timestamp is not deterministic. rowid is monotonic and tie-free; ASC +
-        # LIMIT 1 deterministically selects the first-inserted (CLI-submitted) row.
-        "trace_id=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT trace_id FROM activity WHERE action_type = 'request.created' ORDER BY rowid ASC LIMIT 1\"); short_id=$(printf '%s' \"$trace_id\" | cut -c1-8); echo \"trace_id: $trace_id\"; \"$FRAMEWORK_HOME/bin/exactl\" review approve \"request-$short_id\"",
-      ]
+    args: [
+      "-c",
+      "trace_id=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT trace_id FROM activity WHERE action_type = 'request.created' ORDER BY rowid ASC LIMIT 1\"); short_id=$(printf '%s' \"$trace_id\" | cut -c1-8); echo \"trace_id: $trace_id\"; \"$FRAMEWORK_HOME/bin/exactl\" review approve \"request-$short_id\"",
+    ]
     output_criteria:
       - id: "review-approved"
         kind: "command-output-contains"
         contains: ["review.approved"]
         score_weight: 0.15
-
-  # run-tests now checks the mounted portal only AFTER approve-review has merged the worktree
-  # branch in — before that step existed, this always ran against stale, unfixed code.
-  - id: "run-tests"
+  - id: "verify-tests"
     type: "shell"
     command: "sh"
-    args:
-      [
-        "-c",
-        "cd \"$WORKSPACE_ROOT/todo-app\" && deno test src/",
-      ]
+    args: ["-c", "cd \"$WORKSPACE_ROOT/todo-app\" && deno test src/"]
     output_criteria:
       - id: "tests-pass"
         kind: "command-exit-code"
         equals: 0
         score_weight: 0.3
-
-  # The fix-bug skill makes patch_file the primary edit tool for a minimal bug fix
-  # (write_file is only a fallback for full rewrites), so the expected trajectory is
-  # read_file + patch_file. allow_extra_tools tolerates a stray write_file/list_directory.
-  - id: "assert-trajectory"
-    type: "trajectory-assert"
-    source_step: "wait-for-execution-completion"
-    expected_sequence:
-      - tool: "read_file"
-      - tool: "patch_file"
-    order_matters: false
-    allow_extra_tools: true
-    partial_credit: true
-    input_criteria: []
-    output_criteria: []
-
+  - id: "assert-no-dynamic-tool-calls"
+    type: "shell"
+    command: "sh"
+    args: [
+      "-c",
+      "count=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COUNT(*) FROM activity WHERE action_type = 'dynamic_tool_call'\"); echo \"dynamic_tool_call count: $count\"; test \"$count\" = \"0\"",
+    ]
+    output_criteria:
+      - id: "no-dynamic-tool-calls"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.2
+  - id: "assert-files-changed"
+    type: "shell"
+    command: "sh"
+    args: [
+      "-c",
+      "n=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COALESCE(SUM(json_extract(payload,'$.files_changed')),0) FROM activity WHERE action_type = 'agent.execution_completed'\"); echo \"files_changed total: $n\"; test \"$n\" -gt 0",
+    ]
+    output_criteria:
+      - id: "files-changed-nonempty"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.2
   - id: "prepare-llm-judge-evidence"
     type: "shell"
     command: "sh"
-    args:
-      [
-        "-c",
-        "cat \"$WORKSPACE_ROOT/todo-app/src/utils.ts\" > \"$WORKSPACE_ROOT/llm-judge-input.txt\"",
-      ]
+    args: ["-c", "cat \"$WORKSPACE_ROOT/todo-app/src/main.ts\" > \"$WORKSPACE_ROOT/llm-judge-input.txt\""]
     output_criteria:
       - id: "evidence-prepared"
         kind: "command-exit-code"
         equals: 0
-
   - id: "judge-quality"
     type: "shell"
     command: "sh"
     args: ["-c", "true"]
-    # A real Anthropic judge (not the mock). EXA_LLM_PROVIDER selects the provider the eval
-    # harness resolves; without it, callLlmEndpoint's real-LLM path errors ("provider required").
-    # step_pass_threshold: a near-perfect (but not 1.0) judge score is still a pass —
-    # only a score below 0.8 flips the scenario outcome to scenario-failure.
     step_pass_threshold: 0.8
     env:
       EXA_EVAL_LLM_MOCK: "false"
-      EXA_LLM_PROVIDER: "anthropic"
-      EXA_EVAL_MODEL_SIZE: "M"
     output_criteria:
       - id: "llm-judge-quality"
         kind: "llm-judge"
         preset: "GOAL_ALIGNED_REVIEW"
         evidence_path: "llm-judge-input.txt"
+        context_path: "$REQUEST_FIXTURE"
         score_threshold: 0.5
         score_weight: 0.4
-
   - id: "stop-daemon"
     type: "exactl"
     command: "daemon"

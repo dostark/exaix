@@ -1,18 +1,27 @@
 schema_version: "1.0.0"
-id: "swe-add-feature-endpoint-cli-all"
-title: "Add a complete-task endpoint to the todo-app API entirely via a headless CLI subscription (analysis, planning, and code_changes — zero API key)"
+id: "swe-fix-bug-null-guard-cli-all-legacy"
+title: "Fix null-safety bugs in todo-app entirely via a headless CLI subscription (analysis, planning, and code_changes — zero API key)"
 pack: "swe_tasks"
-tags: ["swe", "add-feature", "provider-live", "cli-delegate", "no-api-key"]
-request_fixture: "fixtures/requests/swe_tasks/add-feature-endpoint.md"
+tags: ["swe", "swe-legacy", "fix-bug", "provider-live", "cli-delegate", "no-api-key"]
+request_fixture: "fixtures/requests/swe_tasks/fix-bug-null-guard.md"
 portals: []
 mode_support: ["auto"]
 
 # Two cells, one per supported CLI-delegate tool. The runner only ever executes the FIRST
-# cell with status "run" (synthetic_runner.ts) — select explicitly to exercise a specific tool:
-#   run-scenarios -s swe-add-feature-endpoint-cli-all --cell claude-code
-#   run-scenarios -s swe-add-feature-endpoint-cli-all --cell opencode
+# cell with status "run" (synthetic_runner.ts) — a bare invocation with no --cell selection
+# always runs whichever cell's binary happens to be on PATH first, silently never running the
+# other. Select explicitly to exercise a specific tool:
+#   run-scenarios -s swe-fix-bug-null-guard-cli-all --cell claude-code
+#   run-scenarios -s swe-fix-bug-null-guard-cli-all --cell opencode
+# CI (or a local full pass) runs both by invoking once per --cell. Adding a new CLI-delegate
+# tool (Codex, Kimi, GLM, ...) means adding one more cell here + one new config file — no
+# other scenario changes.
 matrix:
   cells:
+    # provider is a documentary label only (matrix_expander.ts) — the config's own [ai].provider
+    # is the real source of truth. $CELL_PROVIDER/$CELL_MODEL are resolved from that same
+    # config's [ai] block by materializeCellConfig (synthetic_runner.ts), so this placeholder
+    # never drifts from the config and the scenario never hardcodes a provider/model string.
     - tool: "claude-code"
       provider: "$CELL_PROVIDER"
       config: "configs/claude-cli-delegate-all.toml"
@@ -42,14 +51,14 @@ steps:
         equals: 0
 
   # code_changes forces PortalExecutionStrategy.WORKTREE for a plan whose frontmatter carries a
-  # portal, so the portal must be a real git repo. Mirrors add-feature-endpoint.yaml.
+  # portal, so the portal must be a real git repo. Mirrors fix-bug-null-guard.yaml.
   - id: "setup-portal-repo"
     type: "shell"
     command: "sh"
     args:
       [
         "-c",
-        "cp -r \"$FRAMEWORK_HOME/fixtures/portals/todo_app\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'",
+        "cp -r \"$FRAMEWORK_HOME/fixtures/portals/todo_app_null_guard_bug\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'",
       ]
     output_criteria:
       - id: "portal-repo-initialized"
@@ -65,9 +74,11 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
-  # CliDelegateStrategy is dispatched only for a blueprint whose capabilities include
-  # "cli_delegate" (AgentOrchestrator.executeStep). Patch ONLY the sandboxed copy just staged
-  # into the workspace, so this verification never touches the repo's real identity file.
+  # CliDelegateStrategy (packages/execution/src/strategies/cli_delegate_strategy.ts) is dispatched
+  # only for a blueprint whose capabilities include "cli_delegate" (AgentOrchestrator.executeStep).
+  # The real Blueprints/Identities/senior-coder.md intentionally does NOT declare this capability —
+  # patch ONLY the sandboxed copy just staged into the workspace, so this verification never
+  # touches the repo's real identity file.
   - id: "patch-blueprint-capability"
     type: "shell"
     command: "sh"
@@ -90,6 +101,11 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
+  # The selected cell's config (configs/claude-cli-delegate-all.toml or
+  # configs/opencode-cli-delegate-all.toml): [ai]/[models.default] AND [cli_delegate] all point
+  # at the same tool/model — request analysis, plan generation, and the code_changes step all
+  # run through the same headless CLI subprocess. allow_net is empty; no ANTHROPIC_API_KEY or
+  # any metered HTTP call is used anywhere in this run.
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"
@@ -136,6 +152,10 @@ steps:
   - id: "wait-for-plan"
     type: "wait-for-file"
     args: ["**/Plans/*_plan.md"]
+    # A rejected plan (e.g. the CLI-delegate model using a tool name outside
+    # McpToolName) writes to Workspace/Rejected/ within seconds — fail fast on that
+    # instead of burning the full 180s timeout waiting for a plan that already can't
+    # exist, and surface the real rejection reason instead of a generic timeout.
     failure_glob: "**/Workspace/Rejected/*_rejected.md"
     timeout_sec: 180
     input_criteria: []
@@ -164,15 +184,34 @@ steps:
         path_pattern: "**/Archive/*_plan.md"
         score_weight: 0.15
 
-  # PortalExecutionStrategy.WORKTREE is forced for every plan whose frontmatter carries a
-  # portal; approve the review to merge the worktree branch back before run-tests checks the
-  # mounted portal. See fix-bug-null-guard-cli-all.yaml for the full rationale.
+  # PortalExecutionStrategy.WORKTREE (GitExecutionSetupService.getExecutionStrategy) is forced
+  # for every plan whose frontmatter carries a portal — CliDelegateStrategy gets no exemption
+  # from this: its subprocess cwd resolves through AgentOrchestrator's ToolRegistry, whose
+  # baseDir is the worktree checkout for a WORKTREE-strategy plan (PlanExecutor.createAgentExecutor).
+  # So the agent's commit lands only in .exa/worktrees/<portal>/<trace_id>/ until a review is
+  # approved. Discover this run's trace_id from the journal (activity.trace_id, populated
+  # synchronously by request.created — no need to wait for anything execution-time) and approve
+  # via the request_id shorthand ("request-<first 8 chars of trace_id>", matching
+  # RequestCreateHandler's own filename/branch-naming convention) — ReviewCommands.show/approve
+  # accept it directly, no need to know the full feat/<request_id>-<traceSuffix> branch name.
+  # This exercises the same merge-back path already proven end-to-end by
+  # tests/integration/portal_worktree_review_cleanup_e2e_test.ts ("review approve removes
+  # worktree, pointer, and feature branch"). Does not touch session_delegate — neither cell's
+  # config declares a [session_delegate] block.
   - id: "approve-review"
     type: "shell"
     command: "sh"
     args:
       [
         "-c",
+        # This step's "sh" resolves to dash on Debian/Ubuntu (no bash), which does not support
+        # bash's ${var:0:8} substring syntax ("Bad substitution", exit 2) — use `cut` instead.
+        # The daemon journals TWO request.created rows per real request: the CLI's own
+        # submission (request_create_handler.ts) and an independent daemon-side re-detection
+        # (packages/request/src/service.ts) — both can share the same millisecond timestamp,
+        # so ORDER BY timestamp is not deterministic (live-observed: picked the wrong,
+        # unrelated trace_id). rowid is monotonic and tie-free; ASC + LIMIT 1 deterministically
+        # selects the first-inserted (CLI-submitted) row.
         "trace_id=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT trace_id FROM activity WHERE action_type = 'request.created' ORDER BY rowid ASC LIMIT 1\"); short_id=$(printf '%s' \"$trace_id\" | cut -c1-8); echo \"trace_id: $trace_id\"; \"$FRAMEWORK_HOME/bin/exactl\" review approve \"request-$short_id\"",
       ]
     output_criteria:
@@ -181,8 +220,8 @@ steps:
         contains: ["review.approved"]
         score_weight: 0.15
 
-  # Deterministic pass signal: the fixture's own test suite must still pass after the new
-  # handler is added, checked against the mounted portal now that approve-review has merged in.
+  # run-tests now checks the mounted portal only AFTER approve-review has merged the worktree
+  # branch in — before that step existed, this always ran against stale, unfixed code.
   - id: "run-tests"
     type: "shell"
     command: "sh"
@@ -197,8 +236,9 @@ steps:
         equals: 0
         score_weight: 0.3
 
-  # CliDelegateStrategy is a single synchronous subprocess call per step — it never journals
-  # dynamic_tool_call rows (that's ReActLoopStrategy's per-tool-invocation event).
+  # CliDelegateStrategy is a single synchronous subprocess call per step — it never calls
+  # executor.logDynamicToolCall (that's ReActLoopStrategy's per-tool-invocation journal event),
+  # so a genuine CliDelegateStrategy run journals ZERO dynamic_tool_call rows.
   - id: "assert-no-dynamic-tool-calls"
     type: "shell"
     command: "sh"
@@ -213,6 +253,8 @@ steps:
         equals: 0
         score_weight: 0.2
 
+  # SUM (not the last row alone — a multi-step plan's final step is often a read-only
+  # verification turn that legitimately reports 0) across all agent.execution_completed rows.
   - id: "assert-files-changed"
     type: "shell"
     command: "sh"
@@ -233,17 +275,26 @@ steps:
     args:
       [
         "-c",
-        "cat \"$WORKSPACE_ROOT/todo-app/src/api.ts\" > \"$WORKSPACE_ROOT/llm-judge-input.txt\"",
+        "cat \"$WORKSPACE_ROOT/todo-app/src/utils.ts\" > \"$WORKSPACE_ROOT/llm-judge-input.txt\"",
       ]
     output_criteria:
       - id: "evidence-prepared"
         kind: "command-exit-code"
         equals: 0
 
+  # The LLM judge itself is a SEPARATE evaluation call (not part of the request/plan/execution
+  # loop under test), resolved via ModelResolver against bootstrapProviderRegistry() — the
+  # same registration path the selected cell's provider went through, so pointing the judge at
+  # it too keeps this scenario's "zero API key" claim true end-to-end (agent AND judge).
+  # $CELL_PROVIDER / $CELL_MODEL come from the selected cell's own config's [ai] block via
+  # materializeCellConfig — never hardcoded here, so a future provider only needs a new config
+  # file plus one new matrix cell above, not an edit to this scenario's steps.
   - id: "judge-quality"
     type: "shell"
     command: "sh"
     args: ["-c", "true"]
+    # step_pass_threshold: a near-perfect (but not 1.0) judge score is still a pass —
+    # only a score below 0.8 flips the scenario outcome to scenario-failure.
     step_pass_threshold: 0.8
     env:
       EXA_EVAL_LLM_MOCK: "false"
@@ -254,6 +305,10 @@ steps:
         kind: "llm-judge"
         preset: "GOAL_ALIGNED_REVIEW"
         evidence_path: "llm-judge-input.txt"
+        # Without context_path the judge sees only the fixed utils.ts content, with zero
+        # information about the original task — goal_alignment/task_fulfillment/
+        # request_understanding can only be guessed, not scored. $REQUEST_FIXTURE (the same
+        # fixture submit-request used) gives the judge the real stated objective.
         context_path: "$REQUEST_FIXTURE"
         score_threshold: 0.5
         score_weight: 0.4

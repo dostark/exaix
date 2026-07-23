@@ -1,0 +1,10 @@
+{
+  "base_ref": "5534b2a6597187a9441025bc349f1e9dc23dc8a1",
+  "scoped_test_cmd": "deno test src/api_test.ts",
+  "expected_fail_tests": ["src/api_test.ts"],
+  "portal": "todo_app_injection",
+  "family": "task:security-fix",
+  "difficulty": "M",
+  "min_turns": 2,
+  "title": "Fix code injection in handleSearchTasks"
+}
