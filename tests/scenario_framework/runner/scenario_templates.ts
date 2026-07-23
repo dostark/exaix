@@ -35,6 +35,7 @@ export interface ISweTaskTemplateOptions {
   trajectorySequence?: Array<{ tool: string }>;
   scoringWeights?: Record<string, number>;
   judgeContextPath?: string;
+  judgeEvidencePath?: string;
 }
 
 interface IIdSequenceStepOptions {
@@ -275,7 +276,7 @@ export function renderSweTaskTemplate(
         `  - id: "patch-blueprint-capability"`,
         `    type: "shell"`,
         `    command: "sh"`,
-        `    args: ["-c", "sed -i s/\\"react\\"/\\"react\\", \\"cli_delegate\\"/ $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md && grep -q cli_delegate $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md"]`,
+        `    args: ["-c", "sed -i 's/\\"react\\"/\\"react\\", \\"cli_delegate\\"/' $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md && grep -q cli_delegate $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md"]`,
         `    output_criteria:`,
         `      - id: "capability-patched"`,
         `        kind: "command-exit-code"`,
@@ -338,20 +339,19 @@ export function renderSweTaskTemplate(
     `      - id: "request-submitted"`,
     `        kind: "command-output-contains"`,
     `        contains: ["request.created"]`,
-    `      - id: "plan-produced"`,
-    `        kind: "file-found"`,
-    `        path_pattern: "**/Plans/*_plan.md"`,
-    scoreWeights.plan_produced !== undefined
-      ? `        score_weight: ${scoreWeights.plan_produced}`
-      : `        score_weight: 0.15`,
     "",
     `  - id: "wait-for-plan"`,
     `    type: "wait-for-file"`,
     `    args: ["**/Plans/*_plan.md"]`,
     `    timeout_sec: 180`,
     hasCliDelegate ? `    failure_glob: "**/Workspace/Rejected/*_rejected.md"` : "",
-    `    input_criteria: []`,
-    `    output_criteria: []`,
+    `    output_criteria:`,
+    `      - id: "plan-produced"`,
+    `        kind: "file-found"`,
+    `        path_pattern: "**/Plans/*_plan.md"`,
+    scoreWeights.plan_produced !== undefined
+      ? `        score_weight: ${scoreWeights.plan_produced}`
+      : `        score_weight: 0.15`,
     "",
     `  - id: "approve-plan"`,
     `    type: "exactl"`,
@@ -450,7 +450,9 @@ export function renderSweTaskTemplate(
     `  - id: "prepare-llm-judge-evidence"`,
     `    type: "shell"`,
     `    command: "sh"`,
-    `    args: ["-c", "cat \\"$WORKSPACE_ROOT/todo-app/src/main.ts\\" > \\"$WORKSPACE_ROOT/llm-judge-input.txt\\""]`,
+    `    args: ["-c", "cat \\"$WORKSPACE_ROOT/todo-app/${
+      task.judgeEvidencePath ?? "src/main.ts"
+    }\\" > \\"$WORKSPACE_ROOT/llm-judge-input.txt\\""]`,
     `    output_criteria:`,
     `      - id: "evidence-prepared"`,
     `        kind: "command-exit-code"`,

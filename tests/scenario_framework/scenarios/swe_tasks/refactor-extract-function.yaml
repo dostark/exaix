@@ -56,7 +56,7 @@ steps:
     command: "sh"
     args: [
       "-c",
-      "sed -i s/\"react\"/\"react\", \"cli_delegate\"/ $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md && grep -q cli_delegate $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md",
+      "sed -i 's/\"react\"/\"react\", \"cli_delegate\"/' $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md && grep -q cli_delegate $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md",
     ]
     output_criteria:
       - id: "capability-patched"
@@ -108,17 +108,16 @@ steps:
       - id: "request-submitted"
         kind: "command-output-contains"
         contains: ["request.created"]
-      - id: "plan-produced"
-        kind: "file-found"
-        path_pattern: "**/Plans/*_plan.md"
-        score_weight: 0.15
   - id: "wait-for-plan"
     type: "wait-for-file"
     args: ["**/Plans/*_plan.md"]
     timeout_sec: 180
     failure_glob: "**/Workspace/Rejected/*_rejected.md"
-    input_criteria: []
-    output_criteria: []
+    output_criteria:
+      - id: "plan-produced"
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
+        score_weight: 0.15
   - id: "approve-plan"
     type: "exactl"
     command: "plan"
@@ -184,7 +183,7 @@ steps:
   - id: "prepare-llm-judge-evidence"
     type: "shell"
     command: "sh"
-    args: ["-c", "cat \"$WORKSPACE_ROOT/todo-app/src/main.ts\" > \"$WORKSPACE_ROOT/llm-judge-input.txt\""]
+    args: ["-c", "cat \"$WORKSPACE_ROOT/todo-app/src/business_logic.ts\" > \"$WORKSPACE_ROOT/llm-judge-input.txt\""]
     output_criteria:
       - id: "evidence-prepared"
         kind: "command-exit-code"
