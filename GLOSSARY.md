@@ -40,11 +40,11 @@ The code-level execution unit that orchestrates one or more identities to comple
 
 A discrete capability — reading or writing files, running git operations, querying external systems — that an agent invokes on an identity's behalf to act on the world beyond LLM reasoning. Tools are implemented as handlers under `packages/mcp/server/handlers/` (see [.copilot/docs/TOOLS.md](.copilot/docs/TOOLS.md) for the full agent-accessible index), validated and executed by the `ToolRegistry` within an identity's permitted capabilities and a portal's security boundaries, and exposed to MCP clients through the MCP Server.
 
-### Model Intent (Phase 132)
+### Model Intent (model resolution and intent)
 
 A description of the model you want — by capability requirements — rather than a hardcoded `provider:model` ID. Model Intent fields include `model_size` (S/M/L/XL), `thinking` (true/false), `effort` (low/medium/high), `characteristics` (cheapest/fastest — soft ranking hints), `required_capabilities` (chat, streaming, vision, tools — hard filters), and `preferred_provider`. The `ModelResolver` translates these fields into a concrete `provider:model` at runtime, decoupling identities from any single provider.
 
-### ModelResolver (Phase 132)
+### ModelResolver (model resolution and intent)
 
 The service that accepts a `ModelIntent` and returns a concrete `{provider, model, callOptions}` tuple. Resolution follows a strict precedence: explicit `provider:model` override > `model_size` + characteristic scoring > preset default > fallback chain > context-window overflow bump. The ModelResolver is wired into `AgentExecutor`, `FlowRunner`, `LlmClient`, and the CLI (`exactl request`). Available via CLI flags `--model-size`, `--thinking`, `--effort`, `--characteristic`, and `--preferred-provider`.
 
@@ -56,11 +56,11 @@ The capability tier labels `S`, `M`, `L`, and `XL`, each mapped to a preset prof
 
 Another term for ModelSize: a pre-configured profile that bundles context-window size, cost ceiling, and thinking support into a single label (`S`/`M`/`L`/`XL`). Users express their need by tier; the system picks the concrete model that fits.
 
-### Characteristic (Phase 132)
+### Characteristic (model resolution and intent)
 
 A soft ranking hint (`cheapest` or `fastest`) that scores candidate providers without eliminating any. `cheapest` biases toward lower-cost providers; `fastest` treats all candidates equally (picks the first healthy one). Multiple characteristics accumulate. Available as `--characteristic` CLI flag (repeatable) and as `characteristics` in blueprint frontmatter.
 
-### Required Capabilities (Phase 132)
+### Required Capabilities (model resolution and intent)
 
 A hard filter that excludes providers lacking **all** listed capabilities. Values include `chat`, `streaming`, `vision`, `tools`, and `multi-model`. Only available in blueprint frontmatter (no CLI flag). See `docs/Exaix_User_Guide.md §6.2` for the per-provider support matrix.
 
