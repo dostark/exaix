@@ -5,7 +5,7 @@
  * @architectural-layer AI
  * @related-files [packages/ai/src/providers.ts, "packages/execution/src/agent_runner.ts"]
  */
-import { PricingTier, PriorityLevel, type ProviderCostTier } from "@exaix/core";
+import { type ChatFormat, PricingTier, PriorityLevel, type ProviderCostTier } from "@exaix/core";
 import type { IProviderFactory } from "./factories/abstract_provider_factory.ts";
 
 type ProviderRegistryGlobal = typeof globalThis & {
@@ -57,6 +57,8 @@ export interface IProviderMetadata {
    * prose convention. Absent/undefined is treated identically to false.
    */
   supportsNativeTools?: boolean;
+  /** Chat protocol format supported by this provider. Phase 155. */
+  chatFormat?: ChatFormat;
 }
 
 function syncRegisteredProviderTypes(providerTypes: Iterable<string>): void {

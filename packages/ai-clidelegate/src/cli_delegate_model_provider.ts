@@ -114,6 +114,9 @@ export interface ICliDelegateModelProviderOptions {
  */
 export interface IOpencodeReadOnlyPermissionConfig {
   permission: {
+    read?: OpencodePermissionValue;
+    grep?: OpencodePermissionValue;
+    glob?: OpencodePermissionValue;
     edit: OpencodePermissionValue;
     bash: OpencodePermissionValue;
     task: OpencodePermissionValue;
@@ -134,12 +137,19 @@ const defaultRun: IRunCliDelegateProcess = (command, args, options) => SafeSubpr
 const OPENCODE_PERMISSION_DENY = OpencodePermissionValueSchema.enum.deny;
 
 /**
- * This provider never edits files, so every write surface is denied outright
- * rather than allowlisted per-path.
+ * Read-only config for plan-generation calls. edit/bash/task are denied
+ * (this provider never executes tool actions), but read/grep/glob are
+ * allowed so the model stays in its structured ReAct tool-use loop and
+ * outputs valid JSON rather than free-form prose. Without these allowed,
+ * opencode falls back to plain assistant-text (no `--json-schema` flag).
+ * Phase 155 Step 2.
  */
 function buildOpencodeReadOnlyConfig(): IOpencodeReadOnlyPermissionConfig {
   return {
     permission: {
+      read: "allow",
+      grep: "allow",
+      glob: "allow",
       edit: OPENCODE_PERMISSION_DENY,
       bash: OPENCODE_PERMISSION_DENY,
       task: OPENCODE_PERMISSION_DENY,
