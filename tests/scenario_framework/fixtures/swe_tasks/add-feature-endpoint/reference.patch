@@ -1,0 +1,54 @@
+diff --git a/src/api.ts b/src/api.ts
+index 0bf722a..15edabe 100644
+--- a/src/api.ts
++++ b/src/api.ts
+@@ -46,4 +46,12 @@ export function handleCreateTask(repo: TaskRepository, req: IRequest, res: IResp
+   res.status(201).json(task);
+ }
+ 
+-// No handler exists yet for marking a task complete (PATCH /tasks/:id/complete).
++export function handleCompleteTask(repo: TaskRepository, req: IRequest, res: IResponse): void {
++  const existing = repo.get(req.params.id);
++  if (!existing) {
++    res.status(404).json({ error: "Task not found" });
++    return;
++  }
++  repo.update(req.params.id, { done: true });
++  res.json(repo.get(req.params.id));
++}
+diff --git a/src/api_test.ts b/src/api_test.ts
+index 1fa523b..a6b75bd 100644
+--- a/src/api_test.ts
++++ b/src/api_test.ts
+@@ -8,7 +8,7 @@
+ 
+ // deno-lint-ignore-file no-explicit-any
+ import { assertEquals } from "jsr:@std/assert@1";
+-import { handleCreateTask, handleGetTask, handleListTasks, type IRequest, type IResponse } from "./api.ts";
++import { handleCompleteTask, handleCreateTask, handleGetTask, handleListTasks, type IRequest, type IResponse } from "./api.ts";
+ import { TaskRepository } from "./storage.ts";
+ 
+ function makeResponse(): IResponse & { statusCode: number; body: any } {
+@@ -59,3 +59,22 @@ Deno.test("handleListTasks returns every stored task", () => {
+ 
+   assertEquals(res.body.length, 2);
+ });
++
++
++Deno.test("handleCompleteTask marks an existing task as done", () => {
++  const repo = new TaskRepository();
++  repo.add({ id: "1", title: "Test", priority: "low", done: false, dueDate: null, assignee: null });
++  const req: IRequest = { body: {}, params: { id: "1" } };
++  const res = makeResponse();
++  handleCompleteTask(repo, req, res);
++  assertEquals(res.statusCode, 200);
++  assertEquals(res.body?.done, true);
++});
++
++Deno.test("handleCompleteTask returns 404 for a missing task", () => {
++  const repo = new TaskRepository();
++  const req: IRequest = { body: {}, params: { id: "missing" } };
++  const res = makeResponse();
++  handleCompleteTask(repo, req, res);
++  assertEquals(res.statusCode, 404);
++});

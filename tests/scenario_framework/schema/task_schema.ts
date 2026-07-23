@@ -28,6 +28,8 @@ export const TaskJsonSchema = z.object({
   difficulty: z.enum(["S", "M"]),
   /** Minimum reasonable ReAct iterations for the task (default 2). Used by turn-efficiency penalty. */
   min_turns: z.number().int().min(1).max(100).optional().default(2),
+  /** Name of the fixture portal directory (relative to fixtures/portals/). Defaults to "todo_app". */
+  portal: z.string().min(1).optional().default("todo_app"),
   /** Human-readable task title. */
   title: z.string().optional(),
 });

@@ -1,0 +1,8 @@
+{
+  "base_ref": "fc8bab4ca20c482f23961cb7c1476d4ce2b210f7",
+  "scoped_test_cmd": "deno test src/api_test.ts",
+  "family": "task:feature",
+  "difficulty": "S",
+  "min_turns": 3,
+  "title": "Add a 'complete task' handler to the API"
+}

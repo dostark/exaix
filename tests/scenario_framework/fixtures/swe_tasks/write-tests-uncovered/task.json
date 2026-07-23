@@ -1,0 +1,9 @@
+{
+  "base_ref": "fc8bab4ca20c482f23961cb7c1476d4ce2b210f7",
+  "scoped_test_cmd": "deno test src/priority_calculator_test.ts",
+  "expected_fail_tests": [],
+  "family": "task:test-authoring",
+  "difficulty": "M",
+  "min_turns": 3,
+  "title": "Write unit tests for priority_calculator.ts"
+}

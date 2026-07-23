@@ -1,0 +1,10 @@
+{
+  "base_ref": "7dcba9b570f442ff8658299c65aab644dcb39242",
+  "scoped_test_cmd": "deno test src/utils_test.ts",
+  "expected_fail_tests": ["src/utils_test.ts"],
+  "portal": "todo_app_null_guard_bug",
+  "family": "task:bug-fix",
+  "difficulty": "S",
+  "min_turns": 2,
+  "title": "Fix null-safety bugs in formatAssignee and formatDueDate"
+}

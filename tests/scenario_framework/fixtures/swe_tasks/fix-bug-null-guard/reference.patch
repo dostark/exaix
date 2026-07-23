@@ -1,0 +1,18 @@
+diff --git a/src/utils.ts b/src/utils.ts
+index 81d1f69..bf788b6 100644
+--- a/src/utils.ts
++++ b/src/utils.ts
+@@ -9,11 +9,11 @@
+ import type { ITask } from "./models.ts";
+ 
+ export function formatAssignee(task: ITask): string {
+-  return task.assignee.name.toUpperCase();
++  return task.assignee ? task.assignee.name.toUpperCase() : "";
+ }
+ 
+ export function formatDueDate(task: ITask): string {
+-  return task.dueDate.slice(0, 10);
++  return task.dueDate ? task.dueDate.slice(0, 10) : "";
+ }
+ 
+ export function formatTaskSummary(task: ITask): string {

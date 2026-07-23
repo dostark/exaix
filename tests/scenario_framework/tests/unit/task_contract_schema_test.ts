@@ -9,6 +9,7 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
+import { join } from "@std/path";
 import { TaskJsonSchema } from "../../schema/task_schema.ts";
 
 Deno.test("[TaskContract] accepts a valid exemplar task.json", () => {
@@ -64,6 +65,34 @@ Deno.test("[TaskContract] min_turns defaults to 2", () => {
   };
   const parsed = TaskJsonSchema.parse(task);
   assertEquals(parsed.min_turns, 2);
+});
+
+Deno.test("[TaskContract] all fixture directories have valid task.json and reference.patch", async () => {
+  const fixturesDir = new URL("../../fixtures/swe_tasks", import.meta.url).pathname;
+  const portalsDir = new URL("../../fixtures/portals", import.meta.url).pathname;
+  let count = 0;
+  for await (const entry of Deno.readDir(fixturesDir)) {
+    if (!entry.isDirectory) continue;
+    const taskJsonPath = join(fixturesDir, entry.name, "task.json");
+    const patchPath = join(fixturesDir, entry.name, "reference.patch");
+    const taskMdPath = join(fixturesDir, entry.name, "TASK.md");
+
+    const taskContent = await Deno.readTextFile(taskJsonPath);
+    const task = JSON.parse(taskContent);
+    const parsed = TaskJsonSchema.parse(task);
+    assert(parsed.portal, "portal must resolve");
+    const portalDir = join(portalsDir, parsed.portal);
+    const portalStat = await Deno.stat(portalDir);
+    assert(portalStat.isDirectory, `portal directory must exist: ${portalDir}`);
+
+    const patchStat = await Deno.stat(patchPath);
+    assert(patchStat.isFile, `reference.patch must exist: ${patchPath}`);
+    const taskMdStat = await Deno.stat(taskMdPath);
+    assert(taskMdStat.isFile, `TASK.md must exist: ${taskMdPath}`);
+
+    count++;
+  }
+  assert(count >= 4, "expected at least 4 fixture directories");
 });
 
 Deno.test("[TaskContract] accepts opencode-go cell reference in fixture path patterns", () => {
