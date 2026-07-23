@@ -128,7 +128,10 @@ steps:
     type: "wait-for-file"
     args: ["**/Plans/*_plan.md"]
     failure_glob: "**/Workspace/Rejected/*_rejected.md"
-    timeout_sec: 180
+    # Longer timeout for write-tests scenario: opencode's read-only plan mode produces
+    # free-form text without --json-schema support, requiring plan-validation retries
+    # that consume >180s (observed: 2 retries ~92s + 3rd attempt needs ~60-200s).
+    timeout_sec: 300
     input_criteria: []
     output_criteria:
       - id: "plan-produced"
