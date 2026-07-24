@@ -14,6 +14,17 @@ import { dirname, resolve } from "@std/path";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IEvalHistoryEntry } from "./history_schema.ts";
 
+/** Per-family summary row returned by summarizeByTag. */
+export interface IFamilySummaryRow {
+  family: string;
+  taskCount: number;
+  meanScore: number;
+  meanPassAt1: number;
+  reconcileRate: number;
+  meanDurationMs: number;
+  delta: number | null;
+}
+
 const EVAL_TABLE_RUNS = "eval_runs";
 const EVAL_SCHEMA_VERSION_INSERT = "INSERT OR IGNORE INTO eval_schema_version (version, description) VALUES ";
 
@@ -642,14 +653,4 @@ export class EvalSqliteStore {
   close(): void {
     this.db.close();
   }
-}
-
-export interface IFamilySummaryRow {
-  family: string;
-  taskCount: number;
-  meanScore: number;
-  meanPassAt1: number;
-  reconcileRate: number;
-  meanDurationMs: number;
-  delta: number | null;
 }

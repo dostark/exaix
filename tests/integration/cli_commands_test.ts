@@ -28,10 +28,14 @@ async function createArtifactReview(
 }
 
 /** Helper: writes a wait-state JSON file and returns the directory path. */
+interface IWaitStateOverrides {
+  status?: string;
+}
+
 async function writeWaitState(
   env: TestEnvironment,
   runId: string,
-  overrides: Record<string, unknown> = {},
+  overrides: IWaitStateOverrides = {},
 ): Promise<string> {
   const traceId = "trace-integration-wait";
   const waitDir = join(env.tempDir, "Workspace", "WaitStates", traceId);
