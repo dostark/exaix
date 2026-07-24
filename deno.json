@@ -299,6 +299,9 @@
       "packages/",
       "packages-team/",
       "apps/"
+    ],
+    "exclude": [
+      "tests/scenario_framework/fixtures/portals"
     ]
   },
   "compilerOptions": {
