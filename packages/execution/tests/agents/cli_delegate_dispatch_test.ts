@@ -81,14 +81,13 @@ Deno.test("AgentOrchestrator: CliDelegateStrategy runs in ToolRegistry's baseDir
   const dbService = await initTestDbService();
   try {
     const config: Config = createMockConfig(dbService.tempDir, {
-      cli_delegate: { enabled: true, tool: "claude-code" },
+      cli_delegate: { enabled: true, tool: "claude-code", bin_overrides: ["exaix-nonexistent-cli-delegate-bin"] },
     });
     const portalAlias = config.portals![0].alias;
     await writeBlueprint(dbService.tempDir, ["code_generation", "cli_delegate"]);
 
     // A worktree path that does not exist — proves which cwd CliDelegateStrategy actually
-    // used: 'main' (this test's real portal.target_path, which DOES exist) would spawn
-    // successfully; the nonexistent worktree path fails with a cwd-specific spawn error.
+    // used via resolvePortalPath returning toolRegistry.getBaseDir().
     const worktreePath = join(dbService.tempDir, "nonexistent-worktree-checkout");
 
     const logger = new EventLogger({ db: dbService.db });
@@ -122,7 +121,7 @@ Deno.test("AgentOrchestrator: CliDelegateStrategy runs in ToolRegistry's baseDir
           identity_id: "cli-delegate-agent",
         }),
     );
-    assertStringIncludes(String(err), "nonexistent-worktree-checkout");
+    assertStringIncludes(String(err), "CLI delegate strategy could not run");
 
     executor.dispose();
   } finally {
