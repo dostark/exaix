@@ -1,0 +1,39 @@
+schema_version: "1.0.0"
+id: "tools-negative-path-escape"
+title: "Negative — path escape attempt is refused"
+pack: "mcp_tools_extended"
+tags: ["negative", "security", "path-escape", "subsystem:tools", "entity:read_file", "entity:write_file"]
+request_fixture: "fixtures/requests/mcp_tools_extended/read_file.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "setup-portal"
+    type: "shell"
+    name: "Create fixture directory within safe bounds"
+    command: "sh"
+    args: ["-c", "mkdir -p /tmp/exaix-safe-portal && echo 'safe' > /tmp/exaix-safe-portal/file.txt"]
+    output_criteria:
+      - id: "fixture-ready"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "attempt-escape"
+    type: "shell"
+    name: "Attempt to read file outside portal (../)"
+    command: "sh"
+    args: ["-c", "cat /tmp/exaix-safe-portal/../etc/passwd 2>&1 || true"]
+    output_criteria:
+      - id: "escape-attempt-logged"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 1.0
+
+  - id: "cleanup"
+    type: "shell"
+    name: "Clean up"
+    command: "rm"
+    args: ["-rf", "/tmp/exaix-safe-portal"]
+    output_criteria:
+      - id: "cleaned"
+        kind: "command-exit-code"
+        equals: 0

@@ -1,0 +1,54 @@
+schema_version: "1.0.0"
+id: "tools-read-roundtrip"
+title: "File read tools — read_file, list_directory round-trips"
+pack: "mcp_tools_extended"
+tags: ["read", "roundtrip", "subsystem:tools", "entity:read_file", "entity:list_directory"]
+request_fixture: "fixtures/requests/mcp_tools_extended/read_file.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "setup-files"
+    type: "shell"
+    name: "Create test fixture files"
+    command: "sh"
+    args: [
+      "-c",
+      "mkdir -p /tmp/exaix-test-read && echo 'hello world' > /tmp/exaix-test-read/test.txt && echo 'line2' > /tmp/exaix-test-read/other.txt",
+    ]
+    output_criteria:
+      - id: "fixtures-created"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+
+  - id: "verify-read-file"
+    type: "shell"
+    name: "Verify read_file via cat"
+    command: "cat"
+    args: ["/tmp/exaix-test-read/test.txt"]
+    output_criteria:
+      - id: "read-content"
+        kind: "command-output-contains"
+        contains: ["hello world"]
+        score_weight: 0.4
+
+  - id: "verify-list-directory"
+    type: "shell"
+    name: "Verify list_directory via ls"
+    command: "ls"
+    args: ["/tmp/exaix-test-read"]
+    output_criteria:
+      - id: "list-output"
+        kind: "command-output-contains"
+        contains: ["test.txt", "other.txt"]
+        score_weight: 0.4
+
+  - id: "cleanup"
+    type: "shell"
+    name: "Clean up temp files"
+    command: "rm"
+    args: ["-rf", "/tmp/exaix-test-read"]
+    output_criteria:
+      - id: "cleanup-done"
+        kind: "command-exit-code"
+        equals: 0

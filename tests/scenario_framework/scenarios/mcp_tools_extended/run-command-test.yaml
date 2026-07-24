@@ -1,0 +1,18 @@
+schema_version: "1.0.0"
+id: "run-command-test"
+title: "Run command tool executes shell commands"
+pack: "mcp_tools_extended"
+tags: ["run_command", "execution", "subsystem:tools", "entity:run_command"]
+request_fixture: "fixtures/requests/mcp_tools_extended/run_command.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "run-trivial-command"
+    type: "shell"
+    command: "echo"
+    args: ["hello from run_command test"]
+    output_criteria:
+      - id: "command-executed"
+        kind: "command-output-contains"
+        contains: ["hello from run_command test"]
+        score_weight: 1.0

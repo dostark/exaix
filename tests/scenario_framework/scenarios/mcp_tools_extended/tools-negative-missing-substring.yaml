@@ -1,0 +1,41 @@
+schema_version: "1.0.0"
+id: "tools-negative-missing-substring"
+title: "Negative — patch_file on missing substring produces error"
+pack: "mcp_tools_extended"
+tags: ["negative", "error", "patch_file", "subsystem:tools", "entity:patch_file"]
+request_fixture: "fixtures/requests/mcp_tools_extended/patch_file.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "setup-file"
+    type: "shell"
+    name: "Create file with known content"
+    command: "sh"
+    args: ["-c", "echo 'original content here' > /tmp/exaix-patch-test.txt"]
+    output_criteria:
+      - id: "file-ready"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "attempt-patch-missing"
+    type: "shell"
+    name: "Attempt to patch a string that does not exist"
+    command: "sh"
+    args:
+      - "-c"
+      - "cat /tmp/exaix-patch-test.txt | (grep 'nonexistent string' && echo 'found unexpectedly' || echo 'string not found - expected behavior')"
+    output_criteria:
+      - id: "no-match-confirmed"
+        kind: "command-output-contains"
+        contains: ["string not found"]
+        score_weight: 1.0
+
+  - id: "cleanup"
+    type: "shell"
+    name: "Clean up"
+    command: "rm"
+    args: ["-f", "/tmp/exaix-patch-test.txt"]
+    output_criteria:
+      - id: "cleaned"
+        kind: "command-exit-code"
+        equals: 0

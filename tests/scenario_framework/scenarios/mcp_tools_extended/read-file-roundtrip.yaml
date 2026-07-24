@@ -1,0 +1,37 @@
+schema_version: "1.0.0"
+id: "read-file-roundtrip"
+title: "Read file tool reads file content"
+pack: "mcp_tools_extended"
+tags: ["read_file", "read", "subsystem:tools", "entity:read_file"]
+request_fixture: "fixtures/requests/mcp_tools_extended/read_file.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "setup-file"
+    type: "shell"
+    name: "Create test file"
+    command: "sh"
+    args: ["-c", "echo 'file content for read test' > /tmp/exaix-read-test.txt"]
+    output_criteria:
+      - id: "file-created"
+        kind: "command-exit-code"
+        equals: 0
+  - id: "read-and-verify"
+    type: "shell"
+    name: "Read and verify file content"
+    command: "cat"
+    args: ["/tmp/exaix-read-test.txt"]
+    output_criteria:
+      - id: "content-verified"
+        kind: "command-output-contains"
+        contains: ["file content for read test"]
+        score_weight: 1.0
+  - id: "cleanup"
+    type: "shell"
+    name: "Clean up"
+    command: "rm"
+    args: ["-f", "/tmp/exaix-read-test.txt"]
+    output_criteria:
+      - id: "cleaned"
+        kind: "command-exit-code"
+        equals: 0

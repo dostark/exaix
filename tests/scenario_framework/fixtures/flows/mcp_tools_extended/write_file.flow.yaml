@@ -1,0 +1,20 @@
+# @schema-version: 1.0.0
+---
+id: "write-file-content"
+name: "Write File Content"
+description: "Use write_file tool to write file content"
+version: "1.0.0"
+output:
+  from: step
+  step: write
+  format: markdown
+steps:
+  - id: "write"
+    name: "Write file using write_file"
+    identity: "senior-coder"
+    execution_mode: "declared"
+    tools:
+      - write_file
+    input:
+      source: "request"
+    timeout: 30000

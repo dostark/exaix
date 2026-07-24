@@ -1,0 +1,20 @@
+# @schema-version: 1.0.0
+---
+id: "read-file-content"
+name: "Read File Content"
+description: "Use read_file tool to read a file's content"
+version: "1.0.0"
+output:
+  from: step
+  step: read
+  format: markdown
+steps:
+  - id: "read"
+    name: "Read file using read_file"
+    identity: "senior-coder"
+    execution_mode: "declared"
+    tools:
+      - read_file
+    input:
+      source: "request"
+    timeout: 30000

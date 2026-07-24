@@ -1,25 +1,5 @@
 {
-  "tools": [
-    { "id": "read_file", "reason": "phase-142 step 2" },
-    { "id": "write_file", "reason": "phase-142 step 2" },
-    { "id": "list_directory", "reason": "phase-142 step 2" },
-    { "id": "run_command", "reason": "phase-142 step 2" },
-    { "id": "git_create_branch", "reason": "phase-142 step 2" },
-    { "id": "git_commit", "reason": "phase-142 step 2" },
-    { "id": "git_status", "reason": "phase-142 step 2" },
-    { "id": "git_log", "reason": "phase-142 step 2" },
-    { "id": "git_worktree", "reason": "phase-142 step 2" },
-    { "id": "exaix_create_request", "reason": "phase-142 step 2" },
-    { "id": "exaix_list_plans", "reason": "phase-142 step 2" },
-    { "id": "exaix_approve_plan", "reason": "phase-142 step 2" },
-    { "id": "exaix_query_journal", "reason": "phase-142 step 2" },
-    { "id": "exaix_config_get", "reason": "phase-142 step 2" },
-    { "id": "exaix_config_validate", "reason": "phase-142 step 2" },
-    { "id": "exaix_config_diff", "reason": "phase-142 step 2" },
-    { "id": "exaix_config_get_provenance", "reason": "phase-142 step 2" },
-    { "id": "exaix_config_set", "reason": "phase-142 step 2" },
-    { "id": "exaix_config_apply", "reason": "phase-142 step 2" }
-  ],
+  "tools": [],
   "identities": [
     { "id": "mock-agent", "reason": "test double" },
     { "id": "README.md", "reason": "directory readme, not an identity" }

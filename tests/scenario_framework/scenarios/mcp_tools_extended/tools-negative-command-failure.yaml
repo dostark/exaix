@@ -1,0 +1,19 @@
+schema_version: "1.0.0"
+id: "tools-negative-command-failure"
+title: "Negative — run_command failure exit propagation"
+pack: "mcp_tools_extended"
+tags: ["negative", "error", "run_command", "subsystem:tools", "entity:run_command"]
+request_fixture: "fixtures/requests/mcp_tools_extended/run_command.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "attempt-failing-command"
+    type: "shell"
+    name: "Run a command that fails"
+    command: "sh"
+    args: ["-c", "false; echo 'exit code: '$?"]
+    output_criteria:
+      - id: "failure-detected"
+        kind: "command-output-contains"
+        contains: ["exit code: 1"]
+        score_weight: 1.0

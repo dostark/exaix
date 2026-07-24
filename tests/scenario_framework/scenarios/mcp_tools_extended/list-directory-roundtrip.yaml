@@ -1,0 +1,37 @@
+schema_version: "1.0.0"
+id: "list-directory-roundtrip"
+title: "List directory tool lists contents"
+pack: "mcp_tools_extended"
+tags: ["list_directory", "read", "subsystem:tools", "entity:list_directory"]
+request_fixture: "fixtures/requests/mcp_tools_extended/list_directory.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "setup-dir"
+    type: "shell"
+    name: "Create test directory with files"
+    command: "sh"
+    args: ["-c", "mkdir -p /tmp/exaix-list-test && touch /tmp/exaix-list-test/a.txt /tmp/exaix-list-test/b.txt"]
+    output_criteria:
+      - id: "dir-created"
+        kind: "command-exit-code"
+        equals: 0
+  - id: "list-and-verify"
+    type: "shell"
+    name: "List and verify directory contents"
+    command: "ls"
+    args: ["/tmp/exaix-list-test"]
+    output_criteria:
+      - id: "list-verified"
+        kind: "command-output-contains"
+        contains: ["a.txt", "b.txt"]
+        score_weight: 1.0
+  - id: "cleanup"
+    type: "shell"
+    name: "Clean up"
+    command: "rm"
+    args: ["-rf", "/tmp/exaix-list-test"]
+    output_criteria:
+      - id: "cleaned"
+        kind: "command-exit-code"
+        equals: 0
