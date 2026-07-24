@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "dynamic-permission-boundary"
 title: "Dynamic steps accept approval-required domain tools at validation time"
 pack: "dynamic_execution"
-tags: ["security", "dynamic", "validation", "tool-confirmation", "subsystem:mcp-client"]
+tags: ["security", "dynamic", "validation", "tool-confirmation", "subsystem:mcp-client", "entity:exaix_create_request"]
 request_fixture: "fixtures/requests/dynamic_execution/approval_required_tool.md"
 mode_support: ["auto"]
 portals: []

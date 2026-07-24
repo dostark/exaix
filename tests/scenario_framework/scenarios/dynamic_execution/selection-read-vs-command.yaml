@@ -1,0 +1,64 @@
+schema_version: "1.0.0"
+id: "selection-read-vs-command"
+title: "Tool selection — read_file preferred over run_command (cat)"
+pack: "dynamic_execution"
+tags: ["selection", "read-vs-command", "trajectory", "subsystem:mcp-client", "entity:read_file"]
+request_fixture: "fixtures/requests/dynamic_execution/explore_codebase.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
+      EXA_CI_MODE: "1"
+    output_criteria:
+      - id: "daemon-started"
+        score_weight: 0.3
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
+    output_criteria:
+      - id: "request-submitted"
+        score_weight: 0.3
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 120
+    output_criteria:
+      - id: "plan-produced"
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
+        score_weight: 0.4
+
+  - id: "assert-tool-selection"
+    type: "trajectory-assert"
+    name: "Verify read_file was selected over run_command"
+    source_step: "submit-request"
+    expected_sequence:
+      - tool: "read_file"
+    order_matters: false
+    allow_extra_tools: true
+    partial_credit: true
+    input_criteria: []
+    output_criteria: []
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-exit-code"
+        equals: 0
