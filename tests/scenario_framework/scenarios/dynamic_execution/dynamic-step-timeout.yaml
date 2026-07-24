@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "dynamic-step-timeout"
 title: "Dynamic steps respect timeout configuration"
 pack: "dynamic_execution"
-tags: ["timeout", "dynamic", "error-handling"]
+tags: ["timeout", "dynamic", "error-handling", "subsystem:mcp-client"]
 request_fixture: "fixtures/requests/dynamic_execution/timeout_test.md"
 mode_support: ["auto"]
 portals: []

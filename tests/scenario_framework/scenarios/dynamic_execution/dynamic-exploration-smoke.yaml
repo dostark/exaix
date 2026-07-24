@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "dynamic-exploration-smoke"
 title: "Dynamic step explores codebase using read-only tools"
 pack: "dynamic_execution"
-tags: ["smoke", "dynamic", "read-only"]
+tags: ["smoke", "dynamic", "read-only", "subsystem:mcp-client"]
 request_fixture: "fixtures/requests/dynamic_execution/explore_codebase.md"
 mode_support: ["auto", "manual-checkpoint"]
 portals:

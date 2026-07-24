@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "dynamic-tool-confirmation-denial"
 title: "Queued tool confirmation can be listed and denied"
 pack: "dynamic_execution"
-tags: ["dynamic", "tool-confirmation", "denial", "security"]
+tags: ["dynamic", "tool-confirmation", "denial", "security", "subsystem:mcp-client"]
 request_fixture: "fixtures/requests/dynamic_execution/tool_confirmation_denial.md"
 mode_support: ["auto"]
 portals: []

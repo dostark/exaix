@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "software-architect-validation"
 title: "Software Architect agent validation"
 pack: "provider_live"
-tags: ["provider-live", "planning"]
+tags: ["provider-live", "planning", "subsystem:identities", "entity:software-architect"]
 request_fixture: "fixtures/requests/provider_live/software_architect.md"
 mode_support: ["auto", "step"]
 portals:

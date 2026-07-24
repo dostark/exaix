@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "quality-gate-clarification"
 title: "Quality gate pauses for clarification on underspecified requests"
 pack: "agent_flows"
-tags: ["manual-only", "clarification"]
+tags: ["manual-only", "clarification", "subsystem:flows"]
 request_fixture: "fixtures/requests/agent_flows/quality_gate_clarification.md"
 mode_support: ["manual-checkpoint"]
 portals: []

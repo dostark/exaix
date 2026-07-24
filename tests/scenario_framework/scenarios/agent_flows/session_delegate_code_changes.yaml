@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "session-delegate-code-changes"
 title: "Session Delegation — Code Changes Gate"
 pack: "agent_flows"
-tags: ["safety-gate", "session-delegation", "manual-only"]
+tags: ["safety-gate", "session-delegation", "manual-only", "subsystem:flows"]
 request_fixture: "fixtures/requests/agent_flows/request_analysis_smoke.md"
 mode_support: ["auto"]
 portals: []

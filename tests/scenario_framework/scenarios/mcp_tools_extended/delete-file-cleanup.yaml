@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "delete-file-cleanup"
 title: "Delete file tool removes files safely"
 pack: "mcp_tools_extended"
-tags: ["delete_file", "cleanup", "write-tools"]
+tags: ["delete_file", "cleanup", "write-tools", "subsystem:tools", "entity:delete_file"]
 request_fixture: "fixtures/requests/mcp_tools_extended/delete_file_cleanup.md"
 mode_support: ["auto"]
 portals: []

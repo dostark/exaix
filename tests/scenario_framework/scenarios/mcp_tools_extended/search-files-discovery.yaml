@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "search-files-discovery"
 title: "Search files tool finds files by glob pattern"
 pack: "mcp_tools_extended"
-tags: ["search_files", "discovery", "read-tools"]
+tags: ["search_files", "discovery", "read-tools", "subsystem:tools", "entity:search_files"]
 request_fixture: "fixtures/requests/mcp_tools_extended/search_files_discovery.md"
 mode_support: ["auto"]
 portals: []

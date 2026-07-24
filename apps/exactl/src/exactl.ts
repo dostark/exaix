@@ -2954,6 +2954,7 @@ const evalCommand = new Command()
       .option("--scenario <id:string>", "Filter to a single scenario ID")
       .option("--pack <pack:string>", "Filter to a single pack (e.g. swe-tasks)")
       .option("-l, --last <n:number>", "Limit to the last N runs")
+      .option("--group-by <prefix:string>", "Group by tag prefix: subsystem or entity")
       .action((options) => {
         try {
           evalCommands.report({
@@ -2961,6 +2962,7 @@ const evalCommand = new Command()
             scenario: options.scenario,
             last: options.last,
             pack: options.pack,
+            groupBy: options.groupBy,
           });
         } catch (error) {
           console.error("eval report failed:", error instanceof Error ? error.message : String(error));

@@ -478,6 +478,28 @@ steps:
 - **All step types** available in §3 (file-exists, text-contains, json-path-equals,
   journal-event-exists, llm-judge, etc.)
 
+### Subsystem Tag Taxonomy (Phase 142)
+
+Each scenario that covers a core Exaix capability surface (tools, MCP server/contract,
+MCP client/ReAct selection, identities, skills, or flows) SHOULD carry the appropriate
+`subsystem:<name>` and `entity:<id>` tags so that `exactl eval report --group-by subsystem|entity`
+can produce per-surface and per-entity trend reports.
+
+| Tag                    | Purpose                                                                     |
+| ---------------------- | --------------------------------------------------------------------------- |
+| `subsystem:tools`      | Scenario exercises an MCP tool handler                                      |
+| `subsystem:mcp-server` | Scenario exercises the out-of-process MCP server contract                   |
+| `subsystem:mcp-client` | Scenario exercises in-process ReAct tool selection or permission            |
+| `subsystem:identities` | Scenario evaluates a Blueprint identity                                     |
+| `subsystem:skills`     | Scenario evaluates skill injection mechanics or effectiveness               |
+| `subsystem:flows`      | Scenario evaluates a Blueprint flow blueprint                               |
+| `entity:<id>`          | The specific entity tested (e.g. `entity:read_file`, `entity:senior-coder`) |
+
+**Parity gate rule:** Adding a new tool/identity/skill/flow to its catalog requires
+adding at least one eval scenario with the matching `entity:<id>` tag, or adding a
+reasoned entry to the parity exclusion list at `tests/eval/parity_exclusions.json`.
+The parity gate (Gate 15) enforces this in ci-core.
+
 ### The `matrix:` block — one scenario, many cells (Phase 127)
 
 A scenario may declare an **additive, optional** `matrix:` block to run the same step list

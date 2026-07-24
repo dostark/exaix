@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "code-analyst-validation"
 title: "Code Analyst agent validation across CLI structure"
 pack: "provider_live"
-tags: ["provider-live", "analysis", "code-analyst"]
+tags: ["provider-live", "analysis", "code-analyst", "subsystem:identities", "entity:code-analyst"]
 request_fixture: "fixtures/requests/provider_live/code_analyst_cli_structure.md"
 mode_support: ["auto", "step"]
 portals:

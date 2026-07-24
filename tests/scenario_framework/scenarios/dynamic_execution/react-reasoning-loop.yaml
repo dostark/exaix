@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "react-reasoning-loop"
 title: "ReAct loop executes multiple iterations to complete objective"
 pack: "dynamic_execution"
-tags: ["react", "dynamic", "provider-live"]
+tags: ["react", "dynamic", "provider-live", "subsystem:mcp-client"]
 request_fixture: "fixtures/requests/dynamic_execution/find_and_summarize.md"
 mode_support: ["manual-checkpoint"]
 portals:

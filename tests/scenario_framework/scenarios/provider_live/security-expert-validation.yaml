@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "security-expert-validation"
 title: "Security Expert agent validation"
 pack: "provider_live"
-tags: ["provider-live", "planning"]
+tags: ["provider-live", "planning", "subsystem:identities", "entity:security-expert"]
 request_fixture: "fixtures/requests/provider_live/security_expert.md"
 mode_support: ["auto", "step"]
 portals:

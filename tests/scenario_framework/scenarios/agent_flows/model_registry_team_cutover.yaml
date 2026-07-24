@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "model-registry-team-cutover"
 title: "Model Registry Team cutover — request-to-plan-approval-to-execution resolves via ModelResolver (best_ranked)"
 pack: "agent_flows"
-tags: ["safety-gate", "model-routing"]
+tags: ["safety-gate", "model-routing", "subsystem:flows"]
 edition: "team"
 request_fixture: "fixtures/requests/agent_flows/model_registry_team_cutover.md"
 mode_support: ["auto"]

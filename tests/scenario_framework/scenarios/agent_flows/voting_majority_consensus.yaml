@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "voting-majority-consensus"
 title: "Voting Group majority consensus — 3 runners produce 2-vs-1 majority"
 pack: "agent_flows"
-tags: ["safety-gate", "voting", "consensus"]
+tags: ["safety-gate", "voting", "consensus", "subsystem:flows"]
 edition: "team"
 request_fixture: "fixtures/requests/agent_flows/voting_majority_consensus.md"
 flow_fixture: "fixtures/flows/voting/majority_consensus.flow.yaml"

@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "guardrail-block-violation"
 title: "Guardrail blocks on policy violation — verifies concurrent guardrail runner integration"
 pack: "agent_flows"
-tags: ["safety-gate"]
+tags: ["safety-gate", "subsystem:flows"]
 edition: "team"
 request_fixture: "fixtures/requests/agent_flows/guardrail_block_violation.md"
 mode_support: ["auto"]

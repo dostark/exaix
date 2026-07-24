@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "session-delegate-refinement"
 title: "Session Delegation — Refinement Gate"
 pack: "agent_flows"
-tags: ["safety-gate", "session-delegation"]
+tags: ["safety-gate", "session-delegation", "subsystem:flows"]
 request_fixture: "fixtures/requests/agent_flows/quality_gate_clarification.md"
 mode_support: ["auto"]
 portals: []

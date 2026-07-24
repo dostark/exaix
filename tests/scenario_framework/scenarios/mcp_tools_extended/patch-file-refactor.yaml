@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "patch-file-refactor"
 title: "Patch file tool performs targeted refactoring"
 pack: "mcp_tools_extended"
-tags: ["patch_file", "refactoring", "write-tools"]
+tags: ["patch_file", "refactoring", "write-tools", "subsystem:tools", "entity:patch_file"]
 request_fixture: "fixtures/requests/mcp_tools_extended/patch_file_refactor.md"
 mode_support: ["auto", "manual-checkpoint"]
 portals: []

@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "quality-judge-validation"
 title: "Quality Judge agent validation"
 pack: "provider_live"
-tags: ["provider-live", "planning"]
+tags: ["provider-live", "planning", "subsystem:identities", "entity:quality-judge"]
 request_fixture: "fixtures/requests/provider_live/quality_judge.md"
 mode_support: ["auto", "step"]
 portals:

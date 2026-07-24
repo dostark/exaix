@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "move-file-restructure"
 title: "Move file tool relocates files correctly"
 pack: "mcp_tools_extended"
-tags: ["move_file", "restructure", "write-tools"]
+tags: ["move_file", "restructure", "write-tools", "subsystem:tools", "entity:move_file"]
 request_fixture: "fixtures/requests/mcp_tools_extended/move_file_restructure.md"
 mode_support: ["auto", "manual-checkpoint"]
 portals: []

@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "create-directory-structure"
 title: "Create directory tool creates nested directories"
 pack: "mcp_tools_extended"
-tags: ["create_directory", "setup", "write-tools"]
+tags: ["create_directory", "setup", "write-tools", "subsystem:tools", "entity:create_directory"]
 request_fixture: "fixtures/requests/mcp_tools_extended/create_directory_structure.md"
 mode_support: ["auto"]
 portals: []

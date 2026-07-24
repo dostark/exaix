@@ -25,6 +25,11 @@ export const ScenarioSchema = z.object({
   pack: NON_EMPTY_STRING,
   tags: z.array(z.string().min(1)),
   request_fixture: NON_EMPTY_STRING,
+  /**
+   * @deprecated Use `flow:` frontmatter in request fixtures instead. This field
+   * is defined but not consumed by the scenario runner. Kept for backward
+   * compatibility with existing scenario YAML files that still reference it.
+   */
   flow_fixture: NON_EMPTY_STRING.optional(),
   mode_support: z.array(z.nativeEnum(ScenarioExecutionMode)).min(1),
   portals: z.array(PortalMountSchema),

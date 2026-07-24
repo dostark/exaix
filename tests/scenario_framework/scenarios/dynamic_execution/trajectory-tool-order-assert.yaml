@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "trajectory-tool-order-assert"
 title: "Trajectory eval captures tool order from fixture journal"
 pack: "dynamic_execution"
-tags: ["dynamic", "manual-only", "trajectory"]
+tags: ["dynamic", "manual-only", "trajectory", "subsystem:mcp-client"]
 request_fixture: "fixtures/requests/dynamic_execution/explore_codebase.md"
 portals: []
 mode_support: ["manual-checkpoint"]

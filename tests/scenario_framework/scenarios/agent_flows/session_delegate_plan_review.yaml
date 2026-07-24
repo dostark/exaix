@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "session-delegate-plan-review"
 title: "Session Delegation — Plan Review Gate"
 pack: "agent_flows"
-tags: ["safety-gate", "session-delegation", "manual-only"]
+tags: ["safety-gate", "session-delegation", "manual-only", "subsystem:flows"]
 request_fixture: "fixtures/requests/agent_flows/plan_amendment_trigger_drift.md"
 mode_support: ["auto"]
 portals: []

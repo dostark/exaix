@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "plan-amendment-lifecycle"
 title: "Plan Amendment Lifecycle"
 pack: "agent_flows"
-tags: ["safety-gate", "planning", "amendment"]
+tags: ["safety-gate", "planning", "amendment", "subsystem:flows"]
 request_fixture: "fixtures/requests/agent_flows/plan_amendment_trigger_drift.md"
 mode_support: ["auto"]
 portals: []
