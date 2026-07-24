@@ -465,6 +465,7 @@ export function renderSweTaskTemplate(
     `    step_pass_threshold: 0.8`,
     `    env:`,
     `      EXA_EVAL_LLM_MOCK: "false"`,
+    `      EXA_LLM_PROVIDER: "$CELL_PROVIDER"`,
     `    output_criteria:`,
     `      - id: "llm-judge-quality"`,
     `        kind: "llm-judge"`,

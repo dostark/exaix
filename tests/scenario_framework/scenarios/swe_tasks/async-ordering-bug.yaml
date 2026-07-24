@@ -35,10 +35,7 @@ steps:
   - id: "setup-portal-repo"
     type: "shell"
     command: "sh"
-    args: [
-      "-c",
-      "cp -r \"$FRAMEWORK_HOME/fixtures/portals/todo_app_async_bug\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'",
-    ]
+    args: ["-c", "cp -r \"$FRAMEWORK_HOME/fixtures/portals/todo_app_async_bug\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'"]
     output_criteria:
       - id: "portal-repo-initialized"
         kind: "command-exit-code"
@@ -54,10 +51,7 @@ steps:
   - id: "patch-blueprint-capability"
     type: "shell"
     command: "sh"
-    args: [
-      "-c",
-      "sed -i 's/\"react\"/\"react\", \"cli_delegate\"/' $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md && grep -q cli_delegate $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md",
-    ]
+    args: ["-c", "sed -i 's/\"react\"/\"react\", \"cli_delegate\"/' $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md && grep -q cli_delegate $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md"]
     output_criteria:
       - id: "capability-patched"
         kind: "command-exit-code"
@@ -138,10 +132,7 @@ steps:
   - id: "approve-review"
     type: "shell"
     command: "sh"
-    args: [
-      "-c",
-      "trace_id=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT trace_id FROM activity WHERE action_type = 'request.created' ORDER BY rowid ASC LIMIT 1\"); short_id=$(printf '%s' \"$trace_id\" | cut -c1-8); echo \"trace_id: $trace_id\"; \"$FRAMEWORK_HOME/bin/exactl\" review approve \"request-$short_id\"",
-    ]
+    args: ["-c", "trace_id=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT trace_id FROM activity WHERE action_type = 'request.created' ORDER BY rowid ASC LIMIT 1\"); short_id=$(printf '%s' \"$trace_id\" | cut -c1-8); echo \"trace_id: $trace_id\"; \"$FRAMEWORK_HOME/bin/exactl\" review approve \"request-$short_id\""]
     output_criteria:
       - id: "review-approved"
         kind: "command-output-contains"
@@ -159,10 +150,7 @@ steps:
   - id: "assert-no-dynamic-tool-calls"
     type: "shell"
     command: "sh"
-    args: [
-      "-c",
-      "count=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COUNT(*) FROM activity WHERE action_type = 'dynamic_tool_call'\"); echo \"dynamic_tool_call count: $count\"; test \"$count\" = \"0\"",
-    ]
+    args: ["-c", "count=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COUNT(*) FROM activity WHERE action_type = 'dynamic_tool_call'\"); echo \"dynamic_tool_call count: $count\"; test \"$count\" = \"0\""]
     output_criteria:
       - id: "no-dynamic-tool-calls"
         kind: "command-exit-code"
@@ -171,10 +159,7 @@ steps:
   - id: "assert-files-changed"
     type: "shell"
     command: "sh"
-    args: [
-      "-c",
-      "n=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COALESCE(SUM(json_extract(payload,'$.files_changed')),0) FROM activity WHERE action_type = 'agent.execution_completed'\"); echo \"files_changed total: $n\"; test \"$n\" -gt 0",
-    ]
+    args: ["-c", "n=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COALESCE(SUM(json_extract(payload,'$.files_changed')),0) FROM activity WHERE action_type = 'agent.execution_completed'\"); echo \"files_changed total: $n\"; test \"$n\" -gt 0"]
     output_criteria:
       - id: "files-changed-nonempty"
         kind: "command-exit-code"
@@ -195,6 +180,7 @@ steps:
     step_pass_threshold: 0.8
     env:
       EXA_EVAL_LLM_MOCK: "false"
+      EXA_LLM_PROVIDER: "$CELL_PROVIDER"
     output_criteria:
       - id: "llm-judge-quality"
         kind: "llm-judge"
