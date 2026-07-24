@@ -1,0 +1,8 @@
+{
+  "base_ref": "fc8bab4ca20c482f23961cb7c1476d4ce2b210f7",
+  "scoped_test_cmd": "echo 'prose task: no tests to run'",
+  "family": "task:comprehension",
+  "difficulty": "M",
+  "min_turns": 3,
+  "title": "Map the dependency graph of the storage module"
+}

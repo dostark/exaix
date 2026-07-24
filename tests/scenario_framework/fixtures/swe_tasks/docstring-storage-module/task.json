@@ -1,0 +1,8 @@
+{
+  "base_ref": "fc8bab4ca20c482f23961cb7c1476d4ce2b210f7",
+  "scoped_test_cmd": "deno doc src/storage.ts | head -20",
+  "family": "task:documentation",
+  "difficulty": "M",
+  "min_turns": 3,
+  "title": "Add JSDoc documentation to the storage module"
+}

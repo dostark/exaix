@@ -1,0 +1,8 @@
+{
+  "base_ref": "fc8bab4ca20c482f23961cb7c1476d4ce2b210f7",
+  "scoped_test_cmd": "echo 'prose task: no tests to run'",
+  "family": "task:documentation",
+  "difficulty": "S",
+  "min_turns": 2,
+  "title": "Write a README section for the API module"
+}
