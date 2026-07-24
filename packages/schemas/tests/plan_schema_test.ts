@@ -393,9 +393,9 @@ describe("PlanSchema", () => {
       assertEquals(result.success, false);
     });
 
-    it("should reject plan with subject exceeding 80 characters", () => {
+    it("should reject plan with subject exceeding 200 characters", () => {
       const planData = {
-        subject: "A".repeat(81),
+        subject: "A".repeat(201),
         description: "Valid description",
         steps: [
           {
