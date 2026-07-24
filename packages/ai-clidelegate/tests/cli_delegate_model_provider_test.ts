@@ -344,9 +344,9 @@ Deno.test("CliDelegateModelProvider: strips and empties ANTHROPIC_API_KEY/ANTHRO
     Deno.env.delete("ANTHROPIC_AUTH_TOKEN");
   }
 
-  assertEquals(seenEnv?.ANTHROPIC_API_KEY, "");
-  assertEquals(seenEnv?.ANTHROPIC_AUTH_TOKEN, "");
-  assertEquals(seenEnv?.ANTHROPIC_BASE_URL, "");
+  assertEquals(seenEnv?.ANTHROPIC_API_KEY, undefined);
+  assertEquals(seenEnv?.ANTHROPIC_AUTH_TOKEN, undefined);
+  assertEquals(seenEnv?.ANTHROPIC_BASE_URL, undefined);
 });
 
 Deno.test("CliDelegateModelProvider: maps claude result into IGenerateResult (content, usage, cost_usd)", async () => {

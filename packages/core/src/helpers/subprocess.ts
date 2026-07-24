@@ -14,6 +14,12 @@ export interface ISubprocessOptions {
   abortSignal?: AbortSignal;
   cwd?: string;
   env?: Record<string, string>;
+  /** When true, the subprocess starts with a clean environment (no inherited vars).
+   *  Deno 2.x merges `env` with the parent process env by default, so sensitive
+   *  vars like ANTHROPIC_API_KEY leak to subprocesses unless clearEnv is set.
+   *  When clearEnv is true, the subprocess only receives the vars in `env`.
+   *  Phase 141 GAP-3 follow-up. */
+  clearEnv?: boolean;
 }
 
 const DEFAULT_SUBPROCESS_TIMEOUT_MS = 30000;
@@ -51,6 +57,9 @@ export class SafeSubprocess {
 
       if (env) {
         cmdOptions.env = env;
+      }
+      if (options.clearEnv) {
+        cmdOptions.clearEnv = true;
       }
 
       const cmd = new Deno.Command(command, cmdOptions);

@@ -84,7 +84,7 @@ export interface ICliDelegateProcessResult {
 export type IRunCliDelegateProcess = (
   command: string,
   args: string[],
-  options: { cwd: string; env?: Record<string, string>; timeoutMs?: number },
+  options: { cwd: string; env?: Record<string, string>; timeoutMs?: number; clearEnv?: boolean },
 ) => Promise<ICliDelegateProcessResult>;
 
 export interface ICliDelegateModelProviderOptions {
@@ -135,11 +135,6 @@ function buildDelegateEnv(): Record<string, string> {
   for (const key of STRIPPED_AUTH_ENV_KEYS) {
     delete env[key];
   }
-  // Also set the keys to empty string to override any config-file credential
-  // the CLI might read — prevents silent fallback to saved API key in settings.
-  env.ANTHROPIC_API_KEY = "";
-  env.ANTHROPIC_AUTH_TOKEN = "";
-  env.ANTHROPIC_BASE_URL = "";
   return env;
 }
 
@@ -264,6 +259,7 @@ export class CliDelegateModelProvider implements IModelProvider {
       result = await this.run(this.options.bin, args, {
         cwd: this.options.cwd,
         env,
+        clearEnv: true,
         timeoutMs: this.options.timeoutMs ?? DEFAULT_CLI_DELEGATE_TIMEOUT_MS,
       });
     } catch (error) {
