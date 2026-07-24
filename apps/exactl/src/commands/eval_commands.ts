@@ -176,26 +176,58 @@ export class EvalCommands extends BaseCommand {
    * "—", never "0": a cell whose every run had no tracked cost (all direct-API) is unknown
    * spend, not free spend, and must never be confused with a predicted-cost figure.
    */
-  report(options: { view?: string; scenario?: string; last?: number }): void {
+  report(options: { view?: string; scenario?: string; last?: number; pack?: string }): void {
     const view = options.view ?? "cost";
-    if (view !== "cost") {
-      console.log(`Unknown report view: ${view}. Supported views: cost`);
+    if (view === "cost") {
+      const dbPath = resolveEvalDbPath();
+      const store = new EvalSqliteStore(dbPath);
+      try {
+        store.initialize();
+        const runs = store.queryRuns({ scenario: options.scenario, last: options.last });
+        if (runs.length === 0) {
+          console.log("No evaluation history found for cost report.");
+          return;
+        }
+        renderCostReportTable(groupRunsByCell(runs));
+      } finally {
+        store.close();
+      }
       return;
     }
 
-    const dbPath = resolveEvalDbPath();
-    const store = new EvalSqliteStore(dbPath);
-    try {
-      store.initialize();
-      const runs = store.queryRuns({ scenario: options.scenario, last: options.last });
-      if (runs.length === 0) {
-        console.log("No evaluation history found for cost report.");
-        return;
+    if (view === "families") {
+      const dbPath = resolveEvalDbPath();
+      const store = new EvalSqliteStore(dbPath);
+      try {
+        store.initialize();
+        const summary = store.summarizeByTag("task:", { pack: options.pack });
+        if (summary.length === 0) {
+          console.log("No family summary data found.");
+          return;
+        }
+        console.log("Family Report");
+        console.log("-------------");
+        console.log(
+          `  ${"Family".padEnd(25)} ${"Tasks".padEnd(6)} ${"Mean".padEnd(7)} ${"Pass@1".padEnd(8)} ${
+            "Reconcile".padEnd(10)
+          } ${"Duration".padEnd(10)}`,
+        );
+        for (const row of summary) {
+          console.log(
+            `  ${row.family.padEnd(25)} ${String(row.taskCount).padEnd(6)} ${row.meanScore.toFixed(3).padEnd(7)} ${
+              row.meanPassAt1.toFixed(3).padEnd(8)
+            } ${(row.reconcileRate * 100).toFixed(0).padEnd(9)}% ${
+              Math.round(row.meanDurationMs).toString().padEnd(9)
+            }ms`,
+          );
+        }
+      } finally {
+        store.close();
       }
-      renderCostReportTable(groupRunsByCell(runs));
-    } finally {
-      store.close();
+      return;
     }
+
+    console.log(`Unknown report view: ${view}. Supported views: cost, families`);
   }
 
   compare(runA: string, runB: string): void {
@@ -300,7 +332,7 @@ function groupRunsByCell(runs: ICostReportRunRow[]): ICostReportCellGroup[] {
     const cellId = run.cell_id ?? COST_REPORT_UNKNOWN_CELL;
     const provider = run.provider ?? COST_REPORT_UNKNOWN_PROVIDER;
     const model = run.model ?? COST_REPORT_UNKNOWN_MODEL;
-    const key = `${cellId} ${provider} ${model}`;
+    const key = `${cellId}-${provider}-${model}`;
     const existing = groups.get(key);
     if (existing) {
       existing.runs.push(run);

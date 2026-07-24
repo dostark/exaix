@@ -2950,12 +2950,18 @@ const evalCommand = new Command()
     "report",
     new Command()
       .description("Render a cross-cell timing/token/tracked-cost comparison report")
-      .option("--view <view:string>", "Report view: cost", { default: "cost" })
+      .option("--view <view:string>", "Report view: cost or families", { default: "cost" })
       .option("--scenario <id:string>", "Filter to a single scenario ID")
+      .option("--pack <pack:string>", "Filter to a single pack (e.g. swe-tasks)")
       .option("-l, --last <n:number>", "Limit to the last N runs")
       .action((options) => {
         try {
-          evalCommands.report({ view: options.view, scenario: options.scenario, last: options.last });
+          evalCommands.report({
+            view: options.view,
+            scenario: options.scenario,
+            last: options.last,
+            pack: options.pack,
+          });
         } catch (error) {
           console.error("eval report failed:", error instanceof Error ? error.message : String(error));
           Deno.exit(1);
