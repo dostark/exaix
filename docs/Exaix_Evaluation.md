@@ -677,32 +677,65 @@ schema contracts, extension patterns, and validation sandbox setup.
 ## 13. swe_tasks Benchmark Pack
 
 The `swe_tasks` pack (`tests/scenario_framework/scenarios/swe_tasks/`) is a
-repeatable benchmark of typical software tasks (fix-bug, add-feature,
-refactor, write-tests) against the `todo_app` fixture portal. It exercises
-all three criterion families: deterministic weighted criteria
-(`command-exit-code`, `file-found`), trajectory-assert on expected tool
-sequences, and LLM-as-judge (`preset: GOAL_ALIGNED_REVIEW`).
+repeatable benchmark of typical software engineering tasks organized by
+family (defect, constructive, behaviour-preserving, judgment) against the
+`todo_app` fixture portal.
 
-Each scenario has two variants:
+### Task Corpus (21 scenarios)
 
-- **Provider-live** (e.g. `fix-bug-null-guard.yaml`): runs through the
-  configured `IModelProvider` (e.g. Anthropic) for both request analysis
-  and execution — requires `ANTHROPIC_API_KEY`.
-- **CLI-delegate** (e.g. `fix-bug-null-guard-cli-all.yaml`): runs entirely
-  through a headless `claude`/`opencode` CLI subprocess via
-  `CliDelegateStrategy`, authenticated against a flat-rate subscription.
-  Zero API key needed. Use `--cell claude-code` or `--cell opencode` to
-  select the tool explicitly.
+| Family | Tasks | Example |
+|--------|-------|---------|
+| Bug-fix | 4 | fix-bug-null-guard, async-ordering-bug, injection-sanitisation, path-traversal-storage |
+| Feature | 4 | add-feature-endpoint, add-search-feature, add-batch-operations |
+| Refactor | 4 | extract-sort-utility, rename-priority-type, rename-done-to-completed |
+| Test | 4 | write-tests-uncovered, write-coverage-for-priority, write-regression-test-for-summary |
+| Comprehension | 2 | explain-request-flow, map-dependencies |
+| Documentation | 2 | write-api-readme, docstring-storage-module |
+
+Each task has a `task.json` (metadata + base_ref), `TASK.md` (brief),
+`reference.patch` (reference solution), and scenario YAML.
+
+### Scoring Channels
+
+- **Plan quality** (weighted): plan produced (`file-found`), review approved
+  (`command-output-contains`), execution completed (`file-found` archive)
+- **Functional correctness** (0.3): `command-exit-code` on `deno test`
+- **Security** (0.2): no dynamic tool calls (`sqlite3 COUNT(*)`)
+- **Output quality** (0.4): LLM-as-judge (`GOAL_ALIGNED_REVIEW` preset)
+
+Suite score = weighted mean of all steps. Unexecuted steps score 0
+(Phase 141 scoring fix).
+
+### Running
 
 ```bash
-# CLI-delegate path (cost-preferred, no API key)
-exactl eval run --scenario scenarios/swe_tasks/fix-bug-null-guard-cli-all.yaml \
-  --cell claude-code --eval-mode --score-threshold 0.6
-
-# Direct-API path (metered, requires ANTHROPIC_API_KEY)
+# CLI-delegate on opencode Go tier (no API key required)
 exactl eval run --scenario scenarios/swe_tasks/fix-bug-null-guard.yaml \
-  --eval-mode --score-threshold 0.6
+  --cell opencode --eval-mode --score-threshold 0.3
+
+# All swe_tasks scenarios via catalog
+exactl eval run --pack swe-tasks --cell opencode --eval-mode
+
+# View family-level report
+exactl eval report --pack swe-tasks --format table
+
+# Compare providers
+exactl eval report --pack swe-tasks --cell opencode --cell claude-code
 ```
 
-See `tests/scenario_framework/README.md` §Headless CLI execution for
-`--cell` selection and config setup.
+### Configuration
+
+Cells are configured in `configs/eval-cells.toml`. The opencode Go tier
+(`opencode-go/deepseek-v4-flash`) is the default opencode cell. The claude-code
+cell requires the `claude` CLI binary on PATH.
+
+### Extending
+
+Add a new task:
+1. Create `tests/scenario_framework/fixtures/swe_tasks/<task-id>/` with
+   `task.json`, `TASK.md`, `reference.patch`
+2. Create the request fixture in `fixtures/requests/swe_tasks/`
+3. Generate the scenario YAML via `renderSweTaskTemplate`
+4. Validate with `deno test tests/scenario_framework/tests/unit/task_contract_schema_test.ts`
+
+See `tests/scenario_framework/AUTHORING.md` for the full authoring workflow.
