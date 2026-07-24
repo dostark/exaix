@@ -561,7 +561,7 @@ export class EvalSqliteStore {
   ): Array<{ run_id: string; scenario_id: string; tags: string | null; suite_score: number; passed: number; duration_ms: number | null }> {
     if (!lastPerScenario) return rows;
     const seen = new Set<string>();
-    const result: IRunSummaryRow[] = [];
+    const result: Array<{ run_id: string; scenario_id: string; tags: string | null; suite_score: number; passed: number; duration_ms: number | null }> = [];
     for (const row of rows) {
       if (seen.has(row.scenario_id)) continue;
       seen.add(row.scenario_id);
