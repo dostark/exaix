@@ -277,6 +277,11 @@
     "tests/scenario_framework/fixtures/portals/todo_app",
     "tests/scenario_framework/fixtures/portals/todo_app_null_guard_bug"
   ],
+  "lint": {
+    "exclude": [
+      "tests/scenario_framework/fixtures/portals"
+    ]
+  },
   "fmt": {
     "useTabs": false,
     "lineWidth": 120,
@@ -299,6 +304,9 @@
       "packages/",
       "packages-team/",
       "apps/"
+    ],
+    "exclude": [
+      "tests/scenario_framework/fixtures/portals"
     ]
   },
   "compilerOptions": {

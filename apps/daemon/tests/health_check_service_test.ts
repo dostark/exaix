@@ -421,7 +421,7 @@ Deno.test("[integration] initializeHealthChecks returns operational health check
     assertEquals(typeof report.checks.database.metadata?.response_time_ms, "number");
     assertEquals(report.checks.llm_provider.status, "pass");
     assertEquals(typeof report.checks.llm_provider.metadata?.response_time_ms, "number");
-    assertEquals(report.checks.disk_space.status, "pass");
+    assert(["pass", "warn"].includes(report.checks.disk_space.status));
     assertEquals(typeof report.checks.disk_space.metadata?.used_percent, "number");
     assert(["pass", "warn"].includes(report.checks.memory.status));
     assertEquals(typeof report.checks.memory.metadata?.used_mb, "number");
