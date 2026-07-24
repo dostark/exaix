@@ -8,7 +8,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 import type { ITask } from "./models.ts";
-import { TaskRepository } from "./storage.ts";
+import type { TaskRepository } from "./storage.ts";
 
 export interface IRequest {
   body: any;

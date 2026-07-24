@@ -3,16 +3,16 @@
 ## Import Relationships
 
 ```
-        src/models.ts
-              |
-              v
-        src/storage.ts
-         /    |    \
-        v     v     v
-  src/api.ts  src/business_logic.ts  src/utils.ts
-        |
-        v
-  src/api_test.ts
+      src/models.ts
+            |
+            v
+      src/storage.ts
+       /    |    \
+      v     v     v
+src/api.ts  src/business_logic.ts  src/utils.ts
+      |
+      v
+src/api_test.ts
 ```
 
 ## Direct Dependencies
@@ -21,11 +21,11 @@
 
 ## Consumers
 
-| Consumer              | What it uses                      |
-|-----------------------|-----------------------------------|
-| `src/api.ts`          | `TaskRepository`                  |
-| `src/business_logic.ts` | `TaskRepository`                |
-| `src/api_test.ts`     | `TaskRepository`                  |
+| Consumer                | What it uses     |
+| ----------------------- | ---------------- |
+| `src/api.ts`            | `TaskRepository` |
+| `src/business_logic.ts` | `TaskRepository` |
+| `src/api_test.ts`       | `TaskRepository` |
 
 ## Main Export
 

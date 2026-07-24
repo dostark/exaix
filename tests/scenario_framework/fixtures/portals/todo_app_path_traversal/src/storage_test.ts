@@ -1,7 +1,7 @@
 // deno-lint-ignore-file
 // original from todo_app fixture
 import { assertEquals, assertRejects } from "jsr:@std/assert@1";
-import type { TaskRepository } from "./storage.ts";
+import { TaskRepository } from "./storage.ts";
 import type { ITask } from "./models.ts";
 
 Deno.test("TaskRepository stores and retrieves tasks", () => {

@@ -37,7 +37,7 @@ Deno.test("processBatchSubmissions enforces 3-duplicate limit across the batch",
       { title: "Meeting", rawPriority: "low", dueDate: null, assignee: null },
     ],
     () => Promise.resolve(tasks),
-    (task) => {
+    async (task) => {
       tasks.push(task);
     },
   );

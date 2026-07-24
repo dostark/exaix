@@ -683,14 +683,14 @@ family (defect, constructive, behaviour-preserving, judgment) against the
 
 ### Task Corpus (21 scenarios)
 
-| Family | Tasks | Example |
-|--------|-------|---------|
-| Bug-fix | 4 | fix-bug-null-guard, async-ordering-bug, injection-sanitisation, path-traversal-storage |
-| Feature | 4 | add-feature-endpoint, add-search-feature, add-batch-operations |
-| Refactor | 4 | extract-sort-utility, rename-priority-type, rename-done-to-completed |
-| Test | 4 | write-tests-uncovered, write-coverage-for-priority, write-regression-test-for-summary |
-| Comprehension | 2 | explain-request-flow, map-dependencies |
-| Documentation | 2 | write-api-readme, docstring-storage-module |
+| Family        | Tasks | Example                                                                                |
+| ------------- | ----- | -------------------------------------------------------------------------------------- |
+| Bug-fix       | 4     | fix-bug-null-guard, async-ordering-bug, injection-sanitisation, path-traversal-storage |
+| Feature       | 4     | add-feature-endpoint, add-search-feature, add-batch-operations                         |
+| Refactor      | 4     | extract-sort-utility, rename-priority-type, rename-done-to-completed                   |
+| Test          | 4     | write-tests-uncovered, write-coverage-for-priority, write-regression-test-for-summary  |
+| Comprehension | 2     | explain-request-flow, map-dependencies                                                 |
+| Documentation | 2     | write-api-readme, docstring-storage-module                                             |
 
 Each task has a `task.json` (metadata + base_ref), `TASK.md` (brief),
 `reference.patch` (reference solution), and scenario YAML.
@@ -732,6 +732,7 @@ cell requires the `claude` CLI binary on PATH.
 ### Extending
 
 Add a new task:
+
 1. Create `tests/scenario_framework/fixtures/swe_tasks/<task-id>/` with
    `task.json`, `TASK.md`, `reference.patch`
 2. Create the request fixture in `fixtures/requests/swe_tasks/`

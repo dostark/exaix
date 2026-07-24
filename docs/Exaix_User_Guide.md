@@ -1972,17 +1972,17 @@ exactl daemon logs --lines 100           # Show last 100 lines
 exactl daemon logs --follow              # Stream logs (like tail -f)
 ```
 
- #### **Eval Commands** - Run and compare evaluation scenarios
+#### **Eval Commands** - Run and compare evaluation scenarios
 
- Run predefined scenario packs, score results, and compare runs. Full documentation
- in `docs/Exaix_Evaluation.md`.
+Run predefined scenario packs, score results, and compare runs. Full documentation
+in `docs/Exaix_Evaluation.md`.
 
- ```bash
- exactl eval run --pack smoke --trials 5
- exactl eval history --last 10
- exactl eval compare --run-a <id> --run-b <id>
- exactl eval report --pack swe-tasks --format table
- ```
+```bash
+exactl eval run --pack smoke --trials 5
+exactl eval history --last 10
+exactl eval compare --run-a <id> --run-b <id>
+exactl eval report --pack swe-tasks --format table
+```
 
 #### **Skill Commands** - Manage Procedural Skills
 

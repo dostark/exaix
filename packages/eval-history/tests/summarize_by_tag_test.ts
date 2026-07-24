@@ -55,7 +55,7 @@ function createStore(): { store: EvalSqliteStore; cleanup: () => void } {
     cleanup: () => {
       try {
         Deno.removeSync(path);
-      } catch {}
+      } catch { /* file may not exist */ }
     },
   };
 }

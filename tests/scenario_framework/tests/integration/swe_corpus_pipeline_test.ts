@@ -20,21 +20,27 @@ Deno.test("[SweCorpusPipeline] full task loop completes with populated scoring c
     // Create a fixture directory with reference.patch
     const fixtureDir = `${workspaceRoot}/fixture`;
     await Deno.mkdir(fixtureDir, { recursive: true });
-    await Deno.writeTextFile(`${fixtureDir}/reference.patch`, `diff --git a/test.txt b/test.txt
+    await Deno.writeTextFile(
+      `${fixtureDir}/reference.patch`,
+      `diff --git a/test.txt b/test.txt
 new file mode 100644
 index 0000000..3b2b5e3
 --- /dev/null
 +++ b/test.txt
 @@ -0,0 +1 @@
 +fixed
-`);
-    await Deno.writeTextFile(`${fixtureDir}/task.json`, JSON.stringify({
-      base_ref: "0000000000000000000000000000000000000001",
-      scoped_test_cmd: "test -f test.txt",
-      family: "task:bug-fix",
-      difficulty: "S",
-      title: "Pipeline test task",
-    }));
+`,
+    );
+    await Deno.writeTextFile(
+      `${fixtureDir}/task.json`,
+      JSON.stringify({
+        base_ref: "0000000000000000000000000000000000000001",
+        scoped_test_cmd: "test -f test.txt",
+        family: "task:bug-fix",
+        difficulty: "S",
+        title: "Pipeline test task",
+      }),
+    );
 
     const scenarioPath = await writeSyntheticScenario({
       frameworkHome,
@@ -46,7 +52,10 @@ index 0000000..3b2b5e3
           id: "setup-worktree",
           type: ScenarioStepType.SHELL,
           command: "sh",
-          args: ["-c", `cp -r "${fixtureDir}" "${workspaceRoot}/worktree" && cd "${workspaceRoot}/worktree" && git init -q && git add -A && git -c user.email=t@t.com -c user.name=t commit -q -m 'init'`],
+          args: [
+            "-c",
+            `cp -r "${fixtureDir}" "${workspaceRoot}/worktree" && cd "${workspaceRoot}/worktree" && git init -q && git add -A && git -c user.email=t@t.com -c user.name=t commit -q -m 'init'`,
+          ],
           outputCriteriaLines: ['    - id: "worktree-ready"', '      kind: "command-exit-code"', "      equals: 0"],
         },
         {
