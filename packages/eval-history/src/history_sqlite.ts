@@ -479,7 +479,110 @@ export class EvalSqliteStore {
     return totalDeleted;
   }
 
+  /**
+   * Summarize runs grouped by a tag prefix (e.g. "task:" matches "task:feature", "task:bug-fix").
+   * Returns per-family aggregates: count, mean score, pass@1, reconcile rate, mean duration.
+   */
+  summarizeByTag(
+    tagPrefix: string,
+    options: { pack?: string; cellId?: string; lastPerScenario?: boolean },
+  ): IFamilySummaryRow[] {
+    const conditions: string[] = [`tags LIKE '["%${tagPrefix}%'`];
+    const params: (string | number)[] = [];
+
+    if (options.pack) {
+      conditions.push("pack = ?");
+      params.push(options.pack);
+    }
+    if (options.cellId) {
+      conditions.push("cell_id = ?");
+      params.push(options.cellId);
+    }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    const rows = this.db.prepare(
+      `SELECT run_id, scenario_id, tags, suite_score, passed, duration_ms FROM eval_runs ${where} ORDER BY run_timestamp DESC`,
+    ).all<
+      {
+        run_id: string;
+        scenario_id: string;
+        tags: string | null;
+        suite_score: number;
+        passed: number;
+        duration_ms: number | null;
+      }
+    >(...params);
+
+    // Deduplicate: keep only latest per scenario if lastPerScenario is true
+    const seen = new Set<string>();
+    const filtered: typeof rows = [];
+    for (const row of rows) {
+      if (options.lastPerScenario && seen.has(row.scenario_id)) continue;
+      seen.add(row.scenario_id);
+      filtered.push(row);
+    }
+
+    // Group by tag prefix match
+    const groups = new Map<
+      string,
+      { scores: number[]; passCount: number; reconcileCount: number; totalDuration: number; runIds: string[] }
+    >();
+    for (const row of filtered) {
+      if (!row.tags) continue;
+      let matched = false;
+      for (const tag of JSON.parse(row.tags) as string[]) {
+        if (tag.startsWith(tagPrefix)) {
+          if (!groups.has(tag)) {
+            groups.set(tag, { scores: [], passCount: 0, reconcileCount: 0, totalDuration: 0, runIds: [] });
+          }
+          const g = groups.get(tag)!;
+          g.scores.push(row.suite_score);
+          g.passCount += row.passed ? 1 : 0;
+          g.totalDuration += row.duration_ms ?? 0;
+          g.runIds.push(row.run_id);
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) continue;
+    }
+
+    // Compute reconcile rate for each family
+    const result: IFamilySummaryRow[] = [];
+    for (const [family, g] of groups) {
+      let reconcileCount = 0;
+      for (const runId of g.runIds) {
+        const crit = this.db.prepare(
+          `SELECT COUNT(*) as cnt FROM eval_criteria_results WHERE run_id = ? AND criterion_id = 'review-approved' AND passed = 1`,
+        ).get<{ cnt: number }>(runId);
+        if (crit && crit.cnt > 0) reconcileCount++;
+      }
+
+      result.push({
+        family,
+        taskCount: g.scores.length,
+        meanScore: g.scores.reduce((a, b) => a + b, 0) / g.scores.length,
+        meanPassAt1: g.passCount / g.scores.length,
+        reconcileRate: g.scores.length > 0 ? reconcileCount / g.scores.length : 0,
+        meanDurationMs: g.scores.length > 0 ? g.totalDuration / g.scores.length : 0,
+        delta: null,
+      });
+    }
+
+    return result.sort((a, b) => a.family.localeCompare(b.family));
+  }
+
   close(): void {
     this.db.close();
   }
+}
+
+export interface IFamilySummaryRow {
+  family: string;
+  taskCount: number;
+  meanScore: number;
+  meanPassAt1: number;
+  reconcileRate: number;
+  meanDurationMs: number;
+  delta: number | null;
 }
