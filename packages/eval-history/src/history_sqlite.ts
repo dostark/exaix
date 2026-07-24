@@ -556,12 +556,39 @@ export class EvalSqliteStore {
    * Deduplicate runs keeping only the latest per scenario.
    */
   private deduplicateRuns(
-    rows: Array<{ run_id: string; scenario_id: string; tags: string | null; suite_score: number; passed: number; duration_ms: number | null }>,
+    rows: Array<
+      {
+        run_id: string;
+        scenario_id: string;
+        tags: string | null;
+        suite_score: number;
+        passed: number;
+        duration_ms: number | null;
+      }
+    >,
     lastPerScenario: boolean,
-  ): Array<{ run_id: string; scenario_id: string; tags: string | null; suite_score: number; passed: number; duration_ms: number | null }> {
+  ): Array<
+    {
+      run_id: string;
+      scenario_id: string;
+      tags: string | null;
+      suite_score: number;
+      passed: number;
+      duration_ms: number | null;
+    }
+  > {
     if (!lastPerScenario) return rows;
     const seen = new Set<string>();
-    const result: Array<{ run_id: string; scenario_id: string; tags: string | null; suite_score: number; passed: number; duration_ms: number | null }> = [];
+    const result: Array<
+      {
+        run_id: string;
+        scenario_id: string;
+        tags: string | null;
+        suite_score: number;
+        passed: number;
+        duration_ms: number | null;
+      }
+    > = [];
     for (const row of rows) {
       if (seen.has(row.scenario_id)) continue;
       seen.add(row.scenario_id);
@@ -574,10 +601,25 @@ export class EvalSqliteStore {
    * Group runs by tags matching the given prefix.
    */
   private groupRunsByTag(
-    rows: Array<{ run_id: string; scenario_id: string; tags: string | null; suite_score: number; passed: number; duration_ms: number | null }>,
+    rows: Array<
+      {
+        run_id: string;
+        scenario_id: string;
+        tags: string | null;
+        suite_score: number;
+        passed: number;
+        duration_ms: number | null;
+      }
+    >,
     tagPrefix: string,
-  ): Map<string, { scores: number[]; passCount: number; reconcileCount: number; totalDuration: number; runIds: string[] }> {
-    const groups = new Map<string, { scores: number[]; passCount: number; reconcileCount: number; totalDuration: number; runIds: string[] }>();
+  ): Map<
+    string,
+    { scores: number[]; passCount: number; reconcileCount: number; totalDuration: number; runIds: string[] }
+  > {
+    const groups = new Map<
+      string,
+      { scores: number[]; passCount: number; reconcileCount: number; totalDuration: number; runIds: string[] }
+    >();
     for (const row of rows) {
       if (!row.tags) continue;
       for (const tag of JSON.parse(row.tags) as string[]) {
