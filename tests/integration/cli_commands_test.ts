@@ -161,7 +161,11 @@ cliTest("CLI: review show displays review details", async () => {
 cliTest("CLI: review show --diff displays artifact body for artifact IDs", async () => {
   const env = await TestEnvironment.create();
   try {
-    const artifactId = await createArtifactReview(env, "request-artifact-001", "# Artifact Title\n\nArtifact body content");
+    const artifactId = await createArtifactReview(
+      env,
+      "request-artifact-001",
+      "# Artifact Title\n\nArtifact body content",
+    );
 
     const result = await runExactl(["review", "show", artifactId, "--diff"], env.tempDir);
     assertEquals(result.code, 0);
