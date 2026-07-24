@@ -87,7 +87,7 @@ export interface ICliDelegateProcessResult {
 export type IRunCliDelegateProcess = (
   command: string,
   args: string[],
-  options: { cwd: string; env?: Record<string, string>; timeoutMs?: number },
+  options: { cwd: string; env?: Record<string, string>; timeoutMs?: number; clearEnv?: boolean },
 ) => Promise<ICliDelegateProcessResult>;
 
 /** Resolves a portal alias to its absolute checkout path. Backed by AgentOrchestrator.getPortalConfig. */
@@ -213,6 +213,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
       result = await this.run(this.deps.bin, args, {
         cwd: portalPath,
         env: buildDelegateEnv(portalPath),
+        clearEnv: true,
         timeoutMs: CLI_DELEGATE_TURN_TIMEOUT_MS,
       });
     } catch (error) {
@@ -258,6 +259,7 @@ export class CliDelegateStrategy implements IExecutionStrategy {
       result = await this.run(this.deps.bin, args, {
         cwd: portalPath,
         env: buildDelegateEnv(portalPath),
+        clearEnv: true,
         timeoutMs: CLI_DELEGATE_TURN_TIMEOUT_MS,
       });
     } catch (error) {
