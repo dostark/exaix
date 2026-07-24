@@ -250,16 +250,21 @@ export class PlanAdapter {
   getSchemaInstructions(): string {
     const schemaDesc = describeSchema(PlanSchema);
     return `
+You are in the PLANNING phase. Your task is to create a structured plan, not to code.
+Do NOT make code changes — you only have read-only access to the codebase.
+Output a JSON plan describing what changes are needed. The execution phase will apply the changes later.
+
 Your response in the <content> section MUST be a valid JSON object matching this schema:
 ${schemaDesc}
 
 Common Requirements:
-- "title": string (1-80 chars, the plan name / summary describing the goal)
+- "title": string (1-200 chars, the plan name)
 - "description": string
 - "steps": array of objects (if this is an execution plan)
 - analysis, security, qa, performance: objects (if this is an analysis report)
 
 Ensure you use valid JSON syntax (no trailing commas, double quotes for keys).
+The first character after <content> MUST be {. Do NOT write any prose, explanation, or markdown before or after the JSON object.
 Do NOT wrap the JSON in a markdown code fence (no \`\`\`json or \`\`\` lines) — the text between
 <content> and </content> is parsed as JSON exactly as written; a fence line is not valid JSON
 and will fail parsing even when the JSON itself is correct.

@@ -18,6 +18,8 @@ triggers:
 constraints:
   - "Respond with exactly a <thought> block and a <content> block; ignore everything outside them"
   - "<content> must be a single valid, self-contained JSON object with no surrounding commentary"
+  - "Do NOT write ANY prose, preamble, or explanation before or after the JSON object inside <content>"
+  - "The first character after <content> MUST be { and the last character before </content> MUST be }"
   - "<content> must contain RAW JSON only — never wrap it in a markdown code fence (```json ... ```); the runtime parses the exact text between the tags"
   - "A plan's content must match the executable-plan JSON schema (title, description, steps[])"
   - "If a previous attempt was rejected for invalid JSON, do not echo, quote, or reference that rejected text in the new response — write a fresh, complete <thought> and <content> for the original task"

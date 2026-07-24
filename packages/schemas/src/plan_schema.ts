@@ -149,8 +149,8 @@ export const PlanSchema = z.object({
    * plan-writer supplies the originating request's subject onto the plan downstream
    * (plan_writer.ts), independent of the candidate. (max 80 chars)
    */
-  title: z.string().min(1).max(80).optional(),
-  subject: z.string().min(1).max(80).optional(),
+  title: z.string().min(1).max(200).optional(),
+  subject: z.string().min(1).max(200).optional(),
 
   /** Overall plan description */
   description: z.string().min(1),
