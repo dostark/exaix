@@ -1,0 +1,9 @@
+{
+  "base_ref": "d2c0ea94ebd7cab96a50089ace81f2c48bbe1c06",
+  "scoped_test_cmd": "deno test src/",
+  "portal": "todo_app_old_priority_name",
+  "family": "task:refactor",
+  "difficulty": "M",
+  "min_turns": 3,
+  "title": "Rename TaskPriority type to Priority"
+}

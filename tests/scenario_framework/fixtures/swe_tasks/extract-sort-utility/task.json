@@ -1,0 +1,9 @@
+{
+  "base_ref": "a528ef342e0a97e9c624f30820b973224695ed2e",
+  "scoped_test_cmd": "deno check src/priority_calculator.ts",
+  "portal": "todo_app_duplicate_sorting",
+  "family": "task:refactor",
+  "difficulty": "S",
+  "min_turns": 3,
+  "title": "Extract duplicated sorting logic into a shared function"
+}

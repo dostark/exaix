@@ -1,0 +1,8 @@
+{
+  "base_ref": "cd3e1e32c6a61ef728e74bccab58dab24a31b4c5",
+  "scoped_test_cmd": "deno test src/utils_test.ts",
+  "family": "task:test",
+  "difficulty": "M",
+  "min_turns": 2,
+  "title": "Write a regression test for formatTaskSummary"
+}

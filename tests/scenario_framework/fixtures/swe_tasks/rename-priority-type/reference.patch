@@ -1,0 +1,78 @@
+diff --git a/src/business_logic.ts b/src/business_logic.ts
+index 8976a8c..29cd024 100644
+--- a/src/business_logic.ts
++++ b/src/business_logic.ts
+@@ -7,7 +7,7 @@
+  *   swe-refactor-extract-function scenario's target.
+  */
+ 
+-import type { ITask, IUser, TaskPriority } from "./models.ts";
++import type { ITask, IUser, Priority } from "./models.ts";
+ 
+ export interface ITaskSubmissionResult {
+   success: boolean;
+@@ -27,13 +27,13 @@ export function processTaskSubmission(
+   if (!title || title.trim().length === 0) errors.push("Title is required");
+   if (title.length > 200) errors.push("Title exceeds 200 characters");
+ 
+-  const validPriorities: TaskPriority[] = ["low", "medium", "high"];
+-  let priority: TaskPriority = "medium";
++  const validPriorities: Priority[] = ["low", "medium", "high"];
++  let priority: Priority = "medium";
+   if (rawPriority) {
+-    if (!validPriorities.includes(rawPriority as TaskPriority)) {
++    if (!validPriorities.includes(rawPriority as Priority)) {
+       errors.push(`Invalid priority: ${rawPriority}`);
+     } else {
+-      priority = rawPriority as TaskPriority;
++      priority = rawPriority as Priority;
+     }
+   }
+ 
+diff --git a/src/models.ts b/src/models.ts
+index 7f1f36b..5e4bd37 100644
+--- a/src/models.ts
++++ b/src/models.ts
+@@ -4,7 +4,7 @@
+  * @description swe_tasks fixture portal: shared domain types for the todo-app fixture.
+  */
+ 
+-export type TaskPriority = "low" | "medium" | "high";
++export type Priority = "low" | "medium" | "high";
+ 
+ export interface IUser {
+   id: string;
+diff --git a/src/priority_calculator.ts b/src/priority_calculator.ts
+index cd81169..1d68188 100644
+--- a/src/priority_calculator.ts
++++ b/src/priority_calculator.ts
+@@ -5,9 +5,9 @@
+  *   Zero test coverage — the swe-write-tests-uncovered scenario's target.
+  */
+ 
+-import type { ITask, TaskPriority } from "./models.ts";
++import type { ITask, Priority } from "./models.ts";
+ 
+-const PRIORITY_RANK: Record<TaskPriority, number> = { low: 0, medium: 1, high: 2 };
++const PRIORITY_RANK: Record<Priority, number> = { low: 0, medium: 1, high: 2 };
+ const ESCALATION_THRESHOLD_MS = 2 * 24 * 60 * 60 * 1000; // 2 days
+ 
+ export function daysUntilDue(task: ITask, now: Date = new Date()): number | null {
+@@ -17,7 +17,7 @@ export function daysUntilDue(task: ITask, now: Date = new Date()): number | null
+   return Math.ceil((due.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+ }
+ 
+-export function escalatedPriority(task: ITask, now: Date = new Date()): TaskPriority {
++export function escalatedPriority(task: ITask, now: Date = new Date()): Priority {
+   if (task.done || !task.dueDate) return task.priority;
+   const due = new Date(task.dueDate);
+   if (Number.isNaN(due.getTime())) return task.priority;
+@@ -26,7 +26,7 @@ export function escalatedPriority(task: ITask, now: Date = new Date()): TaskPrio
+   if (msUntilDue < 0) return "high";
+   if (msUntilDue <= ESCALATION_THRESHOLD_MS && PRIORITY_RANK[task.priority] < PRIORITY_RANK.high) {
+     const nextRank = Math.min(PRIORITY_RANK[task.priority] + 1, PRIORITY_RANK.high);
+-    return (Object.keys(PRIORITY_RANK) as TaskPriority[]).find((p) => PRIORITY_RANK[p] === nextRank)!;
++    return (Object.keys(PRIORITY_RANK) as Priority[]).find((p) => PRIORITY_RANK[p] === nextRank)!;
+   }
+   return task.priority;
+ }

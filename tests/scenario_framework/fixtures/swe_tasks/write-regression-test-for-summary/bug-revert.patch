@@ -1,0 +1,12 @@
+diff --git a/src/utils.ts b/src/utils.ts
+index 5bedafa..abc1234 100644
+--- a/src/utils.ts
++++ b/src/utils.ts
+@@ -19,5 +19,5 @@ export function formatDueDate(task: { dueDate: string | null }): string {
+ }
+ 
+ export function formatTaskSummary(task: { title: string; done: boolean; dueDate: string | null }): string {
+-  const status = task.done ? "[x]" : "[ ]";
++  const status = task.dueDate ? "[x]" : "[ ]";
+   return `${status} ${task.title}`;
+ }

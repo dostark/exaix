@@ -1,0 +1,60 @@
+diff --git a/src/priority_calculator.ts b/src/priority_calculator.ts
+index 0c68516..0a1b550 100644
+--- a/src/priority_calculator.ts
++++ b/src/priority_calculator.ts
+@@ -1,7 +1,7 @@
+ /**
+  * @module TodoAppPriorityCalculator
+  * @path src/priority_calculator.ts
+- * @description Due-date-aware priority escalation with duplicated sorting logic.
++ * @description Due-date-aware priority escalation with shared sort logic.
+  */
+ 
+ import type { ITask, Priority } from "./models.ts";
+@@ -22,32 +22,22 @@ export function escalatedPriority(task: ITask): Priority {
+   return task.priority;
+ }
+ 
+-// Duplicated: sorts tasks by escalated priority, then by due date
++function compareByEscalatedPriority(a: ITask, b: ITask): number {
++  const pa = escalatedPriority(a);
++  const pb = escalatedPriority(b);
++  const order = { low: 0, medium: 1, high: 2 };
++  const diff = order[pb] - order[pa];
++  if (diff !== 0) return diff;
++  if (!a.dueDate && !b.dueDate) return 0;
++  if (!a.dueDate) return 1;
++  if (!b.dueDate) return -1;
++  return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
++}
++
+ export function sortByEscalatedPriority(tasks: ITask[]): ITask[] {
+-  return [...tasks].sort((a, b) => {
+-    const pa = escalatedPriority(a);
+-    const pb = escalatedPriority(b);
+-    const order = { low: 0, medium: 1, high: 2 };
+-    const diff = order[pb] - order[pa];
+-    if (diff !== 0) return diff;
+-    if (!a.dueDate && !b.dueDate) return 0;
+-    if (!a.dueDate) return 1;
+-    if (!b.dueDate) return -1;
+-    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+-  });
++  return [...tasks].sort(compareByEscalatedPriority);
+ }
+ 
+-// Duplicated: same sorting logic, used in a different context (task listing)
+ export function sortTasksForDisplay(tasks: ITask[]): ITask[] {
+-  return [...tasks].sort((a, b) => {
+-    const pa = escalatedPriority(a);
+-    const pb = escalatedPriority(b);
+-    const order = { low: 0, medium: 1, high: 2 };
+-    const diff = order[pb] - order[pa];
+-    if (diff !== 0) return diff;
+-    if (!a.dueDate && !b.dueDate) return 0;
+-    if (!a.dueDate) return 1;
+-    if (!b.dueDate) return -1;
+-    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+-  });
++  return [...tasks].sort(compareByEscalatedPriority);
+ }

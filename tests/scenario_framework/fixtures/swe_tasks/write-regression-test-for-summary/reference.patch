@@ -1,0 +1,12 @@
+diff --git a/src/utils_test.ts b/src/utils_test.ts
+index 1f847f2..def4567 100644
+--- a/src/utils_test.ts
++++ b/src/utils_test.ts
+@@ -35,3 +35,15 @@ Deno.test("formatDueDate still formats a present due date", () => {
+ Deno.test("formatTaskSummary marks a done task", () => {
+   assertEquals(formatTaskSummary({ title: "Test", done: true, dueDate: null }), "[x] Test");
+ });
++
++Deno.test("formatTaskSummary does not mark a task with dueDate as done", () => {
++  assertEquals(formatTaskSummary({ title: "Test", done: false, dueDate: "2026-12-31" }), "[ ] Test");
++});

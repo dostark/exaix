@@ -1,0 +1,193 @@
+schema_version: "1.0.0"
+id: "swe-write-regression-test-for-summary"
+title: "Write a regression test for formatTaskSummary"
+pack: "swe_tasks"
+tags: ["swe", "provider-live"]
+request_fixture: "fixtures/requests/swe_tasks/write-regression-test-for-summary.md"
+portals: []
+mode_support: ["auto"]
+matrix:
+  cells:
+    - tool: "claude-code"
+      provider: "$CELL_PROVIDER"
+      config: "configs/claude-cli-delegate-all.toml"
+      requires_bin: "claude"
+    - tool: "opencode"
+      provider: "$CELL_PROVIDER"
+      config: "configs/opencode-cli-delegate-all.toml"
+      requires_bin: "opencode"
+steps:
+  - id: "setup-db"
+    type: "shell"
+    command: "deno"
+    args: ["run", "-A", "--config", "$FRAMEWORK_HOME/../../deno.json", "$FRAMEWORK_HOME/../../scripts/setup_db.ts"]
+    env:
+      EXA_MIGRATIONS_DIR: "$FRAMEWORK_HOME/../../migrations"
+    output_criteria:
+      - id: "setup-done"
+        kind: "command-exit-code"
+        equals: 0
+  - id: "setup-portal-repo"
+    type: "shell"
+    command: "sh"
+    args: ["-c", "cp -r \"$FRAMEWORK_HOME/fixtures/portals/todo_app\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'"]
+    output_criteria:
+      - id: "portal-repo-initialized"
+        kind: "command-exit-code"
+        equals: 0
+  - id: "setup-blueprints"
+    type: "shell"
+    command: "cp"
+    args: ["-r", "$FRAMEWORK_HOME/../../Blueprints", "$WORKSPACE_ROOT/Blueprints"]
+    output_criteria:
+      - id: "blueprints-copied"
+        kind: "command-exit-code"
+        equals: 0
+  - id: "patch-blueprint-capability"
+    type: "shell"
+    command: "sh"
+    args: ["-c", "sed -i 's/\"react\"/\"react\", \"cli_delegate\"/' $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md && grep -q cli_delegate $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md"]
+    output_criteria:
+      - id: "capability-patched"
+        kind: "command-exit-code"
+        equals: 0
+  - id: "setup-memory"
+    type: "shell"
+    command: "cp"
+    args: ["-r", "$FRAMEWORK_HOME/../../Memory", "$WORKSPACE_ROOT/Memory"]
+    output_criteria:
+      - id: "memory-copied"
+        kind: "command-exit-code"
+        equals: 0
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+  - id: "add-portal"
+    type: "exactl"
+    command: "portal"
+    args: ["add", "$WORKSPACE_ROOT/todo-app", "todo-app"]
+    output_criteria:
+      - id: "portal-added"
+        kind: "command-exit-code"
+        equals: 0
+  - id: "restart-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["restart"]
+    output_criteria:
+      - id: "daemon-restarted"
+        kind: "command-output-contains"
+        contains: ["daemon.restarted"]
+  - id: "wait-for-daemon-ready"
+    type: "wait-for-journal-event"
+    event_type: "daemon.ready"
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "todo-app", "--identity", "senior-coder"]
+    output_criteria:
+      - id: "request-submitted"
+        kind: "command-output-contains"
+        contains: ["request.created"]
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 180
+    failure_glob: "**/Workspace/Rejected/*_rejected.md"
+    output_criteria:
+      - id: "plan-produced"
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
+        score_weight: 0.15
+  - id: "approve-plan"
+    type: "exactl"
+    command: "plan"
+    args: ["approve-all"]
+    output_criteria:
+      - id: "plan-approved"
+        kind: "command-output-contains"
+        contains: ["approved"]
+  - id: "wait-for-execution-completion"
+    type: "wait-for-file"
+    args: ["**/Archive/*_plan.md"]
+    timeout_sec: 300
+    output_criteria:
+      - id: "execution-completed"
+        kind: "file-found"
+        path_pattern: "**/Archive/*_plan.md"
+        score_weight: 0.15
+  - id: "approve-review"
+    type: "shell"
+    command: "sh"
+    args: ["-c", "trace_id=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT trace_id FROM activity WHERE action_type = 'request.created' ORDER BY rowid ASC LIMIT 1\"); short_id=$(printf '%s' \"$trace_id\" | cut -c1-8); echo \"trace_id: $trace_id\"; \"$FRAMEWORK_HOME/bin/exactl\" review approve \"request-$short_id\""]
+    output_criteria:
+      - id: "review-approved"
+        kind: "command-output-contains"
+        contains: ["review.approved"]
+        score_weight: 0.15
+  - id: "verify-tests"
+    type: "shell"
+    command: "sh"
+    args: ["-c", "cd \"$WORKSPACE_ROOT/todo-app\" && deno test src/"]
+    output_criteria:
+      - id: "tests-pass"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+  - id: "assert-no-dynamic-tool-calls"
+    type: "shell"
+    command: "sh"
+    args: ["-c", "count=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COUNT(*) FROM activity WHERE action_type = 'dynamic_tool_call'\"); echo \"dynamic_tool_call count: $count\"; test \"$count\" = \"0\""]
+    output_criteria:
+      - id: "no-dynamic-tool-calls"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.2
+  - id: "assert-files-changed"
+    type: "shell"
+    command: "sh"
+    args: ["-c", "n=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COALESCE(SUM(json_extract(payload,'$.files_changed')),0) FROM activity WHERE action_type = 'agent.execution_completed'\"); echo \"files_changed total: $n\"; test \"$n\" -gt 0"]
+    output_criteria:
+      - id: "files-changed-nonempty"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.2
+  - id: "prepare-llm-judge-evidence"
+    type: "shell"
+    command: "sh"
+    args: ["-c", "cat \"$WORKSPACE_ROOT/todo-app/src/utils_test.ts\" > \"$WORKSPACE_ROOT/llm-judge-input.txt\""]
+    output_criteria:
+      - id: "evidence-prepared"
+        kind: "command-exit-code"
+        equals: 0
+  - id: "judge-quality"
+    type: "shell"
+    command: "sh"
+    args: ["-c", "true"]
+    step_pass_threshold: 0.8
+    env:
+      EXA_EVAL_LLM_MOCK: "false"
+    output_criteria:
+      - id: "llm-judge-quality"
+        kind: "llm-judge"
+        preset: "GOAL_ALIGNED_REVIEW"
+        evidence_path: "llm-judge-input.txt"
+        context_path: "$REQUEST_FIXTURE"
+        score_threshold: 0.5
+        score_weight: 0.4
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-output-contains"
+        contains: ["daemon.stopped"]

@@ -1,0 +1,8 @@
+{
+  "base_ref": "081716b5b428ef0ef289239fd8ba1d466014895f",
+  "scoped_test_cmd": "deno test src/priority_calculator_test.ts",
+  "family": "task:test",
+  "difficulty": "M",
+  "min_turns": 3,
+  "title": "Add unit test coverage for priority_calculator.ts"
+}

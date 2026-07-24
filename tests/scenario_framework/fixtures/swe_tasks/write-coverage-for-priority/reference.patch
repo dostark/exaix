@@ -1,0 +1,48 @@
+diff --git a/src/priority_calculator_test.ts b/src/priority_calculator_test.ts
+new file mode 100644
+index 0000000..f3fddf7
+--- /dev/null
++++ b/src/priority_calculator_test.ts
+@@ -0,0 +1,42 @@
++/**
++ * @module PriorityCalculatorTest
++ * @path src/priority_calculator_test.ts
++ * @description Tests for priority calculator.
++ */
++
++import { assertEquals } from "jsr:@std/assert@1";
++import { daysUntilDue, escalatedPriority, sortByEscalatedPriority } from "./priority_calculator.ts";
++import type { ITask } from "./models.ts";
++
++function makeTask(overrides: Partial<ITask> = {}): ITask {
++  return { id: "1", title: "T", priority: "medium", done: false, dueDate: null, assignee: null, ...overrides };
++}
++
++Deno.test("daysUntilDue returns null for null dueDate", () => {
++  assertEquals(daysUntilDue(null), null);
++});
++
++Deno.test("daysUntilDue returns a positive number for a future date", () => {
++  const future = new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 10);
++  const days = daysUntilDue(future);
++  assertEquals(typeof days, "number");
++  assertEquals(days! > 0, true);
++});
++
++Deno.test("escalatedPriority returns same priority when dueDate is null", () => {
++  assertEquals(escalatedPriority(makeTask()), "medium");
++});
++
++Deno.test("escalatedPriority escalates low to medium within 2 days", () => {
++  const soon = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
++  const task = makeTask({ priority: "low", dueDate: soon });
++  assertEquals(escalatedPriority(task), "medium");
++});
++
++Deno.test("sortByEscalatedPriority returns tasks sorted by escalated priority", () => {
++  const high = makeTask({ id: "1", priority: "high", dueDate: null });
++  const low = makeTask({ id: "2", priority: "low", dueDate: null });
++  const sorted = sortByEscalatedPriority([low, high]);
++  assertEquals(sorted[0].id, "1");
++  assertEquals(sorted[1].id, "2");
++});
