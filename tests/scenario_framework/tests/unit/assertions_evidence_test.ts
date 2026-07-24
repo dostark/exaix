@@ -715,3 +715,24 @@ Deno.test({
     });
   },
 });
+
+Deno.test({
+  name:
+    "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint uses CLI delegate provider when EXA_LLM_PROVIDER=claude-cli",
+  ...DISABLED_OPTS,
+  fn: async () => {
+    await withEnv({ EXA_LLM_PROVIDER: "claude-cli", ...NO_BACKWARD_KEYS }, async () => {
+      try {
+        await callLlmEndpoint("test prompt");
+        fail("Expected CLI delegate error");
+      } catch (err) {
+        const msg = (err as Error).message;
+        assert(!msg.includes("EXA_LLM_PROVIDER"), "should resolve provider, not complain about missing");
+        assert(
+          msg.includes("exited with code") || msg.includes("not found") || msg.includes("Permission denied"),
+          `expected CLI delegate error, got: ${msg}`,
+        );
+      }
+    });
+  },
+});
