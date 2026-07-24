@@ -1,0 +1,93 @@
+diff --git a/src/api.ts b/src/api.ts
+index 0bf722a..4729d99 100644
+--- a/src/api.ts
++++ b/src/api.ts
+@@ -2,8 +2,6 @@
+  * @module TodoAppApi
+  * @path src/api.ts
+  * @description swe_tasks fixture portal: HTTP-style handlers over TaskRepository.
+- *   There is no way to mark a task complete — the swe-add-feature-endpoint
+- *   scenario's target is adding a PATCH /tasks/:id/complete handler.
+  */
+ 
+ // deno-lint-ignore-file no-explicit-any
+@@ -46,4 +44,16 @@ export function handleCreateTask(repo: TaskRepository, req: IRequest, res: IResp
+   res.status(201).json(task);
+ }
+ 
+-// No handler exists yet for marking a task complete (PATCH /tasks/:id/complete).
++export function handleSearchTasks(repo: TaskRepository, req: IRequest, res: IResponse): void {
++  const query = typeof req.body.query === "string" ? req.body.query.toLowerCase() : "";
++  if (!query) {
++    res.status(400).json({ error: "Query must be a non-empty string" });
++    return;
++  }
++  const results = repo.list().filter((t) => {
++    const titleMatch = t.title.toLowerCase().includes(query);
++    const assigneeMatch = t.assignee && t.assignee.name.toLowerCase().includes(query);
++    return titleMatch || assigneeMatch;
++  });
++  res.json(results);
++}
+diff --git a/src/api_test.ts b/src/api_test.ts
+index 1fa523b..36b87b1 100644
+--- a/src/api_test.ts
++++ b/src/api_test.ts
+@@ -2,14 +2,13 @@
+  * @module TodoAppApiTest
+  * @path src/api_test.ts
+  * @description swe_tasks fixture portal: baseline coverage for the existing API handlers.
+- *   The swe-add-feature-endpoint scenario adds a new handler alongside these — must not
+- *   break them.
+  */
+ 
+ // deno-lint-ignore-file no-explicit-any
+ import { assertEquals } from "jsr:@std/assert@1";
+-import { handleCreateTask, handleGetTask, handleListTasks, type IRequest, type IResponse } from "./api.ts";
++import { handleCreateTask, handleGetTask, handleListTasks, handleSearchTasks, type IRequest, type IResponse } from "./api.ts";
+ import { TaskRepository } from "./storage.ts";
++import type { IUser } from "./models.ts";
+ 
+ function makeResponse(): IResponse & { statusCode: number; body: any } {
+   const res = {
+@@ -59,3 +58,40 @@ Deno.test("handleListTasks returns every stored task", () => {
+ 
+   assertEquals(res.body.length, 2);
+ });
++
++Deno.test("handleSearchTasks filters by title match (case-insensitive)", () => {
++  const repo = new TaskRepository();
++  repo.add({ id: "1", title: "Buy milk", priority: "low", done: false, dueDate: null, assignee: null });
++  repo.add({ id: "2", title: "Walk dog", priority: "low", done: false, dueDate: null, assignee: null });
++  const req: IRequest = { body: { query: "milk" }, params: {} };
++  const res = makeResponse();
++
++  handleSearchTasks(repo, req, res);
++
++  assertEquals(res.body.length, 1);
++  assertEquals(res.body[0].id, "1");
++});
++
++Deno.test("handleSearchTasks filters by assignee name (case-insensitive)", () => {
++  const repo = new TaskRepository();
++  const alice: IUser = { id: "u1", name: "Alice", email: "alice@test.com" };
++  repo.add({ id: "1", title: "Review PR", priority: "medium", done: false, dueDate: null, assignee: alice });
++  repo.add({ id: "2", title: "Fix bug", priority: "high", done: false, dueDate: null, assignee: null });
++  const req: IRequest = { body: { query: "alice" }, params: {} };
++  const res = makeResponse();
++
++  handleSearchTasks(repo, req, res);
++
++  assertEquals(res.body.length, 1);
++  assertEquals(res.body[0].id, "1");
++});
++
++Deno.test("handleSearchTasks returns 400 for empty query", () => {
++  const repo = new TaskRepository();
++  const req: IRequest = { body: { query: "" }, params: {} };
++  const res = makeResponse();
++
++  handleSearchTasks(repo, req, res);
++
++  assertEquals(res.statusCode, 400);
++});

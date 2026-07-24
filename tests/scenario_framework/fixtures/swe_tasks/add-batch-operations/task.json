@@ -1,0 +1,8 @@
+{
+  "base_ref": "99303096ecf035c3a6ed82ad813af3a2c62e5752",
+  "scoped_test_cmd": "deno test src/batch_operations_test.ts",
+  "family": "task:feature",
+  "difficulty": "M",
+  "min_turns": 4,
+  "title": "Add batch operations for task management"
+}

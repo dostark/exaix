@@ -1,0 +1,39 @@
+diff --git a/src/api.ts b/src/api.ts
+index 0bf722a..c74eacf 100644
+--- a/src/api.ts
++++ b/src/api.ts
+@@ -38,7 +38,7 @@ export function handleCreateTask(repo: TaskRepository, req: IRequest, res: IResp
+     id: crypto.randomUUID(),
+     title: req.body.title,
+     priority: req.body.priority ?? "medium",
+-    done: false,
++    completed: false,
+     dueDate: req.body.dueDate ?? null,
+     assignee: req.body.assignee ?? null,
+   };
+diff --git a/src/business_logic.ts b/src/business_logic.ts
+index 29cd024..4b59ec8 100644
+--- a/src/business_logic.ts
++++ b/src/business_logic.ts
+@@ -59,7 +59,7 @@ export function processTaskSubmission(
+     id: crypto.randomUUID(),
+     title,
+     priority,
+-    done: false,
++    completed: false,
+     dueDate,
+     assignee,
+   };
+diff --git a/src/models.ts b/src/models.ts
+index 5e4bd37..6f33e07 100644
+--- a/src/models.ts
++++ b/src/models.ts
+@@ -16,7 +16,7 @@ export interface ITask {
+   id: string;
+   title: string;
+   priority: Priority;
+-  done: boolean;
++  completed: boolean;
+   dueDate: string | null;
+   assignee: IUser | null;
+ }

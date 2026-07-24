@@ -1,0 +1,8 @@
+{
+  "base_ref": "bb5c755b21d5d98658841c319cf0f51b986ea5e9",
+  "scoped_test_cmd": "deno test src/api_test.ts",
+  "family": "task:feature",
+  "difficulty": "S",
+  "min_turns": 3,
+  "title": "Add a task search endpoint"
+}

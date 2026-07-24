@@ -1,0 +1,8 @@
+{
+  "base_ref": "5fd20eda770bc9e09c65cc446468c5bc6d3a55ef",
+  "scoped_test_cmd": "deno test src/",
+  "family": "task:refactor",
+  "difficulty": "M",
+  "min_turns": 4,
+  "title": "Rename done to completed across the codebase"
+}

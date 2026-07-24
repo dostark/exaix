@@ -1,0 +1,8 @@
+{
+  "base_ref": "b8d6b0f48e07dfd552d9420f3235613d72e45ad6",
+  "scoped_test_cmd": "deno test src/api_routes_test.ts",
+  "family": "task:refactor",
+  "difficulty": "M",
+  "min_turns": 3,
+  "title": "Extract API route strings into named constants"
+}

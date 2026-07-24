@@ -1,0 +1,85 @@
+diff --git a/src/batch_operations.ts b/src/batch_operations.ts
+new file mode 100644
+index 0000000..e04baf1
+--- /dev/null
++++ b/src/batch_operations.ts
+@@ -0,0 +1,30 @@
++/**
++ * @module BatchOperations
++ * @path src/batch_operations.ts
++ * @description Batch operations for task management.
++ */
++
++import { TaskRepository } from "./storage.ts";
++import type { ITask, Priority } from "./models.ts";
++
++export function batchUpdateStatus(repo: TaskRepository, ids: string[], done: boolean): ITask[] {
++  const updated: ITask[] = [];
++  for (const id of ids) {
++    const task = repo.get(id);
++    if (task) {
++      repo.update(id, { done });
++      const updatedTask = repo.get(id);
++      if (updatedTask) updated.push(updatedTask);
++    }
++  }
++  return updated;
++}
++
++export function batchDeleteByPriority(repo: TaskRepository, priority: Priority): number {
++  const tasks = repo.list();
++  const toDelete = tasks.filter((t) => t.priority === priority);
++  for (const t of toDelete) {
++    repo.remove(t.id);
++  }
++  return toDelete.length;
++}
+diff --git a/src/batch_operations_test.ts b/src/batch_operations_test.ts
+new file mode 100644
+index 0000000..0d7a675
+--- /dev/null
++++ b/src/batch_operations_test.ts
+@@ -0,0 +1,43 @@
++/**
++ * @module BatchOperationsTest
++ * @path src/batch_operations_test.ts
++ * @description Tests for batch operations.
++ */
++
++import { assertEquals } from "jsr:@std/assert@1";
++import { TaskRepository } from "./storage.ts";
++import { batchUpdateStatus, batchDeleteByPriority } from "./batch_operations.ts";
++
++Deno.test("batchUpdateStatus marks multiple tasks as done", () => {
++  const repo = new TaskRepository();
++  repo.add({ id: "1", title: "A", priority: "low", done: false, dueDate: null, assignee: null });
++  repo.add({ id: "2", title: "B", priority: "low", done: false, dueDate: null, assignee: null });
++  repo.add({ id: "3", title: "C", priority: "low", done: false, dueDate: null, assignee: null });
++
++  const updated = batchUpdateStatus(repo, ["1", "3"], true);
++
++  assertEquals(updated.length, 2);
++  assertEquals(repo.get("1")?.done, true);
++  assertEquals(repo.get("2")?.done, false);
++});
++
++Deno.test("batchUpdateStatus skips missing ids", () => {
++  const repo = new TaskRepository();
++  repo.add({ id: "1", title: "A", priority: "low", done: false, dueDate: null, assignee: null });
++
++  const updated = batchUpdateStatus(repo, ["1", "missing"], true);
++
++  assertEquals(updated.length, 1);
++});
++
++Deno.test("batchDeleteByPriority removes all tasks of a given priority", () => {
++  const repo = new TaskRepository();
++  repo.add({ id: "1", title: "A", priority: "low", done: false, dueDate: null, assignee: null });
++  repo.add({ id: "2", title: "B", priority: "medium", done: false, dueDate: null, assignee: null });
++  repo.add({ id: "3", title: "C", priority: "low", done: false, dueDate: null, assignee: null });
++
++  const deleted = batchDeleteByPriority(repo, "low");
++
++  assertEquals(deleted, 2);
++  assertEquals(repo.list().length, 1);
++});
