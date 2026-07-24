@@ -32,3 +32,8 @@ steps:
         score_weight: 0.8
         kind: "json-path-exists"
         path: "$.steps[0]"
+      - id: "quality-content"
+        kind: "llm-judge"
+        preset: "CONTENT_QUALITY"
+        context_path: "$REQUEST_FIXTURE"
+        score_threshold: 0.7

@@ -57,3 +57,8 @@ steps:
         score_weight: 0.6
         kind: "json-path-exists"
         path: "$.complexity"
+      - id: "quality-code"
+        kind: "llm-judge"
+        preset: "GOAL_ALIGNED_REVIEW"
+        context_path: "$REQUEST_FIXTURE"
+        score_threshold: 0.7
