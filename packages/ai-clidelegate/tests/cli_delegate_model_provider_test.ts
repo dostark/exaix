@@ -317,7 +317,7 @@ Deno.test("CliDelegateModelProvider: different conversationIds never share a ses
   }
 });
 
-Deno.test("CliDelegateModelProvider: strips ANTHROPIC_API_KEY/ANTHROPIC_AUTH_TOKEN from the spawned env", async () => {
+Deno.test("CliDelegateModelProvider: strips and empties ANTHROPIC_API_KEY/ANTHROPIC_AUTH_TOKEN/ANTHROPIC_BASE_URL from the spawned env", async () => {
   let seenEnv: Record<string, string> | undefined;
   const run: IRunCliDelegateProcess = (_command, _args, options) => {
     seenEnv = options.env;
@@ -344,8 +344,9 @@ Deno.test("CliDelegateModelProvider: strips ANTHROPIC_API_KEY/ANTHROPIC_AUTH_TOK
     Deno.env.delete("ANTHROPIC_AUTH_TOKEN");
   }
 
-  assertEquals(seenEnv?.ANTHROPIC_API_KEY, undefined);
-  assertEquals(seenEnv?.ANTHROPIC_AUTH_TOKEN, undefined);
+  assertEquals(seenEnv?.ANTHROPIC_API_KEY, "");
+  assertEquals(seenEnv?.ANTHROPIC_AUTH_TOKEN, "");
+  assertEquals(seenEnv?.ANTHROPIC_BASE_URL, "");
 });
 
 Deno.test("CliDelegateModelProvider: maps claude result into IGenerateResult (content, usage, cost_usd)", async () => {

@@ -124,11 +124,22 @@ export interface IOpencodeReadOnlyPermissionConfig {
 }
 
 /** Env vars stripped from every spawn so a subscription login wins over metered API billing. */
-const STRIPPED_AUTH_ENV_KEYS: readonly string[] = ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"];
+const STRIPPED_AUTH_ENV_KEYS: readonly string[] = [
+  "ANTHROPIC_API_KEY",
+  "ANTHROPIC_AUTH_TOKEN",
+  "ANTHROPIC_BASE_URL",
+];
 
 function buildDelegateEnv(): Record<string, string> {
   const env = Deno.env.toObject();
-  for (const key of STRIPPED_AUTH_ENV_KEYS) delete env[key];
+  for (const key of STRIPPED_AUTH_ENV_KEYS) {
+    delete env[key];
+  }
+  // Also set the keys to empty string to override any config-file credential
+  // the CLI might read — prevents silent fallback to saved API key in settings.
+  env.ANTHROPIC_API_KEY = "";
+  env.ANTHROPIC_AUTH_TOKEN = "";
+  env.ANTHROPIC_BASE_URL = "";
   return env;
 }
 
