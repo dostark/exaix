@@ -16,6 +16,33 @@ import { ArtifactRegistry, DatabaseArtifactRepository } from "@exaix/core/artifa
 import { ReviewStatus } from "@exaix/core/status";
 import { cliTest, runExactl } from "./helpers/cli_test_helpers.ts";
 
+/** Helper: creates an artifact-backed review and returns its ID. */
+async function createArtifactReview(
+  env: TestEnvironment,
+  requestId: string,
+  content: string,
+): Promise<string> {
+  const repo = new DatabaseArtifactRepository(env.db);
+  const artifactRegistry = new ArtifactRegistry(repo, env.tempDir);
+  return await artifactRegistry.createArtifact(requestId, "code-analyst", content);
+}
+
+/** Helper: writes a wait-state JSON file and returns the directory path. */
+async function writeWaitState(
+  env: TestEnvironment,
+  runId: string,
+  overrides: Record<string, unknown> = {},
+): Promise<string> {
+  const traceId = "trace-integration-wait";
+  const waitDir = join(env.tempDir, "Workspace", "WaitStates", traceId);
+  await Deno.mkdir(waitDir, { recursive: true });
+  await Deno.writeTextFile(
+    join(waitDir, `${runId}.json`),
+    makeWaitStateJson(overrides),
+  );
+  return waitDir;
+}
+
 cliTest("CLI: request list shows created requests", async () => {
   const env = await TestEnvironment.create();
   try {
@@ -134,13 +161,7 @@ cliTest("CLI: review show displays review details", async () => {
 cliTest("CLI: review show --diff displays artifact body for artifact IDs", async () => {
   const env = await TestEnvironment.create();
   try {
-    const repo = new DatabaseArtifactRepository(env.db);
-    const artifactRegistry = new ArtifactRegistry(repo, env.tempDir);
-    const artifactId = await artifactRegistry.createArtifact(
-      "request-artifact-001",
-      "code-analyst",
-      "# Artifact Title\n\nArtifact body content",
-    );
+    const artifactId = await createArtifactReview(env, "request-artifact-001", "# Artifact Title\n\nArtifact body content");
 
     const result = await runExactl(["review", "show", artifactId, "--diff"], env.tempDir);
     assertEquals(result.code, 0);
@@ -153,17 +174,13 @@ cliTest("CLI: review show --diff displays artifact body for artifact IDs", async
 cliTest("CLI: review approve marks artifact as approved (no git)", async () => {
   const env = await TestEnvironment.create();
   try {
-    const repo = new DatabaseArtifactRepository(env.db);
-    const artifactRegistry = new ArtifactRegistry(repo, env.tempDir);
-    const artifactId = await artifactRegistry.createArtifact(
-      "request-artifact-002",
-      "code-analyst",
-      "# Approve Me\n\nThis is an artifact",
-    );
+    const artifactId = await createArtifactReview(env, "request-artifact-002", "# Approve Me\n\nThis is an artifact");
 
     const approve = await runExactl(["review", "approve", artifactId], env.tempDir);
     assertEquals(approve.code, 0);
 
+    const repo = new DatabaseArtifactRepository(env.db);
+    const artifactRegistry = new ArtifactRegistry(repo, env.tempDir);
     const updated = await artifactRegistry.getArtifact(artifactId);
     assertEquals(updated.status, ReviewStatus.APPROVED);
   } finally {
@@ -174,14 +191,7 @@ cliTest("CLI: review approve marks artifact as approved (no git)", async () => {
 cliTest("CLI: review list includes both code reviews and artifact-backed reviews", async () => {
   const env = await TestEnvironment.create();
   try {
-    // Create an artifact-backed review
-    const repo = new DatabaseArtifactRepository(env.db);
-    const artifactRegistry = new ArtifactRegistry(repo, env.tempDir);
-    const artifactId = await artifactRegistry.createArtifact(
-      "request-mixed-001",
-      "code-analyst",
-      "# Mixed Artifact\n\nHello from artifact",
-    );
+    const artifactId = await createArtifactReview(env, "request-mixed-001", "# Mixed Artifact\n\nHello from artifact");
 
     // Create a minimal feat/* branch so the code-review path yields at least one entry
     // (No commit required; branch points at existing commit.)
@@ -488,12 +498,7 @@ function makeWaitStateJson(overrides: object = {}): string {
 cliTest("CLI: wait list shows pending wait states", async () => {
   const env = await TestEnvironment.create({ initGit: false });
   try {
-    const waitDir = join(env.tempDir, "Workspace", "WaitStates", "trace-integration-wait");
-    await Deno.mkdir(waitDir, { recursive: true });
-    await Deno.writeTextFile(
-      join(waitDir, "550e8400-e29b-41d4-a716-446655440000.json"),
-      makeWaitStateJson(),
-    );
+    await writeWaitState(env, "550e8400-e29b-41d4-a716-446655440000");
 
     const result = await runExactl(["wait", "list"], env.tempDir);
     assertEquals(result.code, 0);
@@ -506,12 +511,7 @@ cliTest("CLI: wait list shows pending wait states", async () => {
 cliTest("CLI: wait list --status pending filters correctly", async () => {
   const env = await TestEnvironment.create({ initGit: false });
   try {
-    const waitDir = join(env.tempDir, "Workspace", "WaitStates", "trace-integration-wait");
-    await Deno.mkdir(waitDir, { recursive: true });
-    await Deno.writeTextFile(
-      join(waitDir, "550e8400-e29b-41d4-a716-446655440000.json"),
-      makeWaitStateJson({ status: "fulfilled" }),
-    );
+    await writeWaitState(env, "550e8400-e29b-41d4-a716-446655440000", { status: "fulfilled" });
 
     const result = await runExactl(["wait", "list", "--status", "fulfilled"], env.tempDir);
     assertEquals(result.code, 0);

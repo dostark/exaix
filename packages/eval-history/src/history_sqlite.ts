@@ -514,49 +514,15 @@ export class EvalSqliteStore {
     >(...params);
 
     // Deduplicate: keep only latest per scenario if lastPerScenario is true
-    const seen = new Set<string>();
-    const filtered: typeof rows = [];
-    for (const row of rows) {
-      if (options.lastPerScenario && seen.has(row.scenario_id)) continue;
-      seen.add(row.scenario_id);
-      filtered.push(row);
-    }
+    const filtered = this.deduplicateRuns(rows, options.lastPerScenario ?? false);
 
     // Group by tag prefix match
-    const groups = new Map<
-      string,
-      { scores: number[]; passCount: number; reconcileCount: number; totalDuration: number; runIds: string[] }
-    >();
-    for (const row of filtered) {
-      if (!row.tags) continue;
-      let matched = false;
-      for (const tag of JSON.parse(row.tags) as string[]) {
-        if (tag.startsWith(tagPrefix)) {
-          if (!groups.has(tag)) {
-            groups.set(tag, { scores: [], passCount: 0, reconcileCount: 0, totalDuration: 0, runIds: [] });
-          }
-          const g = groups.get(tag)!;
-          g.scores.push(row.suite_score);
-          g.passCount += row.passed ? 1 : 0;
-          g.totalDuration += row.duration_ms ?? 0;
-          g.runIds.push(row.run_id);
-          matched = true;
-          break;
-        }
-      }
-      if (!matched) continue;
-    }
+    const groups = this.groupRunsByTag(filtered, tagPrefix);
 
     // Compute reconcile rate for each family
     const result: IFamilySummaryRow[] = [];
     for (const [family, g] of groups) {
-      let reconcileCount = 0;
-      for (const runId of g.runIds) {
-        const crit = this.db.prepare(
-          `SELECT COUNT(*) as cnt FROM eval_criteria_results WHERE run_id = ? AND criterion_id = 'review-approved' AND passed = 1`,
-        ).get<{ cnt: number }>(runId);
-        if (crit && crit.cnt > 0) reconcileCount++;
-      }
+      const reconcileCount = this.countReconciledRuns(g.runIds);
 
       result.push({
         family,
@@ -570,6 +536,65 @@ export class EvalSqliteStore {
     }
 
     return result.sort((a, b) => a.family.localeCompare(b.family));
+  }
+
+  /**
+   * Count how many of the given run IDs have a passing review-approved criterion.
+   */
+  private countReconciledRuns(runIds: string[]): number {
+    let count = 0;
+    for (const runId of runIds) {
+      const crit = this.db.prepare(
+        `SELECT COUNT(*) as cnt FROM eval_criteria_results WHERE run_id = ? AND criterion_id = 'review-approved' AND passed = 1`,
+      ).get<{ cnt: number }>(runId);
+      if (crit && crit.cnt > 0) count++;
+    }
+    return count;
+  }
+
+  /**
+   * Deduplicate runs keeping only the latest per scenario.
+   */
+  private deduplicateRuns(
+    rows: Array<{ run_id: string; scenario_id: string; tags: string | null; suite_score: number; passed: number; duration_ms: number | null }>,
+    lastPerScenario: boolean,
+  ): Array<{ run_id: string; scenario_id: string; tags: string | null; suite_score: number; passed: number; duration_ms: number | null }> {
+    if (!lastPerScenario) return rows;
+    const seen = new Set<string>();
+    const result: IRunSummaryRow[] = [];
+    for (const row of rows) {
+      if (seen.has(row.scenario_id)) continue;
+      seen.add(row.scenario_id);
+      result.push(row);
+    }
+    return result;
+  }
+
+  /**
+   * Group runs by tags matching the given prefix.
+   */
+  private groupRunsByTag(
+    rows: Array<{ run_id: string; scenario_id: string; tags: string | null; suite_score: number; passed: number; duration_ms: number | null }>,
+    tagPrefix: string,
+  ): Map<string, { scores: number[]; passCount: number; reconcileCount: number; totalDuration: number; runIds: string[] }> {
+    const groups = new Map<string, { scores: number[]; passCount: number; reconcileCount: number; totalDuration: number; runIds: string[] }>();
+    for (const row of rows) {
+      if (!row.tags) continue;
+      for (const tag of JSON.parse(row.tags) as string[]) {
+        if (tag.startsWith(tagPrefix)) {
+          if (!groups.has(tag)) {
+            groups.set(tag, { scores: [], passCount: 0, reconcileCount: 0, totalDuration: 0, runIds: [] });
+          }
+          const g = groups.get(tag)!;
+          g.scores.push(row.suite_score);
+          g.passCount += row.passed ? 1 : 0;
+          g.totalDuration += row.duration_ms ?? 0;
+          g.runIds.push(row.run_id);
+          break;
+        }
+      }
+    }
+    return groups;
   }
 
   close(): void {
