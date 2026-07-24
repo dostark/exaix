@@ -1,0 +1,31 @@
+schema_version: "1.0.0"
+id: "mcp-server-sse-liveness"
+title: "MCP server — SSE transport boots and serves endpoint"
+pack: "mcp_server"
+tags: ["sse", "liveness", "subsystem:mcp-server", "team"]
+edition: "team"
+request_fixture: "fixtures/requests/mcp_tools_extended/read_file.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "start-sse-server"
+    type: "shell"
+    name: "Start MCP server with SSE transport"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "apps/mcp-server/main.ts"
+      - "--transport"
+      - "sse"
+      - "--port"
+      - "19876"
+    env:
+      EXA_LLM_PROVIDER: "mock"
+      EXA_CI_MODE: "1"
+    timeout_sec: 10
+    output_criteria:
+      - id: "server-started"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 1.0

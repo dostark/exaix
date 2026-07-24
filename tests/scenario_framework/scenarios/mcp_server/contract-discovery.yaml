@@ -1,0 +1,44 @@
+schema_version: "1.0.0"
+id: "mcp-server-contract-discovery"
+title: "MCP server — tools/list discovery parity with TOOL_MANIFEST"
+pack: "mcp_server"
+tags: ["smoke", "subsystem:mcp-server", "team"]
+edition: "team"
+request_fixture: "fixtures/requests/mcp_tools_extended/read_file.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "run-discovery"
+    type: "shell"
+    name: "Run MCP stdio driver to discover tools"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "tests/scenario_framework/scripts/mcp_stdio_driver.ts"
+      - "--timeout-ms"
+      - "15000"
+      - "--"
+      - "deno"
+      - "run"
+      - "-A"
+      - "apps/mcp-server/main.ts"
+      - "--"
+      - '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","clientInfo":{"name":"test","version":"1.0"}}}'
+      - '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
+    env:
+      EXA_LLM_PROVIDER: "mock"
+      EXA_CI_MODE: "1"
+    output_criteria:
+      - id: "discovery-succeeded"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+      - id: "server-initialized"
+        kind: "command-output-contains"
+        contains: ["initialize"]
+        score_weight: 0.4
+      - id: "tools-list-returned"
+        kind: "command-output-contains"
+        contains: ["tools"]
+        score_weight: 0.5

@@ -1,0 +1,36 @@
+schema_version: "1.0.0"
+id: "mcp-server-approval-gating"
+title: "MCP server — approval-gated tools refused without approval context"
+pack: "mcp_server"
+tags: ["approval", "security", "subsystem:mcp-server", "team"]
+edition: "team"
+request_fixture: "fixtures/requests/mcp_tools_extended/read_file.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "test-approval-gating"
+    type: "shell"
+    name: "Test approval-gated tools via stdio driver"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "tests/scenario_framework/scripts/mcp_stdio_driver.ts"
+      - "--timeout-ms"
+      - "15000"
+      - "--"
+      - "deno"
+      - "run"
+      - "-A"
+      - "apps/mcp-server/main.ts"
+      - "--"
+      - '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","clientInfo":{"name":"test","version":"1.0"}}}'
+      - '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"exaix_create_request","arguments":{}}}'
+    env:
+      EXA_LLM_PROVIDER: "mock"
+      EXA_CI_MODE: "1"
+    output_criteria:
+      - id: "approval-refused"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 1.0
