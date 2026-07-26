@@ -11,6 +11,7 @@
 import {
   DAEMON_IDENTITY_ID,
   DaemonStatus,
+  DEFAULT_FLOWS_PATH,
   DEFAULT_IDENTITIES_PATH,
   EDITION_SOLO,
   EDITION_TEAM,
@@ -48,7 +49,13 @@ import { EventLogger, EventLoggerStructuredOutput } from "@exaix/core/logger";
 import { AgentRunner, ExecutionLoop } from "@exaix/execution";
 import { initializeHealthChecks } from "@exaix/core/health";
 import { buildMilestoneEmitterFromConfig } from "@exaix/core/observability";
-import { AgentOrchestratorAdapter, FlowRunner, type IFlowEventLogger, type IFlowEventPayload } from "@exaix/flow";
+import {
+  AgentOrchestratorAdapter,
+  FlowLoader,
+  FlowRunner,
+  type IFlowEventLogger,
+  type IFlowEventPayload,
+} from "@exaix/flow";
 import {
   initializeMemoryAutoApprovalMaintenance,
   MemoryAutoApprovalService,
@@ -62,6 +69,7 @@ import { createEmbeddingProvider } from "@exaix/ai/embeddings/embedding_provider
 import type { IEmbeddingProviderConfig } from "@exaix/ai/embeddings/embedding_provider_factory.ts";
 import { NotificationService } from "@exaix/core/notification";
 import { SkillsService } from "@exaix/core/skills";
+import { FlowLoaderAdapter } from "../../apps/common/adapters/flow_loader_adapter.ts";
 import { MemoryBankAdapter } from "../../apps/common/adapters/memory_bank_adapter.ts";
 import {
   createDefaultSymbolExtractorRegistry,
@@ -854,6 +862,12 @@ if (import.meta.main) {
       dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
     });
 
+    // The processor needs the flow itself, not a verdict about it: it previously cast
+    // `{ id } as IFlow` and FlowRunner crashed reading `steps.length` on the result.
+    const flowLoader = new FlowLoaderAdapter(
+      new FlowLoader(join(config.system.root, config.paths.blueprints, DEFAULT_FLOWS_PATH)),
+    );
+
     // Wire Team-edition capability modules through the edition-composer seam.
     // Dynamic import keeps bootstrap_team.ts (+ its @exaix-team deps) out of the Solo binary.
     if (editionType === EDITION_TEAM) {
@@ -886,6 +900,7 @@ if (import.meta.main) {
       costTracker,
       sessionMemory,
       flowRunner,
+      flowLoader,
       onClarificationCreated: async (traceId: string, _requestId: string) => {
         const waitStateId = crypto.randomUUID();
         const resumeToken = crypto.randomUUID();

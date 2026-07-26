@@ -5,7 +5,7 @@ status: "pending"
 priority: "normal"
 source: "cli"
 created_by: "scenario-framework"
-flow: "dogfood_loop"
+flow: "dogfood-loop"
 ---
 
 # Execute dogfood_loop flow

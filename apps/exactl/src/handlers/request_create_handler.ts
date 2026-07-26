@@ -72,12 +72,17 @@ export class RequestCreateHandler extends BaseCommand {
 
       const initialStatus = options.analyze ? RequestStatus.ANALYZING : RequestStatus.PENDING;
 
+      // A flow request must carry NO identity: RequestProcessor.getRequestKindOrFail rejects
+      // the combination outright ("Request cannot specify both 'flow' and 'agent' fields").
+      // `agent` above always resolves to something because of the DEFAULT_IDENTITY_ID
+      // fallback, so writing it unconditionally made every CLI-created flow request — via the
+      // `--flow` flag as much as via file frontmatter — fail the moment the daemon parsed it.
       const frontmatterFields: Record<string, string | boolean> = {
         trace_id,
         created,
         status: initialStatus,
         priority,
-        identity: agent,
+        ...(options.flow ? {} : { identity: agent }),
         source,
         created_by,
         subject,
@@ -302,15 +307,26 @@ function splitFileFrontmatter(content: string): ISplitFile {
  * the request pipeline owns — `trace_id`, `created`, `status`, `source`, `created_by` — are
  * deliberately NOT carried over; `create()` mints fresh ones, so reusing a fixture's
  * trace_id would collide in the journal on the second submission.
+ *
+ * `flow` and `identity` are mutually exclusive, and the exclusion has to be re-applied HERE
+ * because a frontmatter-declared flow arrives too late for the CLI's own guard. `--identity`
+ * carries a default (`exactl.ts:376`), so `options.identity` is always populated, and
+ * `request_actions.ts:124` clears it only when the `--flow` FLAG is present. A flow that comes
+ * from the file instead reached the validator alongside that defaulted identity and was
+ * rejected outright — which is what failed 15 of the flow_blueprints scenarios at their submit
+ * step. The rule applied is the CLI's existing one, unchanged: a flow request carries no
+ * identity.
  */
 function mergeFileFrontmatterIntoOptions(
   frontmatter: IRequestFrontmatter,
   options: IRequestOptions,
 ): IRequestOptions {
   const priority = VALID_PRIORITIES.find((candidate) => candidate === frontmatter.priority);
+  const flow = options.flow ?? frontmatter.flow;
   return {
     ...options,
-    identity: options.identity ?? options.agent ?? frontmatter.identity,
+    identity: flow ? undefined : (options.identity ?? options.agent ?? frontmatter.identity),
+    agent: flow ? undefined : options.agent,
     priority: options.priority ?? priority,
     portal: options.portal ?? frontmatter.portal,
     target_branch: options.target_branch ?? frontmatter.target_branch,
@@ -320,7 +336,7 @@ function mergeFileFrontmatterIntoOptions(
     thinking: options.thinking ?? frontmatter.thinking,
     effort: options.effort ?? frontmatter.effort,
     characteristics: options.characteristics ?? frontmatter.characteristics,
-    flow: options.flow ?? frontmatter.flow,
+    flow,
     subject: options.subject ?? frontmatter.subject,
     skills: options.skills ?? normalizeFrontmatterList(frontmatter.skills),
     tags: options.tags ?? normalizeFrontmatterList(frontmatter.tags),

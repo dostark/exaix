@@ -5,7 +5,7 @@ status: "pending"
 priority: "normal"
 source: "cli"
 created_by: "scenario-framework"
-flow: "security_audit"
+flow: "security-audit"
 ---
 
 # Execute security_audit flow

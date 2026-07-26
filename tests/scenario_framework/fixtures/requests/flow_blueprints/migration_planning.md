@@ -5,7 +5,7 @@ status: "pending"
 priority: "normal"
 source: "cli"
 created_by: "scenario-framework"
-flow: "migration_planning"
+flow: "migration-planning"
 ---
 
 # Execute migration_planning flow

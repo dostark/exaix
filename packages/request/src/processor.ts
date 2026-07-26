@@ -39,7 +39,7 @@ import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IFlowRunner } from "@exaix/flow";
 import { DomainEventType } from "@exaix/core/events";
-import type { IFlowValidatorService } from "@exaix/core/types";
+import type { IFlowLoaderService, IFlowValidatorService } from "@exaix/core/types";
 import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
 import { ProviderSelector } from "@exaix/ai/provider_selector.ts";
 import { CostTracker } from "@exaix/core/cost";
@@ -137,6 +137,13 @@ export interface IRequestProcessorConfig {
    * instead of generating a stub plan.
    */
   flowRunner?: IFlowRunner;
+
+  /**
+   * Resolves a flow blueprint by id for processFlowRequest. Without it the processor cannot
+   * hand FlowRunner a real flow — the previous code cast `{ id }` to IFlow, leaving `steps`
+   * undefined and crashing the runner.
+   */
+  flowLoader?: IFlowLoaderService;
 }
 
 // ============================================================================
@@ -161,6 +168,7 @@ export class RequestProcessor {
   private readonly sessionMemory?: SessionMemoryService;
   private readonly testProvider?: IModelProvider;
   private readonly flowRunner?: IFlowRunner;
+  private readonly flowLoader?: IFlowLoaderService;
   private readonly milestoneEmitter?: IMilestoneEmitter;
   private readonly taskComplexityClassifier: ITaskComplexityClassifier;
   private readonly blueprintResolver: IBlueprintResolver;
@@ -203,6 +211,7 @@ export class RequestProcessor {
     const _flowsDir = join(this.config.system.root, this.config.paths.flows);
     this.flowValidator = ctx.flowValidator ?? null;
     this.flowRunner = processorConfig.flowRunner;
+    this.flowLoader = processorConfig.flowLoader ?? processorConfig.context?.flowLoader;
 
     this.requestParser = new RequestParser(this.logger);
     this.statusManager = new StatusManager(this.logger);
@@ -495,6 +504,32 @@ export class RequestProcessor {
     return this.processAgentRequest(opts);
   }
 
+  /**
+   * Resolve the flow blueprint, failing the request with a named cause when it cannot be
+   * loaded. A missing loader is a wiring fault rather than a bad request, so it is reported as
+   * such instead of silently degrading to a stub the runner cannot execute.
+   */
+  private async loadFlowOrFail(
+    flowId: string,
+    filePath: string,
+    traceLogger: IEventLogger,
+  ): Promise<IFlow | null> {
+    if (!this.flowLoader) {
+      const error = "Flow requests require a flowLoader; none is configured";
+      traceLogger.error(DomainEventType.RequestFlowValidationFailed, flowId, { error });
+      await this.statusManager.updateStatus(filePath, RequestStatus.FAILED, error);
+      return null;
+    }
+    try {
+      return await this.flowLoader.loadFlow(flowId);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      traceLogger.error(DomainEventType.RequestFlowValidationFailed, flowId, { error: message });
+      await this.statusManager.updateStatus(filePath, RequestStatus.FAILED, `Flow load failed: ${message}`);
+      return null;
+    }
+  }
+
   private async processFlowRequest(
     opts: IProcessRequestOptions,
   ): Promise<string | null> {
@@ -516,7 +551,11 @@ export class RequestProcessor {
 
     // If a FlowRunner is configured, delegate to real multi-agent execution
     if (this.flowRunner) {
-      const flow = { id: frontmatter.flow } as IFlow;
+      // Load the flow rather than fabricating one. `{ id } as IFlow` left every other field
+      // undefined, and FlowRunner reads `flow.steps.length` (flow_runner.ts:981) — so every
+      // flow request died with "Cannot read properties of undefined (reading 'length')".
+      const flow = await this.loadFlowOrFail(frontmatter.flow!, filePath, traceLogger);
+      if (!flow) return null;
       const body = await Deno.readTextFile(filePath);
       const flowResult = await this.flowRunner.execute(flow, {
         userPrompt: body,

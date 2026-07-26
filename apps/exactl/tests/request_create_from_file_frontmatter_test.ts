@@ -132,6 +132,52 @@ Evaluate the pinned skills.
     assertEquals(frontmatter.identity, "researcher", "the flag stated at invocation is the more explicit intent");
   });
 
+  it("accepts a file whose frontmatter declares a flow, without an identity conflict", async () => {
+    // `--identity` carries a DEFAULT (exactl.ts:376), so options.identity is always populated,
+    // and the CLI's flow/identity exclusion (request_actions.ts:124) nulls it only when the
+    // `--flow` FLAG is present. A flow arriving from file frontmatter reaches the validator
+    // after that guard has run, so every flow fixture was rejected with "Cannot specify both
+    // 'flow' and 'agent'/'identity'" — 15 of the flow_blueprints scenarios at once.
+    await Deno.mkdir(join(tempDir, "Blueprints", "Flows"), { recursive: true });
+    await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "api-design.flow.yaml"), "id: api-design\n");
+
+    const inputFile = join(tempDir, "flow.md");
+    await Deno.writeTextFile(
+      inputFile,
+      '---\ntrace_id: "flow-trace"\nstatus: "pending"\nflow: "api-design"\n---\n\nExecute the flow.\n',
+    );
+
+    const result = await requestCommands.createFromFile(inputFile, { identity: "default" });
+    assert(result.path, "a flow request submitted by file must be created");
+    const { frontmatter } = splitFrontmatter(await Deno.readTextFile(result.path));
+    assertEquals((frontmatter as { flow?: string }).flow, "api-design", "the flow must reach the request file");
+  });
+
+  it("omits identity from a flow request's frontmatter, which the daemon requires", async () => {
+    // `create()` computes `agent = options.identity || options.agent || DEFAULT_IDENTITY_ID`
+    // and writes it into frontmatter unconditionally, so every flow request — including one
+    // made with the `--flow` FLAG — carried `identity: default` alongside `flow:`.
+    // RequestProcessor.getRequestKindOrFail (processor.ts:427) fails exactly that combination
+    // with "Request cannot specify both 'flow' and 'agent' fields", so a CLI-created flow
+    // request was rejected by the daemon every time. The pack could not catch it while the
+    // fixture's `flow:` was still being dropped, because the request was not a flow request.
+    await Deno.mkdir(join(tempDir, "Blueprints", "Flows"), { recursive: true });
+    await Deno.writeTextFile(join(tempDir, "Blueprints", "Flows", "api-design.flow.yaml"), "id: api-design\n");
+
+    const inputFile = join(tempDir, "flow2.md");
+    await Deno.writeTextFile(
+      inputFile,
+      '---\ntrace_id: "flow-trace-2"\nstatus: "pending"\nflow: "api-design"\n---\n\nExecute the flow.\n',
+    );
+
+    const result = await requestCommands.createFromFile(inputFile, { identity: "default" });
+    assert(result.path);
+    const { frontmatter } = splitFrontmatter(await Deno.readTextFile(result.path));
+
+    assertEquals((frontmatter as { flow?: string }).flow, "api-design");
+    assertEquals(frontmatter.identity, undefined, "a flow request must carry no identity");
+  });
+
   it("still accepts a plain file with no frontmatter at all", async () => {
     const { body } = await submit("Implement feature from file");
     assertStringIncludes(body, "Implement feature from file");

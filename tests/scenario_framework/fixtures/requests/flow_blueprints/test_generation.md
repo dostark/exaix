@@ -5,7 +5,7 @@ status: "pending"
 priority: "normal"
 source: "cli"
 created_by: "scenario-framework"
-flow: "test_generation"
+flow: "test-generation"
 ---
 
 # Execute test_generation flow

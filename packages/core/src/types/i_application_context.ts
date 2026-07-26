@@ -19,6 +19,7 @@ import type { IMemoryExtractorService } from "./i_memory_extractor_service.ts";
 import type { IMemoryEmbeddingService } from "./i_memory_embedding_service.ts";
 import type { IArchiveService } from "./i_archive_service.ts";
 import type { IFlowValidatorService } from "./i_flow_validator_service.ts";
+import type { IFlowLoaderService } from "./i_flow_loader_service.ts";
 import type { IContextCardGeneratorService } from "./i_context_card_generator_service.ts";
 import type { ISkillsService } from "./i_skills_service.ts";
 import type { IPortalService } from "./i_portal_service.ts";
@@ -72,6 +73,7 @@ export interface IApplicationContext {
 
   /** Optional validation for agent flows */
   flowValidator?: IFlowValidatorService;
+  flowLoader?: IFlowLoaderService;
 
   /** Optional visual context card generation */
   contextCards?: IContextCardGeneratorService;

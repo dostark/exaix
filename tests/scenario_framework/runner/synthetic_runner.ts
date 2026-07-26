@@ -8,8 +8,8 @@
  * @related-files [tests/scenario_framework/tests/integration/synthetic_runner_test.ts, tests/scenario_framework/runner/scenario_loader.ts]
  */
 
-import { join } from "@std/path";
-import { ensureDir } from "@std/fs";
+import { dirname, join } from "@std/path";
+import { copy, ensureDir } from "@std/fs";
 import { parse as parseToml } from "@std/toml";
 import { evaluateCriterion, evaluateStepOutcome, type IScenarioStepOutcome, StepFailureStage } from "./assertions.ts";
 import { type IRunManifest, writeExecutionLog, writeRunManifest } from "./evidence_collector.ts";
@@ -94,6 +94,46 @@ export interface IMaterializedCellConfig {
  */
 const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..");
 
+/**
+ * Catalogs the daemon resolves against the WORKSPACE root rather than the repo, and which a
+ * fresh sandbox therefore lacks entirely.
+ *
+ * `assertFlowExists` reads `<root>/Blueprints/Flows/<id>.flow.yaml` and `SkillsService` reads
+ * `<root>/Memory/Skills`, so without these a flow request is rejected as "not found" and skill
+ * matching runs against an empty catalog — neither of which looks like a missing-fixture
+ * problem from the scenario's failure output. Seeded here for the same reason `setup_db.ts`
+ * runs here: production has these in place before the daemon starts, and a scenario that has
+ * to arrange them itself is testing its own setup.
+ */
+const SEEDED_CATALOGS: readonly (readonly [string, string])[] = [
+  [join("Blueprints"), join("Blueprints")],
+  [join("Memory", "Skills"), join("Memory", "Skills")],
+] as const;
+
+/**
+ * Copy the shipped catalogs into a sandbox workspace, filling in only what is absent.
+ *
+ * Additive by design: a scenario that patches an identity inside its sandbox keeps the patch,
+ * and an operator-supplied `--workspace` is never rewritten. Exported for direct testing.
+ */
+export async function seedWorkspaceCatalogs(workspaceRoot: string, repoRoot: string): Promise<void> {
+  for (const [from, to] of SEEDED_CATALOGS) {
+    const destination = join(workspaceRoot, to);
+    try {
+      await Deno.stat(destination);
+      continue; // already present — never overwrite
+    } catch { /* absent: seed it */ }
+    const source = join(repoRoot, from);
+    try {
+      await Deno.stat(source);
+    } catch {
+      continue; // not shipped in this checkout; nothing to seed
+    }
+    await ensureDir(dirname(destination));
+    await copy(source, destination, { overwrite: false });
+  }
+}
+
 export async function runSyntheticScenario(
   options: IRunSyntheticScenarioOptions,
 ): Promise<IRunSyntheticScenarioResult> {
@@ -103,6 +143,11 @@ export async function runSyntheticScenario(
   // ENOENT ("No such cwd"). Matrix cells were covered by materializeCellConfig's ensureDir, but
   // non-matrix scenarios were not; create it here unconditionally so every run mode is covered.
   await ensureDir(options.workspaceRoot);
+
+  // Seed the catalogs the daemon resolves against the workspace root. Without them a flow
+  // request is rejected as "Flow '<id>' not found" and skill matching scores against an empty
+  // catalog — both of which surface as unrelated-looking scenario failures.
+  await seedWorkspaceCatalogs(options.workspaceRoot, REPO_ROOT);
 
   // Baseline for artefact correlation. Scenarios in a pack run share one sandbox workspace,
   // so a glob like `**/*_plan.md` matches every plan an earlier scenario left behind.

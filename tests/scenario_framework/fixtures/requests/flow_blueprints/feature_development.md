@@ -5,7 +5,7 @@ status: "pending"
 priority: "normal"
 source: "cli"
 created_by: "scenario-framework"
-flow: "feature_development"
+flow: "feature-development"
 ---
 
 # Execute feature_development flow

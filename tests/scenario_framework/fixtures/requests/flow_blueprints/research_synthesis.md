@@ -5,7 +5,7 @@ status: "pending"
 priority: "normal"
 source: "cli"
 created_by: "scenario-framework"
-flow: "research_synthesis"
+flow: "research-synthesis"
 ---
 
 # Execute research_synthesis flow

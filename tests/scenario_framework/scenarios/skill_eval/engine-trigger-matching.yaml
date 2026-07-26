@@ -14,21 +14,6 @@ request_fixture: "fixtures/requests/skill_eval/trigger_match.md"
 mode_support: ["auto"]
 portals: []
 steps:
-  # A fresh sandbox has no Memory dir at all, and a reused one has an empty Memory/Skills, so
-  # SkillsService loads zero skills: trigger matching cannot fire and a pinned id hydrates to
-  # nothing. Seed the repo's real catalog so the pack scores against the skills that ship.
-  - id: "setup-skills"
-    type: "shell"
-    command: "sh"
-    args: [
-      "-c",
-      "mkdir -p $WORKSPACE_ROOT/Memory && cp -r $FRAMEWORK_HOME/../../Memory/Skills $WORKSPACE_ROOT/Memory/Skills",
-    ]
-    output_criteria:
-      - id: "skills-seeded"
-        kind: "command-exit-code"
-        equals: 0
-
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"
@@ -68,7 +53,20 @@ steps:
       - id: "trigger-match-observed"
         kind: "journal-event-exists"
         event_type: "skills.resolved"
-        score_weight: 1.0
+        score_weight: 0.5
+        payload_includes:
+          matched_skill_ids:
+            - "reflexive-critique"
+            - "architecture-review"
+
+      # `skills.resolved` reports the UNION, so on its own it cannot say whether an id arrived
+      # by matching or by some other route. The matcher's own event is what proves the
+      # matching stage produced them, and it is the assertion Step 12 set out to make before
+      # the propagation blockers made it unreachable — kept alongside rather than replaced.
+      - id: "matcher-stage-observed"
+        kind: "journal-event-exists"
+        event_type: "skills.match_completed"
+        score_weight: 0.5
         payload_includes:
           matched_skill_ids:
             - "reflexive-critique"

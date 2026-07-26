@@ -5,7 +5,7 @@ status: "pending"
 priority: "normal"
 source: "cli"
 created_by: "scenario-framework"
-flow: "api_documentation"
+flow: "api-documentation"
 ---
 
 # Execute api_documentation flow

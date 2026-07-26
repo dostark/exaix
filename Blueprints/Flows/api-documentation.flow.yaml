@@ -1,4 +1,4 @@
-id: api-documentation-flow
+id: api-documentation
 name: API Documentation Generation
 description: Comprehensive API documentation from code analysis to publication-ready docs
 version: 1.0.0

@@ -5,7 +5,7 @@ status: "pending"
 priority: "normal"
 source: "cli"
 created_by: "scenario-framework"
-flow: "bug_investigation"
+flow: "bug-investigation"
 ---
 
 # Execute bug_investigation flow

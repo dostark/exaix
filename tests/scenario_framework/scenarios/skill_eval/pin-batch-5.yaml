@@ -7,21 +7,6 @@ request_fixture: "fixtures/requests/skill_eval/pin_batch5.md"
 mode_support: ["auto"]
 portals: []
 steps:
-  # A fresh sandbox has no Memory dir at all, and a reused one has an empty Memory/Skills, so
-  # SkillsService loads zero skills: trigger matching cannot fire and a pinned id hydrates to
-  # nothing. Seed the repo's real catalog so the pack scores against the skills that ship.
-  - id: "setup-skills"
-    type: "shell"
-    command: "sh"
-    args: [
-      "-c",
-      "mkdir -p $WORKSPACE_ROOT/Memory && cp -r $FRAMEWORK_HOME/../../Memory/Skills $WORKSPACE_ROOT/Memory/Skills",
-    ]
-    output_criteria:
-      - id: "skills-seeded"
-        kind: "command-exit-code"
-        equals: 0
-
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"

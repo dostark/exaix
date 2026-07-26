@@ -5,7 +5,7 @@ status: "pending"
 priority: "normal"
 source: "cli"
 created_by: "scenario-framework"
-flow: "onboarding_docs"
+flow: "onboarding-docs"
 ---
 
 # Execute onboarding_docs flow

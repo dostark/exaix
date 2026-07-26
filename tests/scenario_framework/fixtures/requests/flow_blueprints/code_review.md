@@ -5,7 +5,7 @@ status: "pending"
 priority: "normal"
 source: "cli"
 created_by: "scenario-framework"
-flow: "code_review"
+flow: "code-review"
 ---
 
 # Execute code_review flow

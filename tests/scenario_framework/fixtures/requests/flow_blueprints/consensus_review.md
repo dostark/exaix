@@ -5,7 +5,7 @@ status: "pending"
 priority: "normal"
 source: "cli"
 created_by: "scenario-framework"
-flow: "consensus_review"
+flow: "consensus-review"
 ---
 
 # Execute consensus_review flow
