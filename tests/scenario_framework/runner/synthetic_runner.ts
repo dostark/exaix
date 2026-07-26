@@ -214,6 +214,12 @@ export async function runSyntheticScenario(
   // unrelated tool calls from prior/later steps.
   const stepRowidWindows = new Map<string, { start: number; end: number }>();
 
+  // Journal rowid captured before the PREVIOUS step ran, handed to a `wait-for-journal-event`
+  // barrier as its baseline. A barrier that captured its own baseline at wait-start could not
+  // see an event the step before it produced — which is exactly the case now that
+  // `exactl daemon start` blocks until `daemon.ready` is journalled.
+  let previousStepStartRowid = 0;
+
   let runResult: IRunScenarioInModeResult;
   try {
     runResult = await runScenarioInMode({
@@ -230,6 +236,7 @@ export async function runSyntheticScenario(
           step: resolvedStep,
           workspaceRoot: options.workspaceRoot,
           artifactBaselineMs: scenarioStartedAtMs,
+          journalBaselineRowid: previousStepStartRowid,
           exactlExecutable: options.exactlExecutable,
           requestFixturePath: loadedScenario.requestFixture.absolutePath,
           frameworkHome: options.frameworkHome,
@@ -239,6 +246,7 @@ export async function runSyntheticScenario(
         });
         const end = await currentMaxRowid(options.workspaceRoot);
         stepRowidWindows.set(step.id, { start, end });
+        previousStepStartRowid = start;
 
         stepOutcomes.push(outcome);
 
@@ -416,6 +424,8 @@ interface IExecuteSyntheticStepOptions {
    * sharing the sandbox workspace. Set to the scenario's start time.
    */
   artifactBaselineMs?: number;
+  /** Journal rowid captured before the previous step ran — a barrier step's baseline. */
+  journalBaselineRowid?: number;
   exactlExecutable?: string;
   requestFixturePath: string;
   frameworkHome: string;
@@ -465,6 +475,7 @@ async function executeSyntheticStep(
     env,
     verbose: options.verbose,
     artifactBaselineMs: options.artifactBaselineMs,
+    journalBaselineRowid: options.journalBaselineRowid,
   });
 
   const outputOutcome = await evaluateStepOutcome({
