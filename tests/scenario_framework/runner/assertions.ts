@@ -225,7 +225,16 @@ export async function evaluateStepOutcome(
     };
   }
 
-  if ((options.executionResult?.exitCode ?? 0) !== 0) {
+  // Mirror the expect_failure semantics runScenarioInMode already applies (modes.ts):
+  // for a step that declares expect_failure, a non-zero exit is the EXPECTED outcome and a
+  // zero exit is the failure. Without this the short-circuit below skipped output criteria
+  // on every expect_failure step, so scenarios written to elicit a refusal passed without
+  // ever evaluating the assertion that made them meaningful.
+  const expectFailure = options.step.expect_failure ?? false;
+  const exitCode = options.executionResult?.exitCode ?? 0;
+  const executionFailed = expectFailure ? exitCode === 0 : exitCode !== 0;
+
+  if (executionFailed) {
     return {
       stepId: options.step.id,
       status: CriterionStatus.FAILED,

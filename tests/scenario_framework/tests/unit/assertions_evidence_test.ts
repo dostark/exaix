@@ -736,3 +736,79 @@ Deno.test({
     });
   },
 });
+
+// `expect_failure` was honoured in modes.ts (do not halt the scenario on a non-zero exit)
+// but NOT in evaluateStepOutcome, which short-circuited to EXECUTION failure on any
+// non-zero exit and skipped output criteria entirely. A scenario deliberately eliciting a
+// failure therefore "passed" without any of its assertions ever running — a false green.
+Deno.test("[ScenarioFrameworkAssertionsEvidence] expect_failure evaluates output criteria on a non-zero exit", async () => {
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-framework-expect-failure-" });
+  try {
+    const outcome = await evaluateStepOutcome({
+      workspaceRoot,
+      step: {
+        id: "negative-step",
+        type: ScenarioStepType.SHELL,
+        command: "sh",
+        expect_failure: true,
+        input_criteria: [],
+        output_criteria: [
+          {
+            id: "error-text-present",
+            kind: CriterionKind.COMMAND_OUTPUT_CONTAINS,
+            contains: ["Tool 'nonexistent_tool' not found"],
+          },
+        ],
+      } as never,
+      executionResult: {
+        stepId: "negative-step",
+        stepType: ScenarioStepType.SHELL,
+        startedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        durationMs: 1,
+        exitCode: 1,
+        stdout: "Tool 'nonexistent_tool' not found",
+        stderr: "",
+        combinedOutput: "Tool 'nonexistent_tool' not found",
+      } as never,
+    });
+
+    assertEquals(outcome.status, CriterionStatus.PASSED);
+    assertEquals(outcome.criterionResults.length, 1);
+    assertEquals(outcome.criterionResults[0].criterion_id, "error-text-present");
+  } finally {
+    await Deno.remove(workspaceRoot, { recursive: true });
+  }
+});
+
+Deno.test("[ScenarioFrameworkAssertionsEvidence] expect_failure fails the step when the command unexpectedly succeeds", async () => {
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-framework-expect-failure-" });
+  try {
+    const outcome = await evaluateStepOutcome({
+      workspaceRoot,
+      step: {
+        id: "negative-step",
+        type: ScenarioStepType.SHELL,
+        command: "sh",
+        expect_failure: true,
+        input_criteria: [],
+        output_criteria: [],
+      } as never,
+      executionResult: {
+        stepId: "negative-step",
+        stepType: ScenarioStepType.SHELL,
+        startedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        durationMs: 1,
+        exitCode: 0,
+        stdout: "",
+        stderr: "",
+        combinedOutput: "",
+      } as never,
+    });
+
+    assertEquals(outcome.status, CriterionStatus.FAILED);
+  } finally {
+    await Deno.remove(workspaceRoot, { recursive: true });
+  }
+});

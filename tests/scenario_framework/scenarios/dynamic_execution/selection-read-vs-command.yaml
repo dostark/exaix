@@ -7,6 +7,22 @@ request_fixture: "fixtures/requests/dynamic_execution/explore_codebase.md"
 mode_support: ["auto"]
 portals: []
 steps:
+  # The daemon migrates only the Config DB at boot; the journal schema is
+  # scripts/setup_db.ts's job (see the scenario template's setup-db step). Without this,
+  # `.exa/journal.db` has no `activity` table, every daemon activity write fails silently
+  # into daemon.log, and no plan is ever produced — the request just sits in Requests/.
+  - id: "setup-db"
+    type: "shell"
+    command: "deno"
+    args: ["run", "-A", "--config", "$FRAMEWORK_HOME/../../deno.json", "$FRAMEWORK_HOME/../../scripts/setup_db.ts"]
+    env:
+      EXA_MIGRATIONS_DIR: "$FRAMEWORK_HOME/../../migrations"
+    output_criteria:
+      - id: "setup-done"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.2
+
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"
@@ -19,6 +35,17 @@ steps:
         score_weight: 0.3
         kind: "command-output-contains"
         contains: ["daemon.started"]
+
+  # `exactl daemon start` returns at daemon.started, ~700ms BEFORE the request watchers
+  # are up. A request written into that gap already exists when the watcher starts, so the
+  # watcher never fires on it and the request sits in Requests/ unprocessed forever. This
+  # barrier is the established fix (see agent_flows/amendment_lifecycle.scenario.yaml).
+  - id: "wait-for-daemon-ready"
+    type: "wait-for-journal-event"
+    event_type: "daemon.ready"
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
 
   - id: "submit-request"
     type: "exactl"

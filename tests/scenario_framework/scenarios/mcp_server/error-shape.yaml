@@ -1,6 +1,10 @@
 schema_version: "1.0.0"
+# Asserts spec-shaped JSON-RPC errors. The previous version asserted only
+# `contains: ["not found"]` and `exit-code: 0`, and pointed at sandbox-relative paths that
+# do not exist, so it never ran. Now pins the JSON-RPC error code as well as the message,
+# and covers both an unknown tool and a schema-invalid call.
 id: "mcp-server-error-shape"
-title: "MCP server — error shapes for malformed requests and unknown tools"
+title: "MCP server — error shapes for unknown tools and invalid arguments"
 pack: "mcp_server"
 tags: ["error", "malformed", "subsystem:mcp-server", "team"]
 edition: "team"
@@ -8,33 +12,74 @@ request_fixture: "fixtures/requests/mcp_tools_extended/read_file.md"
 mode_support: ["auto"]
 portals: []
 steps:
-  - id: "test-error-shapes"
+  - id: "setup-portal"
     type: "shell"
-    name: "Test error shapes via stdio driver"
+    name: "Create the fixture portal and its config"
     command: "deno"
     args:
       - "run"
       - "-A"
-      - "tests/scenario_framework/scripts/mcp_stdio_driver.ts"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
+    output_criteria:
+      - id: "portal-ready"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+
+  - id: "test-error-shapes"
+    type: "shell"
+    name: "Unknown tool and invalid arguments both produce spec-shaped errors"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/mcp_stdio_driver.ts"
       - "--timeout-ms"
-      - "15000"
+      - "30000"
       - "--"
       - "deno"
       - "run"
       - "-A"
-      - "apps/mcp-server/main.ts"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/../../apps/mcp-server/main.ts"
       - "--"
-      - '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","clientInfo":{"name":"test","version":"1.0"}}}'
+      - '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","clientInfo":{"name":"scenario","version":"1.0"}}}'
       - '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"nonexistent_tool","arguments":{}}}'
+      - '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"read_file","arguments":{"portal":"tools"}}}'
+    # The driver exits 1 because a response carries a JSON-RPC error — which is exactly
+    # what this step elicits. expect_failure inverts the exit-code expectation so the
+    # non-zero exit is the pass condition instead of halting the scenario.
+    expect_failure: true
     env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
       EXA_LLM_PROVIDER: "mock"
       EXA_CI_MODE: "1"
+    # No exit-code criterion: this scenario exists to elicit JSON-RPC errors, and
+    # mcp_stdio_driver exits 1 whenever a response carries one. The error content below is
+    # the assertion; a transport failure would yield no responses and fail it.
     output_criteria:
-      - id: "error-returned"
-        kind: "command-exit-code"
-        equals: 0
-        score_weight: 0.5
-      - id: "error-content"
+      - id: "unknown-tool-error-message"
         kind: "command-output-contains"
-        contains: ["not found"]
+        contains: ["Tool 'nonexistent_tool' not found"]
+        score_weight: 1.0
+      # -32602 is the JSON-RPC "Invalid params" code; pinning it catches a server that
+      # reports the right prose under the wrong protocol code.
+      - id: "spec-error-code-used"
+        kind: "command-output-contains"
+        contains: ["-32602"]
+        score_weight: 0.8
+      - id: "invalid-arguments-error"
+        kind: "command-output-contains"
+        contains: ["Invalid tool arguments", "validation_errors"]
+        score_weight: 0.8
+      - id: "jsonrpc-envelope-preserved"
+        kind: "command-output-contains"
+        contains: ["\"jsonrpc\": \"2.0\""]
         score_weight: 0.5

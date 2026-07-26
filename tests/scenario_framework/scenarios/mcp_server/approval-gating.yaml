@@ -1,6 +1,10 @@
 schema_version: "1.0.0"
+# [security] Asserts the server's two refusal layers for privileged tools. The previous
+# version called exaix_create_request with empty arguments and asserted only
+# `command-exit-code: 0` — it proved nothing about approval, and (as the empty-args probe
+# shows) that call is refused by ARGUMENT VALIDATION, never reaching the approval gate.
 id: "mcp-server-approval-gating"
-title: "MCP server — approval-gated tools refused without approval context"
+title: "[security] MCP server — privileged tools are gated, not silently executed"
 pack: "mcp_server"
 tags: ["approval", "security", "subsystem:mcp-server", "team"]
 edition: "team"
@@ -8,29 +12,68 @@ request_fixture: "fixtures/requests/mcp_tools_extended/read_file.md"
 mode_support: ["auto"]
 portals: []
 steps:
-  - id: "test-approval-gating"
+  - id: "setup-portal"
     type: "shell"
-    name: "Test approval-gated tools via stdio driver"
+    name: "Create the fixture portal and its config"
     command: "deno"
     args:
       - "run"
       - "-A"
-      - "tests/scenario_framework/scripts/mcp_stdio_driver.ts"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
+    output_criteria:
+      - id: "portal-ready"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+
+  - id: "test-approval-gating"
+    type: "shell"
+    name: "[security] A dangerous config write is staged behind confirmation, not applied"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/mcp_stdio_driver.ts"
       - "--timeout-ms"
-      - "15000"
+      - "30000"
       - "--"
       - "deno"
       - "run"
       - "-A"
-      - "apps/mcp-server/main.ts"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/../../apps/mcp-server/main.ts"
       - "--"
-      - '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","clientInfo":{"name":"test","version":"1.0"}}}'
-      - '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"exaix_create_request","arguments":{}}}'
+      - '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","clientInfo":{"name":"scenario","version":"1.0"}}}'
+      - '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"exaix_config_set","arguments":{"key":"ai.provider","value":"mock","identity_id":"tools-eval"}}}'
+      - '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"exaix_create_request","arguments":{}}}'
+    # The driver exits 1 because a response carries a JSON-RPC error — which is exactly
+    # what this step elicits. expect_failure inverts the exit-code expectation so the
+    # non-zero exit is the pass condition instead of halting the scenario.
+    expect_failure: true
     env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
       EXA_LLM_PROVIDER: "mock"
       EXA_CI_MODE: "1"
+    # No exit-code criterion: mcp_stdio_driver exits 1 when ANY response carries a
+    # JSON-RPC error, but here a refusal IS the expected result, so a non-zero exit is
+    # correct behaviour rather than a step failure. The content assertions below carry the
+    # weight — a transport failure would produce no responses and fail them.
     output_criteria:
-      - id: "approval-refused"
-        kind: "command-exit-code"
-        equals: 0
+      # Layer 1 — the approval gate: a dangerous-tier write is STAGED, requiring an
+      # explicit apply. A server that applied it silently would not emit these.
+      - id: "dangerous-write-requires-confirmation"
+        kind: "command-output-contains"
+        contains: ["Run exaix_config_apply to activate", "requires_confirmation", "dangerous"]
         score_weight: 1.0
+      # Layer 2 — argument validation refuses a malformed privileged call outright.
+      - id: "malformed-privileged-call-refused"
+        kind: "command-output-contains"
+        contains: ["Invalid tool arguments"]
+        score_weight: 0.8
