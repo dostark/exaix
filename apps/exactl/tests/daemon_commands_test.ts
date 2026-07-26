@@ -12,6 +12,7 @@ import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
+import { Database } from "@db/sqlite";
 import { DaemonCommands } from "../src/commands/daemon_commands.ts";
 import { isProcessAlive } from "@exaix/cli/process_utils.ts";
 import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
@@ -29,6 +30,7 @@ import { readFixtureTextSync } from "@exaix/testing";
  */
 class TestDaemonCommands extends DaemonCommands {
   public mockActionLogger?: IDisplayService;
+  public skipDaemonReadyWait = true;
 
   public override getActionLogger(): IDisplayService {
     if (this.mockActionLogger) return this.mockActionLogger;
@@ -37,6 +39,15 @@ class TestDaemonCommands extends DaemonCommands {
 
   public override async logDaemonActivity(actionType: string, payload: JSONObject): Promise<void> {
     return await super.logDaemonActivity(actionType, payload);
+  }
+
+  public override waitForDaemonReady(
+    _workspaceRoot: string,
+    _pid: number,
+    _timeoutMs: number,
+  ): Promise<boolean> {
+    if (this.skipDaemonReadyWait) return Promise.resolve(true);
+    return super.waitForDaemonReady(_workspaceRoot, _pid, _timeoutMs);
   }
 }
 
@@ -915,6 +926,143 @@ describe("DaemonCommands - migrate() compatibility check (Step 6)", {
       assert("message" in parsed);
     } finally {
       console.log = originalLog;
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// waitForDaemonReady — journal polling for daemon.ready
+// ---------------------------------------------------------------------------
+
+describe("DaemonCommands - waitForDaemonReady", {
+  sanitizeResources: false,
+  sanitizeOps: false,
+}, () => {
+  let tempDir: string;
+  let journalPath: string;
+  let daemonCommands: TestDaemonCommands;
+
+  /** Create a fresh journal with the activity schema */
+  function createJournal(path: string): void {
+    const db = new Database(path);
+    try {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS activity (
+          id TEXT PRIMARY KEY,
+          trace_id TEXT NOT NULL,
+          actor TEXT NOT NULL,
+          actor_type TEXT,
+          identity_id TEXT,
+          agent_kind TEXT,
+          action_type TEXT NOT NULL,
+          target TEXT,
+          payload TEXT NOT NULL,
+          prompt_tokens INTEGER DEFAULT 0,
+          completion_tokens INTEGER DEFAULT 0,
+          cost_usd REAL DEFAULT 0.0,
+          timestamp DATETIME DEFAULT (datetime('now'))
+        )
+      `);
+    } finally {
+      db.close();
+    }
+  }
+
+  beforeEach(async () => {
+    tempDir = await Deno.makeTempDir({ prefix: "wait-ready-test-" });
+    journalPath = join(tempDir, ".exa", "journal.db");
+    await ensureDir(join(tempDir, ".exa"));
+    createJournal(journalPath);
+
+    daemonCommands = new TestDaemonCommands(createStubContext());
+    daemonCommands.skipDaemonReadyWait = false;
+  });
+
+  afterEach(async () => {
+    await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+  });
+
+  it("returns true when daemon.ready appears in journal", async () => {
+    const proc = new Deno.Command("sleep", { args: ["30"] }).spawn();
+
+    // Inject daemon.ready into the journal after a short delay
+    const timer = setTimeout(() => {
+      const db = new Database(journalPath);
+      try {
+        db.exec(
+          "INSERT INTO activity (id, trace_id, actor, actor_type, action_type, target, payload, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))",
+          crypto.randomUUID(),
+          "test",
+          "daemon",
+          "system",
+          "daemon.ready",
+          "exaix",
+          JSON.stringify({}),
+        );
+      } finally {
+        db.close();
+      }
+    }, 200);
+
+    try {
+      const ready = await daemonCommands.waitForDaemonReady(tempDir, proc.pid, 5000);
+      assertEquals(ready, true);
+    } finally {
+      clearTimeout(timer);
+      proc.kill("SIGTERM");
+      await proc.status.catch(() => {});
+    }
+  });
+
+  it("returns false on timeout when event never appears", async () => {
+    const proc = new Deno.Command("sleep", { args: ["10"] }).spawn();
+
+    try {
+      const ready = await daemonCommands.waitForDaemonReady(tempDir, proc.pid, 1000);
+      assertEquals(ready, false);
+    } finally {
+      proc.kill("SIGTERM");
+      await proc.status.catch(() => {});
+    }
+  });
+
+  it("returns false when daemon dies during wait", async () => {
+    // Start a process and kill it immediately
+    const proc = new Deno.Command("sleep", { args: ["30"] }).spawn();
+    proc.kill("SIGTERM");
+    await proc.status.catch(() => {});
+    await new Promise((r) => setTimeout(r, 200));
+
+    const ready = await daemonCommands.waitForDaemonReady(tempDir, proc.pid, 5000);
+    assertEquals(ready, false);
+  });
+
+  it("rejects stale daemon.ready from before the wait", async () => {
+    // Pre-write a daemon.ready at the first rowid
+    const db = new Database(journalPath);
+    try {
+      db.exec(
+        "INSERT INTO activity (id, trace_id, actor, actor_type, action_type, target, payload, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))",
+        crypto.randomUUID(),
+        "pre-existing",
+        "daemon",
+        "system",
+        "daemon.ready",
+        "exaix",
+        JSON.stringify({}),
+      );
+    } finally {
+      db.close();
+    }
+
+    const proc = new Deno.Command("sleep", { args: ["30"] }).spawn();
+
+    try {
+      const ready = await daemonCommands.waitForDaemonReady(tempDir, proc.pid, 2000);
+      assertEquals(ready, false);
+    } finally {
+      proc.kill("SIGTERM");
+      await proc.status.catch(() => {});
     }
   });
 });
