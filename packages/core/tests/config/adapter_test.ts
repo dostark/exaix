@@ -107,6 +107,24 @@ function cleanUp(dir: string): void {
   Deno.removeSync(dir, { recursive: true });
 }
 
+// Every other adapter test pre-migrates the DB via setupAdapter(), which is precisely why
+// the unmigrated path went unnoticed: `exactl config get|diff|validate` on a root whose
+// config DB the daemon has never migrated used to surface a raw `no such table:
+// config_overrides` SQLite error instead of falling back to registry defaults.
+Deno.test(
+  "[configuring] DirectConfigAdapter.get falls back to registry defaults on an unmigrated DB",
+  () => {
+    const dir = Deno.makeTempDirSync({ prefix: "adapter-unmigrated-" });
+    try {
+      const dbPath = ensureConfigDb(dir);
+      const adapter = new DirectConfigAdapter(dbPath);
+      assertEquals(adapter.get("adapter_test.timeout_ms"), 30000);
+    } finally {
+      cleanUp(dir);
+    }
+  },
+);
+
 Deno.test(
   "[configuring] DirectConfigAdapter.get returns registry default when no override",
   () => {

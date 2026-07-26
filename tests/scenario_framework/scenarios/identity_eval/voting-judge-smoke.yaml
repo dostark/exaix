@@ -3,7 +3,7 @@ id: "voting-judge-smoke"
 title: "voting-judge structural smoke — plan structure validation on mock provider"
 pack: "identity_eval"
 tags: ["smoke", "subsystem:identities", "entity:voting-judge"]
-request_fixture: "fixtures/requests/provider_live/voting-judge.md"
+request_fixture: "fixtures/requests/provider_live/voting_judge.md"
 mode_support: ["auto"]
 portals: []
 edition: "team"

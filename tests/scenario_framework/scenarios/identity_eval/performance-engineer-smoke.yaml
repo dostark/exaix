@@ -3,7 +3,7 @@ id: "performance-engineer-smoke"
 title: "performance-engineer structural smoke — plan structure validation on mock provider"
 pack: "identity_eval"
 tags: ["smoke", "subsystem:identities", "entity:performance-engineer"]
-request_fixture: "fixtures/requests/provider_live/performance-engineer.md"
+request_fixture: "fixtures/requests/provider_live/performance_engineer.md"
 mode_support: ["auto"]
 portals: []
 

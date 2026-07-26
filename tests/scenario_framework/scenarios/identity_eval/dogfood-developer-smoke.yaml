@@ -3,7 +3,7 @@ id: "dogfood-developer-smoke"
 title: "dogfood-developer structural smoke — plan structure validation on mock provider"
 pack: "identity_eval"
 tags: ["smoke", "subsystem:identities", "entity:dogfood-developer"]
-request_fixture: "fixtures/requests/provider_live/dogfood-developer.md"
+request_fixture: "fixtures/requests/provider_live/dogfood_coder.md"
 mode_support: ["auto"]
 portals: []
 

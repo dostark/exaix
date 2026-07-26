@@ -38,10 +38,12 @@ steps:
         kind: "command-output-contains"
         contains: ["request.created"]
 
+  # `exactl journal` has no `query` subcommand and no `--limit` flag; the tail size
+  # flag is `-n/--tail` (apps/exactl/src/exactl.ts:journalCommand).
   - id: "query-journal"
     type: "exactl"
     command: "journal"
-    args: ["query", "--limit", "5"]
+    args: ["--tail", "5"]
     output_criteria:
       - id: "journal-queried"
         kind: "command-exit-code"

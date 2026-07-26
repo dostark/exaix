@@ -3,7 +3,7 @@ id: "research-synthesizer-smoke"
 title: "research-synthesizer structural smoke — plan structure validation on mock provider"
 pack: "identity_eval"
 tags: ["smoke", "subsystem:identities", "entity:research-synthesizer"]
-request_fixture: "fixtures/requests/provider_live/research-synthesizer.md"
+request_fixture: "fixtures/requests/provider_live/research_synthesizer.md"
 mode_support: ["auto"]
 portals: []
 

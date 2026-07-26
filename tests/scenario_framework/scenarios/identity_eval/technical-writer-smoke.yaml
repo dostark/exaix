@@ -3,7 +3,7 @@ id: "technical-writer-smoke"
 title: "technical-writer structural smoke — plan structure validation on mock provider"
 pack: "identity_eval"
 tags: ["smoke", "subsystem:identities", "entity:technical-writer"]
-request_fixture: "fixtures/requests/provider_live/technical-writer.md"
+request_fixture: "fixtures/requests/provider_live/technical_writer.md"
 mode_support: ["auto"]
 portals: []
 

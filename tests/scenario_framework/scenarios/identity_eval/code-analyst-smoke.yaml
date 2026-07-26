@@ -3,7 +3,7 @@ id: "code-analyst-smoke"
 title: "code-analyst structural smoke — plan structure validation on mock provider"
 pack: "identity_eval"
 tags: ["smoke", "subsystem:identities", "entity:code-analyst"]
-request_fixture: "fixtures/requests/provider_live/code-analyst.md"
+request_fixture: "fixtures/requests/provider_live/code_analyst_cli_structure.md"
 mode_support: ["auto"]
 portals: []
 

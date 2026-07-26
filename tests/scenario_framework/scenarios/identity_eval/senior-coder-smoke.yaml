@@ -3,7 +3,7 @@ id: "senior-coder-smoke"
 title: "senior-coder structural smoke — plan structure validation on mock provider"
 pack: "identity_eval"
 tags: ["smoke", "subsystem:identities", "entity:senior-coder"]
-request_fixture: "fixtures/requests/provider_live/senior-coder.md"
+request_fixture: "fixtures/requests/provider_live/senior_coder.md"
 mode_support: ["auto"]
 portals: []
 

@@ -21,11 +21,14 @@ steps:
     command: "sh"
     args:
       - "-c"
-      - "rm -rf /tmp/exaix-git-test && mkdir -p /tmp/exaix-git-test && cd /tmp/exaix-git-test && git init && git config user.email test@test.com && git config user.name Tester && echo 'initial' > readme.txt && git add . && git commit -m 'initial commit'"
+      - "rm -rf /tmp/exaix-git-test && mkdir -p /tmp/exaix-git-test && cd /tmp/exaix-git-test && git init -b main && git config user.email test@test.com && git config user.name Tester && echo 'initial' > readme.txt && git add . && git commit -m 'initial commit'"
     output_criteria:
+      # git prints "Initialized empty Git repository in ..." — the assertion is
+      # case-sensitive, and `-b main` pins the branch name so the branch check below
+      # does not depend on the host's init.defaultBranch setting.
       - id: "repo-initialized"
         kind: "command-output-contains"
-        contains: ["initialized"]
+        contains: ["Initialized empty Git repository"]
         score_weight: 0.3
 
   - id: "verify-git-status"
@@ -91,11 +94,13 @@ steps:
     command: "sh"
     args:
       - "-c"
-      - "cd /tmp/exaix-git-test && git worktree add /tmp/exaix-wt-test main 2>&1 || true"
+      # `main` is already checked out in the primary worktree, so add a NEW branch —
+      # checking out an already-checked-out branch is refused by git.
+      - "cd /tmp/exaix-git-test && git worktree add -b wt-test /tmp/exaix-wt-test main 2>&1"
     output_criteria:
       - id: "worktree-added"
         kind: "command-output-contains"
-        contains: ["Preparing"]
+        contains: ["Preparing worktree"]
         score_weight: 0.3
 
   - id: "cleanup"

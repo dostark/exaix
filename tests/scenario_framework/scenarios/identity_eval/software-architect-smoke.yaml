@@ -3,7 +3,7 @@ id: "software-architect-smoke"
 title: "software-architect structural smoke — plan structure validation on mock provider"
 pack: "identity_eval"
 tags: ["smoke", "subsystem:identities", "entity:software-architect"]
-request_fixture: "fixtures/requests/provider_live/software-architect.md"
+request_fixture: "fixtures/requests/provider_live/software_architect.md"
 mode_support: ["auto"]
 portals: []
 

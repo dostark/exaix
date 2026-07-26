@@ -3,7 +3,7 @@ id: "tools-negative-missing-substring"
 title: "Negative — patch_file on missing substring produces error"
 pack: "mcp_tools_extended"
 tags: ["negative", "error", "patch_file", "subsystem:tools", "entity:patch_file"]
-request_fixture: "fixtures/requests/mcp_tools_extended/patch_file.md"
+request_fixture: "fixtures/requests/mcp_tools_extended/patch_file_refactor.md"
 mode_support: ["auto"]
 portals: []
 steps:

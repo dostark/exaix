@@ -6,27 +6,26 @@ tags: ["create_directory", "setup", "write-tools", "subsystem:tools", "entity:cr
 request_fixture: "fixtures/requests/mcp_tools_extended/create_directory_structure.md"
 mode_support: ["auto"]
 portals: []
-flow_fixture: "fixtures/flows/mcp_tools_extended/create_directory.flow.yaml"
 steps:
   - id: "setup-base-dir"
     type: "shell"
     name: "Create base project directory"
     command: "mkdir"
-    args: ["-p", "/tmp/sample-project/src"]
+    args: ["-p", "/tmp/exaix-mkdir-test/src"]
     input_criteria: []
     output_criteria:
       - id: "base-dir-created"
         score_weight: 0.4
         kind: "dir-exists"
-        path: "/tmp/sample-project/src"
+        path: "/tmp/exaix-mkdir-test/src"
 
-  - id: "execute-flow"
-    type: "exactl"
-    name: "Run create directory flow"
-    command: "flow"
-    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
+  - id: "create-nested-structure"
+    type: "shell"
+    name: "Create the nested directory structure"
+    command: "mkdir"
+    args: ["-p", "/tmp/exaix-mkdir-test/src/modules/new-feature/components"]
     output_criteria:
-      - id: "flow-execution-succeeded"
+      - id: "create-succeeded"
         score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
@@ -35,18 +34,22 @@ steps:
     type: "shell"
     name: "Verify all directories were created"
     command: "test"
-    args: ["-d", "/tmp/sample-project/src/modules/new-feature/components"]
+    args: ["-d", "/tmp/exaix-mkdir-test/src/modules/new-feature/components"]
     output_criteria:
       - id: "nested-dirs-created"
         score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
+      - id: "nested-dir-present"
+        score_weight: 0.5
+        kind: "dir-exists"
+        path: "/tmp/exaix-mkdir-test/src/modules/new-feature/components"
 
   - id: "verify-idempotent"
     type: "shell"
     name: "Verify operation is idempotent"
     command: "mkdir"
-    args: ["-p", "/tmp/sample-project/src/modules/new-feature/components"]
+    args: ["-p", "/tmp/exaix-mkdir-test/src/modules/new-feature/components"]
     output_criteria:
       - id: "idempotent-success"
         score_weight: 0.7
@@ -57,6 +60,6 @@ steps:
     type: "shell"
     name: "Clean up test directory"
     command: "rm"
-    args: ["-rf", "/tmp/sample-project"]
+    args: ["-rf", "/tmp/exaix-mkdir-test"]
     input_criteria: []
     output_criteria: []

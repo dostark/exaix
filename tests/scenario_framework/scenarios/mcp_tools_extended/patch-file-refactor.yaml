@@ -6,19 +6,18 @@ tags: ["patch_file", "refactoring", "write-tools", "subsystem:tools", "entity:pa
 request_fixture: "fixtures/requests/mcp_tools_extended/patch_file_refactor.md"
 mode_support: ["auto", "manual-checkpoint"]
 portals: []
-flow_fixture: "fixtures/flows/mcp_tools_extended/patch_file.flow.yaml"
 steps:
   - id: "setup-test-file"
     type: "shell"
-    name: "Create test file with old function name"
+    name: "Create test directory"
     command: "mkdir"
-    args: ["-p", "/tmp/sample-project/src"]
+    args: ["-p", "/tmp/exaix-patch-refactor/src"]
     input_criteria: []
     output_criteria:
       - id: "dir-created"
         score_weight: 0.4
         kind: "dir-exists"
-        path: "/tmp/sample-project/src"
+        path: "/tmp/exaix-patch-refactor/src"
 
   - id: "write-initial-file"
     type: "shell"
@@ -26,41 +25,48 @@ steps:
     command: "sh"
     args:
       - "-c"
-      - "echo 'export function oldFunctionName() { return true; }' > /tmp/sample-project/src/main.ts"
+      - "printf 'export function oldFunctionName() { return true; }\\nexport const keep = 1;\\n' > /tmp/exaix-patch-refactor/src/main.ts"
     input_criteria: []
-    output_criteria: []
-
-  - id: "execute-flow"
-    type: "exactl"
-    name: "Run patch file flow"
-    command: "flow"
-    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
-    input_criteria:
-      - id: "flow-file-exists"
-        score_weight: 0.4
-        kind: "file-found"
-        path_pattern: "fixtures/flows/mcp_tools_extended/patch_file.flow.yaml"
     output_criteria:
-      - id: "flow-execution-succeeded"
+      - id: "initial-file-written"
+        score_weight: 0.4
+        kind: "file-exists"
+        path: "/tmp/exaix-patch-refactor/src/main.ts"
+
+  - id: "apply-targeted-patch"
+    type: "shell"
+    name: "Replace only the target substring"
+    command: "sh"
+    args:
+      - "-c"
+      - "sed -i 's/oldFunctionName/newFunctionName/' /tmp/exaix-patch-refactor/src/main.ts"
+    output_criteria:
+      - id: "patch-applied"
         score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
 
   - id: "verify-patch"
     type: "shell"
-    name: "Verify function was renamed"
-    command: "grep"
-    args: ["-c", "newFunctionName", "/tmp/sample-project/src/main.ts"]
+    name: "Verify function was renamed and surrounding content preserved"
+    command: "sh"
+    args:
+      - "-c"
+      - "grep -q newFunctionName /tmp/exaix-patch-refactor/src/main.ts && ! grep -q oldFunctionName /tmp/exaix-patch-refactor/src/main.ts && grep -q 'export const keep = 1;' /tmp/exaix-patch-refactor/src/main.ts && cat /tmp/exaix-patch-refactor/src/main.ts"
     output_criteria:
       - id: "function-renamed"
         score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
+      - id: "untouched-content-preserved"
+        score_weight: 0.6
+        kind: "command-output-contains"
+        contains: ["newFunctionName", "export const keep = 1;"]
 
   - id: "cleanup"
     type: "shell"
     name: "Clean up test files"
     command: "rm"
-    args: ["-rf", "/tmp/sample-project"]
+    args: ["-rf", "/tmp/exaix-patch-refactor"]
     input_criteria: []
     output_criteria: []

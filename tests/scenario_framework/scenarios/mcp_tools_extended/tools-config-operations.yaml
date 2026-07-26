@@ -28,10 +28,13 @@ steps:
         kind: "command-output-contains"
         contains: ["daemon.started"]
 
+  # `provider` is not a registered key — the registry namespaces it as `ai.provider`
+  # (packages/core/src/config/registry.ts consumers), and `config get` on an unregistered
+  # key correctly raises ConfigKeyNotFoundError.
   - id: "verify-config-get"
     type: "exactl"
     command: "config"
-    args: ["get", "provider"]
+    args: ["get", "ai.provider"]
     output_criteria:
       - id: "config-get-works"
         kind: "command-exit-code"

@@ -3,7 +3,7 @@ id: "security-expert-smoke"
 title: "security-expert structural smoke — plan structure validation on mock provider"
 pack: "identity_eval"
 tags: ["smoke", "subsystem:identities", "entity:security-expert"]
-request_fixture: "fixtures/requests/provider_live/security-expert.md"
+request_fixture: "fixtures/requests/provider_live/security_expert.md"
 mode_support: ["auto"]
 portals: []
 

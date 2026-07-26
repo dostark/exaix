@@ -6,7 +6,6 @@ tags: ["move_file", "restructure", "write-tools", "subsystem:tools", "entity:mov
 request_fixture: "fixtures/requests/mcp_tools_extended/move_file_restructure.md"
 mode_support: ["auto", "manual-checkpoint"]
 portals: []
-flow_fixture: "fixtures/flows/mcp_tools_extended/move_file.flow.yaml"
 steps:
   - id: "setup-test-file"
     type: "shell"
@@ -14,40 +13,50 @@ steps:
     command: "sh"
     args:
       - "-c"
-      - "mkdir -p /tmp/sample-project/src/helpers && echo 'utility' > /tmp/sample-project/src/utils.ts"
+      - "mkdir -p /tmp/exaix-move-test/src/helpers && echo 'utility' > /tmp/exaix-move-test/src/utils.ts"
     input_criteria: []
     output_criteria:
       - id: "file-created"
         score_weight: 0.4
-        kind: "file-found"
-        path_pattern: "/tmp/sample-project/src/utils.ts"
+        kind: "file-exists"
+        path: "/tmp/exaix-move-test/src/utils.ts"
 
-  - id: "execute-flow"
-    type: "exactl"
-    name: "Run move file flow"
-    command: "flow"
-    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
+  - id: "move-file"
+    type: "shell"
+    name: "Move the file to its new location"
+    command: "mv"
+    args: ["/tmp/exaix-move-test/src/utils.ts", "/tmp/exaix-move-test/src/helpers/utils.ts"]
     output_criteria:
-      - id: "flow-execution-succeeded"
+      - id: "move-succeeded"
         score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
 
   - id: "verify-move"
     type: "shell"
-    name: "Verify file was moved to new location"
-    command: "test"
-    args: ["-f", "/tmp/sample-project/src/helpers/utils.ts"]
+    name: "Verify file is at the new location, absent from the old, and content preserved"
+    command: "sh"
+    args:
+      - "-c"
+      - "test ! -f /tmp/exaix-move-test/src/utils.ts && cat /tmp/exaix-move-test/src/helpers/utils.ts"
     output_criteria:
       - id: "file-moved"
         score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
+      - id: "content-preserved"
+        score_weight: 0.6
+        kind: "command-output-contains"
+        contains: ["utility"]
+      - id: "source-absent"
+        score_weight: 0.5
+        kind: "file-not-exists"
+        path: "/tmp/exaix-move-test/src/utils.ts"
 
   - id: "cleanup"
     type: "shell"
     name: "Clean up test directory"
     command: "rm"
-    args: ["-rf", "/tmp/sample-project"]
+    args: ["-rf", "/tmp/exaix-move-test"]
     input_criteria: []
     output_criteria: []

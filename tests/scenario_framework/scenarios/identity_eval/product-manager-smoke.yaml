@@ -3,7 +3,7 @@ id: "product-manager-smoke"
 title: "product-manager structural smoke — plan structure validation on mock provider"
 pack: "identity_eval"
 tags: ["smoke", "subsystem:identities", "entity:product-manager"]
-request_fixture: "fixtures/requests/provider_live/product-manager.md"
+request_fixture: "fixtures/requests/provider_live/product_manager.md"
 mode_support: ["auto"]
 portals: []
 

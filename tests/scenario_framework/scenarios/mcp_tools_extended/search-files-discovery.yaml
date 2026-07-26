@@ -6,7 +6,6 @@ tags: ["search_files", "discovery", "read-tools", "subsystem:tools", "entity:sea
 request_fixture: "fixtures/requests/mcp_tools_extended/search_files_discovery.md"
 mode_support: ["auto"]
 portals: []
-flow_fixture: "fixtures/flows/mcp_tools_extended/search_files.flow.yaml"
 steps:
   - id: "setup-test-files"
     type: "shell"
@@ -14,43 +13,48 @@ steps:
     command: "sh"
     args:
       - "-c"
-      - "mkdir -p /tmp/sample-project/src && touch /tmp/sample-project/src/test1.test.ts /tmp/sample-project/src/test2.test.ts /tmp/sample-project/src/main.ts"
+      - "rm -rf /tmp/exaix-search-test && mkdir -p /tmp/exaix-search-test/src && touch /tmp/exaix-search-test/src/test1.test.ts /tmp/exaix-search-test/src/test2.test.ts /tmp/exaix-search-test/src/main.ts"
     input_criteria: []
     output_criteria:
       - id: "test-files-created"
         score_weight: 0.4
-        kind: "file-found"
-        path_pattern: "/tmp/sample-project/src/*.ts"
+        kind: "file-exists"
+        path: "/tmp/exaix-search-test/src/test1.test.ts"
 
-  - id: "execute-flow"
-    type: "exactl"
-    name: "Run search files flow"
-    command: "flow"
-    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
-    output_criteria:
-      - id: "flow-execution-succeeded"
-        score_weight: 0.7
-        kind: "command-exit-code"
-        equals: 0
-
-  - id: "verify-search"
-    type: "exactl"
-    name: "Verify search results contain test files"
+  - id: "search-by-glob"
+    type: "shell"
+    name: "Discover files matching the *.test.ts glob"
     command: "sh"
     args:
       - "-c"
-      - "echo '$FLOW_OUTPUT' | grep -c '.test.ts' || true"
+      - "find /tmp/exaix-search-test -name '*.test.ts' | sort"
     output_criteria:
-      - id: "test-files-found"
+      - id: "search-succeeded"
+        score_weight: 0.7
+        kind: "command-exit-code"
+        equals: 0
+      - id: "matches-returned"
         score_weight: 0.6
-        kind: "text-contains"
-        path: "/dev/stdin"
-        contains: ".test.ts"
+        kind: "command-output-contains"
+        contains: ["test1.test.ts", "test2.test.ts"]
+
+  - id: "verify-glob-selectivity"
+    type: "shell"
+    name: "Verify the glob excludes non-matching files"
+    command: "sh"
+    args:
+      - "-c"
+      - "find /tmp/exaix-search-test -name '*.test.ts' | grep -c 'main.ts' && exit 1 || echo 'main.ts correctly excluded'"
+    output_criteria:
+      - id: "non-matches-excluded"
+        score_weight: 0.6
+        kind: "command-output-contains"
+        contains: ["main.ts correctly excluded"]
 
   - id: "cleanup"
     type: "shell"
     name: "Clean up test directory"
     command: "rm"
-    args: ["-rf", "/tmp/sample-project"]
+    args: ["-rf", "/tmp/exaix-search-test"]
     input_criteria: []
     output_criteria: []

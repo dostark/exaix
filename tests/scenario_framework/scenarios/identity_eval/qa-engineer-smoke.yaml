@@ -3,7 +3,7 @@ id: "qa-engineer-smoke"
 title: "qa-engineer structural smoke — plan structure validation on mock provider"
 pack: "identity_eval"
 tags: ["smoke", "subsystem:identities", "entity:qa-engineer"]
-request_fixture: "fixtures/requests/provider_live/qa-engineer.md"
+request_fixture: "fixtures/requests/provider_live/qa_engineer.md"
 mode_support: ["auto"]
 portals: []
 

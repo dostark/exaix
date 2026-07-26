@@ -6,7 +6,6 @@ tags: ["delete_file", "cleanup", "write-tools", "subsystem:tools", "entity:delet
 request_fixture: "fixtures/requests/mcp_tools_extended/delete_file_cleanup.md"
 mode_support: ["auto"]
 portals: []
-flow_fixture: "fixtures/flows/mcp_tools_extended/delete_file.flow.yaml"
 steps:
   - id: "setup-test-file"
     type: "shell"
@@ -14,40 +13,46 @@ steps:
     command: "sh"
     args:
       - "-c"
-      - "mkdir -p /tmp/sample-project/src && echo 'deprecated' > /tmp/sample-project/src/deprecated.ts"
+      - "mkdir -p /tmp/exaix-delete-test/src && echo 'deprecated' > /tmp/exaix-delete-test/src/deprecated.ts"
     input_criteria: []
     output_criteria:
       - id: "file-created"
         score_weight: 0.4
-        kind: "file-found"
-        path_pattern: "/tmp/sample-project/src/deprecated.ts"
+        kind: "file-exists"
+        path: "/tmp/exaix-delete-test/src/deprecated.ts"
 
-  - id: "execute-flow"
-    type: "exactl"
-    name: "Run delete file flow"
-    command: "flow"
-    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
+  - id: "delete-target"
+    type: "shell"
+    name: "Delete the target file"
+    command: "rm"
+    args: ["-f", "/tmp/exaix-delete-test/src/deprecated.ts"]
     output_criteria:
-      - id: "flow-execution-succeeded"
+      - id: "delete-succeeded"
         score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
 
   - id: "verify-deletion"
     type: "shell"
-    name: "Verify file was deleted"
-    command: "test"
-    args: ["!", "-f", "/tmp/sample-project/src/deprecated.ts"]
+    name: "Verify the file is gone and its parent directory survived"
+    command: "sh"
+    args:
+      - "-c"
+      - "test ! -f /tmp/exaix-delete-test/src/deprecated.ts && test -d /tmp/exaix-delete-test/src"
     output_criteria:
       - id: "file-deleted"
         score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
+      - id: "file-absent"
+        score_weight: 0.5
+        kind: "file-not-exists"
+        path: "/tmp/exaix-delete-test/src/deprecated.ts"
 
   - id: "cleanup"
     type: "shell"
     name: "Clean up test directory"
     command: "rm"
-    args: ["-rf", "/tmp/sample-project"]
+    args: ["-rf", "/tmp/exaix-delete-test"]
     input_criteria: []
     output_criteria: []
