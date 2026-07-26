@@ -97,6 +97,41 @@ export async function runSyntheticScenario(
   // non-matrix scenarios were not; create it here unconditionally so every run mode is covered.
   await ensureDir(options.workspaceRoot);
 
+  // Baseline for artefact correlation. Scenarios in a pack run share one sandbox workspace,
+  // so a glob like `**/*_plan.md` matches every plan an earlier scenario left behind.
+  // Captured at scenario entry, this timestamp separates "produced by this scenario" from
+  // "left by a previous one", which is what makes the shared workspace safe without
+  // per-scenario cleanup.
+  const scenarioStartedAtMs = Date.now();
+
+  // Run database migrations (setup_db.ts) so the sandbox's .exa/journal.db has all required
+  // tables (activity, provider_costs, etc.). Without this step the daemon hits "no such table"
+  // errors when the EventLogger or agent execution tries to write to missing tables. This must
+  // happen BEFORE any start-daemon step since the daemon expects the schema to already exist
+  // (production runs setup_db.ts before the daemon starts via the deploy pipeline).
+  const setupDbResult = await new Deno.Command("deno", {
+    args: [
+      "run",
+      "-A",
+      "--config",
+      join(options.frameworkHome, "..", "..", "deno.json"),
+      join(options.frameworkHome, "..", "..", "scripts", "setup_db.ts"),
+    ],
+    cwd: options.workspaceRoot,
+    env: {
+      EXA_MIGRATIONS_DIR: join(options.frameworkHome, "..", "..", "migrations"),
+    },
+  }).output();
+  // Fatal, not a warning: a scenario running against an unmigrated database fails later on
+  // whichever table it happens to touch first, which reads as an unrelated defect. Failing
+  // here names the real cause once.
+  if (!setupDbResult.success) {
+    throw new Error(
+      `setup_db.ts failed with exit code ${setupDbResult.code} for workspace ${options.workspaceRoot}; ` +
+        `the scenario database would be unmigrated.\n${new TextDecoder().decode(setupDbResult.stderr)}`,
+    );
+  }
+
   const loadedScenario = await loadScenarioFromYamlFile({
     frameworkHome: options.frameworkHome,
     scenarioPath: options.scenarioPath,
@@ -187,6 +222,7 @@ export async function runSyntheticScenario(
         const outcome = await executeSyntheticStep({
           step: resolvedStep,
           workspaceRoot: options.workspaceRoot,
+          artifactBaselineMs: scenarioStartedAtMs,
           exactlExecutable: options.exactlExecutable,
           requestFixturePath: loadedScenario.requestFixture.absolutePath,
           frameworkHome: options.frameworkHome,
@@ -368,6 +404,11 @@ export function resolveTrajectorySourceStep(
 interface IExecuteSyntheticStepOptions {
   step: IScenarioStep;
   workspaceRoot: string;
+  /**
+   * Epoch-ms floor separating this scenario's artefacts from those of earlier scenarios
+   * sharing the sandbox workspace. Set to the scenario's start time.
+   */
+  artifactBaselineMs?: number;
   exactlExecutable?: string;
   requestFixturePath: string;
   frameworkHome: string;
@@ -416,10 +457,12 @@ async function executeSyntheticStep(
     cwd: options.workspaceRoot,
     env,
     verbose: options.verbose,
+    artifactBaselineMs: options.artifactBaselineMs,
   });
 
   const outputOutcome = await evaluateStepOutcome({
     workspaceRoot: options.workspaceRoot,
+    artifactBaselineMs: options.artifactBaselineMs,
     step: resolvedStep,
     executionResult,
     env,

@@ -65,6 +65,8 @@ export interface IEvaluateStepOutcomeOptions {
   portalAliases?: string[];
   verbose?: boolean;
   exactlExecutable?: string;
+  /** Epoch-ms floor for artefacts this scenario may claim — see IExecuteScenarioStepOptions. */
+  artifactBaselineMs?: number;
 }
 
 export interface IScenarioStepOutcome {
@@ -193,6 +195,7 @@ export async function evaluateStepOutcome(
     stepTargetFile = await resolveStepFilePattern(
       options.workspaceRoot,
       options.step.file_pattern,
+      options.artifactBaselineMs,
     );
   }
 
@@ -929,18 +932,49 @@ async function* walkWorkspaceFiles(dir: string): AsyncGenerator<string> {
   }
 }
 
+/**
+ * Resolve a step's `file_pattern` to the MOST RECENTLY WRITTEN match.
+ *
+ * Scenarios in a pack run share one sandbox workspace, so a pattern like `**\/*_plan.md`
+ * matches every plan produced by every earlier scenario. Returning the first
+ * directory-walk match — whatever order the walk happens to yield — made a step validate
+ * an arbitrary scenario's artefact; with a criterion weak enough not to notice (e.g. a
+ * field-exists check) that reads as a pass. Selecting the newest match correlates the step
+ * with the request this scenario just submitted and waited for, which is what lets a shared
+ * sandbox stay correct without per-scenario cleanup.
+ *
+ * Ties (same mtime) fall back to the lexically greatest path so the result stays
+ * deterministic rather than walk-order dependent.
+ */
 async function resolveStepFilePattern(
   workspaceRoot: string,
   pattern: string,
+  baselineMs?: Opt<number, Reason.OptionalInput>,
 ): Promise<string | undefined> {
   const matcher = globToRegExp(pattern);
+  let best: { relativePath: string; modifiedMs: number } | undefined;
+
   for await (const filePath of walkWorkspaceFiles(workspaceRoot)) {
     const relativePath = relative(workspaceRoot, filePath);
-    if (matcher.test(relativePath)) {
-      return relativePath;
+    if (!matcher.test(relativePath)) continue;
+
+    let modifiedMs = 0;
+    try {
+      modifiedMs = (await Deno.stat(filePath)).mtime?.getTime() ?? 0;
+    } catch {
+      continue; // vanished between walk and stat — ignore rather than fail resolution
     }
+    // Reject artefacts written before this scenario began — they belong to an earlier
+    // scenario sharing the sandbox workspace.
+    if (baselineMs !== undefined && modifiedMs < baselineMs) continue;
+
+    const isNewer = best === undefined ||
+      modifiedMs > best.modifiedMs ||
+      (modifiedMs === best.modifiedMs && relativePath > best.relativePath);
+    if (isNewer) best = { relativePath, modifiedMs };
   }
-  return undefined;
+
+  return best?.relativePath;
 }
 
 function rewriteCriteriaWithTarget(

@@ -12,6 +12,7 @@
 import { type ICriterionResult, type IScenarioStep, ScenarioStepType } from "../schema/step_schema.ts";
 import { globToRegExp, join, relative, resolve } from "@std/path";
 import { Database } from "@db/sqlite";
+import type { Opt, Reason } from "@exaix/core/types";
 import {
   captureToolCallsFromJournal,
   type IExpectedTrajectory,
@@ -25,6 +26,15 @@ export interface IExecuteScenarioStepOptions {
   cwd?: string;
   env?: { [key: string]: string };
   verbose?: boolean;
+  /**
+   * Epoch-ms floor for artefacts this scenario may claim as its own. Scenarios in a pack
+   * run share one sandbox workspace, so `**\/*_plan.md` also matches every plan an earlier
+   * scenario produced — a `wait-for-file` step was satisfied INSTANTLY by a stale match and
+   * returned before the current request's plan existed. Set to the scenario's start time,
+   * this rejects prior scenarios' artefacts the same way the daemon-ready wait rejects
+   * stale journal events via a `sinceRowid` baseline. Omit to accept any match.
+   */
+  artifactBaselineMs?: number;
 }
 
 export interface IScenarioStepExecutionResult {
@@ -164,7 +174,7 @@ async function executeWaitForFileStep(
 
   while (Date.now() - startTime < timeoutMs) {
     // Search for matching files
-    const found = await findMatchingFiles(workspaceRoot, pattern);
+    const found = await findMatchingFiles(workspaceRoot, pattern, options.artifactBaselineMs);
 
     if (found.length > 0) {
       const completedAtEpochMs = Date.now();
@@ -383,13 +393,35 @@ async function executeWaitForJournalEventStep(
   };
 }
 
-async function findMatchingFiles(root: string, pattern: RegExp): Promise<string[]> {
+/**
+ * True when `path` was last modified at or after `baselineMs` — i.e. it belongs to the
+ * current scenario rather than an earlier one sharing the workspace. No baseline means
+ * every match is acceptable (single-scenario runs, and callers that do not correlate).
+ */
+async function isAtOrAfterBaseline(
+  path: string,
+  baselineMs?: Opt<number, Reason.OptionalInput>,
+): Promise<boolean> {
+  if (baselineMs === undefined) return true;
+  try {
+    const modified = (await Deno.stat(path)).mtime?.getTime();
+    return modified === undefined ? false : modified >= baselineMs;
+  } catch {
+    return false;
+  }
+}
+
+async function findMatchingFiles(
+  root: string,
+  pattern: RegExp,
+  baselineMs?: Opt<number, Reason.OptionalInput>,
+): Promise<string[]> {
   const matches: string[] = [];
   const workspaceRoot = root;
 
   try {
     for await (const entry of Deno.readDir(root)) {
-      await checkEntry(entry, root, pattern, matches, workspaceRoot);
+      await checkEntry(entry, root, pattern, matches, workspaceRoot, baselineMs);
     }
   } catch {
     // Directory not accessible
@@ -404,19 +436,22 @@ async function checkEntry(
   pattern: RegExp,
   matches: string[],
   workspaceRoot: string,
+  baselineMs?: Opt<number, Reason.OptionalInput>,
 ): Promise<void> {
   const fullPath = resolve(basePath, entry.name);
   const relPath = relative(workspaceRoot, fullPath);
 
   if (entry.isFile && (pattern.test(entry.name) || pattern.test(relPath))) {
-    matches.push(fullPath);
+    if (await isAtOrAfterBaseline(fullPath, baselineMs)) {
+      matches.push(fullPath);
+    }
     return;
   }
 
   if (entry.isDirectory && !entry.name.startsWith(".")) {
     try {
       for await (const subEntry of Deno.readDir(fullPath)) {
-        await checkEntry(subEntry, fullPath, pattern, matches, workspaceRoot);
+        await checkEntry(subEntry, fullPath, pattern, matches, workspaceRoot, baselineMs);
       }
     } catch {
       // Directory not accessible

@@ -22,11 +22,11 @@ steps:
       - "$REQUEST_FIXTURE"
   - id: "wait-for-plan"
     type: "wait-for-file"
-    args: ["**/*_plan.yaml"]
+    args: ["**/*_plan.md"]
     timeout_sec: 180
   - id: "validate-plan-content"
     type: "json-assert"
-    file_pattern: "**/*_plan.yaml"
+    file_pattern: "**/*_plan.md"
     output_criteria:
       - id: "has-steps"
         score_weight: 0.8

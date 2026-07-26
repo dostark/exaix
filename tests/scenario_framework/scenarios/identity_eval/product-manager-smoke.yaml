@@ -35,26 +35,47 @@ steps:
 
   - id: "wait-for-plan"
     type: "wait-for-file"
-    args: ["**/*_plan.yaml"]
+    args: ["**/*_plan.md"]
     timeout_sec: 120
     output_criteria:
       - id: "plan-produced"
         kind: "file-found"
-        path_pattern: "**/*_plan.yaml"
+        path_pattern: "**/*_plan.md"
         score_weight: 0.5
 
   - id: "validate-plan-structure"
     type: "json-assert"
-    file_pattern: "**/*_plan.yaml"
+    file_pattern: "**/*_plan.md"
     output_criteria:
-      - id: "has-steps"
-        score_weight: 0.8
-        kind: "json-path-exists"
-        path: "$.steps[0]"
-      - id: "has-title"
+      # The point of an identity smoke is that THIS identity produced the plan.
+      # frontmatter-field-exists only proves the field is present — PlanWriter stamps it
+      # unconditionally, so every identity scenario would pass with the wrong identity.
+      - id: "plan-attributed-to-identity"
+        score_weight: 1.0
+        kind: "frontmatter-field-equals"
+        field: "identity_id"
+        equals: "product-manager"
+      - id: "has-subject"
         score_weight: 0.5
-        kind: "json-path-exists"
-        path: "$.title"
+        kind: "frontmatter-field-exists"
+        field: "subject"
+      - id: "has-trace"
+        score_weight: 0.3
+        kind: "frontmatter-field-exists"
+        field: "trace_id"
+
+  # Frontmatter alone says nothing about whether a real plan was produced. The plan BODY
+  # carries the structure the original `$.steps[0]` criterion was reaching for.
+  - id: "verify-plan-has-steps"
+    type: "shell"
+    name: "The produced plan contains an executable step structure"
+    command: "sh"
+    args: ["-c", "cat $WORKSPACE_ROOT/Workspace/Plans/*_plan.md"]
+    output_criteria:
+      - id: "plan-has-execution-steps"
+        kind: "command-output-contains"
+        contains: ["## Execution Steps", "## Step 1"]
+        score_weight: 0.8
 
   - id: "stop-daemon"
     type: "exactl"
