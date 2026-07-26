@@ -5,8 +5,21 @@
  *   least one eval scenario tagged entity:<skill-id>, minus exclusions.
  */
 import { assertEquals } from "@std/assert";
+import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { assertCatalogCovered } from "./catalog_parity.ts";
 import parityExclusions from "./parity_exclusions.json" with { type: "json" };
+
+const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
+const SEEDS_DIR = join(REPO_ROOT, "Blueprints", "Skills");
+
+/** Every skill id that actually ships, read from the seed catalog rather than restated here. */
+async function readShippedSkillIds(): Promise<string[]> {
+  const ids: string[] = [];
+  for await (const entry of Deno.readDir(SEEDS_DIR)) {
+    if (entry.isFile && entry.name.endsWith(".skill.md")) ids.push(entry.name.replace(/\.skill\.md$/, ""));
+  }
+  return ids.sort();
+}
 
 const BATCH_SKILLS_1 = ["tdd-methodology", "security-first", "code-review", "exaix-conventions", "portal-grounding"];
 const BATCH_SKILLS_2 = [
@@ -53,19 +66,20 @@ function buildBatchCatalog(batch: string[]): Array<{ id: string; tags: string[] 
   }));
 }
 
-Deno.test("skill_eval_parity — batch 5 covers all 27 skills", () => {
-  // Verify total skill count is correct
-  assertEquals(ALL_SKILLS.length, 27);
+Deno.test("skill_eval_parity — the batches cover every skill that ships", async () => {
+  // This asserted `ALL_SKILLS.length === 27` against a list declared in this same file, so it
+  // could only fail if someone edited the list and forgot to edit the number — while a skill
+  // added to `Blueprints/Skills/` and to no batch left the catalog uncovered and the test
+  // green. Both halves are now checked against the shipped catalog, which is the thing parity
+  // is supposed to be parity WITH; the count is whatever the catalog says it is.
+  const shipped = await readShippedSkillIds();
+  const batched = new Set(ALL_SKILLS);
 
-  // Verify every skill has its batch's entity tag
-  for (const skill of ALL_SKILLS) {
-    const inBatch = BATCH_SKILLS_1.includes(skill) ||
-      BATCH_SKILLS_2.includes(skill) ||
-      BATCH_SKILLS_3.includes(skill) ||
-      BATCH_SKILLS_4.includes(skill) ||
-      BATCH_SKILLS_5.includes(skill);
-    assertEquals(inBatch, true, `Skill ${skill} not found in any batch`);
-  }
+  const uncovered = shipped.filter((id) => !batched.has(id));
+  assertEquals(uncovered, [], `skills that ship but belong to no batch: ${uncovered.join(", ")}`);
+
+  const stale = ALL_SKILLS.filter((id) => !shipped.includes(id));
+  assertEquals(stale, [], `batched skills with no seed in Blueprints/Skills: ${stale.join(", ")}`);
 });
 
 Deno.test("skill_eval_parity — all skills pass when batch scenarios exist", () => {
