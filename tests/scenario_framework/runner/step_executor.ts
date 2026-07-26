@@ -35,6 +35,17 @@ export interface IExecuteScenarioStepOptions {
    * stale journal events via a `sinceRowid` baseline. Omit to accept any match.
    */
   artifactBaselineMs?: number;
+  /**
+   * Journal rowid floor for a `wait-for-journal-event` barrier: only events above it count.
+   *
+   * The step used to capture this itself, at the moment the wait began — which cannot see an
+   * event the PRECEDING step already produced. `exactl daemon start` now blocks until
+   * `daemon.ready` is journalled, so every `wait-for-daemon-ready` barrier placed after it
+   * (30 scenarios) sat above that row and waited out its timeout for a second `daemon.ready`
+   * that never comes. Pass the rowid the runner captured before the producing step ran.
+   * Omit to fall back to capturing at wait-start.
+   */
+  journalBaselineRowid?: number;
 }
 
 export interface IScenarioStepExecutionResult {
@@ -331,9 +342,11 @@ async function executeWaitForJournalEventStep(
   const timeoutMs = timeoutSec * 1000;
   const startTime = Date.now();
 
-  // Baseline: only events written AFTER this wait begins count. This is what makes the barrier
-  // ignore a stale `daemon.ready` left by a daemon that a prior `restart` step already killed.
-  const sinceRowid = await currentMaxRowid(workspaceRoot);
+  // Baseline: only events above this rowid count, which makes the barrier ignore a stale
+  // `daemon.ready` left by a daemon a prior `restart` step already killed. It comes from the
+  // runner, captured BEFORE the producing step ran — capturing it here instead would sit above
+  // the event the immediately preceding step just produced and could never be satisfied.
+  const sinceRowid = options.journalBaselineRowid ?? await currentMaxRowid(workspaceRoot);
 
   if (!eventType) {
     const completedAtEpochMs = Date.now();

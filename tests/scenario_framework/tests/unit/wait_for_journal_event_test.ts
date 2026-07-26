@@ -14,7 +14,9 @@
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
-import { currentMaxRowid, journalHasEvent } from "../../runner/step_executor.ts";
+import { currentMaxRowid, executeScenarioStep, journalHasEvent } from "../../runner/step_executor.ts";
+import type { CriterionPhase as _CriterionPhase } from "../../schema/step_schema.ts";
+import { ScenarioStepType } from "../../schema/step_schema.ts";
 
 /** Build a minimal journal DB with an `activity(action_type)` table and seed the given events. */
 async function makeJournal(events: string[]): Promise<string> {
@@ -121,6 +123,61 @@ Deno.test("[wait_for_journal_event] sinceRowid=0 (or omitted) matches any event 
   try {
     assertEquals(await journalHasEvent(ws, "daemon.ready", 0), true);
     assertEquals(await journalHasEvent(ws, "daemon.ready"), true);
+  } finally {
+    await Deno.remove(ws, { recursive: true });
+  }
+});
+
+// --- where the baseline is captured (Phase 142 Step 17) ---
+//
+// A barrier step capturing its OWN baseline at the moment it starts cannot see an event the
+// step before it already produced. `exactl daemon start` now blocks until `daemon.ready` is
+// journalled, so by the time the following `wait-for-daemon-ready` step runs, the event it is
+// waiting for is already below its self-captured baseline — and it waits out its full timeout
+// for a second `daemon.ready` that will never come. 30 scenarios carry that barrier.
+//
+// The baseline must therefore come from BEFORE the producing step ran, which the runner
+// already records per step. Stale-event protection is unaffected: a `daemon.ready` from a
+// daemon that an earlier step killed still sits below that rowid.
+
+function waitStep(id: string, eventType: string) {
+  return {
+    id,
+    type: ScenarioStepType.WAIT_FOR_JOURNAL_EVENT,
+    event_type: eventType,
+    timeout_sec: 2,
+    continue_on_failure: false,
+    input_criteria: [],
+    output_criteria: [],
+  };
+}
+
+Deno.test("[wait_for_journal_event] an event the PRECEDING step produced satisfies the barrier", async () => {
+  // rowid 1-2 are the preceding `daemon start` step's own output; the runner captured
+  // baseline=0 before that step ran.
+  const ws = await makeJournal(["daemon.starting", "daemon.ready"]);
+  try {
+    const result = await executeScenarioStep({
+      step: waitStep("wait-for-daemon-ready", "daemon.ready"),
+      cwd: ws,
+      journalBaselineRowid: 0,
+    });
+    assertEquals(result.exitCode, 0, result.stderr);
+  } finally {
+    await Deno.remove(ws, { recursive: true });
+  }
+});
+
+Deno.test("[wait_for_journal_event] a stale event from before the preceding step is still rejected", async () => {
+  // daemon #1's ready (rowid 1) predates the restart step, whose baseline is 3.
+  const ws = await makeJournal(["daemon.ready", "daemon.stopping", "daemon.stopped"]);
+  try {
+    const result = await executeScenarioStep({
+      step: waitStep("wait-for-daemon-ready", "daemon.ready"),
+      cwd: ws,
+      journalBaselineRowid: 3,
+    });
+    assertEquals(result.exitCode, 1, "a pre-baseline event must not satisfy the barrier");
   } finally {
     await Deno.remove(ws, { recursive: true });
   }
