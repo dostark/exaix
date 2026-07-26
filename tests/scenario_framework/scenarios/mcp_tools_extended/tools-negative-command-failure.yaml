@@ -1,19 +1,49 @@
 schema_version: "1.0.0"
+# Asserts run_command surfaces a non-zero exit from the command it ran, rather than
+# reporting success. The previous version ran `false; echo $?` in the scenario's own
+# shell — it demonstrated that `false` returns 1, not that the tool propagates it.
 id: "tools-negative-command-failure"
-title: "Negative — run_command failure exit propagation"
+title: "Negative — run_command propagates a failing command's exit code"
 pack: "mcp_tools_extended"
 tags: ["negative", "error", "run_command", "subsystem:tools", "entity:run_command"]
 request_fixture: "fixtures/requests/mcp_tools_extended/run_command.md"
 mode_support: ["auto"]
 portals: []
 steps:
-  - id: "attempt-failing-command"
+  - id: "setup-portal"
     type: "shell"
-    name: "Run a command that fails"
-    command: "sh"
-    args: ["-c", "false; echo 'exit code: '$?"]
+    name: "Create the fixture portal and its config"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
     output_criteria:
-      - id: "failure-detected"
+      - id: "portal-ready"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+
+  - id: "run-allowlisted-command-that-fails"
+    type: "shell"
+    name: "An allowlisted command that exits non-zero is reported as a failure, not a success"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "run_command"
+      - '{"portal":"tools","command":"ls","args":["no-such-path-inside-portal"],"identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "failure-surfaced"
         kind: "command-output-contains"
-        contains: ["exit code: 1"]
+        contains: ["Command failed with exit code", "\"isError\": true", "\"success\": false"]
         score_weight: 1.0

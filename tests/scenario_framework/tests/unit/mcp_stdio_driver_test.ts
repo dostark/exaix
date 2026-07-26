@@ -96,6 +96,49 @@ Deno.test("sendJsonRpcRequests — echo server returns correct responses", async
   assertEquals(responses[1].id, 2);
 });
 
+Deno.test("parseDriverArgs — accepts the documented leading `--` before the server command", () => {
+  // The usage string advertises `[--timeout-ms <ms>] -- <server-command...> -- <requests...>`.
+  // Both that form and the bare `<server-command...> -- <requests...>` form must parse, so a
+  // scenario author following the driver's own help text is not silently rejected.
+  const { command, requests } = parseDriverArgs([
+    "--timeout-ms",
+    "5000",
+    "--",
+    "deno",
+    "run",
+    "server.ts",
+    "--",
+    '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}',
+  ]);
+
+  assertEquals(command, ["deno", "run", "server.ts"]);
+  assertEquals(requests.length, 1);
+});
+
+Deno.test("sendJsonRpcRequests — a server that exits early reports the server error, not a stream TypeError", async () => {
+  // A server that dies before answering leaves stdin closed; closing the writer in the
+  // `finally` block then throws "Writable stream is closed or errored", which used to
+  // escape as an uncaught TypeError and replace the actual diagnostic.
+  const process = await spawnProcess([
+    "deno",
+    "eval",
+    "console.error('server boom'); Deno.exit(3);",
+  ]);
+
+  const { responses, error } = await sendJsonRpcRequests(process, [
+    { jsonrpc: "2.0", id: 1, method: "initialize", params: {} },
+  ], 2000);
+
+  try {
+    process.kill("SIGTERM");
+  } catch { /* ignore */ }
+  await process.status;
+
+  // The call must return normally with a diagnosable outcome rather than throwing.
+  assertEquals(Array.isArray(responses), true);
+  assertEquals(typeof error === "string" || responses.length > 0, true);
+});
+
 Deno.test("sendJsonRpcRequests — malformed JSON produces parse error", async () => {
   const process = await spawnProcess(["deno", "eval", echoServerScript()]);
 

@@ -1,58 +1,60 @@
 schema_version: "1.0.0"
+# Asserts delete_file removes a file through the tool handler and that a later read_file
+# reports NOT_FOUND. The previous version ran `rm -f` and tested `test ! -f`.
 id: "delete-file-cleanup"
-title: "Delete file tool removes files safely"
+title: "delete_file removes a file the tools can no longer read"
 pack: "mcp_tools_extended"
 tags: ["delete_file", "cleanup", "write-tools", "subsystem:tools", "entity:delete_file"]
 request_fixture: "fixtures/requests/mcp_tools_extended/delete_file_cleanup.md"
 mode_support: ["auto"]
 portals: []
 steps:
-  - id: "setup-test-file"
+  - id: "setup-portal"
     type: "shell"
-    name: "Create test file to delete"
-    command: "sh"
+    name: "Create the fixture portal and its config"
+    command: "deno"
     args:
-      - "-c"
-      - "mkdir -p /tmp/exaix-delete-test/src && echo 'deprecated' > /tmp/exaix-delete-test/src/deprecated.ts"
-    input_criteria: []
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
     output_criteria:
-      - id: "file-created"
-        score_weight: 0.4
-        kind: "file-exists"
-        path: "/tmp/exaix-delete-test/src/deprecated.ts"
-
-  - id: "delete-target"
-    type: "shell"
-    name: "Delete the target file"
-    command: "rm"
-    args: ["-f", "/tmp/exaix-delete-test/src/deprecated.ts"]
-    output_criteria:
-      - id: "delete-succeeded"
-        score_weight: 0.7
+      - id: "portal-ready"
         kind: "command-exit-code"
         equals: 0
+        score_weight: 0.3
 
-  - id: "verify-deletion"
+  - id: "delete-then-verify"
     type: "shell"
-    name: "Verify the file is gone and its parent directory survived"
-    command: "sh"
+    name: "delete_file removes the target; a sibling file is untouched"
+    command: "deno"
     args:
-      - "-c"
-      - "test ! -f /tmp/exaix-delete-test/src/deprecated.ts && test -d /tmp/exaix-delete-test/src"
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "delete_file"
+      - '{"portal":"tools","path":"src/helper.test.ts","identity_id":"tools-eval"}'
+      - "read_file"
+      - '{"portal":"tools","path":"src/helper.test.ts","identity_id":"tools-eval"}'
+      - "list_directory"
+      - '{"portal":"tools","path":"src","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
-      - id: "file-deleted"
+      - id: "delete-reported-success"
+        kind: "command-output-contains"
+        contains: ["delete_file success on src/helper.test.ts"]
         score_weight: 0.7
-        kind: "command-exit-code"
-        equals: 0
-      - id: "file-absent"
-        score_weight: 0.5
-        kind: "file-not-exists"
-        path: "/tmp/exaix-delete-test/src/deprecated.ts"
-
-  - id: "cleanup"
-    type: "shell"
-    name: "Clean up test directory"
-    command: "rm"
-    args: ["-rf", "/tmp/exaix-delete-test"]
-    input_criteria: []
-    output_criteria: []
+      - id: "deleted-file-unreadable"
+        kind: "command-output-contains"
+        contains: ["File not found: src/helper.test.ts"]
+        score_weight: 1.0
+      - id: "siblings-survived"
+        kind: "command-output-contains"
+        contains: ["greeting.txt", "main.ts"]
+        score_weight: 0.7

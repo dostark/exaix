@@ -1,6 +1,14 @@
 schema_version: "1.0.0"
+# LIMITATION — this scenario asserts git behaviour through the git CLI, not through the
+# git_* MCP tool handlers, and is the one pack member that remains a surrogate.
+# `apps/mcp-server/main.ts` injects `createGitServiceStub()`, whose methods return canned
+# values (getCurrentBranch => "main", commit => "", listWorktrees => []), so driving
+# git_commit/git_status/git_log/git_worktree through the standalone server would assert
+# the stub rather than the handlers. Every other tool in this pack was converted to real
+# `tools/call` round-trips in Step 14; closing this one needs a non-stub IGitService in
+# the standalone server, which is out of this step's scope.
 id: "git-operations-roundtrip"
-title: "Git tools — branch, commit, status, log, worktree operations"
+title: "Git tools — branch, commit, status, log, worktree operations (CLI surrogate; see header)"
 pack: "mcp_tools_extended"
 tags:
   - "git"

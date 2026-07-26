@@ -1,18 +1,77 @@
 schema_version: "1.0.0"
+# Asserts run_command executes through the tool handler and returns the command's real
+# output and exit code. The previous version ran `echo` directly from the scenario and
+# asserted its output — a test of the shell, not of run_command.
 id: "run-command-test"
-title: "Run command tool executes shell commands"
+title: "run_command executes inside the portal and enforces its allowlist"
 pack: "mcp_tools_extended"
 tags: ["run_command", "execution", "subsystem:tools", "entity:run_command"]
 request_fixture: "fixtures/requests/mcp_tools_extended/run_command.md"
 mode_support: ["auto"]
 portals: []
 steps:
-  - id: "run-trivial-command"
+  - id: "setup-portal"
     type: "shell"
-    command: "echo"
-    args: ["hello from run_command test"]
+    name: "Create the fixture portal and its config"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
     output_criteria:
-      - id: "command-executed"
+      - id: "portal-ready"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+
+  - id: "call-run-command"
+    type: "shell"
+    name: "run_command returns the command's real output and exit code"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "run_command"
+      - '{"portal":"tools","command":"echo","args":["hello from run_command"],"identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "command-output-returned"
         kind: "command-output-contains"
-        contains: ["hello from run_command test"]
+        contains: ["hello from run_command"]
+        score_weight: 1.0
+      - id: "exit-code-reported"
+        kind: "command-output-contains"
+        contains: ["\"exitCode\": 0"]
+        score_weight: 0.7
+      - id: "call-succeeded"
+        kind: "command-output-contains"
+        contains: ["\"success\": true"]
+        score_weight: 0.6
+
+  - id: "call-run-command-denied"
+    type: "shell"
+    name: "[security] a command outside the allowlist is refused by the handler"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "run_command"
+      - '{"portal":"tools","command":"curl","args":["https://example.com"],"identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "allowlist-enforced"
+        kind: "command-output-contains"
+        contains: ["Command 'curl' is not allowed", "\"isError\": true"]
         score_weight: 1.0

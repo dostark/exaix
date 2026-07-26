@@ -10,23 +10,23 @@
  * @related-files [apps/mcp-server/main.ts, tests/scenario_framework/scenarios/mcp_server/]
  */
 
-type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
-interface JsonRpcParams {
+export interface IJsonRpcParams {
   [key: string]: JsonValue;
 }
 
-interface JsonRpcRequest {
+export interface IJsonRpcRequest {
   jsonrpc: "2.0";
   id: number;
   method: string;
-  params?: JsonRpcParams;
+  params?: IJsonRpcParams;
 }
 
 interface JsonRpcResult {
   echo?: boolean;
   method?: string;
-  params?: JsonRpcParams;
+  params?: IJsonRpcParams;
   tools?: JsonValue[];
   protocolVersion?: string;
   serverInfo?: { [key: string]: string };
@@ -51,7 +51,7 @@ const DEFAULT_TIMEOUT_MS = 15000;
 export function parseDriverArgs(args: string[]): {
   command: string[];
   timeoutMs: number;
-  requests: JsonRpcRequest[];
+  requests: IJsonRpcRequest[];
 } {
   const timeoutIndex = args.indexOf("--timeout-ms");
   let timeoutMs = DEFAULT_TIMEOUT_MS;
@@ -62,18 +62,25 @@ export function parseDriverArgs(args: string[]): {
     rest = args.filter((_, i) => i !== timeoutIndex && i !== timeoutIndex + 1);
   }
 
+  // Both invocation forms are accepted: the one the usage string advertises, with a
+  // leading `--` separating the driver's own flags from the server command, and the bare
+  // form without it. Only the separator BEFORE the requests is load-bearing.
+  if (rest[0] === "--") {
+    rest = rest.slice(1);
+  }
+
   const cmdEnd = rest.indexOf("--");
-  if (cmdEnd < 0 || cmdEnd === 0) {
+  if (cmdEnd <= 0) {
     throw new Error(
-      "Usage: mcp_stdio_driver.ts [--timeout-ms <ms>] -- <server-command...> -- <json-rpc-request-json>...",
+      "Usage: mcp_stdio_driver.ts [--timeout-ms <ms>] [--] <server-command...> -- <json-rpc-request-json>...",
     );
   }
 
   const command = rest.slice(0, cmdEnd);
   const requestJsons = rest.slice(cmdEnd + 1);
-  const requests: JsonRpcRequest[] = requestJsons.map((json, i) => {
+  const requests: IJsonRpcRequest[] = requestJsons.map((json, i) => {
     try {
-      return JSON.parse(json) as JsonRpcRequest;
+      return JSON.parse(json) as IJsonRpcRequest;
     } catch {
       throw new Error(`Failed to parse request ${i}: ${json}`);
     }
@@ -97,7 +104,7 @@ export async function spawnProcess(
 
 export async function sendJsonRpcRequests(
   process: Deno.ChildProcess,
-  requests: JsonRpcRequest[],
+  requests: IJsonRpcRequest[],
   timeoutMs: number,
 ): Promise<{ responses: JsonRpcResponse[]; error?: string }> {
   const responses: JsonRpcResponse[] = [];
@@ -116,7 +123,13 @@ export async function sendJsonRpcRequests(
     const message = e instanceof Error ? e.message : String(e);
     return { responses, error: message };
   } finally {
-    writer.close();
+    // A server that died before answering leaves stdin already closed; closing the writer
+    // then rejects with "Writable stream is closed or errored". Swallow it so the caller
+    // still gets the real diagnostic (the server's own error) instead of a stream
+    // TypeError escaping as an unhandled rejection.
+    try {
+      await writer.close();
+    } catch { /* server stdin already gone — the real error is reported above */ }
   }
 
   return { responses };

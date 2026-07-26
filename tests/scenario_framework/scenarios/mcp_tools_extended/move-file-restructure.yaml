@@ -1,62 +1,60 @@
 schema_version: "1.0.0"
+# Asserts move_file relocates a file through the tool handler: readable at the new path,
+# gone from the old one, content preserved. The previous version ran `mv`.
 id: "move-file-restructure"
-title: "Move file tool relocates files correctly"
+title: "move_file relocates a file within the portal"
 pack: "mcp_tools_extended"
 tags: ["move_file", "restructure", "write-tools", "subsystem:tools", "entity:move_file"]
 request_fixture: "fixtures/requests/mcp_tools_extended/move_file_restructure.md"
 mode_support: ["auto", "manual-checkpoint"]
 portals: []
 steps:
-  - id: "setup-test-file"
+  - id: "setup-portal"
     type: "shell"
-    name: "Create test file and destination directory"
-    command: "sh"
+    name: "Create the fixture portal and its config"
+    command: "deno"
     args:
-      - "-c"
-      - "mkdir -p /tmp/exaix-move-test/src/helpers && echo 'utility' > /tmp/exaix-move-test/src/utils.ts"
-    input_criteria: []
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
     output_criteria:
-      - id: "file-created"
-        score_weight: 0.4
-        kind: "file-exists"
-        path: "/tmp/exaix-move-test/src/utils.ts"
-
-  - id: "move-file"
-    type: "shell"
-    name: "Move the file to its new location"
-    command: "mv"
-    args: ["/tmp/exaix-move-test/src/utils.ts", "/tmp/exaix-move-test/src/helpers/utils.ts"]
-    output_criteria:
-      - id: "move-succeeded"
-        score_weight: 0.7
+      - id: "portal-ready"
         kind: "command-exit-code"
         equals: 0
+        score_weight: 0.3
 
-  - id: "verify-move"
+  - id: "move-then-verify"
     type: "shell"
-    name: "Verify file is at the new location, absent from the old, and content preserved"
-    command: "sh"
+    name: "move_file moves the file; content follows and the source path is gone"
+    command: "deno"
     args:
-      - "-c"
-      - "test ! -f /tmp/exaix-move-test/src/utils.ts && cat /tmp/exaix-move-test/src/helpers/utils.ts"
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "move_file"
+      - '{"portal":"tools","from":"src/greeting.txt","to":"docs/greeting.txt","identity_id":"tools-eval"}'
+      - "read_file"
+      - '{"portal":"tools","path":"docs/greeting.txt","identity_id":"tools-eval"}'
+      - "read_file"
+      - '{"portal":"tools","path":"src/greeting.txt","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
-      - id: "file-moved"
-        score_weight: 0.7
-        kind: "command-exit-code"
-        equals: 0
-      - id: "content-preserved"
-        score_weight: 0.6
+      - id: "move-reported-success"
         kind: "command-output-contains"
-        contains: ["utility"]
-      - id: "source-absent"
-        score_weight: 0.5
-        kind: "file-not-exists"
-        path: "/tmp/exaix-move-test/src/utils.ts"
-
-  - id: "cleanup"
-    type: "shell"
-    name: "Clean up test directory"
-    command: "rm"
-    args: ["-rf", "/tmp/exaix-move-test"]
-    input_criteria: []
-    output_criteria: []
+        contains: ["move_file success: moved src/greeting.txt to docs/greeting.txt"]
+        score_weight: 0.7
+      - id: "content-at-destination"
+        kind: "command-output-contains"
+        contains: ["hello from the tools pack fixture portal"]
+        score_weight: 1.0
+      - id: "source-path-gone"
+        kind: "command-output-contains"
+        contains: ["File not found: src/greeting.txt"]
+        score_weight: 0.8

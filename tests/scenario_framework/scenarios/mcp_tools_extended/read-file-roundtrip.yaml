@@ -1,37 +1,73 @@
 schema_version: "1.0.0"
+# Invokes the real read_file handler over the MCP stdio transport against a fixture
+# portal. The previous version asserted `cat` output, which passed whether or not the
+# read_file tool existed at all.
 id: "read-file-roundtrip"
-title: "Read file tool reads file content"
+title: "read_file returns real portal content through the MCP server"
 pack: "mcp_tools_extended"
 tags: ["read_file", "read", "subsystem:tools", "entity:read_file"]
 request_fixture: "fixtures/requests/mcp_tools_extended/read_file.md"
 mode_support: ["auto"]
 portals: []
 steps:
-  - id: "setup-file"
+  - id: "setup-portal"
     type: "shell"
-    name: "Create test file"
-    command: "sh"
-    args: ["-c", "echo 'file content for read test' > /tmp/exaix-read-test.txt"]
+    name: "Create the fixture portal and its config"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
     output_criteria:
-      - id: "file-created"
+      - id: "portal-ready"
         kind: "command-exit-code"
         equals: 0
-  - id: "read-and-verify"
+        score_weight: 0.3
+
+  - id: "call-read-file"
     type: "shell"
-    name: "Read and verify file content"
-    command: "cat"
-    args: ["/tmp/exaix-read-test.txt"]
+    name: "read_file returns the file's real content"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "read_file"
+      - '{"portal":"tools","path":"src/greeting.txt","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
-      - id: "content-verified"
+      - id: "file-content-returned"
         kind: "command-output-contains"
-        contains: ["file content for read test"]
+        contains: ["hello from the tools pack fixture portal", "second line stays untouched"]
         score_weight: 1.0
-  - id: "cleanup"
+      - id: "call-succeeded"
+        kind: "command-output-contains"
+        contains: ["\"success\": true"]
+        score_weight: 0.6
+
+  - id: "call-read-missing-file"
     type: "shell"
-    name: "Clean up"
-    command: "rm"
-    args: ["-f", "/tmp/exaix-read-test.txt"]
+    name: "read_file on a missing path reports NOT_FOUND rather than succeeding"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "read_file"
+      - '{"portal":"tools","path":"does-not-exist.txt","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
-      - id: "cleaned"
-        kind: "command-exit-code"
-        equals: 0
+      - id: "not-found-reported"
+        kind: "command-output-contains"
+        contains: ["File not found: does-not-exist.txt", "\"isError\": true"]
+        score_weight: 0.8

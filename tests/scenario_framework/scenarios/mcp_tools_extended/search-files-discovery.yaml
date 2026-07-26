@@ -1,60 +1,95 @@
 schema_version: "1.0.0"
+# Asserts search_files discovers files by glob through the tool handler, including that
+# non-matching files are excluded. The previous version ran `find` and asserted its output.
+# This scenario is also the regression guard for the ToolRegistry wiring in
+# apps/mcp-server/main.ts — without it search_files fails with
+# "ToolRegistry not available in context".
 id: "search-files-discovery"
-title: "Search files tool finds files by glob pattern"
+title: "search_files discovers portal files by glob and excludes non-matches"
 pack: "mcp_tools_extended"
 tags: ["search_files", "discovery", "read-tools", "subsystem:tools", "entity:search_files"]
 request_fixture: "fixtures/requests/mcp_tools_extended/search_files_discovery.md"
 mode_support: ["auto"]
 portals: []
 steps:
-  - id: "setup-test-files"
+  - id: "setup-portal"
     type: "shell"
-    name: "Create test files with various extensions"
-    command: "sh"
+    name: "Create the fixture portal and its config"
+    command: "deno"
     args:
-      - "-c"
-      - "rm -rf /tmp/exaix-search-test && mkdir -p /tmp/exaix-search-test/src && touch /tmp/exaix-search-test/src/test1.test.ts /tmp/exaix-search-test/src/test2.test.ts /tmp/exaix-search-test/src/main.ts"
-    input_criteria: []
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
     output_criteria:
-      - id: "test-files-created"
-        score_weight: 0.4
-        kind: "file-exists"
-        path: "/tmp/exaix-search-test/src/test1.test.ts"
-
-  - id: "search-by-glob"
-    type: "shell"
-    name: "Discover files matching the *.test.ts glob"
-    command: "sh"
-    args:
-      - "-c"
-      - "find /tmp/exaix-search-test -name '*.test.ts' | sort"
-    output_criteria:
-      - id: "search-succeeded"
-        score_weight: 0.7
+      - id: "portal-ready"
         kind: "command-exit-code"
         equals: 0
-      - id: "matches-returned"
-        score_weight: 0.6
-        kind: "command-output-contains"
-        contains: ["test1.test.ts", "test2.test.ts"]
+        score_weight: 0.3
 
-  - id: "verify-glob-selectivity"
+  - id: "search-ts-files"
     type: "shell"
-    name: "Verify the glob excludes non-matching files"
-    command: "sh"
+    name: "search_files returns the portal's TypeScript files"
+    command: "deno"
     args:
-      - "-c"
-      - "find /tmp/exaix-search-test -name '*.test.ts' | grep -c 'main.ts' && exit 1 || echo 'main.ts correctly excluded'"
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "search_files"
+      - '{"portal":"tools","pattern":"**/*.ts","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
-      - id: "non-matches-excluded"
-        score_weight: 0.6
+      - id: "matches-returned"
         kind: "command-output-contains"
-        contains: ["main.ts correctly excluded"]
+        contains: ["src/main.ts", "src/helper.test.ts"]
+        score_weight: 1.0
+      - id: "tool-registry-wired"
+        kind: "command-output-contains"
+        contains: ["\"success\": true"]
+        score_weight: 0.8
 
-  - id: "cleanup"
+  - id: "search-narrow-glob"
     type: "shell"
-    name: "Clean up test directory"
-    command: "rm"
-    args: ["-rf", "/tmp/exaix-search-test"]
-    input_criteria: []
-    output_criteria: []
+    name: "A narrower glob returns only its matches"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "search_files"
+      - '{"portal":"tools","pattern":"**/*.test.ts","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "narrow-glob-matches"
+        kind: "command-output-contains"
+        contains: ["src/helper.test.ts"]
+        score_weight: 0.8
+
+  - id: "search-filters-rather-than-listing-everything"
+    type: "shell"
+    name: "A glob matching nothing returns an empty result, proving the filter is applied"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "search_files"
+      - '{"portal":"tools","pattern":"**/*.nomatch","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "empty-result-for-no-matches"
+        kind: "command-output-contains"
+        contains: ["\"files\": []"]
+        score_weight: 0.7

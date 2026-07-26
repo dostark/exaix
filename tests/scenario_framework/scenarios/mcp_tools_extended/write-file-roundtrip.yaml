@@ -1,34 +1,64 @@
 schema_version: "1.0.0"
+# Asserts write_file actually writes: the bytes it claims to have written are read back
+# through read_file and seen by list_directory. The previous version ran `echo > f && cat f`.
 id: "write-file-roundtrip"
-title: "Write file tool creates new files"
+title: "write_file creates a file the other tools can see"
 pack: "mcp_tools_extended"
 tags: ["write_file", "write", "subsystem:tools", "entity:write_file"]
 request_fixture: "fixtures/requests/mcp_tools_extended/write_file.md"
 mode_support: ["auto"]
 portals: []
 steps:
-  - id: "setup"
+  - id: "setup-portal"
     type: "shell"
-    command: "mkdir"
-    args: ["-p", "/tmp/exaix-write-test"]
+    name: "Create the fixture portal and its config"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
     output_criteria:
-      - id: "setup-done"
+      - id: "portal-ready"
         kind: "command-exit-code"
         equals: 0
-  - id: "write-and-verify"
+        score_weight: 0.3
+
+  - id: "write-then-read-back"
     type: "shell"
-    command: "sh"
-    args: ["-c", "echo 'write test content' > /tmp/exaix-write-test/out.txt && cat /tmp/exaix-write-test/out.txt"]
+    name: "write_file writes bytes that read_file returns and list_directory lists"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "write_file"
+      - '{"portal":"tools","path":"src/created.txt","content":"written through the write_file tool","identity_id":"tools-eval"}'
+      - "read_file"
+      - '{"portal":"tools","path":"src/created.txt","identity_id":"tools-eval"}'
+      - "list_directory"
+      - '{"portal":"tools","path":"src","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
-      - id: "write-verified"
+      - id: "write-reported-success"
         kind: "command-output-contains"
-        contains: ["write test content"]
+        contains: ["File written successfully: src/created.txt"]
+        score_weight: 0.7
+      - id: "content-read-back"
+        kind: "command-output-contains"
+        contains: ["written through the write_file tool"]
         score_weight: 1.0
-  - id: "cleanup"
-    type: "shell"
-    command: "rm"
-    args: ["-rf", "/tmp/exaix-write-test"]
-    output_criteria:
-      - id: "cleaned"
-        kind: "command-exit-code"
-        equals: 0
+      - id: "visible-in-listing"
+        kind: "command-output-contains"
+        contains: ["created.txt"]
+        score_weight: 0.7
+      - id: "all-calls-succeeded"
+        kind: "command-output-contains"
+        contains: ["\"success\": true"]
+        score_weight: 0.6

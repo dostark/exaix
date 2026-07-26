@@ -1,6 +1,9 @@
 schema_version: "1.0.0"
+# Asserts the exaix_config_* MCP tools themselves, including the approval gate on a
+# dangerous-tier write. The previous version drove `exactl config` from the CLI — a
+# different surface from the tools this scenario is tagged for.
 id: "tools-config-operations"
-title: "Config tools — get, validate, diff, provenance operations"
+title: "Config tools — get, validate, diff, provenance, and the approval gate on set"
 pack: "mcp_tools_extended"
 tags:
   - "config"
@@ -15,57 +18,88 @@ request_fixture: "fixtures/requests/mcp_tools_extended/exaix_config_get.md"
 mode_support: ["auto"]
 portals: []
 steps:
-  - id: "start-daemon"
-    type: "exactl"
-    command: "daemon"
-    args: ["start"]
-    env:
-      EXA_LLM_PROVIDER: "mock"
-      EXA_CI_MODE: "1"
+  - id: "setup-portal"
+    type: "shell"
+    name: "Create the fixture portal and its config"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
     output_criteria:
-      - id: "daemon-started"
+      - id: "portal-ready"
+        kind: "command-exit-code"
+        equals: 0
         score_weight: 0.3
+
+  - id: "read-side-config-tools"
+    type: "shell"
+    name: "get, validate, diff and provenance return real config state"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "exaix_config_get"
+      - '{"key":"ai.provider","identity_id":"tools-eval"}'
+      - "exaix_config_validate"
+      - '{"identity_id":"tools-eval"}'
+      - "exaix_config_diff"
+      - '{"identity_id":"tools-eval"}'
+      - "exaix_config_get_provenance"
+      - '{"key":"ai.provider","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "config-get-returns-key-and-value"
         kind: "command-output-contains"
-        contains: ["daemon.started"]
+        contains: ["ai.provider"]
+        score_weight: 0.8
+      - id: "config-validate-reports-valid"
+        kind: "command-output-contains"
+        contains: ["All config keys are valid."]
+        score_weight: 0.7
+      - id: "config-diff-returns-structure"
+        kind: "command-output-contains"
+        contains: ["overridden", "added", "missing"]
+        score_weight: 0.7
+      - id: "provenance-names-its-source"
+        kind: "command-output-contains"
+        contains: ["Source: registry"]
+        score_weight: 0.7
+      - id: "all-read-calls-succeeded"
+        kind: "command-output-contains"
+        contains: ["\"success\": true"]
+        score_weight: 0.6
 
-  # `provider` is not a registered key — the registry namespaces it as `ai.provider`
-  # (packages/core/src/config/registry.ts consumers), and `config get` on an unregistered
-  # key correctly raises ConfigKeyNotFoundError.
-  - id: "verify-config-get"
-    type: "exactl"
-    command: "config"
-    args: ["get", "ai.provider"]
+  - id: "dangerous-set-requires-confirmation"
+    type: "shell"
+    name: "[security] a dangerous-tier config_set stages the change behind a confirmation gate"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "exaix_config_set"
+      - '{"key":"ai.provider","value":"mock","identity_id":"tools-eval"}'
+      - "exaix_config_get"
+      - '{"key":"ai.provider","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
-      - id: "config-get-works"
-        kind: "command-exit-code"
-        equals: 0
-        score_weight: 0.4
-
-  - id: "verify-config-validate"
-    type: "exactl"
-    command: "config"
-    args: ["validate"]
-    output_criteria:
-      - id: "config-validate-works"
-        kind: "command-exit-code"
-        equals: 0
-        score_weight: 0.4
-
-  - id: "verify-config-diff"
-    type: "exactl"
-    command: "config"
-    args: ["diff"]
-    output_criteria:
-      - id: "config-diff-works"
-        kind: "command-exit-code"
-        equals: 0
-        score_weight: 0.4
-
-  - id: "stop-daemon"
-    type: "exactl"
-    command: "daemon"
-    args: ["stop"]
-    output_criteria:
-      - id: "daemon-stopped"
-        kind: "command-exit-code"
-        equals: 0
+      - id: "set-is-staged-not-applied"
+        kind: "command-output-contains"
+        contains: ["Run exaix_config_apply to activate", "requires_confirmation"]
+        score_weight: 1.0
+      - id: "dangerous-tier-flagged"
+        kind: "command-output-contains"
+        contains: ["dangerous"]
+        score_weight: 0.8

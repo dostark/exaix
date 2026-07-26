@@ -1,72 +1,63 @@
 schema_version: "1.0.0"
+# Asserts patch_file performs a targeted in-place edit through the tool handler: the
+# search string is replaced, the surrounding content survives, and the change is visible
+# to a subsequent read_file. The previous version ran `sed -i` and asserted its result.
 id: "patch-file-refactor"
-title: "Patch file tool performs targeted refactoring"
+title: "patch_file performs a targeted edit visible to read_file"
 pack: "mcp_tools_extended"
 tags: ["patch_file", "refactoring", "write-tools", "subsystem:tools", "entity:patch_file"]
 request_fixture: "fixtures/requests/mcp_tools_extended/patch_file_refactor.md"
 mode_support: ["auto", "manual-checkpoint"]
 portals: []
 steps:
-  - id: "setup-test-file"
+  - id: "setup-portal"
     type: "shell"
-    name: "Create test directory"
-    command: "mkdir"
-    args: ["-p", "/tmp/exaix-patch-refactor/src"]
-    input_criteria: []
-    output_criteria:
-      - id: "dir-created"
-        score_weight: 0.4
-        kind: "dir-exists"
-        path: "/tmp/exaix-patch-refactor/src"
-
-  - id: "write-initial-file"
-    type: "shell"
-    name: "Write initial file content"
-    command: "sh"
+    name: "Create the fixture portal and its config"
+    command: "deno"
     args:
-      - "-c"
-      - "printf 'export function oldFunctionName() { return true; }\\nexport const keep = 1;\\n' > /tmp/exaix-patch-refactor/src/main.ts"
-    input_criteria: []
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
     output_criteria:
-      - id: "initial-file-written"
-        score_weight: 0.4
-        kind: "file-exists"
-        path: "/tmp/exaix-patch-refactor/src/main.ts"
-
-  - id: "apply-targeted-patch"
-    type: "shell"
-    name: "Replace only the target substring"
-    command: "sh"
-    args:
-      - "-c"
-      - "sed -i 's/oldFunctionName/newFunctionName/' /tmp/exaix-patch-refactor/src/main.ts"
-    output_criteria:
-      - id: "patch-applied"
-        score_weight: 0.7
+      - id: "portal-ready"
         kind: "command-exit-code"
         equals: 0
+        score_weight: 0.3
 
-  - id: "verify-patch"
+  - id: "patch-then-read-back"
     type: "shell"
-    name: "Verify function was renamed and surrounding content preserved"
-    command: "sh"
+    name: "patch_file renames the symbol and leaves the rest of the file intact"
+    command: "deno"
     args:
-      - "-c"
-      - "grep -q newFunctionName /tmp/exaix-patch-refactor/src/main.ts && ! grep -q oldFunctionName /tmp/exaix-patch-refactor/src/main.ts && grep -q 'export const keep = 1;' /tmp/exaix-patch-refactor/src/main.ts && cat /tmp/exaix-patch-refactor/src/main.ts"
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "patch_file"
+      - '{"portal":"tools","path":"src/main.ts","search":"oldFunctionName","replace":"newFunctionName","identity_id":"tools-eval"}'
+      - "read_file"
+      - '{"portal":"tools","path":"src/main.ts","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
-      - id: "function-renamed"
-        score_weight: 0.7
-        kind: "command-exit-code"
-        equals: 0
-      - id: "untouched-content-preserved"
-        score_weight: 0.6
+      - id: "patch-reported-success"
         kind: "command-output-contains"
-        contains: ["newFunctionName", "export const keep = 1;"]
-
-  - id: "cleanup"
-    type: "shell"
-    name: "Clean up test files"
-    command: "rm"
-    args: ["-rf", "/tmp/exaix-patch-refactor"]
-    input_criteria: []
-    output_criteria: []
+        contains: ["patch_file success on src/main.ts"]
+        score_weight: 0.7
+      - id: "symbol-renamed"
+        kind: "command-output-contains"
+        contains: ["newFunctionName"]
+        score_weight: 1.0
+      - id: "untouched-content-preserved"
+        kind: "command-output-contains"
+        contains: ["KEEP_ME"]
+        score_weight: 0.7
+      - id: "call-succeeded"
+        kind: "command-output-contains"
+        contains: ["\"success\": true"]
+        score_weight: 0.6
