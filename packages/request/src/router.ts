@@ -28,6 +28,7 @@ import type { IRoutingPolicyService } from "@exaix/routing";
 import { GitBranchName } from "@exaix/git";
 import type { JSONValue } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
+import { normalizeFrontmatterList } from "./common.ts";
 
 export interface IFlowResult {
   flowRunId: string;
@@ -115,7 +116,7 @@ function normalizeText(value?: Opt<string, Reason.SensibleDefault>): string | un
 }
 
 export class RoutingError extends Error {
-  constructor(message: string, public readonly requestId?: string) {
+  constructor(message: string, public readonly requestId?: Opt<string, Reason.OptionalInput>) {
     super(message);
     this.name = "RoutingError";
   }
@@ -456,7 +457,7 @@ export class RequestRouter {
 
   private async selectIdentity(
     request: RouterRequest,
-    explicitIdentityId?: string,
+    explicitIdentityId?: Opt<string, Reason.OptionalInput>,
   ): Promise<{ selectedIdentityId: string; policyDecision?: IRoutingPolicyDecision }> {
     const allowDynamicRouting = request.frontmatter.allow_dynamic_routing ??
       this.config.routing?.enable_dynamic_routing ?? false;
@@ -534,12 +535,18 @@ export class RequestRouter {
   }
 
   private createParsedRequest(request: RouterRequest, allowDynamicRouting: boolean): IParsedRequest {
+    // Carry the frontmatter fields skill resolution depends on. This builder previously
+    // forwarded only the body and ids, so `skills` never reached AgentRunner's explicit
+    // override branch and `tags` never reached trigger matching — both silently inert on
+    // every request routed through routeToIdentity / routeToDefaultAgent.
     const parsedRequest: IParsedRequest = {
       userPrompt: request.body,
       context: {},
       traceId: request.traceId,
       requestId: request.requestId,
       allowDynamicRouting,
+      skills: normalizeFrontmatterList(request.frontmatter?.skills),
+      tags: normalizeFrontmatterList(request.frontmatter?.tags),
     };
     const portalContext = this.buildPortalContext(request.frontmatter?.portal);
     if (portalContext) {
@@ -548,7 +555,7 @@ export class RequestRouter {
     return parsedRequest;
   }
 
-  private buildPortalContext(portalAlias?: string): string | null {
+  private buildPortalContext(portalAlias?: Opt<string, Reason.OptionalInput>): string | null {
     if (!portalAlias) return null;
 
     const portal = this.config.portals.find((p) => p.alias === portalAlias);
