@@ -46,7 +46,7 @@ steps:
     args:
       [
         "-c",
-        "cp -r \"$FRAMEWORK_HOME/fixtures/portals/todo_app_null_guard_bug\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'",
+        "cp -rL \"$FRAMEWORK_HOME/fixtures/portals/todo_app_null_guard_bug\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'",
       ]
     output_criteria:
       - id: "portal-repo-initialized"
