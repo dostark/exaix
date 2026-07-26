@@ -47,6 +47,8 @@ import {
   PORTAL_CONTEXT_KEY,
   PORTAL_KNOWLEDGE_KEY,
   RESPONSE_STOP_REASON_MAX_TOKENS,
+  SKILL_EVENT_RETRIEVAL_FAILED,
+  SKILL_EVENT_RETRIEVAL_TIMEOUT,
 } from "@exaix/core";
 import type { IRetryContext, IRetryPolicy, IRetryPolicyConfig, IRetryResult } from "@exaix/core/request";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -450,26 +452,19 @@ export class AgentRunner implements IAgentRunner {
             result.matches.forEach((m) => matchScores.set(m.skillId, m.confidence));
             totalAvailable = result.totalAvailable;
 
-            // Union in any critical default skills the dynamic match missed (e.g. the
-            // response-contract output-format contract) — a successful dynamic match must
-            // not silently drop a skill the identity always requires.
-            if (blueprint.defaultSkills?.length) {
-              const missing = blueprint.defaultSkills.filter((id) => !skillIds.includes(id));
-              const criticalMissing = await this.filterCriticalSkillIds(missing);
-              for (const id of criticalMissing) {
-                skillIds.push(id);
-                matchScores.set(id, 0.5);
-                totalAvailable++;
-              }
-            }
+            totalAvailable += await this.unionCriticalDefaultSkills(
+              skillIds,
+              matchScores,
+              blueprint.defaultSkills,
+            );
           } // 3. Fallback to blueprint defaults
           else if (blueprint.defaultSkills?.length) {
             skillIds = blueprint.defaultSkills;
             skillIds.forEach((id) => matchScores.set(id, 0.5));
             totalAvailable = skillIds.length;
           }
-        } catch (error) {
-          console.warn("[IAgentRunner] Skill matching failed or timed out, continuing without skills:", error);
+        } catch (error: unknown) {
+          this.logSkillRetrievalFailure(error instanceof Error ? error.message : String(error), identityId);
         }
       }
 
@@ -852,6 +847,48 @@ export class AgentRunner implements IAgentRunner {
   /**
    * Log activity to IActivity Journal (if database provided)
    */
+  /**
+   * Union any CRITICAL default skills the dynamic match missed into the selected set.
+   *
+   * A successful dynamic match must not silently drop a skill the identity always requires
+   * (e.g. the response-contract output-format contract). Mutates `skillIds` and
+   * `matchScores` in place and returns how many were added, so the caller can keep its
+   * `totalAvailable` accurate.
+   */
+  private async unionCriticalDefaultSkills(
+    skillIds: string[],
+    matchScores: Map<string, number>,
+    defaultSkills?: Opt<string[], Reason.OptionalInput>,
+  ): Promise<number> {
+    if (!defaultSkills?.length) return 0;
+
+    const missing = defaultSkills.filter((id) => !skillIds.includes(id));
+    const criticalMissing = await this.filterCriticalSkillIds(missing);
+    for (const id of criticalMissing) {
+      skillIds.push(id);
+      matchScores.set(id, 0.5);
+    }
+    return criticalMissing.length;
+  }
+
+  /**
+   * Journal a dynamic skill-match that timed out or threw.
+   *
+   * This path silently degrades the agent — it proceeds with NO skills at all — and was
+   * previously visible only as a console warning, so the Activity Journal showed a normal
+   * run. The 500ms timeout is separated from a genuine failure so the two are
+   * distinguishable after the fact.
+   */
+  private logSkillRetrievalFailure(message: string, identityId: string): void {
+    this.logActivity(
+      ACTIVITY_ACTOR_AGENT,
+      message.includes("timed out") ? SKILL_EVENT_RETRIEVAL_TIMEOUT : SKILL_EVENT_RETRIEVAL_FAILED,
+      identityId,
+      { identity_id: identityId, error: message },
+    );
+    console.warn("[IAgentRunner] Skill matching failed or timed out, continuing without skills:", message);
+  }
+
   private logActivity(
     _actor: string,
     actionType: string,

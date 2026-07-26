@@ -1,9 +1,16 @@
 schema_version: "1.0.0"
+# Exercises the TRIGGER path — a request with no `skills:` frontmatter, whose tags and body
+# keywords the matcher scores against a skill's declared triggers.
+#
+# The previous version used fixtures/requests/skill_eval/pin_batch1.md, which pins
+# `skills: [tdd-methodology, ...]`. Explicit request.skills short-circuits matching entirely
+# (AgentRunner takes the pinned ids and never calls matchSkills), so despite its title the
+# scenario was a duplicate of skill-pin-batch-1 and could not observe trigger matching at all.
 id: "skill-engine-trigger-matching"
-title: "Skill engine — trigger matching hits skills whose triggers match request tags"
+title: "Skill engine — trigger matching hits skills whose triggers match request tags and keywords"
 pack: "skill_eval"
 tags: ["smoke", "engine", "subsystem:skills"]
-request_fixture: "fixtures/requests/skill_eval/pin_batch1.md"
+request_fixture: "fixtures/requests/skill_eval/trigger_match.md"
 mode_support: ["auto"]
 portals: []
 steps:

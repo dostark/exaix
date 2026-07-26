@@ -828,6 +828,11 @@ if (import.meta.main) {
     const skillsService = new SkillsService(
       { memoryDir: join(config.system.root, config.paths.memory), portal: config.paths.workspace },
       dbService,
+      undefined,
+      // Without a logger every skills event (match_completed, skill.used, skill.created)
+      // is silently dropped — `this.logger?.` short-circuits — so skill selection left no
+      // trace in the Activity Journal at all.
+      logger,
     );
     await skillsService.initialize();
     const agentRunner = new AgentRunner(llmProvider, {
