@@ -5,7 +5,7 @@ status: "pending"
 priority: "normal"
 source: "cli"
 created_by: "scenario-framework"
-tags: [review, quality, error-handling]
+tags: [self-critique, architecture-review, error-handling]
 ---
 
 # Review error handling in the request processing pipeline
@@ -30,6 +30,10 @@ Acceptance criteria:
 NOTE FOR MAINTAINERS: this request deliberately carries NO `skills:` frontmatter. Explicit
 `request.skills` pinning short-circuits trigger matching entirely — AgentRunner resolves the
 pinned ids and never calls `matchSkills` — so a fixture that pins skills cannot exercise the
-trigger path. The `tags` above and the keywords in this body are what the matcher scores
-against: `review`/`quality` reach the code-review skill, and `error`/`exception`/`catch`
-reach error-handling.
+trigger path. Two of the tags above are chosen precisely because this body cannot reach the
+skills they belong to by any other route: `self-critique` is declared only by
+`reflexive-critique` and `architecture-review` only by the skill of that name, and neither
+word — nor any synonym the keyword scorer would pick up — appears in a request about
+exception paths. So a match on either skill is proof the tag channel carried it, not the
+keyword channel. `error-handling` is the opposite case, reachable both ways, and is kept so
+the fixture still exercises a normal tag/keyword agreement alongside the discriminating two.

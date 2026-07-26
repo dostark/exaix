@@ -8,6 +8,7 @@ skill_id: "response-contract-performance"
 name: "Response Contract — Performance Analysis"
 version: "1.0.0"
 description: "The <content> JSON template for a performance/scalability deliverable (findings, priorities, scalability). Applies alongside response-contract, only for performance-analysis requests."
+critical: true
 
 triggers:
   keywords:

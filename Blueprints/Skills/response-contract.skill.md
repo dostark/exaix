@@ -61,8 +61,8 @@ text outside these tags is ignored.
    text between `<content>` and `</content>` and passes it directly to a JSON
    parser — a leading/trailing `` ```json `` or `` ``` `` line is not JSON and
    causes parsing to fail immediately, even though the JSON itself may be
-    correct. Wrong: `<content>` followed by a fenced `` ```json `` block. Right:
-    `<content>` followed immediately by the raw `{ ... }` object, nothing else.
+   correct. Wrong: `<content>` followed by a fenced `` ```json `` block. Right:
+   `<content>` followed immediately by the raw `{ ... }` object, nothing else.
 
 ## Agent Thought Standardization
 

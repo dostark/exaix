@@ -13,10 +13,7 @@ description: "LLM-as-a-Judge agent for evaluating code and content quality"
 default_skills: [
   "response-contract-judge",
   "verdict-rubric",
-  "code-review",
-  "portal-grounding",
   "reflexive-critique",
-  "gap-analysis",
 ]
 ---
 

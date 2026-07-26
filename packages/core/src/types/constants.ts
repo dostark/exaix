@@ -523,6 +523,12 @@ export const PLAN_AMENDMENT_EVENT_APPLIED = "plan.amendment.applied";
 export const SKILL_EVENT_MATCH_COMPLETED = "skills.match_completed";
 export const SKILL_EVENT_RETRIEVAL_TIMEOUT = "skills.retrieval_timeout";
 export const SKILL_EVENT_RETRIEVAL_FAILED = "skills.retrieval_failed";
+/**
+ * The final skill set for a request, with the pinned/matched/default breakdown that produced
+ * it (Phase 142 Step 17). Distinct from SKILL_EVENT_MATCH_COMPLETED, which reports only the
+ * dynamic-matching stage and is not reached at all when a request pins skills explicitly.
+ */
+export const SKILL_EVENT_RESOLVED = "skills.resolved";
 export const MEMORY_EVENT_AUTO_APPROVED = "memory.auto_approved";
 export const MEMORY_EVENT_TIER_SELECTED = "memory.tier_selected";
 export const MEMORY_MIN_VECTORS_FOR_LOCAL_SEARCH: number = configurable({

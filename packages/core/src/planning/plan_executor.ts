@@ -122,6 +122,20 @@ export interface IPlanAction {
 }
 
 /**
+ * Read `tags` off a plan context's frontmatter for skill trigger matching. The frontmatter
+ * is an untyped JSON map here, and YAML admits either a list or a lone string.
+ */
+function frontmatterTags(context: IPlanContext): string[] | undefined {
+  const raw = context.frontmatter?.tags;
+  if (Array.isArray(raw)) {
+    const tags = raw.map((tag) => String(tag).trim()).filter((tag) => tag.length > 0);
+    return tags.length > 0 ? tags : undefined;
+  }
+  if (typeof raw === "string" && raw.trim().length > 0) return [raw.trim()];
+  return undefined;
+}
+
+/**
  * Concatenate every step's title and content into one document. Passed as
  * IExecutionContext.full_plan alongside each step's own fragment — a strategy
  * that drives a whole-task-at-once agent (CliDelegateStrategy) uses this to
@@ -346,6 +360,10 @@ export class PlanExecutor {
 
     const { matches } = await skills.matchSkills({
       requestText,
+      // Frontmatter tags are a first-class trigger input; sending requestText alone left the
+      // matcher with nothing but extracted keywords and returned 0 matches on requests whose
+      // tags named a skill outright.
+      tags: frontmatterTags(context),
       identityId: context.identity,
     });
     const topMatch = matches[0];
@@ -372,6 +390,7 @@ export class PlanExecutor {
 
     const { matches } = await skills.matchSkills({
       requestText,
+      tags: frontmatterTags(context),
       identityId: context.identity,
     });
 

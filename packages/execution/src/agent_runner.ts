@@ -47,6 +47,7 @@ import {
   PORTAL_CONTEXT_KEY,
   PORTAL_KNOWLEDGE_KEY,
   RESPONSE_STOP_REASON_MAX_TOKENS,
+  SKILL_EVENT_RESOLVED,
   SKILL_EVENT_RETRIEVAL_FAILED,
   SKILL_EVENT_RETRIEVAL_TIMEOUT,
 } from "@exaix/core";
@@ -109,9 +110,6 @@ export interface IParsedRequest {
 
   /** Optional: Explicit skills to apply (overrides trigger matching) - Phase 17 */
   skills?: string[];
-
-  /** Optional: Skills to skip/disable for this request - Phase 17 */
-  skipSkills?: string[];
 
   /** Optional: Enable dynamic routing for this request */
   allowDynamicRouting?: boolean;
@@ -423,56 +421,44 @@ export class AgentRunner implements IAgentRunner {
 
     const matchingStartTime = Date.now();
     try {
-      let skillIds: string[] = [];
+      // ONE rule: the resulting set is pinned ∪ dynamically-matched ∪ identity defaults.
+      // This replaced three branch-specific merge rules (a pin unioned all defaults, a
+      // dynamic hit unioned only `critical` ones, a dynamic miss took all defaults), under
+      // which nobody could predict why a given skill was or was not injected. Prompt bloat
+      // is controlled by keeping identity default_skills short, not by dropping defaults
+      // conditionally; `critical` now serves only its other job — surviving compaction.
       const matchScores = new Map<string, number>();
-      let totalAvailable = 0;
+      const skillIds: string[] = [];
+      const add = (id: string, score: number) => {
+        if (skillIds.includes(id)) return;
+        skillIds.push(id);
+        matchScores.set(id, score);
+      };
 
-      // 1. Explicit request-level override (merged with blueprint default skills)
-      if (request.skills?.length) {
-        skillIds = [...request.skills];
-        skillIds.forEach((id) => matchScores.set(id, 1.0));
-        totalAvailable = skillIds.length;
-        // Union in default skills from the identity blueprint (GAP-5)
-        if (blueprint.defaultSkills?.length) {
-          for (const id of blueprint.defaultSkills) {
-            if (!skillIds.includes(id)) {
-              skillIds.push(id);
-              matchScores.set(id, 0.5);
-              totalAvailable++;
-            }
-          }
-        }
-      } // 2. Dynamic matching
-      else {
+      const pinned = request.skills ?? [];
+      for (const id of pinned) add(id, 1.0);
+
+      // Dynamic matching is skipped when the request pinned skills explicitly — the pin is
+      // the caller stating what they want, and matching would only add noise to it.
+      const matched: string[] = [];
+      if (!pinned.length) {
         try {
           const result = await this.performDynamicSkillMatching(request, identityId);
-
-          if (result.matches.length > 0) {
-            skillIds = result.matches.map((m) => m.skillId);
-            result.matches.forEach((m) => matchScores.set(m.skillId, m.confidence));
-            totalAvailable = result.totalAvailable;
-
-            totalAvailable += await this.unionCriticalDefaultSkills(
-              skillIds,
-              matchScores,
-              blueprint.defaultSkills,
-            );
-          } // 3. Fallback to blueprint defaults
-          else if (blueprint.defaultSkills?.length) {
-            skillIds = blueprint.defaultSkills;
-            skillIds.forEach((id) => matchScores.set(id, 0.5));
-            totalAvailable = skillIds.length;
+          for (const match of result.matches) {
+            matched.push(match.skillId);
+            add(match.skillId, match.confidence);
           }
         } catch (error: unknown) {
           this.logSkillRetrievalFailure(error instanceof Error ? error.message : String(error), identityId);
         }
       }
 
-      // 4. Filtering
-      if (request.skipSkills?.length) {
-        const skip = request.skipSkills;
-        skillIds = skillIds.filter((id) => !skip.includes(id));
-      }
+      const defaults = blueprint.defaultSkills ?? [];
+      for (const id of defaults) add(id, 0.5);
+
+      this.logSkillResolution(identityId, skillIds, pinned, matched, defaults);
+
+      const totalAvailable = skillIds.length;
 
       // 5. Hydration
       const skillsContext = await this.hydrateSkills(
@@ -492,17 +478,6 @@ export class AgentRunner implements IAgentRunner {
       console.error("[IAgentRunner] Skill management critical failure:", error);
       return { skillIds: [], skillsContext: null };
     }
-  }
-
-  /**
-   * Given a list of skill IDs, return only the ones whose skill definition is
-   * marked critical: true. Used to union critical default skills back into a
-   * successful dynamic match without reintroducing every default skill.
-   */
-  private async filterCriticalSkillIds(skillIds: string[]): Promise<string[]> {
-    if (skillIds.length === 0) return [];
-    const skills = await Promise.all(skillIds.map((id) => this.skillsService!.getSkill(id)));
-    return skillIds.filter((_, i) => skills[i]?.critical === true);
   }
 
   /**
@@ -847,29 +822,6 @@ export class AgentRunner implements IAgentRunner {
   /**
    * Log activity to IActivity Journal (if database provided)
    */
-  /**
-   * Union any CRITICAL default skills the dynamic match missed into the selected set.
-   *
-   * A successful dynamic match must not silently drop a skill the identity always requires
-   * (e.g. the response-contract output-format contract). Mutates `skillIds` and
-   * `matchScores` in place and returns how many were added, so the caller can keep its
-   * `totalAvailable` accurate.
-   */
-  private async unionCriticalDefaultSkills(
-    skillIds: string[],
-    matchScores: Map<string, number>,
-    defaultSkills?: Opt<string[], Reason.OptionalInput>,
-  ): Promise<number> {
-    if (!defaultSkills?.length) return 0;
-
-    const missing = defaultSkills.filter((id) => !skillIds.includes(id));
-    const criticalMissing = await this.filterCriticalSkillIds(missing);
-    for (const id of criticalMissing) {
-      skillIds.push(id);
-      matchScores.set(id, 0.5);
-    }
-    return criticalMissing.length;
-  }
 
   /**
    * Journal a dynamic skill-match that timed out or threw.
@@ -887,6 +839,31 @@ export class AgentRunner implements IAgentRunner {
       { identity_id: identityId, error: message },
     );
     console.warn("[IAgentRunner] Skill matching failed or timed out, continuing without skills:", message);
+  }
+
+  /**
+   * Journal the final skill set for a request together with the three inputs that produced it.
+   *
+   * `skills.match_completed` covers only the dynamic-matching stage, which is skipped
+   * entirely for a request that pins skills — so that path left the Activity Journal with no
+   * record of which skills the agent actually ran with. The breakdown is what makes the union
+   * auditable: it answers "why is this skill in my prompt?" without re-deriving the merge.
+   */
+  private logSkillResolution(
+    identityId: string,
+    skillIds: string[],
+    pinned: string[],
+    matched: string[],
+    defaults: string[],
+  ): void {
+    this.logActivity(ACTIVITY_ACTOR_AGENT, SKILL_EVENT_RESOLVED, identityId, {
+      identity_id: identityId,
+      skill_ids: skillIds,
+      skill_count: skillIds.length,
+      pinned_skill_ids: pinned,
+      matched_skill_ids: matched,
+      default_skill_ids: defaults,
+    });
   }
 
   private logActivity(

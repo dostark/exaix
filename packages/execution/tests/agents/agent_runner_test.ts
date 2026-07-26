@@ -1145,7 +1145,7 @@ Deno.test("IAgentRunner: uses blueprint defaultSkills when no trigger matches", 
   assertEquals(mockSkills.contextBuiltForSkills, ["default-skill-1", "default-skill-2"]);
 });
 
-Deno.test("IAgentRunner: trigger matches override blueprint defaultSkills", async () => {
+Deno.test("IAgentRunner: trigger matches are concatenated with blueprint defaultSkills", async () => {
   const mockProvider = new MockProvider(wellFormedResponse);
   const mockSkills = new MockSkillsService();
 
@@ -1169,8 +1169,9 @@ Deno.test("IAgentRunner: trigger matches override blueprint defaultSkills", asyn
   const result = await runner.run(blueprintWithDefaults, sampleRequest, undefined);
 
   assertExists(result);
-  // Should use matched skill, NOT default
-  assertEquals(result.skillsApplied, ["matched-skill"]);
+  // Phase 142 Step 17: matches no longer OVERRIDE defaults — the resulting set is
+  // matched ∪ defaults, so both appear. One rule replaced three branch-specific ones.
+  assertEquals(result.skillsApplied, ["matched-skill", "default-skill-1"]);
 });
 
 Deno.test("IAgentRunner: request-level skills override trigger matches", async () => {
@@ -1201,60 +1202,6 @@ Deno.test("IAgentRunner: request-level skills override trigger matches", async (
   assertEquals(result.skillsApplied, ["explicit-skill-1", "explicit-skill-2"]);
   // matchSkills should not be called when explicit skills are provided
   assertEquals(mockSkills.matchCallCount, 0);
-});
-
-Deno.test("IAgentRunner: skipSkills filters out matched skills", async () => {
-  const mockProvider = new MockProvider(wellFormedResponse);
-  const mockSkills = new MockSkillsService();
-
-  // Trigger matches return multiple skills
-  mockSkills.setMatchedSkills([
-    { skillId: "skill-a", confidence: 0.9, matchedTriggers: { keywords: ["test"] } },
-    { skillId: "skill-b", confidence: 0.8, matchedTriggers: { keywords: ["test"] } },
-    { skillId: "skill-c", confidence: 0.7, matchedTriggers: { keywords: ["test"] } },
-  ]);
-  mockSkills.setSkillContext("## Filtered Skills\nSome instructions");
-
-  const runner = new AgentRunner(mockProvider, {
-    skillsService: mockSkills,
-  });
-
-  // Request that skips some skills
-  const requestWithSkipSkills: IParsedRequest = {
-    userPrompt: "Do something",
-    context: {},
-    skipSkills: ["skill-b"],
-  };
-
-  const result = await runner.run(sampleBlueprint, requestWithSkipSkills, undefined);
-
-  assertExists(result);
-  // skill-b should be filtered out
-  assertEquals(result.skillsApplied, ["skill-a", "skill-c"]);
-});
-
-Deno.test("IAgentRunner: skipSkills with explicit skills", async () => {
-  const mockProvider = new MockProvider(wellFormedResponse);
-  const mockSkills = new MockSkillsService();
-  mockSkills.setSkillContext("## Skills\nInstructions");
-
-  const runner = new AgentRunner(mockProvider, {
-    skillsService: mockSkills,
-  });
-
-  // Request with both explicit skills and skip
-  const requestWithBoth: IParsedRequest = {
-    userPrompt: "Do something",
-    context: {},
-    skills: ["skill-x", "skill-y", "skill-z"],
-    skipSkills: ["skill-y"],
-  };
-
-  const result = await runner.run(sampleBlueprint, requestWithBoth, undefined);
-
-  assertExists(result);
-  // skill-y should be filtered out from explicit list
-  assertEquals(result.skillsApplied, ["skill-x", "skill-z"]);
 });
 
 // ============================================================================

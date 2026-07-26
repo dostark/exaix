@@ -14,6 +14,21 @@ request_fixture: "fixtures/requests/skill_eval/trigger_match.md"
 mode_support: ["auto"]
 portals: []
 steps:
+  # A fresh sandbox has no Memory dir at all, and a reused one has an empty Memory/Skills, so
+  # SkillsService loads zero skills: trigger matching cannot fire and a pinned id hydrates to
+  # nothing. Seed the repo's real catalog so the pack scores against the skills that ship.
+  - id: "setup-skills"
+    type: "shell"
+    command: "sh"
+    args: [
+      "-c",
+      "mkdir -p $WORKSPACE_ROOT/Memory && cp -r $FRAMEWORK_HOME/../../Memory/Skills $WORKSPACE_ROOT/Memory/Skills",
+    ]
+    output_criteria:
+      - id: "skills-seeded"
+        kind: "command-exit-code"
+        equals: 0
+
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"
@@ -39,15 +54,25 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
+  # A bare event-type match proves only that the matcher ran, not that it matched anything —
+  # a zero-match result emits the same event. These two skills are reachable ONLY through the
+  # tag channel for this fixture: `self-critique` and `architecture-review` are each declared
+  # by exactly one skill, and neither word appears in a request body about exception paths,
+  # so the keyword scorer cannot produce them. Requiring them is therefore precisely the
+  # assertion that request-frontmatter tags survive parsing and reach the matcher (Step 17B).
   - id: "wait-for-match"
     type: "wait-for-journal-event"
-    event_type: "skills.match_completed"
+    event_type: "skills.resolved"
     timeout_sec: 60
     output_criteria:
       - id: "trigger-match-observed"
         kind: "journal-event-exists"
-        event_type: "skills.match_completed"
+        event_type: "skills.resolved"
         score_weight: 1.0
+        payload_includes:
+          matched_skill_ids:
+            - "reflexive-critique"
+            - "architecture-review"
 
   - id: "stop-daemon"
     type: "exactl"

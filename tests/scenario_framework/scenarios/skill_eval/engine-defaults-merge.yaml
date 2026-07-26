@@ -7,6 +7,21 @@ request_fixture: "fixtures/requests/skill_eval/pin_batch1.md"
 mode_support: ["auto"]
 portals: []
 steps:
+  # A fresh sandbox has no Memory dir at all, and a reused one has an empty Memory/Skills, so
+  # SkillsService loads zero skills: trigger matching cannot fire and a pinned id hydrates to
+  # nothing. Seed the repo's real catalog so the pack scores against the skills that ship.
+  - id: "setup-skills"
+    type: "shell"
+    command: "sh"
+    args: [
+      "-c",
+      "mkdir -p $WORKSPACE_ROOT/Memory && cp -r $FRAMEWORK_HOME/../../Memory/Skills $WORKSPACE_ROOT/Memory/Skills",
+    ]
+    output_criteria:
+      - id: "skills-seeded"
+        kind: "command-exit-code"
+        equals: 0
+
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"
@@ -32,15 +47,28 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
+  # The merge rule under test is pinned ∪ matched ∪ defaults, so the assertion has to see
+  # BOTH sides in one event: the ids pinned by the fixture and senior-coder's own
+  # default_skills. `skills.match_completed` reports only the matching stage — which this
+  # pinned request skips entirely — so it could never show the merge.
   - id: "wait-for-match"
     type: "wait-for-journal-event"
-    event_type: "skills.match_completed"
+    event_type: "skills.resolved"
     timeout_sec: 60
     output_criteria:
       - id: "defaults-merged"
         kind: "journal-event-exists"
-        event_type: "skills.match_completed"
+        event_type: "skills.resolved"
         score_weight: 1.0
+        payload_includes:
+          pinned_skill_ids:
+            - "tdd-methodology"
+            - "security-first"
+          default_skill_ids:
+            - "response-contract"
+          skill_ids:
+            - "tdd-methodology"
+            - "response-contract"
 
   - id: "stop-daemon"
     type: "exactl"

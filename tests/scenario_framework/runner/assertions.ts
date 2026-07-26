@@ -602,6 +602,27 @@ async function evaluateJournalEventExistsCriterion(
     e.action_type === criterion.event_type || e.event_type === criterion.event_type
   );
 
+  // payload_includes (Phase 142 Step 17): require at least one matching event whose parsed
+  // payload carries, under each named key, an array containing every listed string — proving
+  // e.g. that ids pinned in request frontmatter actually reached `skills.resolved`, which a
+  // bare event-type match cannot distinguish from a run that resolved something else.
+  if (criterion.payload_includes) {
+    const includes = criterion.payload_includes;
+    if (typeMatches.some((e) => payloadIncludesAll(e, includes))) return buildPassedResult(options, []);
+    const summary = JSON.stringify(includes);
+    return buildFailedResult(options, {
+      message: typeMatches.length === 0
+        ? `expected journal event type: ${criterion.event_type}`
+        : `expected a '${criterion.event_type}' event whose payload includes ${summary}, but no matching event did`,
+      expectedValue: `${criterion.event_type} with payload including ${summary}`,
+      observedValue: typeMatches.length === 0
+        ? `Latest 50 events: ${events.slice(0, 50).map((e) => e.action_type || e.event_type).join(", ")}`
+        : `${typeMatches.length} matching event(s), payloads: ${
+          typeMatches.slice(0, 5).map((e) => String(e.payload)).join(" | ")
+        }`,
+    });
+  }
+
   // Without a payload_absent predicate, a bare event-type match passes (backward-compatible).
   if (!criterion.payload_absent) {
     if (typeMatches.length > 0) return buildPassedResult(options, []);
@@ -636,22 +657,43 @@ async function evaluateJournalEventExistsCriterion(
  * a payload that is missing, non-string, or unparseable is treated as not-containing.
  */
 function payloadContainsAll(event: IJournalEvent, expected: IJournalPayloadFields): boolean {
-  const raw = event.payload;
-  let payload: IJournalPayloadFields;
-  if (typeof raw === "string") {
-    try {
-      payload = JSON.parse(raw) as IJournalPayloadFields;
-    } catch {
-      return false;
-    }
-  } else if (raw && typeof raw === "object") {
-    payload = raw as IJournalPayloadFields;
-  } else {
-    return false;
-  }
+  const payload = parseEventPayload(event);
+  if (!payload) return false;
   return Object.entries(expected).every(([key, value]) =>
     key in payload && JSON.stringify(payload[key]) === JSON.stringify(value)
   );
+}
+
+/**
+ * True when, for every entry in `expected`, the event's payload holds an ARRAY under that key
+ * containing each listed string. Membership rather than equality, so a criterion can pin the
+ * ids it cares about without restating the whole array.
+ */
+function payloadIncludesAll(event: IJournalEvent, expected: Record<string, string[]>): boolean {
+  const payload = parseEventPayload(event);
+  if (!payload) return false;
+  return Object.entries(expected).every(([key, values]) => {
+    const actual = payload[key];
+    if (!Array.isArray(actual)) return false;
+    return values.every((value) => actual.includes(value));
+  });
+}
+
+/**
+ * The CLI journal serializes each row's payload as a JSON string (IActivityRecord.payload);
+ * the NDJSON path may already hold an object. Returns null when it is missing or unparseable.
+ */
+function parseEventPayload(event: IJournalEvent): IJournalPayloadFields | null {
+  const raw = event.payload;
+  if (typeof raw === "string") {
+    try {
+      return JSON.parse(raw) as IJournalPayloadFields;
+    } catch {
+      return null;
+    }
+  }
+  if (raw && typeof raw === "object") return raw as IJournalPayloadFields;
+  return null;
 }
 
 async function loadJournalFromCli(options: IEvaluateCriterionOptions): Promise<IJournalEvent[] | null> {

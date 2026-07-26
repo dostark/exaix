@@ -8,7 +8,7 @@ created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"
 version: "1.1.0"
 description: "Documentation specialist for creating clear, comprehensive technical content"
-default_skills: ["response-contract", "documentation-driven", "portal-grounding"]
+default_skills: [response-contract, documentation-driven]
 permitted_tools:
   - read_file
   - write_file

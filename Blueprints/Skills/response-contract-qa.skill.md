@@ -8,6 +8,7 @@ skill_id: "response-contract-qa"
 name: "Response Contract — QA/Testing"
 version: "1.0.0"
 description: "The <content> JSON template for a QA/testing-strategy deliverable (test summary, coverage, issues). Applies alongside response-contract, only for QA/testing requests."
+critical: true
 
 triggers:
   keywords:

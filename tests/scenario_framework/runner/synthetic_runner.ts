@@ -87,6 +87,13 @@ export interface IMaterializedCellConfig {
   aiModel?: string;
 }
 
+/**
+ * This file always lives within the Exaix repo at tests/scenario_framework/runner/.
+ * Compute the repo root from this known location rather than from frameworkHome
+ * (which may be a temp dir in tests).
+ */
+const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..");
+
 export async function runSyntheticScenario(
   options: IRunSyntheticScenarioOptions,
 ): Promise<IRunSyntheticScenarioResult> {
@@ -114,12 +121,12 @@ export async function runSyntheticScenario(
       "run",
       "-A",
       "--config",
-      join(options.frameworkHome, "..", "..", "deno.json"),
-      join(options.frameworkHome, "..", "..", "scripts", "setup_db.ts"),
+      join(REPO_ROOT, "deno.json"),
+      join(REPO_ROOT, "scripts", "setup_db.ts"),
     ],
     cwd: options.workspaceRoot,
     env: {
-      EXA_MIGRATIONS_DIR: join(options.frameworkHome, "..", "..", "migrations"),
+      EXA_MIGRATIONS_DIR: join(REPO_ROOT, "migrations"),
     },
   }).output();
   // Fatal, not a warning: a scenario running against an unmigrated database fails later on
@@ -165,7 +172,7 @@ export async function runSyntheticScenario(
     // The daemon resolves a relative EXA_CONFIG_PATH against its CWD (the workspace),
     // not the repo, so the cell's preset must be made absolute against the repo root
     // (frameworkHome/../..) before it is overlaid onto the start-daemon step.
-    configBaseDir: join(options.frameworkHome, "..", ".."),
+    configBaseDir: REPO_ROOT,
     selectedCell: options.selectedCell,
   });
   const firstRunnable = runnableGroups.find((g) => g.status === "run");
@@ -187,7 +194,7 @@ export async function runSyntheticScenario(
   );
   const materialized = await materializeCellConfig(stepsToRun, {
     workspaceRoot: options.workspaceRoot,
-    worktreePath: join(options.frameworkHome, "..", ".."),
+    worktreePath: REPO_ROOT,
   });
   stepsToRun = materialized.steps;
 

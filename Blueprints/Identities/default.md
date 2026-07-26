@@ -8,7 +8,7 @@ created: "2025-12-09T13:47:00Z"
 created_by: "exaix-setup"
 version: "1.1.0"
 description: "General-purpose coding assistant for planning and implementation"
-default_skills: ["response-contract", "error-handling", "portal-grounding", "blueprint-best-practices"]
+default_skills: [response-contract, error-handling, conversational-dialogue]
 permitted_tools:
   - read_file
   - list_directory

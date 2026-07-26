@@ -346,3 +346,42 @@ Deno.test("RequestRouter: applies routing policy service for default routing whe
   assertEquals(decisionEvent?.payload?.selected_identity_id, "senior-coder");
   assertEquals(decisionEvent?.payload?.allow_dynamic_routing, true);
 });
+
+// ---------------------------------------------------------------------------
+// Phase 142 Step 17 — createParsedRequest forwarded only the body and ids, so a
+// request's `skills` and `tags` never reached AgentRunner. Explicit pinning was
+// therefore inert on this path and tag-driven trigger matching never fired.
+// ---------------------------------------------------------------------------
+
+Deno.test("[step17] RequestRouter forwards frontmatter skills to the agent request", async () => {
+  const { mockAgentRunner, router } = createRouterTestContext({ config: createMockConfig("/tmp/exaix-step17-router") });
+  const request = sampleRouterRequest({
+    frontmatter: { skills: ["tdd-methodology", "security-first"] } as Partial<IRequestFrontmatter>,
+  });
+
+  await router.route(request);
+
+  assertEquals(mockAgentRunner.executedAgents[0].request.skills, ["tdd-methodology", "security-first"]);
+});
+
+Deno.test("[step17] RequestRouter forwards frontmatter tags for trigger matching", async () => {
+  const { mockAgentRunner, router } = createRouterTestContext({ config: createMockConfig("/tmp/exaix-step17-router") });
+  const request = sampleRouterRequest({
+    frontmatter: { tags: ["review", "error-handling"] } as Partial<IRequestFrontmatter>,
+  });
+
+  await router.route(request);
+
+  assertEquals(mockAgentRunner.executedAgents[0].request.tags, ["review", "error-handling"]);
+});
+
+Deno.test("[step17] RequestRouter accepts a YAML-array skills without throwing", async () => {
+  const { mockAgentRunner, router } = createRouterTestContext({ config: createMockConfig("/tmp/exaix-step17-router") });
+  const request = sampleRouterRequest({
+    frontmatter: { skills: '["code-review"]' } as Partial<IRequestFrontmatter>,
+  });
+
+  await router.route(request);
+
+  assertEquals(mockAgentRunner.executedAgents[0].request.skills, ["code-review"]);
+});

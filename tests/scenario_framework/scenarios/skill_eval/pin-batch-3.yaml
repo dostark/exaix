@@ -7,6 +7,21 @@ request_fixture: "fixtures/requests/skill_eval/pin_batch3.md"
 mode_support: ["auto"]
 portals: []
 steps:
+  # A fresh sandbox has no Memory dir at all, and a reused one has an empty Memory/Skills, so
+  # SkillsService loads zero skills: trigger matching cannot fire and a pinned id hydrates to
+  # nothing. Seed the repo's real catalog so the pack scores against the skills that ship.
+  - id: "setup-skills"
+    type: "shell"
+    command: "sh"
+    args: [
+      "-c",
+      "mkdir -p $WORKSPACE_ROOT/Memory && cp -r $FRAMEWORK_HOME/../../Memory/Skills $WORKSPACE_ROOT/Memory/Skills",
+    ]
+    output_criteria:
+      - id: "skills-seeded"
+        kind: "command-exit-code"
+        equals: 0
+
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"
@@ -32,15 +47,29 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
+  # Waits on `skills.resolved`, not `skills.match_completed`: matching is deliberately
+  # skipped for a request that pins skills, so match_completed never fires on this path and
+  # the step could only pass by accident, when some later plan step happened to call the
+  # matcher. `payload_includes` then checks the pinned ids actually reached the resolved set,
+  # which is the propagation this scenario exists to prove — and, because each batch pins a
+  # distinct set, it also stops one batch's event from satisfying another's assertion in the
+  # shared sandbox.
   - id: "wait-for-completion"
     type: "wait-for-journal-event"
-    event_type: "skills.match_completed"
+    event_type: "skills.resolved"
     timeout_sec: 60
     output_criteria:
       - id: "skills-matched"
         kind: "journal-event-exists"
-        event_type: "skills.match_completed"
+        event_type: "skills.resolved"
         score_weight: 1.0
+        payload_includes:
+          pinned_skill_ids:
+            - "fix-bug"
+            - "gap-analysis"
+            - "performance-analysis"
+            - "reflexive-critique"
+            - "requirements-analysis"
 
   - id: "stop-daemon"
     type: "exactl"
