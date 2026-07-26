@@ -13,9 +13,9 @@ schema_version: "1.0.0"
 # protected-branch guards), the command timeout, the index.lock retry, and
 # trace-attributed journalling that the daemon path gets.
 #
-# Converting this scenario is planned as phase-150 Step 5, after phase-150 Steps 1-4
+# Converting this scenario is planned as phase-156 Step 5, after phase-156 Steps 1-4
 # route the handlers through a real per-portal IGitServiceFactory. See
-# exaix-dev-docs/planning/phase-150-mcp-git-service-integration.md.
+# exaix-dev-docs/planning/phase-156-mcp-git-service-integration.md.
 id: "git-operations-roundtrip"
 title: "Git tools — branch, commit, status, log, worktree operations (CLI surrogate; see header)"
 pack: "mcp_tools_extended"
