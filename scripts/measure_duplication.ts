@@ -137,7 +137,13 @@ async function runDuplicationCheck() {
     ["tests/integration", "tests/scenario_framework"],
     INTEGRATION_TEST_THRESHOLD,
     ".duplication_report_integration_tests",
-    ["**/*.d.ts", "**/*.md", "**/*.yaml", "**/*.yml"],
+    [
+      "**/*.d.ts",
+      "**/*.md",
+      "**/*.yaml",
+      "**/*.yml",
+      "**/fixtures/portals/**",
+    ],
   );
 
   const sourcePassed = logTotals("Source", sourceTotals, SOURCE_THRESHOLD);
