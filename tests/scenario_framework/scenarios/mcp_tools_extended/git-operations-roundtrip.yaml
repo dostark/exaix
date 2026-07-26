@@ -1,12 +1,21 @@
 schema_version: "1.0.0"
 # LIMITATION — this scenario asserts git behaviour through the git CLI, not through the
-# git_* MCP tool handlers, and is the one pack member that remains a surrogate.
-# `apps/mcp-server/main.ts` injects `createGitServiceStub()`, whose methods return canned
-# values (getCurrentBranch => "main", commit => "", listWorktrees => []), so driving
-# git_commit/git_status/git_log/git_worktree through the standalone server would assert
-# the stub rather than the handlers. Every other tool in this pack was converted to real
-# `tools/call` round-trips in Step 14; closing this one needs a non-stub IGitService in
-# the standalone server, which is out of this step's scope.
+# git_* MCP tool handlers, and is the one pack member that remains a surrogate. Every
+# other tool in this pack was converted to real `tools/call` round-trips in phase-142
+# Step 14.
+#
+# The reason recorded during Step 14 — that `createGitServiceStub()` in
+# apps/mcp-server/main.ts would make the tools assert a stub — was WRONG, and was
+# corrected on 2026-07-26. The git_* handlers never read `context.git`; each constructs
+# `new Deno.Command("git", ...)` directly, so git_status and git_log already return real
+# results through the standalone server. The actual gap is that those handlers bypass
+# IGitService altogether, and so skip GitService.validateArgs (destructive-operation and
+# protected-branch guards), the command timeout, the index.lock retry, and
+# trace-attributed journalling that the daemon path gets.
+#
+# Converting this scenario is planned as phase-150 Step 5, after phase-150 Steps 1-4
+# route the handlers through a real per-portal IGitServiceFactory. See
+# exaix-dev-docs/planning/phase-150-mcp-git-service-integration.md.
 id: "git-operations-roundtrip"
 title: "Git tools — branch, commit, status, log, worktree operations (CLI surrogate; see header)"
 pack: "mcp_tools_extended"
