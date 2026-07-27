@@ -38,7 +38,7 @@ steps:
       - candidate-security
     input:
       source: aggregate
-      transform: combine-reviews
+      transform: mergeAsContext
     condition: results.every(r => r.status === 'completed')
     retry:
       maxAttempts: 1

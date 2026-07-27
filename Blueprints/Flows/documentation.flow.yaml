@@ -12,7 +12,7 @@ steps:
     dependsOn: []
     input:
       source: request
-      transform: extract-code-files
+      transform: mergeAsContext
     retry:
       maxAttempts: 1
       backoffMs: 1000
@@ -25,7 +25,7 @@ steps:
     input:
       source: step
       stepId: extract-code-structure
-      transform: focus-api-elements
+      transform: mergeAsContext
     retry:
       maxAttempts: 1
       backoffMs: 1000
@@ -38,7 +38,7 @@ steps:
     input:
       source: step
       stepId: extract-code-structure
-      transform: focus-user-features
+      transform: mergeAsContext
     retry:
       maxAttempts: 1
       backoffMs: 1000
@@ -51,7 +51,7 @@ steps:
     input:
       source: step
       stepId: extract-code-structure
-      transform: analyze-architecture
+      transform: mergeAsContext
     retry:
       maxAttempts: 1
       backoffMs: 1000
@@ -65,7 +65,7 @@ steps:
       - generate-architecture-docs
     input:
       source: aggregate
-      transform: merge-documentation
+      transform: mergeAsContext
     retry:
       maxAttempts: 1
       backoffMs: 1000

@@ -10,7 +10,7 @@ steps:
     dependsOn: []
     input:
       source: request
-      transform: extract_code
+      transform: mergeAsContext
     retry:
       maxAttempts: 1
       backoffMs: 1000
@@ -67,7 +67,7 @@ steps:
         - endpoint-documentation
         - data-models
         - authentication-docs
-      transform: merge_as_context
+      transform: mergeAsContext
     retry:
       maxAttempts: 2
       backoffMs: 3000
@@ -87,7 +87,7 @@ steps:
         - data-models
         - authentication-docs
         - examples-integration
-      transform: merge_as_context
+      transform: mergeAsContext
     retry:
       maxAttempts: 2
       backoffMs: 2000
