@@ -16,6 +16,7 @@ export type { IAgentRequestContext } from "./src/feedback_loop.ts";
 export type { IIterationResult } from "./src/feedback_loop.ts";
 export type { IImprovementAgent } from "./src/feedback_loop.ts";
 export type { ISelfCorrectingConfig } from "./src/feedback_loop.ts";
+export { resolveAggregateSources } from "./src/flow_runner.ts";
 export type { IAgentExecutor } from "./src/flow_runner.ts";
 export type { IFlowEventLogger } from "./src/flow_runner.ts";
 export type { IFlowEventPayload } from "./src/flow_runner.ts";

@@ -611,6 +611,21 @@ export function toGateConfig(evaluate: IGateEvaluate): IGateConfig {
  * FlowRunner - Orchestrates multi-agent flow execution
  * Implements Step 7.4 of the Exaix Implementation Plan
  */
+/**
+ * The steps an `aggregate` input draws from: an explicit `from`, else the step's `dependsOn`.
+ *
+ * `dependsOn` already names the steps a step consumes, so requiring them restated in `from` is
+ * redundant — and three of the four flows using `aggregate` omitted it, each failing at its
+ * final step with the flow aggregating nothing and the request dying several layers later on
+ * `Invalid JSON: Unexpected end of JSON input`. An explicit `from` still wins, so a step may
+ * legitimately depend on more than it consumes. Returns empty when neither is specified, which
+ * the caller treats as an error rather than silently aggregating nothing.
+ */
+export function resolveAggregateSources(step: { input: { from?: string[] }; dependsOn?: string[] }): string[] {
+  if (step.input.from?.length) return step.input.from;
+  return step.dependsOn ?? [];
+}
+
 export class FlowRunner implements IFlowRunner {
   private conditionEvaluator: ConditionEvaluator;
   protected dynamicStepExecutor?: DynamicStepExecutor;
@@ -1736,11 +1751,15 @@ export class FlowRunner implements IFlowRunner {
     step: IFlowStep,
     stepResults: Map<string, IStepResult>,
   ): string {
-    if (!step.input.from || step.input.from.length === 0) {
-      throw new Error(`Step ${step.id} has source "aggregate" but no "from" steps specified`);
+    const from = resolveAggregateSources(step);
+
+    if (from.length === 0) {
+      throw new Error(
+        `Step ${step.id} has source "aggregate" but neither "from" nor "dependsOn" names a step to aggregate`,
+      );
     }
 
-    const aggregatedInputs = step.input.from.map((stepId) => this.getStepResultContent(step, stepId, stepResults));
+    const aggregatedInputs = from.map((stepId) => this.getStepResultContent(step, stepId, stepResults));
     return aggregatedInputs.length === 1 ? aggregatedInputs[0] : aggregatedInputs.join("\n\n");
   }
 
