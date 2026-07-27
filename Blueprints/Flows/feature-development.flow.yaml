@@ -83,10 +83,13 @@ steps:
       maxAttempts: 1
       backoffMs: 1000
 output:
-  from:
-    - code-review
-    - integration-test
-  format: json
+  # A flow feeding request-to-plan generation must aggregate to ONE plan document. Naming two
+  # sources with `format: json` produced a map keyed by step id — `{"code-review": ...,
+  # "integration-test": ...}` — which fails plan validation with a bare "Required". The three
+  # flows that work all output from a single terminal step, and `integration-test` already
+  # depends on `code-review`, so the second source was redundant with its own dependency chain.
+  from: integration-test
+  format: markdown
 settings:
   maxParallelism: 3
   failFast: true
