@@ -68,6 +68,8 @@ export interface IRunSyntheticScenarioOptions {
    * more than one cell of the same matrix scenario (one invocation per --cell).
    */
   selectedCell?: string;
+  /** Upper bound applied to every step's `timeout_sec`; shortens only, never extends. */
+  maxStepTimeoutSec?: number;
 }
 
 export interface IRunSyntheticScenarioResult {
@@ -185,6 +187,57 @@ export async function seedPortalFixtures(workspaceRoot: string, repoRoot: string
   }
 }
 
+/** A portal's baseline: the commit its default branch pointed at when the sandbox was seeded. */
+type PortalBaseline = { portal: string; head: string };
+
+async function gitOut(cwd: string, args: string[]): Promise<string | null> {
+  const result = await new Deno.Command("git", { args, cwd, stdout: "piped", stderr: "null" }).output();
+  return result.success ? new TextDecoder().decode(result.stdout).trim() : null;
+}
+
+/** Record each seeded portal's default-branch HEAD, so drift can be detected after a run. */
+export async function capturePortalBaselines(workspaceRoot: string): Promise<PortalBaseline[]> {
+  const root = join(workspaceRoot, PORTAL_FIXTURES_DEST);
+  const baselines: PortalBaseline[] = [];
+  try {
+    for await (const entry of Deno.readDir(root)) {
+      if (!entry.isDirectory) continue;
+      const head = await gitOut(join(root, entry.name), ["rev-parse", "HEAD"]);
+      if (head) baselines.push({ portal: entry.name, head });
+    }
+  } catch { /* no portals seeded */ }
+  return baselines;
+}
+
+/**
+ * Names every portal whose default branch moved or whose working tree was dirtied.
+ *
+ * Portal mutation is supposed to happen ONLY inside a git worktree on its own branch —
+ * `getExecutionStrategy` forces `PortalExecutionStrategy.WORKTREE` for every portal task, and
+ * `GitService` refuses operations on protected branches. Neither guarantee was ever checked
+ * against an actual run, and the failure is silent: a write that misses the worktree lands on
+ * the portal's checked-out default branch and looks exactly like success. That became possible
+ * only once portals were seeded as real repositories, so the check ships with the seeding.
+ */
+export async function detectPortalDrift(
+  workspaceRoot: string,
+  baselines: readonly PortalBaseline[],
+): Promise<string[]> {
+  const root = join(workspaceRoot, PORTAL_FIXTURES_DEST);
+  const drifted: string[] = [];
+  for (const baseline of baselines) {
+    const portal = join(root, baseline.portal);
+    const head = await gitOut(portal, ["rev-parse", "HEAD"]);
+    if (head !== null && head !== baseline.head) {
+      drifted.push(`${baseline.portal}: default branch moved ${baseline.head.slice(0, 8)} -> ${head.slice(0, 8)}`);
+      continue;
+    }
+    const status = await gitOut(portal, ["status", "--porcelain"]);
+    if (status) drifted.push(`${baseline.portal}: working tree dirty (${status.split("\n").length} path(s))`);
+  }
+  return drifted;
+}
+
 export async function runSyntheticScenario(
   options: IRunSyntheticScenarioOptions,
 ): Promise<IRunSyntheticScenarioResult> {
@@ -200,6 +253,7 @@ export async function runSyntheticScenario(
   // catalog — both of which surface as unrelated-looking scenario failures.
   await seedWorkspaceCatalogs(options.workspaceRoot, REPO_ROOT);
   await seedPortalFixtures(options.workspaceRoot, REPO_ROOT);
+  const portalBaselines = await capturePortalBaselines(options.workspaceRoot);
 
   // Baseline for artefact correlation. Scenarios in a pack run share one sandbox workspace,
   // so a glob like `**/*_plan.md` matches every plan an earlier scenario left behind.
@@ -334,6 +388,7 @@ export async function runSyntheticScenario(
           workspaceRoot: options.workspaceRoot,
           artifactBaselineMs: scenarioStartedAtMs,
           journalBaselineRowid: previousStepStartRowid,
+          maxStepTimeoutSec: options.maxStepTimeoutSec,
           exactlExecutable: options.exactlExecutable,
           requestFixturePath: loadedScenario.requestFixture.absolutePath,
           frameworkHome: options.frameworkHome,
@@ -392,6 +447,18 @@ export async function runSyntheticScenario(
     scenarioId: loadedScenario.scenario.id,
     stepOutcomes,
   });
+
+  // Portal mutation is supposed to happen only inside a worktree on its own branch. A write
+  // that misses the worktree lands on the portal's checked-out default branch and otherwise
+  // looks exactly like success, so it is surfaced loudly rather than left to a reviewer to
+  // notice — the scenario's own criteria cannot see it.
+  const portalDrift = await detectPortalDrift(options.workspaceRoot, portalBaselines);
+  if (portalDrift.length > 0) {
+    console.error(
+      `\n%c ⚠ portal drift — mutation escaped its worktree:\n   ${portalDrift.join("\n   ")}`,
+      "color: red; font-weight: bold;",
+    );
+  }
 
   return {
     loadedScenario,
@@ -523,6 +590,8 @@ interface IExecuteSyntheticStepOptions {
   artifactBaselineMs?: number;
   /** Journal rowid captured before the previous step ran — a barrier step's baseline. */
   journalBaselineRowid?: number;
+  /** Upper bound applied to every step's `timeout_sec`; shortens only, never extends. */
+  maxStepTimeoutSec?: number;
   exactlExecutable?: string;
   requestFixturePath: string;
   frameworkHome: string;
@@ -545,7 +614,18 @@ async function executeSyntheticStep(
     EXA_CONFIG_PATH: join(options.workspaceRoot, WORKSPACE_CONFIG_FILE),
   };
 
-  const resolvedStep = expandVariablesInStep(options.step, baseEnv);
+  const expandedStep = expandVariablesInStep(options.step, baseEnv);
+
+  // A wait step's timeout is sized for a real run (120-180s). When iterating on a failure that
+  // is already visible in seconds, those waits dominate the loop: the step is going to fail and
+  // the only question is how long we pay to learn it. `--max-step-timeout` caps every step's
+  // budget. It only ever SHORTENS a timeout, so it cannot make a step pass that would not have.
+  const resolvedStep = options.maxStepTimeoutSec !== undefined
+    ? {
+      ...expandedStep,
+      timeout_sec: Math.min(expandedStep.timeout_sec ?? options.maxStepTimeoutSec, options.maxStepTimeoutSec),
+    }
+    : expandedStep;
 
   // Merge the EXPANDED step.env last so values like EXA_MIGRATIONS_DIR resolve before
   // they reach the spawned process.

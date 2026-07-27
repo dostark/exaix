@@ -45,6 +45,12 @@ await new Command()
   .option("-P, --pack <name:string>", "Run all scenarios in a named pack (repeatable)", { collect: true })
   .option("-t, --tag <tag:string>", "Filter by tag (repeatable)", { collect: true })
   .option(
+    "--max-step-timeout <sec:number>",
+    "Cap every step's timeout_sec. Wait steps are sized for real runs (120-180s), which " +
+      "dominates the loop when iterating on a failure visible in seconds. Shortens only, so a " +
+      "step that would have failed cannot be made to pass.",
+  )
+  .option(
     "--fail-fast",
     "Stop after the first scenario that does not pass, leaving its sandbox for inspection. " +
       "A full pack takes minutes and a failure is usually visible in the first scenario, so " +
@@ -168,6 +174,7 @@ await new Command()
               ? `${Deno.env.get("EXA_BIN_PATH")}/exactl`
               : resolve(frameworkHome, "bin/exactl"),
             selectedCell: options.cell,
+            maxStepTimeoutSec: options.maxStepTimeout,
           });
 
           const suiteScore = result.manifest.suite_score ?? 1.0;

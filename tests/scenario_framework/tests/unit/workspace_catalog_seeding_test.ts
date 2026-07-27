@@ -21,7 +21,12 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { seedPortalFixtures, seedWorkspaceCatalogs } from "../../runner/synthetic_runner.ts";
+import {
+  capturePortalBaselines,
+  detectPortalDrift,
+  seedPortalFixtures,
+  seedWorkspaceCatalogs,
+} from "../../runner/synthetic_runner.ts";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..", "..");
 
@@ -154,6 +159,72 @@ Deno.test("[portal_fixtures] seeding a portal twice does not reinitialise it", a
     const second = await gitIn(portal, ["rev-parse", "HEAD"]);
 
     assertEquals(second.out, first.out, "a second pass must not discard the portal's history");
+  } finally {
+    await Deno.remove(ws, { recursive: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Portal mutation must land in a worktree branch, never on the portal's default branch.
+//
+// `getExecutionStrategy` forces PortalExecutionStrategy.WORKTREE for every portal task and
+// GitService refuses operations on protected branches, but nothing ever checked the OUTCOME —
+// and the failure is silent, because a write that misses the worktree lands on the checked-out
+// default branch and looks like success. Seeding portals as real repositories is what made
+// that failure mode reachable, so the check ships alongside it.
+// ---------------------------------------------------------------------------
+
+Deno.test("[portal_drift] a portal mutated through a worktree branch is not flagged", async () => {
+  const ws = await Deno.makeTempDir({ prefix: "drift-ok-" });
+  try {
+    await seedPortalFixtures(ws, REPO_ROOT);
+    const baselines = await capturePortalBaselines(ws);
+    const portal = join(ws, "fixtures", "portals", "simple_repo");
+    const wt = join(ws, "wt");
+    await gitIn(portal, ["worktree", "add", "-b", "exaix/task-1", wt]);
+
+    // The agent's work happens in the worktree, on its own branch — the sanctioned path.
+    await Deno.writeTextFile(join(wt, "NEW.md"), "agent output\n");
+    await gitIn(wt, ["-c", "user.email=a@b.c", "-c", "user.name=A", "add", "-A"]);
+    await gitIn(wt, ["-c", "user.email=a@b.c", "-c", "user.name=A", "commit", "-m", "feat: work"]);
+
+    assertEquals(await detectPortalDrift(ws, baselines), [], "worktree-branch work must not count as drift");
+  } finally {
+    await Deno.remove(ws, { recursive: true });
+  }
+});
+
+Deno.test("[portal_drift] a commit landing on the portal's default branch is caught", async () => {
+  const ws = await Deno.makeTempDir({ prefix: "drift-branch-" });
+  try {
+    await seedPortalFixtures(ws, REPO_ROOT);
+    const baselines = await capturePortalBaselines(ws);
+    const portal = join(ws, "fixtures", "portals", "simple_repo");
+
+    await Deno.writeTextFile(join(portal, "LEAKED.md"), "written outside a worktree\n");
+    await gitIn(portal, ["-c", "user.email=a@b.c", "-c", "user.name=A", "add", "-A"]);
+    await gitIn(portal, ["-c", "user.email=a@b.c", "-c", "user.name=A", "commit", "-m", "leak"]);
+
+    const drift = await detectPortalDrift(ws, baselines);
+    assertEquals(drift.length, 1, `expected drift to be reported, got: ${drift.join("; ")}`);
+    assert(drift[0].includes("default branch moved"), drift[0]);
+  } finally {
+    await Deno.remove(ws, { recursive: true });
+  }
+});
+
+Deno.test("[portal_drift] an uncommitted write into the portal root is caught", async () => {
+  // The likelier real failure: a tool writes straight into the portal without committing.
+  const ws = await Deno.makeTempDir({ prefix: "drift-dirty-" });
+  try {
+    await seedPortalFixtures(ws, REPO_ROOT);
+    const baselines = await capturePortalBaselines(ws);
+
+    await Deno.writeTextFile(join(ws, "fixtures", "portals", "simple_repo", "STRAY.md"), "oops\n");
+
+    const drift = await detectPortalDrift(ws, baselines);
+    assertEquals(drift.length, 1, `expected drift to be reported, got: ${drift.join("; ")}`);
+    assert(drift[0].includes("working tree dirty"), drift[0]);
   } finally {
     await Deno.remove(ws, { recursive: true });
   }

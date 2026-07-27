@@ -235,3 +235,82 @@ Deno.test("[flow-step] genuine plan-execution prompts still yield actions", asyn
 
   assertStringIncludes(response.content, TAG_ACTIONS, "the execution path must be unaffected");
 });
+
+Deno.test("[flow-step] a plan-execution prompt embedding `## Step N` headers still yields actions", async () => {
+  // The regression this guards: a plan's steps render as `## Step N` markdown headers, so an
+  // execution prompt carries the same header shape as merged flow context. A first fix matched
+  // the header alone and hijacked execution, starving the ReAct loop — "No actions generated
+  // in ReAct iteration" — which reads as an agent fault rather than a mock misclassification.
+  const provider = new MockLLMProvider(MockStrategy.RECORDED, { recordings: [] });
+
+  const prompt = `You are executing a plan.
+
+Execution Context: request-abc
+
+## Step 1
+Create the file.
+
+## Step 2
+Verify it.
+
+Action required: implement step 1.`;
+
+  const response = await provider.generate(prompt);
+
+  assertStringIncludes(response.content, TAG_ACTIONS, "execution must not be misread as a flow step");
+  assertEquals(response.content.includes(TAG_CONTENT), false);
+});
+
+// ---------------------------------------------------------------------------
+// Recorded replay must be honest about whether it replayed anything.
+//
+// `recorded` is the DEFAULT strategy, and with no fixtures configured the constructor
+// silently substitutes default patterns — so every scenario run so far reported
+// `provider: mock-recorded-<model>` while replaying nothing. Two guarantees make
+// fixture-backed runs trustworthy: the provider says when it is really pattern-matching, and
+// strict mode refuses a prompt it has no recording for instead of quietly answering from a
+// regex. Without the second, a fixture set with holes degrades into the same silent
+// misclassification that produced "No actions generated in ReAct iteration".
+// ---------------------------------------------------------------------------
+
+Deno.test("[recorded] a provider with no fixtures reports that it is pattern-matching", () => {
+  const provider = new MockLLMProvider(MockStrategy.RECORDED, { recordings: [] });
+  assertEquals(provider.isPatternFallback, true, "an unrecorded provider must not claim to replay");
+});
+
+Deno.test("[recorded] a provider with fixtures does not claim pattern fallback", () => {
+  const provider = new MockLLMProvider(MockStrategy.RECORDED, {
+    recordings: [{
+      promptHash: "abc",
+      promptPreview: "anything",
+      response: "<thought>t</thought><content>{}</content>",
+      model: "m",
+      tokens: { input: 1, output: 1 },
+      recordedAt: new Date().toISOString(),
+    }],
+  });
+  assertEquals(provider.isPatternFallback, false);
+});
+
+Deno.test("[recorded] strict mode refuses a prompt with no recording instead of guessing", async () => {
+  const provider = new MockLLMProvider(MockStrategy.RECORDED, {
+    recordings: [{
+      promptHash: "nonmatching",
+      promptPreview: "unrelated",
+      response: "<thought>t</thought><content>{}</content>",
+      model: "m",
+      tokens: { input: 1, output: 1 },
+      recordedAt: new Date().toISOString(),
+    }],
+    strictRecordings: true,
+  });
+
+  let threw = false;
+  try {
+    await provider.generate("a prompt nobody recorded");
+  } catch (error) {
+    threw = true;
+    assertStringIncludes(String(error), "strict recordings are enabled");
+  }
+  assertEquals(threw, true, "a fixture hole must surface, not be answered from a regex");
+});

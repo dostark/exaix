@@ -194,7 +194,11 @@ Deno.test("MockProviderFactory: creates providers", async () => {
 
   const provider = await factory.create(options);
   assertExists(provider);
-  assertEquals(provider.id, "mock-recorded-test-model");
+  // REVISED by Phase 142 Step 13: with no fixtures configured, MockLLMProvider substitutes
+  // default regex patterns, so `recorded` named a replay that never happened — every scenario
+  // journal reported `mock-recorded-<model>` while answering from patterns. The id now states
+  // what actually ran; asking for RECORDED *with* fixtures still yields `mock-recorded-*`.
+  assertEquals(provider.id, "mock-pattern-test-model");
 });
 
 Deno.test("AnthropicProviderFactory: requires API key", async () => {
