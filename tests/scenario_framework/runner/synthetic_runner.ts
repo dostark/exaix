@@ -253,6 +253,7 @@ export async function runSyntheticScenario(
   // catalog — both of which surface as unrelated-looking scenario failures.
   await seedWorkspaceCatalogs(options.workspaceRoot, REPO_ROOT);
   await seedPortalFixtures(options.workspaceRoot, REPO_ROOT);
+  await seedWorkspaceConfig(options.workspaceRoot, options.frameworkHome);
   const portalBaselines = await capturePortalBaselines(options.workspaceRoot);
 
   // Baseline for artefact correlation. Scenarios in a pack run share one sandbox workspace,
@@ -497,6 +498,27 @@ function startsADaemon(step: { id: string; command?: string; args?: string[] }):
   if (step.id === MATRIX_START_DAEMON_STEP_ID) return true;
   if (step.command !== "daemon") return false;
   return (step.args ?? []).some((arg) => arg === "start" || arg === "restart");
+}
+
+/**
+ * Copy the framework's `exa.config.toml` into the sandbox when it has none of its own.
+ *
+ * The daemon writes a minimal default config on first start — `[system]` and `[watcher]` only —
+ * so every config-gated behaviour was OFF in scenario runs regardless of what the framework
+ * config declared. `[amendment] enabled = true` never reached the daemon, so no plan amendment
+ * could ever be proposed and `plan-amendment-lifecycle` waited out its timeout for a file
+ * nothing would write; `[session_delegate]` was equally absent. Never overwrites an existing
+ * config, so a scenario that writes its own keeps it.
+ */
+async function seedWorkspaceConfig(workspaceRoot: string, frameworkHome: string): Promise<void> {
+  const destination = join(workspaceRoot, WORKSPACE_CONFIG_FILE);
+  try {
+    await Deno.stat(destination);
+    return; // the sandbox already has a config — leave it alone
+  } catch { /* absent: seed it */ }
+  try {
+    await copy(join(frameworkHome, WORKSPACE_CONFIG_FILE), destination, { overwrite: false });
+  } catch { /* framework config absent in this checkout */ }
 }
 
 /**
