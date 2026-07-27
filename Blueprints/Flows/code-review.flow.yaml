@@ -54,7 +54,7 @@ steps:
     input:
       source: aggregate
       transform: mergeAsContext
-    condition: results.every(r => r.status === 'completed')
+    condition: steps.every(r => r.success)
     retry:
       maxAttempts: 1
       backoffMs: 1000
