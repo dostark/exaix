@@ -38,8 +38,8 @@ export class PortalService {
     private configService: IConfigService,
     private contextCardGenerator: IContextCardGeneratorService,
     private display: IDisplayService,
-    private portalKnowledge?: IPortalKnowledgeService,
-    private portalKnowledgeConfig?: IPortalKnowledgeConfig,
+    private portalKnowledge?: Opt<IPortalKnowledgeService, Reason.OptionalDependency>,
+    private portalKnowledgeConfig?: Opt<IPortalKnowledgeConfig, Reason.OptionalDependency>,
   ) {
     this.portalsDir = join(config.system.root as string, config.paths.portals as string);
   }
@@ -50,7 +50,7 @@ export class PortalService {
   async add(
     targetPath: string,
     alias: string,
-    options?: { defaultBranch?: string; executionStrategy?: PortalExecutionStrategy },
+    options?: Opt<{ defaultBranch?: string; executionStrategy?: PortalExecutionStrategy }, Reason.OptionalInput>,
   ): Promise<void> {
     this.validateAlias(alias);
 
@@ -75,6 +75,13 @@ export class PortalService {
     const symlinkPath = join(this.portalsDir, alias);
     try {
       await Deno.lstat(symlinkPath);
+      // Mounting the same path under the same alias asks for a state that already holds, so it
+      // is a no-op rather than an error. Rejecting it made the operation order-dependent:
+      // scenarios sharing a sandbox each mount the same fixture portal, and every one after the
+      // first failed at its opening step. A DIFFERENT target under an existing alias is still a
+      // conflict and still refused.
+      const existingTarget = await Deno.readLink(symlinkPath).catch(() => null);
+      if (existingTarget === absoluteTarget) return;
       throw new Error(`Portal '${alias}' already exists`);
     } catch (error) {
       if (!(error instanceof Deno.errors.NotFound)) {
@@ -246,7 +253,7 @@ export class PortalService {
     };
   }
 
-  async remove(alias: string, options?: { keepCard?: boolean }): Promise<void> {
+  async remove(alias: string, options?: Opt<{ keepCard?: boolean }, Reason.OptionalInput>): Promise<void> {
     const { symlinkPath, contextCardPath } = await this.resolvePortalPaths(alias);
 
     await Deno.remove(symlinkPath);
@@ -408,7 +415,7 @@ export class PortalService {
 
   async analyze(
     alias: string,
-    options?: { mode?: PortalAnalysisMode; force?: boolean },
+    options?: Opt<{ mode?: PortalAnalysisMode; force?: boolean }, Reason.OptionalInput>,
   ): Promise<string> {
     const symlinkPath = join(this.portalsDir, alias);
 
