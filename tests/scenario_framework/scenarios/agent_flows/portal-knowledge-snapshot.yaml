@@ -27,6 +27,11 @@ steps:
         equals: 0
   - id: "knowledge-artifact"
     type: "wait-for-file"
+    # The glob was missing entirely, so the step fell back to a default and waited for
+    # `**/*_analysis.json` while its own criterion checks for knowledge.json — it could only
+    # ever time out. Waits for the artefact the criterion actually asserts.
+    args: ["**/Memory/Projects/*/knowledge.json"]
+    timeout_sec: 60
     input_criteria: []
     output_criteria:
       - id: "knowledge-json-found"
