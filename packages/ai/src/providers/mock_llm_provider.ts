@@ -654,6 +654,39 @@ I will analyze the request and provide a detailed architectural assessment.
       // Execution patterns (specific triggers) — must come BEFORE planning patterns
       // so that "Step N" prompts are caught before generic "implement" patterns
       {
+        // A flow step's prompt is its predecessor's output run through the step's transform, and
+        // `mergeAsContext` prefixes each section with a `## Step N` markdown header. That header
+        // matched the execution pattern below, so every flow step past the first was answered
+        // with <actions> and no <content>: the step reported success with outputLength 0, the
+        // flow aggregated nothing, and plan validation failed on empty input. Anchored to the
+        // shape mergeAsContext actually emits — an optional lifted `# Title` then `## Step 1` —
+        // so it cannot capture a genuine execution turn, which announces itself with
+        // "Execution Context" or "Action required:" instead.
+        pattern: /^##\s+Step \d+/m,
+        response: `<thought>
+I will address this step and produce output the next step can consume.
+</thought>
+
+<content>
+{
+  "subject": "Flow Step Output",
+  "description": "Structured output for this flow step, suitable as input to the next step.",
+  "steps": [
+    {
+      "step": 1,
+      "title": "Address the step's objective",
+      "description": "Work through what this step was asked to produce, using the prior step's output as context."
+    },
+    {
+      "step": 2,
+      "title": "Hand off",
+      "description": "Summarise the result so the next step in the flow can build on it."
+    }
+  ]
+}
+</content>`,
+      },
+      {
         pattern: /executing a plan|Performing step|Action required:|Step \d+|Execution Context/i,
         response: (_match, prompt) => {
           // Check what kind of action is being requested

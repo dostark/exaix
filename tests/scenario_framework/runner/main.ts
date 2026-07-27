@@ -44,6 +44,12 @@ await new Command()
   .option("-s, --scenario <id:string>", "Run a single named scenario (repeatable)", { collect: true })
   .option("-P, --pack <name:string>", "Run all scenarios in a named pack (repeatable)", { collect: true })
   .option("-t, --tag <tag:string>", "Filter by tag (repeatable)", { collect: true })
+  .option(
+    "--fail-fast",
+    "Stop after the first scenario that does not pass, leaving its sandbox for inspection. " +
+      "A full pack takes minutes and a failure is usually visible in the first scenario, so " +
+      "this is for iterating on a fix rather than for measuring a pack.",
+  )
   .option("-d, --dry-run", "Validate configuration and scenario definitions without executing any steps")
   .option("-v, --verbose", "Show full CLI commands executed in each step")
   .option("--eval-mode", "Enable eval history writing for evaluation runs")
@@ -233,6 +239,21 @@ await new Command()
         suiteScore,
         passed: isPassed,
       });
+
+      // --fail-fast: stop at the first failure rather than running the rest of the pack. The
+      // remaining scenarios are still reported, as SKIPPED rather than passed, so a truncated
+      // run cannot be mistaken for a green one.
+      if (options.failFast && !isPassed) {
+        const remaining = selectedEntries.slice(selectedEntries.indexOf(entry) + 1);
+        console.log(
+          `\n--fail-fast: stopping after ${entry.id} (${suiteScore.toFixed(3)}); ` +
+            `${remaining.length} scenario(s) not run.`,
+        );
+        for (const skipped of remaining) {
+          scenarioVerdicts.push({ scenarioId: `${skipped.id} (skipped)`, pack: "", suiteScore: 0, passed: false });
+        }
+        break;
+      }
     }
     // 9. Compute run verdict
     const runVerdict: IRunVerdict = infraError

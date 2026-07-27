@@ -134,6 +134,57 @@ export async function seedWorkspaceCatalogs(workspaceRoot: string, repoRoot: str
   }
 }
 
+/** Where the shipped portal fixtures live, and where a sandbox expects to find its own copy. */
+const PORTAL_FIXTURES_SOURCE = join("tests", "scenario_framework", "fixtures", "portals");
+const PORTAL_FIXTURES_DEST = join("fixtures", "portals");
+
+/** Identity used for the base commit, passed per-invocation so no global git config is touched. */
+const SEED_GIT_ARGS = ["-c", "user.email=scenario@exaix.local", "-c", "user.name=Scenario Framework"];
+
+async function git(cwd: string, args: string[]): Promise<boolean> {
+  const result = await new Deno.Command("git", { args, cwd, stdout: "null", stderr: "null" }).output();
+  return result.success;
+}
+
+/**
+ * Copy the portal fixtures into the sandbox and initialise each as a git repository.
+ *
+ * Portals are mutated ONLY through git worktrees (`PortalExecutionStrategy.WORKTREE`), so a
+ * portal that is not a repo has nowhere isolated to put an agent's changes — it either bypasses
+ * the isolation or writes straight into the portal root. All nine shipped fixtures were plain
+ * directories, so no scenario exercised that invariant.
+ *
+ * Initialised here rather than committed to the repo: nested `.git` trees are awkward to carry,
+ * and a per-run repository is what makes `git worktree add` safe to call concurrently across
+ * scenarios sharing a sandbox. Skips any portal that is already a repo, so a second pass never
+ * discards history an earlier scenario created.
+ */
+export async function seedPortalFixtures(workspaceRoot: string, repoRoot: string): Promise<void> {
+  const source = join(repoRoot, PORTAL_FIXTURES_SOURCE);
+  try {
+    await Deno.stat(source);
+  } catch {
+    return; // fixtures not present in this checkout
+  }
+
+  const destination = join(workspaceRoot, PORTAL_FIXTURES_DEST);
+  await ensureDir(dirname(destination));
+  await copy(source, destination, { overwrite: false }).catch(() => {});
+
+  for await (const entry of Deno.readDir(destination)) {
+    if (!entry.isDirectory) continue;
+    const portal = join(destination, entry.name);
+    try {
+      await Deno.stat(join(portal, ".git"));
+      continue; // already a repo — leave its history alone
+    } catch { /* not yet initialised */ }
+
+    await git(portal, [...SEED_GIT_ARGS, "init", "-q"]);
+    await git(portal, [...SEED_GIT_ARGS, "add", "-A"]);
+    await git(portal, [...SEED_GIT_ARGS, "commit", "-q", "-m", "chore(fixture): portal baseline"]);
+  }
+}
+
 export async function runSyntheticScenario(
   options: IRunSyntheticScenarioOptions,
 ): Promise<IRunSyntheticScenarioResult> {
@@ -148,6 +199,7 @@ export async function runSyntheticScenario(
   // request is rejected as "Flow '<id>' not found" and skill matching scores against an empty
   // catalog — both of which surface as unrelated-looking scenario failures.
   await seedWorkspaceCatalogs(options.workspaceRoot, REPO_ROOT);
+  await seedPortalFixtures(options.workspaceRoot, REPO_ROOT);
 
   // Baseline for artefact correlation. Scenarios in a pack run share one sandbox workspace,
   // so a glob like `**/*_plan.md` matches every plan an earlier scenario left behind.

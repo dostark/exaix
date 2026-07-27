@@ -11,18 +11,6 @@ steps:
   # scripts/setup_db.ts's job (see the scenario template's setup-db step). Without this,
   # `.exa/journal.db` has no `activity` table, every daemon activity write fails silently
   # into daemon.log, and no plan is ever produced — the request just sits in Requests/.
-  - id: "setup-db"
-    type: "shell"
-    command: "deno"
-    args: ["run", "-A", "--config", "$FRAMEWORK_HOME/../../deno.json", "$FRAMEWORK_HOME/../../scripts/setup_db.ts"]
-    env:
-      EXA_MIGRATIONS_DIR: "$FRAMEWORK_HOME/../../migrations"
-    output_criteria:
-      - id: "setup-done"
-        kind: "command-exit-code"
-        equals: 0
-        score_weight: 0.2
-
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"

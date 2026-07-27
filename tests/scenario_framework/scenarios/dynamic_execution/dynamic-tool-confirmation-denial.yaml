@@ -7,17 +7,6 @@ request_fixture: "fixtures/requests/dynamic_execution/tool_confirmation_denial.m
 mode_support: ["auto"]
 portals: []
 steps:
-  - id: "setup-db"
-    type: "shell"
-    name: "Initialize workspace database"
-    command: "deno"
-    args: ["run", "-A", "--config", "$FRAMEWORK_HOME/../../deno.json", "$FRAMEWORK_HOME/../../scripts/setup_db.ts"]
-    output_criteria:
-      - id: "db-ready"
-        score_weight: 0.7
-        kind: "command-exit-code"
-        equals: 0
-
   - id: "seed-confirmation"
     type: "shell"
     name: "Seed pending tool confirmation"

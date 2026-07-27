@@ -8,16 +8,6 @@ mode_support: ["auto"]
 portals: []
 
 steps:
-  - id: "setup-db"
-    type: "shell"
-    command: "deno"
-    args: ["run", "-A", "--config", "$FRAMEWORK_HOME/../../deno.json", "$FRAMEWORK_HOME/../../scripts/setup_db.ts"]
-    output_criteria:
-      - id: "setup-done"
-        score_weight: 0.7
-        kind: "command-exit-code"
-        equals: 0
-
   - id: "build-mock-tool"
     type: "shell"
     command: "deno"

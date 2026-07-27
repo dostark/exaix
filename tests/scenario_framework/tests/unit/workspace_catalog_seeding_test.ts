@@ -21,7 +21,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { seedWorkspaceCatalogs } from "../../runner/synthetic_runner.ts";
+import { seedPortalFixtures, seedWorkspaceCatalogs } from "../../runner/synthetic_runner.ts";
 
 const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..", "..");
 
@@ -82,6 +82,78 @@ Deno.test("[workspace_catalog_seeding] seeding is idempotent", async () => {
     // per-scenario `cp -r <src>/Skills <dst>/Skills` workaround does when the target exists.
     assertEquals(await exists(join(ws, "Memory", "Skills", "Skills")), false);
     assertEquals(await exists(join(ws, "Blueprints", "Blueprints")), false);
+  } finally {
+    await Deno.remove(ws, { recursive: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Portal fixtures must arrive as git repositories.
+//
+// All mutation of a portal goes through a git worktree — `PortalExecutionStrategy.WORKTREE`,
+// and `agent_orchestrator.ts:292` treats the worktree checkout as the path ToolRegistry is
+// built against. A portal that is not a repo cannot have a worktree, so an agent given one
+// either bypasses the isolation or silently writes into the portal root. All nine shipped
+// fixtures were plain directories, so no scenario exercised the invariant at all.
+//
+// Initialised at seed time rather than committed: nested .git trees inside the repo are
+// awkward to carry, and a per-run repo is what makes worktrees safe to create concurrently.
+// ---------------------------------------------------------------------------
+
+async function gitIn(cwd: string, args: string[]): Promise<{ ok: boolean; out: string }> {
+  const result = await new Deno.Command("git", { args, cwd, stdout: "piped", stderr: "piped" }).output();
+  return { ok: result.success, out: new TextDecoder().decode(result.stdout).trim() };
+}
+
+Deno.test("[portal_fixtures] every seeded portal is a git repo with a base commit", async () => {
+  const ws = await Deno.makeTempDir({ prefix: "seed-portals-" });
+  try {
+    await seedPortalFixtures(ws, REPO_ROOT);
+
+    const portalsRoot = join(ws, "fixtures", "portals");
+    let checked = 0;
+    for await (const entry of Deno.readDir(portalsRoot)) {
+      if (!entry.isDirectory) continue;
+      const portal = join(portalsRoot, entry.name);
+      assert(await exists(join(portal, ".git")), `${entry.name} must be a git repo`);
+      const head = await gitIn(portal, ["rev-parse", "HEAD"]);
+      assert(head.ok && head.out.length > 0, `${entry.name} must have a base commit for worktrees to branch from`);
+      checked++;
+    }
+    assert(checked > 0, "expected at least one portal fixture to be seeded");
+  } finally {
+    await Deno.remove(ws, { recursive: true });
+  }
+});
+
+Deno.test("[portal_fixtures] a seeded portal supports creating a worktree", async () => {
+  // The whole point: if `git worktree add` fails, portal mutation has nowhere isolated to go.
+  const ws = await Deno.makeTempDir({ prefix: "seed-portals-wt-" });
+  try {
+    await seedPortalFixtures(ws, REPO_ROOT);
+    const portal = join(ws, "fixtures", "portals", "simple_repo");
+    const wt = join(ws, "wt");
+
+    const added = await gitIn(portal, ["worktree", "add", "-b", "exaix/test", wt]);
+
+    assert(added.ok, "a seeded portal must support git worktree add");
+    assert(await exists(wt), "the worktree checkout must exist");
+  } finally {
+    await Deno.remove(ws, { recursive: true });
+  }
+});
+
+Deno.test("[portal_fixtures] seeding a portal twice does not reinitialise it", async () => {
+  const ws = await Deno.makeTempDir({ prefix: "seed-portals-idem-" });
+  try {
+    await seedPortalFixtures(ws, REPO_ROOT);
+    const portal = join(ws, "fixtures", "portals", "simple_repo");
+    const first = await gitIn(portal, ["rev-parse", "HEAD"]);
+
+    await seedPortalFixtures(ws, REPO_ROOT);
+    const second = await gitIn(portal, ["rev-parse", "HEAD"]);
+
+    assertEquals(second.out, first.out, "a second pass must not discard the portal's history");
   } finally {
     await Deno.remove(ws, { recursive: true });
   }
