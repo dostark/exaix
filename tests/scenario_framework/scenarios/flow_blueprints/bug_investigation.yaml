@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "bug_investigation"
 title: "Flow blueprint — bug_investigation"
 pack: "flow_blueprints"
-tags: ["smoke", "subsystem:flows", "entity:bug_investigation.flow"]
+tags: ["subsystem:flows", "entity:bug_investigation.flow"]
 request_fixture: "fixtures/requests/flow_blueprints/bug_investigation.md"
 mode_support: ["auto"]
 portals: []

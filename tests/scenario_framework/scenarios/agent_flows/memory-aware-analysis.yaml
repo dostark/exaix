@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "memory-aware-analysis"
 title: "Memory-aware analysis enriches request understanding"
 pack: "agent_flows"
-tags: ["analysis", "smoke", "memory", "subsystem:flows"]
+tags: ["analysis", "memory", "subsystem:flows"]
 request_fixture: "fixtures/requests/agent_flows/memory_aware_analysis.md"
 mode_support: ["auto", "step"]
 portals: []

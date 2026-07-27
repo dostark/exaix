@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "consensus_review"
 title: "Flow blueprint — consensus_review (Team-gated)"
 pack: "flow_blueprints"
-tags: ["smoke", "subsystem:flows", "entity:consensus_review.flow"]
+tags: ["subsystem:flows", "entity:consensus_review.flow"]
 edition: "team"
 request_fixture: "fixtures/requests/flow_blueprints/consensus_review.md"
 mode_support: ["auto"]

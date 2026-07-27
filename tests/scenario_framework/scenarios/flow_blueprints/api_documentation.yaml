@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "api_documentation"
 title: "Flow blueprint — api_documentation"
 pack: "flow_blueprints"
-tags: ["smoke", "subsystem:flows", "entity:api_documentation.flow"]
+tags: ["subsystem:flows", "entity:api_documentation.flow"]
 request_fixture: "fixtures/requests/flow_blueprints/api_documentation.md"
 mode_support: ["auto"]
 portals: []

@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "analyze-codebase"
 title: "Flow blueprint — analyze-codebase"
 pack: "flow_blueprints"
-tags: ["smoke", "subsystem:flows", "entity:analyze-codebase.flow"]
+tags: ["subsystem:flows", "entity:analyze-codebase.flow"]
 request_fixture: "fixtures/requests/flow_blueprints/analyze-codebase.md"
 mode_support: ["auto"]
 portals: []

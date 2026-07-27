@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "refactoring"
 title: "Flow blueprint — refactoring"
 pack: "flow_blueprints"
-tags: ["smoke", "subsystem:flows", "entity:refactoring.flow"]
+tags: ["subsystem:flows", "entity:refactoring.flow"]
 request_fixture: "fixtures/requests/flow_blueprints/refactoring.md"
 mode_support: ["auto"]
 portals: []

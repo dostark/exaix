@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "migration_planning"
 title: "Flow blueprint — migration_planning"
 pack: "flow_blueprints"
-tags: ["smoke", "subsystem:flows", "entity:migration_planning.flow"]
+tags: ["subsystem:flows", "entity:migration_planning.flow"]
 request_fixture: "fixtures/requests/flow_blueprints/migration_planning.md"
 mode_support: ["auto"]
 portals: []

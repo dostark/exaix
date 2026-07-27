@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "portal-knowledge-snapshot"
 title: "Portal knowledge gathers a snapshot for a mounted portal"
 pack: "agent_flows"
-tags: ["smoke", "portal", "subsystem:flows"]
+tags: ["portal", "subsystem:flows"]
 request_fixture: "fixtures/requests/agent_flows/portal_knowledge_snapshot.md"
 mode_support: ["auto", "step"]
 portals:
