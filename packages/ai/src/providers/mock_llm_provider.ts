@@ -162,10 +162,18 @@ function responseForPromptDialect(prompt: string): string | null {
   return null;
 }
 
-/** What a ReAct turn must return: its parser reads `THOUGHT:` and `STATUS: COMPLETE`. */
-const REACT_COMPLETE_RESPONSE = `THOUGHT: Reviewed the step and found nothing further to change.
+/**
+ * What a ReAct turn must return: its parser reads `THOUGHT:` and `STATUS: COMPLETE`.
+ *
+ * Worded with explicit certainty on purpose. PlanExecutor runs a low-confidence check over the
+ * step result (`confidenceScorer.assessQuick`) and proposes an amendment below the threshold,
+ * which halts execution awaiting approval — so hedged phrasing here stops every plan mid-run.
+ * The drift branch above uses the mirror-image wording to trigger that path deliberately.
+ */
+const REACT_COMPLETE_RESPONSE =
+  `THOUGHT: Completed the step successfully with high confidence. The implementation is correct and verified.
 STATUS: COMPLETE
-SUMMARY: Reviewed the step and found nothing further to change.`;
+SUMMARY: Completed the step successfully with high confidence. The implementation is correct and verified.`;
 
 const FLOW_STEP_RESPONSE = `<thought>
 I will address this step and produce output the next step can consume.
@@ -754,6 +762,16 @@ I will analyze the request and provide a detailed architectural assessment.
 
       // Execution patterns (specific triggers) — must come BEFORE planning patterns
       // so that "Step N" prompts are caught before generic "implement" patterns
+      {
+        // ReAct prompts carry NONE of the execution markers below — the template is
+        // `IDENTITY: ... CAPABILITIES: ... AVAILABLE TOOLS: ...` — so a check placed inside the
+        // execution response never ran for them. They fell through to a plan-shaped pattern,
+        // returning neither a toml action block nor STATUS: COMPLETE, which the loop reports as
+        // "Agent provided no actions and did not signal completion" and PlanExecutor converts
+        // into a tool_error amendment that halts the plan awaiting approval.
+        pattern: /^AVAILABLE TOOLS:/m,
+        response: REACT_COMPLETE_RESPONSE,
+      },
       {
         pattern: /executing a plan|Performing step|Action required:|Step \d+|Execution Context/i,
         response: (_match, prompt) => {

@@ -24,17 +24,6 @@ steps:
         kind: "command-output-contains"
         contains: ["daemon.started"]
 
-  # `exactl daemon start` returns at daemon.started, ~700ms BEFORE the request watchers
-  # are up. A request written into that gap already exists when the watcher starts, so the
-  # watcher never fires on it and the request sits in Requests/ unprocessed forever. This
-  # barrier is the established fix (see agent_flows/amendment_lifecycle.scenario.yaml).
-  - id: "wait-for-daemon-ready"
-    type: "wait-for-journal-event"
-    event_type: "daemon.ready"
-    timeout_sec: 30
-    input_criteria: []
-    output_criteria: []
-
   - id: "submit-request"
     type: "exactl"
     command: "request"
