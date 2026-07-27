@@ -249,7 +249,10 @@ Deno.test("ProviderFactory: uses registry for mock provider", async () => {
 
   const provider = await ProviderFactory.create(config);
   assertExists(provider);
-  assertEquals(provider.id, "mock-recorded-test-model");
+  // REVISED by Phase 142 Step 13: no fixtures_dir is configured here, so MockLLMProvider
+  // answers from regex patterns rather than replaying anything. The id now says so; claiming
+  // `recorded` meant every scenario journal misreported which responses the run actually saw.
+  assertEquals(provider.id, "mock-pattern-test-model");
 });
 
 Deno.test("ProviderFactory: maintains backward compatibility for ollama", async () => {
