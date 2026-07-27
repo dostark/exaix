@@ -144,6 +144,29 @@ function isFlowStepPrompt(prompt: string): boolean {
   return !PLAN_EXECUTION_MARKERS.test(prompt) && /^##\s+Step \d+/m.test(prompt);
 }
 
+/** ReActLoopStrategy's prompt template (react_loop_strategy.ts:768,788), which its own parser pairs with. */
+function isReActLoopPrompt(prompt: string): boolean {
+  return prompt.includes("IDENTITY: ") && prompt.includes("AVAILABLE TOOLS:");
+}
+
+/**
+ * The response a prompt's own parser can read, when that is not the legacy <actions> envelope.
+ *
+ * A flow step needs <content> for its successor; a ReActLoopStrategy turn parses `THOUGHT:` and
+ * `STATUS: COMPLETE`. Answering either in the legacy dialect produces a failure attributed to
+ * the agent — "No actions generated in ReAct iteration" — rather than to the mock.
+ */
+function responseForPromptDialect(prompt: string): string | null {
+  if (isFlowStepPrompt(prompt)) return FLOW_STEP_RESPONSE;
+  if (isReActLoopPrompt(prompt)) return REACT_COMPLETE_RESPONSE;
+  return null;
+}
+
+/** What a ReAct turn must return: its parser reads `THOUGHT:` and `STATUS: COMPLETE`. */
+const REACT_COMPLETE_RESPONSE = `THOUGHT: Reviewed the step and found nothing further to change.
+STATUS: COMPLETE
+SUMMARY: Reviewed the step and found nothing further to change.`;
+
 const FLOW_STEP_RESPONSE = `<thought>
 I will address this step and produce output the next step can consume.
 </thought>
@@ -734,7 +757,8 @@ I will analyze the request and provide a detailed architectural assessment.
       {
         pattern: /executing a plan|Performing step|Action required:|Step \d+|Execution Context/i,
         response: (_match, prompt) => {
-          if (isFlowStepPrompt(prompt)) return FLOW_STEP_RESPONSE;
+          const dialect = responseForPromptDialect(prompt);
+          if (dialect) return dialect;
 
           // Check what kind of action is being requested
           const needsFileWrite = /write|create|add|implement|modify|update/i.test(prompt);
