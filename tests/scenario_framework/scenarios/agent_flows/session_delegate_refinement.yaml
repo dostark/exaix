@@ -74,8 +74,11 @@ steps:
 
   - id: "verify-delegated-clarification"
     type: "exactl"
+    # `request show` takes a required <id> positional and has no --all flag, so this invoked a
+    # flag that does not exist and the CLI read it as a request id: "Request not found: --all".
+    # `list` is the command that reports across requests.
     command: "request"
-    args: ["show", "--all"]
+    args: ["list"]
     output_criteria:
       - id: "clarification-present"
         score_weight: 0.5
