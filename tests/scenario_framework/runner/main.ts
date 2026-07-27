@@ -9,6 +9,7 @@ import { Command, EnumType } from "@cliffy/command";
 import { resolve } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { type IRuntimeConfig, resolveRuntimeConfigForExecution, ScenarioCiProfile } from "./config.ts";
+import { applySandboxCleanup, describeRetention, planSandboxCleanup, SandboxRetention } from "./sandbox_lifecycle.ts";
 import { ScenarioExecutionMode } from "../schema/step_schema.ts";
 import { type IScenarioCatalogEntry, loadScenarioCatalog } from "./scenario_catalog.ts";
 import { runSyntheticScenario } from "./synthetic_runner.ts";
@@ -65,6 +66,11 @@ await new Command()
   .option(
     "--cell <tool:string>",
     "Run only the matrix cell whose tool matches (e.g. claude-code, opencode) — every other cell is skipped, not run",
+  )
+  .option(
+    "--keep-sandbox",
+    "Keep the sandbox this run mints, even on success. A failing run always keeps it regardless, " +
+      "and an operator-supplied --workspace is never removed.",
   )
   .action(async (options) => {
     // 1. Resolve framework home (directory containing the runner entry point)
@@ -292,7 +298,21 @@ await new Command()
       });
     }
 
-    // 13. Exit with appropriate code
+    // 13. Reclaim the sandbox this run minted.
+    //
+    // Nothing removed one before, so growth was unbounded and proportional to how often anyone ran
+    // scenarios — 103 sandboxes / 407 MB measured on one development machine, and each is now ~4 MB
+    // because the runner seeds Blueprints, Memory and the git-backed portal fixtures into it. On a
+    // CI runner that fills the disk and presents as an unrelated build failure.
+    //
+    // An infra error counts as "did not pass": that is precisely when the journal is needed.
+    await reclaimSandbox({
+      runtimeConfig,
+      keepSandbox: options.keepSandbox === true,
+      runPassed: runVerdict.allPassed && !runVerdict.infraError,
+    });
+
+    // 14. Exit with appropriate code
     if (runVerdict.infraError) {
       console.error("\nInfrastructure error encountered. Exiting with code 2.");
       Deno.exit(2);
@@ -304,6 +324,42 @@ await new Command()
     }
   })
   .parse(Deno.args);
+
+interface IReclaimSandboxOptions {
+  runtimeConfig: IRuntimeConfig;
+  keepSandbox: boolean;
+  runPassed: boolean;
+}
+
+/**
+ * Decide and perform the sandbox's fate, then say what happened.
+ *
+ * Always prints the path when the sandbox is retained: a retained sandbox nobody can find is the
+ * same as a deleted one, and the whole point of keeping a failed run's state is that someone reads
+ * the journal and the daemon log in it.
+ */
+async function reclaimSandbox(options: IReclaimSandboxOptions): Promise<void> {
+  const plan = planSandboxCleanup({
+    workspacePath: options.runtimeConfig.workspace_path,
+    outputDir: options.runtimeConfig.output_dir,
+    provenance: options.runtimeConfig.workspace_provenance,
+    keepSandbox: options.keepSandbox,
+    runPassed: options.runPassed,
+  });
+
+  try {
+    const outcome = await applySandboxCleanup(plan, options.runtimeConfig.workspace_path);
+    if (outcome.retention === SandboxRetention.REMOVED) {
+      const preserved = plan.preserve.length > 0 ? ` (evidence kept at ${options.runtimeConfig.output_dir})` : "";
+      console.log(`\nSandbox reclaimed: ${outcome.path}${preserved}`);
+      return;
+    }
+    console.log(`\nSandbox kept at ${outcome.path} — ${describeRetention(outcome.retention)}`);
+  } catch (error) {
+    // Cleanup failing must never change a run's verdict; report and move on.
+    console.error(`\nSandbox cleanup skipped: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
 
 interface IEvalReport {
   threshold: number | undefined;

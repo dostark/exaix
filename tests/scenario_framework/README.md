@@ -15,6 +15,8 @@ see **[`docs/Exaix_Evaluation.md`](../../docs/Exaix_Evaluation.md)**.
    - [Automated Sandbox Setup](#21-automated-sandbox-setup)
    - [Manual Sandbox Setup](#22-manual-sandbox-setup)
    - [Run Validation Scenarios](#23-run-validation-scenarios)
+   - [Where Sandboxes Are Created](#24-where-sandboxes-are-created)
+   - [Sandbox Lifecycle](#25-sandbox-lifecycle--what-is-kept-and-how-to-reclaim-the-rest)
 3. [Architecture & Extension](#3-architecture--extension)
 4. [Directory Structure](#4-directory-structure)
 5. [Quick Reference](#5-quick-reference)
@@ -262,14 +264,51 @@ There are **two** ways a sandbox comes into being, and they live in different pl
     root**. Override it to put sandboxes anywhere: `export EXA_SANDBOX_BASE=/var/exa-sandboxes`.
   - The runner **refuses to use the repo root** as a sandbox — this guard stops a run from leaking
     `.exa/journal.db`, `logs/`, and worktrees into your working tree (a real bug this default fixed).
-  - Each run gets its own `<run-id>` directory, so failed runs are preserved side-by-side for
-    post-mortem. List them with `./bin/sandbox list`; find the latest with `./bin/sandbox`.
+  - Each run gets its own `<run-id>` directory. **A failed run's sandbox is kept** for post-mortem;
+    a successful one is reclaimed — see §2.5. List them with `./bin/sandbox list`; find the latest
+    with `./bin/sandbox`.
 
 > Why a sibling, not `/tmp` or `.dogfood/`? It stays outside the repo tree (clean `git status`, no
 > interference with `deno test`/watchers), it's trivial to find for debugging, and it needs only a
 > single predictable path added to the daemon's least-privilege `--allow-write` allow-list. This is
 > the same default the debug helpers in §6 assume. Defined in
 > `tests/scenario_framework/runner/config.ts` (`defaultSandboxRoot`).
+
+### 2.5 Sandbox Lifecycle — What Is Kept, and How to Reclaim the Rest
+
+A sandbox is ~4 MB (the runner seeds `Blueprints/`, `Memory/` and the git-backed portal fixtures
+into each one; `fixtures/` alone is 2.5 MB). Nothing used to remove them, so they accumulated
+without bound — 103 sandboxes / 407 MB on one development machine before this was added. On a CI
+runner that fills the disk and presents as an unrelated build failure.
+
+| Situation                                | Outcome                                                 |
+| ---------------------------------------- | ------------------------------------------------------- |
+| Run passes                               | Sandbox reclaimed; **evidence under `output/` is kept** |
+| Any scenario fails, or an infra error    | Sandbox **kept**, path printed                          |
+| `--keep-sandbox`                         | Sandbox **kept**, path printed                          |
+| `--workspace <path>` (operator-supplied) | **Never removed**, whatever the outcome                 |
+
+The asymmetry is deliberate: the cost of keeping a failed run's state is disk, and the cost of
+discarding it is an undiagnosable failure. Evidence is preserved by _exclusion_ rather than by
+relocation — the default `output_dir` is `<sandbox>/output`, and eval-history entries reference
+those paths, so moving them would leave the history pointing at nothing. A reclaimed sandbox
+shrinks from ~4 MB to ~16 KB.
+
+Provenance is recorded on the config (`workspace_provenance`), not inferred from the path. Guessing
+by shape would delete a real workspace the day someone points `--workspace` at a directory under
+the sandbox base.
+
+**Reclaiming the backlog.** Dry-run by default:
+
+```bash
+deno task scenario:prune                 # 7-day window, lists what it would remove
+deno task scenario:prune --days 14
+deno task scenario:prune --days 0 --apply  # actually remove, all ages
+```
+
+Selection is by modification time, not by parsing the run-id. This is also what a periodic CI job
+would call. Defined in `scripts/prune_scenario_sandboxes.ts`; policy in
+`tests/scenario_framework/runner/sandbox_lifecycle.ts`.
 
 ---
 

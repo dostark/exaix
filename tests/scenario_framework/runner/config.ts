@@ -10,7 +10,8 @@
 import { dirname, join, resolve } from "@std/path";
 import { z } from "zod";
 import { ScenarioExecutionMode } from "../schema/step_schema.ts";
-import type { JSONObject } from "@exaix/core/types";
+import type { JSONObject, Opt, Reason } from "@exaix/core/types";
+import { WorkspaceProvenance } from "./sandbox_lifecycle.ts";
 
 export interface IScenarioSelectionOptions {
   explicitScenarioIds?: string[];
@@ -98,6 +99,12 @@ export const RuntimeConfigSchema = z.object({
   timeout_sec: z.number().int().positive().default(DEFAULT_RUNTIME_TIMEOUT_SEC),
   allow_dirty_workspace: z.boolean().default(false),
   verbose: z.boolean().default(false),
+  /**
+   * Phase 142 Step 16 — whether the runner minted `workspace_path` or the operator supplied it.
+   * Cleanup reads this instead of guessing from the path: deciding by shape would delete a real
+   * workspace the day someone points `--workspace` at a directory under the sandbox base.
+   */
+  workspace_provenance: z.nativeEnum(WorkspaceProvenance).default(WorkspaceProvenance.RUNNER_MINTED),
 }).strict();
 
 export type IRuntimeConfig = z.infer<typeof RuntimeConfigSchema>;
@@ -161,6 +168,7 @@ export function resolveRuntimeConfigForExecution(
     mode: options.cliFlags?.mode ?? fileConfig.mode ?? ScenarioExecutionMode.AUTO,
     profile: options.cliFlags?.profile ?? fileConfig.profile,
     verbose: options.cliFlags?.verbose ?? fileConfig.verbose ?? false,
+    workspace_provenance: explicitWorkspace ? WorkspaceProvenance.OPERATOR_SUPPLIED : WorkspaceProvenance.RUNNER_MINTED,
   });
 }
 
@@ -251,7 +259,7 @@ export const ScenarioRunnerCliFlagSchema = z.object({
 export type IScenarioRunnerCliFlags = z.infer<typeof ScenarioRunnerCliFlagSchema>;
 
 function normalizePortalPaths(
-  portals?: { [key: string]: string },
+  portals?: Opt<{ [key: string]: string }, Reason.OptionalInput>,
 ): { [key: string]: string } | undefined {
   if (!portals) {
     return undefined;
