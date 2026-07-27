@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "edition-smoke"
 title: "Edition-aware smoke — verifies correct provider registry for Solo vs Team"
 pack: "agent_flows"
-tags: ["edition", "subsystem:flows"]
+tags: ["smoke", "edition", "subsystem:flows"]
 edition: "team"
 request_fixture: "fixtures/requests/agent_flows/edition_smoke.md"
 mode_support: ["auto"]
