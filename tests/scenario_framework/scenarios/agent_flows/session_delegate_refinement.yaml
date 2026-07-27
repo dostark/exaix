@@ -10,13 +10,13 @@ portals: []
 steps:
   - id: "build-mock-tool"
     type: "shell"
-    command: "deno"
+    # bash, not `deno run`: the target is a Bourne-Again shell script (#!/bin/bash), so deno
+    # parsed it as TypeScript and failed with "Expected ';', '}' or <eof>". The path also
+    # needed the $FRAMEWORK_HOME prefix every sibling argument already used — bare
+    # `scripts/...` resolved against the sandbox, where the repo's scripts do not exist.
+    command: "bash"
     args: [
-      "run",
-      "-A",
-      "--config",
-      "$FRAMEWORK_HOME/../../deno.json",
-      "scripts/build_mock_session_tool.sh",
+      "$FRAMEWORK_HOME/../../scripts/build_mock_session_tool.sh",
       "$FRAMEWORK_HOME/../../.cache/mock_session_tool_bin",
     ]
     output_criteria:
