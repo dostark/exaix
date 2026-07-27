@@ -5,8 +5,7 @@ name: "Write File Content"
 description: "Use write_file tool to write file content"
 version: "1.0.0"
 output:
-  from: step
-  step: write
+  from: write
   format: markdown
 steps:
   - id: "write"

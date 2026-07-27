@@ -1,77 +1,104 @@
 schema_version: "1.0.0"
 id: "dynamic-exploration-smoke"
-title: "Dynamic step explores codebase using read-only tools"
+title: "A dynamic-mode flow step executes end to end and is journalled"
 pack: "dynamic_execution"
 tags: ["smoke", "dynamic", "read-only", "subsystem:mcp-client"]
 request_fixture: "fixtures/requests/dynamic_execution/explore_codebase.md"
 mode_support: ["auto", "manual-checkpoint"]
+# Mounted by the runner from the seeded fixture, which is a real git repository — portals are
+# mutated only through worktrees, and a plain directory has nowhere isolated to put changes.
+# Previously this pointed at /tmp/sample-ts-project, a bare `mkdir -p` outside the sandbox that
+# leaked between runs and gave `file-found` the whole filesystem to walk.
 portals:
   - alias: "sample-ts-project"
-    source_path: "/tmp/sample-ts-project"
+    source_path: "$WORKSPACE_ROOT/fixtures/portals/simple_repo"
 flow_fixture: "fixtures/flows/dynamic_execution/explore.flow.yaml"
 steps:
-  - id: "setup-portal"
-    type: "shell"
-    name: "Copy sample portal to temp location"
-    command: "mkdir"
-    args: ["-p", "/tmp/sample-ts-project/src"]
-    input_criteria: []
-    output_criteria:
-      - id: "portal-created"
-        score_weight: 0.4
-        kind: "dir-exists"
-        path: "/tmp/sample-ts-project"
-
-  - id: "execute-flow"
+  - id: "start-daemon"
     type: "exactl"
-    name: "Run dynamic exploration flow"
-    command: "flow"
-    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
-    input_criteria:
-      - id: "flow-file-exists"
+    command: "daemon"
+    args: ["start"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
+      EXA_CI_MODE: "1"
+    output_criteria:
+      - id: "daemon-started"
+        score_weight: 0.3
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
+    output_criteria:
+      - id: "request-submitted"
         score_weight: 0.4
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 120
+    output_criteria:
+      - id: "plan-produced"
+        score_weight: 0.5
         kind: "file-found"
-        path_pattern: "fixtures/flows/dynamic_execution/explore.flow.yaml"
-    output_criteria:
-      - id: "flow-execution-succeeded"
-        score_weight: 0.7
-        kind: "command-exit-code"
-        equals: 0
+        path_pattern: "**/Plans/*_plan.md"
 
-  - id: "verify-journal"
-    type: "exactl"
-    name: "Verify Activity Journal entries"
-    command: "journal"
-    args: ["query", "--trace-id", "$FLOW_TRACE_ID", "--format", "json"]
+  - id: "verify-dynamic-step-ran"
+    type: "shell"
+    name: "The dynamic step is journalled as started and completed"
+    # The original criteria asserted `mcp.tool.read_file` / `mcp.tool.list_directory` action
+    # types and waited on a `flow_run_*.json` artefact. Neither exists: tool calls are journalled
+    # as `dynamic_tool_call`, and nothing in the codebase writes a flow_run file. The mock tier
+    # makes no tool calls at all (Step 15 finding), so what is assertable here is that a
+    # dynamic-mode step is dispatched and completes — the tool-selection claim is provider-live's.
+    command: "sh"
+    args: [
+      "-c",
+      "sqlite3 -json \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT action_type, json_extract(payload,'$.stepId') AS step_id FROM activity WHERE action_type IN ('flow.step.started','flow.step.completed') AND json_extract(payload,'$.stepId') = 'explore' ORDER BY rowid\"",
+    ]
     output_criteria:
-      - id: "tool-calls-logged"
+      - id: "dynamic-step-started-and-completed"
+        score_weight: 0.6
+        kind: "json-query"
+        query: "length"
+        min: 2
+      - id: "step-completion-journalled"
         score_weight: 0.6
         kind: "json-query"
         query: ".[].action_type"
-        contains: ["mcp.tool.read_file", "mcp.tool.list_directory"]
+        contains: ["flow.step.completed"]
+
+  - id: "verify-single-trace"
+    type: "shell"
+    name: "The run is journalled under one trace"
+    command: "sh"
+    args: [
+      "-c",
+      "trace_id=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT trace_id FROM activity WHERE action_type = 'request.created' ORDER BY rowid DESC LIMIT 1\"); echo \"trace_id: $trace_id\" >&2; \"$FRAMEWORK_HOME/bin/exactl\" journal --filter \"trace_id=$trace_id\" --format json",
+    ]
+    output_criteria:
+      - id: "events-under-trace"
+        score_weight: 0.6
+        kind: "json-query"
+        query: "length"
+        min: 1
       - id: "trace-id-present"
         score_weight: 0.6
         kind: "json-query"
         query: ".[].trace_id"
         not_empty: true
 
-  - id: "verify-output"
-    type: "wait-for-file"
-    name: "Wait for flow run output"
-    args: ["**/flow_run_*.json"]
-    timeout_sec: 120
-    input_criteria: []
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
     output_criteria:
-      - id: "dynamic-step-completed"
-        score_weight: 0.6
-        kind: "json-query"
-        query: ".steps[?@.execution_mode=='dynamic'].completed"
-        equals: true
-
-  - id: "cleanup"
-    type: "shell"
-    name: "Clean up temp portal"
-    command: "rm"
-    args: ["-rf", "/tmp/sample-ts-project"]
-    input_criteria: []
-    output_criteria: []
+      - id: "daemon-stopped"
+        kind: "command-exit-code"
+        equals: 0

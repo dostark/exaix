@@ -5,8 +5,7 @@ name: "Exaix Create Request"
 description: "Use exaix_create_request tool"
 version: "1.0.0"
 output:
-  from: step
-  step: exec
+  from: exec
   format: markdown
 steps:
   - id: "exec"

@@ -5,8 +5,7 @@ name: "List Directory Contents"
 description: "Use list_directory tool to list directory contents"
 version: "1.0.0"
 output:
-  from: step
-  step: list
+  from: list
   format: markdown
 steps:
   - id: "list"

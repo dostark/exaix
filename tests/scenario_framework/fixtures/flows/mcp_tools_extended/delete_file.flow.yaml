@@ -5,8 +5,7 @@ name: "Delete File Cleanup"
 description: "Use delete_file tool to remove deprecated files"
 version: "1.0.0"
 output:
-  from: step
-  step: cleanup
+  from: cleanup
   format: markdown
 steps:
   - id: "cleanup"

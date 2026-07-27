@@ -1120,6 +1120,26 @@ function evaluateVersionLteCriterion(
   };
 }
 
+/**
+ * The number `min`/`max` compare against, and the noun that describes it.
+ *
+ * A query resolving to a number IS the quantity — `query: "length", min: 1` says "at least one
+ * row". Measuring the length of a number instead yielded 0 for every input, so that criterion
+ * could never pass; three scenarios used the form and each read as a missing journal row.
+ * Arrays and strings keep counting elements/characters, which is what every other caller means.
+ */
+interface IComparableNumber {
+  value: number;
+  noun: string;
+}
+
+function comparableNumber(result: JSONValue): IComparableNumber {
+  if (typeof result === "number" && Number.isFinite(result)) return { value: result, noun: "" };
+  if (Array.isArray(result)) return { value: result.length, noun: "items" };
+  if (typeof result === "string") return { value: result.length, noun: "characters" };
+  return { value: 0, noun: "items" };
+}
+
 function evaluateJsonQueryCriterion(
   options: IEvaluateCriterionOptions,
 ): Promise<ICriterionResult> {
@@ -1178,17 +1198,17 @@ function evaluateJsonQueryCriterion(
         ? `JSON query "${criterion.query}" returned non-empty value`
         : `JSON query "${criterion.query}" returned empty value`;
     } else if (criterion.min !== undefined) {
-      const length = Array.isArray(result) ? result.length : typeof result === "string" ? result.length : 0;
-      passed = length >= criterion.min;
+      const { value, noun } = comparableNumber(result);
+      passed = value >= criterion.min;
       message = passed
-        ? `JSON query "${criterion.query}" returned ${length} items (>= ${criterion.min})`
-        : `JSON query "${criterion.query}" returned ${length} items, expected >= ${criterion.min}`;
+        ? `JSON query "${criterion.query}" returned ${value} ${noun} (>= ${criterion.min})`
+        : `JSON query "${criterion.query}" returned ${value} ${noun}, expected >= ${criterion.min}`;
     } else if (criterion.max !== undefined) {
-      const length = Array.isArray(result) ? result.length : typeof result === "string" ? result.length : 0;
-      passed = length <= criterion.max;
+      const { value, noun } = comparableNumber(result);
+      passed = value <= criterion.max;
       message = passed
-        ? `JSON query "${criterion.query}" returned ${length} items (<= ${criterion.max})`
-        : `JSON query "${criterion.query}" returned ${length} items, expected <= ${criterion.max}`;
+        ? `JSON query "${criterion.query}" returned ${value} ${noun} (<= ${criterion.max})`
+        : `JSON query "${criterion.query}" returned ${value} ${noun}, expected <= ${criterion.max}`;
     } else if (criterion.unique_count_min !== undefined) {
       if (!Array.isArray(result)) {
         passed = false;

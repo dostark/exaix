@@ -5,8 +5,7 @@ name: "Exaix Config Set"
 description: "Use exaix_config_set tool"
 version: "1.0.0"
 output:
-  from: step
-  step: exec
+  from: exec
   format: markdown
 steps:
   - id: "exec"

@@ -5,8 +5,7 @@ name: "Invalid Write Tool in Dynamic Mode"
 description: "Test flow that intentionally includes write_file in dynamic mode permitted_tools"
 version: "1.0.0"
 output:
-  from: step
-  step: write-attempt
+  from: write-attempt
   format: markdown
 steps:
   - id: "write-attempt"

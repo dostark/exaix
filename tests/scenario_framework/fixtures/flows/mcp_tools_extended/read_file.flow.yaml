@@ -5,8 +5,7 @@ name: "Read File Content"
 description: "Use read_file tool to read a file's content"
 version: "1.0.0"
 output:
-  from: step
-  step: read
+  from: read
   format: markdown
 steps:
   - id: "read"

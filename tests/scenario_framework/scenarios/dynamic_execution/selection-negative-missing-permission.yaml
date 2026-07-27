@@ -2,7 +2,15 @@ schema_version: "1.0.0"
 id: "selection-negative-missing-permission"
 title: "Negative control — missing-permission path journals failure, not vacuous pass"
 pack: "dynamic_execution"
-tags: ["selection", "negative", "security", "subsystem:mcp-client", "entity:run_command"]
+# Phase 142 Step 15 — moved to the provider-live tier. Every step below the plan wait asserts a
+# TOOL TRAJECTORY, and the mock provider makes no tool calls: `dynamic_tool_call` rows are 0 under
+# every configuration tried (before approval, after `plan approve-all`, with and without a
+# readiness barrier), so `trajectory-assert` correctly reports `matched 0/1 (score 0.00)` — the
+# scorer works and there is nothing to score. Which tool an agent reaches for is a judgement only
+# a real model makes, so the claim cannot be served by a canned-response tier at all. Keeping the
+# scenario in the mock profile would have meant either a permanent red or deleting the assertion
+# that is the scenario's entire point.
+tags: ["selection", "negative", "security", "subsystem:mcp-client", "entity:run_command", "provider-live"]
 request_fixture: "fixtures/requests/dynamic_execution/write_attempt.md"
 mode_support: ["auto"]
 portals: []

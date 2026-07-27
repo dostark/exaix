@@ -5,8 +5,7 @@ name: "Approval Required Tool in Dynamic Mode"
 description: "Test flow that allows an approval-required domain tool in dynamic mode"
 version: "1.0.0"
 output:
-  from: step
-  step: approval-attempt
+  from: approval-attempt
   format: markdown
 steps:
   - id: "approval-attempt"

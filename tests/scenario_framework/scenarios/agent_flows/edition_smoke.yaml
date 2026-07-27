@@ -1,20 +1,85 @@
 schema_version: "1.0.0"
 id: "edition-smoke"
-title: "Edition-aware smoke — verifies correct provider registry for Solo vs Team"
+title: "Edition-aware smoke — the daemon resolves a model through the edition's registry"
 pack: "agent_flows"
 tags: ["smoke", "edition", "subsystem:flows"]
 edition: "team"
 request_fixture: "fixtures/requests/agent_flows/edition_smoke.md"
 mode_support: ["auto"]
 portals: []
+# Phase 142 Step 15 — `exactl evaluate --edition-provider-check` was pure fiction: no `evaluate`
+# command, no such flag, and no reference to either anywhere in the repository. It was invisible
+# because `edition: team` skips the scenario on Solo, which is every development machine.
+#
+# The registry is observed through the DAEMON, not the CLI. `models list` prints
+# "Model Registry (Solo floor)" unconditionally — `init.ts:102` notes the CLI process holds only
+# the Solo floor and cannot reach the DB-backed live registry — so it cannot distinguish editions
+# at all. The daemon resolves through ModelRegistryService and journals `model.resolved` with the
+# candidate provider set, which is the edition-sensitive observable.
+#
+# NOT VERIFIED on Solo: this scenario is edition-gated and skipped here, so the repair is to the
+# command and event names (both now real), not a measured pass.
 steps:
-  - id: "edition-provider-assert"
+  - id: "start-daemon"
     type: "exactl"
-    command: "evaluate"
-    args: ["--edition-provider-check"]
-    input_criteria: []
+    command: "daemon"
+    args: ["start"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
+      EXA_CI_MODE: "1"
     output_criteria:
-      - id: "edition-command-succeeded"
-        score_weight: 1.0
+      - id: "daemon-started"
+        score_weight: 0.3
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
+    output_criteria:
+      - id: "request-submitted"
+        score_weight: 0.4
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 120
+    output_criteria:
+      - id: "plan-produced"
+        score_weight: 0.4
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
+
+  - id: "assert-registry-resolved"
+    type: "shell"
+    name: "The daemon journalled a model resolution with a candidate provider set"
+    command: "sh"
+    args: [
+      "-c",
+      "sqlite3 -json \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT json_extract(payload,'$.selected') AS selected, json_extract(payload,'$.candidate_providers') AS candidate_providers FROM activity WHERE action_type = 'model.resolved' ORDER BY rowid DESC LIMIT 1\"",
+    ]
+    output_criteria:
+      - id: "model-resolved"
+        score_weight: 0.6
+        kind: "json-query"
+        query: ".[].selected"
+        not_empty: true
+      - id: "registry-supplied-candidates"
+        score_weight: 0.6
+        kind: "json-query"
+        query: ".[].candidate_providers"
+        not_empty: true
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
         kind: "command-exit-code"
         equals: 0

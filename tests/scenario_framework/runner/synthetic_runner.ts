@@ -8,9 +8,10 @@
  * @related-files [tests/scenario_framework/tests/integration/synthetic_runner_test.ts, tests/scenario_framework/runner/scenario_loader.ts]
  */
 
-import { dirname, join } from "@std/path";
+import { dirname, join, resolve } from "@std/path";
 import { copy, ensureDir } from "@std/fs";
 import { parse as parseToml } from "@std/toml";
+import { parse as parseYaml } from "@std/yaml";
 import { evaluateCriterion, evaluateStepOutcome, type IScenarioStepOutcome, StepFailureStage } from "./assertions.ts";
 import { type IRunManifest, writeExecutionLog, writeRunManifest } from "./evidence_collector.ts";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -134,6 +135,31 @@ export async function seedWorkspaceCatalogs(workspaceRoot: string, repoRoot: str
     await ensureDir(dirname(destination));
     await copy(source, destination, { overwrite: false });
   }
+}
+
+/**
+ * Copy a scenario's `flow_fixture` into the sandbox's flow catalog, named after the flow's own id.
+ *
+ * `assertFlowExists` resolves `<root>/Blueprints/Flows/<id>.flow.yaml`, so a fixture left in the
+ * framework tree can never be requested — the scenario has to stage it. Eight scenarios declared
+ * the field and none of them could: nothing read it, and `$FLOW_FIXTURE` expanded to nothing, so
+ * `dynamic-permission-boundary`'s hand-rolled `cp` died on the literal `$FLOW_FIXTURE`. Doing it
+ * here is the same move as mounting `portals:` and seeding the catalogs — setup the scenario
+ * should not be testing.
+ *
+ * Overwrites: unlike the shipped catalogs, this file belongs to the scenario about to run, and a
+ * stale copy from an earlier scenario sharing the sandbox would silently win.
+ */
+export async function stageFlowFixture(workspaceRoot: string, flowFixturePath: string): Promise<void> {
+  const contents = await Deno.readTextFile(flowFixturePath);
+  const declaredId = parseYaml(contents) as { id?: string } | null;
+  const flowId = declaredId?.id;
+  if (!flowId) {
+    throw new Error(`flow fixture declares no id: ${flowFixturePath}`);
+  }
+  const flowsDir = join(workspaceRoot, "Blueprints", "Flows");
+  await ensureDir(flowsDir);
+  await Deno.writeTextFile(join(flowsDir, `${flowId}.flow.yaml`), contents);
 }
 
 /** Where the shipped portal fixtures live, and where a sandbox expects to find its own copy. */
@@ -318,6 +344,14 @@ export async function runSyntheticScenario(
     await mountDeclaredPortal(portal, options, envForExpansion);
   }
 
+  // Same story for `flow_fixture`: declared by eight scenarios, read by nothing.
+  if (loadedScenario.scenario.flow_fixture) {
+    await stageFlowFixture(
+      options.workspaceRoot,
+      resolve(options.frameworkHome, loadedScenario.scenario.flow_fixture),
+    );
+  }
+
   const stepOutcomes: IScenarioStepOutcome[] = [];
 
   // Phase 127 Step 5 — matrix-aware step resolution. For a `matrix:` scenario this
@@ -400,6 +434,9 @@ export async function runSyntheticScenario(
           maxStepTimeoutSec: options.maxStepTimeoutSec,
           exactlExecutable: options.exactlExecutable,
           requestFixturePath: loadedScenario.requestFixture.absolutePath,
+          flowFixturePath: loadedScenario.scenario.flow_fixture
+            ? resolve(options.frameworkHome, loadedScenario.scenario.flow_fixture)
+            : undefined,
           frameworkHome: options.frameworkHome,
           env: runEnv,
           portalAliases: options.portalAliases ?? loadedScenario.scenario.portals.map((portal) => portal.alias),
@@ -671,11 +708,32 @@ interface IExecuteSyntheticStepOptions {
   maxStepTimeoutSec?: number;
   exactlExecutable?: string;
   requestFixturePath: string;
+  /** Absolute path of the scenario's `flow_fixture`, when it declares one — `$FLOW_FIXTURE`. */
+  flowFixturePath?: string;
   frameworkHome: string;
   env?: { [key: string]: string };
   portalAliases: string[];
   verbose?: boolean;
 }
+
+/**
+ * The `$VAR` names the runner defines for a step. Exported so the scenario tree can be checked
+ * against the real table rather than a restatement of it: `expandInString` leaves an unknown
+ * name verbatim (a shell local like `WORKTREE=$(...)` depends on that), so a name outside this
+ * set does not fail at load — it reaches the step as the literal text `$NAME` and fails there.
+ *
+ * `CELL_PROVIDER`/`CELL_MODEL` are supplied per matrix cell via `options.env`, not here.
+ */
+export const SCENARIO_SUBSTITUTED_VARIABLES = [
+  "REQUEST_FIXTURE",
+  "FLOW_FIXTURE",
+  "WORKSPACE_ROOT",
+  "EXA_SYSTEM_ROOT",
+  "FRAMEWORK_HOME",
+  "EXA_CONFIG_PATH",
+  "CELL_PROVIDER",
+  "CELL_MODEL",
+] as const;
 
 async function executeSyntheticStep(
   options: IExecuteSyntheticStepOptions,
@@ -685,6 +743,9 @@ async function executeSyntheticStep(
     ...Deno.env.toObject(),
     ...(options.env ?? {}),
     REQUEST_FIXTURE: options.requestFixturePath,
+    // Defined only when the scenario declares `flow_fixture`; a step referencing it otherwise
+    // keeps the literal `$FLOW_FIXTURE`, which is what the guard test forbids at author time.
+    ...(options.flowFixturePath ? { FLOW_FIXTURE: options.flowFixturePath } : {}),
     WORKSPACE_ROOT: options.workspaceRoot,
     EXA_SYSTEM_ROOT: options.workspaceRoot,
     FRAMEWORK_HOME: options.frameworkHome,

@@ -20,9 +20,22 @@
 import { assertEquals } from "@std/assert";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
+import { walk } from "@std/fs";
 
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
 const FLOWS_DIR = join(REPO_ROOT, "Blueprints", "Flows");
+
+/**
+ * Phase 142 Step 15 — the scenario framework's own flow fixtures are held to the same contract.
+ *
+ * They were exempt only because nothing loaded them: `flow_fixture` was parsed and acted on
+ * nowhere, so no fixture flow had ever executed. Once the runner started staging them, all
+ * thirteen aggregated to nothing — every one wrote `from: step` with a separate `step: <id>` key,
+ * a shape `aggregateOutput` does not implement. It reads `output.from` as the step id, so
+ * `stepResults.get("step")` missed, the flow completed "successfully" with `outputLength: 0`, and
+ * the request died on `Invalid JSON: Unexpected end of JSON input` — four layers from the cause.
+ */
+const FIXTURE_FLOWS_DIR = join(REPO_ROOT, "tests", "scenario_framework", "fixtures", "flows");
 
 interface IFlowOutput {
   from?: string | string[];
@@ -33,15 +46,26 @@ interface IFlowDoc {
   output?: IFlowOutput;
 }
 
-async function readFlowOutputs(): Promise<{ flow: string; output?: IFlowOutput }[]> {
-  const rows: { flow: string; output?: IFlowOutput }[] = [];
-  for await (const entry of Deno.readDir(FLOWS_DIR)) {
-    if (!entry.isFile || !entry.name.endsWith(".flow.yaml")) continue;
-    const parsed = parseYaml(await Deno.readTextFile(join(FLOWS_DIR, entry.name))) as IFlowDoc;
-    rows.push({ flow: entry.name.replace(/\.flow\.yaml$/, ""), output: parsed.output });
+interface IFlowRow {
+  flow: string;
+  path: string;
+  output?: IFlowOutput;
+}
+
+/** Every `.flow.yaml` under a directory tree, so nested fixture packs are covered too. */
+async function readFlowsUnder(root: string): Promise<IFlowRow[]> {
+  const rows: IFlowRow[] = [];
+  for await (const entry of walk(root, { exts: [".yaml"], includeDirs: false })) {
+    if (!entry.name.endsWith(".flow.yaml")) continue;
+    const parsed = parseYaml(await Deno.readTextFile(entry.path)) as IFlowDoc;
+    rows.push({ flow: entry.name.replace(/\.flow\.yaml$/, ""), path: entry.path, output: parsed.output });
   }
   rows.sort((a, b) => a.flow.localeCompare(b.flow));
   return rows;
+}
+
+async function readFlowOutputs(): Promise<IFlowRow[]> {
+  return [...await readFlowsUnder(FLOWS_DIR), ...await readFlowsUnder(FIXTURE_FLOWS_DIR)];
 }
 
 Deno.test("[flow-output] every flow declares an output block", async () => {
@@ -67,10 +91,10 @@ Deno.test("[flow-output] every named output source is a step the flow declares",
   // A typo here is silent: the aggregator skips a source it cannot resolve, so the flow
   // produces a shorter document — or nothing — with no error naming the missing step.
   const dangling: string[] = [];
-  for (const { flow, output } of await readFlowOutputs()) {
+  for (const { flow, path, output } of await readFlowOutputs()) {
     if (!output?.from) continue;
-    const text = await Deno.readTextFile(join(FLOWS_DIR, `${flow}.flow.yaml`));
-    const stepIds = new Set([...text.matchAll(/^\s{2}- id:\s*(\S+)/gm)].map((m) => m[1]));
+    const text = await Deno.readTextFile(path);
+    const stepIds = new Set([...text.matchAll(/^\s{2}- id:\s*"?([\w-]+)"?/gm)].map((m) => m[1]));
     for (const source of Array.isArray(output.from) ? output.from : [output.from]) {
       if (!stepIds.has(source)) dangling.push(`${flow} -> ${source}`);
     }

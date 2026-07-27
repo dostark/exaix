@@ -5,8 +5,7 @@ name: "Run Shell Command"
 description: "Use run_command tool to execute a shell command"
 version: "1.0.0"
 output:
-  from: step
-  step: exec
+  from: exec
   format: markdown
 steps:
   - id: "exec"
