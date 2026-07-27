@@ -97,12 +97,12 @@ steps:
     args: ["list"]
     # The clarification file is named for the request's UUID, so the target is resolved by
     # pattern rather than by a literal path.
-    file_pattern: "**/Clarifications/*.json"
+    file_pattern: "Workspace/Clarifications/*.json"
     output_criteria:
       - id: "clarification-confirmed"
         score_weight: 0.5
         kind: "json-path-equals"
-        path: "status"
+        path: "$.status"
         equals: "user-confirmed"
 
   - id: "stop-daemon"
