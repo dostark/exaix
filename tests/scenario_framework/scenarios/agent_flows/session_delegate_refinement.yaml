@@ -74,16 +74,22 @@ steps:
 
   - id: "verify-delegated-clarification"
     type: "exactl"
-    # `request show` takes a required <id> positional and has no --all flag, so this invoked a
-    # flag that does not exist and the CLI read it as a request id: "Request not found: --all".
-    # `list` is the command that reports across requests.
+    # Asserts the clarification RECORD, not CLI output. This checked `request show --all` for
+    # the text "user-confirmed" — a flag that does not exist (`show` takes a required <id>, so
+    # the CLI read it as a request id), and `request list` does not carry the marker either. The
+    # delegated confirmation is state, and it lives in the clarification session file as
+    # `status: user-confirmed`; asserting it there is what makes this step mean the gate ran.
     command: "request"
     args: ["list"]
+    # The clarification file is named for the request's UUID, so the target is resolved by
+    # pattern rather than by a literal path.
+    file_pattern: "**/Clarifications/*.json"
     output_criteria:
-      - id: "clarification-present"
+      - id: "clarification-confirmed"
         score_weight: 0.5
-        kind: "command-output-contains"
-        contains: ["user-confirmed"]
+        kind: "json-path-equals"
+        path: "status"
+        equals: "user-confirmed"
 
   - id: "stop-daemon"
     type: "exactl"
