@@ -72,6 +72,20 @@ steps:
         kind: "file-found"
         path_pattern: "**/Clarifications/*.json"
 
+  # The clarification file exists as soon as the gate opens, but its status only becomes
+  # `user-confirmed` once the delegate's answer is reconciled back. The preceding wait gates on
+  # existence, so the verify step ran against a record whose status had not yet landed. This
+  # barrier waits for the reconcile itself.
+  - id: "wait-for-delegate-reconciled"
+    type: "wait-for-journal-event"
+    event_type: "session.delegate.reconciled"
+    timeout_sec: 60
+    output_criteria:
+      - id: "delegate-reconciled"
+        kind: "journal-event-exists"
+        event_type: "session.delegate.reconciled"
+        score_weight: 1.0
+
   - id: "verify-delegated-clarification"
     type: "exactl"
     # Asserts the clarification RECORD, not CLI output. This checked `request show --all` for
