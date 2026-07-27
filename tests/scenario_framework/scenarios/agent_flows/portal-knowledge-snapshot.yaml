@@ -6,8 +6,11 @@ tags: ["portal", "subsystem:flows"]
 request_fixture: "fixtures/requests/agent_flows/portal_knowledge_snapshot.md"
 mode_support: ["auto", "step"]
 portals:
+  # The sandbox's own seeded copy, not /tmp: nothing ever created /tmp/portal-sample-app, so the
+  # declared portal could not be mounted and the scenario failed at its first step. The seeded
+  # fixtures are git repositories, which is what portal mutation through a worktree requires.
   - alias: "portal-sample-app"
-    source_path: "/tmp/portal-sample-app"
+    source_path: "$WORKSPACE_ROOT/fixtures/portals/todo_app"
 steps:
   - id: "portal-mounted"
     type: "exactl"

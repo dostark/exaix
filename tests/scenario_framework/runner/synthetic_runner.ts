@@ -309,6 +309,14 @@ export async function runSyntheticScenario(
     source_path: expandInString(p.source_path, envForExpansion),
   }));
 
+  // Mount what the scenario declared. `portals:` has been parsed, validated and path-expanded
+  // since the schema was written, and nothing ever acted on it — 20 scenarios declare portals
+  // and each had to mount them itself with a shell step, or simply failed. `portal add` is
+  // idempotent for an identical target, so re-mounting across a shared sandbox is safe.
+  for (const portal of loadedScenario.scenario.portals) {
+    await mountDeclaredPortal(portal, options, envForExpansion);
+  }
+
   const stepOutcomes: IScenarioStepOutcome[] = [];
 
   // Phase 127 Step 5 — matrix-aware step resolution. For a `matrix:` scenario this
@@ -489,6 +497,38 @@ function startsADaemon(step: { id: string; command?: string; args?: string[] }):
   if (step.id === MATRIX_START_DAEMON_STEP_ID) return true;
   if (step.command !== "daemon") return false;
   return (step.args ?? []).some((arg) => arg === "start" || arg === "restart");
+}
+
+/**
+ * Mount a portal a scenario declared, so `portals:` means something.
+ *
+ * Best-effort and never fatal: a scenario whose declared source path does not exist should fail
+ * on its own assertions with a legible message, not be aborted here by setup. The alias is
+ * reported when the mount fails so the cause is not silent.
+ */
+async function mountDeclaredPortal(
+  portal: { alias: string; source_path: string },
+  options: IRunSyntheticScenarioOptions,
+  env: { [key: string]: string },
+): Promise<void> {
+  try {
+    const result = await new Deno.Command(options.exactlExecutable ?? "exactl", {
+      args: ["portal", "add", portal.source_path, portal.alias],
+      cwd: options.workspaceRoot,
+      env,
+      stdin: "null",
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    if (!result.success) {
+      console.warn(
+        `%c ⚠ declared portal '${portal.alias}' could not be mounted from ${portal.source_path}`,
+        "color: orange;",
+      );
+    }
+  } catch {
+    // Spawning the CLI failed; the scenario's own portal assertions will report it.
+  }
 }
 
 /**
