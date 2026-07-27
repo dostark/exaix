@@ -411,7 +411,7 @@ export async function runSyntheticScenario(
     // leaking the daemon process this run started. `daemon stop` is idempotent (no-ops as
     // daemon.not_running when nothing is running), so it is always safe to force-invoke here
     // as a teardown guarantee whenever this run's steps include a start-daemon step.
-    if (stepsToRun.some((step) => step.id === MATRIX_START_DAEMON_STEP_ID)) {
+    if (stepsToRun.some(startsADaemon)) {
       await forceStopDaemon({
         workspaceRoot: options.workspaceRoot,
         exactlExecutable: options.exactlExecutable,
@@ -474,6 +474,21 @@ interface IForceStopDaemonOptions {
   workspaceRoot: string;
   exactlExecutable?: string;
   env?: { [key: string]: string };
+}
+
+/**
+ * True when a step launches a daemon this run would be responsible for stopping.
+ *
+ * The teardown guard previously keyed on the step ID being exactly `start-daemon`, which misses
+ * every scenario that starts one under another name — 25 use `restart-daemon`, and `restart`
+ * delegates to `start`. Those leaked a daemon whenever they failed before their own stop step.
+ * Keying on what the step DOES rather than what it is called removes the dependency on naming
+ * convention, which nothing enforces.
+ */
+function startsADaemon(step: { id: string; command?: string; args?: string[] }): boolean {
+  if (step.id === MATRIX_START_DAEMON_STEP_ID) return true;
+  if (step.command !== "daemon") return false;
+  return (step.args ?? []).some((arg) => arg === "start" || arg === "restart");
 }
 
 /**
