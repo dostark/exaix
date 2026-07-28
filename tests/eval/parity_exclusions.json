@@ -1,12 +1,20 @@
 {
   "tools": [],
   "identities": [
-    { "id": "mock-agent", "reason": "test double" },
-    { "id": "README.md", "reason": "directory readme, not an identity" }
+    {
+      "id": "mock-agent",
+      "reason": "test double"
+    }
   ],
   "skills": [
-    { "id": "portal-grounding", "reason": "no standalone runtime JSON (meta-skill)" },
-    { "id": "exaix-conventions", "reason": "no standalone runtime JSON (meta-skill)" }
+    {
+      "id": "portal-grounding",
+      "reason": "no standalone runtime JSON (meta-skill)"
+    },
+    {
+      "id": "exaix-conventions",
+      "reason": "no standalone runtime JSON (meta-skill)"
+    }
   ],
   "flows": []
 }
