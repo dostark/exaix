@@ -242,3 +242,30 @@ Deno.test("[flow-fixture] a scenario whose request names a flow must declare tha
     `these depend on another scenario having staged their flow first:\n${undeclared.join("\n")}`,
   );
 });
+
+Deno.test("[flow-fixture] the schema does not describe the field as unconsumed", async () => {
+  // Phase 142 Step 8. The schema carried `@deprecated ... not consumed by the scenario runner`,
+  // which was accurate when written and became the opposite of the truth the moment Step 15 wired
+  // the field. Twelve scenarios now depend on it, and a reader trusting the tag would delete a
+  // load-bearing declaration. Prose drifts silently; this pins it to the runner's actual behaviour.
+  const schema = await Deno.readTextFile(join(FRAMEWORK_HOME, "schema", "scenario_schema.ts"));
+  const runner = await Deno.readTextFile(join(FRAMEWORK_HOME, "runner", "synthetic_runner.ts"));
+
+  const runnerStagesIt = runner.includes("stageFlowFixture(");
+  assert(runnerStagesIt, "the runner must still stage flow_fixture, or this guard is checking nothing");
+
+  const declaration = schema.slice(0, schema.indexOf("flow_fixture:"));
+  const lastComment = declaration.lastIndexOf("/**");
+  const docBlock = declaration.slice(lastComment);
+
+  // Matches the JSDoc TAG form (`* @deprecated` at the start of a line), not the word: the block
+  // deliberately explains that the tag used to be there, and that prose is the useful part.
+  assert(
+    !/^\s*\*\s*@deprecated\b/m.test(docBlock),
+    "flow_fixture is staged by the runner; a @deprecated tag would tell a reader to remove it",
+  );
+  assert(
+    !/not consumed by the scenario runner/.test(docBlock),
+    "the schema claims the runner ignores a field the runner stages",
+  );
+});

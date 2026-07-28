@@ -4434,6 +4434,47 @@ exactl eval history --last 10
 For the complete CLI reference, scoring model, scenario authoring guide, and
 CI integration, see **[`docs/Exaix_Evaluation.md`](Exaix_Evaluation.md)**.
 
+### Subsystem evaluation
+
+Scenarios are tagged by the subsystem they measure — tools, mcp-server, mcp-client, identities,
+skills, flows — so coverage can be read per subsystem rather than per directory:
+
+```bash
+# Every mock-tier scenario across all six subsystems
+deno task eval:subsystems
+
+# The cheap tier: one or more representatives per subsystem
+deno task eval:subsystems:core
+
+# The catalog/flow/identity/skill/tool parity gates
+deno task test:parity
+
+# Per-subsystem summary with pass counts and trend deltas
+exactl eval report --group-by subsystem
+```
+
+> **Run these by hand.** None is attached to a CI job or to the pre-commit gates. `eval:subsystems`
+> spawns daemons across roughly seventy scenarios; the nightly tier below spends provider budget.
+
+**The nightly provider-live recipe.** The mock tier proves mechanics. Anything about _which_ tool an
+agent reaches for, or how good its output is, needs a real model — the mock provider emits no tool
+calls at all, so a trajectory score there is always 0.00 and never partial.
+
+```bash
+EXA_LLM_PROVIDER=google \
+deno run -A tests/scenario_framework/runner/main.ts \
+  --tag subsystem:mcp-client --tag provider-live \
+  --mode auto --eval-mode --trials 3
+```
+
+`--tag provider-live` turns off the CI-safety filter that normally drops those scenarios; it does
+not widen the selection into other packs. Do not pin `EXA_LLM_PROVIDER` inside a scenario — step
+`env` is merged last and would override the value you set here.
+
+Scenario sandboxes are reclaimed on success and kept on failure; reclaim the backlog with
+`deno task scenario:prune` (dry-run by default). See
+[`tests/scenario_framework/README.md`](../tests/scenario_framework/README.md) §2.5 and §4b.
+
 ---
 
 ## Concurrent Guardrail Runner

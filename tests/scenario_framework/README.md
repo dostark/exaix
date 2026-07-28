@@ -229,21 +229,30 @@ cd "$FRAMEWORK_DIR/scenario_framework"
 ./bin/run-scenarios --profile ci-core --verbose
 ```
 
-All 10 packs (37 scenarios) are available in deployed mode. Packs that require
-a sandbox deploy:
+**17 packs, 146 scenarios** (counts measured from the catalog, not maintained by hand — regenerate
+with `loadScenarioCatalog` if they drift). The `Subsystem` column is what
+`eval report --group-by subsystem` aggregates and what the cadence tiers select on; a pack with no
+subsystem tag is not part of the six-subsystem coverage contract.
 
-| Pack                 | Requires        | Scenarios |
-| -------------------- | --------------- | --------- |
-| `agent_flows`        | Daemon + portal | 8         |
-| `dynamic_execution`  | Daemon          | 1         |
-| `framework_test`     | Framework       | 1         |
-| `integration_e2e`    | Daemon + portal | 2         |
-| `mcp_tools_extended` | Daemon          | 2         |
-| `provider_live`      | Real LLM        | 2         |
-| `smoke`              | Daemon          | 1         |
-| `triggers-basic`     | Daemon          | 1         |
-| `blueprint-eval`     | None            | 2         |
-| `eval-smoke`         | None            | 1         |
+| Pack                 | Requires        | Scenarios | Subsystem    |
+| -------------------- | --------------- | --------- | ------------ |
+| `agent_flows`        | Daemon + portal | 17        | `flows`      |
+| `blueprint_eval`     | None            | 2         | —            |
+| `dynamic_execution`  | Daemon          | 11        | `mcp-client` |
+| `eval_edge_cases`    | None            | 5         | —            |
+| `eval_smoke`         | None            | 1         | —            |
+| `flow_blueprints`    | Daemon          | 16        | `flows`      |
+| `framework_test`     | Framework       | 2         | —            |
+| `identity_eval`      | Daemon          | 14        | `identities` |
+| `integration_e2e`    | Daemon + portal | 3         | —            |
+| `mcp_server`         | Daemon (Team)   | 5         | `mcp-server` |
+| `mcp_tools_extended` | Daemon          | 16        | `tools`      |
+| `portal_knowledge`   | Daemon + portal | 1         | —            |
+| `provider_live`      | Real LLM        | 21        | `identities` |
+| `skill_eval`         | Daemon          | 7         | `skills`     |
+| `smoke`              | Daemon          | 1         | —            |
+| `swe_tasks`          | Real LLM        | 23        | —            |
+| `triggers_basic`     | Daemon          | 1         | —            |
 
 ### 2.4 Where Sandboxes Are Created
 
@@ -591,7 +600,12 @@ can produce per-surface and per-entity trend reports.
 **Parity gate rule:** Adding a new tool/identity/skill/flow to its catalog requires
 adding at least one eval scenario with the matching `entity:<id>` tag, or adding a
 reasoned entry to the parity exclusion list at `tests/eval/parity_exclusions.json`.
-The parity gate (Gate 15) enforces this in ci-core.
+
+The gates that check this are `tests/eval/{catalog,flow,identity,skill,tool}_*parity*_test.ts`, run
+by `deno task test:parity`. **This is a manual command, not a CI job** — it is not in
+`.github/workflows/`, `scripts/ci.ts` or the pre-commit gate list. (An earlier version of this
+paragraph said "the parity gate (Gate 15) enforces this in ci-core"; Gate 15 is the markdown-path
+check, and no parity gate runs automatically.)
 
 ### The `matrix:` block — one scenario, many cells (Phase 127)
 

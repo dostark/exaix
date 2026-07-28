@@ -26,9 +26,19 @@ export const ScenarioSchema = z.object({
   tags: z.array(z.string().min(1)),
   request_fixture: NON_EMPTY_STRING,
   /**
-   * @deprecated Use `flow:` frontmatter in request fixtures instead. This field
-   * is defined but not consumed by the scenario runner. Kept for backward
-   * compatibility with existing scenario YAML files that still reference it.
+   * Framework-relative path to a flow YAML the runner stages into the sandbox's
+   * `Blueprints/Flows/<flow-id>.flow.yaml` before the scenario's steps run.
+   *
+   * NOT deprecated, and not optional in practice for any scenario whose request fixture carries a
+   * `flow:` field naming a flow outside the shipped catalog: `assertFlowExists` resolves
+   * `<root>/Blueprints/Flows/<id>.flow.yaml`, so an unstaged flow fails the request with
+   * "Flow '<id>' not found".
+   *
+   * This carried a deprecation tag asserting the runner ignored the field, which was accurate
+   * until Phase 142 Step 15 wired it — the field had been parsed, validated and read
+   * by nobody, and eight scenarios referencing `$FLOW_FIXTURE` died on the literal string. Twelve
+   * scenarios now depend on it. The staging is `synthetic_runner.ts:stageFlowFixture`, and the file
+   * is named after the flow's OWN declared id, not the fixture's filename.
    */
   flow_fixture: NON_EMPTY_STRING.optional(),
   mode_support: z.array(z.nativeEnum(ScenarioExecutionMode)).min(1),

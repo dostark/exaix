@@ -1045,6 +1045,18 @@ For the component responsibilities table, key design decisions, and configuratio
 
 The scenario framework provides comprehensive end-to-end testing for Exaix features including dynamic tool selection, ReAct reasoning, and extended MCP tool handlers. For scenario pack definitions and execution modes, see `docs/Reference_Data.md#scenario-framework`.
 
+### Subsystem evaluation layer
+
+Scenarios carry a `subsystem:` tag naming what they measure — `tools`, `mcp-server`, `mcp-client`, `identities`, `skills`, `flows` — and an optional `entity:<name>` narrowing to a single tool, identity, skill or flow. This is the axis coverage is read on: a subsystem with no green scenario is a subsystem nothing measures, and the parity gates (`tests/eval/*_parity_test.ts`) fail when a catalog entry has neither a scenario nor a reasoned exclusion in `tests/eval/parity_exclusions.json`.
+
+Three properties are structural rather than conventional, because each failed silently before it was enforced:
+
+- **The suite score must be able to fall below its own gate.** Setup and teardown steps carry zero weight (`tests/scenario_framework/runner/scoring.ts`); a step-weighted mean over every step made the score "the fraction of steps that passed", and a total failure of the mechanism under test still scored 0.800 against a 0.7 threshold.
+- **A green pack must be known to go red.** Each subsystem declares a mutation in `tests/scenario_framework/runner/pack_mutations.ts` that must turn its pack red, and a test verifies the mutation's anchor still resolves in its source file.
+- **A mean is reported only where criteria are graded.** Contract packs ask yes/no questions and report `passed/total`; gradedness is derived from the observed scores, not a maintained list.
+
+Cadence tiers (`ci-smoke`, `ci-core`, `ci-extended`, nightly provider-live) are selection profiles plus manually-invoked `deno task` entries — they are not attached to CI jobs. See `docs/Exaix_Evaluation.md` §12 and `tests/scenario_framework/README.md` §4b.
+
 ---
 
 ## Trigger Adapter Layer
