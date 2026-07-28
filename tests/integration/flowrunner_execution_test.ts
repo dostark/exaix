@@ -24,6 +24,9 @@ import { CostTracker } from "@exaix/core/cost";
 import type { IApplicationContext } from "@exaix/core/types";
 import type { IFlowRunner } from "@exaix/flow";
 import type { IFlow } from "@exaix/schemas/flow.ts";
+import { FlowSchema } from "@exaix/schemas/flow.ts";
+import type { IFlowLoaderService } from "@exaix/core/types";
+import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 
 Deno.test({
   name: "[integration] Flow request delegates to FlowRunner when configured",
@@ -54,6 +57,30 @@ name: "Default Agent"
 model: "mock:gpt-5.2-pro"
 ---\nYou are a helpful assistant.`,
       );
+
+      // Phase 142 Step 13 made a missing loader a hard wiring fault: `loadFlowOrFail` reports
+      // "Flow requests require a flowLoader" and returns null, so the runner is never reached.
+      // Before that, the processor fabricated `{ id } as IFlow` and this test passed while the
+      // real path was broken. Delegation cannot be exercised without a loader.
+      const flowLoader: IFlowLoaderService = {
+        loadFlow: (flowId: string) =>
+          // Parsed through the real schema so the stub gains the same defaults (version,
+          // settings, per-step type/execution_mode) a loaded blueprint has, and cannot drift
+          // from IFlow as fields are added.
+          Promise.resolve(FlowSchema.parse({
+            id: flowId,
+            name: "Code Review",
+            description: "Flow blueprint stub for the delegation test",
+            steps: [{
+              id: "review",
+              name: "Review",
+              identity: "default",
+              input: { source: FlowInputSource.REQUEST },
+              dependsOn: [],
+            }],
+            output: { from: "review", format: FlowOutputFormat.MARKDOWN },
+          })),
+      };
 
       let flowRunnerCalled = false;
       const mockFlowRunner: IFlowRunner = {
@@ -92,6 +119,7 @@ model: "mock:gpt-5.2-pro"
         context,
         costTracker,
         flowRunner: mockFlowRunner,
+        flowLoader,
       });
 
       const traceId = crypto.randomUUID();

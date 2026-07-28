@@ -14,6 +14,7 @@ import { PlanAmendmentPendingError } from "@exaix/core/planning";
 import type { ConfidenceScorer } from "@exaix/execution";
 import { createMockConfig } from "@exaix/testing";
 import { castAny as castTo, createStubDb } from "@exaix/testing";
+import { AMENDMENT_ARTIFACTS_DIR } from "@exaix/core/types";
 
 interface IPlanStepInput {
   number: number;
@@ -154,7 +155,15 @@ export function attachPlanAgentExecutor(
 }
 
 export function getPlanAmendmentsDir(root: string, config: Config, traceId: string): string {
-  return join(root, config.paths.memory, config.paths.memoryExecution, traceId, "amendments");
+  // Mirrors MissionReporter.discoverAmendments exactly. `paths.memoryExecution` is accepted in two
+  // forms — root-relative ("Memory/Execution") or memory-relative ("Execution") — and production
+  // disambiguates on the separator. This helper used to hardcode the memory-relative join, so when
+  // the shipped default moved to the root-relative form it produced "Memory/Memory/Execution" and
+  // five amendment tests failed on a path that production resolves correctly.
+  const executionRoot = config.paths.memoryExecution.includes("/")
+    ? config.paths.memoryExecution
+    : join(config.paths.memory, config.paths.memoryExecution);
+  return join(root, executionRoot, traceId, AMENDMENT_ARTIFACTS_DIR);
 }
 
 export async function readDirEntries(path: string): Promise<Deno.DirEntry[]> {
