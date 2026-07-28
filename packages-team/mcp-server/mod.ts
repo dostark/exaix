@@ -20,6 +20,7 @@ export * from "./handlers/delete_file_tool.ts";
 export * from "./handlers/git_commit_tool.ts";
 export * from "./handlers/git_create_branch_tool.ts";
 export * from "./handlers/git_status_tool.ts";
+export * from "./handlers/git_worktree_tool.ts";
 export * from "./handlers/list_directory_tool.ts";
 export * from "./handlers/move_file_tool.ts";
 export * from "./handlers/patch_file_tool.ts";
