@@ -1,68 +1,77 @@
 /**
  * @module ToolEvalParityTest
  * @path tests/eval/tool_eval_parity_test.ts
- * @description Parity test asserting every TOOL_MANIFEST entry has at least one
- *   eval scenario tagged entity:<tool-name>, minus an explicit exclusion list.
- *   Step 2: tools exclusion list is empty — all 24 docs_visible tools are expected
- *   to have eval coverage via their entity:<tool> tags.
+ * @description Parity test asserting every docs-visible `TOOL_MANIFEST` entry has at least one
+ *   eval scenario tagged `entity:<tool-name>`, minus reasoned exclusions.
+ *
+ *   Rewritten in Phase 142. The manifest side was always read from source, but every assertion
+ *   compared it against a SYNTHETIC scenario catalog — empty in two tests, and in a third built
+ *   from the manifest names themselves, so adding a tool changed both sides at once. The gate
+ *   therefore never once looked at a real scenario, and its four checks duplicated
+ *   `catalog_parity_harness_test.ts`, which already covers `assertCatalogCovered`'s behaviour with
+ *   synthetic input across five cases. Duplicated harness coverage inside a parity file is
+ *   maintenance cost that buys nothing: it fails when the helper changes and stays green when the
+ *   coverage it is named for rots away.
+ * @architectural-layer Test
+ * @related-files [tests/eval/catalog_parity.ts, tests/eval/catalog_parity_harness_test.ts, packages/mcp/src/manifest.ts]
  */
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
+import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { TOOL_MANIFEST } from "@exaix/mcp";
 import { assertCatalogCovered } from "./catalog_parity.ts";
+import { loadScenarioCatalog } from "../scenario_framework/runner/scenario_catalog.ts";
 import parityExclusions from "./parity_exclusions.json" with { type: "json" };
 
-const MANIFEST_TOOL_NAMES = TOOL_MANIFEST
-  .filter((e) => e.docs_visible)
-  .map((e) => e.name);
+const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
+const FRAMEWORK_HOME = join(REPO_ROOT, "tests", "scenario_framework");
+
+const MANIFEST_TOOL_NAMES = TOOL_MANIFEST.filter((e) => e.docs_visible).map((e) => e.name);
 
 const toolsExclusions: string[] = (parityExclusions.tools ?? []).map((e: { id: string }) => e.id);
 
-Deno.test("tool_eval_parity — empty exclusions means all 24 tools are missing with no catalog", () => {
-  assertEquals(toolsExclusions.length, 0, "Step 2 should have zero tool exclusions");
+Deno.test("tool_eval_parity — every docs-visible tool has a real scenario, or a reasoned exclusion", async () => {
+  const catalog = await loadScenarioCatalog({ frameworkHome: FRAMEWORK_HOME });
+  assert(MANIFEST_TOOL_NAMES.length > 0, "no docs-visible tools in the manifest; the reader checks nothing");
+
   const missing = assertCatalogCovered({
     catalogIds: MANIFEST_TOOL_NAMES,
-    scenarioCatalog: [],
+    scenarioCatalog: catalog.map((scenario) => ({ id: scenario.id, tags: scenario.tags })),
     subsystemTag: "subsystem:tools",
     exclusions: toolsExclusions,
   });
-  assertEquals(missing.length, MANIFEST_TOOL_NAMES.length);
+
+  assertEquals(
+    missing.sort(),
+    [],
+    `these tools ship with no scenario tagged entity:<name> and no reasoned exclusion:\n${missing.join("\n")}`,
+  );
 });
 
-Deno.test("tool_eval_parity — adding a manifest tool without coverage fails", () => {
-  const extendedIds = [...MANIFEST_TOOL_NAMES, "new_phantom_tool"];
-  const missing = assertCatalogCovered({
-    catalogIds: extendedIds,
-    scenarioCatalog: [],
-    subsystemTag: "subsystem:tools",
-    exclusions: toolsExclusions,
-  });
-  const missingSet = new Set(missing);
-  assertEquals(missingSet.has("new_phantom_tool"), true);
-  assertEquals(missing.length, MANIFEST_TOOL_NAMES.length + 1);
+Deno.test("tool_eval_parity — every tool entity tag names a tool that exists", async () => {
+  // The other direction: a tag naming no manifest entry becomes a phantom row in
+  // `eval report --group-by entity`. Flow tags carried exactly this defect for thirteen entries.
+  const catalog = await loadScenarioCatalog({ frameworkHome: FRAMEWORK_HOME });
+  const known = new Set(TOOL_MANIFEST.map((e) => e.name));
+
+  const phantom: string[] = [];
+  for (const scenario of catalog) {
+    if (!scenario.tags.includes("subsystem:tools")) continue;
+    for (const tag of scenario.tags) {
+      if (!tag.startsWith("entity:")) continue;
+      const name = tag.slice("entity:".length);
+      if (!known.has(name)) phantom.push(`${scenario.id}: ${tag}`);
+    }
+  }
+
+  assertEquals([...new Set(phantom)].sort(), [], `entity tags naming no manifest tool:\n${phantom.join("\n")}`);
 });
 
-Deno.test("tool_eval_parity — all 24 tools pass when their scenarios exist in catalog", () => {
-  const scenarioCatalog = MANIFEST_TOOL_NAMES.map((name) => ({
-    id: `${name}_test`,
-    tags: ["subsystem:tools", `entity:${name}`],
-  }));
-  const missing = assertCatalogCovered({
-    catalogIds: MANIFEST_TOOL_NAMES,
-    scenarioCatalog,
-    subsystemTag: "subsystem:tools",
-    exclusions: toolsExclusions,
-  });
-  assertEquals(missing, []);
-});
-
-Deno.test("tool_eval_parity — covered by a single scenario passes", () => {
-  const missing = assertCatalogCovered({
-    catalogIds: ["read_file"],
-    scenarioCatalog: [
-      { id: "read_file_test", tags: ["subsystem:tools", "entity:read_file"] },
-    ],
-    subsystemTag: "subsystem:tools",
-    exclusions: [],
-  });
-  assertEquals(missing, []);
+Deno.test("tool_eval_parity — the tools exclusion list stays empty", () => {
+  // Not a tautology: the list is data in `parity_exclusions.json`, and the claim is that no tool is
+  // deliberately uncovered. An entry appearing here is a decision someone should have to defend.
+  assertEquals(
+    toolsExclusions,
+    [],
+    `every docs-visible tool is expected to carry eval coverage; excluded: ${toolsExclusions.join(", ")}`,
+  );
 });

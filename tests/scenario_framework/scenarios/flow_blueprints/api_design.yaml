@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "api_design"
 title: "Flow blueprint — api_design"
 pack: "flow_blueprints"
-tags: ["subsystem:flows", "entity:api_design.flow"]
+tags: ["subsystem:flows", "entity:api-design.flow"]
 request_fixture: "fixtures/requests/flow_blueprints/api_design.md"
 mode_support: ["auto"]
 portals: []

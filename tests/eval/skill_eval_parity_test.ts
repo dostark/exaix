@@ -7,10 +7,12 @@
 import { assertEquals } from "@std/assert";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { assertCatalogCovered } from "./catalog_parity.ts";
+import { loadScenarioCatalog } from "../scenario_framework/runner/scenario_catalog.ts";
 import parityExclusions from "./parity_exclusions.json" with { type: "json" };
 
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
 const SEEDS_DIR = join(REPO_ROOT, "Blueprints", "Skills");
+const FRAMEWORK_HOME = join(REPO_ROOT, "tests", "scenario_framework");
 
 /** Every skill id that actually ships, read from the seed catalog rather than restated here. */
 async function readShippedSkillIds(): Promise<string[]> {
@@ -59,13 +61,6 @@ const skillExclusions: string[] = (parityExclusions.skills ?? []).map(
   (e: { id: string }) => e.id,
 );
 
-function buildBatchCatalog(batch: string[]): Array<{ id: string; tags: string[] }> {
-  return batch.map((name) => ({
-    id: `${name}_test`,
-    tags: ["subsystem:skills", `entity:${name}`],
-  }));
-}
-
 Deno.test("skill_eval_parity — the batches cover every skill that ships", async () => {
   // This asserted `ALL_SKILLS.length === 27` against a list declared in this same file, so it
   // could only fail if someone edited the list and forgot to edit the number — while a skill
@@ -82,32 +77,56 @@ Deno.test("skill_eval_parity — the batches cover every skill that ships", asyn
   assertEquals(stale, [], `batched skills with no seed in Blueprints/Skills: ${stale.join(", ")}`);
 });
 
-Deno.test("skill_eval_parity — all skills pass when batch scenarios exist", () => {
-  const scenarioCatalog = [
-    ...buildBatchCatalog(BATCH_SKILLS_1),
-    ...buildBatchCatalog(BATCH_SKILLS_2),
-    ...buildBatchCatalog(BATCH_SKILLS_3),
-    ...buildBatchCatalog(BATCH_SKILLS_4),
-    ...buildBatchCatalog(BATCH_SKILLS_5),
-  ];
+Deno.test("skill_eval_parity — every shipped skill has a real scenario, or a reasoned exclusion", async () => {
+  // This replaces a check that built its scenario catalog FROM the batch lists — a circle in which
+  // adding a skill to a batch also created the scenario that covered it. Measured against the real
+  // catalog, the skill scenarios carried **no `entity:` tags at all**, so entity-level coverage for
+  // this subsystem was zero while the gate reported green. The tags now come from each scenario's
+  // request fixture, which is where the pinned skills are actually declared.
+  const catalog = await loadScenarioCatalog({ frameworkHome: FRAMEWORK_HOME });
+  const shipped = await readShippedSkillIds();
+
   const missing = assertCatalogCovered({
-    catalogIds: ALL_SKILLS,
-    scenarioCatalog,
+    catalogIds: shipped,
+    scenarioCatalog: catalog.map((scenario) => ({ id: scenario.id, tags: scenario.tags })),
     subsystemTag: "subsystem:skills",
     exclusions: skillExclusions,
   });
-  assertEquals(missing, []);
+
+  assertEquals(
+    missing.sort(),
+    [],
+    `these skills ship with no scenario tagged entity:<id> and no reasoned exclusion:\n${missing.join("\n")}`,
+  );
 });
 
-Deno.test("skill_eval_parity — fails on synthetic uncovered skill", () => {
-  const extendedIds = [...ALL_SKILLS, "synthetic-uncovered-skill"];
-  const scenarioCatalog = buildBatchCatalog(BATCH_SKILLS_1);
-  const missing = assertCatalogCovered({
-    catalogIds: extendedIds,
-    scenarioCatalog,
-    subsystemTag: "subsystem:skills",
-    exclusions: skillExclusions,
-  });
-  const missingSet = new Set(missing);
-  assertEquals(missingSet.has("synthetic-uncovered-skill"), true);
+Deno.test("skill_eval_parity — a scenario's entity tags match the skills its fixture pins", async () => {
+  // The tags are only trustworthy if they describe the request that actually runs. A scenario
+  // claiming to cover a skill its fixture does not pin would satisfy the gate above while testing
+  // nothing about that skill.
+  const catalog = await loadScenarioCatalog({ frameworkHome: FRAMEWORK_HOME });
+  const mismatched: string[] = [];
+
+  for (const scenario of catalog) {
+    if (!scenario.tags.includes("subsystem:skills")) continue;
+    const tagged = scenario.tags.filter((tag) => tag.startsWith("entity:")).map((tag) => tag.slice(7));
+    if (tagged.length === 0) continue;
+
+    const fixture = join(FRAMEWORK_HOME, scenario.request_fixture);
+    const text = await Deno.readTextFile(fixture).catch(() => "");
+    const pinned = new Set(
+      (text.match(/^skills:\s*\[([\s\S]*?)\]/m)?.[1] ?? "")
+        .split(",").map((s) => s.trim()).filter((s) => s.length > 0),
+    );
+
+    for (const id of tagged) {
+      if (!pinned.has(id)) mismatched.push(`${scenario.id}: entity:${id} is not pinned by its fixture`);
+    }
+  }
+
+  assertEquals(mismatched.sort(), [], mismatched.join("\n"));
 });
+
+// `fails on synthetic uncovered skill` lived here: it fed `assertCatalogCovered` a made-up id and
+// checked the helper reported it. That is the helper's own contract, already covered five ways in
+// `catalog_parity_harness_test.ts`, and it told us nothing about whether any skill is evaluated.

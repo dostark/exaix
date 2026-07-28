@@ -2,7 +2,15 @@ schema_version: "1.0.0"
 id: "skill-pin-batch-2"
 title: "Skill injection — pin batch 2 via skills: frontmatter"
 pack: "skill_eval"
-tags: ["smoke", "subsystem:skills"]
+tags: [
+  "smoke",
+  "subsystem:skills",
+  "entity:architecture-review",
+  "entity:blueprint-best-practices",
+  "entity:collaborative-flow",
+  "entity:documentation-driven",
+  "entity:error-handling",
+]
 request_fixture: "fixtures/requests/skill_eval/pin_batch2.md"
 mode_support: ["auto"]
 portals: []

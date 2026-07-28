@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "research_synthesis"
 title: "Flow blueprint — research_synthesis"
 pack: "flow_blueprints"
-tags: ["subsystem:flows", "entity:research_synthesis.flow"]
+tags: ["subsystem:flows", "entity:research-synthesis.flow"]
 request_fixture: "fixtures/requests/flow_blueprints/research_synthesis.md"
 mode_support: ["auto"]
 portals: []

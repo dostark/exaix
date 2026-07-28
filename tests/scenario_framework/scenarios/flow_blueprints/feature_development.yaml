@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "feature_development"
 title: "Flow blueprint — feature_development"
 pack: "flow_blueprints"
-tags: ["subsystem:flows", "entity:feature_development.flow"]
+tags: ["subsystem:flows", "entity:feature-development.flow"]
 request_fixture: "fixtures/requests/flow_blueprints/feature_development.md"
 mode_support: ["auto"]
 portals: []

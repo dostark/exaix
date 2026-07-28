@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "code_review"
 title: "Flow blueprint — code_review"
 pack: "flow_blueprints"
-tags: ["smoke", "subsystem:flows", "entity:code_review.flow"]
+tags: ["smoke", "subsystem:flows", "entity:code-review.flow"]
 request_fixture: "fixtures/requests/flow_blueprints/code_review.md"
 mode_support: ["auto"]
 portals: []

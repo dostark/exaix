@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "security_audit"
 title: "Flow blueprint — security_audit"
 pack: "flow_blueprints"
-tags: ["subsystem:flows", "entity:security_audit.flow"]
+tags: ["subsystem:flows", "entity:security-audit.flow"]
 request_fixture: "fixtures/requests/flow_blueprints/security_audit.md"
 mode_support: ["auto"]
 portals: []

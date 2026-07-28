@@ -12,7 +12,16 @@ import parityExclusions from "./parity_exclusions.json" with { type: "json" };
 const BLUEPRINTS_SKILLS = resolve(Deno.cwd(), "Blueprints", "Skills");
 const MEMORY_SKILLS_GLOBAL = resolve(Deno.cwd(), "Memory", "Skills", "global");
 
-const skipSkills: string[] = (parityExclusions.skills ?? []).map(
+/**
+ * Skills with no runtime JSON, by design.
+ *
+ * Reads `skills_without_runtime_json`, not `skills`. The two lists were one until Phase 142: a
+ * single `skills` array served both this integrity check and the eval-coverage parity gate, whose
+ * concerns are unrelated — a meta-skill can lack a runtime JSON while being perfectly well covered
+ * by an eval scenario. Sharing the list meant giving one of the two gates the wrong answer, and
+ * the entries' own reason text ("no standalone runtime JSON") described only this one.
+ */
+const skipSkills: string[] = (parityExclusions.skills_without_runtime_json ?? []).map(
   (e: { id: string }) => e.id,
 );
 

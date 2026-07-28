@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "onboarding_docs"
 title: "Flow blueprint — onboarding_docs"
 pack: "flow_blueprints"
-tags: ["subsystem:flows", "entity:onboarding_docs.flow"]
+tags: ["subsystem:flows", "entity:onboarding-docs.flow"]
 request_fixture: "fixtures/requests/flow_blueprints/onboarding_docs.md"
 mode_support: ["auto"]
 portals: []

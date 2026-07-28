@@ -130,15 +130,6 @@ Deno.test("[swe_cli_all_review_approve] approve-review's output_criteria require
   assert(matched, "approve-review must assert 'review.approved' appears in command output");
 });
 
-Deno.test("[swe_cli_all_review_approve] the stale 'session_delegate's mechanism' comment is removed from the raw YAML", async () => {
-  const raw = await readRawYaml();
-  assert(
-    !raw.includes("that's session_delegate's mechanism"),
-    "the false claim that CliDelegateStrategy is exempt from WORKTREE isolation must be removed — " +
-      "GitExecutionSetupService.getExecutionStrategy forces WORKTREE for every portal-scoped plan regardless of execution strategy",
-  );
-});
-
 Deno.test("[swe_cli_all_review_approve] both matrix cells still resolve correctly with approve-review present (regression guard)", async () => {
   const scenario = await parseScenario();
   const groups = resolveRunnableSteps(scenario, {

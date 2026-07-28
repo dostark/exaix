@@ -50,37 +50,12 @@ const identityExclusions: string[] = (parityExclusions.identities ?? []).map(
   (e: { id: string }) => e.id,
 );
 
-Deno.test("identity_eval_parity — all identities are covered or excluded", () => {
-  const missing = assertCatalogCovered({
-    catalogIds: identityNames,
-    scenarioCatalog: [],
-    subsystemTag: "subsystem:identities",
-    exclusions: identityExclusions,
-  });
-  // With no scenario catalog loaded, all non-excluded identities show as missing
-  const expectedMissing = identityNames.filter(
-    (name) => !identityExclusions.includes(name),
-  );
-  assertEquals(
-    new Set(missing),
-    new Set(expectedMissing),
-    `Expected missing: ${expectedMissing.join(", ")}; got: ${missing.join(", ")}`,
-  );
-});
-
-Deno.test("identity_eval_parity — all identities pass when their scenarios exist", () => {
-  const scenarioCatalog = identityNames.map((name) => ({
-    id: `${name}_test`,
-    tags: ["subsystem:identities", `entity:${name}`],
-  }));
-  const missing = assertCatalogCovered({
-    catalogIds: identityNames,
-    scenarioCatalog,
-    subsystemTag: "subsystem:identities",
-    exclusions: identityExclusions,
-  });
-  assertEquals(missing, []);
-});
+// The two checks that used to sit here — one passing an EMPTY scenario list and asserting every
+// identity was missing, the other building the scenario list from the identity names themselves —
+// were tautologies: adding an identity changed both sides at once. They also duplicated
+// `catalog_parity_harness_test.ts`, which covers `assertCatalogCovered` against synthetic input in
+// five cases. Removed rather than repaired; the real comparison is against the shipped catalog,
+// below.
 
 Deno.test("identity_eval_parity — the catalog is read from disk, not restated here", async () => {
   // The list was hardcoded, so the gate could not see an identity someone added to the directory —

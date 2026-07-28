@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "test_generation"
 title: "Flow blueprint — test_generation"
 pack: "flow_blueprints"
-tags: ["subsystem:flows", "entity:test_generation.flow"]
+tags: ["subsystem:flows", "entity:test-generation.flow"]
 request_fixture: "fixtures/requests/flow_blueprints/test_generation.md"
 mode_support: ["auto"]
 portals: []

@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "dogfood_loop"
 title: "Flow blueprint — dogfood_loop"
 pack: "flow_blueprints"
-tags: ["subsystem:flows", "entity:dogfood_loop.flow"]
+tags: ["subsystem:flows", "entity:dogfood-loop.flow"]
 request_fixture: "fixtures/requests/flow_blueprints/dogfood_loop.md"
 mode_support: ["auto"]
 portals: []
