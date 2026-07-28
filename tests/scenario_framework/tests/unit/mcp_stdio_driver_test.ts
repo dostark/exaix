@@ -5,9 +5,19 @@
  *   request/response correlation, and malformed handling against a scripted
  *   echo server via direct function calls.
  */
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { parseDriverArgs, sendJsonRpcRequests, spawnProcess } from "../../scripts/mcp_stdio_driver.ts";
 
+/**
+ * Echo server that keeps reading until stdin closes.
+ *
+ * It used to `break` after the FIRST stdin chunk. `sendJsonRpcRequests` writes request N+1 only
+ * after reading response N, so a second request always arrives in a second chunk — by which point
+ * this server had exited and the write hit a closed pipe. Whether that surfaced as
+ * "Broken pipe (os error 32)" or was silently absorbed by the pipe buffer depended on how fast the
+ * subprocess got torn down, so the multi-request test passed in isolation and failed under the
+ * parallel suite's load.
+ */
 function echoServerScript(): string {
   return `
 const d=new TextDecoder(),e=new TextEncoder();
@@ -23,7 +33,6 @@ for await(const c of Deno.stdin.readable){
       await Deno.stdout.write(e.encode(s));
     }
   }
-  break;
 }
 `.trim();
 }
@@ -134,17 +143,34 @@ Deno.test("sendJsonRpcRequests — a server that exits early reports the server 
   } catch { /* ignore */ }
   await process.status;
 
-  // The call must return normally with a diagnosable outcome rather than throwing.
-  assertEquals(Array.isArray(responses), true);
-  assertEquals(typeof error === "string" || responses.length > 0, true);
+  // The previous assertions here were `Array.isArray(responses) === true` — always true for a
+  // declared array — and a disjunction satisfied by either branch, which together amounted to
+  // "something came back". What the fix actually guarantees is that the caller is left holding
+  // the server's diagnosis rather than the swallowed stream error.
+  assertEquals(responses.length, 1);
+  assertEquals(responses[0].id, 1);
+  assertEquals(responses[0].result, undefined, "a dead server cannot have produced a result");
+  const failure = responses[0].error?.message ?? error ?? "";
+  assert(failure.length > 0, "a dead server must produce a diagnosable failure");
+  assert(
+    !failure.includes("Writable stream is closed"),
+    `the stream teardown error must not replace the real diagnostic; got: ${failure}`,
+  );
 });
 
-Deno.test("sendJsonRpcRequests — malformed JSON produces parse error", async () => {
-  const process = await spawnProcess(["deno", "eval", echoServerScript()]);
+Deno.test("sendJsonRpcRequests — a non-JSON line from the server becomes a -32700 parse error", async () => {
+  // This case previously sent a well-formed request to the echo server and asserted it was
+  // echoed back — the comment even conceded "the echo server echoes it back successfully". It
+  // was named for the parse-error path while exercising the success path, so the driver's own
+  // malformed-response branch (mcp_stdio_driver.ts:158-164) had no coverage at all.
+  const process = await spawnProcess([
+    "deno",
+    "eval",
+    "for await (const _ of Deno.stdin.readable) { console.log('this is not json'); break; }",
+  ]);
 
   const { responses } = await sendJsonRpcRequests(process, [
-    // Send a valid JSON but malformed as a request
-    { jsonrpc: "2.0", id: 99, method: "", params: {} },
+    { jsonrpc: "2.0", id: 99, method: "initialize", params: {} },
   ], 5000);
 
   try {
@@ -152,7 +178,11 @@ Deno.test("sendJsonRpcRequests — malformed JSON produces parse error", async (
   } catch { /* ignore */ }
   await process.status;
 
-  // Even with an empty method, the echo server echoes it back successfully
   assertEquals(responses.length, 1);
-  assertEquals(responses[0].id, 99);
+  assertEquals(responses[0].id, 99, "the parse error must be correlated to the request id");
+  assertEquals(responses[0].error?.code, -32700);
+  assert(
+    responses[0].error?.message.includes("this is not json"),
+    `the offending line must be quoted back for diagnosis; got: ${responses[0].error?.message}`,
+  );
 });
