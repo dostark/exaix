@@ -12,10 +12,24 @@ import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import { FlowSchema } from "@exaix/schemas/flow.ts";
 import { FlowStepExecutionMode } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
-import { WRITE_TOOLS } from "@exaix/mcp";
+import { APPROVAL_REQUIRED_TOOLS, WRITE_TOOLS } from "@exaix/mcp";
 import type { McpToolName } from "@exaix/mcp";
 
-function validateDynamicStepTools(steps: IFlowStep[]): string[] {
+/**
+ * A dynamic step may use a tool only if it neither writes nor requires human approval.
+ *
+ * The write check alone left a hole. `exaix_config_set` and `exaix_config_apply` declare
+ * `side_effect_scope: none`, so `deriveMcpToolClassificationSets` put them in READ_ONLY_TOOLS and
+ * a dynamic step could mutate configuration. The boundary was never "no writes in a dynamic step";
+ * it was "no tools whose side-effect scope happens to be labelled".
+ *
+ * Phase 142 Step 7 settled the Phase 79 question this exposes — whether approval-required tools
+ * belong in dynamic steps — in the negative. A dynamic step's tools are chosen by a model at
+ * runtime, so the approval prompt would be the only thing between the model and the effect, and a
+ * prompt an operator sees mid-run and out of context is a weak place to make that call. Declared
+ * steps are unaffected: their tool list is human-authored, which is the basis for the distinction.
+ */
+export function validateDynamicStepTools(steps: IFlowStep[]): string[] {
   const errors: string[] = [];
 
   for (const step of steps) {
@@ -23,9 +37,18 @@ function validateDynamicStepTools(steps: IFlowStep[]): string[] {
     if (!step.permitted_tools || step.permitted_tools.length === 0) continue;
 
     for (const tool of step.permitted_tools) {
+      // A tool that is both a write and approval-required yields ONE error, not two: two would
+      // read as two separate problems and double-count against the step.
       if (WRITE_TOOLS.has(tool as McpToolName)) {
         errors.push(
           `Step "${step.id}": tool "${tool}" is a write tool and cannot be ` +
+            `used in execution_mode: "dynamic". Move to a declared step.`,
+        );
+        continue;
+      }
+      if (APPROVAL_REQUIRED_TOOLS.has(tool as McpToolName)) {
+        errors.push(
+          `Step "${step.id}": tool "${tool}" requires human approval and cannot be ` +
             `used in execution_mode: "dynamic". Move to a declared step.`,
         );
       }

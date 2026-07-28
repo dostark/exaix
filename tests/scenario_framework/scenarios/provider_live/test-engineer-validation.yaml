@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "test-engineer-validation"
 title: "Test Engineer agent validation"
 pack: "provider_live"
-tags: ["provider-live", "planning"]
+tags: ["provider-live", "planning", "subsystem:identities", "entity:test-engineer"]
 request_fixture: "fixtures/requests/provider_live/test_engineer.md"
 mode_support: ["auto", "step"]
 portals:
@@ -22,13 +22,18 @@ steps:
       - "$REQUEST_FIXTURE"
   - id: "wait-for-plan"
     type: "wait-for-file"
-    args: ["**/*_plan.yaml"]
+    args: ["**/*_plan.md"]
     timeout_sec: 180
   - id: "validate-plan-content"
     type: "json-assert"
-    file_pattern: "**/*_plan.yaml"
+    file_pattern: "**/*_plan.md"
     output_criteria:
       - id: "has-steps"
         score_weight: 0.8
         kind: "json-path-exists"
         path: "$.steps[0]"
+      - id: "quality-plan"
+        kind: "llm-judge"
+        preset: "GOAL_ALIGNED_REVIEW"
+        context_path: "$REQUEST_FIXTURE"
+        score_threshold: 0.7

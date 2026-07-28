@@ -282,15 +282,15 @@ export const ConfigSchema = z.object({
     requests: z.string().default(DEFAULTS.DEFAULT_REQUESTS_PATH),
     rejected: z.string().default(DEFAULTS.DEFAULT_REJECTED_PATH),
     identities: z.string().default(DEFAULTS.DEFAULT_IDENTITIES_PATH),
-    flows: z.string().default(DEFAULTS.DEFAULT_FLOWS_PATH),
+    flows: z.string().default(DEFAULTS.ExaPathDefaults.flows),
     waitStates: z.string().default(DEFAULTS.DEFAULT_WAIT_STATES_PATH),
-    memoryProjects: z.string().default(DEFAULTS.DEFAULT_PROJECTS_MEMORY_PATH),
-    memoryExecution: z.string().default(DEFAULTS.DEFAULT_EXECUTION_MEMORY_PATH),
-    memoryIndex: z.string().default(DEFAULTS.DEFAULT_INDEX_MEMORY_PATH),
-    memorySkills: z.string().default(DEFAULTS.DEFAULT_SKILLS_MEMORY_PATH),
-    memoryPending: z.string().default(DEFAULTS.DEFAULT_PENDING_MEMORY_PATH),
-    memoryTasks: z.string().default(DEFAULTS.DEFAULT_TASKS_MEMORY_PATH),
-    memoryGlobal: z.string().default(DEFAULTS.DEFAULT_GLOBAL_MEMORY_PATH),
+    memoryProjects: z.string().default(DEFAULTS.ExaPathDefaults.memoryProjects),
+    memoryExecution: z.string().default(DEFAULTS.ExaPathDefaults.memoryExecution),
+    memoryIndex: z.string().default(DEFAULTS.ExaPathDefaults.memoryIndex),
+    memorySkills: z.string().default(DEFAULTS.ExaPathDefaults.memorySkills),
+    memoryPending: z.string().default(DEFAULTS.ExaPathDefaults.memoryPending),
+    memoryTasks: z.string().default(DEFAULTS.ExaPathDefaults.memoryTasks),
+    memoryGlobal: z.string().default(DEFAULTS.ExaPathDefaults.memoryGlobal),
   }).default({}),
   database: z.object({
     batch_flush_ms: c("database.batch_flush_ms"),
@@ -859,6 +859,24 @@ export const ConfigSchema = z.object({
 }).superRefine((data, ctx: z.RefinementCtx) => {
   // Type assertion to avoid circular reference
   const configData = data as z.infer<typeof ConfigSchema>;
+
+  // `paths.flows` shipped as the bare `"Flows"` before Phase 142, which resolves to `<root>/Flows`
+  // — a directory the catalog has never lived in. The symptom was `exactl flow list` reporting
+  // "No flows found" against a workspace holding twenty flows, four layers from the cause. An
+  // existing config carrying that value would silently resolve to an empty catalog again, so it
+  // is rejected at load where the operator can act on it.
+  //
+  // Deliberately narrow: only the stale default is refused. Bare subfolder names in general are a
+  // legitimate choice for an operator who really does keep the catalog at the workspace root.
+  if (configData.paths?.flows === DEFAULTS.DEFAULT_FLOWS_PATH) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `paths.flows = "${DEFAULTS.DEFAULT_FLOWS_PATH}" is the pre-Phase-142 default and resolves to an ` +
+        `empty catalog. Use the composite form "${DEFAULTS.ExaPathDefaults.flows}", or an explicit ` +
+        `path if the catalog genuinely lives elsewhere.`,
+      path: ["paths", "flows"],
+    });
+  }
 
   // Validate that default_model exists in models keys or is a fallback chain
   const modelKeys = Object.keys(configData.models || {});

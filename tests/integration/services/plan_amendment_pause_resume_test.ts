@@ -6,6 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
+import { dirname } from "@std/path";
 import { initTestDbService } from "@exaix/testing";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
@@ -17,6 +18,7 @@ import {
   createPlanAmendmentExecutor,
   createPlanAmendmentServiceForTest,
   createPlanExecutionContext,
+  getPlanAmendmentsDir,
   readDirEntries,
   withPlanAmendmentPendingScenario,
 } from "./plan_amendment_test_helper.ts";
@@ -111,10 +113,14 @@ Deno.test("Amendment artifact is stored in correct directory structure", async (
       scorer: mockScorer,
     },
     async ({ config, root }) => {
+      // `paths.memoryExecution` ships root-relative ("Memory/Execution") but is also accepted
+      // memory-relative ("Execution"); getPlanAmendmentsDir applies the same disambiguation
+      // production uses, so derive from it rather than re-joining the segments here and
+      // double-prefixing "Memory/".
       const memoryPath = `${root}/${config.paths.memory}`;
-      const executionPath = `${memoryPath}/${config.paths.memoryExecution}`;
-      const tracePath = `${executionPath}/${traceId}`;
-      const amendmentsPath = `${tracePath}/amendments`;
+      const amendmentsPath = getPlanAmendmentsDir(root, config, traceId);
+      const tracePath = dirname(amendmentsPath);
+      const executionPath = dirname(tracePath);
 
       const memoryStat = await Deno.stat(memoryPath);
       assertEquals(memoryStat.isDirectory, true);

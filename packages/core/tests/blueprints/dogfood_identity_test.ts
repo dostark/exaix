@@ -25,19 +25,29 @@ Deno.test("[dogfood-identity] dogfood-developer loads through IBlueprintLoader",
   assertEquals(blueprint.identityId, "dogfood-developer");
 });
 
-Deno.test("[dogfood-identity] dogfood-developer carries the 5 rigor skills + response-contract", async () => {
+/**
+ * Skills this identity cannot do its job without, whatever else it carries.
+ *
+ * Deliberately a SUBSET, not the whole list. Phase 142 Step 17 rewrote this test twice: it
+ * first asserted a fixed count of 8, then the exact pruned array — both of which fail on any
+ * legitimate curation of the list and neither of which says what the identity actually needs.
+ * A count cannot tell a deliberate prune from an accidental one; an exact list re-declares
+ * policy that `tests/blueprints/test_helpers.ts:ROLE_REQUIRED_SKILLS` already owns, and
+ * implicitly pins the complement too. The catalog-wide invariants — every entry resolves,
+ * nobody exceeds the budget, nobody carries two output contracts — belong to
+ * `tests/eval/identity_default_skills_test.ts` and are not restated here.
+ */
+const DOGFOOD_REQUIRED_SKILLS = ["response-contract", "exaix-conventions", "tdd-methodology"];
+
+Deno.test("[dogfood-identity] dogfood-developer carries the skills its role requires", async () => {
   const loader = new IBlueprintLoader({ blueprintsPath: IDENTITIES_PATH });
   const blueprint = await loader.load("dogfood-developer");
 
   assertExists(blueprint);
   const skills = blueprint.frontmatter.default_skills ?? [];
-  const rigorSkills = ["tdd-methodology", "exaix-conventions", "portal-grounding", "security-first", "code-review"];
 
-  for (const skill of rigorSkills) {
-    assertEquals(skills.includes(skill), true, `default_skills must include '${skill}'`);
-  }
-  // The universal output contract is also required (added in Phase 131 Step 4).
-  assertEquals(skills.includes("response-contract"), true, "default_skills must include 'response-contract'");
+  const missing = DOGFOOD_REQUIRED_SKILLS.filter((skill) => !skills.includes(skill));
+  assertEquals(missing, [], `dogfood-developer is missing role-required default_skills: ${missing.join(", ")}`);
 });
 
 Deno.test("[dogfood-identity] identity_id is dogfood-developer", async () => {

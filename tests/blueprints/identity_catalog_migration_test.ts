@@ -79,7 +79,17 @@ function walkIdentitiesTree(): string[] {
 // Test 1: Every active identity has response-contract (or response-contract-judge)
 // in default_skills
 // ─────────────────────────────────────────────
-const RESPONSE_CONTRACT_SKILLS = new Set(["response-contract", "response-contract-judge"]);
+// Phase 142 Step 17: an identity carries exactly ONE output contract, and it is the most
+// specific one available — the four analysis identities carry a `response-contract-<domain>`
+// variant instead of the generic, so the whole family counts.
+const RESPONSE_CONTRACT_SKILLS = new Set([
+  "response-contract",
+  "response-contract-judge",
+  "response-contract-code-analysis",
+  "response-contract-performance",
+  "response-contract-qa",
+  "response-contract-security-analysis",
+]);
 
 Deno.test({
   name: "[step7] every active identity has response-contract in default_skills",

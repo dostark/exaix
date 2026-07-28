@@ -1,0 +1,19 @@
+# @schema-version: 1.0.0
+---
+id: "list-directory-contents"
+name: "List Directory Contents"
+description: "Use list_directory tool to list directory contents"
+version: "1.0.0"
+output:
+  from: list
+  format: markdown
+steps:
+  - id: "list"
+    name: "List directory using list_directory"
+    identity: "senior-coder"
+    execution_mode: "declared"
+    tools:
+      - list_directory
+    input:
+      source: "request"
+    timeout: 30000

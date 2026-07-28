@@ -11,6 +11,7 @@
 
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IOutputValidator } from "./internal_types.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IRequestQualityAssessment, IRequestQualityIssue } from "@exaix/schemas/request_quality_assessment.ts";
 import { RequestQualityLevel, RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
@@ -80,9 +81,9 @@ export function buildQualityGateConfig(
  */
 export function buildRequestQualityGateFromConfig(
   cfg: IQualityGateTomlConfig,
-  provider?: IModelProvider,
-  validator?: IOutputValidator,
-  eventLogger?: IEventLogger,
+  provider: Opt<IModelProvider, Reason.OptionalDependency>,
+  validator: Opt<IOutputValidator, Reason.OptionalDependency>,
+  eventLogger: Opt<IEventLogger, Reason.OptionalDependency>,
 ): RequestQualityGate {
   return new RequestQualityGate(buildQualityGateConfig(cfg), provider, validator, eventLogger);
 }
@@ -116,9 +117,9 @@ export class RequestQualityGate implements IRequestQualityGateService {
 
   constructor(
     config: IRequestQualityGateConfig,
-    provider?: IModelProvider,
-    validator?: IOutputValidator,
-    eventLogger?: IEventLogger,
+    provider?: Opt<IModelProvider, Reason.OptionalDependency>,
+    validator?: Opt<IOutputValidator, Reason.OptionalDependency>,
+    eventLogger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
     this.config = config;
     this.provider = provider;
@@ -138,7 +139,7 @@ export class RequestQualityGate implements IRequestQualityGateService {
 
   async assess(
     requestText: string,
-    context?: IRequestQualityContext,
+    context?: Opt<IRequestQualityContext, Reason.OptionalContext>,
   ): Promise<IRequestQualityAssessment> {
     const start = performance.now();
 

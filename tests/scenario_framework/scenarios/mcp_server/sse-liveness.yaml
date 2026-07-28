@@ -1,0 +1,51 @@
+schema_version: "1.0.0"
+# Asserts the SSE transport boots and accepts a connection. The previous version ran the
+# long-lived server in the FOREGROUND with `timeout_sec: 10` and asserted `exit-code: 0` —
+# a server that stays up can only ever be killed by the timeout and report non-zero, so the
+# scenario could never pass, and it leaked the process on the runner. The probe script
+# backgrounds the server, polls an ephemeral port, and always reaps the child.
+id: "mcp-server-sse-liveness"
+title: "MCP server — SSE transport boots and serves its endpoint"
+pack: "mcp_server"
+tags: ["sse", "liveness", "subsystem:mcp-server", "team"]
+edition: "team"
+request_fixture: "fixtures/requests/mcp_tools_extended/read_file.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "probe-sse-liveness"
+    type: "shell"
+    name: "SSE server accepts a connection, then exits cleanly"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/probe_sse_liveness.ts"
+    env:
+      EXA_LLM_PROVIDER: "mock"
+      EXA_CI_MODE: "1"
+    timeout_sec: 90
+    output_criteria:
+      - id: "sse-alive"
+        kind: "command-output-contains"
+        contains: ["\"sse_alive\": true"]
+        score_weight: 1.0
+      - id: "probe-exited-zero"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.5
+
+  - id: "verify-no-leaked-server"
+    type: "shell"
+    name: "No MCP server process survives the probe"
+    command: "sh"
+    # The bracket around the first character stops pgrep matching this very command line,
+    # whose own argv contains the pattern being searched for.
+    args: ["-c", "pgrep -f '[a]pps/mcp-server/main.ts' >/dev/null 2>&1 && echo 'LEAKED' || echo 'no leaked server'"]
+    output_criteria:
+      - id: "no-leak"
+        kind: "command-output-contains"
+        contains: ["no leaked server"]
+        score_weight: 1.0

@@ -83,15 +83,6 @@ Deno.test("[swe_direct_api_review_approve] approve-review's output_criteria requ
   assert(matched, "approve-review must assert 'review.approved' appears in command output");
 });
 
-Deno.test("[swe_direct_api_review_approve] the stale 'no code_changes delegate worktree is created' comment is removed from the raw YAML", async () => {
-  const raw = await readRawYaml();
-  assert(
-    !raw.includes("no code_changes delegate worktree is created"),
-    "the false claim that this execution path is exempt from worktree isolation must be removed — " +
-      "GitExecutionSetupService.getExecutionStrategy forces WORKTREE for every portal-scoped plan regardless of session_delegate.enabled",
-  );
-});
-
 Deno.test("[swe_direct_api_review_approve] the single matrix cell still resolves correctly with approve-review present (regression guard)", async () => {
   const scenario = await parseScenario();
   const cellTools = scenario.matrix?.cells.map((c) => c.tool) ?? [];

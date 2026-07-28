@@ -14,6 +14,7 @@
     "@exaix/core/types": "../core/src/types/mod.ts",
     "@exaix/core/evaluation": "../core/src/evaluation/mod.ts",
     "@exaix/core/composer": "../core/src/composer/mod.ts",
+    "@exaix/core/config": "../core/src/config/mod.ts",
     "@exaix/core/func": "../core/src/func/mod.ts",
     "@exaix/core/blueprint": "../core/src/blueprint/mod.ts",
     "@exaix/core/request": "../core/src/request/mod.ts",

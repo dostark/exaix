@@ -1,0 +1,19 @@
+# @schema-version: 1.0.0
+---
+id: "exaix_config_diff"
+name: "Exaix Config Diff"
+description: "Use exaix_config_diff tool"
+version: "1.0.0"
+output:
+  from: exec
+  format: markdown
+steps:
+  - id: "exec"
+    name: "Execute using exaix_config_diff"
+    identity: "senior-coder"
+    execution_mode: "declared"
+    tools:
+      - exaix_config_diff
+    input:
+      source: "request"
+    timeout: 30000

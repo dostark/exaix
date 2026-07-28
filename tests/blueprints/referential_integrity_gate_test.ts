@@ -165,7 +165,7 @@ Deno.test({
       id: "__test_wrong_skills_default",
       fm: { default_skills: [] },
     };
-    const required: string[] = ROLE_REQUIRED_SKILLS["default"] ?? ["portal-grounding"];
+    const required: string[] = ROLE_REQUIRED_SKILLS["default"] ?? [];
     const declared = new Set(badIdentity.fm.default_skills);
     const missing = required.filter((s) => !declared.has(s));
 
@@ -174,10 +174,13 @@ Deno.test({
       true,
       "Gate must detect an identity missing role-required skills",
     );
+    // Assert against the role matrix rather than a hardcoded skill name: this test previously
+    // named `portal-grounding`, which stopped being a role requirement when Phase 142 Step 17
+    // pruned it from every identity's defaults in favour of trigger matching.
     assertEquals(
-      missing.includes("portal-grounding"),
-      true,
-      "Gate must identify portal-grounding as the missing skill for default role",
+      missing.sort(),
+      [...required].sort(),
+      "Gate must report every role-required skill the identity failed to declare",
     );
   },
 });

@@ -95,6 +95,37 @@ role this field plays.
 
 ---
 
+## Config Path Settings
+
+### `paths.memoryExecution` (two accepted forms)
+
+Names the execution-memory directory, and accepts **two** shapes — an agent
+reading a config must not guess which is meant:
+
+- **Composite / root-relative** — `"Memory/Execution"` (the current default).
+  Resolved as `<root>/Memory/Execution`.
+- **Bare / memory-relative** — `"Execution"` (the pre-Phase-142 default).
+  Resolved as `<root>/<paths.memory>/Execution`.
+
+The disambiguation rule is "does the value contain a separator", and it lives in
+exactly one place: `packages/core/src/config/paths.ts:resolveMemoryExecutionRoot`.
+Never inline it — joining a composite value onto `paths.memory` produces
+`Memory/Memory/Execution`.
+
+### `paths.flows` (one rule, one rejected legacy value)
+
+Names the flow-blueprint catalog. Consumers resolve
+`join(config.system.root, config.paths.flows)` and never recompose the path from
+`paths.blueprints` plus a flows subfolder — the two agree only on a default
+workspace.
+
+The value `"Flows"` is **rejected at config load**: it was the pre-Phase-142
+default, resolves to a directory the catalog has never shipped in, and produced
+`exactl flow list` reporting "No flows found" against a workspace holding twenty
+flows. The composite form is `"Blueprints/Flows"`.
+
+---
+
 ## CLI Layer
 
 ### `exactl`
@@ -223,7 +254,7 @@ concepts defined in the root glossary:
 
 | Code name                                    | Layer                                                                | Meaning                                                                                                                                                                                         |
 | -------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `IChangesetResult` / `ChangesetResultSchema` | Zod-inferred type + schema, `packages/schemas/src/agent_executor.ts` | Structured result an agent reports after applying a Plan's changes — `branch`, `commit_sha`, `files_changed`, `description`, `tool_calls`, `execution_time_ms`, `unauthorized_changes`, `usage` |
+| `IChangesetResult` / `ChangesetResultSchema` | Zod-inferred type + schema, `packages/schemas/src/agent_orchestrator.ts` | Structured result an agent reports after applying a Plan's changes — `branch`, `commit_sha`, `files_changed`, `description`, `tool_calls`, `execution_time_ms`, `unauthorized_changes`, `usage` |
 | `IPlanAmendmentService`                      | Interface, `packages/core/src/types/i_plan_amendment_service.ts`     | `shouldAmend(trigger)` decides whether an amendment is warranted; generates a structural patch proposal against a plan's remaining steps                                                        |
 | `IPlanAmendmentGate`                         | Interface, `packages/core/src/types/i_plan_amendment_gate.ts`        | `processAmendment(...)` routes a proposed amendment through human approval and returns a decision; `applyApprovedAmendment(...)` rewrites the plan content once approved                        |
 

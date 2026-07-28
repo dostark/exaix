@@ -52,6 +52,7 @@ import {
 } from "@exaix/testing";
 import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface ITestEnvironmentOptions {
   /** Custom config overrides */
@@ -80,6 +81,15 @@ interface IRequestBaseOptions extends IRequestCreationOptions {
   contentPrefix: string;
 }
 
+/** Overrides for the RequestProcessor a test environment builds. */
+export interface IRequestProcessorTestOptions {
+  providerMode?: MockStrategy;
+  recordings?: IRecordedResponse[];
+  includeReasoning?: boolean;
+  requestsDir?: string;
+  blueprintsPath?: string;
+}
+
 export class TestEnvironment {
   readonly tempDir: string;
   readonly config: Config;
@@ -90,7 +100,7 @@ export class TestEnvironment {
     tempDir: string,
     config: Config,
     db: DatabaseService,
-    cleanup?: () => Promise<void>,
+    cleanup?: Opt<() => Promise<void>, Reason.OptionalDependency>,
   ) {
     this.tempDir = tempDir;
     this.config = config;
@@ -206,7 +216,7 @@ plans = "Plans"
 requests = "Requests"
 rejected = "Rejected"
 identities = "Identities"
-flows = "Flows"
+flows = "Blueprints/Flows"
 memoryProjects = "Projects"
 memoryExecution = "Execution"
 memoryIndex = "Index"
@@ -356,7 +366,7 @@ retry_backoff_base_ms = 1000
     description: string,
     options: IRequestCreationOptions,
     contentPrefix: string,
-    flowId?: string,
+    flowId?: Opt<string, Reason.OptionalInput>,
   ): Promise<{ filePath: string; traceId: string }> {
     return this.createRequestBase(description, {
       ...options,
@@ -776,7 +786,7 @@ This plan will accomplish the requested task.
    */
   async createBlueprint(
     identityId: string,
-    content?: string,
+    content?: Opt<string, Reason.TestStub>,
   ): Promise<string> {
     const blueprintsPath = join(this.tempDir, "Blueprints", "Identities");
     await ensureDir(blueprintsPath);
@@ -798,13 +808,7 @@ Always respond with valid JSON containing a plan with actionable steps.`;
   /**
    * Create a RequestProcessor with MockLLMProvider
    */
-  createRequestProcessor(options?: {
-    providerMode?: MockStrategy;
-    recordings?: IRecordedResponse[];
-    includeReasoning?: boolean;
-    requestsDir?: string;
-    blueprintsPath?: string;
-  }): {
+  createRequestProcessor(options?: Opt<IRequestProcessorTestOptions, Reason.TestOverride>): {
     provider: MockLLMProvider;
     processor: RequestProcessor;
   } {

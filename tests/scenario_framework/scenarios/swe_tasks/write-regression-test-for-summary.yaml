@@ -17,16 +17,6 @@ matrix:
       config: "configs/opencode-cli-delegate-all.toml"
       requires_bin: "opencode"
 steps:
-  - id: "setup-db"
-    type: "shell"
-    command: "deno"
-    args: ["run", "-A", "--config", "$FRAMEWORK_HOME/../../deno.json", "$FRAMEWORK_HOME/../../scripts/setup_db.ts"]
-    env:
-      EXA_MIGRATIONS_DIR: "$FRAMEWORK_HOME/../../migrations"
-    output_criteria:
-      - id: "setup-done"
-        kind: "command-exit-code"
-        equals: 0
   - id: "setup-portal-repo"
     type: "shell"
     command: "sh"

@@ -22,6 +22,11 @@ track scores over time, compare runs, and gate CI on quality thresholds.
 | Blueprint quality    | `blueprint-eval`          |
 | Eval self-test       | `eval-smoke`              |
 
+Packs are also tagged by the **subsystem** they measure — `subsystem:tools`, `subsystem:mcp-server`,
+`subsystem:mcp-client`, `subsystem:identities`, `subsystem:skills`, `subsystem:flows` — which is the
+axis `eval report --group-by subsystem` aggregates and the one the cadence tiers select on. See
+[§12 Subsystem Evaluation](#12-subsystem-evaluation).
+
 ---
 
 ## 2. Quick Start
@@ -667,14 +672,97 @@ exactl eval compare --run-a $RUN_A --run-b $RUN_B | grep "delta"
 
 ---
 
-## 12. Extending the Framework
+## 12. Subsystem Evaluation
+
+Packs are organised by _which subsystem they measure_, not only by which directory they live in. A
+scenario carries a `subsystem:` tag, and the six subsystems together are the coverage contract: if a
+subsystem has no green scenario, nothing in this framework is measuring it.
+
+| Subsystem tag          | What it measures                                       | Edition |
+| ---------------------- | ------------------------------------------------------ | ------- |
+| `subsystem:tools`      | MCP tool round-trips through the real server           | all     |
+| `subsystem:mcp-server` | the external-client contract over stdio                | Team    |
+| `subsystem:mcp-client` | dynamic-step execution and tool selection              | all     |
+| `subsystem:identities` | identity resolution and its effect on the written plan | all     |
+| `subsystem:skills`     | skill matching, pinning and injection into the prompt  | all     |
+| `subsystem:flows`      | flow blueprints end to end, request through plan       | all     |
+
+A second axis, `entity:<name>`, narrows to one tool, identity, skill or flow — that is what
+`eval report --group-by entity` aggregates.
+
+### Cadence tiers
+
+| Tier            | Command                          | Selects                                                        |
+| --------------- | -------------------------------- | -------------------------------------------------------------- |
+| **ci-smoke**    | `--profile ci-smoke`             | `smoke`-tagged scenarios                                       |
+| **ci-core**     | `deno task eval:subsystems:core` | the `smoke` subset — one or more representatives per subsystem |
+| **ci-core**     | `deno task test:parity`          | the catalog/flow/identity/skill/tool parity gates              |
+| **ci-extended** | `deno task eval:subsystems`      | every mock-tier scenario across all six subsystems             |
+| **nightly**     | see below                        | the `provider-live` tier, against a real model                 |
+
+> **These tasks are run by hand.** None is attached to a GitHub Actions job, to `scripts/ci.ts`, or
+> to the pre-commit gates. Wiring a tier into CI is a separate, deliberate decision — `eval:subsystems`
+> spawns daemons across ~70 scenarios, and the nightly tier spends provider budget.
+
+Selection is CI-safe by default: an explicit `--tag` or `--pack` drops `provider-live` and
+non-`auto` scenarios, because they cannot pass without a real model and would otherwise depress
+every baseline. Asking for an excluded tag turns that filter off — which is how the nightly tier is
+selected — and an excluded tag never widens the selection into other packs.
+
+### Reading a subsystem report
+
+```bash
+exactl eval report --group-by subsystem
+```
+
+```text
+Name                    Tasks  Passed   Mean    Delta    Pass@1
+subsystem:flows         21     21/21    —       +0.000   1.000
+subsystem:identities    15     15/15    —       —        1.000
+```
+
+Two columns deserve care:
+
+- **`Mean` shows `—` for contract packs.** Most subsystem scenarios ask yes/no questions: the pinned
+  skill reached the prompt or it did not. A mean over binary assertions is the pass rate wearing
+  three decimal places, and reading a drop from 1.000 to 0.971 as "97% healthy" is how a dead
+  feature once looked fine. A mean appears only when some score falls strictly between 0 and 1 —
+  that is, when the criteria are genuinely graded, as with an LLM judge.
+- **`Delta` shows `—` on a first observation**, not `+0.000`. "No comparison" and "no change" are
+  different facts.
+
+### The contributor rule
+
+**Adding a tool, identity, skill or flow requires an eval scenario — or a reasoned parity
+exclusion.** The parity gates (`deno task test:parity`) compare each catalog against the scenarios
+that reference it and fail on anything uncovered. To exclude something deliberately, add it to
+`tests/eval/parity_exclusions.json` with a reason; an unexplained gap is a failure, not a default.
+
+### A green pack means something only if it is known to go red
+
+Every subsystem declares at least one mutation that must turn its pack red, in
+`tests/scenario_framework/runner/pack_mutations.ts`. This exists because packs in this codebase have
+repeatedly been unable to fail for the right reason: one sat at mean 0.714 with three "green"
+scenarios while asserting nothing at all, and fourteen identity smokes asserted a frontmatter field
+that is stamped unconditionally — so every one would have passed with the _wrong_ identity.
+
+`pack_mutation_coverage_test.ts` verifies each mutation's anchor still resolves in its source file,
+so a refactor cannot silently retire a pack's only evidence of sensitivity.
+
+Related: setup and teardown steps carry no weight in the suite score. A step-weighted mean over
+every step made the score really "the fraction of steps that passed", and most steps are harness
+plumbing — a total failure of the mechanism under test still scored 0.800 against a 0.7 gate.
+
+---
+
+## 13. Extending the Framework
 
 See `tests/scenario_framework/README.md` for architectural documentation,
 schema contracts, extension patterns, and validation sandbox setup.
 
 ---
 
-## 13. swe_tasks Benchmark Pack
+## 14. swe_tasks Benchmark Pack
 
 The `swe_tasks` pack (`tests/scenario_framework/scenarios/swe_tasks/`) is a
 repeatable benchmark of typical software engineering tasks organized by

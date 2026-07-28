@@ -5,13 +5,12 @@ name: "Full Refactoring Workflow"
 description: "End-to-end refactoring combining dynamic exploration and declared patches"
 version: "1.0.0"
 output:
-  from: step
-  step: summary
+  from: summary
   format: markdown
 steps:
   - id: "explore"
     name: "Explore codebase to identify refactoring targets"
-    identity: "researcher"
+    identity: "code-analyst"
     execution_mode: "dynamic"
     permitted_tools:
       - read_file
@@ -36,7 +35,7 @@ steps:
 
   - id: "summary"
     name: "Generate summary of changes"
-    identity: "researcher"
+    identity: "code-analyst"
     execution_mode: "declared"
     tools:
       - read_file

@@ -56,7 +56,8 @@ export interface IRequestOptions {
   characteristics?: string[];
   flow?: string;
   skills?: string[];
-  skipSkills?: string[];
+  /** Tags the skill matcher scores against a skill's declared trigger tags (Phase 142). */
+  tags?: string[];
   subject?: string;
   analyze?: boolean;
   analysis_engine?: AnalysisMode;

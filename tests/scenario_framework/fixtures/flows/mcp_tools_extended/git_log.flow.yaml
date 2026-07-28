@@ -1,0 +1,19 @@
+# @schema-version: 1.0.0
+---
+id: "git_log"
+name: "Git Log"
+description: "Use git_log tool"
+version: "1.0.0"
+output:
+  from: exec
+  format: markdown
+steps:
+  - id: "exec"
+    name: "Execute using git_log"
+    identity: "senior-coder"
+    execution_mode: "declared"
+    tools:
+      - git_log
+    input:
+      source: "request"
+    timeout: 30000

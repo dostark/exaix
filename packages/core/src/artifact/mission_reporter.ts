@@ -14,6 +14,7 @@
 import { DomainEventType } from "@exaix/core/events";
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
+import { resolveMemoryExecutionRoot } from "../config/paths.ts";
 import {
   AMENDMENT_ARTIFACTS_DIR,
   DEFAULT_EXECUTION_MEMORY_PATH,
@@ -28,6 +29,7 @@ import { ExecutionStatus } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { ZPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import { exists } from "@std/fs";
+import type { Opt, Reason } from "../types/optional_marker.ts";
 
 // ============================================================================
 // Types and Interfaces
@@ -135,8 +137,8 @@ export class MissionReporter {
     config: Config,
     reportConfig: IReportConfig,
     memoryBank: MemoryBankService,
-    logger?: IEventLogger,
-    reader?: IEventJournalReader,
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>,
+    reader?: Opt<IEventJournalReader, Reason.OptionalDependency>,
   ) {
     this.config = config;
     this.reportConfig = reportConfig;
@@ -389,9 +391,7 @@ export class MissionReporter {
     const amendments: NonNullable<ITraceData["amendments"]> = [];
 
     try {
-      const executionRoot = this.config.paths.memoryExecution.includes("/")
-        ? this.config.paths.memoryExecution
-        : join(this.config.paths.memory, this.config.paths.memoryExecution);
+      const executionRoot = resolveMemoryExecutionRoot(this.config.paths);
 
       const amendmentsDir = join(
         this.config.system.root,

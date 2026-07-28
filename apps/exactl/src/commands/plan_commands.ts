@@ -7,6 +7,7 @@
  */
 
 import { join } from "@std/path";
+import { resolveMemoryExecutionRoot } from "@exaix/core/config";
 import { ensureDir, exists } from "@std/fs";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import { FrontmatterParser } from "@exaix/core/parsing";
@@ -112,7 +113,7 @@ export class PlanCommands extends BaseCommand {
    * Approve a plan: move from Workspace/Plans to Workspace/Active
    * Only plans with status='review' can be approved.
    */
-  async approve(planId: string, skills?: string[]): Promise<void> {
+  async approve(planId: string, skills?: Opt<string[], Reason.OptionalInput>): Promise<void> {
     try {
       // Validate input
       const validation = new ValidationChain()
@@ -188,7 +189,7 @@ export class PlanCommands extends BaseCommand {
   /**
    * Approve all plans awaiting review.
    */
-  async approveAll(skills?: string[]): Promise<void> {
+  async approveAll(skills?: Opt<string[], Reason.OptionalInput>): Promise<void> {
     try {
       const plans = await this.list(PlanStatus.REVIEW);
       if (plans.length === 0) {
@@ -302,7 +303,7 @@ export class PlanCommands extends BaseCommand {
   }
 
   private async updateRequestForRejection(
-    requestId: string | undefined,
+    requestId: Opt<string, Reason.TraceAbsent>,
     rejectedPath: string,
   ): Promise<void> {
     if (!requestId) return;
@@ -411,7 +412,7 @@ export class PlanCommands extends BaseCommand {
   }
 
   private async updateRequestForRevision(
-    requestId: string | undefined,
+    requestId: Opt<string, Reason.TraceAbsent>,
     comments: string[],
   ): Promise<void> {
     if (!requestId) return;
@@ -468,7 +469,7 @@ export class PlanCommands extends BaseCommand {
    * - Workspace/Rejected: rejected
    * - All directories when no filter is specified
    */
-  async list(statusFilter?: PlanStatusType): Promise<IPlanMetadata[]> {
+  async list(statusFilter?: Opt<PlanStatusType, Reason.QueryFilter>): Promise<IPlanMetadata[]> {
     const plans: IPlanMetadata[] = [];
     const dirsToScan = this.resolvePlanDirectories(statusFilter);
 
@@ -667,9 +668,7 @@ export class PlanCommands extends BaseCommand {
     }
 
     const config = this.context.config.getAll();
-    const executionRoot = config.paths.memoryExecution.includes("/")
-      ? config.paths.memoryExecution
-      : join(config.paths.memory, config.paths.memoryExecution);
+    const executionRoot = resolveMemoryExecutionRoot(config.paths);
 
     const artifactPath = join(
       config.system.root,

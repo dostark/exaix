@@ -19,6 +19,7 @@ export * from "./daemon_adapter.ts";
 export * from "./agent_adapter.ts";
 export * from "./display_adapter.ts";
 export * from "./archive_adapter.ts";
+export * from "./flow_loader_adapter.ts";
 export * from "./flow_validator_adapter.ts";
 export * from "./context_card_adapter.ts";
 export * from "./skills_adapter.ts";

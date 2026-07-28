@@ -6,7 +6,7 @@
  * @description Barrel exports for @exaix/request internals: analysis, parsing,
  * routing, and processing services.
  */
-export { applyAnalysisToRequest, buildParsedRequest, loadBlueprint } from "./common.ts";
+export { applyAnalysisToRequest, buildParsedRequest, loadBlueprint, normalizeFrontmatterList } from "./common.ts";
 export { buildPlanValidationFeedbackPrompt } from "./common.ts";
 
 export { RequestAnalyzer } from "./analysis/mod.ts";

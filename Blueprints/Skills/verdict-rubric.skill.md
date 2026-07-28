@@ -8,6 +8,7 @@ skill_id: "verdict-rubric"
 name: "Verdict & Rubric Evaluation"
 version: "1.0.0"
 description: "Structured scoring criteria and verdict thresholds for LLM-as-a-Judge evaluations"
+critical: true
 
 triggers:
   tags:

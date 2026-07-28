@@ -8,7 +8,7 @@
  * @related-files [packages/flow/src/step_output_formatter.ts, packages/flow/src/flow_runner.ts]
  */
 
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { StepOutputFormatter } from "@exaix/flow";
 import type { IStepResult } from "@exaix/flow";
 import { FlowOutputFormat } from "@exaix/core";
@@ -106,4 +106,37 @@ Deno.test("[StepOutputFormatter.aggregateOutput] empty from list returns empty s
   const formatter = new StepOutputFormatter();
   const output: IFlowOutput = { from: [], format: FlowOutputFormat.MARKDOWN };
   assertEquals(formatter.aggregateOutput(output, new Map()), "");
+});
+
+// ---------------------------------------------------------------------------
+// Phase 142 Step 13 — mergeAsContext on a step's real output.
+//
+// A step whose input comes from a previous step receives that step's output verbatim, and an
+// agent step emits a plan JSON OBJECT. applyMergeAsContextTransform parsed the input, found it
+// was not an array, and fell through to `throw new Error("mergeAsContext requires an array of
+// strings")` — while genuinely unparseable prose was handled fine by the paragraph-splitting
+// fallback. So valid JSON was treated as WORSE input than arbitrary text, and every flow whose
+// second step used this transform died there: api-design failed 7 of its 8 steps this way.
+// ---------------------------------------------------------------------------
+
+Deno.test("[StepOutputFormatter.applyTransform] mergeAsContext accepts a JSON object from a prior step", () => {
+  const formatter = new StepOutputFormatter();
+  const priorStepOutput = JSON.stringify({ description: "Design the API", steps: [{ step: 1, title: "Model" }] });
+
+  const result = formatter.applyTransform(priorStepOutput, "mergeAsContext");
+
+  assertStringIncludes(result, "Design the API");
+});
+
+Deno.test("[StepOutputFormatter.applyTransform] mergeAsContext still handles prose and JSON arrays", () => {
+  const formatter = new StepOutputFormatter();
+
+  assertStringIncludes(formatter.applyTransform("First para\n\nSecond para", "mergeAsContext"), "First para");
+  assertStringIncludes(formatter.applyTransform(JSON.stringify(["alpha", "beta"]), "mergeAsContext"), "alpha");
+});
+
+Deno.test("[StepOutputFormatter.applyTransform] mergeAsContext tolerates an empty step output", () => {
+  const formatter = new StepOutputFormatter();
+  // A step that produced nothing must not take the whole flow down with an exception.
+  assertEquals(typeof formatter.applyTransform("", "mergeAsContext"), "string");
 });

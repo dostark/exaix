@@ -66,7 +66,7 @@ Follow instructions
       portals: "Portals",
       memory: "Memory",
       runtime: "Runtime",
-      flows: "Flows",
+      flows: "Blueprints/Flows",
     },
     database: {
       batch_flush_ms: 100,

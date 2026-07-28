@@ -131,6 +131,30 @@ Deno.test("[RequestProcessor] populates IParsedRequest.tags from analysis", () =
   assertEquals(request.tags, ["auth", "security", "login"]);
 });
 
+Deno.test("[RequestProcessor] keeps frontmatter tags when analysis supplies its own", () => {
+  // Phase 142 Step 17G: `request.tags = analysis.tags` discarded whatever the request author
+  // wrote in `tags:` frontmatter. Those tags are the only input the skill matcher scores
+  // against a skill's declared trigger tags, so tag-driven skill selection could never fire
+  // for a request that also went through analysis — which every request does.
+  const frontmatter = { ...makeTestFrontmatter(), tags: ["self-critique", "architecture-review"] };
+  const request = buildParsedRequest("Review the exception paths", frontmatter, "req-tags", "trace-tags");
+  const analysis = makeAnalysis({ tags: ["error-handling", "reliability"] });
+
+  applyAnalysisToRequest(request, analysis);
+
+  assertEquals(request.tags, ["self-critique", "architecture-review", "error-handling", "reliability"]);
+});
+
+Deno.test("[RequestProcessor] does not duplicate a tag both sources declare", () => {
+  const frontmatter = { ...makeTestFrontmatter(), tags: ["error-handling"] };
+  const request = buildParsedRequest("Review the exception paths", frontmatter, "req-dup", "trace-dup");
+  const analysis = makeAnalysis({ tags: ["error-handling", "reliability"] });
+
+  applyAnalysisToRequest(request, analysis);
+
+  assertEquals(request.tags, ["error-handling", "reliability"]);
+});
+
 Deno.test("[RequestProcessor] populates IParsedRequest.filePaths from analysis", () => {
   const frontmatter = makeTestFrontmatter();
   const request = buildParsedRequest("Update src/auth.ts", frontmatter, "req-3", "trace-3");

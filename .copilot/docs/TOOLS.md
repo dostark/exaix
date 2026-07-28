@@ -14,6 +14,27 @@ links:
 
 > **Human developers:** For workstation setup, installation, and CLI tool guides see [exaix-dev-docs/dev/Exaix_Tools.md](./exaix-dev-docs/dev/Exaix_Tools.md).
 
+## Evaluation coverage
+
+Every tool below is expected to have an eval scenario tagged `subsystem:tools` and
+`entity:<tool_name>`, exercised through the real MCP server rather than a shell surrogate. The
+parity gate `tests/eval/tool_eval_parity_test.ts` fails when a manifest entry has neither a scenario
+nor a reasoned exclusion in `tests/eval/parity_exclusions.json`.
+
+**Adding a tool therefore means adding a scenario, or writing down why not.** Run the pack with
+`deno task eval:subsystems` (all six subsystems, mock tier) and the gates with
+`deno task test:parity`; both are invoked by hand, not by a CI job.
+
+Two flags in the table below also constrain where a tool may be used. A tool that is **not**
+`Dynamic`, or that requires approval, is refused in a flow step with `execution_mode: dynamic` —
+`validateDynamicStepTools` checks both, because a dynamic step's tool list is chosen by a model at
+runtime and the approval prompt would be the only thing between it and the effect. Note that
+`side_effect_scope: none` does not imply safe-for-dynamic: `exaix_config_set` and
+`exaix_config_apply` mutate configuration while declaring no side-effect scope, which is why the
+approval flag is checked separately.
+
+See `docs/Exaix_Evaluation.md` §12 for the subsystem taxonomy and cadence.
+
 <!-- AGENT_TOOLS_START -->
 
 ## 🤖 Agent Tool Index (MCP) {#agent-tools}

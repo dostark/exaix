@@ -22,7 +22,7 @@ steps:
       - "$REQUEST_FIXTURE"
   - id: "wait-for-pm-plan"
     type: "wait-for-file"
-    args: ["**/*_plan.yaml"]
+    args: ["**/*_plan.md"]
     timeout_sec: 180
   - id: "create-architect-request"
     type: "exactl"
@@ -36,5 +36,5 @@ steps:
       - "Based on the recent product manager plan generated in the workspace, design the technical architecture for the TUI monitoring dashboard. Review the latest plan.yaml to understand the user stories before creating your architectural design."
   - id: "wait-for-architect-plan"
     type: "wait-for-file"
-    args: ["**/*_plan.yaml"]
+    args: ["**/*_plan.md"]
     timeout_sec: 180

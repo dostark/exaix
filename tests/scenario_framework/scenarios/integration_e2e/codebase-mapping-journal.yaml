@@ -2,44 +2,64 @@ schema_version: "1.0.0"
 id: "codebase-mapping-journal"
 title: "Codebase mapping with full Activity Journal audit trail"
 pack: "integration_e2e"
-tags: ["e2e", "dynamic", "journal", "audit", "traceability"]
+tags: ["e2e", "dynamic", "journal", "audit", "traceability", "provider-live"]
 request_fixture: "fixtures/requests/integration_e2e/codebase_mapping_journal.md"
 mode_support: ["auto", "manual-checkpoint"]
 portals:
   - alias: "sample-project"
-    source_path: "/tmp/sample-project"
+    source_path: "$WORKSPACE_ROOT/fixtures/portals/simple_repo"
 flow_fixture: "fixtures/flows/integration_e2e/codebase_mapping.flow.yaml"
+# Phase 142 Step 15 — repaired against the real surfaces. `exactl flow run` has never existed; a
+# flow executes when a request naming it in its `flow:` frontmatter is submitted. The sample
+# project was built with `mkdir -p /tmp/sample-project`, outside the sandbox and shared between
+# runs; it is now the seeded git fixture the runner mounts. `mcp.tool.read_file` and its siblings
+# are not action types the journal ever writes — tool calls are journalled as `dynamic_tool_call`.
+# Nothing in the repository writes a `flow_run_*.json`, so that wait could only time out.
+#
+# Tagged provider-live: the tool calls it counts require a real model. The mock provider makes
+# none, which is the Step 15 finding.
 steps:
-  - id: "setup-project"
-    type: "shell"
-    name: "Create sample project with multiple files"
-    command: "sh"
-    args:
-      - "-c"
-      - "mkdir -p /tmp/sample-project/src/utils /tmp/sample-project/src/services && touch /tmp/sample-project/src/main.ts /tmp/sample-project/src/utils/helper.ts /tmp/sample-project/src/services/api.ts"
-    input_criteria: []
-    output_criteria:
-      - id: "project-created"
-        score_weight: 0.4
-        kind: "dir-exists"
-        path: "/tmp/sample-project"
-
-  - id: "execute-flow"
+  - id: "start-daemon"
     type: "exactl"
-    name: "Run codebase mapping flow"
-    command: "flow"
-    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
+    command: "daemon"
+    args: ["start"]
+    env:
+      EXA_CI_MODE: "1"
     output_criteria:
-      - id: "flow-completed"
-        score_weight: 0.7
-        kind: "command-exit-code"
-        equals: 0
+      - id: "daemon-started"
+        score_weight: 0.3
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "submit-request"
+    type: "exactl"
+    name: "Submit the request whose frontmatter names the flow"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE"]
+    output_criteria:
+      - id: "request-submitted"
+        score_weight: 0.4
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 180
+    output_criteria:
+      - id: "plan-produced"
+        score_weight: 0.5
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
 
   - id: "verify-journal-entries"
-    type: "exactl"
-    name: "Verify all tool calls are journaled with trace ID"
-    command: "journal"
-    args: ["query", "--trace-id", "$FLOW_TRACE_ID", "--format", "json"]
+    type: "shell"
+    name: "Every tool call is journalled, under the run's trace"
+    command: "sh"
+    args: [
+      "-c",
+      "trace_id=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT trace_id FROM activity WHERE action_type = 'request.created' ORDER BY rowid DESC LIMIT 1\"); echo \"trace_id: $trace_id\" >&2; sqlite3 -json \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT action_type, trace_id, json_extract(payload,'$.tool_name') AS tool_name FROM activity WHERE action_type = 'dynamic_tool_call' AND trace_id = '$trace_id' ORDER BY rowid\"",
+    ]
     output_criteria:
       - id: "multiple-events"
         score_weight: 0.6
@@ -51,29 +71,17 @@ steps:
         kind: "json-query"
         query: ".[].trace_id"
         not_empty: true
-      - id: "tool-calls-present"
+      - id: "distinct-tools-used"
         score_weight: 0.6
         kind: "json-query"
-        query: ".[].action_type"
-        contains: ["mcp.tool.read_file", "mcp.tool.list_directory"]
+        query: ".[].tool_name"
+        unique_count_min: 2
 
-  - id: "verify-output"
-    type: "wait-for-file"
-    name: "Wait for flow run output"
-    args: ["**/flow_run_*.json"]
-    timeout_sec: 180
-    input_criteria: []
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
     output_criteria:
-      - id: "dynamic-step-completed"
-        score_weight: 0.6
-        kind: "json-query"
-        query: ".steps[?@.execution_mode=='dynamic'].completed"
-        equals: true
-
-  - id: "cleanup"
-    type: "shell"
-    name: "Clean up test project"
-    command: "rm"
-    args: ["-rf", "/tmp/sample-project"]
-    input_criteria: []
-    output_criteria: []
+      - id: "daemon-stopped"
+        kind: "command-exit-code"
+        equals: 0

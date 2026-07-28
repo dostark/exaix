@@ -5,8 +5,7 @@ name: "Patch File Refactoring"
 description: "Use patch_file tool to refactor function names"
 version: "1.0.0"
 output:
-  from: step
-  step: refactor
+  from: refactor
   format: markdown
 steps:
   - id: "refactor"

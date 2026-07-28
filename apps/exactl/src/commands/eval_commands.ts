@@ -175,9 +175,60 @@ export class EvalCommands extends BaseCommand {
    * exclusively from eval_runs.total_tracked_cost_usd (Phase 140a Step 4). Absent values render
    * "—", never "0": a cell whose every run had no tracked cost (all direct-API) is unknown
    * spend, not free spend, and must never be confused with a predicted-cost figure.
+   *
+   * `--group-by subsystem|entity` renders per-family summary rows grouped by the chosen
+   * tag prefix (subsystem: or entity:) using store.summarizeByTag.
    */
-  report(options: { view?: string; scenario?: string; last?: number; pack?: string }): void {
+  report(options: {
+    view?: string;
+    scenario?: string;
+    last?: number;
+    pack?: string;
+    groupBy?: string;
+  }): void {
     const view = options.view ?? "cost";
+
+    if (options.groupBy) {
+      const dbPath = resolveEvalDbPath();
+      const store = new EvalSqliteStore(dbPath);
+      try {
+        store.initialize();
+        const tagPrefix = options.groupBy === "subsystem" ? "subsystem:" : "entity:";
+        const summary = store.summarizeByTag(tagPrefix, { pack: options.pack });
+        if (summary.length === 0) {
+          console.log("No matching summary data found for the requested group.");
+          return;
+        }
+        console.log(
+          `${options.groupBy === "subsystem" ? "Subsystem" : "Entity"} Report`,
+        );
+        console.log("-".repeat(70));
+        console.log(
+          `  ${"Name".padEnd(30)} ${"Tasks".padEnd(6)} ${"Passed".padEnd(8)} ${"Mean".padEnd(7)} ${"Delta".padEnd(8)} ${
+            "Pass@1".padEnd(8)
+          } ${"Reconcile".padEnd(10)} ${"Duration".padEnd(10)}`,
+        );
+        for (const row of summary) {
+          // A mean only where the criteria are graded. Over a pack of yes/no contract assertions it
+          // is the pass rate wearing three decimal places, and reading 0.971 as "97% healthy" is
+          // how a dead subsystem looked healthy in Phase 142 Step 17.
+          const mean = row.graded ? row.meanScore.toFixed(3) : "—";
+          // "—" on a first run: there is nothing for a trend to be against, and printing +0.000
+          // would read as "no change" rather than "no comparison".
+          const delta = row.delta === null ? "—" : `${row.delta >= 0 ? "+" : ""}${row.delta.toFixed(3)}`;
+          console.log(
+            `  ${row.family.padEnd(30)} ${String(row.taskCount).padEnd(6)} ${
+              `${row.passedCount}/${row.taskCount}`.padEnd(8)
+            } ${mean.padEnd(7)} ${delta.padEnd(8)} ${row.meanPassAt1.toFixed(3).padEnd(8)} ${
+              (row.reconcileRate * 100).toFixed(0).padEnd(9)
+            }% ${Math.round(row.meanDurationMs).toString().padEnd(9)}ms`,
+          );
+        }
+      } finally {
+        store.close();
+      }
+      return;
+    }
     if (view === "cost") {
       const dbPath = resolveEvalDbPath();
       const store = new EvalSqliteStore(dbPath);
@@ -351,7 +402,7 @@ function sum(values: number[]): number | undefined {
   return values.length > 0 ? values.reduce((a, b) => a + b, 0) : undefined;
 }
 
-function formatNumberOrAbsent(value: Opt<number, Reason.OptionalInput>, digits = 0): string {
+function formatNumberOrAbsent(value?: Opt<number, Reason.OptionalInput>, digits = 0): string {
   return value === undefined ? COST_REPORT_ABSENT_VALUE : value.toFixed(digits);
 }
 

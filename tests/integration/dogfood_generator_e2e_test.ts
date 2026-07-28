@@ -34,9 +34,13 @@ Deno.test("[dogfood-e2e] dogfood-developer identity loads through IBlueprintLoad
 
   assertExists(blueprint, "dogfood-developer must load");
   assertEquals(blueprint.identityId, "dogfood-developer");
+  // This test covers the GENERATOR flow, so all it needs from the identity is that it loads
+  // and carries the skill that flow depends on. It used to assert `skills.length === 8`,
+  // which broke the moment the list was legitimately curated (Phase 142 Step 17) while
+  // telling a reader nothing about which skills were expected or why. Which defaults the
+  // identity should carry is `dogfood_identity_test.ts`'s question, not this test's.
   const skills = blueprint.frontmatter.default_skills ?? [];
-  assertEquals(skills.length, 8, "must have 8 rigor skills");
-  assertEquals(skills.includes("tdd-methodology"), true);
+  assertEquals(skills.includes("tdd-methodology"), true, "the generator flow assumes TDD guidance is loaded");
 });
 
 Deno.test("[dogfood-e2e] gap-analysis and step-execution load through SkillsService.getSkill", async () => {

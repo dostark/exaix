@@ -1,0 +1,112 @@
+schema_version: "1.0.0"
+# [security] Asserts the handlers REFUSE out-of-portal paths and unauthorised identities.
+# The previous version ran `cat /tmp/.../../etc/passwd || true` and asserted exit code 0,
+# which is satisfied by any outcome whatsoever — it proved nothing about refusal.
+id: "tools-negative-path-escape"
+title: "[security] Path escape and unauthorised identity are refused by the handlers"
+pack: "mcp_tools_extended"
+tags: ["negative", "security", "path-escape", "subsystem:tools", "entity:read_file", "entity:write_file"]
+request_fixture: "fixtures/requests/mcp_tools_extended/read_file.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "setup-portal"
+    type: "shell"
+    name: "Create the fixture portal and its config"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
+    output_criteria:
+      - id: "portal-ready"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+
+  - id: "read-traversal-refused"
+    type: "shell"
+    name: "[security] read_file refuses a ../ path that escapes the portal"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "read_file"
+      - '{"portal":"tools","path":"../../../etc/passwd","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "read-traversal-blocked"
+        kind: "command-output-contains"
+        contains: ["Path traversal not allowed", "\"isError\": true"]
+        score_weight: 1.0
+      - id: "no-passwd-content-leaked"
+        kind: "command-output-contains"
+        contains: ["\"success\": false"]
+        score_weight: 0.8
+
+  - id: "write-traversal-refused"
+    type: "shell"
+    name: "[security] write_file refuses an absolute path outside the portal"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "write_file"
+      - '{"portal":"tools","path":"/tmp/exaix-should-never-exist.txt","content":"escaped","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      # An absolute path is rejected earlier than a `../` path — by JSON-RPC argument
+      # validation (code -32602 "Access denied: Invalid path") rather than by the
+      # handler's own traversal guard, so the refusal shape differs from the read case
+      # above. Both are refusals; the assertion matches the layer that actually rejects.
+      - id: "write-traversal-blocked"
+        kind: "command-output-contains"
+        contains: ["Access denied: Invalid path", "\"success\": false"]
+        score_weight: 1.0
+
+  - id: "escaped-file-was-never-created"
+    type: "shell"
+    name: "[security] the refused write left nothing on disk outside the portal"
+    command: "sh"
+    args: ["-c", "test ! -f /tmp/exaix-should-never-exist.txt && echo 'no escaped file'"]
+    output_criteria:
+      - id: "nothing-written-outside-portal"
+        kind: "command-output-contains"
+        contains: ["no escaped file"]
+        score_weight: 1.0
+
+  - id: "unauthorised-identity-refused"
+    type: "shell"
+    name: "[security] an identity absent from identities_allowed is refused"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "read_file"
+      - '{"portal":"tools","path":"src/greeting.txt","identity_id":"not-allowed-identity"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "permission-denied"
+        kind: "command-output-contains"
+        contains: ["is not allowed to access portal 'tools'", "\"isError\": true"]
+        score_weight: 1.0
+      - id: "no-content-returned-to-unauthorised-caller"
+        kind: "command-output-contains"
+        contains: ["\"success\": false"]
+        score_weight: 0.8

@@ -1,0 +1,55 @@
+schema_version: "1.0.0"
+# Asserts patch_file refuses an edit whose search string is not present, and leaves the
+# file untouched. The previous version piped `grep` output through the scenario's own
+# shell, which said nothing about the tool's behaviour.
+id: "tools-negative-missing-substring"
+title: "Negative — patch_file on a missing substring errors and leaves the file unchanged"
+pack: "mcp_tools_extended"
+tags: ["negative", "error", "patch_file", "subsystem:tools", "entity:patch_file"]
+request_fixture: "fixtures/requests/mcp_tools_extended/patch_file_refactor.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "setup-portal"
+    type: "shell"
+    name: "Create the fixture portal and its config"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
+    output_criteria:
+      - id: "portal-ready"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+
+  - id: "patch-missing-substring"
+    type: "shell"
+    name: "patch_file reports the search string was not found, and the file is unmodified"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "patch_file"
+      - '{"portal":"tools","path":"src/main.ts","search":"NO_SUCH_SUBSTRING_HERE","replace":"replacement","identity_id":"tools-eval"}'
+      - "read_file"
+      - '{"portal":"tools","path":"src/main.ts","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "search-string-not-found-error"
+        kind: "command-output-contains"
+        contains: ["patch_file: search string not found", "\"isError\": true"]
+        score_weight: 1.0
+      - id: "file-left-unmodified"
+        kind: "command-output-contains"
+        contains: ["oldFunctionName", "KEEP_ME"]
+        score_weight: 0.8

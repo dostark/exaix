@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "acceptance-criteria-propagation"
 title: "Propagates acceptance criteria into evaluation outputs"
 pack: "agent_flows"
-tags: ["provider-live", "criteria"]
+tags: ["provider-live", "criteria", "subsystem:flows"]
 request_fixture: "fixtures/requests/agent_flows/acceptance_criteria_propagation.md"
 mode_support: ["auto"]
 portals: []

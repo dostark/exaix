@@ -8,6 +8,7 @@ skill_id: "response-contract-code-analysis"
 name: "Response Contract — Code Analysis"
 version: "1.0.0"
 description: "The <content> JSON template for a codebase-analysis deliverable (structure, modules, patterns, metrics). Applies alongside response-contract, only for analysis requests."
+critical: true
 
 triggers:
   keywords:

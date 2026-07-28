@@ -25,7 +25,15 @@ Deno.test("[TrajectoryScenario] trajectory-tool-order-assert parses with correct
 
   const assertStep = scenario.steps.find((s) => s.id === "assert-trajectory-order");
   assertEquals(assertStep?.type, ScenarioStepType.TRAJECTORY_ASSERT);
-  assertEquals(assertStep?.source_step, "execute-source-step");
+  // Phase 142 Step 15 — the source step used to be pinned by name to `execute-source-step`, a
+  // step that ran the non-existent `exactl flow run`. What matters is that `source_step` resolves
+  // to a step the scenario declares: the trajectory is read from that step's journal window, so a
+  // name pointing at nothing yields an empty window and a silent 0.00 rather than an error.
+  assertEquals(
+    scenario.steps.some((s) => s.id === assertStep?.source_step),
+    true,
+    `source_step "${assertStep?.source_step}" names no declared step`,
+  );
   assertEquals(assertStep?.expected_sequence?.length, 3);
   assertEquals(assertStep?.expected_sequence?.[0].tool, "read_file");
   assertEquals(assertStep?.expected_sequence?.[1].tool, "edit_file");
@@ -43,6 +51,11 @@ Deno.test("[TrajectoryScenario] trajectory-tool-args-assert parses with args con
   assertEquals(scenario.id, "trajectory-tool-args-assert");
   const assertStep = scenario.steps.find((s) => s.id === "assert-args-constraints");
   assertEquals(assertStep?.type, ScenarioStepType.TRAJECTORY_ASSERT);
+  assertEquals(
+    scenario.steps.some((s) => s.id === assertStep?.source_step),
+    true,
+    `source_step "${assertStep?.source_step}" names no declared step`,
+  );
   assertEquals(assertStep?.expected_sequence?.length, 2);
 
   const search = assertStep?.expected_sequence?.[0];

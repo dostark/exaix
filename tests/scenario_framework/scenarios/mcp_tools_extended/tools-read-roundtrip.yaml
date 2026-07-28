@@ -1,0 +1,69 @@
+schema_version: "1.0.0"
+# Asserts the read tools resolve paths correctly at more than one depth of the portal.
+# The previous version named its steps "Verify read_file via cat" and "Verify
+# list_directory via ls" — it exercised coreutils, not the tools.
+id: "tools-read-roundtrip"
+title: "read_file and list_directory resolve paths at portal root and nested depth"
+pack: "mcp_tools_extended"
+# Phase 142 Step 7 — `smoke` makes this the tools pack's ci-core representative. The subsystem
+# had none, so the tier that runs on every change covered its largest pack (16 scenarios) not
+# at all, and the report rendered without the row nobody would notice was missing. This one:
+# two steps, no daemon, and it round-trips both read tools through the real MCP server.
+tags: ["read", "roundtrip", "smoke", "subsystem:tools", "entity:read_file", "entity:list_directory"]
+request_fixture: "fixtures/requests/mcp_tools_extended/read_file.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "setup-portal"
+    type: "shell"
+    name: "Create the fixture portal and its config"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
+    output_criteria:
+      - id: "portal-ready"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+
+  - id: "read-at-portal-root-and-nested"
+    type: "shell"
+    name: "list_directory at the portal root; read_file from two different subdirectories"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "list_directory"
+      - '{"portal":"tools","path":".","identity_id":"tools-eval"}'
+      - "read_file"
+      - '{"portal":"tools","path":"src/greeting.txt","identity_id":"tools-eval"}'
+      - "read_file"
+      - '{"portal":"tools","path":"docs/readme.txt","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "root-listing-shows-subdirs"
+        kind: "command-output-contains"
+        contains: ["src", "docs"]
+        score_weight: 0.7
+      - id: "nested-src-file-read"
+        kind: "command-output-contains"
+        contains: ["hello from the tools pack fixture portal"]
+        score_weight: 1.0
+      - id: "nested-docs-file-read"
+        kind: "command-output-contains"
+        contains: ["tools_pack fixture portal"]
+        score_weight: 0.8
+      - id: "all-calls-succeeded"
+        kind: "command-output-contains"
+        contains: ["\"success\": true"]
+        score_weight: 0.6

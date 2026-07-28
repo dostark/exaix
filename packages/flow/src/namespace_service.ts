@@ -10,6 +10,7 @@ import { ensureDir, exists } from "@std/fs";
 import { dirname, join } from "@std/path";
 import { DEFAULT_NAMESPACE_MAX_BYTES } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
+import { resolveMemoryExecutionRoot } from "@exaix/core/config";
 import { type IFlowNamespaceEntry, type IFlowNamespaceWrite, ZFlowNamespaceEntry } from "@exaix/schemas/flow.ts";
 import type { JSONValue } from "@exaix/core";
 
@@ -63,9 +64,7 @@ export class FlowNamespaceService implements IFlowNamespaceService {
   constructor(private readonly config: Config) {}
 
   getNamespacePath(traceId: string): string {
-    const executionRoot = this.config.paths.memoryExecution.includes("/")
-      ? this.config.paths.memoryExecution
-      : join(this.config.paths.memory, this.config.paths.memoryExecution);
+    const executionRoot = resolveMemoryExecutionRoot(this.config.paths);
 
     return join(this.config.system.root, executionRoot, traceId, NAMESPACE_FILE_NAME);
   }

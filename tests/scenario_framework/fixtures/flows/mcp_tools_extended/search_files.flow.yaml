@@ -5,13 +5,12 @@ name: "Search Files Discovery"
 description: "Use search_files tool to find files by pattern"
 version: "1.0.0"
 output:
-  from: step
-  step: search
+  from: search
   format: markdown
 steps:
   - id: "search"
     name: "Search for files using search_files"
-    identity: "researcher"
+    identity: "code-analyst"
     execution_mode: "declared"
     tools:
       - search_files

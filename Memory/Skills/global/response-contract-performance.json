@@ -41,6 +41,7 @@
       "weight": 40
     }
   ],
+  "critical": true,
   "compatible_with": {
     "agents": [
       "*"

@@ -1,0 +1,56 @@
+schema_version: "1.0.0"
+# Asserts list_directory returns the fixture portal's real entries, including the
+# structured-data block agents consume. The previous version asserted `ls` output.
+id: "list-directory-roundtrip"
+title: "list_directory returns real portal entries and structured data"
+pack: "mcp_tools_extended"
+tags: ["list_directory", "read", "subsystem:tools", "entity:list_directory"]
+request_fixture: "fixtures/requests/mcp_tools_extended/list_directory.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "setup-portal"
+    type: "shell"
+    name: "Create the fixture portal and its config"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
+    output_criteria:
+      - id: "portal-ready"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+
+  - id: "call-list-directory"
+    type: "shell"
+    name: "list_directory lists the fixture portal's src/ contents"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "list_directory"
+      - '{"portal":"tools","path":"src","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "entries-returned"
+        kind: "command-output-contains"
+        contains: ["greeting.txt", "helper.test.ts", "main.ts"]
+        score_weight: 1.0
+      - id: "structured-data-emitted"
+        kind: "command-output-contains"
+        contains: ["exaix_structured_data"]
+        score_weight: 0.7
+      - id: "call-succeeded"
+        kind: "command-output-contains"
+        contains: ["\"success\": true"]
+        score_weight: 0.6

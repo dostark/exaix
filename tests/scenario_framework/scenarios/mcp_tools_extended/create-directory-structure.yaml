@@ -1,62 +1,63 @@
 schema_version: "1.0.0"
+# Asserts create_directory creates nested directories through the tool handler, that the
+# result is usable (a file can be written into it) and that the call is idempotent.
+# The previous version ran `mkdir -p` and tested `test -d`.
 id: "create-directory-structure"
-title: "Create directory tool creates nested directories"
+title: "create_directory creates a usable nested structure and is idempotent"
 pack: "mcp_tools_extended"
-tags: ["create_directory", "setup", "write-tools"]
+tags: ["create_directory", "setup", "write-tools", "subsystem:tools", "entity:create_directory"]
 request_fixture: "fixtures/requests/mcp_tools_extended/create_directory_structure.md"
 mode_support: ["auto"]
 portals: []
-flow_fixture: "fixtures/flows/mcp_tools_extended/create_directory.flow.yaml"
 steps:
-  - id: "setup-base-dir"
+  - id: "setup-portal"
     type: "shell"
-    name: "Create base project directory"
-    command: "mkdir"
-    args: ["-p", "/tmp/sample-project/src"]
-    input_criteria: []
+    name: "Create the fixture portal and its config"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
     output_criteria:
-      - id: "base-dir-created"
-        score_weight: 0.4
-        kind: "dir-exists"
-        path: "/tmp/sample-project/src"
-
-  - id: "execute-flow"
-    type: "exactl"
-    name: "Run create directory flow"
-    command: "flow"
-    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
-    output_criteria:
-      - id: "flow-execution-succeeded"
-        score_weight: 0.7
+      - id: "portal-ready"
         kind: "command-exit-code"
         equals: 0
+        score_weight: 0.3
 
-  - id: "verify-directories"
+  - id: "create-nested-then-use"
     type: "shell"
-    name: "Verify all directories were created"
-    command: "test"
-    args: ["-d", "/tmp/sample-project/src/modules/new-feature/components"]
+    name: "create_directory creates the nesting; write_file proves it is usable"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "create_directory"
+      - '{"portal":"tools","path":"src/modules/new-feature/components","identity_id":"tools-eval"}'
+      - "write_file"
+      - '{"portal":"tools","path":"src/modules/new-feature/components/widget.ts","content":"export const widget = true;","identity_id":"tools-eval"}'
+      - "list_directory"
+      - '{"portal":"tools","path":"src/modules/new-feature/components","identity_id":"tools-eval"}'
+      - "create_directory"
+      - '{"portal":"tools","path":"src/modules/new-feature/components","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
-      - id: "nested-dirs-created"
+      - id: "directory-created"
+        kind: "command-output-contains"
+        contains: ["create_directory success on src/modules/new-feature/components"]
+        score_weight: 1.0
+      - id: "directory-is-usable"
+        kind: "command-output-contains"
+        contains: ["widget.ts"]
+        score_weight: 0.8
+      - id: "idempotent-no-error"
+        kind: "command-output-contains"
+        contains: ["\"success\": true"]
         score_weight: 0.7
-        kind: "command-exit-code"
-        equals: 0
-
-  - id: "verify-idempotent"
-    type: "shell"
-    name: "Verify operation is idempotent"
-    command: "mkdir"
-    args: ["-p", "/tmp/sample-project/src/modules/new-feature/components"]
-    output_criteria:
-      - id: "idempotent-success"
-        score_weight: 0.7
-        kind: "command-exit-code"
-        equals: 0
-
-  - id: "cleanup"
-    type: "shell"
-    name: "Clean up test directory"
-    command: "rm"
-    args: ["-rf", "/tmp/sample-project"]
-    input_criteria: []
-    output_criteria: []

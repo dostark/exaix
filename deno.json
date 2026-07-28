@@ -62,6 +62,7 @@
     "sandbox": "deno run -A scripts/setup_sandbox.ts",
     "scenario:test": "deno test --allow-all tests/scenario_framework/",
     "scenario:test:unit": "deno test --allow-all tests/scenario_framework/tests/unit/",
+    "scenario:prune": "deno run --allow-read --allow-write --allow-env scripts/prune_scenario_sandboxes.ts",
     "test": "deno run --allow-run --allow-read --allow-env --allow-write scripts/test_parallel.ts --reporter=dot",
     "test_verbose": "deno test --allow-all tests/ packages/ packages-team/ apps/",
     "test:solo": "deno test --allow-all --reporter=dot tests/ packages/ apps/",
@@ -70,6 +71,9 @@
     "test_parallel:team": "EXAIX_EDITION=team deno run --allow-run --allow-read --allow-env --allow-write scripts/test_parallel.ts --reporter=dot",
     "test_parallel:pretty": "EXAIX_EDITION=solo deno run --allow-run --allow-read --allow-env --allow-write scripts/test_parallel.ts --reporter=pretty",
     "test:security": "deno test --allow-all --filter \"[security]\" tests/",
+    "test:parity": "deno test --allow-all tests/eval/catalog_parity_harness_test.ts tests/eval/flow_eval_parity_test.ts tests/eval/identity_eval_parity_test.ts tests/eval/skill_eval_parity_test.ts tests/eval/tool_eval_parity_test.ts",
+    "eval:subsystems": "deno run -A tests/scenario_framework/runner/main.ts --profile ci-extended --tag subsystem:tools --tag subsystem:mcp-server --tag subsystem:mcp-client --tag subsystem:identities --tag subsystem:skills --tag subsystem:flows --mode auto --eval-mode --score-threshold 0.7",
+    "eval:subsystems:core": "deno run -A tests/scenario_framework/runner/main.ts --profile ci-core --mode auto --eval-mode --score-threshold 0.7",
     "test:team-smoke": "deno test --allow-all --filter \"[team]\" tests/",
     "test:ci": "deno test --allow-all tests/infra/",
     "test:llama": "EXA_RUN_LLAMA_TESTS=true deno test --allow-all tests/llama_provider_test.ts",
@@ -101,6 +105,8 @@
     "check:qwen-skills-sync": "deno run --allow-read scripts/check_qwen_skills_sync.ts",
     "check:hardcoded-models": "deno run --allow-read scripts/check_hardcoded_models.ts",
     "check:event-strings": "deno run --allow-read scripts/check_event_strings.ts",
+    "check:constant-restatement": "deno run --allow-read scripts/check_constant_restatement.ts",
+    "verify:pack-mutations": "deno run -A scripts/verify_pack_mutations.ts",
     "check:leak-guard": "deno run --allow-read scripts/leak_guard.ts",
     "check:no-edition-conditionals": "deno run --allow-read --allow-run=grep scripts/check_no_edition_conditionals.ts",
     "check:tool-result-parity": "deno run -A scripts/check_tool_result_parity.ts",
@@ -274,8 +280,7 @@
     "cov_profile",
     "exaix",
     "dist",
-    "tests/scenario_framework/fixtures/portals/todo_app",
-    "tests/scenario_framework/fixtures/portals/todo_app_null_guard_bug"
+    "tests/scenario_framework/fixtures/portals"
   ],
   "lint": {
     "exclude": [

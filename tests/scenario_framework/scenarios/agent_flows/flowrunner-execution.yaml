@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "flowrunner-execution"
 title: "FlowRunner executes flow request and produces a plan"
 pack: "agent_flows"
-tags: ["smoke"]
+tags: ["subsystem:flows"]
 request_fixture: "fixtures/requests/agent_flows/flowrunner_execution.md"
 mode_support: ["auto"]
 portals: []

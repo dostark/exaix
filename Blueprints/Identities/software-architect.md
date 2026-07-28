@@ -12,10 +12,7 @@ version: "1.1.0"
 description: "Architecture design specialist for scalable, maintainable system design"
 default_skills: [
   "response-contract",
-  "exaix-conventions",
   "architecture-review",
-  "typescript-patterns",
-  "portal-grounding",
   "blueprint-best-practices",
   "collaborative-flow",
 ]

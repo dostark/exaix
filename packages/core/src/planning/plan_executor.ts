@@ -9,6 +9,7 @@
 
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
+import { resolveMemoryExecutionRoot } from "../config/paths.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
 import type { IModelIntent } from "@exaix/schemas/model_intent.ts";
@@ -119,6 +120,20 @@ export interface IPlanAction {
   tool: string;
   params: Record<string, JSONValue>;
   description?: string;
+}
+
+/**
+ * Read `tags` off a plan context's frontmatter for skill trigger matching. The frontmatter
+ * is an untyped JSON map here, and YAML admits either a list or a lone string.
+ */
+function frontmatterTags(context: IPlanContext): string[] | undefined {
+  const raw = context.frontmatter?.tags;
+  if (Array.isArray(raw)) {
+    const tags = raw.map((tag) => String(tag).trim()).filter((tag) => tag.length > 0);
+    return tags.length > 0 ? tags : undefined;
+  }
+  if (typeof raw === "string" && raw.trim().length > 0) return [raw.trim()];
+  return undefined;
 }
 
 /**
@@ -346,6 +361,10 @@ export class PlanExecutor {
 
     const { matches } = await skills.matchSkills({
       requestText,
+      // Frontmatter tags are a first-class trigger input; sending requestText alone left the
+      // matcher with nothing but extracted keywords and returned 0 matches on requests whose
+      // tags named a skill outright.
+      tags: frontmatterTags(context),
       identityId: context.identity,
     });
     const topMatch = matches[0];
@@ -372,6 +391,7 @@ export class PlanExecutor {
 
     const { matches } = await skills.matchSkills({
       requestText,
+      tags: frontmatterTags(context),
       identityId: context.identity,
     });
 
@@ -624,9 +644,7 @@ export class PlanExecutor {
       });
 
       // 4. Persist amendment artifact
-      const executionRoot = this.config.paths.memoryExecution.includes("/")
-        ? this.config.paths.memoryExecution
-        : join(this.config.paths.memory, this.config.paths.memoryExecution);
+      const executionRoot = resolveMemoryExecutionRoot(this.config.paths);
 
       const amendmentsDir = join(
         this.config.system.root,

@@ -177,6 +177,11 @@ const JournalEventExistsCriterionSchema = BaseCriterionSchema.extend({
   // carry every one of these key/value pairs. Distinguishes an ACCEPTED reconcile from a
   // non-scope-rejected one (both emit session.delegate.reconciled) — see assertions.ts.
   payload_absent: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
+  // Phase 142 Step 17: when set, a matching event must exist whose parsed `payload` carries,
+  // under each named key, an ARRAY containing every listed string. Membership rather than
+  // equality, so a criterion can pin the ids it cares about out of e.g. `skills.resolved`'s
+  // `skill_ids` without restating the whole resolved set — see assertions.ts.
+  payload_includes: z.record(z.string(), z.array(z.string().min(1)).min(1)).optional(),
 }).strict();
 
 const CommandExitCodeCriterionSchema = BaseCriterionSchema.extend({

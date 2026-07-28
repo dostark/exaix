@@ -11,7 +11,7 @@ steps:
   - id: "vote"
     name: "Vote on result"
     type: "voting_group"
-    identity: "voter"
+    identity: "voting-judge"
     execution_mode: "declared"
     input:
       source: "request"

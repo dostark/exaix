@@ -2,12 +2,15 @@ schema_version: "1.0.0"
 id: "portal-knowledge-snapshot"
 title: "Portal knowledge gathers a snapshot for a mounted portal"
 pack: "agent_flows"
-tags: ["smoke", "portal"]
+tags: ["portal", "subsystem:flows"]
 request_fixture: "fixtures/requests/agent_flows/portal_knowledge_snapshot.md"
 mode_support: ["auto", "step"]
 portals:
+  # The sandbox's own seeded copy, not /tmp: nothing ever created /tmp/portal-sample-app, so the
+  # declared portal could not be mounted and the scenario failed at its first step. The seeded
+  # fixtures are git repositories, which is what portal mutation through a worktree requires.
   - alias: "portal-sample-app"
-    source_path: "/tmp/portal-sample-app"
+    source_path: "$WORKSPACE_ROOT/fixtures/portals/todo_app"
 steps:
   - id: "portal-mounted"
     type: "exactl"
@@ -24,6 +27,11 @@ steps:
         equals: 0
   - id: "knowledge-artifact"
     type: "wait-for-file"
+    # The glob was missing entirely, so the step fell back to a default and waited for
+    # `**/*_analysis.json` while its own criterion checks for knowledge.json — it could only
+    # ever time out. Waits for the artefact the criterion actually asserts.
+    args: ["**/Memory/Projects/*/knowledge.json"]
+    timeout_sec: 60
     input_criteria: []
     output_criteria:
       - id: "knowledge-json-found"

@@ -1,0 +1,36 @@
+schema_version: "1.0.0"
+id: "dynamic-write-tool-boundary"
+title: "Dynamic steps are refused write-only tools at validation time"
+pack: "dynamic_execution"
+tags: ["security", "dynamic", "validation", "subsystem:mcp-client", "entity:write_file"]
+request_fixture: "fixtures/requests/dynamic_execution/write_attempt.md"
+mode_support: ["auto"]
+portals: []
+# Sibling of `dynamic-permission-boundary`, and the reason it exists is a measurement.
+#
+# `validateDynamicStepTools` refuses a dynamic step's tool on two independent grounds: the tool is
+# a WRITE tool, or the tool is APPROVAL-REQUIRED. The sibling scenario's fixture grants
+# `exaix_create_request`, which is in BOTH sets — so the approval branch catches it whatever the
+# write branch does. Phase 142 Step 21 ran the mutation this pack declares (disabling the write
+# branch in `flow_loader.ts`) and the pack stayed green at 1.000: the write guard had no coverage
+# at all, and the pack's only evidence of sensitivity was measuring the other guard.
+#
+# This scenario grants `write_file` — a write tool that is not approval-required — so the write
+# branch is the only thing that can refuse it.
+flow_fixture: "fixtures/flows/dynamic_execution/write_tool_dynamic.flow.yaml"
+steps:
+  - id: "validate-flow"
+    type: "exactl"
+    name: "A dynamic step granted a write-only tool must fail validation"
+    command: "flow"
+    args: ["validate", "write-tool-dynamic"]
+    expect_failure: true
+    output_criteria:
+      - id: "validation-rejected"
+        score_weight: 0.7
+        kind: "command-exit-code"
+        equals: 1
+      - id: "names-the-write-tool-and-step"
+        score_weight: 0.7
+        kind: "command-output-contains"
+        contains: ["write_file", "write-attempt", "write tool"]

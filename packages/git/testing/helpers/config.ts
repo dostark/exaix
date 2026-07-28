@@ -34,7 +34,7 @@ export function createMockConfig(root: string, overrides: Partial<Config> = {}):
       requests: overrides.paths?.requests ?? "Requests",
       rejected: overrides.paths?.rejected ?? "Rejected",
       identities: overrides.paths?.identities ?? "Identities",
-      flows: overrides.paths?.flows ?? "Flows",
+      flows: overrides.paths?.flows ?? "Blueprints/Flows",
       memoryProjects: overrides.paths?.memoryProjects ?? "Projects",
       memoryExecution: overrides.paths?.memoryExecution ?? "Execution",
       memoryIndex: overrides.paths?.memoryIndex ?? "Index",

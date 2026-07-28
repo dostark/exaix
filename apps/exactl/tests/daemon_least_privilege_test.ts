@@ -13,7 +13,7 @@ import { assertEquals } from "@std/assert";
 import { DaemonCommands } from "../src/commands/daemon_commands.ts";
 import { createStubContext } from "@exaix/testing";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { DAEMON_SPAWN_PERMISSIONS } from "@exaix/core/types";
+import { DAEMON_DEFAULT_NET_HOSTS, DAEMON_SPAWN_PERMISSIONS } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 
 /** Expose the protected buildSpawnFlags() and allow injecting a config that throws. */
@@ -62,7 +62,11 @@ Deno.test("[daemon_least_privilege] allow_net=undefined → --allow-net=<default
   try {
     const flags = cmds.callSpawnFlags();
     const netFlag = flags.find((f) => f.startsWith("--allow-net="));
-    assertEquals(netFlag, "--allow-net=api.anthropic.com,api.openai.com,localhost:11434");
+    // Derived from the constant the spawn path reads. This case asserts that an undefined
+    // allow_net falls back to the default grant rather than to --allow-all or a blanket grant;
+    // the membership of that default is pinned per-provider in
+    // tests/daemon/net_allowlist_covers_providers_test.ts.
+    assertEquals(netFlag, `--allow-net=${DAEMON_DEFAULT_NET_HOSTS.join(",")}`);
   } finally {
     await cleanup();
   }

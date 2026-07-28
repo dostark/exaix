@@ -40,11 +40,16 @@ const MOCK_STEP: IFlowStep = {
   retry: { maxAttempts: 1, backoffMs: 0 },
 };
 
+const MOCK_RESULTS = {
+  step1: { success: true, duration: 100, content: "output-1" },
+  step2: { success: false, duration: 50, error: "Failed" },
+};
+
 const MOCK_CONTEXT: IConditionContext = {
-  results: {
-    step1: { success: true, duration: 100, content: "output-1" },
-    step2: { success: false, duration: 50, error: "Failed" },
-  },
+  results: MOCK_RESULTS,
+  // Derived rather than restated, so the array view cannot drift from the keyed one — which is
+  // exactly the drift that let two shipped flows be written against a shape the context never had.
+  steps: Object.entries(MOCK_RESULTS).map(([id, result]) => ({ id, ...result })),
   request: { userPrompt: "test request", traceId: "trace-1", requestId: "req-1" },
   flow: { id: "flow-1", name: "Test Flow", version: "1.0" },
 };
@@ -154,4 +159,47 @@ Deno.test("ConditionEvaluationError: includes condition and stepId", () => {
   assertEquals(err.condition, "someExpr");
   assertEquals(err.stepId, "step-1");
   assertEquals(err.message, "eval failed");
+});
+
+// ---------------------------------------------------------------------------
+// Phase 142 Step 13 — "all previous steps succeeded" must be expressible.
+//
+// `results` is a Record keyed by step id, and the sandbox permits array methods only on real
+// arrays and does not allowlist `Object.values`. So `results.every(...)` fails with
+// "Method 'every' is only allowed on arrays" and `Object.values(results).every(...)` fails with
+// "Only allowlisted array method calls are permitted" — the commonest condition a flow author
+// would write is inexpressible, and it fails CLOSED: the guarded step is silently skipped, the
+// flow aggregates nothing, and the request dies on "Invalid JSON: Unexpected end of JSON input"
+// with nothing pointing at the condition. Two shipped flows were written against that shape.
+//
+// `steps` is the array view of the same results, so the intent can be written directly.
+// ---------------------------------------------------------------------------
+
+Deno.test("[condition] steps exposes the results as an array, so every() is usable", async () => {
+  const evaluator = new ConditionEvaluator();
+  const context = {
+    results: { "analyze": { success: true }, "review": { success: true } },
+    steps: [{ id: "analyze", success: true }, { id: "review", success: true }],
+    request: { userPrompt: "x" },
+    flow: { id: "f", name: "f" },
+  } as never;
+
+  const result = await evaluator.evaluate("steps.every(r => r.success)", context);
+
+  assertEquals(result.shouldExecute, true, result.error);
+});
+
+Deno.test("[condition] a failed step makes steps.every() false rather than erroring", async () => {
+  const evaluator = new ConditionEvaluator();
+  const context = {
+    results: { "analyze": { success: true }, "review": { success: false } },
+    steps: [{ id: "analyze", success: true }, { id: "review", success: false }],
+    request: { userPrompt: "x" },
+    flow: { id: "f", name: "f" },
+  } as never;
+
+  const result = await evaluator.evaluate("steps.every(r => r.success)", context);
+
+  assertEquals(result.shouldExecute, false);
+  assertEquals(result.error, undefined, "a false condition is a decision, not an evaluation error");
 });

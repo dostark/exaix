@@ -26,7 +26,7 @@ effort: "high" # reasoning token budget (low, medium, high)
 characteristics: [] # ["fastest", "cheapest"] — soft ranking hints
 preferred_provider: "" # narrow candidate pool to a specific provider
 capabilities: ["analysis", "review"] # behavioural tags, NOT tool names
-default_skills: ["response-contract", "code-review", "portal-grounding"]
+default_skills: ["response-contract-code-analysis"] # keep short — see §Skills
 permitted_tools: ["read_file", "grep_search"] # least-privilege tool allowlist
 created: "2026-01-01T00:00:00Z"
 created_by: "you@example.com"
@@ -99,17 +99,48 @@ Skills are the modern, versioned, criticality-aware replacement for the retired
 fragment includes. Reference them via `default_skills`:
 
 ```yaml
-default_skills: ["response-contract", "code-review", "portal-grounding"]
+default_skills: ["response-contract", "tdd-methodology"]
 ```
+
+### Keep `default_skills` short
+
+Skills reach a prompt through one of two channels, and choosing the wrong one is
+the most common authoring mistake:
+
+- **`default_skills`** — injected on **every** request this identity handles,
+  unconditionally. Every entry is prompt weight paid whether or not the request
+  needs it.
+- **Trigger matching** — the skill's own `triggers` (keywords, tags, task types,
+  file patterns) pull it in on the requests that actually call for it.
+
+A skill that declares triggers belongs in the trigger channel. `code-review`,
+`portal-grounding`, `fix-bug`, `commit-message`, `error-handling` and
+`gap-analysis` all declare triggers, so none of them should appear in
+`default_skills` — `portal-grounding` was carried by 14 of 15 identities before
+Phase 142 Step 17 removed it from all of them for exactly this reason.
+
+Two rules the catalog enforces (`tests/eval/identity_default_skills_test.ts`):
+
+- **At most five entries**, matching the `max_per_request` cap on matched skills.
+  Skills are always concatenated — pinned ∪ trigger-matched ∪ defaults — so a
+  long default list is the one thing that cannot be trimmed at request time.
+- **Exactly one output contract.** Carry either the generic `response-contract`
+  or a specialised variant (`response-contract-qa`, `response-contract-judge`, …),
+  never both.
 
 Key skills:
 
 - `response-contract` — the mandatory `<thought>`/`<content>` output contract and
-  executable-plan JSON schema.
-- `code-review` — comprehensive code-review checklist.
-- `security-first` — secure coding and vulnerability assessment.
+  executable-plan JSON schema. A good default for every identity.
 - `tdd-methodology` — Red-Green-Refactor cycle and test design.
-- `portal-grounding` — grounding responses in the portal's real files/symbols.
+- `security-first` — secure coding and vulnerability assessment.
+- `code-review` — comprehensive code-review checklist (**trigger-matched**).
+- `portal-grounding` — grounding responses in the portal's real files/symbols
+  (**trigger-matched**).
+
+Skills whose content must survive context compaction carry `critical: true`; that
+flag is a **retention** marker, not a selection one, and the whole
+`response-contract*` family plus `verdict-rubric` carry it.
 
 Skills are loaded at runtime by the skill service from `Memory/Skills/`, which is
 generated from these authored `.skill.md` files (`deno task check:skill-index`

@@ -523,6 +523,12 @@ export const PLAN_AMENDMENT_EVENT_APPLIED = "plan.amendment.applied";
 export const SKILL_EVENT_MATCH_COMPLETED = "skills.match_completed";
 export const SKILL_EVENT_RETRIEVAL_TIMEOUT = "skills.retrieval_timeout";
 export const SKILL_EVENT_RETRIEVAL_FAILED = "skills.retrieval_failed";
+/**
+ * The final skill set for a request, with the pinned/matched/default breakdown that produced
+ * it (Phase 142 Step 17). Distinct from SKILL_EVENT_MATCH_COMPLETED, which reports only the
+ * dynamic-matching stage and is not reached at all when a request pins skills explicitly.
+ */
+export const SKILL_EVENT_RESOLVED = "skills.resolved";
 export const MEMORY_EVENT_AUTO_APPROVED = "memory.auto_approved";
 export const MEMORY_EVENT_TIER_SELECTED = "memory.tier_selected";
 export const MEMORY_MIN_VECTORS_FOR_LOCAL_SEARCH: number = configurable({
@@ -2966,6 +2972,14 @@ export const DAEMON_SPAWN_RUN_BINARIES: readonly string[] = [
 export const DAEMON_DEFAULT_NET_HOSTS: readonly string[] = [
   "api.anthropic.com",
   "api.openai.com",
+  // Phase 142 Step 7 — the first live nightly run died on `Requires net access to
+  // "generativelanguage.googleapis.com:443"`. Both of these are shipped, bootstrap-registered
+  // providers that `ProviderSelector` will choose, so omitting them was not a security posture:
+  // the daemon crashed the step with a permission error instead of refusing on policy, and the
+  // request failed several layers from the cause. Each host is traced to that provider package's
+  // own base-URL constant, and `net_allowlist_covers_providers_test.ts` keeps the two in step.
+  "generativelanguage.googleapis.com",
+  "openrouter.ai",
   "localhost:11434",
 ];
 
@@ -3069,3 +3083,31 @@ export async function runWithConcurrency<T>(
   }
   await Promise.all(executing);
 }
+
+// ============================================================================
+// Subsystem Evaluation (Phase 142)
+// ============================================================================
+/**
+ * Suite-score floor for a subsystem evaluation pack run (`deno task eval:subsystems`).
+ *
+ * Not an arbitrary round number: it sits inside a dynamic range that had to be repaired before it
+ * meant anything. Step 7 measured that a suite score could not fall below ~0.8 — daemon start,
+ * setup and teardown all carried equal weight with the one step that asserts the behaviour under
+ * test, so a *total* failure of the mechanism a pack exists to test scored 0.800 and the gate
+ * stayed green. With lifecycle steps now zero-weighted, the same mutation (breaking flow output
+ * aggregation) takes a scenario to 0.500.
+ *
+ * 0.7 is therefore chosen to sit strictly between the measured broken score (0.500) and the
+ * pre-fix floor (0.800): low enough that a healthy deterministic pack never trips it, high enough
+ * that a broken mechanism does. `tests/eval/subsystem_score_threshold_test.ts` pins both bounds
+ * and keeps the `deno.json` tasks — which cannot import a constant — in step with this value.
+ */
+export const SUBSYSTEM_EVAL_SCORE_THRESHOLD: number = configurable({
+  key: "eval.subsystem_score_threshold",
+  default: 0.7,
+  type: ConfigValueType.NUMBER,
+  description: "Minimum suite score a subsystem evaluation pack must reach to pass",
+  min: 0,
+  max: 1,
+  swap: SwapClass.HOT,
+});

@@ -2,31 +2,21 @@ schema_version: "1.0.0"
 id: "session-delegate-refinement"
 title: "Session Delegation — Refinement Gate"
 pack: "agent_flows"
-tags: ["safety-gate", "session-delegation"]
+tags: ["safety-gate", "session-delegation", "subsystem:flows"]
 request_fixture: "fixtures/requests/agent_flows/quality_gate_clarification.md"
 mode_support: ["auto"]
 portals: []
 
 steps:
-  - id: "setup-db"
-    type: "shell"
-    command: "deno"
-    args: ["run", "-A", "--config", "$FRAMEWORK_HOME/../../deno.json", "$FRAMEWORK_HOME/../../scripts/setup_db.ts"]
-    output_criteria:
-      - id: "setup-done"
-        score_weight: 0.7
-        kind: "command-exit-code"
-        equals: 0
-
   - id: "build-mock-tool"
     type: "shell"
-    command: "deno"
+    # bash, not `deno run`: the target is a Bourne-Again shell script (#!/bin/bash), so deno
+    # parsed it as TypeScript and failed with "Expected ';', '}' or <eof>". The path also
+    # needed the $FRAMEWORK_HOME prefix every sibling argument already used — bare
+    # `scripts/...` resolved against the sandbox, where the repo's scripts do not exist.
+    command: "bash"
     args: [
-      "run",
-      "-A",
-      "--config",
-      "$FRAMEWORK_HOME/../../deno.json",
-      "scripts/build_mock_session_tool.sh",
+      "$FRAMEWORK_HOME/../../scripts/build_mock_session_tool.sh",
       "$FRAMEWORK_HOME/../../.cache/mock_session_tool_bin",
     ]
     output_criteria:
@@ -82,15 +72,38 @@ steps:
         kind: "file-found"
         path_pattern: "**/Clarifications/*.json"
 
+  # The clarification file exists as soon as the gate opens, but its status only becomes
+  # `user-confirmed` once the delegate's answer is reconciled back. The preceding wait gates on
+  # existence, so the verify step ran against a record whose status had not yet landed. This
+  # barrier waits for the reconcile itself.
+  - id: "wait-for-delegate-reconciled"
+    type: "wait-for-journal-event"
+    event_type: "session.delegate.reconciled"
+    timeout_sec: 60
+    output_criteria:
+      - id: "delegate-reconciled"
+        kind: "journal-event-exists"
+        event_type: "session.delegate.reconciled"
+        score_weight: 1.0
+
   - id: "verify-delegated-clarification"
     type: "exactl"
+    # Asserts the clarification RECORD, not CLI output. This checked `request show --all` for
+    # the text "user-confirmed" — a flag that does not exist (`show` takes a required <id>, so
+    # the CLI read it as a request id), and `request list` does not carry the marker either. The
+    # delegated confirmation is state, and it lives in the clarification session file as
+    # `status: user-confirmed`; asserting it there is what makes this step mean the gate ran.
     command: "request"
-    args: ["show", "--all"]
+    args: ["list"]
+    # The clarification file is named for the request's UUID, so the target is resolved by
+    # pattern rather than by a literal path.
+    file_pattern: "Workspace/Clarifications/*.json"
     output_criteria:
-      - id: "clarification-present"
+      - id: "clarification-confirmed"
         score_weight: 0.5
-        kind: "command-output-contains"
-        contains: ["user-confirmed"]
+        kind: "json-path-equals"
+        path: "$.status"
+        equals: "user-confirmed"
 
   - id: "stop-daemon"
     type: "exactl"

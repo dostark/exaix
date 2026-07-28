@@ -1,0 +1,12 @@
+{
+  "tools": [],
+  "identities": [
+    {
+      "id": "mock-agent",
+      "reason": "test double"
+    }
+  ],
+  "skills": [],
+  "flows": [],
+  "skills_without_runtime_json": []
+}

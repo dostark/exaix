@@ -1,0 +1,19 @@
+# @schema-version: 1.0.0
+---
+id: "exaix_create_request"
+name: "Exaix Create Request"
+description: "Use exaix_create_request tool"
+version: "1.0.0"
+output:
+  from: exec
+  format: markdown
+steps:
+  - id: "exec"
+    name: "Execute using exaix_create_request"
+    identity: "senior-coder"
+    execution_mode: "declared"
+    tools:
+      - exaix_create_request
+    input:
+      source: "request"
+    timeout: 30000

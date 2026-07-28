@@ -5,6 +5,7 @@ status: "pending"
 priority: "high"
 source: "cli"
 created_by: "scenario-framework"
+flow: "find-and-summarize"
 ---
 
 # Multi-Step Codebase Analysis with ReAct Reasoning

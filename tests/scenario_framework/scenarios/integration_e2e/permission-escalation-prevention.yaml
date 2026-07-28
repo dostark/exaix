@@ -6,44 +6,42 @@ tags: ["e2e", "security", "permission-boundary", "negative-test"]
 request_fixture: "fixtures/requests/integration_e2e/permission_escalation_prevention.md"
 mode_support: ["auto"]
 portals: []
+# Phase 142 Step 15 — three fictions removed. `flow validate` takes a flow ID, not a file path, and
+# the fixture is now staged into the sandbox catalog by the runner so the ID resolves.
+# `exactl flow run` has never existed, so "execute and expect rejection" could only ever fail on a
+# usage dump — validation is where the escalation is refused, which is what this asserts.
+# `exactl journal query` is not a command and `security.validation_failed` is not an event the
+# codebase emits, so that step asserted something that could never be true.
 flow_fixture: "fixtures/flows/integration_e2e/permission_escalation.flow.yaml"
 steps:
   - id: "validate-flow"
     type: "exactl"
-    name: "Validate flow with invalid configuration"
+    name: "A dynamic step granted write_file must fail validation"
     command: "flow"
-    args: ["validate", "$FLOW_FIXTURE"]
-    input_criteria:
-      - id: "flow-file-exists"
-        score_weight: 0.4
-        kind: "file-found"
-        path_pattern: "fixtures/flows/integration_e2e/permission_escalation.flow.yaml"
-    output_criteria:
-      - id: "validation-failed"
-        score_weight: 0.7
-        kind: "command-output-contains"
-        contains: ["write_file", "not allowed", "dynamic"]
-
-  - id: "execute-flow-expect-failure"
-    type: "exactl"
-    name: "Execute flow expecting security rejection"
-    command: "flow"
-    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
+    args: ["validate", "permission-escalation-test"]
     expect_failure: true
     output_criteria:
-      - id: "execution-blocked"
+      - id: "validation-rejected"
+        score_weight: 0.7
+        kind: "command-exit-code"
+        equals: 1
+      - id: "names-the-escalating-tool"
         score_weight: 0.7
         kind: "command-output-contains"
-        contains: ["write tool", "dynamic mode", "not permitted", "security"]
+        contains: ["write_file", "dynamic"]
 
-  - id: "verify-journal-security-event"
-    type: "exactl"
-    name: "Verify security event was logged"
-    command: "journal"
-    args: ["query", "--format", "json"]
+  - id: "read-only-tool-not-flagged"
+    type: "shell"
+    name: "The rejection names only the write tool, not the read-only one beside it"
+    # Guards against a rule that rejects any dynamic step carrying permitted_tools at all: the
+    # fixture grants read_file AND write_file, and only the second is an escalation.
+    command: "sh"
+    args: [
+      "-c",
+      "out=$(\"$FRAMEWORK_HOME/bin/exactl\" flow validate permission-escalation-test 2>&1 || true); echo \"$out\"; ! echo \"$out\" | grep -q 'read_file\" is a write tool'",
+    ]
     output_criteria:
-      - id: "security-event-logged"
+      - id: "read-only-tool-accepted"
         score_weight: 0.6
-        kind: "json-query"
-        query: ".[].action_type"
-        contains: ["security.validation_failed"]
+        kind: "command-exit-code"
+        equals: 0

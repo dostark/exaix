@@ -1,0 +1,19 @@
+# @schema-version: 1.0.0
+---
+id: "git_worktree"
+name: "Git Worktree"
+description: "Use git_worktree tool"
+version: "1.0.0"
+output:
+  from: exec
+  format: markdown
+steps:
+  - id: "exec"
+    name: "Execute using git_worktree"
+    identity: "senior-coder"
+    execution_mode: "declared"
+    tools:
+      - git_worktree
+    input:
+      source: "request"
+    timeout: 30000

@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "request-analysis-smoke"
 title: "Request analysis produces a smoke-level analysis artifact"
 pack: "agent_flows"
-tags: ["smoke", "analysis"]
+tags: ["analysis", "subsystem:flows"]
 request_fixture: "fixtures/requests/agent_flows/request_analysis_smoke.md"
 mode_support: ["auto", "step"]
 portals: []

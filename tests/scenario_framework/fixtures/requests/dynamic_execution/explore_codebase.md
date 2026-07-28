@@ -5,6 +5,7 @@ status: "pending"
 priority: "normal"
 source: "cli"
 created_by: "scenario-framework"
+flow: "explore-codebase"
 ---
 
 # Explore Codebase Structure

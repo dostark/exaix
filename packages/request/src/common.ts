@@ -11,6 +11,7 @@ import { exists } from "@std/fs";
 import type { IBlueprint, IParsedRequest } from "@exaix/execution";
 import type { IRequestFrontmatter } from "@exaix/core/request";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /** Load an agent blueprint file from a blueprints directory. */
 export async function loadBlueprint(blueprintsPath: string, identityId: string): Promise<IBlueprint | null> {
@@ -26,30 +27,49 @@ export async function loadBlueprint(blueprintsPath: string, identityId: string):
 }
 
 /** Build a IParsedRequest used by IAgentRunner. */
+/**
+ * Normalise a list-shaped frontmatter field (`skills`, `tags`) into a string array.
+ *
+ * Three shapes reach us: a YAML array (`skills: [a, b]`) from a hand-authored request, a
+ * JSON-encoded array from the CLI (`service.ts` writes it with JSON.stringify), and a bare
+ * comma-separated or single-value string. `skills` used to be typed `string` and parsed with
+ * `.trim()`, so the hand-authored form — the one every eval fixture uses — threw
+ * `frontmatter.skills.trim is not a function`.
+ */
+export function normalizeFrontmatterList(raw?: Opt<string[] | string, Reason.OptionalInput>): string[] | undefined {
+  if (raw === undefined) return undefined;
+
+  if (Array.isArray(raw)) {
+    const fromArray = raw.map((entry) => String(entry).trim()).filter((entry) => entry.length > 0);
+    return fromArray.length > 0 ? fromArray : undefined;
+  }
+
+  const text = raw.trim();
+  if (text.length === 0) return undefined;
+
+  if (text.startsWith("[") && text.endsWith("]")) {
+    try {
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed)) {
+        const fromJson = parsed.map((entry) => String(entry).trim()).filter((entry) => entry.length > 0);
+        if (fromJson.length > 0) return fromJson;
+      }
+    } catch {
+      // Malformed JSON — fall through to the comma-separated reading below.
+    }
+  }
+
+  const fromCsv = text.split(",").map((entry) => entry.trim()).filter((entry) => entry.length > 0);
+  return fromCsv.length > 0 ? fromCsv : undefined;
+}
+
 export function buildParsedRequest(
   body: string,
   frontmatter: IRequestFrontmatter,
   requestId: string,
   traceId: string,
 ): IParsedRequest {
-  let skills: string[] | undefined;
-  if (frontmatter.skills) {
-    const s = frontmatter.skills.trim();
-    if (s.startsWith("[") && s.endsWith("]")) {
-      try {
-        const parsed = JSON.parse(s);
-        if (Array.isArray(parsed)) {
-          skills = parsed.map((x) => String(x).trim()).filter((x) => x.length > 0);
-        }
-      } catch {
-        // Fallback to split if parsing fails
-      }
-    }
-
-    if (!skills) {
-      skills = s.split(",").map((x) => x.trim()).filter((x) => x.length > 0);
-    }
-  }
+  const skills = normalizeFrontmatterList(frontmatter.skills);
 
   return {
     userPrompt: body.trim(),
@@ -69,6 +89,7 @@ export function buildParsedRequest(
     requestId,
     traceId,
     skills,
+    tags: normalizeFrontmatterList(frontmatter.tags),
     model: frontmatter.model,
     model_size: frontmatter.model_size,
     preferred_provider: frontmatter.preferred_provider,
@@ -116,7 +137,11 @@ export function applyAnalysisToRequest(
   analysis: IRequestAnalysis,
 ): void {
   request.taskType = analysis.taskType;
-  request.tags = analysis.tags;
+  // Union rather than overwrite: the frontmatter tags are the author's explicit statement of
+  // intent and are the only input the skill matcher scores against a skill's declared trigger
+  // tags. Assigning analysis.tags over them meant tag-driven skill selection could never fire
+  // for any request that went through analysis — which is every request.
+  request.tags = [...new Set([...(request.tags ?? []), ...(analysis.tags ?? [])])];
   request.filePaths = analysis.referencedFiles;
   request.context.analysis = analysis;
 }

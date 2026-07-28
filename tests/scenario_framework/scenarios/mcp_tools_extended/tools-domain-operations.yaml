@@ -1,0 +1,99 @@
+schema_version: "1.0.0"
+# Asserts the exaix_* domain tools themselves. The previous version drove `exactl request`
+# and `exactl journal` from the CLI — a different surface from the tools it is tagged for,
+# so a broken exaix_create_request handler would not have failed this scenario.
+id: "tools-domain-operations"
+title: "Domain tools — create_request, list_plans, query_journal through the MCP server"
+pack: "mcp_tools_extended"
+tags:
+  - "domain"
+  - "subsystem:tools"
+  - "entity:exaix_create_request"
+  - "entity:exaix_list_plans"
+  - "entity:exaix_approve_plan"
+  - "entity:exaix_query_journal"
+request_fixture: "fixtures/requests/mcp_tools_extended/exaix_create_request.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "setup-portal"
+    type: "shell"
+    name: "Create the fixture portal and its config"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
+    output_criteria:
+      - id: "portal-ready"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+
+  - id: "create-request-and-list-plans"
+    type: "shell"
+    name: "exaix_create_request writes a real request; exaix_list_plans answers"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "exaix_create_request"
+      - '{"subject":"tools pack domain probe","description":"created by the tools eval pack","identity_id":"tools-eval"}'
+      - "exaix_list_plans"
+      - '{"identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "request-created"
+        kind: "command-output-contains"
+        contains: ["Request created successfully.", "Trace ID:"]
+        score_weight: 1.0
+      - id: "list-plans-answered"
+        kind: "command-output-contains"
+        contains: ["\"success\": true"]
+        score_weight: 0.6
+
+  # The handler writes the `description` argument as the request body and stamps
+  # `source: mcp` in the frontmatter — that stamp is what distinguishes a request created
+  # through the MCP tool from one created by the CLI, so it is the assertion that matters.
+  - id: "created-request-is-on-disk"
+    type: "shell"
+    name: "The request the tool reported creating actually exists, stamped source: mcp"
+    command: "sh"
+    args: ["-c", "ls $WORKSPACE_ROOT/Workspace/Requests/ && cat $WORKSPACE_ROOT/Workspace/Requests/request-*.md"]
+    output_criteria:
+      - id: "request-file-written"
+        kind: "command-output-contains"
+        contains: ["request-"]
+        score_weight: 0.7
+      - id: "request-came-through-mcp"
+        kind: "command-output-contains"
+        contains: ["source: mcp", "created by the tools eval pack"]
+        score_weight: 1.0
+
+  - id: "query-journal"
+    type: "shell"
+    name: "exaix_query_journal answers against the workspace journal"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "exaix_query_journal"
+      - '{"limit":5,"identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "journal-tool-responded"
+        kind: "command-output-contains"
+        contains: ["\"id\": 2"]
+        score_weight: 0.7
