@@ -402,7 +402,7 @@ function sum(values: number[]): number | undefined {
   return values.length > 0 ? values.reduce((a, b) => a + b, 0) : undefined;
 }
 
-function formatNumberOrAbsent(value: Opt<number, Reason.OptionalInput>, digits = 0): string {
+function formatNumberOrAbsent(value?: Opt<number, Reason.OptionalInput>, digits = 0): string {
   return value === undefined ? COST_REPORT_ABSENT_VALUE : value.toFixed(digits);
 }
 

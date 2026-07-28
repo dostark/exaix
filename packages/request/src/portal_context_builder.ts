@@ -28,7 +28,7 @@ export interface IPortalContextBuilderConfig {
 
 export interface IPortalContextBuilder {
   buildFileContext(
-    portalAlias: Opt<string, Reason.OptionalContext>,
+    portalAlias?: Opt<string, Reason.OptionalContext>,
     traceLogger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ): Promise<string | null>;
   resolveKnowledgeContext(
@@ -54,7 +54,7 @@ export class PortalContextBuilder implements IPortalContextBuilder {
   }
 
   async buildFileContext(
-    portalAlias: Opt<string, Reason.OptionalContext>,
+    portalAlias?: Opt<string, Reason.OptionalContext>,
     traceLogger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ): Promise<string | null> {
     if (!portalAlias) return null;
