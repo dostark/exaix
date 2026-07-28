@@ -449,8 +449,13 @@ scenario_framework/
 
 ## 4b. Subsystem Cadence — Which Tier Runs What
 
-Phase 142 wires three tiers over the six subsystem packs (`subsystem:tools`, `subsystem:mcp-server`,
+Phase 142 defines three tiers over the six subsystem packs (`subsystem:tools`, `subsystem:mcp-server`,
 `subsystem:mcp-client`, `subsystem:identities`, `subsystem:skills`, `subsystem:flows`).
+
+> **These are run by hand.** None of the commands below is attached to a GitHub Actions job, to
+> `scripts/ci.ts`, or to the pre-commit gates — "tier" here names a _selection_ and the task that
+> executes it, not something that fires on every change. Adding them to a CI job is a separate,
+> deliberate decision.
 
 | Tier               | Command                          | Selects                                                        |
 | ------------------ | -------------------------------- | -------------------------------------------------------------- |
