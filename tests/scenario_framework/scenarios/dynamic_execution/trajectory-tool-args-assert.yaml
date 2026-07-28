@@ -12,6 +12,10 @@ mode_support: ["manual-checkpoint"]
 # does not exist either. Both replaced with the real path, which the scenario's own declared
 # `request_fixture` already supports. Remains manual-only: the trajectory it asserts needs
 # real tool calls, which the mock provider does not make.
+# Phase 142 Step 7 — declares the flow its request fixture names, so the runner stages it.
+# Without this the scenario only worked when another had already staged `explore-codebase`
+# into the shared sandbox.
+flow_fixture: "fixtures/flows/dynamic_execution/explore.flow.yaml"
 steps:
   - id: "start-daemon"
     type: "exactl"

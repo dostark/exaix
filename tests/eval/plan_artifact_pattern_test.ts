@@ -13,6 +13,14 @@
 import { assertEquals } from "@std/assert";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { walk } from "@std/fs";
+import { globToRegExp } from "@std/path";
+
+/** Where `PlanWriter` actually puts a plan, and what it names it. */
+const CANDIDATE_PLAN_PATHS = [
+  "Workspace/Plans/request-1a2b3c4d_plan.md",
+  "Workspace/Archive/request-1a2b3c4d_plan.md",
+  "/abs/sandbox/Workspace/Plans/request-1a2b3c4d_plan.md",
+];
 
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
 const SCENARIOS_DIR = join(REPO_ROOT, "tests", "scenario_framework", "scenarios");
@@ -46,5 +54,33 @@ Deno.test("plan_artifact_pattern — no scenario waits on a plan suffix nothing 
     offenders,
     [],
     `scenarios reference a plan suffix the runtime never writes (expected "${PLAN_SUFFIX}"):\n${offenders.join("\n")}`,
+  );
+});
+
+Deno.test("plan_artifact_pattern — a plan glob must be able to match a real filename", async () => {
+  // Phase 142 Step 7. Step 11 caught the wrong SUFFIX (`_plan.yaml`); this catches the wrong STEM.
+  // Two scenarios waited on `**/_plan.md`, missing the `*` — and `PlanWriter` emits
+  // `${requestId}_plan.md`, never a bare `_plan.md`, so those steps could only ever time out.
+  // Found by the first full six-subsystem run, because both were in packs no earlier step ran.
+  const offenders: string[] = [];
+
+  for await (const entry of walk(SCENARIOS_DIR, { exts: [".yaml"], includeDirs: false })) {
+    const text = await Deno.readTextFile(entry.path);
+    for (const match of text.matchAll(/(?:path_pattern|args):\s*\[?\s*"([^"]*_plan\.[a-z]+)"/g)) {
+      const glob = match[1];
+      // Matched with the real glob engine rather than a hand-rolled translation: the point is
+      // whether the RUNNER would match the runtime's filename, so anything else tests my regex.
+      const matcher = globToRegExp(glob, { globstar: true, extended: true });
+      const matchesSomething = CANDIDATE_PLAN_PATHS.some((candidate) => matcher.test(candidate));
+      if (!matchesSomething) offenders.push(`${entry.path.split("/scenarios/")[1]}: ${glob}`);
+    }
+  }
+
+  assertEquals(
+    [...new Set(offenders)].sort(),
+    [],
+    `these globs match none of ${JSON.stringify(CANDIDATE_PLAN_PATHS)}, so the step can only time out:\n${
+      offenders.join("\n")
+    }`,
   );
 });

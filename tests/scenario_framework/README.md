@@ -447,6 +447,51 @@ scenario_framework/
 
 ---
 
+## 4b. Subsystem Cadence — Which Tier Runs What
+
+Phase 142 wires three tiers over the six subsystem packs (`subsystem:tools`, `subsystem:mcp-server`,
+`subsystem:mcp-client`, `subsystem:identities`, `subsystem:skills`, `subsystem:flows`).
+
+| Tier               | Command                          | Selects                                                        |
+| ------------------ | -------------------------------- | -------------------------------------------------------------- |
+| **ci-core**        | `deno task eval:subsystems:core` | `smoke`-tagged representatives, one or more per subsystem      |
+| **ci-core** (also) | `deno task test:parity`          | the catalog/flow/identity/skill/tool parity gates (deno tests) |
+| **ci-extended**    | `deno task eval:subsystems`      | every mock-tier scenario across all six subsystems             |
+| **nightly**        | see below                        | the `provider-live` tier, against a real model                 |
+
+`ci-core` and `ci-extended` used to select the _same_ set — 86 scenarios each on a Team build — so
+the cheap tier bought nothing. `ci-core` is now the `smoke` subset (28), and its extra content is
+the parity gates, which are deno tests rather than scenarios.
+
+`subsystem:mcp-server` is `edition: team` and is correctly absent from a Solo run; every other
+subsystem runs on both editions.
+
+### The nightly provider-live recipe
+
+The mock tier proves mechanics. Anything about _which_ tool an agent reaches for, or how good its
+output is, needs a real model — see the Step 15 finding: the mock provider emits **zero**
+`dynamic_tool_call` rows, so a trajectory score there is always 0.00 and never partial.
+
+```bash
+# One subsystem's live tier. `--tag provider-live` disables the CI-safety filter, which is what
+# makes the excluded scenarios selectable at all.
+EXA_LLM_PROVIDER=google \
+deno run -A tests/scenario_framework/runner/main.ts \
+  --tag subsystem:mcp-client --tag provider-live \
+  --mode auto --eval-mode --trials 3
+
+# Then read the per-subsystem table:
+exactl eval report --group-by subsystem
+```
+
+Notes that cost real money if ignored:
+
+- **Provider comes from the environment.** A scenario must not pin `EXA_LLM_PROVIDER`; step `env`
+  is merged last and would override you. A guard test enforces this for `provider-live` scenarios.
+- `--trials 3` is what makes a reliability number meaningful; a single live trial measures one
+  sample of a stochastic system.
+- Costs land in the journal and surface via `exactl eval report` (cost view).
+
 ## 5. Quick Reference
 
 | Task                                          | Command / Document                                                                      |
@@ -454,6 +499,10 @@ scenario_framework/
 | Run eval (self-contained packs)               | `exactl eval run --pack blueprint-eval`                                                 |
 | Run eval (with sandbox)                       | `exactl eval run --pack agent_flows`                                                    |
 | Run validation scenarios (deployed framework) | `./bin/run-scenarios --profile ci-core`                                                 |
+| Subsystem tier — every change                 | `deno task eval:subsystems:core` + `deno task test:parity`                              |
+| Subsystem tier — full mock                    | `deno task eval:subsystems`                                                             |
+| Subsystem tier — nightly live                 | see §4b                                                                                 |
+| Per-subsystem report                          | `exactl eval report --group-by subsystem`                                               |
 | Deploy sandbox (automated)                    | `scripts/setup_sandbox.ts` (see §2.1)                                                   |
 | Deploy framework to sandbox                   | `./bin/deploy-framework` (see §2.2)                                                     |
 | Debug a failing e2e scenario                  | `./bin/debug-scenario <id>` → `./bin/journal` / `./bin/delegate-inspect` (§6 Debugging) |

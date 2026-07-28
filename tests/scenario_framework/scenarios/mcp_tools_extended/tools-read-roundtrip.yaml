@@ -5,7 +5,11 @@ schema_version: "1.0.0"
 id: "tools-read-roundtrip"
 title: "read_file and list_directory resolve paths at portal root and nested depth"
 pack: "mcp_tools_extended"
-tags: ["read", "roundtrip", "subsystem:tools", "entity:read_file", "entity:list_directory"]
+# Phase 142 Step 7 — `smoke` makes this the tools pack's ci-core representative. The subsystem
+# had none, so the tier that runs on every change covered its largest pack (16 scenarios) not
+# at all, and the report rendered without the row nobody would notice was missing. This one:
+# two steps, no daemon, and it round-trips both read tools through the real MCP server.
+tags: ["read", "roundtrip", "smoke", "subsystem:tools", "entity:read_file", "entity:list_directory"]
 request_fixture: "fixtures/requests/mcp_tools_extended/read_file.md"
 mode_support: ["auto"]
 portals: []

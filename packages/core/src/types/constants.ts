@@ -2972,6 +2972,14 @@ export const DAEMON_SPAWN_RUN_BINARIES: readonly string[] = [
 export const DAEMON_DEFAULT_NET_HOSTS: readonly string[] = [
   "api.anthropic.com",
   "api.openai.com",
+  // Phase 142 Step 7 — the first live nightly run died on `Requires net access to
+  // "generativelanguage.googleapis.com:443"`. Both of these are shipped, bootstrap-registered
+  // providers that `ProviderSelector` will choose, so omitting them was not a security posture:
+  // the daemon crashed the step with a permission error instead of refusing on policy, and the
+  // request failed several layers from the cause. Each host is traced to that provider package's
+  // own base-URL constant, and `net_allowlist_covers_providers_test.ts` keeps the two in step.
+  "generativelanguage.googleapis.com",
+  "openrouter.ai",
   "localhost:11434",
 ];
 

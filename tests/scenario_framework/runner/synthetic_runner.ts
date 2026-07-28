@@ -121,19 +121,43 @@ const SEEDED_CATALOGS: readonly (readonly [string, string])[] = [
  */
 export async function seedWorkspaceCatalogs(workspaceRoot: string, repoRoot: string): Promise<void> {
   for (const [from, to] of SEEDED_CATALOGS) {
-    const destination = join(workspaceRoot, to);
-    try {
-      await Deno.stat(destination);
-      continue; // already present — never overwrite
-    } catch { /* absent: seed it */ }
     const source = join(repoRoot, from);
     try {
       await Deno.stat(source);
     } catch {
       continue; // not shipped in this checkout; nothing to seed
     }
-    await ensureDir(dirname(destination));
-    await copy(source, destination, { overwrite: false });
+    await seedMissingEntries(source, join(workspaceRoot, to));
+  }
+}
+
+/**
+ * Copy every entry of `source` that `destination` lacks, recursing into directories both have.
+ *
+ * Additive at the FILE level rather than the directory level. Skipping whenever the destination
+ * directory merely existed was enough until the first full six-subsystem run: `model-registry-
+ * team-cutover` copies the catalog itself (`cp -r … $WORKSPACE_ROOT/Blueprints`), and after it the
+ * shared sandbox held a `Blueprints/` that seeding then refused to complete — so every later flow
+ * scenario failed with "Flow 'analyze-codebase' not found". Per-pack runs never saw it, because
+ * the scenario that creates the directory and the scenarios that need the catalog were never in
+ * the same invocation.
+ *
+ * A file the destination already has is left exactly as it is, which preserves the Step 13
+ * guarantee that a scenario's own patch to an identity survives seeding.
+ */
+async function seedMissingEntries(source: string, destination: string): Promise<void> {
+  await ensureDir(destination);
+  for await (const entry of Deno.readDir(source)) {
+    const from = join(source, entry.name);
+    const to = join(destination, entry.name);
+    const present = await Deno.lstat(to).then(() => true).catch(() => false);
+
+    if (entry.isDirectory) {
+      await seedMissingEntries(from, to);
+      continue;
+    }
+    if (present) continue; // never overwrite what the sandbox already has
+    await copy(from, to, { overwrite: false });
   }
 }
 
@@ -934,6 +958,12 @@ export async function buildRunManifest(options: IBuildRunManifestOptions): Promi
   return {
     scenarioId: options.loadedScenario.scenario.id,
     pack: options.loadedScenario.scenario.pack,
+    // The field was declared, commented "propagated to eval history", read by `history_writer.ts`
+    // and filtered on by `summarizeByTag` — and set by nobody, so every `eval_runs` row carried an
+    // empty `tags` column and `eval report --group-by subsystem` reported "No matching summary
+    // data found" after a full 72-scenario run. An empty group is indistinguishable from "no runs
+    // yet", which is why nothing failed.
+    tags: [...(options.loadedScenario.scenario.tags ?? [])],
     mode: options.mode,
     outcome: mapScenarioOutcome(options.runResult),
     suite_score: computeSuiteScore(stepScores),

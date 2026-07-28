@@ -39,7 +39,7 @@ export { FlowCheckpointService } from "./src/checkpoint_service.ts";
 export { FlowNamespaceService, NamespaceQuotaExceededError } from "./src/namespace_service.ts";
 export { FlowReporter } from "./src/reporter.ts";
 export { FlowValidatorImpl } from "./src/validator.ts";
-export { FlowLoader } from "./src/flow_loader.ts";
+export { FlowLoader, validateDynamicStepTools } from "./src/flow_loader.ts";
 export { DependencyResolver, FlowValidationError } from "./src/dependency_resolver.ts";
 export { ActivityJournal } from "./src/activity_journal.ts";
 export { ConditionEvaluationError, ConditionEvaluator } from "./src/condition_evaluator.ts";

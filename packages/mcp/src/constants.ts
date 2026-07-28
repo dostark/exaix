@@ -61,3 +61,16 @@ const derivedMcpToolClassificationSets = deriveMcpToolClassificationSets();
 export const READ_ONLY_TOOLS = derivedMcpToolClassificationSets.readOnlyTools;
 export const WRITE_TOOLS = derivedMcpToolClassificationSets.writeTools;
 export const TOTAL_MCP_TOOLS = READ_ONLY_TOOLS.size + WRITE_TOOLS.size;
+
+/**
+ * Tools whose manifest entry sets `requires_human_approval`.
+ *
+ * Distinct from WRITE_TOOLS and not derivable from it: `exaix_config_set` and `exaix_config_apply`
+ * mutate configuration while declaring `side_effect_scope: none`, so the read/write split
+ * classified them read-only. Anything deciding what a model may reach for at runtime needs this
+ * set as well as the write set — see `validateDynamicStepTools`.
+ */
+export const APPROVAL_REQUIRED_TOOLS: ReadonlySet<McpToolName> = new Set(
+  TOOL_MANIFEST.filter((entry) => isLiveMcpTool(entry) && entry.requires_human_approval)
+    .map((entry) => entry.name as McpToolName),
+);

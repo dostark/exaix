@@ -20,7 +20,6 @@ steps:
     command: "daemon"
     args: ["start"]
     env:
-      EXA_LLM_PROVIDER: "mock"
       EXA_CI_MODE: "1"
     output_criteria:
       - id: "daemon-started"
@@ -32,8 +31,6 @@ steps:
     type: "exactl"
     command: "request"
     args: ["--file", "$REQUEST_FIXTURE"]
-    env:
-      EXA_LLM_PROVIDER: "mock"
     output_criteria:
       - id: "request-submitted"
         score_weight: 0.3

@@ -2,7 +2,13 @@ schema_version: "1.0.0"
 id: "model-intent-e2e"
 title: "Model Intent E2E — model-size M + thinking routing, plus Phase 134 Solo curated-list resolution (preferred_list)"
 pack: "provider_live"
-tags: ["provider-live", "model-routing", "safety-gate"]
+# Phase 142 Step 7 — retagged `provider-live` -> `manual-only`. The tag was overloaded to mean
+# both "needs a real model" and "keep out of CI", and this scenario is the second, not the
+# first: it asserts `model.resolved` is journalled with `preferred_list`, which is routing
+# mechanics the mock provider exercises — hence the deliberate `EXA_LLM_PROVIDER: "mock"` pin
+# below. Claiming provider-live while forcing mock meant the tier it advertised could never
+# run it. `manual-only` is in CI_EXCLUDED_TAGS, so it stays out of CI either way.
+tags: ["manual-only", "model-routing", "safety-gate"]
 request_fixture: "fixtures/requests/provider_live/model_intent.md"
 mode_support: ["auto"]
 portals: []

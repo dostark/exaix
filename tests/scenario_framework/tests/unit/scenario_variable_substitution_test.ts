@@ -212,3 +212,33 @@ Deno.test("[scenario-vars] a scenario declaring flow_fixture gets $FLOW_FIXTURE 
     "scenarios declare flow_fixture, so the runner must define $FLOW_FIXTURE",
   );
 });
+
+Deno.test("[flow-fixture] a scenario whose request names a flow must declare that flow", async () => {
+  // Phase 142 Step 7. A request fixture carrying `flow: <id>` only works if the flow is in the
+  // sandbox catalog, and the runner stages exactly what `flow_fixture` names. Two selection
+  // scenarios shared a fixture that Step 15 gave a `flow:` field without declaring the fixture
+  // themselves, so they passed only when another scenario had staged it first in the shared
+  // sandbox — and failed the moment the nightly tier ran them alone.
+  const shippedFlows = new Set<string>();
+  for await (const entry of Deno.readDir(join(REPO_ROOT, "Blueprints", "Flows"))) {
+    if (entry.name.endsWith(".flow.yaml")) shippedFlows.add(entry.name.replace(/\.flow\.yaml$/, ""));
+  }
+
+  const undeclared: string[] = [];
+  for (const { id, doc } of await readScenarioFiles()) {
+    const fixture = doc?.request_fixture;
+    if (typeof fixture !== "string") continue;
+    const text = await Deno.readTextFile(resolve(FRAMEWORK_HOME, fixture)).catch(() => null);
+    const named = text?.match(/^flow:\s*"?([\w-]+)"?\s*$/m)?.[1];
+    if (!named) continue;
+    // A flow in the shipped catalog is seeded for every scenario; only fixture flows need staging.
+    if (shippedFlows.has(named)) continue;
+    if (!doc?.flow_fixture) undeclared.push(`${id} -> needs flow "${named}" staged`);
+  }
+
+  assertEquals(
+    undeclared.sort(),
+    [],
+    `these depend on another scenario having staged their flow first:\n${undeclared.join("\n")}`,
+  );
+});

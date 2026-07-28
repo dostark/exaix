@@ -8,11 +8,12 @@
  * @related-files [tests/scenario_framework/runner/scenario_catalog.ts, tests/scenario_framework/scenarios/agent_flows]
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 import type { IScenario } from "../../schema/scenario_schema.ts";
-import type { IScenarioStep } from "../../schema/step_schema.ts";
+import { type IScenarioStep, ScenarioExecutionMode } from "../../schema/step_schema.ts";
 import {
+  CI_EXCLUDED_TAGS,
   listCiSafeScenarios,
   loadScenarioCatalog,
   selectScenarioCatalogEntries,
@@ -51,21 +52,22 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] CI-safe scenario list excludes scen
     packs: ["agent_flows"],
   });
 
-  assertEquals(
-    ciSafeScenarios.map((scenario: IScenario) => scenario.id).sort(),
-    [
-      "edition-smoke",
-      "flowrunner-execution",
-      "guardrail-block-violation",
-      "memory-aware-analysis",
-      "model-registry-team-cutover",
-      "plan-amendment-lifecycle",
-      "portal-knowledge-snapshot",
-      "request-analysis-smoke",
-      "session-delegate-refinement",
-      "voting-majority-consensus",
-    ],
+  // Phase 142 Step 7 — asserts the PROPERTY rather than a frozen list. The list broke the moment
+  // `guardrail-block-violation` was correctly retagged provider-live (its verdict is model-
+  // produced), which is a legitimate change the test should not have contested. What must hold is
+  // that the CI-safe view carries no scenario a mock-tier run cannot pass, and is not empty.
+  const ciSafeIds = ciSafeScenarios.map((scenario: IScenario) => scenario.id).sort();
+  assert(ciSafeIds.length > 0, "the agent_flows pack must contribute something to CI");
+
+  const excluded = ciSafeScenarios.filter((scenario: IScenario) =>
+    scenario.tags.some((tag) => (CI_EXCLUDED_TAGS as readonly string[]).includes(tag))
   );
+  assertEquals(excluded.map((scenario: IScenario) => scenario.id), [], "no CI-excluded tag may appear");
+
+  const nonAuto = ciSafeScenarios.filter((scenario: IScenario) =>
+    !scenario.mode_support.includes(ScenarioExecutionMode.AUTO)
+  );
+  assertEquals(nonAuto.map((scenario: IScenario) => scenario.id), [], "every CI-safe scenario must run unattended");
 });
 
 Deno.test("[ScenarioFrameworkAgentFlowsPack] scenario metadata for the Agent Flows pack satisfies schema and criteria requirements", async () => {

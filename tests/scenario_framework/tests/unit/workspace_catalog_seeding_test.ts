@@ -229,3 +229,73 @@ Deno.test("[portal_drift] an uncommitted write into the portal root is caught", 
     await Deno.remove(ws, { recursive: true });
   }
 });
+
+// ---------------------------------------------------------------------------
+// Phase 142 Step 7 — seeding must be additive at the FILE level, not the directory level.
+//
+// The first full six-subsystem run (the cutover) found every flow scenario after
+// `model-registry-team-cutover` failing with "Flow 'analyze-codebase' not found". That scenario
+// copies the catalog itself (`cp -r $FRAMEWORK_HOME/../../Blueprints $WORKSPACE_ROOT/Blueprints`),
+// and the runner's seeding skipped whenever `Blueprints/` merely EXISTED — so a partially-created
+// catalog stayed partial for every later scenario in the shared sandbox. Per-pack runs never saw
+// it, because the scenario that creates the directory and the scenarios that need the catalog were
+// never in the same invocation.
+// ---------------------------------------------------------------------------
+
+Deno.test("[workspace_catalog_seeding] a partially-created catalog is completed, not skipped", async () => {
+  const ws = await Deno.makeTempDir({ prefix: "seed-partial-" });
+  try {
+    // What a scenario's own `cp -r`/`mkdir` leaves behind: the directory exists, the files do not.
+    await Deno.mkdir(join(ws, "Blueprints", "Identities"), { recursive: true });
+    await Deno.mkdir(join(ws, "Blueprints", "Flows"), { recursive: true });
+
+    await seedWorkspaceCatalogs(ws, REPO_ROOT);
+
+    assert(
+      await exists(join(ws, "Blueprints", "Flows", "analyze-codebase.flow.yaml")),
+      "the shipped flow catalog must be seeded even though Blueprints/ already existed",
+    );
+    assert(await exists(join(ws, "Blueprints", "Identities", "senior-coder.md")), "identities too");
+  } finally {
+    await Deno.remove(ws, { recursive: true });
+  }
+});
+
+Deno.test("[workspace_catalog_seeding] completing a partial catalog still never overwrites", async () => {
+  // The Step 13 guarantee must survive the fix: a scenario that patches an identity in the shared
+  // sandbox keeps its patch.
+  const ws = await Deno.makeTempDir({ prefix: "seed-partial-nooverwrite-" });
+  try {
+    const identities = join(ws, "Blueprints", "Identities");
+    await Deno.mkdir(identities, { recursive: true });
+    await Deno.writeTextFile(join(identities, "senior-coder.md"), "PATCHED BY SCENARIO");
+
+    await seedWorkspaceCatalogs(ws, REPO_ROOT);
+
+    assertEquals(await Deno.readTextFile(join(identities, "senior-coder.md")), "PATCHED BY SCENARIO");
+    assert(await exists(join(identities, "code-analyst.md")), "the rest of the catalog still arrives");
+  } finally {
+    await Deno.remove(ws, { recursive: true });
+  }
+});
+
+Deno.test("[workspace_catalog_seeding] a flow staged by an earlier scenario does not starve the catalog", async () => {
+  // The exact shape `stageFlowFixture` leaves: Blueprints/Flows exists holding one staged fixture.
+  const ws = await Deno.makeTempDir({ prefix: "seed-staged-" });
+  try {
+    const flows = join(ws, "Blueprints", "Flows");
+    await Deno.mkdir(flows, { recursive: true });
+    await Deno.writeTextFile(join(flows, "explore-codebase.flow.yaml"), 'id: "explore-codebase"');
+
+    await seedWorkspaceCatalogs(ws, REPO_ROOT);
+
+    assert(await exists(join(flows, "analyze-codebase.flow.yaml")), "shipped flows must still arrive");
+    assertEquals(
+      await Deno.readTextFile(join(flows, "explore-codebase.flow.yaml")),
+      'id: "explore-codebase"',
+      "the staged fixture must survive",
+    );
+  } finally {
+    await Deno.remove(ws, { recursive: true });
+  }
+});

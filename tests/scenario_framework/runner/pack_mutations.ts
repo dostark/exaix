@@ -1,0 +1,109 @@
+/**
+ * @module ScenarioFrameworkPackMutations
+ * @path tests/scenario_framework/runner/pack_mutations.ts
+ * @description Phase 142 Step 7 — for each subsystem pack, a mutation that must turn it red.
+ *
+ * A green pack means something only if it is known to go red. Nothing enforced that property, and
+ * this phase repeatedly found packs that could not fail for the right reason: the skills pack sat
+ * at mean 0.714 with three "green" scenarios while asserting nothing at all (Step 17), and the
+ * identity smokes asserted `frontmatter-field-exists: identity_id` — a field `PlanWriter` stamps
+ * unconditionally — so all fourteen would have passed with the WRONG identity (Step 11).
+ *
+ * Each entry names a real source edit that breaks the mechanism the pack exists to test. Declaring
+ * them here rather than in prose makes them checkable: `pack_mutation_coverage_test.ts` verifies
+ * every pack has one and that its anchor still resolves, so a refactor that moves the code fails
+ * loudly instead of silently retiring the pack's only evidence of sensitivity.
+ *
+ * @architectural-layer Test
+ * @related-files [tests/scenario_framework/tests/unit/pack_mutation_coverage_test.ts, tests/scenario_framework/runner/scoring.ts]
+ */
+
+/**
+ * A subsystem the phase defines. Written as an explicit union rather than derived from
+ * SUBSYSTEM_TAGS so the exported interface below can precede every value declaration, which the
+ * style gate requires.
+ */
+export type SubsystemTag =
+  | "subsystem:tools"
+  | "subsystem:mcp-server"
+  | "subsystem:mcp-client"
+  | "subsystem:identities"
+  | "subsystem:skills"
+  | "subsystem:flows";
+
+export interface IPackMutation {
+  /** The subsystem whose pack this mutation must turn red. */
+  subsystem: SubsystemTag;
+  /** Repo-relative source file to edit. */
+  file: string;
+  /** Exact text to replace — the anchor, verified to still exist. */
+  find: string;
+  /** What to replace it with, reproducing a plausible regression. */
+  replace: string;
+  /** The mechanism this breaks, in one line. */
+  breaks: string;
+}
+
+/** Every subsystem must carry at least one mutation; `pack_mutation_coverage_test.ts` enforces it. */
+export const SUBSYSTEM_TAGS: readonly SubsystemTag[] = [
+  "subsystem:tools",
+  "subsystem:mcp-server",
+  "subsystem:mcp-client",
+  "subsystem:identities",
+  "subsystem:skills",
+  "subsystem:flows",
+] as const;
+
+export const PACK_MUTATIONS: readonly IPackMutation[] = [
+  {
+    subsystem: "subsystem:flows",
+    file: "packages/flow/src/step_output_formatter.ts",
+    find: '      const result = stepResults.get(stepId);\n      return result?.result?.content || "";',
+    replace: '      const result = stepResults.get(stepId);\n      return result ? "" : "";',
+    breaks:
+      "flow output aggregation — every flow aggregates to the empty string, exactly the state Step 13 found when all 32 fixture flows used the wrong output shape",
+  },
+  {
+    subsystem: "subsystem:mcp-client",
+    file: "packages/flow/src/flow_loader.ts",
+    find: "      if (WRITE_TOOLS.has(tool as McpToolName)) {",
+    replace: "      if (false && WRITE_TOOLS.has(tool as McpToolName)) {",
+    breaks:
+      "the dynamic-step write-tool boundary — a dynamic step could be granted write tools, which `dynamic-permission-boundary` exists to refuse",
+  },
+  {
+    subsystem: "subsystem:skills",
+    file: "packages/execution/src/agent_runner.ts",
+    find: "      const pinned = request.skills ?? [];",
+    replace: "      const pinned: string[] = [];",
+    breaks:
+      "pinned-skill injection — reproduces exactly the Step 17 regression where every pinned skill was dropped and the pack still scored 0.800",
+  },
+  {
+    subsystem: "subsystem:identities",
+    file: "packages/core/src/planning/plan_writer.ts",
+    find: "identity_id",
+    replace: "identity_id_MUTATED",
+    breaks:
+      "the identity stamped onto a written plan — the `frontmatter-field-equals` assertion Step 11 introduced after finding the previous check passed with the wrong identity",
+  },
+  {
+    subsystem: "subsystem:tools",
+    file: "packages/tool-runtime/src/tool_registry.ts",
+    find: "export class ToolRegistry",
+    replace: "export class ToolRegistry_MUTATED",
+    breaks: "tool registration — no tool resolves, so every round-trip scenario in the tools pack fails",
+  },
+  {
+    subsystem: "subsystem:mcp-server",
+    file: "packages/mcp/server/tool_handler.ts",
+    find: "export abstract class ToolHandler {",
+    replace: "export abstract class ToolHandler_MUTATED {",
+    breaks: "MCP tool dispatch — the external-client contract the mcp-server pack asserts over stdio",
+  },
+] as const;
+
+/** Mutations declared for a subsystem. */
+export function mutationsFor(subsystem: SubsystemTag): IPackMutation[] {
+  return PACK_MUTATIONS.filter((mutation) => mutation.subsystem === subsystem);
+}

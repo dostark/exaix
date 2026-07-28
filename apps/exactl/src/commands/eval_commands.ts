@@ -204,17 +204,24 @@ export class EvalCommands extends BaseCommand {
         );
         console.log("-".repeat(70));
         console.log(
-          `  ${"Name".padEnd(30)} ${"Tasks".padEnd(6)} ${"Mean".padEnd(7)} ${"Pass@1".padEnd(8)} ${
-            "Reconcile".padEnd(10)
-          } ${"Duration".padEnd(10)}`,
+          `  ${"Name".padEnd(30)} ${"Tasks".padEnd(6)} ${"Passed".padEnd(8)} ${"Mean".padEnd(7)} ${"Delta".padEnd(8)} ${
+            "Pass@1".padEnd(8)
+          } ${"Reconcile".padEnd(10)} ${"Duration".padEnd(10)}`,
         );
         for (const row of summary) {
+          // A mean only where the criteria are graded. Over a pack of yes/no contract assertions it
+          // is the pass rate wearing three decimal places, and reading 0.971 as "97% healthy" is
+          // how a dead subsystem looked healthy in Phase 142 Step 17.
+          const mean = row.graded ? row.meanScore.toFixed(3) : "—";
+          // "—" on a first run: there is nothing for a trend to be against, and printing +0.000
+          // would read as "no change" rather than "no comparison".
+          const delta = row.delta === null ? "—" : `${row.delta >= 0 ? "+" : ""}${row.delta.toFixed(3)}`;
           console.log(
-            `  ${row.family.padEnd(30)} ${String(row.taskCount).padEnd(6)} ${row.meanScore.toFixed(3).padEnd(7)} ${
-              row.meanPassAt1.toFixed(3).padEnd(8)
-            } ${(row.reconcileRate * 100).toFixed(0).padEnd(9)}% ${
-              Math.round(row.meanDurationMs).toString().padEnd(9)
-            }ms`,
+            `  ${row.family.padEnd(30)} ${String(row.taskCount).padEnd(6)} ${
+              `${row.passedCount}/${row.taskCount}`.padEnd(8)
+            } ${mean.padEnd(7)} ${delta.padEnd(8)} ${row.meanPassAt1.toFixed(3).padEnd(8)} ${
+              (row.reconcileRate * 100).toFixed(0).padEnd(9)
+            }% ${Math.round(row.meanDurationMs).toString().padEnd(9)}ms`,
           );
         }
       } finally {

@@ -9,6 +9,7 @@
  * @phase-134 Step 2 production call-site: injects the edition-selected IModelRegistry (DefaultModelRegistry floor in Solo) into ModelResolver.
  */
 import {
+  DAEMON_DEFAULT_NET_HOSTS,
   DAEMON_IDENTITY_ID,
   DaemonStatus,
   DEFAULT_FLOWS_PATH,
@@ -383,7 +384,9 @@ if (import.meta.main) {
     // Phase 121 Step 2: log the effective net allowlist
     if (config.system.allow_net === undefined) {
       await logger.info(DomainEventType.NetAllowlist, "default-allowlist", {
-        hosts: "api.anthropic.com,api.openai.com,localhost:11434",
+        // Read from the constant rather than restated: the literal here kept reporting three hosts
+        // after the list grew, so the journal described an allowlist the daemon was not using.
+        hosts: DAEMON_DEFAULT_NET_HOSTS.join(","),
       });
     } else if (config.system.allow_net.length === 0) {
       await logger.info(DomainEventType.NetAllowlist, "all-blocked", { hosts: "" });
