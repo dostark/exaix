@@ -129,7 +129,13 @@ export async function runScenarioInMode(
     executedStepIds.push(step.id);
 
     const expectFailure = step.expect_failure ?? false;
-    const isExecutionFailed = expectFailure ? executionResult.exitCode === 0 : executionResult.exitCode !== 0;
+    // An explicit `executionFailed` outranks the exit code. The executor sets it when the step
+    // failed at the EXECUTION stage, which on an `expect_failure` step includes "the command
+    // succeeded when a refusal was expected" — a case whose normalised exit code (1) reads here
+    // as the expected failure, inverting the verdict. Falling back to the exit code keeps the
+    // rule intact for callers that do not set the flag.
+    const isExecutionFailed = executionResult.executionFailed ??
+      (expectFailure ? executionResult.exitCode === 0 : executionResult.exitCode !== 0);
 
     if (isExecutionFailed) {
       return {
@@ -254,6 +260,19 @@ function applyCiSafety(scenarios: ISelectableScenario[], requestedTags: string[]
     if (!scenario.mode_support.includes(ScenarioExecutionMode.AUTO)) return false;
     return !scenario.tags.some((tag) => excluded.includes(tag));
   });
+}
+
+/**
+ * The environment a child runner process needs to select scenarios for a given edition.
+ *
+ * The counterpart of `filterByEdition` below, and it lives beside it deliberately: this module is
+ * the one place that knows the edition is carried in the environment, so nothing else has to name
+ * the variable. A caller launching a runner for an edition-gated pack asks for the env rather than
+ * constructing it — without this, a Team-gated pack run with no edition set selects *nothing* and
+ * reports a green pack over an empty selection.
+ */
+export function editionEnv(edition: string): { [key: string]: string } {
+  return { EXAIX_EDITION: edition };
 }
 
 function filterByEdition(scenarios: ISelectableScenario[]): ISelectableScenario[] {

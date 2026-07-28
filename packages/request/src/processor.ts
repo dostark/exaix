@@ -208,7 +208,8 @@ export class RequestProcessor {
       runtimeRoot: join(this.config.system.root, this.config.paths.runtime),
     });
 
-    const _flowsDir = join(this.config.system.root, this.config.paths.flows);
+    // No flows directory is resolved here: the injected loader already owns that resolution.
+    // A discarded `join(root, paths.flows)` sat here and read as intentional.
     this.flowValidator = ctx.flowValidator ?? null;
     this.flowRunner = processorConfig.flowRunner;
     this.flowLoader = processorConfig.flowLoader ?? processorConfig.context?.flowLoader;

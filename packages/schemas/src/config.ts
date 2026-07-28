@@ -860,6 +860,24 @@ export const ConfigSchema = z.object({
   // Type assertion to avoid circular reference
   const configData = data as z.infer<typeof ConfigSchema>;
 
+  // `paths.flows` shipped as the bare `"Flows"` before Phase 142, which resolves to `<root>/Flows`
+  // — a directory the catalog has never lived in. The symptom was `exactl flow list` reporting
+  // "No flows found" against a workspace holding twenty flows, four layers from the cause. An
+  // existing config carrying that value would silently resolve to an empty catalog again, so it
+  // is rejected at load where the operator can act on it.
+  //
+  // Deliberately narrow: only the stale default is refused. Bare subfolder names in general are a
+  // legitimate choice for an operator who really does keep the catalog at the workspace root.
+  if (configData.paths?.flows === DEFAULTS.DEFAULT_FLOWS_PATH) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `paths.flows = "${DEFAULTS.DEFAULT_FLOWS_PATH}" is the pre-Phase-142 default and resolves to an ` +
+        `empty catalog. Use the composite form "${DEFAULTS.ExaPathDefaults.flows}", or an explicit ` +
+        `path if the catalog genuinely lives elsewhere.`,
+      path: ["paths", "flows"],
+    });
+  }
+
   // Validate that default_model exists in models keys or is a fallback chain
   const modelKeys = Object.keys(configData.models || {});
   const fallbackChainKeys = Object.keys(configData.provider_strategy?.fallback_chains || {});

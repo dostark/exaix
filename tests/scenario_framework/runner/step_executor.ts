@@ -67,6 +67,22 @@ export interface IScenarioStepExecutionResult {
    */
   criteriaFailed?: boolean;
   /**
+   * True when the step failed at the EXECUTION stage, stated explicitly rather than inferred.
+   *
+   * `toModeExecutionResult` used to signal an execution failure by normalising `exitCode` to 1,
+   * and `modes.ts` re-derived the verdict from that exit code through `expect_failure` semantics —
+   * where a non-zero exit means *the expected failure happened*. On an `expect_failure` step the
+   * two readings are exact opposites, so a step that failed because its command unexpectedly
+   * SUCCEEDED was reported as the refusal the scenario asked for, and the scenario finished
+   * `Outcome: success` at `suite_score: 0.000`.
+   *
+   * Found by Phase 142 Step 21's first real run of the declared pack mutations: the mcp-client
+   * pack reported green while the scenario under it scored zero. Sibling of the Step 10 defect in
+   * `evaluateStepOutcome`, and fixed the same way — say what happened instead of encoding it in a
+   * value whose meaning depends on the reader.
+   */
+  executionFailed?: boolean;
+  /**
    * Criterion results populated by trajectory-assert steps (and potentially
    * other non-shell step types) for direct forwarding into evaluateStepOutcome.
    */

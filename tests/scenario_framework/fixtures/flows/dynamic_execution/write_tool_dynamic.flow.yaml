@@ -1,0 +1,25 @@
+# @schema-version: 1.0.0
+---
+id: "write-tool-dynamic"
+name: "Write Tool in Dynamic Mode"
+description: "Test flow granting a write-only tool to a dynamic step, to exercise the WRITE_TOOLS branch of validateDynamicStepTools"
+version: "1.0.0"
+output:
+  from: write-attempt
+  format: markdown
+steps:
+  - id: "write-attempt"
+    name: "Attempt a write tool in dynamic mode"
+    identity: "senior-coder"
+    execution_mode: "dynamic"
+    permitted_tools:
+      # `write_file` is a write tool and NOT approval-required. That combination is the point:
+      # `exaix_create_request` (used by the sibling approval fixture) is in BOTH classification
+      # sets, so the approval branch of `validateDynamicStepTools` catches it even when the write
+      # branch is disabled — which is why disabling the write branch left the mcp-client pack
+      # green at 1.000 when Phase 142 Step 21 first ran its declared mutation. This fixture
+      # reaches the write branch and nothing else.
+      - write_file
+    input:
+      source: "request"
+    timeout: 60000

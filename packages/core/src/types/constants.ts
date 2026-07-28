@@ -3083,3 +3083,31 @@ export async function runWithConcurrency<T>(
   }
   await Promise.all(executing);
 }
+
+// ============================================================================
+// Subsystem Evaluation (Phase 142)
+// ============================================================================
+/**
+ * Suite-score floor for a subsystem evaluation pack run (`deno task eval:subsystems`).
+ *
+ * Not an arbitrary round number: it sits inside a dynamic range that had to be repaired before it
+ * meant anything. Step 7 measured that a suite score could not fall below ~0.8 — daemon start,
+ * setup and teardown all carried equal weight with the one step that asserts the behaviour under
+ * test, so a *total* failure of the mechanism a pack exists to test scored 0.800 and the gate
+ * stayed green. With lifecycle steps now zero-weighted, the same mutation (breaking flow output
+ * aggregation) takes a scenario to 0.500.
+ *
+ * 0.7 is therefore chosen to sit strictly between the measured broken score (0.500) and the
+ * pre-fix floor (0.800): low enough that a healthy deterministic pack never trips it, high enough
+ * that a broken mechanism does. `tests/eval/subsystem_score_threshold_test.ts` pins both bounds
+ * and keeps the `deno.json` tasks — which cannot import a constant — in step with this value.
+ */
+export const SUBSYSTEM_EVAL_SCORE_THRESHOLD: number = configurable({
+  key: "eval.subsystem_score_threshold",
+  default: 0.7,
+  type: ConfigValueType.NUMBER,
+  description: "Minimum suite score a subsystem evaluation pack must reach to pass",
+  min: 0,
+  max: 1,
+  swap: SwapClass.HOT,
+});

@@ -9,6 +9,7 @@
 
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
+import { resolveMemoryExecutionRoot } from "../config/paths.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
 import type { IModelIntent } from "@exaix/schemas/model_intent.ts";
@@ -643,9 +644,7 @@ export class PlanExecutor {
       });
 
       // 4. Persist amendment artifact
-      const executionRoot = this.config.paths.memoryExecution.includes("/")
-        ? this.config.paths.memoryExecution
-        : join(this.config.paths.memory, this.config.paths.memoryExecution);
+      const executionRoot = resolveMemoryExecutionRoot(this.config.paths);
 
       const amendmentsDir = join(
         this.config.system.root,

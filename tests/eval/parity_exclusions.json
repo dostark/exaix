@@ -8,14 +8,5 @@
   ],
   "skills": [],
   "flows": [],
-  "skills_without_runtime_json": [
-    {
-      "id": "portal-grounding",
-      "reason": "meta-skill: injected as guidance, has no standalone runtime JSON"
-    },
-    {
-      "id": "exaix-conventions",
-      "reason": "meta-skill: injected as guidance, has no standalone runtime JSON"
-    }
-  ]
+  "skills_without_runtime_json": []
 }

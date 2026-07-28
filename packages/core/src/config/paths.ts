@@ -6,6 +6,7 @@
  * @related-files ["packages/schemas/src/config.ts", "packages/core/src/types/constants.ts"]
  */
 
+import { join } from "@std/path";
 import * as DEFAULTS from "../types/constants.ts";
 
 export interface IExaPaths {
@@ -31,6 +32,17 @@ export interface IExaPaths {
   memoryGlobal: string;
 }
 
+/**
+ * The `paths` fields `resolveMemoryExecutionRoot` reads.
+ *
+ * Narrower than `IExaPaths` so callers holding a partial config (or a test fixture) can use the
+ * helper without constructing the full table.
+ */
+export interface IMemoryExecutionPaths {
+  memory: string;
+  memoryExecution: string;
+}
+
 export function getDefaultPaths(_root: string): IExaPaths {
   return {
     workspace: DEFAULTS.DEFAULT_WORKSPACE_PATH,
@@ -54,4 +66,25 @@ export function getDefaultPaths(_root: string): IExaPaths {
     memoryTasks: DEFAULTS.ExaPathDefaults.memoryTasks,
     memoryGlobal: DEFAULTS.ExaPathDefaults.memoryGlobal,
   };
+}
+
+/**
+ * Resolve the execution-memory root from a `paths` record, tolerating both declared forms.
+ *
+ * `paths.memoryExecution` has shipped in two shapes. It defaulted to the bare `"Execution"`,
+ * meaning *relative to `paths.memory`*, and Phase 142 Step 15 repointed the default to the
+ * composite `"Memory/Execution"`, meaning *relative to the workspace root*. Configs and fixtures
+ * carrying either value are still in the wild, so both must resolve — joining a composite value
+ * onto `paths.memory` produces `Memory/Memory/Execution`, which is the failure this rule exists
+ * to prevent.
+ *
+ * A value containing a separator is taken as already root-relative; a bare subfolder name is
+ * joined onto `paths.memory`. The rule lived as five inline copies across `packages/core`,
+ * `packages/flow` and `apps/exactl` before it lived here.
+ *
+ * @param paths - The `memory` and `memoryExecution` entries of a resolved config.
+ * @returns The execution-memory directory, relative to the workspace root.
+ */
+export function resolveMemoryExecutionRoot(paths: IMemoryExecutionPaths): string {
+  return paths.memoryExecution.includes("/") ? paths.memoryExecution : join(paths.memory, paths.memoryExecution);
 }

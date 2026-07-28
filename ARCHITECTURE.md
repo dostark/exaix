@@ -263,6 +263,29 @@ flowchart TB
     class DB,Event,Config,Git service
 ```
 
+### Path settings (`config.paths`)
+
+Every directory the runtime touches is named by a `config.paths.*` entry, and consumers resolve
+`join(config.system.root, config.paths.<key>)`. Two of these entries carry contracts worth knowing
+before reading a config:
+
+- **`paths.memoryExecution` accepts two forms.** It shipped as the bare `"Execution"`, meaning
+  _relative to `paths.memory`_, and Phase 142 repointed the default to the composite
+  `"Memory/Execution"`, meaning _relative to the workspace root_. Configs carrying either value are
+  still valid. Resolution goes through one helper —
+  `packages/core/src/config/paths.ts:resolveMemoryExecutionRoot` — which treats a value containing
+  a separator as already root-relative and joins a bare name onto `paths.memory`. Joining a
+  composite value onto `paths.memory` yields `Memory/Memory/Execution`, which is the failure the
+  helper exists to prevent; `tests/config/memory_execution_resolution_test.ts` pins both forms and
+  fails if a consumer inlines the rule instead of calling the helper.
+
+- **`paths.flows` has exactly one resolution rule and one rejected legacy value.** Consumers read
+  the setting; none recomposes it from `paths.blueprints` plus the flows subfolder, because the two
+  rules agree only on a default workspace and diverge under an override. The pre-Phase-142 default
+  `"Flows"` is refused at config load with a message naming `Blueprints/Flows`: it resolves to a
+  directory the catalog has never shipped in, and the symptom was `exactl flow list` reporting
+  "No flows found" against a workspace holding twenty flows.
+
 ### Config DB (.exa/config.db)
 
 The `.exa/config.db` SQLite database stores configuration overrides for keys registered via `configurable()`. It complements the TOML bootstrap (`exa.config.toml`) which supplies only `system.root` and boot-time paths. As of Phase 137, **180+ `configurable()` keys** are registered across all packages (core, AI providers, git, etc.).

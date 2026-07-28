@@ -18,6 +18,9 @@
  * @related-files [tests/scenario_framework/tests/unit/pack_mutation_coverage_test.ts, tests/scenario_framework/runner/scoring.ts]
  */
 
+import { EDITION_TEAM } from "@exaix/core";
+import { editionEnv } from "./modes.ts";
+
 /**
  * A subsystem the phase defines. Written as an explicit union rather than derived from
  * SUBSYSTEM_TAGS so the exported interface below can precede every value declaration, which the
@@ -43,6 +46,9 @@ export interface IPackMutation {
   /** The mechanism this breaks, in one line. */
   breaks: string;
 }
+
+/** Subsystems whose pack is edition-gated and selects nothing without a Team build. */
+export const EDITION_GATED_SUBSYSTEMS: ReadonlySet<SubsystemTag> = new Set(["subsystem:mcp-server"]);
 
 /** Every subsystem must carry at least one mutation; `pack_mutation_coverage_test.ts` enforces it. */
 export const SUBSYSTEM_TAGS: readonly SubsystemTag[] = [
@@ -106,4 +112,59 @@ export const PACK_MUTATIONS: readonly IPackMutation[] = [
 /** Mutations declared for a subsystem. */
 export function mutationsFor(subsystem: SubsystemTag): IPackMutation[] {
   return PACK_MUTATIONS.filter((mutation) => mutation.subsystem === subsystem);
+}
+
+/**
+ * Apply a mutation, run something against the mutated tree, and restore the file unconditionally.
+ *
+ * Declaring a mutation is not evidence: `pack_mutation_coverage_test.ts` proves an anchor still
+ * resolves, which says a refactor has not moved the code — not that the pack notices when the
+ * mechanism breaks. Only running the pack against the mutated tree can say that, and five of the
+ * six mutations here were never run (Phase 142 GAP-5).
+ *
+ * Restoration is in a `finally` and writes the ORIGINAL bytes back rather than reversing the
+ * substitution, so an aborted run cannot leave a half-reverted file behind. The replacement
+ * itself mirrors `pack_mutation_coverage_test.ts`'s no-op check: first occurrence only.
+ *
+ * @param repoRoot - Checkout the mutation's `file` is relative to.
+ * @param mutation - The mutation to apply.
+ * @param run - Callback invoked while the tree is mutated.
+ * @returns Whatever `run` returns.
+ */
+export async function withMutation<T>(
+  repoRoot: string,
+  mutation: IPackMutation,
+  run: () => Promise<T>,
+): Promise<T> {
+  const path = `${repoRoot}/${mutation.file}`;
+  const original = await Deno.readTextFile(path);
+  if (!original.includes(mutation.find)) {
+    throw new Error(
+      `mutation anchor for ${mutation.subsystem} no longer resolves in ${mutation.file}: ${mutation.find.slice(0, 60)}`,
+    );
+  }
+
+  await Deno.writeTextFile(path, original.replace(mutation.find, mutation.replace));
+  try {
+    return await run();
+  } finally {
+    await Deno.writeTextFile(path, original);
+  }
+}
+
+/**
+ * Environment a subsystem's pack run needs.
+ *
+ * The mock provider and CI mode are universal; the edition is not. `subsystem:mcp-server` is
+ * edition-gated, so on a Solo build its five scenarios are correctly *absent* — and a mutation run
+ * against an empty selection reports a green pack, which is the exact false negative the verifier
+ * exists to prevent.
+ *
+ * This lives here rather than in `scripts/verify_pack_mutations.ts` because which packs are
+ * edition-gated is a property of the pack registry. The environment itself comes from
+ * `modes.ts:editionEnv`, the module that also reads it back during selection.
+ */
+export function runEnvFor(subsystem: SubsystemTag): { [key: string]: string } {
+  const base: { [key: string]: string } = { EXA_LLM_PROVIDER: "mock", EXA_CI_MODE: "1" };
+  return EDITION_GATED_SUBSYSTEMS.has(subsystem) ? { ...base, ...editionEnv(EDITION_TEAM) } : base;
 }

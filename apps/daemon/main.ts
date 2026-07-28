@@ -12,7 +12,6 @@ import {
   DAEMON_DEFAULT_NET_HOSTS,
   DAEMON_IDENTITY_ID,
   DaemonStatus,
-  DEFAULT_FLOWS_PATH,
   DEFAULT_IDENTITIES_PATH,
   EDITION_SOLO,
   EDITION_TEAM,
@@ -867,8 +866,13 @@ if (import.meta.main) {
 
     // The processor needs the flow itself, not a verdict about it: it previously cast
     // `{ id } as IFlow` and FlowRunner crashed reading `steps.length` on the result.
+    //
+    // Read `config.paths.flows` rather than recomposing it from `paths.blueprints` and
+    // `DEFAULT_FLOWS_PATH`. The two agree on a default workspace and diverge the moment an
+    // operator overrides the setting — which would leave `exactl flow list` honouring the
+    // override while the daemon that actually runs the flows ignored it.
     const flowLoader = new FlowLoaderAdapter(
-      new FlowLoader(join(config.system.root, config.paths.blueprints, DEFAULT_FLOWS_PATH)),
+      new FlowLoader(join(config.system.root, config.paths.flows)),
     );
 
     // Wire Team-edition capability modules through the edition-composer seam.

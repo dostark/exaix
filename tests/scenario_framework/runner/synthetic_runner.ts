@@ -886,6 +886,9 @@ function toModeExecutionResult(
     return {
       ...outcome.executionResult,
       exitCode: outcome.executionResult.exitCode === 0 ? 1 : outcome.executionResult.exitCode,
+      // Say it, rather than leaving `modes.ts` to infer it from the normalised exit code above.
+      // On an `expect_failure` step that inference is exactly backwards — see `executionFailed`.
+      executionFailed: true,
     };
   }
 
