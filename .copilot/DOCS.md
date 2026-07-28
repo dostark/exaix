@@ -58,6 +58,7 @@ topics: ["reference", "docs", "catalog"]
 - **`agents`** → [docs/README.md](docs/README.md), [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)
 - **`architecture`** → [skills/edition-development/SKILL.md](skills/edition-development/SKILL.md), [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md), [skills/review-code/SKILL.md](skills/review-code/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/exaix-development/SKILL.md](skills/exaix-development/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/explore/SKILL.md](skills/explore/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`architecture-review`** → [skills/review-research/SKILL.md](skills/review-research/SKILL.md)
+- **`assertion-sensitivity`** → [skills/test-development/SKILL.md](skills/test-development/SKILL.md)
 - **`audit`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`auth`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`best-practices`** → [skills/review-code/SKILL.md](skills/review-code/SKILL.md), [skills/commit/SKILL.md](skills/commit/SKILL.md)
