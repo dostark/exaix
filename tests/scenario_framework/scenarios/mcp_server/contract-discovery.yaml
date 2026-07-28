@@ -1,0 +1,101 @@
+schema_version: "1.0.0"
+# Asserts real discovery parity: the server must serve the tools TOOL_MANIFEST declares
+# docs_visible. The previous version asserted `contains: ["tools"]`, which any JSON
+# response satisfies, and pointed at sandbox-relative paths that do not exist, so it could
+# never run at all.
+id: "mcp-server-contract-discovery"
+title: "MCP server — tools/list discovery parity with TOOL_MANIFEST"
+pack: "mcp_server"
+tags: ["smoke", "subsystem:mcp-server", "team"]
+edition: "team"
+request_fixture: "fixtures/requests/mcp_tools_extended/read_file.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "setup-portal"
+    type: "shell"
+    name: "Create the fixture portal and its config"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
+    output_criteria:
+      - id: "portal-ready"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+
+  - id: "run-discovery"
+    type: "shell"
+    name: "tools/list over stdio returns the advertised manifest"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/mcp_stdio_driver.ts"
+      - "--timeout-ms"
+      - "30000"
+      - "--"
+      - "deno"
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/../../apps/mcp-server/main.ts"
+      - "--"
+      - '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","clientInfo":{"name":"scenario","version":"1.0"}}}'
+      - '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+      EXA_LLM_PROVIDER: "mock"
+      EXA_CI_MODE: "1"
+    output_criteria:
+      - id: "discovery-succeeded"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+      - id: "protocol-handshake"
+        kind: "command-output-contains"
+        contains: ["protocolVersion", "2024-11-05"]
+        score_weight: 0.4
+      # Named tools from every family the manifest declares — a served list missing any of
+      # these is drift between TOOL_MANIFEST and what an external client can actually call.
+      - id: "file-tools-served"
+        kind: "command-output-contains"
+        contains: [
+          "read_file",
+          "write_file",
+          "patch_file",
+          "delete_file",
+          "move_file",
+          "list_directory",
+          "search_files",
+        ]
+        score_weight: 1.0
+      - id: "git-tools-served"
+        kind: "command-output-contains"
+        contains: ["git_status", "git_log", "git_commit", "git_create_branch", "git_worktree"]
+        score_weight: 0.8
+      - id: "domain-and-config-tools-served"
+        kind: "command-output-contains"
+        contains: [
+          "exaix_create_request",
+          "exaix_list_plans",
+          "exaix_approve_plan",
+          "exaix_query_journal",
+          "exaix_config_get",
+          "exaix_config_set",
+          "exaix_config_apply",
+        ]
+        score_weight: 0.8
+      - id: "input-schemas-present"
+        kind: "command-output-contains"
+        contains: ["inputSchema", "identity_id"]
+        score_weight: 0.5

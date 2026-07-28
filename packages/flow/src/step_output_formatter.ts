@@ -37,21 +37,24 @@ type BuiltInTransformHandler = (ctx: {
 function applyMergeAsContextTransform(input: string, transformArgs: Opt<JSONValue, Reason.OptionalInput>): string {
   if (Array.isArray(transformArgs)) {
     // Filter to strings only — mergeAsContext requires string[]
-    const strings = transformArgs.filter((v): v is string => typeof v === "string");
-    return mergeAsContext(strings);
+    return mergeAsContext(transformArgs.filter((v): v is string => typeof v === "string"));
   }
 
   try {
-    const inputs = JSON.parse(input);
-    if (Array.isArray(inputs)) {
-      return mergeAsContext(inputs);
+    const parsed = JSON.parse(input);
+    if (Array.isArray(parsed)) {
+      return mergeAsContext(parsed.filter((v): v is string => typeof v === "string"));
     }
   } catch {
-    const inputs = input.split("\n\n").filter((s) => s.trim());
-    return mergeAsContext(inputs);
+    // Not JSON at all — the text path below handles it, like every other non-array shape.
   }
 
-  throw new Error("mergeAsContext requires an array of strings");
+  // Everything else is treated as text: paragraphs of prose, but also a JSON OBJECT, which is
+  // what an agent step actually emits. That case used to throw
+  // "mergeAsContext requires an array of strings" while unparseable prose was accepted — so
+  // valid JSON was worse input than arbitrary text, and every flow whose second step used this
+  // transform died on its predecessor's own output.
+  return mergeAsContext(input.split("\n\n").filter((section) => section.trim()));
 }
 
 function applyExtractSectionTransform(

@@ -173,3 +173,144 @@ Deno.test("[regression] MockLLMProvider distinguishes execution from planning ke
   assertStringIncludes(executionResponseText, TAG_ACTIONS);
   assertEquals(executionResponseText.includes(KEY_STEPS), false);
 });
+
+// ---------------------------------------------------------------------------
+// Phase 142 Step 13 — a flow step's prompt must not be mistaken for plan execution.
+//
+// A flow step's userPrompt is its predecessor's output run through the step's transform, and
+// `mergeAsContext` (core/func/transforms.ts:37) prefixes each section with a `## Step N`
+// markdown header. The execution pattern matches /Step \d+/i, so every flow step past the
+// first was answered with <actions> and no <content> — the step reported success with
+// outputLength 0, aggregation produced nothing, and plan validation then failed on empty
+// input. That is what held the flows pack at 0.500 with all 8 of api-design's steps "green".
+// ---------------------------------------------------------------------------
+
+/**
+ * What the mock actually receives for a flow step: the identity's assembled system prompt,
+ * then the merged context. The `## Step N` header is mid-prompt, never at its start — an
+ * earlier fix anchored on the prompt's start and matched nothing in a real run.
+ */
+const MERGE_AS_CONTEXT_PROMPT = `# Software Architect Agent
+
+You design systems and document the reasoning behind each decision.
+
+## Step 1
+The API needs resource endpoints for requests and plans, with status transitions.`;
+
+Deno.test("[flow-step] a mergeAsContext prompt yields content, not actions", async () => {
+  const provider = new MockLLMProvider(MockStrategy.RECORDED, { recordings: [] });
+
+  const response = await provider.generate(MERGE_AS_CONTEXT_PROMPT);
+
+  assertStringIncludes(response.content, TAG_CONTENT, "a flow step must produce content for the next step");
+  assertEquals(response.content.includes(TAG_ACTIONS), false, "a flow step is not a plan-execution turn");
+});
+
+Deno.test("[flow-step] a mergeAsContext prompt keeping its original title still yields content", async () => {
+  // mergeAsContext lifts a leading `# Title` above the step headers, so the prompt can start
+  // with the request's own heading rather than with `## Step 1`.
+  const provider = new MockLLMProvider(MockStrategy.RECORDED, { recordings: [] });
+
+  const response = await provider.generate(`# Design the REST interface\n\n${MERGE_AS_CONTEXT_PROMPT}`);
+
+  assertStringIncludes(response.content, TAG_CONTENT);
+});
+
+Deno.test("[flow-step] the flow-step response parses as a plan, so the final step's output validates", async () => {
+  // The last step's content becomes the flow's aggregated output, which RequestProcessor hands
+  // to plan validation — so the payload has to be a well-formed plan, not arbitrary prose.
+  const provider = new MockLLMProvider(MockStrategy.RECORDED, { recordings: [] });
+
+  const response = await provider.generate(MERGE_AS_CONTEXT_PROMPT);
+  const content = response.content.split(TAG_CONTENT)[1].split("</content>")[0];
+
+  const parsed = JSON.parse(content) as { steps?: { step: number; title: string }[] };
+  assertEquals(Array.isArray(parsed.steps), true, "the aggregated flow output must validate as a plan");
+});
+
+Deno.test("[flow-step] genuine plan-execution prompts still yield actions", async () => {
+  const provider = new MockLLMProvider(MockStrategy.RECORDED, { recordings: [] });
+
+  const response = await provider.generate("Execution Context: Performing step 2. Action required: implement the fix.");
+
+  assertStringIncludes(response.content, TAG_ACTIONS, "the execution path must be unaffected");
+});
+
+Deno.test("[flow-step] a plan-execution prompt embedding `## Step N` headers still yields actions", async () => {
+  // The regression this guards: a plan's steps render as `## Step N` markdown headers, so an
+  // execution prompt carries the same header shape as merged flow context. A first fix matched
+  // the header alone and hijacked execution, starving the ReAct loop — "No actions generated
+  // in ReAct iteration" — which reads as an agent fault rather than a mock misclassification.
+  const provider = new MockLLMProvider(MockStrategy.RECORDED, { recordings: [] });
+
+  const prompt = `You are executing a plan.
+
+Execution Context: request-abc
+
+## Step 1
+Create the file.
+
+## Step 2
+Verify it.
+
+Action required: implement step 1.`;
+
+  const response = await provider.generate(prompt);
+
+  assertStringIncludes(response.content, TAG_ACTIONS, "execution must not be misread as a flow step");
+  assertEquals(response.content.includes(TAG_CONTENT), false);
+});
+
+// ---------------------------------------------------------------------------
+// Recorded replay must be honest about whether it replayed anything.
+//
+// `recorded` is the DEFAULT strategy, and with no fixtures configured the constructor
+// silently substitutes default patterns — so every scenario run so far reported
+// `provider: mock-recorded-<model>` while replaying nothing. Two guarantees make
+// fixture-backed runs trustworthy: the provider says when it is really pattern-matching, and
+// strict mode refuses a prompt it has no recording for instead of quietly answering from a
+// regex. Without the second, a fixture set with holes degrades into the same silent
+// misclassification that produced "No actions generated in ReAct iteration".
+// ---------------------------------------------------------------------------
+
+Deno.test("[recorded] a provider with no fixtures reports that it is pattern-matching", () => {
+  const provider = new MockLLMProvider(MockStrategy.RECORDED, { recordings: [] });
+  assertEquals(provider.isPatternFallback, true, "an unrecorded provider must not claim to replay");
+});
+
+Deno.test("[recorded] a provider with fixtures does not claim pattern fallback", () => {
+  const provider = new MockLLMProvider(MockStrategy.RECORDED, {
+    recordings: [{
+      promptHash: "abc",
+      promptPreview: "anything",
+      response: "<thought>t</thought><content>{}</content>",
+      model: "m",
+      tokens: { input: 1, output: 1 },
+      recordedAt: new Date().toISOString(),
+    }],
+  });
+  assertEquals(provider.isPatternFallback, false);
+});
+
+Deno.test("[recorded] strict mode refuses a prompt with no recording instead of guessing", async () => {
+  const provider = new MockLLMProvider(MockStrategy.RECORDED, {
+    recordings: [{
+      promptHash: "nonmatching",
+      promptPreview: "unrelated",
+      response: "<thought>t</thought><content>{}</content>",
+      model: "m",
+      tokens: { input: 1, output: 1 },
+      recordedAt: new Date().toISOString(),
+    }],
+    strictRecordings: true,
+  });
+
+  let threw = false;
+  try {
+    await provider.generate("a prompt nobody recorded");
+  } catch (error) {
+    threw = true;
+    assertStringIncludes(String(error), "strict recordings are enabled");
+  }
+  assertEquals(threw, true, "a fixture hole must surface, not be answered from a regex");
+});

@@ -33,29 +33,12 @@ class NoOpReplayPolicy implements IStepReplayPolicy {
   }
 }
 
-Deno.test("NoOpDurabilityStore: save resolves without error", async () => {
-  const store = new NoOpDurabilityStore();
-  const record = {
-    recordId: crypto.randomUUID(),
-    traceId: "trace-1",
-    flowId: "flow-1",
-    stepId: "step-1",
-    idempotencyKey: {
-      traceId: "trace-1",
-      flowId: "flow-1",
-      stepId: "step-1",
-      attemptClass: StepAttemptClass.INITIAL,
-      inputHash: "abcdef1234567890",
-    },
-    disposition: StepExecutionDisposition.EXECUTED,
-    startedAt: new Date().toISOString(),
-    inputHash: "abcdef1234567890",
-    sideEffectClass: StepSideEffectClass.LLM,
-    replayEligible: true,
-  };
-  await store.save(record);
-});
-
+// `save resolves without error` sat here, constructing a fifteen-field durability record in order
+// to call a NO-OP store's save() and assert nothing. A method defined to do nothing doing nothing
+// is not a fact worth a test, and the record shape had to be maintained in step with the interface
+// for no return. `invalidate resolves without error` was the same shape and is also gone. What
+// remains below is the behaviour that can actually differ: what the no-op store RETURNS, and that
+// it satisfies the interface.
 Deno.test("NoOpDurabilityStore: findReplayCandidate returns null", async () => {
   const store = new NoOpDurabilityStore();
   const result = await store.findReplayCandidate({
@@ -80,11 +63,6 @@ Deno.test("NoOpDurabilityStore: findReplayCandidate returns null without optiona
     attemptClass: "retry",
   });
   assertEquals(result, null);
-});
-
-Deno.test("NoOpDurabilityStore: invalidate resolves without error", async () => {
-  const store = new NoOpDurabilityStore();
-  await store.invalidate("record-1", "test invalidation");
 });
 
 Deno.test("NoOpReplayPolicy: canReuse returns denied by default", () => {

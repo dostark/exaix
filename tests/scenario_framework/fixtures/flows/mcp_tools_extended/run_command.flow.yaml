@@ -1,0 +1,19 @@
+# @schema-version: 1.0.0
+---
+id: "run-command-exec"
+name: "Run Shell Command"
+description: "Use run_command tool to execute a shell command"
+version: "1.0.0"
+output:
+  from: exec
+  format: markdown
+steps:
+  - id: "exec"
+    name: "Execute command using run_command"
+    identity: "senior-coder"
+    execution_mode: "declared"
+    tools:
+      - run_command
+    input:
+      source: "request"
+    timeout: 30000

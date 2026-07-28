@@ -9,6 +9,7 @@
  * @phase-134 Step 2 production call-site: injects the edition-selected IModelRegistry (DefaultModelRegistry floor in Solo) into ModelResolver.
  */
 import {
+  DAEMON_DEFAULT_NET_HOSTS,
   DAEMON_IDENTITY_ID,
   DaemonStatus,
   DEFAULT_IDENTITIES_PATH,
@@ -48,7 +49,13 @@ import { EventLogger, EventLoggerStructuredOutput } from "@exaix/core/logger";
 import { AgentRunner, ExecutionLoop } from "@exaix/execution";
 import { initializeHealthChecks } from "@exaix/core/health";
 import { buildMilestoneEmitterFromConfig } from "@exaix/core/observability";
-import { AgentOrchestratorAdapter, FlowRunner, type IFlowEventLogger, type IFlowEventPayload } from "@exaix/flow";
+import {
+  AgentOrchestratorAdapter,
+  FlowLoader,
+  FlowRunner,
+  type IFlowEventLogger,
+  type IFlowEventPayload,
+} from "@exaix/flow";
 import {
   initializeMemoryAutoApprovalMaintenance,
   MemoryAutoApprovalService,
@@ -62,6 +69,7 @@ import { createEmbeddingProvider } from "@exaix/ai/embeddings/embedding_provider
 import type { IEmbeddingProviderConfig } from "@exaix/ai/embeddings/embedding_provider_factory.ts";
 import { NotificationService } from "@exaix/core/notification";
 import { SkillsService } from "@exaix/core/skills";
+import { FlowLoaderAdapter } from "../../apps/common/adapters/flow_loader_adapter.ts";
 import { MemoryBankAdapter } from "../../apps/common/adapters/memory_bank_adapter.ts";
 import {
   createDefaultSymbolExtractorRegistry,
@@ -375,7 +383,9 @@ if (import.meta.main) {
     // Phase 121 Step 2: log the effective net allowlist
     if (config.system.allow_net === undefined) {
       await logger.info(DomainEventType.NetAllowlist, "default-allowlist", {
-        hosts: "api.anthropic.com,api.openai.com,localhost:11434",
+        // Read from the constant rather than restated: the literal here kept reporting three hosts
+        // after the list grew, so the journal described an allowlist the daemon was not using.
+        hosts: DAEMON_DEFAULT_NET_HOSTS.join(","),
       });
     } else if (config.system.allow_net.length === 0) {
       await logger.info(DomainEventType.NetAllowlist, "all-blocked", { hosts: "" });
@@ -828,6 +838,11 @@ if (import.meta.main) {
     const skillsService = new SkillsService(
       { memoryDir: join(config.system.root, config.paths.memory), portal: config.paths.workspace },
       dbService,
+      undefined,
+      // Without a logger every skills event (match_completed, skill.used, skill.created)
+      // is silently dropped — `this.logger?.` short-circuits — so skill selection left no
+      // trace in the Activity Journal at all.
+      logger,
     );
     await skillsService.initialize();
     const agentRunner = new AgentRunner(llmProvider, {
@@ -848,6 +863,17 @@ if (import.meta.main) {
       dynamicModeTools: DYNAMIC_MODE_TOOLS,
       dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
     });
+
+    // The processor needs the flow itself, not a verdict about it: it previously cast
+    // `{ id } as IFlow` and FlowRunner crashed reading `steps.length` on the result.
+    //
+    // Read `config.paths.flows` rather than recomposing it from `paths.blueprints` and
+    // `DEFAULT_FLOWS_PATH`. The two agree on a default workspace and diverge the moment an
+    // operator overrides the setting — which would leave `exactl flow list` honouring the
+    // override while the daemon that actually runs the flows ignored it.
+    const flowLoader = new FlowLoaderAdapter(
+      new FlowLoader(join(config.system.root, config.paths.flows)),
+    );
 
     // Wire Team-edition capability modules through the edition-composer seam.
     // Dynamic import keeps bootstrap_team.ts (+ its @exaix-team deps) out of the Solo binary.
@@ -881,6 +907,7 @@ if (import.meta.main) {
       costTracker,
       sessionMemory,
       flowRunner,
+      flowLoader,
       onClarificationCreated: async (traceId: string, _requestId: string) => {
         const waitStateId = crypto.randomUUID();
         const resumeToken = crypto.randomUUID();

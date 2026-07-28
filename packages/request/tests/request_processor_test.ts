@@ -10,7 +10,7 @@
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { MockStrategy, PricingTier, ProviderCostTier } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { type IRequestProcessorConfig, RequestProcessor } from "@exaix/request";
 import { AgentRunner } from "@exaix/execution";
@@ -24,6 +24,7 @@ import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IApplicationContext } from "@exaix/core/types";
 import type { IFlowRunner } from "@exaix/flow";
+import type { IFlowLoaderService } from "@exaix/core/types";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import {
   createStubConfig,
@@ -105,7 +106,17 @@ describe("RequestProcessor", () => {
   let processorConfig: IRequestProcessorConfig;
   let cleanup: () => Promise<void>;
   let costTracker: CostTracker;
-  let createProcessor: (provider?: IModelProvider, flowRunner?: IFlowRunner) => RequestProcessor;
+  /** Minimal IFlow for tests that only care that a LOADED flow reaches FlowRunner. */
+  const makeMinimalFlow = (
+    id: string,
+    steps: { id: string; identity: string }[],
+  ): IFlow => ({ id, name: id, description: id, version: "1.0", steps } as IFlow);
+
+  let createProcessor: (
+    provider?: IModelProvider,
+    flowRunner?: IFlowRunner,
+    flowLoader?: IFlowLoaderService,
+  ) => RequestProcessor;
 
   beforeEach(async () => {
     // Initialize database with initTestDbService (creates temp dir with activity table)
@@ -146,7 +157,7 @@ describe("RequestProcessor", () => {
       strengths: ["fast", "reliable", "deterministic"],
     });
 
-    createProcessor = (provider?: IModelProvider, flowRunner?: IFlowRunner) => {
+    createProcessor = (provider?: IModelProvider, flowRunner?: IFlowRunner, flowLoader?: IFlowLoaderService) => {
       const resolvedProvider = provider ??
         createStubProvider(
           '<thought>ok</thought><content>{"description": "Mock plan", ' +
@@ -165,6 +176,7 @@ describe("RequestProcessor", () => {
         testProvider: provider,
         costTracker,
         flowRunner,
+        flowLoader,
         agentRunner: new AgentRunner(resolvedProvider),
       });
     };
@@ -624,10 +636,56 @@ Review this pull request for security issues.`;
 
       await Deno.writeTextFile(requestPath, requestContent);
 
-      const processor = createProcessor(undefined, mockFlowRunner);
+      // Supplies a loader: a flow request without one is now a named wiring failure rather
+      // than a silent degradation to an id-only stub the runner cannot execute.
+      const processor = createProcessor(undefined, mockFlowRunner, {
+        loadFlow: (id: string) => Promise.resolve(makeMinimalFlow(id, [])),
+      });
       await processor.process(requestPath);
 
       assert(flowRunnerCalled, "FlowRunner.execute should be called for flow requests");
+    });
+
+    it("should hand FlowRunner the LOADED flow, not an id-only stub", async () => {
+      // processor.ts built `{ id: frontmatter.flow } as IFlow` — a cast, not a load — so every
+      // field but `id` was undefined and FlowRunner crashed on `flow.steps.length`
+      // (flow_runner.ts:981) with "Cannot read properties of undefined". The sibling test above
+      // could not catch it: it asserts only that execute() was CALLED, ignoring its argument.
+      const { traceId, requestPath } = createTestRequestPath(testDir);
+      let receivedFlow: IFlow | undefined;
+
+      const capturingFlowRunner: IFlowRunner = {
+        execute(flow: IFlow, _request: { userPrompt: string; traceId?: string; requestId?: string }) {
+          receivedFlow = flow;
+          return Promise.resolve({
+            flowRunId: "test-run",
+            success: true,
+            stepResults: new Map<string, never>(),
+            output: "ok",
+            duration: 1,
+            startedAt: new Date(),
+            completedAt: new Date(),
+          });
+        },
+      };
+
+      const loadedFlow = makeMinimalFlow("code-review", [{ id: "review", identity: "code-analyst" }]);
+
+      await Deno.writeTextFile(
+        requestPath,
+        `---\ntrace_id: "${traceId}"\ncreated: "${new Date().toISOString()}"\nstatus: pending\n` +
+          `priority: high\nflow: code-review\nsource: cli\ncreated_by: "test@example.com"\n---\n\n` +
+          `Review this pull request for security issues.`,
+      );
+
+      const processor = createProcessor(undefined, capturingFlowRunner, {
+        loadFlow: () => Promise.resolve(loadedFlow),
+      });
+      await processor.process(requestPath);
+
+      assertExists(receivedFlow, "FlowRunner must receive a flow");
+      assertEquals(receivedFlow!.id, "code-review");
+      assertEquals(receivedFlow!.steps?.length, 1, "the flow must arrive with its steps loaded");
     });
 
     it("should return null when FlowRunner throws", async () => {

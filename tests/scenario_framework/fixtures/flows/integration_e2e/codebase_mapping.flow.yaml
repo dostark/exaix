@@ -5,13 +5,12 @@ name: "Codebase Mapping with Journal Verification"
 description: "Map codebase with full Activity Journal audit trail"
 version: "1.0.0"
 output:
-  from: step
-  step: map
+  from: map
   format: markdown
 steps:
   - id: "map"
     name: "Map codebase structure with full logging"
-    identity: "researcher"
+    identity: "code-analyst"
     execution_mode: "dynamic"
     permitted_tools:
       - read_file

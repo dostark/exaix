@@ -55,21 +55,28 @@ export const DESTRUCTIVE_TOOLS = new Set([
  * (beyond the universal response-contract added in Step 7).
  */
 export const ROLE_REQUIRED_SKILLS: Record<string, string[]> = {
-  "default": ["portal-grounding"],
-  "mock-agent": ["portal-grounding"],
-  "code-analyst": ["code-review", "typescript-patterns", "portal-grounding"],
-  "product-manager": ["portal-grounding"],
-  "software-architect": ["exaix-conventions", "typescript-patterns", "portal-grounding"],
-  "senior-coder": ["fix-bug"],
-  "dogfood-developer": ["tdd-methodology", "exaix-conventions", "portal-grounding"],
-  "qa-engineer": ["tdd-methodology", "error-handling", "portal-grounding"],
-  "test-engineer": ["response-contract", "tdd-methodology", "error-handling", "portal-grounding"],
-  "security-expert": ["security-first", "code-review", "portal-grounding"],
-  "performance-engineer": ["code-review", "portal-grounding"],
-  "technical-writer": ["documentation-driven", "portal-grounding"],
-  "quality-judge": ["code-review", "portal-grounding"],
-  "voting-judge": ["code-review", "portal-grounding"],
-  "research-synthesizer": ["research-methodology", "portal-grounding"],
+  // Phase 142 Step 17: this floor was rewritten when default_skills were pruned from 68
+  // entries to 33. Under the always-concatenate model every default is unconditional prompt
+  // weight on every request, so a default must be something the identity needs EVERY time.
+  // Situational skills (language-, task-, phase-specific) were removed and are reached by
+  // trigger matching instead — `portal-grounding` in particular, which was a default on 14
+  // of 15 identities despite only applying when a request names a portal, and which declares
+  // `portal`/`context`/`grounding` keyword triggers that fire exactly then.
+  "default": ["response-contract"],
+  "mock-agent": ["response-contract"],
+  "code-analyst": ["response-contract-code-analysis", "code-review"],
+  "product-manager": ["response-contract", "requirements-analysis"],
+  "software-architect": ["response-contract", "architecture-review"],
+  "senior-coder": ["response-contract", "tdd-methodology"],
+  "dogfood-developer": ["response-contract", "exaix-conventions", "tdd-methodology"],
+  "qa-engineer": ["response-contract-qa", "tdd-methodology"],
+  "test-engineer": ["response-contract", "tdd-methodology"],
+  "security-expert": ["response-contract-security-analysis", "security-first"],
+  "performance-engineer": ["response-contract-performance", "performance-analysis"],
+  "technical-writer": ["response-contract", "documentation-driven"],
+  "quality-judge": ["response-contract-judge", "verdict-rubric"],
+  "voting-judge": ["response-contract-judge", "verdict-rubric"],
+  "research-synthesizer": ["response-contract", "research-methodology"],
 };
 
 /** Identities whose role is analysis/evaluation — no destructive tools. */

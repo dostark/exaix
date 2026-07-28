@@ -6,7 +6,6 @@
  * @description Verifies MCP tool handlers return isError:true structured responses instead of throwing for tool-logic errors.
  */
 import { assertEquals } from "@std/assert";
-import { ToolErrorCode } from "@exaix/core";
 import { QueryJournalTool } from "@exaix-team/mcp-server";
 import { RunCommandTool } from "@exaix-team/mcp-server";
 import { createBaseToolContext } from "@exaix/mcp/testing";
@@ -75,11 +74,8 @@ Deno.test("QueryJournalTool: execution failure returns isError:true response, no
   assertEquals((response.content[0] as { type: "text"; text: string }).text, "Journal unavailable");
 });
 
-Deno.test("ToolErrorCode: enum values cover required error taxonomy", () => {
-  assertEquals(ToolErrorCode.PERMISSION_DENIED, "PERMISSION_DENIED");
-  assertEquals(ToolErrorCode.NOT_FOUND, "NOT_FOUND");
-  assertEquals(ToolErrorCode.PATH_TRAVERSAL, "PATH_TRAVERSAL");
-  assertEquals(ToolErrorCode.INVALID_ARGS, "INVALID_ARGS");
-  assertEquals(ToolErrorCode.COMMAND_BLOCKED, "COMMAND_BLOCKED");
-  assertEquals(ToolErrorCode.EXECUTION_FAILED, "EXECUTION_FAILED");
-});
+// "ToolErrorCode: enum values cover required error taxonomy" was removed here: it compared each
+// enum member to its own name, so it passed whether or not any handler emitted a code — and until
+// recently none reached anywhere, because the base class took the argument as `_code` and dropped
+// it. The taxonomy's real contract, that the classification is produced and observable in the
+// activity journal, is asserted in packages/mcp/tests/tool_error_code_journal_test.ts.

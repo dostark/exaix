@@ -28,6 +28,13 @@ const createContext = (
       },
     ]),
   ),
+  steps: Object.entries(results).map(([id, r]) => ({
+    id,
+    success: r.success,
+    content: r.content,
+    data: r.data,
+    duration: 100,
+  })),
   request: {
     userPrompt: "Test prompt",
     traceId: "test-trace",

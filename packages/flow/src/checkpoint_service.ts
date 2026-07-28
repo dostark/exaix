@@ -10,6 +10,7 @@ import { ensureDir, exists } from "@std/fs";
 import { dirname, join } from "@std/path";
 import { FLOW_CHECKPOINT_SCHEMA_VERSION } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
+import { resolveMemoryExecutionRoot } from "@exaix/core/config";
 import type { IFlowCheckpoint, IFlowStepResultSnapshot } from "@exaix/schemas/flow.ts";
 import { ZFlowCheckpoint } from "@exaix/schemas/flow.ts";
 
@@ -30,9 +31,7 @@ export class FlowCheckpointService implements IFlowCheckpointService {
   constructor(private readonly config: Config) {}
 
   getCheckpointPath(traceId: string): string {
-    const executionRoot = this.config.paths.memoryExecution.includes("/")
-      ? this.config.paths.memoryExecution
-      : join(this.config.paths.memory, this.config.paths.memoryExecution);
+    const executionRoot = resolveMemoryExecutionRoot(this.config.paths);
 
     return join(
       this.config.system.root,

@@ -14,6 +14,7 @@ import type { ICliApplicationContext } from "@exaix/core/types";
 import type { MCPContent, MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
 import type { PortalOperation, ToolErrorCode } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 import type { LogMetadata } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 
@@ -27,7 +28,11 @@ export abstract class ToolHandler {
   protected logger?: IEventLogger;
   protected permissions: IPortalPermissionsChecker | null;
 
-  constructor(context: ICliApplicationContext, permissions?: IPortalPermissionsChecker, logger?: IEventLogger) {
+  constructor(
+    context: ICliApplicationContext,
+    permissions?: Opt<IPortalPermissionsChecker, Reason.OptionalDependency>,
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>,
+  ) {
     this.context = context;
     this.config = context.config.getAll();
     this.logger = logger;
@@ -44,7 +49,7 @@ export abstract class ToolHandler {
     return {
       getActivitiesByTrace: (traceId: string) => db.getActivitiesByTrace(traceId),
       getActivitiesByTraceSafe: (traceId: string) => db.getActivitiesByTraceSafe(traceId),
-      getRecentActivity: (limit?: number) => db.getRecentActivity(limit),
+      getRecentActivity: (limit?: Opt<number, Reason.QueryFilter>) => db.getRecentActivity(limit),
       queryActivity: (filter) => db.queryActivity(filter),
     } as IEventJournalReader;
   }
@@ -148,14 +153,18 @@ export abstract class ToolHandler {
     toolName: string,
     portal: string,
     identityId: string,
-    _code: ToolErrorCode,
+    code: ToolErrorCode,
     message: string,
     metadata: LogMetadata,
   ): MCPToolResponse {
+    // The code is journalled, not returned: the agent-facing text stays the raw message so
+    // handler tests and scenario assertions keep matching on it, while the journal gains the
+    // classification each handler already computes.
     this.logToolExecution(toolName, portal, identityId, {
       ...metadata,
       success: false,
       error: message,
+      errorCode: code,
     });
     return {
       content: [{ type: "text", text: message }],

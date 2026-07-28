@@ -58,3 +58,34 @@ Deno.test("[GAP-11] buildParsedRequest sets undefined when frontmatter has no IM
   assertEquals(req.thinking, undefined);
   assertEquals(req.characteristics, undefined);
 });
+
+// ---------------------------------------------------------------------------
+// Phase 142 Step 17 — frontmatter inputs that skill resolution depends on.
+// `tags` was never copied (IRequestFrontmatter did not even declare it), and
+// `skills` only parsed when written as a JSON string, so a hand-authored YAML
+// array raised "frontmatter.skills.trim is not a function".
+// ---------------------------------------------------------------------------
+
+Deno.test("[step17] buildParsedRequest forwards frontmatter tags for trigger matching", () => {
+  const fm = makeFrontmatter({ tags: ["review", "error-handling"] });
+  const req = buildParsedRequest("body", fm, "req-1", "trace-1");
+  assertEquals(req.tags, ["review", "error-handling"]);
+});
+
+Deno.test("[step17] buildParsedRequest accepts skills written as a YAML array", () => {
+  const fm = makeFrontmatter({ skills: ["tdd-methodology", "security-first"] });
+  const req = buildParsedRequest("body", fm, "req-1", "trace-1");
+  assertEquals(req.skills, ["tdd-methodology", "security-first"]);
+});
+
+Deno.test("[step17] buildParsedRequest still accepts the CLI's JSON-string skills form", () => {
+  const fm = makeFrontmatter({ skills: '["tdd-methodology","security-first"]' });
+  const req = buildParsedRequest("body", fm, "req-1", "trace-1");
+  assertEquals(req.skills, ["tdd-methodology", "security-first"]);
+});
+
+Deno.test("[step17] buildParsedRequest accepts a comma-separated skills string", () => {
+  const fm = makeFrontmatter({ skills: "tdd-methodology, security-first" });
+  const req = buildParsedRequest("body", fm, "req-1", "trace-1");
+  assertEquals(req.skills, ["tdd-methodology", "security-first"]);
+});

@@ -12,8 +12,8 @@ version: "1.1.0"
 description: "Expert-level software engineer for complex implementation tasks"
 default_skills: [
   "response-contract",
-  "commit-message",
-  "fix-bug",
+  "tdd-methodology",
+  "typescript-patterns",
 ]
 permitted_tools:
   - read_file

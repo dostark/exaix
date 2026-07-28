@@ -5,8 +5,7 @@ name: "Permission Escalation Prevention"
 description: "Verify dynamic mode cannot escalate to write tools"
 version: "1.0.0"
 output:
-  from: step
-  step: test
+  from: test
   format: markdown
 steps:
   - id: "test"

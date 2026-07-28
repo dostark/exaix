@@ -437,9 +437,16 @@ export class ProviderFactory {
   private static generateProviderId(options: IResolvedProviderOptions): string {
     // Special case for mock provider which includes strategy
     if (options.provider === DEFAULTS.PROVIDER_MOCK) {
-      return `${DEFAULTS.PROVIDER_ID_MOCK_PREFIX}${
-        options.mockStrategy ?? DEFAULTS.PROVIDER_ID_MOCK_DEFAULT_STRATEGY
-      }-${options.model}`;
+      // `recorded` is the DEFAULT strategy, and MockLLMProvider silently substitutes regex
+      // patterns when no fixtures are configured — so this id claimed a replay that never
+      // happened on every run. It is the id the daemon journals (via getProviderInfoByName),
+      // so a reader auditing which responses a scenario saw was told "recorded" while the
+      // answers came from patterns. Report the EFFECTIVE strategy instead.
+      const configured = options.mockStrategy ?? DEFAULTS.PROVIDER_ID_MOCK_DEFAULT_STRATEGY;
+      const effective = configured === DEFAULTS.PROVIDER_ID_MOCK_DEFAULT_STRATEGY && !options.mockFixturesDir
+        ? DEFAULTS.PROVIDER_ID_MOCK_PATTERN_STRATEGY
+        : configured;
+      return `${DEFAULTS.PROVIDER_ID_MOCK_PREFIX}${effective}-${options.model}`;
     }
 
     // Default pattern for all other providers

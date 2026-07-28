@@ -15,5 +15,5 @@ steps:
     output_criteria:
       - id: "plan-produced"
         kind: "file-found"
-        path_pattern: "**/_plan.md"
+        path_pattern: "**/*_plan.md"
         score_weight: 1.0

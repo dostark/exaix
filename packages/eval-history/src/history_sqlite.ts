@@ -18,7 +18,24 @@ import type { IEvalHistoryEntry } from "./history_schema.ts";
 export interface IFamilySummaryRow {
   family: string;
   taskCount: number;
+  /**
+   * Scenarios that passed, counted exactly.
+   *
+   * Most subsystem packs ask yes/no questions, and `MEAN 1.000` over such a pack invites reading a
+   * drop to 0.971 as "97% healthy" when it means "one assertion of many broke". `7/7` says what
+   * happened.
+   */
+  passedCount: number;
   meanScore: number;
+  /**
+   * Whether a mean carries information for this family.
+   *
+   * True when some run scored strictly between 0 and 1 — that is, when the underlying criteria can
+   * be partly satisfied. Derived from the observed scores rather than from a hand-maintained list
+   * of "contract packs", so a pack that gains a judge-scored criterion starts reporting a mean
+   * without anyone remembering to reclassify it.
+   */
+  graded: boolean;
   meanPassAt1: number;
   reconcileRate: number;
   meanDurationMs: number;
@@ -535,14 +552,17 @@ export class EvalSqliteStore {
     for (const [family, g] of groups) {
       const reconcileCount = this.countReconciledRuns(g.runIds);
 
+      const meanScore = g.scores.reduce((a, b) => a + b, 0) / g.scores.length;
       result.push({
         family,
         taskCount: g.scores.length,
-        meanScore: g.scores.reduce((a, b) => a + b, 0) / g.scores.length,
+        passedCount: g.passCount,
+        graded: g.scores.some((score) => score > 0 && score < 1),
+        meanScore,
+        delta: this.previousMeanForFamily(rows, family, tagPrefix, meanScore),
         meanPassAt1: g.passCount / g.scores.length,
         reconcileRate: g.scores.length > 0 ? reconcileCount / g.scores.length : 0,
         meanDurationMs: g.scores.length > 0 ? g.totalDuration / g.scores.length : 0,
-        delta: null,
       });
     }
 
@@ -566,6 +586,49 @@ export class EvalSqliteStore {
   /**
    * Deduplicate runs keeping only the latest per scenario.
    */
+  /**
+   * Change in this family's mean since the previous observation of the same scenarios.
+   *
+   * `delta` was declared and hardcoded `null`, and no report rendered it — so "trend deltas after
+   * the second run" could not be true of any output. Defined here as: the latest score per
+   * scenario (which is what the row's mean is over) minus the mean of each scenario's
+   * SECOND-latest score. `null` when no scenario in the family has been seen twice, because a
+   * first run has nothing to be a trend against.
+   *
+   * Compared per scenario rather than per run so a family whose membership changed between runs
+   * does not report a delta that is really a change of denominator.
+   */
+  private previousMeanForFamily(
+    rows: Array<{ scenario_id: string; tags: string | null; suite_score: number }>,
+    family: string,
+    tagPrefix: string,
+    currentMean: number,
+  ): number | null {
+    const seenPerScenario = new Map<string, number[]>();
+    for (const row of rows) {
+      if (!this.rowHasFamily(row.tags, family, tagPrefix)) continue;
+      const scores = seenPerScenario.get(row.scenario_id) ?? [];
+      scores.push(row.suite_score);
+      seenPerScenario.set(row.scenario_id, scores);
+    }
+
+    // `rows` arrives newest-first, so index 1 is each scenario's previous observation.
+    const previous = [...seenPerScenario.values()].filter((scores) => scores.length > 1).map((scores) => scores[1]);
+    if (previous.length === 0) return null;
+    return currentMean - previous.reduce((a, b) => a + b, 0) / previous.length;
+  }
+
+  /** True when a stored `tags` JSON column carries the family tag. */
+  private rowHasFamily(tags: string | null, family: string, tagPrefix: string): boolean {
+    if (!tags) return false;
+    try {
+      const parsed = JSON.parse(tags) as string[];
+      return parsed.some((tag) => tag.startsWith(tagPrefix) && tag === family);
+    } catch {
+      return false;
+    }
+  }
+
   private deduplicateRuns(
     rows: Array<
       {

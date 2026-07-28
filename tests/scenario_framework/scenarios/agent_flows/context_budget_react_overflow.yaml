@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "context-budget-react-overflow"
 title: "ReAct loop compacts oversized tool results via ContextBudgetManager"
 pack: "agent_flows"
-tags: ["context-budget", "react"]
+tags: ["context-budget", "react", "subsystem:flows"]
 description: >-
   Three-observation ReAct scenario where each tool result is artificially large.
   ContextBudgetManager is configured with a tight loopHistory budget, causing

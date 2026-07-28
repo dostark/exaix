@@ -28,8 +28,6 @@ export const RequestSchema = z.object({
 
   /** Explicit skills to apply for this request (overrides trigger matching) */
   skills: z.array(z.string()).optional(),
-  /** Skills to skip/disable for this request */
-  skip_skills: z.array(z.string()).optional(),
 });
 
 export type Request = z.infer<typeof RequestSchema>;

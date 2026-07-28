@@ -149,42 +149,72 @@ Deno.test("fix(agent-runner): a critical default skill survives a successful dyn
   // The critical default skill must survive even though it wasn't dynamically matched.
   assertEquals(resolved.includes("response-contract"), true, "critical default skill must not be dropped");
 
-  // Non-critical defaults must NOT be pulled in — only the critical one, to avoid
-  // reintroducing the prompt-bloat problem this fix is meant to prevent.
-  assertEquals(resolved.includes("error-handling"), false);
-  assertEquals(resolved.includes("portal-grounding"), false);
-  assertEquals(resolved.includes("blueprint-best-practices"), false);
+  // SUPERSEDED by Phase 142 Step 17: non-critical defaults ARE now pulled in. The
+  // critical-only union was an anti-bloat measure that made the resulting set depend on a
+  // flag only 2 of 27 skills set, so nobody could predict it. Bloat is now controlled by
+  // keeping identity default_skills short instead, and every default is concatenated.
+  assertEquals(resolved.includes("error-handling"), true);
+  assertEquals(resolved.includes("portal-grounding"), true);
+  assertEquals(resolved.includes("blueprint-best-practices"), true);
 });
 
-Deno.test("[agent-runner-merge] skipSkills still removes a skill from the unioned set", async () => {
+// ---------------------------------------------------------------------------
+// Phase 142 Step 17 — always-concatenate. Skill resolution used three different
+// merge rules depending on branch (explicit pin unioned ALL defaults, a dynamic
+// hit unioned only `critical` ones, a dynamic miss took ALL defaults), so nobody
+// could predict the resulting set. One rule now applies everywhere:
+// pinned ∪ matched ∪ defaults.
+// ---------------------------------------------------------------------------
+
+Deno.test("[step17] explicit pin concatenates with every identity default", async () => {
   const runner = createMinimalRunner();
+  const blueprint: IBlueprint = {
+    systemPrompt: "test",
+    defaultSkills: ["response-contract", "error-handling", "portal-grounding"],
+  };
+  const request = { skills: ["exaix-conventions"], userPrompt: "do the thing", taskType: "feature" };
+
+  const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-identity");
+  const resolved: string[] = result.skillIds;
+
+  assertEquals(resolved.includes("exaix-conventions"), true, "the pinned skill is present");
+  for (const id of blueprint.defaultSkills!) {
+    assertEquals(resolved.includes(id), true, `default ${id} must be concatenated, critical or not`);
+  }
+});
+
+Deno.test("[step17] the resulting set has no duplicates when a pin repeats a default", async () => {
+  const runner = createMinimalRunner();
+  const blueprint: IBlueprint = { systemPrompt: "test", defaultSkills: ["response-contract", "error-handling"] };
+  const request = { skills: ["error-handling"], userPrompt: "do the thing", taskType: "feature" };
+
+  const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-identity");
+  const resolved: string[] = result.skillIds;
+
+  assertEquals(resolved.filter((id) => id === "error-handling").length, 1);
+});
+
+Deno.test("[step17] a successful dynamic match concatenates ALL defaults, not just critical ones", async () => {
+  // Reverses the earlier "critical-only union" rule deliberately. That rule existed to avoid
+  // prompt bloat, but it made the resulting set unpredictable — whether a default survived
+  // depended on a `critical` flag only 2 of 27 skills set. Bloat is now controlled at the
+  // source instead: identity default_skills lists are kept short (Step 17 task D), and
+  // `critical` reverts to its other, load-bearing job — surviving context compaction.
+  const provider = makeMockProvider();
+  const skillsSvc = makeMockSkillsServiceWithDynamicMatch("tdd-methodology", new Set(["response-contract"]));
+  const runner = new AgentRunner(provider as any, { skillsService: skillsSvc, disableSkills: false } as any);
 
   const blueprint: IBlueprint = {
     systemPrompt: "test",
-    defaultSkills: ["tdd-methodology", "exaix-conventions", "portal-grounding", "security-first", "code-review"],
+    defaultSkills: ["response-contract", "error-handling", "portal-grounding"],
   };
+  const request = { userPrompt: "Fix the null-safety bug in src/utils.ts", taskType: "bugfix" };
 
-  const request = {
-    skills: ["exaix-conventions"],
-    skipSkills: ["code-review"],
-    userPrompt: "implement feature",
-    taskType: "feature",
-  };
-
-  const result = await (runner as any).matchAndApplySkills(
-    blueprint,
-    request,
-    "test-identity",
-  );
-
-  assertExists(result);
+  const result = await (runner as any).matchAndApplySkills(blueprint, request, "test-identity");
   const resolved: string[] = result.skillIds;
 
-  // The skipped skill must be removed
-  assertEquals(resolved.includes("code-review"), false, "code-review must be skipped");
-
-  // Other rigor skills must still be present
-  assertEquals(resolved.includes("tdd-methodology"), true);
-  assertEquals(resolved.includes("portal-grounding"), true);
-  assertEquals(resolved.includes("security-first"), true);
+  assertEquals(resolved.includes("tdd-methodology"), true, "the dynamic match is present");
+  for (const id of blueprint.defaultSkills!) {
+    assertEquals(resolved.includes(id), true, `default ${id} must be concatenated regardless of critical`);
+  }
 });

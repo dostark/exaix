@@ -15,6 +15,8 @@ see **[`docs/Exaix_Evaluation.md`](../../docs/Exaix_Evaluation.md)**.
    - [Automated Sandbox Setup](#21-automated-sandbox-setup)
    - [Manual Sandbox Setup](#22-manual-sandbox-setup)
    - [Run Validation Scenarios](#23-run-validation-scenarios)
+   - [Where Sandboxes Are Created](#24-where-sandboxes-are-created)
+   - [Sandbox Lifecycle](#25-sandbox-lifecycle--what-is-kept-and-how-to-reclaim-the-rest)
 3. [Architecture & Extension](#3-architecture--extension)
 4. [Directory Structure](#4-directory-structure)
 5. [Quick Reference](#5-quick-reference)
@@ -227,21 +229,30 @@ cd "$FRAMEWORK_DIR/scenario_framework"
 ./bin/run-scenarios --profile ci-core --verbose
 ```
 
-All 10 packs (37 scenarios) are available in deployed mode. Packs that require
-a sandbox deploy:
+**17 packs, 146 scenarios** (counts measured from the catalog, not maintained by hand — regenerate
+with `loadScenarioCatalog` if they drift). The `Subsystem` column is what
+`eval report --group-by subsystem` aggregates and what the cadence tiers select on; a pack with no
+subsystem tag is not part of the six-subsystem coverage contract.
 
-| Pack                 | Requires        | Scenarios |
-| -------------------- | --------------- | --------- |
-| `agent_flows`        | Daemon + portal | 8         |
-| `dynamic_execution`  | Daemon          | 1         |
-| `framework_test`     | Framework       | 1         |
-| `integration_e2e`    | Daemon + portal | 2         |
-| `mcp_tools_extended` | Daemon          | 2         |
-| `provider_live`      | Real LLM        | 2         |
-| `smoke`              | Daemon          | 1         |
-| `triggers-basic`     | Daemon          | 1         |
-| `blueprint-eval`     | None            | 2         |
-| `eval-smoke`         | None            | 1         |
+| Pack                 | Requires        | Scenarios | Subsystem    |
+| -------------------- | --------------- | --------- | ------------ |
+| `agent_flows`        | Daemon + portal | 17        | `flows`      |
+| `blueprint_eval`     | None            | 2         | —            |
+| `dynamic_execution`  | Daemon          | 11        | `mcp-client` |
+| `eval_edge_cases`    | None            | 5         | —            |
+| `eval_smoke`         | None            | 1         | —            |
+| `flow_blueprints`    | Daemon          | 16        | `flows`      |
+| `framework_test`     | Framework       | 2         | —            |
+| `identity_eval`      | Daemon          | 14        | `identities` |
+| `integration_e2e`    | Daemon + portal | 3         | —            |
+| `mcp_server`         | Daemon (Team)   | 5         | `mcp-server` |
+| `mcp_tools_extended` | Daemon          | 16        | `tools`      |
+| `portal_knowledge`   | Daemon + portal | 1         | —            |
+| `provider_live`      | Real LLM        | 21        | `identities` |
+| `skill_eval`         | Daemon          | 7         | `skills`     |
+| `smoke`              | Daemon          | 1         | —            |
+| `swe_tasks`          | Real LLM        | 23        | —            |
+| `triggers_basic`     | Daemon          | 1         | —            |
 
 ### 2.4 Where Sandboxes Are Created
 
@@ -262,14 +273,51 @@ There are **two** ways a sandbox comes into being, and they live in different pl
     root**. Override it to put sandboxes anywhere: `export EXA_SANDBOX_BASE=/var/exa-sandboxes`.
   - The runner **refuses to use the repo root** as a sandbox — this guard stops a run from leaking
     `.exa/journal.db`, `logs/`, and worktrees into your working tree (a real bug this default fixed).
-  - Each run gets its own `<run-id>` directory, so failed runs are preserved side-by-side for
-    post-mortem. List them with `./bin/sandbox list`; find the latest with `./bin/sandbox`.
+  - Each run gets its own `<run-id>` directory. **A failed run's sandbox is kept** for post-mortem;
+    a successful one is reclaimed — see §2.5. List them with `./bin/sandbox list`; find the latest
+    with `./bin/sandbox`.
 
 > Why a sibling, not `/tmp` or `.dogfood/`? It stays outside the repo tree (clean `git status`, no
 > interference with `deno test`/watchers), it's trivial to find for debugging, and it needs only a
 > single predictable path added to the daemon's least-privilege `--allow-write` allow-list. This is
 > the same default the debug helpers in §6 assume. Defined in
 > `tests/scenario_framework/runner/config.ts` (`defaultSandboxRoot`).
+
+### 2.5 Sandbox Lifecycle — What Is Kept, and How to Reclaim the Rest
+
+A sandbox is ~4 MB (the runner seeds `Blueprints/`, `Memory/` and the git-backed portal fixtures
+into each one; `fixtures/` alone is 2.5 MB). Nothing used to remove them, so they accumulated
+without bound — 103 sandboxes / 407 MB on one development machine before this was added. On a CI
+runner that fills the disk and presents as an unrelated build failure.
+
+| Situation                                | Outcome                                                 |
+| ---------------------------------------- | ------------------------------------------------------- |
+| Run passes                               | Sandbox reclaimed; **evidence under `output/` is kept** |
+| Any scenario fails, or an infra error    | Sandbox **kept**, path printed                          |
+| `--keep-sandbox`                         | Sandbox **kept**, path printed                          |
+| `--workspace <path>` (operator-supplied) | **Never removed**, whatever the outcome                 |
+
+The asymmetry is deliberate: the cost of keeping a failed run's state is disk, and the cost of
+discarding it is an undiagnosable failure. Evidence is preserved by _exclusion_ rather than by
+relocation — the default `output_dir` is `<sandbox>/output`, and eval-history entries reference
+those paths, so moving them would leave the history pointing at nothing. A reclaimed sandbox
+shrinks from ~4 MB to ~16 KB.
+
+Provenance is recorded on the config (`workspace_provenance`), not inferred from the path. Guessing
+by shape would delete a real workspace the day someone points `--workspace` at a directory under
+the sandbox base.
+
+**Reclaiming the backlog.** Dry-run by default:
+
+```bash
+deno task scenario:prune                 # 7-day window, lists what it would remove
+deno task scenario:prune --days 14
+deno task scenario:prune --days 0 --apply  # actually remove, all ages
+```
+
+Selection is by modification time, not by parsing the run-id. This is also what a periodic CI job
+would call. Defined in `scripts/prune_scenario_sandboxes.ts`; policy in
+`tests/scenario_framework/runner/sandbox_lifecycle.ts`.
 
 ---
 
@@ -408,6 +456,56 @@ scenario_framework/
 
 ---
 
+## 4b. Subsystem Cadence — Which Tier Runs What
+
+Phase 142 defines three tiers over the six subsystem packs (`subsystem:tools`, `subsystem:mcp-server`,
+`subsystem:mcp-client`, `subsystem:identities`, `subsystem:skills`, `subsystem:flows`).
+
+> **These are run by hand.** None of the commands below is attached to a GitHub Actions job, to
+> `scripts/ci.ts`, or to the pre-commit gates — "tier" here names a _selection_ and the task that
+> executes it, not something that fires on every change. Adding them to a CI job is a separate,
+> deliberate decision.
+
+| Tier               | Command                          | Selects                                                        |
+| ------------------ | -------------------------------- | -------------------------------------------------------------- |
+| **ci-core**        | `deno task eval:subsystems:core` | `smoke`-tagged representatives, one or more per subsystem      |
+| **ci-core** (also) | `deno task test:parity`          | the catalog/flow/identity/skill/tool parity gates (deno tests) |
+| **ci-extended**    | `deno task eval:subsystems`      | every mock-tier scenario across all six subsystems             |
+| **nightly**        | see below                        | the `provider-live` tier, against a real model                 |
+
+`ci-core` and `ci-extended` used to select the _same_ set — 86 scenarios each on a Team build — so
+the cheap tier bought nothing. `ci-core` is now the `smoke` subset (28), and its extra content is
+the parity gates, which are deno tests rather than scenarios.
+
+`subsystem:mcp-server` is `edition: team` and is correctly absent from a Solo run; every other
+subsystem runs on both editions.
+
+### The nightly provider-live recipe
+
+The mock tier proves mechanics. Anything about _which_ tool an agent reaches for, or how good its
+output is, needs a real model — see the Step 15 finding: the mock provider emits **zero**
+`dynamic_tool_call` rows, so a trajectory score there is always 0.00 and never partial.
+
+```bash
+# One subsystem's live tier. `--tag provider-live` disables the CI-safety filter, which is what
+# makes the excluded scenarios selectable at all.
+EXA_LLM_PROVIDER=google \
+deno run -A tests/scenario_framework/runner/main.ts \
+  --tag subsystem:mcp-client --tag provider-live \
+  --mode auto --eval-mode --trials 3
+
+# Then read the per-subsystem table:
+exactl eval report --group-by subsystem
+```
+
+Notes that cost real money if ignored:
+
+- **Provider comes from the environment.** A scenario must not pin `EXA_LLM_PROVIDER`; step `env`
+  is merged last and would override you. A guard test enforces this for `provider-live` scenarios.
+- `--trials 3` is what makes a reliability number meaningful; a single live trial measures one
+  sample of a stochastic system.
+- Costs land in the journal and surface via `exactl eval report` (cost view).
+
 ## 5. Quick Reference
 
 | Task                                          | Command / Document                                                                      |
@@ -415,6 +513,10 @@ scenario_framework/
 | Run eval (self-contained packs)               | `exactl eval run --pack blueprint-eval`                                                 |
 | Run eval (with sandbox)                       | `exactl eval run --pack agent_flows`                                                    |
 | Run validation scenarios (deployed framework) | `./bin/run-scenarios --profile ci-core`                                                 |
+| Subsystem tier — every change                 | `deno task eval:subsystems:core` + `deno task test:parity`                              |
+| Subsystem tier — full mock                    | `deno task eval:subsystems`                                                             |
+| Subsystem tier — nightly live                 | see §4b                                                                                 |
+| Per-subsystem report                          | `exactl eval report --group-by subsystem`                                               |
 | Deploy sandbox (automated)                    | `scripts/setup_sandbox.ts` (see §2.1)                                                   |
 | Deploy framework to sandbox                   | `./bin/deploy-framework` (see §2.2)                                                     |
 | Debug a failing e2e scenario                  | `./bin/debug-scenario <id>` → `./bin/journal` / `./bin/delegate-inspect` (§6 Debugging) |
@@ -477,6 +579,33 @@ steps:
   use tags to group related scenarios for CI profiles.
 - **All step types** available in §3 (file-exists, text-contains, json-path-equals,
   journal-event-exists, llm-judge, etc.)
+
+### Subsystem Tag Taxonomy (Phase 142)
+
+Each scenario that covers a core Exaix capability surface (tools, MCP server/contract,
+MCP client/ReAct selection, identities, skills, or flows) SHOULD carry the appropriate
+`subsystem:<name>` and `entity:<id>` tags so that `exactl eval report --group-by subsystem|entity`
+can produce per-surface and per-entity trend reports.
+
+| Tag                    | Purpose                                                                     |
+| ---------------------- | --------------------------------------------------------------------------- |
+| `subsystem:tools`      | Scenario exercises an MCP tool handler                                      |
+| `subsystem:mcp-server` | Scenario exercises the out-of-process MCP server contract                   |
+| `subsystem:mcp-client` | Scenario exercises in-process ReAct tool selection or permission            |
+| `subsystem:identities` | Scenario evaluates a Blueprint identity                                     |
+| `subsystem:skills`     | Scenario evaluates skill injection mechanics or effectiveness               |
+| `subsystem:flows`      | Scenario evaluates a Blueprint flow blueprint                               |
+| `entity:<id>`          | The specific entity tested (e.g. `entity:read_file`, `entity:senior-coder`) |
+
+**Parity gate rule:** Adding a new tool/identity/skill/flow to its catalog requires
+adding at least one eval scenario with the matching `entity:<id>` tag, or adding a
+reasoned entry to the parity exclusion list at `tests/eval/parity_exclusions.json`.
+
+The gates that check this are `tests/eval/{catalog,flow,identity,skill,tool}_*parity*_test.ts`, run
+by `deno task test:parity`. **This is a manual command, not a CI job** — it is not in
+`.github/workflows/`, `scripts/ci.ts` or the pre-commit gate list. (An earlier version of this
+paragraph said "the parity gate (Gate 15) enforces this in ci-core"; Gate 15 is the markdown-path
+check, and no parity gate runs automatically.)
 
 ### The `matrix:` block — one scenario, many cells (Phase 127)
 

@@ -1,0 +1,133 @@
+schema_version: "1.0.0"
+# LIMITATION — this scenario asserts git behaviour through the git CLI, not through the
+# git_* MCP tool handlers, and is the one pack member that remains a surrogate. Every
+# other tool in this pack was converted to real `tools/call` round-trips in phase-142
+# Step 14.
+#
+# The reason recorded during Step 14 — that `createGitServiceStub()` in
+# apps/mcp-server/main.ts would make the tools assert a stub — was WRONG, and was
+# corrected on 2026-07-26. The git_* handlers never read `context.git`; each constructs
+# `new Deno.Command("git", ...)` directly, so git_status and git_log already return real
+# results through the standalone server. The actual gap is that those handlers bypass
+# IGitService altogether, and so skip GitService.validateArgs (destructive-operation and
+# protected-branch guards), the command timeout, the index.lock retry, and
+# trace-attributed journalling that the daemon path gets.
+#
+# Converting this scenario is planned as phase-156 Step 5, after phase-156 Steps 1-4
+# route the handlers through a real per-portal IGitServiceFactory. See
+# exaix-dev-docs/planning/phase-156-mcp-git-service-integration.md.
+id: "git-operations-roundtrip"
+title: "Git tools — branch, commit, status, log, worktree operations (CLI surrogate; see header)"
+pack: "mcp_tools_extended"
+tags:
+  - "git"
+  - "roundtrip"
+  - "subsystem:tools"
+  - "entity:git_create_branch"
+  - "entity:git_commit"
+  - "entity:git_status"
+  - "entity:git_log"
+  - "entity:git_worktree"
+request_fixture: "fixtures/requests/mcp_tools_extended/git_operations.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "init-repo"
+    type: "shell"
+    name: "Initialize test git repository"
+    command: "sh"
+    args:
+      - "-c"
+      - "rm -rf /tmp/exaix-git-test && mkdir -p /tmp/exaix-git-test && cd /tmp/exaix-git-test && git init -b main && git config user.email test@test.com && git config user.name Tester && echo 'initial' > readme.txt && git add . && git commit -m 'initial commit'"
+    output_criteria:
+      # git prints "Initialized empty Git repository in ..." — the assertion is
+      # case-sensitive, and `-b main` pins the branch name so the branch check below
+      # does not depend on the host's init.defaultBranch setting.
+      - id: "repo-initialized"
+        kind: "command-output-contains"
+        contains: ["Initialized empty Git repository"]
+        score_weight: 0.3
+
+  - id: "verify-git-status"
+    type: "shell"
+    name: "Verify git status shows clean state"
+    command: "git"
+    args: ["-C", "/tmp/exaix-git-test", "status"]
+    output_criteria:
+      - id: "status-clean"
+        kind: "command-output-contains"
+        contains: ["nothing to commit"]
+        score_weight: 0.4
+
+  - id: "verify-git-branch"
+    type: "shell"
+    name: "Verify current branch is main"
+    command: "git"
+    args: ["-C", "/tmp/exaix-git-test", "branch", "--show-current"]
+    output_criteria:
+      - id: "branch-main"
+        kind: "command-output-contains"
+        contains: ["main"]
+        score_weight: 0.3
+
+  - id: "verify-git-create-branch"
+    type: "shell"
+    name: "Create and switch to a feature branch"
+    command: "git"
+    args: ["-C", "/tmp/exaix-git-test", "checkout", "-b", "feature/test"]
+    output_criteria:
+      - id: "branch-created"
+        kind: "command-output-contains"
+        contains: ["Switched to a new branch"]
+        score_weight: 0.4
+
+  - id: "make-change-and-commit"
+    type: "shell"
+    name: "Make a change and commit"
+    command: "sh"
+    args:
+      - "-c"
+      - "cd /tmp/exaix-git-test && echo 'feature work' >> readme.txt && git add . && git commit -m 'feature commit'"
+    output_criteria:
+      - id: "commit-made"
+        kind: "command-output-contains"
+        contains: ["feature commit"]
+        score_weight: 0.4
+
+  - id: "verify-git-log"
+    type: "shell"
+    name: "Verify git log shows commits"
+    command: "git"
+    args: ["-C", "/tmp/exaix-git-test", "log", "--oneline"]
+    output_criteria:
+      - id: "log-shows-commits"
+        kind: "command-output-contains"
+        contains: ["feature commit", "initial commit"]
+        score_weight: 0.4
+
+  - id: "verify-git-worktree"
+    type: "shell"
+    name: "Verify worktree add"
+    command: "sh"
+    args:
+      - "-c"
+      # `main` is already checked out in the primary worktree, so add a NEW branch —
+      # checking out an already-checked-out branch is refused by git.
+      - "cd /tmp/exaix-git-test && git worktree add -b wt-test /tmp/exaix-wt-test main 2>&1"
+    output_criteria:
+      - id: "worktree-added"
+        kind: "command-output-contains"
+        contains: ["Preparing worktree"]
+        score_weight: 0.3
+
+  - id: "cleanup"
+    type: "shell"
+    name: "Clean up test repos"
+    command: "sh"
+    args:
+      - "-c"
+      - "rm -rf /tmp/exaix-git-test /tmp/exaix-wt-test"
+    output_criteria:
+      - id: "cleaned"
+        kind: "command-exit-code"
+        equals: 0

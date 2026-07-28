@@ -736,3 +736,135 @@ Deno.test({
     });
   },
 });
+
+// `expect_failure` was honoured in modes.ts (do not halt the scenario on a non-zero exit)
+// but NOT in evaluateStepOutcome, which short-circuited to EXECUTION failure on any
+// non-zero exit and skipped output criteria entirely. A scenario deliberately eliciting a
+// failure therefore "passed" without any of its assertions ever running — a false green.
+Deno.test("[ScenarioFrameworkAssertionsEvidence] expect_failure evaluates output criteria on a non-zero exit", async () => {
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-framework-expect-failure-" });
+  try {
+    const outcome = await evaluateStepOutcome({
+      workspaceRoot,
+      step: {
+        id: "negative-step",
+        type: ScenarioStepType.SHELL,
+        command: "sh",
+        expect_failure: true,
+        input_criteria: [],
+        output_criteria: [
+          {
+            id: "error-text-present",
+            kind: CriterionKind.COMMAND_OUTPUT_CONTAINS,
+            contains: ["Tool 'nonexistent_tool' not found"],
+          },
+        ],
+      } as never,
+      executionResult: {
+        stepId: "negative-step",
+        stepType: ScenarioStepType.SHELL,
+        startedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        durationMs: 1,
+        exitCode: 1,
+        stdout: "Tool 'nonexistent_tool' not found",
+        stderr: "",
+        combinedOutput: "Tool 'nonexistent_tool' not found",
+      } as never,
+    });
+
+    assertEquals(outcome.status, CriterionStatus.PASSED);
+    assertEquals(outcome.criterionResults.length, 1);
+    assertEquals(outcome.criterionResults[0].criterion_id, "error-text-present");
+  } finally {
+    await Deno.remove(workspaceRoot, { recursive: true });
+  }
+});
+
+Deno.test("[ScenarioFrameworkAssertionsEvidence] expect_failure fails the step when the command unexpectedly succeeds", async () => {
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-framework-expect-failure-" });
+  try {
+    const outcome = await evaluateStepOutcome({
+      workspaceRoot,
+      step: {
+        id: "negative-step",
+        type: ScenarioStepType.SHELL,
+        command: "sh",
+        expect_failure: true,
+        input_criteria: [],
+        output_criteria: [],
+      } as never,
+      executionResult: {
+        stepId: "negative-step",
+        stepType: ScenarioStepType.SHELL,
+        startedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        durationMs: 1,
+        exitCode: 0,
+        stdout: "",
+        stderr: "",
+        combinedOutput: "",
+      } as never,
+    });
+
+    assertEquals(outcome.status, CriterionStatus.FAILED);
+  } finally {
+    await Deno.remove(workspaceRoot, { recursive: true });
+  }
+});
+
+// Scenarios in a pack run share one sandbox workspace, so a glob like `**/*_plan.md`
+// matches every plan any earlier scenario produced. resolveStepFilePattern returned the
+// FIRST directory-walk match — arbitrary order — so a step validated some other scenario's
+// artefact. Resolving the most recently written match correlates the step with the request
+// it just submitted and waited for, which is what makes a shared sandbox safe.
+Deno.test("[ScenarioFrameworkAssertionsEvidence] file_pattern resolves the most recent match in a shared workspace", async () => {
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-framework-newest-" });
+  try {
+    const plansDir = join(workspaceRoot, "Workspace", "Plans");
+    await Deno.mkdir(plansDir, { recursive: true });
+
+    // An earlier scenario's plan, then this scenario's plan.
+    const stale = join(plansDir, "request-aaaa_plan.md");
+    const fresh = join(plansDir, "request-zzzz_plan.md");
+    await Deno.writeTextFile(stale, "---\nidentity_id: earlier-scenario\n---\n");
+    await new Promise((r) => setTimeout(r, 25));
+    await Deno.writeTextFile(fresh, "---\nidentity_id: this-scenario\n---\n");
+    // Make the ordering unambiguous regardless of filesystem timestamp granularity.
+    const staleTime = new Date(Date.now() - 60_000);
+    await Deno.utime(stale, staleTime, staleTime);
+
+    const outcome = await evaluateStepOutcome({
+      workspaceRoot,
+      step: {
+        id: "validate-plan",
+        type: ScenarioStepType.JSON_ASSERT,
+        file_pattern: "**/*_plan.md",
+        input_criteria: [],
+        output_criteria: [
+          {
+            id: "attributed-to-this-scenario",
+            kind: CriterionKind.FRONTMATTER_FIELD_EQUALS,
+            field: "identity_id",
+            equals: "this-scenario",
+          },
+        ],
+      } as never,
+      executionResult: {
+        stepId: "validate-plan",
+        stepType: ScenarioStepType.JSON_ASSERT,
+        startedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        durationMs: 1,
+        exitCode: 0,
+        stdout: "",
+        stderr: "",
+        combinedOutput: "",
+      } as never,
+    });
+
+    assertEquals(outcome.status, CriterionStatus.PASSED);
+  } finally {
+    await Deno.remove(workspaceRoot, { recursive: true });
+  }
+});

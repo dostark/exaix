@@ -6,6 +6,7 @@
  * @related-files ["apps/daemon/main.ts"]
  */
 
+import { Database } from "@db/sqlite";
 import { DomainEventType } from "@exaix/core/events";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
@@ -23,6 +24,12 @@ import type { IDaemonStatus } from "@exaix/core/types";
 
 /** Logger actor name for daemon operations */
 const DAEMON_ACTOR = "daemon";
+
+/** How long (ms) to wait for the daemon to emit daemon.ready after the process is alive */
+const DAEMON_READY_TIMEOUT_MS = 30_000;
+
+/** How often (ms) to poll the journal for daemon.ready */
+const DAEMON_READY_POLL_INTERVAL_MS = 500;
 
 /**
  * Commands for daemon control
@@ -129,6 +136,20 @@ export class DaemonCommands extends BaseCommand {
         pid: pid,
         log_file: logFile,
       });
+
+      // Block until the daemon emits daemon.ready (watchers confirmed listening).
+      // This eliminates the ~700ms race window between process-alive and watchers-up
+      // — the CLI only returns when the daemon is genuinely ready for work.
+      const ready = await this.waitForDaemonReady(workspaceRoot, pid, DAEMON_READY_TIMEOUT_MS);
+      if (!ready) {
+        await this.logDaemonActivity(DomainEventType.DaemonStartFailed, {
+          error: "Daemon started but never reached ready state (watchers not listening)",
+          pid: pid,
+        });
+        throw new Error(
+          "Daemon failed to become ready within timeout. Check logs for details.",
+        );
+      }
     } catch (error) {
       await DefaultErrorStrategy.handle({
         commandName: "DaemonCommands.start",
@@ -445,6 +466,90 @@ export class DaemonCommands extends BaseCommand {
       }
     }
     return false;
+  }
+
+  /**
+   * Poll the workspace journal for daemon.ready (the daemon process's signal that every
+   * file-watcher is confirmed listening).  Used after waitForProcessState to close the
+   * ~700ms race window between process-alive and watchers-up — the CLI only returns once
+   * the daemon is genuinely able to process incoming work.
+   *
+   * @returns true when daemon.ready is found, false on timeout or if the daemon dies.
+   */
+  protected async waitForDaemonReady(
+    workspaceRoot: string,
+    pid: number,
+    timeoutMs: number,
+  ): Promise<boolean> {
+    const dbPath = join(workspaceRoot, ".exa", "journal.db");
+
+    // Baseline: only events written AFTER this wait begins count. This prevents a
+    // stale daemon.ready from a previous daemon instance (e.g. after restart) from
+    // satisfying the wait for a new daemon that hasn't finished booting yet.
+    const sinceRowid = await this.journalMaxRowid(dbPath);
+
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeoutMs) {
+      if (!await isProcessAlive(pid)) return false;
+
+      if (await this.journalHasEvent(dbPath, DomainEventType.DaemonReady, sinceRowid)) {
+        return true;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, DAEMON_READY_POLL_INTERVAL_MS));
+    }
+    return false;
+  }
+
+  /**
+   * Maximum rowid in the activity table, or 0 if the journal doesn't exist yet.
+   */
+  private async journalMaxRowid(dbPath: string): Promise<number> {
+    try {
+      await Deno.stat(dbPath);
+    } catch {
+      return 0;
+    }
+    try {
+      const db = new Database(dbPath, { readonly: true });
+      try {
+        const row = db.prepare("SELECT MAX(rowid) AS m FROM activity").get<{ m: number | null }>();
+        return row?.m ?? 0;
+      } finally {
+        db.close();
+      }
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * True if the activity table contains an event of `eventType` with a rowid greater
+   * than `sinceRowid`. Tolerant of missing/empty journal.
+   */
+  private async journalHasEvent(
+    dbPath: string,
+    eventType: string,
+    sinceRowid: number,
+  ): Promise<boolean> {
+    try {
+      await Deno.stat(dbPath);
+    } catch {
+      return false;
+    }
+    try {
+      const db = new Database(dbPath, { readonly: true });
+      try {
+        const row = db
+          .prepare("SELECT 1 FROM activity WHERE action_type = ? AND rowid > ? LIMIT 1")
+          .get(eventType, sinceRowid);
+        return row !== undefined;
+      } finally {
+        db.close();
+      }
+    } catch {
+      return false;
+    }
   }
 
   /**

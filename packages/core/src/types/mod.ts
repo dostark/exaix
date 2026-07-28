@@ -26,6 +26,7 @@ export * from "./i_daemon_service.ts";
 export * from "./i_database_service.ts";
 export * from "./i_display_service.ts";
 export * from "./i_executor.ts";
+export * from "./i_flow_loader_service.ts";
 export * from "./i_flow_validator_service.ts";
 export * from "./i_voting_consensus_service.ts";
 export * from "./i_hitl_policy_evaluator.ts";

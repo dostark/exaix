@@ -15,6 +15,7 @@
 import { assert, assertEquals, assertNotEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { dirname, resolve } from "@std/path";
 import { resolveRuntimeConfigForExecution } from "../../runner/config.ts";
+import { WorkspaceProvenance } from "../../runner/sandbox_lifecycle.ts";
 
 // The framework lives at <repo>/tests/scenario_framework; repo root is two levels up.
 const EXECUTION_DIRECTORY = "/home/example/git/exaix/tests/scenario_framework";
@@ -113,4 +114,43 @@ Deno.test("[SandboxDefault] a resolved workspace_path equal to the repo root is 
     Error,
     "repo root",
   );
+});
+
+// ---------------------------------------------------------------------------
+// Phase 142 Step 16 — provenance is recorded, not inferred.
+//
+// Cleanup must never remove a workspace the operator supplied. Deciding that by path shape
+// ("does it live under the sandbox base?") deletes a real workspace the day someone points
+// `--workspace` at a directory there — data loss with no undo — so the config carries the fact
+// directly from the one place that knows it: whether an explicit path was given.
+// ---------------------------------------------------------------------------
+
+Deno.test("[SandboxDefault] a runner-minted sandbox is marked as such", () => {
+  const config = withSandboxBase(
+    undefined,
+    () => resolveRuntimeConfigForExecution({ executionDirectory: EXECUTION_DIRECTORY }),
+  );
+
+  assertEquals(config.workspace_provenance, WorkspaceProvenance.RUNNER_MINTED);
+});
+
+Deno.test("[SandboxDefault] an explicit CLI workspace is marked operator-supplied", () => {
+  const config = withSandboxBase(undefined, () =>
+    resolveRuntimeConfigForExecution({
+      executionDirectory: EXECUTION_DIRECTORY,
+      cliFlags: { workspace: "/srv/operator-workspace" },
+    }));
+
+  assertEquals(config.workspace_provenance, WorkspaceProvenance.OPERATOR_SUPPLIED);
+});
+
+Deno.test("[SandboxDefault] a workspace_path from the config file is operator-supplied too", () => {
+  // The file is as much the operator's statement of intent as the flag is.
+  const config = withSandboxBase(undefined, () =>
+    resolveRuntimeConfigForExecution({
+      executionDirectory: EXECUTION_DIRECTORY,
+      fileConfig: { workspace_path: "/srv/from-config" },
+    }));
+
+  assertEquals(config.workspace_provenance, WorkspaceProvenance.OPERATOR_SUPPLIED);
 });

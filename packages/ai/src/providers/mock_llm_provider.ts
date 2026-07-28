@@ -84,6 +84,8 @@ export interface IMockLLMProviderOptions {
   recordings?: IRecordedResponse[];
   /** Directory to load recordings from */
   fixtureDir?: string;
+  /** Refuse to answer a prompt that has no recording, instead of falling back to patterns. */
+  strictRecordings?: boolean;
   /** Pattern matchers for pattern strategy */
   patterns?: IPatternMatcher[];
   /** Error message for failing strategy */
@@ -116,6 +118,86 @@ export class MockLLMError extends Error {
  * Mock LLM provider for deterministic testing.
  * Implements IModelProvider for use in tests.
  */
+/**
+ * What a flow step returns: a plan-shaped payload in <content>.
+ *
+ * Plan-shaped because the LAST step's content becomes the flow's aggregated output, which
+ * RequestProcessor hands to plan validation — prose there fails with "Invalid JSON".
+ */
+/** Markers a genuine plan-execution turn announces itself with; merged flow context has none. */
+const PLAN_EXECUTION_MARKERS = /executing a plan|Performing step|Action required:|Execution Context|Current Step:/i;
+
+/**
+ * True when a prompt is a FLOW step rather than a plan-execution turn.
+ *
+ * A flow step's prompt is its predecessor's output run through `mergeAsContext`, which prefixes
+ * sections with `## Step N` markdown headers — matching the same `/Step \d+/` alternative the
+ * execution pattern uses. It needs <content> for the next step to consume, not the <actions> an
+ * execution turn returns; without this every flow step past the first reported success with an
+ * empty output.
+ *
+ * Decided here rather than by an earlier pattern because a genuine execution prompt ALSO
+ * carries `## Step N` headers (it embeds the plan markdown), so matching the header alone
+ * hijacks execution and starves the ReAct loop of actions.
+ */
+function isFlowStepPrompt(prompt: string): boolean {
+  return !PLAN_EXECUTION_MARKERS.test(prompt) && /^##\s+Step \d+/m.test(prompt);
+}
+
+/** ReActLoopStrategy's prompt template (react_loop_strategy.ts:768,788), which its own parser pairs with. */
+function isReActLoopPrompt(prompt: string): boolean {
+  return prompt.includes("IDENTITY: ") && prompt.includes("AVAILABLE TOOLS:");
+}
+
+/**
+ * The response a prompt's own parser can read, when that is not the legacy <actions> envelope.
+ *
+ * A flow step needs <content> for its successor; a ReActLoopStrategy turn parses `THOUGHT:` and
+ * `STATUS: COMPLETE`. Answering either in the legacy dialect produces a failure attributed to
+ * the agent — "No actions generated in ReAct iteration" — rather than to the mock.
+ */
+function responseForPromptDialect(prompt: string): string | null {
+  if (isFlowStepPrompt(prompt)) return FLOW_STEP_RESPONSE;
+  if (isReActLoopPrompt(prompt)) return REACT_COMPLETE_RESPONSE;
+  return null;
+}
+
+/**
+ * What a ReAct turn must return: its parser reads `THOUGHT:` and `STATUS: COMPLETE`.
+ *
+ * Worded with explicit certainty on purpose. PlanExecutor runs a low-confidence check over the
+ * step result (`confidenceScorer.assessQuick`) and proposes an amendment below the threshold,
+ * which halts execution awaiting approval — so hedged phrasing here stops every plan mid-run.
+ * The drift branch above uses the mirror-image wording to trigger that path deliberately.
+ */
+const REACT_COMPLETE_RESPONSE =
+  `THOUGHT: Completed the step successfully with high confidence. The implementation is correct and verified.
+STATUS: COMPLETE
+SUMMARY: Completed the step successfully with high confidence. The implementation is correct and verified.`;
+
+const FLOW_STEP_RESPONSE = `<thought>
+I will address this step and produce output the next step can consume.
+</thought>
+
+<content>
+{
+  "subject": "Flow Step Output",
+  "description": "Structured output for this flow step, suitable as input to the next step.",
+  "steps": [
+    {
+      "step": 1,
+      "title": "Address the step's objective",
+      "description": "Work through what this step was asked to produce, using the prior step's output as context."
+    },
+    {
+      "step": 2,
+      "title": "Hand off",
+      "description": "Summarise the result so the next step in the flow can build on it."
+    }
+  ]
+}
+</content>`;
+
 export class MockLLMProvider implements IModelProvider {
   public readonly id: string;
 
@@ -147,6 +229,8 @@ export class MockLLMProvider implements IModelProvider {
     this.tokensPerResponse = options.tokensPerResponse ?? { input: MOCK_INPUT_TOKENS, output: MOCK_OUTPUT_TOKENS };
 
     // Load recordings from fixture directory if specified
+    this.strictRecordings = options.strictRecordings ?? false;
+
     if (options.fixtureDir) {
       this.loadRecordingsFromDir(options.fixtureDir);
     }
@@ -249,6 +333,17 @@ export class MockLLMProvider implements IModelProvider {
     );
     if (previewMatch) {
       return previewMatch.response;
+    }
+
+    // A miss under `recorded` is a hole in the fixture set, and silently answering it from a
+    // regex is how the tier comes to lie about what it replayed. Strict mode refuses instead,
+    // naming the hash so the missing recording can be captured.
+    if (this.strictRecordings) {
+      throw new MockLLMError(
+        `No recording for prompt hash ${hash} and strict recordings are enabled.\n` +
+          `Preview: "${prompt.substring(0, 120)}..."\n` +
+          `Capture this response or run without strict mode to fall back to patterns.`,
+      );
     }
 
     // Fall back to pattern matching if available
@@ -461,6 +556,20 @@ export class MockLLMProvider implements IModelProvider {
    * Get default pattern matchers for common request types
    * Returns different patterns for planning vs execution prompts
    */
+  /**
+   * True when this provider replayed nothing and is really pattern-matching.
+   *
+   * `recorded` is the default strategy and the constructor silently substitutes default
+   * patterns when no fixtures are configured, so a run labelled `mock-recorded-<model>`
+   * replayed no recordings at all. Callers building the provider id use this to say what
+   * actually happened.
+   */
+  private readonly strictRecordings: boolean;
+
+  get isPatternFallback(): boolean {
+    return this.strategy === MockStrategy.RECORDED && this.recordings.length === 0;
+  }
+
   private getDefaultPatterns(): IPatternMatcher[] {
     return [
       // Specialist patterns (hit first)
@@ -654,8 +763,21 @@ I will analyze the request and provide a detailed architectural assessment.
       // Execution patterns (specific triggers) — must come BEFORE planning patterns
       // so that "Step N" prompts are caught before generic "implement" patterns
       {
+        // ReAct prompts carry NONE of the execution markers below — the template is
+        // `IDENTITY: ... CAPABILITIES: ... AVAILABLE TOOLS: ...` — so a check placed inside the
+        // execution response never ran for them. They fell through to a plan-shaped pattern,
+        // returning neither a toml action block nor STATUS: COMPLETE, which the loop reports as
+        // "Agent provided no actions and did not signal completion" and PlanExecutor converts
+        // into a tool_error amendment that halts the plan awaiting approval.
+        pattern: /^AVAILABLE TOOLS:/m,
+        response: REACT_COMPLETE_RESPONSE,
+      },
+      {
         pattern: /executing a plan|Performing step|Action required:|Step \d+|Execution Context/i,
         response: (_match, prompt) => {
+          const dialect = responseForPromptDialect(prompt);
+          if (dialect) return dialect;
+
           // Check what kind of action is being requested
           const needsFileWrite = /write|create|add|implement|modify|update/i.test(prompt);
           const needsFileRead = /read|analyze|review|check/i.test(prompt);

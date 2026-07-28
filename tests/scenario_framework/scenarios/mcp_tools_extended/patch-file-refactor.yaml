@@ -1,66 +1,63 @@
 schema_version: "1.0.0"
+# Asserts patch_file performs a targeted in-place edit through the tool handler: the
+# search string is replaced, the surrounding content survives, and the change is visible
+# to a subsequent read_file. The previous version ran `sed -i` and asserted its result.
 id: "patch-file-refactor"
-title: "Patch file tool performs targeted refactoring"
+title: "patch_file performs a targeted edit visible to read_file"
 pack: "mcp_tools_extended"
-tags: ["patch_file", "refactoring", "write-tools"]
+tags: ["patch_file", "refactoring", "write-tools", "subsystem:tools", "entity:patch_file"]
 request_fixture: "fixtures/requests/mcp_tools_extended/patch_file_refactor.md"
 mode_support: ["auto", "manual-checkpoint"]
 portals: []
-flow_fixture: "fixtures/flows/mcp_tools_extended/patch_file.flow.yaml"
 steps:
-  - id: "setup-test-file"
+  - id: "setup-portal"
     type: "shell"
-    name: "Create test file with old function name"
-    command: "mkdir"
-    args: ["-p", "/tmp/sample-project/src"]
-    input_criteria: []
-    output_criteria:
-      - id: "dir-created"
-        score_weight: 0.4
-        kind: "dir-exists"
-        path: "/tmp/sample-project/src"
-
-  - id: "write-initial-file"
-    type: "shell"
-    name: "Write initial file content"
-    command: "sh"
+    name: "Create the fixture portal and its config"
+    command: "deno"
     args:
-      - "-c"
-      - "echo 'export function oldFunctionName() { return true; }' > /tmp/sample-project/src/main.ts"
-    input_criteria: []
-    output_criteria: []
-
-  - id: "execute-flow"
-    type: "exactl"
-    name: "Run patch file flow"
-    command: "flow"
-    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
-    input_criteria:
-      - id: "flow-file-exists"
-        score_weight: 0.4
-        kind: "file-found"
-        path_pattern: "fixtures/flows/mcp_tools_extended/patch_file.flow.yaml"
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
     output_criteria:
-      - id: "flow-execution-succeeded"
-        score_weight: 0.7
+      - id: "portal-ready"
         kind: "command-exit-code"
         equals: 0
+        score_weight: 0.3
 
-  - id: "verify-patch"
+  - id: "patch-then-read-back"
     type: "shell"
-    name: "Verify function was renamed"
-    command: "grep"
-    args: ["-c", "newFunctionName", "/tmp/sample-project/src/main.ts"]
+    name: "patch_file renames the symbol and leaves the rest of the file intact"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "patch_file"
+      - '{"portal":"tools","path":"src/main.ts","search":"oldFunctionName","replace":"newFunctionName","identity_id":"tools-eval"}'
+      - "read_file"
+      - '{"portal":"tools","path":"src/main.ts","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
     output_criteria:
-      - id: "function-renamed"
+      - id: "patch-reported-success"
+        kind: "command-output-contains"
+        contains: ["patch_file success on src/main.ts"]
         score_weight: 0.7
-        kind: "command-exit-code"
-        equals: 0
-
-  - id: "cleanup"
-    type: "shell"
-    name: "Clean up test files"
-    command: "rm"
-    args: ["-rf", "/tmp/sample-project"]
-    input_criteria: []
-    output_criteria: []
+      - id: "symbol-renamed"
+        kind: "command-output-contains"
+        contains: ["newFunctionName"]
+        score_weight: 1.0
+      - id: "untouched-content-preserved"
+        kind: "command-output-contains"
+        contains: ["KEEP_ME"]
+        score_weight: 0.7
+      - id: "call-succeeded"
+        kind: "command-output-contains"
+        contains: ["\"success\": true"]
+        score_weight: 0.6

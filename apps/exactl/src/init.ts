@@ -184,10 +184,17 @@ export async function initializeServices(
     const memoryBank = new MemoryBankService(cfg, displayLogger);
     const extractor = new MemoryExtractorService(cfg, dbLocal, memoryBank);
     const embedding = new MemoryEmbeddingService(cfg);
-    const skills = new SkillsService({
-      memoryDir: join(cfg.system.root!, cfg.paths.memory!),
-      portal: cfg.paths.workspace,
-    }, dbLocal);
+    const skills = new SkillsService(
+      {
+        memoryDir: join(cfg.system.root!, cfg.paths.memory!),
+        portal: cfg.paths.workspace,
+        // Mirrors apps/daemon/main.ts: without a logger every skills event is dropped by
+        // `this.logger?.`, leaving skill selection absent from the Activity Journal.
+      },
+      dbLocal,
+      undefined,
+      displayLogger,
+    );
     const archive = new ArchiveService(join(cfg.system.root!, cfg.paths.archive!));
     const flowsPath = join(cfg.system.root!, cfg.paths.flows!);
     const flowLoader = new FlowLoader(flowsPath);

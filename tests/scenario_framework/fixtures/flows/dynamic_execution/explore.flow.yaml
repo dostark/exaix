@@ -5,13 +5,12 @@ name: "Explore Codebase Structure"
 description: "Dynamic exploration of codebase using read-only tools"
 version: "1.0.0"
 output:
-  from: step
-  step: explore
+  from: explore
   format: markdown
 steps:
   - id: "explore"
     name: "Explore and analyze codebase structure"
-    identity: "researcher"
+    identity: "code-analyst"
     execution_mode: "dynamic"
     permitted_tools:
       - read_file

@@ -7,8 +7,11 @@ request_fixture: fixtures/requests/framework_test/smoke.md
 mode_support: [auto]
 
 portals:
+  # The repository root, reached the way the other 14 portal declarations reach it. This was
+  # "$HOME/git/Exaix" — a path that exists on no machine whose checkout is not named `Exaix`,
+  # which put a guaranteed failure into the per-PR ci-smoke tier.
   - alias: portal-exaix
-    source_path: "$HOME/git/Exaix"
+    source_path: "$FRAMEWORK_HOME/../.."
 
 steps:
   - id: cleanup-workspace

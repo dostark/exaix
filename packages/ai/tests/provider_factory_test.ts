@@ -854,3 +854,29 @@ Deno.test("ProviderFactory: getProviderInfoByName returns named provider details
   assertEquals(info.model, "fast-mock");
   assertEquals(info.type, "mock");
 });
+
+// ---------------------------------------------------------------------------
+// The provider id the daemon journals must name the strategy that actually ran.
+//
+// `generateProviderId` builds the mock id independently of MockProviderFactory, and it is what
+// `getProviderInfoByName` — and therefore the daemon's own `daemon.ready` event — reports. It
+// derived the id from the CONFIGURED strategy, so every scenario journal said
+// `mock-recorded-<model>` while MockLLMProvider silently answered from regex patterns:
+// `recorded` is the default and no fixtures_dir was ever configured. Anyone auditing which
+// responses a scenario actually saw was given the wrong answer.
+// ---------------------------------------------------------------------------
+
+Deno.test("ProviderFactory: a mock with no fixtures is reported as pattern, not recorded", () => {
+  const config = createTestConfig();
+  config.models = {
+    unrecorded: { provider: "mock", model: "test-model", timeout_ms: 15000 },
+  };
+
+  const info = ProviderFactory.getProviderInfoByName(config, "unrecorded");
+
+  assertEquals(info.id, "mock-pattern-test-model", "an unconfigured mock must not claim to replay");
+});
+
+// The counterpart — a fixture-backed provider does NOT report pattern fallback — is asserted
+// against MockLLMProvider directly in mock_execution_pattern_regression_test.ts, where the
+// recordings can be supplied without going through config resolution.

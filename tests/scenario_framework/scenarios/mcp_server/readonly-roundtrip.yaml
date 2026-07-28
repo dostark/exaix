@@ -1,0 +1,76 @@
+schema_version: "1.0.0"
+# Asserts read-only tools actually round-trip over stdio against a real portal. The
+# previous version created a /tmp fixture it never used, called only `tools/list`, and
+# asserted `contains: ["tools"]` — it never read a file despite its title.
+id: "mcp-server-readonly-roundtrip"
+title: "MCP server — read-only tool round-trips over stdio"
+pack: "mcp_server"
+tags: ["readonly", "roundtrip", "subsystem:mcp-server", "team"]
+edition: "team"
+request_fixture: "fixtures/requests/mcp_tools_extended/read_file.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "setup-portal"
+    type: "shell"
+    name: "Create the fixture portal and its config"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
+    output_criteria:
+      - id: "portal-ready"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+
+  - id: "run-read-roundtrip"
+    type: "shell"
+    name: "read_file, list_directory and search_files return real portal content"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/mcp_stdio_driver.ts"
+      - "--timeout-ms"
+      - "30000"
+      - "--"
+      - "deno"
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/../../apps/mcp-server/main.ts"
+      - "--"
+      - '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","clientInfo":{"name":"scenario","version":"1.0"}}}'
+      - '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"read_file","arguments":{"portal":"tools","path":"src/greeting.txt","identity_id":"tools-eval"}}}'
+      - '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"list_directory","arguments":{"portal":"tools","path":"src","identity_id":"tools-eval"}}}'
+      - '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"search_files","arguments":{"portal":"tools","pattern":"**/*.ts","identity_id":"tools-eval"}}}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+      EXA_LLM_PROVIDER: "mock"
+      EXA_CI_MODE: "1"
+    output_criteria:
+      - id: "roundtrip-succeeded"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+      - id: "read-file-returned-real-content"
+        kind: "command-output-contains"
+        contains: ["hello from the tools pack fixture portal"]
+        score_weight: 1.0
+      - id: "list-directory-returned-real-entries"
+        kind: "command-output-contains"
+        contains: ["greeting.txt", "main.ts"]
+        score_weight: 0.8
+      - id: "search-files-returned-real-matches"
+        kind: "command-output-contains"
+        contains: ["src/main.ts"]
+        score_weight: 0.8

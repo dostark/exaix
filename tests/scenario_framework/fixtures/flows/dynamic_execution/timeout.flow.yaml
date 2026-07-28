@@ -5,13 +5,12 @@ name: "Dynamic Step Timeout Test"
 description: "Test that dynamic steps respect timeout configuration"
 version: "1.0.0"
 output:
-  from: step
-  step: timeout-step
+  from: timeout-step
   format: markdown
 steps:
   - id: "timeout-step"
     name: "Step with short timeout"
-    identity: "researcher"
+    identity: "code-analyst"
     execution_mode: "dynamic"
     permitted_tools:
       - read_file

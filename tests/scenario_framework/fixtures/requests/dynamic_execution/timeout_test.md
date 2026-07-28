@@ -5,6 +5,7 @@ status: "pending"
 priority: "low"
 source: "cli"
 created_by: "scenario-framework"
+flow: "timeout-test"
 ---
 
 # Dynamic Step Timeout Test

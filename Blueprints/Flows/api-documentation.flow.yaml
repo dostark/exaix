@@ -1,0 +1,101 @@
+id: api-documentation
+name: API Documentation Generation
+description: Comprehensive API documentation from code analysis to publication-ready docs
+version: 1.0.0
+steps:
+  - id: api-analysis
+    name: API Structure Analysis
+    type: agent
+    identity: code-analyst
+    dependsOn: []
+    input:
+      source: request
+      transform: mergeAsContext
+    retry:
+      maxAttempts: 1
+      backoffMs: 1000
+  - id: endpoint-documentation
+    name: Endpoint Documentation
+    type: agent
+    identity: technical-writer
+    dependsOn:
+      - api-analysis
+    input:
+      source: step
+      stepId: api-analysis
+      transform: passthrough
+    retry:
+      maxAttempts: 2
+      backoffMs: 2000
+  - id: data-models
+    name: Data Models & Schemas
+    type: agent
+    identity: technical-writer
+    dependsOn:
+      - api-analysis
+    input:
+      source: step
+      stepId: api-analysis
+      transform: passthrough
+    retry:
+      maxAttempts: 2
+      backoffMs: 2000
+  - id: authentication-docs
+    name: Authentication & Security
+    type: agent
+    identity: security-expert
+    dependsOn:
+      - api-analysis
+    input:
+      source: step
+      stepId: api-analysis
+      transform: passthrough
+    retry:
+      maxAttempts: 2
+      backoffMs: 2000
+  - id: examples-integration
+    name: Code Examples & Integration Guide
+    type: agent
+    identity: technical-writer
+    dependsOn:
+      - endpoint-documentation
+      - data-models
+      - authentication-docs
+    input:
+      source: aggregate
+      from:
+        - endpoint-documentation
+        - data-models
+        - authentication-docs
+      transform: mergeAsContext
+    retry:
+      maxAttempts: 2
+      backoffMs: 3000
+  - id: documentation-review
+    name: Documentation Review & Quality Assurance
+    type: agent
+    identity: quality-judge
+    dependsOn:
+      - endpoint-documentation
+      - data-models
+      - authentication-docs
+      - examples-integration
+    input:
+      source: aggregate
+      from:
+        - endpoint-documentation
+        - data-models
+        - authentication-docs
+        - examples-integration
+      transform: mergeAsContext
+    retry:
+      maxAttempts: 2
+      backoffMs: 2000
+output:
+  from: documentation-review
+  format: markdown
+settings:
+  maxParallelism: 3
+  failFast: false
+  timeout: 900000
+  includeRequestCriteria: false

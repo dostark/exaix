@@ -12,13 +12,9 @@ version: "1.1.0"
 description: "Solo developer identity for self-hosted dogfooding — plans with its own model, delegates code-changes to headless OpenCode"
 default_skills: [
   "response-contract",
-  "tdd-methodology",
   "exaix-conventions",
-  "portal-grounding",
-  "security-first",
-  "code-review",
+  "tdd-methodology",
   "step-execution",
-  "commit-message",
 ]
 permitted_tools:
   - read_file

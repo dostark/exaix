@@ -18,6 +18,7 @@ import {
   DEFAULT_SKILLS_KEYWORD_MATCH_SATURATION,
   type MemoryBankSource,
   MemoryScope,
+  SKILL_EVENT_MATCH_COMPLETED,
   SkillStatus,
 } from "../../mod.ts";
 import { extractKeywords } from "./text_utils.ts";
@@ -267,6 +268,7 @@ export class SkillsService implements ISkillsService {
     const contextBudgetChars = request.contextBudgetChars;
 
     if (contextBudgetChars === undefined) {
+      this.logMatchCompleted(limitedMatches, totalAvailable, false);
       return { matches: limitedMatches, totalAvailable };
     }
 
@@ -288,7 +290,35 @@ export class SkillsService implements ISkillsService {
       remainingBudget -= skillBlockLength;
     }
 
+    this.logMatchCompleted(budgetedMatches, totalAvailable, budgetedMatches.length < limitedMatches.length);
     return { matches: budgetedMatches, totalAvailable };
+  }
+
+  /**
+   * Journal the outcome of a skill match.
+   *
+   * SKILL_EVENT_MATCH_COMPLETED was declared in constants.ts but never emitted, so skill
+   * matching left no trace in the Activity Journal at all: which skills were selected for a
+   * request, how many were dropped by the per-request cap, and whether the context budget
+   * truncated the set were all unobservable. A zero-match outcome is journalled too — "no
+   * skill applied" is a result worth seeing, not an absence of one.
+   */
+  private logMatchCompleted(
+    matches: ISkillMatch[],
+    totalAvailable: number,
+    budgetTruncated: boolean,
+  ): void {
+    this.logger?.info(
+      SKILL_EVENT_MATCH_COMPLETED,
+      this.config.portal ?? null,
+      {
+        matched_skill_ids: matches.map((match) => match.skillId),
+        matched_count: matches.length,
+        total_available: totalAvailable,
+        max_per_request: this.skillsConfig.maxSkillsPerRequest,
+        budget_truncated: budgetTruncated,
+      },
+    );
   }
 
   private calculateTriggerMatch(

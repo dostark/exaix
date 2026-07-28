@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "step-durability-resume"
 title: "Resumed flow skips completed analytical steps via SKIPPED_BY_REUSE"
 pack: "agent_flows"
-tags: ["step-durability"]
+tags: ["step-durability", "subsystem:flows"]
 description: >-
   Three-step flow (context-gather → analyse → synthesise). The analyse step
   has sideEffectClass: none (replay-safe). After step 2 completes and a

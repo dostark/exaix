@@ -74,293 +74,42 @@ async function getFlowAgentRefs(flowPath: string): Promise<string[]> {
 // Flow Agent Resolution Tests
 // ============================================================================
 
-Deno.test("Flow validation: code_review.flow.yaml resolves all agents", async () => {
-  const identityIds = await getAllAgentIds();
-  const flowPath = join(FLOWS_DIR, "code_review.flow.yaml");
-  const flowAgents = await getFlowAgentRefs(flowPath);
-
-  for (const agent of flowAgents) {
-    assertEquals(
-      identityIds.has(agent),
-      true,
-      `code_review.flow.yaml references "${agent}" but no blueprint exists`,
-    );
-  }
-});
-
-Deno.test("Flow validation: feature_development.flow.yaml resolves all agents", async () => {
-  const identityIds = await getAllAgentIds();
-  const flowPath = join(FLOWS_DIR, "feature_development.flow.yaml");
-  const flowAgents = await getFlowAgentRefs(flowPath);
-
-  for (const agent of flowAgents) {
-    assertEquals(
-      identityIds.has(agent),
-      true,
-      `feature_development.flow.yaml references "${agent}" but no blueprint exists`,
-    );
-  }
-});
-
-Deno.test("Flow validation: documentation.flow.yaml resolves all agents", async () => {
-  const identityIds = await getAllAgentIds();
-  const flowPath = join(FLOWS_DIR, "documentation.flow.yaml");
-  const flowAgents = await getFlowAgentRefs(flowPath);
-
-  for (const agent of flowAgents) {
-    assertEquals(
-      identityIds.has(agent),
-      true,
-      `documentation.flow.yaml references "${agent}" but no blueprint exists`,
-    );
-  }
-});
-
-Deno.test("Flow validation: bug_investigation.flow.yaml resolves all agents", async () => {
-  const identityIds = await getAllAgentIds();
-  const flowPath = join(FLOWS_DIR, "bug_investigation.flow.yaml");
-  const flowAgents = await getFlowAgentRefs(flowPath);
-
-  for (const agent of flowAgents) {
-    assertEquals(
-      identityIds.has(agent),
-      true,
-      `bug_investigation.flow.yaml references "${agent}" but no blueprint exists`,
-    );
-  }
-});
-
-Deno.test("Flow validation: refactoring.flow.yaml resolves all agents", async () => {
-  const identityIds = await getAllAgentIds();
-  const flowPath = join(FLOWS_DIR, "refactoring.flow.yaml");
-  const flowAgents = await getFlowAgentRefs(flowPath);
-
-  for (const agent of flowAgents) {
-    assertEquals(
-      identityIds.has(agent),
-      true,
-      `refactoring.flow.yaml references "${agent}" but no blueprint exists`,
-    );
-  }
-});
-
-Deno.test("Flow validation: security_audit.flow.yaml resolves all agents", async () => {
-  const identityIds = await getAllAgentIds();
-  const flowPath = join(FLOWS_DIR, "security_audit.flow.yaml");
-  const flowAgents = await getFlowAgentRefs(flowPath);
-
-  for (const agent of flowAgents) {
-    assertEquals(
-      identityIds.has(agent),
-      true,
-      `security_audit.flow.yaml references "${agent}" but no blueprint exists`,
-    );
-  }
-});
-
-Deno.test("Flow validation: api_design.flow.yaml resolves all agents", async () => {
-  const identityIds = await getAllAgentIds();
-  const flowPath = join(FLOWS_DIR, "api_design.flow.yaml");
-  const flowAgents = await getFlowAgentRefs(flowPath);
-
-  for (const agent of flowAgents) {
-    assertEquals(
-      identityIds.has(agent),
-      true,
-      `api_design.flow.yaml references "${agent}" but no blueprint exists`,
-    );
-  }
-});
-
-Deno.test("Flow validation: test_generation.flow.yaml resolves all agents", async () => {
-  const identityIds = await getAllAgentIds();
-  const flowPath = join(FLOWS_DIR, "test_generation.flow.yaml");
-  const flowAgents = await getFlowAgentRefs(flowPath);
-
-  for (const agent of flowAgents) {
-    assertEquals(
-      identityIds.has(agent),
-      true,
-      `test_generation.flow.yaml references "${agent}" but no blueprint exists`,
-    );
-  }
-});
-
-Deno.test("Flow validation: pr_review.flow.yaml resolves all agents", async () => {
-  const identityIds = await getAllAgentIds();
-  const flowPath = join(FLOWS_DIR, "pr_review.flow.yaml");
-  const flowAgents = await getFlowAgentRefs(flowPath);
-
-  for (const agent of flowAgents) {
-    assertEquals(
-      identityIds.has(agent),
-      true,
-      `pr_review.flow.yaml references "${agent}" but no blueprint exists`,
-    );
-  }
-});
-
-Deno.test("Flow validation: migration_planning.flow.yaml resolves all agents", async () => {
-  const identityIds = await getAllAgentIds();
-  const flowPath = join(FLOWS_DIR, "migration_planning.flow.yaml");
-  const flowAgents = await getFlowAgentRefs(flowPath);
-
-  for (const agent of flowAgents) {
-    assertEquals(
-      identityIds.has(agent),
-      true,
-      `migration_planning.flow.yaml references "${agent}" but no blueprint exists`,
-    );
-  }
-});
-
-Deno.test("Flow validation: onboarding_docs.flow.yaml resolves all agents", async () => {
-  const identityIds = await getAllAgentIds();
-  const flowPath = join(FLOWS_DIR, "onboarding_docs.flow.yaml");
-  const flowAgents = await getFlowAgentRefs(flowPath);
-
-  for (const agent of flowAgents) {
-    assertEquals(
-      identityIds.has(agent),
-      true,
-      `onboarding_docs.flow.yaml references "${agent}" but no blueprint exists`,
-    );
-  }
-});
-
 // ============================================================================
-// Flow defaultSkills Tests
+// Catalog-wide Flow Tests
 // ============================================================================
+//
+// These enumerate Blueprints/Flows/ rather than naming files one per Deno.test. The previous
+// shape declared 22 tests hardcoding 11 filenames, which duplicated the catalog-wide agent
+// test already at the bottom of this file and broke wholesale when Phase 142 Step 13 renamed
+// the 13 snake_case flow files to match their kebab-case ids. A hardcoded list also cannot
+// cover a newly added flow — the case the drift it was meant to catch actually matters.
 
-Deno.test("Flow validation: code_review.flow.yaml has defaultSkills", async () => {
-  const flowPath = join(FLOWS_DIR, "code_review.flow.yaml");
-  const content = await Deno.readTextFile(flowPath);
+/**
+ * Flows that have never declared `defaultSkills`.
+ *
+ * Surfaced the moment this test started enumerating the directory: the 11 hardcoded per-file
+ * tests it replaced simply never named these two, so the gap was invisible rather than
+ * accepted. They are listed rather than fixed because whether every flow REQUIRES
+ * defaultSkills is an unconfirmed requirement, and inventing one to make a test green is how
+ * an assertion stops meaning anything. The list must shrink, never grow.
+ */
+const FLOWS_WITHOUT_DEFAULT_SKILLS = new Set(["analyze-codebase.flow.yaml", "api-documentation.flow.yaml"]);
 
-  const hasDefaultSkills = content.includes("defaultSkills:");
+Deno.test("Flow validation: no flow loses its defaultSkills", async () => {
+  const missing: string[] = [];
+  const staleExemptions: string[] = [];
+  for await (const entry of Deno.readDir(FLOWS_DIR)) {
+    if (!entry.isFile || !entry.name.endsWith(".flow.yaml")) continue;
+    const content = await Deno.readTextFile(join(FLOWS_DIR, entry.name));
+    const has = content.includes("defaultSkills:");
+    if (!has && !FLOWS_WITHOUT_DEFAULT_SKILLS.has(entry.name)) missing.push(entry.name);
+    if (has && FLOWS_WITHOUT_DEFAULT_SKILLS.has(entry.name)) staleExemptions.push(entry.name);
+  }
+  assertEquals(missing.sort(), [], `flow blueprints that lost defaultSkills: ${missing.join(", ")}`);
   assertEquals(
-    hasDefaultSkills,
-    true,
-    "code_review.flow.yaml should have defaultSkills defined",
-  );
-});
-
-Deno.test("Flow validation: feature_development.flow.yaml has defaultSkills", async () => {
-  const flowPath = join(FLOWS_DIR, "feature_development.flow.yaml");
-  const content = await Deno.readTextFile(flowPath);
-
-  const hasDefaultSkills = content.includes("defaultSkills:");
-  assertEquals(
-    hasDefaultSkills,
-    true,
-    "feature_development.flow.yaml should have defaultSkills defined",
-  );
-});
-
-Deno.test("Flow validation: documentation.flow.yaml has defaultSkills", async () => {
-  const flowPath = join(FLOWS_DIR, "documentation.flow.yaml");
-  const content = await Deno.readTextFile(flowPath);
-
-  const hasDefaultSkills = content.includes("defaultSkills:");
-  assertEquals(
-    hasDefaultSkills,
-    true,
-    "documentation.flow.yaml should have defaultSkills defined",
-  );
-});
-
-Deno.test("Flow validation: bug_investigation.flow.yaml has defaultSkills", async () => {
-  const flowPath = join(FLOWS_DIR, "bug_investigation.flow.yaml");
-  const content = await Deno.readTextFile(flowPath);
-
-  const hasDefaultSkills = content.includes("defaultSkills:");
-  assertEquals(
-    hasDefaultSkills,
-    true,
-    "bug_investigation.flow.yaml should have defaultSkills defined",
-  );
-});
-
-Deno.test("Flow validation: refactoring.flow.yaml has defaultSkills", async () => {
-  const flowPath = join(FLOWS_DIR, "refactoring.flow.yaml");
-  const content = await Deno.readTextFile(flowPath);
-
-  const hasDefaultSkills = content.includes("defaultSkills:");
-  assertEquals(
-    hasDefaultSkills,
-    true,
-    "refactoring.flow.yaml should have defaultSkills defined",
-  );
-});
-
-Deno.test("Flow validation: security_audit.flow.yaml has defaultSkills", async () => {
-  const flowPath = join(FLOWS_DIR, "security_audit.flow.yaml");
-  const content = await Deno.readTextFile(flowPath);
-
-  const hasDefaultSkills = content.includes("defaultSkills:");
-  assertEquals(
-    hasDefaultSkills,
-    true,
-    "security_audit.flow.yaml should have defaultSkills defined",
-  );
-});
-
-Deno.test("Flow validation: api_design.flow.yaml has defaultSkills", async () => {
-  const flowPath = join(FLOWS_DIR, "api_design.flow.yaml");
-  const content = await Deno.readTextFile(flowPath);
-
-  const hasDefaultSkills = content.includes("defaultSkills:");
-  assertEquals(
-    hasDefaultSkills,
-    true,
-    "api_design.flow.yaml should have defaultSkills defined",
-  );
-});
-
-Deno.test("Flow validation: test_generation.flow.yaml has defaultSkills", async () => {
-  const flowPath = join(FLOWS_DIR, "test_generation.flow.yaml");
-  const content = await Deno.readTextFile(flowPath);
-
-  const hasDefaultSkills = content.includes("defaultSkills:");
-  assertEquals(
-    hasDefaultSkills,
-    true,
-    "test_generation.flow.yaml should have defaultSkills defined",
-  );
-});
-
-Deno.test("Flow validation: pr_review.flow.yaml has defaultSkills", async () => {
-  const flowPath = join(FLOWS_DIR, "pr_review.flow.yaml");
-  const content = await Deno.readTextFile(flowPath);
-
-  const hasDefaultSkills = content.includes("defaultSkills:");
-  assertEquals(
-    hasDefaultSkills,
-    true,
-    "pr_review.flow.yaml should have defaultSkills defined",
-  );
-});
-
-Deno.test("Flow validation: migration_planning.flow.yaml has defaultSkills", async () => {
-  const flowPath = join(FLOWS_DIR, "migration_planning.flow.yaml");
-  const content = await Deno.readTextFile(flowPath);
-
-  const hasDefaultSkills = content.includes("defaultSkills:");
-  assertEquals(
-    hasDefaultSkills,
-    true,
-    "migration_planning.flow.yaml should have defaultSkills defined",
-  );
-});
-
-Deno.test("Flow validation: onboarding_docs.flow.yaml has defaultSkills", async () => {
-  const flowPath = join(FLOWS_DIR, "onboarding_docs.flow.yaml");
-  const content = await Deno.readTextFile(flowPath);
-
-  const hasDefaultSkills = content.includes("defaultSkills:");
-  assertEquals(
-    hasDefaultSkills,
-    true,
-    "onboarding_docs.flow.yaml should have defaultSkills defined",
+    staleExemptions.sort(),
+    [],
+    `these now declare defaultSkills — remove them from FLOWS_WITHOUT_DEFAULT_SKILLS: ${staleExemptions.join(", ")}`,
   );
 });
 

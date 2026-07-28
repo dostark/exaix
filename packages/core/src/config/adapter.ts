@@ -28,6 +28,7 @@ import {
   listBlocklistPatterns,
   listLockedKeys,
   lockKey,
+  migrateConfigDb,
   removeBlocklistPattern,
   unlockKey,
 } from "./db.ts";
@@ -377,6 +378,12 @@ export class DirectConfigAdapter implements IConfigAdapter {
     logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
     this.db = new Database(dbPath);
+    // The daemon migrates the Config DB at boot, but external callers (notably
+    // `exactl config get|diff|validate`) may open a root the daemon has never touched.
+    // migrateConfigDb is CREATE TABLE IF NOT EXISTS throughout, so applying it here is
+    // idempotent and turns a raw `no such table: config_overrides` into the intended
+    // registry-default fallback.
+    migrateConfigDb(this.db);
     this.adapterMode = mode ?? ConfigAdapterMode.DIRECT;
     this.daemonLogger = logger;
   }

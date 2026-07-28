@@ -213,19 +213,41 @@ Deno.test("PortalService: add rejects non-directory target", async () => {
   }
 });
 
-Deno.test("PortalService: add rejects duplicate alias", async () => {
+// REVISED by Phase 142 Step 13: re-adding an alias that already points at the SAME target is
+// now a no-op rather than an error. Scenarios in a pack share one sandbox, so the first to
+// mount `test-project` succeeded and every later one failed at its first step — five
+// agent_flows scenarios scored 0.000 for that reason alone, while passing in isolation.
+// Mounting the same path under the same alias is a request for a state that already holds;
+// rejecting it makes the operation order-dependent for no gain. A DIFFERENT target under an
+// existing alias is still an error, because that is a genuine conflict.
+
+Deno.test("PortalService: re-adding the same target under an existing alias is a no-op", async () => {
   const { service, cleanup, tempDir } = await createPortalTestEnv();
   try {
     const targetDir = join(tempDir, "target-project");
     await Deno.mkdir(targetDir, { recursive: true });
 
     await service.add(targetDir, "myproject");
+    await service.add(targetDir, "myproject");
 
-    await assertRejects(
-      () => service.add(targetDir, "myproject"),
-      Error,
-      "already exists",
-    );
+    const portals = await service.list();
+    assertEquals(portals.filter((p) => p.alias === "myproject").length, 1, "the portal is mounted exactly once");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("PortalService: add rejects an existing alias pointing at a different target", async () => {
+  const { service, cleanup, tempDir } = await createPortalTestEnv();
+  try {
+    const first = join(tempDir, "target-project");
+    const second = join(tempDir, "other-project");
+    await Deno.mkdir(first, { recursive: true });
+    await Deno.mkdir(second, { recursive: true });
+
+    await service.add(first, "myproject");
+
+    await assertRejects(() => service.add(second, "myproject"), Error, "already exists");
   } finally {
     await cleanup();
   }

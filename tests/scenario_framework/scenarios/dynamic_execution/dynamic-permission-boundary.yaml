@@ -1,51 +1,37 @@
 schema_version: "1.0.0"
 id: "dynamic-permission-boundary"
-title: "Dynamic steps accept approval-required domain tools at validation time"
+title: "Dynamic steps are refused write tools at validation time"
 pack: "dynamic_execution"
-tags: ["security", "dynamic", "validation", "tool-confirmation"]
+tags: ["security", "dynamic", "validation", "tool-confirmation", "subsystem:mcp-client", "entity:exaix_create_request"]
 request_fixture: "fixtures/requests/dynamic_execution/approval_required_tool.md"
 mode_support: ["auto"]
 portals: []
+# Staged into the sandbox's Blueprints/Flows by the runner, under the flow's own declared id.
+# The two shell steps that used to do this by hand died on the literal `$FLOW_FIXTURE`, and
+# copied it to `approval-required.flow.yaml` — a name the loader would never resolve, since the
+# fixture declares `id: approval-required-dynamic`.
+#
+# The fixture grants `exaix_create_request` to a dynamic step. This scenario was authored to
+# assert that validation ACCEPTS it, on a Phase 79 intent that approval-required domain tools are
+# gated at runtime rather than at validation. The system models no such tier: `deriveMcpTool-
+# ClassificationSets` splits tools on `side_effect_scope === NONE` alone, and both validators
+# (`flow_loader.ts:validateDynamicStepTools` and `flow_validation.ts:validateFlowForCli`) refuse
+# any write tool in a dynamic step. So the fixture is a genuine violation, and what it proves is
+# that the boundary holds — which is the assertion below.
 flow_fixture: "fixtures/flows/dynamic_execution/approval_required.flow.yaml"
 steps:
-  - id: "stage-flow"
-    type: "shell"
-    name: "Stage approval-required flow fixture into workspace"
-    command: "mkdir"
-    args: ["-p", "$WORKSPACE_ROOT/Blueprints/Flows"]
-    output_criteria:
-      - id: "flows-dir-created"
-        score_weight: 0.7
-        kind: "command-exit-code"
-        equals: 0
-
-  - id: "copy-flow"
-    type: "shell"
-    name: "Copy approval-required flow fixture"
-    command: "cp"
-    args: ["$FLOW_FIXTURE", "$WORKSPACE_ROOT/Blueprints/Flows/approval-required.flow.yaml"]
-    output_criteria:
-      - id: "flow-copied"
-        score_weight: 0.7
-        kind: "command-exit-code"
-        equals: 0
-
   - id: "validate-flow"
     type: "exactl"
-    name: "Validate flow with approval-required tool in dynamic mode"
+    name: "A dynamic step granted a write tool must fail validation"
     command: "flow"
-    args: ["validate", "approval-required"]
-    input_criteria:
-      - id: "flow-file-exists"
-        score_weight: 0.4
-        kind: "file-found"
-        path_pattern: "fixtures/flows/dynamic_execution/approval_required.flow.yaml"
+    args: ["validate", "approval-required-dynamic"]
+    expect_failure: true
     output_criteria:
-      - id: "validation-succeeded"
+      - id: "validation-rejected"
         score_weight: 0.7
         kind: "command-exit-code"
-        equals: 0
-      - id: "validation-ok-message"
+        equals: 1
+      - id: "names-the-offending-tool-and-step"
         score_weight: 0.7
         kind: "command-output-contains"
-        contains: ["approval-required", "valid"]
+        contains: ["exaix_create_request", "approval-attempt", "dynamic"]

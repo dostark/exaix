@@ -1,0 +1,87 @@
+schema_version: "1.0.0"
+id: "security-expert-smoke"
+title: "security-expert structural smoke — plan structure validation on mock provider"
+pack: "identity_eval"
+tags: ["smoke", "subsystem:identities", "entity:security-expert"]
+request_fixture: "fixtures/requests/provider_live/security_expert.md"
+mode_support: ["auto"]
+portals: []
+
+steps:
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
+      EXA_CI_MODE: "1"
+    output_criteria:
+      - id: "daemon-started"
+        score_weight: 0.3
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--identity", "security-expert", "--plan-only", "--file", "$REQUEST_FIXTURE"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
+    output_criteria:
+      - id: "request-submitted"
+        score_weight: 0.4
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/*_plan.md"]
+    timeout_sec: 120
+    output_criteria:
+      - id: "plan-produced"
+        kind: "file-found"
+        path_pattern: "**/*_plan.md"
+        score_weight: 0.5
+
+  - id: "validate-plan-structure"
+    type: "json-assert"
+    file_pattern: "**/*_plan.md"
+    output_criteria:
+      # The point of an identity smoke is that THIS identity produced the plan.
+      # frontmatter-field-exists only proves the field is present — PlanWriter stamps it
+      # unconditionally, so every identity scenario would pass with the wrong identity.
+      - id: "plan-attributed-to-identity"
+        score_weight: 1.0
+        kind: "frontmatter-field-equals"
+        field: "identity_id"
+        equals: "security-expert"
+      - id: "has-subject"
+        score_weight: 0.5
+        kind: "frontmatter-field-exists"
+        field: "subject"
+      - id: "has-trace"
+        score_weight: 0.3
+        kind: "frontmatter-field-exists"
+        field: "trace_id"
+
+  # Frontmatter alone says nothing about whether a real plan was produced. The plan BODY
+  # carries the structure the original `$.steps[0]` criterion was reaching for.
+  - id: "verify-plan-has-steps"
+    type: "shell"
+    name: "The produced plan contains an executable step structure"
+    command: "sh"
+    args: ["-c", "cat $WORKSPACE_ROOT/Workspace/Plans/*_plan.md"]
+    output_criteria:
+      - id: "plan-has-execution-steps"
+        kind: "command-output-contains"
+        contains: ["## Execution Steps", "## Step 1"]
+        score_weight: 0.8
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-exit-code"
+        equals: 0

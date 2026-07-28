@@ -2,43 +2,65 @@ schema_version: "1.0.0"
 id: "react-reasoning-loop"
 title: "ReAct loop executes multiple iterations to complete objective"
 pack: "dynamic_execution"
-tags: ["react", "dynamic", "provider-live"]
+tags: ["react", "dynamic", "provider-live", "subsystem:mcp-client", "entity:read_file"]
 request_fixture: "fixtures/requests/dynamic_execution/find_and_summarize.md"
 mode_support: ["manual-checkpoint"]
+# Phase 142 Step 15 — `exactl flow run <flow> --request <file>` was invoked here and has never
+# existed; a flow runs when a request naming it in its `flow:` frontmatter is submitted, which the
+# fixture now does. The portal was a bare `mkdir -p /tmp/sample-ts-project`, outside the sandbox
+# and shared between runs; it is now the seeded git fixture, mounted by the runner. The
+# `flow_run_*.json` wait was removed: no code in the repository writes such a file, so that step
+# could only ever time out.
+#
+# Stays provider-live: the iteration count and distinct tool names it asserts require real tool
+# calls, and the mock provider makes none.
 portals:
   - alias: "sample-ts-project"
-    source_path: "/tmp/sample-ts-project"
+    source_path: "$WORKSPACE_ROOT/fixtures/portals/simple_repo"
 flow_fixture: "fixtures/flows/dynamic_execution/find_and_summarize.flow.yaml"
 steps:
-  - id: "setup-portal"
-    type: "shell"
-    name: "Create temp portal directory"
-    command: "mkdir"
-    args: ["-p", "/tmp/sample-ts-project/src"]
-    input_criteria: []
-    output_criteria:
-      - id: "portal-created"
-        score_weight: 0.4
-        kind: "dir-exists"
-        path: "/tmp/sample-ts-project"
-
-  - id: "execute-flow"
+  - id: "start-daemon"
     type: "exactl"
-    name: "Run ReAct reasoning flow"
-    command: "flow"
-    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
+    command: "daemon"
+    args: ["start"]
+    env:
+      EXA_CI_MODE: "1"
+    output_criteria:
+      - id: "daemon-started"
+        score_weight: 0.3
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "submit-request"
+    type: "exactl"
+    name: "Submit the request whose frontmatter names the ReAct flow"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE"]
     checkpoint: true
     output_criteria:
-      - id: "flow-succeeded"
-        score_weight: 0.7
-        kind: "command-exit-code"
-        equals: 0
+      - id: "request-submitted"
+        score_weight: 0.4
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+    timeout_sec: 180
+    output_criteria:
+      - id: "plan-produced"
+        score_weight: 0.5
+        kind: "file-found"
+        path_pattern: "**/Plans/*_plan.md"
 
   - id: "verify-iterations"
-    type: "exactl"
-    name: "Verify multiple ReAct iterations"
-    command: "journal"
-    args: ["query", "--trace-id", "$FLOW_TRACE_ID", "--action", "dynamic_step_event", "--format", "json"]
+    type: "shell"
+    name: "Verify multiple ReAct iterations with distinct tools"
+    command: "sh"
+    args: [
+      "-c",
+      "sqlite3 -json \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT action_type, json_extract(payload,'$.tool_name') AS tool_name FROM activity WHERE action_type = 'dynamic_tool_call' ORDER BY rowid\"",
+    ]
     output_criteria:
       - id: "multiple-iterations"
         score_weight: 0.6
@@ -51,23 +73,26 @@ steps:
         query: ".[].tool_name"
         unique_count_min: 2
 
-  - id: "verify-output"
-    type: "wait-for-file"
-    name: "Wait for flow run output"
-    args: ["**/flow_run_*.json"]
-    timeout_sec: 180
-    input_criteria: []
+  - id: "verify-dynamic-step-completed"
+    type: "shell"
+    name: "The dynamic step is journalled as completed"
+    command: "sh"
+    args: [
+      "-c",
+      "sqlite3 -json \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT action_type FROM activity WHERE action_type = 'flow.step.completed' AND json_extract(payload,'$.stepId') = 'analyze'\"",
+    ]
     output_criteria:
       - id: "dynamic-step-completed"
         score_weight: 0.6
         kind: "json-query"
-        query: ".steps[?@.execution_mode=='dynamic'].completed"
-        equals: true
+        query: "length"
+        min: 1
 
-  - id: "cleanup"
-    type: "shell"
-    name: "Clean up temp portal"
-    command: "rm"
-    args: ["-rf", "/tmp/sample-ts-project"]
-    input_criteria: []
-    output_criteria: []
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["stop"]
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-exit-code"
+        equals: 0

@@ -2,22 +2,12 @@ schema_version: "1.0.0"
 id: "plan-amendment-lifecycle"
 title: "Plan Amendment Lifecycle"
 pack: "agent_flows"
-tags: ["safety-gate", "planning", "amendment"]
+tags: ["safety-gate", "planning", "amendment", "subsystem:flows"]
 request_fixture: "fixtures/requests/agent_flows/plan_amendment_trigger_drift.md"
 mode_support: ["auto"]
 portals: []
 
 steps:
-  - id: "setup-db"
-    type: "shell"
-    command: "deno"
-    args: ["run", "-A", "--config", "$FRAMEWORK_HOME/../../deno.json", "$FRAMEWORK_HOME/../../scripts/setup_db.ts"]
-    output_criteria:
-      - id: "setup-done"
-        score_weight: 0.7
-        kind: "command-exit-code"
-        equals: 0
-
   - id: "add-portal"
     type: "exactl"
     command: "portal"

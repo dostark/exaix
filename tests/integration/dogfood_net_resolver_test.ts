@@ -12,8 +12,16 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { resolveDogfoodNetFlag } from "../../scripts/dogfood_daemon.ts";
+import { DAEMON_DEFAULT_NET_HOSTS } from "@exaix/core/types";
 
-const DEFAULT_NET = "--allow-net=api.anthropic.com,api.openai.com,localhost:11434";
+// Derived from the constant the resolver itself reads, NOT a second copy of the host list. What
+// these cases assert is the FALLBACK decision — omitted/malformed input must yield the default
+// rather than null, an empty grant, or an unchecked cast of the raw value. Which hosts belong in
+// that default is a separate contract, pinned against each provider package's own base-URL
+// constant in tests/daemon/net_allowlist_covers_providers_test.ts. Restating the hosts here made
+// the two drift: adding the Google and OpenRouter hosts to the constant broke these three tests
+// without any behaviour changing.
+const DEFAULT_NET = `--allow-net=${DAEMON_DEFAULT_NET_HOSTS.join(",")}`;
 
 async function withConfig(body: string, fn: (path: string) => void): Promise<void> {
   const dir = await Deno.makeTempDir({ prefix: "dogfood-net-" });

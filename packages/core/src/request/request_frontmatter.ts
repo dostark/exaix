@@ -33,7 +33,17 @@ export interface IRequestFrontmatter {
   effort?: string;
   /** Soft hints: cheapest|fastest, repeatable (Phase 132) */
   characteristics?: string[];
-  skills?: string;
+  /**
+   * Skills to apply for this request. Accepts a YAML array (`skills: [a, b]`, how requests
+   * are hand-authored) or a string — the CLI writes a JSON-encoded array via JSON.stringify,
+   * and a bare comma-separated list is also tolerated. buildParsedRequest normalises all
+   * three. Typing this `string` alone made a hand-written array throw on `.trim()`.
+   */
+  skills?: string[] | string;
+  /** Tags used by skill trigger matching and identity routing. Declared in RequestSchema but
+   * previously absent here, so no builder could copy them and tag-driven matching never
+   * fired. Accepts a list or a lone string, matching what raw YAML can yield. */
+  tags?: string[] | string;
   subject?: string;
   /** ISO timestamp set by the quality gate after first assessment. Prevents re-assessment on re-entry. */
   assessed_at?: string;

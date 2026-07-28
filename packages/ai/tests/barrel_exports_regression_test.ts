@@ -54,6 +54,6 @@ Deno.test("@exaix/ai/providers subpath exports provider contracts and helpers", 
   });
 });
 
-Deno.test("@exaix/ai root barrel exports shared utilities", () => {
-  // Shared utilities verified below — no root-level exports to assert yet.
-});
+// A test named "root barrel exports shared utilities" sat here with a body that was one comment:
+// "no root-level exports to assert yet". It passed unconditionally and could never fail. The
+// subpath export above is the real coverage; when the root barrel gains exports, assert them.

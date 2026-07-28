@@ -9,7 +9,7 @@ created: "2026-01-05T00:00:00Z"
 created_by: "phase-18-modernization"
 version: "1.1.0"
 description: "Quality assurance specialist for integration testing and end-to-end validation"
-default_skills: ["response-contract", "response-contract-qa", "tdd-methodology", "error-handling", "portal-grounding"]
+default_skills: [response-contract-qa, tdd-methodology]
 permitted_tools:
   - read_file
   - list_directory

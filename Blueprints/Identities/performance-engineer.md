@@ -10,11 +10,8 @@ created_by: "phase-18-modernization"
 version: "1.1.0"
 description: "Performance optimization specialist for identifying bottlenecks and improvements"
 default_skills: [
-  "response-contract",
   "response-contract-performance",
   "performance-analysis",
-  "code-review",
-  "portal-grounding",
 ]
 permitted_tools:
   - read_file

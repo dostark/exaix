@@ -12,6 +12,7 @@
 import { type ICriterionResult, type IScenarioStep, ScenarioStepType } from "../schema/step_schema.ts";
 import { globToRegExp, join, relative, resolve } from "@std/path";
 import { Database } from "@db/sqlite";
+import type { Opt, Reason } from "@exaix/core/types";
 import {
   captureToolCallsFromJournal,
   type IExpectedTrajectory,
@@ -25,6 +26,26 @@ export interface IExecuteScenarioStepOptions {
   cwd?: string;
   env?: { [key: string]: string };
   verbose?: boolean;
+  /**
+   * Epoch-ms floor for artefacts this scenario may claim as its own. Scenarios in a pack
+   * run share one sandbox workspace, so `**\/*_plan.md` also matches every plan an earlier
+   * scenario produced — a `wait-for-file` step was satisfied INSTANTLY by a stale match and
+   * returned before the current request's plan existed. Set to the scenario's start time,
+   * this rejects prior scenarios' artefacts the same way the daemon-ready wait rejects
+   * stale journal events via a `sinceRowid` baseline. Omit to accept any match.
+   */
+  artifactBaselineMs?: number;
+  /**
+   * Journal rowid floor for a `wait-for-journal-event` barrier: only events above it count.
+   *
+   * The step used to capture this itself, at the moment the wait began — which cannot see an
+   * event the PRECEDING step already produced. `exactl daemon start` now blocks until
+   * `daemon.ready` is journalled, so every `wait-for-daemon-ready` barrier placed after it
+   * (30 scenarios) sat above that row and waited out its timeout for a second `daemon.ready`
+   * that never comes. Pass the rowid the runner captured before the producing step ran.
+   * Omit to fall back to capturing at wait-start.
+   */
+  journalBaselineRowid?: number;
 }
 
 export interface IScenarioStepExecutionResult {
@@ -45,6 +66,22 @@ export interface IScenarioStepExecutionResult {
    * final outcome as scenario-failure if this was ever true for any step.
    */
   criteriaFailed?: boolean;
+  /**
+   * True when the step failed at the EXECUTION stage, stated explicitly rather than inferred.
+   *
+   * `toModeExecutionResult` used to signal an execution failure by normalising `exitCode` to 1,
+   * and `modes.ts` re-derived the verdict from that exit code through `expect_failure` semantics —
+   * where a non-zero exit means *the expected failure happened*. On an `expect_failure` step the
+   * two readings are exact opposites, so a step that failed because its command unexpectedly
+   * SUCCEEDED was reported as the refusal the scenario asked for, and the scenario finished
+   * `Outcome: success` at `suite_score: 0.000`.
+   *
+   * Found by Phase 142 Step 21's first real run of the declared pack mutations: the mcp-client
+   * pack reported green while the scenario under it scored zero. Sibling of the Step 10 defect in
+   * `evaluateStepOutcome`, and fixed the same way — say what happened instead of encoding it in a
+   * value whose meaning depends on the reader.
+   */
+  executionFailed?: boolean;
   /**
    * Criterion results populated by trajectory-assert steps (and potentially
    * other non-shell step types) for direct forwarding into evaluateStepOutcome.
@@ -164,7 +201,7 @@ async function executeWaitForFileStep(
 
   while (Date.now() - startTime < timeoutMs) {
     // Search for matching files
-    const found = await findMatchingFiles(workspaceRoot, pattern);
+    const found = await findMatchingFiles(workspaceRoot, pattern, options.artifactBaselineMs);
 
     if (found.length > 0) {
       const completedAtEpochMs = Date.now();
@@ -321,9 +358,11 @@ async function executeWaitForJournalEventStep(
   const timeoutMs = timeoutSec * 1000;
   const startTime = Date.now();
 
-  // Baseline: only events written AFTER this wait begins count. This is what makes the barrier
-  // ignore a stale `daemon.ready` left by a daemon that a prior `restart` step already killed.
-  const sinceRowid = await currentMaxRowid(workspaceRoot);
+  // Baseline: only events above this rowid count, which makes the barrier ignore a stale
+  // `daemon.ready` left by a daemon a prior `restart` step already killed. It comes from the
+  // runner, captured BEFORE the producing step ran — capturing it here instead would sit above
+  // the event the immediately preceding step just produced and could never be satisfied.
+  const sinceRowid = options.journalBaselineRowid ?? await currentMaxRowid(workspaceRoot);
 
   if (!eventType) {
     const completedAtEpochMs = Date.now();
@@ -383,13 +422,35 @@ async function executeWaitForJournalEventStep(
   };
 }
 
-async function findMatchingFiles(root: string, pattern: RegExp): Promise<string[]> {
+/**
+ * True when `path` was last modified at or after `baselineMs` — i.e. it belongs to the
+ * current scenario rather than an earlier one sharing the workspace. No baseline means
+ * every match is acceptable (single-scenario runs, and callers that do not correlate).
+ */
+async function isAtOrAfterBaseline(
+  path: string,
+  baselineMs?: Opt<number, Reason.OptionalInput>,
+): Promise<boolean> {
+  if (baselineMs === undefined) return true;
+  try {
+    const modified = (await Deno.stat(path)).mtime?.getTime();
+    return modified === undefined ? false : modified >= baselineMs;
+  } catch {
+    return false;
+  }
+}
+
+async function findMatchingFiles(
+  root: string,
+  pattern: RegExp,
+  baselineMs?: Opt<number, Reason.OptionalInput>,
+): Promise<string[]> {
   const matches: string[] = [];
   const workspaceRoot = root;
 
   try {
     for await (const entry of Deno.readDir(root)) {
-      await checkEntry(entry, root, pattern, matches, workspaceRoot);
+      await checkEntry(entry, root, pattern, matches, workspaceRoot, baselineMs);
     }
   } catch {
     // Directory not accessible
@@ -404,19 +465,22 @@ async function checkEntry(
   pattern: RegExp,
   matches: string[],
   workspaceRoot: string,
+  baselineMs?: Opt<number, Reason.OptionalInput>,
 ): Promise<void> {
   const fullPath = resolve(basePath, entry.name);
   const relPath = relative(workspaceRoot, fullPath);
 
   if (entry.isFile && (pattern.test(entry.name) || pattern.test(relPath))) {
-    matches.push(fullPath);
+    if (await isAtOrAfterBaseline(fullPath, baselineMs)) {
+      matches.push(fullPath);
+    }
     return;
   }
 
   if (entry.isDirectory && !entry.name.startsWith(".")) {
     try {
       for await (const subEntry of Deno.readDir(fullPath)) {
-        await checkEntry(subEntry, fullPath, pattern, matches, workspaceRoot);
+        await checkEntry(subEntry, fullPath, pattern, matches, workspaceRoot, baselineMs);
       }
     } catch {
       // Directory not accessible

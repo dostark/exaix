@@ -5,8 +5,7 @@ name: "Create Directory Structure"
 description: "Use create_directory tool to create nested directories"
 version: "1.0.0"
 output:
-  from: step
-  step: create
+  from: create
   format: markdown
 steps:
   - id: "create"

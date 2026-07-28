@@ -38,6 +38,16 @@ export interface IIntegrityResult {
   violations: IIntegrityViolation[];
 }
 
+/** Skills exempt from the orphan-skill rule (trigger-matched, not in default_skills). */
+const TRIGGER_MATCHED_SKILLS: string[] = [
+  "fix-bug",
+  "portal-grounding",
+  "commit-message",
+  "gap-analysis",
+  "code-review",
+  "error-handling",
+];
+
 /** Identities exempt from the orphan-identity rule (invoked directly, not via flows). */
 const EXEMPT_IDENTITY_IDS: ReadonlySet<string> = new Set(["default"]);
 
@@ -162,8 +172,9 @@ export function checkBlueprintIntegrity(blueprintsDir: string): IIntegrityResult
     }
   }
 
-  // 4. orphan-skill: every skill must be referenced by >=1 identity.
+  // 4. orphan-skill: every skill must be referenced by >=1 identity (or be trigger-matched).
   for (const id of skillIds) {
+    if (TRIGGER_MATCHED_SKILLS.includes(id)) continue;
     if (!usedSkills.has(id)) {
       violations.push({
         kind: "orphan-skill",

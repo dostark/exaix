@@ -20,6 +20,7 @@ const PWNED_KEY = "__exaix_condition_sandbox_pwned__";
 function ctx(): IConditionContext {
   return {
     results: { "step-1": { success: true, duration: 1 } },
+    steps: [{ id: "step-1", success: true, duration: 1 }],
     request: { userPrompt: "Test prompt", traceId: "t", requestId: "r" },
     flow: { id: "f", name: "F", version: DEFAULT_FLOW_VERSION },
   };

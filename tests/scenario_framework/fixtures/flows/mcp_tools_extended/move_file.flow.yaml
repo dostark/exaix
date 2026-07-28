@@ -5,8 +5,7 @@ name: "Move File Restructure"
 description: "Use move_file tool to relocate files"
 version: "1.0.0"
 output:
-  from: step
-  step: move
+  from: move
   format: markdown
 steps:
   - id: "move"

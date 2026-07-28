@@ -16,8 +16,18 @@ import type { Opt, Reason } from "@exaix/core/types";
  * Context available during condition evaluation
  */
 export interface IConditionContext {
-  /** Results from previously executed steps */
+  /** Results from previously executed steps, keyed by step id for direct access. */
   results: Record<string, IStepResultContext>;
+  /**
+   * The same results as an array, so aggregate conditions are expressible.
+   *
+   * The sandbox permits array methods only on real arrays and does not allowlist
+   * `Object.values`, so `results.every(...)` and `Object.values(results).every(...)` are both
+   * rejected — and the rejection fails CLOSED, silently skipping the guarded step. Without this
+   * view, "all previous steps succeeded" — the commonest condition a flow author writes — could
+   * not be expressed at all.
+   */
+  steps: (IStepResultContext & { id: string })[];
   /** Original flow request */
   request: {
     userPrompt: string;
@@ -171,6 +181,7 @@ export class ConditionEvaluator {
 
     return {
       results,
+      steps: Object.entries(results).map(([id, result]) => ({ id, ...result })),
       request: {
         userPrompt: request.userPrompt,
         traceId: request.traceId,
@@ -197,7 +208,7 @@ export class ConditionEvaluator {
     // Project the context to a plain JSON structure: conditions only ever read
     // JSON-shaped step data, and this yields an ExpressionContext without casts.
     const jsonContext: ExpressionContext = JSON.parse(
-      JSON.stringify({ results: context.results, request: context.request, flow: context.flow }),
+      JSON.stringify({ results: context.results, steps: context.steps, request: context.request, flow: context.flow }),
     );
     return evaluateExpression(condition, jsonContext);
   }

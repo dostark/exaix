@@ -16,37 +16,13 @@ matrix:
       requires_key: "ANTHROPIC_API_KEY"
 
 steps:
-  - id: "setup-db"
-    type: "shell"
-    command: "deno"
-    args:
-      [
-        "run",
-        "-A",
-        "--config",
-        "$FRAMEWORK_HOME/../../deno.json",
-        "$FRAMEWORK_HOME/../../scripts/setup_db.ts",
-      ]
-    env:
-      EXA_MIGRATIONS_DIR: "$FRAMEWORK_HOME/../../migrations"
-    output_criteria:
-      - id: "setup-done"
-        kind: "command-exit-code"
-        equals: 0
-
-  # The code_changes execution path forces PortalExecutionStrategy.WORKTREE for any plan whose
-  # frontmatter carries a portal (git_execution_setup_service.ts:getExecutionStrategy) — so the
-  # portal MUST be a real git repo. Copy the read-only todo_app_null_guard_bug fixture (the only
-  # copy carrying this scenario's deliberate null-safety bug — the shared todo_app fixture used
-  # by other swe_tasks scenarios is null-safe by default) into the workspace and git-init+commit
-  # it, then mount THAT (next step), mirroring session_delegate_matrix_live.yaml.
   - id: "setup-portal-repo"
     type: "shell"
     command: "sh"
     args:
       [
         "-c",
-        "cp -r \"$FRAMEWORK_HOME/fixtures/portals/todo_app_null_guard_bug\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'",
+        "cp -rL \"$FRAMEWORK_HOME/fixtures/portals/todo_app_null_guard_bug\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'",
       ]
     output_criteria:
       - id: "portal-repo-initialized"

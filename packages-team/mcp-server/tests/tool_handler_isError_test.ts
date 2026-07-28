@@ -11,7 +11,7 @@ import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { stub } from "@std/testing/mock";
-import { PortalOperation, ToolErrorCode } from "@exaix/core";
+import { PortalOperation } from "@exaix/core";
 import { ReadFileTool } from "@exaix-team/mcp-server";
 import { DeleteFileTool } from "@exaix-team/mcp-server";
 import { MoveFileTool } from "@exaix-team/mcp-server";
@@ -355,13 +355,8 @@ Deno.test("QueryJournalTool: database failure returns isError:true, not thrown e
   assertIsErrorResponse(response);
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
-// ToolErrorCode taxonomy contract
-
-Deno.test("ToolErrorCode: all expected error codes are defined", () => {
-  assertEquals(ToolErrorCode.NOT_FOUND, "NOT_FOUND");
-  assertEquals(ToolErrorCode.INVALID_ARGS, "INVALID_ARGS");
-  assertEquals(ToolErrorCode.EXECUTION_FAILED, "EXECUTION_FAILED");
-  assertEquals(ToolErrorCode.PERMISSION_DENIED, "PERMISSION_DENIED");
-  assertEquals(ToolErrorCode.PATH_TRAVERSAL, "PATH_TRAVERSAL");
-});
+// The ToolErrorCode taxonomy was previously "covered" here by asserting each member equalled its
+// own name (`ToolErrorCode.NOT_FOUND === "NOT_FOUND"`) — a restatement of the enum that passed
+// whether or not any handler emitted a code, and that omitted COMMAND_BLOCKED while claiming to
+// check them all. What the taxonomy is for — a classification observable downstream — is asserted
+// in packages/mcp/tests/tool_error_code_journal_test.ts.

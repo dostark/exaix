@@ -65,6 +65,8 @@ export interface IEvaluateStepOutcomeOptions {
   portalAliases?: string[];
   verbose?: boolean;
   exactlExecutable?: string;
+  /** Epoch-ms floor for artefacts this scenario may claim — see IExecuteScenarioStepOptions. */
+  artifactBaselineMs?: number;
 }
 
 export interface IScenarioStepOutcome {
@@ -193,6 +195,7 @@ export async function evaluateStepOutcome(
     stepTargetFile = await resolveStepFilePattern(
       options.workspaceRoot,
       options.step.file_pattern,
+      options.artifactBaselineMs,
     );
   }
 
@@ -225,7 +228,16 @@ export async function evaluateStepOutcome(
     };
   }
 
-  if ((options.executionResult?.exitCode ?? 0) !== 0) {
+  // Mirror the expect_failure semantics runScenarioInMode already applies (modes.ts):
+  // for a step that declares expect_failure, a non-zero exit is the EXPECTED outcome and a
+  // zero exit is the failure. Without this the short-circuit below skipped output criteria
+  // on every expect_failure step, so scenarios written to elicit a refusal passed without
+  // ever evaluating the assertion that made them meaningful.
+  const expectFailure = options.step.expect_failure ?? false;
+  const exitCode = options.executionResult?.exitCode ?? 0;
+  const executionFailed = expectFailure ? exitCode === 0 : exitCode !== 0;
+
+  if (executionFailed) {
     return {
       stepId: options.step.id,
       status: CriterionStatus.FAILED,
@@ -590,6 +602,27 @@ async function evaluateJournalEventExistsCriterion(
     e.action_type === criterion.event_type || e.event_type === criterion.event_type
   );
 
+  // payload_includes (Phase 142 Step 17): require at least one matching event whose parsed
+  // payload carries, under each named key, an array containing every listed string — proving
+  // e.g. that ids pinned in request frontmatter actually reached `skills.resolved`, which a
+  // bare event-type match cannot distinguish from a run that resolved something else.
+  if (criterion.payload_includes) {
+    const includes = criterion.payload_includes;
+    if (typeMatches.some((e) => payloadIncludesAll(e, includes))) return buildPassedResult(options, []);
+    const summary = JSON.stringify(includes);
+    return buildFailedResult(options, {
+      message: typeMatches.length === 0
+        ? `expected journal event type: ${criterion.event_type}`
+        : `expected a '${criterion.event_type}' event whose payload includes ${summary}, but no matching event did`,
+      expectedValue: `${criterion.event_type} with payload including ${summary}`,
+      observedValue: typeMatches.length === 0
+        ? `Latest 50 events: ${events.slice(0, 50).map((e) => e.action_type || e.event_type).join(", ")}`
+        : `${typeMatches.length} matching event(s), payloads: ${
+          typeMatches.slice(0, 5).map((e) => String(e.payload)).join(" | ")
+        }`,
+    });
+  }
+
   // Without a payload_absent predicate, a bare event-type match passes (backward-compatible).
   if (!criterion.payload_absent) {
     if (typeMatches.length > 0) return buildPassedResult(options, []);
@@ -624,22 +657,43 @@ async function evaluateJournalEventExistsCriterion(
  * a payload that is missing, non-string, or unparseable is treated as not-containing.
  */
 function payloadContainsAll(event: IJournalEvent, expected: IJournalPayloadFields): boolean {
-  const raw = event.payload;
-  let payload: IJournalPayloadFields;
-  if (typeof raw === "string") {
-    try {
-      payload = JSON.parse(raw) as IJournalPayloadFields;
-    } catch {
-      return false;
-    }
-  } else if (raw && typeof raw === "object") {
-    payload = raw as IJournalPayloadFields;
-  } else {
-    return false;
-  }
+  const payload = parseEventPayload(event);
+  if (!payload) return false;
   return Object.entries(expected).every(([key, value]) =>
     key in payload && JSON.stringify(payload[key]) === JSON.stringify(value)
   );
+}
+
+/**
+ * True when, for every entry in `expected`, the event's payload holds an ARRAY under that key
+ * containing each listed string. Membership rather than equality, so a criterion can pin the
+ * ids it cares about without restating the whole array.
+ */
+function payloadIncludesAll(event: IJournalEvent, expected: Record<string, string[]>): boolean {
+  const payload = parseEventPayload(event);
+  if (!payload) return false;
+  return Object.entries(expected).every(([key, values]) => {
+    const actual = payload[key];
+    if (!Array.isArray(actual)) return false;
+    return values.every((value) => actual.includes(value));
+  });
+}
+
+/**
+ * The CLI journal serializes each row's payload as a JSON string (IActivityRecord.payload);
+ * the NDJSON path may already hold an object. Returns null when it is missing or unparseable.
+ */
+function parseEventPayload(event: IJournalEvent): IJournalPayloadFields | null {
+  const raw = event.payload;
+  if (typeof raw === "string") {
+    try {
+      return JSON.parse(raw) as IJournalPayloadFields;
+    } catch {
+      return null;
+    }
+  }
+  if (raw && typeof raw === "object") return raw as IJournalPayloadFields;
+  return null;
 }
 
 async function loadJournalFromCli(options: IEvaluateCriterionOptions): Promise<IJournalEvent[] | null> {
@@ -920,18 +974,49 @@ async function* walkWorkspaceFiles(dir: string): AsyncGenerator<string> {
   }
 }
 
+/**
+ * Resolve a step's `file_pattern` to the MOST RECENTLY WRITTEN match.
+ *
+ * Scenarios in a pack run share one sandbox workspace, so a pattern like `**\/*_plan.md`
+ * matches every plan produced by every earlier scenario. Returning the first
+ * directory-walk match — whatever order the walk happens to yield — made a step validate
+ * an arbitrary scenario's artefact; with a criterion weak enough not to notice (e.g. a
+ * field-exists check) that reads as a pass. Selecting the newest match correlates the step
+ * with the request this scenario just submitted and waited for, which is what lets a shared
+ * sandbox stay correct without per-scenario cleanup.
+ *
+ * Ties (same mtime) fall back to the lexically greatest path so the result stays
+ * deterministic rather than walk-order dependent.
+ */
 async function resolveStepFilePattern(
   workspaceRoot: string,
   pattern: string,
+  baselineMs?: Opt<number, Reason.OptionalInput>,
 ): Promise<string | undefined> {
   const matcher = globToRegExp(pattern);
+  let best: { relativePath: string; modifiedMs: number } | undefined;
+
   for await (const filePath of walkWorkspaceFiles(workspaceRoot)) {
     const relativePath = relative(workspaceRoot, filePath);
-    if (matcher.test(relativePath)) {
-      return relativePath;
+    if (!matcher.test(relativePath)) continue;
+
+    let modifiedMs = 0;
+    try {
+      modifiedMs = (await Deno.stat(filePath)).mtime?.getTime() ?? 0;
+    } catch {
+      continue; // vanished between walk and stat — ignore rather than fail resolution
     }
+    // Reject artefacts written before this scenario began — they belong to an earlier
+    // scenario sharing the sandbox workspace.
+    if (baselineMs !== undefined && modifiedMs < baselineMs) continue;
+
+    const isNewer = best === undefined ||
+      modifiedMs > best.modifiedMs ||
+      (modifiedMs === best.modifiedMs && relativePath > best.relativePath);
+    if (isNewer) best = { relativePath, modifiedMs };
   }
-  return undefined;
+
+  return best?.relativePath;
 }
 
 function rewriteCriteriaWithTarget(
@@ -1035,6 +1120,26 @@ function evaluateVersionLteCriterion(
   };
 }
 
+/**
+ * The number `min`/`max` compare against, and the noun that describes it.
+ *
+ * A query resolving to a number IS the quantity — `query: "length", min: 1` says "at least one
+ * row". Measuring the length of a number instead yielded 0 for every input, so that criterion
+ * could never pass; three scenarios used the form and each read as a missing journal row.
+ * Arrays and strings keep counting elements/characters, which is what every other caller means.
+ */
+interface IComparableNumber {
+  value: number;
+  noun: string;
+}
+
+function comparableNumber(result: JSONValue): IComparableNumber {
+  if (typeof result === "number" && Number.isFinite(result)) return { value: result, noun: "" };
+  if (Array.isArray(result)) return { value: result.length, noun: "items" };
+  if (typeof result === "string") return { value: result.length, noun: "characters" };
+  return { value: 0, noun: "items" };
+}
+
 function evaluateJsonQueryCriterion(
   options: IEvaluateCriterionOptions,
 ): Promise<ICriterionResult> {
@@ -1093,17 +1198,17 @@ function evaluateJsonQueryCriterion(
         ? `JSON query "${criterion.query}" returned non-empty value`
         : `JSON query "${criterion.query}" returned empty value`;
     } else if (criterion.min !== undefined) {
-      const length = Array.isArray(result) ? result.length : typeof result === "string" ? result.length : 0;
-      passed = length >= criterion.min;
+      const { value, noun } = comparableNumber(result);
+      passed = value >= criterion.min;
       message = passed
-        ? `JSON query "${criterion.query}" returned ${length} items (>= ${criterion.min})`
-        : `JSON query "${criterion.query}" returned ${length} items, expected >= ${criterion.min}`;
+        ? `JSON query "${criterion.query}" returned ${value} ${noun} (>= ${criterion.min})`
+        : `JSON query "${criterion.query}" returned ${value} ${noun}, expected >= ${criterion.min}`;
     } else if (criterion.max !== undefined) {
-      const length = Array.isArray(result) ? result.length : typeof result === "string" ? result.length : 0;
-      passed = length <= criterion.max;
+      const { value, noun } = comparableNumber(result);
+      passed = value <= criterion.max;
       message = passed
-        ? `JSON query "${criterion.query}" returned ${length} items (<= ${criterion.max})`
-        : `JSON query "${criterion.query}" returned ${length} items, expected <= ${criterion.max}`;
+        ? `JSON query "${criterion.query}" returned ${value} ${noun} (<= ${criterion.max})`
+        : `JSON query "${criterion.query}" returned ${value} ${noun}, expected <= ${criterion.max}`;
     } else if (criterion.unique_count_min !== undefined) {
       if (!Array.isArray(result)) {
         passed = false;

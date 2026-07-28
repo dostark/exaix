@@ -45,6 +45,7 @@
       "weight": 30
     }
   ],
+  "critical": true,
   "compatible_with": {
     "agents": [
       "quality-judge",

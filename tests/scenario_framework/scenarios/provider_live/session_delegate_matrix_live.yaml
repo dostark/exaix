@@ -36,33 +36,6 @@ matrix:
 
 steps:
   # --- Setup (shared across all cells) ---
-  - id: "setup-db"
-    type: "shell"
-    command: "deno"
-    args:
-      [
-        "run",
-        "-A",
-        "--config",
-        "$FRAMEWORK_HOME/../../deno.json",
-        "$FRAMEWORK_HOME/../../scripts/setup_db.ts",
-      ]
-    # The DB lands in the workspace CWD (.exa/journal.db) so the daemon finds it; the
-    # migrations *source* is the repo (a deployable workspace has no migrations/ dir).
-    # EXA_MIGRATIONS_DIR points setup_db.ts at the repo migrations (Phase 127 harness fix).
-    env:
-      EXA_MIGRATIONS_DIR: "$FRAMEWORK_HOME/../../migrations"
-    output_criteria:
-      - id: "setup-done"
-        score_weight: 0.5
-        kind: "command-exit-code"
-        equals: 0
-
-  # setup-blueprints: the daemon resolves agent identities from <workspace>/Blueprints/Identities/,
-  # which deploy_workspace.ts provisions for a deployed sandbox but the synthetic runner's bare
-  # workspace lacks — so analysis fails with "Blueprint not found: default". Copy the repo's
-  # Blueprints/ into the workspace (mirrors deploy_workspace) so the identity the request routes to
-  # exists. The shell step's cwd is the workspace.
   - id: "setup-blueprints"
     type: "shell"
     command: "cp"

@@ -9,6 +9,7 @@
 
 import { ConfigService } from "@exaix/core/config";
 import { DatabaseService } from "@exaix/storage-sqlite";
+import { ToolRegistry } from "@exaix/tool-runtime";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { ICliApplicationContext } from "@exaix/core/types";
 import type { IModelProvider } from "@exaix/ai";
@@ -109,6 +110,44 @@ function createDisplayServiceStub(): IDisplayService {
   };
 }
 
+/**
+ * Assemble the application context the MCP server runs on.
+ *
+ * The provider, git and display services are stubs by design — the standalone server
+ * evaluates transport, discovery, permissions and filesystem tools, not LLM or git
+ * behaviour. The ToolRegistry, however, is NOT optional: SearchFilesTool and
+ * RunCommandTool delegate to `context.toolRegistry` and fail with "ToolRegistry not
+ * available in context" without it, so `tools/list` would advertise 24 tools of which 2
+ * could never be called by an external client.
+ */
+export function buildServerContext(
+  configService: ConfigService,
+): { context: ICliApplicationContext; dispose: () => void } {
+  const config = configService.get();
+  const dbService: IDatabaseService = new DatabaseService(config);
+
+  const context: ICliApplicationContext = {
+    config: configService,
+    db: dbService,
+    provider: createProviderStub(),
+    git: createGitServiceStub(),
+    display: createDisplayServiceStub(),
+  };
+
+  // Constructed after `context` so the registry sees the same services the handlers do,
+  // then attached back onto it — the dependency is genuinely mutual.
+  context.toolRegistry = new ToolRegistry({ config, context });
+
+  return {
+    context,
+    dispose: () => {
+      try {
+        dbService.close?.();
+      } catch { /* best-effort teardown */ }
+    },
+  };
+}
+
 function parseFlags(): { transport: McpTransportType; port: number } {
   const transportIndex = Deno.args.indexOf("--transport");
   const transportValue = transportIndex >= 0 && transportIndex + 1 < Deno.args.length
@@ -131,17 +170,7 @@ if (import.meta.main) {
 
   const configPath = Deno.env.get("EXA_CONFIG_PATH");
   const configService = new ConfigService(configPath);
-  const config = configService.get();
-
-  const dbService: IDatabaseService = new DatabaseService(config);
-
-  const context: ICliApplicationContext = {
-    config: configService,
-    db: dbService,
-    provider: createProviderStub(),
-    git: createGitServiceStub(),
-    display: createDisplayServiceStub(),
-  };
+  const { context } = buildServerContext(configService);
 
   const server = new MCPServer({
     context,

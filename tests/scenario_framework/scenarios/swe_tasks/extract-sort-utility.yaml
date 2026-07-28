@@ -22,22 +22,12 @@ matrix:
       requires_bin: "true"
       requires_key: "ANTHROPIC_API_KEY"
 steps:
-  - id: "setup-db"
-    type: "shell"
-    command: "deno"
-    args: ["run", "-A", "--config", "$FRAMEWORK_HOME/../../deno.json", "$FRAMEWORK_HOME/../../scripts/setup_db.ts"]
-    env:
-      EXA_MIGRATIONS_DIR: "$FRAMEWORK_HOME/../../migrations"
-    output_criteria:
-      - id: "setup-done"
-        kind: "command-exit-code"
-        equals: 0
   - id: "setup-portal-repo"
     type: "shell"
     command: "sh"
     args: [
       "-c",
-      "cp -r \"$FRAMEWORK_HOME/fixtures/portals/todo_app_duplicate_sorting\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'",
+      "cp -rL \"$FRAMEWORK_HOME/fixtures/portals/todo_app_duplicate_sorting\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'",
     ]
     output_criteria:
       - id: "portal-repo-initialized"

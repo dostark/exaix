@@ -11,7 +11,11 @@
  */
 
 /** Root identifiers a condition may reference. Everything else is rejected. */
-const ALLOWED_ROOTS = new Set(["results", "request", "flow"]);
+// `steps` is the array view of `results`. The sandbox permits array methods only on real
+// arrays and does not allowlist `Object.values`, so without it an aggregate condition such as
+// "every previous step succeeded" cannot be written at all — and the rejection fails closed,
+// silently skipping the guarded step.
+const ALLOWED_ROOTS = new Set(["results", "steps", "request", "flow"]);
 
 /** Array methods a condition may call. No other call expressions are permitted. */
 const ALLOWED_METHODS = new Set(["every", "some", "includes"]);
