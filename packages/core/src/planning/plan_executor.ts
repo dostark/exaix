@@ -110,7 +110,7 @@ export interface IPlanExecutorOptions {
    */
   onCodeChangesDelegate?: (
     traceId: string,
-    step: { title: string; content: string; successCriteria?: string[] },
+    step: { number: number; title: string; content: string; successCriteria?: string[] },
     worktreePath: string,
   ) => Promise<string>;
 }
@@ -526,6 +526,7 @@ export class PlanExecutor {
       return { skip: false };
     }
     const delegateResult = await this.options.onCodeChangesDelegate(traceId, {
+      number: step.number,
       title: step.title,
       content: step.content,
       successCriteria: step.successCriteria ?? undefined,

@@ -218,6 +218,7 @@ export const DomainEventType = {
   SessionDelegateExpired: "session.delegate.expired", // Phase 111: wait-state deadline sweep
   SessionDelegateCancelled: "session.delegate.cancelled", // Phase 111: exactl session cancel
   SessionDelegateContentlessBrief: "session.delegate.contentless_brief", // Phase 150: placeholder/empty brief rejection
+  SessionDelegateBriefFailed: "session.delegate.brief_failed", // Phase 150 Step 13: prepareBrief throw (distinct from reconciled)
 
   // Phase 128: delegate permission-hardening events
   SessionDelegateAgentMismatch: "session.delegate.agent_mismatch", // R3: generated agent.<name> key diverges from delegate identity

@@ -107,7 +107,7 @@ export interface IExecutionLoopConfig {
    */
   onCodeChangesDelegate?: (
     traceId: string,
-    step: { title: string; content: string; successCriteria?: string[] },
+    step: { number: number; title: string; content: string; successCriteria?: string[] },
     worktreePath: string,
   ) => Promise<string>;
 
@@ -188,7 +188,7 @@ export class ExecutionLoop {
   private hitlBlueprintRules?: HitlRule[];
   private onCodeChangesDelegate?: (
     traceId: string,
-    step: { title: string; content: string; successCriteria?: string[] },
+    step: { number: number; title: string; content: string; successCriteria?: string[] },
     worktreePath: string,
   ) => Promise<string>;
   private gitServiceFactory?: IGitServiceFactory;
