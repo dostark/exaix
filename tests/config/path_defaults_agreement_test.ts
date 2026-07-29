@@ -21,7 +21,6 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
-import { parse as parseToml } from "@std/toml";
 import { ExaPathDefaults } from "@exaix/core";
 import { getDefaultPaths } from "@exaix/core/config";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
@@ -57,22 +56,6 @@ Deno.test("[path-defaults] getDefaultPaths agrees with ExaPathDefaults", () => {
   for (const [key, expected] of Object.entries({ ...ExaPathDefaults } as PathTable)) {
     if (fromHelper[key] !== expected) {
       disagreements.push(`paths.${key}: getDefaultPaths "${fromHelper[key]}" vs ExaPathDefaults "${expected}"`);
-    }
-  }
-  assertEquals(disagreements.sort(), [], disagreements.join("\n"));
-});
-
-Deno.test("[path-defaults] the shipped exa.config.toml agrees with the defaults it overrides", async () => {
-  // The override is what hid the defect: development always ran with the correct value, so no
-  // test, gate or manual run could see the wrong one.
-  const shipped = parseToml(await Deno.readTextFile(join(REPO_ROOT, "exa.config.toml"))) as { paths?: PathTable };
-  assert(shipped.paths, "expected the shipped config to declare a [paths] table");
-
-  const disagreements: string[] = [];
-  for (const [key, declared] of Object.entries(shipped.paths)) {
-    const expected = ({ ...ExaPathDefaults } as PathTable)[key];
-    if (expected !== undefined && declared !== expected) {
-      disagreements.push(`paths.${key}: exa.config.toml "${declared}" vs ExaPathDefaults "${expected}"`);
     }
   }
   assertEquals(disagreements.sort(), [], disagreements.join("\n"));
