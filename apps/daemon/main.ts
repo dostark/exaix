@@ -1047,7 +1047,11 @@ if (import.meta.main) {
 
     const onCodeChangesDelegate = _sessionDelegateService && _sessionWaitStore && _headlessLauncher &&
         config.session_delegate?.gates?.includes(GATE_CODE_CHANGES)
-      ? async (traceId: string, stepId: string, worktreePath: string): Promise<string> => {
+      ? async (
+        traceId: string,
+        step: { title: string; content: string; successCriteria?: string[] },
+        worktreePath: string,
+      ): Promise<string> => {
         const sd = config.session_delegate!;
         const requestsDir = join(config.system.root, "Workspace", DEFAULT_REQUESTS_PATH);
         const resolvedModel = await resolveModelFromTrace(traceId, requestsDir, modelResolver);
@@ -1057,8 +1061,9 @@ if (import.meta.main) {
             gate: GATE_CODE_CHANGES,
             tool: sd.tool,
             ...(resolvedModel ? { model: resolvedModel } : sd.model ? { model: sd.model } : {}),
-            objective: `Execute step ${stepId}`,
-            artifactRef: `trace:${traceId}/step:${stepId}`,
+            objective: step.content,
+            acceptanceCriteria: step.successCriteria,
+            artifactRef: `trace:${traceId}/step:${step.title}`,
             permittedPaths: [`Workspace/**`],
             // Use the REAL worktree the execution loop created (PlanExecutor's executionRoot),
             // not a recomputed path — fixes the LIVE-RT "No such cwd" spawn failure (Layer 12).

@@ -11,6 +11,7 @@ export * from "./plan.ts";
 export * from "./plan_adapter.ts";
 export * from "./plan_amendment_gate.ts";
 export * from "./plan_amendment_service.ts";
+export * from "./delegate_brief.ts";
 export * from "./plan_executor.ts";
 export * from "./plan_writer.ts";
 export * from "./structured_plan_parser.ts";

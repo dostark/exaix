@@ -486,11 +486,19 @@ Deno.test("PlanExecutor: passes its executionRoot (worktree path) to the code-ch
     async ({ repoDir, writeBlueprint, createExecutor }) => {
       await writeBlueprint(BASIC_TEST_BLUEPRINT);
 
-      const received: { traceId?: string; stepId?: string; worktreePath?: string } = {};
+      const received: {
+        traceId?: string;
+        step?: { title: string; content: string; successCriteria?: string[] };
+        worktreePath?: string;
+      } = {};
       const executor = createExecutor(new MockProvider("noop"), {
-        onCodeChangesDelegate: (traceId: string, stepId: string, worktreePath: string) => {
+        onCodeChangesDelegate: (
+          traceId: string,
+          step: { title: string; content: string; successCriteria?: string[] },
+          worktreePath: string,
+        ) => {
           received.traceId = traceId;
-          received.stepId = stepId;
+          received.step = step;
           received.worktreePath = worktreePath;
           return Promise.resolve("changes_made");
         },
@@ -506,9 +514,10 @@ Deno.test("PlanExecutor: passes its executionRoot (worktree path) to the code-ch
 
       await executor.execute(join("/tmp", "unused_plan.md"), context);
 
-      // The delegate was invoked with the executor's real worktree root, not a recomputed path.
+      // The delegate was invoked with the executor's real worktree root and step content.
       assertEquals(received.worktreePath, repoDir);
-      assertEquals(received.stepId, "1");
+      assertEquals(received.step?.title, "Edit code");
+      assertEquals(received.step?.content, "Make a code change");
     },
   );
 });

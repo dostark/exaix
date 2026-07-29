@@ -736,7 +736,10 @@ Deno.test("ExecutionLoop: onCodeChangesDelegate is accepted in config without er
       db,
       logger,
       identityId: "test-identity",
-      onCodeChangesDelegate: (_traceId: string, _stepId: string) => {
+      onCodeChangesDelegate: (
+        _traceId: string,
+        _step: { title: string; content: string; successCriteria?: string[] },
+      ) => {
         return Promise.resolve("changes_made");
       },
     });
