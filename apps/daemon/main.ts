@@ -31,6 +31,7 @@ import {
   seedConfigDb,
 } from "@exaix/core/config";
 import { evaluateNetPolicy } from "@exaix/core/security";
+import { isContentlessBrief } from "@exaix/core/planning";
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import {
@@ -1055,6 +1056,14 @@ if (import.meta.main) {
         const sd = config.session_delegate!;
         const requestsDir = join(config.system.root, "Workspace", DEFAULT_REQUESTS_PATH);
         const resolvedModel = await resolveModelFromTrace(traceId, requestsDir, modelResolver);
+        if (isContentlessBrief(step.content)) {
+          await logger.warn(DomainEventType.SessionDelegateContentlessBrief, traceId, {
+            trace_id: traceId,
+            step_id: step.title,
+            objective_preview: step.content.slice(0, 80),
+          });
+          return DECISION_ABANDONED;
+        }
         try {
           const brief = await _sessionDelegateService!.prepareBrief({
             traceId,

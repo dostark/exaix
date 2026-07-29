@@ -19,3 +19,14 @@ export function buildDelegateBriefArgs(
     acceptanceCriteria: step.successCriteria?.length ? [...step.successCriteria] : undefined,
   };
 }
+
+/**
+ * Checks whether a brief objective is contentless (empty) or matches the legacy
+ * placeholder shape ("Execute step N"). Returns true when the guard should reject
+ * the brief (Phase 150 Step 2).
+ */
+export function isContentlessBrief(objective: string): boolean {
+  if (!objective || objective.trim().length === 0) return true;
+  const placeholderPattern = /^[Ee]xecute\s+step\s+\d+/;
+  return placeholderPattern.test(objective.trim());
+}
