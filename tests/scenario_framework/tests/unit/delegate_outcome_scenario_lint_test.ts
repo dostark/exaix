@@ -19,8 +19,15 @@ function hasOutcomeCriteria(steps: ReturnType<typeof ScenarioSchema.parse>["step
     if (step.type === ScenarioStepType.JOURNAL_ASSERT && step.output_criteria) {
       for (const criterion of step.output_criteria) {
         if (criterion.kind === CriterionKind.JOURNAL_EVENT_EXISTS) {
-          if (criterion.payload_absent || criterion.payload_includes) return true;
-          if (criterion.event_type && criterion.event_type !== "session.delegate.reconciled") return true;
+          // payload_includes on any event qualifies (asserts a specific payload value)
+          if (criterion.payload_includes) return true;
+          // payload_absent qualifies ONLY when it targets a non-reconciled event
+          // (a payload_absent on session.delegate.reconciled is a plumbing assertion)
+          if (
+            criterion.payload_absent && criterion.event_type && criterion.event_type !== "session.delegate.reconciled"
+          ) {
+            return true;
+          }
         }
       }
     }
@@ -57,8 +64,8 @@ Deno.test("[delegate-outcome-lint] at least one provider_live delegate scenario 
   assert(
     foundOutcome,
     "at least one provider_live delegate scenario must carry an outcome criterion " +
-      "(payload_absent/payload_includes filter or non-reconciled event assertion) — " +
-      "currently provided by session_delegate_matrix_live.yaml (payload_absent) " +
-      "and session_delegate_scope_violation_live.yaml (non-reconciled event)",
+      "(file-contains, json-assert, trajectory-assert, frontmatter-assert, " +
+      "payload_includes, or payload_absent on a non-reconciled event) — " +
+      "currently provided by session_delegate_outcome_live.yaml (file-contains + payload_absent paths_touched)",
   );
 });
