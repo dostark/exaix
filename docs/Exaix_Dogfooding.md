@@ -479,6 +479,13 @@ This implements session delegation (shipped — see `exaix-dev-docs/planning/pha
 Without it, the daemon uses its in-process agent (`ReActLoopStrategy`) which works identically
 but runs on the daemon's own provider.
 
+**Phase 150 (2026-07): Faithful delegate briefs.** The delegate now receives the
+full step content (`objective`) and any `successCriteria` (`acceptanceCriteria`),
+replacing the placeholder `"Execute step N"`. A contentless-brief guard rejects
+empty or placeholder objectives with a journal event
+(`session.delegate.contentless_brief`) and returns `"abandoned"`, preventing
+silent no-ops. See `packages/core/tests/planning/contentless_brief_guard_test.ts`.
+
 ### 6.4 Config Presets (multi-delegate provider routing)
 
 The daemon ships four `[session_delegate]` presets:

@@ -18,6 +18,23 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 150 (Dogfood Delegation Fidelity)
+
+### Added
+
+- Faithful delegate briefs — the `onCodeChangesDelegate` callback now passes the
+  step's full title, content, and success criteria (not a placeholder step number).
+- Contentless-brief guard — empty or `"Execute step N"` placeholder objectives are
+  rejected with a `session.delegate.contentless_brief` journal event.
+- Outcome-asserting delegate scenarios — `delegate_outcome_scenario_lint_test.ts`
+  ensures provider_live scenarios carry `payload_absent` filters or non-reconciled
+  event assertions.
+- Meta-workflow identities — `Blueprints/Identities/dogfood-coder.md` (write +
+  delegate) and `code-reviewer.md` (read-only) for the documented autonomous queue.
+- Queue pipeline CI test — `meta_workflow_queue_pipeline_test.ts` validates that
+  `plan_to_requests.ts` generates resolvable identities and non-placeholder content
+  without requiring tokens or a live delegate binary.
+
 ## Unreleased — Phase 142 (Subsystem Evaluation Packs)
 
 ### Added
