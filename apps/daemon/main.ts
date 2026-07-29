@@ -31,7 +31,7 @@ import {
   seedConfigDb,
 } from "@exaix/core/config";
 import { evaluateNetPolicy } from "@exaix/core/security";
-import { isContentlessBrief } from "@exaix/core/planning";
+import { buildDelegateBriefArgs, isContentlessBrief } from "@exaix/core/planning";
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import {
@@ -1050,7 +1050,7 @@ if (import.meta.main) {
         config.session_delegate?.gates?.includes(GATE_CODE_CHANGES)
       ? async (
         traceId: string,
-        step: { title: string; content: string; successCriteria?: string[] },
+        step: { number: number; title: string; content: string; successCriteria?: string[] },
         worktreePath: string,
       ): Promise<string> => {
         const sd = config.session_delegate!;
@@ -1059,20 +1059,21 @@ if (import.meta.main) {
         if (isContentlessBrief(step.content)) {
           await logger.warn(DomainEventType.SessionDelegateContentlessBrief, traceId, {
             trace_id: traceId,
-            step_id: step.title,
+            step_id: String(step.number),
             objective_preview: step.content.slice(0, 80),
           });
           return DECISION_ABANDONED;
         }
         try {
+          const briefArgs = buildDelegateBriefArgs(step);
           const brief = await _sessionDelegateService!.prepareBrief({
             traceId,
             gate: GATE_CODE_CHANGES,
             tool: sd.tool,
             ...(resolvedModel ? { model: resolvedModel } : sd.model ? { model: sd.model } : {}),
-            objective: step.content,
-            acceptanceCriteria: step.successCriteria,
-            artifactRef: `trace:${traceId}/step:${step.title}`,
+            objective: briefArgs.objective,
+            ...(briefArgs.acceptanceCriteria ? { acceptanceCriteria: briefArgs.acceptanceCriteria } : {}),
+            artifactRef: `trace:${traceId}/step:${step.number}`,
             permittedPaths: [`Workspace/**`],
             // Use the REAL worktree the execution loop created (PlanExecutor's executionRoot),
             // not a recomputed path — fixes the LIVE-RT "No such cwd" spawn failure (Layer 12).
@@ -1155,9 +1156,10 @@ if (import.meta.main) {
           }
           return DECISION_ABANDONED;
         } catch (err) {
-          // Launch failed (binary not found, etc.) — expire the wait state and return abandoned
-          logger.info(DomainEventType.SessionDelegateReconciled, traceId, {
+          // Brief preparation or launch failed — journal a distinct failure event (not reconciled)
+          logger.info(DomainEventType.SessionDelegateBriefFailed, traceId, {
             gate: GATE_CODE_CHANGES,
+            step_id: String(step.number),
             error: err instanceof Error ? err.message : String(err),
           });
           try {
