@@ -5,6 +5,7 @@
  */
 
 export type TaskPriority = "low" | "medium" | "high";
+type Priority = TaskPriority;
 
 export interface IUser {
   id: string;
