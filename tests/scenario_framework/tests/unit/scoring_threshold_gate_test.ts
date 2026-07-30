@@ -12,6 +12,7 @@ import {
   checkScoreThreshold,
   type IRunVerdict,
   type IScenarioVerdict,
+  resolveScenarioVerdict,
 } from "../../runner/scoring.ts";
 
 Deno.test("[ScoreThreshold] checkScoreThreshold — score above threshold passes", () => {
@@ -85,4 +86,30 @@ Deno.test("[ScoreThreshold] accumulateRunVerdict — single scenario that passes
   assertEquals(verdict.allPassed, true);
   assertEquals(verdict.scenarios.length, 1);
   assertEquals(verdict.scenarios[0].scenarioId, "solo");
+});
+
+// Phase 150 LIVE-RT: the first real delegate run reported ✅ PASSED at 0.727 while
+// its manifest recorded outcome "scenario-failure" — three outcome assertions had
+// failed (no briefed event, no reconciled event, file unchanged) but the weighted
+// suite score still cleared the gate. A threshold may only ever LOWER a verdict;
+// it must never override steps that actually failed.
+Deno.test("[ScoreThreshold] resolveScenarioVerdict — failed steps cannot pass on score alone", () => {
+  assertEquals(resolveScenarioVerdict("scenario-failure", 0.727, 0.5), false);
+});
+
+Deno.test("[ScoreThreshold] resolveScenarioVerdict — success below threshold still fails", () => {
+  assertEquals(resolveScenarioVerdict("success", 0.3, 0.5), false);
+});
+
+Deno.test("[ScoreThreshold] resolveScenarioVerdict — success above threshold passes", () => {
+  assertEquals(resolveScenarioVerdict("success", 0.9, 0.5), true);
+});
+
+Deno.test("[ScoreThreshold] resolveScenarioVerdict — no threshold falls back to outcome", () => {
+  assertEquals(resolveScenarioVerdict("success", 0.1, undefined), true);
+  assertEquals(resolveScenarioVerdict("scenario-failure", 1.0, undefined), false);
+});
+
+Deno.test("[ScoreThreshold] resolveScenarioVerdict — a missing manifest never passes", () => {
+  assertEquals(resolveScenarioVerdict(undefined, 1.0, 0.5), false);
 });

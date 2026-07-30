@@ -105,7 +105,11 @@ export interface IExecutionLoopConfig {
    * agent without importing the concrete launcher (layer-boundary seam).
    * Phase 111 Step 8 wires the actual invocation.
    */
-  onCodeChangesDelegate?: (traceId: string, stepId: string, worktreePath: string) => Promise<string>;
+  onCodeChangesDelegate?: (
+    traceId: string,
+    step: { number: number; title: string; content: string; successCriteria?: string[] },
+    worktreePath: string,
+  ) => Promise<string>;
 
   /** Factory for creating per-execution IGitService instances. Required if portal/worktree execution is used. */
   gitServiceFactory?: IGitServiceFactory;
@@ -182,7 +186,11 @@ export class ExecutionLoop {
   private hitlPolicyEvaluator?: IHitlPolicyEvaluator;
   private confirmationInterceptor?: IToolConfirmationInterceptor;
   private hitlBlueprintRules?: HitlRule[];
-  private onCodeChangesDelegate?: (traceId: string, stepId: string, worktreePath: string) => Promise<string>;
+  private onCodeChangesDelegate?: (
+    traceId: string,
+    step: { number: number; title: string; content: string; successCriteria?: string[] },
+    worktreePath: string,
+  ) => Promise<string>;
   private gitServiceFactory?: IGitServiceFactory;
   private toolRegistryFactory?: IToolRegistryFactory;
   private memoryBank?: IMemoryBankService;

@@ -68,9 +68,13 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
       if (!this.supportsHeadless) {
         throw new Error(`Session tool '${this.tool}' does not support headless launch`);
       }
-      // Optional model selector (`--model <model>`); flags precede the trailing objective.
-      const modelFlag = brief.model ? [SESSION_FLAG_MODEL, brief.model] : [];
       if (this.tool === "claude-code") {
+        // The daemon resolves models to `provider:model` and prepareBrief requires that
+        // colon form, but the `claude` CLI rejects a provider-prefixed id. Strip the
+        // prefix here — claude-code only; opencode's own prefix handling is untouched.
+        const claudeModelFlag = brief.model
+          ? [SESSION_FLAG_MODEL, brief.model.slice(brief.model.indexOf(":") + 1)]
+          : [];
         return {
           command: this.bin,
           args: [
@@ -78,23 +82,31 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
             brief.objective,
             SESSION_FLAG_OUTPUT_FORMAT,
             SESSION_OUTPUT_FORMAT_JSON,
-            ...modelFlag,
+            ...claudeModelFlag,
           ],
           cwd: brief.worktree_path ?? dirname(briefPath),
           env: budgetEnv(brief),
         };
       }
       // opencode headless — opencode run supports --format json, not --output-format
+      // Phase 150 LIVE-RT: prepareBrief requires provider:model (colon) but
+      // opencode --model uses provider/model (slash). Convert here.
+      // Also pass --dir so opencode resolves relative paths against the
+      // worktree, not the project's git root (which is the portal checkout).
+      const opencodeWorkDir = brief.worktree_path ?? dirname(briefPath);
+      const opencodeModelFlag = brief.model ? [SESSION_FLAG_MODEL, brief.model.replace(":", "/")] : [];
+      const opencodeDirFlag = ["--dir", opencodeWorkDir];
       return {
         command: this.bin,
         args: [
           SESSION_SUBCMD_RUN,
           SESSION_FLAG_FORMAT,
           SESSION_OUTPUT_FORMAT_JSON,
-          ...modelFlag,
+          ...opencodeDirFlag,
+          ...opencodeModelFlag,
           brief.objective,
         ],
-        cwd: brief.worktree_path ?? dirname(briefPath),
+        cwd: opencodeWorkDir,
         env: budgetEnv(brief),
       };
     }

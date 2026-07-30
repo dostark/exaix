@@ -294,3 +294,38 @@ Deno.test("[session_delegate] every matrix entry uses a real decision verb", () 
     }
   }
 });
+
+// Phase 150 LIVE-RT: the per-step brief hardcoded permitted_paths to `Workspace/**`,
+// which can never match the worktree-relative paths a portal code change touches
+// (`src/main.ts`), so every live delegate return was rejected as a scope violation.
+// The scope is now operator-declared per config preset.
+Deno.test("[session_delegate] SessionDelegateConfigSchema accepts operator-declared permitted_paths", () => {
+  const parsed = SessionDelegateConfigSchema.parse({
+    enabled: true,
+    tool: "claude-code",
+    gates: ["code_changes"],
+    launch_mode: "headless",
+    permitted_paths: ["src/**", "tests/**"],
+  });
+  assertEquals(parsed.permitted_paths, ["src/**", "tests/**"]);
+});
+
+Deno.test("[session_delegate] SessionDelegateConfigSchema leaves permitted_paths absent when unset", () => {
+  const parsed = SessionDelegateConfigSchema.parse({
+    enabled: true,
+    tool: "claude-code",
+    gates: ["code_changes"],
+  });
+  assertEquals(parsed.permitted_paths, undefined);
+});
+
+Deno.test("[session_delegate] SessionDelegateConfigSchema rejects an empty permitted_paths list", () => {
+  assertThrows(() =>
+    SessionDelegateConfigSchema.parse({
+      enabled: true,
+      tool: "claude-code",
+      gates: ["code_changes"],
+      permitted_paths: [],
+    })
+  );
+});

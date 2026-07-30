@@ -77,6 +77,8 @@ export const ROLE_REQUIRED_SKILLS: Record<string, string[]> = {
   "quality-judge": ["response-contract-judge", "verdict-rubric"],
   "voting-judge": ["response-contract-judge", "verdict-rubric"],
   "research-synthesizer": ["response-contract", "research-methodology"],
+  "dogfood-coder": ["response-contract", "exaix-conventions", "tdd-methodology"],
+  "code-reviewer": ["response-contract", "code-review"],
 };
 
 /** Identities whose role is analysis/evaluation — no destructive tools. */
@@ -86,6 +88,7 @@ export const READ_ONLY_IDENTITIES = new Set([
   "performance-engineer",
   "quality-judge",
   "voting-judge",
+  "code-reviewer",
 ]);
 
 export function readRawFrontmatter(filePath: string): IRawFrontmatter | null {

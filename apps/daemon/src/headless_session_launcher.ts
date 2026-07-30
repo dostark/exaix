@@ -15,7 +15,7 @@
  * @related-files [packages/session/src/delegate_return_parser.ts, packages/session/src/supervised_launch.ts, packages/session/src/session_adapter_registry.ts]
  */
 
-import { join } from "@std/path";
+import { isAbsolute, join, relative } from "@std/path";
 import { assertBinaryAllowed, mergeDelegateEnv, sanitizeChildEnv } from "@exaix/session/supervised_launch.ts";
 import { parseDelegateStdout } from "@exaix/session/delegate_return_parser.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
@@ -62,7 +62,7 @@ export class HeadlessSessionLauncher {
   async launch(
     launch: ISessionLaunch,
     traceId: string,
-    delegateProviderEnv: Record<string, string> | undefined,
+    delegateProviderEnv: Opt<Record<string, string>, Reason.OptionalInput>,
   ): Promise<void> {
     const parentEnv = Deno.env.toObject();
     const sanitizedEnv = sanitizeChildEnv(launch.env, parentEnv);
@@ -141,9 +141,19 @@ export class HeadlessSessionLauncher {
     const tool: SessionTool = briefTool === "claude-code" ? "claude-code" : "opencode";
     const parsed = parseDelegateStdout(raw, tool);
 
-    // Compute paths_touched: union of parser toolPaths + git diff
+    // Compute paths_touched: union of parser toolPaths + git diff.
+    // OpenCode's tool_use events carry absolute filePaths. Convert them to
+    // worktree-relative so the scope checker (which rejects absolute paths)
+    // can match them against permitted_paths.
     let pathsTouched = parsed.toolPaths;
     if (worktreePath) {
+      pathsTouched = pathsTouched.map((p) => {
+        if (isAbsolute(p)) {
+          const rel = relative(worktreePath, p);
+          return rel.startsWith("..") ? p : rel;
+        }
+        return p;
+      });
       const gitPaths = await this.computeGitDiff(worktreePath);
       if (gitPaths.length > 0) {
         const seen = new Set(pathsTouched);

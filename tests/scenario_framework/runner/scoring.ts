@@ -7,6 +7,7 @@
  * @related-files [tests/scenario_framework/schema/step_schema.ts, tests/scenario_framework/tests/unit/scoring_test.ts]
  */
 
+import type { Opt, Reason } from "@exaix/core/types";
 import type { ICriterionResult, IScenarioStep } from "../schema/step_schema.ts";
 import { CriterionStatus } from "../schema/step_schema.ts";
 import { configurable } from "@exaix/core/config";
@@ -93,6 +94,30 @@ export const RunVerdict = {
  */
 export function checkScoreThreshold(suiteScore: number, threshold: number): boolean {
   return suiteScore >= threshold;
+}
+
+/**
+ * Resolves a scenario's pass/fail verdict from BOTH its recorded outcome and its
+ * suite score. A threshold may only ever lower a verdict — it can never lift a
+ * scenario whose steps failed.
+ *
+ * Phase 150 LIVE-RT: the first live delegate run printed ✅ PASSED at 0.727 while
+ * its manifest recorded `scenario-failure` — three outcome assertions had failed,
+ * but the verdict was taken from the weighted score alone and the outcome was
+ * ignored. That is precisely the green-but-hollow pass this phase exists to make
+ * impossible, one level above the delegate.
+ *
+ * @param outcome Manifest outcome (`"success"` when every step passed); `undefined`
+ *   when no manifest was produced, which never passes.
+ * @param threshold Score gate; when `undefined` the outcome alone decides.
+ */
+export function resolveScenarioVerdict(
+  outcome: Opt<string, Reason.OptionalContext>,
+  suiteScore: number,
+  threshold: Opt<number, Reason.OptionalInput>,
+): boolean {
+  if (outcome !== "success") return false;
+  return threshold === undefined || checkScoreThreshold(suiteScore, threshold);
 }
 
 /**

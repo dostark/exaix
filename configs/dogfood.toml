@@ -1,7 +1,7 @@
 [system]
 root = "__DOGFOOD_ROOT__"
 log_level = "info"
-allow_net = ["api.anthropic.com", "api.openai.com", "localhost:11434"]
+allow_net = ["api.anthropic.com", "api.openai.com", "localhost:11434", "generativelanguage.googleapis.com"]
 
 [paths]
 workspace = "Workspace"
@@ -37,9 +37,10 @@ tool = "opencode"
 # Model the delegate (opencode) should use, passed as `--model <model>`.
 # Change this to swap the code-changes model (e.g. a Qwen slug), or change `tool`
 # to "claude-code". The tool resolves the slug against its own provider config.
-model = "deepseek-v4-flash"
+model = "opencode:deepseek-v4-flash-free"
 gates = ["code_changes"]
 launch_mode = "headless"
 # Phase 128 R3: auto-generate a confined opencode.jsonc agent permission block
 # derived from SessionBrief.permitted_paths.
-harden_permissions = true
+harden_permissions = false
+permitted_paths = ["src/**"]

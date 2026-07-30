@@ -54,6 +54,11 @@ export interface IPlanStep {
   number: number;
   title: string;
   content: string;
+  /**
+   * Optional success criteria for this step. When populated, the daemon-side
+   * callback uses these as acceptanceCriteria for the delegate brief.
+   */
+  successCriteria?: string[];
 }
 
 export interface IPlanContext {
@@ -103,7 +108,11 @@ export interface IPlanExecutorOptions {
    * execution loop created — so the delegate spawns in the directory that exists
    * (not a recomputed one). Phase 111 Step 7; LIVE-RT worktree-path fix.
    */
-  onCodeChangesDelegate?: (traceId: string, stepId: string, worktreePath: string) => Promise<string>;
+  onCodeChangesDelegate?: (
+    traceId: string,
+    step: { number: number; title: string; content: string; successCriteria?: string[] },
+    worktreePath: string,
+  ) => Promise<string>;
 }
 
 export interface IPlanActionReport {
@@ -516,7 +525,12 @@ export class PlanExecutor {
     if (!this.options.onCodeChangesDelegate) {
       return { skip: false };
     }
-    const delegateResult = await this.options.onCodeChangesDelegate(traceId, String(step.number), this.repoPath);
+    const delegateResult = await this.options.onCodeChangesDelegate(traceId, {
+      number: step.number,
+      title: step.title,
+      content: step.content,
+      successCriteria: step.successCriteria ?? undefined,
+    }, this.repoPath);
     if (delegateResult === "changes_made") {
       return {
         skip: false,

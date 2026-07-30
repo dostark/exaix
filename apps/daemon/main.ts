@@ -31,6 +31,7 @@ import {
   seedConfigDb,
 } from "@exaix/core/config";
 import { evaluateNetPolicy } from "@exaix/core/security";
+import { buildDelegateBriefArgs, isContentlessBrief } from "@exaix/core/planning";
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import {
@@ -1047,19 +1048,38 @@ if (import.meta.main) {
 
     const onCodeChangesDelegate = _sessionDelegateService && _sessionWaitStore && _headlessLauncher &&
         config.session_delegate?.gates?.includes(GATE_CODE_CHANGES)
-      ? async (traceId: string, stepId: string, worktreePath: string): Promise<string> => {
+      ? async (
+        traceId: string,
+        step: { number: number; title: string; content: string; successCriteria?: string[] },
+        worktreePath: string,
+      ): Promise<string> => {
         const sd = config.session_delegate!;
         const requestsDir = join(config.system.root, "Workspace", DEFAULT_REQUESTS_PATH);
         const resolvedModel = await resolveModelFromTrace(traceId, requestsDir, modelResolver);
+        if (isContentlessBrief(step.content)) {
+          await logger.warn(DomainEventType.SessionDelegateContentlessBrief, traceId, {
+            trace_id: traceId,
+            step_id: String(step.number),
+            objective_preview: step.content.slice(0, 80),
+          });
+          return DECISION_ABANDONED;
+        }
         try {
+          const briefArgs = buildDelegateBriefArgs(step);
           const brief = await _sessionDelegateService!.prepareBrief({
             traceId,
             gate: GATE_CODE_CHANGES,
             tool: sd.tool,
             ...(resolvedModel ? { model: resolvedModel } : sd.model ? { model: sd.model } : {}),
-            objective: `Execute step ${stepId}`,
-            artifactRef: `trace:${traceId}/step:${stepId}`,
-            permittedPaths: [`Workspace/**`],
+            objective: briefArgs.objective,
+            ...(briefArgs.acceptanceCriteria ? { acceptanceCriteria: briefArgs.acceptanceCriteria } : {}),
+            artifactRef: `trace:${traceId}/step:${step.number}`,
+            // `paths_touched` are worktree-relative, so a portal code change reports
+            // `src/main.ts` — the previous hardcoded `Workspace/**` matched none of it
+            // and reconcile rejected every live return as a scope violation. Presets
+            // declare the tree their tasks may edit; the fallback preserves the prior
+            // behaviour for configs that have not opted in.
+            permittedPaths: sd.permitted_paths ?? [`Workspace/**`],
             // Use the REAL worktree the execution loop created (PlanExecutor's executionRoot),
             // not a recomputed path — fixes the LIVE-RT "No such cwd" spawn failure (Layer 12).
             worktreePath,
@@ -1120,12 +1140,20 @@ if (import.meta.main) {
               brief: brief.objective,
             });
             await _headlessLauncher.launch(launch, traceId, delegateProviderEnv);
-          } else {
-            logger.info(DomainEventType.SessionDelegateBriefed, traceId, {
-              mode: sd.launch_mode,
-              tool: sd.tool,
-            });
           }
+          // `briefed` records that a brief was prepared and parked — true on every
+          // launch mode. It was previously emitted only on the non-headless branch,
+          // so a headless run (the dogfood path) journalled `launched` with no
+          // `briefed`, leaving the audit chain incomplete and making any assertion
+          // on the event unsatisfiable (Phase 150 LIVE-RT, GAP-D).
+          // Awaited, like the `launched` emission above: an un-awaited write races
+          // daemon shutdown and is simply lost, which is how the old non-headless
+          // emission could go missing too.
+          await logger.info(DomainEventType.SessionDelegateBriefed, traceId, {
+            mode: sd.launch_mode,
+            tool: sd.tool,
+            gate: GATE_CODE_CHANGES,
+          });
 
           // Block until reconciled or deadline — poll every 2s
           const deadline = Date.parse(brief.deadline);
@@ -1141,9 +1169,10 @@ if (import.meta.main) {
           }
           return DECISION_ABANDONED;
         } catch (err) {
-          // Launch failed (binary not found, etc.) — expire the wait state and return abandoned
-          logger.info(DomainEventType.SessionDelegateReconciled, traceId, {
+          // Brief preparation or launch failed — journal a distinct failure event (not reconciled)
+          logger.info(DomainEventType.SessionDelegateBriefFailed, traceId, {
             gate: GATE_CODE_CHANGES,
+            step_id: String(step.number),
             error: err instanceof Error ? err.message : String(err),
           });
           try {

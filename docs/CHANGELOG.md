@@ -18,6 +18,54 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 150 (Dogfood Delegation Fidelity)
+
+### Added
+
+- Faithful delegate briefs — a delegated code-change step now receives the plan step's
+  full title, content, and acceptance criteria instead of a placeholder step number, so
+  the headless agent has the task description it needs to do the work.
+- Acceptance criteria reach the delegate even when a plan step carries no structured
+  criteria, by reading the step's own acceptance section.
+- Contentless-brief guard — an empty or placeholder objective is rejected and journalled
+  (`session.delegate.contentless_brief`) instead of silently returning a no-op delegation.
+- Brief-preparation failures are journalled as their own event, distinct from a clean
+  delegate reconcile.
+- Meta-workflow identities — `dogfood-coder` (write + delegate) and `code-reviewer`
+  (read-only) for the documented autonomous dogfooding queue.
+- `permitted_paths` in the `[session_delegate]` config block — declare which
+  worktree-relative paths a delegate may change. Presets that omit it keep the previous
+  behaviour.
+
+### Changed
+
+- The delegate end-to-end suite now requires a real, scoped change to pass; a delegation
+  that reconciles without touching any file fails it.
+- A scenario whose steps failed can no longer be reported as passing because its weighted
+  score cleared the threshold — the score can only lower a verdict, never lift one.
+- Every delegation now journals `session.delegate.briefed`, including headless runs, which
+  previously recorded only `session.delegate.launched`.
+
+### Fixed
+
+- Delegating a code change to Claude Code with a configured model now works. The resolved
+  `provider:model` identifier was passed through to the CLI, which rejects the provider
+  prefix, so the delegate never ran with the requested model.
+- Code changes to a portal are no longer rejected as out of scope. The delegate's brief
+  permitted only `Workspace/**`, which can never match a portal-relative source path, so
+  every completed delegation was discarded at reconciliation.
+- Generating a request queue from a plan no longer drops the first step when the plan
+  file begins directly with a step heading, which previously left the queue depending on
+  a step that was never created.
+- The generated request queue now correctly records and preserves `depends_on` ordering,
+  so each request can reference its predecessor rather than running in an arbitrary
+  sequence.
+- OpenCode delegates now write changes to the correct worktree directory instead of
+  the portal checkout, so code changes are properly isolated and preserved.
+- A step title containing path-separator characters (e.g. `../`) no longer silently
+  aborts delegation by reaching the path-normalisation boundary inside the brief
+  preparation step.
+
 ## Unreleased — Phase 142 (Subsystem Evaluation Packs)
 
 ### Added

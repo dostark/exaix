@@ -53,7 +53,7 @@ Deno.test("[prepare_brief] carries the optional model from input into the brief 
 
     const launch = service.resolveLaunch(brief, "headless");
     const modelIdx = launch.args.indexOf("--model");
-    assertEquals(launch.args[modelIdx + 1], "deepseek:deepseek-v4-flash");
+    assertEquals(launch.args[modelIdx + 1], "deepseek/deepseek-v4-flash");
   } finally {
     await Deno.remove(dir, { recursive: true });
   }

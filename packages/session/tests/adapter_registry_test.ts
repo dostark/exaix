@@ -123,16 +123,19 @@ Deno.test("[session_adapter] claude-code headless argv contains -p, objective an
   assertEquals(launch.args.includes("json"), true, "output format must be json");
 });
 
-Deno.test("[session_adapter] opencode headless argv contains run, --format json, objective", () => {
+Deno.test("[session_adapter] opencode headless argv contains run, --format json, --dir, objective", () => {
   const registry = createDefaultSessionAdapterRegistry();
   const brief = makeBrief({ tool: "opencode", objective: "Implement feature X" });
   const launch = registry.resolve("opencode").buildLaunch(brief, "headless", BRIEF_PATH);
   assertEquals(launch.args[0], "run", "headless opencode must start with `run` subcommand");
   assertEquals(launch.args[1], "--format", "opencode uses --format (not --output-format)");
   assertEquals(launch.args[2], "json", "must request JSON output for return synthesis");
+  assertEquals(launch.args[3], "--dir", "opencode must include --dir for worktree path resolution");
+  assertEquals(launch.args[4], brief.worktree_path, "--dir must be followed by the worktree path");
   assertEquals(launch.args.includes("Implement feature X"), true, "objective must be a discrete argv item");
   assertEquals(launch.args.includes("--brief"), false, "opencode does not support --brief flag");
   assertEquals(launch.args.includes("--max-total-tokens"), false, "opencode does not support --max-total-tokens");
+  assertEquals(launch.cwd, brief.worktree_path, "cwd must match the worktree path");
 });
 
 Deno.test("[session_adapter] cursor + vscode reject headless launch", () => {
@@ -188,6 +191,27 @@ Deno.test("[session_adapter] opencode headless emits --model <model> when the br
   assertEquals(launch.args[launch.args.length - 1], "Implement feature X", "objective stays the trailing positional");
 });
 
+// Phase 150 LIVE-RT: prepareBrief requires provider:model (colon) form, and
+// ModelResolver produces it. OpenCode's `--model` flag uses provider/model (slash).
+// The adapter must convert the colon to a slash for opencode, analogously to how
+// claude-code's adapter strips the prefix entirely.
+Deno.test("[session_adapter] opencode headless converts provider:model to provider/model for --model", () => {
+  const registry = createDefaultSessionAdapterRegistry();
+  const brief = makeBrief({
+    tool: "opencode",
+    model: "opencode:deepseek-v4-flash-free",
+    objective: "Implement feature X",
+  });
+  const launch = registry.resolve("opencode").buildLaunch(brief, "headless", BRIEF_PATH);
+  const modelIdx = launch.args.indexOf("--model");
+  assertEquals(modelIdx >= 0, true, "opencode headless must include --model");
+  assertEquals(
+    launch.args[modelIdx + 1],
+    "opencode/deepseek-v4-flash-free",
+    "opencode --model uses provider/model (slash), not provider:model (colon)",
+  );
+});
+
 Deno.test("[session_adapter] claude-code headless emits --model <model> when the brief carries a model", () => {
   const registry = createDefaultSessionAdapterRegistry();
   const brief = makeBrief({ tool: "claude-code", model: "claude-sonnet-4-6", objective: "Refactor auth" });
@@ -216,4 +240,33 @@ Deno.test("[session_adapter] synthesizeReturn builds a schema-valid, gate-legal 
   assertEquals(parsed.data.resume_token, brief.resume_token);
   assertEquals(parsed.data.decision, "changes_made");
   assertEquals(parsed.data.paths_touched, ["src/feature.ts"]);
+});
+
+// Phase 150 LIVE-RT: the daemon resolves models to `provider:model`
+// (apps/daemon/main.ts resolveRequestModel) and prepareBrief REQUIRES that colon
+// form. The claude CLI rejects a provider-prefixed id ("It may not exist or you
+// may not have access to it"), so the adapter must strip the prefix when building
+// --model. Verified against claude CLI 2.1.217.
+Deno.test("[session_adapter] claude-code headless strips the provider prefix from --model", () => {
+  const registry = createDefaultSessionAdapterRegistry();
+  const brief = makeBrief({
+    tool: "claude-code",
+    model: "anthropic:claude-sonnet-5",
+    objective: "Refactor auth",
+  });
+  const launch = registry.resolve("claude-code").buildLaunch(brief, "headless", BRIEF_PATH);
+  const modelIdx = launch.args.indexOf("--model");
+  assertEquals(modelIdx >= 0, true, "claude-code headless must include --model");
+  assertEquals(
+    launch.args[modelIdx + 1],
+    "claude-sonnet-5",
+    "the claude CLI rejects a provider-prefixed model id — the prefix must be stripped",
+  );
+});
+
+Deno.test("[session_adapter] claude-code headless leaves an unprefixed model untouched", () => {
+  const registry = createDefaultSessionAdapterRegistry();
+  const brief = makeBrief({ tool: "claude-code", model: "claude-sonnet-5", objective: "x" });
+  const launch = registry.resolve("claude-code").buildLaunch(brief, "headless", BRIEF_PATH);
+  assertEquals(launch.args[launch.args.indexOf("--model") + 1], "claude-sonnet-5");
 });

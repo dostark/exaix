@@ -1,0 +1,78 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+log_level = "info"
+allow_net = ["generativelanguage.googleapis.com", "api.anthropic.com", "localhost:11434"]
+
+[paths]
+workspace = "Workspace"
+portals = "Portals"
+memory = "Memory"
+
+# Analysis/planning model. Deliberately NOT Anthropic: this preset is for a live
+# delegate run with ANTHROPIC_API_KEY unset, so the headless `claude` CLI child
+# authenticates with the subscription OAuth credential rather than API billing.
+# The daemon's own planning LLM therefore needs a provider that does not depend on
+# that key — Google here (GOOGLE_API_KEY).
+[ai]
+provider = "google"
+model = "gemini-flash-latest"
+
+# The daemon resolves its analysis provider via `agents.default_model` → `[models.<name>]`,
+# NOT the `[ai]` block above (which is only a fallback). Pin the named models explicitly.
+[models.default]
+provider = "google"
+model = "gemini-flash-latest"
+timeout_ms = 60000
+
+[models.fast]
+provider = "google"
+model = "gemini-flash-latest"
+timeout_ms = 60000
+
+[agents]
+default_model = "default"
+
+[rate_limiting]
+enabled = true
+max_calls_per_minute = 300
+
+[[portals]]
+alias = "exaix-self"
+target_path = "__WORKTREE_PATH__"
+execution_strategy = "worktree"
+default_branch = "main"
+
+[portal_knowledge]
+auto_analyze_on_mount = true
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = true
+
+# Delegate the code_changes gate to headless Claude Code on Sonnet 5.
+#
+# Model id: `prepareBrief` requires the `provider:model` form (it rejects a bare id),
+# but the `claude` CLI rejects a provider-prefixed id — passing `anthropic:claude-sonnet-5`
+# returns "It may not exist or you may not have access to it". The claude-code adapter
+# strips the prefix when building `--model`, so this value satisfies both.
+# Verified against claude CLI 2.1.217: `claude -p ... --model claude-sonnet-5` succeeds.
+#
+# No [session_delegate.provider] block: sanitizeChildEnv strips provider keys from the
+# child, so the CLI falls back to its own OAuth credential. Run with ANTHROPIC_API_KEY
+# unset so the delegate bills the subscription rather than the API.
+[session_delegate]
+enabled = true
+tool = "claude-code"
+model = "anthropic:claude-sonnet-5"
+gates = ["code_changes"]
+launch_mode = "headless"
+# Worktree-relative globs the delegate may touch. `paths_touched` are relative to the
+# portal worktree, so a source edit reports `src/main.ts`. Scoped to the source trees
+# deliberately: a delegate that writes `.env`, CI config, or a dotfile still trips the
+# reconcile scope check (see session_delegate_scope_violation_live.yaml).
+permitted_paths = ["src/**", "tests/**"]
+# Phase 128 R3: derive --permission-mode + scoped --allowedTools flags
+# from SessionBrief.permitted_paths.
+harden_permissions = true

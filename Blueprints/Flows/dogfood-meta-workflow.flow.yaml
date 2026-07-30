@@ -1,0 +1,44 @@
+id: dogfood-meta-workflow
+name: Dogfood Meta-Workflow Pipeline
+description: Phase-plan → pre-gap → next-steps (N phases) → post-gap → clean-ci pipeline. Each step maps to a §7.5 identity.
+version: 1.0.0
+defaultSkills:
+  - step-execution
+  - exaix-conventions
+steps:
+  - id: pre-gap
+    name: Pre-Gap Analysis
+    type: agent
+    identity: code-analyst
+    dependsOn: []
+    input:
+      source: request
+      transform: passthrough
+  - id: next-steps
+    name: Implement Steps (TDD)
+    type: agent
+    identity: dogfood-coder
+    dependsOn:
+      - pre-gap
+    input:
+      source: step
+      stepId: pre-gap
+      transform: passthrough
+  - id: post-gap
+    name: Post-Gap Analysis
+    type: agent
+    identity: code-reviewer
+    dependsOn:
+      - next-steps
+    input:
+      source: step
+      stepId: next-steps
+      transform: passthrough
+output:
+  from: post-gap
+  format: markdown
+settings:
+  maxParallelism: 1
+  failFast: true
+  timeout: 600000
+  includeRequestCriteria: true
