@@ -68,8 +68,6 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
       if (!this.supportsHeadless) {
         throw new Error(`Session tool '${this.tool}' does not support headless launch`);
       }
-      // Optional model selector (`--model <model>`); flags precede the trailing objective.
-      const modelFlag = brief.model ? [SESSION_FLAG_MODEL, brief.model] : [];
       if (this.tool === "claude-code") {
         // The daemon resolves models to `provider:model` and prepareBrief requires that
         // colon form, but the `claude` CLI rejects a provider-prefixed id. Strip the
@@ -91,13 +89,16 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
         };
       }
       // opencode headless — opencode run supports --format json, not --output-format
+      // Phase 150 LIVE-RT: prepareBrief requires provider:model (colon) but
+      // opencode --model uses provider/model (slash). Convert here.
+      const opencodeModelFlag = brief.model ? [SESSION_FLAG_MODEL, brief.model.replace(":", "/")] : [];
       return {
         command: this.bin,
         args: [
           SESSION_SUBCMD_RUN,
           SESSION_FLAG_FORMAT,
           SESSION_OUTPUT_FORMAT_JSON,
-          ...modelFlag,
+          ...opencodeModelFlag,
           brief.objective,
         ],
         cwd: brief.worktree_path ?? dirname(briefPath),

@@ -188,6 +188,27 @@ Deno.test("[session_adapter] opencode headless emits --model <model> when the br
   assertEquals(launch.args[launch.args.length - 1], "Implement feature X", "objective stays the trailing positional");
 });
 
+// Phase 150 LIVE-RT: prepareBrief requires provider:model (colon) form, and
+// ModelResolver produces it. OpenCode's `--model` flag uses provider/model (slash).
+// The adapter must convert the colon to a slash for opencode, analogously to how
+// claude-code's adapter strips the prefix entirely.
+Deno.test("[session_adapter] opencode headless converts provider:model to provider/model for --model", () => {
+  const registry = createDefaultSessionAdapterRegistry();
+  const brief = makeBrief({
+    tool: "opencode",
+    model: "opencode:deepseek-v4-flash-free",
+    objective: "Implement feature X",
+  });
+  const launch = registry.resolve("opencode").buildLaunch(brief, "headless", BRIEF_PATH);
+  const modelIdx = launch.args.indexOf("--model");
+  assertEquals(modelIdx >= 0, true, "opencode headless must include --model");
+  assertEquals(
+    launch.args[modelIdx + 1],
+    "opencode/deepseek-v4-flash-free",
+    "opencode --model uses provider/model (slash), not provider:model (colon)",
+  );
+});
+
 Deno.test("[session_adapter] claude-code headless emits --model <model> when the brief carries a model", () => {
   const registry = createDefaultSessionAdapterRegistry();
   const brief = makeBrief({ tool: "claude-code", model: "claude-sonnet-4-6", objective: "Refactor auth" });
