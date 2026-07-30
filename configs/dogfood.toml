@@ -1,7 +1,7 @@
 [system]
 root = "__DOGFOOD_ROOT__"
 log_level = "info"
-allow_net = ["api.anthropic.com", "api.openai.com", "localhost:11434"]
+allow_net = ["api.anthropic.com", "api.openai.com", "localhost:11434", "generativelanguage.googleapis.com"]
 
 [paths]
 workspace = "Workspace"
