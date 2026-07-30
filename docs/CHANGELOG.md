@@ -22,18 +22,41 @@
 
 ### Added
 
-- Faithful delegate briefs — the `onCodeChangesDelegate` callback now passes the
-  step's full title, content, and success criteria (not a placeholder step number).
-- Contentless-brief guard — empty or `"Execute step N"` placeholder objectives are
-  rejected with a `session.delegate.contentless_brief` journal event.
-- Outcome-asserting delegate scenarios — `delegate_outcome_scenario_lint_test.ts`
-  ensures provider_live scenarios carry `payload_absent` filters or non-reconciled
-  event assertions.
-- Meta-workflow identities — `Blueprints/Identities/dogfood-coder.md` (write +
-  delegate) and `code-reviewer.md` (read-only) for the documented autonomous queue.
-- Queue pipeline CI test — `meta_workflow_queue_pipeline_test.ts` validates that
-  `plan_to_requests.ts` generates resolvable identities and non-placeholder content
-  without requiring tokens or a live delegate binary.
+- Faithful delegate briefs — a delegated code-change step now receives the plan step's
+  full title, content, and acceptance criteria instead of a placeholder step number, so
+  the headless agent has the task description it needs to do the work.
+- Acceptance criteria reach the delegate even when a plan step carries no structured
+  criteria, by reading the step's own acceptance section.
+- Contentless-brief guard — an empty or placeholder objective is rejected and journalled
+  (`session.delegate.contentless_brief`) instead of silently returning a no-op delegation.
+- Brief-preparation failures are journalled as their own event, distinct from a clean
+  delegate reconcile.
+- Meta-workflow identities — `dogfood-coder` (write + delegate) and `code-reviewer`
+  (read-only) for the documented autonomous dogfooding queue.
+- `permitted_paths` in the `[session_delegate]` config block — declare which
+  worktree-relative paths a delegate may change. Presets that omit it keep the previous
+  behaviour.
+
+### Changed
+
+- The delegate end-to-end suite now requires a real, scoped change to pass; a delegation
+  that reconciles without touching any file fails it.
+- A scenario whose steps failed can no longer be reported as passing because its weighted
+  score cleared the threshold — the score can only lower a verdict, never lift one.
+- Every delegation now journals `session.delegate.briefed`, including headless runs, which
+  previously recorded only `session.delegate.launched`.
+
+### Fixed
+
+- Delegating a code change to Claude Code with a configured model now works. The resolved
+  `provider:model` identifier was passed through to the CLI, which rejects the provider
+  prefix, so the delegate never ran with the requested model.
+- Code changes to a portal are no longer rejected as out of scope. The delegate's brief
+  permitted only `Workspace/**`, which can never match a portal-relative source path, so
+  every completed delegation was discarded at reconciliation.
+- Generating a request queue from a plan no longer drops the first step when the plan
+  file begins directly with a step heading, which previously left the queue depending on
+  a step that was never created.
 
 ## Unreleased — Phase 142 (Subsystem Evaluation Packs)
 
