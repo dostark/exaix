@@ -79,6 +79,12 @@ System constraints
     Always use PathResolver to validate paths before access.
   - MCP enforcement: in Hybrid mode, agents read files directly but MUST use MCP
     tools for writes (auditability).
+  - Git handler rule: MCP git tool handlers MUST obtain IGitService through
+    `this.resolveGitService(portalPath)` (a ToolHandler protected helper), NEVER
+    through `new Deno.Command("git", …)`. The service path inherits validateArgs
+    (destructive-operation/protected-branch guards), command timeout, index.lock
+    retry, and trace-attributed journalling. The concrete GitService class stays
+    in the composition root — handlers depend only on the IGitService interface.
   - Request quality gate: runs on every request before routing. Modes: heuristic,
     llm, hybrid. Outcomes: proceed, auto-enrich, needs-clarification, reject.
     Key interfaces: IRequestQualityGateService, IClarificationSession.

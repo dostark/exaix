@@ -62,6 +62,40 @@ export async function setupToolsPortal(
   } catch { /* first run — nothing to clear */ }
 
   await copy(resolve(fixturePortalPath), portalPath, { overwrite: true });
+
+  // Phase 156 Step 5: git-init the tools portal so git_* MCP tools have a real
+  // repository to operate in. Opt-in via MCP_GIT_INIT=1 env var so non-git
+  // scenarios are unaffected.
+  if (Deno.env.get("MCP_GIT_INIT") === "1") {
+    const gitCmd = new Deno.Command("git", {
+      args: ["init", "-b", "main"],
+      cwd: portalPath,
+      stdout: "piped",
+      stderr: "piped",
+    });
+    await gitCmd.output();
+    const configCmd1 = new Deno.Command("git", {
+      args: ["config", "user.email", "test@tools.eval"],
+      cwd: portalPath,
+    });
+    await configCmd1.output();
+    const configCmd2 = new Deno.Command("git", {
+      args: ["config", "user.name", "Tools Evaluator"],
+      cwd: portalPath,
+    });
+    await configCmd2.output();
+    const addCmd = new Deno.Command("git", {
+      args: ["add", "-A"],
+      cwd: portalPath,
+    });
+    await addCmd.output();
+    const commitCmd = new Deno.Command("git", {
+      args: ["commit", "-m", "initial commit for tools evaluation"],
+      cwd: portalPath,
+    });
+    await commitCmd.output();
+  }
+
   await Deno.writeTextFile(configPath, buildToolsConfigToml(root, portalPath));
 
   return { portalPath, configPath };
