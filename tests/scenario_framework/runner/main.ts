@@ -19,12 +19,12 @@ import { selectScenariosForExecution } from "./modes.ts";
 import { writeEvalHistoryEntries } from "./history_writer_dispatch.ts";
 import {
   accumulateRunVerdict,
-  checkScoreThreshold,
   computeMultiTrialMetrics,
   DEFAULT_EVAL_SCORE_THRESHOLD,
   DEFAULT_EVAL_TRIALS,
   type IRunVerdict,
   type IScenarioVerdict,
+  resolveScenarioVerdict,
   RunVerdict,
 } from "./scoring.ts";
 
@@ -216,7 +216,7 @@ await new Command()
       if (trials > 1) {
         const metrics = computeMultiTrialMetrics(trialScores, scoreThreshold ?? 0.5);
         suiteScore = metrics.mean;
-        isPassed = scoreThreshold !== undefined ? checkScoreThreshold(suiteScore, scoreThreshold) : false;
+        isPassed = resolveScenarioVerdict(manifests.get(entry.id)?.outcome, suiteScore, scoreThreshold);
         console.log(
           `  Aggregate: mean=${metrics.mean.toFixed(3)} pass_at_1=${metrics.pass_at_1.toFixed(3)} pass_pow_k=${
             metrics.pass_pow_k.toFixed(3)
@@ -241,9 +241,7 @@ await new Command()
       } else {
         const manifest = manifests.get(entry.id);
         suiteScore = manifest?.suite_score ?? 1.0;
-        isPassed = scoreThreshold !== undefined
-          ? checkScoreThreshold(suiteScore, scoreThreshold)
-          : (manifest?.outcome === "success");
+        isPassed = resolveScenarioVerdict(manifest?.outcome, suiteScore, scoreThreshold);
       }
 
       scenarioVerdicts.push({
