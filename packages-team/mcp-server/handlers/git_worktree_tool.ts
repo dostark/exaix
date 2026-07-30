@@ -120,22 +120,14 @@ export class GitWorktreeTool extends ToolHandler {
         worktreeArgs.push(resolvedPath);
       }
 
-      const cmd = new Deno.Command("git", {
-        args: worktreeArgs,
-        cwd: portalPath,
-        stdout: "piped",
-        stderr: "piped",
-      });
-
-      const { code, stdout, stderr } = await cmd.output();
-
-      if (code !== 0) {
-        const error = new TextDecoder().decode(stderr);
-        throw new Error(`Failed to execute git worktree ${action}: ${error}`);
+      const gitService = this.resolveGitService(portalPath);
+      const validation = gitService.validateArgs(worktreeArgs);
+      if (!validation.valid) {
+        throw new Error(`Invalid worktree arguments: ${validation.reason}`);
       }
 
-      const output = new TextDecoder().decode(stdout).trim();
-      const text = output || `git worktree ${action} completed successfully`;
+      const { output: rawOutput } = await gitService.runGitCommand(worktreeArgs);
+      const text = rawOutput.trim() || `git worktree ${action} completed successfully`;
 
       return this.formatSuccess(
         "git_worktree",

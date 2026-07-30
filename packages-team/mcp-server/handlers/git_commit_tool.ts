@@ -44,7 +44,7 @@ export class GitCommitTool extends ToolHandler {
       // Check if git repository exists
       await this.validateGitRepository(portalPath, portal);
 
-      // Stage files
+      // Stage files — route through IGitService with validateArgs
       let stageArgs: string[];
       if (files && files.length > 0) {
         stageArgs = ["add", ...files];
@@ -52,14 +52,12 @@ export class GitCommitTool extends ToolHandler {
         stageArgs = ["add", "."];
       }
 
-      const stageCmd = new Deno.Command("git", {
-        args: stageArgs,
-        cwd: portalPath,
-        stdout: "piped",
-        stderr: "piped",
-      });
-
-      await stageCmd.output();
+      const gitService = this.resolveGitService(portalPath);
+      const stageValidation = gitService.validateArgs(stageArgs);
+      if (!stageValidation.valid) {
+        throw new Error(`Invalid stage arguments: ${stageValidation.reason}`);
+      }
+      await gitService.runGitCommand(stageArgs);
 
       // Commit changes
       const commitArgs = [GIT_CMD_COMMIT];
@@ -71,34 +69,14 @@ export class GitCommitTool extends ToolHandler {
       }
       commitArgs.push("-m", message);
 
-      const commitCmd = new Deno.Command("git", {
-        args: commitArgs,
-        cwd: portalPath,
-        stdout: "piped",
-        stderr: "piped",
-      });
-
-      const { code, stderr } = await commitCmd.output();
-
-      if (code !== 0) {
-        const error = new TextDecoder().decode(stderr);
-        throw new Error(`Failed to commit: ${error}`);
+      const commitValidation = gitService.validateArgs(commitArgs);
+      if (!commitValidation.valid) {
+        throw new Error(`Invalid commit arguments: ${commitValidation.reason}`);
       }
+      await gitService.runGitCommand(commitArgs);
 
-      const hashCmd = new Deno.Command("git", {
-        args: ["rev-parse", "HEAD"],
-        cwd: portalPath,
-        stdout: "piped",
-        stderr: "piped",
-      });
-
-      const { code: hashCode, stdout: hashStdout, stderr: hashStderr } = await hashCmd.output();
-      if (hashCode !== 0) {
-        const error = new TextDecoder().decode(hashStderr);
-        throw new Error(`Failed to resolve commit hash: ${error}`);
-      }
-
-      const commitHash = new TextDecoder().decode(hashStdout).trim();
+      const { output: hashRaw } = await gitService.runGitCommand(["rev-parse", "HEAD"]);
+      const commitHash = hashRaw.trim();
 
       return this.formatSuccess(
         "git_commit",

@@ -92,22 +92,10 @@ export class GitLogTool extends ToolHandler {
         logArgs.push("--", path);
       }
 
-      const cmd = new Deno.Command("git", {
-        args: logArgs,
-        cwd: portalPath,
-        stdout: "piped",
-        stderr: "piped",
-      });
+      const gitService = this.resolveGitService(portalPath);
+      const { output: rawOutput } = await gitService.runGitCommand(logArgs);
 
-      const { code, stdout, stderr } = await cmd.output();
-
-      if (code !== 0) {
-        const error = new TextDecoder().decode(stderr);
-        throw new Error(`Failed to get log: ${error}`);
-      }
-
-      const output = new TextDecoder().decode(stdout).trim();
-      const logText = output || "No commits found for the specified filter";
+      const logText = rawOutput.trim() || "No commits found for the specified filter";
 
       return this.formatSuccess(
         "git_log",

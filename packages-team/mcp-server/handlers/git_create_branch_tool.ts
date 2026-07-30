@@ -42,35 +42,23 @@ export class GitCreateBranchTool extends ToolHandler {
       // Check if git repository exists
       await this.validateGitRepository(portalPath, portal);
 
-      // Create branch using git command
+      // Route through IGitService — validateArgs guards against dangerous options
+      const gitService = this.resolveGitService(portalPath);
       const createArgs = [GIT_CMD_CHECKOUT, force ? "-B" : "-b", branch];
-      const cmd = new Deno.Command("git", {
-        args: createArgs,
-        cwd: portalPath,
-        stdout: "piped",
-        stderr: "piped",
-      });
-
-      const { code, stderr } = await cmd.output();
-
-      if (code !== 0) {
-        const error = new TextDecoder().decode(stderr);
-        throw new Error(`Failed to create branch: ${error}`);
+      const validation = gitService.validateArgs(createArgs);
+      if (!validation.valid) {
+        throw new Error(`Invalid branch arguments: ${validation.reason}`);
       }
 
-      if (track) {
-        const trackCmd = new Deno.Command("git", {
-          args: ["branch", "--set-upstream-to", track, branch],
-          cwd: portalPath,
-          stdout: "piped",
-          stderr: "piped",
-        });
+      await gitService.runGitCommand(createArgs);
 
-        const { code: trackCode, stderr: trackStderr } = await trackCmd.output();
-        if (trackCode !== 0) {
-          const error = new TextDecoder().decode(trackStderr);
-          throw new Error(`Failed to set upstream tracking: ${error}`);
+      if (track) {
+        const trackArgs = ["branch", "--set-upstream-to", track, branch];
+        const trackValidation = gitService.validateArgs(trackArgs);
+        if (!trackValidation.valid) {
+          throw new Error(`Invalid track arguments: ${trackValidation.reason}`);
         }
+        await gitService.runGitCommand(trackArgs);
       }
 
       return this.formatSuccess(
