@@ -123,16 +123,19 @@ Deno.test("[session_adapter] claude-code headless argv contains -p, objective an
   assertEquals(launch.args.includes("json"), true, "output format must be json");
 });
 
-Deno.test("[session_adapter] opencode headless argv contains run, --format json, objective", () => {
+Deno.test("[session_adapter] opencode headless argv contains run, --format json, --dir, objective", () => {
   const registry = createDefaultSessionAdapterRegistry();
   const brief = makeBrief({ tool: "opencode", objective: "Implement feature X" });
   const launch = registry.resolve("opencode").buildLaunch(brief, "headless", BRIEF_PATH);
   assertEquals(launch.args[0], "run", "headless opencode must start with `run` subcommand");
   assertEquals(launch.args[1], "--format", "opencode uses --format (not --output-format)");
   assertEquals(launch.args[2], "json", "must request JSON output for return synthesis");
+  assertEquals(launch.args[3], "--dir", "opencode must include --dir for worktree path resolution");
+  assertEquals(launch.args[4], brief.worktree_path, "--dir must be followed by the worktree path");
   assertEquals(launch.args.includes("Implement feature X"), true, "objective must be a discrete argv item");
   assertEquals(launch.args.includes("--brief"), false, "opencode does not support --brief flag");
   assertEquals(launch.args.includes("--max-total-tokens"), false, "opencode does not support --max-total-tokens");
+  assertEquals(launch.cwd, brief.worktree_path, "cwd must match the worktree path");
 });
 
 Deno.test("[session_adapter] cursor + vscode reject headless launch", () => {
