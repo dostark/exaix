@@ -1074,7 +1074,12 @@ if (import.meta.main) {
             objective: briefArgs.objective,
             ...(briefArgs.acceptanceCriteria ? { acceptanceCriteria: briefArgs.acceptanceCriteria } : {}),
             artifactRef: `trace:${traceId}/step:${step.number}`,
-            permittedPaths: [`Workspace/**`],
+            // `paths_touched` are worktree-relative, so a portal code change reports
+            // `src/main.ts` — the previous hardcoded `Workspace/**` matched none of it
+            // and reconcile rejected every live return as a scope violation. Presets
+            // declare the tree their tasks may edit; the fallback preserves the prior
+            // behaviour for configs that have not opted in.
+            permittedPaths: sd.permitted_paths ?? [`Workspace/**`],
             // Use the REAL worktree the execution loop created (PlanExecutor's executionRoot),
             // not a recomputed path — fixes the LIVE-RT "No such cwd" spawn failure (Layer 12).
             worktreePath,
@@ -1135,12 +1140,20 @@ if (import.meta.main) {
               brief: brief.objective,
             });
             await _headlessLauncher.launch(launch, traceId, delegateProviderEnv);
-          } else {
-            logger.info(DomainEventType.SessionDelegateBriefed, traceId, {
-              mode: sd.launch_mode,
-              tool: sd.tool,
-            });
           }
+          // `briefed` records that a brief was prepared and parked — true on every
+          // launch mode. It was previously emitted only on the non-headless branch,
+          // so a headless run (the dogfood path) journalled `launched` with no
+          // `briefed`, leaving the audit chain incomplete and making any assertion
+          // on the event unsatisfiable (Phase 150 LIVE-RT, GAP-D).
+          // Awaited, like the `launched` emission above: an un-awaited write races
+          // daemon shutdown and is simply lost, which is how the old non-headless
+          // emission could go missing too.
+          await logger.info(DomainEventType.SessionDelegateBriefed, traceId, {
+            mode: sd.launch_mode,
+            tool: sd.tool,
+            gate: GATE_CODE_CHANGES,
+          });
 
           // Block until reconciled or deadline — poll every 2s
           const deadline = Date.parse(brief.deadline);

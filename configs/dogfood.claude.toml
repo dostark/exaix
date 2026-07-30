@@ -71,12 +71,25 @@ enabled = true
 [session_delegate]
 enabled = true
 tool = "claude-code"
-# Known-valid current model id (the stale claude-sonnet-5 was rejected by the headless
-# `claude` CLI as non-existent, so the delegate spawned but made no edits). Matches the analysis
-# model above, which this environment confirmed works for live runs.
-model = "claude-haiku-4-5-20251001"
+# Model id must be the `provider:model` form — prepareBrief rejects a bare id, and the
+# claude-code adapter strips the prefix before passing it to `--model`.
+#
+# CORRECTION (Phase 150 LIVE-RT): an earlier comment here claimed "the stale
+# claude-sonnet-5 was rejected by the headless `claude` CLI as non-existent". That
+# diagnosis was wrong. Probing claude CLI 2.1.217 directly:
+#   --model claude-sonnet-5            -> works
+#   --model anthropic:claude-sonnet-5  -> "It may not exist or you may not have access to it"
+# The *provider prefix* was rejected, never the model name. The bare id pinned in
+# response then failed prepareBrief's colon check, so this preset could not delegate
+# at all unless the request carried its own model intent.
+model = "anthropic:claude-haiku-4-5-20251001"
 gates = ["code_changes"]
 launch_mode = "headless"
+# Worktree-relative globs the delegate may touch. `paths_touched` are relative to the
+# portal worktree, so a source edit reports `src/main.ts` — the `Workspace/**` fallback
+# matches none of it and reconcile rejects every return as a scope violation. Scoped to
+# source trees deliberately: a write to `.env` or CI config still trips the check.
+permitted_paths = ["src/**", "tests/**"]
 # Phase 128 R3: derive --permission-mode + scoped --allowedTools flags
 # from SessionBrief.permitted_paths.
 harden_permissions = true

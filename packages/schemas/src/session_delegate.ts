@@ -197,6 +197,16 @@ export const SessionDelegateConfigSchema = z.object({
   token_budget: SessionTokenBudgetSchema.optional(),
   /** Absolute paths to additional binaries allowed for headless launch (Phase 111). */
   bin_overrides: z.array(z.string()).optional(),
+  /**
+   * Worktree-relative globs the delegate may touch at the code_changes gate
+   * (Phase 150 LIVE-RT). `paths_touched` are worktree-relative, so a portal code
+   * change reports `src/main.ts` — the previous hardcoded `Workspace/**` could
+   * never match it and rejected every live return as a scope violation. Declaring
+   * the scope per config preset keeps Risk R1's "acceptance names the scope"
+   * property: a preset opts into exactly the tree its tasks may edit, and paths
+   * outside it (`.env`, CI config) still fail the check.
+   */
+  permitted_paths: z.array(z.string().min(1)).min(1).optional(),
   /** Declarative delegate provider block: routes the tool through a specific API gateway. */
   provider: SessionDelegateProviderSchema.optional(),
   /**

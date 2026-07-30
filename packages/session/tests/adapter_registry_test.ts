@@ -217,3 +217,32 @@ Deno.test("[session_adapter] synthesizeReturn builds a schema-valid, gate-legal 
   assertEquals(parsed.data.decision, "changes_made");
   assertEquals(parsed.data.paths_touched, ["src/feature.ts"]);
 });
+
+// Phase 150 LIVE-RT: the daemon resolves models to `provider:model`
+// (apps/daemon/main.ts resolveRequestModel) and prepareBrief REQUIRES that colon
+// form. The claude CLI rejects a provider-prefixed id ("It may not exist or you
+// may not have access to it"), so the adapter must strip the prefix when building
+// --model. Verified against claude CLI 2.1.217.
+Deno.test("[session_adapter] claude-code headless strips the provider prefix from --model", () => {
+  const registry = createDefaultSessionAdapterRegistry();
+  const brief = makeBrief({
+    tool: "claude-code",
+    model: "anthropic:claude-sonnet-5",
+    objective: "Refactor auth",
+  });
+  const launch = registry.resolve("claude-code").buildLaunch(brief, "headless", BRIEF_PATH);
+  const modelIdx = launch.args.indexOf("--model");
+  assertEquals(modelIdx >= 0, true, "claude-code headless must include --model");
+  assertEquals(
+    launch.args[modelIdx + 1],
+    "claude-sonnet-5",
+    "the claude CLI rejects a provider-prefixed model id — the prefix must be stripped",
+  );
+});
+
+Deno.test("[session_adapter] claude-code headless leaves an unprefixed model untouched", () => {
+  const registry = createDefaultSessionAdapterRegistry();
+  const brief = makeBrief({ tool: "claude-code", model: "claude-sonnet-5", objective: "x" });
+  const launch = registry.resolve("claude-code").buildLaunch(brief, "headless", BRIEF_PATH);
+  assertEquals(launch.args[launch.args.indexOf("--model") + 1], "claude-sonnet-5");
+});

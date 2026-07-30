@@ -45,9 +45,15 @@ enabled = true
 [session_delegate]
 enabled = true
 tool = "claude-code"
-model = "claude-sonnet-5"
+# `provider:model` form: prepareBrief rejects a bare id, and the claude-code adapter
+# strips the prefix before `--model` (Phase 150 LIVE-RT). The bare id here would have
+# thrown in prepareBrief and abandoned the step.
+model = "anthropic:claude-sonnet-5"
 gates = ["code_changes"]
 launch_mode = "headless"
+# `paths_touched` are worktree-relative, so the `Workspace/**` fallback scope-violates
+# every portal source edit. Scoped to source trees; `.env` and CI config still fail.
+permitted_paths = ["src/**", "tests/**"]
 harden_permissions = true
 
 [session_delegate.provider]

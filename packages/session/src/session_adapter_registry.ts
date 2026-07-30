@@ -71,6 +71,12 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
       // Optional model selector (`--model <model>`); flags precede the trailing objective.
       const modelFlag = brief.model ? [SESSION_FLAG_MODEL, brief.model] : [];
       if (this.tool === "claude-code") {
+        // The daemon resolves models to `provider:model` and prepareBrief requires that
+        // colon form, but the `claude` CLI rejects a provider-prefixed id. Strip the
+        // prefix here — claude-code only; opencode's own prefix handling is untouched.
+        const claudeModelFlag = brief.model
+          ? [SESSION_FLAG_MODEL, brief.model.slice(brief.model.indexOf(":") + 1)]
+          : [];
         return {
           command: this.bin,
           args: [
@@ -78,7 +84,7 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
             brief.objective,
             SESSION_FLAG_OUTPUT_FORMAT,
             SESSION_OUTPUT_FORMAT_JSON,
-            ...modelFlag,
+            ...claudeModelFlag,
           ],
           cwd: brief.worktree_path ?? dirname(briefPath),
           env: budgetEnv(brief),
