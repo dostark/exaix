@@ -280,11 +280,11 @@
     "cov_profile",
     "exaix",
     "dist",
-    "tests/scenario_framework/fixtures/portals"
+    "tests/scenario_framework/fixtures/"
   ],
   "lint": {
     "exclude": [
-      "tests/scenario_framework/fixtures/portals"
+      "tests/scenario_framework/fixtures/"
     ]
   },
   "fmt": {
@@ -311,7 +311,7 @@
       "apps/"
     ],
     "exclude": [
-      "tests/scenario_framework/fixtures/portals"
+      "tests/scenario_framework/fixtures/"
     ]
   },
   "compilerOptions": {
