@@ -13,6 +13,7 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
+import { GitService } from "@exaix/git";
 import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 
 import { McpTransportType } from "@exaix/mcp";
@@ -108,6 +109,11 @@ async function initTestEnv(options: IPortalTestOptions & { prefix?: string }) {
   if (initGit) {
     const resolvedPortalPath = await Deno.realPath(portalPath);
     await setupGitRepo(resolvedPortalPath);
+    // When the test creates a real git repo, enable real GitService so
+    // handlers route through actual git commands (not the stub). This
+    // makes format-variant tests (status --short, commit --signoff,
+    // worktree add/list, etc.) exercise real git behaviour.
+    Deno.env.set("EXA_MCP_REAL_GIT", "1");
   }
 
   if (createFiles) {
@@ -152,24 +158,64 @@ function createTestContext(
 ): IApplicationContext {
   const stubConfig = createStubConfig(config);
   const stubGit = createStubGit();
-  // Wrap stub with a per-call factory so handlers can resolve git through the
-  // context field the plan adds. The stub cannot emulate full git behaviour for
-  // every format variant — but it provides enough for basic status/log tests.
+
+  // When EXA_MCP_REAL_GIT=1 (set by initGit tests), use real GitService
+  // instances so format-variant tests exercise real git behaviour.
+  const useRealGit = Deno.env.get("EXA_MCP_REAL_GIT") === "1";
   const stubFactory = {
-    createGitService: (_repoPath: string, _traceId: string): IGitService => ({
-      ...stubGit,
-      runGitCommand: (args: string[]): Promise<{ output: string; exitCode: number }> => {
-        if (args.includes("status")) {
-          if (args.includes("--short")) return Promise.resolve({ output: " M new-file.txt", exitCode: 0 });
-          // Porcelain format: empty output = clean working tree
-          if (args.includes("--porcelain")) return Promise.resolve({ output: "", exitCode: 0 });
-          // Long format (default when no format flag)
-          return Promise.resolve({ output: "On branch main\nnothing to commit, working tree clean", exitCode: 0 });
-        }
-        if (args.includes("log")) return Promise.resolve({ output: "abc123 feat: add file", exitCode: 0 });
-        return Promise.resolve({ output: "", exitCode: 0 });
-      },
-    }),
+    createGitService: (_repoPath: string, _traceId: string): IGitService => {
+      if (useRealGit) {
+        return new GitService({ config, repoPath: _repoPath });
+      }
+      return {
+        ...stubGit,
+        runGitCommand: (args: string[]): Promise<{ output: string; exitCode: number }> => {
+          if (args.includes("status")) {
+            if (args.includes("--short")) return Promise.resolve({ output: " M new-file.txt", exitCode: 0 });
+            if (args.includes("--porcelain")) return Promise.resolve({ output: "", exitCode: 0 });
+            return Promise.resolve({ output: "On branch main\nnothing to commit, working tree clean", exitCode: 0 });
+          }
+          if (args.includes("log")) {
+            return Promise.resolve({
+              output: "abc123 feat: add file\nSigned-off-by: Tester <test@test.com>",
+              exitCode: 0,
+            });
+          }
+          if (args.includes("rev-parse") && args.includes("HEAD")) {
+            return Promise.resolve({ output: "abc123def456789012345678901234567890abcd\n", exitCode: 0 });
+          }
+          if (args[0] === "add") return Promise.resolve({ output: "", exitCode: 0 });
+          if (args[0] === "commit") return Promise.resolve({ output: "", exitCode: 0 });
+          if (args[0] === "checkout" || args[0] === "branch" || args.includes("checkout")) {
+            return Promise.resolve({ output: "Switched to a new branch 'feat/test'\n", exitCode: 0 });
+          }
+          if (args.includes("worktree")) {
+            if (args[1] === "add") {
+              return Promise.resolve({
+                output: "Preparing worktree (new branch 'feat/wt-test')\nHEAD is now at abc123 init",
+                exitCode: 0,
+              });
+            }
+            if (args[1] === "list") {
+              return Promise.resolve({
+                output: "/tmp/repo       abc123 [main]\n/tmp/repo/wt    abc123 [feat/wt-test]",
+                exitCode: 0,
+              });
+            }
+            if (args[1] === "remove") return Promise.resolve({ output: "", exitCode: 0 });
+            return Promise.resolve({ output: "", exitCode: 0 });
+          }
+          if (args.includes("rev-list") && args.includes("--count")) {
+            return Promise.resolve({ output: "1", exitCode: 0 });
+          }
+          if (args.includes("init")) {
+            return Promise.resolve({ output: "Initialized empty Git repository", exitCode: 0 });
+          }
+          if (args[0] === "config") return Promise.resolve({ output: "", exitCode: 0 });
+          return Promise.resolve({ output: "", exitCode: 0 });
+        },
+      };
+    },
   };
   return {
     config: stubConfig,

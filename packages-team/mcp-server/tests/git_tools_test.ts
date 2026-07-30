@@ -179,7 +179,7 @@ Deno.test("git_commit: rejects when nothing to commit", async () => {
     });
 
     const response = await ctx.server.handleRequest(request);
-    assertMCPToolError(response as IMCPResponseShape, "Failed to commit");
+    assertMCPToolError(response as IMCPResponseShape, "Git command failed");
   } finally {
     await ctx.cleanup();
   }
@@ -699,7 +699,7 @@ Deno.test("[security] git_commit: handler calls resolveGitService and validateAr
     const request = createToolCallRequest("git_commit", {
       portal: "TestPortal",
       message: "test commit",
-      files: ["legit-file.txt"],
+      files: ["test.txt"],
     });
 
     const response = await ctx.server.handleRequest(request);

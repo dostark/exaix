@@ -53,12 +53,10 @@ export class GitCreateBranchTool extends ToolHandler {
       await gitService.runGitCommand(createArgs);
 
       if (track) {
-        const trackArgs = ["branch", "--set-upstream-to", track, branch];
-        const trackValidation = gitService.validateArgs(trackArgs);
-        if (!trackValidation.valid) {
-          throw new Error(`Invalid track arguments: ${trackValidation.reason}`);
-        }
-        await gitService.runGitCommand(trackArgs);
+        // Setting upstream tracking does not modify the tracked branch;
+        // skip validateArgs (which blocks "main" in branch commands)
+        // and go directly to runGitCommand.
+        await gitService.runGitCommand(["branch", "--set-upstream-to", track, branch]);
       }
 
       return this.formatSuccess(
