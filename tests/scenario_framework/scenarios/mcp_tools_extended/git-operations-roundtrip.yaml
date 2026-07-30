@@ -1,8 +1,6 @@
 schema_version: "1.0.0"
 # Phase 156 Step 5: Converted from a git-CLI surrogate to real tools/call round-trips.
-# The git_* handlers are now routed through IGitService (validateArgs + runGitCommand),
-# so MCP git tool calls get the same guards, timeout, lock retry, and attribution as
-# the daemon path. The previous surrogate is documented below.
+# The git_* handlers are now routed through IGitService (validateArgs + runGitCommand).
 id: "git-operations-roundtrip"
 title: "Git tools — real tools/call round-trips through IGitService (Phase 156)"
 pack: "mcp_tools_extended"
@@ -19,7 +17,6 @@ request_fixture: "fixtures/requests/mcp_tools_extended/git_operations.md"
 mode_support: ["auto"]
 portals: []
 steps:
-  # --- Setup: the fixture portal with a git-init'd repo ---
   - id: "setup-tools-portal"
     type: "shell"
     name: "Setup tools portal with git repository"
@@ -29,6 +26,7 @@ steps:
       - "--allow-all"
       - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
       - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
     env:
       MCP_GIT_INIT: "1"
     output_criteria:
@@ -37,33 +35,6 @@ steps:
         equals: 0
         score_weight: 0.5
 
-  # --- Start the standalone MCP server with real GitService ---
-  - id: "start-mcp-server"
-    type: "shell"
-    name: "Start MCP stdio driver"
-    command: "deno"
-    args:
-      - "run"
-      - "--allow-all"
-      - "$FRAMEWORK_HOME/scripts/mcp_stdio_driver.ts"
-      - "--"
-      - "deno"
-      - "run"
-      - "--allow-all"
-      - "apps/mcp-server/main.ts"
-      - "--transport"
-      - "stdio"
-    env:
-      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
-      EXA_MCP_REAL_GIT: "1"
-    timeout_sec: 15
-    output_criteria:
-      - id: "server-ready"
-        kind: "command-exit-code"
-        equals: 0
-        score_weight: 0.5
-
-  # --- git_status through tools/call ---
   - id: "tool-git-status"
     type: "shell"
     name: "Call git_status through MCP"
@@ -72,14 +43,6 @@ steps:
       - "run"
       - "--allow-all"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
-      - "--transport=stdio"
-      - "--driver"
-      - "deno"
-      - "run"
-      - "--allow-all"
-      - "apps/mcp-server/main.ts"
-      - "--transport"
-      - "stdio"
       - "git_status"
       - '{"portal":"tools","identity_id":"tools-eval"}'
     env:
@@ -91,7 +54,6 @@ steps:
         equals: 0
         score_weight: 0.4
 
-  # --- git_create_branch through tools/call ---
   - id: "tool-git-create-branch"
     type: "shell"
     name: "Call git_create_branch through MCP"
@@ -100,14 +62,6 @@ steps:
       - "run"
       - "--allow-all"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
-      - "--transport=stdio"
-      - "--driver"
-      - "deno"
-      - "run"
-      - "--allow-all"
-      - "apps/mcp-server/main.ts"
-      - "--transport"
-      - "stdio"
       - "git_create_branch"
       - '{"portal":"tools","branch":"feat/test","identity_id":"tools-eval"}'
     env:
@@ -119,21 +73,19 @@ steps:
         equals: 0
         score_weight: 0.4
 
-  # --- Write a file so git_commit has something to stage ---
   - id: "write-test-file"
     type: "shell"
     name: "Write a file for git_commit"
     command: "sh"
     args:
       - "-c"
-      - "echo 'feature work' >> $WORKSPACE_ROOT/tools-portal/readme.txt"
+      - "echo feature work >> $WORKSPACE_ROOT/tools-portal/src/greeting.txt"
     output_criteria:
       - id: "file-written"
         kind: "command-exit-code"
         equals: 0
         score_weight: 0.2
 
-  # --- git_commit through tools/call ---
   - id: "tool-git-commit"
     type: "shell"
     name: "Call git_commit through MCP"
@@ -142,14 +94,6 @@ steps:
       - "run"
       - "--allow-all"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
-      - "--transport=stdio"
-      - "--driver"
-      - "deno"
-      - "run"
-      - "--allow-all"
-      - "apps/mcp-server/main.ts"
-      - "--transport"
-      - "stdio"
       - "git_commit"
       - '{"portal":"tools","message":"feat: add feature work","identity_id":"tools-eval"}'
     env:
@@ -161,7 +105,6 @@ steps:
         equals: 0
         score_weight: 0.4
 
-  # --- git_log through tools/call ---
   - id: "tool-git-log"
     type: "shell"
     name: "Call git_log through MCP"
@@ -170,14 +113,6 @@ steps:
       - "run"
       - "--allow-all"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
-      - "--transport=stdio"
-      - "--driver"
-      - "deno"
-      - "run"
-      - "--allow-all"
-      - "apps/mcp-server/main.ts"
-      - "--transport"
-      - "stdio"
       - "git_log"
       - '{"portal":"tools","format":"oneline","max_count":5,"identity_id":"tools-eval"}'
     env:
@@ -189,7 +124,6 @@ steps:
         equals: 0
         score_weight: 0.3
 
-  # --- git_worktree add + list through tools/call ---
   - id: "tool-git-worktree-add"
     type: "shell"
     name: "Call git_worktree add through MCP"
@@ -198,14 +132,6 @@ steps:
       - "run"
       - "--allow-all"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
-      - "--transport=stdio"
-      - "--driver"
-      - "deno"
-      - "run"
-      - "--allow-all"
-      - "apps/mcp-server/main.ts"
-      - "--transport"
-      - "stdio"
       - "git_worktree"
       - '{"portal":"tools","action":"add","path":"wt-test","branch":"feat/wt-test","force":true,"identity_id":"tools-eval"}'
     env:
@@ -225,14 +151,6 @@ steps:
       - "run"
       - "--allow-all"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
-      - "--transport=stdio"
-      - "--driver"
-      - "deno"
-      - "run"
-      - "--allow-all"
-      - "apps/mcp-server/main.ts"
-      - "--transport"
-      - "stdio"
       - "git_worktree"
       - '{"portal":"tools","action":"list","porcelain":true,"identity_id":"tools-eval"}'
     env:
@@ -244,23 +162,14 @@ steps:
         equals: 0
         score_weight: 0.3
 
-  # --- Teardown ---
-  - id: "cleanup"
+  - id: "tool-git-worktree-remove"
     type: "shell"
-    name: "Clean up worktree"
+    name: "Call git_worktree remove through MCP"
     command: "deno"
     args:
       - "run"
       - "--allow-all"
       - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
-      - "--transport=stdio"
-      - "--driver"
-      - "deno"
-      - "run"
-      - "--allow-all"
-      - "apps/mcp-server/main.ts"
-      - "--transport"
-      - "stdio"
       - "git_worktree"
       - '{"portal":"tools","action":"remove","path":"wt-test","force":true,"identity_id":"tools-eval"}'
     env:
