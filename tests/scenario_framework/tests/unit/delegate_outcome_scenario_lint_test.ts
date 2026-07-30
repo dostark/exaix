@@ -14,23 +14,18 @@ import { CriterionKind, ScenarioStepType } from "../../schema/step_schema.ts";
 const REPO_ROOT = fromFileUrl(new URL("../../../../", import.meta.url));
 const SCENARIOS_DIR = join(REPO_ROOT, "tests/scenario_framework/scenarios");
 
-function hasOutcomeCriteria(steps: ReturnType<typeof ScenarioSchema.parse>["steps"]): boolean {
+/**
+ * The outcome scenario asserts the delegate's produced change. It must assert on
+ * CONTENT the delegate wrote, not on plumbing events. Phase 150 LIVE-RT tightened
+ * this twice: a `payload_absent` filter on `session.delegate.reconciled` is a
+ * plumbing assertion (the first live run showed a scenario reconciling green while
+ * touching zero files), and the content assertion now runs as a `shell` step
+ * because the delegate's worktree path is named for the run's trace id and
+ * criterion `path` values are literal — so a bare "is there a shell step" check
+ * would be satisfied by every scenario's setup and prove nothing.
+ */
+function assertsProducedContent(steps: ReturnType<typeof ScenarioSchema.parse>["steps"]): boolean {
   for (const step of steps) {
-    if (step.type === ScenarioStepType.JOURNAL_ASSERT && step.output_criteria) {
-      for (const criterion of step.output_criteria) {
-        if (criterion.kind === CriterionKind.JOURNAL_EVENT_EXISTS) {
-          // payload_includes on any event qualifies (asserts a specific payload value)
-          if (criterion.payload_includes) return true;
-          // payload_absent qualifies ONLY when it targets a non-reconciled event
-          // (a payload_absent on session.delegate.reconciled is a plumbing assertion)
-          if (
-            criterion.payload_absent && criterion.event_type && criterion.event_type !== "session.delegate.reconciled"
-          ) {
-            return true;
-          }
-        }
-      }
-    }
     if (
       step.type === ScenarioStepType.FILE_CONTAINS ||
       step.type === ScenarioStepType.JSON_ASSERT ||
@@ -39,33 +34,35 @@ function hasOutcomeCriteria(steps: ReturnType<typeof ScenarioSchema.parse>["step
     ) {
       return true;
     }
+    // A shell step qualifies only when it reads the delegate's worktree AND asserts
+    // on the content it finds there — setup/teardown shell steps do neither.
+    if (step.type === ScenarioStepType.SHELL && step.output_criteria) {
+      const readsWorktree = (step.args ?? []).some((a) => String(a).includes(".exa/worktrees"));
+      const assertsContent = step.output_criteria.some(
+        (c) => c.kind === CriterionKind.COMMAND_OUTPUT_CONTAINS && (c.contains?.length ?? 0) > 0,
+      );
+      if (readsWorktree && assertsContent) return true;
+    }
   }
   return false;
 }
 
-Deno.test("[delegate-outcome-lint] at least one provider_live delegate scenario carries an outcome criterion", async () => {
-  const providerLiveDir = join(SCENARIOS_DIR, "provider_live");
-  let foundDelegate = false;
-  let foundOutcome = false;
-
-  for await (const file of Deno.readDir(providerLiveDir)) {
-    if (!file.name.endsWith(".yaml") || !file.name.includes("session_delegate")) continue;
-    foundDelegate = true;
-    const filePath = join(providerLiveDir, file.name);
-    const raw = await Deno.readTextFile(filePath);
-    const parsed = ScenarioSchema.parse(parseYaml(raw));
-
-    if (hasOutcomeCriteria(parsed.steps)) {
-      foundOutcome = true;
-    }
-  }
-
-  assert(foundDelegate, "must find at least one provider_live session_delegate scenario");
+Deno.test("[delegate-outcome-lint] the outcome scenario asserts delegate-produced content", async () => {
+  const path = join(SCENARIOS_DIR, "provider_live/session_delegate_outcome_live.yaml");
+  const parsed = ScenarioSchema.parse(parseYaml(await Deno.readTextFile(path)));
   assert(
-    foundOutcome,
-    "at least one provider_live delegate scenario must carry an outcome criterion " +
-      "(file-contains, json-assert, trajectory-assert, frontmatter-assert, " +
-      "payload_includes, or payload_absent on a non-reconciled event) — " +
-      "currently provided by session_delegate_outcome_live.yaml (file-contains + payload_absent paths_touched)",
+    assertsProducedContent(parsed.steps),
+    "session_delegate_outcome_live.yaml must assert on content the delegate wrote — " +
+      "a reconcile/plumbing assertion alone lets a no-op delegation pass",
+  );
+});
+
+Deno.test("[delegate-outcome-lint] plumbing-only scenarios do not satisfy the outcome check", async () => {
+  const path = join(SCENARIOS_DIR, "provider_live/session_delegate_matrix_live.yaml");
+  const parsed = ScenarioSchema.parse(parseYaml(await Deno.readTextFile(path)));
+  assert(
+    !assertsProducedContent(parsed.steps),
+    "the matrix scenario asserts plumbing only — if it now satisfies the outcome check, " +
+      "the check has been loosened to the point of proving nothing",
   );
 });

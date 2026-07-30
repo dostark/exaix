@@ -9,7 +9,7 @@ portals: []
 
 matrix:
   axes:
-    tool: ["opencode"]
+    tool: ["opencode", "claude-code"]
     provider: ["direct"]
   cells:
     - tool: "opencode"
@@ -17,6 +17,15 @@ matrix:
       config: "configs/dogfood.toml"
       requires_bin: "opencode"
       requires_optin: "EXA_MATRIX_OPENCODE"
+    # claude-code on Sonnet 5. Deliberately NOT gated on ANTHROPIC_API_KEY: this cell
+    # runs with that variable unset so the headless `claude` child authenticates with
+    # the subscription OAuth credential instead of API billing. The daemon's own
+    # analysis provider is Google in this preset, so it needs no Anthropic key either.
+    - tool: "claude-code"
+      provider: "direct"
+      config: "configs/dogfood.claude.sonnet5.toml"
+      requires_bin: "claude"
+      requires_optin: "EXA_MATRIX_CLAUDE_SONNET5"
 
 steps:
   # --- Setup ---
@@ -109,12 +118,58 @@ steps:
         kind: "command-output-contains"
         contains: ["approved"]
 
-  - id: "wait-for-delegate-return"
-    type: "wait-for-file"
-    args: ["**/Session/**/return.json"]
-    timeout_sec: 300
+  # Wait for the INTENDED CHANGE, not for "a return.json".
+  #
+  # The planner decides how many steps the plan has, and a read-only first step
+  # ("inspect src/main.ts before editing") produces a return.json of its own. Waiting
+  # on the first return therefore raced the delegate: the scenario asserted while the
+  # step that actually writes the file was still running, and reported a no-op that
+  # had simply not happened yet (Phase 150 LIVE-RT).
+  #
+  # Polling for the outcome is plan-shape independent — it waits however many steps
+  # the planner emits — and it cannot mask a genuine no-op: if the delegate never
+  # writes GREETING the loop exhausts and the step fails.
+  - id: "wait-for-intended-change"
+    type: "shell"
+    command: "sh"
+    args:
+      [
+        "-c",
+        "for _ in $(seq 1 150); do grep -qs GREETING \"$WORKSPACE_ROOT\"/.exa/worktrees/*/*/src/main.ts && exit 0; sleep 2; done; exit 1",
+      ]
+    timeout_sec: 320
+    output_criteria:
+      - id: "intended-change-appeared"
+        score_weight: 1.0
+        kind: "command-exit-code"
+        equals: 0
+
+  # The file appears as soon as the delegate writes it, but the return.json is only
+  # parsed and reconciled afterwards. Asserting the journal straight after the write
+  # raced reconciliation — and teardown then stopped the daemon before it finished,
+  # so `reconciled` was missing from a run whose delegate had actually succeeded
+  # (Phase 150 LIVE-RT). Block until reconciliation is journalled.
+  - id: "wait-for-reconcile"
+    type: "wait-for-journal-event"
+    event_type: "session.delegate.reconciled"
+    timeout_sec: 120
+    input_criteria: []
+    output_criteria: []
 
   # --- Outcome assertions ---
+  # Brief preparation must have happened with a real objective. The CI variant
+  # (tests/integration/meta_workflow_queue_pipeline_test.ts) stops before this point —
+  # it verifies the generated request would survive the contentless guard, but cannot
+  # boot a daemon token-free — so this scenario owns the `briefed` proof (Phase 150 GAP-D).
+  - id: "assert-brief-prepared"
+    type: "journal-assert"
+    input_criteria: []
+    output_criteria:
+      - id: "briefed-event-present"
+        score_weight: 1.0
+        kind: "journal-event-exists"
+        event_type: "session.delegate.briefed"
+
   # The delegate must have reconciled cleanly (not rejected)
   - id: "assert-reconciled-clean"
     type: "journal-assert"
@@ -127,24 +182,35 @@ steps:
         payload_absent:
           rejected: true
 
-  # The intended file change must be present in the portal worktree.
-  # A no-op delegation (paths_touched: []) fails here because the file
-  # would not contain the expected constant.
+  # The intended file change must be present in the delegate's git worktree.
+  #
+  # NOT the portal checkout: the execution loop creates an isolated worktree under
+  # .exa/worktrees/<portal>/<traceId>/ and the delegate edits there. reconcile.ts
+  # only *validates* a return — nothing merges the worktree back — so the portal's
+  # own working tree is unchanged by design, and the earlier assertion against
+  # $WORKSPACE_ROOT/test-portal/src/main.ts could never pass even on a perfect run
+  # (Phase 150 LIVE-RT).
+  #
+  # A shell step rather than file-contains because the worktree directory is named
+  # for the run's trace id; criterion `path` values are literal, with no glob
+  # expansion, so the wildcard has to be resolved by the shell.
+  #
+  # A no-op delegation (paths_touched: []) fails here: the file would still read
+  # `console.log("hello")` with no GREETING constant.
   - id: "assert-greeting-added"
-    type: "file-contains"
-    args: ["$WORKSPACE_ROOT/test-portal/src/main.ts"]
+    type: "shell"
+    command: "sh"
+    args: ["-c", "cat \"$WORKSPACE_ROOT\"/.exa/worktrees/*/*/src/main.ts"]
     input_criteria: []
     output_criteria:
       - id: "greeting-constant-present"
         score_weight: 1.0
-        kind: "text-contains"
-        path: "$WORKSPACE_ROOT/test-portal/src/main.ts"
-        contains: "GREETING"
+        kind: "command-output-contains"
+        contains: ["GREETING"]
       - id: "greeting-value-present"
         score_weight: 1.0
-        kind: "text-contains"
-        path: "$WORKSPACE_ROOT/test-portal/src/main.ts"
-        contains: "hello from delegate"
+        kind: "command-output-contains"
+        contains: ["hello from delegate"]
 
   # --- Teardown ---
   - id: "stop-daemon"
