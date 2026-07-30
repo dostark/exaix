@@ -4,6 +4,8 @@
  * @description swe_tasks fixture portal: shared domain types for the todo-app fixture.
  */
 
+// @ts-nocheck — intentionally buggy fixture for SWE task scenarios
+
 export type TaskPriority = "low" | "medium" | "high";
 
 export interface IUser {

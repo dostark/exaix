@@ -1868,7 +1868,7 @@ async function main() {
               includeDirs: false,
               exts: [".ts", ".tsx"],
               followSymlinks: false,
-              skip: [/[/\\]\.git[/\\]/, /[/\\]node_modules[/\\]/, /check_code_style\.ts$/],
+              skip: [/[/\\]\.git[/\\]/, /[/\\]node_modules[/\\]/, /check_code_style\.ts$/, /[/\\]scenario_framework[/\\]fixtures[/\\]/],
             })
           ) {
             await checkFile(entry.path);
@@ -1884,7 +1884,7 @@ async function main() {
         includeDirs: false,
         exts: [".ts", ".tsx"],
         followSymlinks: false,
-        skip: [/[/\\]\.git[/\\]/, /[/\\]node_modules[/\\]/, /check_code_style\.ts$/],
+        skip: [/[/\\]\.git[/\\]/, /[/\\]node_modules[/\\]/, /check_code_style\.ts$/, /[/\\]scenario_framework[/\\]fixtures[/\\]/],
       })
     ) {
       // skip generated code or scripts if necessary

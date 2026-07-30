@@ -6,6 +6,8 @@
  *   task / a task with no due date — the swe-fix-bug-null-guard scenario's target.
  */
 
+// @ts-nocheck — intentionally buggy fixture for SWE task scenarios
+
 import type { ITask } from "./models.ts";
 
 export function formatAssignee(task: ITask): string {
