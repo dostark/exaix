@@ -5,8 +5,6 @@
  */
 
 export type TaskPriority = "low" | "medium" | "high";
-// DEPRECATED: old type name retained for migration scenario testing
-type Priority = TaskPriority;
 
 export interface IUser {
   id: string;

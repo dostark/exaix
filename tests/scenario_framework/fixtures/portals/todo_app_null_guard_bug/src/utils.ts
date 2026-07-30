@@ -9,13 +9,11 @@
 import type { ITask } from "./models.ts";
 
 export function formatAssignee(task: ITask): string {
-  // Bug: crashes when assignee is null — the scenario tests fix this
-  return (task.assignee as NonNullable<ITask["assignee"]>).name.toUpperCase();
+  return task.assignee.name.toUpperCase();
 }
 
 export function formatDueDate(task: ITask): string {
-  // Bug: crashes when dueDate is null — the scenario tests fix this
-  return (task.dueDate as NonNullable<ITask["dueDate"]>).slice(0, 10);
+  return task.dueDate.slice(0, 10);
 }
 
 export function formatTaskSummary(task: ITask): string {
