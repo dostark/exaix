@@ -17,6 +17,7 @@ import type { PortalOperation, ToolErrorCode } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { LogMetadata } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
+import type { IGitService } from "@exaix/core/types";
 
 /**
  * Base class for all MCP tool handlers
@@ -201,6 +202,25 @@ export abstract class ToolHandler {
     } catch {
       throw new Error(`Not a git repository: ${portalName}`);
     }
+  }
+
+  /**
+   * Returns a per-portal IGitService instance from context.gitServiceFactory.
+   * Throws an explicit, documented error when the factory is absent — the same
+   * detectable failure mode Phase 142 proved for a missing ToolRegistry.
+   */
+  protected resolveGitService(portalPath: string): IGitService {
+    const factory = this.context.gitServiceFactory;
+    if (!factory) {
+      throw new Error(
+        `IGitServiceFactory not available in context — git operations through MCP require ` +
+          `a gitServiceFactory to be wired in the composition root`,
+      );
+    }
+    // Trace ID is not available per-call in the MCP context; use the portal path
+    // as a scoping key. The daemon path passes a real traceId; this is acknowledged
+    // in the plan as an acceptable divergence.
+    return factory.createGitService(portalPath, `mcp:${portalPath}`);
   }
 
   /**

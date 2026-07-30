@@ -34,6 +34,7 @@ import {
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import type { JSONValue } from "@exaix/core/types";
 import type { IApplicationContext } from "@exaix/core/types";
+import type { IGitService } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 
@@ -150,10 +151,31 @@ function createTestContext(
   db: Awaited<ReturnType<typeof initTestDbService>>["db"],
 ): IApplicationContext {
   const stubConfig = createStubConfig(config);
+  const stubGit = createStubGit();
+  // Wrap stub with a per-call factory so handlers can resolve git through the
+  // context field the plan adds. The stub cannot emulate full git behaviour for
+  // every format variant — but it provides enough for basic status/log tests.
+  const stubFactory = {
+    createGitService: (_repoPath: string, _traceId: string): IGitService => ({
+      ...stubGit,
+      runGitCommand: (args: string[]): Promise<{ output: string; exitCode: number }> => {
+        if (args.includes("status")) {
+          if (args.includes("--short")) return Promise.resolve({ output: " M new-file.txt", exitCode: 0 });
+          // Porcelain format: empty output = clean working tree
+          if (args.includes("--porcelain")) return Promise.resolve({ output: "", exitCode: 0 });
+          // Long format (default when no format flag)
+          return Promise.resolve({ output: "On branch main\nnothing to commit, working tree clean", exitCode: 0 });
+        }
+        if (args.includes("log")) return Promise.resolve({ output: "abc123 feat: add file", exitCode: 0 });
+        return Promise.resolve({ output: "", exitCode: 0 });
+      },
+    }),
+  };
   return {
     config: stubConfig,
     db,
-    git: createStubGit(),
+    git: stubGit,
+    gitServiceFactory: stubFactory,
     provider: createStubProvider(),
     display: createStubDisplay(),
     toolRegistry: new ToolRegistry({ config }),

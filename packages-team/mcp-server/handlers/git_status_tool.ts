@@ -11,6 +11,8 @@ import type { JSONValue } from "@exaix/core";
 import { GitStatusFormat, PortalOperation, ToolErrorCode } from "@exaix/core";
 import { GitStatusToolArgsSchema } from "@exaix/schemas/mcp.ts";
 
+const GIT_SUBCOMMAND_STATUS = "status";
+
 /**
  * GitStatusTool - Queries git repository status in portals
  *
@@ -36,7 +38,7 @@ export class GitStatusTool extends ToolHandler {
       await this.validateGitRepository(portalPath, portal);
 
       // Get git status
-      const statusArgs = ["status"];
+      const statusArgs = [GIT_SUBCOMMAND_STATUS];
       if (format === GitStatusFormat.SHORT) {
         statusArgs.push("--short");
       } else if (format === GitStatusFormat.PORCELAIN) {
@@ -47,22 +49,11 @@ export class GitStatusTool extends ToolHandler {
         statusArgs.push("--untracked-files=no");
       }
 
-      const cmd = new Deno.Command("git", {
-        args: statusArgs,
-        cwd: portalPath,
-        stdout: "piped",
-        stderr: "piped",
-      });
+      // Route through IGitService for validated, timeout-bounded git execution
+      const gitService = this.resolveGitService(portalPath);
+      const { output: rawOutput } = await gitService.runGitCommand(statusArgs);
 
-      const { code, stdout, stderr } = await cmd.output();
-
-      if (code !== 0) {
-        const error = new TextDecoder().decode(stderr);
-        throw new Error(`Failed to get status: ${error}`);
-      }
-
-      const output = new TextDecoder().decode(stdout);
-      const statusText = output.trim() ? output : "Working tree clean - no changes detected";
+      const statusText = rawOutput.trim() ? rawOutput : "Working tree clean - no changes detected";
 
       return this.formatSuccess(
         "git_status",
@@ -73,7 +64,7 @@ export class GitStatusTool extends ToolHandler {
           identity_id,
           format: format ?? GitStatusFormat.PORCELAIN,
           include_untracked: include_untracked !== false,
-          has_changes: output.trim().length > 0,
+          has_changes: rawOutput.trim().length > 0,
         },
       );
     } catch (error) {

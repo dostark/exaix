@@ -11,6 +11,7 @@ import type { IDatabaseService } from "./i_database_service.ts";
 import type { IModelProvider } from "@exaix/ai";
 
 import type { IGitService } from "./i_git_service.ts";
+import type { IGitServiceFactory } from "./i_git_service_factory.ts";
 import type { IDisplayService } from "./i_display_service.ts";
 import type { IConfigService } from "./i_config_service.ts";
 import type { IMemoryService } from "./i_memory_service.ts";
@@ -55,6 +56,14 @@ export interface IApplicationContext {
 
   /** Optional tool registry for MCP/tool execution */
   toolRegistry?: IToolRegistry;
+
+  /**
+   * Optional git service factory for per-portal GitService construction.
+   * Set by composition roots (daemon, MCP server) that need per-call git
+   * instances. Handlers access git through this factory, never `context.git`
+   * directly. A missing factory produces a detectable error.
+   */
+  gitServiceFactory?: IGitServiceFactory;
 
   /** Optional memory service for knowledge management */
   memory?: IMemoryService;
