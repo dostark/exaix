@@ -683,6 +683,17 @@ export async function main(args: string[]): Promise<number> {
   // Batch 2: sequential files, one per Deno.Command, no DENO_JOBS set
   // ---------------------------------------------------------------------------
   //
+  // Kill any daemon processes left behind by the parallel batch. Parallel
+  // tests that spawn daemons may leak them on timeout/abort; a leftover
+  // daemon occupies the default CLI port and causes sequential daemon tests
+  // to fail with "Daemon died during startup" or missing journal events.
+  try {
+    const cleanup = new Deno.Command("pkill", { args: ["-f", "daemon/main.ts"] }).outputSync();
+    if (cleanup.code === 0) {
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  } catch { /* pkill not available */ }
+  //
   // Pre-warm the daemon module cache after the parallel batch. Parallel
   // compilation can leave partial/corrupted cache entries; this forces a
   // clean cache build before any daemon subprocess touches it.
