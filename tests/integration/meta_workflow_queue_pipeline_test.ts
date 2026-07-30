@@ -10,6 +10,7 @@ import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/a
 import { fromFileUrl, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { IBlueprintLoader } from "@exaix/core/blueprint";
+import { isContentlessBrief } from "@exaix/core/planning";
 
 const REPO_ROOT = fromFileUrl(new URL("../../", import.meta.url));
 const SCRIPTS_PATH = join(REPO_ROOT, "scripts", "plan_to_requests.ts");
@@ -55,7 +56,6 @@ interface IRequestFrontmatter {
   identity_id?: string;
   title?: string;
   tags?: string[];
-  depends_on?: string[];
   trace_id?: string;
 }
 
@@ -64,6 +64,27 @@ function parseRequestFrontmatter(filePath: string): IRequestFrontmatter {
   const match = content.match(/^---\n([\s\S]*?)\n---\n/);
   if (!match) return {};
   return parseYaml(match[1]) as IRequestFrontmatter;
+}
+
+/**
+ * `plan_to_requests.ts` emits `depends_on` into the request BODY (not the frontmatter) —
+ * see the `bodyLines` assembly in that script. Reading it off the frontmatter yields
+ * `undefined` for every request and silently asserts nothing.
+ */
+function parseDependsOn(filePath: string): number[] {
+  const content = Deno.readTextFileSync(filePath);
+  const match = content.match(/^depends_on:\s*(\[[^\]]*\])\s*$/m);
+  if (!match) return [];
+  return JSON.parse(match[1]) as number[];
+}
+
+/** Step number from the authoritative `step-N` tag, not from the file path. */
+function stepNumberOf(fm: IRequestFrontmatter): number | undefined {
+  for (const tag of fm.tags ?? []) {
+    const match = tag.match(/^step-(\d+)$/);
+    if (match) return Number.parseInt(match[1], 10);
+  }
+  return undefined;
 }
 
 Deno.test("[meta-workflow-queue] plan_to_requests generates queue with correct identity resolution", async () => {
@@ -100,10 +121,84 @@ Deno.test("[meta-workflow-queue] generated requests carry non-empty content for 
         body.length > 0,
         `request ${file} must have non-empty body content for brief objective`,
       );
+      // Bind to the production guard rather than re-implementing its pattern: this is the
+      // exact predicate the daemon's onCodeChangesDelegate applies before prepareBrief, so a
+      // generated request that passes here would survive the contentless-brief check.
       assert(
-        !body.match(/^[Ee]xecute\s+step\s+\d+/),
-        `request ${file} body must not be a placeholder — got "${body.slice(0, 80)}"`,
+        !isContentlessBrief(body),
+        `request ${file} body must not be a contentless/placeholder objective — got "${body.slice(0, 80)}"`,
       );
+    }
+  } finally {
+    await Deno.remove(tmpDir, { recursive: true });
+  }
+});
+
+Deno.test("[meta-workflow-queue] every plan step reaches the queue", async () => {
+  const tmpDir = cleanTempDir();
+  try {
+    const files = await generateQueue(MINIMAL_PLAN, tmpDir);
+    const planText = Deno.readTextFileSync(MINIMAL_PLAN);
+    const planSteps = [...planText.matchAll(/^#{2,3}\s+Step\s+(\d+)/gm)]
+      .map((m) => Number.parseInt(m[1], 10));
+    assert(planSteps.length > 0, "fixture must declare at least one step");
+
+    const queued = files
+      .map((file) => stepNumberOf(parseRequestFrontmatter(file)))
+      .filter((n): n is number => n !== undefined)
+      .sort((a, b) => a - b);
+
+    assertEquals(
+      queued,
+      planSteps.sort((a, b) => a - b),
+      "every step in the plan must produce a request — a dropped step leaves the queue with a dangling dependency",
+    );
+  } finally {
+    await Deno.remove(tmpDir, { recursive: true });
+  }
+});
+
+Deno.test("[meta-workflow-queue] depends_on chain is consistent and acyclic", async () => {
+  const tmpDir = cleanTempDir();
+  try {
+    const files = await generateQueue(MINIMAL_PLAN, tmpDir);
+    assert(files.length >= 2, `expected at least 2 requests, got ${files.length}`);
+
+    const requests = files.map((file) => ({
+      file,
+      step: stepNumberOf(parseRequestFrontmatter(file)),
+      dependsOn: parseDependsOn(file),
+    }));
+
+    const queuedSteps = new Set<number>();
+    for (const { file, step } of requests) {
+      assertExists(step, `request ${file} must carry a step-N tag`);
+      queuedSteps.add(step);
+    }
+
+    const head = Math.min(...queuedSteps);
+    for (const { file, step, dependsOn } of requests) {
+      // Only the head of the chain may declare no dependency; every other request must.
+      if (step !== head) {
+        assert(
+          dependsOn.length > 0,
+          `request ${file} (step ${step}) must declare a non-empty depends_on`,
+        );
+      }
+
+      // Existence and ordering hold for every declared dependency, head included —
+      // a dependency on a step that never reached the queue is a broken chain.
+      for (const dep of dependsOn) {
+        assert(
+          queuedSteps.has(dep),
+          `request ${file} depends on step ${dep}, which is not in the queue ` +
+            `(queued: ${[...queuedSteps].sort((a, b) => a - b).join(", ")})`,
+        );
+        assert(
+          dep < step!,
+          `request ${file} (step ${step}) depends on step ${dep}, which is not earlier — the chain must be acyclic`,
+        );
+      }
     }
   } finally {
     await Deno.remove(tmpDir, { recursive: true });

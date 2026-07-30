@@ -62,7 +62,9 @@ function extractSteps(content: string): ParsedStep[] {
   const steps: ParsedStep[] = [];
   const seen = new Set<number>();
   let match: RegExpExecArray | null;
-  let lastIndex = 0;
+  // -1 (not 0) is the "no step seen yet" sentinel: a plan whose first step heading sits at
+  // offset 0 — no frontmatter or preamble — would otherwise have that step silently dropped.
+  let lastIndex = -1;
   let lastStepNumber = 0;
 
   while ((match = stepRegex.exec(content)) !== null) {
@@ -73,14 +75,14 @@ function extractSteps(content: string): ParsedStep[] {
     }
     seen.add(stepNumber);
 
-    if (lastIndex > 0) {
+    if (lastIndex >= 0) {
       steps.push({ stepNumber: lastStepNumber, sectionText: content.slice(lastIndex, match.index).trim() });
     }
     lastIndex = match.index;
     lastStepNumber = stepNumber;
   }
 
-  if (lastIndex > 0) {
+  if (lastIndex >= 0) {
     steps.push({ stepNumber: lastStepNumber, sectionText: content.slice(lastIndex).trim() });
   }
 
