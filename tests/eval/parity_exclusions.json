@@ -4,9 +4,22 @@
     {
       "id": "mock-agent",
       "reason": "test double"
+    },
+    {
+      "id": "dogfood-coder",
+      "reason": "dogfood meta-workflow identity (Phase 150) — exercised by the live session_delegate_outcome scenario"
+    },
+    {
+      "id": "code-reviewer",
+      "reason": "dogfood meta-workflow identity (Phase 150) — exercised by the live session_delegate_outcome scenario"
     }
   ],
   "skills": [],
-  "flows": [],
+  "flows": [
+    {
+      "id": "dogfood-meta-workflow.flow",
+      "reason": "dogfood meta-workflow (Phase 150) — exercised by the live session_delegate_outcome scenario"
+    }
+  ],
   "skills_without_runtime_json": []
 }

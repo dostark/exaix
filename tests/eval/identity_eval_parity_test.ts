@@ -86,7 +86,11 @@ Deno.test("identity_eval_parity — README.md is filtered by the reader, not exc
 
 Deno.test("identity_eval_parity — mock-agent remains a real, reasoned exclusion", () => {
   // The distinction the fix depends on: mock-agent IS an identity file, deliberately uncovered.
-  assertEquals(identityExclusions, ["mock-agent"]);
+  // dogfood-coder + code-reviewer are Phase 150 meta-workflow identities exercised by live scenarios.
+  assertEquals(
+    [...identityExclusions].sort(),
+    ["code-reviewer", "dogfood-coder", "mock-agent"],
+  );
 });
 
 Deno.test("identity_eval_parity — every shipped identity has a real scenario, or a reasoned exclusion", async () => {

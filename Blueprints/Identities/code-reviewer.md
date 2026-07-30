@@ -14,6 +14,7 @@ default_skills: [
   "code-review",
   "security-first",
   "exaix-conventions",
+  "response-contract",
 ]
 permitted_tools:
   - read_file
