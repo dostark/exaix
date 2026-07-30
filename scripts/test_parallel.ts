@@ -667,12 +667,10 @@ export async function main(args: string[]): Promise<number> {
     EXA_TEST_FORCE_CLI_PARALLEL: "1",
   };
   const batch1IgnorePaths = [...SEQUENTIAL_FILES, ...PARALLEL_IGNORE_PATHS];
-  const batch1IgnoreArg = batch1IgnorePaths.length > 0 ? `--ignore=${batch1IgnorePaths.join(",")}` : "";
+  const batch1IgnoreArgs = batch1IgnorePaths.map((p) => `--ignore=${p}`);
 
   const batch1Args = ["--parallel", "tests/", "packages/", ...teamPaths, "apps/", ...forwardedArgs];
-  if (batch1IgnoreArg) {
-    batch1Args.splice(1, 0, batch1IgnoreArg);
-  }
+  batch1Args.splice(1, 0, ...batch1IgnoreArgs);
 
   const batch1Stats = await runAndCapture(
     batch1Args,
