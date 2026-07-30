@@ -150,7 +150,7 @@ Deno.test("migrate_db.ts up creates database and applies migrations", async () =
   }
 });
 
-Deno.test("[phase135] migrate_db.ts up applies 002_model_registry after 001 (registry tables, cost_source, benchmark)", async () => {
+Deno.test("[phase135] migrate_db.ts up creates the registry tables, cost_source and benchmark from 001", async () => {
   const tmp = await setupTestWorkspace();
   try {
     const result = await runMigrate(tmp, ["up"]);
@@ -158,10 +158,9 @@ Deno.test("[phase135] migrate_db.ts up applies 002_model_registry after 001 (reg
 
     const dbPath = join(getRuntimeDir(tmp), "journal.db");
 
-    // 002 is recorded in schema_migrations (after 001).
+    // 001 is the whole schema — the former 002_model_registry was folded into it.
     const migrations = await queryDb(dbPath, "SELECT version FROM schema_migrations ORDER BY id;");
     assertStringIncludes(migrations, "001_init.sql");
-    assertStringIncludes(migrations, "002_model_registry.sql");
 
     // All six §5.2/§5.8.2 registry tables exist.
     const tables = await queryDb(
@@ -181,9 +180,11 @@ Deno.test("[phase135] migrate_db.ts up applies 002_model_registry after 001 (reg
       assertStringIncludes(tables, t);
     }
 
-    // provider_costs gained a cost_source column (nullable — pre-existing rows stay valid).
+    // provider_costs carries the cost-provenance and cache-token columns (all nullable).
     const cols = await queryDb(dbPath, "SELECT name FROM pragma_table_info('provider_costs');");
     assertStringIncludes(cols, "cost_source");
+    assertStringIncludes(cols, "cache_read_tokens");
+    assertStringIncludes(cols, "cache_creation_tokens");
   } finally {
     await Deno.remove(tmp, { recursive: true }).catch(() => {});
   }
@@ -220,6 +221,13 @@ Deno.test("migrate_db.ts up is idempotent", async () => {
 Deno.test("migrate_db.ts down reverts last migration", async () => {
   const tmp = await setupTestWorkspace();
   try {
+    // The repo ships a single consolidated migration, so add a second one here — otherwise
+    // "reverts the LAST one and leaves the rest" has nothing to distinguish.
+    await Deno.writeTextFile(
+      join(tmp, "migrations", "999_test_down.sql"),
+      "-- up\nCREATE TABLE test_down_table (id INTEGER PRIMARY KEY);\n\n-- down\nDROP TABLE IF EXISTS test_down_table;\n",
+    );
+
     // First apply migrations
     const upResult = await runMigrate(tmp, ["up"]);
     assertEquals(upResult.code, 0, `migrate up failed: ${upResult.stderr}`);
@@ -240,7 +248,7 @@ Deno.test("migrate_db.ts down reverts last migration", async () => {
       (await queryDb(dbPath, "SELECT COUNT(*) FROM schema_migrations;")).trim(),
     );
     assertEquals(after, before - 1, "down should revert exactly the last migration");
-    // The most recent migration reverted is 002; 001 remains.
+    // The most recent migration (999) was reverted; the base schema migration remains.
     const remaining = await queryDb(dbPath, "SELECT version FROM schema_migrations;");
     assertStringIncludes(remaining, "001_init.sql");
   } finally {
@@ -312,9 +320,8 @@ DROP TABLE IF EXISTS test_order_table;
       "SELECT version FROM schema_migrations ORDER BY id;",
     );
     const versions = migrations.trim().split("\n");
-    // Real migrations (001, 002, …) apply first in filename order, then 999.
+    // Real migrations apply first in filename order, then 999.
     assertEquals(versions[0], "001_init.sql");
-    assertEquals(versions[1], "002_model_registry.sql");
     assertEquals(versions[versions.length - 1], "999_test_order.sql");
 
     // Verify test table was created

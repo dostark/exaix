@@ -9,6 +9,7 @@
 import { assert, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
+import { migrateDaemonWorkspace } from "./helpers/daemon_config.ts";
 
 function writeDaemonConfig(configPath: string, root: string): void {
   const cfg = [
@@ -96,6 +97,7 @@ Deno.test({
       writeDaemonConfig(configPath, tempDir);
 
       await env.createBlueprint("senior-coder");
+      await migrateDaemonWorkspace(tempDir);
 
       const proc = new Deno.Command("deno", {
         args: ["run", "--allow-all", "apps/daemon/main.ts"],

@@ -146,8 +146,23 @@ interface IValidationResult {
 function validateMigration(migrationFile: string, db: Database): IValidationResult {
   switch (migrationFile) {
     case "001_init.sql": {
-      // Check that all core tables exist (consolidated migration)
-      const tables = ["activity", "leases", "reviews", "notifications", "provider_costs", "artifacts"];
+      // Check that all tables exist. 001 is the whole schema — core tables plus the Team
+      // model-registry tables that used to live in the since-folded-in 002.
+      const tables = [
+        "activity",
+        "leases",
+        "reviews",
+        "notifications",
+        "pending_tool_confirmations",
+        "provider_costs",
+        "artifacts",
+        "model_catalog",
+        "model_pricing",
+        "model_latency",
+        "provider_rate_limit",
+        "registry_refresh_audit",
+        "model_benchmark",
+      ];
       for (const table of tables) {
         const result = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(table);
         if (!result) {
@@ -165,12 +180,14 @@ function validateMigration(migrationFile: string, db: Database): IValidationResu
         "idx_reviews_trace_id",
         "idx_reviews_status",
         "idx_reviews_portal",
-        "idx_reviews_identity_id",
+        "idx_reviews_created_by",
         "idx_reviews_branch",
         "idx_provider_costs_provider",
         "idx_provider_costs_timestamp",
         "idx_artifacts_status",
         "idx_artifacts_identity",
+        "idx_latency_lookup",
+        "idx_benchmark_rank",
       ];
       for (const index of indexes) {
         const indexExists = db.prepare("SELECT name FROM sqlite_master WHERE type='index' AND name=?").get(index);

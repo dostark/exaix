@@ -9,7 +9,37 @@
  * adapter pattern (DirectConfigAdapter.set()) instead.
  */
 
-import { join } from "@std/path";
+import { dirname, join } from "@std/path";
+
+/** Repo root, from `tests/integration/helpers/` — the source of `migrations/` and `deno.json`. */
+const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..");
+
+/**
+ * Migrate a daemon test workspace's `.exa/journal.db` by running `scripts/setup_db.ts`
+ * with the workspace as CWD — the same step the scenario framework and the production
+ * deploy pipeline run BEFORE any daemon starts.
+ *
+ * `DatabaseService` auto-creates only the `activity` table in test mode, so an unmigrated
+ * workspace is missing every other production table. A Solo daemon never touches them and
+ * boots anyway; a Team daemon seeds the curated benchmark floor at startup and dies with
+ * `no such table: model_benchmark`, taking the whole boot down before `watcher.started`.
+ * Idempotent (`schema_migrations` tracks applied files), so repeated boots are safe.
+ */
+export async function migrateDaemonWorkspace(root: string): Promise<void> {
+  const result = await new Deno.Command("deno", {
+    args: ["run", "-A", "--config", join(REPO_ROOT, "deno.json"), join(REPO_ROOT, "scripts", "setup_db.ts")],
+    cwd: root,
+    env: { EXA_MIGRATIONS_DIR: join(REPO_ROOT, "migrations") },
+  }).output();
+  // Fatal, not a warning: a daemon booting on an unmigrated database fails later on whichever
+  // table it happens to touch first, which reads as an unrelated defect. Fail here instead.
+  if (!result.success) {
+    throw new Error(
+      `setup_db.ts exited ${result.code} for workspace ${root}; the daemon database would be unmigrated.\n` +
+        new TextDecoder().decode(result.stderr),
+    );
+  }
+}
 
 export function writeDaemonConfig(
   configPath: string,
@@ -108,6 +138,10 @@ export function assertDaemonPidIsDead(pid: number): void {
  * `settleMs`, then SIGTERM it. `extraEnv` merges over the base test env. If provided,
  * `midFlight` runs after the daemon has settled and before the post-inject wait — used
  * to write an external Config DB override the running daemon must pick up.
+ *
+ * Migrates the workspace first (see {@link migrateDaemonWorkspace}) so the daemon finds the
+ * production schema, exactly as it does in a deployed workspace. Every caller writes its TOML
+ * at the workspace root, so the root is `configPath`'s directory.
  */
 export async function bootRealDaemon(
   configPath: string,
@@ -118,6 +152,7 @@ export async function bootRealDaemon(
     afterInjectMs?: number;
   } = {},
 ): Promise<void> {
+  await migrateDaemonWorkspace(dirname(configPath));
   const proc = new Deno.Command("deno", {
     args: ["run", "--allow-all", "apps/daemon/main.ts"],
     stdin: "null",

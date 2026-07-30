@@ -77,7 +77,7 @@ export function initActivityTableSchema(db: DatabaseService): void {
 }
 
 /**
- * SQL for reviews table (from migration 002, renamed in Phase 36)
+ * SQL for reviews table (mirrors migrations/001_init.sql; `created_by` since Phase 36)
  */
 export const REVIEWS_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS reviews (
@@ -214,9 +214,9 @@ export const ARTIFACTS_TABLE_SQL = `
 `;
 
 /**
- * SQL for the Phase 135 Team model-registry tables (from migration
- * 002_model_registry.sql, §5.2). Lets tests set up the registry schema without
- * hand-writing DDL or running the migration runner.
+ * SQL for the Phase 135 Team model-registry tables (mirrors migrations/001_init.sql,
+ * §5.2). Lets tests set up the registry schema without hand-writing DDL or running
+ * the migration runner.
  */
 export const REGISTRY_TABLES_SQL = `
   CREATE TABLE IF NOT EXISTS model_catalog (

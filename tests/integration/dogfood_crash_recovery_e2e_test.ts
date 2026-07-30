@@ -22,7 +22,7 @@ import { ConfigService } from "@exaix/core/config";
 import { EventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import { initActivityTableSchema } from "@exaix/testing";
-import { writeDaemonConfig as writeConfig } from "./helpers/daemon_config.ts";
+import { migrateDaemonWorkspace, writeDaemonConfig as writeConfig } from "./helpers/daemon_config.ts";
 
 /** Poll cadence while waiting for the booted daemon to satisfy a condition. */
 const BOOT_POLL_INTERVAL_MS = 500;
@@ -96,6 +96,10 @@ Deno.test({
     const requestPath = join(tempDir, "Workspace", "Requests", `${traceId}_crash_recovery.md`);
 
     try {
+      // Migrate before seeding so the journal the daemon later opens carries the full
+      // production schema, not just the `activity` table (see migrateDaemonWorkspace).
+      await migrateDaemonWorkspace(tempDir);
+
       // Seed a real launched event into the daemon's own file-backed journal —
       // the same marker apps/daemon/main.ts emits (Step 4a) before spawning the
       // delegate, with NO terminal event (simulating a crash before return.json).
