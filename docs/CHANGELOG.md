@@ -57,6 +57,14 @@
 - Generating a request queue from a plan no longer drops the first step when the plan
   file begins directly with a step heading, which previously left the queue depending on
   a step that was never created.
+- The generated request queue now correctly records and preserves `depends_on` ordering,
+  so each request can reference its predecessor rather than running in an arbitrary
+  sequence.
+- OpenCode delegates now write changes to the correct worktree directory instead of
+  the portal checkout, so code changes are properly isolated and preserved.
+- A step title containing path-separator characters (e.g. `../`) no longer silently
+  aborts delegation by reaching the path-normalisation boundary inside the brief
+  preparation step.
 
 ## Unreleased — Phase 142 (Subsystem Evaluation Packs)
 
