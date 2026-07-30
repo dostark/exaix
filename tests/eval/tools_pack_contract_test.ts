@@ -140,3 +140,26 @@ Deno.test("tools_pack_contract — no file-found criterion uses an absolute path
     `file-found matches sandbox-relative paths only; use file-exists for absolute paths:\n${offenders.join("\n")}`,
   );
 });
+
+Deno.test("tools_pack_contract — no scenario invokes git as a shell command (Phase 156 closure)", async () => {
+  const scenarios = await loadPackScenarios();
+  const offenders: string[] = [];
+  for (const { file, scenario } of scenarios) {
+    for (const step of scenario.steps ?? []) {
+      if (step.type !== "shell" || !step.command) continue;
+      if (step.command === "git") {
+        offenders.push(`${file}:${step.id} -> invokes git directly (should be tools/call to git_* MCP handler)`);
+      }
+      for (const arg of step.args ?? []) {
+        if (arg === "git" || arg.endsWith("/git") || arg.includes("git ")) {
+          offenders.push(`${file}:${step.id} -> shell arg invokes git (should be tools/call)`);
+        }
+      }
+    }
+  }
+  assertEquals(
+    offenders,
+    [],
+    `pack scenarios must not shell-invoke git — use tools/call to git_* MCP handlers:\n${offenders.join("\n")}`,
+  );
+});

@@ -886,14 +886,15 @@ Exaix includes an extensible MCP tool handler system that enables agents to perf
 
 ### Tool Handler Categories
 
-| Category            | Tools                                                  | Purpose                  |
-| ------------------- | ------------------------------------------------------ | ------------------------ |
-| **Read-Only**       | `read_file`, `list_directory`, `search_files`          | Exploration and analysis |
-| **Write Tools**     | `write_file`, `patch_file`, `delete_file`, `move_file` | File mutations           |
-| **Directory Tools** | `create_directory`                                     | Directory management     |
-| **Command Tools**   | `run_command`                                          | System command execution |
+| Category            | Tools                                                                      | Purpose                  |
+| ------------------- | -------------------------------------------------------------------------- | ------------------------ |
+| **Read-Only**       | `read_file`, `list_directory`, `search_files`                              | Exploration and analysis |
+| **Write Tools**     | `write_file`, `patch_file`, `delete_file`, `move_file`                     | File mutations           |
+| **Directory Tools** | `create_directory`                                                         | Directory management     |
+| **Command Tools**   | `run_command`                                                              | System command execution |
+| **Git Tools**       | `git_status`, `git_log`, `git_commit`, `git_create_branch`, `git_worktree` | Repository operations    |
 
-All tools enforce portal-scoped operations. For the class diagram, patch file strategy, and security boundary details, see `packages/mcp/README.md`.
+All tools enforce portal-scoped operations. Git tools obtain `IGitService` through `context.gitServiceFactory` (set by the composition root) via `ToolHandler.resolveGitService(portalPath)` — never through direct `Deno.Command("git")`. The service path inherits `validateArgs` (destructive-operation and protected-branch guards), command timeout, `index.lock` retry, and trace-attributed journalling. For the class diagram, patch file strategy, and security boundary details, see `packages/mcp/README.md`.
 
 ---
 
