@@ -198,7 +198,7 @@ Deno.test("[git-worktree] removing a worktree that was never added returns isErr
       });
 
       assertEquals(response.isError, true);
-      assertStringIncludes(toolText(response).toLowerCase(), "worktree");
+      assertStringIncludes(toolText(response).toLowerCase(), "working tree");
     },
   );
 });

@@ -179,7 +179,7 @@ Deno.test("git_commit: rejects when nothing to commit", async () => {
     });
 
     const response = await ctx.server.handleRequest(request);
-    assertMCPToolError(response as IMCPResponseShape, "Git command failed");
+    assertMCPToolError(response as IMCPResponseShape, "Nothing to commit");
   } finally {
     await ctx.cleanup();
   }

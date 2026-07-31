@@ -49,7 +49,8 @@ import {
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import type { JSONValue } from "@exaix/core/types";
 import type { IApplicationContext } from "@exaix/core/types";
-import type { IGitService } from "@exaix/core/types";
+import type { IGitService, IGitServiceFactory } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 
@@ -164,19 +165,14 @@ async function initTestEnv(options: IPortalTestOptions & { prefix?: string }) {
 }
 
 /**
- * Helper to create IApplicationContext from test env
+ * Git service factory for test contexts. Returns real GitService instances when
+ * EXA_MCP_REAL_GIT=1 (set by initGit tests) so format-variant tests exercise
+ * real git behaviour; otherwise a stub emulating common git subcommands.
  */
-function createTestContext(
-  config: Config,
-  db: Awaited<ReturnType<typeof initTestDbService>>["db"],
-): IApplicationContext {
-  const stubConfig = createStubConfig(config);
+function createGitServiceFactory(config: Config): IGitServiceFactory {
   const stubGit = createStubGit();
-
-  // When EXA_MCP_REAL_GIT=1 (set by initGit tests), use real GitService
-  // instances so format-variant tests exercise real git behaviour.
   const useRealGit = Deno.env.get("EXA_MCP_REAL_GIT") === "1";
-  const stubFactory = {
+  return {
     createGitService: (_repoPath: string, _traceId: string): IGitService => {
       if (useRealGit) {
         return new GitService({ config, repoPath: _repoPath });
@@ -231,6 +227,18 @@ function createTestContext(
       };
     },
   };
+}
+
+/**
+ * Helper to create IApplicationContext from test env
+ */
+function createTestContext(
+  config: Config,
+  db: Awaited<ReturnType<typeof initTestDbService>>["db"],
+): IApplicationContext {
+  const stubConfig = createStubConfig(config);
+  const stubGit = createStubGit();
+  const stubFactory = createGitServiceFactory(config);
   return {
     config: stubConfig,
     db,
@@ -332,6 +340,7 @@ export function createToolContext(
 ): IApplicationContext {
   return createStubContext({
     config: createStubConfig(env.config),
+    gitServiceFactory: createGitServiceFactory(env.config),
     ...overrides,
   });
 }
@@ -426,7 +435,7 @@ export function createToolCallRequest(
  */
 export function createMCPRequest(
   method: string,
-  params?: Record<string, JSONValue>,
+  params?: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
   id: number | string = 1,
 ): {
   jsonrpc: "2.0";
@@ -448,7 +457,7 @@ export function createMCPRequest(
 export function assertMCPError(
   response: IMCPResponseShape,
   expectedCode: number,
-  messageContains?: string,
+  messageContains?: Opt<string, Reason.OptionalInput>,
 ): void {
   assertExists(response.error, "Expected error in response");
   assertEquals(
@@ -472,7 +481,7 @@ export function assertMCPError(
  */
 export function assertMCPToolError(
   response: IMCPResponseShape,
-  messageContains?: string,
+  messageContains?: Opt<string, Reason.OptionalInput>,
 ): void {
   assertExists(response.result, "Expected result in response (not a protocol error)");
   const result = response.result as { isError?: boolean; content?: Array<{ type: string; text?: string }> };

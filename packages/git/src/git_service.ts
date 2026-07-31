@@ -731,6 +731,15 @@ export class GitService implements IGitService {
     return { valid: true };
   }
 
+  /**
+   * Error detail for a failed git command. git writes some failure messages
+   * (e.g. "nothing to commit") to stdout rather than stderr, so fall back to
+   * stdout when stderr is empty.
+   */
+  private errorDetail(errorOutput: string, output: string): string {
+    return errorOutput || output;
+  }
+
   public async runGitCommand(
     args: string[],
     options: IGitCommandOptions = {},
@@ -770,7 +779,7 @@ export class GitService implements IGitService {
 
         // Handle specific git error conditions
         if (result.code !== 0) {
-          const gitError = this.classifyGitError(result.code, errorOutput, args);
+          const gitError = this.classifyGitError(result.code, this.errorDetail(errorOutput, output), args);
 
           if (throwOnError) {
             throw gitError;
