@@ -143,6 +143,9 @@ async function runCoverageCheck() {
       "--allow-all",
       ...(flags.parallel ? ["--parallel"] : []),
       `--coverage=${COVERAGE_DIR}`,
+      // Note: an explicit --ignore replaces the deno.json `exclude` config,
+      // so any fixture paths skipped by config must be re-listed here.
+      "--ignore=tests/scenario_framework/fixtures/",
       ...(flags["with-llama"] ? [] : ["--ignore=tests/llama_provider_test.ts"]),
       "tests/",
       "packages/",
