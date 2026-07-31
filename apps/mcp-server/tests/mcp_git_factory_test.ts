@@ -59,18 +59,16 @@ Deno.test("buildServerContext: EXA_MCP_REAL_GIT=1 exposes a gitServiceFactory", 
   }
 });
 
-Deno.test("buildServerContext: without EXA_MCP_REAL_GIT, gitServiceFactory is undefined (stub fallback)", () => {
+Deno.test("buildServerContext: without EXA_MCP_REAL_GIT, gitServiceFactory returns stub", () => {
   const root = Deno.makeTempDirSync({ prefix: "mcp-git-stub-" });
   try {
     Deno.mkdirSync(`${root}/portal`, { recursive: true });
     const configService = new ConfigService(writeMinimalConfig(root));
     const { context, dispose } = buildServerContext(configService);
     try {
-      assertEquals(
-        context.gitServiceFactory,
-        undefined,
-        "gitServiceFactory must be undefined when EXA_MCP_REAL_GIT is unset (stub fallback)",
-      );
+      assert(context.gitServiceFactory !== undefined, "gitServiceFactory must be present (stub factory)");
+      const stubService = context.gitServiceFactory!.createGitService(root, "trace-1");
+      assertEquals(typeof stubService.runGitCommand, "function");
       // context.git should still be present (stub)
       assert(context.git !== undefined, "context.git must still be present (stub)");
       assertEquals(typeof context.git.getCurrentBranch, "function");

@@ -144,9 +144,11 @@ export function buildServerContext(
   // When EXA_MCP_REAL_GIT is not set (CI, test environments), use the stub.
   // Scenario configs set EXA_MCP_REAL_GIT=1 to exercise real git behaviour.
   const useRealGit = Deno.env.get("EXA_MCP_REAL_GIT") === "1";
-  const gitServiceFactory = useRealGit ? createGitServiceFactory(config, logger) : undefined;
+  const gitServiceFactory: IGitServiceFactory = useRealGit ? createGitServiceFactory(config, logger) : {
+    createGitService: (_repoPath: string, _traceId: string) => createGitServiceStub(),
+  };
   const gitService = useRealGit
-    ? gitServiceFactory!.createGitService(config.system.root, "mcp-server-boot")
+    ? gitServiceFactory.createGitService(config.system.root, "mcp-server-boot")
     : createGitServiceStub();
 
   const context: ICliApplicationContext = {

@@ -98,6 +98,7 @@ const CLI_OUTPUT_FORMAT_HELP = "Output format: table, json, md";
 const CLI_OUTPUT_FORMAT_DEFAULT = { default: UIOutputFormat.TABLE };
 const CLI_OPTION_JSON_HELP = "Output in JSON format";
 const CONFIG_LABEL = "config";
+const CONFIG_VALIDATE_ACTION = "config.validate";
 const CONFIG_DIFF_LABEL = "diff";
 const DEFAULT_CAPABILITIES_LABEL = "general";
 const CLI_LIMIT_OPTION = "-l, --limit <limit:number>";
@@ -1500,10 +1501,10 @@ export const __test_command = new Command()
             try {
               const report = await configCommands.validate(path);
               if (report.valid) {
-                display.info("config.validate", "config", { valid: true });
+                display.info(CONFIG_VALIDATE_ACTION, CONFIG_LABEL, { valid: true });
               } else {
                 for (const issue of report.issues) {
-                  display.warn("config.validate", issue.path, { message: issue.message, code: issue.code });
+                  display.warn(CONFIG_VALIDATE_ACTION, issue.path, { message: issue.message, code: issue.code });
                 }
               }
             } catch (error) {
