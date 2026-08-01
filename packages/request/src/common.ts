@@ -96,6 +96,8 @@ export function buildParsedRequest(
     thinking: frontmatter.thinking,
     effort: frontmatter.effort,
     characteristics: frontmatter.characteristics,
+    scenarioId: frontmatter.scenario_id,
+    stepId: frontmatter.step_id,
   };
 }
 

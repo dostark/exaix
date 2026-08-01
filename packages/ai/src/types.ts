@@ -126,6 +126,24 @@ export interface IModelOptions {
    *  with content_blocks/tool_use). "openai" = Chat Completions API with
    *  tool_calls/tool_call_id. "native" = Exaix TOML action blocks (Phase 151). */
   chatFormat?: ChatFormat;
+  /** Where this call happened, for fixture replay addressing (Phase 157). Assigned by
+   *  AgentRunner from IParsedRequest.scenarioId/stepId; absent for every call outside the
+   *  scenario framework, which keeps MockLLMProvider's recorded-strategy lookup keyed by
+   *  prompt hash exactly as before. */
+  callSite?: ICallSite;
+}
+
+/**
+ * Where an LLM call happened, for fixture replay addressing (Phase 157). Recorded fixtures
+ * are addressed by call site rather than by prompt content, so an edited system prompt
+ * reports as drift on the affected fixtures instead of invalidating the whole set.
+ */
+export interface ICallSite {
+  scenarioId: string;
+  stepId: string;
+  /** Ordinal of this logical call within the step, incremented once per consumed response.
+   *  A retried logical call (internal to executeWithRetry) keeps the same index. */
+  callIndex: number;
 }
 
 /**

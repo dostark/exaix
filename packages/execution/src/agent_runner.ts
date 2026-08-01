@@ -13,7 +13,7 @@
  * @related-files ["packages/request/src/processor.ts", "packages/core/src/blueprint/blueprint_loader.ts"]
  */
 
-import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
+import type { ICallSite, IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import { toSafeJson } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
@@ -121,6 +121,13 @@ export interface IParsedRequest {
   thinking?: boolean;
   effort?: string;
   characteristics?: string[];
+
+  /** Scenario id from request frontmatter, for fixture replay call-site addressing
+   *  (Phase 157). Absent outside the scenario framework. */
+  scenarioId?: string;
+  /** Step id from request frontmatter, for fixture replay call-site addressing
+   *  (Phase 157). Absent outside the scenario framework. */
+  stepId?: string;
 }
 
 /**
@@ -227,6 +234,9 @@ export class AgentRunner implements IAgentRunner {
 
   private modelProvider: IModelProvider;
   private config?: IAgentRunnerConfig;
+  /** Next call index per (scenarioId, stepId), for fixture replay addressing (Phase 157).
+   *  Incremented once per consumed response — a retried logical call keeps its index. */
+  private callIndexByCallSite = new Map<string, number>();
 
   constructor(
     planAdapterOrProvider?: Opt<IPlanAdapter | IModelProvider, Reason.OptionalDependency>,
@@ -352,8 +362,9 @@ export class AgentRunner implements IAgentRunner {
     }, traceId);
 
     // Step 2: Execute via the model provider (with retry if enabled)
+    const callSite = this.resolveCallSite(request);
     await this.emitMilestone(MILESTONE_LLM_CALL_STARTED, traceId, `LLM call started for ${identityId}`);
-    const retryResult = await this.executeWithRetry(combinedPrompt, startTime, traceId, jsonSchema);
+    const retryResult = await this.executeWithRetry(combinedPrompt, startTime, traceId, jsonSchema, callSite);
 
     const duration = Date.now() - startTime;
 
@@ -361,6 +372,7 @@ export class AgentRunner implements IAgentRunner {
     if (!retryResult.success) {
       this.handleExecutionFailure(retryResult, requestId, identityId, traceId, duration);
     }
+    this.markCallSiteConsumed(callSite);
 
     // Step 3: Parse the response to extract thought and content
     const generateResult = retryResult.value;
@@ -574,6 +586,30 @@ export class AgentRunner implements IAgentRunner {
   }
 
   /**
+   * Assign the call site for this logical call (Phase 157), reading — but not yet
+   * incrementing — the next call index for (scenarioId, stepId). Absent when the request
+   * carries no scenarioId/stepId, which keeps every call outside the scenario framework
+   * keyed by prompt hash exactly as before.
+   */
+  private resolveCallSite(request: IParsedRequest): ICallSite | undefined {
+    if (!request.scenarioId || !request.stepId) return undefined;
+    const key = `${request.scenarioId}::${request.stepId}`;
+    const callIndex = this.callIndexByCallSite.get(key) ?? 0;
+    return { scenarioId: request.scenarioId, stepId: request.stepId, callIndex };
+  }
+
+  /**
+   * Advance the call index for a call site once its response has actually been consumed.
+   * Retries within the SAME logical call never reach this — they reuse the callSite object
+   * assigned before the retry loop started — so only a subsequent run() sees the new index.
+   */
+  private markCallSiteConsumed(callSite: Opt<ICallSite, Reason.OptionalContext>): void {
+    if (!callSite) return;
+    const key = `${callSite.scenarioId}::${callSite.stepId}`;
+    this.callIndexByCallSite.set(key, callSite.callIndex + 1);
+  }
+
+  /**
    * Execute the model generation with retry logic
    */
   private async executeWithRetry(
@@ -581,9 +617,14 @@ export class AgentRunner implements IAgentRunner {
     startTime: number,
     conversationId: Opt<string, Reason.TraceAbsent>,
     jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
+    callSite: Opt<ICallSite, Reason.OptionalContext>,
   ): Promise<IRetryResult<IGenerateResult>> {
-    const generateOptions: IModelOptions | undefined = conversationId || jsonSchema
-      ? { ...(conversationId ? { conversationId } : {}), ...(jsonSchema ? { jsonSchema } : {}) }
+    const generateOptions: IModelOptions | undefined = conversationId || jsonSchema || callSite
+      ? {
+        ...(conversationId ? { conversationId } : {}),
+        ...(jsonSchema ? { jsonSchema } : {}),
+        ...(callSite ? { callSite } : {}),
+      }
       : undefined;
     if (this.disableRetry) {
       // Direct execution without retry

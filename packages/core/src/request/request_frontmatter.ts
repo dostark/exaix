@@ -55,6 +55,12 @@ export interface IRequestFrontmatter {
   expected_outcomes?: string[];
   /** Scope constraints parsed from YAML frontmatter (Phase 49). */
   scope?: { include?: string[]; exclude?: string[] };
+  /** Scenario id stamped by the scenario runner via EXA_SCENARIO_ID, for fixture replay
+   *  call-site addressing (Phase 157). Absent outside the scenario framework. */
+  scenario_id?: string;
+  /** Step id stamped by the scenario runner via EXA_STEP_ID, for fixture replay call-site
+   *  addressing (Phase 157). Absent outside the scenario framework. */
+  step_id?: string;
 }
 
 export interface IParsedRequestFile {

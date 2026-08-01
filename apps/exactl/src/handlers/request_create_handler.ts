@@ -206,6 +206,21 @@ export class RequestCreateHandler extends BaseCommand {
 
     this.addModelIntentFrontmatterFields(frontmatterFields, options);
     this.addArrayFrontmatterFields(frontmatterFields, options);
+    this.addCallSiteFrontmatterFields(frontmatterFields);
+  }
+
+  /**
+   * Stamp scenario_id/step_id from EXA_SCENARIO_ID/EXA_STEP_ID (Phase 157). The scenario
+   * runner exports these per step so a `submit-request` step's `exactl request --file`
+   * subprocess can carry them into the created request's frontmatter — the transport
+   * AgentRunner later reads to key fixture replay by call site instead of prompt hash.
+   * Absent outside the scenario framework.
+   */
+  private addCallSiteFrontmatterFields(frontmatterFields: Record<string, string | boolean | number>): void {
+    const scenarioId = Deno.env.get("EXA_SCENARIO_ID");
+    const stepId = Deno.env.get("EXA_STEP_ID");
+    if (scenarioId) frontmatterFields.scenario_id = scenarioId;
+    if (stepId) frontmatterFields.step_id = stepId;
   }
 
   private addModelIntentFrontmatterFields(

@@ -12,7 +12,7 @@
  */
 
 import { MockStrategy, ProviderType } from "@exaix/core";
-import type { IModelOptions, IModelProvider } from "../types.ts";
+import type { ICallSite, IModelOptions, IModelProvider } from "../types.ts";
 import type { IGenerateResult } from "./common.ts";
 import { MOCK_DELAY_MS, MOCK_INPUT_TOKENS, MOCK_OUTPUT_TOKENS } from "@exaix/ai";
 import { ToolName } from "@exaix/core";
@@ -38,6 +38,20 @@ export interface IRecordedResponse {
   tokens: { input: number; output: number };
   /** When this was recorded */
   recordedAt: string;
+  /** Where this recording was captured (Phase 157). When present, lookup addresses by call
+   *  site instead of prompt hash; the hash is still compared on replay to detect drift. */
+  callSite?: ICallSite;
+}
+
+/**
+ * A call-site hit whose current prompt hash no longer matches the recorded fixture. The
+ * fixture still replays — the recording may still be representative — but the mismatch is
+ * reported so a human can decide whether to re-capture (Phase 157 Design Decision 1).
+ */
+export interface IFixtureDriftReport {
+  callSite: ICallSite;
+  expectedHash: string;
+  actualHash: string;
 }
 
 /**
@@ -113,6 +127,16 @@ export class MockLLMError extends Error {
 // ============================================================================
 // MockLLMProvider Implementation
 // ============================================================================
+
+/** Stable string key for a call site, used to match a recording against options.callSite. */
+function callSiteKey(callSite: ICallSite): string {
+  return `${callSite.scenarioId}::${callSite.stepId}::${callSite.callIndex}`;
+}
+
+/** Human-readable call site, used in error messages and drift warnings. */
+function describeCallSite(callSite: ICallSite): string {
+  return `${callSite.scenarioId}/${callSite.stepId}#${callSite.callIndex}`;
+}
 
 /**
  * Mock LLM provider for deterministic testing.
@@ -213,6 +237,7 @@ export class MockLLMProvider implements IModelProvider {
   private _callCount: number = 0;
   private _callHistory: ICallRecord[] = [];
   private _totalTokens: ITokenCount = { input: 0, output: 0 };
+  private _driftReports: IFixtureDriftReport[] = [];
 
   /**
    * @param strategy Mock strategy to use
@@ -275,7 +300,7 @@ export class MockLLMProvider implements IModelProvider {
     let response: string;
     switch (this.strategy) {
       case MockStrategy.RECORDED:
-        response = await this.generateRecorded(prompt);
+        response = await this.generateRecorded(prompt, options);
         break;
       case MockStrategy.SCRIPTED:
         response = await this.generateScripted();
@@ -316,9 +341,15 @@ export class MockLLMProvider implements IModelProvider {
   // ============================================================================
 
   /**
-   * Recorded strategy: Look up response by prompt hash
+   * Recorded strategy: look up a response by call site when the caller supplies one
+   * (Phase 157), falling back to the pre-existing whole-prompt-hash lookup otherwise —
+   * byte-identical to today's behaviour for every call that doesn't set options.callSite.
    */
-  private generateRecorded(prompt: string): string {
+  private generateRecorded(prompt: string, options: Opt<IModelOptions, Reason.OptionalInput>): string {
+    if (options?.callSite) {
+      return this.generateRecordedByCallSite(prompt, options.callSite);
+    }
+
     const hash = this.hashPrompt(prompt);
 
     // Try exact hash match first
@@ -358,6 +389,52 @@ export class MockLLMProvider implements IModelProvider {
 
     throw new MockLLMError(
       `No recorded response found for prompt hash: ${hash}\n` +
+        `Prompt preview: "${prompt.substring(0, 50)}..."\n` +
+        `Available recordings: ${this.recordings.length}\n` +
+        `Hint: Add recordings or use 'pattern' strategy instead`,
+    );
+  }
+
+  /**
+   * Look up a recording by call site (Phase 157 Design Decision 1). A hit whose prompt hash
+   * no longer matches still replays — the recording may still be representative — but is
+   * reported as drift. A miss is fatal under strictRecordings, naming the call site so the
+   * missing fixture can be captured; otherwise it falls back to pattern matching.
+   */
+  private generateRecordedByCallSite(prompt: string, callSite: ICallSite): string {
+    const key = callSiteKey(callSite);
+    const recording = this.recordings.find((r) => r.callSite && callSiteKey(r.callSite) === key);
+
+    if (recording) {
+      const actualHash = this.hashPrompt(prompt);
+      if (recording.promptHash !== actualHash) {
+        this._driftReports.push({ callSite, expectedHash: recording.promptHash, actualHash });
+        console.warn(
+          `Fixture drift at call site ${describeCallSite(callSite)}: the prompt hash changed from ` +
+            `${recording.promptHash} to ${actualHash}. Replaying the recorded response — review whether ` +
+            `it still represents the current prompt.`,
+        );
+      }
+      return recording.response;
+    }
+
+    if (this.strictRecordings) {
+      throw new MockLLMError(
+        `No recording for call site ${describeCallSite(callSite)} and strict recordings are enabled.\n` +
+          `Preview: "${prompt.substring(0, 120)}..."\n` +
+          `Capture this response or run without strict mode to fall back to patterns.`,
+      );
+    }
+
+    if (this.patterns.length > 0) {
+      console.warn(
+        `No recording for call site ${describeCallSite(callSite)}, falling back to pattern matching.`,
+      );
+      return this.generatePattern(prompt);
+    }
+
+    throw new MockLLMError(
+      `No recorded response found for call site: ${describeCallSite(callSite)}\n` +
         `Prompt preview: "${prompt.substring(0, 50)}..."\n` +
         `Available recordings: ${this.recordings.length}\n` +
         `Hint: Add recordings or use 'pattern' strategy instead`,
@@ -431,6 +508,14 @@ export class MockLLMProvider implements IModelProvider {
    */
   get totalTokens(): ITokenCount {
     return { ...this._totalTokens };
+  }
+
+  /**
+   * Call-site hits whose prompt hash no longer matched the recorded fixture (Phase 157).
+   * Empty when no call-site-keyed generation has drifted.
+   */
+  get driftReports(): IFixtureDriftReport[] {
+    return [...this._driftReports];
   }
 
   /**

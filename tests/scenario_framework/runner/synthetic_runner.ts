@@ -90,6 +90,19 @@ export interface IMaterializedCellConfig {
   aiModel?: string;
 }
 
+/** Options for {@link buildStepBaseEnv} — a subset of IExecuteSyntheticStepOptions plus the
+ *  scenario id, which the step-level options do not otherwise carry. */
+export interface IStepBaseEnvOptions {
+  scenarioId: string;
+  stepId: string;
+  requestFixturePath: string;
+  /** Absolute path of the scenario's `flow_fixture`, when it declares one — `$FLOW_FIXTURE`. */
+  flowFixturePath?: string;
+  workspaceRoot: string;
+  frameworkHome: string;
+  env?: { [key: string]: string };
+}
+
 /**
  * This file always lives within the Exaix repo at tests/scenario_framework/runner/.
  * Compute the repo root from this known location rather than from frameworkHome
@@ -451,6 +464,7 @@ export async function runSyntheticScenario(
 
         const start = await currentMaxRowid(options.workspaceRoot);
         const outcome = await executeSyntheticStep({
+          scenarioId: loadedScenario.scenario.id,
           step: resolvedStep,
           workspaceRoot: options.workspaceRoot,
           artifactBaselineMs: scenarioStartedAtMs,
@@ -719,6 +733,7 @@ export function resolveTrajectorySourceStep(
 }
 
 interface IExecuteSyntheticStepOptions {
+  scenarioId: string;
   step: IScenarioStep;
   workspaceRoot: string;
   /**
@@ -759,11 +774,19 @@ export const SCENARIO_SUBSTITUTED_VARIABLES = [
   "CELL_MODEL",
 ] as const;
 
-async function executeSyntheticStep(
-  options: IExecuteSyntheticStepOptions,
-): Promise<IScenarioStepOutcome> {
-  // Base env (without step.env) used to expand the step's own $VARS — incl. step.env values.
-  const baseEnv = {
+/**
+ * The base env every synthetic step's subprocess sees, before the step's own (already
+ * $VAR-expanded) `env:` block is merged on top. Extracted from executeSyntheticStep so it can
+ * be asserted directly, without spawning a real daemon or exactl process.
+ *
+ * EXA_SCENARIO_ID/EXA_STEP_ID (Phase 157) let a `submit-request` step's `exactl request --file`
+ * subprocess stamp them into the created request's frontmatter — the transport that lets
+ * fixture replay key by call site instead of prompt hash. Set alongside the other
+ * runner-controlled vars (REQUEST_FIXTURE, WORKSPACE_ROOT, ...), which a step's own `env:`
+ * cannot override.
+ */
+export function buildStepBaseEnv(options: IStepBaseEnvOptions): Record<string, string> {
+  return {
     ...Deno.env.toObject(),
     ...(options.env ?? {}),
     REQUEST_FIXTURE: options.requestFixturePath,
@@ -774,7 +797,24 @@ async function executeSyntheticStep(
     EXA_SYSTEM_ROOT: options.workspaceRoot,
     FRAMEWORK_HOME: options.frameworkHome,
     EXA_CONFIG_PATH: join(options.workspaceRoot, WORKSPACE_CONFIG_FILE),
+    EXA_SCENARIO_ID: options.scenarioId,
+    EXA_STEP_ID: options.stepId,
   };
+}
+
+async function executeSyntheticStep(
+  options: IExecuteSyntheticStepOptions,
+): Promise<IScenarioStepOutcome> {
+  // Base env (without step.env) used to expand the step's own $VARS — incl. step.env values.
+  const baseEnv = buildStepBaseEnv({
+    scenarioId: options.scenarioId,
+    stepId: options.step.id,
+    requestFixturePath: options.requestFixturePath,
+    flowFixturePath: options.flowFixturePath,
+    workspaceRoot: options.workspaceRoot,
+    frameworkHome: options.frameworkHome,
+    env: options.env,
+  });
 
   const expandedStep = expandVariablesInStep(options.step, baseEnv);
 
