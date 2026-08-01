@@ -13,7 +13,7 @@ import { applySandboxCleanup, describeRetention, planSandboxCleanup, SandboxRete
 import { ScenarioExecutionMode } from "../schema/step_schema.ts";
 import { type IScenarioCatalogEntry, loadScenarioCatalog } from "./scenario_catalog.ts";
 import { runSyntheticScenario } from "./synthetic_runner.ts";
-import { applyCaptureFixturesFlag } from "./capture_fixtures_flag.ts";
+import { applyCaptureFixturesFlag, reportCaptureFlakiness } from "./capture_fixtures_flag.ts";
 import type { IRunManifest } from "./evidence_collector.ts";
 import { reportScenarioFailure, reportSuiteSummary } from "./reporter.ts";
 import { selectScenariosForExecution } from "./modes.ts";
@@ -282,6 +282,13 @@ await new Command()
     // 10. Print suite summary
     if (selectedEntries.length > 0) {
       reportSuiteSummary(scenarioVerdicts, scoreThreshold);
+    }
+
+    // 10b. Phase 157 Step 4: after a --capture-fixtures run, report which call sites needed
+    // retries to satisfy their contract — a call site the real model rarely satisfies on the
+    // first try is a product finding, not noise to smooth away by re-rolling.
+    if (options.captureFixtures) {
+      await reportCaptureFlakiness(resolve(options.captureFixtures));
     }
 
     // 11. Write eval-report.json

@@ -57,7 +57,9 @@ export class RateLimitedProvider implements IModelProvider {
   public dayStart = Date.now();
 
   constructor(
-    private inner: IModelProvider,
+    /** Public (Phase 157) so unwrapModelProvider can reach through a decorator chain to
+     *  report on the underlying provider (e.g. MockLLMProvider fixture drift). */
+    public readonly inner: IModelProvider,
     private limits: IRateLimitConfig,
   ) {
     this.id = `rate-limited-${inner.id}`;

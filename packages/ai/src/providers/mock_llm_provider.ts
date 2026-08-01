@@ -15,7 +15,12 @@ import { MockStrategy, ProviderType } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import type { ICallSite, IModelOptions, IModelProvider } from "../types.ts";
 import type { IGenerateResult } from "./common.ts";
-import { MOCK_DELAY_MS, MOCK_INPUT_TOKENS, MOCK_OUTPUT_TOKENS } from "@exaix/ai";
+import {
+  DEFAULT_FIXTURE_DRIFT_RECAPTURE_THRESHOLD,
+  MOCK_DELAY_MS,
+  MOCK_INPUT_TOKENS,
+  MOCK_OUTPUT_TOKENS,
+} from "@exaix/ai";
 import { ToolName } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
@@ -58,6 +63,19 @@ export interface IFixtureDriftReport {
   callSite: ICallSite;
   expectedHash: string;
   actualHash: string;
+}
+
+/**
+ * Aggregated drift, reported per run (Phase 157 Step 4). `totalCallSiteLookups` counts only
+ * call-site lookups that found a recording — a miss is a coverage gap, not drift, and is
+ * excluded so it cannot dilute the rate.
+ */
+export interface IDriftSummary {
+  totalCallSiteLookups: number;
+  driftedCalls: number;
+  driftRate: number;
+  overThreshold: boolean;
+  fixtures: string[];
 }
 
 /**
@@ -316,6 +334,9 @@ export class MockLLMProvider implements IModelProvider {
   private _callHistory: ICallRecord[] = [];
   private _totalTokens: ITokenCount = { input: 0, output: 0 };
   private _driftReports: IFixtureDriftReport[] = [];
+  /** Call-site lookups that found a recording (whether current or drifted) — the denominator
+   *  reportDrift() rates against. A miss is a coverage gap, not drift, so it is excluded. */
+  private _callSiteHitCount: number = 0;
 
   /**
    * @param strategy Mock strategy to use
@@ -484,6 +505,7 @@ export class MockLLMProvider implements IModelProvider {
     const recording = this.recordings.find((r) => r.callSite && callSiteKey(r.callSite) === key);
 
     if (recording) {
+      this._callSiteHitCount++;
       const actualHash = this.hashPrompt(prompt);
       if (recording.promptHash !== actualHash) {
         this._driftReports.push({ callSite, expectedHash: recording.promptHash, actualHash });
@@ -594,6 +616,23 @@ export class MockLLMProvider implements IModelProvider {
    */
   get driftReports(): IFixtureDriftReport[] {
     return [...this._driftReports];
+  }
+
+  /**
+   * Aggregate drift totals for this run (Phase 157 Step 4), rated against
+   * DEFAULT_FIXTURE_DRIFT_RECAPTURE_THRESHOLD unless a caller supplies its own. A miss is
+   * excluded from the denominator — it is a coverage gap, not drift.
+   */
+  reportDrift(threshold: number = DEFAULT_FIXTURE_DRIFT_RECAPTURE_THRESHOLD): IDriftSummary {
+    const driftedCalls = this._driftReports.length;
+    const driftRate = this._callSiteHitCount > 0 ? driftedCalls / this._callSiteHitCount : 0;
+    return {
+      totalCallSiteLookups: this._callSiteHitCount,
+      driftedCalls,
+      driftRate,
+      overThreshold: driftRate > threshold,
+      fixtures: this._driftReports.map((r) => describeCallSite(r.callSite)),
+    };
   }
 
   /**

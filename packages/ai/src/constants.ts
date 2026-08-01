@@ -72,6 +72,32 @@ export const DEFAULT_CAPTURE_MAX_ATTEMPTS: number = configurable({
   swap: SwapClass.HOT,
 });
 
+/** Phase 157 Step 4: fraction of in-use fixtures that must have drifted (a call-site hit
+ *  whose prompt hash no longer matches) before a run flags the set as due for re-capture. */
+export const DEFAULT_FIXTURE_DRIFT_RECAPTURE_THRESHOLD: number = configurable({
+  key: "ai.fixture_drift_recapture_threshold",
+  default: 0.2,
+  type: ConfigValueType.NUMBER,
+  description: "Fraction of in-use fixtures drifted before a run flags the set as due for re-capture",
+  min: 0,
+  max: 1,
+  swap: SwapClass.HOT,
+});
+
+/** Phase 157 Step 4: fraction of capture attempts that were failures before a call site is
+ *  raised as a product finding — a prompt the real model can't reliably satisfy — rather
+ *  than kept as a fixture to keep re-rolling. */
+export const DEFAULT_CAPTURE_FAILURE_PRODUCT_FINDING_THRESHOLD: number = configurable({
+  key: "ai.capture_failure_product_finding_threshold",
+  default: 0.4,
+  type: ConfigValueType.NUMBER,
+  description:
+    "Fraction of capture attempts that were failures before a call site is raised as a product finding, not re-rolled",
+  min: 0,
+  max: 1,
+  swap: SwapClass.HOT,
+});
+
 export const DEFAULT_MOCK_PROVIDER_ID = "mock-provider";
 
 export const PROVIDER_MOCK_DESCRIPTION = "Mock provider for testing and development";

@@ -96,6 +96,59 @@ export EXA_LLM_MODEL=gemini-1.5-flash
 exactl eval run --pack eval-smoke
 ```
 
+### Recorded Mock Fixtures (Phase 157) — capture, replay, refresh
+
+The `flow_blueprints` pack chains step responses (a step's output is the next step's input),
+so it is the one pack where a mock misclassification is indistinguishable from a product
+defect. `MockLLMProvider`'s `recorded` strategy replays real LLM exchanges captured once and
+committed under `tests/scenario_framework/fixtures/mock_recordings/<pack>/`, addressed by
+call site (scenario id, step id, call index) rather than by prompt content — a prompt edit
+reports as drift on the affected fixtures instead of invalidating the whole set.
+
+**Capturing (or refreshing) a fixture set** is one command, run with a real provider
+configured:
+
+```bash
+export EXA_LLM_PROVIDER=anthropic
+export ANTHROPIC_API_KEY="sk-..."
+deno run -A tests/scenario_framework/runner/main.ts \
+  --capture-fixtures tests/scenario_framework/fixtures/mock_recordings/flow_blueprints \
+  -P flow_blueprints
+```
+
+This is **operator-triggered only — never a CI gate.** It costs real API credits, and the
+result is a diff of committed JSON files that should be reviewed like any other change:
+
+- **What to run**: the command above, scoped to the pack whose fixtures need refreshing
+  (`-P <pack>`, or `-s <scenario-id>` for a single scenario). Re-running overwrites only the
+  addressed call sites' fixture files — a sibling fixture untouched by the prompt change is
+  left byte-identical, so the diff is scoped to what actually changed.
+- **What to review in the diff**: each changed fixture's `response` (does it still look like
+  a plausible answer to its call site's prompt?) and its `capture` field, if present (`{
+  attempts, failures }` — how many tries it took the real model to produce a
+  contract-satisfying response; present only when it took more than one).
+- **What provenance means**: every fixture carries `model` and `recordedAt`. A fixture set
+  captured from a different model is a different tier — check these fields before comparing
+  two runs' results.
+- **Capturing from a mock provider is refused**, not merely discouraged —
+  `EXA_CAPTURE_FIXTURES_DIR` set with `EXA_LLM_PROVIDER=mock` fails fast with a stated
+  reason, so a fixture set can never accidentally encode the mock's own regex guesses.
+
+**Drift and flakiness are reported automatically.** During replay, the daemon logs a
+`[fixture-drift]` warning on shutdown naming every call site whose prompt hash no longer
+matches its recorded fixture (`MockLLMProvider.reportDrift()`), and flags when the drift
+rate crosses the `ai.fixture_drift_recapture_threshold` configurable (default 20%). After a
+`--capture-fixtures` run, the runner prints a `[capture-flakiness]` warning for any call site
+whose capture attempts crossed the `ai.capture_failure_product_finding_threshold`
+configurable (default 40%) — a call site the real model rarely satisfies on the first try is
+a **product finding**, not noise to smooth away by re-rolling.
+
+**Fixtures are not a quality claim.** A replayed response is identical whether or not an
+artefact (a skill, a blueprint change) improved anything — capture and replay only raise
+mechanics fidelity (the pipeline runs on real model shapes, not regex guesses). Whether an
+artefact actually helps is a provider-live question; see
+[`docs/Exaix_Evaluation.md`](../../docs/Exaix_Evaluation.md).
+
 ### Headless CLI execution for `swe_tasks` — the cost-preferred live-eval path
 
 The `swe_tasks` pack's `provider-live` scenarios (see `scenarios/swe_tasks/`) exercise a real

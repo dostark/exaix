@@ -14,6 +14,7 @@
 
 import { resolve } from "@std/path";
 import type { Opt, Reason } from "@exaix/core/types";
+import { reportFlakiness } from "@exaix/ai/providers";
 
 /** Read by packages/ai/src/provider_factory.ts's resolveOptions(). */
 export const CAPTURE_FIXTURES_ENV_VAR = "EXA_CAPTURE_FIXTURES_DIR";
@@ -25,4 +26,20 @@ export const CAPTURE_FIXTURES_ENV_VAR = "EXA_CAPTURE_FIXTURES_DIR";
 export function applyCaptureFixturesFlag(dir: Opt<string, Reason.OptionalInput>): void {
   if (!dir) return;
   Deno.env.set(CAPTURE_FIXTURES_ENV_VAR, resolve(dir));
+}
+
+/**
+ * After a --capture-fixtures run, print a warning naming any call site whose capture
+ * failure rate crosses DEFAULT_CAPTURE_FAILURE_PRODUCT_FINDING_THRESHOLD (Phase 157 Step 4).
+ * Reuses packages/ai's reportFlakiness — the runner does not re-scan fixture files itself.
+ */
+export async function reportCaptureFlakiness(dir: string): Promise<void> {
+  const summary = await reportFlakiness(dir);
+  for (const entry of summary.flakyFixtures) {
+    console.warn(
+      `[capture-flakiness] ${entry.callSite}: ${(entry.failureRate * 100).toFixed(0)}% of ${entry.attempts} ` +
+        `capture attempts failed — the real model rarely satisfies this prompt on the first try. ` +
+        `This is a product finding, not noise to re-roll away.`,
+    );
+  }
 }

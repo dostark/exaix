@@ -42,6 +42,7 @@ import {
   ProviderFactory,
   ProviderRegistry,
 } from "@exaix/ai";
+import { MockLLMProvider, unwrapModelProvider } from "@exaix/ai/providers";
 import type { Opt, Reason } from "@exaix/core/types";
 import { DefaultModelRegistry } from "@exaix/model-registry";
 import { RequestProcessor } from "@exaix/request";
@@ -473,6 +474,26 @@ if (import.meta.main) {
       model: providerInfo.model,
       source: providerInfo.source,
       named_model: defaultModelName,
+    });
+
+    // Phase 157 Step 4: on shutdown, report accumulated fixture drift for this run — a
+    // slowly staling fixture set should be visible before it is worthless. Unwraps through
+    // TracedProvider/RateLimitedProvider (ProviderFactory.createAndWrap applies both when a
+    // logger/rate-limiting is configured) to find the underlying MockLLMProvider, if any.
+    gracefulShutdown.registerCleanup("report_fixture_drift", () => {
+      const underlying = unwrapModelProvider(llmProvider);
+      if (underlying instanceof MockLLMProvider) {
+        const summary = underlying.reportDrift();
+        if (summary.driftedCalls > 0) {
+          console.warn(
+            `[fixture-drift] ${summary.driftedCalls}/${summary.totalCallSiteLookups} call-site lookups ` +
+              `drifted this run (rate ${(summary.driftRate * 100).toFixed(0)}%)` +
+              `${summary.overThreshold ? " — OVER THRESHOLD, recapture recommended" : ""}. ` +
+              `Fixtures: ${summary.fixtures.join(", ")}`,
+          );
+        }
+      }
+      return Promise.resolve();
     });
 
     // Construct GuardrailRunner if enabled and Team edition (Phase 107)

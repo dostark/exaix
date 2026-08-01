@@ -18,13 +18,15 @@ export class TracedProvider implements IModelProvider {
   public readonly id: string;
 
   constructor(
-    private inner: IModelProvider,
+    /** Public (Phase 157) so unwrapModelProvider can reach through a decorator chain to
+     *  report on the underlying provider (e.g. MockLLMProvider fixture drift). */
+    public readonly inner: IModelProvider,
     private logger: IEventLogger,
   ) {
     this.id = inner.id;
   }
 
-  async generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
+  async generate(prompt: string, options?: Opt<IModelOptions, Reason.OptionalInput>): Promise<IGenerateResult> {
     const traceId = crypto.randomUUID();
     const startTime = performance.now();
 

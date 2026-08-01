@@ -7,6 +7,7 @@
  */
 
 import type { JSONValue } from "@exaix/core";
+import type { IModelProvider } from "../types.ts";
 
 /**
  * Result of a model provider generate call.
@@ -176,4 +177,27 @@ export async function withRetry<T>(
     }
   }
   throw lastError ?? new Error("Unknown error in withRetry");
+}
+
+/** A decorator provider (TracedProvider, RateLimitedProvider, ...) that wraps another. */
+interface IWrappingModelProvider extends IModelProvider {
+  readonly inner: IModelProvider;
+}
+
+function hasInnerProvider(provider: IModelProvider): provider is IWrappingModelProvider {
+  return "inner" in provider;
+}
+
+/**
+ * Reach through a decorator chain (TracedProvider, RateLimitedProvider, ...) to the
+ * underlying provider (Phase 157 Step 4). Used by daemon shutdown to find a MockLLMProvider,
+ * regardless of how many wrappers ProviderFactory applied, so it can report fixture drift.
+ * Returns the provider itself when it is not wrapped.
+ */
+export function unwrapModelProvider(provider: IModelProvider): IModelProvider {
+  let current = provider;
+  while (hasInnerProvider(current)) {
+    current = current.inner;
+  }
+  return current;
 }
