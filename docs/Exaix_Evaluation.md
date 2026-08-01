@@ -753,6 +753,32 @@ Related: setup and teardown steps carry no weight in the suite score. A step-wei
 every step made the score really "the fraction of steps that passed", and most steps are harness
 plumbing — a total failure of the mechanism under test still scored 0.800 against a 0.7 gate.
 
+### Recorded fixtures raise mechanics fidelity, not quality
+
+The `flow_blueprints` pack chains step responses — a step's output is the next step's input —
+which makes it the one pack where the mock's own regex guesses can be mistaken for a product
+defect. Recorded fixtures replace those guesses with replayed real LLM exchanges
+(`MockLLMProvider`'s `recorded` strategy), addressed by **call site** (scenario id, step id, call
+index) rather than by
+matching the prompt's content — so an edited system prompt reports as drift on the affected
+fixtures instead of invalidating the whole set. See
+[`tests/scenario_framework/README.md` § "Recorded Mock Fixtures"](../tests/scenario_framework/README.md#recorded-mock-fixtures-phase-157)
+for how to capture, replay, and refresh them.
+
+**A replayed response is identical whether or not an artefact helped.** Capturing and replaying a
+fixture raises the pack's _mechanics_ fidelity — the pipeline runs on a real model's response
+shapes instead of a regex's guess of what one looks like — and says **nothing** about whether a
+skill, blueprint change, or prompt edit made the response _better_. A green `flow_blueprints` run
+on recorded fixtures means the real model's shapes flow through the pipeline correctly; it does
+not mean, and was never designed to mean, that any particular artefact improved the outcome.
+Whether an artefact helps is a provider-live question — value evaluation runs against a real model
+every time, in every arm, which recorded fixtures structurally cannot substitute for.
+
+Only `flow_blueprints` uses fixtures. `identity_eval` and `skill_eval` assert against frontmatter
+fields and journal payloads — what the daemon _did_ with a request, not what the model _said_ —
+so they do not depend on response content and gain nothing from replaying real exchanges; the
+mock's pattern-dispatch fallback is sufficient and unaffected by the fixture-replay wiring above.
+
 ---
 
 ## 13. Extending the Framework

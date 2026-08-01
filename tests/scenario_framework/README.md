@@ -96,7 +96,9 @@ export EXA_LLM_MODEL=gemini-1.5-flash
 exactl eval run --pack eval-smoke
 ```
 
-### Recorded Mock Fixtures (Phase 157) — capture, replay, refresh
+### Recorded Mock Fixtures (Phase 157)
+
+Capture, replay, refresh, and the call-site addressing rationale.
 
 The `flow_blueprints` pack chains step responses (a step's output is the next step's input),
 so it is the one pack where a mock misclassification is indistinguishable from a product
@@ -104,6 +106,30 @@ defect. `MockLLMProvider`'s `recorded` strategy replays real LLM exchanges captu
 committed under `tests/scenario_framework/fixtures/mock_recordings/<pack>/`, addressed by
 call site (scenario id, step id, call index) rather than by prompt content — a prompt edit
 reports as drift on the affected fixtures instead of invalidating the whole set.
+
+**Why call site, not prompt content.** The earlier design hashed the whole prompt (system
+prompt + injected skills + task) to find a recording. That means editing one identity
+blueprint invalidates every fixture that used it, and under strict mode every affected
+scenario fails at once — the predictable response is to switch strict mode off, which
+returns the tier to regex dispatch with extra machinery in front. A naive prompt-hash
+fixture set is worse than the patterns it replaces. Addressing by call site instead — _where_
+the call happened, not what it said — turns the same prompt edit into a reviewable drift
+report (the hash is still compared and mismatches are logged) rather than a wall of misses,
+which is what actually keeps strict mode switched on.
+
+**Configuration surface (Phase 157):**
+
+| Surface                                        | What it does                                                                                                                                                     | Where                                                                       |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `[ai.mock] strict`                             | Enables `strictRecordings` via committed config                                                                                                                  | `exa.config.toml`, `MockConfigSchema`                                       |
+| `MOCK_STRICT` env                              | Per-step override of `strict`; lets one shared sandbox config scope strictness per pack (`"1"` on)                                                               | step `env:` blocks; read by `ProviderFactory.resolveOptions`                |
+| `EXA_CAPTURE_FIXTURES_DIR` env                 | Enables capture mode, wrapping the resolved provider in `CaptureRecordingProvider`; refused when the resolved provider is mock                                   | set by `--capture-fixtures <dir>`; read by `ProviderFactory.resolveOptions` |
+| `[ai.mock] fixtures_dir`                       | Directory `MockLLMProvider` loads recordings from; `$FRAMEWORK_HOME`/`$WORKSPACE_ROOT`-expanded to an absolute, repo-tree-anchored path by `seedWorkspaceConfig` | `exa.config.toml`                                                           |
+| `EXA_SCENARIO_ID` / `EXA_STEP_ID` env          | Exported by the runner per step (`buildStepBaseEnv`); a `submit-request` step's `exactl request --file` reads them                                               | every spawned step subprocess                                               |
+| Request frontmatter `scenario_id` / `step_id`  | Stamped from the env vars above by `RequestCreateHandler`; parsed by the daemon into `IParsedRequest.scenarioId`/`stepId`                                        | request `.md` files                                                         |
+| `IModelOptions.callSite`                       | `{ scenarioId, stepId, callIndex }`, assigned by `AgentRunner` from the frontmatter fields above; what `MockLLMProvider` keys replay on                          | `packages/ai/src/types.ts`                                                  |
+| `ai.fixture_drift_recapture_threshold`         | `configurable()` key, default `0.2` — drift rate above which a run flags the set for re-capture                                                                  | `packages/ai/src/constants.ts`                                              |
+| `ai.capture_failure_product_finding_threshold` | `configurable()` key, default `0.4` — capture failure rate above which a call site is a product finding                                                          | `packages/ai/src/constants.ts`                                              |
 
 **Capturing (or refreshing) a fixture set** is one command, run with a real provider
 configured:
