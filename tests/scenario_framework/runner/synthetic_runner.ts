@@ -584,15 +584,23 @@ function startsADaemon(step: { id: string; command?: string; args?: string[] }):
  * could ever be proposed and `plan-amendment-lifecycle` waited out its timeout for a file
  * nothing would write; `[session_delegate]` was equally absent. Never overwrites an existing
  * config, so a scenario that writes its own keeps it.
+ *
+ * The copy is a plain `copy()` (Phase 157: now text-read-and-rewrite) so a `$FRAMEWORK_HOME`-
+ * relative value the framework config declares — e.g. `[ai.mock] fixtures_dir` pointing at the
+ * committed repo-tree fixture set — is expanded to an absolute path, the same substitution
+ * step commands/env already get, instead of reaching the daemon as a literal `$FRAMEWORK_HOME`
+ * string that resolves to nothing.
  */
-async function seedWorkspaceConfig(workspaceRoot: string, frameworkHome: string): Promise<void> {
+export async function seedWorkspaceConfig(workspaceRoot: string, frameworkHome: string): Promise<void> {
   const destination = join(workspaceRoot, WORKSPACE_CONFIG_FILE);
   try {
     await Deno.stat(destination);
     return; // the sandbox already has a config — leave it alone
   } catch { /* absent: seed it */ }
   try {
-    await copy(join(frameworkHome, WORKSPACE_CONFIG_FILE), destination, { overwrite: false });
+    const template = await Deno.readTextFile(join(frameworkHome, WORKSPACE_CONFIG_FILE));
+    const resolved = expandInString(template, { FRAMEWORK_HOME: frameworkHome, WORKSPACE_ROOT: workspaceRoot });
+    await Deno.writeTextFile(destination, resolved);
   } catch { /* framework config absent in this checkout */ }
 }
 

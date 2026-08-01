@@ -14,6 +14,7 @@ steps:
     args: ["start"]
     env:
       EXA_LLM_PROVIDER: "mock"
+      MOCK_STRICT: "1"
       EXA_CI_MODE: "1"
     output_criteria:
       - id: "daemon-started"

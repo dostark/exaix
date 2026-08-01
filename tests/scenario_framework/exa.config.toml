@@ -17,3 +17,12 @@ tool = "claude-code"
 gates = ["refinement", "plan_review", "code_changes", "review"]
 launch_mode = "headless"
 bin_overrides = []
+
+# Phase 157: committed, call-site-addressed fixtures for the flow_blueprints pack. Strict
+# mode is scoped per step via MOCK_STRICT env (flows scenarios pin it; identity/skill packs
+# don't), so this global fixtures_dir is harmless for other packs — a miss there just falls
+# back to pattern dispatch exactly as before. $FRAMEWORK_HOME is expanded by
+# seedWorkspaceConfig into an absolute, repo-tree-anchored path.
+[ai.mock]
+strategy = "recorded"
+fixtures_dir = "$FRAMEWORK_HOME/fixtures/mock_recordings/flow_blueprints"

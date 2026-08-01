@@ -322,7 +322,13 @@ export class ProviderFactory {
     // Mock-specific
     const mockStrategy = merged.mock?.strategy ?? baseAi?.mock?.strategy ?? DEFAULTS.DEFAULT_MOCK_STRATEGY;
     const mockFixturesDir = merged.mock?.fixtures_dir ?? baseAi?.mock?.fixtures_dir;
-    const mockStrict = merged.mock?.strict ?? baseAi?.mock?.strict ?? false;
+    // MOCK_STRICT env (Phase 157 Step 3) lets a scenario pack scope strict mode per step —
+    // the sandbox has one shared exa.config.toml, so per-pack strictness can't be a config
+    // key. Unset falls back to the config value, exactly as Step 2 wired it.
+    const envMockStrict = this.safeEnvGet("MOCK_STRICT");
+    const mockStrict = envMockStrict !== undefined
+      ? envMockStrict === "1"
+      : (merged.mock?.strict ?? baseAi?.mock?.strict ?? false);
 
     // Operator-triggered capture (Phase 157) — env-only, never a committed config value.
     const captureFixturesDir = this.safeEnvGet("EXA_CAPTURE_FIXTURES_DIR");
