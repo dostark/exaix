@@ -189,6 +189,14 @@ export interface IResolvedProviderOptions {
   mockStrategy?: MockStrategy;
   /** Mock fixtures directory */
   mockFixturesDir?: string;
+  /** Refuse to answer a prompt/call site with no recording, instead of falling back to
+   *  patterns (Phase 157). */
+  mockStrict?: boolean;
+  /** Directory to record fixtures into, from EXA_CAPTURE_FIXTURES_DIR (Phase 157). Operator-
+   *  triggered only — never set by committed config. Refused when the resolved provider is
+   *  mock (capturing the mock's own guesses would manufacture an authoritative-looking
+   *  fixture set that encodes them). */
+  captureFixturesDir?: string;
   /** Custom provider ID */
   id?: string;
   /** Responses for scripted mock */

@@ -26,6 +26,7 @@ import type { IModelProvider, IProviderInfo, IResolvedProviderOptions } from "./
 import { ProviderFactoryError } from "./errors.ts";
 
 import { LazyProvider } from "./providers/lazy_provider.ts";
+import { CaptureRecordingProvider } from "./providers/capture_recording_provider.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
 declare const Deno: { env: { get(key: string): string | undefined } };
@@ -321,6 +322,10 @@ export class ProviderFactory {
     // Mock-specific
     const mockStrategy = merged.mock?.strategy ?? baseAi?.mock?.strategy ?? DEFAULTS.DEFAULT_MOCK_STRATEGY;
     const mockFixturesDir = merged.mock?.fixtures_dir ?? baseAi?.mock?.fixtures_dir;
+    const mockStrict = merged.mock?.strict ?? baseAi?.mock?.strict ?? false;
+
+    // Operator-triggered capture (Phase 157) — env-only, never a committed config value.
+    const captureFixturesDir = this.safeEnvGet("EXA_CAPTURE_FIXTURES_DIR");
 
     return {
       provider: providerType,
@@ -329,6 +334,8 @@ export class ProviderFactory {
       timeoutMs,
       mockStrategy: mockStrategy as MockStrategy,
       mockFixturesDir,
+      mockStrict,
+      captureFixturesDir,
       config,
     };
   }
@@ -355,6 +362,20 @@ export class ProviderFactory {
     costTracker?: Opt<ICostTracker, Reason.OptionalDependency>,
   ): Promise<IModelProvider> {
     let provider = await this.createProvider(options);
+
+    // Operator-triggered capture (Phase 157): wrap the real provider in a recording wrapper.
+    // Refused outright for mock — capturing the mock's own guesses would manufacture an
+    // authoritative-looking fixture set that encodes the very guesses this phase removes.
+    if (options.captureFixturesDir) {
+      if (options.provider === ProviderType.MOCK) {
+        throw new ProviderFactoryError(
+          `Cannot capture fixtures from a mock provider (EXA_CAPTURE_FIXTURES_DIR is set, but the ` +
+            `resolved provider is mock). Capture requires a live provider — set EXA_LLM_PROVIDER to a ` +
+            `real provider for this run.`,
+        );
+      }
+      provider = new CaptureRecordingProvider(provider, { dir: options.captureFixturesDir });
+    }
 
     // Apply LLM call tracing when a logger is available
     if (options.logger) {

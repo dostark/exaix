@@ -12,6 +12,7 @@
  */
 
 import { MockStrategy, ProviderType } from "@exaix/core";
+import type { JSONValue } from "@exaix/core";
 import type { ICallSite, IModelOptions, IModelProvider } from "../types.ts";
 import type { IGenerateResult } from "./common.ts";
 import { MOCK_DELAY_MS, MOCK_INPUT_TOKENS, MOCK_OUTPUT_TOKENS } from "@exaix/ai";
@@ -41,6 +42,11 @@ export interface IRecordedResponse {
   /** Where this recording was captured (Phase 157). When present, lookup addresses by call
    *  site instead of prompt hash; the hash is still compared on replay to detect drift. */
   callSite?: ICallSite;
+  /** Retry metadata from capture (Phase 157): how many attempts it took to get a
+   *  contract-satisfying response, and why the earlier ones were refused. Absent when
+   *  captured on the first attempt. The rate this represents across a fixture set is a
+   *  product finding, not noise to smooth away — see Step 4's flakiness reporting. */
+  capture?: { attempts: number; failures: string[] };
 }
 
 /**
@@ -133,9 +139,81 @@ function callSiteKey(callSite: ICallSite): string {
   return `${callSite.scenarioId}::${callSite.stepId}::${callSite.callIndex}`;
 }
 
-/** Human-readable call site, used in error messages and drift warnings. */
-function describeCallSite(callSite: ICallSite): string {
+/** Human-readable call site, used in error messages and drift warnings. Exported (Phase 157
+ *  Step 2) so capture's own error messages describe a call site identically to replay's. */
+export function describeCallSite(callSite: ICallSite): string {
   return `${callSite.scenarioId}/${callSite.stepId}#${callSite.callIndex}`;
+}
+
+/**
+ * Hash a prompt for recording lookup. Exported (Phase 157) so capture writes the exact same
+ * hash a later replay will compute — the algorithm drift detection compares against.
+ */
+export function hashPrompt(prompt: string): string {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(prompt);
+
+  // Use synchronous hash computation
+  const hashBuffer = new Uint8Array(32);
+  const view = new DataView(hashBuffer.buffer);
+
+  // Simple hash for testing (not cryptographically secure, but deterministic)
+  let hash = 0;
+  for (let i = 0; i < data.length; i++) {
+    hash = ((hash << 5) - hash + data[i]) | 0;
+  }
+  view.setInt32(0, hash);
+
+  // Add more entropy from the string
+  let hash2 = 5381;
+  for (let i = 0; i < data.length; i++) {
+    hash2 = (hash2 * 33) ^ data[i];
+  }
+  view.setInt32(4, hash2);
+
+  // Convert to hex string (first 8 chars)
+  return Array.from(hashBuffer.slice(0, 8))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/** True when `value` has every field IRecordedResponse.callSite requires. Takes the
+ *  post-cast (unchecked) static type — the check itself is what makes it a real runtime
+ *  guarantee, not the cast. */
+function isValidCallSite(value: Opt<Partial<ICallSite>, Reason.OptionalInput>): boolean {
+  if (typeof value !== "object" || value === null) return false;
+  return typeof value.scenarioId === "string" &&
+    typeof value.stepId === "string" &&
+    typeof value.callIndex === "number";
+}
+
+/**
+ * Validate a loaded fixture file against the IRecordedResponse contract, so a corrupt or
+ * schema-violating recording fails loudly at load time — naming the file — instead of an
+ * unvalidated JSON.parse crash or a silently-malformed recording than can never replay
+ * correctly (Phase 157 Step 2).
+ */
+function validateRecordedResponse(value: JSONValue, filePath: string): IRecordedResponse {
+  const fail = (reason: string): never => {
+    throw new MockLLMError(`Corrupt fixture file "${filePath}": ${reason}.`);
+  };
+  if (typeof value !== "object" || value === null) fail("not a JSON object");
+  const candidate = value as Partial<IRecordedResponse>;
+  if (typeof candidate.promptHash !== "string") fail("missing string field promptHash");
+  if (typeof candidate.promptPreview !== "string") fail("missing string field promptPreview");
+  if (typeof candidate.response !== "string") fail("missing string field response");
+  if (typeof candidate.model !== "string") fail("missing string field model");
+  if (typeof candidate.recordedAt !== "string") fail("missing string field recordedAt");
+  if (
+    typeof candidate.tokens !== "object" || candidate.tokens === null ||
+    typeof candidate.tokens.input !== "number" || typeof candidate.tokens.output !== "number"
+  ) {
+    fail("missing or malformed tokens: { input: number, output: number }");
+  }
+  if (candidate.callSite !== undefined && !isValidCallSite(candidate.callSite)) {
+    fail("callSite is present but malformed — expected { scenarioId, stepId, callIndex }");
+  }
+  return candidate as IRecordedResponse;
 }
 
 /**
@@ -164,12 +242,12 @@ const PLAN_EXECUTION_MARKERS = /executing a plan|Performing step|Action required
  * carries `## Step N` headers (it embeds the plan markdown), so matching the header alone
  * hijacks execution and starves the ReAct loop of actions.
  */
-function isFlowStepPrompt(prompt: string): boolean {
+export function isFlowStepPrompt(prompt: string): boolean {
   return !PLAN_EXECUTION_MARKERS.test(prompt) && /^##\s+Step \d+/m.test(prompt);
 }
 
 /** ReActLoopStrategy's prompt template (react_loop_strategy.ts:768,788), which its own parser pairs with. */
-function isReActLoopPrompt(prompt: string): boolean {
+export function isReActLoopPrompt(prompt: string): boolean {
   return prompt.includes("IDENTITY: ") && prompt.includes("AVAILABLE TOOLS:");
 }
 
@@ -180,7 +258,7 @@ function isReActLoopPrompt(prompt: string): boolean {
  * `STATUS: COMPLETE`. Answering either in the legacy dialect produces a failure attributed to
  * the agent — "No actions generated in ReAct iteration" — rather than to the mock.
  */
-function responseForPromptDialect(prompt: string): string | null {
+export function responseForPromptDialect(prompt: string): string | null {
   if (isFlowStepPrompt(prompt)) return FLOW_STEP_RESPONSE;
   if (isReActLoopPrompt(prompt)) return REACT_COMPLETE_RESPONSE;
   return null;
@@ -542,31 +620,7 @@ export class MockLLMProvider implements IModelProvider {
    * Hash a prompt for recording lookup
    */
   hashPrompt(prompt: string): string {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(prompt);
-
-    // Use synchronous hash computation
-    const hashBuffer = new Uint8Array(32);
-    const view = new DataView(hashBuffer.buffer);
-
-    // Simple hash for testing (not cryptographically secure, but deterministic)
-    let hash = 0;
-    for (let i = 0; i < data.length; i++) {
-      hash = ((hash << 5) - hash + data[i]) | 0;
-    }
-    view.setInt32(0, hash);
-
-    // Add more entropy from the string
-    let hash2 = 5381;
-    for (let i = 0; i < data.length; i++) {
-      hash2 = (hash2 * 33) ^ data[i];
-    }
-    view.setInt32(4, hash2);
-
-    // Convert to hex string (first 8 chars)
-    return Array.from(hashBuffer.slice(0, 8))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+    return hashPrompt(prompt);
   }
 
   /**
@@ -599,8 +653,17 @@ export class MockLLMProvider implements IModelProvider {
         if (entry.isFile && entry.name.endsWith(".json")) {
           const path = `${dir}/${entry.name}`;
           const content = Deno.readTextFileSync(path);
-          const recording = JSON.parse(content) as IRecordedResponse;
-          this.recordings.push(recording);
+          let parsed: JSONValue;
+          try {
+            parsed = JSON.parse(content);
+          } catch (parseError) {
+            throw new MockLLMError(
+              `Corrupt fixture file "${path}": invalid JSON (${
+                parseError instanceof Error ? parseError.message : String(parseError)
+              }).`,
+            );
+          }
+          this.recordings.push(validateRecordedResponse(parsed, path));
         }
       }
     } catch (error) {

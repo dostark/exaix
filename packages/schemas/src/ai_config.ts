@@ -55,6 +55,9 @@ export const MockConfigSchema = z.object({
   error_message: z.string().optional(),
   /** Delay in ms for slow strategy */
   delay_ms: z.number().positive().optional(),
+  /** Refuse to answer a prompt/call site with no recording, instead of falling back to
+   *  patterns (Phase 157). Off by default — matches today's behaviour. */
+  strict: z.boolean().optional(),
 }).default({
   strategy: DEFAULT_MOCK_STRATEGY,
 });

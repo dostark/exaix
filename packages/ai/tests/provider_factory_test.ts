@@ -29,6 +29,7 @@ import {
 import { AiConfigSchema, type Config } from "@exaix/schemas";
 import { ProviderRegistry } from "../src/provider_registry.ts";
 import { setProviderRegistryBootstrap } from "../src/provider_factory.ts";
+import { CaptureRecordingProvider } from "../src/providers/capture_recording_provider.ts";
 
 import { createTestConfig, getProviderForModel } from "./helpers/test_config.ts";
 
@@ -880,3 +881,31 @@ Deno.test("ProviderFactory: a mock with no fixtures is reported as pattern, not 
 // The counterpart — a fixture-backed provider does NOT report pattern fallback — is asserted
 // against MockLLMProvider directly in mock_execution_pattern_regression_test.ts, where the
 // recordings can be supplied without going through config resolution.
+
+// ============================================================================
+// Capture Wiring Tests (Phase 157 Step 2)
+// ============================================================================
+
+parallelSafeTest(
+  "ProviderFactory: EXA_CAPTURE_FIXTURES_DIR wraps a non-mock provider in CaptureRecordingProvider",
+  withEnvVars({ EXA_LLM_PROVIDER: "ollama", EXA_CAPTURE_FIXTURES_DIR: await Deno.makeTempDir() }, async () => {
+    await withConcreteProviders(async () => {
+      const config = createTestConfig();
+      config.rate_limiting.enabled = false;
+      const provider = await ProviderFactory.create(config);
+
+      assertEquals(provider instanceof CaptureRecordingProvider, true);
+    });
+  }),
+);
+
+Deno.test(
+  "ProviderFactory: EXA_CAPTURE_FIXTURES_DIR unset leaves the provider unwrapped by capture",
+  withEnvVars({ EXA_LLM_PROVIDER: "mock" }, async () => {
+    const config = createTestConfig();
+    config.rate_limiting.enabled = false;
+    const provider = await ProviderFactory.create(config);
+
+    assertEquals(provider instanceof CaptureRecordingProvider, false);
+  }),
+);

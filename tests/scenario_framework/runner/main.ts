@@ -13,6 +13,7 @@ import { applySandboxCleanup, describeRetention, planSandboxCleanup, SandboxRete
 import { ScenarioExecutionMode } from "../schema/step_schema.ts";
 import { type IScenarioCatalogEntry, loadScenarioCatalog } from "./scenario_catalog.ts";
 import { runSyntheticScenario } from "./synthetic_runner.ts";
+import { applyCaptureFixturesFlag } from "./capture_fixtures_flag.ts";
 import type { IRunManifest } from "./evidence_collector.ts";
 import { reportScenarioFailure, reportSuiteSummary } from "./reporter.ts";
 import { selectScenariosForExecution } from "./modes.ts";
@@ -72,9 +73,16 @@ await new Command()
     "Keep the sandbox this run mints, even on success. A failing run always keeps it regardless, " +
       "and an operator-supplied --workspace is never removed.",
   )
+  .option(
+    "--capture-fixtures <dir:string>",
+    "Record a live run into a replayable fixture set at <dir> (Phase 157). Refused when the " +
+      "resolved provider is mock — set --capture-fixtures alongside a real EXA_LLM_PROVIDER. " +
+      "Operator-triggered only, never a CI gate.",
+  )
   .action(async (options) => {
     // 1. Resolve framework home (directory containing the runner entry point)
     const frameworkHome = resolve(new URL(".", import.meta.url).pathname, "..");
+    applyCaptureFixturesFlag(options.captureFixtures);
 
     // 2. Load file-based config if provided or default exists
     let fileConfig: Partial<IRuntimeConfig> = {};

@@ -59,6 +59,19 @@ export const DEFAULT_LOCAL_MODEL_TIMEOUT_MS: number = configurable({
   swap: SwapClass.HOT,
 });
 
+/** Phase 157: how many times CaptureRecordingProvider retries a call site before giving up
+ *  on a contract-satisfying response. Retries are recorded as fixture metadata, never
+ *  discarded silently — see IRecordedResponse.capture. */
+export const DEFAULT_CAPTURE_MAX_ATTEMPTS: number = configurable({
+  key: "ai.capture_max_attempts",
+  default: 3,
+  type: ConfigValueType.NUMBER,
+  description: "Max attempts CaptureRecordingProvider makes per call site before refusing to write a fixture",
+  min: 1,
+  max: 10,
+  swap: SwapClass.HOT,
+});
+
 export const DEFAULT_MOCK_PROVIDER_ID = "mock-provider";
 
 export const PROVIDER_MOCK_DESCRIPTION = "Mock provider for testing and development";

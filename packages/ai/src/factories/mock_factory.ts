@@ -18,6 +18,7 @@ export class MockProviderFactory extends AbstractProviderFactory {
       id: options.id ?? `mock-${strategy}-${options.model}`,
       fixtureDir: options.mockFixturesDir,
       responses: options.responses,
+      strictRecordings: options.mockStrict,
     });
 
     // `recorded` is the default strategy and the provider silently substitutes default
