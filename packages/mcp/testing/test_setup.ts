@@ -23,7 +23,6 @@ import {
   GIT_CMD_LIST,
   GIT_CMD_LOG,
   GIT_CMD_REMOVE,
-  GIT_CMD_REV_LIST,
   GIT_CMD_REV_PARSE,
   GIT_CMD_STATUS,
   GIT_CMD_WORKTREE,
@@ -214,9 +213,6 @@ function createGitServiceFactory(config: Config): IGitServiceFactory {
             }
             if (args[1] === GIT_CMD_REMOVE) return Promise.resolve({ output: "", exitCode: 0 });
             return Promise.resolve({ output: "", exitCode: 0 });
-          }
-          if (args.includes(GIT_CMD_REV_LIST) && args.includes("--count")) {
-            return Promise.resolve({ output: "1", exitCode: 0 });
           }
           if (args.includes(GIT_CMD_INIT)) {
             return Promise.resolve({ output: "Initialized empty Git repository", exitCode: 0 });

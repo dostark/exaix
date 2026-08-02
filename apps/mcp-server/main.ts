@@ -16,7 +16,6 @@ import type { IModelProvider } from "@exaix/ai";
 import type { IGitService } from "@exaix/core/types";
 import type { IGitServiceFactory } from "@exaix/core/types";
 import type { IDisplayService } from "@exaix/core/types";
-import type { IEventLogger } from "@exaix/core/logger";
 import { MCPServer } from "@exaix-team/mcp-server";
 import { GitService } from "@exaix/git";
 import { DEFAULT_MCP_HTTP_PORT, McpTransportType } from "@exaix/mcp";
@@ -85,11 +84,10 @@ function createProviderStub(): IModelProvider {
 
 function createGitServiceFactory(
   config: ReturnType<ConfigService["get"]>,
-  logger?: IEventLogger,
 ): IGitServiceFactory {
   return {
     createGitService(repoPath: string, traceId: string): IGitService {
-      return new GitService({ config, repoPath, traceId, logger });
+      return new GitService({ config, repoPath, traceId });
     },
   };
 }
@@ -136,7 +134,6 @@ function createDisplayServiceStub(): IDisplayService {
  */
 export function buildServerContext(
   configService: ConfigService,
-  logger?: IEventLogger,
 ): { context: ICliApplicationContext; dispose: () => void } {
   const config = configService.get();
   const dbService: IDatabaseService = new DatabaseService(config);
@@ -144,7 +141,7 @@ export function buildServerContext(
   // When EXA_MCP_REAL_GIT is not set (CI, test environments), use the stub.
   // Scenario configs set EXA_MCP_REAL_GIT=1 to exercise real git behaviour.
   const useRealGit = Deno.env.get("EXA_MCP_REAL_GIT") === "1";
-  const gitServiceFactory: IGitServiceFactory = useRealGit ? createGitServiceFactory(config, logger) : {
+  const gitServiceFactory: IGitServiceFactory = useRealGit ? createGitServiceFactory(config) : {
     createGitService: (_repoPath: string, _traceId: string) => createGitServiceStub(),
   };
   const gitService = useRealGit

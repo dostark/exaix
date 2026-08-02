@@ -35,6 +35,7 @@ import { buildDelegateBriefArgs, isContentlessBrief } from "@exaix/core/planning
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import {
+  DEFAULT_FIXTURE_DRIFT_RECAPTURE_THRESHOLD,
   DefaultRoutingStrategy,
   type IProviderHealthChecker,
   type IResolutionStrategy,
@@ -483,7 +484,7 @@ if (import.meta.main) {
     gracefulShutdown.registerCleanup("report_fixture_drift", () => {
       const underlying = unwrapModelProvider(llmProvider);
       if (underlying instanceof MockLLMProvider) {
-        const summary = underlying.reportDrift();
+        const summary = underlying.reportDrift(DEFAULT_FIXTURE_DRIFT_RECAPTURE_THRESHOLD);
         if (summary.driftedCalls > 0) {
           console.warn(
             `[fixture-drift] ${summary.driftedCalls}/${summary.totalCallSiteLookups} call-site lookups ` +

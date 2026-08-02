@@ -65,7 +65,6 @@ export const GIT_FLAG_UNTRACKED_FILES_ALL = "--untracked-files=all";
 export const GIT_CMD_LIST = "list";
 export const GIT_CMD_ADD = "add";
 export const GIT_CMD_REMOVE = "remove";
-export const GIT_CMD_REV_LIST = "rev-list";
 export const GIT_CMD_CHECKOUT = "checkout";
 export const GIT_CMD_COMMIT = "commit";
 export const GIT_CMD_LOG = "log";

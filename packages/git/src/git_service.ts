@@ -25,9 +25,12 @@ import {
   DEFAULT_GIT_MAX_RETRIES,
   DEFAULT_GIT_RETRY_BACKOFF_BASE_MS,
   DEFAULT_GIT_TRACE_ID_SHORT_LENGTH,
+  GIT_CMD_ADD,
   GIT_CMD_BRANCH,
   GIT_CMD_CONFIG,
+  GIT_CMD_INIT,
   GIT_CMD_LIST,
+  GIT_CMD_REMOVE,
   GIT_CMD_REV_PARSE,
   GIT_CMD_STATUS,
   GIT_CMD_WORKTREE,
@@ -212,7 +215,7 @@ export class GitService implements IGitService {
 
       // Initialize repository with explicit default branch
       const initCmd = new Deno.Command("git", {
-        args: ["init", "-b", "master"],
+        args: [GIT_CMD_INIT, "-b", "master"],
         cwd: this.repoPath,
         stdout: "piped",
         stderr: "piped",
@@ -554,7 +557,7 @@ export class GitService implements IGitService {
   async addWorktree(worktreePath: string, baseBranch: string): Promise<void> {
     // Use --force to allow checking out branches that may be in use by other worktrees
     // This is safe because the execution worktree will create its own feature branch
-    await this.runGitCommand([GIT_CMD_WORKTREE, "add", worktreePath, baseBranch, "--force"]);
+    await this.runGitCommand([GIT_CMD_WORKTREE, GIT_CMD_ADD, worktreePath, baseBranch, "--force"]);
   }
 
   /**
@@ -566,7 +569,7 @@ export class GitService implements IGitService {
     worktreePath: string,
     options?: Opt<{ force?: boolean }, Reason.ExecutionConfig>,
   ): Promise<void> {
-    const args = [GIT_CMD_WORKTREE, "remove"];
+    const args = [GIT_CMD_WORKTREE, GIT_CMD_REMOVE];
     if (options?.force) args.push("--force");
     args.push(worktreePath);
     await this.runGitCommand(args);
