@@ -18,6 +18,29 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 157 (Recorded Mock Fixtures — Capture, Replay and Drift)
+
+### Added
+
+- `--capture-fixtures <dir>` on the scenario runner — records a live provider run into a
+  committed, replayable fixture set instead of calling the model on every future run (see
+  `tests/scenario_framework/README.md` — "Recorded Mock Fixtures").
+- `[ai.mock] strategy = "recorded"` and `fixtures_dir` config — the mock provider replays a
+  committed fixture by call site (which step made this call), not by hashing the prompt, so
+  editing a prompt no longer invalidates the whole recorded set.
+- `MOCK_STRICT` env var (and `[ai.mock] strict` config) — a missing fixture fails the run
+  outright instead of silently falling back to a pattern-matched guess.
+- Drift and flakiness reporting — the daemon warns (`[fixture-drift]`) when a replayed
+  fixture's prompt no longer matches what was recorded, and the runner warns
+  (`[capture-flakiness]`) when a call site frequently failed to satisfy its response
+  contract during capture, both against configurable thresholds.
+
+### Fixed
+
+- Capturing fixtures for a scenario with parallel steps no longer silently loses recordings
+  when two steps happen to run at the same time — each step's fixture is now addressed by
+  its own step id instead of a shared counter the steps could collide on.
+
 ## Unreleased — Phase 150 (Dogfood Delegation Fidelity)
 
 ### Added
