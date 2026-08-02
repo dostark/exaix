@@ -29,6 +29,9 @@ export enum ComparisonMetric {
   OBJECTIVE_OUTCOME = "objective_outcome",
   JUDGE_SCORE = "judge_score",
   PROMPT_TOKENS = "prompt_tokens",
+  /** Phase 158 Step 6: flow orchestration's wall-clock cost, kept separate from token
+   *  cost since a flow can be token-cheap but slow (or the reverse). */
+  WALL_CLOCK_MS = "wall_clock_ms",
 }
 
 /** A human-readable label for one side of an arm; the concrete overlay/suppression
