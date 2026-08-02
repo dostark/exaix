@@ -1544,6 +1544,19 @@ export function resolveEvalLlmTimeoutMs(provider: string): number | undefined {
     : undefined;
 }
 
+/**
+ * Live-observed: the eval-judge's ephemeral provider config passed a hardcoded
+ * "/tmp/exa-eval" literal as `system.root`. HTTP-based providers never read it, but
+ * CliDelegateProviderFactory.create() uses `config.system.root` as the CLI subprocess's
+ * `cwd` — and that literal directory does not exist, so every claude-cli/opencode-cli
+ * judge call failed immediately ("Failed to spawn ...: No such cwd '/tmp/exa-eval'").
+ * `Deno.cwd()` is always a real, existing directory, and non-CLI providers still never
+ * read it, so this is safe for every provider, not just CLI-delegate ones.
+ */
+export function resolveEvalLlmJudgeConfigRoot(): string {
+  return Deno.cwd();
+}
+
 export async function callLlmEndpoint(
   prompt: string,
   stepEnv?: Opt<{ [key: string]: string }, Reason.OptionalInput>,
@@ -1607,7 +1620,7 @@ export async function callLlmEndpoint(
     isWithinBudget: () => Promise.resolve(true),
   };
   const eventLogger = createMockEventLogger();
-  const config = createMockConfig("/tmp/exa-eval", {
+  const config = createMockConfig(resolveEvalLlmJudgeConfigRoot(), {
     model_presets: DEFAULT_MODEL_PRESETS,
   });
 
@@ -1639,7 +1652,10 @@ export async function callLlmEndpoint(
       ? { ai_timeout: { default_ms: cliDelegateTimeoutMs, providers: { [resolved.provider]: cliDelegateTimeoutMs } } }
       : {}),
   };
-  const finalConfig = createMockConfig("/tmp/exa-eval", overrides as Parameters<typeof createMockConfig>[1]);
+  const finalConfig = createMockConfig(
+    resolveEvalLlmJudgeConfigRoot(),
+    overrides as Parameters<typeof createMockConfig>[1],
+  );
   const provider = await ProviderFactory.createByName(finalConfig, "default");
   const result = await provider.generate(prompt, {
     ...resolved.options,

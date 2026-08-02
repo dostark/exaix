@@ -723,8 +723,13 @@ Deno.test({
   fn: async () => {
     await withEnv({ EXA_LLM_PROVIDER: "claude-cli", ...NO_BACKWARD_KEYS }, async () => {
       try {
-        await callLlmEndpoint("test prompt");
-        fail("Expected CLI delegate error");
+        const result = await callLlmEndpoint("test prompt");
+        // Before the resolveEvalLlmJudgeConfigRoot fix (2026-08-02), this always threw
+        // because the config's cwd literal ("/tmp/exa-eval") did not exist. On a machine
+        // where the claude binary is genuinely installed and authenticated, the spawn now
+        // succeeds instead — a non-empty response still proves routing reached
+        // CliDelegateModelProvider rather than silently falling back to mock.
+        assert(result.length > 0, "expected a non-empty CLI delegate response");
       } catch (err) {
         const msg = (err as Error).message;
         assert(!msg.includes("EXA_LLM_PROVIDER"), "should resolve provider, not complain about missing");

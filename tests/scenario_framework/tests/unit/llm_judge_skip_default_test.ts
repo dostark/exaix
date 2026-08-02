@@ -11,6 +11,7 @@ import { CriterionKind, CriterionPhase, CriterionStatus } from "../../schema/ste
 import {
   evaluateLlmJudgeCriterion,
   resolveEvalJudgeContext,
+  resolveEvalLlmJudgeConfigRoot,
   resolveEvalLlmTimeoutMs,
 } from "../../runner/assertions.ts";
 import type { IEvaluateCriterionOptions } from "../../runner/assertions.ts";
@@ -125,6 +126,25 @@ Deno.test({
     // ProviderFactory's own generic 30s default apply as before.
     assertEquals(resolveEvalLlmTimeoutMs(ProviderType.ANTHROPIC), undefined);
     assertEquals(resolveEvalLlmTimeoutMs(ProviderType.OPENAI), undefined);
+  },
+  sanitizeOps: false,
+  sanitizeResources: false,
+});
+
+Deno.test({
+  name:
+    "[LlmJudgeSkip] resolveEvalLlmJudgeConfigRoot returns a directory that actually exists, not a placeholder literal",
+  fn: async () => {
+    // Live-observed (2026-08-02, first swe_tasks run through the claude-code cell):
+    // CliDelegateProviderFactory.create() uses config.system.root as the CLI subprocess's
+    // cwd. The eval-judge's config previously hardcoded "/tmp/exa-eval", which does not
+    // exist on disk, so every claude-cli/opencode-cli judge call failed immediately with
+    // "Failed to spawn ...: No such cwd '/tmp/exa-eval'" — the main task's own CLI-delegate
+    // call succeeded because it used the real sandbox cwd, proving the bug was specific to
+    // the judge's separately-constructed config, not CliDelegateModelProvider itself.
+    const root = resolveEvalLlmJudgeConfigRoot();
+    const stat = await Deno.stat(root);
+    assertEquals(stat.isDirectory, true);
   },
   sanitizeOps: false,
   sanitizeResources: false,
