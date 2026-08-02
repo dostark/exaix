@@ -204,6 +204,19 @@ export interface IPlanAdapter {
   getSchemaInstructions(): string;
 }
 
+/**
+ * Comma-separated skill ids to exclude from the resolved set for this process's lifetime
+ * (Phase 158 Step 2, closes GAP-2). A skill-ablation arm's control side sets this instead
+ * of adding a request-contract field; safe because the scenario framework runs one
+ * scenario per daemon process, so concurrent arms never share an env.
+ */
+export const EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR = "EXA_EVAL_SUPPRESS_SKILLS";
+
+function readSuppressedSkillIds(): Set<string> {
+  const raw = Deno.env.get(EXA_EVAL_SUPPRESS_SKILLS_ENV_VAR) ?? "";
+  return new Set(raw.split(",").map((id) => id.trim()).filter((id) => id.length > 0));
+}
+
 // ============================================================================
 // Agent Runner Service
 // ============================================================================
@@ -472,7 +485,20 @@ export class AgentRunner implements IAgentRunner {
       const defaults = blueprint.defaultSkills ?? [];
       for (const id of defaults) add(id, 0.5);
 
-      this.logSkillResolution(identityId, skillIds, pinned, matched, defaults);
+      // Phase 158 Step 2: a skill-ablation arm's control side suppresses a skill from the
+      // FINAL resolved set — after pinned/matched/defaults are unioned, not only from the
+      // dynamic-match sub-path — so a skill that only ever arrives via a pin or a default
+      // is suppressed just as reliably as a dynamically matched one. Env-scoped rather than
+      // a request-contract field: the scenario framework runs one scenario per daemon
+      // process, so concurrent arms never share an env.
+      const suppressed = readSuppressedSkillIds();
+      const suppressedPresent = skillIds.filter((id) => suppressed.has(id));
+      for (const id of suppressedPresent) {
+        skillIds.splice(skillIds.indexOf(id), 1);
+        matchScores.delete(id);
+      }
+
+      this.logSkillResolution(identityId, skillIds, pinned, matched, defaults, suppressedPresent);
 
       const totalAvailable = skillIds.length;
 
@@ -923,6 +949,7 @@ export class AgentRunner implements IAgentRunner {
     pinned: string[],
     matched: string[],
     defaults: string[],
+    suppressed: string[],
   ): void {
     this.logActivity(ACTIVITY_ACTOR_AGENT, SKILL_EVENT_RESOLVED, identityId, {
       identity_id: identityId,
@@ -931,6 +958,7 @@ export class AgentRunner implements IAgentRunner {
       pinned_skill_ids: pinned,
       matched_skill_ids: matched,
       default_skill_ids: defaults,
+      suppressed_skill_ids: suppressed,
     });
   }
 

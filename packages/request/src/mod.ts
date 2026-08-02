@@ -35,7 +35,12 @@ export {
 
 export { type ITaskComplexityClassifier, TaskComplexityClassifier } from "./task_complexity_classifier.ts";
 
-export { BlueprintResolver, type IBlueprintResolver, type IBlueprintResolverConfig } from "./blueprint_resolver.ts";
+export {
+  BlueprintResolver,
+  EXA_EVAL_IDENTITY_OVERLAY_DIR_ENV_VAR,
+  type IBlueprintResolver,
+  type IBlueprintResolverConfig,
+} from "./blueprint_resolver.ts";
 
 export {
   type IPortalContextBuilder,

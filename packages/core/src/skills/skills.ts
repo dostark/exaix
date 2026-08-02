@@ -51,6 +51,16 @@ const DEFAULT_CONFIG: ISkillsConfig = {
   matchThreshold: 0.3,
 };
 
+/**
+ * Directory checked ahead of the shipped catalog for a single skill's content, for the
+ * lifetime of this process (Phase 158 Step 2, closes GAP-1). A `skill-version` arm sets
+ * this to compare skill S at version a vs. version b without editing `Blueprints/Skills/`
+ * or the generated `Memory/Skills/` tree — the caller MUST have already validated this
+ * directory via `PathResolver` (see `tests/scenario_framework/runner/arm_overlay.ts`)
+ * before setting it; `SkillsService` trusts the value and does not re-validate it.
+ */
+export const EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR = "EXA_EVAL_SKILL_OVERLAY_DIR";
+
 export class SkillsService implements ISkillsService {
   private skillsConfig: ISkillsConfig;
   private skillsDir: string | null = null;
@@ -89,6 +99,9 @@ export class SkillsService implements ISkillsService {
   }
 
   async getSkill(skillId: string): Promise<ISkill | null> {
+    const overlaid = await this.getOverlaidSkill(skillId);
+    if (overlaid) return overlaid;
+
     const skillPath = await this.findSkillPath(skillId);
     if (!skillPath) return null;
 
@@ -98,6 +111,22 @@ export class SkillsService implements ISkillsService {
       return parsed as ISkill;
     } catch (error) {
       console.error(`Failed to load skill ${skillId}:`, error);
+      return null;
+    }
+  }
+
+  private async getOverlaidSkill(skillId: string): Promise<ISkill | null> {
+    const overlayDir = Deno.env.get(EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR);
+    if (!overlayDir) return null;
+
+    const overlayPath = join(overlayDir, `${skillId}.json`);
+    if (!(await exists(overlayPath))) return null;
+
+    try {
+      const content = await Deno.readTextFile(overlayPath);
+      return JSON.parse(content) as ISkill;
+    } catch (error) {
+      console.error(`Failed to load overlay skill ${skillId} from ${overlayPath}:`, error);
       return null;
     }
   }

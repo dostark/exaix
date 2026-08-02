@@ -7,5 +7,5 @@
  */
 
 export { CriteriaGenerator } from "./criteria_generator.ts";
-export { SkillsService } from "./skills.ts";
+export { EXA_EVAL_SKILL_OVERLAY_DIR_ENV_VAR, SkillsService } from "./skills.ts";
 export type { ISkillsConfig } from "./skills.ts";
