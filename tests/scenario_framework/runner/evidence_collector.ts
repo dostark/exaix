@@ -11,6 +11,7 @@ import { dirname, isAbsolute, resolve } from "@std/path";
 import type { ICriterionResult, IScenarioStep } from "../schema/step_schema.ts";
 import type { IScenarioStepOutcome } from "./assertions.ts";
 import type { IArmComparisonSpec } from "./arm_comparison.ts";
+import type { IMechanicsEvidence } from "./validity_gate.ts";
 
 export interface ICopyEvidenceArtifactOptions {
   outputDir: string;
@@ -57,6 +58,11 @@ export interface IRunManifest {
   /** The pre-registered arm-comparison declaration this run measures against, when the
    *  run is part of Phase 158's value-evaluation tier. Absent for ordinary mechanics runs. */
   armComparison?: IArmComparisonSpec;
+  /** The Phase 142 mechanics evidence that admitted this value run through Step 3's
+   *  validity gate, kept distinct from `armComparison` so a later reader can tell "the
+   *  artefact ran" (mechanics) apart from "the artefact helped" (value). Absent for
+   *  ordinary mechanics runs. */
+  mechanicsEvidence?: IMechanicsEvidence;
 }
 
 export interface IWriteRunManifestOptions {
