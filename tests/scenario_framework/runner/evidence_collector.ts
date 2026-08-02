@@ -4,12 +4,13 @@
  * @description Implements Step 5 evidence copy helpers and run
  * manifest persistence with a deterministic output path.
  * @architectural-layer Test
- * @related-files [tests/scenario_framework/runner/assertions.ts, tests/scenario_framework/tests/unit/assertions_evidence_test.ts]
+ * @related-files [tests/scenario_framework/runner/assertions.ts, tests/scenario_framework/tests/unit/assertions_evidence_test.ts, tests/scenario_framework/runner/arm_comparison.ts]
  */
 
 import { dirname, isAbsolute, resolve } from "@std/path";
 import type { ICriterionResult, IScenarioStep } from "../schema/step_schema.ts";
 import type { IScenarioStepOutcome } from "./assertions.ts";
+import type { IArmComparisonSpec } from "./arm_comparison.ts";
 
 export interface ICopyEvidenceArtifactOptions {
   outputDir: string;
@@ -53,6 +54,9 @@ export interface IRunManifest {
   model?: string;
   /** Task-family tags propagated to eval history. Phase 141 Step 1. */
   tags?: string[];
+  /** The pre-registered arm-comparison declaration this run measures against, when the
+   *  run is part of Phase 158's value-evaluation tier. Absent for ordinary mechanics runs. */
+  armComparison?: IArmComparisonSpec;
 }
 
 export interface IWriteRunManifestOptions {
