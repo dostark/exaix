@@ -70,6 +70,33 @@ Deno.test("[capture_writes_fixtures] one fixture per call site, with provenance"
   }
 });
 
+Deno.test("[capture_writes_fixtures] different flow steps at the same scenario/step/callIndex write separate fixtures (Phase 157 Step 3 fix — parallel-wave collision)", async () => {
+  const dir = await Deno.makeTempDir();
+  const siteA: ICallSite = {
+    scenarioId: "flows",
+    stepId: "submit-flow-request",
+    flowStepId: "define-endpoints",
+    callIndex: 0,
+  };
+  const siteB: ICallSite = {
+    scenarioId: "flows",
+    stepId: "submit-flow-request",
+    flowStepId: "design-schemas",
+    callIndex: 0,
+  };
+  const capture = new CaptureRecordingProvider(new StubProvider(WELL_FORMED_FLOW_RESPONSE), { dir });
+
+  await capture.generate(FLOW_STEP_PROMPT, { callSite: siteA });
+  await capture.generate(FLOW_STEP_PROMPT, { callSite: siteB });
+
+  const fixtures = await readFixtures(dir);
+  assertEquals(
+    fixtures.length,
+    2,
+    "two different flow steps sharing scenarioId/stepId/callIndex must not overwrite each other",
+  );
+});
+
 Deno.test("[capture_writes_fixtures] re-capturing the same call site overwrites, not accumulates", async () => {
   const dir = await Deno.makeTempDir();
   const siteA: ICallSite = { scenarioId: "flows", stepId: "a", callIndex: 0 };

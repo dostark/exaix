@@ -8,11 +8,16 @@
  *   spawned step subprocess already inherits (synthetic_runner.ts's buildStepBaseEnv spreads
  *   `Deno.env.toObject()`), including the daemon-start step where ProviderFactory reads
  *   EXA_CAPTURE_FIXTURES_DIR and wraps its (real) provider in CaptureRecordingProvider.
+ *
+ *   The daemon's write scope is its workspace tree, so the requested dir (typically inside the
+ *   repo) is denied with a NotCapable write error. buildStepBaseEnv therefore rewrites the var
+ *   into the sandbox (`<workspace>/fixtures/mock_recordings/<basename>`), and after the run the
+ *   runner mirrors the captured files back to the requested dir (copyCapturedFixtures).
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/main.ts, tests/scenario_framework/runner/synthetic_runner.ts, packages/ai/src/provider_factory.ts]
  */
 
-import { resolve } from "@std/path";
+import { basename, join, resolve } from "@std/path";
 import type { Opt, Reason } from "@exaix/core/types";
 import { reportFlakiness } from "@exaix/ai/providers";
 
@@ -26,6 +31,34 @@ export const CAPTURE_FIXTURES_ENV_VAR = "EXA_CAPTURE_FIXTURES_DIR";
 export function applyCaptureFixturesFlag(dir: Opt<string, Reason.OptionalInput>): void {
   if (!dir) return;
   Deno.env.set(CAPTURE_FIXTURES_ENV_VAR, resolve(dir));
+}
+
+/**
+ * The dir the daemon may actually write to. The daemon's write scope is the sandbox workspace
+ * tree, so the requested (repo) dir would be denied with a NotCapable write error; capture
+ * files are written here instead and mirrored back to the requested dir after the run.
+ */
+export function sandboxCaptureFixturesDir(workspaceRoot: string, requestedDir: string): string {
+  return join(workspaceRoot, "fixtures", "mock_recordings", basename(resolve(requestedDir)));
+}
+
+/**
+ * Mirror every fixture file captured inside the sandbox back to the dir the operator asked
+ * for. A no-op when nothing was captured (the requested dir is not created either).
+ */
+export async function copyCapturedFixtures(requestedDir: string, workspaceRoot: string): Promise<void> {
+  const sandboxDir = sandboxCaptureFixturesDir(workspaceRoot, requestedDir);
+  const target = resolve(requestedDir);
+  try {
+    await Deno.stat(sandboxDir);
+  } catch {
+    return; // nothing was captured; nothing to mirror
+  }
+  await Deno.mkdir(target, { recursive: true });
+  for await (const entry of Deno.readDir(sandboxDir)) {
+    if (!entry.isFile) continue;
+    await Deno.copyFile(join(sandboxDir, entry.name), join(target, entry.name));
+  }
 }
 
 /**

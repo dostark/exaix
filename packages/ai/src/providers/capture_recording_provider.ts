@@ -44,10 +44,16 @@ function describeOptionalCallSite(callSite: Opt<ICallSite, Reason.OptionalContex
 }
 
 /** Deterministic filename for a call site (or, absent one, for a prompt hash) — the
- *  addressing that makes re-capture overwrite rather than accumulate variants. */
+ *  addressing that makes re-capture overwrite rather than accumulate variants.
+ *  flowStepId (Phase 157 Step 3) is included when present so two different flow steps
+ *  sharing (scenarioId, stepId, callIndex) — which happens when parallel-wave steps race the
+ *  shared call-index counter — write to distinct files instead of overwriting each other. */
 function fixtureFilename(callSite: Opt<ICallSite, Reason.OptionalContext>, promptHash: string): string {
-  if (callSite) return `${callSite.scenarioId}__${callSite.stepId}__${callSite.callIndex}.json`;
-  return `${promptHash}.json`;
+  if (!callSite) return `${promptHash}.json`;
+  const parts = [callSite.scenarioId, callSite.stepId];
+  if (callSite.flowStepId) parts.push(callSite.flowStepId);
+  parts.push(String(callSite.callIndex));
+  return `${parts.join("__")}.json`;
 }
 
 const CONTENT_TAG = "<content>";
@@ -65,6 +71,13 @@ function requiredMarkersFor(prompt: string): string[] {
   if (isFlowStepPrompt(prompt)) return [CONTENT_TAG];
   if (isReActLoopPrompt(prompt)) return []; // checked separately below (STATUS: COMPLETE OR a toml block)
   return [];
+}
+
+/** Single-line, truncated preview of a refused response so the refusal reason is diagnosable
+ *  from the error alone (live-capture debugging aid; not persisted in fixtures). */
+function responsePreview(response: string): string {
+  const collapsed = response.replace(/\s+/g, " ").trim();
+  return collapsed.length > 160 ? `${collapsed.slice(0, 157)}...` : collapsed;
 }
 
 /**
@@ -123,7 +136,7 @@ export class CaptureRecordingProvider implements IModelProvider {
         accepted = result;
         break;
       }
-      failures.push(`attempt ${attempts}: ${violation}`);
+      failures.push(`attempt ${attempts}: ${violation} (response preview: ${responsePreview(result.content)})`);
     }
 
     if (!accepted) {

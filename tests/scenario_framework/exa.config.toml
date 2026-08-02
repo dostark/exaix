@@ -26,3 +26,14 @@ bin_overrides = []
 [ai.mock]
 strategy = "recorded"
 fixtures_dir = "$FRAMEWORK_HOME/fixtures/mock_recordings/flow_blueprints"
+
+# The daemon default (10 USD/day, packages/core/src/types/constants.ts) is sized for metered
+# API spend. Headless CLI providers (claude-cli, opencode-cli) are subscription-billed — no
+# real per-call cost — but RateLimitedProvider still tracks their self-reported cost_usd
+# against the same persistent per-day budget, tripping RateLimiterError partway through any
+# live-provider scenario batch (verified live during Phase 157 Step 3's flow_blueprints
+# capture: 10 scenarios' worth of claude-cli calls exhausted the default cap and every
+# scenario after that failed on the budget check, not on flow logic). Raised for this
+# framework's live-provider runs only — the production default is untouched.
+[rate_limiting]
+max_cost_per_day = 300.0

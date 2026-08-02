@@ -646,6 +646,50 @@ Review this pull request for security issues.`;
       assert(flowRunnerCalled, "FlowRunner.execute should be called for flow requests");
     });
 
+    it("should hand FlowRunner the request's scenario_id/step_id so LLM calls stay keyed (Phase 157)", async () => {
+      // The call-site transport (runner env -> exactl frontmatter -> daemon parse) stops at
+      // FlowRunner.execute: the flow request carries the key, but processor.ts passed only
+      // userPrompt/traceId/requestId/portal, so every flow-step LLM call was unkeyed and
+      // capture mode refused it ("Capture refused for an unkeyed call"). The execute request
+      // must receive scenario_id/step_id from the frontmatter.
+      const { traceId, requestPath } = createTestRequestPath(testDir);
+      let receivedRequest: { scenarioId?: string; stepId?: string } | undefined;
+
+      const capturingFlowRunner: IFlowRunner = {
+        execute(
+          _flow: IFlow,
+          request: { userPrompt: string; traceId?: string; requestId?: string; scenarioId?: string; stepId?: string },
+        ) {
+          receivedRequest = request;
+          return Promise.resolve({
+            flowRunId: "test-run",
+            success: true,
+            stepResults: new Map<string, never>(),
+            output: "ok",
+            duration: 1,
+            startedAt: new Date(),
+            completedAt: new Date(),
+          });
+        },
+      };
+
+      await Deno.writeTextFile(
+        requestPath,
+        `---\ntrace_id: "${traceId}"\ncreated: "${new Date().toISOString()}"\nstatus: pending\n` +
+          `priority: high\nflow: code-review\nsource: cli\ncreated_by: "test@example.com"\n` +
+          `scenario_id: "feature_development"\nstep_id: "submit-flow-request"\n---\n\n` +
+          `Review this pull request for security issues.`,
+      );
+
+      const processor = createProcessor(undefined, capturingFlowRunner, {
+        loadFlow: (id: string) => Promise.resolve(makeMinimalFlow(id, [])),
+      });
+      await processor.process(requestPath);
+
+      assertEquals(receivedRequest?.scenarioId, "feature_development");
+      assertEquals(receivedRequest?.stepId, "submit-flow-request");
+    });
+
     it("should hand FlowRunner the LOADED flow, not an id-only stub", async () => {
       // processor.ts built `{ id: frontmatter.flow } as IFlow` — a cast, not a load — so every
       // field but `id` was undefined and FlowRunner crashed on `flow.steps.length`

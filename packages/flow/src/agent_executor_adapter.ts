@@ -34,6 +34,9 @@ interface IParsedRequest {
   context: IRequestContextContext;
   requestId?: string;
   traceId?: string;
+  scenarioId?: string;
+  stepId?: string;
+  flowStepId?: string;
 }
 
 /**
@@ -76,6 +79,9 @@ export class AgentOrchestratorAdapter {
       context: (request.context ?? {}) as IRequestContextContext,
       requestId: request.requestId,
       traceId: request.traceId,
+      scenarioId: request.scenarioId,
+      stepId: request.stepId,
+      flowStepId: request.flowStepId,
     };
 
     return await this.runner.run(blueprint, parsedRequest, undefined);

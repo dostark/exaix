@@ -141,6 +141,15 @@ export interface IModelOptions {
 export interface ICallSite {
   scenarioId: string;
   stepId: string;
+  /** Flow-internal step id (e.g. "define-endpoints"), present only for calls FlowRunner
+   *  drives. Added (Phase 157 Step 3) because keying solely by (scenarioId, stepId, callIndex)
+   *  raced across flow steps in the same parallel wave — WaveOrchestrator.executeWave runs
+   *  wave steps concurrently via Promise.all, and the shared callIndex counter could be read
+   *  by two steps before either advanced it, landing both on the same index and causing one
+   *  step's captured fixture to silently overwrite the other's. A flow step's own id is
+   *  unique within its flow and never invoked concurrently with itself, so keying by it makes
+   *  the collision structurally impossible. */
+  flowStepId?: string;
   /** Ordinal of this logical call within the step, incremented once per consumed response.
    *  A retried logical call (internal to executeWithRetry) keeps the same index. */
   callIndex: number;

@@ -40,6 +40,9 @@ export interface IStepExecutionContext {
     readonly context: Record<string, JSONValue>;
     readonly traceId?: string;
     readonly requestId?: string;
+    readonly scenarioId?: string;
+    readonly stepId?: string;
+    readonly flowStepId?: string;
     readonly requestAnalysis?: IRequestAnalysis;
     readonly skills?: readonly string[];
     readonly sharedNamespace?: Readonly<Record<string, string>>;

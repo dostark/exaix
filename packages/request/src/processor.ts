@@ -563,6 +563,11 @@ export class RequestProcessor {
         traceId,
         requestId,
         portal: frontmatter.portal,
+        // Phase 157: the call-site key stamped by exactl (scenario_id/step_id) must reach the
+        // flow's agent steps, or every flow-step LLM call is unkeyed and capture mode refuses
+        // it. Without this, the transport stopped at FlowRunner.execute.
+        scenarioId: frontmatter.scenario_id,
+        stepId: frontmatter.step_id,
       });
 
       const result = {

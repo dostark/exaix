@@ -65,6 +65,48 @@ Deno.test("[fixture_addressing] a different call index at the same scenario/step
   assertEquals(second.content, "response for call 1");
 });
 
+Deno.test("[fixture_addressing] a different flowStepId at the same scenario/step/callIndex is a distinct fixture (Phase 157 Step 3 fix — parallel-wave collision)", async () => {
+  const siteA: ICallSite = {
+    scenarioId: "flow_blueprints",
+    stepId: "submit-flow-request",
+    flowStepId: "define-endpoints",
+    callIndex: 0,
+  };
+  const siteB: ICallSite = {
+    scenarioId: "flow_blueprints",
+    stepId: "submit-flow-request",
+    flowStepId: "design-schemas",
+    callIndex: 0,
+  };
+  const recordings: IRecordedResponse[] = [
+    {
+      promptHash: "h0",
+      promptPreview: "p0",
+      response: "define-endpoints response",
+      model: TEST_MODEL_ANTHROPIC,
+      tokens: { input: 1, output: 1 },
+      recordedAt: "2026-01-01T00:00:00Z",
+      callSite: siteA,
+    },
+    {
+      promptHash: "h1",
+      promptPreview: "p1",
+      response: "design-schemas response",
+      model: TEST_MODEL_ANTHROPIC,
+      tokens: { input: 1, output: 1 },
+      recordedAt: "2026-01-01T00:00:00Z",
+      callSite: siteB,
+    },
+  ];
+  const provider = new MockLLMProvider(MockStrategy.RECORDED, { recordings, patterns: [] });
+
+  const first = await provider.generate("prompt for define-endpoints", { callSite: siteA });
+  const second = await provider.generate("prompt for design-schemas", { callSite: siteB });
+
+  assertEquals(first.content, "define-endpoints response");
+  assertEquals(second.content, "design-schemas response");
+});
+
 Deno.test("[fixture_addressing] a recording keyed for a different step is not returned", async () => {
   const recordings: IRecordedResponse[] = [{
     promptHash: "h",

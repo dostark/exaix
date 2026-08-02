@@ -108,6 +108,8 @@ export interface IFlowRunner {
       requestAnalysis?: IRequestAnalysis;
       portalKnowledge?: IPortalKnowledge;
       portal?: string;
+      scenarioId?: string;
+      stepId?: string;
     },
   ): Promise<IFlowResult>;
 }
@@ -120,6 +122,14 @@ export interface IFlowStepRequest {
   context: Record<string, JSONValue>;
   traceId?: string;
   requestId?: string;
+  /** Call-site key (Phase 157): the scenario/step that submitted the request, so LLM
+   *  calls made for this step can be addressed by call site instead of prompt hash. */
+  scenarioId?: string;
+  stepId?: string;
+  /** This flow-internal step's own id (Phase 157 Step 3), e.g. "define-endpoints". Scopes
+   *  call-index assignment per flow step so steps racing in the same parallel wave
+   *  (WaveOrchestrator.executeWave uses Promise.all) cannot collide on the same index. */
+  flowStepId?: string;
   /** Skills to apply for this step execution (Phase 17) */
   skills?: string[];
   /** Structured request analysis from Step 11 */
@@ -626,6 +636,37 @@ export function resolveAggregateSources(step: { input: { from?: string[] }; depe
   return step.dependsOn ?? [];
 }
 
+/**
+ * Output-shape instruction appended to every AGENT step prompt (Phase 157 live capture).
+ *
+ * Without it a real model answers a flow step in prose, which fails BOTH the capture
+ * contract (a flow-step response's <content> block must be valid JSON) and — for the
+ * final step — plan validation downstream, since the aggregated flow output is parsed
+ * as a plan JSON envelope by PlanAdapter. The mock provider already answers flow steps
+ * in this dialect; this instruction makes a live model reproduce the same shape the
+ * mock and the capture contract expect.
+ *
+ * Exported (not private) so durability tests can seed replay records with the exact
+ * prompt the runner will hash — the instruction is part of the content address.
+ */
+export function flowStepOutputInstruction(step: IFlowStep, flow: IFlow): string {
+  const planShape = `{"subject": "Flow Step Output", "description": "Structured output for this step", ` +
+    `"steps": [{"step": 1, "title": "Step title", "description": "What this step produced"}]}`;
+  const from = flow.output?.from;
+  const isFinalStep = from === step.id || (Array.isArray(from) && from.includes(step.id));
+  const purpose = isFinalStep
+    ? "You are the FINAL step of a multi-agent flow: your response's <content> block becomes " +
+      "the flow's aggregated output and must parse as a plan."
+    : "You are a step in a multi-agent flow: your response's <content> block is consumed " +
+      "programmatically by the next step.";
+  return `\n\n${purpose}\nRespond exactly in this format — no other text outside the tags:\n` +
+    `<thought>\nBrief reasoning (1-3 sentences).\n</thought>\n\n` +
+    `<content>\n${planShape}\n</content>\n` +
+    `The <content> block MUST be valid JSON: the first character after <content> must be ` +
+    `{ and the last before </content> must be }, with no prose, explanation, or markdown ` +
+    `fences inside it.`;
+}
+
 export class FlowRunner implements IFlowRunner {
   private conditionEvaluator: ConditionEvaluator;
   protected dynamicStepExecutor?: DynamicStepExecutor;
@@ -933,6 +974,8 @@ export class FlowRunner implements IFlowRunner {
       requestId?: string;
       requestAnalysis?: IRequestAnalysis;
       portal?: string;
+      scenarioId?: string;
+      stepId?: string;
     },
   ): Promise<IFlowResult> {
     const flowRunId = crypto.randomUUID();
@@ -1565,6 +1608,9 @@ export class FlowRunner implements IFlowRunner {
         context: stepRequest.context ?? {},
         traceId: stepRequest.traceId,
         requestId: stepRequest.requestId,
+        scenarioId: stepRequest.scenarioId,
+        stepId: stepRequest.stepId,
+        flowStepId: stepRequest.flowStepId,
         requestAnalysis: stepRequest.requestAnalysis,
         skills: stepRequest.skills,
         sharedNamespace: stepRequest.sharedNamespace,
@@ -1665,11 +1711,18 @@ export class FlowRunner implements IFlowRunner {
     flowRunId: string,
     step: IFlowStep,
     flow: IFlow,
-    originalRequest: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    originalRequest: {
+      userPrompt: string;
+      traceId?: string;
+      requestId?: string;
+      requestAnalysis?: IRequestAnalysis;
+      scenarioId?: string;
+      stepId?: string;
+    },
     stepResults: Map<string, IStepResult>,
   ): Promise<IFlowStepRequest> {
     const inputData = this.collectStepInputData(step, originalRequest, stepResults);
-    const userPrompt = await this.buildStepUserPrompt(flowRunId, step, originalRequest, inputData);
+    const userPrompt = await this.buildStepUserPrompt(flowRunId, step, flow, originalRequest, inputData);
 
     // Merge skills: step-level skills override flow-level defaults (Phase 17)
     const skills = step.skills ?? flow.defaultSkills;
@@ -1688,6 +1741,9 @@ export class FlowRunner implements IFlowRunner {
       context: {},
       traceId: originalRequest.traceId,
       requestId: originalRequest.requestId,
+      scenarioId: originalRequest.scenarioId,
+      stepId: originalRequest.stepId,
+      flowStepId: step.id,
       skills,
       requestAnalysis: originalRequest.requestAnalysis,
     };
@@ -1766,31 +1822,36 @@ export class FlowRunner implements IFlowRunner {
   private async buildStepUserPrompt(
     flowRunId: string,
     step: IFlowStep,
+    flow: IFlow,
     originalRequest: { userPrompt: string; traceId?: string; requestId?: string },
     inputData: string,
   ): Promise<string> {
-    if (!step.input.transform) {
-      return inputData;
+    const transformStart = Date.now();
+    const basePrompt = step.input.transform
+      ? this.stepOutputFormatter.applyTransform(
+        inputData,
+        step.input.transform as string | ((input: string) => string),
+        step.input.transformArgs as JSONValue | undefined,
+        originalRequest.userPrompt,
+      )
+      : inputData;
+
+    if (step.input.transform) {
+      await this.eventLogger.log(DomainEventType.FlowStepTransformApplied, {
+        flowRunId,
+        stepId: step.id,
+        transformName: typeof step.input.transform === "string" ? step.input.transform : "custom",
+        inputSize: inputData.length,
+        outputSize: basePrompt.length,
+        duration: Date.now() - transformStart,
+        traceId: originalRequest.traceId,
+        requestId: originalRequest.requestId,
+      });
     }
 
-    const transformStart = Date.now();
-    const userPrompt = this.stepOutputFormatter.applyTransform(
-      inputData,
-      step.input.transform as string | ((input: string) => string),
-      step.input.transformArgs as JSONValue | undefined,
-      originalRequest.userPrompt,
-    );
-
-    await this.eventLogger.log(DomainEventType.FlowStepTransformApplied, {
-      flowRunId,
-      stepId: step.id,
-      transformName: typeof step.input.transform === "string" ? step.input.transform : "custom",
-      inputSize: inputData.length,
-      outputSize: userPrompt.length,
-      duration: Date.now() - transformStart,
-      traceId: originalRequest.traceId,
-      requestId: originalRequest.requestId,
-    });
+    const userPrompt = step.type === FlowStepType.GATE
+      ? basePrompt
+      : `${basePrompt}${flowStepOutputInstruction(step, flow)}`;
 
     return userPrompt;
   }

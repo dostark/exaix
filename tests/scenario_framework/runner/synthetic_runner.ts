@@ -28,6 +28,7 @@ import {
 } from "./matrix_expander.ts";
 import { currentMaxRowid, executeScenarioStep, type IScenarioStepExecutionResult } from "./step_executor.ts";
 import { readStepLlmMetrics } from "./step_llm_metrics.ts";
+import { CAPTURE_FIXTURES_ENV_VAR, sandboxCaptureFixturesDir } from "./capture_fixtures_flag.ts";
 import {
   CriterionPhase,
   CriterionStatus,
@@ -794,9 +795,16 @@ export const SCENARIO_SUBSTITUTED_VARIABLES = [
  * cannot override.
  */
 export function buildStepBaseEnv(options: IStepBaseEnvOptions): Record<string, string> {
+  // The daemon's write scope is its workspace tree; a --capture-fixtures dir pointing into the
+  // repo would be denied with a NotCapable write error. Rewrite it into the sandbox — the
+  // runner mirrors the captured files back after the run (copyCapturedFixtures).
+  const requestedCaptureDir = Deno.env.get(CAPTURE_FIXTURES_ENV_VAR);
   return {
     ...Deno.env.toObject(),
     ...(options.env ?? {}),
+    ...(requestedCaptureDir
+      ? { [CAPTURE_FIXTURES_ENV_VAR]: sandboxCaptureFixturesDir(options.workspaceRoot, requestedCaptureDir) }
+      : {}),
     REQUEST_FIXTURE: options.requestFixturePath,
     // Defined only when the scenario declares `flow_fixture`; a step referencing it otherwise
     // keeps the literal `$FLOW_FIXTURE`, which is what the guard test forbids at author time.

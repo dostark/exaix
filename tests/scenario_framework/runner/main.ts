@@ -13,7 +13,7 @@ import { applySandboxCleanup, describeRetention, planSandboxCleanup, SandboxRete
 import { ScenarioExecutionMode } from "../schema/step_schema.ts";
 import { type IScenarioCatalogEntry, loadScenarioCatalog } from "./scenario_catalog.ts";
 import { runSyntheticScenario } from "./synthetic_runner.ts";
-import { applyCaptureFixturesFlag, reportCaptureFlakiness } from "./capture_fixtures_flag.ts";
+import { applyCaptureFixturesFlag, copyCapturedFixtures, reportCaptureFlakiness } from "./capture_fixtures_flag.ts";
 import type { IRunManifest } from "./evidence_collector.ts";
 import { reportScenarioFailure, reportSuiteSummary } from "./reporter.ts";
 import { selectScenariosForExecution } from "./modes.ts";
@@ -289,6 +289,9 @@ await new Command()
     // first try is a product finding, not noise to smooth away by re-rolling.
     if (options.captureFixtures) {
       await reportCaptureFlakiness(resolve(options.captureFixtures));
+      // The daemon captured into the sandbox (its write scope — buildStepBaseEnv rewrites the
+      // dir). Mirror the files back to the requested dir before the sandbox is reclaimed below.
+      await copyCapturedFixtures(resolve(options.captureFixtures), runtimeConfig.workspace_path);
     }
 
     // 11. Write eval-report.json

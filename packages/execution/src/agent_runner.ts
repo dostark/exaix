@@ -128,6 +128,10 @@ export interface IParsedRequest {
   /** Step id from request frontmatter, for fixture replay call-site addressing
    *  (Phase 157). Absent outside the scenario framework. */
   stepId?: string;
+  /** Flow-internal step id, assigned by FlowRunner from IFlowStep.id for calls it drives
+   *  (Phase 157 Step 3 — scopes call-index assignment per flow step so concurrent steps in
+   *  the same parallel wave cannot collide on the same index). Absent for non-flow calls. */
+  flowStepId?: string;
 }
 
 /**
@@ -587,15 +591,28 @@ export class AgentRunner implements IAgentRunner {
 
   /**
    * Assign the call site for this logical call (Phase 157), reading — but not yet
-   * incrementing — the next call index for (scenarioId, stepId). Absent when the request
-   * carries no scenarioId/stepId, which keeps every call outside the scenario framework
-   * keyed by prompt hash exactly as before.
+   * incrementing — the next call index for (scenarioId, stepId, flowStepId). Absent when the
+   * request carries no scenarioId/stepId, which keeps every call outside the scenario
+   * framework keyed by prompt hash exactly as before.
+   *
+   * flowStepId is included in the counter key (Step 3) because flow-internal steps in the
+   * same parallel wave call this synchronously before either awaits — without flowStepId,
+   * two different steps could read the same unconsumed counter value and collide on one
+   * callIndex. A flow step's own id is unique within its flow and never invoked concurrently
+   * with itself, so scoping the counter by it makes the collision structurally impossible.
    */
   private resolveCallSite(request: IParsedRequest): ICallSite | undefined {
     if (!request.scenarioId || !request.stepId) return undefined;
-    const key = `${request.scenarioId}::${request.stepId}`;
+    const key = this.callSiteCounterKey(request.scenarioId, request.stepId, request.flowStepId);
     const callIndex = this.callIndexByCallSite.get(key) ?? 0;
-    return { scenarioId: request.scenarioId, stepId: request.stepId, callIndex };
+    return {
+      scenarioId: request.scenarioId,
+      stepId: request.stepId,
+      // Omitted entirely (not set to undefined) for non-flow calls, so a plain ReAct-loop
+      // callSite's shape is byte-identical to before this field existed.
+      ...(request.flowStepId ? { flowStepId: request.flowStepId } : {}),
+      callIndex,
+    };
   }
 
   /**
@@ -605,8 +622,18 @@ export class AgentRunner implements IAgentRunner {
    */
   private markCallSiteConsumed(callSite: Opt<ICallSite, Reason.OptionalContext>): void {
     if (!callSite) return;
-    const key = `${callSite.scenarioId}::${callSite.stepId}`;
+    const key = this.callSiteCounterKey(callSite.scenarioId, callSite.stepId, callSite.flowStepId);
     this.callIndexByCallSite.set(key, callSite.callIndex + 1);
+  }
+
+  /** Shared key builder for the callIndex counter map — resolveCallSite and
+   *  markCallSiteConsumed must compute an identical key or the counter never advances. */
+  private callSiteCounterKey(
+    scenarioId: string,
+    stepId: string,
+    flowStepId: Opt<string, Reason.OptionalContext>,
+  ): string {
+    return `${scenarioId}::${stepId}::${flowStepId ?? ""}`;
   }
 
   /**

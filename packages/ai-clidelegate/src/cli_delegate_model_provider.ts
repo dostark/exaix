@@ -130,6 +130,9 @@ const STRIPPED_AUTH_ENV_KEYS: readonly string[] = [
   "ANTHROPIC_BASE_URL",
 ];
 
+/** Placeholder for an absent sessionId/conversationId in the diagnostic generate-start log. */
+const UNSET_LOG_LABEL = "none";
+
 function buildDelegateEnv(): Record<string, string> {
   const env = Deno.env.toObject();
   for (const key of STRIPPED_AUTH_ENV_KEYS) {
@@ -254,6 +257,13 @@ export class CliDelegateModelProvider implements IModelProvider {
       env.OPENCODE_CONFIG = await this.opencodeReadOnlyConfigPath;
     }
 
+    const startedAt = Date.now();
+    console.log(
+      `[CliDelegateModelProvider] generate start: model=${this.options.model} promptLen=${prompt.length} ` +
+        `hasContentTag=${prompt.includes("<content>")} sessionId=${sessionId ?? UNSET_LOG_LABEL} ` +
+        `conversationId=${conversationId ?? UNSET_LOG_LABEL}`,
+    );
+
     let result: ICliDelegateProcessResult;
     try {
       result = await this.run(this.options.bin, args, {
@@ -263,6 +273,10 @@ export class CliDelegateModelProvider implements IModelProvider {
         timeoutMs: this.options.timeoutMs ?? DEFAULT_CLI_DELEGATE_TIMEOUT_MS,
       });
     } catch (error) {
+      console.log(
+        `[CliDelegateModelProvider] generate threw after ${Date.now() - startedAt}ms: ` +
+          `${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new ModelProviderError(
         `CliDelegateModelProvider could not run '${this.options.bin}': ${
           error instanceof Error ? error.message : String(error)
@@ -270,6 +284,10 @@ export class CliDelegateModelProvider implements IModelProvider {
         this.id,
       );
     }
+    console.log(
+      `[CliDelegateModelProvider] generate exited: code=${result.code} durationMs=${Date.now() - startedAt} ` +
+        `stdoutLen=${result.stdout.length} stderrLen=${result.stderr.length}`,
+    );
 
     if (result.code !== 0) {
       throw new ModelProviderError(
@@ -286,6 +304,9 @@ export class CliDelegateModelProvider implements IModelProvider {
     }
 
     const parsed = parseDelegateStdout(result.stdout, this.options.tool);
+    console.log(
+      `[CliDelegateModelProvider] lastText preview: ${JSON.stringify((parsed.lastText ?? "").slice(0, 300))}`,
+    );
     // opencode's read-only planning calls (edit/bash/task denied above) have no real
     // tool-calling to anchor their output, so a freehand plan JSON can use tool names
     // outside McpToolName (see opencode_plan_schema_adapter.ts) — normalize before this

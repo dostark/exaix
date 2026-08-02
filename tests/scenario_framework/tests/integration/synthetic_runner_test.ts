@@ -11,11 +11,13 @@
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
+import { withEnv } from "@exaix/testing";
 import { ScenarioExecutionMode, ScenarioStepType } from "../../schema/step_schema.ts";
 import { SCHEMA_VERSION } from "../../schema/version.ts";
 import { selectScenariosForExecution } from "../../runner/modes.ts";
 import { loadScenarioCatalog } from "../../runner/scenario_catalog.ts";
-import { runSyntheticScenario } from "../../runner/synthetic_runner.ts";
+import { buildStepBaseEnv, runSyntheticScenario } from "../../runner/synthetic_runner.ts";
+import { CAPTURE_FIXTURES_ENV_VAR } from "../../runner/capture_fixtures_flag.ts";
 import {
   type ISyntheticScenarioStepDefinition,
   withSyntheticTestEnv,
@@ -259,6 +261,21 @@ Deno.test("[ScenarioFrameworkSyntheticRunner] synthetic CI scenario selection ho
 
     assertEquals(byTag.map((scenario) => scenario.id), ["synthetic-smoke"]);
     assertEquals(byId.map((scenario) => scenario.id), ["synthetic-manual"]);
+  });
+});
+
+Deno.test("[ScenarioFrameworkSyntheticRunner] buildStepBaseEnv rewrites the capture fixtures dir into the sandbox", async () => {
+  await withEnv({
+    [CAPTURE_FIXTURES_ENV_VAR]: "/repo/tests/scenario_framework/fixtures/mock_recordings/flow_blueprints",
+  }, () => {
+    const env = buildStepBaseEnv({
+      scenarioId: "synthetic-capture",
+      stepId: "start-daemon",
+      requestFixturePath: "/tmp/request.json",
+      workspaceRoot: "/sandbox/ws",
+      frameworkHome: "/sandbox",
+    });
+    assertEquals(env[CAPTURE_FIXTURES_ENV_VAR], "/sandbox/ws/fixtures/mock_recordings/flow_blueprints");
   });
 });
 

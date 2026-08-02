@@ -37,6 +37,14 @@ steps:
   - id: "wait-for-completion"
     type: "wait-for-file"
     args: ["**/Plans/*_plan.md"]
+    # assess-quality's identity (quality-judge) has its own strict raw-JSON-verdict contract
+    # that occasionally conflicts with the flow-step output wrapper a real model is asked for
+    # (verified live: refused on 2/2 capture attempts once, complied on other runs) — a
+    # stochastic single-call outcome, not a deterministic format/identity mismatch (three other
+    # quality-judge-terminated flows in this pack comply reliably). Fail fast on rejection
+    # instead of burning the full timeout waiting for a plan that a rejected request will never
+    # produce.
+    failure_glob: "**/Rejected/*_rejected.md"
     timeout_sec: 120
     output_criteria:
       - id: "plan-produced"

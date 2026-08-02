@@ -115,7 +115,203 @@ class SequencedMockAgentRunner implements IAgentExecutor {
   }
 }
 
+Deno.test("FlowRunner: appends an output-shape instruction to agent step prompts (Phase 157)", async () => {
+  const steps: IFlowStepInput[] = [
+    {
+      id: "analyze",
+      name: "Analyze",
+      identity: "agent1",
+      dependsOn: [],
+      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+    },
+  ];
+
+  const flow: IFlowInput = {
+    id: "test-flow",
+    name: "Test Flow",
+    description: "A test flow",
+    version: DEFAULT_FLOW_VERSION,
+    steps,
+    output: { from: "analyze", format: FlowOutputFormat.MARKDOWN },
+    settings: { maxParallelism: 3, failFast: true },
+  };
+
+  const received: IFlowStepRequest[] = [];
+  const capturingExecutor: IAgentExecutor = {
+    run(_identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+      received.push(request);
+      return Promise.resolve({ thought: "Thinking", content: "Result", raw: "raw" });
+    },
+  };
+  const mockLogger = new MockEventLogger();
+
+  const runner = new FlowRunner({ agentExecutor: capturingExecutor, eventLogger: mockLogger });
+  const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
+
+  assertEquals(result.success, true);
+  assertEquals(received.length, 1);
+  const prompt = received[0].userPrompt;
+  assert(prompt.includes("test request"), "the request text is still present");
+  assert(prompt.includes("<content>"), "the prompt instructs the <content> envelope");
+  assert(prompt.includes("MUST be valid JSON"), "the prompt demands valid JSON in <content>");
+  assert(
+    /final step of a multi-agent flow/i.test(prompt),
+    "the final output step's instruction is plan-shaped",
+  );
+});
+
+Deno.test("FlowRunner: an intermediate agent step gets the envelope instruction without the final-step plan wording", async () => {
+  const steps: IFlowStepInput[] = [
+    {
+      id: "analyze",
+      name: "Analyze",
+      identity: "agent1",
+      dependsOn: [],
+      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+    },
+    {
+      id: "implement",
+      name: "Implement",
+      identity: "agent2",
+      dependsOn: ["analyze"],
+      input: { source: FlowInputSource.STEP, stepId: "analyze", transform: "mergeAsContext" },
+      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+    },
+  ];
+
+  const flow: IFlowInput = {
+    id: "test-flow",
+    name: "Test Flow",
+    description: "A test flow",
+    version: DEFAULT_FLOW_VERSION,
+    steps,
+    output: { from: "implement", format: FlowOutputFormat.MARKDOWN },
+    settings: { maxParallelism: 3, failFast: true },
+  };
+
+  const received: IFlowStepRequest[] = [];
+  const capturingExecutor: IAgentExecutor = {
+    run(_identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+      received.push(request);
+      return Promise.resolve({ thought: "Thinking", content: "Result", raw: "raw" });
+    },
+  };
+  const mockLogger = new MockEventLogger();
+
+  const runner = new FlowRunner({ agentExecutor: capturingExecutor, eventLogger: mockLogger });
+  const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
+
+  assertEquals(result.success, true);
+  assertEquals(received.length, 2);
+  const firstPrompt = received[0].userPrompt;
+  assert(firstPrompt.includes("<content>"), "every agent step prompt carries the envelope instruction");
+  assert(
+    !/final step of a multi-agent flow/i.test(firstPrompt),
+    "a non-final step must not claim to be the final step",
+  );
+  const lastPrompt = received[1].userPrompt;
+  assert(
+    /final step of a multi-agent flow/i.test(lastPrompt),
+    "the flow's output step gets the plan-shaped instruction",
+  );
+});
+
 // Test FlowRunner class
+Deno.test("FlowRunner: threads scenarioId/stepId from the execute request into agent steps (Phase 157)", async () => {
+  const steps: IFlowStepInput[] = [
+    {
+      id: "step1",
+      name: "Step 1",
+      identity: "agent1",
+      dependsOn: [],
+      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+    },
+  ];
+
+  const flow: IFlowInput = {
+    id: "test-flow",
+    name: "Test IFlow as IFlow",
+    description: "A test flow",
+    version: DEFAULT_FLOW_VERSION,
+    steps,
+    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
+    settings: { maxParallelism: 3, failFast: true },
+  };
+
+  const received: IFlowStepRequest[] = [];
+  const capturingExecutor: IAgentExecutor = {
+    run(_identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+      received.push(request);
+      return Promise.resolve({ thought: "Thinking 1", content: "Result 1", raw: "raw result 1" });
+    },
+  };
+  const mockLogger = new MockEventLogger();
+
+  const runner = new FlowRunner({ agentExecutor: capturingExecutor, eventLogger: mockLogger });
+  await runner.execute(flow as IFlow, {
+    userPrompt: "test request",
+    scenarioId: "feature_development",
+    stepId: "submit-flow-request",
+  });
+
+  assertEquals(received.length, 1);
+  assertEquals(received[0].scenarioId, "feature_development");
+  assertEquals(received[0].stepId, "submit-flow-request");
+  assertEquals(received[0].flowStepId, "step1");
+});
+
+Deno.test("FlowRunner: each flow-internal step gets its own flow step id as flowStepId (Phase 157 Step 3)", async () => {
+  const steps: IFlowStepInput[] = [
+    {
+      id: "step1",
+      name: "Step 1",
+      identity: "agent1",
+      dependsOn: [],
+      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+    },
+    {
+      id: "step2",
+      name: "Step 2",
+      identity: "agent2",
+      dependsOn: ["step1"],
+      input: { source: FlowInputSource.STEP, stepId: "step1", transform: "passthrough" },
+      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+    },
+  ];
+
+  const flow: IFlowInput = {
+    id: "test-flow",
+    name: "Test IFlow as IFlow",
+    description: "A test flow",
+    version: DEFAULT_FLOW_VERSION,
+    steps,
+    output: { from: "step2", format: FlowOutputFormat.MARKDOWN },
+    settings: { maxParallelism: 1, failFast: true },
+  };
+
+  const received: IFlowStepRequest[] = [];
+  const capturingExecutor: IAgentExecutor = {
+    run(_identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+      received.push(request);
+      return Promise.resolve({ thought: "Thinking", content: "Result", raw: "raw result" });
+    },
+  };
+  const mockLogger = new MockEventLogger();
+
+  const runner = new FlowRunner({ agentExecutor: capturingExecutor, eventLogger: mockLogger });
+  await runner.execute(flow as IFlow, {
+    userPrompt: "test request",
+    scenarioId: "feature_development",
+    stepId: "submit-flow-request",
+  });
+
+  assertEquals(received.map((request) => request.flowStepId), ["step1", "step2"]);
+});
+
 Deno.test("FlowRunner: executes simple sequential flow", async () => {
   const steps: IFlowStepInput[] = [
     {

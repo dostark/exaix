@@ -11,6 +11,7 @@ import { encodeHex } from "@std/encoding/hex";
 import {
   DefaultStepReplayPolicy,
   FlowRunner,
+  flowStepOutputInstruction,
   type IAgentExecutor,
   type IFlowEventLogger,
   type IFlowStepRequest,
@@ -125,7 +126,12 @@ Deno.test("StepDurabilityReplay: skips execution when reusable prior record exis
   const logger = new MockEventLogger();
   const replayPolicy = new DefaultStepReplayPolicy();
 
-  const inputHashHex = await computeInputHash("test input");
+  // Seed the record with the exact prompt the runner will produce for step1: the request
+  // text plus the appended output-shape instruction (flowStepOutputInstruction), since
+  // the step's content address includes the instruction.
+  const flow = buildTwoStepFlow();
+  const seededPrompt = "test input" + flowStepOutputInstruction(flow.steps[0] as IFlow["steps"][number], flow as IFlow);
+  const inputHashHex = await computeInputHash(seededPrompt);
   const priorRecord: IStepExecutionRecord = {
     recordId: crypto.randomUUID(),
     traceId: "test-trace-id",

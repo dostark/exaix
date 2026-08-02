@@ -1,0 +1,17 @@
+{
+  "promptHash": "1d0c013208c562f3",
+  "promptPreview": "# Technical Writer Agent\n\nYou are a technical writing expert. Create clear, accurate, and comprehens",
+  "response": "<thought>\nThe upstream review step reported that the target files (packages/execution/src/agent_runner.ts and request builders) and any git branch/diff don't exist in the accessible filesystem — there is nothing to document. As the Technical Writer step, I cannot author documentation about a code review that never happened; I must pass through this blocker rather than fabricate documentation content.\n</thought>\n\n<content>\n{\"subject\": \"Flow Step Output\", \"description\": \"Structured output for this step\", \"steps\": [{\"step\": 1, \"title\": \"Documentation blocked: review target unavailable\", \"description\": \"No documentation could be produced because the upstream review step could not access the source material. The requested files (packages/execution/src/agent_runner.ts and the request builders) and any corresponding git branch/diff do not exist in the accessible filesystem — the working directory is not a git repository, has no 'packages' or 'execution' directory, and contains only unrelated fixture portals (todo_app_*, tools_pack, simple_repo). Since no findings, code excerpts, or verified behavior were produced by the prior step, there is no factual basis for a doc summary, changelog entry, or API reference update. Recommend verifying the correct branch/repo path or supplying the diff directly, then re-running the review and documentation steps.\"}]}\n</content>",
+  "model": "claude-sonnet-5",
+  "tokens": {
+    "input": 2,
+    "output": 424
+  },
+  "recordedAt": "2026-08-02T10:25:03.783Z",
+  "callSite": {
+    "scenarioId": "pr_review",
+    "stepId": "submit-flow-request",
+    "flowStepId": "documentation-review",
+    "callIndex": 0
+  }
+}

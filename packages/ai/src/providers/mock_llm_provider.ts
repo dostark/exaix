@@ -152,15 +152,19 @@ export class MockLLMError extends Error {
 // MockLLMProvider Implementation
 // ============================================================================
 
-/** Stable string key for a call site, used to match a recording against options.callSite. */
+/** Stable string key for a call site, used to match a recording against options.callSite.
+ *  Includes flowStepId (Phase 157 Step 3) so two different flow steps sharing (scenarioId,
+ *  stepId, callIndex) — which happens when parallel-wave steps race the shared call-index
+ *  counter — resolve to distinct fixtures instead of colliding. */
 function callSiteKey(callSite: ICallSite): string {
-  return `${callSite.scenarioId}::${callSite.stepId}::${callSite.callIndex}`;
+  return `${callSite.scenarioId}::${callSite.stepId}::${callSite.flowStepId ?? ""}::${callSite.callIndex}`;
 }
 
 /** Human-readable call site, used in error messages and drift warnings. Exported (Phase 157
  *  Step 2) so capture's own error messages describe a call site identically to replay's. */
 export function describeCallSite(callSite: ICallSite): string {
-  return `${callSite.scenarioId}/${callSite.stepId}#${callSite.callIndex}`;
+  const flowSegment = callSite.flowStepId ? `/${callSite.flowStepId}` : "";
+  return `${callSite.scenarioId}/${callSite.stepId}${flowSegment}#${callSite.callIndex}`;
 }
 
 /**
@@ -200,6 +204,7 @@ export function hashPrompt(prompt: string): string {
  *  guarantee, not the cast. */
 function isValidCallSite(value: Opt<Partial<ICallSite>, Reason.OptionalInput>): boolean {
   if (typeof value !== "object" || value === null) return false;
+  if (value.flowStepId !== undefined && typeof value.flowStepId !== "string") return false;
   return typeof value.scenarioId === "string" &&
     typeof value.stepId === "string" &&
     typeof value.callIndex === "number";
@@ -229,7 +234,7 @@ function validateRecordedResponse(value: JSONValue, filePath: string): IRecorded
     fail("missing or malformed tokens: { input: number, output: number }");
   }
   if (candidate.callSite !== undefined && !isValidCallSite(candidate.callSite)) {
-    fail("callSite is present but malformed — expected { scenarioId, stepId, callIndex }");
+    fail("callSite is present but malformed — expected { scenarioId, stepId, callIndex, flowStepId? }");
   }
   return candidate as IRecordedResponse;
 }
