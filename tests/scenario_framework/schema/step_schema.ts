@@ -246,6 +246,12 @@ export type IExpectedSequenceEntry = z.infer<typeof ExpectedSequenceEntrySchema>
 const LlmJudgeCriterionSchema = BaseCriterionSchema.extend({
   kind: z.literal(CriterionKind.LLM_JUDGE),
   evidence_path: z.string().min(1).optional(),
+  // Path to a git-tracked file (relative to workspaceRoot) whose diff against its repo's
+  // root commit is computed as evidence instead of evidence_path's raw final-state content.
+  // Takes precedence over evidence_path when both are set. Makes "did anything change"
+  // unambiguous — a raw final-state snapshot leaves the judge inferring that from prose
+  // alone, and live testing showed it sometimes infers wrong.
+  evidence_diff_path: z.string().min(1).optional(),
   preset: z.string().min(1).optional(),
   rubric: z.string().min(1).optional(),
   // Path to a file (relative to workspaceRoot, e.g. the original request fixture) whose

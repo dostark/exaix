@@ -9,7 +9,7 @@
  * @related-files [tests/scenario_framework/runner/evidence_collector.ts, tests/scenario_framework/schema/step_schema.ts, tests/scenario_framework/tests/unit/assertions_evidence_test.ts]
  */
 
-import { globToRegExp, isAbsolute, relative, resolve } from "@std/path";
+import { dirname, globToRegExp, isAbsolute, relative, resolve } from "@std/path";
 import { levenshteinDistance } from "@std/text";
 import { parse as parseYaml } from "@std/yaml";
 import {
@@ -1362,11 +1362,80 @@ export async function resolveEvalJudgeContext(
   return options.rubric;
 }
 
+/**
+ * Loads the catalog's judge-methodology skills' (verdict-rubric, response-contract-judge)
+ * instructions directly from Memory/Skills/global/ — not through SkillsService/AgentRunner,
+ * which would need a DB and risks EXA_EVAL_SUPPRESS_SKILLS (set for the arm under test)
+ * leaking into the judge's own skill resolution in the same process. Both skills are
+ * `critical: true` with `usage_count: 0` in the shipped catalog: authored for exactly this
+ * (evidence-grounded, reason-before-score judging) but never wired into any judge call
+ * path. A missing/unreadable/malformed skill file degrades gracefully — matching
+ * resolveEvalJudgeContext's fallback convention — rather than failing the judge step.
+ */
+export async function loadJudgeMethodologyInstructions(workspaceRoot: string): Promise<string> {
+  const skillIds = ["verdict-rubric", "response-contract-judge"];
+  const parts: string[] = [];
+  for (const skillId of skillIds) {
+    const path = resolve(workspaceRoot, "Memory", "Skills", "global", `${skillId}.json`);
+    try {
+      const raw = await Deno.readTextFile(path);
+      const parsed = JSON.parse(raw) as { instructions?: string };
+      if (parsed.instructions) parts.push(parsed.instructions);
+    } catch {
+      // Missing/unreadable/malformed — skip this skill's contribution, don't fail the judge.
+    }
+  }
+  return parts.join("\n\n---\n\n");
+}
+
+/**
+ * Prepends the loaded methodology instructions ahead of the evaluation request itself, so
+ * the judge reads "how to judge" before "what to judge" — matching
+ * response-contract-judge's own "read the goal, then the evidence" ordering. Empty
+ * methodology returns the prompt unchanged.
+ */
+export function prependMethodologyInstructions(prompt: string, methodology: string): string {
+  if (!methodology) return prompt;
+  return `${methodology}\n\n---\n\n${prompt}`;
+}
+
+const GIT_DIFF_NO_CHANGES_MESSAGE = "(no changes — working tree matches the initial commit)";
+
+async function runGitCapture(cwd: string, args: string[]): Promise<string> {
+  const output = await new Deno.Command("git", { args, cwd, stdout: "piped", stderr: "piped" }).output();
+  if (!output.success) {
+    throw new Error(`git ${args.join(" ")} failed: ${new TextDecoder().decode(output.stderr)}`);
+  }
+  return new TextDecoder().decode(output.stdout);
+}
+
+/**
+ * Computes a diff of `trackedFilePath` between its containing git repo's root commit and
+ * HEAD — deterministic, harness-computed evidence rather than the judge inferring "did
+ * anything change" from a final-state-only snapshot. Live-observed 2026-08-02: judge calls
+ * given only a final-state file hallucinated "does not represent a diff/fix" and "the
+ * original buggy fixture file" on code that was genuinely, verifiably fixed (confirmed by
+ * the real test suite passing). An empty diff (no real change) is reported explicitly
+ * rather than as blank/ambiguous text the judge could misread either way.
+ */
+export async function computeGitDiffEvidence(workspaceRoot: string, trackedFilePath: string): Promise<string> {
+  const absolutePath = resolve(workspaceRoot, trackedFilePath);
+  const containingDir = dirname(absolutePath);
+
+  const repoRoot = (await runGitCapture(containingDir, ["rev-parse", "--show-toplevel"])).trim();
+  const rootCommit = (await runGitCapture(repoRoot, ["rev-list", "--max-parents=0", "HEAD"])).trim().split("\n")[0];
+  const relativePath = relative(repoRoot, absolutePath);
+
+  const diff = await runGitCapture(repoRoot, ["diff", rootCommit, "HEAD", "--", relativePath]);
+  return diff.trim().length > 0 ? diff : GIT_DIFF_NO_CHANGES_MESSAGE;
+}
+
 export async function evaluateLlmJudgeCriterion(
   options: IEvaluateCriterionOptions,
 ): Promise<ICriterionResult> {
   const criterion = options.criterion as ICriterion & {
     evidence_path?: string;
+    evidence_diff_path?: string;
     preset?: string;
     rubric?: string;
     context_path?: string;
@@ -1389,7 +1458,9 @@ export async function evaluateLlmJudgeCriterion(
   const isMulti = effectiveCriteria.length > 1;
 
   let content = "";
-  if (criterion.evidence_path) {
+  if (criterion.evidence_diff_path) {
+    content = await computeGitDiffEvidence(options.workspaceRoot, criterion.evidence_diff_path);
+  } else if (criterion.evidence_path) {
     const resolvedPath = resolve(options.workspaceRoot, criterion.evidence_path);
     try {
       content = await Deno.readTextFile(resolvedPath);
@@ -1405,7 +1476,9 @@ export async function evaluateLlmJudgeCriterion(
     rubric: criterion.rubric,
     contextPath: criterion.context_path,
   });
-  const promptUsed = buildEvaluationPrompt(content, effectiveCriteria, evalContext, isMulti);
+  const basePrompt = buildEvaluationPrompt(content, effectiveCriteria, evalContext, isMulti);
+  const methodology = await loadJudgeMethodologyInstructions(options.workspaceRoot);
+  const promptUsed = prependMethodologyInstructions(basePrompt, methodology);
   const threshold = criterion.score_threshold ?? 0.7;
   const judgeProvenance = resolveEvalJudgeProvenance(options.env);
 
@@ -1421,7 +1494,11 @@ export async function evaluateLlmJudgeCriterion(
       message: "LLM judge skipped: no LLM configured. " +
         "Set EXA_EVAL_LLM_MOCK=pass for auto-pass in self-tests, " +
         "or set EXA_LLM_PROVIDER for real evaluation.",
-      evidence_refs: criterion.evidence_path ? [criterion.evidence_path] : [],
+      evidence_refs: criterion.evidence_diff_path
+        ? [criterion.evidence_diff_path]
+        : criterion.evidence_path
+        ? [criterion.evidence_path]
+        : [],
       score_weight: options.criterion.score_weight,
     };
   }
@@ -1442,7 +1519,11 @@ export async function evaluateLlmJudgeCriterion(
         message: `LLM judge preset "${criterion.preset}": mock weighted score ${
           weightedScore.toFixed(4)
         } (threshold: ${threshold}) — [${perCriterionSummary}]`,
-        evidence_refs: criterion.evidence_path ? [criterion.evidence_path] : [],
+        evidence_refs: criterion.evidence_diff_path
+          ? [criterion.evidence_diff_path]
+          : criterion.evidence_path
+          ? [criterion.evidence_path]
+          : [],
         score: weightedScore,
         score_weight: options.criterion.score_weight,
         ...(judgeProvenance ? { judge: judgeProvenance } : {}),
@@ -1454,7 +1535,11 @@ export async function evaluateLlmJudgeCriterion(
       phase: options.phase,
       status: CriterionStatus.PASSED,
       message: `LLM judge (${criterion.preset ?? "inline rubric"}): mock pass (threshold: ${threshold})`,
-      evidence_refs: criterion.evidence_path ? [criterion.evidence_path] : [],
+      evidence_refs: criterion.evidence_diff_path
+        ? [criterion.evidence_diff_path]
+        : criterion.evidence_path
+        ? [criterion.evidence_path]
+        : [],
       score: 1.0,
       score_weight: options.criterion.score_weight,
       ...(judgeProvenance ? { judge: judgeProvenance } : {}),
@@ -1483,7 +1568,11 @@ export async function evaluateLlmJudgeCriterion(
         message: `LLM judge preset "${criterion.preset}": weighted score ${
           weightedScore.toFixed(4)
         } (threshold: ${threshold}) — [${perCriterionSummary}]`,
-        evidence_refs: criterion.evidence_path ? [criterion.evidence_path] : [],
+        evidence_refs: criterion.evidence_diff_path
+          ? [criterion.evidence_diff_path]
+          : criterion.evidence_path
+          ? [criterion.evidence_path]
+          : [],
         observed_value: weightedScore,
         expected_value: threshold,
         score: weightedScore,
@@ -1507,7 +1596,11 @@ export async function evaluateLlmJudgeCriterion(
       phase: options.phase,
       status: passed ? CriterionStatus.PASSED : CriterionStatus.FAILED,
       message: `LLM judge score: ${score.toFixed(2)} (threshold: ${threshold})`,
-      evidence_refs: criterion.evidence_path ? [criterion.evidence_path] : [],
+      evidence_refs: criterion.evidence_diff_path
+        ? [criterion.evidence_diff_path]
+        : criterion.evidence_path
+        ? [criterion.evidence_path]
+        : [],
       observed_value: score,
       expected_value: threshold,
       score: score,
