@@ -1411,12 +1411,16 @@ async function runGitCapture(cwd: string, args: string[]): Promise<string> {
 
 /**
  * Computes a diff of `trackedFilePath` between its containing git repo's root commit and
- * HEAD — deterministic, harness-computed evidence rather than the judge inferring "did
- * anything change" from a final-state-only snapshot. Live-observed 2026-08-02: judge calls
- * given only a final-state file hallucinated "does not represent a diff/fix" and "the
- * original buggy fixture file" on code that was genuinely, verifiably fixed (confirmed by
- * the real test suite passing). An empty diff (no real change) is reported explicitly
- * rather than as blank/ambiguous text the judge could misread either way.
+ * the current working tree — deterministic, harness-computed evidence rather than the
+ * judge inferring "did anything change" from a final-state-only snapshot. Diffs against
+ * the working tree (not HEAD) rather than just the committed history: live-observed
+ * 2026-08-02, a solved trial left its (correct) fix uncommitted, so a root..HEAD diff saw
+ * nothing and would have reported "(no changes)" on code that was genuinely fixed —
+ * exactly the broken-pipeline-read-as-worthless-artefact failure Phase 158's validity gate
+ * exists to catch. Also fixes the earlier gap of judge calls given only a final-state file
+ * hallucinating "does not represent a diff/fix" on code that was genuinely, verifiably
+ * fixed. An empty diff (no real change at all) is reported explicitly rather than as
+ * blank/ambiguous text the judge could misread either way.
  */
 export async function computeGitDiffEvidence(workspaceRoot: string, trackedFilePath: string): Promise<string> {
   const absolutePath = resolve(workspaceRoot, trackedFilePath);
@@ -1426,7 +1430,7 @@ export async function computeGitDiffEvidence(workspaceRoot: string, trackedFileP
   const rootCommit = (await runGitCapture(repoRoot, ["rev-list", "--max-parents=0", "HEAD"])).trim().split("\n")[0];
   const relativePath = relative(repoRoot, absolutePath);
 
-  const diff = await runGitCapture(repoRoot, ["diff", rootCommit, "HEAD", "--", relativePath]);
+  const diff = await runGitCapture(repoRoot, ["diff", rootCommit, "--", relativePath]);
   return diff.trim().length > 0 ? diff : GIT_DIFF_NO_CHANGES_MESSAGE;
 }
 

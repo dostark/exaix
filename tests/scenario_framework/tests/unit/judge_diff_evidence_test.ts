@@ -58,6 +58,29 @@ Deno.test("[JudgeDiffEvidence] a genuine fix produces a non-empty diff showing t
   }
 });
 
+Deno.test("[JudgeDiffEvidence] an uncommitted fix in the working tree is still captured, not silently reported as no changes", async () => {
+  // Live-observed 2026-08-02: a Haiku-solved trial left its (correct) fix uncommitted —
+  // diffing root..HEAD alone saw nothing, since HEAD was still the init commit. A judge
+  // shown "(no changes)" for genuinely-fixed-but-uncommitted code is the exact broken-
+  // pipeline-read-as-worthless-artefact failure Phase 158's validity gate exists to catch.
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-diff-evidence-uncommitted-" });
+  try {
+    const repoDir = `${workspaceRoot}/todo-app`;
+    await Deno.mkdir(repoDir, { recursive: true });
+    await Deno.writeTextFile(`${repoDir}/utils.ts`, "export function f() { return x.y; }\n");
+    await runGit(repoDir, ["init", "-q"]);
+    await runGit(repoDir, ["-c", "user.email=t@t.com", "-c", "user.name=t", "add", "-A"]);
+    await runGit(repoDir, ["-c", "user.email=t@t.com", "-c", "user.name=t", "commit", "-q", "-m", "init"]);
+    // Fix applied but never committed — HEAD is still the init commit.
+    await Deno.writeTextFile(`${repoDir}/utils.ts`, 'export function f() { if (!x) return ""; return x.y; }\n');
+
+    const diff = await computeGitDiffEvidence(workspaceRoot, "todo-app/utils.ts");
+    assertStringIncludes(diff, "if (!x) return");
+  } finally {
+    await Deno.remove(workspaceRoot, { recursive: true });
+  }
+});
+
 Deno.test("[JudgeDiffEvidence] no changes since the root commit is reported explicitly, not as an empty/ambiguous string", async () => {
   const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-diff-evidence-nochange-" });
   try {
