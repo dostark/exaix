@@ -140,6 +140,60 @@ Deno.test("[auditLedgerRows] a named file that is an import.meta.main entrypoint
   assertEquals(auditLedgerRows(rows, files), []);
 });
 
+Deno.test("[auditLedgerRows] a named identifier called only from its own file's import.meta.main entrypoint is not flagged", () => {
+  // Regression: scripts/run_value_comparison_report.ts's computeArmComparisonReport is
+  // exported for testability and called by that same file's renderReport(), which is
+  // itself only called from that file's import.meta.main block — a real, reachable
+  // production call chain entirely inside one script, the same shape every operator-run
+  // script in this repo uses (check_blueprint_integrity.ts, check_artefact_decision_coverage.ts).
+  const rows: IReachabilityLedgerRow[] = [{
+    docPath: "phase-999-example.md",
+    symbolLabel: "`paired-arm-comparison`",
+    addedIn: "Step 1",
+    wiringStep: "Step 9",
+    callSiteText: "wired via computeArmComparisonReport — closed 2026-08-04",
+    status: "✅",
+  }];
+  const files: IFileRecord[] = [
+    {
+      path: "scripts/run_value_comparison_report.ts",
+      content: [
+        "export function computeArmComparisonReport() { return 1; }",
+        "function renderReport() { return computeArmComparisonReport(); }",
+        "if (import.meta.main) { renderReport(); }",
+      ].join("\n"),
+    },
+  ];
+
+  assertEquals(auditLedgerRows(rows, files), []);
+});
+
+Deno.test("[auditLedgerRows] an identifier that only appears once (its own declaration) in an entrypoint file is still flagged", () => {
+  // The entrypoint exemption requires a real second occurrence (a call), not merely that
+  // the defining file happens to be a script.
+  const rows: IReachabilityLedgerRow[] = [{
+    docPath: "phase-999-example.md",
+    symbolLabel: "`some-row`",
+    addedIn: "Step 1",
+    wiringStep: "Step 9",
+    callSiteText: "wired via unusedHelper — closed 2026-08-04",
+    status: "✅",
+  }];
+  const files: IFileRecord[] = [
+    {
+      path: "scripts/some_script.ts",
+      content: [
+        "export function unusedHelper() { return 1; }",
+        "if (import.meta.main) { console.log('entrypoint ran, but called nothing'); }",
+      ].join("\n"),
+    },
+  ];
+
+  const findings = auditLedgerRows(rows, files);
+  assertEquals(findings.length, 1);
+  assertEquals(findings[0].candidateIdentifier, "unusedHelper");
+});
+
 Deno.test("[parseReachabilityLedgerRows] parses a well-formed table under a Reachability Ledger heading", () => {
   const content = [
     "## Reachability Ledger (pending production consumers)",

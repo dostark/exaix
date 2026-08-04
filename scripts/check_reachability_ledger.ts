@@ -207,6 +207,30 @@ function isEntrypointScript(definitionFiles: string[], files: IFileRecord[]): bo
 }
 
 /**
+ * True when `identifier` is both defined in, and referenced a second time within, a file
+ * that is itself an `import.meta.main` entrypoint — the common shape of every script this
+ * repo already ships (`check_blueprint_integrity.ts`, `check_artefact_decision_coverage.ts`,
+ * `run_value_comparison_report.ts`): a small exported helper called only from that same
+ * file's entrypoint block. A single occurrence is just the `export` declaration; a second
+ * occurrence is a real call from the file's own reachable entrypoint, even though no
+ * _other_ file ever imports the symbol. Known imprecision, same class as the rest of this
+ * tool: the second "occurrence" is a raw text match, so an identifier that happens to
+ * appear inside a string literal (e.g. a log message) would also count — narrow and
+ * unlikely, but a false negative, not a false positive, so it under- rather than
+ * over-reports.
+ */
+function isCalledFromOwnEntrypoint(identifier: string, definitionFiles: string[], files: IFileRecord[]): boolean {
+  const byPath = new Map(files.map((f) => [f.path, f.content]));
+  const pattern = new RegExp(`\\b${identifier}\\b`, "g");
+  return definitionFiles.some((path) => {
+    const content = byPath.get(path);
+    if (content === undefined || !stripComments(content).includes("import.meta.main")) return false;
+    const occurrences = stripComments(content).match(pattern);
+    return (occurrences?.length ?? 0) >= 2;
+  });
+}
+
+/**
  * Audits every ✅ row for candidate identifiers with no verifiable call-site. A candidate
  * that resolves to no `export` declaration anywhere is skipped, not flagged — it is most
  * likely a ledger label, a commit SHA, or prose, not a real code symbol this check can
@@ -224,6 +248,7 @@ export function auditLedgerRows(rows: IReachabilityLedgerRow[], files: IFileReco
     for (const candidate of extractCandidateSymbols(row.callSiteText)) {
       const definitionFiles = findExportDefinitionFiles(candidate, productionFiles);
       if (definitionFiles.length === 0) continue; // not a verifiable code symbol
+      if (isCalledFromOwnEntrypoint(candidate, definitionFiles, productionFiles)) continue;
 
       const usageFiles = findUsageFiles(candidate, productionFiles, new Set(definitionFiles));
       if (usageFiles.length === 0) {

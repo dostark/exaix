@@ -1,0 +1,34 @@
+{
+  "armComparisons": [
+    {
+      "input": {
+        "armId": "demo-arm",
+        "metric": "objective_outcome",
+        "tasks": [{ "taskId": "demo-task", "control": [0.5, 0.5], "treatment": [0.9, 0.9] }]
+      },
+      "deltaPromptTokens": 1000
+    }
+  ],
+  "validityGates": [
+    {
+      "binding": { "artefactId": "demo-artefact", "pack": "demo_pack", "scenarioIds": ["demo-scenario"] },
+      "evidence": {
+        "pack": "demo_pack",
+        "scenarioIds": ["demo-scenario"],
+        "commitSha": "deadbeef",
+        "outcome": "green",
+        "verifiedAt": "2026-01-01T00:00:00Z"
+      },
+      "valueRunCommitSha": "deadbeef"
+    }
+  ],
+  "placeboArms": [
+    {
+      "input": {
+        "armId": "demo-placebo",
+        "metric": "objective_outcome",
+        "tasks": [{ "taskId": "demo-task", "control": [0.9], "treatment": [0.4] }]
+      }
+    }
+  ]
+}
