@@ -9,7 +9,7 @@
  */
 
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
-import { FlowStepOnErrorAction } from "@exaix/core";
+import { FlowStepExecutionMode, FlowStepOnErrorAction, FlowStepType } from "@exaix/core";
 
 /** Runs pre-execution structural checks against a flow definition. */
 export class FlowRuntimeValidator {
@@ -87,6 +87,26 @@ export class FlowRuntimeValidator {
       }
     }
 
+    return null;
+  }
+
+  /**
+   * Belt-and-suspenders runtime check mirroring the `FlowStepSchema` refine (Phase 159
+   * Step 1): a step declaring `strategy` while `execution_mode` is DYNAMIC, or on a
+   * non-agent step type, is rejected before any wave is scheduled. The schema is the
+   * single source of truth for allowed values; this catches a flow loaded from a source
+   * that bypassed schema validation.
+   */
+  validateStepStrategy(flow: IFlow): string | null {
+    for (const step of flow.steps) {
+      if (step.strategy === undefined) continue;
+      if (step.execution_mode === FlowStepExecutionMode.DYNAMIC) {
+        return `Step '${step.id}' declares strategy '${step.strategy}' but execution_mode is DYNAMIC`;
+      }
+      if (step.type !== FlowStepType.AGENT) {
+        return `Step '${step.id}' declares strategy '${step.strategy}' but is not an agent-type step`;
+      }
+    }
     return null;
   }
 

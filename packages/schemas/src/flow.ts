@@ -9,6 +9,7 @@
 import { z } from "zod";
 import {
   DataFormat,
+  ExecutionStrategyName,
   FlowConsensusMethod,
   FlowGateOnFail,
   FlowInputSource,
@@ -170,8 +171,19 @@ export const ConsensusConfigSchema = z.object({
   weights: z.record(z.number()).optional(),
 });
 
+/**
+ * Agent strategies a flow step may force on a DECLARED step, bypassing the strategy
+ * registry's capability-based dispatch. Reuses `ExecutionStrategyName`, excluding the
+ * internal `legacy` fallback — that value is never a deliberate author choice.
+ */
+export const FlowStepStrategySchema = z.enum([
+  ExecutionStrategyName.REACT,
+  ExecutionStrategyName.MCP,
+  ExecutionStrategyName.CLI_DELEGATE,
+]);
+
 // FlowStep schema definition
-export const FlowStepSchema = z.object({
+const FlowStepSchemaBase = z.object({
   id: z.string().min(1, "Step ID cannot be empty"),
   name: z.string().min(1, "Step name cannot be empty"),
   /** Step type: standard agent step, gate, branch, or consensus. Defaults to "agent" */
@@ -221,6 +233,30 @@ export const FlowStepSchema = z.object({
   parallel: ZFlowParallelConfig.optional(),
   mergeFromGroups: z.array(z.string()).optional(),
   mergeMode: ZParallelMergeMode.optional(),
+  /**
+   * Forces this DECLARED agent step through the agent strategy registry with the
+   * given strategy, bypassing capability-based dispatch. Invalid on a DYNAMIC step
+   * (which already has its own tool-selection loop) or a non-agent step type.
+   */
+  strategy: FlowStepStrategySchema.optional(),
+});
+
+export const FlowStepSchema = FlowStepSchemaBase.superRefine((step, ctx) => {
+  if (step.strategy === undefined) return;
+  if (step.execution_mode === FlowStepExecutionMode.DYNAMIC) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "strategy is invalid on a DYNAMIC step — DYNAMIC already selects tools at runtime",
+      path: ["strategy"],
+    });
+  }
+  if (step.type !== FlowStepType.AGENT) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "strategy is only valid on an agent-type step",
+      path: ["strategy"],
+    });
+  }
 });
 
 // Flow schema definition

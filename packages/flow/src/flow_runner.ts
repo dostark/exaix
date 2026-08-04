@@ -1068,6 +1068,15 @@ export class FlowRunner implements IFlowRunner {
       throw new FlowExecutionError(parallelValidationError, flowRunId);
     }
 
+    const strategyValidationError = this.runtimeValidator.validateStepStrategy(flow);
+    if (strategyValidationError) {
+      await this.eventLogger.log(FLOW_EVENT_VALIDATION_FAILED, {
+        error: strategyValidationError,
+        ...this.getIFlowLogBase(flow, request),
+      });
+      throw new FlowExecutionError(strategyValidationError, flowRunId);
+    }
+
     if (this.agentExecutor.hasBlueprint) {
       const identityValidationError = await this.runtimeValidator.validateStepIdentities(
         flow,
