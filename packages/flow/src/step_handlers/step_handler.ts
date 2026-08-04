@@ -58,6 +58,8 @@ export interface IStepExecutionContext {
         }
       >
     >;
+    /** The flow's portal alias (Phase 159); required for a strategy-routed step. */
+    readonly portal?: string;
   };
 
   /** Unique identifier for this flow run */

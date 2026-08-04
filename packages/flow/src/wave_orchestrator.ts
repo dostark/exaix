@@ -32,7 +32,13 @@ import {
   type IStepResult,
 } from "./flow_runner.ts";
 
-type IWaveRequest = { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis };
+type IWaveRequest = {
+  userPrompt: string;
+  traceId?: string;
+  requestId?: string;
+  requestAnalysis?: IRequestAnalysis;
+  portal?: string;
+};
 
 interface IWaveProcessingOutcome {
   successCount: number;

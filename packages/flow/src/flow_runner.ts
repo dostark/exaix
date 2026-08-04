@@ -98,6 +98,17 @@ export interface IAgentExecutor {
    * execution. Absent executors (e.g. test doubles) simply skip the identity check.
    */
   hasBlueprint?(identityId: string): Promise<boolean>;
+  /**
+   * Strategy-routed step execution (Phase 159): forces `identityId` through the agent
+   * strategy registry with `strategy`, bypassing the no-strategy `run()` path's single
+   * direct generate call. Absent executors fail fast when a step declares a strategy
+   * (`agent_step_handler.ts` surfaces a clear error rather than silently falling back).
+   */
+  runWithStrategy?(
+    identityId: string,
+    request: IFlowStepRequest,
+    strategy: NonNullable<IFlowStep["strategy"]>,
+  ): Promise<IAgentExecutionResult>;
 }
 
 /**
@@ -143,6 +154,13 @@ export interface IFlowStepRequest {
   sharedNamespace?: Record<string, string>;
   /** Deterministic summaries for requested parallel groups (Phase 65) */
   parallelGroupResults?: Record<string, IParallelGroupSummary>;
+  /**
+   * The flow's portal alias (Phase 159), threaded unchanged from `FlowRunner.execute()`'s
+   * own `request.portal`. Required by a strategy-routed step (`runWithStrategy`) to resolve
+   * `AgentOrchestrator.executeStep`'s mandatory `options.portal`; absent for a flow invoked
+   * with no portal, which is fine for a no-strategy step (`AgentRunner.run` never needs one).
+   */
+  portal?: string;
 }
 
 export interface IParallelGroupSummary {
@@ -242,12 +260,25 @@ interface IStepNamespaceWrites {
   stepOutput: string;
 }
 
+/**
+ * The original flow-execution request, threaded unchanged from `FlowRunner.execute()`
+ * through every internal step method. `portal` (Phase 159) is carried here so a
+ * strategy-routed step can resolve a portal alias for `AgentOrchestrator.executeStep`.
+ */
+type IFlowOriginalRequest = {
+  userPrompt: string;
+  traceId?: string;
+  requestId?: string;
+  requestAnalysis?: IRequestAnalysis;
+  portal?: string;
+};
+
 /** Shared context for step-level execution (reduces parameter count across step methods). */
 interface IStepContext {
   flowRunId: string;
   step: IFlowStep;
   flow: IFlow;
-  request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis };
+  request: IFlowOriginalRequest;
   stepResults: Map<string, IStepResult>;
   startedAt: Date;
 }
@@ -1032,7 +1063,7 @@ export class FlowRunner implements IFlowRunner {
    */
   private async validateIFlow(
     flow: IFlow,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    request: IFlowOriginalRequest,
     flowRunId: string,
   ): Promise<void> {
     // Log flow validation start
@@ -1104,7 +1135,7 @@ export class FlowRunner implements IFlowRunner {
    */
   private async aggregateAndFinalize(
     flow: IFlow,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    request: IFlowOriginalRequest,
     flowRunId: string,
     stepResults: Map<string, IStepResult>,
     startedAt: Date,
@@ -1190,7 +1221,7 @@ export class FlowRunner implements IFlowRunner {
    */
   private async handleExecutionError(
     flow: IFlow,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    request: IFlowOriginalRequest,
     flowRunId: string,
     stepResults: Map<string, IStepResult>,
     startedAt: Date,
@@ -1236,7 +1267,7 @@ export class FlowRunner implements IFlowRunner {
     flowRunId: string,
     stepId: string,
     flow: IFlow,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    request: IFlowOriginalRequest,
     stepResults: Map<string, IStepResult>,
   ): Promise<IStepResult> {
     const step = flow.steps.find((s) => s.id === stepId)!;
@@ -1510,7 +1541,7 @@ export class FlowRunner implements IFlowRunner {
     flowRunId: string,
     step: IFlowStep,
     fallbackStep: IFlowStep,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    request: IFlowOriginalRequest,
     fallbackResult: IStepResult,
     startedAt: Date,
   ): IStepResult {
@@ -1552,7 +1583,7 @@ export class FlowRunner implements IFlowRunner {
     step: IFlowStep,
     flow: IFlow,
     stepResults: Map<string, IStepResult>,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    request: IFlowOriginalRequest,
     startedAt: Date,
   ): Promise<IStepResult | null> {
     if (!step.condition) {
@@ -1611,7 +1642,7 @@ export class FlowRunner implements IFlowRunner {
     flowRunId: string,
     step: IFlowStep,
     flow: IFlow,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    request: IFlowOriginalRequest,
     stepRequest: IFlowStepRequest,
     startedAt: Date,
   ): Promise<IAgentExecutionResult> {
@@ -1643,6 +1674,7 @@ export class FlowRunner implements IFlowRunner {
         skills: stepRequest.skills,
         sharedNamespace: stepRequest.sharedNamespace,
         parallelGroupResults: stepRequest.parallelGroupResults,
+        portal: stepRequest.portal,
       },
       flowRunId,
       startedAt,
@@ -1702,7 +1734,7 @@ export class FlowRunner implements IFlowRunner {
   private formatStepFailure(
     flowRunId: string,
     step: IFlowStep,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    request: IFlowOriginalRequest,
     error: Error | string | unknown,
     startedAt: Date,
   ): IStepResult {
@@ -1739,14 +1771,7 @@ export class FlowRunner implements IFlowRunner {
     flowRunId: string,
     step: IFlowStep,
     flow: IFlow,
-    originalRequest: {
-      userPrompt: string;
-      traceId?: string;
-      requestId?: string;
-      requestAnalysis?: IRequestAnalysis;
-      scenarioId?: string;
-      stepId?: string;
-    },
+    originalRequest: IFlowOriginalRequest & { scenarioId?: string; stepId?: string },
     stepResults: Map<string, IStepResult>,
   ): Promise<IFlowStepRequest> {
     const inputData = this.collectStepInputData(step, originalRequest, stepResults);
@@ -1774,6 +1799,7 @@ export class FlowRunner implements IFlowRunner {
       flowStepId: step.id,
       skills,
       requestAnalysis: originalRequest.requestAnalysis,
+      portal: originalRequest.portal,
     };
 
     const stepRequestWithParallelGroups = this.parallelGroupMergeService.attachParallelGroupResults(
@@ -1892,7 +1918,7 @@ export class FlowRunner implements IFlowRunner {
     flowRunId: string,
     stepId: string,
     flow: IFlow,
-    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    request: IFlowOriginalRequest,
     stepResults: Map<string, IStepResult>,
   ): Promise<IStepResult> {
     try {
