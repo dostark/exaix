@@ -30,5 +30,107 @@
         "tasks": [{ "taskId": "demo-task", "control": [0.9], "treatment": [0.4] }]
       }
     }
-  ]
+  ],
+  "skillReachability": {
+    "catalog": [
+      { "skillId": "demo-skill-a", "critical": false },
+      { "skillId": "demo-skill-b", "critical": true }
+    ],
+    "defaultSkillIds": ["demo-skill-a"],
+    "corpusMatches": [{ "taskId": "demo-task", "matchedSkillIds": [] }]
+  },
+  "skillFullTrialPlan": {
+    "screening": [
+      {
+        "skillId": "demo-skill-a",
+        "input": {
+          "armId": "a",
+          "metric": "objective_outcome",
+          "tasks": [{ "taskId": "t", "control": [0.5], "treatment": [0.9] }]
+        }
+      },
+      {
+        "skillId": "demo-skill-b",
+        "input": {
+          "armId": "b",
+          "metric": "objective_outcome",
+          "tasks": [{ "taskId": "t", "control": [0.5], "treatment": [0.55] }]
+        }
+      }
+    ],
+    "criticalSkillIds": ["demo-skill-b"],
+    "topN": 1
+  },
+  "skillValueReport": {
+    "results": [
+      {
+        "skillId": "demo-skill-flat",
+        "input": {
+          "armId": "flat",
+          "metric": "objective_outcome",
+          "tasks": [
+            { "taskId": "t1", "control": [0.8], "treatment": [0.85] },
+            { "taskId": "t2", "control": [0.8], "treatment": [0.75] }
+          ]
+        },
+        "deltaPromptTokens": 100
+      }
+    ],
+    "nonCoverage": [],
+    "decisions": [{ "skillId": "demo-skill-flat", "decision": "keep", "rationale": "no measured harm" }]
+  },
+  "identityTaskType": {
+    "input": {
+      "armId": "identity-swap",
+      "metric": "objective_outcome",
+      "tasks": [
+        { "taskId": "bugfix-task", "control": [0.5], "treatment": [0.9] },
+        { "taskId": "refactor-task", "control": [0.9], "treatment": [0.5] }
+      ]
+    },
+    "taskTypeById": { "bugfix-task": "bugfix", "refactor-task": "refactor" }
+  },
+  "identityPrune": {
+    "input": {
+      "armId": "prune",
+      "metric": "objective_outcome",
+      "tasks": [
+        { "taskId": "t1", "control": [0.8], "treatment": [0.85] },
+        { "taskId": "t2", "control": [0.8], "treatment": [0.75] }
+      ]
+    }
+  },
+  "flowValue": {
+    "catalog": [{ "flowId": "demo-flow" }, { "flowId": "unexercised-flow" }],
+    "coverage": [{ "flowId": "demo-flow", "taskIds": ["demo-task"] }],
+    "results": [
+      {
+        "flowId": "demo-flow",
+        "qualityInput": {
+          "armId": "q",
+          "metric": "objective_outcome",
+          "tasks": [{ "taskId": "t", "control": [0.9], "treatment": [0.6] }]
+        },
+        "tokenInput": {
+          "armId": "tok",
+          "metric": "prompt_tokens",
+          "tasks": [{ "taskId": "t", "control": [1000], "treatment": [5000] }]
+        },
+        "wallClockInput": {
+          "armId": "wc",
+          "metric": "wall_clock_ms",
+          "tasks": [{ "taskId": "t", "control": [10000], "treatment": [60000] }]
+        }
+      }
+    ]
+  },
+  "judgeCalibration": {
+    "judgeIdentityId": "demo-judge",
+    "samples": [
+      { "taskId": "t1", "judgeScore": 0.2, "objectiveOutcome": 0.2 },
+      { "taskId": "t2", "judgeScore": 0.4, "objectiveOutcome": 0.4 },
+      { "taskId": "t3", "judgeScore": 0.6, "objectiveOutcome": 0.6 },
+      { "taskId": "t4", "judgeScore": 0.8, "objectiveOutcome": 0.8 }
+    ]
+  }
 }
