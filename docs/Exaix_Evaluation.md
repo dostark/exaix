@@ -854,3 +854,143 @@ Add a new task:
 4. Validate with `deno test tests/scenario_framework/tests/unit/task_contract_schema_test.ts`
 
 See `tests/scenario_framework/AUTHORING.md` for the full authoring workflow.
+
+---
+
+## 15. Artefact Value Evaluation
+
+Every pack described above — `identity_eval`, `skill_eval`, `flow_blueprints`, and §14's
+`swe_tasks` on its own — answers "does the artefact reach the run and execute?" None of them
+answers "does the artefact make the outcome better?" A skill whose instructions actively degrade
+the model's output still passes `skill_eval` as long as it is injected; a flow that produces a
+worse plan than no flow at all still passes `flow_blueprints` as long as it writes its files. The
+value tier exists to close that gap, by running the same task twice — once with an artefact,
+once without — and reporting the difference.
+
+### What this tier answers, and what it costs
+
+|          | Mechanics packs (§12, `identity_eval`/`skill_eval`/`flow_blueprints`) | Value tier (this section)                                            |
+| -------- | --------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Question | Does the artefact reach the run and execute?                          | Does the artefact improve the outcome?                               |
+| Tier     | Mock — canned responses chosen by prompt regex                        | Provider-live                                                        |
+| Verdict  | Pass/fail per scenario                                                | A paired delta, with its variance and its token cost                 |
+| Cost     | Seconds, every PR                                                     | Model spend, deliberately scheduled                                  |
+| Catches  | The pinned skill never arrived; the flow was never loadable           | The artefact is injected correctly and still makes the outcome worse |
+
+**A green mechanics pack is a precondition for a value result, not a substitute for one.** Before
+the mock tier's own scoring fix landed, every pinned skill was silently dropped before reaching
+the daemon — an ablation run over that window would have measured Δ = 0 for every skill, and the
+honest-looking reading would have been "skills do not work, delete the subsystem." The validity
+gate below exists so that a value result can never be published without a same-commit mechanics
+result standing behind it.
+
+### Arms: how a run varies without editing the catalog
+
+An **arm** is a named configuration delta applied to one scenario run — never a change to
+`Blueprints/` on disk, since an arm that rewrites the catalog cannot run concurrently with its own
+control and corrupts the working tree on failure.
+
+| Arm kind          | Control                          | Treatment                                   | Mechanism                                                                                            |
+| ----------------- | -------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `skill-ablation`  | resolved skill set minus skill S | resolved set as normal                      | `EXA_EVAL_SUPPRESS_SKILLS` (comma-separated skill ids), read inside `AgentRunner`'s skill resolution |
+| `skill-version`   | skill S at version _a_           | skill S at version _b_                      | `EXA_EVAL_SKILL_OVERLAY_DIR`, a directory shadowing `Memory/Skills/` for the run                     |
+| `identity-swap`   | identity A handles the request   | identity B handles the request              | request frontmatter `identity:`, one value per arm                                                   |
+| `identity-config` | identity A as shipped            | identity A with a modified `default_skills` | `EXA_EVAL_IDENTITY_OVERLAY_DIR`, a directory shadowing `Blueprints/Identities/` for the run          |
+| `flow-ablation`   | request executed without a flow  | request executed under flow F               | request frontmatter `flow:`, present or absent                                                       |
+| `flow-swap`       | flow F                           | flow G                                      | request frontmatter `flow:`, one value per arm                                                       |
+
+Every overlay directory is validated through `PathResolver` before it is prepended to a search
+path, and both `Blueprints/` and the generated `Memory/Skills/` tree are asserted byte-identical
+after a run — an arm that leaves a mark on the catalog it reads from is a bug, not a side effect.
+See `tests/scenario_framework/README.md` for the authoring walkthrough and the exact commands.
+
+### Pre-registration, pairing, and the no-effect rule
+
+Before any trial runs, an arm comparison is declared — arm id, kind, control/treatment config, the
+task set, the trial count, and which single metric will be scored — and persisted in the run
+manifest. Requesting a metric or a task outside that declaration is rejected, not silently scored;
+this is what stops a task set or a metric from being picked after the results are already in,
+which is the most likely way this tier would otherwise produce confident nonsense.
+
+Both arms run the **same tasks**, with the **same trial count**, under the **same judge**. Per
+task, the delta is `treatment.mean − control.mean`; those per-task deltas are then aggregated into
+a mean, a population standard deviation, and a count of tasks whose delta sign disagrees with the
+aggregate's.
+
+**A delta smaller than the trial-level standard deviation is reported as no effect, not as a small
+effect**, and this is enforced by the harness (`computePairedComparison`'s `noEffect` field) —
+never left for a reader to eyeball off a report. Two real deltas from the same 2026-08-04 run make
+the distinction concrete:
+
+| Skill               | Mean Δ | Stdev Δ                   | Verdict                                          |
+| ------------------- | ------ | ------------------------- | ------------------------------------------------ |
+| `response-contract` | +0.557 | (n=3, sign-consistent)    | a real effect — kept                             |
+| `exaix-conventions` | −0.006 | larger than abs(Δ) at n=1 | no effect — kept anyway, without a quality claim |
+
+The second row is not "a slightly negative skill." It is a skill whose measured effect cannot be
+told apart from run-to-run noise on that cell, and the report says so plainly rather than implying
+precision the sample size doesn't support.
+
+### Reading a report: deltas, never absolute scores
+
+The value tier never publishes an absolute score for an artefact — only the paired delta. An
+absolute number invites comparing two tasks of different difficulty as if a shared scale meant the
+same thing on both, and the paired delta is the only quantity that is actually stable across the
+corpus. `value-per-1k-tokens` (`deltaScore / (deltaPromptTokens / 1000)`) turns the delta into a
+cost-adjusted number: a skill that adds +0.02 quality for +3000 prompt tokens is a worse trade than
+one that adds +0.02 for free, and a report that only showed the raw delta would rank them the
+same. A zero-token-cost positive delta is a free win and ranks above every finite value (`+∞`,
+never a large finite number, so it can never lose a ranking to a merely-large one).
+
+### The validity gate and the placebo arm
+
+A value result is inadmissible unless the artefact's mechanics scenario (§12) is **green at
+the same commit** — `evaluateValidityGate`/`assertValidityGate` check the binding and reject the
+run otherwise, with the reason recorded alongside the (withheld) result. Every value run also
+carries a **placebo arm**: a deliberately harmful artefact (e.g. a skill that forbids the plan
+contract it's supposed to help satisfy), which must produce a detectable negative delta
+(`assertPlaceboDetected`). This is not a one-time design proof — it runs **every time**, so a
+value run demonstrates the pipeline can detect an effect on the day it actually ran, not merely
+that it once could.
+
+### Every artefact needs a decision, or a reason it has none yet
+
+`assertArtefactDecisionCoverage` (`tests/scenario_framework/runner/artefact_decision_coverage.ts`)
+requires every artefact in the real `Blueprints/` catalog to carry either a recorded decision
+(`keep` / `revise` / `remove`, each with a non-empty rationale) or a stated non-coverage reason.
+Run it against the live catalog with:
+
+```bash
+deno run -A scripts/check_artefact_decision_coverage.ts
+```
+
+**A flow decision carries one extra rule the other two artefact kinds do not.** A flow cannot be
+recorded `keep`/`revise`/`remove` unless its measurement is flagged `cleanMeasurement: true` — a
+flow-ablation result confounded by something other than the flow itself (see the next section)
+can only ever back an `awaiting-remeasurement` status, never a verdict.
+
+**Contributor rule:** a new identity, skill, or flow ships with either a value result or a stated
+reason it cannot be measured yet (see the "Contributor rule: value evidence" section in each of
+`Blueprints/Skills/README.md`, `Blueprints/Identities/README.md`, `Blueprints/Flows/README.md`).
+
+### A worked example of a confounded result: `feature-development`
+
+The one flow-ablation result this tier has produced compared flow-orchestrated execution
+(suite 0.750) against direct execution (suite 0.996) on the same task. Read at face value, that
+looks like a flow-quality finding. It is not, and the reason is instructive: at the time the arm
+ran, a flow step had no way to request the `cli_delegate` execution strategy the direct-execution
+control used — it fell back to a ReAct loop instead. The comparison therefore varied **two axes at
+once** (flow orchestration _and_ execution strategy), not one, so the delta cannot be attributed to
+flow orchestration alone. It is recorded `awaiting-remeasurement`, not `keep`/`revise`/`remove`,
+pending a controlled re-run once flow steps can opt into `strategy: "cli_delegate"` — see
+`exaix-dev-docs/planning/phase-159-flow-step-execution-strategy.md`. The lesson generalizes: an
+arm that appears to isolate one variable can still be confounded by something the comparison
+didn't hold fixed, and the honest response is to withhold the verdict, not round it off.
+
+### Where results live
+
+Live-run records — the actual arm results, per-skill/identity/flow decisions, and founding
+baselines for trend comparison — are recorded directly in
+`exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`, dated per run. This tier is
+provider-live and deliberately scheduled (never a CI gate, never a pre-commit hook); running a
+screening pass or a full-trial arm is an operator action, the same class as §12's fixture capture.

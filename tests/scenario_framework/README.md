@@ -175,6 +175,64 @@ mechanics fidelity (the pipeline runs on real model shapes, not regex guesses). 
 artefact actually helps is a provider-live question; see
 [`docs/Exaix_Evaluation.md`](../../docs/Exaix_Evaluation.md).
 
+### Value Evaluation — Arm Authoring & Pre-Registration (Phase 158)
+
+Whether an artefact (identity, skill, or flow) actually improves an outcome — not merely whether
+it is injected — is a separate, provider-live tier layered on top of the packs above. Full
+narrative (the no-effect rule, value-per-token, the validity gate, how to read a report) lives in
+[`docs/Exaix_Evaluation.md` §15](../../docs/Exaix_Evaluation.md#15-artefact-value-evaluation); this
+section covers the mechanical "how do I author an arm" side.
+
+**An arm is a configuration overlay, never a `Blueprints/` edit.** Six kinds cover every artefact
+class:
+
+| Arm kind          | Mechanism                                                 | Env var / field                                        |
+| ----------------- | --------------------------------------------------------- | ------------------------------------------------------ |
+| `skill-ablation`  | suppress a skill from the resolved set for this run only  | `EXA_EVAL_SUPPRESS_SKILLS` (comma-separated skill ids) |
+| `skill-version`   | shadow `Memory/Skills/` with an overlay directory         | `EXA_EVAL_SKILL_OVERLAY_DIR`                           |
+| `identity-swap`   | route the request to a different identity                 | request frontmatter `identity:`                        |
+| `identity-config` | shadow `Blueprints/Identities/` with an overlay directory | `EXA_EVAL_IDENTITY_OVERLAY_DIR`                        |
+| `flow-ablation`   | run the request with or without flow orchestration        | request frontmatter `flow:` present/absent             |
+| `flow-swap`       | route the request to a different flow                     | request frontmatter `flow:`                            |
+
+All three env vars are per-process — safe because the scenario framework runs one scenario per
+daemon process, so concurrent arms never share an env — and every overlay directory is validated
+through `PathResolver` before it is prepended to a search path. Set them in a scenario step's
+`env:` block, the same surface used elsewhere in this framework:
+
+```yaml
+steps:
+  - id: control-arm
+    type: submit-request
+    env:
+      EXA_EVAL_SUPPRESS_SKILLS: "response-contract"
+```
+
+**Pre-registration is mandatory, not a convention.** An `IArmComparisonSpec` (arm id, kind,
+control/treatment description, task set, trial count, and the one metric that will be scored) is
+declared and persisted in the run manifest before any trial executes.
+`validatePreregistration` (`runner/arm_comparison.ts`) rejects a comparison whose metric or whose
+task falls outside that declaration — a screening pass over a task _subset_ of the registered set
+is fine (that's the intended screen-then-drill workflow), but a task outside it is not, and neither
+is a metric decided after seeing results.
+
+**Every value run needs mechanics evidence and a placebo arm, or it is not admissible** — see
+`runner/validity_gate.ts` (`evaluateValidityGate`/`assertValidityGate`, `assertPlaceboDetected`)
+and §15's fuller explanation of why. A value result committed without both is treated as
+unverified, the same way an untested code change is.
+
+**Applying and auditing decisions against the real catalog:**
+
+```bash
+# After a value run, record keep/revise/remove (or a non-coverage reason) per artefact,
+# then verify every catalog artefact has one:
+deno run -A scripts/check_artefact_decision_coverage.ts
+```
+
+This is an operator-run gate — the same class as `scripts/check_blueprint_integrity.ts` — not
+wired into CI, since a newly-added artefact should surface as "needs a decision," not silently
+fail a build before anyone has recorded one.
+
 ### Headless CLI execution for `swe_tasks` — the cost-preferred live-eval path
 
 The `swe_tasks` pack's `provider-live` scenarios (see `scenarios/swe_tasks/`) exercise a real
