@@ -18,6 +18,24 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 158 (Artefact Value Evaluation)
+
+### Added
+
+- A value-evaluation tier that measures whether a curated identity, skill or flow actually
+  improves task outcomes, distinct from the existing packs that only check an artefact
+  reaches the run (see `Exaix_Evaluation.md §15`).
+- `EXA_EVAL_SUPPRESS_SKILLS`, `EXA_EVAL_SKILL_OVERLAY_DIR` and `EXA_EVAL_IDENTITY_OVERLAY_DIR`
+  env vars — vary which skills are injected or overlay a skill/identity's configuration for a
+  single evaluation run, without editing the shipped catalog.
+- An operator-run catalog gate confirming every shipped identity, skill and flow carries a
+  recorded value decision (keep, revise, remove, or a stated reason it cannot yet be measured).
+- An operator-run report tool that reproduces a value-evaluation report — paired arm
+  comparisons, validity gates, and skill/identity/flow value — from a file of previously
+  collected run data.
+- A "Contributor rule: value evidence" section in each catalog README (identities, skills,
+  flows) — a new artefact must carry a value result or a stated reason it cannot be measured yet.
+
 ## Unreleased — Phase 157 (Recorded Mock Fixtures — Capture, Replay and Drift)
 
 ### Added
