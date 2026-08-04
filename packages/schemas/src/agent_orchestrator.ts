@@ -8,7 +8,7 @@
  */
 
 import { z } from "zod";
-import { AgentExecutionErrorType, JSONValueSchema, SecurityMode } from "@exaix/core";
+import { AgentExecutionErrorType, ExecutionStrategyName, JSONValueSchema, SecurityMode } from "@exaix/core";
 
 /**
  * Security mode for agent execution
@@ -64,6 +64,10 @@ export const AgentExecutionOptionsSchema = z.object({
   native_tools_enabled: z.boolean().optional().describe(
     "Opt in to provider-enforced native tool selection instead of TOML-block prose. Requires a provider with supportsNativeTools: true (Anthropic after Step 2).",
   ),
+  strategy: z.enum([ExecutionStrategyName.REACT, ExecutionStrategyName.MCP, ExecutionStrategyName.CLI_DELEGATE])
+    .optional().describe(
+      "Forced execution strategy, bypassing capability-based dispatch. Set by a flow step's own `strategy` field (Phase 159); absent for the plan-execution path, which keeps capability-based dispatch.",
+    ),
 });
 export type IAgentExecutionOptions = z.output<
   typeof AgentExecutionOptionsSchema

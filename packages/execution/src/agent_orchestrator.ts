@@ -573,7 +573,7 @@ export class AgentOrchestrator {
       options.portal,
     );
 
-    const strategyName = this.resolveStrategyName(_blueprint);
+    const strategyName = this.resolveStrategyName(_blueprint, options);
 
     this.applyBlueprintToolScope(_blueprint, options);
 
@@ -817,13 +817,24 @@ export class AgentOrchestrator {
   }
 
   /**
-   * Resolve executeStep's dispatch strategy (Phase 61: prefer MCP or ReAct if
-   * specified, fallback to legacy). CLI_DELEGATE is an explicit opt-in choice
-   * (blueprint capabilities + [cli_delegate] config enabled) — it never
-   * overrides MCP, and it is never chosen implicitly as a fallback for a
-   * missing CLI binary; a step that names it must have it available.
+   * Resolve executeStep's dispatch strategy. `options.strategy` (Phase 159), when
+   * present, is returned verbatim — an unconditional override, never cross-checked
+   * against `blueprint.capabilities`. This mirrors capability dispatch's own behavior
+   * of never restricting *which* strategy runs, only what it may touch (that
+   * enforcement stays in `applyBlueprintToolScope` and the permission check, both of
+   * which run regardless of the override). Absent an override, capability dispatch
+   * applies unchanged (Phase 61: prefer MCP or ReAct if specified, fallback to legacy).
+   * CLI_DELEGATE is an explicit opt-in choice (blueprint capabilities + [cli_delegate]
+   * config enabled) — it never overrides MCP, and it is never chosen implicitly as a
+   * fallback for a missing CLI binary; a step that names it must have it available.
    */
-  private resolveStrategyName(blueprint: IAgentFileBlueprint): ExecutionStrategyName {
+  private resolveStrategyName(
+    blueprint: IAgentFileBlueprint,
+    options: IAgentExecutionOptions,
+  ): ExecutionStrategyName {
+    if (options.strategy) {
+      return options.strategy;
+    }
     if (blueprint.capabilities.includes(ExecutionStrategyName.MCP)) {
       return ExecutionStrategyName.MCP;
     }
