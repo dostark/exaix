@@ -1,0 +1,155 @@
+schema_version: "1.0.0"
+id: "flow-strategy-react"
+title: "A flow step forcing strategy: react executes against a real live provider"
+pack: "agent_flows"
+tags: ["subsystem:flows", "provider-live"]
+request_fixture: "fixtures/requests/agent_flows/strategy_comparison_react.md"
+mode_support: ["auto"]
+portals: []
+matrix:
+  cells:
+    - tool: "opencode"
+      provider: "opencode-cli"
+      config: "configs/opencode-no-delegate.toml"
+      requires_bin: "opencode"
+steps:
+  - id: "setup-portal-repo"
+    type: "shell"
+    command: "sh"
+    args: [
+      "-c",
+      "cp -r \"$FRAMEWORK_HOME/fixtures/portals/todo_app\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=agent-flows@exaix.dev -c user.name=agent-flows commit -q -m 'init todo-app fixture'",
+    ]
+    output_criteria:
+      - id: "portal-repo-initialized"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "setup-blueprints"
+    type: "shell"
+    command: "cp"
+    args: ["-r", "$FRAMEWORK_HOME/../../Blueprints", "$WORKSPACE_ROOT/Blueprints"]
+    output_criteria:
+      - id: "blueprints-copied"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "setup-memory"
+    type: "shell"
+    command: "cp"
+    args: ["-r", "$FRAMEWORK_HOME/../../Memory", "$WORKSPACE_ROOT/Memory"]
+    output_criteria:
+      - id: "memory-copied"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "add-portal"
+    type: "exactl"
+    command: "portal"
+    args: ["add", "$WORKSPACE_ROOT/todo-app", "todo-app"]
+    output_criteria:
+      - id: "portal-added"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "restart-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["restart"]
+    output_criteria:
+      - id: "daemon-restarted"
+        kind: "command-output-contains"
+        contains: ["daemon.restarted"]
+
+  - id: "wait-for-daemon-ready"
+    type: "wait-for-journal-event"
+    event_type: "daemon.ready"
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+
+  - id: "submit-flow-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "todo-app"]
+    output_criteria:
+      - id: "request-submitted"
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  # NOTE: this scenario proves strategy DISPATCH (the forced `strategy: react` step reaches
+  # ReActLoopStrategy and calls a real live provider), not that the ReAct loop's task succeeds.
+  # A live small model can emit a <thought> with no parseable <action>, which the ReAct loop
+  # correctly treats as a hard failure ("No actions generated in ReAct iteration") rather than
+  # silently completing — so waiting on `flow.completed` here would time out on a legitimate,
+  # already-terminal failure. `flow.step.started` fires immediately and always carries the
+  # `strategy` field (packages/flow/src/flow_runner.ts), which is what this scenario asserts.
+  - id: "wait-for-step-started"
+    type: "wait-for-journal-event"
+    event_type: "flow.step.started"
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria:
+      - id: "step-started"
+        kind: "journal-event-exists"
+        event_type: "flow.step.started"
+        score_weight: 0.4
+
+  - id: "assert-strategy-in-journal"
+    type: "shell"
+    command: "sh"
+    args: [
+      "-c",
+      "count=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COUNT(*) FROM activity WHERE action_type = 'flow.step.started' AND payload LIKE '%\\\"stepId\\\":\\\"react-step\\\"%' AND payload LIKE '%\\\"strategy\\\":\\\"react\\\"%'\"); echo \"strategy-tagged flow.step.started count: $count\"; test \"$count\" -gt 0",
+    ]
+    output_criteria:
+      - id: "strategy-honored"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+
+  - id: "wait-for-generation"
+    type: "wait-for-journal-event"
+    event_type: "agent.generation_completed"
+    timeout_sec: 60
+    input_criteria: []
+    output_criteria: []
+
+  - id: "report-usage-metrics"
+    type: "shell"
+    command: "sh"
+    args: [
+      "-c",
+      "sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT payload FROM activity WHERE action_type = 'agent.generation_completed' ORDER BY rowid DESC LIMIT 1\"",
+    ]
+    output_criteria:
+      - id: "usage-metrics-recorded"
+        kind: "command-output-contains"
+        contains: ["prompt_tokens"]
+        score_weight: 0.3
+
+  # Informational only (always exits 0): polls a bounded 60s for the flow's own terminal
+  # outcome so the comparison doc can report whether this run's ReAct loop converged on a
+  # valid action or hit the "No actions generated" failure mode — without gating the
+  # scenario's pass/fail on a live model's reliability (see the note on wait-for-step-started).
+  - id: "report-flow-outcome"
+    type: "shell"
+    command: "sh"
+    args: [
+      "-c",
+      "db=\"$WORKSPACE_ROOT/.exa/journal.db\"; for i in $(seq 1 30); do row=$(sqlite3 \"$db\" \"SELECT action_type FROM activity WHERE action_type IN ('flow.completed','flow.failed') ORDER BY rowid DESC LIMIT 1\"); if [ -n \"$row\" ]; then echo \"flow-outcome: $row\"; exit 0; fi; sleep 2; done; echo 'flow-outcome: inconclusive-within-60s'; exit 0",
+    ]
+    output_criteria:
+      - id: "flow-outcome-reported"
+        kind: "command-output-contains"
+        contains: ["flow-outcome"]
+        score_weight: 0.0

@@ -146,18 +146,12 @@ steps:
         kind: "command-exit-code"
         equals: 0
         score_weight: 0.3
-  - id: "assert-no-dynamic-tool-calls"
-    type: "shell"
-    command: "sh"
-    args: [
-      "-c",
-      "count=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COUNT(*) FROM activity WHERE action_type = 'dynamic_tool_call'\"); echo \"dynamic_tool_call count: $count\"; test \"$count\" = \"0\"",
-    ]
-    output_criteria:
-      - id: "no-dynamic-tool-calls"
-        kind: "command-exit-code"
-        equals: 0
-        score_weight: 0.2
+  # assert-no-dynamic-tool-calls removed here (Phase 159 Step 6): flow execution legitimately
+  # emits dynamic_tool_call events for any non-cli_delegate strategy (the default/ReAct
+  # plan-execution path), so this criterion is unsatisfiable for a flow scenario whose steps
+  # aren't pinned to cli_delegate. Unlike the feature-development variant, this scenario is
+  # not pinned to cli_delegate by Step 8, so the criterion is not restored here (see
+  # exaix-dev-docs/planning/phase-159-flow-step-execution-strategy.md Step 6).
   - id: "assert-files-changed"
     type: "shell"
     command: "sh"

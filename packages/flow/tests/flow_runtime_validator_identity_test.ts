@@ -8,7 +8,13 @@
  *   (FlowValidatorImpl) enforces the same existence check against a real catalog.
  */
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
+import {
+  ExecutionStrategyName,
+  FlowInputSource,
+  FlowOutputFormat,
+  FlowStepExecutionMode,
+  FlowStepType,
+} from "@exaix/core";
 import { FlowRuntimeValidator } from "@exaix/flow";
 import { FlowValidatorImpl } from "@exaix/flow";
 import { FlowLoader } from "@exaix/flow";
@@ -51,6 +57,25 @@ Deno.test("FlowRuntimeValidator.validateStepIdentities rejects a step whose iden
   const flow = makeFlow(makeStep("s2", "typo-identity"));
   const err = await validator.validateStepIdentities(flow, (_id: string) => Promise.resolve(false));
   assertStringIncludes(err ?? "", "s2");
+  assertStringIncludes(err ?? "", "typo-identity");
+});
+
+Deno.test("FlowRuntimeValidator.validateStepIdentities passes for a strategy-forced step whose identity resolves", async () => {
+  const validator = new FlowRuntimeValidator();
+  const step = makeStep("s1", "senior-coder");
+  step.strategy = ExecutionStrategyName.REACT;
+  const flow = makeFlow(step);
+  const err = await validator.validateStepIdentities(flow, (id: string) => Promise.resolve(id === "senior-coder"));
+  assertEquals(err, null);
+});
+
+Deno.test("FlowRuntimeValidator.validateStepIdentities rejects a strategy-forced step whose identity does not exist", async () => {
+  const validator = new FlowRuntimeValidator();
+  const step = makeStep("s1", "typo-identity");
+  step.strategy = ExecutionStrategyName.CLI_DELEGATE;
+  const flow = makeFlow(step);
+  const err = await validator.validateStepIdentities(flow, (_id: string) => Promise.resolve(false));
+  assertStringIncludes(err ?? "", "s1");
   assertStringIncludes(err ?? "", "typo-identity");
 });
 

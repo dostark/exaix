@@ -1,0 +1,30 @@
+id: strategy-comparison-cli-delegate
+name: Strategy Comparison — cli_delegate
+description: >
+  Single-step flow whose step forces strategy: cli_delegate (Phase 159), used by
+  the provider-live scenario proving a strategy-routed flow step reaches the real
+  headless CLI. Paired with strategy-comparison-react.flow.yaml on the same task
+  for a control-axis (cli_delegate vs react) comparison. Not a production task
+  flow — a mechanism cutover fixture.
+version: "1.0"
+steps:
+  - id: delegate-step
+    name: Implement the task via forced cli_delegate strategy
+    identity: senior-coder
+    execution_mode: declared
+    strategy: cli_delegate
+    input:
+      source: request
+      transform: passthrough
+    timeout: 300000
+    retry:
+      maxAttempts: 1
+      backoffMs: 1000
+
+output:
+  from: delegate-step
+  format: markdown
+
+settings:
+  maxParallelism: 1
+  failFast: true
