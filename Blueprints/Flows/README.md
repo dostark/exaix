@@ -82,6 +82,18 @@ exactl flow validate my-new-flow
 When you fill a template's `{{placeholder}}` slots with real identity ids and save
 it as a `*.flow.yaml`, the integrity gate will require those identities to exist.
 
+### Contributor rule: value evidence
+
+A new flow must carry either a value-evaluation result (a flow-ablation or flow-swap
+delta from the value tier described in
+`exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`) or a stated reason
+it cannot be measured yet (e.g. it is not corpus-reachable). A flow with neither is
+presence-tested (it loads and produces its files) but never shown to help. Note: as
+of this writing the one flow-ablation result the corpus produced is confounded by
+execution strategy (see that phase's Step 6) — a flow decision recorded off that
+result alone is not sufficient evidence; it must be marked `awaiting-remeasurement`
+pending `exaix-dev-docs/planning/phase-159-flow-step-execution-strategy.md`.
+
 ## Available flows
 
 Concrete flows include: `code_review`, `feature_development`, `documentation`,

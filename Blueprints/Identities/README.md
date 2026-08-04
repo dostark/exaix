@@ -93,6 +93,14 @@ exactl blueprint identity create my-identity --name "My Identity" --model "provi
 > The previous `--template <name>` flag (backed by a separate template library)
 > has been replaced by `--from <identity-id>`, which clones a concrete identity.
 
+### Contributor rule: value evidence
+
+A new identity must carry either a value-evaluation result (a head-to-head or
+config-arm delta from the value tier described in
+`exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`) or a stated reason
+it cannot be measured yet (e.g. it is not corpus-reachable). An identity with neither
+is presence-tested but never shown to help.
+
 ## Skills
 
 Skills are the modern, versioned, criticality-aware replacement for the retired
