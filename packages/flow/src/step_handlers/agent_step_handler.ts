@@ -42,6 +42,9 @@ export class AgentStepHandler implements IFlowStepHandler {
     if (step.execution_mode === FlowStepExecutionMode.DYNAMIC && this.#dynamicStepExecutor) {
       return await this.#executeDynamic(step, request, stepRequest);
     }
+    if (step.strategy) {
+      return await this.#executeWithStrategy(step, stepRequest);
+    }
     return await this.#executeDeclared(step, stepRequest);
   }
 
@@ -79,5 +82,26 @@ export class AgentStepHandler implements IFlowStepHandler {
     stepRequest: IStepExecutionContext["stepRequest"],
   ): Promise<IAgentExecutionResult> {
     return await this.#agentExecutor.run(step.identity, stepRequest as IFlowStepRequest);
+  }
+
+  /**
+   * Routes a DECLARED step that declares `strategy` (Phase 159) through
+   * `IAgentExecutor.runWithStrategy`, bypassing the single-shot `run()` path. Fails fast
+   * when the configured executor does not support it, rather than silently falling back.
+   */
+  async #executeWithStrategy(
+    step: IStepExecutionContext["step"],
+    stepRequest: IStepExecutionContext["stepRequest"],
+  ): Promise<IAgentExecutionResult> {
+    if (!this.#agentExecutor.runWithStrategy) {
+      throw new Error(
+        `Step '${step.id}' declares strategy '${step.strategy}' but the configured agent executor does not support runWithStrategy`,
+      );
+    }
+    return await this.#agentExecutor.runWithStrategy(
+      step.identity,
+      stepRequest as IFlowStepRequest,
+      step.strategy!,
+    );
   }
 }

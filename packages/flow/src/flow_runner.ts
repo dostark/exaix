@@ -427,6 +427,8 @@ export interface IFlowEventPayloadMap {
     flowRunId: string;
     stepId: string;
     identityId: string;
+    /** The step's declared strategy (Phase 159), when set. */
+    strategy?: string;
   };
   "flow.step.retry": IFlowEventRequestContext & {
     flowRunId: string;
@@ -484,6 +486,8 @@ export interface IFlowEventPayloadMap {
     duration: number;
     outputLength: number;
     hasThought: boolean;
+    /** The step's declared strategy (Phase 159), when set. */
+    strategy?: string;
   };
   [DomainEventType.FlowStepFailed]: IFlowEventRequestContext & {
     flowRunId: string;
@@ -1296,6 +1300,7 @@ export class FlowRunner implements IFlowRunner {
       flowRunId,
       stepId,
       identityId: step.identity,
+      strategy: step.strategy,
       traceId: request.traceId,
       requestId: request.requestId,
     });
@@ -1704,6 +1709,7 @@ export class FlowRunner implements IFlowRunner {
       duration,
       outputLength: result.content.length,
       hasThought: !!result.thought,
+      strategy: step.strategy,
       traceId: request.traceId,
       requestId: request.requestId,
     });
