@@ -1,0 +1,44 @@
+id: strategy-routing-smoke
+name: Strategy Routing Smoke Test
+description: >
+  Two-step flow (Phase 159): the first step declares no strategy (the unchanged
+  AgentRunner.run path), the second forces strategy: react. Used by the mock-tier
+  scenario proving a strategy-routed flow step is reachable from a real daemon
+  boot, alongside a same-boot regression check that a no-strategy step is
+  unaffected. Not a production task flow — a mechanism cutover fixture.
+version: "1.0"
+steps:
+  - id: no-strategy-step
+    name: Execute via the unchanged no-strategy path
+    identity: mock-agent
+    execution_mode: declared
+    dependsOn: []
+    input:
+      source: request
+      transform: passthrough
+    retry:
+      maxAttempts: 1
+      backoffMs: 1000
+
+  - id: react-step
+    name: Execute via forced react strategy
+    identity: mock-agent
+    execution_mode: declared
+    strategy: react
+    dependsOn:
+      - no-strategy-step
+    input:
+      source: step
+      stepId: no-strategy-step
+      transform: passthrough
+    retry:
+      maxAttempts: 1
+      backoffMs: 1000
+
+output:
+  from: react-step
+  format: markdown
+
+settings:
+  maxParallelism: 1
+  failFast: true

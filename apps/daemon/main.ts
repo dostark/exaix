@@ -79,7 +79,7 @@ import {
   type ISymbolExtractorRegistry,
   PortalKnowledgeService,
 } from "@exaix/portal/knowledge";
-import { PathResolver } from "@exaix/portal";
+import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IPortalKnowledgeConfig, PortalAnalysisMode } from "@exaix/core/types";
 import { createConfigReloadHandler, createDbWatcherHandler, getMaxOverrideId } from "@exaix/core/config";
 import { GracefulShutdown } from "./src/graceful_shutdown.ts";
@@ -873,9 +873,18 @@ if (import.meta.main) {
       skillsService,
       logger,
     });
+    const portalPermissions = new PortalPermissionsService(config.portals ?? []);
     const agentExecutorAdapter = new AgentOrchestratorAdapter(
       agentRunner,
       blueprintsPath,
+      {
+        config,
+        db: dbService,
+        logger,
+        permissions: portalPermissions,
+        provider: llmProvider,
+        modelResolver,
+      },
     );
     const flowRunner = new FlowRunner({
       agentExecutor: agentExecutorAdapter,

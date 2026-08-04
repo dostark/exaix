@@ -1,0 +1,132 @@
+schema_version: "1.0.0"
+id: "flow-strategy-routing"
+title: "A flow step declaring strategy routes through the agent strategy registry"
+pack: "agent_flows"
+tags: ["subsystem:flows"]
+request_fixture: "fixtures/requests/agent_flows/strategy_routing_smoke.md"
+mode_support: ["auto"]
+portals: []
+matrix:
+  cells:
+    - tool: "exactl"
+      provider: "mock"
+      config: "configs/agent-flows-mock-pattern.toml"
+      requires_bin: "true"
+steps:
+  - id: "setup-portal-repo"
+    type: "shell"
+    command: "sh"
+    args: [
+      "-c",
+      "cp -r \"$FRAMEWORK_HOME/fixtures/portals/todo_app\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=agent-flows@exaix.dev -c user.name=agent-flows commit -q -m 'init todo-app fixture'",
+    ]
+    output_criteria:
+      - id: "portal-repo-initialized"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "setup-blueprints"
+    type: "shell"
+    command: "cp"
+    args: ["-r", "$FRAMEWORK_HOME/../../Blueprints", "$WORKSPACE_ROOT/Blueprints"]
+    output_criteria:
+      - id: "blueprints-copied"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "setup-memory"
+    type: "shell"
+    command: "cp"
+    args: ["-r", "$FRAMEWORK_HOME/../../Memory", "$WORKSPACE_ROOT/Memory"]
+    output_criteria:
+      - id: "memory-copied"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
+      EXA_CI_MODE: "1"
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "add-portal"
+    type: "exactl"
+    command: "portal"
+    args: ["add", "$WORKSPACE_ROOT/todo-app", "todo-app"]
+    output_criteria:
+      - id: "portal-added"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "restart-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["restart"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
+      EXA_CI_MODE: "1"
+    output_criteria:
+      - id: "daemon-restarted"
+        kind: "command-output-contains"
+        contains: ["daemon.restarted"]
+
+  - id: "wait-for-daemon-ready"
+    type: "wait-for-journal-event"
+    event_type: "daemon.ready"
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+
+  - id: "submit-flow-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "todo-app"]
+    env:
+      EXA_LLM_PROVIDER: "mock"
+    output_criteria:
+      - id: "request-submitted"
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-flow-completed"
+    type: "wait-for-journal-event"
+    event_type: "flow.completed"
+    timeout_sec: 120
+    input_criteria: []
+    output_criteria:
+      - id: "flow-completed"
+        kind: "journal-event-exists"
+        event_type: "flow.completed"
+        score_weight: 0.34
+
+  - id: "assert-strategy-in-journal"
+    type: "shell"
+    command: "sh"
+    args: [
+      "-c",
+      "count=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COUNT(*) FROM activity WHERE action_type = 'flow.step.completed' AND payload LIKE '%\\\"stepId\\\":\\\"react-step\\\"%' AND payload LIKE '%\\\"strategy\\\":\\\"react\\\"%'\"); echo \"strategy-tagged flow.step.completed count: $count\"; test \"$count\" -gt 0",
+    ]
+    output_criteria:
+      - id: "strategy-honored"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.33
+
+  - id: "assert-no-strategy-step-unchanged"
+    type: "shell"
+    command: "sh"
+    args: [
+      "-c",
+      "count=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COUNT(*) FROM activity WHERE action_type = 'flow.step.completed' AND payload LIKE '%\\\"stepId\\\":\\\"no-strategy-step\\\"%' AND payload NOT LIKE '%\\\"strategy\\\":%'\"); echo \"unchanged no-strategy flow.step.completed count: $count\"; test \"$count\" -gt 0",
+    ]
+    output_criteria:
+      - id: "no-strategy-step-unchanged"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.33

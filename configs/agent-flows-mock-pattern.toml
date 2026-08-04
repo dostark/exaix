@@ -1,0 +1,30 @@
+[system]
+root = "."
+version = "1.0.0"
+log_level = "info"
+
+[watcher]
+debounce_ms = 200
+stability_check = true
+
+[amendment]
+enabled = true
+threshold = 60
+
+[session_delegate]
+enabled = false
+tool = "claude-code"
+gates = ["refinement", "plan_review", "code_changes", "review"]
+launch_mode = "headless"
+bin_overrides = []
+
+# Phase 159: pattern strategy (not "recorded") so a flow step with no pre-captured fixture
+# still gets a deterministic mock response via MockLLMProvider's built-in default patterns
+# (e.g. the generic ReAct-completion pattern matching "AVAILABLE TOOLS:"), rather than
+# failing with "No recorded response found" — the base exa.config.toml's `recorded` strategy
+# with a flow_blueprints fixtures_dir only covers that pack's own pre-captured prompts.
+[ai.mock]
+strategy = "pattern"
+
+[rate_limiting]
+max_cost_per_day = 300.0
