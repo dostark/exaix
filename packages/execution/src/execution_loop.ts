@@ -432,6 +432,12 @@ export class ExecutionLoop {
 
     const actions = structuredPlan ? [] : this.parsePlanActions(planContent);
     const planAgentId = frontmatter.identity_id || structuredPlan?.agent;
+    if (!frontmatter.identity_id && structuredPlan && planAgentId) {
+      console.warn(
+        `[ExecutionLoop] plan ${structuredPlan.trace_id} carried no identity_id; ` +
+          `falling back to default identity "${planAgentId}" for execution`,
+      );
+    }
     const isReadOnly = await this.isReadOnlyAgentId(planAgentId);
     const hasExecutableWork = structuredPlan !== null || actions.length > 0;
     const executionStrategy = this.gitExecutionSetupService.getExecutionStrategy(frontmatter);
