@@ -9,6 +9,7 @@ steps:
     name: Analyze Requirements
     type: agent
     identity: product-manager
+    strategy: cli_delegate
     dependsOn: []
     input:
       source: request
@@ -20,6 +21,7 @@ steps:
     name: Design Architecture
     type: agent
     identity: software-architect
+    strategy: cli_delegate
     dependsOn:
       - analyze-requirements
     input:
@@ -33,6 +35,7 @@ steps:
     name: Implement Feature
     type: agent
     identity: senior-coder
+    strategy: cli_delegate
     dependsOn:
       - design-architecture
     input:
@@ -47,6 +50,7 @@ steps:
     name: Write Unit Tests
     type: agent
     identity: test-engineer
+    strategy: cli_delegate
     dependsOn:
       - implement-feature
     input:
@@ -60,6 +64,7 @@ steps:
     name: Code Review
     type: agent
     identity: senior-coder
+    strategy: cli_delegate
     dependsOn:
       - implement-feature
       - write-tests
@@ -73,6 +78,7 @@ steps:
     name: Integration Testing
     type: agent
     identity: qa-engineer
+    strategy: cli_delegate
     dependsOn:
       - code-review
     input:

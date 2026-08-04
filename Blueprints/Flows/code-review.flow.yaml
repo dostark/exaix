@@ -9,6 +9,7 @@ steps:
     name: Analyze Codebase
     type: agent
     identity: senior-coder
+    strategy: react
     dependsOn: []
     input:
       source: request

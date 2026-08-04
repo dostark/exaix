@@ -10,6 +10,7 @@ steps:
     name: Implement Step (TDD)
     type: agent
     identity: dogfood-developer
+    strategy: cli_delegate
     dependsOn: []
     input:
       source: request
@@ -21,6 +22,7 @@ steps:
     name: Review the Implementation
     type: agent
     identity: quality-judge
+    strategy: react
     dependsOn:
       - implement
     input:

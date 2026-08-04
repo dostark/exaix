@@ -9,6 +9,7 @@ steps:
     name: Extract Code Structure
     type: agent
     identity: code-analyst
+    strategy: react
     dependsOn: []
     input:
       source: request

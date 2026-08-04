@@ -9,6 +9,7 @@ steps:
     name: Analyze Project Structure
     type: agent
     identity: code-analyst
+    strategy: react
     dependsOn: []
     input:
       source: request

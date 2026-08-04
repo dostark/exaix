@@ -7,6 +7,8 @@ description: >
   boot, alongside a same-boot regression check that a no-strategy step is
   unaffected. Not a production task flow — a mechanism cutover fixture.
 version: "1.0"
+defaultSkills:
+  - tdd-methodology
 steps:
   - id: no-strategy-step
     name: Execute via the unchanged no-strategy path

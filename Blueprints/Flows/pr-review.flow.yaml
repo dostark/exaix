@@ -11,6 +11,7 @@ steps:
     name: Analyze PR Diff
     type: agent
     identity: code-analyst
+    strategy: react
     dependsOn: []
     input:
       source: request

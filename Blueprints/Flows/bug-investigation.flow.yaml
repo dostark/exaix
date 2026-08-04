@@ -22,6 +22,7 @@ steps:
     name: Locate Relevant Code
     type: agent
     identity: code-analyst
+    strategy: react
     dependsOn:
       - analyze-bug-report
     input:
@@ -35,6 +36,7 @@ steps:
     name: Identify Root Cause
     type: agent
     identity: senior-coder
+    strategy: react
     dependsOn:
       - locate-relevant-code
     input:
@@ -63,6 +65,7 @@ steps:
     name: Propose Fix
     type: agent
     identity: senior-coder
+    strategy: react
     dependsOn:
       - identify-root-cause
       - security-impact
@@ -80,6 +83,7 @@ steps:
     name: Write Regression Tests
     type: agent
     identity: test-engineer
+    strategy: react
     dependsOn:
       - propose-fix
     input:

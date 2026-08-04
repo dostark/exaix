@@ -22,6 +22,7 @@ steps:
     name: Analyze Current Codebase
     type: agent
     identity: code-analyst
+    strategy: react
     dependsOn: []
     input:
       source: request

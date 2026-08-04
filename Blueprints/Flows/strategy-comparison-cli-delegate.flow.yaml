@@ -7,6 +7,8 @@ description: >
   for a control-axis (cli_delegate vs react) comparison. Not a production task
   flow — a mechanism cutover fixture.
 version: "1.0"
+defaultSkills:
+  - tdd-methodology
 steps:
   - id: delegate-step
     name: Implement the task via forced cli_delegate strategy

@@ -7,6 +7,7 @@ steps:
     name: API Structure Analysis
     type: agent
     identity: code-analyst
+    strategy: react
     dependsOn: []
     input:
       source: request

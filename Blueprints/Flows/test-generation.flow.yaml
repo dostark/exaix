@@ -11,6 +11,7 @@ steps:
     name: Analyze Code Structure
     type: agent
     identity: code-analyst
+    strategy: react
     dependsOn: []
     input:
       source: request
@@ -37,6 +38,7 @@ steps:
     name: Generate Unit Tests
     type: agent
     identity: test-engineer
+    strategy: react
     dependsOn:
       - identify-test-scenarios
     input:
@@ -53,6 +55,7 @@ steps:
     name: Generate Integration Tests
     type: agent
     identity: qa-engineer
+    strategy: react
     dependsOn:
       - identify-test-scenarios
     input:
@@ -83,6 +86,7 @@ steps:
     name: Generate Edge Case Tests
     type: agent
     identity: test-engineer
+    strategy: react
     dependsOn:
       - identify-edge-cases
       - generate-unit-tests

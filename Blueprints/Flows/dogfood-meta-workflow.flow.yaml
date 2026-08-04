@@ -10,6 +10,7 @@ steps:
     name: Pre-Gap Analysis
     type: agent
     identity: code-analyst
+    strategy: react
     dependsOn: []
     input:
       source: request
@@ -18,6 +19,7 @@ steps:
     name: Implement Steps (TDD)
     type: agent
     identity: dogfood-coder
+    strategy: cli_delegate
     dependsOn:
       - pre-gap
     input:
@@ -28,6 +30,7 @@ steps:
     name: Post-Gap Analysis
     type: agent
     identity: code-reviewer
+    strategy: react
     dependsOn:
       - next-steps
     input:
