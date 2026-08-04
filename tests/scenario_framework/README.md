@@ -221,6 +221,19 @@ is a metric decided after seeing results.
 and §15's fuller explanation of why. A value result committed without both is treated as
 unverified, the same way an untested code change is.
 
+**Turning a real run's collected data into a report:**
+
+```bash
+deno run -A scripts/run_value_comparison_report.ts scripts/run_value_comparison_report.example.json
+```
+
+`scripts/run_value_comparison_report.ts` calls `computePairedComparison`/`computeValuePerToken`,
+`evaluateValidityGate`/`assertValidityGate`/`assertPlaceboDetected`, the skill/identity/flow
+reporting layer, and `computeJudgeCalibration` against a generic JSON input — see the checked-in
+`.example.json` for the exact schema per section. Feed it a real live run's collected per-task
+trial data (never hand-transcribe historical numbers into a fixture — see §15) to get a
+code-computed report instead of a narrated one.
+
 **Applying and auditing decisions against the real catalog:**
 
 ```bash

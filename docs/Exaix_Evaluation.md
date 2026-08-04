@@ -953,6 +953,40 @@ contract it's supposed to help satisfy), which must produce a detectable negativ
 value run demonstrates the pipeline can detect an effect on the day it actually ran, not merely
 that it once could.
 
+### Reproducing a report from real data
+
+Every function this section describes — `computePairedComparison`, `computeValuePerToken`,
+`evaluateValidityGate`, `assertValidityGate`, `assertPlaceboDetected`, plus the
+skill/identity/flow reporting layer (`computeSkillReachability`, `planFullTrials`,
+`buildSkillValueReport`, `assertSkillDecisionsRecorded`, `groupDeltasByTaskType`,
+`interpretPruneVerdict`, `computeFlowReachability`, `buildFlowValueReport`) and judge
+calibration (`computeJudgeCalibration`) — is real, reusable computation, not a one-off. A
+2026-08-04 post-implementation review found all of them had zero production call-sites: six
+Reachability Ledger rows in this phase's plan doc had been marked closed on narrative evidence
+alone, meaning the published live-run numbers were never actually run through the code built to
+compute them.
+
+`scripts/run_value_comparison_report.ts` is the fix: an operator-run CLI (same class as
+`scripts/check_artefact_decision_coverage.ts` above — not wired into CI) that reads a JSON file
+and calls every one of these functions for real:
+
+```bash
+deno run -A scripts/run_value_comparison_report.ts scripts/run_value_comparison_report.example.json
+```
+
+**The input schema is deliberately generic — it names no artefact.** A section for arm
+comparisons, one for validity gates, one for placebo arms, and one each for skill/identity/flow
+reporting and judge calibration; whichever a real live run collects flows straight through. This
+was a considered design choice, not an oversight: the first draft of the fix proposed transcribing
+phase-158's own historical numbers into a checked-in fixture to "reproduce" them — but those
+numbers are unclean, retry-heavy measurements (a free tier that ran out mid-screening, a judge
+provider that silently fell back to a timing-out default, single-trial screening), and encoding
+them as a permanent fixture would have laundered that noise into something that reads as validated
+ground truth. The tool's own test suite and its committed example input use only clearly-synthetic,
+illustrative numbers — proof that the code is reachable, not a claim about any specific historical
+run. Reachability and trustworthiness are different questions; this tool answers only the first
+one, on purpose.
+
 ### Every artefact needs a decision, or a reason it has none yet
 
 `assertArtefactDecisionCoverage` (`tests/scenario_framework/runner/artefact_decision_coverage.ts`)
