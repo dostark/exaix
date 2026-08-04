@@ -1,9 +1,9 @@
 schema_version: "1.0.0"
-id: "swe-write-regression-test-for-summary"
-title: "Write a regression test for formatTaskSummary"
+id: "swe-explain-request-flow-codeanalyst-preprune"
+title: "Explain request flow (code-analyst identity, pre-prune overlay)"
 pack: "swe_tasks"
 tags: ["swe", "provider-live"]
-request_fixture: "fixtures/requests/swe_tasks/write-regression-test-for-summary.md"
+request_fixture: "fixtures/requests/swe_tasks/explain-request-flow.md"
 portals: []
 mode_support: ["auto"]
 matrix:
@@ -16,6 +16,11 @@ matrix:
       provider: "$CELL_PROVIDER"
       config: "configs/opencode-cli-delegate-all.toml"
       requires_bin: "opencode"
+    - tool: "exactl"
+      provider: "anthropic"
+      config: "configs/anthropic-no-delegate.toml"
+      requires_bin: "true"
+      requires_key: "ANTHROPIC_API_KEY"
 steps:
   - id: "setup-portal-repo"
     type: "shell"
@@ -41,7 +46,7 @@ steps:
     command: "sh"
     args: [
       "-c",
-      "sed -i 's/\"react\"/\"react\", \"cli_delegate\"/' $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md && grep -q cli_delegate $WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md",
+      "sed -i 's/\"react\"/\"react\", \"cli_delegate\"/' $WORKSPACE_ROOT/Blueprints/Identities/code-analyst.md && grep -q cli_delegate $WORKSPACE_ROOT/Blueprints/Identities/code-analyst.md",
     ]
     output_criteria:
       - id: "capability-patched"
@@ -59,6 +64,8 @@ steps:
     type: "exactl"
     command: "daemon"
     args: ["start"]
+    env:
+      EXA_EVAL_IDENTITY_OVERLAY_DIR: "$WORKSPACE_ROOT/overlay-identities"
     output_criteria:
       - id: "daemon-started"
         kind: "command-output-contains"
@@ -75,6 +82,8 @@ steps:
     type: "exactl"
     command: "daemon"
     args: ["restart"]
+    env:
+      EXA_EVAL_IDENTITY_OVERLAY_DIR: "$WORKSPACE_ROOT/overlay-identities"
     output_criteria:
       - id: "daemon-restarted"
         kind: "command-output-contains"
@@ -88,7 +97,7 @@ steps:
   - id: "submit-request"
     type: "exactl"
     command: "request"
-    args: ["--file", "$REQUEST_FIXTURE", "--portal", "todo-app", "--identity", "senior-coder"]
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "todo-app", "--identity", "code-analyst"]
     output_criteria:
       - id: "request-submitted"
         kind: "command-output-contains"
@@ -168,7 +177,7 @@ steps:
   - id: "prepare-llm-judge-evidence"
     type: "shell"
     command: "sh"
-    args: ["-c", "cat \"$WORKSPACE_ROOT/todo-app/src/utils_test.ts\" > \"$WORKSPACE_ROOT/llm-judge-input.txt\""]
+    args: ["-c", "cat \"$WORKSPACE_ROOT/todo-app/src/api.ts\" > \"$WORKSPACE_ROOT/llm-judge-input.txt\""]
     output_criteria:
       - id: "evidence-prepared"
         kind: "command-exit-code"
