@@ -55,6 +55,9 @@ Key points
   to events, schemas, or responses — verify values are correct, not just present.
 - Run an integration surface audit (Phase 2b) on every step that introduces a
   new interface or output field — dead fields with no consumers are gaps.
+  Run `deno task check:reachability-ledger <plan-doc-path>` first, as a mechanized
+  first pass over every ✅ Reachability Ledger row — advisory, not a replacement for
+  the manual grep.
 - Run a module convention probe (Phase 2c) on every step that modifies or
   creates source files — new code should match the existing module's dominant
   style.
@@ -85,6 +88,8 @@ Do / Don't
   🟡 Feasibility / 🟠 Testing / 🔵 Conceptual) so the team can triage quickly.
 - ✅ Do verify values, not just presence — a field existing with the wrong value is a gap (Phase 2a).
 - ✅ Do trace output fields to their consumers — dead fields with no readers are gaps (Phase 2b).
+- ✅ Do run `check:reachability-ledger` as a first pass on every ✅ ledger row, then verify its findings by hand
+  (Phase 2b) — it is advisory, not authoritative.
 - ✅ Do check new code against existing module conventions — inconsistency within a file is a gap (Phase 2c).
 - ✅ Do run Phase 5 security checks on every step touching input handling,
   auth/authorisation, path resolution, secrets, or external payloads.
@@ -220,6 +225,21 @@ For **every interface, type, or output field** the step introduces:
      DI into a production consumer or registered in the appropriate factory /
      registry / bootstrap module. Services that exist solely as definitions
      with no wiring path are dead regardless of how many tests create them.
+
+1. **Audit the plan doc's Reachability Ledger against real call-sites, not against its
+   own prose.** Run `deno task check:reachability-ledger <plan-doc-path>`
+   (`scripts/check_reachability_ledger.ts`) first — it parses every ✅ ledger row's
+   "Production call-site" cell for identifier/filename mentions and greps for a real
+   non-test reference outside the definition file. This exists because phase-158's
+   2026-08-04 post-gap analysis found six ✅ rows whose narrated call-site
+   (`computePairedComparison`, `evaluateValidityGate`, and the Step 4–6
+   skill/identity/flow reporting modules) was never actually invoked by any committed
+   code — a manual grep is what caught it, and this mechanizes that grep so it does
+   not depend on remembering to do it by hand. It is advisory (free-text heuristics
+   both miss dynamic-dispatch/registry-based wiring and can false-positive on an
+   entrypoint script that omits the `import.meta.main` guard), so every finding still
+   needs the manual G1-style verification above before it becomes a GAP entry — but a
+   row the tool flags is a row to check first, not last.
 
 ---
 

@@ -111,7 +111,15 @@ VERIFY phase — value correctness, wiring, consumer tracing, convention check
         re-sequence so the wiring lands in this phase, or pause and surface it to the
         user. Stage the planning-doc ledger edit in THIS step's commit.
       - If the CURRENT step wires an item an earlier step put on the ledger: flip that
-        row to ✅ and fill in the production call-site, in this step's commit.
+        row to ✅ and fill in the production call-site, in this step's commit. Before
+        flipping it, run `deno task check:reachability-ledger <plan-doc-path>`
+        (`scripts/check_reachability_ledger.ts`) — it parses the row's "Production
+        call-site" cell for identifier/filename mentions and greps for a real
+        non-test reference outside the definition file, catching by mechanism the
+        exact mistake phase-158's 2026-08-04 post-gap analysis found by hand: six ✅
+        rows whose named call-site was never actually invoked by any committed code.
+        Advisory only (false positives happen — see the tool's own output for known
+        causes), so a finding means "verify by hand," not "automatically revert to ⏳."
       Every ledger row MUST be ✅ before the phase is closed (Phase-completion gate G2).
   12. Trace every output field to its consumer.
       Grep the codebase for consumers of each new exported symbol, interface field,
@@ -293,7 +301,10 @@ PHASE-COMPLETION GATE (run ONCE, after the last step, BEFORE declaring the phase
       wired) and either wire it or correct the label to `✅ CORE (wired in Step M)`.
       Confirm each ✅ row's "Production call-site" column names a real file:Symbol that a
       G1 grep actually found — a row flipped to ✅ with no verifiable call-site is
-      treated as ⏳.
+      treated as ⏳. Run `deno task check:reachability-ledger <plan-doc-path>` as a
+      first pass before the manual G1 grep — it mechanizes exactly this check across
+      every ✅ row in the doc and will not find dynamic-dispatch/registry-based wiring,
+      so treat its output as candidates to verify by hand, not a final verdict.
   G3. For every opt-in flag the phase introduced, confirm a test flips the REAL config
       (e.g. `config.feature.enabled = true`) and asserts the observable behaviour — not
       a unit test of the gated component in isolation. "Enabling the flag does nothing"
