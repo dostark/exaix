@@ -8,6 +8,8 @@
 
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import { DependencyResolver } from "./dependency_resolver.ts";
+import { exists } from "@std/fs";
+import { IBlueprintLoader } from "@exaix/core/blueprint";
 
 export interface IFlowLoader {
   loadFlow(flowId: string): Promise<IFlow>;
@@ -21,12 +23,16 @@ export interface IFlowValidator {
 }
 
 export class FlowValidatorImpl implements IFlowValidator {
+  private readonly blueprintLoader: IBlueprintLoader;
+
   constructor(
     private flowLoader: IFlowLoader,
     private blueprintsPath: string,
-  ) {}
+  ) {
+    this.blueprintLoader = new IBlueprintLoader({ blueprintsPath });
+  }
 
-  validate(flow: IFlow): Promise<{ isValid: boolean; errors: string[]; warnings: string[] }> {
+  async validate(flow: IFlow): Promise<{ isValid: boolean; errors: string[]; warnings: string[] }> {
     const errors: string[] = [];
     const flowId = flow.id || "unnamed";
 
@@ -41,15 +47,18 @@ export class FlowValidatorImpl implements IFlowValidator {
       const agentError = this.validateStepAgents(flowId, flow.steps);
       if (agentError) errors.push(agentError);
 
+      const identityError = await this.validateStepIdentitiesExist(flowId, flow.steps);
+      if (identityError) errors.push(identityError);
+
       const outputError = this.validateOutput(flowId, flow);
       if (outputError) errors.push(outputError);
     }
 
-    return Promise.resolve({
+    return {
       isValid: errors.length === 0,
       errors,
       warnings: [],
-    });
+    };
   }
 
   async validateFile(path: string): Promise<{ isValid: boolean; errors: string[]; warnings: string[] }> {
@@ -127,6 +136,21 @@ export class FlowValidatorImpl implements IFlowValidator {
     for (const step of steps) {
       if (!step.identity || typeof step.identity !== "string" || step.identity === "") {
         return `IFlow '${flowId}' step '${step.id}' has invalid identity: ${step.identity}`;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Enforces that every step's identity resolves to a blueprint in the deployed catalog.
+   * Gated on the catalog directory existing: a validator built without a real catalog path
+   * (e.g. in-memory tests) only enforces the schema-level non-empty check above.
+   */
+  private async validateStepIdentitiesExist(flowId: string, steps: IFlowStep[]): Promise<string | null> {
+    if (!(await exists(this.blueprintsPath))) return null;
+    for (const step of steps) {
+      if (!(await this.blueprintLoader.exists(step.identity))) {
+        return `IFlow '${flowId}' step '${step.id}' references identity '${step.identity}' that does not exist in the blueprint catalog`;
       }
     }
     return null;

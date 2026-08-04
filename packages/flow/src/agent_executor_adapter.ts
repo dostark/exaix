@@ -64,12 +64,15 @@ export class AgentOrchestratorAdapter {
     this.loader = new IBlueprintLoader({ blueprintsPath });
   }
 
+  async hasBlueprint(identityId: string): Promise<boolean> {
+    return await this.loader.exists(identityId);
+  }
+
   async run(identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
     const loaded = await this.loader.load(identityId);
     if (!loaded) {
       throw new Error(`Blueprint not found for identity: ${identityId}`);
     }
-
     const blueprint: IBlueprint = {
       systemPrompt: loaded.systemPrompt,
       identityId: loaded.identityId,

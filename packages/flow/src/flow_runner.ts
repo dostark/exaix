@@ -93,6 +93,11 @@ import type { Opt, Reason } from "@exaix/core/types";
  */
 export interface IAgentExecutor {
   run(identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult>;
+  /**
+   * Optional blueprint-existence probe used to validate every flow step's identity before
+   * execution. Absent executors (e.g. test doubles) simply skip the identity check.
+   */
+  hasBlueprint?(identityId: string): Promise<boolean>;
 }
 
 /**
@@ -1061,6 +1066,20 @@ export class FlowRunner implements IFlowRunner {
         ...this.getIFlowLogBase(flow, request),
       });
       throw new FlowExecutionError(parallelValidationError, flowRunId);
+    }
+
+    if (this.agentExecutor.hasBlueprint) {
+      const identityValidationError = await this.runtimeValidator.validateStepIdentities(
+        flow,
+        (identityId) => this.agentExecutor.hasBlueprint!(identityId),
+      );
+      if (identityValidationError) {
+        await this.eventLogger.log(FLOW_EVENT_VALIDATION_FAILED, {
+          error: identityValidationError,
+          ...this.getIFlowLogBase(flow, request),
+        });
+        throw new FlowExecutionError(identityValidationError, flowRunId);
+      }
     }
 
     // Log flow validation success

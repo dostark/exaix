@@ -49,6 +49,7 @@ export { DynamicStepExecutor } from "./src/dynamic_step_executor.ts";
 export { FeedbackLoop, FeedbackLoopConfigSchema } from "./src/feedback_loop.ts";
 export { createFeedbackLoop, runSelfCorrectingAgent, SimpleImprovementAgent } from "./src/feedback_loop.ts";
 export { FlowAbortError, FlowExecutionError, FlowRunner, toGateConfig } from "./src/flow_runner.ts";
+export { FlowRuntimeValidator } from "./src/flow_runtime_validator.ts";
 export {
   FlowCheckpointCoordinator,
   type IFlowCheckpointCoordinator,

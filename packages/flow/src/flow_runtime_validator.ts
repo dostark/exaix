@@ -89,4 +89,25 @@ export class FlowRuntimeValidator {
 
     return null;
   }
+
+  /**
+   * Validates that every step's identity resolves to a real blueprint before any wave is
+   * scheduled. Covers the hand-off target of every dependency edge as well, since the whole
+   * step list is checked — a flow whose next step references a missing identity is rejected
+   * up front instead of failing mid-execution with "Blueprint not found".
+   */
+  async validateStepIdentities(
+    flow: IFlow,
+    hasBlueprint: (identityId: string) => Promise<boolean>,
+  ): Promise<string | null> {
+    for (const step of flow.steps) {
+      if (!step.identity) {
+        return `Step '${step.id}' has no identity`;
+      }
+      if (!(await hasBlueprint(step.identity))) {
+        return `Step '${step.id}' references identity '${step.identity}' that does not exist in the blueprint catalog`;
+      }
+    }
+    return null;
+  }
 }
