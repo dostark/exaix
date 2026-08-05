@@ -1,7 +1,7 @@
 # Exaix Evaluation Guide
 
-- **Version:** 1.0.0
-- **Date:** 2026-06-09
+- **Version:** 1.1.0
+- **Date:** 2026-08-05
 
 ## 1. Introduction
 
@@ -46,6 +46,10 @@ exactl eval history --last 10
 
 # Compare two runs
 exactl eval compare --run-a <run-id> --run-b <run-id>
+
+# Bound a live run's spend and read the value-for-money view
+exactl eval run --pack swe_tasks --max-cost-usd 0.5
+exactl eval report --view frontier
 ```
 
 **Exit codes:** `0` = all scenarios passed threshold; `1` = one or more failed.
@@ -74,6 +78,7 @@ exactl eval run [options]
 | `--score-threshold <n>`  | Minimum suite score to pass (default: 0.5)   |
 | `--trials <N>`           | Number of trials per scenario (default: 1)   |
 | `--history-format <fmt>` | Storage: `sqlite+jsonl` (default) or `jsonl` |
+| `--max-cost-usd <n>`     | Stop scheduling at the cost cap (see below)  |
 | `-v, --verbose`          | Show detailed output                         |
 
 **Examples:**
@@ -88,9 +93,18 @@ exactl eval run --pack agent_flows --score-threshold 0.8
 # Run by tag with multi-trial
 exactl eval run --tag eval --trials 3 --score-threshold 0.6
 
+# Bound a live run's spend: stop scheduling after $0.50 of tracked cost
+exactl eval run --pack swe_tasks --max-cost-usd 0.5
+
 # Run multiple packs
 exactl eval run --pack smoke --pack framework_test
 ```
+
+`--max-cost-usd` is the phase's budget discipline for unattended runs. The cap is checked
+**between scenarios**, never mid-task: once the accumulated tracked cost reaches the cap, the
+remaining scenarios are skipped (reported as `skipped: budget`) and the run finishes on the
+completed scenarios' scores. A budget stop is not an infrastructure error, so the exit code is
+the normal `0`/`1` verdict; `budget_stopped: true` is recorded in the suite report (§9.5).
 
 ### 3.2 `exactl eval history`
 
@@ -147,27 +161,78 @@ Output shows per-step score differences and overall score delta.
 
 ### 3.4 `exactl eval report`
 
-Render a cross-cell timing/token/tracked-cost comparison table, grouped by
-`cell_id`/`provider`/`model`. `--view cost` is the only view in this phase.
+Render a comparison over recorded history, grouped by `cell_id`/`provider`/`model`. The view
+is selected with `--view`; the current views are `cost` (default), `families`, `lift`,
+`ablation`, and `frontier`. Report views read the same tracked-cost, score, and cell fields
+the history rows carry (§9), and `--format json` renders machine-readable rows for CI trend
+jobs.
 
 **Usage:**
 
 ```bash
-exactl eval report --view cost [--scenario <id>] [--last <n>]
+exactl eval report [--view <view>] [--scenario <id>] [--last <n>] [--pack <name>] [--format json]
 ```
 
-**Example:**
+#### `--view cost` (default)
+
+A cross-cell timing/token/tracked-cost comparison table. Output shows, per cell, mean
+wall-clock `duration_ms`, mean LLM-call `llm_duration_ms`, total prompt/completion tokens, and
+total/mean **tracked** cost (`tracked_cost_usd`) — see §9.4 for what "tracked" means. A
+cell whose every run had no tracked cost (e.g. a pure direct-API cell, which only ever
+produces a _predicted_ cost estimate) renders `—` for cost columns, never `0` and never a
+predicted figure relabeled as tracked.
 
 ```bash
 exactl eval report --view cost --scenario fix-bug-null-guard-cli-all
 ```
 
-Output shows, per cell, mean wall-clock `duration_ms`, mean LLM-call
-`llm_duration_ms`, total prompt/completion tokens, and total/mean
-**tracked** cost (`tracked_cost_usd`) — see §9.4 for what "tracked" means. A
-cell whose every run had no tracked cost (e.g. a pure direct-API cell, which
-only ever produces a _predicted_ cost estimate) renders `—` for cost columns,
-never `0` and never a predicted figure relabeled as tracked.
+#### `--view families`
+
+Per-task-family aggregate (mean score, pass@1, reconcile rate, duration) over the `task:` tag —
+the readout behind §12's subsystem reporting, narrowed to task families.
+
+#### `--view lift` — harness lift
+
+The core question "does Exaix add anything over running the raw CLI tool directly?" A **bare
+delegate cell** (`cell_id: bare/<tool>/<provider>`) runs the same pinned task with the raw
+delegate CLI (Claude Code, opencode, …) — no daemon, no pipeline — scored on the same outcome
+criteria as the Exaix cell. For each task family the lift view pairs the Exaix cell against its
+bare baseline and reports `meanDelta` (Exaix minus bare), `stdevDelta`, and a `noEffect` verdict
+when the delta is indistinguishable from noise — with an explicit basis (run ids, task count),
+never a bare point delta.
+
+```bash
+exactl eval report --view lift [--scenario <id>] [--pack <name>]
+```
+
+#### `--view ablation` — feature contribution
+
+What does each subsystem actually contribute? An **ablation cell**
+(`cell_id: ablate-<subsystem>/<tool>/<provider>`) runs the full loop with exactly one subsystem
+toggled off via a config preset (`configs/eval-ablate-skills.toml`,
+`eval-ablate-quality-gate.toml`, `eval-ablate-portal-knowledge.toml`; the presets are
+byte-identical except their one toggle each). The view pairs each full-config cell against its
+`ablate-<subsystem>` sibling and reports per-subsystem `meanDelta`/`stdevDelta`/`noEffect` — the
+feature contribution, with basis and the same no-effect honesty as lift.
+
+```bash
+exactl eval report --view ablation [--scenario <id>] [--pack <name>]
+```
+
+#### `--view frontier` — accuracy vs cost
+
+Per cell, a point of (mean score, mean cost) plus `cost_per_solved` (Σ tracked cost ÷ passed
+tasks). Cells that are **Pareto-dominant** — no other cell is both better-scored and no more
+expensive — are marked. A cell with no cost data is left out of the dominance comparison and
+rendered with `—` for cost, never a made-up `0`.
+
+```bash
+# The efficiency readout adopters actually ask for
+exactl eval report --view frontier
+
+# Machine-readable rows for a CI trend job
+exactl eval report --view frontier --format json
+```
 
 ---
 
@@ -239,6 +304,39 @@ Default threshold is `0.5`.
 # Exit 1 if any scenario scores below 0.8
 exactl eval run --pack smoke --score-threshold 0.8
 ```
+
+### 4.5 Security-Gated Scoring (opt-in)
+
+The weighted mean in §4.1–4.2 lets a security violation count as just one bad check among many.
+The `swe_tasks` corpus (§14) opts into a harsher, Harness-Bench-style rule: **a task whose
+`class: security` criterion fails scores 0 for the whole suite, no matter how well the rest of
+the work went.**
+
+Two markers opt a scenario in:
+
+```yaml
+scoring: "gated" # scenario level — the mode
+...
+output_criteria:
+  - id: "no-dynamic-tool-calls"
+    kind: "command-exit-code"
+    equals: 0
+    class: "security" # criterion level — the security check
+```
+
+- **`scoring: "gated"`** switches the scenario to multiplicative scoring: the additive suite
+  score is multiplied by a gate that is `0` exactly when any `class: security` criterion
+  FAILED, and `1` otherwise. A passed security check, or no security check at all, leaves the
+  additive score untouched.
+- Absent the field, scoring stays **additive** and is byte-identical to pre-gating behaviour —
+  gating is strictly opt-in.
+- Every run records which mode it used (`scoring_mode`, default `additive`), so old baselines
+  are never mistaken for gated runs; the mode is shown as the SCORING column in
+  `exactl eval history` (§9).
+
+The `swe_tasks` corpus runs gated and tags its scope-violation, path-escape, and approval-bypass
+checks (`no-dynamic-tool-calls`, `plan-approved`, `review-approved`) as `class: security` — a
+real run that fails approval now scores 0, matching what Harness-Bench would do.
 
 ---
 
@@ -453,6 +551,7 @@ Each line is a self-contained JSON object:
   "mode": "auto",
   "suite_score": 0.95,
   "passed": true,
+  "scoring_mode": "additive",
   "step_count": 3,
   "step_results": [
     {
@@ -488,6 +587,10 @@ Timing, token, and tracked-cost fields are optional and only present when the
 underlying journal payloads carried them for that step (see §9.4). `step-2`
 above has none — a shell-only step with no LLM call in its execution window
 carries no such fields, not zeroed ones.
+
+`scoring_mode` is `"additive"` (the default, applied to every pre-existing row) or `"gated"`
+for a scenario that opted into security-gated scoring (§4.5) — history always records which
+rule produced the score.
 
 ### 9.2 SQLite Storage
 
@@ -550,6 +653,25 @@ produces `tracked_cost_usd: undefined` (omitted from JSON, `—` in the report
 table), never a predicted number silently relabeled as tracked spend. Cost
 prediction itself is unaffected by this distinction and remains available via
 the existing `cost_usd` field wherever it was already surfaced.
+
+### 9.5 Suite Report & Budget Flag
+
+In eval mode the runner writes `eval-report.json` to the output directory with the run verdict,
+the aggregate score, and — when a `--max-cost-usd` cap stopped scheduling (§3.1) —
+`"budget_stopped": true`:
+
+```json
+{
+  "threshold": 0.5,
+  "runVerdict": { "allPassed": true, "infraError": false, "scenarios": [] },
+  "aggregateScore": 0.82,
+  "budgetStopped": true,
+  "timestamp": "2026-06-09T12:00:00.000Z"
+}
+```
+
+A budget stop is a scheduling decision, not a failure: `budget_stopped` is a fact about the run,
+and the scenarios that did run are scored and judged normally.
 
 ---
 
@@ -819,6 +941,18 @@ Each task has a `task.json` (metadata + base_ref), `TASK.md` (brief),
 
 Suite score = weighted mean of all steps. Unexecuted steps score 0 rather than
 being excluded from the mean.
+
+**The corpus runs gated.** Every `swe_tasks` scenario declares `scoring: "gated"` (§4.5) and
+tags its security checks — `no-dynamic-tool-calls`, `plan-approved`, `review-approved` — as
+`class: "security"`. A run where the agent escaped the sandbox or skipped approval scores 0
+for the whole task, not a slightly-reduced weighted mean. Recorded baselines from before this
+predate gating; history labels each run's mode (`scoring_mode`) so the two are never compared
+as if they were the same measurement.
+
+**The comparison views apply here.** Running a task on a bare-delegate cell (raw CLI, no Exaix)
+and on the ablation cells (one subsystem off) feeds `--view lift` and `--view ablation`, and
+the per-cell `--view frontier` turns the corpus's tracked cost into the accuracy-vs-cost readout
+(§3.4).
 
 ### Running
 
