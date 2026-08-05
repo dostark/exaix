@@ -14,7 +14,7 @@
 
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { AgentOrchestratorAdapter } from "@exaix/flow";
+import { AgentOrchestratorAdapter, PLAN_WRITTEN_FILES_TRACE_MAX } from "@exaix/flow";
 import type { IFlowStepRequest } from "@exaix/flow";
 import { StrategyRegistry } from "@exaix/execution";
 import { initTestDbService } from "@exaix/testing";
@@ -414,6 +414,157 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: a different traceId does NO
       Error,
       "Security violation",
     );
+  } finally {
+    await dbService.cleanup();
+  }
+});
+
+Deno.test("AgentOrchestratorAdapter.runWithStrategy: evicts the least-recently-touched trace's planWrittenFiles entry once PLAN_WRITTEN_FILES_TRACE_MAX distinct trace_ids have been seen (post-gap Step 10, GAP-1)", async () => {
+  const dbService = await initTestDbService();
+  try {
+    const portalPath = join(dbService.tempDir, "portal-eviction");
+    const fillerPortalPath = join(dbService.tempDir, "portal-eviction-filler");
+    await initGitPortal(portalPath);
+    await initGitPortal(fillerPortalPath);
+    const config: Config = createMockConfig(dbService.tempDir, {
+      portals: [
+        { alias: "portal", target_path: portalPath, default_branch: "main", identities_allowed: ["*"], operations: [] },
+        {
+          alias: "filler",
+          target_path: fillerPortalPath,
+          default_branch: "main",
+          identities_allowed: ["*"],
+          operations: [],
+        },
+      ],
+    });
+    const logger = new EventLogger({ db: dbService.db });
+    const permissions = new PortalPermissionsService(config.portals!);
+    await writeBlueprint(dbService.tempDir, "test-agent");
+
+    const strategyRegistry = new StrategyRegistry();
+    // The evictable trace writes a real, uncommitted file (observable eviction proof — see
+    // below). Filler traces target a SEPARATE, always-clean portal with a no-op spy — they
+    // must never touch the "portal" alias, or they'd immediately trip the (correct, pre-
+    // existing) cross-trace isolation check themselves, independent of eviction.
+    registerFileWritingStrategy(strategyRegistry, ExecutionStrategyName.REACT, portalPath, "src/evictable.ts");
+    const fillerCalls: Array<{ context: IExecutionContext; options: IAgentExecutionOptions }> = [];
+    registerSpy(strategyRegistry, ExecutionStrategyName.CLI_DELEGATE, fillerCalls);
+
+    const adapter = new AgentOrchestratorAdapter(
+      { run: () => Promise.reject(new Error("should not be called")) },
+      join(dbService.tempDir, "Blueprints", "Identities"),
+      { config, db: dbService.db, logger, permissions, strategyRegistry },
+    );
+
+    const evictedTraceId = crypto.randomUUID();
+    // Leaves src/evictable.ts uncommitted in the portal, authorized under evictedTraceId.
+    await adapter.runWithStrategy!(
+      "test-agent",
+      makeStepRequest({ portal: "portal", traceId: evictedTraceId }),
+      ExecutionStrategyName.REACT,
+    );
+
+    // Touch PLAN_WRITTEN_FILES_TRACE_MAX brand-new trace_ids against the clean filler portal
+    // (never touching evictedTraceId again) — this must push evictedTraceId's entry out once
+    // the map is at capacity.
+    for (let i = 0; i < PLAN_WRITTEN_FILES_TRACE_MAX; i++) {
+      await adapter.runWithStrategy!(
+        "test-agent",
+        makeStepRequest({ portal: "filler", traceId: crypto.randomUUID() }),
+        ExecutionStrategyName.CLI_DELEGATE,
+      );
+    }
+
+    // A later call under the SAME evictedTraceId should now see src/evictable.ts (still
+    // physically uncommitted from the first call) as unauthorized, because its planWrittenFiles
+    // entry was evicted — a fresh, empty Set no longer records that file as legitimate. This is
+    // the same "Security violation" mechanism the cross-trace-isolation test above uses to prove
+    // isolation; here it proves eviction happened.
+    await assertRejects(
+      () =>
+        adapter.runWithStrategy!(
+          "test-agent",
+          makeStepRequest({ portal: "portal", traceId: evictedTraceId }),
+          ExecutionStrategyName.CLI_DELEGATE,
+        ),
+      Error,
+      "Security violation",
+    );
+  } finally {
+    await dbService.cleanup();
+  }
+});
+
+Deno.test("AgentOrchestratorAdapter.runWithStrategy: an actively-touched trace's planWrittenFiles entry is never evicted while it remains the most-recently-touched entry (post-gap Step 10, GAP-1 regression guard)", async () => {
+  const dbService = await initTestDbService();
+  try {
+    const portalPath = join(dbService.tempDir, "portal-eviction-regression");
+    const fillerPortalPath = join(dbService.tempDir, "portal-eviction-regression-filler");
+    await initGitPortal(portalPath);
+    await initGitPortal(fillerPortalPath);
+    const config: Config = createMockConfig(dbService.tempDir, {
+      portals: [
+        { alias: "portal", target_path: portalPath, default_branch: "main", identities_allowed: ["*"], operations: [] },
+        {
+          alias: "filler",
+          target_path: fillerPortalPath,
+          default_branch: "main",
+          identities_allowed: ["*"],
+          operations: [],
+        },
+      ],
+    });
+    const logger = new EventLogger({ db: dbService.db });
+    const permissions = new PortalPermissionsService(config.portals!);
+    await writeBlueprint(dbService.tempDir, "test-agent");
+
+    const strategyRegistry = new StrategyRegistry();
+    // Filler calls target the separate, always-clean "filler" portal — see the eviction
+    // test above for why they must not touch "portal" directly.
+    registerFileWritingStrategy(strategyRegistry, ExecutionStrategyName.REACT, portalPath, "src/active.ts");
+    const fillerCalls: Array<{ context: IExecutionContext; options: IAgentExecutionOptions }> = [];
+    registerSpy(strategyRegistry, ExecutionStrategyName.CLI_DELEGATE, fillerCalls);
+
+    const adapter = new AgentOrchestratorAdapter(
+      { run: () => Promise.reject(new Error("should not be called")) },
+      join(dbService.tempDir, "Blueprints", "Identities"),
+      { config, db: dbService.db, logger, permissions, strategyRegistry },
+    );
+
+    const activeTraceId = crypto.randomUUID();
+    // Leaves src/active.ts uncommitted in the portal, authorized under activeTraceId.
+    await adapter.runWithStrategy!(
+      "test-agent",
+      makeStepRequest({ portal: "portal", traceId: activeTraceId }),
+      ExecutionStrategyName.REACT,
+    );
+
+    // Interleave more than PLAN_WRITTEN_FILES_TRACE_MAX filler trace_ids (clean portal) with a
+    // re-touch of activeTraceId (dirty portal, still authorized) after every filler call, so
+    // activeTraceId is always the most-recently-used entry and must never become the eviction
+    // candidate.
+    for (let i = 0; i < PLAN_WRITTEN_FILES_TRACE_MAX * 2; i++) {
+      await adapter.runWithStrategy!(
+        "test-agent",
+        makeStepRequest({ portal: "filler", traceId: crypto.randomUUID() }),
+        ExecutionStrategyName.CLI_DELEGATE,
+      );
+      await adapter.runWithStrategy!(
+        "test-agent",
+        makeStepRequest({ portal: "portal", traceId: activeTraceId }),
+        ExecutionStrategyName.CLI_DELEGATE,
+      );
+    }
+
+    // A final call under activeTraceId must still succeed — src/active.ts is still recorded as
+    // authorized under its still-present planWrittenFiles entry.
+    const result = await adapter.runWithStrategy!(
+      "test-agent",
+      makeStepRequest({ portal: "portal", traceId: activeTraceId }),
+      ExecutionStrategyName.CLI_DELEGATE,
+    );
+    assertEquals(result.content, "spy strategy ran for portal");
   } finally {
     await dbService.cleanup();
   }

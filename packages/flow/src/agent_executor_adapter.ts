@@ -21,6 +21,8 @@ import { IBlueprintLoader } from "@exaix/core/blueprint";
 import type { IFlowStepRequest } from "./flow_runner.ts";
 import type { IDatabaseService, JSONValue } from "@exaix/core";
 import type { ExecutionStrategyName } from "@exaix/core";
+import { ConfigValueType, SwapClass } from "@exaix/core";
+import { configurable } from "@exaix/core/config";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import { PathResolver, type PortalPermissionsService } from "@exaix/portal";
@@ -89,6 +91,25 @@ export interface IAgentOrchestratorConstructionDeps {
    */
   strategyRegistry?: StrategyRegistry;
 }
+
+/**
+ * Maximum number of distinct flow-run `trace_id`s whose `planWrittenFiles` accumulator
+ * `AgentOrchestratorAdapter` retains (post-gap analysis Step 10, GAP-1). Without a bound,
+ * `planWrittenFilesByTrace` grows by one entry per unique trace_id for the daemon-boot
+ * singleton adapter's entire lifetime. Mirrors the bounded-Map convention already
+ * established for the identical trace-keyed-state-in-a-long-lived-singleton problem —
+ * `apps/daemon/main.ts`'s `traceModelCache`/`TRACE_CACHE_MAX` (a prior "PG-6" remediation).
+ */
+export const PLAN_WRITTEN_FILES_TRACE_MAX: number = configurable({
+  key: "flow.plan_written_files_trace_max",
+  default: 100,
+  type: ConfigValueType.NUMBER,
+  description:
+    "Maximum number of distinct flow-run trace_ids whose planWrittenFiles accumulator AgentOrchestratorAdapter retains before evicting the least-recently-touched entry",
+  min: 1,
+  max: 10_000,
+  swap: SwapClass.HOT,
+});
 
 /**
  * Adapter that wraps an IAgentRunner (or compatible IRunner) into FlowRunner's
@@ -175,11 +196,20 @@ export class AgentOrchestratorAdapter {
     const traceId = request.traceId ?? crypto.randomUUID();
     const pathResolver = new PathResolver(config, { traceId });
     const toolRegistry = new ToolRegistry({ config, traceId, baseDir: portalConfig.target_path, pathResolver });
+    // Bounded, least-recently-touched-evicted map (post-gap Step 10, GAP-1): re-inserting a
+    // key moves it to the end of the Map's iteration order, so an actively-touched trace is
+    // never the oldest entry and is never evicted while its flow run is still in progress.
     let planWrittenFiles = this.planWrittenFilesByTrace.get(traceId);
-    if (!planWrittenFiles) {
+    if (planWrittenFiles) {
+      this.planWrittenFilesByTrace.delete(traceId);
+    } else {
+      if (this.planWrittenFilesByTrace.size >= PLAN_WRITTEN_FILES_TRACE_MAX) {
+        const oldestTraceId = this.planWrittenFilesByTrace.keys().next().value;
+        if (oldestTraceId) this.planWrittenFilesByTrace.delete(oldestTraceId);
+      }
       planWrittenFiles = new Set<string>();
-      this.planWrittenFilesByTrace.set(traceId, planWrittenFiles);
     }
+    this.planWrittenFilesByTrace.set(traceId, planWrittenFiles);
     const orchestrator = new AgentOrchestrator({
       config,
       db,
