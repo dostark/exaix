@@ -18,6 +18,25 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 159 (Flow Step Execution Strategy)
+
+### Added
+
+- A flow step's YAML can now declare `strategy: react | mcp | cli_delegate` to route that
+  step through the agent strategy registry (tool-capable execution: reading the repo,
+  running commands, delegating to a CLI) instead of the default single-shot generation,
+  without changing `execution_mode` (see `Exaix_User_Guide.md` — "Flow Step Execution
+  Strategy").
+
+### Changed
+
+- 16 of the 17 bundled flows now assign an explicit strategy per step — steps that must
+  inspect the live repository use `react`, steps that produce or verify real file changes
+  use `cli_delegate`, and everything else keeps the previous single-shot behavior.
+- The bundled `feature-development` flow now runs every step via `cli_delegate`, giving its
+  cost-vs-quality comparison against direct execution a clean, matched-strategy result
+  instead of an earlier inconclusive one.
+
 ## Unreleased — Phase 158 (Artefact Value Evaluation)
 
 ### Added
