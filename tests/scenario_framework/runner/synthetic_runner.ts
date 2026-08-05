@@ -27,7 +27,9 @@ import {
   resolveRunnableSteps,
 } from "./matrix_expander.ts";
 import { currentMaxRowid, executeScenarioStep, type IScenarioStepExecutionResult } from "./step_executor.ts";
-import { readStepLlmMetrics } from "./step_llm_metrics.ts";
+import { parseDelegateStepLlmMetrics, readStepLlmMetrics } from "./step_llm_metrics.ts";
+import { BARE_DELEGATE_STEP_ID, HARNESS_BARE_TAG, REQUEST_FIXTURE_CONTENT_SENTINEL } from "./matrix_expander.ts";
+import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
 import { CAPTURE_FIXTURES_ENV_VAR, sandboxCaptureFixturesDir } from "./capture_fixtures_flag.ts";
 import {
   CriterionPhase,
@@ -44,7 +46,7 @@ export interface IBuildRunManifestOptions {
   stepOutcomes: IScenarioStepOutcome[];
   mode: ScenarioExecutionMode;
   runResult: IRunScenarioInModeResult;
-  matrixCell?: { cellId?: string; provider?: string; model?: string };
+  matrixCell?: { cellId?: string; provider?: string; model?: string; tool?: string; harness?: "bare" };
   /** The workspace root whose `.exa/journal.db` readStepLlmMetrics reads per step. */
   workspaceRoot: string;
   /** Each step's own [start, end] journal rowid window, tracked by the executeStep callback. */
@@ -517,8 +519,13 @@ export async function runSyntheticScenario(
         // Prefer the config-derived provider (materialized.aiProvider) over the cell's own
         // `provider:` field — the YAML field may be a $CELL_PROVIDER placeholder today, and
         // the config's [ai].provider is the actual source of truth for what ran regardless.
-        cellId: `${firstRunnable.cell.tool}-${materialized.aiProvider ?? firstRunnable.cell.provider}`,
+        // A `harness: bare` cell (Phase 143 Step 1) records the `bare/<tool>/<provider>` shape.
+        cellId: firstRunnable.cell.harness === "bare"
+          ? `bare/${firstRunnable.cell.tool}/${firstRunnable.cell.provider}`
+          : `${firstRunnable.cell.tool}-${materialized.aiProvider ?? firstRunnable.cell.provider}`,
         provider: materialized.aiProvider ?? firstRunnable.cell.provider,
+        tool: firstRunnable.cell.tool,
+        harness: firstRunnable.cell.harness,
       }
       : undefined,
   });
@@ -833,6 +840,9 @@ async function executeSyntheticStep(
   });
 
   const expandedStep = expandVariablesInStep(options.step, baseEnv);
+  // Bare-delegate steps carry the task content as a sentinel arg element — expand it to the
+  // fixture's exact bytes AFTER env expansion (Phase 143 Step 1, GAP-4).
+  const contentExpandedStep = await expandFileContentSentinels(expandedStep, options.requestFixturePath);
 
   // A wait step's timeout is sized for a real run (120-180s). When iterating on a failure that
   // is already visible in seconds, those waits dominate the loop: the step is going to fail and
@@ -840,10 +850,10 @@ async function executeSyntheticStep(
   // budget. It only ever SHORTENS a timeout, so it cannot make a step pass that would not have.
   const resolvedStep = options.maxStepTimeoutSec !== undefined
     ? {
-      ...expandedStep,
-      timeout_sec: Math.min(expandedStep.timeout_sec ?? options.maxStepTimeoutSec, options.maxStepTimeoutSec),
+      ...contentExpandedStep,
+      timeout_sec: Math.min(contentExpandedStep.timeout_sec ?? options.maxStepTimeoutSec, options.maxStepTimeoutSec),
     }
-    : expandedStep;
+    : contentExpandedStep;
 
   // Merge the EXPANDED step.env last so values like EXA_MIGRATIONS_DIR resolve before
   // they reach the spawned process.
@@ -963,7 +973,19 @@ export async function buildRunManifest(options: IBuildRunManifestOptions): Promi
     // Execution failures score 0 regardless of input criteria results
     const stepScore = outcome.failureStage === "execution" ? 0 : computeStepScore(outcome.criterionResults);
     const window = options.stepRowidWindows.get(outcome.stepId);
-    const llmMetrics = window ? await readStepLlmMetrics(options.workspaceRoot, window.start, window.end) : {};
+    // A bare cell's delegate step never writes journal rows (the delegate is an external CLI):
+    // its cost/tokens come from the delegate's stdout via parseDelegateStdout instead of the
+    // journal window (Phase 143 Step 1).
+    const isBareDelegate = options.matrixCell?.harness === "bare" &&
+      outcome.stepId === BARE_DELEGATE_STEP_ID;
+    const llmMetrics = window
+      ? await readStepLlmMetrics(options.workspaceRoot, window.start, window.end)
+      : isBareDelegate && options.matrixCell?.tool
+      ? parseDelegateStepLlmMetrics(
+        outcome.executionResult?.stdout ?? "",
+        options.matrixCell.tool as SessionTool,
+      )
+      : {};
     return {
       stepId: outcome.stepId,
       stepType: resolveStepType(options.loadedScenario.steps, outcome.stepId),
@@ -1022,7 +1044,10 @@ export async function buildRunManifest(options: IBuildRunManifestOptions): Promi
     // empty `tags` column and `eval report --group-by subsystem` reported "No matching summary
     // data found" after a full 72-scenario run. An empty group is indistinguishable from "no runs
     // yet", which is why nothing failed.
-    tags: [...(options.loadedScenario.scenario.tags ?? [])],
+    tags: [
+      ...(options.loadedScenario.scenario.tags ?? []),
+      ...(options.matrixCell?.harness === "bare" ? [HARNESS_BARE_TAG] : []),
+    ],
     mode: options.mode,
     outcome: mapScenarioOutcome(options.runResult),
     suite_score: computeSuiteScore(stepScores),
@@ -1110,6 +1135,29 @@ export function expandVariablesInStep(step: IScenarioStep, env: Record<string, s
     input_criteria: step.input_criteria.map((criterion: ICriterion) => expandCriterionPathFields(criterion, env)),
     output_criteria: step.output_criteria.map((criterion: ICriterion) => expandCriterionPathFields(criterion, env)),
   } as IScenarioStep;
+}
+
+/**
+ * Phase 143 Step 1 — replace the bare delegate step's `$REQUEST_FIXTURE_CONTENT` sentinel with
+ * the request fixture's exact bytes as ONE discrete args element. `expandVariablesInStep` leaves
+ * the unknown name verbatim (it is not an env var), so this runs after it; the content is
+ * inserted as-is — never shell-interpolated (GAP-4) — and a single pass means `$`/backtick
+ * characters inside the task text cannot re-enter expansion. A step without the sentinel is
+ * returned unchanged.
+ */
+export async function expandFileContentSentinels(
+  step: IScenarioStep,
+  requestFixturePath: string,
+): Promise<IScenarioStep> {
+  const args = step.args;
+  if (!args || !args.some((arg) => arg === REQUEST_FIXTURE_CONTENT_SENTINEL)) {
+    return step;
+  }
+  const content = await Deno.readTextFile(requestFixturePath);
+  return {
+    ...step,
+    args: args.map((arg) => (arg === REQUEST_FIXTURE_CONTENT_SENTINEL ? content : arg)),
+  };
 }
 
 /**

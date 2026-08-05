@@ -111,12 +111,50 @@ const ENV_CONFIG_PATH = "EXA_CONFIG_PATH";
 const ENV_DELEGATE_TOOL = "EXA_SESSION_DELEGATE_TOOL";
 const ENV_DELEGATE_ENABLED = "EXA_SESSION_DELEGATE_ENABLED";
 
+/** The history tag a bare baseline cell's run carries (Phase 143 Step 1 cell taxonomy). */
+export const HARNESS_BARE_TAG = "harness:bare";
+
+/** The step id of the bare scenario's direct-delegate launch step (scenario_templates.ts). */
+export const BARE_DELEGATE_STEP_ID = "bare-delegate";
+
+/**
+ * The args-element sentinel that expands to the request fixture's exact bytes as ONE discrete
+ * array element (never shell-interpolated — GAP-4). `expandVariablesInStep` leaves the unknown
+ * `$REQUEST_FIXTURE_CONTENT` name verbatim (it is not an env var); `expandFileContentSentinels`
+ * (synthetic_runner.ts) replaces it with the fixture file content after env expansion.
+ */
+export const REQUEST_FIXTURE_CONTENT_SENTINEL = "$REQUEST_FIXTURE_CONTENT";
+
+/**
+ * Per-tool direct delegate launch shapes for bare cells (Phase 143 Step 1): the executable and
+ * the args head before the task-content element. Shapes match the shipped headless delegate
+ * surfaces (Dogfooding guide §6.1–6.2): `opencode run --format json --dir <worktree>` and
+ * `claude -p --output-format json` (the step's cwd IS the worktree). The task content is
+ * appended by the bare overlay as `REQUEST_FIXTURE_CONTENT_SENTINEL` — its own discrete element.
+ * Unknown tools fail loudly at overlay time (authoring error), mirroring the start-daemon
+ * requirement below.
+ */
+const BARE_DELEGATE_LAUNCH_SHAPES: Record<string, { bin: string; args: string[] }> = {
+  "opencode": {
+    bin: "opencode",
+    args: ["run", "--format", "json", "--dir", "$WORKSPACE_ROOT/todo-app"],
+  },
+  "claude-code": {
+    bin: "claude",
+    args: ["-p", "--output-format", "json"],
+  },
+};
+
 const NON_EMPTY = z.string().min(1);
 
 /**
  * One cell of the matrix: a (tool, provider) pair selected by a real config preset.
  * `provider` is a documentary label; the actual provider realm is chosen by `config`'s
  * [session_delegate.provider] block (GAP-2 — there is no EXA_SESSION_DELEGATE_PROVIDER).
+ * `harness: bare` (Phase 143 Step 1) marks a bare-delegate baseline cell: it skips the
+ * daemon boot entirely (the delegate is launched directly), records `cell_id:
+ * bare/<tool>/<provider>` + the `harness:bare` tag, and its cost/tokens come from the
+ * delegate's stdout via `parseDelegateStdout` rather than the journal.
  */
 export const MatrixCellSchema = z.object({
   tool: NON_EMPTY,
@@ -125,6 +163,7 @@ export const MatrixCellSchema = z.object({
   requires_bin: NON_EMPTY,
   requires_key: NON_EMPTY.optional(),
   requires_optin: NON_EMPTY.optional(),
+  harness: z.enum(["bare"]).optional(),
 }).strict();
 
 export const MatrixSchema = z.object({
@@ -160,12 +199,21 @@ function cellSkipReason(cell: IMatrixCell, options: IExpandMatrixOptions): strin
 /**
  * Overlay the per-cell delegate env onto the start-daemon step, leaving all other
  * steps untouched. Returns a fresh step array (no mutation of the input).
+ *
+ * A `harness: bare` cell (Phase 143 Step 1) never boots the daemon: instead the bare-delegate
+ * step's executable and args are rewritten per tool (bin + args head from
+ * `BARE_DELEGATE_LAUNCH_SHAPES`, task content appended as its own discrete
+ * `REQUEST_FIXTURE_CONTENT_SENTINEL` element). The start-daemon requirement does not apply to
+ * bare cells — they have no daemon step by template construction.
  */
 function overlayCellEnv(
   steps: IScenarioStep[],
   cell: IMatrixCell,
   configBaseDir: Opt<string, Reason.OptionalInput>,
 ): IScenarioStep[] {
+  if (cell.harness === "bare") {
+    return overlayBareDelegateStep(steps, cell);
+  }
   // The overlay targets exactly one step (start-daemon). If it is missing the cell would
   // boot with no delegate config and silently false-green — fail loudly on the authoring error.
   if (!steps.some((step) => step.id === MATRIX_START_DAEMON_STEP_ID)) {
@@ -184,6 +232,36 @@ function overlayCellEnv(
         [ENV_DELEGATE_TOOL]: cell.tool,
         [ENV_DELEGATE_ENABLED]: "true",
       },
+    };
+  });
+}
+
+/**
+ * Rewrite a bare cell's `bare-delegate` step with the tool's direct-launch shape. The template
+ * renders the step with placeholder command/args; the per-cell rewrite supplies the real
+ * executable, args head, and the task-content sentinel element. Fails loudly when the bare
+ * scenario lacks the delegate step (authoring error) or the tool has no launch shape.
+ */
+function overlayBareDelegateStep(steps: IScenarioStep[], cell: IMatrixCell): IScenarioStep[] {
+  const shape = BARE_DELEGATE_LAUNCH_SHAPES[cell.tool];
+  if (!shape) {
+    throw new Error(
+      `bare matrix cell (tool=${cell.tool}, provider=${cell.provider}) has no direct-launch shape ` +
+        `(supported tools: ${Object.keys(BARE_DELEGATE_LAUNCH_SHAPES).join(", ")})`,
+    );
+  }
+  const delegate = steps.find((step) => step.id === BARE_DELEGATE_STEP_ID);
+  if (!delegate) {
+    throw new Error(
+      `bare matrix cell (tool=${cell.tool}, provider=${cell.provider}) has no '${BARE_DELEGATE_STEP_ID}' step to rewrite`,
+    );
+  }
+  return steps.map((step) => {
+    if (step.id !== BARE_DELEGATE_STEP_ID) return step;
+    return {
+      ...step,
+      command: shape.bin,
+      args: [...shape.args, REQUEST_FIXTURE_CONTENT_SENTINEL],
     };
   });
 }

@@ -42,8 +42,27 @@ export interface IFamilySummaryRow {
   delta: number | null;
 }
 
+/**
+ * A run with its outcome-channel scores attached — the input shape of the harness-lift
+ * comparison (Phase 143 Step 1). `tags` is JSON-parsed; `outcome_scores` holds the `score` of
+ * each step whose `step_id` is in the queried outcome step set, in step order (empty when the
+ * run has no outcome steps — a run without outcome evidence contributes no match).
+ */
+export interface IOutcomeRunRow {
+  run_id: string;
+  scenario_id: string;
+  pack: string | null;
+  tags: string[] | null;
+  run_timestamp: string;
+  provider: string | null;
+  model: string | null;
+  cell_id: string | null;
+  outcome_scores: number[];
+}
+
 const EVAL_TABLE_RUNS = "eval_runs";
 const EVAL_SCHEMA_VERSION_INSERT = "INSERT OR IGNORE INTO eval_schema_version (version, description) VALUES ";
+const SQL_AND_SEPARATOR = " AND ";
 
 interface IRunRow {
   run_id: string;
@@ -437,12 +456,68 @@ export class EvalSqliteStore {
       params.push(options.since);
     }
 
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(SQL_AND_SEPARATOR)}` : "";
     const limit = options.last ? `LIMIT ${options.last}` : "";
 
     return this.db.prepare(
       `SELECT * FROM eval_runs ${where} ORDER BY run_timestamp DESC ${limit}`,
     ).all<IRunRow>(...params);
+  }
+
+  /**
+   * Phase 143 Step 1 — query runs with their outcome-channel step scores attached, the input
+   * of the harness-lift comparison. Filters on the same (scenario, pack) conditions as
+   * queryRuns and joins each run's `eval_run_steps` rows whose `step_id` is in
+   * `outcomeStepIds`. Querying only, never compute — the paired-delta math stays in
+   * `arm_comparison.ts` (pre-gap GAP-1: eval-history must not reimplement it).
+   */
+  queryOutcomeRuns(options: {
+    scenario?: string;
+    pack?: string;
+    outcomeStepIds: string[];
+  }): IOutcomeRunRow[] {
+    const conditions: string[] = [];
+    const params: (string | number)[] = [];
+
+    if (options.scenario) {
+      conditions.push("scenario_id = ?");
+      params.push(options.scenario);
+    }
+    if (options.pack) {
+      conditions.push("pack = ?");
+      params.push(options.pack);
+    }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(SQL_AND_SEPARATOR)}` : "";
+    const runs = this.db.prepare(
+      `SELECT * FROM eval_runs ${where} ORDER BY run_timestamp DESC`,
+    ).all<IRunRow>(...params);
+
+    const outcomeStepIds = options.outcomeStepIds;
+    const stepsByRun = new Map<string, number[]>();
+    if (outcomeStepIds.length > 0 && runs.length > 0) {
+      const placeholders = outcomeStepIds.map(() => "?").join(", ");
+      const stepRows = this.db.prepare(
+        `SELECT run_id, score FROM eval_run_steps WHERE step_id IN (${placeholders}) ORDER BY run_id, step_index`,
+      ).all<{ run_id: string; score: number }>(...outcomeStepIds);
+      for (const row of stepRows) {
+        const scores = stepsByRun.get(row.run_id);
+        if (scores) scores.push(row.score);
+        else stepsByRun.set(row.run_id, [row.score]);
+      }
+    }
+
+    return runs.map((run) => ({
+      run_id: run.run_id,
+      scenario_id: run.scenario_id,
+      pack: run.pack ?? null,
+      tags: run.tags ? (JSON.parse(run.tags) as string[]) : null,
+      run_timestamp: run.run_timestamp,
+      provider: run.provider,
+      model: run.model,
+      cell_id: run.cell_id,
+      outcome_scores: stepsByRun.get(run.run_id) ?? [],
+    }));
   }
 
   compareRuns(runIdA: string, runIdB: string): {
@@ -527,7 +602,7 @@ export class EvalSqliteStore {
       params.push(options.cellId);
     }
 
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(SQL_AND_SEPARATOR)}` : "";
     const rows = this.db.prepare(
       `SELECT run_id, scenario_id, tags, suite_score, passed, duration_ms FROM eval_runs ${where} ORDER BY run_timestamp DESC`,
     ).all<

@@ -11,6 +11,8 @@
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { AGENT_EVENT_EXECUTION_COMPLETED, AGENT_GENERATION_COMPLETED } from "@exaix/core";
+import { parseDelegateStdout } from "@exaix/session";
+import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
 
 export interface IStepLlmMetricsTokens {
   prompt: number;
@@ -35,6 +37,31 @@ interface IActivityMetricsRow {
   cache_creation_tokens_sum: number | null;
   tracked_cost_usd_sum: number | null;
   row_count: number;
+}
+
+/**
+ * Phase 143 Step 1 — map a bare cell's delegate step stdout into the history step fields,
+ * reusing the daemon's own `parseDelegateStdout` (pre-gap GAP-3: never reimplement delegate
+ * parsing). Claude `{type:"result"}` usage and OpenCode JSONL `step_finish` token/cost events
+ * land in `tokens_*` / `tracked_cost_usd` exactly as the journal path records them. Absent cost
+ * stays `undefined` (the frontier view renders "—"); a stdout with nothing parseable records NO
+ * metrics — fake zeros would read as "free run" in every cost view.
+ */
+export function parseDelegateStepLlmMetrics(stdout: string, tool: SessionTool): IStepLlmMetrics {
+  const parsed = parseDelegateStdout(stdout, tool);
+  if (parsed.tokenStats.total === 0 && parsed.costUsd === undefined) {
+    return {};
+  }
+  return {
+    tokens: {
+      prompt: parsed.tokenStats.input,
+      completion: parsed.tokenStats.output,
+      cacheRead: parsed.tokenStats.cacheRead,
+      cacheCreation: parsed.tokenStats.cacheCreation,
+      total: parsed.tokenStats.total,
+    },
+    trackedCostUsd: parsed.costUsd,
+  };
 }
 
 /**

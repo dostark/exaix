@@ -9,6 +9,7 @@
 
 import type { Opt, Reason } from "@exaix/core/types";
 import { SCHEMA_VERSION } from "../schema/version.ts";
+import { BARE_DELEGATE_STEP_ID, REQUEST_FIXTURE_CONTENT_SENTINEL } from "./matrix_expander.ts";
 
 export interface IScenarioTemplateOptions {
   id: string;
@@ -24,6 +25,8 @@ export interface ICellDef {
   config: string;
   requiresBin?: string;
   requiresKey?: string;
+  /** Phase 143 Step 1: marks a bare-delegate baseline cell (rendered as `harness: bare`). */
+  harness?: "bare";
 }
 
 export interface ISweTaskTemplateOptions {
@@ -37,6 +40,13 @@ export interface ISweTaskTemplateOptions {
   judgeContextPath?: string;
   judgeEvidencePath?: string;
 }
+
+/** The outcome step id shared by the Exaix and bare swe templates — the outcome channel a
+ *  harness-lift comparison filters on (Phase 143 Step 1 Architecture Notes). */
+export const VERIFY_TESTS_STEP_ID = "verify-tests";
+
+/** Default wall-clock bound for the bare delegate step (Phase 143 Step 1). */
+const DEFAULT_BARE_DELEGATE_TIMEOUT_SEC = 600;
 
 interface IIdSequenceStepOptions {
   id: string;
@@ -92,6 +102,7 @@ function renderCells(cells: ICellDef[]): string {
     lines.push(`      config: "${c.config}"`);
     if (c.requiresBin) lines.push(`      requires_bin: "${c.requiresBin}"`);
     if (c.requiresKey) lines.push(`      requires_key: "${c.requiresKey}"`);
+    if (c.harness) lines.push(`      harness: "${c.harness}"`);
   }
   return lines.join("\n");
 }
@@ -215,32 +226,18 @@ function _idSequenceStep(opts: IIdSequenceStepOptions): string {
 }
 
 /**
- * Render a complete swe_tasks benchmark scenario YAML against the
- * todo_app fixture portal. The template emits both CLI-delegate-specific
- * and direct-API-specific steps; irrelevant steps are skipped at
- * expansion time via matrix cell guards.
+ * The pinned-worktree setup steps shared by the Exaix and bare swe templates. Both templates
+ * must run the task in the same worktree state (brief and worktree parity enforced by
+ * construction — Phase 143 Step 1 baseline-fairness constraint), so the setup blocks are
+ * rendered by one function and never diverge. `includeCliDelegatePatch` renders the
+ * CLI-delegate-only `patch-blueprint-capability` step between setup-blueprints and setup-memory
+ * (the Exaix loop needs it; the bare cell launches the delegate directly and does not).
  */
-export function renderSweTaskTemplate(
-  task: ISweTaskTemplateOptions,
-): string {
-  const hasCliDelegate = task.cells.some((c) => c.requiresBin);
-  const scoreWeights = task.scoringWeights ?? {};
-  const portalDir = task.portal ?? "todo_app";
-
-  const parts: string[] = [
-    `schema_version: "1.0.0"`,
-    `id: "${task.id}"`,
-    `title: "${task.title}"`,
-    `pack: "swe_tasks"`,
-    `tags: ["swe", "provider-live"]`,
-    `request_fixture: "${task.requestFixture}"`,
-    `portals: []`,
-    `mode_support: ["auto"]`,
-    "",
-    renderCells(task.cells),
-    "",
-    "steps:",
-    // ── setup ──
+function renderSweSetupSteps(
+  portalDir: string,
+  opts: { includeCliDelegatePatch: boolean },
+): string[] {
+  return [
     `  - id: "setup-db"`,
     `    type: "shell"`,
     `    command: "deno"`,
@@ -270,8 +267,7 @@ export function renderSweTaskTemplate(
     `        kind: "command-exit-code"`,
     `        equals: 0`,
     "",
-    // CLI-delegate only: patch senior-coder capabilities
-    ...(hasCliDelegate
+    ...(opts.includeCliDelegatePatch
       ? [
         `  - id: "patch-blueprint-capability"`,
         `    type: "shell"`,
@@ -293,6 +289,57 @@ export function renderSweTaskTemplate(
     `        kind: "command-exit-code"`,
     `        equals: 0`,
     "",
+  ];
+}
+
+/**
+ * The outcome step both templates share: run the portal's scoped tests. This is the outcome
+ * channel a harness-lift comparison scores on — the only channel that exists for bare cells.
+ */
+function renderSweVerifyTestsStep(scoreWeights: Record<string, number>): string {
+  return [
+    `  - id: "${VERIFY_TESTS_STEP_ID}"`,
+    `    type: "shell"`,
+    `    command: "sh"`,
+    `    args: ["-c", "cd \\"$WORKSPACE_ROOT/todo-app\\" && deno test src/"]`,
+    `    output_criteria:`,
+    `      - id: "tests-pass"`,
+    `        kind: "command-exit-code"`,
+    `        equals: 0`,
+    scoreWeights.tests_pass !== undefined
+      ? `        score_weight: ${scoreWeights.tests_pass}`
+      : `        score_weight: 0.3`,
+    "",
+  ].join("\n");
+}
+
+/**
+ * Render a complete swe_tasks benchmark scenario YAML against the
+ * todo_app fixture portal. The template emits both CLI-delegate-specific
+ * and direct-API-specific steps; irrelevant steps are skipped at
+ * expansion time via matrix cell guards.
+ */
+export function renderSweTaskTemplate(
+  task: ISweTaskTemplateOptions,
+): string {
+  const hasCliDelegate = task.cells.some((c) => c.requiresBin);
+  const scoreWeights = task.scoringWeights ?? {};
+  const portalDir = task.portal ?? "todo_app";
+
+  const parts: string[] = [
+    `schema_version: "1.0.0"`,
+    `id: "${task.id}"`,
+    `title: "${task.title}"`,
+    `pack: "swe_tasks"`,
+    `tags: ["swe", "provider-live"]`,
+    `request_fixture: "${task.requestFixture}"`,
+    `portals: []`,
+    `mode_support: ["auto"]`,
+    "",
+    renderCells(task.cells),
+    "",
+    "steps:",
+    ...renderSweSetupSteps(portalDir, { includeCliDelegatePatch: hasCliDelegate }),
     // ── daemon lifecycle ──
     `  - id: "start-daemon"`,
     `    type: "exactl"`,
@@ -387,18 +434,7 @@ export function renderSweTaskTemplate(
       ? `        score_weight: ${scoreWeights.review_approved}`
       : `        score_weight: 0.15`,
     "",
-    `  - id: "verify-tests"`,
-    `    type: "shell"`,
-    `    command: "sh"`,
-    `    args: ["-c", "cd \\"$WORKSPACE_ROOT/todo-app\\" && deno test src/"]`,
-    `    output_criteria:`,
-    `      - id: "tests-pass"`,
-    `        kind: "command-exit-code"`,
-    `        equals: 0`,
-    scoreWeights.tests_pass !== undefined
-      ? `        score_weight: ${scoreWeights.tests_pass}`
-      : `        score_weight: 0.3`,
-    "",
+    renderSweVerifyTestsStep(scoreWeights),
     // CLI-delegate only assertions
     ...(hasCliDelegate
       ? [
@@ -487,6 +523,54 @@ export function renderSweTaskTemplate(
     `        kind: "command-output-contains"`,
     `        contains: ["daemon.stopped"]`,
     "",
+  ];
+
+  return parts.filter(Boolean).join("\n");
+}
+
+/**
+ * Render the bare-delegate baseline scenario for a swe_tasks task (Phase 143 Step 1). Same
+ * id/title/brief as the Exaix template (matching on scenario_id), the SAME pinned-worktree
+ * setup steps (parity by construction), then a single `bare-delegate` SHELL step launching the
+ * delegate directly with the task content as its own discrete args element (placeholder shape —
+ * the matrix overlay rewrites command/args per cell tool), and the unchanged `verify-tests`
+ * outcome step. Process/plan steps (daemon, request, plan, approve, review, judge, trajectory)
+ * are structurally absent: bare cells have no journal, so process-channel criteria are excluded
+ * from both sides of a lift comparison (Design Decision 1), never scored as 0 against the bare
+ * cell. Every cell carries the `harness: bare` marker so the runner records
+ * `cell_id: bare/<tool>/<provider>` and the `harness:bare` tag.
+ */
+export function renderSweTaskBareTemplate(
+  task: ISweTaskTemplateOptions,
+): string {
+  const scoreWeights = task.scoringWeights ?? {};
+  const portalDir = task.portal ?? "todo_app";
+
+  const parts: string[] = [
+    `schema_version: "1.0.0"`,
+    `id: "${task.id}"`,
+    `title: "${task.title}"`,
+    `pack: "swe_tasks"`,
+    `tags: ["swe", "provider-live"]`,
+    `request_fixture: "${task.requestFixture}"`,
+    `portals: []`,
+    `mode_support: ["auto"]`,
+    "",
+    renderCells(task.cells.map((c) => ({ ...c, harness: "bare" }))),
+    "",
+    "steps:",
+    ...renderSweSetupSteps(portalDir, { includeCliDelegatePatch: false }),
+    `  - id: "${BARE_DELEGATE_STEP_ID}"`,
+    `    type: "shell"`,
+    `    command: "opencode"`,
+    `    args: ["run", "--format", "json", "--dir", "$WORKSPACE_ROOT/todo-app", "${REQUEST_FIXTURE_CONTENT_SENTINEL}"]`,
+    `    timeout_sec: ${DEFAULT_BARE_DELEGATE_TIMEOUT_SEC}`,
+    `    output_criteria:`,
+    `      - id: "delegate-ran"`,
+    `        kind: "command-exit-code"`,
+    `        equals: 0`,
+    "",
+    renderSweVerifyTestsStep(scoreWeights),
   ];
 
   return parts.filter(Boolean).join("\n");

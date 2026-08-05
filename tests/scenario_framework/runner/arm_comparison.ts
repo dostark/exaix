@@ -22,6 +22,10 @@ export enum ArmKind {
   IDENTITY_CONFIG = "identity-config",
   FLOW_ABLATION = "flow-ablation",
   FLOW_SWAP = "flow-swap",
+  /** Phase 143 Step 1: the harness-lift arm — the full Exaix cell (treatment) vs the bare
+   *  delegate baseline cell (control) on the outcome channel only (bare cells have no journal,
+   *  so process-channel criteria are excluded from both sides — Design Decision 1). */
+  HARNESS_ABLATION = "harness-ablation",
 }
 
 /** Which recorded metric a comparison measures the delta on. */
