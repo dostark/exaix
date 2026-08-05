@@ -2889,6 +2889,10 @@ const evalCommand = new Command()
         "--cell <tool:string>",
         "Run only the matrix cell whose tool matches (e.g. claude-code, opencode) — every other cell is skipped, not run",
       )
+      .option(
+        "--max-cost-usd <usd:number>",
+        "Stop scheduling after accumulated tracked cost reaches this cap (skips remaining scenarios; never truncates a running task)",
+      )
       .option("-v, --verbose", "Show detailed output")
       .action(async (options) => {
         try {
@@ -2900,6 +2904,7 @@ const evalCommand = new Command()
             trials: options.trials,
             historyFormat: options.historyFormat,
             cell: options.cell,
+            maxCostUsd: options.maxCostUsd,
             verbose: options.verbose,
           });
         } catch (error) {

@@ -18,6 +18,7 @@ import type { IRunManifest } from "./evidence_collector.ts";
 import { reportScenarioFailure, reportSuiteSummary } from "./reporter.ts";
 import { selectScenariosForExecution } from "./modes.ts";
 import { writeEvalHistoryEntries } from "./history_writer_dispatch.ts";
+import { BudgetTracker, computeScenarioTotalCost } from "./budget.ts";
 import {
   accumulateRunVerdict,
   computeMultiTrialMetrics,
@@ -64,6 +65,11 @@ await new Command()
   .option("--score-threshold <threshold:number>", "Minimum suite score to pass (default: 0.5)")
   .option("--trials <n:number>", "Number of trials per scenario (default: 1)")
   .option("--history-format <format:string>", "History storage format: sqlite+jsonl or jsonl (default: sqlite+jsonl)")
+  .option(
+    "--max-cost-usd <usd:number>",
+    "Stop scheduling after accumulated tracked cost reaches this cap — remaining scenarios are " +
+      "skipped (never truncates a running task) and the eval report flags budget_stopped",
+  )
   .option(
     "--cell <tool:string>",
     "Run only the matrix cell whose tool matches (e.g. claude-code, opencode) — every other cell is skipped, not run",
@@ -158,8 +164,20 @@ await new Command()
       passPowK: number;
     }>();
     let infraError = false;
+    // Phase 143 Step 4: `--max-cost-usd` stops scheduling (never truncates a running task).
+    const budget = new BudgetTracker({ maxCostUsd: options.maxCostUsd });
 
     for (const entry of selectedEntries) {
+      // Checked between scenarios: once accumulated cost reached the cap, the remaining
+      // scenarios are skipped and the report flags budget_stopped.
+      if (budget.shouldStop) {
+        console.log(
+          `\n--max-cost-usd reached (${budget.accumulatedCostUsd.toFixed(3)} >= ${options.maxCostUsd}); ` +
+            `skipping ${entry.id} and the remaining scenarios.`,
+        );
+        scenarioVerdicts.push({ scenarioId: `${entry.id} (skipped: budget)`, pack: "", suiteScore: 0, passed: false });
+        continue;
+      }
       console.log(`\nScenario: ${entry.id}`);
       const trialScores: number[] = [];
       let trialInfraError = false;
@@ -215,6 +233,13 @@ await new Command()
         if (runtimeConfig.mode === ScenarioExecutionMode.AUTO) {
           break;
         }
+      }
+
+      // Phase 143 Step 4: accumulate the scenario's tracked cost (trial-0 manifest) toward the
+      // budget cap — checked between scenarios, so a running task is never truncated.
+      const runManifest = manifests.get(entry.id);
+      if (runManifest) {
+        budget.recordScenarioCost(computeScenarioTotalCost(runManifest.steps));
       }
 
       // Compute aggregate suite score from trial metrics
@@ -299,6 +324,7 @@ await new Command()
       await writeEvalReport(runtimeConfig.output_dir, {
         threshold: scoreThreshold,
         runVerdict,
+        budgetStopped: budget.budgetStopped,
       });
     }
 
@@ -381,12 +407,13 @@ interface IEvalReport {
   threshold: number | undefined;
   runVerdict: IRunVerdict;
   aggregateScore: number | undefined;
+  budgetStopped?: boolean;
   timestamp: string;
 }
 
 async function writeEvalReport(
   outputDir: string,
-  opts: { threshold: number | undefined; runVerdict: IRunVerdict },
+  opts: { threshold: number | undefined; runVerdict: IRunVerdict; budgetStopped?: boolean },
 ): Promise<string> {
   const scores = opts.runVerdict.scenarios.map((s) => s.suiteScore);
   const aggregateScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : undefined;
@@ -395,6 +422,7 @@ async function writeEvalReport(
     threshold: opts.threshold,
     runVerdict: opts.runVerdict,
     aggregateScore,
+    ...(opts.budgetStopped ? { budgetStopped: true } : {}),
     timestamp: new Date().toISOString(),
   };
 

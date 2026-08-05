@@ -28,6 +28,21 @@ interface IHistoryEntry {
   timestamp: string;
 }
 
+/** A frontier cell row: per-cell mean score/cost, cost-per-solved, and Pareto marking. */
+export interface IFrontierCellRow {
+  cell: string;
+  provider: string;
+  model: string;
+  runCount: number;
+  passedCount: number;
+  meanScore: number | undefined;
+  meanCost: number | undefined;
+  costPerSolved: number | undefined;
+  /** True when the cell is not dominated by any other cost-reporting cell (Metric Definitions
+   *  predicate). Missing-cost cells never participate in dominance and are never marked. */
+  pareto: boolean;
+}
+
 interface ICostReportRunRow {
   cell_id: string | null;
   provider: string | null;
@@ -69,6 +84,7 @@ export class EvalCommands extends BaseCommand {
     trials?: number;
     historyFormat?: string;
     cell?: string;
+    maxCostUsd?: number;
     verbose?: boolean;
   }): Promise<void> {
     const args = buildRunArgs(options);
@@ -193,6 +209,8 @@ export class EvalCommands extends BaseCommand {
     last?: number;
     pack?: string;
     groupBy?: string;
+    /** Output format (e.g. "json" for the frontier view's CI trend output). */
+    format?: string;
     /** Explicit eval.db path override (test-supporting). When absent, resolves from
      *  EXA_EVAL_DB_PATH or the process cwd. Tests pass it so the process-global cwd
      *  (shared across `deno test --parallel` worker threads) never backs the path. */
@@ -202,44 +220,7 @@ export class EvalCommands extends BaseCommand {
     const resolveDb = () => options.dbPath ?? resolveEvalDbPath();
 
     if (options.groupBy) {
-      const dbPath = resolveDb();
-      const store = new EvalSqliteStore(dbPath);
-      try {
-        store.initialize();
-        const tagPrefix = options.groupBy === "subsystem" ? "subsystem:" : "entity:";
-        const summary = store.summarizeByTag(tagPrefix, { pack: options.pack });
-        if (summary.length === 0) {
-          console.log("No matching summary data found for the requested group.");
-          return;
-        }
-        console.log(
-          `${options.groupBy === "subsystem" ? "Subsystem" : "Entity"} Report`,
-        );
-        console.log("-".repeat(70));
-        console.log(
-          `  ${"Name".padEnd(30)} ${TASKS_COLUMN.padEnd(6)} ${"Passed".padEnd(8)} ${"Mean".padEnd(7)} ${
-            "Delta".padEnd(8)
-          } ${"Pass@1".padEnd(8)} ${"Reconcile".padEnd(10)} ${"Duration".padEnd(10)}`,
-        );
-        for (const row of summary) {
-          // A mean only where the criteria are graded. Over a pack of yes/no contract assertions it
-          // is the pass rate wearing three decimal places, and reading 0.971 as "97% healthy" is
-          // how a dead subsystem looked healthy in Phase 142 Step 17.
-          const mean = row.graded ? row.meanScore.toFixed(3) : "—";
-          // "—" on a first run: there is nothing for a trend to be against, and printing +0.000
-          // would read as "no change" rather than "no comparison".
-          const delta = row.delta === null ? "—" : `${row.delta >= 0 ? "+" : ""}${row.delta.toFixed(3)}`;
-          console.log(
-            `  ${row.family.padEnd(30)} ${String(row.taskCount).padEnd(6)} ${
-              `${row.passedCount}/${row.taskCount}`.padEnd(8)
-            } ${mean.padEnd(7)} ${delta.padEnd(8)} ${row.meanPassAt1.toFixed(3).padEnd(8)} ${
-              (row.reconcileRate * 100).toFixed(0).padEnd(9)
-            }% ${Math.round(row.meanDurationMs).toString().padEnd(9)}ms`,
-          );
-        }
-      } finally {
-        store.close();
-      }
+      this.renderGroupedReport(options);
       return;
     }
     if (SCRIPT_REPORT_VIEWS.has(view)) {
@@ -260,6 +241,11 @@ export class EvalCommands extends BaseCommand {
       } finally {
         store.close();
       }
+      return;
+    }
+
+    if (view === "frontier") {
+      this.renderFrontierReport(options);
       return;
     }
 
@@ -295,7 +281,78 @@ export class EvalCommands extends BaseCommand {
       return;
     }
 
-    console.log(`Unknown report view: ${view}. Supported views: cost, families, lift, ablation`);
+    console.log(`Unknown report view: ${view}. Supported views: cost, families, lift, ablation, frontier`);
+  }
+
+  private renderGroupedReport(options: {
+    groupBy?: string;
+    pack?: string;
+    dbPath?: string;
+  }): void {
+    const dbPath = options.dbPath ?? resolveEvalDbPath();
+    const store = new EvalSqliteStore(dbPath);
+    try {
+      store.initialize();
+      const tagPrefix = options.groupBy === "subsystem" ? "subsystem:" : "entity:";
+      const summary = store.summarizeByTag(tagPrefix, { pack: options.pack });
+      if (summary.length === 0) {
+        console.log("No matching summary data found for the requested group.");
+        return;
+      }
+      console.log(
+        `${options.groupBy === "subsystem" ? "Subsystem" : "Entity"} Report`,
+      );
+      console.log("-".repeat(70));
+      console.log(
+        `  ${"Name".padEnd(30)} ${TASKS_COLUMN.padEnd(6)} ${"Passed".padEnd(8)} ${"Mean".padEnd(7)} ${
+          "Delta".padEnd(8)
+        } ${"Pass@1".padEnd(8)} ${"Reconcile".padEnd(10)} ${"Duration".padEnd(10)}`,
+      );
+      for (const row of summary) {
+        // A mean only where the criteria are graded. Over a pack of yes/no contract assertions it
+        // is the pass rate wearing three decimal places, and reading 0.971 as "97% healthy" is
+        // how a dead subsystem looked healthy in Phase 142 Step 17.
+        const mean = row.graded ? row.meanScore.toFixed(3) : "—";
+        // "—" on a first run: there is nothing for a trend to be against, and printing +0.000
+        // would read as "no change" rather than "no comparison".
+        const delta = row.delta === null ? "—" : `${row.delta >= 0 ? "+" : ""}${row.delta.toFixed(3)}`;
+        console.log(
+          `  ${row.family.padEnd(30)} ${String(row.taskCount).padEnd(6)} ${
+            `${row.passedCount}/${row.taskCount}`.padEnd(8)
+          } ${mean.padEnd(7)} ${delta.padEnd(8)} ${row.meanPassAt1.toFixed(3).padEnd(8)} ${
+            (row.reconcileRate * 100).toFixed(0).padEnd(9)
+          }% ${Math.round(row.meanDurationMs).toString().padEnd(9)}ms`,
+        );
+      }
+    } finally {
+      store.close();
+    }
+  }
+
+  private renderFrontierReport(options: {
+    scenario?: string;
+    last?: number;
+    dbPath?: string;
+    format?: string;
+  }): void {
+    const dbPath = options.dbPath ?? resolveEvalDbPath();
+    const store = new EvalSqliteStore(dbPath);
+    try {
+      store.initialize();
+      const runs = store.queryRuns({ scenario: options.scenario, last: options.last });
+      const rows = computeFrontierRows(runs);
+      if (rows.length === 0) {
+        console.log("No frontier data found in history.");
+        return;
+      }
+      if (options.format === "json") {
+        console.log(JSON.stringify(rows, null, 2));
+      } else {
+        renderFrontierTable(rows);
+      }
+    } finally {
+      store.close();
+    }
   }
 
   private renderScriptView(
@@ -397,6 +454,7 @@ export function buildRunArgs(options: {
   trials?: number;
   historyFormat?: string;
   cell?: string;
+  maxCostUsd?: number;
   verbose?: boolean;
 }): string[] {
   const frameworkPath = resolveFrameworkPath();
@@ -420,6 +478,7 @@ export function buildRunArgs(options: {
   if (options.trials !== undefined && options.trials > 1) args.push("--trials", String(options.trials));
   if (options.historyFormat !== undefined) args.push("--history-format", options.historyFormat);
   if (options.cell !== undefined) args.push("--cell", options.cell);
+  if (options.maxCostUsd !== undefined) args.push("--max-cost-usd", String(options.maxCostUsd));
 
   args.push("--eval-mode");
 
@@ -460,6 +519,93 @@ function sum(values: number[]): number | undefined {
 
 function formatNumberOrAbsent(value?: Opt<number, Reason.OptionalInput>, digits = 0): string {
   return value === undefined ? COST_REPORT_ABSENT_VALUE : value.toFixed(digits);
+}
+
+/** Structural subset of the eval-history run row the frontier needs. */
+interface IFrontierRunRow {
+  cell_id: string | null;
+  provider: string | null;
+  model: string | null;
+  suite_score: number;
+  passed: number;
+  total_tracked_cost_usd: number | null;
+}
+
+/**
+ * Compute the accuracy-vs-cost frontier over history runs (Phase 143 Step 4). Per cell:
+ * mean score, mean tracked cost (only runs that report cost), cost_per_solved =
+ * Σ cost / count(passed) (— when no passes), and the Pareto marking per the Metric Definitions
+ * predicate: A dominates B iff meanScore(A) >= meanScore(B) AND meanCost(A) <= meanCost(B) with
+ * at least one strict inequality; exact ties are co-dominant (both un-dominated); a cell with no
+ * cost data is excluded from dominance entirely.
+ */
+export function computeFrontierRows(runs: IFrontierRunRow[]): IFrontierCellRow[] {
+  const groups = new Map<string, IFrontierRunRow[]>();
+  for (const run of runs) {
+    const cell = run.cell_id ?? COST_REPORT_UNKNOWN_CELL;
+    const provider = run.provider ?? COST_REPORT_UNKNOWN_PROVIDER;
+    const model = run.model ?? COST_REPORT_UNKNOWN_MODEL;
+    const key = `${cell}-${provider}-${model}`;
+    const group = groups.get(key) ?? [];
+    group.push(run);
+    groups.set(key, group);
+  }
+  const rows: IFrontierCellRow[] = [];
+  for (const [, groupRuns] of groups) {
+    const passedCount = groupRuns.filter((r) => r.passed === 1).length;
+    const costRuns = groupRuns.filter((r) => r.total_tracked_cost_usd !== null) as Array<
+      IFrontierRunRow & { total_tracked_cost_usd: number }
+    >;
+    const meanCost = costRuns.length > 0 ? mean(costRuns.map((r) => r.total_tracked_cost_usd)) : undefined;
+    const costTotal = costRuns.length > 0 ? costRuns.reduce((acc, r) => acc + r.total_tracked_cost_usd, 0) : undefined;
+    rows.push({
+      cell: groupRuns[0].cell_id ?? COST_REPORT_UNKNOWN_CELL,
+      provider: groupRuns[0].provider ?? COST_REPORT_UNKNOWN_PROVIDER,
+      model: groupRuns[0].model ?? COST_REPORT_UNKNOWN_MODEL,
+      runCount: groupRuns.length,
+      passedCount,
+      meanScore: mean(groupRuns.map((r) => r.suite_score)),
+      meanCost,
+      costPerSolved: costTotal !== undefined && passedCount > 0 ? costTotal / passedCount : undefined,
+      pareto: false,
+    });
+  }
+  // Pareto pass: only cells that report cost participate; A dominates B iff
+  // meanScore(A) >= meanScore(B) && meanCost(A) <= meanCost(B), at least one strict.
+  const costRows = rows.filter((r) => r.meanCost !== undefined) as Array<
+    IFrontierCellRow & { meanCost: number }
+  >;
+  for (const row of costRows) {
+    const dominated = costRows.some((other) =>
+      other !== row &&
+      other.meanScore! >= row.meanScore! &&
+      other.meanCost <= row.meanCost &&
+      (other.meanScore! > row.meanScore! || other.meanCost < row.meanCost)
+    );
+    row.pareto = !dominated;
+  }
+
+  return rows;
+}
+
+/** Render the frontier table: per-cell score/cost/cost-per-solved with Pareto markers. */
+function renderFrontierTable(rows: IFrontierCellRow[]): void {
+  console.log("Accuracy vs Cost Frontier");
+  console.log("-".repeat(100));
+  console.log(
+    `  ${padRight("Cell", 24)} ${padRight("Runs", 6)} ${padRight("Solved", 8)} ${padRight("MeanScore", 10)} ${
+      padRight("MeanCost", 10)
+    } ${padRight("Cost/Solved", 12)} Pareto`,
+  );
+  for (const row of rows) {
+    console.log(
+      `  ${padRight(row.cell.slice(0, 24), 24)} ${padRight(String(row.runCount), 6)} ${
+        padRight(String(row.passedCount), 8)
+      } ${padRight(formatNumberOrAbsent(row.meanScore, 3), 10)} ${
+        padRight(formatNumberOrAbsent(row.meanCost, 4), 10)
+      } ${padRight(formatNumberOrAbsent(row.costPerSolved, 4), 12)} ${row.pareto ? "◀ pareto" : "—"}`,
+    );
+  }
 }
 
 function renderCostReportTable(groups: ICostReportCellGroup[]): void {
