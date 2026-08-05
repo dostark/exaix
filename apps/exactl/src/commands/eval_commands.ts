@@ -43,6 +43,20 @@ export interface IFrontierCellRow {
   pareto: boolean;
 }
 
+/** A failure class row: overall count plus the family × cell breakdown. */
+export interface IFailuresClassRow {
+  className: string;
+  count: number;
+  familyCounts: Array<{ family: string; count: number }>;
+  cellCounts: Array<{ cell: string; count: number }>;
+}
+
+/** The failures aggregation: per-class rows and the top class per cell. */
+export interface IFailuresReport {
+  classes: IFailuresClassRow[];
+  topClassByCell: Array<{ cell: string; className: string; count: number }>;
+}
+
 interface ICostReportRunRow {
   cell_id: string | null;
   provider: string | null;
@@ -68,6 +82,8 @@ const HARNESS_LIFT_SCRIPT_RELATIVE_PATH = "../../../../scripts/run_harness_lift_
 const ABLATION_SCRIPT_RELATIVE_PATH = "../../../../scripts/run_ablation_report.ts";
 /** Shared report-table column label (check:magic: appears in 4 renderers). */
 const TASKS_COLUMN = "Tasks";
+/** The `--format json` output format (check:magic: appears in 3 renderers). */
+const JSON_FORMAT = "json";
 /** Report views that spawn a Test-layer script bridge (never imported into production). */
 const SCRIPT_REPORT_VIEWS = new Set(["lift", "ablation"]);
 
@@ -186,7 +202,7 @@ export class EvalCommands extends BaseCommand {
 
   private renderHistory(entries: IHistoryEntry[], format?: Opt<string, Reason.OptionalInput>): void {
     const fmt = format ?? "table";
-    if (fmt === "json") {
+    if (fmt === JSON_FORMAT) {
       console.log(JSON.stringify(entries, null, 2));
     } else {
       renderHistoryTable(entries);
@@ -248,6 +264,10 @@ export class EvalCommands extends BaseCommand {
       this.renderFrontierReport(options);
       return;
     }
+    if (view === "failures") {
+      this.renderFailuresReport(options);
+      return;
+    }
 
     if (view === "families") {
       const dbPath = resolveDb();
@@ -281,7 +301,7 @@ export class EvalCommands extends BaseCommand {
       return;
     }
 
-    console.log(`Unknown report view: ${view}. Supported views: cost, families, lift, ablation, frontier`);
+    console.log(`Unknown report view: ${view}. Supported views: cost, families, lift, ablation, frontier, failures`);
   }
 
   private renderGroupedReport(options: {
@@ -345,10 +365,32 @@ export class EvalCommands extends BaseCommand {
         console.log("No frontier data found in history.");
         return;
       }
-      if (options.format === "json") {
+      if (options.format === JSON_FORMAT) {
         console.log(JSON.stringify(rows, null, 2));
       } else {
         renderFrontierTable(rows);
+      }
+    } finally {
+      store.close();
+    }
+  }
+
+  private renderFailuresReport(options: {
+    scenario?: string;
+    last?: number;
+    dbPath?: string;
+    format?: string;
+  }): void {
+    const dbPath = options.dbPath ?? resolveEvalDbPath();
+    const store = new EvalSqliteStore(dbPath);
+    try {
+      store.initialize();
+      const runs = store.queryRuns({ scenario: options.scenario, last: options.last });
+      const report = computeFailuresReport(runs);
+      if (options.format === JSON_FORMAT) {
+        console.log(JSON.stringify(report, null, 2));
+      } else {
+        renderFailuresTable(report);
       }
     } finally {
       store.close();
@@ -531,6 +573,16 @@ interface IFrontierRunRow {
   total_tracked_cost_usd: number | null;
 }
 
+/** Structural subset of the eval-history run row the failures view needs. */
+interface IFailuresRunRow {
+  cell_id: string | null;
+  tags: string | null;
+  failure_classes: string | null;
+}
+
+const FAMILY_TAG_PREFIX = "task:";
+const UNKNOWN_FAMILY = "unknown-family";
+
 /**
  * Compute the accuracy-vs-cost frontier over history runs (Phase 143 Step 4). Per cell:
  * mean score, mean tracked cost (only runs that report cost), cost_per_solved =
@@ -605,6 +657,92 @@ function renderFrontierTable(rows: IFrontierCellRow[]): void {
         padRight(formatNumberOrAbsent(row.meanCost, 4), 10)
       } ${padRight(formatNumberOrAbsent(row.costPerSolved, 4), 12)} ${row.pareto ? "◀ pareto" : "—"}`,
     );
+  }
+}
+
+/**
+ * Aggregate seeded history runs into the failures report (Phase 143 Step 5): per-class counts
+ * with the class × family × cell breakdown, and the top class per cell. `failure_classes` and
+ * `tags` are JSON strings in the row; family is the first `task:` tag.
+ */
+export function computeFailuresReport(runs: IFailuresRunRow[]): IFailuresReport {
+  const classMap = new Map<string, { count: number; families: Map<string, number>; cells: Map<string, number> }>();
+  const cellClassCounts = new Map<string, Map<string, number>>();
+
+  for (const run of runs) {
+    let classes: string[] = [];
+    try {
+      classes = run.failure_classes ? JSON.parse(run.failure_classes) as string[] : [];
+    } catch {
+      classes = [];
+    }
+    let tags: string[] = [];
+    try {
+      tags = run.tags ? JSON.parse(run.tags) as string[] : [];
+    } catch {
+      tags = [];
+    }
+    const family = tags.find((t) => t.startsWith(FAMILY_TAG_PREFIX)) ?? UNKNOWN_FAMILY;
+    const cell = run.cell_id ?? COST_REPORT_UNKNOWN_CELL;
+
+    for (const className of classes) {
+      let acc = classMap.get(className);
+      if (!acc) {
+        acc = { count: 0, families: new Map(), cells: new Map() };
+        classMap.set(className, acc);
+      }
+      acc.count++;
+      acc.families.set(family, (acc.families.get(family) ?? 0) + 1);
+      acc.cells.set(cell, (acc.cells.get(cell) ?? 0) + 1);
+
+      const perCell = cellClassCounts.get(cell) ?? new Map<string, number>();
+      perCell.set(className, (perCell.get(className) ?? 0) + 1);
+      cellClassCounts.set(cell, perCell);
+    }
+  }
+
+  const classes: IFailuresClassRow[] = [...classMap.entries()]
+    .map(([className, acc]) => ({
+      className,
+      count: acc.count,
+      familyCounts: [...acc.families.entries()].map(([family, count]) => ({ family, count })),
+      cellCounts: [...acc.cells.entries()].map(([cell, count]) => ({ cell, count })),
+    }))
+    .sort((a, b) => b.count - a.count || a.className.localeCompare(b.className));
+
+  const topClassByCell = [...cellClassCounts.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([cell, counts]) => {
+      const [className, count] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+      return { cell, className, count };
+    });
+
+  return { classes, topClassByCell };
+}
+
+/** Render the failures report: per-class rows with family/cell counts + top class per cell. */
+function renderFailuresTable(report: IFailuresReport): void {
+  if (report.classes.length === 0) {
+    console.log("No failure classes found in history.");
+    return;
+  }
+  console.log("Failure Classes");
+  console.log("-".repeat(100));
+  console.log(
+    `  ${padRight("Class", 32)} ${padRight("Count", 6)} ${padRight("Families", 30)} ${padRight("Cells", 28)}`,
+  );
+  for (const row of report.classes) {
+    console.log(
+      `  ${padRight(row.className.slice(0, 32), 32)} ${padRight(String(row.count), 6)} ${
+        padRight(row.familyCounts.map((f) => `${f.family}(${f.count})`).join(", ").slice(0, 30), 30)
+      } ${padRight(row.cellCounts.map((c) => `${c.cell}(${c.count})`).join(", ").slice(0, 28), 28)}`,
+    );
+  }
+  if (report.topClassByCell.length > 0) {
+    console.log("\nTop class per cell:");
+    for (const top of report.topClassByCell) {
+      console.log(`  ${top.cell}: ${top.className} (${top.count})`);
+    }
   }
 }
 

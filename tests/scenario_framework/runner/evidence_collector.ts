@@ -53,6 +53,9 @@ export interface IRunManifest {
   suite_score?: number;
   /** The scoring mode the run was computed under (Phase 143 Step 3). Absent ⇒ additive. */
   scoringMode?: ScoringMode;
+  /** The run's failure classes (Phase 143 Step 5) — joined from its journal trace at
+   *  history-write time; absent ⇒ no failures classified. */
+  failureClasses?: string[];
   cellId?: string;
   provider?: string;
   model?: string;

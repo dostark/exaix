@@ -6,7 +6,7 @@
  */
 
 import { Command, EnumType } from "@cliffy/command";
-import { resolve } from "@std/path";
+import { join, resolve } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { type IRuntimeConfig, resolveRuntimeConfigForExecution, ScenarioCiProfile } from "./config.ts";
 import { applySandboxCleanup, describeRetention, planSandboxCleanup, SandboxRetention } from "./sandbox_lifecycle.ts";
@@ -19,6 +19,7 @@ import { reportScenarioFailure, reportSuiteSummary } from "./reporter.ts";
 import { selectScenariosForExecution } from "./modes.ts";
 import { writeEvalHistoryEntries } from "./history_writer_dispatch.ts";
 import { BudgetTracker, computeScenarioTotalCost } from "./budget.ts";
+import { computeRunFailureClasses } from "./failure_classifier.ts";
 import {
   accumulateRunVerdict,
   computeMultiTrialMetrics,
@@ -166,6 +167,8 @@ await new Command()
     let infraError = false;
     // Phase 143 Step 4: `--max-cost-usd` stops scheduling (never truncates a running task).
     const budget = new BudgetTracker({ maxCostUsd: options.maxCostUsd });
+    // Phase 143 Step 5: the trial-0 workspace whose journal holds the run's trace.
+    let firstTrialWorkspaceRoot = "";
 
     for (const entry of selectedEntries) {
       // Checked between scenarios: once accumulated cost reached the cap, the remaining
@@ -214,6 +217,8 @@ await new Command()
 
           if (trial === 0) {
             manifests.set(entry.id, result.manifest);
+            // Phase 143 Step 5: the run's trace lives in this trial's workspace journal.
+            firstTrialWorkspaceRoot = trialWorkspaceRoot;
           }
 
           console.log(`${trialLabel} Outcome: ${result.manifest.outcome} (suite_score: ${suiteScore.toFixed(3)})`);
@@ -283,6 +288,19 @@ await new Command()
         suiteScore,
         passed: isPassed,
       });
+
+      // Phase 143 Step 5: join the run's journal trace into failure classes (recovered findings
+      // excluded; `execution-alignment` when reconciled but outcome below threshold).
+      if (options.evalMode) {
+        const manifest = manifests.get(entry.id);
+        if (manifest && firstTrialWorkspaceRoot) {
+          manifest.failureClasses = computeRunFailureClasses({
+            journalPath: join(firstTrialWorkspaceRoot, ".exa", "journal.db"),
+            outcomeScore: suiteScore,
+            scoreThreshold,
+          });
+        }
+      }
 
       // --fail-fast: stop at the first failure rather than running the rest of the pack. The
       // remaining scenarios are still reported, as SKIPPED rather than passed, so a truncated

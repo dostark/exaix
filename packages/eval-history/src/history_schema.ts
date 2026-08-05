@@ -78,6 +78,10 @@ export const EvalHistoryEntrySchema = z.object({
   total_tracked_cost_usd: z.number().min(0).optional(),
   /** Task-family tags propagated from scenario manifest. Phase 141 Step 1. */
   tags: z.array(z.string()).optional(),
+  /** Failure taxonomy for the run (Phase 143 Step 5): distinct unrecovered anomaly eventTypes
+   *  plus the `execution-alignment` class, joined from the run's journal trace. Absent ⇒ no
+   *  failures classified. */
+  failure_classes: z.array(z.string()).optional(),
   /** Scoring composition mode (Phase 143 Step 3). Default additive so every pre-existing
    *  row without an explicit mode reads unambiguously as additive. Values match the Test
    *  layer's `ScoringMode` in tests/scenario_framework/runner/scoring.ts. */

@@ -118,6 +118,7 @@ function buildEvalHistoryEntry(
     suite_score: manifest.suite_score,
     score_threshold: opts?.scoreThreshold,
     scoring_mode: manifest.scoringMode === ScoringMode.GATED ? EvalScoringMode.GATED : EvalScoringMode.ADDITIVE,
+    failure_classes: manifest.failureClasses,
     step_count: manifest.steps.length,
     step_results: manifest.steps.map((s) => ({
       step_id: s.stepId,

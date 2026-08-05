@@ -75,6 +75,7 @@ interface IRunRow {
   passed: number;
   mode: string;
   scoring_mode: string;
+  failure_classes: string | null;
   score_threshold: number | null;
   trials: number;
   exactl_version: string | null;
@@ -315,6 +316,14 @@ export class EvalSqliteStore {
           "(6, 'Add scoring_mode column to eval_runs (Phase 143 Step 3)')",
       );
     }
+
+    if (currentVersion < 7) {
+      this.addColumns(EVAL_TABLE_RUNS, ["failure_classes TEXT"]);
+      this.db.exec(
+        EVAL_SCHEMA_VERSION_INSERT +
+          "(7, 'Add failure_classes column to eval_runs (Phase 143 Step 5)')",
+      );
+    }
   }
 
   writeRun(
@@ -348,8 +357,9 @@ export class EvalSqliteStore {
          blueprint_id, blueprint_version, exactl_version, schema_version, trial_scores, metadata,
          duration_ms, trace_id, provider, model, cell_id,
          total_llm_duration_ms, total_tokens_prompt, total_tokens_completion,
-         total_tokens_cache_read, total_tokens_cache_creation, total_tracked_cost_usd, scoring_mode)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         total_tokens_cache_read, total_tokens_cache_creation, total_tracked_cost_usd, scoring_mode,
+         failure_classes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
     const insertStep = this.db.prepare(
@@ -402,6 +412,7 @@ export class EvalSqliteStore {
         entry.total_tokens_cache_creation ?? null,
         entry.total_tracked_cost_usd ?? null,
         entry.scoring_mode ?? EvalScoringMode.ADDITIVE,
+        entry.failure_classes ? JSON.stringify(entry.failure_classes) : null,
       );
 
       if (steps) {
