@@ -9,9 +9,21 @@
 
 import type { Opt, Reason } from "@exaix/core/types";
 import type { ICriterionResult, IScenarioStep } from "../schema/step_schema.ts";
-import { CriterionStatus } from "../schema/step_schema.ts";
+import { CriterionClass, CriterionStatus } from "../schema/step_schema.ts";
 import { configurable } from "@exaix/core/config";
 import { ConfigValueType } from "@exaix/core";
+
+// ============================================================================
+// Scoring modes
+// ============================================================================
+
+/** The scoring composition mode a scenario runs under (Phase 143 Step 3). */
+export enum ScoringMode {
+  /** Weighted mean of step scores; criterion failures only lower their step. */
+  ADDITIVE = "additive",
+  /** Multiplicative: a `class: security` criterion failure zeroes the whole suite. */
+  GATED = "gated",
+}
 
 // ============================================================================
 // Exported interfaces
@@ -221,6 +233,24 @@ export function computeSuiteScore(
 
   if (totalWeight === 0) return 0.0;
   return weightedSum / totalWeight;
+}
+
+/**
+ * Phase 143 Step 3 — apply the security gate to an already-computed suite score.
+ * The additive suite score already folds both channels (outcome + process, i.e. OUTPUT
+ * and INPUT criterion phases) as a weighted mean over steps; gated scoring multiplies it
+ * by a gate that is 0 exactly when ANY `class: security` criterion FAILED, matching
+ * Harness-Bench's Security·Completion·Process semantics. An identity when nothing
+ * security-class failed, so the additive default is byte-identical for existing scenarios.
+ */
+export function composeGated(
+  suiteScore: number,
+  criterionResults: ICriterionResult[],
+): number {
+  const securityViolation = criterionResults.some(
+    (result) => result.class === CriterionClass.SECURITY && result.status === CriterionStatus.FAILED,
+  );
+  return securityViolation ? 0 : suiteScore;
 }
 
 /**

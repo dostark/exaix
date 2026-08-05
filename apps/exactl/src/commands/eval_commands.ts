@@ -22,6 +22,7 @@ interface IHistoryEntry {
   pack?: string;
   outcome: string;
   mode: string;
+  scoring_mode?: string;
   suite_score?: number;
   passed: boolean;
   timestamp: string;
@@ -135,6 +136,7 @@ export class EvalCommands extends BaseCommand {
         pack: r.pack,
         outcome: r.passed ? "success" : "failure",
         mode: r.mode,
+        scoring_mode: r.scoring_mode,
         suite_score: r.suite_score,
         passed: r.passed === 1,
         timestamp: r.run_timestamp,
@@ -492,7 +494,7 @@ function renderCostReportTable(groups: ICostReportCellGroup[]): void {
 function renderHistoryTable(entries: IHistoryEntry[]): void {
   const header = `${padRight("RUN ID", 36)} | ${padRight("SCENARIO", 28)} | ${padRight("OUTCOME", 16)} | ${
     padRight("SCORE", 8)
-  } | ${padRight("PASSED", 8)} | TIMESTAMP`;
+  } | ${padRight("PASSED", 8)} | ${padRight("SCORING", 9)} | TIMESTAMP`;
   const sep = "-".repeat(header.length);
   console.log(header);
   console.log(sep);
@@ -500,11 +502,12 @@ function renderHistoryTable(entries: IHistoryEntry[]): void {
   for (const entry of entries) {
     const score = entry.suite_score !== undefined ? entry.suite_score.toFixed(2) : "N/A";
     const passed = entry.passed ? "✓" : "✗";
+    const scoring = entry.scoring_mode ?? "additive";
     const ts = entry.timestamp.slice(0, 19).replace("T", " ");
     console.log(
       `${padRight(entry.run_id.slice(0, 36), 36)} | ${padRight(entry.scenario_id.slice(0, 28), 28)} | ${
         padRight(entry.outcome.slice(0, 16), 16)
-      } | ${padRight(score, 8)} | ${padRight(passed, 8)} | ${ts}`,
+      } | ${padRight(score, 8)} | ${padRight(passed, 8)} | ${padRight(scoring, 9)} | ${ts}`,
     );
   }
 }

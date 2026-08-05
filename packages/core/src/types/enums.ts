@@ -158,6 +158,16 @@ export enum ToolErrorCode {
 }
 
 /**
+ * The scoring composition mode an eval scenario runs under (Phase 143 Step 3). Canonical
+ * definition for the eval-history storage schema — the Test layer's `ScoringMode` in
+ * tests/scenario_framework/runner/scoring.ts shares these exact string values.
+ */
+export enum EvalScoringMode {
+  ADDITIVE = "additive",
+  GATED = "gated",
+}
+
+/**
  * Supported runtime and system commands for tool execution.
  */
 export enum SystemCommand {

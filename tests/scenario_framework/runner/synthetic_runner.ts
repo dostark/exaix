@@ -15,7 +15,7 @@ import { parse as parseYaml } from "@std/yaml";
 import { evaluateCriterion, evaluateStepOutcome, type IScenarioStepOutcome, StepFailureStage } from "./assertions.ts";
 import { type IRunManifest, writeExecutionLog, writeRunManifest } from "./evidence_collector.ts";
 import type { Opt, Reason } from "@exaix/core/types";
-import { computeStepScore, computeSuiteScore, type IStepScoreInput } from "./scoring.ts";
+import { composeGated, computeStepScore, computeSuiteScore, type IStepScoreInput, ScoringMode } from "./scoring.ts";
 import { type IRunScenarioInModeResult, runScenarioInMode } from "./modes.ts";
 import { type ILoadedScenario, loadScenarioFromYamlFile } from "./scenario_loader.ts";
 import {
@@ -1045,6 +1045,9 @@ export async function buildRunManifest(options: IBuildRunManifestOptions): Promi
     };
   });
 
+  const scoringMode = options.loadedScenario.scenario.scoring ?? ScoringMode.ADDITIVE;
+  const baseSuiteScore = computeSuiteScore(stepScores);
+
   return {
     scenarioId: options.loadedScenario.scenario.id,
     pack: options.loadedScenario.scenario.pack,
@@ -1060,7 +1063,15 @@ export async function buildRunManifest(options: IBuildRunManifestOptions): Promi
     ],
     mode: options.mode,
     outcome: mapScenarioOutcome(options.runResult),
-    suite_score: computeSuiteScore(stepScores),
+    // Phase 143 Step 3: under `scoring: gated` the security gate multiplies the additive
+    // suite score (gate = 0 iff any class:security criterion FAILED); additive is identity.
+    suite_score: scoringMode === ScoringMode.GATED
+      ? composeGated(
+        baseSuiteScore,
+        steps.flatMap((s) => s.criterionResults ?? []),
+      )
+      : baseSuiteScore,
+    scoringMode,
     steps,
     ...(options.matrixCell
       ? {

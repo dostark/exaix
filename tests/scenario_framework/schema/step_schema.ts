@@ -75,11 +75,21 @@ export enum CriterionStatus {
   BLOCKED = "blocked",
 }
 
+/** Optional marker classifying a criterion's intent (Phase 143 Step 3). A `class: security`
+ *  criterion failure gates the whole suite under `scoring: gated` (Harness-Bench
+ *  Security·Completion·Process semantics). Declared here — not in runner/scoring.ts — because
+ *  scoring.ts already imports `CriterionStatus` as a value from this module; putting the enum
+ *  here keeps the schema→scoring edge one-directional (no runtime import cycle). */
+export enum CriterionClass {
+  SECURITY = "security",
+}
+
 const ScenarioExecutionModeSchema = z.nativeEnum(ScenarioExecutionMode);
 const ScenarioStepTypeSchema = z.nativeEnum(ScenarioStepType);
 const CriterionKindSchema = z.nativeEnum(CriterionKind);
 const CriterionPhaseSchema = z.nativeEnum(CriterionPhase);
 const CriterionStatusSchema = z.nativeEnum(CriterionStatus);
+const CriterionClassSchema = z.nativeEnum(CriterionClass);
 
 export const PortalMountSchema = z.object({
   alias: NON_EMPTY_STRING,
@@ -93,6 +103,10 @@ const BaseCriterionSchema = z.object({
   kind: CriterionKindSchema,
   message: z.string().min(1).optional(),
   score_weight: z.number().min(0).max(1).optional(),
+  /** Optional classification marker (Phase 143 Step 3). `class: "security"` marks a
+   *  scope-violation / path-escape / approval-bypass criterion whose failure gates the
+   *  suite under `scoring: gated`. */
+  class: CriterionClassSchema.optional(),
 });
 
 const FileExistsCriterionSchema = BaseCriterionSchema.extend({
@@ -301,6 +315,9 @@ export const CriterionResultSchema = z.object({
   score_weight: z.number().min(0).max(1).optional(),
   /** Continuous criterion score 0-1. Absent ⇒ derive from status (PASSED=1, else 0). */
   score: z.number().min(0).max(1).optional(),
+  /** Criterion class propagated from the criterion definition (Phase 143 Step 3) — lets
+   *  the gated scorer gate without re-resolving step definitions. */
+  class: CriterionClassSchema.optional(),
   /** Judge provenance — populated only by llm-judge. */
   judge: z.object({
     provider: z.string(),

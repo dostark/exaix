@@ -28,6 +28,8 @@ export interface IWriteSyntheticScenarioOptions {
   steps: ISyntheticScenarioStepDefinition[];
   schemaVersion: string;
   requestFixturePath?: string;
+  /** Scenario-level scoring mode (Phase 143 Step 3). Emitted as `scoring: "gated"`. */
+  scoring?: "gated";
 }
 
 const DEFAULT_REQUEST_FIXTURE_PATH = "fixtures/requests/shared/synthetic_request.md";
@@ -71,6 +73,7 @@ export async function writeSyntheticScenario(
       `request_fixture: "${requestFixturePath}"`,
       'mode_support: ["auto", "manual-checkpoint"]',
       "portals: []",
+      ...(options.scoring ? [`scoring: "${options.scoring}"`] : []),
       "steps:",
       ...options.steps.flatMap((step) => [
         `  - id: "${step.id}"`,

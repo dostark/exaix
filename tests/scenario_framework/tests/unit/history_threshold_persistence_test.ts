@@ -6,6 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
+import { EvalScoringMode } from "@exaix/core";
 import { join } from "@std/path";
 import { EvalHistoryEntrySchema, EvalSqliteStore } from "@exaix/eval-history";
 import { writeEvalHistoryEntry } from "../../runner/history_writer.ts";
@@ -131,6 +132,7 @@ Deno.test("[HistoryThreshold] SQLite store persists score_threshold", async () =
       pack: "smoke",
       outcome: "success",
       mode: "auto",
+      scoring_mode: EvalScoringMode.ADDITIVE,
       suite_score: 0.75,
       score_threshold: 0.6,
       passed: true,
@@ -148,6 +150,7 @@ Deno.test("[HistoryThreshold] SQLite store persists passed=false with threshold"
       pack: "smoke",
       outcome: "scenario-failure",
       mode: "auto",
+      scoring_mode: EvalScoringMode.ADDITIVE,
       suite_score: 0.3,
       score_threshold: 0.5,
       passed: false,

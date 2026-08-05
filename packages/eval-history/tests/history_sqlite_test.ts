@@ -7,6 +7,7 @@
  */
 
 import { assertEquals } from "@std/assert";
+import { EvalScoringMode } from "@exaix/core";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { EvalSqliteStore, type IEvalHistoryEntry } from "@exaix/eval-history";
@@ -18,6 +19,7 @@ function makeTestEntry(overrides: Partial<IEvalHistoryEntry> = {}): IEvalHistory
     pack: "smoke",
     outcome: "success",
     mode: "auto",
+    scoring_mode: EvalScoringMode.ADDITIVE,
     suite_score: 0.95,
     passed: true,
     timestamp: new Date().toISOString(),
@@ -58,12 +60,13 @@ Deno.test("[ScenarioFrameworkHistorySqlite] initialize creates all tables and ap
     const versions = store["db"].prepare(
       "SELECT version, description FROM eval_schema_version ORDER BY version",
     ).all<{ version: number; description: string }>();
-    assertEquals(versions.length, 5);
+    assertEquals(versions.length, 6);
     assertEquals(versions[0].version, 1);
     assertEquals(versions[1].version, 2);
     assertEquals(versions[2].version, 3);
     assertEquals(versions[3].version, 4);
     assertEquals(versions[4].version, 5);
+    assertEquals(versions[5].version, 6);
 
     // Verify v2 columns exist
     const hasBlueprintId = store["db"].prepare(
@@ -87,7 +90,7 @@ Deno.test("[ScenarioFrameworkHistorySqlite] re-initialization is idempotent", ()
       "SELECT COUNT(*) as cnt FROM eval_schema_version",
     ).get<{ cnt: number }>();
     // All migrations applied once, second initialize does not duplicate them
-    assertEquals(versionCount?.cnt, 5);
+    assertEquals(versionCount?.cnt, 6);
   });
 });
 

@@ -8,6 +8,7 @@
  */
 
 import { assertEquals } from "@std/assert";
+import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "../src/history_sqlite.ts";
 import type { IEvalHistoryEntry } from "../src/history_schema.ts";
 import { getDefaultComponentVersions } from "../src/history_schema.ts";
@@ -19,6 +20,7 @@ function makeEntry(overrides: Partial<IEvalHistoryEntry> & { run_id: string; sce
     suite_score: 0.5,
     passed: false,
     mode: "eval",
+    scoring_mode: EvalScoringMode.ADDITIVE,
     score_threshold: 0.3,
     outcome: "scenario-failure",
     timestamp: new Date().toISOString(),

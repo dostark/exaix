@@ -12,6 +12,7 @@
  */
 
 import { assertEquals } from "@std/assert";
+import { EvalScoringMode } from "@exaix/core";
 import { join } from "@std/path";
 import { EvalSqliteStore, type IEvalHistoryEntry } from "@exaix/eval-history";
 
@@ -22,6 +23,7 @@ function makeTestEntry(overrides: Partial<IEvalHistoryEntry> = {}): IEvalHistory
     pack: "smoke",
     outcome: "success",
     mode: "auto",
+    scoring_mode: EvalScoringMode.ADDITIVE,
     suite_score: 0.95,
     passed: true,
     timestamp: new Date().toISOString(),

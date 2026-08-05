@@ -9,6 +9,7 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
+import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore, type IEvalHistoryEntry } from "@exaix/eval-history";
 import type { IRunManifest } from "../../runner/evidence_collector.ts";
 import { EvalHistoryEntrySchema } from "@exaix/eval-history";
@@ -42,6 +43,7 @@ Deno.test("[TagsFlow] EvalHistoryEntrySchema accepts optional tags array", () =>
     pack: "swe_tasks",
     outcome: "success",
     mode: "auto",
+    scoring_mode: EvalScoringMode.ADDITIVE,
     passed: true,
     timestamp: new Date().toISOString(),
     tags: ["task:bug-fix", "difficulty:S"],
@@ -54,6 +56,7 @@ Deno.test("[TagsFlow] EvalHistoryEntrySchema accepts optional tags array", () =>
     scenario_id: "s2",
     outcome: "success",
     mode: "auto",
+    scoring_mode: EvalScoringMode.ADDITIVE,
     passed: true,
     timestamp: new Date().toISOString(),
   };
@@ -74,6 +77,7 @@ Deno.test("[TagsFlow] SQLite store persists and retrieves tags", () => {
       pack: "swe_tasks",
       outcome: "success",
       mode: "auto",
+      scoring_mode: EvalScoringMode.ADDITIVE,
       passed: true,
       timestamp: new Date().toISOString(),
       tags: ["task:bug-fix", "difficulty:S"],
@@ -90,6 +94,7 @@ Deno.test("[TagsFlow] SQLite store persists and retrieves tags", () => {
       scenario_id: "s2",
       outcome: "success",
       mode: "auto",
+      scoring_mode: EvalScoringMode.ADDITIVE,
       passed: true,
       timestamp: new Date().toISOString(),
     });

@@ -15,6 +15,7 @@ import {
   ScenarioStepSchema,
 } from "./step_schema.ts";
 import { MatrixSchema } from "../runner/matrix_expander.ts";
+import { ScoringMode } from "../runner/scoring.ts";
 
 const NON_EMPTY_STRING = z.string().min(1);
 
@@ -50,6 +51,10 @@ export const ScenarioSchema = z.object({
    * Absent → the scenario runs exactly as before (backward-compatible).
    */
   matrix: MatrixSchema.optional(),
+  /** Phase 143 Step 3 — opt-in scoring mode. `gated` zeroes the suite when any
+   *  `class: security` criterion fails; absent (default) is additive and byte-identical
+   *  to pre-gating scoring. */
+  scoring: z.nativeEnum(ScoringMode).optional(),
   edition: z.enum(["solo", "team", "enterprise"]).optional(),
   description: z.string().min(1).optional(),
   risk: z.string().min(1).optional(),

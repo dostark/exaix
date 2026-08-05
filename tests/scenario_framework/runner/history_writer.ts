@@ -8,6 +8,7 @@
  */
 
 import type { Opt, Reason } from "@exaix/core/types";
+import { EvalScoringMode } from "@exaix/core";
 import { dirname, fromFileUrl, resolve } from "@std/path";
 import {
   EvalHistoryEntrySchema,
@@ -16,6 +17,7 @@ import {
   type IEvalHistoryEntry,
 } from "@exaix/eval-history";
 import type { IRunManifest, IRunManifestStep } from "./evidence_collector.ts";
+import { ScoringMode } from "./scoring.ts";
 
 export interface IWriteEvalHistoryOptions {
   outputDir: string;
@@ -115,6 +117,7 @@ function buildEvalHistoryEntry(
     mode: manifest.mode,
     suite_score: manifest.suite_score,
     score_threshold: opts?.scoreThreshold,
+    scoring_mode: manifest.scoringMode === ScoringMode.GATED ? EvalScoringMode.GATED : EvalScoringMode.ADDITIVE,
     step_count: manifest.steps.length,
     step_results: manifest.steps.map((s) => ({
       step_id: s.stepId,

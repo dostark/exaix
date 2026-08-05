@@ -2,6 +2,7 @@ schema_version: "1.0.0"
 id: "swe-write-tests-uncovered-legacy"
 title: "Write unit tests for priority_calculator (provider-live)"
 pack: "swe_tasks"
+scoring: "gated"
 tags: ["swe", "swe-legacy", "write-tests", "provider-live"]
 request_fixture: "fixtures/requests/swe_tasks/write-tests-uncovered.md"
 portals: []
@@ -98,6 +99,7 @@ steps:
     args: ["approve-all"]
     output_criteria:
       - id: "plan-approved"
+        class: "security"
         kind: "command-output-contains"
         contains: ["approved"]
 

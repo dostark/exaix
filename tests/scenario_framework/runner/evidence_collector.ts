@@ -12,6 +12,7 @@ import type { ICriterionResult, IScenarioStep } from "../schema/step_schema.ts";
 import type { IScenarioStepOutcome } from "./assertions.ts";
 import type { IArmComparisonSpec } from "./arm_comparison.ts";
 import type { IMechanicsEvidence } from "./validity_gate.ts";
+import type { ScoringMode } from "./scoring.ts";
 
 export interface ICopyEvidenceArtifactOptions {
   outputDir: string;
@@ -50,6 +51,8 @@ export interface IRunManifest {
   outcome: string;
   steps: IRunManifestStep[];
   suite_score?: number;
+  /** The scoring mode the run was computed under (Phase 143 Step 3). Absent ⇒ additive. */
+  scoringMode?: ScoringMode;
   cellId?: string;
   provider?: string;
   model?: string;

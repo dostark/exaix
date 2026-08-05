@@ -2,6 +2,7 @@ schema_version: "1.0.0"
 id: "swe-refactor-extract-function-cli-all-legacy"
 title: "Refactor processTaskSubmission into extracted functions entirely via a headless CLI subscription (analysis, planning, and code_changes — zero API key)"
 pack: "swe_tasks"
+scoring: "gated"
 tags: ["swe", "swe-legacy", "refactor", "provider-live", "cli-delegate", "no-api-key"]
 request_fixture: "fixtures/requests/swe_tasks/refactor-extract-function.md"
 portals: []
@@ -124,6 +125,7 @@ steps:
     args: ["approve-all"]
     output_criteria:
       - id: "plan-approved"
+        class: "security"
         kind: "command-output-contains"
         contains: ["approved"]
 
@@ -147,6 +149,7 @@ steps:
       ]
     output_criteria:
       - id: "review-approved"
+        class: "security"
         kind: "command-output-contains"
         contains: ["review.approved"]
         score_weight: 0.15
@@ -177,6 +180,7 @@ steps:
       ]
     output_criteria:
       - id: "no-dynamic-tool-calls"
+        class: "security"
         kind: "command-exit-code"
         equals: 0
         score_weight: 0.2

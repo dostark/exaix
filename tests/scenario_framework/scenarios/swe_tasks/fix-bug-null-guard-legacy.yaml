@@ -2,6 +2,7 @@ schema_version: "1.0.0"
 id: "swe-fix-bug-null-guard-legacy"
 title: "Fix null-safety bugs in todo-app display formatting (provider-live)"
 pack: "swe_tasks"
+scoring: "gated"
 tags: ["swe", "swe-legacy", "fix-bug", "provider-live"]
 request_fixture: "fixtures/requests/swe_tasks/fix-bug-null-guard.md"
 portals: []
@@ -126,6 +127,7 @@ steps:
     args: ["approve-all"]
     output_criteria:
       - id: "plan-approved"
+        class: "security"
         kind: "command-output-contains"
         contains: ["approved"]
 
@@ -171,6 +173,7 @@ steps:
       ]
     output_criteria:
       - id: "review-approved"
+        class: "security"
         kind: "command-output-contains"
         contains: ["review.approved"]
         score_weight: 0.15

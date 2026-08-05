@@ -13,6 +13,7 @@
  */
 
 import { assert, assertAlmostEquals, assertEquals } from "@std/assert";
+import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { computeHarnessLift } from "../../runner/harness_lift.ts";
 import { ArmKind, ComparisonMetric, type IArmComparisonSpec } from "../../runner/arm_comparison.ts";
@@ -39,6 +40,7 @@ function seedRun(store: EvalSqliteStore, o: ISeedRunOptions): void {
     tags: o.tags ?? ["task:bug-fix"],
     outcome: "success",
     mode: "auto",
+    scoring_mode: EvalScoringMode.ADDITIVE,
     suite_score: o.score,
     passed: true,
     timestamp: o.timestamp,
@@ -335,6 +337,7 @@ Deno.test("[PairedLift] runs without outcome scores contribute no match", () => 
       tags: ["task:bug-fix"],
       outcome: "success",
       mode: "auto",
+      scoring_mode: EvalScoringMode.ADDITIVE,
       suite_score: 0.6,
       passed: true,
       timestamp: "2026-08-01T00:00:00Z",

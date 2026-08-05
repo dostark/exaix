@@ -9,7 +9,7 @@
  */
 
 import { z } from "zod";
-import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
+import { BINARY_VERSION, EvalScoringMode, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 
 /**
  * Component versions stamped onto each eval-history entry for provenance. `binary_version` +
@@ -78,6 +78,10 @@ export const EvalHistoryEntrySchema = z.object({
   total_tracked_cost_usd: z.number().min(0).optional(),
   /** Task-family tags propagated from scenario manifest. Phase 141 Step 1. */
   tags: z.array(z.string()).optional(),
+  /** Scoring composition mode (Phase 143 Step 3). Default additive so every pre-existing
+   *  row without an explicit mode reads unambiguously as additive. Values match the Test
+   *  layer's `ScoringMode` in tests/scenario_framework/runner/scoring.ts. */
+  scoring_mode: z.nativeEnum(EvalScoringMode).default(EvalScoringMode.ADDITIVE),
   component_versions: z.object({
     binary_version: z.string(),
     schema_version: z.string(),

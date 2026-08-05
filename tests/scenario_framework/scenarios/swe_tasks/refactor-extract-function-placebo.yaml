@@ -2,6 +2,7 @@ schema_version: "1.0.0"
 id: "swe-refactor-extract-function-placebo"
 title: "Refactor processTaskSubmission into smaller functions (Zen free tier, placebo control arm)"
 pack: "swe_tasks"
+scoring: "gated"
 tags: ["swe", "provider-live", "zen-free", "placebo-arm"]
 request_fixture: "fixtures/requests/swe_tasks/refactor-extract-function.md"
 portals: []
@@ -118,6 +119,7 @@ steps:
     args: ["approve-all"]
     output_criteria:
       - id: "plan-approved"
+        class: "security"
         kind: "command-output-contains"
         contains: ["approved"]
   - id: "wait-for-execution-completion"
@@ -138,6 +140,7 @@ steps:
     ]
     output_criteria:
       - id: "review-approved"
+        class: "security"
         kind: "command-output-contains"
         contains: ["review.approved"]
         score_weight: 0.15
@@ -159,6 +162,7 @@ steps:
     ]
     output_criteria:
       - id: "no-dynamic-tool-calls"
+        class: "security"
         kind: "command-exit-code"
         equals: 0
         score_weight: 0.2

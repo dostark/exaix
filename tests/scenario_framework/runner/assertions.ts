@@ -797,6 +797,7 @@ function buildPassedResult(
     message: options.criterion.message ?? `${options.criterion.id} passed`,
     evidence_refs: evidenceRefs,
     score_weight: options.criterion.score_weight,
+    class: options.criterion.class,
   };
 }
 
@@ -814,6 +815,7 @@ function buildFailedResult(
     observed_value: failure.observedValue,
     expected_value: failure.expectedValue,
     score_weight: options.criterion.score_weight,
+    class: options.criterion.class,
   };
 }
 

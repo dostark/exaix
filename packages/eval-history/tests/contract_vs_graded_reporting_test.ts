@@ -19,6 +19,7 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
+import { EvalScoringMode } from "@exaix/core";
 import { EvalSqliteStore } from "../src/history_sqlite.ts";
 import type { IEvalHistoryEntry } from "../src/history_schema.ts";
 import { getDefaultComponentVersions } from "../src/history_schema.ts";
@@ -32,6 +33,7 @@ function makeEntry(
     suite_score: 1,
     passed: true,
     mode: "eval",
+    scoring_mode: EvalScoringMode.ADDITIVE,
     score_threshold: 0.7,
     outcome: "success",
     timestamp: new Date().toISOString(),

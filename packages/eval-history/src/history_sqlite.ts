@@ -12,6 +12,7 @@
 import { Database } from "@db/sqlite";
 import { dirname, resolve } from "@std/path";
 import type { Opt, Reason } from "@exaix/core/types";
+import { EvalScoringMode } from "@exaix/core";
 import type { IEvalHistoryEntry } from "./history_schema.ts";
 
 /** Per-family summary row returned by summarizeByTag. */
@@ -73,6 +74,7 @@ interface IRunRow {
   suite_score: number;
   passed: number;
   mode: string;
+  scoring_mode: string;
   score_threshold: number | null;
   trials: number;
   exactl_version: string | null;
@@ -305,6 +307,14 @@ export class EvalSqliteStore {
           "(5, 'Add tags column to eval_runs for task-family taxonomy (Phase 141 Step 1)')",
       );
     }
+
+    if (currentVersion < 6) {
+      this.addColumns(EVAL_TABLE_RUNS, ["scoring_mode TEXT NOT NULL DEFAULT 'additive'"]);
+      this.db.exec(
+        EVAL_SCHEMA_VERSION_INSERT +
+          "(6, 'Add scoring_mode column to eval_runs (Phase 143 Step 3)')",
+      );
+    }
   }
 
   writeRun(
@@ -338,8 +348,8 @@ export class EvalSqliteStore {
          blueprint_id, blueprint_version, exactl_version, schema_version, trial_scores, metadata,
          duration_ms, trace_id, provider, model, cell_id,
          total_llm_duration_ms, total_tokens_prompt, total_tokens_completion,
-         total_tokens_cache_read, total_tokens_cache_creation, total_tracked_cost_usd)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         total_tokens_cache_read, total_tokens_cache_creation, total_tracked_cost_usd, scoring_mode)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
     const insertStep = this.db.prepare(
@@ -391,6 +401,7 @@ export class EvalSqliteStore {
         entry.total_tokens_cache_read ?? null,
         entry.total_tokens_cache_creation ?? null,
         entry.total_tracked_cost_usd ?? null,
+        entry.scoring_mode ?? EvalScoringMode.ADDITIVE,
       );
 
       if (steps) {

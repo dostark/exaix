@@ -13,6 +13,7 @@
  */
 
 import { assert, assertStringIncludes } from "@std/assert";
+import { EvalScoringMode } from "@exaix/core";
 import { join } from "@std/path";
 import { EvalSqliteStore } from "@exaix/eval-history";
 import { EvalCommands } from "../src/commands/eval_commands.ts";
@@ -53,6 +54,7 @@ function seedRun(
     tags: overrides.tags ?? ["task:bug-fix"],
     outcome: "success",
     mode: "auto",
+    scoring_mode: EvalScoringMode.ADDITIVE,
     suite_score: overrides.score,
     passed: true,
     timestamp: new Date().toISOString(),
