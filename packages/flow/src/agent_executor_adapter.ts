@@ -6,7 +6,10 @@
  * before delegating to IAgentRunner.run(). Also implements the strategy-routed seam
  * (Phase 159): `runWithStrategy` constructs a fresh, per-call `AgentOrchestrator` from
  * injected construction dependencies (never a stored, long-lived instance — see GAP-2)
- * and dispatches through the agent strategy registry with a forced strategy.
+ * and dispatches through the agent strategy registry with a forced strategy. Each call's
+ * fresh orchestrator shares a `planWrittenFiles` Set with every other step of the SAME flow
+ * run (keyed by trace_id, see `planWrittenFilesByTrace`), so a multi-step cli_delegate flow's
+ * later steps don't revert an earlier step's still-uncommitted, legitimate writes (Step 8).
  * @architectural-layer Flows
  * @dependencies ["@exaix/execution", "@exaix/core"]
  * @related-files ["packages/flow/src/flow_runner.ts", "packages/execution/src/agent_runner.ts", "packages/execution/src/agent_orchestrator.ts"]
@@ -21,7 +24,7 @@ import type { ExecutionStrategyName } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import { PathResolver, type PortalPermissionsService } from "@exaix/portal";
-import { ToolRegistry } from "@exaix/tool-runtime";
+import { OutputValidator, ToolRegistry } from "@exaix/tool-runtime";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
@@ -94,6 +97,19 @@ export interface IAgentOrchestratorConstructionDeps {
 export class AgentOrchestratorAdapter {
   private loader: IBlueprintLoader;
 
+  /**
+   * Files legitimately written by an earlier step of the SAME flow run, keyed by that run's
+   * own `trace_id` — shared across the fresh, per-call `AgentOrchestrator` instances
+   * `runWithStrategy` constructs for each of that flow's steps (Phase 159 Step 8 finding: a
+   * later step's audit otherwise sees an empty Set and reverts an earlier step's still-
+   * uncommitted, legitimate write). Keying by trace_id (not sharing one Set process-wide)
+   * keeps different flow runs isolated, preserving GAP-2's guarantee. Grows for the lifetime
+   * of this adapter instance (the daemon's own lifetime) — a bounded, per-flow-run set of
+   * file paths, not cleaned up on flow completion; acceptable for now since each flow run
+   * adds a handful of entries, not unboundedly many.
+   */
+  private readonly planWrittenFilesByTrace = new Map<string, Set<string>>();
+
   constructor(
     private runner: IRunner,
     blueprintsPath: string,
@@ -159,6 +175,11 @@ export class AgentOrchestratorAdapter {
     const traceId = request.traceId ?? crypto.randomUUID();
     const pathResolver = new PathResolver(config, { traceId });
     const toolRegistry = new ToolRegistry({ config, traceId, baseDir: portalConfig.target_path, pathResolver });
+    let planWrittenFiles = this.planWrittenFilesByTrace.get(traceId);
+    if (!planWrittenFiles) {
+      planWrittenFiles = new Set<string>();
+      this.planWrittenFilesByTrace.set(traceId, planWrittenFiles);
+    }
     const orchestrator = new AgentOrchestrator({
       config,
       db,
@@ -169,6 +190,7 @@ export class AgentOrchestratorAdapter {
       toolRegistry,
       modelResolver,
       strategyRegistry,
+      planWrittenFiles,
     });
 
     try {
@@ -187,9 +209,21 @@ export class AgentOrchestratorAdapter {
         strategy,
       };
       const result = await orchestrator.executeStep(context, options);
+      // A flow step's prompt (flowStepOutputInstruction, flow_runner.ts) requires the model
+      // to wrap its answer in <thought>/<content> tags, and for a final step, the <content>
+      // body must parse as plan JSON downstream. ReActLoopStrategy already extracts just the
+      // <content> body via its own OutputParser call before returning (createFinalResult);
+      // CliDelegateStrategy does not (`description: parsed.lastText`, the model's raw,
+      // unparsed text) — so bridging `result.description` unchanged fed the whole
+      // thought+content text into plan-JSON parsing and got rejected ("Invalid JSON:
+      // Unexpected token '<'", Phase 159 Step 8 live finding). Extracting here (not inside
+      // CliDelegateStrategy) keeps the fix scoped to this bridge — react's already-clean
+      // description has no <content> wrapper, so parseXMLTags' own no-tags-found fallback
+      // returns it unchanged.
+      const { content } = new OutputValidator().parseXMLTags(result.description);
       return {
         thought: `Strategy-routed step completed via ${strategy}`,
-        content: result.description,
+        content,
         raw: JSON.stringify(result),
       };
     } finally {

@@ -124,10 +124,10 @@ const FLOW_DECISIONS: IArtefactDecisionEntry[] = [
   {
     kind: ArtefactKind.FLOW,
     artefactId: "feature-development",
-    status: ArtefactDecisionStatus.AWAITING_REMEASUREMENT,
+    status: ArtefactDecisionStatus.REVISE,
     rationale:
-      "the only flow-ablation result (suite 0.750 vs direct 0.996) is confounded by execution strategy, not a " +
-      "clean orchestration-value measurement — see phase-158 Step 6's caveat and phase-159",
+      "Phase 159 Step 8 clean re-measurement (both arms matched on strategy: cli_delegate, opencode-cli/opencode-go-deepseek-v4-flash, add-feature-endpoint task): quality Δ 0.00 (suite 0.996 both arms, n=1), token Δ +11752 (+430%, 2729→14481 prompt tokens), wall-clock Δ +80959ms (+86%, 94.5s→175.5s) — the flow's 6-step decomposition costs meaningfully more for identical measured quality on this task. Not REMOVE (not broken, no quality regression, decomposition may have unmeasured reviewability value) and not KEEP (a real, non-noise cost premium with no offsetting quality gain deserves an explicit flag, unlike a near-zero Δ at noise level — contrast NO_MEASURABLE_EFFECT_GO_TIER's skills). Revise: reconsider whether all 6 steps need strategy: cli_delegate uniformly (Step 7's audit table already flags analyze-requirements/design-architecture as synthesis-only steps under the general rubric; only Step 8's cross-arm-matching requirement forced them to cli_delegate here) once this flow itself gets remeasured outside a strategy-matching study.",
+    cleanMeasurement: true,
   },
   nonCoverage(ArtefactKind.FLOW, "analyze-codebase", NOT_EXERCISED_BY_AN_ARM),
   nonCoverage(ArtefactKind.FLOW, "api-design", NOT_EXERCISED_BY_AN_ARM),
@@ -145,6 +145,21 @@ const FLOW_DECISIONS: IArtefactDecisionEntry[] = [
   nonCoverage(ArtefactKind.FLOW, "research-synthesis", NOT_EXERCISED_BY_AN_ARM),
   nonCoverage(ArtefactKind.FLOW, "security-audit", NOT_EXERCISED_BY_AN_ARM),
   nonCoverage(ArtefactKind.FLOW, "test-generation", NOT_EXERCISED_BY_AN_ARM),
+  nonCoverage(
+    ArtefactKind.FLOW,
+    "strategy-comparison-cli-delegate",
+    "Phase 159 mechanism-proof fixture (Step 6), not a production task flow subject to a value decision",
+  ),
+  nonCoverage(
+    ArtefactKind.FLOW,
+    "strategy-comparison-react",
+    "Phase 159 mechanism-proof fixture (Step 6), not a production task flow subject to a value decision",
+  ),
+  nonCoverage(
+    ArtefactKind.FLOW,
+    "strategy-routing-smoke",
+    "Phase 159 mechanism-proof fixture (Step 5), not a production task flow subject to a value decision",
+  ),
 ];
 
 /** The 2026-08-04 live run's decisions, exactly as recorded in the Phase 158 plan doc. */

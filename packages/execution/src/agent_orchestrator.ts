@@ -126,6 +126,14 @@ export interface IAgentOrchestratorDeps {
   guardrailRunner?: IGuardrailRunner;
   options?: IAgentOrchestratorOptions;
   modelResolver?: ModelResolver;
+  /**
+   * Externally-owned set of files already legitimately written by an earlier step of the
+   * same plan/flow run — shared across per-call orchestrator instances so a later step's
+   * audit doesn't flag an earlier step's still-uncommitted writes (see the field doc on
+   * `planWrittenFiles`). Defaults to a fresh, empty Set when omitted (PlanExecutor's own
+   * one-orchestrator-per-plan usage, unaffected by this change).
+   */
+  planWrittenFiles?: Set<string>;
 }
 
 /**
@@ -202,11 +210,17 @@ export class AgentOrchestrator {
    * Files written by any step of the current plan through legitimate portal-scoped tools.
    * The audit runs after every step against the CUMULATIVE worktree, but earlier steps'
    * changes stay uncommitted until plan completion — so a later read-only step must still
-   * treat those earlier writes as authorized. This instance persists for the whole plan
-   * (one orchestrator per plan in PlanExecutor), accumulating across steps and resetting
-   * only when a new orchestrator is constructed for the next plan.
+   * treat those earlier writes as authorized. PlanExecutor's one-orchestrator-per-plan
+   * pattern accumulates this naturally across steps for free. A strategy-routed flow step
+   * (Phase 159's `runWithStrategy`) instead constructs a fresh orchestrator PER STEP (GAP-2 —
+   * an instance must never survive past one call, or it silently pre-authorizes a later,
+   * unrelated flow's writes) — so for a multi-step flow run, `deps.planWrittenFiles` lets the
+   * caller inject the SAME Set across those per-step instances (keyed by the flow run's own
+   * trace_id), restoring the accumulation PlanExecutor gets for free while keeping different
+   * flow runs isolated from each other (Phase 159 Step 8 finding: without this, a later step
+   * in the same flow reverted an earlier step's still-uncommitted, legitimate write).
    */
-  private readonly planWrittenFiles = new Set<string>();
+  private readonly planWrittenFiles: Set<string>;
 
   /** Exposes current prompt budget to IReActLoopExecutor (Phase 83). */
   public get currentPromptBudget(): IPromptBudget | undefined {
@@ -242,6 +256,7 @@ export class AgentOrchestrator {
     this.db = deps.db;
     this.logger = deps.logger;
     this.pathResolver = deps.pathResolver;
+    this.planWrittenFiles = deps.planWrittenFiles ?? new Set<string>();
     this.permissions = deps.permissions;
     this.provider = deps.provider;
     this.strategyRegistry = deps.strategyRegistry;

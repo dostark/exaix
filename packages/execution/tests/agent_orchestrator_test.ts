@@ -662,6 +662,456 @@ Deno.test({
 
 Deno.test({
   name:
+    "AgentOrchestrator: an injected planWrittenFiles Set pre-authorizes a file an earlier, separate orchestrator instance legitimately wrote",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+
+      // Reproduces a real Phase 159 Step 8 finding: runWithStrategy (agent_executor_adapter.ts)
+      // constructs a FRESH AgentOrchestrator per flow step (GAP-2 — never a shared, long-lived
+      // instance across unrelated flows). But within ONE multi-step flow run using
+      // strategy: cli_delegate, each step's fresh orchestrator had an empty, unshared
+      // planWrittenFiles Set, so a prior step's own (uncommitted) writes looked "unauthorized"
+      // to the next step's audit and were reverted. The fix: an optional, externally-owned
+      // planWrittenFiles Set can be injected and shared across orchestrator instances for the
+      // same flow run (by traceId), while remaining isolated across different flow runs.
+      const sharedWrittenFiles = new Set<string>();
+
+      const step1WrittenPath = "src/step1-output.ts";
+      const step1Registry = new StrategyRegistry();
+      step1Registry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: async () => {
+          await Deno.mkdir(join(portalDir, "src"), { recursive: true });
+          // Left uncommitted on purpose — mirrors CliDelegateStrategy not committing after
+          // every flow step, which is what made the next step's `git status --porcelain`
+          // still show this file as dirty.
+          await Deno.writeTextFile(join(portalDir, step1WrittenPath), "export const one = 1;\n");
+          return {
+            branch: "feat/step1",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [step1WrittenPath],
+            description: "wrote step1-output",
+            tool_calls: 1,
+            execution_time_ms: 10,
+          };
+        },
+      });
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      const traceId = crypto.randomUUID();
+      const contextFor = (requestId: string): IExecutionContext => ({
+        trace_id: traceId,
+        request_id: requestId,
+        request: "write step output",
+        plan: "write",
+        portal: "TestPortal",
+      });
+      const options: IAgentExecutionOptions = {
+        portal: "TestPortal",
+        identity_id: "test-agent",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+      };
+
+      const step1Executor = new AgentOrchestrator({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        strategyRegistry: step1Registry,
+        planWrittenFiles: sharedWrittenFiles,
+      });
+      const step1Result = await step1Executor.executeStep(contextFor("step-1-req"), options);
+      assertEquals(step1Result.files_changed, [step1WrittenPath]);
+      step1Executor.dispose();
+
+      // step1-output.ts is still dirty on disk (never committed). A SECOND, freshly
+      // constructed orchestrator — sharing the SAME Set instance, as runWithStrategy will for
+      // the same traceId — must not flag it, even though step 2's own files_changed only
+      // reports its own new file.
+      const step2WrittenPath = "src/step2-output.ts";
+      const step2Registry = new StrategyRegistry();
+      step2Registry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: async () => {
+          await Deno.writeTextFile(join(portalDir, step2WrittenPath), "export const two = 2;\n");
+          return {
+            branch: "feat/step2",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [step2WrittenPath],
+            description: "wrote step2-output",
+            tool_calls: 1,
+            execution_time_ms: 10,
+          };
+        },
+      });
+      const step2Executor = new AgentOrchestrator({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        strategyRegistry: step2Registry,
+        planWrittenFiles: sharedWrittenFiles,
+      });
+
+      const step2Result = await step2Executor.executeStep(contextFor("step-2-req"), options);
+      assertEquals(step2Result.files_changed, [step2WrittenPath]);
+      step2Executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name:
+    "AgentOrchestrator: without a shared planWrittenFiles Set, a second fresh instance reverts an earlier instance's legitimate uncommitted write (regression guard)",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+
+      const step1WrittenPath = "src/unshared-step1-output.ts";
+      const step1Registry = new StrategyRegistry();
+      step1Registry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: async () => {
+          await Deno.mkdir(join(portalDir, "src"), { recursive: true });
+          await Deno.writeTextFile(join(portalDir, step1WrittenPath), "export const one = 1;\n");
+          return {
+            branch: "feat/step1",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [step1WrittenPath],
+            description: "wrote unshared-step1-output",
+            tool_calls: 1,
+            execution_time_ms: 10,
+          };
+        },
+      });
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      const traceId = crypto.randomUUID();
+      const contextFor = (requestId: string): IExecutionContext => ({
+        trace_id: traceId,
+        request_id: requestId,
+        request: "write step output",
+        plan: "write",
+        portal: "TestPortal",
+      });
+      const options: IAgentExecutionOptions = {
+        portal: "TestPortal",
+        identity_id: "test-agent",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+      };
+
+      const step1Executor = new AgentOrchestrator({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        strategyRegistry: step1Registry,
+      });
+      await step1Executor.executeStep(contextFor("step-1-req"), options);
+      step1Executor.dispose();
+
+      const step2WrittenPath = "src/unshared-step2-output.ts";
+      const step2Registry = new StrategyRegistry();
+      step2Registry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: async () => {
+          await Deno.writeTextFile(join(portalDir, step2WrittenPath), "export const two = 2;\n");
+          return {
+            branch: "feat/step2",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [step2WrittenPath],
+            description: "wrote unshared-step2-output",
+            tool_calls: 1,
+            execution_time_ms: 10,
+          };
+        },
+      });
+      // No planWrittenFiles injected — a fresh, empty Set (today's default). Reproduces the
+      // live bug: step 1's still-uncommitted file is invisible to step 2's audit.
+      const step2Executor = new AgentOrchestrator({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        strategyRegistry: step2Registry,
+      });
+
+      await assertRejects(
+        () => step2Executor.executeStep(contextFor("step-2-req"), options),
+        AgentExecutionError,
+        "Security violation",
+      );
+      step2Executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name:
+    "AgentOrchestrator: an injected planWrittenFiles Set pre-authorizes a prior step's uncommitted changes across separate instances",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+
+      // Reproduces the Phase 159 Step 8 live finding: runWithStrategy builds a FRESH
+      // AgentOrchestrator per flow step (GAP-2 cross-flow isolation), so a multi-step
+      // cli_delegate flow's step N+1 has no memory of step N's own (uncommitted)
+      // writes. git status --porcelain still shows step N's file dirty when step N+1's
+      // audit runs, and since a brand-new orchestrator's planWrittenFiles starts empty,
+      // step N's file gets flagged "unauthorized" and reverted — destroying real work.
+      // The fix: construct with a shared `planWrittenFiles` Set (same object reference
+      // across both instances here, mirroring the per-traceId Set the adapter now
+      // threads through sequential runWithStrategy calls of the same flow run).
+      const sharedWrittenFiles = new Set<string>();
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      const step1Path = "src/step1-output.ts";
+      const step1Registry = new StrategyRegistry();
+      step1Registry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: async () => {
+          await Deno.mkdir(join(portalDir, "src"), { recursive: true });
+          await Deno.writeTextFile(join(portalDir, step1Path), "export const step1 = 1;\n");
+          return {
+            branch: "feat/step",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [step1Path],
+            description: "wrote step1-output",
+            tool_calls: 1,
+            execution_time_ms: 10,
+          };
+        },
+      });
+      const step1Executor = new AgentOrchestrator({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        strategyRegistry: step1Registry,
+        planWrittenFiles: sharedWrittenFiles,
+      });
+      const step1Context: IExecutionContext = {
+        trace_id: crypto.randomUUID(),
+        request_id: "step1-req",
+        request: "write step1 output",
+        plan: "write",
+        portal: "TestPortal",
+      };
+      const stepOptions: IAgentExecutionOptions = {
+        portal: "TestPortal",
+        identity_id: "test-agent",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+      };
+      await step1Executor.executeStep(step1Context, stepOptions);
+      step1Executor.dispose();
+
+      // step1Path is now sitting in the portal as an UNCOMMITTED, dirty file — exactly
+      // like a CliDelegateStrategy step that does not commit after itself.
+      const step2Path = "src/step2-output.ts";
+      const step2Registry = new StrategyRegistry();
+      step2Registry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: async () => {
+          await Deno.writeTextFile(join(portalDir, step2Path), "export const step2 = 2;\n");
+          return {
+            branch: "feat/step",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [step2Path],
+            description: "wrote step2-output",
+            tool_calls: 1,
+            execution_time_ms: 10,
+          };
+        },
+      });
+      const step2Executor = new AgentOrchestrator({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        strategyRegistry: step2Registry,
+        planWrittenFiles: sharedWrittenFiles,
+      });
+      const step2Context: IExecutionContext = {
+        trace_id: crypto.randomUUID(),
+        request_id: "step2-req",
+        request: "write step2 output",
+        plan: "write",
+        portal: "TestPortal",
+      };
+
+      // Must NOT throw: step1Path is authorized via the shared planWrittenFiles Set,
+      // step2Path via its own files_changed report.
+      const result = await step2Executor.executeStep(step2Context, stepOptions);
+      assertEquals(result.files_changed, [step2Path]);
+
+      step2Executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name:
+    "AgentOrchestrator: WITHOUT a shared planWrittenFiles Set, a second fresh instance flags a prior step's uncommitted change as a security violation",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+
+      // Documents the bug this fix addresses: two independently-constructed instances
+      // (no shared planWrittenFiles) reproduce the live Phase 159 Step 8 failure.
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      const step1Path = "src/unshared-step1-output.ts";
+      const step1Registry = new StrategyRegistry();
+      step1Registry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: async () => {
+          await Deno.mkdir(join(portalDir, "src"), { recursive: true });
+          await Deno.writeTextFile(join(portalDir, step1Path), "export const step1 = 1;\n");
+          return {
+            branch: "feat/step",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [step1Path],
+            description: "wrote step1-output",
+            tool_calls: 1,
+            execution_time_ms: 10,
+          };
+        },
+      });
+      const step1Executor = new AgentOrchestrator({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        strategyRegistry: step1Registry,
+      });
+      const stepOptions: IAgentExecutionOptions = {
+        portal: "TestPortal",
+        identity_id: "test-agent",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+      };
+      await step1Executor.executeStep(
+        {
+          trace_id: crypto.randomUUID(),
+          request_id: "unshared-step1-req",
+          request: "write step1 output",
+          plan: "write",
+          portal: "TestPortal",
+        },
+        stepOptions,
+      );
+      step1Executor.dispose();
+
+      const step2Path = "src/unshared-step2-output.ts";
+      const step2Registry = new StrategyRegistry();
+      step2Registry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: async () => {
+          await Deno.writeTextFile(join(portalDir, step2Path), "export const step2 = 2;\n");
+          return {
+            branch: "feat/step",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [step2Path],
+            description: "wrote step2-output",
+            tool_calls: 1,
+            execution_time_ms: 10,
+          };
+        },
+      });
+      const step2Executor = new AgentOrchestrator({
+        config: testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        strategyRegistry: step2Registry,
+      });
+
+      await assertRejects(
+        () =>
+          step2Executor.executeStep(
+            {
+              trace_id: crypto.randomUUID(),
+              request_id: "unshared-step2-req",
+              request: "write step2 output",
+              plan: "write",
+              portal: "TestPortal",
+            },
+            stepOptions,
+          ),
+        AgentExecutionError,
+        "Security violation",
+      );
+
+      step2Executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name:
     "AgentOrchestrator: a step executing in a git worktree (ToolRegistry.getBaseDir()) audits against the worktree, not the mounted portal",
   fn: async () => {
     await setup();

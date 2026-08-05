@@ -146,12 +146,23 @@ steps:
         kind: "command-exit-code"
         equals: 0
         score_weight: 0.3
-  # assert-no-dynamic-tool-calls removed here (Phase 159 Step 6): flow execution legitimately
-  # emits dynamic_tool_call events for any non-cli_delegate strategy (the default/ReAct
-  # plan-execution path), so this criterion is unsatisfiable for a flow scenario whose steps
-  # aren't pinned to cli_delegate. Phase 159 Step 8 restores it here specifically once this
-  # scenario's flow steps are confirmed pinned to cli_delegate (see
-  # exaix-dev-docs/planning/phase-159-flow-step-execution-strategy.md Step 6/8).
+  # assert-no-dynamic-tool-calls restored here (Phase 159 Step 8): Step 7 pinned all 6 steps of
+  # feature-development.flow.yaml to strategy: cli_delegate, which never emits dynamic_tool_call
+  # events (see Step 6's removal note, still in effect for the *other* flow scenarios that may
+  # still use react). This scenario's confound is resolved, so the criterion is a legitimate
+  # regression guard again — it catches a future silent fallback to ReAct.
+  - id: "assert-no-dynamic-tool-calls"
+    type: "shell"
+    command: "sh"
+    args: [
+      "-c",
+      "count=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COUNT(*) FROM activity WHERE action_type = 'dynamic_tool_call'\"); echo \"dynamic_tool_call count: $count\"; test \"$count\" = \"0\"",
+    ]
+    output_criteria:
+      - id: "no-dynamic-tool-calls"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.2
   - id: "assert-files-changed"
     type: "shell"
     command: "sh"
@@ -164,6 +175,21 @@ steps:
         kind: "command-exit-code"
         equals: 0
         score_weight: 0.2
+  # Phase 159 Step 8: informational only (always exits 0) — aggregate usage across every
+  # agent.execution_completed event this run produced, so the flow-vs-direct-execution
+  # comparison report has real, measured token/cost totals instead of an estimate.
+  - id: "report-usage-metrics"
+    type: "shell"
+    command: "sh"
+    args: [
+      "-c",
+      "sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COALESCE(SUM(json_extract(payload,'$.usage.prompt_tokens')),0), COALESCE(SUM(json_extract(payload,'$.usage.completion_tokens')),0), COALESCE(SUM(json_extract(payload,'$.usage.cost_usd_estimate')),0) FROM activity WHERE action_type = 'agent.execution_completed'\"",
+    ]
+    output_criteria:
+      - id: "usage-metrics-reported"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.0
   - id: "prepare-llm-judge-evidence"
     type: "shell"
     command: "sh"

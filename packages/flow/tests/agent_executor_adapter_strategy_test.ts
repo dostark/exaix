@@ -152,6 +152,89 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: dispatches through the forc
   }
 });
 
+Deno.test("AgentOrchestratorAdapter.runWithStrategy: extracts the <content> block from a raw thought/content response (CliDelegateStrategy shape) instead of bridging the whole raw text", async () => {
+  const dbService = await initTestDbService();
+  try {
+    const config: Config = createMockConfig(dbService.tempDir);
+    const portalAlias = config.portals![0].alias;
+    const logger = new EventLogger({ db: dbService.db });
+    const permissions = new PortalPermissionsService(config.portals!);
+    await writeBlueprint(dbService.tempDir, "test-agent");
+
+    // Reproduces the Phase 159 Step 8 live finding: CliDelegateStrategy.execute() sets
+    // description: parsed.lastText — the model's RAW, unparsed response, thought/content
+    // wrapper included (it never calls OutputParser, unlike ReActLoopStrategy's
+    // createFinalResult). A flow's final step output is expected (flowStepOutputInstruction,
+    // flow_runner.ts) to have its <content> block extracted and parsed as plan JSON — feeding
+    // the whole raw thought+content text downstream fails with "Invalid JSON: Unexpected
+    // token '<'". The bridge must extract just the <content> body when present.
+    const rawThoughtContent = "<thought>\nSome reasoning about the task.\n</thought>\n\n" +
+      '<content>\n{"subject": "Flow Step Output", "steps": []}\n</content>';
+    const strategyRegistry = new StrategyRegistry();
+    strategyRegistry.register({
+      name: ExecutionStrategyName.CLI_DELEGATE,
+      execute: () =>
+        Promise.resolve({
+          branch: "feat/step",
+          commit_sha: "0000000000000000000000000000000000000000",
+          files_changed: [],
+          description: rawThoughtContent,
+          tool_calls: 1,
+          execution_time_ms: 10,
+        }),
+    });
+
+    const adapter = new AgentOrchestratorAdapter(
+      { run: () => Promise.reject(new Error("should not be called")) },
+      join(dbService.tempDir, "Blueprints", "Identities"),
+      { config, db: dbService.db, logger, permissions, strategyRegistry },
+    );
+
+    const result = await adapter.runWithStrategy!(
+      "test-agent",
+      makeStepRequest({ portal: portalAlias }),
+      ExecutionStrategyName.CLI_DELEGATE,
+    );
+
+    assertEquals(result.content, '{"subject": "Flow Step Output", "steps": []}');
+  } finally {
+    await dbService.cleanup();
+  }
+});
+
+Deno.test("AgentOrchestratorAdapter.runWithStrategy: bridges the whole description unchanged when it carries no <content> wrapper", async () => {
+  const dbService = await initTestDbService();
+  try {
+    const config: Config = createMockConfig(dbService.tempDir);
+    const portalAlias = config.portals![0].alias;
+    const logger = new EventLogger({ db: dbService.db });
+    const permissions = new PortalPermissionsService(config.portals!);
+    await writeBlueprint(dbService.tempDir, "test-agent");
+
+    const calls: Array<{ context: IExecutionContext; options: IAgentExecutionOptions }> = [];
+    const strategyRegistry = new StrategyRegistry();
+    registerSpy(strategyRegistry, ExecutionStrategyName.REACT, calls);
+
+    const adapter = new AgentOrchestratorAdapter(
+      { run: () => Promise.reject(new Error("should not be called")) },
+      join(dbService.tempDir, "Blueprints", "Identities"),
+      { config, db: dbService.db, logger, permissions, strategyRegistry },
+    );
+
+    const result = await adapter.runWithStrategy!(
+      "test-agent",
+      makeStepRequest({ portal: portalAlias }),
+      ExecutionStrategyName.REACT,
+    );
+
+    // No <thought>/<content> wrapper in "spy strategy ran for ..." — extraction must fall
+    // back to the original text unchanged (parseXMLTags' own no-tags-found behavior).
+    assertEquals(result.content, "spy strategy ran for " + portalAlias);
+  } finally {
+    await dbService.cleanup();
+  }
+});
+
 Deno.test("AgentOrchestratorAdapter.runWithStrategy: two calls for different portals each build options/context scoped to their own portal", async () => {
   const dbService = await initTestDbService();
   try {
@@ -196,6 +279,141 @@ Deno.test("AgentOrchestratorAdapter.runWithStrategy: two calls for different por
     assertEquals(calls[0].context.portal, "portal-a");
     assertEquals(calls[1].options.portal, "portal-b");
     assertEquals(calls[1].context.portal, "portal-b");
+  } finally {
+    await dbService.cleanup();
+  }
+});
+
+/** Registers a strategy that writes a real file to the portal and reports it in files_changed. */
+function registerFileWritingStrategy(
+  strategyRegistry: StrategyRegistry,
+  name: string,
+  portalPath: string,
+  relPath: string,
+): void {
+  strategyRegistry.register({
+    name,
+    execute: async () => {
+      await Deno.mkdir(join(portalPath, "src"), { recursive: true });
+      await Deno.writeTextFile(join(portalPath, relPath), `export const x = "${relPath}";\n`);
+      const result: IChangesetResult = {
+        branch: "feat/step",
+        commit_sha: "0000000000000000000000000000000000000000",
+        files_changed: [relPath],
+        description: "wrote " + relPath,
+        tool_calls: 1,
+        execution_time_ms: 1,
+      };
+      return result;
+    },
+  });
+}
+
+async function initGitPortal(portalPath: string): Promise<void> {
+  await Deno.mkdir(portalPath, { recursive: true });
+  await new Deno.Command("git", { args: ["init"], cwd: portalPath }).output();
+  await new Deno.Command("git", { args: ["config", "user.name", "Test"], cwd: portalPath }).output();
+  await new Deno.Command("git", { args: ["config", "user.email", "test@exaix.local"], cwd: portalPath }).output();
+  await Deno.writeTextFile(join(portalPath, "README.md"), "# Portal\n");
+  await new Deno.Command("git", { args: ["add", "README.md"], cwd: portalPath }).output();
+  await new Deno.Command("git", { args: ["commit", "-m", "init"], cwd: portalPath }).output();
+}
+
+Deno.test("AgentOrchestratorAdapter.runWithStrategy: two calls sharing a traceId accumulate planWrittenFiles (a later step doesn't revert an earlier step's uncommitted write)", async () => {
+  const dbService = await initTestDbService();
+  try {
+    const portalPath = join(dbService.tempDir, "portal-shared-trace");
+    await initGitPortal(portalPath);
+    const config: Config = createMockConfig(dbService.tempDir, {
+      portals: [{
+        alias: "portal",
+        target_path: portalPath,
+        default_branch: "main",
+        identities_allowed: ["*"],
+        operations: [],
+      }],
+    });
+    const logger = new EventLogger({ db: dbService.db });
+    const permissions = new PortalPermissionsService(config.portals!);
+    await writeBlueprint(dbService.tempDir, "test-agent");
+
+    const strategyRegistry = new StrategyRegistry();
+    registerFileWritingStrategy(strategyRegistry, ExecutionStrategyName.REACT, portalPath, "src/step1.ts");
+    registerFileWritingStrategy(strategyRegistry, ExecutionStrategyName.CLI_DELEGATE, portalPath, "src/step2.ts");
+
+    const adapter = new AgentOrchestratorAdapter(
+      { run: () => Promise.reject(new Error("should not be called")) },
+      join(dbService.tempDir, "Blueprints", "Identities"),
+      { config, db: dbService.db, logger, permissions, strategyRegistry },
+    );
+
+    const traceId = crypto.randomUUID();
+    // Step 1 writes and leaves its file uncommitted, mirroring a real CliDelegateStrategy run.
+    await adapter.runWithStrategy!(
+      "test-agent",
+      makeStepRequest({ portal: "portal", traceId }),
+      ExecutionStrategyName.REACT,
+    );
+    // Step 2 (a fresh AgentOrchestrator, same traceId) must not see step 1's still-dirty file as unauthorized.
+    const result = await adapter.runWithStrategy!(
+      "test-agent",
+      makeStepRequest({ portal: "portal", traceId }),
+      ExecutionStrategyName.CLI_DELEGATE,
+    );
+    assertEquals(result.content, "wrote src/step2.ts");
+
+    // Both files must still be present (not reverted by a false-positive security violation).
+    const step1Exists = await Deno.stat(join(portalPath, "src/step1.ts")).then(() => true).catch(() => false);
+    const step2Exists = await Deno.stat(join(portalPath, "src/step2.ts")).then(() => true).catch(() => false);
+    assertEquals(step1Exists, true);
+    assertEquals(step2Exists, true);
+  } finally {
+    await dbService.cleanup();
+  }
+});
+
+Deno.test("AgentOrchestratorAdapter.runWithStrategy: a different traceId does NOT inherit another flow run's planWrittenFiles", async () => {
+  const dbService = await initTestDbService();
+  try {
+    const portalPath = join(dbService.tempDir, "portal-isolated-trace");
+    await initGitPortal(portalPath);
+    const config: Config = createMockConfig(dbService.tempDir, {
+      portals: [{
+        alias: "portal",
+        target_path: portalPath,
+        default_branch: "main",
+        identities_allowed: ["*"],
+        operations: [],
+      }],
+    });
+    const logger = new EventLogger({ db: dbService.db });
+    const permissions = new PortalPermissionsService(config.portals!);
+    await writeBlueprint(dbService.tempDir, "test-agent");
+
+    const strategyRegistry = new StrategyRegistry();
+    registerFileWritingStrategy(strategyRegistry, ExecutionStrategyName.REACT, portalPath, "src/run-a.ts");
+    registerFileWritingStrategy(strategyRegistry, ExecutionStrategyName.CLI_DELEGATE, portalPath, "src/run-b.ts");
+
+    const adapter = new AgentOrchestratorAdapter(
+      { run: () => Promise.reject(new Error("should not be called")) },
+      join(dbService.tempDir, "Blueprints", "Identities"),
+      { config, db: dbService.db, logger, permissions, strategyRegistry },
+    );
+
+    // Run A leaves its file uncommitted in the portal.
+    await adapter.runWithStrategy!("test-agent", makeStepRequest({ portal: "portal" }), ExecutionStrategyName.REACT);
+    // Run B is a DIFFERENT flow run (its own random traceId from makeStepRequest) — it must
+    // NOT inherit run A's planWrittenFiles, so it correctly flags run A's leftover file.
+    await assertRejects(
+      () =>
+        adapter.runWithStrategy!(
+          "test-agent",
+          makeStepRequest({ portal: "portal" }),
+          ExecutionStrategyName.CLI_DELEGATE,
+        ),
+      Error,
+      "Security violation",
+    );
   } finally {
     await dbService.cleanup();
   }

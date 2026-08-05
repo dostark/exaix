@@ -39,10 +39,22 @@ enabled = false
 [request_analysis]
 enabled = true
 
-# Pin the curated list to opencode-cli so a size-M request cannot resolve to any other
+# Pin the curated list to opencode-cli so a size-M/L request cannot resolve to any other
 # (metered) provider via ProviderSelector's scoring path — mirrors the Phase 134 Solo
 # curated-list pin used by the other cli-delegate configs, adapted to this provider type.
 [model_presets.M]
+max_cost_per_mtok = 0
+min_context_window = 32000
+supports_thinking = false
+candidates = ["opencode-cli"]
+
+# Phase 159 Step 8: senior-coder's blueprint declares model_size: L. Without this preset,
+# ModelResolver.resolvePresetFromSize has no "L" entry in this config's model_presets object
+# (config-defined presets replace, not merge with, the schema defaults), so plan-execution's
+# size-L intent silently resolved to a "mock" candidate via a different resolution branch and
+# the execution step hung indefinitely (no LLM/CLI call ever logged) — confirmed live via a
+# 300s-timeout re-measurement run before this preset was added.
+[model_presets.L]
 max_cost_per_mtok = 0
 min_context_window = 32000
 supports_thinking = false

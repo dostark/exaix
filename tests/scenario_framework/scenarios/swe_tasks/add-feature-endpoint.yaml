@@ -170,6 +170,21 @@ steps:
         kind: "command-exit-code"
         equals: 0
         score_weight: 0.2
+  # Phase 159 Step 8: informational only (always exits 0) — aggregate usage across every
+  # agent.execution_completed event this run produced, so the flow-vs-direct-execution
+  # comparison report has real, measured token/cost totals instead of an estimate.
+  - id: "report-usage-metrics"
+    type: "shell"
+    command: "sh"
+    args: [
+      "-c",
+      "sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COALESCE(SUM(json_extract(payload,'$.usage.prompt_tokens')),0), COALESCE(SUM(json_extract(payload,'$.usage.completion_tokens')),0), COALESCE(SUM(json_extract(payload,'$.usage.cost_usd_estimate')),0) FROM activity WHERE action_type = 'agent.execution_completed'\"",
+    ]
+    output_criteria:
+      - id: "usage-metrics-reported"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.0
   - id: "prepare-llm-judge-evidence"
     type: "shell"
     command: "sh"
