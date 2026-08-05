@@ -59,6 +59,55 @@ settings:
 `defaultSkills` apply to all steps; a step may add its own `skills` (step-level
 takes priority over flow-level).
 
+## Step execution strategy
+
+A step may add an optional `strategy` field to route it through the agent strategy registry
+instead of the default single-shot generate path:
+
+```yaml
+steps:
+  - id: implement-feature
+    name: Implement Feature
+    identity: senior-coder
+    execution_mode: declared # strategy is only valid on a declared step
+    strategy: cli_delegate # react | mcp | cli_delegate — omit for the default path
+    dependsOn: [design-architecture]
+```
+
+`strategy` is valid only on a `declared` step (the default when `execution_mode` is omitted) —
+setting it on a `dynamic` step is a schema validation error, since a dynamic step already
+selects its own tools at runtime. See `docs/Exaix_User_Guide.md`'s "Flow Step Execution
+Strategy" section for the full field documentation and the `react` vs `cli_delegate`
+control-axis tradeoff.
+
+### Rollout rubric — should a new step opt in?
+
+Bias toward leaving `strategy` unset; opt a step in only when its task genuinely needs it:
+
+- **Leave unset** when the step's job is pure planning, synthesis, aggregation, or
+  documentation-writing over context already provided by an earlier step (`mergeAsContext`/
+  `aggregate` input). This is the right choice for most steps — reading the live repo would
+  add cost without changing the answer.
+- **`strategy: react`** when the step's task genuinely needs to inspect the live repository
+  (read/search/explore existing code, verify a claim against real files, or produce output
+  precise enough that a passed-along summary isn't enough — e.g. drafting a fix or test that
+  must reference real function signatures) but does not need to be handed off to an external
+  CLI.
+- **`strategy: cli_delegate`** when the step's task is to produce or verify real file changes
+  (implement code, write tests, run or fix a build).
+- A step already covered by a Phase 158 flow-ablation/flow-swap measurement must get the
+  **same** strategy choice across every step of that one flow, so a future re-measurement
+  compares orchestration overhead alone, not a mix of strategies within one flow.
+
+`feature-development.flow.yaml` ships `strategy: "cli_delegate"` on all 6 of its steps as a
+worked example — required uniformly (not a discretionary rubric outcome for every one of its
+steps) to match its own direct-execution comparison arm; see
+`exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`'s `feature-development`
+decision (`REVISE` as of 2026-08-05: same measured quality as direct execution, meaningfully
+higher token/wall-clock cost) and
+`exaix-dev-docs/planning/phase-159-flow-step-execution-strategy.md`'s Step 7 audit table for
+the full 17-flow catalog rollout and its per-step rationale.
+
 ## Using flows
 
 ```bash
@@ -88,11 +137,13 @@ A new flow must carry either a value-evaluation result (a flow-ablation or flow-
 delta from the value tier described in
 `exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`) or a stated reason
 it cannot be measured yet (e.g. it is not corpus-reachable). A flow with neither is
-presence-tested (it loads and produces its files) but never shown to help. Note: as
-of this writing the one flow-ablation result the corpus produced is confounded by
-execution strategy (see that phase's Step 6) — a flow decision recorded off that
-result alone is not sufficient evidence; it must be marked `awaiting-remeasurement`
-pending `exaix-dev-docs/planning/phase-159-flow-step-execution-strategy.md`.
+presence-tested (it loads and produces its files) but never shown to help. A value
+decision for a flow whose steps mix execution strategies is confounded — pin every
+step of the flow being measured to the same `strategy` as its direct-execution
+comparison arm (see "Step execution strategy" above) before recording a decision, so
+the delta measures orchestration overhead alone. `feature-development` is the worked
+example: `REVISE` as of 2026-08-05, recorded in
+`scripts/check_artefact_decision_coverage.ts` with `cleanMeasurement: true`.
 
 ## Available flows
 

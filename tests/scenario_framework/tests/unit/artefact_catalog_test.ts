@@ -117,7 +117,7 @@ Deno.test("[ArtefactCatalog] flow templates under Flows/templates/ are not enume
   }
 });
 
-Deno.test("[ArtefactCatalog] the real repo catalog matches Phase 158's published counts (15/27/17)", async () => {
+Deno.test("[ArtefactCatalog] the real repo catalog matches the published counts (15/27/20)", async () => {
   const repoRoot = join(new URL("../../../../", import.meta.url).pathname);
   const catalog = await loadArtefactCatalog(join(repoRoot, "Blueprints"));
 
@@ -125,5 +125,8 @@ Deno.test("[ArtefactCatalog] the real repo catalog matches Phase 158's published
 
   assertEquals(byKind(ArtefactKind.IDENTITY), 15, "curated identities (excluding README, mock-agent, default)");
   assertEquals(byKind(ArtefactKind.SKILL), 27, "skills");
-  assertEquals(byKind(ArtefactKind.FLOW), 17, "runnable flows (excluding templates/)");
+  // Phase 158 published 17 (excluding templates/); Phase 159 added 3 mechanism-proof fixture
+  // flows (strategy-comparison-cli-delegate, strategy-comparison-react, strategy-routing-smoke),
+  // each with NON_COVERAGE entries in scripts/check_artefact_decision_coverage.ts's FLOW_DECISIONS.
+  assertEquals(byKind(ArtefactKind.FLOW), 20, "runnable flows (excluding templates/)");
 });

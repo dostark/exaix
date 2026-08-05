@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "flow-strategy-cli-delegate"
 title: "A flow step forcing strategy: cli_delegate executes against the real headless CLI"
 pack: "agent_flows"
-tags: ["subsystem:flows", "provider-live"]
+tags: ["subsystem:flows", "provider-live", "entity:strategy-comparison-cli-delegate.flow"]
 request_fixture: "fixtures/requests/agent_flows/strategy_comparison_cli_delegate.md"
 mode_support: ["auto"]
 portals: []

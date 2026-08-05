@@ -1709,6 +1709,56 @@ exactl flow validate <flow-id>
 exactl flow validate research-pipeline
 ```
 
+#### Flow Step Execution Strategy
+
+A flow step's YAML may declare an optional `strategy` field that routes the step through
+Exaix's agent strategy registry instead of the default single-shot generate path:
+
+```yaml
+steps:
+  - id: implement-feature
+    name: Implement Feature
+    identity: senior-coder
+    execution_mode: declared # strategy is only valid on a declared step
+    strategy: cli_delegate # react | mcp | cli_delegate
+    dependsOn: [design-architecture]
+    input:
+      source: step
+      stepId: design-architecture
+      transform: mergeAsContext
+```
+
+**Allowed values:**
+
+| Value          | What it does                                                                                     |
+| -------------- | ------------------------------------------------------------------------------------------------ |
+| _(unset)_      | Default. The step generates once via the daemon's direct-generate path — no live tool access.    |
+| `react`        | Runs the daemon's own ReAct loop against the step's portal — the daemon keeps execution control. |
+| `mcp`          | Routes through the MCP tool-execution path.                                                      |
+| `cli_delegate` | Delegates the step to a headless CLI subprocess (`opencode`/`claude`) running its own session.   |
+
+**DECLARED-only rule:** `strategy` may only be set on a step whose `execution_mode` is
+`declared` (the default when `execution_mode` is omitted). Setting it on a `dynamic` step is a
+validation error — a dynamic step already selects its own tools at runtime, so a forced
+strategy is redundant.
+
+**Choosing a strategy — the control-axis tradeoff:** `react` and `cli_delegate` are not a
+"faster vs. slower" choice — they trade off _who_ keeps execution control. `react` keeps the
+daemon in the loop (its own context compaction, tool-result formatting, and audit trail apply
+uniformly), while `cli_delegate` hands the whole task to the external CLI's own internal loop
+(useful when you want that tool's own workflow — e.g. its own test-running or file-editing
+conventions — rather than the daemon's). Neither is cheaper by default: measure the actual
+prompt tokens, wall-clock time, and cost for your own task rather than assuming one is
+always cheaper. Most flow steps need neither — a step that only synthesizes or aggregates
+already-provided context does not need live tool access at all, so the default (unset) is the
+right choice for most steps; opt a step into `react` or `cli_delegate` only when its task
+genuinely needs to read the live repository or produce real file changes.
+
+`feature-development.flow.yaml` ships with `strategy: "cli_delegate"` on all 6 of its steps as
+a worked example of this rollout, chosen to match its own direct-execution comparison baseline
+(see `exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`'s `feature-development`
+decision).
+
 #### Routing Commands — Inspect dynamic identity selection
 
 Use routing commands to preview how Exaix will choose an identity before executing a request, and to validate routing policy syntax and semantics.

@@ -270,7 +270,7 @@ Every directory the runtime touches is named by a `config.paths.*` entry, and co
 before reading a config:
 
 - **`paths.memoryExecution` accepts two forms.** It shipped as the bare `"Execution"`, meaning
-  _relative to `paths.memory`_, and Phase 142 repointed the default to the composite
+  _relative to `paths.memory`_, and the default was later repointed to the composite
   `"Memory/Execution"`, meaning _relative to the workspace root_. Configs carrying either value are
   still valid. Resolution goes through one helper —
   `packages/core/src/config/paths.ts:resolveMemoryExecutionRoot` — which treats a value containing
@@ -436,6 +436,33 @@ step rather than recomputation from scratch — is still maturing and should not
 yet be relied on as a complete guarantee.
 
 ---
+
+### Flow Step Execution Axes {#flow-step-execution-axes}
+
+A flow step has two independent, orthogonal execution controls — changing one never changes
+the other's behaviour:
+
+- **`execution_mode`** (`declared` | `dynamic`, default `declared`) — the _engine_ axis:
+  whether the step's tool calls are pre-declared (`tools:`/`permitted_tools:`, human-authored)
+  or selected by the model at runtime.
+- **`strategy`** (`react` | `mcp` | `cli_delegate`, optional, DECLARED-only) — the _agent
+  strategy_ axis: routes a DECLARED step through the agent strategy registry
+  (`AgentOrchestrator.executeStep`) instead of the default single-shot `AgentRunner.run` path.
+  Left unset (the catalog default for most steps), the step takes the direct-generate path.
+  `react` runs the daemon's own ReAct tool-use loop against the step's portal; `cli_delegate`
+  delegates the whole step to a headless CLI subprocess (`opencode`/`claude`) driving its own
+  autonomous session. Setting `strategy` on a `dynamic` step is a schema validation error —
+  a dynamic step already selects its own tools at runtime, so a forced strategy is redundant
+  and the two axes would conflict.
+
+`AgentStepHandler.execute` checks `step.strategy` first: when set, it calls
+`IAgentExecutor.runWithStrategy`, which builds a fresh, per-call `AgentOrchestrator` (never a
+stored, long-lived instance, so one flow's writes can never leak into an unrelated flow's audit)
+and dispatches through the forced strategy; otherwise it falls through to the unchanged `run()`
+path, so a step with no `strategy` is byte-for-byte unaffected. See
+`exaix-dev-docs/planning/phase-159-flow-step-execution-strategy.md` for the full rollout
+rationale and the catalog-wide decision rubric, and `docs/Exaix_User_Guide.md` for the
+field's user-facing documentation.
 
 ## Per-Action HITL Governance {#hitl-governance}
 

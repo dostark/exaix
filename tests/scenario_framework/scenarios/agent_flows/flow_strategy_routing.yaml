@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "flow-strategy-routing"
 title: "A flow step declaring strategy routes through the agent strategy registry"
 pack: "agent_flows"
-tags: ["subsystem:flows"]
+tags: ["subsystem:flows", "entity:strategy-routing-smoke.flow"]
 request_fixture: "fixtures/requests/agent_flows/strategy_routing_smoke.md"
 mode_support: ["auto"]
 portals: []

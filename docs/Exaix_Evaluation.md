@@ -817,8 +817,8 @@ Each task has a `task.json` (metadata + base_ref), `TASK.md` (brief),
 - **Security** (0.2): no dynamic tool calls (`sqlite3 COUNT(*)`)
 - **Output quality** (0.4): LLM-as-judge (`GOAL_ALIGNED_REVIEW` preset)
 
-Suite score = weighted mean of all steps. Unexecuted steps score 0
-(Phase 141 scoring fix).
+Suite score = weighted mean of all steps. Unexecuted steps score 0 rather than
+being excluded from the mean.
 
 ### Running
 

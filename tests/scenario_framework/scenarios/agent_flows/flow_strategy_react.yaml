@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "flow-strategy-react"
 title: "A flow step forcing strategy: react executes against a real live provider"
 pack: "agent_flows"
-tags: ["subsystem:flows", "provider-live"]
+tags: ["subsystem:flows", "provider-live", "entity:strategy-comparison-react.flow"]
 request_fixture: "fixtures/requests/agent_flows/strategy_comparison_react.md"
 mode_support: ["auto"]
 portals: []
