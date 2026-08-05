@@ -1,0 +1,53 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+log_level = "info"
+allow_net = []
+
+[paths]
+workspace = "Workspace"
+portals = "Portals"
+memory = "Memory"
+
+# Phase 143 Step 2 feature-ablation preset. Each of the three presets
+# (skills / quality-gate / portal-knowledge) is byte-identical to the others except
+# its one documented toggle line, so a contribution delta is attributable to exactly
+# one subsystem. cell_id: ablate-<subsystem>/<tool>/<provider>, tag: ablate:<subsystem>.
+[skills]
+inject_in_prompt = true
+
+[ai]
+provider = "claude-cli"
+model = "claude-sonnet-5"
+
+[models.default]
+provider = "claude-cli"
+model = "claude-sonnet-5"
+timeout_ms = 300000
+
+[agents]
+default_model = "default"
+
+[rate_limiting]
+enabled = true
+max_calls_per_minute = 300
+
+[portal_knowledge]
+injection_enabled = true
+auto_analyze_on_mount = true
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = true
+
+[model_presets.M]
+max_cost_per_mtok = 0
+min_context_window = 32000
+supports_thinking = false
+candidates = ["claude-cli"]
+
+[cli_delegate]
+enabled = true
+tool = "claude-code"
+model = "claude-sonnet-5"

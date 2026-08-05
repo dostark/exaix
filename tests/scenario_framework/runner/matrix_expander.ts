@@ -114,6 +114,14 @@ const ENV_DELEGATE_ENABLED = "EXA_SESSION_DELEGATE_ENABLED";
 /** The history tag a bare baseline cell's run carries (Phase 143 Step 1 cell taxonomy). */
 export const HARNESS_BARE_TAG = "harness:bare";
 
+/** The tag-prefix an ablation cell's run carries: `ablate:<subsystem>` (Phase 143 Step 2). */
+export const ABLATE_TAG_PREFIX = "ablate:";
+
+/** The tag an ablation cell's run carries for a given subsystem. */
+export function ablateTag(subsystem: string): string {
+  return `${ABLATE_TAG_PREFIX}${subsystem}`;
+}
+
 /** The step id of the bare scenario's direct-delegate launch step (scenario_templates.ts). */
 export const BARE_DELEGATE_STEP_ID = "bare-delegate";
 
@@ -164,6 +172,10 @@ export const MatrixCellSchema = z.object({
   requires_key: NON_EMPTY.optional(),
   requires_optin: NON_EMPTY.optional(),
   harness: z.enum(["bare"]).optional(),
+  /** Phase 143 Step 2: the ablation subsystem token (skills | quality-gate | portal-knowledge).
+   *  When set, the cell runs the full loop with exactly that subsystem toggled off and records
+   *  `cell_id: ablate-<subsystem>/<tool>/<provider>` + the `ablate:<subsystem>` tag. */
+  ablate: NON_EMPTY.optional(),
 }).strict();
 
 export const MatrixSchema = z.object({

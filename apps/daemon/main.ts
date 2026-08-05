@@ -872,6 +872,11 @@ if (import.meta.main) {
       milestoneEmitter: buildMilestoneEmitterFromConfig(config),
       skillsService,
       logger,
+      // Phase 143 Step 2: `skills.inject_in_prompt=false` (the skills ablation preset)
+      // fully disables skills matching+injection in the runner — no `skills.match_completed`
+      // / `skills.resolved` event is journaled. The flag defaults true, so ordinary configs
+      // are unaffected.
+      disableSkills: !config.skills.inject_in_prompt,
     });
     const portalPermissions = new PortalPermissionsService(config.portals ?? []);
     const agentExecutorAdapter = new AgentOrchestratorAdapter(

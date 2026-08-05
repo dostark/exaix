@@ -26,6 +26,12 @@ export enum ArmKind {
    *  delegate baseline cell (control) on the outcome channel only (bare cells have no journal,
    *  so process-channel criteria are excluded from both sides — Design Decision 1). */
   HARNESS_ABLATION = "harness-ablation",
+  /** Phase 143 Step 2: feature-ablation arms — the full-config cell (treatment) vs an
+   *  `ablate-<subsystem>` cell (control) with exactly one subsystem toggled off. SKILL_ABLATION
+   *  (skills.inject_in_prompt=false) is reused from Phase 158; the quality-gate and
+   *  portal-knowledge variants join it for the three-factor ablation set. */
+  QUALITY_GATE_ABLATION = "quality-gate-ablation",
+  PORTAL_KNOWLEDGE_ABLATION = "portal-knowledge-ablation",
 }
 
 /** Which recorded metric a comparison measures the delta on. */

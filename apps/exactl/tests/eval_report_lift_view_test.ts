@@ -18,8 +18,6 @@ import { EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { VERIFY_TESTS_STEP_ID } from "../../../tests/scenario_framework/runner/scenario_templates.ts";
 
-const ORIGINAL_CWD = Deno.cwd();
-
 interface IConsoleArgs extends Array<string | number | boolean | object | undefined | null> {}
 
 function withCapturedOutput<T>(fn: () => T): Promise<{ output: string[]; result: T }> {
@@ -118,40 +116,31 @@ Deno.test("[EvalReportLiftView] renders per-family meanDelta/stdevDelta/noEffect
   store.close();
 
   const cmds = new EvalCommands(context);
-  Deno.chdir(tempDir);
-  try {
-    const { output } = await withCapturedOutput(() => cmds.report({ view: "lift" }));
+  const { output } = await withCapturedOutput(() => cmds.report({ view: "lift", dbPath }));
 
-    const text = output.join("\n");
-    assertStringIncludes(text, "task:bug-fix", "family name must be rendered");
-    assertStringIncludes(text, "+0.300", "meanDelta must render with sign and 3 decimals");
-    assertStringIncludes(text, "0.100", "stdevDelta must render");
-    assertStringIncludes(text, "effect", "|meanDelta| >= stdevDelta → effect verdict");
-    assertStringIncludes(text, "bare/claude-code/anthropic", "control cell basis must be named");
-    assertStringIncludes(text, "claude-code-anthropic", "treatment cell basis must be named");
-    assertStringIncludes(text, "run-e1", "treatment basis run ids must be listed");
-    assertStringIncludes(text, "run-b1", "control basis run ids must be listed");
-    assertStringIncludes(text, "2", "task count must render");
-    assertStringIncludes(text, "unmatched", "unmatched exclusion must be surfaced as a warning");
-  } finally {
-    Deno.chdir(ORIGINAL_CWD);
-  }
+  const text = output.join("\n");
+  assertStringIncludes(text, "task:bug-fix", "family name must be rendered");
+  assertStringIncludes(text, "+0.300", "meanDelta must render with sign and 3 decimals");
+  assertStringIncludes(text, "0.100", "stdevDelta must render");
+  assertStringIncludes(text, "effect", "|meanDelta| >= stdevDelta → effect verdict");
+  assertStringIncludes(text, "bare/claude-code/anthropic", "control cell basis must be named");
+  assertStringIncludes(text, "claude-code-anthropic", "treatment cell basis must be named");
+  assertStringIncludes(text, "run-e1", "treatment basis run ids must be listed");
+  assertStringIncludes(text, "run-b1", "control basis run ids must be listed");
+  assertStringIncludes(text, "2", "task count must render");
+  assertStringIncludes(text, "unmatched", "unmatched exclusion must be surfaced as a warning");
   await cleanup();
 });
 
 Deno.test("[EvalReportLiftView] empty history renders the no-history notice, not a crash", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  Deno.chdir(tempDir);
-  try {
-    const cmds = new EvalCommands(context);
-    const { output } = await withCapturedOutput(() => cmds.report({ view: "lift" }));
-    const text = output.join("\n");
-    assert(
-      text.length > 0 && !text.includes("Error"),
-      `must render a notice, got: ${text}`,
-    );
-  } finally {
-    Deno.chdir(ORIGINAL_CWD);
-    await cleanup();
-  }
+  const dbPath = join(tempDir, ".exa", "eval.db");
+  const cmds = new EvalCommands(context);
+  const { output } = await withCapturedOutput(() => cmds.report({ view: "lift", dbPath }));
+  const text = output.join("\n");
+  assert(
+    text.length > 0 && !text.includes("Error"),
+    `must render a notice, got: ${text}`,
+  );
+  await cleanup();
 });

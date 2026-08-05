@@ -49,6 +49,11 @@ interface ICostReportCellGroup {
 
 const FRAMEWORK_RELATIVE_PATH = "../../../../tests/scenario_framework/runner/main.ts";
 const HARNESS_LIFT_SCRIPT_RELATIVE_PATH = "../../../../scripts/run_harness_lift_report.ts";
+const ABLATION_SCRIPT_RELATIVE_PATH = "../../../../scripts/run_ablation_report.ts";
+/** Shared report-table column label (check:magic: appears in 4 renderers). */
+const TASKS_COLUMN = "Tasks";
+/** Report views that spawn a Test-layer script bridge (never imported into production). */
+const SCRIPT_REPORT_VIEWS = new Set(["lift", "ablation"]);
 
 export class EvalCommands extends BaseCommand {
   constructor(context: ICommandContext) {
@@ -186,11 +191,16 @@ export class EvalCommands extends BaseCommand {
     last?: number;
     pack?: string;
     groupBy?: string;
+    /** Explicit eval.db path override (test-supporting). When absent, resolves from
+     *  EXA_EVAL_DB_PATH or the process cwd. Tests pass it so the process-global cwd
+     *  (shared across `deno test --parallel` worker threads) never backs the path. */
+    dbPath?: Opt<string, Reason.OptionalInput>;
   }): void {
     const view = options.view ?? "cost";
+    const resolveDb = () => options.dbPath ?? resolveEvalDbPath();
 
     if (options.groupBy) {
-      const dbPath = resolveEvalDbPath();
+      const dbPath = resolveDb();
       const store = new EvalSqliteStore(dbPath);
       try {
         store.initialize();
@@ -205,9 +215,9 @@ export class EvalCommands extends BaseCommand {
         );
         console.log("-".repeat(70));
         console.log(
-          `  ${"Name".padEnd(30)} ${"Tasks".padEnd(6)} ${"Passed".padEnd(8)} ${"Mean".padEnd(7)} ${"Delta".padEnd(8)} ${
-            "Pass@1".padEnd(8)
-          } ${"Reconcile".padEnd(10)} ${"Duration".padEnd(10)}`,
+          `  ${"Name".padEnd(30)} ${TASKS_COLUMN.padEnd(6)} ${"Passed".padEnd(8)} ${"Mean".padEnd(7)} ${
+            "Delta".padEnd(8)
+          } ${"Pass@1".padEnd(8)} ${"Reconcile".padEnd(10)} ${"Duration".padEnd(10)}`,
         );
         for (const row of summary) {
           // A mean only where the criteria are graded. Over a pack of yes/no contract assertions it
@@ -230,12 +240,12 @@ export class EvalCommands extends BaseCommand {
       }
       return;
     }
-    if (view === "lift") {
-      this.renderHarnessLiftReport(options.scenario, options.pack);
+    if (SCRIPT_REPORT_VIEWS.has(view)) {
+      this.renderScriptView(view, options.scenario, options.pack, options.dbPath);
       return;
     }
     if (view === "cost") {
-      const dbPath = resolveEvalDbPath();
+      const dbPath = resolveDb();
       const store = new EvalSqliteStore(dbPath);
       try {
         store.initialize();
@@ -252,7 +262,7 @@ export class EvalCommands extends BaseCommand {
     }
 
     if (view === "families") {
-      const dbPath = resolveEvalDbPath();
+      const dbPath = resolveDb();
       const store = new EvalSqliteStore(dbPath);
       try {
         store.initialize();
@@ -264,7 +274,7 @@ export class EvalCommands extends BaseCommand {
         console.log("Family Report");
         console.log("-------------");
         console.log(
-          `  ${"Family".padEnd(25)} ${"Tasks".padEnd(6)} ${"Mean".padEnd(7)} ${"Pass@1".padEnd(8)} ${
+          `  ${"Family".padEnd(25)} ${TASKS_COLUMN.padEnd(6)} ${"Mean".padEnd(7)} ${"Pass@1".padEnd(8)} ${
             "Reconcile".padEnd(10)
           } ${"Duration".padEnd(10)}`,
         );
@@ -283,15 +293,19 @@ export class EvalCommands extends BaseCommand {
       return;
     }
 
-    console.log(`Unknown report view: ${view}. Supported views: cost, families, lift`);
+    console.log(`Unknown report view: ${view}. Supported views: cost, families, lift, ablation`);
   }
 
-  private renderHarnessLiftReport(
+  private renderScriptView(
+    view: string,
     scenario?: Opt<string, Reason.QueryFilter>,
     pack?: Opt<string, Reason.QueryFilter>,
+    dbPath?: Opt<string, Reason.OptionalInput>,
   ): void {
-    const dbPath = resolveEvalDbPath();
-    const args = ["run", "--allow-all", resolveHarnessLiftScriptPath(), "--db", dbPath];
+    const isLift = view === "lift";
+    const scriptPath = isLift ? resolveHarnessLiftScriptPath() : resolveAblationScriptPath();
+    const dbPathResolved = dbPath ?? resolveEvalDbPath();
+    const args = ["run", "--allow-all", scriptPath, "--db", dbPathResolved];
     if (scenario) {
       args.push("--scenario", scenario);
     }
@@ -300,10 +314,17 @@ export class EvalCommands extends BaseCommand {
     }
     const output = new Deno.Command("deno", { args, cwd: Deno.cwd() }).outputSync();
     if (output.code !== 0) {
-      console.error(`Harness lift report failed: ${new TextDecoder().decode(output.stderr)}`);
+      console.error(
+        `${isLift ? "Harness lift" : "Ablation"} report failed: ${new TextDecoder().decode(output.stderr)}`,
+      );
       return;
     }
-    renderHarnessLiftTable(new TextDecoder().decode(output.stdout));
+    const stdout = new TextDecoder().decode(output.stdout);
+    if (isLift) {
+      renderHarnessLiftTable(stdout);
+    } else {
+      renderAblationTable(stdout);
+    }
   }
 
   compare(runA: string, runB: string): void {
@@ -360,6 +381,10 @@ function resolveFrameworkPath(): string {
 
 function resolveHarnessLiftScriptPath(): string {
   return resolve(new URL(".", import.meta.url).pathname, HARNESS_LIFT_SCRIPT_RELATIVE_PATH);
+}
+
+function resolveAblationScriptPath(): string {
+  return resolve(new URL(".", import.meta.url).pathname, ABLATION_SCRIPT_RELATIVE_PATH);
 }
 
 export function buildRunArgs(options: {
@@ -530,7 +555,7 @@ function renderHarnessLiftTable(stdout: string): void {
   console.log("-".repeat(100));
   console.log(
     `  ${padRight("Family", 24)} ${padRight("Tool", 12)} ${padRight("Provider", 10)} ${padRight("Model", 20)} ${
-      padRight("Tasks", 6)
+      padRight(TASKS_COLUMN, 6)
     } ${padRight("MeanDelta", 10)} ${padRight("StdevDelta", 10)} NoEffect`,
   );
   for (const family of report.families) {
@@ -539,6 +564,81 @@ function renderHarnessLiftTable(stdout: string): void {
     console.log(
       `  ${padRight(family.family, 24)} ${padRight(family.tool, 12)} ${padRight(family.provider, 10)} ${
         padRight(family.model ?? "—", 20)
+      } ${padRight(String(family.taskCount), 6)} ${padRight(meanDelta, 10)} ${
+        padRight(family.comparison.stdevDelta.toFixed(3), 10)
+      } ${verdict}`,
+    );
+    console.log(
+      `  basis: control=${family.basis.controlCell} (runs: ${
+        family.basis.controlRunIds.join(", ") || "—"
+      }) | treatment=${family.basis.treatmentCell} (runs: ${family.basis.treatmentRunIds.join(", ") || "—"})`,
+    );
+    if (family.basis.unmatchedTaskIds.length > 0) {
+      console.log(`  excluded (no matched pair): ${family.basis.unmatchedTaskIds.join(", ")}`);
+    }
+  }
+  if (report.unmatchedWarningCount > 0) {
+    console.log(
+      `Warning: ${report.unmatchedWarningCount} unmatched task(s) had no matched pair and were excluded`,
+    );
+  }
+}
+
+interface IAblationViewFamilyRow {
+  family: string;
+  tool: string;
+  provider: string;
+  model: string | null;
+  subsystem: string;
+  taskCount: number;
+  comparison: {
+    meanDelta: number;
+    stdevDelta: number;
+    noEffect: boolean;
+  };
+  basis: {
+    controlCell: string;
+    treatmentCell: string;
+    controlRunIds: string[];
+    treatmentRunIds: string[];
+    unmatchedTaskIds: string[];
+  };
+}
+
+interface IAblationViewReport {
+  subsystems: { subsystem: string; kind: string }[];
+  families: IAblationViewFamilyRow[];
+  unmatchedWarningCount: number;
+}
+
+function renderAblationTable(stdout: string): void {
+  let report: IAblationViewReport;
+  try {
+    report = JSON.parse(stdout) as IAblationViewReport;
+  } catch {
+    console.error("Ablation report produced unparseable output.");
+    return;
+  }
+  if (report.families.length === 0) {
+    console.log("No ablation comparisons found in history.");
+    return;
+  }
+  const armLabel = report.subsystems
+    .map((s) => `${s.subsystem} (${s.kind})`)
+    .join(", ");
+  console.log(`Ablation Report — arms: ${armLabel}`);
+  console.log("-".repeat(100));
+  console.log(
+    `  ${padRight("Family", 24)} ${padRight("Subsystem", 16)} ${padRight("Tool", 12)} ${padRight("Provider", 10)} ${
+      padRight(TASKS_COLUMN, 6)
+    } ${padRight("MeanDelta", 10)} ${padRight("StdevDelta", 10)} NoEffect`,
+  );
+  for (const family of report.families) {
+    const meanDelta = `${family.comparison.meanDelta >= 0 ? "+" : ""}${family.comparison.meanDelta.toFixed(3)}`;
+    const verdict = family.comparison.noEffect ? "no-effect" : "effect";
+    console.log(
+      `  ${padRight(family.family, 24)} ${padRight(family.subsystem, 16)} ${padRight(family.tool, 12)} ${
+        padRight(family.provider, 10)
       } ${padRight(String(family.taskCount), 6)} ${padRight(meanDelta, 10)} ${
         padRight(family.comparison.stdevDelta.toFixed(3), 10)
       } ${verdict}`,

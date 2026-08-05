@@ -780,6 +780,8 @@ export const ConfigSchema = z.object({
   }),
   /** Portal codebase knowledge gathering configuration (Phase 119) */
   portal_knowledge: z.object({
+    /** Whether request-time portal knowledge resolution/injection runs at all (Phase 143 ablation switch; default on, off disables the request-side injection only). */
+    injection_enabled: z.boolean().default(true),
     /** Automatically trigger knowledge analysis after portal mount. */
     auto_analyze_on_mount: z.boolean().default(true),
     /** Default analysis depth when not overridden per-call. */
@@ -821,6 +823,7 @@ export const ConfigSchema = z.object({
     /** Git since filter (e.g. "1.year", "30.days"). */
     git_history_since: z.string().optional().default(DEFAULTS.GIT_HISTORY_SINCE),
   }).optional().default({
+    injection_enabled: true,
     auto_analyze_on_mount: true,
     default_mode: DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_MODE as PortalAnalysisMode,
     quick_scan_limit: DEFAULTS.DEFAULT_QUICK_SCAN_LIMIT,

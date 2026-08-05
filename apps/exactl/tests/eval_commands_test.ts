@@ -7,7 +7,7 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { join } from "@std/path";
+import { fromFileUrl, join } from "@std/path";
 import { buildRunArgs, EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 
@@ -15,7 +15,10 @@ import { createCliTestContext } from "./helpers/test_setup.ts";
 // fallback) relative to Deno.cwd(), not the test's tempDir — chdir into
 // tempDir for the duration of each history test so real repo-root eval
 // history (e.g. from live scenario runs) can't leak into these assertions.
-const ORIGINAL_CWD = Deno.cwd();
+// Anchored to the repo root (not Deno.cwd()): `deno test --parallel` shares one
+// process cwd across worker threads, so a module-load Deno.cwd() can capture
+// another worker's soon-deleted tempdir and the restore chdir would then ENOENT.
+const ORIGINAL_CWD = fromFileUrl(new URL("../../..", import.meta.url));
 
 interface IConsoleArgs extends Array<string | number | boolean | object | undefined | null> {}
 

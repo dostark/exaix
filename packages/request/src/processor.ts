@@ -351,17 +351,10 @@ export class RequestProcessor {
       await saveAnalysis(filePath, analysis).catch(() => {});
     }
 
-    // Resolve portal knowledge for portal-bound requests
-    const portal = frontmatter.portal;
-    let portalKnowledge: IPortalKnowledge | undefined;
-    if (this.portalKnowledgeService && portal) {
-      const portalPath = (this.config.portals ?? []).find((p) => p.alias === portal)?.target_path;
-      if (portalPath) {
-        portalKnowledge = await this.portalKnowledgeService
-          .getOrAnalyze(portal, portalPath)
-          .catch(() => undefined);
-      }
-    }
+    // Resolve portal knowledge for portal-bound requests (Phase 143 Step 2: the
+    // `portal_knowledge.injection_enabled` switch gates the request-side injection —
+    // off means the knowledge service is never consulted at request time).
+    const portalKnowledge = await this.resolvePortalKnowledge(frontmatter.portal);
 
     const context: IRequestProcessingContext = {
       filePath,
@@ -423,6 +416,18 @@ export class RequestProcessor {
       default:
         return false;
     }
+  }
+
+  /** Resolve portal knowledge for a portal-bound request, honoring the Phase 143 Step 2
+   *  `portal_knowledge.injection_enabled` ablation switch (off → never consulted). */
+  private async resolvePortalKnowledge(
+    portal?: Opt<string, Reason.OptionalContext>,
+  ): Promise<IPortalKnowledge | undefined> {
+    if (!this.portalKnowledgeService || !portal) return undefined;
+    if (this.config.portal_knowledge?.injection_enabled === false) return undefined;
+    const portalPath = (this.config.portals ?? []).find((p) => p.alias === portal)?.target_path;
+    if (!portalPath) return undefined;
+    return await this.portalKnowledgeService.getOrAnalyze(portal, portalPath).catch(() => undefined);
   }
 
   private async getRequestKindOrFail(args: {

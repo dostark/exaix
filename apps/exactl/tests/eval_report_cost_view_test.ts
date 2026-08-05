@@ -10,11 +10,10 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { EvalSqliteStore, resolveEvalDbPath } from "@exaix/eval-history";
+import { join } from "@std/path";
+import { EvalSqliteStore } from "@exaix/eval-history";
 import { EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-
-const ORIGINAL_CWD = Deno.cwd();
 
 interface IConsoleArgs extends Array<string | number | boolean | object | undefined | null> {}
 
@@ -69,9 +68,11 @@ function seedRun(
 
 Deno.test("[EvalReportCostView] renders one row per distinct cell_id/provider/model with correct mean/total tracked cost", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  Deno.chdir(tempDir);
+  // Explicit db path — never the process-global cwd (shared across `deno test --parallel`
+  // worker threads), so seeding and report() always agree regardless of concurrent chdirs.
+  const dbPath = join(tempDir, ".exa", "eval.db");
   try {
-    const store = new EvalSqliteStore(resolveEvalDbPath());
+    const store = new EvalSqliteStore(dbPath);
     store.initialize();
     seedRun(store, {
       runId: "run-a1",
@@ -100,7 +101,7 @@ Deno.test("[EvalReportCostView] renders one row per distinct cell_id/provider/mo
     store.close();
 
     const cmds = new EvalCommands(context);
-    const { output } = await withCapturedOutput(() => cmds.report({ view: "cost", scenario: "report-test" }));
+    const { output } = await withCapturedOutput(() => cmds.report({ view: "cost", scenario: "report-test", dbPath }));
     const text = output.join("\n");
 
     assertStringIncludes(text, "claude-code-anthropic");
@@ -109,16 +110,15 @@ Deno.test("[EvalReportCostView] renders one row per distinct cell_id/provider/mo
     // mean duration_ms across both runs: (1000+2000)/2 = 1500
     assertStringIncludes(text, "1500");
   } finally {
-    Deno.chdir(ORIGINAL_CWD);
     await cleanup();
   }
 });
 
 Deno.test("[EvalReportCostView] a cell with no tracked cost data renders — never 0 or a predicted figure", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  Deno.chdir(tempDir);
+  const dbPath = join(tempDir, ".exa", "eval.db");
   try {
-    const store = new EvalSqliteStore(resolveEvalDbPath());
+    const store = new EvalSqliteStore(dbPath);
     store.initialize();
     seedRun(store, {
       runId: "run-b1",
@@ -132,23 +132,24 @@ Deno.test("[EvalReportCostView] a cell with no tracked cost data renders — nev
     store.close();
 
     const cmds = new EvalCommands(context);
-    const { output } = await withCapturedOutput(() => cmds.report({ view: "cost", scenario: "report-test-untracked" }));
+    const { output } = await withCapturedOutput(() =>
+      cmds.report({ view: "cost", scenario: "report-test-untracked", dbPath })
+    );
     const text = output.join("\n");
 
     assertStringIncludes(text, "direct-api-openai");
     assertStringIncludes(text, "—");
     assertEquals(/\|\s*0(\.0+)?\s*\|/.test(text), false, "must not render 0 for untracked cost");
   } finally {
-    Deno.chdir(ORIGINAL_CWD);
     await cleanup();
   }
 });
 
 Deno.test("[EvalReportCostView] renders per-cell comparison for at least two matrix cells", async () => {
   const { context, tempDir, cleanup } = await createCliTestContext();
-  Deno.chdir(tempDir);
+  const dbPath = join(tempDir, ".exa", "eval.db");
   try {
-    const store = new EvalSqliteStore(resolveEvalDbPath());
+    const store = new EvalSqliteStore(dbPath);
     store.initialize();
     seedRun(store, {
       runId: "run-c1",
@@ -169,13 +170,14 @@ Deno.test("[EvalReportCostView] renders per-cell comparison for at least two mat
     store.close();
 
     const cmds = new EvalCommands(context);
-    const { output } = await withCapturedOutput(() => cmds.report({ view: "cost", scenario: "multi-cell-test" }));
+    const { output } = await withCapturedOutput(() =>
+      cmds.report({ view: "cost", scenario: "multi-cell-test", dbPath })
+    );
     const text = output.join("\n");
 
     assertStringIncludes(text, "claude-code");
     assertStringIncludes(text, "opencode");
   } finally {
-    Deno.chdir(ORIGINAL_CWD);
     await cleanup();
   }
 });

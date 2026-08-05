@@ -28,7 +28,12 @@ import {
 } from "./matrix_expander.ts";
 import { currentMaxRowid, executeScenarioStep, type IScenarioStepExecutionResult } from "./step_executor.ts";
 import { parseDelegateStepLlmMetrics, readStepLlmMetrics } from "./step_llm_metrics.ts";
-import { BARE_DELEGATE_STEP_ID, HARNESS_BARE_TAG, REQUEST_FIXTURE_CONTENT_SENTINEL } from "./matrix_expander.ts";
+import {
+  ablateTag,
+  BARE_DELEGATE_STEP_ID,
+  HARNESS_BARE_TAG,
+  REQUEST_FIXTURE_CONTENT_SENTINEL,
+} from "./matrix_expander.ts";
 import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
 import { CAPTURE_FIXTURES_ENV_VAR, sandboxCaptureFixturesDir } from "./capture_fixtures_flag.ts";
 import {
@@ -46,7 +51,7 @@ export interface IBuildRunManifestOptions {
   stepOutcomes: IScenarioStepOutcome[];
   mode: ScenarioExecutionMode;
   runResult: IRunScenarioInModeResult;
-  matrixCell?: { cellId?: string; provider?: string; model?: string; tool?: string; harness?: "bare" };
+  matrixCell?: { cellId?: string; provider?: string; model?: string; tool?: string; harness?: "bare"; ablate?: string };
   /** The workspace root whose `.exa/journal.db` readStepLlmMetrics reads per step. */
   workspaceRoot: string;
   /** Each step's own [start, end] journal rowid window, tracked by the executeStep callback. */
@@ -520,12 +525,16 @@ export async function runSyntheticScenario(
         // `provider:` field — the YAML field may be a $CELL_PROVIDER placeholder today, and
         // the config's [ai].provider is the actual source of truth for what ran regardless.
         // A `harness: bare` cell (Phase 143 Step 1) records the `bare/<tool>/<provider>` shape.
+        // An `ablate` cell (Phase 143 Step 2) records the `ablate-<subsystem>/<tool>/<provider>` shape.
         cellId: firstRunnable.cell.harness === "bare"
           ? `bare/${firstRunnable.cell.tool}/${firstRunnable.cell.provider}`
+          : firstRunnable.cell.ablate
+          ? `ablate-${firstRunnable.cell.ablate}/${firstRunnable.cell.tool}/${firstRunnable.cell.provider}`
           : `${firstRunnable.cell.tool}-${materialized.aiProvider ?? firstRunnable.cell.provider}`,
         provider: materialized.aiProvider ?? firstRunnable.cell.provider,
         tool: firstRunnable.cell.tool,
         harness: firstRunnable.cell.harness,
+        ablate: firstRunnable.cell.ablate,
       }
       : undefined,
   });
@@ -1047,6 +1056,7 @@ export async function buildRunManifest(options: IBuildRunManifestOptions): Promi
     tags: [
       ...(options.loadedScenario.scenario.tags ?? []),
       ...(options.matrixCell?.harness === "bare" ? [HARNESS_BARE_TAG] : []),
+      ...(options.matrixCell?.ablate ? [ablateTag(options.matrixCell.ablate)] : []),
     ],
     mode: options.mode,
     outcome: mapScenarioOutcome(options.runResult),

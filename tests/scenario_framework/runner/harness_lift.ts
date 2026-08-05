@@ -65,6 +65,13 @@ export interface IHarnessLiftOptions {
   preregistered?: IArmComparisonSpec;
 }
 
+/** A single side's latest outcome run (shared by the lift and ablation engines). */
+export interface ISideRun {
+  runId: string;
+  timestamp: string;
+  scores: number[];
+}
+
 /** The `cell_id` prefix of bare-delegate baseline cells (Phase 143 Step 1 cell taxonomy). */
 export const BARE_CELL_PREFIX = "bare/";
 
@@ -111,12 +118,24 @@ export function resolveFamily(tags: string[] | null, fallback: string): string {
   return fallback;
 }
 
-interface ISideRun {
-  runId: string;
-  timestamp: string;
-  scores: number[];
+/** Bucket key over (task, tool, provider, model) — the lift and ablation pairing unit. */
+export function keyOf(taskId: string, tool: string, provider: string, model: string | null): string {
+  return `${taskId}|${tool}|${provider}|${model ?? ""}`;
 }
 
+/** Latest-run-wins accumulation over ISO-8601 timestamps (lexicographic sort). */
+export function latest(existing: Opt<ISideRun, Reason.RecursiveOmit>, candidate: ISideRun): ISideRun {
+  if (!existing) return candidate;
+  // ISO-8601 timestamps sort lexicographically; later wins.
+  return candidate.timestamp > existing.timestamp ? candidate : existing;
+}
+
+/** Arithmetic mean over a numeric list. */
+export function mean(values: number[]): number {
+  return values.reduce((a, b) => a + b, 0) / values.length;
+}
+
+/** A (task, tool, provider, model) bucket pairing one latest run per side. */
 interface IMatchBucket {
   taskId: string;
   tool: string;
@@ -127,20 +146,6 @@ interface IMatchBucket {
   treatment?: ISideRun;
   /** True when the task had runs but both sides lack a latest run with outcome evidence. */
   unmatched: boolean;
-}
-
-function keyOf(taskId: string, tool: string, provider: string, model: string | null): string {
-  return `${taskId}|${tool}|${provider}|${model ?? ""}`;
-}
-
-function latest(existing: Opt<ISideRun, Reason.RecursiveOmit>, candidate: ISideRun): ISideRun {
-  if (!existing) return candidate;
-  // ISO-8601 timestamps sort lexicographically; later wins.
-  return candidate.timestamp > existing.timestamp ? candidate : existing;
-}
-
-function mean(values: number[]): number {
-  return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
 /**
