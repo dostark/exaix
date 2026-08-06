@@ -797,7 +797,7 @@ runnable cell; the cell's config preset is resolved to an **absolute** path (the
 workspace, not the repo). See `scenarios/provider_live/session_delegate_matrix_live.yaml` for the
 full four-cell example.
 
-### Cell kinds: bare-delegate baseline and feature ablations (Phase 143)
+### Cell kinds: bare-delegate baseline and feature ablations
 
 Two additional cell markers sit beside the ordinary cell and feed the comparison report views
 (§"Harness-Lift & Cost Evaluation" in `docs/Exaix_Evaluation.md`):

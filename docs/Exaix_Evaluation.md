@@ -1197,7 +1197,7 @@ screening pass or a full-trial arm is an operator action, the same class as §12
 
 ---
 
-## 16. Harness-Lift & Cost Evaluation (Phase 143)
+## 16. Harness-Lift & Cost Evaluation
 
 This section ties together the comparison machinery built across the phase: measuring **what
 Exaix adds over running the raw CLI tool directly**, **what each subsystem contributes**, **at
