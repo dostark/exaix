@@ -106,6 +106,7 @@
     "check:qwen-skills-sync": "deno run --allow-read scripts/check_qwen_skills_sync.ts",
     "check:hardcoded-models": "deno run --allow-read scripts/check_hardcoded_models.ts",
     "check:event-strings": "deno run --allow-read scripts/check_event_strings.ts",
+    "check:scenario-declarative": "deno run -A scripts/check_scenario_declarative.ts",
     "check:constant-restatement": "deno run --allow-read scripts/check_constant_restatement.ts",
     "verify:pack-mutations": "deno run -A scripts/verify_pack_mutations.ts",
     "check:leak-guard": "deno run --allow-read scripts/leak_guard.ts",
