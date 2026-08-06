@@ -26,9 +26,6 @@ matrix:
       config: "configs/anthropic-no-delegate.toml"
       requires_bin: "true"
       requires_key: "ANTHROPIC_API_KEY"
-judge:
-  provider: "opencode-cli"
-  model: "opencode-cli:opencode-go/deepseek-v4-flash"
 steps:
   - id: "patch-blueprint-capability"
     type: "patch-blueprint"

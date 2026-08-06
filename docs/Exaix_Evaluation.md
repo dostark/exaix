@@ -460,6 +460,19 @@ Configure via `EXA_LLM_PROVIDER` (e.g. `anthropic`, `openai`, `google`, `openrou
 and `EXA_LLM_MODEL`. Each provider reads its own API key from its standard env var. Unset
 `EXA_LLM_PROVIDER` defaults to the Mock provider (no external call).
 
+The judge can use a **different model than the scenario's own execution model** — the judge
+model is never hardcoded in a scenario. Set the dedicated judge vars, which take precedence
+over the scenario's model:
+
+```bash
+EXA_EVAL_LLM_PROVIDER=anthropic EXA_EVAL_LLM_MODEL=claude-sonnet-4-5 \
+  EXA_LLM_PROVIDER=opencode-cli EXA_LLM_MODEL=opencode-go/deepseek-v4-flash \
+  exactl eval run --pack swe_tasks
+```
+
+When `EXA_EVAL_LLM_PROVIDER`/`EXA_EVAL_LLM_MODEL` are unset, the judge falls back to
+`EXA_LLM_PROVIDER`/`EXA_LLM_MODEL`, then to `EXA_EVAL_MODEL_SIZE` (provider without a model).
+
 ---
 
 ## 7. Trajectory Evaluation

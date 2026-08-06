@@ -20,8 +20,6 @@ matrix:
       requires_bin: "true"
       requires_key: "ANTHROPIC_API_KEY"
 
-judge:
-  provider: "anthropic"
 steps:
   - id: "start-daemon"
     type: "exactl"

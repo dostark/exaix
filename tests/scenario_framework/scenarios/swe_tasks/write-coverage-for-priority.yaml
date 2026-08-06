@@ -21,9 +21,6 @@ matrix:
       provider: "$CELL_PROVIDER"
       config: "configs/opencode-cli-delegate-all.toml"
       requires_bin: "opencode"
-judge:
-  provider: "opencode-cli"
-  model: "opencode-cli:opencode-go/deepseek-v4-flash"
 steps:
   - id: "patch-blueprint-capability"
     type: "patch-blueprint"

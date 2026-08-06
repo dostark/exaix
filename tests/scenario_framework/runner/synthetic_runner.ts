@@ -38,7 +38,6 @@ import {
 import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
 import { CAPTURE_FIXTURES_ENV_VAR, sandboxCaptureFixturesDir } from "./capture_fixtures_flag.ts";
 import {
-  CriterionKind,
   CriterionPhase,
   CriterionStatus,
   type ICriterion,
@@ -491,7 +490,6 @@ export async function runSyntheticScenario(
           flowFixturePath: loadedScenario.scenario.flow_fixture
             ? resolve(options.frameworkHome, loadedScenario.scenario.flow_fixture)
             : undefined,
-          judge: loadedScenario.scenario.judge,
           frameworkHome: options.frameworkHome,
           env: runEnv,
           portalAliases: options.portalAliases ?? loadedScenario.scenario.portals.map((portal) => portal.alias),
@@ -873,8 +871,6 @@ interface IExecuteSyntheticStepOptions {
   requestFixturePath: string;
   /** Absolute path of the scenario's `flow_fixture`, when it declares one — `$FLOW_FIXTURE`. */
   flowFixturePath?: string;
-  /** Scenario-level LLM judge config (`judge:` block) — injected into judge steps' env. */
-  judge?: { provider?: string; model?: string };
   frameworkHome: string;
   env?: { [key: string]: string };
   portalAliases: string[];
@@ -979,7 +975,6 @@ async function executeSyntheticStep(
   // Merge the EXPANDED step.env last so values like EXA_MIGRATIONS_DIR resolve before
   // they reach the spawned process.
   const env = { ...baseEnv, ...(resolvedStep.env ?? {}) };
-  injectScenarioJudgeEnv(env, resolvedStep, baseEnv, options.judge);
 
   const inputResults = await evaluateInputCriteria({
     ...options,
@@ -1307,26 +1302,4 @@ function expandInString(str: string, env: Record<string, string>): string {
     const value = env[name];
     return value !== undefined ? value : match;
   });
-}
-
-/** True when the step runs an LLM judge itself — the `judge` step type or any input/output
- *  criterion of kind `llm-judge` — i.e. the only steps that consume EXA_LLM_PROVIDER/MODEL. */
-export function stepCarriesLlmJudge(step: IScenarioStep): boolean {
-  if (step.type === ScenarioStepType.JUDGE) return true;
-  const criteria = [...(step.input_criteria ?? []), ...(step.output_criteria ?? [])];
-  return criteria.some((c) => c.kind === CriterionKind.LLM_JUDGE);
-}
-
-/** Inject the scenario-level `judge:` config into a judge step's env as
- *  `EXA_LLM_PROVIDER`/`EXA_LLM_MODEL` (a step env that already sets them wins). `$CELL_*`
- *  tokens resolve against the base env so matrix cells get their own judge provider/model. */
-export function injectScenarioJudgeEnv(
-  env: Record<string, string>,
-  step: IScenarioStep,
-  baseEnv: Record<string, string>,
-  judge: Opt<{ provider?: string; model?: string }, Reason.OptionalInput> = undefined,
-): void {
-  if (!judge || !stepCarriesLlmJudge(step)) return;
-  if (!env.EXA_LLM_PROVIDER && judge.provider) env.EXA_LLM_PROVIDER = expandInString(judge.provider, baseEnv);
-  if (!env.EXA_LLM_MODEL && judge.model) env.EXA_LLM_MODEL = expandInString(judge.model, baseEnv);
 }

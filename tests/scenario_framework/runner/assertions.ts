@@ -1370,15 +1370,21 @@ function evaluateCommandOutputNotContainsCriterion(
   };
 }
 
-export /**
+/**
  * Resolve judge provenance from step env, process env, or model resolution.
- * Returns { provider, model } when both are available, undefined otherwise.
+ * Precedence (so the judge model can differ from the scenario's own execution model):
+ *   1. `EXA_EVAL_LLM_PROVIDER` / `EXA_EVAL_LLM_MODEL` — dedicated judge vars (step env or
+ *      process env; the runner's base env already carries process env through).
+ *   2. `EXA_LLM_PROVIDER` / `EXA_LLM_MODEL` — the scenario's own execution model (step env or
+ *      process env).
+ * Returns { provider, model } when both are available, undefined otherwise. A provider without
+ * a model falls back to `EXA_EVAL_MODEL_SIZE`, then the provider itself.
  */
-function resolveEvalJudgeProvenance(
+export function resolveEvalJudgeProvenance(
   env?: Opt<{ [key: string]: string }, Reason.OptionalInput>,
 ): { provider: string; model: string } | undefined {
-  const provider = env?.EXA_LLM_PROVIDER ?? Deno.env.get("EXA_LLM_PROVIDER");
-  const model = env?.EXA_LLM_MODEL ?? Deno.env.get("EXA_LLM_MODEL");
+  const provider = env?.EXA_EVAL_LLM_PROVIDER ?? env?.EXA_LLM_PROVIDER ?? Deno.env.get("EXA_LLM_PROVIDER");
+  const model = env?.EXA_EVAL_LLM_MODEL ?? env?.EXA_LLM_MODEL ?? Deno.env.get("EXA_LLM_MODEL");
   if (provider && model) return { provider, model };
   if (provider) {
     const modelFromSize = env?.EXA_EVAL_MODEL_SIZE ?? Deno.env.get("EXA_EVAL_MODEL_SIZE");

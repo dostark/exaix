@@ -26,8 +26,6 @@ matrix:
       config: "configs/anthropic-no-delegate.toml"
       requires_bin: "true"
       requires_key: "ANTHROPIC_API_KEY"
-judge:
-  provider: "$CELL_PROVIDER"
 steps:
   - id: "patch-blueprint-capability"
     type: "patch-blueprint"
