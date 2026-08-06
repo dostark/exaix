@@ -94,6 +94,13 @@ const CriterionClassSchema = z.nativeEnum(CriterionClass);
 export const PortalMountSchema = z.object({
   alias: NON_EMPTY_STRING,
   source_path: z.string().min(1),
+  /** When set, the fixture at `source_path` is clean-staged into this workspace path (the
+   *  runner removes any prior target, stale worktrees, and stale symlink first) and the
+   *  portal is mounted there. The runner owns reset + copy, so an evaluated repo can never
+   *  leak a previous scenario's/cell's changes. Absent → `source_path` is mounted directly. */
+  target_path: z.string().min(1).optional(),
+  /** Initialize a git repo (with an initial commit) in `target_path` after the fixture copy. */
+  git_init: z.boolean().optional(),
 }).strict();
 
 export type IPortalMount = z.infer<typeof PortalMountSchema>;

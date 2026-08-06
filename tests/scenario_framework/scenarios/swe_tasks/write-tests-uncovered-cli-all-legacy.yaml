@@ -5,7 +5,11 @@ pack: "swe_tasks"
 scoring: "gated"
 tags: ["swe", "swe-legacy", "write-tests", "provider-live", "cli-delegate", "no-api-key"]
 request_fixture: "fixtures/requests/swe_tasks/write-tests-uncovered.md"
-portals: []
+portals:
+  - alias: "todo-app"
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/todo_app"
+    target_path: "$WORKSPACE_ROOT/todo-app"
+    git_init: true
 mode_support: ["auto"]
 
 matrix:
@@ -20,19 +24,6 @@ matrix:
       requires_bin: "opencode"
 
 steps:
-  - id: "setup-portal-repo"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "cp -r \"$FRAMEWORK_HOME/fixtures/portals/todo_app\" \"$WORKSPACE_ROOT/todo-app\" && cd \"$WORKSPACE_ROOT/todo-app\" && git init -q && git add -A && git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks commit -q -m 'init todo-app fixture'",
-      ]
-    output_criteria:
-      - id: "portal-repo-initialized"
-        kind: "command-exit-code"
-        equals: 0
-
   - id: "setup-blueprints"
     type: "shell"
     command: "cp"
@@ -72,15 +63,6 @@ steps:
       - id: "daemon-started"
         kind: "command-output-contains"
         contains: ["daemon.started"]
-
-  - id: "add-portal"
-    type: "exactl"
-    command: "portal"
-    args: ["add", "$WORKSPACE_ROOT/todo-app", "todo-app"]
-    output_criteria:
-      - id: "portal-added"
-        kind: "command-exit-code"
-        equals: 0
 
   - id: "restart-daemon"
     type: "exactl"

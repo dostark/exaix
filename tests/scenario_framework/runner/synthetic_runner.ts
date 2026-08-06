@@ -41,6 +41,7 @@ import {
   CriterionStatus,
   type ICriterion,
   type ICriterionResult,
+  type IPortalMount,
   type IScenarioStep,
   type ScenarioExecutionMode,
   ScenarioStepType,
@@ -375,19 +376,12 @@ export async function runSyntheticScenario(
     EXA_CONFIG_PATH: join(options.workspaceRoot, WORKSPACE_CONFIG_FILE),
   };
 
-  // Expand top-level portals for portability (e.g., using $FRAMEWORK_HOME)
+  // Expand top-level portals for portability (e.g., using $FRAMEWORK_HOME / $WORKSPACE_ROOT)
   loadedScenario.scenario.portals = loadedScenario.scenario.portals.map((p) => ({
     ...p,
     source_path: expandInString(p.source_path, envForExpansion),
+    ...(p.target_path ? { target_path: expandInString(p.target_path, envForExpansion) } : {}),
   }));
-
-  // Mount what the scenario declared. `portals:` has been parsed, validated and path-expanded
-  // since the schema was written, and nothing ever acted on it — 20 scenarios declare portals
-  // and each had to mount them itself with a shell step, or simply failed. `portal add` is
-  // idempotent for an identical target, so re-mounting across a shared sandbox is safe.
-  for (const portal of loadedScenario.scenario.portals) {
-    await mountDeclaredPortal(portal, options, envForExpansion);
-  }
 
   // Same story for `flow_fixture`: declared by eight scenarios, read by nothing.
   if (loadedScenario.scenario.flow_fixture) {
@@ -436,6 +430,14 @@ export async function runSyntheticScenario(
     worktreePath: REPO_ROOT,
   });
   stepsToRun = materialized.steps;
+
+  // Mount what the scenario declared. Runs AFTER materializeCellConfig so the `[[portals]]`
+  // entry lands in the workspace config the daemon actually boots with (mounting before it
+  // was overwritten by the materialized cell config silently lost the entry — the second
+  // scenario in a shared sandbox then failed execution with "Portal not found"). A fixture
+  // mount (target_path) is clean-staged first: the runner owns the reset, so an evaluated
+  // repo can never leak a prior scenario's/cell's changes or solution.
+  await prepareDeclaredPortals(loadedScenario.scenario.portals, options, envForExpansion);
 
   // The cell config's own [ai].provider/[ai].model (parsed above) becomes $CELL_PROVIDER /
   // $CELL_MODEL for every step's existing $VAR expansion (executeSyntheticStep's baseEnv) —
@@ -628,14 +630,117 @@ export async function seedWorkspaceConfig(workspaceRoot: string, frameworkHome: 
  * on its own assertions with a legible message, not be aborted here by setup. The alias is
  * reported when the mount fails so the cause is not silent.
  */
-async function mountDeclaredPortal(
-  portal: { alias: string; source_path: string },
+/** Git identity used for the initial commit in a staged fixture portal (mirrors the swe_tasks
+ *  shell setup this staging replaces). */
+const SWE_FIXTURE_GIT_IDENTITY = { email: "swe-tasks@exaix.dev", name: "swe-tasks" } as const;
+/** Initial commit message for a staged fixture portal repo. */
+const SWE_FIXTURE_COMMIT_MESSAGE = "init todo-app fixture";
+
+/** True when a portal mount declares a fixture to stage into the workspace. */
+function isFixturePortal(portal: IPortalMount): portal is IPortalMount & { target_path: string } {
+  return typeof portal.target_path === "string";
+}
+
+/**
+ * Prepare every portal a scenario declared. A fixture mount (`target_path` set) is clean-staged:
+ * the runner removes any prior target, stale per-portal execution worktrees, and the stale
+ * symlink — a shared sandbox persists across scenarios/cells in one invocation, and a
+ * non-resetting copy would leave the previous scenario's working-tree changes (its solution) in
+ * the evaluated repo — then copies the fixture and (when `git_init`) initializes a git repo with
+ * the initial commit. The portal is then registered against the staged path. A direct mount (no
+ * `target_path`) registers `source_path` unchanged. Runs AFTER materializeCellConfig so the
+ * `[[portals]]` entry lands in the daemon's real config.
+ */
+async function prepareDeclaredPortals(
+  portals: IPortalMount[],
+  options: IRunSyntheticScenarioOptions,
+  env: { [key: string]: string },
+): Promise<void> {
+  for (const portal of portals) {
+    const source = expandInString(portal.source_path, env);
+    const target = isFixturePortal(portal) ? expandInString(portal.target_path, env) : source;
+    if (isFixturePortal(portal)) {
+      await resetAndStageFixturePortal(portal, source, target, options.workspaceRoot);
+    }
+    await mountPortal(target, portal.alias, options, env);
+  }
+}
+
+/** Clean-reset the evaluated repo: remove the prior target (and its .git), stale execution
+ *  worktrees for the alias, and the stale symlink, then stage a fresh fixture copy. Exported
+ *  for direct unit testing of the isolation guarantee. */
+export async function resetAndStageFixturePortal(
+  portal: IPortalMount & { target_path: string },
+  source: string,
+  target: string,
+  workspaceRoot: string,
+): Promise<void> {
+  await removePath(target);
+  await removePath(join(workspaceRoot, ".exa", "worktrees", portal.alias));
+  await removePath(join(workspaceRoot, "Portals", portal.alias));
+  await copyFixture(source, target);
+  if (portal.git_init) {
+    await gitInitFixtureRepo(target);
+  }
+}
+
+/** Force-remove a path (file, symlink, or directory tree); absence is not an error. */
+async function removePath(path: string): Promise<void> {
+  try {
+    await Deno.remove(path, { recursive: true });
+  } catch {
+    // Nothing to clean is fine — a fresh sandbox has no prior state.
+  }
+}
+
+/** Recursively copy a fixture directory into the (already-cleared) target. */
+async function copyFixture(source: string, target: string): Promise<void> {
+  await ensureDir(dirname(target));
+  await copy(source, target, { overwrite: true });
+}
+
+/** Initialize a git repo with the single initial fixture commit (same identity the scenario
+ *  setup used, so execution worktrees/branches behave identically). */
+async function gitInitFixtureRepo(repoPath: string): Promise<void> {
+  await runGit(repoPath, ["init", "-q"]);
+  await runGit(repoPath, ["add", "-A"]);
+  await runGit(repoPath, [
+    "-c",
+    `user.email=${SWE_FIXTURE_GIT_IDENTITY.email}`,
+    "-c",
+    `user.name=${SWE_FIXTURE_GIT_IDENTITY.name}`,
+    "commit",
+    "-q",
+    "-m",
+    SWE_FIXTURE_COMMIT_MESSAGE,
+  ]);
+}
+
+async function runGit(cwd: string, args: string[]): Promise<void> {
+  const result = await new Deno.Command("git", {
+    args,
+    cwd,
+    stdin: "null",
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  if (!result.success) {
+    const stderr = new TextDecoder().decode(result.stderr).trim();
+    throw new Error(`git ${args.join(" ")} failed in ${cwd}: ${stderr}`);
+  }
+}
+
+/** Register a portal via `portal add` (idempotent for an identical target). Best-effort: a
+ *  failed mount is surfaced as a warning and the scenario's own portal assertions report it. */
+async function mountPortal(
+  targetPath: string,
+  alias: string,
   options: IRunSyntheticScenarioOptions,
   env: { [key: string]: string },
 ): Promise<void> {
   try {
     const result = await new Deno.Command(options.exactlExecutable ?? "exactl", {
-      args: ["portal", "add", portal.source_path, portal.alias],
+      args: ["portal", "add", targetPath, alias],
       cwd: options.workspaceRoot,
       env,
       stdin: "null",
@@ -644,7 +749,7 @@ async function mountDeclaredPortal(
     }).output();
     if (!result.success) {
       console.warn(
-        `%c ⚠ declared portal '${portal.alias}' could not be mounted from ${portal.source_path}`,
+        `%c ⚠ declared portal '${alias}' could not be mounted from ${targetPath}`,
         "color: orange;",
       );
     }
