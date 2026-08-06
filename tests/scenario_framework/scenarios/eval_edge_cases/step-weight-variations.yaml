@@ -8,25 +8,17 @@ mode_support: ["auto"]
 portals: []
 steps:
   - id: "step-a"
-    type: "shell"
-    command: "sh"
-    args:
-      - "-c"
-      - |
-          echo "present" > $WORKSPACE_ROOT/step-a-file.txt
-    step_weight: 0.8
+    type: "write-file"
+    path: "step-a-file.txt"
+    content: "present"
     output_criteria:
       - id: "step-a-file"
         kind: "file-exists"
         path: "step-a-file.txt"
   - id: "step-b"
-    type: "shell"
-    command: "sh"
-    args:
-      - "-c"
-      - |
-          echo "present" > $WORKSPACE_ROOT/step-b-file.txt
-    step_weight: 0.2
+    type: "write-file"
+    path: "step-b-file.txt"
+    content: "present"
     output_criteria:
       - id: "step-b-missing"
         kind: "file-exists"

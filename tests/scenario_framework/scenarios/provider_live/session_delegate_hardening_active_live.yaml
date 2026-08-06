@@ -11,31 +11,13 @@ pack: "provider_live"
 tags: ["provider-live", "session-delegation", "safety-gate"]
 request_fixture: "fixtures/requests/provider_live/session_delegate_code_change.md"
 mode_support: ["auto"]
-portals: []
+portals:
+  - alias: "test-portal"
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/simple_repo"
+    target_path: "$WORKSPACE_ROOT/test-portal"
+    git_init: true
 
 steps:
-  - id: "setup-portal-repo"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "rm -rf \"$WORKSPACE_ROOT/test-portal\" && cp -r \"$FRAMEWORK_HOME/fixtures/portals/simple_repo\" \"$WORKSPACE_ROOT/test-portal\" && cd \"$WORKSPACE_ROOT/test-portal\" && git init -q && git add -A && git -c user.email=delegate@exaix.dev -c user.name=delegate commit -q -m 'init test portal'",
-      ]
-    output_criteria:
-      - id: "portal-repo-initialized"
-        score_weight: 0.5
-        kind: "command-exit-code"
-        equals: 0
-
-  # Daemon started WITH harden_permissions enabled. EXA_CONFIG_PATH points at the dogfood.claude
-  # preset (Claude analysis + portal/root sentinels); the runner materializes a sentinel-resolved
-  # copy into the workspace (root → workspace, worktree → portal) before any step runs. The
-  # EXA_SESSION_DELEGATE_* env vars override the preset's [session_delegate] block (daemon supports
-  # this for E2E): tool=opencode, gates=code_changes, headless, harden_permissions=true — so the
-  # delegate launches OpenCode with the generated permission config (Phase 128 pre-flight guard).
-  # A fresh per-run sandbox (sibling exaix-sandboxes/<run-id>) means no stale portal persists across
-  # runs, so a plain `add-portal` succeeds — the former setup-clean-portal workaround is gone.
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"

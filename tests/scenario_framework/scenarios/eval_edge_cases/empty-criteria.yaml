@@ -8,11 +8,7 @@ mode_support: ["auto"]
 portals: []
 steps:
   - id: "create-file"
-    type: "shell"
-    command: "sh"
-    args:
-      - "-c"
-      - |
-          echo "test" > $WORKSPACE_ROOT/edge-empty.txt
-    input_criteria: []
+    type: "write-file"
+    path: "edge-empty.txt"
+    content: "test"
     output_criteria: []

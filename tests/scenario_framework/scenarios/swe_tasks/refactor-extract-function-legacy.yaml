@@ -87,20 +87,13 @@ steps:
         score_weight: 0.15
 
   - id: "locate-worktree"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "find \"$WORKSPACE_ROOT/.exa/worktrees/todo-app\" -mindepth 1 -maxdepth 1 -type d | head -1 > \"$WORKSPACE_ROOT/.exa/worktree-path.txt\"",
-      ]
+    type: "wait-for-file"
+    args: ["**/.exa/worktrees/todo-app/*/plan.md"]
+    timeout_sec: 120
     output_criteria:
       - id: "worktree-located"
-        kind: "command-exit-code"
-        equals: 0
-      - id: "worktree-path-recorded"
         kind: "file-found"
-        path_pattern: "**/.exa/worktree-path.txt"
+        path_pattern: "**/.exa/worktrees/todo-app/*/plan.md"
 
   # Deterministic pass signal: business_logic_test.ts asserts processTaskSubmission's
   # observable behavior — the request explicitly requires it keep passing unmodified, so a

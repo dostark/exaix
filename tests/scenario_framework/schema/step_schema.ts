@@ -25,6 +25,7 @@ export enum ScenarioStepType {
   TEST_RUN = "test-run",
   PATCH_BLUEPRINT = "patch-blueprint",
   PREPARE_EVIDENCE = "prepare-evidence",
+  WRITE_FILE = "write-file",
   JUDGE = "judge",
   WAIT_FOR_FILE = "wait-for-file",
   WAIT_FOR_JOURNAL_EVENT = "wait-for-journal-event",
@@ -377,6 +378,12 @@ export const ScenarioStepSchema = z.object({
   source: z.string().min(1).optional(),
   // prepare-evidence: workspace-relative target for the copied evidence (default llm-judge-input.txt).
   target: z.string().min(1).optional(),
+  // write-file: workspace-relative path to write.
+  path: z.string().min(1).optional(),
+  // write-file: content to write (overwrites); with `append: true` it appends.
+  content: z.string().optional(),
+  // write-file: append to the file instead of overwriting.
+  append: z.boolean().optional(),
   checkpoint: z.union([NON_EMPTY_STRING, z.boolean()]).optional(),
   instructions: NON_EMPTY_STRING.optional(),
   continue_on_failure: z.boolean().default(false),

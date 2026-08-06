@@ -5,7 +5,11 @@ pack: "provider_live"
 tags: ["provider-live", "session-delegation", "safety-gate"]
 request_fixture: "fixtures/requests/provider_live/session_delegate_code_change.md"
 mode_support: ["auto"]
-portals: []
+portals:
+  - alias: "test-portal"
+    source_path: "$FRAMEWORK_HOME/fixtures/portals/simple_repo"
+    target_path: "$WORKSPACE_ROOT/test-portal"
+    git_init: true
 
 matrix:
   axes:
@@ -36,25 +40,6 @@ matrix:
 
 steps:
   # --- Setup (shared across all cells) ---
-  - id: "setup-portal-repo"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "cp -r \"$FRAMEWORK_HOME/fixtures/portals/simple_repo\" \"$WORKSPACE_ROOT/test-portal\" && cd \"$WORKSPACE_ROOT/test-portal\" && git init -q && git add -A && git -c user.email=delegate@exaix.dev -c user.name=delegate commit -q -m 'init test portal'",
-      ]
-    output_criteria:
-      - id: "portal-repo-initialized"
-        score_weight: 0.5
-        kind: "command-exit-code"
-        equals: 0
-
-  # start-daemon: the matrix_expander overlay repoints EXA_CONFIG_PATH at the workspace's
-  # materialized exa.config.toml (sentinels resolved: root → workspace, worktree → portal),
-  # which carries the cell's [session_delegate.provider] realm + the complete [session_delegate]
-  # block (enabled, tool=claude-code, gates=[code_changes], launch_mode=headless). The daemon
-  # MUST start before the portal is added so portal add + the daemon share one live config file.
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"

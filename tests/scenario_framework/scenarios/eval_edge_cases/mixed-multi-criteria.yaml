@@ -8,15 +8,9 @@ mode_support: ["auto"]
 portals: []
 steps:
   - id: "create-artifacts"
-    type: "shell"
-    command: "sh"
-    args:
-      - "-c"
-      - |
-          mkdir -p $WORKSPACE_ROOT/multi
-          echo '{"a":1}' > $WORKSPACE_ROOT/multi/data.json
-          echo "content" > $WORKSPACE_ROOT/multi/notes.txt
-    input_criteria: []
+    type: "write-file"
+    path: "multi/notes.txt"
+    content: "content"
     output_criteria:
       - id: "json-exists"
         kind: "file-exists"

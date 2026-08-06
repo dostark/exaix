@@ -16,8 +16,8 @@ import {
   type IScenarioStep,
   ScenarioStepType,
 } from "../schema/step_schema.ts";
-import { copy } from "@std/fs";
-import { globToRegExp, join, relative, resolve } from "@std/path";
+import { copy, ensureDir } from "@std/fs";
+import { dirname, globToRegExp, join, relative, resolve } from "@std/path";
 import { Database } from "@db/sqlite";
 import type { Opt, Reason } from "@exaix/core/types";
 import {
@@ -202,6 +202,11 @@ export async function executeScenarioStep(
   // Handle prepare-evidence — copy a cwd-relative source file to a workspace evidence target.
   if (options.step.type === ScenarioStepType.PREPARE_EVIDENCE) {
     return await executePrepareEvidenceStep(options, startedAt, startedAtEpochMs);
+  }
+
+  // Handle write-file — write a content string to a workspace-relative path.
+  if (options.step.type === ScenarioStepType.WRITE_FILE) {
+    return await executeWriteFileStep(options, startedAt, startedAtEpochMs);
   }
 
   // Handle trajectory-assert — reads journal directly via SQLite instead of executing a command
@@ -819,6 +824,42 @@ async function executePrepareEvidenceStep(
     await copy(join(executionBase, source), join(workspaceRoot, target), { overwrite: true });
     ok = true;
     message = `prepared evidence: ${source} → ${target}`;
+  } catch (error) {
+    message = error instanceof Error ? error.message : String(error);
+  }
+  const completedAtEpochMs = Date.now();
+  const completedAt = new Date(completedAtEpochMs).toISOString();
+  return {
+    stepId: options.step.id,
+    stepType: options.step.type,
+    startedAt,
+    completedAt,
+    durationMs: completedAtEpochMs - startedAtEpochMs,
+    exitCode: ok ? 0 : 1,
+    stdout: message,
+    stderr: ok ? "" : message,
+    combinedOutput: message,
+  };
+}
+
+/** A `write-file` step: write a content string to a workspace-relative path (or append). */
+async function executeWriteFileStep(
+  options: IExecuteScenarioStepOptions,
+  startedAt: string,
+  startedAtEpochMs: number,
+): Promise<IScenarioStepExecutionResult> {
+  const relPath = options.step.path ?? options.step.args?.[0] ?? "";
+  const content = options.step.content ?? options.step.args?.[1] ?? "";
+  const workspaceRoot = options.cwd || Deno.cwd();
+  let message = "";
+  let ok = false;
+  try {
+    const target = resolve(workspaceRoot, relPath);
+    await ensureDir(dirname(target));
+    const previous = options.step.append ? await Deno.readTextFile(target).catch(() => "") : "";
+    await Deno.writeTextFile(target, previous + content);
+    ok = true;
+    message = `${options.step.append ? "appended to" : "wrote"} ${relPath}`;
   } catch (error) {
     message = error instanceof Error ? error.message : String(error);
   }

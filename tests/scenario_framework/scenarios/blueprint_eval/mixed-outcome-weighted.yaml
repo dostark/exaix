@@ -8,15 +8,9 @@ mode_support: ["auto"]
 portals: []
 steps:
   - id: "create-partial-artifacts"
-    type: "shell"
-    command: "sh"
-    args:
-      - "-c"
-      - |
-          mkdir -p $WORKSPACE_ROOT/artifacts
-          echo "present" > $WORKSPACE_ROOT/artifacts/existing-file.txt
-          echo '{"key":"value"}' > $WORKSPACE_ROOT/artifacts/data.json
-    input_criteria: []
+    type: "write-file"
+    path: "artifacts/existing-file.txt"
+    content: "present"
     output_criteria:
       - id: "check-existing-file"
         kind: "file-exists"

@@ -8,15 +8,9 @@ mode_support: ["auto"]
 portals: []
 steps:
   - id: "create-smoke-artifacts"
-    type: "shell"
-    command: "sh"
-    args:
-      - "-c"
-      - |
-          mkdir -p $WORKSPACE_ROOT/eval-test
-          echo "smoke test data" > $WORKSPACE_ROOT/eval-test/output.txt
-          echo '{"smoke":true,"value":42}' > $WORKSPACE_ROOT/eval-test/metrics.json
-    input_criteria: []
+    type: "write-file"
+    path: "eval-test/output.txt"
+    content: "smoke test data"
     output_criteria:
       - id: "output-file-exists"
         kind: "file-exists"
