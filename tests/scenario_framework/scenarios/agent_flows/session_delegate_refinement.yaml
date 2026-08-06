@@ -9,7 +9,7 @@ portals: []
 
 steps:
   - id: "build-mock-tool"
-    type: "shell"
+    type: "run-script"
     # bash, not `deno run`: the target is a Bourne-Again shell script (#!/bin/bash), so deno
     # parsed it as TypeScript and failed with "Expected ';', '}' or <eof>". The path also
     # needed the $FRAMEWORK_HOME prefix every sibling argument already used — bare

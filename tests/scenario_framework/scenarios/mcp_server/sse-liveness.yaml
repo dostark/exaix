@@ -38,7 +38,7 @@ steps:
         score_weight: 0.5
 
   - id: "verify-no-leaked-server"
-    type: "shell"
+    type: "run-script"
     name: "No MCP server process survives the probe"
     command: "sh"
     # The bracket around the first character stops pgrep matching this very command line,

@@ -16,19 +16,19 @@ mode_support: ["manual-checkpoint"]
 portals: []
 steps:
   - id: "inject-large-observation-1"
-    type: "shell"
+    type: "judge"
     command: "echo"
     args:
       - "Observation 1: large tool result (simulated). ContextBudgetManager receives this as a tool_result segment with high tokenEstimate."
 
   - id: "inject-large-observation-2"
-    type: "shell"
+    type: "judge"
     command: "echo"
     args:
       - "Observation 2: large tool result (simulated). Budget pressure accumulates across iterations as history grows."
 
   - id: "inject-large-observation-3"
-    type: "shell"
+    type: "judge"
     command: "echo"
     args:
       - "Observation 3: large tool result (simulated). By the third iteration the loopHistory budget is exhausted; tool_result segments are dropped and overflowRecovered is set to true."

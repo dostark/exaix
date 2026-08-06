@@ -10,9 +10,8 @@ portals: []
 # All assertions are performed in tests/scenario_framework/tests/triggers_basic_scenario_test.ts.
 steps:
   - id: noop
-    type: shell
+    type: judge
     name: "Placeholder"
-    command: "true"
     args: []
     input_criteria: []
     output_criteria: []
