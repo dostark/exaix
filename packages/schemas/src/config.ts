@@ -783,7 +783,7 @@ export const ConfigSchema = z.object({
     /** Whether request-time portal knowledge resolution/injection runs at all (Phase 143 ablation switch; default on, off disables the request-side injection only). */
     injection_enabled: z.boolean().default(true),
     /** Automatically trigger knowledge analysis after portal mount. */
-    auto_analyze_on_mount: z.boolean().default(true),
+    auto_analyze_on_mount: z.boolean().default(false),
     /** Default analysis depth when not overridden per-call. */
     default_mode: z.nativeEnum(PortalAnalysisMode)
       .default(DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_MODE as PortalAnalysisMode),
@@ -824,7 +824,7 @@ export const ConfigSchema = z.object({
     git_history_since: z.string().optional().default(DEFAULTS.GIT_HISTORY_SINCE),
   }).optional().default({
     injection_enabled: true,
-    auto_analyze_on_mount: true,
+    auto_analyze_on_mount: false,
     default_mode: DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_MODE as PortalAnalysisMode,
     quick_scan_limit: DEFAULTS.DEFAULT_QUICK_SCAN_LIMIT,
     max_files_to_read: DEFAULTS.DEFAULT_MAX_FILES_TO_READ,

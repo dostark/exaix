@@ -3286,7 +3286,7 @@ exactl portal knowledge MyProject --json
 
 ```toml
 [portal_knowledge]
-auto_analyze_on_mount = true      # Analyze on portal add/refresh
+auto_analyze_on_mount = false     # Analyze on portal add/refresh (opt-in)
 default_mode          = "quick"   # quick | standard | deep
 quick_scan_limit      = 200       # Max files read in quick mode
 max_files_to_read     = 50        # Hard cap across all strategies

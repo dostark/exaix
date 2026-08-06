@@ -66,12 +66,24 @@ Deno.test("[ConfigSchema] uses defaults when portal_knowledge is absent", () => 
   assertEquals(result.success, true);
   if (result.success) {
     const pk = result.data.portal_knowledge!;
-    assertEquals(pk.auto_analyze_on_mount, true);
+    assertEquals(pk.auto_analyze_on_mount, false);
     assertEquals(pk.default_mode, DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_MODE);
     assertEquals(pk.quick_scan_limit, DEFAULTS.DEFAULT_QUICK_SCAN_LIMIT);
     assertEquals(pk.max_files_to_read, DEFAULTS.DEFAULT_MAX_FILES_TO_READ);
     assertEquals(pk.staleness_hours, DEFAULTS.DEFAULT_KNOWLEDGE_STALENESS_HOURS);
     assertEquals(pk.use_llm_inference, true);
+  }
+});
+
+Deno.test("[ConfigSchema] auto_analyze_on_mount defaults to false when the key is omitted", () => {
+  const result = ConfigSchema.safeParse({
+    ...baseConfig(),
+    portal_knowledge: { default_mode: "standard" },
+  });
+
+  assertEquals(result.success, true);
+  if (result.success) {
+    assertEquals(result.data.portal_knowledge!.auto_analyze_on_mount, false);
   }
 });
 
