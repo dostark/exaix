@@ -57,6 +57,7 @@ export enum CriterionKind {
   VERSION_LTE = "version-lte",
   DIR_EXISTS = "dir-exists",
   COMMAND_OUTPUT_CONTAINS = "command-output-contains",
+  COMMAND_OUTPUT_NOT_CONTAINS = "command-output-not-contains",
   LLM_JUDGE = "llm-judge",
   TRAJECTORY = "trajectory",
 }
@@ -215,6 +216,11 @@ const CommandOutputContainsCriterionSchema = BaseCriterionSchema.extend({
   contains: z.array(z.string()).min(1),
 }).strict();
 
+const CommandOutputNotContainsCriterionSchema = BaseCriterionSchema.extend({
+  kind: z.literal(CriterionKind.COMMAND_OUTPUT_NOT_CONTAINS),
+  not_contains: z.array(z.string()).min(1),
+}).strict();
+
 const StatusEqualsCriterionSchema = BaseCriterionSchema.extend({
   kind: z.literal(CriterionKind.STATUS_EQUALS),
   equals: NON_EMPTY_STRING,
@@ -305,6 +311,7 @@ export const CriterionSchema = z.discriminatedUnion("kind", [
   VersionGteCriterionSchema,
   VersionLteCriterionSchema,
   CommandOutputContainsCriterionSchema,
+  CommandOutputNotContainsCriterionSchema,
   LlmJudgeCriterionSchema,
 ]);
 

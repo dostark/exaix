@@ -118,6 +118,7 @@ type IVersionEqualsCriterion = Extract<ICriterion, { kind: CriterionKind.VERSION
 type IVersionGteCriterion = Extract<ICriterion, { kind: CriterionKind.VERSION_GTE }>;
 type IVersionLteCriterion = Extract<ICriterion, { kind: CriterionKind.VERSION_LTE }>;
 type ICommandOutputContainsCriterion = Extract<ICriterion, { kind: CriterionKind.COMMAND_OUTPUT_CONTAINS }>;
+type ICommandOutputNotContainsCriterion = Extract<ICriterion, { kind: CriterionKind.COMMAND_OUTPUT_NOT_CONTAINS }>;
 
 interface IKeyValueDocument {
   [key: string]: any;
@@ -169,6 +170,8 @@ export async function evaluateCriterion(
       return await evaluateVersionLteCriterion(options);
     case CriterionKind.COMMAND_OUTPUT_CONTAINS:
       return evaluateCommandOutputContainsCriterion(options);
+    case CriterionKind.COMMAND_OUTPUT_NOT_CONTAINS:
+      return evaluateCommandOutputNotContainsCriterion(options);
     case CriterionKind.LLM_JUDGE:
       return await evaluateLlmJudgeCriterion(options);
   }
@@ -1302,6 +1305,32 @@ function evaluateCommandOutputContainsCriterion(
     evidence_refs: [],
     observed_value: combined,
     expected_value: criterion.contains,
+  };
+}
+
+/** Assert that none of the forbidden patterns appear in the combined stdout+stderr output. */
+function evaluateCommandOutputNotContainsCriterion(
+  options: IEvaluateCriterionOptions,
+): ICriterionResult {
+  const criterion = options.criterion as ICommandOutputNotContainsCriterion;
+  const stdout = options.executionResult?.stdout ?? "";
+  const stderr = options.executionResult?.stderr ?? "";
+  const combined = stdout + stderr;
+
+  const found = criterion.not_contains.filter((pattern) => combined.includes(pattern));
+  const passed = found.length === 0;
+
+  return {
+    criterion_id: criterion.id,
+    kind: CriterionKind.COMMAND_OUTPUT_NOT_CONTAINS,
+    phase: options.phase,
+    status: passed ? CriterionStatus.PASSED : CriterionStatus.FAILED,
+    message: passed
+      ? `Command output contains none of the forbidden patterns`
+      : `Command output contains forbidden patterns: ${found.join(", ")}`,
+    evidence_refs: [],
+    observed_value: combined,
+    expected_value: criterion.not_contains,
   };
 }
 

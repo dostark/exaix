@@ -37,22 +37,75 @@ steps:
     output_criteria: []
 
   # --- Submit all 7 high-prio identities ---
-  - id: "submit-all"
-    type: "shell"
-    command: "sh"
-    args:
-      - "-c"
-      - |
-          set -e
-          for spec in senior-coder:senior_coder software-architect:software_architect quality-judge:quality_judge security-expert:security_expert dogfood-developer:dogfood_coder voting-judge:voting_judge default:default; do
-            id="${spec%%:*}"
-            fixture="${spec#*:}"
-            echo "=== Submitting request for $id ==="
-            $FRAMEWORK_HOME/bin/exactl request --file "$FRAMEWORK_HOME/fixtures/requests/provider_live/${fixture}.md" --identity "$id"
-            echo "=== Submitted $id ==="
-          done
+  - id: "submit-senior-coder"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$FRAMEWORK_HOME/fixtures/requests/provider_live/senior_coder.md", "--identity", "senior-coder"]
     output_criteria:
-      - id: "all-submitted"
+      - id: "senior-coder-submitted"
+        kind: "command-exit-code"
+        equals: 0
+  - id: "submit-software-architect"
+    type: "exactl"
+    command: "request"
+    args: [
+      "--file",
+      "$FRAMEWORK_HOME/fixtures/requests/provider_live/software_architect.md",
+      "--identity",
+      "software-architect",
+    ]
+    output_criteria:
+      - id: "software-architect-submitted"
+        kind: "command-exit-code"
+        equals: 0
+  - id: "submit-quality-judge"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$FRAMEWORK_HOME/fixtures/requests/provider_live/quality_judge.md", "--identity", "quality-judge"]
+    output_criteria:
+      - id: "quality-judge-submitted"
+        kind: "command-exit-code"
+        equals: 0
+  - id: "submit-security-expert"
+    type: "exactl"
+    command: "request"
+    args: [
+      "--file",
+      "$FRAMEWORK_HOME/fixtures/requests/provider_live/security_expert.md",
+      "--identity",
+      "security-expert",
+    ]
+    output_criteria:
+      - id: "security-expert-submitted"
+        kind: "command-exit-code"
+        equals: 0
+  - id: "submit-dogfood-developer"
+    type: "exactl"
+    command: "request"
+    args: [
+      "--file",
+      "$FRAMEWORK_HOME/fixtures/requests/provider_live/dogfood_coder.md",
+      "--identity",
+      "dogfood-developer",
+    ]
+    output_criteria:
+      - id: "dogfood-developer-submitted"
+        kind: "command-exit-code"
+        equals: 0
+  - id: "submit-voting-judge"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$FRAMEWORK_HOME/fixtures/requests/provider_live/voting_judge.md", "--identity", "voting-judge"]
+    output_criteria:
+      - id: "voting-judge-submitted"
+        kind: "command-exit-code"
+        equals: 0
+  - id: "submit-default"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$FRAMEWORK_HOME/fixtures/requests/provider_live/default.md", "--identity", "default"]
+    output_criteria:
+      - id: "default-submitted"
         kind: "command-exit-code"
         equals: 0
 

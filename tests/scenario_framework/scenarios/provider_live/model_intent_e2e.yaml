@@ -61,17 +61,19 @@ steps:
   # error "Portal not found: workspace" once the plan is approved and executed. exaix-self
   # is the portal the dogfood.claude.no-delegate.toml preset already registers.
   - id: "submit-request"
-    type: "shell"
-    command: "sh"
-    args:
-      - "-c"
-      - |
-          $FRAMEWORK_HOME/bin/exactl request \
-            --file "$REQUEST_FIXTURE" \
-            --model-size M \
-            --thinking \
-            --portal exaix-self \
-            --subject "Model intent e2e test"
+    type: "exactl"
+    command: "request"
+    args: [
+      "--file",
+      "$REQUEST_FIXTURE",
+      "--model-size",
+      "M",
+      "--thinking",
+      "--portal",
+      "exaix-self",
+      "--subject",
+      "Model intent e2e test",
+    ]
     output_criteria:
       - id: "request-submitted"
         kind: "command-exit-code"
@@ -135,14 +137,9 @@ steps:
   # never sees it, ModelResolver never runs, and model.resolved never fires. verify-model-intent
   # above only checks the plan FILE exists, not that it was ever executed.
   - id: "approve-plan"
-    type: "shell"
-    command: "sh"
-    args:
-      - "-c"
-      - |
-          plan_file=$(ls "$WORKSPACE_ROOT/Workspace/Plans/"*_plan.md 2>/dev/null | head -1)
-          plan_id=$(basename "$plan_file" .md)
-          $FRAMEWORK_HOME/bin/exactl plan approve "$plan_id"
+    type: "exactl"
+    command: "plan"
+    args: ["approve-all"]
     output_criteria:
       - id: "plan-approved"
         kind: "command-exit-code"

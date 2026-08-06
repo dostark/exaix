@@ -873,3 +873,63 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] file_pattern resolves the most 
     await Deno.remove(workspaceRoot, { recursive: true });
   }
 });
+
+Deno.test("[ScenarioFrameworkAssertionsEvidence] command-output-not-contains passes when output lacks the pattern", async () => {
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-framework-not-contains-" });
+  try {
+    const result = await evaluateCriterion({
+      workspaceRoot,
+      phase: CriterionPhase.OUTPUT,
+      criterion: {
+        id: "read-only-tool-accepted",
+        kind: CriterionKind.COMMAND_OUTPUT_NOT_CONTAINS,
+        not_contains: ['read_file" is a write tool'],
+      },
+      executionResult: {
+        stepId: "read-only-tool-not-flagged",
+        stepType: ScenarioStepType.EXACTL,
+        startedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        durationMs: 1,
+        exitCode: 1,
+        stdout: 'write_file" is a write tool',
+        stderr: "",
+        combinedOutput: 'write_file" is a write tool',
+      } as never,
+    });
+    assertEquals(result.status, CriterionStatus.PASSED);
+    assertEquals(result.observed_value, 'write_file" is a write tool');
+  } finally {
+    await Deno.remove(workspaceRoot, { recursive: true });
+  }
+});
+
+Deno.test("[ScenarioFrameworkAssertionsEvidence] command-output-not-contains fails when any pattern appears (stdout+stderr)", async () => {
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-framework-not-contains-" });
+  try {
+    const result = await evaluateCriterion({
+      workspaceRoot,
+      phase: CriterionPhase.OUTPUT,
+      criterion: {
+        id: "read-only-tool-accepted",
+        kind: CriterionKind.COMMAND_OUTPUT_NOT_CONTAINS,
+        not_contains: ['read_file" is a write tool', "approval required"],
+      },
+      executionResult: {
+        stepId: "read-only-tool-not-flagged",
+        stepType: ScenarioStepType.EXACTL,
+        startedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        durationMs: 1,
+        exitCode: 1,
+        stdout: "",
+        stderr: 'write_file is escalated; read_file" is a write tool',
+        combinedOutput: 'write_file is escalated; read_file" is a write tool',
+      } as never,
+    });
+    assertEquals(result.status, CriterionStatus.FAILED);
+    assertEquals(result.expected_value, ['read_file" is a write tool', "approval required"]);
+  } finally {
+    await Deno.remove(workspaceRoot, { recursive: true });
+  }
+});

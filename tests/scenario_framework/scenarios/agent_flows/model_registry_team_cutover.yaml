@@ -116,15 +116,9 @@ steps:
 
   # --- Submit request targeting the best-characteristic identity ---
   - id: "submit-request"
-    type: "shell"
-    command: "sh"
-    args:
-      - "-c"
-      - |
-          $FRAMEWORK_HOME/bin/exactl request \
-            --file "$REQUEST_FIXTURE" \
-            --identity stub-best \
-            --subject "Model registry Team cutover scenario"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--identity", "stub-best", "--subject", "Model registry Team cutover scenario"]
     output_criteria:
       - id: "request-submitted"
         kind: "command-exit-code"
@@ -154,14 +148,9 @@ steps:
 
   # --- Approve the plan, moving it to Workspace/Active so ExecutionLoop picks it up ---
   - id: "approve-plan"
-    type: "shell"
-    command: "sh"
-    args:
-      - "-c"
-      - |
-          plan_file=$(ls "$WORKSPACE_ROOT/Workspace/Plans/"*_plan.md 2>/dev/null | head -1)
-          plan_id=$(basename "$plan_file" .md)
-          $FRAMEWORK_HOME/bin/exactl plan approve "$plan_id"
+    type: "exactl"
+    command: "plan"
+    args: ["approve-all"]
     output_criteria:
       - id: "plan-approved"
         kind: "command-exit-code"

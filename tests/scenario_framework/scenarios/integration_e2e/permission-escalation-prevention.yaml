@@ -31,17 +31,18 @@ steps:
         contains: ["write_file", "dynamic"]
 
   - id: "read-only-tool-not-flagged"
-    type: "shell"
+    type: "exactl"
     name: "The rejection names only the write tool, not the read-only one beside it"
     # Guards against a rule that rejects any dynamic step carrying permitted_tools at all: the
-    # fixture grants read_file AND write_file, and only the second is an escalation.
-    command: "sh"
-    args: [
-      "-c",
-      "out=$(\"$FRAMEWORK_HOME/bin/exactl\" flow validate permission-escalation-test 2>&1 || true); echo \"$out\"; ! echo \"$out\" | grep -q 'read_file\" is a write tool'",
-    ]
+    # fixture grants read_file AND write_file, and only the second is an escalation. validate
+    # fails on the write-file escalation (see validate-flow above), so expect_failure makes the
+    # non-zero exit the expected outcome and the not-contains criterion asserts read_file is not
+    # named as a write tool.
+    command: "flow"
+    args: ["validate", "permission-escalation-test"]
+    expect_failure: true
     output_criteria:
       - id: "read-only-tool-accepted"
         score_weight: 0.6
-        kind: "command-exit-code"
-        equals: 0
+        kind: "command-output-not-contains"
+        not_contains: ['read_file" is a write tool']
