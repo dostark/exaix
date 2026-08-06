@@ -149,13 +149,10 @@ steps:
   # Deterministic pass signal: the fixture's own test suite must still pass after the new
   # handler is added, checked against the mounted portal now that approve-review has merged in.
   - id: "run-tests"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "cd \"$WORKSPACE_ROOT/todo-app\" && deno test src/",
-      ]
+    type: "test-run"
+    cwd: "todo-app"
+    command: "deno"
+    args: ["test", "src/"]
     output_criteria:
       - id: "tests-pass"
         kind: "command-exit-code"

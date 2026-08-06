@@ -115,13 +115,10 @@ steps:
   # observable behavior — the request explicitly requires it keep passing unmodified, so a
   # refactor that changes behavior (not just structure) is caught here.
   - id: "run-tests"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "WORKTREE=$(cat \"$WORKSPACE_ROOT/.exa/worktree-path.txt\") && cd \"$WORKTREE\" && deno test src/",
-      ]
+    type: "test-run"
+    cwd: "$WORKTREE"
+    command: "deno"
+    args: ["test", "src/"]
     output_criteria:
       - id: "tests-pass"
         kind: "command-exit-code"

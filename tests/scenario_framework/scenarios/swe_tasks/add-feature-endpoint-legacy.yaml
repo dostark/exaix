@@ -116,13 +116,10 @@ steps:
   # fix-bug scenario), so this asserts "the feature didn't break anything it touched",
   # while the llm-judge criterion below assesses whether the feature was actually built.
   - id: "run-tests"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "WORKTREE=$(cat \"$WORKSPACE_ROOT/.exa/worktree-path.txt\") && cd \"$WORKTREE\" && deno test src/",
-      ]
+    type: "test-run"
+    cwd: "$WORKTREE"
+    command: "deno"
+    args: ["test", "src/"]
     output_criteria:
       - id: "tests-pass"
         kind: "command-exit-code"

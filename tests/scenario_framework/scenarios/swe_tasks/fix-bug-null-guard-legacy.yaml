@@ -161,13 +161,10 @@ steps:
   # run-tests now checks the mounted portal only AFTER approve-review has merged the worktree
   # branch in — before that step existed, this always ran against stale, unfixed code.
   - id: "run-tests"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "cd \"$WORKSPACE_ROOT/todo-app\" && deno test src/",
-      ]
+    type: "test-run"
+    cwd: "todo-app"
+    command: "deno"
+    args: ["test", "src/"]
     output_criteria:
       - id: "tests-pass"
         kind: "command-exit-code"

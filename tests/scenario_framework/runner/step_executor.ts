@@ -702,6 +702,16 @@ function buildCommandSpec(options: IExecuteScenarioStepOptions): ICommandSpec {
     };
   }
 
+  // test-run executes the repo's test command in the step's resolved `cwd` (workspace, portal
+  // dir, or `$WORKTREE`) — a framework-owned test-runner instead of a `cd ... && deno test`
+  // shell step. Defaults to `deno test`.
+  if (options.step.type === ScenarioStepType.TEST_RUN) {
+    return {
+      executable: options.step.command ?? "deno",
+      args: options.step.args ?? ["test"],
+    };
+  }
+
   if (options.step.type === ScenarioStepType.EXACTL) {
     if (!options.step.command) {
       throw new Error(`exactl step requires a command: ${options.step.id}`);

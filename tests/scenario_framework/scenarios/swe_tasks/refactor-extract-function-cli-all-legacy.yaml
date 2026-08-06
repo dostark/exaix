@@ -139,13 +139,10 @@ steps:
   # Deterministic pass signal: business_logic_test.ts asserts processTaskSubmission's
   # observable behavior — the request explicitly requires it keep passing unmodified.
   - id: "run-tests"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "cd \"$WORKSPACE_ROOT/todo-app\" && deno test src/",
-      ]
+    type: "test-run"
+    cwd: "todo-app"
+    command: "deno"
+    args: ["test", "src/"]
     output_criteria:
       - id: "tests-pass"
         kind: "command-exit-code"

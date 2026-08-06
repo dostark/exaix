@@ -130,9 +130,10 @@ steps:
         contains: ["review.approved"]
         score_weight: 0.15
   - id: "verify-tests"
-    type: "shell"
-    command: "sh"
-    args: ["-c", "cd \"$WORKSPACE_ROOT/todo-app\" && deno test src/"]
+    type: "test-run"
+    cwd: "todo-app"
+    command: "deno"
+    args: ["test", "src/"]
     output_criteria:
       - id: "tests-pass"
         kind: "command-exit-code"

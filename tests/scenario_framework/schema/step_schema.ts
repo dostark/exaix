@@ -22,6 +22,7 @@ export enum ScenarioExecutionMode {
 export enum ScenarioStepType {
   SHELL = "shell",
   EXACTL = "exactl",
+  TEST_RUN = "test-run",
   WAIT_FOR_FILE = "wait-for-file",
   WAIT_FOR_JOURNAL_EVENT = "wait-for-journal-event",
   WAIT_FOR_STATUS = "wait-for-status",
