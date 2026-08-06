@@ -199,4 +199,11 @@ Deno.test("[security] bare opencode launch runs in the eval-jail container mount
   assert(args.slice(opencodeIdx).includes("--dir"), "opencode --dir must be set");
   assert(args.includes("/worktree"), "delegate cwd is the jail worktree");
   assert(args.includes("OPENCODE_CONFIG=/worktree/opencode.jsonc"), "permission config passed into the jail");
+  // Claude Code subscription, never API billing: the jail must not pass ANTHROPIC_API_KEY into
+  // the container (the daemon path strips it too — cli_delegate_strategy_test.ts). The
+  // subscription login is what authenticates, not a metered key.
+  assert(
+    !args.some((a) => a === "ANTHROPIC_API_KEY" || a === "--env=ANTHROPIC_API_KEY" || a.includes("ANTHROPIC_API_KEY=")),
+    "the jail must never pass ANTHROPIC_API_KEY into the container",
+  );
 });

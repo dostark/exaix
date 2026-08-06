@@ -18,10 +18,22 @@ provider = "claude-cli"
 model = "claude-sonnet-5"
 requires_bin = "claude"
 
+[tool.claude-haiku-4-5]
+config = "configs/claude-haiku-4-5-delegate-all.toml"
+provider = "claude-cli"
+model = "claude-haiku-4-5"
+requires_bin = "claude"
+
 [tool.opencode]
 config = "configs/opencode-cli-delegate-all.toml"
 provider = "opencode-cli"
 model = "opencode-go/deepseek-v4-flash"
+requires_bin = "opencode"
+
+[tool.opencode-north-mini-code]
+config = "configs/opencode-north-mini-code-free.toml"
+provider = "opencode-cli"
+model = "opencode/north-mini-code-free"
 requires_bin = "opencode"
 
 [tool.opencode-go]
