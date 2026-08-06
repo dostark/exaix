@@ -58,9 +58,11 @@ steps:
   - id: "assert-registry-resolved"
     type: "journal-assert"
     name: "The daemon journalled a model resolution with a candidate provider set"
-    args: [
-      "SELECT json_extract(payload,'$.selected') AS selected, json_extract(payload,'$.candidate_providers') AS candidate_providers FROM activity WHERE action_type = 'model.resolved' ORDER BY rowid DESC LIMIT 1",
-    ]
+    action_type: "model.resolved"
+    latest_only: true
+    project:
+      selected: "payload.selected"
+      candidate_providers: "payload.candidate_providers"
     output_criteria:
       - id: "model-resolved"
         score_weight: 0.6

@@ -369,6 +369,35 @@ export const ScenarioStepSchema = z.object({
   failure_glob: NON_EMPTY_STRING.optional(),
   // wait-for-journal-event: the action_type to poll the workspace journal for (e.g. daemon.ready).
   event_type: NON_EMPTY_STRING.optional(),
+  // journal-assert: declarative activity-journal query (no raw SQL). Filter fields narrow the
+  // rows considered; `project`/`sums` shape the emitted JSON; `expect_*` picks the assertion
+  // contract (default: at least one matching row). `trace_scoped` scopes to the current
+  // request's trace (first request.created above the scenario baseline).
+  action_type: NON_EMPTY_STRING.optional(),
+  action_types: z.array(NON_EMPTY_STRING).min(1).optional(),
+  action_type_prefix: NON_EMPTY_STRING.optional(),
+  trace_scoped: z.boolean().optional(),
+  payload_equals: z.array(
+    z.object({
+      path: NON_EMPTY_STRING,
+      value: z.union([z.string(), z.number(), z.boolean()]),
+    }).strict(),
+  ).optional(),
+  payload_contains: z.array(NON_EMPTY_STRING).optional(),
+  payload_not_contains: z.array(NON_EMPTY_STRING).optional(),
+  latest_only: z.boolean().optional(),
+  // project: column name -> value source. Sources: "action_type", "trace_id", "rowid", or a
+  // payload JSON path prefixed "payload." (e.g. "payload.tool_name").
+  project: z.record(z.string().min(1), z.string().min(1)).optional(),
+  // sums: column name -> payload JSON path summed over matching rows (single aggregate row).
+  sums: z.record(z.string().min(1), z.string().min(1)).optional(),
+  expect_count: z.number().int().min(0).optional(),
+  expect_sum: z.object({
+    path: NON_EMPTY_STRING,
+    gt: z.number(),
+  }).strict().optional(),
+  // expect_contains: every substring must appear in the LATEST matching row's payload.
+  expect_contains: z.array(NON_EMPTY_STRING).min(1).optional(),
   // file-contains: wait until at least this many files match the step's glob(s) (args and/or
   // file_pattern) before evaluating its file/text criteria. Default 1.
   min_matches: z.number().int().min(1).optional(),

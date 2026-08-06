@@ -138,9 +138,9 @@ steps:
 
   - id: "assert-no-dynamic-tool-calls"
     type: "journal-assert"
-    args: [
-      "SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM activity WHERE action_type = 'dynamic_tool_call' AND trace_id = '$TRACE_ID')",
-    ]
+    action_type: "dynamic_tool_call"
+    trace_scoped: true
+    expect_count: 0
     output_criteria:
       - id: "no-dynamic-tool-calls"
         class: "security"
@@ -150,9 +150,11 @@ steps:
 
   - id: "assert-files-changed"
     type: "journal-assert"
-    args: [
-      "SELECT 1 WHERE (SELECT COALESCE(SUM(json_extract(payload,'$.files_changed')),0) FROM activity WHERE action_type = 'agent.execution_completed' AND trace_id = '$TRACE_ID') > 0",
-    ]
+    action_type: "agent.execution_completed"
+    trace_scoped: true
+    expect_sum:
+      path: "files_changed"
+      gt: 0
     output_criteria:
       - id: "files-changed-nonempty"
         kind: "command-exit-code"

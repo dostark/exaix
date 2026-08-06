@@ -81,9 +81,10 @@ steps:
 
   - id: "assert-strategy-in-journal"
     type: "journal-assert"
-    args: [
-      "SELECT 1 WHERE EXISTS (SELECT 1 FROM activity WHERE action_type = 'flow.step.completed' AND payload LIKE '%\"stepId\":\"react-step\"%' AND payload LIKE '%\"strategy\":\"react\"%')",
-    ]
+    action_type: "flow.step.completed"
+    payload_contains:
+      - '"stepId":"react-step"'
+      - '"strategy":"react"'
     output_criteria:
       - id: "strategy-honored"
         kind: "command-exit-code"
@@ -92,9 +93,11 @@ steps:
 
   - id: "assert-no-strategy-step-unchanged"
     type: "journal-assert"
-    args: [
-      "SELECT 1 WHERE EXISTS (SELECT 1 FROM activity WHERE action_type = 'flow.step.completed' AND payload LIKE '%\"stepId\":\"no-strategy-step\"%' AND payload NOT LIKE '%\"strategy\":%')",
-    ]
+    action_type: "flow.step.completed"
+    payload_contains:
+      - '"stepId":"no-strategy-step"'
+    payload_not_contains:
+      - '"strategy":'
     output_criteria:
       - id: "no-strategy-step-unchanged"
         kind: "command-exit-code"

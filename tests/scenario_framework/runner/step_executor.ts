@@ -921,21 +921,59 @@ async function executeRemoveFilesStep(
   };
 }
 
-/** A `journal-assert` step: run a declarative SQL assertion against the workspace journal.
- *  `$TRACE_ID` is substituted with the current request's trace so the assertion is scoped to
- *  THIS scenario (never an earlier scenario's rows in a shared sandbox). The result rows are
- *  emitted as JSON on stdout (so json-query criteria can score them) and the step exits 0 when
- *  at least one row is returned, 1 otherwise — a `SELECT 1 WHERE <condition>` query therefore
- *  passes exactly when its condition holds. */
+/** A `journal-assert` step: run a DECLARATIVE activity-journal assertion against the workspace
+ *  journal — no raw SQL lives in scenario YAML, the framework builds the query from the step's
+ *  filter/projection/assertion fields. `trace_scoped` resolves to the current request's trace
+ *  (first request.created above the scenario baseline) so the assertion never reads an earlier
+ *  scenario's rows in a shared sandbox.
+ *
+ *  Assertion contract: the step exits 0 when the assertion holds —
+ *   - `expect_count`  : matching rows == N (negative assertion, e.g. "no tool calls");
+ *   - `expect_sum`    : SUM(payload.<path>) > bound (e.g. "files changed > 0");
+ *   - `expect_contains`: every substring appears in the LATEST matching row's payload;
+ *   - otherwise       : at least one matching row exists.
+ *  The result rows are emitted as JSON on stdout so json-query criteria can score them. */
 function executeJournalAssertStep(
   options: IExecuteScenarioStepOptions,
   startedAt: string,
   startedAtEpochMs: number,
 ): IScenarioStepExecutionResult {
-  const query = options.step.args?.[0] ?? "";
   const workspaceRoot = options.cwd || Deno.cwd();
-  const traceId = resolveCurrentTrace(workspaceRoot, options.journalBaselineRowid);
-  const substituted = traceId ? query.replaceAll("$TRACE_ID", traceId) : query;
+  const traceId = options.step.trace_scoped
+    ? resolveCurrentTrace(workspaceRoot, options.journalBaselineRowid)
+    : undefined;
+
+  const where: string[] = [];
+  const params: Array<string | number | boolean> = [];
+  if (options.step.action_type) {
+    where.push("action_type = ?");
+    params.push(options.step.action_type);
+  }
+  if (options.step.action_type_prefix) {
+    where.push("action_type LIKE ?");
+    params.push(`${options.step.action_type_prefix}%`);
+  }
+  if (options.step.action_types?.length) {
+    where.push(`action_type IN (${options.step.action_types.map(() => "?").join(", ")})`);
+    params.push(...options.step.action_types);
+  }
+  if (traceId) {
+    where.push("trace_id = ?");
+    params.push(traceId);
+  }
+  for (const entry of options.step.payload_equals ?? []) {
+    where.push(`json_extract(payload, '$.${safeJsonPath(entry.path)}') = ?`);
+    params.push(entry.value);
+  }
+  for (const needle of options.step.payload_contains ?? []) {
+    where.push("payload LIKE ?");
+    params.push(`%${needle}%`);
+  }
+  for (const needle of options.step.payload_not_contains ?? []) {
+    where.push("payload NOT LIKE ?");
+    params.push(`%${needle}%`);
+  }
+  const whereSql = where.length ? ` WHERE ${where.join(" AND ")}` : "";
 
   let matched = false;
   let rowsJson = "[]";
@@ -944,9 +982,45 @@ function executeJournalAssertStep(
   let db: Database | undefined;
   try {
     db = new Database(dbPath, { readonly: true });
-    const rows = db.prepare(substituted).all();
-    matched = rows.length > 0;
-    rowsJson = JSON.stringify(rows);
+    if (options.step.sums && Object.keys(options.step.sums).length) {
+      const columns = Object.entries(options.step.sums)
+        .map(([column, path]) =>
+          `COALESCE(SUM(json_extract(payload, '$.${safeJsonPath(path)}')), 0) AS ${safeColumnName(column)}`
+        )
+        .join(", ");
+      const rows = db.prepare(`SELECT ${columns} FROM activity${whereSql}`).all(...params);
+      matched = rows.length > 0;
+      rowsJson = JSON.stringify(rows);
+    } else if (options.step.expect_count !== undefined) {
+      const row = db.prepare(`SELECT COUNT(*) AS count FROM activity${whereSql}`).get(...params) as
+        | { count: number }
+        | undefined;
+      const count = row?.count ?? 0;
+      matched = count === options.step.expect_count;
+      rowsJson = JSON.stringify([{ count }]);
+    } else if (options.step.expect_sum) {
+      const row = db.prepare(
+        `SELECT COALESCE(SUM(json_extract(payload, '$.${
+          safeJsonPath(options.step.expect_sum.path)
+        }')), 0) AS sum FROM activity${whereSql}`,
+      ).get(...params) as { sum: number } | undefined;
+      const sum = row?.sum ?? 0;
+      matched = sum > options.step.expect_sum.gt;
+      rowsJson = JSON.stringify([{ sum }]);
+    } else if (options.step.expect_contains?.length) {
+      const row = db.prepare(
+        `SELECT payload FROM activity${whereSql} ORDER BY rowid DESC LIMIT 1`,
+      ).get(...params) as { payload: string } | undefined;
+      const payload = row?.payload ?? "";
+      matched = options.step.expect_contains.every((needle) => payload.includes(needle));
+      rowsJson = JSON.stringify([{ payload }]);
+    } else {
+      const projection = buildJournalProjection(options.step.project);
+      const order = options.step.latest_only ? " ORDER BY rowid DESC LIMIT 1" : " ORDER BY rowid";
+      const rows = db.prepare(`SELECT ${projection} FROM activity${whereSql}${order}`).all(...params);
+      matched = rows.length > 0;
+      rowsJson = JSON.stringify(rows);
+    }
   } catch (error) {
     errorMessage = error instanceof Error ? error.message : String(error);
   } finally {
@@ -972,6 +1046,46 @@ function executeJournalAssertStep(
     stderr: matched ? "" : `${message}${errorMessage ? `: ${errorMessage}` : ""}`,
     combinedOutput: rowsJson,
   };
+}
+
+const JOURNAL_SAFE_PATH_RE = /^[A-Za-z0-9_.-]+$/;
+const JOURNAL_SAFE_COLUMN_RE = /^[A-Za-z0-9_]+$/;
+
+/** A journal-assert payload path placed into a json_extract selector must be strictly
+ *  alphanumeric/underscore/dot/hyphen — never attacker- or YAML-controllable SQL. */
+function safeJsonPath(path: string): string {
+  if (!JOURNAL_SAFE_PATH_RE.test(path)) {
+    throw new Error(`invalid journal-assert payload path: ${path}`);
+  }
+  return path;
+}
+
+function safeColumnName(column: string): string {
+  if (!JOURNAL_SAFE_COLUMN_RE.test(column)) {
+    throw new Error(`invalid journal-assert column name: ${column}`);
+  }
+  return column;
+}
+
+/** Build the SELECT list for a journal-assert probe from a `project` map of column name -> value
+ *  source ("action_type"/"trace_id"/"rowid", or a "payload.<path>" extraction). Defaults to a
+ *  constant row so a bare probe still passes when any row matches. */
+function buildJournalProjection(
+  project: Opt<Record<string, string>, Reason.OptionalInput> = undefined,
+): string {
+  if (!project || Object.keys(project).length === 0) {
+    return "1 AS matched";
+  }
+  return Object.entries(project).map(([column, source]) => {
+    const name = safeColumnName(column);
+    if (source === "action_type") return `action_type AS ${name}`;
+    if (source === "trace_id") return `trace_id AS ${name}`;
+    if (source === "rowid") return `rowid AS ${name}`;
+    if (source.startsWith("payload.")) {
+      return `json_extract(payload, '$.${safeJsonPath(source.slice("payload.".length))}') AS ${name}`;
+    }
+    throw new Error(`invalid journal-assert project source: ${source}`);
+  }).join(", ");
 }
 
 function buildCommandSpec(options: IExecuteScenarioStepOptions): ICommandSpec {

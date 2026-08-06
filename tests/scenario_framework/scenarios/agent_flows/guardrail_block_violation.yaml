@@ -79,7 +79,9 @@ steps:
   - id: "assert-guardrail-screened"
     type: "journal-assert"
     name: "The guardrail recorded a verdict for this run"
-    args: ["SELECT action_type FROM activity WHERE action_type LIKE 'guardrail.%' ORDER BY rowid"]
+    action_type_prefix: "guardrail."
+    project:
+      action_type: "action_type"
     output_criteria:
       - id: "guardrail-ran"
         score_weight: 0.6

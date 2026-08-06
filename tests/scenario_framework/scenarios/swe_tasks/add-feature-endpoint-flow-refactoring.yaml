@@ -122,9 +122,11 @@ steps:
   # exaix-dev-docs/planning/phase-159-flow-step-execution-strategy.md Step 6).
   - id: "assert-files-changed"
     type: "journal-assert"
-    args: [
-      "SELECT 1 WHERE (SELECT COALESCE(SUM(json_extract(payload,'$.files_changed')),0) FROM activity WHERE action_type = 'agent.execution_completed' AND trace_id = '$TRACE_ID') > 0",
-    ]
+    action_type: "agent.execution_completed"
+    trace_scoped: true
+    expect_sum:
+      path: "files_changed"
+      gt: 0
     output_criteria:
       - id: "files-changed-nonempty"
         kind: "command-exit-code"

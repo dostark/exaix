@@ -121,9 +121,9 @@ steps:
   # regression guard again — it catches a future silent fallback to ReAct.
   - id: "assert-no-dynamic-tool-calls"
     type: "journal-assert"
-    args: [
-      "SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM activity WHERE action_type = 'dynamic_tool_call' AND trace_id = '$TRACE_ID')",
-    ]
+    action_type: "dynamic_tool_call"
+    trace_scoped: true
+    expect_count: 0
     output_criteria:
       - id: "no-dynamic-tool-calls"
         class: "security"
@@ -132,9 +132,11 @@ steps:
         score_weight: 0.2
   - id: "assert-files-changed"
     type: "journal-assert"
-    args: [
-      "SELECT 1 WHERE (SELECT COALESCE(SUM(json_extract(payload,'$.files_changed')),0) FROM activity WHERE action_type = 'agent.execution_completed' AND trace_id = '$TRACE_ID') > 0",
-    ]
+    action_type: "agent.execution_completed"
+    trace_scoped: true
+    expect_sum:
+      path: "files_changed"
+      gt: 0
     output_criteria:
       - id: "files-changed-nonempty"
         kind: "command-exit-code"
@@ -145,9 +147,12 @@ steps:
   # comparison report has real, measured token/cost totals instead of an estimate.
   - id: "report-usage-metrics"
     type: "journal-assert"
-    args: [
-      "SELECT COALESCE(SUM(json_extract(payload,'$.usage.prompt_tokens')),0) AS prompt_tokens, COALESCE(SUM(json_extract(payload,'$.usage.completion_tokens')),0) AS completion_tokens, COALESCE(SUM(json_extract(payload,'$.usage.cost_usd_estimate')),0) AS cost_usd FROM activity WHERE action_type = 'agent.execution_completed' AND trace_id = '$TRACE_ID'",
-    ]
+    action_type: "agent.execution_completed"
+    trace_scoped: true
+    sums:
+      prompt_tokens: "usage.prompt_tokens"
+      completion_tokens: "usage.completion_tokens"
+      cost_usd: "usage.cost_usd_estimate"
     output_criteria:
       - id: "usage-metrics-reported"
         kind: "command-exit-code"

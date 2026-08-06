@@ -56,9 +56,10 @@ steps:
   - id: "verify-iterations"
     type: "journal-assert"
     name: "Verify multiple ReAct iterations with distinct tools"
-    args: [
-      "SELECT action_type, json_extract(payload,'$.tool_name') AS tool_name FROM activity WHERE action_type = 'dynamic_tool_call' ORDER BY rowid",
-    ]
+    action_type: "dynamic_tool_call"
+    project:
+      action_type: "action_type"
+      tool_name: "payload.tool_name"
     output_criteria:
       - id: "multiple-iterations"
         score_weight: 0.6
@@ -74,9 +75,12 @@ steps:
   - id: "verify-dynamic-step-completed"
     type: "journal-assert"
     name: "The dynamic step is journalled as completed"
-    args: [
-      "SELECT action_type FROM activity WHERE action_type = 'flow.step.completed' AND json_extract(payload,'$.stepId') = 'analyze'",
-    ]
+    action_type: "flow.step.completed"
+    payload_equals:
+      - path: "stepId"
+        value: "analyze"
+    project:
+      action_type: "action_type"
     output_criteria:
       - id: "dynamic-step-completed"
         score_weight: 0.6

@@ -66,6 +66,21 @@ steps:
     args: ['-c', 'test ! -f /tmp/escaped.txt && echo ok']
 `;
 
+const SQL_JOURNAL_ASSERT_YAML = `schema_version: "1.0.0"
+id: "sql-journal-assert"
+pack: "smoke"
+portals: []
+mode_support: ["auto"]
+steps:
+  - id: "no-dynamic-tools"
+    type: "journal-assert"
+    args: ["SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM activity WHERE action_type = 'dynamic_tool_call')"]
+  - id: "declarative"
+    type: "journal-assert"
+    action_type: "dynamic_tool_call"
+    expect_count: 0
+`;
+
 Deno.test("[scenario-declarative] classifier recognizes each procedural category", () => {
   assertEquals(classifyShellStep("sh", ["-c", `sqlite3 "$WORKSPACE_ROOT/.exa/journal.db" "SELECT 1"`]), "journal-sql");
   assertEquals(classifyShellStep("sh", ["-c", `"$FRAMEWORK_HOME/bin/exactl" review approve request-x`]), "exactl-glue");
@@ -94,6 +109,14 @@ Deno.test("[scenario-declarative] procedural steps are reported with category an
   // Line numbers point at the step's `- id:` marker in the raw text.
   assertEquals(byId["setup-repo"].line, 7);
   assertEquals(byId["approve-review"].line, 11);
+});
+
+Deno.test("[scenario-declarative] a journal-assert step with raw SQL args is a journal-sql violation", () => {
+  const violations = analyzeScenarioYaml(SQL_JOURNAL_ASSERT_YAML);
+  assertEquals(violations.length, 1, "only the args-carrying journal-assert is a violation");
+  assertEquals(violations[0].step_id, "no-dynamic-tools");
+  assertEquals(violations[0].category, "journal-sql");
+  assertEquals(violations[0].line, 7);
 });
 
 Deno.test("[scenario-declarative] multi-file scan aggregates and reports non-ok", async () => {

@@ -52,9 +52,13 @@ steps:
   - id: "verify-dynamic-step-ran"
     type: "journal-assert"
     name: "The dynamic step is journalled as started and completed"
-    args: [
-      "SELECT action_type, json_extract(payload,'$.stepId') AS step_id FROM activity WHERE action_type IN ('flow.step.started','flow.step.completed') AND json_extract(payload,'$.stepId') = 'explore' ORDER BY rowid",
-    ]
+    action_types: ["flow.step.started", "flow.step.completed"]
+    payload_equals:
+      - path: "stepId"
+        value: "explore"
+    project:
+      action_type: "action_type"
+      step_id: "payload.stepId"
     output_criteria:
       - id: "dynamic-step-started-and-completed"
         score_weight: 0.6
@@ -70,7 +74,10 @@ steps:
   - id: "verify-single-trace"
     type: "journal-assert"
     name: "The run is journalled under one trace"
-    args: ["SELECT action_type, trace_id FROM activity WHERE trace_id = '$TRACE_ID' ORDER BY rowid"]
+    trace_scoped: true
+    project:
+      action_type: "action_type"
+      trace_id: "trace_id"
     output_criteria:
       - id: "events-under-trace"
         score_weight: 0.6

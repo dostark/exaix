@@ -136,14 +136,22 @@ export function classifyShellStep(command: Opt<string, Reason.OptionalInput>, ar
   return "inline-script";
 }
 
-/** Analyze one scenario YAML document: every `type: shell` step is a declarative violation. */
+/** Analyze one scenario YAML document: every `type: shell` step is a declarative violation, and
+ *  so is a `journal-assert` step carrying a raw SQL string in `args` (the step's declarative
+ *  filter/projection/assertion fields are the sanctioned form). */
 export function analyzeScenarioYaml(text: string): IScenarioProceduralViolation[] {
   const scenario = parseYaml(text) as IScenarioShape;
   const lines = text.split("\n");
   const violations: IScenarioProceduralViolation[] = [];
   for (const step of scenario?.steps ?? []) {
-    if (step?.type !== "shell") continue;
     const stepId = step.id ?? "(unnamed)";
+    if (step?.type === "journal-assert" && Array.isArray(step.args) && step.args.length > 0) {
+      const line = lines.findIndex((l) => l.includes(`- id: "${stepId}"`)) + 1;
+      const detail = String(step.args[0]).slice(0, 100);
+      violations.push({ file: "", line, step_id: stepId, category: "journal-sql", detail });
+      continue;
+    }
+    if (step?.type !== "shell") continue;
     const line = lines.findIndex((l) => l.includes(`- id: "${stepId}"`)) + 1;
     const category = classifyShellStep(step.command, step.args ?? []);
     const detail = [step.command, ...(step.args ?? [])].map(String).join(" ").slice(0, 100);

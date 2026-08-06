@@ -80,9 +80,10 @@ steps:
 
   - id: "assert-strategy-in-journal"
     type: "journal-assert"
-    args: [
-      "SELECT 1 WHERE EXISTS (SELECT 1 FROM activity WHERE action_type = 'flow.step.started' AND payload LIKE '%\"stepId\":\"react-step\"%' AND payload LIKE '%\"strategy\":\"react\"%')",
-    ]
+    action_type: "flow.step.started"
+    payload_contains:
+      - '"stepId":"react-step"'
+      - '"strategy":"react"'
     output_criteria:
       - id: "strategy-honored"
         kind: "command-exit-code"
@@ -98,9 +99,8 @@ steps:
 
   - id: "report-usage-metrics"
     type: "journal-assert"
-    args: [
-      "SELECT 1 WHERE (SELECT payload FROM activity WHERE action_type = 'agent.generation_completed' ORDER BY rowid DESC LIMIT 1) LIKE '%prompt_tokens%'",
-    ]
+    action_type: "agent.generation_completed"
+    expect_contains: ["prompt_tokens"]
     output_criteria:
       - id: "usage-metrics-recorded"
         kind: "command-exit-code"

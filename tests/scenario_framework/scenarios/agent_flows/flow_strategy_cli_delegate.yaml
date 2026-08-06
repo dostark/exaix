@@ -73,9 +73,10 @@ steps:
 
   - id: "assert-strategy-in-journal"
     type: "journal-assert"
-    args: [
-      "SELECT 1 WHERE EXISTS (SELECT 1 FROM activity WHERE action_type = 'flow.step.completed' AND payload LIKE '%\"stepId\":\"delegate-step\"%' AND payload LIKE '%\"strategy\":\"cli_delegate\"%')",
-    ]
+    action_type: "flow.step.completed"
+    payload_contains:
+      - '"stepId":"delegate-step"'
+      - '"strategy":"cli_delegate"'
     output_criteria:
       - id: "strategy-honored"
         kind: "command-exit-code"
@@ -84,9 +85,8 @@ steps:
 
   - id: "report-usage-metrics"
     type: "journal-assert"
-    args: [
-      "SELECT 1 WHERE (SELECT payload FROM activity WHERE action_type = 'agent.execution_completed' ORDER BY rowid DESC LIMIT 1) LIKE '%prompt_tokens%'",
-    ]
+    action_type: "agent.execution_completed"
+    expect_contains: ["prompt_tokens"]
     output_criteria:
       - id: "usage-metrics-recorded"
         kind: "command-exit-code"

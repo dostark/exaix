@@ -55,7 +55,10 @@ steps:
   - id: "verify-partial-logging"
     type: "journal-assert"
     name: "The run is journalled under a single trace"
-    args: ["SELECT action_type, trace_id FROM activity WHERE trace_id = '$TRACE_ID' ORDER BY rowid"]
+    trace_scoped: true
+    project:
+      action_type: "action_type"
+      trace_id: "trace_id"
     output_criteria:
       - id: "some-events-logged"
         score_weight: 0.6

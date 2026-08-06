@@ -55,9 +55,12 @@ steps:
   - id: "verify-journal-entries"
     type: "journal-assert"
     name: "Every tool call is journalled, under the run's trace"
-    args: [
-      "SELECT action_type, trace_id, json_extract(payload,'$.tool_name') AS tool_name FROM activity WHERE action_type = 'dynamic_tool_call' AND trace_id = '$TRACE_ID' ORDER BY rowid",
-    ]
+    action_type: "dynamic_tool_call"
+    trace_scoped: true
+    project:
+      action_type: "action_type"
+      trace_id: "trace_id"
+      tool_name: "payload.tool_name"
     output_criteria:
       - id: "multiple-events"
         score_weight: 0.6
