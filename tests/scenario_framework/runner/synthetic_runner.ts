@@ -15,6 +15,10 @@ import { parse as parseYaml } from "@std/yaml";
 import { evaluateCriterion, evaluateStepOutcome, type IScenarioStepOutcome, StepFailureStage } from "./assertions.ts";
 import { type IRunManifest, writeExecutionLog, writeRunManifest } from "./evidence_collector.ts";
 import type { Opt, Reason } from "@exaix/core/types";
+import { ExaPathDefaults } from "@exaix/core";
+import { GitService } from "@exaix/git";
+import { ConfigSchema } from "@exaix/schemas";
+import type { Config } from "@exaix/schemas/config.ts";
 import { composeGated, computeStepScore, computeSuiteScore, type IStepScoreInput, ScoringMode } from "./scoring.ts";
 import { type IRunScenarioInModeResult, runScenarioInMode } from "./modes.ts";
 import { type ILoadedScenario, loadScenarioFromYamlFile } from "./scenario_loader.ts";
@@ -216,8 +220,8 @@ const PORTAL_FIXTURES_DEST = join("fixtures", "portals");
 const SEED_GIT_ARGS = ["-c", "user.email=scenario@exaix.local", "-c", "user.name=Scenario Framework"];
 
 async function git(cwd: string, args: string[]): Promise<boolean> {
-  const result = await new Deno.Command("git", { args, cwd, stdout: "null", stderr: "null" }).output();
-  return result.success;
+  const result = await gitServiceFor(cwd).runGitCommand(args, { throwOnError: false });
+  return result.exitCode === 0;
 }
 
 /**
@@ -263,8 +267,8 @@ export async function seedPortalFixtures(workspaceRoot: string, repoRoot: string
 type PortalBaseline = { portal: string; head: string };
 
 async function gitOut(cwd: string, args: string[]): Promise<string | null> {
-  const result = await new Deno.Command("git", { args, cwd, stdout: "piped", stderr: "null" }).output();
-  return result.success ? new TextDecoder().decode(result.stdout).trim() : null;
+  const result = await gitServiceFor(cwd).runGitCommand(args, { throwOnError: false });
+  return result.exitCode === 0 ? result.output.trim() : null;
 }
 
 /** Record each seeded portal's default-branch HEAD, so drift can be detected after a run. */
@@ -699,12 +703,30 @@ async function copyFixture(source: string, target: string): Promise<void> {
   await copy(source, target, { overwrite: true });
 }
 
+/** Cached minimal config for the fixture-staging GitService — only `repoPath` is read at
+ *  runtime (runGitCommand), so a parsed minimal config satisfies the constructor type. */
+let fixtureGitConfig: Config | undefined;
+
+function getFixtureGitConfig(): Config {
+  fixtureGitConfig ??= ConfigSchema.parse({
+    system: { root: "", log_level: "info" },
+    paths: { ...ExaPathDefaults },
+  });
+  return fixtureGitConfig;
+}
+
+/** A repo-scoped GitService. Native Exaix git layer — no raw `git` CLI spawn in framework code. */
+function gitServiceFor(repoPath: string): GitService {
+  return new GitService({ config: getFixtureGitConfig(), repoPath });
+}
+
 /** Initialize a git repo with the single initial fixture commit (same identity the scenario
  *  setup used, so execution worktrees/branches behave identically). */
 async function gitInitFixtureRepo(repoPath: string): Promise<void> {
-  await runGit(repoPath, ["init", "-q"]);
-  await runGit(repoPath, ["add", "-A"]);
-  await runGit(repoPath, [
+  const git = gitServiceFor(repoPath);
+  await git.runGitCommand(["init", "-q"]);
+  await git.runGitCommand(["add", "-A"]);
+  await git.runGitCommand([
     "-c",
     `user.email=${SWE_FIXTURE_GIT_IDENTITY.email}`,
     "-c",
@@ -714,20 +736,6 @@ async function gitInitFixtureRepo(repoPath: string): Promise<void> {
     "-m",
     SWE_FIXTURE_COMMIT_MESSAGE,
   ]);
-}
-
-async function runGit(cwd: string, args: string[]): Promise<void> {
-  const result = await new Deno.Command("git", {
-    args,
-    cwd,
-    stdin: "null",
-    stdout: "piped",
-    stderr: "piped",
-  }).output();
-  if (!result.success) {
-    const stderr = new TextDecoder().decode(result.stderr).trim();
-    throw new Error(`git ${args.join(" ")} failed in ${cwd}: ${stderr}`);
-  }
 }
 
 /** Register a portal via `portal add` (idempotent for an identical target). Best-effort: a
