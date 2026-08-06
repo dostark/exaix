@@ -5,7 +5,7 @@ schema_version: "1.0.0"
 id: "read-file-roundtrip"
 title: "read_file returns real portal content through the MCP server"
 pack: "mcp_tools_extended"
-tags: ["read_file", "read", "subsystem:tools", "entity:read_file"]
+tags: ["read_file", "read", "smoke", "subsystem:tools", "entity:read_file"]
 request_fixture: "fixtures/requests/mcp_tools_extended/read_file.md"
 mode_support: ["auto"]
 portals: []

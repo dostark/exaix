@@ -12,11 +12,11 @@ import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { withRepoRoot } from "@exaix/testing";
-import { createScenarioContext, runScenario, skipInCI } from "./helpers/scenario_test_utils.ts";
+import { createScenarioContext, runScenario, skipSlowScenarioIntegration } from "./helpers/scenario_test_utils.ts";
 
 Deno.test({
   name: "Scenario: Portal Knowledge Strategies — all 11 strategies",
-  ignore: skipInCI,
+  ignore: skipSlowScenarioIntegration,
   sanitizeOps: false,
   sanitizeResources: false,
   async fn(_t) {

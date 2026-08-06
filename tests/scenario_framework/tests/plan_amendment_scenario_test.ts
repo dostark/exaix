@@ -7,11 +7,11 @@ import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { withRepoRoot } from "@exaix/testing";
-import { createScenarioContext, runScenario, skipInCI } from "./helpers/scenario_test_utils.ts";
+import { createScenarioContext, runScenario, skipSlowScenarioIntegration } from "./helpers/scenario_test_utils.ts";
 
 Deno.test({
   name: "Scenario: Plan Amendment Lifecycle",
-  ignore: skipInCI,
+  ignore: skipSlowScenarioIntegration,
   async fn(_t) {
     await withRepoRoot(async () => {
       const { runnerPath, workspacePath } = await createScenarioContext();

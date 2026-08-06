@@ -17,6 +17,11 @@ export interface IRunScenarioResult {
 
 export const skipInCI = !!Deno.env.get("CI") || !!Deno.env.get("GITHUB_ACTIONS");
 
+/** Skip guard for SLOW full-scenario integration tests (portal-knowledge-strategies,
+ *  plan-amendment-lifecycle) that boot a real daemon and can take minutes. They are skipped in
+ *  CI and, by default, locally — run them on demand with `EXA_TEST_SLOW_SCENARIOS=1`. */
+export const skipSlowScenarioIntegration = skipInCI || Deno.env.get("EXA_TEST_SLOW_SCENARIOS") !== "1";
+
 export async function stopDaemon(): Promise<void> {
   try {
     const stopDaemon = new Deno.Command(Deno.execPath(), {

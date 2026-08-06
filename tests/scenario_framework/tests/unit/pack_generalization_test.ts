@@ -31,7 +31,6 @@ Deno.test("[ScenarioFrameworkPackGeneralization] runner can load two unrelated p
 
   assertEquals(allPacks, [
     "agent_flows",
-    "blueprint_eval",
     "dynamic_execution",
     "eval_edge_cases",
     "eval_smoke",
