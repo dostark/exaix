@@ -18,7 +18,8 @@ import { DOGFOOD_DEVELOPER_IDENTITY_ID } from "@exaix/core/types";
 import { buildOpencodePermissionConfig } from "@exaix/session";
 import { OpencodeConfigSchema } from "@exaix/schemas/opencode_config.ts";
 import { type ISweTaskTemplateOptions, renderSweTaskBareTemplate } from "../../runner/scenario_templates.ts";
-import { BARE_DELEGATE_STEP_ID } from "../../runner/matrix_expander.ts";
+import { BARE_DELEGATE_STEP_ID, expandMatrix, MatrixSchema } from "../../runner/matrix_expander.ts";
+import { type IScenarioStep, ScenarioStepType } from "../../schema/step_schema.ts";
 
 interface IParsedBareStep {
   id: string;
@@ -99,4 +100,56 @@ Deno.test("[security] the staged config matches the shared permission builder (d
 
   const expected = buildOpencodePermissionConfig(["**"]);
   assertEquals(JSON.parse(jsonMatch[1]), expected, "bare config must be byte-identical to the shared builder");
+});
+
+function makeBareDelegateStep(): IScenarioStep {
+  return {
+    id: BARE_DELEGATE_STEP_ID,
+    type: ScenarioStepType.SHELL,
+    command: "opencode",
+    args: ["run"],
+    continue_on_failure: false,
+    input_criteria: [],
+    output_criteria: [],
+  };
+}
+
+function expandBareClaudeCell(): { args: string[] } {
+  const matrix = MatrixSchema.parse({
+    cells: [{
+      tool: "claude-code",
+      provider: "anthropic",
+      config: "configs/claude-cli-delegate-all.toml",
+      requires_bin: "claude",
+      harness: "bare",
+    }],
+  });
+  const runs = expandMatrix([makeBareDelegateStep()], matrix, {
+    env: { ANTHROPIC_API_KEY: "k" },
+    binOnPath: () => true,
+  });
+  assertEquals(runs.length, 1, "bare claude cell must be runnable");
+  const delegate = runs[0].steps.find((s) => s.id === BARE_DELEGATE_STEP_ID);
+  assertExists(delegate, "bare delegate step must survive expansion");
+  return { args: delegate.args ?? [] };
+}
+
+Deno.test("[security] bare claude-code launch carries the worktree-scoped tool flags (Exaix parity)", () => {
+  const { args } = expandBareClaudeCell();
+  assert(args.includes("--permission-mode"), "must carry --permission-mode");
+  assertEquals(args[args.indexOf("--permission-mode") + 1], "acceptEdits");
+  assert(args.includes("--allowedTools"), "must carry --allowedTools");
+  assertEquals(args[args.indexOf("--allowedTools") + 1], "Read,Edit,Bash(git *)");
+  assert(!args.includes("--dangerously-skip-permissions"), "must never bypass permissions");
+});
+
+Deno.test("[security] bare claude-code launch is confined by the worktree boundary + tool surface (no wildcard bash)", () => {
+  const { args } = expandBareClaudeCell();
+  const allowedTools = args[args.indexOf("--allowedTools") + 1];
+  // The tool surface is scoped: no bare "Bash" — only git subcommands. Claude Code has no
+  // path-deny config (unlike opencode's external_directory), so the leak defense is the
+  // worktree boundary + this tool-surface restriction; a wildcard Bash would allow a
+  // `find / -name reference.patch` probe, which the scoped tools exclude.
+  assertEquals(allowedTools.includes("Bash("), true);
+  assertEquals(allowedTools.includes(",Bash,"), false, "no bare bash tool");
 });

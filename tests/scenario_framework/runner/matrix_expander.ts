@@ -19,6 +19,7 @@ import { z } from "zod";
 import { isAbsolute, join } from "@std/path";
 import type { IScenarioStep } from "../schema/step_schema.ts";
 import type { Opt, Reason } from "@exaix/core/types";
+import { deriveClaudeToolFlags } from "@exaix/session";
 
 /** A single cell's expansion: either a runnable step list or a recorded skip. */
 export interface IMatrixCellRun {
@@ -149,7 +150,12 @@ const BARE_DELEGATE_LAUNCH_SHAPES: Record<string, { bin: string; args: string[] 
   },
   "claude-code": {
     bin: "claude",
-    args: ["-p", "--output-format", "json"],
+    // Phase 143 fix — the bare claude-cell launch carries the same scoped tool flags as the
+    // daemon-run delegate (deriveClaudeToolFlags): --permission-mode acceptEdits and a scoped
+    // --allowedTools (no wildcard Bash). Claude has no path-deny config (unlike opencode's
+    // external_directory), so path confinement is the worktree boundary + this tool-surface
+    // restriction; never --dangerously-skip-permissions.
+    args: ["-p", "--output-format", "json", ...deriveClaudeToolFlags()],
   },
 };
 
