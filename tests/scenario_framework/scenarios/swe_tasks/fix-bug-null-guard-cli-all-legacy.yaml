@@ -202,13 +202,10 @@ steps:
   # executor.logDynamicToolCall (that's ReActLoopStrategy's per-tool-invocation journal event),
   # so a genuine CliDelegateStrategy run journals ZERO dynamic_tool_call rows.
   - id: "assert-no-dynamic-tool-calls"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "count=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COUNT(*) FROM activity WHERE action_type = 'dynamic_tool_call'\"); echo \"dynamic_tool_call count: $count\"; test \"$count\" = \"0\"",
-      ]
+    type: "journal-assert"
+    args: [
+      "SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM activity WHERE action_type = 'dynamic_tool_call' AND trace_id = '$TRACE_ID')",
+    ]
     output_criteria:
       - id: "no-dynamic-tool-calls"
         class: "security"
@@ -219,13 +216,10 @@ steps:
   # SUM (not the last row alone — a multi-step plan's final step is often a read-only
   # verification turn that legitimately reports 0) across all agent.execution_completed rows.
   - id: "assert-files-changed"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "n=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COALESCE(SUM(json_extract(payload,'$.files_changed')),0) FROM activity WHERE action_type = 'agent.execution_completed'\"); echo \"files_changed total: $n\"; test \"${n:-0}\" -gt 0",
-      ]
+    type: "journal-assert"
+    args: [
+      "SELECT 1 WHERE (SELECT COALESCE(SUM(json_extract(payload,'$.files_changed')),0) FROM activity WHERE action_type = 'agent.execution_completed' AND trace_id = '$TRACE_ID') > 0",
+    ]
     output_criteria:
       - id: "files-changed-nonempty"
         kind: "command-exit-code"

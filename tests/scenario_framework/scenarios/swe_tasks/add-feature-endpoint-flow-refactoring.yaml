@@ -142,11 +142,9 @@ steps:
   # not pinned to cli_delegate by Step 8, so the criterion is not restored here (see
   # exaix-dev-docs/planning/phase-159-flow-step-execution-strategy.md Step 6).
   - id: "assert-files-changed"
-    type: "shell"
-    command: "sh"
+    type: "journal-assert"
     args: [
-      "-c",
-      "n=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COALESCE(SUM(json_extract(payload,'$.files_changed')),0) FROM activity WHERE action_type = 'agent.execution_completed'\"); echo \"files_changed total: $n\"; test \"$n\" -gt 0",
+      "SELECT 1 WHERE (SELECT COALESCE(SUM(json_extract(payload,'$.files_changed')),0) FROM activity WHERE action_type = 'agent.execution_completed' AND trace_id = '$TRACE_ID') > 0",
     ]
     output_criteria:
       - id: "files-changed-nonempty"

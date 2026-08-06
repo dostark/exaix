@@ -914,6 +914,8 @@ export const SCENARIO_SUBSTITUTED_VARIABLES = [
   // scenario load), NOT by expandInString — but it is a framework-supplied name, so a scenario
   // referencing `$WORKTREE` must be recognized as valid.
   "WORKTREE",
+  // Substituted by the journal-assert step at execution time with the current request's trace.
+  "TRACE_ID",
 ] as const;
 
 /**

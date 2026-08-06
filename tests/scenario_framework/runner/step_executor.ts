@@ -165,6 +165,13 @@ export async function executeScenarioStep(
     return await executeFileContainsStep(options, startedAt, startedAtEpochMs);
   }
 
+  // Handle journal-assert — run a declarative SQL assertion against the workspace journal
+  // (native @db/sqlite, trace-scoped via $TRACE_ID). The query must return a row when the
+  // assertion holds; a row → exit 0, no row → exit 1.
+  if (options.step.type === ScenarioStepType.JOURNAL_ASSERT) {
+    return await executeJournalAssertStep(options, startedAt, startedAtEpochMs);
+  }
+
   // Handle trajectory-assert — reads journal directly via SQLite instead of executing a command
   if (options.step.type === ScenarioStepType.TRAJECTORY_ASSERT) {
     const dbPath = join(options.cwd ?? Deno.cwd(), ".exa", "journal.db");
@@ -688,6 +695,72 @@ async function checkEntry(
 interface ICommandSpec {
   executable: string;
   args: string[];
+}
+
+/** Resolve the current scenario's request trace: the newest `request.created` event's trace_id. */
+function resolveCurrentTrace(workspaceRoot: string): string | undefined {
+  const dbPath = join(workspaceRoot, ".exa", "journal.db");
+  let db: Database | undefined;
+  try {
+    db = new Database(dbPath, { readonly: true });
+    const row = db
+      .prepare("SELECT trace_id FROM activity WHERE action_type = 'request.created' ORDER BY rowid DESC LIMIT 1")
+      .get<{ trace_id: string }>();
+    return row?.trace_id;
+  } catch {
+    return undefined;
+  } finally {
+    db?.close();
+  }
+}
+
+/** A `journal-assert` step: run a declarative SQL assertion against the workspace journal.
+ *  `$TRACE_ID` is substituted with the current request's trace so the assertion is scoped to
+ *  THIS scenario (never an earlier scenario's rows in a shared sandbox). The query must return
+ *  a row when the assertion holds — exit 0 on a row, exit 1 otherwise. */
+function executeJournalAssertStep(
+  options: IExecuteScenarioStepOptions,
+  startedAt: string,
+  startedAtEpochMs: number,
+): IScenarioStepExecutionResult {
+  const query = options.step.args?.[0] ?? "";
+  const workspaceRoot = options.cwd || Deno.cwd();
+  const traceId = resolveCurrentTrace(workspaceRoot);
+  const substituted = traceId ? query.replaceAll("$TRACE_ID", traceId) : query;
+
+  let matched = false;
+  let errorMessage = "";
+  const dbPath = join(workspaceRoot, ".exa", "journal.db");
+  let db: Database | undefined;
+  try {
+    db = new Database(dbPath, { readonly: true });
+    const result = db.prepare(substituted).get();
+    matched = result !== undefined;
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : String(error);
+  } finally {
+    db?.close();
+  }
+
+  const completedAtEpochMs = Date.now();
+  const completedAt = new Date(completedAtEpochMs).toISOString();
+  const message = matched
+    ? "Journal assertion held"
+    : `Journal assertion failed${errorMessage ? `: ${errorMessage}` : ""}`;
+  if (options.verbose) {
+    console.log(`\n%c > ${message}`, matched ? "color: green; font-weight: bold;" : "color: red; font-weight: bold;");
+  }
+  return {
+    stepId: options.step.id,
+    stepType: options.step.type,
+    startedAt,
+    completedAt,
+    durationMs: completedAtEpochMs - startedAtEpochMs,
+    exitCode: matched ? 0 : 1,
+    stdout: message,
+    stderr: matched ? "" : message,
+    combinedOutput: message,
+  };
 }
 
 function buildCommandSpec(options: IExecuteScenarioStepOptions): ICommandSpec {
