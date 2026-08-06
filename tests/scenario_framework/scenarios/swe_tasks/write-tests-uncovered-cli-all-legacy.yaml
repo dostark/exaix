@@ -125,13 +125,9 @@ steps:
         score_weight: 0.15
 
   - id: "approve-review"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "trace_id=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT trace_id FROM activity WHERE action_type = 'request.created' ORDER BY rowid ASC LIMIT 1\"); short_id=$(printf '%s' \"$trace_id\" | cut -c1-8); echo \"trace_id: $trace_id\"; \"$FRAMEWORK_HOME/bin/exactl\" review approve \"request-$short_id\"",
-      ]
+    type: "exactl"
+    command: "review"
+    args: ["approve", "$REQUEST_ID"]
     output_criteria:
       - id: "review-approved"
         class: "security"

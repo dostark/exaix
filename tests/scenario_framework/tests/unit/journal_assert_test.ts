@@ -69,15 +69,32 @@ Deno.test("[journal_assert] a failing assertion returns no row and exits 1", asy
   });
 });
 
-Deno.test("[journal_assert] $TRACE_ID scopes to the newest request's trace", async () => {
+Deno.test("[journal_assert] $TRACE_ID resolves to the first request.created above the scenario baseline", async () => {
   await withJournal(async (ws) => {
-    // newest request.created is trace-2, which has NO dynamic_tool_call → assertion holds.
+    // Journal rows: rowid 1 trace-1 request.created, rowid 2 trace-1 dynamic_tool_call,
+    // rowid 3 trace-2 request.created. The baseline (rowid > 2) excludes a PRIOR scenario's
+    // rows, so $TRACE_ID = trace-2 (the current request) — which has no dynamic_tool_call.
+    const result = await executeScenarioStep({
+      step: journalAssertStep(
+        "SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM activity WHERE action_type = 'dynamic_tool_call' AND trace_id = '$TRACE_ID')",
+      ),
+      cwd: ws,
+      journalBaselineRowid: 2,
+    });
+    assertEquals(result.exitCode, 0, `$TRACE_ID must scope to trace-2 above the baseline, got: ${result.stderr}`);
+  });
+});
+
+Deno.test("[journal_assert] $TRACE_ID resolves to the FIRST request.created (rowid ASC, not newest)", async () => {
+  await withJournal(async (ws) => {
+    // No baseline → the first request.created (trace-1) is selected; trace-1 HAS a
+    // dynamic_tool_call, so the assertion fails — proving ASC (not DESC/newest) resolution.
     const result = await executeScenarioStep({
       step: journalAssertStep(
         "SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM activity WHERE action_type = 'dynamic_tool_call' AND trace_id = '$TRACE_ID')",
       ),
       cwd: ws,
     });
-    assertEquals(result.exitCode, 0, `$TRACE_ID must scope to trace-2, got: ${result.stderr}`);
+    assertEquals(result.exitCode, 1, "$TRACE_ID must resolve to the first request.created (trace-1)");
   });
 });

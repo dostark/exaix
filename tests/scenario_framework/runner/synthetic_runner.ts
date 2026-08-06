@@ -916,6 +916,8 @@ export const SCENARIO_SUBSTITUTED_VARIABLES = [
   "WORKTREE",
   // Substituted by the journal-assert step at execution time with the current request's trace.
   "TRACE_ID",
+  // Substituted at step-execution time with `request-<trace[0:8]>` (review/plan approve key).
+  "REQUEST_ID",
 ] as const;
 
 /**

@@ -102,6 +102,27 @@ const WAIT_FOR_FILE_POLL_INTERVAL_MS = 2000; // Check every 2 seconds
 /** The cwd token that resolves to the scenario's newest execution worktree. */
 export const CWD_WORKTREE_TOKEN = "$WORKTREE";
 
+/** Substitute runtime-only variables into a command spec: `$TRACE_ID` → the current request's
+ *  full trace, `$REQUEST_ID` → `request-<trace[0:8]>` (the review/plan approve key). Resolved at
+ *  step-execution time (the trace does not exist at scenario load). */
+function substituteRuntimeVars(
+  spec: ICommandSpec,
+  workspaceRoot: string,
+  baselineRowid?: Opt<number, Reason.OptionalInput>,
+): ICommandSpec {
+  const traceId = resolveCurrentTrace(workspaceRoot, baselineRowid);
+  if (!traceId) return spec;
+  const vars: Record<string, string> = {
+    TRACE_ID: traceId,
+    REQUEST_ID: `request-${traceId.slice(0, 8)}`,
+  };
+  const apply = (value: string): string => value.replace(/\$([A-Z][A-Z0-9_]*)/g, (match, name) => vars[name] ?? match);
+  return {
+    executable: apply(spec.executable),
+    args: spec.args.map(apply),
+  };
+}
+
 /** Resolve a step's declared working directory: omitted → workspace root, a relative path →
  *  workspace-relative, `$WORKTREE` → the newest execution worktree (baseline-aware). */
 export async function resolveExecutionBase(
@@ -216,13 +237,14 @@ export async function executeScenarioStep(
 
   const commandSpec = buildCommandSpec(options);
   const executionBase = await resolveExecutionBase(options.step, options.cwd || Deno.cwd(), options.artifactBaselineMs);
+  const resolved = substituteRuntimeVars(commandSpec, options.cwd || Deno.cwd(), options.journalBaselineRowid);
 
   if (options.verbose) {
-    console.log(`\n%c > ${commandSpec.executable} ${commandSpec.args.join(" ")}`, "color: green; font-weight: bold;");
+    console.log(`\n%c > ${resolved.executable} ${resolved.args.join(" ")}`, "color: green; font-weight: bold;");
   }
 
-  const output = await new Deno.Command(commandSpec.executable, {
-    args: commandSpec.args,
+  const output = await new Deno.Command(resolved.executable, {
+    args: resolved.args,
     cwd: executionBase,
     env: options.env,
     stdin: "null",
@@ -697,15 +719,24 @@ interface ICommandSpec {
   args: string[];
 }
 
-/** Resolve the current scenario's request trace: the newest `request.created` event's trace_id. */
-function resolveCurrentTrace(workspaceRoot: string): string | undefined {
+/** Resolve the current scenario's request trace: the first `request.created` rowid above the
+ *  scenario's journal baseline. ASC+LIMIT 1 is deterministic (rowid is monotonic and ties never
+ *  occur — two request.created rows CAN share a millisecond), and the baseline rejects an
+ *  earlier scenario's request in a shared sandbox. */
+function resolveCurrentTrace(
+  workspaceRoot: string,
+  baselineRowid?: Opt<number, Reason.OptionalInput>,
+): string | undefined {
   const dbPath = join(workspaceRoot, ".exa", "journal.db");
   let db: Database | undefined;
   try {
     db = new Database(dbPath, { readonly: true });
+    const where = baselineRowid ? " AND rowid > ?" : "";
     const row = db
-      .prepare("SELECT trace_id FROM activity WHERE action_type = 'request.created' ORDER BY rowid DESC LIMIT 1")
-      .get<{ trace_id: string }>();
+      .prepare(
+        `SELECT trace_id FROM activity WHERE action_type = 'request.created'${where} ORDER BY rowid ASC LIMIT 1`,
+      )
+      .get<{ trace_id: string }>(baselineRowid);
     return row?.trace_id;
   } catch {
     return undefined;
@@ -725,7 +756,7 @@ function executeJournalAssertStep(
 ): IScenarioStepExecutionResult {
   const query = options.step.args?.[0] ?? "";
   const workspaceRoot = options.cwd || Deno.cwd();
-  const traceId = resolveCurrentTrace(workspaceRoot);
+  const traceId = resolveCurrentTrace(workspaceRoot, options.journalBaselineRowid);
   const substituted = traceId ? query.replaceAll("$TRACE_ID", traceId) : query;
 
   let matched = false;

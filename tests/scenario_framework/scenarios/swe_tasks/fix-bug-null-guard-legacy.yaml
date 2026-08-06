@@ -137,20 +137,9 @@ steps:
   # worktree, pointer, and feature branch"). Does not touch session_delegate — this cell's
   # config declares no [session_delegate] block.
   - id: "approve-review"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        # This step's "sh" resolves to dash on Debian/Ubuntu (no bash), which does not support
-        # bash's ${var:0:8} substring syntax ("Bad substitution", exit 2) — use `cut` instead.
-        # The daemon journals TWO request.created rows per real request: the CLI's own
-        # submission (request_create_handler.ts) and an independent daemon-side re-detection
-        # (packages/request/src/service.ts) — both can share the same millisecond timestamp,
-        # so ORDER BY timestamp is not deterministic. rowid is monotonic and tie-free; ASC +
-        # LIMIT 1 deterministically selects the first-inserted (CLI-submitted) row.
-        "trace_id=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT trace_id FROM activity WHERE action_type = 'request.created' ORDER BY rowid ASC LIMIT 1\"); short_id=$(printf '%s' \"$trace_id\" | cut -c1-8); echo \"trace_id: $trace_id\"; \"$FRAMEWORK_HOME/bin/exactl\" review approve \"request-$short_id\"",
-      ]
+    type: "exactl"
+    command: "review"
+    args: ["approve", "$REQUEST_ID"]
     output_criteria:
       - id: "review-approved"
         class: "security"

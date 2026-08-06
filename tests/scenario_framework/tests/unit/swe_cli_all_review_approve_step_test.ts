@@ -60,63 +60,25 @@ Deno.test("[swe_cli_all_review_approve] an approve-review step exists between wa
   );
 });
 
-Deno.test("[swe_cli_all_review_approve] approve-review discovers trace_id from the journal and calls review approve, not a hardcoded branch", async () => {
+Deno.test("[swe_cli_all_review_approve] approve-review resolves the request via $REQUEST_ID and calls review approve, not a hardcoded branch", async () => {
   const scenario = await parseScenario();
   const step = scenario.steps.find((s) => s.id === "approve-review");
   assert(step, "approve-review step must exist");
-  assert(step.type === "shell", "approve-review must be a shell step");
+  assert(step.type === "exactl", "approve-review must be a native exactl step");
+  assert(step.command === "review", "must invoke 'review approve'");
 
   const argsText = (step.args ?? []).join(" ");
-  assert(argsText.includes("review approve"), "must invoke 'review approve'");
+  assert(argsText.includes("approve"), "must invoke 'review approve'");
   assert(
-    argsText.includes("trace_id") && argsText.includes("request.created"),
-    "must derive the branch/request identity from a live journal lookup (trace_id / request.created), not a hardcoded value",
+    argsText.includes("$REQUEST_ID"),
+    "must use the framework-resolved $REQUEST_ID, not a hardcoded branch",
   );
 });
 
-Deno.test("[swe_cli_all_review_approve] approve-review queries by rowid, not timestamp, to pick the FIRST request.created row deterministically", async () => {
-  const scenario = await parseScenario();
-  const step = scenario.steps.find((s) => s.id === "approve-review");
-  assert(step, "approve-review step must exist");
-
-  const argsText = (step.args ?? []).join(" ");
-  // Live-observed: the daemon journals TWO request.created rows for one real request — the
-  // CLI submission (request_create_handler.ts) and an independent daemon-side re-detection
-  // (packages/request/src/service.ts), both timestamped to the same millisecond. An
-  // `ORDER BY timestamp DESC` tiebreak is not deterministic and picked the WRONG, unrelated
-  // trace_id in a real run ("Review not found: request-e2f73712" — the real request was
-  // f4b95c4d). rowid is monotonic and ties never occur; ASC + LIMIT 1 picks the genuinely
-  // first-inserted (CLI-submitted) row.
-  assert(
-    argsText.includes("rowid"),
-    "must order by rowid (monotonic, tie-free) rather than timestamp (two request.created rows can share a millisecond)",
-  );
-  assert(
-    /ORDER BY rowid ASC/.test(argsText) || /ORDER BY rowid\b/.test(argsText),
-    "must order by rowid ASC to deterministically select the first-inserted request.created row",
-  );
-  assert(
-    !/ORDER BY timestamp/.test(argsText),
-    "must not order by timestamp — ties between the CLI's own request.created and the daemon's independent re-detection event make this non-deterministic",
-  );
-});
-
-Deno.test("[swe_cli_all_review_approve] approve-review uses POSIX-portable substring extraction, not bash-only ${var:0:8} (dash: 'Bad substitution')", async () => {
-  const scenario = await parseScenario();
-  const step = scenario.steps.find((s) => s.id === "approve-review");
-  assert(step, "approve-review step must exist");
-
-  const argsText = (step.args ?? []).join(" ");
-  assert(
-    !/\$\{[a-zA-Z_][a-zA-Z0-9_]*:\d/.test(argsText),
-    "must not use bash-only ${var:offset:length} substring syntax — the step's command is 'sh', " +
-      "which resolves to dash on this system and does not support it (live-observed: 'Bad substitution', exit code 2)",
-  );
-  assert(
-    argsText.includes("cut -c1-8") || argsText.includes("cut -c 1-8"),
-    "must extract the 8-char trace_id prefix via a POSIX-portable method (e.g. 'cut -c1-8')",
-  );
-});
+// The trace-id derivation (rowid ASC within the scenario's journal baseline, 8-char prefix) is
+// now FRAMEWORK-OWNED in step_executor.resolveCurrentTrace — enforced by
+// journal_assert_test.ts ("$TRACE_ID scopes to the newest request's trace") rather than repeated
+// in every scenario YAML.
 
 Deno.test("[swe_cli_all_review_approve] approve-review's output_criteria requires review.approved in the command output", async () => {
   const scenario = await parseScenario();

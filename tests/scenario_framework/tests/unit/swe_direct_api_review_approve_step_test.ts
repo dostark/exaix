@@ -57,17 +57,18 @@ Deno.test("[swe_direct_api_review_approve] an approve-review step exists between
   );
 });
 
-Deno.test("[swe_direct_api_review_approve] approve-review discovers trace_id from the journal and calls review approve, not a hardcoded branch", async () => {
+Deno.test("[swe_direct_api_review_approve] approve-review resolves the request via $REQUEST_ID and calls review approve, not a hardcoded branch", async () => {
   const scenario = await parseScenario();
   const step = scenario.steps.find((s) => s.id === "approve-review");
   assert(step, "approve-review step must exist");
-  assert(step.type === "shell", "approve-review must be a shell step");
+  assert(step.type === "exactl", "approve-review must be a native exactl step");
+  assert(step.command === "review", "must invoke 'review approve'");
 
   const argsText = (step.args ?? []).join(" ");
-  assert(argsText.includes("review approve"), "must invoke 'review approve'");
+  assert(argsText.includes("approve"), "must invoke 'review approve'");
   assert(
-    argsText.includes("trace_id") && argsText.includes("request.created"),
-    "must derive the branch/request identity from a live journal lookup (trace_id / request.created), not a hardcoded value",
+    argsText.includes("$REQUEST_ID"),
+    "must use the framework-resolved $REQUEST_ID (derived from the current request's journal trace), not a hardcoded branch",
   );
 });
 
