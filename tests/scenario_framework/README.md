@@ -6,6 +6,9 @@ and the Exaix integration test runner (secondary). This document covers both rol
 For **user-facing evaluation workflow, CLI reference, scoring model, and tutorials**,
 see **[`docs/Exaix_Evaluation.md`](../../docs/Exaix_Evaluation.md)**.
 
+For the **complete scenario authoring language — scenario structure, every step type, and
+every criterion kind** — see **[`SCENARIO_DSL.md`](./SCENARIO_DSL.md)**.
+
 ---
 
 ## Table of Contents
