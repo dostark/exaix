@@ -27,19 +27,9 @@ The DSL has three layers:
 3. **Criteria** — the assertions (`input_criteria` before a step, `output_criteria` after)
    that decide pass/fail and produce the step score.
 
-Scenarios are run either directly through the runner or through `exactl eval`:
-
-```bash
-# Direct runner (dev): run one scenario
-deno run -A tests/scenario_framework/runner/main.ts \
-  --scenario my-scenario-id --workspace /tmp/ws --output /tmp/ws/out --verbose
-
-# CI profile: run every smoke-tagged scenario
-deno run -A tests/scenario_framework/runner/main.ts --profile ci-core
-
-# Product CLI: evaluate a whole pack
-exactl eval run --pack my-pack
-```
+This document is the **language reference**. For how to run scenarios, the scoring model, and
+the `exactl eval` CLI, see the [`README.md`](./README.md) quick reference and
+[`docs/Exaix_Evaluation.md`](../../docs/Exaix_Evaluation.md).
 
 Validation happens at load time. A scenario that violates the schema (unknown field, a
 step missing a required field, a `shell` step, …) is rejected before any step executes.
@@ -488,14 +478,20 @@ actually shown).
 
 ## 7. Scoring Model
 
-- **Criterion score**: continuous 0–1 (LLM-judge reports a fractional score; others derive
-  from status: `PASSED`=1, else 0).
-- **Step score**: weighted sum of its criteria (`score_weight`), optionally gated by
-  `step_pass_threshold`.
-- **Suite score**: weighted sum of steps (`step_weight`).
-- **`scoring: gated`**: any `class: security` criterion failure zeroes the whole suite.
-- **`step_pass_threshold`** on a `judge` step: the judge's fractional score must clear it for
-  the step to count as passed.
+Criterion scores are continuous 0–1 (LLM-judge reports a fractional score; others derive from
+status: `PASSED`=1, else 0); a **step score** is the weighted sum of its criteria
+(`score_weight`), a **suite score** the weighted sum of its steps (`step_weight`), and
+`scoring: gated` zeroes the suite on any `class: security` criterion failure. The exact
+formulas and thresholds live in [`docs/Exaix_Evaluation.md`](../../docs/Exaix_Evaluation.md);
+only the DSL knobs are listed here:
+
+| DSL knob                        | Effect                                                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `score_weight` (criterion)      | weight of a criterion within its step                                                                               |
+| `step_weight` (step)            | weight of a step within the suite                                                                                   |
+| `step_pass_threshold` (step)    | min step score for the step to count as passed (e.g. on a `judge` step, the judge's fractional score must clear it) |
+| `scoring: gated` (header)       | any `class: security` criterion failure zeroes the whole suite                                                      |
+| `class: "security"` (criterion) | marks a criterion whose failure gates the suite under `scoring: gated`                                              |
 
 ---
 
@@ -588,18 +584,18 @@ steps:
         equals: 0
 ```
 
-**Run it:**
+**Run it** (see the README quick reference for the runner CLI; the judge model is set purely by
+env, see §3):
 
 ```bash
 # Mock provider (structural criteria only; judge criteria SKIPPED unless EXA_EVAL_LLM_MOCK=pass)
-EXA_EVAL_LLM_MOCK=pass \
-  deno run -A tests/scenario_framework/runner/main.ts \
-    --scenario todo-plan --workspace /tmp/ws --output /tmp/ws/out --verbose
+EXA_EVAL_LLM_MOCK=pass deno run -A tests/scenario_framework/runner/main.ts \
+  --scenario todo-plan --workspace /tmp/ws --output /tmp/ws/out --verbose
 
 # Real judge model, distinct from the scenario model
 EXA_EVAL_LLM_MOCK=false EXA_EVAL_LLM_PROVIDER=anthropic EXA_EVAL_LLM_MODEL=claude-sonnet-4-5 \
   deno run -A tests/scenario_framework/runner/main.ts \
-    --scenario todo-plan --workspace /tmp/ws --output /tmp/ws/out
+  --scenario todo-plan --workspace /tmp/ws --output /tmp/ws/out
 ```
 
 **Authoring checklist:**
@@ -617,29 +613,25 @@ EXA_EVAL_LLM_MOCK=false EXA_EVAL_LLM_PROVIDER=anthropic EXA_EVAL_LLM_MODEL=claud
 
 ## 9. Running & Validation Commands
 
+For running scenarios (`exactl eval`, the direct runner, CI profiles, subsystem tiers) see the
+[`README.md`](./README.md) quick reference. The one DSL-specific check is declarative purity:
+
 ```bash
-# Schema + declarative-purity validation across ALL scenarios
-deno run -A scripts/check_scenario_declarative.ts
-
-# Framework unit + integration tests
-deno test tests/scenario_framework/tests/
-
-# Full CI pipeline
-deno run -A scripts/ci.ts all
+deno task check:scenario-declarative   # no shell steps, no raw SQL, no hardcoded worktree globs
 ```
 
 ---
 
 ## 10. Where Things Live
 
-| What                                | Path                                                             |
-| ----------------------------------- | ---------------------------------------------------------------- |
-| Scenarios                           | `tests/scenario_framework/scenarios/<pack>/`                     |
-| Schema (steps, criteria, portals)   | `tests/scenario_framework/schema/step_schema.ts`                 |
-| Schema (scenario header)            | `tests/scenario_framework/schema/scenario_schema.ts`             |
-| Step executor                       | `tests/scenario_framework/runner/step_executor.ts`               |
-| Criterion evaluation                | `tests/scenario_framework/runner/assertions.ts`                  |
-| Scenario runner                     | `tests/scenario_framework/runner/main.ts`, `synthetic_runner.ts` |
-| Matrix expansion                    | `tests/scenario_framework/runner/matrix_expander.ts`             |
-| Templates                           | `tests/scenario_framework/templates/scenario_template.yaml`      |
-| Fixtures (portals, requests, flows) | `tests/scenario_framework/fixtures/`                             |
+The DSL-relevant files only — for the full framework directory map see
+[`README.md`](./README.md#4-directory-structure).
+
+| What                             | Path                                                        |
+| -------------------------------- | ----------------------------------------------------------- |
+| Scenario header schema           | `tests/scenario_framework/schema/scenario_schema.ts`        |
+| Step / criterion / portal schema | `tests/scenario_framework/schema/step_schema.ts`            |
+| Step executor                    | `tests/scenario_framework/runner/step_executor.ts`          |
+| Criterion evaluation             | `tests/scenario_framework/runner/assertions.ts`             |
+| Matrix expansion                 | `tests/scenario_framework/runner/matrix_expander.ts`        |
+| Starter template                 | `tests/scenario_framework/templates/scenario_template.yaml` |
