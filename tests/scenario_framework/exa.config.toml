@@ -23,6 +23,13 @@ bin_overrides = []
 # don't), so this global fixtures_dir is harmless for other packs — a miss there just falls
 # back to pattern dispatch exactly as before. $FRAMEWORK_HOME is expanded by
 # seedWorkspaceConfig into an absolute, repo-tree-anchored path.
+# The strategies scenario analyzes the full Exaix repo (a 3400+ file monorepo).
+# The default quick_scan_limit (200) scans only the first 400 files in walk order,
+# so convention/naming detection flips whenever repo additions shift that window.
+# Raised to the config max so the analysis covers the whole tree deterministically.
+[portal_knowledge]
+quick_scan_limit = 10000
+
 [ai.mock]
 strategy = "recorded"
 fixtures_dir = "$FRAMEWORK_HOME/fixtures/mock_recordings/flow_blueprints"
