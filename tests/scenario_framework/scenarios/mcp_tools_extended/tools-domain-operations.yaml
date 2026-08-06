@@ -64,18 +64,17 @@ steps:
   # `source: mcp` in the frontmatter — that stamp is what distinguishes a request created
   # through the MCP tool from one created by the CLI, so it is the assertion that matters.
   - id: "created-request-is-on-disk"
-    type: "shell"
+    type: "file-contains"
     name: "The request the tool reported creating actually exists, stamped source: mcp"
-    command: "sh"
-    args: ["-c", "ls $WORKSPACE_ROOT/Workspace/Requests/ && cat $WORKSPACE_ROOT/Workspace/Requests/request-*.md"]
+    file_pattern: "**/Workspace/Requests/request-*.md"
     output_criteria:
       - id: "request-file-written"
-        kind: "command-output-contains"
-        contains: ["request-"]
+        kind: "file-found"
+        path_pattern: "**/Workspace/Requests/request-*.md"
         score_weight: 0.7
       - id: "request-came-through-mcp"
-        kind: "command-output-contains"
-        contains: ["source: mcp", "created by the tools eval pack"]
+        kind: "text-matches"
+        matches: ["source: mcp", "created by the tools eval pack"]
         score_weight: 1.0
 
   - id: "query-journal"

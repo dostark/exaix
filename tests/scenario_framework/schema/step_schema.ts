@@ -119,7 +119,7 @@ const BaseCriterionSchema = z.object({
 
 const FileExistsCriterionSchema = BaseCriterionSchema.extend({
   kind: z.literal(CriterionKind.FILE_EXISTS),
-  path: NON_EMPTY_STRING,
+  path: z.string().optional(),
 }).strict();
 
 const FileFoundCriterionSchema = BaseCriterionSchema.extend({
@@ -129,12 +129,12 @@ const FileFoundCriterionSchema = BaseCriterionSchema.extend({
 
 const FileNotExistsCriterionSchema = BaseCriterionSchema.extend({
   kind: z.literal(CriterionKind.FILE_NOT_EXISTS),
-  path: NON_EMPTY_STRING,
+  path: z.string().optional(),
 }).strict();
 
 const TextContainsCriterionSchema = BaseCriterionSchema.extend({
   kind: z.literal(CriterionKind.TEXT_CONTAINS),
-  path: NON_EMPTY_STRING,
+  path: z.string().optional(),
   contains: NON_EMPTY_STRING,
   similarity_threshold: z.number().min(0).max(1).optional(),
 }).strict();
@@ -238,7 +238,7 @@ const EnvVarPresentCriterionSchema = BaseCriterionSchema.extend({
 
 const TextMatchesCriterionSchema = BaseCriterionSchema.extend({
   kind: z.literal(CriterionKind.TEXT_MATCHES),
-  path: NON_EMPTY_STRING,
+  path: z.string().optional(),
   matches: z.array(NON_EMPTY_STRING).min(1),
   flags: z.string().optional(),
 }).strict();
@@ -357,6 +357,9 @@ export const ScenarioStepSchema = z.object({
   failure_glob: NON_EMPTY_STRING.optional(),
   // wait-for-journal-event: the action_type to poll the workspace journal for (e.g. daemon.ready).
   event_type: NON_EMPTY_STRING.optional(),
+  // file-contains: wait until at least this many files match the step's glob(s) (args and/or
+  // file_pattern) before evaluating its file/text criteria. Default 1.
+  min_matches: z.number().int().min(1).optional(),
   checkpoint: z.union([NON_EMPTY_STRING, z.boolean()]).optional(),
   instructions: NON_EMPTY_STRING.optional(),
   continue_on_failure: z.boolean().default(false),
@@ -414,6 +417,24 @@ export const ScenarioStepSchema = z.object({
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "llm-judge criteria require either 'preset' or 'rubric'",
+        path: [criterion.id],
+      });
+    }
+  }
+
+  // A file/text criterion with no `path` relies on the step's file_pattern to resolve its target
+  // at evaluation time (rewriteCriteriaWithTarget). Without a file_pattern the target is unknowable.
+  const pathlessFileKinds = [
+    CriterionKind.FILE_EXISTS,
+    CriterionKind.FILE_NOT_EXISTS,
+    CriterionKind.TEXT_CONTAINS,
+    CriterionKind.TEXT_MATCHES,
+  ];
+  for (const criterion of [...(step.input_criteria ?? []), ...(step.output_criteria ?? [])]) {
+    if (pathlessFileKinds.includes(criterion.kind) && !(criterion as { path?: string }).path && !step.file_pattern) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${criterion.kind} criteria without a path require a step file_pattern`,
         path: [criterion.id],
       });
     }

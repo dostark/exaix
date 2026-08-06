@@ -116,17 +116,12 @@ steps:
   # new tests included — must pass (a delegate that writes a test asserting wrong behavior, or
   # that breaks under deno check's strict nulls, fails here).
   - id: "assert-new-test-file-exists"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "WORKTREE=$(cat \"$WORKSPACE_ROOT/.exa/worktree-path.txt\") && test -f \"$WORKTREE/src/priority_calculator_test.ts\"",
-      ]
+    type: "file-contains"
+    file_pattern: "**/.exa/worktrees/*/*/src/priority_calculator_test.ts"
     output_criteria:
       - id: "new-test-file-exists"
-        kind: "command-exit-code"
-        equals: 0
+        kind: "file-found"
+        path_pattern: "**/.exa/worktrees/*/*/src/priority_calculator_test.ts"
         score_weight: 0.15
 
   - id: "run-tests"

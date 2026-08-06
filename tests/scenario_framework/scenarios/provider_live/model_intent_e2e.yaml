@@ -81,25 +81,13 @@ steps:
 
   # --- Wait for plan to be created ---
   - id: "wait-for-plan"
-    type: "shell"
-    command: "sh"
-    args:
-      - "-c"
-      - |
-          for i in $(seq 1 90); do
-            count=$(ls "$WORKSPACE_ROOT/Workspace/Plans/"*_plan.md 2>/dev/null | wc -l)
-            if [ "$count" -ge 1 ]; then
-              echo "Plan file found"
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "Timeout: no plan created after 180s"
-          exit 1
+    type: "wait-for-file"
+    args: ["**/Workspace/Plans/*_plan.md"]
+    timeout_sec: 180
     output_criteria:
       - id: "plan-created"
-        kind: "command-exit-code"
-        equals: 0
+        kind: "file-found"
+        path_pattern: "**/Workspace/Plans/*_plan.md"
 
   # --- Verify plan exists and request model_size/thinking flags are preserved ---
   - id: "verify-model-intent"

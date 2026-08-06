@@ -142,17 +142,12 @@ steps:
   # The task IS writing tests, so the pass signal is two-part: the new test file must exist,
   # checked against the mounted portal now that approve-review has merged the worktree in.
   - id: "assert-new-test-file-exists"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "test -f \"$WORKSPACE_ROOT/todo-app/src/priority_calculator_test.ts\"",
-      ]
+    type: "file-contains"
+    file_pattern: "todo-app/src/priority_calculator_test.ts"
     output_criteria:
       - id: "new-test-file-exists"
-        kind: "command-exit-code"
-        equals: 0
+        kind: "file-found"
+        path_pattern: "todo-app/src/priority_calculator_test.ts"
         score_weight: 0.15
 
   - id: "run-tests"

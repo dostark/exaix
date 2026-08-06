@@ -117,26 +117,10 @@ steps:
   # model output and its identity_id, so either counts as "the identity ran and
   # responded". We wait for 7 such outputs.
   - id: "wait-for-all-outputs"
-    type: "shell"
-    command: "sh"
-    args:
-      - "-c"
-      - |
-          echo "=== Waiting for 7 identity outputs (plans + rejected drafts) ==="
-          count_outputs() {
-            { ls "$WORKSPACE_ROOT/Workspace/Plans/"*_plan.md \
-                 "$WORKSPACE_ROOT/Workspace/Rejected/"*_rejected.md 2>/dev/null; } | wc -l
-          }
-          for i in $(seq 1 150); do
-            count=$(count_outputs)
-            if [ "$count" -ge 7 ]; then
-              echo "Found $count identity outputs"
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "Timeout: only $(count_outputs) identity outputs after 300s"
-          exit 1
+    type: "file-contains"
+    args: ["**/Workspace/Plans/*_plan.md", "**/Workspace/Rejected/*_rejected.md"]
+    min_matches: 7
+    timeout_sec: 300
     output_criteria:
       - id: "outputs-created"
         kind: "command-exit-code"

@@ -9,7 +9,13 @@
  * @related-files [tests/scenario_framework/runner/config.ts, tests/scenario_framework/tests/unit/scenario_loader_execution_core_test.ts]
  */
 
-import { type ICriterionResult, type IScenarioStep, ScenarioStepType } from "../schema/step_schema.ts";
+import {
+  CriterionKind,
+  type ICriterion,
+  type ICriterionResult,
+  type IScenarioStep,
+  ScenarioStepType,
+} from "../schema/step_schema.ts";
 import { globToRegExp, join, relative, resolve } from "@std/path";
 import { Database } from "@db/sqlite";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -107,6 +113,13 @@ export async function executeScenarioStep(
   // Handle wait-for-journal-event — a readiness barrier that polls the workspace journal
   if (options.step.type === ScenarioStepType.WAIT_FOR_JOURNAL_EVENT) {
     return await executeWaitForJournalEventStep(options, startedAt, startedAtEpochMs);
+  }
+
+  // Handle file-contains — wait (poll) until the step's glob(s) resolve to at least `min_matches`
+  // files AND the resolved target's content satisfies the step's text criteria, then let
+  // evaluateStepOutcome assert the file/text criteria declaratively.
+  if (options.step.type === ScenarioStepType.FILE_CONTAINS) {
+    return await executeFileContainsStep(options, startedAt, startedAtEpochMs);
   }
 
   // Handle trajectory-assert — reads journal directly via SQLite instead of executing a command
@@ -279,6 +292,146 @@ async function executeWaitForFileStep(
     stdout: "",
     stderr: `Timeout after ${timeoutSec}s waiting for file matching: ${pathPattern}`,
     combinedOutput: `Timeout after ${timeoutSec}s waiting for file matching: ${pathPattern}`,
+  };
+}
+
+/** The text patterns a `file-contains` step's output criteria require in the resolved file. */
+interface IFileContentExpectation {
+  contains: string[];
+  matches: RegExp[];
+}
+
+/** Collect the positive content expectations (text-contains/text-matches) from a step's criteria. */
+function collectFileContentExpectations(criteria: ICriterion[]): IFileContentExpectation {
+  const expectation: IFileContentExpectation = { contains: [], matches: [] };
+  for (const criterion of criteria ?? []) {
+    if (criterion.kind === CriterionKind.TEXT_CONTAINS) {
+      const value = (criterion as { contains?: string }).contains;
+      if (value) expectation.contains.push(value);
+    }
+    if (criterion.kind === CriterionKind.TEXT_MATCHES) {
+      const values = (criterion as { matches?: string[] }).matches;
+      for (const pattern of values ?? []) expectation.matches.push(new RegExp(pattern));
+    }
+  }
+  return expectation;
+}
+
+/** The file the content expectation is judged against: the newest of the matched files. */
+async function newestMatchingFile(matches: string[]): Promise<Opt<string, Reason.OptionalInput>> {
+  let best: { path: string; mtime: number } | undefined;
+  for (const file of matches) {
+    const mtime = (await Deno.stat(file).catch(() => null))?.mtime?.getTime() ?? 0;
+    if (!best || mtime > best.mtime) best = { path: file, mtime };
+  }
+  return best?.path;
+}
+
+/** True when the resolved file's content satisfies every expected pattern. */
+async function fileSatisfiesExpectation(
+  file: Opt<string, Reason.OptionalInput>,
+  expectation: IFileContentExpectation,
+): Promise<boolean> {
+  if (expectation.contains.length === 0 && expectation.matches.length === 0) return true;
+  if (!file) return false;
+  const content = await Deno.readTextFile(file).catch(() => "");
+  return expectation.contains.every((pattern) => content.includes(pattern)) &&
+    expectation.matches.every((regex) => regex.test(content));
+}
+
+/** A `file-contains` step: wait until the glob(s) resolve to ≥ `min_matches` files whose
+ *  content (when the output criteria demand it) satisfies the expected patterns. A criterion
+ *  of `file-not-exists` is a negative assertion — no wait, evaluated immediately. */
+async function executeFileContainsStep(
+  options: IExecuteScenarioStepOptions,
+  startedAt: string,
+  startedAtEpochMs: number,
+): Promise<IScenarioStepExecutionResult> {
+  const timeoutSec = options.step.timeout_sec ?? 120;
+  const workspaceRoot = options.cwd || Deno.cwd();
+  const timeoutMs = timeoutSec * 1000;
+  const startTime = Date.now();
+
+  const globs = [
+    ...(options.step.file_pattern ? [options.step.file_pattern] : []),
+    ...(options.step.args ?? []),
+  ].filter((glob) => glob.length > 0);
+  const minMatches = options.step.min_matches ?? 1;
+  const expectations = collectFileContentExpectations(options.step.output_criteria);
+  const negativeAssertion = (options.step.output_criteria ?? []).some((c) => c.kind === CriterionKind.FILE_NOT_EXISTS);
+
+  // A negative assertion (file-not-exists) is evaluated immediately — the file must NEVER
+  // appear, so there is nothing to wait for.
+  if (negativeAssertion) {
+    const completedAtEpochMs = Date.now();
+    const completedAt = new Date(completedAtEpochMs).toISOString();
+    return {
+      stepId: options.step.id,
+      stepType: options.step.type,
+      startedAt,
+      completedAt,
+      durationMs: completedAtEpochMs - startedAtEpochMs,
+      exitCode: 0,
+      stdout: "Negative assertion evaluated immediately",
+      stderr: "",
+      combinedOutput: "Negative assertion evaluated immediately",
+    };
+  }
+
+  while (Date.now() - startTime < timeoutMs) {
+    const matches: string[] = [];
+    for (const glob of globs) {
+      const found = await findMatchingFiles(workspaceRoot, globToRegExp(glob), options.artifactBaselineMs);
+      for (const file of found) {
+        if (!matches.includes(file)) matches.push(file);
+      }
+    }
+
+    const target = await newestMatchingFile(matches);
+    const contentReady = await fileSatisfiesExpectation(target, expectations);
+
+    if (matches.length >= minMatches && (negativeAssertion || contentReady)) {
+      const completedAtEpochMs = Date.now();
+      const completedAt = new Date(completedAtEpochMs).toISOString();
+      const message = `File(s) ready: ${matches.join(", ")}`;
+      if (options.verbose) {
+        console.log(`\n%c > ${message}`, "color: green; font-weight: bold;");
+      }
+      return {
+        stepId: options.step.id,
+        stepType: options.step.type,
+        startedAt,
+        completedAt,
+        durationMs: completedAtEpochMs - startedAtEpochMs,
+        exitCode: 0,
+        stdout: message,
+        stderr: "",
+        combinedOutput: message,
+      };
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, WAIT_FOR_FILE_POLL_INTERVAL_MS));
+  }
+
+  const completedAtEpochMs = Date.now();
+  const completedAt = new Date(completedAtEpochMs).toISOString();
+  const message = `Timeout after ${timeoutSec}s waiting for ${globs.join(" or ")} ` +
+    `(${minMatches}+ files${
+      expectations.contains.length || expectations.matches.length ? " with matching content" : ""
+    })`;
+  if (options.verbose) {
+    console.log(`\n%c > ${message}`, "color: red; font-weight: bold;");
+  }
+  return {
+    stepId: options.step.id,
+    stepType: options.step.type,
+    startedAt,
+    completedAt,
+    durationMs: completedAtEpochMs - startedAtEpochMs,
+    exitCode: 1,
+    stdout: "",
+    stderr: message,
+    combinedOutput: message,
   };
 }
 

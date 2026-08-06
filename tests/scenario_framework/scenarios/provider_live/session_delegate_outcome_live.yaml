@@ -130,19 +130,13 @@ steps:
   # the planner emits — and it cannot mask a genuine no-op: if the delegate never
   # writes GREETING the loop exhausts and the step fails.
   - id: "wait-for-intended-change"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "for _ in $(seq 1 150); do grep -qs GREETING \"$WORKSPACE_ROOT\"/.exa/worktrees/*/*/src/main.ts && exit 0; sleep 2; done; exit 1",
-      ]
-    timeout_sec: 320
+    type: "file-contains"
+    file_pattern: "**/.exa/worktrees/*/*/src/main.ts"
+    timeout_sec: 300
     output_criteria:
-      - id: "intended-change-appeared"
-        score_weight: 1.0
-        kind: "command-exit-code"
-        equals: 0
+      - id: "intended-change-observed"
+        kind: "text-contains"
+        contains: "GREETING"
 
   # The file appears as soon as the delegate writes it, but the return.json is only
   # parsed and reconciled afterwards. Asserting the journal straight after the write
@@ -198,19 +192,18 @@ steps:
   # A no-op delegation (paths_touched: []) fails here: the file would still read
   # `console.log("hello")` with no GREETING constant.
   - id: "assert-greeting-added"
-    type: "shell"
-    command: "sh"
-    args: ["-c", "cat \"$WORKSPACE_ROOT\"/.exa/worktrees/*/*/src/main.ts"]
+    type: "file-contains"
+    file_pattern: "**/.exa/worktrees/*/*/src/main.ts"
     input_criteria: []
     output_criteria:
       - id: "greeting-constant-present"
         score_weight: 1.0
-        kind: "command-output-contains"
-        contains: ["GREETING"]
+        kind: "text-contains"
+        contains: "GREETING"
       - id: "greeting-value-present"
         score_weight: 1.0
-        kind: "command-output-contains"
-        contains: ["hello from delegate"]
+        kind: "text-contains"
+        contains: "hello from delegate"
 
   # --- Teardown ---
   - id: "stop-daemon"
