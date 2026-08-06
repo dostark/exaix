@@ -2573,9 +2573,17 @@ const journalCommand = new Command()
   .command(
     "wait",
     new Command()
-      .description("Block until an event is journalled above a rowid baseline (or timeout)")
+      .description("Block until an event is journalled after a baseline (or timeout)")
       .option("--event <event:string>", "Action type to wait for (e.g. daemon.ready)")
-      .option("--since <since:number>", "Only count events with rowid above this baseline (default: current max rowid)")
+      .option(
+        "--since <since:string>",
+        "Only count events timestamped after this ISO datetime (default: events arriving while waiting)",
+      )
+      .option(
+        "--since-rowid <since-rowid:number>",
+        "Only count events with rowid above this internal baseline (scenario framework use)",
+        { hidden: true },
+      )
       .option("--timeout <timeout:number>", "Max wait in seconds", { default: 30 })
       .option("--payload <pattern:string>", "Only count events whose payload matches this LIKE pattern")
       .action(async (options) => {

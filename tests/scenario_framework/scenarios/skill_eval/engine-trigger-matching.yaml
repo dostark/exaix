@@ -48,7 +48,7 @@ steps:
   - id: "wait-for-match"
     type: "exactl"
     command: "journal"
-    args: ["wait", "--event", "skills.resolved", "--since", "$JOURNAL_BASELINE", "--timeout", "60"]
+    args: ["wait", "--event", "skills.resolved", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "60"]
     timeout_sec: 60
     output_criteria:
       - id: "trigger-match-observed"

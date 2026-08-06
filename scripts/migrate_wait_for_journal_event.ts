@@ -4,7 +4,7 @@
  * @path scripts/migrate_wait_for_journal_event.ts
  * @description Converts every `type: "wait-for-journal-event"` scenario step to an
  *   `exactl journal wait` step: `type: "exactl"` + `command: "journal"` +
- *   `args: ["wait", "--event", <event>, "--since", "$JOURNAL_BASELINE"]`, preserving the
+ *   `args: ["wait", "--event", <event>, "--since-rowid", "$JOURNAL_BASELINE"]`, preserving the
  *   step's `timeout_sec` (also passed as `--timeout`). The framework substitutes
  *   `$JOURNAL_BASELINE` with the scenario's journal rowid baseline at step-execution time.
  *   Comments, `name:`, and criteria fields are preserved verbatim.
@@ -42,7 +42,7 @@ function transformBlock(block: string[]): string[] {
       const indent = line.match(/^\s*/)?.[0] ?? "    ";
       const timeoutArgs = timeout ? `, "--timeout", "${timeout}"` : "";
       out.push(`${indent}command: "journal"`);
-      out.push(`${indent}args: ["wait", "--event", "${event}", "--since", "$JOURNAL_BASELINE"${timeoutArgs}]`);
+      out.push(`${indent}args: ["wait", "--event", "${event}", "--since-rowid", "$JOURNAL_BASELINE"${timeoutArgs}]`);
     } else {
       out.push(line);
     }

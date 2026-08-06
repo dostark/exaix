@@ -26,7 +26,12 @@ export interface IJournalCommandOptions {
 
 export interface IJournalWaitOptions {
   event?: string;
-  since?: number;
+  /** ISO-datetime floor — only events timestamped after this count (user-facing). */
+  since?: string;
+  /** Internal rowid floor — only events with rowid strictly above this count. Used by the
+   *  scenario framework (`$JOURNAL_BASELINE`); a rowid is collision-free where two events can
+   *  share a millisecond timestamp. Takes precedence over `since` when both are set. */
+  sinceRowid?: number;
   timeout?: number;
   payload?: string;
 }
@@ -75,12 +80,18 @@ export class JournalCommands extends BaseCommand {
       console.error(colors.red("journal wait requires --event <action_type>"));
       Deno.exit(1);
     }
-    const sinceRowid = options.since ?? await this.currentMaxRowid();
+    // Baseline: `--since-rowid` (internal) wins over `--since` (timestamp); with neither, the
+    // current max rowid at call time — so only events that arrive while waiting count.
+    const baseline = options.sinceRowid !== undefined
+      ? { rowid: options.sinceRowid }
+      : options.since
+      ? { iso: options.since }
+      : { rowid: await this.currentMaxRowid() };
     const timeoutMs = timeoutSec * 1000;
     const startTime = Date.now();
 
     while (Date.now() - startTime < timeoutMs) {
-      if (await this.journalHasEvent(event, sinceRowid, payload)) {
+      if (await this.journalHasEvent(event, baseline, payload)) {
         console.log(`Journal event present: ${event}`);
         return;
       }
@@ -91,16 +102,27 @@ export class JournalCommands extends BaseCommand {
     Deno.exit(1);
   }
 
-  /** True when an activity row matches `event` with rowid strictly above `sinceRowid`. */
+  /** True when an activity row matches `event` above the rowid/timestamp baseline. */
   private async journalHasEvent(
     event: string,
-    sinceRowid: number,
+    baseline: { rowid?: number; iso?: string },
     payload: Opt<string, Reason.OptionalInput> = undefined,
   ): Promise<boolean> {
-    const params: Array<string | number> = payload ? [event, sinceRowid, payload] : [event, sinceRowid];
-    const where = payload ? " AND payload LIKE ?" : "";
+    let where = "action_type = ?";
+    const params: Array<string | number> = [event];
+    if (baseline.rowid !== undefined) {
+      where += " AND rowid > ?";
+      params.push(baseline.rowid);
+    } else if (baseline.iso) {
+      where += " AND timestamp > ?";
+      params.push(baseline.iso);
+    }
+    if (payload) {
+      where += " AND payload LIKE ?";
+      params.push(payload);
+    }
     const row = await this.db.preparedGet<{ n: number }>(
-      `SELECT 1 AS n FROM activity WHERE action_type = ? AND rowid > ?${where} LIMIT 1`,
+      `SELECT 1 AS n FROM activity WHERE ${where} LIMIT 1`,
       params,
     );
     // `preparedGet` yields undefined (not null) for an absent row — treat both as no-match.

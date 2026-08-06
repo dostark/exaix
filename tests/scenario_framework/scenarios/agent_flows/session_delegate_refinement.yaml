@@ -80,7 +80,7 @@ steps:
   - id: "wait-for-delegate-reconciled"
     type: "exactl"
     command: "journal"
-    args: ["wait", "--event", "session.delegate.reconciled", "--since", "$JOURNAL_BASELINE", "--timeout", "60"]
+    args: ["wait", "--event", "session.delegate.reconciled", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "60"]
     timeout_sec: 60
     output_criteria:
       - id: "delegate-reconciled"

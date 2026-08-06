@@ -66,7 +66,7 @@ steps:
   - id: "wait-for-daemon-ready"
     type: "exactl"
     command: "journal"
-    args: ["wait", "--event", "daemon.ready", "--since", "$JOURNAL_BASELINE", "--timeout", "30"]
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
     timeout_sec: 30
     input_criteria: []
     output_criteria: []
@@ -128,7 +128,7 @@ steps:
   - id: "wait-for-reconcile"
     type: "exactl"
     command: "journal"
-    args: ["wait", "--event", "session.delegate.reconciled", "--since", "$JOURNAL_BASELINE", "--timeout", "120"]
+    args: ["wait", "--event", "session.delegate.reconciled", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "120"]
     timeout_sec: 120
     input_criteria: []
     output_criteria: []

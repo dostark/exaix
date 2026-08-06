@@ -2467,8 +2467,8 @@ exactl log cost --period monthly
 ```
 
 To **wait** for an event instead of querying — a readiness barrier — use the `wait`
-subcommand. It polls the journal until the matching event is journalled above a rowid
-baseline (or the timeout elapses), printing the matched event and exiting `0` on a match
+subcommand. It polls the journal until the matching event is journalled after a baseline
+(or the timeout elapses), printing the matched event and exiting `0` on a match
 and `1` on timeout. This is useful in scripts and test harnesses that must block until
 the daemon is ready, a flow completes, a plan is approved, and so on.
 
@@ -2479,10 +2479,8 @@ exactl journal wait --event daemon.ready
 # Raise the timeout
 exactl journal wait --event flow.completed --timeout 120
 
-# Only count events ABOVE a rowid baseline — ignore events a prior run produced.
-# Omitted, the baseline is the current max rowid, so only events that arrive while
-# waiting count.
-exactl journal wait --event plan.approved --since 1234 --timeout 120
+# Only count events timestamped after a given time (ISO datetime) — ignore earlier events
+exactl journal wait --event plan.approved --since "2026-06-01T12:00:00Z" --timeout 120
 
 # Match only events whose payload contains a substring (SQL LIKE pattern)
 exactl journal wait --event model.resolved --payload "%preferred_list%"

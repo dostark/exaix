@@ -47,7 +47,7 @@ steps:
   - id: "wait-for-daemon-ready"
     type: "exactl"
     command: "journal"
-    args: ["wait", "--event", "daemon.ready", "--since", "$JOURNAL_BASELINE", "--timeout", "30"]
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
     timeout_sec: 30
     input_criteria: []
     output_criteria: []
@@ -71,7 +71,7 @@ steps:
   - id: "wait-for-step-started"
     type: "exactl"
     command: "journal"
-    args: ["wait", "--event", "flow.step.started", "--since", "$JOURNAL_BASELINE", "--timeout", "30"]
+    args: ["wait", "--event", "flow.step.started", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
     timeout_sec: 30
     input_criteria: []
     output_criteria:
@@ -95,7 +95,7 @@ steps:
   - id: "wait-for-generation"
     type: "exactl"
     command: "journal"
-    args: ["wait", "--event", "agent.generation_completed", "--since", "$JOURNAL_BASELINE", "--timeout", "60"]
+    args: ["wait", "--event", "agent.generation_completed", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "60"]
     timeout_sec: 60
     input_criteria: []
     output_criteria: []
@@ -117,7 +117,7 @@ steps:
   - id: "report-flow-outcome"
     type: "exactl"
     command: "journal"
-    args: ["wait", "--event", "flow.completed", "--since", "$JOURNAL_BASELINE", "--timeout", "60"]
+    args: ["wait", "--event", "flow.completed", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "60"]
     timeout_sec: 60
     input_criteria: []
     output_criteria:

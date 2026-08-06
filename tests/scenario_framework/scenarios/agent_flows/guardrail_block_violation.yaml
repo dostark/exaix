@@ -72,7 +72,7 @@ steps:
     # Caught by the first full six-subsystem run; Step 15 had marked it NOT VERIFIED because
     # `edition: team` skips it on Solo, which is every development machine.
     command: "journal"
-    args: ["wait", "--event", "guardrail.screen.violation", "--since", "$JOURNAL_BASELINE", "--timeout", "120"]
+    args: ["wait", "--event", "guardrail.screen.violation", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "120"]
     timeout_sec: 120
     input_criteria: []
     output_criteria: []

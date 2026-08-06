@@ -460,7 +460,7 @@ export async function runSyntheticScenario(
   const stepRowidWindows = new Map<string, { start: number; end: number }>();
 
   // Journal rowid captured before the PREVIOUS step ran, handed to an
-  // `exactl journal wait --since $JOURNAL_BASELINE` barrier as its baseline. A barrier that
+  // `exactl journal wait --since-rowid $JOURNAL_BASELINE` barrier as its baseline. A barrier that
   // captured its own baseline at wait-start could not
   // see an event the step before it produced — which is exactly the case now that
   // `exactl daemon start` blocks until `daemon.ready` is journalled.
@@ -903,7 +903,7 @@ export const SCENARIO_SUBSTITUTED_VARIABLES = [
   // Substituted at step-execution time with `request-<trace[0:8]>` (review/plan approve key).
   "REQUEST_ID",
   // Substituted at step-execution time with the scenario's journal rowid baseline, so an
-  // `exactl journal wait --since $JOURNAL_BASELINE` step ignores a prior scenario's events.
+  // `exactl journal wait --since-rowid $JOURNAL_BASELINE` step ignores a prior scenario's events.
   "JOURNAL_BASELINE",
 ] as const;
 

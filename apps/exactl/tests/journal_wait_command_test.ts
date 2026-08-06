@@ -41,7 +41,7 @@ Deno.test({
       db.logActivity("system", "daemon.ready", "", {}, "t-1");
       await db.waitForFlush();
       const out = await captureConsoleOutput(
-        () => (waitCommand(db, config).wait({ event: "daemon.ready", since, timeout: 2 })),
+        () => (waitCommand(db, config).wait({ event: "daemon.ready", sinceRowid: since, timeout: 2 })),
       );
       assertStringIncludes(out, "Journal event present: daemon.ready");
     } finally {
@@ -51,7 +51,51 @@ Deno.test({
 });
 
 Deno.test({
-  name: "journal wait ignores events at or below the since baseline (times out)",
+  name: "journal wait --since (ISO timestamp) counts events timestamped after it",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const { db, config, cleanup } = await initTestDbService();
+    try {
+      await db.preparedRun(
+        "INSERT INTO activity (id, trace_id, actor, action_type, payload, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+        ["a1", "t-1", "system", "daemon.ready", "{}", "2020-01-02T00:00:00.000Z"],
+      );
+      await db.waitForFlush();
+      const out = await captureConsoleOutput(
+        () => (waitCommand(db, config).wait({ event: "daemon.ready", since: "2020-01-01T00:00:00.000Z", timeout: 1 })),
+      );
+      assertStringIncludes(out, "Journal event present: daemon.ready");
+    } finally {
+      await cleanup();
+    }
+  },
+});
+
+Deno.test({
+  name: "journal wait --since (ISO timestamp) ignores events timestamped at or before it",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    const { db, config, cleanup } = await initTestDbService();
+    try {
+      await db.preparedRun(
+        "INSERT INTO activity (id, trace_id, actor, action_type, payload, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+        ["a1", "t-1", "system", "daemon.ready", "{}", "2020-01-01T00:00:00.000Z"],
+      );
+      await db.waitForFlush();
+      const result = await expectExitWithLogs(
+        () => (waitCommand(db, config).wait({ event: "daemon.ready", since: "2020-01-01T00:00:00.000Z", timeout: 1 })),
+      );
+      assertStringIncludes(result.errors.join("\n"), "Timeout");
+    } finally {
+      await cleanup();
+    }
+  },
+});
+
+Deno.test({
+  name: "journal wait ignores events at or below the sinceRowid baseline (times out)",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -61,7 +105,7 @@ Deno.test({
       await db.waitForFlush();
       const since = await currentMaxRowid(db);
       const result = await expectExitWithLogs(
-        () => (waitCommand(db, config).wait({ event: "daemon.ready", since, timeout: 1 })),
+        () => (waitCommand(db, config).wait({ event: "daemon.ready", sinceRowid: since, timeout: 1 })),
       );
       assertStringIncludes(result.errors.join("\n"), "Timeout");
     } finally {
