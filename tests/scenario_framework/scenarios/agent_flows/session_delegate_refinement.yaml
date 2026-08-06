@@ -10,13 +10,14 @@ portals: []
 steps:
   - id: "build-mock-tool"
     type: "run-script"
-    # bash, not `deno run`: the target is a Bourne-Again shell script (#!/bin/bash), so deno
-    # parsed it as TypeScript and failed with "Expected ';', '}' or <eof>". The path also
-    # needed the $FRAMEWORK_HOME prefix every sibling argument already used — bare
-    # `scripts/...` resolved against the sandbox, where the repo's scripts do not exist.
-    command: "bash"
+    # Native-Deno build helper (scripts/build_mock_session_tool.ts) compiles
+    # mock_session_tool.ts and moves the binary — replacing the previous raw `bash`
+    # invocation of the shell build script with the framework's native layer.
+    command: "deno"
     args: [
-      "$FRAMEWORK_HOME/../../scripts/build_mock_session_tool.sh",
+      "run",
+      "-A",
+      "$FRAMEWORK_HOME/../../scripts/build_mock_session_tool.ts",
       "$FRAMEWORK_HOME/../../.cache/mock_session_tool_bin",
     ]
     output_criteria:

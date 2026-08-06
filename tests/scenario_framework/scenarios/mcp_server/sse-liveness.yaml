@@ -40,10 +40,11 @@ steps:
   - id: "verify-no-leaked-server"
     type: "run-script"
     name: "No MCP server process survives the probe"
-    command: "sh"
-    # The bracket around the first character stops pgrep matching this very command line,
-    # whose own argv contains the pattern being searched for.
-    args: ["-c", "pgrep -f '[a]pps/mcp-server/main.ts' >/dev/null 2>&1 && echo 'LEAKED' || echo 'no leaked server'"]
+    # Native-Deno process check (scripts/check_process_alive.ts) enumerates /proc cmdlines —
+    # no `pgrep`/`sh` spawn. Self-match is impossible because the helper's own argv is
+    # `deno run ...`, not the MCP server path.
+    command: "deno"
+    args: ["run", "-A", "$FRAMEWORK_HOME/../../scripts/check_process_alive.ts", "apps/mcp-server/main.ts"]
     output_criteria:
       - id: "no-leak"
         kind: "command-output-contains"

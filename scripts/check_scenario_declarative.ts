@@ -38,7 +38,8 @@ export type ProceduralCategory =
   | "test-run"
   | "sandbox-setup"
   | "filesystem-probe"
-  | "inline-script";
+  | "inline-script"
+  | "hardcoded-path";
 
 export interface IScenarioProceduralViolation {
   file: string;
@@ -78,6 +79,11 @@ interface IStepShape {
   type?: Opt<string, Reason.OptionalInput>;
   command?: Opt<string, Reason.OptionalInput>;
   args?: Opt<StepArg[], Reason.OptionalInput>;
+  file_pattern?: Opt<string, Reason.OptionalInput>;
+  output_criteria?: Opt<
+    Array<{ path_pattern?: Opt<string, Reason.OptionalInput> }>,
+    Reason.OptionalInput
+  >;
 }
 
 interface IScenarioShape {
@@ -91,6 +97,7 @@ export const PROCEDURAL_CATEGORIES: readonly ProceduralCategory[] = [
   "sandbox-setup",
   "filesystem-probe",
   "inline-script",
+  "hardcoded-path",
 ];
 
 /** Low-level shell/utility binaries the scenario framework must not spawn directly. Native Deno
@@ -138,26 +145,53 @@ export function classifyShellStep(command: Opt<string, Reason.OptionalInput>, ar
 
 /** Analyze one scenario YAML document: every `type: shell` step is a declarative violation, and
  *  so is a `journal-assert` step carrying a raw SQL string in `args` (the step's declarative
- *  filter/projection/assertion fields are the sanctioned form). */
+ *  filter/projection/assertion fields are the sanctioned form). `run-script` may only invoke a
+ *  framework helper via `deno` or `exactl` — a relabeled `bash`/`sh` is a hidden shell step. A
+ *  hardcoded `.exa/worktrees/...` glob anywhere in a step is a portability violation: the
+ *  framework-owned `$WORKTREE` token / relative globs are the sanctioned form. */
 export function analyzeScenarioYaml(text: string): IScenarioProceduralViolation[] {
   const scenario = parseYaml(text) as IScenarioShape;
   const lines = text.split("\n");
   const violations: IScenarioProceduralViolation[] = [];
   for (const step of scenario?.steps ?? []) {
     const stepId = step.id ?? "(unnamed)";
+    const line = lines.findIndex((l) => l.includes(`- id: "${stepId}"`)) + 1;
     if (step?.type === "journal-assert" && Array.isArray(step.args) && step.args.length > 0) {
-      const line = lines.findIndex((l) => l.includes(`- id: "${stepId}"`)) + 1;
       const detail = String(step.args[0]).slice(0, 100);
       violations.push({ file: "", line, step_id: stepId, category: "journal-sql", detail });
       continue;
     }
+    if (step?.type === "run-script" && step.command && !["deno", "exactl"].includes(step.command)) {
+      const detail = `run-script invokes raw ${step.command} (only deno/exactl helpers are sanctioned)`;
+      violations.push({ file: "", line, step_id: stepId, category: "inline-script", detail });
+      continue;
+    }
+    // Hardcoded worktree globs: `**/.exa/worktrees/<alias>/...` in args, file_pattern, or a
+    // path_pattern criterion pins the sandbox layout — use relative globs or the $WORKTREE token.
+    const hardcoded = hardcodedWorktreeGlob(step);
+    if (hardcoded) {
+      violations.push({ file: "", line, step_id: stepId, category: "hardcoded-path", detail: hardcoded });
+      continue;
+    }
     if (step?.type !== "shell") continue;
-    const line = lines.findIndex((l) => l.includes(`- id: "${stepId}"`)) + 1;
     const category = classifyShellStep(step.command, step.args ?? []);
     const detail = [step.command, ...(step.args ?? [])].map(String).join(" ").slice(0, 100);
     violations.push({ file: "", line, step_id: stepId, category, detail });
   }
   return violations;
+}
+
+/** The hardcoded `.exa/worktrees/` glob found in a step (args, file_pattern, path_pattern), or
+ *  undefined when the step uses relative globs / the `$WORKTREE` token. */
+function hardcodedWorktreeGlob(step: IStepShape): string | undefined {
+  const haystacks: string[] = [];
+  for (const arg of step.args ?? []) if (typeof arg === "string") haystacks.push(arg);
+  if (step.file_pattern) haystacks.push(step.file_pattern);
+  for (const criterion of step.output_criteria ?? []) {
+    if (criterion.path_pattern) haystacks.push(criterion.path_pattern);
+  }
+  const hit = haystacks.find((s) => s.includes(".exa/worktrees"));
+  return hit ? `hardcoded worktree glob: ${hit.slice(0, 100)}` : undefined;
 }
 
 /** Scan every scenario YAML under `dir` and aggregate procedural violations. */

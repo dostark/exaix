@@ -88,12 +88,12 @@ steps:
 
   - id: "locate-worktree"
     type: "wait-for-file"
-    args: ["**/.exa/worktrees/todo-app/*/plan.md"]
+    args: ["**/Plans/*_plan.md"]
     timeout_sec: 120
     output_criteria:
       - id: "worktree-located"
         kind: "file-found"
-        path_pattern: "**/.exa/worktrees/todo-app/*/plan.md"
+        path_pattern: "**/Plans/*_plan.md"
 
   # The task IS writing tests, so the pass signal is two-part: the new test file must exist
   # (proving the delegate actually wrote it, not just talked about it), and the whole suite —

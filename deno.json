@@ -147,7 +147,7 @@
     "dogfood:log": "deno run -A scripts/dogfood_daemon.ts log",
     "dogfood:bootstrap": "deno run -A scripts/dogfood_bootstrap.ts",
     "dogfood:clean": "deno run -A scripts/dogfood_clean.ts",
-    "build:mock-tool": "bash scripts/build_mock_session_tool.sh"
+    "build:mock-tool": "deno run -A scripts/build_mock_session_tool.ts"
   },
   "imports": {
     "@cliffy/table": "jsr:@cliffy/table@^1.2.1",

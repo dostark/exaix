@@ -81,6 +81,40 @@ steps:
     expect_count: 0
 `;
 
+const RELABELED_SHELL_YAML = `schema_version: "1.0.0"
+id: "relabeled-shell"
+pack: "smoke"
+portals: []
+mode_support: ["auto"]
+steps:
+  - id: "probe"
+    type: "run-script"
+    command: "sh"
+    args: ["-c", "pgrep -f '[a]pps/x' >/dev/null && echo LEAKED || echo clean"]
+  - id: "helper"
+    type: "run-script"
+    command: "deno"
+    args: ["run", "-A", "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts", "read_file"]
+`;
+
+const HARDCODED_PATH_YAML = `schema_version: "1.0.0"
+id: "hardcoded-path"
+pack: "smoke"
+portals: []
+mode_support: ["auto"]
+steps:
+  - id: "wait-plan"
+    type: "wait-for-file"
+    args: ["**/.exa/worktrees/todo-app/*/plan.md"]
+    output_criteria:
+      - id: "plan-found"
+        kind: "file-found"
+        path_pattern: "**/.exa/worktrees/todo-app/*/plan.md"
+  - id: "wait-relative"
+    type: "wait-for-file"
+    args: ["**/Plans/*_plan.md"]
+`;
+
 Deno.test("[scenario-declarative] classifier recognizes each procedural category", () => {
   assertEquals(classifyShellStep("sh", ["-c", `sqlite3 "$WORKSPACE_ROOT/.exa/journal.db" "SELECT 1"`]), "journal-sql");
   assertEquals(classifyShellStep("sh", ["-c", `"$FRAMEWORK_HOME/bin/exactl" review approve request-x`]), "exactl-glue");
@@ -117,6 +151,20 @@ Deno.test("[scenario-declarative] a journal-assert step with raw SQL args is a j
   assertEquals(violations[0].step_id, "no-dynamic-tools");
   assertEquals(violations[0].category, "journal-sql");
   assertEquals(violations[0].line, 7);
+});
+
+Deno.test("[scenario-declarative] a run-script that relabels bash/sh is an inline-script violation", () => {
+  const violations = analyzeScenarioYaml(RELABELED_SHELL_YAML);
+  assertEquals(violations.length, 1, "the deno helper run-script is sanctioned");
+  assertEquals(violations[0].step_id, "probe");
+  assertEquals(violations[0].category, "inline-script");
+});
+
+Deno.test("[scenario-declarative] a hardcoded worktree glob is a hardcoded-path violation", () => {
+  const violations = analyzeScenarioYaml(HARDCODED_PATH_YAML);
+  assertEquals(violations.length, 1, "the relative glob step is sanctioned");
+  assertEquals(violations[0].step_id, "wait-plan");
+  assertEquals(violations[0].category, "hardcoded-path");
 });
 
 Deno.test("[scenario-declarative] multi-file scan aggregates and reports non-ok", async () => {

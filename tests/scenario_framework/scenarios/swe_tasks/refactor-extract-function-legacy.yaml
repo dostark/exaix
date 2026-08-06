@@ -88,12 +88,12 @@ steps:
 
   - id: "locate-worktree"
     type: "wait-for-file"
-    args: ["**/.exa/worktrees/todo-app/*/plan.md"]
+    args: ["**/Plans/*_plan.md"]
     timeout_sec: 120
     output_criteria:
       - id: "worktree-located"
         kind: "file-found"
-        path_pattern: "**/.exa/worktrees/todo-app/*/plan.md"
+        path_pattern: "**/Plans/*_plan.md"
 
   # Deterministic pass signal: business_logic_test.ts asserts processTaskSubmission's
   # observable behavior — the request explicitly requires it keep passing unmodified, so a
