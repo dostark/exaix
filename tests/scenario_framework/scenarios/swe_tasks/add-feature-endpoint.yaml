@@ -139,11 +139,9 @@ steps:
   # agent.execution_completed event this run produced, so the flow-vs-direct-execution
   # comparison report has real, measured token/cost totals instead of an estimate.
   - id: "report-usage-metrics"
-    type: "shell"
-    command: "sh"
+    type: "journal-assert"
     args: [
-      "-c",
-      "sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COALESCE(SUM(json_extract(payload,'$.usage.prompt_tokens')),0), COALESCE(SUM(json_extract(payload,'$.usage.completion_tokens')),0), COALESCE(SUM(json_extract(payload,'$.usage.cost_usd_estimate')),0) FROM activity WHERE action_type = 'agent.execution_completed'\"",
+      "SELECT COALESCE(SUM(json_extract(payload,'$.usage.prompt_tokens')),0) AS prompt_tokens, COALESCE(SUM(json_extract(payload,'$.usage.completion_tokens')),0) AS completion_tokens, COALESCE(SUM(json_extract(payload,'$.usage.cost_usd_estimate')),0) AS cost_usd FROM activity WHERE action_type = 'agent.execution_completed' AND trace_id = '$TRACE_ID'",
     ]
     output_criteria:
       - id: "usage-metrics-reported"

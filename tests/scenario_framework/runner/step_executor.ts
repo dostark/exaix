@@ -839,8 +839,10 @@ async function executePrepareEvidenceStep(
 
 /** A `journal-assert` step: run a declarative SQL assertion against the workspace journal.
  *  `$TRACE_ID` is substituted with the current request's trace so the assertion is scoped to
- *  THIS scenario (never an earlier scenario's rows in a shared sandbox). The query must return
- *  a row when the assertion holds — exit 0 on a row, exit 1 otherwise. */
+ *  THIS scenario (never an earlier scenario's rows in a shared sandbox). The result rows are
+ *  emitted as JSON on stdout (so json-query criteria can score them) and the step exits 0 when
+ *  at least one row is returned, 1 otherwise — a `SELECT 1 WHERE <condition>` query therefore
+ *  passes exactly when its condition holds. */
 function executeJournalAssertStep(
   options: IExecuteScenarioStepOptions,
   startedAt: string,
@@ -852,13 +854,15 @@ function executeJournalAssertStep(
   const substituted = traceId ? query.replaceAll("$TRACE_ID", traceId) : query;
 
   let matched = false;
+  let rowsJson = "[]";
   let errorMessage = "";
   const dbPath = join(workspaceRoot, ".exa", "journal.db");
   let db: Database | undefined;
   try {
     db = new Database(dbPath, { readonly: true });
-    const result = db.prepare(substituted).get();
-    matched = result !== undefined;
+    const rows = db.prepare(substituted).all();
+    matched = rows.length > 0;
+    rowsJson = JSON.stringify(rows);
   } catch (error) {
     errorMessage = error instanceof Error ? error.message : String(error);
   } finally {
@@ -880,9 +884,9 @@ function executeJournalAssertStep(
     completedAt,
     durationMs: completedAtEpochMs - startedAtEpochMs,
     exitCode: matched ? 0 : 1,
-    stdout: message,
-    stderr: matched ? "" : message,
-    combinedOutput: message,
+    stdout: rowsJson,
+    stderr: matched ? "" : `${message}${errorMessage ? `: ${errorMessage}` : ""}`,
+    combinedOutput: rowsJson,
   };
 }
 

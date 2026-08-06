@@ -53,12 +53,10 @@ steps:
         path_pattern: "**/Plans/*_plan.md"
 
   - id: "verify-journal-entries"
-    type: "shell"
+    type: "journal-assert"
     name: "Every tool call is journalled, under the run's trace"
-    command: "sh"
     args: [
-      "-c",
-      "trace_id=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT trace_id FROM activity WHERE action_type = 'request.created' ORDER BY rowid DESC LIMIT 1\"); echo \"trace_id: $trace_id\" >&2; sqlite3 -json \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT action_type, trace_id, json_extract(payload,'$.tool_name') AS tool_name FROM activity WHERE action_type = 'dynamic_tool_call' AND trace_id = '$trace_id' ORDER BY rowid\"",
+      "SELECT action_type, trace_id, json_extract(payload,'$.tool_name') AS tool_name FROM activity WHERE action_type = 'dynamic_tool_call' AND trace_id = '$TRACE_ID' ORDER BY rowid",
     ]
     output_criteria:
       - id: "multiple-events"

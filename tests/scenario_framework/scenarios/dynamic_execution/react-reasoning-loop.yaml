@@ -54,12 +54,10 @@ steps:
         path_pattern: "**/Plans/*_plan.md"
 
   - id: "verify-iterations"
-    type: "shell"
+    type: "journal-assert"
     name: "Verify multiple ReAct iterations with distinct tools"
-    command: "sh"
     args: [
-      "-c",
-      "sqlite3 -json \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT action_type, json_extract(payload,'$.tool_name') AS tool_name FROM activity WHERE action_type = 'dynamic_tool_call' ORDER BY rowid\"",
+      "SELECT action_type, json_extract(payload,'$.tool_name') AS tool_name FROM activity WHERE action_type = 'dynamic_tool_call' ORDER BY rowid",
     ]
     output_criteria:
       - id: "multiple-iterations"
@@ -74,12 +72,10 @@ steps:
         unique_count_min: 2
 
   - id: "verify-dynamic-step-completed"
-    type: "shell"
+    type: "journal-assert"
     name: "The dynamic step is journalled as completed"
-    command: "sh"
     args: [
-      "-c",
-      "sqlite3 -json \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT action_type FROM activity WHERE action_type = 'flow.step.completed' AND json_extract(payload,'$.stepId') = 'analyze'\"",
+      "SELECT action_type FROM activity WHERE action_type = 'flow.step.completed' AND json_extract(payload,'$.stepId') = 'analyze'",
     ]
     output_criteria:
       - id: "dynamic-step-completed"

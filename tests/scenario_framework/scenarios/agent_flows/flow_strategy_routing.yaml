@@ -88,11 +88,9 @@ steps:
         score_weight: 0.34
 
   - id: "assert-strategy-in-journal"
-    type: "shell"
-    command: "sh"
+    type: "journal-assert"
     args: [
-      "-c",
-      "count=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COUNT(*) FROM activity WHERE action_type = 'flow.step.completed' AND payload LIKE '%\\\"stepId\\\":\\\"react-step\\\"%' AND payload LIKE '%\\\"strategy\\\":\\\"react\\\"%'\"); echo \"strategy-tagged flow.step.completed count: $count\"; test \"$count\" -gt 0",
+      "SELECT 1 WHERE EXISTS (SELECT 1 FROM activity WHERE action_type = 'flow.step.completed' AND payload LIKE '%\"stepId\":\"react-step\"%' AND payload LIKE '%\"strategy\":\"react\"%')",
     ]
     output_criteria:
       - id: "strategy-honored"
@@ -101,11 +99,9 @@ steps:
         score_weight: 0.33
 
   - id: "assert-no-strategy-step-unchanged"
-    type: "shell"
-    command: "sh"
+    type: "journal-assert"
     args: [
-      "-c",
-      "count=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COUNT(*) FROM activity WHERE action_type = 'flow.step.completed' AND payload LIKE '%\\\"stepId\\\":\\\"no-strategy-step\\\"%' AND payload NOT LIKE '%\\\"strategy\\\":%'\"); echo \"unchanged no-strategy flow.step.completed count: $count\"; test \"$count\" -gt 0",
+      "SELECT 1 WHERE EXISTS (SELECT 1 FROM activity WHERE action_type = 'flow.step.completed' AND payload LIKE '%\"stepId\":\"no-strategy-step\"%' AND payload NOT LIKE '%\"strategy\":%')",
     ]
     output_criteria:
       - id: "no-strategy-step-unchanged"

@@ -80,11 +80,9 @@ steps:
         score_weight: 0.4
 
   - id: "assert-strategy-in-journal"
-    type: "shell"
-    command: "sh"
+    type: "journal-assert"
     args: [
-      "-c",
-      "count=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COUNT(*) FROM activity WHERE action_type = 'flow.step.completed' AND payload LIKE '%\\\"stepId\\\":\\\"delegate-step\\\"%' AND payload LIKE '%\\\"strategy\\\":\\\"cli_delegate\\\"%'\"); echo \"strategy-tagged flow.step.completed count: $count\"; test \"$count\" -gt 0",
+      "SELECT 1 WHERE EXISTS (SELECT 1 FROM activity WHERE action_type = 'flow.step.completed' AND payload LIKE '%\"stepId\":\"delegate-step\"%' AND payload LIKE '%\"strategy\":\"cli_delegate\"%')",
     ]
     output_criteria:
       - id: "strategy-honored"
@@ -93,14 +91,12 @@ steps:
         score_weight: 0.3
 
   - id: "report-usage-metrics"
-    type: "shell"
-    command: "sh"
+    type: "journal-assert"
     args: [
-      "-c",
-      "sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT payload FROM activity WHERE action_type = 'agent.execution_completed' ORDER BY rowid DESC LIMIT 1\"",
+      "SELECT 1 WHERE (SELECT payload FROM activity WHERE action_type = 'agent.execution_completed' ORDER BY rowid DESC LIMIT 1) LIKE '%prompt_tokens%'",
     ]
     output_criteria:
       - id: "usage-metrics-recorded"
-        kind: "command-output-contains"
-        contains: ["prompt_tokens"]
+        kind: "command-exit-code"
+        equals: 0
         score_weight: 0.3

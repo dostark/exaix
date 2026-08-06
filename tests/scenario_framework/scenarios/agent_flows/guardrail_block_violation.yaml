@@ -79,13 +79,9 @@ steps:
     output_criteria: []
 
   - id: "assert-guardrail-screened"
-    type: "shell"
+    type: "journal-assert"
     name: "The guardrail recorded a verdict for this run"
-    command: "sh"
-    args: [
-      "-c",
-      "sqlite3 -json \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT action_type FROM activity WHERE action_type LIKE 'guardrail.%' ORDER BY rowid\"",
-    ]
+    args: ["SELECT action_type FROM activity WHERE action_type LIKE 'guardrail.%' ORDER BY rowid"]
     output_criteria:
       - id: "guardrail-ran"
         score_weight: 0.6

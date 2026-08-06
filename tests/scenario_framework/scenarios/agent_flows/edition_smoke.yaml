@@ -56,12 +56,10 @@ steps:
         path_pattern: "**/Plans/*_plan.md"
 
   - id: "assert-registry-resolved"
-    type: "shell"
+    type: "journal-assert"
     name: "The daemon journalled a model resolution with a candidate provider set"
-    command: "sh"
     args: [
-      "-c",
-      "sqlite3 -json \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT json_extract(payload,'$.selected') AS selected, json_extract(payload,'$.candidate_providers') AS candidate_providers FROM activity WHERE action_type = 'model.resolved' ORDER BY rowid DESC LIMIT 1\"",
+      "SELECT json_extract(payload,'$.selected') AS selected, json_extract(payload,'$.candidate_providers') AS candidate_providers FROM activity WHERE action_type = 'model.resolved' ORDER BY rowid DESC LIMIT 1",
     ]
     output_criteria:
       - id: "model-resolved"

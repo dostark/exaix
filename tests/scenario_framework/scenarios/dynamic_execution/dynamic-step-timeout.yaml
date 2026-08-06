@@ -53,13 +53,9 @@ steps:
         path_pattern: "**/Plans/*_plan.md"
 
   - id: "verify-partial-logging"
-    type: "shell"
+    type: "journal-assert"
     name: "The run is journalled under a single trace"
-    command: "sh"
-    args: [
-      "-c",
-      "trace_id=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT trace_id FROM activity WHERE trace_id IS NOT NULL ORDER BY rowid DESC LIMIT 1\"); echo \"trace_id: $trace_id\" >&2; \"$FRAMEWORK_HOME/bin/exactl\" journal --filter \"trace_id=$trace_id\" --format json",
-    ]
+    args: ["SELECT action_type, trace_id FROM activity WHERE trace_id = '$TRACE_ID' ORDER BY rowid"]
     output_criteria:
       - id: "some-events-logged"
         score_weight: 0.6

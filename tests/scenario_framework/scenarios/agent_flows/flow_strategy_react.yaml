@@ -87,11 +87,9 @@ steps:
         score_weight: 0.4
 
   - id: "assert-strategy-in-journal"
-    type: "shell"
-    command: "sh"
+    type: "journal-assert"
     args: [
-      "-c",
-      "count=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT COUNT(*) FROM activity WHERE action_type = 'flow.step.started' AND payload LIKE '%\\\"stepId\\\":\\\"react-step\\\"%' AND payload LIKE '%\\\"strategy\\\":\\\"react\\\"%'\"); echo \"strategy-tagged flow.step.started count: $count\"; test \"$count\" -gt 0",
+      "SELECT 1 WHERE EXISTS (SELECT 1 FROM activity WHERE action_type = 'flow.step.started' AND payload LIKE '%\"stepId\":\"react-step\"%' AND payload LIKE '%\"strategy\":\"react\"%')",
     ]
     output_criteria:
       - id: "strategy-honored"
@@ -107,31 +105,27 @@ steps:
     output_criteria: []
 
   - id: "report-usage-metrics"
-    type: "shell"
-    command: "sh"
+    type: "journal-assert"
     args: [
-      "-c",
-      "sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT payload FROM activity WHERE action_type = 'agent.generation_completed' ORDER BY rowid DESC LIMIT 1\"",
+      "SELECT 1 WHERE (SELECT payload FROM activity WHERE action_type = 'agent.generation_completed' ORDER BY rowid DESC LIMIT 1) LIKE '%prompt_tokens%'",
     ]
     output_criteria:
       - id: "usage-metrics-recorded"
-        kind: "command-output-contains"
-        contains: ["prompt_tokens"]
+        kind: "command-exit-code"
+        equals: 0
         score_weight: 0.3
 
-  # Informational only (always exits 0): polls a bounded 60s for the flow's own terminal
-  # outcome so the comparison doc can report whether this run's ReAct loop converged on a
-  # valid action or hit the "No actions generated" failure mode — without gating the
-  # scenario's pass/fail on a live model's reliability (see the note on wait-for-step-started).
+  # Informational only (always passes): the flow's own terminal outcome (converged on a valid
+  # action, or the "No actions generated" failure mode) is reported for the comparison doc
+  # without gating the scenario's pass/fail on a live model's reliability. The bounded poll is a
+  # wait-for-journal-event on flow.completed/flow.failed; exit is not gated.
   - id: "report-flow-outcome"
-    type: "shell"
-    command: "sh"
-    args: [
-      "-c",
-      "db=\"$WORKSPACE_ROOT/.exa/journal.db\"; for i in $(seq 1 30); do row=$(sqlite3 \"$db\" \"SELECT action_type FROM activity WHERE action_type IN ('flow.completed','flow.failed') ORDER BY rowid DESC LIMIT 1\"); if [ -n \"$row\" ]; then echo \"flow-outcome: $row\"; exit 0; fi; sleep 2; done; echo 'flow-outcome: inconclusive-within-60s'; exit 0",
-    ]
+    type: "wait-for-journal-event"
+    event_type: "flow.completed"
+    timeout_sec: 60
+    input_criteria: []
     output_criteria:
       - id: "flow-outcome-reported"
-        kind: "command-output-contains"
-        contains: ["flow-outcome"]
+        kind: "journal-event-exists"
+        event_type: "flow.completed"
         score_weight: 0.0

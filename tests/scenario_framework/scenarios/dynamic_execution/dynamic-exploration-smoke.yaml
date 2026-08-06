@@ -50,17 +50,10 @@ steps:
         path_pattern: "**/Plans/*_plan.md"
 
   - id: "verify-dynamic-step-ran"
-    type: "shell"
+    type: "journal-assert"
     name: "The dynamic step is journalled as started and completed"
-    # The original criteria asserted `mcp.tool.read_file` / `mcp.tool.list_directory` action
-    # types and waited on a `flow_run_*.json` artefact. Neither exists: tool calls are journalled
-    # as `dynamic_tool_call`, and nothing in the codebase writes a flow_run file. The mock tier
-    # makes no tool calls at all (Step 15 finding), so what is assertable here is that a
-    # dynamic-mode step is dispatched and completes — the tool-selection claim is provider-live's.
-    command: "sh"
     args: [
-      "-c",
-      "sqlite3 -json \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT action_type, json_extract(payload,'$.stepId') AS step_id FROM activity WHERE action_type IN ('flow.step.started','flow.step.completed') AND json_extract(payload,'$.stepId') = 'explore' ORDER BY rowid\"",
+      "SELECT action_type, json_extract(payload,'$.stepId') AS step_id FROM activity WHERE action_type IN ('flow.step.started','flow.step.completed') AND json_extract(payload,'$.stepId') = 'explore' ORDER BY rowid",
     ]
     output_criteria:
       - id: "dynamic-step-started-and-completed"
@@ -75,13 +68,9 @@ steps:
         contains: ["flow.step.completed"]
 
   - id: "verify-single-trace"
-    type: "shell"
+    type: "journal-assert"
     name: "The run is journalled under one trace"
-    command: "sh"
-    args: [
-      "-c",
-      "trace_id=$(sqlite3 \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT trace_id FROM activity WHERE action_type = 'request.created' ORDER BY rowid DESC LIMIT 1\"); echo \"trace_id: $trace_id\" >&2; \"$FRAMEWORK_HOME/bin/exactl\" journal --filter \"trace_id=$trace_id\" --format json",
-    ]
+    args: ["SELECT action_type, trace_id FROM activity WHERE trace_id = '$TRACE_ID' ORDER BY rowid"]
     output_criteria:
       - id: "events-under-trace"
         score_weight: 0.6

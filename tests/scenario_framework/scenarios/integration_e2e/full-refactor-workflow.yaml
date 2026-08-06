@@ -53,12 +53,10 @@ steps:
         path_pattern: "**/Plans/*_plan.md"
 
   - id: "verify-journal"
-    type: "shell"
+    type: "journal-assert"
     name: "Both phases of the refactor are journalled as tool calls"
-    command: "sh"
     args: [
-      "-c",
-      "sqlite3 -json \"$WORKSPACE_ROOT/.exa/journal.db\" \"SELECT action_type, json_extract(payload,'$.tool_name') AS tool_name FROM activity WHERE action_type = 'dynamic_tool_call' ORDER BY rowid\"",
+      "SELECT action_type, json_extract(payload,'$.tool_name') AS tool_name FROM activity WHERE action_type = 'dynamic_tool_call' ORDER BY rowid",
     ]
     output_criteria:
       - id: "exploration-logged"
