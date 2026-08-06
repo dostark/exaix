@@ -36,20 +36,6 @@ matrix:
 
 steps:
   # --- Setup (shared across all cells) ---
-  - id: "setup-blueprints"
-    type: "shell"
-    command: "cp"
-    args: ["-r", "$FRAMEWORK_HOME/../../Blueprints", "$WORKSPACE_ROOT/Blueprints"]
-    output_criteria:
-      - id: "blueprints-copied"
-        score_weight: 0.5
-        kind: "command-exit-code"
-        equals: 0
-
-  # setup-portal-repo: the code_changes delegate gate creates a git WORKTREE from the portal for the
-  # delegate's isolated edits — so the portal MUST be a git repo. The simple_repo fixture is not one;
-  # copy it into the workspace and git-init+commit it, then mount THAT (next step) as the portal.
-  # Leaves the read-only fixture untouched; mirrors how setup-blueprints/setup-db provision prereqs.
   - id: "setup-portal-repo"
     type: "shell"
     command: "sh"

@@ -10,18 +10,6 @@ portals: []
 
 steps:
   # --- Setup ---
-  - id: "setup-blueprints"
-    type: "shell"
-    command: "cp"
-    args: ["-r", "$FRAMEWORK_HOME/../../Blueprints", "$WORKSPACE_ROOT/Blueprints"]
-    output_criteria:
-      - id: "blueprints-copied"
-        kind: "command-exit-code"
-        equals: 0
-
-  # A best-characteristic identity: extras.characteristics ("best") and extras.task_type
-  # ("feature") on the identity blueprint's OWN frontmatter drive resolveModelFromBlueprint's
-  # IModelIntent — the request never carries these fields (Step 8's precedence).
   - id: "setup-best-identity"
     type: "shell"
     command: "sh"

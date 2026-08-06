@@ -14,16 +14,6 @@ mode_support: ["auto"]
 portals: []
 
 steps:
-  - id: "setup-blueprints"
-    type: "shell"
-    command: "cp"
-    args: ["-r", "$FRAMEWORK_HOME/../../Blueprints", "$WORKSPACE_ROOT/Blueprints"]
-    output_criteria:
-      - id: "blueprints-copied"
-        score_weight: 0.5
-        kind: "command-exit-code"
-        equals: 0
-
   - id: "setup-portal-repo"
     type: "shell"
     command: "sh"

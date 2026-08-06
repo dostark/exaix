@@ -136,7 +136,10 @@ const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..");
  */
 const SEEDED_CATALOGS: readonly (readonly [string, string])[] = [
   [join("Blueprints"), join("Blueprints")],
-  [join("Memory", "Skills"), join("Memory", "Skills")],
+  // The full shipped Memory tree (Skills + template banks), so scenarios never need a
+  // `cp -r Memory` setup step — the daemon's runtime banks are written to the workspace at
+  // run time and the seeded copy is only the shipped template.
+  [join("Memory"), join("Memory")],
 ] as const;
 
 /**

@@ -37,20 +37,6 @@ matrix:
       requires_bin: "opencode"
 
 steps:
-  - id: "setup-blueprints"
-    type: "shell"
-    command: "cp"
-    args: ["-r", "$FRAMEWORK_HOME/../../Blueprints", "$WORKSPACE_ROOT/Blueprints"]
-    output_criteria:
-      - id: "blueprints-copied"
-        kind: "command-exit-code"
-        equals: 0
-
-  # CliDelegateStrategy (packages/execution/src/strategies/cli_delegate_strategy.ts) is dispatched
-  # only for a blueprint whose capabilities include "cli_delegate" (AgentOrchestrator.executeStep).
-  # The real Blueprints/Identities/senior-coder.md intentionally does NOT declare this capability —
-  # patch ONLY the sandboxed copy just staged into the workspace, so this verification never
-  # touches the repo's real identity file.
   - id: "patch-blueprint-capability"
     type: "shell"
     command: "sh"
@@ -64,20 +50,6 @@ steps:
         kind: "command-exit-code"
         equals: 0
 
-  - id: "setup-memory"
-    type: "shell"
-    command: "cp"
-    args: ["-r", "$FRAMEWORK_HOME/../../Memory", "$WORKSPACE_ROOT/Memory"]
-    output_criteria:
-      - id: "memory-copied"
-        kind: "command-exit-code"
-        equals: 0
-
-  # The selected cell's config (configs/claude-cli-delegate-all.toml or
-  # configs/opencode-cli-delegate-all.toml): [ai]/[models.default] AND [cli_delegate] all point
-  # at the same tool/model — request analysis, plan generation, and the code_changes step all
-  # run through the same headless CLI subprocess. allow_net is empty; no ANTHROPIC_API_KEY or
-  # any metered HTTP call is used anywhere in this run.
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"

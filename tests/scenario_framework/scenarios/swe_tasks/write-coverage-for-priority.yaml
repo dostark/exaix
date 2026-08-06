@@ -22,14 +22,6 @@ matrix:
       config: "configs/opencode-cli-delegate-all.toml"
       requires_bin: "opencode"
 steps:
-  - id: "setup-blueprints"
-    type: "shell"
-    command: "cp"
-    args: ["-r", "$FRAMEWORK_HOME/../../Blueprints", "$WORKSPACE_ROOT/Blueprints"]
-    output_criteria:
-      - id: "blueprints-copied"
-        kind: "command-exit-code"
-        equals: 0
   - id: "patch-blueprint-capability"
     type: "shell"
     command: "sh"
@@ -41,14 +33,7 @@ steps:
       - id: "capability-patched"
         kind: "command-exit-code"
         equals: 0
-  - id: "setup-memory"
-    type: "shell"
-    command: "cp"
-    args: ["-r", "$FRAMEWORK_HOME/../../Memory", "$WORKSPACE_ROOT/Memory"]
-    output_criteria:
-      - id: "memory-copied"
-        kind: "command-exit-code"
-        equals: 0
+
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"

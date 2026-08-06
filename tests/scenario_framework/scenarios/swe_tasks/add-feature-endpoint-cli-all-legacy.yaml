@@ -28,18 +28,6 @@ matrix:
       requires_bin: "opencode"
 
 steps:
-  - id: "setup-blueprints"
-    type: "shell"
-    command: "cp"
-    args: ["-r", "$FRAMEWORK_HOME/../../Blueprints", "$WORKSPACE_ROOT/Blueprints"]
-    output_criteria:
-      - id: "blueprints-copied"
-        kind: "command-exit-code"
-        equals: 0
-
-  # CliDelegateStrategy is dispatched only for a blueprint whose capabilities include
-  # "cli_delegate" (AgentOrchestrator.executeStep). Patch ONLY the sandboxed copy just staged
-  # into the workspace, so this verification never touches the repo's real identity file.
   - id: "patch-blueprint-capability"
     type: "shell"
     command: "sh"
@@ -50,15 +38,6 @@ steps:
       ]
     output_criteria:
       - id: "capability-patched"
-        kind: "command-exit-code"
-        equals: 0
-
-  - id: "setup-memory"
-    type: "shell"
-    command: "cp"
-    args: ["-r", "$FRAMEWORK_HOME/../../Memory", "$WORKSPACE_ROOT/Memory"]
-    output_criteria:
-      - id: "memory-copied"
         kind: "command-exit-code"
         equals: 0
 

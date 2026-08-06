@@ -21,34 +21,6 @@ matrix:
       requires_key: "ANTHROPIC_API_KEY"
 
 steps:
-  - id: "setup-blueprints"
-    type: "shell"
-    command: "cp"
-    args: ["-r", "$FRAMEWORK_HOME/../../Blueprints", "$WORKSPACE_ROOT/Blueprints"]
-    output_criteria:
-      - id: "blueprints-copied"
-        kind: "command-exit-code"
-        equals: 0
-
-  # SkillsService (wired into the daemon's analysis AgentRunner) reads compiled JSON skill
-  # files from <workspace>/Memory/Skills/ — a separate representation from the human-authored
-  # .skill.md files under Blueprints/Skills/. Without this copy, default_skills (e.g.
-  # response-contract, the <thought>/<content> format contract) resolve to nothing and the
-  # request-analysis LLM call never sees the contract instructions.
-  - id: "setup-memory"
-    type: "shell"
-    command: "cp"
-    args: ["-r", "$FRAMEWORK_HOME/../../Memory", "$WORKSPACE_ROOT/Memory"]
-    output_criteria:
-      - id: "memory-copied"
-        kind: "command-exit-code"
-        equals: 0
-
-  # The matrix cell's config (configs/anthropic-no-delegate.toml) is overlaid onto this step's
-  # EXA_CONFIG_PATH by expandMatrix/materializeCellConfig — real Anthropic for analysis AND
-  # execution, session_delegate.enabled = false so execution runs through the daemon's own
-  # AgentExecutor/DynamicStepExecutor, journalling real dynamic_tool_call events
-  # (trajectory-assert's source) instead of routing every step to a headless CLI delegate.
   - id: "start-daemon"
     type: "exactl"
     command: "daemon"
