@@ -13,7 +13,13 @@
 import { assert, assertEquals } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
-import { analyzeScenarioYaml, classifyShellStep, scanScenarioDir } from "../../scripts/check_scenario_declarative.ts";
+import {
+  analyzeScenarioYaml,
+  classifyShellStep,
+  scanFrameworkRawShell,
+  scanFrameworkRawShellDir,
+  scanScenarioDir,
+} from "../../scripts/check_scenario_declarative.ts";
 
 const DECLARATIVE_YAML = `schema_version: "1.0.0"
 id: "declarative-only"
@@ -109,6 +115,52 @@ Deno.test("[scenario-declarative] multi-file scan aggregates and reports non-ok"
     assertEquals(report.categories["filesystem-probe"], 1);
     assertEquals(report.categories["inline-script"], 0);
     assert(report.violations.every((v) => v.file === "a/clean.yaml" || v.file === "b/dirty.yaml"));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("[scenario-declarative] raw-shell scanner flags low-level binaries but allows deno/exactl", () => {
+  const clean = [
+    '  const cmd = new Deno.Command("deno", { args, cwd });',
+    '  await new Deno.Command(options.exactlExecutable ?? "exactl", { args });',
+    "  const svc = new GitService({ config, repoPath });",
+    "  await Deno.remove(path, { recursive: true });",
+    "  await copy(source, target, { overwrite: true });",
+  ].join("\n");
+  assertEquals(scanFrameworkRawShell(clean), [], `clean source flagged: ${clean}`);
+
+  const dirty = [
+    '  await new Deno.Command("git", { args, cwd });',
+    '  const r = await new Deno.Command("sqlite3", { args });',
+    '  new Deno.Command("sh", ["-c", "cp x y"]);',
+  ].join("\n");
+  const violations = scanFrameworkRawShell(dirty);
+  assertEquals(violations.length, 3);
+  assertEquals(violations.map((v) => v.bin), ["git", "sqlite3", "sh"]);
+  assertEquals(violations[0].line, 1);
+  assertEquals(violations[1].line, 2);
+});
+
+Deno.test("[scenario-declarative] framework raw-shell scan aggregates across files", async () => {
+  const root = await Deno.makeTempDir({ prefix: "scenario-rawshell-" });
+  try {
+    await ensureDir(join(root, "a"));
+    await ensureDir(join(root, "b"));
+    await Deno.writeTextFile(
+      join(root, "a", "ok.ts"),
+      '  const cmd = new Deno.Command("deno", { args });\n',
+    );
+    await Deno.writeTextFile(
+      join(root, "b", "dirty.ts"),
+      '  const out = await new Deno.Command("git", { args, cwd }).output();\n',
+    );
+    const report = await scanFrameworkRawShellDir(root);
+    assertEquals(report.filesScanned, 2);
+    assertEquals(report.ok, false);
+    assertEquals(report.violations.length, 1);
+    assertEquals(report.violations[0].file, "b/dirty.ts");
+    assertEquals(report.violations[0].bin, "git");
   } finally {
     await Deno.remove(root, { recursive: true });
   }
