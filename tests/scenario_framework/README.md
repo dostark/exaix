@@ -830,6 +830,19 @@ The three ablation presets (`configs/eval-ablate-{skills,quality-gate,portal-kno
 are byte-identical except their one toggle each; runs carry the `harness:bare` /
 `ablate:<subsystem>` tags and a cell_id the comparison engines pair on.
 
+**Bare delegates run in a worktree-only jail container.** Every bare-cell launch is wrapped in
+`docker run` with a bind mount of **only** the task worktree (`$WORKSPACE_ROOT/todo-app` →
+`/worktree`), `--cap-drop=ALL` and `--no-new-privileges` — so the repo (and its
+`reference.patch` solution fixtures) is not present in the delegate's filesystem and solution
+leakage is structurally impossible. The opencode permission config / claude tool flags are
+defense-in-depth. Build the jail image with:
+
+```bash
+deno task eval:jail:build   # docker build --target eval-jail -t exaix-eval-jail .
+```
+
+The image name is overridable via `EXA_EVAL_JAIL_IMAGE`.
+
 ### Running Scenarios Locally (before sandbox deploy)
 
 The fastest local workflow uses the synthetic runner (`runner/synthetic_runner.ts`)

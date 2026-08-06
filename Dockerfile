@@ -39,9 +39,9 @@ RUN printf 'import { Database } from "@db/sqlite";\nconst db = new Database(":me
 # "builder") needs these on PATH so the @provider_live E2E test can run.
 # OpenRouter does not require a binary — it is configured via env vars only.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates curl nodejs npm \
-  && npm install -g @anthropic-ai/claude-code \
-  && curl -fsSL https://opencode.ai/install.sh | sh \
+  && apt-get install -y --no-install-recommends ca-certificates curl nodejs npm build-essential python3 \
+  && npm install -g node-gyp @anthropic-ai/claude-code \
+  && curl -fsSL https://opencode.ai/install | bash \
   && rm -rf /var/lib/apt/lists/* /root/.npm /root/.cache
 
 # ---------------------------------------------------------------------------
@@ -81,3 +81,39 @@ ENTRYPOINT ["deno", "run", \
   "--allow-read", "--allow-write", "--allow-net", "--allow-env", "--allow-ffi", "--allow-import", \
   "--allow-run=git,deno,npm,node,exoctl,opencode,claude,ls,grep,echo,printf,pwd,whoami,id,date,uptime,which,type,command,hash,alias", \
   "/app/apps/daemon/main.ts"]
+
+# ---------------------------------------------------------------------------
+# Stage 3 — eval-jail: the delegate-run container for the eval harness's bare cells.
+# The runner mounts ONLY the task worktree into this container (`--mount
+# src=<worktree>,dst=/worktree`), so the repo's fixtures — including the
+# `reference.patch` solution for the very task under test — are NOT present in the
+# delegate's filesystem. Solution leakage becomes structurally impossible, and the
+# opencode permission config / claude tool flags become defense-in-depth.
+# The jail does NOT run the Exaix daemon, so it deliberately skips the builder's
+# deno module-graph cache (which needs native tree-sitter compilation) — it only
+# needs node (for Claude Code) and the delegate CLIs.
+# Build:   docker build --target eval-jail -t exaix-eval-jail .
+# ---------------------------------------------------------------------------
+FROM denoland/deno:2.8.2 AS eval-jail
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates curl nodejs npm build-essential python3 \
+  && npm install -g @anthropic-ai/claude-code \
+  && curl -fsSL https://opencode.ai/install | bash \
+  && rm -rf /var/lib/apt/lists/* /root/.npm /root/.cache
+
+# Make the delegate CLIs resolvable for any --user. npm -g puts claude in /usr/local/bin
+# (world-readable); the opencode install script drops the binary under the building user's
+# home — which is root-private (0700) — so COPY it (dereferenced) into /usr/local/bin rather
+# than symlinking, or a non-root delegate could not traverse the target.
+RUN set -eux; \
+    command -v claude; \
+    opencode_src="$(find /root /usr/local /usr/bin /home -name opencode -type f 2>/dev/null | head -n1 || true)"; \
+    if [ -n "$opencode_src" ]; then cp "$opencode_src" /usr/local/bin/opencode && chmod 755 /usr/local/bin/opencode; fi; \
+    command -v opencode && command -v claude
+
+# The runner passes `--user <host-uid>:<host-gid>` so the bind-mounted worktree (owned by the
+# host user) is writable; HOME=/tmp gives the delegate a writable cache. The image default user
+# is only a fallback when --user is absent.
+ENV HOME=/tmp
+WORKDIR /worktree

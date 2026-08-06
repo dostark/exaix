@@ -146,7 +146,10 @@ export const REQUEST_FIXTURE_CONTENT_SENTINEL = "$REQUEST_FIXTURE_CONTENT";
 const BARE_DELEGATE_LAUNCH_SHAPES: Record<string, { bin: string; args: string[] }> = {
   "opencode": {
     bin: "opencode",
-    args: ["run", "--format", "json", "--dir", "$WORKSPACE_ROOT/todo-app"],
+    // Inside the eval-jail container the worktree is at /worktree (the runner mounts only the
+    // task worktree there); the delegate's own path scoping (OPENCODE_CONFIG external_directory
+    // deny) is defense-in-depth, not the primary boundary.
+    args: ["run", "--format", "json", "--dir", "/worktree"],
   },
   "claude-code": {
     bin: "claude",
@@ -158,6 +161,46 @@ const BARE_DELEGATE_LAUNCH_SHAPES: Record<string, { bin: string; args: string[] 
     args: ["-p", "--output-format", "json", ...deriveClaudeToolFlags()],
   },
 };
+
+/** Env var that overrides the eval-jail image name (default `exaix-eval-jail`). */
+const EXA_EVAL_JAIL_IMAGE_ENV = "EXA_EVAL_JAIL_IMAGE";
+const DEFAULT_EXA_EVAL_JAIL_IMAGE = "exaix-eval-jail";
+
+/**
+ * Phase 143 — the eval-jail launch wrapper. Every bare delegate runs inside a container that
+ * mounts ONLY the task worktree (`$WORKSPACE_ROOT/todo-app` → /worktree): the repo (and its
+ * `reference.patch` solutions) is absent from the delegate's filesystem, so solution leakage is
+ * structurally impossible. `--user <host-uid>:<host-gid>` keeps the bind-mounted worktree (owned
+ * by the host user) writable; `--cap-drop=ALL` + `--no-new-privileges` harden the process; the
+ * opencode permission config is passed in via OPENCODE_CONFIG (defense-in-depth).
+ */
+function buildJailLaunch(inner: { bin: string; args: string[] }): { bin: string; args: string[] } {
+  const image = Deno.env.get(EXA_EVAL_JAIL_IMAGE_ENV) ?? DEFAULT_EXA_EVAL_JAIL_IMAGE;
+  const uid = Deno.uid();
+  const gid = Deno.gid();
+  const userArgs = uid !== null && gid !== null ? ["--user", `${uid}:${gid}`] : [];
+  return {
+    bin: "docker",
+    args: [
+      "run",
+      "--rm",
+      "--mount",
+      "type=bind,src=$WORKSPACE_ROOT/todo-app,dst=/worktree",
+      "--workdir",
+      "/worktree",
+      ...userArgs,
+      "--cap-drop=ALL",
+      "--security-opt=no-new-privileges",
+      "-e",
+      "HOME=/tmp",
+      "-e",
+      "OPENCODE_CONFIG=/worktree/opencode.jsonc",
+      image,
+      inner.bin,
+      ...inner.args,
+    ],
+  };
+}
 
 const NON_EMPTY = z.string().min(1);
 
@@ -274,12 +317,15 @@ function overlayBareDelegateStep(steps: IScenarioStep[], cell: IMatrixCell): ISc
       `bare matrix cell (tool=${cell.tool}, provider=${cell.provider}) has no '${BARE_DELEGATE_STEP_ID}' step to rewrite`,
     );
   }
+  // Phase 143 — every bare delegate runs in the eval-jail container (worktree-only mount), so
+  // the repo's solution fixtures are not in the delegate's filesystem.
+  const jailed = buildJailLaunch(shape);
   return steps.map((step) => {
     if (step.id !== BARE_DELEGATE_STEP_ID) return step;
     return {
       ...step,
-      command: shape.bin,
-      args: [...shape.args, REQUEST_FIXTURE_CONTENT_SENTINEL],
+      command: jailed.bin,
+      args: [...jailed.args, REQUEST_FIXTURE_CONTENT_SENTINEL],
     };
   });
 }

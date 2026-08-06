@@ -74,6 +74,7 @@
     "test:parity": "deno test --allow-all tests/eval/catalog_parity_harness_test.ts tests/eval/flow_eval_parity_test.ts tests/eval/identity_eval_parity_test.ts tests/eval/skill_eval_parity_test.ts tests/eval/tool_eval_parity_test.ts",
     "eval:subsystems": "deno run -A tests/scenario_framework/runner/main.ts --profile ci-extended --tag subsystem:tools --tag subsystem:mcp-server --tag subsystem:mcp-client --tag subsystem:identities --tag subsystem:skills --tag subsystem:flows --mode auto --eval-mode --score-threshold 0.7",
     "eval:subsystems:core": "deno run -A tests/scenario_framework/runner/main.ts --profile ci-core --mode auto --eval-mode --score-threshold 0.7",
+    "eval:jail:build": "docker build --target eval-jail -t exaix-eval-jail .",
     "test:team-smoke": "deno test --allow-all --filter \"[team]\" tests/",
     "test:ci": "deno test --allow-all tests/infra/",
     "test:llama": "EXA_RUN_LLAMA_TESTS=true deno test --allow-all tests/llama_provider_test.ts",

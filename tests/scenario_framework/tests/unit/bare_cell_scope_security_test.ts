@@ -153,3 +153,50 @@ Deno.test("[security] bare claude-code launch is confined by the worktree bounda
   assertEquals(allowedTools.includes("Bash("), true);
   assertEquals(allowedTools.includes(",Bash,"), false, "no bare bash tool");
 });
+
+function expandBareOpencodeCell(): { command: string; args: string[] } {
+  const matrix = MatrixSchema.parse({
+    cells: [{
+      tool: "opencode",
+      provider: "ollama",
+      config: "configs/ollama-cli-delegate-all.toml",
+      requires_bin: "opencode",
+      harness: "bare",
+    }],
+  });
+  const runs = expandMatrix([makeBareDelegateStep()], matrix, {
+    env: {},
+    binOnPath: () => true,
+  });
+  assertEquals(runs.length, 1, "bare opencode cell must be runnable");
+  const delegate = runs[0].steps.find((s) => s.id === BARE_DELEGATE_STEP_ID);
+  assertExists(delegate, "bare delegate step must survive expansion");
+  return { command: delegate.command ?? "", args: delegate.args ?? [] };
+}
+
+Deno.test("[security] bare opencode launch runs in the eval-jail container mounting only the worktree", () => {
+  const { command, args } = expandBareOpencodeCell();
+  assertEquals(command, "docker", "bare delegate must run via docker");
+  assertEquals(args[0], "run");
+
+  const mounts = args.filter((a) => a.startsWith("type=bind"));
+  assertEquals(mounts.length, 1, "exactly one bind mount");
+  assertEquals(mounts[0], "type=bind,src=$WORKSPACE_ROOT/todo-app,dst=/worktree", "mount is ONLY the worktree");
+  assert(!args.some((a) => a.includes("exaix") && a.includes("bind")), "the repo must never be mounted");
+
+  assert(args.includes("--cap-drop=ALL"), "must drop all capabilities");
+  assert(args.includes("--security-opt=no-new-privileges"), "must forbid privilege escalation");
+  const uid = Deno.uid();
+  const gid = Deno.gid();
+  if (uid !== null && gid !== null) {
+    assertEquals(args[args.indexOf("--user") + 1], `${uid}:${gid}`, "container runs as the host uid (writable mount)");
+  }
+  assertEquals(args[args.indexOf("--workdir") + 1], "/worktree");
+
+  // The inner delegate command targets the container worktree path.
+  const opencodeIdx = args.indexOf("opencode");
+  assert(opencodeIdx > 0, "opencode must be the inner command");
+  assert(args.slice(opencodeIdx).includes("--dir"), "opencode --dir must be set");
+  assert(args.includes("/worktree"), "delegate cwd is the jail worktree");
+  assert(args.includes("OPENCODE_CONFIG=/worktree/opencode.jsonc"), "permission config passed into the jail");
+});
