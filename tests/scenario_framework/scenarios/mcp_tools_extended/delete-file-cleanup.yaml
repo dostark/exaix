@@ -10,7 +10,7 @@ mode_support: ["auto"]
 portals: []
 steps:
   - id: "setup-portal"
-    type: "shell"
+    type: "run-script"
     name: "Create the fixture portal and its config"
     command: "deno"
     args:
@@ -28,7 +28,7 @@ steps:
         score_weight: 0.3
 
   - id: "delete-then-verify"
-    type: "shell"
+    type: "run-script"
     name: "delete_file removes the target; a sibling file is untouched"
     command: "deno"
     args:

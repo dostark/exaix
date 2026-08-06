@@ -11,7 +11,7 @@ mode_support: ["auto"]
 portals: []
 steps:
   - id: "setup-portal"
-    type: "shell"
+    type: "run-script"
     name: "Create the fixture portal and its config"
     command: "deno"
     args:
@@ -29,7 +29,7 @@ steps:
         score_weight: 0.3
 
   - id: "read-traversal-refused"
-    type: "shell"
+    type: "run-script"
     name: "[security] read_file refuses a ../ path that escapes the portal"
     command: "deno"
     args:
@@ -53,7 +53,7 @@ steps:
         score_weight: 0.8
 
   - id: "write-traversal-refused"
-    type: "shell"
+    type: "run-script"
     name: "[security] write_file refuses an absolute path outside the portal"
     command: "deno"
     args:
@@ -87,7 +87,7 @@ steps:
         score_weight: 1.0
 
   - id: "unauthorised-identity-refused"
-    type: "shell"
+    type: "run-script"
     name: "[security] an identity absent from identities_allowed is refused"
     command: "deno"
     args:

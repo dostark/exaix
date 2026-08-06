@@ -19,7 +19,7 @@ mode_support: ["auto"]
 portals: []
 steps:
   - id: "setup-portal"
-    type: "shell"
+    type: "run-script"
     name: "Create the fixture portal and its config"
     command: "deno"
     args:
@@ -37,7 +37,7 @@ steps:
         score_weight: 0.3
 
   - id: "read-side-config-tools"
-    type: "shell"
+    type: "run-script"
     name: "get, validate, diff and provenance return real config state"
     command: "deno"
     args:
@@ -79,7 +79,7 @@ steps:
         score_weight: 0.6
 
   - id: "dangerous-set-requires-confirmation"
-    type: "shell"
+    type: "run-script"
     name: "[security] a dangerous-tier config_set stages the change behind a confirmation gate"
     command: "deno"
     args:

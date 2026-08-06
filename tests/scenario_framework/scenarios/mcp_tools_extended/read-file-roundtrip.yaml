@@ -11,7 +11,7 @@ mode_support: ["auto"]
 portals: []
 steps:
   - id: "setup-portal"
-    type: "shell"
+    type: "run-script"
     name: "Create the fixture portal and its config"
     command: "deno"
     args:
@@ -29,7 +29,7 @@ steps:
         score_weight: 0.3
 
   - id: "call-read-file"
-    type: "shell"
+    type: "run-script"
     name: "read_file returns the file's real content"
     command: "deno"
     args:
@@ -53,7 +53,7 @@ steps:
         score_weight: 0.6
 
   - id: "call-read-missing-file"
-    type: "shell"
+    type: "run-script"
     name: "read_file on a missing path reports NOT_FOUND rather than succeeding"
     command: "deno"
     args:

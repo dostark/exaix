@@ -13,7 +13,7 @@ mode_support: ["auto"]
 portals: []
 steps:
   - id: "setup-portal"
-    type: "shell"
+    type: "run-script"
     name: "Create the fixture portal and its config"
     command: "deno"
     args:
@@ -31,7 +31,7 @@ steps:
         score_weight: 0.3
 
   - id: "test-approval-gating"
-    type: "shell"
+    type: "run-script"
     name: "[security] A dangerous config write is staged behind confirmation, not applied"
     command: "deno"
     args:

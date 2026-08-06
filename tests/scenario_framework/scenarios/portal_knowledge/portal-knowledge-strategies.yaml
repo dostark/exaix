@@ -96,7 +96,7 @@ steps:
 
   # ── Step 6: deep structural validation via deno eval ────────────────────
   - id: "validate-deep-structure"
-    type: "shell"
+    type: "run-script"
     command: "deno"
     args:
       - "eval"

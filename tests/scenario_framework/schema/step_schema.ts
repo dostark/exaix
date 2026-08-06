@@ -27,6 +27,7 @@ export enum ScenarioStepType {
   PREPARE_EVIDENCE = "prepare-evidence",
   WRITE_FILE = "write-file",
   REMOVE_FILES = "remove-files",
+  RUN_SCRIPT = "run-script",
   JUDGE = "judge",
   WAIT_FOR_FILE = "wait-for-file",
   WAIT_FOR_JOURNAL_EVENT = "wait-for-journal-event",

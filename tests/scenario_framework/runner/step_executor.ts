@@ -986,6 +986,19 @@ function buildCommandSpec(options: IExecuteScenarioStepOptions): ICommandSpec {
     };
   }
 
+  // run-script executes a declared framework helper command (e.g. `deno run -A
+  // $FRAMEWORK_HOME/scripts/call_mcp_tool.ts <tool> <args>`) — a semantic wrapper over the
+  // shell form so helper invocations are not raw procedural shell.
+  if (options.step.type === ScenarioStepType.RUN_SCRIPT) {
+    if (!options.step.command) {
+      throw new Error(`run-script step requires a command: ${options.step.id}`);
+    }
+    return {
+      executable: options.step.command,
+      args: options.step.args ?? [],
+    };
+  }
+
   // test-run executes the repo's test command in the step's resolved `cwd` (workspace, portal
   // dir, or `$WORKTREE`) — a framework-owned test-runner instead of a `cd ... && deno test`
   // shell step. Defaults to `deno test`.

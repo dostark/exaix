@@ -8,7 +8,7 @@ mode_support: ["auto"]
 portals: []
 steps:
   - id: "seed-confirmation"
-    type: "shell"
+    type: "run-script"
     name: "Seed pending tool confirmation"
     command: "deno"
     args:

@@ -11,7 +11,7 @@ mode_support: ["auto"]
 portals: []
 steps:
   - id: "setup-portal"
-    type: "shell"
+    type: "run-script"
     name: "Create the fixture portal and its config"
     command: "deno"
     args:
@@ -29,7 +29,7 @@ steps:
         score_weight: 0.3
 
   - id: "run-allowlisted-command-that-fails"
-    type: "shell"
+    type: "run-script"
     name: "An allowlisted command that exits non-zero is reported as a failure, not a success"
     command: "deno"
     args:

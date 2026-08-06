@@ -18,7 +18,7 @@ mode_support: ["auto"]
 portals: []
 steps:
   - id: "setup-tools-portal"
-    type: "shell"
+    type: "run-script"
     name: "Setup tools portal with git repository"
     command: "deno"
     args:
@@ -36,7 +36,7 @@ steps:
         score_weight: 0.5
 
   - id: "tool-git-status"
-    type: "shell"
+    type: "run-script"
     name: "Call git_status through MCP"
     command: "deno"
     args:
@@ -55,7 +55,7 @@ steps:
         score_weight: 0.4
 
   - id: "tool-git-create-branch"
-    type: "shell"
+    type: "run-script"
     name: "Call git_create_branch through MCP"
     command: "deno"
     args:
@@ -86,7 +86,7 @@ steps:
         score_weight: 0.2
 
   - id: "tool-git-commit"
-    type: "shell"
+    type: "run-script"
     name: "Call git_commit through MCP"
     command: "deno"
     args:
@@ -105,7 +105,7 @@ steps:
         score_weight: 0.4
 
   - id: "tool-git-log"
-    type: "shell"
+    type: "run-script"
     name: "Call git_log through MCP"
     command: "deno"
     args:
@@ -124,7 +124,7 @@ steps:
         score_weight: 0.3
 
   - id: "tool-git-worktree-add"
-    type: "shell"
+    type: "run-script"
     name: "Call git_worktree add through MCP"
     command: "deno"
     args:
@@ -143,7 +143,7 @@ steps:
         score_weight: 0.3
 
   - id: "tool-git-worktree-list"
-    type: "shell"
+    type: "run-script"
     name: "Call git_worktree list through MCP"
     command: "deno"
     args:
@@ -162,7 +162,7 @@ steps:
         score_weight: 0.3
 
   - id: "tool-git-worktree-remove"
-    type: "shell"
+    type: "run-script"
     name: "Call git_worktree remove through MCP"
     command: "deno"
     args:
