@@ -55,6 +55,17 @@ export const ScenarioSchema = z.object({
    *  `class: security` criterion fails; absent (default) is additive and byte-identical
    *  to pre-gating scoring. */
   scoring: z.nativeEnum(ScoringMode).optional(),
+  /**
+   * Scenario-level LLM judge configuration. The runner injects `provider`/`model` into a
+   * `judge` step (or any step carrying an `llm-judge` criterion) as `EXA_LLM_PROVIDER` /
+   * `EXA_LLM_MODEL` when the step's own env doesn't set them — so scenarios never hardcode a
+   * judge model in the step env. `$CELL_PROVIDER`/`$CELL_MODEL` tokens resolve per matrix cell.
+   * `model` may be omitted (the judge falls back to `EXA_EVAL_MODEL_SIZE`, as before).
+   */
+  judge: z.object({
+    provider: NON_EMPTY_STRING.optional(),
+    model: NON_EMPTY_STRING.optional(),
+  }).strict().optional(),
   edition: z.enum(["solo", "team", "enterprise"]).optional(),
   description: z.string().min(1).optional(),
   risk: z.string().min(1).optional(),

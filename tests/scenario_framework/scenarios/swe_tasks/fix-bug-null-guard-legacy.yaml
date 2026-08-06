@@ -20,6 +20,8 @@ matrix:
       requires_bin: "true"
       requires_key: "ANTHROPIC_API_KEY"
 
+judge:
+  provider: "anthropic"
 steps:
   - id: "start-daemon"
     type: "exactl"
@@ -163,7 +165,6 @@ steps:
     step_pass_threshold: 0.8
     env:
       EXA_EVAL_LLM_MOCK: "false"
-      EXA_LLM_PROVIDER: "anthropic"
       EXA_EVAL_MODEL_SIZE: "M"
     output_criteria:
       - id: "llm-judge-quality"

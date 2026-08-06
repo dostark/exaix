@@ -26,6 +26,9 @@ matrix:
       config: "configs/anthropic-no-delegate.toml"
       requires_bin: "true"
       requires_key: "ANTHROPIC_API_KEY"
+judge:
+  provider: "opencode-cli"
+  model: "opencode-cli:opencode-go/deepseek-v4-flash"
 steps:
   - id: "patch-blueprint-capability"
     type: "patch-blueprint"
@@ -173,8 +176,6 @@ steps:
     step_pass_threshold: 0.8
     env:
       EXA_EVAL_LLM_MOCK: "false"
-      EXA_LLM_PROVIDER: "opencode-cli"
-      EXA_LLM_MODEL: "opencode-cli:opencode-go/deepseek-v4-flash"
     output_criteria:
       - id: "llm-judge-quality"
         kind: "llm-judge"
