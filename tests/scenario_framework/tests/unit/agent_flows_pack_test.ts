@@ -105,7 +105,20 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] scenario metadata for the Agent Flo
     assertEquals(scenario.steps.length > 0, true);
     assertEquals(
       scenario.steps.every((step: IScenarioStep) =>
-        ["wait-for-file", "shell", "exactl", "wait-for-journal-event"].includes(step.type) ||
+        [
+          "wait-for-file",
+          "shell",
+          "exactl",
+          "wait-for-journal-event",
+          "journal-assert",
+          "file-contains",
+          "write-file",
+          "remove-files",
+          "patch-blueprint",
+          "prepare-evidence",
+          "judge",
+          "test-run",
+        ].includes(step.type) ||
         ((step.input_criteria?.length ?? 0) + (step.output_criteria?.length ?? 0) > 0)
       ),
       true,

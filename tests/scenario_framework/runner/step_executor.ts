@@ -209,6 +209,11 @@ export async function executeScenarioStep(
     return await executeWriteFileStep(options, startedAt, startedAtEpochMs);
   }
 
+  // Handle remove-files — remove workspace files matching a glob (sandbox cleanup).
+  if (options.step.type === ScenarioStepType.REMOVE_FILES) {
+    return await executeRemoveFilesStep(options, startedAt, startedAtEpochMs);
+  }
+
   // Handle trajectory-assert — reads journal directly via SQLite instead of executing a command
   if (options.step.type === ScenarioStepType.TRAJECTORY_ASSERT) {
     const dbPath = join(options.cwd ?? Deno.cwd(), ".exa", "journal.db");
@@ -849,8 +854,9 @@ async function executeWriteFileStep(
   startedAtEpochMs: number,
 ): Promise<IScenarioStepExecutionResult> {
   const relPath = options.step.path ?? options.step.args?.[0] ?? "";
-  const content = options.step.content ?? options.step.args?.[1] ?? "";
   const workspaceRoot = options.cwd || Deno.cwd();
+  const rawContent = options.step.content ?? options.step.args?.[1] ?? "";
+  const content = rawContent.replaceAll("$WORKSPACE_ROOT", workspaceRoot);
   let message = "";
   let ok = false;
   try {
@@ -874,6 +880,43 @@ async function executeWriteFileStep(
     exitCode: ok ? 0 : 1,
     stdout: message,
     stderr: ok ? "" : message,
+    combinedOutput: message,
+  };
+}
+
+/** A `remove-files` step: remove workspace files matching the declared glob(s). */
+async function executeRemoveFilesStep(
+  options: IExecuteScenarioStepOptions,
+  startedAt: string,
+  startedAtEpochMs: number,
+): Promise<IScenarioStepExecutionResult> {
+  const globs = options.step.args ?? [];
+  const workspaceRoot = options.cwd || Deno.cwd();
+  let removed = 0;
+  let errorMessage = "";
+  try {
+    for (const glob of globs) {
+      const matches = await findMatchingFiles(workspaceRoot, globToRegExp(glob));
+      for (const file of matches) {
+        await Deno.remove(file).catch(() => {});
+        removed++;
+      }
+    }
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : String(error);
+  }
+  const completedAtEpochMs = Date.now();
+  const completedAt = new Date(completedAtEpochMs).toISOString();
+  const message = `removed ${removed} file(s)${errorMessage ? `: ${errorMessage}` : ""}`;
+  return {
+    stepId: options.step.id,
+    stepType: options.step.type,
+    startedAt,
+    completedAt,
+    durationMs: completedAtEpochMs - startedAtEpochMs,
+    exitCode: errorMessage ? 1 : 0,
+    stdout: message,
+    stderr: errorMessage ? message : "",
     combinedOutput: message,
   };
 }

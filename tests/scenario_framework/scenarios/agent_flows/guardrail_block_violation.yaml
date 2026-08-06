@@ -30,13 +30,11 @@ portals: []
 # names (both now real), not a measured pass.
 steps:
   - id: "enable-guardrail"
-    type: "shell"
+    type: "write-file"
     name: "Turn the guardrail on for this sandbox"
-    command: "sh"
-    args: [
-      "-c",
-      "printf '\\n[guardrail]\\nenabled = true\\n' >> \"$EXA_CONFIG_PATH\" && grep -q 'enabled = true' \"$EXA_CONFIG_PATH\"",
-    ]
+    path: "exa.config.toml"
+    content: "\n[guardrail]\nenabled = true\n"
+    append: true
     output_criteria:
       - id: "guardrail-enabled"
         score_weight: 0.4

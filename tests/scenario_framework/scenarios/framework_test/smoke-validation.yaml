@@ -15,10 +15,9 @@ portals:
 
 steps:
   - id: cleanup-workspace
-    type: shell
+    type: remove-files
     name: "Clean up existing analysis artifacts"
-    command: "sh"
-    args: ["-c", "rm -f $WORKSPACE_ROOT/Workspace/Requests/*_analysis.json"]
+    args: ["Workspace/Requests/*_analysis.json"]
     input_criteria: []
     output_criteria: []
 

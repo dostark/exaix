@@ -9,12 +9,17 @@ portals: []
 
 steps:
   - id: create-readme
-    type: shell
-    command: "sh"
-    args: [
-      "-c",
-      "printf '# Exa-Test README for project features\\n\\nExa-Test README for project features.\\n\\n## Features\\n- Feature 1: This is a bullet points\\n- Feature 2: Another bullet points\\n- Feature 3: Final bullet points\\n' > README.md",
-    ]
+    type: write-file
+    path: README.md
+    content: |
+      # Exa-Test README for project features
+
+      Exa-Test README for project features.
+
+      ## Features
+      - Feature 1: This is a bullet points
+      - Feature 2: Another bullet points
+      - Feature 3: Final bullet points
     input_criteria: []
     output_criteria:
       - id: regex-case-insensitive

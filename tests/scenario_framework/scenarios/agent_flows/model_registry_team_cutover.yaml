@@ -11,23 +11,19 @@ portals: []
 steps:
   # --- Setup ---
   - id: "setup-best-identity"
-    type: "shell"
-    command: "sh"
-    args:
-      - "-c"
-      - |
-          cat > "$WORKSPACE_ROOT/Blueprints/Identities/stub-best.md" <<'IDENTITY'
-          ---
-          identity_id: "stub-best"
-          model: ""
-          characteristics: ["best"]
-          task_type: feature
-          permitted_tools:
-            - write_file
-          ---
+    type: "write-file"
+    path: "Blueprints/Identities/stub-best.md"
+    content: |
+      ---
+      identity_id: "stub-best"
+      model: ""
+      characteristics: ["best"]
+      task_type: feature
+      permitted_tools:
+        - write_file
+      ---
 
-          You are a stub agent for testing best-ranked model resolution.
-          IDENTITY
+      You are a stub agent for testing best-ranked model resolution.
     output_criteria:
       - id: "identity-written"
         kind: "command-exit-code"
@@ -42,31 +38,27 @@ steps:
   # Deliberately NOT configs/dogfood.toml — its session_delegate.model = "deepseek-v4-flash"
   # intercepts plan steps before AgentOrchestrator/ModelResolver ever runs.
   - id: "write-config"
-    type: "shell"
-    command: "sh"
-    args:
-      - "-c"
-      - |
-          cat > "$WORKSPACE_ROOT/exa.config.toml" <<'CONFIG'
-          [system]
-          root = "$WORKSPACE_ROOT"
+    type: "write-file"
+    path: "exa.config.toml"
+    content: |
+      [system]
+      root = "$WORKSPACE_ROOT"
 
-          [paths]
-          workspace = "Workspace"
-          blueprints = "Blueprints"
-          runtime = ".exa"
-          memory = "Memory"
-          portals = "Portals"
+      [paths]
+      workspace = "Workspace"
+      blueprints = "Blueprints"
+      runtime = ".exa"
+      memory = "Memory"
+      portals = "Portals"
 
-          [quality_gate]
-          enabled = false
+      [quality_gate]
+      enabled = false
 
-          [request_analysis]
-          enabled = false
+      [request_analysis]
+      enabled = false
 
-          [model_registry]
-          enabled = true
-          CONFIG
+      [model_registry]
+      enabled = true
     output_criteria:
       - id: "config-written"
         kind: "command-exit-code"

@@ -74,12 +74,11 @@ steps:
         score_weight: 0.4
 
   - id: "write-test-file"
-    type: "shell"
+    type: "write-file"
     name: "Write a file for git_commit"
-    command: "sh"
-    args:
-      - "-c"
-      - "echo feature work >> $WORKSPACE_ROOT/tools-portal/src/greeting.txt"
+    path: "tools-portal/src/greeting.txt"
+    content: "feature work"
+    append: true
     output_criteria:
       - id: "file-written"
         kind: "command-exit-code"
