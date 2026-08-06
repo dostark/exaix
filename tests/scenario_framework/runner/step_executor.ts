@@ -16,6 +16,7 @@ import {
   type IScenarioStep,
   ScenarioStepType,
 } from "../schema/step_schema.ts";
+import { copy } from "@std/fs";
 import { globToRegExp, join, relative, resolve } from "@std/path";
 import { Database } from "@db/sqlite";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -191,6 +192,16 @@ export async function executeScenarioStep(
   // assertion holds; a row → exit 0, no row → exit 1.
   if (options.step.type === ScenarioStepType.JOURNAL_ASSERT) {
     return await executeJournalAssertStep(options, startedAt, startedAtEpochMs);
+  }
+
+  // Handle patch-blueprint — add capabilities to a sandboxed blueprint's frontmatter.
+  if (options.step.type === ScenarioStepType.PATCH_BLUEPRINT) {
+    return await executePatchBlueprintStep(options, startedAt, startedAtEpochMs);
+  }
+
+  // Handle prepare-evidence — copy a cwd-relative source file to a workspace evidence target.
+  if (options.step.type === ScenarioStepType.PREPARE_EVIDENCE) {
+    return await executePrepareEvidenceStep(options, startedAt, startedAtEpochMs);
   }
 
   // Handle trajectory-assert — reads journal directly via SQLite instead of executing a command
@@ -743,6 +754,87 @@ function resolveCurrentTrace(
   } finally {
     db?.close();
   }
+}
+
+/** A `patch-blueprint` step: add capabilities to a sandboxed blueprint's frontmatter. */
+async function executePatchBlueprintStep(
+  options: IExecuteScenarioStepOptions,
+  startedAt: string,
+  startedAtEpochMs: number,
+): Promise<IScenarioStepExecutionResult> {
+  const blueprint = options.step.blueprint ?? options.step.args?.[0] ?? "";
+  const capabilities = options.step.add_capabilities ?? [];
+  const workspaceRoot = options.cwd || Deno.cwd();
+  const blueprintPath = join(workspaceRoot, "Blueprints", "Identities", `${blueprint}.md`);
+  let message = "";
+  let ok = false;
+  try {
+    const text = await Deno.readTextFile(blueprintPath);
+    const lines = text.split("\n");
+    const idx = lines.findIndex((l) => l.startsWith("capabilities:"));
+    if (idx !== -1) {
+      const raw = lines[idx].slice("capabilities:".length).trim();
+      const array = JSON.parse(raw) as string[];
+      for (const capability of capabilities) {
+        if (!array.includes(capability)) array.push(capability);
+      }
+      lines[idx] = `capabilities: ${JSON.stringify(array)}`;
+      await Deno.writeTextFile(blueprintPath, lines.join("\n"));
+      ok = capabilities.every((c) => array.includes(c));
+      message = `patched ${blueprint}: ${capabilities.join(", ")}`;
+    } else {
+      message = `no capabilities: line in ${blueprint}.md`;
+    }
+  } catch (error) {
+    message = error instanceof Error ? error.message : String(error);
+  }
+  const completedAtEpochMs = Date.now();
+  const completedAt = new Date(completedAtEpochMs).toISOString();
+  return {
+    stepId: options.step.id,
+    stepType: options.step.type,
+    startedAt,
+    completedAt,
+    durationMs: completedAtEpochMs - startedAtEpochMs,
+    exitCode: ok ? 0 : 1,
+    stdout: message,
+    stderr: ok ? "" : message,
+    combinedOutput: message,
+  };
+}
+
+/** A `prepare-evidence` step: copy a cwd-relative source file to a workspace evidence target. */
+async function executePrepareEvidenceStep(
+  options: IExecuteScenarioStepOptions,
+  startedAt: string,
+  startedAtEpochMs: number,
+): Promise<IScenarioStepExecutionResult> {
+  const source = options.step.source ?? options.step.args?.[0] ?? "";
+  const target = options.step.target ?? "llm-judge-input.txt";
+  const workspaceRoot = options.cwd || Deno.cwd();
+  const executionBase = await resolveExecutionBase(options.step, workspaceRoot, options.artifactBaselineMs);
+  let message = "";
+  let ok = false;
+  try {
+    await copy(join(executionBase, source), join(workspaceRoot, target), { overwrite: true });
+    ok = true;
+    message = `prepared evidence: ${source} → ${target}`;
+  } catch (error) {
+    message = error instanceof Error ? error.message : String(error);
+  }
+  const completedAtEpochMs = Date.now();
+  const completedAt = new Date(completedAtEpochMs).toISOString();
+  return {
+    stepId: options.step.id,
+    stepType: options.step.type,
+    startedAt,
+    completedAt,
+    durationMs: completedAtEpochMs - startedAtEpochMs,
+    exitCode: ok ? 0 : 1,
+    stdout: message,
+    stderr: ok ? "" : message,
+    combinedOutput: message,
+  };
 }
 
 /** A `journal-assert` step: run a declarative SQL assertion against the workspace journal.

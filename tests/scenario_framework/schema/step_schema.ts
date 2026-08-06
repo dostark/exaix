@@ -23,6 +23,9 @@ export enum ScenarioStepType {
   SHELL = "shell",
   EXACTL = "exactl",
   TEST_RUN = "test-run",
+  PATCH_BLUEPRINT = "patch-blueprint",
+  PREPARE_EVIDENCE = "prepare-evidence",
+  JUDGE = "judge",
   WAIT_FOR_FILE = "wait-for-file",
   WAIT_FOR_JOURNAL_EVENT = "wait-for-journal-event",
   WAIT_FOR_STATUS = "wait-for-status",
@@ -366,6 +369,14 @@ export const ScenarioStepSchema = z.object({
   // file-contains: wait until at least this many files match the step's glob(s) (args and/or
   // file_pattern) before evaluating its file/text criteria. Default 1.
   min_matches: z.number().int().min(1).optional(),
+  // patch-blueprint: the identity whose sandboxed blueprint gets capabilities added.
+  blueprint: z.string().min(1).optional(),
+  // patch-blueprint: capabilities to add to the blueprint's capabilities array.
+  add_capabilities: z.array(z.string().min(1)).optional(),
+  // prepare-evidence: cwd-relative source file to copy to the evidence target.
+  source: z.string().min(1).optional(),
+  // prepare-evidence: workspace-relative target for the copied evidence (default llm-judge-input.txt).
+  target: z.string().min(1).optional(),
   checkpoint: z.union([NON_EMPTY_STRING, z.boolean()]).optional(),
   instructions: NON_EMPTY_STRING.optional(),
   continue_on_failure: z.boolean().default(false),

@@ -148,26 +148,17 @@ steps:
     output_criteria: []
 
   - id: "prepare-llm-judge-evidence"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "cat \"$WORKSPACE_ROOT/todo-app/src/utils.ts\" > \"$WORKSPACE_ROOT/llm-judge-input.txt\"",
-      ]
+    type: "prepare-evidence"
+    cwd: "todo-app"
+    source: "src/api.ts"
+    target: "llm-judge-input.txt"
     output_criteria:
       - id: "evidence-prepared"
         kind: "command-exit-code"
         equals: 0
 
   - id: "judge-quality"
-    type: "shell"
-    command: "sh"
-    args: ["-c", "true"]
-    # A real Anthropic judge (not the mock). EXA_LLM_PROVIDER selects the provider the eval
-    # harness resolves; without it, callLlmEndpoint's real-LLM path errors ("provider required").
-    # step_pass_threshold: a near-perfect (but not 1.0) judge score is still a pass —
-    # only a score below 0.8 flips the scenario outcome to scenario-failure.
+    type: "judge"
     step_pass_threshold: 0.8
     env:
       EXA_EVAL_LLM_MOCK: "false"

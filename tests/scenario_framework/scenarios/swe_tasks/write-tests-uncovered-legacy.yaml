@@ -140,22 +140,17 @@ steps:
     output_criteria: []
 
   - id: "prepare-llm-judge-evidence"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "WORKTREE=$(cat \"$WORKSPACE_ROOT/.exa/worktree-path.txt\") && cat \"$WORKTREE/src/priority_calculator_test.ts\" > \"$WORKSPACE_ROOT/llm-judge-input.txt\" 2>/dev/null || echo 'no test file written' > \"$WORKSPACE_ROOT/llm-judge-input.txt\"",
-      ]
+    type: "prepare-evidence"
+    cwd: "$WORKTREE"
+    source: "src/api.ts"
+    target: "llm-judge-input.txt"
     output_criteria:
       - id: "evidence-prepared"
         kind: "command-exit-code"
         equals: 0
 
   - id: "judge-quality"
-    type: "shell"
-    command: "sh"
-    args: ["-c", "true"]
+    type: "judge"
     env:
       EXA_EVAL_LLM_MOCK: "false"
     output_criteria:

@@ -38,13 +38,9 @@ matrix:
 
 steps:
   - id: "patch-blueprint-capability"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "sed -i 's/\"react\"\\]/\"react\", \"cli_delegate\"\\]/' \"$WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md\" && grep -q cli_delegate \"$WORKSPACE_ROOT/Blueprints/Identities/senior-coder.md\"",
-      ]
+    type: "patch-blueprint"
+    blueprint: "senior-coder"
+    add_capabilities: ["cli_delegate"]
     output_criteria:
       - id: "capability-patched"
         kind: "command-exit-code"
@@ -187,13 +183,10 @@ steps:
         score_weight: 0.2
 
   - id: "prepare-llm-judge-evidence"
-    type: "shell"
-    command: "sh"
-    args:
-      [
-        "-c",
-        "cat \"$WORKSPACE_ROOT/todo-app/src/utils.ts\" > \"$WORKSPACE_ROOT/llm-judge-input.txt\"",
-      ]
+    type: "prepare-evidence"
+    cwd: "todo-app"
+    source: "src/api.ts"
+    target: "llm-judge-input.txt"
     output_criteria:
       - id: "evidence-prepared"
         kind: "command-exit-code"
@@ -207,11 +200,7 @@ steps:
   # materializeCellConfig — never hardcoded here, so a future provider only needs a new config
   # file plus one new matrix cell above, not an edit to this scenario's steps.
   - id: "judge-quality"
-    type: "shell"
-    command: "sh"
-    args: ["-c", "true"]
-    # step_pass_threshold: a near-perfect (but not 1.0) judge score is still a pass —
-    # only a score below 0.8 flips the scenario outcome to scenario-failure.
+    type: "judge"
     step_pass_threshold: 0.8
     env:
       EXA_EVAL_LLM_MOCK: "false"
