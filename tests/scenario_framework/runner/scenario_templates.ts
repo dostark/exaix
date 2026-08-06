@@ -10,6 +10,7 @@
 import type { Opt, Reason } from "@exaix/core/types";
 import { SCHEMA_VERSION } from "../schema/version.ts";
 import { BARE_DELEGATE_STEP_ID, REQUEST_FIXTURE_CONTENT_SENTINEL } from "./matrix_expander.ts";
+import { buildOpencodePermissionConfig } from "@exaix/session";
 
 export interface IScenarioTemplateOptions {
   id: string;
@@ -546,6 +547,13 @@ export function renderSweTaskBareTemplate(
   const scoreWeights = task.scoringWeights ?? {};
   const portalDir = task.portal ?? "todo_app";
 
+  // Phase 143 fix — the bare delegate is scoped to its worktree exactly like the daemon-run
+  // delegate: an opencode permission config is staged INTO the sandbox worktree and passed via
+  // OPENCODE_CONFIG, so the raw CLI cannot read outside the worktree (e.g. the repo's
+  // fixtures/swe_tasks/<task>/reference.patch solution). `**` = everything under the worktree.
+  const bareScopeConfigJson = JSON.stringify(buildOpencodePermissionConfig(["**"]))
+    .replaceAll('"', '\\"');
+
   const parts: string[] = [
     `schema_version: "1.0.0"`,
     `id: "${task.id}"`,
@@ -560,9 +568,19 @@ export function renderSweTaskBareTemplate(
     "",
     "steps:",
     ...renderSweSetupSteps(portalDir, { includeCliDelegatePatch: false }),
+    `  - id: "stage-bare-opencode-config"`,
+    `    type: "shell"`,
+    `    command: "sh"`,
+    `    args: ["-c", "printf '%s' '${bareScopeConfigJson}' > \\"$WORKSPACE_ROOT/todo-app/opencode.jsonc\\""]`,
+    `    output_criteria:`,
+    `      - id: "opencode-config-staged"`,
+    `        kind: "command-exit-code"`,
+    `        equals: 0`,
     `  - id: "${BARE_DELEGATE_STEP_ID}"`,
     `    type: "shell"`,
     `    command: "opencode"`,
+    `    env:`,
+    `      OPENCODE_CONFIG: "$WORKSPACE_ROOT/todo-app/opencode.jsonc"`,
     `    args: ["run", "--format", "json", "--dir", "$WORKSPACE_ROOT/todo-app", "${REQUEST_FIXTURE_CONTENT_SENTINEL}"]`,
     `    timeout_sec: ${DEFAULT_BARE_DELEGATE_TIMEOUT_SEC}`,
     `    output_criteria:`,
