@@ -2412,9 +2412,22 @@ exactl eval history --source jsonl --last 10
 # Compare two evaluation runs side-by-side
 exactl eval compare --run-a <run-id> --run-b <run-id>
 
+# Bound a run's spend and read the accuracy-vs-cost / harness-lift readouts
+exactl eval run --pack swe_tasks --max-cost-usd 0.5
+exactl eval report --view frontier
+exactl eval report --view lift
+exactl eval report --view failures
+
 # View family-level report (swe-tasks pack)
 exactl eval report --pack swe-tasks --format table
 ```
+
+`eval report` views: `cost` (default), `families`, `lift` (Exaix vs the raw CLI on the same
+task), `ablation` (per-subsystem contribution), `frontier` (accuracy vs cost with Pareto
+marking), and `failures` (why runs fail, per family and cell); `--format json` gives
+machine-readable rows. `--max-cost-usd` stops scheduling once accumulated tracked cost reaches
+the cap (remaining scenarios skipped, never a task truncated mid-run). Full documentation in
+`docs/Exaix_Evaluation.md`.
 
 Exit codes: `0` all passed, `1` one or more below threshold, `2` infrastructure
 error. Eval reports are written to the output directory as `eval-report.json`.

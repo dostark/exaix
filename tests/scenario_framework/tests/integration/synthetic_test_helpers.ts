@@ -30,6 +30,16 @@ export interface IWriteSyntheticScenarioOptions {
   requestFixturePath?: string;
   /** Scenario-level scoring mode (Phase 143 Step 3). Emitted as `scoring: "gated"`. */
   scoring?: "gated";
+  /** A single matrix cell (Phase 143 Step 6 grid): emits a `matrix:` block with one cell so the
+   *  run records a `cell_id` (+ `harness: bare` / `ablate:` markers). */
+  matrixCell?: {
+    tool: string;
+    provider: string;
+    config: string;
+    requiresBin: string;
+    harness?: "bare";
+    ablate?: string;
+  };
 }
 
 const DEFAULT_REQUEST_FIXTURE_PATH = "fixtures/requests/shared/synthetic_request.md";
@@ -74,6 +84,18 @@ export async function writeSyntheticScenario(
       'mode_support: ["auto", "manual-checkpoint"]',
       "portals: []",
       ...(options.scoring ? [`scoring: "${options.scoring}"`] : []),
+      ...(options.matrixCell
+        ? [
+          "matrix:",
+          "  cells:",
+          `    - tool: "${options.matrixCell.tool}"`,
+          `      provider: "${options.matrixCell.provider}"`,
+          `      config: "${options.matrixCell.config}"`,
+          `      requires_bin: "${options.matrixCell.requiresBin}"`,
+          ...(options.matrixCell.harness ? [`      harness: "${options.matrixCell.harness}"`] : []),
+          ...(options.matrixCell.ablate ? [`      ablate: "${options.matrixCell.ablate}"`] : []),
+        ]
+        : []),
       "steps:",
       ...options.steps.flatMap((step) => [
         `  - id: "${step.id}"`,

@@ -797,6 +797,39 @@ runnable cell; the cell's config preset is resolved to an **absolute** path (the
 workspace, not the repo). See `scenarios/provider_live/session_delegate_matrix_live.yaml` for the
 full four-cell example.
 
+### Cell kinds: bare-delegate baseline and feature ablations (Phase 143)
+
+Two additional cell markers sit beside the ordinary cell and feed the comparison report views
+(§"Harness-Lift & Cost Evaluation" in `docs/Exaix_Evaluation.md`):
+
+| Marker            | `cell_id`                        | Purpose                                                      |
+| ----------------- | -------------------------------- | ------------------------------------------------------------ |
+| `harness: "bare"` | `bare/<tool>/<provider>`         | **Bare-delegate baseline** — raw CLI, no Exaix; lift control |
+| `ablate: "<sub>"` | `ablate-<sub>/<tool>/<provider>` | **Feature ablation** — one subsystem off; ablation control   |
+
+```yaml
+matrix:
+  cells:
+    - tool: "claude-code"
+      provider: "anthropic"
+      config: "configs/claude-cli-delegate-all.toml"
+      requires_bin: "claude"
+    - tool: "claude-code"
+      provider: "anthropic"
+      config: "configs/claude-cli-delegate-all.toml"
+      requires_bin: "claude"
+      harness: "bare"
+    - tool: "claude-code"
+      provider: "anthropic"
+      config: "configs/eval-ablate-skills.toml"
+      requires_bin: "claude"
+      ablate: "skills"
+```
+
+The three ablation presets (`configs/eval-ablate-{skills,quality-gate,portal-knowledge}.toml`)
+are byte-identical except their one toggle each; runs carry the `harness:bare` /
+`ablate:<subsystem>` tags and a cell_id the comparison engines pair on.
+
 ### Running Scenarios Locally (before sandbox deploy)
 
 The fastest local workflow uses the synthetic runner (`runner/synthetic_runner.ts`)

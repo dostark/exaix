@@ -1,6 +1,6 @@
 # Exaix Evaluation Guide
 
-- **Version:** 1.1.0
+- **Version:** 1.2.0
 - **Date:** 2026-08-05
 
 ## 1. Introduction
@@ -163,9 +163,9 @@ Output shows per-step score differences and overall score delta.
 
 Render a comparison over recorded history, grouped by `cell_id`/`provider`/`model`. The view
 is selected with `--view`; the current views are `cost` (default), `families`, `lift`,
-`ablation`, and `frontier`. Report views read the same tracked-cost, score, and cell fields
-the history rows carry (§9), and `--format json` renders machine-readable rows for CI trend
-jobs.
+`ablation`, `frontier`, and `failures`. Report views read the same tracked-cost, score, and cell
+fields the history rows carry (§9), and `--format json` renders machine-readable rows for CI
+trend jobs.
 
 **Usage:**
 
@@ -232,6 +232,18 @@ exactl eval report --view frontier
 
 # Machine-readable rows for a CI trend job
 exactl eval report --view frontier --format json
+```
+
+#### `--view failures` — why runs fail
+
+Every run that failed records _why_ (§9.6). This view aggregates those failure classes across
+history: per-class counts with the family × cell breakdown, and the **top class per cell** — so
+you can see at a glance whether a cell keeps dying on one specific failure mode. Supports
+`--format json`.
+
+```bash
+exactl eval report --view failures
+exactl eval report --view failures --format json
 ```
 
 ---
@@ -552,6 +564,7 @@ Each line is a self-contained JSON object:
   "suite_score": 0.95,
   "passed": true,
   "scoring_mode": "additive",
+  "failure_classes": ["execution.failed"],
   "step_count": 3,
   "step_results": [
     {
@@ -591,6 +604,10 @@ carries no such fields, not zeroed ones.
 `scoring_mode` is `"additive"` (the default, applied to every pre-existing row) or `"gated"`
 for a scenario that opted into security-gated scoring (§4.5) — history always records which
 rule produced the score.
+
+`failure_classes` is the run's failure taxonomy (§9.6) — the distinct anomaly event types from
+the run's trace plus the `execution-alignment` class. Absent for runs with no classified
+failures.
 
 ### 9.2 SQLite Storage
 
@@ -672,6 +689,21 @@ the aggregate score, and — when a `--max-cost-usd` cap stopped scheduling (§3
 
 A budget stop is a scheduling decision, not a failure: `budget_stopped` is a fact about the run,
 and the scenarios that did run are scored and judged normally.
+
+### 9.6 Failure Classes
+
+Every eval run records **why it failed**. `failure_classes` is the run's failure taxonomy: the
+distinct anomaly event types found in the run's journal trace — with **recovered** findings
+excluded (a failure that was later succeeded on the same target is not a lasting failure mode) —
+plus the eval-only `execution-alignment` class.
+
+`execution-alignment` means "plausible work, failed verification": the delegate's work was
+accepted/reconciled (`session.delegate.reconciled` appears in the run's trace) but the outcome
+score came in below the pass threshold. The agent did something — just not the right thing. A
+reconciled run that passed is not flagged.
+
+No new detector was built — the classes come from the existing anomaly projection over the
+run's trace. Read the taxonomy with `exactl eval report --view failures` (§3.4).
 
 ---
 
@@ -950,9 +982,9 @@ predate gating; history labels each run's mode (`scoring_mode`) so the two are n
 as if they were the same measurement.
 
 **The comparison views apply here.** Running a task on a bare-delegate cell (raw CLI, no Exaix)
-and on the ablation cells (one subsystem off) feeds `--view lift` and `--view ablation`, and
-the per-cell `--view frontier` turns the corpus's tracked cost into the accuracy-vs-cost readout
-(§3.4).
+and on the ablation cells (one subsystem off) feeds `--view lift` and `--view ablation`, the
+per-cell `--view frontier` turns the corpus's tracked cost into the accuracy-vs-cost readout, and
+`--view failures` answers why runs fail per family and cell (§3.4).
 
 ### Running
 
@@ -1162,3 +1194,72 @@ baselines for trend comparison — are recorded directly in
 `exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`, dated per run. This tier is
 provider-live and deliberately scheduled (never a CI gate, never a pre-commit hook); running a
 screening pass or a full-trial arm is an operator action, the same class as §12's fixture capture.
+
+---
+
+## 16. Harness-Lift & Cost Evaluation (Phase 143)
+
+This section ties together the comparison machinery built across the phase: measuring **what
+Exaix adds over running the raw CLI tool directly**, **what each subsystem contributes**, **at
+what cost**, and **why runs fail**. The four report views (§3.4), gated scoring (§4.5), and the
+budget cap (§3.1/§9.5) are the tools; this section is the methodology.
+
+### The cell taxonomy
+
+A "cell" is one configuration of the harness running one task. The comparison views pair cells
+that differ in exactly one thing:
+
+| Cell kind                          | `cell_id`                              | What differs from the Exaix cell                      |
+| ---------------------------------- | -------------------------------------- | ----------------------------------------------------- |
+| Exaix cell                         | `<tool>-<provider>`                    | — (the baseline configuration)                        |
+| **Bare-delegate cell** (§3.4 lift) | `bare/<tool>/<provider>`               | No Exaix at all — the raw CLI runs the same task      |
+| **Ablation cells** (§3.4 ablation) | `ablate-<subsystem>/<tool>/<provider>` | Exactly one subsystem toggled off via a config preset |
+
+The three ablation presets (`configs/eval-ablate-skills.toml`,
+`eval-ablate-quality-gate.toml`, `eval-ablate-portal-knowledge.toml`) are byte-identical except
+their one toggle each, so a contribution delta is attributable to exactly one subsystem. The
+memory-injection toggle does not exist in config (it is constructor-gated), so the ablation set
+ships with **three** factors, not four.
+
+### Metric semantics
+
+- **Outcome-channel only for lift.** A bare cell has no daemon and no process channel, so the
+  lift comparison scores both sides on the **outcome channel alone** (the verify-tests check) —
+  process-criteria that only an Exaix run could satisfy are excluded from both sides. A delta
+  over fewer than a handful of tasks is reported with its `noEffect` verdict, never presented as
+  a confident number.
+- **Single-factor ablation.** Each ablation flips one toggle; a contribution is
+  `mean(full-config) − mean(ablate)`. If an arm varies more than one thing, its delta is
+  confounded and is withheld, not rounded off.
+- **Gated scoring** (§4.5) applies to the corpus: a `class: security` failure zeroes the task.
+- **Cost is tracked, not predicted** (§9.4); the frontier (§3.4) marks Pareto-dominant cells.
+
+### Running the grid
+
+The full harness-value grid runs the `swe_tasks` corpus across every cell kind on one provider,
+budget-capped, with gating on:
+
+```bash
+# The five cell kinds, one provider, within a spend bound
+exactl eval run --pack swe_tasks --cell <tool> --max-cost-usd 2.0 --eval-mode \
+  --score-threshold 0.5          # Exaix cell
+# ... plus the bare cell and the three ablation cells (bare/ablate variants), then:
+exactl eval report --view lift --pack swe_tasks
+exactl eval report --view ablation --pack swe_tasks
+exactl eval report --view frontier --pack swe_tasks
+exactl eval report --view failures --pack swe_tasks
+```
+
+The grid mechanics are guarded in CI token-free by `harness_grid_pipeline_test.ts` (scripted
+delegates, synthetic history). The live grid run and its founding tables are operator-triggered
+and provider-live — never a CI gate.
+
+### What the numbers mean — and what they don't
+
+A harness-lift number is **per-provider, per-corpus, per-date**. It answers "on this task set,
+with this model, this day, did the Exaix harness beat the raw CLI — and by how much (or was the
+difference noise)?" It is **not** a context-free "Exaix adds N points" claim that survives being
+lifted onto a different corpus, provider, or week. The same discipline applies to feature
+contributions and the frontier: read each number with its basis (cells, run ids, task count)
+and its `noEffect` verdict, and treat a lift near zero or negative as a real finding — the
+corpus may simply ceiling near 1.0 for capable models.
