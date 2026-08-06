@@ -15,10 +15,7 @@ import { parse as parseYaml } from "@std/yaml";
 import { evaluateCriterion, evaluateStepOutcome, type IScenarioStepOutcome, StepFailureStage } from "./assertions.ts";
 import { type IRunManifest, writeExecutionLog, writeRunManifest } from "./evidence_collector.ts";
 import type { Opt, Reason } from "@exaix/core/types";
-import { ExaPathDefaults } from "@exaix/core";
-import { GitService } from "@exaix/git";
-import { ConfigSchema } from "@exaix/schemas";
-import type { Config } from "@exaix/schemas/config.ts";
+import { gitServiceFor } from "./git_helpers.ts";
 import { composeGated, computeStepScore, computeSuiteScore, type IStepScoreInput, ScoringMode } from "./scoring.ts";
 import { type IRunScenarioInModeResult, runScenarioInMode } from "./modes.ts";
 import { type ILoadedScenario, loadScenarioFromYamlFile } from "./scenario_loader.ts";
@@ -704,23 +701,6 @@ async function removePath(path: string): Promise<void> {
 async function copyFixture(source: string, target: string): Promise<void> {
   await ensureDir(dirname(target));
   await copy(source, target, { overwrite: true });
-}
-
-/** Cached minimal config for the fixture-staging GitService — only `repoPath` is read at
- *  runtime (runGitCommand), so a parsed minimal config satisfies the constructor type. */
-let fixtureGitConfig: Config | undefined;
-
-function getFixtureGitConfig(): Config {
-  fixtureGitConfig ??= ConfigSchema.parse({
-    system: { root: "", log_level: "info" },
-    paths: { ...ExaPathDefaults },
-  });
-  return fixtureGitConfig;
-}
-
-/** A repo-scoped GitService. Native Exaix git layer — no raw `git` CLI spawn in framework code. */
-function gitServiceFor(repoPath: string): GitService {
-  return new GitService({ config: getFixtureGitConfig(), repoPath });
 }
 
 /** Initialize a git repo with the single initial fixture commit (same identity the scenario

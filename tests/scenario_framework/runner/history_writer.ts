@@ -10,6 +10,7 @@
 import type { Opt, Reason } from "@exaix/core/types";
 import { EvalScoringMode } from "@exaix/core";
 import { dirname, fromFileUrl, resolve } from "@std/path";
+import { gitServiceFor } from "./git_helpers.ts";
 import {
   EvalHistoryEntrySchema,
   getDefaultComponentVersions,
@@ -50,21 +51,18 @@ const GIT_UNKNOWN_COMMIT = "unknown";
  * failing the run — provenance is best-effort metadata, never a gate.
  */
 async function captureFrameworkGitProvenance(): Promise<{ commit: string; dirty: boolean }> {
-  async function git(args: string[]): Promise<{ ok: boolean; out: string }> {
+  const git = gitServiceFor(FRAMEWORK_DIR);
+  async function gitSafe(args: string[]): Promise<{ ok: boolean; out: string }> {
     try {
-      const output = await new Deno.Command("git", {
-        args: ["-C", FRAMEWORK_DIR, ...args],
-        stdout: "piped",
-        stderr: "null",
-      }).output();
-      return { ok: output.success, out: new TextDecoder().decode(output.stdout).trim() };
+      const result = await git.runGitCommand(args, { throwOnError: false });
+      return { ok: result.exitCode === 0, out: result.output.trim() };
     } catch {
       return { ok: false, out: "" };
     }
   }
-  const head = await git(["rev-parse", "HEAD"]);
+  const head = await gitSafe(["rev-parse", "HEAD"]);
   // `git status --porcelain` of the framework subtree: any output = uncommitted changes present.
-  const status = await git(["status", "--porcelain", "--", FRAMEWORK_DIR]);
+  const status = await gitSafe(["status", "--porcelain", "--", FRAMEWORK_DIR]);
   return {
     commit: head.ok && head.out.length > 0 ? head.out : GIT_UNKNOWN_COMMIT,
     dirty: status.ok ? status.out.length > 0 : false,

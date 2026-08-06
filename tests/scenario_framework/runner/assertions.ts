@@ -24,6 +24,7 @@ import {
 import type { JSONValue, Opt, Reason } from "@exaix/core/types";
 import type { IScenarioStepExecutionResult } from "./step_executor.ts";
 import { resolveExecutionBase } from "./step_executor.ts";
+import { gitServiceFor } from "./git_helpers.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import {
   buildEvaluationPrompt,
@@ -1467,12 +1468,11 @@ export function prependMethodologyInstructions(prompt: string, methodology: stri
 
 const GIT_DIFF_NO_CHANGES_MESSAGE = "(no changes — working tree matches the initial commit)";
 
+/** A repo-scoped native git layer for evidence diffing — the Exaix GitService, never a raw git
+ *  CLI spawn. Throws on failure, returns captured stdout. */
 async function runGitCapture(cwd: string, args: string[]): Promise<string> {
-  const output = await new Deno.Command("git", { args, cwd, stdout: "piped", stderr: "piped" }).output();
-  if (!output.success) {
-    throw new Error(`git ${args.join(" ")} failed: ${new TextDecoder().decode(output.stderr)}`);
-  }
-  return new TextDecoder().decode(output.stdout);
+  const result = await gitServiceFor(cwd).runGitCommand(args);
+  return result.output;
 }
 
 /**
