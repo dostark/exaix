@@ -92,7 +92,7 @@ steps:
   - id: "wait-for-plan"
     type: "wait-for-file"
     args: ["**/Plans/*_plan.md"]
-    failure_glob: "**/Workspace/Rejected/*_rejected.md"
+    failure_glob: "Workspace/Rejected/*_rejected.md"
     # Longer timeout for write-tests scenario: opencode's read-only plan mode produces
     # free-form text without --json-schema support, requiring plan-validation retries
     # that consume >180s (observed: 2 retries ~92s + 3rd attempt needs ~60-200s).
@@ -143,11 +143,12 @@ steps:
   # checked against the mounted portal now that approve-review has merged the worktree in.
   - id: "assert-new-test-file-exists"
     type: "file-contains"
-    file_pattern: "todo-app/src/priority_calculator_test.ts"
+    cwd: "todo-app"
+    file_pattern: "src/priority_calculator_test.ts"
     output_criteria:
       - id: "new-test-file-exists"
         kind: "file-found"
-        path_pattern: "todo-app/src/priority_calculator_test.ts"
+        path_pattern: "src/priority_calculator_test.ts"
         score_weight: 0.15
 
   - id: "run-tests"

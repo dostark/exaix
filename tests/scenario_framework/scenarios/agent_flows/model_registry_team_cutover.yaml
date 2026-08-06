@@ -127,12 +127,12 @@ steps:
   # --- Wait for the plan to reach review status ---
   - id: "wait-for-plan"
     type: "wait-for-file"
-    args: ["**/Workspace/Plans/*_plan.md"]
+    args: ["Workspace/Plans/*_plan.md"]
     timeout_sec: 180
     output_criteria:
       - id: "plan-created"
         kind: "file-found"
-        path_pattern: "**/Workspace/Plans/*_plan.md"
+        path_pattern: "Workspace/Plans/*_plan.md"
 
   # --- Approve the plan, moving it to Workspace/Active so ExecutionLoop picks it up ---
   - id: "approve-plan"

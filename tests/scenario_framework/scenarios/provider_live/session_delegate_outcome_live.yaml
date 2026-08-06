@@ -131,7 +131,8 @@ steps:
   # writes GREETING the loop exhausts and the step fails.
   - id: "wait-for-intended-change"
     type: "file-contains"
-    file_pattern: "**/.exa/worktrees/*/*/src/main.ts"
+    cwd: "$WORKTREE"
+    file_pattern: "src/main.ts"
     timeout_sec: 300
     output_criteria:
       - id: "intended-change-observed"
@@ -193,7 +194,8 @@ steps:
   # `console.log("hello")` with no GREETING constant.
   - id: "assert-greeting-added"
     type: "file-contains"
-    file_pattern: "**/.exa/worktrees/*/*/src/main.ts"
+    cwd: "$WORKTREE"
+    file_pattern: "src/main.ts"
     input_criteria: []
     output_criteria:
       - id: "greeting-constant-present"

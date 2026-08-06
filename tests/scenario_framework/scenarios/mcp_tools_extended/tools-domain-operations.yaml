@@ -66,11 +66,11 @@ steps:
   - id: "created-request-is-on-disk"
     type: "file-contains"
     name: "The request the tool reported creating actually exists, stamped source: mcp"
-    file_pattern: "**/Workspace/Requests/request-*.md"
+    file_pattern: "Workspace/Requests/request-*.md"
     output_criteria:
       - id: "request-file-written"
         kind: "file-found"
-        path_pattern: "**/Workspace/Requests/request-*.md"
+        path_pattern: "Workspace/Requests/request-*.md"
         score_weight: 0.7
       - id: "request-came-through-mcp"
         kind: "text-matches"

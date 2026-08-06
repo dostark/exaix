@@ -92,7 +92,7 @@ steps:
   - id: "wait-for-plan"
     type: "wait-for-file"
     args: ["**/Plans/*_plan.md"]
-    failure_glob: "**/Workspace/Rejected/*_rejected.md"
+    failure_glob: "Workspace/Rejected/*_rejected.md"
     timeout_sec: 180
     input_criteria: []
     output_criteria:

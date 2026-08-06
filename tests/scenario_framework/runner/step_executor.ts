@@ -99,6 +99,49 @@ const TEXT_DECODER = new TextDecoder();
 const WHITESPACE_PATTERN = /\s+/;
 const WAIT_FOR_FILE_POLL_INTERVAL_MS = 2000; // Check every 2 seconds
 
+/** The cwd token that resolves to the scenario's newest execution worktree. */
+export const CWD_WORKTREE_TOKEN = "$WORKTREE";
+
+/** Resolve a step's declared working directory: omitted → workspace root, a relative path →
+ *  workspace-relative, `$WORKTREE` → the newest execution worktree (baseline-aware). */
+export async function resolveExecutionBase(
+  step: { cwd?: string },
+  workspaceRoot: string,
+  baselineMs?: Opt<number, Reason.OptionalInput>,
+): Promise<string> {
+  if (!step.cwd) return workspaceRoot;
+  if (step.cwd === CWD_WORKTREE_TOKEN) {
+    const worktree = await resolveNewestWorktree(workspaceRoot, baselineMs);
+    return worktree ?? workspaceRoot;
+  }
+  return resolve(workspaceRoot, step.cwd);
+}
+
+/** The newest worktree directory under `.exa/worktrees/<alias>/<trace>` (baseline-aware), or
+ *  undefined when none exists. */
+async function resolveNewestWorktree(
+  workspaceRoot: string,
+  baselineMs?: Opt<number, Reason.OptionalInput>,
+): Promise<string | undefined> {
+  const worktreesRoot = join(workspaceRoot, ".exa", "worktrees");
+  let best: { path: string; mtime: number } | undefined;
+  try {
+    for await (const alias of Deno.readDir(worktreesRoot)) {
+      if (!alias.isDirectory) continue;
+      for await (const trace of Deno.readDir(join(worktreesRoot, alias.name))) {
+        if (!trace.isDirectory) continue;
+        const worktreePath = join(worktreesRoot, alias.name, trace.name);
+        const mtime = (await Deno.stat(worktreePath).catch(() => null))?.mtime?.getTime() ?? 0;
+        if (baselineMs !== undefined && mtime < baselineMs) continue;
+        if (!best || mtime > best.mtime) best = { path: worktreePath, mtime };
+      }
+    }
+  } catch {
+    // No worktrees yet — fall back to the workspace root by returning undefined.
+  }
+  return best?.path;
+}
+
 export async function executeScenarioStep(
   options: IExecuteScenarioStepOptions,
 ): Promise<IScenarioStepExecutionResult> {
@@ -165,6 +208,7 @@ export async function executeScenarioStep(
   }
 
   const commandSpec = buildCommandSpec(options);
+  const executionBase = await resolveExecutionBase(options.step, options.cwd || Deno.cwd(), options.artifactBaselineMs);
 
   if (options.verbose) {
     console.log(`\n%c > ${commandSpec.executable} ${commandSpec.args.join(" ")}`, "color: green; font-weight: bold;");
@@ -172,7 +216,7 @@ export async function executeScenarioStep(
 
   const output = await new Deno.Command(commandSpec.executable, {
     args: commandSpec.args,
-    cwd: options.cwd,
+    cwd: executionBase,
     env: options.env,
     stdin: "null",
     stdout: "piped",
@@ -205,7 +249,7 @@ async function executeWaitForFileStep(
   const timeoutSec = options.step.timeout_sec ?? 120; // Default 2 minutes
   const pathPattern = options.step.args?.[0] || "**/*_analysis.json";
   const failureGlob = options.step.failure_glob;
-  const workspaceRoot = options.cwd || Deno.cwd();
+  const executionBase = await resolveExecutionBase(options.step, options.cwd || Deno.cwd(), options.artifactBaselineMs);
   const timeoutMs = timeoutSec * 1000;
 
   const pattern = globToRegExp(pathPattern);
@@ -214,7 +258,7 @@ async function executeWaitForFileStep(
 
   while (Date.now() - startTime < timeoutMs) {
     // Search for matching files
-    const found = await findMatchingFiles(workspaceRoot, pattern, options.artifactBaselineMs);
+    const found = await findMatchingFiles(executionBase, pattern, options.artifactBaselineMs);
 
     if (found.length > 0) {
       const completedAtEpochMs = Date.now();
@@ -245,7 +289,7 @@ async function executeWaitForFileStep(
     // instead of burning the rest of timeout_sec, and surface the failure file's content
     // so the real error (not a generic timeout) reaches the scenario's failure details.
     if (failurePattern) {
-      const failureFound = await findMatchingFiles(workspaceRoot, failurePattern);
+      const failureFound = await findMatchingFiles(executionBase, failurePattern);
       if (failureFound.length > 0) {
         const completedAtEpochMs = Date.now();
         const completedAt = new Date(completedAtEpochMs).toISOString();
@@ -348,7 +392,7 @@ async function executeFileContainsStep(
   startedAtEpochMs: number,
 ): Promise<IScenarioStepExecutionResult> {
   const timeoutSec = options.step.timeout_sec ?? 120;
-  const workspaceRoot = options.cwd || Deno.cwd();
+  const executionBase = await resolveExecutionBase(options.step, options.cwd || Deno.cwd(), options.artifactBaselineMs);
   const timeoutMs = timeoutSec * 1000;
   const startTime = Date.now();
 
@@ -381,7 +425,7 @@ async function executeFileContainsStep(
   while (Date.now() - startTime < timeoutMs) {
     const matches: string[] = [];
     for (const glob of globs) {
-      const found = await findMatchingFiles(workspaceRoot, globToRegExp(glob), options.artifactBaselineMs);
+      const found = await findMatchingFiles(executionBase, globToRegExp(glob), options.artifactBaselineMs);
       for (const file of found) {
         if (!matches.includes(file)) matches.push(file);
       }

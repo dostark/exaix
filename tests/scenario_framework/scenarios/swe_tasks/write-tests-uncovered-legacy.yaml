@@ -117,11 +117,12 @@ steps:
   # that breaks under deno check's strict nulls, fails here).
   - id: "assert-new-test-file-exists"
     type: "file-contains"
-    file_pattern: "**/.exa/worktrees/*/*/src/priority_calculator_test.ts"
+    cwd: "$WORKTREE"
+    file_pattern: "src/priority_calculator_test.ts"
     output_criteria:
       - id: "new-test-file-exists"
         kind: "file-found"
-        path_pattern: "**/.exa/worktrees/*/*/src/priority_calculator_test.ts"
+        path_pattern: "src/priority_calculator_test.ts"
         score_weight: 0.15
 
   - id: "run-tests"

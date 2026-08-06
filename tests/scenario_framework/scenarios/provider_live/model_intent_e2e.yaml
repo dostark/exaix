@@ -82,12 +82,12 @@ steps:
   # --- Wait for plan to be created ---
   - id: "wait-for-plan"
     type: "wait-for-file"
-    args: ["**/Workspace/Plans/*_plan.md"]
+    args: ["Workspace/Plans/*_plan.md"]
     timeout_sec: 180
     output_criteria:
       - id: "plan-created"
         kind: "file-found"
-        path_pattern: "**/Workspace/Plans/*_plan.md"
+        path_pattern: "Workspace/Plans/*_plan.md"
 
   # --- Verify plan exists and request model_size/thinking flags are preserved ---
   - id: "verify-model-intent"

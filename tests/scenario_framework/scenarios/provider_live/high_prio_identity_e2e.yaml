@@ -118,7 +118,7 @@ steps:
   # responded". We wait for 7 such outputs.
   - id: "wait-for-all-outputs"
     type: "file-contains"
-    args: ["**/Workspace/Plans/*_plan.md", "**/Workspace/Rejected/*_rejected.md"]
+    args: ["Workspace/Plans/*_plan.md", "Workspace/Rejected/*_rejected.md"]
     min_matches: 7
     timeout_sec: 300
     output_criteria:

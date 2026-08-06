@@ -910,6 +910,10 @@ export const SCENARIO_SUBSTITUTED_VARIABLES = [
   "EXA_CONFIG_PATH",
   "CELL_PROVIDER",
   "CELL_MODEL",
+  // Resolved by the step executor at step-execution time (the worktree does not exist at
+  // scenario load), NOT by expandInString — but it is a framework-supplied name, so a scenario
+  // referencing `$WORKTREE` must be recognized as valid.
+  "WORKTREE",
 ] as const;
 
 /**

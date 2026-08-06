@@ -68,7 +68,7 @@ steps:
   - id: "verify-plan-has-steps"
     type: "file-contains"
     name: "The produced plan contains an executable step structure"
-    file_pattern: "**/Workspace/Plans/*_plan.md"
+    file_pattern: "Workspace/Plans/*_plan.md"
     output_criteria:
       - id: "plan-has-execution-steps"
         kind: "text-matches"

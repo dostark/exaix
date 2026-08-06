@@ -114,3 +114,29 @@ Deno.test("[file_contains] a negative file-not-exists assertion does not wait", 
     assert(elapsedMs < 1500, `expected immediate return, took ${elapsedMs}ms`);
   });
 });
+
+Deno.test("[file_contains] cwd $WORKTREE resolves a relative glob against the newest worktree", async () => {
+  await withTempWorkspace(async (ws) => {
+    const wt = join(ws, ".exa", "worktrees", "todo-app", "trace-1");
+    await Deno.mkdir(join(wt, "src"), { recursive: true });
+    await Deno.writeTextFile(join(wt, "src", "main.ts"), "const GREETING = 'hi';\n");
+    const result = await executeScenarioStep({
+      step: step({ cwd: "$WORKTREE", file_pattern: "src/main.ts" }),
+      cwd: ws,
+    });
+    assertEquals(result.exitCode, 0, `expected worktree-relative match, got ${result.stderr}`);
+    assert(result.stdout.includes("main.ts"), `expected file named in stdout: ${result.stdout}`);
+  });
+});
+
+Deno.test("[file_contains] cwd relative path resolves against the workspace root", async () => {
+  await withTempWorkspace(async (ws) => {
+    await Deno.mkdir(join(ws, "todo-app", "src"), { recursive: true });
+    await Deno.writeTextFile(join(ws, "todo-app", "src", "main.ts"), "const GREETING = 'hi';\n");
+    const result = await executeScenarioStep({
+      step: step({ cwd: "todo-app", file_pattern: "src/main.ts" }),
+      cwd: ws,
+    });
+    assertEquals(result.exitCode, 0, `expected cwd-relative match, got ${result.stderr}`);
+  });
+});

@@ -119,7 +119,7 @@ steps:
     # McpToolName) writes to Workspace/Rejected/ within seconds — fail fast on that
     # instead of burning the full 180s timeout waiting for a plan that already can't
     # exist, and surface the real rejection reason instead of a generic timeout.
-    failure_glob: "**/Workspace/Rejected/*_rejected.md"
+    failure_glob: "Workspace/Rejected/*_rejected.md"
     timeout_sec: 180
     input_criteria: []
     output_criteria:

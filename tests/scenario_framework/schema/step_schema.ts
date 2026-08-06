@@ -348,6 +348,11 @@ export const ScenarioStepSchema = z.object({
   name: NON_EMPTY_STRING.optional(),
   command: NON_EMPTY_STRING.optional(),
   args: z.array(z.string()).optional(),
+  /** Working directory the step runs in (and file_pattern/file criteria resolve against).
+   *  Omitted → workspace root. A relative path resolves against the workspace root. The token
+   *  `$WORKTREE` resolves to the scenario's newest execution worktree — so scenarios never
+   *  hardcode deep `.exa/worktrees/...` globs. */
+  cwd: z.string().min(1).optional(),
   env: z.record(z.string(), z.string()).optional(),
   timeout_sec: z.number().int().positive().optional(),
   // wait-for-file: an optional second glob polled alongside args[0]. If it matches before

@@ -83,7 +83,7 @@ steps:
     type: "wait-for-file"
     args: ["**/Plans/*_plan.md"]
     timeout_sec: 180
-    failure_glob: "**/Workspace/Rejected/*_rejected.md"
+    failure_glob: "Workspace/Rejected/*_rejected.md"
     output_criteria:
       - id: "plan-produced"
         kind: "file-found"

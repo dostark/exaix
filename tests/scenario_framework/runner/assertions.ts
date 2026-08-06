@@ -23,6 +23,7 @@ import {
 } from "../schema/step_schema.ts";
 import type { JSONValue, Opt, Reason } from "@exaix/core/types";
 import type { IScenarioStepExecutionResult } from "./step_executor.ts";
+import { resolveExecutionBase } from "./step_executor.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import {
   buildEvaluationPrompt,
@@ -49,6 +50,8 @@ import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstr
 
 export interface IEvaluateCriterionOptions {
   workspaceRoot: string;
+  /** The step's resolved working directory — file criteria resolve against it when set. */
+  executionBase?: string;
   phase: CriterionPhase;
   criterion: ICriterion;
   executionResult?: IScenarioStepExecutionResult;
@@ -195,8 +198,9 @@ export async function evaluateStepOutcome(
   // Resolve file_pattern if provided by the step
   let stepTargetFile: string | undefined = undefined;
   if (options.step.file_pattern) {
+    const executionBase = await resolveExecutionBase(options.step, options.workspaceRoot, options.artifactBaselineMs);
     stepTargetFile = await resolveStepFilePattern(
-      options.workspaceRoot,
+      executionBase,
       options.step.file_pattern,
       options.artifactBaselineMs,
     );
@@ -211,8 +215,13 @@ export async function evaluateStepOutcome(
     ? rewriteCriteriaWithTarget(options.step.output_criteria, stepTargetFile)
     : options.step.output_criteria;
 
+  // The step's resolved working directory — file criteria (file-found, text-contains, ...) and
+  // the file_pattern glob resolve against it, so scenarios declare short relative paths.
+  const executionBase = await resolveExecutionBase(options.step, options.workspaceRoot, options.artifactBaselineMs);
+
   const inputResults = await evaluateCriteriaBatch({
     workspaceRoot: options.workspaceRoot,
+    executionBase,
     phase: CriterionPhase.INPUT,
     criteria: inputCriteria,
     executionResult: options.executionResult,
@@ -252,6 +261,7 @@ export async function evaluateStepOutcome(
 
   const outputResults = await evaluateCriteriaBatch({
     workspaceRoot: options.workspaceRoot,
+    executionBase,
     phase: CriterionPhase.OUTPUT,
     criteria: outputCriteria,
     executionResult: options.executionResult,
@@ -272,6 +282,7 @@ export async function evaluateStepOutcome(
 
 interface IEvaluateCriteriaBatchOptions {
   workspaceRoot: string;
+  executionBase?: string;
   phase: CriterionPhase;
   criteria: ICriterion[];
   executionResult?: IScenarioStepExecutionResult;
@@ -289,6 +300,7 @@ async function evaluateCriteriaBatch(
     results.push(
       await evaluateCriterion({
         workspaceRoot: options.workspaceRoot,
+        executionBase: options.executionBase,
         phase: options.phase,
         criterion,
         executionResult: options.executionResult,
@@ -310,10 +322,13 @@ async function evaluateFileExistsCriterion(
   options: IEvaluateCriterionOptions,
 ): Promise<ICriterionResult> {
   const criterion = options.criterion as IFileExistsCriterion;
-  const evidenceRefs = buildEvidenceRefs(options.workspaceRoot, criterion.path);
+  const evidenceRefs = buildEvidenceRefs(options.workspaceRoot, criterion.path ?? "");
+  if (!criterion.path) {
+    return buildFailedResult(options, { message: "file-exists criterion has no path (no file_pattern to resolve it)" });
+  }
 
   try {
-    await Deno.stat(resolveCriterionPath(options.workspaceRoot, criterion.path));
+    await Deno.stat(resolveCriterionPath(criterionBase(options), criterion.path));
     return buildPassedResult(options, evidenceRefs);
   } catch {
     return buildFailedResult(options, {
@@ -328,7 +343,7 @@ async function evaluateFileFoundCriterion(
 ): Promise<ICriterionResult> {
   const criterion = options.criterion as IFileFoundCriterion;
   const matcher = globToRegExp(criterion.path_pattern);
-  for await (const filePath of walkWorkspaceFiles(options.workspaceRoot)) {
+  for await (const filePath of walkWorkspaceFiles(criterionBase(options))) {
     const relativePath = relative(options.workspaceRoot, filePath);
     if (matcher.test(relativePath)) {
       return buildPassedResult(options, [relativePath]);
@@ -345,9 +360,14 @@ async function evaluateFileNotExistsCriterion(
   options: IEvaluateCriterionOptions,
 ): Promise<ICriterionResult> {
   const criterion = options.criterion as IFileNotExistsCriterion;
+  if (!criterion.path) {
+    return buildFailedResult(options, {
+      message: "file-not-exists criterion has no path (no file_pattern to resolve it)",
+    });
+  }
 
   try {
-    await Deno.stat(resolveCriterionPath(options.workspaceRoot, criterion.path));
+    await Deno.stat(resolveCriterionPath(criterionBase(options), criterion.path));
     return buildFailedResult(options, {
       message: `expected file to be absent: ${criterion.path}`,
       evidenceRefs: buildEvidenceRefs(options.workspaceRoot, criterion.path),
@@ -361,7 +381,12 @@ async function evaluateTextContainsCriterion(
   options: IEvaluateCriterionOptions,
 ): Promise<ICriterionResult> {
   const criterion = options.criterion as ITextContainsCriterion;
-  const content = await safeReadTextFile(options.workspaceRoot, criterion.path);
+  if (!criterion.path) {
+    return buildFailedResult(options, {
+      message: "text-contains criterion has no path (no file_pattern to resolve it)",
+    });
+  }
+  const content = await safeReadTextFile(criterionBase(options), criterion.path);
 
   if (content === null) {
     return buildFailedResult(options, {
@@ -401,7 +426,12 @@ async function evaluateTextMatchesCriterion(
   options: IEvaluateCriterionOptions,
 ): Promise<ICriterionResult> {
   const criterion = options.criterion as ITextMatchesCriterion;
-  const content = await safeReadTextFile(options.workspaceRoot, criterion.path);
+  if (!criterion.path) {
+    return buildFailedResult(options, {
+      message: "text-matches criterion has no path (no file_pattern to resolve it)",
+    });
+  }
+  const content = await safeReadTextFile(criterionBase(options), criterion.path);
 
   if (content === null) {
     return buildFailedResult(options, {
@@ -820,6 +850,11 @@ function buildFailedResult(
     score_weight: options.criterion.score_weight,
     class: options.criterion.class,
   };
+}
+
+/** The base directory file criteria resolve against: the step's resolved cwd, else the workspace. */
+function criterionBase(options: IEvaluateCriterionOptions): string {
+  return options.executionBase ?? options.workspaceRoot;
 }
 
 function resolveCriterionPath(workspaceRoot: string, relativePath: string): string {
