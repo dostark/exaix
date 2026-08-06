@@ -109,7 +109,6 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] scenario metadata for the Agent Flo
           "wait-for-file",
           "shell",
           "exactl",
-          "wait-for-journal-event",
           "journal-assert",
           "file-contains",
           "write-file",

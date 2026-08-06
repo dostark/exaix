@@ -30,7 +30,6 @@ export enum ScenarioStepType {
   RUN_SCRIPT = "run-script",
   JUDGE = "judge",
   WAIT_FOR_FILE = "wait-for-file",
-  WAIT_FOR_JOURNAL_EVENT = "wait-for-journal-event",
   WAIT_FOR_STATUS = "wait-for-status",
   WAIT_FOR_JSON_FIELD = "wait-for-json-field",
   JOURNAL_ASSERT = "journal-assert",
@@ -367,8 +366,6 @@ export const ScenarioStepSchema = z.object({
   // in stderr) instead of burning the rest of timeout_sec waiting for a file that a known
   // failure (e.g. a rejected plan) means will never appear.
   failure_glob: NON_EMPTY_STRING.optional(),
-  // wait-for-journal-event: the action_type to poll the workspace journal for (e.g. daemon.ready).
-  event_type: NON_EMPTY_STRING.optional(),
   // journal-assert: declarative activity-journal query (no raw SQL). Filter fields narrow the
   // rows considered; `project`/`sums` shape the emitted JSON; `expect_*` picks the assertion
   // contract (default: at least one matching row). `trace_scoped` scopes to the current

@@ -64,8 +64,9 @@ steps:
         contains: ["daemon.restarted"]
 
   - id: "wait-for-daemon-ready"
-    type: "wait-for-journal-event"
-    event_type: "daemon.ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since", "$JOURNAL_BASELINE", "--timeout", "30"]
     timeout_sec: 30
     input_criteria: []
     output_criteria: []
@@ -125,8 +126,9 @@ steps:
   # so `reconciled` was missing from a run whose delegate had actually succeeded
   # (Phase 150 LIVE-RT). Block until reconciliation is journalled.
   - id: "wait-for-reconcile"
-    type: "wait-for-journal-event"
-    event_type: "session.delegate.reconciled"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "session.delegate.reconciled", "--since", "$JOURNAL_BASELINE", "--timeout", "120"]
     timeout_sec: 120
     input_criteria: []
     output_criteria: []

@@ -9,6 +9,7 @@
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import * as colors from "@std/fmt/colors";
 import type { IJournalFilterOptions } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 import { JournalFormatter } from "@exaix/cli/formatters/journal_formatter.ts";
 import type { UIOutputFormat } from "@exaix/tui";
 
@@ -22,6 +23,19 @@ export interface IJournalCommandOptions {
   actor?: string;
   target?: string;
 }
+
+export interface IJournalWaitOptions {
+  event?: string;
+  since?: number;
+  timeout?: number;
+  payload?: string;
+}
+
+/** Default readiness-barrier timeout for `exactl journal wait` (seconds). */
+const JOURNAL_WAIT_DEFAULT_TIMEOUT_SEC = 30;
+/** Poll cadence for the readiness barrier — an event appearing after the baseline is noticed
+ *  within one interval. */
+const JOURNAL_WAIT_POLL_INTERVAL_MS = 500;
 
 /**
  * JournalCommands provides CLI access to the IActivity Journal.
@@ -43,6 +57,60 @@ export class JournalCommands extends BaseCommand {
 
     // Format output
     JournalFormatter.render(results, filterOptions, options.format);
+  }
+
+  /**
+   * Readiness barrier: block until `event` is journalled ABOVE `since` (default: the current
+   * max rowid at call time — the barrier only counts events that appear while waiting), or the
+   * timeout elapses. Exits 0 with `Journal event present: <event>` on a match, 1 with a timeout
+   * message otherwise. The `since` baseline (rowid) lets a caller ignore a stale event a prior
+   * run produced — scenario steps pass the scenario's journal baseline so a `daemon.ready` that
+   * fired before this barrier started still counts.
+   */
+  async wait(options: IJournalWaitOptions): Promise<void> {
+    const event = options.event;
+    const timeoutSec = options.timeout ?? JOURNAL_WAIT_DEFAULT_TIMEOUT_SEC;
+    const payload = options.payload;
+    if (!event) {
+      console.error(colors.red("journal wait requires --event <action_type>"));
+      Deno.exit(1);
+    }
+    const sinceRowid = options.since ?? await this.currentMaxRowid();
+    const timeoutMs = timeoutSec * 1000;
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeoutMs) {
+      if (await this.journalHasEvent(event, sinceRowid, payload)) {
+        console.log(`Journal event present: ${event}`);
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, JOURNAL_WAIT_POLL_INTERVAL_MS));
+    }
+
+    console.error(colors.red(`Timeout after ${timeoutSec}s waiting for journal event: ${event}`));
+    Deno.exit(1);
+  }
+
+  /** True when an activity row matches `event` with rowid strictly above `sinceRowid`. */
+  private async journalHasEvent(
+    event: string,
+    sinceRowid: number,
+    payload: Opt<string, Reason.OptionalInput> = undefined,
+  ): Promise<boolean> {
+    const params: Array<string | number> = payload ? [event, sinceRowid, payload] : [event, sinceRowid];
+    const where = payload ? " AND payload LIKE ?" : "";
+    const row = await this.db.preparedGet<{ n: number }>(
+      `SELECT 1 AS n FROM activity WHERE action_type = ? AND rowid > ?${where} LIMIT 1`,
+      params,
+    );
+    // `preparedGet` yields undefined (not null) for an absent row — treat both as no-match.
+    return row !== null && row !== undefined;
+  }
+
+  /** The highest activity rowid currently journalled, or 0 in an empty journal. */
+  private async currentMaxRowid(): Promise<number> {
+    const row = await this.db.preparedGet<{ m: number }>("SELECT MAX(rowid) AS m FROM activity");
+    return row?.m ?? 0;
   }
 
   private parseFilterOptions(options: IJournalCommandOptions): IJournalFilterOptions {

@@ -43,9 +43,10 @@ export interface IExecuteScenarioStepOptions {
    */
   artifactBaselineMs?: number;
   /**
-   * Journal rowid floor for a `wait-for-journal-event` barrier: only events above it count.
+   * Journal rowid floor an `exactl journal wait --since $JOURNAL_BASELINE` barrier counts from —
+   * only events above it count.
    *
-   * The step used to capture this itself, at the moment the wait began — which cannot see an
+   * The wait command used to capture this itself, at the moment the wait began — which cannot see an
    * event the PRECEDING step already produced. `exactl daemon start` now blocks until
    * `daemon.ready` is journalled, so every `wait-for-daemon-ready` barrier placed after it
    * (30 scenarios) sat above that row and waited out its timeout for a second `daemon.ready`
@@ -112,11 +113,16 @@ function substituteRuntimeVars(
   baselineRowid?: Opt<number, Reason.OptionalInput>,
 ): ICommandSpec {
   const traceId = resolveCurrentTrace(workspaceRoot, baselineRowid);
-  if (!traceId) return spec;
   const vars: Record<string, string> = {
-    TRACE_ID: traceId,
-    REQUEST_ID: `request-${traceId.slice(0, 8)}`,
+    // The scenario's journal rowid baseline — resolvable even before any request exists (e.g. a
+    // `daemon.ready` wait). `exactl journal wait --since $JOURNAL_BASELINE` must ignore events a
+    // PRIOR scenario in a shared sandbox produced; 0 (no baseline) means "any matching event".
+    JOURNAL_BASELINE: String(baselineRowid ?? 0),
   };
+  if (traceId) {
+    vars.TRACE_ID = traceId;
+    vars.REQUEST_ID = `request-${traceId.slice(0, 8)}`;
+  }
   const apply = (value: string): string => value.replace(/\$([A-Z][A-Z0-9_]*)/g, (match, name) => vars[name] ?? match);
   return {
     executable: apply(spec.executable),
@@ -173,11 +179,6 @@ export async function executeScenarioStep(
   // Handle wait-for-file step type with polling
   if (options.step.type === ScenarioStepType.WAIT_FOR_FILE) {
     return await executeWaitForFileStep(options, startedAt, startedAtEpochMs);
-  }
-
-  // Handle wait-for-journal-event — a readiness barrier that polls the workspace journal
-  if (options.step.type === ScenarioStepType.WAIT_FOR_JOURNAL_EVENT) {
-    return await executeWaitForJournalEventStep(options, startedAt, startedAtEpochMs);
   }
 
   // Handle file-contains — wait (poll) until the step's glob(s) resolve to at least `min_matches`
@@ -530,43 +531,10 @@ async function executeFileContainsStep(
 }
 
 /**
- * True once the workspace journal (`<workspaceRoot>/.exa/journal.db`) holds an `activity` row
- * with the given `action_type` **and a rowid greater than `sinceRowid`**. The poll predicate for
- * `wait-for-journal-event`. The `sinceRowid` baseline lets a wait ignore events that already
- * existed when it began — e.g. a stale `daemon.ready` from the daemon that a restart just killed,
- * so the barrier waits for the NEW daemon's readiness, not the old one's leftover. Pass 0 (default)
- * to match any event of the type. Tolerant: a missing DB, a fresh DB without the `activity` table,
- * or any read error counts as "not yet" (false), never an exception.
- */
-export async function journalHasEvent(
-  workspaceRoot: string,
-  eventType: string,
-  sinceRowid = 0,
-): Promise<boolean> {
-  const dbPath = join(workspaceRoot, ".exa", "journal.db");
-  try {
-    await Deno.stat(dbPath);
-  } catch {
-    return false; // journal not created yet
-  }
-  let db: Database | undefined;
-  try {
-    db = new Database(dbPath, { readonly: true });
-    const row = db
-      .prepare("SELECT 1 FROM activity WHERE action_type = ? AND rowid > ? LIMIT 1")
-      .get(eventType, sinceRowid);
-    return row !== undefined;
-  } catch {
-    return false; // no activity table yet / locked / unreadable — treat as not-ready
-  } finally {
-    db?.close();
-  }
-}
-
-/**
- * The current highest `rowid` in the workspace journal — the baseline a `wait-for-journal-event`
- * captures before polling, so it only counts events that arrive AFTER the wait starts. Returns 0
- * for a missing/empty/uninitialized journal (so the first event always counts as "after").
+ * The current highest `rowid` in the workspace journal — the scenario journal baseline captured
+ * before a run, handed to steps via `$JOURNAL_BASELINE` so an `exactl journal wait --since`
+ * barrier ignores a prior scenario's events. Returns 0 for a missing/empty/uninitialized
+ * journal (so the first event always counts as "after").
  */
 export async function currentMaxRowid(workspaceRoot: string): Promise<number> {
   const dbPath = join(workspaceRoot, ".exa", "journal.db");
@@ -585,88 +553,6 @@ export async function currentMaxRowid(workspaceRoot: string): Promise<number> {
   } finally {
     db?.close();
   }
-}
-
-const DEFAULT_WAIT_FOR_JOURNAL_TIMEOUT_SEC = 30;
-
-/**
- * Readiness barrier: poll the workspace journal until `step.event_type` appears (or timeout).
- * Used after `daemon restart` to wait for `watcher.started` — the daemon's file-watch is active
- * only once that event is journalled, so submitting a request before it would race the watcher.
- */
-async function executeWaitForJournalEventStep(
-  options: IExecuteScenarioStepOptions,
-  startedAt: string,
-  startedAtEpochMs: number,
-): Promise<IScenarioStepExecutionResult> {
-  const eventType = options.step.event_type;
-  const timeoutSec = options.step.timeout_sec ?? DEFAULT_WAIT_FOR_JOURNAL_TIMEOUT_SEC;
-  const workspaceRoot = options.cwd ?? Deno.cwd();
-  const timeoutMs = timeoutSec * 1000;
-  const startTime = Date.now();
-
-  // Baseline: only events above this rowid count, which makes the barrier ignore a stale
-  // `daemon.ready` left by a daemon a prior `restart` step already killed. It comes from the
-  // runner, captured BEFORE the producing step ran — capturing it here instead would sit above
-  // the event the immediately preceding step just produced and could never be satisfied.
-  const sinceRowid = options.journalBaselineRowid ?? await currentMaxRowid(workspaceRoot);
-
-  if (!eventType) {
-    const completedAtEpochMs = Date.now();
-    const message = "wait-for-journal-event requires `event_type`";
-    return {
-      stepId: options.step.id,
-      stepType: options.step.type,
-      startedAt,
-      completedAt: new Date(completedAtEpochMs).toISOString(),
-      durationMs: completedAtEpochMs - startedAtEpochMs,
-      exitCode: 1,
-      stdout: "",
-      stderr: message,
-      combinedOutput: message,
-    };
-  }
-
-  while (Date.now() - startTime < timeoutMs) {
-    if (await journalHasEvent(workspaceRoot, eventType, sinceRowid)) {
-      const completedAtEpochMs = Date.now();
-      if (options.verbose) {
-        console.log(
-          `\n%c > Journal event '${eventType}' (rowid > ${sinceRowid}) seen after ${
-            completedAtEpochMs - startedAtEpochMs
-          }ms`,
-          "color: green; font-weight: bold;",
-        );
-      }
-      const msg = `Journal event present: ${eventType}`;
-      return {
-        stepId: options.step.id,
-        stepType: options.step.type,
-        startedAt,
-        completedAt: new Date(completedAtEpochMs).toISOString(),
-        durationMs: completedAtEpochMs - startedAtEpochMs,
-        exitCode: 0,
-        stdout: msg,
-        stderr: "",
-        combinedOutput: msg,
-      };
-    }
-    await new Promise((resolve) => setTimeout(resolve, WAIT_FOR_FILE_POLL_INTERVAL_MS));
-  }
-
-  const completedAtEpochMs = Date.now();
-  const message = `Timeout after ${timeoutSec}s waiting for journal event: ${eventType}`;
-  return {
-    stepId: options.step.id,
-    stepType: options.step.type,
-    startedAt,
-    completedAt: new Date(completedAtEpochMs).toISOString(),
-    durationMs: completedAtEpochMs - startedAtEpochMs,
-    exitCode: 1,
-    stdout: "",
-    stderr: message,
-    combinedOutput: message,
-  };
 }
 
 /**

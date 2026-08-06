@@ -32,8 +32,9 @@ steps:
     command: "daemon"
     args: ["start"]
   - id: "wait-ready"
-    type: "wait-for-journal-event"
-    event_type: "daemon.ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since", "$JOURNAL_BASELINE", "--timeout", "30"]
     timeout_sec: 30
     input_criteria: []
     output_criteria: []

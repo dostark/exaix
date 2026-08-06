@@ -50,8 +50,9 @@ steps:
   # distinct set, it also stops one batch's event from satisfying another's assertion in the
   # shared sandbox.
   - id: "wait-for-completion"
-    type: "wait-for-journal-event"
-    event_type: "skills.resolved"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "skills.resolved", "--since", "$JOURNAL_BASELINE", "--timeout", "60"]
     timeout_sec: 60
     output_criteria:
       - id: "skills-matched"

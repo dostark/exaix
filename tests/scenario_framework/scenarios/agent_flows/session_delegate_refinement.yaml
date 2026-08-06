@@ -78,8 +78,9 @@ steps:
   # existence, so the verify step ran against a record whose status had not yet landed. This
   # barrier waits for the reconcile itself.
   - id: "wait-for-delegate-reconciled"
-    type: "wait-for-journal-event"
-    event_type: "session.delegate.reconciled"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "session.delegate.reconciled", "--since", "$JOURNAL_BASELINE", "--timeout", "60"]
     timeout_sec: 60
     output_criteria:
       - id: "delegate-reconciled"

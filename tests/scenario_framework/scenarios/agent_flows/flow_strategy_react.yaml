@@ -45,8 +45,9 @@ steps:
         contains: ["daemon.restarted"]
 
   - id: "wait-for-daemon-ready"
-    type: "wait-for-journal-event"
-    event_type: "daemon.ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since", "$JOURNAL_BASELINE", "--timeout", "30"]
     timeout_sec: 30
     input_criteria: []
     output_criteria: []
@@ -68,8 +69,9 @@ steps:
   # already-terminal failure. `flow.step.started` fires immediately and always carries the
   # `strategy` field (packages/flow/src/flow_runner.ts), which is what this scenario asserts.
   - id: "wait-for-step-started"
-    type: "wait-for-journal-event"
-    event_type: "flow.step.started"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "flow.step.started", "--since", "$JOURNAL_BASELINE", "--timeout", "30"]
     timeout_sec: 30
     input_criteria: []
     output_criteria:
@@ -91,8 +93,9 @@ steps:
         score_weight: 0.3
 
   - id: "wait-for-generation"
-    type: "wait-for-journal-event"
-    event_type: "agent.generation_completed"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "agent.generation_completed", "--since", "$JOURNAL_BASELINE", "--timeout", "60"]
     timeout_sec: 60
     input_criteria: []
     output_criteria: []
@@ -109,11 +112,12 @@ steps:
 
   # Informational only (always passes): the flow's own terminal outcome (converged on a valid
   # action, or the "No actions generated" failure mode) is reported for the comparison doc
-  # without gating the scenario's pass/fail on a live model's reliability. The bounded poll is a
-  # wait-for-journal-event on flow.completed/flow.failed; exit is not gated.
+  # without gating the scenario's pass/fail on a live model's reliability. The bounded poll is an
+  # exactl journal wait on flow.completed/flow.failed; exit is not gated.
   - id: "report-flow-outcome"
-    type: "wait-for-journal-event"
-    event_type: "flow.completed"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "flow.completed", "--since", "$JOURNAL_BASELINE", "--timeout", "60"]
     timeout_sec: 60
     input_criteria: []
     output_criteria:

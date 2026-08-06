@@ -18,7 +18,12 @@ import { BlueprintCommands } from "./commands/blueprint_commands.ts";
 import { FlowCommands } from "./commands/flow_commands.ts";
 import { DashboardCommands } from "./commands/dashboard_commands.ts";
 import { MemoryCommands } from "./commands/memory_commands.ts";
-import { type IJournalCommandOptions, JournalCommands, normalizeLogsFilter } from "./commands/journal_commands.ts";
+import {
+  type IJournalCommandOptions,
+  type IJournalWaitOptions,
+  JournalCommands,
+  normalizeLogsFilter,
+} from "./commands/journal_commands.ts";
 import { CostCommands } from "./commands/cost_commands.ts";
 import { ModelCommands } from "./commands/model_commands.ts";
 import { DefaultModelRegistry } from "@exaix/model-registry";
@@ -2564,7 +2569,20 @@ const journalCommand = new Command()
   .action(async (options) => {
     const cmd = new JournalCommands(context);
     await cmd.show(options as IJournalCommandOptions);
-  });
+  })
+  .command(
+    "wait",
+    new Command()
+      .description("Block until an event is journalled above a rowid baseline (or timeout)")
+      .option("--event <event:string>", "Action type to wait for (e.g. daemon.ready)")
+      .option("--since <since:number>", "Only count events with rowid above this baseline (default: current max rowid)")
+      .option("--timeout <timeout:number>", "Max wait in seconds", { default: 30 })
+      .option("--payload <pattern:string>", "Only count events whose payload matches this LIKE pattern")
+      .action(async (options) => {
+        const cmd = new JournalCommands(context);
+        await cmd.wait(options as IJournalWaitOptions);
+      }),
+  );
 
 const costCommand = new Command()
   .description("Display aggregated cost reports")

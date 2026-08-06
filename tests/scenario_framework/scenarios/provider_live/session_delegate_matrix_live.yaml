@@ -83,8 +83,9 @@ steps:
   # daemon PROCESS emits only after every watcher is confirmed listening (distinct from the CLI's
   # daemon.started — no same-named-event ambiguity).
   - id: "wait-for-daemon-ready"
-    type: "wait-for-journal-event"
-    event_type: "daemon.ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since", "$JOURNAL_BASELINE", "--timeout", "30"]
     timeout_sec: 30
     input_criteria: []
     output_criteria: []

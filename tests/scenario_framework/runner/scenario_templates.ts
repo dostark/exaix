@@ -203,8 +203,9 @@ function _waitForFileStep(
 function _waitForJournalStep(id: string, eventType: string, timeoutSec: number): string {
   return [
     `  - id: "${id}"`,
-    `    type: "wait-for-journal-event"`,
-    `    event_type: "${eventType}"`,
+    `    type: "exactl"`,
+    `    command: "journal"`,
+    `    args: ["wait", "--event", "${eventType}", "--since", "$JOURNAL_BASELINE", "--timeout", "${timeoutSec}"]`,
     `    timeout_sec: ${timeoutSec}`,
     `    input_criteria: []`,
     `    output_criteria: []`,
@@ -370,8 +371,9 @@ export function renderSweTaskTemplate(
     `        contains: ["daemon.restarted"]`,
     "",
     `  - id: "wait-for-daemon-ready"`,
-    `    type: "wait-for-journal-event"`,
-    `    event_type: "daemon.ready"`,
+    `    type: "exactl"`,
+    `    command: "journal"`,
+    `    args: ["wait", "--event", "daemon.ready", "--since", "$JOURNAL_BASELINE", "--timeout", "30"]`,
     `    timeout_sec: 30`,
     `    input_criteria: []`,
     `    output_criteria: []`,

@@ -37,8 +37,9 @@ steps:
   # default_skills. `skills.match_completed` reports only the matching stage — which this
   # pinned request skips entirely — so it could never show the merge.
   - id: "wait-for-match"
-    type: "wait-for-journal-event"
-    event_type: "skills.resolved"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "skills.resolved", "--since", "$JOURNAL_BASELINE", "--timeout", "60"]
     timeout_sec: 60
     output_criteria:
       - id: "defaults-merged"
