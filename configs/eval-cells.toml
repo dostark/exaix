@@ -55,3 +55,9 @@ provider = "anthropic"
 model = "claude-sonnet-5"
 requires_key = "ANTHROPIC_API_KEY"
 native_tools = false
+
+[tool.opencode-laguna-free]
+config = "configs/opencode-laguna-free.toml"
+provider = "opencode-cli"
+model = "opencode/laguna-s-2.1-free"
+requires_bin = "opencode"

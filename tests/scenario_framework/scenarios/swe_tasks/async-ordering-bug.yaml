@@ -29,6 +29,10 @@ matrix:
       provider: "$CELL_PROVIDER"
       config: "configs/opencode-north-mini-code-free.toml"
       requires_bin: "opencode"
+    - tool: "opencode-laguna-free"
+      provider: "$CELL_PROVIDER"
+      config: "configs/opencode-laguna-free.toml"
+      requires_bin: "opencode"
     - tool: "exactl"
       provider: "anthropic"
       config: "configs/anthropic-no-delegate.toml"
@@ -78,7 +82,7 @@ steps:
   - id: "wait-for-plan"
     type: "wait-for-file"
     args: ["**/Plans/*_plan.md"]
-    timeout_sec: 180
+    timeout_sec: 360
     failure_glob: "Workspace/Rejected/*_rejected.md"
     output_criteria:
       - id: "plan-produced"
