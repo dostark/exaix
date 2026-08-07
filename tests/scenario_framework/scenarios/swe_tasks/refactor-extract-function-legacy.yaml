@@ -5,6 +5,7 @@ pack: "swe_tasks"
 scoring: "gated"
 tags: ["swe", "swe-legacy", "refactor", "provider-live"]
 request_fixture: "fixtures/requests/swe_tasks/refactor-extract-function.md"
+reference_patch: "fixtures/swe_tasks/refactor-extract-function/reference.patch"
 portals:
   - alias: "todo-app"
     source_path: "$FRAMEWORK_HOME/fixtures/portals/todo_app"
@@ -122,16 +123,6 @@ steps:
     input_criteria: []
     output_criteria: []
 
-  - id: "prepare-llm-judge-evidence"
-    type: "prepare-evidence"
-    cwd: "$WORKTREE"
-    source: "src/api.ts"
-    target: "llm-judge-input.txt"
-    output_criteria:
-      - id: "evidence-prepared"
-        kind: "command-exit-code"
-        equals: 0
-
   - id: "judge-quality"
     type: "judge"
     env:
@@ -140,7 +131,10 @@ steps:
       - id: "llm-judge-quality"
         kind: "llm-judge"
         preset: "GOAL_ALIGNED_REVIEW"
-        evidence_path: "llm-judge-input.txt"
+        # Code-change task: the judge reviews the FULL worktree branch diff (the applied
+        # changes) against the task's reference patch — never a pre-picked single file.
+        evidence_diff_dir: "todo-app"
+        context_path: "$REFERENCE_PATCH"
         score_threshold: 0.5
         score_weight: 0.4
 

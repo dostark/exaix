@@ -1413,6 +1413,27 @@ function buildMockMultiCriteriaResult(
   };
 }
 
+/** The evidence references an llm-judge criterion claims, in precedence order: the whole-repo
+ *  branch diff dir, a single-file diff, or a raw evidence file. Recorded in the criterion
+ *  result so a run manifest shows WHAT the judge was asked to evaluate. */
+function llmJudgeEvidenceRefs(
+  criterion: ICriterion & { evidence_path?: string; evidence_diff_path?: string; evidence_diff_dir?: string },
+): string[] {
+  if (criterion.evidence_diff_dir) return [criterion.evidence_diff_dir];
+  if (criterion.evidence_diff_path) return [criterion.evidence_diff_path];
+  if (criterion.evidence_path) return [criterion.evidence_path];
+  return [];
+}
+
+/** Attach the judge's CAPTURED reasoning to the judge provenance so run artifacts prove the
+ *  judge actually reasoned over the supplied evidence, rather than a bare provider/model tag. */
+function judgeResult(
+  provenance: Opt<{ provider: string; model: string }, Reason.OptionalInput> = undefined,
+  reasoning: string,
+): { provider: string; model: string; reasoning: string } | undefined {
+  return provenance ? { ...provenance, reasoning } : undefined;
+}
+
 /**
  * Resolves the `context` buildEvaluationPrompt receives: `context_path`'s file content when
  * set (e.g. the original request fixture — lets a judge actually score "goal_alignment"/
@@ -1494,15 +1515,23 @@ async function runGitCapture(cwd: string, args: string[]): Promise<string> {
  * fixed. An empty diff (no real change at all) is reported explicitly rather than as
  * blank/ambiguous text the judge could misread either way.
  */
-export async function computeGitDiffEvidence(workspaceRoot: string, trackedFilePath: string): Promise<string> {
+export async function computeGitDiffEvidence(
+  workspaceRoot: string,
+  trackedFilePath: string,
+  diffWholeBranch = false,
+): Promise<string> {
   const absolutePath = resolve(workspaceRoot, trackedFilePath);
-  const containingDir = dirname(absolutePath);
+  const containingDir = diffWholeBranch ? absolutePath : dirname(absolutePath);
 
   const repoRoot = (await runGitCapture(containingDir, ["rev-parse", "--show-toplevel"])).trim();
   const rootCommit = (await runGitCapture(repoRoot, ["rev-list", "--max-parents=0", "HEAD"])).trim().split("\n")[0];
-  const relativePath = relative(repoRoot, absolutePath);
 
-  const diff = await runGitCapture(repoRoot, ["diff", rootCommit, "--", relativePath]);
+  const relativePath = relative(repoRoot, absolutePath);
+  // Whole-branch mode diffs EVERY applied change vs the repo's root commit — the complete
+  // worktree-branch delta a judge on a code-change task must see, not a single pre-picked file.
+  const pathArgs = diffWholeBranch ? [] : ["--", relativePath];
+
+  const diff = await runGitCapture(repoRoot, ["diff", rootCommit, ...pathArgs]);
   return diff.trim().length > 0 ? diff : GIT_DIFF_NO_CHANGES_MESSAGE;
 }
 
@@ -1512,6 +1541,7 @@ export async function evaluateLlmJudgeCriterion(
   const criterion = options.criterion as ICriterion & {
     evidence_path?: string;
     evidence_diff_path?: string;
+    evidence_diff_dir?: string;
     preset?: string;
     rubric?: string;
     context_path?: string;
@@ -1533,9 +1563,22 @@ export async function evaluateLlmJudgeCriterion(
   const effectiveCriteria = criterion.preset ? resolveCriterionPreset(criterion.preset) : [];
   const isMulti = effectiveCriteria.length > 1;
 
+  // For a code-change task the evidence is the worktree branch diff; the prompt must EXPLICITLY
+  // tell the judge what the content is and to compare it against the reference patch in the
+  // context — otherwise a judge reading bare diff text can still guess without grounding.
+  const GIT_DIFF_EVIDENCE_HEADER =
+    "The content below is the git diff of the code changes applied in the worktree branch for " +
+    "this task. Evaluate whether these applied changes comply with the task goal, and compare " +
+    "them against the reference patch provided in the Context. Cite the actual changed lines " +
+    "you considered in your reasoning.";
   let content = "";
-  if (criterion.evidence_diff_path) {
+  let isGitDiff = false;
+  if (criterion.evidence_diff_dir) {
+    content = await computeGitDiffEvidence(options.workspaceRoot, criterion.evidence_diff_dir, true);
+    isGitDiff = true;
+  } else if (criterion.evidence_diff_path) {
     content = await computeGitDiffEvidence(options.workspaceRoot, criterion.evidence_diff_path);
+    isGitDiff = true;
   } else if (criterion.evidence_path) {
     const resolvedPath = resolve(options.workspaceRoot, criterion.evidence_path);
     try {
@@ -1545,6 +1588,9 @@ export async function evaluateLlmJudgeCriterion(
     }
   } else {
     content = options.executionResult?.stdout ?? "";
+  }
+  if (isGitDiff && content.trim().length > 0) {
+    content = `${GIT_DIFF_EVIDENCE_HEADER}\n\n${content}`;
   }
 
   const evalContext = await resolveEvalJudgeContext({
@@ -1570,11 +1616,7 @@ export async function evaluateLlmJudgeCriterion(
       message: "LLM judge skipped: no LLM configured. " +
         "Set EXA_EVAL_LLM_MOCK=pass for auto-pass in self-tests, " +
         "or set EXA_LLM_PROVIDER for real evaluation.",
-      evidence_refs: criterion.evidence_diff_path
-        ? [criterion.evidence_diff_path]
-        : criterion.evidence_path
-        ? [criterion.evidence_path]
-        : [],
+      evidence_refs: llmJudgeEvidenceRefs(criterion),
       score_weight: options.criterion.score_weight,
     };
   }
@@ -1595,14 +1637,10 @@ export async function evaluateLlmJudgeCriterion(
         message: `LLM judge preset "${criterion.preset}": mock weighted score ${
           weightedScore.toFixed(4)
         } (threshold: ${threshold}) — [${perCriterionSummary}]`,
-        evidence_refs: criterion.evidence_diff_path
-          ? [criterion.evidence_diff_path]
-          : criterion.evidence_path
-          ? [criterion.evidence_path]
-          : [],
+        evidence_refs: llmJudgeEvidenceRefs(criterion),
         score: weightedScore,
         score_weight: options.criterion.score_weight,
-        ...(judgeProvenance ? { judge: judgeProvenance } : {}),
+        ...(judgeResult(judgeProvenance, "mock pass") ? { judge: judgeResult(judgeProvenance, "mock pass") } : {}),
       };
     }
     return {
@@ -1611,14 +1649,10 @@ export async function evaluateLlmJudgeCriterion(
       phase: options.phase,
       status: CriterionStatus.PASSED,
       message: `LLM judge (${criterion.preset ?? "inline rubric"}): mock pass (threshold: ${threshold})`,
-      evidence_refs: criterion.evidence_diff_path
-        ? [criterion.evidence_diff_path]
-        : criterion.evidence_path
-        ? [criterion.evidence_path]
-        : [],
+      evidence_refs: llmJudgeEvidenceRefs(criterion),
       score: 1.0,
       score_weight: options.criterion.score_weight,
-      ...(judgeProvenance ? { judge: judgeProvenance } : {}),
+      ...(judgeResult(judgeProvenance, "mock pass") ? { judge: judgeResult(judgeProvenance, "mock pass") } : {}),
     };
   }
 
@@ -1635,6 +1669,11 @@ export async function evaluateLlmJudgeCriterion(
       const perCriterionSummary = effectiveCriteria.map((c) =>
         `${c.name}: ${parsed.criteriaScores[c.name]?.score.toFixed(2) ?? "N/A"}`
       ).join("; ");
+      // Capture the judge's per-criterion reasoning so the run artifact proves it reasoned over
+      // the supplied evidence (the worktree diff), not a bare score.
+      const reasoning = effectiveCriteria
+        .map((c) => `${c.name}: ${parsed.criteriaScores[c.name]?.reasoning ?? "(no reasoning)"}`)
+        .join(" | ");
       console.error(`[eval] preset="${criterion.preset}" weighted=${weightedScore.toFixed(4)} passed=${passed}`);
       return {
         criterion_id: criterion.id,
@@ -1644,16 +1683,12 @@ export async function evaluateLlmJudgeCriterion(
         message: `LLM judge preset "${criterion.preset}": weighted score ${
           weightedScore.toFixed(4)
         } (threshold: ${threshold}) — [${perCriterionSummary}]`,
-        evidence_refs: criterion.evidence_diff_path
-          ? [criterion.evidence_diff_path]
-          : criterion.evidence_path
-          ? [criterion.evidence_path]
-          : [],
+        evidence_refs: llmJudgeEvidenceRefs(criterion),
         observed_value: weightedScore,
         expected_value: threshold,
         score: weightedScore,
         score_weight: options.criterion.score_weight,
-        ...(judgeProvenance ? { judge: judgeProvenance } : {}),
+        ...(judgeResult(judgeProvenance, reasoning) ? { judge: judgeResult(judgeProvenance, reasoning) } : {}),
       };
     }
 
@@ -1672,16 +1707,14 @@ export async function evaluateLlmJudgeCriterion(
       phase: options.phase,
       status: passed ? CriterionStatus.PASSED : CriterionStatus.FAILED,
       message: `LLM judge score: ${score.toFixed(2)} (threshold: ${threshold})`,
-      evidence_refs: criterion.evidence_diff_path
-        ? [criterion.evidence_diff_path]
-        : criterion.evidence_path
-        ? [criterion.evidence_path]
-        : [],
+      evidence_refs: llmJudgeEvidenceRefs(criterion),
       observed_value: score,
       expected_value: threshold,
       score: score,
       score_weight: options.criterion.score_weight,
-      ...(judgeProvenance ? { judge: judgeProvenance } : {}),
+      ...(judgeResult(judgeProvenance, parsed.reasoning)
+        ? { judge: judgeResult(judgeProvenance, parsed.reasoning) }
+        : {}),
     };
   } catch (err) {
     return {

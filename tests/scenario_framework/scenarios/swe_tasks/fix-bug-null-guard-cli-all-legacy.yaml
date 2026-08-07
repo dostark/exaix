@@ -5,6 +5,7 @@ pack: "swe_tasks"
 scoring: "gated"
 tags: ["swe", "swe-legacy", "fix-bug", "provider-live", "cli-delegate", "no-api-key"]
 request_fixture: "fixtures/requests/swe_tasks/fix-bug-null-guard.md"
+reference_patch: "fixtures/swe_tasks/fix-bug-null-guard/reference.patch"
 portals:
   - alias: "todo-app"
     source_path: "$FRAMEWORK_HOME/fixtures/portals/todo_app_null_guard_bug"
@@ -185,16 +186,6 @@ steps:
         equals: 0
         score_weight: 0.2
 
-  - id: "prepare-llm-judge-evidence"
-    type: "prepare-evidence"
-    cwd: "todo-app"
-    source: "src/api.ts"
-    target: "llm-judge-input.txt"
-    output_criteria:
-      - id: "evidence-prepared"
-        kind: "command-exit-code"
-        equals: 0
-
   # The LLM judge itself is a SEPARATE evaluation call (not part of the request/plan/execution
   # loop under test), resolved via ModelResolver against bootstrapProviderRegistry() — the
   # same registration path the selected cell's provider went through, so pointing the judge at
@@ -211,12 +202,10 @@ steps:
       - id: "llm-judge-quality"
         kind: "llm-judge"
         preset: "GOAL_ALIGNED_REVIEW"
-        evidence_path: "llm-judge-input.txt"
-        # Without context_path the judge sees only the fixed utils.ts content, with zero
-        # information about the original task — goal_alignment/task_fulfillment/
-        # request_understanding can only be guessed, not scored. $REQUEST_FIXTURE (the same
-        # fixture submit-request used) gives the judge the real stated objective.
-        context_path: "$REQUEST_FIXTURE"
+        # Code-change task: the judge reviews the FULL worktree branch diff (the applied
+        # changes) against the task's reference patch — never a pre-picked single file.
+        evidence_diff_dir: "todo-app"
+        context_path: "$REFERENCE_PATCH"
         score_threshold: 0.5
         score_weight: 0.4
 

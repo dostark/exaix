@@ -108,6 +108,8 @@ export interface IStepBaseEnvOptions {
   requestFixturePath: string;
   /** Absolute path of the scenario's `flow_fixture`, when it declares one — `$FLOW_FIXTURE`. */
   flowFixturePath?: string;
+  /** Absolute path of the scenario's `reference_patch`, when it declares one — `$REFERENCE_PATCH`. */
+  referencePatchPath?: string;
   workspaceRoot: string;
   frameworkHome: string;
   env?: { [key: string]: string };
@@ -496,6 +498,9 @@ export async function runSyntheticScenario(
           flowFixturePath: loadedScenario.scenario.flow_fixture
             ? resolve(options.frameworkHome, loadedScenario.scenario.flow_fixture)
             : undefined,
+          referencePatchPath: loadedScenario.scenario.reference_patch
+            ? resolve(options.frameworkHome, loadedScenario.scenario.reference_patch)
+            : undefined,
           frameworkHome: options.frameworkHome,
           env: runEnv,
           portalAliases: options.portalAliases ?? loadedScenario.scenario.portals.map((portal) => portal.alias),
@@ -880,6 +885,8 @@ interface IExecuteSyntheticStepOptions {
   requestFixturePath: string;
   /** Absolute path of the scenario's `flow_fixture`, when it declares one — `$FLOW_FIXTURE`. */
   flowFixturePath?: string;
+  /** Absolute path of the scenario's `reference_patch`, when it declares one — `$REFERENCE_PATCH`. */
+  referencePatchPath?: string;
   frameworkHome: string;
   env?: { [key: string]: string };
   portalAliases: string[];
@@ -897,6 +904,7 @@ interface IExecuteSyntheticStepOptions {
 export const SCENARIO_SUBSTITUTED_VARIABLES = [
   "REQUEST_FIXTURE",
   "FLOW_FIXTURE",
+  "REFERENCE_PATCH",
   "WORKSPACE_ROOT",
   "EXA_SYSTEM_ROOT",
   "FRAMEWORK_HOME",
@@ -942,6 +950,9 @@ export function buildStepBaseEnv(options: IStepBaseEnvOptions): Record<string, s
     // Defined only when the scenario declares `flow_fixture`; a step referencing it otherwise
     // keeps the literal `$FLOW_FIXTURE`, which is what the guard test forbids at author time.
     ...(options.flowFixturePath ? { FLOW_FIXTURE: options.flowFixturePath } : {}),
+    // Defined only when the scenario declares `reference_patch`; a step referencing it
+    // otherwise keeps the literal `$REFERENCE_PATCH`, which the guard test forbids at author time.
+    ...(options.referencePatchPath ? { REFERENCE_PATCH: options.referencePatchPath } : {}),
     WORKSPACE_ROOT: options.workspaceRoot,
     EXA_SYSTEM_ROOT: options.workspaceRoot,
     FRAMEWORK_HOME: options.frameworkHome,
@@ -960,6 +971,7 @@ async function executeSyntheticStep(
     stepId: options.step.id,
     requestFixturePath: options.requestFixturePath,
     flowFixturePath: options.flowFixturePath,
+    referencePatchPath: options.referencePatchPath,
     workspaceRoot: options.workspaceRoot,
     frameworkHome: options.frameworkHome,
     env: options.env,

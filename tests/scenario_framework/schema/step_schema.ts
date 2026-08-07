@@ -285,6 +285,11 @@ const LlmJudgeCriterionSchema = BaseCriterionSchema.extend({
   // unambiguous — a raw final-state snapshot leaves the judge inferring that from prose
   // alone, and live testing showed it sometimes infers wrong.
   evidence_diff_path: z.string().min(1).optional(),
+  // Path to a workspace-relative DIRECTORY that is the git repo whose ENTIRE branch diff (vs
+  // its root commit) is the judge evidence — the complete set of applied code changes. For a
+  // code-change task the judge reviews the diff, not a single file. Takes precedence over
+  // evidence_diff_path and evidence_path. See assertions.ts:computeGitDiffEvidence.
+  evidence_diff_dir: z.string().min(1).optional(),
   preset: z.string().min(1).optional(),
   rubric: z.string().min(1).optional(),
   // Path to a file (relative to workspaceRoot, e.g. the original request fixture) whose

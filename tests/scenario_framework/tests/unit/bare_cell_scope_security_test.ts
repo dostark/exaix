@@ -180,8 +180,13 @@ Deno.test("[security] bare opencode launch runs in the eval-jail container mount
   assertEquals(args[0], "run");
 
   const mounts = args.filter((a) => a.startsWith("type=bind"));
-  assertEquals(mounts.length, 1, "exactly one bind mount");
-  assertEquals(mounts[0], "type=bind,src=$WORKSPACE_ROOT/todo-app,dst=/worktree", "mount is ONLY the worktree");
+  assertEquals(mounts.length, 2, "exactly two bind mounts: the worktree + the claude credentials");
+  assertEquals(
+    mounts[0],
+    "type=bind,src=$WORKSPACE_ROOT/todo-app,dst=/worktree",
+    "the primary mount is ONLY the worktree",
+  );
+  assertEquals(mounts[1].endsWith("dst=/tmp/.claude/.credentials.json,ro"), true, "the creds mount is read-only");
   assert(!args.some((a) => a.includes("exaix") && a.includes("bind")), "the repo must never be mounted");
 
   assert(args.includes("--cap-drop=ALL"), "must drop all capabilities");

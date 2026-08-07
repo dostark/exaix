@@ -42,6 +42,14 @@ export const ScenarioSchema = z.object({
    * is named after the flow's OWN declared id, not the fixture's filename.
    */
   flow_fixture: NON_EMPTY_STRING.optional(),
+  /**
+   * Framework-relative path to the task's ground-truth reference patch (e.g.
+   * `fixtures/swe_tasks/<task>/reference.patch`). Exposed to steps as `$REFERENCE_PATCH`.
+   * For code-change tasks the judge's llm-judge criterion passes it as `context_path` so it
+   * grades the applied worktree diff against the reference — the only basis for judging a
+   * code-change task.
+   */
+  reference_patch: NON_EMPTY_STRING.optional(),
   mode_support: z.array(z.nativeEnum(ScenarioExecutionMode)).min(1),
   portals: z.array(PortalMountSchema),
   steps: z.array(ScenarioStepSchema).min(1),

@@ -15,7 +15,8 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { computeGitDiffEvidence } from "../../runner/assertions.ts";
+import { computeGitDiffEvidence, evaluateLlmJudgeCriterion } from "../../runner/assertions.ts";
+import { CriterionKind, CriterionPhase } from "../../schema/step_schema.ts";
 
 async function runGit(cwd: string, args: string[]): Promise<void> {
   const output = await new Deno.Command("git", { args, cwd, stdout: "null", stderr: "piped" }).output();
@@ -119,6 +120,66 @@ Deno.test("[JudgeDiffEvidence] the diff is scoped to the requested file, not the
     assertStringIncludes(diff, "a-changed");
     assertEquals(diff.includes("other.ts"), false);
     assertEquals(diff.includes("b-changed"), false);
+  } finally {
+    await Deno.remove(workspaceRoot, { recursive: true });
+  }
+});
+
+Deno.test("[JudgeDiffEvidence] whole-branch mode diffs EVERY applied change in the repo", async () => {
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-diff-evidence-branch-" });
+  try {
+    const repoDir = `${workspaceRoot}/todo-app`;
+    await Deno.mkdir(repoDir, { recursive: true });
+    await Deno.writeTextFile(`${repoDir}/utils.ts`, "a\n");
+    await Deno.writeTextFile(`${repoDir}/storage.ts`, "b\n");
+    await runGit(repoDir, ["init", "-q"]);
+    await runGit(repoDir, ["-c", "user.email=t@t.com", "-c", "user.name=t", "add", "-A"]);
+    await runGit(repoDir, ["-c", "user.email=t@t.com", "-c", "user.name=t", "commit", "-q", "-m", "init"]);
+    await Deno.writeTextFile(`${repoDir}/utils.ts`, "a-changed\n");
+    await Deno.writeTextFile(`${repoDir}/storage.ts`, "b-changed\n");
+    await runGit(repoDir, ["-c", "user.email=t@t.com", "-c", "user.name=t", "add", "-A"]);
+    await runGit(repoDir, ["-c", "user.email=t@t.com", "-c", "user.name=t", "commit", "-q", "-m", "fix"]);
+
+    const diff = await computeGitDiffEvidence(workspaceRoot, "todo-app", true);
+    assertStringIncludes(diff, "a-changed");
+    assertStringIncludes(diff, "b-changed");
+    assertStringIncludes(diff, "utils.ts");
+    assertStringIncludes(diff, "storage.ts");
+  } finally {
+    await Deno.remove(workspaceRoot, { recursive: true });
+  }
+});
+
+Deno.test("[JudgeDiffEvidence] a git-diff judge records the diff dir as evidence and captures reasoning", async () => {
+  const workspaceRoot = await Deno.makeTempDir({ prefix: "judge-diff-evidence-err-" });
+  try {
+    const repoDir = `${workspaceRoot}/todo-app`;
+    await Deno.mkdir(repoDir, { recursive: true });
+    await Deno.writeTextFile(`${repoDir}/storage.ts`, "a\n");
+    await runGit(repoDir, ["init", "-q"]);
+    await runGit(repoDir, ["-c", "user.email=t@t.com", "-c", "user.name=t", "add", "-A"]);
+    await runGit(repoDir, ["-c", "user.email=t@t.com", "-c", "user.name=t", "commit", "-q", "-m", "init"]);
+    await Deno.writeTextFile(`${repoDir}/storage.ts`, "a-changed\n");
+    const result = await evaluateLlmJudgeCriterion({
+      workspaceRoot,
+      phase: CriterionPhase.OUTPUT,
+      criterion: {
+        id: "llm-judge-quality",
+        kind: CriterionKind.LLM_JUDGE,
+        preset: "task_fulfillment",
+        evidence_diff_dir: "todo-app",
+        context_path: "reference.patch",
+        score_threshold: 0.7,
+      },
+      env: {
+        EXA_EVAL_LLM_MOCK: "pass",
+        EXA_LLM_PROVIDER: "claude-cli",
+        EXA_LLM_MODEL: "claude-cli:claude-sonnet-5",
+      },
+    });
+    assertEquals(result.evidence_refs, ["todo-app"], "the diff dir is the recorded evidence");
+    assertEquals(result.judge?.provider, "claude-cli");
+    assertStringIncludes(result.judge?.reasoning ?? "", "mock pass");
   } finally {
     await Deno.remove(workspaceRoot, { recursive: true });
   }
