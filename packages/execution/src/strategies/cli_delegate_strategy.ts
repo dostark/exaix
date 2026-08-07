@@ -45,6 +45,8 @@ import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
 import { parseDelegateStdout } from "@exaix/session/delegate_return_parser.ts";
 import { deriveClaudeToolFlags } from "@exaix/session/claude_permission_flags.ts";
 import { SafeSubprocess, SubprocessError } from "@exaix/core";
+import { DEFAULT_GIT_STATUS_TIMEOUT_MS } from "@exaix/git";
+import { GIT_CMD_STATUS, GIT_FLAG_UNTRACKED_FILES_ALL } from "@exaix/git/constants.ts";
 import {
   AgentExecutionErrorType,
   CLI_DELEGATE_TURN_TIMEOUT_MS,
@@ -178,12 +180,21 @@ export class CliDelegateStrategy implements IExecutionStrategy {
       ? await this.runClaudeStep(context.trace_id, objective, portalPath)
       : await this.runOpencodeStep(context.trace_id, objective, portalPath);
 
+    const reportedPaths = toPortalRelativePaths(parsed.toolPaths, portalPath);
+    // claude's parsed toolPaths is empty today (its print-mode stream emits no per-turn
+    // tool_use lines), so the delegate's REAL writes would be invisible to the step audit and
+    // every legitimate change flagged as a false-positive security violation — which fails the
+    // plan, the plan never reaches Archive, and the scenario's wait-for-execution-completion
+    // times out. Fall back to the worktree's actual `git status` changes when the stream
+    // reported nothing, so the real writes become the step's authorized files_changed.
+    const filesChanged = reportedPaths.length > 0 ? reportedPaths : await this.detectGitChanges(portalPath);
+
     const executionTimeMs = Date.now() - startTime;
 
     return {
       branch: "",
       commit_sha: "0".repeat(40),
-      files_changed: toPortalRelativePaths(parsed.toolPaths, portalPath),
+      files_changed: filesChanged,
       description: parsed.lastText || context.plan,
       tool_calls: parsed.toolPaths.length,
       execution_time_ms: executionTimeMs,
@@ -285,6 +296,28 @@ export class CliDelegateStrategy implements IExecutionStrategy {
     }
 
     return parseDelegateStdout(result.stdout, this.deps.tool);
+  }
+
+  /**
+   * Detect the delegate's REAL worktree writes via `git status --porcelain` — used when the
+   * CLI tool's stream reported no tool paths (claude), so the step audit sees the actual
+   * changes as authorized files_changed instead of flagging every write as a false-positive
+   * security violation. Mirrors git_audit_service's own status read (same flags/timeout).
+   */
+  private async detectGitChanges(portalPath: string): Promise<string[]> {
+    try {
+      const result = await SafeSubprocess.run("git", [GIT_CMD_STATUS, "--porcelain", GIT_FLAG_UNTRACKED_FILES_ALL], {
+        cwd: portalPath,
+        timeoutMs: DEFAULT_GIT_STATUS_TIMEOUT_MS,
+      });
+      if (result.code !== 0) return [];
+      return result.stdout
+        .split("\n")
+        .filter((line) => line.trim().length > 0)
+        .map((line) => line.slice(3).trim());
+    } catch {
+      return [];
+    }
   }
 
   /**

@@ -542,6 +542,44 @@ Deno.test("CliDelegateStrategy: parses opencode JSONL events for files_changed a
   assertEquals(result.usage?.cost_usd, 0.004);
 });
 
+Deno.test("CliDelegateStrategy: a claude turn with no parsed tool paths falls back to git status for files_changed", async () => {
+  // claude's parsed toolPaths is empty today; without the git-status fallback the step audit
+  // would flag every real write as a false-positive security violation and the plan would
+  // never reach Archive (wait-for-execution-completion timeout). The real writes must become
+  // the authorized files_changed.
+  const dir = Deno.makeTempDirSync();
+  const git = (args: string[], cwd: string) => new Deno.Command("git", { args, cwd }).output();
+  try {
+    await git(["init", "-q", "-b", "main"], dir);
+    await new Deno.Command("mkdir", { args: ["-p", `${dir}/src`] }).output();
+    await Deno.writeTextFile(`${dir}/src/api.ts`, "export const a = 1;\n");
+    await git(["add", "."], dir);
+    await git(["commit", "-q", "-m", "base"], dir);
+    await Deno.writeTextFile(`${dir}/src/api.ts`, "export const a = 2;\n");
+    await Deno.writeTextFile(`${dir}/new-file.ts`, "export const b = 1;\n");
+
+    const run: IRunCliDelegateProcess = (_command, _args, _options) =>
+      Promise.resolve({
+        code: 0,
+        stdout: [systemLine("ses_claude_1"), resultLine("Patched the endpoint.")].join("\n"),
+        stderr: "",
+      });
+
+    const strategy = new CliDelegateStrategy({
+      tool: "claude-code",
+      bin: "claude",
+      resolvePortalPath: () => dir,
+      run,
+    });
+
+    const result = await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
+
+    assertEquals(result.files_changed.sort(), ["new-file.ts", "src/api.ts"]);
+  } finally {
+    await new Deno.Command("rm", { args: ["-rf", dir] }).output();
+  }
+});
+
 Deno.test("CliDelegateStrategy: throws AgentExecutionError when the portal path cannot be resolved", async () => {
   const strategy = new CliDelegateStrategy({
     tool: "claude-code",
