@@ -150,6 +150,8 @@ steps:
     cwd: "todo-app"
     command: "deno"
     args: ["test", "src/"]
+    # A failing test run must NOT skip the judge: the failure is the signal being graded.
+    continue_on_failure: true
     output_criteria:
       - id: "tests-pass"
         kind: "command-exit-code"
@@ -206,6 +208,8 @@ steps:
         # changes) against the task's reference patch — never a pre-picked single file.
         evidence_diff_dir: "todo-app"
         context_path: "$REFERENCE_PATCH"
+        # Pass the verify-tests outcome (PASSED/FAILED + exit code + output) to the judge.
+        test_run_source: "run-tests"
         score_threshold: 0.5
         score_weight: 0.4
 

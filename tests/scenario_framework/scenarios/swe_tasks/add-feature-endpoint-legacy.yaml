@@ -136,6 +136,8 @@ steps:
         # changes) against the task's reference patch — never a pre-picked single file.
         evidence_diff_dir: "todo-app"
         context_path: "$REFERENCE_PATCH"
+        # Pass the verify-tests outcome (PASSED/FAILED + exit code + output) to the judge.
+        test_run_source: "run-tests"
         score_threshold: 0.5
         score_weight: 0.4
 

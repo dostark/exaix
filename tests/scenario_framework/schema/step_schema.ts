@@ -297,6 +297,10 @@ const LlmJudgeCriterionSchema = BaseCriterionSchema.extend({
   // GOAL_ALIGNED_REVIEW asks the judge to score "goal_alignment"/"request_understanding"
   // against a stated objective the judge was never shown — it can only guess.
   context_path: z.string().min(1).optional(),
+  // Step id whose test-run outcome (PASSED/FAILED + exit code + output) is passed to the judge
+  // as additional context. A judge must run and grade EVEN when the tests failed — the failure
+  // is the signal being evaluated, not a reason to skip. See assertions.ts.
+  test_run_source: z.string().min(1).optional(),
   score_threshold: z.number().min(0).max(1).default(0.7),
 }).strict();
 

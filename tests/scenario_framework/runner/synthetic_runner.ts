@@ -492,6 +492,7 @@ export async function runSyntheticScenario(
           artifactBaselineMs: scenarioStartedAtMs,
           journalBaselineRowid: previousStepStartRowid,
           traceBaselineRowid: scenarioJournalBaselineRowid,
+          stepOutcomes,
           maxStepTimeoutSec: options.maxStepTimeoutSec,
           exactlExecutable: options.exactlExecutable,
           requestFixturePath: loadedScenario.requestFixture.absolutePath,
@@ -887,6 +888,8 @@ interface IExecuteSyntheticStepOptions {
   flowFixturePath?: string;
   /** Absolute path of the scenario's `reference_patch`, when it declares one — `$REFERENCE_PATCH`. */
   referencePatchPath?: string;
+  /** Outcomes of steps that already ran this scenario (a judge's test_run_source). */
+  stepOutcomes?: IScenarioStepOutcome[];
   frameworkHome: string;
   env?: { [key: string]: string };
   portalAliases: string[];
@@ -1029,6 +1032,7 @@ async function executeSyntheticStep(
     executionResult,
     env,
     portalAliases: options.portalAliases,
+    stepOutcomes: options.stepOutcomes,
   });
 
   return {
@@ -1053,6 +1057,7 @@ async function evaluateInputCriteria(
         criterion,
         env: options.env,
         portalAliases: options.portalAliases,
+        stepOutcomes: options.stepOutcomes,
       }),
     );
   }

@@ -15,8 +15,9 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { computeGitDiffEvidence, evaluateLlmJudgeCriterion } from "../../runner/assertions.ts";
-import { CriterionKind, CriterionPhase } from "../../schema/step_schema.ts";
+import { computeGitDiffEvidence, evaluateLlmJudgeCriterion, resolveTestRunStatus } from "../../runner/assertions.ts";
+import type { IScenarioStepOutcome } from "../../runner/assertions.ts";
+import { CriterionKind, CriterionPhase, CriterionStatus } from "../../schema/step_schema.ts";
 
 async function runGit(cwd: string, args: string[]): Promise<void> {
   const output = await new Deno.Command("git", { args, cwd, stdout: "null", stderr: "piped" }).output();
@@ -183,4 +184,42 @@ Deno.test("[JudgeDiffEvidence] a git-diff judge records the diff dir as evidence
   } finally {
     await Deno.remove(workspaceRoot, { recursive: true });
   }
+});
+
+function testOutcome(stepId: string, status: CriterionStatus, exitCode: number, output: string): IScenarioStepOutcome {
+  return {
+    stepId,
+    status,
+    failureStage: status === CriterionStatus.PASSED ? null : "execution",
+    criterionResults: [],
+    executionResult: {
+      stepId,
+      stepType: "test-run",
+      startedAt: "",
+      completedAt: "",
+      durationMs: 0,
+      exitCode,
+      stdout: output,
+      stderr: "",
+      combinedOutput: output,
+    },
+  } as IScenarioStepOutcome;
+}
+
+Deno.test("[JudgeDiffEvidence] test_run_source passes a FAILED test run to the judge as context", () => {
+  const status = resolveTestRunStatus("verify-tests", [
+    testOutcome("verify-tests", CriterionStatus.FAILED, 1, "FAILED | 16 passed | 1 failed"),
+  ]);
+  assertStringIncludes(status ?? "", "FAILED");
+  assertStringIncludes(status ?? "", "exit code 1");
+  assertStringIncludes(status ?? "", "16 passed | 1 failed");
+});
+
+Deno.test("[JudgeDiffEvidence] test_run_source passes a PASSED test run and tolerates a missing step", () => {
+  const passed = resolveTestRunStatus("verify-tests", [
+    testOutcome("verify-tests", CriterionStatus.PASSED, 0, "ok | 17 passed"),
+  ]);
+  assertStringIncludes(passed ?? "", "PASSED");
+  assertEquals(resolveTestRunStatus("verify-tests", undefined), undefined);
+  assertEquals(resolveTestRunStatus("missing", [testOutcome("other", CriterionStatus.PASSED, 0, "x")]), undefined);
 });

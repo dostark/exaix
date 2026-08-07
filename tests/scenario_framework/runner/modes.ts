@@ -138,12 +138,18 @@ export async function runScenarioInMode(
       (expectFailure ? executionResult.exitCode === 0 : executionResult.exitCode !== 0);
 
     if (isExecutionFailed) {
-      return {
-        status: ExecutionStateStatus.FAILED,
-        nextStepIndex: stepIndex,
-        executedStepIds,
-        outcome: ExecutionOutcome.SCENARIO_FAILURE,
-      };
+      // A step that declares `continue_on_failure` records its failure (the outcome is already
+      // in stepOutcomes for a later judge's test_run_source) but does NOT halt the loop — the
+      // scenario continues so e.g. an llm-judge still runs and grades the failing solution.
+      if (!step.continue_on_failure) {
+        return {
+          status: ExecutionStateStatus.FAILED,
+          nextStepIndex: stepIndex,
+          executedStepIds,
+          outcome: ExecutionOutcome.SCENARIO_FAILURE,
+        };
+      }
+      anyCriteriaFailed = true;
     }
 
     // A criterion (input/output_criteria) failure does not halt execution — subsequent

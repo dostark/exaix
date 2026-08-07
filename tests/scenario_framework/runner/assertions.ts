@@ -59,6 +59,8 @@ export interface IEvaluateCriterionOptions {
   env?: { [key: string]: string };
   portalAliases?: string[];
   exactlExecutable?: string;
+  /** Outcomes of steps that already ran this scenario (a judge's test_run_source). */
+  stepOutcomes?: IScenarioStepOutcome[];
 }
 
 export interface IEvaluateStepOutcomeOptions {
@@ -71,6 +73,8 @@ export interface IEvaluateStepOutcomeOptions {
   exactlExecutable?: string;
   /** Epoch-ms floor for artefacts this scenario may claim — see IExecuteScenarioStepOptions. */
   artifactBaselineMs?: number;
+  /** Outcomes of steps that already ran this scenario (a judge's test_run_source). */
+  stepOutcomes?: IScenarioStepOutcome[];
 }
 
 export interface IScenarioStepOutcome {
@@ -229,6 +233,7 @@ export async function evaluateStepOutcome(
     env: options.env,
     portalAliases: options.portalAliases,
     exactlExecutable: options.exactlExecutable,
+    stepOutcomes: options.stepOutcomes,
   });
 
   if (hasFailedCriterion(inputResults)) {
@@ -269,6 +274,7 @@ export async function evaluateStepOutcome(
     env: options.env,
     portalAliases: options.portalAliases,
     exactlExecutable: options.exactlExecutable,
+    stepOutcomes: options.stepOutcomes,
   });
   const criterionResults = [...inputResults, ...outputResults];
 
@@ -290,6 +296,8 @@ interface IEvaluateCriteriaBatchOptions {
   env?: { [key: string]: string };
   portalAliases?: string[];
   exactlExecutable?: string;
+  /** Outcomes of steps that already ran this scenario (a judge's test_run_source). */
+  stepOutcomes?: IScenarioStepOutcome[];
 }
 
 async function evaluateCriteriaBatch(
@@ -308,6 +316,7 @@ async function evaluateCriteriaBatch(
         env: options.env,
         portalAliases: options.portalAliases,
         exactlExecutable: options.exactlExecutable,
+        stepOutcomes: options.stepOutcomes,
       }),
     );
   }
@@ -1425,6 +1434,21 @@ function llmJudgeEvidenceRefs(
   return [];
 }
 
+/** Format a declared test-run step's outcome (PASSED/FAILED + exit code + output) for the
+ *  judge's context, so it grades the solution WITH the test signal, never without it. */
+export function resolveTestRunStatus(
+  testRunSource: Opt<string, Reason.OptionalInput> = undefined,
+  stepOutcomes: Opt<IScenarioStepOutcome[], Reason.OptionalInput> = undefined,
+): string | undefined {
+  if (!testRunSource || !stepOutcomes) return undefined;
+  const outcome = stepOutcomes.find((o) => o.stepId === testRunSource);
+  if (!outcome) return undefined;
+  const passed = outcome.status === CriterionStatus.PASSED;
+  const exitCode = outcome.executionResult?.exitCode ?? 0;
+  const output = (outcome.executionResult?.combinedOutput ?? "").slice(0, 2000);
+  return `${passed ? "PASSED" : "FAILED"} (exit code ${exitCode})\n${output}`.trim();
+}
+
 /** Attach the judge's CAPTURED reasoning to the judge provenance so run artifacts prove the
  *  judge actually reasoned over the supplied evidence, rather than a bare provider/model tag. */
 function judgeResult(
@@ -1545,6 +1569,7 @@ export async function evaluateLlmJudgeCriterion(
     preset?: string;
     rubric?: string;
     context_path?: string;
+    test_run_source?: string;
     score_threshold?: number;
   };
 
@@ -1598,7 +1623,13 @@ export async function evaluateLlmJudgeCriterion(
     rubric: criterion.rubric,
     contextPath: criterion.context_path,
   });
-  const basePrompt = buildEvaluationPrompt(content, effectiveCriteria, evalContext, isMulti);
+  // Pass the declared test-run step's status to the judge as ADDITIONAL context. A judge must
+  // run and grade even when the tests failed — the failure IS the signal being evaluated.
+  const testStatus = resolveTestRunStatus(criterion.test_run_source, options.stepOutcomes);
+  const contextWithTests = testStatus
+    ? `${evalContext ?? ""}\n\n## Test Run Result (${criterion.test_run_source})\n${testStatus}`
+    : evalContext;
+  const basePrompt = buildEvaluationPrompt(content, effectiveCriteria, contextWithTests, isMulti);
   const methodology = await loadJudgeMethodologyInstructions(options.workspaceRoot);
   const promptUsed = prependMethodologyInstructions(basePrompt, methodology);
   const threshold = criterion.score_threshold ?? 0.7;
