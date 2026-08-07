@@ -356,6 +356,40 @@ Deno.test("[PairedLift] runs without outcome scores contribute no match", () => 
   }
 });
 
+Deno.test("[PairedLift] a `bare-`-prefixed bare scenario id pairs with the same Exaix task", () => {
+  const { store, cleanup } = openStore();
+  try {
+    seedRun(store, {
+      runId: "e3",
+      scenarioId: "swe-async-ordering-bug",
+      cellId: EXAIX_CELL,
+      provider: "anthropic",
+      model: "m1",
+      score: 0.917,
+      timestamp: "2026-08-07T00:00:00Z",
+    });
+    seedRun(store, {
+      runId: "b3",
+      scenarioId: "bare-swe-async-ordering-bug",
+      cellId: BARE_CELL,
+      provider: "anthropic",
+      model: "m1",
+      score: 1.0,
+      timestamp: "2026-08-07T00:00:00Z",
+    });
+
+    const rows = store.queryOutcomeRuns({ outcomeStepIds: OUTCOME_STEP_IDS });
+    const report = computeHarnessLift(rows);
+
+    assertEquals(report.unmatchedWarningCount, 0, "the bare- prefixed run must pair, not be unmatched");
+    assertEquals(report.families.length, 1, "one matched family");
+    assertEquals(report.families[0].basis.controlRunIds, ["b3"]);
+    assertEquals(report.families[0].basis.treatmentRunIds, ["e3"]);
+  } finally {
+    cleanup();
+  }
+});
+
 function assertThrows(fn: () => unknown, pattern: RegExp, message: string): void {
   let threw: Error | undefined;
   try {

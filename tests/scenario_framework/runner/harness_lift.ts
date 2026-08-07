@@ -90,13 +90,21 @@ export function parseBareCellId(cellId: string | null): { tool: string; provider
 }
 
 /**
- * Parse an Exaix cell_id into its (tool, provider) pair, or null. The runner records
- * `<tool>-<provider>` (synthetic_runner.ts buildRunManifest) where the TOOL may itself contain
- * a dash ("claude-code"), so the provider is the LAST dash segment and the tool is the rest;
- * the taxonomy's `<tool>/<provider>` shape is tolerated as a fallback.
+ * Parse an Exaix cell_id into its (tool, provider) pair. The runner records
+ * `<tool>-<provider>`, and BOTH names may contain dashes ("claude-code", "claude-cli"), so the
+ * split is only reliable with the row's explicit `provider` column as a suffix hint: the tool
+ * is the cell_id minus its trailing `-<provider>`. A last-dash fallback (provider without
+ * dashes) keeps legacy rows pairing.
  */
-export function parseExaixCellId(cellId: string | null): { tool: string; provider: string } | null {
+export function parseExaixCellId(
+  cellId: string | null,
+  providerHint: string | null,
+): { tool: string; provider: string } | null {
   if (!cellId || cellId.startsWith(BARE_CELL_PREFIX)) return null;
+  if (providerHint && cellId.length > providerHint.length + 1 && cellId.endsWith(`-${providerHint}`)) {
+    const tool = cellId.slice(0, cellId.length - providerHint.length - 1);
+    if (tool) return { tool, provider: providerHint };
+  }
   const dashIndex = cellId.lastIndexOf("-");
   if (dashIndex > 0 && dashIndex < cellId.length - 1) {
     return { tool: cellId.slice(0, dashIndex), provider: cellId.slice(dashIndex + 1) };
@@ -116,6 +124,20 @@ export function resolveFamily(tags: string[] | null, fallback: string): string {
     }
   }
   return fallback;
+}
+
+/**
+ * The pairing identity of a run's TASK — what the lift/ablation views pair on. A bare cell
+ * running `bare-swe-<task>` IS the same task as the Exaix cell's `swe-<task>` — the `bare-`
+ * prefix is a rendering artifact and is stripped so the pair matches. (The `task:` tag is a
+ * FAMILY grouping, never a per-task id, so it does not participate in pairing.)
+ */
+export function resolveTaskIdentity(row: IOutcomeRunRow): string {
+  const bare = row.cell_id?.startsWith(BARE_CELL_PREFIX) ?? false;
+  if (bare && row.scenario_id.startsWith("bare-") && row.scenario_id.length > "bare-".length) {
+    return row.scenario_id.slice("bare-".length);
+  }
+  return row.scenario_id;
 }
 
 /** Bucket key over (task, tool, provider, model) — the lift and ablation pairing unit. */
@@ -164,7 +186,7 @@ export function computeHarnessLift(
 
   for (const row of rows) {
     const bare = parseBareCellId(row.cell_id);
-    const exaix = bare ? null : parseExaixCellId(row.cell_id);
+    const exaix = bare ? null : parseExaixCellId(row.cell_id, row.provider);
     const identity = bare ?? exaix;
     if (!identity) {
       unidentifiableTaskIds.add(row.scenario_id);
@@ -172,15 +194,16 @@ export function computeHarnessLift(
     }
     if (row.outcome_scores.length === 0) continue;
 
-    const key = keyOf(row.scenario_id, identity.tool, identity.provider, row.model);
+    const taskId = resolveTaskIdentity(row);
+    const key = keyOf(taskId, identity.tool, identity.provider, row.model);
     let bucket = buckets.get(key);
     if (!bucket) {
       bucket = {
-        taskId: row.scenario_id,
+        taskId,
         tool: identity.tool,
         provider: identity.provider,
         model: row.model,
-        family: resolveFamily(row.tags, row.scenario_id),
+        family: resolveFamily(row.tags, taskId),
         unmatched: true,
       };
       buckets.set(key, bucket);
