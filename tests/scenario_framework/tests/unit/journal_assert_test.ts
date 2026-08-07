@@ -14,7 +14,7 @@
 import { assertEquals, assertObjectMatch } from "@std/assert";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
-import { executeScenarioStep } from "../../runner/step_executor.ts";
+import { executeScenarioStep, substituteRuntimeVars } from "../../runner/step_executor.ts";
 import { ScenarioStepSchema, ScenarioStepType } from "../../schema/step_schema.ts";
 
 function journalAssertStep(overrides: Partial<JournalAssertConfig> = {}) {
@@ -376,6 +376,30 @@ type JournalAssertConfig = {
   expect_sum?: { path: string; gt: number };
   expect_contains?: string[];
 };
+
+// --- runtime-var substitution -------------------------------------------------
+
+Deno.test("[journal_assert] $REQUEST_ID resolves from the SCENARIO baseline, not a high per-step barrier baseline", async () => {
+  await withJournal([
+    ["trace-scen", "request.created", "{}"],
+    ["trace-scen", "agent.execution_completed", '{"files_changed":1}'],
+  ], (ws) => {
+    // Scenario baseline (rowid 0, before the request) resolves the current request's trace —
+    // the per-step barrier baseline for a late step (rowid 2, above the request) must NOT.
+    const spec = substituteRuntimeVars(
+      { executable: "exactl", args: ["review", "approve", "$REQUEST_ID"] },
+      ws,
+      0,
+    );
+    assertEquals(spec.args[2], "request-trace-sc", "$REQUEST_ID = request-<trace[0:8]> from the scenario baseline");
+    const high = substituteRuntimeVars(
+      { executable: "exactl", args: ["review", "approve", "$REQUEST_ID"] },
+      ws,
+      2,
+    );
+    assertEquals(high.args[2], "$REQUEST_ID", "a barrier baseline above the request leaves $REQUEST_ID literal");
+  });
+});
 
 // --- schema round-trip ------------------------------------------------------
 

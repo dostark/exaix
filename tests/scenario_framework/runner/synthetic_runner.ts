@@ -465,6 +465,11 @@ export async function runSyntheticScenario(
   // see an event the step before it produced — which is exactly the case now that
   // `exactl daemon start` blocks until `daemon.ready` is journalled.
   let previousStepStartRowid = 0;
+  // The SCENARIO's journal baseline, captured once at scenario start — the floor for
+  // `$TRACE_ID`/`$REQUEST_ID` resolution (the current scenario's first `request.created`). A
+  // per-step barrier baseline would rise above the request as execution progresses and leave
+  // `$REQUEST_ID` (review approve) unresolvable.
+  const scenarioJournalBaselineRowid = await currentMaxRowid(options.workspaceRoot);
 
   let runResult: IRunScenarioInModeResult;
   try {
@@ -484,6 +489,7 @@ export async function runSyntheticScenario(
           workspaceRoot: options.workspaceRoot,
           artifactBaselineMs: scenarioStartedAtMs,
           journalBaselineRowid: previousStepStartRowid,
+          traceBaselineRowid: scenarioJournalBaselineRowid,
           maxStepTimeoutSec: options.maxStepTimeoutSec,
           exactlExecutable: options.exactlExecutable,
           requestFixturePath: loadedScenario.requestFixture.absolutePath,
@@ -865,6 +871,9 @@ interface IExecuteSyntheticStepOptions {
   artifactBaselineMs?: number;
   /** Journal rowid captured before the previous step ran — a barrier step's baseline. */
   journalBaselineRowid?: number;
+  /** The scenario-level journal baseline for `$TRACE_ID`/`$REQUEST_ID` resolution — see
+   *  IExecuteScenarioStepOptions.traceBaselineRowid. */
+  traceBaselineRowid?: number;
   /** Upper bound applied to every step's `timeout_sec`; shortens only, never extends. */
   maxStepTimeoutSec?: number;
   exactlExecutable?: string;
@@ -998,6 +1007,7 @@ async function executeSyntheticStep(
     verbose: options.verbose,
     artifactBaselineMs: options.artifactBaselineMs,
     journalBaselineRowid: options.journalBaselineRowid,
+    traceBaselineRowid: options.traceBaselineRowid,
   });
 
   const outputOutcome = await evaluateStepOutcome({

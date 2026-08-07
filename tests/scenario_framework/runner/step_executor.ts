@@ -54,6 +54,14 @@ export interface IExecuteScenarioStepOptions {
    * Omit to fall back to capturing at wait-start.
    */
   journalBaselineRowid?: number;
+  /**
+   * The SCENARIO's journal rowid baseline (captured at scenario start, NOT the per-step
+   * barrier baseline) — used to resolve `$TRACE_ID`/`$REQUEST_ID` to the CURRENT scenario's
+   * request (the first `request.created` above it). A per-step barrier baseline rises above the
+   * request as execution progresses, so `$REQUEST_ID` (e.g. `exactl review approve`) would
+   * otherwise resolve to nothing. Falls back to `journalBaselineRowid` when omitted.
+   */
+  traceBaselineRowid?: number;
 }
 
 export interface IScenarioStepExecutionResult {
@@ -107,7 +115,11 @@ export const CWD_WORKTREE_TOKEN = "$WORKTREE";
 /** Substitute runtime-only variables into a command spec: `$TRACE_ID` → the current request's
  *  full trace, `$REQUEST_ID` → `request-<trace[0:8]>` (the review/plan approve key). Resolved at
  *  step-execution time (the trace does not exist at scenario load). */
-function substituteRuntimeVars(
+/** Substitute runtime-only variables into a command spec: `$TRACE_ID` → the current request's
+ *  full trace, `$REQUEST_ID` → `request-<trace[0:8]>` (the review/plan approve key), and
+ *  `$JOURNAL_BASELINE` → the scenario's journal baseline rowid. Resolved at step-execution time
+ *  (the trace does not exist at scenario load). */
+export function substituteRuntimeVars(
   spec: ICommandSpec,
   workspaceRoot: string,
   baselineRowid?: Opt<number, Reason.OptionalInput>,
@@ -259,7 +271,11 @@ export async function executeScenarioStep(
 
   const commandSpec = buildCommandSpec(options);
   const executionBase = await resolveExecutionBase(options.step, options.cwd || Deno.cwd(), options.artifactBaselineMs);
-  const resolved = substituteRuntimeVars(commandSpec, options.cwd || Deno.cwd(), options.journalBaselineRowid);
+  const resolved = substituteRuntimeVars(
+    commandSpec,
+    options.cwd || Deno.cwd(),
+    options.traceBaselineRowid ?? options.journalBaselineRowid,
+  );
 
   if (options.verbose) {
     console.log(`\n%c > ${resolved.executable} ${resolved.args.join(" ")}`, "color: green; font-weight: bold;");
@@ -826,7 +842,7 @@ function executeJournalAssertStep(
 ): IScenarioStepExecutionResult {
   const workspaceRoot = options.cwd || Deno.cwd();
   const traceId = options.step.trace_scoped
-    ? resolveCurrentTrace(workspaceRoot, options.journalBaselineRowid)
+    ? resolveCurrentTrace(workspaceRoot, options.traceBaselineRowid ?? options.journalBaselineRowid)
     : undefined;
 
   const where: string[] = [];

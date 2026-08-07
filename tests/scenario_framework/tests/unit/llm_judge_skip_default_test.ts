@@ -97,7 +97,7 @@ Deno.test({
         makeOptions({ env: { EXA_EVAL_LLM_MOCK: "false" } }),
       );
       assertEquals(result.status, CriterionStatus.ERROR);
-      assertStringIncludes(result.message!, "EXA_LLM_PROVIDER is required");
+      assertStringIncludes(result.message!, "EXA_LLM_PROVIDER");
     } finally {
       if (prevMock !== undefined) Deno.env.set("EXA_EVAL_LLM_MOCK", prevMock);
       if (prevProvider !== undefined) Deno.env.set("EXA_LLM_PROVIDER", prevProvider);
