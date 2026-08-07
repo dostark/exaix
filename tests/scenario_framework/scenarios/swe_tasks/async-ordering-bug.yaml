@@ -117,7 +117,7 @@ steps:
     type: "test-run"
     cwd: "todo-app"
     command: "deno"
-    args: ["test", "src/"]
+    args: ["test", "--allow-read", "--allow-write", "src/"]
     output_criteria:
       - id: "tests-pass"
         kind: "command-exit-code"
