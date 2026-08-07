@@ -160,6 +160,12 @@ const BARE_DELEGATE_LAUNCH_SHAPES: Record<string, { bin: string; args: string[] 
     // restriction; never --dangerously-skip-permissions.
     args: ["-p", "--output-format", "json", ...deriveClaudeToolFlags()],
   },
+  "claude-haiku-4-5": {
+    bin: "claude",
+    // Same scoped bare-launch as claude-code, pinned to the weak haiku model so the Exaix-vs-
+    // bare comparison on the harness-lift weak-model tier runs a matching delegate.
+    args: ["-p", "--output-format", "json", "--model", "claude-haiku-4-5", ...deriveClaudeToolFlags()],
+  },
 };
 
 /** Env var that overrides the eval-jail image name (default `exaix-eval-jail`). */
@@ -179,6 +185,14 @@ function buildJailLaunch(inner: { bin: string; args: string[] }): { bin: string;
   const uid = Deno.uid();
   const gid = Deno.gid();
   const userArgs = uid !== null && gid !== null ? ["--user", `${uid}:${gid}`] : [];
+  // The container's claude (HOME=/tmp) needs the host's claude.ai subscription login — the
+  // eval-jail credential passthrough. Read-only mount of just the credentials file; the image
+  // holds no login, so without this the bare claude delegate cannot authenticate.
+  const hostHome = Deno.env.get("HOME");
+  const claudeCreds = hostHome ? `${hostHome}/.claude/.credentials.json` : undefined;
+  const credMounts = claudeCreds
+    ? ["--mount", `type=bind,src=${claudeCreds},dst=/tmp/.claude/.credentials.json,ro`]
+    : [];
   return {
     bin: "docker",
     args: [
@@ -195,6 +209,7 @@ function buildJailLaunch(inner: { bin: string; args: string[] }): { bin: string;
       "HOME=/tmp",
       "-e",
       "OPENCODE_CONFIG=/worktree/opencode.jsonc",
+      ...credMounts,
       image,
       inner.bin,
       ...inner.args,
@@ -322,10 +337,20 @@ function overlayBareDelegateStep(steps: IScenarioStep[], cell: IMatrixCell): ISc
   const jailed = buildJailLaunch(shape);
   return steps.map((step) => {
     if (step.id !== BARE_DELEGATE_STEP_ID) return step;
+    // claude's `-p` requires the prompt as the argument IMMEDIATELY after it — a prompt
+    // trailing other flags (--allowedTools etc.) is mis-parsed as "no prompt". opencode takes
+    // the objective as its trailing positional, so the sentinel stays last there.
+    const args = [...jailed.args];
+    const printIdx = args.indexOf("-p");
+    if (printIdx >= 0) {
+      args.splice(printIdx + 1, 0, REQUEST_FIXTURE_CONTENT_SENTINEL);
+    } else {
+      args.push(REQUEST_FIXTURE_CONTENT_SENTINEL);
+    }
     return {
       ...step,
       command: jailed.bin,
-      args: [...jailed.args, REQUEST_FIXTURE_CONTENT_SENTINEL],
+      args,
     };
   });
 }
