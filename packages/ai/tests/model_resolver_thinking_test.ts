@@ -14,6 +14,7 @@ import { MockProviderFactory } from "../src/factories/mock_factory.ts";
 import { DefaultRoutingStrategy } from "../src/routing/default_routing_strategy.ts";
 import { createStubCostTracker, createStubHealthChecker } from "./helpers/service_stubs.ts";
 import { ModelResolver } from "../src/model_resolver.ts";
+import type { IModelIntent } from "../src/types.ts";
 import { createTestConfig } from "./helpers/test_config.ts";
 
 function registerProvider(
@@ -89,6 +90,42 @@ Deno.test("[step132.1][thinking] effort without thinking does not trigger thinki
 
     assertEquals(result.provider, "basic");
     assertEquals(result.options?.effort, "high");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[thinking] a string 'false' thinking intent does not demand a thinking provider", async () => {
+  const { cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+    registerProvider("basic", { supportsThinking: false });
+
+    const resolver = makeResolver();
+    // YAML failsafe parsing turns `thinking: false` into the STRING "false" (truthy in JS).
+    const stringyIntent = { thinking: "false" } as { thinking: string } & Omit<IModelIntent, "thinking">;
+    const result = await resolver.resolve(stringyIntent as IModelIntent);
+
+    assertEquals(result.provider, "basic", "string 'false' must be treated as thinking disabled");
+    assertEquals(result.options?.thinking ?? false, false, "call options must not carry thinking");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[thinking] a string 'true' thinking intent still requires a thinking provider", async () => {
+  const { cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+    registerProvider("basic", { supportsThinking: false });
+
+    const resolver = makeResolver();
+    const stringyIntent = { thinking: "true" } as { thinking: string } & Omit<IModelIntent, "thinking">;
+    await assertRejects(
+      () => resolver.resolve(stringyIntent as IModelIntent),
+      Error,
+      "no suitable model found",
+    );
   } finally {
     await cleanup();
   }

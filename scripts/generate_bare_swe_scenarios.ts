@@ -26,6 +26,30 @@ const TASKS = [
     requestFixture: "fixtures/requests/swe_tasks/path-traversal-storage.md",
     portal: "todo_app_path_traversal",
   },
+  {
+    id: "bare-swe-fix-bug-null-guard",
+    title: "Bare delegate baseline — Fix null-pointer crash in addTask",
+    requestFixture: "fixtures/requests/swe_tasks/fix-bug-null-guard.md",
+    portal: "todo_app_null_guard_bug",
+  },
+  {
+    id: "bare-swe-injection-sanitisation",
+    title: "Bare delegate baseline — Sanitise task descriptions before rendering",
+    requestFixture: "fixtures/requests/swe_tasks/injection-sanitisation.md",
+    portal: "todo_app_injection",
+  },
+  {
+    id: "bare-swe-refactor-extract-function",
+    title: "Bare delegate baseline — Extract sort utility from task list rendering",
+    requestFixture: "fixtures/requests/swe_tasks/refactor-extract-function.md",
+    portal: "todo_app",
+  },
+  {
+    id: "bare-swe-add-feature-endpoint",
+    title: "Bare delegate baseline — Add a search feature endpoint",
+    requestFixture: "fixtures/requests/swe_tasks/add-feature-endpoint.md",
+    portal: "todo_app",
+  },
 ];
 
 const CELLS = [

@@ -55,6 +55,20 @@ interface IScoreCandidatesIntent {
 const CHARACTERISTIC_WEIGHT = 1;
 const CHARACTERISTIC_BEST = "best";
 
+/**
+ * Normalize boolean-typed intent fields that arrive as YAML-failsafe STRINGS. The blueprint
+ * frontmatter is parsed with `schema: "failsafe"` (all scalars become strings), so
+ * `thinking: false` yields the STRING "false" — truthy in JS, which would make the resolver
+ * demand a thinking-capable provider and fail. Coerce `"true"`/`"false"` at the boundary.
+ */
+function normalizeIntentBooleans(intent: IModelIntent): IModelIntent {
+  const rawThinking: string | boolean | undefined = intent.thinking as string | boolean | undefined;
+  if (typeof rawThinking === "string") {
+    return { ...intent, thinking: rawThinking.toLowerCase() === "true" };
+  }
+  return intent;
+}
+
 /** @internal Map of preset override name → { model_size → resolved model } */
 const OVERRIDE_MODEL_MAP: Record<string, Record<ModelSize, { provider: string; model: string }>> = {
   test: {
@@ -91,6 +105,7 @@ export class ModelResolver {
    */
   async resolve(intent: IModelIntent): Promise<IResolvedModel> {
     const startTime = Date.now();
+    intent = normalizeIntentBooleans(intent);
 
     const overrideResult = this.tryResolveOverride(intent);
     if (overrideResult) return overrideResult;
