@@ -1736,8 +1736,11 @@ export async function callLlmEndpoint(
   // Deno.env here silently ignored a step-declared EXA_EVAL_LLM_MOCK/EXA_LLM_PROVIDER and
   // fell through to the MockLLMProvider.
   const readEnv = (key: string): string | undefined => stepEnv?.[key] ?? Deno.env.get(key);
-  const envProvider = readEnv("EXA_LLM_PROVIDER");
-  const envModel = readEnv("EXA_LLM_MODEL");
+  // Dedicated judge vars (EXA_EVAL_LLM_*) win over the scenario's own model (EXA_LLM_*) so a
+  // run can grade with a different model than it executes with — consistent with
+  // resolveEvalJudgeProvenance.
+  const envProvider = readEnv("EXA_EVAL_LLM_PROVIDER") ?? readEnv("EXA_LLM_PROVIDER");
+  const envModel = readEnv("EXA_EVAL_LLM_MODEL") ?? readEnv("EXA_LLM_MODEL");
   const envEvalModelSize = readEnv("EXA_EVAL_MODEL_SIZE");
   const envEvalCharacteristics = readEnv("EXA_EVAL_CHARACTERISTICS");
   const useRealLlm = readEnv("EXA_EVAL_LLM_MOCK") === "false";
@@ -1745,8 +1748,8 @@ export async function callLlmEndpoint(
   // Real LLM calls require an explicit provider
   if (useRealLlm && !envProvider) {
     throw new Error(
-      "EXA_LLM_PROVIDER is required when EXA_EVAL_LLM_MOCK=false. " +
-        "Set it to a supported provider (e.g. 'ollama', 'anthropic').",
+      "EXA_LLM_PROVIDER (or EXA_EVAL_LLM_PROVIDER) is required when EXA_EVAL_LLM_MOCK=false. " +
+        "Set it to a supported provider (e.g. 'ollama', 'anthropic', 'opencode-cli').",
     );
   }
 
