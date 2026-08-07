@@ -59,6 +59,17 @@ Deno.test("[tag-safety] a pack selection is filtered the same way", () => {
   assertEquals(idsFor({ scenarios: SCENARIOS, explicitPacks: ["flows"] }), ["mock-a", "mock-b"]);
 });
 
+Deno.test("[tag-safety] an excluded tag alongside a pack is the CI opt-in for that pack", () => {
+  // `--pack swe_tasks --tag provider-live` is how an operator runs a provider-live pack. The
+  // tag must opt the pack selection out of CI-safety filtering — it was silently dropped before,
+  // filtering the whole pack to zero scenarios.
+  assertEquals(
+    idsFor({ scenarios: SCENARIOS, explicitPacks: ["flows"], explicitTags: ["provider-live"] }),
+    ["checkpoint-a", "live-a", "manual-a", "mock-a", "mock-b"],
+    "the excluded tag is a MODIFIER on the pack selection, not a second selector",
+  );
+});
+
 Deno.test("[tag-safety] asking for an excluded tag turns the filter off", () => {
   // The nightly recipe's selection. Stripping exactly what was requested would return nothing.
   assertEquals(idsFor({ scenarios: SCENARIOS, explicitTags: ["provider-live"] }), ["live-a"]);

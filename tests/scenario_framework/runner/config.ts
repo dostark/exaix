@@ -190,7 +190,10 @@ export function resolveScenarioSelection(
       source: ScenarioSelectionSource.EXPLICIT_PACKS,
       scenarioIds: [],
       packs: [...(options.explicitPacks ?? [])],
-      tags: [],
+      // Merge tags alongside the packs: a `--tag provider-live` alongside `--pack swe_tasks`
+      // is the CI-safety OPT-IN that lets a provider-live pack run, and was silently dropped
+      // before (applyCiSafety then filtered the whole pack to zero scenarios).
+      tags: [...(options.explicitTags ?? [])],
       profile: options.profile,
     };
   }
