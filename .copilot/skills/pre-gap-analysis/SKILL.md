@@ -10,7 +10,7 @@ scope: dev
 title: "Pre-Gap Analysis Skill (#pre-gap-analysis)"
 description: Pre-implementation gap analysis of a phase planning document — finds ambiguities, missing contracts, and security risks before coding starts
 short_summary: "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against."
-version: "1.7.0"
+version: "1.8.0"
 topics: [
   "planning",
   "gap-analysis",
@@ -107,6 +107,15 @@ Do / Don't
 - ❌ Don't accept a doc-only edit as resolving a code-change gap — if the gap says
   "file X needs a new field", editing the plan to say "file X has the field" does not
   create the field. Only a real code change and a successful grep close the gap.
+- ✅ Do re-read the actual current text of every section a Resolution names before marking
+  it ✅ APPLIED, even when the Resolution is doc-only — a Resolution is itself an
+  unverified claim about the edit, not the edit.
+- ❌ Don't mark a Resolution ✅ APPLIED from memory of having "addressed" the gap
+  conceptually — verify the literal text change exists exactly where and as the
+  Resolution says, in every location it names, not just the first one.
+- ❌ Don't mark a 🔴/🔒 gap ✅ APPLIED when its Resolution defers the actual decision to
+  "before/during implementation" — that is a precisely-scoped open decision, not a closed
+  gap; mark it `⏳ DEFERRED-TO-IMPLEMENTATION` and keep the verdict `⚠️ GAPS FOUND`.
 - ✅ Do bump the document version after writing gaps in.
 - ✅ Do fix trivial gaps (typos, wrong paths, minor formatting, missing clarifying sentences) by editing the plan text in-place without registering a gap entry.
 - ✅ Do include a brief "In-Place Fixes" subsection in the Pre-Gap Analysis section listing all in-place fixes so the reader knows what was changed.
@@ -551,7 +560,13 @@ Classify every gap:
 Reachability findings (Phase 8) map to 🟡 Feasibility by default, and to 🔴 Critical when
 a runtime success criterion has no wiring path anywhere in the plan (the plan is
 internally contradictory). An open 🔴 reachability gap blocks the `✅ READY TO IMPLEMENT`
-verdict.
+verdict. A Resolution that defers the actual decision to implementation time (e.g. "choose
+option (a) or (b) before implementation," "to be defined during implementation," "ask the
+implementer to state...") does **not** close a 🔴 or 🔒 gap for verdict purposes — it
+documents the decision precisely but leaves it unmade. Mark that Pre-Implementation Action
+`⏳ DEFERRED-TO-IMPLEMENTATION`, not `✅ APPLIED`, and the verdict stays `⚠️ GAPS FOUND`
+until the decision is actually made in the plan text (or the severity is explicitly
+downgraded with a stated reason the decision genuinely cannot be made before code exists).
 
 Build a gap summary table before detailed entries.
 
@@ -614,6 +629,7 @@ are written. Format with grep outcome annotations:
 ```markdown
 1. 🔴 [GAP-1] <action> — ✅ [grep: `symbol` in `file.ts:N`]
 2. 🟡 [GAP-2] <action> — ⛔ UNVERIFIED [grep: `symbol` not found]
+3. 🔴 [GAP-3] <action deferring the actual choice to implementation> — ⏳ DEFERRED-TO-IMPLEMENTATION [not a closed gap — see Phase 9]
 ```
 ````
 
@@ -622,12 +638,23 @@ are written. Format with grep outcome annotations:
 1. **Grep every code-change claim.** If the expected symbol doesn't exist in production
    code, the resolution is `⛔ UNVERIFIED` — downgrade the step to ⏳ pending.
 
-2. **Cross-reference against step markers.** If a resolution claims enforcement is
+1. **Cross-reference against step markers.** If a resolution claims enforcement is
    "implemented" but the step is marked CORE (not WIRED), flag the contradiction.
    Either the resolution is wrong or the marker is wrong.
 
-3. **No doc-only code-change resolutions.** A doc edit alone cannot close a gap that
+1. **No doc-only code-change resolutions.** A doc edit alone cannot close a gap that
    requires source code. The grep must find the claimed change.
+
+1. **Re-verify every Resolution's own text against the document — doc-only or not.** A
+   Resolution paragraph is a *claim about what the edit did*, not proof it happened. Before
+   marking any Pre-Implementation Action `✅ APPLIED` — whether its Resolution promises a
+   plan-text edit only (no source code exists yet) or a source-code change — re-read the
+   actual current text of *every* section/step the Resolution names and confirm each one
+   literally contains what the Resolution claims, word for concrete word (not "conceptually
+   addressed"). If the Resolution names three locations and only two were actually edited,
+   the gap is not closed: mark it `⛔ UNVERIFIED` and leave the step `⏳ pending` until the
+   missing edit lands. This applies even when nothing exists to grep — "no code to verify"
+   is not license to skip verifying the doc edit itself happened as described.
 
 ---
 
@@ -641,6 +668,12 @@ are written. Format with grep outcome annotations:
    claims a source-code change, grep the production codebase for the expected symbol.
    A resolution that only edits the doc but claims code was changed is ⛔ UNVERIFIED
    (see the Pre-Implementation Actions section for the full grep protocol).
+1. **Re-read every doc-only resolution against the current document, one final time.**
+   For each Pre-Implementation Action with no code to grep, re-open the exact section(s)
+   its Resolution names and confirm the text matches, right before finalizing — not from
+   memory of having written it. This is the same discipline as the grep step above, applied
+   to plan-text edits instead of source-code edits; skipping it is how a gap gets marked
+   `✅ APPLIED` while the document still contains the original, unfixed claim.
 1. **Check step-level marker consistency.** Verify every step has `⏳ pending` markers —
    no code has been written yet. Flag any `✅ CORE`/`✅ WIRED`/`[x]` as premature and
    reset to `⏳`. Exempt only prior-phase steps confirmed shipped via grep.

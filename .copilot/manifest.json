@@ -614,7 +614,7 @@
       "scope": "dev",
       "title": "Pre-Gap Analysis Skill (#pre-gap-analysis)",
       "short_summary": "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against.",
-      "version": "1.7.0",
+      "version": "1.8.0",
       "topics": [
         "planning",
         "gap-analysis",
