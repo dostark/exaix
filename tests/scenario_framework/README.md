@@ -186,17 +186,18 @@ narrative (the no-effect rule, value-per-token, the validity gate, how to read a
 [`docs/Exaix_Evaluation.md` §15](../../docs/Exaix_Evaluation.md#15-artefact-value-evaluation); this
 section covers the mechanical "how do I author an arm" side.
 
-**An arm is a configuration overlay, never a `Blueprints/` edit.** Six kinds cover every artefact
+**An arm is a configuration overlay, never a `Blueprints/` edit.** Seven kinds cover every artefact
 class:
 
-| Arm kind          | Mechanism                                                 | Env var / field                                        |
-| ----------------- | --------------------------------------------------------- | ------------------------------------------------------ |
-| `skill-ablation`  | suppress a skill from the resolved set for this run only  | `EXA_EVAL_SUPPRESS_SKILLS` (comma-separated skill ids) |
-| `skill-version`   | shadow `Memory/Skills/` with an overlay directory         | `EXA_EVAL_SKILL_OVERLAY_DIR`                           |
-| `identity-swap`   | route the request to a different identity                 | request frontmatter `identity:`                        |
-| `identity-config` | shadow `Blueprints/Identities/` with an overlay directory | `EXA_EVAL_IDENTITY_OVERLAY_DIR`                        |
-| `flow-ablation`   | run the request with or without flow orchestration        | request frontmatter `flow:` present/absent             |
-| `flow-swap`       | route the request to a different flow                     | request frontmatter `flow:`                            |
+| Arm kind            | Mechanism                                                                                                                                                                            | Env var / field                                        |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| `skill-ablation`    | suppress a skill from the resolved set for this run only                                                                                                                             | `EXA_EVAL_SUPPRESS_SKILLS` (comma-separated skill ids) |
+| `skill-version`     | shadow `Memory/Skills/` with an overlay directory                                                                                                                                    | `EXA_EVAL_SKILL_OVERLAY_DIR`                           |
+| `identity-swap`     | route the request to a different identity                                                                                                                                            | request frontmatter `identity:`                        |
+| `identity-config`   | shadow `Blueprints/Identities/` with an overlay directory                                                                                                                            | `EXA_EVAL_IDENTITY_OVERLAY_DIR`                        |
+| `persona-isolation` | shadow only an identity's persona body, holding `model_size`/`capabilities`/`default_skills`/`permitted_tools` fixed (Phase 161) — see `templates/persona_isolation_arm.template.md` | `EXA_EVAL_IDENTITY_OVERLAY_DIR` (body-only overlay)    |
+| `flow-ablation`     | run the request with or without flow orchestration                                                                                                                                   | request frontmatter `flow:` present/absent             |
+| `flow-swap`         | route the request to a different flow                                                                                                                                                | request frontmatter `flow:`                            |
 
 All three env vars are per-process — safe because the scenario framework runs one scenario per
 daemon process, so concurrent arms never share an env — and every overlay directory is validated

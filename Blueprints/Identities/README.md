@@ -101,6 +101,16 @@ config-arm delta from the value tier described in
 it cannot be measured yet (e.g. it is not corpus-reachable). An identity with neither
 is presence-tested but never shown to help.
 
+**Persona-body value specifically** is a separate, narrower question from "does this
+identity earn its place" — `identity-swap`/`identity-config` vary the whole bundle or
+just `default_skills`, never the persona/voice prose alone. See
+`exaix-dev-docs/planning/phase-161-identity-persona-value-isolation.md` (🚧 Planning)
+for the `persona-isolation` arm that isolates it, and
+`tests/scenario_framework/templates/persona_isolation_arm.template.md` for the
+authoring template. Until that arm has run for a given identity, its `KEEP` decision
+in `phase-158-artefact-value-evaluation.md` reflects "no measured harm from the
+identity as a whole," not "the persona text specifically helps."
+
 ## Skills
 
 Skills are the modern, versioned, criticality-aware replacement for the retired
