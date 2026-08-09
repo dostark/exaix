@@ -4,12 +4,12 @@
 
 Each task lives under `fixtures/swe_tasks/<task-id>/` with three files:
 
-```
+````text
 fixtures/swe_tasks/<task-id>/
 ├── task.json          # Task metadata (schema, portal, difficulty)
 ├── reference.patch    # Ground truth: the correct fix diff
 └── TASK.md            # Rich brief: goal, actions, acceptance criteria, constraints
-```
+```text
 
 Adding a new task is a content-only exercise — no code changes needed.
 
@@ -41,17 +41,17 @@ Existing portals:
   "min_turns": 2,
   "title": "Short human-readable title"
 }
-```
+```text
 
 **Fields:**
 
 - `base_ref`: SHA of the fixture portal's `git init` commit. Compute with:
-  ```
+  ```text
   git init && git add -A && GIT_COMMITTER_DATE=2020-01-01T00:00:00Z \
     GIT_AUTHOR_DATE=2020-01-01T00:00:00Z \
     git -c user.email=swe-tasks@exaix.dev -c user.name=swe-tasks \
     commit -m 'init todo-app fixture' && git rev-parse HEAD
-  ```
+  ```text
 - `scoped_test_cmd`: The test command that verifies the fix (`deno test <file>`).
 - `portal`: Name of the fixture portal directory under `fixtures/portals/`.
 - `family`: One of: `task:bug-fix`, `task:security-fix`, `task:feature`,
@@ -65,7 +65,7 @@ Existing portals:
 The reference patch is a standard `git diff` that transforms the buggy state
 into the fixed state. Generate with:
 
-```
+```text
 # Copy fixture, init git, commit
 cp -r fixtures/portals/<portal> /tmp/task-fixture
 cd /tmp/task-fixture && git init -q && git add -A && \
@@ -74,7 +74,7 @@ cd /tmp/task-fixture && git init -q && git add -A && \
 
 # Apply your fix (edit the files)
 # Then: git diff > reference.patch
-```
+```text
 
 ### 4. Write TASK.md
 
@@ -94,9 +94,19 @@ and direct-API step sequences. You only need the three fixture files above.
 
 Run the controls test to verify the task is non-vacuous:
 
-```
+```text
 deno test --allow-all tests/scenario_framework/tests/unit/task_contract_schema_test.ts
-```
+```text
 
 This validates that `task.json` parses, the portal directory exists, and
 `reference.patch` + `TASK.md` are present.
+
+## See Also
+
+This guide covers **internal** `swe_tasks` corpus tasks (content-only, against the `todo_app`
+fixture). For adding a **new external public benchmark** (Terminal-Bench, SWE-bench, or a
+future adapter), see
+`tests/scenario_framework/templates/external_benchmark_adapter.template.md` and
+`exaix-dev-docs/planning/phase-160-external-benchmark-harness-sota-hardening.md` — that path
+implements the `IExternalBenchmarkAdapter` contract instead of this content-only workflow.
+````

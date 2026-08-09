@@ -14,15 +14,15 @@ every criterion kind** — see **[`SCENARIO_DSL.md`](./SCENARIO_DSL.md)**.
 ## Table of Contents
 
 1. [Evaluation (Primary Role)](#1-evaluation-primary-role)
-2. [Validation (Secondary Role)](#2-validation-secondary-role)
+1. [Validation (Secondary Role)](#2-validation-secondary-role)
    - [Automated Sandbox Setup](#21-automated-sandbox-setup)
    - [Manual Sandbox Setup](#22-manual-sandbox-setup)
    - [Run Validation Scenarios](#23-run-validation-scenarios)
    - [Where Sandboxes Are Created](#24-where-sandboxes-are-created)
    - [Sandbox Lifecycle](#25-sandbox-lifecycle--what-is-kept-and-how-to-reclaim-the-rest)
-3. [Architecture & Extension](#3-architecture--extension)
-4. [Directory Structure](#4-directory-structure)
-5. [Quick Reference](#5-quick-reference)
+1. [Architecture & Extension](#3-architecture--extension)
+1. [Directory Structure](#4-directory-structure)
+1. [Quick Reference](#5-quick-reference)
 
 ---
 
@@ -480,9 +480,9 @@ would call. Defined in `scripts/prune_scenario_sandboxes.ts`; policy in
 
 1. **`auto` (Default)**: Runs all steps non-interactively. Fails fast on the first
    error. Best for CI and regression.
-2. **`step`**: Pauses after every step, waiting for user confirmation. Good for
+1. **`step`**: Pauses after every step, waiting for user confirmation. Good for
    debugging.
-3. **`manual-checkpoint`**: Pauses only at steps with `checkpoint: true` in YAML.
+1. **`manual-checkpoint`**: Pauses only at steps with `checkpoint: true` in YAML.
 
 ### Authoring Scenarios
 
@@ -732,6 +732,19 @@ steps:
   use tags to group related scenarios for CI profiles.
 - **All step types** available in §3 (file-exists, text-contains, json-path-equals,
   journal-event-exists, llm-judge, etc.)
+
+### Authoring External Benchmark Tasks (Phase 144 / Phase 160)
+
+Adding an `swe_tasks` corpus task (internal, `todo_app`-fixture-based) is a content-only
+exercise — see `tests/scenario_framework/AUTHORING.md`. Adding support for a **new external
+public benchmark** (Terminal-Bench, SWE-bench, or a future adapter) is different: it implements
+the `IExternalBenchmarkAdapter` contract (Phase 160 Step 1, generalizing Phase 144's
+Terminal-Bench design) instead of hand-writing a one-off ingest script. See
+`tests/scenario_framework/templates/external_benchmark_adapter.template.md` for the contract,
+a complete worked example, and the customization-points table, and
+`exaix-dev-docs/planning/phase-160-external-benchmark-harness-sota-hardening.md` for the
+SOTA research and roadmap behind it (freshness gating, near-miss validity controls, container
+image caching).
 
 ### Subsystem Tag Taxonomy (Phase 142)
 
