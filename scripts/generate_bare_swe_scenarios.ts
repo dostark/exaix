@@ -53,8 +53,18 @@ const TASKS = [
 ];
 
 const CELLS = [
-  { tool: "claude-code", provider: "claude-cli", config: "configs/claude-cli-delegate-all.toml", requiresBin: "claude" },
-  { tool: "claude-haiku-4-5", provider: "claude-cli", config: "configs/claude-haiku-4-5-delegate-all.toml", requiresBin: "claude" },
+  {
+    tool: "claude-code",
+    provider: "claude-cli",
+    config: "configs/claude-cli-delegate-all.toml",
+    requiresBin: "claude",
+  },
+  {
+    tool: "claude-haiku-4-5",
+    provider: "claude-cli",
+    config: "configs/claude-haiku-4-5-delegate-all.toml",
+    requiresBin: "claude",
+  },
 ];
 
 for (const task of TASKS) {

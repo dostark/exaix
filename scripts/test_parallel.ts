@@ -71,7 +71,6 @@ const SEQUENTIAL_FILES: string[] = [
   "tests/scenario_framework/tests/portal_knowledge_strategies_scenario_test.ts",
   // Daemon-launching scenario: waits on daemon.ready within 30s, which loses
   // the race under DENO_JOBS parallelism (passes comfortably run sequentially).
-  "tests/scenario_framework/tests/provider_live/model_intent_e2e_test.ts",
   "apps/daemon/tests/deploy_workspace_test.ts",
   "tests/integration/cli_commands_test.ts",
   // MCP handshake test — `mock_agent.ts` hardcodes branch "feat/test" which

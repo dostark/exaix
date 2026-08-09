@@ -14,7 +14,7 @@ import { MockProviderFactory } from "../src/factories/mock_factory.ts";
 import { DefaultRoutingStrategy } from "../src/routing/default_routing_strategy.ts";
 import { createStubCostTracker, createStubHealthChecker } from "./helpers/service_stubs.ts";
 import { ModelResolver } from "../src/model_resolver.ts";
-import type { IModelIntent } from "../src/types.ts";
+import type { IModelIntent } from "@exaix/schemas";
 import { createTestConfig } from "./helpers/test_config.ts";
 
 function registerProvider(
@@ -103,8 +103,10 @@ Deno.test("[thinking] a string 'false' thinking intent does not demand a thinkin
 
     const resolver = makeResolver();
     // YAML failsafe parsing turns `thinking: false` into the STRING "false" (truthy in JS).
-    const stringyIntent = { thinking: "false" } as { thinking: string } & Omit<IModelIntent, "thinking">;
-    const result = await resolver.resolve(stringyIntent as IModelIntent);
+    // Build the raw intent via Object.assign so no cast masks the string at runtime.
+    const stringyIntent: IModelIntent = {};
+    Object.assign(stringyIntent, { thinking: "false" });
+    const result = await resolver.resolve(stringyIntent);
 
     assertEquals(result.provider, "basic", "string 'false' must be treated as thinking disabled");
     assertEquals(result.options?.thinking ?? false, false, "call options must not carry thinking");
@@ -120,9 +122,10 @@ Deno.test("[thinking] a string 'true' thinking intent still requires a thinking 
     registerProvider("basic", { supportsThinking: false });
 
     const resolver = makeResolver();
-    const stringyIntent = { thinking: "true" } as { thinking: string } & Omit<IModelIntent, "thinking">;
+    const stringyIntent: IModelIntent = {};
+    Object.assign(stringyIntent, { thinking: "true" });
     await assertRejects(
-      () => resolver.resolve(stringyIntent as IModelIntent),
+      () => resolver.resolve(stringyIntent),
       Error,
       "no suitable model found",
     );

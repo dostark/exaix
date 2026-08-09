@@ -168,7 +168,7 @@ export function computeAblationContributions(
       unmatchedWarningCount++;
       continue;
     }
-    const exaix = parseExaixCellId(row.cell_id);
+    const exaix = parseExaixCellId(row.cell_id, row.provider);
     if (!exaix) {
       unmatchedWarningCount++;
       continue;

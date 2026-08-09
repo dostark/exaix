@@ -23,21 +23,21 @@ async function collectScenarios(): Promise<string[]> {
 }
 
 function rewriteScenario(txt: string): { out: string; changed: boolean } {
-  if (!txt.includes("evidence_diff_dir: \"todo-app\"")) {
+  if (!txt.includes('evidence_diff_dir: "todo-app"')) {
     return { out: txt, changed: false };
   }
   let out = txt;
 
   // 1) verify-tests: continue_on_failure so the judge still runs on a failing test run.
   out = out.replace(
-    /(  - id: "verify-tests"\n    type: "test-run"\n    cwd: "todo-app"\n    command: "deno"\n    args: \[[^\]]*\]\n)/,
+    /( {2}- id: "verify-tests"\n {4}type: "test-run"\n {4}cwd: "todo-app"\n {4}command: "deno"\n {4}args: \[[^\]]*\]\n)/,
     "$1    # A failing test run must NOT skip the judge: the failure is the signal being graded.\n    continue_on_failure: true\n",
   );
 
   // 2) llm-judge criterion: pass the test-run status as additional context.
   out = out.replace(
-    /(        context_path: "\$REFERENCE_PATCH"\n)(?=\s*score_threshold)/,
-    "$1        # Pass the verify-tests outcome (PASSED/FAILED + exit code + output) to the judge.\n        test_run_source: \"verify-tests\"\n",
+    /( {8}context_path: "\$REFERENCE_PATCH"\n)(?=\s*score_threshold)/,
+    '$1        # Pass the verify-tests outcome (PASSED/FAILED + exit code + output) to the judge.\n        test_run_source: "verify-tests"\n',
   );
 
   return { out, changed: out !== txt };

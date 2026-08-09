@@ -3,7 +3,8 @@
  * @module MigrateJournalAssertSql
  * @path scripts/migrate_journal_assert_sql.ts
  * @description Migrates every `journal-assert` step that embeds a raw SQL query in its `args`
- *   to the declarative config fields (action_type/trace_scoped/payload_*/project/sums/expect_*).
+ *   to the declarative config fields (action_type, trace_scoped, payload_*, project, sums,
+ *   expect_*).
  *   Raw SQL stays inside the framework (step_executor.ts builds the query from the fields).
  *   Idempotent: steps with no `args` (criteria-only) and already-migrated steps are left alone.
  *   Usage: deno run -A scripts/migrate_journal_assert_sql.ts [--check] [--dry-run]
@@ -202,8 +203,6 @@ async function collectYamlFiles(): Promise<string[]> {
   return out.sort();
 }
 
-const SQL_RE = /(?<indent>\s+)args:\s*(?:\[[^\]]*\]|\n(?<indent2>[\s]*)\[[^\]]*\])\n?/g;
-
 function rewriteFile(txt: string): { out: string; changed: number; errors: string[] } {
   const lines = txt.split("\n");
   const out: string[] = [];
@@ -246,9 +245,9 @@ function rewriteFile(txt: string): { out: string; changed: number; errors: strin
     // Determine the step type: look back for the nearest `type: "..."` at step indent.
     let stepType: string | undefined;
     for (let k = out.length - 1; k >= 0; k--) {
-      const t = out[k].match(/^  - id: "(.*)"$/);
+      const t = out[k].match(/^ {2}- id: "(.*)"$/);
       if (t) break;
-      const ty = out[k].match(/^    type: "([^"]+)"$/);
+      const ty = out[k].match(/^ {4}type: "([^"]+)"$/);
       if (ty) {
         stepType = ty[1];
         break;

@@ -54,7 +54,7 @@ const DEFAULT_ROWS: Array<[string, string, string]> = [
 
 async function withJournal(
   rows: Array<[string, string, string]> = DEFAULT_ROWS,
-  fn: (ws: string) => Promise<void>,
+  fn: (ws: string) => void | Promise<void>,
 ): Promise<void> {
   const ws = await Deno.makeTempDir({ prefix: "journal-assert-" });
   try {
@@ -152,7 +152,7 @@ Deno.test("[journal_assert] expect_sum passes when the summed payload field is a
       journalBaselineRowid: 0,
     });
     assertEquals(result.exitCode, 0, `expected sum pass, got: ${result.stderr}`);
-    assertObjectMatch(JSON.parse(result.stdout), [{ sum: 3 }]);
+    assertObjectMatch(JSON.parse(result.stdout)[0], { sum: 3 });
   });
 });
 
@@ -220,7 +220,7 @@ Deno.test("[journal_assert] a projected probe emits payload-extracted columns fo
       cwd: ws,
     });
     assertEquals(result.exitCode, 0, `expected rows, got: ${result.stderr}`);
-    assertObjectMatch(JSON.parse(result.stdout), [{ action_type: "dynamic_tool_call", tool_name: "read_file" }]);
+    assertObjectMatch(JSON.parse(result.stdout)[0], { action_type: "dynamic_tool_call", tool_name: "read_file" });
   });
 });
 
@@ -257,7 +257,7 @@ Deno.test("[journal_assert] action_type_prefix matches a LIKE prefix on action_t
       cwd: ws,
     });
     assertEquals(result.exitCode, 0, `expected guardrail row, got: ${result.stderr}`);
-    assertObjectMatch(JSON.parse(result.stdout), [{ action_type: "guardrail.screen.violation" }]);
+    assertObjectMatch(JSON.parse(result.stdout)[0], { action_type: "guardrail.screen.violation" });
   });
 });
 
@@ -356,26 +356,9 @@ Deno.test("[journal_assert] sums defaults to 0 when no rows match (informational
       cwd: ws,
     });
     assertEquals(result.exitCode, 0, "aggregate always returns one row");
-    assertObjectMatch(JSON.parse(result.stdout), [{ prompt_tokens: 0 }]);
+    assertObjectMatch(JSON.parse(result.stdout)[0], { prompt_tokens: 0 });
   });
 });
-
-/** A declarative journal-assert step config under test (the same fields the schema accepts). */
-type JournalAssertConfig = {
-  action_type?: string;
-  action_types?: string[];
-  action_type_prefix?: string;
-  trace_scoped?: boolean;
-  payload_equals?: Array<{ path: string; value: string | number | boolean }>;
-  payload_contains?: string[];
-  payload_not_contains?: string[];
-  latest_only?: boolean;
-  project?: Record<string, string>;
-  sums?: Record<string, string>;
-  expect_count?: number;
-  expect_sum?: { path: string; gt: number };
-  expect_contains?: string[];
-};
 
 // --- runtime-var substitution -------------------------------------------------
 

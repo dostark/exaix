@@ -61,18 +61,18 @@ function rewriteScenario(txt: string): { out: string; changed: boolean } {
   // 2) Remove the prepare-evidence step (source/target/llm-judge-input.txt) entirely. Tolerates
   // both a trailing blank line and a directly-following next step (flow-variant scenarios).
   out = out.replace(
-    /  - id: "prepare-llm-judge-evidence"\n(?:    type: "prepare-evidence"\n    cwd: "[^"]+"\n    source: "[^"]+"\n    target: "llm-judge-input.txt"\n    output_criteria:\n      - id: "evidence-prepared"\n        kind: "command-exit-code"\n        equals: 0\n)(?:\n)?/,
+    / {2}- id: "prepare-llm-judge-evidence"\n(?: {4}type: "prepare-evidence"\n {4}cwd: "[^"]+"\n {4}source: "[^"]+"\n {4}target: "llm-judge-input.txt"\n {4}output_criteria:\n {6}- id: "evidence-prepared"\n {8}kind: "command-exit-code"\n {8}equals: 0\n)(?:\n)?/,
     "",
   );
 
   // 3) Switch the judge criterion to the whole-branch diff + reference-patch context. Handles
   // both a following context_path (standard swe_tasks) and its absence (legacy variants).
   out = out.replace(
-    /        evidence_path: "llm-judge-input.txt"\n(?:        context_path: "\$REQUEST_FIXTURE"\n)?/,
+    / {8}evidence_path: "llm-judge-input.txt"\n(?: {8}context_path: "\$REQUEST_FIXTURE"\n)?/,
     "        # Code-change task: the judge reviews the FULL worktree branch diff (the applied\n" +
-    "        # changes) against the task's reference patch — never a pre-picked single file.\n" +
-    '        evidence_diff_dir: "todo-app"\n' +
-    '        context_path: "$REFERENCE_PATCH"\n',
+      "        # changes) against the task's reference patch — never a pre-picked single file.\n" +
+      '        evidence_diff_dir: "todo-app"\n' +
+      '        context_path: "$REFERENCE_PATCH"\n',
   );
 
   return { out, changed: out !== txt };

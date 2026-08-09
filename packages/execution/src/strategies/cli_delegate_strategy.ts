@@ -45,8 +45,6 @@ import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
 import { parseDelegateStdout } from "@exaix/session/delegate_return_parser.ts";
 import { deriveClaudeToolFlags } from "@exaix/session/claude_permission_flags.ts";
 import { SafeSubprocess, SubprocessError } from "@exaix/core";
-import { DEFAULT_GIT_STATUS_TIMEOUT_MS } from "@exaix/git";
-import { GIT_CMD_STATUS, GIT_FLAG_UNTRACKED_FILES_ALL } from "@exaix/git/constants.ts";
 import {
   AgentExecutionErrorType,
   CLI_DELEGATE_TURN_TIMEOUT_MS,
@@ -113,6 +111,14 @@ const defaultRun: IRunCliDelegateProcess = (command, args, options) => SafeSubpr
 
 /** Env vars stripped from every CLI-delegate spawn so a Claude Pro/Max subscription login wins over metered API billing (see module doc's Auth section). */
 const STRIPPED_AUTH_ENV_KEYS: readonly string[] = ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"];
+
+// git status read used by detectGitChanges() to surface the delegate's real writes as
+// files_changed. Kept LOCAL (not imported from @exaix/git) so a strategy file does not reach
+// into a low-level constants module — CODE_STYLE.md §15; values mirror git_audit_service's.
+const GIT_CMD_STATUS = "status";
+const GIT_FLAG_PORCELAIN = "--porcelain";
+const GIT_FLAG_UNTRACKED_FILES_ALL = "--untracked-files=all";
+const GIT_STATUS_TIMEOUT_MS = 30_000;
 
 /**
  * Build the spawn env: the daemon's own env minus the keys that would force API-key billing
@@ -303,13 +309,19 @@ export class CliDelegateStrategy implements IExecutionStrategy {
    * CLI tool's stream reported no tool paths (claude), so the step audit sees the actual
    * changes as authorized files_changed instead of flagging every write as a false-positive
    * security violation. Mirrors git_audit_service's own status read (same flags/timeout).
+   * The git command constants are kept LOCAL rather than imported from @exaix/git so a
+   * strategy file does not reach into a low-level constants module (CODE_STYLE.md §15).
    */
   private async detectGitChanges(portalPath: string): Promise<string[]> {
     try {
-      const result = await SafeSubprocess.run("git", [GIT_CMD_STATUS, "--porcelain", GIT_FLAG_UNTRACKED_FILES_ALL], {
-        cwd: portalPath,
-        timeoutMs: DEFAULT_GIT_STATUS_TIMEOUT_MS,
-      });
+      const result = await SafeSubprocess.run(
+        "git",
+        [GIT_CMD_STATUS, GIT_FLAG_PORCELAIN, GIT_FLAG_UNTRACKED_FILES_ALL],
+        {
+          cwd: portalPath,
+          timeoutMs: GIT_STATUS_TIMEOUT_MS,
+        },
+      );
       if (result.code !== 0) return [];
       return result.stdout
         .split("\n")

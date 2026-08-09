@@ -57,10 +57,10 @@ function rewriteFile(txt: string): { out: string; changed: number } {
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
-    if (/^  - id:/.test(line)) {
+    if (/^ {2}- id:/.test(line)) {
       const block = [line];
       let j = i + 1;
-      while (j < lines.length && !/^  - id:/.test(lines[j])) {
+      while (j < lines.length && !/^ {2}- id:/.test(lines[j])) {
         block.push(lines[j]);
         j++;
       }
