@@ -180,17 +180,22 @@ Deno.test("[security] bare opencode launch runs in the eval-jail container mount
   assertEquals(args[0], "run");
 
   const mounts = args.filter((a) => a.startsWith("type=bind"));
-  assertEquals(mounts.length, 2, "exactly two bind mounts: the worktree + the claude credentials");
+  assertEquals(mounts.length, 2, "exactly two bind mounts: the worktree + the opencode credentials");
   assertEquals(
     mounts[0],
     "type=bind,src=$WORKSPACE_ROOT/todo-app,dst=/worktree",
     "the primary mount is ONLY the worktree",
   );
   assertEquals(
-    mounts[1].endsWith(",dst=/tmp/.claude"),
+    mounts[1].endsWith(",dst=/tmp/.local"),
     true,
-    "the creds mount targets the writable staged .claude dir (a disposable copy), not the read-only live file — " +
-      "Claude Code's own Bash tool needs to create /tmp/.claude/session-env beside the credentials",
+    "an opencode delegate must get its OWN staged auth.json (opencode's real credential store is " +
+      "~/.local/share/opencode/auth.json, not ~/.claude/.credentials.json) — mounting claude's " +
+      "credentials into an opencode container is a no-op that silently leaves opencode unauthenticated. " +
+      "Mounted at /tmp/.local (not the narrower /tmp/.local/share/opencode): opencode also writes " +
+      "session/model-cache state under ~/.local/state/opencode at runtime, and Docker auto-creates an " +
+      "unmounted parent as root-owned — discovered via a real jailed run (Phase 144 Step 5) failing " +
+      "with EACCES on mkdir '/tmp/.local/state'.",
   );
   assertEquals(
     mounts[1].includes(",ro"),
@@ -220,5 +225,48 @@ Deno.test("[security] bare opencode launch runs in the eval-jail container mount
   assert(
     !args.some((a) => a === "ANTHROPIC_API_KEY" || a === "--env=ANTHROPIC_API_KEY" || a.includes("ANTHROPIC_API_KEY=")),
     "the jail must never pass ANTHROPIC_API_KEY into the container",
+  );
+});
+
+function expandBareOpencodeGoCell(): { command: string; args: string[] } {
+  const matrix = MatrixSchema.parse({
+    cells: [{
+      tool: "opencode-go",
+      provider: "opencode-cli",
+      config: "configs/opencode-go-delegate-all.toml",
+      requires_bin: "opencode",
+      harness: "bare",
+    }],
+  });
+  const runs = expandMatrix([makeBareDelegateStep()], matrix, {
+    env: {},
+    binOnPath: () => true,
+  });
+  assertEquals(runs.length, 1, "bare opencode-go cell must be runnable");
+  const delegate = runs[0].steps.find((s) => s.id === BARE_DELEGATE_STEP_ID);
+  assertExists(delegate, "bare delegate step must survive expansion");
+  return { command: delegate.command ?? "", args: delegate.args ?? [] };
+}
+
+Deno.test("[security] bare opencode-go launch pins the deepseek-v4-flash model via --model and stays worktree-scoped", () => {
+  const { command, args } = expandBareOpencodeGoCell();
+  assertEquals(command, "docker", "bare delegate must run via docker");
+
+  const opencodeIdx = args.indexOf("opencode");
+  assert(opencodeIdx > 0, "opencode must be the inner command");
+  const inner = args.slice(opencodeIdx);
+  assert(inner.includes("--model"), "opencode-go must pin its model via --model");
+  assertEquals(
+    inner[inner.indexOf("--model") + 1],
+    "opencode-go/deepseek-v4-flash",
+    "--model must be the exact opencode-go deepseek-v4-flash model string",
+  );
+
+  const mounts = args.filter((a) => a.startsWith("type=bind"));
+  assertEquals(mounts.length, 2, "worktree mount + opencode credentials mount");
+  assertEquals(
+    mounts[1].endsWith(",dst=/tmp/.local"),
+    true,
+    "opencode-go shares opencode's binary, so it authenticates the same way — the staged auth.json copy",
   );
 });

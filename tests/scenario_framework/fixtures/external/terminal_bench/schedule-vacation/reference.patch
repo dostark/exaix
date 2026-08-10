@@ -1,0 +1,489 @@
+diff --git a/alice_schedule.txt b/alice_schedule.txt
+new file mode 100644
+index 0000000..fd1a1ec
+--- /dev/null
++++ b/alice_schedule.txt
+@@ -0,0 +1,5 @@
++Schedule format: UNAVAILABLE_PERIODS
++UNAVAILABLE: 2025-01-01 to 2025-06-15 (School semester)
++UNAVAILABLE: 2025-06-20 to 2025-06-25 (Family wedding)
++UNAVAILABLE: 2025-07-15 to 2025-07-25 (Teacher conference)
++UNAVAILABLE: 2025-08-05 to 2025-12-31 (School preparation and semester)
+diff --git a/all_availability.json b/all_availability.json
+new file mode 100644
+index 0000000..4f6ef74
+--- /dev/null
++++ b/all_availability.json
+@@ -0,0 +1,54 @@
++{
++  "alice": [
++    {
++      "start": "2025-06-16",
++      "end": "2025-06-19"
++    },
++    {
++      "start": "2025-06-26",
++      "end": "2025-07-14"
++    },
++    {
++      "start": "2025-07-26",
++      "end": "2025-08-04"
++    }
++  ],
++  "bob": [
++    {
++      "start": "2025-06-15",
++      "end": "2025-06-28"
++    },
++    {
++      "start": "2025-07-15",
++      "end": "2025-08-04"
++    }
++  ],
++  "charlie": [
++    {
++      "start": "2025-06-01",
++      "end": "2025-06-14"
++    },
++    {
++      "start": "2025-07-21",
++      "end": "2025-07-25"
++    },
++    {
++      "start": "2025-07-28",
++      "end": "2025-08-03"
++    }
++  ],
++  "dana": [
++    {
++      "start": "2025-06-19",
++      "end": "2025-06-24"
++    },
++    {
++      "start": "2025-07-16",
++      "end": "2025-08-03"
++    },
++    {
++      "start": "2025-08-21",
++      "end": "2025-08-24"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/bob_schedule.txt b/bob_schedule.txt
+new file mode 100644
+index 0000000..22bf183
+--- /dev/null
++++ b/bob_schedule.txt
+@@ -0,0 +1,67 @@
++Schedule format: SHIFT_CSV
++SHIFT: 2025-06-01,working,night
++SHIFT: 2025-06-02,working,night
++SHIFT: 2025-06-03,working,night
++SHIFT: 2025-06-04,working,night
++SHIFT: 2025-06-05,working,night
++SHIFT: 2025-06-06,working,night
++SHIFT: 2025-06-07,working,night
++SHIFT: 2025-06-08,working,night
++SHIFT: 2025-06-09,working,night
++SHIFT: 2025-06-10,working,night
++SHIFT: 2025-06-11,working,night
++SHIFT: 2025-06-12,working,night
++SHIFT: 2025-06-13,working,night
++SHIFT: 2025-06-14,working,night
++SHIFT: 2025-06-15,off,rest
++SHIFT: 2025-06-16,off,rest
++SHIFT: 2025-06-17,off,rest
++SHIFT: 2025-06-18,off,rest
++SHIFT: 2025-06-19,off,rest
++SHIFT: 2025-06-20,off,rest
++SHIFT: 2025-06-21,off,rest
++SHIFT: 2025-06-22,off,rest
++SHIFT: 2025-06-23,off,rest
++SHIFT: 2025-06-24,off,rest
++SHIFT: 2025-06-25,off,rest
++SHIFT: 2025-06-26,off,rest
++SHIFT: 2025-06-27,off,rest
++SHIFT: 2025-06-28,off,rest
++SHIFT: 2025-06-29,working,day
++SHIFT: 2025-06-30,working,day
++SHIFT: 2025-07-01,working,day
++SHIFT: 2025-07-02,working,day
++SHIFT: 2025-07-03,working,day
++SHIFT: 2025-07-04,working,day
++SHIFT: 2025-07-05,working,day
++SHIFT: 2025-07-06,working,day
++SHIFT: 2025-07-07,working,day
++SHIFT: 2025-07-08,working,day
++SHIFT: 2025-07-09,working,day
++SHIFT: 2025-07-10,working,day
++SHIFT: 2025-07-11,working,day
++SHIFT: 2025-07-12,working,day
++SHIFT: 2025-07-13,working,day
++SHIFT: 2025-07-14,working,day
++SHIFT: 2025-07-15,off,rest
++SHIFT: 2025-07-16,off,rest
++SHIFT: 2025-07-17,off,rest
++SHIFT: 2025-07-18,off,rest
++SHIFT: 2025-07-19,off,rest
++SHIFT: 2025-07-20,off,rest
++SHIFT: 2025-07-21,off,rest
++SHIFT: 2025-07-22,off,rest
++SHIFT: 2025-07-23,off,rest
++SHIFT: 2025-07-24,off,rest
++SHIFT: 2025-07-25,off,rest
++SHIFT: 2025-07-26,off,rest
++SHIFT: 2025-07-27,off,rest
++SHIFT: 2025-07-28,off,rest
++SHIFT: 2025-07-29,off,rest
++SHIFT: 2025-07-30,off,rest
++SHIFT: 2025-07-31,off,rest
++SHIFT: 2025-08-01,off,rest
++SHIFT: 2025-08-02,off,rest
++SHIFT: 2025-08-03,off,rest
++SHIFT: 2025-08-04,off,rest
++SHIFT: 2025-08-05,working,night
+diff --git a/charlie_schedule.txt b/charlie_schedule.txt
+new file mode 100644
+index 0000000..1e4f489
+--- /dev/null
++++ b/charlie_schedule.txt
+@@ -0,0 +1,13 @@
++Schedule format: TRAVEL_TEXT
++LINE1: CHARLIE'S BUSINESS TRAVEL SCHEDULE
++LINE2: ==================================
++LINE3:
++LINE4: Unavailable for personal travel:
++LINE5:
++LINE6: January 2025 - May 2025: Heavy project season, no time off
++LINE7:
++LINE8: June 15-30, 2025: Client conference in Tokyo
++LINE9: July 1-20, 2025: Project deployment in Berlin
++LINE10: July 26-27, 2025: Board meeting in NYC (cannot be moved)
++LINE11:
++LINE12: August 4-31, 2025: Client onsite in London
+diff --git a/dana_schedule.txt b/dana_schedule.txt
+new file mode 100644
+index 0000000..f65e7da
+--- /dev/null
++++ b/dana_schedule.txt
+@@ -0,0 +1,7 @@
++Schedule format: MIXED_JSON
++FAMILY_COMMITMENTS:
++  BUSY: 2025-01-01 to 2025-06-10 (Kids school year)
++  BUSY: 2025-06-11 to 2025-06-18 (Kids soccer camp)
++  BUSY: 2025-06-25 to 2025-07-15 (Kids summer camp session 1)
++  BUSY: 2025-08-04 to 2025-08-20 (Kids summer camp session 2)
++  BUSY: 2025-08-25 to 2025-12-31 (School starts, back to routine)
+diff --git a/overlap_results.json b/overlap_results.json
+new file mode 100644
+index 0000000..023ec2c
+--- /dev/null
++++ b/overlap_results.json
+@@ -0,0 +1,164 @@
++{
++  "vacation_duration": 7,
++  "overlapping_windows": [
++    {
++      "start": "2025-07-28",
++      "end": "2025-08-03",
++      "start_formatted": "July 28, 2025",
++      "end_formatted": "August 03, 2025",
++      "available_friends": [
++        "alice",
++        "bob",
++        "charlie",
++        "dana"
++      ],
++      "friend_count": 4
++    },
++    {
++      "start": "2025-07-26",
++      "end": "2025-08-01",
++      "start_formatted": "July 26, 2025",
++      "end_formatted": "August 01, 2025",
++      "available_friends": [
++        "alice",
++        "bob",
++        "dana"
++      ],
++      "friend_count": 3
++    },
++    {
++      "start": "2025-07-27",
++      "end": "2025-08-02",
++      "start_formatted": "July 27, 2025",
++      "end_formatted": "August 02, 2025",
++      "available_friends": [
++        "alice",
++        "bob",
++        "dana"
++      ],
++      "friend_count": 3
++    },
++    {
++      "start": "2025-07-16",
++      "end": "2025-07-22",
++      "start_formatted": "July 16, 2025",
++      "end_formatted": "July 22, 2025",
++      "available_friends": [
++        "bob",
++        "dana"
++      ],
++      "friend_count": 2
++    },
++    {
++      "start": "2025-07-17",
++      "end": "2025-07-23",
++      "start_formatted": "July 17, 2025",
++      "end_formatted": "July 23, 2025",
++      "available_friends": [
++        "bob",
++        "dana"
++      ],
++      "friend_count": 2
++    },
++    {
++      "start": "2025-07-18",
++      "end": "2025-07-24",
++      "start_formatted": "July 18, 2025",
++      "end_formatted": "July 24, 2025",
++      "available_friends": [
++        "bob",
++        "dana"
++      ],
++      "friend_count": 2
++    },
++    {
++      "start": "2025-07-19",
++      "end": "2025-07-25",
++      "start_formatted": "July 19, 2025",
++      "end_formatted": "July 25, 2025",
++      "available_friends": [
++        "bob",
++        "dana"
++      ],
++      "friend_count": 2
++    },
++    {
++      "start": "2025-07-20",
++      "end": "2025-07-26",
++      "start_formatted": "July 20, 2025",
++      "end_formatted": "July 26, 2025",
++      "available_friends": [
++        "bob",
++        "dana"
++      ],
++      "friend_count": 2
++    },
++    {
++      "start": "2025-07-21",
++      "end": "2025-07-27",
++      "start_formatted": "July 21, 2025",
++      "end_formatted": "July 27, 2025",
++      "available_friends": [
++        "bob",
++        "dana"
++      ],
++      "friend_count": 2
++    },
++    {
++      "start": "2025-07-22",
++      "end": "2025-07-28",
++      "start_formatted": "July 22, 2025",
++      "end_formatted": "July 28, 2025",
++      "available_friends": [
++        "bob",
++        "dana"
++      ],
++      "friend_count": 2
++    },
++    {
++      "start": "2025-07-23",
++      "end": "2025-07-29",
++      "start_formatted": "July 23, 2025",
++      "end_formatted": "July 29, 2025",
++      "available_friends": [
++        "bob",
++        "dana"
++      ],
++      "friend_count": 2
++    },
++    {
++      "start": "2025-07-24",
++      "end": "2025-07-30",
++      "start_formatted": "July 24, 2025",
++      "end_formatted": "July 30, 2025",
++      "available_friends": [
++        "bob",
++        "dana"
++      ],
++      "friend_count": 2
++    },
++    {
++      "start": "2025-07-25",
++      "end": "2025-07-31",
++      "start_formatted": "July 25, 2025",
++      "end_formatted": "July 31, 2025",
++      "available_friends": [
++        "bob",
++        "dana"
++      ],
++      "friend_count": 2
++    },
++    {
++      "start": "2025-07-29",
++      "end": "2025-08-04",
++      "start_formatted": "July 29, 2025",
++      "end_formatted": "August 04, 2025",
++      "available_friends": [
++        "alice",
++        "bob"
++      ],
++      "friend_count": 2
++    }
++  ],
++  "total_windows_found": 14
++}
+\ No newline at end of file
+diff --git a/parse_schedules.py b/parse_schedules.py
+new file mode 100644
+index 0000000..bc075fa
+--- /dev/null
++++ b/parse_schedules.py
+@@ -0,0 +1,127 @@
++import json
++from datetime import datetime, timedelta
++
++def parse_date(date_str):
++    return datetime.strptime(date_str, "%Y-%m-%d")
++
++def calculate_availability(unavailable_periods, year=2025):
++    year_start = datetime(year, 6, 1)
++    year_end = datetime(year, 8, 31)
++    
++    unavailable = []
++    for period in unavailable_periods:
++        start = parse_date(period['start'])
++        end = parse_date(period['end'])
++        unavailable.append((start, end))
++    
++    unavailable.sort()
++    
++    available = []
++    current = year_start
++    
++    for start, end in unavailable:
++        if current < start:
++            available.append({
++                "start": current.strftime("%Y-%m-%d"),
++                "end": (start - timedelta(days=1)).strftime("%Y-%m-%d")
++            })
++        current = max(current, end + timedelta(days=1))
++    
++    if current <= year_end:
++        available.append({
++            "start": current.strftime("%Y-%m-%d"),
++            "end": year_end.strftime("%Y-%m-%d")
++        })
++    
++    return available
++
++# Alice
++with open('/tmp/exaix-tb-ingest-8d46c9f70164a6c4/alice_schedule.txt', 'r') as f:
++    alice_lines = f.readlines()
++
++alice_unavailable = []
++for line in alice_lines:
++    if line.startswith("UNAVAILABLE:"):
++        parts = line.strip().split(": ")[1]
++        date_part = parts.split(" (")[0]
++        start_date, end_date = date_part.split(" to ")
++        alice_unavailable.append({
++            "start": start_date.strip(),
++            "end": end_date.strip()
++        })
++
++alice_availability = calculate_availability(alice_unavailable)
++
++# Bob
++with open('/tmp/exaix-tb-ingest-8d46c9f70164a6c4/bob_schedule.txt', 'r') as f:
++    bob_lines = f.readlines()
++
++bob_available_dates = []
++for line in bob_lines:
++    if line.startswith("SHIFT:"):
++        shift_data = line.strip().split(": ")[1]
++        date, status, shift_type = shift_data.split(",")
++        if status == "off":
++            bob_available_dates.append(date)
++bob_available_dates.sort()
++bob_availability = []
++if bob_available_dates:
++    period_start = bob_available_dates[0]
++    period_end = bob_available_dates[0]
++    
++    for i in range(1, len(bob_available_dates)):
++        current_date = parse_date(bob_available_dates[i])
++        prev_date = parse_date(period_end)
++        
++        if current_date == prev_date + timedelta(days=1):
++            period_end = bob_available_dates[i]
++        else:
++            bob_availability.append({
++                "start": period_start,
++                "end": period_end
++            })
++            period_start = bob_available_dates[i]
++            period_end = bob_available_dates[i]
++    
++    bob_availability.append({
++        "start": period_start,
++        "end": period_end
++    })
++
++# Charlie
++charlie_unavailable = [
++    {"start": "2025-01-01", "end": "2025-05-31"},
++    {"start": "2025-06-15", "end": "2025-06-30"},
++    {"start": "2025-07-01", "end": "2025-07-20"},
++    {"start": "2025-07-26", "end": "2025-07-27"},
++    {"start": "2025-08-04", "end": "2025-08-31"}
++]
++
++charlie_availability = calculate_availability(charlie_unavailable)
++
++# Dana
++with open('/tmp/exaix-tb-ingest-8d46c9f70164a6c4/dana_schedule.txt', 'r') as f:
++    dana_lines = f.readlines()
++
++dana_unavailable = []
++for line in dana_lines:
++    if line.strip().startswith("BUSY:"):
++        parts = line.strip().split("BUSY: ")[1]
++        date_part = parts.split(" (")[0]
++        start_date, end_date = date_part.split(" to ")
++        dana_unavailable.append({
++            "start": start_date.strip(),
++            "end": end_date.strip()
++        })
++
++dana_availability = calculate_availability(dana_unavailable)
++
++all_availability = {
++    'alice': alice_availability,
++    'bob': bob_availability,
++    'charlie': charlie_availability,
++    'dana': dana_availability
++}
++
++with open('/tmp/exaix-tb-ingest-8d46c9f70164a6c4/all_availability.json', 'w') as f:
++    json.dump(all_availability, f, indent=2)
+diff --git a/vacation_dates.txt b/vacation_dates.txt
+new file mode 100644
+index 0000000..e61ebf6
+--- /dev/null
++++ b/vacation_dates.txt
+@@ -0,0 +1 @@
++2025-07-28 to 2025-08-03
+\ No newline at end of file

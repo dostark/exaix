@@ -1,0 +1,7 @@
+diff --git a/aggregates.json b/aggregates.json
+new file mode 100644
+index 0000000..dc975d9
+--- /dev/null
++++ b/aggregates.json
+@@ -0,0 +1 @@
++{"top_5_users_by_amount":{},"top_5_tags_by_count":{}}

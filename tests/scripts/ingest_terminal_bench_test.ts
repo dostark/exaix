@@ -73,10 +73,13 @@ Deno.test("[IngestTerminalBench] ingests a fixture task dir to an exact expected
 
     assertEquals(
       taskJson.scoped_test_cmd,
-      'curl -LsSf https://astral.sh/uv/0.7.13/install.sh | sh -s -- -q && export PATH="$HOME/.local/bin:$PATH" && ' +
-        "uv venv /tmp/.venv -q && . /tmp/.venv/bin/activate && uv pip install -q pytest==8.4.1 && cd /app && " +
+      "curl -LsSf https://astral.sh/uv/0.7.13/install.sh | sh -s -- -q && " +
+        "/tmp/.local/bin/uv venv /tmp/.venv -q && . /tmp/.venv/bin/activate && " +
+        "/tmp/.local/bin/uv pip install -q pytest==8.4.1 && cd /app && " +
         "pytest /oracle_tests/test_outputs.py -rA",
-      "scoped_test_cmd must be self-contained (pytest bootstrap inline) and target the hidden oracle-tests mount",
+      "scoped_test_cmd must be self-contained (pytest bootstrap inline), never reference " +
+        "$HOME/$PATH (host-substituted by the scenario framework before reaching the " +
+        "container), and target the hidden oracle-tests mount",
     );
 
     const oracleTest = await Deno.readTextFile(join(result.contractDir, "oracle_tests", "test_outputs.py"));
@@ -84,6 +87,129 @@ Deno.test("[IngestTerminalBench] ingests a fixture task dir to an exact expected
       oracleTest.includes('total_path.read_text().strip() == "15"'),
       "the hidden oracle test must be vendored verbatim into the contract dir",
     );
+  });
+});
+
+Deno.test("[IngestTerminalBench] a hanging oracle solution is killed at the timeout, not left to run forever", async () => {
+  await withTempDirs(async (outFixturesDir, outPortalsDir) => {
+    const sourceDir = await Deno.makeTempDir({ prefix: "exaix-tb-hanging-source-" });
+    try {
+      await Deno.mkdir(join(sourceDir, "data"));
+      await Deno.writeTextFile(join(sourceDir, "data", "numbers.txt"), "1\n2\n3\n");
+      await Deno.mkdir(join(sourceDir, "tests"));
+      await Deno.writeTextFile(
+        join(sourceDir, "tests", "test_outputs.py"),
+        "def test_total():\n    assert True\n",
+      );
+      await Deno.writeTextFile(
+        join(sourceDir, "task.yaml"),
+        "instruction: |-\n  Sum numbers.\nauthor_name: Test Fixture\nauthor_email: fixture@example.com\n" +
+          "difficulty: easy\ncategory: data-processing\ntags:\n  - data-processing\n",
+      );
+      await Deno.writeTextFile(join(sourceDir, "run-tests.sh"), "#!/bin/bash\nuv pip install pytest==8.4.1\n");
+      // Sleeps far longer than the test's timeout — a stand-in for a genuinely hung or
+      // pathologically slow oracle script (Phase 144 Step 5: batch ingest must never let one
+      // bad upstream task block the whole release).
+      await Deno.writeTextFile(join(sourceDir, "solution.sh"), "#!/bin/bash\nsleep 30\n");
+
+      const start = performance.now();
+      await assertRejects(
+        () =>
+          ingestTerminalBenchTask({
+            sourceDir,
+            taskId: "hanging-task",
+            benchmarkVersion: BENCHMARK_VERSION,
+            rootLicenseText: ALLOWLISTED_LICENSE_TEXT,
+            outFixturesDir,
+            outPortalsDir,
+            oracleSolutionTimeoutMs: 300,
+          }),
+        Error,
+        "timed out",
+      );
+      const elapsedMs = performance.now() - start;
+      assert(
+        elapsedMs < 5000,
+        `must abort near the 300ms timeout, not wait out the full 30s sleep (took ${elapsedMs}ms)`,
+      );
+    } finally {
+      await Deno.remove(sourceDir, { recursive: true });
+    }
+  });
+});
+
+Deno.test("[IngestTerminalBench] reference.patch preserves binary file content — git apply reconstructs it exactly", async () => {
+  await withTempDirs(async (outFixturesDir, outPortalsDir) => {
+    const sourceDir = await Deno.makeTempDir({ prefix: "exaix-tb-binary-source-" });
+    try {
+      await Deno.mkdir(join(sourceDir, "tests"));
+      await Deno.writeTextFile(
+        join(sourceDir, "tests", "test_outputs.py"),
+        "def test_binary():\n    assert True\n",
+      );
+      await Deno.writeTextFile(
+        join(sourceDir, "task.yaml"),
+        "instruction: |-\n  Produce a binary artifact.\nauthor_name: Test Fixture\n" +
+          "author_email: fixture@example.com\ndifficulty: easy\ncategory: data-processing\ntags:\n  - data-processing\n",
+      );
+      await Deno.writeTextFile(join(sourceDir, "run-tests.sh"), "#!/bin/bash\nuv pip install pytest==8.4.1\n");
+      // The oracle solution writes a file containing a NUL byte — git treats any file with a
+      // NUL byte as binary; `git diff` (no --binary) only emits "Binary files differ", which
+      // `git apply` cannot reconstruct from (found via a real controls-sweep run across the
+      // pinned Terminal-Bench release, Phase 144 Step 5 — ~10 real tasks fail their reference
+      // control this exact way).
+      await Deno.writeTextFile(
+        join(sourceDir, "solution.sh"),
+        String.raw`#!/bin/bash` + "\n" + String.raw`printf 'AB\x00CD' > /app/artifact.bin` + "\n",
+      );
+
+      const result = await ingestTerminalBenchTask({
+        sourceDir,
+        taskId: "binary-task",
+        benchmarkVersion: BENCHMARK_VERSION,
+        rootLicenseText: ALLOWLISTED_LICENSE_TEXT,
+        outFixturesDir,
+        outPortalsDir,
+      });
+      assertEquals(result.skipped, false);
+
+      const referencePatch = await Deno.readTextFile(join(result.contractDir, "reference.patch"));
+      assert(
+        referencePatch.includes("GIT binary patch") || referencePatch.includes("literal "),
+        "reference.patch must embed the actual binary content (git diff --binary), not just " +
+          '"Binary files differ" — a patch without embedded content cannot be applied',
+      );
+
+      // Prove the patch is actually applicable: apply it to a fresh clone of the portal and
+      // confirm the binary artifact reconstructs byte-for-byte.
+      const applyTarget = await Deno.makeTempDir({ prefix: "exaix-tb-binary-apply-" });
+      try {
+        await Deno.mkdir(applyTarget, { recursive: true });
+        for await (const entry of Deno.readDir(result.portalDir)) {
+          await Deno.copyFile(join(result.portalDir, entry.name), join(applyTarget, entry.name)).catch(() => {});
+        }
+        const initCmd = new Deno.Command("git", { args: ["init", "-q"], cwd: applyTarget });
+        await initCmd.output();
+        const patchPath = join(applyTarget, ".test-reference.patch");
+        await Deno.writeTextFile(patchPath, referencePatch);
+        const applyCmd = new Deno.Command("git", { args: ["apply", patchPath], cwd: applyTarget, stderr: "piped" });
+        const applyOutput = await applyCmd.output();
+        assert(
+          applyOutput.success,
+          `git apply must succeed on the vendored reference.patch: ${new TextDecoder().decode(applyOutput.stderr)}`,
+        );
+        const reconstructed = await Deno.readFile(join(applyTarget, "artifact.bin"));
+        assertEquals(
+          new TextDecoder().decode(reconstructed),
+          "AB\x00CD",
+          "the reconstructed binary file must match the oracle solution's output exactly",
+        );
+      } finally {
+        await Deno.remove(applyTarget, { recursive: true });
+      }
+    } finally {
+      await Deno.remove(sourceDir, { recursive: true });
+    }
   });
 });
 

@@ -46,6 +46,10 @@ export interface IIngestOptions {
   rootLicenseText: string;
   outFixturesDir: string;
   outPortalsDir: string;
+  /** Bounds a single oracle solution.sh run — batch ingest must never let one hung or
+   *  pathologically slow upstream task block the whole release (Phase 144 Step 5).
+   *  Defaults to `DEFAULT_ORACLE_SOLUTION_TIMEOUT_MS`. */
+  oracleSolutionTimeoutMs?: Opt<number, Reason.SensibleDefault>;
 }
 
 export interface IIngestResult {
@@ -122,6 +126,12 @@ export interface IBatchIngestOptions {
   outScenariosDir: string;
   /** Where generated `<task-id>.md` request fixtures are written. */
   outRequestsDir: string;
+  /** Bounds each task's oracle solution.sh run — see IIngestOptions. Defaults to
+   *  `DEFAULT_ORACLE_SOLUTION_TIMEOUT_MS`. */
+  oracleSolutionTimeoutMs?: Opt<number, Reason.SensibleDefault>;
+  /** Delegate tool baked into every generated scenario's bare-delegate step (a
+   *  BARE_DELEGATE_LAUNCH_SHAPES key). Defaults to `DEFAULT_SCENARIO_TOOL`. */
+  scenarioTool?: Opt<string, Reason.SensibleDefault>;
 }
 
 interface ICliArgs {
@@ -306,6 +316,10 @@ const DEFAULT_SCENARIO_TOOL = "claude-code";
  *  (no shared "framework evaluation constants" file exists, matching
  *  DEFAULT_BARE_DELEGATE_TIMEOUT_SEC in scenario_templates.ts, GAP-9). */
 export const MIN_SUPPORTED_COVERAGE_PCT = 30;
+/** Default bound for a single oracle solution.sh run (Phase 144 Step 5) — a batch ingest
+ *  must never let one hung or pathologically slow upstream task (e.g. a real kernel build)
+ *  block the whole release; the task is simply recorded `ingest-error` and the batch continues. */
+export const DEFAULT_ORACLE_SOLUTION_TIMEOUT_MS = 180_000;
 
 async function runGit(
   args: string[],
@@ -321,22 +335,76 @@ async function runGit(
 }
 
 /**
+ * Runs `git diff` and returns its RAW output with exactly one trailing newline appended only
+ * if missing — never `.trim()`ed. `runGit`'s blanket `.trim()` is safe for plumbing output
+ * (rev-parse, status) but corrupts a `--binary` diff: a binary hunk's "literal <n>" block is
+ * terminated by a blank line, and `.trim()` strips exactly that trailing blank line when the
+ * binary hunk is the diff's last line, producing a patch `git apply` rejects with "corrupt
+ * binary patch" (found via a real controls-sweep run across the pinned Terminal-Bench release,
+ * Phase 144 Step 5).
+ */
+async function runGitDiff(args: string[], cwd: string): Promise<string> {
+  const command = new Deno.Command("git", { args, cwd, stdout: "piped", stderr: "piped" });
+  const output = await command.output();
+  if (!output.success) {
+    throw new Error(`git ${args.join(" ")} failed: ${new TextDecoder().decode(output.stderr)}`);
+  }
+  const raw = new TextDecoder().decode(output.stdout);
+  return raw.endsWith("\n") ? raw : `${raw}\n`;
+}
+
+/**
  * Applies the upstream oracle solution against a dockerless temp working directory.
  * The solution's hardcoded container WORKDIR (`/app`) is rewritten to the real temp
  * path first — Step 1 has no container to provide `/app`; Step 2 will run the
  * unmodified upstream script inside the real container.
  */
-async function applyOracleSolutionDockerless(solutionPath: string, workDir: string): Promise<void> {
+async function applyOracleSolutionDockerless(
+  solutionPath: string,
+  workDir: string,
+  timeoutMs: number = DEFAULT_ORACLE_SOLUTION_TIMEOUT_MS,
+): Promise<void> {
   const originalScript = await Deno.readTextFile(solutionPath);
   const adaptedScript = originalScript.replaceAll(CONTAINER_WORKDIR, workDir);
   const adaptedPath = join(workDir, ".oracle-solution-dockerless.sh");
   await Deno.writeTextFile(adaptedPath, adaptedScript);
   const command = new Deno.Command("bash", { args: [adaptedPath], cwd: workDir, stdout: "piped", stderr: "piped" });
-  const output = await command.output();
-  await Deno.remove(adaptedPath);
-  if (!output.success) {
-    throw new Error(`oracle solution failed: ${new TextDecoder().decode(output.stderr)}`);
+  const child = command.spawn();
+  const timeoutHandle = setTimeout(() => {
+    try {
+      child.kill("SIGKILL");
+    } catch {
+      // Process already exited between the timer firing and the kill call — fine.
+    }
+  }, timeoutMs);
+  // child.status resolves purely on the DIRECT child's exit — unlike child.output(), it never
+  // waits for stdout/stderr pipe EOF. That distinction matters here: killing bash does not kill
+  // any grandchild it forked (e.g. a `sleep`/build step the script started), and an orphaned
+  // grandchild inheriting the piped stdout/stderr fds can hold the pipe open indefinitely —
+  // output() would then block past the timeout for exactly as long as the orphan keeps running
+  // (observed directly: a killed bash wrapping `sleep 30` still made output() wait the full 30s).
+  let status: Deno.CommandStatus;
+  try {
+    status = await child.status;
+  } finally {
+    clearTimeout(timeoutHandle);
   }
+  await Deno.remove(adaptedPath);
+  const timedOut = status.signal === "SIGKILL";
+  if (!status.success) {
+    if (timedOut) {
+      // Reading stderr here would risk the exact pipe-EOF stall the timeout exists to avoid
+      // (see above) — report the timeout without draining it.
+      child.stderr.cancel().catch(() => {});
+      child.stdout.cancel().catch(() => {});
+      throw new Error(`oracle solution timed out after ${timeoutMs}ms and was killed`);
+    }
+    const stderrText = await new Response(child.stderr).text();
+    child.stdout.cancel().catch(() => {});
+    throw new Error(`oracle solution failed: ${stderrText}`);
+  }
+  child.stderr.cancel().catch(() => {});
+  child.stdout.cancel().catch(() => {});
 }
 
 function humanizeTaskId(taskId: string): string {
@@ -382,12 +450,22 @@ const DEFAULT_TEST_PACKAGES = "pytest==8.4.1";
 export function deriveScopedTestCmd(runTestsShText: string): string {
   const pipInstallMatch = runTestsShText.match(/uv pip install\s+([^\n]+)/);
   const packages = pipInstallMatch ? pipInstallMatch[1].trim() : DEFAULT_TEST_PACKAGES;
+  // Invoke uv by its full, known container path (`HOME=/tmp` is hardcoded onto every jailed
+  // launch — see buildJailLaunch) rather than `export PATH="$HOME/.local/bin:$PATH"`: this
+  // whole command is embedded as ONE persisted scenario-YAML args element, which passes
+  // through the scenario framework's expandInString — a generic pass that substitutes any
+  // `$HOME`/`$PATH`-shaped token with the HOST's own environment value, not the container's
+  // runtime one, silently rewriting the uv bin path to a host path that doesn't exist inside
+  // the container ("uv: command not found") — found via a real scenario-driven live run
+  // (Phase 144 Step 5; the controls-sweep script bypasses expandInString, so it never hit
+  // this). `. /tmp/.venv/bin/activate` still safely prepends the venv's own bin dir to PATH
+  // via bash's OWN runtime variable expansion inside the container — never text baked in here.
+  const uvBin = "/tmp/.local/bin/uv";
   return [
     `curl -LsSf https://astral.sh/uv/${UV_INSTALLER_VERSION}/install.sh | sh -s -- -q`,
-    `export PATH="$HOME/.local/bin:$PATH"`,
-    `uv venv /tmp/.venv -q`,
+    `${uvBin} venv /tmp/.venv -q`,
     `. /tmp/.venv/bin/activate`,
-    `uv pip install -q ${packages}`,
+    `${uvBin} pip install -q ${packages}`,
     `cd ${CONTAINER_WORKDIR}`,
     `pytest /oracle_tests/test_outputs.py -rA`,
   ].join(" && ");
@@ -441,9 +519,9 @@ export async function ingestTerminalBenchTask(options: IIngestOptions): Promise<
     const baseRef = await runGit(["rev-parse", "HEAD"], workDir);
 
     const solutionPath = resolve(join(options.sourceDir, "solution.sh"));
-    await applyOracleSolutionDockerless(solutionPath, workDir);
+    await applyOracleSolutionDockerless(solutionPath, workDir, options.oracleSolutionTimeoutMs);
     await runGit(["add", "-A"], workDir);
-    const referencePatch = await runGit(["diff", "--cached"], workDir) + "\n";
+    const referencePatch = await runGitDiff(["diff", "--cached", "--binary"], workDir);
 
     const contractDir = join(options.outFixturesDir, sanitizedTaskId);
     await Deno.mkdir(contractDir, { recursive: true });
@@ -536,6 +614,7 @@ async function ingestOneBatchTask(taskId: string, options: IBatchIngestOptions):
       rootLicenseText: options.rootLicenseText,
       outFixturesDir: options.outFixturesDir,
       outPortalsDir: options.outPortalsDir,
+      oracleSolutionTimeoutMs: options.oracleSolutionTimeoutMs,
     });
     if (result.skipped) {
       return { task_id: taskId, class: "license-ineligible", reason: result.reason, controls_status: "pending" };
@@ -555,7 +634,8 @@ async function ingestOneBatchTask(taskId: string, options: IBatchIngestOptions):
       portalDir: `external/terminal_bench/${result.taskId}`,
       scopedTestCmd: taskJson.scoped_test_cmd,
       oracleTestsDir: `${result.taskId}/oracle_tests`,
-      tool: DEFAULT_SCENARIO_TOOL,
+      tool: options.scenarioTool ?? DEFAULT_SCENARIO_TOOL,
+      benchmarkVersion: options.benchmarkVersion,
     });
     await Deno.mkdir(options.outScenariosDir, { recursive: true });
     await Deno.writeTextFile(join(options.outScenariosDir, `${result.taskId}.yaml`), scenarioYaml + "\n");

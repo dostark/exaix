@@ -34,6 +34,7 @@ Deno.test("[ScenarioFrameworkPackGeneralization] runner can load two unrelated p
     "dynamic_execution",
     "eval_edge_cases",
     "eval_smoke",
+    "external_terminal_bench",
     "flow_blueprints",
     "framework_test",
     "identity_eval",

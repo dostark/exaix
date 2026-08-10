@@ -36,6 +36,29 @@ export interface IWriteEvalHistoryEntriesOptions {
   dbPath?: Opt<string, Reason.OptionalInput>;
 }
 
+const BENCHMARK_TAG_PREFIX = "bench:";
+const BENCHMARK_VERSION_TAG_PREFIX = "bench-version:";
+
+/** One tag's value shape: benchmark provenance derived from a manifest's `bench:<name>` /
+ *  `bench-version:<sha>` tags (Phase 144 Step 5) — the convention `renderExternalBenchTaskTemplate`
+ *  stamps onto every generated Terminal-Bench scenario. Absent on every internal (non-external)
+ *  run, which carries neither tag. */
+interface IBenchmarkProvenance {
+  benchmark?: string;
+  benchmarkVersion?: string;
+}
+
+function deriveBenchmarkProvenance(tags: Opt<string[], Reason.OptionalInput>): IBenchmarkProvenance {
+  const benchmark = tags?.find((t) => t.startsWith(BENCHMARK_TAG_PREFIX))?.slice(BENCHMARK_TAG_PREFIX.length);
+  const benchmarkVersion = tags?.find((t) => t.startsWith(BENCHMARK_VERSION_TAG_PREFIX))?.slice(
+    BENCHMARK_VERSION_TAG_PREFIX.length,
+  );
+  return {
+    ...(benchmark !== undefined ? { benchmark } : {}),
+    ...(benchmarkVersion !== undefined ? { benchmarkVersion } : {}),
+  };
+}
+
 /**
  * This is the actual, sole production call site that projects `manifest.steps` into the
  * array `EvalSqliteStore.writeRun`'s `steps` parameter receives; it is independent of and
@@ -71,6 +94,7 @@ export async function writeEvalHistoryEntries(options: IWriteEvalHistoryEntriesO
         cellId: manifest.cellId,
         provider: manifest.provider,
         model: manifest.model,
+        ...deriveBenchmarkProvenance(manifest.tags),
       });
 
       if (sqliteStore) {

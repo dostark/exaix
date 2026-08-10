@@ -1,0 +1,14 @@
+{
+  "base_ref": "8c87fe1c09b8a1cdbb9cb722f3414a3b13673395",
+  "scoped_test_cmd": "curl -LsSf https://astral.sh/uv/0.7.13/install.sh | sh -s -- -q && /tmp/.local/bin/uv venv /tmp/.venv -q && . /tmp/.venv/bin/activate && /tmp/.local/bin/uv pip install -q pytest==8.4.1 && cd /app && pytest /oracle_tests/test_outputs.py -rA",
+  "family": "task:system-administration",
+  "difficulty": "M",
+  "min_turns": 2,
+  "portal": "external/terminal_bench/install-klee-minimal",
+  "source": {
+    "benchmark": "terminal-bench",
+    "version": "d28711d0da2675d0bb1d56de45ae5df6082438a3",
+    "task_id": "install-klee-minimal"
+  },
+  "title": "Install Klee Minimal"
+}

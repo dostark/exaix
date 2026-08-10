@@ -16,7 +16,7 @@
  */
 
 import { z } from "zod";
-import { isAbsolute, join } from "@std/path";
+import { dirname, isAbsolute, join } from "@std/path";
 import type { IScenarioStep } from "../schema/step_schema.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 import { deriveClaudeToolFlags } from "@exaix/session";
@@ -46,6 +46,15 @@ export interface IJailLaunchOptions {
   /** Extra raw `--mount <entry>` bind mounts beyond `mountSource` (e.g. the hidden oracle
    *  test directory for a verify-only step — never present during delegate editing). */
   extraMounts?: Opt<string[], Reason.OptionalInput>;
+  /** Explicit `--mount` args used VERBATIM instead of live-resolving credentials via
+   *  `resolveCredentialMounts`. A caller that persists the launch args into a static file
+   *  (e.g. `renderExternalBenchTaskTemplate` writing a scenario YAML) MUST supply this — a
+   *  live-resolved credential mount points at a disposable temp dir that only exists for the
+   *  process lifetime of the call that created it, going stale before the persisted file's
+   *  next run (discovered via a real batch-ingest run, Phase 144 Step 5). Use a
+   *  `$FRAMEWORK_HOME`-relative path (expanded fresh at each scenario run) refreshed by a
+   *  companion setup step, never a `Deno.makeTempDirSync()` path. */
+  credentialMountArgs?: Opt<string[], Reason.OptionalInput>;
 }
 
 export interface IExpandMatrixOptions {
@@ -185,6 +194,16 @@ export const BARE_DELEGATE_LAUNCH_SHAPES: Record<string, { bin: string; args: st
     // bare comparison on the harness-lift weak-model tier runs a matching delegate.
     args: ["-p", "--output-format", "json", "--model", "claude-haiku-4-5", ...deriveClaudeToolFlags()],
   },
+  "opencode-go": {
+    bin: "opencode",
+    // Phase 144 Step 5 — pins the eval-cells.toml catalog's opencode-go/deepseek-v4-flash cell
+    // for jailed bare-delegate live runs. No hardcoded --dir (unlike the plain "opencode" key,
+    // pinned to the standard bare-cell /worktree mount): this shape is reused by BOTH the
+    // standard matrix path (mounted at /worktree) and the Terminal-Bench external_bench_task
+    // template (mounted at /app) — opencode defaults to its process cwd when --dir is omitted,
+    // which buildJailLaunch's --workdir already sets correctly for either mount destination.
+    args: ["run", "--format", "json", "--model", "opencode-go/deepseek-v4-flash"],
+  },
 };
 
 /** Env var that overrides the eval-jail image name (default `exaix-eval-jail`). */
@@ -193,6 +212,56 @@ const DEFAULT_EXA_EVAL_JAIL_IMAGE = "exaix-eval-jail";
 
 const DEFAULT_JAIL_MOUNT_DEST = "/worktree";
 
+/** Per-binary host credential store: `liveRelPath` (relative to `$HOME`) is the live credential
+ *  file to copy; `stagedFileRelPath` is where that copy lands under the staged temp root;
+ *  `stagedDirRelPath` (relative to `$HOME`, i.e. the jail's `/tmp`) is what the staged root
+ *  mounts as inside the container. The staged root must be wide enough for the binary's own
+ *  runtime writes (session/log/cache files it creates beside its credentials) — mounting only
+ *  the exact credential file's parent lets Docker auto-create a root-owned, non-writable
+ *  ancestor the binary then fails to `mkdir` under. Add an entry here when a new delegate
+ *  binary needs jailed live-run credentials — `resolveCredentialMounts` handles the rest. */
+export const CREDENTIAL_STORES: Record<
+  string,
+  { liveRelPath: string; stagedFileRelPath: string; stagedDirRelPath: string }
+> = {
+  "claude": {
+    liveRelPath: ".claude/.credentials.json",
+    stagedFileRelPath: ".credentials.json",
+    stagedDirRelPath: ".claude",
+  },
+  "opencode": {
+    // Mounted at the wider /tmp/.local (not /tmp/.local/share/opencode): opencode also writes
+    // session/model-cache state under ~/.local/state/opencode at runtime — discovered via a
+    // real jailed run (Phase 144 Step 5) failing EACCES on `mkdir /tmp/.local/state` when only
+    // the narrower share/opencode path was mounted.
+    liveRelPath: ".local/share/opencode/auth.json",
+    stagedFileRelPath: "share/opencode/auth.json",
+    stagedDirRelPath: ".local",
+  },
+};
+
+/**
+ * Stage a disposable copy of `bin`'s host credential file and return the `--mount` args
+ * pointing the jail at it (or `[]` when `bin` has no known credential store, `HOME` is unset,
+ * or the live file does not exist — e.g. CI, no subscription/API login). Never mounts the
+ * live host file itself. See `buildJailLaunch`'s docstring for the directory-vs-single-file
+ * rationale.
+ */
+function resolveCredentialMounts(bin: string): string[] {
+  const store = CREDENTIAL_STORES[bin];
+  const hostHome = Deno.env.get("HOME");
+  if (!store || !hostHome) return [];
+  try {
+    const liveCredsPath = `${hostHome}/${store.liveRelPath}`;
+    const stagedDir = Deno.makeTempDirSync({ prefix: "eval-jail-creds-" });
+    const stagedFile = `${stagedDir}/${store.stagedFileRelPath}`;
+    Deno.mkdirSync(dirname(stagedFile), { recursive: true });
+    Deno.copyFileSync(liveCredsPath, stagedFile);
+    return ["--mount", `type=bind,src=${stagedDir},dst=/tmp/${store.stagedDirRelPath}`];
+  } catch {
+    return [];
+  }
+}
 /**
  * Phase 143 — the eval-jail launch wrapper. Every jailed delegate runs inside a container that
  * mounts ONLY `options.mountSource` (bare cells: `$WORKSPACE_ROOT/todo-app` → `/worktree`): the
@@ -212,31 +281,22 @@ export function buildJailLaunch(
   const uid = Deno.uid();
   const gid = Deno.gid();
   const userArgs = uid !== null && gid !== null ? ["--user", `${uid}:${gid}`] : [];
-  // The container's claude (HOME=/tmp) needs the host's claude.ai subscription login — the
-  // eval-jail credential passthrough. A DISPOSABLE COPY of the credentials file is staged
-  // into a fresh temp dir and bind-mounted (read-write) at /tmp/.claude — never the live
-  // host file. Mounting the live file alone (read-only) at /tmp/.claude/.credentials.json
-  // was the original design, but Docker auto-creates /tmp/.claude as a root-owned,
-  // non-writable directory when only a single nested file is mounted, and Claude Code's own
-  // Bash tool needs to `mkdir /tmp/.claude/session-env` beside it — blocking every Bash call
-  // with EACCES (discovered via a real headless run, Phase 144 Step 2). Mounting the WHOLE
-  // staged directory read-write fixes this while still never exposing the real credentials
-  // file to in-container writes — only a disposable copy is mounted, so even an in-container
-  // modification cannot corrupt the host's real login.
-  const hostHome = Deno.env.get("HOME");
-  let credMounts: string[] = [];
-  if (hostHome) {
-    try {
-      const liveCredsPath = `${hostHome}/.claude/.credentials.json`;
-      const stagedClaudeDir = Deno.makeTempDirSync({ prefix: "eval-jail-creds-" });
-      Deno.copyFileSync(liveCredsPath, `${stagedClaudeDir}/.credentials.json`);
-      credMounts = ["--mount", `type=bind,src=${stagedClaudeDir},dst=/tmp/.claude`];
-    } catch {
-      // No host credentials file (e.g. CI, no subscription login) — jailed delegate runs
-      // without claude.ai auth, matching the prior behavior when HOME/the file was absent.
-      credMounts = [];
-    }
-  }
+  // The container's delegate binary (HOME=/tmp) needs the host's real credentials — the
+  // eval-jail credential passthrough. A DISPOSABLE COPY of the credential file is staged into
+  // a fresh temp dir and bind-mounted (read-write) at a HOME-relative destination — never the
+  // live host file. Mounting the live file alone (read-only) at a single nested path was the
+  // original design, but Docker auto-creates the parent as a root-owned, non-writable
+  // directory when only a single nested file is mounted, and both Claude Code's Bash tool
+  // (needs to `mkdir .claude/session-env` beside its credentials) and opencode's own session/
+  // log writes need the directory itself writable — blocking every call with EACCES (discovered
+  // via a real headless run, Phase 144 Step 2). Mounting the WHOLE staged directory read-write
+  // fixes this while still never exposing the real credentials file to in-container writes —
+  // only a disposable copy is mounted, so even an in-container modification cannot corrupt the
+  // host's real login. Tool-aware (Phase 144 Step 5): each delegate binary reads credentials
+  // from its own store — Claude Code from `~/.claude/.credentials.json`, opencode (incl. the
+  // opencode-go bare cell) from `~/.local/share/opencode/auth.json` — mounting the wrong
+  // store is a silent no-op that leaves the delegate unauthenticated, not a loud failure.
+  const credMounts = options.credentialMountArgs ?? resolveCredentialMounts(inner.bin);
   const mountDest = options.mountDest ?? DEFAULT_JAIL_MOUNT_DEST;
   const workdir = options.workdir ?? DEFAULT_JAIL_MOUNT_DEST;
   const extraEnvArgs = Object.entries(options.extraEnv ?? {}).flatMap(([key, value]) => ["-e", `${key}=${value}`]);

@@ -13,6 +13,7 @@ import {
   BARE_DELEGATE_LAUNCH_SHAPES,
   BARE_DELEGATE_STEP_ID,
   buildJailLaunch,
+  CREDENTIAL_STORES,
   REQUEST_FIXTURE_CONTENT_SENTINEL,
 } from "./matrix_expander.ts";
 import { buildOpencodePermissionConfig } from "@exaix/session";
@@ -38,6 +39,10 @@ export interface IExternalBenchTaskTemplateOptions {
   oracleTestsDir: string;
   /** Delegate tool, looked up in the shared BARE_DELEGATE_LAUNCH_SHAPES (Phase 143 reuse). */
   tool: string;
+  /** Pinned upstream release SHA (task.json's `source.version`, Phase 144 Step 1) — stamped
+   *  onto the scenario as a `bench-version:<sha>` tag (Phase 144 Step 5) so eval-history
+   *  entries can be attributed to a specific benchmark release, not just the benchmark name. */
+  benchmarkVersion: string;
   scoringWeights?: Record<string, number>;
 }
 
@@ -639,6 +644,52 @@ const ORACLE_TESTS_MOUNT_DEST = "/oracle_tests";
  * convention) instead of `/worktree`. No docker-compose: a single `docker run --rm` per
  * step, so teardown is guaranteed by `--rm` on every exit path, not a separate cleanup step.
  */
+
+/** Gitignored, framework-relative root for the STABLE (never-random) credential staging
+ *  directories `buildExternalBenchCredentialStagingStep` refreshes before every run — reuses
+ *  the already-gitignored `tests/scenario_framework/output/` tree so a staged auth/credential
+ *  copy can never be accidentally committed. */
+const CREDENTIAL_STAGING_ROOT = "$FRAMEWORK_HOME/output/.eval-jail-creds";
+
+/** A rendered `external_bench_task` credential-staging setup step, refreshing `bin`'s host
+ *  credential into a STABLE path before the delegate step runs (or `null` when `bin` has no
+ *  known credential store — e.g. "bash", which never needs auth). Unlike
+ *  `buildJailLaunch`'s live `resolveCredentialMounts` (a disposable temp dir resolved ONCE at
+ *  the moment `renderExternalBenchTaskTemplate` runs), this path is a `$FRAMEWORK_HOME`-
+ *  relative template string the runner expands FRESH on every scenario execution — so a
+ *  persisted scenario YAML re-run days later still gets a live, current credential copy
+ *  instead of pointing at a long-gone temp dir (found via a real batch-ingest run, Phase 144
+ *  Step 5). `2>/dev/null || true`: absent host credentials (CI, no login) degrade to an
+ *  unauthenticated jailed run, matching `resolveCredentialMounts`'s own graceful degradation —
+ *  never a hard scenario failure at staging time.
+ */
+function buildExternalBenchCredentialStagingStep(
+  bin: string,
+): { id: string; yamlLines: string[]; mountArgs: string[] } | null {
+  const store = CREDENTIAL_STORES[bin];
+  if (!store) return null;
+  const stagedRoot = `${CREDENTIAL_STAGING_ROOT}/${bin}`;
+  const stagedFile = `${stagedRoot}/${store.stagedFileRelPath}`;
+  const id = `stage-${bin}-credentials`;
+  const script =
+    `mkdir -p "$(dirname "${stagedFile}")" && cp "$HOME/${store.liveRelPath}" "${stagedFile}" 2>/dev/null || true`;
+  return {
+    id,
+    yamlLines: [
+      `  - id: "${id}"`,
+      `    type: "shell"`,
+      `    command: "sh"`,
+      `    args: ["-c", ${JSON.stringify(script)}]`,
+      `    output_criteria:`,
+      `      - id: "${id}-ran"`,
+      `        kind: "command-exit-code"`,
+      `        equals: 0`,
+      "",
+    ],
+    mountArgs: ["--mount", `type=bind,src=${stagedRoot},dst=/tmp/${store.stagedDirRelPath}`],
+  };
+}
+
 export function renderExternalBenchTaskTemplate(task: IExternalBenchTaskTemplateOptions): string {
   const scoreWeights = task.scoringWeights ?? {};
   const shape = BARE_DELEGATE_LAUNCH_SHAPES[task.tool];
@@ -649,10 +700,12 @@ export function renderExternalBenchTaskTemplate(task: IExternalBenchTaskTemplate
     );
   }
   const mountSource = `$FRAMEWORK_HOME/fixtures/portals/${task.portalDir}`;
+  const credStaging = buildExternalBenchCredentialStagingStep(shape.bin);
   const jailedDelegate = buildJailLaunch(shape, {
     mountSource,
     mountDest: EXTERNAL_BENCH_MOUNT_DEST,
     workdir: EXTERNAL_BENCH_MOUNT_DEST,
+    credentialMountArgs: credStaging?.mountArgs,
   });
   const delegateArgs = [...jailedDelegate.args];
   const printIdx = delegateArgs.indexOf("-p");
@@ -675,12 +728,13 @@ export function renderExternalBenchTaskTemplate(task: IExternalBenchTaskTemplate
     `id: "${task.id}"`,
     `title: "${task.title}"`,
     `pack: "external_terminal_bench"`,
-    `tags: ["bench:terminal-bench", "docker", "provider-live"]`,
+    `tags: ["bench:terminal-bench", "bench-version:${task.benchmarkVersion}", "docker", "provider-live"]`,
     `request_fixture: "${task.requestFixture}"`,
     `portals: []`,
     `mode_support: ["auto"]`,
     "",
     "steps:",
+    ...(credStaging?.yamlLines ?? []),
     `  - id: "${BARE_DELEGATE_STEP_ID}"`,
     `    type: "shell"`,
     `    command: "${jailedDelegate.bin}"`,

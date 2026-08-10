@@ -1,0 +1,29 @@
+diff --git a/program_O0 b/program_O0
+new file mode 100755
+index 0000000..f812dcd
+Binary files /dev/null and b/program_O0 differ
+diff --git a/program_O3 b/program_O3
+new file mode 100755
+index 0000000..ef53538
+Binary files /dev/null and b/program_O3 differ
+diff --git a/program_Os b/program_Os
+new file mode 100755
+index 0000000..51b3eed
+Binary files /dev/null and b/program_Os differ
+diff --git a/program_g_O0 b/program_g_O0
+new file mode 100755
+index 0000000..050a9e5
+Binary files /dev/null and b/program_g_O0 differ
+diff --git a/results.md b/results.md
+new file mode 100644
+index 0000000..c5da952
+--- /dev/null
++++ b/results.md
+@@ -0,0 +1,7 @@
++
++| Optimization Flag | Binary Size (bytes) | Execution Time (ms) |
++|-------------------|----------------------|---------------------|
++| -O0               | 16216             | 452.0       |
++| -Os               | 16224             | 270.0       |
++| -O3               | 16224             | 148.0       |
++| -g -O0            | 19216             | 458.0       |

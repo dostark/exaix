@@ -1,0 +1,1361 @@
+{
+  "generated_at": "2026-08-10T15:50:48.427Z",
+  "benchmark_version": "d28711d0da2675d0bb1d56de45ae5df6082438a3",
+  "total_tasks": 241,
+  "supported_count": 94,
+  "coverage_pct": 39.004149377593365,
+  "tasks": [
+    {
+      "task_id": "3d-model-format-legacy",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: ",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "accelerate-maximal-square",
+      "class": "unsupported",
+      "reason": "gpu-required",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "acl-permissions-inheritance",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: mkdir: cannot create directory ‘/srv/shared’: Permission denied",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "adaptive-rejection-sampler",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: E: Could not open lock file /var/lib/apt/lists/lock - open (13: Permission denied)",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "add-benchmark-lm-eval-harness",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: fatal: 'lfs' appears to be a git command, but we were not",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "aimo-airline-departures",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "amuse-install",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: E: Could not open lock file /var/lib/apt/lists/lock - open (13: Permission denied)",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "analyze-access-logs",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "ancient-puzzle",
+      "class": "unsupported",
+      "reason": "multi-container",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "assign-seats",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "attention-mil",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "audio-synth-stft-peaks",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: E: Could not open lock file /var/lib/apt/lists/lock - open (13: Permission denied)",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "bank-trans-filter",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "blind-maze-explorer-5x5",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: Traceback (most recent call last):",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "blind-maze-explorer-algorithm",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: Traceback (most recent call last):",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "bn-fit-modify",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-1a5bb3f319fc4d13/.oracle-solution-dockerless.sh: line 11: R: command not found",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "break-filter-js-from-html",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "broken-networking",
+      "class": "unsupported",
+      "reason": "custom-network-config",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "broken-python",
+      "class": "unsupported",
+      "reason": "ingest-error: No such file or directory (os error 2): readfile '/tmp/tb-work/upstream/original-tasks/broken-python/solution.sh'",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "build-cython-ext",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: Cloning into '/tmp/exaix-tb-ingest-a17dd47d59cd40b3/pyknotid'...",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "build-initramfs-qemu",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "build-linux-kernel-qemu",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution timed out after 60000ms and was killed",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "build-pmars",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-3129b8b145a6b092/.oracle-solution-dockerless.sh: line 8: /etc/apt/sources.list.d/deb-src.list: Permission denied",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "build-pov-ray",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: E: Could not open lock file /var/lib/apt/lists/lock - open (13: Permission denied)",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "build-stp",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: E: Could not open lock file /var/lib/apt/lists/lock - open (13: Permission denied)",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "build-tcc-qemu",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution timed out after 60000ms and was killed",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "caffe-cifar-10",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution timed out after 60000ms and was killed",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "cancel-async-tasks",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "cartpole-rl-training",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: cat: /tmp/exaix-tb-ingest-d1bf7305981a76b2/test.py: No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "catch-me-if-you-can",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: ",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "causal-inference-r",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: + echo '=== DEBUG: Installing system libraries ==='",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "chem-property-targeting",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "chem-rf",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "chess-best-move",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: ",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "circuit-fibsqrt",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "classifier-debug",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "cobol-modernization",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "code-from-image",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "compile-compcert",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "conda-env-conflict-resolution",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-d489b73c3eb8e397/.oracle-solution-dockerless.sh: line 5: cd: /tmp/exaix-tb-ingest-d489b73c3eb8e397/project: No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "configure-git-webserver",
+      "class": "unsupported",
+      "reason": "requires-live-service",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "constraints-scheduling",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: Traceback (most recent call last):",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "count-call-stack",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "count-dataset-tokens",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: error: externally-managed-environment",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "countdown-game",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "cpp-compatibility",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "cprofiling-python",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "crack-7z-hash",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: ls: cannot access 'john': No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "create-bucket",
+      "class": "unsupported",
+      "reason": "requires-live-service",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "cron-broken-network",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: rm: cannot remove '/etc/init.d/network-monitor': No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "cross-entropy-method",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-962e96fda893f8cc/.oracle-solution-dockerless.sh: line 168: python: command not found",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "csv-to-parquet",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: downloading uv 0.7.13 x86_64-unknown-linux-gnu",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "custom-memory-heap-crash",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: cc1plus: fatal error: /tmp/exaix-tb-ingest-d00e31cdac8552d5/main.cpp: No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "db-wal-recovery",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "debug-long-program",
+      "class": "unsupported",
+      "reason": "multi-container",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "decommissioning-service-with-sensitive-data",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: tar: Removing leading `/' from member names",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "deterministic-tarball",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "distribution-search",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "dna-assembly",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "dna-insert",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "download-youtube",
+      "class": "unsupported",
+      "reason": "ingest-error: No such file or directory (os error 2): readfile '/tmp/tb-work/upstream/original-tasks/download-youtube/solution.sh'",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "enemy-grid-escape",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: RuntimeError: Bad magic number in .pyc file",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "extract-elf",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "extract-moves-from-video",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "extract-safely",
+      "class": "unsupported",
+      "reason": "ingest-error: No such file or directory (os error 2): readfile '/tmp/tb-work/upstream/original-tasks/extract-safely/solution.sh'",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "feal-differential-cryptanalysis",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "feal-linear-cryptanalysis",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: attack.c: In function ‘study’:",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "fibonacci-server",
+      "class": "unsupported",
+      "reason": "requires-live-service",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "filter-js-from-html",
+      "class": "unsupported",
+      "reason": "requires-live-service",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "financial-document-processor",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "find-official-code",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: error: externally-managed-environment",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "find-restaurant",
+      "class": "unsupported",
+      "reason": "multi-container",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "fix-code-vulnerability",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: ls: cannot access 'docs': No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "fix-git",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "fix-ocaml-gc",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: sed: can't read /tmp/exaix-tb-ingest-316864a10c59dcab/ocaml/runtime/shared_heap.c: No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "fix-pandas-version",
+      "class": "unsupported",
+      "reason": "ingest-error: No such file or directory (os error 2): readfile '/tmp/tb-work/upstream/original-tasks/fix-pandas-version/solution.sh'",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "fix-permissions",
+      "class": "unsupported",
+      "reason": "ingest-error: No such file or directory (os error 2): readfile '/tmp/tb-work/upstream/original-tasks/fix-permissions/solution.sh'",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "flood-monitoring-basic",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: Traceback (most recent call last):",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "fmri-encoding-r",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: E: Could not open lock file /var/lib/apt/lists/lock - open (13: Permission denied)",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "form-filling",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "gcc-compiler-optimization",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "gcode-to-text",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: E: Could not open lock file /var/lib/apt/lists/lock - open (13: Permission denied)",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "get-bitcoin-nodes",
+      "class": "unsupported",
+      "reason": "requires-live-service",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "git-leak-recovery",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "git-multibranch",
+      "class": "unsupported",
+      "reason": "requires-live-service",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "git-workflow-hack",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "gomoku-planner",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "gpt2-codegolf",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "grid-pattern-transform",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "hdfs-deployment",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: E: Could not open lock file /var/lib/dpkg/lock-frontend - open (13: Permission denied)",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "hello-world",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "heterogeneous-dates",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: cat: /tmp/exaix-tb-ingest-1cafd41ec09651e7/daily_temp_sf_high.csv: No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "hf-lora-adapter",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: error: externally-managed-environment",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "hf-model-inference",
+      "class": "unsupported",
+      "reason": "requires-live-service",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "hf-train-lora-adapter",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: error: externally-managed-environment",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "home-server-https",
+      "class": "unsupported",
+      "reason": "multi-container",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "html-finance-verify",
+      "class": "unsupported",
+      "reason": "gpu-required",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "huarong-dao-solver",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "hydra-debug-slurm-mode",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "ilp-solver",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "implement-eigenvectors-from-eigenvalues-research-paper",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-a96d286a1757f8fc/.oracle-solution-dockerless.sh: line 12: cd: /tmp/exaix-tb-ingest-a96d286a1757f8fc/quimb: No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "incompatible-python-fasttext",
+      "class": "unsupported",
+      "reason": "ingest-error: No such file or directory (os error 2): readfile '/tmp/tb-work/upstream/original-tasks/incompatible-python-fasttext/solution.sh'",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "install-klee-minimal",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "install-windows-3.11",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution timed out after 60000ms and was killed",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "install-windows-xp",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution timed out after 60000ms and was killed",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "interactive-maze-game",
+      "class": "unsupported",
+      "reason": "multi-container",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "intrusion-detection",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "jq-data-processing",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "jsonl-aggregator",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "jupyter-notebook-server",
+      "class": "unsupported",
+      "reason": "requires-live-service",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "kv-store-grpc",
+      "class": "unsupported",
+      "reason": "requires-live-service",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "large-scale-text-editing",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "largest-eigenval",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "lean4-proof",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution timed out after 60000ms and was killed",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "leelachess0-pytorch-conversion",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: Cloning into 'lc0'...",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "llm-inference-batching-scheduler",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "llm-spec-decoding",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-acefeb50a4ee186b/.oracle-solution-dockerless.sh: line 109: python: command not found",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "log-summary",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "log-summary-date-ranges",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: E: Could not open lock file /var/lib/apt/lists/lock - open (13: Permission denied)",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "logistic-regression-divergence",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: cat: /tmp/exaix-tb-ingest-6ae91ea000dcfc23/logreg.py: No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "magsac-install",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution timed out after 60000ms and was killed",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "mahjong-winninghand",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "mailman",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-24f9d60f54c75380/.oracle-solution-dockerless.sh: line 5: /etc/mailname: Permission denied",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "make-doom-for-mips",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: ",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "make-mips-interpreter",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: node:fs:561",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "matlab-python-conversion",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: E: Could not open lock file /var/lib/dpkg/lock-frontend - open (13: Permission denied)",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "mcmc-sampling-stan",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: + echo '=== DEBUG: Installing system dependencies ==='",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "merge-diff-arc-agi-task",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "mixed-integer-programming",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: error: externally-managed-environment",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "mlflow-register",
+      "class": "unsupported",
+      "reason": "requires-live-service",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "mnist-learning-fix",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: cat: /tmp/exaix-tb-ingest-9097645bf5a77f7/fix.py: No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "model-extraction-relu-logits",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "modernize-fortran-build",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: make: gfortran: No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "modernize-scientific-stack",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: Traceback (most recent call last):",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "movie-helper",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: Traceback (most recent call last):",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "mteb-eval",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-7430786d7838335c/.oracle-solution-dockerless.sh: line 7: mteb: command not found",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "mteb-leaderboard",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution timed out after 60000ms and was killed",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "mteb-retrieve",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-b5788244b2944084/.oracle-solution-dockerless.sh: line 17: python: command not found",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "multi-source-data-merger",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: Traceback (most recent call last):",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "multistep-definite-integral",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "neuron-to-jaxley-conversion",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "new-encrypt-command",
+      "class": "unsupported",
+      "reason": "ingest-error: No such file or directory (os error 2): readfile '/tmp/tb-work/upstream/original-tasks/new-encrypt-command/solution.sh'",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "nginx-request-logging",
+      "class": "unsupported",
+      "reason": "requires-live-service",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "npm-conflict-resolution",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution timed out after 60000ms and was killed",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "ode-solver-rk4",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "oom",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: rm: cannot remove '/root/.cache/huggingface/hub/large_model_file': Permission denied",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "openssl-selfsigned-cert",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-c43bd873fe8edea9/.oracle-solution-dockerless.sh: line 99: python: command not found",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "optimal-transport",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "organization-json-generator",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: error: externally-managed-environment",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "overfull-hbox",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "pandas-etl",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: downloading uv 0.12.3 x86_64-unknown-linux-gnu",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "pandas-sql-query",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "parallel-particle-simulator",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: ",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "parallelize-compute-squares",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "parallelize-graph",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: ",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "password-recovery",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "path-tracing",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "path-tracing-reverse",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "pcap-to-netflow",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "play-lord",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "play-zork",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "play-zork-easy",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "png-generation",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "polyglot-c-py",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "polyglot-rust-c",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "port-compressor",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-e2d7b2c31aa3d44/.oracle-solution-dockerless.sh: line 7: /tmp/exaix-tb-ingest-e2d7b2c31aa3d44/rs/src/file_output.rs: No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "portfolio-optimization",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "postgres-csv-clean",
+      "class": "unsupported",
+      "reason": "multi-container",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "predicate-pushdown-bench",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-e15ce7eddc3181e8/.oracle-solution-dockerless.sh: line 8: sbt: command not found",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "predict-customer-churn",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: Traceback (most recent call last):",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "privilege-escalation",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: sudo: a terminal is required to read the password; either use the -S option to read from standard input or configure an askpass helper",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "processing-pipeline",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: chmod: cannot access '/data/output': No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "protein-assembly",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: error: externally-managed-environment",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "protocol-analysis-rs",
+      "class": "unsupported",
+      "reason": "requires-live-service",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "prove-plus-comm",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-1a1e2edfc52dd4ec/.oracle-solution-dockerless.sh: line 21: coqc: command not found",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "puzzle-solver",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "pypi-server",
+      "class": "unsupported",
+      "reason": "requires-live-service",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "pytorch-model-cli",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "pytorch-model-recovery",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "qemu-alpine-ssh",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-9b4a4379338ade9f/.oracle-solution-dockerless.sh: line 11: qemu-system-x86_64: command not found",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "qemu-startup",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-323f4033720b9d24/.oracle-solution-dockerless.sh: line 11: qemu-system-x86_64: command not found",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "query-optimize",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "raman-fitting",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: cat: graphene.dat: No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "rare-mineral-allocation",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: Traceback (most recent call last):",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "recover-accuracy-log",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: ls: cannot access '/tmp/exaix-tb-ingest-9f3a811f99504216/raw_logs/': No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "recover-obfuscated-files",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-63ba0bdf60840888/.oracle-solution-dockerless.sh: line 13: cd: /tmp/exaix-tb-ingest-63ba0bdf60840888/sensitive_data: No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "regex-chess",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-8fd58dd7d5296a18/.oracle-solution-dockerless.sh: line 3: python: command not found",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "regex-log",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "reshard-c4-data",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "reverse-engineering",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-78437c375aa2c556/.oracle-solution-dockerless.sh: line 78: python: command not found",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "rstan-to-pystan",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: + export DEBIAN_FRONTEND=noninteractive",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "run-pdp11-code",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution timed out after 60000ms and was killed",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "sam-cell-seg",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "sanitize-git-repo",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: sed: no input files",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "schedule-vacation",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "schemelike-metacircular-eval",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "security-celery-redis-rce",
+      "class": "unsupported",
+      "reason": "multi-container",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "security-vulhub-minio",
+      "class": "unsupported",
+      "reason": "multi-container",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "setup-custom-dev-env",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution timed out after 60000ms and was killed",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "sha-puzzle",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "shell-deobfuscation",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: cat: /tmp/exaix-tb-ingest-96409037efdca49a/suspicious_script.sh: No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "simple-sheets-put",
+      "class": "unsupported",
+      "reason": "multi-container",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "simple-web-scraper",
+      "class": "unsupported",
+      "reason": "multi-container",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "slurm-simple-node-monitoring",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution timed out after 60000ms and was killed",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "solana-data",
+      "class": "unsupported",
+      "reason": "requires-live-service",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "solve-maze-challenge",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "solve-sudoku",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: ",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "sparql-professors-universities",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "sparql-university",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "speech-to-text",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: fatal: destination path '/tmp/exaix-tb-ingest-7aad2b9e18382627' already exists and is not an empty directory.",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "spinning-up-rl",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution timed out after 60000ms and was killed",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "spring-messaging-vul",
+      "class": "unsupported",
+      "reason": "multi-container",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "sql-injection-attack",
+      "class": "unsupported",
+      "reason": "multi-container",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "sqlite-db-truncate",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "sqlite-with-gcov",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: E: Could not open lock file /var/lib/apt/lists/lock - open (13: Permission denied)",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "stable-parallel-kmeans",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "sudo-llvm-ir",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-73a7a6d3b7052435/.oracle-solution-dockerless.sh: line 7: cd: /tmp/exaix-tb-ingest-73a7a6d3b7052435/program/sudo: No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "swe-bench-astropy-1",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-316f4bfac186ec7/.oracle-solution-dockerless.sh: line 11: /tmp/exaix-tb-ingest-316f4bfac186ec7/astropy/solution_patch.diff: No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "swe-bench-astropy-2",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-341a84d2e3d27c08/.oracle-solution-dockerless.sh: line 11: /tmp/exaix-tb-ingest-341a84d2e3d27c08/astropy/solution_patch.diff: No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "swe-bench-fsspec",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: ",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "swe-bench-langcodes",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: ",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "tmux-advanced-workflow",
+      "class": "unsupported",
+      "reason": "requires-interactive-terminal",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "torch-pipeline-parallelism",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "torch-tensor-parallelism",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "train-bpe-tokenizer",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "train-fasttext",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "tree-directory-parser",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-6424788a7311fd89/cmd.sh: line 23: /tmp/exaix-tb-ingest-6424788a7311fd89/tree_map.txt: No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "triton-interpret",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: + apt-get update -qq",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "tune-mjcf",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: cp: cannot stat '/tmp/exaix-tb-ingest-274f4a3311cdef12/model_ref.xml': No such file or directory",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "unprivileged-headless-pyrender",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution timed out after 60000ms and was killed",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "vertex-solver",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: Traceback (most recent call last):",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "video-processing",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "vimscript-vim-quine",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "vul-flask",
+      "class": "unsupported",
+      "reason": "requires-live-service",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "vul-flink",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: Error: Flink source file not found at /opt/flink/flink-runtime/src/main/java/org/apache/flink/runtime/rest/FileUploadHandler.java",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "vulnerable-secret",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "wasm-pipeline",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "weighted-max-sat-solver",
+      "class": "supported",
+      "controls_status": "pass"
+    },
+    {
+      "task_id": "winning-avg-corewars",
+      "class": "supported",
+      "controls_status": "fail"
+    },
+    {
+      "task_id": "word2vec-from-scratch",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-c3432a3f9ec84238/.oracle-solution-dockerless.sh: line 473: python: command not found",
+      "controls_status": "pending"
+    },
+    {
+      "task_id": "write-compressor",
+      "class": "unsupported",
+      "reason": "ingest-error: oracle solution failed: /tmp/exaix-tb-ingest-1e19b516f24d71cc/.oracle-solution-dockerless.sh: line 732: rustc: command not found",
+      "controls_status": "pending"
+    }
+  ]
+}

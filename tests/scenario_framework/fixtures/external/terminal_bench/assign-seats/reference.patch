@@ -1,0 +1,32 @@
+diff --git a/alice_decoded.txt b/alice_decoded.txt
+new file mode 100644
+index 0000000..27e63f6
+--- /dev/null
++++ b/alice_decoded.txt
+@@ -0,0 +1 @@
++print("I'm Alice! You should know that Frankie and I work at rival companies.")
+\ No newline at end of file
+diff --git a/bob_decoded.txt b/bob_decoded.txt
+new file mode 100644
+index 0000000..db52e99
+--- /dev/null
++++ b/bob_decoded.txt
+@@ -0,0 +1 @@
++print("I'm Bob! My preference is that I sit two seats to the left of Alice. Also, I don't like Ethan, so I refuse to sit next to him.")
+\ No newline at end of file
+diff --git a/charlie_decoded.txt b/charlie_decoded.txt
+new file mode 100644
+index 0000000..a2ba1b2
+--- /dev/null
++++ b/charlie_decoded.txt
+@@ -0,0 +1 @@
++print("So... who are the two people I'm sitting between?")
+\ No newline at end of file
+diff --git a/results.txt b/results.txt
+new file mode 100644
+index 0000000..e630520
+--- /dev/null
++++ b/results.txt
+@@ -0,0 +1,2 @@
++Alice, Bob
++Alice, Ethan

@@ -30,6 +30,20 @@ Deno.test("[DelegateIsolation] buildJailLaunch wraps an inner command in the har
   assert(jailed.args.includes("claude"), "the inner delegate binary must be present as the container command");
 });
 
+Deno.test("[DelegateIsolation] buildJailLaunch uses an explicit credentialMountArgs override instead of live-resolving credentials", () => {
+  const jailed = buildJailLaunch({ bin: "claude", args: ["-p"] }, {
+    mountSource: "/some/portal",
+    mountDest: "/app",
+    credentialMountArgs: ["--mount", "type=bind,src=$FRAMEWORK_HOME/output/.eval-jail-creds/claude,dst=/tmp/.claude"],
+  });
+  assertJailed(jailed.bin, jailed.args);
+  assert(
+    jailed.args.includes("type=bind,src=$FRAMEWORK_HOME/output/.eval-jail-creds/claude,dst=/tmp/.claude"),
+    "must use the override mount verbatim (a template-safe, run-time-expanded path) instead of a " +
+      "generation-time-resolved disposable temp dir, which would go stale before the persisted scenario re-runs",
+  );
+});
+
 Deno.test("[DelegateIsolation] external_bench_task template's rendered delegate step is jail-wrapped, never host-direct", () => {
   const yaml = renderExternalBenchTaskTemplate({
     id: "delegate-isolation-fixture",
@@ -39,6 +53,7 @@ Deno.test("[DelegateIsolation] external_bench_task template's rendered delegate 
     oracleTestsDir: "delegate-isolation-fixture/oracle_tests",
     scopedTestCmd: "true",
     tool: "claude-code",
+    benchmarkVersion: "d28711d0da2675d0bb1d56de45ae5df6082438a3",
   });
   assert(yaml.includes('command: "docker"'), "rendered delegate step must invoke docker, not the raw CLI");
   assert(yaml.includes("--cap-drop=ALL"), "rendered args must carry the capability drop");

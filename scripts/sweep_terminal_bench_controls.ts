@@ -16,7 +16,7 @@
  * @related-files [scripts/ingest_terminal_bench.ts, tests/scenario_framework/runner/matrix_expander.ts]
  */
 
-import { join } from "@std/path";
+import { join, resolve } from "@std/path";
 import { copy } from "@std/fs";
 import type { Opt, Reason } from "@exaix/core/types";
 import { buildJailLaunch, dockerProbeSkipReason } from "../tests/scenario_framework/runner/matrix_expander.ts";
@@ -100,9 +100,12 @@ async function runControl(
       extraMounts: [`type=bind,src=${options.oracleTestsSourceDir},dst=/oracle_tests,ro`],
     });
     const run = await runCommand(jailed.bin, jailed.args);
+    const stderrTail = run.stderr.trim().slice(-500);
     return {
       passed: run.code === 0,
-      detail: run.code === 0 ? "verify exited 0" : `verify exited ${run.code}`,
+      detail: run.code === 0
+        ? "verify exited 0"
+        : `verify exited ${run.code}${stderrTail ? ` — stderr: ${stderrTail}` : ""}`,
     };
   } finally {
     await Deno.remove(workDir, { recursive: true });
@@ -194,9 +197,13 @@ function parseArgs(argv: string[]): ISweepCliArgs {
     );
   }
   return {
-    manifestPath,
-    fixturesDir,
-    portalsDir,
+    manifestPath: resolve(manifestPath),
+    // docker --mount requires an absolute src path — a relative --fixtures-dir/--portals-dir
+    // (the natural way to invoke this script from the repo root) otherwise fails at the
+    // daemon with "invalid mount path ... must be absolute" (found via a real sweep run,
+    // Phase 144 Step 5).
+    fixturesDir: resolve(fixturesDir),
+    portalsDir: resolve(portalsDir),
     concurrency: flags["concurrency"] ? Number.parseInt(flags["concurrency"], 10) : DEFAULT_CONCURRENCY,
   };
 }

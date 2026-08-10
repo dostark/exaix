@@ -81,8 +81,20 @@ function printHelp(): void {
   );
 }
 
+/** Vendored task-environment portals (`fixtures/portals/**`) are materialized, arbitrary
+ *  externally-sourced content (Phase 144: a Terminal-Bench/SWE-bench task's own working-dir
+ *  files, bind-mounted verbatim) — never Exaix-authored documentation prose. A `.md`
+ *  extension there is incidental to the vendored task, not a doc; linting (or "fixing") it
+ *  would mutate byte-for-byte vendored fixtures the reference.patch/oracle controls were
+ *  computed against. Excluded from both the directory walk and explicit file-path args. */
+const VENDORED_PORTAL_MARKER = "/fixtures/portals/";
+
+function isVendoredPortalContent(path: string): boolean {
+  return normalize(path).includes(VENDORED_PORTAL_MARKER);
+}
+
 function isMarkdownFile(path: string): boolean {
-  return extname(path).toLowerCase() === ".md";
+  return extname(path).toLowerCase() === ".md" && !isVendoredPortalContent(path);
 }
 
 async function pathExists(path: string): Promise<boolean> {
@@ -94,7 +106,7 @@ async function pathExists(path: string): Promise<boolean> {
   }
 }
 
-async function collectMarkdownFiles(inputPaths: string[]): Promise<string[]> {
+export async function collectMarkdownFiles(inputPaths: string[]): Promise<string[]> {
   const files: string[] = [];
   const roots = inputPaths.length > 0 ? inputPaths : [...DEFAULT_ROOTS];
 

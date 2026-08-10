@@ -925,6 +925,14 @@ export const SCENARIO_SUBSTITUTED_VARIABLES = [
   // Substituted at step-execution time with the scenario's journal rowid baseline, so an
   // `exactl journal wait --since-rowid $JOURNAL_BASELINE` step ignores a prior scenario's events.
   "JOURNAL_BASELINE",
+  // Substituted at step-execution time by expandFileContentSentinels (matrix_expander.ts's
+  // REQUEST_FIXTURE_CONTENT_SENTINEL), NOT by expandInString — an exact-match args-element swap
+  // to the request fixture's raw bytes, never shell-interpolated (GAP-4). Unlike the standard
+  // bare-cell matrix path (which injects this sentinel dynamically at matrix-expansion time and
+  // never persists it), `external_bench_task`'s renderExternalBenchTaskTemplate (Phase 144 Step
+  // 2/5) bakes the sentinel directly into the persisted scenario YAML, so it is a name real
+  // committed scenarios reference on disk, not only an in-memory-only token.
+  "REQUEST_FIXTURE_CONTENT",
 ] as const;
 
 /**

@@ -1,0 +1,40 @@
+diff --git a/sum_array.h b/sum_array.h
+index 3d8aa89..f972d67 100644
+--- a/sum_array.h
++++ b/sum_array.h
+@@ -1,12 +1,27 @@
+ #include <array>
++#include <cstddef>
+ 
+-template <typename T, std::size_t N>
+-constexpr T sum_array(const std::array<T, N> &arr)
++template <typename T, size_t N, size_t I = 0>
++struct sum_array_impl
++{
++    static constexpr T sum(const std::array<T, N> &arr)
++    {
++        return arr[I] + sum_array_impl<T, N, I + 1>::sum(arr);
++    }
++};
++
++template <typename T, size_t N>
++struct sum_array_impl<T, N, N>
+ {
+-    T sum = 0;
+-    for (std::size_t i = 0; i < N; ++i)
++    static constexpr T sum(const std::array<T, N> &)
+     {
+-        sum += arr[i];
++        return T{};
+     }
+-    return sum;
+-}
+\ No newline at end of file
++};
++
++template <typename T, size_t N>
++constexpr T sum_array(const std::array<T, N> &arr)
++{
++    return sum_array_impl<T, N>::sum(arr);
++}
++

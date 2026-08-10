@@ -27,21 +27,42 @@ function render() {
     oracleTestsDir: "log-summary/oracle_tests",
     scopedTestCmd: "cd /app && pytest tests/test_outputs.py -rA",
     tool: "claude-code",
+    benchmarkVersion: "d28711d0da2675d0bb1d56de45ae5df6082438a3",
     scoringWeights: { tests_pass: 0.5 },
   });
 }
 
-Deno.test("[ExternalTemplateMechanics] renders outcome-only steps: delegate + verify-tests, no process/daemon steps", () => {
+Deno.test("[ExternalTemplateMechanics] renders a credential-staging setup step before delegate + verify-tests, no process/daemon steps", () => {
   const yaml = render();
   const parsed = parseYaml(yaml) as { steps: Array<{ id: string }> };
   const ids = parsed.steps.map((s) => s.id);
-  assertEquals(ids, ["bare-delegate", "verify-tests"]);
+  assertEquals(ids, ["stage-claude-credentials", "bare-delegate", "verify-tests"]);
 });
 
-Deno.test("[ExternalTemplateMechanics] carries the bench:terminal-bench, docker, and provider-live tags", () => {
+Deno.test("[ExternalTemplateMechanics] the credential-staging step re-stages into a STABLE, gitignored path — never a generation-time-random temp dir that would go stale before a later re-run", () => {
+  const yaml = render();
+  assert(
+    yaml.includes("$FRAMEWORK_HOME/output/.eval-jail-creds/claude"),
+    "the staging step and the delegate's mount must reference the same stable, run-time-expanded path",
+  );
+  assert(
+    !yaml.includes("eval-jail-creds-") || !/eval-jail-creds-[0-9a-f]{16,}/.test(yaml),
+    "must never bake a Deno.makeTempDirSync()-style random suffix into the persisted scenario YAML",
+  );
+});
+
+Deno.test("[ExternalTemplateMechanics] carries the bench:terminal-bench, bench-version, docker, and provider-live tags", () => {
   const yaml = render();
   const parsed = parseYaml(yaml) as { tags: string[] };
-  assertEquals(parsed.tags.sort(), ["bench:terminal-bench", "docker", "provider-live"]);
+  assertEquals(
+    parsed.tags.sort(),
+    [
+      "bench-version:d28711d0da2675d0bb1d56de45ae5df6082438a3",
+      "bench:terminal-bench",
+      "docker",
+      "provider-live",
+    ],
+  );
 });
 
 Deno.test("[ExternalTemplateMechanics] pack is external_terminal_bench, distinct from the internal swe_tasks pack", () => {
@@ -84,6 +105,7 @@ Deno.test("[ExternalTemplateMechanics] an unsupported tool throws at render time
       oracleTestsDir: "x/oracle_tests",
       scopedTestCmd: "true",
       tool: "not-a-real-tool",
+      benchmarkVersion: "d28711d0da2675d0bb1d56de45ae5df6082438a3",
     });
   } catch {
     threw = true;

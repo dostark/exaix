@@ -1,0 +1,13 @@
+diff --git a/report.txt b/report.txt
+new file mode 100644
+index 0000000..390b0c3
+--- /dev/null
++++ b/report.txt
+@@ -0,0 +1,7 @@
++Total requests: 2000
++Unique IP addresses: 273
++Top 3 URLs:
++  /order-confirmation: 54
++  /product/456: 53
++  /about.html: 52
++404 errors: 83
