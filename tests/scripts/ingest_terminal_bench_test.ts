@@ -39,7 +39,6 @@ Deno.test("[IngestTerminalBench] ingests a fixture task dir to an exact expected
       taskId: "fixture-task",
       benchmarkVersion: BENCHMARK_VERSION,
       rootLicenseText: ALLOWLISTED_LICENSE_TEXT,
-      testCommand: "cd /app && pytest tests/test_outputs.py -rA",
       outFixturesDir,
       outPortalsDir,
     });
@@ -71,6 +70,20 @@ Deno.test("[IngestTerminalBench] ingests a fixture task dir to an exact expected
 
     const envFile = await Deno.readTextFile(join(result.portalDir, "data", "numbers.txt"));
     assertEquals(envFile, "3\n5\n7\n");
+
+    assertEquals(
+      taskJson.scoped_test_cmd,
+      'curl -LsSf https://astral.sh/uv/0.7.13/install.sh | sh -s -- -q && export PATH="$HOME/.local/bin:$PATH" && ' +
+        "uv venv /tmp/.venv -q && . /tmp/.venv/bin/activate && uv pip install -q pytest==8.4.1 && cd /app && " +
+        "pytest /oracle_tests/test_outputs.py -rA",
+      "scoped_test_cmd must be self-contained (pytest bootstrap inline) and target the hidden oracle-tests mount",
+    );
+
+    const oracleTest = await Deno.readTextFile(join(result.contractDir, "oracle_tests", "test_outputs.py"));
+    assert(
+      oracleTest.includes('total_path.read_text().strip() == "15"'),
+      "the hidden oracle test must be vendored verbatim into the contract dir",
+    );
   });
 });
 
@@ -83,7 +96,6 @@ Deno.test("[IngestTerminalBench] sanitizes the task-id and rejects a path-traver
           taskId: "../../evil",
           benchmarkVersion: BENCHMARK_VERSION,
           rootLicenseText: ALLOWLISTED_LICENSE_TEXT,
-          testCommand: "cd /app && pytest tests/test_outputs.py -rA",
           outFixturesDir,
           outPortalsDir,
         }),
@@ -99,7 +111,6 @@ Deno.test("[IngestTerminalBench] a license-ineligible task is skipped, not vendo
       taskId: "ineligible-task",
       benchmarkVersion: BENCHMARK_VERSION,
       rootLicenseText: ALLOWLISTED_LICENSE_TEXT,
-      testCommand: "cd /app && pytest tests/test_outputs.py -rA",
       outFixturesDir,
       outPortalsDir,
     });
@@ -125,7 +136,6 @@ Deno.test("[IngestTerminalBench] disallowed root license (DISALLOWED_LICENSE_TEX
       taskId: "fixture-task",
       benchmarkVersion: BENCHMARK_VERSION,
       rootLicenseText: DISALLOWED_LICENSE_TEXT,
-      testCommand: "cd /app && pytest tests/test_outputs.py -rA",
       outFixturesDir,
       outPortalsDir,
     });

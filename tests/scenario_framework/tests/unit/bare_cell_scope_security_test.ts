@@ -186,7 +186,17 @@ Deno.test("[security] bare opencode launch runs in the eval-jail container mount
     "type=bind,src=$WORKSPACE_ROOT/todo-app,dst=/worktree",
     "the primary mount is ONLY the worktree",
   );
-  assertEquals(mounts[1].endsWith("dst=/tmp/.claude/.credentials.json,ro"), true, "the creds mount is read-only");
+  assertEquals(
+    mounts[1].endsWith(",dst=/tmp/.claude"),
+    true,
+    "the creds mount targets the writable staged .claude dir (a disposable copy), not the read-only live file — " +
+      "Claude Code's own Bash tool needs to create /tmp/.claude/session-env beside the credentials",
+  );
+  assertEquals(
+    mounts[1].includes(",ro"),
+    false,
+    "the staged copy is writable (in-container writes cannot reach the real host credentials — only the disposable copy)",
+  );
   assert(!args.some((a) => a.includes("exaix") && a.includes("bind")), "the repo must never be mounted");
 
   assert(args.includes("--cap-drop=ALL"), "must drop all capabilities");

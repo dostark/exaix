@@ -9,7 +9,12 @@
 
 import type { Opt, Reason } from "@exaix/core/types";
 import { SCHEMA_VERSION } from "../schema/version.ts";
-import { BARE_DELEGATE_STEP_ID, REQUEST_FIXTURE_CONTENT_SENTINEL } from "./matrix_expander.ts";
+import {
+  BARE_DELEGATE_LAUNCH_SHAPES,
+  BARE_DELEGATE_STEP_ID,
+  buildJailLaunch,
+  REQUEST_FIXTURE_CONTENT_SENTINEL,
+} from "./matrix_expander.ts";
 import { buildOpencodePermissionConfig } from "@exaix/session";
 
 export interface IScenarioTemplateOptions {
@@ -18,6 +23,22 @@ export interface IScenarioTemplateOptions {
   pack: string;
   tags: string[];
   requestFixture: string;
+}
+export interface IExternalBenchTaskTemplateOptions {
+  id: string;
+  title: string;
+  requestFixture: string;
+  /** Portal directory relative to fixtures/portals/, e.g. "external/terminal_bench/log-summary". */
+  portalDir: string;
+  /** The vendored task.json's scoped_test_cmd — the benchmark's own outcome criterion. */
+  scopedTestCmd: string;
+  /** Directory (relative to fixtures/external/terminal_bench/<task-id>/) holding the hidden
+   *  oracle test content — mounted read-only ONLY for the verify step, at /oracle_tests,
+   *  never visible to the delegate step. */
+  oracleTestsDir: string;
+  /** Delegate tool, looked up in the shared BARE_DELEGATE_LAUNCH_SHAPES (Phase 143 reuse). */
+  tool: string;
+  scoringWeights?: Record<string, number>;
 }
 
 export interface ICellDef {
@@ -591,6 +612,97 @@ export function renderSweTaskBareTemplate(
     `        equals: 0`,
     "",
     renderSweVerifyTestsStep(scoreWeights),
+  ];
+
+  return parts.filter(Boolean).join("\n");
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Phase 144 Step 2 — external_bench_task template (Terminal-Bench container-portal)
+// ────────────────────────────────────────────────────────────────────────────
+
+/** Container mount destination + WORKDIR for external-benchmark tasks — matches the
+ *  upstream benchmark's own container convention (Terminal-Bench uses `/app`), unlike the
+ *  bare swe_tasks jail's `/worktree` — see phase-144 Step 1's `scoped_test_cmd` values. */
+const EXTERNAL_BENCH_MOUNT_DEST = "/app";
+/** Where the hidden oracle test content is mounted — verify step only, never the delegate step. */
+const ORACLE_TESTS_MOUNT_DEST = "/oracle_tests";
+
+/**
+ * Renders an `external_bench_task` scenario: the exemplar runs inside its vendored
+ * environment bracket rather than the shared `renderSweSetupSteps` (hardcoded to copy +
+ * `git init` into `$WORKSPACE_ROOT/todo-app`, which cannot represent an already-vendored
+ * external portal — GAP-2). The delegate and verify steps are wrapped by the exported,
+ * parametrized `buildJailLaunch` at render time (not via the matrix's per-cell overlay,
+ * which is hardcoded to the todo-app mount) — the exact same hardened container-launch
+ * shape Phase 143's bare cells use, mounted at `/app` (the upstream benchmark's own
+ * convention) instead of `/worktree`. No docker-compose: a single `docker run --rm` per
+ * step, so teardown is guaranteed by `--rm` on every exit path, not a separate cleanup step.
+ */
+export function renderExternalBenchTaskTemplate(task: IExternalBenchTaskTemplateOptions): string {
+  const scoreWeights = task.scoringWeights ?? {};
+  const shape = BARE_DELEGATE_LAUNCH_SHAPES[task.tool];
+  if (!shape) {
+    throw new Error(
+      `external_bench_task (tool=${task.tool}) has no direct-launch shape ` +
+        `(supported tools: ${Object.keys(BARE_DELEGATE_LAUNCH_SHAPES).join(", ")})`,
+    );
+  }
+  const mountSource = `$FRAMEWORK_HOME/fixtures/portals/${task.portalDir}`;
+  const jailedDelegate = buildJailLaunch(shape, {
+    mountSource,
+    mountDest: EXTERNAL_BENCH_MOUNT_DEST,
+    workdir: EXTERNAL_BENCH_MOUNT_DEST,
+  });
+  const delegateArgs = [...jailedDelegate.args];
+  const printIdx = delegateArgs.indexOf("-p");
+  if (printIdx >= 0) {
+    delegateArgs.splice(printIdx + 1, 0, REQUEST_FIXTURE_CONTENT_SENTINEL);
+  } else {
+    delegateArgs.push(REQUEST_FIXTURE_CONTENT_SENTINEL);
+  }
+  const jailedVerify = buildJailLaunch({ bin: "bash", args: ["-c", task.scopedTestCmd] }, {
+    mountSource,
+    mountDest: EXTERNAL_BENCH_MOUNT_DEST,
+    workdir: EXTERNAL_BENCH_MOUNT_DEST,
+    extraMounts: [
+      `type=bind,src=$FRAMEWORK_HOME/fixtures/external/terminal_bench/${task.oracleTestsDir},dst=${ORACLE_TESTS_MOUNT_DEST},ro`,
+    ],
+  });
+
+  const parts: string[] = [
+    `schema_version: "1.0.0"`,
+    `id: "${task.id}"`,
+    `title: "${task.title}"`,
+    `pack: "external_terminal_bench"`,
+    `tags: ["bench:terminal-bench", "docker", "provider-live"]`,
+    `request_fixture: "${task.requestFixture}"`,
+    `portals: []`,
+    `mode_support: ["auto"]`,
+    "",
+    "steps:",
+    `  - id: "${BARE_DELEGATE_STEP_ID}"`,
+    `    type: "shell"`,
+    `    command: "${jailedDelegate.bin}"`,
+    `    args: [${delegateArgs.map((a) => JSON.stringify(a)).join(", ")}]`,
+    `    timeout_sec: ${DEFAULT_BARE_DELEGATE_TIMEOUT_SEC}`,
+    `    output_criteria:`,
+    `      - id: "delegate-ran"`,
+    `        kind: "command-exit-code"`,
+    `        equals: 0`,
+    "",
+    `  - id: "${VERIFY_TESTS_STEP_ID}"`,
+    `    type: "shell"`,
+    `    command: "${jailedVerify.bin}"`,
+    `    args: [${jailedVerify.args.map((a) => JSON.stringify(a)).join(", ")}]`,
+    `    output_criteria:`,
+    `      - id: "tests-pass"`,
+    `        kind: "command-exit-code"`,
+    `        equals: 0`,
+    scoreWeights.tests_pass !== undefined
+      ? `        score_weight: ${scoreWeights.tests_pass}`
+      : `        score_weight: 0.3`,
+    "",
   ];
 
   return parts.filter(Boolean).join("\n");

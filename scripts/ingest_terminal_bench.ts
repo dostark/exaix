@@ -39,7 +39,6 @@ export interface IIngestOptions {
   taskId: string;
   benchmarkVersion: string;
   rootLicenseText: string;
-  testCommand: string;
   outFixturesDir: string;
   outPortalsDir: string;
 }
@@ -59,7 +58,6 @@ interface ICliArgs {
   taskId: string;
   benchmarkVersion: string;
   license: string;
-  testCommand: string;
   outFixtures: string;
   outPortals: string;
 }
@@ -219,6 +217,36 @@ async function copyEnvironmentEntries(sourceDir: string, destDir: string): Promi
   }
 }
 
+/** The pinned uv release used to bootstrap pytest dockerlessly for verification (matches
+ *  every observed upstream run-tests.sh's own pinned uv installer version). */
+const UV_INSTALLER_VERSION = "0.7.13";
+/** Fallback pip package spec when the upstream run-tests.sh names none explicitly. */
+const DEFAULT_TEST_PACKAGES = "pytest==8.4.1";
+
+/**
+ * Derives a self-contained, dockerless-safe scoped_test_cmd from the upstream run-tests.sh:
+ * every observed Terminal-Bench task's run-tests.sh installs uv + the task's pytest package
+ * set, then runs `pytest $TEST_DIR/test_outputs.py`. The eval-jail image already ships
+ * curl/python3 but not uv/pytest, so this derivation extracts ONLY the task-specific
+ * `uv pip install` package list and rebuilds a minimal, non-root-safe bootstrap around it —
+ * dropping the upstream script's `apt-get` lines (root-only; curl is already present) and
+ * pointing at the hidden oracle-tests mount (/oracle_tests) instead of $TEST_DIR (an env var
+ * Exaix's harness does not set).
+ */
+export function deriveScopedTestCmd(runTestsShText: string): string {
+  const pipInstallMatch = runTestsShText.match(/uv pip install\s+([^\n]+)/);
+  const packages = pipInstallMatch ? pipInstallMatch[1].trim() : DEFAULT_TEST_PACKAGES;
+  return [
+    `curl -LsSf https://astral.sh/uv/${UV_INSTALLER_VERSION}/install.sh | sh -s -- -q`,
+    `export PATH="$HOME/.local/bin:$PATH"`,
+    `uv venv /tmp/.venv -q`,
+    `. /tmp/.venv/bin/activate`,
+    `uv pip install -q ${packages}`,
+    `cd ${CONTAINER_WORKDIR}`,
+    `pytest /oracle_tests/test_outputs.py -rA`,
+  ].join(" && ");
+}
+
 export async function ingestTerminalBenchTask(options: IIngestOptions): Promise<IIngestResult> {
   const sanitizedTaskId = PathSecurity.normalizePath(options.taskId);
 
@@ -277,9 +305,14 @@ export async function ingestTerminalBenchTask(options: IIngestOptions): Promise<
     const instructionLines = upstream.instruction.trim().split("\n").map((line) => line.replace(/[ \t]+$/, ""));
     await Deno.writeTextFile(join(contractDir, "TASK.md"), `# ${title}\n\n${instructionLines.join("\n")}\n`);
 
+    const runTestsShText = await Deno.readTextFile(join(options.sourceDir, "run-tests.sh"));
+    const scopedTestCmd = deriveScopedTestCmd(runTestsShText);
+    const oracleTestsDir = join(contractDir, "oracle_tests");
+    await copy(join(options.sourceDir, "tests"), oracleTestsDir, { overwrite: true });
+
     const taskJson: ITaskJson = TaskJsonSchema.parse({
       base_ref: baseRef,
-      scoped_test_cmd: options.testCommand,
+      scoped_test_cmd: scopedTestCmd,
       family: `task:${upstream.category}`,
       difficulty: mapDifficulty(upstream.difficulty),
       min_turns: 2,
@@ -317,11 +350,10 @@ function parseArgs(argv: string[]): ICliArgs {
   const taskId = flags["task-id"];
   const benchmarkVersion = flags["benchmark-version"];
   const license = flags["license"];
-  const testCommand = flags["test-command"];
-  if (!source || !taskId || !benchmarkVersion || !license || !testCommand) {
+  if (!source || !taskId || !benchmarkVersion || !license) {
     throw new Error(
       "Usage: --source <dir> --task-id <id> --benchmark-version <sha> --license <path> " +
-        "--test-command <cmd> [--out-fixtures <dir>] [--out-portals <dir>]",
+        "[--out-fixtures <dir>] [--out-portals <dir>]",
     );
   }
   return {
@@ -329,7 +361,6 @@ function parseArgs(argv: string[]): ICliArgs {
     taskId,
     benchmarkVersion,
     license,
-    testCommand,
     outFixtures: flags["out-fixtures"] ?? DEFAULT_OUT_FIXTURES_DIR,
     outPortals: flags["out-portals"] ?? DEFAULT_OUT_PORTALS_DIR,
   };
@@ -343,7 +374,6 @@ async function main(): Promise<void> {
     taskId: args.taskId,
     benchmarkVersion: args.benchmarkVersion,
     rootLicenseText,
-    testCommand: args.testCommand,
     outFixturesDir: args.outFixtures,
     outPortalsDir: args.outPortals,
   });

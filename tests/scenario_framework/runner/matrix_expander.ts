@@ -28,6 +28,25 @@ export interface IMatrixCellRun {
   status: MatrixCellStatusValue;
   skipReason?: string;
 }
+/**
+ * Options for `buildJailLaunch`. `mountSource` is the only required field — every other
+ * option defaults to the exact shape Phase 143's bare-cell path has always used
+ * (`/worktree` mount + workdir, no extra env beyond `HOME=/tmp`), so existing callers are
+ * unaffected by this Phase 144 Step 2 generalization.
+ */
+export interface IJailLaunchOptions {
+  /** Host path bind-mounted into the container (the only content the delegate can see). */
+  mountSource: string;
+  /** Mount destination inside the container. Defaults to `/worktree` (bare-cell convention). */
+  mountDest?: Opt<string, Reason.SensibleDefault>;
+  /** Container WORKDIR. Defaults to `/worktree` (bare-cell convention). */
+  workdir?: Opt<string, Reason.SensibleDefault>;
+  /** Extra `-e KEY=VALUE` env vars beyond the always-present `HOME=/tmp`. */
+  extraEnv?: Opt<Record<string, string>, Reason.OptionalInput>;
+  /** Extra raw `--mount <entry>` bind mounts beyond `mountSource` (e.g. the hidden oracle
+   *  test directory for a verify-only step — never present during delegate editing). */
+  extraMounts?: Opt<string[], Reason.OptionalInput>;
+}
 
 export interface IExpandMatrixOptions {
   /** Environment snapshot used for key / opt-in presence checks. */
@@ -143,7 +162,7 @@ export const REQUEST_FIXTURE_CONTENT_SENTINEL = "$REQUEST_FIXTURE_CONTENT";
  * Unknown tools fail loudly at overlay time (authoring error), mirroring the start-daemon
  * requirement below.
  */
-const BARE_DELEGATE_LAUNCH_SHAPES: Record<string, { bin: string; args: string[] }> = {
+export const BARE_DELEGATE_LAUNCH_SHAPES: Record<string, { bin: string; args: string[] }> = {
   "opencode": {
     bin: "opencode",
     // Inside the eval-jail container the worktree is at /worktree (the runner mounts only the
@@ -172,43 +191,72 @@ const BARE_DELEGATE_LAUNCH_SHAPES: Record<string, { bin: string; args: string[] 
 const EXA_EVAL_JAIL_IMAGE_ENV = "EXA_EVAL_JAIL_IMAGE";
 const DEFAULT_EXA_EVAL_JAIL_IMAGE = "exaix-eval-jail";
 
+const DEFAULT_JAIL_MOUNT_DEST = "/worktree";
+
 /**
- * Phase 143 — the eval-jail launch wrapper. Every bare delegate runs inside a container that
- * mounts ONLY the task worktree (`$WORKSPACE_ROOT/todo-app` → /worktree): the repo (and its
- * `reference.patch` solutions) is absent from the delegate's filesystem, so solution leakage is
- * structurally impossible. `--user <host-uid>:<host-gid>` keeps the bind-mounted worktree (owned
- * by the host user) writable; `--cap-drop=ALL` + `--no-new-privileges` harden the process; the
- * opencode permission config is passed in via OPENCODE_CONFIG (defense-in-depth).
+ * Phase 143 — the eval-jail launch wrapper. Every jailed delegate runs inside a container that
+ * mounts ONLY `options.mountSource` (bare cells: `$WORKSPACE_ROOT/todo-app` → `/worktree`): the
+ * repo (and its `reference.patch` solutions) is absent from the delegate's filesystem, so
+ * solution leakage is structurally impossible. `--user <host-uid>:<host-gid>` keeps the
+ * bind-mounted directory (owned by the host user) writable; `--cap-drop=ALL` +
+ * `--no-new-privileges` harden the process; `options.extraEnv` (e.g. bare cells'
+ * `OPENCODE_CONFIG`) is defense-in-depth, never the primary boundary. Exported and
+ * parametrized (Phase 144 Step 2) so `external_bench_task` reuses this exact hardened launch
+ * shape instead of hand-rolling a second `docker run` invocation.
  */
-function buildJailLaunch(inner: { bin: string; args: string[] }): { bin: string; args: string[] } {
+export function buildJailLaunch(
+  inner: { bin: string; args: string[] },
+  options: IJailLaunchOptions,
+): { bin: string; args: string[] } {
   const image = Deno.env.get(EXA_EVAL_JAIL_IMAGE_ENV) ?? DEFAULT_EXA_EVAL_JAIL_IMAGE;
   const uid = Deno.uid();
   const gid = Deno.gid();
   const userArgs = uid !== null && gid !== null ? ["--user", `${uid}:${gid}`] : [];
   // The container's claude (HOME=/tmp) needs the host's claude.ai subscription login — the
-  // eval-jail credential passthrough. Read-only mount of just the credentials file; the image
-  // holds no login, so without this the bare claude delegate cannot authenticate.
+  // eval-jail credential passthrough. A DISPOSABLE COPY of the credentials file is staged
+  // into a fresh temp dir and bind-mounted (read-write) at /tmp/.claude — never the live
+  // host file. Mounting the live file alone (read-only) at /tmp/.claude/.credentials.json
+  // was the original design, but Docker auto-creates /tmp/.claude as a root-owned,
+  // non-writable directory when only a single nested file is mounted, and Claude Code's own
+  // Bash tool needs to `mkdir /tmp/.claude/session-env` beside it — blocking every Bash call
+  // with EACCES (discovered via a real headless run, Phase 144 Step 2). Mounting the WHOLE
+  // staged directory read-write fixes this while still never exposing the real credentials
+  // file to in-container writes — only a disposable copy is mounted, so even an in-container
+  // modification cannot corrupt the host's real login.
   const hostHome = Deno.env.get("HOME");
-  const claudeCreds = hostHome ? `${hostHome}/.claude/.credentials.json` : undefined;
-  const credMounts = claudeCreds
-    ? ["--mount", `type=bind,src=${claudeCreds},dst=/tmp/.claude/.credentials.json,ro`]
-    : [];
+  let credMounts: string[] = [];
+  if (hostHome) {
+    try {
+      const liveCredsPath = `${hostHome}/.claude/.credentials.json`;
+      const stagedClaudeDir = Deno.makeTempDirSync({ prefix: "eval-jail-creds-" });
+      Deno.copyFileSync(liveCredsPath, `${stagedClaudeDir}/.credentials.json`);
+      credMounts = ["--mount", `type=bind,src=${stagedClaudeDir},dst=/tmp/.claude`];
+    } catch {
+      // No host credentials file (e.g. CI, no subscription login) — jailed delegate runs
+      // without claude.ai auth, matching the prior behavior when HOME/the file was absent.
+      credMounts = [];
+    }
+  }
+  const mountDest = options.mountDest ?? DEFAULT_JAIL_MOUNT_DEST;
+  const workdir = options.workdir ?? DEFAULT_JAIL_MOUNT_DEST;
+  const extraEnvArgs = Object.entries(options.extraEnv ?? {}).flatMap(([key, value]) => ["-e", `${key}=${value}`]);
+  const extraMountArgs = (options.extraMounts ?? []).flatMap((entry) => ["--mount", entry]);
   return {
     bin: "docker",
     args: [
       "run",
       "--rm",
       "--mount",
-      "type=bind,src=$WORKSPACE_ROOT/todo-app,dst=/worktree",
+      `type=bind,src=${options.mountSource},dst=${mountDest}`,
+      ...extraMountArgs,
       "--workdir",
-      "/worktree",
+      workdir,
       ...userArgs,
       "--cap-drop=ALL",
       "--security-opt=no-new-privileges",
       "-e",
       "HOME=/tmp",
-      "-e",
-      "OPENCODE_CONFIG=/worktree/opencode.jsonc",
+      ...extraEnvArgs,
       ...credMounts,
       image,
       inner.bin,
@@ -216,7 +264,6 @@ function buildJailLaunch(inner: { bin: string; args: string[] }): { bin: string;
     ],
   };
 }
-
 const NON_EMPTY = z.string().min(1);
 
 /**
@@ -334,7 +381,10 @@ function overlayBareDelegateStep(steps: IScenarioStep[], cell: IMatrixCell): ISc
   }
   // Phase 143 — every bare delegate runs in the eval-jail container (worktree-only mount), so
   // the repo's solution fixtures are not in the delegate's filesystem.
-  const jailed = buildJailLaunch(shape);
+  const jailed = buildJailLaunch(shape, {
+    mountSource: "$WORKSPACE_ROOT/todo-app",
+    extraEnv: { OPENCODE_CONFIG: "/worktree/opencode.jsonc" },
+  });
   return steps.map((step) => {
     if (step.id !== BARE_DELEGATE_STEP_ID) return step;
     // claude's `-p` requires the prompt as the argument IMMEDIATELY after it — a prompt
@@ -394,6 +444,23 @@ export function binIsOnPath(bin: string, pathEnv: Opt<string, Reason.OptionalInp
     }
   }
   return false;
+}
+
+/** The binary `dockerProbeSkipReason` checks for. */
+const DOCKER_BIN = "docker";
+
+/**
+ * Pre-flight docker-availability predicate (Phase 144 Step 2), mirroring `cellSkipReason`'s
+ * shape: null means runnable, a string is the skip reason. Checked BEFORE any `docker run` —
+ * `step_executor.ts`'s generic SHELL-step path has no missing-binary-to-SKIPPED handling of
+ * its own (a bare `Deno.Command(...).output()`), so an absent `docker` invoked through that
+ * path would throw uncaught rather than skip. Callers gate `external_bench_task` scenario
+ * runs on this predicate the same way matrix cells are gated on `cellSkipReason`.
+ */
+export function dockerProbeSkipReason(
+  binOnPath: Opt<(bin: string) => boolean, Reason.SensibleDefault> = binIsOnPath,
+): string | null {
+  return binOnPath(DOCKER_BIN) ? null : `binary '${DOCKER_BIN}' not on PATH`;
 }
 
 /**

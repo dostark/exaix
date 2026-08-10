@@ -1,6 +1,6 @@
 {
   "base_ref": "fa95a187e021186645be252a18b8eacc7985a429",
-  "scoped_test_cmd": "cd /app && pytest tests/test_outputs.py -rA",
+  "scoped_test_cmd": "curl -LsSf https://astral.sh/uv/0.7.13/install.sh | sh -s -- -q && export PATH=\"$HOME/.local/bin:$PATH\" && uv venv /tmp/.venv -q && . /tmp/.venv/bin/activate && uv pip install -q pytest==8.4.1 && cd /app && pytest /oracle_tests/test_outputs.py -rA",
   "family": "task:system-administration",
   "difficulty": "S",
   "min_turns": 2,
