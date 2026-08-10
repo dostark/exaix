@@ -11,19 +11,24 @@
  *   The oracle solution is applied dockerlessly by rewriting its hardcoded `/app` working
  *   directory to the real temp working directory (Step 1 has no container; Step 2 will run
  *   the unmodified upstream script inside the real container).
- *   Usage: deno run -A scripts/ingest_terminal_bench.ts --source <dir> --task-id <id>
- *     --benchmark-version <sha> --license <root-license-path> --test-command <cmd>
- *     [--out-fixtures <dir>] [--out-portals <dir>]
- * @related-files [tests/scenario_framework/schema/task_schema.ts, tests/scripts/ingest_terminal_bench_test.ts, tests/scripts/license_eligibility_test.ts]
+ *   Usage:
+ *     deno run -A scripts/ingest_terminal_bench.ts --source <dir> --task-id <id>
+ *       --benchmark-version <sha> --license <root-license-path>
+ *       [--out-fixtures <dir>] [--out-portals <dir>]
+ *     deno run -A scripts/ingest_terminal_bench.ts --batch <upstream-release-root>
+ *       --benchmark-version <sha> --license <root-license-path> [--out-fixtures <dir>]
+ *       [--out-portals <dir>] [--out-scenarios <dir>] [--out-requests <dir>]  (Phase 144 Step 3)
+ * @related-files [tests/scenario_framework/schema/task_schema.ts, tests/scenario_framework/runner/scenario_templates.ts, tests/scripts/ingest_terminal_bench_test.ts, tests/scripts/license_eligibility_test.ts, tests/scripts/classifier_test.ts, tests/scripts/manifest_integrity_test.ts]
  */
 
 import { z } from "zod";
 import { parse as parseYaml } from "@std/yaml";
-import { copy } from "@std/fs";
+import { copy, walk } from "@std/fs";
 import { join, resolve } from "@std/path";
 import { PathSecurity } from "@exaix/tool-runtime";
 import type { Opt, Reason } from "@exaix/core/types";
 import { type ITaskJson, TaskJsonSchema } from "../tests/scenario_framework/schema/task_schema.ts";
+import { renderExternalBenchTaskTemplate } from "../tests/scenario_framework/runner/scenario_templates.ts";
 
 /** The 5 permissive, redistribution-safe licenses accepted for vendoring external benchmark content (GAP-10). */
 export type LicenseIdentifier = "MIT" | "Apache-2.0" | "BSD-2-Clause" | "BSD-3-Clause" | "ISC";
@@ -53,13 +58,82 @@ export interface IIngestResult {
   reason?: string;
 }
 
+/** Reasons classifyTerminalBenchTask can disqualify a task from the supported subset
+ *  (Phase 144 Step 3's classifier table: `supported` = file-oriented, solvable/verifiable
+ *  by editing/creating files in the working dir; everything else is `unsupported`).
+ *  Every branch is a structural or content signal the bind-mount + single `docker run`
+ *  substrate (GAP-1) cannot faithfully represent. */
+export type UnsupportedReason =
+  | "multi-container"
+  | "custom-network-config"
+  | "privileged-or-device-access"
+  | "gpu-required"
+  | "requires-live-service"
+  | "requires-interactive-terminal"
+  | "ambiguous-environment"
+  | "ingest-error";
+
+export interface IClassifierInput {
+  /** Raw docker-compose.yaml text from the upstream task dir. */
+  dockerComposeText: string;
+  /** Raw Dockerfile text from the upstream task dir. */
+  dockerfileText: string;
+  /** Concatenated content of every file under the upstream task's tests/ dir. */
+  testScriptsText: string;
+}
+
+export interface IClassificationResult {
+  supported: boolean;
+  reason?: UnsupportedReason;
+}
+
+/** A batch-ingested task's final disposition in the coverage manifest. */
+export type TaskClass = "supported" | "unsupported" | "license-ineligible";
+/** Docker-gated controls-sweep outcome (Step 3 Actions); ingest itself never runs docker,
+ *  so every freshly-ingested task starts "pending" until the separate sweep updates it. */
+export type ControlsStatus = "pending" | "pass" | "fail" | "docker-unavailable";
+
+/** One task's classification/ingestion outcome inside a batch manifest. */
+export interface IManifestTaskEntry {
+  task_id: string;
+  class: TaskClass;
+  reason?: string;
+  controls_status: ControlsStatus;
+}
+
+/** Published per-release coverage manifest (Phase 144 Step 3). */
+export interface IManifest {
+  generated_at: string;
+  benchmark_version: string;
+  total_tasks: number;
+  supported_count: number;
+  coverage_pct: number;
+  tasks: IManifestTaskEntry[];
+}
+
+export interface IBatchIngestOptions {
+  /** Directory containing one subdirectory per upstream task. */
+  upstreamRoot: string;
+  benchmarkVersion: string;
+  rootLicenseText: string;
+  outFixturesDir: string;
+  outPortalsDir: string;
+  /** Where generated `<task-id>.yaml` scenarios are written (external_terminal_bench pack). */
+  outScenariosDir: string;
+  /** Where generated `<task-id>.md` request fixtures are written. */
+  outRequestsDir: string;
+}
+
 interface ICliArgs {
-  source: string;
-  taskId: string;
+  source?: string;
+  taskId?: string;
+  batch?: string;
   benchmarkVersion: string;
   license: string;
   outFixtures: string;
   outPortals: string;
+  outScenarios: string;
+  outRequests: string;
 }
 
 /** Canonical order of LICENSE_ALLOWLIST — GAP-10's fixed permissive allowlist. */
@@ -113,6 +187,69 @@ export function checkLicenseEligibility(
   return { eligible: true, matched: rootMatch };
 }
 
+/** Permissive compose-service schema — only the fields the classifier inspects are typed;
+ *  every other real docker-compose field (image, build, volumes, environment, command, …)
+ *  is stripped by zod's default unknown-key behavior, matching `UpstreamTaskYamlSchema`. */
+const ComposeServiceSchema = z.object({
+  dns: z.unknown().optional(),
+  extra_hosts: z.unknown().optional(),
+  networks: z.unknown().optional(),
+  privileged: z.boolean().optional(),
+  cap_add: z.unknown().optional(),
+  devices: z.unknown().optional(),
+});
+const ComposeSchema = z.object({
+  services: z.record(z.string(), ComposeServiceSchema).optional(),
+});
+
+/** Test-script content signals a live network probe (HTTP client, raw socket, curl to a host). */
+const LIVE_SERVICE_PATTERN =
+  /\brequests\.(get|post|put|delete|patch)\(|urllib\.request|socket\.(socket|create_connection)|https?:\/\/(localhost|127\.0\.0\.1)|curl\s+https?:\/\//i;
+/** Test-script content signals interactive-terminal control (the bind-mount jail has no TTY/pty). */
+const INTERACTIVE_TERMINAL_PATTERN = /\btmux\b|\bpexpect\b|\bpty\.(spawn|openpty)|\bpyte\.|send_keys\(/i;
+/** Dockerfile content signals a GPU/CUDA base image or runtime requirement. */
+const GPU_PATTERN = /\bnvidia\b|\bcuda\b/i;
+
+/**
+ * Classifies an upstream Terminal-Bench task as `supported` (runs faithfully inside the
+ * bind-mount single-container substrate) or `unsupported` with a machine-readable reason
+ * (Phase 144 Step 3). Conservative: any ambiguous or unparseable signal is `unsupported`,
+ * never silently defaulted to `supported` — matching the plan's classifier disposition
+ * table ("ambiguous ⇒ unsupported with reason recorded").
+ */
+export function classifyTerminalBenchTask(input: IClassifierInput): IClassificationResult {
+  let compose: z.infer<typeof ComposeSchema>;
+  try {
+    compose = ComposeSchema.parse(parseYaml(input.dockerComposeText) ?? {});
+  } catch {
+    return { supported: false, reason: "ambiguous-environment" };
+  }
+  const serviceNames = Object.keys(compose.services ?? {});
+  if (serviceNames.length !== 1) {
+    return {
+      supported: false,
+      reason: serviceNames.length > 1 ? "multi-container" : "ambiguous-environment",
+    };
+  }
+  const service = compose.services![serviceNames[0]];
+  if (service.dns !== undefined || service.extra_hosts !== undefined || service.networks !== undefined) {
+    return { supported: false, reason: "custom-network-config" };
+  }
+  if (service.privileged === true || service.cap_add !== undefined || service.devices !== undefined) {
+    return { supported: false, reason: "privileged-or-device-access" };
+  }
+  if (GPU_PATTERN.test(input.dockerfileText)) {
+    return { supported: false, reason: "gpu-required" };
+  }
+  if (LIVE_SERVICE_PATTERN.test(input.testScriptsText)) {
+    return { supported: false, reason: "requires-live-service" };
+  }
+  if (INTERACTIVE_TERMINAL_PATTERN.test(input.testScriptsText)) {
+    return { supported: false, reason: "requires-interactive-terminal" };
+  }
+  return { supported: true };
+}
+
 const DIFFICULTY_MAP: Record<string, ITaskJson["difficulty"]> = {
   "easy": "S",
   "medium": "M",
@@ -160,6 +297,15 @@ const SYNTHETIC_COMMIT_AUTHOR_EMAIL = "external-bench-ingest@exaix.dev";
 const CONTAINER_WORKDIR = "/app";
 const DEFAULT_OUT_FIXTURES_DIR = "tests/scenario_framework/fixtures/external/terminal_bench";
 const DEFAULT_OUT_PORTALS_DIR = "tests/scenario_framework/fixtures/portals/external/terminal_bench";
+const DEFAULT_OUT_SCENARIOS_DIR = "tests/scenario_framework/scenarios/external_terminal_bench";
+const DEFAULT_OUT_REQUESTS_DIR = "tests/scenario_framework/fixtures/requests/external/terminal_bench";
+/** Delegate tool used to render batch-generated scenarios (Phase 143's BARE_DELEGATE_LAUNCH_SHAPES key). */
+const DEFAULT_SCENARIO_TOOL = "claude-code";
+/** Minimum supported-subset coverage (Risks R4): below this, reassess the subset choice
+ *  before spending on a live run — declared locally per this module's own convention
+ *  (no shared "framework evaluation constants" file exists, matching
+ *  DEFAULT_BARE_DELEGATE_TIMEOUT_SEC in scenario_templates.ts, GAP-9). */
+export const MIN_SUPPORTED_COVERAGE_PCT = 30;
 
 async function runGit(
   args: string[],
@@ -337,6 +483,129 @@ export async function ingestTerminalBenchTask(options: IIngestOptions): Promise<
   }
 }
 
+/** Reads a file, returning "" if it does not exist (classifier inputs are all optional —
+ *  a task without a docker-compose.yaml/Dockerfile is judged on whatever signals exist). */
+async function readOptionalFile(path: string): Promise<string> {
+  try {
+    return await Deno.readTextFile(path);
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) return "";
+    throw error;
+  }
+}
+
+/** Concatenates every regular file under `testsDir` (classifier test-script inspection
+ *  input) — recursive, since some upstream tasks nest helper modules under tests/. */
+async function concatenateTestScripts(testsDir: string): Promise<string> {
+  const chunks: string[] = [];
+  try {
+    for await (const entry of walk(testsDir, { includeDirs: false })) {
+      chunks.push(await Deno.readTextFile(entry.path));
+    }
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound)) throw error;
+  }
+  return chunks.join("\n");
+}
+
+/**
+ * Classifies, ingests, and generates the scenario/request fixture for one upstream task —
+ * the single-task unit of `batchIngestTerminalBench`'s loop. Any failure anywhere in this
+ * path (a malformed upstream file, an oracle solution that cannot apply outside its real
+ * container, an unexpected schema mismatch) is caught and recorded as `unsupported` with
+ * an `ingest-error` reason instead of propagating — one bad upstream task must never abort
+ * the whole release batch (Actions: "failures either fix ingest bugs or reclassify the
+ * task with reason").
+ */
+async function ingestOneBatchTask(taskId: string, options: IBatchIngestOptions): Promise<IManifestTaskEntry> {
+  try {
+    const taskSourceDir = join(options.upstreamRoot, taskId);
+    const classification = classifyTerminalBenchTask({
+      dockerComposeText: await readOptionalFile(join(taskSourceDir, "docker-compose.yaml")),
+      dockerfileText: await readOptionalFile(join(taskSourceDir, "Dockerfile")),
+      testScriptsText: await concatenateTestScripts(join(taskSourceDir, "tests")),
+    });
+    if (!classification.supported) {
+      return { task_id: taskId, class: "unsupported", reason: classification.reason, controls_status: "pending" };
+    }
+
+    const result = await ingestTerminalBenchTask({
+      sourceDir: taskSourceDir,
+      taskId,
+      benchmarkVersion: options.benchmarkVersion,
+      rootLicenseText: options.rootLicenseText,
+      outFixturesDir: options.outFixturesDir,
+      outPortalsDir: options.outPortalsDir,
+    });
+    if (result.skipped) {
+      return { task_id: taskId, class: "license-ineligible", reason: result.reason, controls_status: "pending" };
+    }
+
+    const taskJson: ITaskJson = TaskJsonSchema.parse(
+      JSON.parse(await Deno.readTextFile(join(result.contractDir, "task.json"))),
+    );
+    const taskMdText = await Deno.readTextFile(join(result.contractDir, "TASK.md"));
+    await Deno.mkdir(options.outRequestsDir, { recursive: true });
+    await Deno.writeTextFile(join(options.outRequestsDir, `${result.taskId}.md`), taskMdText);
+
+    const scenarioYaml = renderExternalBenchTaskTemplate({
+      id: `external-terminal-bench-${result.taskId}`,
+      title: taskJson.title ?? humanizeTaskId(result.taskId),
+      requestFixture: `fixtures/requests/external/terminal_bench/${result.taskId}.md`,
+      portalDir: `external/terminal_bench/${result.taskId}`,
+      scopedTestCmd: taskJson.scoped_test_cmd,
+      oracleTestsDir: `${result.taskId}/oracle_tests`,
+      tool: DEFAULT_SCENARIO_TOOL,
+    });
+    await Deno.mkdir(options.outScenariosDir, { recursive: true });
+    await Deno.writeTextFile(join(options.outScenariosDir, `${result.taskId}.yaml`), scenarioYaml + "\n");
+
+    return { task_id: result.taskId, class: "supported", controls_status: "pending" };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      task_id: taskId,
+      class: "unsupported",
+      reason: `ingest-error: ${message.split("\n")[0].slice(0, 200)}`,
+      controls_status: "pending",
+    };
+  }
+}
+
+/**
+ * Batch-ingests every task subdirectory of `options.upstreamRoot` (Phase 144 Step 3):
+ * classifies each task, ingests the supported+license-eligible subset through the exact
+ * same `ingestTerminalBenchTask` mapping/license/portal logic Step 1 established (no
+ * duplication — Architecture Notes), generates one scenario + request fixture per ingested
+ * task, and publishes a coverage manifest. 100% dockerless — classification is pure file
+ * inspection, matching the Constraints ("CI is docker-free"); the controls sweep that
+ * validates the supported subset live is a separate, explicitly docker-gated concern.
+ */
+export async function batchIngestTerminalBench(options: IBatchIngestOptions): Promise<IManifest> {
+  const taskIds = (await Array.fromAsync(Deno.readDir(options.upstreamRoot)))
+    .filter((entry) => entry.isDirectory)
+    .map((entry) => entry.name)
+    .sort();
+
+  const tasks: IManifestTaskEntry[] = [];
+  for (const taskId of taskIds) {
+    tasks.push(await ingestOneBatchTask(taskId, options));
+  }
+
+  const supportedCount = tasks.filter((task) => task.class === "supported").length;
+  const manifest: IManifest = {
+    generated_at: new Date().toISOString(),
+    benchmark_version: options.benchmarkVersion,
+    total_tasks: tasks.length,
+    supported_count: supportedCount,
+    coverage_pct: tasks.length > 0 ? (supportedCount / tasks.length) * 100 : 0,
+    tasks,
+  };
+  await Deno.mkdir(options.outFixturesDir, { recursive: true });
+  await Deno.writeTextFile(join(options.outFixturesDir, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
+  return manifest;
+}
+
 function parseArgs(argv: string[]): ICliArgs {
   const flags: Record<string, string> = {};
   for (let index = 0; index < argv.length; index += 1) {
@@ -348,30 +617,66 @@ function parseArgs(argv: string[]): ICliArgs {
   }
   const source = flags["source"];
   const taskId = flags["task-id"];
+  const batch = flags["batch"];
   const benchmarkVersion = flags["benchmark-version"];
   const license = flags["license"];
-  if (!source || !taskId || !benchmarkVersion || !license) {
-    throw new Error(
-      "Usage: --source <dir> --task-id <id> --benchmark-version <sha> --license <path> " +
-        "[--out-fixtures <dir>] [--out-portals <dir>]",
-    );
+  const usage = "Usage: --source <dir> --task-id <id> --benchmark-version <sha> --license <path> " +
+    "[--out-fixtures <dir>] [--out-portals <dir>]\n" +
+    "   or: --batch <upstream-release-root> --benchmark-version <sha> --license <path> " +
+    "[--out-fixtures <dir>] [--out-portals <dir>] [--out-scenarios <dir>] [--out-requests <dir>]";
+  if (!benchmarkVersion || !license) {
+    throw new Error(usage);
+  }
+  if (batch) {
+    if (source || taskId) {
+      throw new Error(`--batch is mutually exclusive with --source/--task-id.\n${usage}`);
+    }
+  } else if (!source || !taskId) {
+    throw new Error(usage);
   }
   return {
     source,
     taskId,
+    batch,
     benchmarkVersion,
     license,
     outFixtures: flags["out-fixtures"] ?? DEFAULT_OUT_FIXTURES_DIR,
     outPortals: flags["out-portals"] ?? DEFAULT_OUT_PORTALS_DIR,
+    outScenarios: flags["out-scenarios"] ?? DEFAULT_OUT_SCENARIOS_DIR,
+    outRequests: flags["out-requests"] ?? DEFAULT_OUT_REQUESTS_DIR,
   };
 }
 
 async function main(): Promise<void> {
   const args = parseArgs(Deno.args);
   const rootLicenseText = await Deno.readTextFile(args.license);
+
+  if (args.batch) {
+    const manifest = await batchIngestTerminalBench({
+      upstreamRoot: args.batch,
+      benchmarkVersion: args.benchmarkVersion,
+      rootLicenseText,
+      outFixturesDir: args.outFixtures,
+      outPortalsDir: args.outPortals,
+      outScenariosDir: args.outScenarios,
+      outRequestsDir: args.outRequests,
+    });
+    console.log(
+      `BATCH INGESTED ${manifest.total_tasks} tasks -> ${manifest.supported_count} supported ` +
+        `(${manifest.coverage_pct.toFixed(1)}% coverage)`,
+    );
+    if (manifest.coverage_pct < MIN_SUPPORTED_COVERAGE_PCT) {
+      console.warn(
+        `WARNING: coverage ${manifest.coverage_pct.toFixed(1)}% is below MIN_SUPPORTED_COVERAGE_PCT ` +
+          `(${MIN_SUPPORTED_COVERAGE_PCT}%) — reassess the subset choice before spending on a live run.`,
+      );
+    }
+    return;
+  }
+
   const result = await ingestTerminalBenchTask({
-    sourceDir: args.source,
-    taskId: args.taskId,
+    sourceDir: args.source!,
+    taskId: args.taskId!,
     benchmarkVersion: args.benchmarkVersion,
     rootLicenseText,
     outFixturesDir: args.outFixtures,

@@ -1,0 +1,8 @@
+instruction: |-
+  Create a file /app/result.txt containing exactly the text "gamma-done".
+author_name: Test Fixture
+author_email: fixture@example.com
+difficulty: easy
+category: file-editing
+tags:
+  - file-editing

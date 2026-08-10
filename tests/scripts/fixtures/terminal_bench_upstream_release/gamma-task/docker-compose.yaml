@@ -1,0 +1,8 @@
+services:
+  client:
+    build:
+      dockerfile: Dockerfile
+    image: ${T_BENCH_TASK_DOCKER_CLIENT_IMAGE_NAME}
+    command: ["sh", "-c", "sleep infinity"]
+    environment:
+      - TEST_DIR=${T_BENCH_TEST_DIR}
