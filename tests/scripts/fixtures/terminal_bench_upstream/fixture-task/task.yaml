@@ -1,0 +1,9 @@
+instruction: |-
+  In /app/data there is a file named numbers.txt containing one integer per line.
+  Write the sum of all integers to /app/total.txt.
+author_name: Test Fixture
+author_email: fixture@example.com
+difficulty: easy
+category: data-processing
+tags:
+  - data-processing

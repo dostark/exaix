@@ -1,0 +1,8 @@
+instruction: |-
+  This task's license is not on the allowlist and must be skipped by ingest.
+author_name: Test Fixture
+author_email: fixture@example.com
+difficulty: easy
+category: data-processing
+tags:
+  - data-processing

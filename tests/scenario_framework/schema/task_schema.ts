@@ -7,8 +7,22 @@
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/runner/scenario_templates.ts, tests/scenario_framework/tests/unit/task_contract_schema_test.ts]
  */
-
 import { z } from "zod";
+
+/**
+ * Provenance for a task ingested from an external public benchmark (Phase 144).
+ * Absent for internal swe_tasks (harvested from Exaix's own git history).
+ */
+export const TaskSourceSchema = z.object({
+  /** Which external benchmark this task was ingested from. */
+  benchmark: z.enum(["terminal-bench", "swe-bench"]),
+  /** Pinned upstream release identifier (commit SHA or version tag). */
+  version: z.string().min(1),
+  /** The task's identifier within the upstream benchmark. */
+  task_id: z.string().min(1),
+});
+
+export type ITaskSource = z.infer<typeof TaskSourceSchema>;
 
 /**
  * Zod schema for a swe_tasks task.json file.
@@ -30,6 +44,8 @@ export const TaskJsonSchema = z.object({
   min_turns: z.number().int().min(1).max(100).optional().default(2),
   /** Name of the fixture portal directory (relative to fixtures/portals/). Defaults to "todo_app". */
   portal: z.string().min(1).optional().default("todo_app"),
+  /** Provenance for externally-sourced tasks (Phase 144). Absent for internal swe_tasks. */
+  source: TaskSourceSchema.optional(),
   /** Human-readable task title. */
   title: z.string().optional(),
 });

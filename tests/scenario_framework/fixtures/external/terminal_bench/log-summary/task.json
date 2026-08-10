@@ -1,0 +1,14 @@
+{
+  "base_ref": "fa95a187e021186645be252a18b8eacc7985a429",
+  "scoped_test_cmd": "cd /app && pytest tests/test_outputs.py -rA",
+  "family": "task:system-administration",
+  "difficulty": "S",
+  "min_turns": 2,
+  "portal": "external/terminal_bench/log-summary",
+  "source": {
+    "benchmark": "terminal-bench",
+    "version": "d28711d0da2675d0bb1d56de45ae5df6082438a3",
+    "task_id": "log-summary"
+  },
+  "title": "Log Summary"
+}

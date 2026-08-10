@@ -1,0 +1,7 @@
+{
+  "benchmark": "terminal-bench",
+  "repository": "https://github.com/laude-institute/terminal-bench",
+  "commit": "d28711d0da2675d0bb1d56de45ae5df6082438a3",
+  "pinned_date": "2026-08-09",
+  "license_sha256": "bb28c48e3e078166e91cfc2b6db7ffebb8a0973b9e23b3df060561292d8d69ec"
+}

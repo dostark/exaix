@@ -1,0 +1,10 @@
+diff --git a/summary.csv b/summary.csv
+new file mode 100644
+index 0000000..6ac1e04
+--- /dev/null
++++ b/summary.csv
+@@ -0,0 +1,4 @@
++severity,count
++ERROR,4
++WARNING,3
++INFO,8
