@@ -876,7 +876,7 @@ non-`auto` scenarios, because they cannot pass without a real model and would ot
 every baseline. Asking for an excluded tag turns that filter off — which is how the nightly tier is
 selected — and an excluded tag never widens the selection into other packs.
 
-**External benchmarks** (Phase 144): the `external_terminal_bench` pack joins this same
+**External benchmarks:** the `external_terminal_bench` pack joins this same
 hand-run nightly tier via its own `provider-live` + `docker` tags (a task's delegate and
 verify steps run inside the `exaix-eval-jail` container, so Docker must be installed and
 running). Select it explicitly, e.g.
