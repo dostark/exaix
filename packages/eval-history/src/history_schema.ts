@@ -82,6 +82,11 @@ export const EvalHistoryEntrySchema = z.object({
    *  plus the `execution-alignment` class, joined from the run's journal trace. Absent ⇒ no
    *  failures classified. */
   failure_classes: z.array(z.string()).optional(),
+  /** External-benchmark provenance (Phase 144 Step 4): present only on external-benchmark
+   *  runs (Terminal-Bench/SWE-bench). Absent on every pre-existing non-external run, so the
+   *  additive migration keeps old rows renderable. */
+  benchmark: z.string().min(1).optional(),
+  benchmark_version: z.string().min(1).optional(),
   /** Scoring composition mode (Phase 143 Step 3). Default additive so every pre-existing
    *  row without an explicit mode reads unambiguously as additive. Values match the Test
    *  layer's `ScoringMode` in tests/scenario_framework/runner/scoring.ts. */

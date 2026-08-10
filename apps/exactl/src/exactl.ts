@@ -2560,7 +2560,7 @@ const journalCommand = new Command()
     collect: true,
   })
   .option("-n, --tail <n:number>", "Show last N entries", { default: 50 })
-  .option("--format <format:string>", "Output format (text, table, json)", { default: CLI_OUTPUT_FORMATS.TEXT })
+  .option(CLI_OUTPUT_FORMAT_OPTION, "Output format (text, table, json)", { default: CLI_OUTPUT_FORMATS.TEXT })
   .option("--distinct <field:string>", "Return distinct values for specified field")
   .option("--count", "Return count aggregation by action_type")
   .option("--payload <pattern:string>", "Filter by payload LIKE pattern")
@@ -2614,7 +2614,7 @@ const logsCommand = new Command()
     collect: true,
   })
   .option("-n, --tail <n:number>", "Show last N entries", { default: 50 })
-  .option("--format <format:string>", "Output format (text, table, json)", { default: CLI_OUTPUT_FORMATS.TEXT })
+  .option(CLI_OUTPUT_FORMAT_OPTION, "Output format (text, table, json)", { default: CLI_OUTPUT_FORMATS.TEXT })
   .option("--payload <pattern:string>", "Filter by payload LIKE pattern")
   .option("--actor <actor:string>", "Filter by actor")
   .option("--target <target:string>", "Filter by target")
@@ -2947,7 +2947,7 @@ const evalCommand = new Command()
       .option("--scenario <id:string>", "Filter by scenario ID")
       .option("--pack <name:string>", "Filter by pack name")
       .option("--since <date:string>", "Filter to runs since date (ISO 8601)")
-      .option("--format <format:string>", "Output format: table, json", { default: "table" })
+      .option(CLI_OUTPUT_FORMAT_OPTION, "Output format: table, json", { default: "table" })
       .action(async (options) => {
         try {
           await evalCommands.history({
@@ -2982,13 +2982,16 @@ const evalCommand = new Command()
     "report",
     new Command()
       .description("Render a cross-cell timing/token/tracked-cost comparison report")
-      .option("--view <view:string>", "Report view: cost, families, lift, ablation, frontier, or failures", {
-        default: "cost",
-      })
+      .option(
+        "--view <view:string>",
+        "Report view: cost, families, lift, ablation, frontier, failures, or external",
+        { default: "cost" },
+      )
       .option("--scenario <id:string>", "Filter to a single scenario ID")
       .option("--pack <pack:string>", "Filter to a single pack (e.g. swe-tasks)")
       .option("-l, --last <n:number>", "Limit to the last N runs")
       .option("--group-by <prefix:string>", "Group by tag prefix: subsystem or entity")
+      .option(CLI_OUTPUT_FORMAT_OPTION, "Output format: table, json (frontier/failures/external views)")
       .action((options) => {
         try {
           evalCommands.report({
@@ -2997,6 +3000,7 @@ const evalCommand = new Command()
             last: options.last,
             pack: options.pack,
             groupBy: options.groupBy,
+            format: options.format,
           });
         } catch (error) {
           console.error("eval report failed:", error instanceof Error ? error.message : String(error));

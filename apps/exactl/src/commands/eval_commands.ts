@@ -8,7 +8,7 @@
 
 import { resolve } from "@std/path";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
-import { EvalSqliteStore, resolveEvalDbPath } from "@exaix/eval-history";
+import { EvalSqliteStore, EXTERNAL_BENCHMARK_CAVEAT, resolveEvalDbPath } from "@exaix/eval-history";
 import type { Opt, Reason } from "@exaix/core/types";
 
 interface IRunManifest {
@@ -57,6 +57,30 @@ export interface IFailuresReport {
   topClassByCell: Array<{ cell: string; className: string; count: number }>;
 }
 
+/** An external-benchmark comparability row (Phase 144 Step 4): per (benchmark, version, cell) —
+ *  outcome-channel resolved rate over the tasks run, task count vs the manifest's supported
+ *  subset size, coverage, mean tracked cost, latest run date, and the harness+model identifiers. */
+export interface IExternalCellRow {
+  benchmark: string;
+  benchmarkVersion: string;
+  cell: string;
+  provider: string;
+  model: string;
+  /** Tasks run in this cell (each run is one task verdict). The resolved-rate denominator. */
+  tasksRun: number;
+  resolvedCount: number;
+  /** resolvedCount / tasksRun — never silently partial: the denominator is the tasks run. */
+  resolvedRate: number;
+  /** Published supported-subset size from the coverage manifest (— when unknown). */
+  subsetSize: number | undefined;
+  /** tasksRun / subsetSize — how much of the supported subset was exercised (— when unknown). */
+  coveragePct: number | undefined;
+  /** Mean of the runs' total_tracked_cost_usd (— when no run reports cost). */
+  meanCostUsd: number | undefined;
+  /** Latest run timestamp in the group (ISO date). */
+  latestRunAt: string;
+}
+
 interface ICostReportRunRow {
   cell_id: string | null;
   provider: string | null;
@@ -80,6 +104,15 @@ interface ICostReportCellGroup {
 const FRAMEWORK_RELATIVE_PATH = "../../../../tests/scenario_framework/runner/main.ts";
 const HARNESS_LIFT_SCRIPT_RELATIVE_PATH = "../../../../scripts/run_harness_lift_report.ts";
 const ABLATION_SCRIPT_RELATIVE_PATH = "../../../../scripts/run_ablation_report.ts";
+/** Relative (to this file) root of the external-benchmark coverage manifests published by the
+ *  batch ingest (scripts/ingest_terminal_bench.ts). Resolved per benchmark via
+ *  EXTERNAL_BENCHMARK_FIXTURE_DIRS. */
+const EXTERNAL_MANIFESTS_RELATIVE_DIR = "../../../../tests/scenario_framework/fixtures/external";
+/** Benchmark name (as stamped on history rows) → fixture directory name. Only the benchmark
+ *  shipping in this phase is mapped; an unmapped benchmark renders subset/coverage as —. */
+const EXTERNAL_BENCHMARK_FIXTURE_DIRS: Record<string, string> = {
+  "terminal-bench": "terminal_bench",
+};
 /** Shared report-table column label (check:magic: appears in 4 renderers). */
 const TASKS_COLUMN = "Tasks";
 /** The `--format json` output format (check:magic: appears in 3 renderers). */
@@ -231,6 +264,9 @@ export class EvalCommands extends BaseCommand {
      *  EXA_EVAL_DB_PATH or the process cwd. Tests pass it so the process-global cwd
      *  (shared across `deno test --parallel` worker threads) never backs the path. */
     dbPath?: Opt<string, Reason.OptionalInput>;
+    /** Explicit coverage-manifest path override for `--view external` (test-supporting).
+     *  When absent, resolves per benchmark from the framework fixtures dir. */
+    externalManifestPath?: Opt<string, Reason.OptionalInput>;
   }): void {
     const view = options.view ?? "cost";
     const resolveDb = () => options.dbPath ?? resolveEvalDbPath();
@@ -301,7 +337,14 @@ export class EvalCommands extends BaseCommand {
       return;
     }
 
-    console.log(`Unknown report view: ${view}. Supported views: cost, families, lift, ablation, frontier, failures`);
+    if (view === "external") {
+      this.renderExternalReport(options);
+      return;
+    }
+
+    console.log(
+      `Unknown report view: ${view}. Supported views: cost, families, lift, ablation, frontier, failures, external`,
+    );
   }
 
   private renderGroupedReport(options: {
@@ -391,6 +434,51 @@ export class EvalCommands extends BaseCommand {
         console.log(JSON.stringify(report, null, 2));
       } else {
         renderFailuresTable(report);
+      }
+    } finally {
+      store.close();
+    }
+  }
+
+  /**
+   * `--view external` (Phase 144 Step 4): external-benchmark comparability per
+   * (benchmark, benchmark_version, cell). Resolved rate is the outcome-channel pass over the
+   * tasks run — its denominator is never silently partial — stated next to the manifest's
+   * supported-subset size and coverage. Mean cost uses only `total_tracked_cost_usd` runs
+   * (never a predicted figure). Renders the single-sourced caveat block below the table.
+   */
+  private renderExternalReport(options: {
+    pack?: string;
+    dbPath?: string;
+    format?: string;
+    externalManifestPath?: string;
+  }): void {
+    const dbPath = options.dbPath ?? resolveEvalDbPath();
+    const store = new EvalSqliteStore(dbPath);
+    try {
+      store.initialize();
+      const runs = store.queryExternalRuns({ pack: options.pack });
+      if (runs.length === 0) {
+        console.log("No external-benchmark runs found in history.");
+        return;
+      }
+      const subsetByVersion = new Map<string, number>();
+      for (const run of runs) {
+        if (!run.benchmark || !run.benchmark_version) continue;
+        const key = `${run.benchmark}-${run.benchmark_version}`;
+        if (subsetByVersion.has(key)) continue;
+        const manifestPath = options.externalManifestPath ?? resolveExternalManifestPath(run.benchmark);
+        if (!manifestPath) continue;
+        const manifest = readExternalManifest(manifestPath);
+        if (manifest && manifest.benchmarkVersion === run.benchmark_version) {
+          subsetByVersion.set(key, manifest.supportedCount);
+        }
+      }
+      const rows = computeExternalRows(runs, subsetByVersion);
+      if (options.format === JSON_FORMAT) {
+        console.log(JSON.stringify({ caveat: EXTERNAL_BENCHMARK_CAVEAT, rows }, null, 2));
+      } else {
+        renderExternalTable(rows);
       }
     } finally {
       store.close();
@@ -744,6 +832,133 @@ function renderFailuresTable(report: IFailuresReport): void {
       console.log(`  ${top.cell}: ${top.className} (${top.count})`);
     }
   }
+}
+
+/**
+ * Resolve the coverage manifest path for a benchmark (Phase 144 Step 4): the manifest the
+ * batch ingest publishes under tests/scenario_framework/fixtures/external/<dir>/manifest.json.
+ * Unmapped benchmarks resolve to undefined and render subset/coverage as —.
+ */
+function resolveExternalManifestPath(benchmark: string): string | undefined {
+  const dir = EXTERNAL_BENCHMARK_FIXTURE_DIRS[benchmark];
+  if (!dir) return undefined;
+  return resolve(new URL(".", import.meta.url).pathname, EXTERNAL_MANIFESTS_RELATIVE_DIR, dir, "manifest.json");
+}
+
+/** The coverage-manifest fields the external view needs (full shape lives in
+ *  scripts/ingest_terminal_bench.ts — the view only consumes subset provenance). */
+interface IExternalManifestInfo {
+  benchmarkVersion: string;
+  supportedCount: number;
+}
+
+/** Read + parse a coverage manifest; missing/unparseable → undefined (subset/coverage —). */
+function readExternalManifest(path: string): IExternalManifestInfo | undefined {
+  try {
+    const raw = JSON.parse(Deno.readTextFileSync(path)) as {
+      benchmark_version?: string;
+      supported_count?: number;
+    };
+    if (typeof raw.benchmark_version !== "string" || typeof raw.supported_count !== "number") {
+      return undefined;
+    }
+    return { benchmarkVersion: raw.benchmark_version, supportedCount: raw.supported_count };
+  } catch {
+    return undefined;
+  }
+}
+
+/** Structural subset of the eval-history run row the external view needs. */
+interface IExternalRunRow {
+  passed: number;
+  run_timestamp: string;
+  provider: string | null;
+  model: string | null;
+  cell_id: string | null;
+  total_tracked_cost_usd: number | null;
+  benchmark: string | null;
+  benchmark_version: string | null;
+}
+
+/**
+ * Compute the external-benchmark comparability rows (Phase 144 Step 4). Per
+ * (benchmark, benchmark_version, cell_id): tasksRun is the number of run verdicts — the
+ * resolved-rate denominator, never silently partial — resolvedRate = passed / tasksRun, and
+ * subsetSize/coveragePct come from the coverage manifest keyed by benchmark_version (— when
+ * unknown). Mean cost averages only runs that report total_tracked_cost_usd.
+ */
+export function computeExternalRows(
+  runs: IExternalRunRow[],
+  subsetByVersion: ReadonlyMap<string, number>,
+): IExternalCellRow[] {
+  const groups = new Map<string, IExternalRunRow[]>();
+  for (const run of runs) {
+    const cell = run.cell_id ?? COST_REPORT_UNKNOWN_CELL;
+    const key = `${run.benchmark ?? ""}-${run.benchmark_version ?? ""}-${cell}`;
+    const group = groups.get(key) ?? [];
+    group.push(run);
+    groups.set(key, group);
+  }
+
+  const rows: IExternalCellRow[] = [];
+  for (const [, groupRuns] of groups) {
+    const benchmark = groupRuns[0].benchmark ?? "";
+    const benchmarkVersion = groupRuns[0].benchmark_version ?? "";
+    const resolvedCount = groupRuns.filter((r) => r.passed === 1).length;
+    const costRuns = groupRuns.filter((r) => r.total_tracked_cost_usd !== null) as Array<
+      IExternalRunRow & { total_tracked_cost_usd: number }
+    >;
+    const subsetSize = subsetByVersion.get(`${benchmark}-${benchmarkVersion}`);
+    rows.push({
+      benchmark,
+      benchmarkVersion,
+      cell: groupRuns[0].cell_id ?? COST_REPORT_UNKNOWN_CELL,
+      provider: groupRuns[0].provider ?? COST_REPORT_UNKNOWN_PROVIDER,
+      model: groupRuns[0].model ?? COST_REPORT_UNKNOWN_MODEL,
+      tasksRun: groupRuns.length,
+      resolvedCount,
+      resolvedRate: resolvedCount / groupRuns.length,
+      subsetSize,
+      coveragePct: subsetSize !== undefined ? (groupRuns.length / subsetSize) * 100 : undefined,
+      meanCostUsd: costRuns.length > 0 ? mean(costRuns.map((r) => r.total_tracked_cost_usd)) : undefined,
+      latestRunAt: groupRuns.map((r) => r.run_timestamp).sort().at(-1) ?? "",
+    });
+  }
+
+  return rows.sort(
+    (a, b) =>
+      a.benchmark.localeCompare(b.benchmark) ||
+      a.benchmarkVersion.localeCompare(b.benchmarkVersion) ||
+      a.cell.localeCompare(b.cell),
+  );
+}
+
+/** Render the external-benchmark comparability table + the single-sourced caveat block. */
+function renderExternalTable(rows: IExternalCellRow[]): void {
+  console.log("External Benchmark Comparability");
+  console.log("-".repeat(120));
+  console.log(
+    `  ${padRight("Benchmark", 14)} ${padRight("Version", 12)} ${padRight("Cell", 22)} ${padRight("Provider", 10)} ${
+      padRight("Model", 16)
+    } ${padRight(TASKS_COLUMN, 6)} ${padRight("Resolved", 9)} ${padRight("Rate", 7)} ${padRight("Subset", 8)} ${
+      padRight("Coverage", 10)
+    } ${padRight("MeanCost", 10)} RunDate`,
+  );
+  for (const row of rows) {
+    const coverage = row.coveragePct === undefined ? COST_REPORT_ABSENT_VALUE : `${row.coveragePct.toFixed(0)}%`;
+    console.log(
+      `  ${padRight(row.benchmark.slice(0, 14), 14)} ${padRight(row.benchmarkVersion.slice(0, 12), 12)} ${
+        padRight(row.cell.slice(0, 22), 22)
+      } ${padRight(row.provider.slice(0, 10), 10)} ${padRight(row.model.slice(0, 16), 16)} ${
+        padRight(String(row.tasksRun), 6)
+      } ${padRight(`${row.resolvedCount}/${row.tasksRun}`, 9)} ${
+        padRight((row.resolvedRate * 100).toFixed(0) + "%", 7)
+      } ${padRight(formatNumberOrAbsent(row.subsetSize), 8)} ${padRight(coverage, 10)} ${
+        padRight(formatNumberOrAbsent(row.meanCostUsd, 4), 10)
+      } ${row.latestRunAt.slice(0, 10)}`,
+    );
+  }
+  console.log(`\nCaveat: ${EXTERNAL_BENCHMARK_CAVEAT}`);
 }
 
 function renderCostReportTable(groups: ICostReportCellGroup[]): void {

@@ -12,3 +12,4 @@ export { EvalSqliteStore, resolveEvalDbPath } from "./src/history_sqlite.ts";
 export type { IFamilySummaryRow, IOutcomeRunRow } from "./src/history_sqlite.ts";
 export { EvalHistoryEntrySchema, getDefaultComponentVersions, StepResultSchema } from "./src/history_schema.ts";
 export type { IComponentVersions, IEvalHistoryEntry, IStepResult } from "./src/history_schema.ts";
+export { EXTERNAL_BENCHMARK_CAVEAT } from "./src/external_benchmark.ts";

@@ -64,6 +64,8 @@ export interface IOutcomeRunRow {
 const EVAL_TABLE_RUNS = "eval_runs";
 const EVAL_SCHEMA_VERSION_INSERT = "INSERT OR IGNORE INTO eval_schema_version (version, description) VALUES ";
 const SQL_AND_SEPARATOR = " AND ";
+/** Pack-filter predicate, shared by the four run-query methods (check:magic). */
+const SQL_CONDITION_PACK = "pack = ?";
 
 interface IRunRow {
   run_id: string;
@@ -91,6 +93,9 @@ interface IRunRow {
   total_tokens_cache_read: number | null;
   total_tokens_cache_creation: number | null;
   total_tracked_cost_usd: number | null;
+  /** External-benchmark provenance (Phase 144 Step 4). NULL on pre-existing non-external runs. */
+  benchmark: string | null;
+  benchmark_version: string | null;
 }
 
 interface IStepRow {
@@ -324,6 +329,14 @@ export class EvalSqliteStore {
           "(7, 'Add failure_classes column to eval_runs (Phase 143 Step 5)')",
       );
     }
+
+    if (currentVersion < 8) {
+      this.addColumns(EVAL_TABLE_RUNS, ["benchmark TEXT", "benchmark_version TEXT"]);
+      this.db.exec(
+        EVAL_SCHEMA_VERSION_INSERT +
+          "(8, 'Add benchmark/benchmark_version columns to eval_runs for external-benchmark provenance (Phase 144 Step 4)')",
+      );
+    }
   }
 
   writeRun(
@@ -358,8 +371,8 @@ export class EvalSqliteStore {
          duration_ms, trace_id, provider, model, cell_id,
          total_llm_duration_ms, total_tokens_prompt, total_tokens_completion,
          total_tokens_cache_read, total_tokens_cache_creation, total_tracked_cost_usd, scoring_mode,
-         failure_classes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         failure_classes, benchmark, benchmark_version)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
     const insertStep = this.db.prepare(
@@ -413,6 +426,8 @@ export class EvalSqliteStore {
         entry.total_tracked_cost_usd ?? null,
         entry.scoring_mode ?? EvalScoringMode.ADDITIVE,
         entry.failure_classes ? JSON.stringify(entry.failure_classes) : null,
+        entry.benchmark ?? null,
+        entry.benchmark_version ?? null,
       );
 
       if (steps) {
@@ -470,7 +485,7 @@ export class EvalSqliteStore {
       params.push(options.scenario);
     }
     if (options.pack) {
-      conditions.push("pack = ?");
+      conditions.push(SQL_CONDITION_PACK);
       params.push(options.pack);
     }
     if (options.since) {
@@ -483,6 +498,27 @@ export class EvalSqliteStore {
 
     return this.db.prepare(
       `SELECT * FROM eval_runs ${where} ORDER BY run_timestamp DESC ${limit}`,
+    ).all<IRunRow>(...params);
+  }
+
+  /**
+   * Phase 144 Step 4 — query only the external-benchmark runs (those carrying `benchmark` +
+   * `benchmark_version` provenance). Input of the `exactl eval report --view external`
+   * comparability view; grouping, resolved-rate and coverage math stays in the CLI layer so the
+   * store remains a plain query surface. Runs with a NULL benchmark (every pre-existing
+   * non-external run) are never returned.
+   */
+  queryExternalRuns(options: { pack?: string } = {}): IRunRow[] {
+    const conditions = ["benchmark IS NOT NULL AND benchmark != ''"];
+    const params: (string | number)[] = [];
+
+    if (options.pack) {
+      conditions.push(SQL_CONDITION_PACK);
+      params.push(options.pack);
+    }
+
+    return this.db.prepare(
+      `SELECT * FROM eval_runs WHERE ${conditions.join(SQL_AND_SEPARATOR)} ORDER BY run_timestamp DESC`,
     ).all<IRunRow>(...params);
   }
 
@@ -506,7 +542,7 @@ export class EvalSqliteStore {
       params.push(options.scenario);
     }
     if (options.pack) {
-      conditions.push("pack = ?");
+      conditions.push(SQL_CONDITION_PACK);
       params.push(options.pack);
     }
 
@@ -616,7 +652,7 @@ export class EvalSqliteStore {
     const params: (string | number)[] = [];
 
     if (options.pack) {
-      conditions.push("pack = ?");
+      conditions.push(SQL_CONDITION_PACK);
       params.push(options.pack);
     }
     if (options.cellId) {
