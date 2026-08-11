@@ -14,7 +14,7 @@
 
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
-import { DOGFOOD_DEVELOPER_IDENTITY_ID } from "@exaix/core/types";
+import { DOGFOOD_DEVELOPER_IDENTITY_ID, type Opt, type Reason } from "@exaix/core/types";
 import { buildOpencodePermissionConfig } from "@exaix/session";
 import { OpencodeConfigSchema } from "@exaix/schemas/opencode_config.ts";
 import { type ISweTaskTemplateOptions, renderSweTaskBareTemplate } from "../../runner/scenario_templates.ts";
@@ -174,58 +174,130 @@ function expandBareOpencodeCell(): { command: string; args: string[] } {
   return { command: delegate.command ?? "", args: delegate.args ?? [] };
 }
 
-Deno.test("[security] bare opencode launch runs in the eval-jail container mounting only the worktree", () => {
-  const { command, args } = expandBareOpencodeCell();
-  assertEquals(command, "docker", "bare delegate must run via docker");
-  assertEquals(args[0], "run");
+/** Run `fn` with HOME pointed at `homeDir`, restoring the caller's HOME afterwards. Lets the
+ *  credentials-mount tests control whether `resolveCredentialMounts` finds a host login
+ *  (the CI runner has none, a dev machine usually has one). */
+function withHome(homeDir: string, fn: () => void): void {
+  const previous = Deno.env.get("HOME");
+  Deno.env.set("HOME", homeDir);
+  try {
+    fn();
+  } finally {
+    if (previous === undefined) Deno.env.delete("HOME");
+    else Deno.env.set("HOME", previous);
+  }
+}
 
+interface IJailMountExpectation {
+  expectCredentialsMount: boolean;
+  /** The simulated host HOME, used to assert the credentials mount never points at the live file. */
+  liveCredentialsHome?: Opt<string, Reason.OptionalInput>;
+}
+
+/** Shared eval-jail mount-surface assertions: the worktree bind is always first and is the
+ *  ONLY mandatory mount; a second mount is allowed only for the disposable staged credentials
+ *  copy (never the live host file); the repo must never appear. */
+function assertJailMountSurface(args: string[], expectation: IJailMountExpectation): void {
   const mounts = args.filter((a) => a.startsWith("type=bind"));
-  assertEquals(mounts.length, 2, "exactly two bind mounts: the worktree + the opencode credentials");
+  assertEquals(
+    mounts.length,
+    expectation.expectCredentialsMount ? 2 : 1,
+    "the jail carries the worktree mount plus, only when a host login exists, ONE disposable credentials copy",
+  );
   assertEquals(
     mounts[0],
     "type=bind,src=$WORKSPACE_ROOT/todo-app,dst=/worktree",
     "the primary mount is ONLY the worktree",
   );
-  assertEquals(
-    mounts[1].endsWith(",dst=/tmp/.local"),
-    true,
-    "an opencode delegate must get its OWN staged auth.json (opencode's real credential store is " +
-      "~/.local/share/opencode/auth.json, not ~/.claude/.credentials.json) — mounting claude's " +
-      "credentials into an opencode container is a no-op that silently leaves opencode unauthenticated. " +
-      "Mounted at /tmp/.local (not the narrower /tmp/.local/share/opencode): opencode also writes " +
-      "session/model-cache state under ~/.local/state/opencode at runtime, and Docker auto-creates an " +
-      "unmounted parent as root-owned — discovered via a real jailed run (Phase 144 Step 5) failing " +
-      "with EACCES on mkdir '/tmp/.local/state'.",
-  );
-  assertEquals(
-    mounts[1].includes(",ro"),
-    false,
-    "the staged copy is writable (in-container writes cannot reach the real host credentials — only the disposable copy)",
-  );
-  assert(!args.some((a) => a.includes("exaix") && a.includes("bind")), "the repo must never be mounted");
-
-  assert(args.includes("--cap-drop=ALL"), "must drop all capabilities");
-  assert(args.includes("--security-opt=no-new-privileges"), "must forbid privilege escalation");
-  const uid = Deno.uid();
-  const gid = Deno.gid();
-  if (uid !== null && gid !== null) {
-    assertEquals(args[args.indexOf("--user") + 1], `${uid}:${gid}`, "container runs as the host uid (writable mount)");
+  if (expectation.expectCredentialsMount) {
+    assertEquals(
+      mounts[1].endsWith(",dst=/tmp/.local"),
+      true,
+      "an opencode delegate must get its OWN staged auth.json (opencode's real credential store is " +
+        "~/.local/share/opencode/auth.json, not ~/.claude/.credentials.json) — mounting claude's " +
+        "credentials into an opencode container is a no-op that silently leaves opencode unauthenticated. " +
+        "Mounted at /tmp/.local (not the narrower /tmp/.local/share/opencode): opencode also writes " +
+        "session/model-cache state under ~/.local/state/opencode at runtime, and Docker auto-creates an " +
+        "unmounted parent as root-owned — discovered via a real jailed run (Phase 144 Step 5) failing " +
+        "with EACCES on mkdir '/tmp/.local/state'.",
+    );
+    assertEquals(
+      mounts[1].includes(",ro"),
+      false,
+      "the staged copy is writable (in-container writes cannot reach the real host credentials — only the disposable copy)",
+    );
+    if (expectation.liveCredentialsHome !== undefined) {
+      assert(
+        !mounts[1].includes(expectation.liveCredentialsHome),
+        "the staged temp copy is mounted, never the live host credential file",
+      );
+    }
   }
-  assertEquals(args[args.indexOf("--workdir") + 1], "/worktree");
+  assert(!args.some((a) => a.includes("exaix") && a.includes("bind")), "the repo must never be mounted");
+}
 
-  // The inner delegate command targets the container worktree path.
-  const opencodeIdx = args.indexOf("opencode");
-  assert(opencodeIdx > 0, "opencode must be the inner command");
-  assert(args.slice(opencodeIdx).includes("--dir"), "opencode --dir must be set");
-  assert(args.includes("/worktree"), "delegate cwd is the jail worktree");
-  assert(args.includes("OPENCODE_CONFIG=/worktree/opencode.jsonc"), "permission config passed into the jail");
-  // Claude Code subscription, never API billing: the jail must not pass ANTHROPIC_API_KEY into
-  // the container (the daemon path strips it too — cli_delegate_strategy_test.ts). The
-  // subscription login is what authenticates, not a metered key.
-  assert(
-    !args.some((a) => a === "ANTHROPIC_API_KEY" || a === "--env=ANTHROPIC_API_KEY" || a.includes("ANTHROPIC_API_KEY=")),
-    "the jail must never pass ANTHROPIC_API_KEY into the container",
-  );
+Deno.test("[security] bare opencode launch runs in the eval-jail container mounting only the worktree", () => {
+  // CI-equivalent host: no opencode login — `resolveCredentialMounts` yields no credentials
+  // mount, so the jail must be complete with exactly ONE bind mount (the worktree). The
+  // two-mount (logged-in host) branch is covered by the next test with a staged fake login.
+  const bareHome = Deno.makeTempDirSync({ prefix: "jail-no-creds-" });
+  try {
+    withHome(bareHome, () => {
+      const { command, args } = expandBareOpencodeCell();
+      assertEquals(command, "docker", "bare delegate must run via docker");
+      assertEquals(args[0], "run");
+
+      assertJailMountSurface(args, { expectCredentialsMount: false });
+
+      assert(args.includes("--cap-drop=ALL"), "must drop all capabilities");
+      assert(args.includes("--security-opt=no-new-privileges"), "must forbid privilege escalation");
+      const uid = Deno.uid();
+      const gid = Deno.gid();
+      if (uid !== null && gid !== null) {
+        assertEquals(
+          args[args.indexOf("--user") + 1],
+          `${uid}:${gid}`,
+          "container runs as the host uid (writable mount)",
+        );
+      }
+      assertEquals(args[args.indexOf("--workdir") + 1], "/worktree");
+
+      // The inner delegate command targets the container worktree path.
+      const opencodeIdx = args.indexOf("opencode");
+      assert(opencodeIdx > 0, "opencode must be the inner command");
+      assert(args.slice(opencodeIdx).includes("--dir"), "opencode --dir must be set");
+      assert(args.includes("/worktree"), "delegate cwd is the jail worktree");
+      assert(args.includes("OPENCODE_CONFIG=/worktree/opencode.jsonc"), "permission config passed into the jail");
+      // Claude Code subscription, never API billing: the jail must not pass ANTHROPIC_API_KEY into
+      // the container (the daemon path strips it too — cli_delegate_strategy_test.ts). The
+      // subscription login is what authenticates, not a metered key.
+      assert(
+        !args.some((a) =>
+          a === "ANTHROPIC_API_KEY" || a === "--env=ANTHROPIC_API_KEY" || a.includes("ANTHROPIC_API_KEY=")
+        ),
+        "the jail must never pass ANTHROPIC_API_KEY into the container",
+      );
+    });
+  } finally {
+    Deno.removeSync(bareHome, { recursive: true });
+  }
+});
+
+Deno.test("[security] bare opencode launch stages a disposable auth.json copy when a host login exists", () => {
+  // Logged-in host: the jail gains exactly ONE extra bind mount — the disposable staged copy
+  // of ~/.local/share/opencode/auth.json, writable, never the live host file.
+  const credsHome = Deno.makeTempDirSync({ prefix: "jail-creds-" });
+  try {
+    Deno.mkdirSync(`${credsHome}/.local/share/opencode`, { recursive: true });
+    Deno.writeTextFileSync(`${credsHome}/.local/share/opencode/auth.json`, "{}");
+    withHome(credsHome, () => {
+      const { command, args } = expandBareOpencodeCell();
+      assertEquals(command, "docker", "bare delegate must run via docker");
+      assertJailMountSurface(args, { expectCredentialsMount: true, liveCredentialsHome: credsHome });
+    });
+  } finally {
+    Deno.removeSync(credsHome, { recursive: true });
+  }
 });
 
 function expandBareOpencodeGoCell(): { command: string; args: string[] } {
@@ -249,24 +321,43 @@ function expandBareOpencodeGoCell(): { command: string; args: string[] } {
 }
 
 Deno.test("[security] bare opencode-go launch pins the deepseek-v4-flash model via --model and stays worktree-scoped", () => {
-  const { command, args } = expandBareOpencodeGoCell();
-  assertEquals(command, "docker", "bare delegate must run via docker");
+  // CI-equivalent host: no opencode login — exactly one bind mount (the worktree).
+  const bareHome = Deno.makeTempDirSync({ prefix: "jail-no-creds-" });
+  try {
+    withHome(bareHome, () => {
+      const { command, args } = expandBareOpencodeGoCell();
+      assertEquals(command, "docker", "bare delegate must run via docker");
 
-  const opencodeIdx = args.indexOf("opencode");
-  assert(opencodeIdx > 0, "opencode must be the inner command");
-  const inner = args.slice(opencodeIdx);
-  assert(inner.includes("--model"), "opencode-go must pin its model via --model");
-  assertEquals(
-    inner[inner.indexOf("--model") + 1],
-    "opencode-go/deepseek-v4-flash",
-    "--model must be the exact opencode-go deepseek-v4-flash model string",
-  );
+      const opencodeIdx = args.indexOf("opencode");
+      assert(opencodeIdx > 0, "opencode must be the inner command");
+      const inner = args.slice(opencodeIdx);
+      assert(inner.includes("--model"), "opencode-go must pin its model via --model");
+      assertEquals(
+        inner[inner.indexOf("--model") + 1],
+        "opencode-go/deepseek-v4-flash",
+        "--model must be the exact opencode-go deepseek-v4-flash model string",
+      );
 
-  const mounts = args.filter((a) => a.startsWith("type=bind"));
-  assertEquals(mounts.length, 2, "worktree mount + opencode credentials mount");
-  assertEquals(
-    mounts[1].endsWith(",dst=/tmp/.local"),
-    true,
-    "opencode-go shares opencode's binary, so it authenticates the same way — the staged auth.json copy",
-  );
+      assertJailMountSurface(args, { expectCredentialsMount: false });
+    });
+  } finally {
+    Deno.removeSync(bareHome, { recursive: true });
+  }
+});
+
+Deno.test("[security] bare opencode-go launch stages the opencode auth.json copy when a host login exists", () => {
+  // opencode-go shares opencode's binary, so it authenticates the same way — the staged
+  // auth.json copy, never the live host file.
+  const credsHome = Deno.makeTempDirSync({ prefix: "jail-creds-" });
+  try {
+    Deno.mkdirSync(`${credsHome}/.local/share/opencode`, { recursive: true });
+    Deno.writeTextFileSync(`${credsHome}/.local/share/opencode/auth.json`, "{}");
+    withHome(credsHome, () => {
+      const { command, args } = expandBareOpencodeGoCell();
+      assertEquals(command, "docker", "bare delegate must run via docker");
+      assertJailMountSurface(args, { expectCredentialsMount: true, liveCredentialsHome: credsHome });
+    });
+  } finally {
+    Deno.removeSync(credsHome, { recursive: true });
+  }
 });
