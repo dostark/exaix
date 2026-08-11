@@ -87,6 +87,13 @@ For each remediation step, in order:
    backtick-wrapped and a staged file). If a criterion is being deferred rather than closed,
    write `- ⚠️ deferred <text> →` `` `<LedgerSymbol>` `` and add a Reachability Ledger row.
    Leave no `- [ ]` in a remediation step this commit claims.
+5. **Truncation trap when editing long single-line criteria/status lines**: plan-doc
+   criterion lines routinely exceed the `read` tool's per-line display cap and get shown
+   ending in `...`. NEVER copy that truncated text into an edit body — it permanently
+   deletes the rest of the line. For a small substitution inside a long line, either
+   re-`read` a narrow line range and confirm no trailing `...` before editing, or do a
+   targeted Python/sed string-replace on the exact original substring and verify with
+   `git diff` that only the intended text changed before moving on.
 
 ### Phase 4 — Commit (plan-step commit)
 
@@ -100,10 +107,30 @@ it goes through the plan-step gate:
 3. Write the structured message (type `fix`; body has `what:`, `rationale:`, `tests:`,
    `who:`, `impact:`, the gap numbers e.g. `remediation: GAP-1, GAP-3`, and a mandatory
    `plan: exaix-dev-docs/planning/<phase>.md#<remediation-step-N>` field), then commit both
-   repos via `deno run -A scripts/commit_plan_step.ts <commit-msg-file> --commit`.
-4. If it blocks asking to roll back the submodule's last commit, run
-   `git -C exaix-dev-docs reset --soft HEAD~1` and re-run so the plan doc + parent land in
-   sync. See the submodule-workflow and #next-steps (step 26) skills.
+   repos via `deno run -A scripts/commit_plan_step.ts <commit-msg-file> --commit`. Before
+   writing the message, read `#commit`'s "Structured Message Validator Traps" section
+   (Structural Bloom bullet-count rule, Impact component-word-must-appear-in-`what:` rule,
+   semicolon-in-`impact:` rule) — these block commits mid-remediation just as often as a
+   missing `plan:` field does.
+4. **Multiple remediation steps touching the SAME source file**: don't force one commit
+   per step if their edits land in the same file(s) — hunk-splitting an already-applied
+   multi-step diff is expensive and error-prone. Group those steps into ONE commit whose
+   `plan:` field names any one of them, mark ALL of the grouped steps' Success Criteria
+   done in the plan doc in that same commit, and name every covered GAP/step in the
+   message body. This is honest (every cited `→ path` really is a changed file of that
+   commit) and dramatically cheaper than manual `git apply --cached` hunk surgery.
+5. If `commit_plan_step.ts --commit` blocks BEFORE touching git (preflight error asking
+   to roll back the submodule's last commit), the submodule was committed separately,
+   breaking the commit-together flow: run `git -C exaix-dev-docs reset --soft HEAD~1` and
+   re-run so the plan doc + parent land in sync.
+6. If instead the submodule commit SUCCEEDS and only the PARENT's `check_commit_msg.ts`
+   validation rejects the message (Structural Bloom, Component Traceability, etc.) — do
+   NOT roll back the submodule, it is already valid. Confirm with
+   `git -C exaix-dev-docs log --oneline -1`, then fix the message text and commit the
+   parent directly: `git add exaix-dev-docs <parent files already staged> && git commit -F
+   <fixed-msg-file>` (skip re-running the orchestrator — it would try to commit the
+   submodule a second time with nothing staged there). See the submodule-workflow skill's
+   matching recipe.
 
 ## Output Format
 

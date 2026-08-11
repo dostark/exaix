@@ -4,7 +4,7 @@ agent: general
 scope: dev
 title: "Self-Improvement Loop (#self-improvement)"
 description: "Detect instruction gaps during work, patch .copilot/ docs safely with minimal test-backed updates, and run the terminal phase-loop retrospective (self-improvement-retro) that catches and fixes problematic places in the phase development process — skills, instructions, .copilot structure"
-short_summary: "How to detect instruction gaps during work and patch .copilot/ docs safely with minimal, test-backed updates, plus the terminal phase-loop retro that fixes problems in skills, instructions, and .copilot structure."
+short_summary: "Detect instruction gaps during work and patch .copilot/ docs safely with minimal, test-backed updates; run the terminal phase-loop retro to fix skill, instruction, and .copilot structure gaps."
 version: "1.1.0"
 topics: ["self-improvement", "instruction-adequacy", "retrospective", "agents", "maintenance", "rag", "process"]
 qwen_skill: self-improvement

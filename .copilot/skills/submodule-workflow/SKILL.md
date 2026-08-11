@@ -58,6 +58,14 @@ commit the submodule first. Instead:
    committed separately (breaking the commit-together flow): run
    `git -C exaix-dev-docs reset --soft HEAD~1` to restage those changes, then re-run the
    orchestrator so the phase file and the parent land together.
+5. **Different failure mode — the submodule commit SUCCEEDS but the PARENT's
+   `check_commit_msg.ts` validation rejects the message** (Structural Bloom bullet-count,
+   Component Traceability, etc. — see `#commit`'s validator-traps section): do NOT roll
+   back the submodule, it already landed validly. Confirm with
+   `git -C exaix-dev-docs log --oneline -1`, fix the message text, then commit the parent
+   directly — `git add exaix-dev-docs <already-staged parent files> && git commit -F
+   <fixed-msg-file>` — skip re-running `commit_plan_step.ts`, which would try (and fail)
+   to commit the submodule a second time with nothing left staged there.
 
 The general "submodule first" rule still governs all NON-plan-step submodule changes.
 

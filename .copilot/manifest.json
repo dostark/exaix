@@ -515,7 +515,7 @@
       "agent": "general",
       "scope": "dev",
       "title": "Self-Improvement Loop (#self-improvement)",
-      "short_summary": "How to detect instruction gaps during work and patch .copilot/ docs safely with minimal, test-backed updates, plus the terminal phase-loop retro that fixes problems in skills, instructions, and .copilot structure.",
+      "short_summary": "Detect instruction gaps during work and patch .copilot/ docs safely with minimal, test-backed updates; run the terminal phase-loop retro to fix skill, instruction, and .copilot structure gaps.",
       "version": "1.1.0",
       "topics": [
         "self-improvement",
