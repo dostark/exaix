@@ -145,6 +145,47 @@ function splitLines(text: string): string[] {
   return text.split("\n");
 }
 
+/**
+ * Applies `fn` only to the segments of `line` OUTSIDE backtick inline code spans, leaving
+ * code-span content (delimiters included) byte-for-byte untouched. Used by fixers whose
+ * rewrite regex (e.g. MD049's underscore-to-asterisk emphasis conversion) would otherwise
+ * misparse underscores inside identifiers like `` `CI_EXCLUDED_TAGS` `` as emphasis markup —
+ * the 2026-08-10 corruption incident this guards against.
+ */
+function applyOutsideCodeSpans(line: string, fn: (segment: string) => string): string {
+  let result = "";
+  let cursor = 0;
+  let inCodeSpan = false;
+  let codeSpanTicks = 0;
+  let segmentStart = 0;
+
+  while (cursor < line.length) {
+    if (line[cursor] === "`") {
+      let j = cursor;
+      while (j < line.length && line[j] === "`") j++;
+      const tickCount = j - cursor;
+
+      if (!inCodeSpan) {
+        result += fn(line.slice(segmentStart, cursor));
+        inCodeSpan = true;
+        codeSpanTicks = tickCount;
+        segmentStart = cursor;
+      } else if (tickCount === codeSpanTicks) {
+        result += line.slice(segmentStart, j);
+        inCodeSpan = false;
+        codeSpanTicks = 0;
+        segmentStart = j;
+      }
+      cursor = j;
+      continue;
+    }
+    cursor += 1;
+  }
+
+  result += inCodeSpan ? line.slice(segmentStart) : fn(line.slice(segmentStart));
+  return result;
+}
+
 type Fence = { char: "`" | "~"; length: number };
 
 function decodeFragment(fragment: string): string {
@@ -574,16 +615,42 @@ export function applySpecificFixes(content: string, findings: IFinding[]): { fix
     text = newLines.join("\n");
   }
 
-  // Fix MD049: emphasis style (convert underscores to asterisks)
+  // Fix MD049: emphasis style (convert underscores to asterisks). Fenced code blocks are
+  // skipped entirely and inline backtick code spans are protected via applyOutsideCodeSpans —
+  // an identifier like `CI_EXCLUDED_TAGS` must never be misparsed as emphasis markup (2026-08-10
+  // corruption incident: this exact bug turned it into `CI*EXCLUDED*TAGS`).
   const md049Fixes = findings.filter((f) => f.rule === "MD049/emphasis-style");
   if (md049Fixes.length > 0) {
     const lines = splitLines(text);
     const newLines: string[] = [];
+    let inFenceLocal = false;
+    let fenceLocal: Fence | null = null;
 
     for (const line of lines) {
-      // Convert __text__ to **text** and _text_ to *text*
-      let fixedLine = line.replace(/__([^_]+)__/g, "**$1**");
-      fixedLine = fixedLine.replace(/_([^_]+)_/g, "*$1*");
+      const fenceStart = parseFenceStart(line);
+      if (fenceStart && !inFenceLocal) {
+        inFenceLocal = true;
+        fenceLocal = fenceStart;
+        newLines.push(line);
+        continue;
+      }
+      if (fenceStart && inFenceLocal && fenceLocal && isFenceClose(line, fenceLocal)) {
+        inFenceLocal = false;
+        fenceLocal = null;
+        newLines.push(line);
+        continue;
+      }
+      if (inFenceLocal) {
+        newLines.push(line);
+        continue;
+      }
+
+      // Convert __text__ to **text** and _text_ to *text*, only outside code spans.
+      const fixedLine = applyOutsideCodeSpans(line, (segment) => {
+        let converted = segment.replace(/__([^_]+)__/g, "**$1**");
+        converted = converted.replace(/_([^_]+)_/g, "*$1*");
+        return converted;
+      });
       newLines.push(fixedLine);
       if (fixedLine !== line) {
         changed = true;
