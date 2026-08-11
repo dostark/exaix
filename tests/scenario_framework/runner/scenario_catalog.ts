@@ -12,6 +12,7 @@ import { relative, resolve } from "@std/path";
 import type { IScenario } from "../schema/scenario_schema.ts";
 import { ScenarioExecutionMode } from "../schema/step_schema.ts";
 import { loadScenarioFromYamlFile } from "./scenario_loader.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface ILoadScenarioCatalogOptions {
   frameworkHome: string;
@@ -33,7 +34,7 @@ export interface IScenarioCatalogSelectionOptions {
 
 const DEFAULT_SCENARIOS_DIRECTORY = "scenarios";
 const SCENARIO_FILE_EXTENSIONS = [".yaml", ".yml"] as const;
-export const CI_EXCLUDED_TAGS = ["manual-only", "provider-live", "live"] as const;
+export const CI_EXCLUDED_TAGS = ["manual-only", "provider-live", "live", "docker"] as const;
 
 export async function loadScenarioCatalog(
   options: ILoadScenarioCatalogOptions,
@@ -91,7 +92,7 @@ export function selectScenarioCatalogEntries(
 
 export function listCiSafeScenarios(
   catalog: IScenarioCatalogEntry[],
-  selection?: Omit<IScenarioCatalogSelectionOptions, "catalog">,
+  selection?: Opt<Omit<IScenarioCatalogSelectionOptions, "catalog">, Reason.QueryFilter>,
 ): IScenarioCatalogEntry[] {
   const selectedCatalog = selection === undefined ? catalog : selectScenarioCatalogEntries({
     catalog,
