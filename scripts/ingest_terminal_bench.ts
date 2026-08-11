@@ -320,6 +320,12 @@ export const MIN_SUPPORTED_COVERAGE_PCT = 30;
  *  must never let one hung or pathologically slow upstream task (e.g. a real kernel build)
  *  block the whole release; the task is simply recorded `ingest-error` and the batch continues. */
 export const DEFAULT_ORACLE_SOLUTION_TIMEOUT_MS = 180_000;
+/** Cap on bytes retained from a continuously-drained oracle-solution stdout/stderr stream
+ *  (Phase 144 post-gap remediation, GAP-4) — the pipe must be drained WHILE awaiting the
+ *  child's exit (never only after) to avoid the OS pipe-buffer deadlock a verbose script can
+ *  otherwise trigger; this bound stops a pathologically chatty script from growing the
+ *  in-memory buffer unboundedly while still draining (and discarding) everything past it. */
+export const MAX_DRAINED_STREAM_BYTES = 65_536;
 
 async function runGit(
   args: string[],
@@ -353,6 +359,37 @@ async function runGitDiff(args: string[], cwd: string): Promise<string> {
   return raw.endsWith("\n") ? raw : `${raw}\n`;
 }
 
+/** Reads `reader` to EOF into an at-most-`capBytes` buffer, decoding what was kept — excess
+ *  bytes past the cap are still read (so the pipe keeps draining) but discarded. Never rejects:
+ *  a cancelled or errored reader resolves with whatever was accumulated so far, so a caller
+ *  racing this against a kill/timeout never has to await a stream that might hang forever on
+ *  an orphaned grandchild still holding the pipe open. */
+async function drainCapped(reader: ReadableStreamDefaultReader<Uint8Array>, capBytes: number): Promise<string> {
+  const kept: Uint8Array[] = [];
+  let keptBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value && keptBytes < capBytes) {
+        const remaining = capBytes - keptBytes;
+        const chunk = value.length > remaining ? value.subarray(0, remaining) : value;
+        kept.push(chunk);
+        keptBytes += chunk.length;
+      }
+    }
+  } catch {
+    // Reader cancelled (timeout path) or the underlying stream errored — return what we have.
+  }
+  const merged = new Uint8Array(keptBytes);
+  let offset = 0;
+  for (const chunk of kept) {
+    merged.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return new TextDecoder().decode(merged);
+}
+
 /**
  * Applies the upstream oracle solution against a dockerless temp working directory.
  * The solution's hardcoded container WORKDIR (`/app`) is rewritten to the real temp
@@ -370,6 +407,14 @@ async function applyOracleSolutionDockerless(
   await Deno.writeTextFile(adaptedPath, adaptedScript);
   const command = new Deno.Command("bash", { args: [adaptedPath], cwd: workDir, stdout: "piped", stderr: "piped" });
   const child = command.spawn();
+  // GAP-4: drain stdout/stderr CONCURRENTLY with awaiting the child's exit, not only after —
+  // otherwise a script writing more than the OS pipe buffer capacity (~64KiB) blocks on its
+  // own write() with nothing reading the other end, deadlocking until the timeout kills it
+  // (a false timeout on a verbose-but-correct solution).
+  const stdoutReader = child.stdout.getReader();
+  const stderrReader = child.stderr.getReader();
+  const stdoutPromise = drainCapped(stdoutReader, MAX_DRAINED_STREAM_BYTES);
+  const stderrPromise = drainCapped(stderrReader, MAX_DRAINED_STREAM_BYTES);
   const timeoutHandle = setTimeout(() => {
     try {
       child.kill("SIGKILL");
@@ -391,33 +436,36 @@ async function applyOracleSolutionDockerless(
   }
   await Deno.remove(adaptedPath);
   const timedOut = status.signal === "SIGKILL";
+  if (timedOut) {
+    // An orphaned grandchild can still hold the pipe open past the killed direct child's
+    // exit — cancel rather than await the drain, so it can never hang this function (matches
+    // the prior cancel-not-read behavior for this path exactly).
+    stdoutReader.cancel().catch(() => {});
+    stderrReader.cancel().catch(() => {});
+    throw new Error(`oracle solution timed out after ${timeoutMs}ms and was killed`);
+  }
+  const stderrText = await stderrPromise;
+  await stdoutPromise;
   if (!status.success) {
-    if (timedOut) {
-      // Reading stderr here would risk the exact pipe-EOF stall the timeout exists to avoid
-      // (see above) — report the timeout without draining it.
-      child.stderr.cancel().catch(() => {});
-      child.stdout.cancel().catch(() => {});
-      throw new Error(`oracle solution timed out after ${timeoutMs}ms and was killed`);
-    }
-    const stderrText = await new Response(child.stderr).text();
-    child.stdout.cancel().catch(() => {});
     throw new Error(`oracle solution failed: ${stderrText}`);
   }
-  child.stderr.cancel().catch(() => {});
-  child.stdout.cancel().catch(() => {});
 }
 
 function humanizeTaskId(taskId: string): string {
   return taskId.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
 }
 
-/** Reads a task-local LICENSE/NOTICE override if present in the upstream source dir. */
-async function readTaskLocalLicense(sourceDir: string): Promise<string | undefined> {
+/** Reads a task-local LICENSE/NOTICE override if present in the upstream source dir. A real
+ *  I/O error on a file that DOES exist (permission denied, an unreadable directory in its
+ *  place, etc.) must never be silently treated as "no override present" — GAP-7: it fails
+ *  closed and propagates, matching `readOptionalFile`'s already-correct pattern below. */
+export async function readTaskLocalLicense(sourceDir: string): Promise<string | undefined> {
   for (const name of ["LICENSE", "NOTICE"]) {
     try {
       return await Deno.readTextFile(join(sourceDir, name));
-    } catch {
-      continue;
+    } catch (error) {
+      if (error instanceof Deno.errors.NotFound) continue;
+      throw error;
     }
   }
   return undefined;
@@ -436,6 +484,11 @@ async function copyEnvironmentEntries(sourceDir: string, destDir: string): Promi
 const UV_INSTALLER_VERSION = "0.7.13";
 /** Fallback pip package spec when the upstream run-tests.sh names none explicitly. */
 const DEFAULT_TEST_PACKAGES = "pytest==8.4.1";
+/** Conservative PyPI package-spec allowlist (GAP-1): names, version operators/specifiers,
+ *  extras brackets, and comma/space separators only — no shell metacharacters. `run-tests.sh`
+ *  is upstream, externally-authored content; this is the last line of defense before its
+ *  `uv pip install` argument is spliced into a shell command executed inside the jail. */
+const PACKAGE_SPEC_PATTERN = /^[A-Za-z0-9_.\-\[\]<>=!, ]+$/;
 
 /**
  * Derives a self-contained, dockerless-safe scoped_test_cmd from the upstream run-tests.sh:
@@ -448,8 +501,19 @@ const DEFAULT_TEST_PACKAGES = "pytest==8.4.1";
  * Exaix's harness does not set).
  */
 export function deriveScopedTestCmd(runTestsShText: string): string {
-  const pipInstallMatch = runTestsShText.match(/uv pip install\s+([^\n]+)/);
-  const packages = pipInstallMatch ? pipInstallMatch[1].trim() : DEFAULT_TEST_PACKAGES;
+  // Normalize backslash-newline shell line continuations first so a single wrapped
+  // `uv pip install` invocation reads as one logical line, then join every distinct
+  // `uv pip install` invocation's package list (not just the first) — see GAP-1.
+  const normalized = runTestsShText.replace(/\\\r?\n[ \t]*/g, " ");
+  const pipInstallMatches = [...normalized.matchAll(/uv pip install\s+([^\n]+)/g)];
+  const packages = (pipInstallMatches.length > 0
+    ? pipInstallMatches.map((m) => m[1].trim()).join(" ")
+    : DEFAULT_TEST_PACKAGES).replace(/\s+/g, " ");
+  if (!PACKAGE_SPEC_PATTERN.test(packages)) {
+    throw new Error(
+      `deriveScopedTestCmd: rejected upstream package spec containing disallowed characters: ${packages}`,
+    );
+  }
   // Invoke uv by its full, known container path (`HOME=/tmp` is hardcoded onto every jailed
   // launch — see buildJailLaunch) rather than `export PATH="$HOME/.local/bin:$PATH"`: this
   // whole command is embedded as ONE persisted scenario-YAML args element, which passes
