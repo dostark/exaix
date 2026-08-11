@@ -8,6 +8,8 @@
  *   deno run -A scripts/check_commit_msg.ts <commit_msg_file>
  */
 
+import type { Opt, Reason } from "@exaix/core/types";
+
 /** A reference to a plan doc + step, parsed from the commit's `plan:` field. */
 export interface IPlanRef {
   docPath: string;
@@ -565,6 +567,8 @@ async function getStagedFiles(): Promise<string[]> {
   try {
     const output = await new Deno.Command("git", {
       args: ["diff", "--cached", "--name-only"],
+      // See scripts/check_edition_graph.ts for why LD_LIBRARY_PATH is scrubbed here.
+      env: { LD_LIBRARY_PATH: "" },
       stdout: "piped",
       stderr: "null",
     }).output();
@@ -576,10 +580,12 @@ async function getStagedFiles(): Promise<string[]> {
 }
 
 /** Run git in `cwd` (or the repo root); trimmed stdout, or "" on failure. */
-async function gitOut(args: string[], cwd?: string): Promise<string> {
+async function gitOut(args: string[], cwd?: Opt<string, Reason.OptionalContext>): Promise<string> {
   try {
     const out = await new Deno.Command("git", {
       args: cwd ? ["-C", cwd, ...args] : args,
+      // See scripts/check_edition_graph.ts for why LD_LIBRARY_PATH is scrubbed here.
+      env: { LD_LIBRARY_PATH: "" },
       stdout: "piped",
       stderr: "null",
     }).output();
@@ -693,6 +699,8 @@ async function isGitMergeCommit(): Promise<boolean> {
   try {
     const process = new Deno.Command("git", {
       args: ["rev-parse", "--verify", "MERGE_HEAD"],
+      // See scripts/check_edition_graph.ts for why LD_LIBRARY_PATH is scrubbed here.
+      env: { LD_LIBRARY_PATH: "" },
       stdout: "null",
       stderr: "null",
     });

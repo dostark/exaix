@@ -98,6 +98,11 @@ function repoRelative(specifier: string, repoRootUrl: string): string | null {
 async function resolveGraphEdges(entry: string, repoRootUrl: string): Promise<IGraphEdge[]> {
   const cmd = new Deno.Command("deno", {
     args: ["info", "--json", entry],
+    // Some dev shells export LD_LIBRARY_PATH for unrelated native-toolchain reasons; Deno
+    // treats spawning a subprocess that would inherit it as a distinct permission-sensitive
+    // op (dynamic-linker search path), which this script's --allow-run=deno grant doesn't
+    // cover. It has no bearing on `deno info`'s own resolution, so scrub it for the child.
+    env: { LD_LIBRARY_PATH: "" },
     stdout: "piped",
     stderr: "piped",
     signal: AbortSignal.timeout(DENO_INFO_TIMEOUT_MS),

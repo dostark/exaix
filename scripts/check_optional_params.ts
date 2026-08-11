@@ -508,6 +508,8 @@ async function stagedTsFiles(): Promise<string[]> {
   const out = await new Deno.Command("git", {
     args: ["diff", "--cached", "--name-only", "--diff-filter=ACM"],
     cwd: REPO_ROOT,
+    // See scripts/check_edition_graph.ts for why LD_LIBRARY_PATH is scrubbed here.
+    env: { LD_LIBRARY_PATH: "" },
     stdout: "piped",
     stderr: "null",
   }).output();

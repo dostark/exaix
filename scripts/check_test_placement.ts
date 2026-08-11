@@ -149,6 +149,8 @@ export function validateTestPlacement(paths: string[]): ITestPlacementResult {
 async function runGit(...args: string[]): Promise<string> {
   const command = new Deno.Command("git", {
     args,
+    // See scripts/check_edition_graph.ts for why LD_LIBRARY_PATH is scrubbed here.
+    env: { LD_LIBRARY_PATH: "" },
     stdout: "piped",
     stderr: "piped",
   });

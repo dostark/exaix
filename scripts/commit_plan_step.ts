@@ -21,13 +21,16 @@
  * @related-files [scripts/check_commit_msg.ts, .claude/skills/submodule-workflow/SKILL.md]
  */
 
+import type { Opt, Reason } from "@exaix/core/types";
 import { type IOwningRepo, type IPlanRef, parsePlanField, resolveOwningRepo } from "./check_commit_msg.ts";
 
 /** Run a git command in `cwd`; return trimmed stdout (empty on failure). */
-async function git(args: string[], cwd?: string): Promise<string> {
+async function git(args: string[], cwd?: Opt<string, Reason.OptionalContext>): Promise<string> {
   try {
     const out = await new Deno.Command("git", {
       args: cwd ? ["-C", cwd, ...args] : args,
+      // See scripts/check_edition_graph.ts for why LD_LIBRARY_PATH is scrubbed here.
+      env: { LD_LIBRARY_PATH: "" },
       stdout: "piped",
       stderr: "null",
     }).output();
@@ -98,9 +101,11 @@ async function performCommits(msgFile: string, repo: IOwningRepo): Promise<boole
 }
 
 /** Run git with inherited stdio (so hooks/output show); return success. */
-async function runGitInherit(args: string[], cwd?: string): Promise<boolean> {
+async function runGitInherit(args: string[], cwd?: Opt<string, Reason.OptionalContext>): Promise<boolean> {
   const out = await new Deno.Command("git", {
     args: cwd ? ["-C", cwd, ...args] : args,
+    // See scripts/check_edition_graph.ts for why LD_LIBRARY_PATH is scrubbed here.
+    env: { LD_LIBRARY_PATH: "" },
     stdout: "inherit",
     stderr: "inherit",
   }).output();

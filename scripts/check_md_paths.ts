@@ -383,6 +383,8 @@ async function stagedMarkdownFiles(root: string): Promise<Set<string>> {
   const cmd = new Deno.Command("git", {
     args: ["diff", "--cached", "--name-only", "--diff-filter=ACMR"],
     cwd: resolve(root),
+    // See scripts/check_edition_graph.ts for why LD_LIBRARY_PATH is scrubbed here.
+    env: { LD_LIBRARY_PATH: "" },
     stdout: "piped",
     stderr: "null",
   });
