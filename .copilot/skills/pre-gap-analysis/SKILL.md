@@ -646,10 +646,10 @@ are written. Format with grep outcome annotations:
    requires source code. The grep must find the claimed change.
 
 1. **Re-verify every Resolution's own text against the document — doc-only or not.** A
-   Resolution paragraph is a *claim about what the edit did*, not proof it happened. Before
+   Resolution paragraph is a _claim about what the edit did_, not proof it happened. Before
    marking any Pre-Implementation Action `✅ APPLIED` — whether its Resolution promises a
    plan-text edit only (no source code exists yet) or a source-code change — re-read the
-   actual current text of *every* section/step the Resolution names and confirm each one
+   actual current text of _every_ section/step the Resolution names and confirm each one
    literally contains what the Resolution claims, word for concrete word (not "conceptually
    addressed"). If the Resolution names three locations and only two were actually edited,
    the gap is not closed: mark it `⛔ UNVERIFIED` and leave the step `⏳ pending` until the

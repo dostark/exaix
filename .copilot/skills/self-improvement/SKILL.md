@@ -193,7 +193,16 @@ Do / Don't
 exaix:
   skill_id: self-improvement
   triggers:
-    keywords: [self-improvement, self-improvement-retro, retro, retrospective, instruction-adequacy, doc-patch, gap-detection, phase-loop]
+    keywords: [
+      self-improvement,
+      self-improvement-retro,
+      retro,
+      retrospective,
+      instruction-adequacy,
+      doc-patch,
+      gap-detection,
+      phase-loop,
+    ]
     task_types: [docs, maintenance, process]
     tags: [self-improvement, documentation, retrospective]
   constraints:

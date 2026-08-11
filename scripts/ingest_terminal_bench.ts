@@ -506,9 +506,9 @@ export function deriveScopedTestCmd(runTestsShText: string): string {
   // `uv pip install` invocation's package list (not just the first) — see GAP-1.
   const normalized = runTestsShText.replace(/\\\r?\n[ \t]*/g, " ");
   const pipInstallMatches = [...normalized.matchAll(/uv pip install\s+([^\n]+)/g)];
-  const packages = (pipInstallMatches.length > 0
-    ? pipInstallMatches.map((m) => m[1].trim()).join(" ")
-    : DEFAULT_TEST_PACKAGES).replace(/\s+/g, " ");
+  const packages =
+    (pipInstallMatches.length > 0 ? pipInstallMatches.map((m) => m[1].trim()).join(" ") : DEFAULT_TEST_PACKAGES)
+      .replace(/\s+/g, " ");
   if (!PACKAGE_SPEC_PATTERN.test(packages)) {
     throw new Error(
       `deriveScopedTestCmd: rejected upstream package spec containing disallowed characters: ${packages}`,

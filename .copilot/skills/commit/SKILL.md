@@ -92,10 +92,10 @@ model: <YOUR actual model name and version>
 ⚠️ CRITICAL: Structured Message Validator Traps (common validator failures — `scripts/check_commit_msg.ts`)
 
 - **Structural Bloom**: when a commit touches more than 3 files, `what:` MUST contain at least
-  2 bullet points (lines starting with `- ` or `* `). A single-paragraph `what:` is rejected
+  2 bullet points (lines starting with `-` or `*`). A single-paragraph `what:` is rejected
   with `Structural Bloom: Changes affect N files. Please use at least two bullet points...`
   even if the prose is otherwise detailed. Write `what:` as a short intro sentence followed by
-  `- ` bullets — one per logically distinct change — from the start; don't discover this after
+  `-` bullets — one per logically distinct change — from the start; don't discover this after
   a blocked commit.
 - The **component word(s) before `:` in `impact:`** must appear **verbatim (case-insensitive)** in `what:`. The validator enforces this. Strategy: draft `what:` first using real ARCHITECTURE.md component names; then mirror that exact word in `impact:`. Do NOT choose a generic category label (e.g., `Documentation`, `Planning`, `Schemas`) unless that exact word already appeared in your `what:` text.
 - **Semicolons in `impact:` separate multiple `Component: detail` entries only.** Appending plain English clauses after a semicolon (e.g., `; no runtime changes.` or `; doc-only change.`) causes the validator to misread the clause as a spurious component name. Put such notes inside the `detail` part (e.g., `CompA: added X, no runtime changes`).

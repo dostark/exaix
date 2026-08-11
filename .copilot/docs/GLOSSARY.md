@@ -252,11 +252,11 @@ in the root glossary (Trigger, Plan, Review, Artifact):
 Canonical implementation-level names for the **Changeset** and **Plan Amendment**
 concepts defined in the root glossary:
 
-| Code name                                    | Layer                                                                | Meaning                                                                                                                                                                                         |
-| -------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Code name                                    | Layer                                                                    | Meaning                                                                                                                                                                                         |
+| -------------------------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `IChangesetResult` / `ChangesetResultSchema` | Zod-inferred type + schema, `packages/schemas/src/agent_orchestrator.ts` | Structured result an agent reports after applying a Plan's changes — `branch`, `commit_sha`, `files_changed`, `description`, `tool_calls`, `execution_time_ms`, `unauthorized_changes`, `usage` |
-| `IPlanAmendmentService`                      | Interface, `packages/core/src/types/i_plan_amendment_service.ts`     | `shouldAmend(trigger)` decides whether an amendment is warranted; generates a structural patch proposal against a plan's remaining steps                                                        |
-| `IPlanAmendmentGate`                         | Interface, `packages/core/src/types/i_plan_amendment_gate.ts`        | `processAmendment(...)` routes a proposed amendment through human approval and returns a decision; `applyApprovedAmendment(...)` rewrites the plan content once approved                        |
+| `IPlanAmendmentService`                      | Interface, `packages/core/src/types/i_plan_amendment_service.ts`         | `shouldAmend(trigger)` decides whether an amendment is warranted; generates a structural patch proposal against a plan's remaining steps                                                        |
+| `IPlanAmendmentGate`                         | Interface, `packages/core/src/types/i_plan_amendment_gate.ts`            | `processAmendment(...)` routes a proposed amendment through human approval and returns a decision; `applyApprovedAmendment(...)` rewrites the plan content once approved                        |
 
 ### Wait-state code identifiers
 
