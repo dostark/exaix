@@ -30,6 +30,28 @@
   operator-run tools to ingest a pinned Terminal-Bench release into Exaix's own task
   contract and validate it with null/reference controls before a live run.
 
+### Changed
+
+- The vendored Terminal-Bench task corpus now ships only the 26 tasks whose null/reference
+  validity controls both pass; the other 68 classifier-supported tasks stay recorded (with
+  reason) in the manifest and coverage numbers but are no longer vendored with runnable
+  content, since a controls-failing task was never safe to trust a live result from.
+
+### Fixed
+
+- `scripts/ingest_terminal_bench.ts` no longer hangs, or falsely times out, ingesting a task
+  whose oracle solution prints more output than the OS pipe buffer holds.
+- `scripts/sweep_terminal_bench_controls.ts` no longer hangs indefinitely on a stuck docker
+  verify step, and a single task with a malformed contract no longer discards every other
+  already-completed task's result in the same sweep.
+
+### Security
+
+- `scripts/ingest_terminal_bench.ts` now rejects a crafted upstream `run-tests.sh` install
+  line containing shell metacharacters instead of interpolating it into a constructed shell
+  command, and fails closed on a genuine I/O error reading a task-local license override
+  instead of silently treating it as "no override present."
+
 ## Unreleased — Phase 159 (Flow Step Execution Strategy)
 
 ### Added
