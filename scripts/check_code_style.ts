@@ -508,6 +508,13 @@ const LAYER_LEAK_EXEMPT = new Set([
   "packages/execution/src/git_audit_service.ts",
   "packages/execution/src/execution_context_service.ts",
   "packages/core/src/planning/plan_executor.ts",
+  // Mirrors plan_executor.ts's createAgentExecutor construction pattern (see this file's own
+  // IAgentOrchestratorConstructionDeps docstring): builds a fresh, per-call PathResolver/
+  // ToolRegistry/AgentOrchestrator/OutputValidator with call-time parameters (traceId, portal
+  // target_path) that don't exist until runWithStrategy is invoked — a DI-injected pre-built
+  // instance would violate the documented invariant that AgentOrchestrator's mutable
+  // planWrittenFiles state must never survive past one call.
+  "packages/flow/src/agent_executor_adapter.ts",
 ]);
 
 /**

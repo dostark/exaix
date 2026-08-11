@@ -7,29 +7,12 @@
  *   execution fail with BLUEPRINT_NOT_FOUND (flow-produced plans carry no identity_id).
  */
 import { assertEquals } from "@std/assert";
+import { dirname, fromFileUrl, join } from "@std/path";
 import { DEFAULT_IDENTITY_ID } from "@exaix/core";
 import { parseStructuredPlanFromMarkdown } from "@exaix/core/planning";
 
-const FLOW_PLAN = `---
-trace_id: "t-1"
-request_id: "r-1"
-status: pending
----
-
-# Flow Step Output
-
-Structured output for this step
-
-## Execution Steps
-
-## Step 1: Implement handleCompleteTask
-
-Add the complete-task handler to src/api.ts.
-
-## Step 2: Verify
-
-Run the test suite.
-`;
+const FIXTURE_ROOT = join(dirname(fromFileUrl(import.meta.url)), "fixtures");
+const FLOW_PLAN = await Deno.readTextFile(join(FIXTURE_ROOT, "flow-step-plan-no-identity.md"));
 
 Deno.test("structured plan without identity_id falls back to DEFAULT_IDENTITY_ID, not 'unknown'", () => {
   const plan = parseStructuredPlanFromMarkdown(FLOW_PLAN, { trace_id: "t-1", request_id: "r-1" });

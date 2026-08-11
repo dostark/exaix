@@ -8,6 +8,7 @@ import { assertEquals } from "@std/assert";
 import { buildDelegateBriefArgs, parseAcceptanceFromContent } from "@exaix/core/planning";
 
 Deno.test("parseAcceptanceFromContent: extracts bullets from ## Acceptance section", () => {
+  // style-exclude:FIXTURE_READABILITY - test-case-specific fixture, consistent with its shorter siblings below in this same file (each fixture is unique per-test content, best read alongside its own assertion)
   const content = `Fix the login bug.
 
 ## Acceptance
