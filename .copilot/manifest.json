@@ -515,15 +515,18 @@
       "agent": "general",
       "scope": "dev",
       "title": "Self-Improvement Loop (#self-improvement)",
-      "short_summary": "How to detect instruction gaps during work and patch .copilot/ docs safely with minimal, test-backed updates.",
-      "version": "1.0.0",
+      "short_summary": "How to detect instruction gaps during work and patch .copilot/ docs safely with minimal, test-backed updates, plus the terminal phase-loop retro that fixes problems in skills, instructions, and .copilot structure.",
+      "version": "1.1.0",
       "topics": [
         "self-improvement",
         "instruction-adequacy",
+        "retrospective",
         "agents",
         "maintenance",
-        "rag"
-      ]
+        "rag",
+        "process"
+      ],
+      "qwen_skill": "self-improvement"
     },
     {
       "path": ".copilot/skills/upgrade/SKILL.md",
