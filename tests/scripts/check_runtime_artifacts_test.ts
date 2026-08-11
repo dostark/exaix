@@ -107,7 +107,10 @@ Deno.test("[findRuntimeArtifactViolations] flags a reference.patch that embeds a
     "Binary files differ",
   ].join("\n");
   const violations = findRuntimeArtifactViolations([
-    { path: "tests/scenario_framework/fixtures/external/terminal_bench/some-task/reference.patch", content: patchContent },
+    {
+      path: "tests/scenario_framework/fixtures/external/terminal_bench/some-task/reference.patch",
+      content: patchContent,
+    },
   ]);
   assertEquals(violations.length, 1);
   assertEquals(violations[0].kind, "embedded-in-diff");

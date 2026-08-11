@@ -18,7 +18,7 @@ const PRE_COMMIT_CONTENT = `#!/bin/sh
 # ============================================
 # Gate 0: Block direct commits on 'main'
 #         Bypass: HOOK_BYPASS_MAIN=1 git commit ...
-# Gates 1-18: Format, lint, style, magic, docs, complexity, parity, arch, event-strings, skill, manifest, md-path, agent-docs-integrity, qwen-skills-sync
+# Gates 1-18: Format, lint, style, magic, runtime-artifacts, docs, complexity, parity, arch, event-strings, skill, manifest, md-path, agent-docs-integrity, qwen-skills-sync
 # ============================================
 
 # --- Gate 0: Main branch guard ---
@@ -84,6 +84,15 @@ fi
 deno task check:magic
 if [ $? -ne 0 ]; then
   echo "❌ Error: Magic value validation failed."
+  exit 1
+fi
+
+# 5b. Runtime Artifacts Check (venv/, __pycache__/, node_modules/, and similar generated
+# content — including embedded inside a staged .patch/.diff file's own diff hunks — must
+# never be committed; see Phase 144's Terminal-Bench venv-capture incident)
+deno task check:runtime-artifacts
+if [ $? -ne 0 ]; then
+  echo "❌ Error: A staged file is (or embeds) a runtime/dependency-manager artifact. See output above."
   exit 1
 fi
 

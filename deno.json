@@ -117,6 +117,7 @@
     "check:unused-exports:strict": "deno run -A scripts/check_unused_exports.ts --strict",
     "check:optional-params": "deno run --allow-read --allow-env --allow-run=git scripts/check_optional_params.ts",
     "check:optional-params:staged": "deno run --allow-read --allow-env --allow-run=git scripts/check_optional_params.ts --staged",
+    "check:runtime-artifacts": "deno run --allow-read --allow-run=git scripts/check_runtime_artifacts.ts",
     "check:skill-envelopes": "deno run --allow-read --allow-write=/tmp scripts/generate_skill_json.ts /tmp/skill-env-check-target /tmp/skill-env-check-root --check",
     "check:skill-index": "deno run --allow-read scripts/build_skills_index.ts Memory/Skills . --check",
     "check:blueprint-integrity": "deno run --allow-read scripts/check_blueprint_integrity.ts Blueprints",

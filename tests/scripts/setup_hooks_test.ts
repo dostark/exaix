@@ -58,5 +58,13 @@ describe("scripts/setup_hooks.ts", () => {
       hookInstaller.includes("Only .copilot/manifest.json generated_at changed; skipping amend."),
       "pre-push hook should ignore timestamp-only manifest drift",
     );
+    assert(
+      denoConfig.tasks["check:runtime-artifacts"],
+      "deno.json should have check:runtime-artifacts task",
+    );
+    assert(
+      hookInstaller.includes("deno task check:runtime-artifacts"),
+      "pre-commit hook should run the runtime-artifacts check (venv/, __pycache__/, node_modules/)",
+    );
   });
 });
