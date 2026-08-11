@@ -18,6 +18,18 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 144 (External Benchmark Interop)
+
+### Added
+
+- `exactl eval report --view external` — comparability against a public benchmark
+  (Terminal-Bench: resolved rate, coverage, cost, and provenance per benchmark/version/cell),
+  with a derived-methodology caveat rendered alongside every table (see
+  `Exaix_Evaluation.md` §17).
+- `scripts/ingest_terminal_bench.ts` and `scripts/sweep_terminal_bench_controls.ts` —
+  operator-run tools to ingest a pinned Terminal-Bench release into Exaix's own task
+  contract and validate it with null/reference controls before a live run.
+
 ## Unreleased — Phase 159 (Flow Step Execution Strategy)
 
 ### Added

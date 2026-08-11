@@ -2420,14 +2420,19 @@ exactl eval report --view failures
 
 # View family-level report (swe-tasks pack)
 exactl eval report --pack swe-tasks --format table
+
+# External-benchmark comparability (Terminal-Bench, Docker required to run tasks live)
+exactl eval report --view external
 ```
 
 `eval report` views: `cost` (default), `families`, `lift` (Exaix vs the raw CLI on the same
 task), `ablation` (per-subsystem contribution), `frontier` (accuracy vs cost with Pareto
-marking), and `failures` (why runs fail, per family and cell); `--format json` gives
-machine-readable rows. `--max-cost-usd` stops scheduling once accumulated tracked cost reaches
-the cap (remaining scenarios skipped, never a task truncated mid-run). Full documentation in
-`docs/Exaix_Evaluation.md`.
+marking), `failures` (why runs fail, per family and cell), and `external` (comparability against
+a public benchmark — currently Terminal-Bench; requires Docker to run tasks live, read-only
+against history otherwise; see `docs/Exaix_Evaluation.md` §17 for the methodology and its
+caveats); `--format json` gives machine-readable rows. `--max-cost-usd` stops scheduling once
+accumulated tracked cost reaches the cap (remaining scenarios skipped, never a task truncated
+mid-run). Full documentation in `docs/Exaix_Evaluation.md`.
 
 Exit codes: `0` all passed, `1` one or more below threshold, `2` infrastructure
 error. Eval reports are written to the output directory as `eval-report.json`.

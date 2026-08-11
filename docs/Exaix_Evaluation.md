@@ -1,7 +1,7 @@
 # Exaix Evaluation Guide
 
-- **Version:** 1.2.0
-- **Date:** 2026-08-05
+- **Version:** 1.3.0
+- **Date:** 2026-08-10
 
 ## 1. Introduction
 
@@ -163,7 +163,8 @@ Output shows per-step score differences and overall score delta.
 
 Render a comparison over recorded history, grouped by `cell_id`/`provider`/`model`. The view
 is selected with `--view`; the current views are `cost` (default), `families`, `lift`,
-`ablation`, `frontier`, and `failures`. Report views read the same tracked-cost, score, and cell
+`ablation`, `frontier`, `failures`, and `external` (§17, comparability against a public
+benchmark). Report views read the same tracked-cost, score, and cell
 fields the history rows carry (§9), and `--format json` renders machine-readable rows for CI
 trend jobs.
 
@@ -244,6 +245,18 @@ you can see at a glance whether a cell keeps dying on one specific failure mode.
 ```bash
 exactl eval report --view failures
 exactl eval report --view failures --format json
+```
+
+#### `--view external` — comparability against a public benchmark
+
+Per (benchmark, version, cell): tasks run, resolved count/rate (never a silently partial
+denominator), the manifest's supported-subset size and coverage, mean tracked cost,
+provider/model, and run date — plus the single-sourced comparability caveat. Full methodology,
+the supported-subset ladder, and known limitations are in §17.
+
+```bash
+exactl eval report --view external
+exactl eval report --view external --format json
 ```
 
 ---
@@ -1038,9 +1051,9 @@ Add a new task:
 
 1. Create `tests/scenario_framework/fixtures/swe_tasks/<task-id>/` with
    `task.json`, `TASK.md`, `reference.patch`
-2. Create the request fixture in `fixtures/requests/swe_tasks/`
-3. Generate the scenario YAML via `renderSweTaskTemplate`
-4. Validate with `deno test tests/scenario_framework/tests/unit/task_contract_schema_test.ts`
+1. Create the request fixture in `fixtures/requests/swe_tasks/`
+1. Generate the scenario YAML via `renderSweTaskTemplate`
+1. Validate with `deno test tests/scenario_framework/tests/unit/task_contract_schema_test.ts`
 
 See `tests/scenario_framework/AUTHORING.md` for the full authoring workflow.
 
@@ -1286,3 +1299,153 @@ lifted onto a different corpus, provider, or week. The same discipline applies t
 contributions and the frontier: read each number with its basis (cells, run ids, task count)
 and its `noEffect` verdict, and treat a lift near zero or negative as a real finding — the
 corpus may simply ceiling near 1.0 for capable models.
+
+---
+
+## 17. External Benchmarks
+
+This external-benchmark adapter is an **import-direction** design —
+external tasks are pulled into Exaix's own runner and scored by the benchmark's own tests,
+rather than plugging Exaix into someone else's harness. The dogfood loop being measured (§14) is
+identical either way; only the environment bracket and the outcome check differ. The adapter
+currently covers one benchmark, **Terminal-Bench**; a second adapter (SWE-bench Verified) was
+scoped but explicitly descoped this phase (§17.6).
+
+### 17.1 How it works
+
+1. **Ingest** (`scripts/ingest_terminal_bench.ts`) pins one Terminal-Bench release by commit SHA
+   plus a verified license hash
+   (`tests/scenario_framework/fixtures/external/terminal_bench/PINNED.json`) and converts each
+   task into the same contract §14 uses: `TASK.md` (verbatim instruction), `task.json` (extended
+   with an optional `source: { benchmark, version, task_id }` block), and `reference.patch` (the
+   oracle solution diffed against a **synthetic base commit** — the task's vendored environment,
+   git-initialized at ingest). Licensing is checked per task against a permissive allowlist
+   (`MIT`, `Apache-2.0`, `BSD-2-Clause`, `BSD-3-Clause`, `ISC`); a disallowed or missing license
+   skips that one task, never the whole batch.
+1. **Portal**: the vendored, already-git-initialized environment is copied to
+   `fixtures/portals/external/terminal_bench/<task-id>/` and bind-mounted directly by the
+   scenario template — it does not go through the internal `swe_tasks` setup path (which assumes
+   a fresh `git init`), because that would mint a second, different base commit.
+1. **Execution**: the `external_bench_task` template runs the standard dogfood loop (request →
+   plan → approve → delegate) inside the existing `eval-jail` Docker substrate
+   (`--cap-drop=ALL`, `--security-opt=no-new-privileges`) — never host-direct, since the task
+   directory also carries `reference.patch`, and a host-direct delegate would have filesystem
+   access to its own answer key.
+1. **Verification** runs the benchmark's own, unmodified test script via `docker exec` — the
+   outcome criterion is never Exaix-authored.
+1. **No network fetch at run time.** Everything is vendored at ingest; bumping to a newer
+   Terminal-Bench release is an explicit, reviewed re-ingest, never a floating download.
+
+### 17.2 The subset ladder — which number to cite
+
+A pinned release doesn't run task-for-task: Exaix's bind-mount + single-`docker run` substrate
+can't faithfully represent every task shape (multi-container compose, GPU access, long-lived
+interactive services). Read the number that matches the claim you're making:
+
+| Tier                  | Terminal-Bench `d28711d0` | What it means                                                                                                                                                                                                                                                                                                                        | Where                                                                                                                                                                                                                                                                                             |
+| --------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pinned release        | 241 tasks                 | Everything in the pinned commit                                                                                                                                                                                                                                                                                                      | `manifest.json` `total_tasks`                                                                                                                                                                                                                                                                     |
+| **Supported**         | 94 tasks (39.0%)          | Structurally representable (file-oriented; no interactive/multi-container/GPU requirement) — a **classifier** verdict, not a validity claim                                                                                                                                                                                          | `manifest.json` `supported_count`/`coverage_pct`; `classifyTerminalBenchTask` (`UnsupportedReason`: `multi-container`, `custom-network-config`, `privileged-or-device-access`, `gpu-required`, `requires-live-service`, `requires-interactive-terminal`, `ambiguous-environment`, `ingest-error`) |
+| **Controls-verified** | 26 of the 94              | Both validity controls independently pass — null control fails the benchmark's own tests on the unmodified base state, reference control passes them with the vendored oracle patch applied. The other 68 "supported" tasks fail one or both controls, mostly because the real upstream harness drives execution differently (§17.5) | `manifest.json` per-task `controls_status`; swept by `scripts/sweep_terminal_bench_controls.ts`                                                                                                                                                                                                   |
+
+**Only the controls-verified 26 are safe to run a live task on and trust the resolved/unresolved
+verdict.** A controls-failing task can't distinguish "the delegate solved it" from "the harness
+substrate can't validate it" — running one anyway produces a number that looks like a result but
+isn't. The CLI's own `Coverage` column (§17.3) measures a different, narrower thing — tasks
+actually run so far, out of the 94 supported — never confuse it with the 26-task trustworthy pool
+above.
+
+### 17.3 Running it
+
+```bash
+# Ingest a single task from a local checkout of the upstream release
+deno run -A scripts/ingest_terminal_bench.ts --source <upstream-task-dir> --task-id <id> \
+  --benchmark-version <sha> --license <upstream-root-license-path>
+
+# Batch-ingest a full release with the supported-subset classifier
+deno run -A scripts/ingest_terminal_bench.ts --batch <upstream-release-root> \
+  --benchmark-version <sha> --license <upstream-root-license-path>
+
+# Sweep null + reference controls over every supported task (Docker required; no provider token)
+deno run -A scripts/sweep_terminal_bench_controls.ts \
+  --manifest tests/scenario_framework/fixtures/external/terminal_bench/manifest.json \
+  --fixtures-dir tests/scenario_framework/fixtures/external/terminal_bench \
+  --portals-dir tests/scenario_framework/fixtures/portals/external/terminal_bench
+
+# Run one controls-verified task live, budget-capped (Docker + a live provider required)
+deno run -A tests/scenario_framework/runner/main.ts \
+  --scenario external-terminal-bench-<task-id> --eval-mode --max-cost-usd 2.00
+
+# Read the results
+exactl eval report --view external
+```
+
+**Selecting scenarios.** Generated Terminal-Bench scenarios carry `bench:terminal-bench`,
+`bench-version:<sha>`, `docker`, and `provider-live` tags. `docker`/`bench:*` are selector tags;
+CI exclusion itself reuses the existing `provider-live` entry in `CI_EXCLUDED_TAGS`
+(`tests/scenario_framework/runner/scenario_catalog.ts`) — no new exclusion mechanism was needed.
+
+### 17.4 Caveats — read before citing a number
+
+> External-benchmark results are derived, not native: each task is scored on the benchmark's own
+> tests, per-cell runs are independent, and figures may not generalize to later revisions of the
+> benchmark (contamination risk). Treat them as comparative signals, not certifications.
+
+The block above is rendered verbatim by `exactl eval report --view external`, sourced from
+`EXTERNAL_BENCHMARK_CAVEAT` (`packages/eval-history/src/external_benchmark.ts`) — the single
+source of truth; this doc restates it for readers, never diverges from it.
+
+A defensible sentence looks like: _"Exaix + `opencode-go/deepseek-v4-flash` resolved 1/1
+attempted tasks on the Terminal-Bench `d28711d0` controls-verified subset, 2026-08-10."_ Not:
+"Exaix ranks on Terminal-Bench" — there is no leaderboard submission here, no
+official-harness-parity claim, and no number generalizes past its stated benchmark version,
+model, and date.
+
+**Contamination.** The pinned Terminal-Bench release may predate or postdate any given model's
+training cutoff; a resolved rate on a public, indexed benchmark can be inflated by memorization
+rather than capability. Adopters who need a clean number should run a **private pilot**: hold out
+a small, never-published task set (an internal `swe_tasks`-style corpus, §14, works identically
+here) and compare its resolved rate against the public-benchmark number — a large gap between the
+two is the tell.
+
+### 17.5 Known limitations (tracked, not silently dropped)
+
+- **Harness-fidelity gap.** The real upstream Terminal-Bench harness drives execution via
+  `docker compose up` plus TMUX-keystroke automation with pane-text-parsed results — a different
+  execution paradigm from Exaix's ephemeral `docker run` + headless-JSON-CLI + exit-code
+  substrate. This is the root cause of most of the 68/94 supported tasks that fail one or both
+  validity controls (§17.2); every divergence surfaces as a recorded, machine-readable controls
+  failure, never a silent false pass. Reproducing the real harness's execution model is
+  future-phase-scale work, tracked by the harness-hardening roadmap
+  (`exaix-dev-docs/planning/phase-160-external-benchmark-harness-sota-hardening.md`), not a patch
+  to this phase.
+- **Cost/cell attribution gap.** `external_bench_task` scenarios are bare (no `matrix:` block),
+  so their history rows don't yet populate `cell_id`/`provider`/`model`/`total_tracked_cost_usd`
+  the way matrix-driven cells do — `--view external` renders `unknown-cell`/`unknown-provider`
+  for them until a future step threads that path through. The founding row's
+  `benchmark`/`benchmark_version`/pass-fail/date provenance is real and correct regardless.
+
+### 17.6 SWE-bench Verified pilot — descoped
+
+The plan's stretch half (a fixed 10-instance SWE-bench Verified pilot, reusing the same task
+contract with a repo-clone portal) was descoped on 2026-08-10 with recorded evidence, per its own
+"explicitly descope-friendly if environment cost explodes" design decision. Session priority went
+to landing the non-deferrable Terminal-Bench core for real — a full-release batch ingest, a real
+controls sweep, and a real live founding row — over a second benchmark adapter with heavier
+per-instance repo-clone environments. Re-opening it is a scoped, standalone effort, not a gap in
+this phase's own deliverable: Terminal-Bench alone satisfies the external-comparability gap (N6)
+this phase targets
+(`exaix-dev-docs/dev/Exaix_Eval_Comparative_Analysis.md` §8.2).
+
+### 17.7 Adding a task, a version bump, or a new benchmark
+
+Adding a **task** to the pinned Terminal-Bench release, or moving to a newer release: re-run the
+batch ingest (§17.3) with the new `--benchmark-version`; the classifier and license check run
+automatically, and the diff against the previous `manifest.json` shows exactly what changed.
+
+Adding a **second external benchmark**: this adapter's Terminal-Bench-specific ingest script is
+not a template to copy. A shared adapter contract (`IExternalBenchmarkAdapter`) that a second
+adapter would implement is designed, in the harness-hardening roadmap referenced above, but not
+yet built. Until it lands, see
+`tests/scenario_framework/templates/external_benchmark_adapter.template.md` for the target shape
+and `tests/scenario_framework/README.md` for the authoring workflow.

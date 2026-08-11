@@ -734,6 +734,47 @@ steps:
 - **All step types** available in §3 (file-exists, text-contains, json-path-equals,
   journal-event-exists, llm-judge, etc.)
 
+### Terminal-Bench Fixtures, Tags & Classifier (Phase 144)
+
+**Fixtures layout.** Each ingested task lives under two directory trees:
+
+```text
+tests/scenario_framework/fixtures/external/terminal_bench/
+  PINNED.json                 # pinned commit SHA + license hash for the whole release
+  LICENSE                     # vendored upstream license notice
+  manifest.json                # per-task {class, reason-if-unsupported, controls_status} + coverage
+  <task-id>/
+    TASK.md                    # verbatim instruction
+    task.json                  # 141 contract metadata + optional source block
+    reference.patch            # oracle solution vs. the synthetic base commit
+    oracle_tests/               # upstream's own, unmodified test script(s)
+
+tests/scenario_framework/fixtures/portals/external/terminal_bench/
+  <task-id>/                   # the git-initialized environment working dir — bind-mounted
+                                # directly as the sandbox portal, never copied through the
+                                # internal swe_tasks setup path
+```
+
+**Tags.** Generated scenarios (`tests/scenario_framework/scenarios/external_terminal_bench/`)
+carry `bench:terminal-bench`, `bench-version:<pinned-sha>`, `docker`, and `provider-live`.
+`docker` and `bench:*` are selector tags for filtering (`--tag docker` picks every
+container-requiring scenario); CI exclusion itself is driven entirely by the pre-existing
+`provider-live` entry in `CI_EXCLUDED_TAGS` (`runner/scenario_catalog.ts:36`) — no separate
+`docker` exclusion entry was needed, since every Terminal-Bench scenario already needs a live
+provider too.
+
+**Classifier.** `classifyTerminalBenchTask` (`scripts/ingest_terminal_bench.ts`) splits every
+ingested task into `supported` (file-oriented; the bind-mount + single `docker run` substrate can
+represent it) or `unsupported`, with a machine-readable `UnsupportedReason`: `multi-container`,
+`custom-network-config`, `privileged-or-device-access`, `gpu-required`, `requires-live-service`,
+`requires-interactive-terminal`, `ambiguous-environment`, or `ingest-error`. Ambiguous cases
+classify `unsupported`, never a guess. Every supported task then runs through
+`scripts/sweep_terminal_bench_controls.ts`, which records a `controls_status`
+(`pass`/`fail`/`pending`) per task — only `pass` (both null and reference controls) tasks are
+safe to run live and trust the resolved/unresolved signal on. See
+`docs/Exaix_Evaluation.md` §17 for the full methodology, the 241/94/26 subset ladder, and the
+`eval report --view external` readout.
+
 ### Authoring External Benchmark Tasks (Phase 144 / Phase 160)
 
 Adding an `swe_tasks` corpus task (internal, `todo_app`-fixture-based) is a content-only
