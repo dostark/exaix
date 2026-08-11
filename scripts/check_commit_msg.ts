@@ -184,11 +184,11 @@ export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
   let section: Section = null;
   for (let i = start + 1; i < end; i++) {
     const line = lines[i];
-    if (/^\*\*Planned Tests\*\*/i.test(line)) {
+    if (/^\*\*Planned Tests:?\*\*/i.test(line)) {
       section = "tests";
       continue;
     }
-    if (/^\*\*Success Criteria\*\*/i.test(line)) {
+    if (/^\*\*Success Criteria:?\*\*/i.test(line)) {
       section = "criteria";
       continue;
     }

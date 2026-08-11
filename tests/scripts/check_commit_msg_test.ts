@@ -426,6 +426,35 @@ describe("parsePlanStep", () => {
     assertEquals(parsed.errors, []);
     assertEquals(parsed.criteriaPaths, ["packages/x/src/a.ts"]);
   });
+
+  it("accepts the repo's dominant heading convention — colon INSIDE the closing ** (e.g. `**Success Criteria:**`, `**Planned Tests:**`) — not just colon-after (regression: 104/113 files under exaix-dev-docs/planning/ use colon-inside, but the section-entry regex previously required an exact `**Success Criteria**` prefix and silently never entered the section for colon-inside docs)", () => {
+    const doc = `### Step 6: x
+
+**Planned Tests:**
+
+- ✅ \`a test\` → \`packages/x/tests/a_test.ts\`
+
+**Success Criteria:**
+
+- ✅ a criterion → \`packages/x/src/a.ts\`
+`;
+    const parsed = parsePlanStep(doc, 6);
+    assertEquals(parsed.errors, []);
+    assertEquals(parsed.testPaths, ["packages/x/tests/a_test.ts"]);
+    assertEquals(parsed.criteriaPaths, ["packages/x/src/a.ts"]);
+  });
+
+  it("still rejects an unchecked '- [ ]' criterion under the colon-inside heading convention", () => {
+    const doc = `### Step 6: x
+
+**Success Criteria:**
+
+- ✅ done → \`packages/x/src/a.ts\`
+- [ ] still unimplemented criterion
+`;
+    const parsed = parsePlanStep(doc, 6);
+    assertEquals(parsed.errors.some((e) => e.includes("[ ]") || e.toLowerCase().includes("unchecked")), true);
+  });
 });
 
 // A plan whose step 6 has a ✅ item AND a ⚠️ deferred item, plus a Reachability Ledger.
