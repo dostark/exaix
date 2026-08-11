@@ -20,6 +20,7 @@ import { join, resolve } from "@std/path";
 import { copy } from "@std/fs";
 import type { Opt, Reason } from "@exaix/core/types";
 import { buildJailLaunch, dockerProbeSkipReason } from "../tests/scenario_framework/runner/matrix_expander.ts";
+import { DEFAULT_ORACLE_SOLUTION_TIMEOUT_MS } from "./ingest_terminal_bench.ts";
 import type { IManifest, IManifestTaskEntry } from "./ingest_terminal_bench.ts";
 
 interface ISweepCliArgs {
@@ -34,14 +35,40 @@ const DEFAULT_CONCURRENCY = 4;
 const SWEEP_GIT_EMAIL = "external-bench-ingest@exaix.dev";
 const SWEEP_GIT_NAME = "external-bench-ingest";
 
-async function runCommand(
+/** Runs `bin` with `args`, killed at `timeoutMs` (default matching
+ *  `DEFAULT_ORACLE_SOLUTION_TIMEOUT_MS` — the same bound the dockerless oracle-solution apply
+ *  uses for the identical class of risk) — GAP-2: this is used for the jailed `docker run`
+ *  verify invocation against externally-sourced, untrusted task content, which previously had
+ *  no timeout at all and could hang the sweep indefinitely. Never throws on timeout: returns a
+ *  non-zero, diagnosable result so callers can record a normal control failure. */
+export async function runCommand(
   bin: string,
   args: string[],
   cwd?: Opt<string, Reason.OptionalContext>,
+  timeoutMs: number = DEFAULT_ORACLE_SOLUTION_TIMEOUT_MS,
 ): Promise<{ code: number; stderr: string }> {
-  const command = new Deno.Command(bin, { args, cwd, stdout: "piped", stderr: "piped" });
-  const output = await command.output();
-  return { code: output.code, stderr: new TextDecoder().decode(output.stderr) };
+  const command = new Deno.Command(bin, {
+    args,
+    cwd,
+    stdout: "piped",
+    stderr: "piped",
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  try {
+    const output = await command.output();
+    if (output.signal !== null) {
+      // Deno.Command resolves (never rejects) when the abort signal kills the process —
+      // confirmed empirically: `success: false, signal: "SIGTERM"`, no thrown error.
+      return { code: output.code, stderr: `verify timed out after ${timeoutMs}ms (killed by ${output.signal})` };
+    }
+    return { code: output.code, stderr: new TextDecoder().decode(output.stderr) };
+  } catch (error) {
+    // Defense in depth: some Deno versions/spawn failures may reject instead of resolving.
+    return {
+      code: 1,
+      stderr: `verify timed out after ${timeoutMs}ms: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
 }
 
 /**
@@ -112,55 +139,64 @@ async function runControl(
   }
 }
 
-/** One supported task's full null+reference control outcome. */
-async function sweepTask(
+/** One supported task's full null+reference control outcome. Contains any thrown error
+ *  (malformed/missing task.json, a read failure, etc.) as a `sweep-error` result instead of
+ *  propagating it — GAP-3: mirrors `ingestOneBatchTask`'s own per-task containment in the
+ *  sibling ingest script, so one corrupted task never discards the rest of the sweep's
+ *  already-completed results. */
+export async function sweepTask(
   entry: IManifestTaskEntry,
   fixturesDir: string,
   portalsDir: string,
 ): Promise<{ taskId: string; status: IManifestTaskEntry["controls_status"]; detail: string }> {
-  const contractDir = join(fixturesDir, entry.task_id);
-  const taskJson: { scoped_test_cmd: string } = JSON.parse(
-    await Deno.readTextFile(join(contractDir, "task.json")),
-  );
-  const portalSourceDir = join(portalsDir, entry.task_id);
-  const oracleTestsSourceDir = join(contractDir, "oracle_tests");
-  const referencePatchPath = join(contractDir, "reference.patch");
+  try {
+    const contractDir = join(fixturesDir, entry.task_id);
+    const taskJson: { scoped_test_cmd: string } = JSON.parse(
+      await Deno.readTextFile(join(contractDir, "task.json")),
+    );
+    const portalSourceDir = join(portalsDir, entry.task_id);
+    const oracleTestsSourceDir = join(contractDir, "oracle_tests");
+    const referencePatchPath = join(contractDir, "reference.patch");
 
-  const nullResult = await runControl({
-    taskId: entry.task_id,
-    portalSourceDir,
-    oracleTestsSourceDir,
-    scopedTestCmd: taskJson.scoped_test_cmd,
-    applyReference: false,
-    referencePatchPath,
-  });
-  if (nullResult.passed) {
-    return {
+    const nullResult = await runControl({
       taskId: entry.task_id,
-      status: "fail",
-      detail:
-        `null control unexpectedly PASSED (verify criterion is trivially satisfiable without the oracle solution): ${nullResult.detail}`,
-    };
-  }
+      portalSourceDir,
+      oracleTestsSourceDir,
+      scopedTestCmd: taskJson.scoped_test_cmd,
+      applyReference: false,
+      referencePatchPath,
+    });
+    if (nullResult.passed) {
+      return {
+        taskId: entry.task_id,
+        status: "fail",
+        detail:
+          `null control unexpectedly PASSED (verify criterion is trivially satisfiable without the oracle solution): ${nullResult.detail}`,
+      };
+    }
 
-  const referenceResult = await runControl({
-    taskId: entry.task_id,
-    portalSourceDir,
-    oracleTestsSourceDir,
-    scopedTestCmd: taskJson.scoped_test_cmd,
-    applyReference: true,
-    referencePatchPath,
-  });
-  if (!referenceResult.passed) {
-    return {
+    const referenceResult = await runControl({
       taskId: entry.task_id,
-      status: "fail",
-      detail:
-        `reference control unexpectedly FAILED (oracle solution does not satisfy its own verify criterion): ${referenceResult.detail}`,
-    };
-  }
+      portalSourceDir,
+      oracleTestsSourceDir,
+      scopedTestCmd: taskJson.scoped_test_cmd,
+      applyReference: true,
+      referencePatchPath,
+    });
+    if (!referenceResult.passed) {
+      return {
+        taskId: entry.task_id,
+        status: "fail",
+        detail:
+          `reference control unexpectedly FAILED (oracle solution does not satisfy its own verify criterion): ${referenceResult.detail}`,
+      };
+    }
 
-  return { taskId: entry.task_id, status: "pass", detail: "null fails, reference passes" };
+    return { taskId: entry.task_id, status: "pass", detail: "null fails, reference passes" };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { taskId: entry.task_id, status: "fail", detail: `sweep-error: ${message}` };
+  }
 }
 
 /** Runs `tasks` with at most `concurrency` in flight at once, preserving input order in the result array. */
