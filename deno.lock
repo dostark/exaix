@@ -49,7 +49,7 @@
     "jsr:@std/toml@^1.0.2": "1.0.11",
     "jsr:@std/yaml@^1.0.2": "1.2.0",
     "jsr:@std/yaml@^1.2.0": "1.2.0",
-    "npm:@babel/parser@7.29.3": "7.29.3",
+    "npm:@babel/parser@7.29.8": "7.29.8",
     "npm:ai-token-estimator@1.7.1": "1.7.1",
     "npm:tree-sitter-go@*": "0.25.0",
     "npm:tree-sitter-go@0.25.0": "0.25.0",
@@ -227,21 +227,21 @@
     }
   },
   "npm": {
-    "@babel/helper-string-parser@7.27.1": {
-      "integrity": "sha512-qMlSxKbpRlAridDExk92nSobyDdpPijUq2DW6oDnUqd0iOGxmQjyqhMIihI9+zv4LPyZdRje2cavWPbCbWm3eA=="
+    "@babel/helper-string-parser@7.29.7": {
+      "integrity": "sha512-Pb5ijPrZ89GDH8223L4UP8i6QApWxs04RbPQJTeWDV0/keR2E36MeKnyr6LYmUUvqRRI+Iv87SuF1W6ErINzYw=="
     },
-    "@babel/helper-validator-identifier@7.28.5": {
-      "integrity": "sha512-qSs4ifwzKJSV39ucNjsvc6WVHs6b7S03sOh2OcHF9UHfVPqWWALUsNUVzhSBiItjRZoLHx7nIarVjqKVusUZ1Q=="
+    "@babel/helper-validator-identifier@7.29.7": {
+      "integrity": "sha512-qehxGkRj55h/ff8EMaJ+cYhyaKlHIxqYDn682wQD7RNp9UujOQsHog2uS0r2vzr4pW+sXf90NeeayjcNaX3fFg=="
     },
-    "@babel/parser@7.29.3": {
-      "integrity": "sha512-b3ctpQwp+PROvU/cttc4OYl4MzfJUWy6FZg+PMXfzmt/+39iHVF0sDfqay8TQM3JA2EUOyKcFZt75jWriQijsA==",
+    "@babel/parser@7.29.8": {
+      "integrity": "sha512-E8lTAYNB1KW+FH+VGJuZM1ioAx2E6oVlvQFRrf5P8ZZmsiJXYAD9vTFV7yyEURNzgh1dFqMZuO6tUwcARbqFCA==",
       "dependencies": [
         "@babel/types"
       ],
       "bin": true
     },
-    "@babel/types@7.29.0": {
-      "integrity": "sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==",
+    "@babel/types@7.29.8": {
+      "integrity": "sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg==",
       "dependencies": [
         "@babel/helper-string-parser",
         "@babel/helper-validator-identifier"
@@ -388,7 +388,7 @@
       "jsr:@std/text@^1.0.19",
       "jsr:@std/toml@^1.0.11",
       "jsr:@std/yaml@^1.2.0",
-      "npm:@babel/parser@7.29.3",
+      "npm:@babel/parser@7.29.8",
       "npm:tree-sitter-go@0.25.0",
       "npm:tree-sitter-java@0.23.5",
       "npm:tree-sitter-python@0.25.0",
