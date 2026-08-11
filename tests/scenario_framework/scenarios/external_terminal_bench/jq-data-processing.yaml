@@ -73,6 +73,7 @@ steps:
       "-c",
       "curl -LsSf https://astral.sh/uv/0.7.13/install.sh | sh -s -- -q && /tmp/.local/bin/uv venv /tmp/.venv -q && . /tmp/.venv/bin/activate && /tmp/.local/bin/uv pip install -q pytest==8.4.1  pyyaml==6.0.2 && cd /app && pytest /oracle_tests/test_outputs.py -rA",
     ]
+    timeout_sec: 300
     output_criteria:
       - id: "tests-pass"
         kind: "command-exit-code"

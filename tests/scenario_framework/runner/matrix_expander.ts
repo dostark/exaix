@@ -163,6 +163,26 @@ export const BARE_DELEGATE_STEP_ID = "bare-delegate";
 export const REQUEST_FIXTURE_CONTENT_SENTINEL = "$REQUEST_FIXTURE_CONTENT";
 
 /**
+ * Inserts `REQUEST_FIXTURE_CONTENT_SENTINEL` into `args` immediately after a `-p` flag when
+ * present, or appends it when absent (Phase 144 post-gap remediation, GAP-8 — the single
+ * shared implementation both `overlayCellEnv` below and `renderExternalBenchTaskTemplate` in
+ * `scenario_templates.ts` call, replacing what was duplicated inline logic). claude's `-p`
+ * requires the prompt as the argument immediately after it — a prompt trailing other flags
+ * (--allowedTools etc.) is mis-parsed as "no prompt". Other tools take the objective as a
+ * trailing positional, so the sentinel stays last for them. Never mutates `args`.
+ */
+export function spliceRequestFixtureSentinel(args: readonly string[]): string[] {
+  const spliced = [...args];
+  const printIdx = spliced.indexOf("-p");
+  if (printIdx >= 0) {
+    spliced.splice(printIdx + 1, 0, REQUEST_FIXTURE_CONTENT_SENTINEL);
+  } else {
+    spliced.push(REQUEST_FIXTURE_CONTENT_SENTINEL);
+  }
+  return spliced;
+}
+
+/**
  * Per-tool direct delegate launch shapes for bare cells (Phase 143 Step 1): the executable and
  * the args head before the task-content element. Shapes match the shipped headless delegate
  * surfaces (Dogfooding guide §6.1–6.2): `opencode run --format json --dir <worktree>` and
@@ -447,16 +467,7 @@ function overlayBareDelegateStep(steps: IScenarioStep[], cell: IMatrixCell): ISc
   });
   return steps.map((step) => {
     if (step.id !== BARE_DELEGATE_STEP_ID) return step;
-    // claude's `-p` requires the prompt as the argument IMMEDIATELY after it — a prompt
-    // trailing other flags (--allowedTools etc.) is mis-parsed as "no prompt". opencode takes
-    // the objective as its trailing positional, so the sentinel stays last there.
-    const args = [...jailed.args];
-    const printIdx = args.indexOf("-p");
-    if (printIdx >= 0) {
-      args.splice(printIdx + 1, 0, REQUEST_FIXTURE_CONTENT_SENTINEL);
-    } else {
-      args.push(REQUEST_FIXTURE_CONTENT_SENTINEL);
-    }
+    const args = spliceRequestFixtureSentinel(jailed.args);
     return {
       ...step,
       command: jailed.bin,

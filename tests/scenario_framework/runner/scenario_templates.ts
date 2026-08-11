@@ -15,6 +15,7 @@ import {
   buildJailLaunch,
   CREDENTIAL_STORES,
   REQUEST_FIXTURE_CONTENT_SENTINEL,
+  spliceRequestFixtureSentinel,
 } from "./matrix_expander.ts";
 import { buildOpencodePermissionConfig } from "@exaix/session";
 
@@ -74,6 +75,12 @@ export const VERIFY_TESTS_STEP_ID = "verify-tests";
 
 /** Default wall-clock bound for the bare delegate step (Phase 143 Step 1). */
 const DEFAULT_BARE_DELEGATE_TIMEOUT_SEC = 600;
+/** Default wall-clock bound for the external-bench verify step (Phase 144 post-gap
+ *  remediation, GAP-5) — a real pytest run against the hidden oracle-tests mount must
+ *  declare its own bound explicitly rather than silently inherit the generic step-executor's
+ *  120s default (`step_executor.ts`'s `timeout_sec ?? 120` fallback, which existed
+ *  only because no step in this codebase had opted out of it before). */
+const DEFAULT_EXTERNAL_BENCH_VERIFY_TIMEOUT_SEC = 300;
 
 interface IIdSequenceStepOptions {
   id: string;
@@ -707,13 +714,7 @@ export function renderExternalBenchTaskTemplate(task: IExternalBenchTaskTemplate
     workdir: EXTERNAL_BENCH_MOUNT_DEST,
     credentialMountArgs: credStaging?.mountArgs,
   });
-  const delegateArgs = [...jailedDelegate.args];
-  const printIdx = delegateArgs.indexOf("-p");
-  if (printIdx >= 0) {
-    delegateArgs.splice(printIdx + 1, 0, REQUEST_FIXTURE_CONTENT_SENTINEL);
-  } else {
-    delegateArgs.push(REQUEST_FIXTURE_CONTENT_SENTINEL);
-  }
+  const delegateArgs = spliceRequestFixtureSentinel(jailedDelegate.args);
   const jailedVerify = buildJailLaunch({ bin: "bash", args: ["-c", task.scopedTestCmd] }, {
     mountSource,
     mountDest: EXTERNAL_BENCH_MOUNT_DEST,
@@ -749,6 +750,7 @@ export function renderExternalBenchTaskTemplate(task: IExternalBenchTaskTemplate
     `    type: "shell"`,
     `    command: "${jailedVerify.bin}"`,
     `    args: [${jailedVerify.args.map((a) => JSON.stringify(a)).join(", ")}]`,
+    `    timeout_sec: ${DEFAULT_EXTERNAL_BENCH_VERIFY_TIMEOUT_SEC}`,
     `    output_criteria:`,
     `      - id: "tests-pass"`,
     `        kind: "command-exit-code"`,

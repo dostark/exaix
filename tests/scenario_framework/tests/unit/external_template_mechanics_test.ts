@@ -94,6 +94,18 @@ Deno.test("[ExternalTemplateMechanics] the verify step runs the task's own scope
   );
 });
 
+Deno.test("[ExternalTemplateMechanics] the verify step carries an explicit timeout_sec (GAP-5) rather than silently falling back to the generic step-executor default", () => {
+  const yaml = render();
+  const parsed = parseYaml(yaml) as { steps: Array<{ id: string; timeout_sec?: number }> };
+  const verifyStep = parsed.steps.find((s) => s.id === "verify-tests");
+  assert(verifyStep, "verify-tests step must exist");
+  assertEquals(
+    typeof verifyStep!.timeout_sec,
+    "number",
+    "verify step must declare timeout_sec explicitly — a real pytest run against oracle-tests must not silently inherit an undocumented default",
+  );
+});
+
 Deno.test("[ExternalTemplateMechanics] an unsupported tool throws at render time, not a silent no-op", () => {
   let threw = false;
   try {
