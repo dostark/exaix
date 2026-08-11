@@ -49,6 +49,7 @@
     "jsr:@std/toml@^1.0.2": "1.0.11",
     "jsr:@std/yaml@^1.0.2": "1.2.0",
     "jsr:@std/yaml@^1.2.0": "1.2.0",
+    "npm:@babel/parser@*": "7.29.8",
     "npm:@babel/parser@7.29.8": "7.29.8",
     "npm:ai-token-estimator@1.7.1": "1.7.1",
     "npm:tree-sitter-go@*": "0.25.0",

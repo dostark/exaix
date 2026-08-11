@@ -167,6 +167,7 @@
     "zod": "npm:zod@^4.4.3",
     "typescript": "npm:typescript@6.0.3",
     "@babel/parser": "npm:@babel/parser@7.29.8",
+    "@babel/parser/package.json": "npm:@babel/parser@7.29.8/package.json",
     "web-tree-sitter": "npm:web-tree-sitter@0.26.12",
     "tree-sitter-python": "npm:tree-sitter-python@0.25.0",
     "tree-sitter-rust": "npm:tree-sitter-rust@0.24.0",

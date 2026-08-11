@@ -4,9 +4,13 @@
  * @description Phase 165 (P1): locks the @babel/parser dependency to the 7.29.x line tip
  * (>= 7.29.8, major 7) and smokes the exact parse() call shape used by
  * scripts/measure_complexity.ts so a bump can never silently change AST behavior.
+ * Version metadata resolves through package.json imports (deterministic, offline,
+ * permission-free — no --allow-read needed), mirroring P3's runtime ts.version check.
  */
 
 import * as BabelParser from "@babel/parser";
+import babelPkg from "@babel/parser/package.json" with { type: "json" };
+import denoJson from "../../deno.json" with { type: "json" };
 
 const PARSER_PLUGINS = [
   "typescript",
@@ -25,13 +29,6 @@ function parseWithMeasureComplexityOptions(code: string): object {
   });
 }
 
-function readParserPin(): string {
-  const denoJson = JSON.parse(
-    Deno.readTextFileSync(new URL("../../deno.json", import.meta.url)),
-  );
-  return denoJson.imports["@babel/parser"] as string;
-}
-
 function compareVersions(a: number[], b: number[]): number {
   for (let i = 0; i < Math.max(a.length, b.length); i++) {
     const da = a[i] ?? 0;
@@ -41,20 +38,38 @@ function compareVersions(a: number[], b: number[]): number {
   return 0;
 }
 
-function versionFromPin(pin: string): number[] {
-  const at = pin.lastIndexOf("@");
-  return pin.slice(at + 1).split(".").map((p) => parseInt(p, 10));
+function versionFromString(version: string): number[] {
+  return version.split(".").map((p) => parseInt(p, 10));
 }
 
-Deno.test("P1: @babel/parser pin is on the 7.x line at >= 7.29.8", () => {
-  const pin = readParserPin();
-  const v = versionFromPin(pin);
+Deno.test("P1: resolved @babel/parser is on the 7.x line at >= 7.29.8", () => {
+  const v = versionFromString(babelPkg.version);
+  if (v.length !== 3 || Number.isNaN(v[0])) {
+    throw new Error(`unexpected @babel/parser version shape: ${babelPkg.version}`);
+  }
+  if (v[0] !== 7) {
+    throw new Error(
+      `@babel/parser resolved to major ${v[0]} (${babelPkg.version}) — the 7.x line is the supported line; ` +
+        `Babel 8 migration is deliberately deferred (phase-165 Out of Scope). Review the pin before proceeding.`,
+    );
+  }
+  if (compareVersions(v, [7, 29, 8]) < 0) {
+    throw new Error(
+      `@babel/parser resolved at ${babelPkg.version} — expected >= 7.29.8 (phase-165 step 1 bumps 7.29.3 -> 7.29.8).`,
+    );
+  }
+});
+
+Deno.test("P1: deno.json import-map pin matches the supported line", () => {
+  const pin = denoJson.imports["@babel/parser"] as string;
+  const at = pin.lastIndexOf("@");
+  const v = versionFromString(at >= 0 ? pin.slice(at + 1) : "");
   if (v.length !== 3 || Number.isNaN(v[0])) {
     throw new Error(`unexpected @babel/parser pin shape: ${pin}`);
   }
   if (v[0] !== 7) {
     throw new Error(
-      `@babel/parser resolved to major ${v[0]} (${pin}) — the 7.x line is the supported line; ` +
+      `@babel/parser pinned at major ${v[0]} (${pin}) — the 7.x line is the supported line; ` +
         `Babel 8 migration is deliberately deferred (phase-165 Out of Scope). Review the pin before proceeding.`,
     );
   }

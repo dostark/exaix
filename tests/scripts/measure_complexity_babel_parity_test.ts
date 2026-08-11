@@ -57,7 +57,7 @@ Deno.test("P2: baseline snippet complexity is golden-locked (recorded on 7.29.3)
   }
 });
 
-Deno.test("P2: TSX + decorators + private-field snippet keeps structural shape", () => {
+Deno.test("P2: TSX + decorators + private-field snippet yields golden complexity values", () => {
   const code = "function Component({ items }: { items: string[] }) {\n" +
     "  return <div>{items.map((i) => <span key={i}>{i}</span>)}</div>;\n" +
     "}\n" +
@@ -77,5 +77,38 @@ Deno.test("P2: TSX + decorators + private-field snippet keeps structural shape",
   const cls = ast.program.body.find((n) => n.type === "ClassDeclaration");
   if (!cls || !Array.isArray(cls.decorators) || cls.decorators.length !== 1) {
     throw new Error(`expected ClassDeclaration with 1 decorator, got ${JSON.stringify(cls)}`);
+  }
+
+  const component = { name: "", complexity: -1 };
+  const runMethod = { complexity: -1 };
+  let privatePropertyCount = 0;
+  traverse(ast, (n) => {
+    if (n.type === "FunctionDeclaration" && n.id?.name === "Component") {
+      component.name = n.id.name;
+      component.complexity = complexityForNode(n);
+    }
+    if (n.type === "ClassMethod" && n.key?.name === "run") {
+      runMethod.complexity = complexityForNode(n);
+    }
+    if (n.type === "ClassPrivateProperty") {
+      privatePropertyCount++;
+    }
+  });
+  if (component.name !== "Component" || component.complexity !== 1) {
+    throw new Error(
+      `Component golden complexity drifted from 1 to ${component.complexity} — AST behavior changed across the bump`,
+    );
+  }
+  if (runMethod.complexity !== 2) {
+    throw new Error(
+      `run() golden complexity drifted from 2 to ${runMethod.complexity} — ` +
+        "AST behavior changed across the bump (ClassMethod/IfStatement rename?)",
+    );
+  }
+  if (privatePropertyCount !== 1) {
+    throw new Error(
+      `expected exactly 1 ClassPrivateProperty, got ${privatePropertyCount} — ` +
+        "AST behavior changed across the bump (ClassPrivateProperty rename?)",
+    );
   }
 });
