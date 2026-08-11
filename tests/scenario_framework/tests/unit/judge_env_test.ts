@@ -55,6 +55,14 @@ Deno.test("[judge-env] provider without a model falls back to EXA_EVAL_MODEL_SIZ
   });
 });
 
-Deno.test("[judge-env] no provider configured resolves to undefined", () => {
-  assertEquals(resolveEvalJudgeProvenance({}), undefined);
+Deno.test("[judge-env] no provider configured resolves to undefined", async () => {
+  await withEnv({
+    EXA_LLM_PROVIDER: null,
+    EXA_LLM_MODEL: null,
+    EXA_EVAL_LLM_PROVIDER: null,
+    EXA_EVAL_LLM_MODEL: null,
+    EXA_EVAL_MODEL_SIZE: null,
+  }, () => {
+    assertEquals(resolveEvalJudgeProvenance({}), undefined);
+  });
 });

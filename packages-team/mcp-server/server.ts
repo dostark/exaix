@@ -602,7 +602,7 @@ export class MCPServer {
   public classifyError(
     error: ErrorPayload,
   ): { type: string; code: number; message: string; data?: Record<string, JSONValue> } {
-    const isZodError = (value: ZodErrorCandidate): value is { errors?: Array<object> } => {
+    const isZodError = (value: ZodErrorCandidate): value is { errors?: Array<object>; issues?: Array<object> } => {
       return (
         !!value &&
         typeof value === "object" &&
@@ -618,15 +618,19 @@ export class MCPServer {
       return "";
     };
 
-    // Zod validation errors
+    // Zod validation errors (zod v4 exposes `issues`; older shapes expose `errors`)
     if (isZodError(error)) {
-      const zodError = error as { errors: Array<{ path?: (string | number)[]; message: string }> };
+      const zodError = error as {
+        errors?: Array<{ path?: (string | number)[]; message: string }>;
+        issues?: Array<{ path?: (string | number)[]; message: string }>;
+      };
+      const issues = zodError.issues ?? zodError.errors ?? [];
       return {
         type: "validation_error",
         code: JsonRpcErrorCode.INVALID_PARAMS,
         message: "Invalid tool arguments",
         data: {
-          validation_errors: zodError.errors.map((e) => ({ path: e.path?.join?.(".") ?? "", message: e.message })),
+          validation_errors: issues.map((e) => ({ path: e.path?.join?.(".") ?? "", message: e.message })),
         },
       };
     }

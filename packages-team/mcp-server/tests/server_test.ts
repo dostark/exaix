@@ -172,8 +172,9 @@ Deno.test("MCP Server: classifyError handles Zod validation errors", async () =>
   const ctx = await initMCPTestWithoutPortal();
   try {
     // Create a mock Zod error with a constructor function named 'ZodError'
+    // (zod v4 exposes validation details on `issues`)
     const zodError = {
-      errors: [
+      issues: [
         { path: ["portal"], message: "Required" },
         { path: ["path"], message: "Invalid format" },
       ],
