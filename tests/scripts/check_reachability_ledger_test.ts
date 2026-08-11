@@ -16,6 +16,7 @@
 import { assertEquals } from "@std/assert";
 import {
   auditLedgerRows,
+  detectLedgerShapeWarnings,
   extractCandidateFilenames,
   extractCandidateSymbols,
   findExportDefinitionFiles,
@@ -192,6 +193,36 @@ Deno.test("[auditLedgerRows] an identifier that only appears once (its own decla
   const findings = auditLedgerRows(rows, files);
   assertEquals(findings.length, 1);
   assertEquals(findings[0].candidateIdentifier, "unusedHelper");
+});
+
+Deno.test("[detectLedgerShapeWarnings] flags a non-5-column ledger table (phase-165 regression)", () => {
+  const content = [
+    "## Reachability Ledger",
+    "",
+    "| Symbol / artifact | Consumed by | Status |",
+    "| ----------------- | ----------- | ------ |",
+    "| `deno.json` pin | `scripts/foo.ts` | Planned |",
+    "",
+    "## Next Section",
+  ].join("\n");
+
+  const warnings = detectLedgerShapeWarnings(content, "phase-165-example.md");
+  assertEquals(warnings.length, 1);
+  assertEquals(warnings[0].cellCount, 3);
+  assertEquals(warnings[0].line, 5);
+});
+
+Deno.test("[detectLedgerShapeWarnings] a canonical 5-column table produces no warnings", () => {
+  const content = [
+    "## Reachability Ledger",
+    "",
+    "| Symbol | Added in | Wiring step | Production call-site | Status |",
+    "| --- | --- | --- | --- | --- |",
+    "| `a` | Step 1 | Step 2 | (fooBarBaz called) | ✅ |",
+  ].join("\n");
+
+  const warnings = detectLedgerShapeWarnings(content, "phase-999-example.md");
+  assertEquals(warnings, []);
 });
 
 Deno.test("[parseReachabilityLedgerRows] parses a well-formed table under a Reachability Ledger heading", () => {

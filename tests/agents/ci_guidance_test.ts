@@ -16,3 +16,11 @@ Deno.test("Agent docs: test-development skill documents CI pitfalls", async () =
   assert(md.includes("EXA_TEST_ENABLE_PAID_LLM"), "CI section should mention paid LLM opt-in");
   assert(md.includes("Deno.execPath()"), "CI section should describe running exactl via Deno.execPath()");
 });
+
+Deno.test("Agent docs: test-development skill documents module-init env access for standalone runs", async () => {
+  const md = await Deno.readTextFile(".copilot/skills/test-development/SKILL.md");
+
+  assert(md.includes("Permissions"), "test-development skill should have a Permissions section");
+  assert(md.includes("TSC_WATCHFILE"), "Permissions section should name the typescript module-init env read");
+  assert(md.includes("deno test --allow-all"), "Permissions section should recommend --allow-all for standalone runs");
+});

@@ -52,6 +52,16 @@ export interface IUnverifiedLedgerSymbol {
   reason: string;
 }
 
+/** A Reachability Ledger table row that does not match the canonical 5-column shape
+ *  (`Symbol | Added in | Wiring step | Production call-site | Status`). Reported by
+ *  `detectLedgerShapeWarnings` so a malformed table is surfaced instead of silently
+ *  skipped by `parseReachabilityLedgerRows`. */
+export interface ILedgerShapeWarning {
+  docPath: string;
+  line: number;
+  cellCount: number;
+}
+
 const LEDGER_HEADING_PATTERN = /^#{1,3}\s+.*Reachability Ledger.*$/;
 const TABLE_HEADER_PATTERN = /^\|.*\bSymbol\b.*\|$/;
 const TABLE_SEPARATOR_PATTERN = /^\|[\s:|-]+\|$/;
@@ -107,6 +117,49 @@ export function parseReachabilityLedgerRows(content: string, docPath: string): I
   }
 
   return rows;
+}
+
+/**
+ * Shape-check every Reachability Ledger table in a doc against the canonical 5-column
+ * contract (`Symbol | Added in | Wiring step | Production call-site | Status`). A table
+ * whose data rows do not parse to 5 cells is silently skipped by `parseReachabilityLedgerRows`
+ * (phase-165's ledger was authored 3-column and the audit reported "0 closed rows" with no
+ * warning), so this returns the offending doc/line to surface the format drift instead.
+ */
+export function detectLedgerShapeWarnings(content: string, docPath: string): ILedgerShapeWarning[] {
+  const lines = content.split("\n");
+  const warnings: ILedgerShapeWarning[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    if (!LEDGER_HEADING_PATTERN.test(lines[i])) continue;
+
+    let j = i + 1;
+    while (j < lines.length && !TABLE_HEADER_PATTERN.test(lines[j])) {
+      if (LEDGER_HEADING_PATTERN.test(lines[j])) break;
+      j++;
+    }
+    if (j >= lines.length || !TABLE_HEADER_PATTERN.test(lines[j])) continue;
+    j++;
+    if (j >= lines.length || !TABLE_SEPARATOR_PATTERN.test(lines[j])) continue;
+    j++;
+
+    let sawRow = false;
+    while (j < lines.length && TABLE_ROW_PATTERN.test(lines[j])) {
+      const cells = splitTableRow(lines[j]);
+      if (cells.length >= 1) sawRow = true;
+      if (cells.length > 0 && cells.length !== 5) {
+        warnings.push({ docPath, line: j + 1, cellCount: cells.length });
+      }
+      j++;
+    }
+    if (!sawRow) {
+      // Heading present but no parseable data rows — the table shape is not the
+      // canonical 5-column form the audit depends on (or the ledger is empty).
+      warnings.push({ docPath, line: j + 1, cellCount: 0 });
+    }
+  }
+
+  return warnings;
 }
 
 /** camelCase, PascalCase, or CONSTANT_CASE (underscore-separated) identifier shapes —
@@ -320,8 +373,17 @@ if (import.meta.main) {
   const [docs, files] = await Promise.all([readPhaseDocs(docGlob), readTsFiles(CODE_ROOTS)]);
 
   const allRows = docs.flatMap((doc) => parseReachabilityLedgerRows(doc.content, doc.path));
+  const shapeWarnings = docs.flatMap((doc) => detectLedgerShapeWarnings(doc.content, doc.path));
   const closedRows = allRows.filter((r) => r.status.trim() === CLOSED_STATUS);
   const findings = auditLedgerRows(allRows, files);
+
+  for (const w of shapeWarnings) {
+    console.warn(
+      `⚠️  [${w.docPath}:${w.line}] Reachability Ledger row has ${w.cellCount} column(s), ` +
+        `expected 5 (Symbol | Added in | Wiring step | Production call-site | Status) — ` +
+        `this table is skipped by the audit; fix the column shape.`,
+    );
+  }
 
   if (findings.length === 0) {
     console.log(

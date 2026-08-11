@@ -85,6 +85,7 @@ Do / Don't
 - ❌ Don't structure a feature as horizontal layers ("all cores, then wire") — it maximizes the risk that nothing is connected.
 - ❌ Don't design a third-party integration from memory or assumptions, or settle for a proxy/scrape/undocumented-flag hack when an official integration path exists — verify against the provider's live docs first (§2F).
 - ❌ Don't defer documentation updates; implement them as the last step of the phase.
+- ❌ Don't author code snippets (Technical Architecture, Actions, runbooks) with inline `npm:`, `jsr:`, or `https:` specifiers — `deno lint` rejects them (`no-import-prefix` + `no-unversioned-import`). Reference npm/jsr packages via a deno.json import-map alias (e.g. `"@babel/parser/package.json": "npm:@babel/parser@7.29.8/package.json"` then `import babelPkg from "@babel/parser/package.json"`); keep plan-doc snippets lint-clean so a later implementer is not blocked by the plan's own example.
 
 Prototypes & Validation:
 - Use #pre-gap-analysis to validate this plan against the codebase before starting. The plan's §2G

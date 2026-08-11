@@ -368,6 +368,13 @@ CI pitfalls
   - Avoid compiled binaries. Prefer:
     new Deno.Command(Deno.execPath(), { args: ["run", "--allow-all", ...] })
 
+Permissions
+  - Some npm packages read the environment at module-init time (e.g. `typescript` reads
+    `TSC_WATCHFILE`), so a bare `deno test <file>` on a test importing them fails with
+    `NotCapable: Requires env access to "TSC_WATCHFILE"`. Run standalone script tests
+    with `deno test --allow-all <file>` (matches what `scripts/test_parallel.ts` already
+    spawns), or pass `--allow-env` explicitly.
+
 Output format
   1. Target file(s) — test files created or modified
   2. Helpers used — initTestDbService, createCliTestContext, etc.
