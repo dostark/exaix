@@ -1,7 +1,0 @@
-diff --git a/repo b/repo
-new file mode 160000
-index 0000000..db6ffc5
---- /dev/null
-+++ b/repo
-@@ -0,0 +1 @@
-+Subproject commit db6ffc5857b64cf55b033b6f624e9c8d3ef619f4

@@ -736,7 +736,17 @@ steps:
 
 ### Terminal-Bench Fixtures, Tags & Classifier (Phase 144)
 
-**Fixtures layout.** Each ingested task lives under two directory trees:
+**Fixtures layout.** Each ingested task lives under two directory trees. **Vendoring is
+scoped to the 26 controls-verified tasks, not all 94 classifier-supported ones** (2026-08-10,
+repo-size reduction): a `controls_status: "fail"` task can't yield a trustworthy
+resolved/unresolved signal anyway (see Classifier below), so its bulky content
+(`reference.patch`, `oracle_tests/`, the portal working dir, generated scenario, and request
+fixture) is never vendored/kept - `manifest.json` still records its
+`class`/`controls_status`/`reason` for the full 241-task classification and coverage math,
+only the multi-megabyte per-task content is scoped down. One task's `reference.patch` alone
+was previously 37.8MB (an ingest-pipeline bug that accidentally captured the oracle
+solution's entire Python venv, not just its real 2-file change) - the 68 controls-failed
+tasks totaled 90.5MB of a 99MB corpus before this cut.
 
 ```text
 tests/scenario_framework/fixtures/external/terminal_bench/
@@ -758,10 +768,11 @@ tests/scenario_framework/fixtures/portals/external/terminal_bench/
 **Tags.** Generated scenarios (`tests/scenario_framework/scenarios/external_terminal_bench/`)
 carry `bench:terminal-bench`, `bench-version:<pinned-sha>`, `docker`, and `provider-live`.
 `docker` and `bench:*` are selector tags for filtering (`--tag docker` picks every
-container-requiring scenario); CI exclusion itself is driven entirely by the pre-existing
-`provider-live` entry in `CI_EXCLUDED_TAGS` (`runner/scenario_catalog.ts:36`) — no separate
-`docker` exclusion entry was needed, since every Terminal-Bench scenario already needs a live
-provider too.
+container-requiring scenario). CI exclusion is driven by `CI_EXCLUDED_TAGS`
+(`runner/scenario_catalog.ts:36`), which holds both `provider-live` and `docker` as of
+2026-08-10 (Phase 144 post-gap remediation, GAP-6) - `docker` is its own entry, not merely
+excluded via `provider-live` co-occurrence, so a hypothetical future docker-only scenario
+stays CI-safe automatically.
 
 **Classifier.** `classifyTerminalBenchTask` (`scripts/ingest_terminal_bench.ts`) splits every
 ingested task into `supported` (file-oriented; the bind-mount + single `docker run` substrate can
