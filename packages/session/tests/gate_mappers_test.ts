@@ -21,8 +21,8 @@ import {
   sessionDecisionToReviewStatus,
 } from "@exaix/session/gate_mappers.ts";
 
-const TRACE = "00000000-0000-0000-0000-000000000a07";
-const AMENDMENT_ID = "11111111-2222-3333-4444-555555555555";
+const TRACE = "00000000-0000-4000-8000-000000000a07";
+const AMENDMENT_ID = "11111111-2222-4333-8444-555555555555";
 const NOW = "2026-06-11T00:00:00.000Z";
 const DECIDED_BY = "session:claude-code";
 

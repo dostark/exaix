@@ -38,16 +38,21 @@ function walkObject(schema: z.ZodObject<z.ZodRawShape>): Record<string, JSONValu
 }
 
 function walkSchema(schema: z.ZodTypeAny): Record<string, JSONValue> {
-  if (schema instanceof z.ZodEffects) {
-    return walkSchema(schema._def.schema as z.ZodTypeAny);
+  if (schema instanceof z.ZodPipe) {
+    // .transform()/.pipe() — describe the pre-transform input shape.
+    return walkSchema(schema.in as z.ZodTypeAny);
   }
 
   if (schema instanceof z.ZodOptional) {
-    return walkSchema((schema as z.ZodOptional<z.ZodTypeAny>).unwrap());
+    return walkSchema(schema.unwrap() as z.ZodTypeAny);
   }
 
   if (schema instanceof z.ZodDefault) {
-    return walkSchema((schema as z.ZodDefault<z.ZodTypeAny>)._def.innerType);
+    return walkSchema(schema.unwrap() as z.ZodTypeAny);
+  }
+
+  if (schema instanceof z.ZodPrefault) {
+    return walkSchema(schema.unwrap() as z.ZodTypeAny);
   }
 
   if (schema instanceof z.ZodObject) {
@@ -55,7 +60,7 @@ function walkSchema(schema: z.ZodTypeAny): Record<string, JSONValue> {
   }
 
   if (schema instanceof z.ZodArray) {
-    return { type: "array", items: walkSchema(schema.element) };
+    return { type: "array", items: walkSchema(schema.element as z.ZodTypeAny) };
   }
 
   if (schema instanceof z.ZodString) {
@@ -70,19 +75,19 @@ function walkSchema(schema: z.ZodTypeAny): Record<string, JSONValue> {
     return { type: "boolean" };
   }
 
-  if (schema instanceof z.ZodNativeEnum) {
+  // z.nativeEnum() also constructs a ZodEnum instance in v4 — this covers both z.enum() and
+  // the deprecated z.nativeEnum() call sites still used throughout the schemas package.
+  if (schema instanceof z.ZodEnum) {
     const values = Object.values(schema.enum).filter((v): v is string => typeof v === "string");
     return { type: "string", enum: values };
   }
 
   if (schema instanceof z.ZodUnion) {
-    const options = (schema._def as { options?: z.ZodTypeAny[] }).options || [];
-    return { anyOf: options.map((o) => walkSchema(o)) };
+    return { anyOf: schema.options.map((option) => walkSchema(option as z.ZodTypeAny)) };
   }
 
   if (schema instanceof z.ZodRecord) {
-    const valueSchema = (schema._def as { valueType?: z.ZodTypeAny }).valueType;
-    return { type: "object", additionalProperties: valueSchema ? walkSchema(valueSchema) : true };
+    return { type: "object", additionalProperties: walkSchema(schema.valueType as z.ZodTypeAny) };
   }
 
   return { type: "string" };

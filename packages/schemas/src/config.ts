@@ -139,7 +139,7 @@ const RoutingConfigSchema = z.object({
   policy_path: z.string().min(1).default(".exaix/routing.policy.yaml"),
   experiment_salt: z.string().min(1).default("exaix-routing-experiments"),
   enable_dynamic_routing: z.boolean().default(false),
-}).optional().default({});
+}).optional().prefault({});
 
 /**
  * Phase 135 — Team live model-registry block. Opt-in (`enabled` master gate);
@@ -175,7 +175,7 @@ export const ModelRegistryConfigSchema = z.object({
   admission: z.object({
     top_n: z.number().int().positive().default(25),
     keep_native_whole: z.boolean().default(true),
-  }).default({}),
+  }).prefault({}),
   // §5.7 (F9 + G4) multi-route selection — read by the Step 6 route sub-step (Team).
   route_policy: z.enum(["cheapest", "reliability", "native_first", "user_order"]).default("cheapest"),
   // Near-tie fraction under `cheapest`: routes within this of the cheapest are health-broken.
@@ -193,7 +193,7 @@ export const ModelRegistryConfigSchema = z.object({
     tracked_benchmarks: z.array(z.string()).default([SWE_BENCH_VERIFIED, SWE_BENCH_PRO, GPQA]),
     refresh_cron: z.string().default("0 5 * * 0"), // weekly
     fetch_timeout_ms: z.number().int().positive().default(DEFAULT_BENCHMARK_FETCH_TIMEOUT_MS),
-  }).default({}),
+  }).prefault({}),
   // §5.5.2 (Solo-read, D9): tolerance (percent) for reported-vs-computed cost
   // divergence before emitting model.cost.divergence.
   cost_divergence_tolerance_pct: z.number().min(0).default(5),
@@ -245,20 +245,20 @@ export const ToolsConfigSchema = z.object({
     ]),
     timeout_ms: z.number().default(5000),
     max_response_size_kb: z.number().default(50), // Prevent context flooding
-  }).default({}),
+  }).prefault({}),
 
   // Search limits
   grep_search: z.object({
     max_results: z.number().default(50),
     exclude_dirs: z.array(z.string()).default([".git", "node_modules", "dist", "coverage"]),
-  }).default({}),
+  }).prefault({}),
 
   // Tool confirmation interceptor timeout (Phase 79 — seconds; min 10, max 3600; fallback: DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S)
   confirmation_timeout_s: z.number().min(10).max(3600).optional(),
 });
 
 export const ConfigSchema = z.object({
-  tools: ToolsConfigSchema.optional().default({}),
+  tools: ToolsConfigSchema.optional().prefault({}),
   system: z.object({
     root: z.string().default(getCwdSafe()),
     log_level: z.nativeEnum(LogLevel).default(LogLevel.INFO),
@@ -291,7 +291,7 @@ export const ConfigSchema = z.object({
     memoryPending: z.string().default(DEFAULTS.ExaPathDefaults.memoryPending),
     memoryTasks: z.string().default(DEFAULTS.ExaPathDefaults.memoryTasks),
     memoryGlobal: z.string().default(DEFAULTS.ExaPathDefaults.memoryGlobal),
-  }).default({}),
+  }).prefault({}),
   database: z.object({
     batch_flush_ms: c("database.batch_flush_ms"),
     batch_max_size: c("database.batch_max_size"),
@@ -353,8 +353,8 @@ export const ConfigSchema = z.object({
         .default(DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS),
       score_every_n_iterations: z.number().int().min(1).max(5)
         .default(DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_SCORE_EVERY_N_ITERATIONS),
-    }).optional().default({}),
-  }).default({
+    }).optional().prefault({}),
+  }).prefault({
     default_model: DEFAULTS.DEFAULT_AGENT_MODEL,
     timeout_sec: DEFAULTS.DEFAULT_AGENT_TIMEOUT_SEC,
     max_iterations: DEFAULTS.DEFAULT_AGENT_MAX_ITERATIONS,
@@ -368,7 +368,7 @@ export const ConfigSchema = z.object({
       delay_hours: z.number().int().min(1).max(720).default(24),
       sources_allowed: z.array(AutoApproveSourceSchema).default(["AGENT"]),
       max_batch_size: z.number().int().min(1).max(100).default(20),
-    }).default({}),
+    }).prefault({}),
     embedding: z.object({
       provider: z.nativeEnum(ProviderType).default(ProviderType.OLLAMA),
       model: z.string().default("nomic-embed-text"),
@@ -378,7 +378,7 @@ export const ConfigSchema = z.object({
       chunkSize: z.number().int().min(1).max(100).optional(),
       timeoutMs: z.number().int().positive().optional(),
     }).optional(),
-  }).optional().default({}),
+  }).optional().prefault({}),
   skills: z.object({
     max_per_request: z.number().int().min(1).default(DEFAULTS.DEFAULT_SKILLS_MAX_PER_REQUEST),
     match_threshold: z.number().min(0).max(1).default(DEFAULTS.DEFAULT_SKILLS_MATCH_THRESHOLD),
@@ -396,17 +396,20 @@ export const ConfigSchema = z.object({
   /** AI/LLM provider configuration (legacy/single) */
   ai: AiConfigSchema.optional(),
   /** Named model configurations (default, fast, local, etc.) */
-  models: z.record(z.object({
-    provider: ProviderTypeSchema,
-    model: z.string(),
-    timeout_ms: z.number().positive().optional(),
-    max_tokens: z.number().positive().optional(),
-    temperature: z.number()
-      .min(resolveConfigurableBounds("ai.temperature_min").min!)
-      .max(resolveConfigurableBounds("ai.temperature_max").max!)
-      .optional(),
-    base_url: z.string().optional(),
-  })).default({
+  models: z.record(
+    z.string(),
+    z.object({
+      provider: ProviderTypeSchema,
+      model: z.string(),
+      timeout_ms: z.number().positive().optional(),
+      max_tokens: z.number().positive().optional(),
+      temperature: z.number()
+        .min(resolveConfigurableBounds("ai.temperature_min").min!)
+        .max(resolveConfigurableBounds("ai.temperature_max").max!)
+        .optional(),
+      base_url: z.string().optional(),
+    }),
+  ).default({
     [DEFAULTS.DEFAULT_AGENT_MODEL]: {
       provider: PROVIDER_GOOGLE,
       model: DEFAULT_FAST_MODEL_NAME,
@@ -424,7 +427,7 @@ export const ConfigSchema = z.object({
     },
   }),
   /** Phase 132 — capability presets keyed by model_size (S/M/L/XL). */
-  model_presets: z.record(ModelPresetSchema).default(DEFAULT_MODEL_PRESETS),
+  model_presets: z.record(z.string(), ModelPresetSchema).default(DEFAULT_MODEL_PRESETS),
   /** AI provider endpoints configuration */
   ai_endpoints: z.record(z.string(), z.string()).optional().default({}),
   /** AI retry configuration */
@@ -674,13 +677,13 @@ export const ConfigSchema = z.object({
     max_daily_cost_usd: c("provider_strategy.max_daily_cost_usd"),
     health_check_enabled: z.boolean().default(DEFAULTS.DEFAULT_PROVIDER_STRATEGY_HEALTH_CHECK_ENABLED),
     fallback_enabled: z.boolean().default(DEFAULTS.DEFAULT_PROVIDER_STRATEGY_FALLBACK_ENABLED),
-    fallback_chains: z.record(z.array(z.string()))
+    fallback_chains: z.record(z.string(), z.array(z.string()))
       .default(DEFAULTS.DEFAULT_PROVIDER_STRATEGY_FALLBACK_CHAINS),
-    budgets: z.record(z.number().min(DEFAULTS.PROVIDER_STRATEGY_BUDGETS_MIN)).optional(),
-    task_routing: z.record(z.array(z.string())).optional(),
+    budgets: z.record(z.string(), z.number().min(DEFAULTS.PROVIDER_STRATEGY_BUDGETS_MIN)).optional(),
+    task_routing: z.record(z.string(), z.array(z.string())).optional(),
     /** Phase 132 — rate-limit headroom weight for provider scoring. 0=disabled, 1=max influence. */
     rate_limit_weight: z.number().min(0).max(1).default(0),
-  }).optional().default({
+  }).optional().prefault({
     prefer_free: DEFAULTS.DEFAULT_PROVIDER_STRATEGY_PREFER_FREE,
     allow_local: DEFAULTS.DEFAULT_PROVIDER_STRATEGY_ALLOW_LOCAL,
     max_daily_cost_usd: DEFAULTS.DEFAULT_PROVIDER_STRATEGY_MAX_DAILY_COST_USD,
@@ -710,21 +713,24 @@ export const ConfigSchema = z.object({
     mandatory_rules: [],
   }),
   /** Provider-specific configuration overrides */
-  providers: z.record(z.object({
-    cost_tier: z.nativeEnum(ProviderCostTier).optional(),
-    free_quota_requests_per_day: z.number()
-      .min(DEFAULTS.PROVIDER_FREE_QUOTA_REQUESTS_PER_DAY_MIN)
-      .optional(),
-    base_url: z.string().optional(),
-    timeout_ms: z.number()
-      .min(DEFAULTS.PROVIDER_TIMEOUT_MS_MIN)
-      .max(DEFAULTS.PROVIDER_TIMEOUT_MS_MAX)
-      .optional(),
-    rate_limit_rpm: z.number()
-      .min(DEFAULTS.PROVIDER_RATE_LIMIT_RPM_MIN)
-      .max(DEFAULTS.PROVIDER_RATE_LIMIT_RPM_MAX)
-      .optional(),
-  })).optional().default({}),
+  providers: z.record(
+    z.string(),
+    z.object({
+      cost_tier: z.nativeEnum(ProviderCostTier).optional(),
+      free_quota_requests_per_day: z.number()
+        .min(DEFAULTS.PROVIDER_FREE_QUOTA_REQUESTS_PER_DAY_MIN)
+        .optional(),
+      base_url: z.string().optional(),
+      timeout_ms: z.number()
+        .min(DEFAULTS.PROVIDER_TIMEOUT_MS_MIN)
+        .max(DEFAULTS.PROVIDER_TIMEOUT_MS_MAX)
+        .optional(),
+      rate_limit_rpm: z.number()
+        .min(DEFAULTS.PROVIDER_RATE_LIMIT_RPM_MIN)
+        .max(DEFAULTS.PROVIDER_RATE_LIMIT_RPM_MAX)
+        .optional(),
+    }),
+  ).optional().default({}),
   /** Mock provider configuration */
   mock: z.object({
     delay_ms: c("mock.delay_ms"),
@@ -858,7 +864,7 @@ export const ConfigSchema = z.object({
      *  When true and the provider supports it, ReActLoopStrategy uses native tool_choice
      *  instead of TOML-block prose. Defaults to false. */
     native_tools_enabled: z.boolean().optional().default(false),
-  }).optional().default({ summarization_model: undefined, native_tools_enabled: false }),
+  }).optional().prefault({ summarization_model: undefined, native_tools_enabled: false }),
 }).superRefine((data, ctx: z.RefinementCtx) => {
   // Type assertion to avoid circular reference
   const configData = data as z.infer<typeof ConfigSchema>;

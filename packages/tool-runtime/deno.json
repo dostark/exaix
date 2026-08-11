@@ -15,7 +15,7 @@
     "@exaix/core/func": "../core/src/func/mod.ts",
     "@exaix/schemas": "../schemas/mod.ts",
     "@exaix/schemas/": "../schemas/src/",
-    "zod": "https://deno.land/x/zod@v3.22.4/mod.ts"
+    "zod": "npm:zod@^4.4.3"
   },
   "exports": {
     ".": "./mod.ts"

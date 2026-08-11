@@ -220,8 +220,8 @@ export const GlobalAntiPatternSchema = z.object({
  */
 export const GlobalMemoryStatsSchema = z.object({
   total_learnings: z.number(),
-  by_category: z.record(z.number()),
-  by_project: z.record(z.number()),
+  by_category: z.record(z.string(), z.number()),
+  by_project: z.record(z.string(), z.number()),
   last_activity: z.string().datetime(),
 });
 

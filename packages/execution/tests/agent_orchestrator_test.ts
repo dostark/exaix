@@ -1707,7 +1707,7 @@ Deno.test({
           executor.validateReviewResult(invalidResult);
         },
         Error,
-        "Required",
+        "received undefined",
       );
     } finally {
       await cleanup();

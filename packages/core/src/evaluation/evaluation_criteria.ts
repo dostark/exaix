@@ -39,7 +39,7 @@ export type IRequirementFulfillment = z.infer<typeof RequirementFulfillmentSchem
 
 export const EvaluationResultSchema = z.object({
   overallScore: z.number().min(0).max(1),
-  criteriaScores: z.record(CriterionResultSchema),
+  criteriaScores: z.record(z.string(), CriterionResultSchema),
   pass: z.boolean(),
   feedback: z.string(),
   suggestions: z.array(z.string()).default([]),

@@ -15,7 +15,7 @@ import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adap
 import { generateResumeToken, SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
 import type { IPrepareBriefInput } from "@exaix/session/i_session_delegate.ts";
 
-const TRACE_ID = "00000000-0000-0000-0000-0000000000bb";
+const TRACE_ID = "00000000-0000-4000-8000-0000000000bb";
 const FIXED_NOW = new Date("2026-06-11T00:00:00.000Z");
 const EXPECTED_DEADLINE = "2026-06-12T00:00:00.000Z"; // FIXED_NOW + 24h
 const TOKEN_PATTERN = /^[0-9a-f-]{36}\.[0-9a-f]{64}$/;
@@ -87,7 +87,7 @@ Deno.test("[prepare_brief] deadline is deterministic for a fixed clock", async (
   const dir = await Deno.makeTempDir();
   try {
     const a = await makeService(dir).prepareBrief(baseInput());
-    const b = await makeService(dir).prepareBrief(baseInput({ traceId: "00000000-0000-0000-0000-0000000000cc" }));
+    const b = await makeService(dir).prepareBrief(baseInput({ traceId: "00000000-0000-4000-8000-0000000000cc" }));
     assertEquals(a.deadline, b.deadline);
     assertEquals(a.deadline, EXPECTED_DEADLINE);
   } finally {
@@ -138,7 +138,7 @@ Deno.test("[prepare_brief][security] GAP-2 — resume tokens are unique across b
   const dir = await Deno.makeTempDir();
   try {
     const a = await makeService(dir).prepareBrief(baseInput());
-    const b = await makeService(dir).prepareBrief(baseInput({ traceId: "00000000-0000-0000-0000-0000000000dd" }));
+    const b = await makeService(dir).prepareBrief(baseInput({ traceId: "00000000-0000-4000-8000-0000000000dd" }));
     assertNotEquals(a.resume_token, b.resume_token);
   } finally {
     await Deno.remove(dir, { recursive: true });

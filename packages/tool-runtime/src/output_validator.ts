@@ -14,7 +14,7 @@
  * @related-files ["packages/tool-runtime/src/output_validator.ts", "packages/core/src/func/json_repair.ts"]
  */
 
-import { z, ZodError, type ZodType, type ZodTypeDef } from "zod";
+import { z, ZodError, type ZodType } from "zod";
 import { PlanSchema, PlanStepSchema } from "@exaix/schemas/plan_schema.ts";
 import { AnalysisFindingSeverity, AnalysisFindingType } from "@exaix/core";
 import { repairJSON } from "@exaix/core/func";
@@ -82,7 +82,7 @@ export interface IOutputValidator {
 
   validate<T>(
     content: string,
-    schema: ZodType<T, ZodTypeDef, unknown>,
+    schema: ZodType<T>,
   ): IValidationResult<T>;
 
   validateWithSchema<K extends IOutputSchemaName>(
@@ -92,7 +92,7 @@ export interface IOutputValidator {
 
   parseAndValidate<T>(
     raw: string,
-    schema: ZodType<T, ZodTypeDef, unknown>,
+    schema: ZodType<T>,
   ): IValidationResult<T>;
 
   parseAndValidateWithSchema<K extends IOutputSchemaName>(
@@ -104,7 +104,7 @@ export interface IOutputValidator {
   resetMetrics(): void;
 }
 
-export const OutputSchemas: Record<string, z.ZodTypeAny> = {
+export const OutputSchemas = {
   plan: PlanSchema,
   planStep: PlanStepSchema,
 
@@ -113,10 +113,13 @@ export const OutputSchemas: Record<string, z.ZodTypeAny> = {
     verdict: z.enum(["pass", "fail", "needs_improvement"]),
     reasoning: z.string().min(1),
     suggestions: z.array(z.string()).optional(),
-    criteria: z.record(z.object({
-      score: z.number().min(0).max(10),
-      feedback: z.string(),
-    })).optional(),
+    criteria: z.record(
+      z.string(),
+      z.object({
+        score: z.number().min(0).max(10),
+        feedback: z.string(),
+      }),
+    ).optional(),
   }),
 
   analysis: z.object({
@@ -128,7 +131,7 @@ export const OutputSchemas: Record<string, z.ZodTypeAny> = {
       location: z.string().optional(),
       fix: z.string().optional(),
     })),
-    metrics: z.record(z.union([z.string(), z.number()])).optional(),
+    metrics: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
   }),
 
   simpleResponse: z.object({
@@ -139,7 +142,7 @@ export const OutputSchemas: Record<string, z.ZodTypeAny> = {
 
   toolCall: z.object({
     tool: z.string().min(1),
-    arguments: z.record(JSONValueSchema),
+    arguments: z.record(z.string(), JSONValueSchema),
     reasoning: z.string().optional(),
   }),
 
@@ -147,7 +150,7 @@ export const OutputSchemas: Record<string, z.ZodTypeAny> = {
     actions: z.array(z.object({
       type: z.string(),
       target: z.string().optional(),
-      params: z.record(JSONValueSchema).optional(),
+      params: z.record(z.string(), JSONValueSchema).optional(),
       fallback: z.string().optional(),
     })).min(1),
     fallback: z.string().optional(),
@@ -217,7 +220,7 @@ export class OutputValidator implements IOutputValidator {
 
   validate<T>(
     content: string,
-    schema: ZodType<T, ZodTypeDef, unknown>,
+    schema: ZodType<T>,
   ): IValidationResult<T> {
     this.metrics.totalAttempts++;
     const result: IValidationResult<T> = {
@@ -269,14 +272,14 @@ export class OutputValidator implements IOutputValidator {
       return result;
     } catch (e) {
       if (e instanceof ZodError) {
-        result.errors = e.errors.map((err) => ({
+        result.errors = e.issues.map((err) => ({
           path: err.path.map(String),
           message: err.message,
           code: err.code,
           expected: "expected" in err ? String(err.expected) : undefined,
           received: "received" in err ? String(err.received) : undefined,
         }));
-        this.trackError(`schema_${e.errors[0]?.code || "unknown"}`);
+        this.trackError(`schema_${e.issues[0]?.code || "unknown"}`);
       } else {
         result.errors = [{
           path: [],
@@ -293,16 +296,16 @@ export class OutputValidator implements IOutputValidator {
     content: string,
     schemaName: K,
   ): IValidationResult<z.infer<(typeof OutputSchemas)[K]>> {
-    const schema = OutputSchemas[schemaName];
+    const schema: z.ZodTypeAny = OutputSchemas[schemaName];
     return this.validate(
       content,
-      schema as ZodType<z.infer<(typeof OutputSchemas)[K]>, ZodTypeDef, unknown>,
+      schema as ZodType<z.infer<(typeof OutputSchemas)[K]>>,
     );
   }
 
   parseAndValidate<T>(
     raw: string,
-    schema: ZodType<T, ZodTypeDef, unknown>,
+    schema: ZodType<T>,
   ): IValidationResult<T> {
     const parsed = this.parseXMLTags(raw);
     const result = this.validate(parsed.content, schema);
@@ -315,16 +318,16 @@ export class OutputValidator implements IOutputValidator {
     raw: string,
     schemaName: K,
   ): IValidationResult<z.infer<(typeof OutputSchemas)[K]>> {
-    const schema = OutputSchemas[schemaName];
+    const schema: z.ZodTypeAny = OutputSchemas[schemaName];
     return this.parseAndValidate(
       raw,
-      schema as ZodType<z.infer<(typeof OutputSchemas)[K]>, ZodTypeDef, unknown>,
+      schema as ZodType<z.infer<(typeof OutputSchemas)[K]>>,
     );
   }
 
   async repairWithLLM<T>(
     content: string,
-    schema: ZodType<T, ZodTypeDef, unknown>,
+    schema: ZodType<T>,
     errors: IValidationError[],
   ): Promise<IValidationResult<T>> {
     if (!this.config.llmRepairFn) {

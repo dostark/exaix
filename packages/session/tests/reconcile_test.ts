@@ -14,8 +14,8 @@ import { reconcile } from "@exaix/session/reconcile.ts";
 
 const WORKTREE = "/workspace/worktrees/trace-01";
 const RESUME = "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d.deadbeefdeadbeef";
-const TRACE = "00000000-0000-0000-0000-0000000000ee";
-const OTHER_TRACE = "11111111-1111-1111-1111-111111111111";
+const TRACE = "00000000-0000-4000-8000-0000000000ee";
+const OTHER_TRACE = "11111111-1111-1111-8111-111111111111";
 
 function brief(overrides: Partial<SessionBrief> = {}): SessionBrief {
   return SessionBriefSchema.parse({

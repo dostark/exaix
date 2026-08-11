@@ -8,7 +8,7 @@
  * modules, avoiding imports from root src/services/.
  */
 
-import type { ZodType, ZodTypeDef } from "zod";
+import type { ZodType } from "zod";
 import type { IOutputValidator, IValidationResult } from "../src/internal_types.ts";
 
 /**
@@ -19,7 +19,7 @@ export function createTestValidator(): IOutputValidator {
   return {
     validate<T>(
       content: string,
-      schema: ZodType<T, ZodTypeDef, unknown>,
+      schema: ZodType<T>,
     ): IValidationResult<T> {
       try {
         const parsed = JSON.parse(content);

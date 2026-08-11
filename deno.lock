@@ -64,7 +64,8 @@
     "npm:ts-morph@24.0.0": "24.0.0",
     "npm:typescript@6.0.3": "6.0.3",
     "npm:web-tree-sitter@*": "0.26.9",
-    "npm:web-tree-sitter@0.26.9": "0.26.9"
+    "npm:web-tree-sitter@0.26.9": "0.26.9",
+    "npm:zod@^4.4.3": "4.4.3"
   },
   "jsr": {
     "@cliffy/command@1.2.1": {
@@ -346,6 +347,9 @@
     },
     "web-tree-sitter@0.26.9": {
       "integrity": "sha512-YJwSHANl6XFgeEjB8nitgj0qZYt5gkIesJ4w2srS2wcLB4GUa4xcOkM0YaMsU6WNR53YVIkDSY7Ej4pf3IXtCA=="
+    },
+    "zod@4.4.3": {
+      "integrity": "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ=="
     }
   },
   "remote": {
@@ -387,17 +391,20 @@
       "npm:tree-sitter-python@0.25.0",
       "npm:tree-sitter-rust@0.24.0",
       "npm:typescript@6.0.3",
-      "npm:web-tree-sitter@0.26.9"
+      "npm:web-tree-sitter@0.26.9",
+      "npm:zod@^4.4.3"
     ],
     "members": {
       "packages-team/ai-vertex": {
         "dependencies": [
-          "jsr:@std/assert@^1.0.19"
+          "jsr:@std/assert@^1.0.19",
+          "npm:zod@^4.4.3"
         ]
       },
       "packages-team/model-registry-live": {
         "dependencies": [
-          "jsr:@std/assert@^1.0.19"
+          "jsr:@std/assert@^1.0.19",
+          "npm:zod@^4.4.3"
         ]
       },
       "packages/ai": {
@@ -408,7 +415,8 @@
       },
       "packages/ai-anthropic": {
         "dependencies": [
-          "jsr:@std/assert@^1.0.19"
+          "jsr:@std/assert@^1.0.19",
+          "npm:zod@^4.4.3"
         ]
       },
       "packages/ai-clidelegate": {
@@ -459,7 +467,8 @@
       "packages/eval-history": {
         "dependencies": [
           "jsr:@db/sqlite@0.13",
-          "jsr:@std/path@^1.1.4"
+          "jsr:@std/path@^1.1.4",
+          "npm:zod@^4.4.3"
         ]
       },
       "packages/execution": {
@@ -469,7 +478,8 @@
           "jsr:@std/path@^1.1.4",
           "jsr:@std/streams@^1.0.13",
           "jsr:@std/toml@^1.0.2",
-          "jsr:@std/yaml@^1.0.2"
+          "jsr:@std/yaml@^1.0.2",
+          "npm:zod@^4.4.3"
         ]
       },
       "packages/flow": {
@@ -478,7 +488,8 @@
           "jsr:@std/encoding@^1.0.9",
           "jsr:@std/fs@^1.0.23",
           "jsr:@std/path@^1.1.4",
-          "jsr:@std/testing@^1.0.18"
+          "jsr:@std/testing@^1.0.18",
+          "npm:zod@^4.4.3"
         ]
       },
       "packages/git": {
@@ -513,7 +524,8 @@
         "dependencies": [
           "jsr:@std/assert@^1.0.19",
           "jsr:@std/path@^1.1.4",
-          "jsr:@std/testing@^1.0.18"
+          "jsr:@std/testing@^1.0.18",
+          "npm:zod@^4.4.3"
         ]
       },
       "packages/request": {
@@ -529,20 +541,23 @@
           "jsr:@std/assert@^1.0.19",
           "jsr:@std/path@^1.1.4",
           "jsr:@std/testing@^1.0.18",
-          "jsr:@std/yaml@^1.0.2"
+          "jsr:@std/yaml@^1.0.2",
+          "npm:zod@^4.4.3"
         ]
       },
       "packages/session": {
         "dependencies": [
           "jsr:@std/assert@^1.0.19",
-          "jsr:@std/path@^1.1.4"
+          "jsr:@std/path@^1.1.4",
+          "npm:zod@^4.4.3"
         ]
       },
       "packages/storage-sqlite": {
         "dependencies": [
           "jsr:@db/sqlite@0.13",
           "jsr:@std/fs@^1.0.23",
-          "jsr:@std/path@^1.1.4"
+          "jsr:@std/path@^1.1.4",
+          "npm:zod@^4.4.3"
         ]
       },
       "packages/testing": {
@@ -556,7 +571,8 @@
           "jsr:@std/fs@^1.0.23",
           "jsr:@std/path@^1.1.4",
           "jsr:@std/streams@^1.0.13",
-          "jsr:@std/testing@^1.0.18"
+          "jsr:@std/testing@^1.0.18",
+          "npm:zod@^4.4.3"
         ]
       },
       "packages/triggers": {

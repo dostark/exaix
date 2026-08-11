@@ -69,7 +69,7 @@ export const PlanActionSchema = z.object({
   tool: z.nativeEnum(McpToolName),
 
   /** Parameters for the tool invocation */
-  params: z.record(JSONValueSchema),
+  params: z.record(z.string(), JSONValueSchema),
 
   /** Optional: Description of what this specific action does */
   description: z.string().optional(),

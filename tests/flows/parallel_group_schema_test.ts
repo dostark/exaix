@@ -15,7 +15,7 @@ Deno.test("ZFlowParallelConfig: applies merge defaults", () => {
   const parsed = ZFlowParallelConfig.parse({ group: "reviewers" });
 
   assertEquals(parsed.group, "reviewers");
-  assertEquals(parsed.mergeMode, ZParallelMergeMode.Enum.all);
+  assertEquals(parsed.mergeMode, ZParallelMergeMode.enum.all);
   assertEquals(parsed.order, undefined);
 });
 

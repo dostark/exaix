@@ -11,7 +11,7 @@
  * @related-files [packages/portal/knowledge/pattern_detector.ts, packages/portal/knowledge/key_file_identifier.ts]
  */
 
-import { z, type ZodType, type ZodTypeDef } from "zod";
+import { z, type ZodType } from "zod";
 import type { IModelOptions, IModelProvider } from "@exaix/ai";
 
 import type { IValidationResult } from "@exaix/core/types";
@@ -25,7 +25,7 @@ import {
   ARCHITECTURE_INFERRER_TOKEN_BUDGET,
   sleep,
 } from "@exaix/core";
-import type { ILogger } from "@exaix/core/types";
+import type { ILogger, Opt, Reason } from "@exaix/core/types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -33,7 +33,7 @@ import type { ILogger } from "@exaix/core/types";
 
 /** Minimal validator interface: only the method used by ArchitectureInferrer. */
 export interface IArchitectureValidator {
-  validate<T>(content: string, schema: ZodType<T, ZodTypeDef, unknown>): IValidationResult<T>;
+  validate<T>(content: string, schema: ZodType<T>): IValidationResult<T>;
 }
 
 /** Input bag for a single inference call. */
@@ -87,7 +87,7 @@ export class ArchitectureInferrer {
   constructor(
     provider: IModelProvider,
     validator: IArchitectureValidator,
-    logger?: ILogger,
+    logger?: Opt<ILogger, Reason.OptionalDependency>,
   ) {
     this._provider = provider;
     this._validator = validator;

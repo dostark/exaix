@@ -170,7 +170,7 @@ exaix:
     const result = await generateSkillJson(skillsDir, targetDir, sandboxRoot, { check: true });
     assertEquals(result.success, false);
     assertEquals(result.errors.length, 1);
-    assertStringIncludes(result.errors[0], "Expected array, received string");
+    assertStringIncludes(result.errors[0], "Invalid input: expected array, received string");
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }

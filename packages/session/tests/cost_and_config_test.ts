@@ -18,7 +18,7 @@ const NOW = new Date("2026-06-11T00:00:00.000Z");
 
 function ret(model?: string): SessionReturn {
   return SessionReturnSchema.parse({
-    trace_id: "00000000-0000-0000-0000-000000000c09",
+    trace_id: "00000000-0000-4000-8000-000000000c09",
     resume_token: "tok",
     decision: "changes_made",
     summary: "done",
@@ -55,7 +55,7 @@ Deno.test("[cost_mapping] GAP-6 — an absent model falls back to the Unknown la
 
 Deno.test("[cost_mapping] cost_usd from ISessionCostInput overrides sessionReturn.cost_usd", () => {
   const sessionReturn = SessionReturnSchema.parse({
-    trace_id: "00000000-0000-0000-0000-000000000c10",
+    trace_id: "00000000-0000-4000-8000-000000000c10",
     resume_token: "tok",
     decision: "changes_made",
     summary: "done",
@@ -75,7 +75,7 @@ Deno.test("[cost_mapping] cost_usd from ISessionCostInput overrides sessionRetur
 
 Deno.test("[cost_mapping] cost_usd from sessionReturn.cost_usd used when ISessionCostInput.costUsd absent", () => {
   const sessionReturn = SessionReturnSchema.parse({
-    trace_id: "00000000-0000-0000-0000-000000000c11",
+    trace_id: "00000000-0000-4000-8000-000000000c11",
     resume_token: "tok",
     decision: "changes_made",
     summary: "done",
@@ -94,7 +94,7 @@ Deno.test("[cost_mapping] cost_usd from sessionReturn.cost_usd used when ISessio
 
 Deno.test("[cost_mapping] cost_usd defaults to 0 when absent from both input and return", () => {
   const sessionReturn = SessionReturnSchema.parse({
-    trace_id: "00000000-0000-0000-0000-000000000c12",
+    trace_id: "00000000-0000-4000-8000-000000000c12",
     resume_token: "tok",
     decision: "changes_made",
     summary: "done",

@@ -78,7 +78,7 @@ export const ToolReflectionSchema = z.object({
   })).default([]),
   retry_suggested: z.boolean(),
   retry_reason: z.string().optional(),
-  alternative_parameters: z.record(JSONValueSchema).optional(),
+  alternative_parameters: z.record(z.string(), JSONValueSchema).optional(),
   insights: z.array(z.string()).default([]),
 }) satisfies z.ZodTypeAny;
 

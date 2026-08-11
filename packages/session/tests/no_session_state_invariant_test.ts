@@ -27,7 +27,7 @@ const NOW = "2026-06-12T00:00:00.000Z";
 /** A return loaded with handoff/session state that MUST NOT leak into artifacts. */
 function loadedReturn(decision: SessionReturn["decision"], summary: string): SessionReturn {
   return SessionReturnSchema.parse({
-    trace_id: "00000000-0000-0000-0000-0000000000d6",
+    trace_id: "00000000-0000-4000-8000-0000000000d6",
     resume_token: SECRET_RESUME_TOKEN,
     decision,
     summary,
@@ -49,7 +49,7 @@ function assertNoSessionState(artifact: object, label: string): void {
 
 Deno.test("[session_invariant][security] a plan-amendment decision carries no session state", () => {
   const decision = buildAmendmentDecision({
-    amendmentId: "11111111-2222-3333-4444-555555555555",
+    amendmentId: "11111111-2222-3333-8444-555555555555",
     sessionReturn: loadedReturn("approved", "Plan looks correct."),
     decidedBy: "session:claude-code",
     now: NOW,

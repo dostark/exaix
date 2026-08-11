@@ -36,7 +36,7 @@ export const ZStreamingEvent = z.object({
       STREAMING_EVENT_FLOW_STATUS,
     ] as const,
   ),
-  payload: z.record(z.unknown()),
+  payload: z.record(z.string(), z.unknown()),
 });
 
 export type IStreamingEvent = z.infer<typeof ZStreamingEvent>;

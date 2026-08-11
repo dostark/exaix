@@ -255,7 +255,7 @@ Deno.test("[ScenarioFrameworkContract] rejects invalid criterion result status p
       });
     },
     Error,
-    "Invalid enum value",
+    "Invalid option: expected one of",
   );
 
   assertEquals(CriterionStatus.PASSED, "passed");

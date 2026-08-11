@@ -207,7 +207,7 @@ Deno.test("MemoryCommands: project show --format json outputs valid JSON", async
 Deno.test("MemoryCommands: execution list returns history", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    await createTestExecution(memoryBank, "11111111-1111-1111-1111-111111111111", "ExecProject");
+    await createTestExecution(memoryBank, "11111111-1111-4111-8111-111111111111", "ExecProject");
 
     const result = await commands.executionList({ format: UIOutputFormat.TABLE });
 
@@ -233,8 +233,8 @@ Deno.test("MemoryCommands: execution list empty returns message", async () => {
 Deno.test("MemoryCommands: execution list --portal filters correctly", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    await createTestExecution(memoryBank, "22222222-2222-2222-2222-222222222222", "FilterProjectA");
-    await createTestExecution(memoryBank, "33333333-3333-3333-3333-333333333333", "FilterProjectB");
+    await createTestExecution(memoryBank, "22222222-2222-4222-8222-222222222222", "FilterProjectA");
+    await createTestExecution(memoryBank, "33333333-3333-4333-8333-333333333333", "FilterProjectB");
 
     const result = await commands.executionList({ portal: "FilterProjectA", format: UIOutputFormat.TABLE });
 
@@ -248,9 +248,9 @@ Deno.test("MemoryCommands: execution list --portal filters correctly", async () 
 Deno.test("MemoryCommands: execution list --limit works", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    await createTestExecution(memoryBank, "44444444-4444-4444-4444-444444444444", "LimitProject");
-    await createTestExecution(memoryBank, "55555555-5555-5555-5555-555555555555", "LimitProject");
-    await createTestExecution(memoryBank, "66666666-6666-6666-6666-666666666666", "LimitProject");
+    await createTestExecution(memoryBank, "44444444-4444-4444-8444-444444444444", "LimitProject");
+    await createTestExecution(memoryBank, "55555555-5555-4555-8555-555555555555", "LimitProject");
+    await createTestExecution(memoryBank, "66666666-6666-4666-8666-666666666666", "LimitProject");
 
     const result = await commands.executionList({ limit: 2, format: UIOutputFormat.TABLE });
 
@@ -263,7 +263,7 @@ Deno.test("MemoryCommands: execution list --limit works", async () => {
 Deno.test("MemoryCommands: execution show displays details", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const traceId = "77777777-7777-7777-7777-777777777777";
+    const traceId = "77777777-7777-4777-8777-777777777777";
     await createTestExecution(memoryBank, traceId, "ShowExecProject");
 
     const result = await commands.executionShow(traceId, UIOutputFormat.TABLE);
@@ -308,7 +308,7 @@ Deno.test("MemoryCommands: execution show --format json outputs valid JSON", asy
 Deno.test("MemoryCommands: execution show --format md outputs markdown", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const traceId = "99999999-9999-9999-9999-999999999999";
+    const traceId = "99999999-9999-4999-8999-999999999999";
     await createTestExecution(memoryBank, traceId, "MdExecProject");
 
     const result = await commands.executionShow(traceId, UIOutputFormat.MARKDOWN);
@@ -327,7 +327,7 @@ Deno.test("MemoryCommands: rebuild-index completes successfully", async () => {
   const { commands, memoryBank, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
     await createTestProject(memoryBank, "IndexProject");
-    await createTestExecution(memoryBank, "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "IndexProject");
+    await createTestExecution(memoryBank, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "IndexProject");
 
     const result = await commands.rebuildIndex();
 

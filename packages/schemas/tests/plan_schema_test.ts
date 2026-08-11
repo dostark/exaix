@@ -345,7 +345,7 @@ describe("PlanSchema", () => {
       assertEquals(result.success, false);
       if (!result.success) {
         const errors = result.error as ZodError;
-        const descError = errors.errors.find((e) => e.path.includes("description"));
+        const descError = errors.issues.find((e) => e.path.includes("description"));
         assertExists(descError);
       }
     });
@@ -361,7 +361,7 @@ describe("PlanSchema", () => {
       if (!result.success) {
         const errors = result.error as ZodError;
         // Should have validation errors since neither steps nor specialized fields are present
-        assertExists(errors.errors.length > 0);
+        assertExists(errors.issues.length > 0);
       }
     });
 

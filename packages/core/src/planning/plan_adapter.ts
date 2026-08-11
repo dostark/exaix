@@ -191,8 +191,8 @@ export class PlanAdapter {
       return result.data;
     }
 
-    throw new PlanValidationError(result.error.errors[0]?.message ?? "Plan validation failed", {
-      zodErrors: JSON.parse(JSON.stringify(result.error.errors)) as JSONValue,
+    throw new PlanValidationError(result.error.issues[0]?.message ?? "Plan validation failed", {
+      zodErrors: JSON.parse(JSON.stringify(result.error.issues)) as JSONValue,
       rawContent,
       repairAttempted: false,
       repairSucceeded: false,

@@ -38,13 +38,13 @@ const AnthropicToolUseContentBlockSchema = z.object({
   type: z.literal(ANTHROPIC_CONTENT_TYPE_TOOL_USE),
   id: z.string().min(1),
   name: z.string().min(1),
-  input: z.record(z.unknown()),
+  input: z.record(z.string(), z.unknown()),
 });
 
 const AnthropicToolResultContentBlockSchema = z.object({
   type: z.literal(ANTHROPIC_CONTENT_TYPE_TOOL_RESULT),
   tool_use_id: z.string().min(1),
-  content: z.union([z.string(), z.array(z.record(z.unknown())).min(1)]),
+  content: z.union([z.string(), z.array(z.record(z.string(), z.unknown())).min(1)]),
   is_error: z.boolean().optional(),
 });
 
@@ -71,11 +71,11 @@ export const AnthropicMessagesRequestSchema = z.object({
   tools: z.array(z.object({
     name: z.string().min(1),
     description: z.string().optional(),
-    input_schema: z.record(z.unknown()),
+    input_schema: z.record(z.string(), z.unknown()),
     type: z.string().optional(),
     strict: z.boolean().optional(),
     cache_control: AnthropicCacheControlSchema.optional(),
-    input_examples: z.array(z.record(z.unknown())).optional(),
+    input_examples: z.array(z.record(z.string(), z.unknown())).optional(),
   })).optional(),
   tool_choice: z.union([
     z.object({ type: z.literal(ANTHROPIC_TOOL_CHOICE_AUTO), disable_parallel_tool_use: z.boolean().optional() }),

@@ -42,8 +42,8 @@ const DateOrStringSchema = z.union([z.string().datetime(), z.date()]).transform(
 
 export const ZToolCall = z.object({
   tool: z.nativeEnum(McpToolName),
-  args: z.record(JSONValueSchema).optional(),
-  params: z.record(JSONValueSchema).optional(),
+  args: z.record(z.string(), JSONValueSchema).optional(),
+  params: z.record(z.string(), JSONValueSchema).optional(),
   description: z.string().optional(),
 }).refine((toolCall) => toolCall.args !== undefined || toolCall.params !== undefined, {
   message: "Tool call must provide args or params",
@@ -168,7 +168,7 @@ export const ConsensusConfigSchema = z.object({
   /** Judge agent for "judge" method */
   judge: z.string().optional(),
   /** Weights for "weighted" method */
-  weights: z.record(z.number()).optional(),
+  weights: z.record(z.string(), z.number()).optional(),
 });
 
 /**
@@ -200,18 +200,18 @@ const FlowStepSchemaBase = z.object({
     source: z.nativeEnum(FlowInputSource).default(FlowInputSource.REQUEST),
     stepId: z.string().optional(),
     from: z.array(z.string()).optional(), // For aggregate source
-    transform: z.union([z.string(), z.function().args(z.string()).returns(z.string())]).default("passthrough"),
+    transform: z.union([z.string(), z.function({ input: [z.string()], output: z.string() })]).default("passthrough"),
     // Arguments for transform functions — flat JSON-compatible values
     transformArgs: JSONValueSchema.optional(),
     feedbackStepId: z.string().optional(), // For feedback source
-  }).default({}),
+  }).prefault({}),
   /** Condition for step execution (JavaScript expression) */
   condition: z.string().optional(),
   timeout: z.number().positive().optional(),
   retry: z.object({
     maxAttempts: z.number().int().min(1).default(1),
     backoffMs: z.number().int().min(0).default(DEFAULT_FLOW_STEP_BACKOFF_MS),
-  }).default({}),
+  }).prefault({}),
   onError: ZFlowStepOnError.optional(),
   /** Gate evaluation config (for type: "gate") */
   evaluate: GateEvaluateSchema.optional(),
@@ -276,7 +276,7 @@ export const FlowSchema = z.object({
     timeout: z.number().positive().optional(),
     /** Flow-wide default: include dynamic criteria from request analysis in all gate steps */
     includeRequestCriteria: z.boolean().default(false),
-  }).default({}),
+  }).prefault({}),
   /** Default skills to apply to all steps (Phase 17) */
   defaultSkills: z.array(z.string()).optional(),
   namespace: ZFlowNamespaceConfig.optional(),
@@ -351,7 +351,7 @@ export const StepExecutionRecordSchema = z.object({
   checkpointId: z.string().optional(),
   summary: z.string().optional(),
   invalidationReason: z.string().optional(),
-  metadata: z.record(z.unknown()).optional().default({}),
+  metadata: z.record(z.string(), z.unknown()).optional().default({}),
   error: z.string().optional(),
 });
 

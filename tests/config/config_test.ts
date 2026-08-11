@@ -55,7 +55,7 @@ function assertParseFailsWith(config: RawConfigCandidate, pathKey: string, messa
   const result = ConfigSchema.safeParse(config);
   assertEquals(result.success, false);
   if (!result.success) {
-    const error = result.error.errors.find((e) => e.path.includes(pathKey));
+    const error = result.error.issues.find((e) => e.path.includes(pathKey));
     assertExists(error);
     assertStringIncludes(error.message, messagePart);
   }

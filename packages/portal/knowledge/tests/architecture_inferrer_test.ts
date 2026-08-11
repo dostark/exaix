@@ -9,7 +9,7 @@
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import type { ZodType, ZodTypeDef } from "zod";
+import type { ZodType } from "zod";
 import { ArchitectureInferrer, type IArchitectureValidator } from "@exaix/portal/knowledge";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
@@ -64,7 +64,7 @@ class MockOutputValidator implements IArchitectureValidator {
   constructor(success: boolean) {
     this._success = success;
   }
-  validate<T>(content: string, _schema: ZodType<T, ZodTypeDef, unknown>): IValidationResult<T> {
+  validate<T>(content: string, _schema: ZodType<T>): IValidationResult<T> {
     this.validateCallCount++;
     if (this._success) {
       return {

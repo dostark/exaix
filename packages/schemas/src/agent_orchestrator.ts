@@ -130,7 +130,7 @@ export const AgentExecutionErrorTypeSchema = z.nativeEnum(AgentExecutionErrorTyp
 export const AgentExecutionErrorSchema = z.object({
   type: AgentExecutionErrorTypeSchema,
   message: z.string(),
-  details: z.record(JSONValueSchema).optional(),
+  details: z.record(z.string(), JSONValueSchema).optional(),
   trace_id: z.string().uuid().optional(),
 });
 export type IAgentExecutionError = z.infer<typeof AgentExecutionErrorSchema>;

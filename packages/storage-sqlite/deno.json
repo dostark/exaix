@@ -5,7 +5,7 @@
     "@std/fs": "jsr:@std/fs@^1.0.23",
     "@std/path": "jsr:@std/path@^1.1.4",
     "@db/sqlite": "jsr:@db/sqlite@^0.13.0",
-    "zod": "https://deno.land/x/zod@v3.22.4/mod.ts",
+    "zod": "npm:zod@^4.4.3",
     "@exaix/storage-sqlite": "./mod.ts",
     "@exaix/storage-sqlite/": "./src/",
     "@exaix/ai": "../ai/mod.ts",

@@ -13,7 +13,7 @@ import { HeadlessSessionLauncher } from "../src/headless_session_launcher.ts";
 import type { ISpawnArgs } from "../src/headless_session_launcher.ts";
 import { SessionReturnSchema } from "@exaix/schemas/session_delegate.ts";
 
-const TRACE_ID = "00000000-0000-0000-0000-0000000000a1";
+const TRACE_ID = "00000000-0000-4000-8000-0000000000a1";
 
 function makeMockChild(stdoutData: string, exitCode = 0): Deno.ChildProcess {
   const encoder = new TextEncoder();

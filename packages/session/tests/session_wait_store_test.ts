@@ -10,7 +10,7 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { SessionWaitStore } from "@exaix/session/wait/session_wait_store.ts";
 
-const TRACE = "00000000-0000-0000-0000-0000000000f5";
+const TRACE = "00000000-0000-4000-8000-0000000000f5";
 const TOKEN = "8f14e45f-ceea-467a-9c8e-1f2b3c4d5e6f.cafebabecafebabe";
 const FUTURE = "2026-12-31T00:00:00.000Z";
 const PAST = "2020-01-01T00:00:00.000Z";

@@ -59,7 +59,7 @@ Deno.test("[headless_launcher] spawn is called with the command and args from th
   });
   await launcher.launch(
     makeLaunch({ command: "claude", args: ["-p", "refactor"] }),
-    "00000000-0000-0000-0000-000000000001",
+    "00000000-0000-4000-8000-000000000001",
     undefined,
   );
   assertEquals(captured.length, 1, "spawn must be called exactly once");
@@ -95,7 +95,7 @@ Deno.test("[headless_launcher] stub binary that writes return.json round-trips",
 
 Deno.test("[headless_launcher] exit-without-return synthesizes abandoned return.json", async () => {
   const sessionDir = await Deno.makeTempDir();
-  const traceId = "00000000-0000-0000-0000-000000000003";
+  const traceId = "00000000-0000-4000-8000-000000000003";
   const traceDir = join(sessionDir, traceId);
   await Deno.mkdir(traceDir, { recursive: true });
   const returnPath = join(traceDir, "return.json");

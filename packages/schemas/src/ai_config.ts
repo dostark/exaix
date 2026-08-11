@@ -91,7 +91,7 @@ export const AiConfigSchema = z.object({
 
   /** Mock-specific configuration */
   mock: MockConfigSchema.optional(),
-}).default({
+}).prefault({
   provider: ProviderType.MOCK,
   timeout_ms: DEFAULT_AI_TIMEOUT_MS,
 });

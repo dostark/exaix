@@ -27,7 +27,7 @@ const VALID_BUDGET = {
 };
 
 const VALID_BRIEF = {
-  trace_id: "00000000-0000-0000-0000-000000000001",
+  trace_id: "00000000-0000-4000-8000-000000000001",
   gate: "plan_review",
   tool: "claude-code",
   objective: "Review the generated plan and approve or amend it.",
@@ -39,7 +39,7 @@ const VALID_BRIEF = {
 };
 
 const VALID_RETURN = {
-  trace_id: "00000000-0000-0000-0000-000000000001",
+  trace_id: "00000000-0000-4000-8000-000000000001",
   resume_token: "tok-abc-123",
   decision: "approved",
   summary: "Plan looks correct; approved with no amendments.",
@@ -227,7 +227,7 @@ Deno.test("[session_delegate] SessionDelegateConfigSchema rejects unknown tool",
 
 Deno.test("[session_delegate] SessionWaitStateSchema round-trip", () => {
   const result = SessionWaitStateSchema.safeParse({
-    trace_id: "00000000-0000-0000-0000-000000000002",
+    trace_id: "00000000-0000-4000-8000-000000000002",
     gate: "code_changes",
     resume_token: "tok-xyz-456",
     deadline: "2026-07-02T00:00:00.000Z",

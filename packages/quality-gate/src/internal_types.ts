@@ -11,7 +11,7 @@
  * `path: string`, making them structurally incompatible as a TypeScript interface.
  */
 
-import type { ZodType, ZodTypeDef } from "zod";
+import type { ZodType } from "zod";
 
 // Local validation-error type matching OutputValidator's real return shape.
 export interface IValidationError {
@@ -34,6 +34,6 @@ export interface IValidationResult<T = unknown> {
 export interface IOutputValidator {
   validate<T>(
     content: string,
-    schema: ZodType<T, ZodTypeDef, unknown>,
+    schema: ZodType<T>,
   ): IValidationResult<T>;
 }
