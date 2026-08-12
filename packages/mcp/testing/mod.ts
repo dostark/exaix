@@ -11,3 +11,9 @@ export { AllowAllPermissionsService } from "./allow_all_permissions.ts";
 export { AllowAllConfirmationInterceptor } from "./allow_all_confirmation_interceptor.ts";
 export { DenyAllConfirmationInterceptor } from "./deny_all_confirmation_interceptor.ts";
 export * from "./test_setup.ts";
+export {
+  ECHO_TOOL_TEXT_PREFIX,
+  type IReferenceServerHandle,
+  startReferenceServer,
+  STRUCTURED_TOOL_CURRENCY,
+} from "../tests/fixtures/reference_mcp_server.ts";
