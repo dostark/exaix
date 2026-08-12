@@ -43,7 +43,10 @@ export interface IGitService {
   getCurrentBranch(): Promise<string>;
   getDefaultBranch(repoPath?: string): Promise<string>;
   addWorktree(worktreePath: string, baseBranch: string): Promise<void>;
-  removeWorktree(worktreePath: string, options?: { force?: boolean }): Promise<void>;
+  removeWorktree(
+    worktreePath: string,
+    options?: { force?: boolean; deleteBranch?: boolean },
+  ): Promise<void>;
   pruneWorktrees(options?: { dryRun?: boolean; verbose?: boolean; expire?: string }): Promise<string>;
   listWorktrees(): Promise<IWorktreeInfo[]>;
   runGitCommand(

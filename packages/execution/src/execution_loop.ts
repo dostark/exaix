@@ -1051,7 +1051,10 @@ export class ExecutionLoop {
     // We no longer perform global 'git reset --hard' in the system root.
     if (_cleanup?.worktreePath && _cleanup?.portalGitService) {
       try {
-        await _cleanup.portalGitService.removeWorktree(_cleanup.worktreePath, { force: true });
+        await _cleanup.portalGitService.removeWorktree(_cleanup.worktreePath, {
+          force: true,
+          deleteBranch: true,
+        });
       } catch (error) {
         console.warn(`Failed to cleanup worktree at ${_cleanup.worktreePath}:`, error);
       }
@@ -1108,7 +1111,10 @@ export class ExecutionLoop {
     // identical cleanup for the rejected-plan path).
     if (_cleanup?.worktreePath && _cleanup?.portalGitService) {
       try {
-        await _cleanup.portalGitService.removeWorktree(_cleanup.worktreePath, { force: true });
+        await _cleanup.portalGitService.removeWorktree(_cleanup.worktreePath, {
+          force: true,
+          deleteBranch: true,
+        });
       } catch (removeError) {
         console.warn(`Failed to cleanup worktree at ${_cleanup.worktreePath}:`, removeError);
       }

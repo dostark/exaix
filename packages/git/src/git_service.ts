@@ -34,6 +34,7 @@ import {
   GIT_CMD_REV_PARSE,
   GIT_CMD_STATUS,
   GIT_CMD_WORKTREE,
+  GIT_REQUEST_BRANCH_PREFIX,
 } from "./constants.ts";
 import { GitBranchName } from "./enums.ts";
 import type {
@@ -563,16 +564,45 @@ export class GitService implements IGitService {
   /**
    * Remove a git worktree.
    *
-   * This is not used by Phase 37.6 yet, but is helpful for future lifecycle cleanup.
+   * When `options.deleteBranch` is true, the branch checked out at that worktree
+   * is also deleted after the worktree is removed. This keeps the worktree and
+   * its ephemeral request branch lifecycle symmetric: a removed execution
+   * worktree must not leave an orphaned `feat/request-*` ref behind.
    */
   async removeWorktree(
     worktreePath: string,
-    options?: Opt<{ force?: boolean }, Reason.ExecutionConfig>,
+    options?: Opt<{ force?: boolean; deleteBranch?: boolean }, Reason.ExecutionConfig>,
   ): Promise<void> {
+    const branchToDelete = options?.deleteBranch ? await this.resolveWorktreeBranchName(worktreePath) : null;
+
     const args = [GIT_CMD_WORKTREE, GIT_CMD_REMOVE];
     if (options?.force) args.push("--force");
     args.push(worktreePath);
     await this.runGitCommand(args);
+
+    if (branchToDelete && !this.isProtectedBranchName(branchToDelete)) {
+      await this.runGitCommand([GIT_CMD_BRANCH, "-D", branchToDelete]);
+    }
+  }
+
+  /** Resolve the short branch name checked out at `worktreePath`, or null when detached/none. */
+  private async resolveWorktreeBranchName(worktreePath: string): Promise<string | null> {
+    const worktrees = await this.listWorktrees();
+    const match = worktrees.find((w) => w.path === worktreePath);
+    if (!match?.branch) return null;
+    return match.branch.replace("refs/heads/", "");
+  }
+
+  /** True for repository-protected branches that must never be deleted by cleanup. */
+  private isProtectedBranchName(branchName: string): boolean {
+    const protectedBranches: string[] = [
+      GitBranchName.MAIN,
+      GitBranchName.MASTER,
+      GitBranchName.DEVELOP,
+      GitBranchName.PROD,
+      GitBranchName.PRODUCTION,
+    ];
+    return protectedBranches.includes(branchName.toLowerCase());
   }
 
   /**
@@ -580,6 +610,12 @@ export class GitService implements IGitService {
    *
    * This is useful when worktree directories were deleted manually or after crashes,
    * leaving stale entries under `.git/worktrees`.
+   *
+   * Also deletes orphaned `feat/request-*` branches: an ephemeral execution branch
+   * whose worktree directory is gone (e.g. a scenario-sandbox `/tmp` dir removed
+   * out-of-band) is a leak — the ref persists in the shared `.git` forever. Branches
+   * still checked out in a live worktree are untouched, so pending-review branches
+   * survive.
    */
   async pruneWorktrees(
     options?: Opt<
@@ -593,7 +629,38 @@ export class GitService implements IGitService {
     if (options?.expire) args.push("--expire", options.expire);
 
     const result = await this.runGitCommand(args);
+    if (!options?.dryRun) {
+      await this.pruneOrphanedRequestBranches();
+    }
     return result.output;
+  }
+
+  /**
+   * Delete `feat/request-*` branches whose worktree no longer exists. A branch is
+   * kept when any live worktree (including the main checkout) still references it.
+   */
+  private async pruneOrphanedRequestBranches(): Promise<void> {
+    const liveWorktrees = await this.listWorktrees();
+    const liveBranches = new Set(
+      liveWorktrees
+        .map((w) => w.branch?.replace("refs/heads/", ""))
+        .filter((b): b is string => Boolean(b)),
+    );
+
+    const branchList = await this.runGitCommand([
+      GIT_CMD_BRANCH,
+      "--list",
+      GIT_REQUEST_BRANCH_PREFIX + "*",
+    ]);
+    const candidates = branchList.output
+      .split("\n")
+      .map((line) => line.replace("*", "").trim())
+      .filter((name) => name.length > 0);
+
+    for (const candidate of candidates) {
+      if (liveBranches.has(candidate) || this.isProtectedBranchName(candidate)) continue;
+      await this.runGitCommand([GIT_CMD_BRANCH, "-D", candidate], { throwOnError: false });
+    }
   }
 
   /**

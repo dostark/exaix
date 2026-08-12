@@ -14,6 +14,9 @@ import { ConfigValueType, SwapClass } from "@exaix/core";
 
 export const GIT_EMPTY_SHA = "0000000000000000000000000000000000000000";
 
+/** Prefix of ephemeral execution request branches (`feat/request-<trace8>-<trace8>`). */
+export const GIT_REQUEST_BRANCH_PREFIX = "feat/request-";
+
 // Imported from @exaix/core (configurable in core's constants.ts — see check:config-keys)
 export const GIT_TIMEOUT_MS_MIN = 1000;
 export const GIT_TIMEOUT_MS_MAX = 60000;
