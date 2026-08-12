@@ -139,56 +139,59 @@ jobs:
       - name: Create remediation issue
         if: ${{ steps.existing.outputs.issue_number == '' }}
         id: issue
+        env:
+          GH_TOKEN: ${{ secrets.AUTO_REMEDIATION_PAT }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          WORKFLOW_URL: ${{ github.event.workflow_run.html_url }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          CATEGORY: ${{ steps.parse.outputs.category }}
+          SUMMARY: ${{ steps.parse.outputs.summary }}
+          PLAN: ${{ steps.parse.outputs.plan }}
+          TRANSIENT: ${{ steps.parse.outputs.transient }}
         run: |
-          workflow_name="${{ github.event.workflow_run.name }}"
-          workflow_url="${{ github.event.workflow_run.html_url }}"
-          branch="${{ github.event.workflow_run.head_branch }}"
-          sha="${{ github.event.workflow_run.head_sha }}"
-          category="${{ steps.parse.outputs.category }}"
-          summary="${{ steps.parse.outputs.summary }}"
-          plan="${{ steps.parse.outputs.plan }}"
-          transient="${{ steps.parse.outputs.transient }}"
-
-          body=$(cat <<EOF
-          ## CI Failure — ${workflow_name}
-
-          **Run:** [${workflow_name} #${{ github.event.workflow_run.id }}](${workflow_url})
-          **Branch:** ${branch}
-          **Commit:** ${sha}
-          **Category:** ${category}
-          **Transient:** ${transient}
-
-          ### Summary
-          ${summary}
-
-          ### Remediation Plan
-          ${plan}
-
-          ### Acceptance Criteria
-          - Reproduce the failure locally or in CI context.
-          - Make the smallest safe fix.
-          - Run the narrowest relevant tests first.
-          - Run the full CI workflow relevant to this failure.
-          - Do not weaken tests merely to make CI green.
-
-          ### Links
-          - [Failed workflow run](${workflow_url})
-          - [Commit](https://github.com/${{ github.repository }}/commit/${sha})
-          EOF
-          )
+          # Model-produced text (SUMMARY/PLAN) may contain backticks or $() —
+          # write it via env vars (not shell-substituted) into a body file so it
+          # can never be executed as shell commands.
+          body_file=$(mktemp)
+          printf '%s\n' \
+            "## CI Failure — ${WORKFLOW_NAME}" \
+            "" \
+            "**Run:** [${WORKFLOW_NAME} #${WORKFLOW_RUN_ID}](${WORKFLOW_URL})" \
+            "**Branch:** ${BRANCH}" \
+            "**Commit:** ${SHA}" \
+            "**Category:** ${CATEGORY}" \
+            "**Transient:** ${TRANSIENT}" \
+            "" \
+            "### Summary" \
+            "${SUMMARY}" \
+            "" \
+            "### Remediation Plan" \
+            "${PLAN}" \
+            "" \
+            "### Acceptance Criteria" \
+            "- Reproduce the failure locally or in CI context." \
+            "- Make the smallest safe fix." \
+            "- Run the narrowest relevant tests first." \
+            "- Run the full CI workflow relevant to this failure." \
+            "- Do not weaken tests merely to make CI green." \
+            "" \
+            "### Links" \
+            "- [Failed workflow run](${WORKFLOW_URL})" \
+            "- [Commit](https://github.com/${{ github.repository }}/commit/${SHA})" \
+            > "$body_file"
 
           url=$(gh issue create \
             --repo "${{ github.repository }}" \
-            --title "CI: ${workflow_name} failed on ${branch}" \
-            --body "$body" \
+            --title "CI: ${WORKFLOW_NAME} failed on ${BRANCH}" \
+            --body-file "$body_file" \
             --label "auto-remediation" \
             --label "ci" \
-            --label "workflow:${workflow_name}" \
-            --label "category:${category}")
+            --label "workflow:${WORKFLOW_NAME}" \
+            --label "category:${CATEGORY}")
 
           echo "url=$url" >> "$GITHUB_OUTPUT"
-        env:
-          GH_TOKEN: ${{ secrets.AUTO_REMEDIATION_PAT }}
 
       - name: Comment on existing issue
         if: ${{ steps.existing.outputs.issue_number != '' }}
