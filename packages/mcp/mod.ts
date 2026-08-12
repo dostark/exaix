@@ -21,5 +21,6 @@ export type {
   ExternalMcpTransportKind,
   IExternalMcpCallResult,
   IExternalMcpClient,
+  IExternalMcpConnectOptions,
   IExternalMcpToolDefinition,
 } from "./src/i_external_mcp_client.ts";

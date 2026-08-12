@@ -19,6 +19,7 @@ import type {
   ExternalMcpTransportKind,
   IExternalMcpCallResult,
   IExternalMcpClient,
+  IExternalMcpConnectOptions,
   IExternalMcpToolDefinition,
 } from "@exaix/mcp";
 
@@ -50,4 +51,16 @@ Deno.test("IExternalMcpClient - a minimal implementation object literal satisfie
   assertEquals(await minimalImplementation.listTools(), []);
   assertEquals(await minimalImplementation.callTool("noop", {}), { content: [] });
   await minimalImplementation.close();
+});
+
+/**
+ * `IExternalMcpConnectOptions` compile-time-checked as importable from the
+ * package's public barrel (`@exaix/mcp`), not just the deep
+ * `@exaix/mcp/i_external_mcp_client.ts` path — matches how its sibling types
+ * above are already surfaced (Post-Gap Analysis GAP-4).
+ */
+const minimalConnectOptions = { bearerToken: "token" } satisfies IExternalMcpConnectOptions;
+
+Deno.test("@exaix/mcp barrel - IExternalMcpConnectOptions is importable from the package's public surface", () => {
+  assertEquals(minimalConnectOptions.bearerToken, "token");
 });
