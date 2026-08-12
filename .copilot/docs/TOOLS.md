@@ -35,6 +35,12 @@ approval flag is checked separately.
 
 See `docs/Exaix_Evaluation.md` §12 for the subsystem taxonomy and cadence.
 
+**Phase 162 (outbound MCP client, `exactl mcp connect`) note:** not applicable to this index. The
+phase adds no new Exaix-exposed agent tool — `packages/mcp/src/manifest.ts` is unchanged. It adds a
+CLI subcommand (`exactl mcp connect`) that lets Exaix act as an MCP _client_ against external
+servers, the reverse direction from everything indexed below. See `ARCHITECTURE.md`'s "Inbound vs.
+Outbound MCP" for the disambiguation.
+
 <!-- AGENT_TOOLS_START -->
 
 ## 🤖 Agent Tool Index (MCP) {#agent-tools}

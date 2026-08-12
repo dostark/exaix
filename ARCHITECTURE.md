@@ -923,6 +923,22 @@ Exaix includes an extensible MCP tool handler system that enables agents to perf
 
 All tools enforce portal-scoped operations. Git tools obtain `IGitService` through `context.gitServiceFactory` (set by the composition root) via `ToolHandler.resolveGitService(portalPath)` — never through direct `Deno.Command("git")`. The service path inherits `validateArgs` (destructive-operation and protected-branch guards), command timeout, `index.lock` retry, and trace-attributed journalling. For the class diagram, patch file strategy, and security boundary details, see `packages/mcp/README.md`.
 
+### Inbound vs. Outbound MCP
+
+`packages/mcp` owns MCP in both directions. **Inbound** (existing, `packages-team/mcp-server`): Exaix acts as an MCP _server_, exposing the tool handlers above to external agents. **Outbound** (Phase 162, new): Exaix acts as an MCP _client_, via `ExternalMcpClient`/`IExternalMcpClient` (`packages/mcp/src/external_mcp_client.ts`), reaching a real external MCP server over the wire (Streamable HTTP primary, legacy SSE fallback, with optional bearer-token auth), through `exactl mcp connect`. Do not confuse this with `McpClient` (`packages/mcp/server/mcp_client.ts`) — a local, in-process facade that dispatches to Exaix's own tool handlers and never opens a network connection; its `callTool` is keyed by the closed `McpToolName` enum, structurally incompatible with `IExternalMcpClient`'s string-keyed one.
+
+**Scope Note:** Phase 162 ships the outbound client and CLI subcommand only — no benchmark integration (e.g. Terminal-Bench) is included; Phase 144's Terminal-Bench-harness-fidelity gap remains open and unrelated to this phase's completion. `exactl mcp connect` reaches unauthenticated and bearer-token-authenticated servers only — any server requiring interactive OAuth or `client_credentials`/JWT-assertion grants is out of reach until a further follow-up.
+
+Two `[live]`-tagged tests in `tests/integration/external_mcp_client_live_test.ts` prove reachability against genuine third-party servers (DeepWiki, unauthenticated; GitHub's official remote MCP server, bearer-token-authenticated). Neither runs in default CI (`ignore: Deno.env.get("CI") === "true"`); run them on demand:
+
+```bash
+# DeepWiki only (no token needed)
+deno test --allow-all --filter "DeepWiki" tests/integration/external_mcp_client_live_test.ts
+
+# Both, including the GitHub-authenticated proof
+GITHUB_TOKEN=$(gh auth token) deno test --allow-all tests/integration/external_mcp_client_live_test.ts
+```
+
 ---
 
 ## CLI Commands Architecture

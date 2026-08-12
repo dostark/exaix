@@ -3982,6 +3982,34 @@ Add the following to your `claude_desktop_config.json`:
 
 See `templates/mcp/` for more client configuration examples.
 
+### 8.4 Connecting Outbound (`exactl mcp connect`)
+
+Section 8.1–8.3 cover Exaix acting as an MCP _server_. `exactl mcp connect` is the reverse direction: Exaix acting as an MCP _client_, reaching out to a real external MCP server (a documentation server, a code-hosting platform's MCP endpoint, or any spec-compliant server you point it at).
+
+```bash
+# List every tool a server exposes
+exactl mcp connect <url> --list-tools
+
+# Call a named tool with JSON arguments
+exactl mcp connect <url> --call-tool <name> --args '{"key":"value"}'
+```
+
+Connection is automatic dual-transport: Streamable HTTP is tried first (the current MCP spec's primary transport), falling back to legacy SSE if the server only supports the older protocol — no flag needed either way.
+
+**Authentication.** Some servers require a bearer token (a Personal Access Token or similar). Set it via an environment variable — never a CLI flag, so it never appears in `ps`-visible process arguments:
+
+```bash
+EXA_MCP_BEARER_TOKEN=<your-token> exactl mcp connect <url> --list-tools
+```
+
+`EXA_MCP_BEARER_TOKEN` is forwarded as an `Authorization: Bearer <token>` header on every request to the target server. Only this bearer-token mode is supported — interactive OAuth login flows and `client_credentials`/JWT-assertion grants are not.
+
+**Example — GitHub's official remote MCP server:**
+
+```bash
+EXA_MCP_BEARER_TOKEN=$(gh auth token) exactl mcp connect https://api.githubcopilot.com/mcp/ --list-tools
+```
+
 ## 9. Security
 
 Exaix is built with a "Safety First" architecture, focusing on local execution and explicit permissions.
