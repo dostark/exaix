@@ -1,0 +1,167 @@
+name: File CI Failure Issues
+
+on:
+  workflow_run:
+    workflows: ["Code Quality Gates", "Test Suite"]
+    types: [completed]
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+  models: read
+
+jobs:
+  file-issue:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.AUTO_REMEDIATION_PAT }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Copilot CLI
+        run: npm install -g @github/copilot
+
+      - name: Analyze failed run
+        id: analyze
+        uses: actions/ai-inference@v1
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.AUTO_REMEDIATION_PAT }}
+        with:
+          prompt-file: '.github/models/failed-run-analyze.prompt.yml'
+          model: gpt-4.1
+          token: ${{ secrets.AUTO_REMEDIATION_PAT }}
+          input: |
+            repo: ${{ github.event.repository.name }}
+            owner: ${{ github.event.repository.owner.login }}
+            workflow_run_id: ${{ github.event.workflow_run.id }}
+            issue_number: ""
+            issue_title: ""
+            issue_body: ""
+
+      - name: Parse analysis
+        id: parse
+        uses: actions/github-script@v7
+        env:
+          RESPONSE_JSON: ${{ steps.analyze.outputs.response }}
+        with:
+          script: |
+            const raw = (process.env.RESPONSE_JSON || '').trim();
+            if (!raw) core.setFailed('No response received from analysis step');
+            const withoutFences = raw.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+            const start = withoutFences.indexOf('{');
+            const end = withoutFences.lastIndexOf('}');
+            const jsonText = start === -1 || end <= start
+              ? withoutFences
+              : withoutFences.slice(start, end + 1);
+            let data;
+            try {
+              data = JSON.parse(jsonText);
+            } catch (e) {
+              core.setFailed(`Failed to parse analysis response as JSON: ${e.message}\n${raw.slice(0, 2000)}`);
+              return;
+            }
+            core.setOutput('transient', String(data.transient));
+            core.setOutput('summary', data.summary || '');
+            core.setOutput('plan', data.plan || '');
+            core.setOutput('category', data.category || '');
+
+      - name: Find existing open issue for this workflow
+        id: existing
+        run: |
+          workflow_name="${{ github.event.workflow_run.name }}"
+          issue_number=$(gh issue list \
+            --repo "${{ github.repository }}" \
+            --state open \
+            --label "auto-remediation" \
+            --label "workflow:${workflow_name}" \
+            --json number \
+            --jq '.[0].number')
+          echo "issue_number=$issue_number" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.AUTO_REMEDIATION_PAT }}
+
+      - name: Create labels
+        if: ${{ steps.existing.outputs.issue_number == '' }}
+        run: |
+          workflow_name="${{ github.event.workflow_run.name }}"
+          category="${{ steps.parse.outputs.category }}"
+          gh label create "auto-remediation" --repo "${{ github.repository }}" --color "B60205" --description "Automatically created remediation issues" || true
+          gh label create "ci" --repo "${{ github.repository }}" --color "1D76DB" --description "CI failure tracking" || true
+          gh label create "workflow:${workflow_name}" --repo "${{ github.repository }}" --color "1D76DB" --description "Workflow-specific remediation issues" || true
+          gh label create "category:${category}" --repo "${{ github.repository }}" --color "5319E7" --description "Failure category" || true
+        env:
+          GH_TOKEN: ${{ secrets.AUTO_REMEDIATION_PAT }}
+
+      - name: Create remediation issue
+        if: ${{ steps.existing.outputs.issue_number == '' }}
+        id: issue
+        run: |
+          workflow_name="${{ github.event.workflow_run.name }}"
+          workflow_url="${{ github.event.workflow_run.html_url }}"
+          branch="${{ github.event.workflow_run.head_branch }}"
+          sha="${{ github.event.workflow_run.head_sha }}"
+          category="${{ steps.parse.outputs.category }}"
+          summary="${{ steps.parse.outputs.summary }}"
+          plan="${{ steps.parse.outputs.plan }}"
+          transient="${{ steps.parse.outputs.transient }}"
+
+          body=$(cat <<EOF
+          ## CI Failure — ${workflow_name}
+
+          **Run:** [${workflow_name} #${{ github.event.workflow_run.id }}](${workflow_url})
+          **Branch:** ${branch}
+          **Commit:** ${sha}
+          **Category:** ${category}
+          **Transient:** ${transient}
+
+          ### Summary
+          ${summary}
+
+          ### Remediation Plan
+          ${plan}
+
+          ### Acceptance Criteria
+          - Reproduce the failure locally or in CI context.
+          - Make the smallest safe fix.
+          - Run the narrowest relevant tests first.
+          - Run the full CI workflow relevant to this failure.
+          - Do not weaken tests merely to make CI green.
+
+          ### Links
+          - [Failed workflow run](${workflow_url})
+          - [Commit](https://github.com/${{ github.repository }}/commit/${sha})
+          EOF
+          )
+
+          url=$(gh issue create \
+            --repo "${{ github.repository }}" \
+            --title "CI: ${workflow_name} failed on ${branch}" \
+            --body "$body" \
+            --label "auto-remediation" \
+            --label "ci" \
+            --label "workflow:${workflow_name}" \
+            --label "category:${category}")
+
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.AUTO_REMEDIATION_PAT }}
+
+      - name: Comment on existing issue
+        if: ${{ steps.existing.outputs.issue_number != '' }}
+        run: |
+          workflow_name="${{ github.event.workflow_run.name }}"
+          workflow_url="${{ github.event.workflow_run.html_url }}"
+          gh issue comment "${{ steps.existing.outputs.issue_number }}" \
+            --repo "${{ github.repository }}" \
+            --body "Another failing run of ${workflow_name}: ${workflow_url}"
+        env:
+          GH_TOKEN: ${{ secrets.AUTO_REMEDIATION_PAT }}
