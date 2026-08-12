@@ -32,20 +32,17 @@ jobs:
 
       - name: Analyze failed run
         id: analyze
-        uses: actions/ai-inference@v1
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.AUTO_REMEDIATION_PAT }}
-        with:
-          prompt-file: '.github/models/failed-run-analyze.prompt.yml'
-          model: gpt-4.1
-          token: ${{ secrets.AUTO_REMEDIATION_PAT }}
-          input: |
-            repo: ${{ github.event.repository.name }}
-            owner: ${{ github.event.repository.owner.login }}
-            workflow_run_id: ${{ github.event.workflow_run.id }}
-            issue_number: ""
-            issue_title: ""
-            issue_body: ""
+        run: |
+          # actions/ai-inference@v1 shells out to the GitHub Models inference
+          # endpoint (models.github.ai), which is being retired (410 brownout).
+          # Invoke the Copilot CLI directly instead — it authenticates via
+          # COPILOT_GITHUB_TOKEN and uses the Copilot backend.
+          RESPONSE=$(copilot -p "You are a CI failure triage agent. Analyze a CI test failure and return strict JSON only. The failure is a GitHub Actions run. Goals: classify transient vs non-transient, summarize the root cause briefly, identify a category, produce a minimal remediation plan. Categories: code, test, config, dependency, infrastructure, quality, repeat-transient. Rules: flaky network/service/download failures => transient=true; failing assertions caused by product logic => code or test; lint/format/type errors => quality or code; missing env/permissions/settings => config; package install/lock/version failures => dependency. Fetch and inspect the failing GitHub Actions run logs. Repo: ${{ github.event.repository.name }}, Owner: ${{ github.event.repository.owner.login }}, Workflow Run ID: ${{ github.event.workflow_run.id }}. Return only structured JSON with fields: transient (boolean), summary (string), plan (string), category (one of code, test, config, dependency, infrastructure, quality, repeat-transient)." -s --no-ask-user --model gpt-4.1)
+          echo "response<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$RESPONSE" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Parse analysis
         id: parse

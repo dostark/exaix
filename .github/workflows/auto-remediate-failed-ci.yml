@@ -58,19 +58,17 @@ jobs:
       - name: Analyze issue
         if: ${{ steps.ci-label.outputs.is_ci == 'true' }}
         id: analyze
-        uses: actions/ai-inference@v1
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.AUTO_REMEDIATION_PAT }}
-        with:
-          prompt-file: '.github/models/failed-run-analyze.prompt.yml'
-          model: gpt-4.1
-          token: ${{ secrets.AUTO_REMEDIATION_PAT }}
-          input: |
-            repo: ${{ github.event.repository.name }}
-            owner: ${{ github.event.repository.owner.login }}
-            issue_number: ${{ github.event.issue.number }}
-            issue_title: ${{ github.event.issue.title }}
-            issue_body: ${{ github.event.issue.body }}
+        run: |
+          # actions/ai-inference@v1 shells out to the GitHub Models inference
+          # endpoint (models.github.ai), which is being retired (410 brownout).
+          # Invoke the Copilot CLI directly instead — it authenticates via
+          # COPILOT_GITHUB_TOKEN and uses the Copilot backend.
+          RESPONSE=$(copilot -p "You are a CI failure triage agent. Analyze a CI test failure and return strict JSON only. The failure is described by a GitHub issue; its body usually links the failing GitHub Actions run — fetch that page if present. Goals: classify transient vs non-transient, summarize the root cause briefly, identify a category, produce a minimal remediation plan. Categories: code, test, config, dependency, infrastructure, quality, repeat-transient. Rules: flaky network/service/download failures => transient=true; failing assertions caused by product logic => code or test; lint/format/type errors => quality or code; missing env/permissions/settings => config; package install/lock/version failures => dependency. Repo: ${{ github.event.repository.name }}, Owner: ${{ github.event.repository.owner.login }}, Issue Number: ${{ github.event.issue.number }}, Issue Title: ${{ github.event.issue.title }}, Issue Body: ${{ github.event.issue.body }}. Return only structured JSON with fields: transient (boolean), summary (string), plan (string), category (one of code, test, config, dependency, infrastructure, quality, repeat-transient)." -s --no-ask-user --model gpt-4.1)
+          echo "response<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$RESPONSE" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Parse analysis
         if: ${{ steps.ci-label.outputs.is_ci == 'true' }}
@@ -125,43 +123,20 @@ jobs:
       - name: Fix and open PR
         if: ${{ steps.ci-label.outputs.is_ci == 'true' && steps.parse.outputs.transient == 'false' }}
         id: fix
-        uses: actions/ai-inference@v1
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.AUTO_REMEDIATION_PAT }}
-        with:
-          model: gpt-4.1
-          token: ${{ secrets.AUTO_REMEDIATION_PAT }}
-          copilot-allow-tools: 'shell(git:*),write'
-          input: |
-            repo: ${{ github.event.repository.name }}
-            owner: ${{ github.event.repository.owner.login }}
-            issue_number: ${{ github.event.issue.number }}
-            issue_title: ${{ github.event.issue.title }}
-            issue_body: ${{ github.event.issue.body }}
-            summary: ${{ steps.parse.outputs.summary }}
-            plan: ${{ steps.parse.outputs.plan }}
-          prompt: |
-            You are an autonomous CI-failure fixer for {{owner}}/{{repo}}.
-
-            The repository is checked out on branch fix/ci-{{issue_number}}. Issue
-            #{{issue_number}} reports a CI failure.
-
-            Title: {{issue_title}}
-            Body:
-            {{issue_body}}
-
-            Analysis summary: {{summary}}
-            Suggested plan: {{plan}}
-
-            Requirements:
-            - Reproduce the failing test locally. Run the narrowest relevant test
-              command (this is a Deno repo: `deno test --allow-all <file>` for a
-              specific file, or the package-scoped suite) to confirm the failure.
-            - Implement the smallest, safest fix for the root cause.
-            - Re-run the narrow test until it passes.
-            - Commit the fix with a clear message.
-            - Push the branch to origin and open a pull request against the default
-              branch that closes issue #{{issue_number}}.
-            - Do not weaken or delete tests merely to make CI green.
-            - If you cannot reproduce or safely fix the failure, do not push; instead
-              report what you found and stop.
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          SUMMARY: ${{ steps.parse.outputs.summary }}
+          PLAN: ${{ steps.parse.outputs.plan }}
+          REPO_NAME: ${{ github.event.repository.name }}
+          REPO_OWNER: ${{ github.event.repository.owner.login }}
+        run: |
+          # Direct Copilot CLI invocation with write + shell(git:*) tools so the
+          # agent can edit files, run git, and open a PR. (actions/ai-inference's
+          # GitHub Models endpoint is retired / brownout.)
+          RESPONSE=$(copilot -p "You are an autonomous CI-failure fixer for ${REPO_OWNER}/${REPO_NAME}. The repository is checked out on branch fix/ci-${ISSUE_NUMBER}. Issue #${ISSUE_NUMBER} reports a CI failure. Title: ${ISSUE_TITLE}. Body: ${ISSUE_BODY}. Analysis summary: ${SUMMARY}. Suggested plan: ${PLAN}. Requirements: Reproduce the failing test locally. Run the narrowest relevant test command (this is a Deno repo: 'deno test --allow-all <file>' for a specific file, or the package-scoped suite) to confirm the failure. Implement the smallest, safest fix for the root cause. Re-run the narrow test until it passes. Commit the fix with a clear message. Push the branch to origin and open a pull request against the default branch that closes issue #${ISSUE_NUMBER}. Do not weaken or delete tests merely to make CI green. If you cannot reproduce or safely fix the failure, do not push; instead report what you found and stop." --allow-tool='shell(git:*)' --allow-tool=write -s --no-ask-user --model gpt-4.1)
+          echo "response<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$RESPONSE" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
