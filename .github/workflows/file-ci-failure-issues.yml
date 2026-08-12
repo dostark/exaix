@@ -91,12 +91,43 @@ jobs:
           script: |
             const raw = (process.env.RESPONSE_JSON || '').trim();
             if (!raw) core.setFailed('No response received from analysis step');
-            const withoutFences = raw.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
-            const start = withoutFences.indexOf('{');
-            const end = withoutFences.lastIndexOf('}');
-            const jsonText = start === -1 || end <= start
-              ? withoutFences
-              : withoutFences.slice(start, end + 1);
+
+            // The Copilot CLI may wrap JSON in markdown fences or lead with prose.
+            // Try candidates in order: (1) a ```json ... ``` fenced block anywhere,
+            // (2) a balanced JSON object from the first '{' to its matching '}'.
+            function parseBalanced(text) {
+              const start = text.indexOf('{');
+              if (start === -1) return null;
+              let depth = 0, inStr = false, esc = false;
+              for (let i = start; i < text.length; i++) {
+                const ch = text[i];
+                if (inStr) {
+                  if (esc) esc = false;
+                  else if (ch === '\\') esc = true;
+                  else if (ch === '"') inStr = false;
+                } else if (ch === '"') {
+                  inStr = true;
+                } else if (ch === '{') {
+                  depth++;
+                } else if (ch === '}') {
+                  depth--;
+                  if (depth === 0) return text.slice(start, i + 1);
+                }
+              }
+              return null;
+            }
+
+            let jsonText = null;
+            const fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+            if (fence && fence[1]) {
+              try { jsonText = parseBalanced(fence[1]); } catch { jsonText = null; }
+            }
+            if (!jsonText) jsonText = parseBalanced(raw);
+            if (!jsonText) {
+              core.setFailed(`Could not locate JSON in analysis response\n${raw.slice(0, 2000)}`);
+              return;
+            }
+
             let data;
             try {
               data = JSON.parse(jsonText);
