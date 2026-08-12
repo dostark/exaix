@@ -103,7 +103,10 @@ it goes through the plan-step gate:
 1. Stage the plan doc in the submodule (`git -C exaix-dev-docs add <planning-doc>`) — the
    ✅/deferred lines must be added lines of this diff.
 2. Stage the edited source + test files in the parent — every `→ path` you wrote must be
-   among them.
+   among them. A criterion/test whose module IS the plan doc itself uses the gitlink arrow
+   `→ ` `` `exaix-dev-docs` `` (the path the parent gate sees in `git diff --cached
+   --name-only`) — the internal `exaix-dev-docs/planning/<phase>.md` path is NOT a parent
+   staged file and the gate rejects it with "…not among this commit's changed files".
 3. Write the structured message (type `fix`; body has `what:`, `rationale:`, `tests:`,
    `who:`, `impact:`, the gap numbers e.g. `remediation: GAP-1, GAP-3`, and a mandatory
    `plan: exaix-dev-docs/planning/<phase>.md#<remediation-step-N>` field), then commit both
@@ -131,6 +134,12 @@ it goes through the plan-step gate:
    <fixed-msg-file>` (skip re-running the orchestrator — it would try to commit the
    submodule a second time with nothing staged there). See the submodule-workflow skill's
    matching recipe.
+   If instead the parent rejects the plan-doc `→ path` convention itself (criterion/test
+   not among the parent's changed files), do NOT add a follow-up submodule commit — AMEND
+   the existing one (`git -C exaix-dev-docs add <planning-doc> && git -C exaix-dev-docs
+   commit --amend --no-edit`) so every item line stays an added line of `HEAD~1..HEAD`
+   (`validatePlanStepDiff` drops unchanged lines from a second commit's diff), re-stage the
+   pointer (`git add exaix-dev-docs`), then commit the parent directly.
 
 ## Output Format
 

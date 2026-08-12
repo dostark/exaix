@@ -138,10 +138,14 @@ Phase 11 — Tool result parity
      is consistent with the actual tool handler schemas across all edition layers.
 
 Phase 12 — Stale markdown paths
-   25. Run `deno task check:md-path` — scans all markdown files for references to
-      files that do not exist (stale paths) and bare prose paths that should be
-      backtick-wrapped.
-   26. Fix stale paths (repoint or wrap in backticks), then re-run `deno task check:md-path` — 0 violations.
+   25. Run `deno task check:md-path:staged` — the enforceable gate (CI + pre-commit ratchet)
+      scans staged markdown for references to files that do not exist (stale paths) and
+      bare prose paths that should be backtick-wrapped. The un-scoped `check:md-path`
+      full sweep additionally covers the exaix-dev-docs submodule's historical planning
+      docs (phases 44–78 pre-package-extraction paths): those are pre-existing,
+      intentionally unenforced drift — do NOT "fix" ~3600 legacy references there as part
+      of a cleanup pass.
+   26. Fix stale paths (repoint or wrap in backticks), then re-run `deno task check:md-path:staged` — 0 violations.
 
 Phase 13 — Test placement
    27. Run `deno task check:test-placement` — verifies every test file is in its owning

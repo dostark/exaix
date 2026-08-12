@@ -253,6 +253,11 @@ Commit (plan-step commit — spans the submodule plan doc + the parent code)
           added lines of this diff (the gate verifies it).
         - In the parent: stage the src file(s), test file(s), and any other code — every
           `→ path` you wrote on a done item MUST be among these staged files.
+        - Plan-doc criteria (a criterion/test whose module IS the plan doc itself) use
+          the gitlink arrow `→ ` `` `exaix-dev-docs` `` — the only plan-doc path the
+          parent gate sees in `git diff --cached --name-only`. Never write the internal
+          `exaix-dev-docs/planning/<phase>.md` path: it is not a parent staged file and
+          the gate rejects the commit with "…not among this commit's changed files".
   26. Do NOT run a bare `git commit`. Write the structured message to a file with a `plan:`
       field naming the doc + step, then commit BOTH repos via the orchestrator, which runs
       the plan-step gate and commits the submodule then the parent pointer bump in sync:
@@ -276,6 +281,13 @@ Commit (plan-step commit — spans the submodule plan doc + the parent code)
       `→ path` / un-backticked path / a lingering `- [ ]` / a deferred token with no
       ledger row, fix the plan-doc line (step 23–24 / 24a) and re-stage before retrying.
       See the submodule-workflow and commit skills.
+  26b. If the submodule commit SUCCEEDED but the parent gate rejects the plan-doc lines
+      (e.g. a wrong `→ path` convention), AMEND the submodule commit — `git -C
+      exaix-dev-docs add <planning-doc> && git -C exaix-dev-docs commit --amend --no-edit` —
+      instead of adding a follow-up submodule commit: `validatePlanStepDiff` requires ALL
+      of the step's item lines to be added lines of `HEAD~1..HEAD`, which a second commit
+      would drop for the unchanged lines. Then re-stage the pointer (`git add exaix-dev-docs`)
+      and commit the parent directly.
 
 PHASE-COMPLETION GATE (run ONCE, after the last step, BEFORE declaring the phase complete)
   This gate is MANDATORY and cannot be skipped. A "finalize", "commit remaining
