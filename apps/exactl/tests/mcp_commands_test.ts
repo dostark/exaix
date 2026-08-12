@@ -19,6 +19,8 @@ import { TEST_MCP_PORT } from "@exaix/testing";
 import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { ExternalMcpClient, type IExternalMcpClient } from "@exaix/mcp";
+import { startAuthenticatedReferenceServer, WHOAMI_TOOL_IDENTITY } from "@exaix/mcp/testing";
+import { EXA_MCP_BEARER_TOKEN_ENV_VAR } from "../src/commands/constants.ts";
 import { captureConsoleOutput } from "./helpers/console_utils.ts";
 
 /** Real Streamable HTTP MCP server (official SDK), served on an ephemeral port. */
@@ -199,6 +201,24 @@ Deno.test("[security] McpCommands.connect: an invalid <url> argument produces a 
       "Invalid <url> argument",
     );
   } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("McpCommands.connect: reads EXA_MCP_BEARER_TOKEN and passes it through to ExternalMcpClient.connect()", async () => {
+  const { context, cleanup } = await createCliTestContext();
+  const token = "test-cli-bearer-token";
+  const reference = await startAuthenticatedReferenceServer(token);
+  const commands = new McpCommands(context);
+  Deno.env.set(EXA_MCP_BEARER_TOKEN_ENV_VAR, token);
+  try {
+    const output = await captureConsoleOutput(async () => {
+      await commands.connect(reference.url.href, { callTool: "whoami", args: "{}" });
+    });
+    assertStringIncludes(output, WHOAMI_TOOL_IDENTITY);
+  } finally {
+    Deno.env.delete(EXA_MCP_BEARER_TOKEN_ENV_VAR);
+    await reference.stop();
     await cleanup();
   }
 });

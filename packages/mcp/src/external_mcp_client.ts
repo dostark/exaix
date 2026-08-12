@@ -13,14 +13,21 @@
  * @related-files [packages/mcp/src/i_external_mcp_client.ts, packages/mcp/src/i_mcp_client.ts]
  */
 
-import { Client, SSEClientTransport, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
+import {
+  type AuthProvider,
+  Client,
+  SSEClientTransport,
+  StreamableHTTPClientTransport,
+} from "@modelcontextprotocol/client";
 import { BINARY_VERSION } from "@exaix/core/version.ts";
 import { DEFAULT_MCP_SERVER_NAME } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 import type {
   ExternalMcpTransportKind,
   IExternalMcpCallResult,
   IExternalMcpClient,
+  IExternalMcpConnectOptions,
   IExternalMcpToolDefinition,
 } from "./i_external_mcp_client.ts";
 
@@ -54,10 +61,13 @@ export class ExternalMcpClient implements IExternalMcpClient {
     return this._activeTransport;
   }
 
-  async connect(endpoint: URL): Promise<void> {
+  async connect(endpoint: URL, options?: Opt<IExternalMcpConnectOptions, Reason.OptionalInput>): Promise<void> {
+    const authProvider: AuthProvider | undefined = options?.bearerToken
+      ? { token: () => Promise.resolve(options.bearerToken) }
+      : undefined;
     const streamableAttempt = new this.ClientCtor({ name: DEFAULT_MCP_SERVER_NAME, version: BINARY_VERSION });
     try {
-      await streamableAttempt.connect(new this.StreamableHTTPTransportCtor(endpoint));
+      await streamableAttempt.connect(new this.StreamableHTTPTransportCtor(endpoint, { authProvider }));
       this.client = streamableAttempt;
       this._activeTransport = "streamable-http";
       return;
@@ -66,7 +76,7 @@ export class ExternalMcpClient implements IExternalMcpClient {
       // reused for a second transport attempt — a fresh instance is required.
       const sseAttempt = new this.ClientCtor({ name: DEFAULT_MCP_SERVER_NAME, version: BINARY_VERSION });
       try {
-        await sseAttempt.connect(new this.SSETransportCtor(endpoint));
+        await sseAttempt.connect(new this.SSETransportCtor(endpoint, { authProvider }));
         this.client = sseAttempt;
         this._activeTransport = "sse";
         return;

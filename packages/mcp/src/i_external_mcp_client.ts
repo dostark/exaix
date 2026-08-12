@@ -29,9 +29,19 @@ export interface IExternalMcpCallResult {
   isError?: boolean;
 }
 
+export interface IExternalMcpConnectOptions {
+  /**
+   * Bearer token attached via the SDK's `AuthProvider` primitive (`{ token: () =>
+   * Promise<string | undefined> }`, `docs/clients/machine-auth.md`'s "bring your own
+   * bearer token" pattern) — the only auth mode this phase supports. No interactive
+   * OAuth (`OAuthClientProvider`) or `client_credentials`/JWT-assertion grants.
+   */
+  bearerToken?: string;
+}
+
 export interface IExternalMcpClient {
   /** Connects, trying Streamable HTTP first and falling back to legacy SSE on failure. */
-  connect(endpoint: URL): Promise<void>;
+  connect(endpoint: URL, options?: IExternalMcpConnectOptions): Promise<void>;
   listTools(): Promise<IExternalMcpToolDefinition[]>;
   callTool(name: string, args: Record<string, JSONValue>): Promise<IExternalMcpCallResult>;
   /** Which transport actually connected — "streamable-http" | "sse" — for logging/diagnostics. */

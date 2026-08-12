@@ -13,7 +13,7 @@ import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { ExternalMcpClient, type IExternalMcpClient } from "@exaix/mcp";
 import type { Opt, Reason } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
-import { STDIO_INHERIT } from "./constants.ts";
+import { EXA_MCP_BEARER_TOKEN_ENV_VAR, STDIO_INHERIT } from "./constants.ts";
 
 export class McpCommands extends BaseCommand {
   constructor(context: ICommandContext) {
@@ -48,8 +48,9 @@ export class McpCommands extends BaseCommand {
     const url = this.parseEndpointUrl(endpoint);
     const callArgs = options.callTool ? this.parseCallToolArgs(options.args) : undefined;
     const client = this.createExternalMcpClient();
+    const bearerToken = Deno.env.get(EXA_MCP_BEARER_TOKEN_ENV_VAR);
     try {
-      await client.connect(url);
+      await client.connect(url, bearerToken ? { bearerToken } : undefined);
       if (options.callTool) {
         const result = await client.callTool(options.callTool, callArgs ?? {});
         console.log(JSON.stringify(result, null, 2));

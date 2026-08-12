@@ -17,3 +17,8 @@ export {
   startReferenceServer,
   STRUCTURED_TOOL_CURRENCY,
 } from "../tests/fixtures/reference_mcp_server.ts";
+export {
+  type IAuthenticatedServerHandle,
+  startAuthenticatedReferenceServer,
+  WHOAMI_TOOL_IDENTITY,
+} from "../tests/fixtures/authenticated_reference_server.ts";

@@ -6,9 +6,11 @@
  * the Streamable HTTP and legacy SSE servers are the shared fixtures built
  * in Step 4 (`packages/mcp/tests/fixtures/`), reused here instead of the
  * in-file duplicates this file originally built before Step 4 existed.
+ * Step 6 (v1.3) adds bearer-token auth coverage against the auth-gated
+ * fixture built for this step.
  * @architectural-layer MCP
  * @dependencies [@exaix/mcp, @modelcontextprotocol/client]
- * @related-files [packages/mcp/src/external_mcp_client.ts, packages/mcp/src/i_external_mcp_client.ts, packages/mcp/tests/fixtures/reference_mcp_server.ts, packages/mcp/tests/fixtures/legacy_sse_reference_server.ts]
+ * @related-files [packages/mcp/src/external_mcp_client.ts, packages/mcp/src/i_external_mcp_client.ts, packages/mcp/tests/fixtures/reference_mcp_server.ts, packages/mcp/tests/fixtures/legacy_sse_reference_server.ts, packages/mcp/tests/fixtures/authenticated_reference_server.ts]
  */
 
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
@@ -20,6 +22,9 @@ import {
   STRUCTURED_TOOL_CURRENCY,
 } from "./fixtures/reference_mcp_server.ts";
 import { startLegacySseReferenceServer } from "./fixtures/legacy_sse_reference_server.ts";
+import { startAuthenticatedReferenceServer, WHOAMI_TOOL_IDENTITY } from "./fixtures/authenticated_reference_server.ts";
+
+const AUTH_TEST_TOKEN = "test-bearer-token-secret";
 
 Deno.test("ExternalMcpClient - connects over Streamable HTTP when the server supports it", async () => {
   const reference = await startStreamableReferenceServer();
@@ -149,6 +154,30 @@ Deno.test("ExternalMcpClient - close() tears down the transport cleanly", async 
     await client.close();
     assertEquals(client.activeTransport, undefined);
     await assertRejects(() => client.listTools());
+  } finally {
+    await reference.stop();
+  }
+});
+
+Deno.test("ExternalMcpClient - connect() with a correct bearer token reaches an auth-gated server", async () => {
+  const reference = await startAuthenticatedReferenceServer(AUTH_TEST_TOKEN);
+  const client = new ExternalMcpClient();
+  try {
+    await client.connect(reference.url, { bearerToken: AUTH_TEST_TOKEN });
+    assertEquals(client.activeTransport, "streamable-http");
+    const result = await client.callTool("whoami", {});
+    assertEquals(result.content, [{ type: "text", text: WHOAMI_TOOL_IDENTITY }]);
+  } finally {
+    await client.close();
+    await reference.stop();
+  }
+});
+
+Deno.test("ExternalMcpClient - connect() without a bearer token is rejected by an auth-gated server", async () => {
+  const reference = await startAuthenticatedReferenceServer(AUTH_TEST_TOKEN);
+  const client = new ExternalMcpClient();
+  try {
+    await assertRejects(() => client.connect(reference.url));
   } finally {
     await reference.stop();
   }
