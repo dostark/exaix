@@ -18,6 +18,23 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 162 (Outbound MCP Client)
+
+### Added
+
+- `exactl mcp connect <url>` — connect to any spec-compliant external MCP server as a
+  client, with `--list-tools` to enumerate its tools and `--call-tool <name> --args '<json>'`
+  to invoke one, using the modern Streamable HTTP transport and falling back automatically
+  to the legacy SSE transport for servers that have not migrated yet (see
+  `Exaix_User_Guide.md` §8.4).
+- `EXA_MCP_BEARER_TOKEN` env var — authenticate to token-gated MCP servers (for example
+  GitHub's official MCP endpoint) with a bearer token instead of an interactive login flow.
+
+### Security
+
+- `exactl mcp connect` now refuses to attach a bearer token to a non-HTTPS, non-loopback
+  endpoint, throwing a clear error instead of sending the token in cleartext.
+
 ## Unreleased — Phase 144 (External Benchmark Interop)
 
 ### Added
