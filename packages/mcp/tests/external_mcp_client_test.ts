@@ -182,3 +182,34 @@ Deno.test("ExternalMcpClient - connect() without a bearer token is rejected by a
     await reference.stop();
   }
 });
+
+Deno.test("ExternalMcpClient - connect() refuses to send a bearer token over a plain http:// endpoint", async () => {
+  const client = new ExternalMcpClient();
+  await assertRejects(
+    () => client.connect(new URL("http://example.com/mcp"), { bearerToken: AUTH_TEST_TOKEN }),
+    Error,
+    "refusing to send a bearer token over a non-HTTPS endpoint",
+  );
+});
+
+Deno.test("ExternalMcpClient - connect() forwards the bearer token to the SSE fallback transport and authenticates", async () => {
+  const reference = await startLegacySseReferenceServer(0, AUTH_TEST_TOKEN);
+  const client = new ExternalMcpClient();
+  try {
+    await client.connect(reference.url, { bearerToken: AUTH_TEST_TOKEN });
+    assertEquals(client.activeTransport, "sse");
+  } finally {
+    await client.close();
+    await reference.stop();
+  }
+});
+
+Deno.test("ExternalMcpClient - connect() SSE fallback is rejected without a bearer token", async () => {
+  const reference = await startLegacySseReferenceServer(0, AUTH_TEST_TOKEN);
+  const client = new ExternalMcpClient();
+  try {
+    await assertRejects(() => client.connect(reference.url));
+  } finally {
+    await reference.stop();
+  }
+});

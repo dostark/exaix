@@ -15,9 +15,11 @@
  * for a test fixture is disproportionate to this phase's scope. Test-only
  * code — never imported by production `packages/mcp/src/`.
  * @architectural-layer MCP
- * @dependencies []
+ * @dependencies [@exaix/core]
  * @related-files [packages/mcp/tests/external_mcp_client_test.ts, packages/mcp/tests/fixtures/reference_mcp_server.ts]
  */
+
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface ILegacySseServerHandle {
   readonly url: URL;
@@ -29,9 +31,17 @@ export interface ILegacySseServerHandle {
  * (or the given `port`). Only understands `initialize` and `tools/list` —
  * enough to let `SSEClientTransport.connect()` succeed for fallback testing;
  * any HTTP method/path other than `GET /sse` and `POST /messages` 404s,
- * which is what makes a same-URL Streamable HTTP attempt fail first.
+ * which is what makes a same-URL Streamable HTTP attempt fail first. When
+ * `requiredToken` is set, every request (both the `GET /sse` stream and
+ * `POST /messages`) must carry `Authorization: Bearer <requiredToken>` or
+ * receives a real HTTP 401 — mirrors `authenticated_reference_server.ts`'s
+ * gating pattern, needed because `SSEClientTransport`'s `AuthProvider`
+ * attaches the header to every request, including the initial SSE GET.
  */
-export function startLegacySseReferenceServer(port: number = 0): Promise<ILegacySseServerHandle> {
+export function startLegacySseReferenceServer(
+  port: number = 0,
+  requiredToken?: Opt<string, Reason.OptionalInput>,
+): Promise<ILegacySseServerHandle> {
   const encoder = new TextEncoder();
   let sseController: ReadableStreamDefaultController<Uint8Array> | undefined;
 
@@ -74,6 +84,9 @@ export function startLegacySseReferenceServer(port: number = 0): Promise<ILegacy
   };
 
   const httpServer = Deno.serve({ port, onListen: () => {} }, (req) => {
+    if (requiredToken && req.headers.get("authorization") !== `Bearer ${requiredToken}`) {
+      return Promise.resolve(new Response("Unauthorized", { status: 401 }));
+    }
     const url = new URL(req.url);
     if (req.method === "GET" && url.pathname === "/sse") return handleGetSse();
     if (req.method === "POST" && url.pathname === "/messages") return handlePostMessages(req);

@@ -44,6 +44,9 @@ export interface IExternalMcpClientDeps {
   SSETransportCtor?: typeof SSEClientTransport;
 }
 
+/** Loopback hosts exempted from the HTTPS-only bearer-token requirement — a local test/dev server reached over plain HTTP never leaves the machine, unlike a real remote endpoint. */
+const LOOPBACK_HOSTNAMES = ["127.0.0.1", "localhost", "::1"];
+
 export class ExternalMcpClient implements IExternalMcpClient {
   private readonly ClientCtor: typeof Client;
   private readonly StreamableHTTPTransportCtor: typeof StreamableHTTPClientTransport;
@@ -62,6 +65,11 @@ export class ExternalMcpClient implements IExternalMcpClient {
   }
 
   async connect(endpoint: URL, options?: Opt<IExternalMcpConnectOptions, Reason.OptionalInput>): Promise<void> {
+    if (options?.bearerToken && endpoint.protocol !== "https:" && !LOOPBACK_HOSTNAMES.includes(endpoint.hostname)) {
+      throw new Error(
+        `ExternalMcpClient: refusing to send a bearer token over a non-HTTPS endpoint (${endpoint.protocol}) — use an https:// URL.`,
+      );
+    }
     const authProvider: AuthProvider | undefined = options?.bearerToken
       ? { token: () => Promise.resolve(options.bearerToken) }
       : undefined;
