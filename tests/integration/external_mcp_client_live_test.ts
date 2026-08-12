@@ -19,10 +19,12 @@
  * @related-files [apps/exactl/main.ts, apps/exactl/src/commands/mcp_commands.ts, apps/exactl/src/commands/constants.ts, tests/integration/external_mcp_client_cutover_test.ts]
  */
 
-import { assertStringIncludes } from "@std/assert";
+import { assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { daemonConfigSections } from "./helpers/daemon_config.ts";
 import { runMigrationsIn } from "./helpers/migrate_test_db.ts";
+import { DEFAULT_SUBPROCESS_TIMEOUT_MS } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 
 const REPO_ROOT = new URL("../../", import.meta.url).pathname;
 
@@ -49,6 +51,7 @@ async function runExactl(
   configPath: string,
   args: string[],
   extraEnv: Record<string, string> = {},
+  timeoutMs: Opt<number, Reason.SensibleDefault> = DEFAULT_SUBPROCESS_TIMEOUT_MS,
 ): Promise<{ stdout: string; stderr: string; code: number }> {
   const proc = new Deno.Command("deno", {
     args: ["run", "--allow-all", `${REPO_ROOT}apps/exactl/main.ts`, ...args],
@@ -56,8 +59,28 @@ async function runExactl(
     stdout: "piped",
     stderr: "piped",
   }).spawn();
-  const { code, stdout, stderr } = await proc.output();
-  return { stdout: new TextDecoder().decode(stdout), stderr: new TextDecoder().decode(stderr), code };
+
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    try {
+      proc.kill();
+    } catch {
+      // Already exited between the timer firing and the kill call — fine.
+    }
+  }, timeoutMs);
+
+  try {
+    const { code, stdout, stderr } = await proc.output();
+    if (timedOut) {
+      throw new Error(
+        `runExactl: timed out after ${timeoutMs}ms — the target server may be unresponsive.`,
+      );
+    }
+    return { stdout: new TextDecoder().decode(stdout), stderr: new TextDecoder().decode(stderr), code };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 Deno.test({
@@ -114,6 +137,49 @@ Deno.test({
       }
       assertStringIncludes(result.stdout, "get_me");
     } finally {
+      await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "[live] external_mcp_client_live_test helper - runExactl times out with a clear error instead of hanging when the subprocess never exits",
+  ignore: Deno.env.get("CI") === "true",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    // A raw TCP listener that accepts connections but never writes a response —
+    // deterministic, fast, local "unresponsive server" stand-in, per this step's
+    // own instruction to avoid a real third-party server for this test.
+    const listener = Deno.listen({ port: 0 });
+    (async () => {
+      for await (const _conn of listener) {
+        // Accept and hold the connection open; never respond.
+      }
+    })().catch(() => {});
+    const { port } = listener.addr as Deno.NetAddr;
+
+    const tempDir = await Deno.makeTempDir({ prefix: "external-mcp-client-live-timeout-" });
+    const configPath = join(tempDir, "exa.config.toml");
+    try {
+      await runMigrationsIn(tempDir);
+      writeCliConfig(configPath, tempDir);
+
+      const HANG_TEST_TIMEOUT_MS = 2_000;
+      await assertRejects(
+        () =>
+          runExactl(
+            configPath,
+            ["mcp", "connect", `http://127.0.0.1:${port}/mcp`, "--list-tools"],
+            {},
+            HANG_TEST_TIMEOUT_MS,
+          ),
+        Error,
+        "timed out after",
+      );
+    } finally {
+      listener.close();
       await Deno.remove(tempDir, { recursive: true }).catch(() => {});
     }
   },
