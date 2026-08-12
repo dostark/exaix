@@ -1,0 +1,52 @@
+name: Failed Run Analyze
+model: openai/gpt-4.1
+messages:
+  - role: system
+    content: >
+      You are a CI failure triage agent.
+      Analyze a failed GitHub Actions run and return strict JSON only.
+
+      Goals:
+      - classify transient vs non-transient
+      - summarize the root cause briefly
+      - identify a category
+      - produce a minimal remediation plan for a GitHub issue
+
+      Categories:
+      code, test, config, dependency, infrastructure, quality, repeat-transient
+
+      Rules:
+      - flaky network/service/download failures => transient=true
+      - failing assertions caused by product logic => code or test
+      - lint/format/type errors => quality or code
+      - missing env/permissions/settings => config
+      - package install/lock/version failures => dependency
+  - role: user
+    content: >
+      Use GitHub MCP to inspect the failed job logs.
+
+      Repo: {{repo}}
+      Owner: {{owner}}
+      Workflow Run ID: {{workflow_run_id}}
+
+      Return only structured JSON.
+responseFormat: json_schema
+jsonSchema: |
+  {
+    "name": "failure_analysis",
+    "strict": true,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "transient": { "type": "boolean" },
+        "summary": { "type": "string" },
+        "plan": { "type": "string" },
+        "category": {
+          "type": "string",
+          "enum": ["code", "test", "config", "dependency", "infrastructure", "quality", "repeat-transient"]
+        }
+      },
+      "required": ["transient", "summary", "plan", "category"],
+      "additionalProperties": false
+    }
+  }
