@@ -2551,6 +2551,19 @@ export const __test_command = new Command()
             const cmd = new McpCommands(context);
             await cmd.start(options);
           }),
+      )
+      .command(
+        "connect",
+        new Command()
+          .description("Connect outbound to a real external MCP server")
+          .arguments("<url:string>")
+          .option("--list-tools", "List the server's available tools")
+          .option("--call-tool <name:string>", "Call a tool by name")
+          .option("--args <json:string>", "JSON arguments object for --call-tool")
+          .action(async (options, url: string) => {
+            const cmd = new McpCommands(context);
+            await cmd.connect(url, options);
+          }),
       ),
   );
 
