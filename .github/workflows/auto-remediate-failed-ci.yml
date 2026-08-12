@@ -1,0 +1,190 @@
+name: Auto Remediate Failed CI
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+  pull-requests: read
+  models: read
+
+jobs:
+  analyze-failure:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.name != 'Auto Remediate Failed CI' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Analyze failed run
+        id: analyze
+        uses: actions/ai-inference@v1
+        with:
+          prompt-file: '.github/models/failed-run-analyze.prompt.yml'
+          enable-github-mcp: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          github-mcp-token: ${{ secrets.AUTO_REMEDIATION_PAT }}
+          max-tokens: 4000
+          input: |
+            repo: ${{ github.event.repository.name }}
+            owner: ${{ github.event.repository.owner.login }}
+            workflow_run_id: ${{ github.event.workflow_run.id }}
+
+      - name: Parse analysis
+        id: parse
+        uses: actions/github-script@v7
+        env:
+          RESPONSE_JSON: ${{ steps.analyze.outputs.response }}
+        with:
+          script: |
+            const raw = process.env.RESPONSE_JSON;
+            if (!raw) core.setFailed('No response received from analysis step');
+            const data = JSON.parse(raw);
+            core.setOutput('transient', String(data.transient));
+            core.setOutput('summary', data.summary || '');
+            core.setOutput('plan', data.plan || '');
+            core.setOutput('category', data.category || '');
+
+      - name: Stop on transient failure
+        if: ${{ steps.parse.outputs.transient == 'true' }}
+        run: echo "Transient failure detected; no remediation issue created."
+
+      - name: Find existing remediation issue
+        if: ${{ steps.parse.outputs.transient == 'false' }}
+        id: existing
+        run: |
+          workflow_name="${{ github.event.workflow_run.name }}"
+          issue_number=$(gh issue list \
+            --repo "${{ github.repository }}" \
+            --state open \
+            --label "auto-remediation" \
+            --label "workflow:${workflow_name}" \
+            --json number \
+            --jq '.[0].number')
+          echo "issue_number=$issue_number" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create labels
+        if: ${{ steps.parse.outputs.transient == 'false' && steps.existing.outputs.issue_number == '' }}
+        run: |
+          workflow_name="${{ github.event.workflow_run.name }}"
+          category="${{ steps.parse.outputs.category }}"
+          gh label create "auto-remediation" --repo "${{ github.repository }}" --color "B60205" --description "Automatically created remediation issues" || true
+          gh label create "workflow:${workflow_name}" --repo "${{ github.repository }}" --color "1D76DB" --description "Workflow-specific remediation issues" || true
+          gh label create "category:${category}" --repo "${{ github.repository }}" --color "5319E7" --description "Failure category" || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create remediation issue
+        if: ${{ steps.parse.outputs.transient == 'false' && steps.existing.outputs.issue_number == '' }}
+        id: issue
+        run: |
+          workflow_name="${{ github.event.workflow_run.name }}"
+          workflow_url="${{ github.event.workflow_run.html_url }}"
+          category="${{ steps.parse.outputs.category }}"
+          branch="${{ github.event.workflow_run.head_branch }}"
+          sha="${{ github.event.workflow_run.head_sha }}"
+
+          body=$(cat <<EOF
+          ## CI Failure Remediation
+
+          **Workflow:** [${workflow_name}](${workflow_url})
+          **Run ID:** ${{ github.event.workflow_run.id }}
+          **Branch:** ${branch}
+          **Commit:** ${sha}
+          **Category:** ${category}
+
+          ### Summary
+          ${{ steps.parse.outputs.summary }}
+
+          ### Remediation Plan
+          ${{ steps.parse.outputs.plan }}
+
+          ### Acceptance Criteria
+          - Reproduce the failure locally or in CI context.
+          - Make the smallest safe fix.
+          - Run the narrowest relevant tests first.
+          - Run the full CI workflow relevant to this failure.
+          - Open/update a PR with explanation of the root cause and fix.
+          - Do not weaken tests merely to make CI green.
+
+          ### Links
+          - [Failed workflow run](${workflow_url})
+          - [Commit](https://github.com/${{ github.repository }}/commit/${sha})
+          EOF
+          )
+
+          url=$(gh issue create \
+            --repo "${{ github.repository }}" \
+            --title "fix(ci): ${workflow_name} failure on ${branch}" \
+            --body "$body" \
+            --label "auto-remediation" \
+            --label "workflow:${workflow_name}" \
+            --label "category:${category}")
+
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "number=$(basename "$url")" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment on existing issue
+        if: ${{ steps.parse.outputs.transient == 'false' && steps.existing.outputs.issue_number != '' }}
+        run: |
+          workflow_url="${{ github.event.workflow_run.html_url }}"
+          gh issue comment "${{ steps.existing.outputs.issue_number }}" \
+            --repo "${{ github.repository }}" \
+            --body "Another failing run detected: ${workflow_url}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Assign issue to Copilot
+        if: ${{ steps.parse.outputs.transient == 'false' && steps.issue.outputs.number != '' }}
+        run: |
+          issue_number="${{ steps.issue.outputs.number }}"
+          owner="${{ github.event.repository.owner.login }}"
+          repo="${{ github.event.repository.name }}"
+
+          copilot_query='query($owner:String!, $repo:String!) {
+            repository(owner:$owner, name:$repo) {
+              suggestedActors(capabilities:[CAN_BE_ASSIGNED], first:100) {
+                nodes {
+                  login
+                  __typename
+                  ... on Bot { id }
+                }
+              }
+            }
+          }'
+
+          copilot_response=$(gh api graphql -f query="$copilot_query" -f owner="$owner" -f repo="$repo")
+          copilot_id=$(echo "$copilot_response" | jq -r '.data.repository.suggestedActors.nodes[] | select(.login | test("copilot"; "i")) | .id' | head -n1)
+
+          issue_query='query($owner:String!, $repo:String!, $number:Int!) {
+            repository(owner:$owner, name:$repo) {
+              issue(number:$number) { id }
+            }
+          }'
+
+          issue_response=$(gh api graphql -f query="$issue_query" -F owner="$owner" -F repo="$repo" -F number="$issue_number")
+          issue_id=$(echo "$issue_response" | jq -r '.data.repository.issue.id')
+
+          mutation='mutation($assignableId:ID!, $actorIds:[ID!]!) {
+            replaceActorsForAssignable(input:{assignableId:$assignableId, actorIds:$actorIds}) {
+              assignable { ... on Issue { id } }
+            }
+          }'
+
+          if [[ -n "$copilot_id" && "$copilot_id" != "null" && -n "$issue_id" && "$issue_id" != "null" ]]; then
+            gh api graphql -f query="$mutation" -f assignableId="$issue_id" -f actorIds[]="$copilot_id"
+          else
+            echo "Copilot assignable actor not found."
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.AUTO_REMEDIATION_PAT }}
