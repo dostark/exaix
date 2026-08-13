@@ -1759,6 +1759,34 @@ a worked example of this rollout, chosen to match its own direct-execution compa
 (see `exaix-dev-docs/planning/phase-158-artefact-value-evaluation.md`'s `feature-development`
 decision).
 
+#### Flow Step Execution Modes
+
+A flow step declares how it executes via `execution_mode`:
+
+```yaml
+steps:
+  - id: explore
+    name: Explore the codebase
+    identity: senior-coder
+    execution_mode: dynamic # declared (default) | dynamic
+    permitted_tools:
+      - read_file
+      - list_directory
+      - search_files
+```
+
+| Mode       | What it does                                                                                                                                                                                                      |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `declared` | Default. The step generates once via the agent executor (optionally routed by a `strategy`, above).                                                                                                               |
+| `dynamic`  | Model-driven tool selection: the step runs a ReAct loop that reasons about which `permitted_tools` to call next and declares completion — see `Blueprints/Flows/analyze-codebase.flow.yaml` for a worked example. |
+
+`execution_mode: dynamic` is a **Team-edition** capability. On a Team/Enterprise daemon the
+step's `permitted_tools` are enforced at runtime (the model may only call a tool from that
+list); on a Solo daemon the step is not dynamically wired and falls back to the declared path.
+Use `dynamic` when the step genuinely needs to inspect the live workspace and choose its own
+next action (exploration, investigation); use `declared` (with or without a `strategy`) for
+steps whose work is already fully specified.
+
 #### Routing Commands — Inspect dynamic identity selection
 
 Use routing commands to preview how Exaix will choose an identity before executing a request, and to validate routing policy syntax and semantics.
@@ -2120,8 +2148,20 @@ exactl mcp status
 {
   "mcpServers": {
     "exaix": {
-      "command": "exactl",
-      "args": ["mcp", "start"],
+      "command": "deno",
+      "args": [
+        "run",
+        "--allow-read",
+        "--allow-write",
+        "--allow-net",
+        "--allow-env",
+        "--allow-ffi",
+        "--allow-import",
+        "--allow-run=git,deno,npm,node,exoctl,ls,grep,echo,printf,pwd,whoami,id,date,uptime,which,type,command,hash,alias",
+        "/path/to/Exaix/apps/exactl/main.ts",
+        "mcp",
+        "start"
+      ],
       "env": {
         "EXAIX_ROOT": "/path/to/your/workspace"
       }
@@ -3947,9 +3987,27 @@ The standard way to run the MCP server is via the `exactl` CLI:
 # Start in stdio mode (default, for local clients)
 exactl mcp start
 
-# Start with detailed logging
-exactl mcp start --log-level debug
+# Start over Streamable HTTP on a local port (for remote/HTTP clients)
+exactl mcp start --sse --port 3000
 ```
+
+The server is built on the official `@modelcontextprotocol/server` SDK and negotiates the current spec protocol version (2025-11-25) — not the legacy `2024-11-05` revision. The default `exactl mcp start` serves **stdio**; `--sse --port <N>` serves **Streamable HTTP** (the current spec's primary HTTP transport).
+
+**Authentication (opt-in).** By default the server is unauthenticated. To require a bearer token from every client, enable `mcp.require_auth` and put the secret in an environment variable (never in plaintext config):
+
+```toml
+# exa.config.toml
+[mcp]
+require_auth = true
+# auth_token_env defaults to "MCP_AUTH_TOKEN" — the env var holding the bearer secret
+```
+
+```bash
+export MCP_AUTH_TOKEN="your-secret-token"
+exactl mcp start --sse --port 3000
+```
+
+A client without (or with the wrong) bearer token is rejected with `401`; a client supplying `Authorization: Bearer $MCP_AUTH_TOKEN` is accepted. When `require_auth` is enabled but the token env var is unset, the server fails fast at startup rather than silently rejecting every request.
 
 ### 8.2 Available Tools
 
@@ -3964,16 +4022,28 @@ When connected, AI agents have access to high-level domain tools:
 ### 8.3 Client Integration
 
 **Claude Desktop:**
-Add the following to your `claude_desktop_config.json`:
+Add the following to your `claude_desktop_config.json` (the command mirrors the repo's own fine-grained `deno task cli` permission model — no `--allow-all`):
 
 ```json
 {
   "mcpServers": {
     "exaix": {
-      "command": "exactl",
-      "args": ["mcp", "start"],
+      "command": "deno",
+      "args": [
+        "run",
+        "--allow-read",
+        "--allow-write",
+        "--allow-net",
+        "--allow-env",
+        "--allow-ffi",
+        "--allow-import",
+        "--allow-run=git,deno,npm,node,exoctl,ls,grep,echo,printf,pwd,whoami,id,date,uptime,which,type,command,hash,alias",
+        "/path/to/Exaix/apps/exactl/main.ts",
+        "mcp",
+        "start"
+      ],
       "env": {
-        "EXAIX_ROOT": "/path/to/your/workspace"
+        "EXAIX_ROOT": "/path/to/Exaix"
       }
     }
   }
