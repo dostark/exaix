@@ -148,8 +148,8 @@ Deno.test.ignore(
     await Deno.mkdir(join(tempDir, "packages", "somepkg", "src"), { recursive: true });
     await Deno.mkdir(join(tempDir, "packages", "mcp", "server"), { recursive: true });
     await Deno.writeTextFile(
-      join(tempDir, "packages", "mcp", "server", "mcp_client.ts"),
-      `export class McpClient {}`,
+      join(tempDir, "packages", "mcp", "server", "local_tool_dispatcher.ts"),
+      `export class LocalToolDispatcher {}`,
     );
     const filePath = join(tempDir, "packages", "somepkg", "src", "__temp_package_runtime_import.ts");
     await Deno.writeTextFile(
@@ -160,9 +160,9 @@ Deno.test.ignore(
  * @description Temporary regression file for canonical package runtime import enforcement.
  */
 
-import { McpClient as McpClientBase } from "../../../mcp/server/mcp_client.ts";
+import { LocalToolDispatcher as LocalToolDispatcherBase } from "../../../mcp/server/local_tool_dispatcher.ts";
 
-export class McpClient extends McpClientBase {}
+export class LocalToolDispatcher extends LocalToolDispatcherBase {}
 `,
     );
 

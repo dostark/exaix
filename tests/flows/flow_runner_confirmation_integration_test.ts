@@ -22,7 +22,7 @@ import type { IModelProvider } from "../../packages/ai/src/types.ts";
 import { ProviderFactory } from "../../packages/ai/src/provider_factory.ts";
 import type { Config } from "@exaix/schemas";
 import { FlowRunner, type IAgentExecutor, type IFlowEventLogger, type IFlowStepRequest } from "@exaix/flow";
-import { McpClient, ToolHandler } from "@exaix/mcp/server";
+import { LocalToolDispatcher, ToolHandler } from "@exaix/mcp/server";
 import { initTestDbService } from "@exaix/testing";
 import { createStubConfig, createStubContext } from "@exaix/testing";
 import type { JSONValue } from "@exaix/core/types";
@@ -206,7 +206,7 @@ Deno.test("FlowRunner confirmation integration: approval executes the tool and c
       agentExecutor: new FailingAgentExecutor(),
       eventLogger: new NoopEventLogger(),
       context,
-      mcpClient: new McpClient(context, new Map([[McpToolName.CREATE_REQUEST, handler]])),
+      mcpClient: new LocalToolDispatcher(context, new Map([[McpToolName.CREATE_REQUEST, handler]])),
       dynamicModeTools: DYNAMIC_MODE_TOOLS,
       dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
     });
@@ -266,7 +266,7 @@ Deno.test("FlowRunner confirmation integration: denial skips tool execution and 
       agentExecutor: new FailingAgentExecutor(),
       eventLogger: new NoopEventLogger(),
       context,
-      mcpClient: new McpClient(context, new Map([[McpToolName.CREATE_REQUEST, handler]])),
+      mcpClient: new LocalToolDispatcher(context, new Map([[McpToolName.CREATE_REQUEST, handler]])),
       dynamicModeTools: DYNAMIC_MODE_TOOLS,
       dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
     });

@@ -23,7 +23,7 @@ import type { IAgentExecutionResult } from "@exaix/execution";
 import { DEFAULT_FLOW_VERSION } from "@exaix/core";
 import type { JSONValue } from "@exaix/core/types";
 import { DeleteFileTool } from "@exaix-team/mcp-server";
-import { McpClient } from "@exaix/mcp/server";
+import { LocalToolDispatcher } from "@exaix/mcp/server";
 import { PortalPermissionsService } from "@exaix/portal";
 import { createStubConfig, createStubContext } from "@exaix/testing";
 import { GitTestHelper, setupGitRepo } from "@exaix/git/testing";
@@ -137,7 +137,7 @@ Deno.test("[Step63.4] FlowRunner compensates prior portal changes and leaves the
       agentExecutor: executor,
       eventLogger: logger,
       config: env.config,
-      mcpClient: new McpClient(context, [deleteFileTool]),
+      mcpClient: new LocalToolDispatcher(context, [deleteFileTool]),
     });
 
     await assertRejects(

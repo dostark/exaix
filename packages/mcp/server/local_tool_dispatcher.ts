@@ -1,6 +1,6 @@
 /**
- * @module McpClient
- * @path packages/mcp/server/mcp_client.ts
+ * @module LocalToolDispatcher
+ * @path packages/mcp/server/local_tool_dispatcher.ts
  * @description Wrapper around existing MCP tool execution, providing the IMcpClient interface.
  * @architectural-layer MCP
  * @related-files [packages/mcp/server/tool_handler.ts, packages/flow/src/dynamic_step_executor.ts]
@@ -13,7 +13,11 @@ import type { ToolHandler } from "./tool_handler.ts";
 import type { IApplicationContext, IToolManifestResolver } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 
-export class McpClient implements IMcpClient, IToolManifestResolver {
+/**
+ * Not an MCP protocol client — dispatches locally to Exaix's own tool handlers.
+ * For a real outbound MCP connection, see `packages/mcp/src/external_mcp_client.ts` (Phase 162).
+ */
+export class LocalToolDispatcher implements IMcpClient, IToolManifestResolver {
   private readonly tools: Map<string, ToolHandler>;
 
   constructor(
