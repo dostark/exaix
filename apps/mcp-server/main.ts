@@ -16,58 +16,11 @@ import type { IModelProvider } from "@exaix/ai";
 import type { IGitService } from "@exaix/core/types";
 import type { IGitServiceFactory } from "@exaix/core/types";
 import type { IDisplayService } from "@exaix/core/types";
-import { MCPServer } from "@exaix-team/mcp-server";
+import { buildMcpServer, MCPServer } from "@exaix-team/mcp-server";
+import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { GitService } from "@exaix/git";
 import { DEFAULT_MCP_HTTP_PORT, McpTransportType } from "@exaix/mcp";
 import { validateMCPToolResponse, validateToolResultEnvelope } from "@exaix/schemas/tool_result_validator.ts";
-import type { JSONValue } from "@exaix/core";
-
-interface JSONRPCRequest {
-  jsonrpc: string;
-  id: number | string;
-  method: string;
-  params: Record<string, JSONValue>;
-}
-
-export interface IMcpStdioServer {
-  start(): void;
-  handleRequest(request: JSONRPCRequest): Promise<unknown>;
-}
-
-export interface IMcpStdioIo {
-  stdin: ReadableStream<Uint8Array>;
-  writeStdout: (data: Uint8Array) => Promise<number> | number;
-  onError?: (message: string, error: Error | string | unknown) => void;
-}
-
-export async function runMcpStdioLoop(server: IMcpStdioServer, io: IMcpStdioIo): Promise<void> {
-  server.start();
-
-  const decoder = new TextDecoder();
-  const encoder = new TextEncoder();
-
-  for await (const chunk of io.stdin) {
-    const text = decoder.decode(chunk);
-    const lines = text.split("\n").filter((line) => line.trim() !== "");
-
-    for (const line of lines) {
-      try {
-        const request = JSON.parse(line) as JSONRPCRequest;
-        const response = await server.handleRequest(request);
-        if (response) {
-          const responseStr = JSON.stringify(response) + "\n";
-          await io.writeStdout(encoder.encode(responseStr));
-        }
-      } catch (error) {
-        if (io.onError) {
-          io.onError("Failed to process request:", error);
-        } else {
-          console.error("Failed to process request:", error);
-        }
-      }
-    }
-  }
-}
 
 function createProviderStub(): IModelProvider {
   return {
@@ -195,21 +148,25 @@ if (import.meta.main) {
   const configService = new ConfigService(configPath);
   const { context } = buildServerContext(configService);
 
-  const server = new MCPServer({
+  const mcpServerOptions = {
     context,
     transport,
     resultValidator: {
       validateEnvelope: validateToolResultEnvelope,
       validateMCPResponse: validateMCPToolResponse,
     },
-  });
+  };
 
   if (transport === McpTransportType.SSE) {
+    const server = new MCPServer(mcpServerOptions);
     await server.startHTTPServer(port);
   } else {
-    await runMcpStdioLoop(server, {
-      stdin: Deno.stdin.readable,
-      writeStdout: (data) => Deno.stdout.write(data),
-    });
+    // Step 2: stdio fully migrated onto the official SDK's serveStdio + McpServer —
+    // legacy: "serve" is the SDK's own default (a 2025-era opening is pinned to a
+    // 2025-era instance from the same factory and served exactly as a hand-wired stdio
+    // server serves it today); Exaix's stdio consumers are subprocess-launched by
+    // `exactl mcp start` and always freshly spawned per connection, so this matches
+    // pre-migration behavior exactly (see server.ts's buildSdkServer Architecture Notes).
+    serveStdio(() => buildMcpServer(mcpServerOptions), { legacy: "serve" });
   }
 }

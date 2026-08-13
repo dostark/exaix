@@ -8,10 +8,11 @@
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { ICliApplicationContext } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 import { DomainEventType } from "@exaix/core/events";
 import { MCPConfigSchema, type MCPTool } from "@exaix/schemas/mcp.ts";
 import type { JSONValue } from "@exaix/core";
-import { JsonRpcErrorCode } from "@exaix/core";
+import { JsonRpcErrorCode, MCP_CONTENT_TYPE_STRUCTURED_DATA } from "@exaix/core";
 import { McpTransportType } from "@exaix/mcp";
 import type { ToolHandler } from "@exaix/mcp/server";
 import { EventBusService } from "@exaix/core/observability";
@@ -19,6 +20,18 @@ import { SseHandler } from "./sse_handler.ts";
 import { buildHandlers } from "./tools.ts";
 import { discoverAllResources, parsePortalURI } from "./resources.ts";
 import { generatePrompt, getPrompts } from "./prompts.ts";
+import {
+  type CallToolResult,
+  fromJsonSchema,
+  type GetPromptResult,
+  type JsonSchemaType,
+  type jsonSchemaValidator as IJsonSchemaValidatorProvider,
+  type JsonSchemaValidatorResult,
+  type ListResourcesResult,
+  McpServer,
+  type ReadResourceResult,
+  ResourceTemplate,
+} from "@modelcontextprotocol/server";
 
 import { PortalPermissionsService } from "@exaix/portal";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
@@ -45,6 +58,65 @@ type ZodErrorCandidate =
   | null
   | undefined;
 type MCPHttpResponse = Response;
+
+/** Uniform outcome of executing one tool, decoupled from either transport's own top-level-vs-in-band error convention (Step 2). */
+interface IToolExecutionOutcome {
+  result?: JsonRpcResult;
+  error?: { code: number; message: string; data?: JsonRpcErrorData };
+}
+
+/**
+ * No-op JSON-Schema validator provider for `fromJsonSchema` tool/prompt registrations
+ * (Step 2). The SDK's own JSON-Schema pre-validation is intentionally bypassed here so
+ * `tools/call`/`prompts/get` argument validation stays 100% delegated to each handler's
+ * own Zod `.parse()` — exactly matching pre-migration behavior (Constraints: byte-identical,
+ * not shape-only). Only `tools/list`/`prompts/list`'s advertised schema comes from
+ * `fromJsonSchema`; runtime enforcement is unchanged. See Architecture Notes.
+ */
+const PASSTHROUGH_JSON_SCHEMA_VALIDATOR: IJsonSchemaValidatorProvider = {
+  getValidator<T>(_schema: JsonSchemaType) {
+    return (input): JsonSchemaValidatorResult<T> =>
+      ({ valid: true, data: input, errorMessage: undefined }) as JsonSchemaValidatorResult<T>;
+  },
+};
+
+/**
+ * Adapts a `ToolHandler.execute()` result onto the official SDK's `CallToolResult` (Step 2).
+ * The 2026-07-28 spec's `ContentBlock` union (text/image/audio/resource/resource_link) has
+ * no member for Exaix's proprietary `exaix_structured_data` content type — the SDK's
+ * `registerTool` validates outgoing tool results against that union server-side and rejects
+ * unknown content types with a protocol error (confirmed empirically: passing an
+ * `exaix_structured_data` block straight through fails validation before it reaches the
+ * wire). The SDK's own dedicated `structuredContent` result field (a free-form key-value
+ * object) is the spec's real, dedicated mechanism for exactly this payload (arbitrary
+ * structured data
+ * alongside human-readable text) — this function moves each `exaix_structured_data` block's
+ * `data` there instead of leaving it in `content`. Object-shaped `data` (e.g. domain-tool
+ * results) maps directly; array/primitive-shaped `data` (e.g. `list_directory`'s
+ * `string[]` entries) is wrapped under a `data` key, since `structuredContent` must itself
+ * be an object. Lossless — the same information survives, only the wire envelope changes
+ * to satisfy the SDK's real, unavoidable validation; not a tool-surface redesign.
+ */
+export function toSdkCallToolResult(result: Opt<JsonRpcResult, Reason.OptionalInput>): CallToolResult {
+  const raw = result as { content?: Array<{ type: string; data?: JSONValue }>; isError?: boolean } | undefined;
+  const content: Array<{ type: string; data?: JSONValue }> = [];
+  let structuredContent: Record<string, JSONValue> | undefined;
+  for (const item of raw?.content ?? []) {
+    if (item.type === MCP_CONTENT_TYPE_STRUCTURED_DATA) {
+      const value = item.data;
+      structuredContent = (value !== null && typeof value === "object" && !Array.isArray(value))
+        ? value as Record<string, JSONValue>
+        : { data: value ?? null };
+      continue;
+    }
+    content.push(item);
+  }
+  return {
+    content,
+    ...(structuredContent !== undefined ? { structuredContent } : {}),
+    ...(raw?.isError ? { isError: true } : {}),
+  } as CallToolResult;
+}
 
 /**
  * MCP Server Implementation
@@ -414,47 +486,73 @@ export class MCPServer {
       };
     }
 
+    const outcome = await this.executeToolInternal(params.name, tool, params.arguments);
+    if (outcome.error) {
+      return { jsonrpc: "2.0", id: request.id, error: outcome.error };
+    }
+    return { jsonrpc: "2.0", id: request.id, result: outcome.result };
+  }
+
+  /**
+   * Executes one already-resolved tool, running the exact pre-migration
+   * validation/remediation/logging/classification pipeline (Constraints: byte-identical
+   * business logic, not rewritten) — extracted out of `handleToolsCall` (Step 2) so the
+   * official SDK's `registerTool` callback (`buildSdkServer`) can reuse it verbatim.
+   * Returns a transport-neutral outcome: `handleToolsCall` (HTTP/hand-rolled dispatch,
+   * pre-Step-3) wraps `error` as a top-level JSON-RPC error; `buildSdkServer`'s SDK
+   * callback wraps it as `isError:true` tool-result content instead, since the official
+   * SDK always converts a tool callback's thrown/returned error into in-band content —
+   * it never emits a top-level JSON-RPC error for a tool-execution failure (confirmed
+   * against the vendored SDK: even a thrown `ProtocolError` inside `registerTool`'s
+   * callback is caught and returned as `{content, isError:true}`). This is the one
+   * intentional, SDK-intrinsic behavior difference this migration cannot avoid; the
+   * diagnostic message/classification is preserved byte-for-byte, only the JSON-RPC
+   * envelope (top-level `error` vs in-band `isError`) changes for tool-execution failures.
+   */
+  private async executeToolInternal(
+    toolName: string,
+    tool: ToolHandler,
+    args: JsonRpcArguments,
+  ): Promise<IToolExecutionOutcome> {
     try {
       // Execute tool
-      let result = await tool.execute(params.arguments as Record<string, JSONValue>);
+      let result = await tool.execute(args as Record<string, JSONValue>);
 
       // Validate MCP response envelope when a validator is injected (Enforcement Point 3).
       // rawResult is captured in the failure for audit logging only — never forwarded to clients.
       if (this.resultValidator) {
-        const validationFailure = this.resultValidator.validateMCPResponse(params.name, result);
+        const validationFailure = this.resultValidator.validateMCPResponse(toolName, result);
         if (validationFailure) {
-          const remediationPolicy = this.resolveRemediationPolicy(params.name);
-          const remediationMetadata = lookupRemediationToolMetadata(params.name) ?? undefined;
+          const remediationPolicy = this.resolveRemediationPolicy(toolName);
+          const remediationMetadata = lookupRemediationToolMetadata(toolName) ?? undefined;
 
           if (remediationPolicy) {
             const remediationResult = await applyRemediationPolicy(
-              params.name,
+              toolName,
               remediationPolicy,
               validationFailure,
               this.resultValidator,
               {
                 normalize: (rawResponse) => rawResponse,
                 retry: async () => {
-                  const retryResult = await tool.execute(params.arguments as Record<string, JSONValue>);
+                  const retryResult = await tool.execute(args as Record<string, JSONValue>);
                   return retryResult as JSONValue;
                 },
                 toolMetadata: remediationMetadata,
               },
             );
 
-            await this.reportValidationOutcome(params.name, remediationPolicy, remediationResult);
+            await this.reportValidationOutcome(toolName, remediationPolicy, remediationResult);
 
             if (remediationResult.outcome === "passed") {
               result = remediationResult.remediatedResult as typeof result;
             } else {
               return {
-                jsonrpc: "2.0",
-                id: request.id,
                 result: {
                   content: [
                     {
                       type: "text",
-                      text: `Tool result validation failed for '${params.name}': ${
+                      text: `Tool result validation failed for '${toolName}': ${
                         (remediationResult.failure ?? validationFailure).issues.map((i) => i.message).join("; ")
                       }`,
                     },
@@ -464,19 +562,17 @@ export class MCPServer {
               };
             }
           } else {
-            await this.reportValidationOutcome(params.name, this.getFallbackValidationPolicy(params.name), {
+            await this.reportValidationOutcome(toolName, this.getFallbackValidationPolicy(toolName), {
               outcome: REMEDIATION_OUTCOME_FAIL_CLOSED,
               failure: validationFailure,
               retriesAttempted: 0,
             });
             return {
-              jsonrpc: "2.0",
-              id: request.id,
               result: {
                 content: [
                   {
                     type: "text",
-                    text: `Tool result validation failed for '${params.name}': ${
+                    text: `Tool result validation failed for '${toolName}': ${
                       validationFailure.issues.map((i) => i.message).join("; ")
                     }`,
                   },
@@ -493,9 +589,9 @@ export class MCPServer {
         this.logActivity(
           "mcp.server",
           DomainEventType.McpToolExecuted,
-          params.name,
+          toolName,
           {
-            tool_name: params.name,
+            tool_name: toolName,
             success: true,
             has_result: !!result,
           },
@@ -504,11 +600,7 @@ export class MCPServer {
         // Logging must not break tool execution
       }
 
-      return {
-        jsonrpc: "2.0",
-        id: request.id,
-        result,
-      };
+      return { result };
     } catch (error) {
       // Classify and sanitize errors for JSON-RPC
       const classification = this.classifyError(error as ErrorPayload);
@@ -518,11 +610,11 @@ export class MCPServer {
           this.logActivity(
             "mcp.server",
             DomainEventType.McpPermissionDenied,
-            params.name,
+            toolName,
             {
-              tool_name: params.name,
-              portal: typeof params.arguments.portal === "string" ? params.arguments.portal : null,
-              identity_id: typeof params.arguments.identity_id === "string" ? params.arguments.identity_id : null,
+              tool_name: toolName,
+              portal: typeof args.portal === "string" ? args.portal : null,
+              identity_id: typeof args.identity_id === "string" ? args.identity_id : null,
               error_message: classification.message,
             },
           );
@@ -536,9 +628,9 @@ export class MCPServer {
         this.logActivity(
           "mcp.server",
           DomainEventType.McpToolFailed,
-          params.name,
+          toolName,
           {
-            tool_name: params.name,
+            tool_name: toolName,
             error_type: classification.type,
             error_code: classification.code,
             error_message: classification.message,
@@ -550,8 +642,6 @@ export class MCPServer {
       }
 
       return {
-        jsonrpc: "2.0",
-        id: request.id,
         error: {
           code: classification.code,
           message: classification.message,
@@ -864,6 +954,117 @@ export class MCPServer {
   }
 
   /**
+   * Builds an official-SDK `McpServer` instance from this server's already-constructed
+   * tools/config/permissions/logger (Step 2), for stdio serving via `serveStdio`. Reuses
+   * the exact existing tool-definition JSON schemas (`fromJsonSchema` + the
+   * no-op-validating `PASSTHROUGH_JSON_SCHEMA_VALIDATOR`) so `tools/list`/`prompts/list`
+   * stay byte-identical to Step 1's golden fixture, and reuses `executeToolInternal`/
+   * `generatePrompt`/`discoverAllResources`/`handleToolResultSchema`'s underlying logic
+   * verbatim (Constraints: business logic preserved, not rewritten) — only the protocol
+   * envelope (JSON-RPC dispatch vs SDK registration) changes. Does not yet touch the
+   * HTTP/"SSE" transport (Step 3) — this method is invoked only by `buildMcpServer` for
+   * the stdio path.
+   */
+  buildSdkServer(): McpServer {
+    const sdkServer = new McpServer({ name: this.serverName, version: this.serverVersion });
+
+    for (const tool of this.tools.values()) {
+      const definition = tool.getToolDefinition();
+      sdkServer.registerTool(
+        definition.name,
+        {
+          description: definition.description,
+          inputSchema: fromJsonSchema(definition.inputSchema, PASSTHROUGH_JSON_SCHEMA_VALIDATOR),
+        },
+        async (args): Promise<CallToolResult> => {
+          const outcome = await this.executeToolInternal(definition.name, tool, args as JsonRpcArguments);
+          if (outcome.error) {
+            return { content: [{ type: "text", text: outcome.error.message }], isError: true };
+          }
+          return toSdkCallToolResult(outcome.result);
+        },
+      );
+    }
+
+    for (const prompt of getPrompts()) {
+      const promptArgs = prompt.arguments ?? [];
+      const argsJsonSchema = {
+        type: "object" as const,
+        properties: Object.fromEntries(
+          promptArgs.map((arg) => [arg.name, { type: "string", description: arg.description }]),
+        ),
+        required: promptArgs.filter((arg) => arg.required).map((arg) => arg.name),
+      };
+      sdkServer.registerPrompt(
+        prompt.name,
+        {
+          description: prompt.description,
+          argsSchema: fromJsonSchema(argsJsonSchema, PASSTHROUGH_JSON_SCHEMA_VALIDATOR),
+        },
+        (args): GetPromptResult => {
+          const result = generatePrompt(prompt.name, args as PromptArguments, this.config, this.logger);
+          if (!result) {
+            throw new Error(`Prompt '${prompt.name}' not found`);
+          }
+          // IMCPPromptResult's role field (MessageRole enum: USER, ASSISTANT, or SYSTEM) is
+          // nominally wider than the SDK's user-or-assistant role restriction, but
+          // `generatePrompt` only ever emits MessageRole.USER (confirmed: grep of every
+          // prompts.ts generator) — safe structural cast, not a behavior change.
+          return result as GetPromptResult;
+        },
+      );
+    }
+
+    const resourceDiscoveryOptions = {
+      maxDepth: 3,
+      includeHidden: false,
+      extensions: ["ts", "tsx", "js", "jsx", "py", "rs", "go", "md", "json", "toml"],
+    };
+    sdkServer.registerResource(
+      "portal-files",
+      new ResourceTemplate("portal://{portal}/{+path}", {
+        list: async (): Promise<ListResourcesResult> => ({
+          resources: await discoverAllResources(this.config, this.logger, resourceDiscoveryOptions),
+        }),
+      }),
+      { description: "Files across all configured portals" },
+      async (uri): Promise<ReadResourceResult> => {
+        const parsed = parsePortalURI(uri.toString());
+        if (!parsed) {
+          throw new Error(`Invalid portal URI: ${uri.toString()}`);
+        }
+        const readTool = this.tools.get("read_file");
+        if (!readTool) {
+          throw new Error("read_file tool not available");
+        }
+        const result = await readTool.execute({ portal: parsed.portal, path: parsed.path });
+        this.logActivity(
+          "mcp.resources",
+          DomainEventType.McpResourcesRead,
+          uri.toString(),
+          { portal: parsed.portal, path: parsed.path },
+        );
+        const firstContent = result.content[0] as { text?: string } | undefined;
+        return { contents: [{ uri: uri.toString(), mimeType: "text/plain", text: firstContent?.text ?? "" }] };
+      },
+    );
+
+    sdkServer.server.setRequestHandler(
+      "exaix/tools/result_schema",
+      { params: ToolResultSchemaRequestSchema },
+      (params: { tool: string }) => {
+        const descriptor = buildToolResultSchemaDescriptor(params.tool);
+        if (!descriptor) {
+          throw new Error(`No result schema registered for tool '${params.tool}'`);
+        }
+        return descriptor;
+      },
+    );
+
+    return sdkServer;
+  }
+
+  /**
    * Returns comprehensive security headers for HTTP responses
    * Implements Content Security Policy and other security measures
    */
@@ -1055,4 +1256,15 @@ function createNoopLogger(): IEventLogger {
     debug: () => Promise.resolve(),
     child: () => createNoopLogger(),
   };
+}
+
+/**
+ * Builds the official-SDK `McpServer` factory Step 2's `serveStdio(buildMcpServer)`
+ * consumes (`apps/mcp-server/main.ts`). Constructs the same `MCPServer` this file has
+ * always built (reusing its constructor's context/config/permissions/tool-registration
+ * logic verbatim) and adapts it onto the SDK via `buildSdkServer()`.
+ */
+export function buildMcpServer(options: ConstructorParameters<typeof MCPServer>[0]): McpServer {
+  const mcpServer = new MCPServer(options);
+  return mcpServer.buildSdkServer();
 }
