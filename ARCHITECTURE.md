@@ -185,6 +185,30 @@ into the request body alongside `model` and `messages`.
 - **Seam registries** (flow-step handlers, symbol extractors, guardrail runner, routing strategy) use `ISeamRegistryPlaceholder` in core; concrete types resolved at the app-entry level
 - Transparent feature tiering with upgrade path
 
+### 7. **Packages vs. Services — Placement Model**
+
+**The placement test — one question:** _Can an external consumer use this module without knowing the Exaix daemon exists?_
+
+- **Yes** → it belongs in a package under `packages/`.
+- **No** → it belongs in `apps/` (runtime wiring).
+
+An `apps/` or runtime-wiring module orchestrates the running Exaix process. It coordinates multiple packages and runtime concerns: `Config`, `DatabaseService`, `EventLogger`, file-system state, process lifecycle. It wires packages together into coherent business flows, bootstrapped in `apps/daemon/main.ts` and `apps/exactl/src/init.ts`.
+
+**Common tells that a module belongs in a package:**
+
+- It has no `Config`, `DatabaseService`, or `EventLogger` in its constructor.
+- Its tests use only in-memory stubs or temp directories — no `initTestDbService()`.
+- Another package already imports it (or would need to, for type correctness).
+- Its domain logic would be equally valid in a different application.
+
+**Common tells that a module belongs in `apps/` (runtime wiring):**
+
+- It instantiates or receives a `DatabaseService` to persist state.
+- It emits events via `EventLogger` as part of its contract.
+- It reads from `Config` to determine runtime behaviour (paths, thresholds, feature flags).
+- It coordinates two or more packages — it is glue, not logic.
+- Removing it would break daemon startup or the request-processing pipeline directly.
+
 ---
 
 ## Execution Semantics

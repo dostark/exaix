@@ -3,7 +3,7 @@ title: "Agent Instructions"
 description: Agent coordination and task-specific guidance index
 agent_priority: critical
 copilot_knowledge_base: true
-version: 1.1
+version: 1.2
 capabilities: [task_routing, cross_reference, process_validation]
 links:
   - ".copilot/manifest.json"
@@ -32,7 +32,7 @@ links:
 
 ---
 
-## ⚠️ START HERE — PHASE 1: PRE-TASK
+## ⚠️ START HERE — Pre-Task Checklist
 
 **Before beginning ANY code modification task, you MUST:**
 
@@ -57,27 +57,18 @@ links:
 
 ## Quick Reference
 
-| Need                      | Location                                                                                     |
-| ------------------------- | -------------------------------------------------------------------------------------------- |
-| Behavioral guidelines     | [CLAUDE.md](./CLAUDE.md#behavioral-guidelines)                                               |
-| Dogfood development       | [.copilot/skills/dogfood-development/SKILL.md](.copilot/skills/dogfood-development/SKILL.md) |
-| Doc catalog               | [.copilot/DOCS.md](.copilot/DOCS.md) — all docs by task + topic                              |
-| Doc index (by topic)      | [.copilot/manifest.json](.copilot/manifest.json)                                             |
-| Architecture              | [.copilot/docs/ARCHITECTURE.md](.copilot/docs/ARCHITECTURE.md)                               |
-| Source patterns           | [.copilot/skills/exaix-development/SKILL.md](.copilot/skills/exaix-development/SKILL.md)     |
-| Test development          | [.copilot/skills/test-development/SKILL.md](.copilot/skills/test-development/SKILL.md)       |
-| Documentation skill       | [.copilot/skills/doc/SKILL.md](.copilot/skills/doc/SKILL.md)                                 |
-| Spec-driven development   | [docs/Exaix_SDD.md](docs/Exaix_SDD.md)                                                       |
-| Dev glossary              | [.copilot/docs/GLOSSARY.md](.copilot/docs/GLOSSARY.md)                                       |
-| Coding standards          | [CODE_STYLE.md](./CODE_STYLE.md)                                                             |
-| Magic numbers / constants | [CODE_STYLE.md](./CODE_STYLE.md) §2                                                          |
-| MCP tool index            | [.copilot/docs/TOOLS.md](.copilot/docs/TOOLS.md)                                             |
-| Commit skill              | [.copilot/skills/commit/SKILL.md](.copilot/skills/commit/SKILL.md)                           |
-| Plan skill                | [.copilot/skills/plan/SKILL.md](.copilot/skills/plan/SKILL.md)                               |
-| Next-steps skill          | [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md)                   |
-| Slash commands            | [.copilot/prompts/](.copilot/prompts/)                                                       |
-| Planning documents        | [exaix-dev-docs/planning/](exaix-dev-docs/planning/)                                         |
-| All agent docs index      | [.copilot/manifest.json](.copilot/manifest.json)                                             |
+The full task → doc catalog is auto-generated and always current: **[.copilot/DOCS.md](.copilot/DOCS.md)** (by task type) and **[.copilot/manifest.json](.copilot/manifest.json)** (by topic). Consult those first for anything not in the short list below — a hand-maintained copy of that catalog goes stale silently; this table stays intentionally small so it doesn't.
+
+| Always relevant             | Location                                                                                                                                   |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Behavioral guidelines       | [§ below](#behavioral-guidelines)                                                                                                          |
+| Architecture (ground truth) | [ARCHITECTURE.md](./ARCHITECTURE.md)                                                                                                       |
+| Coding standards            | [CODE_STYLE.md](./CODE_STYLE.md)                                                                                                           |
+| Spec-driven development     | [docs/Exaix_SDD.md](docs/Exaix_SDD.md)                                                                                                     |
+| Commit messages             | [.copilot/skills/commit/SKILL.md](.copilot/skills/commit/SKILL.md)                                                                         |
+| Plan-driven multi-step work | [.copilot/skills/plan/SKILL.md](.copilot/skills/plan/SKILL.md), [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md) |
+| Active phase plans / status | [exaix-dev-docs/planning/](exaix-dev-docs/planning/)                                                                                       |
+| Design analyses & dev specs | [exaix-dev-docs/dev/](exaix-dev-docs/dev/)                                                                                                 |
 
 ## Behavioral Guidelines
 
@@ -104,41 +95,21 @@ Ask "what exactly am I being asked to deliver?" before starting. Build exactly t
 Key facts about the Exaix system:
 
 - **Entry point**: `apps/daemon/main.ts` — starts the daemon, wires all services
-- **Request flow**: `Workspace/Requests/` → `RequestProcessor` → `RequestAnalyzer` → `RequestRouter` → `AgentRunner` → `PlanWriter` → `Workspace/Plans/`
+- **Request flow**: `Workspace/Requests/` → `RequestProcessor` → `RequestAnalyzer` → `RequestRouter` → `AgentRunner` → `PlanWriter` → `Workspace/Plans/` (full step-by-component detail: ARCHITECTURE.md § Request Processing Flow)
 - **Core storage**: SQLite at `.exa/journal.db` (all activity); filesystem at `Workspace/`, `Portals/`, `Memory/`
-- **AI providers**: concrete providers live in `@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix-team/ai-vertex`, `@exaix/ai-openrouter`, `@exaix/ai-ollama`; selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory`; registered at bootstrap by `apps/common/registry_bootstrap.ts`
 - **Architecture invariant**: read the `AGENT_LOGIC` YAML comment in ARCHITECTURE.md's `Request Processing Flow` section before modifying any core flow
 - **Boundary rules**: TUI (`apps/tui/src/`) and CLI (`apps/exactl/src/commands/`) must not import directly from services — use interfaces in shared packages under `packages/`
+- **Package vs. app placement**: the one-question test (and concrete tells for each side) lives in ARCHITECTURE.md § Packages vs. Services — Placement Model
 - **MCP tools**: all agent-accessible tools are listed in [.copilot/docs/TOOLS.md](.copilot/docs/TOOLS.md#agent-tools) and implemented under `packages/mcp/server/` (e.g. `tool_handler.ts`, `domain_tools.ts`)
+- **AI providers**: selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory`, registered at bootstrap (see ARCHITECTURE.md § AI Provider Architecture for the full provider list and registration paths)
+- **Security modes**: Sandboxed (default — no network, no file access) or Hybrid (read-only Portal paths). All production code and test helpers that construct or accept `Workspace/` paths MUST validate them through `PathResolver`; standalone utilities under `scripts/` are exempt only when they never touch workspace paths.
+- **Portal code changes**: when writing or modifying code _inside_ a portal (a user project under `Portals/`), apply the secure-by-default checklist in [Blueprints/Skills/security-first.skill.md](Blueprints/Skills/security-first.skill.md) — input validation, path traversal, injection prevention, auth boundaries, secret handling, OWASP 2021.
 
 ### Runtime & Tooling
 
 - **Runtime:** Deno (strict TypeScript)
 - **Config:** `deno.json` (tasks, imports)
-- **Pre-commit:** Auto-runs gates 0-18. Gate 0 blocks direct commits to `main`. Gates 1-18:
-
-  | Gate | Check                | Task                                           |
-  | ---- | -------------------- | ---------------------------------------------- |
-  | 1    | Format               | `deno task fmt:check`                          |
-  | 2    | Lint                 | `deno task lint`                               |
-  | 3    | Style / boundaries   | `deno task check:style`                        |
-  | 4    | Test placement       | `deno task check:test-placement`               |
-  | 5    | Magic values         | `deno task check:magic`                        |
-  | 6    | Manifest auto-sync   | `scripts/build_agents_index.ts` + `check:docs` |
-  | 7    | Markdown lint        | `scripts/markdown_lint.ts` (staged `.md` only) |
-  | 8    | Complexity           | `deno task check:complexity`                   |
-  | 9    | Tool-result parity   | `deno task check:tool-result-parity`           |
-  | 10   | Architecture         | `deno task check:arch`                         |
-  | 11   | Docs nervous system  | `deno task docs-agent-validate`                |
-  | 12   | Hallucination bench  | `deno task docs-bench`                         |
-  | 13   | Event strings        | `deno task check:event-strings`                |
-  | 14   | Optional params      | `deno task check:optional-params --fail`       |
-  | 15   | Markdown paths       | `deno task check:md-path:staged`               |
-  | 16   | Agent docs integrity | `deno task check:agent-docs-integrity`         |
-  | 17   | Agent docs integrity | `deno task check:agent-docs-integrity`         |
-  | 18   | Qwen skills sync     | `deno task check:qwen-skills-sync`             |
-
-> Gate 12 (`docs-bench`, filter `[hallucination-bench]`) also runs `tests/docs/positioning_consistency_test.ts`, which enforces positioning and narrative's positioning/glossary/weaknesses cross-document consistency (no-vaporware phase claims, three-tier narrative, differentiation material, GLOSSARY.md split, stale-path regressions).
+- **Pre-commit / pre-push hooks:** [CONTRIBUTING.md](CONTRIBUTING.md) § 4.2 Hooks has the maintained hook-by-hook summary. Do not hand-copy the gate list here — it will drift silently; `.git/hooks/pre-commit` and `.git/hooks/pre-push` (installed via `deno task hooks:install`) are the executable ground truth.
 
 ### Key Commands
 
@@ -156,12 +127,7 @@ deno task docs-sync-schemas   # Sync MCP tool schemas to TOOLS.md
 
 A **behavior change** is any edit that affects runtime output, observable state, or what an existing test asserts — as opposed to comments, documentation, formatting, or config-only changes that alter no executed code path. Config-only changes qualify as non-behavior changes only when the changed values are never read by executed code paths (for example, editor settings or CI metadata). Changes to runtime-read config values such as thresholds or feature flags are behavior changes and require TDD.
 
-For changes that modify behavior:
-
-1. Write failing tests first
-2. Run the test and confirm it fails
-3. Implement the minimum code to make it pass
-4. Refactor, keeping tests green
+For the full RED → GREEN → REFACTOR workflow, CI gates per phase, and coverage checks, see [.copilot/skills/tdd-workflow/SKILL.md](.copilot/skills/tdd-workflow/SKILL.md).
 
 ### Coding Standards
 
@@ -169,42 +135,33 @@ All style rules are consolidated in [CODE_STYLE.md](./CODE_STYLE.md). Please con
 file for the authoritative, up-to-date guidelines on typing, imports, constants,
 DI, environment variables, and related topics.
 
-### Before Committing
+---
 
-Use the phase checklists below before claiming the task is complete or creating a commit.
+## Task Checklist
 
-## PHASE 2: DURING IMPLEMENTATION
+Complete this checklist for every implementation task, in order.
 
-Use this checklist while implementing:
+### During Implementation
 
-1. For changes that modify behavior, follow TDD by adding or updating the relevant test first, running it to confirm failure, then implementing the minimal fix.
-2. Place tests in the owning boundary: package-owned code goes in `packages/<package>/tests/`, app-owned code goes in `apps/<app>/tests/`, and cross-cutting integration, scenario, security, and system checks stay in root `tests/`.
+1. For changes that modify behavior, follow TDD: add or update the relevant test first, run it to confirm failure, then implement the minimal fix (see [Development Workflow](#development-workflow) above).
+2. Place tests in the owning boundary: package-owned code in `packages/<package>/tests/`, app-owned code in `apps/<app>/tests/`, cross-cutting integration/scenario/security/system checks in root `tests/`. Full placement rules: [.copilot/skills/test-development/SKILL.md](.copilot/skills/test-development/SKILL.md).
 3. Do not add new `*_test.ts` files next to source files or under retired legacy test directories.
-4. Use established test helpers (`initTestDbService`, `createCliTestContext`, etc.) when project helpers already cover the setup.
-5. Rerun the failing or behavior-scoped test for the changed slice; if the changed code belongs to a package or app with its own test command, run that package- or app-scoped test command next.
-6. **Configurable constants:** When adding a new `DEFAULT_*` constant (in any
-   package), determine if it is a tunable user-facing default. If yes, wrap it
-   with `configurable()` from `@exaix/core/config`. Import the function and
-   wrap the declaration at the definition site — the exported value stays
-   byte-identical. See [CODE_STYLE.md §2](./CODE_STYLE.md#no-magic-values) for
-   required fields and exclusions. Run `deno task check:config-keys` to verify
-   no duplicate keys across all packages.
+4. Use established test helpers (`initTestDbService`, `createCliTestContext`, `TestEnvironment.create`, `withEnv`, `MockLLMProvider`, etc.) — see [.copilot/skills/test-development/SKILL.md](.copilot/skills/test-development/SKILL.md) for the full list; do not hand-roll setup a helper already covers.
+5. Rerun the failing or behavior-scoped test for the changed slice; if the changed code belongs to a package or app with its own test command, run that next.
+6. **Configurable constants:** when adding a new `DEFAULT_*` constant, determine if it is a tunable user-facing default. If yes, wrap it with `configurable()` from `@exaix/core/config` at the definition site — the exported value stays byte-identical. See [CODE_STYLE.md §2](./CODE_STYLE.md#no-magic-values) for required fields and exclusions. Run `deno task check:config-keys` to verify no duplicate keys across all packages.
 
-## PHASE 3: DONE / CI
+### Before Claiming Complete
 
-Complete this sequence in order before claiming any task is complete:
-
-1. Ensure `deno check packages/ apps/ tests/` is clean before finishing.
+1. Ensure `deno check packages/ apps/ tests/` is clean.
 2. Do not use raw SQL table creation in tests when project helpers already cover the setup.
 3. Do not bypass failing checks or ignore pre-commit failures.
-4. Do not introduce magic numbers or strings without following project guidance in `CONTRIBUTING.md`.
+4. Do not introduce magic numbers or strings — see [CODE_STYLE.md §2](./CODE_STYLE.md#no-magic-values).
 5. Do not place imports anywhere other than the top of the file.
 6. If you modified any MCP tool handler under `packages/mcp/server/`, run `deno task docs-sync-schemas` and stage the result.
-7. After each discrete implementation step, run the quick verification command below.
-8. Before any PR handoff or completion claim, run `deno run -A scripts/ci.ts all`.
-9. If `deno run -A scripts/ci.ts all` fails without a clear cause, run the manual workflow commands listed below to replicate CI behavior.
-10. If you cannot execute shell commands in the current environment, state which validation steps were skipped, why they were skipped, and that the task remains unverified. A task with skipped CI steps must NOT be marked complete. Mark it as `PENDING VERIFICATION` and list the exact commands a human reviewer must run to close it.
-11. If CI fails, do not claim completion; identify the root cause, fix it without bypass flags, and rerun the failing check until it passes.
+7. Run the quick verification command below after each discrete implementation step.
+8. Before any PR handoff or completion claim, run `deno run -A scripts/ci.ts all`. If it fails without a clear cause, `.github/workflows/code-quality.yml` and `.github/workflows/pr-validation.yml` are the exact CI step definitions — read them directly rather than trusting a hand-copied summary, which will drift.
+9. If you cannot execute shell commands in the current environment, state which validation steps were skipped, why, and that the task remains unverified. A task with skipped CI steps must NOT be marked complete — mark it `PENDING VERIFICATION` and list the exact commands a human reviewer must run to close it.
+10. If CI fails, do not claim completion; identify the root cause, fix it without bypass flags, and rerun the failing check until it passes.
 
 ### Quick CI Verification
 
@@ -215,219 +172,54 @@ deno task test_parallel > /tmp/test_output.txt 2>&1
 rg "FAILED|failed|error" /tmp/test_output.txt   # or: grep -E "FAILED|failed|error" /tmp/test_output.txt
 ```
 
-Run the unified CI script to verify all checks:
+Full CI pipeline:
 
 ```bash
-# Full CI pipeline (recommended before PR)
-deno run -A scripts/ci.ts all
-
-# Individual checks
-deno run -A scripts/ci.ts check    # Static analysis
-deno run -A scripts/ci.ts test     # Test suite
-deno run -A scripts/ci.ts coverage # Coverage verification
-```
-
-### Manual CI Workflow Verification
-
-To replicate exact CI behavior, run the workflows locally:
-
-**1. Code Quality Gates** (`.github/workflows/code-quality.yml`):
-
-```bash
-# Format check
-deno fmt --check
-
-# Lint check
-deno lint
-
-# Code duplication check
-deno run --allow-run --allow-read --allow-write scripts/measure_duplication.ts --threshold 2.0
-
-# Complexity check
-deno run --allow-read --allow-net scripts/measure_complexity.ts --threshold 15 --json > complexity.json
-deno run --allow-read scripts/check_complexity_breaches.ts
-
-# Test & Coverage
-deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts
-
-# Build verification
-deno check packages/ apps/ tests/
-
-# Architecture validation
-deno task check:arch
-```
-
-**2. PR Validation** (`.github/workflows/pr-validation.yml`):
-
-```bash
-# Configure git identity (if needed — use --local to avoid mutating global config)
-git config --local user.email "dev@example.com"
-git config --local user.name "Developer"
-
-# Run checks
-deno run -A scripts/ci.ts check
-
-# Run tests
-deno run -A scripts/ci.ts test --quick
+deno run -A scripts/ci.ts all      # everything
+deno run -A scripts/ci.ts check    # static analysis only
+deno run -A scripts/ci.ts test     # test suite only
+deno run -A scripts/ci.ts coverage # coverage verification only
 ```
 
 ### CI Failure Response Protocol
-
-If CI fails, follow this sequence:
 
 1. **DO NOT** claim the task is complete.
 2. Read the full error output to identify the root cause.
 3. Fix the issue (do not bypass checks with `--no-verify` or similar flags).
 4. Re-run the failing check to confirm it passes before continuing.
 
-**Common CI Failures:**
+**Common CI failures:**
 
-- **Test failures**: Run `deno test --allow-all` and fix failing tests
-- **Complexity breaches**: Refactor complex functions (see complexity check output)
-- **Duplication**: Extract common code into shared utilities
-- **Coverage drops**: Add tests for uncovered code paths
-- **Lint errors**: Fix code style issues
-- **Type errors**: Resolve TypeScript compilation errors
+- **Test failures**: run `deno test --allow-all` and fix failing tests
+- **Complexity breaches**: refactor complex functions (see complexity check output)
+- **Duplication**: extract common code into shared utilities
+- **Coverage drops**: add tests for uncovered code paths
+- **Lint errors**: fix code style issues
+- **Type errors**: resolve TypeScript compilation errors
 
 ## Project Structure
 
 ```text
-packages/        # Library packages (@exaix/*)
-├── core/        # Core contracts, config, utilities
-├── ai/          # LLM provider contracts and shared utilities
-├── ai-*/        # Concrete provider packages (anthropic, openai, google, ollama)
-├── cli/         # Base CLI types, formatters, helpers
-├── tui/         # Base TUI components and layout
-├── mcp/         # MCP manifest, server runtime
-├── execution/   # Agent orchestration
-├── memory/      # Memory bank, extraction, embedding
-├── portal/      # Portal analysis, permissions, persistence
-├── request/     # Request parsing, routing, processing
-├── routing/     # Routing policy, capability matching
-├── flow/        # Flow persistence, checkpoint, validator
-├── git/         # Git service
-├── schemas/     # Zod validation schemas
-├── storage-sqlite/ # SQLite database implementation
-├── tool-runtime/   # ToolRegistry, OutputValidator, path security
-├── quality-gate/   # Quality evaluation, LLM assessment
-└── testing/     # Shared test helpers and fixtures
-
-apps/            # Thin app entry points
-├── daemon/      # Daemon entry point (main.ts)
-├── exactl/      # CLI app (concrete commands, handlers)
-├── mcp-server/  # MCP server entry point
-└── tui/         # TUI app (concrete dashboards, views)
-
-tests/           # Integration and scenario tests
-.copilot/        # AI assistant guidance (see below)
-docs/            # User documentation
-ARCHITECTURE.md  # System Architecture & Knowledge Base
+packages/        # Library packages (@exaix/*): core, AI provider contracts + concrete
+                  # providers, CLI/TUI primitives, execution, memory, portal, request,
+                  # routing, flow, git, schemas, storage, tool-runtime, quality-gate,
+                  # testing, and more.
+apps/             # Thin app entry points: daemon, exactl (CLI), mcp-server, tui,
+                  # agent-entrypoint, common (shared bootstrap).
+tests/            # Integration and scenario tests
+.copilot/         # AI assistant guidance (see below)
+docs/             # User documentation
+ARCHITECTURE.md   # System Architecture & Knowledge Base
 ```
+
+Package and app names change as the codebase evolves — list them directly (`ls packages/`, `ls apps/`) rather than trusting a hardcoded enumeration here; ARCHITECTURE.md and each package's own README describe what each one does.
 
 ## .copilot/ Directory — Your Knowledge Base
 
-The `.copilot/` folder contains **machine-readable guidance** for AI assistants:
+The `.copilot/` folder is machine-readable guidance for AI assistants: `manifest.json` (auto-generated doc index), `prompts/` (chat routing wrappers), `skills/` (autonomous workflows), `docs/` (on-demand reference docs). Full structure, role distinction, and maintenance commands: [.copilot/README.md](.copilot/README.md).
 
-### Structure
-
-```text
-.copilot/
-├── manifest.json       # Index of all agent docs (auto-generated)
-├── prompts/            # Chat routing wrappers — one .prompt.md per skill
-├── skills/             # Multi-step autonomous skills (SKILL.md per skill)
-├── docs/               # On-demand reference documents (agent-oriented)
-├── planning/           # (reserved — active phase docs live in exaix-dev-docs/planning/)
-└── chunks/             # Pre-chunked docs for RAG (auto-generated)
-```
-
-### When to Consult .copilot/
-
-> For the full task→doc map, use the **Quick Reference** table at the top of this file. The rows below cover `.copilot/`-specific lookups not listed there.
-
-| Task           | Consult                             |
-| -------------- | ----------------------------------- |
-| Security audit | `.copilot/skills/security/SKILL.md` |
-
-## Key Patterns & Constraints
-
-### Service Pattern
-
-- Constructor-based DI: pass `config`, `db`, `provider`
-- Keep side effects out of constructors
-
-### File System as Database
-
-- `Workspace/Active`, `Workspace/Requests`, `Workspace/Plans` are the "database"
-- Use atomic file operations (write + rename)
-- All side-effects MUST log to Activity Journal via `EventLogger`
-
-### Security Modes
-
-- **Sandboxed:** No network, no file access (default)
-- **Hybrid:** Read-only access to Portal paths
-- Workspace paths are file-system paths under `Workspace/` such as `Workspace/Active`, `Workspace/Requests`, `Workspace/Plans`, and their subdirectories.
-- All production code and test helpers that construct or accept workspace paths must validate them through `PathResolver`; standalone utilities under `scripts/` are exempt only when they do not access workspace paths.
-- When writing or modifying code **inside a portal** (user project), apply the secure-by-default practices in [`Blueprints/Skills/security-first.skill.md`](Blueprints/Skills/security-first.skill.md): input validation, path traversal, injection prevention, auth boundaries, secret handling, and the OWASP 2021 checklist.
-
-### Package vs App Placement
-
-**The placement test — one question:** _Can an external consumer use this module without knowing the Exaix daemon exists?_
-
-- **Yes** → it belongs in a package under `packages/`.
-- **No** → it belongs in `apps/` (runtime wiring).
-
-An `apps/` or runtime-wiring module orchestrates the running Exaix process. It coordinates multiple packages and runtime concerns: `Config`, `DatabaseService`, `EventLogger`, file-system state, process lifecycle. It wires packages together into coherent business flows, bootstrapped in `apps/daemon/main.ts` and `apps/exactl/src/init.ts`.
-
-**Common tells that a module belongs in a package:**
-
-- It has no `Config`, `DatabaseService`, or `EventLogger` in its constructor.
-- Its tests use only in-memory stubs or temp directories — no `initTestDbService()`.
-- Another package already imports it (or would need to, for type correctness).
-- Its domain logic would be equally valid in a different application.
-
-**Common tells that a module belongs in `apps/` (runtime wiring):**
-
-- It instantiates or receives a `DatabaseService` to persist state.
-- It emits events via `EventLogger` as part of its contract.
-- It reads from `Config` to determine runtime behaviour (paths, thresholds, feature flags).
-- It coordinates two or more packages — it is glue, not logic.
-- Removing it would break daemon startup or the request-processing pipeline directly.
-
-### Test Guidance
-
-> For full test placement and helper conventions see `.copilot/skills/test-development/SKILL.md`. The rules below apply across all test types.
-
-- Place tests in the owning boundary: package-owned tests in `packages/<package>/tests/`, app-owned tests in `apps/<app>/tests/`, and cross-cutting integration/scenario/security/system tests in root `tests/`.
-- Do not place new tests next to source files unless the project testing guideline explicitly requires it.
-- Use `sanitizeOps: false, sanitizeResources: false` for timer-based tests.
-- Skip `setTimeout` in test mode to avoid timer leaks — pattern: `if (Deno.env.get("DENO_TEST") !== "1") setTimeout(...)`
-
-## Test Helpers
-
-```typescript
-// Database + tempdir setup
-const { db, tempDir, cleanup } = await initTestDbService();
-
-// CLI test context
-const ctx = await createCliTestContext();
-
-// Full integration environment
-const env = await TestEnvironment.create();
-
-// Temporary env vars
-await withEnv({ MY_VAR: "value" }, async () => { ... });
-```
+For a security audit, go directly to [.copilot/skills/security/SKILL.md](.copilot/skills/security/SKILL.md).
 
 ## Current Project Status
 
-Do not rely on inline status in this file. Active phase planning documents live in the `exaix-dev-docs/` submodule at `exaix-dev-docs/planning/`. Read that directory for current project state and completion status before starting work. If the submodule is not checked out or the directory is empty, there are no active phases in progress.
-
-## Common Workflows
-
-For all task types, complete the pre-task checklist first and finish by satisfying the Task Checklist. After adding or changing files in `.copilot/`, you can preview the manifest update before staging:
-
-```bash
-deno run --allow-read --allow-write scripts/build_agents_index.ts
-```
-
-> Note: Gate 6 auto-runs this script and stages the result on every commit when `.copilot/` sources are staged — so the manual run above is only needed to preview changes before committing.
+Do not rely on inline status in this file. Active phase planning documents live in the `exaix-dev-docs/` submodule at `exaix-dev-docs/planning/` — read that directory for current project state and completion status before starting work. Design analyses, technical specs, and dev-only reference docs (package ownership maps, comparative analyses, edition architecture write-ups) live at `exaix-dev-docs/dev/`. If the submodule is not checked out or a directory is empty, there is no content of that kind currently tracked.

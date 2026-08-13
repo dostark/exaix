@@ -79,19 +79,25 @@ deno task hooks:install
 This writes hooks to `.git/hooks/` from `scripts/setup_hooks.ts`. The hooks
 are:
 
-| Hook                      | Purpose                                                                                                                                       |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pre-commit` (Gate 0)     | Blocks direct commits on `main`                                                                                                               |
-| `pre-commit` (Gates 1-12) | Format, lint, style, docs, complexity, arch, tool-result parity, hallucination bench                                                          |
-| `pre-push`                | Regenerate `.copilot/manifest.json`, full type-check (packages/ + apps/ + tests/), focused tests for changed files, security regression tests |
-| `pre-merge-commit`        | Regenerate `.copilot/manifest.json` before merge commits                                                                                      |
+| Hook                      | Purpose                                                                                                                                                                                                                                  |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pre-commit` (Gate 0)     | Blocks direct commits on `main`                                                                                                                                                                                                          |
+| `pre-commit` (Gates 1-12) | Format, lint, style, docs, complexity, arch, tool-result parity, hallucination bench                                                                                                                                                     |
+| `pre-push`                | Regenerate `.copilot/manifest.json` (amends the commit only if it substantively changed), auto-push the `exaix-dev-docs` submodule first if its pointer changed, full type-check (packages/ + apps/ + tests/), security regression tests |
+| `pre-merge-commit`        | Regenerate `.copilot/manifest.json` before merge commits                                                                                                                                                                                 |
 
-The `pre-push` hook is the last gate before code leaves your machine. It regenerates
-`.copilot/manifest.json` before pushing, stages the updated manifest, and amends the
-current commit so the regenerated manifest is included in the push. It also runs
-`deno check packages/ apps/ tests/` to catch type errors in ALL files (not just `apps/daemon/main.ts`),
-runs the test files that correspond to your changes, and always runs security
-regression tests. If any of these fail, the push is blocked.
+The `pre-push` hook is the last gate before code leaves your machine, and it runs in this
+order: (1) regenerate `.copilot/manifest.json` — amends the current commit only if the
+regenerated manifest substantively changed (a `generated_at` timestamp-only diff is
+restored and skipped); (2) if the `exaix-dev-docs` gitlink changed, verify the submodule
+has no uncommitted changes and a configured upstream, then push it to its own remote
+_before_ the parent repo's commits are sent — this ordering matters, because CI's
+`git submodule update` on the parent's new HEAD would fail to resolve a submodule commit
+that only exists locally; (3) `deno check packages/ apps/ tests/` to catch type errors in
+ALL files (not just `apps/daemon/main.ts`); (4) the `[security]`-filtered regression suite
+across `tests/`. There is no "run only the tests for your changed files" step — the type
+check and security suite always run in full. If any step fails, the push (including the
+submodule push) is blocked.
 
 | Hook         | Purpose                               |
 | ------------ | ------------------------------------- |
