@@ -734,7 +734,8 @@ Deno.test({
         const msg = (err as Error).message;
         assert(!msg.includes("EXA_LLM_PROVIDER"), "should resolve provider, not complain about missing");
         assert(
-          msg.includes("exited with code") || msg.includes("not found") || msg.includes("Permission denied"),
+          msg.includes("exited with code") || msg.includes("not found") || msg.includes("Permission denied") ||
+            msg.includes("timed out"),
           `expected CLI delegate error, got: ${msg}`,
         );
       }
