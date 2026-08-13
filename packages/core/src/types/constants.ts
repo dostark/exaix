@@ -807,6 +807,23 @@ export const DEFAULT_MCP_HTTP_PORT: number = configurable({
   max: 65535,
   swap: SwapClass.RESTART,
 });
+/** Phase 163 Step 4: config-gated Bearer-token auth on the MCP HTTP transport. Off by default. */
+export const DEFAULT_MCP_REQUIRE_AUTH: boolean = configurable({
+  key: "mcp.require_auth",
+  default: false,
+  type: ConfigValueType.BOOLEAN,
+  description:
+    "Whether the MCP HTTP transport requires a Bearer token (env var named by mcp.auth_token_env) on every request",
+  swap: SwapClass.RESTART,
+});
+/** AuthInfo.expiresAt (seconds since epoch, ~100y from module load) for Exaix's static shared-secret MCP auth token, which has no natural expiry. */
+export const DEFAULT_MCP_AUTH_TOKEN_EXPIRY_SECONDS: number = configurable({
+  key: "mcp.auth_token_expiry_seconds",
+  default: 3_153_600_000,
+  type: ConfigValueType.NUMBER,
+  description: "Lifetime in seconds reported for the static MCP Bearer token's AuthInfo.expiresAt",
+  swap: SwapClass.RESTART,
+});
 
 // ============================================================================
 // Git Defaults

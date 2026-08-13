@@ -12,15 +12,18 @@ import type { Opt, Reason } from "@exaix/core/types";
 import { DomainEventType } from "@exaix/core/events";
 import { MCPConfigSchema, type MCPTool } from "@exaix/schemas/mcp.ts";
 import type { JSONValue } from "@exaix/core";
-import { JsonRpcErrorCode, MCP_CONTENT_TYPE_STRUCTURED_DATA } from "@exaix/core";
+import { DEFAULT_MCP_AUTH_TOKEN_EXPIRY_SECONDS, JsonRpcErrorCode, MCP_CONTENT_TYPE_STRUCTURED_DATA } from "@exaix/core";
 import { McpTransportType } from "@exaix/mcp";
 import type { ToolHandler } from "@exaix/mcp/server";
 import { EventBusService } from "@exaix/core/observability";
+import { MCP_OAUTH_RESPONSE_TYPE_NONE } from "./constants.ts";
 import { SseHandler } from "./sse_handler.ts";
 import { buildHandlers } from "./tools.ts";
 import { discoverAllResources, parsePortalURI } from "./resources.ts";
 import { generatePrompt, getPrompts } from "./prompts.ts";
 import {
+  type AuthInfo,
+  type AuthMetadataOptions,
   type CallToolResult,
   createMcpHandler,
   fromJsonSchema,
@@ -34,8 +37,13 @@ import {
   localhostAllowedOrigins,
   type McpHttpHandler,
   McpServer,
+  OAuthError,
+  OAuthErrorCode,
+  oauthMetadataResponse,
+  type OAuthTokenVerifier,
   originValidationResponse,
   type ReadResourceResult,
+  requireBearerAuth,
   ResourceTemplate,
 } from "@modelcontextprotocol/server";
 
@@ -87,6 +95,22 @@ const PASSTHROUGH_JSON_SCHEMA_VALIDATOR: IJsonSchemaValidatorProvider = {
       ({ valid: true, data: input, errorMessage: undefined }) as JsonSchemaValidatorResult<T>;
   },
 };
+
+/**
+ * Constant-time string equality for the MCP shared-secret Bearer token (Step 4).
+ * Deno has no `crypto.timingSafeEqual` for strings, so this is the standard
+ * XOR-accumulation equivalent: every byte pair is compared regardless of where
+ * the first mismatch occurs (the early `length` check leaks only the length,
+ * which is not secret for a configured token). Never use `===` on the token.
+ */
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
 
 /**
  * Adapts a `ToolHandler.execute()` result onto the official SDK's `CallToolResult` (Step 2).
@@ -206,7 +230,7 @@ interface HasConstructor {
   constructor: { name: string };
 }
 
-export class MCPServer {
+export class MCPServer implements OAuthTokenVerifier {
   private context: ICliApplicationContext;
   private config: Config;
   private logger?: IEventLogger;
@@ -1144,7 +1168,72 @@ export class MCPServer {
   }
 
   /**
-   * Builds the composed web-standard `fetch` handler for MCP-over-HTTP (Step 3):
+   * Verifies a Bearer token against the configured static shared secret (Step 4),
+   * satisfying the SDK's `OAuthTokenVerifier` contract for `requireBearerAuth`.
+   *
+   * Design (Pre-Gap Analysis GAP-1): Exaix has no credential/session/access-token
+   * model anywhere in the repo to ground a fuller verifier in — the only
+   * credential-adjacent primitive, `SecureCredentialStore`, is an unrelated
+   * per-process secret-obfuscation store for provider API keys. This is therefore
+   * a deliberately minimal, correct mechanism for this tool's actual threat model
+   * (a single-operator, localhost-primary MCP server, not a multi-tenant OAuth
+   * deployment): the shared secret lives in the environment variable named by
+   * `mcp.auth_token_env` (env-var indirection, never in plaintext config — the same
+   * convention as `ai_openrouter.api_key_env`), compared via constant-time equality
+   * (`constantTimeEqual`, never `===`). On match the returned `AuthInfo` ALWAYS
+   * sets `expiresAt` (GAP-2: the SDK's verifier contract rejects tokens whose
+   * `expiresAt` is unset) to a far-future epoch, since a static shared secret has no
+   * natural expiry; on mismatch it throws `OAuthError` with
+   * `OAuthErrorCode.InvalidToken`, which `requireBearerAuth` maps to a 401
+   * `WWW-Authenticate: Bearer error="invalid_token"` challenge. RFC 9728 metadata
+   * serving (see `buildHttpFetch`) completes only the resource-server verification
+   * half of RFC 9728 — deliberately NOT a token-issuance authorization server,
+   * which Exaix does not need or operate.
+   */
+  verifyAccessToken(token: string): Promise<AuthInfo> {
+    const mcpConfig = MCPConfigSchema.parse(this.config.mcp);
+    const configured = Deno.env.get(mcpConfig.auth_token_env) ?? "";
+    if (!constantTimeEqual(configured, token)) {
+      return Promise.reject(new OAuthError(OAuthErrorCode.InvalidToken, "Invalid bearer token"));
+    }
+    return Promise.resolve({
+      token,
+      clientId: "exaix-mcp-client",
+      scopes: [],
+      expiresAt: Math.floor(Date.now() / 1000) + DEFAULT_MCP_AUTH_TOKEN_EXPIRY_SECONDS,
+    });
+  }
+
+  /**
+   * RFC 9728 protected-resource metadata options for the current request (Step 4).
+   * The issuer/resource-server URL is derived from the request's own origin — the
+   * server binds `localhost` only (`startHTTPServer`'s `hostname: "localhost"`), so
+   * the derived issuer always satisfies the SDK's HTTPS-or-loopback rule (GAP-2:
+   * `dangerouslyAllowInsecureIssuerUrl` is never surfaced through any Exaix config;
+   * the issuer is always HTTPS or a loopback address by construction). The
+   * `OAuthMetadata`'s AS endpoints point at the server's own origin because, for a
+   * static shared-secret deployment, the server itself is the token authority —
+   * only the resource-server half of RFC 9728 is served, no token-issuance endpoints
+   * are implemented.
+   */
+  private buildAuthMetadataOptions(request: Request): AuthMetadataOptions {
+    const origin = new URL(request.url).origin;
+    return {
+      oauthMetadata: {
+        issuer: origin,
+        authorization_endpoint: `${origin}/oauth/authorize`,
+        token_endpoint: `${origin}/oauth/token`,
+        response_types_supported: [MCP_OAUTH_RESPONSE_TYPE_NONE],
+        scopes_supported: [],
+      },
+      resourceServerUrl: new URL(origin),
+      resourceName: this.serverName,
+      scopesSupported: [],
+    };
+  }
+
+  /**
+   * Builds the composed web-standard `fetch` handler for MCP-over-HTTP (Steps 3-4):
    * SDK Host/Origin validation (DNS-rebinding/CSRF defense, replacing the hand-rolled
    * `isLoopbackHost`/`rejectUnsafeOrigin` this step retires) → the unrelated, unaffected
    * trace-streaming route (`sse_handler.ts`, never part of the MCP protocol surface) →
@@ -1161,8 +1250,33 @@ export class MCPServer {
    * response as a single-event SSE stream (`Content-Type: text/event-stream`), never a
    * bare `application/json` body — confirmed empirically against the vendored SDK; this
    * is the actual spec behavior this phase migrates onto, not a regression.
+   *
+   * Step 4 (auth): when `mcp.require_auth` is enabled, the composition additionally
+   * (a) fails fast at build time if the token env var is unset — an operator who opts
+   * in but forgets the secret gets a boot-time error, not a server that 401s every
+   * request — (b) serves RFC 9728 protected-resource metadata at
+   * `/.well-known/oauth-protected-resource` (and the RFC 8414 AS document) and (c)
+   * gates the MCP dispatch behind `requireBearerAuth({ verifier: this })`, forwarding
+   * the verified `AuthInfo` into `handler.fetch(request, { authInfo })` so tool
+   * handlers see it via `ctx.http.authInfo`. When `mcp.require_auth` is false (the
+   * default), behavior is byte-identical to pre-Step-4: no metadata routes, no gate,
+   * no header checks beyond the existing Host/Origin validation.
    */
   public buildHttpFetch(): (request: Request) => McpHttpFetchResponsePromise {
+    const mcpConfig = MCPConfigSchema.parse(this.config.mcp);
+    const requireAuth = mcpConfig.require_auth;
+
+    let authGate: ((request: Request) => Promise<AuthInfo | Response>) | undefined;
+    if (requireAuth) {
+      const tokenEnv = mcpConfig.auth_token_env;
+      if ((Deno.env.get(tokenEnv) ?? "") === "") {
+        throw new Error(
+          `mcp.require_auth is enabled but no bearer token is configured — set env var "${tokenEnv}" (config key auth_token_env)`,
+        );
+      }
+      authGate = requireBearerAuth({ verifier: this });
+    }
+
     const handler = createMcpHandler(() => this.buildSdkServer(), { legacy: "stateless" });
     this.mcpHttpHandler = handler;
     const sseHandler = this.sseHandler ?? new SseHandler(EventBusService.getInstance());
@@ -1174,9 +1288,25 @@ export class MCPServer {
         return this.addSecurityHeaders(rejected);
       }
 
+      if (authGate) {
+        const metadata = oauthMetadataResponse(request, this.buildAuthMetadataOptions(request));
+        if (metadata) {
+          return this.addSecurityHeaders(metadata);
+        }
+      }
+
       const url = new URL(request.url);
       if (SseHandler.matchesTraceIdRoute(url.pathname)) {
         return this.addSecurityHeaders(sseHandler.handleRequest(request));
+      }
+
+      if (authGate) {
+        const auth = await authGate(request);
+        if (auth instanceof Response) {
+          return this.addSecurityHeaders(auth);
+        }
+        const response = await handler.fetch(request, { authInfo: auth });
+        return this.addSecurityHeaders(response);
       }
 
       const response = await handler.fetch(request);

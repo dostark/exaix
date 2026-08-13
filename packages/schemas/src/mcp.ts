@@ -30,6 +30,14 @@ export const MCPConfigSchema = z.object({
   transport: z.nativeEnum(McpTransportType).default(McpTransportType.STDIO),
   server_name: z.string().default("exaix"),
   version: z.string().default(DEFAULT_MCP_VERSION),
+  /** Phase 163 Step 4: require a Bearer token on every HTTP-transport request. Off by default. */
+  require_auth: z.boolean().default(false),
+  /**
+   * Name of the environment variable holding the shared-secret Bearer token, following the
+   * same env-var-indirection convention as `ai_openrouter.api_key_env` — the token itself
+   * never sits in plaintext config.
+   */
+  auth_token_env: z.string().default("MCP_AUTH_TOKEN"),
 });
 
 export type MCPConfig = z.infer<typeof MCPConfigSchema>;
