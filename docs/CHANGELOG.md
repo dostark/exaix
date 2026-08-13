@@ -18,6 +18,27 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 163 (MCP Server Spec Compliance)
+
+### Added
+
+- `mcp.require_auth` config flag (with the `MCP_AUTH_TOKEN` env var holding the bearer
+  secret) — opt into bearer-token authentication for `exactl mcp start --sse`, so
+  unauthenticated clients are rejected with `401` while clients presenting the configured
+  token are accepted; the server fails fast at startup if the flag is on but the token is
+  unset (see `Exaix_User_Guide.md` §8.1).
+- `execution_mode: dynamic` flow steps now execute for real on the Team/Enterprise edition —
+  the step runs a model-driven tool-selection loop bounded by its `permitted_tools` instead
+  of silently falling back to the declared path (see `Exaix_User_Guide.md` — "Flow Step
+  Execution Modes").
+
+### Changed
+
+- `exactl mcp start` now serves the MCP protocol through the official TypeScript SDK,
+  negotiating the current protocol version (2025-11-25, up from the legacy 2024-11-05) over
+  both stdio and, with `--sse --port <N>`, real Streamable HTTP (see `Exaix_User_Guide.md`
+  §8.1).
+
 ## Unreleased — Phase 162 (Outbound MCP Client)
 
 ### Added
