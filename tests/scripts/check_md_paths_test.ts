@@ -16,7 +16,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
-import { applyBacktickFix, applyFix, checkMdPaths } from "../../scripts/check_md_paths.ts";
+import { applyBacktickFix, applyFix, checkMdPaths, extractHeadings, slugify } from "../../scripts/check_md_paths.ts";
 
 async function sandbox(): Promise<{ root: string; cleanup: () => void }> {
   const root = await Deno.makeTempDir({ prefix: "md_paths_" });
@@ -463,6 +463,150 @@ Deno.test("[md-paths] scans nested markdown and resolves relative to each file's
     );
     const r = await checkMdPaths(root);
     assertEquals(r.violations.length, 0, JSON.stringify(r.violations));
+  } finally {
+    cleanup();
+  }
+});
+
+// ── Anchor-fragment validation (markdown-link syntax only) ────────────────
+
+Deno.test("[md-anchors] slugify matches GitHub's algorithm for known-good repo anchors", () => {
+  assertEquals(slugify("Behavioral Guidelines"), "behavioral-guidelines");
+  assertEquals(slugify("Task Checklist"), "task-checklist");
+  assertEquals(slugify("2. No Magic Numbers or Strings"), "2-no-magic-numbers-or-strings");
+  // Regression: GitHub does NOT collapse a run left behind by a removed character —
+  // "Skills & Plans" strips only "&", both flanking spaces survive as two hyphens.
+  // Verified against this repo's own real (working) cross-reference in
+  // docs/Exaix_Dogfooding.md ("## 5. Skills & Plans" -> "#5-skills--plans").
+  assertEquals(slugify("5. Skills & Plans"), "5-skills--plans");
+  assertEquals(slugify("Search & Filter"), "search--filter");
+  assertEquals(slugify("Split View / Panes"), "split-view--panes");
+  assertEquals(slugify("Conceptual Alignment — Where They Agree"), "conceptual-alignment--where-they-agree");
+});
+
+Deno.test("[md-anchors] extractHeadings honors an explicit {#custom-id} override", () => {
+  const headings = extractHeadings("## 🤖 Agent Tool Index (MCP) {#agent-tools}\n\nbody\n");
+  assertEquals(headings.length, 1);
+  assertEquals(headings[0].slug, "agent-tools");
+  assertEquals(headings[0].text, "🤖 Agent Tool Index (MCP)");
+});
+
+Deno.test("[md-anchors] extractHeadings disambiguates duplicate slugs like GitHub (-1, -2, ...)", () => {
+  const headings = extractHeadings("## Foo\n\n## Foo\n\n## Foo\n");
+  assertEquals(headings.map((h) => h.slug), ["foo", "foo-1", "foo-2"]);
+});
+
+Deno.test("[md-anchors] extractHeadings ignores a heading-shaped line inside a fenced code block", () => {
+  // Regression: a `# step-manifest` line inside a yaml fence must never be treated
+  // as a real H1 heading (this exact confusion previously corrupted step-manifest
+  // blocks under a markdown-lint auto-fix pass).
+  const headings = extractHeadings("# Real Heading\n\n```yaml\n# step-manifest\nstep: 1\n```\n");
+  assertEquals(headings.map((h) => h.text), ["Real Heading"]);
+});
+
+Deno.test("[md-anchors] a same-file markdown-link anchor to an existing heading passes", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      "## Behavioral Guidelines\n\nSee [above](#behavioral-guidelines).\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.anchorViolations.length, 0, JSON.stringify(r.anchorViolations));
+    assertEquals(r.ok, true);
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-anchors] a same-file markdown-link anchor to a NON-existent heading is flagged", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      "## Behavioral Guidelines\n\nSee [it](#task-checklist).\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.ok, false);
+    assertEquals(r.anchorViolations.length, 1);
+    assertEquals(r.anchorViolations[0].fragment, "task-checklist");
+    assertEquals(r.anchorViolations[0].targetFile, "README.md");
+    assertEquals(r.anchorViolations[0].line, 3);
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-anchors] a cross-file markdown-link anchor to an existing heading in the target passes", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await Deno.writeTextFile(join(root, "ARCHITECTURE.md"), "## Request Processing Flow\n\nbody\n");
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      "See [flow](ARCHITECTURE.md#request-processing-flow) for details.\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.anchorViolations.length, 0, JSON.stringify(r.anchorViolations));
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-anchors] a cross-file markdown-link anchor to a MISSING heading in the target is flagged", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await Deno.writeTextFile(join(root, "CONTRIBUTING.md"), "## Hooks\n\nbody\n");
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      "See [checklist](CONTRIBUTING.md#task-checklist) for details.\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.ok, false);
+    assertEquals(r.anchorViolations.length, 1);
+    assertEquals(r.anchorViolations[0].fragment, "task-checklist");
+    assertEquals(r.anchorViolations[0].targetFile, "CONTRIBUTING.md");
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-anchors] a link whose FILE does not resolve is reported once as a stale path, not double-reported as an anchor violation", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await Deno.writeTextFile(join(root, "README.md"), "See [x](./missing.md#some-section).\n");
+    const r = await checkMdPaths(root);
+    assertEquals(r.anchorViolations.length, 0, JSON.stringify(r.anchorViolations));
+    assert(r.violations.some((v) => v.reference === "./missing.md"));
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-anchors] a #fragment into a non-markdown target is not validated as a heading anchor", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await Deno.writeTextFile(join(root, "constants.ts"), "export const X = 1;\n");
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      "See [x](./constants.ts#not-a-real-heading-anchor).\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.anchorViolations.length, 0, JSON.stringify(r.anchorViolations));
+  } finally {
+    cleanup();
+  }
+});
+
+Deno.test("[md-anchors] backticked and bare-prose #anchor mentions remain unvalidated (link syntax only)", async () => {
+  const { root, cleanup } = await sandbox();
+  try {
+    await Deno.writeTextFile(join(root, "Reference.md"), "# ref\n");
+    await Deno.writeTextFile(
+      join(root, "README.md"),
+      "See `Reference.md#nonexistent-section` and also Reference.md#other-nonexistent here.\n",
+    );
+    const r = await checkMdPaths(root);
+    assertEquals(r.anchorViolations.length, 0, JSON.stringify(r.anchorViolations));
   } finally {
     cleanup();
   }

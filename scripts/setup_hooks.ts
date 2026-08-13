@@ -217,6 +217,15 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# 16c. Doc Section-Reference Check (ratchet: quoted §"Title" citations in STAGED markdown
+# must match a real heading in their target file — see scripts/check_doc_section_refs.ts)
+deno task check:doc-section-refs:staged
+if [ $? -ne 0 ]; then
+  echo "❌ Error: A staged markdown file has a quoted §\"Title\" citation naming a section that doesn't exist."
+  echo "    Fix the citation text, or the heading it names, so they match."
+  exit 1
+fi
+
 # 17. Agent Docs Integrity Check
 deno task check:agent-docs-integrity
 if [ $? -ne 0 ]; then

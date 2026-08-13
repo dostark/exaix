@@ -70,12 +70,28 @@ export interface IMdStyleViolation {
   reference: string;
 }
 
+/** A markdown-link `#fragment` that does not match any heading in its target file. */
+export interface IMdAnchorViolation {
+  /** Repo-relative path of the markdown file containing the reference. */
+  file: string;
+  /** 1-based line number of the reference. */
+  line: number;
+  /** The exact reference string as written in the doc (e.g. `ARCHITECTURE.md#foo` or `#foo`). */
+  reference: string;
+  /** Repo-relative path of the file whose headings were checked (== `file` for same-file anchors). */
+  targetFile: string;
+  /** The anchor fragment that did not resolve. */
+  fragment: string;
+}
+
 export interface IMdPathResult {
   ok: boolean;
   /** Path references that do not resolve (broken links / stale paths). */
   violations: IMdPathViolation[];
   /** Resolvable bare prose paths that should be wrapped in backticks (style facet). */
   styleViolations: IMdStyleViolation[];
+  /** Markdown-link `#fragment`s that do not match any heading in their target file. */
+  anchorViolations: IMdAnchorViolation[];
 }
 
 export interface ICheckOptions {
@@ -89,37 +105,46 @@ export interface ICheckOptions {
   onlyFiles?: Set<string>;
 }
 
+/** One ATX heading extracted from a markdown document. */
+export interface IHeading {
+  /** Heading text with an explicit `{#id}` override stripped, formatting markers intact. */
+  text: string;
+  /** The anchor this heading resolves to: the explicit `{#id}` override, else the computed slug. */
+  slug: string;
+  /** 1-based line number of the heading. */
+  line: number;
+}
 /** Directories never worth scanning or indexing. */
-const IGNORE_DIRS = new Set([
-  "node_modules",
-  ".git",
-  "coverage",
-  "dist",
-  "build",
-  ".copilot/chunks",
-  ".copilot/embeddings",
-]);
+export const IGNORE_DIRS: Record<string, true> = {
+  "node_modules": true,
+  ".git": true,
+  "coverage": true,
+  "dist": true,
+  "build": true,
+  ".copilot/chunks": true,
+  ".copilot/embeddings": true,
+};
 
 /** Extensions we treat as "referable repo files" for backtick/bare-path detection. */
-const REFERABLE_EXTS = new Set([
-  ".ts",
-  ".tsx",
-  ".js",
-  ".md",
-  ".json",
-  ".jsonc",
-  ".toml",
-  ".yaml",
-  ".yml",
-  ".sh",
-]);
+const REFERABLE_EXTS: Record<string, true> = {
+  ".ts": true,
+  ".tsx": true,
+  ".js": true,
+  ".md": true,
+  ".json": true,
+  ".jsonc": true,
+  ".toml": true,
+  ".yaml": true,
+  ".yml": true,
+  ".sh": true,
+};
 
 function hasReferableExt(p: string): boolean {
   const dot = p.lastIndexOf(".");
   if (dot < 0) return false;
   // Strip a trailing #anchor before checking.
   const ext = p.slice(dot).split("#")[0].toLowerCase();
-  return REFERABLE_EXTS.has(ext);
+  return REFERABLE_EXTS[ext] === true;
 }
 
 function isExternalOrAnchor(ref: string): boolean {
@@ -135,6 +160,96 @@ function isExternalOrAnchor(ref: string): boolean {
 /** Strip a trailing `#anchor` and surrounding whitespace from a link target. */
 function cleanTarget(ref: string): string {
   return ref.trim().split("#")[0].split(" ")[0];
+}
+
+/**
+ * A minimal CommonMark fenced-code-block tracker for line-oriented markdown scans.
+ * Shared by `extractHeadings` here and by `scripts/check_doc_section_refs.ts`, so a
+ * `# step-manifest` (or any heading-shaped) line inside a yaml fence is never mistaken
+ * for a real heading in either checker.
+ */
+export class FenceTracker {
+  #marker = "";
+
+  /** Call once per line, in order. Returns true when the line is inside (or opens/closes) a fence. */
+  update(line: string): boolean {
+    const fence = /^\s*(`{3,}|~{3,})(.*)$/.exec(line);
+    if (this.#marker) {
+      if (
+        fence && fence[1][0] === this.#marker[0] && fence[1].length >= this.#marker.length &&
+        fence[2].trim() === ""
+      ) {
+        this.#marker = "";
+      }
+      return true;
+    }
+    if (fence) {
+      this.#marker = fence[1];
+      return true;
+    }
+    return false;
+  }
+}
+
+/**
+ * Compute a GitHub-Flavored-Markdown-compatible heading slug: strip inline
+ * formatting/links/HTML, lowercase, drop punctuation outside `\p{L}\p{N}\p{M}_ -`,
+ * then collapse whitespace to single hyphens. Matches GitHub's rendered anchors for
+ * the plain-text headings used throughout this repo (verified against `#behavioral-guidelines`,
+ * `#task-checklist`, and other already-linked anchors).
+ */
+export function slugify(headingText: string): string {
+  let text = headingText;
+  text = text.replace(/`([^`]+)`/g, "$1");
+  text = text.replace(/\*\*([^*]+)\*\*/g, "$1");
+  text = text.replace(/\*([^*]+)\*/g, "$1");
+  text = text.replace(/__([^_]+)__/g, "$1");
+  text = text.replace(/_([^_]+)_/g, "$1");
+  text = text.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
+  text = text.replace(/<[^>]+>/g, "");
+  text = text.toLowerCase();
+  text = text.replace(/[^\p{L}\p{N}\p{M}_ -]/gu, "");
+  // GitHub does NOT collapse runs of removed punctuation: "Search & Filter" ->
+  // "search--filter" (the "&" is removed but both flanking spaces survive, each
+  // becoming its own hyphen). Replace each space independently, never `\s+`.
+  text = text.replace(/ /g, "-");
+  return text;
+}
+
+const HEADING_OVERRIDE_RE = /\s*\{#([a-zA-Z0-9_-]+)\}\s*$/;
+
+/**
+ * Extract ATX headings (`#` … `######`) from markdown text, honoring an explicit
+ * `{#custom-id}` anchor override — a convention already used throughout this repo
+ * (e.g. CODE_STYLE.md's `## 2. No Magic Numbers or Strings {#no-magic-values}`) — and
+ * GitHub's duplicate-slug disambiguation (`-1`, `-2`, …). Fenced code blocks are
+ * skipped so a heading-shaped line inside a fence is never captured.
+ */
+export function extractHeadings(text: string): IHeading[] {
+  const headings: IHeading[] = [];
+  const seenSlugs: Record<string, number> = {};
+  const fence = new FenceTracker();
+  const lines = text.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (fence.update(line)) continue;
+    const m = /^(#{1,6})\s+(.+?)\s*$/.exec(line);
+    if (!m) continue;
+    let rawText = m[2];
+    const override = HEADING_OVERRIDE_RE.exec(rawText);
+    let slug: string;
+    if (override) {
+      slug = override[1];
+      rawText = rawText.slice(0, override.index).trimEnd();
+    } else {
+      const base = slugify(rawText);
+      const seenCount = seenSlugs[base] ?? 0;
+      slug = seenCount === 0 ? base : `${base}-${seenCount}`;
+      seenSlugs[base] = seenCount + 1;
+    }
+    headings.push({ text: rawText, slug, line: i + 1 });
+  }
+  return headings;
 }
 
 /** Absolute/system/example roots that are never repo references. */
@@ -204,9 +319,17 @@ interface IExtractedRef {
   isBareProse: boolean;
 }
 
+/** A markdown-link target containing a `#fragment` (same-file `#foo` or `path.md#foo`). */
+interface IExtractedAnchorRef {
+  /** The raw link target exactly as written, e.g. `ARCHITECTURE.md#foo` or `#foo`. */
+  raw: string;
+  line: number;
+}
+
 /** Extract candidate references (with line numbers) from one markdown file's text. */
-function extractReferences(text: string): IExtractedRef[] {
+function extractReferences(text: string): { refs: IExtractedRef[]; anchorRefs: IExtractedAnchorRef[] } {
   const out: IExtractedRef[] = [];
+  const anchorRefs: IExtractedAnchorRef[] = [];
   const lines = text.split("\n");
   // Fence tracking, CommonMark-style: an OPENING fence may carry an info string
   // (language), e.g. ```bash; a CLOSING fence must be the marker alone (only the
@@ -270,7 +393,14 @@ function extractReferences(text: string): IExtractedRef[] {
 
     // 1) Markdown links: [text](target) — always link-style.
     for (const m of commentStripped.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
-      const target = cleanTarget(m[1]);
+      const rawTarget = m[1].trim();
+      if (
+        rawTarget.includes("#") && !rawTarget.startsWith("http://") && !rawTarget.startsWith("https://") &&
+        !rawTarget.startsWith("mailto:")
+      ) {
+        anchorRefs.push({ raw: rawTarget, line: i + 1 });
+      }
+      const target = cleanTarget(rawTarget);
       if (!target || isExternalOrAnchor(target) || target.startsWith("@")) continue;
       add(target, true);
     }
@@ -300,7 +430,7 @@ function extractReferences(text: string): IExtractedRef[] {
       add(token, isRelativeReference(token), !isShellLine);
     }
   }
-  return out;
+  return { refs: out, anchorRefs };
 }
 
 /** Drop a trailing `#anchor` from a path reference (the file part is what resolves). */
@@ -325,6 +455,63 @@ function referenceResolves(root: string, mdFileAbs: string, refWithAnchor: strin
   return false;
 }
 
+/**
+ * Validate one anchor-bearing link target against its target file's real headings.
+ * Returns `null` when the anchor resolves, when the target file itself is stale
+ * (already reported separately by the stale-path check — avoid double-reporting),
+ * or when the target is not a markdown file (a `#fragment` on a `.ts`/`.json` target
+ * is a different concept, out of scope here).
+ */
+async function checkAnchorRef(
+  absRoot: string,
+  mdFileAbs: string,
+  mdFileRel: string,
+  raw: string,
+  line: number,
+  headingsCache: Map<string, IHeading[]>,
+): Promise<IMdAnchorViolation | null> {
+  const hashIdx = raw.indexOf("#");
+  const filePart = raw.slice(0, hashIdx);
+  const fragment = raw.slice(hashIdx + 1);
+  if (!fragment) return null; // trailing bare "#" — nothing to validate
+
+  let targetAbs: string;
+  let targetRel: string;
+  if (filePart === "") {
+    targetAbs = mdFileAbs;
+    targetRel = mdFileRel;
+  } else {
+    if (!filePart.toLowerCase().endsWith(".md")) return null;
+    const candidates = isAbsolute(filePart)
+      ? [filePart]
+      : [resolve(dirname(mdFileAbs), filePart), resolve(absRoot, filePart)];
+    const resolved = candidates.find((c) => {
+      try {
+        Deno.statSync(c);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    if (!resolved) return null; // stale FILE path — already reported by the path checker
+    targetAbs = resolved;
+    targetRel = relative(absRoot, resolved).replaceAll("\\", "/");
+  }
+
+  let headings = headingsCache.get(targetAbs);
+  if (!headings) {
+    try {
+      headings = extractHeadings(await Deno.readTextFile(targetAbs));
+    } catch {
+      headings = [];
+    }
+    headingsCache.set(targetAbs, headings);
+  }
+  if (headings.some((h) => h.slug === fragment)) return null;
+
+  return { file: mdFileRel, line, reference: raw, targetFile: targetRel, fragment };
+}
+
 /** Build a basename → [repo-relative path] index for auto-fix suggestions. */
 async function buildBasenameIndex(root: string): Promise<Map<string, string[]>> {
   const index = new Map<string, string[]>();
@@ -332,7 +519,7 @@ async function buildBasenameIndex(root: string): Promise<Map<string, string[]>> 
     const entry of walk(root, {
       includeDirs: false,
       followSymlinks: false,
-      skip: [...IGNORE_DIRS].map((d) => new RegExp(`(^|/)${d.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(/|$)`)),
+      skip: Object.keys(IGNORE_DIRS).map((d) => new RegExp(`(^|/)${d.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(/|$)`)),
     })
   ) {
     const rel = relative(root, entry.path).replaceAll("\\", "/");
@@ -379,7 +566,7 @@ function suggestFor(
 }
 
 /** Repo-relative paths of markdown files currently staged for commit (added/modified). */
-async function stagedMarkdownFiles(root: string): Promise<Set<string>> {
+export async function stagedMarkdownFiles(root: string): Promise<Set<string>> {
   const cmd = new Deno.Command("git", {
     args: ["diff", "--cached", "--name-only", "--diff-filter=ACMR"],
     cwd: resolve(root),
@@ -400,13 +587,15 @@ export async function checkMdPaths(root: string, options: ICheckOptions = {}): P
   const index = await buildBasenameIndex(absRoot);
   const violations: IMdPathViolation[] = [];
   const styleViolations: IMdStyleViolation[] = [];
+  const anchorViolations: IMdAnchorViolation[] = [];
+  const headingsCache = new Map<string, IHeading[]>();
 
   for await (
     const entry of walk(absRoot, {
       exts: [".md"],
       includeDirs: false,
       followSymlinks: false,
-      skip: [...IGNORE_DIRS].map((d) => new RegExp(`(^|/)${d.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(/|$)`)),
+      skip: Object.keys(IGNORE_DIRS).map((d) => new RegExp(`(^|/)${d.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(/|$)`)),
     })
   ) {
     const rel = relative(absRoot, entry.path).replaceAll("\\", "/");
@@ -414,7 +603,8 @@ export async function checkMdPaths(root: string, options: ICheckOptions = {}): P
     if (options.parentOnly && rel.startsWith("exaix-dev-docs/")) continue;
     if (options.onlyFiles && !options.onlyFiles.has(rel)) continue;
     const text = await Deno.readTextFile(entry.path);
-    for (const { ref, line, isLink, isBareProse } of extractReferences(text)) {
+    const { refs, anchorRefs } = extractReferences(text);
+    for (const { ref, line, isLink, isBareProse } of refs) {
       const resolves = referenceResolves(absRoot, entry.path, ref);
       if (!resolves) {
         violations.push({ file: rel, line, reference: ref, isLink, suggestion: suggestFor(ref, rel, index) });
@@ -423,10 +613,20 @@ export async function checkMdPaths(root: string, options: ICheckOptions = {}): P
       // Resolvable + bare-in-prose ⇒ style nag: it should be wrapped in backticks.
       if (isBareProse) styleViolations.push({ file: rel, line, reference: ref });
     }
+    for (const { raw, line } of anchorRefs) {
+      const v = await checkAnchorRef(absRoot, entry.path, rel, raw, line, headingsCache);
+      if (v) anchorViolations.push(v);
+    }
   }
   violations.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
   styleViolations.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
-  return { ok: violations.length === 0 && styleViolations.length === 0, violations, styleViolations };
+  anchorViolations.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
+  return {
+    ok: violations.length === 0 && styleViolations.length === 0 && anchorViolations.length === 0,
+    violations,
+    styleViolations,
+    anchorViolations,
+  };
 }
 
 /**
@@ -519,6 +719,13 @@ function reportViolations(r: IMdPathResult): void {
     console.error(`\n❌ ${r.styleViolations.length} bare path(s) in prose that should be backticked:`);
     for (const v of r.styleViolations) console.error(`  ${v.file}:${v.line}  ${v.reference}`);
   }
+  if (r.anchorViolations.length > 0) {
+    console.error(`\n❌ ${r.anchorViolations.length} markdown-link #anchor(s) that don't match a heading:`);
+    for (const v of r.anchorViolations) {
+      const where = v.targetFile === v.file ? "this file" : v.targetFile;
+      console.error(`  ${v.file}:${v.line}  ${v.reference}  (no "${v.fragment}" heading in ${where})`);
+    }
+  }
   console.error(`\nRun with --fix to rewrite unambiguous renames and wrap bare prose paths in backticks.`);
 }
 
@@ -539,7 +746,9 @@ if (import.meta.main) {
   const result = await checkMdPaths(root, opts);
 
   if (result.ok) {
-    console.log("✅ Markdown path check: all path references resolve and bare prose paths are backticked.");
+    console.log(
+      "✅ Markdown path check: all path references resolve, anchors match real headings, and bare prose paths are backticked.",
+    );
     Deno.exit(0);
   }
 
@@ -553,7 +762,7 @@ if (import.meta.main) {
       Deno.exit(0);
     }
     console.error(
-      `\n❌ ${rechecked.violations.length} stale + ${rechecked.styleViolations.length} bare-path issue(s) remain:`,
+      `\n❌ ${rechecked.violations.length} stale + ${rechecked.styleViolations.length} bare-path + ${rechecked.anchorViolations.length} anchor issue(s) remain:`,
     );
     reportViolations(rechecked);
     Deno.exit(1);

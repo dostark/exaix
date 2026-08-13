@@ -127,6 +127,8 @@
     "check:md-path": "deno run --allow-read --allow-run=git scripts/check_md_paths.ts .",
     "check:md-path:staged": "deno run --allow-read --allow-run=git scripts/check_md_paths.ts . --staged",
     "check:md-path:fix": "deno run --allow-read --allow-write --allow-run=git scripts/check_md_paths.ts . --fix",
+    "check:doc-section-refs": "deno run --allow-read --allow-run=git scripts/check_doc_section_refs.ts .",
+    "check:doc-section-refs:staged": "deno run --allow-read --allow-run=git scripts/check_doc_section_refs.ts . --staged",
     "check:duplication": "deno run --allow-run --allow-read --allow-write scripts/measure_duplication.ts",
     "measure:duplication": "deno run --allow-run --allow-read --allow-write scripts/measure_duplication.ts",
     "compile": "deno compile --allow-read --allow-write --allow-net --allow-env --allow-ffi --allow-import --allow-run=git,deno,npm,node,exoctl,ls,grep,echo,printf,pwd,whoami,id,date,uptime,which,type,command,hash,alias --output exaix apps/daemon/main.ts",
