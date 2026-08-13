@@ -21,11 +21,16 @@ import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
 import { DatabaseService } from "@exaix/storage-sqlite";
+import { DomainEventType } from "@exaix/core/events";
 import { DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS } from "@exaix/mcp";
 import { LocalToolDispatcher } from "@exaix/mcp/server";
 import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 import { createStubContext } from "@exaix/testing";
 import { buildDynamicHandlers } from "@exaix-team/mcp-server";
+import type { IEventLogger } from "@exaix/core/logger";
+import type { IApplicationContext, LogMetadata } from "@exaix/core/types";
+import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
+import { buildTeamMcpClient } from "../src/build_team_mcp_client.ts";
 import {
   bootRealDaemon,
   daemonConfigSections,
@@ -360,6 +365,56 @@ Deno.test({
       "the dispatcher's tool surface must be exactly the union of DYNAMIC_MODE_TOOLS and " +
         "DYNAMIC_MODE_APPROVAL_TOOLS — the narrower safe-only filter is enforced downstream by " +
         "DynamicStepExecutor.resolvePermittedTools(), not by which handlers exist in the map",
+    );
+  },
+});
+
+// ── Fail-soft degradation (Phase 163 Step 10) ────────────────────────────────
+
+Deno.test({
+  name:
+    "[daemon wiring] a Team-edition dynamic-tooling construction failure logs DynamicToolsInitFailed and degrades to no-dynamic-step-mode without crashing boot",
+  async fn() {
+    const errors: Array<{ action: string; payload: LogMetadata }> = [];
+    const logger: IEventLogger = {
+      log: () => Promise.resolve(),
+      info: () => Promise.resolve(),
+      warn: () => Promise.resolve(),
+      error: (action: string, _target: string | null, payload?: LogMetadata) => {
+        errors.push({ action, payload: payload ?? {} });
+        return Promise.resolve();
+      },
+      fatal: () => Promise.resolve(),
+      debug: () => Promise.resolve(),
+      child: () => logger,
+    };
+    // A context whose config.getAll() throws makes the first tool-handler factory's
+    // ToolHandler constructor throw inside buildDynamicHandlers — exercising the
+    // catch → log DynamicToolsInitFailed → return undefined (no crash) path. Spread a
+    // real stub context's config rather than double-casting an ad hoc object, so the
+    // override stays properly typed.
+    const validContext = createStubContext();
+    const throwingContext: IApplicationContext = {
+      ...validContext,
+      config: {
+        ...validContext.config,
+        getAll: () => {
+          throw new Error("dynamic-tooling boom");
+        },
+      },
+    };
+
+    const result = await buildTeamMcpClient(
+      throwingContext,
+      {} as IPortalPermissionsChecker,
+      logger,
+    );
+
+    assertEquals(result, undefined, "a wiring failure must degrade to no mcpClient (undefined), not crash boot");
+    assertEquals(
+      errors.filter((e) => e.action === DomainEventType.DynamicToolsInitFailed).length,
+      1,
+      "DynamicToolsInitFailed must be logged exactly once on a wiring failure",
     );
   },
 });

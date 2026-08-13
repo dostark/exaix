@@ -84,6 +84,7 @@ import type { IPortalKnowledgeConfig, PortalAnalysisMode } from "@exaix/core/typ
 import { createConfigReloadHandler, createDbWatcherHandler, getMaxOverrideId } from "@exaix/core/config";
 import { GracefulShutdown } from "./src/graceful_shutdown.ts";
 import { recoverOrphanedDelegations } from "./src/recovery.ts";
+import { buildTeamMcpClient } from "./src/build_team_mcp_client.ts";
 // registerTeamCapabilities is loaded dynamically inside the Team branch only —
 // bootstrap_team.ts statically pulls in @exaix-team/voting|hitl|portal-extractors,
 // which must stay out of the Solo binary.
@@ -99,7 +100,7 @@ import { ToolRegistry } from "@exaix/tool-runtime";
 import type { IApplicationContext } from "@exaix/core/types";
 import { type LogMetadata, toSafeJson } from "@exaix/core/types";
 import { DEFAULT_MCP_IDENTITY_ID, DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS } from "@exaix/mcp";
-import { LocalToolDispatcher } from "@exaix/mcp/server";
+import type { LocalToolDispatcher } from "@exaix/mcp/server";
 import { SessionWaitStore } from "@exaix/session/wait/session_wait_store.ts";
 import { SessionReturnProcessor } from "@exaix/session/session_return_processor.ts";
 import { SessionReturnWatcher } from "./src/session_return_watcher.ts";
@@ -887,14 +888,7 @@ if (import.meta.main) {
     // rather than taking the whole Team daemon down.
     let mcpClient: LocalToolDispatcher | undefined;
     if (editionType === EDITION_TEAM) {
-      try {
-        const { buildDynamicHandlers } = await import("@exaix-team/mcp-server");
-        mcpClient = new LocalToolDispatcher(context, buildDynamicHandlers(context, portalPermissions));
-      } catch (error) {
-        logger.error(DomainEventType.DynamicToolsInitFailed, "daemon", {
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
+      mcpClient = await buildTeamMcpClient(context, portalPermissions, logger);
     }
     const agentExecutorAdapter = new AgentOrchestratorAdapter(
       agentRunner,
