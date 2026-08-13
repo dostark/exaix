@@ -3,7 +3,7 @@ title: "Agent Instructions"
 description: Agent coordination and task-specific guidance index
 agent_priority: critical
 copilot_knowledge_base: true
-version: 1.2
+version: 1.3
 capabilities: [task_routing, cross_reference, process_validation]
 links:
   - ".copilot/manifest.json"
@@ -44,7 +44,7 @@ links:
 - [ ] If a required document exists on disk but cannot be read or is empty, stop and report: `UNREADABLE: "<path>" exists but could not be read — cannot proceed without resolution.`
 - [ ] Read frontmatter of root `.md` files whenever you are selecting which `.copilot/` documents to consult for a task; the first 20 lines identify `copilot_knowledge_base: true` and relevant `capabilities` for that document
 - [ ] Read `ARCHITECTURE.md` before modifying any core flow
-- [ ] Use symbol-based links (for example `packages/core/src/types.ts:MyServiceConfig`) when referencing code locations
+- [ ] When citing a code location in your response, name the file and the specific symbol (function, class, interface) it concerns — for example `packages/core/src/types.ts:MyServiceConfig` — not just the file
 - [ ] **Acknowledge** which `.copilot/` docs guided your approach in your implementation plan
 
 **Example acknowledgment format:**
@@ -157,11 +157,14 @@ Complete this checklist for every implementation task, in order.
 3. Do not bypass failing checks or ignore pre-commit failures.
 4. Do not introduce magic numbers or strings — see [CODE_STYLE.md §2](./CODE_STYLE.md#no-magic-values).
 5. Do not place imports anywhere other than the top of the file.
-6. If you modified any MCP tool handler under `packages/mcp/server/`, run `deno task docs-sync-schemas` and stage the result.
-7. Run the quick verification command below after each discrete implementation step.
-8. Before any PR handoff or completion claim, run `deno run -A scripts/ci.ts all`. If it fails without a clear cause, `.github/workflows/code-quality.yml` and `.github/workflows/pr-validation.yml` are the exact CI step definitions — read them directly rather than trusting a hand-copied summary, which will drift.
-9. If you cannot execute shell commands in the current environment, state which validation steps were skipped, why, and that the task remains unverified. A task with skipped CI steps must NOT be marked complete — mark it `PENDING VERIFICATION` and list the exact commands a human reviewer must run to close it.
-10. If CI fails, do not claim completion; identify the root cause, fix it without bypass flags, and rerun the failing check until it passes.
+6. Preserve public APIs unless the task explicitly requires a change.
+7. Avoid introducing new dependencies unless necessary.
+8. Fix source behavior, not tests — never edit or weaken a test just to make it pass unless the test itself is wrong.
+9. If you modified any MCP tool handler under `packages/mcp/server/`, run `deno task docs-sync-schemas` and stage the result.
+10. Run the quick verification command below after each discrete implementation step.
+11. Before any PR handoff or completion claim, run `deno run -A scripts/ci.ts all`. If it fails without a clear cause, `.github/workflows/code-quality.yml` and `.github/workflows/pr-validation.yml` are the exact CI step definitions — read them directly rather than trusting a hand-copied summary, which will drift.
+12. If you cannot execute shell commands in the current environment, state which validation steps were skipped, why, and that the task remains unverified. A task with skipped CI steps must NOT be marked complete — mark it `PENDING VERIFICATION` and list the exact commands a human reviewer must run to close it.
+13. If CI fails, do not claim completion; identify the root cause, fix it without bypass flags, and rerun the failing check until it passes.
 
 ### Quick CI Verification
 
