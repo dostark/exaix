@@ -9,7 +9,7 @@
 
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { z } from "zod";
-import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
+import { Client, InMemoryTransport, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { toSdkCallToolResult } from "@exaix-team/mcp-server";
 import { McpToolName, McpTransportType } from "@exaix/mcp";
 import { createMCPRequest, initMCPTest, initMCPTestWithoutPortal } from "@exaix/mcp/testing";
@@ -412,3 +412,59 @@ Deno.test("[MCPServer] exaix/tools/result_schema round-trips through the officia
     await ctx.cleanup();
   }
 });
+
+// ============================================================================
+// Step 3 (Phase 163): Streamable HTTP transport — real-wire golden-fixture parity
+// ============================================================================
+
+Deno.test(
+  "[MCPServer HTTP] tools/list and tools/call over real Streamable HTTP match the golden fixture",
+  async () => {
+    // Uses the low-level `client.request(..., z.unknown())` escape hatch for the same
+    // reason as the InMemoryTransport parity test above: the typed convenience methods
+    // reject Exaix's proprietary `exaix_structured_data` content type client-side.
+    const checkedIn = JSON.parse(await Deno.readTextFile(GOLDEN_FIXTURE_PATH)) as IGoldenFixtureCapture;
+    const ctx = await initMCPTest({ initGit: true, fileContent: GOLDEN_FIXTURE_SEED_FILES });
+    const httpServer = Deno.serve({ port: 0, hostname: "localhost" }, ctx.server.buildHttpFetch());
+    try {
+      const addr = httpServer.addr;
+      if (addr.transport !== "tcp") {
+        throw new Error(`expected a tcp listener, got transport: ${addr.transport}`);
+      }
+
+      const transport = new StreamableHTTPClientTransport(new URL(`http://localhost:${addr.port}/`));
+      const client = new Client({ name: "golden-fixture-http-parity-client", version: "1.0.0" });
+      await client.connect(transport);
+
+      const toolsList = await client.request({ method: "tools/list", params: {} }, z.unknown());
+      assertEquals(
+        JSON.parse(JSON.stringify(toolsList)),
+        checkedIn.toolsList.result,
+        "tools/list over real Streamable HTTP must match Step 1's golden fixture exactly",
+      );
+
+      for (const category of ["READ", "WRITE", "GIT", "META", "DOMAIN"] as const) {
+        const spec = REPRESENTATIVE_TOOL_CALLS.find((c) => c.category === category);
+        assertExists(spec, `representative call spec for category '${category}' must exist`);
+        const callResult = await client.request(
+          { method: "tools/call", params: { name: spec.toolName, arguments: spec.args } },
+          z.unknown(),
+        );
+        // Apply the same structuredContent adapter as the InMemoryTransport parity test —
+        // the wire shape is identical over real HTTP, only the transport framing differs.
+        const expected = toSdkCallToolResult(checkedIn.representativeToolCalls[category].result);
+        assertEquals(
+          JSON.parse(JSON.stringify(callResult)),
+          JSON.parse(JSON.stringify(expected)),
+          `representative tools/call for category '${category}' over real Streamable HTTP must match ` +
+            "Step 1's golden fixture (adapted for the SDK's structuredContent mechanism where applicable)",
+        );
+      }
+
+      await client.close();
+    } finally {
+      await httpServer.shutdown();
+      await ctx.cleanup();
+    }
+  },
+);

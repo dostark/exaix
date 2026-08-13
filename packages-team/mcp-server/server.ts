@@ -22,13 +22,19 @@ import { discoverAllResources, parsePortalURI } from "./resources.ts";
 import { generatePrompt, getPrompts } from "./prompts.ts";
 import {
   type CallToolResult,
+  createMcpHandler,
   fromJsonSchema,
   type GetPromptResult,
+  hostHeaderValidationResponse,
   type JsonSchemaType,
   type jsonSchemaValidator as IJsonSchemaValidatorProvider,
   type JsonSchemaValidatorResult,
   type ListResourcesResult,
+  localhostAllowedHostnames,
+  localhostAllowedOrigins,
+  type McpHttpHandler,
   McpServer,
+  originValidationResponse,
   type ReadResourceResult,
   ResourceTemplate,
 } from "@modelcontextprotocol/server";
@@ -57,7 +63,9 @@ type ZodErrorCandidate =
   | JSONValue[]
   | null
   | undefined;
-type MCPHttpResponse = Response;
+/** Web-standard fetch response for the MCP-over-HTTP handler (Step 3). */
+type McpHttpFetchResponse = Response;
+type McpHttpFetchResponsePromise = Promise<McpHttpFetchResponse>;
 
 /** Uniform outcome of executing one tool, decoupled from either transport's own top-level-vs-in-band error convention (Step 2). */
 interface IToolExecutionOutcome {
@@ -215,6 +223,10 @@ export class MCPServer {
     toolName: string,
     policy: IToolResultRemediationPolicy,
   ) => IToolResultRemediationPolicy;
+  /** Retained so `stop()` can actually close the HTTP listener (Pre-Gap Analysis GAP-9). */
+  private httpServerHandle?: Deno.HttpServer;
+  /** Retained so `stop()` can tear down the SDK's modern-leg in-flight state alongside the listener. */
+  private mcpHttpHandler?: McpHttpHandler;
 
   constructor(options: MCPServerOptions) {
     this.context = options.context;
@@ -305,6 +317,18 @@ export class MCPServer {
         server_name: this.serverName,
       },
     );
+
+    // Pre-Gap Analysis GAP-9: actually tear down the HTTP listener (fire-and-forget is
+    // acceptable here — stop() is synchronous by existing contract; both teardowns are
+    // idempotent and safe to leave unawaited).
+    if (this.httpServerHandle) {
+      void this.httpServerHandle.shutdown();
+      this.httpServerHandle = undefined;
+    }
+    if (this.mcpHttpHandler) {
+      void this.mcpHttpHandler.close();
+      this.mcpHttpHandler = undefined;
+    }
   }
 
   /**
@@ -1120,103 +1144,52 @@ export class MCPServer {
   }
 
   /**
-   * Returns true if the request's Host resolves to the local loopback. The HTTP
-   * server binds to localhost, but a DNS-rebinding page can still reach it from a
-   * victim's browser with an attacker Host header — so we validate it (Finding 5).
+   * Builds the composed web-standard `fetch` handler for MCP-over-HTTP (Step 3):
+   * SDK Host/Origin validation (DNS-rebinding/CSRF defense, replacing the hand-rolled
+   * `isLoopbackHost`/`rejectUnsafeOrigin` this step retires) → the unrelated, unaffected
+   * trace-streaming route (`sse_handler.ts`, never part of the MCP protocol surface) →
+   * the official SDK's `createMcpHandler`-built MCP JSON-RPC dispatch → Exaix's own
+   * CSP/X-Frame-Options/nosniff header set (`addSecurityHeaders`, which the SDK has no
+   * equivalent for, so it is kept and wraps every response). `legacy: "stateless"` is the
+   * SDK's own default: each 2025-era (non-envelope) request — which is what every one of
+   * Exaix's current clients sends, since none negotiate the 2026-07-28 envelope — is
+   * answered by a fresh instance from the same factory over a stateless Streamable HTTP
+   * transport; this matches the Constraints note that current clients already speak plain
+   * POST/JSON, not real SSE, and required no `'reject'`-mode justification. One
+   * SDK-intrinsic, unavoidable behavior change from the hand-rolled path: real Streamable
+   * HTTP (per the spec, for both the modern and 2025-era legacy leg) always frames a
+   * response as a single-event SSE stream (`Content-Type: text/event-stream`), never a
+   * bare `application/json` body — confirmed empirically against the vendored SDK; this
+   * is the actual spec behavior this phase migrates onto, not a regression.
    */
-  private static isLoopbackHost(hostname: string): boolean {
-    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]" || hostname === "::1";
-  }
+  public buildHttpFetch(): (request: Request) => McpHttpFetchResponsePromise {
+    const handler = createMcpHandler(() => this.buildSdkServer(), { legacy: "stateless" });
+    this.mcpHttpHandler = handler;
+    const sseHandler = this.sseHandler ?? new SseHandler(EventBusService.getInstance());
 
-  /**
-   * Rejects requests that are not safe to serve on a localhost-only tool endpoint:
-   * a non-loopback Host (DNS rebinding) or a cross-origin browser request (CSRF).
-   * Local CLI/MCP clients send a loopback Host and no Origin, so they are unaffected.
-   */
-  private rejectUnsafeOrigin(request: Request): MCPHttpResponse | null {
-    const hostname = new URL(request.url).hostname;
-    if (!MCPServer.isLoopbackHost(hostname)) {
-      return this.addSecurityHeaders(new Response("Forbidden: host not allowed", { status: 403 }));
-    }
-
-    const origin = request.headers.get("Origin");
-    if (origin !== null) {
-      let originHost: string | null = null;
-      try {
-        originHost = new URL(origin).hostname;
-      } catch {
-        originHost = null;
-      }
-      if (originHost === null || !MCPServer.isLoopbackHost(originHost)) {
-        return this.addSecurityHeaders(new Response("Forbidden: cross-origin request", { status: 403 }));
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Handles HTTP requests for MCP over HTTP transport
-   * Applies security headers to all responses
-   */
-  async handleHTTPRequest(request: Request): Promise<MCPHttpResponse> {
-    try {
-      // Reject DNS-rebinding (non-loopback Host) and cross-origin (CSRF) requests
-      // before any routing or body parsing.
-      const rejection = this.rejectUnsafeOrigin(request);
-      if (rejection) return rejection;
-
-      // Delegate to SSE handler for SSE routes
-      if (this.sseHandler) {
-        const url = new URL(request.url);
-        if (SseHandler.matchesTraceIdRoute(url.pathname)) {
-          return this.addSecurityHeaders(this.sseHandler.handleRequest(request));
-        }
+    return async (request: Request): McpHttpFetchResponsePromise => {
+      const rejected = hostHeaderValidationResponse(request, localhostAllowedHostnames()) ??
+        originValidationResponse(request, localhostAllowedOrigins());
+      if (rejected) {
+        return this.addSecurityHeaders(rejected);
       }
 
-      // Only allow POST requests for JSON-RPC
-      if (request.method !== "POST") {
-        const response = new Response("Method not allowed", { status: 405 });
-        return this.addSecurityHeaders(response);
+      const url = new URL(request.url);
+      if (SseHandler.matchesTraceIdRoute(url.pathname)) {
+        return this.addSecurityHeaders(sseHandler.handleRequest(request));
       }
 
-      // Parse JSON-RPC request
-      const jsonRpcRequest: JSONRPCRequest = await request.json();
-
-      // Process the request
-      const result = await this.handleRequest(jsonRpcRequest);
-
-      // Return JSON response with security headers
-      const response = new Response(JSON.stringify(result), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-
+      const response = await handler.fetch(request);
       return this.addSecurityHeaders(response);
-    } catch (_error) {
-      // Return error response with security headers
-      const errorResponse = {
-        jsonrpc: "2.0",
-        id: null,
-        error: {
-          code: JsonRpcErrorCode.PARSE_ERROR,
-          message: "Parse error",
-        },
-      };
-
-      const response = new Response(JSON.stringify(errorResponse), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-
-      return this.addSecurityHeaders(response);
-    }
+    };
   }
 
   /**
-   * Starts HTTP server for MCP over HTTP/SSE transport
-   * Only available when transport is configured as "sse"
+   * Starts HTTP server for MCP over HTTP/SSE transport. Only available when transport is
+   * configured as "sse". Returns the actual bound port (useful when `port` is `0` for an
+   * OS-assigned ephemeral port, e.g. in tests).
    */
-  async startHTTPServer(port: number = 3000): Promise<void> {
+  startHTTPServer(port: number = 3000): number {
     if (this.transport !== "sse") {
       throw new Error("HTTP server only available for SSE transport");
     }
@@ -1227,22 +1200,27 @@ export class MCPServer {
 
     this.running = true;
 
-    // Log server start
+    // Deno.serve() returns its handle synchronously (not a Promise) — Pre-Gap Analysis
+    // GAP-9: retained on the instance so stop() can actually close the listener, unlike
+    // the pre-migration fire-and-forget call that discarded it.
+    this.httpServerHandle = Deno.serve({ port, hostname: "localhost" }, this.buildHttpFetch());
+    const addr = this.httpServerHandle.addr;
+    const boundPort = addr.transport === "tcp" || addr.transport === "udp" ? addr.port : port;
+
+    // Log server start with the actual bound port (matches `port` unless it was 0).
     this.logActivity(
       "mcp.server",
       DomainEventType.McpHttpServerStarted,
       null,
       {
         transport: this.transport,
-        port,
+        port: boundPort,
         server_name: this.serverName,
         server_version: this.serverVersion,
       },
     );
 
-    // Event already logged via logActivity above
-
-    await Deno.serve({ port, hostname: "localhost" }, (request: Request) => this.handleHTTPRequest(request));
+    return boundPort;
   }
 }
 

@@ -7,7 +7,7 @@
  * mandatory headers (CSP, HSTS) are applied and prevent cross-site scripting (XSS).
  */
 
-import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
 import { McpTransportType } from "@exaix/mcp";
 import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 
@@ -171,10 +171,17 @@ Deno.test("MCPServer: supports SSE transport configuration", async () => {
 
 Deno.test("MCPServer: handles HTTP POST requests", async () => {
   await withMCPServerSecurity({ transport: McpTransportType.SSE }, async ({ server }) => {
-    // Create a mock initialize request
+    // Create a mock initialize request. Host and Accept headers are required by the
+    // official SDK's Streamable HTTP transport (confirmed empirically) — a real client
+    // (or a real Deno.serve() connection) always sets Host; Accept negotiates the
+    // response framing.
     const initRequest = new Request("http://localhost:3000", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Host": "localhost:3000",
+        "Accept": "application/json, text/event-stream",
+      },
       body: JSON.stringify({
         jsonrpc: "2.0",
         id: 1,
@@ -187,15 +194,18 @@ Deno.test("MCPServer: handles HTTP POST requests", async () => {
       }),
     });
 
-    const response = await server.handleHTTPRequest(initRequest);
+    const response = await server.buildHttpFetch()(initRequest);
 
     // Verify response has security headers
     assert(response.headers.get("Content-Security-Policy") !== null);
     assert(response.headers.get("X-Frame-Options") !== null);
     assert(response.headers.get("Strict-Transport-Security") !== null);
 
-    // Verify it's a JSON response
-    assertEquals(response.headers.get("Content-Type"), "application/json");
+    // Real Streamable HTTP (per spec, both legacy and modern legs) always frames a
+    // response as a single-event SSE stream, never bare application/json — confirmed
+    // empirically against the vendored SDK; this is the actual spec behavior this phase
+    // migrates onto, not a regression (see buildHttpFetch's doc comment).
+    assertEquals(response.headers.get("Content-Type"), "text/event-stream");
     assertEquals(response.status, 200);
   });
 });
@@ -205,9 +215,10 @@ Deno.test("MCPServer: rejects non-POST HTTP requests", async () => {
     // Create a GET request
     const getRequest = new Request("http://localhost:3000", {
       method: "GET",
+      headers: { "Host": "localhost:3000" },
     });
 
-    const response = await server.handleHTTPRequest(getRequest);
+    const response = await server.buildHttpFetch()(getRequest);
 
     // Should return 405 Method Not Allowed with security headers
     assertEquals(response.status, 405);
@@ -220,11 +231,15 @@ Deno.test("MCPServer: handles malformed JSON in HTTP requests", async () => {
     // Create a request with invalid JSON
     const badRequest = new Request("http://localhost:3000", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Host": "localhost:3000",
+        "Accept": "application/json, text/event-stream",
+      },
       body: "invalid json",
     });
 
-    const response = await server.handleHTTPRequest(badRequest);
+    const response = await server.buildHttpFetch()(badRequest);
 
     // Should return 400 Bad Request with security headers
     assertEquals(response.status, 400);
@@ -237,9 +252,10 @@ Deno.test("MCPServer: handles malformed JSON in HTTP requests", async () => {
 });
 
 Deno.test("MCPServer: HTTP server only starts with SSE transport", async () => {
-  await withMCPServerSecurity({ transport: McpTransportType.STDIO }, async ({ server }) => {
-    // Should reject HTTP server start with stdio transport
-    await assertRejects(
+  await withMCPServerSecurity({ transport: McpTransportType.STDIO }, ({ server }) => {
+    // startHTTPServer is synchronous (Deno.serve() returns its handle synchronously,
+    // no await needed) — the SSE-transport guard now throws synchronously too.
+    assertThrows(
       () => server.startHTTPServer(3000),
       Error,
       "HTTP server only available for SSE transport",
@@ -253,21 +269,26 @@ Deno.test("MCPServer: HTTP server only starts with SSE transport", async () => {
 function jsonRpcRequest(url: string, headers: Record<string, string> = {}): Request {
   return new Request(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...headers },
+    headers: {
+      "Content-Type": "application/json",
+      "Host": new URL(url).host,
+      "Accept": "application/json, text/event-stream",
+      ...headers,
+    },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} }),
   });
 }
 
 Deno.test("security: MCPServer rejects a non-localhost Host header (DNS rebinding)", async () => {
   await withMCPServerSecurity({ transport: McpTransportType.SSE }, async ({ server }) => {
-    const response = await server.handleHTTPRequest(jsonRpcRequest("http://attacker.example.com:3000"));
+    const response = await server.buildHttpFetch()(jsonRpcRequest("http://attacker.example.com:3000"));
     assertEquals(response.status, 403);
   });
 });
 
 Deno.test("security: MCPServer rejects a cross-origin request (CSRF)", async () => {
   await withMCPServerSecurity({ transport: McpTransportType.SSE }, async ({ server }) => {
-    const response = await server.handleHTTPRequest(
+    const response = await server.buildHttpFetch()(
       jsonRpcRequest("http://localhost:3000", { "Origin": "https://evil.example.com" }),
     );
     assertEquals(response.status, 403);
@@ -276,9 +297,71 @@ Deno.test("security: MCPServer rejects a cross-origin request (CSRF)", async () 
 
 Deno.test("security: MCPServer allows a same-origin localhost request", async () => {
   await withMCPServerSecurity({ transport: McpTransportType.SSE }, async ({ server }) => {
-    const response = await server.handleHTTPRequest(
+    const response = await server.buildHttpFetch()(
       jsonRpcRequest("http://127.0.0.1:3000", { "Origin": "http://127.0.0.1:3000" }),
     );
     assertEquals(response.status, 200);
   });
 });
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Step 3 (Phase 163) — legacy posture and listener lifecycle
+
+/** Minimal shape of a parsed JSON-RPC response envelope. */
+interface ISseJsonRpcEnvelope {
+  result?: object;
+  error?: object;
+}
+
+/** Extracts the first JSON-RPC payload from an SSE-framed (`text/event-stream`) response body. */
+async function readSseJson(response: Response): Promise<ISseJsonRpcEnvelope> {
+  const text = await response.text();
+  const dataLine = text.split("\n").find((line) => line.startsWith("data: "));
+  assertExists(dataLine, `expected an SSE "data:" line in the response body, got: ${text}`);
+  return JSON.parse(dataLine.slice("data: ".length));
+}
+
+Deno.test(
+  "[MCPServer HTTP] a 2025-era initialize-opening request is served statelessly per the documented legacy posture",
+  async () => {
+    await withMCPServerSecurity({ transport: McpTransportType.SSE }, async ({ server }) => {
+      const fetchHandler = server.buildHttpFetch();
+
+      // A 2025-era client opens with `initialize` — no session-id header, since the
+      // documented `legacy: "stateless"` posture (server.ts's buildHttpFetch doc comment)
+      // serves every request from a fresh instance, requiring no continuity.
+      const initResponse = await fetchHandler(jsonRpcRequest("http://localhost:3000"));
+      assertEquals(initResponse.status, 200);
+      const initBody = await readSseJson(initResponse);
+      assertExists(initBody.result, "initialize must succeed without any prior session state");
+
+      // A second, entirely independent request (no session-id, no relation to the first)
+      // must also succeed on its own — proving statelessness rather than accidentally
+      // depending on the first request's in-memory instance.
+      const toolsResponse = await fetchHandler(jsonRpcRequest("http://localhost:3000"));
+      assertEquals(toolsResponse.status, 200);
+      const toolsBody = await readSseJson(toolsResponse);
+      assertExists(toolsBody.result, "a fresh, unrelated request must be served statelessly");
+    });
+  },
+);
+
+Deno.test(
+  "[MCPServer HTTP] stop() actually closes the underlying Deno.serve() listener — no lingering open port after stop",
+  async () => {
+    await withMCPServerSecurity({ transport: McpTransportType.SSE }, async ({ server }) => {
+      const port = server.startHTTPServer(0);
+
+      // The listener must actually accept connections before stop() — proves the port
+      // captured by startHTTPServer (Pre-Gap Analysis GAP-9) is real and reachable.
+      const before = await fetch(`http://localhost:${port}/`, { method: "GET" });
+      await before.body?.cancel();
+
+      server.stop();
+
+      // After stop(), the same port must refuse new connections — proving stop() actually
+      // invoked httpServerHandle.shutdown() rather than leaking the listener open.
+      await assertRejects(() => fetch(`http://localhost:${port}/`, { method: "GET" }));
+    });
+  },
+);
