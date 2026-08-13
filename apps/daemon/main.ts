@@ -99,6 +99,7 @@ import { ToolRegistry } from "@exaix/tool-runtime";
 import type { IApplicationContext } from "@exaix/core/types";
 import { type LogMetadata, toSafeJson } from "@exaix/core/types";
 import { DEFAULT_MCP_IDENTITY_ID, DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS } from "@exaix/mcp";
+import { LocalToolDispatcher } from "@exaix/mcp/server";
 import { SessionWaitStore } from "@exaix/session/wait/session_wait_store.ts";
 import { SessionReturnProcessor } from "@exaix/session/session_return_processor.ts";
 import { SessionReturnWatcher } from "./src/session_return_watcher.ts";
@@ -879,6 +880,22 @@ if (import.meta.main) {
       disableSkills: !config.skills.inject_in_prompt,
     });
     const portalPermissions = new PortalPermissionsService(config.portals ?? []);
+    // Phase 163 Step 6: wire the real dynamic-step tool dispatcher into the Team-edition
+    // boot path. `buildDynamicHandlers` is Team-gated (BSL package); `LocalToolDispatcher`
+    // is MIT and imported statically. Follows the guardrail block's fail-soft convention:
+    // a wiring failure degrades to today's no-dynamic-step-mode behavior (log + continue)
+    // rather than taking the whole Team daemon down.
+    let mcpClient: LocalToolDispatcher | undefined;
+    if (editionType === EDITION_TEAM) {
+      try {
+        const { buildDynamicHandlers } = await import("@exaix-team/mcp-server");
+        mcpClient = new LocalToolDispatcher(context, buildDynamicHandlers(context, portalPermissions));
+      } catch (error) {
+        logger.error(DomainEventType.DynamicToolsInitFailed, "daemon", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
     const agentExecutorAdapter = new AgentOrchestratorAdapter(
       agentRunner,
       blueprintsPath,
@@ -899,6 +916,7 @@ if (import.meta.main) {
       modelResolver,
       dynamicModeTools: DYNAMIC_MODE_TOOLS,
       dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+      mcpClient,
     });
 
     // The processor needs the flow itself, not a verdict about it: it previously cast

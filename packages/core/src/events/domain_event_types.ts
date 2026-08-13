@@ -531,6 +531,11 @@ export const DomainEventType = {
   GuardrailInitFailed: "guardrail.init_failed",
 
   // ---------------------------------------------------------------------------
+  // Dynamic tools (Phase 163)
+  // ---------------------------------------------------------------------------
+  DynamicToolsInitFailed: "dynamic_tools.init_failed",
+
+  // ---------------------------------------------------------------------------
   // Voting / Consensus (Phase 113)
   // ---------------------------------------------------------------------------
   VotingStarted: "voting.started",
