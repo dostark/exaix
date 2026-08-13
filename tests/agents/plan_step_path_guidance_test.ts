@@ -8,7 +8,11 @@
  * submodule path, which the parent commit gate rejected ("…not among this commit's
  * changed files"); the fix (gitlink `exaix-dev-docs` arrow + amending the submodule
  * commit instead of adding a follow-up one) had to be reverse-engineered from
- * check_commit_msg.ts + a phase-144 precedent.
+ * check_commit_msg.ts + a phase-144 precedent. Also regression for phase-163's
+ * self-improvement-retro: a `→ \`path\`` line with extra backtick-wrapped code
+ * mentions after the arrow made `extractArrowPaths()` demand those mentions as
+ * staged files too, blocking a valid commit twice before the cause was traced to
+ * check_commit_msg.ts's source.
  */
 
 import { assert } from "@std/assert";
@@ -57,5 +61,22 @@ Deno.test("Agent docs: clean-codebase names the staged md-path ratchet as the en
   assert(
     md.includes("unenforced drift"),
     "clean-codebase should warn against fixing historical submodule planning-doc drift",
+  );
+});
+
+Deno.test("Agent docs: commit skill warns that only ONE backtick span may follow a plan-step arrow", async () => {
+  const md = await Deno.readTextFile(".copilot/skills/commit/SKILL.md");
+
+  assert(
+    md.includes("extractArrowPaths()"),
+    "commit skill should name the exact parser function that treats every backtick span as a required path",
+  );
+  assert(
+    md.includes("exactly ONE backtick-wrapped path after the arrow"),
+    "commit skill should state the one-backtick-path-only rule explicitly",
+  );
+  assert(
+    md.includes("Put any incidental backtick-wrapped code/type mentions in the sentence BEFORE the arrow"),
+    "commit skill should tell the agent where to put incidental code mentions instead",
   );
 });

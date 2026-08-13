@@ -81,7 +81,15 @@ Position in the loop — this skill is the terminal step:
 
 3. **Route every finding to a fix** (do not stop at "good to know")
    - Skill defect (wrong or missing guidance) → patch `.copilot/skills/<name>/SKILL.md`
-     (canonical), then mirror the edit to the `.agents/skills/` and `.claude/skills/` copies.
+     (canonical). `.agents`, `.claude`, and `.cursor` are repo-root **symlinks to
+     `.copilot`** (`ls -la .` shows `.agents -> .copilot` etc.), so
+     `.agents/skills/<name>/SKILL.md` and `.claude/skills/<name>/SKILL.md` ARE
+     `.copilot/skills/<name>/SKILL.md` — one edit already updates every mirror, no
+     separate copy step needed (verify with `stat -c %i` on all three paths: identical
+     inode confirms it). Only fall back to editing a mirror path directly if `ls -la .`
+     ever shows one of those top-level entries as a real directory instead of a symlink
+     (a genuinely diverged setup) — and even then, edit in place rather than a
+     write-new-file-then-rename tool, which would fork the symlink into a real directory.
    - Discovery or contract defect (missing prompt wrapper, stale prompts table) →
      `.copilot/prompts/` via `deno run -A scripts/generate_prompt.ts --skill <name>`, and
      `.copilot/prompts/README.md`.
@@ -155,7 +163,7 @@ Do / Don't
 - ✅ Do run the retro only at the terminal step of the phase loop, after `#remediate-code-gaps`.
 - ✅ Do answer all four retro questions from session evidence — not from memory of "having had a fine session".
 - ✅ Do route every retro finding to PATCHED / DEFERRED / REJECTED — findings without a disposition are not findings, they are noise.
-- ✅ Do mirror `.copilot/skills/` edits to the `.agents/skills/` and `.claude/skills/` copies (they are untracked mirrors of the canonical tree).
+- ✅ Do remember `.agents`/`.claude`/`.cursor` are top-level symlinks to `.copilot` — editing `.copilot/skills/<name>/SKILL.md` already updates every mirror; verify with `stat -c %i` (or `ls -la .`) before manually copying anything.
 - ❌ Don't broaden scope into "general best practices" unrelated to Exaix.
 - ❌ Don't update many docs at once without a clear gap list.
 - ❌ Don't rewrite a skill wholesale to fix one friction point — patch the smallest section.

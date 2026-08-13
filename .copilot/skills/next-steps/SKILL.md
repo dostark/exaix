@@ -24,7 +24,7 @@ Key points
 - Each step follows strict RED → GREEN → VERIFY → REFACTOR → CI → DOC cycle
 - After each step: run the Success Criterion Verification Gate (step 14), rewrite each met criterion/test to `- ✅ <text> → ` `` `<staged-path>` `` (or `- ⚠️ deferred <text> → ` `` `<LedgerSymbol>` `` with a ledger row), run fast CI gates, then commit BOTH the submodule plan doc and the parent code via `scripts/commit_plan_step.ts <msg> --commit` (message carries a `plan:` field). No `- [ ]` may remain in a committed step
 - Never skip ahead — complete and commit each step before starting the next
-- If interrupted mid-step, re-read the RED/GREEN evidence in the chat to determine which phase you are in before proceeding
+- If interrupted mid-step, re-read the RED/GREEN evidence in the chat to determine which phase you are in before proceeding. **Chat/session memory is not reliable evidence on its own** — after a compaction, a resumed session, or when a phase may have been worked on by another agent/tool in the interim, ALWAYS cross-check with `git log --oneline -N` in both the parent repo and `exaix-dev-docs` plus the plan doc's own per-step `**Status:**` markers BEFORE writing any code. Trusting stale chat context over `git log` risks re-implementing already-committed work or drafting tests against a design another session already changed.
 - Use focused, file-scoped test commands by default; reserve full-suite commands for massive changes or explicit user requests
 - **All tests implemented in a step MUST be executed and pass before the step can be reported as completed.** This applies to unit tests, integration tests, and scenario/E2E tests alike. Scenario YAML or test files that have only been written (parsed, type-checked) but not run against a real environment do NOT count as passing tests. A step that introduces tests cannot claim completion until those tests are run and green.
 - When reading plan references across more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue
@@ -62,7 +62,9 @@ RED phase
          Gap Register with ⏳ status).
        If a previous-step criterion is marked ✅ but cannot be demonstrated, stop, flag
        it, and do not proceed. A gap in a previous step inevitably contaminates every
-       step built on top of it.
+       step built on top of it. Determine "which step am I actually on" from `git log
+       --oneline` (both repos) and the plan doc's own `**Status:**` markers, NOT from
+       chat memory — see the Key points bullet above.
    2. Cross-reference against pre-gap analysis: if the plan document has a
       Pre-Gap Analysis section with findings for this step number, read each relevant
       gap entry and confirm the step's Planned Tests and Architecture Notes address
@@ -329,7 +331,15 @@ PHASE-COMPLETION GATE (run ONCE, after the last step, BEFORE declaring the phase
       was actually run (not just parsed) and produced a passing result. Scenario/E2E
       tests that exist only as structurally-validated YAML but were never executed
       against a real daemon are BLOCKING — the phase cannot be closed until they pass
-      or are explicitly waived by the user.
+      or are explicitly waived by the user. **Agent shells commonly have `CI=true` set
+      by default** — any `Deno.test({ ignore: Deno.env.get("CI") === "true", ... })`
+      (the standard convention for real-subprocess/real-daemon-boot tests, e.g.
+      `[cutover]`/`[live]`-tagged tests) silently skips under it, and Deno's summary line
+      folds skipped tests into an easy-to-miss `N ignored` count next to `ok`. A file
+      reporting `ok | 2 passed | 0 failed` may still have 3 untested `[live]` cases. At
+      G5, explicitly grep the phase's test files for `ignore:.*CI`, then re-run each
+      match with `env -u CI deno test --allow-all <file>` (or `CI= deno test ...`) and
+      confirm the previously-ignored tests now show `ok`, not just `ok | 0 failed`.
 
 Do / Don't
 - ✅ Do write the test file BEFORE the source file (RED must come first)
@@ -351,6 +361,8 @@ Do / Don't
 - ✅ Do cross-reference the step's tests against pre-gap analysis findings for the same step number (step 2)
 - ✅ Do verify the previous step's success criteria before starting the current step — re-run its tests if needed; a gap in the foundation contaminates everything built on it (step 1a)
 - ✅ Do document any edge cases handled and any deviations from the plan in the commit body
+- ✅ Do re-ground on `git log --oneline` (both repos) before resuming a phase after a session gap/compaction, or when another agent/tool may have touched it — never assume chat memory reflects current repo state (step 1a)
+- ✅ Do grep the phase's tests for `ignore:.*CI` and re-run matches with `env -u CI` at the Phase-Completion Gate (G5) — a shell's default `CI=true` silently skips real-subprocess/real-boot tests inside an otherwise-green summary line
 - ❌ Don't implement source code before writing the failing test
 - ❌ Don't batch multiple steps into one commit
 - ❌ Don't proceed to the next step if any CI gate fails
