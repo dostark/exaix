@@ -7,9 +7,9 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { McpClient, ToolHandler } from "@exaix/mcp/server";
+import { LocalToolDispatcher, ToolHandler } from "@exaix/mcp/server";
 
 Deno.test("@exaix/mcp/server exports the canonical MCP client surface", () => {
-  assertEquals(typeof McpClient, "function");
+  assertEquals(typeof LocalToolDispatcher, "function");
   assertEquals(typeof ToolHandler, "function");
 });

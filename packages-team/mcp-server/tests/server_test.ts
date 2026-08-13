@@ -8,8 +8,17 @@
  */
 
 import { assert, assertEquals, assertExists } from "@std/assert";
+import { z } from "zod";
+import { Client, InMemoryTransport, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
+import { toSdkCallToolResult } from "@exaix-team/mcp-server";
 import { McpToolName, McpTransportType } from "@exaix/mcp";
-import { createMCPRequest, initMCPTestWithoutPortal } from "@exaix/mcp/testing";
+import { createMCPRequest, initMCPTest, initMCPTestWithoutPortal } from "@exaix/mcp/testing";
+import {
+  GOLDEN_FIXTURE_PATH,
+  GOLDEN_FIXTURE_SEED_FILES,
+  type IGoldenFixtureCapture,
+  REPRESENTATIVE_TOOL_CALLS,
+} from "./fixtures/golden_fixture_capture.ts";
 
 /**
  * Tests for  MCP Server Implementation
@@ -285,3 +294,177 @@ Deno.test("MCP Server: classifyError handles non-Error objects", async () => {
     await ctx.cleanup();
   }
 });
+
+// ============================================================================
+// Step 2 (Phase 163): serveStdio + McpServer — official-SDK dispatch parity
+// ============================================================================
+
+Deno.test(
+  "[MCPServer SDK] serveStdio-served tools/list, resources/list, prompts/list, and representative tools/call responses match Step 1's golden fixture exactly",
+  async () => {
+    // Uses the low-level `client.request(..., z.unknown())` escape hatch, not the typed
+    // `listTools()`/`callTool()` convenience methods: the official Client validates those
+    // against the STRICT spec content-block union (text/image/audio/resource/resource_link)
+    // and rejects Exaix's proprietary `exaix_structured_data` content type client-side —
+    // even though the server emits it correctly on the wire. This test verifies the
+    // server's real wire output (what Step 1's golden fixture also captured, via
+    // `server.handleRequest()` directly with no client-side validation at all), matching
+    // "byte-identical, not shape-only" without a strict client rejecting Exaix's own
+    // established, tested content extension. See buildSdkServer's Architecture Notes.
+    const checkedIn = JSON.parse(await Deno.readTextFile(GOLDEN_FIXTURE_PATH)) as IGoldenFixtureCapture;
+    const ctx = await initMCPTest({ initGit: true, fileContent: GOLDEN_FIXTURE_SEED_FILES });
+    try {
+      const sdkServer = ctx.server.buildSdkServer();
+      const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+      const client = new Client({ name: "golden-fixture-parity-client", version: "1.0.0" });
+      await Promise.all([sdkServer.server.connect(serverTransport), client.connect(clientTransport)]);
+
+      const toolsList = await client.request({ method: "tools/list", params: {} }, z.unknown());
+      assertEquals(
+        JSON.parse(JSON.stringify(toolsList)),
+        checkedIn.toolsList.result,
+        "tools/list must match Step 1's golden fixture exactly",
+      );
+
+      const resourcesList = await client.request({ method: "resources/list", params: {} }, z.unknown());
+      assertEquals(
+        JSON.parse(JSON.stringify(resourcesList)),
+        checkedIn.resourcesList.result,
+        "resources/list must match Step 1's golden fixture exactly",
+      );
+
+      const promptsList = await client.request({ method: "prompts/list", params: {} }, z.unknown());
+      assertEquals(
+        JSON.parse(JSON.stringify(promptsList)),
+        checkedIn.promptsList.result,
+        "prompts/list must match Step 1's golden fixture exactly",
+      );
+
+      for (const category of ["READ", "WRITE", "GIT", "META", "DOMAIN"] as const) {
+        const spec = REPRESENTATIVE_TOOL_CALLS.find((c) => c.category === category);
+        assertExists(spec, `representative call spec for category '${category}' must exist`);
+        const callResult = await client.request(
+          { method: "tools/call", params: { name: spec.toolName, arguments: spec.args } },
+          z.unknown(),
+        );
+        // The checked-in fixture froze the pre-migration wire shape, where Exaix's
+        // proprietary `exaix_structured_data` content blocks (READ/list_directory,
+        // DOMAIN/exaix_list_plans) sat inline in `content`. The official SDK's
+        // `registerTool` rejects that content type server-side (no member in the spec's
+        // ContentBlock union) — `buildSdkServer` adapts it into the spec's own
+        // `structuredContent` field instead (see `toSdkCallToolResult`'s doc comment).
+        // Apply the identical adapter to the fixture's expected value so the comparison
+        // targets the same, now-necessarily-different-for-these-two-categories,
+        // spec-compliant shape rather than the frozen pre-adapter one.
+        const expected = toSdkCallToolResult(checkedIn.representativeToolCalls[category].result);
+        assertEquals(
+          JSON.parse(JSON.stringify(callResult)),
+          JSON.parse(JSON.stringify(expected)),
+          `representative tools/call for category '${category}' must match Step 1's golden fixture ` +
+            "(adapted for the SDK's structuredContent mechanism where applicable)",
+        );
+      }
+
+      await client.close();
+    } finally {
+      await ctx.cleanup();
+    }
+  },
+);
+
+Deno.test("[MCPServer] initialize negotiates the real current protocol version, not a hardcoded literal", async () => {
+  const ctx = await initMCPTestWithoutPortal();
+  try {
+    const sdkServer = ctx.server.buildSdkServer();
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const client = new Client({ name: "protocol-version-client", version: "1.0.0" });
+    await Promise.all([sdkServer.server.connect(serverTransport), client.connect(clientTransport)]);
+
+    const negotiated = client.getNegotiatedProtocolVersion();
+    assertExists(negotiated, "the SDK must negotiate a real protocol version during initialize");
+    assert(
+      negotiated !== "2024-11-05",
+      `expected a current, SDK-negotiated protocol version, not the old hardcoded literal "2024-11-05" — got "${negotiated}"`,
+    );
+
+    await client.close();
+  } finally {
+    await ctx.cleanup();
+  }
+});
+
+Deno.test("[MCPServer] exaix/tools/result_schema round-trips through the official custom-method handler", async () => {
+  const ctx = await initMCPTestWithoutPortal();
+  try {
+    const sdkServer = ctx.server.buildSdkServer();
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const client = new Client({ name: "result-schema-client", version: "1.0.0" });
+    await Promise.all([sdkServer.server.connect(serverTransport), client.connect(clientTransport)]);
+
+    const descriptor = await client.request(
+      { method: "exaix/tools/result_schema", params: { tool: McpToolName.READ_FILE } },
+      z.unknown(),
+    );
+    assertExists(descriptor, "exaix/tools/result_schema must return a descriptor for a known tool");
+
+    await client.close();
+  } finally {
+    await ctx.cleanup();
+  }
+});
+
+// ============================================================================
+// Step 3 (Phase 163): Streamable HTTP transport — real-wire golden-fixture parity
+// ============================================================================
+
+Deno.test(
+  "[MCPServer HTTP] tools/list and tools/call over real Streamable HTTP match the golden fixture",
+  async () => {
+    // Uses the low-level `client.request(..., z.unknown())` escape hatch for the same
+    // reason as the InMemoryTransport parity test above: the typed convenience methods
+    // reject Exaix's proprietary `exaix_structured_data` content type client-side.
+    const checkedIn = JSON.parse(await Deno.readTextFile(GOLDEN_FIXTURE_PATH)) as IGoldenFixtureCapture;
+    const ctx = await initMCPTest({ initGit: true, fileContent: GOLDEN_FIXTURE_SEED_FILES });
+    const httpServer = Deno.serve({ port: 0, hostname: "localhost" }, ctx.server.buildHttpFetch());
+    try {
+      const addr = httpServer.addr;
+      if (addr.transport !== "tcp") {
+        throw new Error(`expected a tcp listener, got transport: ${addr.transport}`);
+      }
+
+      const transport = new StreamableHTTPClientTransport(new URL(`http://localhost:${addr.port}/`));
+      const client = new Client({ name: "golden-fixture-http-parity-client", version: "1.0.0" });
+      await client.connect(transport);
+
+      const toolsList = await client.request({ method: "tools/list", params: {} }, z.unknown());
+      assertEquals(
+        JSON.parse(JSON.stringify(toolsList)),
+        checkedIn.toolsList.result,
+        "tools/list over real Streamable HTTP must match Step 1's golden fixture exactly",
+      );
+
+      for (const category of ["READ", "WRITE", "GIT", "META", "DOMAIN"] as const) {
+        const spec = REPRESENTATIVE_TOOL_CALLS.find((c) => c.category === category);
+        assertExists(spec, `representative call spec for category '${category}' must exist`);
+        const callResult = await client.request(
+          { method: "tools/call", params: { name: spec.toolName, arguments: spec.args } },
+          z.unknown(),
+        );
+        // Apply the same structuredContent adapter as the InMemoryTransport parity test —
+        // the wire shape is identical over real HTTP, only the transport framing differs.
+        const expected = toSdkCallToolResult(checkedIn.representativeToolCalls[category].result);
+        assertEquals(
+          JSON.parse(JSON.stringify(callResult)),
+          JSON.parse(JSON.stringify(expected)),
+          `representative tools/call for category '${category}' over real Streamable HTTP must match ` +
+            "Step 1's golden fixture (adapted for the SDK's structuredContent mechanism where applicable)",
+        );
+      }
+
+      await client.close();
+    } finally {
+      await httpServer.shutdown();
+      await ctx.cleanup();
+    }
+  },
+);

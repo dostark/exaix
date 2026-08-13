@@ -10,6 +10,7 @@ import { z } from "zod";
 import { PLAN_STATUS_VALUES } from "@exaix/core/status";
 import {
   DEFAULT_AGENT_MODEL,
+  DEFAULT_MCP_AUTH_TOKEN_EXPIRY_SECONDS,
   DEFAULT_MCP_IDENTITY_ID,
   DEFAULT_MCP_VERSION,
   DEFAULT_QUERY_LIMIT,
@@ -30,6 +31,16 @@ export const MCPConfigSchema = z.object({
   transport: z.nativeEnum(McpTransportType).default(McpTransportType.STDIO),
   server_name: z.string().default("exaix"),
   version: z.string().default(DEFAULT_MCP_VERSION),
+  /** Phase 163 Step 4: require a Bearer token on every HTTP-transport request. Off by default. */
+  require_auth: z.boolean().default(false),
+  /**
+   * Name of the environment variable holding the shared-secret Bearer token, following the
+   * same env-var-indirection convention as `ai_openrouter.api_key_env` — the token itself
+   * never sits in plaintext config.
+   */
+  auth_token_env: z.string().default("MCP_AUTH_TOKEN"),
+  /** Phase 163 Step 9: reported lifetime (seconds) for the static shared-secret token's AuthInfo.expiresAt. */
+  auth_token_expiry_seconds: z.number().int().positive().default(DEFAULT_MCP_AUTH_TOKEN_EXPIRY_SECONDS),
 });
 
 export type MCPConfig = z.infer<typeof MCPConfigSchema>;

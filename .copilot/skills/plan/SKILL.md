@@ -392,7 +392,7 @@ coverage:
 1. Brief chat summary of the architectural approach and key identified risks.
 1. The path to the new or updated planning document file.
 1. Each implementation step includes a fenced YAML step-manifest block (for dogfooding compatibility).
-1. Markdown lint result: `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/<doc>`.
+1. Markdown lint result: `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/<doc>`. If re-run with `--fix`, re-verify every `# step-manifest` yaml fence still has its `step: N` key via `deno run --allow-read scripts/check_step_manifests.ts <doc>` — `--fix`'s heading-blank-line rule has historically misidentified a `# step-manifest` comment inside a fence as a real heading and dropped the following key.
 1. If the plan integrates a third-party service/provider, a **Sources** block: the provider doc URLs consulted (marked official vs community/unofficial) and the research date (§2F).
 1. Recommendation to run `#pre-gap-analysis` on the new plan to verify its completeness against the codebase.
 1. Commit payload — use `#commit` to stage and commit the new planning document.

@@ -88,7 +88,7 @@ For each gap, in severity order:
 1. Bump the document version (e.g., 1.2 → 1.3).
 2. Update the Status line to `🚧 Gap Remediation In Progress`.
 3. If interfaces or schemas changed, ensure a documentation update step (§3D) exists as the final step.
-4. Run `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/<doc>`.
+4. Run `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/<doc>`. If it reports fixable violations and you re-run with `--fix`, immediately re-verify every `# step-manifest` yaml fence still has its `step: N` key via `deno run --allow-read scripts/check_step_manifests.ts <doc>` — `--fix`'s heading-blank-line rule has historically misidentified a `# step-manifest` comment inside a fence as a real heading and dropped the following key.
 
 ### Phase 5 — Commit
 

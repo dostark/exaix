@@ -945,6 +945,19 @@ export class FlowRunner implements IFlowRunner {
       this.options.dynamicModeTools,
       this.options.dynamicModeApprovalTools,
     );
+    // The agent step handler was registered during construction (constructor ~L803), when the
+    // lazy modelResolver path had not built the executor yet — so the handler captured
+    // `dynamicStepExecutor: undefined` and dynamic-mode steps silently fell through to the
+    // static/declared path. Re-register the handler now that the executor exists (Phase 163
+    // Step 6: the daemon always has a modelResolver, so this path was production-dead).
+    const agentHandler = new AgentStepHandler({
+      agentExecutor: this.agentExecutor,
+      dynamicStepExecutor: this.dynamicStepExecutor,
+      config: this.config,
+    });
+    this.stepHandlerRegistry.register(agentHandler);
+    this.stepHandlerRegistry.registerWithKey(FlowStepType.BRANCH, agentHandler);
+    this.stepHandlerRegistry.registerWithKey(FlowStepType.CONSENSUS, agentHandler);
   }
 
   /**

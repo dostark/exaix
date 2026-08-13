@@ -1,7 +1,7 @@
 /**
  * @module DynamicStepBackwardCompatibilityTest
  * @path tests/flows/dynamic_step_backward_compatibility_test.ts
- * @description Regression tests verifying that existing FlowRunner and McpClient usage
+ * @description Regression tests verifying that existing FlowRunner and LocalToolDispatcher usage
  * patterns remain valid during Phase 77/76 migration. Tests that the deprecated
  * mcpHandlers array path still works alongside the new canonical dynamicHandlers Map path.
  * Guards against accidental breaking changes in constructor signatures or handler routing.
@@ -9,7 +9,7 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { McpToolName } from "@exaix/mcp";
-import { McpClient } from "@exaix/mcp/server";
+import { LocalToolDispatcher } from "@exaix/mcp/server";
 import { ToolHandler } from "@exaix/mcp/server";
 import { FlowRunner, type IFlowEventLogger } from "@exaix/flow";
 import { createStubContext } from "@exaix/testing";
@@ -60,22 +60,22 @@ class NoopEventLogger implements IFlowEventLogger {
   log<TEvent extends string>(_event: TEvent, _payload: Record<string, JSONValue>): void {}
 }
 
-// ── McpClient: ToolHandler[] path (legacy) ────────────────────────────────────
+// ── LocalToolDispatcher: ToolHandler[] path (legacy) ────────────────────────────────────
 
-Deno.test("backwards_compat: McpClient accepts ToolHandler[] array (legacy path still works)", async () => {
+Deno.test("backwards_compat: LocalToolDispatcher accepts ToolHandler[] array (legacy path still works)", async () => {
   const handlers: ToolHandler[] = [new StubReadHandler(), new StubListDirHandler()];
-  const client = new McpClient(createStubContext(), handlers);
+  const client = new LocalToolDispatcher(createStubContext(), handlers);
 
   const result = await client.callTool(McpToolName.READ_FILE, {});
   assertEquals(result, "stub content");
 });
 
-Deno.test("backwards_compat: McpClient ToolHandler[] and Map produce identical tool names", () => {
+Deno.test("backwards_compat: LocalToolDispatcher ToolHandler[] and Map produce identical tool names", () => {
   const readHandler = new StubReadHandler();
   const listHandler = new StubListDirHandler();
 
-  const legacyClient = new McpClient(createStubContext(), [readHandler, listHandler]);
-  const canonicalClient = new McpClient(
+  const legacyClient = new LocalToolDispatcher(createStubContext(), [readHandler, listHandler]);
+  const canonicalClient = new LocalToolDispatcher(
     createStubContext(),
     new Map<McpToolName, ToolHandler>([
       [McpToolName.READ_FILE, readHandler],
@@ -90,9 +90,9 @@ Deno.test("backwards_compat: McpClient ToolHandler[] and Map produce identical t
   );
 });
 
-Deno.test("backwards_compat: McpClient getToolDefinitions works from legacy ToolHandler[] input", () => {
+Deno.test("backwards_compat: LocalToolDispatcher getToolDefinitions works from legacy ToolHandler[] input", () => {
   const handlers: ToolHandler[] = [new StubReadHandler()];
-  const client = new McpClient(createStubContext(), handlers);
+  const client = new LocalToolDispatcher(createStubContext(), handlers);
 
   const defs = client.getToolDefinitions([McpToolName.READ_FILE]);
   assertEquals(defs.length, 1);

@@ -84,6 +84,7 @@ import type { IPortalKnowledgeConfig, PortalAnalysisMode } from "@exaix/core/typ
 import { createConfigReloadHandler, createDbWatcherHandler, getMaxOverrideId } from "@exaix/core/config";
 import { GracefulShutdown } from "./src/graceful_shutdown.ts";
 import { recoverOrphanedDelegations } from "./src/recovery.ts";
+import { buildTeamMcpClient } from "./src/build_team_mcp_client.ts";
 // registerTeamCapabilities is loaded dynamically inside the Team branch only —
 // bootstrap_team.ts statically pulls in @exaix-team/voting|hitl|portal-extractors,
 // which must stay out of the Solo binary.
@@ -99,6 +100,7 @@ import { ToolRegistry } from "@exaix/tool-runtime";
 import type { IApplicationContext } from "@exaix/core/types";
 import { type LogMetadata, toSafeJson } from "@exaix/core/types";
 import { DEFAULT_MCP_IDENTITY_ID, DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS } from "@exaix/mcp";
+import type { LocalToolDispatcher } from "@exaix/mcp/server";
 import { SessionWaitStore } from "@exaix/session/wait/session_wait_store.ts";
 import { SessionReturnProcessor } from "@exaix/session/session_return_processor.ts";
 import { SessionReturnWatcher } from "./src/session_return_watcher.ts";
@@ -879,6 +881,15 @@ if (import.meta.main) {
       disableSkills: !config.skills.inject_in_prompt,
     });
     const portalPermissions = new PortalPermissionsService(config.portals ?? []);
+    // Phase 163 Step 6: wire the real dynamic-step tool dispatcher into the Team-edition
+    // boot path. `buildDynamicHandlers` is Team-gated (BSL package); `LocalToolDispatcher`
+    // is MIT and imported statically. Follows the guardrail block's fail-soft convention:
+    // a wiring failure degrades to today's no-dynamic-step-mode behavior (log + continue)
+    // rather than taking the whole Team daemon down.
+    let mcpClient: LocalToolDispatcher | undefined;
+    if (editionType === EDITION_TEAM) {
+      mcpClient = await buildTeamMcpClient(context, portalPermissions, logger);
+    }
     const agentExecutorAdapter = new AgentOrchestratorAdapter(
       agentRunner,
       blueprintsPath,
@@ -899,6 +910,7 @@ if (import.meta.main) {
       modelResolver,
       dynamicModeTools: DYNAMIC_MODE_TOOLS,
       dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
+      mcpClient,
     });
 
     // The processor needs the flow itself, not a verdict about it: it previously cast

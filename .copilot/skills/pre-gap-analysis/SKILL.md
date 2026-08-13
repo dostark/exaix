@@ -677,7 +677,7 @@ are written. Format with grep outcome annotations:
 1. **Check step-level marker consistency.** Verify every step has `⏳ pending` markers —
    no code has been written yet. Flag any `✅ CORE`/`✅ WIRED`/`[x]` as premature and
    reset to `⏳`. Exempt only prior-phase steps confirmed shipped via grep.
-1. Run `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/<doc>`.
+1. Run `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/<doc>`. If it reports fixable violations and you re-run with `--fix`, immediately re-verify every `# step-manifest` yaml fence still has its `step: N` key via `deno run --allow-read scripts/check_step_manifests.ts <doc>` — `--fix`'s heading-blank-line rule has historically misidentified a `# step-manifest` comment inside a fence as a real heading and dropped the following key.
 
 ---
 

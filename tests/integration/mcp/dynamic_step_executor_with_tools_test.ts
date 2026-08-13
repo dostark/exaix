@@ -1,14 +1,14 @@
 /**
  * @module DynamicStepExecutorWithToolsTest
  * @path tests/integration/mcp/dynamic_step_executor_with_tools_test.ts
- * @description Integration tests verifying that FlowRunner wires McpClient using a canonical
+ * @description Integration tests verifying that FlowRunner wires LocalToolDispatcher using a canonical
  * dynamic handler map (Map<McpToolName, ToolHandler>) rather than an ad-hoc handler array.
  * Ensures dynamic tool calls route correctly through the canonical handler surface.
  */
 
 import { assertEquals, assertExists } from "@std/assert";
 import { McpToolName } from "@exaix/mcp";
-import { McpClient } from "@exaix/mcp/server";
+import { LocalToolDispatcher } from "@exaix/mcp/server";
 import { ToolHandler } from "@exaix/mcp/server";
 import { FlowRunner, type IFlowEventLogger } from "@exaix/flow";
 import { createStubContext } from "@exaix/testing";
@@ -64,10 +64,10 @@ class StubListDirTool extends ToolHandler {
   }
 }
 
-// ── McpClient Map constructor tests ───────────────────────────────────────────
+// ── LocalToolDispatcher Map constructor tests ───────────────────────────────────────────
 
 Deno.test(
-  "McpClient: accepts Map<McpToolName, ToolHandler> as canonical dynamic handler input",
+  "LocalToolDispatcher: accepts Map<McpToolName, ToolHandler> as canonical dynamic handler input",
   async () => {
     const readTool = new StubReadFileTool("file contents");
     const listTool = new StubListDirTool();
@@ -77,7 +77,7 @@ Deno.test(
       [McpToolName.LIST_DIRECTORY, listTool],
     ]);
 
-    const client = new McpClient(createStubContext(), handlerMap);
+    const client = new LocalToolDispatcher(createStubContext(), handlerMap);
 
     const result = await client.callTool(McpToolName.READ_FILE, {});
     assertEquals(result, "file contents");
@@ -89,7 +89,7 @@ Deno.test(
 );
 
 Deno.test(
-  "McpClient: getAvailableToolNames returns all registered canonical tool names",
+  "LocalToolDispatcher: getAvailableToolNames returns all registered canonical tool names",
   () => {
     const readTool = new StubReadFileTool("content");
     const listTool = new StubListDirTool();
@@ -99,7 +99,7 @@ Deno.test(
       [McpToolName.LIST_DIRECTORY, listTool],
     ]);
 
-    const client = new McpClient(createStubContext(), handlerMap);
+    const client = new LocalToolDispatcher(createStubContext(), handlerMap);
     const names = client.getAvailableToolNames();
 
     assertExists(names);
@@ -108,13 +108,13 @@ Deno.test(
 );
 
 Deno.test(
-  "McpClient: canonical Map input excludes non-registered tools from getToolDefinitions",
+  "LocalToolDispatcher: canonical Map input excludes non-registered tools from getToolDefinitions",
   () => {
     const handlerMap = new Map<McpToolName, ToolHandler>([
       [McpToolName.READ_FILE, new StubReadFileTool("x")],
     ]);
 
-    const client = new McpClient(createStubContext(), handlerMap);
+    const client = new LocalToolDispatcher(createStubContext(), handlerMap);
     // WRITE_FILE is not in the map — getToolDefinitions should return empty for it
     const defs = client.getToolDefinitions([McpToolName.WRITE_FILE]);
     assertEquals(defs.length, 0);
@@ -124,7 +124,7 @@ Deno.test(
 // ── FlowRunner dynamic wiring tests ───────────────────────────────────────────
 
 Deno.test(
-  "FlowRunner: accepts dynamicHandlers Map in config and wires McpClient canonically",
+  "FlowRunner: accepts dynamicHandlers Map in config and wires LocalToolDispatcher canonically",
   () => {
     const readTool = new StubReadFileTool("hello from canonical");
     const handlerMap = new Map<McpToolName, ToolHandler>([
@@ -153,7 +153,7 @@ Deno.test(
 );
 
 Deno.test(
-  "FlowRunner: dynamicHandlers Map tools are accessible via McpClient registry",
+  "FlowRunner: dynamicHandlers Map tools are accessible via LocalToolDispatcher registry",
   async () => {
     const readTool = new StubReadFileTool("canonical content");
     const listTool = new StubListDirTool();
@@ -163,8 +163,8 @@ Deno.test(
       [McpToolName.LIST_DIRECTORY, listTool],
     ]);
 
-    // McpClient built the same way FlowRunner would build it from dynamicHandlers
-    const client = new McpClient(createStubContext(), handlerMap);
+    // LocalToolDispatcher built the same way FlowRunner would build it from dynamicHandlers
+    const client = new LocalToolDispatcher(createStubContext(), handlerMap);
 
     const names = client.getAvailableToolNames().sort();
     assertEquals(names, [McpToolName.LIST_DIRECTORY, McpToolName.READ_FILE].sort());
