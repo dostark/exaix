@@ -31,6 +31,7 @@ import {
 } from "@exaix/core";
 import { resolveConfigurableBounds } from "@exaix/core/config";
 import {
+  DEFAULT_MCP_AUTH_TOKEN_EXPIRY_SECONDS,
   DEFAULT_MCP_ENABLED,
   DEFAULT_MCP_IDENTITY_ID,
   DEFAULT_MCP_REQUIRE_AUTH,
@@ -518,6 +519,7 @@ export const ConfigSchema = z.object({
     version: DEFAULT_MCP_VERSION,
     require_auth: DEFAULT_MCP_REQUIRE_AUTH,
     auth_token_env: "MCP_AUTH_TOKEN",
+    auth_token_expiry_seconds: DEFAULT_MCP_AUTH_TOKEN_EXPIRY_SECONDS,
   }),
   /** MCP defaults */
   mcp_defaults: z.object({

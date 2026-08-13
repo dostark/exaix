@@ -1200,7 +1200,8 @@ export class MCPServer implements OAuthTokenVerifier {
       token,
       clientId: "exaix-mcp-client",
       scopes: [],
-      expiresAt: Math.floor(Date.now() / 1000) + DEFAULT_MCP_AUTH_TOKEN_EXPIRY_SECONDS,
+      expiresAt: Math.floor(Date.now() / 1000) +
+        (mcpConfig.auth_token_expiry_seconds ?? DEFAULT_MCP_AUTH_TOKEN_EXPIRY_SECONDS),
     });
   }
 

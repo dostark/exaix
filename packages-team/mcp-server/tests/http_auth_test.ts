@@ -35,6 +35,8 @@ interface IWithMCPServerAuthOptions {
   requireAuth?: boolean;
   /** Value to set the configured auth-token env var to; omit to leave it unset. */
   authTokenValue?: string;
+  /** Value for `mcp.auth_token_expiry_seconds`; omit to leave the config default. */
+  authTokenExpirySeconds?: number;
 }
 
 /** Builds an SSE-transport MCPServer with `mcp.require_auth`/`mcp.auth_token_env` configured, restoring the env var afterward. */
@@ -45,6 +47,9 @@ async function withMCPServerAuth(
   const { db, config, cleanup } = await initTestDbService();
   config.mcp.transport = McpTransportType.SSE;
   if (options.requireAuth !== undefined) config.mcp.require_auth = options.requireAuth;
+  if (options.authTokenExpirySeconds !== undefined) {
+    config.mcp.auth_token_expiry_seconds = options.authTokenExpirySeconds;
+  }
   const envName = config.mcp.auth_token_env;
   const previousEnvValue = Deno.env.get(envName);
   if (options.authTokenValue !== undefined) {
@@ -128,6 +133,22 @@ Deno.test("[MCPServer auth] verifyAccessToken's returned AuthInfo always sets ex
     assert(authInfo.expiresAt > Math.floor(Date.now() / 1000), "expiresAt must be in the future");
     assertEquals(authInfo.token, "correct-token");
   });
+});
+
+Deno.test("[MCPServer auth] auth_token_expiry_seconds from config is honoured in verifyAccessToken's AuthInfo.expiresAt", async () => {
+  await withMCPServerAuth(
+    { requireAuth: true, authTokenValue: "correct-token", authTokenExpirySeconds: 60 },
+    async ({ server }) => {
+      const before = Math.floor(Date.now() / 1000);
+      const authInfo = await server.verifyAccessToken("correct-token");
+      assertExists(authInfo.expiresAt, "AuthInfo.expiresAt must be set");
+      // A custom 60-second lifetime must yield a near-future expiry (now + 60), not the ~100-year default.
+      assert(
+        authInfo.expiresAt >= before + 60 && authInfo.expiresAt < before + 120,
+        `expected expiresAt ~now+60s, got ${authInfo.expiresAt} (now=${before})`,
+      );
+    },
+  );
 });
 
 Deno.test("[security][MCPServer auth] verifyAccessToken rejects an unknown token with OAuthErrorCode.InvalidToken", async () => {

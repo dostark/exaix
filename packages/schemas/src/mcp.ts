@@ -10,6 +10,7 @@ import { z } from "zod";
 import { PLAN_STATUS_VALUES } from "@exaix/core/status";
 import {
   DEFAULT_AGENT_MODEL,
+  DEFAULT_MCP_AUTH_TOKEN_EXPIRY_SECONDS,
   DEFAULT_MCP_IDENTITY_ID,
   DEFAULT_MCP_VERSION,
   DEFAULT_QUERY_LIMIT,
@@ -38,6 +39,8 @@ export const MCPConfigSchema = z.object({
    * never sits in plaintext config.
    */
   auth_token_env: z.string().default("MCP_AUTH_TOKEN"),
+  /** Phase 163 Step 9: reported lifetime (seconds) for the static shared-secret token's AuthInfo.expiresAt. */
+  auth_token_expiry_seconds: z.number().int().positive().default(DEFAULT_MCP_AUTH_TOKEN_EXPIRY_SECONDS),
 });
 
 export type MCPConfig = z.infer<typeof MCPConfigSchema>;
