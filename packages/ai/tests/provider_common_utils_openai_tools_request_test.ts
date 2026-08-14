@@ -35,6 +35,8 @@ interface CapturedBody {
   messages: CapturedOpenAiMessage[];
   tools?: CapturedOpenAiTool[];
   tool_choice?: "auto" | "none" | "required" | { type: "function"; function: { name: string } };
+  max_completion_tokens?: number;
+  max_tokens?: number;
 }
 
 function capturedBodyOf(options?: IModelOptions): CapturedBody {
@@ -135,3 +137,12 @@ Deno.test("createOpenAIChatCompletionsRequestInit without priorTurn produces a s
   assertEquals(body.messages[0].role, "user");
   assertEquals(body.messages[0].content, "test prompt");
 });
+
+Deno.test(
+  "createOpenAIChatCompletionsRequestInit serializes max_tokens as max_completion_tokens (OpenAI deprecated max_tokens; incompatible with o-series/gpt-5 reasoning models)",
+  () => {
+    const body = capturedBodyOf({ max_tokens: 8192 });
+    assertEquals(body.max_completion_tokens, 8192);
+    assertEquals(body.max_tokens, undefined);
+  },
+);

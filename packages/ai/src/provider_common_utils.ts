@@ -393,7 +393,12 @@ export function createOpenAIChatCompletionsRequestInit(
     body: JSON.stringify({
       model,
       messages: buildOpenAiMessages(prompt, options?.priorTurn),
-      max_tokens: options?.max_tokens,
+      // OpenAI deprecated max_tokens in favor of max_completion_tokens (current API
+      // contract) and rejects max_tokens outright on o-series/gpt-5 reasoning models with
+      // a 400 invalid_request_error — confirmed 2026-08-14 against a live gpt-5-mini call
+      // during Phase 153 Step 5's execution-phase cutover. IModelOptions.max_tokens is
+      // Exaix's own field name (unchanged); only the OpenAI wire serialization moves.
+      max_completion_tokens: options?.max_tokens,
       temperature: options?.temperature,
       top_p: options?.top_p,
       stop: options?.stop,

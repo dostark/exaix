@@ -256,7 +256,9 @@ export function testProviderOptionsMapping<
 
       // Handle different provider body structures
       const temp = body.temperature ?? body.generationConfig?.temperature;
-      const maxTokens = body.max_tokens ?? body.generationConfig?.maxOutputTokens;
+      // OpenAI serializes max_completion_tokens (current field, Anthropic/Llama still use
+      // max_tokens, Google uses generationConfig.maxOutputTokens).
+      const maxTokens = body.max_tokens ?? body.max_completion_tokens ?? body.generationConfig?.maxOutputTokens;
       const topP = body.top_p ?? body.generationConfig?.topP;
       const stopSeqs = body[stopSequenceKey] ?? body.generationConfig?.stopSequences;
 
