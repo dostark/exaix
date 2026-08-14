@@ -105,6 +105,16 @@ impact: ReqProc: update`;
     assertEquals(result.success, true); // Should bypass
   });
 
+  it("skips validation for GitHub pull-request merge commits", () => {
+    // Regression: GitHub's default "Merge pull request" button message (distinct
+    // from git CLI's "Merge branch" local-merge default) was not exempted, so any
+    // PR merged via the GitHub UI/API failed CI's Gate 0 with no way for the author
+    // to have written a structured message - GitHub, not a human or agent, writes it.
+    const msg = `Merge pull request #8 from dostark/copilot/fix-sequential-test-suite`;
+    const result = validateCommitMsg(msg);
+    assertEquals(result.success, true);
+  });
+
   it("skips validation for merge commits when merge state is detected", () => {
     const msg = `chore: merge feature branch`;
     const result = validateCommitMsg(msg, { isMergeCommit: true });

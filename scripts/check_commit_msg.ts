@@ -394,6 +394,7 @@ export function validateCommitMsg(
   if (
     subject.startsWith("Merge branch") ||
     subject.startsWith("Merge remote-tracking branch") ||
+    subject.startsWith("Merge pull request") ||
     subject.startsWith("Revert ") ||
     subject.startsWith("fixup! ") ||
     subject.startsWith("squash! ")
