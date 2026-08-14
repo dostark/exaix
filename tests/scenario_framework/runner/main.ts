@@ -72,8 +72,10 @@ await new Command()
       "skipped (never truncates a running task) and the eval report flags budget_stopped",
   )
   .option(
-    "--cell <tool:string>",
-    "Run only the matrix cell whose tool matches (e.g. claude-code, opencode) — every other cell is skipped, not run",
+    "--cell <tool_or_provider:string>",
+    "Run only the matrix cell whose tool OR provider matches (e.g. claude-code, opencode, " +
+      "openai, google) — every other cell is skipped, not run. Provider matching disambiguates " +
+      "direct-API cells, which all share tool: exactl.",
   )
   .option(
     "--keep-sandbox",

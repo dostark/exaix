@@ -72,13 +72,18 @@ export interface IExpandMatrixOptions {
    */
   configBaseDir?: Opt<string, Reason.OptionalInput>;
   /**
-   * Explicit cell selection by `tool` (e.g. `--cell claude-code`). The runner only ever
-   * executes the FIRST cell with status "run" (synthetic_runner.ts), so a multi-cell matrix
-   * without a selection always runs whichever prerequisite-satisfied cell appears first —
-   * silently never running the others. When set, every cell whose `tool` does not match is
-   * recorded skipped (with a reason naming the selection), so a caller can loop over cells
-   * explicitly (one invocation per --cell) and still get an honest per-cell status for the
-   * ones it didn't select, rather than an invisible omission.
+   * Explicit cell selection by `tool` (e.g. `--cell claude-code`) OR `provider` (e.g.
+   * `--cell openai`) — checked as an OR, so a value matching either field selects the cell.
+   * The provider fallback exists because every direct-API scenario cell in this framework
+   * uses `tool: "exactl"` (the daemon CLI itself) with `provider` as the field that actually
+   * varies (anthropic/openai/google/...) — once a scenario has more than one such cell,
+   * `tool` alone can no longer disambiguate between them. The runner only ever executes the
+   * FIRST cell with status "run" (synthetic_runner.ts), so a multi-cell matrix without a
+   * selection always runs whichever prerequisite-satisfied cell appears first — silently
+   * never running the others. When set, every cell matching neither field is recorded
+   * skipped (with a reason naming the selection), so a caller can loop over cells explicitly
+   * (one invocation per --cell) and still get an honest per-cell status for the ones it
+   * didn't select, rather than an invisible omission.
    */
   selectedCell?: string;
 }
@@ -380,11 +385,15 @@ export type IMatrixBlock = z.infer<typeof MatrixSchema>;
 /**
  * Evaluate a cell's presence predicates. Returns a skip reason (the first missing
  * predicate) or null when the cell can run. A cell runs only when ALL hold: it matches
- * `options.selectedCell` (when set), its binary is on PATH, every `requires_key` is set,
- * and `requires_optin` is set.
+ * `options.selectedCell` by `tool` OR `provider` (when set), its binary is on PATH, every
+ * `requires_key` is set, and `requires_optin` is set.
  */
 function cellSkipReason(cell: IMatrixCell, options: IExpandMatrixOptions): string | null {
-  if (options.selectedCell !== undefined && cell.tool !== options.selectedCell) {
+  if (
+    options.selectedCell !== undefined &&
+    cell.tool !== options.selectedCell &&
+    cell.provider !== options.selectedCell
+  ) {
     return `not the selected cell (--cell ${options.selectedCell})`;
   }
   if (!options.binOnPath(cell.requires_bin)) {

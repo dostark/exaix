@@ -251,6 +251,60 @@ Deno.test("[scenario_matrix] selectedCell naming a tool absent from the matrix s
   for (const r of runs) assertEquals(r.status, "skip");
 });
 
+const EXACTL_MULTI_PROVIDER_MATRIX: IMatrixBlock = {
+  cells: [
+    {
+      tool: "exactl",
+      provider: "anthropic",
+      config: "configs/anthropic-no-delegate.toml",
+      requires_bin: "true",
+      requires_key: "ANTHROPIC_API_KEY",
+    },
+    {
+      tool: "exactl",
+      provider: "openai",
+      config: "configs/openai-no-delegate.toml",
+      requires_bin: "true",
+      requires_key: "OPENAI_API_KEY",
+    },
+    {
+      tool: "exactl",
+      provider: "google",
+      config: "configs/google-no-delegate.toml",
+      requires_bin: "true",
+      requires_key: "GOOGLE_API_KEY",
+    },
+  ],
+};
+
+Deno.test(
+  "[scenario_matrix] selectedCell also matches by provider when multiple cells share the same tool (--cell openai selects only the openai exactl cell)",
+  () => {
+    const steps = [startDaemonStep()];
+    const runs = expandMatrix(steps, EXACTL_MULTI_PROVIDER_MATRIX, {
+      env: { ANTHROPIC_API_KEY: "k", OPENAI_API_KEY: "k", GOOGLE_API_KEY: "k" },
+      binOnPath: () => true,
+      selectedCell: "openai",
+    });
+    const runnable = runs.filter((r) => r.status === "run");
+    assertEquals(
+      runnable.length,
+      1,
+      "only the openai cell should be selected, not anthropic/google, despite all three sharing tool=exactl",
+    );
+    assertEquals(runnable[0].cell.provider, "openai");
+
+    const skipped = runs.filter((r) => r.status === "skip");
+    assertEquals(skipped.length, 2);
+    for (const r of skipped) {
+      assert(
+        r.cell.provider === "anthropic" || r.cell.provider === "google",
+        `unexpected skipped cell provider ${r.cell.provider}`,
+      );
+    }
+  },
+);
+
 Deno.test("[scenario_matrix] no selectedCell (default) runs every prerequisite-satisfied cell, unaffected (backward-compat)", () => {
   const steps = [startDaemonStep()];
   const runs = expandMatrix(steps, FOUR_CELL_MATRIX, {
