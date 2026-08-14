@@ -361,6 +361,26 @@ describe("parsePlanStep", () => {
     assertEquals(parsed.criteriaPaths.includes("packages/x/src/earlier.ts"), false);
   });
 
+  it("does not bleed into a later '## ' phase-level section (e.g. Success Metrics) when the step is the doc's last '### Step'", () => {
+    // style-exclude:FIXTURE_READABILITY - Compact plan-doc excerpt kept inline for step-parsing test clarity
+    const planDocLastStep = `## Implementation Plan
+
+### Step 6: Terminal, last step in the doc
+
+**Success Criteria**:
+
+- ✅ done criterion → \`packages/x/src/done.ts\`
+
+## Success Metrics
+
+- [ ] Phase-level aspirational target unrelated to Step 6
+- [ ] Another phase-level target
+`;
+    const parsed = parsePlanStep(planDocLastStep, 6);
+    assertEquals(parsed.errors, []);
+    assertEquals(parsed.criteriaPaths, ["packages/x/src/done.ts"]);
+  });
+
   it("captures the raw ✅ item lines for diff verification", () => {
     const parsed = parsePlanStep(PLAN_DOC, 6);
     assertEquals(

@@ -171,9 +171,15 @@ export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
       errors: [`Step ${step} not found in plan doc.`],
     };
   }
+  // Stop at the next step (`### `) OR the next phase-level section (`## `, e.g. Reachability
+  // Ledger, Risks & Mitigations, Success Metrics) — whichever comes first. Without the `## `
+  // check, the LAST `### Step N` in a doc has no following `### ` to bound it, so the scan ran
+  // to EOF and silently swept every later phase-level `- [ ]` (e.g. Success Metrics, which is
+  // intentionally left unchecked — see the plan skill's own guidance) into this step's
+  // criteria/tests, demanding they be resolved to commit the actual last step at all.
   let end = lines.length;
   for (let i = start + 1; i < lines.length; i++) {
-    if (/^###\s+/.test(lines[i])) {
+    if (/^#{2,3}\s+/.test(lines[i])) {
       end = i;
       break;
     }
