@@ -93,6 +93,9 @@ function registerConcreteProviders(): void {
       costTier: GOOGLE_PROVIDER_METADATA.costTier,
       pricingTier: PricingTier.LOW,
       strengths: [...GOOGLE_PROVIDER_METADATA.strengths],
+      // Phase 153 Step 3: GoogleProvider.attemptGenerate() now serializes
+      // IModelOptions.tools/toolChoice into real tools[]/toolConfig request fields.
+      supportsNativeTools: true,
     };
     ProviderRegistry.registerWithMetadata(
       PROVIDER_GOOGLE,

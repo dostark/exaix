@@ -17,7 +17,13 @@ import {
   RateLimitError,
   withRetry,
 } from "./providers/common.ts";
-import type { IModelOptions, IToolChoice, IToolDefinition } from "./types.ts";
+import {
+  type IModelOptions,
+  type IToolChoice,
+  type IToolDefinition,
+  TOOL_CHOICE_TYPE_NONE,
+  TOOL_CHOICE_TYPE_TOOL,
+} from "./types.ts";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_AI_RETRY_BACKOFF_BASE_MS, DEFAULT_AI_RETRY_MAX_ATTEMPTS, PROVIDER_MOCK } from "@exaix/ai";
 import {
@@ -105,6 +111,10 @@ export type GoogleResponse = {
     content?: {
       parts?: Array<{
         text?: string;
+        /** Phase 153: present when Gemini selects a tool. `args` is already a PARSED
+         *  object on the wire (unlike OpenAI's JSON-encoded string) - confirmed via
+         *  official docs. No `id` field - extractGoogleToolCalls() generates one. */
+        functionCall?: { name: string; args: Record<string, JSONValue> };
       }>;
     };
   }>;
@@ -286,13 +296,6 @@ function mapToolDefinitionOpenAI(
 /** OpenAI's wire-format `tool_choice`, mapped from IToolChoice per the Phase 153 mapping table. */
 type OpenAiWireToolChoice = "auto" | "none" | "required" | { type: "function"; function: { name: string } };
 
-/** `IToolChoice.type` discriminant tags this function switches on. Not OpenAI-specific -
- *  shared across every provider-specific mapToolChoice*() function - but declared here
- *  since this is the first one; a future refactor may hoist these beside IToolChoice
- *  itself if a second provider mapper needs them too. */
-const TOOL_CHOICE_TOOL = "tool";
-const TOOL_CHOICE_NONE = "none";
-
 /** Map IToolChoice to OpenAI's wire-format tool_choice per the Phase 153 mapping table.
  *  `disable_parallel_tool_use` has no OpenAI Chat Completions equivalent within
  *  `tool_choice` itself - intentionally NOT wired to `parallel_tool_calls` (a different,
@@ -303,10 +306,10 @@ function mapToolChoiceOpenAI(choice: IToolChoice): OpenAiWireToolChoice {
       return "auto";
     case "any":
       return "required";
-    case TOOL_CHOICE_TOOL:
+    case TOOL_CHOICE_TYPE_TOOL:
       return { type: "function", function: { name: choice.name } };
-    case TOOL_CHOICE_NONE:
-      return TOOL_CHOICE_NONE;
+    case TOOL_CHOICE_TYPE_NONE:
+      return TOOL_CHOICE_TYPE_NONE;
   }
 }
 
@@ -332,7 +335,7 @@ type OpenAiChatMessage =
   | { role: "user"; content: string };
 
 /** OpenAI Chat Completions message role for a tool-result message. Distinct concept from
- *  TOOL_CHOICE_TOOL above (a wire-protocol role, not an IToolChoice discriminant) - named
+ *  TOOL_CHOICE_TYPE_TOOL (a wire-protocol role, not an IToolChoice discriminant) - named
  *  separately even though the literal value happens to match. */
 const OPENAI_MESSAGE_ROLE_TOOL = "tool";
 
@@ -429,6 +432,31 @@ export function tokenMapperGoogle(model: string): ResponseTokenMapper<GoogleResp
 /** Extract textual content from Google response */
 export function extractGoogleContent(d: GoogleResponse): string {
   return d.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+}
+
+/**
+ * Extract ALL tool calls from a Google response. Returns them as IProviderToolCall[] when one
+ * or more `functionCall` parts exist, or undefined when none do. `args` is already a PARSED
+ * object on the wire (unlike OpenAI's JSON-encoded `arguments` string) - no JSON.parse needed.
+ * Gemini's `functionCall` has no `id` field, so a stable-enough-for-one-response synthetic id
+ * is generated per call via crypto.randomUUID() (this codebase's established convention for
+ * per-call ids, e.g. packages/ai/src/traced_provider.ts). Does NOT modify extractGoogleContent's
+ * behavior - this is a separate pass.
+ */
+export function extractGoogleToolCalls(d: GoogleResponse): IProviderToolCall[] | undefined {
+  const parts = d.candidates?.[0]?.content?.parts;
+  if (!parts) return undefined;
+  const calls = parts
+    .filter((part): part is { functionCall: { name: string; args: Record<string, JSONValue> } } =>
+      part.functionCall !== undefined
+    )
+    .map((part) => ({
+      id: crypto.randomUUID(),
+      name: part.functionCall.name,
+      input: part.functionCall.args,
+      type: "function",
+    }));
+  return calls.length > 0 ? calls : undefined;
 }
 
 /** Token mapper for Anthropic response shape */

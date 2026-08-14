@@ -252,3 +252,11 @@ export interface ILlmClient {
     output?: string;
   }>;
 }
+
+/** `IToolChoice.type` discriminant tags, shared across every provider-specific
+ *  mapToolChoice*() function (OpenAI, Google, OpenRouter, ...) so each one switches on a
+ *  named constant instead of a raw string literal. */
+export const TOOL_CHOICE_TYPE_AUTO = "auto";
+export const TOOL_CHOICE_TYPE_ANY = "any";
+export const TOOL_CHOICE_TYPE_TOOL = "tool";
+export const TOOL_CHOICE_TYPE_NONE = "none";
