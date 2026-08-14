@@ -27,6 +27,20 @@ matrix:
       config: "configs/anthropic-no-delegate.toml"
       requires_bin: "true"
       requires_key: "ANTHROPIC_API_KEY"
+    - tool: "exactl"
+      provider: "openai"
+      config: "configs/openai-no-delegate.toml"
+      requires_bin: "true"
+      requires_key: "OPENAI_API_KEY"
+    - tool: "exactl"
+      provider: "google"
+      config: "configs/google-no-delegate.toml"
+      requires_bin: "true"
+      requires_key: "GOOGLE_API_KEY"
+    # OpenRouter cell deliberately omitted (Phase 153 Step 5 Tier B, Pre-Gap-Analysis GAP-2):
+    # no OPENROUTER_API_KEY/persisted credential available in this environment. Add a
+    # `configs/openrouter-no-delegate.toml` + matching cell here once one is provisioned -
+    # tracked as an explicit follow-up, not silently folded into this scenario's coverage.
 steps:
   - id: "patch-blueprint-capability"
     type: "patch-blueprint"

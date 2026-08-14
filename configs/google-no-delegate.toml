@@ -1,0 +1,60 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+log_level = "info"
+allow_net = ["generativelanguage.googleapis.com"]
+
+[paths]
+workspace = "Workspace"
+portals = "Portals"
+memory = "Memory"
+
+# swe_tasks provider-live cell: real Google end to end (analysis + execution), no session
+# delegate - so execution runs through the daemon's own AgentExecutor/DynamicStepExecutor,
+# journalling real dynamic_tool_call events (trajectory-assert's source). Mirrors
+# anthropic-no-delegate.toml's shape exactly; carries no [[portals]] entry - swe_tasks
+# scenarios register their own fixture portal via `exactl portal add` rather than mounting
+# exaix-self. Phase 153 Step 5 Tier A live cutover.
+[ai]
+provider = "google"
+model = "gemini-flash-latest"
+
+[models.default]
+provider = "google"
+model = "gemini-flash-latest"
+timeout_ms = 60000
+
+[agents]
+default_model = "default"
+
+[rate_limiting]
+enabled = true
+max_calls_per_minute = 300
+
+[portal_knowledge]
+auto_analyze_on_mount = true
+
+[quality_gate]
+enabled = false
+
+[execution]
+native_tools_enabled = true
+
+[request_analysis]
+enabled = true
+
+# Phase 134 Solo curated list: without this, a size-M request resolves via ProviderSelector's
+# scoring path instead of the pinned model. Pin the curated list to Google (mirrors
+# anthropic-no-delegate.toml) so the request genuinely plans and executes on gemini-flash-latest.
+# supports_thinking = false matches this provider's real registration (registry_bootstrap.ts
+# does not set supportsThinking for google); max_cost_per_mtok/min_context_window are reasonable
+# declarative bounds for gemini-flash-latest's real cost tier (COST_RATE_GOOGLE = $2.5/1M output)
+# - the actual pin is `candidates`, these fields satisfy the preset schema.
+[model_presets.M]
+max_cost_per_mtok = 3
+min_context_window = 32000
+supports_thinking = false
+candidates = ["google"]
+
+# No [session_delegate] block: tool/gates are required once the block is present at all (even
+# with enabled = false), per SessionDelegateConfigSchema. Omitting it entirely defaults
+# session_delegate to disabled - mirrors anthropic-no-delegate.toml.
