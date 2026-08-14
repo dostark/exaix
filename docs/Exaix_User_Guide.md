@@ -262,7 +262,7 @@ cheapest = ["ollama"]
   **exempt from cost filtering**, so it can win even under a tight budget. An unknown-priced
   model is never treated as "cheapest" — only a genuinely known price qualifies.
 - Curate these lists from the CLI instead of editing TOML by hand — see
-  [`exactl config model` and `exactl models`](#exactl-config-model--exactl-models--solo-model-curation-phase-134).
+  [`exactl config model` and `exactl models`](#exactl-config-model--exactl-models--solo-model-curation-the-curated-model-registry).
 - **Editions:** the Solo floor is a static, offline catalog. A live, always-current catalog and
   stricter routing rigor arrive with the Team edition (the Team edition model registry); Solo behaviour is unchanged
   when no Team module is present. For the full precedence chain, characteristic scoring
@@ -841,9 +841,9 @@ Exaix TUI includes accessibility support:
 - **Layout not saving:** Verify write permissions to `~/.exaix/` directory.
 - **Colors look wrong:** Try toggling high contrast mode or check `$TERM` environment variable.
 
-For complete keyboard shortcuts, see [TUI Keyboard Reference](../apps/tui/README.md#keyboard-shortcuts).
+For complete keyboard shortcuts, see [TUI Keyboard Reference](TUI_Keyboard_Reference.md).
 
-For technical details, see the [Implementation Plan](../exaix-dev-docs/not_actual/Exaix_Implementation_Plan.md#step-95-tui-cockpit-implementation-plan).
+For technical details, see the [Implementation Plan](../exaix-dev-docs/planning/phase-09-ux-improvement.md#step-93-tui-cockpit-implementation-plan).
 
 ### 4.2 Command Groups
 
@@ -899,7 +899,7 @@ $ exactl dashboard
 - If the dashboard fails to launch, ensure your terminal supports ANSI escape codes and your workspace is initialized.
 - For accessibility or theming issues, see the dashboard settings panel (press `?` in the TUI).
 
-See the [Implementation Plan](../exaix-dev-docs/not_actual/Exaix_Implementation_Plan.md#step-95-tui-cockpit-implementation-plan) for technical details and roadmap.
+See the [Implementation Plan](../exaix-dev-docs/planning/phase-09-ux-improvement.md#step-93-tui-cockpit-implementation-plan) for technical details and roadmap.
 
 Exaix CLI is organized into ten main command groups:
 
@@ -1226,7 +1226,7 @@ Every request passes through a three-tier quality assessment before the agent ru
 
 Review and approve plans before agents execute them:
 
-> **⚠️ IMPLEMENTATION STATUS:** Plan approval moves plans to `Workspace/Active/` where they are detected and parsed (Steps 5.12.1-5.12.2 ✅). Automatic agent-driven execution (Steps 5.12.3-5.12.6) is in development. In the agent-driven model, LLM agents will have direct portal access through scoped tools (read_file, write_file, git_create_branch, git_commit) and will create reviews themselves. See [ARCHITECTURE.md](../ARCHITECTURE.md#plan-execution-flow-step-512) for details.
+> **⚠️ IMPLEMENTATION STATUS:** Plan approval moves plans to `Workspace/Active/` where they are detected and parsed (Steps 5.12.1-5.12.2 ✅). Automatic agent-driven execution (Steps 5.12.3-5.12.6) is in development. In the agent-driven model, LLM agents will have direct portal access through scoped tools (read_file, write_file, git_create_branch, git_commit) and will create reviews themselves. See [ARCHITECTURE.md](../ARCHITECTURE.md#plan-execution-flow) for details.
 
 ```bash
 # List all plans awaiting review
@@ -1886,7 +1886,7 @@ step:
 **Available Templates:**
 
 > **model resolution and intent:** Hardcoded `model:` in blueprints is deprecated. Use `model_size:` + `characteristics:` instead.
-> See [§6.2 Model Intent](#62-model-intent-phase-132) for the replacement system.
+> See [§6.2 Model Intent](#62-model-intent-model-resolution-and-intent) for the replacement system.
 
 | Template     | Model                   | Best For                          |
 | ------------ | ----------------------- | --------------------------------- |
@@ -3941,20 +3941,32 @@ The `[execution]` section controls how plan steps are executed:
 
 ```toml
 [execution]
-# Enable provider-enforced native tool selection (Anthropic + ReActLoopStrategy).
-# When true and the provider supports it, the model selects tools via the API's
-# native tool_choice mechanism instead of embedding tool calls in TOML prose.
+# Enable provider-enforced native tool selection. When true and the configured
+# provider supports it, the model selects tools via the API's native tool_choice
+# mechanism instead of embedding tool calls in TOML prose.
 # Default: false.
 native_tools_enabled = true
 ```
 
 When `native_tools_enabled = true`, the daemon's `ReActLoopStrategy` sends a real
-`tools[]`/`tool_choice` parameter to the Anthropic Messages API, constraining the model
-to choose from the tools Exaix actually offers. Falls back to the standard TOML-block
-prose path when the provider or strategy does not support native tool selection.
+`tools[]`/`tool_choice` (or provider-equivalent) parameter to the configured provider's
+API, constraining the model to choose from the tools Exaix actually offers. Falls back
+to the standard TOML-block prose path when the provider or strategy does not support
+native tool selection.
 
-**Current scope:** Anthropic provider only (OpenAI/Google/OpenRouter deferred to a
-future release). ReActLoopStrategy only (LegacyAgentStrategy and LlmClient unchanged).
+**Current scope:**
+
+- **Live-verified**: Anthropic, OpenAI. Real API calls confirm provider-enforced tool
+  selection end-to-end.
+- **Code-complete, pending live verification**: Google, OpenRouter. Serialization is
+  implemented and unit-tested (`supportsNativeTools: true` is registered for both), but
+  has not yet been proven against a real API call in this environment. Enabling this on
+  Google or OpenRouter today uses tested-but-not-yet-live-proven functionality.
+- **OpenRouter caveat**: tool support depends on the specific model OpenRouter routes
+  to, not on OpenRouter itself — check that a model's `supported_parameters` includes
+  `tools` via OpenRouter's `/api/v1/models` endpoint before relying on native tool
+  selection through it.
+- ReActLoopStrategy only (LegacyAgentStrategy and LlmClient unchanged).
 
 ### 5.4 Testing & CI Model Aliases
 
