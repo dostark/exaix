@@ -150,6 +150,14 @@
   when two steps happen to run at the same time — each step's fixture is now addressed by
   its own step id instead of a shared counter the steps could collide on.
 
+## Unreleased — Phase 153 (Multi-Provider Native Tool-Calling)
+
+### Added
+
+- Native tool-calling support (`tools` and `tool_choice` parameters) for OpenAI, Google, and OpenRouter direct-API providers, ensuring models choose from tools Exaix actually offers (see `Exaix_User_Guide.md` §5.3a).
+- Paid-tier live verification for Google Gemini provider native tool-calling under standard production quotas (see `Exaix_User_Guide.md` §5.3a).
+- Scoping of scenario security checks via cell lists, enabling `assert-no-dynamic-tool-calls` security gates to run exclusively on CLI-delegate cells (see `Exaix_User_Guide.md` §5.3a).
+
 ## Unreleased — Phase 150 (Dogfood Delegation Fidelity)
 
 ### Added
