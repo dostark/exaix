@@ -15,12 +15,15 @@ import {
 } from "./constants.ts";
 import {
   createOpenAIChatCompletionsRequestInit,
+  extractOpenAIContent,
+  extractOpenAIToolCalls,
   type OpenAIResponse,
   performProviderCall,
   tokenMapperOpenAI,
 } from "@exaix/ai/provider_common_utils.ts";
 import { BaseProvider, type IBaseProviderOptions, type IGenerateResult } from "@exaix/ai/providers";
 import type { IModelOptions } from "@exaix/ai/types.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 /**
  * Options for OpenAIProvider.
@@ -43,7 +46,10 @@ export class OpenAIProvider extends BaseProvider {
     }, "openai");
   }
 
-  protected override async attemptGenerate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
+  protected override async attemptGenerate(
+    prompt: string,
+    options?: Opt<IModelOptions, Reason.OptionalInput>,
+  ): Promise<IGenerateResult> {
     return await performProviderCall<OpenAIResponse>(
       this.baseUrl,
       createOpenAIChatCompletionsRequestInit(this.apiKey, this.model, prompt, options),
@@ -54,7 +60,8 @@ export class OpenAIProvider extends BaseProvider {
         timeoutMs: this.timeoutMs,
         logger: this.logger,
         tokenMapper: tokenMapperOpenAI(this.model),
-        extractor: (data: OpenAIResponse) => data.choices?.[0]?.message?.content ?? "",
+        extractor: extractOpenAIContent,
+        toolCallExtractor: extractOpenAIToolCalls,
       },
     );
   }

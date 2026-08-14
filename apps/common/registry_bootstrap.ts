@@ -74,6 +74,9 @@ function registerConcreteProviders(): void {
       costTier: OPENAI_PROVIDER_METADATA.costTier,
       pricingTier: PricingTier.MEDIUM,
       strengths: [...OPENAI_PROVIDER_METADATA.strengths],
+      // Phase 153 Step 2: OpenAIProvider.attemptGenerate() now serializes
+      // IModelOptions.tools/toolChoice into real tools[]/tool_choice request fields.
+      supportsNativeTools: true,
     };
     ProviderRegistry.registerWithMetadata(
       PROVIDER_OPENAI,

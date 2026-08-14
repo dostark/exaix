@@ -17,7 +17,7 @@ import {
   RateLimitError,
   withRetry,
 } from "./providers/common.ts";
-import type { IModelOptions } from "./types.ts";
+import type { IModelOptions, IToolChoice, IToolDefinition } from "./types.ts";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_AI_RETRY_BACKOFF_BASE_MS, DEFAULT_AI_RETRY_MAX_ATTEMPTS, PROVIDER_MOCK } from "@exaix/ai";
 import {
@@ -71,11 +71,23 @@ export type OpenAIUsage = {
   total_tokens?: number;
 };
 
+/** Phase 153: one OpenAI-format tool call, as it appears on the wire — `arguments` is a
+ *  JSON-ENCODED STRING (unlike Anthropic's already-parsed `input` object), parsed by
+ *  extractOpenAIToolCalls(). */
+export type OpenAIToolCall = {
+  id: string;
+  type: "function";
+  function: { name: string; arguments: string };
+};
+
 export type OpenAIResponse = {
   usage?: OpenAIUsage;
   choices?: Array<{
     message?: {
       content?: string;
+      /** Phase 153: present when finish_reason is "tool_calls". Absent for every
+       *  response until Step 2 (this step) is the first production caller. */
+      tool_calls?: OpenAIToolCall[];
     };
     text?: string;
   }>;
@@ -256,12 +268,100 @@ export function extractOpenAIContent(d: OpenAIResponse): string {
   return d.choices?.[0]?.message?.content ?? "";
 }
 
+/** Map IToolDefinition to OpenAI's wire-format tool object
+ *  (`{type:"function", function:{name, description?, parameters}}`). */
+function mapToolDefinitionOpenAI(
+  tool: IToolDefinition,
+): { type: "function"; function: { name: string; description?: string; parameters: Record<string, JSONValue> } } {
+  return {
+    type: "function",
+    function: {
+      name: tool.name,
+      ...(tool.description !== undefined ? { description: tool.description } : {}),
+      parameters: tool.inputSchema,
+    },
+  };
+}
+
+/** OpenAI's wire-format `tool_choice`, mapped from IToolChoice per the Phase 153 mapping table. */
+type OpenAiWireToolChoice = "auto" | "none" | "required" | { type: "function"; function: { name: string } };
+
+/** `IToolChoice.type` discriminant tags this function switches on. Not OpenAI-specific -
+ *  shared across every provider-specific mapToolChoice*() function - but declared here
+ *  since this is the first one; a future refactor may hoist these beside IToolChoice
+ *  itself if a second provider mapper needs them too. */
+const TOOL_CHOICE_TOOL = "tool";
+const TOOL_CHOICE_NONE = "none";
+
+/** Map IToolChoice to OpenAI's wire-format tool_choice per the Phase 153 mapping table.
+ *  `disable_parallel_tool_use` has no OpenAI Chat Completions equivalent within
+ *  `tool_choice` itself - intentionally NOT wired to `parallel_tool_calls` (a different,
+ *  unrelated top-level request field) in this phase (Pre-Gap Analysis GAP-1). */
+function mapToolChoiceOpenAI(choice: IToolChoice): OpenAiWireToolChoice {
+  switch (choice.type) {
+    case "auto":
+      return "auto";
+    case "any":
+      return "required";
+    case TOOL_CHOICE_TOOL:
+      return { type: "function", function: { name: choice.name } };
+    case TOOL_CHOICE_NONE:
+      return TOOL_CHOICE_NONE;
+  }
+}
+
+/** OpenAI's tool-result message `content` field is a plain string. Anthropic's
+ *  IProviderTurn.toolResultContent may be a string OR rich content blocks; stringify
+ *  the rich-block case rather than dropping it. */
+function stringifyOpenAiToolResultContent(
+  content: string | Array<{ type: string; [key: string]: JSONValue }>,
+): string {
+  return typeof content === "string" ? content : JSON.stringify(content);
+}
+
+/** One outbound message in the OpenAI Chat Completions `messages[]` array, covering the
+ *  three shapes this module constructs (priorTurn's assistant tool_calls + tool result,
+ *  plus the plain user prompt). */
+type OpenAiChatMessage =
+  | {
+    role: "assistant";
+    content: null;
+    tool_calls: Array<{ id: string; type: "function"; function: { name: string; arguments: string } }>;
+  }
+  | { role: "tool"; tool_call_id: string; content: string }
+  | { role: "user"; content: string };
+
+/** OpenAI Chat Completions message role for a tool-result message. Distinct concept from
+ *  TOOL_CHOICE_TOOL above (a wire-protocol role, not an IToolChoice discriminant) - named
+ *  separately even though the literal value happens to match. */
+const OPENAI_MESSAGE_ROLE_TOOL = "tool";
+
 export function createOpenAIChatCompletionsRequestInit(
   apiKey: string,
   model: string,
   prompt: string,
   options?: Opt<IModelOptions, Reason.OptionalInput>,
 ): RequestInit {
+  const messages: OpenAiChatMessage[] = [];
+  if (options?.priorTurn) {
+    const priorTurn = options.priorTurn;
+    messages.push({
+      role: "assistant",
+      content: null,
+      tool_calls: [{
+        id: priorTurn.toolUseId,
+        type: "function",
+        function: { name: priorTurn.toolName, arguments: JSON.stringify(priorTurn.toolInput) },
+      }],
+    });
+    messages.push({
+      role: OPENAI_MESSAGE_ROLE_TOOL,
+      tool_call_id: priorTurn.toolUseId,
+      content: stringifyOpenAiToolResultContent(priorTurn.toolResultContent),
+    });
+  }
+  messages.push({ role: "user", content: prompt });
+
   return {
     method: "POST",
     headers: {
@@ -270,13 +370,41 @@ export function createOpenAIChatCompletionsRequestInit(
     },
     body: JSON.stringify({
       model,
-      messages: [{ role: "user", content: prompt }],
+      messages,
       max_tokens: options?.max_tokens,
       temperature: options?.temperature,
       top_p: options?.top_p,
       stop: options?.stop,
+      tools: options?.tools?.map(mapToolDefinitionOpenAI),
+      tool_choice: options?.toolChoice ? mapToolChoiceOpenAI(options.toolChoice) : undefined,
     }),
   };
+}
+
+/**
+ * Extract ALL tool calls from an OpenAI response. Returns them as IProviderToolCall[]
+ * when one or more exist, or undefined when none do. `function.arguments` is a
+ * JSON-ENCODED STRING on the wire (unlike Anthropic's already-parsed `input`); a malformed
+ * entry is logged and dropped rather than throwing (provider integrity, not crash) - the
+ * remaining well-formed entries still come through. Does NOT modify extractOpenAIContent's
+ * behavior - this is a separate pass.
+ */
+export function extractOpenAIToolCalls(d: OpenAIResponse): IProviderToolCall[] | undefined {
+  const rawCalls = d.choices?.[0]?.message?.tool_calls;
+  if (!rawCalls || rawCalls.length === 0) return undefined;
+
+  const parsed: IProviderToolCall[] = [];
+  for (const call of rawCalls) {
+    try {
+      const input = JSON.parse(call.function.arguments) as Record<string, JSONValue>;
+      parsed.push({ id: call.id, name: call.function.name, input, type: "function" });
+    } catch {
+      console.warn(
+        `extractOpenAIToolCalls: dropping tool call "${call.function.name}" (id=${call.id}) - malformed arguments JSON`,
+      );
+    }
+  }
+  return parsed.length > 0 ? parsed : undefined;
 }
 
 /** Token mapper for Google response shape */
