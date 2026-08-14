@@ -3,7 +3,7 @@
  * @path packages/ai/src/provider_common_utils.ts
  * @description Shared utilities for AI providers, including token mapping, cost calculation, response handling, and retry logic.
  * @architectural-layer AI
- * @related-files [packages/ai/src/providers.ts]
+ * @related-files [packages/ai/src/providers.ts, packages/ai/src/types.ts, packages/ai/src/providers/common.ts]
  */
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
