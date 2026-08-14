@@ -120,35 +120,6 @@ jobs:
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task docs-bench
 
-  tests-and-coverage:
-    name: "Tests & Coverage"
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: "Checkout repository"
-        uses: actions/checkout@v4
-        with:
-          submodules: false
-
-      - name: "Init public submodule"
-        run: |
-          git config --local submodule.exaix-dev-docs.url "https://x-access-token:${{ secrets.GH_PAT }}@github.com/dostark/exaix-dev-docs.git"
-          git submodule update --init --depth 1 exaix-dev-docs
-
-      - name: "Setup Deno"
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: "2.x"
-
-      - name: "Clear Deno plug cache (avoid corrupted SQLite native plugin)"
-        run: rm -rf ~/.cache/deno/plug/
-
-      - name: "Build agent index (generate .copilot/chunks/)"
-        run: deno run --allow-read --allow-write scripts/build_agents_index.ts
-
-      - name: "Run Test Suite & Verify Coverage"
-        run: deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts
-
   edition-build:
     name: "Edition Build Smoke Tests"
     runs-on: ubuntu-latest

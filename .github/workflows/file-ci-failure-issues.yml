@@ -2,7 +2,7 @@ name: File CI Failure Issues
 
 on:
   workflow_run:
-    workflows: ["Code Quality Gates", "Test Suite"]
+    workflows: ["Code Quality Gates", "Test Suite", "Tests & Coverage"]
     types: [completed]
 
 permissions:
