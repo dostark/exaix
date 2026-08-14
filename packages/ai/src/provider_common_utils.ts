@@ -378,12 +378,44 @@ export function buildOpenAiMessages(
   return messages;
 }
 
+/**
+ * OpenAI's o-series and gpt-5.x reasoning models reject a non-default `temperature`/`top_p`
+ * with a 400 invalid_request_error ("Only the default (1) value is supported") — confirmed
+ * 2026-08-14 against a live gpt-5-mini call during Phase 153 Step 5's execution-phase
+ * cutover. These models expose no fine-grained sampling control; only `reasoning.effort`
+ * (Responses API, not part of Chat Completions) shapes generation. Matched by name prefix
+ * since there is no `IProviderMetadata` capability flag for this today — `o1`/`o3`/`o4`
+ * (bare "o" + digit) and the whole `gpt-5` family; `gpt-4o` ("o" for omni, not o-series)
+ * and earlier models are unaffected.
+ */
+function isOpenAiReasoningModel(model: string): boolean {
+  return /^(o\d|gpt-5)/.test(model);
+}
+
+/** OpenAI's `reasoning_effort` value that disables reasoning entirely — the only value
+ *  Chat Completions accepts alongside function tools on gpt-5.6+ (see
+ *  createOpenAIChatCompletionsRequestInit). Not a member of EffortTier ("low"/"medium"/
+ *  "high"), so it is never a caller preference — only ever this forced override. */
+const OPENAI_REASONING_EFFORT_NONE = "none";
+
 export function createOpenAIChatCompletionsRequestInit(
   apiKey: string,
   model: string,
   prompt: string,
   options?: Opt<IModelOptions, Reason.OptionalInput>,
 ): RequestInit {
+  const reasoningModel = isOpenAiReasoningModel(model);
+  const hasTools = Boolean(options?.tools?.length);
+  // gpt-5.6+ rejects function tools on Chat Completions unless reasoning_effort is
+  // exactly "none" ("Function tools with reasoning_effort are not supported for
+  // gpt-5.6-terra/gpt-5.6-luna in /v1/chat/completions... set reasoning_effort to
+  // 'none'" — confirmed live, 2026-08-14, against both tiers). Force it whenever tools
+  // are present so native tool-calling actually functions on this model family; "none"
+  // is not a valid EffortTier value, so this always overrides any caller preference for
+  // a tool-bearing call. Without tools, pass the caller's normalized EffortTier
+  // (low/medium/high, a valid subset of OpenAI's reasoning_effort values) through
+  // unchanged, preserving full reasoning-effort control for plain generation.
+  const reasoningEffort = reasoningModel ? (hasTools ? OPENAI_REASONING_EFFORT_NONE : options?.effort) : undefined;
   return {
     method: "POST",
     headers: {
@@ -399,8 +431,9 @@ export function createOpenAIChatCompletionsRequestInit(
       // during Phase 153 Step 5's execution-phase cutover. IModelOptions.max_tokens is
       // Exaix's own field name (unchanged); only the OpenAI wire serialization moves.
       max_completion_tokens: options?.max_tokens,
-      temperature: options?.temperature,
-      top_p: options?.top_p,
+      temperature: reasoningModel ? undefined : options?.temperature,
+      top_p: reasoningModel ? undefined : options?.top_p,
+      reasoning_effort: reasoningEffort,
       stop: options?.stop,
       tools: options?.tools?.map(mapToolDefinitionOpenAI),
       tool_choice: options?.toolChoice ? mapToolChoiceOpenAI(options.toolChoice) : undefined,

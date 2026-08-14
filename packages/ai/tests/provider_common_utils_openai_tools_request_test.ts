@@ -37,10 +37,13 @@ interface CapturedBody {
   tool_choice?: "auto" | "none" | "required" | { type: "function"; function: { name: string } };
   max_completion_tokens?: number;
   max_tokens?: number;
+  temperature?: number;
+  top_p?: number;
+  reasoning_effort?: string;
 }
 
-function capturedBodyOf(options?: IModelOptions): CapturedBody {
-  const init = createOpenAIChatCompletionsRequestInit("test-key", "gpt-5", "test prompt", options);
+function capturedBodyOf(options?: IModelOptions, model = "gpt-5"): CapturedBody {
+  const init = createOpenAIChatCompletionsRequestInit("test-key", model, "test prompt", options);
   return JSON.parse(init.body as string);
 }
 
@@ -144,5 +147,61 @@ Deno.test(
     const body = capturedBodyOf({ max_tokens: 8192 });
     assertEquals(body.max_completion_tokens, 8192);
     assertEquals(body.max_tokens, undefined);
+  },
+);
+
+Deno.test(
+  "createOpenAIChatCompletionsRequestInit omits temperature/top_p for reasoning models (o-series/gpt-5.x reject non-default values)",
+  () => {
+    const body = capturedBodyOf({ temperature: 0.1, top_p: 0.9 }, "gpt-5-mini");
+    assertEquals(body.temperature, undefined);
+    assertEquals(body.top_p, undefined);
+  },
+);
+
+Deno.test(
+  "createOpenAIChatCompletionsRequestInit keeps temperature/top_p for non-reasoning models (e.g. gpt-4o-mini)",
+  () => {
+    const body = capturedBodyOf({ temperature: 0.1, top_p: 0.9 }, "gpt-4o-mini");
+    assertEquals(body.temperature, 0.1);
+    assertEquals(body.top_p, 0.9);
+  },
+);
+
+Deno.test(
+  "createOpenAIChatCompletionsRequestInit forces reasoning_effort:none on reasoning models when tools are present (Chat Completions rejects function tools with any other reasoning_effort on gpt-5.6+)",
+  () => {
+    const body = capturedBodyOf({
+      effort: "high",
+      tools: [{ name: "write_file", description: "write", inputSchema: { type: "object" } }],
+    }, "gpt-5.6-terra");
+    assertEquals(body.reasoning_effort, "none");
+  },
+);
+
+Deno.test(
+  "createOpenAIChatCompletionsRequestInit passes options.effort through as reasoning_effort on reasoning models when no tools are present",
+  () => {
+    const body = capturedBodyOf({ effort: "high" }, "gpt-5.6-terra");
+    assertEquals(body.reasoning_effort, "high");
+  },
+);
+
+Deno.test(
+  "createOpenAIChatCompletionsRequestInit omits reasoning_effort on reasoning models when no effort and no tools are given",
+  () => {
+    const body = capturedBodyOf({}, "gpt-5.6-terra");
+    assertEquals(body.reasoning_effort, undefined);
+  },
+);
+
+Deno.test(
+  "createOpenAIChatCompletionsRequestInit never sends reasoning_effort for non-reasoning models, even with tools",
+  () => {
+    const body = capturedBodyOf({
+      effort: "high",
+      tools: [{ name: "write_file", description: "write", inputSchema: { type: "object" } }],
+    }, "gpt-4o-mini");
+    assertEquals(body.reasoning_effort, undefined);
   },
 );

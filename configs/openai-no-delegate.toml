@@ -16,11 +16,17 @@ memory = "Memory"
 # exaix-self. Phase 153 Step 5 Tier A live cutover.
 [ai]
 provider = "openai"
-model = "gpt-5-mini"
+# gpt-5-mini (2025-08-07 snapshot) is labeled "Previous" generation in OpenAI's own docs.
+# gpt-5.6-terra is their current "balance intelligence and cost" recommendation - Sol/
+# Terra/Luna map to roughly Exaix's own XL/L/M/S size tiers; Terra (not the cheapest
+# Luna tier) is the sensible default, matching Exaix's own model_presets.M/L below.
+# Verified live against this account's real /v1/models catalog and function-calling
+# behavior, 2026-08-14 (developers.openai.com/api/docs/models).
+model = "gpt-5.6-terra"
 
 [models.default]
 provider = "openai"
-model = "gpt-5-mini"
+model = "gpt-5.6-terra"
 timeout_ms = 60000
 
 [agents]
@@ -42,14 +48,25 @@ native_tools_enabled = true
 [request_analysis]
 enabled = true
 
-# Phase 134 Solo curated list: without this, a size-M request resolves via ProviderSelector's
-# scoring path instead of the pinned model. Pin the curated list to OpenAI (mirrors
-# anthropic-no-delegate.toml) so the request genuinely plans and executes on gpt-5-mini.
-# supports_thinking = false matches this provider's real registration (registry_bootstrap.ts
-# does not set supportsThinking for openai); max_cost_per_mtok/min_context_window are reasonable
-# declarative bounds for gpt-5-mini's real cost tier (COST_RATE_OPENAI = $2/1M output) - the
-# actual pin is `candidates`, these fields satisfy the preset schema.
+# Phase 134 Solo curated list: without this, a size-M/L request resolves via
+# ProviderSelector's scoring path instead of the pinned model. Pin the curated list to
+# OpenAI (mirrors anthropic-no-delegate.toml) for both M (request analysis/plan
+# generation) and L (execution — confirmed live, 2026-08-14, that ReActLoopStrategy's
+# execution-phase model resolution requests model_size: "L" specifically; an L-less
+# config silently resolved to mock:mock-model for that phase's budget estimation via
+# preset_default) so the request genuinely plans and executes on gpt-5.6-terra
+# throughout. supports_thinking = false matches this provider's real registration
+# (registry_bootstrap.ts does not set supportsThinking for openai); max_cost_per_mtok/
+# min_context_window are conservative declarative bounds (COST_RATE_OPENAI's $2/1M
+# pinned rate predates gpt-5.6 and is not re-verified here) - the actual pin is
+# `candidates`, these fields satisfy the schema.
 [model_presets.M]
+max_cost_per_mtok = 3
+min_context_window = 32000
+supports_thinking = false
+candidates = ["openai"]
+
+[model_presets.L]
 max_cost_per_mtok = 3
 min_context_window = 32000
 supports_thinking = false

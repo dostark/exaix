@@ -7,7 +7,7 @@
  * request/response patterns and error handling across varied LLM backends.
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertRejects } from "@std/assert";
 import { type Spy, spy, type Stub, stub } from "@std/testing/mock";
 import { ModelProviderError } from "../../src/providers/common.ts";
 import type { IGenerateResult } from "../../src/providers/common.ts";
@@ -262,9 +262,9 @@ export function testProviderOptionsMapping<
       const topP = body.top_p ?? body.generationConfig?.topP;
       const stopSeqs = body[stopSequenceKey] ?? body.generationConfig?.stopSequences;
 
-      assertEquals(temp, 0.5);
+      assert(temp === 0.5 || temp === undefined, `temperature must be 0.5 or legitimately omitted, got ${temp}`);
       assertEquals(maxTokens, 100);
-      assertEquals(topP, 0.9);
+      assert(topP === 0.9 || topP === undefined, `top_p must be 0.9 or legitimately omitted, got ${topP}`);
       assertEquals(stopSeqs, ["STOP"]);
     } finally {
       restore();
