@@ -332,6 +332,39 @@ Deno.test(
   },
 );
 
+Deno.test(
+  "[scenario_matrix] assert-no-dynamic-tool-calls with cells: [claude-code, opencode] drops the step for direct-API exactl cells",
+  () => {
+    const scopedStep: IScenarioStep = {
+      ...otherStep(),
+      id: "assert-no-dynamic-tool-calls",
+      cells: ["claude-code", "opencode"],
+    };
+    const steps = [scopedStep, startDaemonStep()];
+
+    const runsFour = expandMatrix(steps, FOUR_CELL_MATRIX, {
+      env: DEFAULT_MATRIX_ENV,
+      binOnPath: () => true,
+    });
+    for (const r of runsFour) {
+      const hasScopedStep = r.steps.some((s) => s.id === "assert-no-dynamic-tool-calls");
+      assert(hasScopedStep, `${r.cell.tool}/${r.cell.provider} (CLI delegate) must keep assert-no-dynamic-tool-calls`);
+    }
+
+    const runsExactl = expandMatrix(steps, EXACTL_MULTI_PROVIDER_MATRIX, {
+      env: { ANTHROPIC_API_KEY: "k", OPENAI_API_KEY: "k", GOOGLE_API_KEY: "k" },
+      binOnPath: () => true,
+    });
+    for (const r of runsExactl) {
+      const hasScopedStep = r.steps.some((s) => s.id === "assert-no-dynamic-tool-calls");
+      assert(
+        !hasScopedStep,
+        `${r.cell.tool}/${r.cell.provider} (direct-API exactl cell) must drop assert-no-dynamic-tool-calls`,
+      );
+    }
+  },
+);
+
 Deno.test("[scenario_matrix] a step with no cells field runs for every cell, unchanged (backward-compat)", () => {
   const steps = [otherStep(), startDaemonStep()];
   const runs = expandMatrix(steps, FOUR_CELL_MATRIX, {

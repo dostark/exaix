@@ -148,6 +148,12 @@ steps:
     action_type: "dynamic_tool_call"
     trace_scoped: true
     expect_count: 0
+    # Scoped to the CLI-delegate cells only (Phase 153 GAP-1): direct-API cells (anthropic/openai/google)
+    # intentionally execute via ReActLoopStrategy with native_tools_enabled: true, which produces
+    # real dynamic_tool_call journal rows. This security gate asserts that no freelance tool calls
+    # were made, which is relevant only to CLI delegates (claude-code, opencode) that are expected
+    # to run completely without Exaix-side dynamic tool-calling.
+    cells: ["claude-code", "opencode"]
     output_criteria:
       - id: "no-dynamic-tool-calls"
         class: "security"

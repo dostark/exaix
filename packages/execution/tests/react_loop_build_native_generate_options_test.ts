@@ -96,6 +96,7 @@ Deno.test("buildNativeGenerateOptions with preferredTool but no native tools act
   assertEquals(options.toolChoice, undefined);
 });
 
+// GAP-3: verified context.plan keyword distinction in Phase 153 Step 8
 // PGAP-3: targeted-edit keyword detection
 const TARGETED_EDIT_PATTERN = /fix|patch|null.guard|refactor|edit|bug|repair/i;
 

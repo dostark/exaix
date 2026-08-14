@@ -3956,12 +3956,13 @@ native tool selection.
 
 **Current scope:**
 
-- **Live-verified**: Anthropic, OpenAI. Real API calls confirm provider-enforced tool
-  selection end-to-end.
-- **Code-complete, pending live verification**: Google, OpenRouter. Serialization is
-  implemented and unit-tested (`supportsNativeTools: true` is registered for both), but
+- **Live-verified**: Anthropic, OpenAI, and Google. Real API calls confirm provider-enforced
+  tool selection end-to-end. Google's live verification was confirmed with a standard paid-tier
+  run returning `"serviceTier": "standard"` (25 dynamic tool call rows, total cost `$0.1211575`).
+- **Code-complete, pending live verification**: OpenRouter. Serialization is
+  implemented and unit-tested (`supportsNativeTools: true` is registered), but
   has not yet been proven against a real API call in this environment. Enabling this on
-  Google or OpenRouter today uses tested-but-not-yet-live-proven functionality.
+  OpenRouter today uses tested-but-not-yet-live-proven functionality.
 - **OpenRouter caveat**: tool support depends on the specific model OpenRouter routes
   to, not on OpenRouter itself — check that a model's `supported_parameters` includes
   `tools` via OpenRouter's `/api/v1/models` endpoint before relying on native tool
