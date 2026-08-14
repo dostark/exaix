@@ -486,9 +486,18 @@ function overlayBareDelegateStep(steps: IScenarioStep[], cell: IMatrixCell): ISc
 }
 
 /**
- * Expand a matrix block into one IMatrixCellRun per cell. Runnable cells carry the
- * per-cell env overlay on their start-daemon step; absent-prerequisite cells are
- * recorded `skip` with a reason and an unmodified step list.
+ * Drop steps scoped away from this cell via their `cells` field (a non-empty allowlist of
+ * `tool` values). A step with no `cells` field runs for every cell, unchanged.
+ */
+function filterStepsForCell(steps: IScenarioStep[], cell: IMatrixCell): IScenarioStep[] {
+  return steps.filter((step) => !step.cells || step.cells.includes(cell.tool));
+}
+
+/**
+ * Expand a matrix block into one IMatrixCellRun per cell. Runnable cells first drop any
+ * step scoped away from them via `cells` (filterStepsForCell), then carry the per-cell env
+ * overlay on their start-daemon step; absent-prerequisite cells are recorded `skip` with a
+ * reason and an unmodified step list.
  */
 export function expandMatrix(
   steps: IScenarioStep[],
@@ -502,7 +511,7 @@ export function expandMatrix(
     }
     return {
       cell,
-      steps: overlayCellEnv(steps, cell, options.configBaseDir),
+      steps: overlayCellEnv(filterStepsForCell(steps, cell), cell, options.configBaseDir),
       status: MatrixCellStatus.RUN,
     };
   });

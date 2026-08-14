@@ -305,6 +305,44 @@ Deno.test(
   },
 );
 
+Deno.test(
+  "[scenario_matrix] a step with cells: [...] runs only for cells whose tool is in the list",
+  () => {
+    const scopedStep: IScenarioStep = {
+      ...otherStep(),
+      id: "patch-blueprint-capability",
+      cells: ["claude-code"],
+    };
+    const steps = [scopedStep, startDaemonStep()];
+    const runs = expandMatrix(steps, FOUR_CELL_MATRIX, {
+      env: DEFAULT_MATRIX_ENV,
+      binOnPath: () => true,
+    });
+
+    for (const r of runs) {
+      const hasScopedStep = r.steps.some((s) => s.id === "patch-blueprint-capability");
+      if (r.cell.tool === "claude-code") {
+        assert(hasScopedStep, "claude-code cells must keep the scoped step");
+      } else {
+        assert(!hasScopedStep, `${r.cell.tool}/${r.cell.provider} must drop the scoped step, not run it`);
+      }
+      // start-daemon must survive regardless — scoping one step must never remove another.
+      assert(r.steps.some((s) => s.id === MATRIX_START_DAEMON_STEP_ID));
+    }
+  },
+);
+
+Deno.test("[scenario_matrix] a step with no cells field runs for every cell, unchanged (backward-compat)", () => {
+  const steps = [otherStep(), startDaemonStep()];
+  const runs = expandMatrix(steps, FOUR_CELL_MATRIX, {
+    env: DEFAULT_MATRIX_ENV,
+    binOnPath: () => true,
+  });
+  for (const r of runs) {
+    assertEquals(r.steps.length, 2, `${r.cell.tool}/${r.cell.provider} must keep every unscoped step`);
+  }
+});
+
 Deno.test("[scenario_matrix] no selectedCell (default) runs every prerequisite-satisfied cell, unaffected (backward-compat)", () => {
   const steps = [startDaemonStep()];
   const runs = expandMatrix(steps, FOUR_CELL_MATRIX, {

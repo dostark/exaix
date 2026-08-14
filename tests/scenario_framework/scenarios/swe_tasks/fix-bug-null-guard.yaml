@@ -46,6 +46,17 @@ steps:
     type: "patch-blueprint"
     blueprint: "senior-coder"
     add_capabilities: ["cli_delegate"]
+    # Scoped to the CLI-delegate cells only (Phase 153 Step 5 finding): the direct-API
+    # exactl cells below (anthropic/openai/google) never enable [cli_delegate] in their
+    # configs, so AgentOrchestrator never registers CliDelegateStrategy for them. Before
+    # this field existed, the capability patch applied unconditionally to every cell,
+    # so a direct-API cell's blueprint carried a capability its config could never back —
+    # AgentOrchestrator.resolveStrategyName() picks CLI_DELEGATE whenever the capability is
+    # present (by design, to fail loudly rather than silently fall back to a different
+    # execution path — see cli_delegate_dispatch_test.ts), so execution threw "Execution
+    # strategy not found: cli_delegate" for every direct-API cell, never reaching
+    # ReActLoopStrategy/native tool-calling at all.
+    cells: ["claude-code", "opencode"]
     output_criteria:
       - id: "capability-patched"
         kind: "command-exit-code"

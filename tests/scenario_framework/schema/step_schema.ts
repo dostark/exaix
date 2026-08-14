@@ -369,6 +369,13 @@ export const ScenarioStepSchema = z.object({
    *  hardcode deep `.exa/worktrees/...` globs. */
   cwd: z.string().min(1).optional(),
   env: z.record(z.string(), z.string()).optional(),
+  /** Matrix-cell scoping: when present, this step only runs for cells whose `tool` is in
+   *  this list — every other cell skips it entirely (removed before execution, not merely
+   *  no-opped). For scenarios whose matrix mixes cell types needing different one-time
+   *  setup (e.g. patch-blueprint-capability's cli_delegate capability patch, needed only by
+   *  CLI-delegate cells, never by direct-API cells sharing the same steps array). Omitted →
+   *  the step runs for every cell (and for matrix-less scenarios), unchanged. */
+  cells: z.array(NON_EMPTY_STRING).min(1).optional(),
   timeout_sec: z.number().int().positive().optional(),
   // wait-for-file: an optional second glob polled alongside args[0]. If it matches before
   // the success glob does, the step fails immediately (surfacing the matched file's content
