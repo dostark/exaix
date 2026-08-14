@@ -8,7 +8,17 @@
  * OpenAI request/response helpers and adds OpenRouter's HTTP-Referer / X-Title ranking headers.
  */
 
-import { extractOpenAIContent, performProviderCall } from "@exaix/ai/provider_common_utils.ts";
+import {
+  buildOpenAiMessages,
+  extractOpenAIContent,
+  extractOpenAIToolCalls,
+  mapToolChoiceOpenAI,
+  mapToolDefinitionOpenAI,
+  type OpenAiChatMessage,
+  type OpenAiWireToolChoice,
+  type OpenAiWireToolDefinition,
+  performProviderCall,
+} from "@exaix/ai/provider_common_utils.ts";
 import { type IOpenRouterResponse, tokenMapperOpenRouter } from "./openrouter_reported_cost.ts";
 import { BaseProvider, type IBaseProviderOptions, type IGenerateResult } from "@exaix/ai/providers";
 import type { IModelOptions } from "@exaix/ai/types.ts";
@@ -48,10 +58,12 @@ export interface IOpenRouterRouting {
   data_collection?: OpenRouterDataCollection;
 }
 
-/** Internal request-body shape for serialization. */
+/** Internal request-body shape for serialization. `messages`/`tools`/`tool_choice` reuse the
+ *  same OpenAI Chat Completions shape Step 2 built (packages/ai/src/provider_common_utils.ts) -
+ *  OpenRouter is a confirmed byte-for-byte pass-through of that contract. */
 interface OpenRouterRequestBody {
   model: string;
-  messages: Array<{ role: string; content: string }>;
+  messages: OpenAiChatMessage[];
   max_tokens?: number;
   temperature?: number;
   top_p?: number;
@@ -60,6 +72,8 @@ interface OpenRouterRequestBody {
   provider?: OpenRouterProviderBody;
   /** Phase 135: request OpenRouter's reported usage.cost in the response. */
   usage?: { include: boolean };
+  tools?: OpenAiWireToolDefinition[];
+  tool_choice?: OpenAiWireToolChoice;
 }
 
 interface OpenRouterProviderBody {
@@ -109,7 +123,7 @@ export class OpenRouterProvider extends BaseProvider {
   ): OpenRouterRequestBody {
     const body: OpenRouterRequestBody = {
       model: this.model,
-      messages: [{ role: "user", content: prompt }],
+      messages: buildOpenAiMessages(prompt, options?.priorTurn),
       // Phase 135 (F6/G9): ask OpenRouter to report the authoritative cost.
       usage: { include: true },
     };
@@ -117,6 +131,8 @@ export class OpenRouterProvider extends BaseProvider {
     if (options?.temperature !== undefined) body.temperature = options.temperature;
     if (options?.top_p !== undefined) body.top_p = options.top_p;
     if (options?.stop !== undefined) body.stop = options.stop;
+    if (options?.tools !== undefined) body.tools = options.tools.map(mapToolDefinitionOpenAI);
+    if (options?.toolChoice !== undefined) body.tool_choice = mapToolChoiceOpenAI(options.toolChoice);
 
     if (this.routing) {
       if (this.routing.models !== undefined) {
@@ -157,6 +173,7 @@ export class OpenRouterProvider extends BaseProvider {
       logger: this.logger,
       tokenMapper: tokenMapperOpenRouter(this.model),
       extractor: extractOpenAIContent,
+      toolCallExtractor: extractOpenAIToolCalls,
     });
   }
 }

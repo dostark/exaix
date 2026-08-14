@@ -19,6 +19,7 @@ import {
 } from "./providers/common.ts";
 import {
   type IModelOptions,
+  type IProviderTurn,
   type IToolChoice,
   type IToolDefinition,
   TOOL_CHOICE_TYPE_NONE,
@@ -278,11 +279,16 @@ export function extractOpenAIContent(d: OpenAIResponse): string {
   return d.choices?.[0]?.message?.content ?? "";
 }
 
-/** Map IToolDefinition to OpenAI's wire-format tool object
- *  (`{type:"function", function:{name, description?, parameters}}`). */
-function mapToolDefinitionOpenAI(
-  tool: IToolDefinition,
-): { type: "function"; function: { name: string; description?: string; parameters: Record<string, JSONValue> } } {
+/** OpenAI's wire-format tool object (`{type:"function", function:{name, description?,
+ *  parameters}}`), mapped from IToolDefinition. Exported so OpenRouter's request body (Step 4)
+ *  can name its `tools[]` field against this shape instead of `ReturnType<typeof ...>`. */
+export type OpenAiWireToolDefinition = {
+  type: "function";
+  function: { name: string; description?: string; parameters: Record<string, JSONValue> };
+};
+
+/** Map IToolDefinition to OpenAI's wire-format tool object. */
+export function mapToolDefinitionOpenAI(tool: IToolDefinition): OpenAiWireToolDefinition {
   return {
     type: "function",
     function: {
@@ -294,13 +300,13 @@ function mapToolDefinitionOpenAI(
 }
 
 /** OpenAI's wire-format `tool_choice`, mapped from IToolChoice per the Phase 153 mapping table. */
-type OpenAiWireToolChoice = "auto" | "none" | "required" | { type: "function"; function: { name: string } };
+export type OpenAiWireToolChoice = "auto" | "none" | "required" | { type: "function"; function: { name: string } };
 
 /** Map IToolChoice to OpenAI's wire-format tool_choice per the Phase 153 mapping table.
  *  `disable_parallel_tool_use` has no OpenAI Chat Completions equivalent within
  *  `tool_choice` itself - intentionally NOT wired to `parallel_tool_calls` (a different,
  *  unrelated top-level request field) in this phase (Pre-Gap Analysis GAP-1). */
-function mapToolChoiceOpenAI(choice: IToolChoice): OpenAiWireToolChoice {
+export function mapToolChoiceOpenAI(choice: IToolChoice): OpenAiWireToolChoice {
   switch (choice.type) {
     case "auto":
       return "auto";
@@ -324,8 +330,10 @@ function stringifyOpenAiToolResultContent(
 
 /** One outbound message in the OpenAI Chat Completions `messages[]` array, covering the
  *  three shapes this module constructs (priorTurn's assistant tool_calls + tool result,
- *  plus the plain user prompt). */
-type OpenAiChatMessage =
+ *  plus the plain user prompt). Exported so OpenRouter's byte-for-byte OpenAI-compatible
+ *  request body (Step 4) can type its own `messages[]` field against the same shape instead
+ *  of duplicating it. */
+export type OpenAiChatMessage =
   | {
     role: "assistant";
     content: null;
@@ -339,15 +347,18 @@ type OpenAiChatMessage =
  *  separately even though the literal value happens to match. */
 const OPENAI_MESSAGE_ROLE_TOOL = "tool";
 
-export function createOpenAIChatCompletionsRequestInit(
-  apiKey: string,
-  model: string,
+/**
+ * Build the OpenAI Chat Completions `messages[]` array for `prompt`, optionally prepending
+ * `priorTurn`'s 2-message exchange (assistant tool_calls + tool result) first. Exported so
+ * OpenRouter's `buildRequestBody()` (Step 4) reuses this exact sequencing rather than
+ * duplicating it - OpenRouter is a confirmed byte-for-byte pass-through of this wire shape.
+ */
+export function buildOpenAiMessages(
   prompt: string,
-  options?: Opt<IModelOptions, Reason.OptionalInput>,
-): RequestInit {
+  priorTurn?: Opt<IProviderTurn, Reason.OptionalInput>,
+): OpenAiChatMessage[] {
   const messages: OpenAiChatMessage[] = [];
-  if (options?.priorTurn) {
-    const priorTurn = options.priorTurn;
+  if (priorTurn) {
     messages.push({
       role: "assistant",
       content: null,
@@ -364,7 +375,15 @@ export function createOpenAIChatCompletionsRequestInit(
     });
   }
   messages.push({ role: "user", content: prompt });
+  return messages;
+}
 
+export function createOpenAIChatCompletionsRequestInit(
+  apiKey: string,
+  model: string,
+  prompt: string,
+  options?: Opt<IModelOptions, Reason.OptionalInput>,
+): RequestInit {
   return {
     method: "POST",
     headers: {
@@ -373,7 +392,7 @@ export function createOpenAIChatCompletionsRequestInit(
     },
     body: JSON.stringify({
       model,
-      messages,
+      messages: buildOpenAiMessages(prompt, options?.priorTurn),
       max_tokens: options?.max_tokens,
       temperature: options?.temperature,
       top_p: options?.top_p,
