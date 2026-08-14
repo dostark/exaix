@@ -3,6 +3,8 @@ name: Auto Remediate Failed CI
 on:
   issues:
     types: [opened]
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: write
@@ -16,16 +18,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Narrow the broad `issues: opened` trigger: an issue only enters the fix
-      # pipeline when it is labeled for CI remediation (auto-remediation/ci/bug)
-      # AND its title signals a CI/test failure. Non-matching issues stop here
-      # after a single cheap API check — no checkout, no model calls.
+      # Narrow the broad `issues: opened` + `issue_comment: created` triggers: an
+      # issue only enters the fix pipeline when it is labeled for CI remediation
+      # (auto-remediation/ci/bug) AND its title signals a CI/test failure.
+      # `issue_comment` also fires for every PR conversation comment and every
+      # human reply on a tracked issue — file-ci-failure-issues.yml posts a
+      # "Comment on existing issue" step (never `issues: opened`) each time an
+      # already-tracked failure recurs, so without this trigger a repeat failure
+      # silently never re-enters remediation once the first issue is filed. Both
+      # the automation's comments and a human's replies are posted under the same
+      # PAT identity (no bot account to key off), so the only reliable signal is
+      # the exact comment body file-ci-failure-issues.yml writes. Non-matching
+      # events stop here after a single cheap API check — no checkout, no model calls.
       - name: Gate on CI remediation label and title
         id: ci-label
         uses: actions/github-script@v7
         env:
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_LABELS: ${{ toJson(github.event.issue.labels) }}
+          EVENT_NAME: ${{ github.event_name }}
+          IS_PR_COMMENT: ${{ github.event.issue.pull_request != null }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -43,7 +56,18 @@ jobs:
             );
             const titleSignalsCi = /ci|test|fail/.test(title);
 
-            core.setOutput("is_ci", String(hasCiLabel && titleSignalsCi));
+            // For issue_comment: only the automation's own repeat-failure comment
+            // ("Another failing run of <workflow>: <url>", written by
+            // file-ci-failure-issues.yml) re-enters the pipeline — never a PR
+            // conversation comment, and never an arbitrary human reply.
+            let commentSignalsRetrigger = true;
+            if (process.env.EVENT_NAME === "issue_comment") {
+              const isPrComment = process.env.IS_PR_COMMENT === "true";
+              const commentBody = process.env.COMMENT_BODY ?? "";
+              commentSignalsRetrigger = !isPrComment && commentBody.startsWith("Another failing run of ");
+            }
+
+            core.setOutput("is_ci", String(hasCiLabel && titleSignalsCi && commentSignalsRetrigger));
 
       - name: Checkout repository
         if: ${{ steps.ci-label.outputs.is_ci == 'true' }}
@@ -153,15 +177,43 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.AUTO_REMEDIATION_PAT }}
 
-      - name: Create fix branch
+      # A repeat trigger (issue_comment re-entering the pipeline above) must not
+      # duplicate an in-flight remediation attempt: if a PR from an earlier run is
+      # still open for this issue, comment with its link and stop instead of
+      # racing a second Copilot fix attempt against the first.
+      - name: Check for existing remediation PR
         if: ${{ steps.ci-label.outputs.is_ci == 'true' && steps.parse.outputs.transient == 'false' }}
+        id: existing-pr
+        run: |
+          url=$(gh pr list \
+            --repo "${{ github.repository }}" \
+            --head "fix/ci-${{ github.event.issue.number }}" \
+            --state open \
+            --json url \
+            --jq '.[0].url')
+          if [ -n "$url" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            gh issue comment "${{ github.event.issue.number }}" \
+              --repo "${{ github.repository }}" \
+              --body "A remediation PR is already open for this issue: ${url}"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.AUTO_REMEDIATION_PAT }}
+
+      - name: Create fix branch
+        if: ${{ steps.ci-label.outputs.is_ci == 'true' && steps.parse.outputs.transient == 'false' && steps.existing-pr.outputs.exists == 'false' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b fix/ci-${{ github.event.issue.number }}
+          # -B (not -b): a prior attempt's branch may still exist locally/remotely
+          # with no open PR (closed or merged without deleting it) — reset it to a
+          # fresh HEAD-based start rather than failing on "branch already exists".
+          git checkout -B fix/ci-${{ github.event.issue.number }}
 
       - name: Fix and open PR
-        if: ${{ steps.ci-label.outputs.is_ci == 'true' && steps.parse.outputs.transient == 'false' }}
+        if: ${{ steps.ci-label.outputs.is_ci == 'true' && steps.parse.outputs.transient == 'false' && steps.existing-pr.outputs.exists == 'false' }}
         id: fix
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
