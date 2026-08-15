@@ -28,9 +28,12 @@ import {
   CLAUDE_CLI_DEFAULTS,
   CLAUDE_CLI_PROVIDER_METADATA,
   CliDelegateProviderFactory,
+  CODEX_CLI_DEFAULTS,
+  CODEX_CLI_PROVIDER_METADATA,
   OPENCODE_CLI_DEFAULTS,
   OPENCODE_CLI_PROVIDER_METADATA,
   PROVIDER_CLAUDE_CLI,
+  PROVIDER_CODEX_CLI,
   PROVIDER_OPENCODE_CLI,
 } from "@exaix/ai-clidelegate";
 
@@ -133,10 +136,9 @@ function registerConcreteProviders(): void {
     );
   }
 
-  // Headless CLI providers (phase-140): drive claude/opencode subprocesses so
-  // planning/analysis calls also bill against a subscription instead of a
-  // metered API key, matching CliDelegateStrategy's auth posture for the
-  // code-editing step.
+  // Headless CLI providers (phase-140, codex added phase-166): drive claude/opencode/codex
+  // subprocesses so planning/analysis calls also bill against a subscription instead of a
+  // metered API key, matching CliDelegateStrategy's auth posture for the code-editing step.
   if (!supported.includes(PROVIDER_CLAUDE_CLI)) {
     const claudeCliMetadata: IProviderMetadata = {
       name: CLAUDE_CLI_PROVIDER_METADATA.name,
@@ -168,6 +170,22 @@ function registerConcreteProviders(): void {
       opencodeCliMetadata,
     );
   }
+
+  if (!supported.includes(PROVIDER_CODEX_CLI)) {
+    const codexCliMetadata: IProviderMetadata = {
+      name: CODEX_CLI_PROVIDER_METADATA.name,
+      description: CODEX_CLI_PROVIDER_METADATA.description,
+      capabilities: [...CODEX_CLI_PROVIDER_METADATA.capabilities],
+      costTier: CODEX_CLI_PROVIDER_METADATA.costTier,
+      pricingTier: PricingTier.LOCAL,
+      strengths: [...CODEX_CLI_PROVIDER_METADATA.strengths],
+    };
+    ProviderRegistry.registerWithMetadata(
+      PROVIDER_CODEX_CLI,
+      new CliDelegateProviderFactory(SessionToolSchema.enum.codex),
+      codexCliMetadata,
+    );
+  }
 }
 
 function registerProviderDefaults(): void {
@@ -179,6 +197,7 @@ function registerProviderDefaults(): void {
   ProviderDefaultsRegistry.register(PROVIDER_OPENROUTER, OPENROUTER_DEFAULTS);
   ProviderDefaultsRegistry.register(PROVIDER_CLAUDE_CLI, CLAUDE_CLI_DEFAULTS);
   ProviderDefaultsRegistry.register(PROVIDER_OPENCODE_CLI, OPENCODE_CLI_DEFAULTS);
+  ProviderDefaultsRegistry.register(PROVIDER_CODEX_CLI, CODEX_CLI_DEFAULTS);
 }
 
 setProviderRegistryBootstrap(registerConcreteProviders);
