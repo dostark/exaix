@@ -348,6 +348,45 @@ code_review = ["large"]
 
 The model names (`small`, `medium`, `large`) reference preset blocks defined in the `[models]` section. See `templates/exa.config.sample.toml` for the full set of available options, including budgets, fallback chains, and per-provider metadata overrides.
 
+#### 2.4.6 Subscription-Billed CLI Providers (codex-cli)
+
+Exaix can also drive certain agentic CLI tools you already have installed, billed against
+their own subscription instead of a metered per-token API key. Currently documented here:
+**codex-cli** (`provider = "codex-cli"`), which spawns a headless `codex exec --json`
+subprocess. `claude-cli` and `opencode-cli` are the same kind of provider (driving
+`claude`/`opencode` subprocesses respectively) but are not yet documented in this guide — a
+pre-existing gap outside this section's scope, not an indication they work differently.
+
+**Prerequisites:**
+
+1. Install the [Codex CLI](https://developers.openai.com/codex/noninteractive) and
+   authenticate once with your ChatGPT Codex subscription:
+
+   ```bash
+   codex login
+   ```
+
+   This persists your session to `~/.codex/auth.json`; no API key is required or used.
+
+2. Point a model at the `codex-cli` provider:
+
+   ```toml
+   [models.codex]
+   provider = "codex-cli"
+   model = "gpt-5.2-codex"
+   ```
+
+**What to expect:**
+
+- `cost_usd` always reports `0` for `codex-cli` calls — the ChatGPT Codex subscription bills
+  flat-rate, not per-token, so there is no metered cost to track.
+- A stray `OPENAI_API_KEY` or `CODEX_API_KEY` already present in your shell environment is
+  never forwarded to the spawned `codex` subprocess — your subscription login always wins
+  over an environment-provided metered key.
+- Every call runs with `--sandbox read-only`, so `codex-cli` calls never write to your
+  filesystem — the same read-only posture Exaix already enforces for headless CLI-delegate
+  planning calls.
+
 ### 2.4 Advanced Deployment Options
 
 ```bash
