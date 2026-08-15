@@ -7,15 +7,16 @@
  * `codex exec --json` subprocess for tool: "codex": argv shape (exec --json --sandbox
  * read-only --model <m>), --output-schema temp-file lifecycle (written under cwd, removed
  * after the subprocess exits regardless of exit code, dropped in favor of resume
- * continuity when both a schema and a cached session exist), thread_id-based session
- * resume, codex's JSONL stdout mapped into IGenerateResult without opencode's
- * OPENCODE_CONFIG/plan-schema-adapter machinery, and that OPENAI_API_KEY/CODEX_API_KEY
- * never reach the spawned subprocess env. Also regression-guards that the three-way
- * tool dispatch replacing the old isClaude boolean left claude-code/opencode behavior
- * unchanged.
+ * continuity when both a schema and a cached session exist, and a removal failure logged
+ * rather than silently swallowed), thread_id-based session resume, codex's JSONL stdout
+ * mapped into IGenerateResult without opencode's OPENCODE_CONFIG/plan-schema-adapter
+ * machinery, and that OPENAI_API_KEY/CODEX_API_KEY never reach the spawned subprocess env.
+ * Also regression-guards that the three-way tool dispatch replacing the old isClaude
+ * boolean left claude-code/opencode behavior unchanged.
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertSpyCalls, spy } from "@std/testing/mock";
 import { CliDelegateModelProvider } from "../src/cli_delegate_model_provider.ts";
 import type { IRunCliDelegateProcess } from "../src/cli_delegate_model_provider.ts";
 import { ModelProviderError } from "@exaix/ai/providers";
@@ -373,4 +374,35 @@ Deno.test("[regression] CliDelegateModelProvider: claude-code and opencode gener
   const opencodeResult = await opencodeProvider.generate("prompt");
   assertEquals(opencodeResult.content, "opencode answer");
   assertEquals(typeof opencodeEnv?.OPENCODE_CONFIG, "string");
+});
+
+Deno.test("CliDelegateModelProvider: codex warns (does not throw) when the --output-schema temp file was already removed by the time cleanup runs", async () => {
+  const cwd = await Deno.makeTempDir();
+  const warnSpy = spy(console, "warn");
+  try {
+    const run: IRunCliDelegateProcess = async (_command, args) => {
+      // Simulate the schema temp file already being gone by the time generate()'s own
+      // finally-block cleanup runs (e.g. an external cleanup, a race) — delete it here,
+      // inside the fake subprocess callback, so the SECOND removal attempt fails.
+      const schemaPath = args[args.indexOf("--output-schema") + 1];
+      await Deno.remove(schemaPath);
+      return { code: 0, stdout: codexAgentMessageStdout("ok"), stderr: "" };
+    };
+    const provider = new CliDelegateModelProvider({
+      tool: "codex",
+      bin: "codex",
+      model: CODEX_MODEL,
+      cwd,
+      run,
+    });
+
+    const result = await provider.generate("prompt", { jsonSchema: { type: "object" } });
+
+    assertEquals(result.content, "ok");
+    assertSpyCalls(warnSpy, 1);
+    assertStringIncludes(String(warnSpy.calls[0].args[0]), "schema temp file");
+  } finally {
+    warnSpy.restore();
+    await Deno.remove(cwd, { recursive: true });
+  }
 });

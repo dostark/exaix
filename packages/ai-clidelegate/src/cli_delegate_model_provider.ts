@@ -22,7 +22,9 @@
  * Auth: ANTHROPIC_API_KEY and ANTHROPIC_AUTH_TOKEN are stripped from the spawned CLI's
  * environment so a Claude Pro/Max subscription login is used instead of metered billing
  * — Claude Code's documented auth precedence always prefers an API key over a
- * subscription login when both are present in the environment.
+ * subscription login when both are present in the environment. OPENAI_API_KEY and
+ * CODEX_API_KEY are stripped the same way (Phase 166) so a ChatGPT Codex subscription
+ * login wins over a metered key.
  *
  * Read-only enforcement: this provider is consumed for TEXT-COMPLETION analysis/planning
  * calls (RequestAnalyzer/PlanWriter), not file edits — CliDelegateStrategy's own edit
@@ -404,7 +406,10 @@ export class CliDelegateModelProvider implements IModelProvider {
     if (this.options.tool !== TOOL_CODEX) return;
     const schemaFlagIndex = args.indexOf(SESSION_FLAG_OUTPUT_SCHEMA);
     if (schemaFlagIndex === -1) return;
-    await Deno.remove(args[schemaFlagIndex + 1]).catch(() => {});
+    const schemaPath = args[schemaFlagIndex + 1];
+    await Deno.remove(schemaPath).catch((error) => {
+      console.warn(`[CliDelegateModelProvider] failed to remove codex schema temp file '${schemaPath}': ${error}`);
+    });
   }
 
   private async buildClaudeArgs(
@@ -446,7 +451,7 @@ export class CliDelegateModelProvider implements IModelProvider {
   }
 
   /**
-   * Builds `codex exec --json --sandbox read-only --model <m> [resume <id>]
+   * Builds `codex exec --json --model <m> --sandbox read-only [resume <id>]
    * [--output-schema <path>] <prompt>`. `--sandbox read-only` is always passed explicitly
    * (Design Decisions — no confirmed CLI default to rely on instead). `resume` and
    * `--output-schema` cannot combine on one codex invocation (OpenAI docs) — resume

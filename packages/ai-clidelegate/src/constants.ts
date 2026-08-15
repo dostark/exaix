@@ -52,7 +52,7 @@ export const DEFAULT_CLI_DELEGATE_TIMEOUT_MS: number = configurable({
   key: "cli_delegate_provider.timeout_ms",
   default: 300_000,
   type: ConfigValueType.NUMBER,
-  description: "Subprocess timeout in milliseconds for the headless claude-cli/opencode-cli providers",
+  description: "Subprocess timeout in milliseconds for the headless claude-cli/opencode-cli/codex-cli providers",
   min: 1000,
   max: 900_000,
   swap: SwapClass.HOT,
