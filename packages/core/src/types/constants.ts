@@ -2925,8 +2925,24 @@ export const SESSION_FLAG_JSON_SCHEMA = "--json-schema";
 /** Default binary names per built-in session adapter (override via config). */
 export const SESSION_BIN_CLAUDE_CODE = "claude";
 export const SESSION_BIN_OPENCODE = "opencode";
+export const SESSION_BIN_CODEX = "codex";
 export const SESSION_BIN_CURSOR = "cursor";
 export const SESSION_BIN_VSCODE = "code";
+
+/**
+ * Codex CLI (`codex exec`) headless flags/subcommands (Phase 166 Step 1). `exec` is the
+ * non-interactive subcommand; `--json` streams JSONL events; `--sandbox read-only` pins
+ * the safe posture explicitly rather than relying on an undocumented CLI default;
+ * `resume <threadId>` continues a prior thread on a fresh cold spawn (mirrors claude's
+ * `--resume`/opencode's `--session` shape); `--output-schema <path>` takes a file path,
+ * unlike claude's inline `--json-schema <json-string>`.
+ */
+export const SESSION_SUBCMD_EXEC = "exec";
+export const SESSION_SUBCMD_RESUME = "resume";
+export const SESSION_FLAG_JSON = "--json";
+export const SESSION_FLAG_SANDBOX = "--sandbox";
+export const SESSION_SANDBOX_READ_ONLY = "read-only";
+export const SESSION_FLAG_OUTPUT_SCHEMA = "--output-schema";
 
 /** Dogfood-developer identity ID — source of truth for the machine name used in OpenCode agent config keys (Phase 128 R3 Step 4). Must match `Blueprints/Identities/dogfood-developer.md:identity_id`. */
 export const DOGFOOD_DEVELOPER_IDENTITY_ID = "dogfood-developer";
@@ -2939,6 +2955,18 @@ export const DOGFOOD_DEVELOPER_IDENTITY_ID = "dogfood-developer";
 export const MINIMUM_VERSION_OPENCODE = "1.0.0";
 export const MINIMUM_VERSION_CLAUDE_CODE = "2.0.0";
 export const MINIMUM_VERSION_CLAUDE_CODE_JSON_SCHEMA = "2.1.205";
+/**
+ * Minimum Codex CLI version this integration targets (Phase 166 Step 1), pinned to the
+ * exact version live-verified against a real `codex exec --help`/`codex --version`
+ * invocation during this phase's pre-implementation analysis: `codex-cli 0.77.0`. Unlike
+ * `MINIMUM_VERSION_CLAUDE_CODE_JSON_SCHEMA`, this floor has **no active
+ * `probeDelegateVersion` gate** in `CliDelegateModelProvider` — a documented Design
+ * Decision (see phase-166-codex-cli-model-provider.md), not an oversight: no evidence was
+ * found that `--output-schema`/`--sandbox`/`resume` were later additions to `codex exec`,
+ * so an operator on a too-old Codex CLI gets a loud CLI-level flag-rejection error rather
+ * than needing speculative version-gating machinery for a first integration pass.
+ */
+export const MINIMUM_VERSION_CODEX = "0.77.0";
 
 /** Filesystem event kinds that indicate a (re)written file worth processing. */
 export const FS_WRITE_EVENT_KINDS: ReadonlySet<string> = new Set(["create", "modify", "rename"]);

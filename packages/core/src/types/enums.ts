@@ -221,6 +221,8 @@ export enum ProviderType {
   CLAUDE_CLI = "claude-cli",
   /** Headless opencode CLI, subscription/flat-rate billed (no metered API key) */
   OPENCODE_CLI = "opencode-cli",
+  /** Headless Codex CLI, subscription-billed via ChatGPT OAuth (no metered API key) */
+  CODEX_CLI = "codex-cli",
   /** OpenAI-compatible chat provider (DeepSeek, Together, etc.) via Chat Completions API. Phase 155. */
   OPENAI_CHAT = "openai-chat",
 }

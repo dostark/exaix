@@ -22,6 +22,7 @@ export type SessionGate = z.infer<typeof SessionGateSchema>;
 export const SessionToolSchema = z.enum([
   "claude-code",
   "opencode",
+  "codex",
   "cursor",
   "vscode",
 ]);

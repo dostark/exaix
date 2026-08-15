@@ -2,9 +2,10 @@
  * @module DelegateReturnParser
  * @path packages/session/src/delegate_return_parser.ts
  * @description Phase 123 Step 1 — extracted parsing logic for headless delegate
- *   stdout. Pure parser module (no DI) that handles both opencode JSONL events
- *   (text, tool_use, step_finish) and claude single-result format. Returns
- *   structured fields for return synthesis.
+ *   stdout. Pure parser module (no DI) that handles opencode JSONL events (text,
+ *   tool_use, step_finish), claude single-result format, and (Phase 166 Step 1)
+ *   codex's `item.completed`/`turn.completed` JSONL events. Returns structured
+ *   fields for return synthesis.
  * @architectural-layer Services
  * @dependencies []
  * @related-files [apps/daemon/src/headless_session_launcher.ts, packages/schemas/src/session_delegate.ts]
@@ -51,10 +52,53 @@ interface IOpencodeEvent {
   };
 }
 
+/**
+ * Shape of a parsed `codex exec --json` JSONL event line (OpenAI docs, verified
+ * 2026-08-13). JSONL like opencode's stream, but with Codex's own event/field names.
+ */
+interface ICodexEvent {
+  type:
+    | "thread.started"
+    | "turn.started"
+    | "turn.completed"
+    | "turn.failed"
+    | "item.started"
+    | "item.completed"
+    | "error";
+  thread_id?: string;
+  item?: {
+    id: string;
+    type:
+      | "agent_message"
+      | "reasoning"
+      | "command_execution"
+      | "file_change"
+      | "mcp_tool_call"
+      | "web_search"
+      | "plan_update";
+    text?: string;
+    path?: string;
+    status?: string;
+  };
+  usage?: {
+    input_tokens: number;
+    cached_input_tokens?: number;
+    output_tokens: number;
+    reasoning_output_tokens?: number;
+  };
+  /** error event */
+  message?: string;
+}
+
 const TOOL_CLAUDE_CODE: SessionTool = "claude-code";
+const TOOL_CODEX: SessionTool = "codex";
 const OPENCODE_EVENT_TEXT = "text";
 const OPENCODE_EVENT_STEP_FINISH = "step_finish";
 const OPENCODE_EVENT_TOOL_USE = "tool_use";
+const CODEX_EVENT_ITEM_COMPLETED = "item.completed";
+const CODEX_EVENT_TURN_COMPLETED = "turn.completed";
+const CODEX_ITEM_TYPE_AGENT_MESSAGE = "agent_message";
+const CODEX_ITEM_TYPE_FILE_CHANGE = "file_change";
 
 /**
  * Parse a delegate tool's complete stdout and extract structured fields for
@@ -69,6 +113,9 @@ export function parseDelegateStdout(stdout: string, tool: SessionTool): IDelegat
   if (tool === TOOL_CLAUDE_CODE) {
     return parseClaudeResult(stdout);
   }
+  if (tool === TOOL_CODEX) {
+    return parseCodexJsonl(stdout);
+  }
 
   return parseOpencodeJsonl(stdout);
 }
@@ -80,7 +127,7 @@ function parseOpencodeJsonl(stdout: string): IDelegateParsedReturn {
   const runState = { toolPaths: [] as string[], seenPaths: new Set<string>() };
 
   for (const line of stdout.trim().split("\n")) {
-    const event = tryParseLine(line);
+    const event = tryParseEventLine<IOpencodeEvent>(line);
     if (!event) continue;
     const type = event.type as string;
     if (type === OPENCODE_EVENT_TEXT) {
@@ -97,11 +144,11 @@ function parseOpencodeJsonl(stdout: string): IDelegateParsedReturn {
   return { lastText, tokenStats, costUsd, toolPaths: runState.toolPaths };
 }
 
-function tryParseLine(line: string): IOpencodeEvent | null {
+function tryParseEventLine<T extends { type: string }>(line: string): T | null {
   if (!line.trim()) return null;
   try {
     const parsed = JSON.parse(line.trim());
-    if (typeof parsed === "object" && parsed && parsed.type) return parsed as IOpencodeEvent;
+    if (typeof parsed === "object" && parsed && parsed.type) return parsed as T;
     return null;
   } catch {
     return null;
@@ -146,6 +193,38 @@ function handleToolUseEvent(
 }
 
 const WRITE_TOOL_NAMES = new Set(["write", "edit"]);
+
+function parseCodexJsonl(stdout: string): IDelegateParsedReturn {
+  let lastText = "";
+  let tokenStats: IDelegateParsedReturn["tokenStats"] = { input: 0, output: 0, total: 0 };
+  const toolPaths: string[] = [];
+  const seenPaths = new Set<string>();
+
+  for (const line of stdout.trim().split("\n")) {
+    const event = tryParseEventLine<ICodexEvent>(line);
+    if (!event) continue;
+
+    if (event.type === CODEX_EVENT_ITEM_COMPLETED && event.item?.type === CODEX_ITEM_TYPE_AGENT_MESSAGE) {
+      if (typeof event.item.text === "string") lastText = event.item.text;
+    } else if (event.type === CODEX_EVENT_ITEM_COMPLETED && event.item?.type === CODEX_ITEM_TYPE_FILE_CHANGE) {
+      const path = event.item.path;
+      if (typeof path === "string" && path && !seenPaths.has(path)) {
+        seenPaths.add(path);
+        toolPaths.push(path);
+      }
+    } else if (event.type === CODEX_EVENT_TURN_COMPLETED && event.usage) {
+      const usage = event.usage;
+      tokenStats = {
+        input: usage.input_tokens ?? 0,
+        output: usage.output_tokens ?? 0,
+        total: (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0),
+        cacheRead: usage.cached_input_tokens,
+      };
+    }
+  }
+
+  return { lastText, tokenStats, costUsd: undefined, toolPaths };
+}
 
 function parseClaudeResult(stdout: string): IDelegateParsedReturn {
   const trimmed = stdout.trim();
