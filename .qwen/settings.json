@@ -11,6 +11,7 @@
     ".copilot/skills/explore",
     ".copilot/skills/fix-bug",
     ".copilot/skills/infra",
+    ".copilot/skills/next-phase",
     ".copilot/skills/next-steps",
     ".copilot/skills/package-extraction",
     ".copilot/skills/plan",

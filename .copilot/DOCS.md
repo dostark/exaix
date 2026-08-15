@@ -35,6 +35,7 @@ topics: ["reference", "docs", "catalog"]
 | Security Skill (#security) | [skills/security/SKILL.md](skills/security/SKILL.md) |
 | Dogfood Development Skill (#dogfood-development) | [skills/dogfood-development/SKILL.md](skills/dogfood-development/SKILL.md) |
 | Test Development Skill (#test-development) | [skills/test-development/SKILL.md](skills/test-development/SKILL.md) |
+| Next Phase Selection (#next-phase) | [skills/next-phase/SKILL.md](skills/next-phase/SKILL.md) |
 | Codebase Exploration (#explore) | [skills/explore/SKILL.md](skills/explore/SKILL.md) |
 | Comparative Analysis Skill (#comparative-analysis) | [skills/comparative-analysis/SKILL.md](skills/comparative-analysis/SKILL.md) |
 | Self-Improvement Loop (#self-improvement) | [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md) |
@@ -86,7 +87,7 @@ topics: ["reference", "docs", "catalog"]
 - **`coverage`** → [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/test-development/SKILL.md](skills/test-development/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md)
 - **`delegation`** → [skills/dogfood-development/SKILL.md](skills/dogfood-development/SKILL.md)
 - **`deno-permissions`** → [skills/security/SKILL.md](skills/security/SKILL.md)
-- **`dependencies`** → [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md)
+- **`dependencies`** → [skills/next-phase/SKILL.md](skills/next-phase/SKILL.md), [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md)
 - **`deployment`** → [skills/infra/SKILL.md](skills/infra/SKILL.md)
 - **`development`** → [skills/exaix-development/SKILL.md](skills/exaix-development/SKILL.md)
 - **`discovery`** → [skills/explore/SKILL.md](skills/explore/SKILL.md)
@@ -123,10 +124,12 @@ topics: ["reference", "docs", "catalog"]
 - **`path-traversal`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`patterns`** → [skills/exaix-development/SKILL.md](skills/exaix-development/SKILL.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md)
 - **`performance`** → [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md)
-- **`planning`** → [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md), [skills/remediate-code-gaps/SKILL.md](skills/remediate-code-gaps/SKILL.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
+- **`phase-selection`** → [skills/next-phase/SKILL.md](skills/next-phase/SKILL.md)
+- **`planning`** → [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/remediate-plan-gaps/SKILL.md](skills/remediate-plan-gaps/SKILL.md), [skills/next-phase/SKILL.md](skills/next-phase/SKILL.md), [skills/remediate-code-gaps/SKILL.md](skills/remediate-code-gaps/SKILL.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`portal`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`positioning`** → [skills/comparative-analysis/SKILL.md](skills/comparative-analysis/SKILL.md)
-- **`process`** → [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)
+- **`prioritization`** → [skills/next-phase/SKILL.md](skills/next-phase/SKILL.md)
+- **`process`** → [skills/next-phase/SKILL.md](skills/next-phase/SKILL.md), [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)
 - **`prompts`** → [prompts/README.md](prompts/README.md)
 - **`qa`** → [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)
 - **`quality`** → [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
@@ -142,6 +145,7 @@ topics: ["reference", "docs", "catalog"]
 - **`retrospective`** → [skills/self-improvement/SKILL.md](skills/self-improvement/SKILL.md)
 - **`review`** → [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md)
 - **`risk`** → [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
+- **`roadmap`** → [skills/next-phase/SKILL.md](skills/next-phase/SKILL.md)
 - **`root-cause`** → [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md)
 - **`routing`** → [prompts/README.md](prompts/README.md)
 - **`run-command`** → [skills/security/SKILL.md](skills/security/SKILL.md)

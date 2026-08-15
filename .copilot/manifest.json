@@ -480,6 +480,23 @@
       "qwen_skill": "test-development"
     },
     {
+      "path": ".copilot/skills/next-phase/SKILL.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Next Phase Selection (#next-phase)",
+      "short_summary": "Pick the most productive next phase from exaix-dev-docs/planning/ by dependency/risk/scope/environment-executability, backed by a maintained PHASE_REGISTRY.md cache.",
+      "version": "1.0.0",
+      "topics": [
+        "planning",
+        "roadmap",
+        "phase-selection",
+        "dependencies",
+        "prioritization",
+        "process"
+      ],
+      "qwen_skill": "next-phase"
+    },
+    {
       "path": ".copilot/skills/explore/SKILL.md",
       "agent": "general",
       "scope": "dev",
@@ -516,7 +533,7 @@
       "scope": "dev",
       "title": "Self-Improvement Loop (#self-improvement)",
       "short_summary": "Detect instruction gaps during work and patch .copilot/ docs safely with minimal, test-backed updates; run the terminal phase-loop retro to fix skill, instruction, and .copilot structure gaps.",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "topics": [
         "self-improvement",
         "instruction-adequacy",
