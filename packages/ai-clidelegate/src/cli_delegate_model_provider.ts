@@ -1,14 +1,14 @@
 /**
  * @module CliDelegateModelProvider
  * @path packages/ai-clidelegate/src/cli_delegate_model_provider.ts
- * @description IModelProvider implementation that drives a headless claude/opencode CLI
+ * @description IModelProvider implementation that drives a headless claude/opencode/codex
  * subprocess instead of a direct HTTP API call, so RequestAnalyzer/PlanWriter's
  * planning/analysis calls bill against a subscription (flat-rate) instead of a metered
  * API key — the same auth posture CliDelegateStrategy already gives the code-editing
  * step (packages/execution/src/strategies/cli_delegate_strategy.ts).
  *
  * Multi-turn: IModelOptions.conversationId, when passed, resumes the same underlying
- * claude/opencode session across calls sharing that id — the same --resume/--session
+ * claude/opencode/codex session across calls sharing that id — the same --resume/--session
  * mechanism CliDelegateStrategy uses, applied here because this provider is
  * constructed ONCE at daemon startup and reused for every request's whole lifetime
  * (apps/daemon/main.ts), so plan-generation retries for the SAME request (via
@@ -33,12 +33,14 @@
  * tool (edit, write, bash) is "allow" unless a config says otherwise — so every opencode
  * call gets an OPENCODE_CONFIG env var pointing at a generated config denying
  * edit/bash/task (verified live: without it, opencode edited a file mid-"analysis"; with
- * it, the identical prompt returned text-only and left the file untouched).
+ * it, the identical prompt returned text-only and left the file untouched). codex needs no
+ * generated config file — `--sandbox read-only` (Phase 166) pins the same safe posture as
+ * a plain CLI flag, since codex's sandbox has no confirmed default to rely on instead.
  *
  * Plan schema normalization (opencode only): because edit/bash/task are denied, opencode's
  * planning response has no real tool-calling to anchor it, so its freehand plan JSON can
  * use tool names outside McpToolName — see opencode_plan_schema_adapter.ts for the
- * live-traced root cause and the normalization applied to every non-claude response
+ * live-traced root cause and the normalization applied to every opencode response
  * before it is returned to the caller (RequestAnalyzer/PlanWriter).
  * @architectural-layer AI
  * @related-files [packages/ai-clidelegate/src/cli_delegate_provider_factory.ts, packages/ai-clidelegate/src/opencode_plan_schema_adapter.ts, packages/execution/src/strategies/cli_delegate_strategy.ts, packages/session/src/delegate_return_parser.ts]
@@ -60,13 +62,19 @@ import {
   DEFAULT_RUNTIME_PATH,
   MINIMUM_VERSION_CLAUDE_CODE_JSON_SCHEMA,
   SESSION_FLAG_FORMAT,
+  SESSION_FLAG_JSON,
   SESSION_FLAG_JSON_SCHEMA,
   SESSION_FLAG_MODEL,
   SESSION_FLAG_OUTPUT_FORMAT,
+  SESSION_FLAG_OUTPUT_SCHEMA,
   SESSION_FLAG_PRINT,
   SESSION_FLAG_RESUME,
+  SESSION_FLAG_SANDBOX,
   SESSION_FLAG_SESSION_ID,
   SESSION_OUTPUT_FORMAT_JSON,
+  SESSION_SANDBOX_READ_ONLY,
+  SESSION_SUBCMD_EXEC,
+  SESSION_SUBCMD_RESUME,
   SESSION_SUBCMD_RUN,
 } from "@exaix/core";
 import { join } from "@std/path";
@@ -128,10 +136,16 @@ const STRIPPED_AUTH_ENV_KEYS: readonly string[] = [
   "ANTHROPIC_API_KEY",
   "ANTHROPIC_AUTH_TOKEN",
   "ANTHROPIC_BASE_URL",
+  "OPENAI_API_KEY",
+  "CODEX_API_KEY",
 ];
 
 /** Placeholder for an absent sessionId/conversationId in the diagnostic generate-start log. */
 const UNSET_LOG_LABEL = "none";
+
+/** Tool identifiers compared at each of generate()'s three-way dispatch sites. */
+const TOOL_CLAUDE_CODE = SessionToolSchema.enum["claude-code"];
+const TOOL_CODEX = SessionToolSchema.enum.codex;
 
 function buildDelegateEnv(): Record<string, string> {
   const env = Deno.env.toObject();
@@ -182,6 +196,22 @@ async function writeOpencodeReadOnlyConfig(cwd: string): Promise<string> {
 }
 
 /**
+ * Writes codex's `--output-schema` payload to a temp JSON file. Uses the same cwd-scoped
+ * `Deno.mkdir`/tmp-dir pattern as writeOpencodeReadOnlyConfig above — NOT bare
+ * `Deno.makeTempFile()`, which defaults to the OS tempdir a daemon process does not hold
+ * `--allow-write` for (see that function's doc comment for the live-verified failure).
+ * generate()'s finally block removes this file once the subprocess exits, so it never
+ * accumulates across calls.
+ */
+async function writeCodexSchemaTempFile(cwd: string, jsonSchema: Record<string, JSONValue>): Promise<string> {
+  const dir = join(cwd, DEFAULT_RUNTIME_PATH, "tmp");
+  await Deno.mkdir(dir, { recursive: true });
+  const path = join(dir, `codex-schema-${crypto.randomUUID()}.json`);
+  await Deno.writeTextFile(path, JSON.stringify(jsonSchema));
+  return path;
+}
+
+/**
  * Extract claude's top-level `session_id` field from a plain `--output-format json`
  * response (a single JSON object, not the stream-json event sequence
  * CliDelegateStrategy parses via cli_delegate_stream_parser.ts).
@@ -221,6 +251,29 @@ function extractOpencodeSessionId(stdout: string): string | undefined {
 }
 
 /**
+ * Extract codex's `thread_id` from its `thread.started` JSONL event line — documented as
+ * the first line of `codex exec --json` output, but scanned like extractOpencodeSessionId
+ * above rather than assumed, for the same defensive-parsing reason.
+ */
+function extractCodexSessionId(stdout: string): string | undefined {
+  for (const line of stdout.trim().split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      const parsed = JSON.parse(line.trim());
+      if (
+        typeof parsed === "object" && parsed !== null && parsed.type === "thread.started" &&
+        typeof parsed.thread_id === "string"
+      ) {
+        return parsed.thread_id;
+      }
+    } catch {
+      continue;
+    }
+  }
+  return undefined;
+}
+
+/**
  * Drives a headless claude/opencode CLI subprocess to satisfy IModelProvider.generate().
  * Not CliDelegateStrategy — this is the AI-layer provider consumed by RequestAnalyzer/
  * PlanWriter/any IModelProvider caller, not the per-plan-step execution strategy.
@@ -228,7 +281,6 @@ function extractOpencodeSessionId(stdout: string): string | undefined {
 export class CliDelegateModelProvider implements IModelProvider {
   public readonly id: string;
   private readonly run: IRunCliDelegateProcess;
-  private readonly isClaude: boolean;
   private opencodeReadOnlyConfigPath: Promise<string> | undefined;
   /** conversationId -> captured session id, for --resume/--session continuity. */
   private readonly sessionIds = new Map<string, string>();
@@ -239,7 +291,6 @@ export class CliDelegateModelProvider implements IModelProvider {
   constructor(private readonly options: ICliDelegateModelProviderOptions) {
     this.id = options.id ?? `${options.tool}-${options.model}`;
     this.run = options.run ?? defaultRun;
-    this.isClaude = options.tool === SessionToolSchema.enum["claude-code"];
     this.probeVersion = options.probeVersion ??
       ((...args: Parameters<typeof probeDelegateVersion>) => probeDelegateVersion(...args));
   }
@@ -248,11 +299,10 @@ export class CliDelegateModelProvider implements IModelProvider {
     const conversationId = options?.conversationId;
     const sessionId = conversationId ? this.sessionIds.get(conversationId) : undefined;
     const jsonSchema = options?.jsonSchema;
-    const args = this.isClaude
-      ? await this.buildClaudeArgs(prompt, sessionId, jsonSchema)
-      : this.buildOpencodeArgs(prompt, sessionId);
+    const args = await this.buildArgsForTool(prompt, sessionId, jsonSchema);
+
     const env = buildDelegateEnv();
-    if (!this.isClaude) {
+    if (!this.isTextPassthroughTool()) {
       this.opencodeReadOnlyConfigPath ??= writeOpencodeReadOnlyConfig(this.options.cwd);
       env.OPENCODE_CONFIG = await this.opencodeReadOnlyConfigPath;
     }
@@ -283,6 +333,10 @@ export class CliDelegateModelProvider implements IModelProvider {
         }`,
         this.id,
       );
+    } finally {
+      // codex's --output-schema temp file (buildCodexArgs) must never accumulate across
+      // calls, whether the subprocess succeeded or failed.
+      await this.cleanupCodexSchemaTempFile(args);
     }
     console.log(
       `[CliDelegateModelProvider] generate exited: code=${result.code} durationMs=${Date.now() - startedAt} ` +
@@ -297,9 +351,7 @@ export class CliDelegateModelProvider implements IModelProvider {
     }
 
     if (conversationId && !sessionId) {
-      const capturedSessionId = this.isClaude
-        ? extractClaudeSessionId(result.stdout)
-        : extractOpencodeSessionId(result.stdout);
+      const capturedSessionId = this.extractSessionIdForTool(result.stdout);
       if (capturedSessionId) this.sessionIds.set(conversationId, capturedSessionId);
     }
 
@@ -310,9 +362,9 @@ export class CliDelegateModelProvider implements IModelProvider {
     // opencode's read-only planning calls (edit/bash/task denied above) have no real
     // tool-calling to anchor their output, so a freehand plan JSON can use tool names
     // outside McpToolName (see opencode_plan_schema_adapter.ts) — normalize before this
-    // reaches PlanAdapter/plan_schema.ts validation. No-op for claude (not affected) and
-    // for any response that isn't a plan JSON object (adapter leaves it unchanged).
-    const content = this.isClaude ? parsed.lastText : adaptOpencodePlanJson(parsed.lastText).json;
+    // reaches PlanAdapter/plan_schema.ts validation. No-op for claude/codex (not affected)
+    // and for any response that isn't a plan JSON object (adapter leaves it unchanged).
+    const content = this.isTextPassthroughTool() ? parsed.lastText : adaptOpencodePlanJson(parsed.lastText).json;
     return {
       content,
       usage: {
@@ -324,6 +376,35 @@ export class CliDelegateModelProvider implements IModelProvider {
       provider: this.options.tool,
       cost_usd: parsed.costUsd ?? 0,
     };
+  }
+
+  /** claude and codex both return plain text directly; only opencode needs the plan-JSON adapter. */
+  private isTextPassthroughTool(): boolean {
+    return this.options.tool === TOOL_CLAUDE_CODE || this.options.tool === TOOL_CODEX;
+  }
+
+  private async buildArgsForTool(
+    prompt: string,
+    sessionId: Opt<string, Reason.TraceAbsent>,
+    jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
+  ): Promise<string[]> {
+    if (this.options.tool === TOOL_CLAUDE_CODE) return await this.buildClaudeArgs(prompt, sessionId, jsonSchema);
+    if (this.options.tool === TOOL_CODEX) return await this.buildCodexArgs(prompt, sessionId, jsonSchema);
+    return this.buildOpencodeArgs(prompt, sessionId);
+  }
+
+  private extractSessionIdForTool(stdout: string): string | undefined {
+    if (this.options.tool === TOOL_CLAUDE_CODE) return extractClaudeSessionId(stdout);
+    if (this.options.tool === TOOL_CODEX) return extractCodexSessionId(stdout);
+    return extractOpencodeSessionId(stdout);
+  }
+
+  /** Removes buildCodexArgs' --output-schema temp file; a no-op for every other tool. */
+  private async cleanupCodexSchemaTempFile(args: string[]): Promise<void> {
+    if (this.options.tool !== TOOL_CODEX) return;
+    const schemaFlagIndex = args.indexOf(SESSION_FLAG_OUTPUT_SCHEMA);
+    if (schemaFlagIndex === -1) return;
+    await Deno.remove(args[schemaFlagIndex + 1]).catch(() => {});
   }
 
   private async buildClaudeArgs(
@@ -361,6 +442,44 @@ export class CliDelegateModelProvider implements IModelProvider {
       this.options.model,
       ...resumeFlag,
       ...jsonSchemaFlag,
+    ];
+  }
+
+  /**
+   * Builds `codex exec --json --sandbox read-only --model <m> [resume <id>]
+   * [--output-schema <path>] <prompt>`. `--sandbox read-only` is always passed explicitly
+   * (Design Decisions — no confirmed CLI default to rely on instead). `resume` and
+   * `--output-schema` cannot combine on one codex invocation (OpenAI docs) — resume
+   * continuity wins; the schema flag is dropped with a warning.
+   */
+  private async buildCodexArgs(
+    prompt: string,
+    sessionId: Opt<string, Reason.TraceAbsent>,
+    jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
+  ): Promise<string[]> {
+    const resumeArgs = sessionId ? [SESSION_SUBCMD_RESUME, sessionId] : [];
+    const schemaArgs: string[] = [];
+    if (jsonSchema) {
+      if (sessionId) {
+        console.warn(
+          `[CliDelegateModelProvider] codex resume ${sessionId} and --output-schema cannot ` +
+            `combine on one invocation; dropping --output-schema to preserve session continuity.`,
+        );
+      } else {
+        const schemaPath = await writeCodexSchemaTempFile(this.options.cwd, jsonSchema);
+        schemaArgs.push(SESSION_FLAG_OUTPUT_SCHEMA, schemaPath);
+      }
+    }
+    return [
+      SESSION_SUBCMD_EXEC,
+      SESSION_FLAG_JSON,
+      SESSION_FLAG_MODEL,
+      this.options.model,
+      SESSION_FLAG_SANDBOX,
+      SESSION_SANDBOX_READ_ONLY,
+      ...resumeArgs,
+      ...schemaArgs,
+      prompt,
     ];
   }
 
