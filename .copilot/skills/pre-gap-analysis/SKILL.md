@@ -10,7 +10,7 @@ scope: dev
 title: "Pre-Gap Analysis Skill (#pre-gap-analysis)"
 description: Pre-implementation gap analysis of a phase planning document — finds ambiguities, missing contracts, and security risks before coding starts
 short_summary: "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against."
-version: "1.8.0"
+version: "1.9.0"
 topics: [
   "planning",
   "gap-analysis",
@@ -51,9 +51,15 @@ Key points
   touches input handling, auth, path resolution, secrets, or external data.
   Security gaps use the 🔒 severity symbol and are always prioritised above
   🟡 Feasibility.
-- A traceability & configurability check (Phase 7) is required for every step
-  that introduces new EventLogger events, thresholds, timeouts, or opt-in
-  features. Untyped events and hardcoded values are gaps.
+- A traceability & configurability check (Phase 7) is required for every step that
+  introduces a state change, a cross-component call, new EventLogger/EventRegistry
+  events, thresholds, timeouts, or opt-in features. This is not just "verify the
+  declared events are well-typed" — actively check whether the step SHOULD have an
+  event and doesn't. `deno task check:event-coverage` is the mechanized first pass
+  (advisory; scoped to the EXISTING module a step extends, since the step's own new
+  code doesn't exist yet at this phase). Untyped events and hardcoded values are gaps;
+  a state change or cross-component call the plan's prose never mentions an event for
+  is also a gap.
 - An integration feasibility & reachability check (Phase 8) is mandatory for
   every plan. Phase 3 confirms the plan's named symbols *resolve*; it cannot
   reveal that no step actually *wires* them into a live path. A plan whose steps
@@ -121,7 +127,9 @@ Do / Don't
 - ✅ Do include a brief "In-Place Fixes" subsection in the Pre-Gap Analysis section listing all in-place fixes so the reader knows what was changed.
 - ✅ Do use any additionally supplied documents as context.
 - ✅ Do run Phase 7 traceability & configurability checks on every step that
-  introduces new `EventLogger` events, thresholds, timeouts, or opt-in features.
+  introduces a state change, a cross-component call, new `EventLogger`/`EventRegistry`
+  events, thresholds, timeouts, or opt-in features — check for missing coverage, not
+  just typing of what's already declared.
 - ✅ Do run Phase 5 scenario framework coverage checks on every step that
   affects the request → plan → execution → review → memory → update flow.
 - ✅ Do run the Phase 8 reachability check on every plan — for each runtime-claiming
@@ -480,9 +488,22 @@ A finding is classified 🔒 Security — always triaged above 🟡 Feasibility.
 
 For **every step** that introduces new behaviour, check:
 
-- Event naming, payload typing, audit chain completeness, event assertions.
-- Config-driven vs. constant-driven values, config schema declaration,
-  feature enable/disable path, config validation tests.
+- **Coverage, not just typing.** For every state change (a new field, a new persisted
+  value, a new mutation) or cross-component call (a new service invoking another
+  injected dependency) the step's Actions describe: does the step's Architecture Notes
+  or prose name the event that reports it? A state change or cross-component call with
+  no event anywhere in the step's description is a gap — don't only check that the
+  events the plan DOES mention are well-formed.
+- Event naming, payload typing, audit chain completeness, event assertions in tests.
+- Config-driven vs. constant-driven values, config schema declaration, feature
+  enable/disable path, config validation tests.
+- **Mechanized cross-check on the module the step extends.** The step's own code
+  doesn't exist yet, but if the step modifies an EXISTING file, run
+  `deno task check:event-coverage` scoped to that file — a pre-existing "wired but
+  silent" class the step is about to add a new state-changing method to is a strong
+  signal the new method will inherit the same gap unless Architecture Notes explicitly
+  call for fixing it. Advisory (see `scripts/check_event_coverage.ts`'s module header
+  for known false-positive sources), not authoritative.
 
 ---
 

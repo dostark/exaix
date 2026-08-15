@@ -123,6 +123,8 @@
     "check:blueprint-integrity": "deno run --allow-read scripts/check_blueprint_integrity.ts Blueprints",
     "check:manifests": "deno run --allow-read scripts/check_step_manifests.ts exaix-dev-docs/planning/ --since 130",
     "check:reachability-ledger": "deno run --allow-read scripts/check_reachability_ledger.ts",
+    "check:event-coverage": "deno run --allow-read --allow-env --allow-run=git scripts/check_event_coverage.ts",
+    "check:event-coverage:staged": "deno run --allow-read --allow-env --allow-run=git scripts/check_event_coverage.ts --staged --fail",
     "check:config-keys": "deno run --allow-read scripts/check_config_keys.ts",
     "check:md-path": "deno run --allow-read --allow-run=git scripts/check_md_paths.ts .",
     "check:md-path:staged": "deno run --allow-read --allow-run=git scripts/check_md_paths.ts . --staged",

@@ -13,8 +13,8 @@ scope: dev
 title: "Next-Steps Skill (#next-steps)"
 description: Run plan-driven TDD step-by-step workflow with CI gates and per-step commits
 short_summary: "Prompt for iterating through .copilot/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits."
-version: "1.4.0"
-topics: ["tdd", "red-green-refactor", "planning", "steps", "ci", "commits", "reachability"]
+version: "1.5.0"
+topics: ["tdd", "red-green-refactor", "planning", "steps", "ci", "commits", "reachability", "traceability"]
 qwen_skill: next-steps
 ---
 
@@ -128,11 +128,20 @@ VERIFY phase — value correctness, wiring, consumer tracing, convention check
       or event payload field the step introduces. If a field has zero readers, flag
       it as dead data. If a field claims integration with an adjacent service, verify
       that service is actually wired and called.
-  13. Check new code against existing module conventions.
+  13. Check new code against existing module conventions, AND verify event coverage.
       Survey 5–10 existing examples of the same concern (event emission, error
       handling, import style, type usage) in the same file or module. If the new code
       diverges from the dominant convention, flag it. Divergence without documented
       justification in the plan's Architecture Notes is a gap.
+      For every state-changing or cross-component-calling method/function this step adds
+      or modifies: confirm it emits the event named in the plan's Architecture Notes
+      (#plan §2H) — "no event needed" must be an explicit, documented decision, not a
+      silent omission. Run `deno task check:event-coverage` (or `--staged` once files are
+      staged) as a first-pass advisory audit: it flags a class accepting an
+      `IEventLogger`/`IEventRegistry` dependency that never calls it, and a state-changing
+      or cross-component-call method with no adjacent event. A finding means "verify by
+      hand," not "automatically a gap" — but an unexamined finding on THIS step's touched
+      files is itself a gap.
 
 SECURITY gate (apply when the step touches portal code or any of: input parsing,
   file paths, database queries, subprocesses, HTTP handlers, auth, secrets)
@@ -340,9 +349,21 @@ PHASE-COMPLETION GATE (run ONCE, after the last step, BEFORE declaring the phase
       G5, explicitly grep the phase's test files for `ignore:.*CI`, then re-run each
       match with `env -u CI deno test --allow-all <file>` (or `CI= deno test ...`) and
       confirm the previously-ignored tests now show `ok`, not just `ok | 0 failed`.
+  G6. **Event coverage audit.** Run `deno task check:event-coverage` across the whole
+      repo (no `--staged` — the phase's changes are already committed by this point).
+      For every finding whose file the phase touched (cross-reference against `git diff
+      --stat <phase-start-commit>..HEAD` in both repos), verify by hand whether it is a
+      real gap: a state change or cross-component call this phase introduced with no
+      event, or a class this phase wired to a logger that is never called anywhere. A
+      confirmed gap is a BLOCKING failure — either add the missing event as an additional
+      step in this phase, or document in the plan doc why no event applies (e.g. the
+      operation is internal bookkeeping, not a domain-significant transition). Findings on
+      files the phase did NOT touch are pre-existing debt, out of scope for this gate — do
+      not block phase closure on them.
 
 Do / Don't
 - ✅ Do write the test file BEFORE the source file (RED must come first)
+- ✅ Do run `deno task check:event-coverage` scoped to this step's touched files at VERIFY step 13, and across the whole phase at the Phase-Completion Gate (G6) — a state change or cross-component call with no adjacent event is a gap unless explicitly justified in Architecture Notes
 - ✅ Do add module-header JSDoc to every new file (src and test)
 - ✅ Do run deno fmt before git add (avoid fmt pre-hook failures)
 - ✅ Do rewrite each met criterion/test to `- ✅ <text> → ` `` `<staged-path>` `` (or `- ⚠️ deferred <text> → ` `` `<token>` `` + ledger row) and add the ✅ WIRED/✅ CORE reachability label before commit — stage the plan-doc edit in the submodule as part of the plan-step commit (step 26)

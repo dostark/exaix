@@ -10,7 +10,7 @@ scope: dev
 title: "Post-Gap Analysis Skill (#post-gap-analysis)"
 description: Deep post-implementation review of a phase planning document — verifies what was built against the plan, delegates code quality review to #review-code, finds gaps, and writes remediation steps back into the document
 short_summary: "Deep review of an existing phase planning document: checks implementation against plan, delegates code quality to #review-code, finds gaps, and writes remediation steps back into the document."
-version: "1.5.0"
+version: "1.6.0"
 topics: [
   "planning",
   "gap-analysis",
@@ -63,8 +63,12 @@ Key points
   style.
 - Run a security gap check (Phase 5) on every step that touches input
   handling, auth, path resolution, secrets, or external data.
-- Run a traceability & configurability check (Phase 6) on every step that
-  introduces new EventLogger events, thresholds, timeouts, or opt-in features.
+- Run a traceability & configurability check (Phase 6) on every step — not only ones
+  that already mention new EventLogger events. Run `deno task check:event-coverage`
+  first as a mechanized first pass (advisory, like `check:reachability-ledger`); for
+  every finding on a file the step touched, verify by hand whether the step's state
+  change or cross-component call really lacks an event, or new hardcoded thresholds/
+  opt-in flags exist.
 - Delegate code quality review to #review-code (Phase 7) instead of
   duplicating style/TS/defensive/perf checks here.
 - When reviewing more than ~20 source files, work in batches of 5–10: read a batch, record findings, then continue.
@@ -99,8 +103,10 @@ Do / Don't
   schemas change.
 - ✅ Do bump the document version and update the Status field in the frontmatter.
 - ✅ Do use any additionally supplied documents as context.
-- ✅ Do run Phase 6 traceability & configurability checks on every step that
-  introduces new `EventLogger` events, thresholds, timeouts, or opt-in features.
+- ✅ Do run Phase 6 traceability & configurability checks on every step — run
+  `deno task check:event-coverage` as a mechanized first pass, then verify findings
+  on the step's touched files by hand; a state change or cross-component call with no
+  event is a gap even if the step's Success Criteria never claimed to add one.
 - ✅ Do run Phase 4 scenario framework coverage verification on every step that
   affects the request → plan → execution → review → memory → update flow.
 - ✅ Do delegate all code quality checks (lint, fmt, TS idiomacy, defensive
@@ -291,10 +297,22 @@ security checklist items. Each failure is a 🔒 Security gap.
 
 ### Phase 6 — Traceability & Configurability Check
 
-For every step introducing new behaviour: verify event naming, payload typing,
-audit chain completeness, event assertions in tests; verify config-driven vs.
-constant-driven values, config schema declaration, feature enable/disable path,
-config validation tests.
+Run `deno task check:event-coverage` (`scripts/check_event_coverage.ts`) as a
+mechanized first pass — it AST-scans the step's touched files for (a) a class wired
+to an `IEventLogger`/`IEventRegistry` dependency that never calls it, and (b) a
+state-changing or cross-component-call method with no adjacent event. It is advisory,
+like `check:reachability-ledger` (see the script's module header for known
+false-positive sources: an event emitted by a caller instead of the flagged method, a
+private helper one level removed, dynamic dispatch) — every finding needs manual
+verification before it becomes a GAP entry.
+
+For every step introducing new behaviour, whether or not the tool flagged it: verify
+event naming, payload typing, audit chain completeness, event assertions in tests;
+verify config-driven vs. constant-driven values, config schema declaration, feature
+enable/disable path, config validation tests. A state change or cross-component call
+the plan's Actions describe with no corresponding event anywhere in the
+implementation is a gap, independent of whether the step's own Success Criteria
+claimed to add one.
 
 ---
 

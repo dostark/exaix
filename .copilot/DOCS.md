@@ -171,7 +171,7 @@ topics: ["reference", "docs", "catalog"]
 - **`tool-selection`** → [docs/TOOLS.md](docs/TOOLS.md)
 - **`tool-use`** → [docs/TOOLS.md](docs/TOOLS.md)
 - **`tools`** → [docs/TOOLS.md](docs/TOOLS.md)
-- **`traceability`** → [skills/plan/SKILL.md](skills/plan/SKILL.md)
+- **`traceability`** → [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md)
 - **`typescript`** → [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md)
 - **`upgrade`** → [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md)
 - **`validation`** → [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)

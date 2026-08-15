@@ -9,7 +9,7 @@ scope: dev
 title: "Review-Code Skill (#review-code)"
 description: Systematic code review — correctness, security, test coverage, architecture, and Exaix conventions
 short_summary: "Autonomous code review against Exaix standards: correctness, security (Phase 3b), test coverage, architecture grounding, and style compliance."
-version: "1.1.0"
+version: "1.2.0"
 topics: ["code-review", "quality-assurance", "security", "testing", "architecture", "best-practices"]
 qwen_skill: review-code
 ---
@@ -163,8 +163,16 @@ rules and the dominant conventions in the existing file:
 1. **Record types.** No `Record<string, unknown>` — define a specific
    interface instead (`check:style` rule).
 
-1. **EventLogger.** Every state transition emits a typed event with a named
-   payload interface.
+1. **EventLogger.** A class only owns audit-logger infrastructure if it accepts
+   `IEventLogger`/`IEventRegistry` via constructor injection (never `new EventLogger(...)`
+   inside a package — `check:style` rule `[package-instantiates-event-logger]`). For a
+   class that DOES accept one: does at least one method call it, and does every
+   significant state-changing or cross-component-call method call it with a named,
+   typed payload interface (never `Record<string, unknown>`)? Every emitted event's
+   action argument must be a `DomainEventType` member (`check:event-strings`), never an
+   inline string literal. `deno task check:event-coverage` is the mechanized first pass
+   for this item — advisory, verify findings by hand (see the script's module header
+   for known false-positive sources).
 
 1. **Exports.** Every new interface/type is exported from the appropriate
    index file.
