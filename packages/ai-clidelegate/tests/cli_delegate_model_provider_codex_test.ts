@@ -20,7 +20,7 @@ import { CliDelegateModelProvider } from "../src/cli_delegate_model_provider.ts"
 import type { IRunCliDelegateProcess } from "../src/cli_delegate_model_provider.ts";
 import { ModelProviderError } from "@exaix/ai/providers";
 
-const CODEX_MODEL = "gpt-5.2-codex";
+const CODEX_MODEL = "gpt-5.6-terra";
 
 function codexAgentMessageStdout(text: string): string {
   return JSON.stringify({ type: "item.completed", item: { id: "i1", type: "agent_message", text } });

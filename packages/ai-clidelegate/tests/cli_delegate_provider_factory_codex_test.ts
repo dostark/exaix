@@ -26,12 +26,12 @@ Deno.test("CliDelegateProviderFactory: creates a codex provider with the request
   const factory = new CliDelegateProviderFactory("codex");
   const provider = await factory.create({
     provider: ProviderType.ANTHROPIC,
-    model: "gpt-5.2-codex",
+    model: "gpt-5.6-terra",
     timeoutMs: 60000,
   } as IResolvedProviderOptions);
 
   const casted = provider as CliDelegateModelProvider;
-  assertEquals(casted.id, "codex-gpt-5.2-codex");
+  assertEquals(casted.id, "codex-gpt-5.6-terra");
 });
 
 Deno.test("CliDelegateProviderFactory: codex falls back to DEFAULT_CODEX_CLI_MODEL when options.model is empty", async () => {

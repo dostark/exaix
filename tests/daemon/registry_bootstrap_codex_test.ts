@@ -54,12 +54,12 @@ Deno.test("registry_bootstrap: codex-cli factory resolves to a CliDelegateModelP
 
   const provider = await factory!.create({
     provider: "codex-cli" as never,
-    model: "gpt-5.2-codex",
+    model: "gpt-5.6-terra",
     timeoutMs: 60000,
   });
 
   assertInstanceOf(provider, CliDelegateModelProvider);
-  assertEquals(provider.id, "codex-gpt-5.2-codex");
+  assertEquals(provider.id, "codex-gpt-5.6-terra");
 });
 
 Deno.test("[integration] registry_bootstrap: codex-cli's real factory-resolved provider reaches an injected fake subprocess and returns parsed content", async () => {
@@ -69,7 +69,7 @@ Deno.test("[integration] registry_bootstrap: codex-cli's real factory-resolved p
   assertExists(factory);
   const provider = await factory!.create({
     provider: "codex-cli" as never,
-    model: "gpt-5.2-codex",
+    model: "gpt-5.6-terra",
     timeoutMs: 60000,
   });
   assertInstanceOf(provider, CliDelegateModelProvider);

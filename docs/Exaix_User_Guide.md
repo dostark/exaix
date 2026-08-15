@@ -373,7 +373,7 @@ pre-existing gap outside this section's scope, not an indication they work diffe
    ```toml
    [models.codex]
    provider = "codex-cli"
-   model = "gpt-5.2-codex"
+   model = "gpt-5.6-terra"
    ```
 
 **What to expect:**
