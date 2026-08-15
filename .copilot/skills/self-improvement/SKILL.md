@@ -5,7 +5,7 @@ scope: dev
 title: "Self-Improvement Loop (#self-improvement)"
 description: "Detect instruction gaps during work, patch .copilot/ docs safely with minimal test-backed updates, and run the terminal phase-loop retrospective (self-improvement-retro) that catches and fixes problematic places in the phase development process — skills, instructions, .copilot structure"
 short_summary: "Detect instruction gaps during work and patch .copilot/ docs safely with minimal, test-backed updates; run the terminal phase-loop retro to fix skill, instruction, and .copilot structure gaps."
-version: "1.1.0"
+version: "1.2.0"
 topics: ["self-improvement", "instruction-adequacy", "retrospective", "agents", "maintenance", "rag", "process"]
 qwen_skill: self-improvement
 ---
@@ -61,7 +61,7 @@ Position in the loop — this skill is the terminal step:
 ```
 
 1. **Gather the session evidence**
-   - The phase planning doc (`.copilot/planning/phase-NN-*.md`): its Pre-Gap Analysis,
+   - The phase planning doc (`exaix-dev-docs/planning/phase-NN-*.md`): its Pre-Gap Analysis,
      Post-Gap Analysis, remediation steps, and Reachability Ledger.
    - The session/chat log: every skill invocation, failed tool call, blocked or
      rolled-back commit, CI gate failure, re-read, and "I had to figure this out" moment.
@@ -105,10 +105,68 @@ Position in the loop — this skill is the terminal step:
 4. **Patch, rebuild, validate, then write the Retrospective**
    - Apply the smallest patch per finding (see Doc patch loop below).
    - Rebuild `.copilot/manifest.json` and validate (commands below).
+   - **Bump the phase doc's own `**Status**:` header** if every step is now done — see
+     "Phase-doc status hygiene" below. This is the single most common gap this retro
+     finds: the last step lands its own `✅`/`WIRED` marker, but the doc's top-line
+     `**Status**:` field (the first thing anyone reads) never gets bumped and stays
+     `🚧 Planning`/`🚧 ... In Progress` indefinitely.
    - Append a short `## Retrospective (self-improvement-retro)` section to the phase
      planning doc: the four answers condensed, a findings table (finding → fix → status),
      and what the next phase should do differently. Keep it to ~15 lines — the fixes live
      in the corpus; this section is the index.
+
+## Phase-doc status hygiene
+
+A phase doc's top-line `**Status**:` header (in `exaix-dev-docs/planning/phase-NN-*.md`)
+goes stale far more often than the step-level content: whoever lands the last step or
+the last gap-remediation step marks that step `✅`/`WIRED` and moves on without bumping
+the header a few lines above it. It then keeps reading `🚧 Planning` or `🚧 Gap
+Remediation In Progress` — sometimes for months — while every step underneath is done.
+This is a real, repeat-offender pattern: `phase-91-positioning-and-narrative.md`'s own
+Step 1 audit independently found and named it in three other phases (67, 71, 82) before
+this section existed; a full audit of the 166-file corpus (2026-08-15) found 11 more
+(62, 71, 77, 78, 79, 82, 135, 142, 153, 159, 165).
+
+**When**: as part of Phase-loop retro step 4 above (your own just-finished phase), and
+periodically as a standalone sweep across the whole `exaix-dev-docs/planning/` corpus.
+
+**Verify at the step level — never trust the header text alone**:
+
+1. Locate every step's own completion marker. The convention differs by document era:
+   older docs use `- [ ]` / `- [x]` GFM checkboxes; newer docs (~phase-140+) use prose
+   bullets instead — `- ✅ <done text> → \`path\`` / `- ⚠️ deferred <text> → <token>` plus
+   a per-step `**Status**: ✅ WIRED`/`✅ IMPLEMENTED` line. Zero `- [ ]` matches is NOT
+   proof of completion in a prose-bullet doc — check for `⚠️` instead.
+1. A doc can have every step checked and still be honestly not-closeable. Search for
+   blocking language that survives past the last checked box — `⏳ PENDING`,
+   `GAPS FOUND — NOT READY`, or a stated-but-unexecuted closing ritual (e.g. "the
+   Phase-Completion Gate has not yet been run"). Write the corrected header to say
+   exactly that (steps done, closure ritual pending), not a flattened `✅ Complete`.
+1. An explicit `⚠️ deferred (<reason>)` / `🗄️ Postponed` / `❌ Cancelled` item does not by
+   itself block a `✅ Complete` verdict — it is an accepted, ledger-tracked exception.
+   Note the caveat in the corrected header instead of hiding it.
+1. When a doc uses neither GFM checkboxes nor `### Step N` headings to track completion
+   (e.g. `phase-132-model-routing.md` at the time of the 2026-08-15 audit), do not guess
+   from indirect signals — leave the header untouched and say so.
+
+**Draft the replacement in the doc's own voice**: cite the concrete evidence you actually
+read (step count, test counts, gap counts, key symbols); never invent numbers the
+document doesn't state. Match the register already used by correctly-labeled phases in
+the same corpus (e.g. `✅ Complete — Steps 1–8 + config follow-ups + post-implementation
+remediation Steps 9–12 all implemented and tested (39 passing).`).
+
+**Edit long header lines safely**: some status blocks are a single unwrapped paragraph
+1000+ characters long. `read`/`grep` output silently truncates any displayed line past
+~512–768 chars, ending it with a literal `…`/`...`. Pasting that *displayed* text into an
+edit body replaces the real line with a truncated one — this happened again during the
+2026-08-15 audit (`phase-142-subsystem-evaluation-packs.md`) despite prior recorded
+lessons about the same trap. Before editing any status line you have not seen in full:
+check its real length in an `eval` cell (`len(line)`) rather than trusting a display that
+ends in `…`; for a small in-place word swap on a long line, recover the untruncated
+original via `git show HEAD:<path>` into a variable, apply a plain string `.replace()`,
+and write the file back from that variable instead of retyping the line by hand; then
+verify immediately with `git diff -- <path>` that only the intended words changed and the
+line length matches expectations.
 
 ## Doc patch loop (when inadequate)
 
@@ -153,6 +211,9 @@ Position in the loop — this skill is the terminal step:
   doc, a retired `agents/` tree) — grep the path before trusting it.
 - **Loop disconnects**: a skill's workflow chain omits the phase-loop steps that actually
   precede/follow it.
+- **Stale phase-doc status headers**: a phase's top-line `**Status**:` says
+  🚧/Planning/In Progress while every step below is done — verify at the step level (see
+  "Phase-doc status hygiene"), never from the header text alone.
 
 Do / Don't
 
@@ -169,6 +230,12 @@ Do / Don't
 - ❌ Don't rewrite a skill wholesale to fix one friction point — patch the smallest section.
 - ❌ Don't declare a retro complete on a summary alone — a retro with zero patches must say why (every finding REJECTED/DEFERRED with rationale).
 - ❌ Don't regenerate `.copilot/DOCS.md` and commit wholesale cosmetic table drift — restore it from git when the only diff is formatting (keep content rows).
+- ✅ Do verify a phase doc's completion at the step level (checkboxes, per-step Status
+  markers, Reachability Ledger rows) before trusting or rewriting its top-line Status
+  header — see "Phase-doc status hygiene".
+- ❌ Don't copy `read`/`grep` output ending in `…`/`...` into an edit body for a long
+  line — it is display-truncated, not the real content; recover the full line (`git
+  show`, untruncated re-read) before editing it.
 
 ## Examples
 
@@ -187,6 +254,22 @@ Do / Don't
   - Q1 answer: "blocked commits twice on the plan-step gate; the commit rule was hard to find."
   - Gaps: (1) next-steps buries the `→`-path staging rule; (2) post-gap-analysis' re-verify rule is easy to skip.
   - Patch: move each rule into its skill's Do/Don't list; add `tests/agents/` assertions that the bullets exist; append the Retrospective section to the phase doc.
+
+- **Example: Phase-doc status hygiene audit**
+  - Task: "Update status of all phases which are actually completed" (a standalone
+    audit, not tied to a single phase's own retro).
+  - Method: bulk-scanned all 166 `exaix-dev-docs/planning/phase-*.md` docs for
+    open/closed checkbox counts and header text, then individually verified every
+    non-obvious candidate against step-level evidence before touching anything.
+  - Findings: 11 confirmed stale headers, including one self-contradicting header
+    (`phase-142`: read "🚧 ... In Progress" while its own next sentence said "all twelve
+    gaps are now closed") and one nuanced case (`phase-153`: steps done, but the doc
+    itself said its Phase-Completion Gate had not yet run — corrected to say exactly
+    that, not flattened to `✅ Complete`). Two suspects were left untouched on
+    inspection: `phase-133` had a genuinely still-`⏳ PENDING` gap; `phase-132` had no
+    reliable step-tracking convention to verify against.
+  - Patch: 11 headers corrected in place; caught and repaired one truncation-copy
+    mistake mid-task via `git show` + a Python splice, verified via `git diff`.
 
 ---
 
@@ -210,6 +293,8 @@ exaix:
       doc-patch,
       gap-detection,
       phase-loop,
+      phase-status,
+      status-header,
     ]
     task_types: [docs, maintenance, process]
     tags: [self-improvement, documentation, retrospective]
@@ -220,6 +305,7 @@ exaix:
     - "Rebuild manifest and chunks after agent doc edits"
     - "Add regression tests when a missing instruction caused real friction"
     - "Route every retro finding to PATCHED, DEFERRED, or REJECTED — none die silently"
+    - "Verify a phase doc's completion at the step level before trusting or rewriting its Status header"
   output_requirements:
     - "Gap list with actionable fixes"
     - "Minimal doc patch applied"
