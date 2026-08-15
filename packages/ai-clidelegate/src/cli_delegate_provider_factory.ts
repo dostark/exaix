@@ -17,9 +17,23 @@ import {
   DEFAULT_CLAUDE_CLI_BIN,
   DEFAULT_CLAUDE_CLI_MODEL,
   DEFAULT_CLI_DELEGATE_TIMEOUT_MS,
+  DEFAULT_CODEX_CLI_BIN,
+  DEFAULT_CODEX_CLI_MODEL,
   DEFAULT_OPENCODE_CLI_BIN,
   DEFAULT_OPENCODE_CLI_MODEL,
 } from "./constants.ts";
+
+/** Per-tool bin/default-model pair `create()` selects between. Covers only the three
+ * tools CliDelegateProviderFactory is ever actually constructed with — cursor/vscode are
+ * interactive-launch tools (SessionAdapterRegistry), never routed through this factory,
+ * and fall back to opencode's defaults below, matching the original isClaude ternary's
+ * "anything non-claude" fallback (never exercised in practice, kept for parity). */
+const BIN_AND_MODEL_BY_TOOL: Partial<Record<SessionTool, { bin: string; defaultModel: string }>> = {
+  [SessionToolSchema.enum["claude-code"]]: { bin: DEFAULT_CLAUDE_CLI_BIN, defaultModel: DEFAULT_CLAUDE_CLI_MODEL },
+  [SessionToolSchema.enum.opencode]: { bin: DEFAULT_OPENCODE_CLI_BIN, defaultModel: DEFAULT_OPENCODE_CLI_MODEL },
+  [SessionToolSchema.enum.codex]: { bin: DEFAULT_CODEX_CLI_BIN, defaultModel: DEFAULT_CODEX_CLI_MODEL },
+};
+const OPENCODE_FALLBACK = { bin: DEFAULT_OPENCODE_CLI_BIN, defaultModel: DEFAULT_OPENCODE_CLI_MODEL };
 
 export class CliDelegateProviderFactory extends AbstractProviderFactory {
   constructor(private readonly tool: SessionTool) {
@@ -27,9 +41,7 @@ export class CliDelegateProviderFactory extends AbstractProviderFactory {
   }
 
   create(options: IResolvedProviderOptions): Promise<IModelProvider> {
-    const isClaude = this.tool === SessionToolSchema.enum["claude-code"];
-    const bin = isClaude ? DEFAULT_CLAUDE_CLI_BIN : DEFAULT_OPENCODE_CLI_BIN;
-    const defaultModel = isClaude ? DEFAULT_CLAUDE_CLI_MODEL : DEFAULT_OPENCODE_CLI_MODEL;
+    const { bin, defaultModel } = BIN_AND_MODEL_BY_TOOL[this.tool] ?? OPENCODE_FALLBACK;
 
     return Promise.resolve(
       new CliDelegateModelProvider({

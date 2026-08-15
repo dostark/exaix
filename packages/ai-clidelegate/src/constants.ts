@@ -2,8 +2,8 @@
  * @module CliDelegatePackageConstants
  * @path packages/ai-clidelegate/src/constants.ts
  * @related-files []
- * @description Headless-CLI (claude/opencode) provider defaults and metadata owned by
- *   @exaix/ai-clidelegate. Both tools are subscription/flat-rate billed — no metered
+ * @description Headless-CLI (claude/opencode/codex) provider defaults and metadata owned by
+ *   @exaix/ai-clidelegate. All three tools are subscription/flat-rate billed — no metered
  *   API key is ever forwarded to the spawned subprocess (see buildDelegateEnv).
  * @architectural-layer AI
  */
@@ -26,6 +26,20 @@ export const DEFAULT_OPENCODE_CLI_MODEL: string = configurable({
   description: "Default model identifier for the headless opencode-cli provider",
   swap: SwapClass.RESTART,
 });
+/**
+ * "gpt-5.2-codex" is the migration target of Codex's own model family (Phase 166 Step 3):
+ * this environment's ~/.codex/config.toml shows "gpt-5.1-codex-max" -> "gpt-5.2-codex", and
+ * OpenAI's own config.toml reference docs independently confirm gpt-5.1-codex-max as a real,
+ * currently-tracked model id in the same family — corroborated by two independent sources,
+ * not a single-environment artifact.
+ */
+export const DEFAULT_CODEX_CLI_MODEL: string = configurable({
+  key: "codex_cli.model",
+  default: "gpt-5.2-codex",
+  type: ConfigValueType.STRING,
+  description: "Default model identifier for the headless codex-cli provider",
+  swap: SwapClass.RESTART,
+});
 export const DEFAULT_CLI_DELEGATE_TIMEOUT_MS: number = configurable({
   key: "cli_delegate_provider.timeout_ms",
   default: 300_000,
@@ -40,14 +54,18 @@ export const DEFAULT_CLI_DELEGATE_TIMEOUT_MS: number = configurable({
  * provider — repurposed as the bare CLI binary name SafeSubprocess.run spawns. */
 export const DEFAULT_CLAUDE_CLI_BIN = "claude";
 export const DEFAULT_OPENCODE_CLI_BIN = "opencode";
+export const DEFAULT_CODEX_CLI_BIN = "codex";
 
 export const PROVIDER_CLAUDE_CLI = ProviderType.CLAUDE_CLI;
 export const PROVIDER_OPENCODE_CLI = ProviderType.OPENCODE_CLI;
+export const PROVIDER_CODEX_CLI = ProviderType.CODEX_CLI;
 
 export const PROVIDER_CLAUDE_CLI_DESCRIPTION =
   "Headless Claude Code CLI, billed against a Claude Pro/Max subscription (no metered API key)";
 export const PROVIDER_OPENCODE_CLI_DESCRIPTION =
   "Headless opencode CLI, billed at the configured model's flat/subscription rate (no metered API key)";
+export const PROVIDER_CODEX_CLI_DESCRIPTION =
+  "Headless Codex CLI, billed against a ChatGPT Codex subscription (no metered API key)";
 export const PROVIDER_CLI_DELEGATE_CAPABILITIES = ["chat"] as const;
 export const PROVIDER_CLI_DELEGATE_STRENGTHS = ["subscription-billed", "no-api-key"] as const;
 export const PROVIDER_CLI_DELEGATE_COST_TIER = ProviderCostTier.FREE;
@@ -68,6 +86,14 @@ export const OPENCODE_CLI_PROVIDER_METADATA = {
   strengths: PROVIDER_CLI_DELEGATE_STRENGTHS,
 } as const;
 
+export const CODEX_CLI_PROVIDER_METADATA = {
+  name: PROVIDER_CODEX_CLI,
+  description: PROVIDER_CODEX_CLI_DESCRIPTION,
+  capabilities: PROVIDER_CLI_DELEGATE_CAPABILITIES,
+  costTier: PROVIDER_CLI_DELEGATE_COST_TIER,
+  strengths: PROVIDER_CLI_DELEGATE_STRENGTHS,
+} as const;
+
 export const CLAUDE_CLI_DEFAULTS: IProviderDefaults = {
   defaultModel: DEFAULT_CLAUDE_CLI_MODEL,
   defaultEndpoint: DEFAULT_CLAUDE_CLI_BIN,
@@ -79,6 +105,14 @@ export const CLAUDE_CLI_DEFAULTS: IProviderDefaults = {
 export const OPENCODE_CLI_DEFAULTS: IProviderDefaults = {
   defaultModel: DEFAULT_OPENCODE_CLI_MODEL,
   defaultEndpoint: DEFAULT_OPENCODE_CLI_BIN,
+  defaultTimeoutMs: DEFAULT_CLI_DELEGATE_TIMEOUT_MS,
+  defaultRetryMaxAttempts: 1,
+  defaultRetryBackoffMs: 0,
+};
+
+export const CODEX_CLI_DEFAULTS: IProviderDefaults = {
+  defaultModel: DEFAULT_CODEX_CLI_MODEL,
+  defaultEndpoint: DEFAULT_CODEX_CLI_BIN,
   defaultTimeoutMs: DEFAULT_CLI_DELEGATE_TIMEOUT_MS,
   defaultRetryMaxAttempts: 1,
   defaultRetryBackoffMs: 0,
