@@ -153,6 +153,23 @@ export function hasVisibleTag(cls: ts.ClassDeclaration, sourceText: string): boo
 
 const LOG_METHOD_FAMILY_DECORATOR_NAMES = new Set(["LogMethod", "LogSyncMethod", "LogGeneratorMethod"]);
 
+/** True when `expr` is a literal `DomainEventType.X` property access, or an object literal
+ *  (an `ILifecycleActions`/`IGeneratorLifecycleActions` value) whose every property is
+ *  itself a literal `DomainEventType.X` — covers both the single-action and per-phase-action
+ *  decorator option shapes. */
+function isRegisteredActionExpression(expr: ts.Expression): boolean {
+  if (ts.isPropertyAccessExpression(expr) && ts.isIdentifier(expr.expression)) {
+    return expr.expression.text === "DomainEventType";
+  }
+  if (ts.isObjectLiteralExpression(expr)) {
+    return expr.properties.length > 0 &&
+      expr.properties.every((property) =>
+        ts.isPropertyAssignment(property) && isRegisteredActionExpression(property.initializer)
+      );
+  }
+  return false;
+}
+
 /** True when a decorator carries a registered DomainEventType action. */
 export function isDecoratorCovered(method: ts.MethodDeclaration): boolean {
   if (!ts.canHaveDecorators(method)) return false;
@@ -166,8 +183,7 @@ export function isDecoratorCovered(method: ts.MethodDeclaration): boolean {
       if (!ts.isObjectLiteralExpression(argument)) return false;
       return argument.properties.some((property) =>
         ts.isPropertyAssignment(property) && ts.isIdentifier(property.name) && property.name.text === "action" &&
-        ts.isPropertyAccessExpression(property.initializer) && ts.isIdentifier(property.initializer.expression) &&
-        property.initializer.expression.text === "DomainEventType"
+        isRegisteredActionExpression(property.initializer)
       );
     });
   });

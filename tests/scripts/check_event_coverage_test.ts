@@ -618,6 +618,35 @@ Deno.test("[isDecoratorCovered] recognizes @LogSyncMethod and @LogGeneratorMetho
   assertEquals(isDecoratorCovered(firstMethod(cls, "streamRun")), true);
 });
 
+Deno.test("[isDecoratorCovered] recognizes an ILifecycleActions object-literal action (per-phase DomainEventType members)", () => {
+  const sf = parse(`
+    export class Svc {
+      @LogGeneratorMethod(logger, {
+        action: {
+          started: DomainEventType.Started,
+          completed: DomainEventType.Completed,
+          failed: DomainEventType.Failed,
+          cancelled: DomainEventType.Cancelled,
+        },
+      })
+      async *streamRun(): AsyncGenerator<string> {}
+    }
+  `);
+  const cls = firstClass(sf);
+  assertEquals(isDecoratorCovered(firstMethod(cls, "streamRun")), true);
+});
+
+Deno.test("[isDecoratorCovered] rejects an action object with a non-DomainEventType member", () => {
+  const sf = parse(`
+    export class Svc {
+      @LogMethod(logger, { action: { started: "raw.string", completed: DomainEventType.Completed, failed: DomainEventType.Failed } })
+      async run(): Promise<void> {}
+    }
+  `);
+  const cls = firstClass(sf);
+  assertEquals(isDecoratorCovered(firstMethod(cls, "run")), false);
+});
+
 Deno.test("[isDecoratorCovered] returns false for an undecorated method", () => {
   const sf = parse(`
     export class Svc {

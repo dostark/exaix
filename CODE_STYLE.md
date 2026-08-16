@@ -578,11 +578,34 @@ try/catch-and-log boilerplate at the call site:
   the source generator returns, failed on a synchronous pre-generator throw or a
   mid-iteration throw), not the invocation.
 
-Each accepts a logger source and a mandatory `{ action, payloadMapper }`: `action`
-(typed `TDomainEventType`, never a bare string, never omittable) names the registered
-event the call reports under — decorators never derive a raw action name from the
-class/method name; `payloadMapper` shapes the `completed` event's success payload from
-the call's arguments and result.
+Each accepts a logger source and a mandatory `{ action, ... }`: `action` (never omittable,
+decorators never derive a raw action name from the class/method name) is either a single
+`TDomainEventType` shared by every phase (the `target` field distinguishes them: `"started"`/
+`"completed"`/`"failed"`/`"cancelled"`), or an `ILifecycleActions` object (`LogGeneratorMethod`:
+`IGeneratorLifecycleActions`, adding `cancelled`) giving each lifecycle phase its own
+registered `TDomainEventType` — for an operation whose phases must remain independently
+taxonomy-distinguishable (e.g. `TracedProvider`'s `LlmCallStarted`/`LlmStreamCompleted`/
+`LlmStreamFailed`/`LlmStreamCancelled`).
+
+**Canonical trace correlation:** every wrapped invocation generates one `crypto.randomUUID()`
+trace ID and passes it as the logger call's fourth argument on every phase it emits — the
+started/completed/failed(/cancelled) events for one call are always joinable in the Activity
+Journal by that shared ID, never independently random per event.
+
+**Payload shaping:** `LogMethod`/`LogSyncMethod`'s `payloadMapper: (args, result?) =>
+IMethodLogPayload` shapes the `completed` event's payload from the call's arguments and
+return value; omitted, it defaults to `{ duration_ms }`. `LogGeneratorMethod` has no single
+`result` (a generator yields many values), so it takes two purpose-built mappers instead:
+`startedPayloadMapper: (args) => IMethodLogPayload` (default: `{ args: toSafeJson(args) }`,
+the raw call arguments JSON-serialized — override when a raw argument is unsuitable for the
+audit journal, e.g. a large prompt that should be summarized by length, not logged verbatim)
+and `payloadMapper: (args, yieldCount, durationMs) => IMethodLogPayload` for `completed`
+(default: `{ duration_ms }`). Whichever mapper is supplied REPLACES the default payload
+entirely — it does not merge with it — so a mapper wanting `duration_ms` must include it
+explicitly (the generator mappers receive `durationMs`/`yieldCount` for exactly this reason).
+**Payload mappers cannot read instance fields** (`this`) — decorator options are evaluated
+in a plain function, not a class method — only the call's own arguments and the values the
+decorator itself tracks (yield count, duration).
 
 **Logger source — static or resolved:** `loggerSource` accepts either a concrete
 `IEventLogger` (evaluated once at class-_definition_ time — `@LogSyncMethod(this.logger,

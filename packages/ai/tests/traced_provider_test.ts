@@ -1,10 +1,10 @@
 /**
  * @module TracedProviderTest
  * @path packages/ai/tests/traced_provider_test.ts
- * @description Verifies TracedProvider.generateStream emits the same started/completed/failed
- * event lifecycle that TracedProvider.generate already emits, hand-wrapped around the inner
- * provider's async generator (Phase 168 Step 6 remediation — LogGeneratorMethod cannot be used
- * here because it would need to reference `this.logger` at class-definition time).
+ * @description Verifies TracedProvider.generateStream emits its started/completed/failed/
+ * cancelled event lifecycle via @LogGeneratorMethod's invocation-time logger resolver and
+ * per-phase lifecycle actions (Phase 168 Step 12 resolution — the resolver form plus
+ * ILifecycleActions removed the class-definition-time binding and single-action blockers).
  * @architectural-layer AI
  * @related-files ["packages/ai/src/traced_provider.ts", "packages/core/src/events/domain_event_types.ts"]
  */
@@ -36,7 +36,7 @@ function createInnerProvider(
   };
 }
 
-Deno.test("[TracedProvider.generateStream] emits started before the first yielded chunk", async () => {
+Deno.test("[TracedProvider.generateStream] emits started (debug level) before the first yielded chunk", async () => {
   const logger = createMockLogger();
   const inner = createInnerProvider(["a", "b"]);
   const traced = new TracedProvider(inner, logger);
@@ -45,16 +45,17 @@ Deno.test("[TracedProvider.generateStream] emits started before the first yielde
   const first = await gen.next();
 
   assertEquals(first.value, "a");
-  assertEquals(logger.info.calls.length, 1);
-  assertEquals(logger.info.calls[0].args[0], DomainEventType.LlmCallStarted);
-  assertEquals(logger.info.calls[0].args[1], "mock-model");
+  assertEquals(logger.debug.calls.length, 1);
+  assertEquals(logger.debug.calls[0].args[0], DomainEventType.LlmCallStarted);
+  const startedPayload = logger.debug.calls[0].args[2] as LogMetadata;
+  assertEquals(startedPayload.prompt_length, "prompt".length);
 
   // Drain the rest so the completed event assertions in other tests are unaffected.
   await gen.next();
   await gen.next();
 });
 
-Deno.test("[TracedProvider.generateStream] emits completed with chunk count after normal exhaustion", async () => {
+Deno.test("[TracedProvider.generateStream] emits completed (info level) with chunk count after normal exhaustion", async () => {
   const logger = createMockLogger();
   const inner = createInnerProvider(["a", "b", "c"]);
   const traced = new TracedProvider(inner, logger);
@@ -65,16 +66,15 @@ Deno.test("[TracedProvider.generateStream] emits completed with chunk count afte
   }
 
   assertEquals(collected, ["a", "b", "c"]);
-  assertEquals(logger.info.calls.length, 2);
-  assertEquals(logger.info.calls[0].args[0], DomainEventType.LlmCallStarted);
-  assertEquals(logger.info.calls[1].args[0], DomainEventType.LlmStreamCompleted);
-  const completedPayload = logger.info.calls[1].args[2] as LogMetadata;
+  assertEquals(logger.info.calls.length, 1);
+  assertEquals(logger.info.calls[0].args[0], DomainEventType.LlmStreamCompleted);
+  const completedPayload = logger.info.calls[0].args[2] as LogMetadata;
   assertEquals(completedPayload.chunk_count, 3);
   assertEquals(typeof completedPayload.duration_ms, "number");
   assertEquals(logger.warn.calls.length, 0);
 });
 
-Deno.test("[TracedProvider.generateStream] emits failed when the inner provider does not support streaming", async () => {
+Deno.test("[TracedProvider.generateStream] emits failed (error level) when the inner provider does not support streaming", async () => {
   const logger = createMockLogger();
   const inner = createInnerProvider([], { throwOnGuard: true });
   const traced = new TracedProvider(inner, logger);
@@ -89,15 +89,14 @@ Deno.test("[TracedProvider.generateStream] emits failed when the inner provider 
     "Inner provider does not support streaming",
   );
 
-  assertEquals(logger.info.calls.length, 1);
-  assertEquals(logger.info.calls[0].args[0], DomainEventType.LlmCallStarted);
-  assertEquals(logger.warn.calls.length, 1);
-  assertEquals(logger.warn.calls[0].args[0], DomainEventType.LlmStreamFailed);
-  const failedPayload = logger.warn.calls[0].args[2] as LogMetadata;
+  assertEquals(logger.debug.calls.length, 1);
+  assertEquals(logger.error.calls.length, 1);
+  assertEquals(logger.error.calls[0].args[0], DomainEventType.LlmStreamFailed);
+  const failedPayload = logger.error.calls[0].args[2] as LogMetadata;
   assertEquals(failedPayload.error, "Inner provider does not support streaming");
 });
 
-Deno.test("[TracedProvider.generateStream] emits failed when the inner generator throws mid-iteration", async () => {
+Deno.test("[TracedProvider.generateStream] emits failed (error level) when the inner generator throws mid-iteration", async () => {
   const logger = createMockLogger();
   const inner = createInnerProvider(["a", "b"], { throwMidStream: true });
   const traced = new TracedProvider(inner, logger);
@@ -114,11 +113,10 @@ Deno.test("[TracedProvider.generateStream] emits failed when the inner generator
   );
 
   assertEquals(collected, ["a"]);
-  assertEquals(logger.info.calls.length, 1);
-  assertEquals(logger.info.calls[0].args[0], DomainEventType.LlmCallStarted);
-  assertEquals(logger.warn.calls.length, 1);
-  assertEquals(logger.warn.calls[0].args[0], DomainEventType.LlmStreamFailed);
-  const failedPayload = logger.warn.calls[0].args[2] as LogMetadata;
+  assertEquals(logger.debug.calls.length, 1);
+  assertEquals(logger.error.calls.length, 1);
+  assertEquals(logger.error.calls[0].args[0], DomainEventType.LlmStreamFailed);
+  const failedPayload = logger.error.calls[0].args[2] as LogMetadata;
   assertEquals(failedPayload.error, "mid-stream failure");
 });
 
@@ -150,5 +148,5 @@ Deno.test("[TracedProvider.generateStream] emits cancellation with the operation
 
   assertEquals(logger.warn.calls.length, 1);
   assertEquals(logger.warn.calls[0].args[0], DomainEventType.LlmStreamCancelled);
-  assertEquals(logger.warn.calls[0].args[3], logger.info.calls[0].args[3]);
+  assertEquals(logger.warn.calls[0].args[3], logger.debug.calls[0].args[3]);
 });

@@ -16,24 +16,25 @@ interface ILogCall {
   level: string;
   msg: string;
   payload: LogMetadata;
+  traceId?: string;
 }
 
 function mockLogger(logCalls: ILogCall[]): IEventLogger {
   return {
-    info: (msg: string, _action: string | null, payload: LogMetadata = {}) => {
-      logCalls.push({ level: "info", msg, payload });
+    info: (msg: string, _action: string | null, payload: LogMetadata = {}, traceId?: string) => {
+      logCalls.push({ level: "info", msg, payload, traceId });
       return Promise.resolve();
     },
-    error: (msg: string, _action: string | null, payload: LogMetadata = {}) => {
-      logCalls.push({ level: "error", msg, payload });
+    error: (msg: string, _action: string | null, payload: LogMetadata = {}, traceId?: string) => {
+      logCalls.push({ level: "error", msg, payload, traceId });
       return Promise.resolve();
     },
-    warn: (msg: string, _action: string | null, payload: LogMetadata = {}) => {
-      logCalls.push({ level: "warn", msg, payload });
+    warn: (msg: string, _action: string | null, payload: LogMetadata = {}, traceId?: string) => {
+      logCalls.push({ level: "warn", msg, payload, traceId });
       return Promise.resolve();
     },
-    debug: (msg: string, _action: string | null, payload: LogMetadata = {}) => {
-      logCalls.push({ level: "debug", msg, payload });
+    debug: (msg: string, _action: string | null, payload: LogMetadata = {}, traceId?: string) => {
+      logCalls.push({ level: "debug", msg, payload, traceId });
       return Promise.resolve();
     },
     fatal: () => Promise.resolve(),
@@ -237,4 +238,153 @@ Deno.test("[LogSyncMethod] resolves a constructor-injected logger at invocation 
 
   assertEquals(new Calculator(logger).double(21), 42);
   assertEquals(logCalls.map((call) => call.level), ["debug", "info"]);
+});
+
+Deno.test("[LogMethod] shares one canonical trace ID across started/completed for one call, a different one on the next call", async () => {
+  const logCalls: ILogCall[] = [];
+  const logger = mockLogger(logCalls);
+
+  class Svc {
+    @LogMethod(logger, { action: DomainEventType.FlowStepExecuted })
+    async run(): Promise<void> {}
+  }
+
+  const obj = new Svc();
+  await obj.run();
+  const [firstStarted, firstCompleted] = logCalls;
+  assertEquals(typeof firstStarted.traceId, "string");
+  assertEquals(firstStarted.traceId, firstCompleted.traceId);
+
+  await obj.run();
+  const [, , secondStarted] = logCalls;
+  assertEquals(secondStarted.traceId === firstStarted.traceId, false);
+});
+
+Deno.test("[LogGeneratorMethod] shares one canonical trace ID across started/completed/failed/cancelled", async () => {
+  const logCalls: ILogCall[] = [];
+  const logger = mockLogger(logCalls);
+
+  class Streamer {
+    @LogGeneratorMethod(logger, { action: DomainEventType.FlowStepExecuted })
+    async *stream(): AsyncGenerator<string> {
+      yield "a";
+    }
+  }
+
+  const obj = new Streamer();
+  for await (const _value of obj.stream()) { /* drain */ }
+
+  assertEquals(logCalls.length, 2);
+  assertEquals(typeof logCalls[0].traceId, "string");
+  assertEquals(logCalls[0].traceId, logCalls[1].traceId);
+});
+
+Deno.test("[LogMethod] uses per-phase actions when action is an ILifecycleActions object", async () => {
+  const logCalls: ILogCall[] = [];
+  const logger = mockLogger(logCalls);
+
+  class Svc {
+    @LogMethod(logger, {
+      action: {
+        started: DomainEventType.ExecutionStarted,
+        completed: DomainEventType.ExecutionCompleted,
+        failed: DomainEventType.ExecutionFailed,
+      },
+    })
+    async run(shouldFail: boolean): Promise<void> {
+      if (shouldFail) throw new Error("boom");
+      await Promise.resolve();
+    }
+  }
+
+  const obj = new Svc();
+  await obj.run(false);
+  assertEquals(logCalls[0].msg, DomainEventType.ExecutionStarted);
+  assertEquals(logCalls[1].msg, DomainEventType.ExecutionCompleted);
+
+  await assertRejects(() => obj.run(true));
+  assertEquals(logCalls[3].msg, DomainEventType.ExecutionFailed);
+});
+
+Deno.test("[LogGeneratorMethod] uses the cancelled action from an IGeneratorLifecycleActions object on early return", async () => {
+  const logCalls: ILogCall[] = [];
+  const logger = mockLogger(logCalls);
+
+  class Streamer {
+    @LogGeneratorMethod(logger, {
+      action: {
+        started: DomainEventType.LlmCallStarted,
+        completed: DomainEventType.LlmStreamCompleted,
+        failed: DomainEventType.LlmStreamFailed,
+        cancelled: DomainEventType.LlmStreamCancelled,
+      },
+    })
+    async *stream(): AsyncGenerator<string> {
+      yield "a";
+      yield "b";
+    }
+  }
+
+  const stream = new Streamer().stream();
+  await stream.next();
+  await stream.return(undefined);
+
+  assertEquals(logCalls.map((c) => c.level), ["debug", "warn"]);
+  assertEquals(logCalls[1].msg, DomainEventType.LlmStreamCancelled);
+});
+
+Deno.test("[LogGeneratorMethod] payloadMapper shapes the completed payload from args, yield count, and duration", async () => {
+  const logCalls: ILogCall[] = [];
+  const logger = mockLogger(logCalls);
+
+  class Streamer {
+    @LogGeneratorMethod<Streamer, [string], string>(logger, {
+      action: DomainEventType.FlowStepExecuted,
+      payloadMapper: (args, yieldCount, durationMs) => ({
+        label: args[0],
+        chunk_count: yieldCount,
+        duration_ms: Math.round(durationMs),
+      }),
+    })
+    async *stream(_label: string): AsyncGenerator<string> {
+      yield "a";
+      yield "b";
+      yield "c";
+    }
+  }
+
+  const received: string[] = [];
+  for await (const value of new Streamer().stream("run-1")) received.push(value);
+
+  assertEquals(received, ["a", "b", "c"]);
+  const completedCall = logCalls.find((c) => c.level === "info");
+  assertEquals(completedCall?.payload.label, "run-1");
+  assertEquals(completedCall?.payload.chunk_count, 3);
+  assertEquals(typeof completedCall?.payload.duration_ms, "number");
+});
+
+Deno.test("[LogGeneratorMethod] startedPayloadMapper replaces the default raw-argument dump", async () => {
+  const logCalls: ILogCall[] = [];
+  const logger = mockLogger(logCalls);
+
+  class Streamer {
+    @LogGeneratorMethod<Streamer, [string], string>(logger, {
+      action: DomainEventType.FlowStepExecuted,
+      startedPayloadMapper: (args) => ({ prompt_length: args[0].length }),
+    })
+    async *stream(prompt: string): AsyncGenerator<string> {
+      void prompt;
+      yield "a";
+    }
+  }
+
+  const received: string[] = [];
+  for await (const value of new Streamer().stream("a very long prompt that must not be logged in full")) {
+    received.push(value);
+  }
+
+  assertEquals(received, ["a"]);
+  const startedCall = logCalls.find((c) => c.level === "debug");
+  assertEquals(startedCall?.payload.prompt_length, "a very long prompt that must not be logged in full".length);
+  assertEquals(startedCall?.payload.args, undefined);
 });
