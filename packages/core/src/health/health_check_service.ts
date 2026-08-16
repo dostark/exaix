@@ -19,10 +19,11 @@ import {
 import { HealthCheckVerdict, HealthStatus } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
 import { LogMethod } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";
 import { DEFAULT_MCP_VERSION } from "@exaix/core/types";
 import { MiddlewarePipeline } from "@exaix/core/func";
-import type { IServiceContext } from "@exaix/core/types";
+import type { IServiceContext, Opt, Reason } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 
 /**
@@ -92,8 +93,8 @@ export class HealthCheckService {
 
   constructor(
     public version: string,
-    private config?: Config,
-    private logger?: EventLogger,
+    private config?: Opt<Config, Reason.SensibleDefault>,
+    private logger?: Opt<EventLogger, Reason.OptionalDependency>,
   ) {
     // Determine logger instance
     this.logger = logger ?? new EventLogger({ prefix: "[IHealthCheck]" });
@@ -146,7 +147,7 @@ export class HealthCheckService {
   /**
    * Perform all registered health checks and return overall status
    */
-  @LogMethod(new EventLogger({ prefix: "[IHealthCheck]" }), "health.check_all")
+  @LogMethod(new EventLogger({ prefix: "[IHealthCheck]" }), { action: DomainEventType.HealthCheckAll })
   async checkHealth(): Promise<IHealthReport> {
     const results: Record<string, IHealthCheckResult> = {};
     let hasFailure = false;
@@ -217,7 +218,7 @@ export class HealthCheckService {
    * @param providerName The name of the provider to check
    * @returns True if the provider is healthy, false otherwise
    */
-  @LogMethod(new EventLogger({ prefix: "[IHealthCheck]" }), "health.check_provider")
+  @LogMethod(new EventLogger({ prefix: "[IHealthCheck]" }), { action: DomainEventType.HealthCheckProvider })
   async checkProvider(providerName: string): Promise<boolean> {
     // ... existing implementation ...
     const now = Date.now();

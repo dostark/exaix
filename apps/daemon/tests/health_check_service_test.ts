@@ -8,6 +8,7 @@
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
 import { ExecutionStatus, HealthCheckVerdict, HealthStatus, MockStrategy } from "@exaix/core";
+import { DomainEventType } from "@exaix/core/events";
 import { createMockConfig } from "@exaix/testing";
 import {
   DatabaseHealthCheck,
@@ -60,6 +61,32 @@ Deno.test("HealthCheckService: returns healthy status when all checks pass", asy
   assertEquals(status.uptime_seconds >= 0, true);
   assertEquals(status.checks.test.status, HealthCheckVerdict.PASS);
   assertEquals(status.checks.test.metadata?.test, "data");
+});
+
+Deno.test("HealthCheckService: checkHealth emits DomainEventType.HealthCheckAll, not an ad hoc string", async () => {
+  const service = new HealthCheckService(DEFAULT_MCP_VERSION);
+  service.registerCheck({
+    name: "test",
+    critical: false,
+    check: () => Promise.resolve({ status: HealthCheckVerdict.PASS, metadata: {} }),
+  });
+
+  const originalLog = console.log;
+  const printed: string[] = [];
+  const captureLog = (...args: Array<unknown>) => printed.push(args.map(String).join(" "));
+  console.log = captureLog;
+  try {
+    await service.checkHealth();
+  } finally {
+    console.log = originalLog;
+  }
+
+  assert(
+    printed.some((line) => line.includes(DomainEventType.HealthCheckAll)),
+    `expected console output to include the action "${DomainEventType.HealthCheckAll}"; got: ${
+      JSON.stringify(printed)
+    }`,
+  );
 });
 
 Deno.test("HealthCheckService: returns degraded status when non-critical check fails", async () => {

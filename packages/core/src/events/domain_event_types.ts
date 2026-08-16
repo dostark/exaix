@@ -547,6 +547,12 @@ export const DomainEventType = {
   // HITL / Governance (Phase 118)
   // ---------------------------------------------------------------------------
   HitlPolicyMatched: "hitl.policy.matched",
+
+  // ---------------------------------------------------------------------------
+  // Health check events (Phase 168)
+  // ---------------------------------------------------------------------------
+  HealthCheckAll: "health.check_all",
+  HealthCheckProvider: "health.check_provider",
 } as const;
 
 export type TDomainEventType = typeof DomainEventType[keyof typeof DomainEventType];
