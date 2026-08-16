@@ -230,10 +230,20 @@ export function findAuditParam(params: readonly ts.ParameterDeclaration[]): stri
   return null;
 }
 
-/** Finds the class's audit-logger field, covering both idioms: a parameter-property
- *  (`constructor(private readonly logger?: IEventLogger) {}`) or a plain constructor
- *  parameter assigned to a field in the constructor body (`this.audit = audit;`). */
-export function findClassAuditField(cls: ts.ClassDeclaration): string | null {
+/** Finds the class's audit-logger field, covering three idioms: a parameter-property
+ *  (`constructor(private readonly logger?: IEventLogger)`), a plain constructor
+ *  parameter assigned to a field in the constructor body (`this.audit = audit;`), and a
+ *  single deps-bag parameter whose same-file-declared interface/type-alias exposes a
+ *  logger-typed member, assigned as `this.audit = deps.eventLogger;` — a widespread
+ *  Exaix DI convention the first two idioms can't see through. `sf` is optional and only
+ *  needed for the third idiom; omit it to keep the first two working without a
+ *  SourceFile in scope (e.g. a bare test fixture). Same-file only for the deps-bag
+ *  idiom — a deliberate, documented limitation consistent with this script's advisory
+ *  nature (a cross-file deps interface is a rarer shape; verify by hand). */
+export function findClassAuditField(
+  cls: ts.ClassDeclaration,
+  sf?: Opt<ts.SourceFile, Reason.OptionalContext>,
+): string | null {
   const ctor = cls.members.find((m): m is ts.ConstructorDeclaration => ts.isConstructorDeclaration(m));
   if (!ctor) return null;
 
@@ -244,12 +254,21 @@ export function findClassAuditField(cls: ts.ClassDeclaration): string | null {
   }
 
   const loggerParamNames = new Set<string>();
+  const depsLoggerMembers = new Map<string, Set<string>>();
   for (const p of ctor.parameters) {
     if (!p.type || isParameterProperty(p)) continue;
     const typeName = unwrapOptTypeName(p.type);
-    if (typeName && isAuditLoggerTypeName(typeName)) loggerParamNames.add(p.name.getText());
+    if (!typeName) continue;
+    if (isAuditLoggerTypeName(typeName)) {
+      loggerParamNames.add(p.name.getText());
+      continue;
+    }
+    if (sf) {
+      const members = findLoggerMembersOfSameFileType(sf, typeName);
+      if (members.size > 0) depsLoggerMembers.set(p.name.getText(), members);
+    }
   }
-  if (loggerParamNames.size === 0 || !ctor.body) return null;
+  if ((loggerParamNames.size === 0 && depsLoggerMembers.size === 0) || !ctor.body) return null;
 
   let foundField: string | null = null;
   const visit = (node: ts.Node) => {
@@ -258,17 +277,48 @@ export function findClassAuditField(cls: ts.ClassDeclaration): string | null {
       ts.isBinaryExpression(node) &&
       node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
       ts.isPropertyAccessExpression(node.left) &&
-      isThisExpr(node.left.expression) &&
-      ts.isIdentifier(node.right) &&
-      loggerParamNames.has(node.right.text)
+      isThisExpr(node.left.expression)
     ) {
-      foundField = node.left.name.text;
-      return;
+      if (ts.isIdentifier(node.right) && loggerParamNames.has(node.right.text)) {
+        foundField = node.left.name.text;
+        return;
+      }
+      if (
+        ts.isPropertyAccessExpression(node.right) &&
+        ts.isIdentifier(node.right.expression) &&
+        depsLoggerMembers.get(node.right.expression.text)?.has(node.right.name.text)
+      ) {
+        foundField = node.left.name.text;
+        return;
+      }
     }
     ts.forEachChild(node, visit);
   };
   visit(ctor.body);
   return foundField;
+}
+
+/** Resolves a same-file interface (or type-alias-to-object-literal) declaration's member
+ *  names whose own type is an audit-logger type — e.g. for `interface IXDeps { eventLogger:
+ *  IEventLogger }`, returns `{"eventLogger"}`. The deps-bag half of `findClassAuditField`. */
+function findLoggerMembersOfSameFileType(sf: ts.SourceFile, typeName: string): Set<string> {
+  const members = new Set<string>();
+  for (const stmt of sf.statements) {
+    let body: ts.NodeArray<ts.TypeElement> | undefined;
+    if (ts.isInterfaceDeclaration(stmt) && stmt.name.text === typeName) {
+      body = stmt.members;
+    } else if (ts.isTypeAliasDeclaration(stmt) && stmt.name.text === typeName && ts.isTypeLiteralNode(stmt.type)) {
+      body = stmt.type.members;
+    }
+    if (!body) continue;
+    for (const m of body) {
+      if (ts.isPropertySignature(m) && m.type && (ts.isIdentifier(m.name) || ts.isStringLiteral(m.name))) {
+        const memberTypeName = unwrapOptTypeName(m.type);
+        if (memberTypeName && isAuditLoggerTypeName(memberTypeName)) members.add(m.name.getText());
+      }
+    }
+  }
+  return members;
 }
 
 /** Collects constructor parameter-property field names whose type is `IFoo`-shaped
@@ -409,7 +459,7 @@ function lineOf(node: ts.Node, sf: ts.SourceFile): number {
  *  "wired but silent" finding when NO method anywhere in the class ever calls the logger
  *  (in which case per-method findings are suppressed as redundant with the class-level one). */
 export function analyzeClass(cls: ts.ClassDeclaration, sf: ts.SourceFile): IAnalyzeClassResult {
-  const auditField = findClassAuditField(cls);
+  const auditField = findClassAuditField(cls, sf);
   if (!auditField) return { findings: [], wiredUnused: null };
 
   const className = cls.name?.getText() ?? "<anonymous>";
@@ -417,7 +467,16 @@ export function analyzeClass(cls: ts.ClassDeclaration, sf: ts.SourceFile): IAnal
   const excludeForStateChange = new Set([auditField]);
   const tagged = hasVisibleTag(cls, sf.getFullText());
 
-  let anyMethodCallsLogger = false;
+  // Class-level "is the logger used ANYWHERE" check must see every method, including
+  // private/protected helpers that centralize the actual .info()/.warn() call — a common,
+  // idiomatic pattern (e.g. a private logActivity() helper called by several public
+  // methods). Deliberately broader than the per-method loop below, which intentionally
+  // skips private/protected methods when deciding whether an INDIVIDUAL method needs its
+  // own adjacent event — a private helper isn't an independently-callable public API.
+  const anyMethodCallsLogger = cls.members.some((member) =>
+    ts.isMethodDeclaration(member) && member.body !== undefined &&
+    (bodyCallsAuditBinding(member.body, { name: auditField, isField: true }) || isDecoratorCovered(member))
+  );
   const findings: IEventCoverageFinding[] = [];
 
   for (const member of cls.members) {
@@ -437,7 +496,6 @@ export function analyzeClass(cls: ts.ClassDeclaration, sf: ts.SourceFile): IAnal
     const covered = bodyCallsAuditBinding(member.body, { name: auditField, isField: true }) ||
       isDecoratorCovered(member);
     if (covered) {
-      anyMethodCallsLogger = true;
       continue;
     }
 
@@ -481,7 +539,7 @@ export function findMissingLoggerFindings(
   for (const stmt of sf.statements) {
     if (!ts.isClassDeclaration(stmt) || !isExported(stmt) || !stmt.name) continue;
     if (!hasVisibleTag(stmt, sourceText)) continue;
-    if (findClassAuditField(stmt) !== null) continue;
+    if (findClassAuditField(stmt, sf) !== null) continue;
     findings.push({ file: path, className: stmt.name.getText(), line: lineOf(stmt, sf) });
   }
 

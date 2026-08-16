@@ -159,6 +159,55 @@ Deno.test("[findClassAuditField] returns null when the class has no logger depen
   assertEquals(findClassAuditField(cls), null);
 });
 
+Deno.test("[findClassAuditField] finds a logger nested in a same-file deps-bag parameter", () => {
+  const sf = parse(`
+    interface ISvcDeps {
+      votingService: IVotingConsensusService;
+      eventLogger: IEventLogger;
+    }
+    class Svc {
+      #eventLogger: IEventLogger;
+      constructor(deps: ISvcDeps) {
+        this.#eventLogger = deps.eventLogger;
+      }
+    }
+  `);
+  const cls = firstClass(sf);
+  assertEquals(findClassAuditField(cls, sf), "#eventLogger");
+});
+
+Deno.test("[findClassAuditField] does not resolve a deps-bag logger when no SourceFile is provided", () => {
+  const sf = parse(`
+    interface ISvcDeps {
+      eventLogger: IEventLogger;
+    }
+    class Svc {
+      #eventLogger: IEventLogger;
+      constructor(deps: ISvcDeps) {
+        this.#eventLogger = deps.eventLogger;
+      }
+    }
+  `);
+  const cls = firstClass(sf);
+  assertEquals(findClassAuditField(cls), null);
+});
+
+Deno.test("[findClassAuditField] returns null for a deps-bag parameter whose type has no logger member", () => {
+  const sf = parse(`
+    interface ISvcDeps {
+      db: IDatabaseService;
+    }
+    class Svc {
+      #db: IDatabaseService;
+      constructor(deps: ISvcDeps) {
+        this.#db = deps.db;
+      }
+    }
+  `);
+  const cls = firstClass(sf);
+  assertEquals(findClassAuditField(cls, sf), null);
+});
+
 // ── findComponentFields ──
 
 Deno.test("[findComponentFields] collects IFoo-typed constructor parameter properties, excluding the logger", () => {
@@ -378,6 +427,42 @@ Deno.test("[analyzeClass] skips a class with no audit-loggable dependency entire
   const result = analyzeClass(cls, sf);
   assertEquals(result.wiredUnused, null);
   assertEquals(result.findings.length, 0);
+});
+
+Deno.test("[analyzeClass] does not flag a class whose logger is only called from a private helper method", () => {
+  const sf = parse(`
+    export class Svc {
+      constructor(private readonly logger?: IEventLogger) {}
+      save(x: string): void {
+        this.logActivity("svc.saved", x);
+      }
+      private logActivity(action: string, target: string): void {
+        this.logger?.info(action, target);
+      }
+    }
+  `);
+  const cls = firstClass(sf);
+  const result = analyzeClass(cls, sf);
+  assertEquals(result.wiredUnused, null);
+  assertEquals(result.findings.length, 0);
+});
+
+Deno.test("[analyzeClass] still flags an individual public method with its own uncovered state change, even when a private helper covers the class overall", () => {
+  const sf = parse(`
+    export class Svc {
+      constructor(private readonly logger?: IEventLogger) {}
+      quiet(): void {
+        this.count = 1;
+      }
+      private logActivity(action: string, target: string): void {
+        this.logger?.info(action, target);
+      }
+    }
+  `);
+  const cls = firstClass(sf);
+  const result = analyzeClass(cls, sf);
+  assertEquals(result.wiredUnused, null);
+  assertEquals(result.findings.some((f) => f.scopeName.endsWith(".quiet")), true);
 });
 
 // ── analyzeSourceFile (integration) ──
