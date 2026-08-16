@@ -11,7 +11,7 @@ scope: dev
 title: "Remediate Code Gaps Skill (#remediate-code-gaps)"
 description: Consumes post-gap-analysis gap findings and edits source code to close each gap — re-runs tests and commits
 short_summary: "Edits source files to close code-level gaps identified by post-gap-analysis, then re-runs tests and creates a structured commit."
-version: "1.0.0"
+version: "1.1.0"
 topics: ["planning", "gap-analysis", "remediation", "tdd", "code-quality"]
 qwen_skill: remediate-code-gaps
 ---
@@ -36,7 +36,7 @@ Do / Don't
 - ✅ Do read each gap's remediation step (Actions) before editing.
 - ✅ Do scope edits to exactly what the gap resolution requires.
 - ✅ Do write tests first (TDD) when adding new behaviour.
-- ✅ Do run CI gates (lint, check, style, arch, magic) before committing.
+- ✅ Do run `deno run -A scripts/ci.ts check` before committing — the single canonical command covering every real pre-commit gate (lint, style, magic, complexity, arch, event-coverage, etc.); a bare `deno task check` is ONLY the type-checker and will NOT catch a magic-value, event-coverage, or event-strings regression (Phase 168 self-improvement-retro finding — a remediation that only ran `deno task check` shipped two real regressions this way).
 - ✅ Do mark the remediation step's Success Criteria / Planned Tests done in the plan doc (`- ✅ <text> → ` `` `<staged-path>` ``) and commit via `scripts/commit_plan_step.ts <msg> --commit` with a `plan:` field.
 - ❌ Don't add new refactoring or polish beyond the named gaps.
 - ❌ Don't rewrite the remediation step's Actions/prose in the plan doc — only flip its Success Criteria / Planned Tests to the done form.
@@ -75,12 +75,12 @@ For each remediation step, in order:
 
 1. **RED**: If the remediation adds new behaviour, write the failing test first at the test path specified in Planned Tests.
 2. **GREEN**: Edit the source file to satisfy the remediation step's Actions. Stay exactly within scope.
-3. **REFACTOR**: Run CI gates (lint, check, style, arch, magic).
+3. **REFACTOR**: Run `deno run -A scripts/ci.ts check` (covers lint, style, magic, complexity, arch, event-coverage, and every other real pre-commit gate in one command).
 
 ### Phase 3 — Validate & mark done
 
 1. Re-run all tests mentioned in the remediation step's Planned Tests.
-2. Run `deno task check clean` to confirm no regressions.
+2. Run `deno run -A scripts/ci.ts check` to confirm no regressions — do NOT substitute a bare `deno task check` (type-checker only) or a hand-picked subset; both have silently missed a real regression before (see the Do/Don't list above).
 3. Verify the gap's Finding is now resolved by re-reading the source.
 4. In the plan doc's remediation step, rewrite each satisfied Success Criterion / Planned
    Test to `- ✅ <text> →` `` `<staged-path>` `` (the source/test module you edited,
@@ -166,7 +166,7 @@ exaix:
   output_requirements:
     - "All code gaps resolved in the source files"
     - "All affected tests pass"
-    - "CI gates clean (lint, check, style, arch, magic)"
+    - "CI gates clean (deno run -A scripts/ci.ts check)"
     - "Structured commit with gap references"
   quality_criteria:
     - name: scope_discipline

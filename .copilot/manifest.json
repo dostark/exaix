@@ -291,7 +291,7 @@
       "scope": "dev",
       "title": "Plan Skill (#plan)",
       "short_summary": "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy.",
-      "version": "1.11.0",
+      "version": "1.12.0",
       "topics": [
         "planning",
         "architecture",
@@ -583,7 +583,7 @@
       "scope": "dev",
       "title": "Remediate Code Gaps Skill (#remediate-code-gaps)",
       "short_summary": "Edits source files to close code-level gaps identified by post-gap-analysis, then re-runs tests and creates a structured commit.",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "topics": [
         "planning",
         "gap-analysis",
