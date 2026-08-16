@@ -546,6 +546,40 @@ Example:
 export class ReviewRegistry { ... }
 ```
 
+### Automated Execution Logging (`LogMethod` / `LogSyncMethod` / `LogGeneratorMethod`) {#log-method-family}
+
+`packages/core/src/logger/decorator.ts` exports a family of TC39 Stage 3 method
+decorators that wrap a method and automatically emit `started`/`completed`/`failed`
+lifecycle events through the supplied `EventLogger` — replacing hand-rolled
+try/catch-and-log boilerplate at the call site:
+
+- **`LogMethod`** — wraps an `async` method returning `Promise<Return>`.
+- **`LogSyncMethod`** — wraps a synchronous method; the wrapper never `await`s the
+  target call.
+- **`LogGeneratorMethod`** — wraps an async generator method (`AsyncGenerator<Yield>`);
+  brackets the _iteration_ lifecycle (started before the first pull, completed after
+  the source generator returns, failed on a synchronous pre-generator throw or a
+  mid-iteration throw), not the invocation.
+
+Each accepts an `EventLogger` and an optional `{ action, payloadMapper }`: `action`
+(typed `TDomainEventType`, never a bare string) names the registered event the call
+reports under, falling back to an auto-derived `${ClassName}.${methodName}` when
+omitted; `payloadMapper` shapes the `completed` event's success payload from the
+call's arguments and result.
+
+**Binding constraint:** the decorator factory's `logger` argument is evaluated once
+at class-_definition_ time, before any instance exists — `@LogSyncMethod(this.logger,
+...)` is not valid syntax. Self-constructing `new EventLogger(...)` at the decorator
+site is only compliant with `[package-instantiates-event-logger]` inside
+`packages/core/` (e.g. `HealthCheckService`, the family's only current production call
+sites). For a class with a constructor-injected logger outside `packages/core/`, call
+`this.logger.info/warn/error(...)` directly in the method body instead of reaching for
+this decorator family.
+
+`scripts/check_event_coverage.ts`'s `isDecoratorCovered` recognizes a method decorated
+with any of the three as covered, the same way it recognizes a direct `.info()`/
+`.warn()`/`.error()` call in the method's own body.
+
 ### Filesystem Watching (`Deno.watchFs`) {#fs-watching}
 
 `Deno.watchFs` has **no built-in idempotency**: it emits multiple/duplicate `FsEvent`s for a single

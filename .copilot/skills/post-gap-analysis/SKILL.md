@@ -110,7 +110,8 @@ Do / Don't
   `deno task check:event-coverage` as a mechanized first pass, then verify findings
   on the step's touched files by hand; a state change or cross-component call with no
   event is a gap even if the step's Success Criteria never claimed to add one. Escalate
-  any finding on an `@visible`-tagged class to 🔴 Critical.
+  any finding on an `@visible`-tagged class to 🔴 Critical — it fails the real
+  pre-commit hook (Gate 19), not just this review.
 - ✅ Do run Phase 4 scenario framework coverage verification on every step that
   affects the request → plan → execution → review → memory → update flow.
 - ✅ Do delegate all code quality checks (lint, fmt, TS idiomacy, defensive

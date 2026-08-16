@@ -373,11 +373,11 @@ introduces a class genuinely load-bearing for observability — on the request �
 execution → review → memory critical path, or handling security-sensitive operations —
 name it in Architecture Notes as an `@visible` candidate and have the step's own Actions
 add the tag. The tag costs nothing and is adoptable immediately; the checker's
-`--fail-on-tagged` enforcement and the pre-commit gate that blocks a real violating commit
-land with Phase 168 (`exaix-dev-docs/planning/phase-168-event-logging-hardening-visibility-audit.md`).
-Until then, a `@visible`-tagged class with a coverage gap is still only advisory in CI —
-but it is a real, escalatable finding at `#pre-gap-analysis`/`#post-gap-analysis`, since the
-tag is the plan's own explicit declaration that coverage is required.
+`--fail-on-tagged` enforcement and the real pre-commit gate (Gate 19) that blocks a
+violating commit are wired and live, landed by Phase 168
+(`exaix-dev-docs/planning/phase-168-event-logging-hardening-visibility-audit.md`) — a
+`@visible`-tagged class with a coverage gap now fails a real `git commit`, not just an
+advisory CI note.
 
 ### 3. Documentation Update Protocol (§3D)
 

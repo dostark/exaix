@@ -144,11 +144,12 @@ VERIFY phase — value correctness, wiring, consumer tracing, convention check
       files is itself a gap.
       If this step introduces a class genuinely load-bearing for observability (request/
       plan/execution/review/memory critical path, security-sensitive), add the `@visible`
-      JSDoc tag to its leading comment (per the plan's Architecture Notes, §2H) — adoptable
-      now, since it is only a doc comment; `check:event-coverage --fail-on-tagged` and the
-      pre-commit gate that enforce it land with Phase 168. If the step modifies a file that
-      already carries an `@visible`-tagged class, treat any coverage finding on it as a real
-      gap to fix in this step, not an advisory item to defer.
+      JSDoc tag to its leading comment (per the plan's Architecture Notes, §2H) —
+      `check:event-coverage --fail-on-tagged` and the real pre-commit gate (Gate 19) that
+      enforce it are wired and live (landed by Phase 168). If this step modifies a file
+      that already carries an `@visible`-tagged class, treat any coverage finding on it as
+      a real gap to fix in this step, not an advisory item to defer — it will fail the
+      real pre-commit hook otherwise.
 
 SECURITY gate (apply when the step touches portal code or any of: input parsing,
   file paths, database queries, subprocesses, HTTP handlers, auth, secrets)

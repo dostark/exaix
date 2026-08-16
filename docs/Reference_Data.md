@@ -325,7 +325,7 @@ Core infrastructure modules for architecture validation:
 | **Parsers**                   | Parse markdown + frontmatter                                  | `packages/core/src/parsing/*.ts`                                              | 🟢 All   |
 | **Plan Parser**               | Shared structured plan parsing utility                        | `packages/core/src/planning/`                                                 | 🟢 All   |
 | **Schemas**                   | Zod validation layer                                          | `packages/schemas/src/*.ts`                                                   | 🟢 All   |
-| **MCP Client**                | Connect to external MCP servers                               | `packages/mcp/server/mcp_client.ts`                                           | 🟢 All   |
+| **MCP Client**                | Connect to external MCP servers                               | `packages/mcp/src/external_mcp_client.ts`                                     | 🟢 All   |
 | **MCP Server**                | JSON-RPC server for tool execution                            | `packages-team/mcp-server/server.ts`                                          | 🔵 Team+ |
 | **Blueprint Loader**          | Unified blueprint parsing                                     | `packages/core/src/blueprint/blueprint_loader.ts`                             | 🟢 All   |
 | **Output Validator**          | Schema validation with JSON repair                            | `packages/tool-runtime/src/output_validator.ts`                               | 🟢 All   |
@@ -460,7 +460,7 @@ graph LR
 
 ## Event Taxonomy {#event-taxonomy}
 
-All event type strings are defined in `packages/core/src/events/domain_event_types.ts:DomainEventType`. Never use inline string literals as event action arguments — always reference a `DomainEventType` member.
+All event type strings are defined in `packages/core/src/events/domain_event_types.ts:DomainEventType`. Never use inline string literals as event action arguments — always reference a `DomainEventType` member. A class carrying the `@visible` JSDoc tag (`CODE_STYLE.md#jsdoc-header-tags`) declares itself load-bearing for the Visibility guarantee (ARCHITECTURE.md#execution-semantics) — `deno task check:event-coverage --fail-on-tagged` blocks a real commit at the pre-commit hook's Gate 19 for any coverage gap on a tagged class.
 
 ### Event Types by Domain
 

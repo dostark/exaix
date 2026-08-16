@@ -504,7 +504,8 @@ For **every step** that introduces new behaviour, check:
   make the "is coverage required here" decision explicit, not leave it to the advisory
   heuristic. If the step MODIFIES a file that already carries an `@visible`-tagged
   class, any coverage gap `check:event-coverage` finds there is 🔴 Critical, not 🟡 —
-  the tag is an existing, explicit commitment the step must not silently regress.
+  the tag is an existing, explicit commitment the step must not silently regress, and
+  a real gap on it fails the real pre-commit hook (Gate 19), not just this analysis.
 - Event naming, payload typing, audit chain completeness, event assertions in tests.
 - Config-driven vs. constant-driven values, config schema declaration, feature
   enable/disable path, config validation tests.
