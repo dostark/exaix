@@ -116,6 +116,23 @@ export function unwrapOptTypeName(typeNode: ts.TypeNode): string | null {
   return name;
 }
 
+// ── Visibility tag (@visible) ──
+
+const VISIBLE_TAG_PATTERN = /@visible\b/;
+
+/** True when `cls`'s own leading JSDoc comment carries the `@visible` tag — a class
+ *  explicitly declaring itself load-bearing for the ARCHITECTURE.md "Visibility"
+ *  guarantee, escalating its coverage findings from advisory to blocking under
+ *  `--fail-on-tagged`. Scoped to the class's own leading comment range (via
+ *  `ts.getLeadingCommentRanges` at the class node's full start), not the whole file
+ *  header, since one file may declare more than one class — mirrors
+ *  `scripts/validate_architecture.ts`'s `@ungrounded` regex exactly in spirit. */
+export function hasVisibleTag(cls: ts.ClassDeclaration, sourceText: string): boolean {
+  const ranges = ts.getLeadingCommentRanges(sourceText, cls.getFullStart());
+  if (!ranges) return false;
+  return ranges.some((r) => VISIBLE_TAG_PATTERN.test(sourceText.slice(r.pos, r.end)));
+}
+
 function hasModifierKind(node: ts.Node, kind: ts.SyntaxKind): boolean {
   if (!ts.canHaveModifiers(node)) return false;
   const mods = ts.getModifiers(node);

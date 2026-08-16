@@ -25,6 +25,7 @@ import {
   findComponentFields,
   findCrossComponentCalls,
   findStateChangeOperations,
+  hasVisibleTag,
   isAuditLoggerTypeName,
   isComponentTypeName,
   unwrapOptTypeName,
@@ -44,6 +45,10 @@ function firstClass(sf: ts.SourceFile): ts.ClassDeclaration {
   const found = sf.statements.find((s): s is ts.ClassDeclaration => ts.isClassDeclaration(s));
   if (!found) throw new Error("no class declaration found in fixture");
   return found;
+}
+
+function allClasses(sf: ts.SourceFile): ts.ClassDeclaration[] {
+  return sf.statements.filter((s): s is ts.ClassDeclaration => ts.isClassDeclaration(s));
 }
 
 function firstMethod(cls: ts.ClassDeclaration, name: string): ts.MethodDeclaration {
@@ -416,4 +421,37 @@ Deno.test("[analyzeSourceFile] reports both a wired-unused class and a method-le
   const result = analyzeSourceFile(sf, "example.ts");
   assertEquals(result.wiredUnused.length, 1);
   assertEquals(result.wiredUnused[0].className, "Svc");
+});
+
+// ── hasVisibleTag ──
+
+Deno.test("[hasVisibleTag] returns true when the class's own leading comment carries @visible", () => {
+  const sf = parse(`
+/** @visible */
+export class Foo {}
+`);
+  const cls = firstClass(sf);
+  assertEquals(hasVisibleTag(cls, sf.getFullText()), true);
+});
+
+Deno.test("[hasVisibleTag] returns false for a class with no tag", () => {
+  const sf = parse(`
+/** Just a regular class. */
+export class Foo {}
+`);
+  const cls = firstClass(sf);
+  assertEquals(hasVisibleTag(cls, sf.getFullText()), false);
+});
+
+Deno.test("[hasVisibleTag] distinguishes between two classes in the same file — only the tagged one matches", () => {
+  const sf = parse(`
+/** Untagged sibling. */
+export class Foo {}
+
+/** @visible */
+export class Bar {}
+`);
+  const [foo, bar] = allClasses(sf);
+  assertEquals(hasVisibleTag(foo, sf.getFullText()), false);
+  assertEquals(hasVisibleTag(bar, sf.getFullText()), true);
 });

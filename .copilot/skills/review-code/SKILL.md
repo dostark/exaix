@@ -181,7 +181,9 @@ rules and the dominant conventions in the existing file:
    index file.
 
 1. **check:arch.** Would `deno task check:arch` pass? All new files must be
-   GROUNDED (or explicitly tagged `@ungrounded`).
+   GROUNDED (or explicitly tagged `@ungrounded`) — `@visible` (item 6 above) uses the
+   same JSDoc-tag mechanism for a different contract (observability coverage, not
+   architecture grounding), documented in `CODE_STYLE.md`'s "JSDoc Header Tags" section.
 
 ---
 

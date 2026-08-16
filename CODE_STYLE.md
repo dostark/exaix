@@ -512,6 +512,40 @@ runtime bugs.
   1. **Functional Code:** Classes, functions, and variable initializations.
 - **Top-of-module placement:** Imports and exported interfaces must appear at the top of the file, before any functional code.
 
+### JSDoc Header Tags (`@visible`) {#jsdoc-header-tags}
+
+A class's leading JSDoc comment may carry the `@visible` tag to declare it explicitly
+load-bearing for ARCHITECTURE.md's Execution Semantics "Visibility" guarantee ("every
+significant runtime transition emits a typed, versioned, trace-linked domain event").
+Tagging a class is a real, tool-enforced commitment, not documentation:
+
+- **Effect:** `scripts/check_event_coverage.ts --fail-on-tagged` treats any coverage
+  finding on an `@visible`-tagged class (a state change or cross-component call with no
+  adjacent event, or a logger dependency never called) as **blocking**, not advisory —
+  wired into the pre-commit hook's staged-files gate.
+- **Placement:** on the class's own leading comment, scoped via `ts.getLeadingCommentRanges`
+  at the class node's full start — not the file's `@module` header — since one file may
+  declare more than one class.
+- **When to add it:** a class on the request → plan → execution → review → memory
+  critical path, or otherwise security- or observability-sensitive, whose coverage must
+  never silently regress.
+- **Precedent:** parsed the same minimal way `scripts/validate_architecture.ts` already
+  parses `@ungrounded` (a plain regex over the comment text) — see that tag's own
+  documentation in `.copilot/skills/clean-codebase/SKILL.md`,
+  `.copilot/skills/edition-development/SKILL.md`, and
+  `.copilot/skills/review-code/SKILL.md`.
+
+Example:
+
+```typescript
+/**
+ * @module ReviewRegistry
+ * @path packages/core/src/artifact/review_registry.ts
+ * @visible
+ */
+export class ReviewRegistry { ... }
+```
+
 ### Filesystem Watching (`Deno.watchFs`) {#fs-watching}
 
 `Deno.watchFs` has **no built-in idempotency**: it emits multiple/duplicate `FsEvent`s for a single
