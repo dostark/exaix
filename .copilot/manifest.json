@@ -359,7 +359,7 @@
       "scope": "dev",
       "title": "Post-Gap Analysis Skill (#post-gap-analysis)",
       "short_summary": "Deep review of an existing phase planning document: checks implementation against plan, delegates code quality to #review-code, finds gaps, and writes remediation steps back into the document.",
-      "version": "1.7.0",
+      "version": "1.8.0",
       "topics": [
         "planning",
         "gap-analysis",

@@ -35,7 +35,7 @@ export class TracedProvider implements IModelProvider {
       prompt_length: prompt.length,
       model: this.id,
       trace_id: traceId,
-    });
+    }, traceId);
 
     try {
       const result = await this.inner.generate(prompt, options);
@@ -49,7 +49,7 @@ export class TracedProvider implements IModelProvider {
         cost_usd: result.cost_usd ?? 0,
         model: this.id,
         trace_id: traceId,
-      });
+      }, traceId);
 
       return result;
     } catch (error) {
@@ -61,7 +61,7 @@ export class TracedProvider implements IModelProvider {
         error_type: error instanceof Error ? error.constructor.name : "unknown",
         model: this.id,
         trace_id: traceId,
-      });
+      }, traceId);
 
       throw error;
     }
@@ -78,8 +78,9 @@ export class TracedProvider implements IModelProvider {
       prompt_length: prompt.length,
       model: this.id,
       trace_id: traceId,
-    });
+    }, traceId);
 
+    let terminalLogged = false;
     try {
       if (!this.inner.generateStream) {
         throw new Error("Inner provider does not support streaming");
@@ -92,25 +93,33 @@ export class TracedProvider implements IModelProvider {
       }
 
       const durationMs = performance.now() - startTime;
-
       void this.logger.info(DomainEventType.LlmStreamCompleted, this.id, {
         duration_ms: Math.round(durationMs),
         chunk_count: chunkCount,
         model: this.id,
         trace_id: traceId,
-      });
+      }, traceId);
+      terminalLogged = true;
     } catch (error) {
       const durationMs = performance.now() - startTime;
-
       void this.logger.warn(DomainEventType.LlmStreamFailed, this.id, {
         duration_ms: Math.round(durationMs),
         error: error instanceof Error ? error.message : String(error),
         error_type: error instanceof Error ? error.constructor.name : "unknown",
         model: this.id,
         trace_id: traceId,
-      });
-
+      }, traceId);
+      terminalLogged = true;
       throw error;
+    } finally {
+      if (!terminalLogged) {
+        const durationMs = performance.now() - startTime;
+        void this.logger.warn(DomainEventType.LlmStreamCancelled, this.id, {
+          duration_ms: Math.round(durationMs),
+          model: this.id,
+          trace_id: traceId,
+        }, traceId);
+      }
     }
   }
 }

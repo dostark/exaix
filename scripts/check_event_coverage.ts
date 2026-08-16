@@ -153,20 +153,23 @@ export function hasVisibleTag(cls: ts.ClassDeclaration, sourceText: string): boo
 
 const LOG_METHOD_FAMILY_DECORATOR_NAMES = new Set(["LogMethod", "LogSyncMethod", "LogGeneratorMethod"]);
 
-/** True when `method`'s own decorator list includes a call to `LogMethod`/`LogSyncMethod`/
- *  `LogGeneratorMethod` — read from the method's decorator list, not its body, since a
- *  decorated method's real logger call lives inside `decorator.ts`, not inside the method
- *  it wraps. This is a structurally different check from every other function in this file
- *  (which all inspect body/parameter shape), hence its own dedicated tests. */
+/** True when a decorator carries a registered DomainEventType action. */
 export function isDecoratorCovered(method: ts.MethodDeclaration): boolean {
   if (!ts.canHaveDecorators(method)) return false;
   const decorators = ts.getDecorators(method);
   if (!decorators) return false;
-  return decorators.some((d) => {
-    const expr = d.expression;
-    if (!ts.isCallExpression(expr)) return false;
-    const callee = expr.expression;
-    return ts.isIdentifier(callee) && LOG_METHOD_FAMILY_DECORATOR_NAMES.has(callee.text);
+  return decorators.some((decorator) => {
+    const expression = decorator.expression;
+    if (!ts.isCallExpression(expression) || !ts.isIdentifier(expression.expression)) return false;
+    if (!LOG_METHOD_FAMILY_DECORATOR_NAMES.has(expression.expression.text)) return false;
+    return expression.arguments.some((argument) => {
+      if (!ts.isObjectLiteralExpression(argument)) return false;
+      return argument.properties.some((property) =>
+        ts.isPropertyAssignment(property) && ts.isIdentifier(property.name) && property.name.text === "action" &&
+        ts.isPropertyAccessExpression(property.initializer) && ts.isIdentifier(property.initializer.expression) &&
+        property.initializer.expression.text === "DomainEventType"
+      );
+    });
   });
 }
 
@@ -419,29 +422,27 @@ export function findCrossComponentCalls(body: ts.Node, componentFieldNames: read
   return findings;
 }
 
-/** True when `body` contains a call to `binding`'s logging surface
- *  (`.info/.warn/.error/.fatal/.debug/.log/.emit(...)`), in either the `this.<field>.x(...)`
- *  or bare `<param>.x(...)` shape (including optional-chained `?.` call forms). */
-export function bodyCallsAuditBinding(body: ts.Node, binding: IAuditBinding): boolean {
+/** True when `body` calls the logger binding. Tagged callers may require a registered taxonomy action. */
+export function bodyCallsAuditBinding(
+  body: ts.Node,
+  binding: IAuditBinding,
+  requireRegisteredAction = false,
+): boolean {
   let found = false;
   const visit = (node: ts.Node) => {
     if (found) return;
     if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
       const methodName = node.expression.name.text;
-      if (LOG_METHOD_PATTERN.test(methodName)) {
+      const action = node.arguments[0];
+      const registeredAction = action && ts.isPropertyAccessExpression(action) &&
+        ts.isIdentifier(action.expression) && action.expression.text === "DomainEventType";
+      if (LOG_METHOD_PATTERN.test(methodName) && (!requireRegisteredAction || registeredAction)) {
         const receiver = node.expression.expression;
-        if (binding.isField) {
-          if (
-            ts.isPropertyAccessExpression(receiver) && isThisExpr(receiver.expression) &&
-            receiver.name.text === binding.name
-          ) {
-            found = true;
-            return;
-          }
-        } else if (ts.isIdentifier(receiver) && receiver.text === binding.name) {
-          found = true;
-          return;
-        }
+        if (
+          binding.isField && ts.isPropertyAccessExpression(receiver) && isThisExpr(receiver.expression) &&
+          receiver.name.text === binding.name
+        ) found = true;
+        if (!binding.isField && ts.isIdentifier(receiver) && receiver.text === binding.name) found = true;
       }
     }
     ts.forEachChild(node, visit);
@@ -463,7 +464,12 @@ function lineOf(node: ts.Node, sf: ts.SourceFile): number {
  *  Deliberately one level only: chasing arbitrarily deep call chains would make "is this
  *  method covered" unboundedly expensive and hard to reason about; a helper-of-a-helper
  *  is a smell this checker doesn't try to untangle — verify by hand. */
-function callsLoggingPrivateHelper(body: ts.Node, cls: ts.ClassDeclaration, binding: IAuditBinding): boolean {
+function callsLoggingPrivateHelper(
+  body: ts.Node,
+  cls: ts.ClassDeclaration,
+  binding: IAuditBinding,
+  requireRegisteredAction = false,
+): boolean {
   const privateHelpers = new Map<string, ts.MethodDeclaration>();
   for (const member of cls.members) {
     if (
@@ -484,7 +490,7 @@ function callsLoggingPrivateHelper(body: ts.Node, cls: ts.ClassDeclaration, bind
       isThisExpr(node.expression.expression)
     ) {
       const helper = privateHelpers.get(node.expression.name.text);
-      if (helper?.body && bodyCallsAuditBinding(helper.body, binding)) {
+      if (helper?.body && bodyCallsAuditBinding(helper.body, binding, requireRegisteredAction)) {
         found = true;
         return;
       }
@@ -516,7 +522,7 @@ export function analyzeClass(cls: ts.ClassDeclaration, sf: ts.SourceFile): IAnal
   // own adjacent event — a private helper isn't an independently-callable public API.
   const anyMethodCallsLogger = cls.members.some((member) =>
     ts.isMethodDeclaration(member) && member.body !== undefined &&
-    (bodyCallsAuditBinding(member.body, { name: auditField, isField: true }) || isDecoratorCovered(member))
+    (bodyCallsAuditBinding(member.body, { name: auditField, isField: true }, tagged) || isDecoratorCovered(member))
   );
   const findings: IEventCoverageFinding[] = [];
 
@@ -534,9 +540,9 @@ export function analyzeClass(cls: ts.ClassDeclaration, sf: ts.SourceFile): IAnal
     }
     const methodName = member.name.getText();
 
-    const covered = bodyCallsAuditBinding(member.body, { name: auditField, isField: true }) ||
+    const covered = bodyCallsAuditBinding(member.body, { name: auditField, isField: true }, tagged) ||
       isDecoratorCovered(member) ||
-      callsLoggingPrivateHelper(member.body, cls, { name: auditField, isField: true });
+      callsLoggingPrivateHelper(member.body, cls, { name: auditField, isField: true }, tagged);
     if (covered) {
       continue;
     }

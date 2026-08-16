@@ -445,6 +445,7 @@ export const DomainEventType = {
 
   // Request processing — status and provider events
   RequestStatusUpdateFailed: "request.status_update_failed",
+  RequestAnalyzed: "request.analyzed",
   RequestFlowValidationFailed: "flow.validation.failed",
   RequestProviderSelected: "provider.selected",
   RequestProviderSelectionFailed: "provider.selection_failed",
@@ -490,6 +491,7 @@ export const DomainEventType = {
   LlmCallFailed: "llm.call.failed",
   LlmStreamCompleted: "llm.stream.completed",
   LlmStreamFailed: "llm.stream.failed",
+  LlmStreamCancelled: "llm.stream.cancelled",
 
   // Model resolution events (Phase 132)
   ModelResolved: "model.resolved",

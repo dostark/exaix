@@ -29,7 +29,8 @@ import {
   HEURISTIC_SCORE_BASELINE,
   HEURISTIC_SCORE_COMPLEXITY_BONUS,
 } from "@exaix/core";
-import type { IEventLogger } from "@exaix/core/logger";
+import { type IEventLogger, LogSyncMethod } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 import type { Opt, Reason } from "@exaix/core/types";
 
 // ---------------------------------------------------------------------------
@@ -210,28 +211,23 @@ export class RequestAnalyzer implements IRequestAnalyzerService {
     }
   }
 
+  @LogSyncMethod((self: RequestAnalyzer) => self.logger, {
+    action: DomainEventType.RequestAnalyzed,
+    payloadMapper: ([requestText, result]) => ({
+      mode: result.metadata.mode,
+      complexity: result.complexity,
+      taskType: result.taskType,
+      actionabilityScore: result.actionabilityScore,
+      durationMs: result.metadata.durationMs,
+      requestLength: requestText.length,
+    }),
+  })
   private _logActivity(
     requestText: string,
     result: IRequestAnalysis,
-    context?: Opt<IRequestAnalysisContext, Reason.OptionalContext>,
+    _context?: Opt<IRequestAnalysisContext, Reason.OptionalContext>,
   ): void {
-    if (this.logger) {
-      try {
-        this.logger.info(
-          "request.analyzed",
-          context?.requestFilePath ?? null,
-          {
-            mode: result.metadata.mode,
-            complexity: result.complexity,
-            taskType: result.taskType,
-            actionabilityScore: result.actionabilityScore,
-            durationMs: result.metadata.durationMs,
-            requestLength: requestText.length,
-          },
-        );
-      } catch {
-        // Non-fatal — analysis result is already produced
-      }
-    }
+    void requestText;
+    void result;
   }
 }

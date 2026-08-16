@@ -121,3 +121,34 @@ Deno.test("[TracedProvider.generateStream] emits failed when the inner generator
   const failedPayload = logger.warn.calls[0].args[2] as LogMetadata;
   assertEquals(failedPayload.error, "mid-stream failure");
 });
+
+Deno.test("[TracedProvider] shares a canonical trace ID across generate lifecycle events", async () => {
+  const logger = createMockLogger();
+  const result = {
+    content: "ok",
+    model: "mock-model",
+    provider: "mock",
+    usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+  };
+  const inner = { ...createInnerProvider([]), generate: () => Promise.resolve(result) };
+  const traced = new TracedProvider(inner, logger);
+
+  await traced.generate("prompt");
+
+  assertEquals(logger.info.calls.length, 2);
+  assertEquals(logger.info.calls[0].args[3], logger.info.calls[1].args[3]);
+  assertEquals(typeof logger.info.calls[0].args[3], "string");
+});
+
+Deno.test("[TracedProvider.generateStream] emits cancellation with the operation trace ID on early return", async () => {
+  const logger = createMockLogger();
+  const traced = new TracedProvider(createInnerProvider(["a", "b"]), logger);
+  const stream = traced.generateStream("prompt");
+
+  await stream.next();
+  await stream.return(undefined);
+
+  assertEquals(logger.warn.calls.length, 1);
+  assertEquals(logger.warn.calls[0].args[0], DomainEventType.LlmStreamCancelled);
+  assertEquals(logger.warn.calls[0].args[3], logger.info.calls[0].args[3]);
+});

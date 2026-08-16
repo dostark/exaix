@@ -10,7 +10,7 @@ scope: dev
 title: "Post-Gap Analysis Skill (#post-gap-analysis)"
 description: Deep post-implementation review of a phase planning document — verifies what was built against the plan, delegates code quality review to #review-code, finds gaps, and writes remediation steps back into the document
 short_summary: "Deep review of an existing phase planning document: checks implementation against plan, delegates code quality to #review-code, finds gaps, and writes remediation steps back into the document."
-version: "1.7.0"
+version: "1.8.0"
 topics: [
   "planning",
   "gap-analysis",
@@ -30,6 +30,10 @@ qwen_skill: post-gap-analysis
 Key points
 - This is a POST-implementation review, not a pre-implementation gap analysis.
   Verify what was actually built against what the plan promised.
+- Derive the problem statement's required outcomes independently of the plan's completed step criteria,
+  then try to falsify each outcome with production evidence and an applicable adversarial case.
+- A documented limitation, deferral, or workaround is not accepted merely because it is
+  tracked: it remains a gap when it prevents a required outcome.
 - Read the planning document first, then read every source file it references.
 - Check every step whose criteria/tests are marked done (`- ✅ <text> → ` `` `path` ``)
   or that carries a `✅ WIRED`/`✅ CORE` status label against the real
@@ -53,6 +57,8 @@ Key points
   to "🚧 Gap Remediation In Progress" after writing gaps into it.
 - Run a semantic value verification (Phase 2a) on every step that adds fields
   to events, schemas, or responses — verify values are correct, not just present.
+- For correlation, identity, provenance, or status values, verify the canonical persisted or indexed field,
+  not just an identically named payload or intermediate value.
 - Run an integration surface audit (Phase 2b) on every step that introduces a
   new interface or output field — dead fields with no consumers are gaps.
   Run `deno task check:reachability-ledger <plan-doc-path>` first, as a mechanized
@@ -94,6 +100,12 @@ Do / Don't
 - ✅ Do classify every gap with a severity symbol (🔴 Critical / 🔒 Security /
   🟡 Feasibility / 🟠 Testing / 🔵 Conceptual) so the team can triage quickly.
 - ✅ Do verify values, not just presence — a field existing with the wrong value is a gap (Phase 2a).
+- ✅ Do derive required outcomes from the problem statement independently of the plan's completed step criteria,
+  and record the falsification evidence for each one.
+- ✅ Do exercise applicable lifecycle alternatives — success, failure, cancellation, abandonment, and early exit —
+  rather than treating the happy path and a thrown error as complete coverage.
+- ✅ Do verify correlation, identity, provenance, and status values at their canonical persisted or indexed field,
+  not only in a payload or temporary representation.
 - ✅ Do trace output fields to their consumers — dead fields with no readers are gaps (Phase 2b).
 - ✅ Do run `check:reachability-ledger` as a first pass on every ✅ ledger row, then verify its findings by hand
   (Phase 2b) — it is advisory, not authoritative.
@@ -126,6 +138,8 @@ Do / Don't
   step number.
 - ❌ Don't accept hardcoded threshold or timeout literals — they must be named
   constants in `packages/core/src/types/constants.ts` or config-schema fields.
+- ❌ Don't accept a documented limitation, deferral, or workaround as resolved when it prevents a required outcome
+  stated by the problem statement, executive summary, goal, or success metrics.
 - ❌ Don't skip event payload typing — untyped events block audit chain
   verification and make integration tests fragile.
 - ❌ Don't re-run the #review-code checklists in Phase 7 — delegate to
@@ -168,7 +182,32 @@ document provided. Your output has two parts:
 
 Read the planning document in full: version, status, every step and its
 completion marker, every file path and symbol. Read all additionally supplied
-documents as ground-truth context.
+documents as ground-truth context. Read the problem statement, executive
+summary, goal, and quantitative success metrics as requirements in their own
+right — they are not superseded by a plan step that happens to be marked done.
+
+---
+
+### Phase 1b — Required Outcome & Falsification Matrix
+
+Before accepting any completed step, derive a compact list of the system-level
+outcomes the problem statement requires independently of the plan's completed step criteria.
+For each outcome, record:
+
+| Required outcome             | Production evidence                         | Adversarial case                 | Verdict     |
+| ---------------------------- | ------------------------------------------- | -------------------------------- | ----------- |
+| <observable system property> | <real call path, stored value, or consumer> | <the applicable way it can fail> | ✅ / gap ID |
+
+Use only outcomes that are materially implied by the phase's problem statement,
+executive summary, goal, interfaces, or success metrics. Examples of generally
+applicable adversarial cases include cancellation, abandonment, and early exit
+for a lifecycle operation; partial completion for a multi-stage operation; and
+an invalid-but-well-typed value for a constrained output.
+
+A completed step does not prove an outcome: if an outcome can fail while every
+listed criterion passes, the outcome needs its own production trace and
+adversarial probe. A documented limitation, deferral, or workaround remains a
+gap when it prevents a required outcome, even if it has a ledger entry.
 
 ---
 
@@ -199,6 +238,12 @@ or modified by the step:
    For every field whose value depends on a dependency or configuration flag:
    trace the dependency chain from constructor to emission point and verify
    the field's value matches what the dependency chain dictates.
+
+1. **Verify canonical storage and lookup semantics.**
+   When a value is used for correlation, identity, provenance, status, routing,
+   or authorization, trace it through the write and read/query boundary. Verify
+   the canonical persisted or indexed field holds the intended value; a matching
+   payload field, log message, cache entry, or intermediate object is not proof.
 
 ---
 
@@ -252,6 +297,12 @@ For **every interface, type, or output field** the step introduces:
    needs the manual G1-style verification above before it becomes a GAP entry — but a
    row the tool flags is a row to check first, not last.
 
+1. **Reconcile declared limitations with required outcomes.**
+   A Reachability Ledger row, deferral, compatibility note, or implementation
+   workaround explains why something is absent; it does not establish that the
+   phase still solves its stated problem. If the absence prevents a required
+   outcome in the Phase 1b matrix, record a gap with the appropriate severity.
+
 ---
 
 ### Phase 2c — Module Convention Probe
@@ -289,6 +340,13 @@ Planned Tests / Success Criteria). Check §3D documentation update compliance.
 For every step affecting the request → plan → execution → review → memory → update
 flow: verify existing scenarios exercise the behaviour, check scenario assertions,
 determine if new scenarios are needed.
+
+For every introduced or changed lifecycle, streaming, transaction, retry, or
+multi-stage operation, enumerate its applicable terminal alternatives: normal
+completion, failure, cancellation, abandonment, and early exit. Verify each
+alternative has the required observable outcome (including cleanup, terminal
+state, and externally visible record) and a focused test where the behaviour is
+new. Do not require inapplicable alternatives; state why they do not apply.
 
 ---
 
@@ -381,6 +439,12 @@ Append at end of planning document using the exact format below.
 
 ## Post-Gap Analysis — <ISO date> — Verdict: ⚠️ GAPS FOUND / ✅ IMPLEMENTATION COMPLETE
 
+### Required Outcome & Falsification Matrix
+
+| Required outcome             | Production evidence                         | Adversarial case                    | Verdict    |
+| ---------------------------- | ------------------------------------------- | ----------------------------------- | ---------- |
+| <observable system property> | <real call path, stored value, or consumer> | <applicable failure mode exercised> | ✅ / GAP-N |
+
 ### Gap Summary
 
 | # | Step   | Severity    | Description            |
@@ -460,12 +524,15 @@ exaix:
     tags: [post-gap, review]
   constraints:
     - "Verify what was built matches the plan"
+    - "Falsify problem-statement outcomes independently of completed plan criteria"
     - "Delegate code quality review to review-code skill"
     - "Write remediation steps back into the plan document"
     - "Run semantic value verification on events, schemas, responses"
+    - "Verify canonical persisted or indexed values for correlation, identity, provenance, status, routing, and authorization"
     - "Run integration surface audit — dead fields with no consumers are gaps"
   output_requirements:
     - "Gap summary table with findings per step"
+    - "Required Outcome & Falsification Matrix with production evidence and an adversarial case per outcome"
     - "Detailed gap entries with Expected vs Actual"
     - "Remediation steps in TDD-First format"
     - "Documentation update step for interface/schema/CLI changes"

@@ -7,7 +7,8 @@
  */
 
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
-import { EventLogger, LogGeneratorMethod, LogMethod, LogSyncMethod } from "@exaix/core/logger";
+import { LogGeneratorMethod, LogMethod, LogSyncMethod } from "@exaix/core/logger";
+import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { LogMetadata } from "@exaix/core";
 
@@ -17,15 +18,28 @@ interface ILogCall {
   payload: LogMetadata;
 }
 
-function mockLogger(logCalls: ILogCall[]): EventLogger {
-  return Object.assign(Object.create(EventLogger.prototype), {
-    info: (msg: string, _action: string, payload: LogMetadata) =>
-      Promise.resolve(logCalls.push({ level: "info", msg, payload })),
-    error: (msg: string, _action: string, payload: LogMetadata) =>
-      Promise.resolve(logCalls.push({ level: "error", msg, payload })),
-    debug: (msg: string, _action: string, payload: LogMetadata) =>
-      Promise.resolve(logCalls.push({ level: "debug", msg, payload })),
-  });
+function mockLogger(logCalls: ILogCall[]): IEventLogger {
+  return {
+    info: (msg: string, _action: string | null, payload: LogMetadata = {}) => {
+      logCalls.push({ level: "info", msg, payload });
+      return Promise.resolve();
+    },
+    error: (msg: string, _action: string | null, payload: LogMetadata = {}) => {
+      logCalls.push({ level: "error", msg, payload });
+      return Promise.resolve();
+    },
+    warn: (msg: string, _action: string | null, payload: LogMetadata = {}) => {
+      logCalls.push({ level: "warn", msg, payload });
+      return Promise.resolve();
+    },
+    debug: (msg: string, _action: string | null, payload: LogMetadata = {}) => {
+      logCalls.push({ level: "debug", msg, payload });
+      return Promise.resolve();
+    },
+    fatal: () => Promise.resolve(),
+    log: () => Promise.resolve(),
+    child: () => mockLogger(logCalls),
+  };
 }
 
 Deno.test("LogMethod (standard decorator): handles errors and custom action", async () => {
@@ -38,7 +52,7 @@ Deno.test("LogMethod (standard decorator): handles errors and custom action", as
       return await Promise.reject(new Error(`failing: ${arg}`));
     }
 
-    @LogMethod(logger)
+    @LogMethod(logger, { action: DomainEventType.FlowStepExecuted })
     async namedMethod() {
       return await Promise.resolve("ok");
     }
@@ -57,7 +71,7 @@ Deno.test("LogMethod (standard decorator): handles errors and custom action", as
 
   // Test default action name and success logging
   await obj.namedMethod();
-  const successCall = logCalls.find((c) => c.msg === "TestClass.namedMethod" && c.level === "info");
+  const successCall = logCalls.find((c) => c.msg === DomainEventType.FlowStepExecuted && c.level === "info");
   assertEquals(!!successCall, true);
 });
 Deno.test("[LogMethod] payloadMapper shapes the success payload when supplied", async () => {
@@ -66,6 +80,7 @@ Deno.test("[LogMethod] payloadMapper shapes the success payload when supplied", 
 
   class Fetcher {
     @LogMethod<Fetcher, [string], string>(logger, {
+      action: DomainEventType.FlowStepExecuted,
       payloadMapper: (_args, result) => ({ resultLength: result?.length ?? 0 }),
     })
     fetch(url: string): Promise<string> {
@@ -86,7 +101,7 @@ Deno.test("[LogSyncMethod] wraps a synchronous method, emits started/completed w
   const logger = mockLogger(logCalls);
 
   class Calculator {
-    @LogSyncMethod(logger)
+    @LogSyncMethod(logger, { action: DomainEventType.FlowStepExecuted })
     double(n: number): number {
       return n * 2;
     }
@@ -104,7 +119,7 @@ Deno.test("[LogSyncMethod] emits failed and rethrows when the sync target throws
   const logger = mockLogger(logCalls);
 
   class Calculator {
-    @LogSyncMethod(logger)
+    @LogSyncMethod(logger, { action: DomainEventType.FlowStepExecuted })
     divide(n: number, by: number): number {
       if (by === 0) throw new Error("division by zero");
       return n / by;
@@ -121,7 +136,7 @@ Deno.test("[LogGeneratorMethod] emits started before the first yield, completed 
   const logger = mockLogger(logCalls);
 
   class Streamer {
-    @LogGeneratorMethod(logger)
+    @LogGeneratorMethod(logger, { action: DomainEventType.FlowStepExecuted })
     async *stream(): AsyncGenerator<string> {
       yield "a";
       yield "b";
@@ -145,7 +160,7 @@ Deno.test("[LogGeneratorMethod] emits failed when the wrapped generator throws m
   const logger = mockLogger(logCalls);
 
   class FailingStreamer {
-    @LogGeneratorMethod(logger)
+    @LogGeneratorMethod(logger, { action: DomainEventType.FlowStepExecuted })
     async *stream(): AsyncGenerator<string> {
       yield "a";
       throw new Error("stream broke");
@@ -173,7 +188,7 @@ Deno.test("[LogGeneratorMethod] emits failed (not started-without-resolution) wh
   const logger = mockLogger(logCalls);
 
   class ThrowingStreamer {
-    @LogGeneratorMethod(logger)
+    @LogGeneratorMethod(logger, { action: DomainEventType.FlowStepExecuted })
     stream(): AsyncGenerator<string> {
       throw new Error("no generator for you");
     }
@@ -184,4 +199,42 @@ Deno.test("[LogGeneratorMethod] emits failed (not started-without-resolution) wh
   await assertRejects(() => gen.next(), Error, "no generator for you");
 
   assertEquals(logCalls.map((c) => c.level), ["debug", "error"]);
+});
+
+Deno.test("[LogGeneratorMethod] resolves a constructor-injected logger and emits cancellation on early return", async () => {
+  const logCalls: ILogCall[] = [];
+  const logger = mockLogger(logCalls);
+
+  class Streamer {
+    constructor(private readonly logger: IEventLogger) {}
+
+    @LogGeneratorMethod((self: Streamer) => self.logger, { action: DomainEventType.FlowStepExecuted })
+    async *stream(): AsyncGenerator<string> {
+      yield "a";
+      yield "b";
+    }
+  }
+
+  const stream = new Streamer(logger).stream();
+  await stream.next();
+  await stream.return(undefined);
+
+  assertEquals(logCalls.map((call) => call.level), ["debug", "warn"]);
+});
+
+Deno.test("[LogSyncMethod] resolves a constructor-injected logger at invocation time", () => {
+  const logCalls: ILogCall[] = [];
+  const logger = mockLogger(logCalls);
+
+  class Calculator {
+    constructor(private readonly logger: IEventLogger) {}
+
+    @LogSyncMethod((self: Calculator) => self.logger, { action: DomainEventType.FlowStepExecuted })
+    double(value: number): number {
+      return value * 2;
+    }
+  }
+
+  assertEquals(new Calculator(logger).double(21), 42);
+  assertEquals(logCalls.map((call) => call.level), ["debug", "info"]);
 });

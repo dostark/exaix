@@ -606,10 +606,10 @@ Deno.test("[isDecoratorCovered] recognizes @LogMethod(logger, ...) on a method",
 Deno.test("[isDecoratorCovered] recognizes @LogSyncMethod and @LogGeneratorMethod", () => {
   const sf = parse(`
     export class Svc {
-      @LogSyncMethod(logger)
+      @LogSyncMethod(logger, { action: DomainEventType.Foo })
       syncRun(): void {}
 
-      @LogGeneratorMethod(logger)
+      @LogGeneratorMethod(logger, { action: DomainEventType.Foo })
       async *streamRun(): AsyncGenerator<string> {}
     }
   `);
@@ -635,7 +635,7 @@ Deno.test("[analyzeClass] treats a decorator-covered method as covered even with
     export class Svc {
       constructor(private readonly logger?: IEventLogger) {}
 
-      @LogMethod(logger)
+      @LogMethod(logger, { action: DomainEventType.Foo })
       save(x: string): void {
         this.repo.save(x);
       }
@@ -696,4 +696,25 @@ Deno.test("[shouldFailOnTagged] returns true when a tagged finding or missing-lo
 
   const missingLogger: IMissingLoggerFinding[] = [{ file: "a.ts", className: "Svc", line: 1 }];
   assertEquals(shouldFailOnTagged([], [], missingLogger), true);
+});
+
+Deno.test("[isDecoratorCovered] rejects a decorator without a registered taxonomy action", () => {
+  const sf = parse(`export class Svc { @LogSyncMethod(logger) run(): void {} }`);
+  assertEquals(isDecoratorCovered(firstMethod(firstClass(sf), "run")), false);
+});
+
+Deno.test("[analyzeClass] rejects a raw action for a visible class while preserving advisory untagged behavior", () => {
+  const tagged = parse(`
+/** @visible */
+export class Svc {
+  constructor(private logger: IEventLogger, private repo: IRepo) {}
+  save(): void { this.logger.info("raw.action", null); this.repo.save(); }
+}`);
+  const untagged = parse(`
+export class Svc {
+  constructor(private logger: IEventLogger, private repo: IRepo) {}
+  save(): void { this.logger.info("raw.action", null); this.repo.save(); }
+}`);
+  assertEquals(analyzeClass(firstClass(tagged), tagged).wiredUnused !== null, true);
+  assertEquals(analyzeClass(firstClass(untagged), untagged).findings.length, 0);
 });
