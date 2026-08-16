@@ -49,7 +49,9 @@ Deno.test("LogMethod (standard decorator): wraps method via (value, context)", a
   const context = { kind: "method", name: "doIt" } as Partial<
     ClassMethodDecoratorContext
   > as ClassMethodDecoratorContext;
-  const wrapped = LogMethod(logger)(original, context) as (...args: string[]) => Promise<unknown>;
+  const wrapped = LogMethod<unknown, [string], string>(logger)(original, context) as (
+    ...args: string[]
+  ) => Promise<unknown>;
 
   const out = await wrapped.call({ constructor: { name: "C" } }, "x");
   assertEquals(out, "ok:x");
