@@ -125,6 +125,7 @@
     "check:reachability-ledger": "deno run --allow-read scripts/check_reachability_ledger.ts",
     "check:event-coverage": "deno run --allow-read --allow-env --allow-run=git scripts/check_event_coverage.ts",
     "check:event-coverage:staged": "deno run --allow-read --allow-env --allow-run=git scripts/check_event_coverage.ts --staged --fail",
+    "check:event-coverage:staged:visible": "deno run --allow-read --allow-env --allow-run=git scripts/check_event_coverage.ts --staged --fail-on-tagged",
     "check:config-keys": "deno run --allow-read scripts/check_config_keys.ts",
     "check:md-path": "deno run --allow-read --allow-run=git scripts/check_md_paths.ts .",
     "check:md-path:staged": "deno run --allow-read --allow-run=git scripts/check_md_paths.ts . --staged",

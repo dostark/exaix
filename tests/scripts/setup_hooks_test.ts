@@ -4,7 +4,7 @@
  * @description Integration test to verify git hook installation logic.
  */
 
-import { assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 
@@ -66,5 +66,115 @@ describe("scripts/setup_hooks.ts", () => {
       hookInstaller.includes("deno task check:runtime-artifacts"),
       "pre-commit hook should run the runtime-artifacts check (venv/, __pycache__/, node_modules/)",
     );
+  });
+});
+
+describe("Gate 19: event coverage visibility (real pre-commit hook, real subprocess git commit)", () => {
+  const REPO_ROOT = Deno.cwd();
+
+  /** Extracts Gate 19's exact current block from the real installed hook, so this test
+   *  always exercises whatever Gate 19 actually says today, not a hand-duplicated copy
+   *  that could silently drift from the real file. `deno task X` is substituted with its
+   *  absolute-path `deno run` equivalent: `deno task` walks UP from the invocation
+   *  directory to find deno.json and then runs with CWD set to *that* directory (verified
+   *  empirically) — correct and unproblematic for a real developer commit (deno.json's
+   *  directory IS the repo root being committed to), but wrong for this test's isolated
+   *  scratch repo (which has no deno.json of its own, so `deno task` would redirect back
+   *  to this real repo and check *its* staged files instead of the scratch repo's). Plain
+   *  `deno run` with an absolute script path does not redirect CWD, so it correctly scopes
+   *  `git diff --cached` (inside check_event_coverage.ts) to the scratch repo. This still
+   *  exercises the exact real script, flags, and hook exit-code/error-message wrapper —
+   *  only the task-runner indirection is swapped for its equivalent expansion. */
+  async function extractGate19(): Promise<string> {
+    const hookContent = await Deno.readTextFile(join(REPO_ROOT, ".git", "hooks", "pre-commit"));
+    const match = hookContent.match(/# 19\. Event Coverage Visibility Check[\s\S]*?\nfi\n/);
+    assert(match, "Gate 19 block not found in .git/hooks/pre-commit — has it been renumbered or removed?");
+    const scriptPath = join(REPO_ROOT, "scripts", "check_event_coverage.ts");
+    return match![0].replace(
+      "deno task check:event-coverage:staged:visible",
+      `deno run --allow-read --allow-env --allow-run=git ${scriptPath} --staged --fail-on-tagged`,
+    );
+  }
+
+  /** Real scratch git repo nested under <repo>/tmp/ (not required to be nested now that
+   *  extractGate19 uses an absolute `deno run` path, but kept for consistency and to keep
+   *  scratch artifacts easy to find during local debugging). Installs a minimal hook
+   *  (Gate 19 only, extracted live) plus one fixture file, then stages it. */
+  async function setupScratchRepo(fixtureContent: string): Promise<string> {
+    await Deno.mkdir(join(REPO_ROOT, "tmp"), { recursive: true });
+    const tmpDir = await Deno.makeTempDir({ dir: join(REPO_ROOT, "tmp"), prefix: "phase168-gate19-" });
+    const gitEnv = { LD_LIBRARY_PATH: "" };
+
+    await new Deno.Command("git", { args: ["init"], cwd: tmpDir, env: gitEnv }).output();
+    await new Deno.Command("git", { args: ["config", "user.name", "Test User"], cwd: tmpDir, env: gitEnv }).output();
+    await new Deno.Command("git", { args: ["config", "user.email", "test@exaix.local"], cwd: tmpDir, env: gitEnv })
+      .output();
+
+    const hooksDir = join(tmpDir, ".git", "hooks");
+    const gate19 = await extractGate19();
+    const hookPath = join(hooksDir, "pre-commit");
+    await Deno.writeTextFile(hookPath, `#!/bin/sh\n${gate19}\necho "Gate 19 passed"\n`);
+    await Deno.chmod(hookPath, 0o755);
+
+    const fixtureDir = join(tmpDir, "packages", "fake_gate19_fixture", "src");
+    await Deno.mkdir(fixtureDir, { recursive: true });
+    await Deno.writeTextFile(join(fixtureDir, "gap_class.ts"), fixtureContent);
+    await new Deno.Command("git", { args: ["add", "."], cwd: tmpDir, env: gitEnv }).output();
+
+    return tmpDir;
+  }
+
+  async function attemptCommit(tmpDir: string): Promise<{ success: boolean; stderr: string }> {
+    const result = await new Deno.Command("git", {
+      args: ["commit", "-m", "gate19 fixture commit"],
+      cwd: tmpDir,
+      env: { LD_LIBRARY_PATH: "" },
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    return { success: result.success, stderr: new TextDecoder().decode(result.stderr) };
+  }
+
+  it("[integration] rejects a real git commit staging a @visible class with no logger dependency", async () => {
+    const fixture = `/** @visible */\nexport class GapClass {\n  doSomething(): void {\n    this.value = 1;\n  }\n}\n`;
+    const tmpDir = await setupScratchRepo(fixture);
+    try {
+      const { success, stderr } = await attemptCommit(tmpDir);
+      assertEquals(success, false, `expected the real pre-commit hook to reject this commit, stderr was: ${stderr}`);
+      assert(
+        stderr.includes("event-coverage") || stderr.includes("@visible-tagged coverage gap"),
+        `expected check:event-coverage rejection text in stderr, got: ${stderr}`,
+      );
+    } finally {
+      await Deno.remove(tmpDir, { recursive: true });
+    }
+  });
+
+  it("[integration] a real git commit staging a @visible class with full coverage succeeds", async () => {
+    const fixture =
+      `import type { IEventLogger } from "@exaix/core/logger";\n\n/** @visible */\nexport class CoveredClass {\n  constructor(private logger: IEventLogger) {}\n  doSomething(): void {\n    this.value = 1;\n    this.logger.info("covered.action", "target", {});\n  }\n}\n`;
+    const tmpDir = await setupScratchRepo(fixture);
+    try {
+      const { success, stderr } = await attemptCommit(tmpDir);
+      assertEquals(success, true, `expected the real pre-commit hook to accept this commit, stderr was: ${stderr}`);
+    } finally {
+      await Deno.remove(tmpDir, { recursive: true });
+    }
+  });
+
+  it("[regression] a real git commit staging an untagged class with a heuristic-only finding still succeeds", async () => {
+    const fixture =
+      `import type { IEventLogger } from "@exaix/core/logger";\n\nexport class UntaggedGapClass {\n  constructor(private logger?: IEventLogger) {}\n  doSomething(): void {\n    this.value = 1;\n  }\n}\n`;
+    const tmpDir = await setupScratchRepo(fixture);
+    try {
+      const { success, stderr } = await attemptCommit(tmpDir);
+      assertEquals(
+        success,
+        true,
+        `expected the real pre-commit hook to accept this commit (untagged findings are advisory-only, never blocking), stderr was: ${stderr}`,
+      );
+    } finally {
+      await Deno.remove(tmpDir, { recursive: true });
+    }
   });
 });
