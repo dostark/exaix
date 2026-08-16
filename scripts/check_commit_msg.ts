@@ -84,6 +84,25 @@ const VALID_TYPES = [
 
 const REQUIRED_FIELDS = ["what", "rationale", "tests", "who", "impact"];
 
+/** Every field name `validateCommitMsg`'s per-line parser recognizes as a real field
+ *  start — required fields plus the documented optional ones (see the "Optional:" line
+ *  in the CLI's own usage output below). A line starting with `word:` whose word is NOT
+ *  in this set is a continuation of the currently-open field, never a new field — this is
+ *  what stops prose like "check:style/check:arch all clean." or "Corrects: the old
+ *  value..." inside a field body from being misparsed as a phantom field, silently
+ *  truncating the real field it belongs to (Phase 166 hit this twice while drafting
+ *  closure commits: the "what:" field lost its Component-Traceability-bearing sentence
+ *  to a phantom "corrects"/"check" field). */
+const KNOWN_COMMIT_FIELDS = new Set([
+  ...REQUIRED_FIELDS,
+  "model",
+  "plan",
+  "conversation_id",
+  "links",
+  "prompt",
+  "tool_audit",
+]);
+
 /** Known valid models to prevent hallucinations (can be extended). */
 const VALID_MODELS = [
   "Gemini",
@@ -430,7 +449,7 @@ export function validateCommitMsg(
     const line = lines[i];
     const fieldMatch = line.match(/^(\w+):\s*(.*)/);
 
-    if (fieldMatch) {
+    if (fieldMatch && KNOWN_COMMIT_FIELDS.has(fieldMatch[1].toLowerCase())) {
       if (currentField) {
         fieldMap.set(currentField, currentContent.join("\n").trim());
       }

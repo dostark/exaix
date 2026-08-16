@@ -76,6 +76,9 @@ Do / Don't
 - ✅ Do order steps so no step consumes something a later step builds; prefer a vertical end-to-end slice before breadth.
 - ✅ Do name the planning document `phase-NN-<kebab-slug>.md` for consistent slugs.
 - ✅ Do keep phases to 8–10 steps maximum — split larger features into two sequential phases.
+- ✅ Do give every step-manifest the SAME `target_branch: feat/phase-NN` — never a distinct
+  `feat/phase-NN-step-N` per step (Phase 166's incident: 5 empty placeholder branches
+  created and deleted before this was standardized).
 - ✅ Do assess scenario framework coverage (§3E) for any change to the end-to-end flow.
 - ✅ Do author all success criteria and success metric checkboxes as `- [ ] <text>` (no `→` path) at plan-authoring time — these are aspirational targets whose implementing module is not yet known. During execution #next-steps rewrites each done item to the completion form the commit gate requires: `- ✅ <text> → ` `` `<path>` `` (backtick-wrapped, staged file) for a met criterion/test, or `- ⚠️ deferred <text> → ` `` `<LedgerSymbol>` `` for one pushed to the Reachability Ledger. The commit gate (`scripts/check_commit_msg.ts` via `commit_plan_step.ts`) BLOCKS any `- [ ]` item left in a step whose commit claims it — so a committed step must have every criterion/test either `✅ → path` or `⚠️ deferred → token`; `[ ]` may only remain on steps not yet implemented.
 - ✅ Do keep success-metric checkboxes (the `## Success Metrics` section, which are phase-level aspirational targets not tied to one step) as `- [ ]` — the commit gate only scopes the per-step Success Criteria / Planned Tests blocks, not the Success Metrics section.
@@ -127,7 +130,7 @@ Follow the structure defined in `exaix-dev-docs/planning/README.md`:
 1. **Reachability Ledger (§E)**: A seeded (initially empty) `## Reachability Ledger (pending production consumers)` table that #next-steps maintains step-by-step; the phase cannot close while any row is ⏳.
 1. **Documentation Updates (§3D)**: Mandatory final step to update `ARCHITECTURE.md`, `docs/`, `TOOLS.md`, etc.
 1. **Success Metrics**: Quantitative targets (performance, quality), including an opt-in reachability metric for every `enabled`-style flag.
-1. **Step Manifests (dogfooding compatibility)**: Every implementation step MUST end with a fenced YAML `step-manifest` block containing `step`, `title`, `identity`, `skills`, `portal`, `target_branch`, `depends_on`, and `acceptance` (tests + outcomes). This makes the plan machine-convertible to daemon requests via `plan_to_requests.ts`. Example:
+1. **Step Manifests (dogfooding compatibility)**: Every implementation step MUST end with a fenced YAML `step-manifest` block containing `step`, `title`, `identity`, `skills`, `portal`, `target_branch`, `depends_on`, and `acceptance` (tests + outcomes). This makes the plan machine-convertible to daemon requests via `plan_to_requests.ts`. `target_branch` is the SAME value on every step of a phase — `feat/phase-NN`, one shared branch, never `feat/phase-NN-step-N` (Phase 166 created and had to delete 5 empty placeholder branches from that per-step pattern before standardizing; `plan_to_requests.ts` reads `target_branch` as a plain per-step string with no uniqueness assumption, so sharing one value across every step is fully compatible). Example:
 
    ```yaml
    # step-manifest
@@ -136,7 +139,7 @@ Follow the structure defined in `exaix-dev-docs/planning/README.md`:
    identity: senior-coder
    skills: [tdd-methodology, exaix-conventions, portal-grounding, security-first]
    portal: exaix-self
-   target_branch: feat/phase-NN-step-1
+   target_branch: feat/phase-NN
    depends_on: []
    acceptance:
      tests:

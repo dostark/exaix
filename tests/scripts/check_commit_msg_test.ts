@@ -42,6 +42,20 @@ impact: ReqProc: update`;
     assertEquals(result.errors.some((e: string) => e.includes("rationale")), true);
   });
 
+  it("does not misparse a colon-containing body line as a new field (regression: Phase 166 commit-msg drafting hit this with 'Corrects:'/'check:style' body lines, silently truncating the 'what:' field and breaking Component Traceability)", () => {
+    const msg = `fix(ai): correct default model
+
+what: Phase 166's Gate found the default codex-cli model was wrong.
+Corrects: packages/ai-clidelegate/src/constants.ts default codex model.
+Component AI is fixed to a ChatGPT-account-compatible model.
+rationale: the old default failed for every real subscription user.
+tests: full suite passing, 202/202.
+who: Claude
+impact: AI: corrected default model, no other providers affected`;
+    const result = validateCommitMsg(msg);
+    assertEquals(result.success, true, result.errors?.join(", "));
+  });
+
   it("fails if a required field is empty", () => {
     const msg = `feat: empty who
 
