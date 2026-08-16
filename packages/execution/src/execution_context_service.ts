@@ -18,6 +18,7 @@ import { PromptBudgetAllocator } from "@exaix/core";
 import type { ITokenizer } from "@exaix/core/func";
 import type { ContextCache } from "@exaix/core/context";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
+import { DomainEventType } from "@exaix/core/events";
 import type { ISnapshotStore } from "./context/snapshot_store.ts";
 import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 
@@ -86,7 +87,13 @@ export class ExecutionContextService {
 
   /** Clear the current prompt budget (e.g., at end of execution). */
   clearBudget(): void {
+    const hadBudget = this._currentPromptBudget !== undefined;
+    const model = this._currentPromptBudget?.model ?? null;
     this._currentPromptBudget = undefined;
+    void this.logger.info(DomainEventType.ExecutionContextBudgetCleared, null, {
+      hadBudget,
+      model,
+    });
   }
 
   /** Allocate prompt budget for the given model and request analysis. */
@@ -99,6 +106,10 @@ export class ExecutionContextService {
       undefined,
       requestAnalysis,
     );
+    void this.logger.info(DomainEventType.ExecutionContextBudgetAllocated, null, {
+      model: modelId,
+      sections: Object.keys(this._currentPromptBudget.sections ?? {}),
+    });
   }
 
   /** Mark stable sections in context cache for potential cache_control. */
@@ -118,11 +129,22 @@ export class ExecutionContextService {
     this._contextCache.markStable("portalKnowledge", sections.portalKnowledge, budget.portalKnowledge);
     this._contextCache.markStable("memory", sections.memory, budget.memory);
     this._contextCache.markStable("skills", sections.skills, budget.skills);
+    void this.logger.info(DomainEventType.ExecutionContextSectionsStabilized, null, {
+      system: budget.system,
+      plan: budget.plan,
+      portalKnowledge: budget.portalKnowledge,
+      memory: budget.memory,
+      skills: budget.skills,
+    });
   }
 
   /** Invalidate the context cache. */
   invalidateCache(): void {
+    const cachePresent = this._contextCache !== undefined;
     this._contextCache?.invalidateAll();
+    void this.logger.info(DomainEventType.ExecutionContextCacheInvalidated, null, {
+      cachePresent,
+    });
   }
 
   /**

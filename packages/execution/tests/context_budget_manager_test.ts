@@ -26,6 +26,7 @@ import type { IContextSegment } from "@exaix/execution";
 import { ContextBudgetManager, NoopContextCompactor } from "@exaix/execution";
 import { castAny } from "@exaix/testing";
 import type { IEventLogger } from "@exaix/core/logger";
+import type { LogMetadata } from "@exaix/core/types";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -562,4 +563,110 @@ Deno.test("[ContextBudgetManager] tool_result + summary share sections.loopHisto
   // summary decision must be trim or drop, not keep (it would overflow the shared counter)
   const summaryDecision = snapshot.decisions.find((d) => d.kind === "summary");
   assertEquals(summaryDecision?.action !== "keep", true);
+});
+
+// ─── Step 6: orphaned event wiring (ContextBudgetAllocated / ContextBudgetConsumed / ContextSectionTruncated) ─
+
+interface ICapturedBudgetEvent {
+  action: string;
+  target: string | null;
+  payload?: LogMetadata;
+}
+
+function createCapturingBudgetLogger(captured: ICapturedBudgetEvent[]): IEventLogger {
+  return castAny<IEventLogger>({
+    info: (action: string, target: string | null, payload?: LogMetadata): Promise<void> => {
+      captured.push({ action, target, payload });
+      return Promise.resolve();
+    },
+  });
+}
+
+Deno.test("[ContextBudgetManager] emits ContextBudgetAllocated at the start of prepare()", async () => {
+  const captured: ICapturedBudgetEvent[] = [];
+  const mockLogger = createCapturingBudgetLogger(captured);
+  const manager: IContextBudgetManager = new ContextBudgetManager(undefined, undefined, undefined, mockLogger);
+
+  await manager.prepare({
+    traceId: "trace-allocated",
+    stepId: "step-1",
+    model: "anthropic:claude-sonnet-5",
+    promptBudget: makePromptBudget(),
+    segments: [
+      makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 25 }),
+    ],
+  });
+
+  const event = captured.find((e) => e.action === DomainEventType.ContextBudgetAllocated);
+  assertEquals(event !== undefined, true);
+  assertEquals(event?.payload?.traceId, "trace-allocated");
+  assertEquals(event?.payload?.stepId, "step-1");
+  assertEquals(event?.payload?.model, "anthropic:claude-sonnet-5");
+  assertEquals(event?.payload?.maxContextTokens, 200_000);
+  assertEquals(event?.payload?.segmentCount, 1);
+});
+
+Deno.test("[ContextBudgetManager] emits ContextBudgetConsumed after computing usedInputTokens", async () => {
+  const captured: ICapturedBudgetEvent[] = [];
+  const mockLogger = createCapturingBudgetLogger(captured);
+  const manager: IContextBudgetManager = new ContextBudgetManager(undefined, undefined, undefined, mockLogger);
+
+  const { snapshot } = await manager.prepare({
+    traceId: "trace-consumed",
+    stepId: "step-1",
+    model: "anthropic:claude-sonnet-5",
+    promptBudget: makePromptBudget(),
+    segments: [
+      makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 25 }),
+    ],
+  });
+
+  const event = captured.find((e) => e.action === DomainEventType.ContextBudgetConsumed);
+  assertEquals(event !== undefined, true);
+  assertEquals(event?.payload?.traceId, "trace-consumed");
+  assertEquals(event?.payload?.usedInputTokens, snapshot.usedInputTokens);
+  assertEquals(event?.payload?.keptSegmentCount, 1);
+  assertEquals(event?.payload?.droppedSegmentCount, 0);
+});
+
+Deno.test("[ContextBudgetManager] emits ContextSectionTruncated when a segment is trimmed", async () => {
+  const captured: ICapturedBudgetEvent[] = [];
+  const mockLogger = createCapturingBudgetLogger(captured);
+  const manager: IContextBudgetManager = new ContextBudgetManager(undefined, undefined, undefined, mockLogger);
+
+  // loopHistory budget of 50 with a 100-token tool_result forces a trim decision.
+  const tightBudget = {
+    ...makePromptBudget(),
+    sections: {
+      system: 0,
+      plan: 0,
+      portalKnowledge: 0,
+      memory: 0,
+      skills: 0,
+      loopHistory: 50,
+    },
+  };
+  const segment = makeSegment({
+    kind: "tool_result",
+    priority: CONTEXT_PRIORITY_TOOL_RESULT,
+    tokenEstimate: 100,
+    content: "x".repeat(400),
+  });
+
+  await manager.prepare({
+    traceId: "trace-truncated",
+    stepId: "step-1",
+    model: "anthropic:claude-sonnet-5",
+    promptBudget: tightBudget,
+    segments: [segment],
+  });
+
+  const event = captured.find((e) => e.action === DomainEventType.ContextSectionTruncated);
+  assertEquals(event !== undefined, true);
+  assertEquals(event?.target, segment.segmentId);
+  assertEquals(event?.payload?.traceId, "trace-truncated");
+  assertEquals(event?.payload?.segmentId, segment.segmentId);
+  assertEquals(event?.payload?.kind, "tool_result");
+  assertEquals(event?.payload?.originalTokens, 100);
+  assertEquals(event?.payload?.remainingBudget, 50);
 });

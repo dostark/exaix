@@ -189,6 +189,17 @@ export class MissionReporter {
       // Create execution record using Memory Bank service
       await this.memoryBank.createExecutionRecord(executionMemory);
 
+      this.logActivity({
+        event_type: DomainEventType.ReportExecutionRecorded,
+        target: traceData.requestId,
+        trace_id: traceData.traceId,
+        metadata: {
+          identity_id: traceData.identityId,
+          status: traceData.status,
+          portal: executionMemory.portal,
+        },
+      });
+
       const createdAt = new Date();
       const reportPath = join(DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, traceData.traceId, "summary.md");
 

@@ -454,6 +454,47 @@ function lineOf(node: ts.Node, sf: ts.SourceFile): number {
   return sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
 }
 
+/** True when `body` calls a private/protected method of `cls` whose own body calls the
+ *  audit binding — the "one level of indirection through a same-class helper" pattern
+ *  (e.g. `processAmendment()` calling `this.emitAmendmentEvent(...)`, a private method
+ *  that itself calls `this.logger.info(...)`) — confirmed real and recurring across
+ *  multiple classes (RequestAnalyzer, PlanAmendmentGate, MemoryBankService,
+ *  MissionReporter all centralize their actual `.info()` call in exactly this shape).
+ *  Deliberately one level only: chasing arbitrarily deep call chains would make "is this
+ *  method covered" unboundedly expensive and hard to reason about; a helper-of-a-helper
+ *  is a smell this checker doesn't try to untangle — verify by hand. */
+function callsLoggingPrivateHelper(body: ts.Node, cls: ts.ClassDeclaration, binding: IAuditBinding): boolean {
+  const privateHelpers = new Map<string, ts.MethodDeclaration>();
+  for (const member of cls.members) {
+    if (
+      ts.isMethodDeclaration(member) && member.body &&
+      (ts.isIdentifier(member.name) || ts.isStringLiteral(member.name)) &&
+      (hasModifierKind(member, ts.SyntaxKind.PrivateKeyword) || hasModifierKind(member, ts.SyntaxKind.ProtectedKeyword))
+    ) {
+      privateHelpers.set(member.name.getText(), member);
+    }
+  }
+  if (privateHelpers.size === 0) return false;
+
+  let found = false;
+  const visit = (node: ts.Node) => {
+    if (found) return;
+    if (
+      ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) &&
+      isThisExpr(node.expression.expression)
+    ) {
+      const helper = privateHelpers.get(node.expression.name.text);
+      if (helper?.body && bodyCallsAuditBinding(helper.body, binding)) {
+        found = true;
+        return;
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(body);
+  return found;
+}
+
 /** Analyzes one class declaration. Returns per-method findings for methods with a state
  *  change or cross-component call and no logger call in their own body, plus a class-level
  *  "wired but silent" finding when NO method anywhere in the class ever calls the logger
@@ -494,7 +535,8 @@ export function analyzeClass(cls: ts.ClassDeclaration, sf: ts.SourceFile): IAnal
     const methodName = member.name.getText();
 
     const covered = bodyCallsAuditBinding(member.body, { name: auditField, isField: true }) ||
-      isDecoratorCovered(member);
+      isDecoratorCovered(member) ||
+      callsLoggingPrivateHelper(member.body, cls, { name: auditField, isField: true });
     if (covered) {
       continue;
     }

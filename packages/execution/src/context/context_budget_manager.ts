@@ -152,6 +152,14 @@ export class ContextBudgetManager implements IContextBudgetManager {
     const startedAt = Date.now();
     const { traceId, stepId, model, promptBudget, segments } = input;
 
+    void this.logger?.info(DomainEventType.ContextBudgetAllocated, null, {
+      traceId,
+      stepId,
+      model,
+      maxContextTokens: promptBudget.totalBudgetTokens,
+      segmentCount: segments.length,
+    });
+
     const decisions: IContextBudgetDecision[] = [];
     const kept: IContextSegment[] = [];
 
@@ -233,6 +241,16 @@ export class ContextBudgetManager implements IContextBudgetManager {
           reason: `truncated to fit remaining section budget (${remaining} tokens)`,
           createdAt: new Date().toISOString(),
         });
+        void this.logger?.info(DomainEventType.ContextSectionTruncated, segment.segmentId, {
+          traceId,
+          stepId,
+          segmentId: segment.segmentId,
+          kind: segment.kind,
+          sectionKey,
+          originalTokens: segment.tokenEstimate,
+          resultingTokens: trimmedTokens,
+          remainingBudget: remaining,
+        });
       }
     }
 
@@ -242,6 +260,16 @@ export class ContextBudgetManager implements IContextBudgetManager {
 
     const usedInputTokens = kept.reduce((sum, s) => sum + s.tokenEstimate, 0);
     const durationMs = Date.now() - startedAt;
+
+    void this.logger?.info(DomainEventType.ContextBudgetConsumed, null, {
+      traceId,
+      stepId,
+      model,
+      maxContextTokens: promptBudget.totalBudgetTokens,
+      usedInputTokens,
+      keptSegmentCount: kept.length,
+      droppedSegmentCount: sorted.length - kept.length,
+    });
 
     // Async tier: schedule LLM summarization for compactable dropped segments.
     const droppedCompactable = sorted.filter(

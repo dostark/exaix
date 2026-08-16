@@ -7,6 +7,7 @@
 
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { ExecutionStatus, MemoryOperation, PortalOperation } from "@exaix/core";
+import { DomainEventType } from "@exaix/core/events";
 import { MemoryBankService } from "@exaix/memory";
 import { createMockConfig } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
@@ -156,6 +157,22 @@ Deno.test("MissionReporter: generates execution memory record after successful e
 
     assert(summaryExists, "summary.md should exist");
     assert(contextExists, "context.json should exist");
+  });
+});
+
+Deno.test("MissionReporter: emits ReportExecutionRecorded after memoryBank.createExecutionRecord", async () => {
+  await withMissionReporter(async ({ db, reporter }) => {
+    const traceData = createTestTraceData();
+
+    const result = await reporter.generate(traceData);
+    assert(result.success);
+
+    const activities = await db.getRecentActivity(100);
+    const recorded = activities.filter((a) => a.action_type === DomainEventType.ReportExecutionRecorded);
+
+    assertEquals(recorded.length, 1);
+    assertEquals(recorded[0].trace_id, traceData.traceId);
+    assertEquals(recorded[0].target, traceData.requestId);
   });
 });
 

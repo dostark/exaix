@@ -229,6 +229,30 @@ Deno.test("MemoryBankService: initGlobalMemory creates Global directory structur
   }
 });
 
+Deno.test("MemoryBankService: initGlobalMemory logs to IActivity Journal", async () => {
+  const { db, config, cleanup } = await initTestDbService();
+
+  try {
+    const logger = new EventLogger({ db });
+    const service = new MemoryBankService(config, logger);
+
+    await service.initGlobalMemory();
+
+    // Wait for batch flush
+    await db.waitForFlush();
+
+    // Verify activity journal entry
+    const activities = db.instance.prepare(
+      "SELECT action_type, target FROM activity ORDER BY timestamp DESC LIMIT 1",
+    ).all() as Array<{ action_type: string; target: string }>;
+    assertEquals(activities.length, 1);
+    assertEquals(activities[0].action_type, "memory.global.initialized");
+    assertEquals(activities[0].target, MemoryScope.GLOBAL);
+  } finally {
+    await cleanup();
+  }
+});
+
 Deno.test("MemoryBankService: getGlobalMemory returns initialized memory", async () => {
   const { config, cleanup } = await initTestDbService();
 
@@ -503,6 +527,54 @@ Deno.test("MemoryBankService: demoteLearning moves from global to project", asyn
     assertExists(project);
     assertEquals(project.patterns.length, 1);
     assertEquals(project.patterns[0].name, "Test IPattern");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("MemoryBankService: demoteLearning logs to IActivity Journal", async () => {
+  const { db, config, cleanup } = await initTestDbService();
+
+  try {
+    const logger = new EventLogger({ db });
+    const service = new MemoryBankService(config, logger);
+
+    const projectMem: IProjectMemory = {
+      portal: "target-app",
+      overview: "Target",
+      patterns: [],
+      decisions: [],
+      references: [],
+    };
+    await service.createProjectMemory(projectMem);
+    await service.initGlobalMemory();
+
+    const learning = createSampleLearning({
+      id: "550e8400-e29b-41d4-a716-446655440003",
+      created_at: "2026-01-04T12:00:00Z",
+      source: MemoryBankSource.USER,
+      scope: MemoryScope.GLOBAL,
+      title: "ILearning for demotion",
+      description: "Learning to demote",
+      category: LearningCategory.PATTERN,
+      tags: [],
+      confidence: ConfidenceAssessmentLevel.HIGH,
+      status: MemoryStatus.APPROVED,
+    });
+    await service.addGlobalLearning(learning);
+
+    await service.demoteLearning(learning.id, "target-app");
+
+    // Wait for batch flush
+    await db.waitForFlush();
+
+    // Verify activity journal entry
+    const activities = db.instance.prepare(
+      "SELECT action_type, target FROM activity WHERE action_type = ? LIMIT 1",
+    ).all("memory.learning.demoted") as Array<{ action_type: string; target: string }>;
+    assertEquals(activities.length, 1);
+    assertEquals(activities[0].action_type, "memory.learning.demoted");
+    assertEquals(activities[0].target, "target-app");
   } finally {
     await cleanup();
   }

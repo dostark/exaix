@@ -447,6 +447,49 @@ Deno.test("[analyzeClass] does not flag a class whose logger is only called from
   assertEquals(result.findings.length, 0);
 });
 
+Deno.test("[analyzeClass] treats a method as covered when it calls a private helper that itself calls the logger", () => {
+  const sf = parse(`
+    export class Svc {
+      constructor(private readonly logger?: IEventLogger, private readonly amendmentService?: IAmendmentService) {}
+      async processAmendment(input: string): Promise<void> {
+        await this.amendmentService.propose(input);
+        await this.emitEvent("proposed", input);
+      }
+      private async emitEvent(action: string, target: string): Promise<void> {
+        if (this.logger) {
+          await this.logger.info(action, target);
+        }
+      }
+    }
+  `);
+  const cls = firstClass(sf);
+  const result = analyzeClass(cls, sf);
+  assertEquals(result.wiredUnused, null);
+  assertEquals(result.findings.some((f) => f.scopeName.endsWith(".processAmendment")), false);
+});
+
+Deno.test("[analyzeClass] still flags a method that calls a non-logging private helper", () => {
+  const sf = parse(`
+    export class Svc {
+      constructor(private readonly logger?: IEventLogger) {}
+      quiet(): void {
+        this.count = 1;
+        this.helper();
+      }
+      private helper(): void {
+        this.other = 2;
+      }
+      loud(): void {
+        this.logger?.info("svc.loud", null);
+      }
+    }
+  `);
+  const cls = firstClass(sf);
+  const result = analyzeClass(cls, sf);
+  assertEquals(result.wiredUnused, null);
+  assertEquals(result.findings.some((f) => f.scopeName.endsWith(".quiet")), true);
+});
+
 Deno.test("[analyzeClass] still flags an individual public method with its own uncovered state change, even when a private helper covers the class overall", () => {
   const sf = parse(`
     export class Svc {

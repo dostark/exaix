@@ -18,7 +18,7 @@ import {
   ReviewSchema,
 } from "@exaix/schemas/review.ts";
 import { type IReviewStatus, ReviewStatus } from "@exaix/core/status";
-import { ACTIVITY_ACTOR_AGENT } from "@exaix/core";
+import { ACTIVITY_ACTOR_AGENT, ActivityActor } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
 /** @visible */
@@ -166,7 +166,17 @@ export class ReviewRegistry {
       throw new Error(`Git diff failed: ${error}`);
     }
 
-    return new TextDecoder().decode(stdout);
+    const diff = new TextDecoder().decode(stdout);
+
+    // Log diff read
+    await this.logger.info(DomainEventType.ReviewDiffRead, review.branch, {
+      review_id: reviewId,
+      trace_id: review.trace_id,
+      branch: review.branch,
+      base_branch: baseBranch,
+    }, review.trace_id);
+
+    return diff;
   }
 
   /**
@@ -177,7 +187,16 @@ export class ReviewRegistry {
     const row = await this.db.preparedGet(sql, [id]);
 
     if (!row) return null;
-    return ReviewSchema.parse(row);
+    const review = ReviewSchema.parse(row);
+
+    // Log read
+    await this.logger.info(DomainEventType.ReviewRead, review.branch, {
+      review_id: review.id,
+      trace_id: review.trace_id,
+      lookup: "by-id",
+    }, review.trace_id);
+
+    return review;
   }
 
   /**
@@ -186,8 +205,18 @@ export class ReviewRegistry {
   async getByBranch(branch: string): Promise<IReview | null> {
     const sql = `SELECT * FROM reviews WHERE branch = ?`;
     const row = await this.db.preparedGet(sql, [branch]);
+
     if (!row) return null;
-    return ReviewSchema.parse(row);
+    const review = ReviewSchema.parse(row);
+
+    // Log read
+    await this.logger.info(DomainEventType.ReviewRead, review.branch, {
+      review_id: review.id,
+      trace_id: review.trace_id,
+      lookup: "by-branch",
+    }, review.trace_id);
+
+    return review;
   }
 
   /**
@@ -220,7 +249,20 @@ export class ReviewRegistry {
     sql += ` ORDER BY created DESC`;
 
     const rows = await this.db.preparedAll<IReview>(sql, params as SqliteParam[]);
-    return rows.map((row) => ReviewSchema.parse(row));
+    const reviews = rows.map((row) => ReviewSchema.parse(row));
+
+    // Log list read
+    await this.logger.info(DomainEventType.ReviewListRead, ActivityActor.SYSTEM, {
+      filters: {
+        trace_id: filters?.trace_id ?? null,
+        portal: filters?.portal ?? null,
+        status: filters?.status ?? null,
+        created_by: filters?.created_by ?? null,
+      },
+      result_count: reviews.length,
+    }, filters?.trace_id);
+
+    return reviews;
   }
 
   /**
@@ -297,7 +339,15 @@ export class ReviewRegistry {
   async countByStatus(status: IReviewStatus): Promise<number> {
     const sql = `SELECT COUNT(*) as count FROM reviews WHERE status = ?`;
     const row = await this.db.preparedGet<{ count: number }>(sql, [status]);
-    return row?.count || 0;
+    const count = row?.count || 0;
+
+    // Log count read
+    await this.logger.info(DomainEventType.ReviewCountRead, ActivityActor.SYSTEM, {
+      status,
+      count,
+    });
+
+    return count;
   }
 
   /**
@@ -306,5 +356,10 @@ export class ReviewRegistry {
   async delete(id: string): Promise<void> {
     const sql = `DELETE FROM reviews WHERE id = ?`;
     await this.db.preparedRun(sql, [id]);
+
+    // Log deletion
+    await this.logger.info(DomainEventType.ReviewDeleted, id, {
+      review_id: id,
+    });
   }
 }

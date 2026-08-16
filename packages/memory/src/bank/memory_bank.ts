@@ -111,6 +111,12 @@ export class MemoryBankService implements IMemoryBankService {
    */
   setEmbeddingService(service: IMemoryEmbeddingService): void {
     this.embeddingService = service;
+
+    this.logActivity({
+      event_type: DomainEventType.MemoryEmbeddingServiceSet,
+      target: MemoryScope.GLOBAL,
+      metadata: { service_name: service.constructor.name },
+    });
   }
 
   /**

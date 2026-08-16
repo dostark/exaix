@@ -49,6 +49,10 @@ export class HistoryManager {
   /** Add an entry to the history. */
   addEntry(entry: ILoopHistoryEntry): void {
     this._loopHistory.push(entry);
+    void this.logger.info(DomainEventType.LoopHistoryEntryAdded, entry.stepId, {
+      entry_type: entry.type,
+      tokens: entry.tokens,
+    });
   }
 
   /** Total tokens used by current history. */

@@ -190,6 +190,51 @@ Deno.test("applyApprovedAmendment delegates to service", async () => {
   assertEquals(result, expected);
 });
 
+Deno.test("applyApprovedAmendment emits PLAN_AMENDMENT_EVENT_APPLIED via logger in isolation", async () => {
+  const events: Array<{ action: string; target: string | null; payload?: LogMetadata }> = [];
+  const logger: IEventLogger = {
+    info(action: string, target: string | null, payload?: LogMetadata) {
+      events.push({ action, target, payload });
+      return Promise.resolve();
+    },
+    warn: () => Promise.resolve(),
+    error: () => Promise.resolve(),
+    fatal: () => Promise.resolve(),
+    debug: () => Promise.resolve(),
+    log: () => Promise.resolve(),
+    child: () => logger,
+  };
+
+  const planContent = "---\nstatus: proposed\n---\n\n## Step 1: title 1\n\ncontent 1";
+  const patch = makePatch({ amendmentId: "solo-001", planId: "plan-solo" });
+  const expected = "---\nstatus: approved\n---\n\n## Step 1: title 1\n\ncontent 1";
+
+  const amendmentService = {
+    proposeAmendment: () => Promise.resolve(makePatch()),
+    applyApprovedAmendment: (_planContent: string, _patch: IPlanAmendmentPatch) => expected,
+    shouldAmend: () => Promise.resolve(true),
+  } as IPlanAmendmentService;
+
+  const gate = new PlanAmendmentGate(
+    makeConfig(),
+    amendmentService,
+    undefined,
+    logger,
+  );
+
+  const result = await gate.applyApprovedAmendment(planContent, patch);
+
+  assertEquals(result, expected);
+  assertEquals(events.length, 1, "applyApprovedAmendment alone should emit exactly one event");
+  assertEquals(events[0].action, PLAN_AMENDMENT_EVENT_APPLIED);
+  assertEquals(events[0].target, "plan:plan-solo");
+  assertObjectMatch(events[0].payload ?? {}, {
+    amendmentId: "solo-001",
+    planId: "plan-solo",
+  });
+  assertExists(events[0].payload?.timestamp);
+});
+
 Deno.test("full audit trail - PROPOSED -> APPROVED -> APPLIED with structured payloads", async () => {
   const events: Array<{ action: string; target: string | null; payload?: LogMetadata }> = [];
   const logger: IEventLogger = {

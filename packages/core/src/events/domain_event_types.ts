@@ -196,6 +196,13 @@ export const DomainEventType = {
 
   // Execution context events
   ExecutionContextCompacted: "execution.context.compacted",
+  ExecutionContextBudgetCleared: "execution.context.budget_cleared",
+  ExecutionContextCacheInvalidated: "execution.context.cache_invalidated",
+  ExecutionContextSectionsStabilized: "execution.context.sections_stabilized",
+  ExecutionContextBudgetAllocated: "execution.context.budget_allocated",
+
+  // Loop history events
+  LoopHistoryEntryAdded: "loop_history.entry_added",
 
   // Wait state events
   WaitStateCreated: "wait_state.created",
@@ -231,6 +238,11 @@ export const DomainEventType = {
 
   // Cost tracking events
   LlmUsageRecorded: "llm.usage",
+  CostPricingLookupSet: "cost.pricing_lookup.set",
+  CostQueriedByCriteria: "cost.query.by_criteria",
+  CostDailyCostQueried: "cost.query.daily",
+  CostSummaryQueried: "cost.query.summary",
+  CostBatchFlushed: "cost.batch.flushed",
 
   // Agent orchestrator events (agent_orchestrator.ts)
   AgentOutput: "agent.output",
@@ -250,9 +262,10 @@ export const DomainEventType = {
   ExecutionAmendmentPending: "execution.amendment_pending",
   ExecutionNoChanges: "execution.no_changes",
 
-  // Report events (execution_loop.ts)
+  // Report events (execution_loop.ts, mission_reporter.ts)
   ReportGenerated: "report.generated",
   ReportError: "report.error",
+  ReportExecutionRecorded: "report.execution_recorded",
 
   // Flow lifecycle events (flow_runner.ts)
   FlowValidating: "flow.validating",
@@ -328,6 +341,7 @@ export const DomainEventType = {
   MemoryLearningDemoted: "memory.learning.demoted",
   MemoryIndicesRebuilt: "memory.indices.rebuilt",
   MemoryEmbeddingsRebuilt: "memory.embeddings.rebuilt",
+  MemoryEmbeddingServiceSet: "memory.embedding_service.set",
   MemoryPendingDigest: "memory.pending_digest",
   MemoryInitFailed: "memory.init_failed",
   MemoryAutoApprovalCycle: "memory.auto_approval_cycle",
@@ -350,6 +364,11 @@ export const DomainEventType = {
   ReviewCreated: "review.created",
   ReviewApproved: "review.approved",
   ReviewRejected: "review.rejected",
+  ReviewDiffRead: "review.diff.read",
+  ReviewRead: "review.read",
+  ReviewListRead: "review.list.read",
+  ReviewCountRead: "review.count.read",
+  ReviewDeleted: "review.deleted",
 
   // Git events (git_service.ts)
   GitCheck: "git.check",
@@ -469,6 +488,8 @@ export const DomainEventType = {
   LlmCallStarted: "llm.call.started",
   LlmCallCompleted: "llm.call.completed",
   LlmCallFailed: "llm.call.failed",
+  LlmStreamCompleted: "llm.stream.completed",
+  LlmStreamFailed: "llm.stream.failed",
 
   // Model resolution events (Phase 132)
   ModelResolved: "model.resolved",
@@ -542,6 +563,7 @@ export const DomainEventType = {
   VotingResolved: "voting.resolved",
   VotingNoConsensus: "voting.no_consensus",
   VotingRunnerFailed: "voting.runner_failed",
+  VotingStepConsensusResolved: "voting.step.consensus_resolved",
 
   // ---------------------------------------------------------------------------
   // HITL / Governance (Phase 118)

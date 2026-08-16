@@ -11,6 +11,7 @@ import type { IFlowStepHandler, IStepExecutionContext } from "./step_handler.ts"
 import type { IVotingConsensusService } from "@exaix/core/types";
 import type { VotingResult } from "@exaix/schemas/voting.ts";
 import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 import { FlowStepExecutionMode } from "@exaix/core";
 import type { IAgentExecutionResult } from "@exaix/execution";
 
@@ -50,6 +51,12 @@ export class VotingStepHandler implements IFlowStepHandler {
       basePrompt,
       traceId,
     );
+
+    await this.#eventLogger.info(DomainEventType.VotingStepConsensusResolved, step.id, {
+      consensus_reached: result.consensus_reached,
+      strategy: result.strategy,
+      candidate_count: result.candidates.length,
+    }, traceId);
 
     return {
       thought: result.consensus_reached

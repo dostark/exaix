@@ -67,13 +67,50 @@ export class TracedProvider implements IModelProvider {
     }
   }
 
-  generateStream?(
+  async *generateStream(
     prompt: string,
     options?: Opt<IModelOptions, Reason.AbstractBoundary>,
   ): AsyncGenerator<string> {
-    if (!this.inner.generateStream) {
-      throw new Error("Inner provider does not support streaming");
+    const traceId = crypto.randomUUID();
+    const startTime = performance.now();
+
+    void this.logger.info(DomainEventType.LlmCallStarted, this.id, {
+      prompt_length: prompt.length,
+      model: this.id,
+      trace_id: traceId,
+    });
+
+    try {
+      if (!this.inner.generateStream) {
+        throw new Error("Inner provider does not support streaming");
+      }
+
+      let chunkCount = 0;
+      for await (const chunk of this.inner.generateStream(prompt, options)) {
+        chunkCount++;
+        yield chunk;
+      }
+
+      const durationMs = performance.now() - startTime;
+
+      void this.logger.info(DomainEventType.LlmStreamCompleted, this.id, {
+        duration_ms: Math.round(durationMs),
+        chunk_count: chunkCount,
+        model: this.id,
+        trace_id: traceId,
+      });
+    } catch (error) {
+      const durationMs = performance.now() - startTime;
+
+      void this.logger.warn(DomainEventType.LlmStreamFailed, this.id, {
+        duration_ms: Math.round(durationMs),
+        error: error instanceof Error ? error.message : String(error),
+        error_type: error instanceof Error ? error.constructor.name : "unknown",
+        model: this.id,
+        trace_id: traceId,
+      });
+
+      throw error;
     }
-    return this.inner.generateStream(prompt, options);
   }
 }

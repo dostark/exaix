@@ -10,7 +10,9 @@
 import { assert, assertAlmostEquals, assertEquals } from "@std/assert";
 import { CostTracker } from "@exaix/core/cost";
 import { initTestDbService } from "@exaix/testing";
+import { createMockEventLogger } from "@exaix/testing";
 import { COST_RATE_ANTHROPIC, COST_RATE_OPENAI, TOKENS_PER_COST_UNIT } from "@exaix/core";
+import { DomainEventType } from "@exaix/core/events";
 import { PROVIDER_ANTHROPIC } from "@exaix/ai-anthropic";
 import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 
@@ -253,4 +255,135 @@ Deno.test("CostTracker: queryByCriteria filters by traceId and portal", async ()
     assertEquals(results[0].completionTokens, 600);
     assertEquals(results[0].tokens, 1000);
   });
+});
+
+Deno.test("CostTracker: setPricingLookup emits CostPricingLookupSet", async () => {
+  const { db, cleanup } = await initTestDbService();
+  const logger = createMockEventLogger();
+  try {
+    const tracker = new CostTracker(db, undefined, logger);
+    tracker.setPricingLookup({
+      getModelPricing: (provider: string, model: string) =>
+        Promise.resolve({ provider, model, provenance: "endpoint" as const }),
+    });
+
+    const events = logger.events.filter((e) => e.action === DomainEventType.CostPricingLookupSet);
+    assertEquals(events.length, 1);
+    assertEquals(events[0].target, "pricing_lookup");
+    assertEquals(events[0].payload?.configured, true);
+
+    await db.close();
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("CostTracker: queryByCriteria emits CostQueriedByCriteria with result count", async () => {
+  const { db, cleanup } = await initTestDbService();
+  const logger = createMockEventLogger();
+  try {
+    const tracker = new CostTracker(db, undefined, logger);
+    const traceId = crypto.randomUUID();
+
+    await tracker.trackGeneration(PROVIDER_OPENAI, "gpt-4", {
+      promptTokens: 400,
+      completionTokens: 600,
+      totalTokens: 1000,
+    }, traceId);
+    await tracker.flush();
+
+    await tracker.queryByCriteria({ traceId });
+
+    const events = logger.events.filter((e) => e.action === DomainEventType.CostQueriedByCriteria);
+    assertEquals(events.length, 1);
+    assertEquals(events[0].target, traceId);
+    assertEquals(events[0].payload?.resultCount, 1);
+    assertEquals(events[0].payload?.traceId, traceId);
+
+    await db.close();
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("CostTracker: getDailyCost emits CostDailyCostQueried with total", async () => {
+  const { db, cleanup } = await initTestDbService();
+  const logger = createMockEventLogger();
+  try {
+    const tracker = new CostTracker(db, undefined, logger);
+
+    await tracker.trackGeneration(PROVIDER_OPENAI, "gpt-4", {
+      promptTokens: 500,
+      completionTokens: 500,
+      totalTokens: 1000,
+    });
+    await tracker.flush();
+
+    const totalCost = await tracker.getDailyCost(PROVIDER_OPENAI);
+
+    const events = logger.events.filter((e) => e.action === DomainEventType.CostDailyCostQueried);
+    assertEquals(events.length, 1);
+    assertEquals(events[0].target, PROVIDER_OPENAI);
+    assertEquals(events[0].payload?.provider, PROVIDER_OPENAI);
+    assertAlmostEquals(events[0].payload?.totalCost as number, totalCost);
+
+    await db.close();
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("CostTracker: getCostSummary emits CostSummaryQueried with result count", async () => {
+  const { db, cleanup } = await initTestDbService();
+  const logger = createMockEventLogger();
+  try {
+    const tracker = new CostTracker(db, undefined, logger);
+    const startDate = new Date();
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 1);
+
+    await tracker.trackGeneration(PROVIDER_OPENAI, "gpt-4", {
+      promptTokens: 500,
+      completionTokens: 500,
+      totalTokens: 1000,
+    });
+    await tracker.flush();
+
+    const summary = await tracker.getCostSummary(startDate, endDate);
+
+    const events = logger.events.filter((e) => e.action === DomainEventType.CostSummaryQueried);
+    assertEquals(events.length, 1);
+    assertEquals(events[0].payload?.resultCount, summary.length);
+    assertEquals(events[0].payload?.startDate, startDate.toISOString());
+    assertEquals(events[0].payload?.endDate, endDate.toISOString());
+
+    await db.close();
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("CostTracker: flush emits CostBatchFlushed with pending count", async () => {
+  const { db, cleanup } = await initTestDbService();
+  const logger = createMockEventLogger();
+  try {
+    const tracker = new CostTracker(db, undefined, logger);
+
+    await tracker.trackGeneration(PROVIDER_OPENAI, "gpt-4", {
+      promptTokens: 500,
+      completionTokens: 500,
+      totalTokens: 1000,
+    });
+    await tracker.flush();
+
+    const events = logger.events.filter((e) => e.action === DomainEventType.CostBatchFlushed);
+    assertEquals(events.length, 1);
+    assertEquals(events[0].target, "cost_batch");
+    assertEquals(events[0].payload?.pendingCount, 1);
+
+    await db.close();
+  } finally {
+    await cleanup();
+  }
 });
