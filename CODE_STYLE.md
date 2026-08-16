@@ -520,9 +520,26 @@ significant runtime transition emits a typed, versioned, trace-linked domain eve
 Tagging a class is a real, tool-enforced commitment, not documentation:
 
 - **Effect:** `scripts/check_event_coverage.ts --fail-on-tagged` treats any coverage
-  finding on an `@visible`-tagged class (a state change or cross-component call with no
-  adjacent event, or a logger dependency never called) as **blocking**, not advisory —
-  wired into the pre-commit hook's staged-files gate.
+  finding on an `@visible`-tagged class as **blocking**, not advisory — wired into the
+  pre-commit hook's staged-files gate. A finding is not just "no logger call anywhere in
+  the class"; a call whose action argument isn't a registered `DomainEventType` member
+  (a literal `DomainEventType.X`, or a same-class private-helper parameter/field typed
+  `TDomainEventType`, resolved one level deep) is equally rejected — the tag requires
+  taxonomy-conformant coverage, not merely logger-call presence.
+- **Trace correlation:** for a `@visible` class whose method emits more than one
+  lifecycle event for the same operation (e.g. started/completed/failed), pass that
+  operation's trace ID as the logger call's fourth positional argument
+  (`logger.info(action, target, payload, traceId)`) on every one of them — embedding
+  `trace_id` only inside `payload` is not enough, since `EventLogger.log` mints a new
+  random trace ID for any event whose fourth argument is absent, breaking the events'
+  journal-level correlation (see `packages/ai/src/traced_provider.ts` for the pattern).
+- **Streaming/generator lifecycle:** a `@visible` class's streaming or async-generator
+  method must emit exactly one terminal event covering every exit path — normal
+  exhaustion, a thrown error, AND early consumer cancellation (the caller stops
+  iterating, e.g. `break`/`return()` from a `for await` loop) — not just the first two.
+  The `TracedProvider.generateStream` pattern: track whether a terminal event already
+  fired (success or failure), and in a `finally` block, emit a dedicated cancellation
+  event only if neither did.
 - **Placement:** on the class's own leading comment, scoped via `ts.getLeadingCommentRanges`
   at the class node's full start — not the file's `@module` header — since one file may
   declare more than one class.
@@ -561,24 +578,27 @@ try/catch-and-log boilerplate at the call site:
   the source generator returns, failed on a synchronous pre-generator throw or a
   mid-iteration throw), not the invocation.
 
-Each accepts an `EventLogger` and an optional `{ action, payloadMapper }`: `action`
-(typed `TDomainEventType`, never a bare string) names the registered event the call
-reports under, falling back to an auto-derived `${ClassName}.${methodName}` when
-omitted; `payloadMapper` shapes the `completed` event's success payload from the
-call's arguments and result.
+Each accepts a logger source and a mandatory `{ action, payloadMapper }`: `action`
+(typed `TDomainEventType`, never a bare string, never omittable) names the registered
+event the call reports under — decorators never derive a raw action name from the
+class/method name; `payloadMapper` shapes the `completed` event's success payload from
+the call's arguments and result.
 
-**Binding constraint:** the decorator factory's `logger` argument is evaluated once
-at class-_definition_ time, before any instance exists — `@LogSyncMethod(this.logger,
-...)` is not valid syntax. Self-constructing `new EventLogger(...)` at the decorator
-site is only compliant with `[package-instantiates-event-logger]` inside
-`packages/core/` (e.g. `HealthCheckService`, the family's only current production call
-sites). For a class with a constructor-injected logger outside `packages/core/`, call
-`this.logger.info/warn/error(...)` directly in the method body instead of reaching for
-this decorator family.
+**Logger source — static or resolved:** `loggerSource` accepts either a concrete
+`IEventLogger` (evaluated once at class-_definition_ time — `@LogSyncMethod(this.logger,
+...)` is not valid syntax in this form) or a `LoggerResolver<This> = (instance: This) =>
+IEventLogger | undefined` function, resolved at _invocation_ time against the actual
+instance — enabling the family on a class with a constructor-injected logger outside
+`packages/core/` (`@LogSyncMethod((self: Calculator) => self.logger, { action: ... })`).
+Self-constructing `new EventLogger(...)` at the decorator site (the static form) is only
+compliant with `[package-instantiates-event-logger]` inside `packages/core/` (e.g.
+`HealthCheckService`).
 
 `scripts/check_event_coverage.ts`'s `isDecoratorCovered` recognizes a method decorated
-with any of the three as covered, the same way it recognizes a direct `.info()`/
-`.warn()`/`.error()` call in the method's own body.
+with any of the three as covered ONLY when the decorator's own `action` option is a
+literal `DomainEventType.X` — the same way it recognizes a direct `.info()`/`.warn()`/
+`.error()` call in the method's own body (or, one level removed, in a same-class private
+helper's body whose action parameter is typed `TDomainEventType`).
 
 ### Filesystem Watching (`Deno.watchFs`) {#fs-watching}
 

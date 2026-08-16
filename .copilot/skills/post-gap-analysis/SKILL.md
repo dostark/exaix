@@ -123,7 +123,12 @@ Do / Don't
   on the step's touched files by hand; a state change or cross-component call with no
   event is a gap even if the step's Success Criteria never claimed to add one. Escalate
   any finding on an `@visible`-tagged class to 🔴 Critical — it fails the real
-  pre-commit hook (Gate 19), not just this review.
+  pre-commit hook (Gate 19), not just this review. For a tagged class specifically: a
+  logger call whose action isn't a registered `DomainEventType` member is a gap even
+  though a call exists; an operation with multiple lifecycle events must pass its trace
+  ID as the logger call's fourth argument on each one (not only in the payload); and a
+  streaming/generator method must have a terminal event for early consumer
+  cancellation, not only normal completion and a thrown error.
 - ✅ Do run Phase 4 scenario framework coverage verification on every step that
   affects the request → plan → execution → review → memory → update flow.
 - ✅ Do delegate all code quality checks (lint, fmt, TS idiomacy, defensive

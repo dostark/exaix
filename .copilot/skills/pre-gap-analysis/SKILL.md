@@ -506,6 +506,16 @@ For **every step** that introduces new behaviour, check:
   class, any coverage gap `check:event-coverage` finds there is 🔴 Critical, not 🟡 —
   the tag is an existing, explicit commitment the step must not silently regress, and
   a real gap on it fails the real pre-commit hook (Gate 19), not just this analysis.
+- **Taxonomy conformance, not just call presence.** For a step touching an `@visible`
+  class: does the plan's logger call use a registered `DomainEventType` action (a
+  literal reference, or a same-class private-helper parameter/field typed
+  `TDomainEventType`), not a raw string? Does an operation emitting multiple lifecycle
+  events pass the canonical trace ID as the logger call's fourth argument on every one
+  of them (embedding it only in the payload lets `EventLogger.log` mint an independent
+  random trace ID per event, breaking Activity Journal correlation)? Does a streaming/
+  generator method plan a terminal event for early consumer cancellation, not only
+  normal completion and a thrown error? Each missing case is a real gap on a tagged
+  class, not advisory.
 - Event naming, payload typing, audit chain completeness, event assertions in tests.
 - Config-driven vs. constant-driven values, config schema declaration, feature
   enable/disable path, config validation tests.

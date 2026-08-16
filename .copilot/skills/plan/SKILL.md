@@ -379,6 +379,17 @@ violating commit are wired and live, landed by Phase 168
 `@visible`-tagged class with a coverage gap now fails a real `git commit`, not just an
 advisory CI note.
 
+`@visible` coverage means more than "a logger call exists": the action argument must
+resolve to a registered `DomainEventType` member (a literal reference, or a same-class
+private-helper parameter/field typed `TDomainEventType`) — a raw string or dynamically
+computed action is a gap even with a logger call present. When a step's operation emits
+more than one lifecycle event (started/completed/failed), plan for the trace ID to be
+passed as the logger call's fourth argument on every one of them, not only embedded in
+the payload — otherwise each event gets an independent random trace ID and cannot be
+joined in the Activity Journal. A streaming or async-generator method must have a
+planned terminal event for every exit path, including early consumer cancellation, not
+only normal completion and a thrown error.
+
 ### 3. Documentation Update Protocol (§3D)
 
 Include a final **Step N (§3D): Update Documentation** that covers:
