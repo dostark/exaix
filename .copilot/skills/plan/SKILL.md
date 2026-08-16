@@ -10,7 +10,7 @@ scope: dev
 title: "Plan Skill (#plan)"
 description: Draft a new Phase Planning Document for a feature, refactor, or architectural change — follows Exaix standards for TDD, security, and traceability. Produces plans that are machine-convertible to dogfood requests (step-manifests for automated request extraction). Grounds any third-party service/provider integration in deep web research of the provider's real, current capability surface so integrations are first-class, not hacks.
 short_summary: "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy."
-version: "1.10.0"
+version: "1.11.0"
 topics: [
   "planning",
   "architecture",
@@ -30,7 +30,7 @@ Key points
 - This is the entry point for EVERY significant feature or refactor.
 - Use Test-Driven Design (TDD): specify Planned Tests BEFORE implementation steps.
 - Enforce Exaix Core Principles:
-  1. Traceability: Every significant state change AND every cross-component communication (a service calling another injected dependency) MUST emit a typed `EventLogger`/`EventRegistry` event (ARCHITECTURE.md's "Visibility" guarantee). Mechanized audit: `deno task check:event-coverage` (see §2H).
+  1. Traceability: Every significant state change AND every cross-component communication (a service calling another injected dependency) MUST emit a typed `EventLogger`/`EventRegistry` event (ARCHITECTURE.md's "Visibility" guarantee). Tag genuinely load-bearing classes `@visible` in their leading JSDoc comment — the explicit contract that promotes coverage from a heuristic guess to a required commitment. Mechanized audit: `deno task check:event-coverage` (see §2H).
   2. Durability: Plans must result in atomic changesets or journaled DB state.
    3. Configurability: Avoid magic numbers; wrap tunable defaults with `configurable()` from `@exaix/core/config` and override via `exactl config set`.
   4. Security: Proactively perform 'Phase 3b' checks (traversal, injection, auth).
@@ -41,7 +41,7 @@ Key points
 - **Specify exact values**: For every enum, union, or variant field, state which concrete value each component emits and under what conditions — not just the allowed set. Vague "can be one of X, Y, Z" without per-component mapping is a pre-gap.
 - **Trace every output to its consumer**: For every new interface field or event payload name a consuming component and verify the data flow reaches it. Fields with no readers are dead data.
 - **Survey module conventions**: Before committing to a pattern choice (event naming, error handling, DI style), read 5–10 existing examples in the affected module and document the dominant convention. Divergence requires justification in Architecture Notes.
-- **Mechanized event-coverage audit**: `deno task check:event-coverage` AST-scans implemented code for classes/functions that accept an audit-logger dependency but never call it, and for state-changing or cross-component-call methods with no adjacent event. It only has code to scan once a step is implemented — advisory at `#next-steps`, re-verified at `#pre-gap-analysis`/`#post-gap-analysis`. Name the exact event (existing `DomainEventType` member, or the new one to add) in Architecture Notes so those later passes have something to check the code against. See §2H.
+- **Mechanized event-coverage audit**: `deno task check:event-coverage` AST-scans implemented code for classes/functions that accept an audit-logger dependency but never call it, and for state-changing or cross-component-call methods with no adjacent event. It only has code to scan once a step is implemented — advisory at `#next-steps`, re-verified at `#pre-gap-analysis`/`#post-gap-analysis`. Name the exact event (existing `DomainEventType` member, or the new one to add) in Architecture Notes so those later passes have something to check the code against. `@visible` (a JSDoc tag on a class's leading comment) marks a component explicitly load-bearing for coverage — adoptable now; `--fail-on-tagged` enforcement lands with Phase 168 (`exaix-dev-docs/planning/phase-168-event-logging-hardening-visibility-audit.md`). See §2H.
 - **Ground third-party integrations in web research**: When a plan integrates an external service, provider, API, or CLI (an LLM provider, a coding-agent tool, a cloud/SaaS API, a binary), do deep web research on the provider's CURRENT official capability surface FIRST — supported endpoints, auth model, config/routing knobs, limits, versioning — and design to its real first-class mechanism. A wrapper/proxy/scrape/undocumented-flag "integration" is a hack that breaks on the next provider update: flag it and prefer the documented path. Record the doc URLs + research date. See §2F.
 - **Ground every code-facing claim in real source**: Before writing any step that extends an existing interface, calls an existing method, or modifies an existing code path, grep the symbol and read the call site first. The plan must be drafted against real signatures and real behaviour, not memory. See §2G.
 - **Map prose claims to named tests**: Every behavioural claim made in the prose (e.g., "checkpoint preserves data", "service Y calls service Z") must have a named test in Planned Tests. Claims without test names are gaps.
@@ -67,7 +67,7 @@ Do / Don't
 - ✅ Do specify the exact value each component emits for every enum/variant field — not just the allowed set.
 - ✅ Do trace every new output field to a named consumer — verify the data flow has a destination before writing it.
 - ✅ Do survey the affected module's existing conventions before choosing a pattern — document divergence in Architecture Notes.
-- ✅ Do name the exact event (existing `DomainEventType` member, or the new member to add) in Architecture Notes for every step introducing a state change or cross-component call — `deno task check:event-coverage` verifies this once the step is implemented (§2H).
+- ✅ Do name the exact event (existing `DomainEventType` member, or the new member to add) in Architecture Notes for every step introducing a state change or cross-component call — `deno task check:event-coverage` verifies this once the step is implemented (§2H). If the step introduces a class genuinely load-bearing for observability (request/plan/execution/review/memory critical path, security-sensitive), propose tagging it `@visible` in Architecture Notes.
 - ✅ Do ground every third-party/provider integration in deep web research of the provider's current official docs — design to the supported first-class endpoint/auth/config surface, and cite the URLs + research date (§2F).
 - ✅ Do ground every code-facing claim in real source before writing it — grep interfaces, read call sites, audit side effects per §2G before drafting any step that references existing code.
 - ✅ Do map every prose behavioural claim to a named test in the step's Planned Tests section.
@@ -171,6 +171,10 @@ For every step, verify:
   `EventLogger`/`EventRegistry` event (e.g., `vault.secret.rotated`). Name the exact event —
   an existing `DomainEventType` member, or the new member the step adds — in Architecture
   Notes; "emits an event" with no name is underspecified.
+- **`@visible` contract**: If the step introduces a class genuinely load-bearing for
+  observability, its Architecture Notes must say so and its Actions must add the `@visible`
+  JSDoc tag to the class's leading comment — the difference between "the checker might flag
+  this" and "this component's coverage is required." See §2H.
 - **Typing**: Event payloads must use named interfaces, never `Record<string, unknown>`.
 - **Config**: Timeouts, thresholds, and feature toggles must be wrapped with `configurable()` in `packages/core/src/types/constants.ts` and overridable via `exactl config set`.
 - **Mechanized verification (§2H)**: `deno task check:event-coverage` is the AST-based
@@ -358,6 +362,19 @@ binding anywhere in its body. It is advisory, like `check:reachability-ledger` a
 nothing to scan at plan-authoring time (no code exists yet), so `#plan`'s job is naming the
 intended event per step, not running the tool; `#next-steps` runs it once the step lands,
 `#pre-gap-analysis`/`#post-gap-analysis` re-verify it against the finished implementation.
+
+`@visible` (a JSDoc tag directly above `export class Foo`'s leading comment) is the
+explicit contract that promotes a class from "the checker guesses this might need
+coverage" to "this component's coverage is a requirement, not advisory." When a step
+introduces a class genuinely load-bearing for observability — on the request → plan →
+execution → review → memory critical path, or handling security-sensitive operations —
+name it in Architecture Notes as an `@visible` candidate and have the step's own Actions
+add the tag. The tag costs nothing and is adoptable immediately; the checker's
+`--fail-on-tagged` enforcement and the pre-commit gate that blocks a real violating commit
+land with Phase 168 (`exaix-dev-docs/planning/phase-168-event-logging-hardening-visibility-audit.md`).
+Until then, a `@visible`-tagged class with a coverage gap is still only advisory in CI —
+but it is a real, escalatable finding at `#pre-gap-analysis`/`#post-gap-analysis`, since the
+tag is the plan's own explicit declaration that coverage is required.
 
 ### 3. Documentation Update Protocol (§3D)
 

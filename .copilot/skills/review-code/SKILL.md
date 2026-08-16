@@ -9,7 +9,7 @@ scope: dev
 title: "Review-Code Skill (#review-code)"
 description: Systematic code review — correctness, security, test coverage, architecture, and Exaix conventions
 short_summary: "Autonomous code review against Exaix standards: correctness, security (Phase 3b), test coverage, architecture grounding, and style compliance."
-version: "1.2.0"
+version: "1.3.0"
 topics: ["code-review", "quality-assurance", "security", "testing", "architecture", "best-practices"]
 qwen_skill: review-code
 ---
@@ -172,7 +172,10 @@ rules and the dominant conventions in the existing file:
    action argument must be a `DomainEventType` member (`check:event-strings`), never an
    inline string literal. `deno task check:event-coverage` is the mechanized first pass
    for this item — advisory, verify findings by hand (see the script's module header
-   for known false-positive sources).
+   for known false-positive sources), UNLESS the class carries the `@visible` JSDoc tag
+   (`#plan` §2H), in which case any coverage gap is 🔴 Critical, not advisory — the tag
+   is the codebase's own explicit declaration that this component's coverage is
+   required.
 
 1. **Exports.** Every new interface/type is exported from the appropriate
    index file.

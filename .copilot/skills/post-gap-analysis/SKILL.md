@@ -10,7 +10,7 @@ scope: dev
 title: "Post-Gap Analysis Skill (#post-gap-analysis)"
 description: Deep post-implementation review of a phase planning document — verifies what was built against the plan, delegates code quality review to #review-code, finds gaps, and writes remediation steps back into the document
 short_summary: "Deep review of an existing phase planning document: checks implementation against plan, delegates code quality to #review-code, finds gaps, and writes remediation steps back into the document."
-version: "1.6.0"
+version: "1.7.0"
 topics: [
   "planning",
   "gap-analysis",
@@ -68,7 +68,10 @@ Key points
   first as a mechanized first pass (advisory, like `check:reachability-ledger`); for
   every finding on a file the step touched, verify by hand whether the step's state
   change or cross-component call really lacks an event, or new hardcoded thresholds/
-  opt-in flags exist.
+  opt-in flags exist. If a step built a component load-bearing for observability with no
+  `@visible` tag proposed anywhere in the plan, flag a 🔵 Conceptual gap — see #plan §2H.
+  Any coverage finding on a class that IS `@visible`-tagged is 🔴 Critical, not advisory —
+  the tag is an explicit, already-made commitment.
 - Delegate code quality review to #review-code (Phase 7) instead of
   duplicating style/TS/defensive/perf checks here.
 - When reviewing more than ~20 source files, work in batches of 5–10: read a batch, record findings, then continue.
@@ -106,7 +109,8 @@ Do / Don't
 - ✅ Do run Phase 6 traceability & configurability checks on every step — run
   `deno task check:event-coverage` as a mechanized first pass, then verify findings
   on the step's touched files by hand; a state change or cross-component call with no
-  event is a gap even if the step's Success Criteria never claimed to add one.
+  event is a gap even if the step's Success Criteria never claimed to add one. Escalate
+  any finding on an `@visible`-tagged class to 🔴 Critical.
 - ✅ Do run Phase 4 scenario framework coverage verification on every step that
   affects the request → plan → execution → review → memory → update flow.
 - ✅ Do delegate all code quality checks (lint, fmt, TS idiomacy, defensive
@@ -304,7 +308,10 @@ state-changing or cross-component-call method with no adjacent event. It is advi
 like `check:reachability-ledger` (see the script's module header for known
 false-positive sources: an event emitted by a caller instead of the flagged method, a
 private helper one level removed, dynamic dispatch) — every finding needs manual
-verification before it becomes a GAP entry.
+verification before it becomes a GAP entry, UNLESS the flagged class carries the
+`@visible` JSDoc tag (#plan §2H) — a finding there is 🔴 Critical without further
+triage, since the tag is the codebase's own explicit declaration that this component's
+coverage is required, not a heuristic guess.
 
 For every step introducing new behaviour, whether or not the tool flagged it: verify
 event naming, payload typing, audit chain completeness, event assertions in tests;
@@ -312,7 +319,10 @@ verify config-driven vs. constant-driven values, config schema declaration, feat
 enable/disable path, config validation tests. A state change or cross-component call
 the plan's Actions describe with no corresponding event anywhere in the
 implementation is a gap, independent of whether the step's own Success Criteria
-claimed to add one.
+claimed to add one. Also verify: did the step build a component that is genuinely
+load-bearing for observability (critical-path or security-sensitive) without proposing
+the `@visible` tag? Flag as 🔵 Conceptual — the implementation should have made this
+decision explicit, matching #plan §2H's own guidance.
 
 ---
 

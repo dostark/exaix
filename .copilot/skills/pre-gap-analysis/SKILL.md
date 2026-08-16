@@ -10,7 +10,7 @@ scope: dev
 title: "Pre-Gap Analysis Skill (#pre-gap-analysis)"
 description: Pre-implementation gap analysis of a phase planning document — finds ambiguities, missing contracts, and security risks before coding starts
 short_summary: "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against."
-version: "1.9.0"
+version: "1.10.0"
 topics: [
   "planning",
   "gap-analysis",
@@ -59,7 +59,9 @@ Key points
   (advisory; scoped to the EXISTING module a step extends, since the step's own new
   code doesn't exist yet at this phase). Untyped events and hardcoded values are gaps;
   a state change or cross-component call the plan's prose never mentions an event for
-  is also a gap.
+  is also a gap. If a step introduces an obviously load-bearing class (request/plan/
+  execution/review/memory critical path, or security-sensitive) with no `@visible`
+  tagging proposal in Architecture Notes, flag a 🔵 Conceptual gap — see #plan §2H.
 - An integration feasibility & reachability check (Phase 8) is mandatory for
   every plan. Phase 3 confirms the plan's named symbols *resolve*; it cannot
   reveal that no step actually *wires* them into a live path. A plan whose steps
@@ -129,7 +131,8 @@ Do / Don't
 - ✅ Do run Phase 7 traceability & configurability checks on every step that
   introduces a state change, a cross-component call, new `EventLogger`/`EventRegistry`
   events, thresholds, timeouts, or opt-in features — check for missing coverage, not
-  just typing of what's already declared.
+  just typing of what's already declared. Flag a step introducing a load-bearing class
+  with no `@visible` tagging proposal as underspecified (#plan §2H).
 - ✅ Do run Phase 5 scenario framework coverage checks on every step that
   affects the request → plan → execution → review → memory → update flow.
 - ✅ Do run the Phase 8 reachability check on every plan — for each runtime-claiming
@@ -494,6 +497,14 @@ For **every step** that introduces new behaviour, check:
   or prose name the event that reports it? A state change or cross-component call with
   no event anywhere in the step's description is a gap — don't only check that the
   events the plan DOES mention are well-formed.
+- **`@visible` candidacy.** If the step introduces a class handling state-changing or
+  cross-component work on the request → plan → execution → review → memory critical
+  path, or a security-sensitive operation, and Architecture Notes do not propose
+  tagging it `@visible` (see #plan §2H), flag a 🔵 Conceptual gap — the plan should
+  make the "is coverage required here" decision explicit, not leave it to the advisory
+  heuristic. If the step MODIFIES a file that already carries an `@visible`-tagged
+  class, any coverage gap `check:event-coverage` finds there is 🔴 Critical, not 🟡 —
+  the tag is an existing, explicit commitment the step must not silently regress.
 - Event naming, payload typing, audit chain completeness, event assertions in tests.
 - Config-driven vs. constant-driven values, config schema declaration, feature
   enable/disable path, config validation tests.

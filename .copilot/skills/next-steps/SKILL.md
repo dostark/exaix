@@ -13,7 +13,7 @@ scope: dev
 title: "Next-Steps Skill (#next-steps)"
 description: Run plan-driven TDD step-by-step workflow with CI gates and per-step commits
 short_summary: "Prompt for iterating through .copilot/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits."
-version: "1.5.0"
+version: "1.6.0"
 topics: ["tdd", "red-green-refactor", "planning", "steps", "ci", "commits", "reachability", "traceability"]
 qwen_skill: next-steps
 ---
@@ -142,6 +142,13 @@ VERIFY phase — value correctness, wiring, consumer tracing, convention check
       or cross-component-call method with no adjacent event. A finding means "verify by
       hand," not "automatically a gap" — but an unexamined finding on THIS step's touched
       files is itself a gap.
+      If this step introduces a class genuinely load-bearing for observability (request/
+      plan/execution/review/memory critical path, security-sensitive), add the `@visible`
+      JSDoc tag to its leading comment (per the plan's Architecture Notes, §2H) — adoptable
+      now, since it is only a doc comment; `check:event-coverage --fail-on-tagged` and the
+      pre-commit gate that enforce it land with Phase 168. If the step modifies a file that
+      already carries an `@visible`-tagged class, treat any coverage finding on it as a real
+      gap to fix in this step, not an advisory item to defer.
 
 SECURITY gate (apply when the step touches portal code or any of: input parsing,
   file paths, database queries, subprocesses, HTTP handlers, auth, secrets)
@@ -359,11 +366,13 @@ PHASE-COMPLETION GATE (run ONCE, after the last step, BEFORE declaring the phase
       step in this phase, or document in the plan doc why no event applies (e.g. the
       operation is internal bookkeeping, not a domain-significant transition). Findings on
       files the phase did NOT touch are pre-existing debt, out of scope for this gate — do
-      not block phase closure on them.
+      not block phase closure on them. Any finding on an `@visible`-tagged class (this
+      phase's own or pre-existing) is a BLOCKING failure regardless of the file-touched
+      scoping above — the tag is an explicit commitment, not a heuristic guess.
 
 Do / Don't
 - ✅ Do write the test file BEFORE the source file (RED must come first)
-- ✅ Do run `deno task check:event-coverage` scoped to this step's touched files at VERIFY step 13, and across the whole phase at the Phase-Completion Gate (G6) — a state change or cross-component call with no adjacent event is a gap unless explicitly justified in Architecture Notes
+- ✅ Do run `deno task check:event-coverage` scoped to this step's touched files at VERIFY step 13, and across the whole phase at the Phase-Completion Gate (G6) — a state change or cross-component call with no adjacent event is a gap unless explicitly justified in Architecture Notes. Tag genuinely load-bearing new classes `@visible` (§ VERIFY step 13) — a gap on a tagged class is always blocking, never advisory.
 - ✅ Do add module-header JSDoc to every new file (src and test)
 - ✅ Do run deno fmt before git add (avoid fmt pre-hook failures)
 - ✅ Do rewrite each met criterion/test to `- ✅ <text> → ` `` `<staged-path>` `` (or `- ⚠️ deferred <text> → ` `` `<token>` `` + ledger row) and add the ✅ WIRED/✅ CORE reachability label before commit — stage the plan-doc edit in the submodule as part of the plan-step commit (step 26)
