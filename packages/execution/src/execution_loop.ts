@@ -20,7 +20,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import type { IApplicationContext } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
-import { DomainEventType, type IEventJournalReader } from "@exaix/core/events";
+import { DomainEventType, type IEventJournalReader, type TDomainEventType } from "@exaix/core/events";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ModelResolver } from "@exaix/ai";
 import type { IGitService, IGitServiceFactory, IMemoryBankService, IToolRegistryFactory } from "@exaix/core/types";
@@ -52,9 +52,6 @@ import {
   EXECUTION_ARTIFACT_PLAN_SECTION_TITLE,
   EXECUTION_ARTIFACT_SECTION_SEPARATOR,
   EXECUTION_REPORT_FILENAME,
-  PLAN_AMENDMENT_EVENT_APPROVED,
-  PLAN_AMENDMENT_EVENT_EXPIRED,
-  PLAN_AMENDMENT_EVENT_REJECTED,
 } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { ConfidenceAssessmentLevel, ConfidenceLevel } from "@exaix/core";
@@ -1156,7 +1153,7 @@ export class ExecutionLoop {
 
                 switch (onTimeout) {
                   case "reject": {
-                    this.logActivity(PLAN_AMENDMENT_EVENT_REJECTED, traceId, {
+                    this.logActivity(DomainEventType.PlanAmendmentRejected, traceId, {
                       request_id: requestId,
                       amendment_id: amendmentId,
                       decidedBy: "timeout",
@@ -1172,7 +1169,7 @@ export class ExecutionLoop {
                     break;
                   }
                   case "approve": {
-                    this.logActivity(PLAN_AMENDMENT_EVENT_APPROVED, traceId, {
+                    this.logActivity(DomainEventType.PlanAmendmentApproved, traceId, {
                       request_id: requestId,
                       amendment_id: amendmentId,
                       decidedBy: "timeout",
@@ -1188,7 +1185,7 @@ export class ExecutionLoop {
                     break;
                   }
                   default: {
-                    this.logActivity(PLAN_AMENDMENT_EVENT_EXPIRED, traceId, {
+                    this.logActivity(DomainEventType.PlanAmendmentExpired, traceId, {
                       request_id: requestId,
                       amendment_id: amendmentId,
                       decidedBy: "timeout",
@@ -1416,7 +1413,7 @@ export class ExecutionLoop {
    * Log activity to database
    */
   private logActivity(
-    actionType: string,
+    actionType: TDomainEventType,
     traceId: string,
     payload: Record<string, JSONValue>,
   ): void {

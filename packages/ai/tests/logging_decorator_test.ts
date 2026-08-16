@@ -10,6 +10,7 @@ import { assertEquals } from "@std/assert";
 import { LogMethod } from "@exaix/core/logger";
 import type { EventLogger } from "@exaix/core/logger";
 import { LogLevel } from "@exaix/core";
+import { DomainEventType } from "@exaix/core/events";
 import type { JSONObject } from "@exaix/core/types";
 
 type LoggedCall = {
@@ -49,12 +50,15 @@ Deno.test("LogMethod (standard decorator): wraps method via (value, context)", a
   const context = { kind: "method", name: "doIt" } as Partial<
     ClassMethodDecoratorContext
   > as ClassMethodDecoratorContext;
-  const wrapped = LogMethod<unknown, [string], string>(logger)(original, context) as (
+  const wrapped = LogMethod<unknown, [string], string>(logger, { action: DomainEventType.FlowStepExecuted })(
+    original,
+    context,
+  ) as (
     ...args: string[]
   ) => Promise<unknown>;
 
   const out = await wrapped.call({ constructor: { name: "C" } }, "x");
   assertEquals(out, "ok:x");
-  assertEquals(calls[0].action, "C.doIt");
+  assertEquals(calls[0].action, DomainEventType.FlowStepExecuted);
   assertEquals(calls[1].target, "completed");
 });

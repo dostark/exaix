@@ -18,13 +18,7 @@ import type {
 } from "@exaix/schemas/plan_amendment.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { Opt, Reason } from "../types/mod.ts";
-import {
-  PLAN_AMENDMENT_EVENT_APPLIED,
-  PLAN_AMENDMENT_EVENT_APPROVED,
-  PLAN_AMENDMENT_EVENT_EXPIRED,
-  PLAN_AMENDMENT_EVENT_PROPOSED,
-  PLAN_AMENDMENT_EVENT_REJECTED,
-} from "../types/constants.ts";
+import { DomainEventType, type TDomainEventType } from "@exaix/core/events";
 import { AmendmentTimeoutAction } from "../types/enums.ts";
 
 const AMENDMENT_DECISION_APPROVED = "approved";
@@ -59,7 +53,7 @@ export class PlanAmendmentGate implements IPlanAmendmentGate {
     });
 
     // 2. Emit proposal event
-    await this.emitAmendmentEvent(PLAN_AMENDMENT_EVENT_PROPOSED, planId, {
+    await this.emitAmendmentEvent(DomainEventType.PlanAmendmentProposed, planId, {
       amendmentId: patch.amendmentId,
       planId,
       stepId: stepLabel,
@@ -93,10 +87,10 @@ export class PlanAmendmentGate implements IPlanAmendmentGate {
 
     // 4. Emit decision event
     const eventName = decision.decision === AMENDMENT_DECISION_APPROVED
-      ? PLAN_AMENDMENT_EVENT_APPROVED
+      ? DomainEventType.PlanAmendmentApproved
       : decision.decision === AMENDMENT_DECISION_REJECTED
-      ? PLAN_AMENDMENT_EVENT_REJECTED
-      : PLAN_AMENDMENT_EVENT_EXPIRED;
+      ? DomainEventType.PlanAmendmentRejected
+      : DomainEventType.PlanAmendmentExpired;
 
     await this.emitAmendmentEvent(eventName, planId, {
       amendmentId: patch.amendmentId,
@@ -113,7 +107,7 @@ export class PlanAmendmentGate implements IPlanAmendmentGate {
 
   async applyApprovedAmendment(planContent: string, patch: IPlanAmendmentPatch): Promise<string> {
     const result = this.amendmentService.applyApprovedAmendment(planContent, patch);
-    await this.emitAmendmentEvent(PLAN_AMENDMENT_EVENT_APPLIED, patch.planId, {
+    await this.emitAmendmentEvent(DomainEventType.PlanAmendmentApplied, patch.planId, {
       amendmentId: patch.amendmentId,
       planId: patch.planId,
       timestamp: new Date().toISOString(),
@@ -166,7 +160,7 @@ export class PlanAmendmentGate implements IPlanAmendmentGate {
   }
 
   private async emitAmendmentEvent(
-    action: string,
+    action: TDomainEventType,
     planId: string,
     payload: LogMetadata,
   ): Promise<void> {

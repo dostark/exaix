@@ -11,7 +11,7 @@
  * @architectural-layer Services
  * @related-files ["packages/execution/src/execution_loop.ts", "packages/memory/src/bank/memory_bank.ts"]
  */
-import { DomainEventType } from "@exaix/core/events";
+import { DomainEventType, type TDomainEventType } from "@exaix/core/events";
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import { resolveMemoryExecutionRoot } from "../config/paths.ts";
@@ -295,7 +295,7 @@ export class MissionReporter {
    * Log activity to database if available
    */
   private logActivity(activityData: {
-    event_type: string;
+    event_type: TDomainEventType;
     target: string;
     trace_id: string;
     metadata: Record<string, JSONValue>;

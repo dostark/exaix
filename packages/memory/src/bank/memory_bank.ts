@@ -15,7 +15,7 @@ import { join } from "@std/path";
 import { ensureDir, ensureDirSync, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
-import { DomainEventType } from "@exaix/core/events";
+import { DomainEventType, type TDomainEventType } from "@exaix/core/events";
 import {
   ActivityActor,
   ActivityType,
@@ -1129,7 +1129,7 @@ export class MemoryBankService implements IMemoryBankService {
    * Log activity to IActivity Journal
    */
   private logActivity(event: {
-    event_type: string;
+    event_type: TDomainEventType;
     target: string;
     trace_id?: string;
     metadata?: Record<string, JSONValue>;

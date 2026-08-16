@@ -718,3 +718,50 @@ export class Svc {
   assertEquals(analyzeClass(firstClass(tagged), tagged).wiredUnused !== null, true);
   assertEquals(analyzeClass(firstClass(untagged), untagged).findings.length, 0);
 });
+
+Deno.test("[analyzeClass] treats a tagged class's private-helper action parameter as covered when typed TDomainEventType", () => {
+  const sf = parse(`
+/** @visible */
+export class Svc {
+  constructor(private logger: IEventLogger) {}
+  save(): void { this.emitEvent(DomainEventType.SvcSaved, null); }
+  private emitEvent(action: TDomainEventType, target: string | null): void {
+    this.logger.info(action, target);
+  }
+}`);
+  const cls = firstClass(sf);
+  const result = analyzeClass(cls, sf);
+  assertEquals(result.wiredUnused, null);
+  assertEquals(result.findings.some((f) => f.scopeName.endsWith(".save")), false);
+});
+
+Deno.test("[analyzeClass] treats a tagged class's private-helper object-field action as covered when the field is typed TDomainEventType", () => {
+  const sf = parse(`
+/** @visible */
+export class Svc {
+  constructor(private logger: IEventLogger) {}
+  save(): void { this.logActivity({ event_type: DomainEventType.SvcSaved, target: "x" }); }
+  private logActivity(event: { event_type: TDomainEventType; target: string }): void {
+    this.logger.info(event.event_type, event.target);
+  }
+}`);
+  const cls = firstClass(sf);
+  const result = analyzeClass(cls, sf);
+  assertEquals(result.wiredUnused, null);
+  assertEquals(result.findings.some((f) => f.scopeName.endsWith(".save")), false);
+});
+
+Deno.test("[analyzeClass] still rejects a tagged class's private-helper action parameter typed as a bare string", () => {
+  const sf = parse(`
+/** @visible */
+export class Svc {
+  constructor(private logger: IEventLogger) {}
+  save(): void { this.emitEvent("svc.saved", null); }
+  private emitEvent(action: string, target: string | null): void {
+    this.logger.info(action, target);
+  }
+}`);
+  const cls = firstClass(sf);
+  const result = analyzeClass(cls, sf);
+  assertEquals(result.wiredUnused !== null, true);
+});

@@ -244,8 +244,12 @@ export const DomainEventType = {
   CostSummaryQueried: "cost.query.summary",
   CostBatchFlushed: "cost.batch.flushed",
 
-  // Agent orchestrator events (agent_orchestrator.ts)
+  // Agent orchestrator events (agent_orchestrator.ts, react_loop_adapter.ts)
   AgentOutput: "agent.output",
+  // Same value as the legacy ACTIVITY_EVENT_DYNAMIC_TOOL_CALL constant (packages/core/src/
+  // types/constants.ts) — trajectory_evaluator.ts still queries by that constant's string
+  // value, so this registers the identical value under DomainEventType rather than changing it.
+  AgentDynamicToolCall: "dynamic_tool_call",
 
   // Execution lifecycle events (execution_loop.ts)
   ExecutionSkipped: "execution.skipped",
@@ -321,6 +325,17 @@ export const DomainEventType = {
   PlanExecutionCompleted: "plan.execution_completed",
   PlanExecutionFailed: "plan.execution_failed",
   PlanAmendmentTriggered: "plan.amendment_triggered",
+  // Plan amendment lifecycle events (plan_amendment_gate.ts, execution_loop.ts,
+  // plan_executor.ts). Same values as the legacy PLAN_AMENDMENT_EVENT_* constants
+  // (packages/core/src/types/constants.ts) — apps/exactl/src/commands/plan_commands.ts
+  // and existing tests still reference those constants directly by name, so this registers
+  // the identical values under DomainEventType rather than renaming them.
+  PlanAmendmentProposed: "plan.amendment.proposed",
+  PlanAmendmentAwaitingApproval: "plan.amendment.awaiting_approval",
+  PlanAmendmentApproved: "plan.amendment.approved",
+  PlanAmendmentRejected: "plan.amendment.rejected",
+  PlanAmendmentExpired: "plan.amendment.expired",
+  PlanAmendmentApplied: "plan.amendment.applied",
 
   // Plan writer events (plan_writer.ts)
   PlanValidationSuccess: "plan.validation.success",

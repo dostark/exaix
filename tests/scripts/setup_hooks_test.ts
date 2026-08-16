@@ -152,7 +152,7 @@ describe("Gate 19: event coverage visibility (real pre-commit hook, real subproc
 
   it("[integration] a real git commit staging a @visible class with full coverage succeeds", async () => {
     const fixture =
-      `import type { IEventLogger } from "@exaix/core/logger";\n\n/** @visible */\nexport class CoveredClass {\n  constructor(private logger: IEventLogger) {}\n  doSomething(): void {\n    this.value = 1;\n    this.logger.info("covered.action", "target", {});\n  }\n}\n`;
+      `import type { IEventLogger } from "@exaix/core/logger";\nimport { DomainEventType } from "@exaix/core/events";\n\n/** @visible */\nexport class CoveredClass {\n  constructor(private logger: IEventLogger) {}\n  doSomething(): void {\n    this.value = 1;\n    this.logger.info(DomainEventType.FlowStepExecuted, "target", {});\n  }\n}\n`;
     const tmpDir = await setupScratchRepo(fixture);
     try {
       const { success, stderr } = await attemptCommit(tmpDir);

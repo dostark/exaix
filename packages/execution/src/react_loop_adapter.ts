@@ -11,14 +11,8 @@
 import type { JSONValue } from "@exaix/core";
 import type { IEventBusService } from "@exaix/core/observability";
 import type { IEventLogger } from "@exaix/core/logger";
-import {
-  ACTIVITY_EVENT_DYNAMIC_TOOL_CALL,
-  ActorType,
-  AGENT_EVENT_OUTPUT,
-  AGENT_GENERATION_COMPLETED,
-  AgentKind,
-  DEFAULT_MCP_IDENTITY_ID,
-} from "@exaix/core";
+import { ActorType, AGENT_GENERATION_COMPLETED, AgentKind, DEFAULT_MCP_IDENTITY_ID } from "@exaix/core";
+import { DomainEventType } from "@exaix/core/events";
 import type { IChangesetResult } from "@exaix/schemas/agent_orchestrator.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IToolRegistry } from "@exaix/core/types";
@@ -98,7 +92,7 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
   }
 
   async logAgentOutput(traceId: string, output: string): Promise<void> {
-    await this.logger.info(AGENT_EVENT_OUTPUT, "subprocess", { output }, traceId);
+    await this.logger.info(DomainEventType.AgentOutput, "subprocess", { output }, traceId);
   }
 
   async logDynamicToolCall(
@@ -109,7 +103,7 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
     iteration: number,
   ): Promise<void> {
     await this.logger.info(
-      ACTIVITY_EVENT_DYNAMIC_TOOL_CALL,
+      DomainEventType.AgentDynamicToolCall,
       "subprocess",
       { tool, args, resultSummary, iteration },
       traceId,

@@ -422,11 +422,51 @@ export function findCrossComponentCalls(body: ts.Node, componentFieldNames: read
   return findings;
 }
 
-/** True when `body` calls the logger binding. Tagged callers may require a registered taxonomy action. */
+/** True when `typeNode` is a type reference to `TDomainEventType`, the registered taxonomy union. */
+function isDomainEventTypeRef(typeNode: Opt<ts.TypeNode, Reason.OptionalContext>): boolean {
+  return typeNode !== undefined && ts.isTypeReferenceNode(typeNode) && ts.isIdentifier(typeNode.typeName) &&
+    typeNode.typeName.text === "TDomainEventType";
+}
+
+/** True when `action` resolves to a registered `DomainEventType` value: a literal
+ *  `DomainEventType.X` property access, a bare parameter of the enclosing function/method
+ *  typed `TDomainEventType` (e.g. `emitEvent(action: TDomainEventType, ...)`), or a property
+ *  access into an object parameter whose matching member is typed `TDomainEventType` (e.g.
+ *  `logActivity(event: { event_type: TDomainEventType, ... })` then `event.event_type`).
+ *  One level of parameter indirection only, mirroring `callsLoggingPrivateHelper`'s own
+ *  "one level only" design — the actual call-site argument isn't traced through. */
+function resolvesToRegisteredAction(
+  action: Opt<ts.Expression, Reason.OptionalContext>,
+  enclosingParams: readonly ts.ParameterDeclaration[],
+): boolean {
+  if (!action) return false;
+  if (ts.isPropertyAccessExpression(action) && ts.isIdentifier(action.expression)) {
+    if (action.expression.text === "DomainEventType") return true;
+    const objectParam = enclosingParams.find((p) =>
+      ts.isIdentifier(p.name) && p.name.text === action.expression.getText()
+    );
+    if (!objectParam?.type || !ts.isTypeLiteralNode(objectParam.type)) return false;
+    const member = objectParam.type.members.find((m): m is ts.PropertySignature =>
+      ts.isPropertySignature(m) && !!m.name && ts.isIdentifier(m.name) && m.name.text === action.name.text
+    );
+    return isDomainEventTypeRef(member?.type);
+  }
+  if (ts.isIdentifier(action)) {
+    const param = enclosingParams.find((p) => ts.isIdentifier(p.name) && p.name.text === action.text);
+    return isDomainEventTypeRef(param?.type);
+  }
+  return false;
+}
+
+/** True when `body` calls the logger binding. Tagged callers may require a registered taxonomy
+ *  action, resolved directly or through one level of parameter-typed indirection (see
+ *  `resolvesToRegisteredAction`) — `enclosingParams` is `body`'s own owning function/method's
+ *  parameter list, needed to resolve that indirection. */
 export function bodyCallsAuditBinding(
   body: ts.Node,
   binding: IAuditBinding,
   requireRegisteredAction = false,
+  enclosingParams: readonly ts.ParameterDeclaration[] = [],
 ): boolean {
   let found = false;
   const visit = (node: ts.Node) => {
@@ -434,8 +474,7 @@ export function bodyCallsAuditBinding(
     if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
       const methodName = node.expression.name.text;
       const action = node.arguments[0];
-      const registeredAction = action && ts.isPropertyAccessExpression(action) &&
-        ts.isIdentifier(action.expression) && action.expression.text === "DomainEventType";
+      const registeredAction = resolvesToRegisteredAction(action, enclosingParams);
       if (LOG_METHOD_PATTERN.test(methodName) && (!requireRegisteredAction || registeredAction)) {
         const receiver = node.expression.expression;
         if (
@@ -490,7 +529,7 @@ function callsLoggingPrivateHelper(
       isThisExpr(node.expression.expression)
     ) {
       const helper = privateHelpers.get(node.expression.name.text);
-      if (helper?.body && bodyCallsAuditBinding(helper.body, binding, requireRegisteredAction)) {
+      if (helper?.body && bodyCallsAuditBinding(helper.body, binding, requireRegisteredAction, helper.parameters)) {
         found = true;
         return;
       }
@@ -522,7 +561,8 @@ export function analyzeClass(cls: ts.ClassDeclaration, sf: ts.SourceFile): IAnal
   // own adjacent event — a private helper isn't an independently-callable public API.
   const anyMethodCallsLogger = cls.members.some((member) =>
     ts.isMethodDeclaration(member) && member.body !== undefined &&
-    (bodyCallsAuditBinding(member.body, { name: auditField, isField: true }, tagged) || isDecoratorCovered(member))
+    (bodyCallsAuditBinding(member.body, { name: auditField, isField: true }, tagged, member.parameters) ||
+      isDecoratorCovered(member))
   );
   const findings: IEventCoverageFinding[] = [];
 
@@ -540,7 +580,8 @@ export function analyzeClass(cls: ts.ClassDeclaration, sf: ts.SourceFile): IAnal
     }
     const methodName = member.name.getText();
 
-    const covered = bodyCallsAuditBinding(member.body, { name: auditField, isField: true }, tagged) ||
+    const covered =
+      bodyCallsAuditBinding(member.body, { name: auditField, isField: true }, tagged, member.parameters) ||
       isDecoratorCovered(member) ||
       callsLoggingPrivateHelper(member.body, cls, { name: auditField, isField: true }, tagged);
     if (covered) {
