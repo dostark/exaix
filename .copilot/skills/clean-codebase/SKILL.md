@@ -11,7 +11,7 @@ scope: dev
 title: "Clean Codebase Skill (#clean-codebase)"
 description: Drive the entire codebase to a fully green CI state — type errors, lint, fmt, style, arch, magic, duplication — with zero violations
 short_summary: "Multi-phase skill to eliminate all type errors, lint warnings, style violations, and CI failures from the repository."
-version: "1.1.0"
+version: "1.2.0"
 topics: ["cleanup", "validation", "linting", "style", "qa", "ci", "architecture"]
 qwen_skill: clean-codebase
 ---
@@ -26,6 +26,15 @@ Key points
 - When the scope involves more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue
 - Edition awareness: `deno task` wrappers (check, lint, fmt) already include `packages-team/` automatically.
   For edition-scoped cleanups, use `deno task ci:solo` or `deno task ci:team` instead of raw commands.
+- `deno run -A scripts/ci.ts check` is a verified single command covering 28 static
+  gates as a true superset of the real pre-commit hook (kept in sync via
+  `tests/scripts/ci_wiring_test.ts` — Phase 168 self-improvement-retro); use it for a
+  fast pass/fail signal before or between phases. It does NOT cover this skill's own
+  deeper categories — `check:duplication`, `check:god-objects`, `check:leak-guard`,
+  `check:no-edition-conditionals`, `check:version`, `check:unused-exports:strict` — those
+  still need their own runs (Phases 8, 10, 17, 19, 22 below; `unused-exports:strict` has
+  no dedicated fix phase yet — treat a nonzero baseline count as a Phase 1 finding to
+  triage by hand).
 
 Canonical prompt (short):
 "Drive the repository to fully green CI. Fix all type errors, lint issues,
@@ -59,6 +68,15 @@ Phase 1 — Baseline measurement
        deno task check:docs                              → manifest freshness
        deno task check:version                           → version bump compliance (dry-run: --dry-run)
        deno task check:god-objects                       → god object candidates (advisory)
+       deno task check:edition-graph                      → edition-leak graph gate (deno-info double-check)
+       deno task check:runtime-artifacts                  → committed venv/__pycache__/node_modules-style artifacts
+       deno task check:agent-docs-integrity                → dangling references in the .copilot/ corpus
+       deno task check:blueprint-integrity                 → Blueprint catalog identity/flow/skill resolution
+       deno task check:skill-index                         → Memory/Skills ↔ Blueprints/Skills sync
+       deno task check:qwen-skills-sync                    → .qwen/settings.json ↔ .copilot/skills/ sync
+       deno task check:config-keys                         → duplicate configurable() key collisions
+       deno task check:event-coverage --fail-on-tagged     → @visible-tagged classes with a coverage gap
+       deno task docs-bench                                → hallucination-benchmark doc/ground-truth drift
        deno task docs-agent-validate                     → agent doc schema validation
   3. Tally totals: N type errors, N lint, N fmt, N style, N edition-conditional,
      N UNGROUNDED, N magic, duplication X/Y/Z%, complexity breaches.
@@ -208,39 +226,27 @@ Phase 20 — Agent docs validation
   41. Fix any violations, re-run until 0 errors/warnings.
 
 Phase 21 — Final full-suite validation
-  42. Run tests to confirm all gates green. Choose the edition-scoped command:
+  42. Confirm every static gate is clean, fastest path first:
+      a. `deno run -A scripts/ci.ts check` — one verified command covering 28 static
+         gates (type-check, lint, fmt, style, arch, magic, event-coverage, and every
+         other real pre-commit gate; see Key Points above). Do NOT hand-chain the
+         individual `deno task check:X` commands instead — a second, separately
+         maintained copy of that list is exactly how 9 of them silently went unchecked
+         here before the Phase 168 alignment.
+      b. Run this skill's extras ci.ts does not cover: `deno task check:duplication`,
+         `deno task check:god-objects`, `deno task check:leak-guard`,
+         `deno task check:no-edition-conditionals`, `deno task check:version --dry-run`.
+      c. Run tests — choose the edition-scoped command:
          # Full (all editions — slowest)
          deno task test_parallel
          # Solo-only (excludes packages-team/)
          deno task test:solo && deno task test:security
          # Team edition (includes packages-team/)
          deno task test:team
-         # CI pipeline (edition-aware)
-         deno task ci:solo    # Solo checks + Solo tests
-         deno task ci:team    # Team checks + Team tests
-      Or validate every gate sequentially:
-         deno task check &&
-         deno lint &&
-         deno fmt --check &&
-         deno task check:style &&
-         deno task check:test-placement &&
-         deno task check:magic &&
-         deno task check:no-edition-conditionals &&
-         deno task check:arch &&
-         deno task check:complexity &&
-         deno task check:duplication &&
-         deno task check:tool-result-parity &&
-         deno task check:skill-envelopes &&
-         deno task check:manifests &&
-         deno task check:hardcoded-models &&
-         deno task check:event-strings &&
-         deno task check:optional-params &&
-         deno task check:leak-guard &&
-         deno task check:docs &&
-       deno task check:version --dry-run &&
-       deno task check:god-objects &&
-       deno task docs-agent-validate &&
-       deno task test:solo
+      Shortcut: `deno task ci:solo` / `deno task ci:team` (== `scripts/ci.ts all
+      --edition <X>`) runs 42a + tests + coverage + build in one edition-scoped command —
+      use it instead of 42a-42c individually when a full pipeline run is warranted, but
+      still run 42b's extras separately (`ci:solo`/`ci:team` don't cover them either).
   43. All checks must report zero errors/warnings/violations before committing.
 
 Phase 22 — God object detection (advisory)
@@ -257,6 +263,33 @@ Phase 22 — God object detection (advisory)
   46. Re-run `deno task check:god-objects` to verify score reduction.
       Target: score < 50 for all classes.
 
+Phase 23 — Additional pre-commit-hook parity gates
+  47. These 9 gates block the real pre-commit hook but had no coverage anywhere in this
+      skill before the Phase 168 ci.ts alignment; each is narrow and typically clean, so
+      fix directly from the script's own error output rather than a dedicated sub-phase:
+      - `check:edition-graph` — a static higher-tier import reached the resolved dependency
+        graph; move the import behind an edition-composer boundary.
+      - `check:runtime-artifacts` — a staged file is (or embeds) a venv/__pycache__/
+        node_modules-style artifact; remove it and add/verify a .gitignore entry.
+      - `check:agent-docs-integrity` — a dangling reference inside the `.copilot/` corpus;
+        fix the citation or the file it points to.
+      - `check:blueprint-integrity` — an orphan identity/skill/flow in `Blueprints/`;
+        resolve the dangling reference or remove the orphan.
+      - `check:skill-index` — `Memory/Skills` is out of sync with `Blueprints/Skills`;
+        run `deno task check:skill-index` without `--check` to regenerate.
+      - `check:qwen-skills-sync` — `.qwen/settings.json` is out of sync with a
+        `.copilot/skills/` `qwen_skill` declaration; add/update the missing entry.
+      - `check:config-keys` — two `configurable()` calls declared the same key; rename
+        one (see CODE_STYLE.md §2).
+      - `check:event-coverage --fail-on-tagged` — an `@visible`-tagged class has a
+        coverage gap; add the missing `DomainEventType` call or verify by hand and
+        adjust the class if the finding is a false positive (see #post-gap-analysis
+        Phase 6 for the by-hand verification method).
+      - `docs-bench` — a hallucination-benchmark assertion in `tests/docs/` failed;
+        the doc drifted from the ground truth the test encodes — fix the doc, not the test.
+  48. Re-run `deno run -A scripts/ci.ts check` to confirm all 9 (plus every other static
+      gate) are clean in one pass.
+
 Commit
   44. Use #commit for the structured commit body. Subject example:
         chore: drive codebase to fully green CI (N violations fixed)
@@ -270,11 +303,11 @@ Commit
         who: <agent identity>
         impact: repository-wide cleanup, no behavior changes
 
-        CI gates: lint OK, type-check OK, style 0 errors, test-placement OK,
-                  arch N GROUNDED, magic OK, edition-conditionals OK,
-                  event-strings OK, optional-params OK, leak-guard OK,
-                  skill-envelopes OK, manifests OK, version OK,
-                  duplication X%, complexity OK, docs-agent-validate OK
+        CI gates: `deno run -A scripts/ci.ts check` clean (28 gates, incl. edition-graph,
+                  runtime-artifacts, agent-docs-integrity, blueprint-integrity,
+                  skill-index, qwen-skills-sync, config-keys, event-coverage, docs-bench);
+                  duplication X%, god-objects OK, leak-guard OK, no-edition-conditionals OK,
+                  version OK, complexity OK
 
 Do / Don't
 - ✅ Do fix in dependency order (type errors first — they cascade into other failures)
@@ -282,6 +315,7 @@ Do / Don't
 - ✅ Do run the specific check after each fix batch before moving to the next phase
 - ✅ Do prefer fixing root cause over suppression annotations
 - ✅ Do run `deno task test:solo` (or `test:team`) AFTER all other checks to confirm no regressions
+- ✅ Do run `deno run -A scripts/ci.ts check` before the final commit (Phase 21, step 42a) instead of hand-chaining individual `deno task check:X` commands — a second hand-maintained copy of that list is exactly how 9 real gates went unchecked here before the Phase 168 alignment
 - ✅ Do keep changes behavioral-neutral (cleanup only, no feature changes)
 - ✅ Do use `deno task` wrappers instead of raw `deno check/lint/fmt` — they automatically include `packages-team/`
 - ✅ Do verify edition-conditional placement when touching edition-aware code

@@ -341,7 +341,7 @@
       "scope": "dev",
       "title": "Clean Codebase Skill (#clean-codebase)",
       "short_summary": "Multi-phase skill to eliminate all type errors, lint warnings, style violations, and CI failures from the repository.",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "topics": [
         "cleanup",
         "validation",
