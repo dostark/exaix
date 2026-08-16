@@ -11,7 +11,7 @@ scope: dev
 title: "Clean Codebase Skill (#clean-codebase)"
 description: Drive the entire codebase to a fully green CI state — type errors, lint, fmt, style, arch, magic, duplication — with zero violations
 short_summary: "Multi-phase skill to eliminate all type errors, lint warnings, style violations, and CI failures from the repository."
-version: "1.2.0"
+version: "1.3.0"
 topics: ["cleanup", "validation", "linting", "style", "qa", "ci", "architecture"]
 qwen_skill: clean-codebase
 ---
@@ -24,8 +24,12 @@ Key points
 - Never mark complete until ALL checks report zero errors/warnings/violations
 - Prefer running check scripts with file-scope flags to get faster feedback loops
 - When the scope involves more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue
-- Edition awareness: `deno task` wrappers (check, lint, fmt) already include `packages-team/` automatically.
-  For edition-scoped cleanups, use `deno task ci:solo` or `deno task ci:team` instead of raw commands.
+- Edition awareness: `deno task` wrappers (check, lint, fmt) already include `packages-team/`
+  automatically — static checks never need edition scoping. For an edition-scoped test run,
+  use `deno task test:solo` / `deno task test:team` directly. For an edition-scoped BUILD,
+  use `deno task ci:solo --skip-tests` / `deno task ci:team --skip-tests` (checks + build,
+  no tests, fast) rather than the full `ci:solo`/`ci:team` (which also re-runs the whole
+  suite a second time for coverage).
 - `deno run -A scripts/ci.ts check` is a verified single command covering 28 static
   gates as a true superset of the real pre-commit hook (kept in sync via
   `tests/scripts/ci_wiring_test.ts` — Phase 168 self-improvement-retro); use it for a
@@ -243,10 +247,14 @@ Phase 21 — Final full-suite validation
          deno task test:solo && deno task test:security
          # Team edition (includes packages-team/)
          deno task test:team
-      Shortcut: `deno task ci:solo` / `deno task ci:team` (== `scripts/ci.ts all
-      --edition <X>`) runs 42a + tests + coverage + build in one edition-scoped command —
-      use it instead of 42a-42c individually when a full pipeline run is warranted, but
-      still run 42b's extras separately (`ci:solo`/`ci:team` don't cover them either).
+      Shortcut: `deno task ci:solo --skip-tests` / `deno task ci:team --skip-tests`
+      (== `scripts/ci.ts all --edition <X> --skip-tests`) runs 42a + build in one
+      edition-scoped command, skipping the slow Testing+Coverage phases — use this as the
+      default local shortcut instead of 42a-42c individually. Only drop `--skip-tests`
+      (running the full `ci:solo`/`ci:team`, which re-runs the whole suite a SECOND time
+      for coverage plus a full build) when the user's prompt explicitly asked for a full
+      pipeline/coverage validation, not for a routine cleanup pass. Either way, still run
+      42b's extras separately (`ci:solo`/`ci:team` don't cover them).
   43. All checks must report zero errors/warnings/violations before committing.
 
 Phase 22 — God object detection (advisory)

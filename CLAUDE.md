@@ -175,13 +175,17 @@ deno task test_parallel > /tmp/test_output.txt 2>&1
 rg "FAILED|failed|error" /tmp/test_output.txt   # or: grep -E "FAILED|failed|error" /tmp/test_output.txt
 ```
 
-Full CI pipeline:
+Full CI pipeline (`all` and `test` run the full suite; `all` additionally re-runs it a
+second time with coverage instrumentation, plus a full binary compile — expensive, use
+`--skip-tests` for a fast local check+build pass when the test suite isn't the thing you
+need re-verified):
 
 ```bash
-deno run -A scripts/ci.ts all      # everything
-deno run -A scripts/ci.ts check    # static analysis only
-deno run -A scripts/ci.ts test     # test suite only
-deno run -A scripts/ci.ts coverage # coverage verification only
+deno run -A scripts/ci.ts all                # everything (check + test x2 + build)
+deno run -A scripts/ci.ts all --skip-tests    # check + build only — skips Testing and Coverage
+deno run -A scripts/ci.ts check               # static analysis only (fast, ~10s)
+deno run -A scripts/ci.ts test                # test suite only
+deno run -A scripts/ci.ts coverage            # coverage verification only
 ```
 
 ### CI Failure Response Protocol

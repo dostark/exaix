@@ -118,3 +118,77 @@ Deno.test("[ci_wiring] checkCommand and allCommand's static-check phases share t
       `the two command bodies must share one task list (STATIC_CHECK_TASKS) so they cannot silently drift apart.`,
   );
 });
+
+Deno.test("[ci_wiring] allCommand declares a --skip-tests flag to skip Testing and Coverage", () => {
+  // Phase 2 (Testing) internally chains full test:solo/test:team/test_parallel + test:security,
+  // and Phase 3 (Coverage) re-runs the ENTIRE suite a second time with --coverage instrumentation
+  // (scripts/ci.ts's own verifyCoverage spawns `deno test --allow-all --coverage=...`) — together
+  // these can run the full suite twice, on top of Phase 4's real binary compile. Real CI
+  // (.github/workflows/*.yml) never invokes `ci.ts all` directly — it calls check/test/build as
+  // separate steps — so `all`'s slow default is purely a local/manual-run cost with no CI
+  // dependency on it staying unconditional.
+  const allStart = CI_SOURCE.indexOf("const allCommand");
+  const allEnd = CI_SOURCE.indexOf("const fixCommand");
+  const allBody = CI_SOURCE.slice(allStart, allEnd);
+  assert(
+    /\.option\(\s*"--skip-tests"/.test(allBody),
+    "allCommand must declare a --skip-tests option for fast local runs (default false — real CI never calls " +
+      "'all' directly, so the default may stay unconditional without breaking .github/workflows/*.yml)",
+  );
+});
+
+Deno.test("[ci_wiring] --skip-tests gates Phase 2 (Testing) and Phase 3 (Coverage), never Phase 1 or Phase 4", () => {
+  const allStart = CI_SOURCE.indexOf("const allCommand");
+  const allEnd = CI_SOURCE.indexOf("const fixCommand");
+  const allBody = CI_SOURCE.slice(allStart, allEnd);
+
+  const phase1Idx = allBody.indexOf("Phase 1: Static Checks");
+  const phase2Idx = allBody.indexOf("Phase 2: Testing");
+  const phase3Idx = allBody.indexOf("Phase 3: Coverage");
+  const phase4Idx = allBody.indexOf("Phase 4: Build");
+  assert(
+    phase1Idx >= 0 && phase2Idx > phase1Idx && phase3Idx > phase2Idx && phase4Idx > phase3Idx,
+    "expected all 4 phase banners present in allCommand, in order",
+  );
+
+  // The guard must sit somewhere between Phase 1 finishing and Phase 4 starting (it legitimately
+  // precedes the "Phase 2: Testing" banner text itself, since the log line lives inside the
+  // conditional's branches) but must NOT appear before Phase 1 starts or after Phase 4 starts —
+  // Checks and Build always run unconditionally.
+  const skipGuardBetween1and4 = /skipTests/.test(allBody.slice(phase1Idx, phase4Idx));
+  const skipGuardBeforePhase1 = /skipTests/.test(allBody.slice(0, phase1Idx));
+  const skipGuardAfterPhase4Start = /skipTests/.test(allBody.slice(phase4Idx));
+  assert(skipGuardBetween1and4, "a skipTests check must gate Phase 2+3 (Testing/Coverage)");
+  assert(!skipGuardBeforePhase1, "Phase 1 (Static Checks) must never be gated by --skip-tests");
+  assert(!skipGuardAfterPhase4Start, "Phase 4 (Build) must never be gated by --skip-tests");
+});
+
+Deno.test("[ci_wiring] real run: --skip-tests suppresses Testing/Coverage banners, default run keeps all 4 phases", async () => {
+  // --dry-run makes every phase (including Coverage/Build, which both check isDryRun) short-circuit
+  // near-instantly, so this exercises the REAL Cliffy flag-parsing/branching, not just source text,
+  // without paying for an actual full test run or binary compile.
+  const runDry = async (extraArgs: string[]) => {
+    const cmd = new Deno.Command(Deno.execPath(), {
+      args: ["run", "-A", "scripts/ci.ts", "all", "--dry-run", ...extraArgs],
+      stdout: "piped",
+      stderr: "piped",
+    });
+    const { stdout, stderr } = await cmd.output();
+    return new TextDecoder().decode(stdout) + new TextDecoder().decode(stderr);
+  };
+
+  const skipped = await runDry(["--skip-tests"]);
+  assert(skipped.includes("Phase 1: Static Checks"), "Phase 1 must still run with --skip-tests");
+  assert(!skipped.includes("Phase 2: Testing"), "Phase 2 (Testing) must be suppressed by --skip-tests");
+  assert(!skipped.includes("Phase 3: Coverage"), "Phase 3 (Coverage) must be suppressed by --skip-tests");
+  assert(skipped.includes("Phase 4: Build"), "Phase 4 (Build) must still run with --skip-tests");
+
+  const full = await runDry([]);
+  assert(full.includes("Phase 1: Static Checks"), "default run (no flag) must include Phase 1");
+  assert(
+    full.includes("Phase 2: Testing"),
+    "default run (no flag) must still run Phase 2 — 'all' stays unconditional unless the flag is passed",
+  );
+  assert(full.includes("Phase 3: Coverage"), "default run (no flag) must still run Phase 3");
+  assert(full.includes("Phase 4: Build"), "default run (no flag) must still run Phase 4");
+});

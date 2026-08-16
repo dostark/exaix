@@ -428,6 +428,15 @@ const coverageCommand = new Command()
 const allCommand = new Command()
   .description("Run full CI pipeline")
   .option("--edition <edition:string>", "Edition to build: solo|team|enterprise", { default: EDITION_SOLO })
+  .option(
+    "--skip-tests",
+    "Skip Phase 2 (Testing) and Phase 3 (Coverage) — Coverage re-runs the full suite a " +
+      "second time with instrumentation, so together they can cost 2x the test suite plus a full " +
+      "compile; use this for a fast local check+build pass. Default stays unconditional ('all' means " +
+      "all) because real CI (.github/workflows/*.yml) never invokes this command directly — it calls " +
+      "check/test/build as separate steps — so nothing in CI depends on this default.",
+    { default: false },
+  )
   .action(async (options) => {
     const edition = (options.edition ?? EDITION_SOLO) as EditionType;
     console.log(`🚀 Starting Full CI Pipeline [edition: ${edition}]`);
@@ -446,19 +455,27 @@ const allCommand = new Command()
       );
     }
 
-    // 2. Tests (Parallel) — edition-scoped
-    console.log(`\n--- Phase 2: Testing [edition: ${edition}] ---`);
-    const testTask = edition === EDITION_SOLO ? "test:solo" : edition === EDITION_TEAM ? "test:team" : "test_parallel";
-    if (
-      !await runParallel([
-        { cmd: ["deno", "task", testTask], desc: `Unit & Integration Tests [edition: ${edition}]` },
-        { cmd: ["deno", "task", "test:security"], desc: "Security Regression Tests" },
-      ])
-    ) Deno.exit(1);
+    if (options.skipTests) {
+      console.log("\n⏭️  Skipping Phase 2 (Testing) and Phase 3 (Coverage) — --skip-tests was passed.");
+    } else {
+      // 2. Tests (Parallel) — edition-scoped
+      console.log(`\n--- Phase 2: Testing [edition: ${edition}] ---`);
+      const testTask = edition === EDITION_SOLO
+        ? "test:solo"
+        : edition === EDITION_TEAM
+        ? "test:team"
+        : "test_parallel";
+      if (
+        !await runParallel([
+          { cmd: ["deno", "task", testTask], desc: `Unit & Integration Tests [edition: ${edition}]` },
+          { cmd: ["deno", "task", "test:security"], desc: "Security Regression Tests" },
+        ])
+      ) Deno.exit(1);
 
-    // 3. Coverage (Optional for now, but part of 'all')
-    console.log("\n--- Phase 3: Coverage ---");
-    await verifyCoverage(edition);
+      // 3. Coverage (Optional for now, but part of 'all')
+      console.log("\n--- Phase 3: Coverage ---");
+      await verifyCoverage(edition);
+    }
 
     // 4. Build
     console.log("\n--- Phase 4: Build ---");

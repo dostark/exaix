@@ -188,7 +188,7 @@
       "scope": "dev",
       "title": "Edition Development Skill (#edition-development)",
       "short_summary": "Develop edition-specific features (Solo/Team/Enterprise) following Exaix's composition architecture, Option-C layout, and seam-based extension model.",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "topics": [
         "edition",
         "solo",
@@ -341,7 +341,7 @@
       "scope": "dev",
       "title": "Clean Codebase Skill (#clean-codebase)",
       "short_summary": "Multi-phase skill to eliminate all type errors, lint warnings, style violations, and CI failures from the repository.",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "topics": [
         "cleanup",
         "validation",
