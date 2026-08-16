@@ -19,7 +19,9 @@ import {
 } from "@exaix/schemas/review.ts";
 import { type IReviewStatus, ReviewStatus } from "@exaix/core/status";
 import { ACTIVITY_ACTOR_AGENT } from "@exaix/core";
+import type { Opt, Reason } from "@exaix/core/types";
 
+/** @visible */
 export class ReviewRegistry {
   constructor(
     private db: IDatabaseService,
@@ -191,7 +193,7 @@ export class ReviewRegistry {
   /**
    * List reviews with optional filters
    */
-  async list(filters?: IReviewFilters): Promise<IReview[]> {
+  async list(filters?: Opt<IReviewFilters, Reason.QueryFilter>): Promise<IReview[]> {
     let sql = `SELECT * FROM reviews WHERE 1=1`;
     const params: Array<string | number> = [];
 
@@ -227,8 +229,8 @@ export class ReviewRegistry {
   async updateStatus(
     id: string,
     status: IReviewStatus,
-    user?: string,
-    reason?: string,
+    user?: Opt<string, Reason.OptionalContext>,
+    reason?: Opt<string, Reason.OptionalContext>,
   ): Promise<void> {
     // Get existing review
     const review = await this.get(id);

@@ -14,6 +14,7 @@ import { DomainEventType } from "@exaix/core/events";
 import type { IModelOptions } from "./types.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
+/** @visible */
 export class TracedProvider implements IModelProvider {
   public readonly id: string;
 

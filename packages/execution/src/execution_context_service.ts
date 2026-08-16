@@ -33,6 +33,7 @@ export interface IPromptBudgetAllocator {
  * Bundles budget allocation, context cache, token counting, context budget manager,
  * and snapshot store into a single injectable service. Reduces AgentOrchestrator's
  * constructor parameter count and encapsulates the context/budget subsystem.
+ * @visible
  */
 export class ExecutionContextService {
   private _currentPromptBudget?: IPromptBudget;

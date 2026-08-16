@@ -19,6 +19,7 @@ export interface IVotingStepHandlerDeps {
   eventLogger: IEventLogger;
 }
 
+/** @visible */
 export class VotingStepHandler implements IFlowStepHandler {
   readonly stepType = "voting_group";
 

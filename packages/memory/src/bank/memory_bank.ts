@@ -74,6 +74,7 @@ import type { Opt, Reason } from "@exaix/core/types";
  * - Execution memory (trace records, lessons learned)
  * - Search and indexing operations
  * - IActivity Journal integration
+ * @visible
  */
 export class MemoryBankService implements IMemoryBankService {
   private memoryRoot!: string;
@@ -90,7 +91,7 @@ export class MemoryBankService implements IMemoryBankService {
    * @param config - Exaix configuration
    * @param db - Database service for IActivity Journal integration
    */
-  constructor(private config: Config, private logger?: IEventLogger) {
+  constructor(private config: Config, private logger?: Opt<IEventLogger, Reason.OptionalDependency>) {
     this.memoryRoot = join(config.system.root!, config.paths.memory!);
     // Use subdirectory names directly, not full paths (which already include Memory/)
     this.projectsDir = join(this.memoryRoot, DEFAULT_PROJECTS_MEMORY_PATH);

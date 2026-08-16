@@ -166,6 +166,7 @@ interface IRegisterReviewOptions {
   worktreePath?: string;
 }
 
+/** @visible */
 export class ExecutionLoop {
   private config: Config;
   private db?: IDatabaseService;

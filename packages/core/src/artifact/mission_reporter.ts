@@ -126,6 +126,7 @@ export interface IGitChangeStats {
 // MissionReporter Implementation
 // ============================================================================
 
+/** @visible */
 export class MissionReporter {
   private config: Config;
   private reportConfig: IReportConfig;

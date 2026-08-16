@@ -17,6 +17,7 @@ import type {
   IPlanAmendmentTrigger,
 } from "@exaix/schemas/plan_amendment.ts";
 import type { Config } from "@exaix/schemas/config.ts";
+import type { Opt, Reason } from "../types/mod.ts";
 import {
   PLAN_AMENDMENT_EVENT_APPLIED,
   PLAN_AMENDMENT_EVENT_APPROVED,
@@ -31,12 +32,13 @@ const AMENDMENT_DECISION_REJECTED = "rejected";
 const AMENDMENT_DECISION_EXPIRED = "expired";
 const AMENDMENT_DECIDED_BY_TIMEOUT = "timeout";
 
+/** @visible */
 export class PlanAmendmentGate implements IPlanAmendmentGate {
   constructor(
     private config: Config,
     private amendmentService: IPlanAmendmentService,
-    private approvalAdapter?: IAmendmentApprovalAdapter,
-    private logger?: IEventLogger,
+    private approvalAdapter?: Opt<IAmendmentApprovalAdapter, Reason.OptionalDependency>,
+    private logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {}
 
   async processAmendment(input: {

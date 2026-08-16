@@ -73,6 +73,7 @@ export interface IReActLoopExecutor {
 
 /**
  * Adapter that implements IReActLoopExecutor by composing AgentOrchestrator's services.
+ * @visible
  */
 export class ReActLoopAdapter implements IReActLoopExecutor {
   constructor(

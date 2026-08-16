@@ -28,6 +28,7 @@ interface IGenerationProvider {
 
 /**
  * Manages loop history ring buffer, compaction, and budget checking.
+ * @visible
  */
 export class HistoryManager {
   private _loopHistory: Array<ILoopHistoryEntry | ICompactedEntry> = [];

@@ -88,6 +88,7 @@ const EFFORT_MAX_TOKENS: Record<EffortTier, number> = {
 /**
  * Policy-driven model resolver. Stateless by design — all state lives in
  * the injected dependencies (selector, registry, config).
+ * @visible
  */
 export class ModelResolver {
   constructor(

@@ -22,6 +22,7 @@ import type { IGitService } from "@exaix/core/types";
 /**
  * Base class for all MCP tool handlers
  * Provides common validation and logging functionality
+ * @visible
  */
 export abstract class ToolHandler {
   protected context: ICliApplicationContext;

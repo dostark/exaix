@@ -115,6 +115,7 @@ function completeFromHeuristic(
 /**
  * Orchestrates heuristic and LLM analysis strategies to produce structured
  * request intent analysis.
+ * @visible
  */
 export class RequestAnalyzer implements IRequestAnalyzerService {
   private readonly threshold: number;
@@ -122,10 +123,10 @@ export class RequestAnalyzer implements IRequestAnalyzerService {
 
   constructor(
     private readonly config: IRequestAnalyzerConfig,
-    private readonly provider?: IModelProvider,
-    private readonly validator?: IOutputValidator,
-    private readonly db?: Pick<IDatabaseService, "logActivity">,
-    private readonly logger?: IEventLogger,
+    private readonly provider?: Opt<IModelProvider, Reason.OptionalDependency>,
+    private readonly validator?: Opt<IOutputValidator, Reason.OptionalDependency>,
+    private readonly db?: Opt<Pick<IDatabaseService, "logActivity">, Reason.OptionalDependency>,
+    private readonly logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
     this.threshold = config.actionabilityThreshold ?? DEFAULT_ACTIONABILITY_THRESHOLD;
     this.llmAnalyzer = provider && validator ? new LlmAnalyzer(provider, validator) : null;
@@ -133,7 +134,7 @@ export class RequestAnalyzer implements IRequestAnalyzerService {
 
   async analyze(
     requestText: string,
-    context?: IRequestAnalysisContext,
+    context?: Opt<IRequestAnalysisContext, Reason.OptionalContext>,
   ): Promise<IRequestAnalysis> {
     const startMs = Date.now();
     const mode = this.config.mode;
@@ -194,7 +195,7 @@ export class RequestAnalyzer implements IRequestAnalyzerService {
 
   private async _callLlmWithFallback(
     requestText: string,
-    context: IRequestAnalysisContext | undefined,
+    context: Opt<IRequestAnalysisContext, Reason.OptionalContext>,
     startMs: number,
   ): Promise<IRequestAnalysis> {
     if (!this.llmAnalyzer) {

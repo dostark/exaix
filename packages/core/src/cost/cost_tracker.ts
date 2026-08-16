@@ -43,6 +43,7 @@ type IPendingCostRecord = Omit<IProviderCostRecord, "id" | "costSource"> & {
 /**
  * Service for tracking and managing LLM provider costs.
  * Provides budget enforcement and cost analytics.
+ * @visible
  */
 export class CostTracker implements ICostTracker {
   private static getCostRates(
