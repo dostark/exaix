@@ -67,6 +67,10 @@ export interface IEventCoverageFinding {
   line: number;
   reasons: Array<"state-change" | "cross-component-call">;
   detail: string[];
+  /** true when the owning class carries @visible — promotes this finding from advisory to
+   *  blocking under --fail-on-tagged. Always false for top-level function findings, since
+   *  @visible is a class-level tag. */
+  tagged: boolean;
 }
 
 /** A class that accepts an audit-logger dependency but never calls it in any method. */
@@ -74,6 +78,19 @@ export interface IWiredUnusedFinding {
   file: string;
   className: string;
   fieldName: string;
+  line: number;
+  /** true when the class carries @visible — promotes this finding from advisory to
+   *  blocking under --fail-on-tagged. */
+  tagged: boolean;
+}
+
+/** A @visible-tagged exported class with no audit-logger constructor dependency at all —
+ *  the population the tool could not see before @visible existed; untagged classes are
+ *  never checked for this (absence of a logger is only a gap when the class explicitly
+ *  declared it must be covered). */
+export interface IMissingLoggerFinding {
+  file: string;
+  className: string;
   line: number;
 }
 
@@ -87,6 +104,7 @@ export interface IAnalyzeClassResult {
 export interface IAnalyzeSourceFileResult {
   findings: IEventCoverageFinding[];
   wiredUnused: IWiredUnusedFinding[];
+  missingLogger: IMissingLoggerFinding[];
 }
 
 // ── Type-name classification ──
@@ -131,6 +149,25 @@ export function hasVisibleTag(cls: ts.ClassDeclaration, sourceText: string): boo
   const ranges = ts.getLeadingCommentRanges(sourceText, cls.getFullStart());
   if (!ranges) return false;
   return ranges.some((r) => VISIBLE_TAG_PATTERN.test(sourceText.slice(r.pos, r.end)));
+}
+
+const LOG_METHOD_FAMILY_DECORATOR_NAMES = new Set(["LogMethod", "LogSyncMethod", "LogGeneratorMethod"]);
+
+/** True when `method`'s own decorator list includes a call to `LogMethod`/`LogSyncMethod`/
+ *  `LogGeneratorMethod` — read from the method's decorator list, not its body, since a
+ *  decorated method's real logger call lives inside `decorator.ts`, not inside the method
+ *  it wraps. This is a structurally different check from every other function in this file
+ *  (which all inspect body/parameter shape), hence its own dedicated tests. */
+export function isDecoratorCovered(method: ts.MethodDeclaration): boolean {
+  if (!ts.canHaveDecorators(method)) return false;
+  const decorators = ts.getDecorators(method);
+  if (!decorators) return false;
+  return decorators.some((d) => {
+    const expr = d.expression;
+    if (!ts.isCallExpression(expr)) return false;
+    const callee = expr.expression;
+    return ts.isIdentifier(callee) && LOG_METHOD_FAMILY_DECORATOR_NAMES.has(callee.text);
+  });
 }
 
 function hasModifierKind(node: ts.Node, kind: ts.SyntaxKind): boolean {
@@ -378,6 +415,7 @@ export function analyzeClass(cls: ts.ClassDeclaration, sf: ts.SourceFile): IAnal
   const className = cls.name?.getText() ?? "<anonymous>";
   const componentFields = findComponentFields(cls);
   const excludeForStateChange = new Set([auditField]);
+  const tagged = hasVisibleTag(cls, sf.getFullText());
 
   let anyMethodCallsLogger = false;
   const findings: IEventCoverageFinding[] = [];
@@ -396,8 +434,9 @@ export function analyzeClass(cls: ts.ClassDeclaration, sf: ts.SourceFile): IAnal
     }
     const methodName = member.name.getText();
 
-    const callsLogger = bodyCallsAuditBinding(member.body, { name: auditField, isField: true });
-    if (callsLogger) {
+    const covered = bodyCallsAuditBinding(member.body, { name: auditField, isField: true }) ||
+      isDecoratorCovered(member);
+    if (covered) {
       anyMethodCallsLogger = true;
       continue;
     }
@@ -415,14 +454,38 @@ export function analyzeClass(cls: ts.ClassDeclaration, sf: ts.SourceFile): IAnal
       line: lineOf(member, sf),
       reasons,
       detail: [...stateOps, ...crossCalls],
+      tagged,
     });
   }
 
   const wiredUnused: IWiredUnusedFinding | null = anyMethodCallsLogger
     ? null
-    : { file: sf.fileName, className, fieldName: auditField, line: lineOf(cls, sf) };
+    : { file: sf.fileName, className, fieldName: auditField, line: lineOf(cls, sf), tagged };
 
   return { findings: wiredUnused ? [] : findings, wiredUnused };
+}
+
+/** For every `@visible`-tagged exported class with no audit-logger dependency at all
+ *  (`findClassAuditField` returns null), emits an `IMissingLoggerFinding` — this is the
+ *  population the tool could not see before `@visible` existed; untagged classes are never
+ *  checked for this (absence of a logger is only a gap when the class explicitly declared
+ *  it must be covered). */
+export function findMissingLoggerFindings(
+  sf: ts.SourceFile,
+  fileName?: Opt<string, Reason.OptionalContext>,
+): IMissingLoggerFinding[] {
+  const path = fileName ?? sf.fileName;
+  const sourceText = sf.getFullText();
+  const findings: IMissingLoggerFinding[] = [];
+
+  for (const stmt of sf.statements) {
+    if (!ts.isClassDeclaration(stmt) || !isExported(stmt) || !stmt.name) continue;
+    if (!hasVisibleTag(stmt, sourceText)) continue;
+    if (findClassAuditField(stmt) !== null) continue;
+    findings.push({ file: path, className: stmt.name.getText(), line: lineOf(stmt, sf) });
+  }
+
+  return findings;
 }
 
 /** Analyzes every exported class and function at the top level of `sf`. Module-private
@@ -461,11 +524,27 @@ export function analyzeSourceFile(
         line: lineOf(stmt, sf),
         reasons,
         detail: [...stateOps, ...crossCalls],
+        // A top-level exported function cannot carry @visible — the tag is class-scoped.
+        tagged: false,
       });
     }
   }
 
-  return { findings, wiredUnused };
+  const missingLogger = findMissingLoggerFindings(sf, path);
+
+  return { findings, wiredUnused, missingLogger };
+}
+
+/** Computes whether `--fail-on-tagged` should exit the CLI with code 1 for a given result
+ *  set: true when at least one `tagged: true` finding or `wiredUnused` entry exists, or any
+ *  missing-logger finding exists at all — regardless of how many untagged findings are also
+ *  present. Untagged findings never fail the build under this flag. */
+export function shouldFailOnTagged(
+  findings: readonly IEventCoverageFinding[],
+  wiredUnused: readonly IWiredUnusedFinding[],
+  missingLogger: readonly IMissingLoggerFinding[],
+): boolean {
+  return findings.some((f) => f.tagged) || wiredUnused.some((w) => w.tagged) || missingLogger.length > 0;
 }
 
 // ── CLI ──
@@ -509,12 +588,14 @@ async function main(): Promise<void> {
   const args = new Set(Deno.args);
   const staged = args.has("--staged");
   const shouldFail = args.has("--fail");
+  const failOnTagged = args.has("--fail-on-tagged");
   const useJson = args.has("--json");
 
   const files = staged ? await collectStagedFiles() : await collectFiles(SCAN_ROOTS);
 
   const allFindings: IEventCoverageFinding[] = [];
   const allWiredUnused: IWiredUnusedFinding[] = [];
+  const allMissingLogger: IMissingLoggerFinding[] = [];
 
   for (const file of files) {
     let text: string;
@@ -527,13 +608,17 @@ async function main(): Promise<void> {
     const result = analyzeSourceFile(sf, file);
     allFindings.push(...result.findings);
     allWiredUnused.push(...result.wiredUnused);
+    allMissingLogger.push(...result.missingLogger);
   }
 
-  const total = allFindings.length + allWiredUnused.length;
+  const total = allFindings.length + allWiredUnused.length + allMissingLogger.length;
+  const taggedFailure = failOnTagged && shouldFailOnTagged(allFindings, allWiredUnused, allMissingLogger);
 
   if (useJson) {
-    console.log(JSON.stringify({ findings: allFindings, wiredUnused: allWiredUnused }, null, 2));
-    if (shouldFail && total > 0) Deno.exit(1);
+    console.log(
+      JSON.stringify({ findings: allFindings, wiredUnused: allWiredUnused, missingLogger: allMissingLogger }, null, 2),
+    );
+    if ((shouldFail && total > 0) || taggedFailure) Deno.exit(1);
     return;
   }
 
@@ -544,30 +629,40 @@ async function main(): Promise<void> {
 
   console.error(
     `\n⚠️  Event coverage audit: ${allWiredUnused.length} wired-but-silent class(es), ` +
-      `${allFindings.length} method/function-level candidate(s) across ${files.length} file(s) scanned. ` +
-      `This is advisory — verify by hand before treating a finding as a real gap. Known false-positive ` +
-      `sources: an event emitted by a caller instead of the flagged method itself, a private helper one ` +
-      `level removed from the flagged method that does the actual emission, and dynamic dispatch.\n`,
+      `${allFindings.length} method/function-level candidate(s), ${allMissingLogger.length} missing-logger ` +
+      `@visible class(es) across ${files.length} file(s) scanned. This is advisory — verify by hand before ` +
+      `treating a finding as a real gap. Known false-positive sources: an event emitted by a caller instead ` +
+      `of the flagged method itself, a private helper one level removed from the flagged method that does ` +
+      `the actual emission, and dynamic dispatch.\n`,
   );
 
+  if (allMissingLogger.length > 0) {
+    console.error("@visible classes with no logger dependency at all:");
+    for (const m of allMissingLogger) {
+      console.error(`  [${m.file}:${m.line}] class ${m.className} is @visible but accepts no audit-logger`);
+    }
+  }
+
   if (allWiredUnused.length > 0) {
-    console.error("Wired but never used:");
+    console.error("\nWired but never used:");
     for (const w of allWiredUnused) {
-      console.error(`  [${w.file}:${w.line}] class ${w.className} accepts '${w.fieldName}' but never calls it`);
+      const tag = w.tagged ? " [@visible]" : "";
+      console.error(`  [${w.file}:${w.line}] class ${w.className} accepts '${w.fieldName}' but never calls it${tag}`);
     }
   }
 
   if (allFindings.length > 0) {
     console.error("\nState change / cross-component call with no adjacent event:");
     for (const f of allFindings) {
-      console.error(`  [${f.file}:${f.line}] ${f.scopeName} (${f.reasons.join(", ")}) — ${f.detail.join("; ")}`);
+      const tag = f.tagged ? " [@visible]" : "";
+      console.error(`  [${f.file}:${f.line}] ${f.scopeName} (${f.reasons.join(", ")}) — ${f.detail.join("; ")}${tag}`);
     }
   }
 
   console.error(
     "\nSee ARCHITECTURE.md#execution-semantics (Visibility guarantee) and docs/Reference_Data.md#event-taxonomy.",
   );
-  if (shouldFail) Deno.exit(1);
+  if ((shouldFail && total > 0) || taggedFailure) Deno.exit(1);
 }
 
 if (import.meta.main) {

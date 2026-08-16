@@ -24,10 +24,16 @@ import {
   findClassAuditField,
   findComponentFields,
   findCrossComponentCalls,
+  findMissingLoggerFindings,
   findStateChangeOperations,
   hasVisibleTag,
+  type IEventCoverageFinding,
+  type IMissingLoggerFinding,
   isAuditLoggerTypeName,
   isComponentTypeName,
+  isDecoratorCovered,
+  type IWiredUnusedFinding,
+  shouldFailOnTagged,
   unwrapOptTypeName,
 } from "../../scripts/check_event_coverage.ts";
 
@@ -454,4 +460,112 @@ export class Bar {}
   const [foo, bar] = allClasses(sf);
   assertEquals(hasVisibleTag(foo, sf.getFullText()), false);
   assertEquals(hasVisibleTag(bar, sf.getFullText()), true);
+});
+
+// ── isDecoratorCovered ──
+
+Deno.test("[isDecoratorCovered] recognizes @LogMethod(logger, ...) on a method", () => {
+  const sf = parse(`
+    export class Svc {
+      @LogMethod(logger, { action: DomainEventType.Foo })
+      async run(): Promise<void> {}
+    }
+  `);
+  const cls = firstClass(sf);
+  assertEquals(isDecoratorCovered(firstMethod(cls, "run")), true);
+});
+
+Deno.test("[isDecoratorCovered] recognizes @LogSyncMethod and @LogGeneratorMethod", () => {
+  const sf = parse(`
+    export class Svc {
+      @LogSyncMethod(logger)
+      syncRun(): void {}
+
+      @LogGeneratorMethod(logger)
+      async *streamRun(): AsyncGenerator<string> {}
+    }
+  `);
+  const cls = firstClass(sf);
+  assertEquals(isDecoratorCovered(firstMethod(cls, "syncRun")), true);
+  assertEquals(isDecoratorCovered(firstMethod(cls, "streamRun")), true);
+});
+
+Deno.test("[isDecoratorCovered] returns false for an undecorated method", () => {
+  const sf = parse(`
+    export class Svc {
+      run(): void {}
+    }
+  `);
+  const cls = firstClass(sf);
+  assertEquals(isDecoratorCovered(firstMethod(cls, "run")), false);
+});
+
+// ── analyzeClass + decorator coverage ──
+
+Deno.test("[analyzeClass] treats a decorator-covered method as covered even with zero direct logger calls", () => {
+  const sf = parse(`
+    export class Svc {
+      constructor(private readonly logger?: IEventLogger) {}
+
+      @LogMethod(logger)
+      save(x: string): void {
+        this.repo.save(x);
+      }
+    }
+  `);
+  const cls = firstClass(sf);
+  const result = analyzeClass(cls, sf);
+  assertEquals(result.wiredUnused, null);
+  assertEquals(result.findings.length, 0);
+});
+
+// ── findMissingLoggerFindings ──
+
+Deno.test("[findMissingLoggerFindings] flags a @visible class with no logger dependency at all", () => {
+  const sf = parse(`
+/** @visible */
+export class Svc {
+  constructor(private readonly repo: IRepo) {}
+}
+`);
+  const result = findMissingLoggerFindings(sf, "example.ts");
+  assertEquals(result.length, 1);
+  assertEquals(result[0].className, "Svc");
+});
+
+Deno.test("[findMissingLoggerFindings] does not flag an untagged class with no logger dependency", () => {
+  const sf = parse(`
+export class Svc {
+  constructor(private readonly repo: IRepo) {}
+}
+`);
+  const result = findMissingLoggerFindings(sf, "example.ts");
+  assertEquals(result.length, 0);
+});
+
+// ── shouldFailOnTagged (the --fail-on-tagged CLI flag's decision logic) ──
+
+Deno.test("[shouldFailOnTagged] returns false when only untagged findings exist", () => {
+  const findings: IEventCoverageFinding[] = [
+    { file: "a.ts", scopeName: "Svc.run", line: 1, reasons: ["state-change"], detail: [], tagged: false },
+  ];
+  const wiredUnused: IWiredUnusedFinding[] = [
+    { file: "a.ts", className: "Svc", fieldName: "logger", line: 1, tagged: false },
+  ];
+  assertEquals(shouldFailOnTagged(findings, wiredUnused, []), false);
+});
+
+Deno.test("[shouldFailOnTagged] returns true when a tagged finding or missing-logger finding exists", () => {
+  const taggedFinding: IEventCoverageFinding[] = [
+    { file: "a.ts", scopeName: "Svc.run", line: 1, reasons: ["state-change"], detail: [], tagged: true },
+  ];
+  assertEquals(shouldFailOnTagged(taggedFinding, [], []), true);
+
+  const taggedWired: IWiredUnusedFinding[] = [
+    { file: "a.ts", className: "Svc", fieldName: "logger", line: 1, tagged: true },
+  ];
+  assertEquals(shouldFailOnTagged([], taggedWired, []), true);
+
+  const missingLogger: IMissingLoggerFinding[] = [{ file: "a.ts", className: "Svc", line: 1 }];
+  assertEquals(shouldFailOnTagged([], [], missingLogger), true);
 });
