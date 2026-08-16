@@ -6,6 +6,8 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
+import { DomainEventType } from "@exaix/core/events";
+import type { LogMetadata } from "@exaix/core";
 import { HistoryManager } from "../src/history_manager.ts";
 import type { ILoopHistoryEntry } from "../src/types.ts";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -22,6 +24,24 @@ function mockLogger(): IEventLogger {
     debug: async () => {},
     child: () => mockLogger(),
   };
+}
+
+function createTrackingLogger(): IEventLogger & { calls: Array<[string, string | null, LogMetadata?]> } {
+  const calls: Array<[string, string | null, LogMetadata?]> = [];
+  const logger: IEventLogger & { calls: typeof calls } = {
+    calls,
+    log: () => Promise.resolve(),
+    info: (action, target, payload) => {
+      calls.push([action, target, payload]);
+      return Promise.resolve();
+    },
+    warn: () => Promise.resolve(),
+    error: () => Promise.resolve(),
+    fatal: () => Promise.resolve(),
+    debug: () => Promise.resolve(),
+    child: () => createTrackingLogger(),
+  };
+  return logger;
 }
 
 function mockConfig(): Config {
@@ -56,6 +76,18 @@ Deno.test("HistoryManager.addEntry appends to history", () => {
   assertEquals(manager.loopHistory.length, 1);
   const entry0 = manager.loopHistory[0];
   if (entry0.type === "step") assertEquals(entry0.description, "test step");
+});
+
+Deno.test("HistoryManager.addEntry emits LoopHistoryEntryAdded with entry_type and tokens", () => {
+  const logger = createTrackingLogger();
+  const manager = new HistoryManager(mockConfig(), logger);
+  const entry = makeStepEntry("test step", 150, "step-42");
+  manager.addEntry(entry);
+  assertEquals(logger.calls.length, 1);
+  const [action, target, payload] = logger.calls[0];
+  assertEquals(action, DomainEventType.LoopHistoryEntryAdded);
+  assertEquals(target, "step-42");
+  assertEquals(payload, { entry_type: "step", tokens: 150 });
 });
 
 Deno.test("HistoryManager.compactLoopHistory does nothing with few entries", async () => {

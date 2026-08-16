@@ -325,7 +325,7 @@ Core infrastructure modules for architecture validation:
 | **Parsers**                   | Parse markdown + frontmatter                                  | `packages/core/src/parsing/*.ts`                                              | 🟢 All   |
 | **Plan Parser**               | Shared structured plan parsing utility                        | `packages/core/src/planning/`                                                 | 🟢 All   |
 | **Schemas**                   | Zod validation layer                                          | `packages/schemas/src/*.ts`                                                   | 🟢 All   |
-| **MCP Client**                | Connect to external MCP servers                               | `packages/mcp/server/mcp_client.ts`                                           | 🟢 All   |
+| **MCP Client**                | Connect to external MCP servers                               | `packages/mcp/src/external_mcp_client.ts`                                     | 🟢 All   |
 | **MCP Server**                | JSON-RPC server for tool execution                            | `packages-team/mcp-server/server.ts`                                          | 🔵 Team+ |
 | **Blueprint Loader**          | Unified blueprint parsing                                     | `packages/core/src/blueprint/blueprint_loader.ts`                             | 🟢 All   |
 | **Output Validator**          | Schema validation with JSON repair                            | `packages/tool-runtime/src/output_validator.ts`                               | 🟢 All   |
@@ -460,7 +460,7 @@ graph LR
 
 ## Event Taxonomy {#event-taxonomy}
 
-All event type strings are defined in `packages/core/src/events/domain_event_types.ts:DomainEventType`. Never use inline string literals as event action arguments — always reference a `DomainEventType` member.
+All event type strings are defined in `packages/core/src/events/domain_event_types.ts:DomainEventType`. Never use inline string literals as event action arguments — always reference a `DomainEventType` member. When a single operation emits more than one lifecycle event (e.g. started/completed/failed), pass that operation's canonical trace ID as the logger call's fourth positional argument on every one of them — `EventLogger.log` mints a new random trace ID whenever that argument is absent, which breaks the events' correlation in the Activity Journal even if the trace ID is also present inside the payload. A class carrying the `@visible` JSDoc tag (`CODE_STYLE.md#jsdoc-header-tags`) declares itself load-bearing for the Visibility guarantee (ARCHITECTURE.md#execution-semantics) — `deno task check:event-coverage --fail-on-tagged` blocks a real commit at the pre-commit hook's Gate 19 for any coverage gap on a tagged class, including a logger call whose action is not a registered `DomainEventType` member, and a streaming/generator method with no terminal event for early consumer cancellation.
 
 ### Event Types by Domain
 
@@ -514,6 +514,12 @@ All event type strings are defined in `packages/core/src/events/domain_event_typ
 | `PlanExecutionCompleted`                 | `plan.execution_completed`                    | Plan                            |
 | `PlanExecutionFailed`                    | `plan.execution_failed`                       | Plan                            |
 | `PlanAmendmentTriggered`                 | `plan.amendment_triggered`                    | Plan                            |
+| `PlanAmendmentProposed`                  | `plan.amendment.proposed`                     | Plan                            |
+| `PlanAmendmentAwaitingApproval`          | `plan.amendment.awaiting_approval`            | Plan                            |
+| `PlanAmendmentApproved`                  | `plan.amendment.approved`                     | Plan                            |
+| `PlanAmendmentRejected`                  | `plan.amendment.rejected`                     | Plan                            |
+| `PlanAmendmentExpired`                   | `plan.amendment.expired`                      | Plan                            |
+| `PlanAmendmentApplied`                   | `plan.amendment.applied`                      | Plan                            |
 | `RequestProcessStarted`                  | `request.process.started`                     | Request                         |
 | `RequestProcessing`                      | `request.processing`                          | Request                         |
 | `RequestSkipped`                         | `request.skipped`                             | Request                         |

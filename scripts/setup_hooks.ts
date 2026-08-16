@@ -18,7 +18,7 @@ const PRE_COMMIT_CONTENT = `#!/bin/sh
 # ============================================
 # Gate 0: Block direct commits on 'main'
 #         Bypass: HOOK_BYPASS_MAIN=1 git commit ...
-# Gates 1-18: Format, lint, style, magic, runtime-artifacts, docs, complexity, parity, arch, event-strings, skill, manifest, md-path, agent-docs-integrity, qwen-skills-sync
+# Gates 1-19: Format, lint, style, magic, runtime-artifacts, docs, complexity, parity, arch, event-strings, skill, manifest, md-path, agent-docs-integrity, qwen-skills-sync, event-coverage-visible
 # ============================================
 
 # --- Gate 0: Main branch guard ---
@@ -237,6 +237,14 @@ fi
 deno task check:qwen-skills-sync
 if [ $? -ne 0 ]; then
   echo "❌ Error: .qwen/settings.json is out of sync with .copilot/skills/ qwen_skill declarations."
+  exit 1
+fi
+
+# 19. Event Coverage Visibility Check (@visible-tagged classes must hold zero coverage gaps)
+deno task check:event-coverage:staged:visible
+if [ $? -ne 0 ]; then
+  echo "❌ Error: A staged file has an @visible-tagged coverage gap. See output above."
+  echo "    Add the missing DomainEventType call, or verify by hand and adjust the class if the finding is a false positive."
   exit 1
 fi
 

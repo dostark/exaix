@@ -175,13 +175,25 @@ rules and the dominant conventions in the existing file:
    for known false-positive sources), UNLESS the class carries the `@visible` JSDoc tag
    (`#plan` §2H), in which case any coverage gap is 🔴 Critical, not advisory — the tag
    is the codebase's own explicit declaration that this component's coverage is
-   required.
+   required. For a `@visible`-tagged class specifically: a logger call whose action
+   resolves to a raw string rather than a registered `DomainEventType` member is a
+   Critical gap even though a call exists; an operation emitting more than one
+   lifecycle event (started/completed/failed) must pass that operation's trace ID as
+   the logger call's fourth argument on every one of them — a value only present inside
+   the payload does not correlate, since `EventLogger.log` mints an independent random
+   trace ID whenever the fourth argument is absent; and a streaming/async-generator
+   method must emit a terminal event for early consumer cancellation (the caller
+   `break`/`return()`s out of a `for await` loop before natural exhaustion), not only
+   normal completion and a thrown error — verify via a `finally` block or equivalent
+   that fires exactly one terminal event across all three exit paths.
 
 1. **Exports.** Every new interface/type is exported from the appropriate
    index file.
 
 1. **check:arch.** Would `deno task check:arch` pass? All new files must be
-   GROUNDED (or explicitly tagged `@ungrounded`).
+   GROUNDED (or explicitly tagged `@ungrounded`) — `@visible` (item 6 above) uses the
+   same JSDoc-tag mechanism for a different contract (observability coverage, not
+   architecture grounding), documented in `CODE_STYLE.md`'s "JSDoc Header Tags" section.
 
 ---
 

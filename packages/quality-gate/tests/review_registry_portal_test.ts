@@ -5,7 +5,7 @@
  * across partitioned portal repositories, ensuring correct path mapping and state persistence.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertExists } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ReviewRegistry } from "@exaix/core/artifact";
@@ -13,6 +13,7 @@ import { GitService } from "@exaix/git";
 import { EventLogger } from "@exaix/core/logger";
 import { GitTestHelper, setupPortalGitRepos } from "@exaix/git/testing";
 import type { Config } from "@exaix/schemas/config.ts";
+import type { DatabaseService } from "@exaix/storage-sqlite";
 
 /**
  * TDD Tests for ReviewRegistry Portal Support
@@ -31,6 +32,7 @@ describe("ReviewRegistry Portal Support", () => {
   let portalGitService: GitService;
   let workspaceGitService: GitService;
   let logger: EventLogger;
+  let db: DatabaseService;
 
   beforeEach(async () => {
     const setup = await setupPortalGitRepos();
@@ -38,6 +40,7 @@ describe("ReviewRegistry Portal Support", () => {
     workspaceRepoDir = setup.workspaceRepoDir;
     config = setup.config;
     cleanup = setup.cleanup;
+    db = setup.db;
     logger = new EventLogger({ db: setup.db });
     registry = new ReviewRegistry(setup.db, logger);
     portalGitService = new GitService({ config, repoPath: portalRepoDir });
@@ -139,6 +142,42 @@ describe("ReviewRegistry Portal Support", () => {
 
       assertEquals(diff.includes("portal content"), true);
       assertEquals(diff.includes("test.txt"), true);
+    });
+
+    it("logs review.diff.read to IActivity Journal", async () => {
+      const traceId = crypto.randomUUID();
+
+      const branchName = await portalGitService.createBranch({
+        requestId: "diff-log-test",
+        traceId,
+      });
+
+      const reviewId = await registry.createReview(
+        traceId,
+        "test-portal",
+        branchName,
+        portalRepoDir,
+      );
+
+      await Deno.writeTextFile(join(portalRepoDir, "log-test.txt"), "diff log content");
+      await portalGitService.runGitCommand(["add", "."]);
+      await portalGitService.commit({
+        message: "Diff log test commit",
+        traceId,
+      });
+
+      await registry.getDiff(reviewId);
+      await db.waitForFlush();
+
+      const activities = db.getActivitiesByTrace(traceId);
+      const diffRead = activities.find((a) => a.action_type === "review.diff.read");
+
+      assertExists(diffRead);
+      assertEquals(diffRead.target, branchName);
+      const payload = JSON.parse(diffRead.payload);
+      assertEquals(payload.review_id, reviewId);
+      assertEquals(payload.branch, branchName);
+      assertExists(payload.base_branch);
     });
 
     it("diff from portal repo is isolated from workspace repo", async () => {

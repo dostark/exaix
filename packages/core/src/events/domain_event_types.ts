@@ -196,6 +196,13 @@ export const DomainEventType = {
 
   // Execution context events
   ExecutionContextCompacted: "execution.context.compacted",
+  ExecutionContextBudgetCleared: "execution.context.budget_cleared",
+  ExecutionContextCacheInvalidated: "execution.context.cache_invalidated",
+  ExecutionContextSectionsStabilized: "execution.context.sections_stabilized",
+  ExecutionContextBudgetAllocated: "execution.context.budget_allocated",
+
+  // Loop history events
+  LoopHistoryEntryAdded: "loop_history.entry_added",
 
   // Wait state events
   WaitStateCreated: "wait_state.created",
@@ -231,9 +238,18 @@ export const DomainEventType = {
 
   // Cost tracking events
   LlmUsageRecorded: "llm.usage",
+  CostPricingLookupSet: "cost.pricing_lookup.set",
+  CostQueriedByCriteria: "cost.query.by_criteria",
+  CostDailyCostQueried: "cost.query.daily",
+  CostSummaryQueried: "cost.query.summary",
+  CostBatchFlushed: "cost.batch.flushed",
 
-  // Agent orchestrator events (agent_orchestrator.ts)
+  // Agent orchestrator events (agent_orchestrator.ts, react_loop_adapter.ts)
   AgentOutput: "agent.output",
+  // Same value as the legacy ACTIVITY_EVENT_DYNAMIC_TOOL_CALL constant (packages/core/src/
+  // types/constants.ts) — trajectory_evaluator.ts still queries by that constant's string
+  // value, so this registers the identical value under DomainEventType rather than changing it.
+  AgentDynamicToolCall: "dynamic_tool_call",
 
   // Execution lifecycle events (execution_loop.ts)
   ExecutionSkipped: "execution.skipped",
@@ -250,9 +266,10 @@ export const DomainEventType = {
   ExecutionAmendmentPending: "execution.amendment_pending",
   ExecutionNoChanges: "execution.no_changes",
 
-  // Report events (execution_loop.ts)
+  // Report events (execution_loop.ts, mission_reporter.ts)
   ReportGenerated: "report.generated",
   ReportError: "report.error",
+  ReportExecutionRecorded: "report.execution_recorded",
 
   // Flow lifecycle events (flow_runner.ts)
   FlowValidating: "flow.validating",
@@ -308,6 +325,17 @@ export const DomainEventType = {
   PlanExecutionCompleted: "plan.execution_completed",
   PlanExecutionFailed: "plan.execution_failed",
   PlanAmendmentTriggered: "plan.amendment_triggered",
+  // Plan amendment lifecycle events (plan_amendment_gate.ts, execution_loop.ts,
+  // plan_executor.ts). Same values as the legacy PLAN_AMENDMENT_EVENT_* constants
+  // (packages/core/src/types/constants.ts) — apps/exactl/src/commands/plan_commands.ts
+  // and existing tests still reference those constants directly by name, so this registers
+  // the identical values under DomainEventType rather than renaming them.
+  PlanAmendmentProposed: "plan.amendment.proposed",
+  PlanAmendmentAwaitingApproval: "plan.amendment.awaiting_approval",
+  PlanAmendmentApproved: "plan.amendment.approved",
+  PlanAmendmentRejected: "plan.amendment.rejected",
+  PlanAmendmentExpired: "plan.amendment.expired",
+  PlanAmendmentApplied: "plan.amendment.applied",
 
   // Plan writer events (plan_writer.ts)
   PlanValidationSuccess: "plan.validation.success",
@@ -328,6 +356,7 @@ export const DomainEventType = {
   MemoryLearningDemoted: "memory.learning.demoted",
   MemoryIndicesRebuilt: "memory.indices.rebuilt",
   MemoryEmbeddingsRebuilt: "memory.embeddings.rebuilt",
+  MemoryEmbeddingServiceSet: "memory.embedding_service.set",
   MemoryPendingDigest: "memory.pending_digest",
   MemoryInitFailed: "memory.init_failed",
   MemoryAutoApprovalCycle: "memory.auto_approval_cycle",
@@ -350,6 +379,11 @@ export const DomainEventType = {
   ReviewCreated: "review.created",
   ReviewApproved: "review.approved",
   ReviewRejected: "review.rejected",
+  ReviewDiffRead: "review.diff.read",
+  ReviewRead: "review.read",
+  ReviewListRead: "review.list.read",
+  ReviewCountRead: "review.count.read",
+  ReviewDeleted: "review.deleted",
 
   // Git events (git_service.ts)
   GitCheck: "git.check",
@@ -426,6 +460,7 @@ export const DomainEventType = {
 
   // Request processing — status and provider events
   RequestStatusUpdateFailed: "request.status_update_failed",
+  RequestAnalyzed: "request.analyzed",
   RequestFlowValidationFailed: "flow.validation.failed",
   RequestProviderSelected: "provider.selected",
   RequestProviderSelectionFailed: "provider.selection_failed",
@@ -469,6 +504,9 @@ export const DomainEventType = {
   LlmCallStarted: "llm.call.started",
   LlmCallCompleted: "llm.call.completed",
   LlmCallFailed: "llm.call.failed",
+  LlmStreamCompleted: "llm.stream.completed",
+  LlmStreamFailed: "llm.stream.failed",
+  LlmStreamCancelled: "llm.stream.cancelled",
 
   // Model resolution events (Phase 132)
   ModelResolved: "model.resolved",
@@ -542,11 +580,18 @@ export const DomainEventType = {
   VotingResolved: "voting.resolved",
   VotingNoConsensus: "voting.no_consensus",
   VotingRunnerFailed: "voting.runner_failed",
+  VotingStepConsensusResolved: "voting.step.consensus_resolved",
 
   // ---------------------------------------------------------------------------
   // HITL / Governance (Phase 118)
   // ---------------------------------------------------------------------------
   HitlPolicyMatched: "hitl.policy.matched",
+
+  // ---------------------------------------------------------------------------
+  // Health check events (Phase 168)
+  // ---------------------------------------------------------------------------
+  HealthCheckAll: "health.check_all",
+  HealthCheckProvider: "health.check_provider",
 } as const;
 
 export type TDomainEventType = typeof DomainEventType[keyof typeof DomainEventType];

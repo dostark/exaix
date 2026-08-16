@@ -24,7 +24,12 @@ import {
 } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
 import { getMemoryExecutionDir, getMemoryIndexDir, getMemoryProjectsDir } from "@exaix/testing";
-import { createMinimalExecutionMemory, createMinimalProjectMemory, createSampleProjectMemory } from "@exaix/testing";
+import {
+  createMinimalExecutionMemory,
+  createMinimalProjectMemory,
+  createSampleProjectMemory,
+  NullEmbeddingStub,
+} from "@exaix/testing";
 import { createTestMemoryBankWithProject } from "../helpers/memory_bank_harness.ts";
 // Helper function to generate valid UUIDs for testing
 function generateTestUUID(): string {
@@ -514,6 +519,30 @@ Deno.test("MemoryBankService: createExecutionRecord logs to IActivity Journal", 
     ).all(traceId) as Array<{ action_type: string; trace_id: string }>;
     assertEquals(activities.length, 1);
     assertEquals(activities[0].action_type, "memory.execution.recorded");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("MemoryBankService: setEmbeddingService logs to IActivity Journal", async () => {
+  const { db, config, cleanup } = await initTestDbService();
+
+  try {
+    const logger = new EventLogger({ db });
+    const service = new MemoryBankService(config, logger);
+
+    service.setEmbeddingService(new NullEmbeddingStub());
+
+    // Wait for batch flush
+    await db.waitForFlush();
+
+    // Verify activity journal entry
+    const activities = db.instance.prepare(
+      "SELECT action_type, target FROM activity ORDER BY timestamp DESC LIMIT 1",
+    ).all() as Array<{ action_type: string; target: string }>;
+    assertEquals(activities.length, 1);
+    assertEquals(activities[0].action_type, "memory.embedding_service.set");
+    assertEquals(activities[0].target, MemoryScope.GLOBAL);
   } finally {
     await cleanup();
   }

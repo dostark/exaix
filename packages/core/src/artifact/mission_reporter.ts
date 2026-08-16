@@ -11,7 +11,7 @@
  * @architectural-layer Services
  * @related-files ["packages/execution/src/execution_loop.ts", "packages/memory/src/bank/memory_bank.ts"]
  */
-import { DomainEventType } from "@exaix/core/events";
+import { DomainEventType, type TDomainEventType } from "@exaix/core/events";
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import { resolveMemoryExecutionRoot } from "../config/paths.ts";
@@ -126,6 +126,7 @@ export interface IGitChangeStats {
 // MissionReporter Implementation
 // ============================================================================
 
+/** @visible */
 export class MissionReporter {
   private config: Config;
   private reportConfig: IReportConfig;
@@ -187,6 +188,17 @@ export class MissionReporter {
 
       // Create execution record using Memory Bank service
       await this.memoryBank.createExecutionRecord(executionMemory);
+
+      this.logActivity({
+        event_type: DomainEventType.ReportExecutionRecorded,
+        target: traceData.requestId,
+        trace_id: traceData.traceId,
+        metadata: {
+          identity_id: traceData.identityId,
+          status: traceData.status,
+          portal: executionMemory.portal,
+        },
+      });
 
       const createdAt = new Date();
       const reportPath = join(DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, traceData.traceId, "summary.md");
@@ -283,7 +295,7 @@ export class MissionReporter {
    * Log activity to database if available
    */
   private logActivity(activityData: {
-    event_type: string;
+    event_type: TDomainEventType;
     target: string;
     trace_id: string;
     metadata: Record<string, JSONValue>;

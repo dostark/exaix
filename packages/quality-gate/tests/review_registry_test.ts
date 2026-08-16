@@ -147,6 +147,31 @@ describe("ReviewRegistry", () => {
     assertEquals(review, null);
   });
 
+  it("should log review.read (by-id) to IActivity Journal", async () => {
+    const trace_id = crypto.randomUUID();
+    const input: IRegisterReviewInput = {
+      trace_id,
+      portal: "TestPortal",
+      repository: "/test/repo",
+      branch: "feat/read-by-id-logging",
+      description: "Test read-by-id logging",
+      created_by: "test-agent",
+      files_changed: 1,
+    };
+
+    const id = await registry.register(input);
+    await registry.get(id);
+    await db.waitForFlush();
+
+    const activities = db.getActivitiesByTrace(trace_id);
+    const read = activities.find((a) => a.action_type === "review.read");
+
+    assertExists(read);
+    const payload = JSON.parse(read.payload);
+    assertEquals(payload.lookup, "by-id");
+    assertEquals(payload.trace_id, trace_id);
+  });
+
   it("should get review by branch name", async () => {
     const input: IRegisterReviewInput = {
       trace_id: crypto.randomUUID(),
@@ -163,6 +188,31 @@ describe("ReviewRegistry", () => {
 
     assertExists(review);
     assertEquals(review.branch, "feat/branch-lookup");
+  });
+
+  it("should log review.read (by-branch) to IActivity Journal", async () => {
+    const trace_id = crypto.randomUUID();
+    const input: IRegisterReviewInput = {
+      trace_id,
+      portal: "TestPortal",
+      repository: "/test/repo",
+      branch: "feat/branch-lookup-logging",
+      description: "Test branch lookup logging",
+      created_by: "test-agent",
+      files_changed: 1,
+    };
+
+    await registry.register(input);
+    await registry.getByBranch("feat/branch-lookup-logging");
+    await db.waitForFlush();
+
+    const activities = db.getActivitiesByTrace(trace_id);
+    const read = activities.find((a) => a.action_type === "review.read");
+
+    assertExists(read);
+    const payload = JSON.parse(read.payload);
+    assertEquals(payload.lookup, "by-branch");
+    assertEquals(payload.trace_id, trace_id);
   });
 
   // ============================================================================
@@ -195,6 +245,32 @@ describe("ReviewRegistry", () => {
     const reviews = await registry.list();
 
     assertEquals(reviews.length, 2);
+  });
+
+  it("should log review.list.read to IActivity Journal", async () => {
+    const trace_id = crypto.randomUUID();
+
+    await registry.register({
+      trace_id,
+      repository: "/test/repo",
+      portal: "TestPortal",
+      branch: "feat/list-logging",
+      description: "List logging test",
+      created_by: "test-agent",
+      files_changed: 1,
+    });
+
+    await registry.list({ trace_id, portal: "TestPortal" });
+    await db.waitForFlush();
+
+    const activities = db.getActivitiesByTrace(trace_id);
+    const listRead = activities.find((a) => a.action_type === "review.list.read");
+
+    assertExists(listRead);
+    const payload = JSON.parse(listRead.payload);
+    assertEquals(payload.filters.trace_id, trace_id);
+    assertEquals(payload.filters.portal, "TestPortal");
+    assertEquals(payload.result_count, 1);
   });
 
   it("should filter reviews by trace_id", async () => {
@@ -515,5 +591,83 @@ describe("ReviewRegistry", () => {
 
     assertEquals(pendingCount, 1);
     assertEquals(approvedCount, 1);
+  });
+
+  it("should log review.count.read to IActivity Journal", async () => {
+    const trace_id = crypto.randomUUID();
+
+    await registry.register({
+      trace_id,
+      repository: "/test/repo",
+      portal: "TestPortal",
+      branch: "feat/count-logging",
+      description: "Count logging test",
+      created_by: "test-agent",
+      files_changed: 1,
+    });
+
+    await db.waitForFlush();
+    const beforeCount = db.getActivitiesByActionType("review.count.read").length;
+
+    const count = await registry.countByStatus(ReviewStatus.PENDING);
+    await db.waitForFlush();
+
+    const activities = db.getActivitiesByActionType("review.count.read");
+    assertEquals(activities.length, beforeCount + 1);
+
+    const payload = JSON.parse(activities[activities.length - 1].payload);
+    assertEquals(payload.status, ReviewStatus.PENDING);
+    assertEquals(payload.count, count);
+  });
+
+  // ============================================================================
+  // Deletion Tests
+  // ============================================================================
+
+  it("should delete a review", async () => {
+    const trace_id = crypto.randomUUID();
+
+    const id = await registry.register({
+      trace_id,
+      repository: "/test/repo",
+      portal: "TestPortal",
+      branch: "feat/delete-test",
+      description: "Delete test",
+      created_by: "test-agent",
+      files_changed: 1,
+    });
+
+    await registry.delete(id);
+
+    const review = await registry.get(id);
+    assertEquals(review, null);
+  });
+
+  it("should log review.deleted to IActivity Journal", async () => {
+    const trace_id = crypto.randomUUID();
+
+    const id = await registry.register({
+      trace_id,
+      repository: "/test/repo",
+      portal: "TestPortal",
+      branch: "feat/delete-logging",
+      description: "Delete logging test",
+      created_by: "test-agent",
+      files_changed: 1,
+    });
+
+    await db.waitForFlush();
+    const beforeCount = db.getActivitiesByActionType("review.deleted").length;
+
+    await registry.delete(id);
+    await db.waitForFlush();
+
+    const activities = db.getActivitiesByActionType("review.deleted");
+    assertEquals(activities.length, beforeCount + 1);
+
+    const deleted = activities[activities.length - 1];
+    assertEquals(deleted.target, id);
+    const payload = JSON.parse(deleted.payload);
+    assertEquals(payload.review_id, id);
   });
 });

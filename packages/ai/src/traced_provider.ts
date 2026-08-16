@@ -10,10 +10,12 @@
 import type { IModelProvider } from "./types.ts";
 import type { IGenerateResult } from "./providers/common.ts";
 import type { IEventLogger } from "@exaix/core/logger";
+import { LogGeneratorMethod } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { IModelOptions } from "./types.ts";
 import type { Opt, Reason } from "@exaix/core/types";
 
+/** @visible */
 export class TracedProvider implements IModelProvider {
   public readonly id: string;
 
@@ -34,7 +36,7 @@ export class TracedProvider implements IModelProvider {
       prompt_length: prompt.length,
       model: this.id,
       trace_id: traceId,
-    });
+    }, traceId);
 
     try {
       const result = await this.inner.generate(prompt, options);
@@ -48,7 +50,7 @@ export class TracedProvider implements IModelProvider {
         cost_usd: result.cost_usd ?? 0,
         model: this.id,
         trace_id: traceId,
-      });
+      }, traceId);
 
       return result;
     } catch (error) {
@@ -60,19 +62,35 @@ export class TracedProvider implements IModelProvider {
         error_type: error instanceof Error ? error.constructor.name : "unknown",
         model: this.id,
         trace_id: traceId,
-      });
+      }, traceId);
 
       throw error;
     }
   }
 
-  generateStream?(
+  @LogGeneratorMethod<TracedProvider, [string, Opt<IModelOptions, Reason.AbstractBoundary>?], string>(
+    (self: TracedProvider) => self.logger,
+    {
+      action: {
+        started: DomainEventType.LlmCallStarted,
+        completed: DomainEventType.LlmStreamCompleted,
+        failed: DomainEventType.LlmStreamFailed,
+        cancelled: DomainEventType.LlmStreamCancelled,
+      },
+      startedPayloadMapper: (args) => ({ prompt_length: args[0].length }),
+      payloadMapper: (_args, yieldCount, durationMs) => ({
+        duration_ms: Math.round(durationMs),
+        chunk_count: yieldCount,
+      }),
+    },
+  )
+  async *generateStream(
     prompt: string,
     options?: Opt<IModelOptions, Reason.AbstractBoundary>,
   ): AsyncGenerator<string> {
     if (!this.inner.generateStream) {
       throw new Error("Inner provider does not support streaming");
     }
-    return this.inner.generateStream(prompt, options);
+    yield* this.inner.generateStream(prompt, options);
   }
 }

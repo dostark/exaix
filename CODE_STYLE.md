@@ -512,6 +512,117 @@ runtime bugs.
   1. **Functional Code:** Classes, functions, and variable initializations.
 - **Top-of-module placement:** Imports and exported interfaces must appear at the top of the file, before any functional code.
 
+### JSDoc Header Tags (`@visible`) {#jsdoc-header-tags}
+
+A class's leading JSDoc comment may carry the `@visible` tag to declare it explicitly
+load-bearing for ARCHITECTURE.md's Execution Semantics "Visibility" guarantee ("every
+significant runtime transition emits a typed, versioned, trace-linked domain event").
+Tagging a class is a real, tool-enforced commitment, not documentation:
+
+- **Effect:** `scripts/check_event_coverage.ts --fail-on-tagged` treats any coverage
+  finding on an `@visible`-tagged class as **blocking**, not advisory — wired into the
+  pre-commit hook's staged-files gate. A finding is not just "no logger call anywhere in
+  the class"; a call whose action argument isn't a registered `DomainEventType` member
+  (a literal `DomainEventType.X`, or a same-class private-helper parameter/field typed
+  `TDomainEventType`, resolved one level deep) is equally rejected — the tag requires
+  taxonomy-conformant coverage, not merely logger-call presence.
+- **Trace correlation:** for a `@visible` class whose method emits more than one
+  lifecycle event for the same operation (e.g. started/completed/failed), pass that
+  operation's trace ID as the logger call's fourth positional argument
+  (`logger.info(action, target, payload, traceId)`) on every one of them — embedding
+  `trace_id` only inside `payload` is not enough, since `EventLogger.log` mints a new
+  random trace ID for any event whose fourth argument is absent, breaking the events'
+  journal-level correlation (see `packages/ai/src/traced_provider.ts` for the pattern).
+- **Streaming/generator lifecycle:** a `@visible` class's streaming or async-generator
+  method must emit exactly one terminal event covering every exit path — normal
+  exhaustion, a thrown error, AND early consumer cancellation (the caller stops
+  iterating, e.g. `break`/`return()` from a `for await` loop) — not just the first two.
+  The `TracedProvider.generateStream` pattern: track whether a terminal event already
+  fired (success or failure), and in a `finally` block, emit a dedicated cancellation
+  event only if neither did.
+- **Placement:** on the class's own leading comment, scoped via `ts.getLeadingCommentRanges`
+  at the class node's full start — not the file's `@module` header — since one file may
+  declare more than one class.
+- **When to add it:** a class on the request → plan → execution → review → memory
+  critical path, or otherwise security- or observability-sensitive, whose coverage must
+  never silently regress.
+- **Precedent:** parsed the same minimal way `scripts/validate_architecture.ts` already
+  parses `@ungrounded` (a plain regex over the comment text) — see that tag's own
+  documentation in `.copilot/skills/clean-codebase/SKILL.md`,
+  `.copilot/skills/edition-development/SKILL.md`, and
+  `.copilot/skills/review-code/SKILL.md`.
+
+Example:
+
+```typescript
+/**
+ * @module ReviewRegistry
+ * @path packages/core/src/artifact/review_registry.ts
+ * @visible
+ */
+export class ReviewRegistry { ... }
+```
+
+### Automated Execution Logging (`LogMethod` / `LogSyncMethod` / `LogGeneratorMethod`) {#log-method-family}
+
+`packages/core/src/logger/decorator.ts` exports a family of TC39 Stage 3 method
+decorators that wrap a method and automatically emit `started`/`completed`/`failed`
+lifecycle events through the supplied `EventLogger` — replacing hand-rolled
+try/catch-and-log boilerplate at the call site:
+
+- **`LogMethod`** — wraps an `async` method returning `Promise<Return>`.
+- **`LogSyncMethod`** — wraps a synchronous method; the wrapper never `await`s the
+  target call.
+- **`LogGeneratorMethod`** — wraps an async generator method (`AsyncGenerator<Yield>`);
+  brackets the _iteration_ lifecycle (started before the first pull, completed after
+  the source generator returns, failed on a synchronous pre-generator throw or a
+  mid-iteration throw), not the invocation.
+
+Each accepts a logger source and a mandatory `{ action, ... }`: `action` (never omittable,
+decorators never derive a raw action name from the class/method name) is either a single
+`TDomainEventType` shared by every phase (the `target` field distinguishes them: `"started"`/
+`"completed"`/`"failed"`/`"cancelled"`), or an `ILifecycleActions` object (`LogGeneratorMethod`:
+`IGeneratorLifecycleActions`, adding `cancelled`) giving each lifecycle phase its own
+registered `TDomainEventType` — for an operation whose phases must remain independently
+taxonomy-distinguishable (e.g. `TracedProvider`'s `LlmCallStarted`/`LlmStreamCompleted`/
+`LlmStreamFailed`/`LlmStreamCancelled`).
+
+**Canonical trace correlation:** every wrapped invocation generates one `crypto.randomUUID()`
+trace ID and passes it as the logger call's fourth argument on every phase it emits — the
+started/completed/failed(/cancelled) events for one call are always joinable in the Activity
+Journal by that shared ID, never independently random per event.
+
+**Payload shaping:** `LogMethod`/`LogSyncMethod`'s `payloadMapper: (args, result?) =>
+IMethodLogPayload` shapes the `completed` event's payload from the call's arguments and
+return value; omitted, it defaults to `{ duration_ms }`. `LogGeneratorMethod` has no single
+`result` (a generator yields many values), so it takes two purpose-built mappers instead:
+`startedPayloadMapper: (args) => IMethodLogPayload` (default: `{ args: toSafeJson(args) }`,
+the raw call arguments JSON-serialized — override when a raw argument is unsuitable for the
+audit journal, e.g. a large prompt that should be summarized by length, not logged verbatim)
+and `payloadMapper: (args, yieldCount, durationMs) => IMethodLogPayload` for `completed`
+(default: `{ duration_ms }`). Whichever mapper is supplied REPLACES the default payload
+entirely — it does not merge with it — so a mapper wanting `duration_ms` must include it
+explicitly (the generator mappers receive `durationMs`/`yieldCount` for exactly this reason).
+**Payload mappers cannot read instance fields** (`this`) — decorator options are evaluated
+in a plain function, not a class method — only the call's own arguments and the values the
+decorator itself tracks (yield count, duration).
+
+**Logger source — static or resolved:** `loggerSource` accepts either a concrete
+`IEventLogger` (evaluated once at class-_definition_ time — `@LogSyncMethod(this.logger,
+...)` is not valid syntax in this form) or a `LoggerResolver<This> = (instance: This) =>
+IEventLogger | undefined` function, resolved at _invocation_ time against the actual
+instance — enabling the family on a class with a constructor-injected logger outside
+`packages/core/` (`@LogSyncMethod((self: Calculator) => self.logger, { action: ... })`).
+Self-constructing `new EventLogger(...)` at the decorator site (the static form) is only
+compliant with `[package-instantiates-event-logger]` inside `packages/core/` (e.g.
+`HealthCheckService`).
+
+`scripts/check_event_coverage.ts`'s `isDecoratorCovered` recognizes a method decorated
+with any of the three as covered ONLY when the decorator's own `action` option is a
+literal `DomainEventType.X` — the same way it recognizes a direct `.info()`/`.warn()`/
+`.error()` call in the method's own body (or, one level removed, in a same-class private
+helper's body whose action parameter is typed `TDomainEventType`).
+
 ### Filesystem Watching (`Deno.watchFs`) {#fs-watching}
 
 `Deno.watchFs` has **no built-in idempotency**: it emits multiple/duplicate `FsEvent`s for a single

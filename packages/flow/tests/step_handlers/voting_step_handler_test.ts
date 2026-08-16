@@ -5,6 +5,7 @@
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
+import { DomainEventType } from "@exaix/core/events";
 import { FlowInputSource, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
 import type { IVotingConsensusService } from "@exaix/core/types";
 import type { VotingGroupConfig, VotingResult } from "@exaix/schemas/voting.ts";
@@ -186,4 +187,72 @@ Deno.test("[flow] VotingStepHandler throws when no voting config", async () => {
     Error,
     "Voting step has no voting config",
   );
+});
+
+Deno.test("[flow] VotingStepHandler emits VotingStepConsensusResolved when consensus reached", async () => {
+  const votingService = new SpyVotingService({ consensus_reached: true });
+  const logger = createMockLogger();
+  const handler = new VotingStepHandler({ votingService, eventLogger: logger });
+  const step = makeStep({
+    voting: {
+      runners: [
+        { blueprint: "agent-a", model_slot: VotingModelSlot.DEFAULT },
+        { blueprint: "agent-b", model_slot: VotingModelSlot.DEFAULT },
+        { blueprint: "agent-c", model_slot: VotingModelSlot.DEFAULT },
+      ],
+      strategy: VotingStrategy.MAJORITY,
+      halt_on_no_consensus: true,
+      timeout_ms: 5000,
+    },
+  });
+  const ctx = makeMinimalCtx(step);
+
+  await handler.execute(ctx);
+
+  assertEquals(logger.info.calls.length, 1);
+  const [action, target, payload] = logger.info.calls[0].args;
+  assertEquals(action, DomainEventType.VotingStepConsensusResolved);
+  assertEquals(target, "vote-1");
+  assertEquals(payload, {
+    consensus_reached: true,
+    strategy: VotingStrategy.MAJORITY,
+    candidate_count: 3,
+  });
+});
+
+Deno.test("[flow] VotingStepHandler emits VotingStepConsensusResolved when consensus not reached", async () => {
+  const votingService = new SpyVotingService({
+    consensus_reached: false,
+    strategy: VotingStrategy.WEIGHTED,
+    candidates: [
+      { runner_id: "runner-a", response: "Answer A" },
+      { runner_id: "runner-b", response: "Answer B" },
+    ],
+  });
+  const logger = createMockLogger();
+  const handler = new VotingStepHandler({ votingService, eventLogger: logger });
+  const step = makeStep({
+    voting: {
+      runners: [
+        { blueprint: "agent-a", model_slot: VotingModelSlot.DEFAULT },
+        { blueprint: "agent-b", model_slot: VotingModelSlot.DEFAULT },
+      ],
+      strategy: VotingStrategy.WEIGHTED,
+      halt_on_no_consensus: false,
+      timeout_ms: 5000,
+    },
+  });
+  const ctx = makeMinimalCtx(step);
+
+  await handler.execute(ctx);
+
+  assertEquals(logger.info.calls.length, 1);
+  const [action, target, payload] = logger.info.calls[0].args;
+  assertEquals(action, DomainEventType.VotingStepConsensusResolved);
+  assertEquals(target, "vote-1");
+  assertEquals(payload, {
+    consensus_reached: false,
+    strategy: VotingStrategy.WEIGHTED,
+    candidate_count: 2,
+  });
 });

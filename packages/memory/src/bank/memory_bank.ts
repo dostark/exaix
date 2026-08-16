@@ -15,7 +15,7 @@ import { join } from "@std/path";
 import { ensureDir, ensureDirSync, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
-import { DomainEventType } from "@exaix/core/events";
+import { DomainEventType, type TDomainEventType } from "@exaix/core/events";
 import {
   ActivityActor,
   ActivityType,
@@ -74,6 +74,7 @@ import type { Opt, Reason } from "@exaix/core/types";
  * - Execution memory (trace records, lessons learned)
  * - Search and indexing operations
  * - IActivity Journal integration
+ * @visible
  */
 export class MemoryBankService implements IMemoryBankService {
   private memoryRoot!: string;
@@ -90,7 +91,7 @@ export class MemoryBankService implements IMemoryBankService {
    * @param config - Exaix configuration
    * @param db - Database service for IActivity Journal integration
    */
-  constructor(private config: Config, private logger?: IEventLogger) {
+  constructor(private config: Config, private logger?: Opt<IEventLogger, Reason.OptionalDependency>) {
     this.memoryRoot = join(config.system.root!, config.paths.memory!);
     // Use subdirectory names directly, not full paths (which already include Memory/)
     this.projectsDir = join(this.memoryRoot, DEFAULT_PROJECTS_MEMORY_PATH);
@@ -110,6 +111,12 @@ export class MemoryBankService implements IMemoryBankService {
    */
   setEmbeddingService(service: IMemoryEmbeddingService): void {
     this.embeddingService = service;
+
+    this.logActivity({
+      event_type: DomainEventType.MemoryEmbeddingServiceSet,
+      target: MemoryScope.GLOBAL,
+      metadata: { service_name: service.constructor.name },
+    });
   }
 
   /**
@@ -1122,7 +1129,7 @@ export class MemoryBankService implements IMemoryBankService {
    * Log activity to IActivity Journal
    */
   private logActivity(event: {
-    event_type: string;
+    event_type: TDomainEventType;
     target: string;
     trace_id?: string;
     metadata?: Record<string, JSONValue>;

@@ -65,32 +65,54 @@ async function runParallel(tasks: Array<{ cmd: string[]; desc: string }>): Promi
   return results.every((r) => r === true);
 }
 
+/**
+ * The full static-analysis gate list, kept as ONE shared source so `checkCommand` and
+ * `allCommand`'s Phase 1 cannot silently drift apart from each other or from the real
+ * pre-commit hook (`scripts/setup_hooks.ts`'s `PRE_COMMIT_CONTENT`) — see
+ * `tests/scripts/ci_wiring_test.ts` for the parity regression tests that enforce this
+ * (Phase 168 self-improvement-retro finding: 9 gates the hook enforced — check:magic,
+ * check:runtime-artifacts, check:complexity, check:arch, docs-agent-validate, docs-bench,
+ * check:event-strings, check:doc-section-refs:staged, check:event-coverage:staged:visible —
+ * had never been added here, so a hook-clean commit could still fail `scripts/ci.ts all`'s
+ * documented "run before completion" promise silently).
+ */
+const STATIC_CHECK_TASKS: Array<{ cmd: string[]; desc: string }> = [
+  { cmd: ["deno", "task", "fmt:check"], desc: "Formatting Check" },
+  { cmd: ["deno", "task", "lint"], desc: "Linting" },
+  { cmd: ["deno", "task", "check:style"], desc: "Style/Boundary Validation" },
+  { cmd: ["deno", "task", "check:edition-graph"], desc: "Edition-Leak Graph Gate (deno-info double-check)" },
+  { cmd: ["deno", "task", "check:test-placement"], desc: "Test Placement Validation" },
+  { cmd: ["deno", "task", "check:magic"], desc: "Magic Value Gate" },
+  { cmd: ["deno", "task", "check:runtime-artifacts"], desc: "Runtime Artifact Guard" },
+  { cmd: ["deno", "task", "check:complexity"], desc: "Code Complexity Gate" },
+  { cmd: ["deno", "task", "check:arch"], desc: "Architecture Validation" },
+  { cmd: ["deno", "task", "docs-agent-validate"], desc: "Agent-Native Documentation Nervous System Check" },
+  { cmd: ["deno", "task", "docs-bench"], desc: "Hallucination Benchmarks (Ground Truth)" },
+  { cmd: ["deno", "task", "check:tool-result-parity"], desc: "Tool Result Parity Check" },
+  { cmd: ["deno", "task", "check:event-strings"], desc: "Inline Event String Check" },
+  { cmd: ["deno", "task", "check:optional-params", "--fail"], desc: "Optional Param Usage Check" },
+  {
+    cmd: ["deno", "task", "check:optional-params:staged"],
+    desc: "Bare-Optional Gate (staged files: ? / | undefined must use Opt)",
+  },
+  { cmd: ["deno", "task", "check:config-keys"], desc: "Config Key Uniqueness Gate" },
+  { cmd: ["deno", "task", "check:skill-envelopes"], desc: "Skill Envelope Validity" },
+  { cmd: ["deno", "task", "check:skill-index"], desc: "Runtime Skill Index Sync" },
+  { cmd: ["deno", "task", "check:blueprint-integrity"], desc: "Blueprint Catalog Integrity" },
+  { cmd: ["deno", "task", "check:manifests"], desc: "Step Manifest Validity" },
+  { cmd: ["deno", "task", "check:hardcoded-models"], desc: "Hardcoded Model CI Gate" },
+  { cmd: ["deno", "task", "check:md-path:staged"], desc: "Stale Markdown Path Check" },
+  { cmd: ["deno", "task", "check:doc-section-refs:staged"], desc: "Doc Section-Reference Check" },
+  { cmd: ["deno", "task", "check:agent-docs-integrity"], desc: "Agent Docs Integrity Check" },
+  { cmd: ["deno", "task", "check:qwen-skills-sync"], desc: "Qwen Skills Sync Check" },
+  { cmd: ["deno", "task", "check:event-coverage:staged:visible"], desc: "Event Coverage Visibility Check" },
+  { cmd: ["deno", "task", "check"], desc: "Type Checking" },
+];
+
 const checkCommand = new Command()
   .description("Run static analysis checks (fmt, lint, type-check)")
   .action(async () => {
-    const success = await runParallel([
-      { cmd: ["deno", "task", "fmt:check"], desc: "Formatting Check" },
-      { cmd: ["deno", "task", "lint"], desc: "Linting" },
-      { cmd: ["deno", "task", "check:style"], desc: "Style/Boundary Validation" },
-      { cmd: ["deno", "task", "check:edition-graph"], desc: "Edition-Leak Graph Gate (deno-info double-check)" },
-      { cmd: ["deno", "task", "check:test-placement"], desc: "Test Placement Validation" },
-      { cmd: ["deno", "task", "check:tool-result-parity"], desc: "Tool Result Parity Check" },
-      { cmd: ["deno", "task", "check:optional-params", "--fail"], desc: "Optional Param Usage Check" },
-      {
-        cmd: ["deno", "task", "check:optional-params:staged"],
-        desc: "Bare-Optional Gate (staged files: ? / | undefined must use Opt)",
-      },
-      { cmd: ["deno", "task", "check:config-keys"], desc: "Config Key Uniqueness Gate" },
-      { cmd: ["deno", "task", "check:skill-envelopes"], desc: "Skill Envelope Validity" },
-      { cmd: ["deno", "task", "check:skill-index"], desc: "Runtime Skill Index Sync" },
-      { cmd: ["deno", "task", "check:blueprint-integrity"], desc: "Blueprint Catalog Integrity" },
-      { cmd: ["deno", "task", "check:manifests"], desc: "Step Manifest Validity" },
-      { cmd: ["deno", "task", "check:hardcoded-models"], desc: "Hardcoded Model CI Gate" },
-      { cmd: ["deno", "task", "check:md-path:staged"], desc: "Stale Markdown Path Check" },
-      { cmd: ["deno", "task", "check:agent-docs-integrity"], desc: "Agent Docs Integrity Check" },
-      { cmd: ["deno", "task", "check:qwen-skills-sync"], desc: "Qwen Skills Sync Check" },
-      { cmd: ["deno", "task", "check"], desc: "Type Checking" },
-    ]);
+    const success = await runParallel(STATIC_CHECK_TASKS);
 
     const docsSuccess = await run(["deno", "task", "check:docs"], "Docs Drift Check");
     if (!docsSuccess) {
@@ -406,6 +428,15 @@ const coverageCommand = new Command()
 const allCommand = new Command()
   .description("Run full CI pipeline")
   .option("--edition <edition:string>", "Edition to build: solo|team|enterprise", { default: EDITION_SOLO })
+  .option(
+    "--skip-tests",
+    "Skip Phase 2 (Testing) and Phase 3 (Coverage) — Coverage re-runs the full suite a " +
+      "second time with instrumentation, so together they can cost 2x the test suite plus a full " +
+      "compile; use this for a fast local check+build pass. Default stays unconditional ('all' means " +
+      "all) because real CI (.github/workflows/*.yml) never invokes this command directly — it calls " +
+      "check/test/build as separate steps — so nothing in CI depends on this default.",
+    { default: false },
+  )
   .action(async (options) => {
     const edition = (options.edition ?? EDITION_SOLO) as EditionType;
     console.log(`🚀 Starting Full CI Pipeline [edition: ${edition}]`);
@@ -414,27 +445,7 @@ const allCommand = new Command()
     // 1. Checks (Parallel)
     console.log("\n--- Phase 1: Static Checks ---");
     if (
-      !await runParallel([
-        { cmd: ["deno", "task", "fmt:check"], desc: "Formatting" },
-        { cmd: ["deno", "task", "lint"], desc: "Linting" },
-        { cmd: ["deno", "task", "check:style"], desc: "Style/Boundary Validation" },
-        { cmd: ["deno", "task", "check:test-placement"], desc: "Test Placement Validation" },
-        { cmd: ["deno", "task", "check:tool-result-parity"], desc: "Tool Result Parity Check" },
-        { cmd: ["deno", "task", "check:optional-params", "--fail"], desc: "Optional Param Usage Check" },
-        {
-          cmd: ["deno", "task", "check:optional-params:staged"],
-          desc: "Bare-Optional Gate (staged files: ? / | undefined must use Opt)",
-        },
-        { cmd: ["deno", "task", "check:config-keys"], desc: "Config Key Uniqueness Gate" },
-        { cmd: ["deno", "task", "check:skill-envelopes"], desc: "Skill Envelope Validity" },
-        { cmd: ["deno", "task", "check:skill-index"], desc: "Runtime Skill Index Sync" },
-        { cmd: ["deno", "task", "check:blueprint-integrity"], desc: "Blueprint Catalog Integrity" },
-        { cmd: ["deno", "task", "check:manifests"], desc: "Step Manifest Validity" },
-        { cmd: ["deno", "task", "check:hardcoded-models"], desc: "Hardcoded Model CI Gate" },
-        { cmd: ["deno", "task", "check:md-path:staged"], desc: "Stale Markdown Path Check" },
-        { cmd: ["deno", "task", "check:agent-docs-integrity"], desc: "Agent Docs Integrity Check" },
-        { cmd: ["deno", "task", "check"], desc: "Type Checking" },
-      ])
+      !await runParallel(STATIC_CHECK_TASKS)
     ) Deno.exit(1);
 
     const docsSuccess = await run(["deno", "task", "check:docs"], "Docs Drift Check");
@@ -444,19 +455,27 @@ const allCommand = new Command()
       );
     }
 
-    // 2. Tests (Parallel) — edition-scoped
-    console.log(`\n--- Phase 2: Testing [edition: ${edition}] ---`);
-    const testTask = edition === EDITION_SOLO ? "test:solo" : edition === EDITION_TEAM ? "test:team" : "test_parallel";
-    if (
-      !await runParallel([
-        { cmd: ["deno", "task", testTask], desc: `Unit & Integration Tests [edition: ${edition}]` },
-        { cmd: ["deno", "task", "test:security"], desc: "Security Regression Tests" },
-      ])
-    ) Deno.exit(1);
+    if (options.skipTests) {
+      console.log("\n⏭️  Skipping Phase 2 (Testing) and Phase 3 (Coverage) — --skip-tests was passed.");
+    } else {
+      // 2. Tests (Parallel) — edition-scoped
+      console.log(`\n--- Phase 2: Testing [edition: ${edition}] ---`);
+      const testTask = edition === EDITION_SOLO
+        ? "test:solo"
+        : edition === EDITION_TEAM
+        ? "test:team"
+        : "test_parallel";
+      if (
+        !await runParallel([
+          { cmd: ["deno", "task", testTask], desc: `Unit & Integration Tests [edition: ${edition}]` },
+          { cmd: ["deno", "task", "test:security"], desc: "Security Regression Tests" },
+        ])
+      ) Deno.exit(1);
 
-    // 3. Coverage (Optional for now, but part of 'all')
-    console.log("\n--- Phase 3: Coverage ---");
-    await verifyCoverage(edition);
+      // 3. Coverage (Optional for now, but part of 'all')
+      console.log("\n--- Phase 3: Coverage ---");
+      await verifyCoverage(edition);
+    }
 
     // 4. Build
     console.log("\n--- Phase 4: Build ---");

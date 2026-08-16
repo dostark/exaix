@@ -24,9 +24,16 @@ import {
   findClassAuditField,
   findComponentFields,
   findCrossComponentCalls,
+  findMissingLoggerFindings,
   findStateChangeOperations,
+  hasVisibleTag,
+  type IEventCoverageFinding,
+  type IMissingLoggerFinding,
   isAuditLoggerTypeName,
   isComponentTypeName,
+  isDecoratorCovered,
+  type IWiredUnusedFinding,
+  shouldFailOnTagged,
   unwrapOptTypeName,
 } from "../../scripts/check_event_coverage.ts";
 
@@ -44,6 +51,10 @@ function firstClass(sf: ts.SourceFile): ts.ClassDeclaration {
   const found = sf.statements.find((s): s is ts.ClassDeclaration => ts.isClassDeclaration(s));
   if (!found) throw new Error("no class declaration found in fixture");
   return found;
+}
+
+function allClasses(sf: ts.SourceFile): ts.ClassDeclaration[] {
+  return sf.statements.filter((s): s is ts.ClassDeclaration => ts.isClassDeclaration(s));
 }
 
 function firstMethod(cls: ts.ClassDeclaration, name: string): ts.MethodDeclaration {
@@ -146,6 +157,55 @@ Deno.test("[findClassAuditField] returns null when the class has no logger depen
   `);
   const cls = firstClass(sf);
   assertEquals(findClassAuditField(cls), null);
+});
+
+Deno.test("[findClassAuditField] finds a logger nested in a same-file deps-bag parameter", () => {
+  const sf = parse(`
+    interface ISvcDeps {
+      votingService: IVotingConsensusService;
+      eventLogger: IEventLogger;
+    }
+    class Svc {
+      #eventLogger: IEventLogger;
+      constructor(deps: ISvcDeps) {
+        this.#eventLogger = deps.eventLogger;
+      }
+    }
+  `);
+  const cls = firstClass(sf);
+  assertEquals(findClassAuditField(cls, sf), "#eventLogger");
+});
+
+Deno.test("[findClassAuditField] does not resolve a deps-bag logger when no SourceFile is provided", () => {
+  const sf = parse(`
+    interface ISvcDeps {
+      eventLogger: IEventLogger;
+    }
+    class Svc {
+      #eventLogger: IEventLogger;
+      constructor(deps: ISvcDeps) {
+        this.#eventLogger = deps.eventLogger;
+      }
+    }
+  `);
+  const cls = firstClass(sf);
+  assertEquals(findClassAuditField(cls), null);
+});
+
+Deno.test("[findClassAuditField] returns null for a deps-bag parameter whose type has no logger member", () => {
+  const sf = parse(`
+    interface ISvcDeps {
+      db: IDatabaseService;
+    }
+    class Svc {
+      #db: IDatabaseService;
+      constructor(deps: ISvcDeps) {
+        this.#db = deps.db;
+      }
+    }
+  `);
+  const cls = firstClass(sf);
+  assertEquals(findClassAuditField(cls, sf), null);
 });
 
 // ── findComponentFields ──
@@ -369,6 +429,85 @@ Deno.test("[analyzeClass] skips a class with no audit-loggable dependency entire
   assertEquals(result.findings.length, 0);
 });
 
+Deno.test("[analyzeClass] does not flag a class whose logger is only called from a private helper method", () => {
+  const sf = parse(`
+    export class Svc {
+      constructor(private readonly logger?: IEventLogger) {}
+      save(x: string): void {
+        this.logActivity("svc.saved", x);
+      }
+      private logActivity(action: string, target: string): void {
+        this.logger?.info(action, target);
+      }
+    }
+  `);
+  const cls = firstClass(sf);
+  const result = analyzeClass(cls, sf);
+  assertEquals(result.wiredUnused, null);
+  assertEquals(result.findings.length, 0);
+});
+
+Deno.test("[analyzeClass] treats a method as covered when it calls a private helper that itself calls the logger", () => {
+  const sf = parse(`
+    export class Svc {
+      constructor(private readonly logger?: IEventLogger, private readonly amendmentService?: IAmendmentService) {}
+      async processAmendment(input: string): Promise<void> {
+        await this.amendmentService.propose(input);
+        await this.emitEvent("proposed", input);
+      }
+      private async emitEvent(action: string, target: string): Promise<void> {
+        if (this.logger) {
+          await this.logger.info(action, target);
+        }
+      }
+    }
+  `);
+  const cls = firstClass(sf);
+  const result = analyzeClass(cls, sf);
+  assertEquals(result.wiredUnused, null);
+  assertEquals(result.findings.some((f) => f.scopeName.endsWith(".processAmendment")), false);
+});
+
+Deno.test("[analyzeClass] still flags a method that calls a non-logging private helper", () => {
+  const sf = parse(`
+    export class Svc {
+      constructor(private readonly logger?: IEventLogger) {}
+      quiet(): void {
+        this.count = 1;
+        this.helper();
+      }
+      private helper(): void {
+        this.other = 2;
+      }
+      loud(): void {
+        this.logger?.info("svc.loud", null);
+      }
+    }
+  `);
+  const cls = firstClass(sf);
+  const result = analyzeClass(cls, sf);
+  assertEquals(result.wiredUnused, null);
+  assertEquals(result.findings.some((f) => f.scopeName.endsWith(".quiet")), true);
+});
+
+Deno.test("[analyzeClass] still flags an individual public method with its own uncovered state change, even when a private helper covers the class overall", () => {
+  const sf = parse(`
+    export class Svc {
+      constructor(private readonly logger?: IEventLogger) {}
+      quiet(): void {
+        this.count = 1;
+      }
+      private logActivity(action: string, target: string): void {
+        this.logger?.info(action, target);
+      }
+    }
+  `);
+  const cls = firstClass(sf);
+  const result = analyzeClass(cls, sf);
+  assertEquals(result.wiredUnused, null);
+  assertEquals(result.findings.some((f) => f.scopeName.endsWith(".quiet")), true);
+});
+
 // ── analyzeSourceFile (integration) ──
 
 Deno.test("[analyzeSourceFile] finds a top-level exported function with a state change and no logger call", () => {
@@ -416,4 +555,242 @@ Deno.test("[analyzeSourceFile] reports both a wired-unused class and a method-le
   const result = analyzeSourceFile(sf, "example.ts");
   assertEquals(result.wiredUnused.length, 1);
   assertEquals(result.wiredUnused[0].className, "Svc");
+});
+
+// ── hasVisibleTag ──
+
+Deno.test("[hasVisibleTag] returns true when the class's own leading comment carries @visible", () => {
+  const sf = parse(`
+/** @visible */
+export class Foo {}
+`);
+  const cls = firstClass(sf);
+  assertEquals(hasVisibleTag(cls, sf.getFullText()), true);
+});
+
+Deno.test("[hasVisibleTag] returns false for a class with no tag", () => {
+  const sf = parse(`
+/** Just a regular class. */
+export class Foo {}
+`);
+  const cls = firstClass(sf);
+  assertEquals(hasVisibleTag(cls, sf.getFullText()), false);
+});
+
+Deno.test("[hasVisibleTag] distinguishes between two classes in the same file — only the tagged one matches", () => {
+  const sf = parse(`
+/** Untagged sibling. */
+export class Foo {}
+
+/** @visible */
+export class Bar {}
+`);
+  const [foo, bar] = allClasses(sf);
+  assertEquals(hasVisibleTag(foo, sf.getFullText()), false);
+  assertEquals(hasVisibleTag(bar, sf.getFullText()), true);
+});
+
+// ── isDecoratorCovered ──
+
+Deno.test("[isDecoratorCovered] recognizes @LogMethod(logger, ...) on a method", () => {
+  const sf = parse(`
+    export class Svc {
+      @LogMethod(logger, { action: DomainEventType.Foo })
+      async run(): Promise<void> {}
+    }
+  `);
+  const cls = firstClass(sf);
+  assertEquals(isDecoratorCovered(firstMethod(cls, "run")), true);
+});
+
+Deno.test("[isDecoratorCovered] recognizes @LogSyncMethod and @LogGeneratorMethod", () => {
+  const sf = parse(`
+    export class Svc {
+      @LogSyncMethod(logger, { action: DomainEventType.Foo })
+      syncRun(): void {}
+
+      @LogGeneratorMethod(logger, { action: DomainEventType.Foo })
+      async *streamRun(): AsyncGenerator<string> {}
+    }
+  `);
+  const cls = firstClass(sf);
+  assertEquals(isDecoratorCovered(firstMethod(cls, "syncRun")), true);
+  assertEquals(isDecoratorCovered(firstMethod(cls, "streamRun")), true);
+});
+
+Deno.test("[isDecoratorCovered] recognizes an ILifecycleActions object-literal action (per-phase DomainEventType members)", () => {
+  const sf = parse(`
+    export class Svc {
+      @LogGeneratorMethod(logger, {
+        action: {
+          started: DomainEventType.Started,
+          completed: DomainEventType.Completed,
+          failed: DomainEventType.Failed,
+          cancelled: DomainEventType.Cancelled,
+        },
+      })
+      async *streamRun(): AsyncGenerator<string> {}
+    }
+  `);
+  const cls = firstClass(sf);
+  assertEquals(isDecoratorCovered(firstMethod(cls, "streamRun")), true);
+});
+
+Deno.test("[isDecoratorCovered] rejects an action object with a non-DomainEventType member", () => {
+  const sf = parse(`
+    export class Svc {
+      @LogMethod(logger, { action: { started: "raw.string", completed: DomainEventType.Completed, failed: DomainEventType.Failed } })
+      async run(): Promise<void> {}
+    }
+  `);
+  const cls = firstClass(sf);
+  assertEquals(isDecoratorCovered(firstMethod(cls, "run")), false);
+});
+
+Deno.test("[isDecoratorCovered] returns false for an undecorated method", () => {
+  const sf = parse(`
+    export class Svc {
+      run(): void {}
+    }
+  `);
+  const cls = firstClass(sf);
+  assertEquals(isDecoratorCovered(firstMethod(cls, "run")), false);
+});
+
+// ── analyzeClass + decorator coverage ──
+
+Deno.test("[analyzeClass] treats a decorator-covered method as covered even with zero direct logger calls", () => {
+  const sf = parse(`
+    export class Svc {
+      constructor(private readonly logger?: IEventLogger) {}
+
+      @LogMethod(logger, { action: DomainEventType.Foo })
+      save(x: string): void {
+        this.repo.save(x);
+      }
+    }
+  `);
+  const cls = firstClass(sf);
+  const result = analyzeClass(cls, sf);
+  assertEquals(result.wiredUnused, null);
+  assertEquals(result.findings.length, 0);
+});
+
+// ── findMissingLoggerFindings ──
+
+Deno.test("[findMissingLoggerFindings] flags a @visible class with no logger dependency at all", () => {
+  const sf = parse(`
+/** @visible */
+export class Svc {
+  constructor(private readonly repo: IRepo) {}
+}
+`);
+  const result = findMissingLoggerFindings(sf, "example.ts");
+  assertEquals(result.length, 1);
+  assertEquals(result[0].className, "Svc");
+});
+
+Deno.test("[findMissingLoggerFindings] does not flag an untagged class with no logger dependency", () => {
+  const sf = parse(`
+export class Svc {
+  constructor(private readonly repo: IRepo) {}
+}
+`);
+  const result = findMissingLoggerFindings(sf, "example.ts");
+  assertEquals(result.length, 0);
+});
+
+// ── shouldFailOnTagged (the --fail-on-tagged CLI flag's decision logic) ──
+
+Deno.test("[shouldFailOnTagged] returns false when only untagged findings exist", () => {
+  const findings: IEventCoverageFinding[] = [
+    { file: "a.ts", scopeName: "Svc.run", line: 1, reasons: ["state-change"], detail: [], tagged: false },
+  ];
+  const wiredUnused: IWiredUnusedFinding[] = [
+    { file: "a.ts", className: "Svc", fieldName: "logger", line: 1, tagged: false },
+  ];
+  assertEquals(shouldFailOnTagged(findings, wiredUnused, []), false);
+});
+
+Deno.test("[shouldFailOnTagged] returns true when a tagged finding or missing-logger finding exists", () => {
+  const taggedFinding: IEventCoverageFinding[] = [
+    { file: "a.ts", scopeName: "Svc.run", line: 1, reasons: ["state-change"], detail: [], tagged: true },
+  ];
+  assertEquals(shouldFailOnTagged(taggedFinding, [], []), true);
+
+  const taggedWired: IWiredUnusedFinding[] = [
+    { file: "a.ts", className: "Svc", fieldName: "logger", line: 1, tagged: true },
+  ];
+  assertEquals(shouldFailOnTagged([], taggedWired, []), true);
+
+  const missingLogger: IMissingLoggerFinding[] = [{ file: "a.ts", className: "Svc", line: 1 }];
+  assertEquals(shouldFailOnTagged([], [], missingLogger), true);
+});
+
+Deno.test("[isDecoratorCovered] rejects a decorator without a registered taxonomy action", () => {
+  const sf = parse(`export class Svc { @LogSyncMethod(logger) run(): void {} }`);
+  assertEquals(isDecoratorCovered(firstMethod(firstClass(sf), "run")), false);
+});
+
+Deno.test("[analyzeClass] rejects a raw action for a visible class while preserving advisory untagged behavior", () => {
+  const tagged = parse(`
+/** @visible */
+export class Svc {
+  constructor(private logger: IEventLogger, private repo: IRepo) {}
+  save(): void { this.logger.info("raw.action", null); this.repo.save(); }
+}`);
+  const untagged = parse(`
+export class Svc {
+  constructor(private logger: IEventLogger, private repo: IRepo) {}
+  save(): void { this.logger.info("raw.action", null); this.repo.save(); }
+}`);
+  assertEquals(analyzeClass(firstClass(tagged), tagged).wiredUnused !== null, true);
+  assertEquals(analyzeClass(firstClass(untagged), untagged).findings.length, 0);
+});
+
+Deno.test("[analyzeClass] treats a tagged class's private-helper action parameter as covered when typed TDomainEventType", () => {
+  const sf = parse(`
+/** @visible */
+export class Svc {
+  constructor(private logger: IEventLogger) {}
+  save(): void { this.emitEvent(DomainEventType.SvcSaved, null); }
+  private emitEvent(action: TDomainEventType, target: string | null): void {
+    this.logger.info(action, target);
+  }
+}`);
+  const cls = firstClass(sf);
+  const result = analyzeClass(cls, sf);
+  assertEquals(result.wiredUnused, null);
+  assertEquals(result.findings.some((f) => f.scopeName.endsWith(".save")), false);
+});
+
+Deno.test("[analyzeClass] treats a tagged class's private-helper object-field action as covered when the field is typed TDomainEventType", () => {
+  const sf = parse(`
+/** @visible */
+export class Svc {
+  constructor(private logger: IEventLogger) {}
+  save(): void { this.logActivity({ event_type: DomainEventType.SvcSaved, target: "x" }); }
+  private logActivity(event: { event_type: TDomainEventType; target: string }): void {
+    this.logger.info(event.event_type, event.target);
+  }
+}`);
+  const cls = firstClass(sf);
+  const result = analyzeClass(cls, sf);
+  assertEquals(result.wiredUnused, null);
+  assertEquals(result.findings.some((f) => f.scopeName.endsWith(".save")), false);
+});
+
+Deno.test("[analyzeClass] still rejects a tagged class's private-helper action parameter typed as a bare string", () => {
+  const sf = parse(`
+/** @visible */
+export class Svc {
+  constructor(private logger: IEventLogger) {}
+  save(): void { this.emitEvent("svc.saved", null); }
+  private emitEvent(action: string, target: string | null): void {
+    this.logger.info(action, target);
+  }
+}`);
+  const cls = firstClass(sf);
+  const result = analyzeClass(cls, sf);
+  assertEquals(result.wiredUnused !== null, true);
 });

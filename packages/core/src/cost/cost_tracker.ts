@@ -43,6 +43,7 @@ type IPendingCostRecord = Omit<IProviderCostRecord, "id" | "costSource"> & {
 /**
  * Service for tracking and managing LLM provider costs.
  * Provides budget enforcement and cost analytics.
+ * @visible
  */
 export class CostTracker implements ICostTracker {
   private static getCostRates(
@@ -82,6 +83,9 @@ export class CostTracker implements ICostTracker {
    */
   setPricingLookup(lookup: IModelPricingLookup): void {
     this.pricingLookup = lookup;
+    void this.eventLogger?.info(DomainEventType.CostPricingLookupSet, "pricing_lookup", {
+      configured: true,
+    });
   }
 
   private get divergenceTolerancePct(): number {
@@ -327,7 +331,7 @@ export class CostTracker implements ICostTracker {
       cacheCreationTokens: number | null;
     }>(query, params);
 
-    return rows.map((row) => ({
+    const results = rows.map((row) => ({
       ...row,
       traceId: row.traceId ?? undefined,
       portal: row.portal ?? undefined,
@@ -336,6 +340,15 @@ export class CostTracker implements ICostTracker {
       cacheReadTokens: row.cacheReadTokens ?? undefined,
       cacheCreationTokens: row.cacheCreationTokens ?? undefined,
     }));
+
+    await this.eventLogger?.info(DomainEventType.CostQueriedByCriteria, filter.traceId ?? filter.model ?? "all", {
+      resultCount: results.length,
+      traceId: filter.traceId ?? null,
+      portal: filter.portal ?? null,
+      model: filter.model ?? null,
+    });
+
+    return results;
   }
 
   getTotalCost(
@@ -372,8 +385,14 @@ export class CostTracker implements ICostTracker {
       : [today.toISOString(), tomorrow.toISOString()];
 
     const result = await this.db.preparedGet<{ total_cost: number | null }>(query, params);
+    const totalCost = result?.total_cost ?? 0;
 
-    return result?.total_cost ?? 0;
+    await this.eventLogger?.info(DomainEventType.CostDailyCostQueried, provider ?? "all", {
+      provider: provider ?? null,
+      totalCost,
+    });
+
+    return totalCost;
   }
 
   async getCostSummary(
@@ -401,7 +420,7 @@ export class CostTracker implements ICostTracker {
       timestamp: string;
     }>(query, params);
 
-    return rows.map((row) => ({
+    const results = rows.map((row) => ({
       id: row.id,
       provider: row.provider,
       model: "unknown",
@@ -414,6 +433,15 @@ export class CostTracker implements ICostTracker {
       portal: undefined,
       timestamp: new Date(row.timestamp),
     }));
+
+    await this.eventLogger?.info(DomainEventType.CostSummaryQueried, provider ?? "all", {
+      provider: provider ?? null,
+      resultCount: results.length,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    });
+
+    return results;
   }
 
   private estimateCost(provider: string, tokens: number, model?: Opt<string, Reason.OptionalInput>): number {
@@ -476,6 +504,10 @@ export class CostTracker implements ICostTracker {
       clearTimeout(this.batchTimeout);
       this.batchTimeout = null;
     }
+    const pendingCount = this.pendingRecords.length;
     await this.flushBatch();
+    await this.eventLogger?.info(DomainEventType.CostBatchFlushed, "cost_batch", {
+      pendingCount,
+    });
   }
 }

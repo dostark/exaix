@@ -6,9 +6,10 @@
 
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
 import { AgentOrchestrator } from "@exaix/execution";
-import type { EventLogger } from "@exaix/core/logger";
+import type { IEventLogger } from "@exaix/core/logger";
 import type { ILogEvent } from "@exaix/core";
-import { ActorType, AgentKind } from "@exaix/core";
+import type { JSONValue, LogMetadata } from "@exaix/core/types";
+import { ActorType, AgentKind, LogLevel } from "@exaix/core";
 import {
   AGENT_EVENT_EXECUTION_COMPLETED,
   AGENT_EVENT_EXECUTION_STARTED,
@@ -30,13 +31,29 @@ import { createMockConfig } from "@exaix/testing";
  * - Test 4: REGRESSION: agentId must never be set to an identity blueprint slug
  */
 
-function createMockLogger(eventCapture: ILogEvent[]): Partial<EventLogger> {
+function createMockLogger(eventCapture: ILogEvent[]): IEventLogger {
+  const log = (e: ILogEvent): Promise<void> => {
+    eventCapture.push(e);
+    return Promise.resolve();
+  };
+  const logAtLevel = (
+    level: LogLevel,
+    action: string,
+    target: string | null,
+    payload?: LogMetadata,
+    traceId?: string,
+  ): Promise<void> =>
+    log({ level, action, target: target ?? "", payload: payload as Record<string, JSONValue>, traceId });
+
   return {
-    log: function (e: ILogEvent): Promise<void> {
-      eventCapture.push(e);
-      return Promise.resolve();
-    },
-  } as Partial<EventLogger>;
+    log,
+    info: (action, target, payload, traceId) => logAtLevel(LogLevel.INFO, action, target, payload, traceId),
+    warn: (action, target, payload, traceId) => logAtLevel(LogLevel.WARN, action, target, payload, traceId),
+    error: (action, target, payload, traceId) => logAtLevel(LogLevel.ERROR, action, target, payload, traceId),
+    fatal: (action, target, payload, traceId) => logAtLevel(LogLevel.FATAL, action, target, payload, traceId),
+    debug: (action, target, payload, traceId) => logAtLevel(LogLevel.DEBUG, action, target, payload, traceId),
+    child: (_overrides: Partial<ILogEvent>): IEventLogger => createMockLogger(eventCapture),
+  };
 }
 
 function createMockConfigForTest(): ReturnType<typeof createMockConfig> {
@@ -48,7 +65,7 @@ function createExecutorHarness(): { executor: AgentOrchestrator; loggedEvents: I
   const executor = new AgentOrchestrator({
     config: createMockConfigForTest(),
     db: {} as Partial<DatabaseService> as DatabaseService,
-    logger: createMockLogger(loggedEvents) as EventLogger,
+    logger: createMockLogger(loggedEvents),
     pathResolver: {} as Partial<PathResolver> as PathResolver,
     permissions: {} as Partial<PortalPermissionsService> as PortalPermissionsService,
   });

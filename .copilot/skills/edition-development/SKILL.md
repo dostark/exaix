@@ -12,7 +12,7 @@ scope: dev
 title: "Edition Development Skill (#edition-development)"
 description: Guide for developing edition-specific features within Exaix's three-tier edition architecture — Option-C layout, seam wiring, composer contracts, build targets, and CI/release pipeline
 short_summary: "Develop edition-specific features (Solo/Team/Enterprise) following Exaix's composition architecture, Option-C layout, and seam-based extension model."
-version: "1.1.0"
+version: "1.2.0"
 topics: [
   "edition",
   "solo",
@@ -221,9 +221,17 @@ deno task build:enterprise  # entry: exaix-enterprise/mod.ts, prefix: exaix-ente
 #   packages-team/, exaix-enterprise/, scripts/, apps/common/
 deno task check:no-edition-conditionals
 
-# Full CI pipeline per edition
+# Full CI pipeline per edition — runs check + test + coverage (re-runs the suite a SECOND
+# time with instrumentation) + build; reserve for a final pre-PR validation, not routine
+# local iteration
 deno task ci:solo           # check + test + coverage + build (Solo)
 deno task ci:team           # check + test + coverage + build (Team)
+
+# Fast local default: same edition-scoped check + build, skips the slow Testing+Coverage
+# phases — use this while iterating unless the prompt explicitly asked to also
+# re-validate the full test suite/coverage
+deno task ci:solo --skip-tests
+deno task ci:team --skip-tests
 
 # Leak guard (before publishing Solo OSS)
 deno run -A scripts/leak_guard.ts --allowlist packages apps --check-headers

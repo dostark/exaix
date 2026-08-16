@@ -10,7 +10,7 @@ scope: dev
 title: "Plan Skill (#plan)"
 description: Draft a new Phase Planning Document for a feature, refactor, or architectural change — follows Exaix standards for TDD, security, and traceability. Produces plans that are machine-convertible to dogfood requests (step-manifests for automated request extraction). Grounds any third-party service/provider integration in deep web research of the provider's real, current capability surface so integrations are first-class, not hacks.
 short_summary: "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy."
-version: "1.11.0"
+version: "1.12.0"
 topics: [
   "planning",
   "architecture",
@@ -81,6 +81,15 @@ Do / Don't
   created and deleted before this was standardized).
 - ✅ Do assess scenario framework coverage (§3E) for any change to the end-to-end flow.
 - ✅ Do author all success criteria and success metric checkboxes as `- [ ] <text>` (no `→` path) at plan-authoring time — these are aspirational targets whose implementing module is not yet known. During execution #next-steps rewrites each done item to the completion form the commit gate requires: `- ✅ <text> → ` `` `<path>` `` (backtick-wrapped, staged file) for a met criterion/test, or `- ⚠️ deferred <text> → ` `` `<LedgerSymbol>` `` for one pushed to the Reachability Ledger. The commit gate (`scripts/check_commit_msg.ts` via `commit_plan_step.ts`) BLOCKS any `- [ ]` item left in a step whose commit claims it — so a committed step must have every criterion/test either `✅ → path` or `⚠️ deferred → token`; `[ ]` may only remain on steps not yet implemented.
+- ✅ Do point every `→ ` `` `path` `` at a real repo file that is actually among the commit's
+  changed files — never a command, task name, or prose description. `scripts/check_commit_msg.ts`
+  extracts whatever is backtick-wrapped after `→` verbatim and requires it to literally match a
+  changed file path; it does not parse or execute the text, so `→ ` `` `deno task
+  docs-agent-validate` `` `` fails with "not among this commit's changed files" even though running
+  that command IS how the criterion was verified. If the real evidence is "ran command X and
+  observed clean output" rather than "this file implements/tests it", point `→` at the file the
+  command's success actually depends on (e.g. the plan doc itself, or the source file the command
+  validates) — not the command string.
 - ✅ Do keep success-metric checkboxes (the `## Success Metrics` section, which are phase-level aspirational targets not tied to one step) as `- [ ]` — the commit gate only scopes the per-step Success Criteria / Planned Tests blocks, not the Success Metrics section.
 - ✅ Do use plain descriptive prose to summarize a step's outputs at authoring time — never pre-write execution status labels such as `**✅ CORE**` or `**✅ WIRED**`. (#next-steps ADDS those reachability labels during execution once proven; they are execution artifacts, not plan-authoring content.)
 - ✅ Do ensure every h2 section carries its own descriptive content that fulfills the section's stated purpose. A section that is only a heading followed immediately by sub-headings (e.g., `## Current State Analysis` with no prose before `### Key Files`) is a **blank container** — it reads as an unfinished outline placeholder, not a written plan. Every h2 must contain at least one paragraph of content at its own level that introduces, summarizes, or frames the sub-sections below it. This is especially critical for `## Executive Summary`, `## Current State Analysis`, `## Technical Architecture`, and `## Security Constraints` — sections whose heading promises information that must not be deferred entirely to sub-sections.
@@ -373,11 +382,22 @@ introduces a class genuinely load-bearing for observability — on the request �
 execution → review → memory critical path, or handling security-sensitive operations —
 name it in Architecture Notes as an `@visible` candidate and have the step's own Actions
 add the tag. The tag costs nothing and is adoptable immediately; the checker's
-`--fail-on-tagged` enforcement and the pre-commit gate that blocks a real violating commit
-land with Phase 168 (`exaix-dev-docs/planning/phase-168-event-logging-hardening-visibility-audit.md`).
-Until then, a `@visible`-tagged class with a coverage gap is still only advisory in CI —
-but it is a real, escalatable finding at `#pre-gap-analysis`/`#post-gap-analysis`, since the
-tag is the plan's own explicit declaration that coverage is required.
+`--fail-on-tagged` enforcement and the real pre-commit gate (Gate 19) that blocks a
+violating commit are wired and live, landed by Phase 168
+(`exaix-dev-docs/planning/phase-168-event-logging-hardening-visibility-audit.md`) — a
+`@visible`-tagged class with a coverage gap now fails a real `git commit`, not just an
+advisory CI note.
+
+`@visible` coverage means more than "a logger call exists": the action argument must
+resolve to a registered `DomainEventType` member (a literal reference, or a same-class
+private-helper parameter/field typed `TDomainEventType`) — a raw string or dynamically
+computed action is a gap even with a logger call present. When a step's operation emits
+more than one lifecycle event (started/completed/failed), plan for the trace ID to be
+passed as the logger call's fourth argument on every one of them, not only embedded in
+the payload — otherwise each event gets an independent random trace ID and cannot be
+joined in the Activity Journal. A streaming or async-generator method must have a
+planned terminal event for every exit path, including early consumer cancellation, not
+only normal completion and a thrown error.
 
 ### 3. Documentation Update Protocol (§3D)
 

@@ -67,6 +67,10 @@ export interface IEventCoverageFinding {
   line: number;
   reasons: Array<"state-change" | "cross-component-call">;
   detail: string[];
+  /** true when the owning class carries @visible — promotes this finding from advisory to
+   *  blocking under --fail-on-tagged. Always false for top-level function findings, since
+   *  @visible is a class-level tag. */
+  tagged: boolean;
 }
 
 /** A class that accepts an audit-logger dependency but never calls it in any method. */
@@ -74,6 +78,19 @@ export interface IWiredUnusedFinding {
   file: string;
   className: string;
   fieldName: string;
+  line: number;
+  /** true when the class carries @visible — promotes this finding from advisory to
+   *  blocking under --fail-on-tagged. */
+  tagged: boolean;
+}
+
+/** A @visible-tagged exported class with no audit-logger constructor dependency at all —
+ *  the population the tool could not see before @visible existed; untagged classes are
+ *  never checked for this (absence of a logger is only a gap when the class explicitly
+ *  declared it must be covered). */
+export interface IMissingLoggerFinding {
+  file: string;
+  className: string;
   line: number;
 }
 
@@ -87,6 +104,7 @@ export interface IAnalyzeClassResult {
 export interface IAnalyzeSourceFileResult {
   findings: IEventCoverageFinding[];
   wiredUnused: IWiredUnusedFinding[];
+  missingLogger: IMissingLoggerFinding[];
 }
 
 // ── Type-name classification ──
@@ -114,6 +132,61 @@ export function unwrapOptTypeName(typeNode: ts.TypeNode): string | null {
     return ts.isTypeReferenceNode(inner) ? inner.typeName.getText() : null;
   }
   return name;
+}
+
+// ── Visibility tag (@visible) ──
+
+const VISIBLE_TAG_PATTERN = /@visible\b/;
+
+/** True when `cls`'s own leading JSDoc comment carries the `@visible` tag — a class
+ *  explicitly declaring itself load-bearing for the ARCHITECTURE.md "Visibility"
+ *  guarantee, escalating its coverage findings from advisory to blocking under
+ *  `--fail-on-tagged`. Scoped to the class's own leading comment range (via
+ *  `ts.getLeadingCommentRanges` at the class node's full start), not the whole file
+ *  header, since one file may declare more than one class — mirrors
+ *  `scripts/validate_architecture.ts`'s `@ungrounded` regex exactly in spirit. */
+export function hasVisibleTag(cls: ts.ClassDeclaration, sourceText: string): boolean {
+  const ranges = ts.getLeadingCommentRanges(sourceText, cls.getFullStart());
+  if (!ranges) return false;
+  return ranges.some((r) => VISIBLE_TAG_PATTERN.test(sourceText.slice(r.pos, r.end)));
+}
+
+const LOG_METHOD_FAMILY_DECORATOR_NAMES = new Set(["LogMethod", "LogSyncMethod", "LogGeneratorMethod"]);
+
+/** True when `expr` is a literal `DomainEventType.X` property access, or an object literal
+ *  (an `ILifecycleActions`/`IGeneratorLifecycleActions` value) whose every property is
+ *  itself a literal `DomainEventType.X` — covers both the single-action and per-phase-action
+ *  decorator option shapes. */
+function isRegisteredActionExpression(expr: ts.Expression): boolean {
+  if (ts.isPropertyAccessExpression(expr) && ts.isIdentifier(expr.expression)) {
+    return expr.expression.text === "DomainEventType";
+  }
+  if (ts.isObjectLiteralExpression(expr)) {
+    return expr.properties.length > 0 &&
+      expr.properties.every((property) =>
+        ts.isPropertyAssignment(property) && isRegisteredActionExpression(property.initializer)
+      );
+  }
+  return false;
+}
+
+/** True when a decorator carries a registered DomainEventType action. */
+export function isDecoratorCovered(method: ts.MethodDeclaration): boolean {
+  if (!ts.canHaveDecorators(method)) return false;
+  const decorators = ts.getDecorators(method);
+  if (!decorators) return false;
+  return decorators.some((decorator) => {
+    const expression = decorator.expression;
+    if (!ts.isCallExpression(expression) || !ts.isIdentifier(expression.expression)) return false;
+    if (!LOG_METHOD_FAMILY_DECORATOR_NAMES.has(expression.expression.text)) return false;
+    return expression.arguments.some((argument) => {
+      if (!ts.isObjectLiteralExpression(argument)) return false;
+      return argument.properties.some((property) =>
+        ts.isPropertyAssignment(property) && ts.isIdentifier(property.name) && property.name.text === "action" &&
+        isRegisteredActionExpression(property.initializer)
+      );
+    });
+  });
 }
 
 function hasModifierKind(node: ts.Node, kind: ts.SyntaxKind): boolean {
@@ -176,10 +249,20 @@ export function findAuditParam(params: readonly ts.ParameterDeclaration[]): stri
   return null;
 }
 
-/** Finds the class's audit-logger field, covering both idioms: a parameter-property
- *  (`constructor(private readonly logger?: IEventLogger) {}`) or a plain constructor
- *  parameter assigned to a field in the constructor body (`this.audit = audit;`). */
-export function findClassAuditField(cls: ts.ClassDeclaration): string | null {
+/** Finds the class's audit-logger field, covering three idioms: a parameter-property
+ *  (`constructor(private readonly logger?: IEventLogger)`), a plain constructor
+ *  parameter assigned to a field in the constructor body (`this.audit = audit;`), and a
+ *  single deps-bag parameter whose same-file-declared interface/type-alias exposes a
+ *  logger-typed member, assigned as `this.audit = deps.eventLogger;` — a widespread
+ *  Exaix DI convention the first two idioms can't see through. `sf` is optional and only
+ *  needed for the third idiom; omit it to keep the first two working without a
+ *  SourceFile in scope (e.g. a bare test fixture). Same-file only for the deps-bag
+ *  idiom — a deliberate, documented limitation consistent with this script's advisory
+ *  nature (a cross-file deps interface is a rarer shape; verify by hand). */
+export function findClassAuditField(
+  cls: ts.ClassDeclaration,
+  sf?: Opt<ts.SourceFile, Reason.OptionalContext>,
+): string | null {
   const ctor = cls.members.find((m): m is ts.ConstructorDeclaration => ts.isConstructorDeclaration(m));
   if (!ctor) return null;
 
@@ -190,12 +273,21 @@ export function findClassAuditField(cls: ts.ClassDeclaration): string | null {
   }
 
   const loggerParamNames = new Set<string>();
+  const depsLoggerMembers = new Map<string, Set<string>>();
   for (const p of ctor.parameters) {
     if (!p.type || isParameterProperty(p)) continue;
     const typeName = unwrapOptTypeName(p.type);
-    if (typeName && isAuditLoggerTypeName(typeName)) loggerParamNames.add(p.name.getText());
+    if (!typeName) continue;
+    if (isAuditLoggerTypeName(typeName)) {
+      loggerParamNames.add(p.name.getText());
+      continue;
+    }
+    if (sf) {
+      const members = findLoggerMembersOfSameFileType(sf, typeName);
+      if (members.size > 0) depsLoggerMembers.set(p.name.getText(), members);
+    }
   }
-  if (loggerParamNames.size === 0 || !ctor.body) return null;
+  if ((loggerParamNames.size === 0 && depsLoggerMembers.size === 0) || !ctor.body) return null;
 
   let foundField: string | null = null;
   const visit = (node: ts.Node) => {
@@ -204,17 +296,48 @@ export function findClassAuditField(cls: ts.ClassDeclaration): string | null {
       ts.isBinaryExpression(node) &&
       node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
       ts.isPropertyAccessExpression(node.left) &&
-      isThisExpr(node.left.expression) &&
-      ts.isIdentifier(node.right) &&
-      loggerParamNames.has(node.right.text)
+      isThisExpr(node.left.expression)
     ) {
-      foundField = node.left.name.text;
-      return;
+      if (ts.isIdentifier(node.right) && loggerParamNames.has(node.right.text)) {
+        foundField = node.left.name.text;
+        return;
+      }
+      if (
+        ts.isPropertyAccessExpression(node.right) &&
+        ts.isIdentifier(node.right.expression) &&
+        depsLoggerMembers.get(node.right.expression.text)?.has(node.right.name.text)
+      ) {
+        foundField = node.left.name.text;
+        return;
+      }
     }
     ts.forEachChild(node, visit);
   };
   visit(ctor.body);
   return foundField;
+}
+
+/** Resolves a same-file interface (or type-alias-to-object-literal) declaration's member
+ *  names whose own type is an audit-logger type — e.g. for `interface IXDeps { eventLogger:
+ *  IEventLogger }`, returns `{"eventLogger"}`. The deps-bag half of `findClassAuditField`. */
+function findLoggerMembersOfSameFileType(sf: ts.SourceFile, typeName: string): Set<string> {
+  const members = new Set<string>();
+  for (const stmt of sf.statements) {
+    let body: ts.NodeArray<ts.TypeElement> | undefined;
+    if (ts.isInterfaceDeclaration(stmt) && stmt.name.text === typeName) {
+      body = stmt.members;
+    } else if (ts.isTypeAliasDeclaration(stmt) && stmt.name.text === typeName && ts.isTypeLiteralNode(stmt.type)) {
+      body = stmt.type.members;
+    }
+    if (!body) continue;
+    for (const m of body) {
+      if (ts.isPropertySignature(m) && m.type && (ts.isIdentifier(m.name) || ts.isStringLiteral(m.name))) {
+        const memberTypeName = unwrapOptTypeName(m.type);
+        if (memberTypeName && isAuditLoggerTypeName(memberTypeName)) members.add(m.name.getText());
+      }
+    }
+  }
+  return members;
 }
 
 /** Collects constructor parameter-property field names whose type is `IFoo`-shaped
@@ -315,29 +438,66 @@ export function findCrossComponentCalls(body: ts.Node, componentFieldNames: read
   return findings;
 }
 
-/** True when `body` contains a call to `binding`'s logging surface
- *  (`.info/.warn/.error/.fatal/.debug/.log/.emit(...)`), in either the `this.<field>.x(...)`
- *  or bare `<param>.x(...)` shape (including optional-chained `?.` call forms). */
-export function bodyCallsAuditBinding(body: ts.Node, binding: IAuditBinding): boolean {
+/** True when `typeNode` is a type reference to `TDomainEventType`, the registered taxonomy union. */
+function isDomainEventTypeRef(typeNode: Opt<ts.TypeNode, Reason.OptionalContext>): boolean {
+  return typeNode !== undefined && ts.isTypeReferenceNode(typeNode) && ts.isIdentifier(typeNode.typeName) &&
+    typeNode.typeName.text === "TDomainEventType";
+}
+
+/** True when `action` resolves to a registered `DomainEventType` value: a literal
+ *  `DomainEventType.X` property access, a bare parameter of the enclosing function/method
+ *  typed `TDomainEventType` (e.g. `emitEvent(action: TDomainEventType, ...)`), or a property
+ *  access into an object parameter whose matching member is typed `TDomainEventType` (e.g.
+ *  `logActivity(event: { event_type: TDomainEventType, ... })` then `event.event_type`).
+ *  One level of parameter indirection only, mirroring `callsLoggingPrivateHelper`'s own
+ *  "one level only" design — the actual call-site argument isn't traced through. */
+function resolvesToRegisteredAction(
+  action: Opt<ts.Expression, Reason.OptionalContext>,
+  enclosingParams: readonly ts.ParameterDeclaration[],
+): boolean {
+  if (!action) return false;
+  if (ts.isPropertyAccessExpression(action) && ts.isIdentifier(action.expression)) {
+    if (action.expression.text === "DomainEventType") return true;
+    const objectParam = enclosingParams.find((p) =>
+      ts.isIdentifier(p.name) && p.name.text === action.expression.getText()
+    );
+    if (!objectParam?.type || !ts.isTypeLiteralNode(objectParam.type)) return false;
+    const member = objectParam.type.members.find((m): m is ts.PropertySignature =>
+      ts.isPropertySignature(m) && !!m.name && ts.isIdentifier(m.name) && m.name.text === action.name.text
+    );
+    return isDomainEventTypeRef(member?.type);
+  }
+  if (ts.isIdentifier(action)) {
+    const param = enclosingParams.find((p) => ts.isIdentifier(p.name) && p.name.text === action.text);
+    return isDomainEventTypeRef(param?.type);
+  }
+  return false;
+}
+
+/** True when `body` calls the logger binding. Tagged callers may require a registered taxonomy
+ *  action, resolved directly or through one level of parameter-typed indirection (see
+ *  `resolvesToRegisteredAction`) — `enclosingParams` is `body`'s own owning function/method's
+ *  parameter list, needed to resolve that indirection. */
+export function bodyCallsAuditBinding(
+  body: ts.Node,
+  binding: IAuditBinding,
+  requireRegisteredAction = false,
+  enclosingParams: readonly ts.ParameterDeclaration[] = [],
+): boolean {
   let found = false;
   const visit = (node: ts.Node) => {
     if (found) return;
     if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
       const methodName = node.expression.name.text;
-      if (LOG_METHOD_PATTERN.test(methodName)) {
+      const action = node.arguments[0];
+      const registeredAction = resolvesToRegisteredAction(action, enclosingParams);
+      if (LOG_METHOD_PATTERN.test(methodName) && (!requireRegisteredAction || registeredAction)) {
         const receiver = node.expression.expression;
-        if (binding.isField) {
-          if (
-            ts.isPropertyAccessExpression(receiver) && isThisExpr(receiver.expression) &&
-            receiver.name.text === binding.name
-          ) {
-            found = true;
-            return;
-          }
-        } else if (ts.isIdentifier(receiver) && receiver.text === binding.name) {
-          found = true;
-          return;
-        }
+        if (
+          binding.isField && ts.isPropertyAccessExpression(receiver) && isThisExpr(receiver.expression) &&
+          receiver.name.text === binding.name
+        ) found = true;
+        if (!binding.isField && ts.isIdentifier(receiver) && receiver.text === binding.name) found = true;
       }
     }
     ts.forEachChild(node, visit);
@@ -350,19 +510,76 @@ function lineOf(node: ts.Node, sf: ts.SourceFile): number {
   return sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
 }
 
+/** True when `body` calls a private/protected method of `cls` whose own body calls the
+ *  audit binding — the "one level of indirection through a same-class helper" pattern
+ *  (e.g. `processAmendment()` calling `this.emitAmendmentEvent(...)`, a private method
+ *  that itself calls `this.logger.info(...)`) — confirmed real and recurring across
+ *  multiple classes (RequestAnalyzer, PlanAmendmentGate, MemoryBankService,
+ *  MissionReporter all centralize their actual `.info()` call in exactly this shape).
+ *  Deliberately one level only: chasing arbitrarily deep call chains would make "is this
+ *  method covered" unboundedly expensive and hard to reason about; a helper-of-a-helper
+ *  is a smell this checker doesn't try to untangle — verify by hand. */
+function callsLoggingPrivateHelper(
+  body: ts.Node,
+  cls: ts.ClassDeclaration,
+  binding: IAuditBinding,
+  requireRegisteredAction = false,
+): boolean {
+  const privateHelpers = new Map<string, ts.MethodDeclaration>();
+  for (const member of cls.members) {
+    if (
+      ts.isMethodDeclaration(member) && member.body &&
+      (ts.isIdentifier(member.name) || ts.isStringLiteral(member.name)) &&
+      (hasModifierKind(member, ts.SyntaxKind.PrivateKeyword) || hasModifierKind(member, ts.SyntaxKind.ProtectedKeyword))
+    ) {
+      privateHelpers.set(member.name.getText(), member);
+    }
+  }
+  if (privateHelpers.size === 0) return false;
+
+  let found = false;
+  const visit = (node: ts.Node) => {
+    if (found) return;
+    if (
+      ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) &&
+      isThisExpr(node.expression.expression)
+    ) {
+      const helper = privateHelpers.get(node.expression.name.text);
+      if (helper?.body && bodyCallsAuditBinding(helper.body, binding, requireRegisteredAction, helper.parameters)) {
+        found = true;
+        return;
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(body);
+  return found;
+}
+
 /** Analyzes one class declaration. Returns per-method findings for methods with a state
  *  change or cross-component call and no logger call in their own body, plus a class-level
  *  "wired but silent" finding when NO method anywhere in the class ever calls the logger
  *  (in which case per-method findings are suppressed as redundant with the class-level one). */
 export function analyzeClass(cls: ts.ClassDeclaration, sf: ts.SourceFile): IAnalyzeClassResult {
-  const auditField = findClassAuditField(cls);
+  const auditField = findClassAuditField(cls, sf);
   if (!auditField) return { findings: [], wiredUnused: null };
 
   const className = cls.name?.getText() ?? "<anonymous>";
   const componentFields = findComponentFields(cls);
   const excludeForStateChange = new Set([auditField]);
+  const tagged = hasVisibleTag(cls, sf.getFullText());
 
-  let anyMethodCallsLogger = false;
+  // Class-level "is the logger used ANYWHERE" check must see every method, including
+  // private/protected helpers that centralize the actual .info()/.warn() call — a common,
+  // idiomatic pattern (e.g. a private logActivity() helper called by several public
+  // methods). Deliberately broader than the per-method loop below, which intentionally
+  // skips private/protected methods when deciding whether an INDIVIDUAL method needs its
+  // own adjacent event — a private helper isn't an independently-callable public API.
+  const anyMethodCallsLogger = cls.members.some((member) =>
+    ts.isMethodDeclaration(member) && member.body !== undefined &&
+    (bodyCallsAuditBinding(member.body, { name: auditField, isField: true }, tagged, member.parameters) ||
+      isDecoratorCovered(member))
+  );
   const findings: IEventCoverageFinding[] = [];
 
   for (const member of cls.members) {
@@ -379,9 +596,11 @@ export function analyzeClass(cls: ts.ClassDeclaration, sf: ts.SourceFile): IAnal
     }
     const methodName = member.name.getText();
 
-    const callsLogger = bodyCallsAuditBinding(member.body, { name: auditField, isField: true });
-    if (callsLogger) {
-      anyMethodCallsLogger = true;
+    const covered =
+      bodyCallsAuditBinding(member.body, { name: auditField, isField: true }, tagged, member.parameters) ||
+      isDecoratorCovered(member) ||
+      callsLoggingPrivateHelper(member.body, cls, { name: auditField, isField: true }, tagged);
+    if (covered) {
       continue;
     }
 
@@ -398,14 +617,38 @@ export function analyzeClass(cls: ts.ClassDeclaration, sf: ts.SourceFile): IAnal
       line: lineOf(member, sf),
       reasons,
       detail: [...stateOps, ...crossCalls],
+      tagged,
     });
   }
 
   const wiredUnused: IWiredUnusedFinding | null = anyMethodCallsLogger
     ? null
-    : { file: sf.fileName, className, fieldName: auditField, line: lineOf(cls, sf) };
+    : { file: sf.fileName, className, fieldName: auditField, line: lineOf(cls, sf), tagged };
 
   return { findings: wiredUnused ? [] : findings, wiredUnused };
+}
+
+/** For every `@visible`-tagged exported class with no audit-logger dependency at all
+ *  (`findClassAuditField` returns null), emits an `IMissingLoggerFinding` — this is the
+ *  population the tool could not see before `@visible` existed; untagged classes are never
+ *  checked for this (absence of a logger is only a gap when the class explicitly declared
+ *  it must be covered). */
+export function findMissingLoggerFindings(
+  sf: ts.SourceFile,
+  fileName?: Opt<string, Reason.OptionalContext>,
+): IMissingLoggerFinding[] {
+  const path = fileName ?? sf.fileName;
+  const sourceText = sf.getFullText();
+  const findings: IMissingLoggerFinding[] = [];
+
+  for (const stmt of sf.statements) {
+    if (!ts.isClassDeclaration(stmt) || !isExported(stmt) || !stmt.name) continue;
+    if (!hasVisibleTag(stmt, sourceText)) continue;
+    if (findClassAuditField(stmt, sf) !== null) continue;
+    findings.push({ file: path, className: stmt.name.getText(), line: lineOf(stmt, sf) });
+  }
+
+  return findings;
 }
 
 /** Analyzes every exported class and function at the top level of `sf`. Module-private
@@ -444,11 +687,27 @@ export function analyzeSourceFile(
         line: lineOf(stmt, sf),
         reasons,
         detail: [...stateOps, ...crossCalls],
+        // A top-level exported function cannot carry @visible — the tag is class-scoped.
+        tagged: false,
       });
     }
   }
 
-  return { findings, wiredUnused };
+  const missingLogger = findMissingLoggerFindings(sf, path);
+
+  return { findings, wiredUnused, missingLogger };
+}
+
+/** Computes whether `--fail-on-tagged` should exit the CLI with code 1 for a given result
+ *  set: true when at least one `tagged: true` finding or `wiredUnused` entry exists, or any
+ *  missing-logger finding exists at all — regardless of how many untagged findings are also
+ *  present. Untagged findings never fail the build under this flag. */
+export function shouldFailOnTagged(
+  findings: readonly IEventCoverageFinding[],
+  wiredUnused: readonly IWiredUnusedFinding[],
+  missingLogger: readonly IMissingLoggerFinding[],
+): boolean {
+  return findings.some((f) => f.tagged) || wiredUnused.some((w) => w.tagged) || missingLogger.length > 0;
 }
 
 // ── CLI ──
@@ -492,12 +751,14 @@ async function main(): Promise<void> {
   const args = new Set(Deno.args);
   const staged = args.has("--staged");
   const shouldFail = args.has("--fail");
+  const failOnTagged = args.has("--fail-on-tagged");
   const useJson = args.has("--json");
 
   const files = staged ? await collectStagedFiles() : await collectFiles(SCAN_ROOTS);
 
   const allFindings: IEventCoverageFinding[] = [];
   const allWiredUnused: IWiredUnusedFinding[] = [];
+  const allMissingLogger: IMissingLoggerFinding[] = [];
 
   for (const file of files) {
     let text: string;
@@ -510,13 +771,17 @@ async function main(): Promise<void> {
     const result = analyzeSourceFile(sf, file);
     allFindings.push(...result.findings);
     allWiredUnused.push(...result.wiredUnused);
+    allMissingLogger.push(...result.missingLogger);
   }
 
-  const total = allFindings.length + allWiredUnused.length;
+  const total = allFindings.length + allWiredUnused.length + allMissingLogger.length;
+  const taggedFailure = failOnTagged && shouldFailOnTagged(allFindings, allWiredUnused, allMissingLogger);
 
   if (useJson) {
-    console.log(JSON.stringify({ findings: allFindings, wiredUnused: allWiredUnused }, null, 2));
-    if (shouldFail && total > 0) Deno.exit(1);
+    console.log(
+      JSON.stringify({ findings: allFindings, wiredUnused: allWiredUnused, missingLogger: allMissingLogger }, null, 2),
+    );
+    if ((shouldFail && total > 0) || taggedFailure) Deno.exit(1);
     return;
   }
 
@@ -527,30 +792,40 @@ async function main(): Promise<void> {
 
   console.error(
     `\n⚠️  Event coverage audit: ${allWiredUnused.length} wired-but-silent class(es), ` +
-      `${allFindings.length} method/function-level candidate(s) across ${files.length} file(s) scanned. ` +
-      `This is advisory — verify by hand before treating a finding as a real gap. Known false-positive ` +
-      `sources: an event emitted by a caller instead of the flagged method itself, a private helper one ` +
-      `level removed from the flagged method that does the actual emission, and dynamic dispatch.\n`,
+      `${allFindings.length} method/function-level candidate(s), ${allMissingLogger.length} missing-logger ` +
+      `@visible class(es) across ${files.length} file(s) scanned. This is advisory — verify by hand before ` +
+      `treating a finding as a real gap. Known false-positive sources: an event emitted by a caller instead ` +
+      `of the flagged method itself, a private helper one level removed from the flagged method that does ` +
+      `the actual emission, and dynamic dispatch.\n`,
   );
 
+  if (allMissingLogger.length > 0) {
+    console.error("@visible classes with no logger dependency at all:");
+    for (const m of allMissingLogger) {
+      console.error(`  [${m.file}:${m.line}] class ${m.className} is @visible but accepts no audit-logger`);
+    }
+  }
+
   if (allWiredUnused.length > 0) {
-    console.error("Wired but never used:");
+    console.error("\nWired but never used:");
     for (const w of allWiredUnused) {
-      console.error(`  [${w.file}:${w.line}] class ${w.className} accepts '${w.fieldName}' but never calls it`);
+      const tag = w.tagged ? " [@visible]" : "";
+      console.error(`  [${w.file}:${w.line}] class ${w.className} accepts '${w.fieldName}' but never calls it${tag}`);
     }
   }
 
   if (allFindings.length > 0) {
     console.error("\nState change / cross-component call with no adjacent event:");
     for (const f of allFindings) {
-      console.error(`  [${f.file}:${f.line}] ${f.scopeName} (${f.reasons.join(", ")}) — ${f.detail.join("; ")}`);
+      const tag = f.tagged ? " [@visible]" : "";
+      console.error(`  [${f.file}:${f.line}] ${f.scopeName} (${f.reasons.join(", ")}) — ${f.detail.join("; ")}${tag}`);
     }
   }
 
   console.error(
     "\nSee ARCHITECTURE.md#execution-semantics (Visibility guarantee) and docs/Reference_Data.md#event-taxonomy.",
   );
-  if (shouldFail) Deno.exit(1);
+  if ((shouldFail && total > 0) || taggedFailure) Deno.exit(1);
 }
 
 if (import.meta.main) {

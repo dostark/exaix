@@ -9,6 +9,7 @@ import { join, normalize } from "@std/path";
 import { PathSecurity } from "@exaix/tool-runtime";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 import type { IEventJournalReader } from "@exaix/core/events";
 import type { ICliApplicationContext } from "@exaix/core/types";
 import type { MCPContent, MCPToolResponse } from "@exaix/schemas/mcp.ts";
@@ -22,6 +23,7 @@ import type { IGitService } from "@exaix/core/types";
 /**
  * Base class for all MCP tool handlers
  * Provides common validation and logging functionality
+ * @visible
  */
 export abstract class ToolHandler {
   protected context: ICliApplicationContext;
@@ -127,7 +129,7 @@ export abstract class ToolHandler {
     metadata: LogMetadata,
   ): void {
     if (!this.logger) return;
-    void this.logger.info(`mcp.tool.${toolName}`, portal, metadata);
+    void this.logger.info(DomainEventType.McpToolExecuted, toolName, { ...metadata, portal });
   }
 
   /**

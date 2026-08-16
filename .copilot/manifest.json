@@ -188,7 +188,7 @@
       "scope": "dev",
       "title": "Edition Development Skill (#edition-development)",
       "short_summary": "Develop edition-specific features (Solo/Team/Enterprise) following Exaix's composition architecture, Option-C layout, and seam-based extension model.",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "topics": [
         "edition",
         "solo",
@@ -291,7 +291,7 @@
       "scope": "dev",
       "title": "Plan Skill (#plan)",
       "short_summary": "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy.",
-      "version": "1.11.0",
+      "version": "1.12.0",
       "topics": [
         "planning",
         "architecture",
@@ -341,7 +341,7 @@
       "scope": "dev",
       "title": "Clean Codebase Skill (#clean-codebase)",
       "short_summary": "Multi-phase skill to eliminate all type errors, lint warnings, style violations, and CI failures from the repository.",
-      "version": "1.1.0",
+      "version": "1.3.0",
       "topics": [
         "cleanup",
         "validation",
@@ -359,7 +359,7 @@
       "scope": "dev",
       "title": "Post-Gap Analysis Skill (#post-gap-analysis)",
       "short_summary": "Deep review of an existing phase planning document: checks implementation against plan, delegates code quality to #review-code, finds gaps, and writes remediation steps back into the document.",
-      "version": "1.7.0",
+      "version": "1.8.0",
       "topics": [
         "planning",
         "gap-analysis",
@@ -583,7 +583,7 @@
       "scope": "dev",
       "title": "Remediate Code Gaps Skill (#remediate-code-gaps)",
       "short_summary": "Edits source files to close code-level gaps identified by post-gap-analysis, then re-runs tests and creates a structured commit.",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "topics": [
         "planning",
         "gap-analysis",
