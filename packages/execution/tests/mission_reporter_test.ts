@@ -133,7 +133,7 @@ async function withMissionReporter(
 // ============================================================================
 
 Deno.test("MissionReporter: generates execution memory record after successful execution", async () => {
-  await withMissionReporter(async ({ tempDir, reporter }) => {
+  await withMissionReporter(async ({ db, tempDir, reporter }) => {
     const traceData = createTestTraceData();
 
     const result = await reporter.generate(traceData);
@@ -157,6 +157,16 @@ Deno.test("MissionReporter: generates execution memory record after successful e
 
     assert(summaryExists, "summary.md should exist");
     assert(contextExists, "context.json should exist");
+
+    // Verify report.generated is journalled with a real, field-level payload
+    await db.waitForFlush();
+    const activities = db.getActivitiesByTrace(traceData.traceId);
+    const generated = activities.filter((a) => a.action_type === DomainEventType.ReportGenerated);
+    assertEquals(generated.length, 1, "report.generated must be logged exactly once");
+    const payload = JSON.parse(generated[0].payload ?? "{}");
+    assertEquals(payload.identity_id, traceData.identityId);
+    assertEquals(payload.status, traceData.status);
+    assertEquals(payload.context_files_count, traceData.contextFiles.length);
   });
 });
 

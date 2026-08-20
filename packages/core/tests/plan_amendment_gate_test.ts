@@ -6,6 +6,8 @@
  */
 import { assertEquals, assertExists, assertObjectMatch } from "@std/assert";
 import type { IEventLogger } from "../src/logger/event_logger.ts";
+import { EventLogger } from "../src/logger/event_logger.ts";
+import { initTestDbService } from "@exaix/testing";
 import type { IPlanAmendmentService } from "../src/types/i_plan_amendment_service.ts";
 import type { IPlanAmendmentPatch, IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
 import type { IAmendmentApprovalAdapter } from "../src/planning/plan_amendment_service.ts";
@@ -16,6 +18,7 @@ import {
   PLAN_AMENDMENT_EVENT_APPLIED,
   PLAN_AMENDMENT_EVENT_APPROVED,
   PLAN_AMENDMENT_EVENT_PROPOSED,
+  PLAN_AMENDMENT_EVENT_REJECTED,
 } from "../src/types/constants.ts";
 
 const makeTrigger = (overrides?: Partial<IPlanAmendmentTrigger>): IPlanAmendmentTrigger => ({
@@ -311,4 +314,122 @@ Deno.test("full audit trail - PROPOSED -> APPROVED -> APPLIED with structured pa
     planId: "plan-audit",
   });
   assertExists(events[2].payload?.timestamp);
+});
+
+Deno.test("processAmendment: plan.amendment.proposed is journalled with a real, field-level payload (real EventLogger)", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const amendmentService = {
+      proposeAmendment: () => Promise.resolve(makePatch({ amendmentId: "real-001", planId: "plan-real" })),
+      applyApprovedAmendment: () => "",
+      shouldAmend: () => Promise.resolve(true),
+    } as IPlanAmendmentService;
+
+    const gate = new PlanAmendmentGate(makeConfig(), amendmentService, undefined, logger);
+    await gate.processAmendment({
+      planId: "plan-real",
+      stepLabel: "3",
+      trigger: makeTrigger({ source: "tool_error" }),
+    });
+    await db.waitForFlush();
+
+    const rows = db.instance.prepare(
+      "SELECT payload FROM activity WHERE action_type = ? AND target = ?",
+    ).all(PLAN_AMENDMENT_EVENT_PROPOSED, "plan:plan-real") as Array<{ payload: string }>;
+    assertEquals(rows.length, 1, "plan.amendment.proposed must be logged exactly once");
+    const payload = JSON.parse(rows[0].payload);
+    assertEquals(payload.amendmentId, "real-001");
+    assertEquals(payload.planId, "plan-real");
+    assertEquals(payload.stepId, "3");
+    assertEquals(payload.triggerSource, "tool_error");
+
+    await db.close();
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("processAmendment: plan.amendment.approved is journalled with a real, field-level payload (real EventLogger)", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const amendmentService = {
+      proposeAmendment: () => Promise.resolve(makePatch({ amendmentId: "real-002", planId: "plan-real" })),
+      applyApprovedAmendment: () => "",
+      shouldAmend: () => Promise.resolve(true),
+    } as IPlanAmendmentService;
+
+    // No approvalAdapter: auto-approve path.
+    const gate = new PlanAmendmentGate(makeConfig(), amendmentService, undefined, logger);
+    await gate.processAmendment({
+      planId: "plan-real",
+      stepLabel: "3",
+      trigger: makeTrigger(),
+    });
+    await db.waitForFlush();
+
+    const rows = db.instance.prepare(
+      "SELECT payload FROM activity WHERE action_type = ? AND target = ?",
+    ).all(PLAN_AMENDMENT_EVENT_APPROVED, "plan:plan-real") as Array<{ payload: string }>;
+    assertEquals(rows.length, 1, "plan.amendment.approved must be logged exactly once");
+    const payload = JSON.parse(rows[0].payload);
+    assertEquals(payload.amendmentId, "real-002");
+    assertEquals(payload.planId, "plan-real");
+    assertEquals(payload.decision, "approved");
+    assertEquals(payload.decidedBy, "auto");
+    assertExists(payload.rationale);
+    assertExists(payload.timestamp);
+
+    await db.close();
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("processAmendment: plan.amendment.rejected is journalled with a real, field-level payload (real EventLogger)", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const amendmentService = {
+      proposeAmendment: () => Promise.resolve(makePatch({ amendmentId: "real-003", planId: "plan-real" })),
+      applyApprovedAmendment: () => "",
+      shouldAmend: () => Promise.resolve(true),
+    } as IPlanAmendmentService;
+
+    const adapter: IAmendmentApprovalAdapter = {
+      requestDecision: () =>
+        Promise.resolve({
+          amendmentId: "real-003",
+          decision: "rejected" as const,
+          decidedAt: new Date().toISOString(),
+          decidedBy: "human",
+          rationale: "scope too large",
+        }),
+    };
+
+    const gate = new PlanAmendmentGate(makeConfig(), amendmentService, adapter, logger);
+    await gate.processAmendment({
+      planId: "plan-real",
+      stepLabel: "3",
+      trigger: makeTrigger(),
+    });
+    await db.waitForFlush();
+
+    const rows = db.instance.prepare(
+      "SELECT payload FROM activity WHERE action_type = ? AND target = ?",
+    ).all(PLAN_AMENDMENT_EVENT_REJECTED, "plan:plan-real") as Array<{ payload: string }>;
+    assertEquals(rows.length, 1, "plan.amendment.rejected must be logged exactly once");
+    const payload = JSON.parse(rows[0].payload);
+    assertEquals(payload.amendmentId, "real-003");
+    assertEquals(payload.planId, "plan-real");
+    assertEquals(payload.decision, "rejected");
+    assertEquals(payload.decidedBy, "human");
+    assertEquals(payload.rationale, "scope too large");
+    assertExists(payload.timestamp);
+
+    await db.close();
+  } finally {
+    await cleanup();
+  }
 });

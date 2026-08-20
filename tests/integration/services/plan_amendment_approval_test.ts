@@ -207,7 +207,7 @@ Deno.test("applyApprovedAmendment correctly applies patch to plan content", asyn
   }
 });
 
-Deno.test("Plan amendment events are defined with correct string values", () => {
+Deno.test("PLAN_AMENDMENT_EVENT_* constants match their DomainEventType string values", () => {
   assertEquals(PLAN_AMENDMENT_EVENT_PROPOSED, "plan.amendment.proposed");
   assertEquals(PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL, "plan.amendment.awaiting_approval");
   assertEquals(PLAN_AMENDMENT_EVENT_APPROVED, "plan.amendment.approved");
