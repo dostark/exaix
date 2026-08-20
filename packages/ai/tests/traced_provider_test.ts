@@ -261,11 +261,13 @@ Deno.test("[TracedProvider.generateStream] emits llm.stream.failed with a real f
     await db.waitForFlush();
 
     const failedRows = db.instance.prepare(
-      "SELECT payload FROM activity WHERE action_type = ? ORDER BY timestamp DESC LIMIT 1",
-    ).all(DomainEventType.LlmStreamFailed) as Array<{ payload: string }>;
+      "SELECT trace_id, payload FROM activity WHERE action_type = ? ORDER BY timestamp DESC LIMIT 1",
+    ).all(DomainEventType.LlmStreamFailed) as Array<{ trace_id: string; payload: string }>;
     assertEquals(failedRows.length, 1, "llm.stream.failed must be logged exactly once");
     const failedPayload = JSON.parse(failedRows[0].payload);
     assertEquals(failedPayload.error, "Inner provider does not support streaming");
+    assertEquals(failedPayload.error_type, "Error");
+    assertExists(failedRows[0].trace_id, "failed row must retain its operation trace in storage");
   } finally {
     await cleanup();
   }
@@ -292,11 +294,13 @@ Deno.test("[TracedProvider.generateStream] emits llm.stream.failed with a real f
     await db.waitForFlush();
 
     const failedRows = db.instance.prepare(
-      "SELECT payload FROM activity WHERE action_type = ? ORDER BY timestamp DESC LIMIT 1",
-    ).all(DomainEventType.LlmStreamFailed) as Array<{ payload: string }>;
+      "SELECT trace_id, payload FROM activity WHERE action_type = ? ORDER BY timestamp DESC LIMIT 1",
+    ).all(DomainEventType.LlmStreamFailed) as Array<{ trace_id: string; payload: string }>;
     assertEquals(failedRows.length, 1, "llm.stream.failed must be logged exactly once");
     const failedPayload = JSON.parse(failedRows[0].payload);
     assertEquals(failedPayload.error, "mid-stream failure");
+    assertEquals(failedPayload.error_type, "Error");
+    assertExists(failedRows[0].trace_id, "failed row must retain its operation trace in storage");
   } finally {
     await cleanup();
   }

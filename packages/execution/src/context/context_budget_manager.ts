@@ -158,7 +158,7 @@ export class ContextBudgetManager implements IContextBudgetManager {
       model,
       maxContextTokens: promptBudget.totalBudgetTokens,
       segmentCount: segments.length,
-    });
+    }, traceId);
 
     const decisions: IContextBudgetDecision[] = [];
     const kept: IContextSegment[] = [];
@@ -250,7 +250,7 @@ export class ContextBudgetManager implements IContextBudgetManager {
           originalTokens: segment.tokenEstimate,
           resultingTokens: trimmedTokens,
           remainingBudget: remaining,
-        });
+        }, traceId);
       }
     }
 
@@ -269,7 +269,7 @@ export class ContextBudgetManager implements IContextBudgetManager {
       usedInputTokens,
       keptSegmentCount: kept.length,
       droppedSegmentCount: sorted.length - kept.length,
-    });
+    }, traceId);
 
     // Async tier: schedule LLM summarization for compactable dropped segments.
     const droppedCompactable = sorted.filter(
@@ -311,7 +311,7 @@ export class ContextBudgetManager implements IContextBudgetManager {
             tokensBefore: tokensBefore as number,
             tokensAfter: 0 as number,
             compressedSegmentCount: droppedCompactable.length as number,
-          });
+          }, snapshot.traceId);
           void this.milestoneEmitter?.emit({
             milestoneId: crypto.randomUUID(),
             traceId: snapshot.traceId as string,

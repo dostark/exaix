@@ -11,11 +11,12 @@ import { join } from "@std/path";
 import { RequestService } from "@exaix/request";
 import { RequestStatus } from "@exaix/core/status";
 import { RequestPriority, RequestSource } from "@exaix/core";
-import { createMockConfig, createStubDisplay } from "@exaix/testing";
+import { createMockConfig, createStubDisplay, initTestDbService } from "@exaix/testing";
 import { ANALYZER_VERSION } from "@exaix/core";
 import { saveAnalysis } from "@exaix/request";
 import { AnalysisMode } from "@exaix/core/types";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
+import { EventLogger } from "@exaix/core/logger";
 
 function createTestRequestService(root: string, overrides?: {
   userIdentity?: string;
@@ -529,5 +530,33 @@ Deno.test("RequestService.analyze: re-analyzes when force=true even with cache",
     assertEquals(result.actionabilityScore !== 55 || result.tags.length >= 0, true);
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+  }
+});
+
+Deno.test("RequestService request.analyzed is queryable by request trace", async () => {
+  const { db, tempDir, cleanup } = await initTestDbService();
+
+  try {
+    const config = createMockConfig(tempDir);
+    const service = new RequestService({
+      config,
+      db,
+      display: createStubDisplay(db),
+      logger: new EventLogger({ db }),
+      userIdentityGetter: () => Promise.resolve("tester"),
+    });
+    const metadata = await service.create("Implement request trace correlation");
+
+    await service.analyze(metadata.trace_id, { force: true, mode: AnalysisMode.HEURISTIC });
+    await db.waitForFlush();
+
+    const rows = db.getActivitiesByTrace(metadata.trace_id).filter(
+      (activity) =>
+        activity.action_type === "request.analyzed" &&
+        activity.target === "completed",
+    );
+    assertEquals(rows.length, 1);
+  } finally {
+    await cleanup();
   }
 });

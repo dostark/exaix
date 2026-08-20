@@ -24,3 +24,18 @@ Deno.test("Agent docs: test-development skill documents module-init env access f
   assert(md.includes("TSC_WATCHFILE"), "Permissions section should name the typescript module-init env read");
   assert(md.includes("deno test --allow-all"), "Permissions section should recommend --allow-all for standalone runs");
 });
+
+Deno.test("Agent docs: focused Deno canaries must prove non-zero test selection", async () => {
+  const md = await Deno.readTextFile(".copilot/skills/test-development/SKILL.md");
+
+  assert(md.includes("multiple-name filters use a regex literal"));
+  assert(md.includes("Treat zero selected tests as a failed verification"));
+  assert(md.includes("--filter '/first case|second case/'"));
+});
+
+Deno.test("Agent docs: completion evidence must survive session restarts", async () => {
+  const md = await Deno.readTextFile(".copilot/skills/test-development/SKILL.md");
+
+  assert(/must not be the sole\s+user-facing proof artifact/.test(md));
+  assert(md.includes("durable, phase-named workspace/sandbox output directory"));
+});

@@ -17,7 +17,7 @@ import { exists } from "@std/fs";
 import { parse as parseToml } from "@std/toml";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { IApplicationContext } from "@exaix/core/types";
+import type { IApplicationContext, IPlanAmendmentGate, IPlanAmendmentService } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType, type IEventJournalReader, type TDomainEventType } from "@exaix/core/events";
@@ -42,7 +42,6 @@ import { isReadOnlyAgentCapabilities } from "@exaix/core/func";
 import { ArtifactRegistry, DatabaseArtifactRepository } from "@exaix/core/artifact";
 import { PlanAmendmentPendingError } from "@exaix/core/planning";
 import { ConfidenceScorer } from "./confidence_scorer.ts";
-import { PlanAmendmentService } from "@exaix/core/planning";
 import { GitExecutionSetupService } from "./git_execution_setup_service.ts";
 import {
   DEFAULT_AMENDMENT_EXPIRY_MS,
@@ -71,6 +70,8 @@ export interface IExecutionLoopConfig {
   logger?: IEventLogger;
   identityId: string;
   llmProvider?: IModelProvider;
+  amendmentService?: IPlanAmendmentService;
+  amendmentGate?: IPlanAmendmentGate;
   /**
    * Phase 135 Step 9 (GAP-C9): threaded into PlanExecutor's IPlanExecutorOptions so
    * AgentOrchestrator.resolveModelFromBlueprint's ModelResolver.resolve() branch is
@@ -178,7 +179,8 @@ export class ExecutionLoop {
   private modelResolver?: ModelResolver;
   private modelRegistry?: IModelRegistry;
   private confidenceScorer?: ConfidenceScorer;
-  private amendmentService?: PlanAmendmentService;
+  private amendmentService?: IPlanAmendmentService;
+  private amendmentGate?: IPlanAmendmentGate;
   private sessionMemory?: SessionMemoryService;
   private guardrailRunner?: IGuardrailRunner;
   private hitlPolicyEvaluator?: IHitlPolicyEvaluator;
@@ -203,6 +205,8 @@ export class ExecutionLoop {
     this.logger = config.logger;
     this.identityId = config.identityId;
     this.llmProvider = ctx?.provider || config.llmProvider;
+    this.amendmentService = config.amendmentService;
+    this.amendmentGate = config.amendmentGate;
     this.modelResolver = config.modelResolver;
     this.modelRegistry = config.modelRegistry;
     this.reviewRegistry = config.reviewRegistry;
@@ -226,7 +230,6 @@ export class ExecutionLoop {
       this.confidenceScorer = new ConfidenceScorer(this.llmProvider, {
         lowConfidenceThreshold: this.config.amendment?.threshold,
       });
-      this.amendmentService = new PlanAmendmentService(this.config, this.llmProvider);
     }
   }
 
@@ -723,6 +726,7 @@ export class ExecutionLoop {
       context: this.context,
       confidenceScorer: this.confidenceScorer,
       amendmentService: this.amendmentService,
+      amendmentGate: this.amendmentGate,
       onCodeChangesDelegate: this.onCodeChangesDelegate,
       modelResolver: this.modelResolver,
       modelRegistry: this.modelRegistry,
@@ -1153,12 +1157,14 @@ export class ExecutionLoop {
 
                 switch (onTimeout) {
                   case "reject": {
-                    this.logActivity(DomainEventType.PlanAmendmentRejected, traceId, {
-                      request_id: requestId,
-                      amendment_id: amendmentId,
+                    await this.amendmentGate?.recordDecision({
+                      planId: requestId,
+                      requestId,
+                      amendmentId,
+                      decision: PlanStatus.REJECTED,
                       decidedBy: "timeout",
                       rationale: "Amendment rejected due to HITL timeout",
-                      timestamp: new Date().toISOString(),
+                      traceId,
                     });
                     const content = await Deno.readTextFile(planPath);
                     const updated = content.replace(
@@ -1169,12 +1175,14 @@ export class ExecutionLoop {
                     break;
                   }
                   case "approve": {
-                    this.logActivity(DomainEventType.PlanAmendmentApproved, traceId, {
-                      request_id: requestId,
-                      amendment_id: amendmentId,
+                    await this.amendmentGate?.recordDecision({
+                      planId: requestId,
+                      requestId,
+                      amendmentId,
+                      decision: PlanStatus.APPROVED,
                       decidedBy: "timeout",
                       rationale: "Amendment approved due to HITL timeout",
-                      timestamp: new Date().toISOString(),
+                      traceId,
                     });
                     const content = await Deno.readTextFile(planPath);
                     const updated = content.replace(
@@ -1185,12 +1193,14 @@ export class ExecutionLoop {
                     break;
                   }
                   default: {
-                    this.logActivity(DomainEventType.PlanAmendmentExpired, traceId, {
-                      request_id: requestId,
-                      amendment_id: amendmentId,
+                    await this.amendmentGate?.recordDecision({
+                      planId: requestId,
+                      requestId,
+                      amendmentId,
+                      decision: "expired",
                       decidedBy: "timeout",
                       rationale: "Amendment expired due to HITL timeout",
-                      timestamp: new Date().toISOString(),
+                      traceId,
                     });
                     await this.handleFailure(
                       planPath,

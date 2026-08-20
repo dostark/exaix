@@ -672,36 +672,46 @@ Deno.test("[ContextBudgetManager] emits ContextSectionTruncated when a segment i
   assertEquals(event?.payload?.remainingBudget, 50);
 });
 
-Deno.test("[ContextBudgetManager] emits ContextBudgetAllocated with a real, field-level payload (real EventLogger)", async () => {
-  const { db, cleanup } = await initTestDbService();
-  try {
-    const logger = new EventLogger({ db });
-    const manager: IContextBudgetManager = new ContextBudgetManager(undefined, undefined, undefined, logger);
+Deno.test(
+  "[ContextBudgetManager] persists every prepare lifecycle event under input.traceId",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    const { db, cleanup } = await initTestDbService();
+    try {
+      const traceId = "trace-real-logger";
+      const logger = new EventLogger({ db });
+      const manager: IContextBudgetManager = new ContextBudgetManager(
+        undefined,
+        new NoopContextCompactor(),
+        undefined,
+        logger,
+      );
 
-    // NOTE: prepare() embeds traceId in the payload only (never as EventLogger.log's 4th
-    // positional argument), so EventLogger mints an independent random trace_id for this
-    // row — query by action_type, not getActivitiesByTrace(traceId). Pre-existing behavior,
-    // out of scope for Phase 169 Step 4 to change; noted for a future traceability pass.
-    await manager.prepare({
-      traceId: "trace-real-logger",
-      stepId: "step-1",
-      model: "anthropic:claude-sonnet-5",
-      promptBudget: makePromptBudget(),
-      segments: [
-        makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 25 }),
-      ],
-    });
-    await db.waitForFlush();
+      await manager.prepare({
+        traceId,
+        stepId: "step-1",
+        model: "anthropic:claude-sonnet-5",
+        promptBudget: makePromptBudget(50),
+        segments: [
+          makeSegment({
+            kind: "tool_result",
+            priority: CONTEXT_PRIORITY_TOOL_RESULT,
+            tokenEstimate: 100,
+            content: "x".repeat(400),
+          }),
+          makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 50 }),
+        ],
+      });
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      await db.waitForFlush();
 
-    const rows = db.instance.prepare(
-      "SELECT payload FROM activity WHERE action_type = ? ORDER BY timestamp DESC LIMIT 1",
-    ).all(DomainEventType.ContextBudgetAllocated) as Array<{ payload: string }>;
-    assertEquals(rows.length, 1, "context.budget.allocated must be logged exactly once");
-    const payload = JSON.parse(rows[0].payload);
-    assertEquals(payload.traceId, "trace-real-logger");
-    assertEquals(payload.maxContextTokens, 200_000);
-    assertEquals(payload.segmentCount, 1);
-  } finally {
-    await cleanup();
-  }
-});
+      const actions = db.getActivitiesByTrace(traceId).map((activity) => activity.action_type);
+      assertEquals(actions.includes(DomainEventType.ContextBudgetAllocated), true);
+      assertEquals(actions.includes(DomainEventType.ContextSectionTruncated), true);
+      assertEquals(actions.includes(DomainEventType.ContextBudgetConsumed), true);
+      assertEquals(actions.includes(DomainEventType.ExecutionContextCompacted), true);
+    } finally {
+      await cleanup();
+    }
+  },
+);

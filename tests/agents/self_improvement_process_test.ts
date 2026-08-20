@@ -54,3 +54,11 @@ Deno.test("Self-improvement loop: verify manifest includes self-improvement doc"
   );
   assertExists(processDoc, "self-improvement.md should be in manifest");
 });
+
+Deno.test("Self-improvement loop: terminal retro reconciles the phase registry", async () => {
+  const processMd = await Deno.readTextFile(".copilot/skills/self-improvement/SKILL.md");
+
+  assert(processMd.includes("Reconcile `exaix-dev-docs/planning/PHASE_REGISTRY.md`"));
+  assert(processMd.includes("remove a completed phase from open/recommended-pickup rows"));
+  assert(processMd.includes("search the registry for stale occurrences"));
+});

@@ -18,6 +18,12 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 169 (@visible Event Runtime Verification)
+
+### Fixed
+
+- Activity Journal lifecycle events now preserve canonical request and execution trace correlation across request analysis, context budgeting, cost tracking, and plan-amendment decisions, so trace-scoped audit queries return complete records (see [Activity Journal](Exaix_User_Guide.md#log--journal-commands---query-the-activity-journal)).
+
 ## Unreleased — Phase 163 (MCP Server Spec Compliance)
 
 ### Added

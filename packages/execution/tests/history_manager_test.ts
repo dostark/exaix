@@ -156,3 +156,26 @@ Deno.test("HistoryManager.addEntry emits LoopHistoryEntryAdded with entry_type a
     await cleanup();
   }
 });
+
+Deno.test("HistoryManager.compactLoopHistory persists ExecutionContextCompacted through a real EventLogger", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const manager = new HistoryManager(mockConfig(), new EventLogger({ db }));
+    manager.addEntry(makeStepEntry("first", 100, "step-1"));
+    manager.addEntry(makeStepEntry("second", 200, "step-2"));
+    manager.addEntry(makeStepEntry("preserved", 50, "step-3"));
+
+    await manager.compactLoopHistory(1);
+    await db.waitForFlush();
+
+    const rows = db.getActivitiesByActionType(DomainEventType.ExecutionContextCompacted);
+    assertEquals(rows.length, 1, "HistoryManager must persist one execution.context.compacted event");
+    const payload = JSON.parse(rows[0].payload);
+    assertEquals(payload.tokensBefore, 300);
+    assertEquals(payload.tokensAfter, 90);
+    assertEquals(payload.compressedCount, 2);
+    assertEquals(payload.preservedCount, 1);
+  } finally {
+    await cleanup();
+  }
+});

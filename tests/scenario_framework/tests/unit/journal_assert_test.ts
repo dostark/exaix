@@ -208,6 +208,21 @@ Deno.test("[journal_assert] expect_contains fails when the latest row's payload 
   });
 });
 
+Deno.test("[journal_assert] current-trace request analysis cannot be satisfied by another trace", async () => {
+  await withJournal([
+    ["old-trace", "request.created", "{}"],
+    ["old-trace", "request.analyzed", '{"mode":"heuristic"}'],
+    ["current-trace", "request.created", "{}"],
+  ], async (ws) => {
+    const result = await executeScenarioStep({
+      step: journalAssertStep({ action_type: "request.analyzed", trace_scoped: true }),
+      cwd: ws,
+      journalBaselineRowid: 2,
+    });
+    assertEquals(result.exitCode, 1, "another trace must not satisfy the current request assertion");
+  });
+});
+
 // --- probe projection -------------------------------------------------------
 
 Deno.test("[journal_assert] a projected probe emits payload-extracted columns for json-query scoring", async () => {

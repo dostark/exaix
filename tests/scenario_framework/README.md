@@ -365,6 +365,12 @@ cd "$HOME/git/Exaix"
 
 ### 2.3 Run Validation Scenarios
 
+From the Exaix repository root, run the framework smoke scenario with:
+
+```bash
+tests/scenario_framework/bin/run-scenarios --scenario framework-smoke-validation --verbose
+```
+
 From the deployed framework directory:
 
 ```bash
@@ -869,7 +875,7 @@ full four-cell example.
 ### Cell kinds: bare-delegate baseline and feature ablations
 
 Two additional cell markers sit beside the ordinary cell and feed the comparison report views
-(§"Harness-Lift & Cost Evaluation" in `docs/Exaix_Evaluation.md`):
+([§16 Harness-Lift & Cost Evaluation](../../docs/Exaix_Evaluation.md#16-harness-lift--cost-evaluation)):
 
 | Marker            | `cell_id`                        | Purpose                                                      |
 | ----------------- | -------------------------------- | ------------------------------------------------------------ |

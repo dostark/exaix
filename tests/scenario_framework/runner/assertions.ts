@@ -1183,6 +1183,13 @@ interface IComparableNumber {
   noun: string;
 }
 
+function isNonEmptyJsonQueryResult(result: Opt<JSONValue, Reason.OptionalInput>): boolean {
+  if (Array.isArray(result)) {
+    return result.length > 0 && result.every(isNonEmptyJsonQueryResult);
+  }
+  return result !== undefined && result !== null && result !== "";
+}
+
 function comparableNumber(result: JSONValue): IComparableNumber {
   if (typeof result === "number" && Number.isFinite(result)) return { value: result, noun: "" };
   if (Array.isArray(result)) return { value: result.length, noun: "items" };
@@ -1243,7 +1250,7 @@ function evaluateJsonQueryCriterion(
         ? `JSON query "${criterion.query}" contains all specified values`
         : `JSON query "${criterion.query}" result does not contain all specified values`;
     } else if (criterion.not_empty) {
-      passed = result !== undefined && result !== null && result !== "";
+      passed = isNonEmptyJsonQueryResult(result);
       message = passed
         ? `JSON query "${criterion.query}" returned non-empty value`
         : `JSON query "${criterion.query}" returned empty value`;

@@ -189,15 +189,17 @@ export class RequestProcessor {
     this.milestoneEmitter = buildMilestoneEmitterFromConfig(this.config);
 
     // Initialize services
-    this.costTracker = processorConfig.costTracker ?? new CostTracker(this.db, this.config);
+    this.logger = processorConfig.logger ??
+      wrapLogger(ctx?.display as IEventLogger | undefined) ??
+      createNoopLogger();
+    this.costTracker = processorConfig.costTracker ??
+      new CostTracker(this.db, this.config, this.logger);
     const healthChecker = processorConfig.healthChecker ?? { checkProvider: () => Promise.resolve(true) };
     this.providerSelector = new ProviderSelector(
       ProviderRegistry,
       this.costTracker,
       healthChecker,
     );
-
-    this.logger = processorConfig.logger ?? wrapLogger(ctx?.display as IEventLogger | undefined) ?? createNoopLogger();
 
     this.plansDir = join(processorConfig.workspacePath, "Plans");
     this.planWriter = new PlanWriter({
@@ -341,6 +343,7 @@ export class RequestProcessor {
     const analysisMode = (this.config.request_analysis?.mode ?? DEFAULT_ANALYZER_MODE) as AnalysisMode;
     const analysis = analysisEnabled
       ? await this.analyzer.analyze(assessedBody, {
+        traceId,
         identityId: frontmatter.identity ?? frontmatter.identity ?? frontmatter.flow,
         priority: frontmatter.priority,
         mode: analysisMode,

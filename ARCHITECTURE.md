@@ -374,6 +374,14 @@ For the key modules table with file paths and sub-schema listings, see `docs/Ref
 
 The `RequestAnalyzer` performs intent extraction before routing, identifying goals, requirements, constraints, and ambiguities. It classifies complexity and actionability to guide provider selection and execution strategy. Analysis runs in three modes (Heuristic / LLM / Hybrid) with a default actionability threshold of 80.
 
+Request-analysis events use constructor injection all the way to the journal. The exported
+`IRequestServiceConfig.logger` is the CLI service seam: `apps/exactl/src/init.ts` supplies its
+canonical `EventLogger`, while `RequestProcessor` supplies its already-resolved processor logger.
+Both paths pass that logger to `RequestAnalyzer`. `RequestAnalyzer._logActivity` maps
+`IRequestAnalysisContext.traceId` through `LogSyncMethod.traceIdMapper`, so every
+`request.analyzed` lifecycle row is persisted under the originating request trace rather than a
+new decorator-generated trace. Package code does not construct its own `EventLogger`.
+
 For analysis mode details, data flow steps, and hardening additions, see `packages/request/README.md#request-analysis-layer`.
 
 ---

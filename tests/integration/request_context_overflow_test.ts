@@ -12,6 +12,7 @@ import { ExecutionLoop } from "@exaix/execution";
 import { join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { ContextLoader } from "@exaix/core/context";
+import { EventLogger } from "@exaix/core/logger";
 
 Deno.test("Integration: Context Overflow - Large file references", async (t) => {
   const env = await TestEnvironment.create();
@@ -71,6 +72,7 @@ Deno.test("Integration: Context Overflow - Large file references", async (t) => 
         isLocalAgent: false,
         traceId,
         db: env.db,
+        logger: new EventLogger({ db: env.db }),
       });
 
       const filePaths = createdFiles.map((f) => join(env.tempDir, f));
@@ -114,16 +116,11 @@ Deno.test("Integration: Context Overflow - Large file references", async (t) => 
 
       const activities = await env.getActivityLog(traceId);
 
-      // Check for context-related activities
-      const _hasContextActivity = activities.some(
-        (a) =>
-          a.action_type.includes("context") ||
-          a.action_type.includes("truncat") ||
-          a.action_type.includes("warning"),
-      );
-
-      // May or may not have explicit warning depending on implementation
-      assert(activities.length >= 0, "Activities should be logged");
+      const contextLoaded = activities.find((activity) => activity.action_type === "context.loaded");
+      assertExists(contextLoaded, "context.loaded must record the truncated load");
+      const payload = JSON.parse(contextLoaded.payload);
+      assertEquals(payload.included_files_count, 3);
+      assertEquals(payload.skipped_files_count, 47);
     });
 
     // ========================================================================
@@ -154,8 +151,11 @@ Deno.test("Integration: Context Overflow - Large file references", async (t) => 
       // Check if there's any indication in logs about context handling
       const activities = await env.getActivityLog(traceId);
 
-      // Activities should be present for the trace
-      assert(activities.length >= 0, "Should have activity entries");
+      const contextLoaded = activities.find((activity) => activity.action_type === "context.loaded");
+      assertExists(contextLoaded, "context.loaded must remain queryable by the request trace");
+      const payload = JSON.parse(contextLoaded.payload);
+      assertEquals(payload.strategy, "smallest-first");
+      assert(payload.total_tokens < 10000, "logged context size must stay below the configured limit");
     });
 
     // ========================================================================

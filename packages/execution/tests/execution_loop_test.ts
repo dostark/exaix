@@ -333,6 +333,7 @@ path = "analysis-target.txt"
     const loop = new ExecutionLoop({
       config,
       db,
+      logger,
       identityId: "daemon",
       llmProvider: new ReadOnlyReportProvider(),
       gitServiceFactory: {
@@ -370,6 +371,53 @@ path = "analysis-target.txt"
 
     const artifactContent = await Deno.readTextFile(join(tempDir, artifacts[0].file_path));
     assertStringIncludes(artifactContent, "Read-only analysis report.");
+
+    await db.waitForFlush();
+    const readonlyExecuted = db.getActivitiesByTrace(traceId).filter(
+      (activity) => activity.action_type === "execution.readonly_structured_plan_executed",
+    );
+    assertEquals(readonlyExecuted.length, 1);
+    assertEquals(JSON.parse(readonlyExecuted[0].payload), {
+      request_id: "readonly-report",
+      identity_id: "code-analyst",
+    });
+
+    const skippedTraceId = crypto.randomUUID();
+    const skippedPlanContent = planContent
+      .replace(traceId, skippedTraceId)
+      .replace("readonly-report", "readonly-skipped");
+    const skippedPlanPath = join(paths.activeDir, "readonly-skipped.md");
+    await Deno.writeTextFile(skippedPlanPath, skippedPlanContent);
+
+    const skippedLoop = new ExecutionLoop({
+      config,
+      db,
+      logger,
+      identityId: "daemon",
+      gitServiceFactory: {
+        createGitService(repoPath: string, eventTraceId: string) {
+          return new GitService({ config, traceId: eventTraceId, identityId: "daemon", repoPath });
+        },
+      },
+      toolRegistryFactory: {
+        createToolRegistry(eventTraceId: string, baseDir: string) {
+          return new ToolRegistry({ config, traceId: eventTraceId, identityId: "daemon", baseDir });
+        },
+      },
+      memoryBank: new MemoryBankService(config, logger),
+    });
+    const skippedResult = await skippedLoop.processTask(skippedPlanPath);
+    assertEquals(skippedResult.success, true);
+
+    await db.waitForFlush();
+    const readonlySkipped = db.getActivitiesByTrace(skippedTraceId).filter(
+      (activity) => activity.action_type === "execution.readonly_structured_plan_skipped",
+    );
+    assertEquals(readonlySkipped.length, 1);
+    assertEquals(JSON.parse(readonlySkipped[0].payload), {
+      request_id: "readonly-skipped",
+      identity_id: "code-analyst",
+    });
   } finally {
     await cleanup();
     await Deno.remove(tempDir, { recursive: true });
@@ -530,6 +578,37 @@ Deno.test("ExecutionLoop: ignores code blocks without tool field", async () => {
   });
 });
 
+Deno.test("ExecutionLoop: persists a trace-scoped skip for amendment-pending plans", async () => {
+  const traceId = crypto.randomUUID();
+  await withExecutionLoopTestContext("exec-test-amendment-skip-", async ({ db, loop, paths }) => {
+    const planContent = [
+      "---",
+      `trace_id: "${traceId}"`,
+      "request_id: amendment-pending-request",
+      "status: amendment_pending",
+      "identity_id: test-identity",
+      "---",
+      "",
+      "# Amendment Pending Plan",
+    ].join("\n");
+    const planPath = join(paths.activeDir, "amendment-pending.md");
+    await Deno.writeTextFile(planPath, planContent);
+
+    const result = await loop.processTask(planPath);
+    assertEquals(result.success, true);
+    assertEquals(result.traceId, traceId);
+
+    await db.waitForFlush();
+    const skipped = db.getActivitiesByTrace(traceId).filter(
+      (activity) => activity.action_type === "execution.skipped",
+    );
+    assertEquals(skipped.length, 1);
+    assertEquals(JSON.parse(skipped[0].payload), {
+      request_id: "amendment-pending-request",
+      reason: "Plan is pending amendment approval",
+    });
+  });
+});
 Deno.test("ExecutionLoop: handles commit with no changes gracefully", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "exec-test-nochanges-" });
   const { db, cleanup } = await initTestDbService();
@@ -541,6 +620,7 @@ Deno.test("ExecutionLoop: handles commit with no changes gracefully", async () =
 
     // Create initial commit so git is initialized
     await Deno.writeTextFile(join(tempDir, "README.md"), "init");
+    await Deno.writeTextFile(join(tempDir, ".gitignore"), "Workspace/\nMemory/\n.exa/\n");
     await new Deno.Command(PortalOperation.GIT, {
       args: ["init"],
       cwd: tempDir,
@@ -571,19 +651,32 @@ Deno.test("ExecutionLoop: handles commit with no changes gracefully", async () =
     const shaBefore = new TextDecoder().decode(headBefore.stdout).trim();
 
     // Create plan that makes no actual file changes
-    const planContent = readFixtureTextSync(
-      import.meta.url,
-      "services",
-      "execution",
-      "execution_loop_test",
-      "planContent_12.md",
-    );
+    const planContent = [
+      "---",
+      'trace_id: "test-trace-nochanges"',
+      "request_id: nochanges-test",
+      "status: active",
+      "identity_id: test-identity",
+      "---",
+      "",
+      "# No Changes Plan",
+      "",
+      "```toml",
+      'tool = "write_file"',
+      'description = "Rewrite existing content"',
+      "",
+      "[params]",
+      'path = "README.md"',
+      'content = "init"',
+      "```",
+    ].join("\n");
     const planPath = join(systemActiveDir, "nochanges-test.md");
     await Deno.writeTextFile(planPath, planContent);
 
     const loop = new ExecutionLoop({
       config,
       db,
+      logger: new EventLogger({ db }),
       identityId: "test-identity",
       gitServiceFactory: {
         createGitService(repoPath: string, traceId: string) {
@@ -619,16 +712,17 @@ Deno.test("ExecutionLoop: handles commit with no changes gracefully", async () =
     }).output();
     const currentBranch = new TextDecoder().decode(branchAfter.stdout).trim();
     assert(
-      currentBranch === "master" || currentBranch === "main",
-      `Expected current branch to be master/main, got: ${currentBranch}`,
+      currentBranch.startsWith("feat/nochanges-test-"),
+      `Expected the no-op execution branch, got: ${currentBranch}`,
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    await db.waitForFlush();
     const activities = db.getActivitiesByTrace("test-trace-nochanges");
-    const _noChangesLog = activities.find((a: ActivityRecord) => a.action_type === "execution.no_changes");
-
-    // May or may not log no_changes depending on timing, but should complete
-    assertEquals(result.success, true);
+    const noChangesLogs = activities.filter(
+      (activity: ActivityRecord) => activity.action_type === "execution.no_changes",
+    );
+    assertEquals(noChangesLogs.length, 1);
+    assertEquals(JSON.parse(noChangesLogs[0].payload), { request_id: "nochanges-test" });
   } finally {
     await cleanup();
     await Deno.remove(tempDir, { recursive: true });

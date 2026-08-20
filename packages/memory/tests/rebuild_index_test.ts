@@ -7,6 +7,8 @@
 
 import { assertEquals, assertExists, assertGreaterOrEqual } from "@std/assert";
 import { MemoryStatus } from "@exaix/core/status";
+import { DomainEventType } from "@exaix/core/events";
+import { EventLogger } from "@exaix/core/logger";
 
 import { join } from "@std/path";
 import { exists } from "@std/fs";
@@ -266,6 +268,30 @@ Deno.test("MemoryBankService: rebuildIndicesWithEmbeddings handles no learnings"
     assertEquals(await exists(manifestPath), true);
     const manifest = JSON.parse(await Deno.readTextFile(manifestPath));
     assertEquals(manifest.index.length, 0);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("MemoryBankService: index and embedding rebuild events persist through a real EventLogger", async () => {
+  const { db, config, cleanup } = await initTestDbService();
+  try {
+    const memoryService = new MemoryBankService(config, new EventLogger({ db }));
+    const embeddingService = new MemoryEmbeddingService(config);
+    await setupTestData(memoryService, config.system.root);
+
+    await memoryService.rebuildIndicesWithEmbeddings(embeddingService);
+    await db.waitForFlush();
+
+    const indexRows = db.getActivitiesByActionType(DomainEventType.MemoryIndicesRebuilt);
+    assertEquals(indexRows.length, 1, "memory.indices.rebuilt must persist exactly once");
+    const indexPayload = JSON.parse(indexRows[0].payload);
+    assertEquals(indexPayload.patterns_indexed, 2);
+    assertGreaterOrEqual(indexPayload.tags_indexed, 1);
+
+    const embeddingRows = db.getActivitiesByActionType(DomainEventType.MemoryEmbeddingsRebuilt);
+    assertEquals(embeddingRows.length, 1, "memory.embeddings.rebuilt must persist exactly once");
+    assertEquals(JSON.parse(embeddingRows[0].payload).learnings_embedded, 2);
   } finally {
     await cleanup();
   }

@@ -25,7 +25,6 @@ import {
   ACTIVITY_ACTOR_AGENT,
   AMENDMENT_ARTIFACTS_DIR,
   PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL,
-  PLAN_AMENDMENT_EVENT_PROPOSED,
   PORTAL_ALIAS_WORKSPACE,
   PROMPT_PLAN_STEP_REASONING_PREFIX,
   PROMPT_PLAN_STEP_TASK_PREFIX,
@@ -35,11 +34,12 @@ import {
 import { DEFAULT_GIT_REV_PARSE_TIMEOUT_MS, GIT_ERROR_NOTHING_TO_COMMIT, GitService } from "@exaix/git";
 import { GIT_CMD_REV_PARSE } from "@exaix/git/constants.ts";
 import type { JSONValue } from "@exaix/core";
-import type { IApplicationContext, IPlanAmendmentService } from "@exaix/core/types";
+import type { IApplicationContext, IPlanAmendmentGate, IPlanAmendmentService } from "@exaix/core/types";
 import type { IDatabaseService, IModelRegistry } from "@exaix/core/types";
 import { TaskType } from "@exaix/core/types";
 import {
   AgentOrchestrator,
+  ContextBudgetManager,
   ExecutionContextService,
   type IAgentOrchestratorOptions,
   type IGuardrailRunner,
@@ -47,6 +47,7 @@ import {
 import { PromptBudgetAllocator } from "@exaix/core";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { PlanAmendmentService } from "./plan_amendment_service.ts";
+import { PlanAmendmentGate } from "./plan_amendment_gate.ts";
 import type { IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
 import { GuardrailBlockedError, PlanAmendmentPendingError } from "./errors.ts";
 
@@ -80,6 +81,7 @@ export interface IPlanExecutorOptions {
   context?: IApplicationContext;
   confidenceScorer?: ConfidenceScorer;
   amendmentService?: IPlanAmendmentService;
+  amendmentGate?: IPlanAmendmentGate;
   /** Optional guardrail runner. When provided, built in createAgentExecutor. */
   guardrailRunner?: IGuardrailRunner;
   /** Request-level IModelIntent fields that override blueprint values (Phase 132). */
@@ -348,7 +350,10 @@ export class PlanExecutor {
       }),
       options,
       modelResolver: this.options.modelResolver,
-      executionContext: new ExecutionContextService(this.config, this.logger, { promptBudgetAllocator }),
+      executionContext: new ExecutionContextService(this.config, this.logger, {
+        promptBudgetAllocator,
+        contextBudgetManager: new ContextBudgetManager(undefined, undefined, undefined, this.logger),
+      }),
     });
   }
 
@@ -627,6 +632,8 @@ export class PlanExecutor {
   ): Promise<void> {
     const service = this.options.amendmentService ||
       new PlanAmendmentService(this.config, this.llmProvider);
+    const gate = this.options.amendmentGate ??
+      new PlanAmendmentGate(this.config, service, undefined, this.logger);
 
     if (await service.shouldAmend(trigger)) {
       await this.logger.info(
@@ -643,18 +650,12 @@ export class PlanExecutor {
       const remainingSteps = context.steps.filter((s) => s.number > _currentStep.number);
 
       // 2. Propose amendment
-      const patch = await service.proposeAmendment({
-        planId: context.request_id, // request_id is used as planId in some contexts
+      const patch = await gate.proposeAmendment({
+        planId: context.request_id,
+        stepLabel: String(_currentStep.number),
         remainingSteps,
         trigger,
-      });
-
-      // 3. Emit PROPOSED event before approval gate
-      await this.logger.info(PLAN_AMENDMENT_EVENT_PROPOSED, context.trace_id, {
-        amendmentId: patch.amendmentId,
-        planId: patch.planId,
-        stepId: trigger.stepId,
-        triggerSource: trigger.source,
+        traceId: context.trace_id,
       });
 
       // 4. Persist amendment artifact

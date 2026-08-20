@@ -174,6 +174,7 @@ export class CostTracker implements ICostTracker {
       completionTokens: usage.completionTokens,
       costUsd: usage.costUsd,
       costSource: usage.costSource,
+      traceId,
     });
     await this.trackRequest(provider, usage.totalTokens, {
       model,
@@ -200,6 +201,7 @@ export class CostTracker implements ICostTracker {
       promptTokens?: number;
       completionTokens?: number;
       costUsd?: number;
+      traceId?: Opt<string, Reason.TraceAbsent>;
       costSource?: CostSource;
     },
   ): Promise<{ cost: number; source: CostSource | null }> {
@@ -214,9 +216,8 @@ export class CostTracker implements ICostTracker {
       options.promptTokens ?? 0,
       options.completionTokens ?? 0,
     );
-
     if (reported !== undefined && computed !== undefined) {
-      await this.emitDivergence(provider, options.model, reported, computed);
+      await this.emitDivergence(provider, options.model, reported, computed, options.traceId);
     }
     if (reported !== undefined) {
       return { cost: reported, source: options.costSource ?? "provider_reported" };
@@ -248,6 +249,7 @@ export class CostTracker implements ICostTracker {
     model: Opt<string, Reason.OptionalInput>,
     reported: number,
     computed: number,
+    traceId?: Opt<string, Reason.TraceAbsent>,
   ): Promise<void> {
     if (!this.eventLogger || computed === 0) return;
     const deltaPct = Math.abs(reported - computed) / computed * PERCENT;
@@ -265,9 +267,9 @@ export class CostTracker implements ICostTracker {
       DomainEventType.ModelCostDivergence,
       `${provider}:${model ?? "unknown"}`,
       metadata,
+      traceId,
     );
   }
-
   async persistEntry(record: IProviderCostRecord): Promise<void> {
     await this.trackRequest(record.provider, record.tokens, {
       model: record.model,

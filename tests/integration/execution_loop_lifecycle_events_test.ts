@@ -19,6 +19,7 @@ Deno.test("Integration: ExecutionLoop Lifecycle Events - execution.started and e
   try {
     let traceId: string;
     let requestId: string;
+    let approvedPlanPath: string;
     let activities: IActivityRecord[];
 
     await t.step("Setup: create and approve a happy-path plan, then execute it", async () => {
@@ -29,7 +30,7 @@ Deno.test("Integration: ExecutionLoop Lifecycle Events - execution.started and e
       requestId = requestPath.split("/").pop()!.replace(".md", "");
 
       const planPath = await env.createPlan(traceId, requestId, { status: "approved" });
-      const approvedPlanPath = await env.approvePlan(planPath);
+      approvedPlanPath = await env.approvePlan(planPath);
 
       const loop = env.createExecutionLoop();
       const result = await loop.processTask(approvedPlanPath);

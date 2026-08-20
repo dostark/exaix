@@ -5,7 +5,7 @@ scope: dev
 title: "Self-Improvement Loop (#self-improvement)"
 description: "Detect instruction gaps during work, patch .copilot/ docs safely with minimal test-backed updates, and run the terminal phase-loop retrospective (self-improvement-retro) that catches and fixes problematic places in the phase development process — skills, instructions, .copilot structure"
 short_summary: "Detect instruction gaps during work and patch .copilot/ docs safely with minimal, test-backed updates; run the terminal phase-loop retro to fix skill, instruction, and .copilot structure gaps."
-version: "1.2.0"
+version: "1.3.0"
 topics: ["self-improvement", "instruction-adequacy", "retrospective", "agents", "maintenance", "rag", "process"]
 qwen_skill: self-improvement
 ---
@@ -110,6 +110,10 @@ Position in the loop — this skill is the terminal step:
      finds: the last step lands its own `✅`/`WIRED` marker, but the doc's top-line
      `**Status**:` field (the first thing anyone reads) never gets bumped and stays
      `🚧 Planning`/`🚧 ... In Progress` indefinitely.
+   - **Reconcile `exaix-dev-docs/planning/PHASE_REGISTRY.md` with the terminal verdict**:
+     remove a completed phase from open/recommended-pickup rows, add or refresh its
+     completed-history/exclusion entry, and search the registry for stale occurrences of
+     the phase ID before declaring the retro complete.
    - Append a short `## Retrospective (self-improvement-retro)` section to the phase
      planning doc: the four answers condensed, a findings table (finding → fix → status),
      and what the next phase should do differently. Keep it to ~15 lines — the fixes live
@@ -134,9 +138,9 @@ periodically as a standalone sweep across the whole `exaix-dev-docs/planning/` c
 
 1. Locate every step's own completion marker. The convention differs by document era:
    older docs use `- [ ]` / `- [x]` GFM checkboxes; newer docs (~phase-140+) use prose
-   bullets instead — `- ✅ <done text> → \`path\`` / `- ⚠️ deferred <text> → <token>` plus
-   a per-step `**Status**: ✅ WIRED`/`✅ IMPLEMENTED` line. Zero `- [ ]` matches is NOT
-   proof of completion in a prose-bullet doc — check for `⚠️` instead.
+   bullets instead — `- ✅ <done text> → \`path\``/`- ⚠️ deferred <text> → <token>`plus
+   a per-step` **Status**: ✅ WIRED`/`✅ IMPLEMENTED`line. Zero`- [ ]`matches is NOT
+   proof of completion in a prose-bullet doc — check for`⚠️` instead.
 1. A doc can have every step checked and still be honestly not-closeable. Search for
    blocking language that survives past the last checked box — `⏳ PENDING`,
    `GAPS FOUND — NOT READY`, or a stated-but-unexecuted closing ritual (e.g. "the
@@ -157,7 +161,7 @@ remediation Steps 9–12 all implemented and tested (39 passing).`).
 
 **Edit long header lines safely**: some status blocks are a single unwrapped paragraph
 1000+ characters long. `read`/`grep` output silently truncates any displayed line past
-~512–768 chars, ending it with a literal `…`/`...`. Pasting that *displayed* text into an
+~512–768 chars, ending it with a literal `…`/`...`. Pasting that _displayed_ text into an
 edit body replaces the real line with a truncated one — this happened again during the
 2026-08-15 audit (`phase-142-subsystem-evaluation-packs.md`) despite prior recorded
 lessons about the same trap. Before editing any status line you have not seen in full:

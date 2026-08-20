@@ -14,13 +14,38 @@ import type {
 } from "@exaix/schemas/plan_amendment.ts";
 
 export interface IPlanAmendmentGate {
+  proposeAmendment(input: {
+    planId: string;
+    stepLabel: string;
+    trigger: IPlanAmendmentTrigger;
+    remainingSteps?: Array<{ number: number; title: string; content: string }>;
+    sharedContext?: LogMetadata;
+    traceId?: string;
+  }): Promise<IPlanAmendmentPatch>;
+
   processAmendment(input: {
     planId: string;
     stepLabel: string;
     trigger: IPlanAmendmentTrigger;
     remainingSteps?: Array<{ number: number; title: string; content: string }>;
     sharedContext?: LogMetadata;
+    traceId?: string;
   }): Promise<IPlanAmendmentDecision>;
 
-  applyApprovedAmendment(planContent: string, patch: IPlanAmendmentPatch): Promise<string>;
+  recordDecision(input: {
+    planId: string;
+    amendmentId: string | null;
+    decision: IPlanAmendmentDecision["decision"];
+    decidedBy: string;
+    rationale?: string;
+    requestId?: string;
+    timestamp?: string;
+    traceId?: string;
+  }): Promise<void>;
+
+  applyApprovedAmendment(
+    planContent: string,
+    patch: IPlanAmendmentPatch,
+    traceId?: string,
+  ): Promise<string>;
 }

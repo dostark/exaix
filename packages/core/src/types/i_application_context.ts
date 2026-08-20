@@ -27,6 +27,7 @@ import type { IPortalService } from "./i_portal_service.ts";
 import type { IRequestService } from "./i_request_service.ts";
 import type { IPlanService } from "./i_plan_service.ts";
 import type { IPlanAmendmentService } from "./i_plan_amendment_service.ts";
+import type { IPlanAmendmentGate } from "./i_plan_amendment_gate.ts";
 import type { IToolRegistry } from "./i_tool_registry.ts";
 import type { IGateEvaluator } from "./i_gate_evaluator.ts";
 import type { IConfigAdapter } from "./i_config_adapter.ts";
@@ -101,6 +102,9 @@ export interface IApplicationContext {
 
   /** Optional plan amendment service */
   amendments?: IPlanAmendmentService;
+
+  /** Canonical owner of amendment lifecycle decisions and events. */
+  amendmentGate?: IPlanAmendmentGate;
 
   /** Optional quality gate evaluator */
   gateEvaluator?: IGateEvaluator;

@@ -7,7 +7,9 @@
 
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { MemoryBankSource } from "@exaix/core";
+import { DomainEventType } from "@exaix/core/events";
 import { ReviewStatus } from "@exaix/core/status";
+import { join } from "@std/path";
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { ReviewRegistry } from "@exaix/core/artifact";
@@ -687,5 +689,54 @@ describe("ReviewRegistry", () => {
     assertEquals(deleted.target, id);
     const payload = JSON.parse(deleted.payload);
     assertEquals(payload.review_id, id);
+  });
+
+  it("should persist review.diff.read through a real EventLogger", async () => {
+    const repository = await Deno.makeTempDir({ prefix: "review-diff-event-" });
+    const runGit = async (args: string[]): Promise<void> => {
+      const result = await new Deno.Command("git", { args, cwd: repository, stdout: "piped", stderr: "piped" })
+        .output();
+      if (!result.success) throw new Error(new TextDecoder().decode(result.stderr));
+    };
+
+    try {
+      await runGit(["init", "-b", "main"]);
+      await runGit(["config", "user.name", "Test User"]);
+      await runGit(["config", "user.email", "test@example.com"]);
+      await Deno.writeTextFile(join(repository, "review.txt"), "before\n");
+      await runGit(["add", "review.txt"]);
+      await runGit(["commit", "-m", "initial"]);
+      await runGit(["checkout", "-b", "feat/diff-event"]);
+      await Deno.writeTextFile(join(repository, "review.txt"), "after\n");
+      await runGit(["add", "review.txt"]);
+      await runGit(["commit", "-m", "change"]);
+
+      const traceId = crypto.randomUUID();
+      const reviewId = await registry.register({
+        trace_id: traceId,
+        repository,
+        portal: "TestPortal",
+        branch: "feat/diff-event",
+        base_branch: "main",
+        description: "Diff event proof",
+        created_by: "test-agent",
+        files_changed: 1,
+      });
+
+      const diff = await registry.getDiff(reviewId);
+      assertEquals(diff.includes("+after"), true);
+      await db.waitForFlush();
+
+      const rows = db.getActivitiesByTrace(traceId).filter(
+        (activity) => activity.action_type === DomainEventType.ReviewDiffRead,
+      );
+      assertEquals(rows.length, 1, "review.diff.read must persist exactly once under the review trace");
+      const payload = JSON.parse(rows[0].payload);
+      assertEquals(payload.review_id, reviewId);
+      assertEquals(payload.branch, "feat/diff-event");
+      assertEquals(payload.base_branch, "main");
+    } finally {
+      await Deno.remove(repository, { recursive: true });
+    }
   });
 });

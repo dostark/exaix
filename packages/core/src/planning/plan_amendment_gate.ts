@@ -35,47 +35,56 @@ export class PlanAmendmentGate implements IPlanAmendmentGate {
     private logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {}
 
+  async proposeAmendment(input: {
+    planId: string;
+    stepLabel: string;
+    trigger: IPlanAmendmentTrigger;
+    remainingSteps?: Array<{ number: number; title: string; content: string }>;
+    sharedContext?: LogMetadata;
+    traceId?: string;
+  }): Promise<IPlanAmendmentPatch> {
+    const patch = await this.amendmentService.proposeAmendment({
+      planId: input.planId,
+      remainingSteps: input.remainingSteps ?? [],
+      trigger: input.trigger,
+      sharedContext: input.sharedContext,
+    });
+
+    await this.emitAmendmentEvent(
+      DomainEventType.PlanAmendmentProposed,
+      input.planId,
+      {
+        amendmentId: patch.amendmentId,
+        planId: input.planId,
+        stepId: input.stepLabel,
+        triggerSource: input.trigger.source,
+      },
+      input.traceId,
+    );
+    return patch;
+  }
+
   async processAmendment(input: {
     planId: string;
     stepLabel: string;
     trigger: IPlanAmendmentTrigger;
     remainingSteps?: Array<{ number: number; title: string; content: string }>;
     sharedContext?: LogMetadata;
+    traceId?: string;
   }): Promise<IPlanAmendmentDecision> {
-    const { planId, stepLabel, trigger, remainingSteps, sharedContext } = input;
-
-    // 1. Propose amendment via service
-    const patch = await this.amendmentService.proposeAmendment({
-      planId,
-      remainingSteps: remainingSteps ?? [],
-      trigger,
-      sharedContext,
-    });
-
-    // 2. Emit proposal event
-    await this.emitAmendmentEvent(DomainEventType.PlanAmendmentProposed, planId, {
-      amendmentId: patch.amendmentId,
-      planId,
-      stepId: stepLabel,
-      triggerSource: trigger.source,
-    });
-
-    // 3. Determine decision
+    const patch = await this.proposeAmendment(input);
     let decision: IPlanAmendmentDecision;
 
     if (this.approvalAdapter && this.config.amendment?.enabled) {
       const hitlTimeoutMs = this.config.amendment.hitl_timeout_ms ?? 300_000;
       const onTimeout = this.config.amendment.on_timeout ?? AmendmentTimeoutAction.ABORT;
-
-      const adapterDecision = await this.raceAdapterWithTimeout(
+      decision = await this.raceAdapterWithTimeout(
         this.approvalAdapter,
         patch,
         hitlTimeoutMs,
         onTimeout,
       );
-      decision = adapterDecision;
     } else {
-      // No adapter or amendment disabled: auto-approve immediately
       decision = {
         amendmentId: patch.amendmentId,
         decision: AMENDMENT_DECISION_APPROVED,
@@ -85,33 +94,66 @@ export class PlanAmendmentGate implements IPlanAmendmentGate {
       };
     }
 
-    // 4. Emit decision event
-    const eventName = decision.decision === AMENDMENT_DECISION_APPROVED
-      ? DomainEventType.PlanAmendmentApproved
-      : decision.decision === AMENDMENT_DECISION_REJECTED
-      ? DomainEventType.PlanAmendmentRejected
-      : DomainEventType.PlanAmendmentExpired;
-
-    await this.emitAmendmentEvent(eventName, planId, {
+    await this.recordDecision({
+      planId: input.planId,
       amendmentId: patch.amendmentId,
-      planId,
       decision: decision.decision,
       decidedBy: decision.decidedBy,
       rationale: decision.rationale,
-      timestamp: new Date().toISOString(),
+      timestamp: decision.decidedAt,
+      traceId: input.traceId,
     });
-
-    // 5. Return decision
     return decision;
   }
 
-  async applyApprovedAmendment(planContent: string, patch: IPlanAmendmentPatch): Promise<string> {
+  async recordDecision(input: {
+    planId: string;
+    amendmentId: string | null;
+    decision: IPlanAmendmentDecision["decision"];
+    decidedBy: string;
+    rationale?: string;
+    requestId?: string;
+    timestamp?: string;
+    traceId?: string;
+  }): Promise<void> {
+    const eventName = input.decision === AMENDMENT_DECISION_APPROVED
+      ? DomainEventType.PlanAmendmentApproved
+      : input.decision === AMENDMENT_DECISION_REJECTED
+      ? DomainEventType.PlanAmendmentRejected
+      : DomainEventType.PlanAmendmentExpired;
+
+    await this.emitAmendmentEvent(
+      eventName,
+      input.planId,
+      {
+        amendmentId: input.amendmentId,
+        planId: input.planId,
+        decision: input.decision,
+        decidedBy: input.decidedBy,
+        rationale: input.rationale,
+        requestId: input.requestId,
+        timestamp: input.timestamp ?? new Date().toISOString(),
+      },
+      input.traceId,
+    );
+  }
+
+  async applyApprovedAmendment(
+    planContent: string,
+    patch: IPlanAmendmentPatch,
+    traceId?: Opt<string, Reason.TraceAbsent>,
+  ): Promise<string> {
     const result = this.amendmentService.applyApprovedAmendment(planContent, patch);
-    await this.emitAmendmentEvent(DomainEventType.PlanAmendmentApplied, patch.planId, {
-      amendmentId: patch.amendmentId,
-      planId: patch.planId,
-      timestamp: new Date().toISOString(),
-    });
+    await this.emitAmendmentEvent(
+      DomainEventType.PlanAmendmentApplied,
+      patch.planId,
+      {
+        amendmentId: patch.amendmentId,
+        planId: patch.planId,
+        timestamp: new Date().toISOString(),
+      },
+      traceId,
+    );
     return result;
   }
 
@@ -163,9 +205,10 @@ export class PlanAmendmentGate implements IPlanAmendmentGate {
     action: TDomainEventType,
     planId: string,
     payload: LogMetadata,
+    traceId: Opt<string, Reason.TraceAbsent>,
   ): Promise<void> {
     if (this.logger) {
-      await this.logger.info(action, `plan:${planId}`, payload);
+      await this.logger.info(action, `plan:${planId}`, payload, traceId);
     }
   }
 }

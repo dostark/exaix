@@ -17,6 +17,7 @@ import { PlanAmendmentGate } from "../src/planning/plan_amendment_gate.ts";
 import {
   PLAN_AMENDMENT_EVENT_APPLIED,
   PLAN_AMENDMENT_EVENT_APPROVED,
+  PLAN_AMENDMENT_EVENT_EXPIRED,
   PLAN_AMENDMENT_EVENT_PROPOSED,
   PLAN_AMENDMENT_EVENT_REJECTED,
 } from "../src/types/constants.ts";
@@ -429,6 +430,53 @@ Deno.test("processAmendment: plan.amendment.rejected is journalled with a real, 
     assertExists(payload.timestamp);
 
     await db.close();
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("PlanAmendmentGate expired and applied events persist under the operation trace", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const traceId = crypto.randomUUID();
+    const patch = makePatch({ amendmentId: "real-terminal", planId: "plan-terminal" });
+    const amendmentService = {
+      proposeAmendment: () => Promise.resolve(patch),
+      applyApprovedAmendment: () => "applied-content",
+      shouldAmend: () => Promise.resolve(true),
+    } as IPlanAmendmentService;
+    const adapter: IAmendmentApprovalAdapter = {
+      requestDecision: () => new Promise(() => {}),
+    };
+    const gate = new PlanAmendmentGate(
+      makeConfig({ hitl_timeout_ms: 1, on_timeout: "abort" }),
+      amendmentService,
+      adapter,
+      new EventLogger({ db }),
+    );
+
+    const decision = await gate.processAmendment({
+      planId: patch.planId,
+      stepLabel: "4",
+      trigger: makeTrigger(),
+      traceId,
+    });
+    assertEquals(decision.decision, "expired");
+    assertEquals(await gate.applyApprovedAmendment("original-content", patch, traceId), "applied-content");
+    await db.waitForFlush();
+
+    const traceRows = db.getActivitiesByTrace(traceId);
+    const expired = traceRows.filter((row) => row.action_type === PLAN_AMENDMENT_EVENT_EXPIRED);
+    assertEquals(expired.length, 1, "plan.amendment.expired must persist exactly once");
+    const expiredPayload = JSON.parse(expired[0].payload);
+    assertEquals(expiredPayload.decision, "expired");
+    assertEquals(expiredPayload.decidedBy, "timeout");
+
+    const applied = traceRows.filter((row) => row.action_type === PLAN_AMENDMENT_EVENT_APPLIED);
+    assertEquals(applied.length, 1, "plan.amendment.applied must persist exactly once");
+    const appliedPayload = JSON.parse(applied[0].payload);
+    assertEquals(appliedPayload.amendmentId, patch.amendmentId);
+    assertEquals(appliedPayload.planId, patch.planId);
   } finally {
     await cleanup();
   }

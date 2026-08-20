@@ -159,3 +159,44 @@ Deno.test("[ExecutionContextService] allocateBudget emits ExecutionContextBudget
     await cleanup();
   }
 });
+
+Deno.test("[ExecutionContextService] clear, invalidate, and stabilize events persist through a real EventLogger", async () => {
+  const { db, config, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const contextCache = new ContextCache();
+    const budget = {
+      model: "journal-model",
+      totalBudgetTokens: 1000,
+      safetyBufferTokens: 100,
+      sections: { system: 10, plan: 20, portalKnowledge: 30, memory: 40, skills: 50, loopHistory: 60 },
+    };
+    const promptBudgetAllocator = castAny<IPromptBudgetAllocator>({ allocate: () => Promise.resolve(budget) });
+    const service = new ExecutionContextService(config, logger, { contextCache, promptBudgetAllocator });
+
+    await service.allocateBudget("journal-model");
+    service.markSectionsStable(
+      { system: "sys", plan: "plan", portalKnowledge: "portal", memory: "memory", skills: "skills" },
+      budget.sections,
+    );
+    service.invalidateCache();
+    service.clearBudget();
+    await db.waitForFlush();
+
+    const stabilized = db.getActivitiesByActionType(DomainEventType.ExecutionContextSectionsStabilized);
+    assertEquals(stabilized.length, 1, "execution.context.sections_stabilized must persist exactly once");
+    assertEquals(JSON.parse(stabilized[0].payload).portalKnowledge, 30);
+
+    const invalidated = db.getActivitiesByActionType(DomainEventType.ExecutionContextCacheInvalidated);
+    assertEquals(invalidated.length, 1, "execution.context.cache_invalidated must persist exactly once");
+    assertEquals(JSON.parse(invalidated[0].payload).cachePresent, true);
+
+    const cleared = db.getActivitiesByActionType(DomainEventType.ExecutionContextBudgetCleared);
+    assertEquals(cleared.length, 1, "execution.context.budget_cleared must persist exactly once");
+    const clearedPayload = JSON.parse(cleared[0].payload);
+    assertEquals(clearedPayload.hadBudget, true);
+    assertEquals(clearedPayload.model, "journal-model");
+  } finally {
+    await cleanup();
+  }
+});

@@ -171,8 +171,11 @@ export function main() {
 
       const activities = await env.getActivityLog(alphaTraceId);
 
-      // Should have some activity entries
-      assert(activities.length >= 0, "Should log portal activities");
+      const denial = activities.find((activity) => activity.action_type === "security.access_denied");
+      assertExists(denial, "portal access audit must retain the denial event");
+      const payload = JSON.parse(denial.payload);
+      assertEquals(payload.portal, "project-alpha");
+      assertEquals(payload.attempted_path, join(env.tempDir, ".exa/secrets.json"));
     });
 
     // ========================================================================

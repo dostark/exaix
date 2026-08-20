@@ -33,3 +33,29 @@ Deno.test("Agent docs: post-gap-analysis requires problem-statement falsificatio
     "post-gap-analysis should not accept a documented limitation that defeats a stated goal",
   );
 });
+
+Deno.test("Agent docs: event coverage claims require exhaustive attributable runtime evidence", async () => {
+  const postGap = await Deno.readTextFile(SKILL_PATH);
+  const remediation = await Deno.readTextFile(
+    ".copilot/skills/remediate-code-gaps/SKILL.md",
+  );
+
+  for (const md of [postGap, remediation]) {
+    assert(
+      md.includes("source-declared event") && md.includes("representative"),
+      "event coverage guidance must reject representative component evidence as exhaustive proof",
+    );
+    assert(
+      md.includes("real `EventLogger`") || md.includes("real-`EventLogger`"),
+      "event coverage guidance must require the real EventLogger path",
+    );
+  }
+  assert(
+    /request-trace\s+scoping/.test(postGap),
+    "scenario journal evidence must be scoped to the request under test",
+  );
+  assert(
+    remediation.includes("#self-improvement-retro"),
+    "gap remediation must hand off to the terminal retrospective before completion",
+  );
+});

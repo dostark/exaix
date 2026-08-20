@@ -48,6 +48,17 @@ function makeMockSnapshotStore(): ISnapshotStore {
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
+Deno.test("[AgentOrchestrator] default production composition provides contextBudgetManager", () => {
+  const executor = new AgentOrchestrator({
+    config: castAny({}),
+    db: castAny({}),
+    logger: castAny({}),
+    pathResolver: castAny({}),
+    permissions: castAny({}),
+  });
+
+  assertExists(executor.contextBudgetManager);
+});
 Deno.test("[AgentOrchestrator] constructor accepts contextBudgetManager parameter", () => {
   const budgetManager = makeMockBudgetManager();
   const executor = new AgentOrchestrator({

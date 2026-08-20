@@ -35,7 +35,7 @@ import {
 } from "@exaix/portal/knowledge";
 import { RequestService } from "@exaix/request";
 import { PlanService } from "@exaix/core/planning";
-import { PlanAmendmentService } from "@exaix/core/planning";
+import { PlanAmendmentGate, PlanAmendmentService } from "@exaix/core/planning";
 import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstrap.ts";
 import { SoloComposer } from "@exaix/core/composer";
 import { DefaultModelRegistry } from "@exaix/model-registry";
@@ -297,11 +297,13 @@ export async function initializeServices(
 
     const plans = new PlanService(cfg, configAdapter, dbLocal, displayAdapter, userIdentityGetter);
     const amendments = new PlanAmendmentService(cfg, providerLocal);
+    const amendmentGate = new PlanAmendmentGate(cfg, amendments, undefined, displayLogger);
 
     context.requests = new RequestAdapter(requests);
     context.portals = new PortalAdapter(portals);
     context.plans = new PlanAdapter(plans);
     context.amendments = new PlanAmendmentAdapter(amendments);
+    context.amendmentGate = amendmentGate;
     context.memoryBank = new MemoryBankAdapter(memoryBank);
     context.extractor = extractor;
     context.embeddings = new MemoryEmbeddingAdapter(embedding);

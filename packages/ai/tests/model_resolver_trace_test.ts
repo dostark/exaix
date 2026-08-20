@@ -8,6 +8,7 @@ import { assertEquals } from "@std/assert";
 import { PricingTier, ProviderCostTier } from "@exaix/core";
 import { initTestDbService } from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing/helpers/services/barrel.ts";
+import { EventLogger, type IEventLogger } from "@exaix/core/logger";
 import { ProviderRegistry } from "../src/provider_registry.ts";
 import { MockProviderFactory } from "../src/factories/mock_factory.ts";
 import { DefaultRoutingStrategy } from "../src/routing/default_routing_strategy.ts";
@@ -26,7 +27,7 @@ function registerProvider(name: string): void {
   });
 }
 
-function makeResolver(logger?: ReturnType<typeof createMockEventLogger>): ModelResolver {
+function makeResolver(logger?: IEventLogger): ModelResolver {
   return new ModelResolver(
     new DefaultRoutingStrategy(ProviderRegistry, createStubCostTracker(), createStubHealthChecker()),
     createTestConfig(),
@@ -88,6 +89,29 @@ Deno.test("[step132.1][trace] model_resolved event has correct target and payloa
     assertEquals(typeof events[0].payload?.attempt, "string");
     assertEquals(typeof events[0].payload?.duration_ms, "string");
   } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[ModelResolver] model.resolved persists through a real EventLogger", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+    registerProvider("journal-provider");
+
+    const resolver = makeResolver(new EventLogger({ db }));
+    await resolver.resolve({ model: "journal-provider:journal-model" });
+    await db.waitForFlush();
+
+    const rows = db.getActivitiesByActionType("model.resolved");
+    assertEquals(rows.length, 1, "model.resolved must be persisted exactly once");
+    assertEquals(rows[0].target, "journal-model");
+    const payload = JSON.parse(rows[0].payload);
+    assertEquals(payload.reason, "explicit_override");
+    assertEquals(payload.selected, "journal-provider:journal-model");
+    assertEquals(payload.candidate_providers, "journal-provider");
+  } finally {
+    ProviderRegistry.clear();
     await cleanup();
   }
 });

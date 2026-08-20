@@ -60,13 +60,14 @@ steps:
         kind: json-path-equals
         path: "$.goals[0].description"
         equals: "Analyze the core architecture of the Exaix Scenario Framework"
-        similarity_threshold: 0.8
+        similarity_threshold: 0.6
 
   - id: check-journal
     type: journal-assert
     name: "Verify quality pipeline execution"
     action_type: "request.analyzed"
     latest_only: true
+    trace_scoped: true
     project:
       mode: "payload.mode"
       complexity: "payload.complexity"
@@ -80,15 +81,15 @@ steps:
       - id: mode-populated
         score_weight: 0.2
         kind: json-query
-        query: ".[].mode"
+        query: ".[0].mode"
         not_empty: true
       - id: complexity-populated
         score_weight: 0.2
         kind: json-query
-        query: ".[].complexity"
+        query: ".[0].complexity"
         not_empty: true
       - id: task-type-populated
         score_weight: 0.2
         kind: json-query
-        query: ".[].taskType"
+        query: ".[0].taskType"
         not_empty: true

@@ -21,9 +21,6 @@ import { CommandUtils } from "@exaix/cli/helpers/command_utils.ts";
 import { enrichWithRequest } from "../helpers/request_enricher.ts";
 import {
   AMENDMENT_ARTIFACTS_DIR,
-  PLAN_AMENDMENT_EVENT_APPLIED,
-  PLAN_AMENDMENT_EVENT_APPROVED,
-  PLAN_AMENDMENT_EVENT_REJECTED,
   PLAN_REVIEW_COMMENT_PREFIX,
   PLAN_REVIEW_COMMENTS_HEADER,
   REQUEST_REVISION_COMMENT_PREFIX,
@@ -715,46 +712,36 @@ export class PlanCommands extends BaseCommand {
       const planPath = join(this.workspaceActiveDir, `${planId}.md`);
       const { content, frontmatter } = await this.loadPlan(planPath);
 
-      if (!this.context.amendments) {
-        throw new Error("Amendment service not available in context.");
+      if (!this.context.amendmentGate) {
+        throw new Error("Amendment gate not available in context.");
       }
 
-      // Apply patch via service (updates steps and status in markdown)
-      const appliedContent = this.context.amendments.applyApprovedAmendment(content, patch);
-
-      // Re-parse to get updated frontmatter/body
-      const { frontmatter: updatedFm, body: updatedBody } = this.extractFrontmatterWithBody(appliedContent);
-
-      // Final polish: update reviewer metadata and clear amendment fields
       const { actor, now } = await this.getUserContext();
+      await this.context.amendmentGate.recordDecision({
+        planId,
+        amendmentId: patch.amendmentId,
+        decision: PlanStatus.APPROVED,
+        decidedBy: actor,
+        timestamp: now,
+        traceId: frontmatter.trace_id,
+      });
+      const appliedContent = await this.context.amendmentGate.applyApprovedAmendment(
+        content,
+        patch,
+        frontmatter.trace_id,
+      );
+
+      const { frontmatter: updatedFm, body: updatedBody } = this.extractFrontmatterWithBody(appliedContent);
       const finalFm: Record<string, JSONValue> = {
         ...updatedFm,
         approved_by: actor,
         approved_at: now,
       };
-      // Clear amendment tracking fields
       delete finalFm.amendment_id;
       delete finalFm.amendment_proposed_at;
 
       const updatedContent = this.serializePlan(finalFm as PlanFrontmatter, updatedBody);
       await Deno.writeTextFile(planPath, updatedContent);
-
-      // Log activity
-      await this.display.info(PLAN_AMENDMENT_EVENT_APPROVED, planId, {
-        amendmentId: patch.amendmentId,
-        message: `Amendment approved and applied to ${planId}`,
-        approved_at: now,
-        approved_by: actor,
-        trace_id: frontmatter.trace_id,
-      });
-
-      // Emit APPLIED event for resume tracking
-      const appliedStepCount = patch.adds.length + patch.updates.length;
-      await this.display.info(PLAN_AMENDMENT_EVENT_APPLIED, planId, {
-        amendmentId: patch.amendmentId,
-        planId,
-        appliedStepCount,
-      });
 
       console.log(`[PlanCommands] Amendment ${patch.amendmentId} approved and applied to ${planId}`);
     } catch (error) {
@@ -769,17 +756,29 @@ export class PlanCommands extends BaseCommand {
   /**
    * Reject an amendment and abort execution
    */
+  /**
+   * Reject an amendment and abort execution
+   */
   async rejectAmendment(planId: string, reason: string): Promise<void> {
     try {
-      // Rejection of amendment usually means aborting the plan entirely or reverting to previous state.
-      // In Exaix, we move the plan to Rejected.
+      if (!this.context.amendmentGate) {
+        throw new Error("Amendment gate not available in context.");
+      }
+      const patch = await this.getAmendment(planId);
+      const planPath = join(this.workspaceActiveDir, `${planId}.md`);
+      const { frontmatter } = await this.loadPlan(planPath);
+
       await this.reject(planId, `Amendment Rejected: ${reason}`);
 
       const { actor, now } = await this.getUserContext();
-      await this.display.info(PLAN_AMENDMENT_EVENT_REJECTED, planId, {
-        rejected_at: now,
-        rejected_by: actor,
-        reason,
+      await this.context.amendmentGate.recordDecision({
+        planId,
+        amendmentId: patch.amendmentId,
+        decision: PlanStatus.REJECTED,
+        decidedBy: actor,
+        rationale: reason,
+        timestamp: now,
+        traceId: frontmatter.trace_id,
       });
     } catch (error) {
       await DefaultErrorStrategy.handle({

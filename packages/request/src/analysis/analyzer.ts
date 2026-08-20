@@ -213,6 +213,7 @@ export class RequestAnalyzer implements IRequestAnalyzerService {
 
   @LogSyncMethod((self: RequestAnalyzer) => self.logger, {
     action: DomainEventType.RequestAnalyzed,
+    traceIdMapper: ([, , context]) => context?.traceId,
     payloadMapper: ([requestText, result]) => ({
       mode: result.metadata.mode,
       complexity: result.complexity,

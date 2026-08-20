@@ -22,7 +22,7 @@ import { CriterionKind, CriterionPhase, CriterionStatus, ScenarioStepType } from
 const THREE_ROWS = JSON.stringify([{ id: "a" }, { id: "b" }, { id: "c" }]);
 
 async function evaluate(
-  criterion: { query: string; min?: number; max?: number },
+  criterion: { query: string; min?: number; max?: number; not_empty?: boolean },
   stdout: string,
 ): Promise<{ status: CriterionStatus; message?: string }> {
   const result = await evaluateCriterion({
@@ -94,4 +94,11 @@ Deno.test("[json-query] zero is compared as a value, not treated as an absent re
 Deno.test("[json-query] the failure message reports the compared number", async () => {
   const result = await evaluate({ query: "length", min: 9 }, THREE_ROWS);
   assert(result.message?.includes("3"), `message should name the observed 3: ${result.message}`);
+});
+
+Deno.test("[json-query] not_empty fails for mapped missing, null, and empty-string values", async () => {
+  for (const stdout of ["[{}]", '[{"value":null}]', '[{"value":""}]']) {
+    const result = await evaluate({ query: ".[].value", not_empty: true }, stdout);
+    assertEquals(result.status, CriterionStatus.FAILED, `${stdout} must fail: ${result.message}`);
+  }
 });

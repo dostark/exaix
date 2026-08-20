@@ -11,7 +11,7 @@ scope: test
 title: "Test Development Skill (#test-development)"
 description: Write tests following Exaix conventions — helpers, placement, patterns, CI
 short_summary: "Write tests for Exaix using the right helpers, placement rules, and patterns."
-version: "1.2.0"
+version: "1.3.0"
 topics: ["testing", "tdd", "coverage", "test-helpers", "assertion-sensitivity"]
 qwen_skill: test-development
 ---
@@ -205,6 +205,19 @@ Assertion sensitivity — a test that cannot fail is worse than no test
     When you delete a test file, grep for it — planning docs cite test paths as
     evidence for ✅ success criteria, and a deleted file leaves those claims
     dangling.
+
+  TEST-RUN EVIDENCE AND CANARY SELECTION
+
+    A command exit code is not proof that the intended tests ran. For every focused or
+    canary run, retain output that names a non-zero selected test count and the expected
+    pass/fail count. In Deno, multiple-name filters use a regex literal such as
+    `--filter '/first case|second case/'`; a plain `--filter 'first|second'` can select
+    zero tests and exit successfully. Treat zero selected tests as a failed verification.
+
+    Evidence cited by a phase completion claim must survive shell/session and WSL/process
+    restarts. `/tmp` is suitable for transient CI diagnosis, but it must not be the sole
+    user-facing proof artifact. Copy or directly write decisive logs and manifests to a
+    durable, phase-named workspace/sandbox output directory and cite that path.
 
 Edge case coverage requirements — mandatory test dimensions
 

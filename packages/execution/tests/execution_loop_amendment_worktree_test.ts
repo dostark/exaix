@@ -19,6 +19,8 @@ import { ReviewRegistry } from "@exaix/core/artifact";
 import { EventLogger } from "@exaix/core/logger";
 import { ensureDir } from "@std/fs/ensure-dir";
 import { PlanStatus } from "@exaix/core/status";
+import { PlanAmendmentGate, PlanAmendmentService } from "@exaix/core/planning";
+import { PLAN_AMENDMENT_EVENT_PROPOSED, PLAN_AMENDMENT_EVENT_REJECTED } from "@exaix/core";
 import { PortalOperation } from "@exaix/core";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -88,12 +90,17 @@ Deno.test(
 
       const logger = new EventLogger({ db, defaultActor: "user:test" });
       const reviewRegistry = new ReviewRegistry(db, logger);
+      const amendmentService = new PlanAmendmentService(config, uncertainLlm);
+      const amendmentGate = new PlanAmendmentGate(config, amendmentService, undefined, logger);
       const loop = new ExecutionLoop({
         config,
         db,
+        logger,
         identityId: "test-agent",
         llmProvider: uncertainLlm,
         reviewRegistry,
+        amendmentService,
+        amendmentGate,
         gitServiceFactory: {
           createGitService(repoPath: string, traceId: string) {
             return new GitService({ config, traceId, identityId: "test-agent", repoPath });
@@ -141,6 +148,22 @@ Finish the task.
       const firstResult = await loop.processTask(planPath);
       assertEquals(firstResult.success, true, "Amendment-pending pause should report success: " + firstResult.error);
 
+      await db.waitForFlush();
+      const activities = await db.getActivitiesByTrace(traceId);
+      const proposalEvents = activities.filter(
+        (activity) => activity.action_type === PLAN_AMENDMENT_EVENT_PROPOSED,
+      );
+      assertEquals(proposalEvents.length, 1, "real execution must emit one trace-scoped proposal event");
+      const pendingEvents = activities.filter(
+        (activity) => activity.action_type === "execution.amendment_pending",
+      );
+      assertEquals(pendingEvents.length, 1, "real execution must emit one trace-scoped pending event");
+      assertEquals(JSON.parse(pendingEvents[0].payload).request_id, requestId);
+      assertEquals(
+        JSON.parse(pendingEvents[0].payload).amendment_id,
+        JSON.parse(proposalEvents[0].payload).amendmentId,
+      );
+
       const worktreeStillExists = await Deno.stat(worktreePath).then(() => true).catch(() => false);
       assertEquals(
         worktreeStillExists,
@@ -175,3 +198,102 @@ Finish the task.
     }
   },
 );
+
+Deno.test("ExecutionLoop routes an expired amendment rejection through IPlanAmendmentGate", async () => {
+  const rootDir = await Deno.makeTempDir({ prefix: "exec-amend-reject-" });
+  const { db, cleanup } = await initTestDbService();
+
+  try {
+    const traceId = crypto.randomUUID();
+    const requestId = "amend-reject-request";
+    const config = createMockConfig(rootDir, {
+      amendment: {
+        enabled: true,
+        threshold: 80,
+        expiryMs: 1,
+        hitl_timeout_ms: 1,
+        on_timeout: "reject",
+      },
+    });
+    const activeDir = join(rootDir, config.paths.workspace, config.paths.active);
+    await ensureDir(activeDir);
+    await Deno.writeTextFile(
+      join(activeDir, `${requestId}_plan.md`),
+      `---\ntrace_id: "${traceId}"\nrequest_id: ${requestId}\nstatus: ${PlanStatus.AMENDMENT_PENDING}\namendment_id: 550e8400-e29b-41d4-a716-446655440099\namendment_proposed_at: "2000-01-01T00:00:00.000Z"\n---\n\n# Expired Amendment\n`,
+    );
+
+    const logger = new EventLogger({ db, defaultActor: "user:test" });
+    const amendmentService = new PlanAmendmentService(config, {} as IModelProvider);
+    const amendmentGate = new PlanAmendmentGate(config, amendmentService, undefined, logger);
+    const loop = new ExecutionLoop({
+      config,
+      db,
+      logger,
+      identityId: "test-agent",
+      amendmentService,
+      amendmentGate,
+    });
+
+    await loop.executeNext();
+    await db.waitForFlush();
+
+    const rejectionEvents = (await db.getActivitiesByTrace(traceId)).filter(
+      (activity) => activity.action_type === PLAN_AMENDMENT_EVENT_REJECTED,
+    );
+    assertEquals(rejectionEvents.length, 1, "expired amendment must emit one correlated rejection");
+    assertEquals(JSON.parse(rejectionEvents[0].payload).decision, "rejected");
+  } finally {
+    await cleanup();
+    await Deno.remove(rootDir, { recursive: true });
+  }
+});
+
+Deno.test("ExecutionLoop routes an expired amendment approval through IPlanAmendmentGate", async () => {
+  const rootDir = await Deno.makeTempDir({ prefix: "exec-amend-approve-" });
+  const { db, cleanup } = await initTestDbService();
+
+  try {
+    const traceId = crypto.randomUUID();
+    const requestId = "amend-approve-request";
+    const amendmentId = "550e8400-e29b-41d4-a716-446655440098";
+    const config = createMockConfig(rootDir, {
+      amendment: {
+        enabled: true,
+        threshold: 80,
+        expiryMs: 1,
+        hitl_timeout_ms: 1,
+        on_timeout: "approve",
+      },
+    });
+    const activeDir = join(rootDir, config.paths.workspace, config.paths.active);
+    await ensureDir(activeDir);
+    await Deno.writeTextFile(
+      join(activeDir, `${requestId}_plan.md`),
+      `---\ntrace_id: "${traceId}"\nrequest_id: ${requestId}\nstatus: ${PlanStatus.AMENDMENT_PENDING}\namendment_id: ${amendmentId}\namendment_proposed_at: "2000-01-01T00:00:00.000Z"\n---\n\n# Expired Amendment\n`,
+    );
+
+    const logger = new EventLogger({ db, defaultActor: "user:test" });
+    const amendmentService = new PlanAmendmentService(config, {} as IModelProvider);
+    const amendmentGate = new PlanAmendmentGate(config, amendmentService, undefined, logger);
+    const loop = new ExecutionLoop({
+      config,
+      db,
+      logger,
+      identityId: "test-agent",
+      amendmentService,
+      amendmentGate,
+    });
+
+    await loop.executeNext();
+    await db.waitForFlush();
+
+    const approvalEvents = (await db.getActivitiesByTrace(traceId)).filter(
+      (activity) => activity.action_type === "plan.amendment.approved",
+    );
+    assertEquals(approvalEvents.length, 1, "expired amendment must emit one correlated approval");
+    assertEquals(JSON.parse(approvalEvents[0].payload).decision, "approved");
+  } finally {
+    await cleanup();
+    await Deno.remove(rootDir, { recursive: true });
+  }
+});

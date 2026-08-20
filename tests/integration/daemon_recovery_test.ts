@@ -245,9 +245,10 @@ Deno.test("Integration: System Recovery - Recover from crash mid-execution", asy
 
       const activities = await env.getActivityLog(traceId);
 
-      // Should have activities (may include execution.started from setup)
-      // The pre-crash activity was logged via logActivity which queues it
-      assert(activities.length >= 0, "IActivity log should be accessible after recovery");
+      const preCrash = activities.find((activity) => activity.action_type === "execution.started");
+      assertExists(preCrash, "the pre-crash execution.started entry must survive recovery");
+      assertEquals(preCrash.target, activePlanPath);
+      assertEquals(JSON.parse(preCrash.payload).plan, "crash-test");
     });
 
     // ========================================================================
@@ -391,10 +392,13 @@ Deno.test("Integration: System Recovery - Database integrity", async () => {
     // Verify database integrity
     const isHealthy = await recovery.checkDatabaseIntegrity();
     assertEquals(isHealthy, true, "Database should be healthy");
-
-    // All entries should still be there
     const activities = await env.getActivityLog(traceId);
-    assert(activities.length >= 0, "Should have activity entries");
+
+    assertEquals(
+      activities.map((activity) => activity.action_type).sort(),
+      ["test.entry1", "test.entry2"],
+      "both exact pre-restart journal entries must survive integrity recovery",
+    );
   } finally {
     await env.cleanup();
   }

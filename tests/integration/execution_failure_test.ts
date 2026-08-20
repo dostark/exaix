@@ -16,6 +16,8 @@ Deno.test("Integration: Execution Failure - Plan fails during execution", async 
 
   try {
     let traceId: string;
+    let requestId: string;
+    let failureError: string;
     let _requestPath: string;
     let activePlanPath: string;
 
@@ -27,7 +29,7 @@ Deno.test("Integration: Execution Failure - Plan fails during execution", async 
       );
       traceId = result.traceId;
       _requestPath = result.filePath;
-      const requestId = `request-${traceId.substring(0, 8)}`;
+      requestId = `request-${traceId.substring(0, 8)}`;
 
       // Create plan with action that will fail
       const planPath = await env.createPlan(traceId, requestId, {
@@ -65,6 +67,8 @@ Deno.test("Integration: Execution Failure - Plan fails during execution", async 
       // Result should indicate failure (ExecutionLoop uses special markers)
       assertEquals(result.success, false, "Execution should fail with failure marker");
       assertExists(result.error, "Should have error message");
+      assertEquals(result.error, "Simulated execution failure");
+      failureError = result.error;
     });
 
     // ========================================================================
@@ -113,9 +117,12 @@ Deno.test("Integration: Execution Failure - Plan fails during execution", async 
       const executionFailed = activities.find((a) => a.action_type === "execution.failed");
       assertExists(executionFailed, "execution.failed must be emitted on execution failure");
       const payload = JSON.parse(executionFailed.payload);
-      assertExists(payload.request_id, "execution.failed payload should include request_id");
-      assertExists(payload.error, "execution.failed payload should include error");
-      assertExists(payload.moved_to, "execution.failed payload should include moved_to");
+      assertEquals(payload.request_id, requestId);
+      assertEquals(payload.error, failureError);
+      assertEquals(
+        payload.moved_to,
+        _join(env.tempDir, "Workspace", "Rejected", `${requestId}_plan_failed.md`),
+      );
     });
 
     // ========================================================================

@@ -416,9 +416,10 @@ Deno.test("CostTracker: flush emits cost.batch.flushed with a real, field-level 
   }
 });
 
-Deno.test("CostTracker: trackGeneration emits model.cost.divergence with a real, field-level payload when reported and computed costs differ (real EventLogger)", async () => {
+Deno.test("CostTracker: model.cost.divergence persists under the generation trace", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
+    const traceId = "cost-divergence-trace";
     const logger = new EventLogger({ db });
     const tracker = new CostTracker(db, undefined, logger);
     tracker.setPricingLookup({
@@ -426,20 +427,18 @@ Deno.test("CostTracker: trackGeneration emits model.cost.divergence with a real,
         Promise.resolve({ provider, model, provenance: "endpoint" as const, inputPerMtok: 10, outputPerMtok: 30 }),
     });
 
-    // reported ($100) deliberately far from the computed split price
-    // ((10 * 1_000_000 + 30 * 1_000_000) / 1_000_000 = $40) to clear the default tolerance.
     await tracker.trackGeneration(PROVIDER_OPENAI, "gpt-4", {
       promptTokens: 1_000_000,
       completionTokens: 1_000_000,
       totalTokens: 2_000_000,
       costUsd: 100,
-    });
+    }, traceId);
     await db.waitForFlush();
 
-    const rows = db.instance.prepare(
-      "SELECT payload FROM activity WHERE action_type = ? ORDER BY timestamp DESC LIMIT 1",
-    ).all(DomainEventType.ModelCostDivergence) as Array<{ payload: string }>;
-    assertEquals(rows.length, 1, "model.cost.divergence must be logged exactly once");
+    const rows = db.getActivitiesByTrace(traceId).filter(
+      (activity) => activity.action_type === DomainEventType.ModelCostDivergence,
+    );
+    assertEquals(rows.length, 1, "model.cost.divergence must be logged exactly once under the generation trace");
     const payload = JSON.parse(rows[0].payload);
     assertEquals(payload.provider, PROVIDER_OPENAI);
     assertEquals(payload.model, "gpt-4");
@@ -447,6 +446,55 @@ Deno.test("CostTracker: trackGeneration emits model.cost.divergence with a real,
     assertEquals(payload.computed, 40);
 
     await db.close();
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("CostTracker: pricing and query events persist through a real EventLogger", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const tracker = new CostTracker(db, undefined, logger);
+    const traceId = crypto.randomUUID();
+    tracker.setPricingLookup({
+      getModelPricing: (provider: string, model: string) =>
+        Promise.resolve({ provider, model, provenance: "endpoint" as const }),
+    });
+    await tracker.trackGeneration(PROVIDER_OPENAI, "gpt-4", {
+      promptTokens: 100,
+      completionTokens: 200,
+      totalTokens: 300,
+    }, traceId);
+    await tracker.flush();
+
+    const startDate = new Date();
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 1);
+    await tracker.queryByCriteria({ traceId });
+    await tracker.getDailyCost(PROVIDER_OPENAI);
+    await tracker.getCostSummary(startDate, endDate);
+    await db.waitForFlush();
+
+    const pricingRows = db.getActivitiesByActionType(DomainEventType.CostPricingLookupSet);
+    assertEquals(pricingRows.length, 1, "cost.pricing_lookup.set must persist exactly once");
+    assertEquals(JSON.parse(pricingRows[0].payload).configured, true);
+
+    const criteriaRows = db.getActivitiesByActionType(DomainEventType.CostQueriedByCriteria);
+    assertEquals(criteriaRows.length, 1, "cost.queried_by_criteria must persist exactly once");
+    assertEquals(JSON.parse(criteriaRows[0].payload).traceId, traceId);
+    assertEquals(JSON.parse(criteriaRows[0].payload).resultCount, 1);
+
+    const dailyRows = db.getActivitiesByActionType(DomainEventType.CostDailyCostQueried);
+    assertEquals(dailyRows.length, 1, "cost.daily_cost_queried must persist exactly once");
+    assertEquals(JSON.parse(dailyRows[0].payload).provider, PROVIDER_OPENAI);
+
+    const summaryRows = db.getActivitiesByActionType(DomainEventType.CostSummaryQueried);
+    assertEquals(summaryRows.length, 1, "cost.summary_queried must persist exactly once");
+    assertEquals(JSON.parse(summaryRows[0].payload).resultCount, 1);
+    assertEquals(JSON.parse(summaryRows[0].payload).startDate, startDate.toISOString());
+    assertEquals(JSON.parse(summaryRows[0].payload).endDate, endDate.toISOString());
   } finally {
     await cleanup();
   }

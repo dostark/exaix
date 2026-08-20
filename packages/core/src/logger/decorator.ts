@@ -32,6 +32,7 @@ export interface IMethodLogPayload {
 }
 
 export type PayloadMapper<Args extends unknown[], Return> = (args: Args, result?: Return) => IMethodLogPayload;
+export type TraceIdMapper<Args extends unknown[]> = (args: Args) => string | undefined;
 
 /** Per-lifecycle-phase registered actions, for an operation whose started/completed/failed
  *  events must remain independently taxonomy-distinguishable rather than sharing one action
@@ -54,6 +55,7 @@ export interface ILogMethodOptions<Args extends unknown[], Return> {
   /** Registered taxonomy member(s). Decorators never derive raw action names. */
   action: TDomainEventType | ILifecycleActions;
   payloadMapper?: Opt<PayloadMapper<Args, Return>, Reason.OptionalContext>;
+  traceIdMapper?: Opt<TraceIdMapper<Args>, Reason.OptionalContext>;
 }
 
 /** Shapes a `LogGeneratorMethod` `completed` event's payload from the call's arguments, the
@@ -118,7 +120,7 @@ export function LogMethod<This, Args extends unknown[], Return>(
       const logger = resolveLogger(loggerSource, this);
       if (!logger) return await target.apply(this, args);
       const startTime = now();
-      const traceId = crypto.randomUUID();
+      const traceId = options.traceIdMapper?.(args) ?? crypto.randomUUID();
       try {
         await logger.debug(
           actionFor(options.action, PHASE_STARTED),
@@ -159,7 +161,7 @@ export function LogSyncMethod<This, Args extends unknown[], Return>(
       const logger = resolveLogger(loggerSource, this);
       if (!logger) return target.apply(this, args);
       const startTime = now();
-      const traceId = crypto.randomUUID();
+      const traceId = options.traceIdMapper?.(args) ?? crypto.randomUUID();
       void logger.debug(
         actionFor(options.action, PHASE_STARTED),
         PHASE_STARTED,

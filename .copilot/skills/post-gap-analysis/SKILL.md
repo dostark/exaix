@@ -10,7 +10,7 @@ scope: dev
 title: "Post-Gap Analysis Skill (#post-gap-analysis)"
 description: Deep post-implementation review of a phase planning document — verifies what was built against the plan, delegates code quality review to #review-code, finds gaps, and writes remediation steps back into the document
 short_summary: "Deep review of an existing phase planning document: checks implementation against plan, delegates code quality to #review-code, finds gaps, and writes remediation steps back into the document."
-version: "1.8.0"
+version: "1.9.0"
 topics: [
   "planning",
   "gap-analysis",
@@ -131,6 +131,10 @@ Do / Don't
   cancellation, not only normal completion and a thrown error.
 - ✅ Do run Phase 4 scenario framework coverage verification on every step that
   affects the request → plan → execution → review → memory → update flow.
+- ✅ Do derive the source-declared event inventory independently when a phase
+  claims exhaustive event or observability coverage, then reconcile it one-for-one
+  against attributable runtime evidence. A representative event per component
+  does not prove every implemented event.
 - ✅ Do delegate all code quality checks (lint, fmt, TS idiomacy, defensive
   programming, performance, dep hygiene) to #review-code Phase 7 — do not
   re-check from scratch.
@@ -345,6 +349,18 @@ Planned Tests / Success Criteria). Check §3D documentation update compliance.
 For every step affecting the request → plan → execution → review → memory → update
 flow: verify existing scenarios exercise the behaviour, check scenario assertions,
 determine if new scenarios are needed.
+
+For journal/event assertions, prove that a missing required field fails the assertion
+(do not accept a non-empty container that contains `undefined`) and require request-trace
+scoping whenever the scenario claims correlation to the current request. A globally found
+event is not evidence that the request under test emitted it.
+
+When the phase claims all implemented events are covered, build an exact inventory from
+the production declarations/emission sites and add a final reconciliation table. Every
+inventory row must cite a scenario or integration/package test that drives the real
+component path, persists through the real `EventLogger`, and asserts the named action plus
+canonical trace and semantic payload fields. Totals must reconcile; missing rows remain
+gaps even when each component has one representative event test.
 
 For every introduced or changed lifecycle, streaming, transaction, retry, or
 multi-stage operation, enumerate its applicable terminal alternatives: normal

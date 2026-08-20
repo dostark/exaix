@@ -118,14 +118,16 @@ Deno.test(
       const { processor } = env.createRequestProcessor();
 
       let planPath: string | null;
+      let requestTraceId: string;
 
       await t.step(
         "[E2E] analysis runs for agent request and produces _analysis.json",
         async () => {
-          const { filePath } = await env.createRequest(
+          const { filePath, traceId } = await env.createRequest(
             "Implement an OAuth2 login flow with Google and GitHub providers",
             { identityId: "senior-coder" },
           );
+          requestTraceId = traceId;
           planPath = await processor.process(filePath);
 
           const analysisPath = filePath.replace(/\.md$/, "_analysis.json");
@@ -135,16 +137,27 @@ Deno.test(
       );
 
       await t.step(
+        "[E2E] RequestProcessor fallback CostTracker journals cost.batch.flushed",
+        async () => {
+          await env.db.waitForFlush();
+          const rows = env.db.instance.prepare(
+            "SELECT payload FROM activity WHERE action_type = ? ORDER BY timestamp DESC LIMIT 1",
+          ).all(DomainEventType.CostBatchFlushed) as Array<{ payload: string }>;
+          assertEquals(rows.length, 1, "production-created CostTracker must journal its flush");
+          const payload = JSON.parse(rows[0].payload);
+          assertEquals(payload.pendingCount, 0);
+        },
+      );
+
+      await t.step(
         "[E2E] request.analyzed is journalled with a real, field-level payload",
         async () => {
           await env.db.waitForFlush();
-          // LogSyncMethod mints its own per-call trace id and logs both a debug "started"
-          // and an info "completed" row under the SAME action_type (only `target` differs -
-          // see packages/core/src/logger/decorator.ts) - filter on target to reach the
-          // "completed" row, which is the one payloadMapper populates.
-          const rows = env.db.instance.prepare(
-            "SELECT payload FROM activity WHERE action_type = ? AND target = 'completed'",
-          ).all(DomainEventType.RequestAnalyzed) as Array<{ payload: string }>;
+          const rows = env.db.getActivitiesByTrace(requestTraceId).filter(
+            (activity) =>
+              activity.action_type === DomainEventType.RequestAnalyzed &&
+              activity.target === "completed",
+          );
           assertEquals(rows.length, 1, "request.analyzed must be logged for the agent request");
           const payload = JSON.parse(rows[0].payload);
           assert(typeof payload.mode === "string" && payload.mode.length > 0, "payload.mode must be populated");

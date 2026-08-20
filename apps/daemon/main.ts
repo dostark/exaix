@@ -31,7 +31,12 @@ import {
   seedConfigDb,
 } from "@exaix/core/config";
 import { evaluateNetPolicy } from "@exaix/core/security";
-import { buildDelegateBriefArgs, isContentlessBrief } from "@exaix/core/planning";
+import {
+  buildDelegateBriefArgs,
+  isContentlessBrief,
+  PlanAmendmentGate,
+  PlanAmendmentService,
+} from "@exaix/core/planning";
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import {
@@ -461,7 +466,7 @@ if (import.meta.main) {
       config,
       defaultModelName,
     );
-    const costTracker = new CostTracker(dbService, config);
+    const costTracker = new CostTracker(dbService, config, logger);
     // Pass the logger so provider-level diagnostics (token usage at info, outbound request
     // debug dumps) reach the journal — without it every provider call is a logging black hole.
     const llmProvider = await ProviderFactory.createByName(
@@ -1237,12 +1242,17 @@ if (import.meta.main) {
       },
     };
 
+    const amendmentService = new PlanAmendmentService(config, llmProvider);
+    const amendmentGate = new PlanAmendmentGate(config, amendmentService, undefined, logger);
+
     const executionLoop = new ExecutionLoop({
       context,
       config,
       db: dbService,
       identityId: DAEMON_IDENTITY_ID,
       llmProvider,
+      amendmentService,
+      amendmentGate,
       reviewRegistry,
       sessionMemory,
       guardrailRunner,

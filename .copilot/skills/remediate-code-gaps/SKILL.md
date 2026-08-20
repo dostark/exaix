@@ -11,7 +11,7 @@ scope: dev
 title: "Remediate Code Gaps Skill (#remediate-code-gaps)"
 description: Consumes post-gap-analysis gap findings and edits source code to close each gap — re-runs tests and commits
 short_summary: "Edits source files to close code-level gaps identified by post-gap-analysis, then re-runs tests and creates a structured commit."
-version: "1.1.0"
+version: "1.2.0"
 topics: ["planning", "gap-analysis", "remediation", "tdd", "code-quality"]
 qwen_skill: remediate-code-gaps
 ---
@@ -24,6 +24,11 @@ Key points
 - Tests come first (TDD): if the gap remediation adds new behaviour, write the test first, then implement.
 - Do NOT rewrite the remediation step's Actions/Architecture Notes/prose — those were authored by post-gap-analysis. The ONLY plan-doc edit you make is marking that step's Success Criteria / Planned Tests DONE once satisfied: rewrite each to `- ✅ <text> → ` `` `<staged-path>` `` (or `- ⚠️ deferred <text> → ` `` `<LedgerSymbol>` `` + a Reachability Ledger row). This is a plan-step completion, so it goes through the plan-step commit gate (below).
 - After all gaps are remediated: re-run all affected tests, run CI gates, then commit BOTH the submodule plan doc (the ✅/deferred marks) and the parent source via `scripts/commit_plan_step.ts <msg> --commit` — the message carries a `plan: <doc>#<remediation-step-N>` field. No `- [ ]` may remain in a remediation step this commit claims.
+- If the phase claims exhaustive event coverage, reconcile every source-declared event
+  against attributable real-`EventLogger` scenario or integration/package-test evidence;
+  representative component coverage is not completion.
+- Before declaring the phase done, run `#self-improvement-retro`, update the phase registry,
+  and record every process finding as PATCHED, DEFERRED, or REJECTED.
 
 Canonical prompt (short):
 "Remediate the code gaps in .copilot/planning/phase-NN-*.md's Post-Gap Analysis
@@ -94,6 +99,13 @@ For each remediation step, in order:
    re-`read` a narrow line range and confirm no trailing `...` before editing, or do a
    targeted Python/sed string-replace on the exact original substring and verify with
    `git diff` that only the intended text changed before moving on.
+6. If the remediation closes an exhaustive observability claim, generate a source event
+   inventory and reconcile its total with the runtime-evidence matrix. Each event needs an
+   attributable test that drives the production component through the real `EventLogger`;
+   mock capture, global lookup, field presence without semantic value checks, and one event
+   standing in for a multi-event component are insufficient.
+7. Run `#self-improvement-retro` before the final completion claim. It owns terminal phase
+   status and `PHASE_REGISTRY.md` hygiene and must disposition every workflow finding.
 
 ### Phase 4 — Commit (plan-step commit)
 
@@ -104,7 +116,7 @@ it goes through the plan-step gate:
    ✅/deferred lines must be added lines of this diff.
 2. Stage the edited source + test files in the parent — every `→ path` you wrote must be
    among them. A criterion/test whose module IS the plan doc itself uses the gitlink arrow
-   `→ ` `` `exaix-dev-docs` `` (the path the parent gate sees in `git diff --cached
+   `→` `` `exaix-dev-docs` `` (the path the parent gate sees in `git diff --cached
    --name-only`) — the internal `exaix-dev-docs/planning/<phase>.md` path is NOT a parent
    staged file and the gate rejects it with "…not among this commit's changed files".
 3. Write the structured message (type `fix`; body has `what:`, `rationale:`, `tests:`,

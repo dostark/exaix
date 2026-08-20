@@ -7,7 +7,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { LogMethod } from "@exaix/core/logger";
+import { LogMethod, LogSyncMethod } from "@exaix/core/logger";
 import type { EventLogger } from "@exaix/core/logger";
 import { LogLevel } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
@@ -18,20 +18,21 @@ type LoggedCall = {
   action: string;
   target: string;
   payload: JSONObject;
+  traceId?: string;
 };
 
 function createStubLogger(calls: LoggedCall[]): EventLogger {
   const logger = {
-    debug: (action: string, target: string, payload: JSONObject) => {
-      calls.push({ level: LogLevel.DEBUG, action, target, payload });
+    debug: (action: string, target: string, payload: JSONObject, traceId?: string) => {
+      calls.push({ level: LogLevel.DEBUG, action, target, payload, traceId });
       return Promise.resolve();
     },
-    info: (action: string, target: string, payload: JSONObject) => {
-      calls.push({ level: LogLevel.INFO, action, target, payload });
+    info: (action: string, target: string, payload: JSONObject, traceId?: string) => {
+      calls.push({ level: LogLevel.INFO, action, target, payload, traceId });
       return Promise.resolve();
     },
-    error: (action: string, target: string, payload: JSONObject) => {
-      calls.push({ level: LogLevel.ERROR, action, target, payload });
+    error: (action: string, target: string, payload: JSONObject, traceId?: string) => {
+      calls.push({ level: LogLevel.ERROR, action, target, payload, traceId });
       return Promise.resolve();
     },
   };
@@ -61,4 +62,35 @@ Deno.test("LogMethod (standard decorator): wraps method via (value, context)", a
   assertEquals(out, "ok:x");
   assertEquals(calls[0].action, DomainEventType.FlowStepExecuted);
   assertEquals(calls[1].target, "completed");
+});
+
+Deno.test("LogSyncMethod uses traceIdMapper output for every lifecycle row and generates a fallback", () => {
+  const mappedCalls: LoggedCall[] = [];
+  const mapped = LogSyncMethod<unknown, [string, { traceId: string }], string>(
+    createStubLogger(mappedCalls),
+    {
+      action: DomainEventType.RequestAnalyzed,
+      traceIdMapper: ([, context]) => context.traceId,
+    },
+  )(
+    (_value: string, _context: { traceId: string }) => "ok",
+    { kind: "method", name: "analyze" } as ClassMethodDecoratorContext,
+  ) as (value: string, context: { traceId: string }) => string;
+
+  const canonicalTraceId = crypto.randomUUID();
+  assertEquals(mapped("request", { traceId: canonicalTraceId }), "ok");
+  assertEquals(mappedCalls.map((call) => call.traceId), [canonicalTraceId, canonicalTraceId]);
+
+  const fallbackCalls: LoggedCall[] = [];
+  const fallback = LogSyncMethod<unknown, [string], string>(
+    createStubLogger(fallbackCalls),
+    { action: DomainEventType.RequestAnalyzed },
+  )(
+    (value: string) => value,
+    { kind: "method", name: "analyze" } as ClassMethodDecoratorContext,
+  ) as (value: string) => string;
+
+  fallback("request");
+  assertEquals(fallbackCalls[0].traceId, fallbackCalls[1].traceId);
+  assertEquals(typeof fallbackCalls[0].traceId, "string");
 });

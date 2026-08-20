@@ -60,7 +60,7 @@ import type { Opt, Reason, TaskType } from "@exaix/core/types";
 import type { ICompactedEntry, ILoopHistoryEntry } from "./types.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
+import { ContextBudgetManager, type IContextBudgetManager } from "./context/context_budget_manager.ts";
 import type { ISnapshotStore } from "./context/snapshot_store.ts";
 import { ExecutionContextService } from "./execution_context_service.ts";
 import { BlueprintService } from "./blueprint_service.ts";
@@ -270,7 +270,7 @@ export class AgentOrchestrator {
       promptBudgetAllocator: undefined,
       contextCache: undefined,
       tokenizer: undefined,
-      contextBudgetManager: undefined,
+      contextBudgetManager: new ContextBudgetManager(undefined, undefined, undefined, this.logger),
       snapshotStore: undefined,
     });
     this.promptBuilder = deps.promptBuilder ?? new PromptBuilder(this.logger, this.ctx);
