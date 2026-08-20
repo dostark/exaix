@@ -13,7 +13,8 @@ import { assertEquals } from "@std/assert";
 import { ContextCache } from "@exaix/core/context";
 import { DomainEventType } from "@exaix/core/events";
 import { ExecutionContextService, type IPromptBudgetAllocator } from "@exaix/execution";
-import { castAny } from "@exaix/testing";
+import { castAny, initTestDbService } from "@exaix/testing";
+import { EventLogger } from "@exaix/core/logger";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core/types";
 
@@ -134,4 +135,27 @@ Deno.test("[ExecutionContextService] markSectionsStable does not emit when cache
 
   const events = captured.filter((e) => e.action === DomainEventType.ExecutionContextSectionsStabilized);
   assertEquals(events.length, 0);
+});
+
+Deno.test("[ExecutionContextService] allocateBudget emits ExecutionContextBudgetAllocated with a real, field-level payload (real EventLogger)", async () => {
+  const { db, config, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const mockBudget = { model: "test-model", sections: { system: 100, plan: 200 } };
+    const promptBudgetAllocator = castAny<IPromptBudgetAllocator>({ allocate: () => Promise.resolve(mockBudget) });
+    const service = new ExecutionContextService(config, logger, { promptBudgetAllocator });
+
+    await service.allocateBudget("test-model");
+    await db.waitForFlush();
+
+    const rows = db.instance.prepare(
+      "SELECT payload FROM activity WHERE action_type = ? ORDER BY timestamp DESC LIMIT 1",
+    ).all(DomainEventType.ExecutionContextBudgetAllocated) as Array<{ payload: string }>;
+    assertEquals(rows.length, 1, "execution.context.budget_allocated must be logged exactly once");
+    const payload = JSON.parse(rows[0].payload);
+    assertEquals(payload.model, "test-model");
+    assertEquals(payload.sections, ["system", "plan"]);
+  } finally {
+    await cleanup();
+  }
 });

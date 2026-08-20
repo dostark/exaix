@@ -24,10 +24,11 @@ import {
 import type { IContextBudgetManager } from "@exaix/execution";
 import type { IContextSegment } from "@exaix/execution";
 import { ContextBudgetManager, NoopContextCompactor } from "@exaix/execution";
-import { castAny } from "@exaix/testing";
+import { castAny, initTestDbService } from "@exaix/testing";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { LogMetadata } from "@exaix/core/types";
 import type { IModelProvider } from "@exaix/ai/types.ts";
+import { EventLogger } from "@exaix/core/logger";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -669,4 +670,38 @@ Deno.test("[ContextBudgetManager] emits ContextSectionTruncated when a segment i
   assertEquals(event?.payload?.kind, "tool_result");
   assertEquals(event?.payload?.originalTokens, 100);
   assertEquals(event?.payload?.remainingBudget, 50);
+});
+
+Deno.test("[ContextBudgetManager] emits ContextBudgetAllocated with a real, field-level payload (real EventLogger)", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const manager: IContextBudgetManager = new ContextBudgetManager(undefined, undefined, undefined, logger);
+
+    // NOTE: prepare() embeds traceId in the payload only (never as EventLogger.log's 4th
+    // positional argument), so EventLogger mints an independent random trace_id for this
+    // row — query by action_type, not getActivitiesByTrace(traceId). Pre-existing behavior,
+    // out of scope for Phase 169 Step 4 to change; noted for a future traceability pass.
+    await manager.prepare({
+      traceId: "trace-real-logger",
+      stepId: "step-1",
+      model: "anthropic:claude-sonnet-5",
+      promptBudget: makePromptBudget(),
+      segments: [
+        makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 25 }),
+      ],
+    });
+    await db.waitForFlush();
+
+    const rows = db.instance.prepare(
+      "SELECT payload FROM activity WHERE action_type = ? ORDER BY timestamp DESC LIMIT 1",
+    ).all(DomainEventType.ContextBudgetAllocated) as Array<{ payload: string }>;
+    assertEquals(rows.length, 1, "context.budget.allocated must be logged exactly once");
+    const payload = JSON.parse(rows[0].payload);
+    assertEquals(payload.traceId, "trace-real-logger");
+    assertEquals(payload.maxContextTokens, 200_000);
+    assertEquals(payload.segmentCount, 1);
+  } finally {
+    await cleanup();
+  }
 });

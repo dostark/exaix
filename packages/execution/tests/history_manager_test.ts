@@ -11,6 +11,8 @@ import type { LogMetadata } from "@exaix/core";
 import { HistoryManager } from "../src/history_manager.ts";
 import type { ILoopHistoryEntry } from "../src/types.ts";
 import type { Config } from "@exaix/schemas/config.ts";
+import { EventLogger } from "@exaix/core/logger";
+import { initTestDbService } from "@exaix/testing";
 
 import type { IEventLogger } from "@exaix/core/logger";
 
@@ -131,4 +133,26 @@ Deno.test("HistoryManager.getBudgetUsage returns accurate token count", () => {
   manager.addEntry(makeStepEntry("step 1", 50));
   manager.addEntry(makeStepEntry("step 2", 150));
   assertEquals(manager.getBudgetUsage(), 200);
+});
+
+Deno.test("HistoryManager.addEntry emits LoopHistoryEntryAdded with entry_type and tokens (real EventLogger)", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const manager = new HistoryManager(mockConfig(), logger);
+    const entry = makeStepEntry("real logger test step", 175, "step-real-99");
+
+    manager.addEntry(entry);
+    await db.waitForFlush();
+
+    const rows = db.instance.prepare(
+      "SELECT payload FROM activity WHERE action_type = ? ORDER BY timestamp DESC LIMIT 1",
+    ).all(DomainEventType.LoopHistoryEntryAdded) as Array<{ payload: string }>;
+    assertEquals(rows.length, 1, "loop_history.entry_added must be logged exactly once");
+    const payload = JSON.parse(rows[0].payload);
+    assertEquals(payload.entry_type, "step");
+    assertEquals(payload.tokens, 175);
+  } finally {
+    await cleanup();
+  }
 });
