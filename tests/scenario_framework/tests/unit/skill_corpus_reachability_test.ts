@@ -12,7 +12,11 @@
 
 import { assertEquals } from "@std/assert";
 import { computeSkillReachability } from "../../runner/skill_corpus_reachability.ts";
-import type { ICorpusTaskMatch, ISkillCatalogEntry } from "../../runner/skill_corpus_reachability.ts";
+import type {
+  ICorpusTaskMatch,
+  IIdentityDefaultSkills,
+  ISkillCatalogEntry,
+} from "../../runner/skill_corpus_reachability.ts";
 
 function catalog(...ids: string[]): ISkillCatalogEntry[] {
   return ids.map((skillId) => ({ skillId, critical: false }));
@@ -59,4 +63,61 @@ Deno.test("[SkillCorpusReachability] a default_skills entry not present in the c
   const result = computeSkillReachability(catalog("tdd-methodology"), ["tdd-methodology", "retired-skill"], []);
   assertEquals(result.reachableSkillIds, ["tdd-methodology"]);
   assertEquals(result.nonCoverage.find((entry) => entry.skillId === "retired-skill"), undefined);
+});
+
+Deno.test("[SkillCorpusReachability] a non-covered skill still declared in another identity's default_skills gets an enriched reason naming that identity", () => {
+  const identities: IIdentityDefaultSkills[] = [
+    { identityId: "qa-engineer", defaultSkillIds: ["response-contract-qa", "tdd-methodology"] },
+  ];
+  const result = computeSkillReachability(
+    catalog("response-contract-qa"),
+    ["response-contract"],
+    [],
+    identities,
+  );
+  assertEquals(result.reachableSkillIds, []);
+  assertEquals(result.nonCoverage.length, 1);
+  assertEquals(result.nonCoverage[0].reason.includes("qa-engineer"), true);
+  assertEquals(result.nonCoverage[0].reason.includes("not evidence the skill is unused"), true);
+});
+
+Deno.test("[SkillCorpusReachability] a non-covered skill declared by multiple identities names all of them", () => {
+  const identities: IIdentityDefaultSkills[] = [
+    { identityId: "quality-judge", defaultSkillIds: ["response-contract-judge", "verdict-rubric"] },
+    { identityId: "voting-judge", defaultSkillIds: ["response-contract-judge", "verdict-rubric"] },
+  ];
+  const result = computeSkillReachability(
+    catalog("response-contract-judge"),
+    ["response-contract"],
+    [],
+    identities,
+  );
+  assertEquals(result.nonCoverage[0].reason.includes("quality-judge"), true);
+  assertEquals(result.nonCoverage[0].reason.includes("voting-judge"), true);
+});
+
+Deno.test("[SkillCorpusReachability] a skill genuinely absent from every identity's default_skills keeps the original, narrower reason", () => {
+  const identities: IIdentityDefaultSkills[] = [
+    { identityId: "senior-coder", defaultSkillIds: ["tdd-methodology"] },
+  ];
+  const result = computeSkillReachability(
+    catalog("truly-orphaned-skill"),
+    ["response-contract"],
+    [],
+    identities,
+  );
+  assertEquals(result.nonCoverage.length, 1);
+  assertEquals(
+    result.nonCoverage[0].reason,
+    "not in the evaluated identity's default_skills and matched by none of the 0 corpus tasks",
+  );
+});
+
+Deno.test("[SkillCorpusReachability] omitting the identity catalog reproduces the original reason exactly", () => {
+  const matches: ICorpusTaskMatch[] = [{ taskId: "task-1", matchedSkillIds: [] }];
+  const result = computeSkillReachability(catalog("orphan-skill"), ["tdd-methodology"], matches);
+  assertEquals(
+    result.nonCoverage[0].reason,
+    "not in the evaluated identity's default_skills and matched by none of the 1 corpus tasks",
+  );
 });
