@@ -1,0 +1,160 @@
+schema_version: "1.0.0"
+# Asserts exaix_portal_symbols end to end through the real MCP server: refuses before the
+# portal has ever been analyzed, then serves the persisted symbolMap once knowledge.json
+# exists, ranked by pageRankScore and filterable by name substring / kind / limit. Issue #3:
+# PortalKnowledgeService's symbol extraction was computed and persisted but had no agent-facing
+# read path — this is the tool that closes that gap, and the scenario this manifest requires
+# every docs-visible tool to carry (tests/eval/tool_eval_parity_test.ts, entity:<tool-name>).
+id: "tools-portal-symbols"
+title: "Domain tool — exaix_portal_symbols serves a portal's persisted code symbols"
+pack: "mcp_tools_extended"
+tags: ["domain", "subsystem:tools", "entity:exaix_portal_symbols"]
+request_fixture: "fixtures/requests/mcp_tools_extended/exaix_create_request.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "setup-portal"
+    type: "run-script"
+    name: "Create the fixture portal and its config"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/setup_tools_portal.ts"
+      - "$WORKSPACE_ROOT"
+      - "$FRAMEWORK_HOME/fixtures/portals/tools_pack"
+    output_criteria:
+      - id: "portal-ready"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.2
+
+  # A prior run of this same scenario in a reused sandbox may have already written the
+  # fixture knowledge.json below — clear it so the "not yet analyzed" step is deterministic
+  # regardless of run history (same order-independence goal as setup_tools_portal.ts's own
+  # "recreated from scratch each run" fixture copy).
+  - id: "clean-knowledge-fixture"
+    type: "remove-files"
+    name: "Clear any knowledge.json left over from a prior run of this scenario"
+    args: ["Memory/Projects/tools/knowledge.json"]
+
+  - id: "not-yet-analyzed"
+    type: "run-script"
+    name: "exaix_portal_symbols refuses before the portal has ever been analyzed"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "exaix_portal_symbols"
+      - '{"portal":"tools","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "not-analyzed-error-surfaced"
+        kind: "command-output-contains"
+        contains: ["has not been analyzed", "\"isError\": true", "\"success\": false"]
+        score_weight: 0.8
+
+  # A small, hand-written symbolMap standing in for a real `portal analyze --mode standard`
+  # run (which is what actually populates this file in production — see
+  # scenarios/portal_knowledge/portal-knowledge-strategies.yaml for that end-to-end path).
+  # Written directly here so this scenario stays fast and asserts the tool's read/filter/rank
+  # contract, not the (separately covered) extraction strategy.
+  - id: "write-knowledge-fixture"
+    type: "write-file"
+    name: "Seed Memory/Projects/tools/knowledge.json with a small real symbolMap"
+    path: "Memory/Projects/tools/knowledge.json"
+    content: |
+      {
+        "portal": "tools",
+        "gatheredAt": "2026-01-01T00:00:00.000Z",
+        "version": 1,
+        "architectureOverview": "A tiny fixture portal used to exercise MCP tools end to end.",
+        "layers": [],
+        "keyFiles": [],
+        "conventions": [],
+        "dependencies": [],
+        "techStack": { "primaryLanguage": "typescript" },
+        "symbolMap": [
+          { "name": "greet", "kind": "function", "file": "src/main.ts", "signature": "function greet(name: string): string", "doc": "Greets a user by name.", "pageRankScore": 5 },
+          { "name": "Greeter", "kind": "class", "file": "src/main.ts", "signature": "class Greeter", "pageRankScore": 3 },
+          { "name": "HelperOptions", "kind": "interface", "file": "src/helper.test.ts", "signature": "interface HelperOptions", "pageRankScore": 1 },
+          { "name": "MAX_RETRIES", "kind": "const", "file": "src/main.ts", "signature": "const MAX_RETRIES: number", "pageRankScore": 0.5 }
+        ],
+        "stats": { "totalFiles": 3, "totalDirectories": 2, "extensionDistribution": { ".ts": 3 } },
+        "metadata": { "durationMs": 5, "mode": "standard", "filesScanned": 3, "filesRead": 3 }
+      }
+    output_criteria:
+      - id: "knowledge-fixture-written"
+        kind: "file-found"
+        path_pattern: "Memory/Projects/tools/knowledge.json"
+        score_weight: 0.2
+
+  - id: "query-all-symbols"
+    type: "run-script"
+    name: "exaix_portal_symbols ranks results by pageRankScore descending"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "exaix_portal_symbols"
+      - '{"portal":"tools","identity_id":"tools-eval"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "top-symbol-is-highest-ranked"
+        kind: "command-output-contains"
+        contains: ["\"name\": \"greet\"", "\"success\": true"]
+        score_weight: 1.0
+
+  - id: "query-filtered-by-kind"
+    type: "run-script"
+    name: "exaix_portal_symbols filters by symbol kind"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "exaix_portal_symbols"
+      - '{"portal":"tools","identity_id":"tools-eval","kind":"interface"}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "kind-filter-matches"
+        kind: "command-output-contains"
+        contains: ["HelperOptions"]
+        score_weight: 0.7
+
+  - id: "query-filtered-by-name-and-limit"
+    type: "run-script"
+    name: "exaix_portal_symbols combines a name-substring filter with limit"
+    command: "deno"
+    args:
+      - "run"
+      - "-A"
+      - "--config"
+      - "$FRAMEWORK_HOME/../../deno.json"
+      - "$FRAMEWORK_HOME/scripts/call_mcp_tool.ts"
+      - "exaix_portal_symbols"
+      - '{"portal":"tools","identity_id":"tools-eval","query":"greet","limit":1}'
+    env:
+      EXA_CONFIG_PATH: "$WORKSPACE_ROOT/tools_pack.config.toml"
+    output_criteria:
+      - id: "query-matches-substring"
+        kind: "command-output-contains"
+        contains: ["\"name\": \"greet\""]
+        score_weight: 0.6
+      - id: "limit-excludes-lower-ranked-match"
+        kind: "command-output-not-contains"
+        not_contains: ["Greeter"]
+        score_weight: 0.4

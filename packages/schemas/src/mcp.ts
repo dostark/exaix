@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import { PLAN_STATUS_VALUES } from "@exaix/core/status";
+import { SymbolEntrySchema } from "./portal_knowledge.ts";
 import {
   DEFAULT_AGENT_MODEL,
   DEFAULT_MCP_AUTH_TOKEN_EXPIRY_SECONDS,
@@ -214,6 +215,14 @@ export const SearchFilesToolArgsSchema = z.object({
   identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
+export const PortalSymbolsToolArgsSchema = z.object({
+  portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
+  query: z.string().min(1).optional(),
+  kind: SymbolEntrySchema.shape.kind.optional(),
+  limit: z.number().int().positive().default(DEFAULT_QUERY_LIMIT),
+  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+});
+
 // Union type for all tool arguments
 export type MCPToolArgs =
   | z.infer<typeof ReadFileToolArgsSchema>
@@ -233,7 +242,8 @@ export type MCPToolArgs =
   | z.infer<typeof MoveFileToolArgsSchema>
   | z.infer<typeof CreateDirectoryToolArgsSchema>
   | z.infer<typeof RunCommandToolArgsSchema>
-  | z.infer<typeof SearchFilesToolArgsSchema>;
+  | z.infer<typeof SearchFilesToolArgsSchema>
+  | z.infer<typeof PortalSymbolsToolArgsSchema>;
 
 // ============================================================================
 // MCP Response Schemas

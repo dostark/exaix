@@ -36,6 +36,7 @@ const EXPECTED_DOCS_VISIBLE_TOOLS: string[] = [
   McpToolName.CONFIG_DIFF,
   McpToolName.CONFIG_GET_PROVENANCE,
   McpToolName.CONFIG_APPLY,
+  McpToolName.PORTAL_SYMBOLS,
 ];
 
 Deno.test("ToolManifestDocsVisibility: docs-visible tools exactly match expected live MCP surface", () => {
