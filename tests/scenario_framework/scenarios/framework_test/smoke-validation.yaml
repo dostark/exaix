@@ -65,9 +65,30 @@ steps:
   - id: check-journal
     type: journal-assert
     name: "Verify quality pipeline execution"
+    action_type: "request.analyzed"
+    latest_only: true
+    project:
+      mode: "payload.mode"
+      complexity: "payload.complexity"
+      taskType: "payload.taskType"
     input_criteria: []
     output_criteria:
       - id: event-logged
         score_weight: 0.6
         kind: journal-event-exists
         event_type: "request.analyzed"
+      - id: mode-populated
+        score_weight: 0.2
+        kind: json-query
+        query: ".[].mode"
+        not_empty: true
+      - id: complexity-populated
+        score_weight: 0.2
+        kind: json-query
+        query: ".[].complexity"
+        not_empty: true
+      - id: task-type-populated
+        score_weight: 0.2
+        kind: json-query
+        query: ".[].taskType"
+        not_empty: true

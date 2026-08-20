@@ -292,6 +292,7 @@ export async function initializeServices(
       validator: validatorLocal,
       config: cfg,
       display: displayAdapter,
+      logger: displayLogger,
     });
 
     const plans = new PlanService(cfg, configAdapter, dbLocal, displayAdapter, userIdentityGetter);

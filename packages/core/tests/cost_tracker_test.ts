@@ -11,6 +11,7 @@ import { assert, assertAlmostEquals, assertEquals } from "@std/assert";
 import { CostTracker } from "@exaix/core/cost";
 import { initTestDbService } from "@exaix/testing";
 import { createMockEventLogger } from "@exaix/testing";
+import { EventLogger } from "@exaix/core/logger";
 import { COST_RATE_ANTHROPIC, COST_RATE_OPENAI, TOKENS_PER_COST_UNIT } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
 import { PROVIDER_ANTHROPIC } from "@exaix/ai-anthropic";
@@ -381,6 +382,69 @@ Deno.test("CostTracker: flush emits CostBatchFlushed with pending count", async 
     assertEquals(events.length, 1);
     assertEquals(events[0].target, "cost_batch");
     assertEquals(events[0].payload?.pendingCount, 1);
+
+    await db.close();
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("CostTracker: flush emits cost.batch.flushed with a real, field-level payload (real EventLogger)", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const tracker = new CostTracker(db, undefined, logger);
+
+    await tracker.trackGeneration(PROVIDER_OPENAI, "gpt-4", {
+      promptTokens: 100,
+      completionTokens: 200,
+      totalTokens: 300,
+    });
+    await tracker.flush();
+    await db.waitForFlush();
+
+    const rows = db.instance.prepare(
+      "SELECT payload FROM activity WHERE action_type = ? ORDER BY timestamp DESC LIMIT 1",
+    ).all(DomainEventType.CostBatchFlushed) as Array<{ payload: string }>;
+    assertEquals(rows.length, 1, "cost.batch.flushed must be logged exactly once");
+    const payload = JSON.parse(rows[0].payload);
+    assertEquals(payload.pendingCount, 1);
+
+    await db.close();
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("CostTracker: trackGeneration emits model.cost.divergence with a real, field-level payload when reported and computed costs differ (real EventLogger)", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const logger = new EventLogger({ db });
+    const tracker = new CostTracker(db, undefined, logger);
+    tracker.setPricingLookup({
+      getModelPricing: (provider: string, model: string) =>
+        Promise.resolve({ provider, model, provenance: "endpoint" as const, inputPerMtok: 10, outputPerMtok: 30 }),
+    });
+
+    // reported ($100) deliberately far from the computed split price
+    // ((10 * 1_000_000 + 30 * 1_000_000) / 1_000_000 = $40) to clear the default tolerance.
+    await tracker.trackGeneration(PROVIDER_OPENAI, "gpt-4", {
+      promptTokens: 1_000_000,
+      completionTokens: 1_000_000,
+      totalTokens: 2_000_000,
+      costUsd: 100,
+    });
+    await db.waitForFlush();
+
+    const rows = db.instance.prepare(
+      "SELECT payload FROM activity WHERE action_type = ? ORDER BY timestamp DESC LIMIT 1",
+    ).all(DomainEventType.ModelCostDivergence) as Array<{ payload: string }>;
+    assertEquals(rows.length, 1, "model.cost.divergence must be logged exactly once");
+    const payload = JSON.parse(rows[0].payload);
+    assertEquals(payload.provider, PROVIDER_OPENAI);
+    assertEquals(payload.model, "gpt-4");
+    assertEquals(payload.reported, 100);
+    assertEquals(payload.computed, 40);
 
     await db.close();
   } finally {

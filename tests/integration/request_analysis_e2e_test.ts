@@ -8,13 +8,14 @@
  * @related-files ["packages/request/src/processor.ts", *   packages/request/src/analysis/analyzer.ts, *   packages/request/src/analysis/persistence.ts, "packages/schemas/src/request_analysis.ts"]
  */
 
-import { assert, assertExists, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "@exaix/request";
 import { RequestAnalyzer } from "@exaix/request";
 import { loadAnalysis } from "@exaix/request";
 import type { IApplicationContext } from "@exaix/core/types";
 import { RequestAnalysisSchema } from "@exaix/schemas/request_analysis.ts";
+import { DomainEventType } from "@exaix/core/events";
 import { AnalysisMode } from "@exaix/core/types";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { createStubConfig, createStubDisplay, createStubGit } from "@exaix/testing";
@@ -130,6 +131,31 @@ Deno.test(
           const analysisPath = filePath.replace(/\.md$/, "_analysis.json");
           const stat = await Deno.stat(analysisPath).catch(() => null);
           assertExists(stat, "_analysis.json should be created for agent request");
+        },
+      );
+
+      await t.step(
+        "[E2E] request.analyzed is journalled with a real, field-level payload",
+        async () => {
+          await env.db.waitForFlush();
+          // LogSyncMethod mints its own per-call trace id and logs both a debug "started"
+          // and an info "completed" row under the SAME action_type (only `target` differs -
+          // see packages/core/src/logger/decorator.ts) - filter on target to reach the
+          // "completed" row, which is the one payloadMapper populates.
+          const rows = env.db.instance.prepare(
+            "SELECT payload FROM activity WHERE action_type = ? AND target = 'completed'",
+          ).all(DomainEventType.RequestAnalyzed) as Array<{ payload: string }>;
+          assertEquals(rows.length, 1, "request.analyzed must be logged for the agent request");
+          const payload = JSON.parse(rows[0].payload);
+          assert(typeof payload.mode === "string" && payload.mode.length > 0, "payload.mode must be populated");
+          assert(
+            typeof payload.complexity === "string" && payload.complexity.length > 0,
+            "payload.complexity must be populated",
+          );
+          assert(
+            typeof payload.taskType === "string" && payload.taskType.length > 0,
+            "payload.taskType must be populated",
+          );
         },
       );
 

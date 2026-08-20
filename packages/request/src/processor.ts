@@ -228,6 +228,7 @@ export class RequestProcessor {
       this.testProvider,
       outputValidator,
       this.db,
+      this.logger,
     );
 
     this.portalKnowledgeService = processorConfig.portalKnowledgeService ?? ctx?.portalKnowledge;

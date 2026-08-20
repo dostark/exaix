@@ -16,6 +16,7 @@ import type { IDisplayService } from "@exaix/core/types";
 import type { IApplicationContext } from "@exaix/core/types";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { loadAnalysis, RequestAnalyzer, saveAnalysis } from "./analysis/mod.ts";
+import type { IEventLogger } from "@exaix/core/logger";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import { AnalysisMode } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
@@ -32,6 +33,8 @@ export interface IRequestServiceConfig {
   validator?: IOutputValidator;
   db?: IDatabaseService;
   context?: IApplicationContext;
+  /** Journals request-analysis domain events (e.g. request.analyzed); DI'd by the service layer. */
+  logger?: Opt<IEventLogger, Reason.OptionalDependency>;
 }
 
 export class RequestService {
@@ -42,6 +45,7 @@ export class RequestService {
   private provider?: IModelProvider;
   private validator?: IOutputValidator;
   private db?: IDatabaseService;
+  private eventLogger?: Opt<IEventLogger, Reason.OptionalDependency>;
 
   constructor(options: IRequestServiceConfig) {
     const ctx = options.context;
@@ -51,6 +55,7 @@ export class RequestService {
     this.provider = ctx?.provider || options.provider;
     this.validator = options.validator;
     this.db = ctx?.db || options.db;
+    this.eventLogger = options.logger;
 
     const root = this.config.system.root!;
     const workspace = this.config.paths.workspace!;
@@ -147,7 +152,10 @@ export class RequestService {
     };
   }
 
-  async list(status?: RequestStatusType, _includeArchived?: boolean): Promise<IRequestEntry[]> {
+  async list(
+    status?: Opt<RequestStatusType, Reason.QueryFilter>,
+    _includeArchived?: Opt<boolean, Reason.OptionalInput>,
+  ): Promise<IRequestEntry[]> {
     const entries: IRequestEntry[] = [];
     if (!await exists(this.requestsDir)) return [];
 
@@ -287,6 +295,7 @@ export class RequestService {
       this.provider,
       this.validator,
       this.db,
+      this.eventLogger,
     );
 
     const analysis = await analyzer.analyze(body, {
