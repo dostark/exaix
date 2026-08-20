@@ -21,6 +21,7 @@ import {
   LearningCategory,
   MemoryBankSource,
   MemoryScope,
+  MemoryType,
 } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
 import { getMemoryExecutionDir, getMemoryIndexDir, getMemoryProjectsDir } from "@exaix/testing";
@@ -507,18 +508,22 @@ Deno.test("MemoryBankService: createExecutionRecord logs to IActivity Journal", 
       summary: "Test execution",
       context_files: [],
       context_portals: [],
-      changes: { files_created: [], files_modified: [], files_deleted: [] },
+      changes: { files_created: ["src/new_file.ts"], files_modified: ["src/existing_file.ts"], files_deleted: [] },
     });
 
     // Wait for batch flush
     await db.waitForFlush();
 
-    // Verify activity journal entry
+    // Verify activity journal entry — field-level, not just action_type presence
     const activities = db.instance.prepare(
-      "SELECT action_type, trace_id FROM activity WHERE trace_id = ? LIMIT 1",
-    ).all(traceId) as Array<{ action_type: string; trace_id: string }>;
+      "SELECT action_type, trace_id, payload FROM activity WHERE trace_id = ? LIMIT 1",
+    ).all(traceId) as Array<{ action_type: string; trace_id: string; payload: string }>;
     assertEquals(activities.length, 1);
     assertEquals(activities[0].action_type, "memory.execution.recorded");
+    const payload = JSON.parse(activities[0].payload);
+    assertEquals(payload.status, ExecutionStatus.COMPLETED);
+    assertEquals(payload.identity_id, "senior-coder");
+    assertEquals(payload.files_changed, 2);
   } finally {
     await cleanup();
   }
@@ -828,6 +833,124 @@ Deno.test("MemoryBankService: lock files are cleaned up on failure", async () =>
     for await (const entry of Deno.readDir(globalDir)) {
       assert(!entry.name.endsWith(".lock"), `Stale lock file found after failure: ${entry.name}`);
     }
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("MemoryBankService: addDecision logs to IActivity Journal", async () => {
+  const { db, config, cleanup } = await initTestDbService();
+
+  try {
+    const logger = new EventLogger({ db });
+    const service = new MemoryBankService(config, logger);
+
+    await service.createProjectMemory(createMinimalProjectMemory({
+      portal: "test-portal",
+      overview: "Test project",
+    }));
+
+    const decision: IDecision = {
+      date: "2026-01-03",
+      decision: "Use PostgreSQL for production database",
+      rationale: "Need ACID compliance and better scaling",
+      alternatives: ["MySQL", "MongoDB"],
+      tags: ["database", "architecture"],
+    };
+    await service.addDecision("test-portal", decision);
+
+    // Wait for batch flush
+    await db.waitForFlush();
+
+    // Verify activity journal entry for decision
+    const activities = db.instance.prepare(
+      "SELECT action_type, payload FROM activity WHERE action_type = 'memory.decision.added' LIMIT 1",
+    ).all() as Array<{ action_type: string; payload: string }>;
+    assertEquals(activities.length, 1);
+    const payload = JSON.parse(activities[0].payload);
+    assertEquals(payload.decision_summary, "Use PostgreSQL for production database");
+    assertEquals(payload.date, "2026-01-03");
+    assertEquals(payload.tags, ["database", "architecture"]);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("MemoryBankService: promoteLearning logs to IActivity Journal", async () => {
+  const { db, config, cleanup } = await initTestDbService();
+
+  try {
+    const logger = new EventLogger({ db });
+    const service = new MemoryBankService(config, logger);
+
+    await service.createProjectMemory(createMinimalProjectMemory({
+      portal: "test-portal",
+      overview: "Test project",
+    }));
+
+    await service.promoteLearning("test-portal", {
+      type: MemoryType.PATTERN,
+      name: "retry-with-backoff",
+      title: "Retry with exponential backoff",
+      description: "Network calls should retry with exponential backoff",
+      category: LearningCategory.PATTERN,
+      tags: ["networking"],
+      confidence: ConfidenceAssessmentLevel.HIGH,
+    });
+
+    // Wait for batch flush
+    await db.waitForFlush();
+
+    // Verify activity journal entry for promotion
+    const activities = db.instance.prepare(
+      "SELECT action_type, payload FROM activity WHERE action_type = 'memory.learning.promoted' LIMIT 1",
+    ).all() as Array<{ action_type: string; payload: string }>;
+    assertEquals(activities.length, 1);
+    const payload = JSON.parse(activities[0].payload);
+    assertEquals(payload.from_type, MemoryType.PATTERN);
+    assertEquals(payload.from_name, "retry-with-backoff");
+    assertEquals(payload.to_scope, MemoryScope.GLOBAL);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("MemoryBankService: demoteLearning logs to IActivity Journal", async () => {
+  const { db, config, cleanup } = await initTestDbService();
+
+  try {
+    const logger = new EventLogger({ db });
+    const service = new MemoryBankService(config, logger);
+
+    await service.createProjectMemory(createMinimalProjectMemory({
+      portal: "test-portal",
+      overview: "Test project",
+    }));
+
+    const learningId = await service.promoteLearning("test-portal", {
+      type: MemoryType.PATTERN,
+      name: "retry-with-backoff",
+      title: "Retry with exponential backoff",
+      description: "Network calls should retry with exponential backoff",
+      category: LearningCategory.PATTERN,
+      tags: ["networking"],
+      confidence: ConfidenceAssessmentLevel.HIGH,
+    });
+
+    await service.demoteLearning(learningId, "test-portal");
+
+    // Wait for batch flush
+    await db.waitForFlush();
+
+    // Verify activity journal entry for demotion
+    const activities = db.instance.prepare(
+      "SELECT action_type, payload FROM activity WHERE action_type = 'memory.learning.demoted' LIMIT 1",
+    ).all() as Array<{ action_type: string; payload: string }>;
+    assertEquals(activities.length, 1);
+    const payload = JSON.parse(activities[0].payload);
+    assertEquals(payload.learning_id, learningId);
+    assertEquals(payload.from_scope, MemoryScope.GLOBAL);
+    assertEquals(payload.to_project, "test-portal");
   } finally {
     await cleanup();
   }
