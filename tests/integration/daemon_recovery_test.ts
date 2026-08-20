@@ -243,7 +243,7 @@ Deno.test("Integration: System Recovery - Recover from crash mid-execution", asy
       await new Promise((resolve) => setTimeout(resolve, 200));
       env.db.waitForFlush();
 
-      const activities = env.getActivityLog(traceId);
+      const activities = await env.getActivityLog(traceId);
 
       // Should have activities (may include execution.started from setup)
       // The pre-crash activity was logged via logActivity which queues it
@@ -274,7 +274,7 @@ Deno.test("Integration: System Recovery - Recover from crash mid-execution", asy
       assertEquals(step1Exists, true, "step1 should exist from before crash");
 
       // IActivity log should not have duplicate entries
-      const activities = env.getActivityLog(traceId);
+      const activities = await env.getActivityLog(traceId);
       const startEntries = activities.filter(
         (a) => a.action_type === "execution.started",
       );
@@ -393,7 +393,7 @@ Deno.test("Integration: System Recovery - Database integrity", async () => {
     assertEquals(isHealthy, true, "Database should be healthy");
 
     // All entries should still be there
-    const activities = env.getActivityLog(traceId);
+    const activities = await env.getActivityLog(traceId);
     assert(activities.length >= 0, "Should have activity entries");
   } finally {
     await env.cleanup();

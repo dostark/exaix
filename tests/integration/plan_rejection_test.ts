@@ -148,7 +148,7 @@ Deno.test("Integration: Plan Rejection - Request to Archive", async (t) => {
       // Wait for log flush
       await new Promise((resolve) => setTimeout(resolve, 150));
 
-      const activities = env.getActivityLog(traceId);
+      const activities = await env.getActivityLog(traceId);
 
       // Should have rejection activity
       const rejectionActivity = activities.find((a) => a.action_type === "plan.rejected");

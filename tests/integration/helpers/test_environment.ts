@@ -25,7 +25,7 @@ import { MockLLMProvider } from "@exaix/ai/providers";
 import { FlowStepType, MemoryOperation, MockStrategy, PortalOperation } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import { RequestProcessor } from "@exaix/request";
-import type { IApplicationContext } from "@exaix/core/types";
+import type { IActivityRecord, IApplicationContext } from "@exaix/core/types";
 import { AgentRunner, ExecutionLoop } from "@exaix/execution";
 import { buildMilestoneEmitterFromConfig } from "@exaix/core/observability";
 import { GitService } from "@exaix/git";
@@ -710,15 +710,11 @@ This plan will accomplish the requested task.
   /**
    * Get activity log entries by trace ID
    */
-  getActivityLog(traceId: string): Array<{
-    action_type: string;
-    actor: string | null;
-    target: string | null;
-    payload: string;
-    timestamp: string;
-  }> {
-    // Flush pending logs
-    this.db.waitForFlush();
+  async getActivityLog(traceId: string): Promise<IActivityRecord[]> {
+    // Flush pending logs — waitForFlush() is genuinely async (polls the batch
+    // queue until it drains); a fire-and-forget call here is a race condition
+    // that lets getActivitiesByTrace() run before pending writes land.
+    await this.db.waitForFlush();
 
     return this.db.getActivitiesByTrace(traceId);
   }

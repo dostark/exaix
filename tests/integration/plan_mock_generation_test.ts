@@ -151,7 +151,7 @@ Deno.test("Integration: Mock Plan Generation - IActivity Logging", async () => {
     await new Promise((resolve) => setTimeout(resolve, 200));
 
     // Verify RequestProcessor logged activities
-    const activities = env.getActivityLog(result.traceId);
+    const activities = await env.getActivityLog(result.traceId);
     assert(activities.length > 0, "RequestProcessor should log activities");
 
     const actionTypes = activities.map((a) => a.action_type);

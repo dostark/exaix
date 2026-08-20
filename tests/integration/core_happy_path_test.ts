@@ -204,7 +204,7 @@ Deno.test("Integration: Happy Path - Request to Report", async (t) => {
       // Wait for any pending log writes
       await new Promise((resolve) => setTimeout(resolve, 200));
 
-      const activities = env.getActivityLog(traceId);
+      const activities = await env.getActivityLog(traceId);
 
       // Should have multiple activity entries
       assert(activities.length >= 1, "Should have activity log entries");

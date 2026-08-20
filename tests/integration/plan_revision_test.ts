@@ -172,7 +172,7 @@ Deno.test("Integration: Plan Revision - Request to Revised Plan", async (t) => {
       // Wait for log flush
       await new Promise((resolve) => setTimeout(resolve, 150));
 
-      const activities = env.getActivityLog(traceId);
+      const activities = await env.getActivityLog(traceId);
 
       const revisionActivity = activities.find((a) => a.action_type === "plan.revision_requested");
       assertExists(revisionActivity, "Should have revision activity");

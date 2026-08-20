@@ -92,10 +92,12 @@ Deno.test("Integration: Execution Failure - Plan fails during execution", async 
     // ========================================================================
     await t.step("Test 3: Failure report generated with error details", async () => {
       // Wait for any async report generation
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      const { promise, resolve } = Promise.withResolvers<void>();
+      setTimeout(resolve, 200);
+      await promise;
 
       // Check for failure report or error in activity log
-      const activities = env.getActivityLog(traceId);
+      const activities = await env.getActivityLog(traceId);
 
       const failureActivities = activities.filter((a) =>
         a.action_type.includes(EvaluationVerdict.FAIL) ||
@@ -103,15 +105,17 @@ Deno.test("Integration: Execution Failure - Plan fails during execution", async 
         a.action_type.includes(MemoryBankSource.EXECUTION)
       );
 
-      // Should have failure-related activities
-      assert(failureActivities.length >= 0, "Should have execution activities");
+      // Should have real failure-related activities, not merely a non-negative count
+      assert(failureActivities.length > 0, "Should have failure-related activities in the journal");
 
-      // If there's a failure activity, check it has error info
+      // execution.failed must be emitted on execution failure — unconditional, never gated
+      // behind an `if (executionFailed)` that silently passes when the event never fires.
       const executionFailed = activities.find((a) => a.action_type === "execution.failed");
-      if (executionFailed) {
-        const payload = JSON.parse(executionFailed.payload);
-        assertExists(payload.error || payload.message, "Should have error details");
-      }
+      assertExists(executionFailed, "execution.failed must be emitted on execution failure");
+      const payload = JSON.parse(executionFailed.payload);
+      assertExists(payload.request_id, "execution.failed payload should include request_id");
+      assertExists(payload.error, "execution.failed payload should include error");
+      assertExists(payload.moved_to, "execution.failed payload should include moved_to");
     });
 
     // ========================================================================
@@ -158,8 +162,8 @@ Deno.test("Integration: Execution Failure - Plan fails during execution", async 
     // ========================================================================
     // Test 6: Failure logged to IActivity Journal
     // ========================================================================
-    await t.step("Test 6: All failure steps logged with trace_id", () => {
-      const activities = env.getActivityLog(traceId);
+    await t.step("Test 6: All failure steps logged with trace_id", async () => {
+      const activities = await env.getActivityLog(traceId);
 
       // Should have multiple activities for the trace
       assert(activities.length >= 1, "Should have logged activities");

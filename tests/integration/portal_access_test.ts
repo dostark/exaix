@@ -116,7 +116,7 @@ export function main() {
       env.db.waitForFlush();
 
       // Verify access denial was logged
-      const activities = env.getActivityLog(alphaTraceId);
+      const activities = await env.getActivityLog(alphaTraceId);
       const denialLogged = activities.some((a) => a.action_type === "security.access_denied");
       assert(denialLogged, "Access denial should be logged");
     });
@@ -169,7 +169,7 @@ export function main() {
       await new Promise((resolve) => setTimeout(resolve, 200));
       env.db.waitForFlush();
 
-      const activities = env.getActivityLog(alphaTraceId);
+      const activities = await env.getActivityLog(alphaTraceId);
 
       // Should have some activity entries
       assert(activities.length >= 0, "Should log portal activities");

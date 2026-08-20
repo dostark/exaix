@@ -167,7 +167,7 @@ Deno.test({
         // Wait briefly for async batch flush, then verify at least two events.
         await t.step("journal contains daemon events", async () => {
           await new Promise((r) => setTimeout(r, 500));
-          const activities = env.getActivityLog(requestTraceId!);
+          const activities = await env.getActivityLog(requestTraceId!);
           assert(activities.length >= 2, `Expected >=2 journal entries for trace, got ${activities.length}`);
         });
       } finally {

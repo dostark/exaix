@@ -87,7 +87,7 @@ Deno.test(
         // Allow some time for activity writes
         await new Promise((resolve) => setTimeout(resolve, 500));
 
-        const acts = env.getActivityLog(requestResult.traceId);
+        const acts = await env.getActivityLog(requestResult.traceId);
         const failed = acts.find((a) => a.action_type?.includes("request.failed"));
         const errPayload = failed?.payload ?? "";
         const errMsg = typeof errPayload === "string" ? errPayload.toLowerCase() : String(errPayload).toLowerCase();
@@ -149,7 +149,7 @@ Deno.test(
       // Allow some time for asynchronous writes
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      const activities = env.getActivityLog(requestResult.traceId);
+      const activities = await env.getActivityLog(requestResult.traceId);
       const actionTypes = activities.map((a) => a.action_type);
       const hasProcessing = actionTypes.some((t) => t.includes("request.processing"));
       const hasPlanned = actionTypes.some((t) => t.includes("request.planned"));

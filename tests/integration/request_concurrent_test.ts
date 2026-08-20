@@ -178,9 +178,9 @@ Deno.test("Integration: Concurrent Requests - Multiple requests in parallel", as
     // ========================================================================
     // Test 6: IActivity log correctly attributes actions
     // ========================================================================
-    await t.step("Test 6: IActivity log correctly attributes to trace_ids", () => {
+    await t.step("Test 6: IActivity log correctly attributes to trace_ids", async () => {
       for (const request of requests) {
-        const activities = env.getActivityLog(request.traceId);
+        const activities = await env.getActivityLog(request.traceId);
 
         // Each trace_id should have its own activity chain
         // No activity should have wrong trace_id

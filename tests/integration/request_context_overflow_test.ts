@@ -112,7 +112,7 @@ Deno.test("Integration: Context Overflow - Large file references", async (t) => 
       await new Promise((resolve) => setTimeout(resolve, 200));
       env.db.waitForFlush();
 
-      const activities = env.getActivityLog(traceId);
+      const activities = await env.getActivityLog(traceId);
 
       // Check for context-related activities
       const _hasContextActivity = activities.some(
@@ -150,9 +150,9 @@ Deno.test("Integration: Context Overflow - Large file references", async (t) => 
     // ========================================================================
     // Test 6: Report indicates context limits
     // ========================================================================
-    await t.step("Test 6: Report indicates context was limited", () => {
+    await t.step("Test 6: Report indicates context was limited", async () => {
       // Check if there's any indication in logs about context handling
-      const activities = env.getActivityLog(traceId);
+      const activities = await env.getActivityLog(traceId);
 
       // Activities should be present for the trace
       assert(activities.length >= 0, "Should have activity entries");
