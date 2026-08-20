@@ -56,6 +56,7 @@ import {
 import {
   computeSkillReachability,
   type ICorpusTaskMatch,
+  type IIdentityDefaultSkills,
   type INonCoverageEntry,
   type ISkillCatalogEntry,
   type ISkillReachabilityResult,
@@ -107,6 +108,10 @@ export interface ISkillReachabilityRequest {
   catalog: ISkillCatalogEntry[];
   defaultSkillIds: string[];
   corpusMatches: ICorpusTaskMatch[];
+  /** Every shipped identity's declared default_skills, catalog-wide — not just the
+   *  identity(ies) this run exercised. Optional: omitting it reproduces the original,
+   *  narrower non-coverage reason. See `computeSkillReachability`'s docstring. */
+  identityDefaultSkills?: IIdentityDefaultSkills[];
 }
 
 export interface ISkillFullTrialPlanRequest {
@@ -216,7 +221,12 @@ export function computePlaceboReport(request: IArmComparisonRequest): IPlaceboRe
 
 /** Calls the real `computeSkillReachability` — GAP-1b's skill-reachability call-site. */
 export function computeSkillReachabilityReport(request: ISkillReachabilityRequest): ISkillReachabilityResult {
-  return computeSkillReachability(request.catalog, request.defaultSkillIds, request.corpusMatches);
+  return computeSkillReachability(
+    request.catalog,
+    request.defaultSkillIds,
+    request.corpusMatches,
+    request.identityDefaultSkills ?? [],
+  );
 }
 
 /** Calls the real `computePairedComparison` per screening entry, then the real

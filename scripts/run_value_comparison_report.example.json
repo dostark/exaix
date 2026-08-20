@@ -37,7 +37,10 @@
       { "skillId": "demo-skill-b", "critical": true }
     ],
     "defaultSkillIds": ["demo-skill-a"],
-    "corpusMatches": [{ "taskId": "demo-task", "matchedSkillIds": [] }]
+    "corpusMatches": [{ "taskId": "demo-task", "matchedSkillIds": [] }],
+    "identityDefaultSkills": [
+      { "identityId": "demo-other-identity", "defaultSkillIds": ["demo-skill-b"] }
+    ]
   },
   "skillFullTrialPlan": {
     "screening": [
