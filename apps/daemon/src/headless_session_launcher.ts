@@ -82,10 +82,12 @@ export class HeadlessSessionLauncher {
       }).spawn());
 
     const child = spawn({ command: launch.command, args: launch.args, cwd: launch.cwd, env: childEnv });
-    await child.status;
+    const stdoutDrain = this.drainStream(child.stdout, "stdout");
+    const stderrDrain = this.drainStream(child.stderr, "stderr");
+    const [, rawStdout] = await Promise.all([child.status, stdoutDrain, stderrDrain]);
 
     const returnPath = join(this.deps.sessionDir, traceId, RETURN_FILE);
-    if (await this.tryReadStdoutAndSynthesize(child, traceId, returnPath, launch.cwd)) {
+    if (await this.synthesizeFromStdout(rawStdout, traceId, returnPath, launch.cwd)) {
       return; // Successfully synthesized from stdout
     }
     // Fall back to checking for tool-written return.json
@@ -113,13 +115,22 @@ export class HeadlessSessionLauncher {
     returnPath: string,
     worktreePath?: Opt<string, Reason.OptionalInput>,
   ): Promise<boolean> {
-    let raw: string;
+    let rawStdout: string;
     try {
-      raw = await this.drainStdout(child);
+      rawStdout = await this.drainStream(child.stdout, "stdout");
     } catch {
       return false;
     }
-    if (!raw.trim()) return false;
+    return await this.synthesizeFromStdout(rawStdout, traceId, returnPath, worktreePath);
+  }
+
+  private async synthesizeFromStdout(
+    rawStdout: string,
+    traceId: string,
+    returnPath: string,
+    worktreePath: Opt<string, Reason.OptionalInput>,
+  ): Promise<boolean> {
+    if (!rawStdout.trim()) return false;
 
     // Determine tool from the brief's tool field
     const briefPath = join(this.deps.sessionDir, traceId, "brief.json");
@@ -138,7 +149,7 @@ export class HeadlessSessionLauncher {
       return false;
     }
 
-    const parsed = parseDelegateStdout(raw, tool);
+    const parsed = parseDelegateStdout(rawStdout, tool);
 
     // Compute paths_touched: union of parser toolPaths + git diff.
     // OpenCode's tool_use events carry absolute filePaths. Convert them to
@@ -191,11 +202,11 @@ export class HeadlessSessionLauncher {
   }
 
   /**
-   * Drain the child's piped stdout completely, bounded by DELEGATE_STDOUT_DRAIN_MS.
+   * Drain one child stream completely, bounded by DELEGATE_STDOUT_DRAIN_MS.
    * Returns the concatenated output as a string.
    */
-  private async drainStdout(child: Deno.ChildProcess): Promise<string> {
-    const reader = child.stdout.getReader();
+  private async drainStream(stream: ReadableStream<Uint8Array>, label: string): Promise<string> {
+    const reader = stream.getReader();
     const chunks: Uint8Array[] = [];
     const decoder = new TextDecoder();
     let totalLength = 0;
@@ -203,10 +214,14 @@ export class HeadlessSessionLauncher {
     try {
       while (true) {
         const read = reader.read();
-        const timeout = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("stdout drain timeout")), DELEGATE_STDOUT_DRAIN_MS)
+        const timeout = Promise.withResolvers<never>();
+        const timeoutId = setTimeout(
+          () => timeout.reject(new Error(`${label} drain timeout`)),
+          DELEGATE_STDOUT_DRAIN_MS,
         );
-        const { value, done } = await Promise.race([read, timeout]);
+        const { value, done } = await Promise.race([read, timeout.promise]).finally(() => {
+          clearTimeout(timeoutId);
+        });
         if (done) break;
         if (value) {
           chunks.push(value);

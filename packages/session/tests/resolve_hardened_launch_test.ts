@@ -8,15 +8,22 @@
 
 import { assertEquals, assertExists, assertMatch } from "@std/assert";
 import type { SessionBrief, SessionDelegateConfig } from "@exaix/schemas/session_delegate.ts";
-import { DOGFOOD_DEVELOPER_IDENTITY_ID } from "@exaix/core/types";
+import {
+  DOGFOOD_DEVELOPER_IDENTITY_ID,
+  MINIMUM_VERSION_CLAUDE_CODE,
+  MINIMUM_VERSION_CODEX,
+  MINIMUM_VERSION_OPENCODE,
+  SESSION_BIN_CODEX,
+} from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adapter_registry.ts";
 import { buildOpencodePermissionConfig } from "@exaix/session/opencode_permission_generator.ts";
-import { SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
+import { type ISessionDelegateServiceDeps, SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
 
 const FIXED_NOW = new Date("2026-06-26T00:00:00.000Z");
 const fixedClock = { now: () => FIXED_NOW };
 
-function makeService(sessionDir: string): SessionDelegateService {
+function makeService(sessionDir: string, overrides: Partial<ISessionDelegateServiceDeps> = {}): SessionDelegateService {
   return new SessionDelegateService({
     registry: createDefaultSessionAdapterRegistry(),
     clock: fixedClock,
@@ -24,10 +31,11 @@ function makeService(sessionDir: string): SessionDelegateService {
     pathResolver: {
       resolve: (path: string) => Promise.resolve(`${sessionDir}/${path.replace("@Runtime/", "")}`),
     } as never,
+    ...overrides,
   });
 }
 
-function opencodeBrief(overrides?: Partial<SessionBrief>): SessionBrief {
+function opencodeBrief(overrides?: Opt<Partial<SessionBrief>, Reason.OptionalInput>): SessionBrief {
   return {
     trace_id: "00000000-0000-0000-0000-0000000step5",
     gate: "code_changes" as const,
@@ -45,7 +53,7 @@ function opencodeBrief(overrides?: Partial<SessionBrief>): SessionBrief {
   };
 }
 
-function claudeBrief(overrides?: Partial<SessionBrief>): SessionBrief {
+function claudeBrief(overrides?: Opt<Partial<SessionBrief>, Reason.OptionalInput>): SessionBrief {
   return {
     trace_id: "00000000-0000-0000-0000-0000000step5",
     gate: "code_changes" as const,
@@ -59,6 +67,16 @@ function claudeBrief(overrides?: Partial<SessionBrief>): SessionBrief {
     token_budget: { max_input_tokens: 10000, max_output_tokens: 10000, max_total_tokens: 20000 },
     resume_token: "tok",
     deadline: new Date(Date.now() + 3_600_000).toISOString(),
+    ...overrides,
+  };
+}
+
+function codexBrief(overrides?: Opt<Partial<SessionBrief>, Reason.OptionalInput>): SessionBrief {
+  return {
+    ...claudeBrief(),
+    trace_id: "00000000-0000-4000-8000-000000000167",
+    tool: "codex",
+    objective: "Execute Codex hardening test",
     ...overrides,
   };
 }
@@ -166,4 +184,38 @@ Deno.test("[delegate_hardening] harden_permissions=false path: resolveLaunch unc
 
   assertEquals(launch.command, "opencode");
   assertEquals(launch.configPath, undefined);
+});
+
+Deno.test("[delegate_hardening] injected probe receives exact minimum versions for every CLI tool", async () => {
+  const observed: Array<[string, string]> = [];
+  const sessionDir = await Deno.makeTempDir();
+  try {
+    const svc = makeService(sessionDir, {
+      versionProbe: (command, minimumVersion) => {
+        observed.push([command, minimumVersion]);
+        return Promise.resolve({ version: minimumVersion, supported: true });
+      },
+    });
+    await svc.resolveHardenedLaunch(codexBrief(), "headless", hardenedConfig());
+    await svc.resolveHardenedLaunch(claudeBrief(), "headless", hardenedConfig());
+    await svc.resolveHardenedLaunch(opencodeBrief(), "headless", hardenedConfig());
+
+    assertEquals(observed, [
+      [SESSION_BIN_CODEX, MINIMUM_VERSION_CODEX],
+      ["claude", MINIMUM_VERSION_CLAUDE_CODE],
+      ["opencode", MINIMUM_VERSION_OPENCODE],
+    ]);
+  } finally {
+    await Deno.remove(sessionDir, { recursive: true });
+  }
+});
+
+Deno.test("[delegate_hardening][security] Codex appends only its gate-derived sandbox flags", async () => {
+  const sessionDir = await Deno.makeTempDir();
+  const svc = makeService(sessionDir, {
+    versionProbe: (_command, minimumVersion) => Promise.resolve({ version: minimumVersion, supported: true }),
+  });
+  const result = await svc.resolveHardenedLaunch(codexBrief(), "headless", hardenedConfig());
+  assertEquals(result.launch.args.slice(-2), ["--sandbox", "workspace-write"]);
+  assertEquals(result.launch.args.includes("danger-full-access"), false);
 });

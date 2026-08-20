@@ -36,6 +36,41 @@ function makeMockChild(stdoutData: string, exitCode = 0): Deno.ChildProcess {
   } as Deno.ChildProcess;
 }
 
+const PIPE_STRESS_PAYLOAD_BYTES = 256 * 1024;
+const DRAIN_START_TIMEOUT_MS = 1_000;
+
+function makeBackpressuredChild(stdoutData: string, stderrData: string): Deno.ChildProcess {
+  const status = Promise.withResolvers<Deno.CommandStatus>();
+  let stdoutPulled = false;
+  let stderrPulled = false;
+  const markPulled = (stream: "stdout" | "stderr") => {
+    stdoutPulled ||= stream === "stdout";
+    stderrPulled ||= stream === "stderr";
+    if (stdoutPulled && stderrPulled) status.resolve({ success: true, code: 0, signal: null });
+  };
+  const makeStream = (data: string, stream: "stdout" | "stderr") => {
+    let sent = false;
+    return new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (sent) {
+          controller.close();
+          return;
+        }
+        sent = true;
+        markPulled(stream);
+        controller.enqueue(new TextEncoder().encode(data));
+        controller.close();
+      },
+    }, { highWaterMark: 0 });
+  };
+  return {
+    status: status.promise,
+    stdout: makeStream(stdoutData, "stdout"),
+    stderr: makeStream(stderrData, "stderr"),
+    kill: () => {},
+  } as Deno.ChildProcess;
+}
+
 interface IRig {
   sessionDir: string;
   launcher: HeadlessSessionLauncher;
@@ -304,6 +339,39 @@ Deno.test("[launcher_stdout] step_finish without tokens uses zeroed stats", asyn
     assertEquals(parsed.token_stats.input_tokens, 0);
     assertEquals(parsed.token_stats.output_tokens, 0);
     assertEquals(parsed.token_stats.total_tokens, 0);
+  } finally {
+    await rig.cleanup();
+  }
+});
+
+Deno.test("[launcher_stdout] drains verbose stdout and stderr before awaiting child status", async () => {
+  const rig = await makeRig("codex");
+  try {
+    const filler = "x".repeat(PIPE_STRESS_PAYLOAD_BYTES);
+    const stdout = [
+      JSON.stringify({ type: "thread.started", thread_id: filler }),
+      JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "drained" } }),
+    ].join("\n");
+    const child = makeBackpressuredChild(stdout, filler);
+    const launcher = new HeadlessSessionLauncher({
+      sessionDir: rig.sessionDir,
+      allowlist: new Set(["codex"]),
+      spawn: () => child,
+    });
+    const completed = await Promise.race([
+      launcher.launch(
+        { command: "codex", args: ["exec", "--json", "test"], cwd: rig.sessionDir, env: {} },
+        TRACE_ID,
+        undefined,
+      ).then(() => true),
+      new Promise<boolean>((resolve) => setTimeout(() => resolve(false), DRAIN_START_TIMEOUT_MS)),
+    ]);
+
+    assertEquals(completed, true, "launcher must begin draining both streams before awaiting status");
+    const parsed = SessionReturnSchema.parse(
+      JSON.parse(await Deno.readTextFile(join(rig.sessionDir, TRACE_ID, "return.json"))),
+    );
+    assertEquals(parsed.summary, "drained");
   } finally {
     await rig.cleanup();
   }

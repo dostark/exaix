@@ -2942,6 +2942,7 @@ export const SESSION_SUBCMD_RESUME = "resume";
 export const SESSION_FLAG_JSON = "--json";
 export const SESSION_FLAG_SANDBOX = "--sandbox";
 export const SESSION_SANDBOX_READ_ONLY = "read-only";
+export const SESSION_SANDBOX_WORKSPACE_WRITE = "workspace-write";
 export const SESSION_FLAG_OUTPUT_SCHEMA = "--output-schema";
 
 /** Dogfood-developer identity ID — source of truth for the machine name used in OpenCode agent config keys (Phase 128 R3 Step 4). Must match `Blueprints/Identities/dogfood-developer.md:identity_id`. */
@@ -2993,6 +2994,7 @@ export const DAEMON_SPAWN_RUN_BINARIES: readonly string[] = [
   "exactl",
   SESSION_BIN_OPENCODE,
   SESSION_BIN_CLAUDE_CODE,
+  SESSION_BIN_CODEX,
   "ls",
   "grep",
   "echo",

@@ -9,7 +9,12 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { DAEMON_DEFAULT_NET_HOSTS, DAEMON_SPAWN_PERMISSIONS, DAEMON_SPAWN_RUN_BINARIES } from "@exaix/core/types";
+import {
+  DAEMON_DEFAULT_NET_HOSTS,
+  DAEMON_SPAWN_PERMISSIONS,
+  DAEMON_SPAWN_RUN_BINARIES,
+  SESSION_BIN_CODEX,
+} from "@exaix/core/types";
 
 Deno.test("[daemon_perms] DAEMON_SPAWN_PERMISSIONS includes net, read, write, run, env, import", () => {
   // Structured typed permission set — not a flat string array (GAP-7).
@@ -28,6 +33,11 @@ Deno.test("[daemon_perms] run allowlist includes git, deno, opencode, claude", (
   assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes("deno"), true);
   assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes("opencode"), true);
   assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes("claude"), true);
+});
+
+Deno.test("[daemon_perms][security] run allowlist includes Codex and excludes arbitrary executables", () => {
+  assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes(SESSION_BIN_CODEX), true);
+  assertEquals(DAEMON_SPAWN_RUN_BINARIES.includes("arbitrary-executable"), false);
 });
 
 Deno.test("[daemon_perms] run allowlist names the real exactl binary, not the phantom 'exoctl'", () => {
