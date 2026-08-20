@@ -477,6 +477,37 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     parallel_safe: true,
     remediationPolicyRef: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
   },
+  {
+    name: McpToolName.PORTAL_SYMBOLS,
+    kind: ToolKind.MCP_DOMAIN,
+    category: ToolCategory.DOMAIN,
+    dynamic_mode_allowed: true,
+    requires_human_approval: false,
+    docs_visible: true,
+    source_ref: "packages-team/mcp-server/portal_knowledge_tools.ts",
+    description:
+      "List code symbols (functions, classes, interfaces, consts, types, enums) previously extracted from a portal's codebase by 'portal analyze' (standard/deep mode). Read-only; safe for dynamic execution. Use to navigate an unfamiliar codebase, find a symbol's file and signature, or discover what a portal exports without reading whole files. Optionally filter by a case-insensitive name substring (query) or symbol kind, and cap result count (limit). Returns an error if the portal has not been analyzed yet — run 'portal analyze' first. Returns an array of symbol records ranked by connectivity (pageRankScore, most-referenced first).",
+    output_schema: {
+      type: JsonSchemaType.ARRAY,
+      description: "Array of code symbol records extracted from the portal, ranked by pageRankScore descending.",
+      items: {
+        type: "object",
+        properties: {
+          name: { type: "string" },
+          kind: { type: "string" },
+          file: { type: "string" },
+          signature: { type: "string" },
+          doc: { type: "string" },
+          pageRankScore: { type: "number" },
+        },
+      },
+    },
+    error_types: ["NOT_FOUND", "INVALID_ARGS", "EXECUTION_FAILED"],
+    idempotent: true,
+    side_effect_scope: ToolSideEffectScope.NONE,
+    parallel_safe: true,
+    remediationPolicyRef: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
+  },
   // ── Config tools (Phase 137) ─────────────────────────────────────────────
   {
     name: McpToolName.CONFIG_GET,

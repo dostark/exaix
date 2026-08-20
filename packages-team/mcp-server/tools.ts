@@ -13,7 +13,7 @@
 
 import { McpToolName, TOOL_MANIFEST, ToolKind } from "@exaix/mcp";
 import type { ToolHandler } from "@exaix/mcp/server";
-import type { ICliApplicationContext } from "@exaix/core/types";
+import type { ICliApplicationContext, Opt, Reason } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
 
@@ -40,9 +40,14 @@ import {
   ConfigSetTool,
   ConfigValidateTool,
 } from "./config_tools.ts";
+import { PortalSymbolsTool } from "./portal_knowledge_tools.ts";
 
 interface IMcpToolFactory {
-  (context: ICliApplicationContext, permissions: IPortalPermissionsChecker, logger?: IEventLogger): ToolHandler;
+  (
+    context: ICliApplicationContext,
+    permissions: IPortalPermissionsChecker,
+    logger?: Opt<IEventLogger, Reason.OptionalDependency>,
+  ): ToolHandler;
 }
 
 const LIVE_MCP_TOOL_KINDS = new Set<ToolKind>([ToolKind.MCP_HANDLER, ToolKind.MCP_DOMAIN]);
@@ -82,6 +87,7 @@ export const LIVE_MCP_TOOL_FACTORIES: ReadonlyMap<McpToolName, IMcpToolFactory> 
   ],
   [McpToolName.CONFIG_SET, (context, permissions, logger) => new ConfigSetTool(context, permissions, logger)],
   [McpToolName.CONFIG_APPLY, (context, permissions, logger) => new ConfigApplyTool(context, permissions, logger)],
+  [McpToolName.PORTAL_SYMBOLS, (context, permissions, logger) => new PortalSymbolsTool(context, permissions, logger)],
 ]);
 
 function liveMcpManifestNames(): McpToolName[] {
@@ -99,7 +105,7 @@ function liveMcpManifestNames(): McpToolName[] {
 export function buildHandlers(
   context: ICliApplicationContext,
   permissions: IPortalPermissionsChecker,
-  logger?: IEventLogger,
+  logger?: Opt<IEventLogger, Reason.OptionalDependency>,
 ): Map<McpToolName, ToolHandler> {
   const handlers: Map<McpToolName, ToolHandler> = new Map();
 

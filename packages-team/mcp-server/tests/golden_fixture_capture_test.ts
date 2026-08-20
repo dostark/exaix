@@ -5,7 +5,7 @@
  * pre-migration golden-response fixture was generated from a live, unmigrated
  * MCPServer (not hand-written) by re-capturing fresh and asserting deep equality,
  * and that its tools/list capture covers exactly the docs_visible manifest subset
- * (24 entries — MCP_HANDLER + MCP_DOMAIN — not the raw 29-entry TOOL_MANIFEST total,
+ * (25 entries — MCP_HANDLER + MCP_DOMAIN — not the raw 30-entry TOOL_MANIFEST total,
  * which includes 5 INTERNAL_ONLY entries never exposed via tools/list; Pre-Gap
  * Analysis GAP-4).
  * @architectural-layer MCP (test)
@@ -49,7 +49,7 @@ Deno.test(
 );
 
 Deno.test(
-  "[golden fixture] tools/list capture covers exactly the docs_visible manifest subset (24 entries), not the raw 29-entry TOOL_MANIFEST total",
+  "[golden fixture] tools/list capture covers exactly the docs_visible manifest subset (25 entries), not the raw 30-entry TOOL_MANIFEST total",
   async () => {
     const fixtureText = await Deno.readTextFile(GOLDEN_FIXTURE_PATH);
     const checkedIn = JSON.parse(fixtureText) as IGoldenFixtureCapture;
@@ -60,13 +60,13 @@ Deno.test(
       result.tools.length,
       DOCS_VISIBLE_TOOL_COUNT,
       `Expected tools/list to expose exactly the docs_visible manifest subset (${DOCS_VISIBLE_TOOL_COUNT} entries: ` +
-        "MCP_HANDLER + MCP_DOMAIN), not TOOL_MANIFEST's raw 29-entry total (which includes 5 INTERNAL_ONLY entries " +
+        "MCP_HANDLER + MCP_DOMAIN), not TOOL_MANIFEST's raw 30-entry total (which includes 5 INTERNAL_ONLY entries " +
         "never exposed via tools/list)",
     );
     assertEquals(
       DOCS_VISIBLE_TOOL_COUNT,
-      24,
-      "docs_visible manifest subset must be exactly 24 entries (Pre-Gap Analysis GAP-4)",
+      25,
+      "docs_visible manifest subset must be exactly 25 entries (Pre-Gap Analysis GAP-4)",
     );
   },
 );
