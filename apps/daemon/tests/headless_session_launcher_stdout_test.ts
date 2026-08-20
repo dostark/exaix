@@ -42,7 +42,7 @@ interface IRig {
   cleanup: () => Promise<void>;
 }
 
-async function makeRig(): Promise<IRig> {
+async function makeRig(tool: "claude-code" | "opencode" | "codex" = "opencode"): Promise<IRig> {
   const sessionDir = await Deno.makeTempDir();
   const traceDir = join(sessionDir, TRACE_ID);
   await ensureDir(traceDir);
@@ -52,6 +52,7 @@ async function makeRig(): Promise<IRig> {
     JSON.stringify({
       trace_id: TRACE_ID,
       gate: "refinement",
+      tool,
       resume_token: "tok-01",
     }),
   );
@@ -68,6 +69,120 @@ async function makeRig(): Promise<IRig> {
     },
   };
 }
+
+async function runGit(cwd: string, args: string[]): Promise<void> {
+  const output = await new Deno.Command("git", {
+    args: ["-C", cwd, ...args],
+    stdout: "null",
+    stderr: "piped",
+  }).output();
+  assertEquals(
+    output.success,
+    true,
+    `git ${args.join(" ")} failed: ${new TextDecoder().decode(output.stderr)}`,
+  );
+}
+
+Deno.test("[launcher_stdout] dispatches a Codex brief to the Codex parser", async () => {
+  const rig = await makeRig("codex");
+  try {
+    const stdout = [
+      { type: "item.completed", item: { id: "item-1", type: "agent_message", text: "Codex completed." } },
+      {
+        type: "item.completed",
+        item: {
+          id: "item-2",
+          type: "file_change",
+          changes: [{ path: "src/codex.ts", kind: "add" }],
+          status: "completed",
+        },
+      },
+      { type: "turn.completed", usage: { input_tokens: 41, cached_input_tokens: 11, output_tokens: 7 } },
+    ].map((event) => JSON.stringify(event)).join("\n");
+
+    const synthesized = await rig.launcher.tryReadStdoutAndSynthesize(
+      makeMockChild(stdout),
+      TRACE_ID,
+      join(rig.sessionDir, TRACE_ID, "return.json"),
+    );
+
+    assertEquals(synthesized, true);
+    const parsed = SessionReturnSchema.parse(
+      JSON.parse(await Deno.readTextFile(join(rig.sessionDir, TRACE_ID, "return.json"))),
+    );
+    assertEquals(parsed.summary, "Codex completed.");
+    assertEquals(parsed.paths_touched, ["src/codex.ts"]);
+    assertEquals(parsed.token_stats, { input_tokens: 41, output_tokens: 7, total_tokens: 48 });
+  } finally {
+    await rig.cleanup();
+  }
+});
+
+Deno.test("[launcher_stdout][security] rejects an unknown brief tool at the schema boundary", async () => {
+  const rig = await makeRig();
+  try {
+    await Deno.writeTextFile(
+      join(rig.sessionDir, TRACE_ID, "brief.json"),
+      JSON.stringify({
+        trace_id: TRACE_ID,
+        gate: "refinement",
+        tool: "untrusted-tool",
+        resume_token: "tok-01",
+      }),
+    );
+    const synthesized = await rig.launcher.tryReadStdoutAndSynthesize(
+      makeMockChild(JSON.stringify({ type: "text", part: { text: "must not parse" } })),
+      TRACE_ID,
+      join(rig.sessionDir, TRACE_ID, "return.json"),
+    );
+    assertEquals(synthesized, false);
+  } finally {
+    await rig.cleanup();
+  }
+});
+
+Deno.test("[launcher_stdout] git porcelain adds modified, deleted, renamed, and untracked paths", async () => {
+  const rig = await makeRig();
+  const worktree = await Deno.makeTempDir({ prefix: "phase167-git-paths-" });
+  try {
+    await runGit(worktree, ["init", "--quiet"]);
+    await runGit(worktree, ["config", "user.email", "phase167@example.invalid"]);
+    await runGit(worktree, ["config", "user.name", "Phase 167 Test"]);
+    await Deno.writeTextFile(join(worktree, "modified.ts"), "export const value = 1;\n");
+    await Deno.writeTextFile(join(worktree, "deleted.ts"), "delete me\n");
+    await Deno.writeTextFile(join(worktree, "old.ts"), "rename me\n");
+    await runGit(worktree, ["add", "."]);
+    await runGit(worktree, ["commit", "--quiet", "-m", "baseline"]);
+
+    await Deno.writeTextFile(join(worktree, "modified.ts"), "export const value = 2;\n");
+    await Deno.remove(join(worktree, "deleted.ts"));
+    await runGit(worktree, ["mv", "old.ts", "new.ts"]);
+    await Deno.writeTextFile(join(worktree, "untracked.ts"), "export const untracked = true;\n");
+
+    const stdout = JSON.stringify({ type: "text", part: { text: "Work completed." } });
+    const synthesized = await rig.launcher.tryReadStdoutAndSynthesize(
+      makeMockChild(stdout),
+      TRACE_ID,
+      join(rig.sessionDir, TRACE_ID, "return.json"),
+      worktree,
+    );
+
+    assertEquals(synthesized, true);
+    const parsed = SessionReturnSchema.parse(
+      JSON.parse(await Deno.readTextFile(join(rig.sessionDir, TRACE_ID, "return.json"))),
+    );
+    assertEquals(parsed.paths_touched.toSorted(), [
+      "deleted.ts",
+      "modified.ts",
+      "new.ts",
+      "old.ts",
+      "untracked.ts",
+    ]);
+  } finally {
+    await rig.cleanup();
+    await Deno.remove(worktree, { recursive: true });
+  }
+});
 
 Deno.test("[launcher_stdout] parses single text event into return.json", async () => {
   const rig = await makeRig();

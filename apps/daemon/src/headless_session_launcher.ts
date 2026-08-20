@@ -19,7 +19,7 @@ import { isAbsolute, join, relative } from "@std/path";
 import { assertBinaryAllowed, mergeDelegateEnv, sanitizeChildEnv } from "@exaix/session/supervised_launch.ts";
 import { parseDelegateStdout } from "@exaix/session/delegate_return_parser.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
-import { SESSION_GATE_DECISIONS, SessionReturnSchema } from "@exaix/schemas/session_delegate.ts";
+import { SESSION_GATE_DECISIONS, SessionReturnSchema, SessionToolSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionDecision, SessionReturn, SessionTool } from "@exaix/schemas/session_delegate.ts";
 import { DELEGATE_STDOUT_DRAIN_MS } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -123,14 +123,14 @@ export class HeadlessSessionLauncher {
 
     // Determine tool from the brief's tool field
     const briefPath = join(this.deps.sessionDir, traceId, "brief.json");
-    let briefTool: string;
+    let tool: SessionTool;
     let briefGate: string;
     let briefTraceId: string;
     let briefResumeToken: string;
     try {
       const raw = await Deno.readTextFile(briefPath);
       const parsed = JSON.parse(raw);
-      briefTool = parsed.tool;
+      tool = SessionToolSchema.parse(parsed.tool);
       briefGate = parsed.gate;
       briefTraceId = parsed.trace_id;
       briefResumeToken = parsed.resume_token;
@@ -138,7 +138,6 @@ export class HeadlessSessionLauncher {
       return false;
     }
 
-    const tool: SessionTool = briefTool === "claude-code" ? "claude-code" : "opencode";
     const parsed = parseDelegateStdout(raw, tool);
 
     // Compute paths_touched: union of parser toolPaths + git diff.
@@ -154,7 +153,7 @@ export class HeadlessSessionLauncher {
         }
         return p;
       });
-      const gitPaths = await this.computeGitDiff(worktreePath);
+      const gitPaths = await this.computeGitChanges(worktreePath);
       if (gitPaths.length > 0) {
         const seen = new Set(pathsTouched);
         for (const p of gitPaths) {
@@ -231,21 +230,19 @@ export class HeadlessSessionLauncher {
   }
 
   /**
-   * Capture git -C <worktreePath> rev-parse HEAD before spawn, then compute
-   * git diff --name-only after exit to produce paths_touched from actual changes.
+   * Use NUL-delimited porcelain status so tracked, untracked, deleted, copied,
+   * and both sides of renamed paths reach scope reconciliation.
    */
-  private async computeGitDiff(worktreePath: string): Promise<string[]> {
+  private async computeGitChanges(worktreePath: string): Promise<string[]> {
     try {
-      const diffCmd = new Deno.Command("git", {
-        args: ["-C", worktreePath, "diff", "--name-only", "HEAD"],
+      const statusCmd = new Deno.Command("git", {
+        args: ["-C", worktreePath, "status", "--porcelain=v1", "-z", "--untracked-files=all"],
         stdout: "piped",
         stderr: "null",
       });
-      const diffOutput = await diffCmd.output();
-      if (!diffOutput.success) return [];
-      const diffText = new TextDecoder().decode(diffOutput.stdout).trim();
-      if (!diffText) return [];
-      return diffText.split("\n").filter((p) => p.trim().length > 0);
+      const statusOutput = await statusCmd.output();
+      if (!statusOutput.success) return [];
+      return parseGitPorcelainPaths(new TextDecoder().decode(statusOutput.stdout));
     } catch {
       return [];
     }
@@ -267,4 +264,26 @@ export class HeadlessSessionLauncher {
     await Deno.writeTextFile(tmp, JSON.stringify(abandoned, null, 2));
     await Deno.rename(tmp, returnPath);
   }
+}
+
+function parseGitPorcelainPaths(output: string): string[] {
+  const records = output.split("\0");
+  const paths: string[] = [];
+  const seen = new Set<string>();
+  for (let index = 0; index < records.length; index++) {
+    const record = records[index];
+    if (record.length < 4) continue;
+    const status = record.slice(0, 2);
+    addUniquePath(record.slice(3), paths, seen);
+    if (status.includes("R") || status.includes("C")) {
+      addUniquePath(records[++index] ?? "", paths, seen);
+    }
+  }
+  return paths;
+}
+
+function addUniquePath(path: string, paths: string[], seen: Set<string>): void {
+  if (!path || seen.has(path)) return;
+  seen.add(path);
+  paths.push(path);
 }

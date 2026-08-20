@@ -6,8 +6,9 @@
  *   headless CLI-delegate tool (alongside claude-code and opencode); its event shape is
  *   JSONL like opencode's but with different field names (`item.completed`/`item.type`
  *   instead of `part.tool`/`part.text`). Covers lastText accumulation from
- *   `item.completed` `agent_message` items, deduplicated `toolPaths` from `file_change`
- *   items, `tokenStats` from `turn.completed.usage` (including the `cached_input_tokens`
+ *   `item.completed` `agent_message` items, deduplicated `toolPaths` from official
+ *   `file_change.changes[]` items (including partial/failed items), `tokenStats` from
+ *   `turn.completed.usage` (including the `cached_input_tokens`
  *   → `cacheRead` mapping), tolerance of unrecognized `item.type` values (Codex may add
  *   new item types in a future release), a `turn.failed` turn producing an empty result
  *   rather than throwing, and a regression guard proving the claude-code/opencode
@@ -29,15 +30,25 @@ Deno.test("[delegate_return_parser] codex parseCodexJsonl extracts lastText from
   assertEquals(result.lastText, "second message");
 });
 
-Deno.test("[delegate_return_parser] codex parseCodexJsonl extracts toolPaths (deduplicated) from item.completed file_change events", () => {
+Deno.test("[delegate_return_parser] codex parses every deduplicated path from official file_change changes arrays", () => {
   const stdout = [
-    `{"type":"item.completed","item":{"id":"item_1","type":"file_change","path":"src/foo.ts","status":"completed"}}`,
-    `{"type":"item.completed","item":{"id":"item_2","type":"file_change","path":"src/foo.ts","status":"completed"}}`,
-    `{"type":"item.completed","item":{"id":"item_3","type":"file_change","path":"src/bar.ts","status":"completed"}}`,
+    `{"type":"item.completed","item":{"id":"item_1","type":"file_change","changes":[{"path":"src/foo.ts","kind":"update"},{"path":"src/bar.ts","kind":"add"}],"status":"completed"}}`,
+    `{"type":"item.completed","item":{"id":"item_2","type":"file_change","changes":[{"path":"src/foo.ts","kind":"update"},{"path":"src/old.ts","kind":"delete"}],"status":"completed"}}`,
   ].join("\n");
 
   const result = parseDelegateStdout(stdout, "codex");
-  assertEquals(result.toolPaths, ["src/foo.ts", "src/bar.ts"]);
+  assertEquals(result.toolPaths, ["src/foo.ts", "src/bar.ts", "src/old.ts"]);
+});
+
+Deno.test("[delegate_return_parser][security] codex conservatively retains paths from partial and failed file changes", () => {
+  const stdout = [
+    `{"type":"item.started","item":{"id":"item_1","type":"file_change","changes":[{"path":"src/partial.ts","kind":"add"}],"status":"in_progress"}}`,
+    `{"type":"item.completed","item":{"id":"item_2","type":"file_change","changes":[{"path":".env","kind":"add"}],"status":"failed"}}`,
+    `{"type":"item.completed","item":{"id":"item_3","type":"file_change","changes":[{"path":"","kind":"add"},{"kind":"delete"}],"status":"failed"}}`,
+  ].join("\n");
+
+  const result = parseDelegateStdout(stdout, "codex");
+  assertEquals(result.toolPaths, ["src/partial.ts", ".env"]);
 });
 
 Deno.test("[delegate_return_parser] codex parseCodexJsonl extracts tokenStats from turn.completed usage, mapping cached_input_tokens to cacheRead", () => {
@@ -84,8 +95,8 @@ Deno.test("[delegate_return_parser] codex parseDelegateStdout dispatches to pars
     `{"type":"turn.started"}`,
     `{"type":"item.started","item":{"id":"item_1","type":"agent_message"}}`,
     `{"type":"item.completed","item":{"id":"item_1","type":"agent_message","text":"first draft"}}`,
-    `{"type":"item.completed","item":{"id":"item_2","type":"file_change","path":"src/foo.ts","status":"completed"}}`,
-    `{"type":"item.completed","item":{"id":"item_3","type":"file_change","path":"src/foo.ts","status":"completed"}}`,
+    `{"type":"item.completed","item":{"id":"item_2","type":"file_change","changes":[{"path":"src/foo.ts","kind":"update"}],"status":"completed"}}`,
+    `{"type":"item.completed","item":{"id":"item_3","type":"file_change","changes":[{"path":"src/foo.ts","kind":"update"}],"status":"completed"}}`,
     `{"type":"item.completed","item":{"id":"item_4","type":"agent_message","text":"final answer"}}`,
     `{"type":"turn.completed","usage":{"input_tokens":200,"cached_input_tokens":75,"output_tokens":90,"reasoning_output_tokens":15}}`,
   ].join("\n");

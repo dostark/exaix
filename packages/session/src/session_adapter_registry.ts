@@ -2,9 +2,9 @@
  * @module SessionAdapterRegistry
  * @path packages/session/src/session_adapter_registry.ts
  * @description Strategy-pattern registry of per-tool session adapters (mirrors the
- *   provider/factory pattern). One configurable BuiltinSessionAdapter backs all
- *   four shipped tools; CLI tools (claude-code, opencode) support supervised
- *   launch, IDE tools (cursor, vscode) are advisory-only. Launch construction is
+ *   provider/factory pattern). One configurable BuiltinSessionAdapter backs all five
+ *   shipped tools; Codex is headless-only, Claude Code/OpenCode also support
+ *   supervised launch, and IDE tools are advisory-only. Launch construction is
  *   hardened per GAP-4: bare binary + discrete argv, token-budget env only.
  * @architectural-layer Services
  * @dependencies [@exaix/schemas, @exaix/core]
@@ -14,6 +14,7 @@
 import { dirname } from "@std/path";
 import {
   SESSION_BIN_CLAUDE_CODE,
+  SESSION_BIN_CODEX,
   SESSION_BIN_CURSOR,
   SESSION_BIN_OPENCODE,
   SESSION_BIN_VSCODE,
@@ -22,11 +23,13 @@ import {
   SESSION_ENV_MAX_TOTAL_TOKENS,
   SESSION_FLAG_BRIEF,
   SESSION_FLAG_FORMAT,
+  SESSION_FLAG_JSON,
   SESSION_FLAG_MAX_TOTAL_TOKENS,
   SESSION_FLAG_MODEL,
   SESSION_FLAG_OUTPUT_FORMAT,
   SESSION_FLAG_PRINT,
   SESSION_OUTPUT_FORMAT_JSON,
+  SESSION_SUBCMD_EXEC,
   SESSION_SUBCMD_RUN,
 } from "@exaix/core/types";
 import {
@@ -62,7 +65,7 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
 
   buildLaunch(brief: SessionBrief, mode: SessionLaunchMode, briefPath: string): ISessionLaunch {
     if (mode === SessionLaunchModeSchema.enum.supervised && !this.supportsSupervised) {
-      throw new Error(`Session tool '${this.tool}' supports advisory launch only`);
+      throw new Error(`Session tool '${this.tool}' does not support supervised launch`);
     }
     if (mode === SessionLaunchModeSchema.enum.headless) {
       if (!this.supportsHeadless) {
@@ -83,6 +86,20 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
             SESSION_FLAG_OUTPUT_FORMAT,
             SESSION_OUTPUT_FORMAT_JSON,
             ...claudeModelFlag,
+          ],
+          cwd: brief.worktree_path ?? dirname(briefPath),
+          env: budgetEnv(brief),
+        };
+      }
+      if (this.tool === "codex") {
+        const codexModelFlag = brief.model ? [SESSION_FLAG_MODEL, brief.model.slice(brief.model.indexOf(":") + 1)] : [];
+        return {
+          command: this.bin,
+          args: [
+            SESSION_SUBCMD_EXEC,
+            SESSION_FLAG_JSON,
+            ...codexModelFlag,
+            brief.objective,
           ],
           cwd: brief.worktree_path ?? dirname(briefPath),
           env: budgetEnv(brief),
@@ -160,11 +177,12 @@ export class SessionAdapterRegistry {
   }
 }
 
-/** Registry pre-loaded with the four shipped adapters. */
+/** Registry pre-loaded with the five shipped adapters. */
 export function createDefaultSessionAdapterRegistry(): SessionAdapterRegistry {
   const registry = new SessionAdapterRegistry();
   registry.register(new BuiltinSessionAdapter("claude-code", SESSION_BIN_CLAUDE_CODE, true, true));
   registry.register(new BuiltinSessionAdapter("opencode", SESSION_BIN_OPENCODE, true, true));
+  registry.register(new BuiltinSessionAdapter("codex", SESSION_BIN_CODEX, false, true));
   registry.register(new BuiltinSessionAdapter("cursor", SESSION_BIN_CURSOR, false, false));
   registry.register(new BuiltinSessionAdapter("vscode", SESSION_BIN_VSCODE, false, false));
   return registry;

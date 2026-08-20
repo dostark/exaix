@@ -2,7 +2,7 @@
  * @module SessionAdapterRegistryTest
  * @path packages/session/tests/adapter_registry_test.ts
  * @description Phase 106 Step 2 + Phase 111 Step 1 — tests for the session-adapter
- *   registry and the four built-in adapters. Covers resolution, unknown-tool rejection,
+ *   registry and the five built-in adapters. Covers resolution, unknown-tool rejection,
  *   supervised argv with budget flags, advisory-only IDE tools, return synthesis, headless
  *   argv for CLI tools, IDE tool headless rejection, and the GAP-4 launch-hardening
  *   invariants (no objective in argv for non-headless; no secrets in env).
@@ -37,10 +37,11 @@ function makeBrief(overrides: Partial<SessionBrief> = {}): SessionBrief {
 
 Deno.test("[session_adapter] default registry resolves every supported tool", () => {
   const registry = createDefaultSessionAdapterRegistry();
-  for (const tool of ["claude-code", "opencode", "cursor", "vscode"] as const) {
+  for (const tool of ["claude-code", "opencode", "codex", "cursor", "vscode"] as const) {
     const adapter = registry.resolve(tool);
     assertEquals(adapter.tool, tool);
   }
+  assertEquals(registry.list(), ["claude-code", "opencode", "codex", "cursor", "vscode"]);
 });
 
 Deno.test("[session_adapter] resolve throws on an unregistered tool", () => {
@@ -138,6 +139,31 @@ Deno.test("[session_adapter] opencode headless argv contains run, --format json,
   assertEquals(launch.cwd, brief.worktree_path, "cwd must match the worktree path");
 });
 
+Deno.test("[session_adapter] codex is headless-only and builds exec --json argv with an unprefixed model", () => {
+  const registry = createDefaultSessionAdapterRegistry();
+  const adapter = registry.resolve("codex");
+  const brief = makeBrief({
+    tool: "codex",
+    model: "openai:gpt-5.3-codex",
+    objective: MALICIOUS_OBJECTIVE,
+  });
+
+  assertEquals(adapter.supportsSupervised, false);
+  assertEquals(adapter.supportsHeadless, true);
+  assertThrows(() => adapter.buildLaunch(brief, "supervised", BRIEF_PATH), Error);
+
+  const launch = adapter.buildLaunch(brief, "headless", BRIEF_PATH);
+  assertEquals(launch.command, "codex");
+  assertEquals(launch.args, [
+    "exec",
+    "--json",
+    "--model",
+    "gpt-5.3-codex",
+    MALICIOUS_OBJECTIVE,
+  ]);
+  assertEquals(launch.cwd, brief.worktree_path);
+});
+
 Deno.test("[session_adapter] cursor + vscode reject headless launch", () => {
   const registry = createDefaultSessionAdapterRegistry();
   for (const tool of ["cursor", "vscode"] as const) {
@@ -223,7 +249,7 @@ Deno.test("[session_adapter] claude-code headless emits --model <model> when the
 
 Deno.test("[session_adapter] headless omits --model when the brief has no model", () => {
   const registry = createDefaultSessionAdapterRegistry();
-  for (const tool of ["claude-code", "opencode"] as const) {
+  for (const tool of ["claude-code", "opencode", "codex"] as const) {
     const launch = registry.resolve(tool).buildLaunch(makeBrief({ tool }), "headless", BRIEF_PATH);
     assertEquals(launch.args.includes("--model"), false, `${tool}: no --model flag when model is unset`);
   }
