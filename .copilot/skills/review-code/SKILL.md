@@ -185,7 +185,9 @@ rules and the dominant conventions in the existing file:
    method must emit a terminal event for early consumer cancellation (the caller
    `break`/`return()`s out of a `for await` loop before natural exhaustion), not only
    normal completion and a thrown error — verify via a `finally` block or equivalent
-   that fires exactly one terminal event across all three exit paths.
+   that fires exactly one terminal event across all three exit paths. A `@visible`-tagged
+   class also needs a real Tier A/B runtime test proving its primary events fire, not
+   only a clean static pass — see `#plan` §2H and `#post-gap-analysis` Phase 6.
 
 1. **Exports.** Every new interface/type is exported from the appropriate
    index file.

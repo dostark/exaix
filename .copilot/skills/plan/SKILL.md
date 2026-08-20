@@ -399,6 +399,22 @@ joined in the Activity Journal. A streaming or async-generator method must have 
 planned terminal event for every exit path, including early consumer cancellation, not
 only normal completion and a thrown error.
 
+A step tagging a class `@visible` must also plan a Tier A (package-integration, real
+`EventLogger`/db, no daemon) or Tier B (scenario e2e, full daemon boot) runtime
+verification test for that class's highest-value events in its Planned Tests — not rely
+on Gate 19's static check alone. Gate 19 only proves the decorator/logger-call shape
+exists in source; it cannot prove the event actually fires with a real payload at
+runtime, is reached by a real production caller, or carries a correct trace ID. Phase
+169 (`exaix-dev-docs/planning/phase-169-visible-event-runtime-verification.md`) found
+multiple `@visible` components whose events passed Gate 19's static check yet had zero
+real runtime coverage — including one (`RequestAnalyzer`) whose event never fired in
+production at all, because the logger dependency was never injected at either
+production call site. A step is not complete until its named `@visible` events are
+proven to fire, with real field values, against a real `EventLogger`/db (Tier A) or a
+real daemon-boot scenario (Tier B) — see `tests/scenario_framework/scenarios/framework_test/smoke-validation.yaml`'s
+`check-journal` step and `packages/core/tests/cost_tracker_test.ts`'s real-`EventLogger`
+tests for the reference pattern.
+
 ### 3. Documentation Update Protocol (§3D)
 
 Include a final **Step N (§3D): Update Documentation** that covers:

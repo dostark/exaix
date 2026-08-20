@@ -526,6 +526,17 @@ Tagging a class is a real, tool-enforced commitment, not documentation:
   (a literal `DomainEventType.X`, or a same-class private-helper parameter/field typed
   `TDomainEventType`, resolved one level deep) is equally rejected — the tag requires
   taxonomy-conformant coverage, not merely logger-call presence.
+- **Runtime verification:** a static `check:event-coverage` pass is not sufficient proof
+  the tag's commitment is met — a `@visible` class needs a real Tier A (package-level,
+  real `EventLogger`/db, no daemon) or Tier B (scenario e2e, full daemon boot) test
+  proving its primary events actually fire with a sane payload at runtime. The static
+  check only proves the decorator/logger-call shape exists in source; it cannot prove
+  the call site is reached by a real production caller, that the payload is populated,
+  or that the trace ID is correct. See `.copilot/skills/plan/SKILL.md` §2H and
+  `exaix-dev-docs/planning/phase-169-visible-event-runtime-verification.md`, which found
+  multiple `@visible` classes with a clean static pass yet zero real runtime coverage —
+  including one event that never fired in production at all because its logger
+  dependency was never injected at either production call site.
 - **Trace correlation:** for a `@visible` class whose method emits more than one
   lifecycle event for the same operation (e.g. started/completed/failed), pass that
   operation's trace ID as the logger call's fourth positional argument

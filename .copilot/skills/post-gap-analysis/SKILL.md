@@ -377,6 +377,17 @@ verification before it becomes a GAP entry, UNLESS the flagged class carries the
 triage, since the tag is the codebase's own explicit declaration that this component's
 coverage is required, not a heuristic guess.
 
+The `@visible`-tagged escalation is not limited to `check:event-coverage`'s own
+findings: also flag 🔴 Critical when a tagged class's primary events have no real Tier
+A/B runtime test (#plan §2H) proving they fire with a real payload — even when the
+static check itself passes cleanly. Gate 19 only proves the decorator/logger-call
+shape exists in source; it cannot prove the event is reached by a real production
+caller, fires with a sane payload, or carries a correct trace ID. Phase 169
+(`exaix-dev-docs/planning/phase-169-visible-event-runtime-verification.md`) is the
+precedent: it found multiple `@visible` components with a clean static pass yet zero
+real runtime coverage, including one whose event never actually fired in production —
+a static-only pass is not sufficient proof of a working `@visible` contract.
+
 For every step introducing new behaviour, whether or not the tool flagged it: verify
 event naming, payload typing, audit chain completeness, event assertions in tests;
 verify config-driven vs. constant-driven values, config schema declaration, feature
