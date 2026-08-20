@@ -7,6 +7,13 @@
  * @related-files [packages/core/src/observability/file_append_milestone_emitter.ts, packages/core/src/observability/composite_milestone_emitter.ts]
  */
 
+// NOTE (Phase 169 Step 2): this file verifies the separate `IMilestoneEmitter` NDJSON
+// stream (packages/core/src/observability/), keyed on `IExecutionMilestone.milestoneType`
+// string literals that happen to match some `DomainEventType` values (e.g.
+// "llm.call.started"). It does NOT drive, and is not evidence for,
+// `TracedProvider`'s own `DomainEventType` emission via `IEventLogger`/the Activity
+// Journal — see packages/ai/tests/traced_provider_test.ts for that coverage.
+
 import { assert, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
