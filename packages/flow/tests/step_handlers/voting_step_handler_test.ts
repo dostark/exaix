@@ -13,7 +13,8 @@ import { VotingModelSlot, VotingStrategy } from "@exaix/core/types";
 import { VotingStepHandler } from "@exaix/flow";
 import type { IFlowStep } from "@exaix/schemas/flow.ts";
 import type { IStepExecutionContext } from "@exaix/flow";
-import { createMockLogger } from "@exaix/testing";
+import { createMockLogger, initTestDbService } from "@exaix/testing";
+import { EventLogger } from "@exaix/core/logger";
 
 // ============================================================
 // Test doubles
@@ -255,4 +256,41 @@ Deno.test("[flow] VotingStepHandler emits VotingStepConsensusResolved when conse
     strategy: VotingStrategy.WEIGHTED,
     candidate_count: 2,
   });
+});
+
+Deno.test("[flow] VotingStepHandler emits voting.step.consensus_resolved with a real, field-level payload (real EventLogger)", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const votingService = new SpyVotingService({ consensus_reached: true, strategy: VotingStrategy.MAJORITY });
+    const logger = new EventLogger({ db });
+    const handler = new VotingStepHandler({ votingService, eventLogger: logger });
+    const step = makeStep({
+      voting: {
+        runners: [
+          { blueprint: "agent-a", model_slot: VotingModelSlot.DEFAULT },
+          { blueprint: "agent-b", model_slot: VotingModelSlot.DEFAULT },
+          { blueprint: "agent-c", model_slot: VotingModelSlot.DEFAULT },
+        ],
+        strategy: VotingStrategy.MAJORITY,
+        halt_on_no_consensus: true,
+        timeout_ms: 5000,
+      },
+    });
+    const ctx = makeMinimalCtx(step);
+
+    await handler.execute(ctx);
+    await db.waitForFlush();
+
+    const activities = db.getActivitiesByActionType(DomainEventType.VotingStepConsensusResolved);
+    assertEquals(activities.length, 1, "voting.step.consensus_resolved must be logged exactly once");
+    assertEquals(activities[0].target, "vote-1");
+    const payload = JSON.parse(activities[0].payload ?? "{}");
+    assertEquals(payload.consensus_reached, true);
+    assertEquals(payload.strategy, VotingStrategy.MAJORITY);
+    assertEquals(payload.candidate_count, 3);
+
+    await db.close();
+  } finally {
+    await cleanup();
+  }
 });

@@ -77,7 +77,7 @@ describe("ReviewRegistry", () => {
     assertEquals(review.commit_sha, null); // SQLite returns null for NULL values
   });
 
-  it("should log review.created to IActivity Journal", async () => {
+  it("should log review.created to IActivity Journal with a real, field-level payload", async () => {
     const trace_id = crypto.randomUUID();
     const input: IRegisterReviewInput = {
       trace_id,
@@ -89,7 +89,7 @@ describe("ReviewRegistry", () => {
       files_changed: 1,
     };
 
-    await registry.register(input);
+    const id = await registry.register(input);
     await db.waitForFlush();
 
     const activities = db.getActivitiesByTrace(trace_id);
@@ -97,6 +97,11 @@ describe("ReviewRegistry", () => {
 
     assertExists(created);
     assertEquals(created.target, "feat/logging-test");
+    const payload = JSON.parse(created.payload ?? "{}");
+    assertEquals(payload.review_id, id);
+    assertEquals(payload.trace_id, trace_id);
+    assertEquals(payload.branch, "feat/logging-test");
+    assertEquals(payload.repository, "/test/repo");
   });
 
   it("should reject invalid input", async () => {
@@ -444,7 +449,7 @@ describe("ReviewRegistry", () => {
     assertExists(review.rejected_at);
   });
 
-  it("should log review.approved to IActivity Journal", async () => {
+  it("should log review.approved to IActivity Journal with a real, field-level payload", async () => {
     const trace_id = crypto.randomUUID();
     const input: IRegisterReviewInput = {
       trace_id,
@@ -465,9 +470,15 @@ describe("ReviewRegistry", () => {
 
     assertExists(approved);
     assertEquals(approved.target, "feat/approve-logging");
+    const payload = JSON.parse(approved.payload ?? "{}");
+    assertEquals(payload.review_id, id);
+    assertEquals(payload.trace_id, trace_id);
+    assertEquals(payload.branch, "feat/approve-logging");
+    assertEquals(payload.approved_by, "test-user");
+    assertExists(payload.approved_at);
   });
 
-  it("should log review.rejected to IActivity Journal", async () => {
+  it("should log review.rejected to IActivity Journal with a real, field-level payload", async () => {
     const trace_id = crypto.randomUUID();
     const input: IRegisterReviewInput = {
       trace_id,
@@ -488,6 +499,13 @@ describe("ReviewRegistry", () => {
 
     assertExists(rejected);
     assertEquals(rejected.target, "feat/reject-logging");
+    const payload = JSON.parse(rejected.payload ?? "{}");
+    assertEquals(payload.review_id, id);
+    assertEquals(payload.trace_id, trace_id);
+    assertEquals(payload.branch, "feat/reject-logging");
+    assertEquals(payload.rejected_by, "test-user");
+    assertEquals(payload.rejection_reason, "Invalid approach");
+    assertExists(payload.rejected_at);
   });
 
   it("should throw error when updating non-existent review", async () => {
