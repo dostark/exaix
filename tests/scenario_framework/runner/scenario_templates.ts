@@ -12,7 +12,6 @@ import { SCHEMA_VERSION } from "../schema/version.ts";
 import {
   BARE_DELEGATE_LAUNCH_SHAPES,
   BARE_DELEGATE_STEP_ID,
-  buildJailLaunch,
   CREDENTIAL_STORES,
   REQUEST_FIXTURE_CONTENT_SENTINEL,
   spliceRequestFixtureSentinel,
@@ -644,58 +643,41 @@ const ORACLE_TESTS_MOUNT_DEST = "/oracle_tests";
  * Renders an `external_bench_task` scenario: the exemplar runs inside its vendored
  * environment bracket rather than the shared `renderSweSetupSteps` (hardcoded to copy +
  * `git init` into `$WORKSPACE_ROOT/todo-app`, which cannot represent an already-vendored
- * external portal — GAP-2). The delegate and verify steps are wrapped by the exported,
- * parametrized `buildJailLaunch` at render time (not via the matrix's per-cell overlay,
- * which is hardcoded to the todo-app mount) — the exact same hardened container-launch
+ * external portal — GAP-2). The delegate and verify steps are declarative `run-script` steps
+ * invoking the framework-owned `run_jailed.ts` (`scripts/run_jailed.ts`), which wraps the
+ * inner command with `buildJailLaunch` at RUN time — the exact same hardened container-launch
  * shape Phase 143's bare cells use, mounted at `/app` (the upstream benchmark's own
- * convention) instead of `/worktree`. No docker-compose: a single `docker run --rm` per
- * step, so teardown is guaranteed by `--rm` on every exit path, not a separate cleanup step.
+ * convention) instead of `/worktree`. GitHub issue #4: this used to bake the resolved
+ * `docker run ...` invocation directly into the persisted scenario YAML as `type: "shell"`
+ * steps (`check:scenario-declarative`'s `sandbox-setup`/`inline-script`/`test-run`
+ * categories); routing through `run_jailed.ts` moves the actual process-spawning into
+ * framework TypeScript, leaving the YAML declarative (a `run-script` step naming a framework
+ * helper plus its typed flags). No docker-compose: `run_jailed.ts` issues a single
+ * `docker run --rm` per step, so teardown is guaranteed by `--rm` on every exit path, not a
+ * separate cleanup step.
  */
 
 /** Gitignored, framework-relative root for the STABLE (never-random) credential staging
- *  directories `buildExternalBenchCredentialStagingStep` refreshes before every run — reuses
- *  the already-gitignored `tests/scenario_framework/output/` tree so a staged auth/credential
+ *  directories `run_jailed.ts` refreshes immediately before every jailed launch — reuses the
+ *  already-gitignored `tests/scenario_framework/output/` tree so a staged auth/credential
  *  copy can never be accidentally committed. */
 const CREDENTIAL_STAGING_ROOT = "$FRAMEWORK_HOME/output/.eval-jail-creds";
 
-/** A rendered `external_bench_task` credential-staging setup step, refreshing `bin`'s host
- *  credential into a STABLE path before the delegate step runs (or `null` when `bin` has no
- *  known credential store — e.g. "bash", which never needs auth). Unlike
- *  `buildJailLaunch`'s live `resolveCredentialMounts` (a disposable temp dir resolved ONCE at
- *  the moment `renderExternalBenchTaskTemplate` runs), this path is a `$FRAMEWORK_HOME`-
- *  relative template string the runner expands FRESH on every scenario execution — so a
- *  persisted scenario YAML re-run days later still gets a live, current credential copy
- *  instead of pointing at a long-gone temp dir (found via a real batch-ingest run, Phase 144
- *  Step 5). `2>/dev/null || true`: absent host credentials (CI, no login) degrade to an
- *  unauthenticated jailed run, matching `resolveCredentialMounts`'s own graceful degradation —
- *  never a hard scenario failure at staging time.
- */
-function buildExternalBenchCredentialStagingStep(
-  bin: string,
-): { id: string; yamlLines: string[]; mountArgs: string[] } | null {
-  const store = CREDENTIAL_STORES[bin];
-  if (!store) return null;
-  const stagedRoot = `${CREDENTIAL_STAGING_ROOT}/${bin}`;
-  const stagedFile = `${stagedRoot}/${store.stagedFileRelPath}`;
-  const id = `stage-${bin}-credentials`;
-  const script =
-    `mkdir -p "$(dirname "${stagedFile}")" && cp "$HOME/${store.liveRelPath}" "${stagedFile}" 2>/dev/null || true`;
-  return {
-    id,
-    yamlLines: [
-      `  - id: "${id}"`,
-      `    type: "shell"`,
-      `    command: "sh"`,
-      `    args: ["-c", ${JSON.stringify(script)}]`,
-      `    output_criteria:`,
-      `      - id: "${id}-ran"`,
-      `        kind: "command-exit-code"`,
-      `        equals: 0`,
-      "",
-    ],
-    mountArgs: ["--mount", `type=bind,src=${stagedRoot},dst=/tmp/${store.stagedDirRelPath}`],
-  };
+/** `run_jailed.ts`'s path, `$FRAMEWORK_HOME`-relative — every external_bench_task container
+ *  launch routes through this single wrapper instead of a raw `docker run` baked into the
+ *  persisted scenario YAML (GitHub issue #4). */
+const RUN_JAILED_SCRIPT = "$FRAMEWORK_HOME/scripts/run_jailed.ts";
+
+/** Renders a YAML flow-sequence of JSON-quoted strings, e.g. `["a", "b"]` — matches how every
+ *  other step's `args:` line in this module is written (JSON string syntax is valid YAML flow
+ *  scalar syntax), so a run-script step's args render identically to a shell step's. */
+function yamlArgsList(values: string[]): string {
+  return `[${values.map((v) => JSON.stringify(v)).join(", ")}]`;
 }
+
+/** The shared `run_jailed.ts` invocation head (before its own `--flag value` pairs) every
+ *  external_bench_task run-script step starts with. */
+const RUN_JAILED_HEAD = ["run", "-A", "--config", "$FRAMEWORK_HOME/../../deno.json", RUN_JAILED_SCRIPT];
 
 export function renderExternalBenchTaskTemplate(task: IExternalBenchTaskTemplateOptions): string {
   const scoreWeights = task.scoringWeights ?? {};
@@ -707,22 +689,40 @@ export function renderExternalBenchTaskTemplate(task: IExternalBenchTaskTemplate
     );
   }
   const mountSource = `$FRAMEWORK_HOME/fixtures/portals/${task.portalDir}`;
-  const credStaging = buildExternalBenchCredentialStagingStep(shape.bin);
-  const jailedDelegate = buildJailLaunch(shape, {
+  const credentialFlags = CREDENTIAL_STORES[shape.bin]
+    ? ["--credential-bin", shape.bin, "--credential-staging-dir", `${CREDENTIAL_STAGING_ROOT}/${shape.bin}`]
+    : [];
+  const delegateInnerArgs = spliceRequestFixtureSentinel(shape.args);
+  const delegateArgs = [
+    ...RUN_JAILED_HEAD,
+    "--mount-source",
     mountSource,
-    mountDest: EXTERNAL_BENCH_MOUNT_DEST,
-    workdir: EXTERNAL_BENCH_MOUNT_DEST,
-    credentialMountArgs: credStaging?.mountArgs,
-  });
-  const delegateArgs = spliceRequestFixtureSentinel(jailedDelegate.args);
-  const jailedVerify = buildJailLaunch({ bin: "bash", args: ["-c", task.scopedTestCmd] }, {
+    "--mount-dest",
+    EXTERNAL_BENCH_MOUNT_DEST,
+    "--workdir",
+    EXTERNAL_BENCH_MOUNT_DEST,
+    ...credentialFlags,
+    "--bin",
+    shape.bin,
+    "--",
+    ...delegateInnerArgs,
+  ];
+  const verifyArgs = [
+    ...RUN_JAILED_HEAD,
+    "--mount-source",
     mountSource,
-    mountDest: EXTERNAL_BENCH_MOUNT_DEST,
-    workdir: EXTERNAL_BENCH_MOUNT_DEST,
-    extraMounts: [
-      `type=bind,src=$FRAMEWORK_HOME/fixtures/external/terminal_bench/${task.oracleTestsDir},dst=${ORACLE_TESTS_MOUNT_DEST},ro`,
-    ],
-  });
+    "--mount-dest",
+    EXTERNAL_BENCH_MOUNT_DEST,
+    "--workdir",
+    EXTERNAL_BENCH_MOUNT_DEST,
+    "--extra-mount",
+    `type=bind,src=$FRAMEWORK_HOME/fixtures/external/terminal_bench/${task.oracleTestsDir},dst=${ORACLE_TESTS_MOUNT_DEST},ro`,
+    "--bin",
+    "bash",
+    "--",
+    "-c",
+    task.scopedTestCmd,
+  ];
 
   const parts: string[] = [
     `schema_version: "1.0.0"`,
@@ -735,11 +735,10 @@ export function renderExternalBenchTaskTemplate(task: IExternalBenchTaskTemplate
     `mode_support: ["auto"]`,
     "",
     "steps:",
-    ...(credStaging?.yamlLines ?? []),
     `  - id: "${BARE_DELEGATE_STEP_ID}"`,
-    `    type: "shell"`,
-    `    command: "${jailedDelegate.bin}"`,
-    `    args: [${delegateArgs.map((a) => JSON.stringify(a)).join(", ")}]`,
+    `    type: "run-script"`,
+    `    command: "deno"`,
+    `    args: ${yamlArgsList(delegateArgs)}`,
     `    timeout_sec: ${DEFAULT_BARE_DELEGATE_TIMEOUT_SEC}`,
     `    output_criteria:`,
     `      - id: "delegate-ran"`,
@@ -747,9 +746,9 @@ export function renderExternalBenchTaskTemplate(task: IExternalBenchTaskTemplate
     `        equals: 0`,
     "",
     `  - id: "${VERIFY_TESTS_STEP_ID}"`,
-    `    type: "shell"`,
-    `    command: "${jailedVerify.bin}"`,
-    `    args: [${jailedVerify.args.map((a) => JSON.stringify(a)).join(", ")}]`,
+    `    type: "run-script"`,
+    `    command: "deno"`,
+    `    args: ${yamlArgsList(verifyArgs)}`,
     `    timeout_sec: ${DEFAULT_EXTERNAL_BENCH_VERIFY_TIMEOUT_SEC}`,
     `    output_criteria:`,
     `      - id: "tests-pass"`,

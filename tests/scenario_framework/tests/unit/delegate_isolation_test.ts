@@ -14,6 +14,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { buildJailLaunch } from "../../runner/matrix_expander.ts";
 import { renderExternalBenchTaskTemplate } from "../../runner/scenario_templates.ts";
+import { buildRunJailedLaunch, parseRunJailedArgs } from "../../scripts/run_jailed.ts";
 
 function assertJailed(command: string, args: string[]): void {
   assertEquals(command, "docker", "delegate must run via docker, not host-direct");
@@ -44,7 +45,7 @@ Deno.test("[DelegateIsolation] buildJailLaunch uses an explicit credentialMountA
   );
 });
 
-Deno.test("[DelegateIsolation] external_bench_task template's rendered delegate step is jail-wrapped, never host-direct", () => {
+Deno.test("[DelegateIsolation] external_bench_task template's rendered delegate step routes through run_jailed.ts, never a bare host-direct command", () => {
   const yaml = renderExternalBenchTaskTemplate({
     id: "delegate-isolation-fixture",
     title: "Delegate Isolation Fixture",
@@ -55,10 +56,38 @@ Deno.test("[DelegateIsolation] external_bench_task template's rendered delegate 
     tool: "claude-code",
     benchmarkVersion: "d28711d0da2675d0bb1d56de45ae5df6082438a3",
   });
-  assert(yaml.includes('command: "docker"'), "rendered delegate step must invoke docker, not the raw CLI");
-  assert(yaml.includes("--cap-drop=ALL"), "rendered args must carry the capability drop");
-  assert(yaml.includes("--security-opt=no-new-privileges"), "rendered args must forbid privilege escalation");
+  assert(
+    yaml.includes('command: "deno"'),
+    "rendered delegate step must invoke the run_jailed.ts wrapper via deno, not a raw docker/CLI command",
+  );
+  assert(yaml.includes("run_jailed.ts"), "rendered delegate step must name the run_jailed.ts framework wrapper");
+  assert(
+    yaml.includes('"--bin", "claude"'),
+    "the delegate tool must be passed as run_jailed.ts's --bin flag, never spawned directly",
+  );
   assert(!yaml.includes('command: "claude"'), "the delegate command must never be the bare, unjailed claude binary");
+  assert(
+    !yaml.includes('command: "docker"'),
+    "the docker invocation must happen inside run_jailed.ts at run time, never baked into the persisted scenario YAML",
+  );
+});
+
+Deno.test("[DelegateIsolation] run_jailed.ts's own launch builder wraps the delegate exactly like buildJailLaunch — the property the rendered step relies on", async () => {
+  const options = parseRunJailedArgs([
+    "--mount-source",
+    "/some/portal",
+    "--mount-dest",
+    "/app",
+    "--workdir",
+    "/app",
+    "--bin",
+    "claude",
+    "--",
+    "-p",
+  ]);
+  const jailed = await buildRunJailedLaunch(options);
+  assertJailed(jailed.bin, jailed.args);
+  assert(jailed.args.includes("claude"), "the inner delegate binary must be present as the container command");
 });
 
 Deno.test("[DelegateIsolation] a delegate step constructed WITHOUT the jail wrapper fails this assertion (regression guard)", () => {
