@@ -7,37 +7,28 @@ request_fixture: "fixtures/requests/external/terminal_bench/log-summary.md"
 portals: []
 mode_support: ["auto"]
 steps:
-  - id: "stage-opencode-credentials"
-    type: "shell"
-    command: "sh"
-    args: [
-      "-c",
-      "mkdir -p \"$(dirname \"$FRAMEWORK_HOME/output/.eval-jail-creds/opencode/share/opencode/auth.json\")\" && cp \"$HOME/.local/share/opencode/auth.json\" \"$FRAMEWORK_HOME/output/.eval-jail-creds/opencode/share/opencode/auth.json\" 2>/dev/null || true",
-    ]
-    output_criteria:
-      - id: "stage-opencode-credentials-ran"
-        kind: "command-exit-code"
-        equals: 0
   - id: "bare-delegate"
-    type: "shell"
-    command: "docker"
+    type: "run-script"
+    command: "deno"
     args: [
       "run",
-      "--rm",
-      "--mount",
-      "type=bind,src=$FRAMEWORK_HOME/fixtures/portals/external/terminal_bench/log-summary,dst=/app",
+      "-A",
+      "--config",
+      "$FRAMEWORK_HOME/../../deno.json",
+      "$FRAMEWORK_HOME/scripts/run_jailed.ts",
+      "--mount-source",
+      "$FRAMEWORK_HOME/fixtures/portals/external/terminal_bench/log-summary",
+      "--mount-dest",
+      "/app",
       "--workdir",
       "/app",
-      "--user",
-      "1000:1000",
-      "--cap-drop=ALL",
-      "--security-opt=no-new-privileges",
-      "-e",
-      "HOME=/tmp",
-      "--mount",
-      "type=bind,src=$FRAMEWORK_HOME/output/.eval-jail-creds/opencode,dst=/tmp/.local",
-      "exaix-eval-jail",
+      "--credential-bin",
       "opencode",
+      "--credential-staging-dir",
+      "$FRAMEWORK_HOME/output/.eval-jail-creds/opencode",
+      "--bin",
+      "opencode",
+      "--",
       "run",
       "--format",
       "json",
@@ -51,25 +42,25 @@ steps:
         kind: "command-exit-code"
         equals: 0
   - id: "verify-tests"
-    type: "shell"
-    command: "docker"
+    type: "run-script"
+    command: "deno"
     args: [
       "run",
-      "--rm",
-      "--mount",
-      "type=bind,src=$FRAMEWORK_HOME/fixtures/portals/external/terminal_bench/log-summary,dst=/app",
-      "--mount",
-      "type=bind,src=$FRAMEWORK_HOME/fixtures/external/terminal_bench/log-summary/oracle_tests,dst=/oracle_tests,ro",
+      "-A",
+      "--config",
+      "$FRAMEWORK_HOME/../../deno.json",
+      "$FRAMEWORK_HOME/scripts/run_jailed.ts",
+      "--mount-source",
+      "$FRAMEWORK_HOME/fixtures/portals/external/terminal_bench/log-summary",
+      "--mount-dest",
+      "/app",
       "--workdir",
       "/app",
-      "--user",
-      "1000:1000",
-      "--cap-drop=ALL",
-      "--security-opt=no-new-privileges",
-      "-e",
-      "HOME=/tmp",
-      "exaix-eval-jail",
+      "--extra-mount",
+      "type=bind,src=$FRAMEWORK_HOME/fixtures/external/terminal_bench/log-summary/oracle_tests,dst=/oracle_tests,ro",
+      "--bin",
       "bash",
+      "--",
       "-c",
       "curl -LsSf https://astral.sh/uv/0.7.13/install.sh | sh -s -- -q && /tmp/.local/bin/uv venv /tmp/.venv -q && . /tmp/.venv/bin/activate && /tmp/.local/bin/uv pip install -q pytest==8.4.1 && cd /app && pytest /oracle_tests/test_outputs.py -rA",
     ]

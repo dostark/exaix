@@ -32,18 +32,26 @@ function render() {
   });
 }
 
-Deno.test("[ExternalTemplateMechanics] renders a credential-staging setup step before delegate + verify-tests, no process/daemon steps", () => {
+Deno.test("[ExternalTemplateMechanics] renders exactly delegate + verify-tests as run-script steps, no separate credential-staging step, no process/daemon steps", () => {
   const yaml = render();
-  const parsed = parseYaml(yaml) as { steps: Array<{ id: string }> };
+  const parsed = parseYaml(yaml) as { steps: Array<{ id: string; type: string; command: string }> };
   const ids = parsed.steps.map((s) => s.id);
-  assertEquals(ids, ["stage-claude-credentials", "bare-delegate", "verify-tests"]);
+  assertEquals(ids, ["bare-delegate", "verify-tests"]);
+  for (const step of parsed.steps) {
+    assertEquals(step.type, "run-script", `step "${step.id}" must be a declarative run-script step`);
+    assertEquals(
+      step.command,
+      "deno",
+      `step "${step.id}" must invoke deno (run_jailed.ts), never a raw shell/docker command`,
+    );
+  }
 });
 
-Deno.test("[ExternalTemplateMechanics] the credential-staging step re-stages into a STABLE, gitignored path — never a generation-time-random temp dir that would go stale before a later re-run", () => {
+Deno.test("[ExternalTemplateMechanics] the delegate step refreshes credentials into a STABLE, gitignored path — never a generation-time-random temp dir that would go stale before a later re-run", () => {
   const yaml = render();
   assert(
     yaml.includes("$FRAMEWORK_HOME/output/.eval-jail-creds/claude"),
-    "the staging step and the delegate's mount must reference the same stable, run-time-expanded path",
+    "the delegate step's --credential-staging-dir must reference a stable, run-time-expanded path",
   );
   assert(
     !yaml.includes("eval-jail-creds-") || !/eval-jail-creds-[0-9a-f]{16,}/.test(yaml),
