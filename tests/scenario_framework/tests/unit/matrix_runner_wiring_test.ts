@@ -40,11 +40,11 @@ async function loadScenario(path: string): Promise<ReturnType<typeof ScenarioSch
 Deno.test("[matrix_runner] resolveRunnableSteps with a matrix block returns one runnable group per runnable cell", async () => {
   const scenario = await loadScenario(MATRIX_SCENARIO);
   const groups = resolveRunnableSteps(scenario, {
-    env: { OPENROUTER_API_KEY: "k", ANTHROPIC_API_KEY: "k", EXA_MATRIX_OPENCODE: "1" },
+    env: { OPENROUTER_API_KEY: "k", ANTHROPIC_API_KEY: "k", EXA_MATRIX_OPENCODE: "1", EXA_MATRIX_CODEX: "1" },
     binOnPath: () => true,
   });
-  // 4 cells all runnable → 4 groups, each carrying the cell's overlaid steps.
-  assertEquals(groups.length, 4);
+  // 5 cells all runnable → 5 groups, each carrying the cell's overlaid steps.
+  assertEquals(groups.length, 5);
   for (const g of groups) {
     const status: MatrixCellStatusValue = g.status;
     assertEquals(status, "run");
@@ -61,7 +61,7 @@ Deno.test("[matrix_runner] resolveRunnableSteps skips cells whose prerequisites 
     env: {}, // no keys, no opt-in
     binOnPath: () => false, // no binaries
   });
-  assertEquals(groups.length, 4);
+  assertEquals(groups.length, 5);
   for (const g of groups) assertEquals(g.status, "skip");
 });
 

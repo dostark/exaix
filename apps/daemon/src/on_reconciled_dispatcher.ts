@@ -27,8 +27,10 @@ export interface ILogPayload {
   [key: string]: string | number | boolean | null | undefined;
 }
 
+/** `traceId` mirrors IEventLogger.info's real 4th parameter — populates the persisted
+ *  row's trace_id column so `trace_scoped: true` journal-assert steps can find it. */
 export interface IReconciledLogger {
-  info(event: string, target: string, payload?: ILogPayload): void;
+  info(event: string, target: string, payload?: ILogPayload, traceId?: string): void;
 }
 
 export interface IOnReconciledDeps {
@@ -89,7 +91,7 @@ export function createOnReconciledHandler(
           deps.logger.info(DomainEventType.SessionDelegateReconciled, traceId, {
             gate: "refinement",
             status: clarification.status,
-          });
+          }, traceId);
           break;
         }
         case "plan_review": {
@@ -108,7 +110,7 @@ export function createOnReconciledHandler(
           deps.logger.info(DomainEventType.SessionDelegateReconciled, traceId, {
             gate: "plan_review",
             decision: amendment.decision,
-          });
+          }, traceId);
           break;
         }
         case SessionGateSchema.enum.review: {
@@ -120,7 +122,7 @@ export function createOnReconciledHandler(
               error: "no matching review found for trace",
               status: patch.status,
               rejection_reason: patch.rejection_reason ?? null,
-            });
+            }, traceId);
             break;
           }
           await deps.reviewRegistry.updateStatus(
@@ -132,7 +134,7 @@ export function createOnReconciledHandler(
           deps.logger.info(DomainEventType.SessionDelegateReconciled, traceId, {
             gate: SessionGateSchema.enum.review,
             status: patch.status,
-          });
+          }, traceId);
           break;
         }
       }
@@ -165,7 +167,7 @@ export function createOnReconciledHandler(
       deps.logger.info(DomainEventType.SessionDelegateReconciled, traceId, {
         error: err instanceof Error ? err.message : String(err),
         gate: "unknown",
-      });
+      }, traceId);
     }
   };
 }

@@ -2942,7 +2942,18 @@ export const SESSION_SUBCMD_RESUME = "resume";
 export const SESSION_FLAG_JSON = "--json";
 export const SESSION_FLAG_SANDBOX = "--sandbox";
 export const SESSION_SANDBOX_READ_ONLY = "read-only";
+export const SESSION_SANDBOX_WORKSPACE_WRITE = "workspace-write";
 export const SESSION_FLAG_OUTPUT_SCHEMA = "--output-schema";
+/**
+ * Codex refuses to run outside a directory it trusts or recognizes as a Git repository:
+ * `Not inside a trusted directory and --skip-git-repo-check was not specified` (live-verified
+ * exit code 1, Phase 167 Step 3). The embedded ReAct provider spawns codex from
+ * `config.system.root` — the daemon's own data root, never a Git repository — so this flag
+ * is required on every embedded-provider invocation, not just an opt-in convenience. It only
+ * bypasses the Git-repository precondition; `--sandbox read-only` remains the operative
+ * execution-permission control.
+ */
+export const SESSION_FLAG_SKIP_GIT_REPO_CHECK = "--skip-git-repo-check";
 
 /** Dogfood-developer identity ID — source of truth for the machine name used in OpenCode agent config keys (Phase 128 R3 Step 4). Must match `Blueprints/Identities/dogfood-developer.md:identity_id`. */
 export const DOGFOOD_DEVELOPER_IDENTITY_ID = "dogfood-developer";
@@ -2993,6 +3004,7 @@ export const DAEMON_SPAWN_RUN_BINARIES: readonly string[] = [
   "exactl",
   SESSION_BIN_OPENCODE,
   SESSION_BIN_CLAUDE_CODE,
+  SESSION_BIN_CODEX,
   "ls",
   "grep",
   "echo",

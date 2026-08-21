@@ -57,13 +57,7 @@ import { EventLogger, EventLoggerStructuredOutput } from "@exaix/core/logger";
 import { AgentRunner, ExecutionLoop } from "@exaix/execution";
 import { initializeHealthChecks } from "@exaix/core/health";
 import { buildMilestoneEmitterFromConfig } from "@exaix/core/observability";
-import {
-  AgentOrchestratorAdapter,
-  FlowLoader,
-  FlowRunner,
-  type IFlowEventLogger,
-  type IFlowEventPayload,
-} from "@exaix/flow";
+import { AgentOrchestratorAdapter, FlowLoader, FlowRunner } from "@exaix/flow";
 import {
   initializeMemoryAutoApprovalMaintenance,
   MemoryAutoApprovalService,
@@ -88,6 +82,7 @@ import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IPortalKnowledgeConfig, PortalAnalysisMode } from "@exaix/core/types";
 import { createConfigReloadHandler, createDbWatcherHandler, getMaxOverrideId } from "@exaix/core/config";
 import { GracefulShutdown } from "./src/graceful_shutdown.ts";
+import { createFlowEventLogger } from "./src/flow_event_logger_adapter.ts";
 import { recoverOrphanedDelegations } from "./src/recovery.ts";
 import { buildTeamMcpClient } from "./src/build_team_mcp_client.ts";
 // registerTeamCapabilities is loaded dynamically inside the Team branch only —
@@ -120,6 +115,7 @@ import {
   DEFAULT_CONFIG_DB_POLL_INTERVAL_MS,
   DEFAULT_REQUESTS_PATH,
   SESSION_BIN_CLAUDE_CODE,
+  SESSION_BIN_CODEX,
   SESSION_BIN_CURSOR,
   SESSION_BIN_OPENCODE,
   SESSION_BIN_VSCODE,
@@ -741,6 +737,7 @@ if (import.meta.main) {
 
       const allowlist = new Set([
         SESSION_BIN_CLAUDE_CODE,
+        SESSION_BIN_CODEX,
         SESSION_BIN_CURSOR,
         SESSION_BIN_OPENCODE,
         SESSION_BIN_VSCODE,
@@ -785,22 +782,12 @@ if (import.meta.main) {
       config.paths.waitStates ?? "WaitStates",
     );
 
-    // Create flow event logger adapter (EventLogger → IFlowEventLogger)
-    const flowLogger: IFlowEventLogger = {
-      log: <TEvent extends string>(
-        event: TEvent,
-        payload: IFlowEventPayload<TEvent>,
-      ): void => {
-        logger.info(
-          event,
-          "flow-runner",
-          payload as Record<
-            string,
-            string | number | boolean | null | undefined
-          >,
-        );
-      },
-    };
+    // Create flow event logger adapter (EventLogger → IFlowEventLogger). Extracted to
+    // apps/daemon/src/flow_event_logger_adapter.ts (Phase 167 Step 3) — see that
+    // module's header for why forwarding payload.traceId as the explicit 4th
+    // logger.info() argument is required for trace_scoped journal-assert steps to
+    // find flow-runner events at all.
+    const flowLogger = createFlowEventLogger(logger);
 
     // Phase 132.4: Create ModelResolver for policy-driven model routing
     const healthChecker: IProviderHealthChecker = {
@@ -1041,18 +1028,22 @@ if (import.meta.main) {
               }
             }
             // Phase 124 Step 4a: emit launched before spawning (orphan marker on crash).
+            // traceId is passed both as target (existing display convention, see
+            // recovery.ts's SessionDelegateCrashRecovered) and as the explicit 4th
+            // argument, which is what actually populates the persisted row's trace_id
+            // column for trace_scoped journal-assert steps (Phase 167 Step 4).
             await logger.info(DomainEventType.SessionDelegateLaunched, traceId, {
               gate: GATE_REFINEMENT,
               tool: sd.tool,
               brief: brief.objective,
-            });
+            }, traceId);
             await _headlessLauncher.launch(launch, traceId, delegateProviderEnv);
           } else {
             logger.info(DomainEventType.SessionDelegateBriefed, traceId, {
               mode: sd.launch_mode,
               tool: sd.tool,
               objective_length: body.length,
-            });
+            }, traceId);
           }
         }
         : undefined,
@@ -1187,11 +1178,13 @@ if (import.meta.main) {
             // Phase 124 Step 4a: emit the launched event BEFORE spawning so a
             // crash during launch leaves a `launched` with no terminal event —
             // the orphan that recoverOrphanedDelegations re-queues on restart.
+            // traceId is the explicit 4th argument (not just target) so the persisted
+            // row's trace_id column matches, for trace_scoped journal-assert (Step 4).
             await logger.info(DomainEventType.SessionDelegateLaunched, traceId, {
               gate: GATE_CODE_CHANGES,
               tool: sd.tool,
               brief: brief.objective,
-            });
+            }, traceId);
             await _headlessLauncher.launch(launch, traceId, delegateProviderEnv);
           }
           // `briefed` records that a brief was prepared and parked — true on every
@@ -1206,7 +1199,7 @@ if (import.meta.main) {
             mode: sd.launch_mode,
             tool: sd.tool,
             gate: GATE_CODE_CHANGES,
-          });
+          }, traceId);
 
           // Block until reconciled or deadline — poll every 2s
           const deadline = Date.parse(brief.deadline);

@@ -1,15 +1,18 @@
 /**
  * @module DelegateMatrixScenarioTest
  * @path tests/scenario_framework/tests/unit/delegate_matrix_scenario_test.ts
- * @description Phase 127 Step 4 / Phase 128 Step 5 — RED-first tests for the
+ * @description Phase 127 Step 4 / Phase 128 Step 5 / Phase 167 Step 4 — tests for the
  *   parametrized session_delegate_matrix_live.yaml and the dedicated permission-
  *   hardening scenario session_delegate_hardening_active_live.yaml. Asserts the
- *   YAML parses against ScenarioSchema, enumerates exactly 4 cells, each cell
- *   selects the intended (tool, provider) pair via config preset +
- *   EXA_SESSION_DELEGATE_TOOL, and every cell terminates in journal-assert steps
- *   asserting session.delegate.reconciled (positive) with no
+ *   YAML parses against ScenarioSchema, enumerates exactly 5 cells (opencode x2,
+ *   claude-code x2, codex), each cell selects the intended (tool, provider) pair via
+ *   config preset + EXA_SESSION_DELEGATE_TOOL, and every cell terminates in
+ *   journal-assert steps asserting session.delegate.reconciled (positive) with no
  *   session.delegate.scope_violation assertion. The hardening scenario proves the
- *   pre-flight guard structure: reconciled without scope_violation.
+ *   pre-flight guard structure: reconciled without scope_violation. The codex cell
+ *   additionally carries four codex-only, trace-scoped journal-assert steps
+ *   (briefed/launched/returned/reconciled) proving the audit chain under the request's
+ *   own trace, not merely global event presence (Phase 167 Step 4).
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/scenarios/provider_live/session_delegate_matrix_live.yaml, tests/scenario_framework/scenarios/provider_live/session_delegate_hardening_active_live.yaml, tests/scenario_framework/runner/matrix_expander.ts]
  */
@@ -58,10 +61,10 @@ function journalEventTypes(
   return found;
 }
 
-Deno.test("[delegate_matrix] the matrix scenario parses and enumerates exactly 4 cells", async () => {
+Deno.test("[delegate_matrix] the matrix scenario parses and enumerates exactly 5 cells", async () => {
   const scenario = await parseMatrixScenario();
   assert(scenario.matrix, "scenario must have a matrix block");
-  assertEquals(scenario.matrix.cells.length, 4, "matrix must have exactly 4 cells");
+  assertEquals(scenario.matrix.cells.length, 5, "matrix must have exactly 5 cells");
   const tags = new Set(scenario.tags);
   assert(tags.has("provider-live"), "must be tagged provider-live");
   assert(tags.has("session-delegation"), "must be tagged session-delegation");
@@ -92,6 +95,11 @@ Deno.test("[delegate_matrix] each cell's config preset + EXA_SESSION_DELEGATE_TO
       config: "configs/dogfood.claude.openrouter.toml",
       bin: "claude",
       hasKey: "OPENROUTER_API_KEY",
+    },
+    "codex/direct": {
+      config: "configs/dogfood.codex.toml",
+      bin: "codex",
+      hasOptin: "EXA_MATRIX_CODEX",
     },
   };
 
@@ -184,7 +192,7 @@ Deno.test("[delegate_matrix] the clean-cell assertion is acceptance-accurate (pa
   }
 });
 
-Deno.test("[delegate_matrix] the scenario steps expandMatrix produces 4 cell-runs with correct per-cell overlay", async () => {
+Deno.test("[delegate_matrix] the scenario steps expandMatrix produces 5 cell-runs with correct per-cell overlay", async () => {
   const scenario = await parseMatrixScenario();
   assert(scenario.matrix, "scenario must have a matrix block");
   const matrix = MatrixSchema.parse(scenario.matrix);
@@ -195,11 +203,12 @@ Deno.test("[delegate_matrix] the scenario steps expandMatrix produces 4 cell-run
       OPENROUTER_API_KEY: "k",
       ANTHROPIC_API_KEY: "k",
       EXA_MATRIX_OPENCODE: "1",
+      EXA_MATRIX_CODEX: "1",
     },
     binOnPath: () => true,
   });
 
-  assertEquals(runs.length, 4, "expandMatrix must produce 4 runs");
+  assertEquals(runs.length, 5, "expandMatrix must produce 5 runs");
   for (const run of runs) {
     assertEquals(run.status, "run", `cell ${run.cell.tool}/${run.cell.provider} should be runnable`);
     // Verify each run's start-daemon step has the per-cell overlay
@@ -210,4 +219,68 @@ Deno.test("[delegate_matrix] the scenario steps expandMatrix produces 4 cell-run
     assertEquals(env.EXA_SESSION_DELEGATE_TOOL, run.cell.tool);
     assertEquals(env.EXA_SESSION_DELEGATE_ENABLED, "true");
   }
+});
+
+Deno.test("[delegate_matrix][security] the codex cell is skipped, not run, when EXA_MATRIX_CODEX is unset (explicit opt-in; default CI never spends a Codex subscription)", async () => {
+  const scenario = await parseMatrixScenario();
+  assert(scenario.matrix, "scenario must have a matrix block");
+  const matrix = MatrixSchema.parse(scenario.matrix);
+
+  const runs = expandMatrix(scenario.steps, matrix, {
+    env: { OPENROUTER_API_KEY: "k", ANTHROPIC_API_KEY: "k", EXA_MATRIX_OPENCODE: "1" },
+    binOnPath: () => true,
+  });
+
+  const codexRuns = runs.filter((r) => r.cell.tool === "codex");
+  assertEquals(codexRuns.length, 1, "the codex cell must still be enumerated, just recorded skipped");
+  for (const r of codexRuns) {
+    assertEquals(r.status, "skip");
+    assert(
+      r.skipReason?.includes("EXA_MATRIX_CODEX"),
+      `skip reason should name the missing opt-in, got: ${r.skipReason}`,
+    );
+  }
+});
+
+Deno.test("[delegate_matrix][security] the codex cell is skipped when the codex binary is absent from PATH, independent of the opt-in", async () => {
+  const scenario = await parseMatrixScenario();
+  assert(scenario.matrix, "scenario must have a matrix block");
+  const matrix = MatrixSchema.parse(scenario.matrix);
+
+  const runs = expandMatrix(scenario.steps, matrix, {
+    env: { OPENROUTER_API_KEY: "k", ANTHROPIC_API_KEY: "k", EXA_MATRIX_OPENCODE: "1", EXA_MATRIX_CODEX: "1" },
+    binOnPath: (bin) => bin !== "codex",
+  });
+
+  const codexRun = runs.find((r) => r.cell.tool === "codex");
+  assertEquals(codexRun?.status, "skip");
+  assert(
+    codexRun?.skipReason?.includes("codex"),
+    `skip reason should name the missing binary, got: ${codexRun?.skipReason}`,
+  );
+});
+
+Deno.test("[delegate_matrix] the codex-only trace-scoped steps assert the exact briefed/launched(tool=codex)/returned(accepted)/reconciled(accepted) chain, scoped to the codex cell only", async () => {
+  const scenario = await parseMatrixScenario();
+  const byId = new Map(scenario.steps.map((s) => [s.id, s]));
+
+  const briefed = byId.get("assert-codex-briefed");
+  const launched = byId.get("assert-codex-launched");
+  const returned = byId.get("assert-codex-returned");
+  const reconciled = byId.get("assert-codex-reconciled");
+  assert(briefed && launched && returned && reconciled, "all four codex-only assertion steps must exist");
+
+  for (const step of [briefed, launched, returned, reconciled]) {
+    assertEquals(step!.type, ScenarioStepType.JOURNAL_ASSERT);
+    assertEquals(step!.cells, ["codex"], `${step!.id} must be scoped to the codex cell only`);
+    assertEquals(step!.trace_scoped, true, `${step!.id} must be trace_scoped`);
+  }
+
+  assertEquals(briefed!.action_type, "session.delegate.briefed");
+  assertEquals(launched!.action_type, "session.delegate.launched");
+  assertEquals(launched!.payload_equals, [{ path: "tool", value: "codex" }]);
+  assertEquals(returned!.action_type, "session.delegate.returned");
+  assertEquals(returned!.payload_equals, [{ path: "accepted", value: true }]);
+  assertEquals(reconciled!.action_type, "session.delegate.reconciled");
+  assertEquals(reconciled!.payload_not_contains, ["rejected"]);
 });

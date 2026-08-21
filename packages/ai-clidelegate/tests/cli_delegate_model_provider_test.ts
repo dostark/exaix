@@ -349,6 +349,52 @@ Deno.test("CliDelegateModelProvider: strips and empties ANTHROPIC_API_KEY/ANTHRO
   assertEquals(seenEnv?.ANTHROPIC_BASE_URL, undefined);
 });
 
+Deno.test("[security] CliDelegateModelProvider: strips LD_*/DYLD_* dynamic-linker env vars from the spawned env", async () => {
+  // Deno's scoped --allow-run=<bin> permission (the daemon's own posture — see
+  // DAEMON_SPAWN_RUN_BINARIES) refuses to forward any env var whose name starts with
+  // "LD_" or "DYLD_" to a spawned child: `Deno.errors.NotCapable: Requires --allow-run
+  // permissions to spawn subprocess with <VAR> environment variable. Alternatively,
+  // spawn with the environment variable unset.` These vars instruct the dynamic linker
+  // to load arbitrary shared libraries into the child, so an operator whose shell sets
+  // LD_LIBRARY_PATH/LD_PRELOAD (common: CUDA/conda/HPC toolchains) would otherwise see
+  // every headless CLI delegate (claude/opencode/codex) fail every generate() call with
+  // a generic "Subprocess failed" error — discovered live while proving Phase 167 Step
+  // 3's forced-ReAct Codex evidence on a workstation with LD_LIBRARY_PATH set.
+  let seenEnv: Record<string, string> | undefined;
+  const run: IRunCliDelegateProcess = (_command, _args, options) => {
+    seenEnv = options.env;
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ type: "result", result: "ok", usage: {}, total_cost_usd: 0 }),
+      stderr: "",
+    });
+  };
+
+  Deno.env.set("LD_LIBRARY_PATH", "/should/not/reach/subprocess");
+  Deno.env.set("LD_PRELOAD", "/should/not/reach/subprocess.so");
+  Deno.env.set("DYLD_INSERT_LIBRARIES", "/should/not/reach/subprocess.dylib");
+  try {
+    const provider = new CliDelegateModelProvider({
+      tool: "claude-code",
+      bin: "claude",
+      model: "claude-sonnet-5",
+      cwd: "/tmp/portal",
+      run,
+    });
+    await provider.generate("prompt");
+  } finally {
+    Deno.env.delete("LD_LIBRARY_PATH");
+    Deno.env.delete("LD_PRELOAD");
+    Deno.env.delete("DYLD_INSERT_LIBRARIES");
+  }
+
+  assertEquals(seenEnv?.LD_LIBRARY_PATH, undefined);
+  assertEquals(seenEnv?.LD_PRELOAD, undefined);
+  assertEquals(seenEnv?.DYLD_INSERT_LIBRARIES, undefined);
+  // Sanity: clearEnv still forwards ordinary vars — this isn't a blanket env wipe.
+  assertEquals(seenEnv?.PATH, Deno.env.get("PATH"));
+});
+
 Deno.test("CliDelegateModelProvider: maps claude result into IGenerateResult (content, usage, cost_usd)", async () => {
   const run: IRunCliDelegateProcess = () =>
     Promise.resolve({

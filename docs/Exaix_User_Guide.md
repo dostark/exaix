@@ -387,6 +387,11 @@ pre-existing gap outside this section's scope, not an indication they work diffe
   filesystem — the same read-only posture Exaix already enforces for headless CLI-delegate
   planning calls.
 
+`[session_delegate] tool = "codex"` (Mode 3 headless session delegation) is a **separate**
+Codex integration path with its own sandbox model — see
+[§2.5.7](#257-codex-sandbox-and-permitted-path-security). This subsection covers only the
+ReAct-loop analysis/planning provider above.
+
 ### 2.4 Advanced Deployment Options
 
 ```bash
@@ -408,9 +413,9 @@ deno task start
 
 ### 2.5 Session Delegation Configuration
 
-Exaix can delegate specific pipeline gates to external CLI agent tools (OpenCode, Claude Code)
-instead of using the built-in LLM. This is useful when you want human-in-the-loop review or
-want to use a specialized tool for specific tasks.
+Exaix can delegate specific pipeline gates to external CLI agent tools (OpenCode, Claude
+Code, Codex) instead of using the built-in LLM. This is useful when you want
+human-in-the-loop review or want to use a specialized tool for specific tasks.
 
 #### 2.5.1 Configuration
 
@@ -419,7 +424,7 @@ Add a `[session_delegate]` section to your `exa.config.toml`:
 ```toml
 [session_delegate]
 enabled = true
-tool = "opencode"              # claude-code | opencode | cursor | vscode
+tool = "opencode"              # claude-code | opencode | codex | cursor | vscode
 gates = ["refinement", "plan_review"]   # which gates to delegate
 launch_mode = "headless"       # advisory (Mode 1) | supervised (Mode 2) | headless (Mode 3)
 ```
@@ -428,11 +433,12 @@ launch_mode = "headless"       # advisory (Mode 1) | supervised (Mode 2) | headl
 
 The delegate tools must be installed separately:
 
-| Tool            | Installation                                                                                                                             |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| **OpenCode**    | [opencode.ai](https://opencode.ai) — CLI installer and setup guide                                                                       |
-| **Claude Code** | [docs.anthropic.com/en/docs/claude-code](https://docs.anthropic.com/en/docs/claude-code/overview) — requires Claude Pro/Max subscription |
-| **OpenRouter**  | See [§2.4.4](#244-enterprise-providers-vertex-ai-openrouter) — API key from [openrouter.ai](https://openrouter.ai)                       |
+| Tool            | Installation                                                                                                                                        |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **OpenCode**    | [opencode.ai](https://opencode.ai) — CLI installer and setup guide                                                                                  |
+| **Claude Code** | [docs.anthropic.com/en/docs/claude-code](https://docs.anthropic.com/en/docs/claude-code/overview) — requires Claude Pro/Max subscription            |
+| **Codex**       | [developers.openai.com/codex](https://developers.openai.com/codex/noninteractive) — requires `codex login` (ChatGPT Codex subscription; no API key) |
+| **OpenRouter**  | See [§2.4.4](#244-enterprise-providers-vertex-ai-openrouter) — API key from [openrouter.ai](https://openrouter.ai)                                  |
 
 #### 2.5.3 Launch Modes
 
@@ -442,8 +448,11 @@ The delegate tools must be installed separately:
 | **Mode 2** | `supervised` | Interactive TTY spawn from `exactl execute --delegate`                     |
 | **Mode 3** | `headless`   | Non-interactive spawn; daemon captures stdout and reconciles automatically |
 
-Mode 3 (headless) supports both `claude-code` and `opencode`. The daemon captures
-JSON event output from `opencode run --format json` and synthesizes a valid `return.json`.
+Mode 3 (headless) supports `claude-code`, `opencode`, and `codex`. For tools that don't
+write `return.json` natively (`opencode run --format json`, `codex exec --json`), the
+daemon captures their JSON event stream from stdout and synthesizes a valid `return.json`.
+**Codex's tested, intended mode is headless (Mode 3)** — Mode 2 (`supervised`) launch
+throws (`resolveLaunch()` rejects it); see [§2.5.7](#257-codex-sandbox-and-permitted-path-security).
 
 #### 2.5.4 Per-Request Override via Environment Variables
 
@@ -479,6 +488,42 @@ Add it to `bin_overrides` for CI scenarios:
 
 ```toml
 bin_overrides = ["/path/to/.cache/mock_session_tool_bin"]
+```
+
+#### 2.5.7 Codex Sandbox and Permitted-Path Security
+
+`codex`'s tested, intended integration path is Mode 3 (headless) — `BuiltinSessionAdapter`
+registers it without Mode 2 (`supervised`) support (`resolveLaunch()` throws), unlike
+`claude-code`/`opencode`. It
+reuses the same `codex login` subscription credential as
+[§2.4.6](#246-subscription-billed-cli-providers-codex-cli); there is no separate auth step
+for session delegation.
+
+Codex enforces scope through two independent, layered mechanisms:
+
+1. **Sandbox (enforced by the `codex` CLI itself, during the run).** With
+   `harden_permissions = true`, the daemon derives `--sandbox workspace-write` when the
+   delegated gate is `code_changes`, or `--sandbox read-only` for every other gate — see
+   `deriveCodexSandboxFlags` (`@exaix/session`). `workspace-write` confines all writes to
+   the worktree root; a write to an absolute path outside it (e.g. `/tmp/...`) never
+   reaches disk, regardless of what the model attempted.
+2. **`permitted_paths` (enforced by Exaix, after the run).** Being inside the worktree is
+   not sufficient on its own: `SessionReturnWatcher`/`reconcile` also check every path the
+   delegate actually touched (via `git diff --name-only`) against the worktree-relative
+   globs in `permitted_paths`. A touched path outside those globs — even one safely inside
+   the sandboxed worktree — is rejected as `session.delegate.scope_violation`, and
+   `session.delegate.reconciled` is never journaled for that request (the durable wait is
+   never resumed).
+
+```toml
+[session_delegate]
+enabled = true
+tool = "codex"
+model = "codex-cli:gpt-5.6-terra"   # provider:model form; a bare model id is rejected
+gates = ["code_changes"]
+launch_mode = "headless"
+permitted_paths = ["src/**", "tests/**"]
+harden_permissions = true
 ```
 
 ### 2.5a Per-Step CLI Delegate Execution — the Cost-Preferred Path for Live/Eval Runs

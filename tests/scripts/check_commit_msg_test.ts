@@ -9,6 +9,7 @@
 import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
 import {
+  gitOut,
   parseLedgerSymbols,
   parsePlanField,
   parsePlanStep,
@@ -776,5 +777,61 @@ describe("validatePlanStepDiff", () => {
     const result = validatePlanStepDiff(items, [], "unknown");
     assertEquals(result.ok, false);
     assertEquals(result.errors.some((e) => e.toLowerCase().includes("roll back")), true);
+  });
+});
+
+// ── Cross-repo git resolution under an inherited hook environment ────────────
+
+describe("gitOut", () => {
+  it("ignores inherited GIT_DIR/GIT_INDEX_FILE/GIT_PREFIX when running a cross-repo -C command", async () => {
+    // Reproduces the live failure: git sets GIT_DIR/GIT_INDEX_FILE/GIT_PREFIX for every
+    // hook subprocess (verified live via a real commit-msg hook trigger in a worktree
+    // checkout). Without sanitization, a nested `git -C <submodule> diff HEAD~1 HEAD`
+    // silently resolves against the INHERITED (wrong) repo instead of <submodule>,
+    // returning an empty diff — which made every plan-step ✅/deferred item look "not an
+    // added line" and blocked the commit. gitOut must produce the correct, non-empty
+    // result regardless of what GIT_* vars the calling process inherited.
+    const repoDir = await Deno.makeTempDir();
+    try {
+      const run = (args: string[]) =>
+        new Deno.Command("git", { args, cwd: repoDir, env: { LD_LIBRARY_PATH: "" } }).output();
+      await run(["init", "-q"]);
+      await run(["config", "user.email", "test@example.com"]);
+      await run(["config", "user.name", "Test"]);
+      await Deno.writeTextFile(`${repoDir}/file.txt`, "line one\n");
+      await run(["add", "file.txt"]);
+      await run(["commit", "-q", "-m", "first"]);
+      await Deno.writeTextFile(`${repoDir}/file.txt`, "line one\nline two\n");
+      await run(["add", "file.txt"]);
+      await run(["commit", "-q", "-m", "second"]);
+
+      const baseline = await gitOut(["diff", "HEAD~1", "HEAD", "--unified=0", "--", "file.txt"], repoDir);
+      assertEquals(baseline.includes("+line two"), true, "sanity: baseline diff must be non-empty");
+
+      // Simulate git's own hook environment: GIT_DIR/GIT_INDEX_FILE/GIT_PREFIX pointing at
+      // an unrelated bogus location, exactly as a real commit-msg hook inherits them.
+      const otherRepo = await Deno.makeTempDir();
+      try {
+        Deno.env.set("GIT_DIR", `${otherRepo}/.git`);
+        Deno.env.set("GIT_INDEX_FILE", `${otherRepo}/.git/index`);
+        Deno.env.set("GIT_PREFIX", "");
+        try {
+          const underPoisonedEnv = await gitOut(
+            ["diff", "HEAD~1", "HEAD", "--unified=0", "--", "file.txt"],
+            repoDir,
+          );
+          assertEquals(underPoisonedEnv, baseline);
+          assertEquals(underPoisonedEnv.includes("+line two"), true);
+        } finally {
+          Deno.env.delete("GIT_DIR");
+          Deno.env.delete("GIT_INDEX_FILE");
+          Deno.env.delete("GIT_PREFIX");
+        }
+      } finally {
+        await Deno.remove(otherRepo, { recursive: true });
+      }
+    } finally {
+      await Deno.remove(repoDir, { recursive: true });
+    }
   });
 });

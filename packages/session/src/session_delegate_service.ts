@@ -14,6 +14,7 @@ import { dirname, join } from "@std/path";
 import {
   DOGFOOD_DEVELOPER_IDENTITY_ID,
   MINIMUM_VERSION_CLAUDE_CODE,
+  MINIMUM_VERSION_CODEX,
   MINIMUM_VERSION_OPENCODE,
   PROVIDER_ANTHROPIC,
   PROVIDER_OLLAMA,
@@ -21,6 +22,7 @@ import {
   SESSION_DEFAULT_DEADLINE_HOURS,
   TIME_MS_PER_HOUR,
 } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 import { SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
 import type {
   SessionBrief,
@@ -40,6 +42,7 @@ import type {
   ISessionPathSafety,
 } from "./i_session_delegate.ts";
 import { deriveClaudeToolFlags } from "./claude_permission_flags.ts";
+import { deriveCodexSandboxFlags } from "./codex_sandbox_flags.ts";
 import { generateOpencodePermissionConfig } from "./opencode_permission_generator.ts";
 import { probeDelegateVersion } from "./delegate_version_probe.ts";
 
@@ -58,12 +61,15 @@ export interface ISessionDelegateServiceDeps {
    * hardening.
    */
   pathResolver?: PathResolver;
+  /** Defaults to probeDelegateVersion; injectable for deterministic minimum-version tests. */
+  versionProbe?: Opt<typeof probeDelegateVersion, Reason.OptionalDependency>;
 }
 
 const BRIEF_FILE = "brief.json";
 const RESUME_TOKEN_ENTROPY_BYTES = 32; // 256-bit suffix (GAP-2)
 const TOOL_OPENCODE = "opencode";
 const TOOL_CLAUDE_CODE = "claude-code";
+const TOOL_CODEX = "codex";
 
 /** System wall-clock implementation of the clock seam. */
 export const systemClock: ISessionClock = { now: () => new Date() };
@@ -160,11 +166,17 @@ export class SessionDelegateService implements ISessionDelegateService {
     const adapter = this.deps.registry.resolve(brief.tool);
     const launch = adapter.buildLaunch(brief, mode, this.briefPathFor(brief.trace_id));
 
-    const minVersion = brief.tool === TOOL_OPENCODE ? MINIMUM_VERSION_OPENCODE : MINIMUM_VERSION_CLAUDE_CODE;
+    const minVersion = brief.tool === TOOL_OPENCODE
+      ? MINIMUM_VERSION_OPENCODE
+      : brief.tool === TOOL_CODEX
+      ? MINIMUM_VERSION_CODEX
+      : MINIMUM_VERSION_CLAUDE_CODE;
     // Pass the (empty) default deps explicitly: deps is a test-injection seam, so
     // naming it here keeps the optional-params check satisfied without changing
     // behaviour (the default is `{}`).
-    const probeResult = await probeDelegateVersion(launch.command, minVersion, {});
+    const probeResult = this.deps.versionProbe
+      ? await this.deps.versionProbe(launch.command, minVersion, {})
+      : await probeDelegateVersion(launch.command, minVersion, {});
     const versionWarning = probeResult.supported ? undefined : probeResult.warning;
 
     let agentNameMismatch = false;
@@ -185,6 +197,9 @@ export class SessionDelegateService implements ISessionDelegateService {
       agentNameMismatch = permConfig.agentKey !== DOGFOOD_DEVELOPER_IDENTITY_ID;
     } else if (brief.tool === TOOL_CLAUDE_CODE) {
       const flags = deriveClaudeToolFlags(brief);
+      launch.args.push(...flags);
+    } else if (brief.tool === TOOL_CODEX) {
+      const flags = deriveCodexSandboxFlags(brief);
       launch.args.push(...flags);
     }
 

@@ -73,7 +73,7 @@ For the full component availability matrix by edition, see `docs/Reference_Data.
 
 ## Composability with Session-Oriented Tools
 
-Exaix is designed to **orchestrate rather than replace** session-oriented agent tools (OpenCode, Claude Code, Cursor). These tools excel at interactive refinement — clarifying intent, iterating on plans, or pair-programming code changes — while Exaix provides the governance, audit trail, and multi-agent orchestration that session tools lack.
+Exaix is designed to **orchestrate rather than replace** session-oriented agent tools (OpenCode, Claude Code, Codex, Cursor). These tools excel at interactive refinement — clarifying intent, iterating on plans, or pair-programming code changes — while Exaix provides the governance, audit trail, and multi-agent orchestration that session tools lack.
 
 The embedding points for session tools are the **pipeline gates** where human judgment adds most value: refinement, plan review, code changes, and review/merge.
 
@@ -88,8 +88,8 @@ Session tool integration **must not introduce session state into Exaix's core pi
 The integration is realized by the `@exaix/session` package as a strict three-part handoff, so the invariant holds by construction (only files + a typed `return.json` cross back):
 
 1. **Brief** — `SessionDelegateService.prepareBrief` (`@exaix/session`) atomically writes `Session/{traceId}/brief.json` (objective, scope globs, token budget, single-use resume token, deadline).
-2. **Launch** — a per-tool `ISessionAdapter` from `SessionAdapterRegistry` (`@exaix/session`) builds a hardened launch (bare binary + discrete argv, token-budget env only); supervised spawns strip provider secrets and enforce a binary allowlist (`@exaix/session`). When `[session_delegate].harden_permissions = true`, `SessionDelegateService.resolveHardenedLaunch()` inserts a permission-derivation step before the launch: version probe → per-tool permission config generation → modified launch with `configPath` (OpenCode) or derived CLI flags (Claude Code).
-3. **Return + Reconcile** — the daemon drains the tool's full stdout stream (bounded by `DELEGATE_STDOUT_DRAIN_MS`), parses tool-specific JSON events (`opencode` JSONL `text`/`step_finish`/`tool_use` events or `claude-code` single `{type:"result"}` object), computes `git diff --name-only HEAD` for `paths_touched`, and atomically writes `Session/{traceId}/return.json` with real `paths_touched`, `token_stats`, and `cost_usd`. `SessionReturnWatcher` then invokes `SessionReturnProcessor`/`reconcile` (constant-time token check, two-stage path-scope enforcement against actual touched paths, gate/decision legality, non-blocking budget overage), maps the outcome into the existing amendment/review/clarification contracts (`@exaix/session`), and resumes the gate's durable wait state (`@exaix/session`).
+2. **Launch** — a per-tool `ISessionAdapter` from `SessionAdapterRegistry` (`@exaix/session`) builds a hardened launch (bare binary + discrete argv, token-budget env only); supervised spawns strip provider secrets and enforce a binary allowlist (`@exaix/session`). When `[session_delegate].harden_permissions = true`, `SessionDelegateService.resolveHardenedLaunch()` inserts a permission-derivation step before the launch: version probe → per-tool permission config generation → modified launch with `configPath` (OpenCode) or derived CLI flags (Claude Code, Codex).
+3. **Return + Reconcile** — the daemon drains the tool's full stdout stream (bounded by `DELEGATE_STDOUT_DRAIN_MS`), parses tool-specific JSON events (`opencode` JSONL `text`/`step_finish`/`tool_use` events, `claude-code` single `{type:"result"}` object, or `codex`'s `item.completed`/`turn.completed` JSONL events), computes `git diff --name-only HEAD` for `paths_touched`, and atomically writes `Session/{traceId}/return.json` with real `paths_touched`, `token_stats`, and `cost_usd`. `SessionReturnWatcher` then invokes `SessionReturnProcessor`/`reconcile` (constant-time token check, two-stage path-scope enforcement against actual touched paths, gate/decision legality, non-blocking budget overage), maps the outcome into the existing amendment/review/clarification contracts (`@exaix/session`), and resumes the gate's durable wait state (`@exaix/session`).
 
 Delegated output is **untrusted** and still flows through the same quality, critique, and review gates as autonomous output. For the pipeline gate diagram with ASCII art and TOML configuration sample, see `packages/flow/README.md#session-tool-integration`.
 
@@ -97,13 +97,21 @@ Delegated output is **untrusted** and still flows through the same quality, crit
 
 The session tool can be launched in one of three modes, configured via `session_delegate.launch_mode`:
 
-| Mode       | Value        | Description                                                                                                                                                                                     | Use case                                                               |
-| ---------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| **Mode 1** | `advisory`   | Exaix prints the command and waits for the human to run the tool out-of-band. The daemon parks a wait state; the human drops a `return.json` to resume.                                         | Default for all tools; safe when the human wants to control execution. |
-| **Mode 2** | `supervised` | Interactive TTY spawn from `exactl execute --delegate`. The CLI attaches the parent terminal so the human can interact with the session tool directly.                                          | Interactive debugging or pair-delegation from the CLI.                 |
-| **Mode 3** | `headless`   | Non-interactive spawn via `claude -p` / `opencode run`. The daemon spawns the binary with a discrete argv prompt, fire-and-forget; `SessionReturnWatcher` reconciles the dropped `return.json`. | CI, automation, and daemon-side delegation where no human is present.  |
+| Mode       | Value        | Description                                                                                                                                                                                                    | Use case                                                               |
+| ---------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **Mode 1** | `advisory`   | Exaix prints the command and waits for the human to run the tool out-of-band. The daemon parks a wait state; the human drops a `return.json` to resume.                                                        | Default for all tools; safe when the human wants to control execution. |
+| **Mode 2** | `supervised` | Interactive TTY spawn from `exactl execute --delegate`. The CLI attaches the parent terminal so the human can interact with the session tool directly.                                                         | Interactive debugging or pair-delegation from the CLI.                 |
+| **Mode 3** | `headless`   | Non-interactive spawn via `claude -p` / `opencode run` / `codex exec`. The daemon spawns the binary with a discrete argv prompt, fire-and-forget; `SessionReturnWatcher` reconciles the dropped `return.json`. | CI, automation, and daemon-side delegation where no human is present.  |
 
 Mode 3 requires `bin_overrides` to add the tool binary to the spawn allowlist (see `packages/flow/README.md#session-tool-integration`). The compiled mock tool at `.cache/mock_session_tool_bin` (built via `deno task build:mock-tool`) is used for CI testing.
+
+Codex's tested, intended integration path is Mode 3 (headless):
+`createDefaultSessionAdapterRegistry()` (`@exaix/session`) registers `codex` without
+supervised-launch support (`resolveLaunch()` throws for Mode 2), unlike `claude-code`/`opencode`.
+With `harden_permissions = true`, `deriveCodexSandboxFlags` (`@exaix/session`) derives `--sandbox
+workspace-write` for the `code_changes` gate or `--sandbox read-only` otherwise — a first,
+in-process enforcement layer independent of the post-hoc `permitted_paths` scope check in step 3
+above.
 
 Mode 3 also supports a `[session_delegate.provider]` block (multi-delegate provider routing) that
 declares which API gateway the delegate should use. When present, the daemon reads
@@ -580,7 +588,9 @@ configured), attributed per `runner_id` with the voting step's `traceId`.
 
 ## AI Provider Architecture {#ai-provider-architecture}
 
-Provider integrations are organized as independent packages (`@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix-team/ai-vertex`, `@exaix/ai-openrouter`, `@exaix/ai-ollama`), selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory`. Solo-edition providers are registered by `apps/common/registry_bootstrap.ts`; Team-edition providers (Vertex AI) are registered by `@exaix-team/team-composer`.
+Provider integrations are organized as independent packages (`@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix-team/ai-vertex`, `@exaix/ai-openrouter`, `@exaix/ai-ollama`, `@exaix/ai-clidelegate`), selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory`. Solo-edition providers are registered by `apps/common/registry_bootstrap.ts`; Team-edition providers (Vertex AI) are registered by `@exaix-team/team-composer`.
+
+`@exaix/ai-clidelegate` registers a distinct kind of `IModelProvider`: `CliDelegateModelProvider` implements ReAct-loop `generate()` by spawning a headless CLI subprocess (`codex exec --json`, `claude --print`, or `opencode run`) and parsing its stdout, rather than calling a metered HTTP API. It backs three providers — `codex-cli`, `claude-cli`, `opencode-cli` — selectable via `[ai].provider` / `[models.<name>].provider` like any other provider, but billed against the CLI's own subscription (`cost_usd` always `0`). This is independent of the `[session_delegate]`/Mode 3 session-delegation contract above, which hands an entire pipeline gate — not a single `generate()` call — to the same external tools.
 
 For the provider component table and edition availability matrix, see `packages/ai/README.md#provider-components`.
 

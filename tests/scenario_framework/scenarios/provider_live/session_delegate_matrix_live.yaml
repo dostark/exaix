@@ -13,7 +13,7 @@ portals:
 
 matrix:
   axes:
-    tool: ["opencode", "claude-code"]
+    tool: ["opencode", "claude-code", "codex"]
     provider: ["direct", "openrouter"]
   cells:
     - tool: "opencode"
@@ -37,6 +37,11 @@ matrix:
       config: "configs/dogfood.claude.openrouter.toml"
       requires_bin: "claude"
       requires_key: "OPENROUTER_API_KEY"
+    - tool: "codex"
+      provider: "direct"
+      config: "configs/dogfood.codex.toml"
+      requires_bin: "codex"
+      requires_optin: "EXA_MATRIX_CODEX"
 
 steps:
   # --- Setup (shared across all cells) ---
@@ -128,6 +133,63 @@ steps:
     type: "wait-for-file"
     args: ["**/Session/**/return.json"]
     timeout_sec: 300
+
+  # --- Codex-only: trace-scoped audit-chain proof (Phase 167 Step 4) ---
+  # The shared assert-reconciled-clean check below uses the older journal-event-exists
+  # criterion kind, which has no trace_scoped support (GAP-1/Architecture Notes: "global
+  # event presence is insufficient"). These four steps assert the SAME four-event
+  # session.delegate.* audit chain scoped to this run's own request trace, so a leftover
+  # row from an earlier scenario in a shared sandbox can never satisfy them.
+  - id: "assert-codex-briefed"
+    type: "journal-assert"
+    cells: ["codex"]
+    action_type: "session.delegate.briefed"
+    trace_scoped: true
+    output_criteria:
+      - id: "codex-briefed-recorded"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.25
+
+  - id: "assert-codex-launched"
+    type: "journal-assert"
+    cells: ["codex"]
+    action_type: "session.delegate.launched"
+    trace_scoped: true
+    payload_equals:
+      - path: "tool"
+        value: "codex"
+    output_criteria:
+      - id: "codex-launched-recorded"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.25
+
+  - id: "assert-codex-returned"
+    type: "journal-assert"
+    cells: ["codex"]
+    action_type: "session.delegate.returned"
+    trace_scoped: true
+    payload_equals:
+      - path: "accepted"
+        value: true
+    output_criteria:
+      - id: "codex-returned-accepted"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.25
+
+  - id: "assert-codex-reconciled"
+    type: "journal-assert"
+    cells: ["codex"]
+    action_type: "session.delegate.reconciled"
+    trace_scoped: true
+    payload_not_contains: ["rejected"]
+    output_criteria:
+      - id: "codex-reconciled-accepted"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.25
 
   # --- Assertion: the delegate reconciled cleanly AND was ACCEPTED ---
   # session.delegate.reconciled must be PRESENT *with an accepted payload*. The watcher

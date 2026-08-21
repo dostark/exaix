@@ -232,3 +232,36 @@ Deno.test("[session_return_watcher] an over-budget accepted return also journals
     await rig.cleanup();
   }
 });
+
+Deno.test("[session_return_watcher][security] journaled events carry traceId as the actual ILogEvent field, not just target — required for trace_scoped journal-assert to find them", async () => {
+  // GAP found live proving Phase 167 Step 4's mandated trace-scoped session.delegate.*
+  // assertions: journal() set `target` to the traceId but never the ILogEvent `traceId`
+  // field itself, so EventLogger.log() fell back to a fresh crypto.randomUUID() for the
+  // persisted row's trace_id column — the exact column a `trace_scoped: true`
+  // journal-assert filters on (`WHERE trace_id = ?`). A row whose target LOOKS like the
+  // right trace but whose trace_id column is a random UUID is invisible to that filter.
+  const rig = await makeRig();
+  try {
+    const brief = await setup(rig, "plan_review", ["Workspace/Plans/**"]);
+    const path = await dropReturn(rig, brief.trace_id, {
+      trace_id: brief.trace_id,
+      resume_token: brief.resume_token,
+      decision: "approved",
+      summary: "ok",
+      paths_touched: [],
+      token_stats: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
+    });
+    await rig.watcher.handleReturnPath(path);
+
+    const returned = rig.sink.events.find((e) => e.action === DomainEventType.SessionDelegateReturned);
+    const reconciled = rig.sink.events.find((e) => e.action === DomainEventType.SessionDelegateReconciled);
+    assertEquals(returned?.traceId, brief.trace_id);
+    assertEquals(reconciled?.traceId, brief.trace_id);
+    // Regression: target keeps carrying the traceId too (existing convention elsewhere,
+    // e.g. recovery.ts's SessionDelegateCrashRecovered) — this fix is additive, not a swap.
+    assertEquals(returned?.target, brief.trace_id);
+    assertEquals(reconciled?.target, brief.trace_id);
+  } finally {
+    await rig.cleanup();
+  }
+});

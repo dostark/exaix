@@ -12,6 +12,7 @@
  */
 
 import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
+import type { Opt, Reason } from "@exaix/core/types";
 
 export interface IDelegateParsedReturn {
   lastText: string;
@@ -52,6 +53,11 @@ interface IOpencodeEvent {
   };
 }
 
+interface ICodexFileChange {
+  path?: string;
+  kind?: string;
+}
+
 /**
  * Shape of a parsed `codex exec --json` JSONL event line (OpenAI docs, verified
  * 2026-08-13). JSONL like opencode's stream, but with Codex's own event/field names.
@@ -77,7 +83,7 @@ interface ICodexEvent {
       | "web_search"
       | "plan_update";
     text?: string;
-    path?: string;
+    changes?: ICodexFileChange[];
     status?: string;
   };
   usage?: {
@@ -206,12 +212,6 @@ function parseCodexJsonl(stdout: string): IDelegateParsedReturn {
 
     if (event.type === CODEX_EVENT_ITEM_COMPLETED && event.item?.type === CODEX_ITEM_TYPE_AGENT_MESSAGE) {
       if (typeof event.item.text === "string") lastText = event.item.text;
-    } else if (event.type === CODEX_EVENT_ITEM_COMPLETED && event.item?.type === CODEX_ITEM_TYPE_FILE_CHANGE) {
-      const path = event.item.path;
-      if (typeof path === "string" && path && !seenPaths.has(path)) {
-        seenPaths.add(path);
-        toolPaths.push(path);
-      }
     } else if (event.type === CODEX_EVENT_TURN_COMPLETED && event.usage) {
       const usage = event.usage;
       tokenStats = {
@@ -221,9 +221,27 @@ function parseCodexJsonl(stdout: string): IDelegateParsedReturn {
         cacheRead: usage.cached_input_tokens,
       };
     }
+
+    if (event.item?.type === CODEX_ITEM_TYPE_FILE_CHANGE) {
+      collectCodexFileChangePaths(event.item.changes, seenPaths, toolPaths);
+    }
   }
 
   return { lastText, tokenStats, costUsd: undefined, toolPaths };
+}
+
+function collectCodexFileChangePaths(
+  changes: Opt<ICodexFileChange[], Reason.OptionalInput>,
+  seenPaths: Set<string>,
+  toolPaths: string[],
+): void {
+  if (!Array.isArray(changes)) return;
+  for (const change of changes) {
+    const path = change?.path;
+    if (typeof path !== "string" || !path || seenPaths.has(path)) continue;
+    seenPaths.add(path);
+    toolPaths.push(path);
+  }
 }
 
 function parseClaudeResult(stdout: string): IDelegateParsedReturn {

@@ -291,24 +291,25 @@ Configuration per request, portal, or blueprint (global scope shown):
 ```toml
 [session_delegate]
 enabled = true
-tool = "opencode"            # claude-code | opencode | cursor | vscode
+tool = "opencode"            # claude-code | opencode | codex | cursor | vscode
 gates = ["refinement", "code_changes"]   # refinement | plan_review | code_changes | review
 launch_mode = "advisory"     # advisory (Mode 1) | supervised (Mode 2) | headless (Mode 3)
 ```
 
 > The legacy `stages` key is accepted as a deprecated alias for `gates`. Only
-> `claude-code`/`opencode` support `supervised` launch; `cursor`/`vscode` are
-> advisory-only.
+> `claude-code`/`opencode` support `supervised` launch (`codex` is headless-only, Mode 3
+> only); `cursor`/`vscode` are advisory-only.
 
 ### Headless Mode (Mode 3) — OpenCode First-Class Support
 
-When `launch_mode = "headless"`, the daemon spawns the tool non-interactively. OpenCode
-and Claude Code use different CLI flags:
+When `launch_mode = "headless"`, the daemon spawns the tool non-interactively. OpenCode,
+Claude Code, and Codex use different CLI flags:
 
 | Tool          | Headless command                                                                           |
 | ------------- | ------------------------------------------------------------------------------------------ |
 | `claude-code` | `claude -p <objective> --brief <path> --max-total-tokens <n> --output-format json`         |
 | `opencode`    | `opencode run --format json <objective>` (does NOT support `--brief`/`--max-total-tokens`) |
+| `codex`       | `codex exec --json <objective>` (does NOT support `--brief`/`--max-total-tokens`)          |
 
 **OpenCode stdout capture:** Since `opencode run` does not write `return.json` natively, the
 `HeadlessSessionLauncher` captures stdout, parses newline-delimited JSON events

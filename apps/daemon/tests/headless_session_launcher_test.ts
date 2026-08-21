@@ -15,6 +15,8 @@ import type { ISpawnArgs } from "../src/headless_session_launcher.ts";
 import { SessionBriefSchema, SessionReturnSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionGate } from "@exaix/schemas/session_delegate.ts";
 import { SESSION_GATE_DECISIONS } from "@exaix/schemas/session_delegate.ts";
+import { SESSION_BIN_CODEX, SESSION_ENV_MAX_TOTAL_TOKENS } from "@exaix/core/types";
+import { withEnv } from "@exaix/testing";
 
 function makeLaunch(overrides: Partial<ISessionLaunch> = {}): ISessionLaunch {
   return {
@@ -66,6 +68,58 @@ Deno.test("[headless_launcher] spawn is called with the command and args from th
   if (captured.length > 0) {
     assertEquals(captured[0].command, "claude");
     assertEquals(captured[0].args, ["-p", "refactor"]);
+  }
+});
+
+Deno.test("[headless_launcher][security] Codex spawn preserves cwd and strips ambient secrets", async () => {
+  const sessionDir = await Deno.makeTempDir();
+  const worktree = await Deno.makeTempDir();
+  const captured: ISpawnArgs[] = [];
+  try {
+    await withEnv(
+      {
+        OPENAI_API_KEY: "ambient-openai-secret",
+        CODEX_API_KEY: "ambient-codex-secret",
+        PHASE167_PRIVATE_KEY: "ambient-private-secret",
+        PATH: "/safe/bin",
+        LANG: "C.UTF-8",
+      },
+      async () => {
+        const launcher = new HeadlessSessionLauncher({
+          sessionDir,
+          allowlist: new Set([SESSION_BIN_CODEX]),
+          spawn: (args: ISpawnArgs) => {
+            captured.push(args);
+            return makeMockChild(0);
+          },
+        });
+        await launcher.launch(
+          makeLaunch({
+            command: SESSION_BIN_CODEX,
+            args: ["exec", "--json", "objective", "--sandbox", "workspace-write"],
+            cwd: worktree,
+            env: { [SESSION_ENV_MAX_TOTAL_TOKENS]: "15000" },
+          }),
+          "00000000-0000-4000-8000-000000000167",
+          undefined,
+        );
+      },
+    );
+
+    assertEquals(captured.length, 1);
+    assertEquals(captured[0].command, SESSION_BIN_CODEX);
+    assertEquals(captured[0].cwd, worktree);
+    assertEquals(captured[0].env.PATH, "/safe/bin");
+    assertEquals(captured[0].env.LANG, "C.UTF-8");
+    assertEquals(captured[0].env[SESSION_ENV_MAX_TOTAL_TOKENS], "15000");
+    assertEquals(captured[0].env.OPENAI_API_KEY, undefined);
+    assertEquals(captured[0].env.CODEX_API_KEY, undefined);
+    assertEquals(captured[0].env.PHASE167_PRIVATE_KEY, undefined);
+    assertEquals(captured[0].args.includes("danger-full-access"), false);
+    assertEquals(captured[0].args.includes("--dangerously-bypass-approvals-and-sandbox"), false);
+  } finally {
+    await Deno.remove(sessionDir, { recursive: true });
+    await Deno.remove(worktree, { recursive: true });
   }
 });
 

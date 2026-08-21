@@ -59,6 +59,7 @@ import {
 } from "./opencode_permission_generator.ts";
 import type { IOpencodePermissionConfig } from "./opencode_permission_generator.ts";
 import { deriveClaudeToolFlags } from "./claude_permission_flags.ts";
+import { deriveCodexSandboxFlags } from "./codex_sandbox_flags.ts";
 import { resolveSessionDelegateConfig } from "./config_resolver.ts";
 import type { ISessionDelegateScopes } from "./config_resolver.ts";
 import type { ISessionDelegateEventPayload } from "./event_payload.ts";
@@ -91,6 +92,7 @@ export type { IAmendmentDecisionInput, IRefinementClarificationInput, IReviewDec
 export { assertBinaryAllowed, sanitizeChildEnv };
 export { defaultSpawnVersion, probeDelegateVersion };
 export { deriveClaudeToolFlags };
+export { deriveCodexSandboxFlags };
 export type { IDelegateVersionProbeDeps, IDelegateVersionResult };
 export { parseDelegateStdout };
 export type { IDelegateParsedReturn };

@@ -19,7 +19,7 @@ import { isAbsolute, join, relative } from "@std/path";
 import { assertBinaryAllowed, mergeDelegateEnv, sanitizeChildEnv } from "@exaix/session/supervised_launch.ts";
 import { parseDelegateStdout } from "@exaix/session/delegate_return_parser.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
-import { SESSION_GATE_DECISIONS, SessionReturnSchema } from "@exaix/schemas/session_delegate.ts";
+import { SESSION_GATE_DECISIONS, SessionReturnSchema, SessionToolSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionDecision, SessionReturn, SessionTool } from "@exaix/schemas/session_delegate.ts";
 import { DELEGATE_STDOUT_DRAIN_MS } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -82,10 +82,12 @@ export class HeadlessSessionLauncher {
       }).spawn());
 
     const child = spawn({ command: launch.command, args: launch.args, cwd: launch.cwd, env: childEnv });
-    await child.status;
+    const stdoutDrain = this.drainStream(child.stdout, "stdout");
+    const stderrDrain = this.drainStream(child.stderr, "stderr");
+    const [, rawStdout] = await Promise.all([child.status, stdoutDrain, stderrDrain]);
 
     const returnPath = join(this.deps.sessionDir, traceId, RETURN_FILE);
-    if (await this.tryReadStdoutAndSynthesize(child, traceId, returnPath, launch.cwd)) {
+    if (await this.synthesizeFromStdout(rawStdout, traceId, returnPath, launch.cwd)) {
       return; // Successfully synthesized from stdout
     }
     // Fall back to checking for tool-written return.json
@@ -113,24 +115,33 @@ export class HeadlessSessionLauncher {
     returnPath: string,
     worktreePath?: Opt<string, Reason.OptionalInput>,
   ): Promise<boolean> {
-    let raw: string;
+    let rawStdout: string;
     try {
-      raw = await this.drainStdout(child);
+      rawStdout = await this.drainStream(child.stdout, "stdout");
     } catch {
       return false;
     }
-    if (!raw.trim()) return false;
+    return await this.synthesizeFromStdout(rawStdout, traceId, returnPath, worktreePath);
+  }
+
+  private async synthesizeFromStdout(
+    rawStdout: string,
+    traceId: string,
+    returnPath: string,
+    worktreePath: Opt<string, Reason.OptionalInput>,
+  ): Promise<boolean> {
+    if (!rawStdout.trim()) return false;
 
     // Determine tool from the brief's tool field
     const briefPath = join(this.deps.sessionDir, traceId, "brief.json");
-    let briefTool: string;
+    let tool: SessionTool;
     let briefGate: string;
     let briefTraceId: string;
     let briefResumeToken: string;
     try {
       const raw = await Deno.readTextFile(briefPath);
       const parsed = JSON.parse(raw);
-      briefTool = parsed.tool;
+      tool = SessionToolSchema.parse(parsed.tool);
       briefGate = parsed.gate;
       briefTraceId = parsed.trace_id;
       briefResumeToken = parsed.resume_token;
@@ -138,8 +149,7 @@ export class HeadlessSessionLauncher {
       return false;
     }
 
-    const tool: SessionTool = briefTool === "claude-code" ? "claude-code" : "opencode";
-    const parsed = parseDelegateStdout(raw, tool);
+    const parsed = parseDelegateStdout(rawStdout, tool);
 
     // Compute paths_touched: union of parser toolPaths + git diff.
     // OpenCode's tool_use events carry absolute filePaths. Convert them to
@@ -154,7 +164,7 @@ export class HeadlessSessionLauncher {
         }
         return p;
       });
-      const gitPaths = await this.computeGitDiff(worktreePath);
+      const gitPaths = await this.computeGitChanges(worktreePath);
       if (gitPaths.length > 0) {
         const seen = new Set(pathsTouched);
         for (const p of gitPaths) {
@@ -192,11 +202,11 @@ export class HeadlessSessionLauncher {
   }
 
   /**
-   * Drain the child's piped stdout completely, bounded by DELEGATE_STDOUT_DRAIN_MS.
+   * Drain one child stream completely, bounded by DELEGATE_STDOUT_DRAIN_MS.
    * Returns the concatenated output as a string.
    */
-  private async drainStdout(child: Deno.ChildProcess): Promise<string> {
-    const reader = child.stdout.getReader();
+  private async drainStream(stream: ReadableStream<Uint8Array>, label: string): Promise<string> {
+    const reader = stream.getReader();
     const chunks: Uint8Array[] = [];
     const decoder = new TextDecoder();
     let totalLength = 0;
@@ -204,10 +214,14 @@ export class HeadlessSessionLauncher {
     try {
       while (true) {
         const read = reader.read();
-        const timeout = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("stdout drain timeout")), DELEGATE_STDOUT_DRAIN_MS)
+        const timeout = Promise.withResolvers<never>();
+        const timeoutId = setTimeout(
+          () => timeout.reject(new Error(`${label} drain timeout`)),
+          DELEGATE_STDOUT_DRAIN_MS,
         );
-        const { value, done } = await Promise.race([read, timeout]);
+        const { value, done } = await Promise.race([read, timeout.promise]).finally(() => {
+          clearTimeout(timeoutId);
+        });
         if (done) break;
         if (value) {
           chunks.push(value);
@@ -231,21 +245,19 @@ export class HeadlessSessionLauncher {
   }
 
   /**
-   * Capture git -C <worktreePath> rev-parse HEAD before spawn, then compute
-   * git diff --name-only after exit to produce paths_touched from actual changes.
+   * Use NUL-delimited porcelain status so tracked, untracked, deleted, copied,
+   * and both sides of renamed paths reach scope reconciliation.
    */
-  private async computeGitDiff(worktreePath: string): Promise<string[]> {
+  private async computeGitChanges(worktreePath: string): Promise<string[]> {
     try {
-      const diffCmd = new Deno.Command("git", {
-        args: ["-C", worktreePath, "diff", "--name-only", "HEAD"],
+      const statusCmd = new Deno.Command("git", {
+        args: ["-C", worktreePath, "status", "--porcelain=v1", "-z", "--untracked-files=all"],
         stdout: "piped",
         stderr: "null",
       });
-      const diffOutput = await diffCmd.output();
-      if (!diffOutput.success) return [];
-      const diffText = new TextDecoder().decode(diffOutput.stdout).trim();
-      if (!diffText) return [];
-      return diffText.split("\n").filter((p) => p.trim().length > 0);
+      const statusOutput = await statusCmd.output();
+      if (!statusOutput.success) return [];
+      return parseGitPorcelainPaths(new TextDecoder().decode(statusOutput.stdout));
     } catch {
       return [];
     }
@@ -267,4 +279,26 @@ export class HeadlessSessionLauncher {
     await Deno.writeTextFile(tmp, JSON.stringify(abandoned, null, 2));
     await Deno.rename(tmp, returnPath);
   }
+}
+
+function parseGitPorcelainPaths(output: string): string[] {
+  const records = output.split("\0");
+  const paths: string[] = [];
+  const seen = new Set<string>();
+  for (let index = 0; index < records.length; index++) {
+    const record = records[index];
+    if (record.length < 4) continue;
+    const status = record.slice(0, 2);
+    addUniquePath(record.slice(3), paths, seen);
+    if (status.includes("R") || status.includes("C")) {
+      addUniquePath(records[++index] ?? "", paths, seen);
+    }
+  }
+  return paths;
+}
+
+function addUniquePath(path: string, paths: string[], seen: Set<string>): void {
+  if (!path || seen.has(path)) return;
+  seen.add(path);
+  paths.push(path);
 }

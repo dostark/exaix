@@ -1,0 +1,68 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+log_level = "info"
+allow_net = []
+
+[paths]
+workspace = "Workspace"
+portals = "Portals"
+memory = "Memory"
+
+# Analysis/planning model (the daemon's own in-process LLM, distinct from the delegate
+# below). The shipped codex-cli provider is subprocess-based (no direct Deno fetch), so
+# allow_net stays empty — matches configs/codex-cli-react.toml's posture (Phase 167 Step 3).
+[ai]
+provider = "codex-cli"
+model = "gpt-5.6-terra"
+
+# The daemon resolves its analysis provider via `agents.default_model` -> `[models.<name>]`,
+# NOT the `[ai]` block above (which is only a fallback). Pin the named models to codex-cli
+# here so this preset truly plans with Codex.
+[models.default]
+provider = "codex-cli"
+model = "gpt-5.6-terra"
+timeout_ms = 300000
+
+[[portals]]
+alias = "exaix-self"
+target_path = "__WORKTREE_PATH__"
+execution_strategy = "worktree"
+default_branch = "main"
+
+[portal_knowledge]
+auto_analyze_on_mount = true
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = true
+
+# Delegate the code_changes gate to headless Codex.
+# Requires the `codex` CLI on PATH with a stored `codex login` (ChatGPT subscription)
+# credential. Provider keys (OPENAI_API_KEY, CODEX_API_KEY) are stripped from the spawned
+# child by buildDelegateEnv/HeadlessSessionLauncher — auth comes from ~/.codex/auth.json,
+# never a metered key.
+[session_delegate]
+enabled = true
+tool = "codex"
+# Model id must be the `provider:model` form — prepareBrief rejects a bare id (same
+# constraint as configs/dogfood.claude.toml's claude-code preset).
+model = "codex-cli:gpt-5.6-terra"
+gates = ["code_changes"]
+launch_mode = "headless"
+# Worktree-relative globs the delegate may touch. `paths_touched` are relative to the
+# portal worktree, so a source edit reports `src/main.ts` — the `Workspace/**` fallback
+# matches none of it and reconcile rejects every return as a scope violation.
+permitted_paths = ["src/**", "tests/**"]
+# Phase 128 R3: derive --sandbox from SessionBrief.permitted_paths' gate (Phase 167 Step 2's
+# deriveCodexSandboxFlags — code_changes maps to --sandbox workspace-write).
+harden_permissions = true
+
+# Pin the curated list to codex-cli so a size-M request (request analysis/plan generation)
+# cannot resolve to any other provider via ProviderSelector's scoring path.
+[model_presets.M]
+max_cost_per_mtok = 0
+min_context_window = 32000
+supports_thinking = false
+candidates = ["codex-cli"]
