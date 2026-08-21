@@ -16,6 +16,11 @@ matrix:
       provider: "opencode-cli"
       config: "configs/opencode-no-delegate.toml"
       requires_bin: "opencode"
+    - tool: "codex"
+      provider: "codex-cli"
+      config: "configs/codex-cli-react.toml"
+      requires_bin: "codex"
+      requires_optin: "EXA_MATRIX_CODEX"
 steps:
   - id: "start-daemon"
     type: "exactl"
@@ -83,9 +88,12 @@ steps:
   - id: "assert-strategy-in-journal"
     type: "journal-assert"
     action_type: "flow.step.started"
-    payload_contains:
-      - '"stepId":"react-step"'
-      - '"strategy":"react"'
+    trace_scoped: true
+    payload_equals:
+      - path: "stepId"
+        value: "react-step"
+      - path: "strategy"
+        value: "react"
     output_criteria:
       - id: "strategy-honored"
         kind: "command-exit-code"
@@ -106,6 +114,25 @@ steps:
     expect_contains: ["prompt_tokens"]
     output_criteria:
       - id: "usage-metrics-recorded"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.3
+
+  - id: "assert-codex-generation"
+    type: "journal-assert"
+    cells: ["codex"]
+    action_type: "agent.generation_completed"
+    trace_scoped: true
+    payload_equals:
+      - path: "provider"
+        value: "codex"
+      - path: "model"
+        value: "gpt-5.6-terra"
+    expect_sum:
+      path: "prompt_tokens"
+      gt: 0
+    output_criteria:
+      - id: "codex-generation-honored"
         kind: "command-exit-code"
         equals: 0
         score_weight: 0.3

@@ -49,6 +49,18 @@ Deno.test("[CellCatalog] claude-code entry has correct fields", async () => {
   assertEquals(cc.native_tools, undefined);
 });
 
+Deno.test("[CellCatalog] codex entry resolves the Codex-only ReAct config without an API key", async () => {
+  const raw = await Deno.readTextFile(CATALOG_PATH);
+  const catalog = parseToml(raw) as ICellCatalog;
+  const codex = catalog.tool!["codex"];
+
+  assertEquals(codex.config, "configs/codex-cli-react.toml");
+  assertEquals(codex.provider, "codex-cli");
+  assertEquals(codex.model, "gpt-5.6-terra");
+  assertEquals(codex.requires_bin, "codex");
+  assertEquals(codex.requires_key, undefined);
+});
+
 Deno.test("[CellCatalog] exactl-native entry has native_tools = true and requires ANTHROPIC_API_KEY", async () => {
   const raw = await Deno.readTextFile(CATALOG_PATH);
   const catalog = parseToml(raw) as ICellCatalog;

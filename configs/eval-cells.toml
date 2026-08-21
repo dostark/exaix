@@ -61,3 +61,9 @@ config = "configs/opencode-laguna-free.toml"
 provider = "opencode-cli"
 model = "opencode/laguna-s-2.1-free"
 requires_bin = "opencode"
+
+[tool.codex]
+config = "configs/codex-cli-react.toml"
+provider = "codex-cli"
+model = "gpt-5.6-terra"
+requires_bin = "codex"

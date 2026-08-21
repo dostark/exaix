@@ -1,0 +1,51 @@
+[system]
+root = "__DOGFOOD_ROOT__"
+log_level = "info"
+allow_net = []
+
+[paths]
+workspace = "Workspace"
+portals = "Portals"
+memory = "Memory"
+
+# Phase 167 Step 3: the react-strategy proof that Phase 166's production-registered
+# codex-cli provider is reachable from a real, forced `strategy: "react"` flow step.
+# Mirrors configs/opencode-no-delegate.toml's shape (the other cell in the same
+# flow_strategy_react.yaml scenario), but keeps [cli_delegate] and [session_delegate]
+# entirely absent (not merely disabled) so the execution step can ONLY reach codex-cli
+# through ReActLoopStrategy's injected IModelProvider — never through a delegate path.
+[ai]
+provider = "codex-cli"
+model = "gpt-5.6-terra"
+
+[models.default]
+provider = "codex-cli"
+model = "gpt-5.6-terra"
+timeout_ms = 300000
+
+[agents]
+default_model = "default"
+
+[rate_limiting]
+enabled = true
+max_calls_per_minute = 300
+
+[portal_knowledge]
+auto_analyze_on_mount = true
+
+[quality_gate]
+enabled = false
+
+[request_analysis]
+enabled = true
+
+# Pin the curated list to codex-cli so a size-M request (request analysis/plan
+# generation) cannot resolve to any other provider via ProviderSelector's scoring
+# path — every provider is registered unconditionally at bootstrap (registry_bootstrap.ts),
+# so without this pin a size-M request could resolve to a metered provider instead.
+# Mirrors configs/opencode-no-delegate.toml and configs/claude-cli-delegate-all.toml.
+[model_presets.M]
+max_cost_per_mtok = 0
+min_context_window = 32000
+supports_thinking = false
+candidates = ["codex-cli"]

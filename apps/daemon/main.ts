@@ -57,13 +57,7 @@ import { EventLogger, EventLoggerStructuredOutput } from "@exaix/core/logger";
 import { AgentRunner, ExecutionLoop } from "@exaix/execution";
 import { initializeHealthChecks } from "@exaix/core/health";
 import { buildMilestoneEmitterFromConfig } from "@exaix/core/observability";
-import {
-  AgentOrchestratorAdapter,
-  FlowLoader,
-  FlowRunner,
-  type IFlowEventLogger,
-  type IFlowEventPayload,
-} from "@exaix/flow";
+import { AgentOrchestratorAdapter, FlowLoader, FlowRunner } from "@exaix/flow";
 import {
   initializeMemoryAutoApprovalMaintenance,
   MemoryAutoApprovalService,
@@ -88,6 +82,7 @@ import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IPortalKnowledgeConfig, PortalAnalysisMode } from "@exaix/core/types";
 import { createConfigReloadHandler, createDbWatcherHandler, getMaxOverrideId } from "@exaix/core/config";
 import { GracefulShutdown } from "./src/graceful_shutdown.ts";
+import { createFlowEventLogger } from "./src/flow_event_logger_adapter.ts";
 import { recoverOrphanedDelegations } from "./src/recovery.ts";
 import { buildTeamMcpClient } from "./src/build_team_mcp_client.ts";
 // registerTeamCapabilities is loaded dynamically inside the Team branch only —
@@ -787,22 +782,12 @@ if (import.meta.main) {
       config.paths.waitStates ?? "WaitStates",
     );
 
-    // Create flow event logger adapter (EventLogger → IFlowEventLogger)
-    const flowLogger: IFlowEventLogger = {
-      log: <TEvent extends string>(
-        event: TEvent,
-        payload: IFlowEventPayload<TEvent>,
-      ): void => {
-        logger.info(
-          event,
-          "flow-runner",
-          payload as Record<
-            string,
-            string | number | boolean | null | undefined
-          >,
-        );
-      },
-    };
+    // Create flow event logger adapter (EventLogger → IFlowEventLogger). Extracted to
+    // apps/daemon/src/flow_event_logger_adapter.ts (Phase 167 Step 3) — see that
+    // module's header for why forwarding payload.traceId as the explicit 4th
+    // logger.info() argument is required for trace_scoped journal-assert steps to
+    // find flow-runner events at all.
+    const flowLogger = createFlowEventLogger(logger);
 
     // Phase 132.4: Create ModelResolver for policy-driven model routing
     const healthChecker: IProviderHealthChecker = {

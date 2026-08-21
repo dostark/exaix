@@ -73,6 +73,7 @@ import {
   SESSION_FLAG_RESUME,
   SESSION_FLAG_SANDBOX,
   SESSION_FLAG_SESSION_ID,
+  SESSION_FLAG_SKIP_GIT_REPO_CHECK,
   SESSION_OUTPUT_FORMAT_JSON,
   SESSION_SANDBOX_READ_ONLY,
   SESSION_SUBCMD_EXEC,
@@ -142,6 +143,20 @@ const STRIPPED_AUTH_ENV_KEYS: readonly string[] = [
   "CODEX_API_KEY",
 ];
 
+/** Env var name prefixes Deno's scoped `--allow-run=<bin>` permission (the daemon's own
+ *  posture — DAEMON_SPAWN_RUN_BINARIES is a name allowlist, never unscoped) refuses to
+ *  forward to a spawned child: `Deno.errors.NotCapable: Requires --allow-run permissions
+ *  to spawn subprocess with <VAR> environment variable. Alternatively, spawn with the
+ *  environment variable unset.` These vars instruct the dynamic linker to load arbitrary
+ *  shared libraries into the child, so Deno treats forwarding them as equivalent to an
+ *  unscoped run grant. Discovered live proving Phase 167 Step 3's forced-ReAct Codex
+ *  evidence on a workstation with LD_LIBRARY_PATH set: every generate() call for every
+ *  headless CLI delegate (claude/opencode/codex) threw a generic "Subprocess failed"
+ *  ModelProviderError instead of running, since buildDelegateEnv forwarded the ambient
+ *  Deno.env.toObject() (including LD_LIBRARY_PATH) verbatim under clearEnv: true.
+ */
+const DYNAMIC_LINKER_ENV_PREFIXES: readonly string[] = ["LD_", "DYLD_"];
+
 /** Placeholder for an absent sessionId/conversationId in the diagnostic generate-start log. */
 const UNSET_LOG_LABEL = "none";
 
@@ -151,8 +166,13 @@ const TOOL_CODEX = SessionToolSchema.enum.codex;
 
 function buildDelegateEnv(): Record<string, string> {
   const env = Deno.env.toObject();
-  for (const key of STRIPPED_AUTH_ENV_KEYS) {
-    delete env[key];
+  for (const key of Object.keys(env)) {
+    if (
+      STRIPPED_AUTH_ENV_KEYS.includes(key) ||
+      DYNAMIC_LINKER_ENV_PREFIXES.some((prefix) => key.startsWith(prefix))
+    ) {
+      delete env[key];
+    }
   }
   return env;
 }
@@ -451,11 +471,15 @@ export class CliDelegateModelProvider implements IModelProvider {
   }
 
   /**
-   * Builds `codex exec --json --model <m> --sandbox read-only [resume <id>]
-   * [--output-schema <path>] <prompt>`. `--sandbox read-only` is always passed explicitly
-   * (Design Decisions — no confirmed CLI default to rely on instead). `resume` and
-   * `--output-schema` cannot combine on one codex invocation (OpenAI docs) — resume
-   * continuity wins; the schema flag is dropped with a warning.
+   * Builds `codex exec --json --model <m> --sandbox read-only --skip-git-repo-check
+   * [resume <id>] [--output-schema <path>] <prompt>`. `--sandbox read-only` is always passed
+   * explicitly (Design Decisions — no confirmed CLI default to rely on instead).
+   * `--skip-git-repo-check` is always passed too: this provider spawns codex from
+   * `config.system.root` (the daemon's own data root), which is never a Git repository, and
+   * codex refuses to run outside a trusted/Git directory without this flag (live-verified,
+   * Phase 167 Step 3) — it only bypasses that precondition, not the sandbox permission model.
+   * `resume` and `--output-schema` cannot combine on one codex invocation (OpenAI docs) —
+   * resume continuity wins; the schema flag is dropped with a warning.
    */
   private async buildCodexArgs(
     prompt: string,
@@ -482,6 +506,7 @@ export class CliDelegateModelProvider implements IModelProvider {
       this.options.model,
       SESSION_FLAG_SANDBOX,
       SESSION_SANDBOX_READ_ONLY,
+      SESSION_FLAG_SKIP_GIT_REPO_CHECK,
       ...resumeArgs,
       ...schemaArgs,
       prompt,

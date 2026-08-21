@@ -54,6 +54,7 @@ Deno.test("CliDelegateModelProvider: builds codex argv with exec --json --sandbo
     CODEX_MODEL,
     "--sandbox",
     "read-only",
+    "--skip-git-repo-check",
     "Analyze this request",
   ]);
 });

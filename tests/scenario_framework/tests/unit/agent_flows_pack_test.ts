@@ -124,3 +124,39 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] scenario metadata for the Agent Flo
     );
   }
 });
+
+Deno.test("[ScenarioFrameworkAgentFlowsPack] forced-ReAct scenario keeps OpenCode and adds opt-in trace-scoped Codex evidence", async () => {
+  const catalog = await loadScenarioCatalog({ frameworkHome: FRAMEWORK_HOME });
+  const scenario = catalog.find((candidate: IScenario) => candidate.id === "flow-strategy-react");
+  assert(scenario, "flow-strategy-react scenario must exist");
+
+  assertEquals(scenario.matrix?.cells[0], {
+    tool: "opencode",
+    provider: "opencode-cli",
+    config: "configs/opencode-no-delegate.toml",
+    requires_bin: "opencode",
+  });
+  assertEquals(scenario.matrix?.cells[1], {
+    tool: "codex",
+    provider: "codex-cli",
+    config: "configs/codex-cli-react.toml",
+    requires_bin: "codex",
+    requires_optin: "EXA_MATRIX_CODEX",
+  });
+
+  const strategyEvidence = scenario.steps.find((step: IScenarioStep) => step.id === "assert-strategy-in-journal");
+  assertEquals(strategyEvidence?.trace_scoped, true);
+  assertEquals(strategyEvidence?.payload_equals, [
+    { path: "stepId", value: "react-step" },
+    { path: "strategy", value: "react" },
+  ]);
+
+  const codexEvidence = scenario.steps.find((step: IScenarioStep) => step.id === "assert-codex-generation");
+  assertEquals(codexEvidence?.cells, ["codex"]);
+  assertEquals(codexEvidence?.trace_scoped, true);
+  assertEquals(codexEvidence?.payload_equals, [
+    { path: "provider", value: "codex" },
+    { path: "model", value: "gpt-5.6-terra" },
+  ]);
+  assertEquals(codexEvidence?.expect_sum, { path: "prompt_tokens", gt: 0 });
+});
