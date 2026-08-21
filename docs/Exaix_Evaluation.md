@@ -952,7 +952,7 @@ defect. Recorded fixtures replace those guesses with replayed real LLM exchanges
 index) rather than by
 matching the prompt's content — so an edited system prompt reports as drift on the affected
 fixtures instead of invalidating the whole set. See
-[`tests/scenario_framework/README.md` § "Recorded Mock Fixtures"](../tests/scenario_framework/README.md#recorded-mock-fixtures-phase-157)
+[`tests/scenario_framework/README.md` § "Recorded Mock Fixtures (Phase 157)"](../tests/scenario_framework/README.md#recorded-mock-fixtures-phase-157)
 for how to capture, replay, and refresh them.
 
 **A replayed response is identical whether or not an artefact helped.** Capturing and replaying a
@@ -1041,9 +1041,19 @@ exactl eval report --pack swe-tasks --cell opencode --cell claude-code
 
 ### Configuration
 
-Cells are configured in `configs/eval-cells.toml`. The opencode Go tier
-(`opencode-go/deepseek-v4-flash`) is the default opencode cell. The claude-code
-cell requires the `claude` CLI binary on PATH.
+Cells are configured in `configs/eval-cells.toml`, the reference catalog scenario authors
+consult when declaring `matrix.cells[]` entries (`tests/scenario_framework/tests/unit/cell_catalog_test.ts`
+validates it structurally). The opencode Go tier (`opencode-go/deepseek-v4-flash`) is the
+default opencode cell. The claude-code cell requires the `claude` CLI binary on PATH. The
+codex cell (`codex-cli/gpt-5.6-terra`) requires the `codex` CLI binary on PATH and a `codex
+login` subscription credential, plus explicit opt-in via `EXA_MATRIX_CODEX` so default CI
+runs never consume subscription quota.
+
+This `[cli_delegate]`-driven `swe_tasks` cell system is distinct from Codex's other two
+surfaces — the embedded ReAct-loop provider (`[ai].provider = "codex-cli"`) and Mode-3
+session delegation (`[session_delegate] tool = "codex"`) — which have their own opt-in
+matrix cells and comparison table; see
+`tests/scenario_framework/README.md#codex-react-cell-vs-mode-3-session-delegation-vs-cli_delegate-vs-bare-phase-167`.
 
 ### Extending
 

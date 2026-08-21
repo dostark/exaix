@@ -845,7 +845,7 @@ the loaded config.
 ```yaml
 matrix:
   axes: # documentary only — the cross-product is the explicit `cells` list below
-    tool: ["opencode", "claude-code"]
+    tool: ["opencode", "claude-code", "codex"]
     provider: ["direct", "openrouter"]
   cells:
     - tool: "claude-code"
@@ -858,6 +858,11 @@ matrix:
       config: "configs/dogfood.toml"
       requires_bin: "opencode"
       requires_optin: "EXA_MATRIX_OPENCODE" # OpenCode has no probe-able key env; opt-in instead
+    - tool: "codex"
+      provider: "direct"
+      config: "configs/dogfood.codex.toml"
+      requires_bin: "codex"
+      requires_optin: "EXA_MATRIX_CODEX" # subscription auth only (`codex login`); opt-in, like OpenCode
 ```
 
 **Per-cell skip (no false reds).** A cell runs only when **all** of its predicates hold:
@@ -870,7 +875,7 @@ scenario `provider-live` so it is omitted from CI auto-runs.
 `resolveRunnableSteps()` → `expandMatrix()` (see `runner/matrix_expander.ts`) and runs the first
 runnable cell; the cell's config preset is resolved to an **absolute** path (the daemon's CWD is the
 workspace, not the repo). See `scenarios/provider_live/session_delegate_matrix_live.yaml` for the
-full four-cell example.
+full five-cell example.
 
 ### Cell kinds: bare-delegate baseline and feature ablations
 
@@ -917,6 +922,25 @@ deno task eval:jail:build   # docker build --target eval-jail -t exaix-eval-jail
 ```
 
 The image name is overridable via `EXA_EVAL_JAIL_IMAGE`.
+
+### Codex ReAct cell vs. Mode-3 session delegation vs. `[cli_delegate]` vs. bare (Phase 167)
+
+Codex participates in evaluation through **two** independent surfaces, each with its own
+opt-in matrix cell — never conflate them when reading a report:
+
+| Surface                                                         | Scenario (`--cell codex`)                                   | Cell selector                                                 | What it proves                                                                                                                                                                  |
+| --------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Embedded ReAct-loop provider (`[ai].provider = "codex-cli"`)    | `scenarios/agent_flows/flow_strategy_react.yaml`            | `requires_bin: "codex"`, `requires_optin: "EXA_MATRIX_CODEX"` | `ReActLoopStrategy` calls `CliDelegateModelProvider` directly; asserts trace-scoped `agent.generation_completed.payload.provider = "codex"` / `.model` / `prompt_tokens > 0`.   |
+| Mode-3 session delegation (`[session_delegate] tool = "codex"`) | `scenarios/provider_live/session_delegate_matrix_live.yaml` | `requires_bin: "codex"`, `requires_optin: "EXA_MATRIX_CODEX"` | A whole `code_changes` gate is handed to headless `codex`; asserts the trace-scoped `session.delegate.{briefed,launched,returned,reconciled}` chain and the real worktree edit. |
+
+Both cells are **explicit opt-in** (`EXA_MATRIX_CODEX`) so default CI runs never consume a
+ChatGPT Codex subscription's usage quota — the same policy `EXA_MATRIX_OPENCODE` applies above.
+
+Neither is `[cli_delegate]` (the "Headless CLI execution for `swe_tasks`" section above) — a
+per-_step_ execution strategy that replaces `ReActLoopStrategy` entirely for one plan step,
+not a provider or a pipeline gate — nor a `harness: "bare"` cell (raw CLI, no Exaix wrapping
+at all; a lift-comparison control, see "Cell kinds" above). All four are legitimate, distinct
+configurations; a comparison report is only meaningful when it compares like with like.
 
 ### Running Scenarios Locally (before sandbox deploy)
 
