@@ -1028,18 +1028,22 @@ if (import.meta.main) {
               }
             }
             // Phase 124 Step 4a: emit launched before spawning (orphan marker on crash).
+            // traceId is passed both as target (existing display convention, see
+            // recovery.ts's SessionDelegateCrashRecovered) and as the explicit 4th
+            // argument, which is what actually populates the persisted row's trace_id
+            // column for trace_scoped journal-assert steps (Phase 167 Step 4).
             await logger.info(DomainEventType.SessionDelegateLaunched, traceId, {
               gate: GATE_REFINEMENT,
               tool: sd.tool,
               brief: brief.objective,
-            });
+            }, traceId);
             await _headlessLauncher.launch(launch, traceId, delegateProviderEnv);
           } else {
             logger.info(DomainEventType.SessionDelegateBriefed, traceId, {
               mode: sd.launch_mode,
               tool: sd.tool,
               objective_length: body.length,
-            });
+            }, traceId);
           }
         }
         : undefined,
@@ -1174,11 +1178,13 @@ if (import.meta.main) {
             // Phase 124 Step 4a: emit the launched event BEFORE spawning so a
             // crash during launch leaves a `launched` with no terminal event —
             // the orphan that recoverOrphanedDelegations re-queues on restart.
+            // traceId is the explicit 4th argument (not just target) so the persisted
+            // row's trace_id column matches, for trace_scoped journal-assert (Step 4).
             await logger.info(DomainEventType.SessionDelegateLaunched, traceId, {
               gate: GATE_CODE_CHANGES,
               tool: sd.tool,
               brief: brief.objective,
-            });
+            }, traceId);
             await _headlessLauncher.launch(launch, traceId, delegateProviderEnv);
           }
           // `briefed` records that a brief was prepared and parked — true on every
@@ -1193,7 +1199,7 @@ if (import.meta.main) {
             mode: sd.launch_mode,
             tool: sd.tool,
             gate: GATE_CODE_CHANGES,
-          });
+          }, traceId);
 
           // Block until reconciled or deadline — poll every 2s
           const deadline = Date.parse(brief.deadline);

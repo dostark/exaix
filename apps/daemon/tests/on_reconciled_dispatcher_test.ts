@@ -40,14 +40,15 @@ interface IRecordedLog {
   event: string;
   target: string;
   payload?: ILogPayload;
+  traceId?: string;
 }
 
 function makeMockLogger(): IReconciledLogger & { logs: IRecordedLog[] } {
   const logs: IRecordedLog[] = [];
   return {
     logs,
-    info(event: string, target: string, payload?: ILogPayload) {
-      logs.push({ event, target, payload });
+    info(event: string, target: string, payload?: ILogPayload, traceId?: string) {
+      logs.push({ event, target, payload, traceId });
     },
   };
 }
@@ -243,6 +244,28 @@ Deno.test("[on_reconciled_dispatcher] refinement abandoned marks clarification u
     const content = await Deno.readTextFile(clarPath);
     const parsed = JSON.parse(content);
     assertEquals(parsed.status, "user-cancelled");
+  } finally {
+    await rig.cleanup();
+  }
+});
+
+Deno.test("[on_reconciled_dispatcher][security] session.delegate.reconciled is logged with the actual traceId argument, not just target — required for trace_scoped journal-assert to find it", async () => {
+  // GAP found live proving Phase 167 Step 4's mandated trace-scoped session.delegate.*
+  // assertions: every call site here passed traceId only as `target`; the real
+  // EventLogger.info(action, target, payload?, traceId?) 4th argument was never
+  // supplied, so the persisted row's trace_id column fell back to a fresh
+  // crypto.randomUUID() — invisible to a `trace_scoped: true` journal-assert's
+  // `WHERE trace_id = ?` filter, regardless of what `target` holds.
+  const rig = await makeRig("plan_review");
+  try {
+    await dropReturn(rig, "approved", "Plan looks correct.");
+    await rig.handler(rig.traceId, "approved");
+
+    const reconciled = rig.logger.logs.find((l) => l.event === DomainEventType.SessionDelegateReconciled);
+    assertExists(reconciled);
+    assertEquals(reconciled?.traceId, rig.traceId);
+    // target keeps carrying the traceId too — additive fix, not a swap.
+    assertEquals(reconciled?.target, rig.traceId);
   } finally {
     await rig.cleanup();
   }

@@ -124,7 +124,12 @@ export class SessionReturnWatcher {
     this.fsWatcher = null;
   }
 
+  /** `target` keeps carrying the traceId too (existing convention elsewhere, e.g.
+   *  recovery.ts's SessionDelegateCrashRecovered) — `traceId` is additive, not a swap, and
+   *  is what actually populates the persisted row's trace_id column (EventLogger.log()
+   *  falls back to a fresh crypto.randomUUID() when it is omitted), which is the column
+   *  every `trace_scoped: true` journal-assert filters on. */
   private async journal(action: string, target: string, payload: ISessionDelegateEventPayload): Promise<void> {
-    await this.deps.logger.log({ action, target, payload, icon: "🤝" });
+    await this.deps.logger.log({ action, target, payload, traceId: target, icon: "🤝" });
   }
 }
