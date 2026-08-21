@@ -605,8 +605,41 @@ async function getStagedFiles(): Promise<string[]> {
   }
 }
 
-/** Run git in `cwd` (or the repo root); trimmed stdout, or "" on failure. */
-async function gitOut(args: string[], cwd?: Opt<string, Reason.OptionalContext>): Promise<string> {
+/** Env var names git itself sets for every hook subprocess (verified live via a real
+ *  commit-msg hook trigger in a worktree checkout: GIT_DIR, GIT_INDEX_FILE, and GIT_PREFIX
+ *  were all present, pointing at the PARENT repo's paths). If inherited, a nested
+ *  `git -C <submodule> ...` call silently resolves against that inherited (wrong) repo
+ *  instead of `<submodule>` — `-C` only chdir()s; explicit GIT_DIR still wins over
+ *  repo-discovery-from-cwd. The nested call then "succeeds" (exit 0) but reports an empty
+ *  diff/log for the submodule, which made every plan-step ✅/deferred item look like a
+ *  stale mark and permanently blocked the plan-step commit gate for submodule-housed docs
+ *  run from inside a worktree. Deno.Command's `env` option only MERGES overrides — an
+ *  empty-string value is still a present key, and git treats `GIT_DIR=""` as an invalid
+ *  literal path, not "unset" — so the keys must be genuinely deleted from this process's
+ *  own environment before spawning, not merely overridden. */
+const GIT_HOOK_ENV_VARS = [
+  "GIT_DIR",
+  "GIT_INDEX_FILE",
+  "GIT_WORK_TREE",
+  "GIT_PREFIX",
+  "GIT_COMMON_DIR",
+  "GIT_OBJECT_DIRECTORY",
+  "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+] as const;
+
+/** Run git in `cwd` (or the repo root); trimmed stdout, or "" on failure. Deletes git's own
+ *  hook-context env vars (see GIT_HOOK_ENV_VARS) from this process before every spawn, so a
+ *  cross-repo `-C <submodule>` call resolves its target repo from `-C`/cwd alone rather than
+ *  an inherited GIT_DIR. Deleting an absent key is a no-op; a missing scoped `--allow-env`
+ *  grant for one of these names degrades to a best-effort no-op rather than crashing. */
+export async function gitOut(args: string[], cwd?: Opt<string, Reason.OptionalContext>): Promise<string> {
+  for (const name of GIT_HOOK_ENV_VARS) {
+    try {
+      Deno.env.delete(name);
+    } catch {
+      // Permission not granted for this specific key — best effort, see doc comment above.
+    }
+  }
   try {
     const out = await new Deno.Command("git", {
       args: cwd ? ["-C", cwd, ...args] : args,
@@ -616,7 +649,7 @@ async function gitOut(args: string[], cwd?: Opt<string, Reason.OptionalContext>)
       stderr: "null",
     }).output();
     return out.success ? new TextDecoder().decode(out.stdout).trim() : "";
-  } catch (_e) {
+  } catch {
     return "";
   }
 }
