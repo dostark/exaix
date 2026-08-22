@@ -395,6 +395,54 @@ Deno.test("[security] CliDelegateModelProvider: strips LD_*/DYLD_* dynamic-linke
   assertEquals(seenEnv?.PATH, Deno.env.get("PATH"));
 });
 
+Deno.test("[security] CliDelegateModelProvider: buildDelegateEnv only forwards an explicit allowlist of safe parent env vars", async () => {
+  // GAP-14 (Phase 167 post-gap-analysis): the pre-fix implementation was a 7-pattern
+  // denylist (5 exact keys + 2 dynamic-linker prefixes) starting from the daemon's FULL
+  // ambient environment — any other secret-shaped var (cloud credentials, VCS tokens, DB
+  // URLs, the SSH agent socket, or this daemon's OWN OPENROUTER_API_KEY) passed through
+  // unfiltered. This test proves the fix: only an explicit safe-key allowlist is forwarded.
+  let seenEnv: Record<string, string> | undefined;
+  const run: IRunCliDelegateProcess = (_command, _args, options) => {
+    seenEnv = options.env;
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ type: "result", result: "ok", usage: {}, total_cost_usd: 0 }),
+      stderr: "",
+    });
+  };
+
+  const secretShapedVars: Record<string, string> = {
+    AWS_SECRET_ACCESS_KEY: "should-not-reach-subprocess",
+    AWS_SESSION_TOKEN: "should-not-reach-subprocess",
+    GITHUB_TOKEN: "should-not-reach-subprocess",
+    GH_TOKEN: "should-not-reach-subprocess",
+    GOOGLE_APPLICATION_CREDENTIALS: "/should/not/reach/subprocess.json",
+    NPM_TOKEN: "should-not-reach-subprocess",
+    DATABASE_URL: "postgres://should-not-reach-subprocess",
+    SSH_AUTH_SOCK: "/should/not/reach/subprocess.sock",
+    OPENROUTER_API_KEY: "should-not-reach-subprocess",
+  };
+  for (const [key, value] of Object.entries(secretShapedVars)) Deno.env.set(key, value);
+  try {
+    const provider = new CliDelegateModelProvider({
+      tool: "claude-code",
+      bin: "claude",
+      model: "claude-sonnet-5",
+      cwd: "/tmp/portal",
+      run,
+    });
+    await provider.generate("prompt");
+  } finally {
+    for (const key of Object.keys(secretShapedVars)) Deno.env.delete(key);
+  }
+
+  for (const key of Object.keys(secretShapedVars)) {
+    assertEquals(seenEnv?.[key], undefined, `${key} must not reach the spawned subprocess`);
+  }
+  // Sanity: the allowlist still forwards ordinary vars — this isn't a blanket env wipe.
+  assertEquals(seenEnv?.PATH, Deno.env.get("PATH"));
+});
+
 Deno.test("CliDelegateModelProvider: maps claude result into IGenerateResult (content, usage, cost_usd)", async () => {
   const run: IRunCliDelegateProcess = () =>
     Promise.resolve({

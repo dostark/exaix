@@ -134,26 +134,35 @@ export interface IOpencodeReadOnlyPermissionConfig {
   };
 }
 
-/** Env vars stripped from every spawn so a subscription login wins over metered API billing. */
-const STRIPPED_AUTH_ENV_KEYS: readonly string[] = [
-  "ANTHROPIC_API_KEY",
-  "ANTHROPIC_AUTH_TOKEN",
-  "ANTHROPIC_BASE_URL",
-  "OPENAI_API_KEY",
-  "CODEX_API_KEY",
-];
+/**
+ * Parent env vars safe to forward to a spawned CLI-delegate subprocess. GAP-14 (Phase 167
+ * post-gap-analysis): the prior implementation was a 7-pattern denylist starting from the
+ * daemon's FULL ambient environment, which forwarded any secret-shaped var the denylist
+ * didn't happen to name (AWS/GitHub/Google/NPM/DB credentials, the SSH agent socket, and
+ * this same daemon's own OPENROUTER_API_KEY). An allowlist is the only model that stays
+ * safe as new secrets are added to the daemon's own environment over time — consistent
+ * with packages/session/src/supervised_launch.ts:sanitizeChildEnv, the Mode-3
+ * session-delegate path's env builder for the identical threat (spawning an untrusted
+ * headless CLI delegate).
+ */
+const ALLOWED_PARENT_ENV_KEYS: readonly string[] = ["PATH", "HOME", "LANG", "LC_ALL", "TERM", "TMPDIR"];
+
+/**
+ * Variables whose name implies a secret — defense-in-depth on top of the allowlist above,
+ * not the sole control. None of ALLOWED_PARENT_ENV_KEYS matches today; this guards a future
+ * allowlist addition from accidentally admitting a secret-shaped name.
+ */
+const SECRET_ENV_PATTERN = /API_KEY|SECRET|PASSWORD|CREDENTIAL|PRIVATE_KEY/i;
 
 /** Env var name prefixes Deno's scoped `--allow-run=<bin>` permission (the daemon's own
  *  posture — DAEMON_SPAWN_RUN_BINARIES is a name allowlist, never unscoped) refuses to
  *  forward to a spawned child: `Deno.errors.NotCapable: Requires --allow-run permissions
  *  to spawn subprocess with <VAR> environment variable. Alternatively, spawn with the
  *  environment variable unset.` These vars instruct the dynamic linker to load arbitrary
- *  shared libraries into the child, so Deno treats forwarding them as equivalent to an
- *  unscoped run grant. Discovered live proving Phase 167 Step 3's forced-ReAct Codex
- *  evidence on a workstation with LD_LIBRARY_PATH set: every generate() call for every
- *  headless CLI delegate (claude/opencode/codex) threw a generic "Subprocess failed"
- *  ModelProviderError instead of running, since buildDelegateEnv forwarded the ambient
- *  Deno.env.toObject() (including LD_LIBRARY_PATH) verbatim under clearEnv: true.
+ *  shared libraries into the child. None of ALLOWED_PARENT_ENV_KEYS matches today; this is
+ *  an orthogonal, defense-in-depth guard against a future allowlist addition colliding with
+ *  this prefix — preserved from the pre-allowlist fix that discovered it live proving Phase
+ *  167 Step 3's forced-ReAct Codex evidence on a workstation with LD_LIBRARY_PATH set.
  */
 const DYNAMIC_LINKER_ENV_PREFIXES: readonly string[] = ["LD_", "DYLD_"];
 
@@ -165,14 +174,14 @@ const TOOL_CLAUDE_CODE = SessionToolSchema.enum["claude-code"];
 const TOOL_CODEX = SessionToolSchema.enum.codex;
 
 function buildDelegateEnv(): Record<string, string> {
-  const env = Deno.env.toObject();
-  for (const key of Object.keys(env)) {
-    if (
-      STRIPPED_AUTH_ENV_KEYS.includes(key) ||
-      DYNAMIC_LINKER_ENV_PREFIXES.some((prefix) => key.startsWith(prefix))
-    ) {
-      delete env[key];
-    }
+  const parentEnv = Deno.env.toObject();
+  const env: Record<string, string> = {};
+  for (const key of ALLOWED_PARENT_ENV_KEYS) {
+    const value = parentEnv[key];
+    if (value === undefined) continue;
+    if (SECRET_ENV_PATTERN.test(key)) continue;
+    if (DYNAMIC_LINKER_ENV_PREFIXES.some((prefix) => key.startsWith(prefix))) continue;
+    env[key] = value;
   }
   return env;
 }
