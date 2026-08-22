@@ -47,6 +47,10 @@ export enum Reason {
   ExecutionConfig = "execution_config",
   /** Optional context — enriches logging/events but safely absent. */
   OptionalContext = "optional_context",
+  /** Value from an untyped external input (e.g. Record<string, JSONValue>), checked
+   *  for presence at runtime to validate the caller used the current parameter
+   *  shape and reject a retired/incompatible one with a clear error. */
+  ShapeValidation = "shape_validation",
 }
 
 /**

@@ -13,14 +13,14 @@
  *   which plan_schema.ts's `tool: z.nativeEnum(McpToolName)` rejects outright, three
  *   retries in a row, identically. This adapter normalizes both the tool name AND the
  *   params shape (McpToolName's params contracts differ structurally — patch_file wants
- *   `patches: [{search, replace}]`, not flat oldString/newString) before the text reaches
- *   real plan validation.
+ *   flat `{search, replace}` key names, not opencode's `{oldString, newString}`) before
+ *   the text reaches real plan validation.
  */
 
 import { assertEquals } from "@std/assert";
 import { adaptOpencodePlanJson } from "../src/opencode_plan_schema_adapter.ts";
 
-Deno.test("[opencode_plan_schema_adapter] remaps edit_file + oldString/newString to patch_file + patches[] (the live-observed case)", () => {
+Deno.test("[opencode_plan_schema_adapter] remaps edit_file + oldString/newString to patch_file + flat search/replace (the live-observed case)", () => {
   const raw = JSON.stringify({
     title: "Add null guards to formatAssignee and formatDueDate",
     description: "Prevent crashes when task.assignee or task.dueDate are null.",
@@ -54,10 +54,8 @@ Deno.test("[opencode_plan_schema_adapter] remaps edit_file + oldString/newString
   assertEquals(action.tool, "patch_file");
   assertEquals(action.params, {
     path: "/ws/todo-app/src/utils.ts",
-    patches: [{
-      search: "  return task.assignee.name.toUpperCase();",
-      replace: '  return task.assignee ? task.assignee.name.toUpperCase() : "";',
-    }],
+    search: "  return task.assignee.name.toUpperCase();",
+    replace: '  return task.assignee ? task.assignee.name.toUpperCase() : "";',
   });
   assertEquals(parsed.steps[0].tools, ["patch_file"]);
 });
@@ -82,7 +80,8 @@ Deno.test("[opencode_plan_schema_adapter] remaps opencode's native 'edit' tool t
   assertEquals(parsed.steps[0].actions[0].tool, "patch_file");
   assertEquals(parsed.steps[0].actions[0].params, {
     path: "src/a.ts",
-    patches: [{ search: "a", replace: "b" }],
+    search: "a",
+    replace: "b",
   });
 });
 
@@ -120,7 +119,7 @@ Deno.test("[opencode_plan_schema_adapter] a plan already using valid McpToolName
       step: 1,
       title: "t1",
       description: "d1",
-      actions: [{ tool: "patch_file", params: { path: "a.ts", patches: [{ search: "a", replace: "b" }] } }],
+      actions: [{ tool: "patch_file", params: { path: "a.ts", search: "a", replace: "b" } }],
     }],
   });
 

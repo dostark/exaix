@@ -495,7 +495,8 @@ Deno.test("CliDelegateModelProvider: opencode plan JSON using 'edit_file' is nor
   assertEquals(parsed.steps[0].actions[0].tool, "patch_file");
   assertEquals(parsed.steps[0].actions[0].params, {
     path: "/ws/src/utils.ts",
-    patches: [{ search: "a", replace: "b" }],
+    search: "a",
+    replace: "b",
   });
 });
 

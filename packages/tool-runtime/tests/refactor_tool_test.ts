@@ -21,8 +21,8 @@ Deno.test("ToolRegistry: refactoring tools", async (t) => {
 
     await t.step("moves file successfully", async () => {
       const result = await registry.execute(ToolName.MOVE_FILE, {
-        source: "move_src.txt",
-        destination: "move_dest.txt",
+        from: "move_src.txt",
+        to: "move_dest.txt",
       });
       assertEquals(result.success, true);
       assertEquals(await Deno.readTextFile(dest), "content");
@@ -33,8 +33,8 @@ Deno.test("ToolRegistry: refactoring tools", async (t) => {
       // dest exists from previous step
       await Deno.writeTextFile(src, "new content");
       const result = await registry.execute(ToolName.MOVE_FILE, {
-        source: "move_src.txt",
-        destination: "move_dest.txt",
+        from: "move_src.txt",
+        to: "move_dest.txt",
         overwrite: false,
       });
       assertEquals(result.success, false);
@@ -43,12 +43,24 @@ Deno.test("ToolRegistry: refactoring tools", async (t) => {
 
     await t.step("overwrites if overwrite=true", async () => {
       const result = await registry.execute(ToolName.MOVE_FILE, {
-        source: "move_src.txt",
-        destination: "move_dest.txt",
+        from: "move_src.txt",
+        to: "move_dest.txt",
         overwrite: true,
       });
       assertEquals(result.success, true);
       assertEquals(await Deno.readTextFile(dest), "new content");
+    });
+
+    await t.step("the retired {source, destination} shape now fails validation, not silently accepted", async () => {
+      await Deno.writeTextFile(src, "should not move");
+      const result = await registry.execute(ToolName.MOVE_FILE, {
+        source: "move_src.txt",
+        destination: "move_dest.txt",
+      });
+      assertEquals(result.success, false);
+      assertEquals(result.error?.includes("from") || result.error?.includes("to"), true);
+      // The source file must be untouched — the old shape must not silently apply anything.
+      assertEquals(await Deno.readTextFile(src), "should not move");
     });
   });
 

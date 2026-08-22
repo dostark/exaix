@@ -75,16 +75,21 @@ Deno.test("ToolRegistry: E2E Workflow", async (t) => {
   });
 
   await t.step("Agent implements feature", async () => {
-    // Patch file
-    const patch = await registry.execute(ToolName.PATCH_FILE, {
+    // Patch file — two sequential flat search/replace calls (Phase 154 Step 4: patch_file
+    // no longer accepts a {patches: [...]} array; each edit is its own call).
+    const patch1 = await registry.execute(ToolName.PATCH_FILE, {
       path: "main.ts",
-      patches: [
-        { search: 'console.log("...");', replace: 'console.log("Hello World");' },
-        { search: "// TODO: Implement greeting", replace: "// Greeting implemented" },
-      ],
+      search: 'console.log("...");',
+      replace: 'console.log("Hello World");',
     });
-    assertEquals(patch.success, true);
-    assertEquals((patch.data as { appliedCount: number }).appliedCount, 2);
+    assertEquals(patch1.success, true);
+
+    const patch2 = await registry.execute(ToolName.PATCH_FILE, {
+      path: "main.ts",
+      search: "// TODO: Implement greeting",
+      replace: "// Greeting implemented",
+    });
+    assertEquals(patch2.success, true);
 
     const content = await Deno.readTextFile(join(tempDir, "main.ts"));
     assertEquals(content.includes("Hello World"), true);
@@ -100,7 +105,7 @@ Deno.test("ToolRegistry: E2E Workflow", async (t) => {
 
   await t.step("Agent refactors", async () => {
     // Move file
-    const move = await registry.execute(ToolName.MOVE_FILE, { source: "main.ts", destination: "src/main.ts" });
+    const move = await registry.execute(ToolName.MOVE_FILE, { from: "main.ts", to: "src/main.ts" });
     assertEquals(move.success, true);
 
     const stat = await Deno.stat(join(tempDir, "src/main.ts"));

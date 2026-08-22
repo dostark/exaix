@@ -63,10 +63,10 @@ export function createCoreToolSchemas(
         properties: {
           path: {
             type: "string",
-            description: "Path to the directory to list",
+            description: "Path to the directory to list (optional, defaults to the workspace root)",
           },
         },
-        required: ["path"],
+        required: [],
       },
     },
     {
@@ -82,10 +82,10 @@ export function createCoreToolSchemas(
           },
           path: {
             type: "string",
-            description: "Directory to search in",
+            description: "Directory to search in (optional, defaults to the workspace root)",
           },
         },
-        required: ["pattern", "path"],
+        required: ["pattern"],
       },
     },
     {
@@ -171,15 +171,15 @@ export function createCoreToolSchemas(
     {
       name: ToolName.MOVE_FILE,
       description:
-        "Move or rename a file from source to destination. Use when you need to relocate or rename a file; for duplicating a file without removing the original use copy_file. Returns data.source and data.destination on success. Fails if destination exists and overwrite is false.",
+        "Move or rename a file from one path to another. Use when you need to relocate or rename a file; for duplicating a file without removing the original use copy_file. Returns data.from and data.to on success. Fails if destination exists and overwrite is false.",
       parameters: {
         type: "object",
         properties: {
-          source: { type: "string", description: "Source path" },
-          destination: { type: "string", description: "Destination path" },
+          from: { type: "string", description: "Source path" },
+          to: { type: "string", description: "Destination path" },
           overwrite: { type: "boolean", description: "Overwrite existing file (default: false)" },
         },
-        required: ["source", "destination"],
+        required: ["from", "to"],
       },
     },
     {
@@ -256,7 +256,7 @@ export function createCoreToolSchemas(
     {
       name: ToolName.PATCH_FILE,
       description:
-        "Apply sequential search-and-replace patches to an existing file without full replacement. Use for targeted edits to a file; for complete file replacement use write_file. Returns data.path and data.appliedCount on success. Fails if any search string is not found.",
+        "Apply a targeted search-and-replace patch to an existing file without full replacement. Use for targeted edits to a file; for complete file replacement use write_file. Returns data.path on success. Fails if the search string is not found, or found more than once (ambiguous).",
       nativeDescription:
         "PREFERRED for targeted edits (fixing bugs, refactoring, null-guard fixes). Modify specific lines in an existing file without rewriting the whole file. For complete replacements, choose write_file.",
       parameters: {
@@ -266,20 +266,17 @@ export function createCoreToolSchemas(
             type: "string",
             description: "Path to file to patch",
           },
-          patches: {
-            type: JsonSchemaType.ARRAY,
-            items: {
-              type: "object",
-              properties: {
-                search: { type: "string", description: "String to search for (exact match)" },
-                replace: { type: "string", description: "String to replace with" },
-              },
-              required: ["search", "replace"],
-            },
-            description: "List of patches to apply sequentially",
+          search: {
+            type: "string",
+            description:
+              "Exact string to find in the file (including whitespace/indentation). Must match exactly once.",
+          },
+          replace: {
+            type: "string",
+            description: "Replacement string. Use empty string to delete the matched section.",
           },
         },
-        required: ["path", "patches"],
+        required: ["path", "search", "replace"],
       },
     },
   ];

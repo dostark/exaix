@@ -54,5 +54,20 @@ Deno.test("tool_registry_core_schemas: read_file schema matches known contract",
 
 Deno.test("tool_registry_core_schemas: patch_file schema matches known contract", () => {
   const patchFile = registryTools().find((t) => t.name === "patch_file");
-  assertEquals(patchFile?.parameters.required, ["path", "patches"]);
+  assertEquals(patchFile?.parameters.required, ["path", "search", "replace"]);
+});
+
+Deno.test("tool_registry_core_schemas: move_file schema matches known contract", () => {
+  const moveFile = registryTools().find((t) => t.name === "move_file");
+  assertEquals(moveFile?.parameters.required, ["from", "to"]);
+});
+
+Deno.test("tool_registry_core_schemas: list_directory schema matches known contract (path optional)", () => {
+  const listDirectory = registryTools().find((t) => t.name === "list_directory");
+  assertEquals(listDirectory?.parameters.required, []);
+});
+
+Deno.test("tool_registry_core_schemas: search_files schema matches known contract (path optional)", () => {
+  const searchFiles = registryTools().find((t) => t.name === "search_files");
+  assertEquals(searchFiles?.parameters.required, ["pattern"]);
 });

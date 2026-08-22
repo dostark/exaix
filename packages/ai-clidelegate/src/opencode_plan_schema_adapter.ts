@@ -52,16 +52,16 @@ interface IRawPlan extends JSONObject {
 
 /**
  * Rewrites one action's params from a source tool's shape to the target McpToolName's
- * shape. Only "edit"-family tools need structural remapping (flat oldString/newString →
- * patches[]); every other mapped tool already uses matching param key names, so those
- * pass through unchanged once the tool name itself is remapped.
+ * shape. Only "edit"-family tools need structural remapping (opencode's flat
+ * oldString/newString → Exaix's flat search/replace, Phase 154 Step 4); every other
+ * mapped tool already uses matching param key names, so those pass through unchanged
+ * once the tool name itself is remapped.
  */
 type ParamsRemapper = (params: JSONObject) => JSONObject;
 
 function remapEditParams(params: JSONObject): JSONObject {
   const path = params.path ?? params.filePath;
-  const patch: JSONObject = { search: params.oldString, replace: params.newString };
-  return { path, patches: [patch] };
+  return { path, search: params.oldString, replace: params.newString };
 }
 
 function remapPathAlias(params: JSONObject): JSONObject {

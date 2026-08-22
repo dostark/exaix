@@ -54,6 +54,23 @@ Deno.test("ToolRegistry: core file operations", async (t) => {
     assertEquals(data?.files.some((f: string) => f.endsWith("search2.ts")), true);
   });
 
+  await t.step("list_directory: path is optional, defaults to the workspace root", async () => {
+    // Reuses "nested/dir" created by the earlier create_directory/list_directory step.
+    const result = await registry.execute(ToolName.LIST_DIRECTORY, {});
+    assertEquals(result.success, true);
+    const data = result.data as { entries: { name: string; isDirectory: boolean }[] };
+    assertEquals(data?.entries.some((e) => e.name === "nested" && e.isDirectory), true);
+  });
+
+  await t.step("search_files: path is optional, defaults to the workspace root", async () => {
+    // Reuses search1.ts/search2.ts/other.md written by the earlier search_files step.
+    const result = await registry.execute(ToolName.SEARCH_FILES, { pattern: "*.ts" });
+    assertEquals(result.success, true);
+    const data = result.data as { files: string[] };
+    assertEquals(data?.files.some((f: string) => f.endsWith("search1.ts")), true);
+    assertEquals(data?.files.some((f: string) => f.endsWith("search2.ts")), true);
+  });
+
   await t.step("security restrictions", async () => {
     // Rejects outside path
     const result = await registry.execute(ToolName.READ_FILE, { path: "../outside.txt" });

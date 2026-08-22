@@ -439,6 +439,7 @@ export class ToolRegistry implements IToolRegistry {
    */
   private registerCoreExecutors(): void {
     const str = (v: JSONValue): string => (typeof v === "string" ? v : String(v ?? ""));
+    const optStr = (v: JSONValue): string | undefined => (typeof v === "string" ? v : undefined);
     const bool = (v: JSONValue): boolean => Boolean(v);
     const strArr = (v: JSONValue): string[] =>
       Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
@@ -467,8 +468,7 @@ export class ToolRegistry implements IToolRegistry {
     );
     this.executors.set(
       ToolName.MOVE_FILE,
-      (p) =>
-        this.moveFile(str(p.source), str(p.destination), p.overwrite !== undefined ? bool(p.overwrite) : undefined),
+      (p) => this.moveFile(optStr(p.from), optStr(p.to), p.overwrite !== undefined ? bool(p.overwrite) : undefined),
     );
     this.executors.set(
       ToolName.COPY_FILE,
@@ -486,7 +486,7 @@ export class ToolRegistry implements IToolRegistry {
     );
     this.executors.set(
       ToolName.PATCH_FILE,
-      (p) => this.patchFile(str(p.path), p.patches as Array<{ search: string; replace: string }>),
+      (p) => this.patchFile(str(p.path), optStr(p.search), optStr(p.replace)),
     );
   }
 
@@ -1188,17 +1188,29 @@ export class ToolRegistry implements IToolRegistry {
   /**
    * Move file tool implementation
    */
-  private async moveFile(source: string, destination: string, overwrite = false): Promise<IToolResult> {
+  private async moveFile(
+    from: Opt<string, Reason.ShapeValidation>,
+    to: Opt<string, Reason.ShapeValidation>,
+    overwrite = false,
+  ): Promise<IToolResult> {
     try {
-      const resolvedSource = await this.resolvePath(source);
-      const resolvedDest = await this.resolvePath(destination);
+      if (from === undefined || to === undefined) {
+        return {
+          success: false,
+          error:
+            "move_file requires 'from' and 'to' string params — the retired {source, destination} shape is no longer accepted",
+        };
+      }
+
+      const resolvedFrom = await this.resolvePath(from);
+      const resolvedTo = await this.resolvePath(to);
 
       if (!overwrite) {
         try {
-          await Deno.stat(resolvedDest);
+          await Deno.stat(resolvedTo);
           return {
             success: false,
-            error: `Destination file '${destination}' already exists (overwrite=false)`,
+            error: `Destination file '${to}' already exists (overwrite=false)`,
           };
         } catch (error) {
           if (!(error instanceof Deno.errors.NotFound)) throw error;
@@ -1206,11 +1218,11 @@ export class ToolRegistry implements IToolRegistry {
       }
 
       // Ensure parent directory exists for destination
-      const parentDir = join(resolvedDest, "..");
+      const parentDir = join(resolvedTo, "..");
       await Deno.mkdir(parentDir, { recursive: true });
 
-      await Deno.rename(resolvedSource, resolvedDest);
-      return this.formatSuccess({ source, destination });
+      await Deno.rename(resolvedFrom, resolvedTo);
+      return this.formatSuccess({ from, to });
     } catch (error) {
       return this.formatError(error);
     }
@@ -1445,27 +1457,45 @@ export class ToolRegistry implements IToolRegistry {
   /**
    * Patch file tool implementation
    */
-  private async patchFile(path: string, patches: Array<{ search: string; replace: string }>): Promise<IToolResult> {
+  private async patchFile(
+    path: string,
+    search: Opt<string, Reason.ShapeValidation>,
+    replace: Opt<string, Reason.ShapeValidation>,
+  ): Promise<IToolResult> {
     try {
-      const resolvedPath = await this.resolvePath(path);
-      let content = await Deno.readTextFile(resolvedPath);
-      let appliedCount = 0;
-
-      for (const patch of patches) {
-        if (!content.includes(patch.search)) {
-          return {
-            success: false,
-            error: `Search string not found in file: ${patch.search.substring(0, 50)}...`,
-          };
-        }
-
-        // Replace ONLY the first occurrence to be safe and predictable
-        content = content.replace(patch.search, patch.replace);
-        appliedCount++;
+      if (search === undefined || replace === undefined) {
+        return {
+          success: false,
+          error:
+            "patch_file requires 'search' and 'replace' string params — the retired {patches: [...]} array shape is no longer accepted",
+        };
       }
 
-      await Deno.writeTextFile(resolvedPath, content);
-      return this.formatSuccess({ path, appliedCount });
+      const resolvedPath = await this.resolvePath(path);
+      const content = await Deno.readTextFile(resolvedPath);
+
+      // Exact-one-occurrence match, mirroring the live MCP handler
+      // (packages-team/mcp-server/handlers/patch_file_tool.ts): fails loudly if the search
+      // string is absent or ambiguous rather than silently patching the first occurrence.
+      const occurrences = content.split(search).length - 1;
+      if (occurrences === 0) {
+        return {
+          success: false,
+          error: `Search string not found in file: ${search.substring(0, 50)}...`,
+        };
+      }
+      if (occurrences > 1) {
+        return {
+          success: false,
+          error: `Search string matches ${occurrences} times in file (ambiguous — must match exactly once): ${
+            search.substring(0, 50)
+          }...`,
+        };
+      }
+
+      const patched = content.replace(search, replace);
+      await Deno.writeTextFile(resolvedPath, patched);
+      return this.formatSuccess({ path });
     } catch (error) {
       return this.formatError(error);
     }
