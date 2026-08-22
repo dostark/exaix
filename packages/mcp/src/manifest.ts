@@ -57,6 +57,12 @@ export interface IToolManifestEntry {
   /** Agent-facing description answering: what it does, when to prefer it, what it returns,
    *  and what can go wrong. Full quality audit in Step 77.9. */
   description: string;
+  /** JSON Schema draft-07 descriptor for the tool's accepted input parameters, mirroring
+   *  the handler's own getToolDefinition().inputSchema. Populated for MCP_HANDLER-kind
+   *  tools with a matching ToolRegistry entry (Phase 154 Step 1); used by
+   *  checkToolCatalogParity() to detect drift between ToolRegistry's and the
+   *  MCP-advertised parameter contract for the same logical tool. */
+  input_schema?: IJsonSchemaDescriptor;
   /** JSON Schema draft-07 descriptor for the tool's return shape (Decision D2). Populated fully in Step 77.9. */
   output_schema?: IJsonSchemaDescriptor;
   /** ToolErrorCode string values this tool may return (populated fully in Step 77.4/77.9). */
@@ -91,6 +97,15 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     source_ref: "packages-team/mcp-server/handlers/read_file_tool.ts",
     description:
       "Return the full text content of a file inside a portal. Use when you need to read or analyze file contents. For searching within files use run_command with grep or rg; for checking whether a file exists use list_directory. Returns the raw file text as a string.",
+    input_schema: {
+      type: "object",
+      properties: {
+        portal: { type: "string", description: "Portal name" },
+        path: { type: "string", description: "Relative path within portal" },
+        identity_id: { type: "string", description: "Identity identifier for permission checks" },
+      },
+      required: ["portal", "path", "identity_id"],
+    },
     output_schema: {
       type: "string",
       description: "Raw text content of the file.",
@@ -111,6 +126,16 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     source_ref: "packages-team/mcp-server/handlers/write_file_tool.ts",
     description:
       "Write or overwrite the full content of a file inside a portal. Use when you need to create a new file or completely replace an existing file. For partial edits use patch_file. Returns a success confirmation message.",
+    input_schema: {
+      type: "object",
+      properties: {
+        portal: { type: "string", description: "Portal name" },
+        path: { type: "string", description: "Relative path within portal" },
+        content: { type: "string", description: "File content to write" },
+        identity_id: { type: "string", description: "Identity identifier for permission checks" },
+      },
+      required: ["portal", "path", "content", "identity_id"],
+    },
     output_schema: {
       type: "string",
       description: "Success confirmation message.",
@@ -131,6 +156,23 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     source_ref: "packages-team/mcp-server/handlers/patch_file_tool.ts",
     description:
       "Apply a targeted patch to replace a specific substring in a file without rewriting the whole file. Use when you need to make a minimal change. For full rewrites use write_file. Returns a success confirmation message.",
+    input_schema: {
+      type: "object",
+      properties: {
+        portal: { type: "string", description: "Portal alias to operate on" },
+        path: { type: "string", description: "File path relative to portal root" },
+        search: {
+          type: "string",
+          description: "Exact string to find in the file (including whitespace/indentation). Must match exactly once.",
+        },
+        replace: {
+          type: "string",
+          description: "Replacement string. Use empty string to delete the matched section.",
+        },
+        identity_id: { type: "string", description: "Identity identifier for permission checks" },
+      },
+      required: ["portal", "path", "search", "replace", "identity_id"],
+    },
     output_schema: {
       type: "string",
       description: "Success confirmation message including the patched path.",
@@ -151,6 +193,15 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     source_ref: "packages-team/mcp-server/handlers/delete_file_tool.ts",
     description:
       "Permanently delete a file inside a portal. Use only when you are certain the file is no longer needed; the operation is irreversible unless the portal is under git version control. Returns a success confirmation message.",
+    input_schema: {
+      type: "object",
+      properties: {
+        portal: { type: "string", description: "Portal alias" },
+        path: { type: "string", description: "File path relative to portal root" },
+        identity_id: { type: "string", description: "Identity identifier for permission checks" },
+      },
+      required: ["portal", "path", "identity_id"],
+    },
     output_schema: {
       type: "string",
       description: "Success confirmation message.",
@@ -171,6 +222,16 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     source_ref: "packages-team/mcp-server/handlers/move_file_tool.ts",
     description:
       "Move or rename a file within a portal. The source path is removed after the move. Use for file reorganization or renaming; not for copying. Returns a success confirmation message.",
+    input_schema: {
+      type: "object",
+      properties: {
+        portal: { type: "string", description: "Portal alias" },
+        from: { type: "string", description: "Source file path relative to portal root" },
+        to: { type: "string", description: "Destination file path relative to portal root" },
+        identity_id: { type: "string", description: "Identity identifier for permission checks" },
+      },
+      required: ["portal", "from", "to", "identity_id"],
+    },
     output_schema: {
       type: "string",
       description: "Success confirmation message.",
@@ -191,6 +252,15 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     source_ref: "packages-team/mcp-server/handlers/create_directory_tool.ts",
     description:
       "Create a directory (and any missing parent directories) inside a portal. Use before writing files into a directory that may not exist yet. Safe to call if the directory already exists. Returns a success confirmation message.",
+    input_schema: {
+      type: "object",
+      properties: {
+        portal: { type: "string", description: "Portal alias" },
+        path: { type: "string", description: "Directory path relative to portal root" },
+        identity_id: { type: "string", description: "Identity identifier for permission checks" },
+      },
+      required: ["portal", "path", "identity_id"],
+    },
     output_schema: {
       type: "string",
       description: "Success confirmation message.",
@@ -211,6 +281,15 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     source_ref: "packages-team/mcp-server/handlers/list_directory_tool.ts",
     description:
       "List the files and subdirectories at a path inside a portal. Use to check whether a file exists, explore directory structure, or enumerate files before processing. Returns an array of entry names.",
+    input_schema: {
+      type: "object",
+      properties: {
+        portal: { type: "string", description: "Portal name" },
+        path: { type: "string", description: "Relative path within portal (optional, defaults to root)" },
+        identity_id: { type: "string", description: "Identity identifier for permission checks" },
+      },
+      required: ["portal", "identity_id"],
+    },
     output_schema: {
       type: JsonSchemaType.ARRAY,
       description: "Array of file and directory names at the specified path.",
@@ -232,6 +311,16 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     source_ref: "packages-team/mcp-server/handlers/search_files_tool.ts",
     description:
       "Search for files matching a name or glob pattern inside a portal. Use to locate files when you don't know the exact path. For content search within files use run_command with grep or rg. Returns an array of matching relative file paths.",
+    input_schema: {
+      type: "object",
+      properties: {
+        portal: { type: "string", description: "Portal name" },
+        pattern: { type: "string", description: "Glob pattern to match" },
+        path: { type: "string", description: "Optional: subdirectory to search in" },
+        identity_id: { type: "string", description: "Identity identifier for permission checks" },
+      },
+      required: ["portal", "pattern", "identity_id"],
+    },
     output_schema: {
       type: JsonSchemaType.ARRAY,
       description: "Array of relative file paths matching the search pattern.",
@@ -355,6 +444,16 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     source_ref: "packages-team/mcp-server/handlers/run_command_tool.ts",
     description:
       "Execute a shell command inside the portal working directory. Use for build tasks, test runners, or any operation not covered by dedicated tools. Returns combined stdout/stderr output and exit code.",
+    input_schema: {
+      type: "object",
+      properties: {
+        portal: { type: "string", description: "Portal name" },
+        command: { type: "string", description: "Command to execute (must be whitelisted)" },
+        args: { type: JsonSchemaType.ARRAY, items: { type: "string" }, description: "Command arguments" },
+        identity_id: { type: "string", description: "Identity identifier for permission checks" },
+      },
+      required: ["portal", "command", "identity_id"],
+    },
     output_schema: {
       type: "object",
       description: "Command execution result with stdout, stderr, and exitCode.",

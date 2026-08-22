@@ -89,6 +89,7 @@ const STATIC_CHECK_TASKS: Array<{ cmd: string[]; desc: string }> = [
   { cmd: ["deno", "task", "docs-agent-validate"], desc: "Agent-Native Documentation Nervous System Check" },
   { cmd: ["deno", "task", "docs-bench"], desc: "Hallucination Benchmarks (Ground Truth)" },
   { cmd: ["deno", "task", "check:tool-result-parity"], desc: "Tool Result Parity Check" },
+  { cmd: ["deno", "task", "check:tool-catalog-parity"], desc: "Tool Catalog Parity Check" },
   { cmd: ["deno", "task", "check:event-strings"], desc: "Inline Event String Check" },
   { cmd: ["deno", "task", "check:optional-params", "--fail"], desc: "Optional Param Usage Check" },
   {
