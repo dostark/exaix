@@ -109,6 +109,10 @@ export const ChangesetResultSchema = z.object({
     cache_read_tokens: z.number().int().nonnegative().optional(),
     /** Prompt-cache write (creation) tokens, one-time per cache segment. */
     cache_creation_tokens: z.number().int().nonnegative().optional(),
+    /** Reasoning/thinking tokens, when the strategy's underlying provider/CLI reports a
+     *  breakdown (subset of completion_tokens, billed as output). undefined when the
+     *  provider/model doesn't report one — never 0 for "no reasoning happened". */
+    reasoning_tokens: z.number().int().nonnegative().optional(),
     /** Distinguishes a real, provider/tool-reported cost_usd ("tracked") from Exaix's
      *  own calculateCost() rate-based guess ("predicted"). Defaults to "predicted" so
      *  every existing direct-API call site that doesn't explicitly set this preserves

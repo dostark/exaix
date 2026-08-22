@@ -93,6 +93,10 @@ export const SessionTokenStatsSchema = z.object({
   cache_read_tokens: z.number().int().nonnegative().optional(),
   /** Prompt-cache write (creation) tokens, one-time per cache segment. */
   cache_creation_tokens: z.number().int().nonnegative().optional(),
+  /** Reasoning/thinking tokens, when the session tool reports a breakdown (subset of
+   *  output_tokens, billed as output). undefined when the tool/model doesn't report one —
+   *  never 0 for "no reasoning happened". */
+  reasoning_tokens: z.number().int().nonnegative().optional(),
 });
 export type SessionTokenStats = z.infer<typeof SessionTokenStatsSchema>;
 

@@ -69,6 +69,10 @@ export interface IProviderCostRecord {
   cacheReadTokens?: number;
   /** Prompt-cache write (creation) tokens, one-time per cache segment. */
   cacheCreationTokens?: number;
+  /** Reasoning/thinking tokens, when the provider/tool reports a breakdown (subset of
+   *  completionTokens, billed as output). undefined when it doesn't report one — never 0
+   *  for "no reasoning happened". */
+  reasoningTokens?: number;
   /** How this record's cost was priced (provider_costs.cost_source):
    *  undefined means the legacy blended estimate (no reported or computed figure). */
   costSource?: CostSource;

@@ -18,6 +18,10 @@ export interface IOpenRouterUsage {
   total_tokens?: number;
   /** USD cost OpenRouter reports when usage:{include:true} was requested. */
   cost?: number;
+  /** OpenRouter is an OpenAI-compatible gateway that passes an upstream reasoning model's
+   *  (o1/o3/gpt-5, gemini-thinking, etc.) reasoning-token breakdown through verbatim. A
+   *  SUBSET of completion_tokens (billed as output, not additional). */
+  completion_tokens_details?: { reasoning_tokens?: number };
 }
 
 /** OpenRouter response — the OpenAI shape (choices/…) with the cost-carrying usage. */
@@ -43,6 +47,7 @@ export function tokenMapperOpenRouter(
       total_tokens: totalTokens,
       model,
       cost_usd: typeof d.usage.cost === "number" ? d.usage.cost : undefined,
+      reasoning_tokens: d.usage.completion_tokens_details?.reasoning_tokens,
     };
   };
 }

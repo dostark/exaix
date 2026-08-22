@@ -622,6 +622,7 @@ export class AgentOrchestrator {
           completion_tokens: validated.usage.completion_tokens,
           cache_read_tokens: validated.usage.cache_read_tokens,
           cache_creation_tokens: validated.usage.cache_creation_tokens,
+          reasoning_tokens: validated.usage.reasoning_tokens,
           cost_source: validated.usage.cost_source,
         }
         : undefined;
@@ -920,6 +921,7 @@ export class AgentOrchestrator {
         completion_tokens?: number;
         cache_read_tokens?: number;
         cache_creation_tokens?: number;
+        reasoning_tokens?: number;
         cost_source?: IChangesetCostSource;
       },
       Reason.OptionalInput

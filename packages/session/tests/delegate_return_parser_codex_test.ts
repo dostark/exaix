@@ -51,7 +51,7 @@ Deno.test("[delegate_return_parser][security] codex conservatively retains paths
   assertEquals(result.toolPaths, ["src/partial.ts", ".env"]);
 });
 
-Deno.test("[delegate_return_parser] codex parseCodexJsonl extracts tokenStats from turn.completed usage, mapping cached_input_tokens to cacheRead", () => {
+Deno.test("[delegate_return_parser] codex parseCodexJsonl extracts tokenStats from turn.completed usage, mapping cached_input_tokens to cacheRead and reasoning_output_tokens to reasoning", () => {
   const stdout =
     `{"type":"turn.completed","usage":{"input_tokens":120,"cached_input_tokens":40,"output_tokens":60,"reasoning_output_tokens":10}}`;
 
@@ -60,6 +60,11 @@ Deno.test("[delegate_return_parser] codex parseCodexJsonl extracts tokenStats fr
   assertEquals(result.tokenStats.output, 60);
   assertEquals(result.tokenStats.total, 180);
   assertEquals(result.tokenStats.cacheRead, 40);
+  // Phase 167 Step 12 (GAP found while answering a delegation-observability question):
+  // reasoning_output_tokens was previously dropped entirely, not folded into output/total
+  // (it already IS included in output_tokens per codex-rs's own upstream accounting), so this
+  // asserts pure breakdown visibility, not a total-count change.
+  assertEquals(result.tokenStats.reasoning, 10);
   // Codex's usage payload has no write-side cache field.
   assertEquals(result.tokenStats.cacheCreation, undefined);
 });
@@ -108,6 +113,7 @@ Deno.test("[delegate_return_parser] codex parseDelegateStdout dispatches to pars
   assertEquals(result.tokenStats.output, 90);
   assertEquals(result.tokenStats.total, 290);
   assertEquals(result.tokenStats.cacheRead, 75);
+  assertEquals(result.tokenStats.reasoning, 15);
   // Codex's usage payload carries no cost data; the caller (CliDelegateModelProvider,
   // Step 2) sets cost_usd: 0 downstream since the subscription bills flat-rate.
   assertEquals(result.costUsd, undefined);
@@ -118,7 +124,7 @@ Deno.test("[delegate_return_parser] [regression] codex dispatch addition leaves 
     `{"type":"result","result":"claude answer","usage":{"input_tokens":10,"output_tokens":5},"total_cost_usd":0.001}`;
   const claudeResult = parseDelegateStdout(claudeStdout, "claude-code");
   assertEquals(claudeResult.lastText, "claude answer");
-  assertEquals(claudeResult.tokenStats, { input: 10, output: 5, total: 15 });
+  assertEquals(claudeResult.tokenStats, { input: 10, output: 5, total: 15, reasoning: undefined });
   assertEquals(claudeResult.costUsd, 0.001);
 
   const opencodeStdout = `{"type":"text","part":{"text":"opencode answer"}}\n`;

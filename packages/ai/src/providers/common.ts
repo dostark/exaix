@@ -23,6 +23,13 @@ export interface IGenerateResult {
     cacheReadTokens?: number;
     /** Anthropic prompt-cache write (creation) tokens, one-time per cache segment. */
     cacheCreationTokens?: number;
+    /** Reasoning/thinking tokens (Anthropic output_tokens_details.thinking_tokens, OpenAI
+     *  completion_tokens_details.reasoning_tokens, Google usageMetadata.thoughtsTokenCount,
+     *  Codex turn.completed.usage.reasoning_output_tokens). A SUBSET of completionTokens
+     *  (billed as output, not additional) when the underlying provider reports one — never 0
+     *  for "no reasoning happened"; undefined when the provider/model doesn't report a
+     *  breakdown at all. */
+    reasoningTokens?: number;
   };
   model: string;
   provider: string;

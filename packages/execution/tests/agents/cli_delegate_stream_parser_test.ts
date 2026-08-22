@@ -30,6 +30,7 @@ Deno.test("parseCliDelegateStreamTurn: text-only turn extracts result text, toke
     total: 12,
     cacheRead: undefined,
     cacheCreation: undefined,
+    reasoning: undefined,
   });
   assertEquals(turn.costUsd, 0.061);
   assertEquals(turn.toolPaths, []);

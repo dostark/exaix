@@ -94,6 +94,7 @@ export class LegacyAgentStrategy implements IExecutionStrategy {
       cost_usd: costUsd,
       cache_read_tokens: result.usage.cacheReadTokens,
       cache_creation_tokens: result.usage.cacheCreationTokens,
+      reasoning_tokens: result.usage.reasoningTokens,
       // LegacyAgentStrategy's cost_usd is always a predicted estimate (registry-computed
       // per-model split price when available, else the flat-rate fallback) — no direct-API
       // provider ever returns a real reported figure — so "predicted".

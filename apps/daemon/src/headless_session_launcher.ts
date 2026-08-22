@@ -227,6 +227,7 @@ export class HeadlessSessionLauncher {
         input_tokens: parsed.tokenStats.input,
         output_tokens: parsed.tokenStats.output,
         total_tokens: parsed.tokenStats.total,
+        reasoning_tokens: parsed.tokenStats.reasoning,
       },
       cost_usd: parsed.costUsd,
     });

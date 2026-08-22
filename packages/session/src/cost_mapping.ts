@@ -45,5 +45,6 @@ export function sessionReturnToCostRecord(input: ISessionCostInput): IProviderCo
     timestamp: input.timestamp,
     cacheReadTokens: stats.cache_read_tokens,
     cacheCreationTokens: stats.cache_creation_tokens,
+    reasoningTokens: stats.reasoning_tokens,
   };
 }

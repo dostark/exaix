@@ -27,6 +27,11 @@ export interface IDelegateParsedReturn {
     cacheRead?: number;
     /** Prompt-cache write (creation) tokens, one-time per cache segment. */
     cacheCreation?: number;
+    /** Reasoning/thinking tokens (Codex turn.completed.usage.reasoning_output_tokens,
+     *  Claude CLI's forwarded output_tokens_details.thinking_tokens). A SUBSET of `output`
+     *  (billed as output, not additional) — never 0 for "no reasoning happened"; undefined
+     *  when the tool doesn't report a breakdown at all. */
+    reasoning?: number;
   };
   costUsd: number | undefined;
   toolPaths: string[];
@@ -223,6 +228,7 @@ function parseCodexJsonl(stdout: string): IDelegateParsedReturn {
         output: usage.output_tokens ?? 0,
         total: (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0),
         cacheRead: usage.cached_input_tokens,
+        reasoning: usage.reasoning_output_tokens,
       };
     }
 
@@ -263,6 +269,7 @@ function parseClaudeResult(stdout: string): IDelegateParsedReturn {
       input: usage.input_tokens ?? 0,
       output: usage.output_tokens ?? 0,
       total: (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0),
+      reasoning: usage.output_tokens_details?.thinking_tokens,
     };
     const costUsd = typeof obj.total_cost_usd === "number" ? obj.total_cost_usd : 0;
     // When --json-schema is used, claude returns a structured_output field

@@ -108,6 +108,7 @@ interface IIterationParams {
   totalCostUsd: number;
   totalCacheReadTokens: number;
   totalCacheCreationTokens: number;
+  totalReasoningTokens: number;
   nativeToolsUsed: boolean;
   nativeToolDefinitions?: Opt<IToolDefinition[], Reason.OptionalInput>;
   nativeToolsPriorTurn?: Opt<IProviderTurn, Reason.OptionalInput>;
@@ -122,6 +123,7 @@ interface IIterationResult {
   totalCostUsd: number;
   totalCacheReadTokens: number;
   totalCacheCreationTokens: number;
+  totalReasoningTokens: number;
   nativeToolsPriorTurn?: IProviderTurn;
   done: boolean;
   result?: IChangesetResult;
@@ -159,6 +161,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     let totalCostUsd = 0;
     let totalCacheReadTokens = 0;
     let totalCacheCreationTokens = 0;
+    let totalReasoningTokens = 0;
 
     // Step 5: native-tools gate — both the opt-in flag AND the provider capability must be true.
     const useNativeTools = options.native_tools_enabled === true &&
@@ -192,6 +195,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         totalCostUsd,
         totalCacheReadTokens,
         totalCacheCreationTokens,
+        totalReasoningTokens,
         nativeToolsUsed,
         nativeToolDefinitions,
         nativeToolsPriorTurn,
@@ -203,6 +207,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       totalCostUsd = iterResult.totalCostUsd;
       totalCacheReadTokens = iterResult.totalCacheReadTokens;
       totalCacheCreationTokens = iterResult.totalCacheCreationTokens;
+      totalReasoningTokens = iterResult.totalReasoningTokens;
       nativeToolsPriorTurn = iterResult.nativeToolsPriorTurn;
       if (iterResult.done) {
         return iterResult.result!;
@@ -228,6 +233,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       costUsd: number;
       cacheReadTokens: number;
       cacheCreationTokens: number;
+      reasoningTokens: number;
     },
   ): IChangesetResult {
     // Screen the final output before review (Phase 107 Step 5).
@@ -249,6 +255,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       cost_usd: usage.costUsd,
       cache_read_tokens: usage.cacheReadTokens,
       cache_creation_tokens: usage.cacheCreationTokens,
+      reasoning_tokens: usage.reasoningTokens,
       // ReActLoopStrategy's cost_usd is always a calculateCost() estimate — no direct-API
       // provider ever returns a real reported figure — so this is always "predicted".
       cost_source: "predicted",
@@ -373,6 +380,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       totalCostUsd,
       totalCacheReadTokens,
       totalCacheCreationTokens,
+      totalReasoningTokens,
       nativeToolsUsed,
       nativeToolDefinitions,
       nativeToolsPriorTurn,
@@ -421,12 +429,14 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     const iterCostUsd = costUsd;
     const iterCacheReadTokens = response.usage.cacheReadTokens ?? 0;
     const iterCacheCreationTokens = response.usage.cacheCreationTokens ?? 0;
+    const iterReasoningTokens = response.usage.reasoningTokens ?? 0;
 
     const newTotalPromptTokens = totalPromptTokens + iterPromptTokens;
     const newTotalCompletionTokens = totalCompletionTokens + iterCompletionTokens;
     const newTotalCostUsd = totalCostUsd + iterCostUsd;
     const newTotalCacheReadTokens = totalCacheReadTokens + iterCacheReadTokens;
     const newTotalCacheCreationTokens = totalCacheCreationTokens + iterCacheCreationTokens;
+    const newTotalReasoningTokens = totalReasoningTokens + iterReasoningTokens;
 
     const parsed = this.parseIterationResponse(response, nativeToolsUsed);
 
@@ -452,6 +462,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
           costUsd: newTotalCostUsd,
           cacheReadTokens: newTotalCacheReadTokens,
           cacheCreationTokens: newTotalCacheCreationTokens,
+          reasoningTokens: newTotalReasoningTokens,
         },
       );
       return {
@@ -461,6 +472,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         totalCostUsd: newTotalCostUsd,
         totalCacheReadTokens: newTotalCacheReadTokens,
         totalCacheCreationTokens: newTotalCacheCreationTokens,
+        totalReasoningTokens: newTotalReasoningTokens,
         done: true,
         result,
       };
@@ -535,6 +547,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
           costUsd: newTotalCostUsd,
           cacheReadTokens: newTotalCacheReadTokens,
           cacheCreationTokens: newTotalCacheCreationTokens,
+          reasoningTokens: newTotalReasoningTokens,
         },
       );
       return {
@@ -544,6 +557,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
         totalCostUsd: newTotalCostUsd,
         totalCacheReadTokens: newTotalCacheReadTokens,
         totalCacheCreationTokens: newTotalCacheCreationTokens,
+        totalReasoningTokens: newTotalReasoningTokens,
         nativeToolsPriorTurn: lastPriorTurn,
         done: true,
         result,
@@ -557,6 +571,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       totalCostUsd: newTotalCostUsd,
       totalCacheReadTokens: newTotalCacheReadTokens,
       totalCacheCreationTokens: newTotalCacheCreationTokens,
+      totalReasoningTokens: newTotalReasoningTokens,
       nativeToolsPriorTurn: lastPriorTurn,
       done: false,
     };

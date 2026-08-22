@@ -26,6 +26,10 @@ export interface ICliDelegateTurnResult {
     cacheRead?: number;
     /** Anthropic prompt-cache write (creation) tokens, one-time per cache segment. */
     cacheCreation?: number;
+    /** Anthropic thinking tokens, forwarded verbatim by Claude Code CLI's real `result`
+     *  event usage.output_tokens_details.thinking_tokens. A SUBSET of `output` (billed as
+     *  output, not additional) — undefined when the CLI doesn't report a breakdown. */
+    reasoning?: number;
   };
   costUsd: number | undefined;
   toolPaths: string[];
@@ -55,6 +59,7 @@ interface IStreamResultEvent {
     output_tokens?: number;
     cache_creation_input_tokens?: number;
     cache_read_input_tokens?: number;
+    output_tokens_details?: { thinking_tokens?: number };
   };
 }
 
@@ -165,6 +170,7 @@ export function parseCliDelegateStreamTurn(lines: string[]): ICliDelegateTurnRes
           total: (event.usage?.input_tokens ?? 0) + (event.usage?.output_tokens ?? 0),
           cacheRead: event.usage?.cache_read_input_tokens,
           cacheCreation: event.usage?.cache_creation_input_tokens,
+          reasoning: event.usage?.output_tokens_details?.thinking_tokens,
         },
         costUsd: event.total_cost_usd,
         toolPaths,

@@ -55,6 +55,10 @@ export type TokenMap = {
   cache_read_tokens?: number;
   /** Anthropic prompt-cache write (creation) tokens, one-time per cache segment. */
   cache_creation_tokens?: number;
+  /** Reasoning/thinking tokens, when the provider reports a breakdown (subset of
+   *  completion_tokens, billed as output, not additional). undefined when the provider/
+   *  model doesn't report one — never 0 for "no reasoning happened". */
+  reasoning_tokens?: number;
 };
 
 type ResponseTokenMapper<T> = (data: T, providerId?: string) => TokenMap | undefined;
@@ -76,6 +80,10 @@ export type OpenAIUsage = {
   prompt_tokens: number;
   completion_tokens: number;
   total_tokens?: number;
+  /** Official OpenAI Chat Completions field for reasoning models (o1/o3/gpt-5 family):
+   *  https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
+   *  reasoning_tokens is a SUBSET of completion_tokens (billed as output). */
+  completion_tokens_details?: { reasoning_tokens?: number };
 };
 
 /** Phase 153: one OpenAI-format tool call, as it appears on the wire — `arguments` is a
@@ -104,6 +112,10 @@ export type GoogleUsageMetadata = {
   promptTokenCount: number;
   candidatesTokenCount: number;
   totalTokenCount?: number;
+  /** Real Gemini API field, present when the model does internal reasoning (2.5+-class
+   *  models default to dynamic thinking). With the Gemini API, candidatesTokenCount already
+   *  includes thoughtsTokenCount — a subset, not additional. */
+  thoughtsTokenCount?: number;
 };
 
 export type GoogleResponse = {
@@ -128,6 +140,10 @@ export type AnthropicUsage = {
    *  was used on this call (anthropic_provider.ts sends cache_control on prompt blocks). */
   cache_creation_input_tokens?: number;
   cache_read_input_tokens?: number;
+  /** Real Anthropic Messages API field, present when extended thinking was used
+   *  (options.thinking / config.ai_anthropic.thinking_default). thinking_tokens is a SUBSET
+   *  of output_tokens (billed as output, not additional). */
+  output_tokens_details?: { thinking_tokens?: number };
 };
 
 export type AnthropicResponse = {
@@ -270,6 +286,7 @@ export function tokenMapperOpenAI(model: string): ResponseTokenMapper<OpenAIResp
       total_tokens: totalTokens,
       model,
       cost_usd: cost,
+      reasoning_tokens: d.usage.completion_tokens_details?.reasoning_tokens,
     };
   };
 }
@@ -482,6 +499,7 @@ export function tokenMapperGoogle(model: string): ResponseTokenMapper<GoogleResp
       total_tokens: totalTokens,
       model,
       cost_usd: cost,
+      reasoning_tokens: d.usageMetadata.thoughtsTokenCount,
     };
   };
 }
@@ -532,6 +550,7 @@ export function tokenMapperAnthropic(model: string): ResponseTokenMapper<Anthrop
       cost_usd: cost,
       cache_read_tokens: d.usage.cache_read_input_tokens,
       cache_creation_tokens: d.usage.cache_creation_input_tokens,
+      reasoning_tokens: d.usage.output_tokens_details?.thinking_tokens,
     };
   };
 }
@@ -679,6 +698,7 @@ export async function performProviderCall<T>(
       totalTokens: tokens?.total_tokens ?? 0,
       cacheReadTokens: tokens?.cache_read_tokens,
       cacheCreationTokens: tokens?.cache_creation_tokens,
+      reasoningTokens: tokens?.reasoning_tokens,
     },
     cost_usd: tokens?.cost_usd,
     model: tokens?.model ?? "unknown",
