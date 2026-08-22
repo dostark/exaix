@@ -101,6 +101,18 @@ model: <YOUR actual model name and version>
 - **Semicolons in `impact:` separate multiple `Component: detail` entries only.** Appending plain English clauses after a semicolon (e.g., `; no runtime changes.` or `; doc-only change.`) causes the validator to misread the clause as a spurious component name. Put such notes inside the `detail` part (e.g., `CompA: added X, no runtime changes`).
 - **Plan-step `→ path` lines: exactly ONE backtick-wrapped path after the arrow, nothing else.** `validatePlanStepDiff`'s `extractArrowPaths()` (invoked by `commit_plan_step.ts`) treats **every** backtick-wrapped token after `→` on a `- ✅ …`/`- ⚠️ deferred …` line as a required staged file path — not just the first one. A line like `→` `server.ts` `(uses` `Deno.serve()` `+` `StreamableHTTPClientTransport)` — i.e. code mentions placed AFTER the arrow — makes the gate also demand `Deno.serve()` and `StreamableHTTPClientTransport` be staged parent files, and it blocks with a confusing "not among this commit's changed files" error. Put any incidental backtick-wrapped code/type mentions in the sentence BEFORE the arrow; only the real path(s) go after it (multiple real paths: two backtick spans separated by a comma, e.g. `a.ts` then `b.ts`).
 - **Fast-fail before the full gate.** For a plan-step message, validate the draft with `deno run --allow-read --allow-run=git scripts/check_commit_msg.ts <msg-file>` (~0.2s) BEFORE running `commit_plan_step.ts --commit`, which re-runs the entire ~15-task pre-commit gate suite (~10-15s) on every retry. Catches Structural Bloom / Component Traceability / arrow-path issues in under a second instead of paying the full gate cost per fix-retry cycle.
+- **Fast-fail false negative: gitlink-only arrow paths.** The fast standalone
+  `check_commit_msg.ts` pre-check reads currently-staged files in the **parent repo only**.
+  When a plan-step's *only* `→` path is the submodule self-reference
+  `→ \`exaix-dev-docs\`` (the convention for a criterion/test whose module IS the plan doc
+  itself — see #remediate-code-gaps' Phase 4 step 2), that pre-check will always report
+  `"exaix-dev-docs" is not among this commit's changed files`, because
+  `commit_plan_step.ts` only stages the `exaix-dev-docs` pointer bump **after** committing
+  the submodule, partway through its own orchestration — after the fast pre-check has
+  already run and failed. This is a false negative, not a real problem: skip the fast
+  pre-check for a step whose criteria cite only the gitlink, and go straight to
+  `commit_plan_step.ts --commit`, which stages the pointer at the right point in its own
+  flow before the real gate runs.
 
 Canonical prompt (short):
 "You've completed [work]. Create a MANDATORY structured commit message.
