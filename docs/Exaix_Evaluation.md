@@ -1044,16 +1044,17 @@ exactl eval report --pack swe-tasks --cell opencode --cell claude-code
 Cells are configured in `configs/eval-cells.toml`, the reference catalog scenario authors
 consult when declaring `matrix.cells[]` entries (`tests/scenario_framework/tests/unit/cell_catalog_test.ts`
 validates it structurally). The opencode Go tier (`opencode-go/deepseek-v4-flash`) is the
-default opencode cell. The claude-code cell requires the `claude` CLI binary on PATH. The
-codex cell (`codex-cli/gpt-5.6-terra`) requires the `codex` CLI binary on PATH and a `codex
-login` subscription credential, plus explicit opt-in via `EXA_MATRIX_CODEX` so default CI
-runs never consume subscription quota.
+default opencode cell. The claude-code cell requires the `claude` CLI binary on PATH. Both
+are `[cli_delegate]`-driven, real swe_tasks cells.
 
-This `[cli_delegate]`-driven `swe_tasks` cell system is distinct from Codex's other two
-surfaces — the embedded ReAct-loop provider (`[ai].provider = "codex-cli"`) and Mode-3
-session delegation (`[session_delegate] tool = "codex"`) — which have their own opt-in
-matrix cells and comparison table; see
-`tests/scenario_framework/README.md#codex-react-cell-vs-mode-3-session-delegation-vs-cli_delegate-vs-bare-phase-167`.
+Codex is not a swe_tasks/`[cli_delegate]` cell: no swe_tasks scenario declares a codex
+matrix entry. `configs/eval-cells.toml`'s `[tool.codex]` entry (`codex-cli/gpt-5.6-terra`)
+is exclusively consumed by the separate `agent_flows` pack's `flow_strategy_react.yaml`
+scenario (Phase 167 Step 3), proving Codex through the embedded ReAct-loop provider
+(`[ai].provider = "codex-cli"`) — distinct from this `[cli_delegate]`-driven `swe_tasks`
+cell system and from Mode-3 session delegation (`[session_delegate] tool = "codex"`); see
+`tests/scenario_framework/README.md#codex-react-cell-vs-mode-3-session-delegation-vs-cli_delegate-vs-bare-phase-167`
+for the full comparison table.
 
 ### Extending
 

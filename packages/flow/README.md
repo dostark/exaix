@@ -269,7 +269,7 @@ Steps can share structured findings through a flow-scoped namespace:
 
 ## Session Tool Integration
 
-Exaix embeds session-oriented agent tools (OpenCode, Claude Code, Cursor) as optional delegates at pipeline gates:
+Exaix embeds session-oriented agent tools (OpenCode, Claude Code, Cursor, Codex) as optional delegates at pipeline gates:
 
 ```text
 Request (file) → [Refinement] ◄ Optional: launch session tool for interactive Q&A

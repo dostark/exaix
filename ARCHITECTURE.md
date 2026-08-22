@@ -103,7 +103,12 @@ The session tool can be launched in one of three modes, configured via `session_
 | **Mode 2** | `supervised` | Interactive TTY spawn from `exactl execute --delegate`. The CLI attaches the parent terminal so the human can interact with the session tool directly.                                                         | Interactive debugging or pair-delegation from the CLI.                 |
 | **Mode 3** | `headless`   | Non-interactive spawn via `claude -p` / `opencode run` / `codex exec`. The daemon spawns the binary with a discrete argv prompt, fire-and-forget; `SessionReturnWatcher` reconciles the dropped `return.json`. | CI, automation, and daemon-side delegation where no human is present.  |
 
-Mode 3 requires `bin_overrides` to add the tool binary to the spawn allowlist (see `packages/flow/README.md#session-tool-integration`). The compiled mock tool at `.cache/mock_session_tool_bin` (built via `deno task build:mock-tool`) is used for CI testing.
+Mode 3 requires `bin_overrides` to add a tool binary to the spawn allowlist — except the
+five built-in tools (`claude-code`, `opencode`, `cursor`, `vscode`, `codex`), which
+`apps/daemon/main.ts` seeds into the allowlist unconditionally and never need
+`bin_overrides` (see `packages/flow/README.md#session-tool-integration`). The compiled mock
+tool at `.cache/mock_session_tool_bin` (built via `deno task build:mock-tool`) is used for
+CI testing.
 
 Codex's tested, intended integration path is Mode 3 (headless):
 `createDefaultSessionAdapterRegistry()` (`@exaix/session`) registers `codex` without
