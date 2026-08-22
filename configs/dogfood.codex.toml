@@ -41,8 +41,8 @@ enabled = true
 # Delegate the code_changes gate to headless Codex.
 # Requires the `codex` CLI on PATH with a stored `codex login` (ChatGPT subscription)
 # credential. Provider keys (OPENAI_API_KEY, CODEX_API_KEY) are stripped from the spawned
-# child by buildDelegateEnv/HeadlessSessionLauncher — auth comes from ~/.codex/auth.json,
-# never a metered key.
+# child by sanitizeChildEnv (packages/session/src/supervised_launch.ts, invoked from
+# HeadlessSessionLauncher.launch()) — auth comes from ~/.codex/auth.json, never a metered key.
 [session_delegate]
 enabled = true
 tool = "codex"
