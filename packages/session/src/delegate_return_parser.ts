@@ -59,8 +59,10 @@ interface ICodexFileChange {
 }
 
 /**
- * Shape of a parsed `codex exec --json` JSONL event line (OpenAI docs, verified
- * 2026-08-13). JSONL like opencode's stream, but with Codex's own event/field names.
+ * Shape of a parsed `codex exec --json` JSONL event line (OpenAI docs; upstream source
+ * codex-rs/exec/src/exec_events.rs re-verified 2026-08-21 during Phase 167 post-gap
+ * remediation — GAP-26). JSONL like opencode's stream, but with Codex's own event/field
+ * names.
  */
 interface ICodexEvent {
   type:
@@ -81,7 +83,9 @@ interface ICodexEvent {
       | "file_change"
       | "mcp_tool_call"
       | "web_search"
-      | "plan_update";
+      | "todo_list"
+      | "collab_tool_call"
+      | "error";
     text?: string;
     changes?: ICodexFileChange[];
     status?: string;

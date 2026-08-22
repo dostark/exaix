@@ -376,3 +376,40 @@ Deno.test("[launcher_stdout] drains verbose stdout and stderr before awaiting ch
     await rig.cleanup();
   }
 });
+
+Deno.test("[launcher_stdout] cumulative byte cap truncates a stream instead of buffering it unbounded", async () => {
+  // GAP-15 (Phase 167 post-gap-analysis): DELEGATE_STDOUT_DRAIN_MS only bounds idle time
+  // between individual reads, not the cumulative bytes accumulated — an adversarial or
+  // verbose child could grow the in-memory buffer without bound. With streamMaxBytes
+  // injected far below the payload size, the JSONL line is cut off mid-object, fails to
+  // parse, and synthesis falls back to the generic per-gate summary instead of the full
+  // (never-truncated) filler text — proving the cap actually stopped buffering, not just
+  // that a return.json happens to exist.
+  const rig = await makeRig("codex");
+  try {
+    const filler = "y".repeat(2_000);
+    const stdout = JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: filler } });
+    const child = makeMockChild(stdout);
+    const launcher = new HeadlessSessionLauncher({
+      sessionDir: rig.sessionDir,
+      allowlist: new Set(["codex"]),
+      spawn: () => child,
+      streamMaxBytes: 200,
+    });
+    await launcher.launch(
+      { command: "codex", args: ["exec", "--json", "test"], cwd: rig.sessionDir, env: {} },
+      TRACE_ID,
+      undefined,
+    );
+    const parsed = SessionReturnSchema.parse(
+      JSON.parse(await Deno.readTextFile(join(rig.sessionDir, TRACE_ID, "return.json"))),
+    );
+    assertEquals(
+      parsed.summary.includes(filler),
+      false,
+      "a capped stream must never yield the full unbounded filler text in the synthesized summary",
+    );
+  } finally {
+    await rig.cleanup();
+  }
+});

@@ -10,15 +10,13 @@
  */
 
 import { SESSION_FLAG_SANDBOX, SESSION_SANDBOX_READ_ONLY, SESSION_SANDBOX_WORKSPACE_WRITE } from "@exaix/core/types";
-import type { Opt, Reason } from "@exaix/core/types";
+import { SessionGateSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionBrief } from "@exaix/schemas/session_delegate.ts";
 
-const CODE_CHANGES_GATE = "code_changes";
-
 /** Return the explicit Codex sandbox argv for the brief's gate. */
-export function deriveCodexSandboxFlags(
-  brief: Opt<SessionBrief, Reason.AbstractBoundary>,
-): string[] {
-  const mode = brief?.gate === CODE_CHANGES_GATE ? SESSION_SANDBOX_WORKSPACE_WRITE : SESSION_SANDBOX_READ_ONLY;
+export function deriveCodexSandboxFlags(brief: SessionBrief): string[] {
+  const mode = brief.gate === SessionGateSchema.enum.code_changes
+    ? SESSION_SANDBOX_WORKSPACE_WRITE
+    : SESSION_SANDBOX_READ_ONLY;
   return [SESSION_FLAG_SANDBOX, mode];
 }

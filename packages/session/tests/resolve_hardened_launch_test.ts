@@ -6,7 +6,7 @@
  *   configPath setting for OpenCode, and flag derivation for Claude Code.
  */
 
-import { assertEquals, assertExists, assertMatch } from "@std/assert";
+import { assertEquals, assertExists, assertMatch, assertRejects } from "@std/assert";
 import type { SessionBrief, SessionDelegateConfig } from "@exaix/schemas/session_delegate.ts";
 import {
   DOGFOOD_DEVELOPER_IDENTITY_ID,
@@ -210,12 +210,72 @@ Deno.test("[delegate_hardening] injected probe receives exact minimum versions f
   }
 });
 
-Deno.test("[delegate_hardening][security] Codex appends only its gate-derived sandbox flags", async () => {
+Deno.test("[delegate_hardening][security] unhardened Codex launch (resolveLaunch, no harden_permissions) still includes --sandbox read-only", () => {
+  // GAP-16 (Phase 167 post-gap-analysis): the base codex headless launch previously had
+  // no --sandbox flag at all — an operator who omitted harden_permissions=true got a
+  // fully unconstrained Codex process, relying entirely on Codex CLI's own unconfirmed
+  // default. This proves the base launch is never fully unconstrained.
+  const sessionDir = "/tmp/test-unhardened-codex-sandbox";
+  const svc = makeService(sessionDir);
+  const launch = svc.resolveLaunch(codexBrief(), "headless");
+  assertEquals(launch.args.includes("--sandbox"), true);
+  assertEquals(launch.args[launch.args.indexOf("--sandbox") + 1], "read-only");
+});
+
+Deno.test("[delegate_hardening][security] hardened Codex launch has exactly one --sandbox flag, widened to workspace-write for code_changes", async () => {
   const sessionDir = await Deno.makeTempDir();
   const svc = makeService(sessionDir, {
     versionProbe: (_command, minimumVersion) => Promise.resolve({ version: minimumVersion, supported: true }),
   });
   const result = await svc.resolveHardenedLaunch(codexBrief(), "headless", hardenedConfig());
-  assertEquals(result.launch.args.slice(-2), ["--sandbox", "workspace-write"]);
+  const sandboxOccurrences = result.launch.args.filter((a) => a === "--sandbox").length;
+  assertEquals(
+    sandboxOccurrences,
+    1,
+    "the base --sandbox read-only must be replaced, not duplicated, when hardening widens it",
+  );
+  assertEquals(result.launch.args[result.launch.args.indexOf("--sandbox") + 1], "workspace-write");
   assertEquals(result.launch.args.includes("danger-full-access"), false);
+});
+
+Deno.test("[delegate_hardening][security] hardened Codex launch stays read-only (single flag) for a non-code_changes gate", async () => {
+  const sessionDir = await Deno.makeTempDir();
+  const svc = makeService(sessionDir, {
+    versionProbe: (_command, minimumVersion) => Promise.resolve({ version: minimumVersion, supported: true }),
+  });
+  const result = await svc.resolveHardenedLaunch(codexBrief({ gate: "review" }), "headless", hardenedConfig());
+  const sandboxOccurrences = result.launch.args.filter((a) => a === "--sandbox").length;
+  assertEquals(
+    sandboxOccurrences,
+    1,
+    "a non-code_changes gate must not leave a duplicate read-only pair from the base launch",
+  );
+  assertEquals(result.launch.args[result.launch.args.indexOf("--sandbox") + 1], "read-only");
+});
+
+Deno.test("[delegate_hardening][security] resolveHardenedLaunch fails closed when the version probe reports the binary unsupported", async () => {
+  // GAP-17 (Phase 167 post-gap-analysis): the pre-fix implementation only set
+  // versionWarning and proceeded to build the launch anyway — a compromised, ancient,
+  // or version-spoofing binary was spawned exactly as if it had passed the gate.
+  const sessionDir = await Deno.makeTempDir();
+  const svc = makeService(sessionDir, {
+    versionProbe: () => Promise.resolve({ version: "0.1.0", supported: false, warning: "too old" }),
+  });
+  await assertRejects(
+    () => svc.resolveHardenedLaunch(codexBrief(), "headless", hardenedConfig()),
+    Error,
+  );
+});
+
+Deno.test("[delegate_hardening][security] resolveHardenedLaunch proceeds with versionWarning when allowUnsupportedVersion is explicitly set", async () => {
+  // The fail-closed default (above) has a deliberate, explicit opt-out for a caller
+  // with a specific reason to launch anyway; production (apps/daemon/main.ts) does not
+  // set this, so the fail-closed default governs there.
+  const sessionDir = await Deno.makeTempDir();
+  const svc = makeService(sessionDir, {
+    versionProbe: () => Promise.resolve({ version: "0.1.0", supported: false, warning: "too old" }),
+    allowUnsupportedVersion: true,
+  });
+  const result = await svc.resolveHardenedLaunch(codexBrief(), "headless", hardenedConfig());
+  assertEquals(result.versionWarning, "too old");
 });

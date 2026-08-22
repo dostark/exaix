@@ -21,7 +21,7 @@ import { parseDelegateStdout } from "@exaix/session/delegate_return_parser.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
 import { SESSION_GATE_DECISIONS, SessionReturnSchema, SessionToolSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionDecision, SessionReturn, SessionTool } from "@exaix/schemas/session_delegate.ts";
-import { DELEGATE_STDOUT_DRAIN_MS } from "@exaix/core/types";
+import { DELEGATE_LAUNCH_TIMEOUT_MS, DELEGATE_STDOUT_DRAIN_MS, DELEGATE_STREAM_MAX_BYTES } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
 
 /** Args forwarded to the (injectable) spawn function, for testability. */
@@ -42,6 +42,17 @@ export interface IHeadlessSessionLauncherDeps {
    * Override in tests under `DENO_TEST` to avoid real subprocess execution.
    */
   spawn?: (args: ISpawnArgs) => Deno.ChildProcess;
+  /**
+   * Overall wall-clock deadline (ms) bounding one launch() call before the child is
+   * killed (Phase 167 GAP-15). Defaults to DELEGATE_LAUNCH_TIMEOUT_MS; overridable for
+   * deterministic tests.
+   */
+  launchTimeoutMs?: Opt<number, Reason.OptionalDependency>;
+  /**
+   * Cumulative byte cap per drained stream before truncation (Phase 167 GAP-15).
+   * Defaults to DELEGATE_STREAM_MAX_BYTES; overridable for deterministic tests.
+   */
+  streamMaxBytes?: Opt<number, Reason.OptionalDependency>;
 }
 
 const RETURN_FILE = "return.json";
@@ -84,7 +95,33 @@ export class HeadlessSessionLauncher {
     const child = spawn({ command: launch.command, args: launch.args, cwd: launch.cwd, env: childEnv });
     const stdoutDrain = this.drainStream(child.stdout, "stdout");
     const stderrDrain = this.drainStream(child.stderr, "stderr");
-    const [, rawStdout] = await Promise.all([child.status, stdoutDrain, stderrDrain]);
+    const launchTimeoutMs = this.deps.launchTimeoutMs ?? DELEGATE_LAUNCH_TIMEOUT_MS;
+    const launchTimeout = Promise.withResolvers<never>();
+    const launchTimeoutId = setTimeout(() => {
+      try {
+        child.kill();
+      } catch {
+        // Already exited between the timeout firing and kill() — nothing to clean up.
+      }
+      launchTimeout.reject(new Error(`Headless session launch exceeded ${launchTimeoutMs}ms; child killed`));
+    }, launchTimeoutMs);
+
+    let rawStdout: string;
+    try {
+      [, rawStdout] = await Promise.race([
+        Promise.all([child.status, stdoutDrain, stderrDrain]),
+        launchTimeout.promise,
+      ]);
+    } catch (error) {
+      console.warn(
+        `[HeadlessSessionLauncher] launch for trace ${traceId} did not complete cleanly: ` +
+          `${error instanceof Error ? error.message : String(error)}`,
+      );
+      await this.synthesizeAbandoned(traceId);
+      return;
+    } finally {
+      clearTimeout(launchTimeoutId);
+    }
 
     const returnPath = join(this.deps.sessionDir, traceId, RETURN_FILE);
     if (await this.synthesizeFromStdout(rawStdout, traceId, returnPath, launch.cwd)) {
@@ -128,7 +165,7 @@ export class HeadlessSessionLauncher {
     rawStdout: string,
     traceId: string,
     returnPath: string,
-    worktreePath: Opt<string, Reason.OptionalInput>,
+    worktreePath?: Opt<string, Reason.OptionalInput>,
   ): Promise<boolean> {
     if (!rawStdout.trim()) return false;
 
@@ -211,6 +248,9 @@ export class HeadlessSessionLauncher {
     const decoder = new TextDecoder();
     let totalLength = 0;
 
+    const streamMaxBytes = this.deps.streamMaxBytes ?? DELEGATE_STREAM_MAX_BYTES;
+    let truncated = false;
+
     try {
       while (true) {
         const read = reader.read();
@@ -224,14 +264,27 @@ export class HeadlessSessionLauncher {
         });
         if (done) break;
         if (value) {
-          chunks.push(value);
-          totalLength += value.length;
+          const remaining = streamMaxBytes - totalLength;
+          if (remaining <= 0) {
+            truncated = true;
+          } else if (value.length <= remaining) {
+            chunks.push(value);
+            totalLength += value.length;
+          } else {
+            chunks.push(value.subarray(0, remaining));
+            totalLength += remaining;
+            truncated = true;
+          }
         }
       }
     } catch {
       // Timeout or stream error — return what we have
     } finally {
       reader.releaseLock();
+    }
+
+    if (truncated) {
+      console.warn(`[HeadlessSessionLauncher] ${label} exceeded ${streamMaxBytes} bytes; truncated.`);
     }
 
     if (chunks.length === 0) return "";

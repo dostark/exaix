@@ -403,6 +403,40 @@ export const DELEGATE_STDOUT_DRAIN_MS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
+/** Overall wall-clock deadline (ms) for one HeadlessSessionLauncher.launch() call — bounds
+ *  total child-process lifetime independently of the per-read idle timeout
+ *  (DELEGATE_STDOUT_DRAIN_MS, which only bounds silence between individual reads). On
+ *  expiry the child is killed and the launch degrades to an abandoned return instead of
+ *  blocking the caller indefinitely (Phase 167 GAP-15). Deliberately generous: a
+ *  legitimate long-running session should never hit this; it exists solely to recover
+ *  from a genuinely stuck child without requiring a daemon restart. */
+export const DELEGATE_LAUNCH_TIMEOUT_MS: number = configurable({
+  key: "delegate.launch_timeout_ms",
+  default: 7_200_000, // 2 hours
+  type: ConfigValueType.NUMBER,
+  description:
+    "Overall wall-clock deadline in milliseconds for one headless delegate launch before the child is killed",
+  min: 60_000,
+  max: 86_400_000,
+  swap: SwapClass.RESTART,
+});
+
+/** Cumulative byte cap per drained stream (stdout or stderr) inside
+ *  HeadlessSessionLauncher's drainStream(). DELEGATE_STDOUT_DRAIN_MS only bounds idle
+ *  time between reads, not total bytes — an adversarial or verbose child can otherwise
+ *  grow the in-memory buffer without bound (Phase 167 GAP-15). Past the cap, further
+ *  chunks are still read (to avoid reintroducing OS pipe backpressure) but no longer
+ *  buffered. */
+export const DELEGATE_STREAM_MAX_BYTES: number = configurable({
+  key: "delegate.stream_max_bytes",
+  default: 10_485_760, // 10 MB
+  type: ConfigValueType.NUMBER,
+  description: "Maximum cumulative bytes buffered per drained delegate stdout/stderr stream before truncation",
+  min: 65_536,
+  max: 104_857_600,
+  swap: SwapClass.RESTART,
+});
+
 // ============================================================================
 // Service Limits and Batch Sizes
 // ============================================================================

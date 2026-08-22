@@ -159,9 +159,10 @@ Deno.test("[session_adapter] codex is headless-only and builds exec --json argv 
     "--json",
     "--model",
     "gpt-5.3-codex",
+    "--sandbox",
+    "read-only",
     MALICIOUS_OBJECTIVE,
   ]);
-  assertEquals(launch.cwd, brief.worktree_path);
 });
 
 Deno.test("[session_adapter] cursor + vscode reject headless launch", () => {

@@ -172,6 +172,48 @@ Deno.test("[headless_launcher] exit-without-return synthesizes abandoned return.
   }
 });
 
+Deno.test("[headless_launcher][security] a never-exiting child is killed within the bounded launch timeout", async () => {
+  // GAP-15 (Phase 167 post-gap-analysis): the pre-fix implementation awaited
+  // child.status with no timeout at all — a hung child (unanswerable interactive
+  // prompt, deadlock, etc.) wedged the launch forever with no recovery short of a
+  // daemon restart. This proves the fix: an injected short deadline kills the child
+  // and the launch still completes (degraded to an abandoned return) instead of hanging.
+  const sessionDir = await Deno.makeTempDir();
+  const traceId = "00000000-0000-4000-8000-000000000005";
+  let killed = false;
+  const hungChild: Deno.ChildProcess = {
+    status: new Promise<Deno.CommandStatus>(() => {}), // never resolves
+    stdout: new ReadableStream(),
+    stderr: new ReadableStream(),
+    kill: () => {
+      killed = true;
+    },
+  } as Deno.ChildProcess;
+
+  try {
+    const launcher = new HeadlessSessionLauncher({
+      sessionDir,
+      allowlist: new Set(["stub"]),
+      spawn: (_args: ISpawnArgs) => hungChild,
+      launchTimeoutMs: 50,
+    });
+    await launcher.launch(makeLaunch({ command: "stub" }), traceId, undefined);
+
+    assertEquals(killed, true, "the hung child must be killed once the launch timeout expires");
+    const content = await Deno.readTextFile(join(sessionDir, traceId, "return.json")).catch(() => null);
+    assertEquals(
+      content !== null,
+      true,
+      "an abandoned return.json must still be synthesized — the launch must degrade, not hang unhandled",
+    );
+    if (content) {
+      assertEquals(JSON.parse(content).decision, "abandoned");
+    }
+  } finally {
+    await Deno.remove(sessionDir, { recursive: true });
+  }
+});
+
 const MOCK_BIN_PATH = join(import.meta.dirname!, "../../..", ".cache", "mock_session_tool_bin");
 const MOCK_BIN_EXISTS = (() => {
   try {

@@ -28,7 +28,9 @@ import {
   SESSION_FLAG_MODEL,
   SESSION_FLAG_OUTPUT_FORMAT,
   SESSION_FLAG_PRINT,
+  SESSION_FLAG_SANDBOX,
   SESSION_OUTPUT_FORMAT_JSON,
+  SESSION_SANDBOX_READ_ONLY,
   SESSION_SUBCMD_EXEC,
   SESSION_SUBCMD_RUN,
 } from "@exaix/core/types";
@@ -47,6 +49,15 @@ function budgetEnv(brief: SessionBrief): Record<string, string> {
     [SESSION_ENV_MAX_OUTPUT_TOKENS]: String(brief.token_budget.max_output_tokens),
     [SESSION_ENV_MAX_TOTAL_TOKENS]: String(brief.token_budget.max_total_tokens),
   };
+}
+
+/**
+ * Strip the `provider:` prefix from a resolved `provider:model` string. The daemon
+ * resolves models to `provider:model` and prepareBrief requires that colon form, but
+ * both the `claude` and `codex` CLIs reject a provider-prefixed model id.
+ */
+function stripProviderPrefix(model: string): string {
+  return model.slice(model.indexOf(":") + 1);
 }
 
 /**
@@ -72,12 +83,7 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
         throw new Error(`Session tool '${this.tool}' does not support headless launch`);
       }
       if (this.tool === "claude-code") {
-        // The daemon resolves models to `provider:model` and prepareBrief requires that
-        // colon form, but the `claude` CLI rejects a provider-prefixed id. Strip the
-        // prefix here — claude-code only; opencode's own prefix handling is untouched.
-        const claudeModelFlag = brief.model
-          ? [SESSION_FLAG_MODEL, brief.model.slice(brief.model.indexOf(":") + 1)]
-          : [];
+        const claudeModelFlag = brief.model ? [SESSION_FLAG_MODEL, stripProviderPrefix(brief.model)] : [];
         return {
           command: this.bin,
           args: [
@@ -92,13 +98,19 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
         };
       }
       if (this.tool === "codex") {
-        const codexModelFlag = brief.model ? [SESSION_FLAG_MODEL, brief.model.slice(brief.model.indexOf(":") + 1)] : [];
+        const codexModelFlag = brief.model ? [SESSION_FLAG_MODEL, stripProviderPrefix(brief.model)] : [];
+        // GAP-16 (Phase 167 post-gap-analysis): the base launch is never fully
+        // sandbox-unconstrained, independent of harden_permissions — resolveHardenedLaunch
+        // widens this to workspace-write only for the code_changes gate when
+        // harden_permissions=true (see SessionDelegateService.resolveHardenedLaunch).
         return {
           command: this.bin,
           args: [
             SESSION_SUBCMD_EXEC,
             SESSION_FLAG_JSON,
             ...codexModelFlag,
+            SESSION_FLAG_SANDBOX,
+            SESSION_SANDBOX_READ_ONLY,
             brief.objective,
           ],
           cwd: brief.worktree_path ?? dirname(briefPath),

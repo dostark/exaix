@@ -20,6 +20,7 @@ import {
   PROVIDER_OLLAMA,
   PROVIDER_OPENROUTER,
   SESSION_DEFAULT_DEADLINE_HOURS,
+  SESSION_FLAG_SANDBOX,
   TIME_MS_PER_HOUR,
 } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -63,6 +64,14 @@ export interface ISessionDelegateServiceDeps {
   pathResolver?: PathResolver;
   /** Defaults to probeDelegateVersion; injectable for deterministic minimum-version tests. */
   versionProbe?: Opt<typeof probeDelegateVersion, Reason.OptionalDependency>;
+  /**
+   * When true, an unsupported or failed version probe (Phase 167 GAP-17) only records
+   * IHardenedLaunchResult.versionWarning instead of refusing the launch. Defaults to
+   * false (fail closed) — opt in only when a caller has a specific, deliberate reason
+   * to launch an unsupported binary anyway. Production (apps/daemon/main.ts) does not
+   * set this.
+   */
+  allowUnsupportedVersion?: Opt<boolean, Reason.OptionalDependency>;
 }
 
 const BRIEF_FILE = "brief.json";
@@ -177,6 +186,17 @@ export class SessionDelegateService implements ISessionDelegateService {
     const probeResult = this.deps.versionProbe
       ? await this.deps.versionProbe(launch.command, minVersion, {})
       : await probeDelegateVersion(launch.command, minVersion, {});
+    // GAP-17 (Phase 167 post-gap-analysis): fail closed by default — a compromised,
+    // ancient, or version-spoofing binary must not be spawned as if it had passed the
+    // gate. allowUnsupportedVersion is a deliberate, explicit opt-out.
+    if (!probeResult.supported && !this.deps.allowUnsupportedVersion) {
+      throw new Error(
+        `resolveHardenedLaunch: '${launch.command}' version ${probeResult.version} does not meet the ` +
+          `minimum required ${minVersion}${
+            probeResult.warning ? ` (${probeResult.warning})` : ""
+          }; refusing to launch.`,
+      );
+    }
     const versionWarning = probeResult.supported ? undefined : probeResult.warning;
 
     let agentNameMismatch = false;
@@ -199,8 +219,16 @@ export class SessionDelegateService implements ISessionDelegateService {
       const flags = deriveClaudeToolFlags(brief);
       launch.args.push(...flags);
     } else if (brief.tool === TOOL_CODEX) {
+      // GAP-16: the base launch (BuiltinSessionAdapter) already carries
+      // --sandbox read-only; replace its mode in place rather than appending a second
+      // --sandbox pair the CLI would have to arbitrate between.
       const flags = deriveCodexSandboxFlags(brief);
-      launch.args.push(...flags);
+      const sandboxFlagIndex = launch.args.indexOf(SESSION_FLAG_SANDBOX);
+      if (sandboxFlagIndex !== -1) {
+        launch.args[sandboxFlagIndex + 1] = flags[1];
+      } else {
+        launch.args.push(...flags);
+      }
     }
 
     return { launch, agentNameMismatch, versionWarning };
