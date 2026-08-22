@@ -592,6 +592,15 @@ export class AgentOrchestrator {
 
     this.applyBlueprintToolScope(_blueprint, options);
 
+    // Phase 154 Step 3: forward this blueprint's own hitl.require_secondary_approval rules
+    // to the ToolRegistry instance the resolved strategy will call execute() on, so a
+    // blueprint's own approval rules gate ReActLoopStrategy/LegacyAgentStrategy/
+    // McpAgentStrategy tool calls the same way DynamicStepExecutor's Flow path already
+    // honors identity.hitl?.require_secondary_approval. Previously hitlBlueprintRules was
+    // declared and evaluated by ToolRegistry's HITL middleware but never actually
+    // populated by any production caller.
+    this.toolRegistry?.setHitlBlueprintRules?.(_blueprint.hitl?.require_secondary_approval ?? []);
+
     try {
       const strategy = this.strategyRegistry!.resolve(strategyName);
       // Forward resolved per-call options (thinking/effort) to the strategy

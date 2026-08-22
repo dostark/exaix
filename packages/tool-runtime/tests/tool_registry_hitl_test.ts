@@ -190,3 +190,27 @@ Deno.test("hitl: blueprint rules passed via config are used by evaluator", async
     assertEquals(receivedBlueprintRules, blueprintRules);
   });
 });
+
+Deno.test("hitl: setHitlBlueprintRules updates the rules used by evaluator on the next execute()", async () => {
+  let receivedBlueprintRules: HitlRule[] | undefined;
+  class InspectingEvaluator implements IHitlPolicyEvaluator {
+    evaluate(
+      blueprintRules: HitlRule[],
+      _toolName: string,
+      _toolArgs: LogMetadata,
+    ): { rule: HitlRule; source: HitlRuleSource } | null {
+      receivedBlueprintRules = blueprintRules;
+      return null;
+    }
+  }
+
+  const newRules: HitlRule[] = [{ tool: "write_file", reason: "set post-construction" }];
+
+  // Constructed with NO blueprint rules, mirroring every real ToolRegistry construction
+  // site (Phase 154 Step 3: hitlBlueprintRules was never populated by any of them).
+  await withRegistry(new InspectingEvaluator(), undefined, undefined, async (registry) => {
+    registry.setHitlBlueprintRules(newRules);
+    await registry.execute("read_file", { path: "/nonexistent" });
+    assertEquals(receivedBlueprintRules, newRules);
+  });
+});

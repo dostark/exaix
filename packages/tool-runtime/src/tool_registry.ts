@@ -510,6 +510,17 @@ export class ToolRegistry implements IToolRegistry {
   }
 
   /**
+   * Sets the per-blueprint HITL rules the HITL middleware evaluates against for every
+   * subsequent `execute()` call, replacing whatever was passed at construction (if any).
+   * Called by `AgentOrchestrator.executeStep()` once it has loaded the blueprint about to
+   * run (Phase 154 Step 3) — see `IToolRegistry.setHitlBlueprintRules` for why this exists
+   * as a setter rather than a constructor-only option.
+   */
+  setHitlBlueprintRules(rules: HitlRule[]): void {
+    this.hitlBlueprintRules = rules;
+  }
+
+  /**
    * Execute a tool by name
    */
   async execute(toolName: string, params: Record<string, JSONValue>): Promise<IToolResult> {

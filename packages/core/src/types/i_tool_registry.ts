@@ -6,6 +6,7 @@
  * @related-files ["packages/tool-runtime/src/tool_registry.ts"]
  */
 import type { JSONValue } from "@exaix/core";
+import type { HitlRule } from "@exaix/schemas/hitl.ts";
 
 export interface IToolParameterSchema {
   type: string;
@@ -50,4 +51,15 @@ export interface IToolRegistry {
   execute(toolName: string, params: Record<string, JSONValue>): Promise<IToolResult>;
   /** The resolved, absolute directory every tool call is rooted at (e.g. a plan's git worktree). */
   getBaseDir(): string;
+  /**
+   * Sets the per-blueprint HITL rules (`hitl.require_secondary_approval`) the HITL
+   * middleware evaluates against for every subsequent `execute()` call, until this is
+   * called again. Called by `AgentOrchestrator.executeStep()` once it has loaded the
+   * blueprint about to run, so a blueprint's own approval rules gate tool calls routed
+   * through this registry the same way `DynamicStepExecutor` already honors
+   * `identity.hitl?.require_secondary_approval` for its own tool-execution path
+   * (Phase 154 Step 3). Optional so existing `IToolRegistry` implementors (test mocks)
+   * are unaffected; a caller that doesn't implement it simply keeps its prior rules.
+   */
+  setHitlBlueprintRules?(rules: HitlRule[]): void;
 }

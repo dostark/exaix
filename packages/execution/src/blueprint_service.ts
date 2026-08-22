@@ -11,6 +11,7 @@ import { isAbsolute, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 import type { Config } from "@exaix/schemas/config.ts";
+import { HitlPolicySchema } from "@exaix/schemas/hitl.ts";
 import type { IModelCallOptions, IModelIntent } from "@exaix/schemas";
 import type { IEventLogger } from "@exaix/core/logger";
 import { SafeError } from "@exaix/core/errors";
@@ -53,6 +54,13 @@ export const BlueprintSchema = z.object({
   capabilities: z.array(z.string().max(MAX_NAME_LENGTH)).max(20).default([]),
   permitted_tools: z.array(z.string().max(MAX_NAME_LENGTH)).max(100).optional(),
   allowed_paths: z.array(z.string().max(255)).max(100).optional(),
+  /**
+   * Per-action HITL governance rules (Phase 118). Declared here (not just relied on via
+   * `.passthrough()`) so it is Zod-validated and typed, not silently passed through as
+   * `unknown` — this schema previously omitted it entirely, so `validatedFrontmatter.hitl`
+   * was untyped and never copied into the returned blueprint (Phase 154 Step 3).
+   */
+  hitl: HitlPolicySchema.optional(),
   created: z.string().optional(),
   created_by: z.string().optional(),
   version: z.string().optional(),
@@ -110,6 +118,11 @@ export class BlueprintService {
           permitted_tools: validatedFrontmatter.permitted_tools,
           allowed_paths: validatedFrontmatter.allowed_paths,
           systemPrompt: sanitizedPrompt,
+          // Phase 154 Step 3: was parsed by BlueprintSchema but dropped here, so
+          // AgentOrchestrator's IAgentFileBlueprint.hitl (see its own doc comment,
+          // "Resolved by ExecutionLoop for ToolRegistry path") was always undefined
+          // regardless of what a blueprint's frontmatter declared.
+          hitl: validatedFrontmatter.hitl,
         },
         resolvedCallOptions,
       };
