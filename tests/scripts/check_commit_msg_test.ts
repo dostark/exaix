@@ -500,6 +500,95 @@ describe("parsePlanStep", () => {
     const parsed = parsePlanStep(doc, 6);
     assertEquals(parsed.errors.some((e) => e.includes("[ ]") || e.toLowerCase().includes("unchecked")), true);
   });
+
+  it("joins a Success Criteria bullet soft-wrapped across multiple lines before matching its → path", () => {
+    const doc = `### Step 6: x
+
+**Success Criteria**:
+
+- ✅ Every provider/CLI that reports a reasoning/thinking-token breakdown (Anthropic, OpenAI,
+  Google, OpenRouter) surfaces it on \`IGenerateResult.usage.reasoningTokens\`, never silently
+  discarded → \`packages/ai/src/provider_common_utils.ts\`, \`packages/session/src/delegate_return_parser.ts\`
+`;
+    const parsed = parsePlanStep(doc, 6);
+    assertEquals(parsed.errors, []);
+    assertEquals(parsed.criteriaPaths.sort(), [
+      "packages/ai/src/provider_common_utils.ts",
+      "packages/session/src/delegate_return_parser.ts",
+    ]);
+  });
+
+  it("joins a Planned Tests bullet soft-wrapped across multiple lines before matching its → path", () => {
+    const doc = `### Step 6: x
+
+**Planned Tests**:
+
+- ✅ A long test description that keeps going and going across a couple of
+  wrapped lines before reaching its own path → \`packages/x/tests/long_test.ts\`
+`;
+    const parsed = parsePlanStep(doc, 6);
+    assertEquals(parsed.errors, []);
+    assertEquals(parsed.testPaths, ["packages/x/tests/long_test.ts"]);
+  });
+
+  it("does not swallow the next bullet's line into the previous wrapped bullet", () => {
+    const doc = `### Step 6: x
+
+**Success Criteria**:
+
+- ✅ First criterion wraps across
+  two lines → \`packages/x/src/a.ts\`
+- ✅ Second criterion → \`packages/x/src/b.ts\`
+`;
+    const parsed = parsePlanStep(doc, 6);
+    assertEquals(parsed.errors, []);
+    assertEquals(parsed.criteriaPaths.sort(), ["packages/x/src/a.ts", "packages/x/src/b.ts"]);
+  });
+
+  it("stops a wrapped bullet's continuation at the next bold heading", () => {
+    const doc = `### Step 6: x
+
+**Success Criteria**:
+
+- ✅ A criterion whose text wraps
+  right up to the next heading → \`packages/x/src/a.ts\`
+
+**Architecture Notes**:
+
+More prose here that must never be treated as part of the criterion above.
+`;
+    const parsed = parsePlanStep(doc, 6);
+    assertEquals(parsed.errors, []);
+    assertEquals(parsed.criteriaPaths, ["packages/x/src/a.ts"]);
+  });
+
+  it("captures each physical line of a wrapped ✅ item individually in itemLines (for per-diff-line traceability)", () => {
+    const doc = `### Step 6: x
+
+**Success Criteria**:
+
+- ✅ First line of a wrapped criterion
+  second continuation line → \`packages/x/src/a.ts\`
+`;
+    const parsed = parsePlanStep(doc, 6);
+    assertEquals(parsed.errors, []);
+    assertEquals(parsed.itemLines, [
+      "- ✅ First line of a wrapped criterion",
+      "second continuation line → `packages/x/src/a.ts`",
+    ]);
+  });
+
+  it("still rejects a wrapped unchecked '- [ ]' criterion (no unimplemented escape hatch)", () => {
+    const doc = `### Step 6: x
+
+**Success Criteria**:
+
+- [ ] An unchecked criterion whose explanation
+  wraps across a continuation line too
+`;
+    const parsed = parsePlanStep(doc, 6);
+    assertEquals(parsed.errors.some((e) => e.includes("[ ]") || e.toLowerCase().includes("unchecked")), true);
+  });
 });
 
 // A plan whose step 6 has a ✅ item AND a ⚠️ deferred item, plus a Reachability Ledger.
@@ -537,6 +626,19 @@ describe("parsePlanStep deferred items", () => {
 `;
     const parsed = parsePlanStep(doc, 6);
     assertEquals(parsed.errors.some((e) => e.toLowerCase().includes("deferred")), true);
+  });
+
+  it("joins a ⚠️ deferred item soft-wrapped across multiple lines before matching its → token", () => {
+    const doc = `### Step 6: x
+
+**Success Criteria**:
+
+- ⚠️ deferred A long deferred criterion whose explanation wraps across a
+  second line before naming its ledger token → IModelRegistryProvider
+`;
+    const parsed = parsePlanStep(doc, 6);
+    assertEquals(parsed.errors, []);
+    assertEquals(parsed.deferredTokens, ["IModelRegistryProvider"]);
   });
 });
 
@@ -777,6 +879,42 @@ describe("validatePlanStepDiff", () => {
     const result = validatePlanStepDiff(items, [], "unknown");
     assertEquals(result.ok, false);
     assertEquals(result.errors.some((e) => e.toLowerCase().includes("roll back")), true);
+  });
+});
+
+describe("parsePlanStep + validatePlanStepDiff integration (wrapped bullets)", () => {
+  it("accepts a wrapped bullet's itemLines against per-physical-line added diff lines", () => {
+    const doc = `### Step 6: x
+
+**Success Criteria**:
+
+- ✅ First line of a wrapped criterion
+  second continuation line → \`packages/x/src/a.ts\`
+`;
+    const parsed = parsePlanStep(doc, 6);
+    assertEquals(parsed.errors, []);
+    const added = [
+      "- ✅ First line of a wrapped criterion",
+      "second continuation line → `packages/x/src/a.ts`",
+    ];
+    const result = validatePlanStepDiff(parsed.itemLines, added, "in_sync");
+    assertEquals(result.ok, true, result.errors.join(", "));
+  });
+
+  it("still flags a stale wrapped bullet whose continuation line was not actually added in this commit's diff", () => {
+    const doc = `### Step 6: x
+
+**Success Criteria**:
+
+- ✅ First line of a wrapped criterion
+  second continuation line → \`packages/x/src/a.ts\`
+`;
+    const parsed = parsePlanStep(doc, 6);
+    // Only the first physical line shows up as added — the continuation line is stale.
+    const added = ["- ✅ First line of a wrapped criterion"];
+    const result = validatePlanStepDiff(parsed.itemLines, added, "in_sync");
+    assertEquals(result.ok, false);
+    assertEquals(result.errors.some((e) => e.includes("not an added line")), true);
   });
 });
 

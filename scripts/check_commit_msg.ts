@@ -27,8 +27,12 @@ export interface IPlanStepPaths {
   /** `→ <token>` of each `⚠️ deferred` criterion/test (must have a Reachability Ledger row). */
   deferredTokens: string[];
   /**
-   * The raw text of every ✅ / ⚠️ deferred item line in the step (trimmed). Used to verify
-   * these lines actually appear as added lines in the plan doc's diff for this commit.
+   * The raw text of every ✅ / ⚠️ deferred item line in the step (trimmed), used to verify
+   * these lines actually appear as added lines in the plan doc's diff for this commit. A
+   * bullet soft-wrapped across several source lines contributes one entry PER PHYSICAL
+   * LINE it spans (not one merged entry) — this matches git diff's own per-physical-line
+   * added-lines granularity, so every line of a freshly-authored wrapped bullet must show
+   * up as added, exactly like a single-line bullet already must.
    */
   itemLines: string[];
   errors: string[];
@@ -156,13 +160,48 @@ function extractArrowPaths(line: string): { paths: string[]; hasBarePath: boolea
 }
 
 /**
+ * True when `line` starts a new plan-doc bullet (`- …`), a bold section heading
+ * (`**…**`), or is blank — i.e. NOT a soft-wrapped continuation of the previous bullet.
+ */
+function startsNewPlanItem(line: string): boolean {
+  return /^\s*-\s/.test(line) || /^\s*\*\*[^*]+\*\*/.test(line) || /^\s*$/.test(line);
+}
+
+/**
+ * Joins `lines[startIdx]` (a bullet-start line) with every following soft-wrapped
+ * continuation line — up to `end` — into one logical, single-space-joined string. Long
+ * Success Criteria / Planned Tests bullets are routinely hand-wrapped across several
+ * source lines for readability; without this, a `→ \`path\`` arrow placed on a
+ * continuation line rather than the `- ✅ …` line itself is invisible to `parsePlanStep`'s
+ * per-item matchers below, and a correctly-authored bullet is wrongly rejected as "marked
+ * done but has no → source path". Returns the merged text plus `endIndex`, the index of
+ * the last physical line consumed (the caller resumes scanning after it).
+ */
+function joinWrappedBullet(
+  lines: string[],
+  startIdx: number,
+  end: number,
+): { text: string; endIndex: number } {
+  let text = lines[startIdx].trim();
+  let endIndex = startIdx;
+  for (let j = startIdx + 1; j < end; j++) {
+    if (startsNewPlanItem(lines[j])) break;
+    text += ` ${lines[j].trim()}`;
+    endIndex = j;
+  }
+  return { text, endIndex };
+}
+
+/**
  * Parse a single `### Step N:` section of a plan doc and collect the source paths
  * declared on **done** success criteria and **done** planned tests, both marked with a
  * leading `✅` (`- ✅ … → path`). Not-yet-done items (unchecked `- [ ]` criteria, or
  * bullets without a ✅) are intentionally ignored so partial-step commits are allowed.
  *
  * A ✅-marked criterion or test WITHOUT a `→ path` is a structural error (the whole point
- * of the convention is that a claimed item names where it is met).
+ * of the convention is that a claimed item names where it is met). A bullet may be
+ * soft-wrapped across several physical source lines (see `joinWrappedBullet`) — the whole
+ * logical bullet is matched as one, so a `→ path` on a continuation line is still found.
  */
 export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
   const lines = docText.split("\n");
@@ -223,13 +262,24 @@ export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
       continue;
     }
     if (section === null) continue;
+    // Only a `- …` line starts a new item; blank lines and stray prose are not bullets.
+    if (!/^\s*-\s/.test(line)) continue;
+
+    // Join every soft-wrapped continuation line into one logical string before matching,
+    // so a `→ \`path\`` arrow landing on a continuation line is still found. Every
+    // physical line consumed is recorded in `itemLines` individually (not the merged
+    // text) so it still lines up with git diff's own per-physical-line added-lines output
+    // (see `validatePlanStepDiff`).
+    const { text: joined, endIndex } = joinWrappedBullet(lines, i, end);
+    const physicalLines = lines.slice(i, endIndex + 1).map((l) => l.trim());
+    i = endIndex;
 
     // ⚠️ deferred criteria/tests (either section): must carry a `→ <ledger-token>` that a
     // Reachability Ledger row references. They are exempt from the changed-file check.
-    const deferred = line.match(/^\s*-\s*⚠️\s*deferred\b\s*(.*)$/i);
+    const deferred = joined.match(/^\s*-\s*⚠️\s*deferred\b\s*(.*)$/i);
     if (deferred) {
-      itemLines.add(line.trim());
-      const tokens = extractArrowTokens(line);
+      physicalLines.forEach((l) => itemLines.add(l));
+      const tokens = extractArrowTokens(joined);
       if (tokens.length === 0) {
         errors.push(
           `Step ${step} deferred item "${truncateForError(deferred[1])}" has no → ledger token ` +
@@ -242,7 +292,7 @@ export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
 
     // No unimplemented escape hatch: a `- [ ]` (unchecked) criterion/test may not remain in
     // a step the commit claims. Every item must be ✅ (done) or ⚠️ deferred (ledger-tracked).
-    const unchecked = line.match(/^\s*-\s*\[\s\]\s*(.*)$/);
+    const unchecked = joined.match(/^\s*-\s*\[\s\]\s*(.*)$/);
     if (unchecked) {
       const kind = section === "tests" ? "planned test" : "criterion";
       errors.push(
@@ -255,10 +305,10 @@ export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
 
     if (section === "criteria") {
       // Done criteria are marked with a leading ✅ (the completion mark, same as tests).
-      const done = line.match(/^\s*-\s*✅\s*(.*)$/);
+      const done = joined.match(/^\s*-\s*✅\s*(.*)$/);
       if (done) {
-        itemLines.add(line.trim());
-        const { paths, hasBarePath } = extractArrowPaths(line);
+        physicalLines.forEach((l) => itemLines.add(l));
+        const { paths, hasBarePath } = extractArrowPaths(joined);
         if (hasBarePath) {
           errors.push(
             `Step ${step} criterion "${truncateForError(done[1])}" has an un-backticked → source path — ` +
@@ -274,10 +324,10 @@ export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
       }
     } else if (section === "tests") {
       // Done tests are marked with a leading ✅ (optionally after "- ").
-      const done = line.match(/^\s*-\s*✅\s*(.*)$/);
+      const done = joined.match(/^\s*-\s*✅\s*(.*)$/);
       if (done) {
-        itemLines.add(line.trim());
-        const { paths, hasBarePath } = extractArrowPaths(line);
+        physicalLines.forEach((l) => itemLines.add(l));
+        const { paths, hasBarePath } = extractArrowPaths(joined);
         if (hasBarePath) {
           errors.push(
             `Step ${step} planned test "${truncateForError(done[1])}" has an un-backticked → test path — ` +
