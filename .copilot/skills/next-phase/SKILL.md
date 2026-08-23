@@ -57,18 +57,18 @@ A hand-maintained (agent-maintained) index of every **not-yet-complete** phase �
 cancelled, and postponed phases are dropped from it entirely (they're not candidates, and
 keeping them bloats the file for no benefit). Columns:
 
-| Column | Meaning |
-| --- | --- |
-| Phase | `NNN` |
-| Title | short title |
-| Real status | the VERIFIED state (may differ from the doc's own header text) |
-| Hard deps | phase numbers that must be ✅ before this can start; `None` if unblocked |
-| Blocking? | `Ready` / `Blocked on <N>` / `Needs <resource>` (e.g. an env var, a GPU runner) |
-| Risk | L / M / M-H / H, from the doc's own Risk Level line |
-| Scope | step count or size signal (rough sizing, not a promise) |
+| Column         | Meaning                                                                                                                                       |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase          | `NNN`                                                                                                                                         |
+| Title          | short title                                                                                                                                   |
+| Real status    | the VERIFIED state (may differ from the doc's own header text)                                                                                |
+| Hard deps      | phase numbers that must be ✅ before this can start; `None` if unblocked                                                                      |
+| Blocking?      | `Ready` / `Blocked on <N>` / `Needs <resource>` (e.g. an env var, a GPU runner)                                                               |
+| Risk           | L / M / M-H / H, from the doc's own Risk Level line                                                                                           |
+| Scope          | step count or size signal (rough sizing, not a promise)                                                                                       |
 | Env-executable | can this be implemented AND live-verified in a typical session right now, or does it need something absent (API key, binary, external infra)? |
-| Notes | the one sentence that matters — why it's ready, why it's not, what's odd about it |
-| Verified | date this row's verdict was checked against the real doc |
+| Notes          | the one sentence that matters — why it's ready, why it's not, what's odd about it                                                             |
+| Verified       | date this row's verdict was checked against the real doc                                                                                      |
 
 A row is **stale** the moment `git log -1 --format=%H -- planning/<file>` (run inside the
 `exaix-dev-docs` submodule) returns a commit newer than the row's `Verified` date, or a

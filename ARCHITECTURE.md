@@ -41,21 +41,21 @@ The pipeline processes work through a gated pipeline (file → plan → approve 
 
 Exaix follows a **three-tier edition model** served by a single **`IEditionComposer`** composition seam:
 
-````text
-┌─────────────────────────────────────────────────────────┐
-│                    exaix (monorepo)                       │
-│  ┌────────────────────────────────────────────────────┐  │
-│  │  packages/  (MIT — always compiled)                 │  │
-│  │  apps/daemon · apps/exactl · apps/tui · apps/mcp-server   │  │
-│  └────────────────────────────────────────────────────┘  │
-│  ┌────────────────────────────────────────────────────┐  │
-│  │  packages-team/  (BSL — Team+Enterprise)            │  │
-│  └────────────────────────────────────────────────────┘  │
-│  ┌────────────────────────────────────────────────────┐  │
-│  │  exaix-enterprise/  (private submodule — Enterprise) │  │
-│  └────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────┘
 ```text
+┌────────────────────────────────────────────────────────────┐
+│                     exaix (monorepo)                       │
+│ ┌────────────────────────────────────────────────────────┐ │
+│ │  packages/  (MIT — always compiled)                    │ │
+│ │  apps/daemon · apps/exactl · apps/tui · apps/mcp-server│ │
+│ └────────────────────────────────────────────────────────┘ │
+│ ┌────────────────────────────────────────────────────────┐ │
+│ │  packages-team/  (BSL — Team+Enterprise)               │ │
+│ └────────────────────────────────────────────────────────┘ │
+│ ┌────────────────────────────────────────────────────────┐ │
+│ │  exaix-enterprise/  (private submodule — Enterprise)   │ │
+│ └────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────┘
+```
 
 **Composition architecture:** `IEditionComposer` (`@exaix/core/composer/`) is the single attach point for edition-specific capabilities. The Solo edition uses `SoloComposer` (default — zero paid features). SoloComposer is **passive**: it stores registered modules but does not invoke their hooks — Team/Enterprise composers will invoke them. Each runtime entry point (daemon, exactl, agent-entrypoint) instantiates `SoloComposer` as the hook anchor (`_editionComposer`), keeping the import path live for Team/Enterprise wiring. Team and Enterprise editions register `ICapabilityModule` instances that fill optional hooks (flow-step handlers, symbol extractors, guardrail runner, routing strategy, entitlement).
 
@@ -123,7 +123,7 @@ sanitisation, so injected `API_KEY` vars survive the `SECRET_ENV_PATTERN` strip:
 name = "openrouter"       # "openrouter" | "anthropic" | "ollama"
 key_env = "OPENROUTER_API_KEY"
 base_url = "https://openrouter.ai/api"
-```text
+```
 
 Per-tool env injection follows a translation table
 (`SessionDelegateService.resolveDelegateEnv`): OpenRouter+opencode sets
@@ -293,7 +293,7 @@ flowchart TB
     class Workspace,Blueprint,Memory,Portals,Runtime storage
     class Solo,Team,Enterprise db
     class DB,Event,Config,Git service
-```text
+```
 
 ### Path settings (`config.paths`)
 
@@ -608,7 +608,7 @@ Selects which LLM API provider to call (Anthropic, OpenAI, Google, Ollama, OpenR
 EXA_LLM_PROVIDER env var ──guard──→ config.ai.provider ──guard──→
   config.provider_strategy.task_routing[taskType] ──guard──→
     selectProvider(capability + free + budget + health + complexity)
-```text
+```
 
 **Guards at each step:** provider must be registered, not blocked in CI/Test (`EXA_TEST_ENABLE_PAID_LLM=1` to unblock), and healthy. Defaults to `mock` when nothing is configured.
 
@@ -635,7 +635,7 @@ NEEDS_CLARIFICATION
   ├── session_delegate.enabled && gates.includes("refinement")
   │   └── HeadlessSessionLauncher → external CLI tool
   └── otherwise → _startClarificationSession() → LLM Q&A loop
-```text
+```
 
 Controlled by `[session_delegate]` TOML config and `EXA_SESSION_DELEGATE_*` env vars.
 
@@ -651,7 +651,7 @@ For each plan step:
     ├── YES, returns "changes_made" → skip AgentExecutor, use delegated result
     ├── YES, returns "abandoned"    → skip step entirely
     └── NO → AgentExecutor.executeStep() (ReAct loop via LLM)
-```text
+```
 
 Controlled by `EXA_SESSION_DELEGATE_GATES=code_changes` env var.
 
@@ -686,7 +686,7 @@ AgentExecutor (dispatcher)
   ├── model resolution     → ModelResolver
   ├── tool registry        → ToolRegistry (lazy-init)
   └── dispose()            → ExecutionContextService, StrategyRegistry
-```text
+```
 
 **Extracted services (completed):**
 
@@ -732,7 +732,7 @@ capabilities.includes("mcp")          → McpAgentStrategy
 capabilities.includes("cli_delegate") → CliDelegateStrategy   (only if [cli_delegate].enabled)
 capabilities.includes("react")        → ReActLoopStrategy
 (none of the above)                   → LegacyAgentStrategy
-```text
+```
 
 `CliDelegateStrategy` drives a **headless `claude`/`opencode` CLI subprocess** in place of a direct `IModelProvider` call — the same effect as `ReActLoopStrategy`'s multi-turn tool-use loop, but executed by the external CLI's own agent loop instead of Exaix's. It never falls back to the direct-API path silently; a missing/unspawnable binary is a hard `AgentExecutionError`, not a degrade. Selection requires both the capability tag and a `[cli_delegate]` config block (`enabled = true`, `tool = "claude-code" | "opencode"`) — an explicit opt-in, not a runtime fallback.
 
@@ -772,7 +772,7 @@ ModelIntent ──→ tryResolveOverride (EXA_MODEL_PRESET_OVERRIDE env var)
                                    policy when 2+ providers offer the same model
                                  → thinking constraint re-resolution
                                  → context-window overflow detection & model-size bump
-```text
+```
 
 **Team seam (`IResolutionStrategy`, `packages/ai/src/i_resolution_strategy.ts`):** four optional hooks (`validateExplicit`, `selectRoute`, `scoreBest`, `rankUsage`) a strategy may implement; an absent hook is a Solo-identical no-op, never an error. `apps/daemon/src/bootstrap_team.ts:buildTeamResolutionStrategy` constructs the concrete `TeamResolutionStrategy` (`packages-team/model-registry-live/src/team_resolution_strategy.ts`) only in Team edition; Solo passes no strategy at all. `packages/core/src/planning/plan_executor.ts:createAgentExecutor` threads the resolver (and, for `best`, the skill-derived task type via `deriveTopSkillTaskTypes`) into `AgentExecutor` per plan execution.
 
@@ -933,7 +933,7 @@ tmpfs: [/tmp:rw, noexec, nosuid, size=256m]
 pids_limit: 512
 mem_limit: 2g
 cpus: 2.0
-```text
+```
 
 The container mounts only the workspace and portal directories needed for agent execution, and attaches to an isolated `exaix-egress` bridge network. Even a full in-process escape (e.g. via the SQLite FFI) is confined to these mounts and the allowlisted egress — it cannot reach the host or other containers.
 
@@ -981,7 +981,7 @@ deno test --allow-all --filter "DeepWiki" tests/integration/external_mcp_client_
 
 # Both, including the GitHub-authenticated proof
 GITHUB_TOKEN=$(gh auth token) deno test --allow-all tests/integration/external_mcp_client_live_test.ts
-```text
+```
 
 ### Tool Catalog Parity: `ToolRegistry` vs `TOOL_MANIFEST`
 
@@ -1164,7 +1164,7 @@ ReActLoopStrategy ──heartbeat──▶ EventBusService ◀── EventLogger
                                (milestones render as stage
                                 indicators + progress hints
                                 + attention markers)
-```text
+```
 
 For the component responsibilities table, key design decisions, and configuration constants, see `docs/Reference_Data.md#live-execution-streaming`.
 
@@ -1251,4 +1251,3 @@ For the full 60+ entry component responsibilities table with file paths and edit
 - **[Dogfood Meta-Workflow Skills](exaix-dev-docs/planning/phase-125-dogfood-meta-workflow-skills.md)** — Completes the dogfood meta-workflow loop by (a) adding `exaix:` blocks to all 23 `.copilot/skills/` so every dev skill becomes a runtime skill in the dogfood sandbox, (b) wiring the `generate_skill_json.ts` transform into `dogfood_bootstrap.ts`, (c) adding gap-remediation skills (`remediate-plan-gaps`, `remediate-code-gaps`) that consume pre-/post-gap-analysis output, (d) making `/plan` emit step-manifests for every step with a `check_step_manifests.ts` CI gate (`--since 130`), and (e) an E2E cutover test proving a generated skill loads and injects through the real `SkillsService`. Delivers dogfooding roadmap items R5 (skill transform), R6 (gap remediation), and R7 (manifest-first plans).
 
 ---
-````
