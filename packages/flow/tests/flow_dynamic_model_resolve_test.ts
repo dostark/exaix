@@ -207,10 +207,6 @@ class RecordingMcpClient implements IMcpClient, IToolManifestResolver {
     return false;
   }
 
-  getToolChoiceHint(_tool: McpToolName): string | undefined {
-    return undefined;
-  }
-
   callTool(tool: McpToolName, _args: ToolArgs): Promise<string> {
     return Promise.resolve(`Result from ${tool}`);
   }
