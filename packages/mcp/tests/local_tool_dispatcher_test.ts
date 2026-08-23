@@ -147,6 +147,23 @@ Deno.test("LocalToolDispatcher - requiresHumanApproval returns false for unknown
   assertEquals(client.requiresHumanApproval("unknown_tool" as McpToolName), false);
 });
 
+Deno.test("LocalToolDispatcher - getToolChoiceHint returns the manifest's hint for patch_file", () => {
+  const client = new LocalToolDispatcher(mockContext, []);
+  const hint = client.getToolChoiceHint(McpToolName.PATCH_FILE);
+  assertEquals(typeof hint, "string");
+  assertEquals((hint?.length ?? 0) > 0, true);
+});
+
+Deno.test("LocalToolDispatcher - getToolChoiceHint returns undefined for a tool with no hint set", () => {
+  const client = new LocalToolDispatcher(mockContext, []);
+  assertEquals(client.getToolChoiceHint(McpToolName.READ_FILE), undefined);
+});
+
+Deno.test("LocalToolDispatcher - getToolChoiceHint returns undefined for an unknown tool name", () => {
+  const client = new LocalToolDispatcher(mockContext, []);
+  assertEquals(client.getToolChoiceHint("unknown_tool" as McpToolName), undefined);
+});
+
 Deno.test("LocalToolDispatcher - Map construction: tool not in map returns not found error", async () => {
   const handlerMap = new Map<McpToolName, ToolHandler>([
     [McpToolName.READ_FILE, new PassingTool()],

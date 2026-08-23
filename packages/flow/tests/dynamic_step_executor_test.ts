@@ -47,6 +47,10 @@ class MockMcpClient implements IMcpClient, IToolManifestResolver {
     return false;
   }
 
+  getToolChoiceHint(_tool: McpToolName): string | undefined {
+    return undefined;
+  }
+
   reset() {
     this.callHistory = [];
     this.responses.clear();

@@ -57,6 +57,12 @@ export interface IToolManifestEntry {
   /** Agent-facing description answering: what it does, when to prefer it, what it returns,
    *  and what can go wrong. Full quality audit in Step 77.9. */
   description: string;
+  /** Short agent-facing tool-selection guidance (Phase 154 Step 5), e.g. "prefer for
+   *  targeted edits". Sourced from the same tool-selection guidance Phase 151/152
+   *  established for the internal ReAct loop (Blueprints/Skills/blueprint-best-practices.skill.md's
+   *  "Precision" practice), exposed here so external MCP clients get the same signal.
+   *  Metadata only in Step 5 — Step 6 wires a runtime consumer. */
+  preferred_tool_choice_hint?: string;
   /** JSON Schema draft-07 descriptor for the tool's accepted input parameters, mirroring
    *  the handler's own getToolDefinition().inputSchema. Populated for MCP_HANDLER-kind
    *  tools with a matching ToolRegistry entry (Phase 154 Step 1); used by
@@ -126,6 +132,8 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     source_ref: "packages-team/mcp-server/handlers/write_file_tool.ts",
     description:
       "Write or overwrite the full content of a file inside a portal. Use when you need to create a new file or completely replace an existing file. For partial edits use patch_file. Returns a success confirmation message.",
+    preferred_tool_choice_hint:
+      "Use for new files or complete rewrites of small files. For targeted edits to existing or large files, prefer patch_file — it keeps diffs reviewable and avoids overwriting unrelated changes.",
     input_schema: {
       type: "object",
       properties: {
@@ -156,6 +164,8 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     source_ref: "packages-team/mcp-server/handlers/patch_file_tool.ts",
     description:
       "Apply a targeted patch to replace a specific substring in a file without rewriting the whole file. Use when you need to make a minimal change. For full rewrites use write_file. Returns a success confirmation message.",
+    preferred_tool_choice_hint:
+      "Prefer for targeted edits to existing files — keeps diffs reviewable and avoids regressions in code you didn't intend to touch. Use write_file only for new or small files.",
     input_schema: {
       type: "object",
       properties: {

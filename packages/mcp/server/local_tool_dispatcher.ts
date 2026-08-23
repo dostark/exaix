@@ -57,6 +57,10 @@ export class LocalToolDispatcher implements IMcpClient, IToolManifestResolver {
     return TOOL_MANIFEST.find((e) => e.name === tool)?.requires_human_approval ?? false;
   }
 
+  getToolChoiceHint(tool: McpToolName): string | undefined {
+    return TOOL_MANIFEST.find((e) => e.name === tool)?.preferred_tool_choice_hint;
+  }
+
   getToolDefinitions(tools: McpToolName[]): Array<{
     name: string;
     description: string;

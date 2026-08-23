@@ -70,6 +70,9 @@ class MockMcpClient implements IMcpClient, IToolManifestResolver {
   requiresHumanApproval(_tool: McpToolName): boolean {
     return false;
   }
+  getToolChoiceHint(_tool: McpToolName): string | undefined {
+    return undefined;
+  }
 }
 
 class MockLlmClient implements ILlmClient {

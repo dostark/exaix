@@ -13,4 +13,7 @@ import type { McpToolName } from "./enums.ts";
 
 export interface IToolManifestResolver {
   requiresHumanApproval(tool: McpToolName): boolean;
+  /** Returns the tool's `preferred_tool_choice_hint` from TOOL_MANIFEST, or undefined
+   *  when the tool has no hint set (Phase 154 Step 5). */
+  getToolChoiceHint(tool: McpToolName): string | undefined;
 }
