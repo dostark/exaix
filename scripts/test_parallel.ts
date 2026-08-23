@@ -5,8 +5,9 @@
  * @description Two-batch test runner that maximises parallel throughput while
  * still executing CLI-subprocess-heavy tests that are unsafe to run concurrently.
  *
- * Batch 1 – the whole test suite run with DENO_JOBS=8 and --parallel for
- *            maximum speed.
+ * Batch 1 – the whole test suite run with `--parallel`, at a worker count
+ *            that matches the host's detected concurrency (or an explicit
+ *            DENO_JOBS the caller already exported) for maximum safe speed.
  * Batch 2 – the sequential files run one after another without DENO_JOBS so
  *            their skipInParallel guards evaluate to false and every test runs.
  *
@@ -25,6 +26,18 @@ export interface IDotReporterState {
 const REPO_ROOT = join(fromFileUrl(import.meta.url), "..", "..");
 const SUPPORTED_REPORTERS = ["pretty", "dot", "tap"] as const;
 export const DOT_REPORTER_LEGEND = "dot legend: .=passed ,=ignored !=failed";
+
+/**
+ * Batch 1 worker count: reuses an explicit `DENO_JOBS` the caller already exported,
+ * otherwise matches `deno test --parallel`'s own built-in default (hardwareConcurrency).
+ * A hardcoded worker count that exceeds the host's actual core count oversubscribes the
+ * machine — Batch 1's CLI-integration tests each spawn `git`/`deno`/`bash` children, and
+ * once concurrent spawn pressure from an oversubscribed worker pool outstrips what the OS
+ * can service, subprocess creation fails transiently with
+ * `NotFound: Failed to spawn '<bin>': entity not found` (observed on a 4-core WSL2 host
+ * with the previous hardcoded DENO_JOBS=8 — 2x the available cores).
+ */
+const BATCH1_WORKER_COUNT = Deno.env.get("DENO_JOBS") ?? String(navigator.hardwareConcurrency);
 
 /**
  * PIDs of currently-running `deno test` batch children, spawned `detached` (their own
@@ -105,6 +118,13 @@ const SEQUENTIAL_FILES: string[] = [
   // (google/claude/openai_enhancements_test.ts, agent_retrieval_smoke_test.ts,
   // etc.) under DENO_JOBS parallelism, producing truncated-JSON reads.
   "tests/agents/build_agents_index_test.ts",
+  // Blueprint commands — 30 tests, each calling setupTest() → TestEnvironment.create(),
+  // i.e. its own full git-repo init/config spawn per test (the highest git-subprocess
+  // density of any file in the corpus). Still reliably hits transient
+  // `NotFound: Failed to spawn 'git': entity not found` under Batch 1's parallel worker
+  // pool even after DENO_JOBS was scaled to hardwareConcurrency — this file alone
+  // oversubscribes spawn capacity regardless of overall worker count.
+  "apps/exactl/tests/blueprint_commands_test.ts",
 ];
 
 /**
@@ -662,7 +682,7 @@ export async function main(args: string[]): Promise<number> {
   // ---------------------------------------------------------------------------
   const batch1Env: Record<string, string> = {
     ...Deno.env.toObject(),
-    DENO_JOBS: "8",
+    DENO_JOBS: BATCH1_WORKER_COUNT,
     EXA_TEST_FORCE_CLI_PARALLEL: "1",
   };
   const batch1IgnorePaths = [...SEQUENTIAL_FILES, ...PARALLEL_IGNORE_PATHS];
