@@ -18,6 +18,28 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 154 (MCP Tool Catalog Unification)
+
+### Changed
+
+- External MCP clients (Claude Desktop, Claude Code, and other connected agents) now see a
+  short "Selection hint" appended to `patch_file`/`write_file`'s advertised description in
+  `tools/list`, giving them the same tool-preference guidance Exaix's own internal agent
+  already uses (see `Exaix_User_Guide.md` §8.2).
+
+### Fixed
+
+- A blueprint's `hitl.require_secondary_approval` rules now actually gate tool calls made
+  through the standard plan-execution path, not just Flow's dynamic steps — previously
+  declared in blueprint frontmatter but silently never enforced there (see
+  `Exaix_User_Guide.md` §12.4).
+
+### Security
+
+- `patch_file` no longer corrupts file content when the replacement text contains
+  `$`-prefixed sequences (e.g. `$&`, `$$`, `$1`) — these were previously silently
+  reinterpreted as regex-style substitution patterns instead of being written literally.
+
 ## Unreleased — Phase 169 (@visible Event Runtime Verification)
 
 ### Fixed
