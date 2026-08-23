@@ -29,7 +29,7 @@ const SECRET_MARKER = "SUPER_SECRET_TOKEN_abc123xyz";
 // rawResult must not be forwarded to MCP clients
 // ============================================================================
 
-Deno.test("MCP boundary validator: rawResult field is not included in client-facing error text", async () => {
+Deno.test("[security] MCP boundary validator: rawResult field is not included in client-facing error text", async () => {
   const failure: IToolResultValidationFailure = {
     tool: "run_command",
     stage: "mcp_boundary",
@@ -86,14 +86,14 @@ Deno.test("MCP boundary validator: rawResult field is not included in client-fac
 // validateToolResultEnvelope rawResult capture
 // ============================================================================
 
-Deno.test("tool_validation_fail_closed: rawResult is captured in failure object for audit", () => {
+Deno.test("[security] tool_validation_fail_closed: rawResult is captured in failure object for audit", () => {
   const raw = { success: "maybe", data: { secret: SECRET_MARKER } };
   const failure = validateToolResultEnvelope("run_command", raw);
   assertExists(failure, "Invalid envelope must produce a failure");
   assertExists(failure.rawResult, "rawResult must be captured in the failure for audit logging");
 });
 
-Deno.test("tool_validation_fail_closed: failure issues array does not expose rawResult values", () => {
+Deno.test("[security] tool_validation_fail_closed: failure issues array does not expose rawResult values", () => {
   const raw = { success: "maybe", data: { secret: SECRET_MARKER } };
   const failure = validateToolResultEnvelope("run_command", raw);
   assertExists(failure);
@@ -104,13 +104,13 @@ Deno.test("tool_validation_fail_closed: failure issues array does not expose raw
   );
 });
 
-Deno.test("tool_validation_fail_closed: tool name is preserved in failure", () => {
+Deno.test("[security] tool_validation_fail_closed: tool name is preserved in failure", () => {
   const failure = validateToolResultEnvelope("run_command", null);
   assertExists(failure);
   assertEquals(failure.tool, "run_command");
 });
 
-Deno.test("tool_validation_fail_closed: mutating registry tool does not retry after validation failure", async () => {
+Deno.test("[security] tool_validation_fail_closed: mutating registry tool does not retry after validation failure", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "registry-fail-closed-" });
   let validationCalls = 0;
 

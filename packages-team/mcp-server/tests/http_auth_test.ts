@@ -186,3 +186,27 @@ Deno.test("[MCPServer auth] with mcp.require_auth=true, RFC 9728 protected-resou
     assertEquals(doc.authorization_servers, ["http://localhost:3000"]);
   });
 });
+
+Deno.test("[security][MCPServer auth] with mcp.require_auth=true, the SSE trace-stream route is reachable without a bearer token (Phase 170 Weakness 2)", async () => {
+  await withMCPServerAuth({ requireAuth: true, authTokenValue: "correct-token" }, async ({ server }) => {
+    // The trace-stream route is dispatched in buildHttpFetch() before the authGate check runs
+    // (server.ts's SseHandler.matchesTraceIdRoute branch returns early, bypassing authGate
+    // entirely). This regression test targets that ordering bug: it must be impossible to reach
+    // the SSE handler's own internal validation (400 for an invalid trace id) without first
+    // passing the bearer-auth gate (401). An intentionally-invalid trace id keeps the assertion
+    // safe/deterministic -- it never opens a real SseHandler.streamEvents() subscription, so
+    // there is no live stream to clean up.
+    const response = await server.buildHttpFetch()(
+      new Request("http://localhost:3000/api/v1/traces/not-a-valid-trace-id/stream", {
+        method: "GET",
+        headers: { "Host": "localhost:3000" },
+      }),
+    );
+    assertEquals(
+      response.status,
+      401,
+      `expected 401 (bearer auth required, none supplied) but got ${response.status} -- ` +
+        "the SSE trace-stream route bypasses authGate entirely (dispatched before the auth check in buildHttpFetch())",
+    );
+  });
+});

@@ -14,7 +14,7 @@ import { GitService } from "@exaix/git";
 import { ExecutionLoop } from "@exaix/execution";
 import { getFixturePath, readFixtureTextSync } from "@exaix/testing";
 
-Deno.test("Git Security: blocks destructive git reset --hard in PlanExecutor", async () => {
+Deno.test("[security] Git Security: blocks destructive git reset --hard in PlanExecutor", async () => {
   const { tempDir, db, cleanup, config } = await createGitTestContext("security-reset-");
   const repoDir = join(tempDir, "repo");
   await Deno.mkdir(repoDir, { recursive: true });
@@ -70,7 +70,7 @@ args = ["reset", "--hard", "HEAD"]
   }
 });
 
-Deno.test("Git Security: blocks checkout to main branch", async () => {
+Deno.test("[security] Git Security: blocks checkout to main branch", async () => {
   const { tempDir, db, cleanup, config } = await createGitTestContext("security-checkout-");
   const repoDir = join(tempDir, "repo");
   await Deno.mkdir(repoDir, { recursive: true });
@@ -116,7 +116,7 @@ args = ["checkout", "main"]
   }
 });
 
-Deno.test("Git Security: prevents system root taint during Portal execution failure", async () => {
+Deno.test("[security] Git Security: prevents system root taint during Portal execution failure", async () => {
   const { tempDir, db, cleanup, config } = await createGitTestContext("security-taint-");
   const systemRoot = join(tempDir, "system_root");
   await Deno.mkdir(systemRoot, { recursive: true });

@@ -52,7 +52,7 @@ function createAuditMockLogger(): { logger: EventLogger; errors: IErrorCapture[]
 }
 
 Deno.test({
-  name: "Audit: unauthorized file triggers SECURITY_VIOLATION throw and security.violation log",
+  name: "[security] Audit: unauthorized file triggers SECURITY_VIOLATION throw and security.violation log",
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async () => {
@@ -198,7 +198,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "Audit: authorized files are not flagged as security violations",
+  name: "[security] Audit: authorized files are not flagged as security violations",
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async () => {

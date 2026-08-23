@@ -56,7 +56,7 @@ function withStrategy(fn: (strategy: BuildArgsFn) => void): void {
   }
 }
 
-Deno.test("subprocess isolation: SANDBOXED buildAgentArgs includes --allow-read", () => {
+Deno.test("[security] subprocess isolation: SANDBOXED buildAgentArgs includes --allow-read", () => {
   withStrategy((s) => {
     const args = s.buildAgentArgs(TEST_BLUEPRINT, SANDBOXED_OPTIONS);
     assert(
@@ -66,7 +66,7 @@ Deno.test("subprocess isolation: SANDBOXED buildAgentArgs includes --allow-read"
   });
 });
 
-Deno.test("subprocess isolation: SANDBOXED buildAgentArgs includes --allow-net", () => {
+Deno.test("[security] subprocess isolation: SANDBOXED buildAgentArgs includes --allow-net", () => {
   withStrategy((s) => {
     const args = s.buildAgentArgs(TEST_BLUEPRINT, SANDBOXED_OPTIONS);
     assert(
@@ -76,7 +76,7 @@ Deno.test("subprocess isolation: SANDBOXED buildAgentArgs includes --allow-net",
   });
 });
 
-Deno.test("subprocess isolation: SANDBOXED buildAgentArgs excludes --allow-write", () => {
+Deno.test("[security] subprocess isolation: SANDBOXED buildAgentArgs excludes --allow-write", () => {
   withStrategy((s) => {
     const args = s.buildAgentArgs(TEST_BLUEPRINT, SANDBOXED_OPTIONS);
     assertFalse(
@@ -86,7 +86,7 @@ Deno.test("subprocess isolation: SANDBOXED buildAgentArgs excludes --allow-write
   });
 });
 
-Deno.test("subprocess isolation: non-SANDBOXED buildAgentArgs uses --allow-all", () => {
+Deno.test("[security] subprocess isolation: non-SANDBOXED buildAgentArgs uses --allow-all", () => {
   withStrategy((s) => {
     const args = s.buildAgentArgs(TEST_BLUEPRINT, HYBRID_OPTIONS);
     assert(
@@ -96,7 +96,7 @@ Deno.test("subprocess isolation: non-SANDBOXED buildAgentArgs uses --allow-all",
   });
 });
 
-Deno.test("subprocess isolation: non-SANDBOXED buildAgentArgs does not add --allow-write separately", () => {
+Deno.test("[security] subprocess isolation: non-SANDBOXED buildAgentArgs does not add --allow-write separately", () => {
   withStrategy((s) => {
     const args = s.buildAgentArgs(TEST_BLUEPRINT, HYBRID_OPTIONS);
     // --allow-all already grants write; there must not be a redundant --allow-write flag

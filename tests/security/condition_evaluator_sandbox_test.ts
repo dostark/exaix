@@ -45,7 +45,7 @@ const HOST_ACCESS_PAYLOADS: ReadonlyArray<readonly [string, string]> = [
 ];
 
 for (const [label, condition] of HOST_ACCESS_PAYLOADS) {
-  Deno.test(`security: condition evaluator blocks ${label}`, () => {
+  Deno.test(`[security] condition evaluator blocks ${label}`, () => {
     const evaluator = new ConditionEvaluator();
     const result = evaluator.evaluate(condition, ctx());
 
@@ -55,7 +55,7 @@ for (const [label, condition] of HOST_ACCESS_PAYLOADS) {
   });
 }
 
-Deno.test("security: condition evaluator does not execute side effects", () => {
+Deno.test("[security] condition evaluator does not execute side effects", () => {
   // Under the previous `new Function(...)` implementation this assignment would run
   // and set the global. The sandboxed evaluator must never execute it.
   Reflect.deleteProperty(globalThis, PWNED_KEY);
@@ -68,14 +68,14 @@ Deno.test("security: condition evaluator does not execute side effects", () => {
   Reflect.deleteProperty(globalThis, PWNED_KEY);
 });
 
-Deno.test("security: condition evaluator rejects assignment expressions", () => {
+Deno.test("[security] condition evaluator rejects assignment expressions", () => {
   const evaluator = new ConditionEvaluator();
   const result = evaluator.evaluate("results.success = true", ctx());
   assertEquals(result.shouldExecute, false);
   assertExists(result.error);
 });
 
-Deno.test("security: validateCondition rejects host-global access", () => {
+Deno.test("[security] validateCondition rejects host-global access", () => {
   const evaluator = new ConditionEvaluator();
   assertEquals(evaluator.validateCondition("Deno.env.toObject()").valid, false);
   assertEquals(evaluator.validateCondition("fetch('x')").valid, false);

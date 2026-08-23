@@ -15,7 +15,7 @@ import { SecureCredentialStore } from "@exaix/core";
 // Unit Tests for SecureCredentialStore
 // ============================================================================
 
-Deno.test("SecureCredentialStore: encrypts and decrypts correctly", async () => {
+Deno.test("[security] SecureCredentialStore: encrypts and decrypts correctly", async () => {
   const testKey = "sk-test123456789";
   await SecureCredentialStore.set("test", testKey);
 
@@ -23,12 +23,12 @@ Deno.test("SecureCredentialStore: encrypts and decrypts correctly", async () => 
   assertEquals(retrieved, testKey);
 });
 
-Deno.test("SecureCredentialStore: returns null for non-existent keys", async () => {
+Deno.test("[security] SecureCredentialStore: returns null for non-existent keys", async () => {
   const retrieved = await SecureCredentialStore.get("nonexistent");
   assertEquals(retrieved, null);
 });
 
-Deno.test("SecureCredentialStore: clears memory securely", async () => {
+Deno.test("[security] SecureCredentialStore: clears memory securely", async () => {
   const testKey = "sk-test123456789";
   await SecureCredentialStore.set("test", testKey);
 
@@ -47,7 +47,7 @@ Deno.test("SecureCredentialStore: clears memory securely", async () => {
   assertEquals(retrieved, null);
 });
 
-Deno.test("SecureCredentialStore: stored data is encrypted", async () => {
+Deno.test("[security] SecureCredentialStore: stored data is encrypted", async () => {
   const testKey = "sk-test123456789";
   await SecureCredentialStore.set("test", testKey);
 
@@ -65,7 +65,7 @@ Deno.test("SecureCredentialStore: stored data is encrypted", async () => {
   assertEquals(retrieved, testKey);
 });
 
-Deno.test("SecureCredentialStore: different keys for different names", async () => {
+Deno.test("[security] SecureCredentialStore: different keys for different names", async () => {
   const key1 = "sk-anthropic123";
   const key2 = "sk-openai456";
 
@@ -80,7 +80,7 @@ Deno.test("SecureCredentialStore: different keys for different names", async () 
   assertNotEquals(retrieved1, retrieved2);
 });
 
-Deno.test("SecureCredentialStore: clear only affects specified key", async () => {
+Deno.test("[security] SecureCredentialStore: clear only affects specified key", async () => {
   const key1 = "sk-anthropic123";
   const key2 = "sk-openai456";
 
@@ -96,7 +96,7 @@ Deno.test("SecureCredentialStore: clear only affects specified key", async () =>
   assertEquals(retrieved2, key2);
 });
 
-Deno.test("SecureCredentialStore: handles empty string values", async () => {
+Deno.test("[security] SecureCredentialStore: handles empty string values", async () => {
   const emptyKey = "";
   await SecureCredentialStore.set("empty", emptyKey);
 
@@ -104,7 +104,7 @@ Deno.test("SecureCredentialStore: handles empty string values", async () => {
   assertEquals(retrieved, emptyKey);
 });
 
-Deno.test("SecureCredentialStore: handles special characters", async () => {
+Deno.test("[security] SecureCredentialStore: handles special characters", async () => {
   const specialKey = "sk-123!@#$%^&*()_+{}|:<>?[]\\;',./";
   await SecureCredentialStore.set("special", specialKey);
 
@@ -116,7 +116,7 @@ Deno.test("SecureCredentialStore: handles special characters", async () => {
 // Integration Tests with Provider Factory
 // ============================================================================
 
-Deno.test("SecureCredentialStore: simulates environment variable initialization", async () => {
+Deno.test("[security] SecureCredentialStore: simulates environment variable initialization", async () => {
   // Simulate the initialization process without actually accessing env
   const anthropicKey = "sk-ant-test123";
   const openaiKey = "sk-openai-test456";
@@ -142,7 +142,7 @@ Deno.test("SecureCredentialStore: simulates environment variable initialization"
   SecureCredentialStore.clear("GOOGLE_API_KEY");
 });
 
-Deno.test("SecureCredentialStore: clearAll removes all credentials", async () => {
+Deno.test("[security] SecureCredentialStore: clearAll removes all credentials", async () => {
   await SecureCredentialStore.set("key1", "value1");
   await SecureCredentialStore.set("key2", "value2");
   await SecureCredentialStore.set("key3", "value3");

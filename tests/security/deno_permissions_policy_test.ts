@@ -32,7 +32,7 @@ function grantsAllowAll(command: string): boolean {
   return /(^|\s)(--allow-all|-A)(\s|$)/.test(command);
 }
 
-Deno.test("security: operational deno tasks do not grant --allow-all", async () => {
+Deno.test("[security] operational deno tasks do not grant --allow-all", async () => {
   const tasks = await loadTasks();
   for (const name of OPERATIONAL_TASKS) {
     const command = tasks[name];
@@ -45,7 +45,7 @@ Deno.test("security: operational deno tasks do not grant --allow-all", async () 
   }
 });
 
-Deno.test("security: operational deno tasks scope --allow-run to an allowlist", async () => {
+Deno.test("[security] operational deno tasks scope --allow-run to an allowlist", async () => {
   const tasks = await loadTasks();
   for (const name of OPERATIONAL_TASKS) {
     const command = tasks[name];
@@ -61,7 +61,7 @@ Deno.test("security: operational deno tasks scope --allow-run to an allowlist", 
   }
 });
 
-Deno.test("security: an explicit unsafe opt-in task remains available", async () => {
+Deno.test("[security] an explicit unsafe opt-in task remains available", async () => {
   const tasks = await loadTasks();
   // The blanket-permission escape hatch is preserved but renamed so it is opt-in.
   assert(tasks["start:unsafe"], "expected a 'start:unsafe' opt-in task for full --allow-all");
