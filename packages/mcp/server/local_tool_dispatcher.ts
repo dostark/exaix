@@ -7,7 +7,7 @@
  */
 import type { ToolArgs } from "@exaix/ai";
 import type { IMcpClient } from "../src/i_mcp_client.ts";
-import { TOOL_MANIFEST } from "@exaix/mcp";
+import { appendToolChoiceHint, TOOL_MANIFEST } from "@exaix/mcp";
 import type { McpToolName } from "@exaix/mcp";
 import type { ToolHandler } from "./tool_handler.ts";
 import type { IApplicationContext, IToolManifestResolver } from "@exaix/core/types";
@@ -69,6 +69,9 @@ export class LocalToolDispatcher implements IMcpClient, IToolManifestResolver {
     return tools
       .map((t) => this.tools.get(t))
       .filter((h): h is ToolHandler => !!h)
-      .map((h) => h.getToolDefinition());
+      .map((h) => {
+        const definition = h.getToolDefinition();
+        return { ...definition, description: appendToolChoiceHint(definition.name, definition.description) };
+      });
   }
 }

@@ -13,7 +13,7 @@ import { DomainEventType } from "@exaix/core/events";
 import { MCPConfigSchema, type MCPTool } from "@exaix/schemas/mcp.ts";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_MCP_AUTH_TOKEN_EXPIRY_SECONDS, JsonRpcErrorCode, MCP_CONTENT_TYPE_STRUCTURED_DATA } from "@exaix/core";
-import { McpTransportType } from "@exaix/mcp";
+import { appendToolChoiceHint, McpTransportType } from "@exaix/mcp";
 import type { ToolHandler } from "@exaix/mcp/server";
 import { EventBusService } from "@exaix/core/observability";
 import { MCP_OAUTH_RESPONSE_TYPE_NONE } from "./constants.ts";
@@ -480,7 +480,10 @@ export class MCPServer implements OAuthTokenVerifier {
   private handleToolsList(
     request: JSONRPCRequest,
   ): JSONRPCResponse {
-    const toolDefinitions = Array.from(this.tools.values()).map((tool) => tool.getToolDefinition());
+    const toolDefinitions = Array.from(this.tools.values()).map((tool) => {
+      const definition = tool.getToolDefinition();
+      return { ...definition, description: appendToolChoiceHint(definition.name, definition.description) };
+    });
 
     // Log tools list request
     this.logActivity(
@@ -1021,7 +1024,7 @@ export class MCPServer implements OAuthTokenVerifier {
       sdkServer.registerTool(
         definition.name,
         {
-          description: definition.description,
+          description: appendToolChoiceHint(definition.name, definition.description),
           inputSchema: fromJsonSchema(definition.inputSchema, PASSTHROUGH_JSON_SCHEMA_VALIDATOR),
         },
         async (args): Promise<CallToolResult> => {

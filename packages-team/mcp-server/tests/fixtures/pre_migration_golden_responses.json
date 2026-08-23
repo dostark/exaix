@@ -32,7 +32,7 @@
         },
         {
           "name": "write_file",
-          "description": "Write or overwrite the full content of a file inside a portal. Use when you need to create a new file or completely replace an existing file. For partial edits use patch_file. Returns a success confirmation message.",
+          "description": "Write or overwrite the full content of a file inside a portal. Use when you need to create a new file or completely replace an existing file. For partial edits use patch_file. Returns a success confirmation message.\n\nSelection hint: Use for new files or complete rewrites of small files. For targeted edits to existing or large files, prefer patch_file — it keeps diffs reviewable and avoids overwriting unrelated changes.",
           "inputSchema": {
             "type": "object",
             "properties": {
@@ -63,7 +63,7 @@
         },
         {
           "name": "patch_file",
-          "description": "Apply a targeted patch to replace a specific substring in a file without rewriting the whole file. Use when you need to make a minimal change. For full rewrites use write_file. Returns a success confirmation message.",
+          "description": "Apply a targeted patch to replace a specific substring in a file without rewriting the whole file. Use when you need to make a minimal change. For full rewrites use write_file. Returns a success confirmation message.\n\nSelection hint: Prefer for targeted edits to existing files — keeps diffs reviewable and avoids regressions in code you didn't intend to touch. Use write_file only for new or small files.",
           "inputSchema": {
             "type": "object",
             "properties": {

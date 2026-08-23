@@ -91,6 +91,17 @@ export interface IToolManifestEntry {
   remediationPolicyRef?: string;
 }
 
+/**
+ * Appends a tool's `preferred_tool_choice_hint` (if set) to a base description, with a
+ * clear delimiter, for surfaces with no dedicated hint field of their own — the MCP
+ * `tools/list` protocol response only has `description` (Phase 154 Step 6). Returns
+ * `description` unchanged when the tool has no hint set or is not in `TOOL_MANIFEST`.
+ */
+export function appendToolChoiceHint(name: string, description: string): string {
+  const hint = TOOL_MANIFEST.find((e) => e.name === name)?.preferred_tool_choice_hint;
+  return hint ? `${description}\n\nSelection hint: ${hint}` : description;
+}
+
 export const TOOL_MANIFEST: IToolManifestEntry[] = [
   // ── Portal / file tools (MCP handlers) ──────────────────────────────────
   {

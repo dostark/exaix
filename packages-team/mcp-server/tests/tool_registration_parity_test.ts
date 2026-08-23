@@ -8,7 +8,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { TOOL_MANIFEST, ToolKind } from "@exaix/mcp";
+import { appendToolChoiceHint, TOOL_MANIFEST, ToolKind } from "@exaix/mcp";
 import { LIVE_MCP_TOOL_FACTORIES } from "@exaix-team/mcp-server";
 import { createMCPRequest, initMCPTestWithoutPortal } from "@exaix/mcp/testing";
 
@@ -92,10 +92,17 @@ Deno.test("ToolRegistrationParity: every tools/list description matches the cano
   await withToolsListResult((result) => {
     const manifestByName = new Map(LIVE_MANIFEST_ENTRIES.map((entry) => [entry.name, entry.description]));
 
+    // Step 6 (Phase 154): served descriptions are the manifest description with the
+    // manifest's own `preferred_tool_choice_hint` appended via `appendToolChoiceHint` -
+    // not the raw manifest description. Compare against that same production helper so
+    // this test still catches real drift (a handler hardcoding a description that
+    // disagrees with the manifest) without false-failing on the sanctioned hint suffix.
+
     const mismatches: string[] = [];
     for (const tool of result.tools) {
-      const expected = manifestByName.get(tool.name);
-      if (expected === undefined) continue;
+      const manifestDescription = manifestByName.get(tool.name);
+      if (manifestDescription === undefined) continue;
+      const expected = appendToolChoiceHint(tool.name, manifestDescription);
       if (tool.description !== expected) {
         mismatches.push(
           `'${tool.name}': served="${tool.description.slice(0, 60)}..." expected="${expected.slice(0, 60)}..."`,

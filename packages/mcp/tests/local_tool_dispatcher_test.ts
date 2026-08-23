@@ -164,6 +164,29 @@ Deno.test("LocalToolDispatcher - getToolChoiceHint returns undefined for an unkn
   assertEquals(client.getToolChoiceHint("unknown_tool" as McpToolName), undefined);
 });
 
+Deno.test("LocalToolDispatcher - getToolDefinitions appends the manifest hint to a tool's description", () => {
+  class StubPatchFileTool extends ToolHandler {
+    constructor() {
+      super(mockContext);
+    }
+    execute(): Promise<MCPToolResponse> {
+      return Promise.resolve({ content: [] });
+    }
+    getToolDefinition(): IToolDefinition {
+      return {
+        name: McpToolName.PATCH_FILE,
+        description: "Base description.",
+        inputSchema: { type: "object", properties: {} },
+      };
+    }
+  }
+  const client = new LocalToolDispatcher(mockContext, [new StubPatchFileTool()]);
+  const [definition] = client.getToolDefinitions([McpToolName.PATCH_FILE]);
+  const hint = client.getToolChoiceHint(McpToolName.PATCH_FILE);
+  assertEquals(definition.description.startsWith("Base description."), true);
+  assertEquals(definition.description.includes(hint ?? "__missing_hint__"), true);
+});
+
 Deno.test("LocalToolDispatcher - Map construction: tool not in map returns not found error", async () => {
   const handlerMap = new Map<McpToolName, ToolHandler>([
     [McpToolName.READ_FILE, new PassingTool()],
