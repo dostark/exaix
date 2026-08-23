@@ -1189,8 +1189,8 @@ export class ToolRegistry implements IToolRegistry {
    * Move file tool implementation
    */
   private async moveFile(
-    from: Opt<string, Reason.ShapeValidation>,
-    to: Opt<string, Reason.ShapeValidation>,
+    from?: Opt<string, Reason.ShapeValidation>,
+    to?: Opt<string, Reason.ShapeValidation>,
     overwrite = false,
   ): Promise<IToolResult> {
     try {

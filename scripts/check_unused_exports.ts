@@ -41,6 +41,46 @@ function isEntryPoint(repoPath: string): boolean {
   return repoPath.endsWith("/main.ts");
 }
 
+/**
+ * `scripts/*.ts` files are never scanned as production roots (isProductionRoot only covers
+ * packages/, packages-team/, apps/), so a package-owned pure function whose only real-world
+ * consumer is its own scripts/ CLI wrapper (a deliberate, tested pattern — e.g.
+ * checkToolCatalogParity in packages/mcp/src/tool_catalog_parity.ts, consumed by
+ * scripts/check_tool_catalog_parity.ts) was invisible to importMap and got misreported as
+ * dead code. This does a lightweight, import-only AST pass over scripts/*.ts (excluding its
+ * own test files) to recognize that wiring, without adding scripts/ to allProdFiles — a
+ * script's own self-contained exports (e.g. checkToolResultParity, defined and used within
+ * the same file) must stay out of scope for the "must be imported elsewhere" check.
+ */
+async function collectScriptImportedNames(): Promise<Set<string>> {
+  const names = new Set<string>();
+  for await (
+    const entry of walk(join(REPO_ROOT, "scripts"), {
+      includeDirs: false,
+      exts: [".ts"],
+      followSymlinks: false,
+      skip: [/\.git/, /node_modules/],
+    })
+  ) {
+    const repoPath = entry.path.startsWith(REPO_ROOT + "/") ? entry.path.slice(REPO_ROOT.length + 1) : entry.path;
+    if (isTestFilePath(repoPath)) continue;
+    const text = await Deno.readTextFile(entry.path);
+    const sourceFile = ts.createSourceFile(repoPath, text, ts.ScriptTarget.Latest, true);
+    ts.forEachChild(sourceFile, (node) => {
+      if (!ts.isImportDeclaration(node) || !node.importClause) return;
+      const clause = node.importClause;
+      if (clause.namedBindings && ts.isNamedImports(clause.namedBindings)) {
+        for (const el of clause.namedBindings.elements) {
+          if (el.isTypeOnly) continue;
+          names.add(el.name.text);
+        }
+      }
+      if (clause.name) names.add(clause.name.text);
+    });
+  }
+  return names;
+}
+
 // ── AST helpers ────────────────────────────────────────────────────────────
 
 function hasExportModifier(node: ts.Node): boolean {
@@ -134,6 +174,7 @@ async function main() {
   const exportMap = new Map<string, IExportSite[]>();
   const importMap = new Map<string, Set<string>>();
   const allProdFiles: string[] = [];
+  const scriptImportedNames = await collectScriptImportedNames();
 
   // Step 1: collect all production .ts files
   for await (
@@ -313,6 +354,7 @@ async function main() {
         if (isTestHelper(name)) continue;
         if (isEntryPointName(name)) continue;
         if (isTestExport(name)) continue;
+        if (scriptImportedNames.has(name)) continue;
 
         console.log(
           `ERROR [unwired-export] ${site.repoPath}:${site.line} – ` +

@@ -146,7 +146,7 @@ export async function runLeakGuard(options: ILeakGuardOptions = {}): Promise<ILe
                 if (
                   (line.match(/["'`][^"'`]*exaix-enterprise[^"'`]*["'`]/) ||
                     line.match(/["'`][^"'`]*packages-team[^"'`]*["'`]/)) &&
-                  (line.includes("import") || line.includes("require"))
+                  /\b(import|require)\b/.test(line)
                 ) {
                   errors.push(
                     `LEAK: ${relativePath}:${i + 1} — string literal referencing '${leakPath}' in import/require`,
