@@ -983,6 +983,24 @@ deno test --allow-all --filter "DeepWiki" tests/integration/external_mcp_client_
 GITHUB_TOKEN=$(gh auth token) deno test --allow-all tests/integration/external_mcp_client_live_test.ts
 ```
 
+### Tool Catalog Parity: `ToolRegistry` vs `TOOL_MANIFEST`
+
+Two independent tool catalogs exist side by side; Phase 154 established an enforced parity gate
+between them rather than merging them into one. `ToolRegistry`
+(`packages/tool-runtime/src/tool_registry.ts`) is the plan-execution catalog, dispatched directly
+by `ReActLoopStrategy`, `LegacyAgentStrategy`, and `McpAgentStrategy` (all three, despite the
+latter's name — Phase 154 Step 2's Routing Evaluation). `TOOL_MANIFEST`
+(`packages/mcp/src/manifest.ts`) is the MCP-facing catalog, served to external MCP clients
+(`apps/mcp-server/`) and Flow's `DynamicStepExecutor` alike through `LocalToolDispatcher`.
+`deno task check:tool-catalog-parity` (`checkToolCatalogParity()`,
+`packages/mcp/src/tool_catalog_parity.ts`) runs in CI and fails on any required-param shape
+divergence between the two, so drift is caught mechanically rather than relying on manual
+synchronization. Phase 154 Step 2 evaluated and explicitly decided **against** migrating
+`ReActLoopStrategy`/`LegacyAgentStrategy`/`McpAgentStrategy` onto `LocalToolDispatcher` — the two
+dispatch paths' independent HITL/confirmation pipelines were found to be organic drift, not
+intentional divergence, and are tracked and remediated per-path rather than justifying a full
+migration.
+
 ---
 
 ## CLI Commands Architecture
