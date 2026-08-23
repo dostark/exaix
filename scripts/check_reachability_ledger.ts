@@ -69,6 +69,17 @@ const TABLE_ROW_PATTERN = /^\|.*\|$/;
 const CLOSED_STATUS = "✅";
 const TEST_FILE_PATTERN = /_test\.ts$/;
 
+/** A ledger row's Status cell counts as closed when it starts with the checkmark, not only
+ *  when it is the bare checkmark alone — the repo's own established convention (`#next-steps`
+ *  skill's own "Do" list) labels closed rows `✅ WIRED`/`✅ CORE <detail>`, and an exact-equality
+ *  check silently treats every such row as still-open, auditing zero of them (Phase 154
+ *  self-improvement-retro finding, discovered running `check:reachability-ledger` for real
+ *  during the phase's own Phase Completion Gate — confirmed also affecting phase-111 and
+ *  phase-121's own ledgers, not specific to one doc). */
+export function isClosedStatus(status: string): boolean {
+  return status.trim().startsWith(CLOSED_STATUS);
+}
+
 /** Splits a markdown table row into trimmed cells, dropping the leading/trailing empties
  *  a `| a | b |`-style split produces. */
 function splitTableRow(line: string): string[] {
@@ -296,7 +307,7 @@ export function auditLedgerRows(rows: IReachabilityLedgerRow[], files: IFileReco
   const productionFiles = files.filter((f) => !TEST_FILE_PATTERN.test(f.path));
 
   for (const row of rows) {
-    if (row.status.trim() !== CLOSED_STATUS) continue;
+    if (!isClosedStatus(row.status)) continue;
 
     for (const candidate of extractCandidateSymbols(row.callSiteText)) {
       const definitionFiles = findExportDefinitionFiles(candidate, productionFiles);
@@ -374,7 +385,7 @@ if (import.meta.main) {
 
   const allRows = docs.flatMap((doc) => parseReachabilityLedgerRows(doc.content, doc.path));
   const shapeWarnings = docs.flatMap((doc) => detectLedgerShapeWarnings(doc.content, doc.path));
-  const closedRows = allRows.filter((r) => r.status.trim() === CLOSED_STATUS);
+  const closedRows = allRows.filter((r) => isClosedStatus(r.status));
   const findings = auditLedgerRows(allRows, files);
 
   for (const w of shapeWarnings) {

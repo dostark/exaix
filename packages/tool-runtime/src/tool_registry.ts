@@ -1477,7 +1477,8 @@ export class ToolRegistry implements IToolRegistry {
       // Exact-one-occurrence match, mirroring the live MCP handler
       // (packages-team/mcp-server/handlers/patch_file_tool.ts): fails loudly if the search
       // string is absent or ambiguous rather than silently patching the first occurrence.
-      const occurrences = content.split(search).length - 1;
+      const segments = content.split(search);
+      const occurrences = segments.length - 1;
       if (occurrences === 0) {
         return {
           success: false,
@@ -1493,7 +1494,10 @@ export class ToolRegistry implements IToolRegistry {
         };
       }
 
-      const patched = content.replace(search, replace);
+      // Array.prototype.join writes `replace` literally — unlike String.prototype.replace(),
+      // it never interprets $&/$`/$'/$$/$<digit> substitution patterns in the replacement text
+      // (Phase 154 GAP-6).
+      const patched = segments.join(replace);
       await Deno.writeTextFile(resolvedPath, patched);
       return this.formatSuccess({ path });
     } catch (error) {

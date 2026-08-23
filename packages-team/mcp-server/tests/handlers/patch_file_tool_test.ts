@@ -106,6 +106,30 @@ Deno.test("PatchFileTool: supports empty replace string (deletion)", async () =>
   });
 });
 
+Deno.test("PatchFileTool: [regression] writes $-prefixed replacement text literally", async () => {
+  await withToolPermissionTest({ operations: [PortalOperation.WRITE] }, async (env) => {
+    // JS String.prototype.replace() interprets $&, $`, $', $$, and $<digit> in the replacement
+    // argument even when the search pattern is a plain string (Phase 154 GAP-6) — patch_file
+    // must write these sequences byte-for-byte, not silently substitute them.
+    const targetPath = "src/main.ts";
+    await Deno.mkdir(join(env.portalPath, "src"), { recursive: true });
+    await Deno.writeTextFile(join(env.portalPath, targetPath), "const target = 1;\n");
+
+    const handler = createHandler(env);
+    const replace = "matched: $&";
+    await handler.execute({
+      portal: "TestPortal",
+      path: targetPath,
+      search: "const target = 1;",
+      replace,
+      identity_id: "test-agent",
+    });
+
+    const content = await Deno.readTextFile(join(env.portalPath, targetPath));
+    assertEquals(content, `${replace}\n`);
+  });
+});
+
 Deno.test("PatchFileTool: getToolDefinition returns correct definition", () => {
   const handler = new PatchFileTool(createBaseToolContext());
   assertToolDefinitionFields(handler.getToolDefinition(), "patch_file", ["portal", "path", "search", "replace"]);

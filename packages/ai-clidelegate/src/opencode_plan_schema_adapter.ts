@@ -61,6 +61,10 @@ type ParamsRemapper = (params: JSONObject) => JSONObject;
 
 function remapEditParams(params: JSONObject): JSONObject {
   const path = params.path ?? params.filePath;
+  // `newString` passes through unsanitized by design — it does not need $-pattern escaping
+  // here. The sink (ToolRegistry.patchFile()/PatchFileTool.execute()) writes `replace` via
+  // Array.prototype.join, which is literal by construction (Phase 154 GAP-6); sanitizing at
+  // this pass-through layer would be redundant, not defense-in-depth.
   return { path, search: params.oldString, replace: params.newString };
 }
 

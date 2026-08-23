@@ -23,6 +23,7 @@ import {
   findFilenameReferences,
   findFilesByBasename,
   findUsageFiles,
+  isClosedStatus,
   parseReachabilityLedgerRows,
 } from "../../scripts/check_reachability_ledger.ts";
 import type { IFileRecord, IReachabilityLedgerRow } from "../../scripts/check_reachability_ledger.ts";
@@ -407,4 +408,44 @@ Deno.test("[auditLedgerRows] a candidate identifier not defined anywhere is sile
   ];
 
   assertEquals(auditLedgerRows(rows, files), []);
+});
+
+Deno.test("[isClosedStatus] recognizes the bare checkmark", () => {
+  assertEquals(isClosedStatus("✅"), true);
+});
+
+Deno.test("[isClosedStatus] recognizes ✅ WIRED and ✅ CORE labels, not just the bare checkmark", () => {
+  assertEquals(isClosedStatus("✅ WIRED"), true);
+  assertEquals(isClosedStatus("✅ CORE (Step 5 E2E exercises it)"), true);
+});
+
+Deno.test("[isClosedStatus] does not treat ⏳ or a removed-row note as closed", () => {
+  assertEquals(isClosedStatus("⏳"), false);
+  assertEquals(isClosedStatus("N/A (removed)"), false);
+});
+
+Deno.test("[auditLedgerRows] audits a ✅ WIRED row exactly like a bare ✅ row (regression)", () => {
+  // scripts/check_reachability_ledger.ts previously used an exact-equality CLOSED_STATUS
+  // check, silently skipping every row using this repo's own established "✅ WIRED"/"✅ CORE"
+  // label convention (#next-steps skill's own "Do" list) — auditing zero such rows while
+  // reporting a clean pass. Confirmed also affecting phase-111/phase-121's own ledgers.
+  const rows: IReachabilityLedgerRow[] = [{
+    docPath: "phase-999-example.md",
+    symbolLabel: "`paired-arm-comparison`",
+    addedIn: "Step 1",
+    wiringStep: "Step 4",
+    callSiteText: "closed (computePairedComparison over the ablation)",
+    status: "✅ WIRED",
+  }];
+  const files: IFileRecord[] = [
+    {
+      path: "tests/scenario_framework/runner/arm_comparison.ts",
+      content: "export function computePairedComparison() {}",
+    },
+    { path: "tests/scenario_framework/runner/arm_comparison_test.ts", content: "computePairedComparison();" },
+  ];
+
+  const findings = auditLedgerRows(rows, files);
+  assertEquals(findings.length, 1);
+  assertEquals(findings[0].candidateIdentifier, "computePairedComparison");
 });

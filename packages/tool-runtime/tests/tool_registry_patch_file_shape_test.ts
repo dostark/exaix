@@ -89,6 +89,37 @@ Deno.test("ToolRegistry: patch_file (flat search/replace shape)", async (t) => {
     },
   );
 
+  await t.step(
+    "[regression] writes $-prefixed replacement text literally, not as a special substitution pattern",
+    async () => {
+      // JS String.prototype.replace() interprets $&, $`, $', $$, and $<digit> in the replacement
+      // argument even when the search pattern is a plain string (Phase 154 GAP-6) — patchFile()
+      // must write these sequences byte-for-byte, not silently substitute them.
+      const cases: Array<{ name: string; replace: string }> = [
+        { name: "$&", replace: "matched: $&" },
+        { name: "$`", replace: "before: $`" },
+        { name: "$'", replace: "after: $'" },
+        { name: "$$", replace: "literal dollar: $$" },
+        { name: "$1", replace: "group: $1" },
+      ];
+
+      for (const [index, { name, replace }] of cases.entries()) {
+        const caseFile = join(tempDir, `dollar-${index}.ts`);
+        await Deno.writeTextFile(caseFile, "const target = 1;\n");
+
+        const result = await registry.execute(ToolName.PATCH_FILE, {
+          path: `dollar-${index}.ts`,
+          search: "const target = 1;",
+          replace,
+        });
+
+        assertEquals(result.success, true, `patch should succeed for case ${name}`);
+        const content = await Deno.readTextFile(caseFile);
+        assertEquals(content, `${replace}\n`, `case ${name}: replacement text must be written literally`);
+      }
+    },
+  );
+
   // Cleanup
   await cleanupTempDir(tempDir);
 });

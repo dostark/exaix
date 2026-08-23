@@ -48,7 +48,8 @@ export class PatchFileTool extends ToolHandler {
       }
 
       // Count occurrences — must be exactly one
-      const occurrences = content.split(search).length - 1;
+      const segments = content.split(search);
+      const occurrences = segments.length - 1;
 
       if (occurrences === 0) {
         throw new Error(
@@ -64,8 +65,10 @@ export class PatchFileTool extends ToolHandler {
         );
       }
 
-      // Apply replacement
-      const patched = content.replace(search, replace);
+      // Array.prototype.join writes `replace` literally — unlike String.prototype.replace(),
+      // it never interprets $&/$`/$'/$$/$<digit> substitution patterns in the replacement text
+      // (Phase 154 GAP-6).
+      const patched = segments.join(replace);
       await Deno.writeTextFile(absolutePath, patched);
 
       this.logToolExecution(McpToolName.PATCH_FILE, portal, identity_id, {
