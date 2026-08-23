@@ -144,7 +144,7 @@ dependency is tracked in `exaix-dev-docs/planning/phase-110-security-hardening-f
 | Mandatory-HMAC fail-closed pattern                       | `packages/triggers/adapters/webhook_adapter.ts`   | Any new external-event ingestion adapter                                                         |
 
 > The full catalogue of prior findings and their fixes lives in
-> `exaix-dev-docs/dev/Exaix_Security_Vulnerability_Analysis.md`. Read it before
+> `exaix-dev-docs/dev/security/Exaix_Security_Vulnerability_Analysis.md`. Read it before
 > auditing a surface — it records what was already exploitable and how it was closed.
 
 ---
@@ -341,11 +341,11 @@ For each finding, write a TDD-First remediation step:
 ### Phase 6 — Finalize
 
 1. Append findings + remediation steps to the canonical security report at
-   `exaix-dev-docs/dev/Exaix_Security_Vulnerability_Analysis.md` (keep its
+   `exaix-dev-docs/dev/security/Exaix_Security_Vulnerability_Analysis.md` (keep its
    numbering and status conventions), and add the Attack-Surface row (S1–S9)
    each finding belongs to. Open security work is tracked in
    `exaix-dev-docs/planning/phase-110-security-hardening-followups.md`.
-2. Run `deno run --allow-read --allow-write scripts/markdown_lint.ts <doc>`.
+1. Run `deno run --allow-read --allow-write scripts/markdown_lint.ts <doc>`.
 
 ---
 
@@ -376,12 +376,12 @@ and the `impact:` component before `:` must appear verbatim in `what:`.
 ## Output Format
 
 1. **Audit verdict** — ✅ No findings / ⚠️ Minor issues / ❌ Security issues found (blocks merge).
-2. **Findings table** — one row per finding (surface S1–S9, item, OWASP, file, description).
-3. **Detail section** — one block per finding with attack scenario, the canonical
+1. **Findings table** — one row per finding (surface S1–S9, item, OWASP, file, description).
+1. **Detail section** — one block per finding with attack scenario, the canonical
    primitive it should reuse, and the required fix.
-4. **Remediation steps** — TDD-First steps ready for `#next-steps` or direct implementation.
-5. **Next action** — use `#fix-bug` per finding, then `#commit` when all resolved.
-6. **Commit payload** — structured commit message generated via `#commit` once all findings are remediated.
+1. **Remediation steps** — TDD-First steps ready for `#next-steps` or direct implementation.
+1. **Next action** — use `#fix-bug` per finding, then `#commit` when all resolved.
+1. **Commit payload** — structured commit message generated via `#commit` once all findings are remediated.
 
 ---
 exaix:
