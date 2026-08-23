@@ -19,7 +19,6 @@ import {
   ENV_PORTAL_ALIAS,
   ENV_TRACE_ID,
   ExecutionStrategyName,
-  SecurityMode,
   SystemCommand,
 } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
@@ -159,15 +158,18 @@ export class McpAgentStrategy implements IExecutionStrategy {
     }
   }
 
-  private buildAgentArgs(_blueprint: IAgentFileBlueprint, options: IAgentExecutionOptions): string[] {
+  private buildAgentArgs(_blueprint: IAgentFileBlueprint, _options: IAgentExecutionOptions): string[] {
     const args = ["run"];
 
-    // Permissions based on SecurityMode
-    if (options.security_mode === SecurityMode.SANDBOXED) {
-      args.push("--allow-read", "--allow-net");
-    } else {
-      args.push("--allow-all");
-    }
+    // Permissions (Phase 170 Weakness 1): the spawned MCP agent process always runs with
+    // the same scoped grant — read + network — regardless of SecurityMode. It previously
+    // granted unrestricted --allow-all to non-SANDBOXED (HYBRID) modes, inverting the
+    // documented SecurityMode containment mapping. SANDBOXED's read+net scope is the named
+    // prior-phase contract (tests/security/subprocess_isolation_test.ts, Step 61.7/G3);
+    // HYBRID was reduced to that same scoped set in Phase 170, since buildAgentArgs has no
+    // portal path here to express the richer --allow-read=<portal> scoping
+    // (see Security_Decision_Ledger D006).
+    args.push("--allow-read", "--allow-net");
 
     // Path to entry point
     const entrypoint = Deno.env.get("EXAIX_AGENT_ENTRYPOINT") || "apps/agent-entrypoint/main.ts";

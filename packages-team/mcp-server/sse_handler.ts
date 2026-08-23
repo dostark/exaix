@@ -21,12 +21,21 @@ const HEARTBEAT_INTERVAL_MS = 15_000;
 /** Default cap on concurrent SSE subscriptions, guarding against local DoS (Finding 13). */
 const DEFAULT_MAX_CONCURRENT_STREAMS = 64;
 
+/** Default per-client cap on concurrent SSE subscriptions (keyed by request Host), guarding against local DoS (Phase 170 sub-phase 2). */
+const DEFAULT_MAX_STREAMS_PER_CLIENT = 8;
+
+/** Default idle-disconnect timeout: a stream that has received no non-heartbeat event for this long is closed to release its subscription and slot (Phase 170 sub-phase 2). */
+const DEFAULT_IDLE_TIMEOUT_MS = 5 * 60_000;
+
 export class SseHandler {
   private activeStreams = 0;
+  private clientStreamCounts = new Map<string, number>();
 
   constructor(
     private eventBus: IEventBusService,
     private readonly maxConcurrentStreams: number = DEFAULT_MAX_CONCURRENT_STREAMS,
+    private readonly maxStreamsPerClient: number = DEFAULT_MAX_STREAMS_PER_CLIENT,
+    private readonly idleTimeoutMs: number = DEFAULT_IDLE_TIMEOUT_MS,
   ) {}
 
   /**
@@ -95,7 +104,8 @@ export class SseHandler {
 
   /**
    * Bridge HTTP SSE to EventBusService.subscribe.
-   * Enforces a concurrent-stream cap (Finding 13) and unsubscribes on client
+   * Enforces a concurrent-stream cap plus a per-client (Host-keyed) cap and an
+   * idle-disconnect timeout (Phase 170 sub-phase 2), and unsubscribes on client
    * disconnect (req.signal abort) or stream cancellation.
    */
   private streamEvents(traceId: string, req: Request): Response {
@@ -103,17 +113,34 @@ export class SseHandler {
     if (this.activeStreams >= this.maxConcurrentStreams) {
       return new Response("Too many concurrent streams", { status: 429 });
     }
+    // Per-client cap: keyed on the request Host so one client cannot exhaust the shared
+    // global budget via many parallel streams. Constructed Requests may lack a Host
+    // header, so fall back to the URL's host (identical value in real-server cases).
+    const clientKey = (req.headers.get("host") ?? new URL(req.url).host).toLowerCase();
+    const clientCount = this.clientStreamCounts.get(clientKey) ?? 0;
+    if (clientCount >= this.maxStreamsPerClient) {
+      return new Response("Too many concurrent streams for this client", { status: 429 });
+    }
     this.activeStreams += 1;
+    this.clientStreamCounts.set(clientKey, clientCount + 1);
 
     let unsubscribe: (() => void) | undefined;
     let heartbeatInterval: ReturnType<typeof setInterval> | undefined;
+    let idleCheckInterval: ReturnType<typeof setInterval> | undefined;
+    let lastActivityAt = Date.now();
     let closed = false;
     const cleanup = () => {
       if (closed) return;
       closed = true;
       if (heartbeatInterval !== undefined) clearInterval(heartbeatInterval);
+      if (idleCheckInterval !== undefined) clearInterval(idleCheckInterval);
       unsubscribe?.();
       this.activeStreams -= 1;
+      const remaining = this.clientStreamCounts.get(clientKey);
+      if (remaining !== undefined) {
+        if (remaining <= 1) this.clientStreamCounts.delete(clientKey);
+        else this.clientStreamCounts.set(clientKey, remaining - 1);
+      }
     };
 
     const stream = new ReadableStream({
@@ -123,6 +150,7 @@ export class SseHandler {
 
         unsubscribe = this.eventBus.subscribe(traceId, (event: IStreamingEvent) => {
           const data = SseHandler.formatSseEvent(event);
+          lastActivityAt = Date.now();
           try {
             controller.enqueue(new TextEncoder().encode(data));
           } catch {
@@ -130,7 +158,8 @@ export class SseHandler {
           }
         });
 
-        // Emit a heartbeat to keep the connection alive.
+        // Emit a heartbeat to keep the connection alive (does not reset the idle timer:
+        // the timer measures event-less time, not byte-less time).
         heartbeatInterval = setInterval(() => {
           try {
             controller.enqueue(new TextEncoder().encode(":\n\n"));
@@ -138,6 +167,19 @@ export class SseHandler {
             // Stream already closed — ignore
           }
         }, HEARTBEAT_INTERVAL_MS);
+
+        // Idle-disconnect: close a stream that has produced no real event recently,
+        // releasing its event-bus subscription and its concurrency slot.
+        idleCheckInterval = setInterval(() => {
+          if (Date.now() - lastActivityAt >= this.idleTimeoutMs) {
+            cleanup();
+            try {
+              controller.close();
+            } catch {
+              // Already closed
+            }
+          }
+        }, Math.min(HEARTBEAT_INTERVAL_MS, this.idleTimeoutMs));
 
         // Free the subscription + slot on client disconnect.
         req.signal.addEventListener("abort", () => {

@@ -1292,25 +1292,30 @@ export class MCPServer implements OAuthTokenVerifier {
         return this.addSecurityHeaders(rejected);
       }
 
+      const url = new URL(request.url);
+      const isTraceRoute = SseHandler.matchesTraceIdRoute(url.pathname);
+
       if (authGate) {
         const metadata = oauthMetadataResponse(request, this.buildAuthMetadataOptions(request));
         if (metadata) {
           return this.addSecurityHeaders(metadata);
         }
-      }
-
-      const url = new URL(request.url);
-      if (SseHandler.matchesTraceIdRoute(url.pathname)) {
-        return this.addSecurityHeaders(sseHandler.handleRequest(request));
-      }
-
-      if (authGate) {
+        // Phase 170 Weakness 2: the trace-stream SSE route must be gated by the same bearer
+        // auth as every other MCP HTTP route — it was previously dispatched before authGate
+        // ran, leaving the stream reachable without a token when mcp.require_auth=true.
         const auth = await authGate(request);
         if (auth instanceof Response) {
           return this.addSecurityHeaders(auth);
         }
+        if (isTraceRoute) {
+          return this.addSecurityHeaders(sseHandler.handleRequest(request));
+        }
         const response = await handler.fetch(request, { authInfo: auth });
         return this.addSecurityHeaders(response);
+      }
+
+      if (isTraceRoute) {
+        return this.addSecurityHeaders(sseHandler.handleRequest(request));
       }
 
       const response = await handler.fetch(request);

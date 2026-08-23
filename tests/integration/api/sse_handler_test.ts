@@ -5,7 +5,7 @@
  * Server-Sent Events to EventBusService for live execution streaming.
  */
 
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { EventBusService } from "@exaix/core/observability";
 import { SseHandler } from "@exaix-team/mcp-server";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
@@ -192,6 +192,74 @@ Deno.test(
 // ============================================================================
 // Integration Test: SSE Stream with Event Bus
 // ============================================================================
+
+Deno.test(
+  "security: SseHandler closes an event-idle stream after the idle timeout (Phase 170 sub-phase 2)",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    const bus = new EventBusService();
+    // Global cap 100, per-client cap 100, 60ms idle timeout — short enough to test deterministically.
+    const handler = new SseHandler(bus, 100, 100, 60);
+
+    const traceId = "550e8400-e29b-41d4-a716-446655440000";
+    const response = await handler.handleRequest(
+      new Request(`http://127.0.0.1:8765/api/v1/traces/${traceId}/stream`),
+    );
+    assertEquals(response.status, 200);
+
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("No response body");
+
+    // Read the initial keepalive comment, then wait for the idle timer to close the stream.
+    await reader.read();
+
+    let done = false;
+    for (let i = 0; i < 20 && !done; i++) {
+      await new Promise((r) => setTimeout(r, 25));
+      const result = await reader.read();
+      done = result.done;
+    }
+
+    reader.releaseLock();
+    bus.close();
+
+    assert(
+      done,
+      "an event-idle SSE stream must be closed by the idle-disconnect timer after idleTimeoutMs",
+    );
+  },
+);
+
+Deno.test(
+  "security: SseHandler enforces a per-client (Host-keyed) concurrent-stream cap (Phase 170 sub-phase 2)",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    const bus = new EventBusService();
+    // Global cap 100, per-client cap 1.
+    const handler = new SseHandler(bus, 100, 1);
+
+    const traceId = "550e8400-e29b-41d4-a716-446655440000";
+    const url = `http://127.0.0.1:8765/api/v1/traces/${traceId}/stream`;
+
+    const r1 = await handler.handleRequest(new Request(url));
+    const r2 = await handler.handleRequest(new Request(url));
+    assertEquals(r1.status, 200);
+    assertEquals(r2.status, 429, "a second stream from the same Host must be rejected with 429");
+
+    // A different Host is a different client and gets its own per-client budget.
+    const r3 = await handler.handleRequest(new Request(url.replace("127.0.0.1", "localhost")));
+    assertEquals(r3.status, 200);
+
+    // Freeing a slot for the first client allows a new stream again.
+    await r1.body?.cancel();
+    const r4 = await handler.handleRequest(new Request(url));
+    assertEquals(r4.status, 200);
+
+    await r3.body?.cancel();
+    await r4.body?.cancel();
+    bus.close();
+  },
+);
 
 Deno.test(
   "SseHandler: published events appear in SSE stream",

@@ -10,6 +10,7 @@
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { McpToolName } from "@exaix/mcp";
+import { DomainEventType } from "@exaix/core/events";
 
 import { join } from "@std/path";
 import {
@@ -115,16 +116,19 @@ Deno.test("read_file: logs invocation to IActivity Journal", async () => {
       // Allow time for batched logging
       await new Promise((resolve) => setTimeout(resolve, 150));
 
+      // The handler's own journal row is the one carrying the portal in its payload (a
+      // second, SDK-dispatch wrapper row for the same tool/action also exists).
       const logs = db.instance.prepare(
-        "SELECT * FROM activity WHERE action_type = ?",
-      ).all(`mcp.tool.${McpToolName.READ_FILE}`);
+        "SELECT * FROM activity WHERE action_type = ? AND target = ? AND payload LIKE ?",
+      ).all(DomainEventType.McpToolExecuted, McpToolName.READ_FILE, '%"portal":"TestPortal"%');
 
       assertEquals(logs.length, 1);
       const log = logs[0] as { target: string; payload: string };
-      assertEquals(log.target, "TestPortal");
+      assertEquals(log.target, McpToolName.READ_FILE);
       const payload = JSON.parse(log.payload);
       assertEquals(payload.path, "log-test.txt");
       assertEquals(payload.success, true);
+      assertEquals(payload.portal, "TestPortal");
     },
   );
 });
@@ -310,16 +314,19 @@ Deno.test("write_file: logs invocation to IActivity Journal", async () => {
     await server.handleRequest(request);
     await new Promise((resolve) => setTimeout(resolve, 150));
 
+    // The handler's own journal row is the one carrying the portal in its payload (a
+    // second, SDK-dispatch wrapper row for the same tool/action also exists).
     const logs = db.instance.prepare(
-      "SELECT * FROM activity WHERE action_type = ?",
-    ).all(`mcp.tool.${McpToolName.WRITE_FILE}`);
+      "SELECT * FROM activity WHERE action_type = ? AND target = ? AND payload LIKE ?",
+    ).all(DomainEventType.McpToolExecuted, McpToolName.WRITE_FILE, '%"portal":"TestPortal"%');
 
     assertEquals(logs.length, 1);
     const log = logs[0] as { target: string; payload: string };
-    assertEquals(log.target, "TestPortal");
+    assertEquals(log.target, McpToolName.WRITE_FILE);
     const payload = JSON.parse(log.payload);
     assertEquals(payload.path, "logged.txt");
     assertEquals(payload.success, true);
+    assertEquals(payload.portal, "TestPortal");
   });
 });
 

@@ -11,7 +11,6 @@ import { type MCPToolResponse, SearchFilesToolArgsSchema } from "@exaix/schemas/
 import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
-import { join } from "@std/path";
 
 /**
  * SearchFilesTool - Searches for files matching a glob pattern
@@ -28,8 +27,11 @@ export class SearchFilesTool extends ToolHandler {
       // Validate portal exists
       const portalPath = this.validatePortalExists(portal);
 
-      // Execute search via ToolRegistry
-      const searchPath = path ? join(portalPath, path) : portalPath;
+      // Resolve and validate the search base against the single authorized portal (Phase 170
+      // Weakness 3): the same canonical per-portal resolver the other MCP file handlers use,
+      // so a "path": ".." (or symlink) traversal can never leave the caller's portal even
+      // though ToolRegistry's own allowed-roots list is intentionally global.
+      const searchPath = path ? await this.resolvePortalPath(portalPath, path) : portalPath;
 
       if (!this.context.toolRegistry) {
         throw new Error("ToolRegistry not available in context");
