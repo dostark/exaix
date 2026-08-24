@@ -44,7 +44,7 @@ import { SessionToolSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
 import { parseDelegateStdout } from "@exaix/session/delegate_return_parser.ts";
 import { deriveClaudeToolFlags } from "@exaix/session/claude_permission_flags.ts";
-import { buildChildEnv } from "@exaix/core/helpers/child_env.ts";
+import { buildAllowlistChildEnv } from "@exaix/core/helpers/child_env.ts";
 import { SafeSubprocess, SubprocessError } from "@exaix/core";
 import {
   AgentExecutionErrorType,
@@ -114,6 +114,11 @@ const defaultRun: IRunCliDelegateProcess = (command, args, options) => SafeSubpr
 /** Env vars stripped from every CLI-delegate spawn so a Claude Pro/Max subscription login wins over metered API billing (see module doc's Auth section). */
 const STRIPPED_AUTH_ENV_KEYS: readonly string[] = ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"];
 
+/** The delegate's OWN subscription auth (Claude Code OAuth) — the one non-allowlisted
+ *  ambient var it genuinely needs, distinct from Exaix's provider secrets. Re-added to the
+ *  launch env explicitly (never via the ambient parent). */
+const DELEGATE_OAUTH_ENV_KEY = "CLAUDE_CODE_OAUTH_TOKEN";
+
 // git status read used by detectGitChanges() to surface the delegate's real writes as
 // files_changed. Kept LOCAL (not imported from @exaix/git) so a strategy file does not reach
 // into a low-level constants module — CODE_STYLE.md §15; values mirror git_audit_service's.
@@ -123,10 +128,13 @@ const GIT_FLAG_UNTRACKED_FILES_ALL = "--untracked-files=all";
 const GIT_STATUS_TIMEOUT_MS = 30_000;
 
 /**
- * Build the spawn env via the SHARED child-env policy (`buildChildEnv`, inherit
- * mode): the daemon's own env minus the injection-class vars (dynamic-linker,
- * interpreter-overlay, git env-config) and minus the keys that would force API-key
- * billing over a subscription login, with PWD overridden to match `portalPath`.
+ * Build the spawn env via the SHARED child-env policy (`buildAllowlistChildEnv`,
+ * allowlist mode): only the safe parent keys (PATH/HOME/LANG/LC_ALL/TERM/TMPDIR) plus the
+ * deliberate PWD override and the delegate's own OAuth subscription auth reach the
+ * subprocess. Ambient secrets (OPENROUTER_API_KEY, cloud/VCS/SSH credentials) and proxy
+ * vars are excluded — the delegate is a foreign agent and must run fail-closed (GAP-28).
+ * The prior inherit mode forwarded the daemon's full secret stack, which the shared policy
+ * reserves for first-party tools only.
  * Deno.Command's `cwd` option changes the OS-level working directory the subprocess
  * is spawned into, but does NOT update a `PWD` env var inherited via
  * Deno.env.toObject() — the daemon's own PWD (wherever it was originally launched
@@ -136,7 +144,12 @@ const GIT_STATUS_TIMEOUT_MS = 30_000;
  * so PWD must always be kept in sync with the real spawn cwd.
  */
 function buildDelegateEnv(portalPath: string): Record<string, string> {
-  const env = buildChildEnv({ mode: "inherit", env: { PWD: portalPath } }).env;
+  const launchEnv: Record<string, string> = { PWD: portalPath };
+  const oauth = Deno.env.get(DELEGATE_OAUTH_ENV_KEY);
+  if (oauth !== undefined) {
+    launchEnv[DELEGATE_OAUTH_ENV_KEY] = oauth;
+  }
+  const env = buildAllowlistChildEnv(launchEnv, Deno.env.toObject());
   for (const key of STRIPPED_AUTH_ENV_KEYS) delete env[key];
   return env;
 }

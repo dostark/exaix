@@ -221,6 +221,26 @@ Deno.test("[delegate_matrix] the scenario steps expandMatrix produces 5 cell-run
   }
 });
 
+Deno.test("[delegate_matrix][security] the codex cell asserts the REAL worktree file-content proof (GREETING in src/main.ts), not just a reconciled journal row", async () => {
+  // Phase 167 Step 4's Action requires "retain the real worktree file-content proof"; GAP-30
+  // verified the matrix only asserted journal events, so a codex run returning
+  // accepted-changes_made with ZERO real edits could pass. Assert the codex cell carries a
+  // file-contains step pinning the fixture's acceptance content.
+  const scenario = await parseMatrixScenario();
+  const byId = new Map(scenario.steps.map((s) => [s.id, s]));
+  const contentStep = byId.get("assert-codex-worktree-change");
+  assert(contentStep, "assert-codex-worktree-change step must exist on the codex cell");
+  assertEquals(contentStep.type, ScenarioStepType.FILE_CONTAINS);
+  assertEquals(contentStep.cells, ["codex"], "the file-content step must be codex-cell-scoped");
+  const textContains = (contentStep.output_criteria ?? []).find((c) => c.kind === CriterionKind.TEXT_CONTAINS);
+  assert(textContains, "the file-content step must carry a text-contains criterion");
+  assertEquals(
+    "contains" in textContains! ? textContains.contains : undefined,
+    "export const GREETING =",
+    "must pin the actual fixture acceptance content (src/main.ts declares GREETING)",
+  );
+});
+
 Deno.test("[delegate_matrix][security] the codex cell is skipped, not run, when EXA_MATRIX_CODEX is unset (explicit opt-in; default CI never spends a Codex subscription)", async () => {
   const scenario = await parseMatrixScenario();
   assert(scenario.matrix, "scenario must have a matrix block");

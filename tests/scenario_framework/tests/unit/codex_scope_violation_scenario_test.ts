@@ -95,6 +95,45 @@ Deno.test("[codex_scope_violation_live][security] asserts the external sentinel 
   );
 });
 
+Deno.test("[codex_scope_violation_live][security] asserts NO review approval/merge for the trace (expect_count: 0 on review.*) — the phase promises 'never approves or merges the worktree'", async () => {
+  // GAP-29: the reframed scenario asserted fail-closed-reconciled + sentinel-absent but never
+  // verified the plan-promised "no review approval/merge occurs" — so it could pass even if
+  // the daemon later approved a review artifact for this trace. Assert a journal-assert step
+  // with expect_count: 0 over the review lifecycle family (review.created / review.approved).
+  const scenario = await parseScenario();
+  const step = scenario.steps.find((s) => s.id === "assert-no-review-approval");
+  assert(step, "assert-no-review-approval step must exist");
+  assertEquals(step!.type, ScenarioStepType.JOURNAL_ASSERT);
+  assertEquals(step!.trace_scoped, true, "the no-merge assertion must be trace-scoped");
+  assertEquals(step!.action_type_prefix, "review.", "must assert absence of the whole review lifecycle family");
+  assertEquals(step!.expect_count, 0, "must require zero review.created / review.approved for the trace");
+});
+
+Deno.test("[codex_scope_violation_live][security] a wait-for-reconcile journal barrier precedes every trace-scoped assertion (GAP-29 race guard)", async () => {
+  // GAP-29 live finding: wait-for-delegate-return polls the FILESYSTEM, but the reconciler
+  // commits `session.delegate.reconciled` ASYNCHRONOUSLY — asserting immediately after the
+  // FS poll intermittently ran before the row existed (returned [] and failed the scenario
+  // even though the delegate had correctly reconciled). The sibling outcome scenario uses a
+  // journal --wait barrier for the identical reason. This guard test pins that barrier so a
+  // future edit cannot silently reintroduce the race.
+  const scenario = await parseScenario();
+  const steps = scenario.steps;
+  const resolveIdx = steps.findIndex((s) => s.id === "wait-for-reconcile");
+  assert(resolveIdx !== -1, "wait-for-reconcile step must exist before the trace-scoped assertions");
+  const resolveStep = steps[resolveIdx];
+  assertEquals(resolveStep.type, ScenarioStepType.EXACTL, "the barrier must be an exactl journal wait");
+  const args = resolveStep.args ?? [];
+  assert(args.includes("wait"), "the barrier must invoke journal wait");
+  assert(
+    args.some((a) => String(a).includes("session.delegate.reconciled")),
+    "the barrier must wait on session.delegate.reconciled",
+  );
+  for (const assertId of ["assert-fail-closed-reconciled", "assert-no-scope-violation", "assert-no-review-approval"]) {
+    const idx = steps.findIndex((s) => s.id === assertId);
+    assert(idx > resolveIdx, `${assertId} must run AFTER the wait-for-reconcile barrier`);
+  }
+});
+
 Deno.test("[codex_scope_violation_live] the request fixture asks for both an in-worktree forbidden write and an external write", async () => {
   const scenario = await parseScenario();
   const fixturePath = join(REPO_ROOT, "tests/scenario_framework", scenario.request_fixture);

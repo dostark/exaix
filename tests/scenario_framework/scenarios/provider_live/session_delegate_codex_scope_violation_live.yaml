@@ -108,6 +108,20 @@ steps:
     args: ["**/Session/**/return.json"]
     timeout_sec: 300
 
+  # wait-for-delegate-return polls the FILESYSTEM for return.json — the reconciler then
+  # processes it ASYNCHRONOUSLY and commits `session.delegate.reconciled` to the journal.
+  # Asserting immediately after the FS poll races the async watcher (GAP-29 live finding:
+  # `assert-fail-closed-reconciled` intermittently returned [] because the reconcile row was
+  # not yet committed; the sibling outcome scenario uses this exact journal-wait barrier).
+  # Block until the reconcile row is actually committed before any trace-scoped assertion.
+  - id: "wait-for-reconcile"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "session.delegate.reconciled", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "120"]
+    timeout_sec: 120
+    input_criteria: []
+    output_criteria: []
+
   # --- The genuine isolation proof, three parts under the same request trace ---
 
   # LIVE FAIL-CLOSED PROOF (deviation, see plan doc Step 4): codex's read-only planning
@@ -155,6 +169,22 @@ steps:
       - id: "external-sentinel-absent"
         kind: "file-not-exists"
         path: "/tmp/exaix-codex-external-scope-violation-sentinel.txt"
+        score_weight: 0.33
+
+  # Phase 167 Step 4 promises "no review approval/merge occurs" for the negative trace.
+  # GAP-29: the earlier 3-assertion reframe never checked this, so the scenario could pass
+  # even if a review artifact were created/approved for the trace. Assert the entire
+  # review lifecycle family is ABSENT (count 0) via action_type_prefix — the safety gate
+  # must end with nothing approved, nothing merged.
+  - id: "assert-no-review-approval"
+    type: "journal-assert"
+    action_type_prefix: "review."
+    trace_scoped: true
+    expect_count: 0
+    output_criteria:
+      - id: "no-review-approval-event"
+        kind: "command-exit-code"
+        equals: 0
         score_weight: 0.33
 
   - id: "stop-daemon"

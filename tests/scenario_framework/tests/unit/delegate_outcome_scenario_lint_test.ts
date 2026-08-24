@@ -58,11 +58,15 @@ Deno.test("[delegate-outcome-lint] the outcome scenario asserts delegate-produce
 });
 
 Deno.test("[delegate-outcome-lint] plumbing-only scenarios do not satisfy the outcome check", async () => {
-  const path = join(SCENARIOS_DIR, "provider_live/session_delegate_matrix_live.yaml");
+  // Phase 167 Step 4 / GAP-30 added the real worktree file-content proof to the matrix
+  // scenario (assert-codex-worktree-change), so it is no longer plumbing-only — it now
+  // legitimately passes the outcome check. Re-point this anti-tauntology guard at a scenario
+  // that remains genuinely plumbing-only (a TUI flow with no delegate-content assertion).
+  const path = join(SCENARIOS_DIR, "provider_live/multi-agent-tui-flow.yaml");
   const parsed = ScenarioSchema.parse(parseYaml(await Deno.readTextFile(path)));
   assert(
     !assertsProducedContent(parsed.steps),
-    "the matrix scenario asserts plumbing only — if it now satisfies the outcome check, " +
-      "the check has been loosened to the point of proving nothing",
+    "multi-agent-tui-flow.yaml asserts content it should not — if it now satisfies the " +
+      "outcome check, the check has been loosened to the point of proving nothing",
   );
 });

@@ -125,6 +125,20 @@ Deno.test("[child-env] isInjectionEnvVar classifies dynamic-linker, overlay and 
   assert(!isInjectionEnvVar("HTTP_PROXY"), "proxy vars are not injection vars (kept for trusted tools)");
 });
 
+Deno.test("[child-env] bare ENV is a deliberate, pinned injection var (POSIX sh startup-file injection; kept for defense-in-depth, GAP-32)", () => {
+  // GAP-32 decision (2026-08-24 post-gap): `ENV` is the POSIX sh startup-file variable that
+  // makes an interactive shell source a parent-controlled file on startup — same injection
+  // class as BASH_ENV. It is deliberately kept in the overlay class because (a) no production
+  // Exaix tool reads a bare `ENV`, so the collision risk is theoretical, and (b) a foreign
+  // child inheriting a poisoned ENV pointing at a malicious rc file is a real supply-chain
+  // vector. Keeping it scrubbed from every child AND from the daemon/exactl process env at
+  // entry is the fail-closed choice; operators who genuinely need ENV set it per-command.
+  assert(isInjectionEnvVar("ENV"), "bare ENV must be classified as an injection var");
+  const { env } = buildChildEnv({ mode: "inherit", env: {}, parentEnv: { ENV: "/tmp/evil.sh", PATH: "/usr/bin" } });
+  assertEquals(env.ENV, undefined, "ENV must be stripped from a child env");
+  assertEquals(env.PATH, "/usr/bin");
+});
+
 Deno.test("[child-env] SECRET_ENV_PATTERN names common secret shapes", () => {
   for (
     const name of [

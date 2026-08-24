@@ -265,6 +265,62 @@ Deno.test("CliDelegateStrategy: strips ANTHROPIC_API_KEY and ANTHROPIC_AUTH_TOKE
   }
 });
 
+Deno.test("CliDelegateStrategy: buildDelegateEnv is allowlist-based — no ambient secrets/proxy reach the delegate; the delegate's OWN OAuth token survives", async () => {
+  // GAP-28 remediation (shared child-env policy): CliDelegateStrategy used inherit mode,
+  // which forwarded the daemon's full secret stack (OPENROUTER_API_KEY, GitHub/AWS/SSH) to
+  // the write-capable delegate. It must now be allowlist-based: only the 6 safe parent keys
+  // plus the deliberate PWD override and the delegate's own subscription auth
+  // (CLAUDE_CODE_OAUTH_TOKEN) reach the subprocess.
+  const originalPwd = Deno.env.get("PWD");
+  const originalOauth = Deno.env.get("CLAUDE_CODE_OAUTH_TOKEN");
+  const originalOpenRouter = Deno.env.get("OPENROUTER_API_KEY");
+  const originalToken = Deno.env.get("ANTHROPIC_AUTH_TOKEN");
+  Deno.env.set("PWD", "/some/stale/daemon/launch/dir");
+  Deno.env.set("CLAUDE_CODE_OAUTH_TOKEN", "delegate-own-subscription-auth");
+  Deno.env.set("OPENROUTER_API_KEY", "sk-or-ambient-secret");
+  Deno.env.set("ANTHROPIC_AUTH_TOKEN", "token-should-not-reach-subprocess");
+
+  let capturedEnv: Record<string, string> | undefined;
+  const run: IRunCliDelegateProcess = (_command, _args, options) => {
+    capturedEnv = options.env;
+    return Promise.resolve({ code: 0, stdout: resultLine("done"), stderr: "" });
+  };
+
+  try {
+    const strategy = new CliDelegateStrategy({
+      tool: "claude-code",
+      bin: "claude",
+      resolvePortalPath: () => "/tmp/worktree-checkout",
+      run,
+    });
+    await strategy.execute(makeBlueprint(), makeContext(), makeOptions());
+
+    assertEquals(capturedEnv?.PATH, Deno.env.get("PATH"), "PATH must be forwarded (safe allowlist key)");
+    assertEquals(capturedEnv?.HOME, Deno.env.get("HOME"), "HOME must be forwarded (safe allowlist key)");
+    assertEquals(capturedEnv?.PWD, "/tmp/worktree-checkout", "PWD override must survive");
+    assertEquals(
+      capturedEnv?.CLAUDE_CODE_OAUTH_TOKEN,
+      "delegate-own-subscription-auth",
+      "the delegate's own OAuth subscription auth must survive (explicit launch env)",
+    );
+    assertEquals(
+      capturedEnv?.OPENROUTER_API_KEY,
+      undefined,
+      "ambient OPENROUTER_API_KEY must never reach the delegate",
+    );
+    assertEquals(capturedEnv?.ANTHROPIC_AUTH_TOKEN, undefined, "ANTHROPIC_AUTH_TOKEN must be stripped");
+  } finally {
+    if (originalPwd === undefined) Deno.env.delete("PWD");
+    else Deno.env.set("PWD", originalPwd);
+    if (originalOauth === undefined) Deno.env.delete("CLAUDE_CODE_OAUTH_TOKEN");
+    else Deno.env.set("CLAUDE_CODE_OAUTH_TOKEN", originalOauth);
+    if (originalOpenRouter === undefined) Deno.env.delete("OPENROUTER_API_KEY");
+    else Deno.env.set("OPENROUTER_API_KEY", originalOpenRouter);
+    if (originalToken === undefined) Deno.env.delete("ANTHROPIC_AUTH_TOKEN");
+    else Deno.env.set("ANTHROPIC_AUTH_TOKEN", originalToken);
+  }
+});
+
 Deno.test("CliDelegateStrategy: overrides the subprocess PWD env var to match the resolved portal/worktree path, not the daemon's own stale PWD", async () => {
   // Live-observed root cause: Deno.Command's `cwd` option changes the OS-level working
   // directory the subprocess is spawned into, but does NOT touch a `PWD` env var inherited
