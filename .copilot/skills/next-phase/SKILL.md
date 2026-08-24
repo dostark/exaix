@@ -134,16 +134,14 @@ scans are expensive (166+ files) — do this rarely, prefer incremental refresh.
 
 ## Examples
 
-- Session (2026-08-15): asked "which planning phase is most productive to take next".
-  Audited the active 130-167 frontier plus spot-checked older phases; recommended
-  Phase 166 (Codex CLI Delegate) — zero dependencies, 5 bounded steps, Risk L, and the
-  `codex` CLI binary was confirmed present (`which codex` → `codex-cli 0.77.0`), so it was
-  both implementable and live-verifiable in the same session. Runners-up: Phase 154 (MCP
-  Tool Catalog Unification — ready but Step 2 carries a real architectural-decision
-  ambiguity), Phase 161 (Identity Persona Value Isolation — ready but needs paid,
-  multi-trial live LLM runs across the identity catalog), Phase 145-149 (the
-  eval-framework-maturation cluster — all legitimate, but each is a multi-step strategic
-  initiative better suited to a dedicated push than a single "what's next" pick).
+- Session: asked "which planning phase is most productive to take next".
+  Audited the active frontier plus spot-checked earlier phases; recommended the
+  next phase with zero dependencies, a bounded step count, low risk, and a CLI
+  binary confirmed present on PATH (so it was both implementable and live-verifiable
+  in the same session). Runners-up were ranked lower for a real architectural-decision
+  ambiguity, or a need for paid multi-trial live LLM runs, or being a multi-step
+  strategic initiative better suited to a dedicated push than a single "what's next"
+  pick — the ranking prose must justify every position.
 
 ## Related
 

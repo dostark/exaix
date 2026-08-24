@@ -118,8 +118,8 @@ VERIFY phase — value correctness, wiring, consumer tracing, convention check
         (`scripts/check_reachability_ledger.ts`) — it parses the row's "Production
         call-site" cell for identifier/filename mentions and greps for a real
         non-test reference outside the definition file, catching by mechanism the
-        exact mistake phase-158's 2026-08-04 post-gap analysis found by hand: six ✅
-        rows whose named call-site was never actually invoked by any committed code.
+        class of ✅ rows whose named call-site was never actually invoked by any committed
+        code (a real, recurring ledger defect).
         Advisory only (false positives happen — see the tool's own output for known
         causes), so a finding means "verify by hand," not "automatically revert to ⏳."
       Every ledger row MUST be ✅ before the phase is closed (Phase-completion gate G2).
@@ -146,7 +146,7 @@ VERIFY phase — value correctness, wiring, consumer tracing, convention check
       plan/execution/review/memory critical path, security-sensitive), add the `@visible`
       JSDoc tag to its leading comment (per the plan's Architecture Notes, §2H) —
       `check:event-coverage --fail-on-tagged` and the real pre-commit gate (Gate 19) that
-      enforce it are wired and live (landed by Phase 168). If this step modifies a file
+      enforce it are wired and live. If this step modifies a file
       that already carries an `@visible`-tagged class, treat any coverage finding on it as
       a real gap to fix in this step, not an advisory item to defer — it will fail the
       real pre-commit hook otherwise.

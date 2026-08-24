@@ -106,6 +106,7 @@ const STATIC_CHECK_TASKS: Array<{ cmd: string[]; desc: string }> = [
   { cmd: ["deno", "task", "check:doc-section-refs:staged"], desc: "Doc Section-Reference Check" },
   { cmd: ["deno", "task", "check:agent-docs-integrity"], desc: "Agent Docs Integrity Check" },
   { cmd: ["deno", "task", "check:qwen-skills-sync"], desc: "Qwen Skills Sync Check" },
+  { cmd: ["deno", "task", "check:skill-ephemera"], desc: "Skill Ephemera Check" },
   { cmd: ["deno", "task", "check:event-coverage:staged:visible"], desc: "Event Coverage Visibility Check" },
   { cmd: ["deno", "task", "check"], desc: "Type Checking" },
 ];

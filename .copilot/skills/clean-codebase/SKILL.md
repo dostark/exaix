@@ -30,9 +30,9 @@ Key points
   use `deno task ci:solo --skip-tests` / `deno task ci:team --skip-tests` (checks + build,
   no tests, fast) rather than the full `ci:solo`/`ci:team` (which also re-runs the whole
   suite a second time for coverage).
-- `deno run -A scripts/ci.ts check` is a verified single command covering 28 static
+- `deno run -A scripts/ci.ts check` is a verified single command covering the static
   gates as a true superset of the real pre-commit hook (kept in sync via
-  `tests/scripts/ci_wiring_test.ts` — Phase 168 self-improvement-retro); use it for a
+  `tests/scripts/ci_wiring_test.ts`); use it for a
   fast pass/fail signal before or between phases. It does NOT cover this skill's own
   deeper categories — `check:duplication`, `check:god-objects`, `check:leak-guard`,
   `check:no-edition-conditionals`, `check:version`, `check:unused-exports:strict` — those
@@ -78,6 +78,7 @@ Phase 1 — Baseline measurement
        deno task check:blueprint-integrity                 → Blueprint catalog identity/flow/skill resolution
        deno task check:skill-index                         → Memory/Skills ↔ Blueprints/Skills sync
        deno task check:qwen-skills-sync                    → .qwen/settings.json ↔ .copilot/skills/ sync
+       deno task check:skill-ephemera                      → leaked dated/phase-specific narrative in skill guidance
        deno task check:config-keys                         → duplicate configurable() key collisions
        deno task check:event-coverage --fail-on-tagged     → @visible-tagged classes with a coverage gap
        deno task docs-bench                                → hallucination-benchmark doc/ground-truth drift
@@ -235,8 +236,8 @@ Phase 21 — Final full-suite validation
          gates (type-check, lint, fmt, style, arch, magic, event-coverage, and every
          other real pre-commit gate; see Key Points above). Do NOT hand-chain the
          individual `deno task check:X` commands instead — a second, separately
-         maintained copy of that list is exactly how 9 of them silently went unchecked
-         here before the Phase 168 alignment.
+         maintained copy of that list is exactly how real gates silently went unchecked
+         before this was centralised.
       b. Run this skill's extras ci.ts does not cover: `deno task check:duplication`,
          `deno task check:god-objects`, `deno task check:leak-guard`,
          `deno task check:no-edition-conditionals`, `deno task check:version --dry-run`.
@@ -272,8 +273,8 @@ Phase 22 — God object detection (advisory)
       Target: score < 50 for all classes.
 
 Phase 23 — Additional pre-commit-hook parity gates
-  47. These 9 gates block the real pre-commit hook but had no coverage anywhere in this
-      skill before the Phase 168 ci.ts alignment; each is narrow and typically clean, so
+  47. These gates block the real pre-commit hook but had no coverage anywhere in this
+      skill before the ci.ts centralisation; each is narrow and typically clean, so
       fix directly from the script's own error output rather than a dedicated sub-phase:
       - `check:edition-graph` — a static higher-tier import reached the resolved dependency
         graph; move the import behind an edition-composer boundary.
@@ -323,7 +324,7 @@ Do / Don't
 - ✅ Do run the specific check after each fix batch before moving to the next phase
 - ✅ Do prefer fixing root cause over suppression annotations
 - ✅ Do run `deno task test:solo` (or `test:team`) AFTER all other checks to confirm no regressions
-- ✅ Do run `deno run -A scripts/ci.ts check` before the final commit (Phase 21, step 42a) instead of hand-chaining individual `deno task check:X` commands — a second hand-maintained copy of that list is exactly how 9 real gates went unchecked here before the Phase 168 alignment
+- ✅ Do run `deno run -A scripts/ci.ts check` before the final commit (Phase 21, step 42a) instead of hand-chaining individual `deno task check:X` commands — a second hand-maintained copy of that list is exactly how real gates went unchecked before this was centralised
 - ✅ Do keep changes behavioral-neutral (cleanup only, no feature changes)
 - ✅ Do use `deno task` wrappers instead of raw `deno check/lint/fmt` — they automatically include `packages-team/`
 - ✅ Do verify edition-conditional placement when touching edition-aware code

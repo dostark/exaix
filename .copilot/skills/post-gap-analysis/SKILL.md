@@ -295,12 +295,10 @@ For **every interface, type, or output field** the step introduces:
    own prose.** Run `deno task check:reachability-ledger <plan-doc-path>`
    (`scripts/check_reachability_ledger.ts`) first — it parses every ✅ ledger row's
    "Production call-site" cell for identifier/filename mentions and greps for a real
-   non-test reference outside the definition file. This exists because phase-158's
-   2026-08-04 post-gap analysis found six ✅ rows whose narrated call-site
-   (`computePairedComparison`, `evaluateValidityGate`, and the Step 4–6
-   skill/identity/flow reporting modules) was never actually invoked by any committed
-   code — a manual grep is what caught it, and this mechanizes that grep so it does
-   not depend on remembering to do it by hand. It is advisory (free-text heuristics
+   non-test reference outside the definition file. This mechanizes a past manual grep
+   that caught several ✅ rows whose narrated call-site was never actually invoked by any
+   committed code, so the check does not depend on remembering to do it by hand. It is
+   advisory (free-text heuristics
    both miss dynamic-dispatch/registry-based wiring and can false-positive on an
    entrypoint script that omits the `import.meta.main` guard), so every finding still
    needs the manual G1-style verification above before it becomes a GAP entry — but a
@@ -398,10 +396,9 @@ findings: also flag 🔴 Critical when a tagged class's primary events have no r
 A/B runtime test (#plan §2H) proving they fire with a real payload — even when the
 static check itself passes cleanly. Gate 19 only proves the decorator/logger-call
 shape exists in source; it cannot prove the event is reached by a real production
-caller, fires with a sane payload, or carries a correct trace ID. Phase 169
-(`exaix-dev-docs/planning/phase-169-visible-event-runtime-verification.md`) is the
-precedent: it found multiple `@visible` components with a clean static pass yet zero
-real runtime coverage, including one whose event never actually fired in production —
+caller, fires with a sane payload, or carries a correct trace ID. Runtime verification
+is the precedent: it has repeatedly found `@visible` components with a clean static pass
+yet zero real runtime coverage, including one whose event never actually fired in production —
 a static-only pass is not sufficient proof of a working `@visible` contract.
 
 For every step introducing new behaviour, whether or not the tool flagged it: verify
