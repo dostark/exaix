@@ -18,6 +18,39 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 167 (Codex CLI Session Adapter)
+
+### Added
+
+- `[ai].provider = "codex-cli"` inside the ReAct execution loop and
+  `[session_delegate] tool = "codex"` with `launch_mode = "headless"` are now two
+  supported, separately-tested Codex surfaces — the headless gate runs in an isolated
+  worktree, reports every touched path, and routes through the workspace-root + post-hoc
+  `permitted_paths` reconciliation model (subscription auth via the stored `codex login`
+  credential; see `Exaix_User_Guide.md` §2.4.6 / §2.5.7).
+- `session_delegate.harden_permissions = true` now derives Codex's `--sandbox` mode from
+  the gate (`code_changes` → `workspace-write`, all other gates → `read-only`) and the
+  minimum-version probe fails closed instead of only warning.
+
+### Changed
+
+- Every spawned child environment is now built through one shared policy: foreign agent
+  binaries (claude/opencode/codex) get an allowlist of safe variables plus their own
+  explicit auth, ambient secrets and proxy settings never reach them; trusted first-party
+  tools strip dynamic-linker, interpreter-overlay and git env-config injection variables;
+  and the daemon/exactl entry scrubs those injection classes from the process environment
+  at startup.
+
+### Security
+
+- Ambient secrets (e.g. `OPENROUTER_API_KEY`, cloud/VCS/SSH credentials) are no longer
+  forwarded to the write-capable execution delegate — the third `[cli_delegate]` surface
+  now uses the same allowlist model as the other spawn paths.
+- Codex's sandbox and spawn hardening strip `LD_*`/`DYLD_*` and interpreter-overlay env
+  vars (which Deno's scoped `--allow-run` refuses to forward and which otherwise silently
+  broke every delegate spawn), and reasoning/thinking-token usage is now captured across
+  every provider and CLI-delegate parser instead of being silently discarded.
+
 ## Unreleased — Phase 154 (MCP Tool Catalog Unification)
 
 ### Changed
