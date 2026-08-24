@@ -139,16 +139,16 @@ steps:
 
   # Informational only (always passes): the flow's own terminal outcome (converged on a valid
   # action, or the "No actions generated" failure mode) is reported for the comparison doc
-  # without gating the scenario's pass/fail on a live model's reliability. The bounded poll is an
-  # exactl journal wait on flow.completed/flow.failed; exit is not gated.
+  # without gating the scenario's pass/fail on a live model's reliability. The bounded poll is
+  # a shell-form journal wait on flow.completed OR flow.failed, and always exits 0 — exit is
+  # not gated (the terminal event is nondeterministic across live runs: codex may finish as
+  # flow.completed or legitimately fail as flow.failed).
   - id: "report-flow-outcome"
-    type: "exactl"
-    command: "journal"
-    args: ["wait", "--event", "flow.completed", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "60"]
-    timeout_sec: 60
+    type: "shell"
+    command: "bash"
+    args:
+      - "-c"
+      - "$FRAMEWORK_HOME/bin/exactl journal wait --event flow.completed --since-rowid $JOURNAL_BASELINE --timeout 30 || $FRAMEWORK_HOME/bin/exactl journal wait --event flow.failed --since-rowid $JOURNAL_BASELINE --timeout 30; true"
+    timeout_sec: 90
     input_criteria: []
-    output_criteria:
-      - id: "flow-outcome-reported"
-        kind: "journal-event-exists"
-        event_type: "flow.completed"
-        score_weight: 0.0
+    output_criteria: []

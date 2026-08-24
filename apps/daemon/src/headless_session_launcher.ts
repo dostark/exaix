@@ -30,6 +30,8 @@ export interface ISpawnArgs {
   args: string[];
   cwd: string;
   env: Record<string, string>;
+  /** True when `env` is the COMPLETE child env (never merged with the parent). */
+  clearEnv: boolean;
 }
 
 export interface IHeadlessSessionLauncherDeps {
@@ -88,11 +90,16 @@ export class HeadlessSessionLauncher {
         args: args.args,
         cwd: args.cwd,
         env: args.env,
+        // The sanitized child env is the COMPLETE intended env — Deno.Command would otherwise
+        // merge it with the parent process env, reintroducing ambient LD_LIBRARY_PATH (which
+        // Deno's scoped --allow-run refuses to forward, killing the spawn) and any parent
+        // secrets the sanitize just stripped (Phase 167 Step 4 live finding).
+        clearEnv: args.clearEnv,
         stdout: "piped",
         stderr: "piped",
       }).spawn());
 
-    const child = spawn({ command: launch.command, args: launch.args, cwd: launch.cwd, env: childEnv });
+    const child = spawn({ command: launch.command, args: launch.args, cwd: launch.cwd, env: childEnv, clearEnv: true });
     const stdoutDrain = this.drainStream(child.stdout, "stdout");
     const stderrDrain = this.drainStream(child.stderr, "stderr");
     const launchTimeoutMs = this.deps.launchTimeoutMs ?? DELEGATE_LAUNCH_TIMEOUT_MS;

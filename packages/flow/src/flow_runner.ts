@@ -1922,7 +1922,15 @@ export class FlowRunner implements IFlowRunner {
       });
     }
 
-    const userPrompt = step.type === FlowStepType.GATE
+    // A strategy-declared execution step (react/cli_delegate/mcp) gets its output-format
+    // instruction from the strategy's own prompt (e.g. ReAct's toml tool-call contract),
+    // NOT from the flow step's <content> plan-envelope instruction. Injecting the latter
+    // text into a forced strategy step makes a live model believe it is in the PLANNING
+    // phase and respond with a JSON plan in <content>, so a react step returns zero tool
+    // actions and ReAct fails with "No actions generated in ReAct iteration" (Phase 167
+    // Step 3 live finding). Plain no-strategy agent steps keep the envelope, since the
+    // flow's next-step / aggregated-output parsing depends on it.
+    const userPrompt = step.type === FlowStepType.GATE || step.strategy
       ? basePrompt
       : `${basePrompt}${flowStepOutputInstruction(step, flow)}`;
 

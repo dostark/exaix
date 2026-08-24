@@ -16,6 +16,7 @@ import {
   EDITION_SOLO,
   EDITION_TEAM,
   ProviderType,
+  scrubProcessEnv,
   SwapClass,
 } from "@exaix/core";
 import { Database } from "@db/sqlite";
@@ -210,6 +211,13 @@ async function resolveModelFromTrace(
 }
 
 if (import.meta.main) {
+  // Scrub ambient injection-class env vars (LD_*, NODE_OPTIONS, git env-config, …)
+  // BEFORE any service init or spawn path reads the process env (Phase 167 Step 4):
+  // the daemon is started from a shell that may export them for unrelated toolchains,
+  // and every child it spawns — including raw Deno.Command calls that bypass
+  // SafeSubprocess — would otherwise inherit them.
+  scrubProcessEnv();
+
   // Simple argument handling for the compiled binary
   if (Deno.args.includes("--version") || Deno.args.includes("-v")) {
     console.log("Exaix Daemon v0.1.0");

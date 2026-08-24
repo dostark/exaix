@@ -4,9 +4,17 @@
  * @description Phase 159 Step 4: the `flow.step.started`/`flow.step.completed` journal
  *   events carry the step's declared `strategy` in their payload when set, so a scenario
  *   can assert which strategy executed a step. Absent for a step with no strategy.
+ *   Phase 167 Step 3 closure: a strategy-declared step's `userPrompt` must NOT carry the
+ *   `<content>` plan-envelope output instruction (flow_runner.flowStepOutputInstruction),
+ *   because a tool-calling execution strategy (react/cli_delegate/mcp) already instructs
+ *   the model to emit tool calls; injecting the "PLANNING phase / output a JSON plan in
+ *   <content>" text makes a live model return a plan JSON instead of actions, causing
+ *   ReAct to fail with "No actions generated in ReAct iteration". A plain (no-strategy)
+ *   agent step keeps the envelope instruction, since its contiguity with the flow's
+ *   aggregated output depends on it.
  */
 
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import {
   ExecutionStrategyName,
   FlowInputSource,
@@ -20,14 +28,17 @@ import type { IAgentExecutionResult } from "@exaix/execution";
 import type { JSONValue } from "@exaix/core/types";
 
 class StubAgentExecutor implements IAgentExecutor {
-  run(_identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+  received: Array<{ identityId: string; request: IFlowStepRequest }> = [];
+  run(identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+    this.received.push({ identityId, request });
     return Promise.resolve({ thought: "ok", content: "done", raw: "done" });
   }
   runWithStrategy(
-    _identityId: string,
-    _request: IFlowStepRequest,
+    identityId: string,
+    request: IFlowStepRequest,
     _strategy: ExecutionStrategyName.REACT | ExecutionStrategyName.MCP | ExecutionStrategyName.CLI_DELEGATE,
   ): Promise<IAgentExecutionResult> {
+    this.received.push({ identityId, request });
     return Promise.resolve({ thought: "ok", content: "strategy-done", raw: "strategy-done" });
   }
 }
@@ -97,4 +108,60 @@ Deno.test("FlowRunner: flow.step.started/completed carry no strategy field when 
   const completed = eventLogger.events.find((e) => e.event === "flow.step.completed");
   assertEquals(started?.payload.strategy, undefined);
   assertEquals(completed?.payload.strategy, undefined);
+});
+
+Deno.test("FlowRunner: a strategy-declared step's userPrompt does NOT carry the <content> plan-envelope output instruction", async () => {
+  // Phase 167 Step 3 closure: the react step prompt must ONLY instruct tool-calling, never
+  // the "PLANNING phase / output a JSON plan in <content>" text, or a live codex model obeys
+  // the planning instruction and returns a plan JSON instead of toml tool actions (the real
+  // "No actions generated in ReAct iteration" failure). Regression over the whole execution
+  // strategy set: react, cli_delegate, mcp.
+  for (
+    const strategy of [
+      ExecutionStrategyName.REACT,
+      ExecutionStrategyName.CLI_DELEGATE,
+      ExecutionStrategyName.MCP,
+    ] as const
+  ) {
+    const executor = new StubAgentExecutor();
+    const runner = new FlowRunner({ agentExecutor: executor, eventLogger: new CapturingEventLogger() });
+
+    await runner.execute(makeFlow(strategy), {
+      userPrompt: "do the thing",
+      traceId: crypto.randomUUID(),
+      requestId: `req-${strategy}`,
+      portal: "workspace",
+    });
+
+    assertEquals(executor.received.length, 1);
+    const prompt = executor.received[0].request.userPrompt;
+    assert(
+      !prompt.includes("<content>"),
+      `strategy step '${strategy}' must not receive the plan-envelope <content> instruction, got: ${prompt}`,
+    );
+    assert(
+      !/step of a multi-agent flow/i.test(prompt),
+      `strategy step '${strategy}' must not be told it is a flow output step, got: ${prompt}`,
+    );
+  }
+});
+
+Deno.test("FlowRunner: a plain no-strategy agent step keeps the <content> plan-envelope output instruction", async () => {
+  // Regression guard: the flow output step's <content> envelope contract is unchanged for
+  // a plain (no-strategy) agent step — the next step / aggregated output still parses it.
+  const executor = new StubAgentExecutor();
+  const runner = new FlowRunner({ agentExecutor: executor, eventLogger: new CapturingEventLogger() });
+
+  await runner.execute(makeFlow(), {
+    userPrompt: "do the thing",
+    traceId: crypto.randomUUID(),
+    requestId: "req-plain",
+    portal: "workspace",
+  });
+
+  assertEquals(executor.received.length, 1);
+  const prompt = executor.received[0].request.userPrompt;
+  assert(prompt.includes("<content>"), "a plain agent step keeps the <content> envelope instruction");
+  assert(/must be valid JSON/i.test(prompt), "a plain agent step still demands valid JSON in <content>");
+  assert(/step of a multi-agent flow/i.test(prompt), "a plain agent step is still framed as a flow step");
 });

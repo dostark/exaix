@@ -5,13 +5,20 @@
  *   scenario session_delegate_codex_scope_violation_live.yaml. Mirrors
  *   scope_violation_scenario_test.ts's role for the opencode negative scenario, adapted
  *   for the trace-scoped `action_type`/`expect_count`/`payload_*` step fields this
- *   scenario uses instead of the older journal-event-exists criterion kind. No new
- *   scenario step kind is introduced; this guards against literal drift and proves the
- *   scenario asserts BOTH scope-enforcement layers (workspace-write sandbox confinement
- *   for the external write, post-hoc checkScope for the in-worktree forbidden write)
- *   under the same request trace. The live runtime assertion is Step 4's non-deferrable
- *   provider-live cutover (deferred pending Codex account quota — see the plan doc's
- *   Reachability Ledger row CODEX-LIVE-GENERATION-QUOTA).
+ *   scenario uses instead of the older journal-event-exists criterion kind.
+ *
+ *   LIVE DEVIATION (2026-08-24): the real codex-cli PLANNING provider fails closed AT
+ *   PLAN TIME for this fixture — it recognizes both writes as out-of-scope and generates
+ *   a plan whose only step is read-only, so the delegate is briefed with no write intent
+ *   and `session.delegate.scope_violation` never fires. The scenario therefore asserts
+ *   the fail-closed guarantees the live path ACTUALLY produces: a reconciled
+ *   `changes_made` return with no write paths, scope_violation ABSENT (nothing escaped),
+ *   and the external sentinel never landing. The layer-2 checkScope fire path (an
+ *   in-worktree write outside permitted_paths -> scope_violation) is proven
+ *   authoritatively by the fake-spawn test apps/daemon/tests/codex_session_scope_test.ts —
+ *   see the plan doc's Step 4 deviation note. The live runtime assertion is Step 4's
+ *   provider-live cutover (see the plan doc's Reachability Ledger row
+ *   CODEX-LIVE-GENERATION-QUOTA).
  * @architectural-layer Test
  * @related-files [tests/scenario_framework/scenarios/provider_live/session_delegate_codex_scope_violation_live.yaml, packages/core/src/events/domain_event_types.ts]
  */
@@ -50,23 +57,28 @@ Deno.test("[codex_scope_violation_live] uses configs/dogfood.codex.toml, not an 
   assertEquals(startDaemon!.env?.EXA_CONFIG_PATH, "$FRAMEWORK_HOME/../../configs/dogfood.codex.toml");
 });
 
-Deno.test("[codex_scope_violation_live][security] asserts session.delegate.scope_violation, trace-scoped, real DomainEventType string", async () => {
+Deno.test("[codex_scope_violation_live][security] asserts the fail-closed reconciled return (changes_made, no write) trace-scoped — the delegate was briefed read-only", async () => {
   const scenario = await parseScenario();
-  const step = scenario.steps.find((s) => s.id === "assert-scope-violation-journalled");
-  assert(step, "assert-scope-violation-journalled step must exist");
+  const step = scenario.steps.find((s) => s.id === "assert-fail-closed-reconciled");
+  assert(step, "assert-fail-closed-reconciled step must exist");
+  assertEquals(step!.type, ScenarioStepType.JOURNAL_ASSERT);
+  assertEquals(step!.trace_scoped, true);
+  assertEquals(step!.action_type, DomainEventType.SessionDelegateReconciled);
+  assertEquals(step!.action_type, "session.delegate.reconciled");
+  assert(
+    step!.payload_equals?.some((e) => e.path === "decision" && e.value === "changes_made"),
+    "must pin the reconciled decision to changes_made (the fail-closed no-op return)",
+  );
+});
+
+Deno.test("[codex_scope_violation_live][security] asserts session.delegate.scope_violation is ABSENT (expect_count: 0) — codex failed closed at plan time, so nothing escaped", async () => {
+  const scenario = await parseScenario();
+  const step = scenario.steps.find((s) => s.id === "assert-no-scope-violation");
+  assert(step, "assert-no-scope-violation step must exist");
   assertEquals(step!.type, ScenarioStepType.JOURNAL_ASSERT);
   assertEquals(step!.trace_scoped, true);
   assertEquals(step!.action_type, DomainEventType.SessionDelegateScopeViolation);
   assertEquals(step!.action_type, "session.delegate.scope_violation");
-});
-
-Deno.test("[codex_scope_violation_live][security] asserts session.delegate.reconciled is ABSENT (expect_count: 0) for this trace — the wait was never resumed", async () => {
-  const scenario = await parseScenario();
-  const step = scenario.steps.find((s) => s.id === "assert-wait-not-resumed");
-  assert(step, "assert-wait-not-resumed step must exist");
-  assertEquals(step!.type, ScenarioStepType.JOURNAL_ASSERT);
-  assertEquals(step!.trace_scoped, true);
-  assertEquals(step!.action_type, DomainEventType.SessionDelegateReconciled);
   assertEquals(step!.expect_count, 0);
 });
 

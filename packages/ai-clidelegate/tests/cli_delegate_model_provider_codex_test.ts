@@ -15,11 +15,10 @@
  * boolean left claude-code/opencode behavior unchanged.
  */
 
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { assertSpyCalls, spy } from "@std/testing/mock";
 import { CliDelegateModelProvider } from "../src/cli_delegate_model_provider.ts";
 import type { IRunCliDelegateProcess } from "../src/cli_delegate_model_provider.ts";
-import { ModelProviderError } from "@exaix/ai/providers";
 
 const CODEX_MODEL = "gpt-5.6-terra";
 
@@ -59,68 +58,43 @@ Deno.test("CliDelegateModelProvider: builds codex argv with exec --json --sandbo
   ]);
 });
 
-Deno.test("CliDelegateModelProvider: codex adds --output-schema <path> under cwd when jsonSchema is set and no sessionId exists", async () => {
+Deno.test("CliDelegateModelProvider: codex drops --output-schema when jsonSchema is set (codex requires strict-mode schemas; PlanAdapter enforces post-hoc)", async () => {
   const cwd = await Deno.makeTempDir();
   try {
     let seenArgs: string[] = [];
-    let schemaFileContentDuringRun = "";
-    const run: IRunCliDelegateProcess = async (_command, args) => {
+    const run: IRunCliDelegateProcess = (_command, args) => {
       seenArgs = args;
-      const schemaIdx = args.indexOf("--output-schema");
-      if (schemaIdx >= 0) {
-        schemaFileContentDuringRun = await Deno.readTextFile(args[schemaIdx + 1]);
-      }
-      return { code: 0, stdout: codexAgentMessageStdout("ok"), stderr: "" };
+      return Promise.resolve({ code: 0, stdout: codexAgentMessageStdout("ok"), stderr: "" });
     };
 
     const provider = new CliDelegateModelProvider({ tool: "codex", bin: "codex", model: CODEX_MODEL, cwd, run });
 
     await provider.generate("prompt", { jsonSchema: { type: "object", properties: {} } });
 
-    const schemaIdx = seenArgs.indexOf("--output-schema");
-    assertEquals(schemaIdx >= 0, true);
-    assertEquals(seenArgs[schemaIdx + 1].startsWith(cwd), true);
-    assertEquals(JSON.parse(schemaFileContentDuringRun), { type: "object", properties: {} });
+    // Phase 167 Step 4 closure: codex 0.147.0 rejects non-strict zod-to-json-schema output
+    // with invalid_json_schema (400), so --output-schema must never reach codex argv — schema
+    // conformance is enforced by PlanAdapter after <content> extraction instead.
+    assertEquals(seenArgs.includes("--output-schema"), false);
+    assertEquals(seenArgs.includes("exec"), true);
   } finally {
     await Deno.remove(cwd, { recursive: true });
   }
 });
 
-Deno.test("CliDelegateModelProvider: codex removes the --output-schema temp file after the subprocess exits, including on a non-zero exit", async () => {
+Deno.test("CliDelegateModelProvider: codex creates no --output-schema temp file under cwd for a jsonSchema call", async () => {
   const cwd = await Deno.makeTempDir();
   try {
-    let lastSchemaPath = "";
-
-    const successRun: IRunCliDelegateProcess = (_command, args) => {
-      lastSchemaPath = args[args.indexOf("--output-schema") + 1];
+    let seenArgs: string[] = [];
+    const run: IRunCliDelegateProcess = (_command, args) => {
+      seenArgs = args;
       return Promise.resolve({ code: 0, stdout: codexAgentMessageStdout("ok"), stderr: "" });
     };
-    const successProvider = new CliDelegateModelProvider({
-      tool: "codex",
-      bin: "codex",
-      model: CODEX_MODEL,
-      cwd,
-      run: successRun,
-    });
-    await successProvider.generate("prompt", { jsonSchema: { type: "object" } });
-    await assertRejects(() => Deno.stat(lastSchemaPath));
+    const provider = new CliDelegateModelProvider({ tool: "codex", bin: "codex", model: CODEX_MODEL, cwd, run });
 
-    const failRun: IRunCliDelegateProcess = (_command, args) => {
-      lastSchemaPath = args[args.indexOf("--output-schema") + 1];
-      return Promise.resolve({ code: 1, stdout: "", stderr: "boom" });
-    };
-    const failProvider = new CliDelegateModelProvider({
-      tool: "codex",
-      bin: "codex",
-      model: CODEX_MODEL,
-      cwd,
-      run: failRun,
-    });
-    await assertRejects(
-      () => failProvider.generate("prompt", { jsonSchema: { type: "object" } }),
-      ModelProviderError,
-    );
-    await assertRejects(() => Deno.stat(lastSchemaPath));
+    await provider.generate("prompt", { jsonSchema: { type: "object" } });
+
+    const schemaIdx = seenArgs.indexOf("--output-schema");
+    assertEquals(schemaIdx, -1, "--output-schema must not be passed to codex, so no temp schema file is created");
   } finally {
     await Deno.remove(cwd, { recursive: true });
   }
@@ -377,17 +351,12 @@ Deno.test("[regression] CliDelegateModelProvider: claude-code and opencode gener
   assertEquals(typeof opencodeEnv?.OPENCODE_CONFIG, "string");
 });
 
-Deno.test("CliDelegateModelProvider: codex warns (does not throw) when the --output-schema temp file was already removed by the time cleanup runs", async () => {
+Deno.test("CliDelegateModelProvider: codex warns (does not throw) that --output-schema is dropped when jsonSchema is set", async () => {
   const cwd = await Deno.makeTempDir();
   const warnSpy = spy(console, "warn");
   try {
-    const run: IRunCliDelegateProcess = async (_command, args) => {
-      // Simulate the schema temp file already being gone by the time generate()'s own
-      // finally-block cleanup runs (e.g. an external cleanup, a race) — delete it here,
-      // inside the fake subprocess callback, so the SECOND removal attempt fails.
-      const schemaPath = args[args.indexOf("--output-schema") + 1];
-      await Deno.remove(schemaPath);
-      return { code: 0, stdout: codexAgentMessageStdout("ok"), stderr: "" };
+    const run: IRunCliDelegateProcess = (_command, _args) => {
+      return Promise.resolve({ code: 0, stdout: codexAgentMessageStdout("ok"), stderr: "" });
     };
     const provider = new CliDelegateModelProvider({
       tool: "codex",
@@ -401,7 +370,7 @@ Deno.test("CliDelegateModelProvider: codex warns (does not throw) when the --out
 
     assertEquals(result.content, "ok");
     assertSpyCalls(warnSpy, 1);
-    assertStringIncludes(String(warnSpy.calls[0].args[0]), "schema temp file");
+    assertStringIncludes(String(warnSpy.calls[0].args[0]), "--output-schema is dropped");
   } finally {
     warnSpy.restore();
     await Deno.remove(cwd, { recursive: true });

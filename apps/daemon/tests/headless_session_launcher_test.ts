@@ -115,6 +115,11 @@ Deno.test("[headless_launcher][security] Codex spawn preserves cwd and strips am
     assertEquals(captured[0].env.OPENAI_API_KEY, undefined);
     assertEquals(captured[0].env.CODEX_API_KEY, undefined);
     assertEquals(captured[0].env.PHASE167_PRIVATE_KEY, undefined);
+    // Phase 167 Step 4 closure: the sanitized child env must REPLACE (not merge with) the
+    // parent env. Deno.Command merges `env` into the parent by default, so without
+    // clearEnv the ambient LD_LIBRARY_PATH / secrets leak back in and codex's spawn is
+    // refused ("Requires --allow-run permissions to spawn subprocess with LD_LIBRARY_PATH").
+    assertEquals(captured[0].clearEnv, true);
     assertEquals(captured[0].args.includes("danger-full-access"), false);
     assertEquals(captured[0].args.includes("--dangerously-bypass-approvals-and-sandbox"), false);
   } finally {

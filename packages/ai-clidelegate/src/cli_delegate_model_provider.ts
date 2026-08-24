@@ -59,6 +59,7 @@ import type { OpencodePermissionValue } from "@exaix/schemas/opencode_config.ts"
 import { parseDelegateStdout } from "@exaix/session/delegate_return_parser.ts";
 import { probeDelegateVersion } from "@exaix/session/delegate_version_probe.ts";
 import type { JSONValue } from "@exaix/core";
+import { buildAllowlistChildEnv } from "@exaix/core/helpers/child_env.ts";
 import { SafeSubprocess } from "@exaix/core";
 import {
   DEFAULT_RUNTIME_PATH,
@@ -135,36 +136,22 @@ export interface IOpencodeReadOnlyPermissionConfig {
 }
 
 /**
- * Parent env vars safe to forward to a spawned CLI-delegate subprocess. GAP-14 (Phase 167
- * post-gap-analysis): the prior implementation was a 7-pattern denylist starting from the
- * daemon's FULL ambient environment, which forwarded any secret-shaped var the denylist
- * didn't happen to name (AWS/GitHub/Google/NPM/DB credentials, the SSH agent socket, and
- * this same daemon's own OPENROUTER_API_KEY). An allowlist is the only model that stays
- * safe as new secrets are added to the daemon's own environment over time — consistent
- * with packages/session/src/supervised_launch.ts:sanitizeChildEnv, the Mode-3
- * session-delegate path's env builder for the identical threat (spawning an untrusted
- * headless CLI delegate).
+ * Build the env for a CLI-delegate subprocess via the SHARED child-env policy
+ * (`@exaix/core/helpers/child_env.ts`), allowlist mode. GAP-14 (Phase 167
+ * post-gap-analysis): the prior implementation was a 7-pattern denylist starting from
+ * the daemon's FULL ambient environment, which forwarded any secret-shaped var the
+ * denylist didn't happen to name (AWS/GitHub/Google/NPM/DB credentials, the SSH agent
+ * socket, and this same daemon's own OPENROUTER_API_KEY). An allowlist is the only
+ * model that stays safe as new secrets are added to the daemon's own environment over
+ * time — consistent with packages/session/src/supervised_launch.ts:sanitizeChildEnv,
+ * the Mode-3 session-delegate path's env builder for the identical threat (spawning
+ * an untrusted headless CLI delegate). The shared policy additionally strips
+ * dynamic-linker, interpreter-overlay and git env-config injection vars, and excludes
+ * proxy vars, from every foreign-agent child.
  */
-const ALLOWED_PARENT_ENV_KEYS: readonly string[] = ["PATH", "HOME", "LANG", "LC_ALL", "TERM", "TMPDIR"];
-
-/**
- * Variables whose name implies a secret — defense-in-depth on top of the allowlist above,
- * not the sole control. None of ALLOWED_PARENT_ENV_KEYS matches today; this guards a future
- * allowlist addition from accidentally admitting a secret-shaped name.
- */
-const SECRET_ENV_PATTERN = /API_KEY|SECRET|PASSWORD|CREDENTIAL|PRIVATE_KEY/i;
-
-/** Env var name prefixes Deno's scoped `--allow-run=<bin>` permission (the daemon's own
- *  posture — DAEMON_SPAWN_RUN_BINARIES is a name allowlist, never unscoped) refuses to
- *  forward to a spawned child: `Deno.errors.NotCapable: Requires --allow-run permissions
- *  to spawn subprocess with <VAR> environment variable. Alternatively, spawn with the
- *  environment variable unset.` These vars instruct the dynamic linker to load arbitrary
- *  shared libraries into the child. None of ALLOWED_PARENT_ENV_KEYS matches today; this is
- *  an orthogonal, defense-in-depth guard against a future allowlist addition colliding with
- *  this prefix — preserved from the pre-allowlist fix that discovered it live proving Phase
- *  167 Step 3's forced-ReAct Codex evidence on a workstation with LD_LIBRARY_PATH set.
- */
-const DYNAMIC_LINKER_ENV_PREFIXES: readonly string[] = ["LD_", "DYLD_"];
+function buildDelegateEnv(): Record<string, string> {
+  return buildAllowlistChildEnv({}, Deno.env.toObject());
+}
 
 /** Placeholder for an absent sessionId/conversationId in the diagnostic generate-start log. */
 const UNSET_LOG_LABEL = "none";
@@ -172,19 +159,6 @@ const UNSET_LOG_LABEL = "none";
 /** Tool identifiers compared at each of generate()'s three-way dispatch sites. */
 const TOOL_CLAUDE_CODE = SessionToolSchema.enum["claude-code"];
 const TOOL_CODEX = SessionToolSchema.enum.codex;
-
-function buildDelegateEnv(): Record<string, string> {
-  const parentEnv = Deno.env.toObject();
-  const env: Record<string, string> = {};
-  for (const key of ALLOWED_PARENT_ENV_KEYS) {
-    const value = parentEnv[key];
-    if (value === undefined) continue;
-    if (SECRET_ENV_PATTERN.test(key)) continue;
-    if (DYNAMIC_LINKER_ENV_PREFIXES.some((prefix) => key.startsWith(prefix))) continue;
-    env[key] = value;
-  }
-  return env;
-}
 
 const defaultRun: IRunCliDelegateProcess = (command, args, options) => SafeSubprocess.run(command, args, options);
 
@@ -223,22 +197,6 @@ async function writeOpencodeReadOnlyConfig(cwd: string): Promise<string> {
   await Deno.mkdir(dir, { recursive: true });
   const path = join(dir, `opencode-readonly-${crypto.randomUUID()}.json`);
   await Deno.writeTextFile(path, JSON.stringify(buildOpencodeReadOnlyConfig(), null, 2));
-  return path;
-}
-
-/**
- * Writes codex's `--output-schema` payload to a temp JSON file. Uses the same cwd-scoped
- * `Deno.mkdir`/tmp-dir pattern as writeOpencodeReadOnlyConfig above — NOT bare
- * `Deno.makeTempFile()`, which defaults to the OS tempdir a daemon process does not hold
- * `--allow-write` for (see that function's doc comment for the live-verified failure).
- * generate()'s finally block removes this file once the subprocess exits, so it never
- * accumulates across calls.
- */
-async function writeCodexSchemaTempFile(cwd: string, jsonSchema: Record<string, JSONValue>): Promise<string> {
-  const dir = join(cwd, DEFAULT_RUNTIME_PATH, "tmp");
-  await Deno.mkdir(dir, { recursive: true });
-  const path = join(dir, `codex-schema-${crypto.randomUUID()}.json`);
-  await Deno.writeTextFile(path, JSON.stringify(jsonSchema));
   return path;
 }
 
@@ -490,23 +448,25 @@ export class CliDelegateModelProvider implements IModelProvider {
    * `resume` and `--output-schema` cannot combine on one codex invocation (OpenAI docs) —
    * resume continuity wins; the schema flag is dropped with a warning.
    */
-  private async buildCodexArgs(
+  private buildCodexArgs(
     prompt: string,
     sessionId: Opt<string, Reason.TraceAbsent>,
     jsonSchema: Opt<Record<string, JSONValue>, Reason.OptionalInput>,
-  ): Promise<string[]> {
+  ): string[] {
     const resumeArgs = sessionId ? [SESSION_SUBCMD_RESUME, sessionId] : [];
-    const schemaArgs: string[] = [];
+    // codex 0.147.0's --output-schema requires OpenAI strict-mode output schemas
+    // (`additionalProperties: false` on every object, every property listed in `required`,
+    // and no anyOf/oneOf) — the zod-to-json-schema output Exaix passes does not satisfy
+    // that, so every such codex call exits 1 with `invalid_json_schema` (400), breaking
+    // plan/analysis generation (Phase 167 Step 4 live finding). Schema conformance is still
+    // enforced by the prompt's plan-instructions and by PlanAdapter validating the JSON
+    // extracted from <content> afterwards, so the flag is dropped for codex; claude-code's
+    // distinct --json-schema path is unaffected.
     if (jsonSchema) {
-      if (sessionId) {
-        console.warn(
-          `[CliDelegateModelProvider] codex resume ${sessionId} and --output-schema cannot ` +
-            `combine on one invocation; dropping --output-schema to preserve session continuity.`,
-        );
-      } else {
-        const schemaPath = await writeCodexSchemaTempFile(this.options.cwd, jsonSchema);
-        schemaArgs.push(SESSION_FLAG_OUTPUT_SCHEMA, schemaPath);
-      }
+      console.warn(
+        `[CliDelegateModelProvider] codex --output-schema is dropped (codex requires strict-mode ` +
+          `schemas; PlanAdapter enforces the plan shape after <content> extraction).`,
+      );
     }
     return [
       SESSION_SUBCMD_EXEC,
@@ -517,7 +477,6 @@ export class CliDelegateModelProvider implements IModelProvider {
       SESSION_SANDBOX_READ_ONLY,
       SESSION_FLAG_SKIP_GIT_REPO_CHECK,
       ...resumeArgs,
-      ...schemaArgs,
       prompt,
     ];
   }

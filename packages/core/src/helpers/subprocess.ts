@@ -1,12 +1,13 @@
 /**
  * @module Subprocess
  * @path packages/core/src/helpers/subprocess.ts
- * @related-files []
+ * @related-files [packages/core/src/helpers/child_env.ts]
  * @architectural-layer Core
  * @ungrounded
  * @description Safe subprocess execution utilities with timeout protection and error handling.
  */
 
+import { buildChildEnv } from "./child_env.ts";
 import type { Opt, Reason } from "../types/optional_marker.ts";
 
 export interface ISubprocessOptions {
@@ -35,6 +36,7 @@ export class SafeSubprocess {
       abortSignal,
       cwd,
       env,
+      clearEnv,
     } = options;
 
     const timeoutController = new AbortController();
@@ -55,12 +57,12 @@ export class SafeSubprocess {
         signal: combinedSignal,
       };
 
-      if (env) {
-        cmdOptions.env = env;
-      }
-      if (options.clearEnv) {
-        cmdOptions.clearEnv = true;
-      }
+      // Build the child env via the shared child-env policy (injection-class vars
+      // stripped) so Deno's scoped --allow-run never refuses to spawn a child that
+      // would inherit LD_*/DYLD_*/overlay/git-config env.
+      const childEnv = buildChildEnv({ mode: "inherit", env, clearEnv });
+      cmdOptions.env = childEnv.env;
+      cmdOptions.clearEnv = childEnv.clearEnv;
 
       const cmd = new Deno.Command(command, cmdOptions);
 
@@ -105,7 +107,7 @@ export class SafeSubprocess {
     args: string[],
     options: ISubprocessOptions = {},
   ): Deno.ChildProcess {
-    const { cwd, env } = options;
+    const { cwd, env, clearEnv } = options;
 
     const cmdOptions: Deno.CommandOptions = {
       args,
@@ -115,9 +117,9 @@ export class SafeSubprocess {
       stdin: "piped",
     };
 
-    if (env) {
-      cmdOptions.env = env;
-    }
+    const childEnv = buildChildEnv({ mode: "inherit", env, clearEnv });
+    cmdOptions.env = childEnv.env;
+    cmdOptions.clearEnv = childEnv.clearEnv;
 
     const cmd = new Deno.Command(command, cmdOptions);
     return cmd.spawn();

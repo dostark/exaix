@@ -37,3 +37,19 @@ export type { IAllocationHints } from "./src/prompt_budget_allocator.ts";
 export type { AuthorizationAction, AuthorizationResource } from "./src/authorizer/authorizer.ts";
 export type { IAuthorizationContext, IAuthorizationDecision, IAuthorizer } from "./src/authorizer/authorizer.ts";
 export { AllowAllAuthorizer } from "./src/authorizer/authorizer.ts";
+
+export type { ChildEnvMode, IChildEnvOptions } from "./src/helpers/child_env.ts";
+export {
+  ALLOWED_PARENT_ENV_KEYS,
+  buildAllowlistChildEnv,
+  buildChildEnv,
+  DYNAMIC_LINKER_ENV_PREFIXES,
+  GIT_ENV_CONFIG_KEYS,
+  GIT_ENV_CONFIG_PREFIXES,
+  INTERPRETER_OVERLAY_ENV_KEYS,
+  isInjectionEnvVar,
+  PROXY_ENV_KEYS,
+  scrubProcessEnv,
+  SECRET_ENV_PATTERN,
+  stripInjectionEnvVars,
+} from "./src/helpers/child_env.ts";

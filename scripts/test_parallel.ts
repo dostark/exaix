@@ -110,6 +110,14 @@ const SEQUENTIAL_FILES: string[] = [
   // DB migration test — runs migrate_db.ts via deno run subprocess; races on
   // the Deno module cache under parallel, yielding partial @exaix/core exports.
   "tests/migrations/migrate_db_test.ts",
+  // Phases 141/167 env-leak follow-up: test_mode_schema_test.ts and subprocess_env
+  // use withEnv()/Deno.env mutation to delete global env vars; this leaks across tests
+  // under DENO_JOBS parallelism. child_env_test.ts's scrubProcessEnv case does the same —
+  // it writes and then deletes LD_LIBRARY_PATH etc. from the PROCESS-global Deno.env
+  // while parallel workers are snapshotting parent env for subprocess spawns, which
+  // surfaced as `NotFound: Failed to spawn 'deno': entity not found` in unrelated
+  // test files (scaffold/daemon/eval) whenever the batch overlapped. Run sequentially.
+  "packages/core/tests/child_env_test.ts",
   // Test-mode schema test — uses withEnv() to delete EXA_TEST_MODE from the
   // global Deno.env; this leaks across tests under DENO_JOBS parallelism.
   "packages/storage-sqlite/tests/test_mode_schema_test.ts",

@@ -44,6 +44,7 @@ import { SessionToolSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionTool } from "@exaix/schemas/session_delegate.ts";
 import { parseDelegateStdout } from "@exaix/session/delegate_return_parser.ts";
 import { deriveClaudeToolFlags } from "@exaix/session/claude_permission_flags.ts";
+import { buildChildEnv } from "@exaix/core/helpers/child_env.ts";
 import { SafeSubprocess, SubprocessError } from "@exaix/core";
 import {
   AgentExecutionErrorType,
@@ -122,19 +123,21 @@ const GIT_FLAG_UNTRACKED_FILES_ALL = "--untracked-files=all";
 const GIT_STATUS_TIMEOUT_MS = 30_000;
 
 /**
- * Build the spawn env: the daemon's own env minus the keys that would force API-key billing
- * over a subscription login, with PWD overridden to match `portalPath`. Deno.Command's `cwd`
- * option changes the OS-level working directory the subprocess is spawned into, but does NOT
- * update a `PWD` env var inherited via Deno.env.toObject() — the daemon's own PWD (wherever it
- * was originally launched from) otherwise leaks through unchanged. opencode's CLI resolves
- * relative tool-call paths against process.env.PWD rather than the kernel cwd (live-verified:
- * a write meant for a worktree checkout landed in the daemon's own launch directory instead),
+ * Build the spawn env via the SHARED child-env policy (`buildChildEnv`, inherit
+ * mode): the daemon's own env minus the injection-class vars (dynamic-linker,
+ * interpreter-overlay, git env-config) and minus the keys that would force API-key
+ * billing over a subscription login, with PWD overridden to match `portalPath`.
+ * Deno.Command's `cwd` option changes the OS-level working directory the subprocess
+ * is spawned into, but does NOT update a `PWD` env var inherited via
+ * Deno.env.toObject() — the daemon's own PWD (wherever it was originally launched
+ * from) otherwise leaks through unchanged. opencode's CLI resolves relative tool-call
+ * paths against process.env.PWD rather than the kernel cwd (live-verified: a write
+ * meant for a worktree checkout landed in the daemon's own launch directory instead),
  * so PWD must always be kept in sync with the real spawn cwd.
  */
 function buildDelegateEnv(portalPath: string): Record<string, string> {
-  const env = Deno.env.toObject();
+  const env = buildChildEnv({ mode: "inherit", env: { PWD: portalPath } }).env;
   for (const key of STRIPPED_AUTH_ENV_KEYS) delete env[key];
-  env.PWD = portalPath;
   return env;
 }
 

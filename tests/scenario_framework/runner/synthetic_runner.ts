@@ -1041,6 +1041,7 @@ async function executeSyntheticStep(
     env,
     portalAliases: options.portalAliases,
     stepOutcomes: options.stepOutcomes,
+    exactlExecutable: options.exactlExecutable,
   });
 
   return {
@@ -1066,6 +1067,7 @@ async function evaluateInputCriteria(
         env: options.env,
         portalAliases: options.portalAliases,
         stepOutcomes: options.stepOutcomes,
+        exactlExecutable: options.exactlExecutable,
       }),
     );
   }

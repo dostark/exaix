@@ -41,6 +41,7 @@ import {
   RequestKind,
   RequestOperation,
   RequestPriority,
+  scrubProcessEnv,
 } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
 import { AnalysisMode } from "@exaix/core/request";
@@ -3025,6 +3026,14 @@ const evalCommand = new Command()
 __test_command.command("eval", evalCommand);
 
 export async function run(): Promise<void> {
+  // Scrub ambient injection-class env vars (LD_*, NODE_OPTIONS, git env-config, …)
+  // BEFORE any command dispatch or subprocess spawn (Phase 167 Step 4): the CLI is
+  // launched from a shell that may export them for unrelated toolchains, and the
+  // daemon it spawns (`daemon start`) inherits this process env. The daemon scrubs
+  // its own env too — belt and suspenders, since raw Deno.Command sites in both
+  // processes must never see them.
+  scrubProcessEnv();
+
   await __test_command.parse(Deno.args);
   if (services.db && services.db.close) {
     await services.db.close();
