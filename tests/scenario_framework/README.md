@@ -739,6 +739,14 @@ steps:
   use tags to group related scenarios for CI profiles.
 - **All step types** available in §3 (file-exists, text-contains, json-path-equals,
   journal-event-exists, llm-judge, etc.)
+- **A `journal-assert` after a `wait-for-file` that polls `return.json` needs a journal
+  `--wait` barrier first.** The delegate's `return.json` lands on disk before the
+  reconciler commits the corresponding `session.delegate.*` journal row, so a
+  `trace_scoped` journal-assert immediately after the FS poll is a race and can
+  legitimately return `[]` on a correct run. Insert `exactl journal wait --event
+  <reconciler-committed-event> --since-rowid $JOURNAL_BASELINE` before the assert (see
+  `scenarios/provider_live/session_delegate_outcome_live.yaml`'s `wait-for-reconcile`
+  step), and add a drift-guard test pinning the barrier precedes every trace-scoped assert.
 
 ### Terminal-Bench Fixtures, Tags & Classifier (Phase 144)
 
