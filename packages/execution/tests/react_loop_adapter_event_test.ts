@@ -10,8 +10,9 @@
  * @related-files ["packages/execution/src/react_loop_adapter.ts"]
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
+import type { IEventLogger } from "@exaix/core/logger";
 import { EventLogger } from "@exaix/core/logger";
 import { initTestDbService } from "@exaix/testing";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -60,6 +61,48 @@ Deno.test("[ReActLoopAdapter] logPromptAssembled emits agent.prompt_assembled wi
     assertEquals(payload.fragmentChars, 256);
     assertEquals(payload.budgetChars, 12000);
     assertEquals(payload.truncated, false);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[ReActLoopAdapter] logPromptAssembled propagates a logger rejection rather than swallowing it", async () => {
+  const { config, cleanup } = await initTestDbService();
+  try {
+    const loggerFailure = new Error("logger unavailable");
+    // A fake IEventLogger whose .info() always rejects — no try/catch anywhere in
+    // logPromptAssembled (or any sibling ReActLoopAdapter log method) means this
+    // rejection must propagate to the caller, matching the class's existing,
+    // uniform error-propagation shape rather than being silently swallowed.
+    const rejectingLogger: IEventLogger = {
+      log: () => Promise.reject(loggerFailure),
+      info: () => Promise.reject(loggerFailure),
+      warn: () => Promise.resolve(),
+      error: () => Promise.resolve(),
+      fatal: () => Promise.resolve(),
+      debug: () => Promise.resolve(),
+      child: () => rejectingLogger,
+    };
+    const adapter = new ReActLoopAdapter(
+      new OutputParser(),
+      new ExecutionContextService(config, rejectingLogger, {}),
+      rejectingLogger,
+    );
+
+    await assertRejects(
+      () =>
+        adapter.logPromptAssembled(crypto.randomUUID(), "request-42", {
+          prompt_kind: "react",
+          iteration: 0,
+          toolIds: ["read_file"],
+          fragmentCount: 1,
+          fragmentChars: 256,
+          budgetChars: 12_000,
+          truncated: false,
+        }),
+      Error,
+      "logger unavailable",
+    );
   } finally {
     await cleanup();
   }

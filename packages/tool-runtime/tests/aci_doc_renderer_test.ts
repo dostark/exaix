@@ -161,6 +161,20 @@ Deno.test("[AciDocRenderer] fragment and aggregate bounds drop the whole next fr
   assertEquals(firstOnly.truncated, true);
 });
 
+Deno.test("[AciDocRenderer] an aggregate budget too small for even the first, individually-valid fragment renders nothing", () => {
+  // small_a's own fragment comfortably fits ACI_DOC_FRAGMENT_MAX_CHARS — this is not the
+  // per-fragment bound from the test above. The caller-supplied aggregate maxChars is what
+  // is too small here, and it is exhausted before any fragment — including the first — can
+  // be appended, not merely before a later one.
+  const smallA = makeTool({ name: "small_a" });
+  const result = renderAciDocFragments([smallA], ["small_a"], 1);
+
+  assertEquals(result.toolIds, []);
+  assertEquals(result.fragmentCount, 0);
+  assertEquals(result.truncated, true);
+  assertEquals(result.text, "");
+});
+
 Deno.test("[AciDocRenderer] model plan budget is the lower cap when present", () => {
   const configuredMax = 12_000;
   const tightBudget: IPromptBudget = {

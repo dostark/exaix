@@ -16,7 +16,7 @@
  * ]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { MockLLMProvider } from "@exaix/ai/providers";
 import { MockStrategy } from "@exaix/core";
@@ -36,7 +36,7 @@ const REACT_BLUEPRINT = readFixtureTextSync(import.meta.url, "integration", "aci
 const SCRIPTED_COMPLETE_RESPONSE =
   "THOUGHT: No changes are needed for this task.\nSTATUS: COMPLETE\nSUMMARY: Nothing to report.";
 
-async function setupExecution(aciDocsEnabled: boolean) {
+async function setupExecution(aciDocsEnabled: boolean, providerStrategy: MockStrategy = MockStrategy.SCRIPTED) {
   const { db, config, tempDir, cleanup } = await initTestDbService();
   config.agents.inject_aci_docs = aciDocsEnabled;
 
@@ -45,7 +45,7 @@ async function setupExecution(aciDocsEnabled: boolean) {
   await Deno.writeTextFile(join(identitiesDir, `${IDENTITY_ID}.md`), REACT_BLUEPRINT);
 
   const logger = new EventLogger({ db });
-  const provider = new MockLLMProvider(MockStrategy.SCRIPTED, { responses: [SCRIPTED_COMPLETE_RESPONSE] });
+  const provider = new MockLLMProvider(providerStrategy, { responses: [SCRIPTED_COMPLETE_RESPONSE] });
   // enableGit: false — this test's concern is ACI injection, not git/worktree behavior;
   // matches the proven pattern in tests/integration/services/plan_amendment_test_helper.ts.
   const executor = new PlanExecutor(config, provider, db, tempDir, logger, { enableGit: false });
@@ -109,6 +109,31 @@ Deno.test(
       const activities = db.getActivitiesByTrace(traceId);
       const promptAssembledEvents = activities.filter((a) => a.action_type === DomainEventType.AgentPromptAssembled);
       assertEquals(promptAssembledEvents.length, 0, "disabled mode never emits agent.prompt_assembled");
+    } finally {
+      await cleanup();
+    }
+  },
+);
+
+Deno.test(
+  "[AciInjection] a provider failure after prompt logging still leaves the agent.prompt_assembled audit record",
+  async () => {
+    const { db, executor, context, planPath, traceId, requestId, cleanup } = await setupExecution(
+      true,
+      MockStrategy.FAILING,
+    );
+    try {
+      // The event is emitted immediately before the provider-bound call (Step 3's
+      // Architecture Notes), so a subsequent provider failure must not erase it.
+      await assertRejects(() => executor.execute(planPath, context));
+      await db.waitForFlush();
+
+      const activities = db.getActivitiesByTrace(traceId);
+      const promptAssembledEvents = activities.filter((a) => a.action_type === DomainEventType.AgentPromptAssembled);
+      assertEquals(promptAssembledEvents.length, 1, "the assembly audit record survives a subsequent provider failure");
+      assertEquals(promptAssembledEvents[0].target, requestId);
+      const payload = JSON.parse(promptAssembledEvents[0].payload);
+      assertEquals(payload.toolIds, ["read_file"]);
     } finally {
       await cleanup();
     }
