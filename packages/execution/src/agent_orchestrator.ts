@@ -283,8 +283,13 @@ export class AgentOrchestrator {
       this.ctx,
       this.logger,
       this._toolRegistry,
-      undefined,
-      deps.guardrailRunner,
+      {
+        guardrailRunner: deps.guardrailRunner,
+        aci: {
+          enabled: this.config.agents?.inject_aci_docs,
+          promptMaxChars: this.config.agents?.aci_doc_prompt_max_chars,
+        },
+      },
     );
     if (deps.options?.guardrailRunner) {
       this._guardrailRunner = deps.options.guardrailRunner;

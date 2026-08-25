@@ -27,6 +27,7 @@ import {
   CONTEXT_PRIORITY_REFLECTION,
   CONTEXT_PRIORITY_SYSTEM,
   CONTEXT_PRIORITY_TOOL_RESULT,
+  DEFAULT_AGENT_ACI_DOC_PROMPT_MAX_CHARS,
   DEFAULT_AGENT_MAX_ITERATIONS,
   EXECUTION_HEARTBEAT_INTERVAL_MS,
   LOOP_HISTORY_BUDGET_THRESHOLD,
@@ -48,12 +49,22 @@ import type { IContextBudgetManagerInput } from "../context/context_budget_manag
 import type { IContextSegment } from "../context/context_segment.ts";
 import type { IReActLoopExecutor } from "../react_loop_adapter.ts";
 import { computeRegistryPredictedCost } from "../registry_computed_cost.ts";
+import { calculateAciDocBudgetChars, type IAciRenderResult, renderAciDocFragments } from "@exaix/tool-runtime";
 
 export interface IReActAction {
   tool: string;
   params: Record<string, JSONValue>;
   description?: string;
 }
+
+/** The five tools listed when an identity/skill declares no permitted_tools restriction at all. */
+const DEFAULT_REACT_VISIBLE_TOOLS: readonly string[] = [
+  ToolName.READ_FILE,
+  ToolName.WRITE_FILE,
+  ToolName.RUN_COMMAND,
+  ToolName.LIST_DIRECTORY,
+  ToolName.SEARCH_FILES,
+];
 
 interface IToolExecutionResult {
   success?: boolean;
@@ -360,6 +371,29 @@ export class ReActLoopStrategy implements IExecutionStrategy {
   }
 
   /**
+   * Journal the ReAct producer's agent.prompt_assembled event immediately before the
+   * provider-bound call (Phase 112 Step 3): exactly one event per enabled iteration, none
+   * on the disabled path. Extracted from runSingleIteration to keep its own complexity
+   * within the project's threshold.
+   */
+  private async emitPromptAssembledEvent(
+    context: IExecutionContext,
+    iteration: number,
+    aciSection: Opt<{ result: IAciRenderResult; budgetChars: number }, Reason.OptionalContext>,
+  ): Promise<void> {
+    if (!this.executor.aciDocsEnabled || !this.executor.logPromptAssembled) return;
+    await this.executor.logPromptAssembled(context.trace_id, context.request_id, {
+      prompt_kind: "react",
+      iteration,
+      toolIds: aciSection?.result.toolIds ?? [],
+      fragmentCount: aciSection?.result.fragmentCount ?? 0,
+      fragmentChars: aciSection?.result.fragmentChars ?? 0,
+      budgetChars: aciSection?.budgetChars ?? 0,
+      truncated: aciSection?.result.truncated ?? false,
+    });
+  }
+
+  /**
    * Execute one iteration of the ReAct loop. Returns accumulated metrics and
    * optionally a finished result when the loop should terminate early.
    */
@@ -394,7 +428,17 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     }
 
     const budgetedHistory = await this.applyContextBudget(blueprint, context, history, i);
-    const prompt = this.buildPrompt(blueprint, context, options, budgetedHistory, nativeToolsUsed);
+    const visibleToolIds = this.deriveVisibleToolIds(options);
+    const aciSection = this.renderAciSection(visibleToolIds);
+    const prompt = this.buildPrompt(
+      blueprint,
+      context,
+      options,
+      budgetedHistory,
+      nativeToolsUsed,
+      visibleToolIds,
+      aciSection?.result,
+    );
 
     const generateOptions = this.buildNativeGenerateOptions(
       nativeToolDefinitions,
@@ -402,6 +446,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       nativeToolsUsed,
       nativePreferredTool,
     );
+    await this.emitPromptAssembledEvent(context, i, aciSection);
     const generateStartTime = Date.now();
     const response = await this.withHeartbeat(context, () => this.provider!.generate(prompt, generateOptions as never));
     const generateDurationMs = Date.now() - generateStartTime;
@@ -771,12 +816,38 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     return history.filter((_, idx) => keptHistoryIds.has(`hist-${idx}-${context.trace_id}`));
   }
 
+  /**
+   * Tools visible to this iteration: `options.permitted_tools` when declared (an explicit
+   * empty array stays empty), else the default five — deduplicated. Computed once and
+   * reused for both the AVAILABLE TOOLS line and ACI rendering (Phase 112 Step 3).
+   */
+  private deriveVisibleToolIds(options: IAgentExecutionOptions): string[] {
+    const requested = options.permitted_tools ?? DEFAULT_REACT_VISIBLE_TOOLS;
+    return [...new Set(requested)];
+  }
+
+  /**
+   * Renders this iteration's ACI guidance, or undefined when disabled. Pure with respect
+   * to this call: reads the executor's registry/budget getters, never mutates state.
+   */
+  private renderAciSection(visibleToolIds: string[]): { result: IAciRenderResult; budgetChars: number } | undefined {
+    if (!this.executor.aciDocsEnabled) return undefined;
+    const tools = this.executor.toolRegistry?.getTools() ?? [];
+    const budgetChars = calculateAciDocBudgetChars(
+      this.executor.aciDocPromptMaxChars ?? DEFAULT_AGENT_ACI_DOC_PROMPT_MAX_CHARS,
+      this.executor.currentPromptBudget,
+    );
+    return { result: renderAciDocFragments(tools, visibleToolIds, budgetChars), budgetChars };
+  }
+
   private buildPrompt(
     blueprint: IAgentFileBlueprint,
     context: IExecutionContext,
     options: IAgentExecutionOptions,
     history: Array<{ role: ReActRole; content: string }>,
     skipToolProse = false,
+    visibleToolIds: string[] = this.deriveVisibleToolIds(options),
+    aciSection: Opt<IAciRenderResult, Reason.OptionalContext> = this.renderAciSection(visibleToolIds)?.result,
   ): string {
     const historyText = this.buildBudgetedHistoryText(history);
 
@@ -801,17 +872,16 @@ INSTRUCTIONS:
     prompt += `
 
 AVAILABLE TOOLS:
-${
-      (options.permitted_tools ||
-        [
-          ToolName.READ_FILE,
-          ToolName.WRITE_FILE,
-          ToolName.RUN_COMMAND,
-          ToolName.LIST_DIRECTORY,
-          ToolName.SEARCH_FILES,
-        ])
-        .join(", ")
-    }`;
+${visibleToolIds.join(", ")}`;
+
+    // Segment 1.5: ACI tool guidance — appended in both prose and skipToolProse (native-tools)
+    // modes when enabled and at least one complete fragment was allocated (Phase 112 Step 3).
+    if (aciSection && aciSection.fragmentCount > 0) {
+      prompt += `
+
+ACI TOOL GUIDANCE:
+${aciSection.text}`;
+    }
 
     // Segment 2: Behavioral guidance — always rendered (PGAP-2)
     prompt += `

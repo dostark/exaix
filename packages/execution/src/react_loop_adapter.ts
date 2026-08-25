@@ -12,7 +12,9 @@ import type { JSONValue } from "@exaix/core";
 import type { IEventBusService } from "@exaix/core/observability";
 import type { IEventLogger } from "@exaix/core/logger";
 import { ActorType, AGENT_GENERATION_COMPLETED, AgentKind, DEFAULT_MCP_IDENTITY_ID } from "@exaix/core";
+import { DEFAULT_AGENT_ACI_DOC_PROMPT_MAX_CHARS } from "@exaix/core";
 import { DomainEventType } from "@exaix/core/events";
+import type { IAgentPromptAssembledReactPayload } from "@exaix/core/events";
 import type { IChangesetResult } from "@exaix/schemas/agent_orchestrator.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IToolRegistry } from "@exaix/core/types";
@@ -63,6 +65,36 @@ export interface IReActLoopExecutor {
   currentPromptBudget?: IPromptBudget;
   budgetLogger?: IEventLogger;
   guardrailRunner?: IGuardrailRunner;
+  /** Phase 112 Step 3 — whether ACI tool guidance is injected into the ReAct execution prompt. */
+  readonly aciDocsEnabled?: boolean;
+  /** Phase 112 Step 3 — the configured aggregate ACI prompt-injection character budget. */
+  readonly aciDocPromptMaxChars?: number;
+  /**
+   * Journal the ReAct producer's agent.prompt_assembled event (Phase 112 Step 3) — the
+   * `target` is `context.request_id` per Section E. Optional so lightweight test doubles
+   * need not implement it; the production adapter always does.
+   */
+  logPromptAssembled?(
+    traceId: string,
+    target: string,
+    payload: IAgentPromptAssembledReactPayload,
+  ): Promise<void>;
+}
+
+/** Phase 112 Step 3 — ACI tool-guidance options, nested inside IReActLoopAdapterOptions. */
+export interface IReActLoopAdapterAciOptions {
+  /** Whether ACI tool guidance is injected into the ReAct execution prompt. */
+  enabled?: boolean;
+  /** The configured aggregate ACI prompt-injection character budget. */
+  promptMaxChars?: number;
+}
+
+/** Trailing optional-dependency bundle for ReActLoopAdapter's constructor, kept as one
+ * parameter object so the constructor stays within the project's 7-parameter limit. */
+export interface IReActLoopAdapterOptions {
+  eventBus?: Opt<IEventBusService, Reason.OptionalDependency>;
+  guardrailRunner?: Opt<IGuardrailRunner, Reason.OptionalDependency>;
+  aci?: IReActLoopAdapterAciOptions;
 }
 
 /**
@@ -70,14 +102,23 @@ export interface IReActLoopExecutor {
  * @visible
  */
 export class ReActLoopAdapter implements IReActLoopExecutor {
+  public readonly eventBus?: IEventBusService;
+  public readonly guardrailRunner?: IGuardrailRunner;
+  public readonly aciDocsEnabled: boolean;
+  public readonly aciDocPromptMaxChars: number;
+
   constructor(
     private outputParser: OutputParser,
     private ctx: ExecutionContextService,
     private logger: IEventLogger,
     public toolRegistry?: Opt<IToolRegistry, Reason.OptionalDependency>,
-    public eventBus?: Opt<IEventBusService, Reason.OptionalDependency>,
-    public guardrailRunner?: Opt<IGuardrailRunner, Reason.OptionalDependency>,
-  ) {}
+    options?: Opt<IReActLoopAdapterOptions, Reason.OptionalInput>,
+  ) {
+    this.eventBus = options?.eventBus;
+    this.guardrailRunner = options?.guardrailRunner;
+    this.aciDocsEnabled = options?.aci?.enabled ?? false;
+    this.aciDocPromptMaxChars = options?.aci?.promptMaxChars ?? DEFAULT_AGENT_ACI_DOC_PROMPT_MAX_CHARS;
+  }
 
   get contextBudgetManager(): IContextBudgetManager | undefined {
     return this.ctx.contextBudgetManager;
@@ -157,5 +198,13 @@ export class ReActLoopAdapter implements IReActLoopExecutor {
         duration_ms: usage.durationMs,
       },
     });
+  }
+
+  async logPromptAssembled(
+    traceId: string,
+    target: string,
+    payload: IAgentPromptAssembledReactPayload,
+  ): Promise<void> {
+    await this.logger.info(DomainEventType.AgentPromptAssembled, target, { ...payload }, traceId);
   }
 }
