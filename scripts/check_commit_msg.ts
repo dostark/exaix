@@ -248,16 +248,17 @@ export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
   let section: Section = null;
   for (let i = start + 1; i < end; i++) {
     const line = lines[i];
-    if (/^\*\*Planned Tests:?\*\*/i.test(line)) {
+    if (/^\s*-?\s*\*\*Planned Tests:?\*\*/i.test(line)) {
       section = "tests";
       continue;
     }
-    if (/^\*\*Success Criteria:?\*\*/i.test(line)) {
+    if (/^\s*-?\s*\*\*Success Criteria:?\*\*/i.test(line)) {
       section = "criteria";
       continue;
     }
-    // A new bold heading (e.g. **Architecture Notes**) ends the current list section.
-    if (/^\*\*[^*]+\*\*/.test(line) && !/Planned Tests|Success Criteria/i.test(line)) {
+    // A new bold heading (e.g. **Architecture Notes**, or its bulleted form
+    // `- **Architecture Notes**:`) ends the current list section.
+    if (/^\s*-?\s*\*\*[^*]+\*\*/.test(line) && !/Planned Tests|Success Criteria/i.test(line)) {
       section = null;
       continue;
     }
