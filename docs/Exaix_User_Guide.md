@@ -4072,6 +4072,49 @@ model = "gpt-5-mini"
 
 The `ModelFactory` provides these convenience aliases and automatically selects `ci_safe` in CI environments unless explicitly opted out via `EXA_TEST_ENABLE_PAID_LLM=1`.
 
+### 5.5 ACI (Agent-Computer Interface) Tool Guidance
+
+The `[agents]` section controls whether structured tool-usage guidance is injected into
+dynamic (ReAct) execution prompts:
+
+```toml
+[agents]
+# Inject each visible tool's ACI block (summary, when/when-not-to-use, worked example,
+# anti-example) into the ReAct prompt. Requires a daemon restart to take effect.
+# Default: false.
+inject_aci_docs = true
+
+# Aggregate character budget for injected ACI guidance across all visible tools in one
+# prompt. Further capped by the model's own plan budget when present. Requires a daemon
+# restart to take effect. Default: 12000. Range: 1000-50000.
+aci_doc_prompt_max_chars = 12000
+```
+
+When enabled, every ReAct iteration's prompt gains a bounded, delimiter-safe guidance
+fragment for each visible tool that declares a compliant `aciDoc` block and a side-effect
+scope; a tool with neither is silently omitted, never partially rendered. Fragments are
+included whole or skipped whole against the aggregate budget above — a large tool's
+fragment being skipped does not prevent a smaller tool's fragment later in the list from
+still fitting.
+
+**Restart required**: both keys are restart-swap configuration — `exactl config set` (or
+editing `exa.config.toml` directly) persists the new value immediately, but only plan
+executions started **after** the next `exactl daemon restart` observe it. Use the standard
+CLI path for either key:
+
+```bash
+exactl config get agents.inject_aci_docs
+exactl config set agents.inject_aci_docs true
+exactl config set agents.aci_doc_prompt_max_chars 8000
+exactl daemon restart
+```
+
+**Disabled compatibility**: with `inject_aci_docs` at its default `false`, the assembled
+prompt is byte-identical to the pre-Phase-112 baseline — no ACI section, no budget
+computation, and no `agent.prompt_assembled` event with `prompt_kind: "react"` is emitted
+at all for that iteration. Existing deployments upgrade with no prompt or behavior change
+until the flag is explicitly enabled.
+
 ## 8. Model Context Protocol (MCP) Server
 
 Exaix includes a built-in MCP server, allowing generic AI clients (like Claude Desktop or IDE extensions) to interact with your workspace using standardized tools.
