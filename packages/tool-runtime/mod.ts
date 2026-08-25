@@ -7,6 +7,7 @@
  */
 
 export * from "./src/tool_registry.ts";
+export * from "./src/aci_doc_renderer.ts";
 export * from "./src/tool_schemas.ts";
 export * from "./src/tool_reflector.ts";
 export * from "./src/cli_confirmation_interceptor.ts";
