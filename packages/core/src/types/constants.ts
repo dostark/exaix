@@ -491,6 +491,40 @@ export const DEFAULT_AGENT_MAX_ITERATIONS: number = configurable({
   max: AGENT_MAX_ITERATIONS_MAX,
   swap: SwapClass.RESTART,
 });
+
+// ---------------------------------------------------------------------------
+// Phase 112: ACI (Agent-Computer Interface / Poka-Yoke) tool guidance
+// ---------------------------------------------------------------------------
+export const DEFAULT_AGENT_INJECT_ACI_DOCS: boolean = configurable({
+  key: "agent.inject_aci_docs",
+  default: false,
+  type: ConfigValueType.BOOLEAN,
+  description: "Whether ACI (Agent-Computer Interface) tool guidance is injected into the ReAct execution prompt",
+  swap: SwapClass.RESTART,
+});
+export const DEFAULT_AGENT_ACI_DOC_PROMPT_MAX_CHARS: number = configurable({
+  key: "agent.aci_doc_prompt_max_chars",
+  default: 12_000,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum aggregate characters of ACI tool guidance injected into the ReAct execution prompt",
+  min: 1_000,
+  max: 50_000,
+  swap: SwapClass.RESTART,
+});
+/** Bound on `AciDoc.summary` (packages/schemas/src/aci_doc.ts). */
+export const ACI_DOC_SUMMARY_MAX_CHARS = 200;
+/** Bound on `AciDoc.when_to_use` / `when_not_to_use`. */
+export const ACI_DOC_GUIDANCE_MAX_CHARS = 600;
+/** Bound on `AciDoc.example.output`. */
+export const ACI_DOC_OUTPUT_MAX_CHARS = 1_000;
+/** Bound on `AciDoc.example.rationale` / `anti_example.why_wrong`. */
+export const ACI_DOC_RATIONALE_MAX_CHARS = 400;
+/** Max property count on an `AciDoc` example/anti-example input record. */
+export const ACI_DOC_INPUT_MAX_PROPERTIES = 16;
+/** Max stable-JSON-serialized size of an `AciDoc` example/anti-example input record. */
+export const ACI_DOC_INPUT_MAX_CHARS = 1_000;
+/** Max size of one tool's complete rendered ACI prompt fragment (Step 2 renderer). */
+export const ACI_DOC_FRAGMENT_MAX_CHARS = 4_096;
 export const DEFAULT_REFLEXIVE_CONVERGENCE_QUALITY_EXIT_THRESHOLD: number = configurable({
   key: "agent.convergence_quality_exit_threshold",
   default: 85,
@@ -528,7 +562,6 @@ export const AGENT_EVENT_EXECUTION_FAILED = "agent.execution_failed";
 export const AGENT_EVENT_OUTPUT = "agent.output";
 export const AGENT_EVENT_SECURITY_VIOLATION = "security.violation";
 export const AGENT_GENERATION_COMPLETED = "agent.generation_completed";
-export const AGENT_EVENT_PROMPT_ASSEMBLED = "agent.prompt_assembled";
 /** Debug-level: the full assembled prompt text, for diagnosing live-provider response issues. */
 export const AGENT_EVENT_PROMPT_DEBUG_DUMP = "agent.prompt_debug_dump";
 /** Debug-level: the raw LLM response as received, before thought/content extraction. */

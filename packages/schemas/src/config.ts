@@ -334,6 +334,8 @@ export const ConfigSchema = z.object({
     default_model: z.string().default(DEFAULTS.DEFAULT_AGENT_MODEL),
     timeout_sec: c("agent.timeout_sec"),
     max_iterations: c("agent.max_iterations"),
+    inject_aci_docs: z.boolean().default(DEFAULTS.DEFAULT_AGENT_INJECT_ACI_DOCS),
+    aci_doc_prompt_max_chars: c("agent.aci_doc_prompt_max_chars"),
     convergence: z.object({
       quality_exit_threshold: z.number()
         .min(0)

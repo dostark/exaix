@@ -29,6 +29,36 @@ export interface IVotingEventPayload {
   error?: string;
 }
 
+/** Planning-producer variant of agent.prompt_assembled (Phase 112 Step 1) — preserves every legacy field `AgentRunner.run` already emitted. */
+export interface IAgentPromptAssembledPlanningPayload {
+  prompt_kind: "planning";
+  identity_id: string;
+  prompt_length: number;
+  skillIdsUsed: string[];
+  skillsCount: number;
+  retrievalLatencyMs: number;
+}
+
+/** ReAct-producer variant of agent.prompt_assembled (Phase 112 Step 3) — per-iteration ACI-fragment injection. */
+export interface IAgentPromptAssembledReactPayload {
+  prompt_kind: "react";
+  /** Zero-based ReAct loop iteration index this prompt was assembled for. */
+  iteration: number;
+  /** Tool IDs whose ACI fragments were actually injected, in registry order. */
+  toolIds: string[];
+  fragmentCount: number;
+  fragmentChars: number;
+  /** The aggregate character budget this render call was capped against. */
+  budgetChars: number;
+  /** True when at least one eligible fragment was dropped for exceeding the budget. */
+  truncated: boolean;
+}
+
+/** Typed payload for agent.prompt_assembled events (Phase 112 Step 1), discriminated by `prompt_kind`. */
+export type IAgentPromptAssembledPayload =
+  | IAgentPromptAssembledPlanningPayload
+  | IAgentPromptAssembledReactPayload;
+
 /** Typed payload for hitl.policy.matched events (Phase 118). */
 export interface IHitlPolicyMatchedPayload {
   traceId: string;
@@ -592,6 +622,13 @@ export const DomainEventType = {
   // ---------------------------------------------------------------------------
   HealthCheckAll: "health.check_all",
   HealthCheckProvider: "health.check_provider",
+
+  // ---------------------------------------------------------------------------
+  // Agent prompt assembly (Phase 112 Step 1). "agent.prompt_assembled" was
+  // previously an untyped raw string constant (AGENT_EVENT_PROMPT_ASSEMBLED,
+  // removed in the same change) — same value, now a registered taxonomy member.
+  // ---------------------------------------------------------------------------
+  AgentPromptAssembled: "agent.prompt_assembled",
 } as const;
 
 export type TDomainEventType = typeof DomainEventType[keyof typeof DomainEventType];

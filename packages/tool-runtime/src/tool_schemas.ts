@@ -8,7 +8,7 @@
  * @architectural-layer Services
  * @related-files ["packages/tool-runtime/src/tool_registry.ts"]
  */
-import { JsonSchemaType, ToolName } from "@exaix/core";
+import { JsonSchemaType, ToolName, ToolSideEffectScope } from "@exaix/core";
 import type { ITool } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
 
@@ -31,6 +31,25 @@ export function createCoreToolSchemas(
           },
         },
         required: ["path"],
+      },
+      sideEffectScope: ToolSideEffectScope.NONE,
+      aciDoc: {
+        summary: "Reads the complete text content of exactly one file at a known path.",
+        when_to_use:
+          "Use when you already know a file's path and need to see or analyze its full content, e.g. before editing it or to answer a question about its contents.",
+        when_not_to_use:
+          "Do not use to locate files by name or pattern (use search_files) or to find a string across many files (use grep_search) — read_file takes exactly one literal path and has no glob or pattern support.",
+        example: {
+          input: { path: "src/example.ts" },
+          output: 'export function example(): string {\n  return "ok";\n}\n',
+          rationale:
+            "The caller already knows the exact path from a prior list_directory or search_files call and needs the file's full text before patching it.",
+        },
+        anti_example: {
+          input: { path: "src/**/*.ts" },
+          why_wrong:
+            "read_file's path parameter is a single literal file path, not a glob pattern — passing a glob returns a not-found error instead of matching multiple files; use search_files to resolve the glob first.",
+        },
       },
     },
     {

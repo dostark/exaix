@@ -35,7 +35,6 @@ import {
   AGENT_EVENT_EXECUTION_COMPLETED,
   AGENT_EVENT_EXECUTION_STARTED,
   AGENT_EVENT_LLM_RESPONSE_RECEIVED,
-  AGENT_EVENT_PROMPT_ASSEMBLED,
   AGENT_EVENT_PROMPT_DEBUG_DUMP,
   AGENT_EVENT_RESPONSE_TRUNCATED,
   DEFAULT_MODEL_FALLBACK,
@@ -51,6 +50,7 @@ import {
   SKILL_EVENT_RETRIEVAL_FAILED,
   SKILL_EVENT_RETRIEVAL_TIMEOUT,
 } from "@exaix/core";
+import { DomainEventType } from "@exaix/core/events";
 import type { IRetryContext, IRetryPolicy, IRetryPolicyConfig, IRetryResult } from "@exaix/core/request";
 import type { Opt, Reason } from "@exaix/core/types";
 
@@ -353,9 +353,10 @@ export class AgentRunner implements IAgentRunner {
     // Phase 70: Log prompt assembled event for observability
     this.logActivity(
       ACTIVITY_ACTOR_AGENT,
-      AGENT_EVENT_PROMPT_ASSEMBLED,
+      DomainEventType.AgentPromptAssembled,
       requestId || null,
       {
+        prompt_kind: "planning",
         identity_id: identityId,
         prompt_length: combinedPrompt.length,
         skillIdsUsed: skillIds,
