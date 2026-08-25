@@ -117,13 +117,15 @@ Deno.test("[ArtefactCatalog] flow templates under Flows/templates/ are not enume
   }
 });
 
-Deno.test("[ArtefactCatalog] the real repo catalog matches the published counts (15/27/20)", async () => {
+Deno.test("[ArtefactCatalog] the real repo catalog matches the published counts (16/27/20)", async () => {
   const repoRoot = join(new URL("../../../../", import.meta.url).pathname);
   const catalog = await loadArtefactCatalog(join(repoRoot, "Blueprints"));
 
   const byKind = (kind: ArtefactKind) => catalog.filter((r) => r.kind === kind).length;
 
-  assertEquals(byKind(ArtefactKind.IDENTITY), 15, "curated identities (excluding README, mock-agent, default)");
+  // Phase 112 Step 7 added Blueprints/Identities/aci-react.md (a real-daemon scenario fixture
+  // identity), bringing the curated count from 15 to 16.
+  assertEquals(byKind(ArtefactKind.IDENTITY), 16, "curated identities (excluding README, mock-agent, default)");
   assertEquals(byKind(ArtefactKind.SKILL), 27, "skills");
   // Phase 158 published 17 (excluding templates/); Phase 159 added 3 mechanism-proof fixture
   // flows (strategy-comparison-cli-delegate, strategy-comparison-react, strategy-routing-smoke),

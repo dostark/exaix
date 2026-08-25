@@ -1,0 +1,141 @@
+schema_version: "1.0.0"
+id: "aci-doc-injection-enabled"
+title: "Phase 112 Step 7 — a real booted daemon with agents.inject_aci_docs=true emits the typed agent.prompt_assembled(react) event"
+pack: "agent_flows"
+tags: ["safety-gate", "subsystem:tools", "entity:aci-react"]
+request_fixture: "fixtures/requests/agent_flows/aci_doc_injection.md"
+mode_support: ["auto"]
+portals: []
+
+steps:
+  # --- Config: real inject_aci_docs=true, quality-gate/request-analysis disabled so the
+  # request reaches a plan without a provider-backed clarification detour ---
+  - id: "write-config"
+    type: "write-file"
+    path: "exa.config.toml"
+    content: |
+      [system]
+      root = "$WORKSPACE_ROOT"
+
+      [paths]
+      workspace = "Workspace"
+      blueprints = "Blueprints"
+      runtime = ".exa"
+      memory = "Memory"
+      portals = "Portals"
+
+      [quality_gate]
+      enabled = false
+
+      [request_analysis]
+      enabled = false
+
+      [agents]
+      inject_aci_docs = true
+    output_criteria:
+      - id: "config-written"
+        kind: "command-exit-code"
+        equals: 0
+
+  # --- Start daemon (mock provider — no real API key or network access needed; a real
+  # ReAct iteration still runs end to end, see Architecture Notes) ---
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon start"
+    env:
+      EXA_LLM_PROVIDER: "mock"
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "wait-for-daemon-ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+
+  # AgentOrchestrator.executeStep requires a `workspace`-aliased portal to be registered
+  # (resolvePortalName's fallback default) — the framework's default config has none.
+  - id: "add-workspace-portal"
+    type: "exactl"
+    command: "portal"
+    args: ["add", "$WORKSPACE_ROOT", "workspace"]
+    output_criteria:
+      - id: "portal-added"
+        kind: "command-exit-code"
+        equals: 0
+
+  # --- Submit and approve the request ---
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--identity", "aci-react", "--subject", "ACI injection enabled scenario"]
+    output_criteria:
+      - id: "request-submitted"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["Workspace/Plans/*_plan.md"]
+    timeout_sec: 180
+    output_criteria:
+      - id: "plan-created"
+        kind: "file-found"
+        path_pattern: "Workspace/Plans/*_plan.md"
+
+  - id: "approve-plan"
+    type: "exactl"
+    command: "plan"
+    args: ["approve-all"]
+    output_criteria:
+      - id: "plan-approved"
+        kind: "command-exit-code"
+        equals: 0
+
+  # --- The real proof: a provider-bound ReAct iteration journalled the typed event ---
+  - id: "wait-for-prompt-assembled"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "agent.prompt_assembled", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "60"]
+    timeout_sec: 60
+    input_criteria: []
+    output_criteria:
+      - id: "prompt-assembled-observed"
+        kind: "journal-event-exists"
+        event_type: "agent.prompt_assembled"
+        score_weight: 0.5
+        payload_includes:
+          toolIds:
+            - "read_file"
+
+  - id: "assert-prompt-assembled-fields"
+    type: "journal-assert"
+    action_type: "agent.prompt_assembled"
+    trace_scoped: true
+    payload_equals:
+      - path: "prompt_kind"
+        value: "react"
+      - path: "iteration"
+        value: 0
+      - path: "fragmentCount"
+        value: 1
+      - path: "truncated"
+        value: false
+    output_criteria:
+      - id: "fields-correct"
+        kind: "command-exit-code"
+        equals: 0
+        score_weight: 0.5
+
+  # --- Stop daemon ---
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon stop"
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-output-contains"
+        contains: ["daemon.stopped"]
