@@ -133,3 +133,106 @@ Deno.test("[checkToolCatalogParity] ToolRegistry-only tool produces a warning, n
   assertEquals(result.warnings.length, 1);
   assertEquals(result.warnings[0].includes("deno_task"), true);
 });
+
+Deno.test("[checkToolCatalogParity] side-effect scope mismatch produces a blocking error when both catalogs declare a scope", () => {
+  const registryTools = [
+    registryTool({
+      name: "example_tool",
+      parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+      sideEffectScope: ToolSideEffectScope.PORTAL,
+    }),
+  ];
+  const manifestEntries = [
+    manifestEntry({
+      name: "example_tool",
+      side_effect_scope: ToolSideEffectScope.NONE,
+      input_schema: {
+        type: "object",
+        properties: { portal: { type: "string" }, path: { type: "string" } },
+        required: ["portal", "path"],
+      },
+    }),
+  ];
+
+  const result = checkToolCatalogParity(registryTools, manifestEntries);
+
+  assertEquals(result.success, false);
+  assertEquals(result.errors.length, 1);
+  assertEquals(result.errors[0].includes("example_tool"), true);
+  assertEquals(result.errors[0].includes("side-effect"), true);
+});
+
+Deno.test("[checkToolCatalogParity] side-effect scope mismatch is caught even when the manifest entry has no input_schema (internal-only tool, mirroring fetch_url)", () => {
+  const registryTools = [
+    registryTool({
+      name: "fetch_url_like",
+      parameters: { type: "object", properties: { url: { type: "string" } }, required: ["url"] },
+      sideEffectScope: ToolSideEffectScope.NETWORK,
+    }),
+  ];
+  const manifestEntries = [
+    manifestEntry({
+      name: "fetch_url_like",
+      side_effect_scope: ToolSideEffectScope.NONE,
+      // No input_schema — mirrors the real fetch_url/grep_search/copy_file internal-only entries.
+    }),
+  ];
+
+  const result = checkToolCatalogParity(registryTools, manifestEntries);
+
+  assertEquals(result.success, false);
+  assertEquals(result.errors.length, 1);
+  assertEquals(result.errors[0].includes("fetch_url_like"), true);
+  assertEquals(result.errors[0].includes("side-effect"), true);
+});
+
+Deno.test("[checkToolCatalogParity] matching side-effect scopes produce zero errors", () => {
+  const registryTools = [
+    registryTool({
+      name: "example_tool",
+      parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+      sideEffectScope: ToolSideEffectScope.PORTAL,
+    }),
+  ];
+  const manifestEntries = [
+    manifestEntry({
+      name: "example_tool",
+      side_effect_scope: ToolSideEffectScope.PORTAL,
+      input_schema: {
+        type: "object",
+        properties: { portal: { type: "string" }, path: { type: "string" } },
+        required: ["portal", "path"],
+      },
+    }),
+  ];
+
+  const result = checkToolCatalogParity(registryTools, manifestEntries);
+
+  assertEquals(result.success, true);
+  assertEquals(result.errors, []);
+});
+
+Deno.test("[checkToolCatalogParity] a ToolRegistry tool with no declared sideEffectScope is not flagged (compatibility-safe optional field)", () => {
+  const registryTools = [
+    registryTool({
+      name: "example_tool",
+      parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
+    }),
+  ];
+  const manifestEntries = [
+    manifestEntry({
+      name: "example_tool",
+      side_effect_scope: ToolSideEffectScope.PORTAL,
+      input_schema: {
+        type: "object",
+        properties: { portal: { type: "string" }, path: { type: "string" } },
+        required: ["portal", "path"],
+      },
+    }),
+  ];
+
+  const result = checkToolCatalogParity(registryTools, manifestEntries);
+
+  assertEquals(result.success, true);
+  assertEquals(result.errors, []);
+});
