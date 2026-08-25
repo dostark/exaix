@@ -39,6 +39,10 @@ class SpyRegistry {
   register(handler: { stepType: string }): void {
     this.registrations.push({ stepType: handler.stepType });
   }
+
+  registerWithKey(key: string, _handler: { stepType: string }): void {
+    this.registrations.push({ stepType: key });
+  }
 }
 
 // ============================================================
@@ -53,6 +57,7 @@ Deno.test("[voting] VotingCapabilityModule registers VotingStepHandler for votin
   const registry = new SpyRegistry();
   module.registerFlowStepHandlers(toSeamPlaceholder(registry));
 
-  assertEquals(registry.registrations.length, 1);
+  assertEquals(registry.registrations.length, 2);
   assertEquals(registry.registrations[0].stepType, "voting_group");
+  assertEquals(registry.registrations[1].stepType, "consensus");
 });
