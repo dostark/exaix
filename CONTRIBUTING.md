@@ -3,7 +3,7 @@ title: CONTRIBUTING.md
 description: Development workflow and contribution guidelines
 agent_priority: medium
 copilot_knowledge_base: true
-version: 1.2
+version: 1.3
 capabilities: [pr_workflow, workspace_deployment, regression_testing]
 links:
   - "scripts/deploy_workspace.ts"
@@ -171,6 +171,100 @@ Clean up WIP commits before merging to main:
 
 ```bash
 git rebase -i origin/main
+```
+
+### 4.7 Feature Work in a Separate Worktree (with Submodules)
+
+A second worktree lets you develop a feature in its own directory while
+`main` (or any other branch) stays checked out, untouched, in the primary
+one — useful for keeping a daemon running on a stable checkout while
+iterating elsewhere, or for parallel work on two unrelated features.
+
+#### Create the worktree
+
+`git worktree add <path> <branch>` fails if `<branch>` is already checked
+out somewhere else — a branch ref can only be the active checkout in one
+worktree at a time, otherwise a commit in one worktree would silently
+desync the other's index from the ref it thinks it's on. `main` is
+normally checked out in the primary worktree, so add the new one detached
+at its tip instead:
+
+```bash
+git worktree add --detach ~/git/exaix-feat main
+```
+
+**Commits on a detached HEAD have no ref keeping them alive** — switch
+away and they become unreachable and eventually gc'd. Turn it into a real
+branch before doing any work:
+
+```bash
+cd ~/git/exaix-feat
+git switch -c feat/<name>
+```
+
+#### Submodules: link a worktree of the existing clone instead of re-cloning
+
+`git submodule update --init` inside a new worktree namespaces the
+submodule's git-dir correctly (`.git/worktrees/<name>/modules/<submodule>`
+as of Git 2.36+), but it is still a **fully independent clone** — its own
+object store, no `objects/info/alternates` back to the primary clone. That
+costs a redundant network fetch and can hit auth friction the primary
+clone doesn't have (this repo's `exaix-dev-docs` submodule is a real
+example: `.gitmodules` records an `https://` URL, but only `ssh://` is
+authenticated on most workstations, so a fresh `submodule update --init`
+fails while the primary clone's manually-repointed `origin` works fine).
+
+Link a worktree of the **existing** submodule clone instead. It shares the
+object store, needs no network round-trip, and branches created in either
+worktree are visible in the other immediately — worktrees of one repo
+share the full ref/object database; only the index and working files
+differ per worktree.
+
+```bash
+# if `submodule update --init` already made an independent clone, remove it first
+git -C ~/git/exaix-feat submodule deinit -f exaix-dev-docs
+
+# create the branch once in the canonical clone (does not touch its current checkout)
+git -C ~/git/exaix/exaix-dev-docs branch feat/<name>-docs main
+
+# link it as a worktree — shares objects, zero network cost
+git -C ~/git/exaix/exaix-dev-docs worktree add ~/git/exaix-feat/exaix-dev-docs feat/<name>-docs
+```
+
+`git -C ~/git/exaix/exaix-dev-docs worktree list` now shows both
+directories against the same repo.
+
+#### Commit and push
+
+Use the existing tooling, not raw `git add`/`git commit` — it applies
+per-worktree automatically (hooks and gates are repo-level, not
+worktree-level):
+
+- Plan-doc step work: `scripts/commit_plan_step.ts` (see the
+  `commit`/`submodule-workflow` skills — canonical source
+  [`.copilot/skills/submodule-workflow/SKILL.md`](.copilot/skills/submodule-workflow/SKILL.md)).
+- Ad-hoc doc/code changes: commit the submodule first, then the parent
+  pointer bump, per the same skill.
+
+A **brand-new branch has no upstream yet**, so the pre-push hook's
+auto-push-the-submodule step (§4.2) cannot help on the first push of
+each — push both manually once, submodule first:
+
+```bash
+git -C ~/git/exaix-feat/exaix-dev-docs push -u origin feat/<name>-docs
+git -C ~/git/exaix-feat push -u origin feat/<name>
+```
+
+After that, plain `git push` works and the pre-push hook's submodule
+safety check covers you.
+
+#### Cleanup
+
+```bash
+git -C ~/git/exaix/exaix-dev-docs worktree remove ~/git/exaix-feat/exaix-dev-docs
+git worktree remove ~/git/exaix-feat
+git -C ~/git/exaix/exaix-dev-docs branch -d feat/<name>-docs   # after merge
+git branch -d feat/<name>                                       # after merge
 ```
 
 ## 5. Pull Request Checklist

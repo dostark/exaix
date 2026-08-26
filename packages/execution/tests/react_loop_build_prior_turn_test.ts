@@ -18,6 +18,9 @@ interface ProviderTurnResult {
   toolInput: { path?: string };
   toolResultContent: string;
   toolResultIsError: boolean;
+  thoughtSignature?: string;
+  thinkingBlocks?: Array<{ thinking: string; signature: string }>;
+  reasoningContent?: string;
 }
 
 interface ProviderToolCallInput {
@@ -25,6 +28,9 @@ interface ProviderToolCallInput {
   name: string;
   input: { path?: string; content?: string };
   type?: string;
+  thoughtSignature?: string;
+  thinkingBlocks?: Array<{ thinking: string; signature: string }>;
+  reasoningContent?: string;
 }
 
 Deno.test("buildPriorTurn maps successful tool result correctly", () => {
@@ -58,4 +64,42 @@ Deno.test("buildPriorTurn maps failed tool result correctly", () => {
   assertEquals(result.toolName, "patch_file");
   assertEquals(result.toolResultIsError, true);
   assertEquals(typeof result.toolResultContent, "string");
+});
+
+Deno.test("buildPriorTurn forwards the provider replay artifacts (thoughtSignature, thinkingBlocks, reasoningContent) to IProviderTurn", () => {
+  const strategy = new ReActLoopStrategy(dummyExecutor);
+  const typed = strategy as never as {
+    buildPriorTurn(toolCall: ProviderToolCallInput, result: IToolResult): ProviderTurnResult;
+  };
+
+  const result = typed.buildPriorTurn(
+    {
+      id: "toolu_xyz789",
+      name: "patch_file",
+      input: { path: "/tmp/test.txt" },
+      type: "tool_use",
+      thoughtSignature: "gemini-sig",
+      thinkingBlocks: [{ thinking: "Let me patch it.", signature: "anthropic-sig" }],
+      reasoningContent: "I will apply the diff.",
+    },
+    { success: true, data: { path: "/tmp/test.txt" } },
+  );
+  assertEquals(result.thoughtSignature, "gemini-sig");
+  assertEquals(result.thinkingBlocks, [{ thinking: "Let me patch it.", signature: "anthropic-sig" }]);
+  assertEquals(result.reasoningContent, "I will apply the diff.");
+});
+
+Deno.test("buildPriorTurn leaves replay artifacts undefined when the tool call carries none", () => {
+  const strategy = new ReActLoopStrategy(dummyExecutor);
+  const typed = strategy as never as {
+    buildPriorTurn(toolCall: ProviderToolCallInput, result: IToolResult): ProviderTurnResult;
+  };
+
+  const result = typed.buildPriorTurn(
+    { id: "toolu_noartifact", name: "read_file", input: { path: "/tmp/test.txt" } },
+    { success: true, data: { path: "/tmp/test.txt" } },
+  );
+  assertEquals(result.thoughtSignature, undefined);
+  assertEquals(result.thinkingBlocks, undefined);
+  assertEquals(result.reasoningContent, undefined);
 });

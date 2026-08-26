@@ -944,6 +944,9 @@ export class FlowRunner implements IFlowRunner {
       this.options.hitlPolicyEvaluator,
       this.options.dynamicModeTools,
       this.options.dynamicModeApprovalTools,
+      // Phase 132 (GAP-9): forward the resolver's per-call options (thinking/effort) to
+      // every ReAct generate() call in dynamic steps.
+      resolved.options,
     );
     // The agent step handler was registered during construction (constructor ~L803), when the
     // lazy modelResolver path had not built the executor yet — so the handler captured

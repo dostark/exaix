@@ -163,12 +163,14 @@ export class BlueprintService {
         taskTypeMap: this.config.model_registry?.task_type_map,
       });
       const intent: IModelIntent = {
-        model: validatedFrontmatter.model,
-        model_size: extras.model_size ?? requestIntent?.model_size,
-        characteristics: extras.characteristics ?? requestIntent?.characteristics,
-        preferred_provider: extras.preferred_provider ?? requestIntent?.preferred_provider,
-        thinking: extras.thinking ?? requestIntent?.thinking,
-        effort: extras.effort ?? requestIntent?.effort,
+        // Phase 132.10 merge rule (GAP-4): request-level intent overrides blueprint
+        // values for any explicitly-set field; unset fields fall through to the blueprint.
+        model: requestIntent?.model || validatedFrontmatter.model,
+        model_size: requestIntent?.model_size ?? extras.model_size,
+        characteristics: requestIntent?.characteristics ?? extras.characteristics,
+        preferred_provider: requestIntent?.preferred_provider ?? extras.preferred_provider,
+        thinking: requestIntent?.thinking ?? extras.thinking,
+        effort: requestIntent?.effort ?? extras.effort,
         task_type: derivedTaskType.taskType,
         task_type_source: derivedTaskType.source,
       };

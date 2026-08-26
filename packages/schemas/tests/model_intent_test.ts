@@ -13,6 +13,24 @@ import type {
   ModelResolutionReason,
   ModelSize,
 } from "../src/model_intent.ts";
+import { EffortTierSchema } from "../src/model_intent.ts";
+
+Deno.test("[132.23][GAP-6] EffortTierSchema parses and round-trips all three effort tiers", () => {
+  for (const tier of ["low", "medium", "high"] as const) {
+    const parsed = EffortTierSchema.parse(tier);
+    assertEquals(parsed, tier);
+  }
+});
+
+Deno.test("[132.23][GAP-6] EffortTierSchema rejects out-of-range effort values", () => {
+  let threw = false;
+  try {
+    EffortTierSchema.parse("turbo");
+  } catch {
+    threw = true;
+  }
+  assertEquals(threw, true);
+});
 
 Deno.test("[step132.1] IModelIntent type accepts all fields", () => {
   const intent: IModelIntent = {

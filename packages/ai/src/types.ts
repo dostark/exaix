@@ -8,7 +8,7 @@
 import type { ChatFormat, ConfigSource, JSONValue, McpToolName, MockStrategy, ProviderType } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { Config, EffortTier, IBlueprintFrontmatter, IModelCallOptions } from "@exaix/schemas";
-import type { IGenerateResult } from "./providers/common.ts";
+import type { IGenerateResult, IThinkingReplayBlock } from "./providers/common.ts";
 
 /**
  * Cache TTL values for Anthropic prompt caching.
@@ -70,6 +70,16 @@ export interface IProviderTurn {
    *  (text, image, document, etc.) matching Anthropic's tool_result.content shape. */
   toolResultContent: string | Array<{ type: string; [key: string]: JSONValue }>;
   toolResultIsError: boolean;
+  /** Gemini's `thoughtSignature` from the prior model functionCall response part.
+   *  Gemini requires replaying it on the FOLLOW-UP request's model functionCall or it
+   *  returns an HTTP 400 ("Function call is missing a thought_signature...") — GAP-153-E. */
+  thoughtSignature?: string;
+  /** Anthropic thinking blocks from the prior assistant message that must be replayed
+   *  complete and unmodified (with signature) ahead of the tool_use block — GAP-153-F. */
+  thinkingBlocks?: IThinkingReplayBlock[];
+  /** OpenAI reasoning content from the prior assistant message to echo back with the
+   *  tool call outputs for multi-turn continuity — GAP-153-G. */
+  reasoningContent?: string;
 }
 
 /**

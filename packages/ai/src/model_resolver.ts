@@ -54,6 +54,8 @@ interface IScoreCandidatesIntent {
 
 const CHARACTERISTIC_WEIGHT = 1;
 const CHARACTERISTIC_BEST = "best";
+const REASON_PRESET_DEFAULT: ModelResolutionReason = "preset_default";
+const REASON_CHARACTERISTICS_SCORED: ModelResolutionReason = "characteristics_scored";
 
 /**
  * Normalize boolean-typed intent fields that arrive as YAML-failsafe STRINGS. The blueprint
@@ -118,28 +120,29 @@ export class ModelResolver {
     if (bareNameResult) return bareNameResult;
 
     const curatedResult = await this.tryResolveCurated(intent, startTime);
-    if (curatedResult) return curatedResult;
+    if (curatedResult) {
+      return (await this.tryResolveOverflow(intent, intent, curatedResult, 1, startTime)) ?? curatedResult;
+    }
 
     const presetResult = await this.tryResolveFromPreset(intent, startTime);
-    if (presetResult) return presetResult;
+    if (presetResult) {
+      return (await this.tryResolveOverflow(intent, intent, presetResult, 1, startTime)) ?? presetResult;
+    }
 
     const fallbacks = intent.fallbacks ?? [];
     const maxAttempts = fallbacks.length + 1;
-    const hadExplicitModelSize = !!intent.model_size;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       const currentIntent = attempt === 1 ? intent : this.mergeFallback(intent, fallbacks[attempt - 2]);
       try {
-        const resolved = await this.resolveOnce(currentIntent, attempt, startTime);
+        const resolved = await this.resolveOnce(
+          currentIntent,
+          attempt,
+          startTime,
+          attempt > 1 ? "fallback" : undefined,
+        );
         if (resolved) {
-          const overflowResult = await this.tryResolveOverflow(
-            intent,
-            currentIntent,
-            resolved,
-            hadExplicitModelSize,
-            attempt,
-            startTime,
-          );
+          const overflowResult = await this.tryResolveOverflow(intent, currentIntent, resolved, attempt, startTime);
           if (overflowResult) return overflowResult;
           return resolved;
         }
@@ -331,7 +334,7 @@ export class ModelResolver {
         resolved,
         providers.map((p) => p.metadata.name),
         {},
-        "preset_default",
+        REASON_PRESET_DEFAULT,
         { durationMs: Date.now() - startTime, routeInfo },
       );
       return resolved;
@@ -348,7 +351,7 @@ export class ModelResolver {
       resolved,
       providers.map((p) => p.metadata.name),
       {},
-      "preset_default",
+      REASON_PRESET_DEFAULT,
       { durationMs: Date.now() - startTime, routeInfo },
     );
     return resolved;
@@ -358,13 +361,13 @@ export class ModelResolver {
     intent: IModelIntent,
     currentIntent: IModelIntent,
     resolved: IResolvedModel,
-    hadExplicitModelSize: boolean,
     attempt: number,
     startTime: number,
   ): Promise<IResolvedModel | null> {
     if (
-      !intent.context_window_fallback || hadExplicitModelSize ||
-      !intent.estimated_input_tokens || !intent.model_size
+      !intent.context_window_fallback ||
+      !intent.estimated_input_tokens ||
+      !currentIntent.model_size
     ) {
       return null;
     }
@@ -375,7 +378,7 @@ export class ModelResolver {
     }
     if (!contextWindow || intent.estimated_input_tokens <= contextWindow) return null;
 
-    const bumped = this.bumpModelSize(intent.model_size);
+    const bumped = this.bumpModelSize(currentIntent.model_size);
     if (!bumped) return null;
 
     const overflowIntent = { ...currentIntent, model_size: bumped };
@@ -398,6 +401,7 @@ export class ModelResolver {
     intent: IModelIntent,
     attempt: number,
     startTime: number,
+    fallbackReason?: Opt<ModelResolutionReason, Reason.OptionalInput>,
   ): Promise<IResolvedModel | null> {
     const criteria = this.buildSelectionCriteria(intent);
     const allProviders = ProviderRegistry.getAllProviders();
@@ -405,29 +409,17 @@ export class ModelResolver {
     const candidates = this.applyCapabilityFilter(allProviders, intent);
     if (candidates.length === 0) return null;
 
-    const providerName = await this.selector.selectProvider(criteria);
+    // Preferred-provider soft hint: select it directly when it is eligible (registered,
+    // capability-filtered, healthy) instead of consulting the routing strategy — the
+    // documented "narrow candidate pool, skip cross-provider scoring" behaviour. Falls
+    // through to the strategy when the hint cannot satisfy the intent.
+    const preferredChosen = await this.tryPreferProvider(intent, candidates);
+    const providerName = preferredChosen ?? await this.selector.selectProvider(criteria);
     const providerMetadata = ProviderRegistry.getProviderMetadata(providerName);
     if (!providerMetadata) return null;
 
-    let model = this.selectModelForProvider(providerName, intent);
+    const model = this.selectModelForProvider(providerName, intent);
     if (!model) return null;
-
-    if (this.modelRegistry && intent.model_size) {
-      // Resilience: a throwing registry must not crash resolution — keep the
-      // metadata-selected model and continue via the Phase 132 scoring path.
-      let entries: IModelEntry[] = [];
-      try {
-        entries = await this.modelRegistry.getModelsByCapability(this.profileFor(intent.model_size));
-      } catch (_error) {
-        entries = [];
-      }
-      if (entries.length > 0) {
-        const match = entries.find((e) => e.provider === providerName);
-        if (match) {
-          model = match.model;
-        }
-      }
-    }
 
     if (intent.thinking && !providerMetadata.supportsThinking) {
       return this.resolveWithThinkingConstraint(
@@ -440,18 +432,20 @@ export class ModelResolver {
       );
     }
 
-    const scores = await this.scoreCandidates(candidates, intent);
-    let { winner, reason } = await this.decideWinner(intent, candidates, providerName, scores);
-
-    if (winner !== providerName) {
-      const winnerModel = this.selectModelForProvider(winner, intent);
-      if (winnerModel) model = winnerModel;
-      else winner = providerName;
-    }
+    // Phase 132 (GAP-5/6): decide the concrete winner/model/reason — the preferred hint
+    // wins directly, otherwise the characteristic blend (incl. rate-limit headroom)
+    // decides over the selector pick, and fallback attempts report reason "fallback".
+    const { winner, model: winnerModel, reason: pickedReason, scores } = await this.decideResolvedPick(
+      intent,
+      candidates,
+      providerName,
+      preferredChosen !== null,
+    );
+    const reason = fallbackReason ?? pickedReason;
 
     const resolved: IResolvedModel = {
       provider: winner,
-      model,
+      model: winnerModel,
       options: this.buildCallOptions(intent),
       attempt,
     };
@@ -472,6 +466,63 @@ export class ModelResolver {
   }
 
   /**
+   * Decide the concrete provider + model + trace reason for a non-thinking resolveOnce
+   * attempt. A preferred-provider soft hint wins directly (skip cross-provider scoring);
+   * otherwise the characteristic blend decides over the selector pick.
+   */
+  private async decideResolvedPick(
+    intent: IModelIntent,
+    candidates: Array<{ metadata: IProviderMetadata }>,
+    providerName: string,
+    preferredChosen: boolean,
+  ): Promise<{ winner: string; model: string; reason: ModelResolutionReason; scores: Record<string, number> }> {
+    let model = this.selectModelForProvider(providerName, intent) ?? providerName;
+    if (this.modelRegistry && intent.model_size) {
+      // Resilience: a throwing registry must not crash resolution — keep the
+      // metadata-selected model and continue via the Phase 132 scoring path.
+      try {
+        const entries = await this.modelRegistry.getModelsByCapability(this.profileFor(intent.model_size));
+        if (entries.length > 0) {
+          const match = entries.find((e) => e.provider === providerName);
+          if (match) model = match.model;
+        }
+      } catch (_error) {
+        // Registry unavailable — degrade to the metadata-selected model.
+      }
+    }
+
+    if (preferredChosen) {
+      return {
+        winner: providerName,
+        model,
+        reason: intent.characteristics?.length ? REASON_CHARACTERISTICS_SCORED : REASON_PRESET_DEFAULT,
+        scores: {},
+      };
+    }
+
+    const scores = await this.scoreCandidates(candidates, intent);
+    let { winner, reason } = await this.decideWinner(intent, candidates, providerName, scores);
+    if (winner !== providerName) {
+      const winnerModel = this.selectModelForProvider(winner, intent);
+      if (winnerModel) model = winnerModel;
+      else winner = providerName;
+    }
+    return { winner, model, reason, scores };
+  }
+
+  /** Preferred-provider soft hint — the provider name when eligible, else null. */
+  private async tryPreferProvider(
+    intent: IModelIntent,
+    candidates: Array<{ metadata: IProviderMetadata }>,
+  ): Promise<string | null> {
+    const preferred = intent.preferred_provider;
+    if (!preferred) return null;
+    if (!candidates.some((c) => c.metadata.name === preferred)) return null;
+    if (!(await this.healthChecker.checkProvider(preferred))) return null;
+    return preferred;
+  }
+
+  /**
    * Phase 135 Step 8 (GAP-C): the score blend DECIDES the outcome, not just the trace —
    * the highest-scored candidate overrides the selector's pick when it differs, gated on
    * a health check so we never override into an unhealthy provider the selector would
@@ -484,7 +535,9 @@ export class ModelResolver {
     providerName: string,
     scores: Record<string, number>,
   ): Promise<{ winner: string; reason: ModelResolutionReason }> {
-    let reason: ModelResolutionReason = intent.characteristics?.length ? "characteristics_scored" : "preset_default";
+    let reason: ModelResolutionReason = intent.characteristics?.length
+      ? REASON_CHARACTERISTICS_SCORED
+      : REASON_PRESET_DEFAULT;
     let winner = providerName;
 
     if (intent.characteristics?.length && Object.keys(scores).length > 0) {
@@ -708,10 +761,31 @@ export class ModelResolver {
         }
       }
 
-      scores[p.metadata.name] = weightSum > 0 ? totalScore / weightSum : 0;
+      const characteristicsScore = weightSum > 0 ? totalScore / weightSum : 0;
+      scores[p.metadata.name] = await this.applyRateLimitBlend(p.metadata.name, characteristicsScore);
     }
 
     return scores;
+  }
+
+  /**
+   * Rate-limit headroom blended into the characteristic score (132.2 / GAP-3):
+   * finalScore = characteristicsScore * (1 - rateLimitWeight) + rateLimitScore *
+   * rateLimitWeight, where rateLimitScore = remaining / maxRpm in [0,1].
+   * Only active when config.provider_strategy.rate_limit_weight > 0 and a registry
+   * rate-limit view is available; any failure degrades to the unblended score.
+   */
+  private async applyRateLimitBlend(provider: string, characteristicsScore: number): Promise<number> {
+    const weight = this.config.provider_strategy?.rate_limit_weight;
+    if (!weight || weight <= 0 || !this.modelRegistry) return characteristicsScore;
+    try {
+      const status = await this.modelRegistry.getRateLimit(provider);
+      if (!status || status.maxRpm <= 0) return characteristicsScore;
+      const rateLimitScore = Math.max(0, Math.min(1, status.remaining / status.maxRpm));
+      return characteristicsScore * (1 - weight) + rateLimitScore * weight;
+    } catch (_error) {
+      return characteristicsScore;
+    }
   }
 
   private buildCallOptions(intent: IModelIntent): IModelCallOptions | undefined {
@@ -753,20 +827,49 @@ export class ModelResolver {
     meta: ITraceMeta,
   ): Promise<void> {
     const routeInfo = meta.routeInfo;
+    const consideredRoutes = (routeInfo?.considered_routes ?? []).map((r) => ({
+      provider: r.provider,
+      health_score: r.health_score,
+      ...(r.price !== undefined ? { price: r.price } : {}),
+    }));
     await this.eventLogger.info(DomainEventType.ModelResolved, resolved.model, {
-      intent: JSON.stringify(intent),
-      candidate_providers: candidateProviders.join(","),
-      scores: JSON.stringify(scores),
-      selected: `${resolved.provider}:${resolved.model}`,
+      intent: this.traceIntent(intent),
+      candidate_providers: candidateProviders,
+      scores,
+      selected: { provider: resolved.provider, model: resolved.model, attempt: resolved.attempt ?? 1 },
       reason,
-      attempt: String(resolved.attempt ?? 1),
-      duration_ms: String(meta.durationMs),
+      duration_ms: meta.durationMs,
       // Phase 135 Step 6 (GAP-9): route decision on the journalled trace payload.
       ...(routeInfo?.route_reason ? { route_reason: routeInfo.route_reason } : {}),
-      ...(routeInfo?.considered_routes ? { considered_routes: JSON.stringify(routeInfo.considered_routes) } : {}),
+      ...(consideredRoutes.length > 0 ? { considered_routes: consideredRoutes } : {}),
       // Phase 135 Step 8 (GAP-9): task-type derivation source, additive on the trace.
       ...(intent.task_type_source ? { task_type_source: intent.task_type_source } : {}),
     });
+  }
+
+  /** The intent subset the typed IModelResolutionTraceEventPayload declares. */
+  private traceIntent(intent: IModelIntent): {
+    model_size?: ModelSize;
+    thinking?: boolean;
+    effort?: EffortTier;
+    characteristics?: string[];
+    required_capabilities?: string[];
+    preferred_provider?: string;
+    model?: string;
+    task_type?: IModelIntent["task_type"];
+    task_type_source?: IModelIntent["task_type_source"];
+  } {
+    return {
+      model_size: intent.model_size,
+      thinking: intent.thinking,
+      effort: intent.effort,
+      characteristics: intent.characteristics,
+      required_capabilities: intent.required_capabilities,
+      preferred_provider: intent.preferred_provider,
+      model: intent.model,
+      task_type: intent.task_type,
+      task_type_source: intent.task_type_source,
+    };
   }
 
   /**

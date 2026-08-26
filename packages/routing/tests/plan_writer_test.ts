@@ -147,6 +147,31 @@ describe("PlanWriter - JSON Integration", () => {
       assertStringIncludes(result.content, "status: review");
     });
 
+    it("[132.21][GAP-4] should carry requestIntent model fields onto the plan frontmatter", async () => {
+      const agentResult: IAgentExecutionResult = {
+        thought: "Test",
+        content: createJsonPlan("Test Plan", "Test description"),
+        raw: "",
+      };
+
+      const metadata: IRequestMetadata = {
+        requestId: "test-id",
+        traceId: "trace-123",
+        createdAt: new Date("2024-11-25T10:00:00Z"),
+        contextFiles: [],
+        contextWarnings: [],
+        identityId: "test-agent",
+        requestIntent: { model_size: "M", thinking: true, effort: "high", preferred_provider: "anthropic" },
+      };
+
+      const result = await planWriter.writePlan(agentResult, metadata);
+
+      assertStringIncludes(result.content, "model_size: M");
+      assertStringIncludes(result.content, "thinking: true");
+      assertStringIncludes(result.content, "effort: high");
+      assertStringIncludes(result.content, "preferred_provider: anthropic");
+    });
+
     it("should include reasoning section", async () => {
       const agentResult: IAgentExecutionResult = {
         thought: "This is my reasoning about the plan",

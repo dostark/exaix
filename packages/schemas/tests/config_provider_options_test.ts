@@ -174,3 +174,17 @@ Deno.test("[ConfigSchema] ai_openrouter.routing rejects invalid data_collection"
   });
   assertEquals(result.success, false);
 });
+
+Deno.test("[132.20][GAP-3] provider_strategy.rate_limit_weight accepts the [0,1] range", () => {
+  for (const weight of [0, 0.1, 0.5, 1]) {
+    const result = ConfigSchema.safeParse({ ...baseConfig(), provider_strategy: { rate_limit_weight: weight } });
+    assertEquals(result.success, true, `rate_limit_weight ${weight} must be accepted`);
+  }
+});
+
+Deno.test("[132.20][GAP-3] provider_strategy.rate_limit_weight rejects out-of-range values", () => {
+  const below = ConfigSchema.safeParse({ ...baseConfig(), provider_strategy: { rate_limit_weight: -0.1 } });
+  const above = ConfigSchema.safeParse({ ...baseConfig(), provider_strategy: { rate_limit_weight: 1.5 } });
+  assertEquals(below.success, false);
+  assertEquals(above.success, false);
+});

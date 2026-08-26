@@ -125,3 +125,62 @@ Deno.test({
     }
   },
 });
+
+Deno.test({
+  name: "PlanExecutor threads requestIntent so request model_size overrides the blueprint (GAP-4)",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    ProviderRegistry.clear();
+    registerLocalProvider("ollama");
+    try {
+      const root = await Deno.makeTempDir();
+      await Deno.mkdir(`${root}/Blueprints/Identities`, { recursive: true });
+      await Deno.writeTextFile(
+        `${root}/Blueprints/Identities/senior-coder.md`,
+        '---\nidentity_id: senior-coder\nmodel: ""\nmodel_size: L\n---\n\nStub identity for testing.\n',
+      );
+      const config = createMockConfig(root, {});
+      const logger = createMockEventLogger();
+      const resolver = new ModelResolver(
+        new DefaultRoutingStrategy(ProviderRegistry, createStubCostTracker(), createStubHealthChecker()),
+        config,
+        createStubHealthChecker(),
+        logger,
+      );
+
+      const executor = new PlanExecutor(
+        config,
+        stubProvider as never,
+        stubDb as never,
+        root,
+        logger,
+        {
+          modelResolver: resolver,
+          enableGit: false,
+          generateReport: true,
+          requestIntent: { model_size: "S" },
+        },
+      );
+
+      await executor.execute(`${root}/plan.md`, {
+        trace_id: crypto.randomUUID(),
+        request_id: "test-req",
+        identity: "senior-coder",
+        frontmatter: {},
+        steps: [{ number: 1, title: "Do nothing", content: "No-op step." }],
+      });
+
+      const resolvedEvents = logger.events.filter((e) => e.action === "model.resolved");
+      const last = resolvedEvents[resolvedEvents.length - 1];
+      const intent = last?.payload?.intent as { model_size?: string } | undefined;
+      assertEquals(
+        intent?.model_size,
+        "S",
+        "request intent (model_size: S) must override the blueprint's model_size: L in the resolver intake",
+      );
+    } finally {
+      ProviderRegistry.clear();
+    }
+  },
+});

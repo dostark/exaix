@@ -137,6 +137,67 @@ Deno.test("[step132.3][model-resolve] AgentOrchestrator with explicit model bypa
   }
 });
 
+Deno.test("[132.21][GAP-4] requestIntent overrides blueprint model_size with field-level precedence", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const testDir = await Deno.makeTempDir();
+    const config = createTestConfig();
+    config.system.root = testDir;
+
+    const mockModel: IResolvedModel = { provider: "p", model: "m", attempt: 1 };
+    const { resolver, captured } = createCapturingResolver(mockModel);
+
+    await writeBlueprint(testDir, "test-agent", {
+      model: "ignored",
+      model_size: "L",
+      thinking: false,
+      capabilities: "[chat]",
+    });
+
+    const executor = makeExecutor(config, db, resolver, {
+      requestIntent: { model_size: "S", thinking: true },
+    });
+    await executor.loadBlueprint("test-agent");
+
+    assertEquals(captured[0]?.model_size, "S", "request model_size must override blueprint model_size");
+    assertEquals(captured[0]?.thinking, true, "request thinking must override blueprint thinking");
+
+    executor.dispose();
+    await Deno.remove(testDir, { recursive: true });
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[132.21][GAP-4] unset requestIntent fields fall through to blueprint defaults", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const testDir = await Deno.makeTempDir();
+    const config = createTestConfig();
+    config.system.root = testDir;
+
+    const mockModel: IResolvedModel = { provider: "p", model: "m", attempt: 1 };
+    const { resolver, captured } = createCapturingResolver(mockModel);
+
+    await writeBlueprint(testDir, "test-agent", {
+      model: "ignored",
+      model_size: "L",
+      capabilities: "[chat]",
+    });
+
+    const executor = makeExecutor(config, db, resolver, { requestIntent: { thinking: false } });
+    await executor.loadBlueprint("test-agent");
+
+    assertEquals(captured[0]?.model_size, "L", "blueprint model_size must win when request leaves it unset");
+    assertEquals(captured[0]?.thinking, false);
+
+    executor.dispose();
+    await Deno.remove(testDir, { recursive: true });
+  } finally {
+    await cleanup();
+  }
+});
+
 Deno.test("[step135.8] request-level requestIntent.task_type wins as frontmatter-tier precedence", async () => {
   const { db, cleanup } = await initTestDbService();
   try {

@@ -155,6 +155,42 @@ Deno.test(
 );
 
 Deno.test(
+  "[react-loop-native-tools-gate-multi-provider] production shape: composite provider.id (openai-opus) matches bare-type metadata (openai) with supportsNativeTools",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    // Production provider instances carry a composite id "<type>-<model>" (ProviderFactory
+    // generateId), while ProviderRegistry metadata is keyed by the BARE type. The gate must
+    // fall back from the composite id to its type prefix, or native tool-calling never fires.
+    const BARE_TYPE = "openai";
+    const COMPOSITE_ID = "openai-gpt-5-mini";
+    ProviderRegistry.clear();
+    ProviderRegistry.registerWithMetadata(BARE_TYPE, new MockProviderFactory(), {
+      name: BARE_TYPE,
+      description: "Bare-type provider registry entry (production shape)",
+      capabilities: ["chat"],
+      costTier: ProviderCostTier.PAID,
+      pricingTier: PricingTier.MEDIUM,
+      strengths: [],
+      supportsNativeTools: true,
+    });
+
+    const getToolsCalls = { count: 0 };
+    const strategy = new ReActLoopStrategy(
+      makeTrackingExecutor(getToolsCalls),
+      makeCompleteProvider(COMPOSITE_ID),
+    );
+
+    await strategy.execute(testBlueprint, testContext, makeOptions(true));
+
+    assertEquals(
+      getToolsCalls.count,
+      1,
+      "composite provider.id must resolve to bare-type metadata, or native tools never enable",
+    );
+  },
+);
+
+Deno.test(
   "[react-loop-native-tools-gate-multi-provider] gate stays false when the capable provider's opt-in flag is unset",
   { sanitizeOps: false, sanitizeResources: false },
   async () => {
@@ -177,6 +213,38 @@ Deno.test(
 
     await strategy.execute(testBlueprint, testContext, makeOptions(false));
 
+    assertEquals(getToolsCalls.count, 0);
+  },
+);
+
+Deno.test(
+  "[react-loop-native-tools-gate-multi-provider] gate does not crash when provider.id is undefined (Step 11 composite-id fallback must stay nil-safe — budget-test regression)",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    ProviderRegistry.clear();
+    ProviderRegistry.registerWithMetadata(NON_ANTHROPIC_PROVIDER_ID, new MockProviderFactory(), {
+      name: NON_ANTHROPIC_PROVIDER_ID,
+      description: "Non-Anthropic fixture provider with native-tools capability",
+      capabilities: ["chat"],
+      costTier: ProviderCostTier.PAID,
+      pricingTier: PricingTier.MEDIUM,
+      strengths: [],
+      supportsNativeTools: true,
+    });
+
+    const getToolsCalls = { count: 0 };
+    // Omit `id` entirely — the budget-test mock provider shape (react_loop_strategy_budget_test.ts).
+    const idlessProvider = {
+      generate(_prompt: string) {
+        return Promise.resolve(makeGenerateResult(`${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`));
+      },
+    } as IModelProvider;
+    const strategy = new ReActLoopStrategy(makeTrackingExecutor(getToolsCalls), idlessProvider);
+
+    await strategy.execute(testBlueprint, testContext, makeOptions(true));
+
+    // Without an id the metadata lookup is undefined; the gate must simply stay off,
+    // not throw a TypeError reading `providerIdForGate.indexOf("-")`.
     assertEquals(getToolsCalls.count, 0);
   },
 );

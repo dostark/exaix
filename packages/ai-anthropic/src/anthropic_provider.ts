@@ -10,7 +10,6 @@ import {
   ANTHROPIC_CACHE_CONTROL_EPHEMERAL,
   ANTHROPIC_CONTENT_TYPE_TEXT,
   ANTHROPIC_CONTENT_TYPE_TOOL_RESULT,
-  ANTHROPIC_CONTENT_TYPE_TOOL_USE,
   ANTHROPIC_MESSAGE_ROLE_ASSISTANT,
   ANTHROPIC_MESSAGE_ROLE_USER,
   ANTHROPIC_THINKING_DISABLED,
@@ -107,22 +106,34 @@ export class AnthropicProvider extends BaseProvider {
     const messages: AnthropicRequestMessage[] = [];
 
     if (options?.priorTurn) {
+      const priorTurn = options.priorTurn;
+      // GAP-153-F: Anthropic requires passing the assistant message's thinking blocks back
+      // complete and unmodified (with their signature) alongside the tool_use they
+      // accompanied — a missing/edited block yields an HTTP 400. Emit them verbatim first.
+      const content: AnthropicRequestContentBlock[] = [
+        ...(priorTurn.thinkingBlocks?.map((block): AnthropicRequestContentBlock => ({
+          type: "thinking",
+          thinking: block.thinking,
+          signature: block.signature,
+        })) ?? []),
+        {
+          type: "tool_use",
+          id: priorTurn.toolUseId,
+          name: priorTurn.toolName,
+          input: priorTurn.toolInput,
+        },
+      ];
       messages.push({
         role: ANTHROPIC_MESSAGE_ROLE_ASSISTANT,
-        content: [{
-          type: ANTHROPIC_CONTENT_TYPE_TOOL_USE,
-          id: options.priorTurn.toolUseId,
-          name: options.priorTurn.toolName,
-          input: options.priorTurn.toolInput,
-        }],
+        content,
       });
       messages.push({
         role: ANTHROPIC_MESSAGE_ROLE_USER,
         content: [{
           type: ANTHROPIC_CONTENT_TYPE_TOOL_RESULT,
-          tool_use_id: options.priorTurn.toolUseId,
-          content: options.priorTurn.toolResultContent,
-          is_error: options.priorTurn.toolResultIsError,
+          tool_use_id: priorTurn.toolUseId,
+          content: priorTurn.toolResultContent,
+          is_error: priorTurn.toolResultIsError,
         }],
       });
     }
@@ -219,6 +230,21 @@ type AnthropicRequestMessage = {
   role: AnthropicMessageRole;
   content: string | unknown[];
 };
+
+/** One outbound assistant content block — a replayed `thinking` block (GAP-153-F) or a
+ *  `tool_use` block. User-side text/tool_result blocks are typed inline where built. */
+type AnthropicRequestContentBlock =
+  | {
+    type: "thinking";
+    thinking: string;
+    signature: string;
+  }
+  | {
+    type: "tool_use";
+    id: string;
+    name: string;
+    input: Record<string, JSONValue>;
+  };
 
 type AnthropicRequestBody = {
   model: string;

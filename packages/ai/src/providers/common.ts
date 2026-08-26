@@ -59,6 +59,24 @@ export interface IProviderToolCall {
   /** The tool call's type — always "tool_use" for Anthropic, but included
    *  for forward compatibility with future provider support. */
   type?: string;
+  /** Gemini's `thoughtSignature` for this functionCall — must be replayed verbatim on
+   *  the next request's model functionCall part (GAP-153-E). */
+  thoughtSignature?: string;
+  /** Anthropic thinking blocks that preceded the tool_use block in the same assistant
+   *  message — must be passed back complete and unmodified (with their signature) ahead
+   *  of the tool_use on the next request (GAP-153-F). */
+  thinkingBlocks?: IThinkingReplayBlock[];
+  /** OpenAI reasoning content (`reasoning_content`) accompanying the tool call — must be
+   *  echoed back on the replayed assistant message for multi-turn continuity (GAP-153-G). */
+  reasoningContent?: string;
+}
+
+/** One Anthropic `thinking` content block that must be replayed verbatim in a tool-use
+ *  turn. `signature` is the opaque verification token Anthropic returns and requires to be
+ *  passed back unchanged (modified/dropped thinking blocks are rejected with an HTTP 400). */
+export interface IThinkingReplayBlock {
+  thinking: string;
+  signature: string;
 }
 /**
  * Base error class for model provider errors.

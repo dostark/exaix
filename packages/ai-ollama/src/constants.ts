@@ -63,12 +63,21 @@ export const PROVIDER_OLLAMA_CAPABILITIES = ["chat", "streaming"] as const;
 export const PROVIDER_OLLAMA_STRENGTHS = ["simple", "local", "privacy"] as const;
 export const PROVIDER_OLLAMA_COST_TIER = ProviderCostTier.FREE;
 
+/** Phase 132 capability metadata — context window (tokens). */
+export const OLLAMA_CONTEXT_WINDOW = 8192;
+/** Phase 132 capability metadata — local, no metered cost. */
+export const OLLAMA_COST_PER_MTok = 0;
+
 export const OLLAMA_PROVIDER_METADATA = {
   name: PROVIDER_OLLAMA,
   description: PROVIDER_OLLAMA_DESCRIPTION,
   capabilities: PROVIDER_OLLAMA_CAPABILITIES,
   costTier: PROVIDER_OLLAMA_COST_TIER,
   strengths: PROVIDER_OLLAMA_STRENGTHS,
+  supportsThinking: false,
+  supportsEffort: false,
+  contextWindow: OLLAMA_CONTEXT_WINDOW,
+  costPerMtok: OLLAMA_COST_PER_MTok,
 } as const;
 
 export const OLLAMA_DEFAULTS: IProviderDefaults = {

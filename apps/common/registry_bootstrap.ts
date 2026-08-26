@@ -42,24 +42,18 @@ function registerConcreteProviders(): void {
 
   if (!supported.includes(PROVIDER_OLLAMA)) {
     const ollamaMetadata: IProviderMetadata = {
-      name: OLLAMA_PROVIDER_METADATA.name,
-      description: OLLAMA_PROVIDER_METADATA.description,
+      ...OLLAMA_PROVIDER_METADATA,
       capabilities: [...OLLAMA_PROVIDER_METADATA.capabilities],
-      costTier: OLLAMA_PROVIDER_METADATA.costTier,
       pricingTier: PricingTier.LOCAL,
-      strengths: [...OLLAMA_PROVIDER_METADATA.strengths],
     };
     ProviderRegistry.registerWithMetadata(PROVIDER_OLLAMA, new OllamaProviderFactory(), ollamaMetadata);
   }
 
   if (!supported.includes(PROVIDER_ANTHROPIC)) {
     const anthropicMetadata: IProviderMetadata = {
-      name: ANTHROPIC_PROVIDER_METADATA.name,
-      description: ANTHROPIC_PROVIDER_METADATA.description,
+      ...ANTHROPIC_PROVIDER_METADATA,
       capabilities: [...ANTHROPIC_PROVIDER_METADATA.capabilities],
-      costTier: ANTHROPIC_PROVIDER_METADATA.costTier,
       pricingTier: PricingTier.HIGH,
-      strengths: [...ANTHROPIC_PROVIDER_METADATA.strengths],
       supportsNativeTools: true,
     };
     ProviderRegistry.registerWithMetadata(
@@ -71,12 +65,9 @@ function registerConcreteProviders(): void {
 
   if (!supported.includes(PROVIDER_OPENAI)) {
     const openaiMetadata: IProviderMetadata = {
-      name: OPENAI_PROVIDER_METADATA.name,
-      description: OPENAI_PROVIDER_METADATA.description,
+      ...OPENAI_PROVIDER_METADATA,
       capabilities: [...OPENAI_PROVIDER_METADATA.capabilities],
-      costTier: OPENAI_PROVIDER_METADATA.costTier,
       pricingTier: PricingTier.MEDIUM,
-      strengths: [...OPENAI_PROVIDER_METADATA.strengths],
       // Phase 153 Step 2: OpenAIProvider.attemptGenerate() now serializes
       // IModelOptions.tools/toolChoice into real tools[]/tool_choice request fields.
       supportsNativeTools: true,
@@ -90,12 +81,9 @@ function registerConcreteProviders(): void {
 
   if (!supported.includes(PROVIDER_GOOGLE)) {
     const googleMetadata: IProviderMetadata = {
-      name: GOOGLE_PROVIDER_METADATA.name,
-      description: GOOGLE_PROVIDER_METADATA.description,
+      ...GOOGLE_PROVIDER_METADATA,
       capabilities: [...GOOGLE_PROVIDER_METADATA.capabilities],
-      costTier: GOOGLE_PROVIDER_METADATA.costTier,
       pricingTier: PricingTier.LOW,
-      strengths: [...GOOGLE_PROVIDER_METADATA.strengths],
       // Phase 153 Step 3: GoogleProvider.attemptGenerate() now serializes
       // IModelOptions.tools/toolChoice into real tools[]/toolConfig request fields.
       supportsNativeTools: true,
@@ -111,12 +99,9 @@ function registerConcreteProviders(): void {
   // a BYO-key, independently-free aggregator — gating it adds no value.
   if (!supported.includes(PROVIDER_OPENROUTER)) {
     const openrouterMetadata: IProviderMetadata = {
-      name: OPENROUTER_PROVIDER_METADATA.name,
-      description: OPENROUTER_PROVIDER_METADATA.description,
+      ...OPENROUTER_PROVIDER_METADATA,
       capabilities: [...OPENROUTER_PROVIDER_METADATA.capabilities],
-      costTier: OPENROUTER_PROVIDER_METADATA.costTier,
       pricingTier: PricingTier.MEDIUM,
-      strengths: [...OPENROUTER_PROVIDER_METADATA.strengths],
       // Phase 135 Step 4 (§5.7.2): OpenRouter is an aggregator reseller — the native
       // admission path and the native_first route policy read this flag.
       isAggregator: true,
@@ -141,12 +126,9 @@ function registerConcreteProviders(): void {
   // metered API key, matching CliDelegateStrategy's auth posture for the code-editing step.
   if (!supported.includes(PROVIDER_CLAUDE_CLI)) {
     const claudeCliMetadata: IProviderMetadata = {
-      name: CLAUDE_CLI_PROVIDER_METADATA.name,
-      description: CLAUDE_CLI_PROVIDER_METADATA.description,
+      ...CLAUDE_CLI_PROVIDER_METADATA,
       capabilities: [...CLAUDE_CLI_PROVIDER_METADATA.capabilities],
-      costTier: CLAUDE_CLI_PROVIDER_METADATA.costTier,
       pricingTier: PricingTier.LOCAL,
-      strengths: [...CLAUDE_CLI_PROVIDER_METADATA.strengths],
     };
     ProviderRegistry.registerWithMetadata(
       PROVIDER_CLAUDE_CLI,
@@ -157,12 +139,9 @@ function registerConcreteProviders(): void {
 
   if (!supported.includes(PROVIDER_OPENCODE_CLI)) {
     const opencodeCliMetadata: IProviderMetadata = {
-      name: OPENCODE_CLI_PROVIDER_METADATA.name,
-      description: OPENCODE_CLI_PROVIDER_METADATA.description,
+      ...OPENCODE_CLI_PROVIDER_METADATA,
       capabilities: [...OPENCODE_CLI_PROVIDER_METADATA.capabilities],
-      costTier: OPENCODE_CLI_PROVIDER_METADATA.costTier,
       pricingTier: PricingTier.LOCAL,
-      strengths: [...OPENCODE_CLI_PROVIDER_METADATA.strengths],
     };
     ProviderRegistry.registerWithMetadata(
       PROVIDER_OPENCODE_CLI,
@@ -173,12 +152,9 @@ function registerConcreteProviders(): void {
 
   if (!supported.includes(PROVIDER_CODEX_CLI)) {
     const codexCliMetadata: IProviderMetadata = {
-      name: CODEX_CLI_PROVIDER_METADATA.name,
-      description: CODEX_CLI_PROVIDER_METADATA.description,
+      ...CODEX_CLI_PROVIDER_METADATA,
       capabilities: [...CODEX_CLI_PROVIDER_METADATA.capabilities],
-      costTier: CODEX_CLI_PROVIDER_METADATA.costTier,
       pricingTier: PricingTier.LOCAL,
-      strengths: [...CODEX_CLI_PROVIDER_METADATA.strengths],
     };
     ProviderRegistry.registerWithMetadata(
       PROVIDER_CODEX_CLI,

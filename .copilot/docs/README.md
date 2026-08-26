@@ -22,4 +22,9 @@ These files stay canonical at the repo root but are discoverable here via symlin
 
 - [ARCHITECTURE.md](../../ARCHITECTURE.md): System architecture.
 - [CODE_STYLE.md](../../CODE_STYLE.md): Coding standards.
-- [GLOSSARY.md](../../GLOSSARY.md): Concept-level glossary (customer-facing).
+
+### Root docs linked, not symlinked
+
+- [GLOSSARY.md](../../GLOSSARY.md): Concept-level glossary (customer-facing). Not a
+  symlink — the `GLOSSARY.md` name in this directory is held by the moved developer
+  glossary above.

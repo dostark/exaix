@@ -52,8 +52,11 @@ import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "@exaix/tui/config.ts";
 // Extracted utilities
 import { MainViewHandler, ViewModeHandler } from "./agent_status/key_handlers.ts";
 import { buildFlatTree, buildTreeByModel, buildTreeByStatus } from "./agent_status/tree_builder.ts";
+import { deriveResolvedModel } from "./agent_status/resolved_model.ts";
 import type { IAgentService } from "@exaix/core/types";
 import type { IAgentHealthData, IAgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
+import type { IResolvedModelJournalEntry } from "./agent_status/resolved_model.ts";
 
 // ===== View State =====
 
@@ -313,6 +316,15 @@ export class AgentStatusView {
       for (const issue of health.issues) {
         lines.push(`  - ${issue}`);
       }
+    }
+    // Phase 132 (GAP-10): surface the resolved provider:model from the journaled
+    // model.resolved event (never import execution services in the TUI). The agent-log
+    // adapter may carry structured journal entries; when it does not, no resolution line
+    // is rendered.
+    const journalEntries = logs.map((log) => log as IResolvedModelJournalEntry);
+    const resolvedModel = deriveResolvedModel(journalEntries);
+    if (resolvedModel) {
+      lines.push(`Model: ${resolvedModel}`);
     }
     lines.push("");
     lines.push("Recent Logs:");
@@ -681,7 +693,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
     }
   }
 
-  private formatDetailContent(agent: IAgentStatusItem | undefined, health: IAgentHealthData): string {
+  private formatDetailContent(agent: Opt<IAgentStatusItem, Reason.OptionalInput>, health: IAgentHealthData): string {
     if (!agent) return "Identity not found.";
 
     const lines: string[] = [];

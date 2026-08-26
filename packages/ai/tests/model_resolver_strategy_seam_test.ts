@@ -212,7 +212,7 @@ Deno.test("[gap9][step6] model.resolved trace payload carries route_reason and c
     const resolvedEvents = logger.events.filter((e) => e.action === "model.resolved");
     const withRoute = resolvedEvents.find((e) => e.payload?.route_reason === "cheapest");
     assertEquals(withRoute !== undefined, true);
-    assertEquals(typeof withRoute?.payload?.considered_routes, "string");
+    assertEquals(Array.isArray(withRoute?.payload?.considered_routes), true);
   } finally {
     ProviderRegistry.clear();
     await cleanup();

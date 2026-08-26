@@ -61,6 +61,13 @@ too large for its context window, or the provider is unavailable), Exaix automat
 steps up to a larger size tier or tries your configured fallbacks — you don't have to
 retry manually.
 
+During plan execution, request-level intent from the request frontmatter (CLI flags such
+as `--model-size`, `--thinking`) overrides the identity blueprint's intent fields for any
+field explicitly set; unset fields fall through to the blueprint. Each provider's
+capability metadata (context window, thinking support, reference cost) is what powers the
+size/thinking eligibility checks, so a custom provider must be registered with those
+fields populated for preset-based selection to apply.
+
 ## 3. Curating your preferred models
 
 You can tell Exaix which providers to prefer for each size tier, without editing config

@@ -95,6 +95,9 @@ const REACT_WRITE_TOOLS: ReadonlySet<string> = new Set<string>([
  * It uses the LLM to generate actions, executes them via ToolRegistry,
  * and maintains a loop until the task is complete.
  */
+/** Which native tool-choice branch produced this iteration's options (Phase 153 Step 11). */
+export type NativeToolChoiceMode = "forced" | "any";
+
 export /** Internal type for dynamically-built provider.generate() options. */
 interface GeneratedOptions {
   temperature: number;
@@ -102,6 +105,12 @@ interface GeneratedOptions {
   tools?: IToolDefinition[];
   toolChoice?: { type: string; name?: string; disable_parallel_tool_use: boolean };
   priorTurn?: IProviderTurn;
+  /**
+   * Phase 153 Step 11 diagnostic (GAP-153-B/D): which native tool-choice branch produced
+   * this iteration's options — "forced" (the PGAP-3 preferred-tool branch) or "any"
+   * (the unconstrained fallback). Non-wire: ignored by provider request builders.
+   */
+  nativeToolChoiceMode?: NativeToolChoiceMode;
 }
 
 /** Parameters for runSingleIteration. */
@@ -175,8 +184,22 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     let totalReasoningTokens = 0;
 
     // Step 5: native-tools gate — both the opt-in flag AND the provider capability must be true.
-    const useNativeTools = options.native_tools_enabled === true &&
-      ProviderRegistry.getProviderMetadata(this.provider.id)?.supportsNativeTools === true;
+    // Provider instances carry a composite id "<type>-<model>" (ProviderFactory.generateId),
+    // while ProviderRegistry metadata is keyed by the BARE provider type — so look the
+    // metadata up by the composite id first (test/back-compat) and fall back to the type
+    // prefix before the first "-", otherwise native tool-calling never enables (Phase 153
+    // Step 11 live finding).
+    const providerIdForGate = this.provider!.id;
+    let supportsNativeTools = providerIdForGate !== undefined &&
+      ProviderRegistry.getProviderMetadata(providerIdForGate)?.supportsNativeTools === true;
+    if (!supportsNativeTools && providerIdForGate !== undefined) {
+      const sep = providerIdForGate.indexOf("-");
+      if (sep !== -1) {
+        supportsNativeTools =
+          ProviderRegistry.getProviderMetadata(providerIdForGate.slice(0, sep))?.supportsNativeTools === true;
+      }
+    }
+    const useNativeTools = options.native_tools_enabled === true && supportsNativeTools;
     let nativeToolsPriorTurn: IProviderTurn | undefined;
     let nativeToolDefinitions: IToolDefinition[] | undefined;
     let nativeToolsUsed = false;
@@ -190,6 +213,15 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     const nativePreferredTool = nativeToolsUsed && TARGETED_EDIT_PATTERN.test(context.plan)
       ? ("patch_file" satisfies string)
       : undefined;
+    // Phase 153 Step 11 (GAP-153-B/D): record iteration-0's context.plan + derived
+    // nativePreferredTool so live non-convergence is attributable (did an exploration step
+    // run first, leaving the pattern unmatched and tool_choice unconstrained?).
+    console.debug("[ReActLoopStrategy] native tools:", {
+      enabled: useNativeTools,
+      planMatch: TARGETED_EDIT_PATTERN.test(context.plan),
+      preferredTool: nativePreferredTool ?? null,
+      planPreview: context.plan.slice(0, Math.min(context.plan.length, 120)),
+    });
 
     for (let i = 0; i < this.MAX_ITERATIONS; i++) {
       const iterResult = await this.runSingleIteration({
@@ -338,9 +370,16 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       // via tool_choice: {type: "tool", name: "..."} instead of {type: "any"}.
       if (nativePreferredTool && !nativeToolsPriorTurn) {
         base.toolChoice = { type: "tool" as const, name: nativePreferredTool, disable_parallel_tool_use: true };
+        base.nativeToolChoiceMode = "forced";
       } else {
         base.toolChoice = { type: "any" as const, disable_parallel_tool_use: true };
+        base.nativeToolChoiceMode = "any";
       }
+      // Phase 153 Step 11 (GAP-153-B/D): one-line diagnostic of the branch chosen.
+      console.debug(
+        `[ReActLoopStrategy] native toolChoice=${base.nativeToolChoiceMode} ` +
+          `preferredTool=${nativePreferredTool ?? "<unset>"} priorTurn=${nativeToolsPriorTurn ? "yes" : "no"}`,
+      );
       if (nativeToolsPriorTurn) {
         base.priorTurn = nativeToolsPriorTurn;
       }
@@ -1067,6 +1106,11 @@ When you are finished, output "${REACT_STATUS_COMPLETE}" followed by "${REACT_SU
       toolInput: toolCall.input,
       toolResultContent: JSON.stringify(result.data ?? result.error ?? {}),
       toolResultIsError: !result.success,
+      // GAP-153-E/GAP-153-F/GAP-153-G: forward every provider reasoning artifact the model
+      // returned so the provider can replay it verbatim on the next turn.
+      ...(toolCall.thoughtSignature !== undefined ? { thoughtSignature: toolCall.thoughtSignature } : {}),
+      ...(toolCall.thinkingBlocks !== undefined ? { thinkingBlocks: toolCall.thinkingBlocks } : {}),
+      ...(toolCall.reasoningContent !== undefined ? { reasoningContent: toolCall.reasoningContent } : {}),
     };
   }
 }

@@ -40,7 +40,10 @@ export type GoogleProviderOptions = IBaseProviderOptions;
 /** One Gemini `contents[]` entry, covering the three shapes this module constructs
  *  (priorTurn's model functionCall + user functionResponse, plus the plain user prompt). */
 type GoogleContent =
-  | { role: "model"; parts: [{ functionCall: { name: string; args: Record<string, JSONValue> } }] }
+  | {
+    role: "model";
+    parts: [{ functionCall: { name: string; args: Record<string, JSONValue>; thoughtSignature?: string } }];
+  }
   | { role: "user"; parts: [{ functionResponse: { name: string; response: { content: JSONValue } } }] }
   | { role: "user"; parts: [{ text: string }] };
 
@@ -105,11 +108,26 @@ export class GoogleProvider extends BaseProvider {
     const endpoint = `${this.baseUrl}/${this.model}:generateContent?key=${this.apiKey}`;
 
     const contents: GoogleContent[] = [];
+    // Gemini requires a conversation to lead with a user turn: a model `functionCall` whose
+    // preceding turn is not a user turn is rejected with an HTTP 400 ("function call turn
+    // must come immediately after a user turn or after a function response turn") — GAP-153-E.
+    // Push the user text first, then the prior functionCall/functionResponse pair, so the
+    // model turn has an immediately-prior user counterpart and the alternation is preserved.
+    contents.push({ role: "user", parts: [{ text: prompt }] });
     if (options?.priorTurn) {
       const priorTurn = options.priorTurn;
       contents.push({
         role: "model",
-        parts: [{ functionCall: { name: priorTurn.toolName, args: priorTurn.toolInput } }],
+        // GAP-153-E: Gemini requires replaying the original thought_signature on a replayed
+        // functionCall — without it the API returns an HTTP 400 ("Function call is missing
+        // a thought_signature in functionCall parts").
+        parts: [{
+          functionCall: {
+            name: priorTurn.toolName,
+            args: priorTurn.toolInput,
+            ...(priorTurn.thoughtSignature !== undefined ? { thoughtSignature: priorTurn.thoughtSignature } : {}),
+          },
+        }],
       });
       contents.push({
         role: "user",
@@ -121,7 +139,6 @@ export class GoogleProvider extends BaseProvider {
         }],
       });
     }
-    contents.push({ role: "user", parts: [{ text: prompt }] });
 
     return await performProviderCall<GoogleResponse>(endpoint, {
       method: "POST",

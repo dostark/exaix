@@ -29,7 +29,7 @@ interface CapturedToolConfig {
 
 interface CapturedPart {
   text?: string;
-  functionCall?: { name: string; args: Record<string, JSONValue> };
+  functionCall?: { name: string; args: Record<string, JSONValue>; thoughtSignature?: string };
   functionResponse?: { name: string; response: { content: JSONValue } };
 }
 
@@ -117,7 +117,7 @@ Deno.test("GoogleProvider.attemptGenerate omits tools/toolConfig when absent (un
   assertEquals(body.toolConfig, undefined);
 });
 
-Deno.test("GoogleProvider.attemptGenerate with priorTurn produces role:model/role:user functionCall/functionResponse sequence", async () => {
+Deno.test("GoogleProvider.attemptGenerate with priorTurn produces Gemini-legal contents ordering (GAP-153-E)", async () => {
   const body = await capturedBodyOf({
     priorTurn: {
       toolUseId: "call_1",
@@ -129,20 +129,44 @@ Deno.test("GoogleProvider.attemptGenerate with priorTurn produces role:model/rol
   });
 
   assertExists(body.contents);
+  // Gemini rejects a conversation whose FIRST turn is a model functionCall ("function call
+  // turn must come immediately after a user turn or after a function response turn",
+  // HTTP 400 on a live two-iteration native run — GAP-153-E). The user text must lead, so
+  // the model functionCall has an immediately-prior user turn.
   assertEquals(body.contents.length, 3);
+  assertEquals(body.contents[0].role, "user");
+  assertEquals(body.contents[0].parts[0].text, "test prompt");
 
-  assertEquals(body.contents[0].role, "model");
-  assertExists(body.contents[0].parts[0].functionCall);
-  assertEquals(body.contents[0].parts[0].functionCall!.name, "patch_file");
-  assertEquals(body.contents[0].parts[0].functionCall!.args, { path: "a.ts", diff: "..." });
-
-  assertEquals(body.contents[1].role, "user");
-  assertExists(body.contents[1].parts[0].functionResponse);
-  assertEquals(body.contents[1].parts[0].functionResponse!.name, "patch_file");
-  assertEquals(body.contents[1].parts[0].functionResponse!.response.content, "patched successfully");
+  assertEquals(body.contents[1].role, "model");
+  assertExists(body.contents[1].parts[0].functionCall);
+  assertEquals(body.contents[1].parts[0].functionCall!.name, "patch_file");
+  assertEquals(body.contents[1].parts[0].functionCall!.args, { path: "a.ts", diff: "..." });
 
   assertEquals(body.contents[2].role, "user");
-  assertEquals(body.contents[2].parts[0].text, "test prompt");
+  assertExists(body.contents[2].parts[0].functionResponse);
+  assertEquals(body.contents[2].parts[0].functionResponse!.name, "patch_file");
+  assertEquals(body.contents[2].parts[0].functionResponse!.response.content, "patched successfully");
+});
+
+Deno.test("GoogleProvider.attemptGenerate replays priorTurn thoughtSignature in the model functionCall part (GAP-153-E)", async () => {
+  const body = await capturedBodyOf({
+    priorTurn: {
+      toolUseId: "call_1",
+      toolName: "patch_file",
+      toolInput: { path: "a.ts", diff: "..." },
+      toolResultContent: "patched successfully",
+      toolResultIsError: false,
+      thoughtSignature: "sig-abc123",
+    },
+  });
+
+  assertExists(body.contents);
+  // Gemini requires the model's replayed functionCall to carry the original
+  // thought_signature; without it Gemini returns an HTTP 400 ("Function call is
+  // missing a thought_signature in functionCall parts").
+  assertEquals(body.contents[1].role, "model");
+  assertEquals(body.contents[1].parts[0].functionCall!.name, "patch_file");
+  assertEquals(body.contents[1].parts[0].functionCall!.thoughtSignature, "sig-abc123");
 });
 
 Deno.test("[regression] GoogleProvider.attemptGenerate without priorTurn produces a single content entry", async () => {

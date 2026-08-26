@@ -7,6 +7,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
+import { defaultSandboxRoot } from "../../scripts/prune_scenario_sandboxes.ts";
 
 // We won't import the logic directly as it's a main-only script usually,
 // but we can test it by running it as a subprocess.
@@ -69,13 +70,13 @@ describe("scripts/setup_hooks.ts", () => {
   });
 });
 
-describe("Gate 19: event coverage visibility (real pre-commit hook, real subprocess git commit)", () => {
+describe("event coverage visibility via the real pre-commit hook (real subprocess git commit)", () => {
   const REPO_ROOT = Deno.cwd();
 
-  /** Extracts Gate 19's exact current block from the real installed hook, so this test
-   *  always exercises whatever Gate 19 actually says today, not a hand-duplicated copy
-   *  that could silently drift from the real file. `deno task X` is substituted with its
-   *  absolute-path `deno run` equivalent: `deno task` walks UP from the invocation
+  /** Extracts the event-coverage block from the real installed pre-commit hook, so this
+   *  test always exercises whatever the hook actually says today, not a hand-duplicated
+   *  copy that could silently drift from the real file. `deno task X` is substituted with
+   *  its absolute-path `deno run` equivalent: `deno task` walks UP from the invocation
    *  directory to find deno.json and then runs with CWD set to *that* directory (verified
    *  empirically) — correct and unproblematic for a real developer commit (deno.json's
    *  directory IS the repo root being committed to), but wrong for this test's isolated
@@ -84,11 +85,24 @@ describe("Gate 19: event coverage visibility (real pre-commit hook, real subproc
    *  `deno run` with an absolute script path does not redirect CWD, so it correctly scopes
    *  `git diff --cached` (inside check_event_coverage.ts) to the scratch repo. This still
    *  exercises the exact real script, flags, and hook exit-code/error-message wrapper —
-   *  only the task-runner indirection is swapped for its equivalent expansion. */
-  async function extractGate19(): Promise<string> {
-    const hookContent = await Deno.readTextFile(join(REPO_ROOT, ".git", "hooks", "pre-commit"));
-    const match = hookContent.match(/# 19\. Event Coverage Visibility Check[\s\S]*?\nfi\n/);
-    assert(match, "Gate 19 block not found in .git/hooks/pre-commit — has it been renumbered or removed?");
+   *  only the task-runner indirection is swapped for its equivalent expansion. The hooks
+   *  dir is resolved via `git rev-parse --git-path hooks` so the test also works from a
+   *  linked worktree (where `.git` is a pointer file, not a directory). The block header
+   *  is matched by its descriptive title (the leading sequence number is deliberately not
+   *  hard-coded) so the test does not break if the gate numbering is ever re-ordered. */
+  async function extractEventCoverageHook(): Promise<string> {
+    const proc = await new Deno.Command("git", {
+      args: ["rev-parse", "--git-path", "hooks"],
+      cwd: REPO_ROOT,
+      env: { LD_LIBRARY_PATH: "" },
+    }).output();
+    if (!proc.success) {
+      throw new Error(`git rev-parse --git-path hooks failed: ${new TextDecoder().decode(proc.stderr)}`);
+    }
+    const hooksDir = new TextDecoder().decode(proc.stdout).trim();
+    const hookContent = await Deno.readTextFile(join(hooksDir, "pre-commit"));
+    const match = hookContent.match(/# \d+\. Event Coverage Visibility Check[\s\S]*?\nfi\n/);
+    assert(match, "event-coverage block not found in .git/hooks/pre-commit — has it been renamed or removed?");
     const scriptPath = join(REPO_ROOT, "scripts", "check_event_coverage.ts");
     return match![0].replace(
       "deno task check:event-coverage:staged:visible",
@@ -96,37 +110,59 @@ describe("Gate 19: event coverage visibility (real pre-commit hook, real subproc
     );
   }
 
-  /** Real scratch git repo nested under <repo>/tmp/ (not required to be nested now that
-   *  extractGate19 uses an absolute `deno run` path, but kept for consistency and to keep
-   *  scratch artifacts easy to find during local debugging). Installs a minimal hook
-   *  (Gate 19 only, extracted live) plus one fixture file, then stages it. */
+  /** Remove any scratch repos left over from earlier interrupted test runs. */
+  async function sweepStaleScratch(sandboxRoot: string): Promise<void> {
+    for (const entry of Deno.readDirSync(sandboxRoot)) {
+      if (entry.isDirectory && entry.name.startsWith(SCRATCH_PREFIX)) {
+        await Deno.remove(join(sandboxRoot, entry.name), { recursive: true });
+      }
+    }
+  }
+
+  /** Real scratch git repo nested under the sibling-of-repo sandbox root
+   *  (`<parent-of-repo>/exaix-sandboxes/precommit-hook-scratch-*`, or EXA_SANDBOX_BASE — the
+   *  same convention the scenario runner and scripts/prune_scenario_sandboxes.ts use). Kept
+   *  OUT of the repo tree so test scratch can never pollute the tracked checkout; each case
+   *  removes its dir in a `finally`, and stale dirs from interrupted runs are swept first.
+   *  extractEventCoverageHook uses an absolute `deno run` path, so the scratch repo only
+   *  needs to be a real git dir — nesting under `exaix-sandboxes/` keeps scratch artifacts
+   *  easy to find during local debugging without touching the repo tree. */
+  const SCRATCH_PREFIX = "precommit-hook-scratch-";
+
   async function setupScratchRepo(fixtureContent: string): Promise<string> {
-    await Deno.mkdir(join(REPO_ROOT, "tmp"), { recursive: true });
-    const tmpDir = await Deno.makeTempDir({ dir: join(REPO_ROOT, "tmp"), prefix: "phase168-gate19-" });
+    const sandboxRoot = defaultSandboxRoot();
+    await Deno.mkdir(sandboxRoot, { recursive: true });
+    await sweepStaleScratch(sandboxRoot);
+    const tmpDir = await Deno.makeTempDir({ dir: sandboxRoot, prefix: SCRATCH_PREFIX });
     const gitEnv = { LD_LIBRARY_PATH: "" };
+    try {
+      await new Deno.Command("git", { args: ["init"], cwd: tmpDir, env: gitEnv }).output();
+      await new Deno.Command("git", { args: ["config", "user.name", "Test User"], cwd: tmpDir, env: gitEnv }).output();
+      await new Deno.Command("git", { args: ["config", "user.email", "test@exaix.local"], cwd: tmpDir, env: gitEnv })
+        .output();
 
-    await new Deno.Command("git", { args: ["init"], cwd: tmpDir, env: gitEnv }).output();
-    await new Deno.Command("git", { args: ["config", "user.name", "Test User"], cwd: tmpDir, env: gitEnv }).output();
-    await new Deno.Command("git", { args: ["config", "user.email", "test@exaix.local"], cwd: tmpDir, env: gitEnv })
-      .output();
+      const hooksDir = join(tmpDir, ".git", "hooks");
+      const eventCoverageBlock = await extractEventCoverageHook();
+      const hookPath = join(hooksDir, "pre-commit");
+      await Deno.writeTextFile(hookPath, `#!/bin/sh\n${eventCoverageBlock}\necho "event-coverage hook passed"\n`);
+      await Deno.chmod(hookPath, 0o755);
 
-    const hooksDir = join(tmpDir, ".git", "hooks");
-    const gate19 = await extractGate19();
-    const hookPath = join(hooksDir, "pre-commit");
-    await Deno.writeTextFile(hookPath, `#!/bin/sh\n${gate19}\necho "Gate 19 passed"\n`);
-    await Deno.chmod(hookPath, 0o755);
+      const fixtureDir = join(tmpDir, "packages", "fake_visible_fixture", "src");
+      await Deno.mkdir(fixtureDir, { recursive: true });
+      await Deno.writeTextFile(join(fixtureDir, "gap_class.ts"), fixtureContent);
+      await new Deno.Command("git", { args: ["add", "."], cwd: tmpDir, env: gitEnv }).output();
 
-    const fixtureDir = join(tmpDir, "packages", "fake_gate19_fixture", "src");
-    await Deno.mkdir(fixtureDir, { recursive: true });
-    await Deno.writeTextFile(join(fixtureDir, "gap_class.ts"), fixtureContent);
-    await new Deno.Command("git", { args: ["add", "."], cwd: tmpDir, env: gitEnv }).output();
-
-    return tmpDir;
+      return tmpDir;
+    } catch (error) {
+      // A failure here (e.g. the real hook cannot be read) must not leak scratch state.
+      await Deno.remove(tmpDir, { recursive: true }).catch(() => {});
+      throw error;
+    }
   }
 
   async function attemptCommit(tmpDir: string): Promise<{ success: boolean; stderr: string }> {
     const result = await new Deno.Command("git", {
-      args: ["commit", "-m", "gate19 fixture commit"],
+      args: ["commit", "-m", "hook fixture commit"],
       cwd: tmpDir,
       env: { LD_LIBRARY_PATH: "" },
       stdout: "piped",
