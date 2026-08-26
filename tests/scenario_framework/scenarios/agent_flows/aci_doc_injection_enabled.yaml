@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "aci-doc-injection-enabled"
 title: "Phase 112 Step 7 — a real booted daemon with agents.inject_aci_docs=true emits the typed agent.prompt_assembled(react) event"
 pack: "agent_flows"
-tags: ["safety-gate", "subsystem:tools", "entity:aci-react"]
+tags: ["safety-gate", "subsystem:identities", "entity:aci-react"]
 request_fixture: "fixtures/requests/agent_flows/aci_doc_injection.md"
 mode_support: ["auto"]
 portals: []

@@ -64,6 +64,7 @@ export const ROLE_REQUIRED_SKILLS: Record<string, string[]> = {
   // `portal`/`context`/`grounding` keyword triggers that fire exactly then.
   "default": ["response-contract"],
   "mock-agent": ["response-contract"],
+  "aci-react": ["response-contract"],
   "code-analyst": ["response-contract-code-analysis", "code-review"],
   "product-manager": ["response-contract", "requirements-analysis"],
   "software-architect": ["response-contract", "architecture-review"],
