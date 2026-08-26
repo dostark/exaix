@@ -30,6 +30,11 @@ node_modules/
 venv/
 .venv/
 __pycache__/
+
+# Repo-root scratch area — generated test/sandbox state (e.g. Phase 168 Gate 19 dirs
+# created when the scenario sandbox falls back to `$EXA_SANDBOX_BASE` inside the tree).
+# Never source; ignore rather than track.
+/tmp/
 *.pyc
 *.pyo
 .pytest_cache/
