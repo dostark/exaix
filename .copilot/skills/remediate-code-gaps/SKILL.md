@@ -92,19 +92,25 @@ For each remediation step, in order:
    backtick-wrapped and a staged file). If a criterion is being deferred rather than closed,
    write `- ⚠️ deferred <text> →` `` `<LedgerSymbol>` `` and add a Reachability Ledger row.
    Leave no `- [ ]` in a remediation step this commit claims.
-5. **Truncation trap when editing long single-line criteria/status lines**: plan-doc
+5. **Canary trap**: a Success Criterion satisfied by a canary (temporarily break the
+   source, confirm the new test goes RED, then restore the source byte-identical) must
+   cite the TEST file as its `→ path`, never the canaried source file — a byte-identical
+   restore has zero net diff and is therefore not a staged file, so citing it fails the
+   "not among this commit's changed files" check. Verify with `git status --short
+   <source-file>` before writing the citation; empty output means it is not stageable.
+6. **Truncation trap when editing long single-line criteria/status lines**: plan-doc
    criterion lines routinely exceed the `read` tool's per-line display cap and get shown
    ending in `...`. NEVER copy that truncated text into an edit body — it permanently
    deletes the rest of the line. For a small substitution inside a long line, either
    re-`read` a narrow line range and confirm no trailing `...` before editing, or do a
    targeted Python/sed string-replace on the exact original substring and verify with
    `git diff` that only the intended text changed before moving on.
-6. If the remediation closes an exhaustive observability claim, generate a source event
+7. If the remediation closes an exhaustive observability claim, generate a source event
    inventory and reconcile its total with the runtime-evidence matrix. Each event needs an
    attributable test that drives the production component through the real `EventLogger`;
    mock capture, global lookup, field presence without semantic value checks, and one event
    standing in for a multi-event component are insufficient.
-7. Run `#self-improvement-retro` before the final completion claim. It owns terminal phase
+8. Run `#self-improvement-retro` before the final completion claim. It owns terminal phase
    status and `PHASE_REGISTRY.md` hygiene and must disposition every workflow finding.
 
 ### Phase 4 — Commit (plan-step commit)

@@ -78,6 +78,8 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] scenario metadata for the Agent Flo
     agentFlowScenarios.map((scenario: IScenario) => scenario.id).sort(),
     [
       "acceptance-criteria-propagation",
+      "aci-doc-injection-disabled",
+      "aci-doc-injection-enabled",
       "context-budget-react-overflow",
       "edition-smoke",
       "flow-strategy-cli-delegate",

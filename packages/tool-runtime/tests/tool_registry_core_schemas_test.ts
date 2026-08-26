@@ -4,12 +4,15 @@
  * @description Pins the exact set and shape of core tool schemas registered by
  * ToolRegistry. Guards the registerCoreTools -> CORE_TOOL_SCHEMAS extraction
  * (god-object decomposition) against accidental drops, duplicates, or content
- * drift when the schema data is moved to its own module.
+ * drift when the schema data is moved to its own module. Also guards Phase 112
+ * Step 1's first trusted ACI doc seed (read_file) and its side-effect scope.
  */
 
 import { assertEquals } from "@std/assert";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { createMockConfig } from "@exaix/testing";
+import { AciDocSchema } from "@exaix/schemas";
+import { ToolSideEffectScope } from "@exaix/core";
 
 const EXPECTED_CORE_TOOL_NAMES = [
   "read_file",
@@ -70,4 +73,15 @@ Deno.test("tool_registry_core_schemas: list_directory schema matches known contr
 Deno.test("tool_registry_core_schemas: search_files schema matches known contract (path optional)", () => {
   const searchFiles = registryTools().find((t) => t.name === "search_files");
   assertEquals(searchFiles?.parameters.required, ["pattern"]);
+});
+
+Deno.test("tool_registry_core_schemas: read_file carries a schema-valid trusted ACI block", () => {
+  const readFile = registryTools().find((t) => t.name === "read_file");
+  const result = AciDocSchema.safeParse(readFile?.aciDoc);
+  assertEquals(result.success, true);
+});
+
+Deno.test("tool_registry_core_schemas: read_file's side-effect scope is NONE", () => {
+  const readFile = registryTools().find((t) => t.name === "read_file");
+  assertEquals(readFile?.sideEffectScope, ToolSideEffectScope.NONE);
 });

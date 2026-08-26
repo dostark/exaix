@@ -89,3 +89,63 @@ Run `deno task docs-sync-schemas` to regenerate after manifest changes.
 | `write_file`                  | Write or overwrite the full content of a file inside a portal. Use when you need to create a new file or completely replace an existing file. For partial edits use patch_file. Returns a success confirmation message.                                                                                                                                                                                                                                                                                                                                                                                                                                  | `write`  | —       |                           | [`packages-team/mcp-server/handlers/write_file_tool.ts`](packages-team/mcp-server/handlers/write_file_tool.ts)               |
 
 <!-- AGENT_TOOLS_END -->
+
+## ACI (Agent-Computer Interface) Authoring Guide
+
+Distinct from the MCP tool index above: an `aciDoc` block is structured, ReAct-only
+authoring guidance attached to a tool's entry in the ReAct catalog
+(`createCoreToolSchemas()`), rendered into dynamic-execution prompts when
+`agents.inject_aci_docs` is enabled. It is never part of the MCP tool manifest and never
+populated from a remote MCP server's tool description — only this repo's own trusted,
+local catalog authors it, which is why the field never needs to appear in the generated
+table above.
+
+**Shape** (`AciDocSchema`, `packages/schemas/src/aci_doc.ts`): `summary`, `when_to_use`,
+`when_not_to_use`, a worked `example` (`input`, `output`, `rationale`), and an
+`anti_example` (`input`, `why_wrong`). Every free-text field has a minimum length (no
+placeholder guidance) and a maximum length (bounded prompt-injection footprint); `example`/
+`anti_example` inputs are JSON-only records with a capped property count and serialized
+size.
+
+**Real example** (`read_file`, `packages/tool-runtime/src/tool_schemas.ts`):
+
+```ts
+aciDoc: {
+  summary: "Reads the complete text content of exactly one file at a known path.",
+  when_to_use:
+    "Use when you already know a file's path and need to see or analyze its full " +
+    "content, e.g. before editing it or to answer a question about its contents.",
+  when_not_to_use:
+    "Do not use to locate files by name or pattern (use search_files) or to find a " +
+    "string across many files (use grep_search) — read_file takes exactly one literal " +
+    "path and has no glob or pattern support.",
+  example: {
+    input: { path: "src/example.ts" },
+    output: "export function example(): string {\n  return \"ok\";\n}\n",
+    rationale:
+      "The caller already knows the exact path from a prior list_directory or " +
+      "search_files call and needs the file's full text before patching it.",
+  },
+  anti_example: {
+    input: { path: "src/**/*.ts", recursive: true },
+    why_wrong:
+      "read_file's only parameter is a single literal `path`; there is no `recursive` " +
+      "option, and a glob pattern will fail to resolve as a literal file path — use " +
+      "search_files to resolve the glob first, then read_file once per match.",
+  },
+},
+```
+
+**MCP-only arguments must never appear in a worked example.** `example.input`/
+`anti_example.input` are checked against the tool's own ReAct-side `ITool.parameters`
+schema (`packages/tool-runtime/src/aci_example_validator.ts`): every key must be a known
+parameter, every required parameter must be present, and every value's runtime type (and
+enum membership, where declared) must match. MCP-transport-only fields such as `portal` or
+`identity_id` are never part of `ITool.parameters` — the MCP server injects them at the
+transport layer, not the ReAct tool-call convention — so including one in a worked example
+is always a validator error, not a stylistic choice.
+
+**Validation**: `deno task check:aci-docs` (warn mode) / `check:aci-docs:strict` (CI-blocking,
+exit `2` on any finding) run `scripts/validate_aci_docs.ts` over the real catalog; both are
+chained into `deno task docs-agent-validate`. A catalog-load or internal error exits `1`
+regardless of mode. Run either after adding or editing an `aciDoc` block.

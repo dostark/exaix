@@ -3,10 +3,12 @@
  * @path packages/core/src/types/i_tool_registry.ts
  * @description Defines the interface for the ToolRegistry service.
  * @architectural-layer Interfaces
- * @related-files ["packages/tool-runtime/src/tool_registry.ts"]
+ * @related-files ["packages/tool-runtime/src/tool_registry.ts", "packages/schemas/src/aci_doc.ts"]
  */
 import type { JSONValue } from "@exaix/core";
 import type { HitlRule } from "@exaix/schemas/hitl.ts";
+import type { AciDoc } from "@exaix/schemas/aci_doc.ts";
+import type { ToolSideEffectScope } from "./enums.ts";
 
 export interface IToolParameterSchema {
   type: string;
@@ -36,6 +38,19 @@ export interface ITool {
    * but critical when the model chooses from a tool list (PGAP-1).
    */
   nativeDescription?: string;
+  /**
+   * Bounded ACI (Agent-Computer Interface / Poka-Yoke) tool guidance: summary,
+   * when/when-not-to-use, a worked example, and an anti-example (Phase 112).
+   * Trusted-local-source-only — only `createCoreToolSchemas()` populates this in
+   * production. Optional for compatibility with third-party/test `ITool` fixtures.
+   */
+  aciDoc?: AciDoc;
+  /**
+   * What state this tool may modify (Phase 112). Compatibility-safe optional field
+   * mirroring `IToolManifestEntry.side_effect_scope`; `AciDoc` carries no narrative
+   * side-effect text so the two representations cannot disagree.
+   */
+  sideEffectScope?: ToolSideEffectScope;
 }
 
 export interface IToolResult {

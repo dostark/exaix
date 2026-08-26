@@ -846,6 +846,33 @@ For the full resolution order, the fail-closed semantics (`permitted_tools: []` 
 The ReAct loop runs: step objective → blueprint → MCP client → LLM
 reasoning → tool call → permission check → observe → iterate/complete.
 
+### ACI (Agent-Computer Interface) Tool Guidance
+
+Each ReAct-catalog tool may carry a bounded `aciDoc` block (Anthropic ACI / Poka-Yoke
+pattern: `summary`, `when_to_use`, `when_not_to_use`, a worked `example`, and an
+`anti_example`) alongside its existing JSON-schema parameters. Only the trusted, local
+ReAct catalog populates this metadata — remote MCP tool descriptions never reach it, and
+the field never appears on the MCP-facing tool manifest, so authoring guidance and the
+MCP protocol surface stay strictly separate. See `.copilot/docs/TOOLS.md`'s ACI authoring
+guide for the schema and worked examples, and `packages/schemas/README.md` for field
+bounds.
+
+Rendering is fail-closed and delimiter-safe: a tool whose `aciDoc` fails schema validation,
+or that declares no side-effect scope, is silently omitted rather than partially rendered,
+and every free-text value is JSON-encoded so injected newlines or backticks cannot break
+out of the prompt's tool-guidance section. Allocation is complete-fragment and
+order-preserving — each candidate's fragment is included in full or skipped whole against
+a per-fragment cap and a shared aggregate character budget (`agents.aci_doc_prompt_max_chars`,
+further capped by the model's own plan budget when present); a large fragment being skipped
+does not block a smaller later one from still fitting.
+
+`ReActLoopStrategy` renders these fragments once per iteration and emits a typed
+`agent.prompt_assembled` event immediately before the provider call, discriminated by a
+`prompt_kind` field (`"react"` carries the iteration index, injected tool IDs, fragment
+count/chars, budget, and a truncation flag; `"planning"` preserves the pre-existing
+non-ReAct producer's fields) — making prompt-injection content and volume independently
+auditable per call, not merely inferable from the final prompt text.
+
 ### Context Budget Management
 
 Dynamic execution is bounded by a two-layer context budget system:

@@ -1,0 +1,130 @@
+schema_version: "1.0.0"
+id: "aci-doc-injection-disabled"
+title: "Phase 112 Step 7 — a real booted daemon with agents.inject_aci_docs=false never emits agent.prompt_assembled(react)"
+pack: "agent_flows"
+tags: ["safety-gate", "subsystem:tools", "entity:aci-react"]
+request_fixture: "fixtures/requests/agent_flows/aci_doc_injection.md"
+mode_support: ["auto"]
+portals: []
+
+steps:
+  # --- Config: real inject_aci_docs=false (explicit, the same identical fixture and
+  # request as the enabled scenario) ---
+  - id: "write-config"
+    type: "write-file"
+    path: "exa.config.toml"
+    content: |
+      [system]
+      root = "$WORKSPACE_ROOT"
+
+      [paths]
+      workspace = "Workspace"
+      blueprints = "Blueprints"
+      runtime = ".exa"
+      memory = "Memory"
+      portals = "Portals"
+
+      [quality_gate]
+      enabled = false
+
+      [request_analysis]
+      enabled = false
+
+      [agents]
+      inject_aci_docs = false
+    output_criteria:
+      - id: "config-written"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon start"
+    env:
+      EXA_LLM_PROVIDER: "mock"
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "wait-for-daemon-ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "30"]
+    timeout_sec: 30
+    input_criteria: []
+    output_criteria: []
+
+  - id: "add-workspace-portal"
+    type: "exactl"
+    command: "portal"
+    args: ["add", "$WORKSPACE_ROOT", "workspace"]
+    output_criteria:
+      - id: "portal-added"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--identity", "aci-react", "--subject", "ACI injection disabled scenario"]
+    output_criteria:
+      - id: "request-submitted"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["Workspace/Plans/*_plan.md"]
+    timeout_sec: 180
+    output_criteria:
+      - id: "plan-created"
+        kind: "file-found"
+        path_pattern: "Workspace/Plans/*_plan.md"
+
+  - id: "approve-plan"
+    type: "exactl"
+    command: "plan"
+    args: ["approve-all"]
+    output_criteria:
+      - id: "plan-approved"
+        kind: "command-exit-code"
+        equals: 0
+
+  # --- The real execution still runs the same ReAct iteration (proving this is a genuine
+  # negative, not a request that never reached execution) ---
+  - id: "wait-for-generation"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "agent.generation_completed", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "60"]
+    timeout_sec: 60
+    input_criteria: []
+    output_criteria: []
+
+  # --- The real proof: disabled mode never journals the typed event, for the identical
+  # fixture/identity/request that the enabled scenario proves DOES journal it ---
+  - id: "assert-no-prompt-assembled"
+    type: "journal-assert"
+    action_type: "agent.prompt_assembled"
+    trace_scoped: true
+    # agent.prompt_assembled has two producers sharing one action_type, discriminated by
+    # prompt_kind: AgentRunner's PLANNING producer (always fires while a plan is written,
+    # regardless of agents.inject_aci_docs) and ReActLoopAdapter's REACT producer (Step 3,
+    # gated by the flag under test here). Without this filter expect_count: 0 can never
+    # hold — the planning-kind event always exists — so it would silently prove nothing.
+    payload_equals:
+      - path: "prompt_kind"
+        value: "react"
+    expect_count: 0
+    output_criteria:
+      - id: "no-prompt-assembled-events"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "stop-daemon"
+    type: "exactl"
+    command: "daemon stop"
+    output_criteria:
+      - id: "daemon-stopped"
+        kind: "command-output-contains"
+        contains: ["daemon.stopped"]

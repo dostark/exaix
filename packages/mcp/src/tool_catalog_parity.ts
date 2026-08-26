@@ -77,6 +77,19 @@ export function checkToolCatalogParity(
       continue;
     }
 
+    // Phase 112 Step 4: compare regardless of input_schema presence — side_effect_scope is a
+    // non-optional TOOL_MANIFEST field, so input_schema-less internal-only tools (fetch_url,
+    // grep_search, copy_file) must not be silently exempted from this check.
+    if (
+      registryTool.sideEffectScope !== undefined &&
+      registryTool.sideEffectScope !== manifestEntry.side_effect_scope
+    ) {
+      errors.push(
+        `Tool '${registryTool.name}': side-effect scope mismatch — ToolRegistry declares ` +
+          `'${registryTool.sideEffectScope}', TOOL_MANIFEST declares '${manifestEntry.side_effect_scope}'.`,
+      );
+    }
+
     const inputSchema = manifestEntry.input_schema;
     if (inputSchema === undefined) {
       continue;

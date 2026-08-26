@@ -501,6 +501,47 @@ describe("parsePlanStep", () => {
     assertEquals(parsed.errors.some((e) => e.includes("[ ]") || e.toLowerCase().includes("unchecked")), true);
   });
 
+  it("accepts a leading '- ' bullet before the bold heading (e.g. `- **Success Criteria**:`, `- **Planned Tests**:`) — a real, minority-but-live convention used by 13 files under exaix-dev-docs/planning/ including phase-112, 106, 107, 111, 113, and 170 (regression: the section-entry regex required the line to START with `**`, so it silently never entered the section — criteriaPaths/testPaths came back empty and the changed-file traceability cross-check became a no-op for every step in these docs)", () => {
+    const doc = `### Step 6: x
+
+- **Planned Tests**:
+
+- ✅ \`a test\` → \`packages/x/tests/a_test.ts\`
+
+- **Success Criteria**:
+
+- ✅ a criterion → \`packages/x/src/a.ts\`
+`;
+    const parsed = parsePlanStep(doc, 6);
+    assertEquals(parsed.errors, []);
+    assertEquals(parsed.testPaths, ["packages/x/tests/a_test.ts"]);
+    assertEquals(parsed.criteriaPaths, ["packages/x/src/a.ts"]);
+  });
+
+  it("also accepts the leading-dash bullet combined with colon-inside (`- **Success Criteria:**`)", () => {
+    const doc = `### Step 6: x
+
+- **Success Criteria:**
+
+- ✅ a criterion → \`packages/x/src/a.ts\`
+`;
+    const parsed = parsePlanStep(doc, 6);
+    assertEquals(parsed.errors, []);
+    assertEquals(parsed.criteriaPaths, ["packages/x/src/a.ts"]);
+  });
+
+  it("still rejects an unchecked '- [ ]' criterion under the leading-dash heading convention", () => {
+    const doc = `### Step 6: x
+
+- **Success Criteria**:
+
+- ✅ done → \`packages/x/src/a.ts\`
+- [ ] still unimplemented criterion
+`;
+    const parsed = parsePlanStep(doc, 6);
+    assertEquals(parsed.errors.some((e) => e.includes("[ ]") || e.toLowerCase().includes("unchecked")), true);
+  });
+
   it("joins a Success Criteria bullet soft-wrapped across multiple lines before matching its → path", () => {
     const doc = `### Step 6: x
 
