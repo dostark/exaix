@@ -2,7 +2,7 @@ schema_version: "1.0.0"
 id: "model-intent-e2e"
 title: "Model intent flags drive an M-profile thinking-capable resolution end-to-end"
 pack: "provider_live"
-tags: ["provider-live", "planning", "subsystem:model-routing", "entity:senior-coder"]
+tags: ["provider-live", "planning", "model-routing", "entity:senior-coder"]
 request_fixture: "fixtures/requests/provider_live/model_intent_e2e.md"
 mode_support: ["auto"]
 portals:

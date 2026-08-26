@@ -610,15 +610,24 @@ Deno.test({
 
 Deno.test({
   name:
-    "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint throws when EXA_EVAL_MODEL_SIZE=S without provider (no provider meets size constraints)",
+    "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint with EXA_EVAL_MODEL_SIZE=S and no explicit provider resolves via Ollama (GAP-1 free local S-tier candidate)",
   ...DISABLED_OPTS,
   fn: async () => {
-    await withEnv({ EXA_EVAL_MODEL_SIZE: "S", ...NO_BACKWARD_KEYS }, async () => {
+    // Since GAP-1 populated real contextWindow/costPerMtok metadata, Ollama (contextWindow
+    // 8192, cost 0) is the only registered candidate that meets the S preset unconfigured —
+    // it's the intended zero-config default, not a resolution failure. Point at an unused
+    // port (like the explicit EXA_LLM_PROVIDER=ollama test above) so this doesn't depend on a
+    // real local Ollama server.
+    await withEnv({
+      EXA_EVAL_MODEL_SIZE: "S",
+      EXA_LLM_BASE_URL: "http://127.0.0.1:11999",
+      ...NO_BACKWARD_KEYS,
+    }, async () => {
       try {
         await callLlmEndpoint("test prompt");
-        fail("Expected resolution error — no provider satisfies S context-window constraint");
+        fail("Expected connection error — Ollama resolved but unreachable at the stub port");
       } catch (err) {
-        assert((err as Error).message.includes("Model resolution failed"));
+        assertStringIncludes((err as Error).message, "11999");
       }
     });
   },
