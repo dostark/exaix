@@ -155,6 +155,42 @@ Deno.test(
 );
 
 Deno.test(
+  "[react-loop-native-tools-gate-multi-provider] production shape: composite provider.id (openai-opus) matches bare-type metadata (openai) with supportsNativeTools",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    // Production provider instances carry a composite id "<type>-<model>" (ProviderFactory
+    // generateId), while ProviderRegistry metadata is keyed by the BARE type. The gate must
+    // fall back from the composite id to its type prefix, or native tool-calling never fires.
+    const BARE_TYPE = "openai";
+    const COMPOSITE_ID = "openai-gpt-5-mini";
+    ProviderRegistry.clear();
+    ProviderRegistry.registerWithMetadata(BARE_TYPE, new MockProviderFactory(), {
+      name: BARE_TYPE,
+      description: "Bare-type provider registry entry (production shape)",
+      capabilities: ["chat"],
+      costTier: ProviderCostTier.PAID,
+      pricingTier: PricingTier.MEDIUM,
+      strengths: [],
+      supportsNativeTools: true,
+    });
+
+    const getToolsCalls = { count: 0 };
+    const strategy = new ReActLoopStrategy(
+      makeTrackingExecutor(getToolsCalls),
+      makeCompleteProvider(COMPOSITE_ID),
+    );
+
+    await strategy.execute(testBlueprint, testContext, makeOptions(true));
+
+    assertEquals(
+      getToolsCalls.count,
+      1,
+      "composite provider.id must resolve to bare-type metadata, or native tools never enable",
+    );
+  },
+);
+
+Deno.test(
   "[react-loop-native-tools-gate-multi-provider] gate stays false when the capable provider's opt-in flag is unset",
   { sanitizeOps: false, sanitizeResources: false },
   async () => {

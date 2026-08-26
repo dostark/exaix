@@ -184,8 +184,21 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     let totalReasoningTokens = 0;
 
     // Step 5: native-tools gate — both the opt-in flag AND the provider capability must be true.
-    const useNativeTools = options.native_tools_enabled === true &&
-      ProviderRegistry.getProviderMetadata(this.provider.id)?.supportsNativeTools === true;
+    // Provider instances carry a composite id "<type>-<model>" (ProviderFactory.generateId),
+    // while ProviderRegistry metadata is keyed by the BARE provider type — so look the
+    // metadata up by the composite id first (test/back-compat) and fall back to the type
+    // prefix before the first "-", otherwise native tool-calling never enables (Phase 153
+    // Step 11 live finding).
+    const providerIdForGate = this.provider!.id;
+    let supportsNativeTools = ProviderRegistry.getProviderMetadata(providerIdForGate)?.supportsNativeTools === true;
+    if (!supportsNativeTools) {
+      const sep = providerIdForGate.indexOf("-");
+      if (sep !== -1) {
+        supportsNativeTools =
+          ProviderRegistry.getProviderMetadata(providerIdForGate.slice(0, sep))?.supportsNativeTools === true;
+      }
+    }
+    const useNativeTools = options.native_tools_enabled === true && supportsNativeTools;
     let nativeToolsPriorTurn: IProviderTurn | undefined;
     let nativeToolDefinitions: IToolDefinition[] | undefined;
     let nativeToolsUsed = false;
