@@ -95,6 +95,9 @@ const REACT_WRITE_TOOLS: ReadonlySet<string> = new Set<string>([
  * It uses the LLM to generate actions, executes them via ToolRegistry,
  * and maintains a loop until the task is complete.
  */
+/** Which native tool-choice branch produced this iteration's options (Phase 153 Step 11). */
+export type NativeToolChoiceMode = "forced" | "any";
+
 export /** Internal type for dynamically-built provider.generate() options. */
 interface GeneratedOptions {
   temperature: number;
@@ -102,6 +105,12 @@ interface GeneratedOptions {
   tools?: IToolDefinition[];
   toolChoice?: { type: string; name?: string; disable_parallel_tool_use: boolean };
   priorTurn?: IProviderTurn;
+  /**
+   * Phase 153 Step 11 diagnostic (GAP-153-B/D): which native tool-choice branch produced
+   * this iteration's options — "forced" (the PGAP-3 preferred-tool branch) or "any"
+   * (the unconstrained fallback). Non-wire: ignored by provider request builders.
+   */
+  nativeToolChoiceMode?: NativeToolChoiceMode;
 }
 
 /** Parameters for runSingleIteration. */
@@ -190,6 +199,15 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     const nativePreferredTool = nativeToolsUsed && TARGETED_EDIT_PATTERN.test(context.plan)
       ? ("patch_file" satisfies string)
       : undefined;
+    // Phase 153 Step 11 (GAP-153-B/D): record iteration-0's context.plan + derived
+    // nativePreferredTool so live non-convergence is attributable (did an exploration step
+    // run first, leaving the pattern unmatched and tool_choice unconstrained?).
+    console.debug("[ReActLoopStrategy] native tools:", {
+      enabled: useNativeTools,
+      planMatch: TARGETED_EDIT_PATTERN.test(context.plan),
+      preferredTool: nativePreferredTool ?? null,
+      planPreview: context.plan.slice(0, Math.min(context.plan.length, 120)),
+    });
 
     for (let i = 0; i < this.MAX_ITERATIONS; i++) {
       const iterResult = await this.runSingleIteration({
@@ -338,9 +356,16 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       // via tool_choice: {type: "tool", name: "..."} instead of {type: "any"}.
       if (nativePreferredTool && !nativeToolsPriorTurn) {
         base.toolChoice = { type: "tool" as const, name: nativePreferredTool, disable_parallel_tool_use: true };
+        base.nativeToolChoiceMode = "forced";
       } else {
         base.toolChoice = { type: "any" as const, disable_parallel_tool_use: true };
+        base.nativeToolChoiceMode = "any";
       }
+      // Phase 153 Step 11 (GAP-153-B/D): one-line diagnostic of the branch chosen.
+      console.debug(
+        `[ReActLoopStrategy] native toolChoice=${base.nativeToolChoiceMode} ` +
+          `preferredTool=${nativePreferredTool ?? "<unset>"} priorTurn=${nativeToolsPriorTurn ? "yes" : "no"}`,
+      );
       if (nativeToolsPriorTurn) {
         base.priorTurn = nativeToolsPriorTurn;
       }
