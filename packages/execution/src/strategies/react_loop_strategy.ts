@@ -190,8 +190,9 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     // prefix before the first "-", otherwise native tool-calling never enables (Phase 153
     // Step 11 live finding).
     const providerIdForGate = this.provider!.id;
-    let supportsNativeTools = ProviderRegistry.getProviderMetadata(providerIdForGate)?.supportsNativeTools === true;
-    if (!supportsNativeTools) {
+    let supportsNativeTools = providerIdForGate !== undefined &&
+      ProviderRegistry.getProviderMetadata(providerIdForGate)?.supportsNativeTools === true;
+    if (!supportsNativeTools && providerIdForGate !== undefined) {
       const sep = providerIdForGate.indexOf("-");
       if (sep !== -1) {
         supportsNativeTools =

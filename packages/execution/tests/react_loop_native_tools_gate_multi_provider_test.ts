@@ -216,3 +216,35 @@ Deno.test(
     assertEquals(getToolsCalls.count, 0);
   },
 );
+
+Deno.test(
+  "[react-loop-native-tools-gate-multi-provider] gate does not crash when provider.id is undefined (Step 11 composite-id fallback must stay nil-safe — budget-test regression)",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    ProviderRegistry.clear();
+    ProviderRegistry.registerWithMetadata(NON_ANTHROPIC_PROVIDER_ID, new MockProviderFactory(), {
+      name: NON_ANTHROPIC_PROVIDER_ID,
+      description: "Non-Anthropic fixture provider with native-tools capability",
+      capabilities: ["chat"],
+      costTier: ProviderCostTier.PAID,
+      pricingTier: PricingTier.MEDIUM,
+      strengths: [],
+      supportsNativeTools: true,
+    });
+
+    const getToolsCalls = { count: 0 };
+    // Omit `id` entirely — the budget-test mock provider shape (react_loop_strategy_budget_test.ts).
+    const idlessProvider = {
+      generate(_prompt: string) {
+        return Promise.resolve(makeGenerateResult(`${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`));
+      },
+    } as IModelProvider;
+    const strategy = new ReActLoopStrategy(makeTrackingExecutor(getToolsCalls), idlessProvider);
+
+    await strategy.execute(testBlueprint, testContext, makeOptions(true));
+
+    // Without an id the metadata lookup is undefined; the gate must simply stay off,
+    // not throw a TypeError reading `providerIdForGate.indexOf("-")`.
+    assertEquals(getToolsCalls.count, 0);
+  },
+);
