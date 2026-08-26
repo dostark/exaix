@@ -31,8 +31,9 @@ venv/
 .venv/
 __pycache__/
 
-# Repo-root scratch area — generated test/sandbox state (e.g. Phase 168 Gate 19 dirs
-# created when the scenario sandbox falls back to `$EXA_SANDBOX_BASE` inside the tree).
+# Repo-root scratch area — generated test/sandbox state. A safety backstop only: the
+# pre-commit-hook integration tests now nest their scratch git repos under the sibling
+# <parent>/exaix-sandboxes/ tree (see tests/scripts/setup_hooks_test.ts), never here.
 # Never source; ignore rather than track.
 /tmp/
 *.pyc
