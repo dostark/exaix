@@ -4,21 +4,31 @@
  * @path scripts/check_agent_docs_integrity.ts
  * @description Validates referential integrity of the .copilot/ agent corpus:
  *   - dangling-readme-link: .copilot/docs/README.md references a non-existent file
+ *   - dangling-docs-index-link: .copilot/DOCS.md references a non-existent file
  *   - dangling-manifest-path: manifest.json entry points to a deleted file
-
  *   - dangling-docs-symlink: a symlink in .copilot/docs/ points to a missing target
+ *   - forbidden-folder: a retired zero-consumer folder (providers/, guidelines/)
+ *     has reappeared under .copilot/
+ *   - docs-readme-symlink-list: the "Symlinked root docs" section of docs/README.md
+ *     names a file that is not actually a symlink there (GAP-133-2 drift class)
  *
  * Usage:
  *   deno run -A scripts/check_agent_docs_integrity.ts [.copilot/ path]
  *
- * This gate does NOT overlap with validate_doc_links.ts (markdown link validation)
- * or validate_cross_reference.ts (cross-ref link resolution). It operates at the
- * corpus-index level — README index, manifest entries, cross-ref rows, symlinks.
+ * This gate does NOT overlap with validate_doc_links.ts (markdown link validation over
+ * the root docs) or validate_cross_reference.ts (cross-ref link resolution). It operates
+ * at the corpus-index level — README index, manifest entries, symlinks, folder hygiene.
  */
 import { join, resolve } from "@std/path";
 
 export interface IIntegrityViolation {
-  kind: "dangling-readme-link" | "dangling-docs-index-link" | "dangling-manifest-path" | "dangling-docs-symlink";
+  kind:
+    | "dangling-readme-link"
+    | "dangling-docs-index-link"
+    | "dangling-manifest-path"
+    | "dangling-docs-symlink"
+    | "forbidden-folder"
+    | "docs-readme-symlink-list";
   file: string;
   detail: string;
 }
@@ -144,6 +154,54 @@ export function checkAgentDocsIntegrity(copilotDir: string): IIntegrityResult {
       file: docsDir,
       detail: "Cannot list docs/ directory",
     });
+  }
+
+  // --- (e) forbidden-folder ---
+  // Retired zero-consumer folders (phase-133) must not silently reappear: SP5's
+  // "no providers//guidelines/ directory" guarantee, fail-closed.
+  for (const folder of ["providers", "guidelines"]) {
+    const folderPath = join(copilotDir, folder);
+    try {
+      const stat = Deno.lstatSync(folderPath);
+      if (stat.isDirectory) {
+        violations.push({
+          kind: "forbidden-folder",
+          file: folderPath,
+          detail: `Retired zero-consumer folder "${folder}" exists under ${copilotDir} — remove it`,
+        });
+      }
+    } catch {
+      // folder absent — expected
+    }
+  }
+
+  // --- (f) docs-readme-symlink-list ---
+  // The "Symlinked root docs" section of docs/README.md may only name files that are
+  // actually symlinks there. GAP-133-2 caught the name-collision drift (a documented
+  // GLOSSARY.md symlink that did not exist); this makes it fail-closed.
+  try {
+    const readmeContent = Deno.readTextFileSync(readmePath);
+    const section = readmeContent.match(/### Symlinked root docs[\s\S]*?(?=\n#{1,3}\s|$)/)?.[0] ?? "";
+    const claimed = [...section.matchAll(/-\s*\[([^\]]+)\]\(([^)]+)\)/g)].map((m) => m[1]);
+    const actualSymlinks = new Set<string>();
+    for (const entry of Deno.readDirSync(docsDir)) {
+      try {
+        if (Deno.lstatSync(join(docsDir, entry.name)).isSymlink) actualSymlinks.add(entry.name);
+      } catch {
+        // stat failed — skip
+      }
+    }
+    for (const name of claimed) {
+      if (!actualSymlinks.has(name)) {
+        violations.push({
+          kind: "docs-readme-symlink-list",
+          file: readmePath,
+          detail: `README "Symlinked root docs" lists "${name}" but no such symlink exists in ${docsDir}`,
+        });
+      }
+    }
+  } catch {
+    // README/docs absent — non-fatal (covered by (a))
   }
 
   return { ok: violations.length === 0, violations };

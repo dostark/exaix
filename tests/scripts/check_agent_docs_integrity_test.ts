@@ -125,3 +125,69 @@ Deno.test({
     assertEquals(result.code, 0, "live .copilot/ should pass integrity check");
   },
 });
+
+Deno.test({
+  name: "check:agent-docs-integrity — (g) a retired zero-consumer folder reappears → FAIL",
+  fn: async () => {
+    const copilotDir = createTempCorpus({
+      "docs/README.md": "# placeholder",
+      "manifest.json": JSON.stringify({ docs: [] }),
+    });
+    Deno.mkdirSync(join(copilotDir, "providers"), { recursive: true });
+    const result = await runCheck(copilotDir);
+    assertEquals(result.code, 1, "should exit 1 when a retired folder reappears");
+    assertStringIncludes(result.output, "forbidden-folder");
+    Deno.removeSync(join(copilotDir, ".."), { recursive: true });
+  },
+});
+
+Deno.test({
+  name: "check:agent-docs-integrity — (h) docs README lists a root-doc symlink that does not exist → FAIL",
+  fn: async () => {
+    const copilotDir = createTempCorpus({
+      // The "Symlinked root docs" section claims GLOSSARY.md too, but docs/GLOSSARY.md is a
+      // regular file (the moved dev glossary), not a symlink — GAP-133-2's drift class.
+      "docs/README.md": [
+        "### Symlinked root docs",
+        "",
+        "- [ARCHITECTURE.md](../../ARCHITECTURE.md): System architecture.",
+        "- [CODE_STYLE.md](../../CODE_STYLE.md): Coding standards.",
+        "- [GLOSSARY.md](../../GLOSSARY.md): Concept-level glossary.",
+        "",
+      ].join("\n"),
+      "docs/GLOSSARY.md": "---\ntitle: Exaix Developer Glossary\n---\n",
+      "../ARCHITECTURE.md": "# architecture",
+      "../CODE_STYLE.md": "# style",
+      "../GLOSSARY.md": "# concept glossary",
+      "manifest.json": JSON.stringify({ docs: [] }),
+    }, { "docs/ARCHITECTURE.md": "../../ARCHITECTURE.md", "docs/CODE_STYLE.md": "../../CODE_STYLE.md" });
+    const result = await runCheck(copilotDir);
+    assertEquals(result.code, 1, "should exit 1 when a documented symlink is not present");
+    assertStringIncludes(result.output, "docs-readme-symlink-list");
+    Deno.removeSync(join(copilotDir, ".."), { recursive: true });
+  },
+});
+
+Deno.test({
+  name: "check:agent-docs-integrity — (i) docs README symlink list matches the real symlinks → PASS",
+  fn: async () => {
+    const copilotDir = createTempCorpus({
+      "docs/README.md": [
+        "### Symlinked root docs",
+        "",
+        "- [ARCHITECTURE.md](../../ARCHITECTURE.md): System architecture.",
+        "- [CODE_STYLE.md](../../CODE_STYLE.md): Coding standards.",
+        "",
+      ].join("\n"),
+      "../ARCHITECTURE.md": "# architecture",
+      "../CODE_STYLE.md": "# style",
+      "manifest.json": JSON.stringify({ docs: [] }),
+    }, {
+      "docs/ARCHITECTURE.md": "../../ARCHITECTURE.md",
+      "docs/CODE_STYLE.md": "../../CODE_STYLE.md",
+    });
+    const result = await runCheck(copilotDir);
+    assertEquals(result.code, 0, "should exit 0 when documented symlinks match reality");
+    Deno.removeSync(join(copilotDir, ".."), { recursive: true });
+  },
+});
