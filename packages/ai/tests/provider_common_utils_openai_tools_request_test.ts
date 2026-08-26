@@ -119,6 +119,44 @@ Deno.test("createOpenAIChatCompletionsRequestInit with priorTurn produces the 3-
   assertEquals(body.messages[2].content, "test prompt");
 });
 
+Deno.test("createOpenAIChatCompletionsRequestInit with priorTurn reasoningContent echoes it on the assistant message (GAP-153-G)", () => {
+  const body = capturedBodyOf({
+    priorTurn: {
+      toolUseId: "call_3",
+      toolName: "patch_file",
+      toolInput: { path: "a.ts", diff: "..." },
+      toolResultContent: "patched successfully",
+      toolResultIsError: false,
+      reasoningContent: "I need to apply the diff to a.ts.",
+    },
+  });
+
+  assertEquals(body.messages.length, 3);
+  assertEquals(body.messages[0].role, "assistant");
+  assertEquals(body.messages[0].content, null);
+  assertEquals(
+    (body.messages[0] as CapturedOpenAiMessage & { reasoning_content?: string }).reasoning_content,
+    "I need to apply the diff to a.ts.",
+  );
+});
+
+Deno.test("createOpenAIChatCompletionsRequestInit with priorTurn lacking reasoningContent omits it on the assistant message", () => {
+  const body = capturedBodyOf({
+    priorTurn: {
+      toolUseId: "call_4",
+      toolName: "patch_file",
+      toolInput: { path: "a.ts", diff: "..." },
+      toolResultContent: "patched successfully",
+      toolResultIsError: false,
+    },
+  });
+
+  assertEquals(
+    (body.messages[0] as CapturedOpenAiMessage & { reasoning_content?: string }).reasoning_content,
+    undefined,
+  );
+});
+
 Deno.test("createOpenAIChatCompletionsRequestInit with priorTurn stringifies rich-content toolResultContent for OpenAI's string-only tool message", () => {
   const body = capturedBodyOf({
     priorTurn: {

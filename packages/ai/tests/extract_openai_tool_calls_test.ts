@@ -105,3 +105,28 @@ Deno.test('extractOpenAIToolCalls sets type to "function" on each entry', () => 
   const result = extractOpenAIToolCalls(response);
   assertEquals(result![0].type, "function");
 });
+
+Deno.test("extractOpenAIToolCalls captures reasoning_content onto the tool call (GAP-153-G)", () => {
+  const response: OpenAIResponse = {
+    choices: [{
+      message: {
+        reasoning_content: "I need to read the file first.",
+        tool_calls: [{ id: "call_1", type: "function", function: { name: "read_file", arguments: '{"path":"a.ts"}' } }],
+      },
+    }],
+  };
+  const result = extractOpenAIToolCalls(response);
+  assertEquals(result![0].reasoningContent, "I need to read the file first.");
+});
+
+Deno.test("extractOpenAIToolCalls leaves reasoningContent undefined when the message omits it", () => {
+  const response: OpenAIResponse = {
+    choices: [{
+      message: {
+        tool_calls: [{ id: "call_1", type: "function", function: { name: "read_file", arguments: "{}" } }],
+      },
+    }],
+  };
+  const result = extractOpenAIToolCalls(response);
+  assertEquals(result![0].reasoningContent, undefined);
+});

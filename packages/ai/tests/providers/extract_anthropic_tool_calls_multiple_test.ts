@@ -5,7 +5,7 @@
  * are ALL extracted, and undefined is returned when no tool_use blocks exist.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertExists } from "@std/assert";
 import { type AnthropicResponse, extractAnthropicToolCalls } from "../../src/provider_common_utils.ts";
 
 Deno.test("extractAnthropicToolCalls extracts multiple parallel tool_use blocks", () => {
@@ -61,4 +61,29 @@ Deno.test("extractAnthropicToolCalls preserves tool input fields", () => {
   const result = extractAnthropicToolCalls(response);
   assertEquals(result![0].input.path, "d.ts");
   assertEquals(result![0].input.content, "hello");
+});
+
+Deno.test("extractAnthropicToolCalls captures leading thinking block + signature onto the tool call (GAP-153-F)", () => {
+  const response: AnthropicResponse = {
+    content: [
+      { type: "thinking", thinking: "Let me pick the right file.", signature: "sig-think-1" },
+      { type: "tool_use", id: "toolu_5", name: "patch_file", input: { path: "e.ts" } },
+    ],
+  };
+  const result = extractAnthropicToolCalls(response);
+  assertEquals(result!.length, 1);
+  assertExists(result![0].thinkingBlocks);
+  assertEquals(result![0].thinkingBlocks!.length, 1);
+  assertEquals(result![0].thinkingBlocks![0].thinking, "Let me pick the right file.");
+  assertEquals(result![0].thinkingBlocks![0].signature, "sig-think-1");
+});
+
+Deno.test("extractAnthropicToolCalls leaves thinkingBlocks undefined when no thinking block precedes (GAP-153-F)", () => {
+  const response: AnthropicResponse = {
+    content: [
+      { type: "tool_use", id: "toolu_6", name: "write_file", input: { path: "f.ts" } },
+    ],
+  };
+  const result = extractAnthropicToolCalls(response);
+  assertEquals(result![0].thinkingBlocks, undefined);
 });

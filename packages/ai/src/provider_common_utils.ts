@@ -103,6 +103,10 @@ export type OpenAIResponse = {
       /** Phase 153: present when finish_reason is "tool_calls". Absent for every
        *  response until Step 2 (this step) is the first production caller. */
       tool_calls?: OpenAIToolCall[];
+      /** Reasoning content disclosed by the model (Chat Completions reasoning models);
+       *  must be echoed back on the replayed assistant message for multi-turn continuity
+       *  (GAP-153-G). */
+      reasoning_content?: string;
     };
     text?: string;
   }>;
@@ -155,6 +159,9 @@ export type AnthropicResponse = {
     type?: string;
     text?: string;
     thinking?: string;
+    /** Anthropic forces replayed thinking blocks to carry this signature verbatim
+     *  (passing back a block without it, or an edited one, yields an HTTP 400) — GAP-153-F. */
+    signature?: string;
     /** tool_use block fields — present only when type === "tool_use". */
     id?: string;
     name?: string;
@@ -354,6 +361,9 @@ export type OpenAiChatMessage =
   | {
     role: "assistant";
     content: null;
+    /** Echoed reasoning content from the prior turn, when the model disclosed any — must
+     *  be passed back with the tool call outputs for multi-turn continuity (GAP-153-G). */
+    reasoning_content?: string;
     tool_calls: Array<{ id: string; type: "function"; function: { name: string; arguments: string } }>;
   }
   | { role: "tool"; tool_call_id: string; content: string }
@@ -379,6 +389,9 @@ export function buildOpenAiMessages(
     messages.push({
       role: "assistant",
       content: null,
+      // GAP-153-G: echo the prior reasoning content back verbatim so multi-turn native
+      // tool calling keeps reasoning continuity on OpenAI reasoning models.
+      ...(priorTurn.reasoningContent !== undefined ? { reasoning_content: priorTurn.reasoningContent } : {}),
       tool_calls: [{
         id: priorTurn.toolUseId,
         type: "function",
@@ -470,11 +483,21 @@ export function extractOpenAIToolCalls(d: OpenAIResponse): IProviderToolCall[] |
   const rawCalls = d.choices?.[0]?.message?.tool_calls;
   if (!rawCalls || rawCalls.length === 0) return undefined;
 
+  // GAP-153-G: the assistant message's reasoning content applies to the whole turn; carry
+  // it onto every extracted tool call so the strategy can echo it back on the next request.
+  const reasoningContent = d.choices?.[0]?.message?.reasoning_content;
+
   const parsed: IProviderToolCall[] = [];
   for (const call of rawCalls) {
     try {
       const input = JSON.parse(call.function.arguments) as Record<string, JSONValue>;
-      parsed.push({ id: call.id, name: call.function.name, input, type: "function" });
+      parsed.push({
+        id: call.id,
+        name: call.function.name,
+        input,
+        type: "function",
+        ...(reasoningContent !== undefined ? { reasoningContent } : {}),
+      });
     } catch {
       console.warn(
         `extractOpenAIToolCalls: dropping tool call "${call.function.name}" (id=${call.id}) - malformed arguments JSON`,
@@ -579,18 +602,46 @@ export function extractAnthropicContent(d: AnthropicResponse): string {
 /**
  * Extract ALL tool_use blocks from an Anthropic response. Returns the blocks as
  * IProviderToolCall[] when one or more exist, or undefined when none do.
- * Does NOT modify extractAnthropicContent's behavior — this is a separate pass.
+ * The assistant message's leading `thinking` blocks (with their `signature`s) are captured
+ * onto the tool call whose tool_use they accompanied — Anthropic requires replaying them
+ * complete and unmodified (GAP-153-F). Does NOT modify extractAnthropicContent's behavior —
+ * this is a separate pass.
  */
 export function extractAnthropicToolCalls(d: AnthropicResponse): IProviderToolCall[] | undefined {
   if (!d.content) return undefined;
   const toolUseBlocks = d.content.filter((block) => block.type === "tool_use");
   if (toolUseBlocks.length === 0) return undefined;
+  const content = d.content;
   return toolUseBlocks.map((block) => ({
     id: block.id ?? "",
     name: block.name ?? "",
     input: block.input ?? {},
     type: "tool_use",
+    // GAP-153-F: capture the thinking block(s) that led up to this tool_use (all thinking
+    // blocks that precede it and come after the previous tool_use, if any).
+    ...(collectThinkingBlocksBefore(content, content.indexOf(block)) ?? {}),
   }));
+}
+
+/** Collect the `thinking` blocks immediately preceding the tool_use block at `toolUseIndex`
+ *  in `content` (walking back from that tool_use, stopping at the next tool_use boundary or
+ *  a text block — Anthropic's "preserving thinking blocks" rule). Returns `{ thinkingBlocks }`
+ *  when at least one found, else undefined (so the spread omits the field entirely). */
+function collectThinkingBlocksBefore(
+  content: NonNullable<AnthropicResponse["content"]>,
+  toolUseIndex: number,
+): { thinkingBlocks: Array<{ thinking: string; signature: string }> } | undefined {
+  const blocks: Array<{ thinking: string; signature: string }> = [];
+  for (let i = toolUseIndex - 1; i >= 0; i--) {
+    const block = content[i];
+    if (block.type === "thinking") {
+      blocks.unshift({ thinking: block.thinking ?? "", signature: block.signature ?? "" });
+      continue;
+    }
+    if (block.type === "tool_use") break;
+    break;
+  }
+  return blocks.length > 0 ? { thinkingBlocks: blocks } : undefined;
 }
 
 /**

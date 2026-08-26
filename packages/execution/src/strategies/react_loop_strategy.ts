@@ -1105,9 +1105,11 @@ When you are finished, output "${REACT_STATUS_COMPLETE}" followed by "${REACT_SU
       toolInput: toolCall.input,
       toolResultContent: JSON.stringify(result.data ?? result.error ?? {}),
       toolResultIsError: !result.success,
-      // Gemini (GAP-153-E): replay the original thought_signature on the next turn's
-      // model functionCall, or the API returns an HTTP 400.
+      // GAP-153-E/GAP-153-F/GAP-153-G: forward every provider reasoning artifact the model
+      // returned so the provider can replay it verbatim on the next turn.
       ...(toolCall.thoughtSignature !== undefined ? { thoughtSignature: toolCall.thoughtSignature } : {}),
+      ...(toolCall.thinkingBlocks !== undefined ? { thinkingBlocks: toolCall.thinkingBlocks } : {}),
+      ...(toolCall.reasoningContent !== undefined ? { reasoningContent: toolCall.reasoningContent } : {}),
     };
   }
 }
