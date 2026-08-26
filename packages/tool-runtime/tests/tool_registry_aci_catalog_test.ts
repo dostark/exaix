@@ -101,3 +101,35 @@ Deno.test("[ToolRegistryAciCatalog] canary: deleting one real catalog entry's AC
   const stillValid = withoutOneAciDoc.every((tool) => tool.aciDoc !== undefined);
   assertEquals(stillValid, false, "a real catalog entry missing its ACI block must be detectable");
 });
+
+Deno.test("[ToolRegistryAciCatalog] rejects a worked example containing the MCP-only 'portal' parameter", () => {
+  const readFile = createCoreToolSchemas().find((t) => t.name === "read_file");
+  assert(readFile !== undefined, "read_file must exist in the real catalog");
+
+  const result = validateAciExampleAgainstSchema(readFile.parameters, {
+    path: "src/example.ts",
+    portal: "some-portal",
+  });
+
+  assertEquals(result.compatible, false);
+  assert(
+    result.violations.some((v) => v.includes("unknown parameter 'portal'")),
+    `expected a violation naming 'portal', got: ${result.violations.join("; ")}`,
+  );
+});
+
+Deno.test("[ToolRegistryAciCatalog] rejects a worked example containing the MCP-only 'identity_id' parameter", () => {
+  const readFile = createCoreToolSchemas().find((t) => t.name === "read_file");
+  assert(readFile !== undefined, "read_file must exist in the real catalog");
+
+  const result = validateAciExampleAgainstSchema(readFile.parameters, {
+    path: "src/example.ts",
+    identity_id: "some-identity",
+  });
+
+  assertEquals(result.compatible, false);
+  assert(
+    result.violations.some((v) => v.includes("unknown parameter 'identity_id'")),
+    `expected a violation naming 'identity_id', got: ${result.violations.join("; ")}`,
+  );
+});
