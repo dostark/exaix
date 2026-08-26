@@ -70,6 +70,11 @@ export interface IProviderTurn {
    *  (text, image, document, etc.) matching Anthropic's tool_result.content shape. */
   toolResultContent: string | Array<{ type: string; [key: string]: JSONValue }>;
   toolResultIsError: boolean;
+  /** Gemini's `thoughtSignature` from the prior model functionCall response part.
+   *  Gemini requires replaying it on the FOLLOW-UP request's model functionCall or it
+   *  returns an HTTP 400 ("Function call is missing a thought_signature...") — GAP-153-E.
+   *  Absent for Anthropic/OpenAI (no such requirement). */
+  thoughtSignature?: string;
 }
 
 /**

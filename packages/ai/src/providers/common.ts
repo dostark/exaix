@@ -59,6 +59,9 @@ export interface IProviderToolCall {
   /** The tool call's type — always "tool_use" for Anthropic, but included
    *  for forward compatibility with future provider support. */
   type?: string;
+  /** Gemini's `thoughtSignature` for this functionCall — must be replayed verbatim on
+   *  the next request's model functionCall part (GAP-153-E). Anthropic/OpenAI omit it. */
+  thoughtSignature?: string;
 }
 /**
  * Base error class for model provider errors.

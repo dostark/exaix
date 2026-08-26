@@ -93,3 +93,21 @@ Deno.test('extractGoogleToolCalls sets type to "function" on each entry', () => 
   const result = extractGoogleToolCalls(response);
   assertEquals(result![0].type, "function");
 });
+
+Deno.test("extractGoogleToolCalls carries thoughtSignature when the functionCall part provides it (GAP-153-E)", () => {
+  const response: GoogleResponse = {
+    candidates: [{
+      content: { parts: [{ functionCall: { name: "patch_file", args: { path: "a.ts" }, thoughtSignature: "sig-x" } }] },
+    }],
+  };
+  const result = extractGoogleToolCalls(response);
+  assertEquals(result![0].thoughtSignature, "sig-x");
+});
+
+Deno.test("extractGoogleToolCalls leaves thoughtSignature undefined when the part omits it", () => {
+  const response: GoogleResponse = {
+    candidates: [{ content: { parts: [{ functionCall: { name: "read_file", args: {} } }] } }],
+  };
+  const result = extractGoogleToolCalls(response);
+  assertEquals(result![0].thoughtSignature, undefined);
+});

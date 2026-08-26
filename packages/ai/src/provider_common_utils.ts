@@ -127,7 +127,7 @@ export type GoogleResponse = {
         /** Phase 153: present when Gemini selects a tool. `args` is already a PARSED
          *  object on the wire (unlike OpenAI's JSON-encoded string) - confirmed via
          *  official docs. No `id` field - extractGoogleToolCalls() generates one. */
-        functionCall?: { name: string; args: Record<string, JSONValue> };
+        functionCall?: { name: string; args: Record<string, JSONValue>; thoughtSignature?: string };
       }>;
     };
   }>;
@@ -522,7 +522,9 @@ export function extractGoogleToolCalls(d: GoogleResponse): IProviderToolCall[] |
   const parts = d.candidates?.[0]?.content?.parts;
   if (!parts) return undefined;
   const calls = parts
-    .filter((part): part is { functionCall: { name: string; args: Record<string, JSONValue> } } =>
+    .filter((
+      part,
+    ): part is { functionCall: { name: string; args: Record<string, JSONValue>; thoughtSignature?: string } } =>
       part.functionCall !== undefined
     )
     .map((part) => ({
@@ -530,6 +532,11 @@ export function extractGoogleToolCalls(d: GoogleResponse): IProviderToolCall[] |
       name: part.functionCall.name,
       input: part.functionCall.args,
       type: "function",
+      // Gemini requires replaying the thought_signature on the next turn's functionCall
+      // (GAP-153-E) — carry it so the strategy can feed it back via priorTurn.
+      ...(part.functionCall.thoughtSignature !== undefined
+        ? { thoughtSignature: part.functionCall.thoughtSignature }
+        : {}),
     }));
   return calls.length > 0 ? calls : undefined;
 }
