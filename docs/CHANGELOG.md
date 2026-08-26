@@ -428,3 +428,16 @@
   (e.g., `exactl logs --filter model_resolved`).
 - ModelResolver — policy-driven model routing (chooses provider+model from capability requirements).
 - `model.resolved` log events for tracing which model was chosen and why.
+
+### Post-gap remediation (132.18–132.28)
+
+- Providers now register capability metadata (`supportsThinking`, `supportsEffort`,
+  `contextWindow`, `costPerMtok`) so size-preset and `--thinking` selection work at
+  daemon runtime instead of degrading to the mock provider.
+- Context-window overflow now bumps `model_size` one tier (S→M→L→XL) and reports
+  `context_window_overflow`; fallback attempts report `reason: "fallback"`.
+- `--preferred-provider` narrows the candidate pool and skips cross-provider scoring;
+  `rate_limit_weight` blends rate-limit headroom into characteristic scoring (>0).
+- Request-level intent flags (`--model-size`, `--thinking`, …) now override blueprint
+  intent during native plan execution; `model.resolved` payloads carry structured
+  `intent`/`selected` fields.

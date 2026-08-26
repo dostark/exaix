@@ -9,6 +9,7 @@
  * @related-files [packages/ai/src/model_resolver.ts, packages/schemas/src/model_intent.ts]
  */
 import type { JSONValue, TaskType } from "@exaix/core";
+import { z } from "zod";
 
 /**
  * Model size tier — maps to a capability profile (context window, thinking, cost).
@@ -17,10 +18,10 @@ import type { JSONValue, TaskType } from "@exaix/core";
 export type ModelSize = "S" | "M" | "L" | "XL";
 
 /**
- * Reasoning effort tier — normalized across providers.
- * Provider-specific mapping: low→minimal tokens, high→extended thinking budget.
+ * Reasoning effort tier — normalized across providers. Provider-specific mapping:
+ * low→minimal tokens, high→extended thinking budget.
  */
-export type EffortTier = "low" | "medium" | "high";
+export type EffortTier = z.infer<typeof EffortTierSchema>;
 
 /**
  * Per-call options returned by ModelResolver and passed to provider.generate().
@@ -51,7 +52,12 @@ export interface IModelIntent {
   model?: string;
   fallbacks?: Partial<IModelIntent>[];
   context_window_fallback?: boolean;
-  /** Estimated input tokens for context-window overflow detection. Used when context_window_fallback is true. */
+  /**
+   * Estimated input tokens for context-window overflow detection. Used when
+   * context_window_fallback is true: on overflow the resolver bumps model_size one
+   * tier (S→M→L→XL, via bumpModelSize) and re-resolves, emitting the
+   * context_window_overflow reason. The bump requires a size-bearing intent.
+   */
   estimated_input_tokens?: number;
   /**
    * Phase 135 Step 8 (§5.8.8) — the derived or declared task type driving the `best`
@@ -127,3 +133,10 @@ export interface IModelResolutionTrace {
   reason: ModelResolutionReason;
   duration_ms: number;
 }
+
+/**
+ * Phase 132 (GAP-6): Zod enum for the reasoning effort tiers, so intent parsing and
+ * validation round-trip through a schema. Placed after the exported interfaces per the
+ * module convention that functional code follows type declarations.
+ */
+export const EffortTierSchema = z.enum(["low", "medium", "high"]);

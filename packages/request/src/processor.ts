@@ -47,6 +47,7 @@ import { CircuitBreaker, CircuitBreakerProvider } from "@exaix/ai/circuit_breake
 import { RequestParser } from "./processing/parser.ts";
 import { StatusManager } from "./processing/status.ts";
 import type { IParsedRequestFile, IRequestFrontmatter } from "@exaix/core/request";
+import type { IModelIntent } from "@exaix/schemas";
 import type { LogMetadata } from "@exaix/core/types";
 import { createOutputValidator, type IOutputValidator } from "@exaix/tool-runtime";
 import type { IAgentRunner } from "@exaix/execution";
@@ -151,6 +152,20 @@ export interface IRequestProcessorConfig {
 // ============================================================================
 
 export class RequestProcessor {
+  /**
+   * Phase 132 (GAP-4): the request frontmatter's model intent fields, forwarded onto the
+   * plan so native execution applies request overrides (see PlanWriter.requestIntent).
+   */
+  private static requestIntentFromFrontmatter(frontmatter: IRequestFrontmatter): Partial<IModelIntent> {
+    const intent: Partial<IModelIntent> = {};
+    if (frontmatter.model_size !== undefined) intent.model_size = frontmatter.model_size as IModelIntent["model_size"];
+    if (frontmatter.thinking !== undefined) intent.thinking = frontmatter.thinking === true;
+    if (frontmatter.effort !== undefined) intent.effort = frontmatter.effort as IModelIntent["effort"];
+    if (frontmatter.characteristics !== undefined) intent.characteristics = frontmatter.characteristics;
+    if (frontmatter.preferred_provider !== undefined) intent.preferred_provider = frontmatter.preferred_provider;
+    if (frontmatter.model !== undefined) intent.model = frontmatter.model;
+    return intent;
+  }
   private readonly planWriter: PlanWriter;
   private readonly plansDir: string;
   private readonly logger: IEventLogger;
@@ -595,6 +610,7 @@ export class RequestProcessor {
         portal: frontmatter.portal,
         targetBranch: frontmatter.target_branch,
         requestAnalysis: analysis,
+        requestIntent: RequestProcessor.requestIntentFromFrontmatter(frontmatter),
       };
 
       return await this.writePlanAndReturnPath(result, metadata, filePath, traceLogger, {
@@ -630,6 +646,7 @@ export class RequestProcessor {
       portal: frontmatter.portal,
       targetBranch: frontmatter.target_branch,
       requestAnalysis: analysis,
+      requestIntent: RequestProcessor.requestIntentFromFrontmatter(frontmatter),
     };
 
     return await this.writePlanAndReturnPath(result, metadata, filePath, traceLogger, {
@@ -697,6 +714,7 @@ export class RequestProcessor {
       targetBranch: frontmatter.target_branch,
       subject: frontmatter.subject,
       requestAnalysis: analysis,
+      requestIntent: RequestProcessor.requestIntentFromFrontmatter(frontmatter),
     };
 
     const planJsonSchema = getPlanJsonSchema();

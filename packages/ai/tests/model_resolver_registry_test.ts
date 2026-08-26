@@ -113,7 +113,7 @@ Deno.test("[step134.2] preset resolution unchanged without registry", async () =
   }
 });
 
-Deno.test("[step134.2] overflow uses registry getContextWindow", async () => {
+Deno.test("[step134.2] overflow uses registry getContextWindow and bumps a size tier", async () => {
   const { cleanup } = await initTestDbService();
   try {
     ProviderRegistry.clear();
@@ -124,23 +124,32 @@ Deno.test("[step134.2] overflow uses registry getContextWindow", async () => {
         {
           provider: "overflow-provider",
           model: "overflow-model",
-          capabilities: { minContextWindow: 1000 },
-          contextWindow: 1000,
+          capabilities: { minContextWindow: 8192 },
+          contextWindow: 8192,
           costPer1kTokens: 0.001,
         },
       ],
       1000,
     );
-    const resolver = makeResolver(registry);
+    const logger = createMockEventLogger();
+    const resolver = makeResolver(registry, logger);
     const result = await resolver.resolve({
       model_size: "S",
       context_window_fallback: true,
       estimated_input_tokens: 5000,
     });
 
-    assertEquals(typeof result.provider, "string");
+    assertEquals(result.provider, "overflow-provider");
     assertEquals(typeof result.model, "string");
     assertEquals(result.attempt, 1);
+
+    const resolvedEvents = logger.events.filter((e) => e.action === "model.resolved");
+    const overflow = resolvedEvents.find((e) => e.payload?.reason === "context_window_overflow");
+    assertEquals(
+      overflow !== undefined,
+      true,
+      "5000 input tokens over a 1000-token window must trigger the S→M bump, not resolve silently",
+    );
   } finally {
     await cleanup();
   }

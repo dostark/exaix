@@ -41,6 +41,7 @@ import { type IStructuredPlan, parseStructuredPlanFromMarkdown } from "@exaix/co
 import { isReadOnlyAgentCapabilities } from "@exaix/core/func";
 import { ArtifactRegistry, DatabaseArtifactRepository } from "@exaix/core/artifact";
 import { PlanAmendmentPendingError } from "@exaix/core/planning";
+import type { IModelIntent } from "@exaix/schemas";
 import { ConfidenceScorer } from "./confidence_scorer.ts";
 import { GitExecutionSetupService } from "./git_execution_setup_service.ts";
 import {
@@ -605,6 +606,23 @@ export class ExecutionLoop {
   }
 
   /**
+   * Phase 132 (GAP-4): extract the request's model intent from the plan frontmatter
+   * passthrough (PlanWriter writes it there), so native plan execution applies the same
+   * request overrides the delegation path resolves.
+   */
+  private requestIntentFromPlanFrontmatter(frontmatter: PlanFrontmatter): Partial<IModelIntent> {
+    const raw = this.toSafeFrontmatter(frontmatter);
+    const intent: Partial<IModelIntent> = {};
+    if (raw.model_size !== undefined) intent.model_size = raw.model_size as IModelIntent["model_size"];
+    if (raw.thinking !== undefined) intent.thinking = raw.thinking === true;
+    if (raw.effort !== undefined) intent.effort = raw.effort as IModelIntent["effort"];
+    if (Array.isArray(raw.characteristics)) intent.characteristics = raw.characteristics as string[];
+    if (raw.preferred_provider !== undefined) intent.preferred_provider = raw.preferred_provider as string;
+    if (raw.model !== undefined) intent.model = raw.model as string;
+    return intent;
+  }
+
+  /**
    * Parse action blocks from plan content
    * Looks for code blocks with tool invocations in TOML format
    */
@@ -730,6 +748,9 @@ export class ExecutionLoop {
       onCodeChangesDelegate: this.onCodeChangesDelegate,
       modelResolver: this.modelResolver,
       modelRegistry: this.modelRegistry,
+      // Phase 132 (GAP-4): request-level intent flags ride the plan frontmatter
+      // (written by PlanWriter) so native execution overrides blueprint values.
+      requestIntent: this.requestIntentFromPlanFrontmatter(frontmatter),
     };
     if (this.guardrailRunner) {
       planExecutorOptions.guardrailRunner = this.guardrailRunner;

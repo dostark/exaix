@@ -16,6 +16,8 @@ import { DefaultRoutingStrategy } from "../src/routing/default_routing_strategy.
 import { createStubCostTracker, createStubHealthChecker } from "./helpers/service_stubs.ts";
 import { ModelResolver } from "../src/model_resolver.ts";
 import { createTestConfig } from "./helpers/test_config.ts";
+import { ConnectionError } from "../src/providers/common.ts";
+import type { IProviderRoutingStrategy } from "../src/routing/provider_routing_strategy.ts";
 
 function registerProvider(
   name: string,
@@ -95,6 +97,48 @@ Deno.test("[step132.1][fallback] throws when all attempts fail", async () => {
         }),
       Error,
     );
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[step132.1][fallback] retryable error on primary re-resolves with first fallback (attempt:2)", async () => {
+  const { cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+    registerProvider("fallback-1");
+
+    let selectorCalls = 0;
+    const retryThenResolve: IProviderRoutingStrategy = {
+      selectProvider: () => {
+        selectorCalls++;
+        if (selectorCalls === 1) return Promise.reject(new ConnectionError("fallback-1", "connection reset"));
+        return Promise.resolve("fallback-1");
+      },
+      selectProviderForTask: (_config, _taskType) => {
+        selectorCalls++;
+        return Promise.resolve("fallback-1");
+      },
+    };
+    const logger = createMockEventLogger();
+    const resolver = new ModelResolver(
+      retryThenResolve,
+      createTestConfig(),
+      createStubHealthChecker(),
+      logger,
+    );
+
+    const result = await resolver.resolve({
+      required_capabilities: ["chat"],
+      fallbacks: [{ required_capabilities: ["chat"] }],
+    });
+
+    assertEquals(selectorCalls, 2, "first attempt must throw and the second must re-resolve");
+    assertEquals(result.provider, "fallback-1");
+    assertEquals(result.attempt, 2);
+
+    const resolvedEvents = logger.events.filter((e) => e.action === "model.resolved");
+    assertEquals(resolvedEvents[0]?.payload?.reason, "fallback", "a fallback attempt must trace reason 'fallback'");
   } finally {
     await cleanup();
   }

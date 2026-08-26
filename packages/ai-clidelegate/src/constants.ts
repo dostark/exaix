@@ -78,12 +78,21 @@ export const PROVIDER_CLI_DELEGATE_CAPABILITIES = ["chat"] as const;
 export const PROVIDER_CLI_DELEGATE_STRENGTHS = ["subscription-billed", "no-api-key"] as const;
 export const PROVIDER_CLI_DELEGATE_COST_TIER = ProviderCostTier.FREE;
 
+/** Phase 132 capability metadata — headless CLI agents carry large native context windows. */
+export const CLI_DELEGATE_CONTEXT_WINDOW = 200_000;
+/** Phase 132 capability metadata — subscription-billed subprocess, no metered per-token cost. */
+export const CLI_DELEGATE_COST_PER_MTok = 0;
+
 export const CLAUDE_CLI_PROVIDER_METADATA = {
   name: PROVIDER_CLAUDE_CLI,
   description: PROVIDER_CLAUDE_CLI_DESCRIPTION,
   capabilities: PROVIDER_CLI_DELEGATE_CAPABILITIES,
   costTier: PROVIDER_CLI_DELEGATE_COST_TIER,
   strengths: PROVIDER_CLI_DELEGATE_STRENGTHS,
+  supportsThinking: false,
+  supportsEffort: false,
+  contextWindow: CLI_DELEGATE_CONTEXT_WINDOW,
+  costPerMtok: CLI_DELEGATE_COST_PER_MTok,
 } as const;
 
 export const OPENCODE_CLI_PROVIDER_METADATA = {
@@ -92,6 +101,10 @@ export const OPENCODE_CLI_PROVIDER_METADATA = {
   capabilities: PROVIDER_CLI_DELEGATE_CAPABILITIES,
   costTier: PROVIDER_CLI_DELEGATE_COST_TIER,
   strengths: PROVIDER_CLI_DELEGATE_STRENGTHS,
+  supportsThinking: false,
+  supportsEffort: false,
+  contextWindow: CLI_DELEGATE_CONTEXT_WINDOW,
+  costPerMtok: CLI_DELEGATE_COST_PER_MTok,
 } as const;
 
 export const CODEX_CLI_PROVIDER_METADATA = {
@@ -100,6 +113,10 @@ export const CODEX_CLI_PROVIDER_METADATA = {
   capabilities: PROVIDER_CLI_DELEGATE_CAPABILITIES,
   costTier: PROVIDER_CLI_DELEGATE_COST_TIER,
   strengths: PROVIDER_CLI_DELEGATE_STRENGTHS,
+  supportsThinking: false,
+  supportsEffort: false,
+  contextWindow: CLI_DELEGATE_CONTEXT_WINDOW,
+  costPerMtok: CLI_DELEGATE_COST_PER_MTok,
 } as const;
 
 export const CLAUDE_CLI_DEFAULTS: IProviderDefaults = {

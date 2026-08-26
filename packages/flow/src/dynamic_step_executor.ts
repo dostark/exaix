@@ -21,6 +21,7 @@ import type { IHitlPolicyEvaluator, IToolConfirmationInterceptor, IToolManifestR
 import { DomainEventType } from "@exaix/core/events";
 import type { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
+import type { IModelCallOptions } from "@exaix/schemas";
 import {
   ACTIVITY_EVENT_DYNAMIC_TOOL_CALL,
   MILESTONE_TOOL_CALL_COMPLETED,
@@ -101,6 +102,8 @@ export class DynamicStepExecutor {
     private readonly hitlPolicyEvaluator?: Opt<IHitlPolicyEvaluator, Reason.OptionalDependency>,
     private readonly dynamicModeTools: ReadonlySet<string> = new Set(),
     private readonly dynamicModeApprovalTools: ReadonlySet<string> = new Set(),
+    /** Per-call model options (thinking/effort/max_tokens) forwarded on every ReAct generate (Phase 132 GAP-9). */
+    private readonly callOptions?: Opt<IModelCallOptions, Reason.OptionalInput>,
   ) {
     this.emitMilestoneFn = milestoneEmitter?.emit.bind(milestoneEmitter);
   }
@@ -156,6 +159,9 @@ export class DynamicStepExecutor {
         availableTools: toolsMetadata,
         iteration: iterations,
         maxIterations,
+        // Phase 132 (GAP-9): forward the resolver's per-call options (thinking/effort);
+        // undefined is backward compatible with the no-options signature.
+        options: this.callOptions,
       });
 
       if (decision.done) {

@@ -3598,6 +3598,12 @@ candidates = ["anthropic:claude-sonnet", "openai:gpt-4o"]
 4. `fallbacks[]` — fallback chain iteration
 5. Context-window overflow — auto-bump to next size tier
 
+During plan execution, **request-level intent overrides the blueprint**: CLI flags such as
+`--model-size M` or `--thinking` (written to the request frontmatter) take precedence over
+the identity blueprint's `model_size:`/`thinking:` for any field that is explicitly set;
+unset fields fall through to the blueprint default. `--preferred-provider` narrows the
+candidate pool and skips cross-provider scoring.
+
 Every resolution emits a `model_resolved` trace event visible via
 `exactl logs --filter model_resolved`.
 

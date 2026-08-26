@@ -18,6 +18,7 @@ import { stringify as stringifyYaml } from "@std/yaml";
 import type { IDatabaseService } from "@exaix/core/types";
 import { PlanAdapter, PlanValidationError } from "./plan_adapter.ts";
 import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
+import type { IModelIntent } from "@exaix/schemas";
 import { MiddlewarePipeline } from "@exaix/core/func";
 import type { IServiceContext } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
@@ -38,6 +39,12 @@ export interface IRequestMetadata {
   targetBranch?: string;
   subject?: string;
   requestAnalysis?: IRequestAnalysis;
+  /**
+   * Phase 132 (GAP-4): request-level model intent (CLI flags) forwarded onto the plan
+   * frontmatter so native plan execution applies the same overrides the delegation
+   * path resolves.
+   */
+  requestIntent?: Partial<IModelIntent>;
 }
 
 export interface IPlanWriterConfig {
@@ -276,6 +283,8 @@ export class PlanWriter {
       frontmatter.model = metadata.model;
     }
 
+    this.applyRequestIntentToFrontmatter(frontmatter, metadata.requestIntent ?? {});
+
     if (metadata.portal) {
       frontmatter.portal = metadata.portal;
     }
@@ -309,6 +318,22 @@ export class PlanWriter {
 
     const yamlContent = stringifyYaml(frontmatter);
     return `---\n${yamlContent}---\n\n`;
+  }
+
+  /**
+   * Phase 132 (GAP-4): carry the request's model intent onto the plan frontmatter so
+   * native plan execution (ExecutionLoop → PlanExecutor → BlueprintService) applies the
+   * same request overrides the delegation path resolves.
+   */
+  private applyRequestIntentToFrontmatter(frontmatter: PlanFrontmatter, requestIntent: Partial<IModelIntent>): void {
+    const passthrough = frontmatter as PlanFrontmatter & Record<string, JSONValue | undefined>;
+    if (requestIntent.model_size !== undefined) passthrough.model_size = requestIntent.model_size;
+    if (requestIntent.thinking !== undefined) passthrough.thinking = requestIntent.thinking;
+    if (requestIntent.effort !== undefined) passthrough.effort = requestIntent.effort;
+    if (requestIntent.characteristics !== undefined) passthrough.characteristics = requestIntent.characteristics;
+    if (requestIntent.preferred_provider !== undefined) {
+      passthrough.preferred_provider = requestIntent.preferred_provider;
+    }
   }
 
   private async getTokenUsageSummary(traceId: string): Promise<ITokenUsageSummary | null> {

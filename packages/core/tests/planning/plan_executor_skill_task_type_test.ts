@@ -148,7 +148,7 @@ Deno.test({
       const resolvedEvents = logger.events.filter((e) => e.action === "model.resolved");
       assertEquals(resolvedEvents.length > 0, true, "ModelResolver.resolve() must have been called");
       const payload = resolvedEvents[0].payload as Record<string, JSONValue>;
-      const intent = JSON.parse(payload.intent as string) as Record<string, JSONValue>;
+      const intent = payload.intent as Record<string, JSONValue>;
       assertEquals(
         intent.task_type,
         "security",

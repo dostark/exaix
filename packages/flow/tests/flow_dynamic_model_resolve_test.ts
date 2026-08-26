@@ -14,12 +14,23 @@ import { createMockConfig, initTestDbService } from "@exaix/testing";
 import { FlowRunner } from "@exaix/flow";
 import type { IAgentExecutor, IFlowEventLogger, IFlowStepRequest } from "@exaix/flow";
 import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, MockStrategy } from "@exaix/core";
+import type { JSONValue } from "@exaix/core/types";
 import type { IToolManifestResolver } from "@exaix/core/types";
 import { type IMcpClient, McpToolName } from "@exaix/mcp";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import type { IModelIntent } from "@exaix/schemas/model_intent.ts";
+import type { IModelCallOptions } from "@exaix/schemas/model_intent.ts";
 import type { ModelResolver, ToolArgs } from "@exaix/ai";
+import {
+  DynamicStepExecutor,
+  type IDynamicStepExecutorOptions,
+  type JournalEntry,
+} from "../src/dynamic_step_executor.ts";
+import type { IFlowStep } from "@exaix/schemas/flow.ts";
+import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
+import { FlowStepSchema } from "@exaix/schemas";
+import type { ILlmClient } from "@exaix/ai";
 
 class MockAgentRunner implements IAgentExecutor {
   run(_identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
@@ -273,3 +284,91 @@ Deno.test(
     }
   },
 );
+
+// ── Phase 132 GAP-9: per-call options reach the dynamic ReAct generate() ──────────
+
+class CapturingLlm implements ILlmClient {
+  lastOptions: IModelCallOptions | undefined;
+  reasonNextAction(params: {
+    identity: IBlueprintFrontmatter;
+    stepObjective: string;
+    accumulatedContext: string;
+    availableTools: Array<{ name: string; description: string; inputSchema: Record<string, JSONValue> }>;
+    iteration: number;
+    maxIterations: number;
+    options?: IModelCallOptions;
+  }): Promise<{ done: boolean; tool?: McpToolName; args?: ToolArgs; output?: string }> {
+    this.lastOptions = params.options;
+    return Promise.resolve({ done: true, output: "complete" });
+  }
+}
+
+/** Noop activity journal satisfying IActivityJournal. */
+const noopJournal = { log: (_entry: JournalEntry): Promise<void> => Promise.resolve() };
+
+function buildDynamicStep(): IFlowStep {
+  return FlowStepSchema.parse({
+    id: "dyn-gap9",
+    name: "Dynamic Step",
+    identity: "agent1",
+    execution_mode: FlowStepExecutionMode.DYNAMIC,
+    permitted_tools: [McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY],
+    input: { source: FlowInputSource.REQUEST },
+    dependsOn: [],
+    retry: { maxAttempts: 1, backoffMs: 0 },
+  }) as IFlowStep;
+}
+
+Deno.test("[132.26][GAP-9] DynamicStepExecutor forwards resolved call options to every ReAct generate", async () => {
+  const llm = new CapturingLlm();
+  const executor = new DynamicStepExecutor(
+    new RecordingMcpClient(),
+    llm,
+    noopJournal as never,
+    undefined,
+    undefined,
+    undefined,
+    new Set([McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY]),
+    new Set(),
+    { thinking: true, effort: "high", max_tokens: 8192 },
+  );
+
+  const identity: IBlueprintFrontmatter = {
+    name: "agent1",
+    model: "",
+    description: "test",
+  } as IBlueprintFrontmatter;
+  const opts: IDynamicStepExecutorOptions = { traceId: "t-gap9", maxIterations: 3 };
+
+  const result = await executor.execute(buildDynamicStep(), identity, "probe", opts);
+
+  assertEquals(result.completed, true);
+  assertEquals(llm.lastOptions?.thinking, true);
+  assertEquals(llm.lastOptions?.effort, "high");
+  assertEquals(llm.lastOptions?.max_tokens, 8192);
+});
+
+Deno.test("[132.26][GAP-9] DynamicStepExecutor without call options stays backward compatible", async () => {
+  const llm = new CapturingLlm();
+  const executor = new DynamicStepExecutor(
+    new RecordingMcpClient(),
+    llm,
+    noopJournal as never,
+    undefined,
+    undefined,
+    undefined,
+    new Set([McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY]),
+    new Set(),
+  );
+
+  const identity: IBlueprintFrontmatter = {
+    name: "agent1",
+    model: "",
+    description: "test",
+  } as IBlueprintFrontmatter;
+  const opts: IDynamicStepExecutorOptions = { traceId: "t-gap9b", maxIterations: 3 };
+
+  await executor.execute(buildDynamicStep(), identity, "probe", opts);
+
+  assertEquals(llm.lastOptions, undefined);
+});

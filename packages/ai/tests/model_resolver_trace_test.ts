@@ -72,7 +72,7 @@ Deno.test("[step132.1][trace] model_resolved event emitted with preset_default r
   }
 });
 
-Deno.test("[step132.1][trace] model_resolved event has correct target and payload shape", async () => {
+Deno.test("[step132.1][trace] model_resolved event has correct target and typed payload shape", async () => {
   const { cleanup } = await initTestDbService();
   try {
     ProviderRegistry.clear();
@@ -85,9 +85,16 @@ Deno.test("[step132.1][trace] model_resolved event has correct target and payloa
     const events = logger.events.filter((e) => e.action === "model.resolved");
     assertEquals(events.length, 1);
     assertEquals(events[0].target, "resolved-model");
-    assertEquals(typeof events[0].payload?.selected, "string");
-    assertEquals(typeof events[0].payload?.attempt, "string");
-    assertEquals(typeof events[0].payload?.duration_ms, "string");
+    const payload = events[0].payload as {
+      selected?: { provider?: string; model?: string; attempt?: number };
+      candidate_providers?: string[];
+      duration_ms?: number;
+    };
+    assertEquals(payload.selected?.provider, "test-provider");
+    assertEquals(payload.selected?.model, "resolved-model");
+    assertEquals(payload.selected?.attempt, 1);
+    assertEquals(Array.isArray(payload.candidate_providers), true);
+    assertEquals(typeof payload.duration_ms, "number");
   } finally {
     await cleanup();
   }
@@ -108,8 +115,10 @@ Deno.test("[ModelResolver] model.resolved persists through a real EventLogger", 
     assertEquals(rows[0].target, "journal-model");
     const payload = JSON.parse(rows[0].payload);
     assertEquals(payload.reason, "explicit_override");
-    assertEquals(payload.selected, "journal-provider:journal-model");
-    assertEquals(payload.candidate_providers, "journal-provider");
+    assertEquals(payload.selected.provider, "journal-provider");
+    assertEquals(payload.selected.model, "journal-model");
+    assertEquals(payload.selected.attempt, 1);
+    assertEquals(payload.candidate_providers, ["journal-provider"]);
   } finally {
     ProviderRegistry.clear();
     await cleanup();

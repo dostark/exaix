@@ -56,7 +56,7 @@ Deno.test("[step132.1][characteristics] trace contains scores for characteristic
 
     const traceEvents = logger.events.filter((e) => e.action === "model.resolved");
     assertEquals(traceEvents.length, 1);
-    const scores = JSON.parse(traceEvents[0].payload?.scores as string ?? "{}");
+    const scores = traceEvents[0].payload?.scores as Record<string, number> | undefined ?? {};
     assertEquals(typeof scores.cheap, "number");
     assertEquals(typeof scores.expensive, "number");
     // cheap should have a higher score (lower cost = higher score)

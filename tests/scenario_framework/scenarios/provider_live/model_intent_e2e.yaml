@@ -1,0 +1,70 @@
+schema_version: "1.0.0"
+id: "model-intent-e2e"
+title: "Model intent flags drive an M-profile thinking-capable resolution end-to-end"
+pack: "provider_live"
+tags: ["provider-live", "planning", "subsystem:model-routing", "entity:senior-coder"]
+request_fixture: "fixtures/requests/provider_live/model_intent_e2e.md"
+mode_support: ["auto"]
+portals:
+  - alias: "portal-exaix"
+    source_path: "$FRAMEWORK_HOME/../.."
+
+steps:
+  - id: "start-daemon"
+    type: "exactl"
+    command: "daemon"
+    args: ["start"]
+    output_criteria:
+      - id: "daemon-started"
+        kind: "command-output-contains"
+        contains: ["daemon.started"]
+
+  - id: "wait-for-daemon-ready"
+    type: "exactl"
+    command: "journal"
+    args: ["wait", "--event", "daemon.ready", "--since-rowid", "$JOURNAL_BASELINE", "--timeout", "60"]
+    timeout_sec: 60
+    input_criteria: []
+    output_criteria: []
+
+  - id: "submit-request"
+    type: "exactl"
+    command: "request"
+    args: ["--file", "$REQUEST_FIXTURE", "--portal", "portal-exaix", "--identity", "senior-coder"]
+    output_criteria:
+      - id: "request-submitted"
+        kind: "command-output-contains"
+        contains: ["request.created"]
+
+  - id: "wait-for-plan"
+    type: "wait-for-file"
+    args: ["**/*_plan.md"]
+    failure_glob: "Workspace/Rejected/*_rejected.md"
+    timeout_sec: 240
+    input_criteria: []
+    output_criteria:
+      - id: "plan-produced"
+        kind: "file-found"
+        path_pattern: "**/*_plan.md"
+        score_weight: 0.4
+
+  # The distilled outcome: ModelResolver must have resolved the request's M-profile
+  # thinking-capable intent during execution — the journaled model.resolved event must
+  # carry intent.model_size == "M" and a thinking-capable pick (never explicit_override).
+  - id: "assert-model-resolved"
+    type: "journal-assert"
+    action_type: "model.resolved"
+    trace_scoped: true
+    payload_equals:
+      - path: "intent.model_size"
+        value: "M"
+    payload_not_contains: ['"reason":"explicit_override"']
+    project:
+      intent_model_size: "payload.intent.model_size"
+      reason: "payload.reason"
+    output_criteria:
+      - id: "model-resolved-m-profile"
+        score_weight: 0.6
+        kind: "json-query"
+        query: "$[0].intent_model_size"
+        equals: "M"
