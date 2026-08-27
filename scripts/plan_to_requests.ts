@@ -189,25 +189,47 @@ export async function copyDocIntoPlanContext(
   return destFile;
 }
 
+/**
+ * Appends the judge-cleanliness entry to the applicable repository-level
+ * `.git/info/exclude`, handling BOTH checkout shapes:
+ *  - regular checkout: `.git` is a directory → its own info/exclude;
+ *  - linked worktree (the dogfood case): `.git` is a FILE holding a relative
+ *    `gitdir:` pointer → the shared COMMON dir (`<repo>/.git`) owns the info/
+ *    exclude that covers every worktree. Anything other than the expected
+ *    `<common>/worktrees/<name>` layout skips silently (best-effort hygiene,
+ *    never a hard failure — the copy has already succeeded by this point).
+ */
 async function appendPlanContextExcludeEntry(gitCheckoutRoot: string): Promise<void> {
-  const gitDir = join(gitCheckoutRoot, ".git");
+  const dotGit = join(gitCheckoutRoot, ".git");
+  let excludeTarget: string | undefined;
   try {
-    const stat = await Deno.stat(gitDir);
-    if (!stat.isDirectory && !stat.isFile) return;
+    const stat = await Deno.stat(dotGit);
+    if (stat.isDirectory) {
+      excludeTarget = join(dotGit, "info", "exclude");
+    } else if (stat.isFile) {
+      // Linked worktree: chase the gitdir pointer to the shared common .git.
+      const pointer = (await Deno.readTextFile(dotGit)).trim();
+      const match = pointer.match(/^gitdir:\s*(.+)$/m);
+      if (!match) return;
+      const gitDir = resolve(gitCheckoutRoot, match[1].replace(/^\.\//, ""));
+      const commonDotGit = gitDir.replace(/\/worktrees\/[^/]+$/, "");
+      if (commonDotGit === gitDir || !commonDotGit.endsWith("/.git")) return;
+      excludeTarget = join(commonDotGit, "info", "exclude");
+    } else {
+      return;
+    }
   } catch {
     return; // Not a git checkout — judge-cleanliness handling does not apply.
   }
-  const infoDir = join(gitDir, "info");
-  await ensureDir(infoDir);
-  const excludePath = join(infoDir, "exclude");
+  await ensureDir(join(excludeTarget, ".."));
   let existing = "";
   try {
-    existing = await Deno.readTextFile(excludePath);
+    existing = await Deno.readTextFile(excludeTarget);
   } catch { /* absent exclude file starts empty */ }
   const hasEntry = existing.split("\n").some((line) => line.trim() === PLAN_CONTEXT_EXCLUDE_ENTRY);
   if (hasEntry) return;
   const prefix = existing.length > 0 && !existing.endsWith("\n") ? "\n" : "";
-  await Deno.writeTextFile(excludePath, `${existing}${prefix}${PLAN_CONTEXT_EXCLUDE_ENTRY}\n`);
+  await Deno.writeTextFile(excludeTarget, `${existing}${prefix}${PLAN_CONTEXT_EXCLUDE_ENTRY}\n`);
 }
 
 // ─── Phase-level context extraction (Phase 173 Step 1) ────────────────────────
