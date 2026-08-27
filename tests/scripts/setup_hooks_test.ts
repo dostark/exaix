@@ -68,6 +68,26 @@ describe("scripts/setup_hooks.ts", () => {
       "pre-commit hook should run the runtime-artifacts check (venv/, __pycache__/, node_modules/)",
     );
   });
+
+  it("clears git-hook-injected GIT_* env vars before running the pre-push security suite", async () => {
+    // git sets GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE/etc. in a hook's own environment;
+    // left unset, these leak into `deno test`'s spawned children and corrupt any test
+    // that creates its own temp git repo (e.g. tests/security/git_security_regression_test.ts),
+    // making raw `git` commands there operate against THIS repo's real .git instead of
+    // the test's isolated one.
+    const hookInstaller = await Deno.readTextFile("scripts/setup_hooks.ts");
+    const securityTestLine = 'deno test --allow-all --filter "[security]" tests/';
+    const idx = hookInstaller.indexOf(securityTestLine);
+    assert(idx !== -1, "pre-push hook must still invoke the security regression suite");
+    const lineStart = hookInstaller.lastIndexOf("\n", idx) + 1;
+    const fullLine = hookInstaller.slice(lineStart, hookInstaller.indexOf("\n", idx));
+    for (const gitVar of ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"]) {
+      assert(
+        fullLine.includes(`-u ${gitVar}`),
+        `pre-push hook's security test invocation must clear ${gitVar} to avoid leaking into the test's own git subprocesses (got: ${fullLine})`,
+      );
+    }
+  });
 });
 
 describe("event coverage visibility via the real pre-commit hook (real subprocess git commit)", () => {
