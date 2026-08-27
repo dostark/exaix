@@ -18,6 +18,29 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 173 (Dogfood Step-Context Sufficiency)
+
+### Added
+
+- Generating requests from a plan document now copies the full phase document into
+  the workspace at `.exa/PlanContext/<slug>.md` and points every generated request at
+  it, so a delegate that needs more than the inline summary can read the source
+  document directly (see `Exaix_User_Guide.md` §4.6).
+
+### Changed
+
+- Generated requests now include a "Why This Step Exists" section carrying the plan's
+  Executive Summary and the Constraints/Design Decisions relevant to that specific
+  step, instead of only the step's own four scraped subsections.
+- Request files now use `identity_id` as the canonical frontmatter field naming the
+  identity blueprint that should handle the request (see `Exaix_User_Guide.md` §4.6).
+
+### Deprecated
+
+- The `identity` request-frontmatter field name is deprecated in favor of
+  `identity_id`; existing hand-authored files using `identity` continue to load
+  unchanged.
+
 ## Unreleased — Phase 167 (Codex CLI Session Adapter)
 
 ### Added
