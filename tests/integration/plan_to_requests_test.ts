@@ -21,7 +21,7 @@ const REPO_ROOT = join(import.meta.dirname!, "..", "..");
 const FIXTURES_DIR = join(REPO_ROOT, "tests", "integration", "fixtures");
 const SCRIPT_PATH = join(REPO_ROOT, "scripts", "plan_to_requests.ts");
 
-async function runGenerator(args: string[]): Promise<{ stdout: string; stderr: string }> {
+async function runGenerator(args: string[]): Promise<{ code: number; stdout: string; stderr: string }> {
   const cmd = new Deno.Command(Deno.execPath(), {
     args: [
       "run",
@@ -34,6 +34,7 @@ async function runGenerator(args: string[]): Promise<{ stdout: string; stderr: s
   });
   const output = await cmd.output();
   return {
+    code: output.code,
     stdout: new TextDecoder().decode(output.stdout),
     stderr: new TextDecoder().decode(output.stderr),
   };
@@ -432,5 +433,206 @@ Deno.test("[plan-to-requests][context] a real repo phase doc yields requests far
     );
   } finally {
     await Deno.remove(tmpDir, { recursive: true });
+  }
+});
+
+// ─── Phase 173 Step 2 — PlanContext copy + pointer ─────────────────────────────
+
+const PLAN_CONTEXT_POINTER_RE =
+  /> Full phase context: `PlanContext\/([^`]+)\.md` \(read this if the context above isn't enough\)\./;
+const CONTEXT_SLUG = "phase-nn-fixture-with-context";
+
+/** Minimal stand-in for a delegate worktree: a directory optionally containing a
+ *  `.git/` tree, a pre-seeded `.git/info/exclude`, and a tracked `.gitignore`. */
+async function makeFakeWorktree(opts: { withGit: boolean; gitignore?: string }): Promise<string> {
+  const root = await Deno.makeTempDir({ prefix: "plan-to-req-wt-" });
+  if (opts.withGit) {
+    await Deno.mkdir(join(root, ".git", "info"), { recursive: true });
+  }
+  if (opts.gitignore !== undefined) {
+    await Deno.writeTextFile(join(root, ".gitignore"), opts.gitignore);
+  }
+  return root;
+}
+
+Deno.test("[plan-to-requests][plan-context] generator copies the phase doc to PlanContext/<slug>.md under --plan-context-root", async () => {
+  const wt = await makeFakeWorktree({ withGit: true });
+  try {
+    const { code, stderr } = await runGenerator([
+      CONTEXT_FIXTURE_PATH,
+      "--out-dir",
+      join(wt, "Workspace", "Requests"),
+      "--plan-context-root",
+      wt,
+    ]);
+    assertEquals(code, 0);
+    assertEquals(stderr, "");
+
+    const copied = await Deno.readTextFile(join(wt, "PlanContext", `${CONTEXT_SLUG}.md`));
+    assertEquals(copied, await Deno.readTextFile(CONTEXT_FIXTURE_PATH), "copy is byte-identical to the source doc");
+  } finally {
+    await Deno.remove(wt, { recursive: true });
+  }
+});
+
+Deno.test("[plan-to-requests][plan-context] generated request body references the copied relative path", async () => {
+  const wt = await makeFakeWorktree({ withGit: true });
+  try {
+    const outDir = join(wt, "Workspace", "Requests");
+    const { code } = await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", outDir, "--plan-context-root", wt]);
+    assertEquals(code, 0);
+
+    for (const stepNum of [1, 2]) {
+      const request = await Deno.readTextFile(join(outDir, `${CONTEXT_SLUG}-step-${stepNum}.md`));
+      assertEquals(request.match(PLAN_CONTEXT_POINTER_RE) !== null, true, `step ${stepNum} must name the path`);
+    }
+  } finally {
+    await Deno.remove(wt, { recursive: true });
+  }
+});
+
+Deno.test("[plan-to-requests][plan-context][hardened-shape] copy lands inside the plan-context root so containment holds by construction", async () => {
+  const wt = await makeFakeWorktree({ withGit: true });
+  try {
+    const outDir = join(wt, "Workspace", "Requests");
+    const { code } = await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", outDir, "--plan-context-root", wt]);
+    assertEquals(code, 0);
+
+    // The file lives INSIDE the root (OpenCode permitted-path assertion satisfied),
+    // and the pointer the request carries is RELATIVE — it resolves from the delegate's
+    // cwd (this same root) without any absolute-path dependence.
+    const expected = join(wt, "PlanContext", `${CONTEXT_SLUG}.md`);
+    const stat = await Deno.stat(expected);
+    assertEquals(stat.isFile, true);
+    const request = await Deno.readTextFile(join(outDir, `${CONTEXT_SLUG}-step-1.md`));
+    const m = request.match(PLAN_CONTEXT_POINTER_RE);
+    assertExists(m);
+    assertEquals(m![1], CONTEXT_SLUG, "pointer must be the bare relative PlanContext/<slug>.md path");
+  } finally {
+    await Deno.remove(wt, { recursive: true });
+  }
+});
+
+Deno.test("[plan-to-requests][plan-context] .git/info/exclude gains PlanContext/ exactly once; tracked .gitignore untouched", async () => {
+  const GITIGNORE = "dist/\nnode_modules/\n";
+  const wt = await makeFakeWorktree({ withGit: true, gitignore: GITIGNORE });
+  try {
+    const args = [CONTEXT_FIXTURE_PATH, "--out-dir", join(wt, "Workspace", "Requests"), "--plan-context-root", wt];
+    assertEquals((await runGenerator(args)).code, 0);
+
+    const excludePath = join(wt, ".git", "info", "exclude");
+    const excludeOnce = await Deno.readTextFile(excludePath);
+    assertEquals(excludeOnce.split("\n").filter((l) => l === "PlanContext/").length, 1, "appended exactly once");
+
+    // Idempotent second run must not duplicate the entry.
+    assertEquals((await runGenerator(args)).code, 0);
+    const excludeTwice = await Deno.readTextFile(excludePath);
+    assertEquals(excludeTwice.split("\n").filter((l) => l === "PlanContext/").length, 1);
+
+    assertEquals(await Deno.readTextFile(join(wt, ".gitignore")), GITIGNORE, "tracked ignore file untouched");
+  } finally {
+    await Deno.remove(wt, { recursive: true });
+  }
+});
+
+Deno.test("[plan-to-requests][plan-context] --no-copy-doc skips the copy and the pointer line", async () => {
+  const wt = await makeFakeWorktree({ withGit: true });
+  try {
+    const outDir = join(wt, "Workspace", "Requests");
+    const { code } = await runGenerator([
+      CONTEXT_FIXTURE_PATH,
+      "--out-dir",
+      outDir,
+      "--plan-context-root",
+      wt,
+      "--no-copy-doc",
+    ]);
+    assertEquals(code, 0);
+
+    let threwNotFound = false;
+    try {
+      await Deno.stat(join(wt, "PlanContext"));
+    } catch {
+      threwNotFound = true;
+    }
+    assertEquals(threwNotFound, true, "no PlanContext dir may be created");
+
+    const request = await Deno.readTextFile(join(outDir, `${CONTEXT_SLUG}-step-1.md`));
+    assertEquals(request.match(PLAN_CONTEXT_POINTER_RE), null, "no pointer line either");
+
+    let excludeMissing = false;
+    try {
+      await Deno.readTextFile(join(wt, ".git", "info", "exclude"));
+    } catch {
+      excludeMissing = true;
+    }
+    assertEquals(excludeMissing, true, "exclude must not be touched when nothing is copied");
+  } finally {
+    await Deno.remove(wt, { recursive: true });
+  }
+});
+
+Deno.test("[plan-to-requests][plan-context][regression] without --plan-context-root output equals --no-copy-doc mode", async () => {
+  const wtA = await makeFakeWorktree({ withGit: false });
+  const wtB = await makeFakeWorktree({ withGit: false });
+  try {
+    const base = [CONTEXT_FIXTURE_PATH];
+    const plain = join(wtA, "Workspace", "Requests");
+    const noCopy = join(wtB, "Workspace", "Requests");
+    assertEquals((await runGenerator([...base, "--out-dir", plain])).code, 0);
+    assertEquals(
+      (await runGenerator([...base, "--out-dir", noCopy, "--plan-context-root", wtB, "--no-copy-doc"])).code,
+      0,
+    );
+
+    // Frontmatter carries a per-run random trace_id, so compare request BODIES:
+    // omitting the flag must produce the same markdown as explicit opt-out.
+    const bodyOf = (md: string): string => md.slice(md.indexOf("\n---\n") + 5);
+    for (const stepNum of [1, 2]) {
+      const a = await Deno.readTextFile(join(plain, `${CONTEXT_SLUG}-step-${stepNum}.md`));
+      const b = await Deno.readTextFile(join(noCopy, `${CONTEXT_SLUG}-step-${stepNum}.md`));
+      assertEquals(bodyOf(a), bodyOf(b), `step ${stepNum}: omitting the flag must match explicit opt-out`);
+      assertEquals(a.match(PLAN_CONTEXT_POINTER_RE), null);
+      assertEquals(a.includes("PlanContext/"), false);
+    }
+  } finally {
+    await Deno.remove(wtA, { recursive: true });
+    await Deno.remove(wtB, { recursive: true });
+  }
+});
+
+Deno.test("[plan-to-requests][plan-context][security] a '..'-laden plan slug is rejected and nothing is written", async () => {
+  const wt = await makeFakeWorktree({ withGit: true });
+  try {
+    // The slug derives from the plan filename; ".." inside it simulates traversal input.
+    const evilDoc = join(await Deno.makeTempDir({ prefix: "evil-src-" }), "phase..evil.md");
+    await Deno.writeTextFile(
+      evilDoc,
+      "# Evil\n\n## Step 1\n\n**Actions:**\n- x\n\n```yaml\n# step-manifest\nstep: 1\ntitle: t\n```\n",
+    );
+
+    const { code, stdout, stderr } = await runGenerator([
+      evilDoc,
+      "--out-dir",
+      join(wt, "Workspace", "Requests"),
+      "--plan-context-root",
+      wt,
+    ]);
+    assertEquals(code !== 0, true, "must exit non-zero on an unsafe slug");
+    assertEquals(
+      (stdout + stderr).includes("phase..evil"),
+      true,
+      "the error must name the rejected slug (rejection-by-validation, not a silent skip)",
+    );
+
+    let planContextAbsent = false;
+    try {
+      await Deno.stat(join(wt, "PlanContext"));
+    } catch {
+      planContextAbsent = true;
+    }
+    assertEquals(planContextAbsent, true, "nothing may be written into the sandbox on rejection");
+  } finally {
+    await Deno.remove(wt, { recursive: true });
   }
 });

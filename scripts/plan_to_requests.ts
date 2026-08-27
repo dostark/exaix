@@ -11,7 +11,7 @@
  * Usage: plan_to_requests.ts <plan_path> [--out-dir <dir>] [--dry-run]
  */
 
-import { basename, extname, join } from "@std/path";
+import { basename, extname, join, resolve } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { type StepManifest, StepManifestSchema } from "@exaix/schemas/step_manifest.ts";
@@ -32,15 +32,25 @@ interface FrontmatterFields {
   skills?: string[];
 }
 
-function parseArgs(): { planPath: string; outDir: string; dryRun: boolean } {
+function parseArgs(): {
+  planPath: string;
+  outDir: string;
+  dryRun: boolean;
+  planContextRoot: string | undefined;
+  noCopyDoc: boolean;
+} {
   const args = Deno.args;
   if (args.length === 0) {
-    console.error("Usage: plan_to_requests.ts <plan_path> [--out-dir <dir>] [--dry-run]");
+    console.error(
+      "Usage: plan_to_requests.ts <plan_path> [--out-dir <dir>] [--dry-run] [--plan-context-root <dir>] [--no-copy-doc]",
+    );
     Deno.exit(1);
   }
   const planPath = args[0];
   let outDir = "Workspace/Requests";
   let dryRun = false;
+  let planContextRoot: string | undefined;
+  let noCopyDoc = false;
 
   for (let i = 1; i < args.length; i++) {
     if (args[i] === "--out-dir" && i + 1 < args.length) {
@@ -48,9 +58,14 @@ function parseArgs(): { planPath: string; outDir: string; dryRun: boolean } {
       i++;
     } else if (args[i] === "--dry-run") {
       dryRun = true;
+    } else if (args[i] === "--plan-context-root" && i + 1 < args.length) {
+      planContextRoot = resolve(args[i + 1]);
+      i++;
+    } else if (args[i] === "--no-copy-doc") {
+      noCopyDoc = true;
     }
   }
-  return { planPath, outDir, dryRun };
+  return { planPath, outDir, dryRun, planContextRoot, noCopyDoc };
 }
 
 function derivePlanSlug(planPath: string): string {
@@ -120,6 +135,79 @@ function extractSection(text: string, heading: string): string {
   const regex = new RegExp(`\\*\\*${heading}:\\*\\*\\s*([\\s\\S]*?)(?=\\n\\*\\*[A-Z]|\\n---|$)`);
   const match = text.match(regex);
   return match ? match[1].trim() : "";
+}
+
+// ─── PlanContext sandbox copy (Phase 173 Step 2, GAP-2/GAP-3) ─────────────────
+
+/** Sandbox-side directory (inside the delegate worktree) the phase doc is copied to. */
+const PLAN_CONTEXT_DIRNAME = "PlanContext";
+/** Line appended to `<root>/.git/info/exclude` so git status / diff judging never
+ *  sees the copy — worktree-local and untracked, unlike a tracked .gitignore. */
+const PLAN_CONTEXT_EXCLUDE_ENTRY = "PlanContext/";
+
+function isUnsafePlanSlug(planSlug: string): boolean {
+  return /[\\/]/.test(planSlug) || planSlug.includes("..");
+}
+
+/** True when `resolved` sits at-or-inside `root` (both resolve()-normalized). */
+function isInsideRoot(resolved: string, root: string): boolean {
+  const segmentSep = Deno.build.os === "windows" ? "\\" : "/";
+  return resolved === root || resolved.startsWith(root + segmentSep);
+}
+
+/**
+ * Copies exactly ONE file — the current phase doc — into
+ * `<plan-context-root>/PlanContext/<slug>.md`, enforcing GAP-2's containment rules:
+ * the slug must be separator/`..`-free, both destination paths are resolved and
+ * asserted inside the root before any write, and no glob/tree traversal ever runs.
+ * When the root is a git checkout, appends the exclude entry once so intended-diff
+ * judging stays clean; silently skips exclude handling outside a checkout.
+ * Throws Error on any violation; returns the written destination path.
+ */
+export async function copyDocIntoPlanContext(
+  sourcePath: string,
+  planSlug: string,
+  planContextRoot: string,
+): Promise<string> {
+  if (isUnsafePlanSlug(planSlug)) {
+    throw new Error(
+      `Unsafe plan slug "${planSlug}": must not contain path separators or ".." segments`,
+    );
+  }
+  const root = resolve(planContextRoot);
+  const destDir = join(root, PLAN_CONTEXT_DIRNAME);
+  const destFile = join(destDir, `${planSlug}.md`);
+  for (const resolved of [resolve(destDir), resolve(destFile)]) {
+    if (!isInsideRoot(resolved, root)) {
+      throw new Error(`Destination "${resolved}" escapes --plan-context-root "${root}"`);
+    }
+  }
+
+  await ensureDir(destDir);
+  await Deno.copyFile(sourcePath, destFile);
+  await appendPlanContextExcludeEntry(root);
+  return destFile;
+}
+
+async function appendPlanContextExcludeEntry(gitCheckoutRoot: string): Promise<void> {
+  const gitDir = join(gitCheckoutRoot, ".git");
+  try {
+    const stat = await Deno.stat(gitDir);
+    if (!stat.isDirectory && !stat.isFile) return;
+  } catch {
+    return; // Not a git checkout — judge-cleanliness handling does not apply.
+  }
+  const infoDir = join(gitDir, "info");
+  await ensureDir(infoDir);
+  const excludePath = join(infoDir, "exclude");
+  let existing = "";
+  try {
+    existing = await Deno.readTextFile(excludePath);
+  } catch { /* absent exclude file starts empty */ }
+  const hasEntry = existing.split("\n").some((line) => line.trim() === PLAN_CONTEXT_EXCLUDE_ENTRY);
+  if (hasEntry) return;
+  const prefix = existing.length > 0 && !existing.endsWith("\n") ? "\n" : "";
+  await Deno.writeTextFile(excludePath, `${existing}${prefix}${PLAN_CONTEXT_EXCLUDE_ENTRY}\n`);
 }
 
 // ─── Phase-level context extraction (Phase 173 Step 1) ────────────────────────
@@ -243,6 +331,7 @@ function buildRequestFile(
   manifest: StepManifest | null,
   sectionText: string,
   content?: Opt<string, Reason.OptionalInput>,
+  contextPointer?: Opt<string, Reason.OptionalInput>,
 ): string {
   const identityId = manifest?.identity ?? "senior-coder";
   const skills = manifest?.skills;
@@ -280,6 +369,7 @@ function buildRequestFile(
     `> Dogfood metadata — portal: \`${portal}\`; target_branch: \`${targetBranch}\``,
     "",
     ...bodyParts,
+    ...(contextPointer ? ["", contextPointer] : []),
     "",
     `depends_on: ${JSON.stringify(dependsOn)}`,
   ];
@@ -329,8 +419,17 @@ function buildWhyThisStepExists(content: string, sectionText: string): string {
   return `## Why This Step Exists\n\n${parts.join("\n\n")}`;
 }
 
+/**
+ * The escape-hatch pointer appended to every generated request when a
+ * --plan-context-root copy was performed: names the relative in-worktree path the
+ * delegate's own Read tool can resolve (GAP-3: relative-by-construction).
+ */
+function planContextPointer(planSlug: string): string {
+  return `> Full phase context: \`PlanContext/${planSlug}.md\` (read this if the context above isn't enough).`;
+}
+
 async function main(): Promise<void> {
-  const { planPath, outDir, dryRun } = parseArgs();
+  const { planPath, outDir, dryRun, planContextRoot, noCopyDoc } = parseArgs();
 
   let content: string;
   try {
@@ -342,6 +441,23 @@ async function main(): Promise<void> {
 
   const planSlug = derivePlanSlug(planPath);
   const steps = extractSteps(content);
+
+  // Phase 173 Step 2 — copy the phase doc into the delegate worktree (once per run,
+  // before any request is written, so a rejection aborts before side effects).
+  const performCopy = !dryRun && planContextRoot !== undefined && !noCopyDoc;
+  if (performCopy && planContextRoot !== undefined) {
+    try {
+      await copyDocIntoPlanContext(planPath, planSlug, planContextRoot);
+      console.log(`Copied phase doc to ${PLAN_CONTEXT_DIRNAME}/${planSlug}.md under ${planContextRoot}`);
+    } catch (error) {
+      console.error(`Error: ${(error as Error).message}`);
+      Deno.exit(1);
+    }
+  }
+  const contextPointer = (!dryRun && planContextRoot !== undefined && !noCopyDoc)
+    ? planContextPointer(planSlug)
+    : undefined;
+
   if (!dryRun) {
     await ensureDir(outDir);
   }
@@ -351,7 +467,14 @@ async function main(): Promise<void> {
     const manifest = extractManifest(step.sectionText);
     const fileName = `${planSlug}-step-${step.stepNumber}.md`;
     const filePath = join(outDir, fileName);
-    const requestContent = buildRequestFile(planSlug, step.stepNumber, manifest, step.sectionText, content);
+    const requestContent = buildRequestFile(
+      planSlug,
+      step.stepNumber,
+      manifest,
+      step.sectionText,
+      content,
+      contextPointer,
+    );
 
     if (dryRun) {
       console.log(
