@@ -388,7 +388,10 @@ fi
 
 # 4. Security Regression Tests (always run — small, fast, critical)
 #    Run only the security-tagged regression suite, not the full test suite.
-deno test --allow-all --filter "[security]" tests/
+#    git sets GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE in a hook's environment; left set,
+#    they leak into deno test's spawned children and corrupt any test that creates its
+#    own temp git repo, making its raw git commands operate on THIS repo instead.
+env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE deno test --allow-all --filter "[security]" tests/
 if [ $? -ne 0 ]; then
   echo "❌ Error: Security regression tests failed."
   exit 1
