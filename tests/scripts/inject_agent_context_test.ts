@@ -22,6 +22,14 @@ async function writeAgentMarkdown(filename: string, content: string) {
   return path;
 }
 
+// "providers" is a retired folder that check_agent_docs_integrity.ts fails closed on
+// if it exists at all in the real .copilot/ tree, so tests must remove the directory
+// itself (not just the files they write into it) once they're done.
+async function removeAgentMarkdownDir() {
+  const dir = join(REPO_ROOT, ".copilot", "providers");
+  await Deno.remove(dir, { recursive: true }).catch(() => {});
+}
+
 Deno.test("inject returns found=false when no matching agent docs", async () => {
   const res = await withRepoRoot(() => inject("nonexistent-agent", "something"));
   assertEquals(res.found, false);
@@ -40,7 +48,7 @@ This paragraph contains ${unique} and should be the snippet extracted.
 
 This is the second paragraph.`;
 
-  const path = await writeAgentMarkdown(filename, md);
+  await writeAgentMarkdown(filename, md);
 
   try {
     const res = await withRepoRoot(() => inject("copilot", unique));
@@ -50,7 +58,7 @@ This is the second paragraph.`;
     assertEquals(res.short_summary, "A short summary");
     assertEquals(res.snippet, `This paragraph contains ${unique} and should be the snippet extracted.`);
   } finally {
-    await Deno.remove(path).catch(() => {});
+    await removeAgentMarkdownDir();
   }
 });
 
@@ -60,8 +68,8 @@ Deno.test("inject selects best-scoring document among multiple candidates", asyn
 
   const md1 = readFixtureTextSync(import.meta.url, "scripts", "inject_agent_context_test", "md1.md");
   const md2 = readFixtureTextSync(import.meta.url, "scripts", "inject_agent_context_test", "md2.md");
-  const p1 = await writeAgentMarkdown(f1, md1);
-  const p2 = await writeAgentMarkdown(f2, md2);
+  await writeAgentMarkdown(f1, md1);
+  await writeAgentMarkdown(f2, md2);
 
   try {
     const res = await withRepoRoot(() => inject("copilot", "foobar again"));
@@ -70,8 +78,7 @@ Deno.test("inject selects best-scoring document among multiple candidates", asyn
     assert(res.path?.endsWith(f2));
     assertEquals(res.title, "High Score");
   } finally {
-    await Deno.remove(p1).catch(() => {});
-    await Deno.remove(p2).catch(() => {});
+    await removeAgentMarkdownDir();
   }
 });
 
@@ -124,7 +131,7 @@ identity: copilot
 
 This doc has no title or short summary but has a paragraph.`;
 
-  const path = await writeAgentMarkdown(filename, md);
+  await writeAgentMarkdown(filename, md);
 
   try {
     const res = await withRepoRoot(() => inject("copilot", "paragraph"));
@@ -133,6 +140,6 @@ This doc has no title or short summary but has a paragraph.`;
     assertEquals(res.short_summary, "");
     assertEquals(res.snippet, "This doc has no title or short summary but has a paragraph.");
   } finally {
-    await Deno.remove(path).catch(() => {});
+    await removeAgentMarkdownDir();
   }
 });
