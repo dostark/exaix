@@ -20,7 +20,12 @@ import type { IEventLogger } from "@exaix/core/logger";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import { AnalysisMode } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
-import type { IRequestEntry, IRequestMetadata, IRequestOptions } from "@exaix/core/request";
+import {
+  type IRequestEntry,
+  type IRequestMetadata,
+  type IRequestOptions,
+  normalizeRequestFrontmatterAliases,
+} from "@exaix/core/request";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IOutputValidator } from "@exaix/tool-runtime";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -68,7 +73,7 @@ export class RequestService {
       const parts = line.split(":");
       if (parts.length >= 2) fm[parts[0].trim()] = parts.slice(1).join(":").trim().replace(/"/g, "");
     });
-    return fm;
+    return normalizeRequestFrontmatterAliases(fm) as Record<string, string>;
   }
 
   async create(
@@ -98,7 +103,7 @@ export class RequestService {
       created,
       status: RequestStatus.PENDING,
       priority,
-      identity,
+      identity_id: identity,
       source,
       created_by,
       subject,
@@ -127,7 +132,7 @@ export class RequestService {
     await this.display.info("request.created", path, {
       trace_id,
       priority,
-      identity,
+      identity_id: identity,
       portal: portal || null,
       source,
       created_by,
@@ -219,7 +224,7 @@ export class RequestService {
         filename,
         status: fm.status as RequestStatusType,
         priority: this.parsePriority(fm.priority),
-        identity: fm.identity || DEFAULT_IDENTITY_ID,
+        identity: fm.identity_id || DEFAULT_IDENTITY_ID,
         portal: fm.portal,
         created: fm.created || "",
         created_by: fm.created_by || "unknown",
@@ -316,7 +321,7 @@ export class RequestService {
       path,
       status: fm.status as RequestStatusType,
       priority: this.parsePriority(fm.priority),
-      identity: fm.identity || DEFAULT_IDENTITY_ID,
+      identity: fm.identity_id || DEFAULT_IDENTITY_ID,
       created: fm.created || "",
       created_by: fm.created_by || "unknown",
       source: this.parseSource(fm.source),

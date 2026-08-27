@@ -9,7 +9,12 @@ import { parse as parseYaml } from "@std/yaml";
 import { exists } from "@std/fs";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
-import type { IParsedRequestFile, IRequestFrontmatter } from "@exaix/core/request";
+import {
+  type IParsedRequestFile,
+  type IRawRequestFrontmatter,
+  type IRequestFrontmatter,
+  normalizeRequestFrontmatterAliases,
+} from "@exaix/core/request";
 import { coerceRequestStatus } from "@exaix/core/status";
 
 export class RequestParser {
@@ -41,7 +46,9 @@ export class RequestParser {
       const body = yamlMatch[2] || "";
 
       // Parse YAML
-      const frontmatter = parseYaml(yamlContent) as IRequestFrontmatter;
+      const frontmatter = normalizeRequestFrontmatterAliases(
+        parseYaml(yamlContent) as IRequestFrontmatter & IRawRequestFrontmatter,
+      );
 
       // Normalize status to canonical set (guards against malformed/unknown values)
       frontmatter.status = coerceRequestStatus(frontmatter.status);

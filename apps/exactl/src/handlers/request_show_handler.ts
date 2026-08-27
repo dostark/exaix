@@ -14,6 +14,8 @@ import type { IRequestShowResult } from "@exaix/core/types";
 import { DEFAULT_IDENTITY_ID, PORTAL_LABEL } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 import { AnalysisMode } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
+import { normalizeRequestFrontmatterAliases } from "@exaix/core/request";
 import { RequestKind, RequestPriority } from "@exaix/core";
 import { coerceRequestStatus } from "@exaix/core/status";
 import { getWorkspaceRequestsDir } from "./request_paths.ts";
@@ -32,7 +34,7 @@ export class RequestShowHandler extends BaseCommand {
   async analyze(
     idOrFilename: string,
     mode: AnalysisMode = AnalysisMode.HYBRID,
-    force?: boolean,
+    force?: Opt<boolean, Reason.OptionalInput>,
   ): Promise<IRequestAnalysis> {
     return await this.requests.analyze(idOrFilename, { mode, force });
   }
@@ -68,7 +70,11 @@ export class RequestShowHandler extends BaseCommand {
     matchingFrontmatter: Record<string, string | boolean | number>,
     planTokens: Record<string, string> | null,
   ): IRequestShowResult["metadata"] {
-    const identityValue = String(matchingFrontmatter.identity || matchingFrontmatter.agent || DEFAULT_IDENTITY_ID);
+    const normalized = normalizeRequestFrontmatterAliases(matchingFrontmatter) as Record<
+      string,
+      string | boolean | number
+    >;
+    const identityValue = String(normalized.identity_id || DEFAULT_IDENTITY_ID);
     const metadata: IRequestShowResult["metadata"] & { agent: string } = {
       path: matchingFile,
       filename: matchingFile.split("/").pop() || "",

@@ -25,7 +25,7 @@ import { createCliTestContext } from "./helpers/test_setup.ts";
 
 /** The created request file's frontmatter fields these tests assert on. */
 interface ICreatedFrontmatter {
-  identity?: string;
+  identity_id?: string;
   priority?: string;
   /** The CLI writes these JSON-encoded; unquoted JSON is also valid YAML, so a reader
    * may see either the raw string or an already-parsed array. */
@@ -98,7 +98,7 @@ Evaluate the pinned skills.
 
   it("carries identity: and priority: through", async () => {
     const { frontmatter } = await submit(PINNED);
-    assertEquals(frontmatter.identity, "senior-coder");
+    assertEquals(frontmatter.identity_id, "senior-coder");
     assertEquals(frontmatter.priority, "high");
   });
 
@@ -129,7 +129,7 @@ Evaluate the pinned skills.
     const result = await requestCommands.createFromFile(inputFile, { identity: "researcher" });
     assert(result.path);
     const { frontmatter } = splitFrontmatter(await Deno.readTextFile(result.path));
-    assertEquals(frontmatter.identity, "researcher", "the flag stated at invocation is the more explicit intent");
+    assertEquals(frontmatter.identity_id, "researcher", "the flag stated at invocation is the more explicit intent");
   });
 
   it("accepts a file whose frontmatter declares a flow, without an identity conflict", async () => {
@@ -175,7 +175,7 @@ Evaluate the pinned skills.
     const { frontmatter } = splitFrontmatter(await Deno.readTextFile(result.path));
 
     assertEquals((frontmatter as { flow?: string }).flow, "api-design");
-    assertEquals(frontmatter.identity, undefined, "a flow request must carry no identity");
+    assertEquals(frontmatter.identity_id, undefined, "a flow request must carry no identity");
   });
 
   it("still accepts a plain file with no frontmatter at all", async () => {

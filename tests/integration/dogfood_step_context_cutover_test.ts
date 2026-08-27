@@ -4,7 +4,7 @@
  * @description Phase 173 Step 3 [integration] bullets as permanent automation against a REAL
  *   linked git worktree (not a simulated one): a generator run with --plan-context-root aimed
  *   at the delegate worktree must produce requests carrying both the inline Why This Step
- *   Exists block and a resolvable relative PlanContext/ path, and `git status --porcelain`
+ *   Exists block and a resolvable relative .exa/PlanContext/ path, and `git status --porcelain`
  *   inside that worktree must stay clean — the judge-cleanliness property GAP-3 option-a
  *   depends on. Cuts at real git mechanics: linked worktrees hold a `.git` FILE whose shared
  *   common dir owns info/exclude.
@@ -20,7 +20,8 @@ const REPO_ROOT = join(import.meta.dirname!, "..", "..");
 const SCRIPT_PATH = join(REPO_ROOT, "scripts", "plan_to_requests.ts");
 const CONTEXT_FIXTURE_PATH = join(REPO_ROOT, "tests", "integration", "fixtures", "phase-nn-fixture-with-context.md");
 const CONTEXT_SLUG = "phase-nn-fixture-with-context";
-const POINTER_RE = /> Full phase context: `PlanContext\/[^`]+\.md` \(read this if the context above isn't enough\)\./;
+const POINTER_RE =
+  /> Full phase context: `\.exa\x2fPlanContext\x2f[^`]+\.md` \(read this if the context above isn't enough\)\./;
 
 async function runGenerator(args: string[]): Promise<{ code: number; stdout: string; stderr: string }> {
   const cmd = new Deno.Command(Deno.execPath(), {
@@ -72,7 +73,7 @@ async function makeRealWorktree(): Promise<IRealWorktree> {
 }
 
 Deno.test(
-  "[cutover][integration] generator run against a real phase doc into a real worktree target produces a request with both the inline context block and a resolvable PlanContext/ path",
+  "[cutover][integration] generator run against a real phase doc into a real worktree target produces a request with both the inline context block and a resolvable .exa/PlanContext/ path",
   { sanitizeOps: false, sanitizeResources: false },
   async () => {
     const wt = await makeRealWorktree();
@@ -96,7 +97,7 @@ Deno.test(
 
       // Resolvable BY CONSTRUCTION: the referenced relative path exists directly
       // under the worktree root that will be the delegate's cwd.
-      const resolvedTarget = join(wt.root, "PlanContext", `${CONTEXT_SLUG}.md`);
+      const resolvedTarget = join(wt.root, ".exa", "PlanContext", `${CONTEXT_SLUG}.md`);
       const stat = await Deno.stat(resolvedTarget);
       assertEquals(stat.isFile, true);
       assertEquals(
@@ -116,6 +117,13 @@ Deno.test(
   async () => {
     const wt = await makeRealWorktree();
     try {
+      const dotGitPointer = await Deno.readTextFile(join(wt.root, ".git"));
+      const pointerRaw = dotGitPointer.match(/gitdir:\s*(.+)/)![1].trim();
+      const gitDirAbs = pointerRaw.startsWith("/") ? pointerRaw : await Deno.realPath(join(wt.root, pointerRaw));
+      const commonDotGit = gitDirAbs.replace(/[\\/]worktrees[\\/][^\\/]+$/, "");
+      const excludePath = join(commonDotGit, "info", "exclude");
+      const excludeBefore = await Deno.readTextFile(excludePath);
+
       const outDir = await Deno.makeTempDir({ prefix: "p173-cutover-out-" });
       const run = await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", outDir, "--plan-context-root", wt.root]);
       assertEquals(run.code, 0, `generator failed: ${run.stderr}`);
@@ -128,20 +136,10 @@ Deno.test(
       }).output();
       assertEquals(porcelain.success, true);
       assertEquals(new TextDecoder().decode(porcelain.stdout).trim(), "", "worktree status must be spotless");
-
-      // The exclusion was recorded where git actually consults it for this worktree:
-      // the SHARED common dir's info/exclude (linked-worktree semantics).
-      const dotGitPointer = await Deno.readTextFile(join(wt.root, ".git"));
-      const pointerRaw = dotGitPointer.match(/gitdir:\s*(.+)/)![1].trim();
-      // The pointer may be relative or absolute — normalize first, THEN strip the
-      // per-worktree registry segment (…/.git/worktrees/<name>) down to …/.git.
-      const gitDirAbs = pointerRaw.startsWith("/") ? pointerRaw : await Deno.realPath(join(wt.root, pointerRaw));
-      const commonDotGit = gitDirAbs.replace(/[\\/]worktrees[\\/][^\\/]+$/, "");
-      const exclude = await Deno.readTextFile(join(commonDotGit, "info", "exclude"));
       assertEquals(
-        exclude.split("\n").some((l) => l.trim() === "PlanContext/"),
-        true,
-        "common .git/info/exclude carries the judge-cleanliness entry exactly for this mechanism",
+        await Deno.readTextFile(excludePath),
+        excludeBefore,
+        "parent-repository .git/info/exclude must remain byte-identical",
       );
     } finally {
       await wt.cleanup();

@@ -349,7 +349,7 @@ retry_backoff_base_ms = 1000
       `status: ${options.status ?? "pending"}`,
       `priority: ${options.priority ?? 5}`,
       options.flowId ? `flow: ${options.flowId}` : null,
-      options.identityId ? `identity: ${options.identityId}` : (options.flowId ? null : `identity: senior-coder`),
+      options.identityId ? `identity_id: ${options.identityId}` : (options.flowId ? null : `identity_id: senior-coder`),
       `source: test`,
       `created_by: test_environment`,
       options.portal ? `portal: "${options.portal}"` : null,

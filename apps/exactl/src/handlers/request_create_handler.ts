@@ -9,7 +9,11 @@
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
-import type { IRequestFrontmatter } from "@exaix/core/request";
+import {
+  type IRawRequestFrontmatter,
+  type IRequestFrontmatter,
+  normalizeRequestFrontmatterAliases,
+} from "@exaix/core/request";
 import { normalizeFrontmatterList } from "@exaix/request";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { RequestKind, RequestPriority, RequestSource } from "@exaix/core";
@@ -82,7 +86,7 @@ export class RequestCreateHandler extends BaseCommand {
         created,
         status: initialStatus,
         priority,
-        ...(options.flow ? {} : { identity: agent }),
+        ...(options.flow ? {} : { identity_id: agent }),
         source,
         created_by,
         subject,
@@ -308,7 +312,12 @@ function splitFileFrontmatter(content: string): ISplitFile {
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       return { frontmatter: null, body: content };
     }
-    return { frontmatter: parsed as IRequestFrontmatter, body: match[2] ?? "" };
+    return {
+      frontmatter: normalizeRequestFrontmatterAliases(
+        parsed as IRequestFrontmatter & IRawRequestFrontmatter,
+      ),
+      body: match[2] ?? "",
+    };
   } catch {
     return { frontmatter: null, body: content };
   }
@@ -340,7 +349,7 @@ function mergeFileFrontmatterIntoOptions(
   const flow = options.flow ?? frontmatter.flow;
   return {
     ...options,
-    identity: flow ? undefined : (options.identity ?? options.agent ?? frontmatter.identity),
+    identity: flow ? undefined : (options.identity ?? options.agent ?? frontmatter.identity_id),
     agent: flow ? undefined : options.agent,
     priority: options.priority ?? priority,
     portal: options.portal ?? frontmatter.portal,

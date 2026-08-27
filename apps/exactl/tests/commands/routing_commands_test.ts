@@ -61,7 +61,7 @@ Deno.test("RoutingCommands: explainRequest returns explicit routing decision for
       requestPath,
       `---
 trace_id: trace-1
-identity: senior-coder
+identity_id: senior-coder
 allow_dynamic_routing: true
 ---
 Please generate code for the new feature.

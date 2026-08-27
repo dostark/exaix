@@ -7,14 +7,19 @@
  */
 
 import type { RequestStatusType } from "@exaix/core/status";
+import type { JSONValue } from "../types/json.ts";
 
 export interface IRequestFrontmatter {
   trace_id: string;
   created: string;
   status: RequestStatusType;
   priority: string;
-  /** Identity blueprint to use for this request (Phase 54 canonical field) */
-  identity?: string;
+  /** Identity blueprint to use for this request. CANONICAL since Phase 173 GAP-1:
+   *  this used to be `identity` while writer-side RequestSchema mandated `identity_id`,
+   *  so generated requests failed admission (`RequestProcessor.getRequestKindOrFail`
+   *  found neither field). Legacy hand-authored files are aliased at the ingestion
+   *  boundary by `normalizeRequestFrontmatterAliases`. */
+  identity_id?: string;
   flow?: string;
   source: string;
   created_by: string;
@@ -67,4 +72,34 @@ export interface IParsedRequestFile {
   frontmatter: IRequestFrontmatter;
   body: string;
   rawContent: string;
+}
+
+/** A raw YAML mapping before required request fields are validated. */
+export interface IRawRequestFrontmatter {
+  [key: string]: JSONValue;
+  identity?: JSONValue;
+  identity_id?: JSONValue;
+}
+
+/**
+ * Maps deprecated request frontmatter keys to their canonical names at the raw-YAML
+ * ingestion boundary. Currently: hand-authored `identity` (pre-Phase-54-era / legacy
+ * docs) → `identity_id`. Files already carrying `identity_id` are untouched, and the
+ * legacy key is REMOVED from the returned object so no downstream reader can depend
+ * on the duplicate surviving.
+ */
+export function normalizeRequestFrontmatterAliases(
+  raw: IRequestFrontmatter & IRawRequestFrontmatter,
+): IRequestFrontmatter & IRawRequestFrontmatter;
+export function normalizeRequestFrontmatterAliases(
+  raw: IRawRequestFrontmatter,
+): IRawRequestFrontmatter;
+export function normalizeRequestFrontmatterAliases(
+  raw: IRawRequestFrontmatter,
+): IRawRequestFrontmatter {
+  const { identity: legacyIdentity, ...canonical } = raw;
+  if (!("identity_id" in canonical) && typeof legacyIdentity === "string") {
+    return { ...canonical, identity_id: legacyIdentity };
+  }
+  return canonical;
 }

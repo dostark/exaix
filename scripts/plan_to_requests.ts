@@ -139,11 +139,8 @@ function extractSection(text: string, heading: string): string {
 
 // ─── PlanContext sandbox copy (Phase 173 Step 2, GAP-2/GAP-3) ─────────────────
 
-/** Sandbox-side directory (inside the delegate worktree) the phase doc is copied to. */
-const PLAN_CONTEXT_DIRNAME = "PlanContext";
-/** Line appended to `<root>/.git/info/exclude` so git status / diff judging never
- *  sees the copy — worktree-local and untracked, unlike a tracked .gitignore. */
-const PLAN_CONTEXT_EXCLUDE_ENTRY = "PlanContext/";
+/** Repo-ignored runtime directory inside the delegate worktree. */
+const PLAN_CONTEXT_RELATIVE_DIR = ".exa/PlanContext";
 
 function isUnsafePlanSlug(planSlug: string): boolean {
   return /[\\/]/.test(planSlug) || planSlug.includes("..");
@@ -155,13 +152,26 @@ function isInsideRoot(resolved: string, root: string): boolean {
   return resolved === root || resolved.startsWith(root + segmentSep);
 }
 
+/** Reject a pre-existing symbolic link at a write boundary; absence is allowed. */
+async function assertNotSymbolicLink(path: string, label: string): Promise<void> {
+  try {
+    const info = await Deno.lstat(path);
+    if (info.isSymlink) {
+      throw new Error(`Refusing symbolic link at PlanContext ${label}: ${path}`);
+    }
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) return;
+    throw error;
+  }
+}
+
 /**
  * Copies exactly ONE file — the current phase doc — into
- * `<plan-context-root>/PlanContext/<slug>.md`, enforcing GAP-2's containment rules:
+ * `<plan-context-root>/.exa/PlanContext/<slug>.md`, enforcing GAP-2's containment rules:
  * the slug must be separator/`..`-free, both destination paths are resolved and
  * asserted inside the root before any write, and no glob/tree traversal ever runs.
- * When the root is a git checkout, appends the exclude entry once so intended-diff
- * judging stays clean; silently skips exclude handling outside a checkout.
+ * Uses the repository-wide .exa/ ignore rule so intended-diff
+ * judging stays clean without mutating shared .git metadata.
  * Throws Error on any violation; returns the written destination path.
  */
 export async function copyDocIntoPlanContext(
@@ -175,7 +185,7 @@ export async function copyDocIntoPlanContext(
     );
   }
   const root = resolve(planContextRoot);
-  const destDir = join(root, PLAN_CONTEXT_DIRNAME);
+  const destDir = join(root, ".exa", "PlanContext");
   const destFile = join(destDir, `${planSlug}.md`);
   for (const resolved of [resolve(destDir), resolve(destFile)]) {
     if (!isInsideRoot(resolved, root)) {
@@ -184,52 +194,10 @@ export async function copyDocIntoPlanContext(
   }
 
   await ensureDir(destDir);
+  await assertNotSymbolicLink(destDir, "directory");
+  await assertNotSymbolicLink(destFile, "file");
   await Deno.copyFile(sourcePath, destFile);
-  await appendPlanContextExcludeEntry(root);
   return destFile;
-}
-
-/**
- * Appends the judge-cleanliness entry to the applicable repository-level
- * `.git/info/exclude`, handling BOTH checkout shapes:
- *  - regular checkout: `.git` is a directory → its own info/exclude;
- *  - linked worktree (the dogfood case): `.git` is a FILE holding a relative
- *    `gitdir:` pointer → the shared COMMON dir (`<repo>/.git`) owns the info/
- *    exclude that covers every worktree. Anything other than the expected
- *    `<common>/worktrees/<name>` layout skips silently (best-effort hygiene,
- *    never a hard failure — the copy has already succeeded by this point).
- */
-async function appendPlanContextExcludeEntry(gitCheckoutRoot: string): Promise<void> {
-  const dotGit = join(gitCheckoutRoot, ".git");
-  let excludeTarget: string | undefined;
-  try {
-    const stat = await Deno.stat(dotGit);
-    if (stat.isDirectory) {
-      excludeTarget = join(dotGit, "info", "exclude");
-    } else if (stat.isFile) {
-      // Linked worktree: chase the gitdir pointer to the shared common .git.
-      const pointer = (await Deno.readTextFile(dotGit)).trim();
-      const match = pointer.match(/^gitdir:\s*(.+)$/m);
-      if (!match) return;
-      const gitDir = resolve(gitCheckoutRoot, match[1].replace(/^\.\//, ""));
-      const commonDotGit = gitDir.replace(/\/worktrees\/[^/]+$/, "");
-      if (commonDotGit === gitDir || !commonDotGit.endsWith("/.git")) return;
-      excludeTarget = join(commonDotGit, "info", "exclude");
-    } else {
-      return;
-    }
-  } catch {
-    return; // Not a git checkout — judge-cleanliness handling does not apply.
-  }
-  await ensureDir(join(excludeTarget, ".."));
-  let existing = "";
-  try {
-    existing = await Deno.readTextFile(excludeTarget);
-  } catch { /* absent exclude file starts empty */ }
-  const hasEntry = existing.split("\n").some((line) => line.trim() === PLAN_CONTEXT_EXCLUDE_ENTRY);
-  if (hasEntry) return;
-  const prefix = existing.length > 0 && !existing.endsWith("\n") ? "\n" : "";
-  await Deno.writeTextFile(excludeTarget, `${existing}${prefix}${PLAN_CONTEXT_EXCLUDE_ENTRY}\n`);
 }
 
 // ─── Phase-level context extraction (Phase 173 Step 1) ────────────────────────
@@ -447,7 +415,7 @@ function buildWhyThisStepExists(content: string, sectionText: string): string {
  * delegate's own Read tool can resolve (GAP-3: relative-by-construction).
  */
 function planContextPointer(planSlug: string): string {
-  return `> Full phase context: \`PlanContext/${planSlug}.md\` (read this if the context above isn't enough).`;
+  return `> Full phase context: \`${PLAN_CONTEXT_RELATIVE_DIR}/${planSlug}.md\` (read this if the context above isn't enough).`;
 }
 
 async function main(): Promise<void> {
@@ -470,7 +438,7 @@ async function main(): Promise<void> {
   if (performCopy && planContextRoot !== undefined) {
     try {
       await copyDocIntoPlanContext(planPath, planSlug, planContextRoot);
-      console.log(`Copied phase doc to ${PLAN_CONTEXT_DIRNAME}/${planSlug}.md under ${planContextRoot}`);
+      console.log(`Copied phase doc to ${PLAN_CONTEXT_RELATIVE_DIR}/${planSlug}.md under ${planContextRoot}`);
     } catch (error) {
       console.error(`Error: ${(error as Error).message}`);
       Deno.exit(1);
@@ -500,7 +468,7 @@ async function main(): Promise<void> {
 
     if (dryRun) {
       console.log(
-        `Would write: ${filePath} (identity: ${manifest?.identity ?? "senior-coder"}, priority: ${
+        `Would write: ${filePath} (identity_id: ${manifest?.identity ?? "senior-coder"}, priority: ${
           Math.max(0, Math.min(10, 10 - step.stepNumber))
         })`,
       );

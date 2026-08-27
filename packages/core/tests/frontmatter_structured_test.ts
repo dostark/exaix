@@ -126,7 +126,7 @@ Deno.test("[IRequestFrontmatter] existing fields unaffected by new additions", (
     priority: "P2",
     source: "test",
     created_by: "tester",
-    identity: "ExaAgent",
+    identity_id: "ExaAgent",
     portal: "/portal",
     model: "gpt-4o",
     subject: "Refactor module",
@@ -134,7 +134,7 @@ Deno.test("[IRequestFrontmatter] existing fields unaffected by new additions", (
     clarification_session_path: "/Workspace/Active/req.clarification.json",
   };
   assertEquals(fm.trace_id, "abc-008");
-  assertEquals(fm.identity, "ExaAgent");
+  assertEquals(fm.identity_id, "ExaAgent");
   assertEquals(fm.assessed_at, "2024-01-01T01:00:00Z");
   assertEquals(fm.acceptance_criteria, undefined);
   assertEquals(fm.expected_outcomes, undefined);

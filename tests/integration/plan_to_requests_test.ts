@@ -12,8 +12,22 @@
 
 import { assertEquals, assertExists, assertMatch } from "@std/assert";
 import { join } from "@std/path";
-import { RequestSchema } from "@exaix/schemas/request.ts";
+import { parse as parseYamlRaw } from "@std/yaml";
 import { parseFrontmatter } from "./helpers/parse_frontmatter.ts";
+import { RequestSchema } from "@exaix/schemas/request.ts";
+import { BlueprintResolver, RequestProcessor } from "@exaix/request";
+import { RequestKind } from "@exaix/core";
+import type { IEventLogger } from "@exaix/core/logger";
+
+const noopTraceLogger: IEventLogger = {
+  log: () => Promise.resolve(),
+  info: () => Promise.resolve(),
+  warn: () => Promise.resolve(),
+  error: () => Promise.resolve(),
+  fatal: () => Promise.resolve(),
+  debug: () => Promise.resolve(),
+  child: () => noopTraceLogger,
+};
 
 const DOGFOOD_META_RE = /> Dogfood metadata — portal: `([^`]+)`; target_branch: `([^`]+)`/;
 
@@ -116,6 +130,7 @@ Deno.test("[plan-to-requests] dry-run prints count without writing", async () =>
     const { stdout, stderr } = await runGenerator([fixturePath, "--out-dir", tmpDir, "--dry-run"]);
     assertEquals(stderr, "");
     assertMatch(stdout, /Would write.*phase-nn-fixture-step/);
+    assertMatch(stdout, /identity_id: senior-coder/);
     assertMatch(stdout, /Would write 3 request file/);
 
     // Verify no files were written
@@ -439,7 +454,7 @@ Deno.test("[plan-to-requests][context] a real repo phase doc yields requests far
 // ─── Phase 173 Step 2 — PlanContext copy + pointer ─────────────────────────────
 
 const PLAN_CONTEXT_POINTER_RE =
-  /> Full phase context: `PlanContext\/([^`]+)\.md` \(read this if the context above isn't enough\)\./;
+  /> Full phase context: `\.exa\x2fPlanContext\x2f([^`]+)\.md` \(read this if the context above isn't enough\)\./;
 const CONTEXT_SLUG = "phase-nn-fixture-with-context";
 
 /** Minimal stand-in for a delegate worktree: a directory optionally containing a
@@ -455,7 +470,7 @@ async function makeFakeWorktree(opts: { withGit: boolean; gitignore?: string }):
   return root;
 }
 
-Deno.test("[plan-to-requests][plan-context] generator copies the phase doc to PlanContext/<slug>.md under --plan-context-root", async () => {
+Deno.test("[plan-to-requests][plan-context] generator copies the phase doc to .exa/PlanContext/<slug>.md under --plan-context-root", async () => {
   const wt = await makeFakeWorktree({ withGit: true });
   try {
     const { code, stderr } = await runGenerator([
@@ -468,7 +483,7 @@ Deno.test("[plan-to-requests][plan-context] generator copies the phase doc to Pl
     assertEquals(code, 0);
     assertEquals(stderr, "");
 
-    const copied = await Deno.readTextFile(join(wt, "PlanContext", `${CONTEXT_SLUG}.md`));
+    const copied = await Deno.readTextFile(join(wt, ".exa", "PlanContext", `${CONTEXT_SLUG}.md`));
     assertEquals(copied, await Deno.readTextFile(CONTEXT_FIXTURE_PATH), "copy is byte-identical to the source doc");
   } finally {
     await Deno.remove(wt, { recursive: true });
@@ -501,35 +516,33 @@ Deno.test("[plan-to-requests][plan-context][hardened-shape] copy lands inside th
     // The file lives INSIDE the root (OpenCode permitted-path assertion satisfied),
     // and the pointer the request carries is RELATIVE — it resolves from the delegate's
     // cwd (this same root) without any absolute-path dependence.
-    const expected = join(wt, "PlanContext", `${CONTEXT_SLUG}.md`);
+    const expected = join(wt, ".exa", "PlanContext", `${CONTEXT_SLUG}.md`);
     const stat = await Deno.stat(expected);
     assertEquals(stat.isFile, true);
     const request = await Deno.readTextFile(join(outDir, `${CONTEXT_SLUG}-step-1.md`));
     const m = request.match(PLAN_CONTEXT_POINTER_RE);
     assertExists(m);
-    assertEquals(m![1], CONTEXT_SLUG, "pointer must be the bare relative PlanContext/<slug>.md path");
+    assertEquals(m![1], CONTEXT_SLUG, "pointer must be the bare relative .exa/PlanContext/<slug>.md path");
   } finally {
     await Deno.remove(wt, { recursive: true });
   }
 });
 
-Deno.test("[plan-to-requests][plan-context] .git/info/exclude gains PlanContext/ exactly once; tracked .gitignore untouched", async () => {
+Deno.test("[plan-context][relocation] repeated runs leave .git metadata and tracked .gitignore untouched", async () => {
   const GITIGNORE = "dist/\nnode_modules/\n";
+  const EXISTING_EXCLUDE = "existing-entry/\n";
   const wt = await makeFakeWorktree({ withGit: true, gitignore: GITIGNORE });
   try {
+    const excludePath = join(wt, ".git", "info", "exclude");
+    await Deno.writeTextFile(excludePath, EXISTING_EXCLUDE);
     const args = [CONTEXT_FIXTURE_PATH, "--out-dir", join(wt, "Workspace", "Requests"), "--plan-context-root", wt];
     assertEquals((await runGenerator(args)).code, 0);
-
-    const excludePath = join(wt, ".git", "info", "exclude");
-    const excludeOnce = await Deno.readTextFile(excludePath);
-    assertEquals(excludeOnce.split("\n").filter((l) => l === "PlanContext/").length, 1, "appended exactly once");
-
-    // Idempotent second run must not duplicate the entry.
     assertEquals((await runGenerator(args)).code, 0);
-    const excludeTwice = await Deno.readTextFile(excludePath);
-    assertEquals(excludeTwice.split("\n").filter((l) => l === "PlanContext/").length, 1);
 
+    assertEquals(await Deno.readTextFile(excludePath), EXISTING_EXCLUDE, ".git metadata must remain byte-identical");
     assertEquals(await Deno.readTextFile(join(wt, ".gitignore")), GITIGNORE, "tracked ignore file untouched");
+    const copied = join(wt, ".exa", "PlanContext", `${CONTEXT_SLUG}.md`);
+    assertEquals((await Deno.stat(copied)).isFile, true, "copy must exist after every sampled run");
   } finally {
     await Deno.remove(wt, { recursive: true });
   }
@@ -551,7 +564,7 @@ Deno.test("[plan-to-requests][plan-context] --no-copy-doc skips the copy and the
 
     let threwNotFound = false;
     try {
-      await Deno.stat(join(wt, "PlanContext"));
+      await Deno.stat(join(wt, ".exa", "PlanContext"));
     } catch {
       threwNotFound = true;
     }
@@ -593,7 +606,7 @@ Deno.test("[plan-to-requests][plan-context][regression] without --plan-context-r
       const b = await Deno.readTextFile(join(noCopy, `${CONTEXT_SLUG}-step-${stepNum}.md`));
       assertEquals(bodyOf(a), bodyOf(b), `step ${stepNum}: omitting the flag must match explicit opt-out`);
       assertEquals(a.match(PLAN_CONTEXT_POINTER_RE), null);
-      assertEquals(a.includes("PlanContext/"), false);
+      assertEquals(a.includes(".exa/PlanContext/"), false);
     }
   } finally {
     await Deno.remove(wtA, { recursive: true });
@@ -627,11 +640,169 @@ Deno.test("[plan-to-requests][plan-context][security] a '..'-laden plan slug is 
 
     let planContextAbsent = false;
     try {
-      await Deno.stat(join(wt, "PlanContext"));
+      await Deno.stat(join(wt, ".exa", "PlanContext"));
     } catch {
       planContextAbsent = true;
     }
     assertEquals(planContextAbsent, true, "nothing may be written into the sandbox on rejection");
+  } finally {
+    await Deno.remove(wt, { recursive: true });
+  }
+});
+
+// ─── Phase 173 Step 5 remediation - admission contract (GAP-1) ────────────────
+
+const REPO_ROOT_ADM = join(import.meta.dirname!, "..", "..");
+const FM_SLICE_RE = /^---\s*\n([\s\S]*?)\n---\s*\n?/;
+
+/** Production-split mechanics (mirrors exactl handler's splitFileFrontmatter and the
+ *  watcher-shared `---` slice: raw parseYaml cast to IRequestFrontmatter, NO read-time
+ *  schema validation) applied to a generated request file. */
+function productionFrontmatterOf(generatedFile: string): Record<string, unknown> {
+  const content = Deno.readTextFileSync(generatedFile); // tests may sync-read for slicing parity
+  const fmSlice = content.match(FM_SLICE_RE);
+  assertExists(fmSlice, "generated file must carry frontmatter");
+  return parseYamlRaw(fmSlice[1]) as Record<string, unknown>;
+}
+
+/** Drives the REAL RequestProcessor.getRequestKindOrFail branch logic via prototype
+ *  binding with only the failure-path collaborator stubbed — the consumer-contract
+ *  oracle whose absence let GAP-1 hide behind writer-side schema greens. */
+async function admissionKindOf(frontmatter: Record<string, unknown>): Promise<RequestKind | null> {
+  const proc = Object.create(RequestProcessor.prototype) as {
+    statusManager: unknown;
+  };
+  proc.statusManager = { updateStatus: async () => {} };
+  const kind = await (proc as never as {
+    getRequestKindOrFail(args: {
+      frontmatter: Record<string, unknown>;
+      filePath: string;
+      traceLogger: IEventLogger;
+    }): Promise<RequestKind | null>;
+  }).getRequestKindOrFail({
+    frontmatter,
+    filePath: "generated-dogfood-request.md",
+    traceLogger: noopTraceLogger,
+  });
+  return kind;
+}
+
+Deno.test("[plan-context][admission] generated frontmatter carries ONLY identity_id (legacy duplicate key must not return)", async () => {
+  const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-admit-" });
+  try {
+    assertEquals((await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", tmpDir])).code, 0);
+    const file = join(tmpDir, `${CONTEXT_SLUG}-step-1.md`);
+    const fm = productionFrontmatterOf(file);
+    assertEquals(fm.identity_id, "senior-coder");
+    assertEquals(fm.identity, undefined, "GAP-1 root fix: legacy identity key must not coexist with identity_id");
+  } finally {
+    await Deno.remove(tmpDir, { recursive: true });
+  }
+});
+
+Deno.test("[plan-context][admission] consumer contract: real getRequestKindOrFail returns IDENTITY for generated output", async () => {
+  const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-admit-kind-" });
+  try {
+    assertEquals((await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", tmpDir])).code, 0);
+    const file = join(tmpDir, `${CONTEXT_SLUG}-step-1.md`);
+    const fm = productionFrontmatterOf(file);
+    const kind = await admissionKindOf(fm);
+    assertEquals(
+      kind,
+      RequestKind.IDENTITY,
+      "generated requests must be admitted as identity-kind, not marked FAILED for missing agent field",
+    );
+  } finally {
+    await Deno.remove(tmpDir, { recursive: true });
+  }
+});
+
+Deno.test("[plan-context][admission] manifest identity resolves to a loadable blueprint file", async () => {
+  const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-admit-bp-" });
+  try {
+    assertEquals((await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", tmpDir])).code, 0);
+    const file = join(tmpDir, `${CONTEXT_SLUG}-step-1.md`);
+    const fm = productionFrontmatterOf(file);
+    assertExists(fm.identity_id, "identity_id must exist before blueprint resolution can be meaningful");
+    // Drive the SAME resolver class RequestProcessor admission instantiates.
+    const resolver = new BlueprintResolver({ blueprintsPath: join(REPO_ROOT_ADM, "Blueprints") });
+    const loaded = await resolver.resolve(String(fm.identity_id), noopTraceLogger);
+    assertExists(
+      loaded,
+      `blueprint '${fm.identity_id}' must load - BlueprintNotFound guard not reachable from generator output`,
+    );
+  } finally {
+    await Deno.remove(tmpDir, { recursive: true });
+  }
+});
+
+Deno.test("[regression][admission] strict RequestSchema accepts canonical generator output", async () => {
+  const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-admit-schema-" });
+  try {
+    assertEquals((await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", tmpDir])).code, 0);
+    const file = join(tmpDir, `${CONTEXT_SLUG}-step-1.md`);
+    const fm = productionFrontmatterOf(file);
+    assertEquals(RequestSchema.safeParse(fm).success, true);
+  } finally {
+    await Deno.remove(tmpDir, { recursive: true });
+  }
+});
+
+Deno.test("[plan-context][relocation][security] pre-existing symlinked PlanContext file is refused", async () => {
+  const wt = await makeFakeWorktree({ withGit: false });
+  const outside = await Deno.makeTempDir({ prefix: "plan-context-outside-" });
+  try {
+    const destDir = join(wt, ".exa", "PlanContext");
+    const OUTSIDE_SENTINEL = "must remain untouched";
+    const outsideTarget = join(outside, "captured-plan.md");
+    await Deno.mkdir(destDir, { recursive: true });
+    await Deno.writeTextFile(outsideTarget, OUTSIDE_SENTINEL);
+    await Deno.symlink(outsideTarget, join(destDir, `${CONTEXT_SLUG}.md`));
+
+    const result = await runGenerator([
+      CONTEXT_FIXTURE_PATH,
+      "--out-dir",
+      join(wt, "Workspace", "Requests"),
+      "--plan-context-root",
+      wt,
+    ]);
+
+    assertEquals(result.code !== 0, true, "symlinked destination must fail closed");
+    assertEquals(
+      (result.stdout + result.stderr).toLowerCase().includes("symbolic link"),
+      true,
+      "failure must identify the rejected symbolic link",
+    );
+    assertEquals(await Deno.readTextFile(outsideTarget), OUTSIDE_SENTINEL, "symlink target must remain untouched");
+  } finally {
+    await Deno.remove(wt, { recursive: true });
+    await Deno.remove(outside, { recursive: true });
+  }
+});
+
+Deno.test("[plan-context][metrics] treatment request stays within 3x stripped control across repeated runs", async () => {
+  const MAX_TREATMENT_TO_CONTROL_RATIO = 3;
+  const wt = await makeFakeWorktree({ withGit: false });
+  try {
+    const outDir = join(wt, "Workspace", "Requests");
+    const args = [CONTEXT_FIXTURE_PATH, "--out-dir", outDir, "--plan-context-root", wt];
+    for (const runNumber of [1, 2]) {
+      assertEquals((await runGenerator(args)).code, 0, `run ${runNumber} must succeed`);
+      const copied = join(wt, ".exa", "PlanContext", `${CONTEXT_SLUG}.md`);
+      assertEquals((await Deno.stat(copied)).isFile, true, `run ${runNumber} must retain the copy`);
+    }
+
+    const request = await Deno.readTextFile(join(outDir, `${CONTEXT_SLUG}-step-1.md`));
+    const whyStart = request.indexOf("## Why This Step Exists");
+    const actionsStart = request.indexOf("## Actions");
+    assertEquals(whyStart >= 0 && actionsStart > whyStart, true);
+    const withoutWhy = request.slice(0, whyStart) + request.slice(actionsStart);
+    const strippedControl = withoutWhy.replace(/\n> Full phase context:[^\n]+\n/, "\n");
+    assertEquals(
+      request.length <= MAX_TREATMENT_TO_CONTROL_RATIO * strippedControl.length,
+      true,
+      `treatment ${request.length}B must stay within ${MAX_TREATMENT_TO_CONTROL_RATIO}x control ${strippedControl.length}B`,
+    );
   } finally {
     await Deno.remove(wt, { recursive: true });
   }

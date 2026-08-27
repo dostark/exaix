@@ -585,7 +585,7 @@ created: "${new Date().toISOString()}"
 status: pending
 priority: high
 flow: code-review
-identity: senior-coder
+identity_id: senior-coder
 source: cli
 created_by: "test@example.com"
 ---
