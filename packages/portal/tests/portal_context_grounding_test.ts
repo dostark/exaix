@@ -77,7 +77,7 @@ Deno.test("RequestProcessor: Portal context includes file list for grounding", a
       requestPath,
       `---
 trace_id: "t1"
-identity: code-analyst
+identity_id: code-analyst
 portal: test-portal
 created: "${new Date().toISOString()}"
 ---

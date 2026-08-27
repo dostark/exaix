@@ -138,7 +138,7 @@ trace_id: "trace-${requestId}"
 created: "${new Date().toISOString()}"
 status: "${RequestStatus.PENDING}"
 priority: "normal"
-identity: "${opts.identity ?? "test-agent"}"
+identity_id: "${opts.identity ?? "test-agent"}"
 assessed_at: "${new Date().toISOString()}"
 ${portalLine}
 created_by: "test-user"

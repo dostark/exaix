@@ -111,7 +111,7 @@ export function makeAgentRequestFileSync(requestsDir: string, options: {
     `created: "${new Date().toISOString()}"`,
     `status: "${options.status ?? RequestStatus.PENDING}"`,
     `priority: "normal"`,
-    `identity: "${identity}"`,
+    `identity_id: "${identity}"`,
     `source: "${options.source ?? RequestSource.CLI}"`,
     options.portal ? `portal: "${options.portal}"` : null,
     `created_by: "test-user"`,

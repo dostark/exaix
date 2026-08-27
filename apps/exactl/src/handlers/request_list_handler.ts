@@ -12,7 +12,6 @@ import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import type { IRequestEntry } from "@exaix/core/types";
 import { getWorkspaceArchiveDir, getWorkspaceRejectedDir, getWorkspaceRequestsDir } from "./request_paths.ts";
 import { DEFAULT_IDENTITY_ID, PORTAL_LABEL } from "@exaix/core";
-import { normalizeRequestFrontmatterAliases } from "@exaix/core/request";
 import { RequestKind, RequestPriority } from "@exaix/core";
 import { coerceRequestStatus, type RequestStatusType } from "@exaix/core/status";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -101,8 +100,7 @@ export class RequestListHandler extends BaseCommand {
     frontmatter: Record<string, string | boolean | number>,
     status: RequestStatusType,
   ): IRequestEntry {
-    const normalized = normalizeRequestFrontmatterAliases(frontmatter) as Record<string, string | boolean | number>;
-    const identityValue = String(normalized.identity_id || DEFAULT_IDENTITY_ID);
+    const identityValue = String(frontmatter.identity_id || DEFAULT_IDENTITY_ID);
     const entry: IRequestEntry & { agent: string } = {
       filename,
       path: filePath,

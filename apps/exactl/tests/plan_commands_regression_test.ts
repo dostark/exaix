@@ -273,7 +273,7 @@ trace_id: "${traceId}"
 created: "2026-01-25T16:28:01.132Z"
 status: planned
 priority: high
-identity: test-agent
+identity_id: test-agent
 portal: test-portal
 created_by: test@example.com
 ---

@@ -151,7 +151,8 @@ Deno.test("RequestParser: logs parse failure on invalid YAML", async () => {
 });
 
 // ============================================================================
-// Phase 173: canonical identity_id with legacy identity ingestion alias
+// Phase 173: canonical identity_id frontmatter field (identity fully retired,
+// no deployments yet to require a legacy-ingestion alias)
 // ============================================================================
 
 Deno.test("RequestParser: parses canonical identity_id from frontmatter", async () => {
@@ -178,7 +179,7 @@ Deno.test("RequestParser: parses canonical identity_id from frontmatter", async 
   });
 });
 
-Deno.test("RequestParser: maps deprecated identity to canonical identity_id", async () => {
+Deno.test("RequestParser: does not alias the retired identity field to identity_id", async () => {
   const errors: LoggedError[] = [];
   const parser = new RequestParser(createLogger(errors));
 
@@ -197,32 +198,7 @@ Deno.test("RequestParser: maps deprecated identity to canonical identity_id", as
     const result = await parser.parse(filePath);
 
     assertEquals(errors.length, 0);
-    assertEquals(result?.frontmatter.identity_id, "senior-coder");
-    assertEquals("identity" in (result?.frontmatter ?? {}), false);
-  });
-});
-
-Deno.test("RequestParser: canonical identity_id wins and deprecated identity is removed", async () => {
-  const errors: LoggedError[] = [];
-  const parser = new RequestParser(createLogger(errors));
-
-  await withTempRequestFile(async (filePath) => {
-    const frontmatter = [
-      `trace_id: "${TEST_REQUEST_TRACE_ID}"`,
-      `created: "${TEST_REQUEST_CREATED_AT}"`,
-      `status: ${TEST_REQUEST_STATUS_VALID}`,
-      `priority: ${TEST_REQUEST_PRIORITY}`,
-      `identity_id: "senior-coder"`,
-      `identity: "legacy-wrong-value"`,
-      `source: ${TEST_REQUEST_SOURCE}`,
-      `created_by: "${TEST_REQUEST_CREATED_BY}"`,
-    ].join("\n");
-
-    await Deno.writeTextFile(filePath, `---\n${frontmatter}\n---\n\n${TEST_REQUEST_BODY}\n`);
-    const result = await parser.parse(filePath);
-
-    assertEquals(result?.frontmatter.identity_id, "senior-coder");
-    assertEquals("identity" in (result?.frontmatter ?? {}), false);
+    assertEquals(result?.frontmatter.identity_id, undefined);
   });
 });
 

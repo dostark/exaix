@@ -115,7 +115,7 @@ trace_id: "trace-ablate-portal"
 created: "${new Date().toISOString()}"
 status: "pending"
 priority: "normal"
-identity: "test-agent"
+identity_id: "test-agent"
 portal: "test-portal"
 created_by: "test-user"
 ---

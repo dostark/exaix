@@ -32,14 +32,9 @@
 - Generated requests now include a "Why This Step Exists" section carrying the plan's
   Executive Summary and the Constraints/Design Decisions relevant to that specific
   step, instead of only the step's own four scraped subsections.
-- Request files now use `identity_id` as the canonical frontmatter field naming the
-  identity blueprint that should handle the request (see `Exaix_User_Guide.md` §4.6).
-
-### Deprecated
-
-- The `identity` request-frontmatter field name is deprecated in favor of
-  `identity_id`; existing hand-authored files using `identity` continue to load
-  unchanged.
+- Request files now use `identity_id` as the frontmatter field naming the identity
+  blueprint that should handle the request; the old `identity` field name is retired
+  and no longer read (see `Exaix_User_Guide.md` §4.6).
 
 ## Unreleased — Phase 167 (Codex CLI Session Adapter)
 

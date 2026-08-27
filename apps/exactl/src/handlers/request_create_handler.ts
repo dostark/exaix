@@ -9,11 +9,7 @@
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
-import {
-  type IRawRequestFrontmatter,
-  type IRequestFrontmatter,
-  normalizeRequestFrontmatterAliases,
-} from "@exaix/core/request";
+import type { IRequestFrontmatter } from "@exaix/core/request";
 import { normalizeFrontmatterList } from "@exaix/request";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { RequestKind, RequestPriority, RequestSource } from "@exaix/core";
@@ -313,9 +309,7 @@ function splitFileFrontmatter(content: string): ISplitFile {
       return { frontmatter: null, body: content };
     }
     return {
-      frontmatter: normalizeRequestFrontmatterAliases(
-        parsed as IRequestFrontmatter & IRawRequestFrontmatter,
-      ),
+      frontmatter: parsed as IRequestFrontmatter,
       body: match[2] ?? "",
     };
   } catch {

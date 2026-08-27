@@ -11,7 +11,6 @@ import { parse as parseYaml } from "@std/yaml";
 import { BaseCommand } from "@exaix/cli/base.ts";
 import { createRoutingPolicyService, loadRoutingPolicy } from "../../../../apps/common/adapters/routing_adapter.ts";
 import { ZRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
-import { normalizeRequestFrontmatterAliases } from "@exaix/core/request";
 import type { JSONValue } from "@exaix/core";
 import type { IRoutingContext, IRoutingMatchCriteria, IRoutingPolicyDecision } from "@exaix/schemas/routing_policy.ts";
 import type { Opt, Reason } from "@exaix/core/types";
@@ -60,9 +59,7 @@ export class RoutingCommands extends BaseCommand {
     const content = await Deno.readTextFile(requestPath);
     const frontmatter = this.parseRequestFrontmatter(content, requestPath);
     const identityField = this.getRequestIdentity(frontmatter);
-    const explicitVersion = typeof frontmatter.identity_id_version === "string"
-      ? frontmatter.identity_id_version
-      : undefined;
+    const explicitVersion = typeof frontmatter.identity_version === "string" ? frontmatter.identity_version : undefined;
 
     const routingContext: IRoutingContext = {
       explicitIdentityId: identityField,
@@ -86,7 +83,7 @@ export class RoutingCommands extends BaseCommand {
       throw new Error(`Unable to parse YAML frontmatter in ${filePath}`);
     }
 
-    return normalizeRequestFrontmatterAliases(parsed as ParsedFrontmatter);
+    return parsed as ParsedFrontmatter;
   }
 
   private buildMatchCriteria(frontmatter: ParsedFrontmatter): IRoutingMatchCriteria {

@@ -64,7 +64,7 @@ function createRequestContent(opts: {
     `created: "${new Date().toISOString()}"`,
     `status: ${opts.status || MemoryStatus.PENDING}`,
     `priority: ${opts.priority || "normal"}`,
-    opts.flow ? null : `identity: ${opts.identity || "default"}`, // Only include agent if no flow
+    opts.flow ? null : `identity_id: ${opts.identity || "default"}`, // Only include identity if no flow
     opts.flow ? `flow: ${opts.flow}` : null,
     `source: cli`,
     `created_by: "test@example.com"`,

@@ -76,7 +76,7 @@ describe("request --file honours the submitted file's own frontmatter", () => {
 trace_id: "fixture-trace"
 status: "pending"
 priority: "high"
-identity: "senior-coder"
+identity_id: "senior-coder"
 skills: [tdd-methodology, security-first]
 tags: [review, quality]
 ---
@@ -96,7 +96,7 @@ Evaluate the pinned skills.
     assertEquals(asList(frontmatter.tags), ["review", "quality"]);
   });
 
-  it("carries identity: and priority: through", async () => {
+  it("carries identity_id: and priority: through", async () => {
     const { frontmatter } = await submit(PINNED);
     assertEquals(frontmatter.identity_id, "senior-coder");
     assertEquals(frontmatter.priority, "high");
