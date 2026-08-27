@@ -335,3 +335,102 @@ Deno.test("[plan-to-requests] heading-scrape fallback uses default portal and ta
     await Deno.remove(tmpDir, { recursive: true });
   }
 });
+
+// ─── Phase 173 Step 1 — Why This Step Exists block ─────────────────────────────
+
+const CONTEXT_FIXTURE_PATH = join(FIXTURES_DIR, "phase-nn-fixture-with-context.md");
+
+Deno.test("[plan-to-requests][context] doc-shaped fixture emits Why This Step Exists with Executive Summary + only shared bullets", async () => {
+  const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-context-" });
+  try {
+    const { stdout, stderr } = await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", tmpDir]);
+    assertEquals(stderr, "");
+    assertMatch(stdout, /Wrote 2 request file/);
+
+    // Step 1 shares the scripts/plan_to_requests.ts token with a constraint bullet.
+    const step1 = await Deno.readTextFile(join(tmpDir, "phase-nn-fixture-with-context-step-1.md"));
+    assertEquals(step1.includes("## Why This Step Exists"), true);
+    assertEquals(
+      step1.indexOf("## Why This Step Exists") < step1.indexOf("## Actions"),
+      true,
+      "the why block leads the body, before Actions",
+    );
+    assertEquals(step1.includes("**The Problem.**"), true, "Executive Summary carried inline");
+    assertEquals(step1.includes("outside the bounded summary"), false, "Goal-paragraph bounding holds");
+    assertEquals(
+      step1.includes("Keep requests concise per `scripts/plan_to_requests.ts` design."),
+      true,
+      "shared-token constraint bullet included",
+    );
+    assertEquals(step1.includes("Never expose private submodule trees"), false, "non-matching bullet filtered");
+    assertEquals(step1.includes("### Relevant Design Decisions"), false, "no-overlap sub-block omitted");
+
+    // Step 2 overlaps nothing: still gets the summary (always-present why), no bullet lists.
+    const step2 = await Deno.readTextFile(join(tmpDir, "phase-nn-fixture-with-context-step-2.md"));
+    assertEquals(step2.includes("## Why This Step Exists"), true);
+    assertEquals(step2.includes("**The Goal.**"), true);
+    assertEquals(step2.includes("### Relevant Constraints"), false);
+    assertEquals(step2.includes("### Relevant Design Decisions"), false);
+  } finally {
+    await Deno.remove(tmpDir, { recursive: true });
+  }
+});
+
+Deno.test("[plan-to-requests][context] legacy minimal fixture output unchanged — no Why This Step Exists block", async () => {
+  const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-context-reg-" });
+  try {
+    const { stderr } = await runGenerator([join(FIXTURES_DIR, "phase-nn-fixture.md"), "--out-dir", tmpDir]);
+    assertEquals(stderr, "");
+
+    for (const stepNum of [1, 2, 3]) {
+      const content = await Deno.readTextFile(join(tmpDir, `phase-nn-fixture-step-${stepNum}.md`));
+      assertEquals(
+        content.includes("## Why This Step Exists"),
+        false,
+        `step ${stepNum}: docs without an Executive Summary keep legacy output`,
+      );
+    }
+  } finally {
+    await Deno.remove(tmpDir, { recursive: true });
+  }
+});
+
+Deno.test("[plan-to-requests][context] a real repo phase doc yields requests far smaller than the source doc", async () => {
+  const realDoc = join(REPO_ROOT, "exaix-dev-docs", "planning", "phase-171-packages-team-submodule-extraction.md");
+  // The planning corpus lives in a submodule; absent in bare checkouts → nothing to prove.
+  const realDocExists = await Deno.stat(realDoc).then(() => true).catch(() => false);
+  if (!realDocExists) {
+    console.log("[skip-context-size] exaix-dev-docs submodule content not present");
+    return;
+  }
+
+  const sourceSize = (await Deno.stat(realDoc)).size;
+  const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-real-doc-" });
+  try {
+    const { stderr } = await runGenerator([realDoc, "--out-dir", tmpDir]);
+    assertEquals(stderr, "");
+
+    let totalRequestBytes = 0;
+    let requestCount = 0;
+    for await (const entry of Deno.readDir(tmpDir)) {
+      if (!entry.isFile) continue;
+      totalRequestBytes += (await Deno.stat(join(tmpDir, entry.name))).size;
+      requestCount++;
+    }
+    assertExists(requestCount > 0, "real doc must yield at least one request");
+
+    const avgRequestSize = totalRequestBytes / requestCount;
+    // "noticeably shorter than the full phase doc, not a second copy of it" — the
+    // per-request body is bounded context + one step's four subsections, so the AVERAGE
+    // request must stay well under half of the source doc's size.
+    assertEquals(
+      avgRequestSize < sourceSize / 2,
+      true,
+      `average request ${
+        Math.round(avgRequestSize)
+      }B must stay under half of source ${sourceSize}B — a ballooning why-block would approach a full-doc copy`,
+    );
+  } finally {
+    await Deno.remove(tmpDir, { recursive: true });
+  }
+});
