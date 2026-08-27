@@ -75,7 +75,7 @@ Deno.test("[RejectedPlanHandler.handleError] PlanValidationError includes identi
       filePath,
       "req-1",
       createMockEventLogger(),
-      makeFrontmatter({ identity: "coder-agent" }),
+      makeFrontmatter({ identity_id: "coder-agent" }),
     );
 
     const rejectedDir = join(config.system.root, config.paths.workspace, config.paths.rejected);

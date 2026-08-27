@@ -13,8 +13,11 @@ export interface IRequestFrontmatter {
   created: string;
   status: RequestStatusType;
   priority: string;
-  /** Identity blueprint to use for this request (Phase 54 canonical field) */
-  identity?: string;
+  /** Identity blueprint to use for this request. CANONICAL since Phase 173 GAP-1:
+   *  this used to be `identity` while writer-side RequestSchema mandated `identity_id`,
+   *  so generated requests failed admission (`RequestProcessor.getRequestKindOrFail`
+   *  found neither field). */
+  identity_id?: string;
   flow?: string;
   source: string;
   created_by: string;

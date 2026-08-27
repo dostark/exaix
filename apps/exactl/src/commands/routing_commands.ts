@@ -100,8 +100,8 @@ export class RoutingCommands extends BaseCommand {
   }
 
   private getRequestIdentity(frontmatter: ParsedFrontmatter): string | undefined {
-    if (typeof frontmatter.identity === "string" && frontmatter.identity.trim()) {
-      return frontmatter.identity.trim();
+    if (typeof frontmatter.identity_id === "string" && frontmatter.identity_id.trim()) {
+      return frontmatter.identity_id.trim();
     }
     if (typeof frontmatter.agent === "string" && frontmatter.agent.trim()) {
       return frontmatter.agent.trim();

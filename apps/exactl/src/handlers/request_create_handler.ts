@@ -82,7 +82,7 @@ export class RequestCreateHandler extends BaseCommand {
         created,
         status: initialStatus,
         priority,
-        ...(options.flow ? {} : { identity: agent }),
+        ...(options.flow ? {} : { identity_id: agent }),
         source,
         created_by,
         subject,
@@ -308,7 +308,10 @@ function splitFileFrontmatter(content: string): ISplitFile {
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       return { frontmatter: null, body: content };
     }
-    return { frontmatter: parsed as IRequestFrontmatter, body: match[2] ?? "" };
+    return {
+      frontmatter: parsed as IRequestFrontmatter,
+      body: match[2] ?? "",
+    };
   } catch {
     return { frontmatter: null, body: content };
   }
@@ -340,7 +343,7 @@ function mergeFileFrontmatterIntoOptions(
   const flow = options.flow ?? frontmatter.flow;
   return {
     ...options,
-    identity: flow ? undefined : (options.identity ?? options.agent ?? frontmatter.identity),
+    identity: flow ? undefined : (options.identity ?? options.agent ?? frontmatter.identity_id),
     agent: flow ? undefined : options.agent,
     priority: options.priority ?? priority,
     portal: options.portal ?? frontmatter.portal,

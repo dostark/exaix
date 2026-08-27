@@ -133,6 +133,12 @@ const SEQUENTIAL_FILES: string[] = [
   // pool even after DENO_JOBS was scaled to hardwareConcurrency — this file alone
   // oversubscribes spawn capacity regardless of overall worker count.
   "apps/exactl/tests/blueprint_commands_test.ts",
+  // DiskSpaceHealthCheck shells out to `df` per check; under Batch 1's worker
+  // pool the subprocess spawn intermittently errors (same spawn-contention class
+  // as blueprint_commands_test.ts above), and DiskSpaceHealthCheck.critical=true
+  // turns that transient spawn failure into a hard FAIL, dragging overall status
+  // to "unhealthy" and breaking assertions that expect "pass"/"warn"/"degraded".
+  "apps/daemon/tests/health_check_service_test.ts",
 ];
 
 /**

@@ -24,7 +24,10 @@ export class RequestListHandler extends BaseCommand {
     this.workspaceRequestsDir = getWorkspaceRequestsDir(context);
   }
 
-  async list(status?: RequestStatusType, includeArchived?: boolean): Promise<IRequestEntry[]> {
+  async list(
+    status?: Opt<RequestStatusType, Reason.QueryFilter>,
+    includeArchived?: Opt<boolean, Reason.QueryFilter>,
+  ): Promise<IRequestEntry[]> {
     const dirsToScan = this.getDirectoriesToScan(includeArchived);
     const requests = await this.scanDirectories(dirsToScan, status);
 
@@ -97,7 +100,7 @@ export class RequestListHandler extends BaseCommand {
     frontmatter: Record<string, string | boolean | number>,
     status: RequestStatusType,
   ): IRequestEntry {
-    const identityValue = String(frontmatter.identity || frontmatter.agent || DEFAULT_IDENTITY_ID);
+    const identityValue = String(frontmatter.identity_id || DEFAULT_IDENTITY_ID);
     const entry: IRequestEntry & { agent: string } = {
       filename,
       path: filePath,

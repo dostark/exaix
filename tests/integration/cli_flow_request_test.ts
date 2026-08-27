@@ -37,7 +37,7 @@ Deno.test("Integration: IFlow as Flow Request Creation and Metadata", async (t) 
       const content = await Deno.readTextFile(requestPath);
 
       assertStringIncludes(content, "flow: refactoring");
-      assertStringIncludes(content, "identity: mock-agent");
+      assertStringIncludes(content, "identity_id: mock-agent");
       assertStringIncludes(content, "source: test");
       assertStringIncludes(content, "priority: 5");
       assertStringIncludes(content, 'tags: ["data", "processing"]');
@@ -114,7 +114,7 @@ Deno.test("Integration: IFlow as Flow Request Validation", async (t) => {
 
       assertStringIncludes(content, "flow: refactoring");
       assertStringIncludes(content, 'portal: "TestPortal"');
-      assertStringIncludes(content, "identity: mock-agent");
+      assertStringIncludes(content, "identity_id: mock-agent");
     });
   } finally {
     await env.cleanup();

@@ -188,7 +188,7 @@ export class RequestRouter {
   async route(request: RouterRequest): Promise<IRoutingDecision> {
     const { traceId, requestId, frontmatter } = request;
     const flowId = frontmatter.flow;
-    const identityId = frontmatter.identity;
+    const identityId = frontmatter.identity_id;
 
     // Check for conflicting fields
     if (flowId && identityId) {
@@ -276,7 +276,7 @@ export class RequestRouter {
 
     // Log routing decision
     await this.eventLogger.log({
-      action: "request.routing.identity",
+      action: "request.routing.identity_id",
       target: requestId,
       payload: { identityId },
       traceId,

@@ -47,6 +47,8 @@ Deno.test("RequestService.create: creates a request file with correct frontmatte
 
     // Verify the file was actually written
     const content = await Deno.readTextFile(metadata.path!);
+    assertEquals(content.includes("identity_id: default"), true);
+    assertEquals(content.includes("\nidentity: default"), false);
     assertEquals(content.includes("trace_id:"), true);
     assertEquals(content.includes("Build the login page"), true);
   } finally {
@@ -263,7 +265,7 @@ trace_id: test-id
 created: ${new Date().toISOString()}
 status: pending
 priority: extreme
-identity: default
+identity_id: default
 source: cli
 created_by: tester
 subject: Test
@@ -295,7 +297,7 @@ trace_id: test-id
 created: ${new Date().toISOString()}
 status: pending
 priority: normal
-identity: default
+identity_id: default
 source: webhook
 created_by: tester
 subject: Test

@@ -142,7 +142,7 @@ export class RejectedPlanHandler implements IRejectedPlanHandler {
     // Record the identity that produced this rejected draft so it has the same
     // attribution an accepted plan carries (identity_id) — reviewers and the
     // identity e2e can trace the draft back to its persona.
-    const identityLine = args.frontmatter?.identity ? `identity_id: ${args.frontmatter.identity}\n` : "";
+    const identityLine = args.frontmatter?.identity_id ? `identity_id: ${args.frontmatter.identity_id}\n` : "";
     return `---
 trace_id: "${args.traceId ?? "unknown"}"
 request_id: "${args.requestId}"

@@ -2810,7 +2810,7 @@ trace_id: "550e8400-e29b-41d4-a716-446655440000"
 created: 2025-11-28T10:30:00.000Z
 status: pending
 priority: normal
-agent: default
+identity_id: default
 source: cli
 created_by: user@example.com
 tags: [feature, api]
@@ -2826,7 +2826,7 @@ Implement user authentication for the API...
 | Benefit                 | Description                                               |
 | ----------------------- | --------------------------------------------------------- |
 | **Memory Banks search** | Structured metadata enables powerful search and filtering |
-| **CLI commands work**   | CLI can filter/sort by status, priority, agent            |
+| **CLI commands work**   | CLI can filter/sort by status, priority, identity_id      |
 | **Standard format**     | Most markdown tools expect YAML (`---` delimiters)        |
 | **Auto-generated**      | `exactl request` creates proper frontmatter automatically |
 
@@ -2840,7 +2840,7 @@ Implement user authentication for the API...
 | `created`             | datetime | ✓        | `2025-11-28T10:30:00.000Z`                                                  |
 | `status`              | string   | ✓        | `pending`, `processing`, `completed`                                        |
 | `priority`            | string   | ✓        | `low`, `normal`, `high`, `critical`                                         |
-| `agent`               | string   | ✓        | `default`, `senior_coder`, `architect`                                      |
+| `identity_id`         | string   | ✓        | `default`, `senior-coder`, `architect`                                      |
 | `source`              | string   | ✓        | `cli`, `file`, `interactive`                                                |
 | `created_by`          | string   | ✓        | `user@example.com`                                                          |
 | `portal`              | string   |          | `MyProject` (optional project context)                                      |
@@ -2860,7 +2860,7 @@ trace_id: "550e8400-e29b-41d4-a716-446655440000"
 created: 2025-11-28T10:30:00.000Z
 status: pending
 priority: high
-agent: senior-coder
+identity_id: senior-coder
 source: cli
 created_by: user@example.com
 acceptance_criteria:
@@ -2907,7 +2907,7 @@ Use them when you want fewer clarification rounds and more reliable evaluation a
 ```yaml
 # Strings (quotes optional for simple values)
 status: pending
-agent: default
+identity_id: default
 
 # Strings with special characters (quotes required)
 trace_id: "550e8400-e29b-41d4-a716-446655440000"

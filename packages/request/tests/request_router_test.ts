@@ -58,7 +58,7 @@ Deno.test("RequestRouter: routes flow requests to FlowRunner", async () => {
 Deno.test("RequestRouter: routes agent requests to IAgentRunner", async () => {
   const { mockAgentRunner, mockLogger, router } = createRouterTestContext();
 
-  const request = sampleRouterRequest({ frontmatter: { identity: "senior-coder" } });
+  const request = sampleRouterRequest({ frontmatter: { identity_id: "senior-coder" } });
 
   const result = await router.route(request);
 
@@ -66,7 +66,7 @@ Deno.test("RequestRouter: routes agent requests to IAgentRunner", async () => {
   assertEquals(result.identityId, "senior-coder");
   assertEquals(mockAgentRunner.executedAgents.length, 1);
   assertEquals(mockAgentRunner.executedAgents[0].blueprint.identityId, "senior-coder");
-  assertEquals(mockLogger.events[0].action, "request.routing.identity");
+  assertEquals(mockLogger.events[0].action, "request.routing.identity_id");
 });
 
 Deno.test("RequestRouter: routes requests without flow/agent to default agent", async () => {
@@ -101,7 +101,7 @@ Deno.test("RequestRouter: throws error for conflicting flow and agent fields", a
   const { router } = createRouterTestContext();
 
   const request = sampleRouterRequest({
-    frontmatter: { flow: "code-review", identity: "senior-coder" },
+    frontmatter: { flow: "code-review", identity_id: "senior-coder" },
   });
 
   await assertRejects(
@@ -120,7 +120,7 @@ Deno.test("RequestRouter: flow takes priority over agent when both present (shou
   router.route = async function (request: Parameters<typeof router.route>[0]) {
     // Skip the conflicting fields check for this test
     const flowId = request.frontmatter.flow;
-    const identityId = request.frontmatter.identity;
+    const identityId = request.frontmatter.identity_id;
 
     if (flowId) {
       return await router.routeToFlow(flowId, request);
@@ -131,7 +131,7 @@ Deno.test("RequestRouter: flow takes priority over agent when both present (shou
     return await router.routeToDefaultAgent(request);
   };
 
-  const request = sampleRouterRequest({ frontmatter: { flow: "code-review", identity: "senior-coder" } });
+  const request = sampleRouterRequest({ frontmatter: { flow: "code-review", identity_id: "senior-coder" } });
 
   const result = await router.route(request);
 
@@ -159,7 +159,7 @@ Deno.test("RequestRouter: applies routing policy service for explicit identity w
   });
 
   const request = sampleRouterRequest({
-    frontmatter: { identity: "senior-coder", allow_dynamic_routing: true },
+    frontmatter: { identity_id: "senior-coder", allow_dynamic_routing: true },
   });
 
   const result = await router.route(request);
@@ -183,7 +183,7 @@ Deno.test("RequestRouter: logs fallback_used when routing policy service fails",
   });
 
   const request = sampleRouterRequest({
-    frontmatter: { identity: "senior-coder", allow_dynamic_routing: true },
+    frontmatter: { identity_id: "senior-coder", allow_dynamic_routing: true },
   });
 
   const result = await router.route(request);

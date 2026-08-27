@@ -303,7 +303,7 @@ export class RequestProcessor {
 
     traceLogger.info(DomainEventType.RequestProcessing, filePath, {
       flow: frontmatter.flow ?? null,
-      agent: frontmatter.identity ?? null,
+      agent: frontmatter.identity_id ?? null,
       priority: frontmatter.priority ?? null,
     });
 
@@ -359,7 +359,7 @@ export class RequestProcessor {
     const analysis = analysisEnabled
       ? await this.analyzer.analyze(assessedBody, {
         traceId,
-        identityId: frontmatter.identity ?? frontmatter.identity ?? frontmatter.flow,
+        identityId: frontmatter.identity_id ?? frontmatter.flow,
         priority: frontmatter.priority,
         mode: analysisMode,
         memories: memoryContext,
@@ -457,7 +457,7 @@ export class RequestProcessor {
     const { frontmatter, filePath, traceLogger } = args;
 
     const hasFlow = !!frontmatter.flow;
-    const hasAgent = !!frontmatter.identity || !!frontmatter.identity;
+    const hasAgent = !!frontmatter.identity_id;
 
     if (hasFlow && hasAgent) {
       traceLogger.error(DomainEventType.RequestInvalid, filePath, {
@@ -673,7 +673,7 @@ export class RequestProcessor {
       specification,
       memoryContext,
     } = opts;
-    const identityId = frontmatter.identity || frontmatter.identity;
+    const identityId = frontmatter.identity_id;
     const loadedBlueprint = await this.blueprintResolver.resolve(identityId!, traceLogger);
 
     if (!loadedBlueprint) {
@@ -708,7 +708,7 @@ export class RequestProcessor {
       createdAt: new Date(frontmatter.created),
       contextFiles: [],
       contextWarnings: [],
-      identityId: frontmatter.identity || frontmatter.identity,
+      identityId: frontmatter.identity_id,
       model: frontmatter.model,
       portal: frontmatter.portal,
       targetBranch: frontmatter.target_branch,

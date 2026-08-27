@@ -70,7 +70,7 @@ describe("RequestCommands", () => {
       assertStringIncludes(content, `trace_id: "${result.trace_id}"`);
       assertStringIncludes(content, "status: pending");
       assertStringIncludes(content, "priority: normal");
-      assertStringIncludes(content, "identity: default");
+      assertStringIncludes(content, "identity_id: default");
       assertStringIncludes(content, "Implement user authentication");
     });
 
@@ -89,7 +89,7 @@ describe("RequestCommands", () => {
 
       if (!result.path) throw new Error("Path should be defined");
       const content = await Deno.readTextFile(result.path);
-      assertStringIncludes(content, "identity: test_writer");
+      assertStringIncludes(content, "identity_id: test_writer");
     });
 
     it("should accept portal option", async () => {

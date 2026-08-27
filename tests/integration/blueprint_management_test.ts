@@ -202,7 +202,7 @@ Invalid blueprint without identity_id field
       );
 
       const content = await Deno.readTextFile(filePath);
-      assertStringIncludes(content, `identity: ${testAgentId}`);
+      assertStringIncludes(content, `identity_id: ${testAgentId}`);
 
       // Verify request can be processed (blueprint exists and is valid)
       const blueprintPath = join(env.tempDir, "Blueprints", "Identities", `${testAgentId}.md`);

@@ -68,7 +68,7 @@ function makeRequestFile(requestsDir: string, body: string, overrides: {
       `created: "${new Date().toISOString()}"`,
       `status: "${RequestStatus.PENDING}"`,
       `priority: "normal"`,
-      `identity: "${agent}"`,
+      `identity_id: "${agent}"`,
       `source: ${RequestSource.CLI}`,
       `created_by: "test-user"`,
       "---",
