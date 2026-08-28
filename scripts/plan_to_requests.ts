@@ -16,7 +16,7 @@ import { ensureDir } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { type StepManifest, StepManifestSchema } from "@exaix/schemas/step_manifest.ts";
 import { RequestSchema } from "@exaix/schemas/request.ts";
-import { type Opt, Reason } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 
 interface ParsedStep {
   stepNumber: number;
