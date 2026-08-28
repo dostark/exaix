@@ -19,6 +19,7 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { HeadlessSessionLauncher } from "../../apps/daemon/src/headless_session_launcher.ts";
 import { SessionReturnProcessor } from "@exaix/session/session_return_processor.ts";
+import { SessionDelegationResultStore } from "@exaix/session/session_delegation_result_store.ts";
 import { SessionWaitStore } from "@exaix/session/wait/session_wait_store.ts";
 import { SESSION_GATE_DECISIONS, SessionBriefSchema } from "@exaix/schemas/session_delegate.ts";
 import type { SessionGate, SessionTool } from "@exaix/schemas/session_delegate.ts";
@@ -93,6 +94,7 @@ async function runCycle(
   await Deno.writeTextFile(briefPath, JSON.stringify(brief));
 
   const store = new SessionWaitStore(waitDir, { now: () => new Date() });
+  const resultStore = new SessionDelegationResultStore(waitDir);
   const parked = await store.park(traceId, brief.gate, brief.resume_token, brief.deadline);
   assertEquals(parked.status, "pending");
 
@@ -114,7 +116,12 @@ async function runCycle(
   const returnExists = await Deno.stat(returnPath).then(() => true).catch(() => false);
   assertEquals(returnExists, true, `return.json must exist for gate ${gate} (${tool.name})`);
 
-  const processor = new SessionReturnProcessor({ sessionDir, workspaceRoot: sessionDir, waitStore: store });
+  const processor = new SessionReturnProcessor({
+    sessionDir,
+    workspaceRoot: sessionDir,
+    waitStore: store,
+    resultStore,
+  });
   const outcome = await processor.processReturn(traceId);
   const finalState = await store.get(traceId);
 

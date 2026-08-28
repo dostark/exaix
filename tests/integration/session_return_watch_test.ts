@@ -13,6 +13,7 @@ import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adap
 import { SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
 import { SessionWaitStore } from "@exaix/session/wait/session_wait_store.ts";
 import { SessionReturnProcessor } from "@exaix/session/session_return_processor.ts";
+import { SessionDelegationResultStore } from "@exaix/session/session_delegation_result_store.ts";
 import type { SessionBrief } from "@exaix/schemas/session_delegate.ts";
 
 const FIXED_NOW = new Date("2026-06-11T00:00:00.000Z");
@@ -31,12 +32,18 @@ async function makeRig(): Promise<ITestRig> {
   const sessionDir = await Deno.makeTempDir();
   const waitDir = await Deno.makeTempDir();
   const store = new SessionWaitStore(waitDir, fixedClock);
+  const resultStore = new SessionDelegationResultStore(waitDir, fixedClock.now);
   const service = new SessionDelegateService({
     registry: createDefaultSessionAdapterRegistry(),
     clock: fixedClock,
     sessionDir,
   });
-  const processor = new SessionReturnProcessor({ sessionDir, workspaceRoot: sessionDir, waitStore: store });
+  const processor = new SessionReturnProcessor({
+    sessionDir,
+    workspaceRoot: sessionDir,
+    waitStore: store,
+    resultStore,
+  });
   return {
     sessionDir,
     waitDir,

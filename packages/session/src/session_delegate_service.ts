@@ -139,6 +139,9 @@ export class SessionDelegateService implements ISessionDelegateService {
 
     const brief = SessionBriefSchema.parse({
       trace_id: input.traceId,
+      parent_trace_id: input.parentTraceId,
+      parent_step_id: input.parentStepId,
+      sequence: input.sequence,
       gate: input.gate,
       tool: input.tool,
       objective: input.objective,

@@ -83,6 +83,26 @@ Deno.test("[prepare_brief] writes a schema-valid brief.json with correct scope/b
   }
 });
 
+Deno.test("[prepare_brief] persists optional parent lineage without changing legacy briefs", async () => {
+  const dir = await Deno.makeTempDir();
+  try {
+    const service = makeService(dir);
+    const legacy = await service.prepareBrief(baseInput());
+    const linked = await service.prepareBrief(baseInput({
+      traceId: "00000000-0000-4000-8000-000000000174",
+      parentTraceId: "00000000-0000-4000-8000-000000000173",
+      parentStepId: "step-1",
+      sequence: 1,
+    }));
+    assertEquals(legacy.parent_trace_id, undefined);
+    assertEquals(linked.parent_trace_id, "00000000-0000-4000-8000-000000000173");
+    assertEquals(linked.parent_step_id, "step-1");
+    assertEquals(linked.sequence, 1);
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
 Deno.test("[prepare_brief] deadline is deterministic for a fixed clock", async () => {
   const dir = await Deno.makeTempDir();
   try {

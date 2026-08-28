@@ -35,6 +35,9 @@ export interface ISessionPathSafety {
 /** Input to SessionDelegateService.prepareBrief(). */
 export interface IPrepareBriefInput {
   traceId: string;
+  parentTraceId?: string;
+  parentStepId?: string;
+  sequence?: number;
   gate: SessionGate;
   tool: SessionTool;
   objective: string;

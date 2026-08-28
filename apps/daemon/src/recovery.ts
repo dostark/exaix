@@ -16,11 +16,13 @@ import { DomainEventType } from "@exaix/core/events";
 import { CRASH_RECOVERY_LOOKBACK_MS } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { IEventLogger } from "@exaix/core/logger";
+import type { ISessionBriefReader } from "@exaix/session/session_brief_reader.ts";
 
 export interface IRecoveryDeps {
   db: IDatabaseService;
   logger: IEventLogger;
   workspaceRoot: string;
+  briefReader?: ISessionBriefReader;
 }
 
 /** Terminal events that mark a delegation as complete (not orphaned). */
@@ -58,13 +60,18 @@ export async function recoverOrphanedDelegations(deps: IRecoveryDeps): Promise<n
       await ensureDir(requestsDir);
       const requestPath = join(requestsDir, `${traceId}_crash_recovery.md`);
 
-      // Reconstruct brief content from the launched event payload
+      // Prefer the validated brief artifact. Legacy journal rows may predate the
+      // reader wiring, so their redaction-free payload remains a compatibility fallback.
       let briefContent = "The original delegation brief is not available.";
       try {
-        const payload = JSON.parse(record.payload);
-        briefContent = payload.brief ?? payload.content ?? briefContent;
+        if (deps.briefReader) {
+          briefContent = (await deps.briefReader.read(traceId)).objective;
+        } else {
+          const payload = JSON.parse(record.payload);
+          briefContent = payload.brief ?? payload.content ?? briefContent;
+        }
       } catch {
-        // Payload is not valid JSON — use default
+        // Missing/invalid legacy recovery input uses the non-sensitive default.
       }
 
       const body = [
@@ -87,7 +94,7 @@ export async function recoverOrphanedDelegations(deps: IRecoveryDeps): Promise<n
         traceId,
         payload: {
           trace_id: traceId,
-          request_path: requestPath,
+          request_path: `Workspace/Requests/${traceId}_crash_recovery.md`,
           recovered_count: recovered.length + 1,
         },
       });
@@ -96,9 +103,9 @@ export async function recoverOrphanedDelegations(deps: IRecoveryDeps): Promise<n
     }
 
     return recovered.length;
-  } catch (err) {
+  } catch {
     deps.logger.info(DomainEventType.SessionDelegateCrashRecovered, "crash-recovery", {
-      error: err instanceof Error ? err.message : String(err),
+      error: "crash recovery failed",
     });
     return 0;
   }

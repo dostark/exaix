@@ -10,6 +10,8 @@ import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import type { SessionBrief, SessionReturn } from "@exaix/schemas/session_delegate.ts";
+import { SessionDelegationOutcomeSchema } from "@exaix/session/session_delegation.ts";
+import { SessionBriefReader } from "@exaix/session/session_brief_reader.ts";
 import { SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
 import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adapter_registry.ts";
 import { ReviewStatus } from "@exaix/core/status";
@@ -92,7 +94,7 @@ async function makeRig(gate: SessionBrief["gate"]): Promise<IRig> {
   const logger = makeMockLogger();
 
   const handler = createOnReconciledHandler({
-    sessionDir,
+    briefReader: new SessionBriefReader(sessionDir),
     workspaceRoot,
     reviewRegistry: {
       getByTrace: (tid: string) => {
@@ -136,11 +138,25 @@ async function dropReturn(rig: IRig, decision: SessionReturn["decision"], summar
   );
 }
 
+function outcome(rig: IRig, decision: SessionReturn["decision"], summary = "ok") {
+  return SessionDelegationOutcomeSchema.parse({
+    delegationTraceId: rig.traceId,
+    parentTraceId: rig.traceId,
+    parentStepId: "legacy",
+    sequence: 1,
+    status: decision === "abandoned" ? "abandoned" : "completed",
+    decision,
+    summary,
+    pathsTouched: [],
+    tokenStats: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
+  });
+}
+
 Deno.test("[on_reconciled_dispatcher] refinement gate writes clarification to Clarifications/", async () => {
   const rig = await makeRig("refinement");
   try {
     await dropReturn(rig, "enriched", "Clarified the requirements.");
-    await rig.handler(rig.traceId, "enriched");
+    await rig.handler(outcome(rig, "enriched", "Clarified the requirements."));
 
     const clarPath = join(rig.workspaceRoot, "Clarifications", `${rig.traceId}.json`);
     const content = await Deno.readTextFile(clarPath);
@@ -156,7 +172,7 @@ Deno.test("[on_reconciled_dispatcher] plan_review gate writes amendment decision
   const rig = await makeRig("plan_review");
   try {
     await dropReturn(rig, "approved", "Plan looks correct.");
-    await rig.handler(rig.traceId, "approved");
+    await rig.handler(outcome(rig, "approved", "Plan looks correct."));
 
     const amendPath = join(rig.workspaceRoot, "Amendments", `${rig.traceId}.json`);
     const content = await Deno.readTextFile(amendPath);
@@ -173,7 +189,7 @@ Deno.test("[on_reconciled_dispatcher] plan_review rejected maps to rejected amen
   const rig = await makeRig("plan_review");
   try {
     await dropReturn(rig, "rejected", "Plan is unsafe.");
-    await rig.handler(rig.traceId, "rejected");
+    await rig.handler(outcome(rig, "rejected", "Plan is unsafe."));
 
     const amendPath = join(rig.workspaceRoot, "Amendments", `${rig.traceId}.json`);
     const content = await Deno.readTextFile(amendPath);
@@ -191,7 +207,7 @@ Deno.test("[on_reconciled_dispatcher] review gate calls reviewRegistry.updateSta
     rig.mockReview.reviews.push({ id: "review-01", trace_id: rig.traceId });
 
     await dropReturn(rig, "approved", "LGTM");
-    await rig.handler(rig.traceId, "approved");
+    await rig.handler(outcome(rig, "approved", "LGTM"));
 
     assertEquals(rig.mockReview.updated.length, 1);
     assertEquals(rig.mockReview.updated[0].id, "review-01");
@@ -207,7 +223,7 @@ Deno.test("[on_reconciled_dispatcher] review gate logs not-found when no review 
   try {
     // No review seeded — should log but not crash
     await dropReturn(rig, "rejected", "Does not meet standards.");
-    await rig.handler(rig.traceId, "rejected");
+    await rig.handler(outcome(rig, "rejected", "Does not meet standards."));
 
     assertEquals(rig.mockReview.updated.length, 0);
     const found = rig.logger.logs.some((l) =>
@@ -222,8 +238,8 @@ Deno.test("[on_reconciled_dispatcher] review gate logs not-found when no review 
 Deno.test("[on_reconciled_dispatcher] missing brief.json logs error without crashing", async () => {
   const rig = await makeRig("plan_review");
   try {
-    // Don't write return.json — callback will fail gracefully
-    await rig.handler(rig.traceId, "approved");
+    await Deno.remove(join(rig.sessionDir, rig.traceId, "brief.json"));
+    await rig.handler(outcome(rig, "approved"));
 
     const found = rig.logger.logs.some((l) =>
       l.event === DomainEventType.SessionDelegateReconciled && l.payload?.error !== undefined
@@ -238,7 +254,7 @@ Deno.test("[on_reconciled_dispatcher] refinement abandoned marks clarification u
   const rig = await makeRig("refinement");
   try {
     await dropReturn(rig, "abandoned", "Gave up.");
-    await rig.handler(rig.traceId, "abandoned");
+    await rig.handler(outcome(rig, "abandoned", "Gave up."));
 
     const clarPath = join(rig.workspaceRoot, "Clarifications", `${rig.traceId}.json`);
     const content = await Deno.readTextFile(clarPath);
@@ -259,13 +275,30 @@ Deno.test("[on_reconciled_dispatcher][security] session.delegate.reconciled is l
   const rig = await makeRig("plan_review");
   try {
     await dropReturn(rig, "approved", "Plan looks correct.");
-    await rig.handler(rig.traceId, "approved");
+    await rig.handler(outcome(rig, "approved", "Plan looks correct."));
 
     const reconciled = rig.logger.logs.find((l) => l.event === DomainEventType.SessionDelegateReconciled);
     assertExists(reconciled);
     assertEquals(reconciled?.traceId, rig.traceId);
     // target keeps carrying the traceId too — additive fix, not a swap.
     assertEquals(reconciled?.target, rig.traceId);
+  } finally {
+    await rig.cleanup();
+  }
+});
+
+Deno.test("[on_reconciled_dispatcher] consumes the typed outcome after return.json is removed", async () => {
+  const rig = await makeRig("plan_review");
+  try {
+    await dropReturn(rig, "approved", "Stored before cleanup.");
+    await Deno.remove(join(rig.sessionDir, rig.traceId, "return.json"));
+
+    await rig.handler(outcome(rig, "approved", "Stored before cleanup."));
+
+    const content = await Deno.readTextFile(
+      join(rig.workspaceRoot, "Amendments", `${rig.traceId}.json`),
+    );
+    assertEquals(JSON.parse(content).rationale, "Stored before cleanup.");
   } finally {
     await rig.cleanup();
   }
