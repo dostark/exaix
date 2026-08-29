@@ -266,6 +266,13 @@ export const DomainEventType = {
   // Phase 121: crash recovery for orphaned delegations
   SessionDelegateCrashRecovered: "session.delegate.crash_recovered",
 
+  // Phase 174 Step 3: session_delegate_cycle lifecycle (SessionDelegateCycleStepHandler).
+  // cycle_resumed is added in Step 4 alongside the durable checkpoint it reports on.
+  SessionDelegateCycleStarted: "session.delegate.cycle_started",
+  SessionDelegateCycleStepCompleted: "session.delegate.cycle_step_completed",
+  SessionDelegateCycleStepRejected: "session.delegate.cycle_step_rejected",
+  SessionDelegateCycleCompleted: "session.delegate.cycle_completed",
+
   // Cost tracking events
   LlmUsageRecorded: "llm.usage",
   CostPricingLookupSet: "cost.pricing_lookup.set",

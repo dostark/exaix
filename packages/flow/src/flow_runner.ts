@@ -6,7 +6,13 @@
  * @related-files [packages/flow/mod.ts, packages/request/src/router.ts]
  */
 
-import type { IFlow, IFlowNamespaceWrite, IFlowStep, IGateEvaluate } from "@exaix/schemas/flow.ts";
+import type {
+  IFlow,
+  IFlowNamespaceWrite,
+  IFlowStep,
+  IGateEvaluate,
+  ISessionDelegateCycleRejectionReason,
+} from "@exaix/schemas/flow.ts";
 import { encodeHex } from "@std/encoding/hex";
 import { FlowRuntimeValidator } from "./flow_runtime_validator.ts";
 import { ParallelGroupMergeService } from "./parallel_group_merge_service.ts";
@@ -591,6 +597,33 @@ export interface IFlowEventPayloadMap {
     traceId: string;
     stepIds: string[];
   };
+  [DomainEventType.SessionDelegateCycleStarted]: {
+    flowRunId: string;
+    stepId: string;
+    traceId: string;
+    planStepCount: number;
+  };
+  [DomainEventType.SessionDelegateCycleStepCompleted]: {
+    flowRunId: string;
+    stepId: string;
+    traceId: string;
+    delegationTraceId: string;
+    sequence: number;
+  };
+  [DomainEventType.SessionDelegateCycleStepRejected]: {
+    flowRunId: string;
+    stepId: string;
+    traceId: string;
+    /** Absent for a plan-level rejection (too large / too many steps / parse failure). */
+    sequence?: number;
+    reason: ISessionDelegateCycleRejectionReason;
+  };
+  [DomainEventType.SessionDelegateCycleCompleted]: {
+    flowRunId: string;
+    stepId: string;
+    traceId: string;
+    stepCount: number;
+  };
 }
 
 export type IFlowEventPayload<TEvent extends string> = TEvent extends keyof IFlowEventPayloadMap
@@ -838,6 +871,7 @@ export class FlowRunner implements IFlowRunner {
           coordinator: options.sessionDelegationCoordinator,
           planContextResolver: options.planContextResolver,
           gateEvaluator: this.gateEvaluator!,
+          eventLogger: this.eventLogger,
         }),
       );
     }

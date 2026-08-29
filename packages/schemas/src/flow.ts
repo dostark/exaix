@@ -253,6 +253,36 @@ export const SessionDelegateCycleConfigSchema = z.object({
 
 export type ISessionDelegateCycleConfig = z.infer<typeof SessionDelegateCycleConfigSchema>;
 
+/**
+ * Categorical halt reason for a rejected cycle step (Phase 174 Step 3). Deliberately
+ * excludes free-text error messages, review feedback, or paths — the
+ * `session.delegate.cycle_step_rejected` event journals this reason, and raw failure
+ * text could carry prompt content or host paths.
+ */
+export const SessionDelegateCycleRejectionReasonSchema = z.enum([
+  "plan_too_large",
+  "too_many_steps",
+  "plan_parse_failed",
+  "non_completed_status",
+  "empty_paths_touched",
+  "review_failed",
+]);
+
+export type ISessionDelegateCycleRejectionReason = z.infer<typeof SessionDelegateCycleRejectionReasonSchema>;
+
+/** Validated shape of `IAgentExecutionResult.raw` for a completed session_delegate_cycle step. */
+export const SessionDelegateCycleAggregateSchema = z.object({
+  stepCount: z.number().int().nonnegative(),
+  touchedPaths: z.array(z.string()),
+  steps: z.array(z.object({
+    sequence: z.number().int().positive(),
+    delegationTraceId: z.string().uuid(),
+    summary: z.string(),
+  })),
+});
+
+export type ISessionDelegateCycleAggregate = z.infer<typeof SessionDelegateCycleAggregateSchema>;
+
 export const FlowStepSchema = FlowStepSchemaBase.extend({
   /** Config for `type: session_delegate_cycle` steps only. */
   delegateCycle: SessionDelegateCycleConfigSchema.optional(),

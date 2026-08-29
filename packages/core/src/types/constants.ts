@@ -1881,6 +1881,28 @@ export const DEFAULT_FLOW_MAX_RETRIES: number = configurable({
   swap: SwapClass.RESTART,
 });
 
+/** Maximum bytes of a resolved PlanContext document a session_delegate_cycle step will parse. */
+export const DEFAULT_SESSION_DELEGATE_CYCLE_MAX_PLAN_BYTES: number = configurable({
+  key: "flow.session_delegate_cycle_max_plan_bytes",
+  default: 200_000,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum PlanContext document size in bytes a session_delegate_cycle step will parse",
+  min: 1_000,
+  max: 5_000_000,
+  swap: SwapClass.RESTART,
+});
+
+/** Maximum number of plan steps a session_delegate_cycle step will delegate in one run. */
+export const DEFAULT_SESSION_DELEGATE_CYCLE_MAX_STEPS: number = configurable({
+  key: "flow.session_delegate_cycle_max_steps",
+  default: 50,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum number of plan steps a session_delegate_cycle step will delegate in one run",
+  min: 1,
+  max: 500,
+  swap: SwapClass.RESTART,
+});
+
 /** Schema version for flow checkpoints. Bump on breaking checkpoint shape changes. */
 export const FLOW_CHECKPOINT_SCHEMA_VERSION = "1";
 
