@@ -22,11 +22,11 @@ export interface ISessionDelegateCycleStore {
 }
 
 /** A checkpoint's `inFlight.state` is never "failed": that maps to checkpoint.status instead. */
-export const SessionDelegateCycleInFlightStateSchema = SessionDelegateCycleClaimStateSchema.exclude(["failed"]);
+const SessionDelegateCycleInFlightStateSchema = SessionDelegateCycleClaimStateSchema.exclude(["failed"]);
 
 export const SessionDelegateCycleCheckpointStatusSchema = z.enum(["running", "completed", "failed"]);
 
-export const SessionDelegateCycleCheckpointSchema = z.object({
+const SessionDelegateCycleCheckpointSchema = z.object({
   parentTraceId: z.string().uuid(),
   lastFlowRunId: z.string().min(1),
   flowStepId: z.string().min(1),
