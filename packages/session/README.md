@@ -41,6 +41,30 @@ contract; runtime wiring (daemon watcher, gate hooks, CLI/TUI) lives in `apps/`.
   `assertBinaryAllowed`).
 - `cost_mapping.ts` / `config_resolver.ts` / `event_payload.ts` — cost record
   (`session:<tool>`, USD sentinel), config precedence, typed event payload.
+- `session_delegation.ts` — `ISessionDelegationCoordinator`/`ISessionDelegationRequest`, the
+  typed entry point `@exaix/flow`'s `session_delegate_cycle` step handler drives once per
+  hardened-plan step; every request carries a required `identityId` (see below).
+- `session_delegate_cycle_claim_store.ts` (Phase 174) — `SessionDelegateCycleClaimStore`, a
+  SQLite-backed launch source of truth. `acquire()` inserts under a unique
+  `(parentTraceId, parentStepId, sequence, planDigest)` key and returns the existing row on
+  conflict rather than relaunching; `transition()` drives `claimed → launched → returned →
+  reviewed | failed`.
+- `session_delegate_cycle_store.ts` (Phase 174) — `SessionDelegateCycleStore`, an atomic
+  temp-write/rename JSON checkpoint under `Memory/Execution/{parentTraceId}/
+  session_delegate_cycles/{flowStepId}.json` mirroring `completedSteps`/`inFlight`/`status` for
+  cheap resume without re-scanning claims. Never the authority on its own — the claim store's
+  unique key is; the checkpoint is a resume convenience.
+
+### Identity Threading (Phase 174)
+
+Every `ISessionDelegationRequest` and `SessionBrief` now carries a **required** `identityId` /
+`identity_id` — the blueprint identity actually delegating the session, sourced from the flow
+step's own `identity:` field (`PlanExecutor`/`SessionDelegateCycleStepHandler` →
+`SessionDelegationCoordinator` → `SessionDelegateService` → `opencode_permission_generator.ts`).
+There is no default and no fallback constant: `generateOpencodePermissionConfig(...)` keys the
+generated OpenCode agent config on whichever `identityId` it is given, and
+`resolveHardenedLaunch()`'s `agentNameMismatch` check compares the generated key against that
+same value — so the check is keyed on the real delegating identity, not a hardcoded name.
 
 The security invariant is mechanical: only files and the typed `return.json`
 cross back into the core pipeline — never session or conversation state.

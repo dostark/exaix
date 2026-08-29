@@ -360,6 +360,85 @@ EXA_SESSION_DELEGATE_ENABLED=true \
 deno task build:mock-tool   # compiles .cache/mock_session_tool_bin
 ```
 
+## Session Delegate Cycle
+
+`type: session_delegate_cycle` (Phase 174) is a distinct `IFlowStepHandler`
+(`SessionDelegateCycleStepHandler`) that drives **N** of the single-shot handoffs above in
+strict sequence — one hardened-plan step at a time, each reviewed before the next starts —
+instead of handing one whole step to an unsupervised `cli_delegate` session. It is the
+production mechanism behind `Blueprints/Flows/dogfood-meta-workflow.flow.yaml:next-steps`.
+
+### Configuration
+
+```yaml
+steps:
+  - id: next-steps
+    type: session_delegate_cycle
+    identity: dogfood-coder # the identity_id threaded through to the delegate's hardened launch
+    input:
+      source: request
+      transform: passthrough # request must carry plan_context_ref; no static plan path
+    delegateCycle:
+      requireChangedPaths: true # non-empty paths_touched required (currently always true)
+      review:
+        identity: quality-judge
+        criteria: [code_correctness, has_tests, task_fulfillment]
+        threshold: 0.8
+        onFail: halt # halt | retry
+        maxRetries: 3
+        includeRequestCriteria: false
+```
+
+The plan itself is never embedded in the flow YAML or request prose: `plan_context_ref` (set by
+`RequestProcessor`/`plan_context_resolver.ts`) names a path relative to the request's configured
+portal root, and both the portal root and the reference are validated before the cycle's first
+launch — request text or flow YAML cannot substitute a different plan or escape the portal.
+
+### Result / Status Mapping
+
+Each sequence resolves to one of the `ISessionDelegateCycleRejectionReason` values on failure
+(`plan_too_large`, `too_many_steps`, `plan_parse_failed`, `non_completed_status`,
+`empty_paths_touched`, `review_failed`, `checkpoint_mismatch`) or advances on success — a
+successful delegation whose `IGateEvaluator` review also passes. The reason is deliberately
+categorical, never free text: it is safe to journal without risk of leaking prompt content or
+host paths. A checkpoint's `status` field (`SessionDelegateCycleCheckpointStatusSchema`) tracks
+`running` / `completed` / `failed` across the whole cycle, independent of any single sequence's
+outcome.
+
+### Restart Behavior
+
+A SQLite-backed claim store (`ISessionDelegateCycleClaimStore`) is the launch source of truth: a
+unique `(parentTraceId, parentStepId, sequence, planDigest)` key means at most one durable
+launch exists per idempotency tuple, across crash points and duplicate handler/watcher entry. An
+atomic JSON checkpoint (`ISessionDelegateCycleStore`, one file per `{parentTraceId}/{flowStepId}`
+under `Memory/Execution/`) mirrors `completedSteps` and the current `inFlight` step for cheap
+resume without re-scanning claims. On restart the handler:
+
+- **Resumes** a matching `running` checkpoint (`session.delegate.cycle_resumed`), continuing from
+  the first incomplete sequence.
+- **Replays** an already-`completed` checkpoint idempotently — zero relaunches.
+- **Rejects** (`checkpoint_mismatch`) a checkpoint whose identity or `planDigest` no longer
+  matches the current attempt, or one already terminally `failed` — never silently overwriting
+  that evidence.
+
+### Failure Semantics
+
+Any failure class — a hollow/rejected delegate return, a failed review, a plan-parse error, an
+oversized or too-long plan, or a checkpoint mismatch — halts the cycle before any further
+coordinator call. There is no partial credit and no silent re-plan: a halted cycle's checkpoint
+remains immutable evidence of what actually completed, and the flow step fails through the
+normal flow failure path rather than continuing with a different or skipped step.
+
+**`onFail`/`maxRetries` today:** `review.onFail`/`review.maxRetries` are part of the shared
+`GateEvaluateSchema` other gate-driven step types also use, but
+`SessionDelegateCycleStepHandler` calls `IGateEvaluator.evaluate(...)` with a hardcoded
+`previousAttempts` of `0` and halts unconditionally on any failed review — it does not inspect
+`onFail`/read `maxRetries`/re-attempt the same sequence. `onFail: retry` is therefore currently
+a no-op for `session_delegate_cycle`; the shipped catalog config
+(`dogfood-meta-workflow.flow.yaml`) sets `onFail: halt` and observes exactly the halt behavior
+described above. Treat this as the current, verified behavior — not a documented retry
+capability that happens to be unused.
+
 ## See Also
 
 - [@exaix/session](../../packages/session/) — Session-delegation handoff contract
