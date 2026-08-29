@@ -14,6 +14,7 @@ import { deriveCodexSandboxFlags } from "@exaix/session/codex_sandbox_flags.ts";
 function makeBrief(gate: SessionGate): SessionBrief {
   return SessionBriefSchema.parse({
     trace_id: "00000000-0000-4000-8000-000000000167",
+    identity_id: "test-identity",
     gate,
     tool: "codex",
     objective: "Apply the requested change",

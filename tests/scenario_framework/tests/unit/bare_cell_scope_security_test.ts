@@ -14,10 +14,14 @@
 
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
-import { DOGFOOD_DEVELOPER_IDENTITY_ID, type Opt, type Reason } from "@exaix/core/types";
+import type { Opt, Reason } from "@exaix/core/types";
 import { buildOpencodePermissionConfig } from "@exaix/session";
 import { OpencodeConfigSchema } from "@exaix/schemas/opencode_config.ts";
-import { type ISweTaskTemplateOptions, renderSweTaskBareTemplate } from "../../runner/scenario_templates.ts";
+import {
+  BARE_DELEGATE_AGENT_ID,
+  type ISweTaskTemplateOptions,
+  renderSweTaskBareTemplate,
+} from "../../runner/scenario_templates.ts";
 import { BARE_DELEGATE_STEP_ID, expandMatrix, MatrixSchema } from "../../runner/matrix_expander.ts";
 import { type IScenarioStep, ScenarioStepType } from "../../schema/step_schema.ts";
 
@@ -82,8 +86,8 @@ Deno.test("[security] the staged opencode config denies external-directory reads
   assert(jsonMatch, "config JSON must be embedded in the staging command");
   const config = OpencodeConfigSchema.parse(JSON.parse(jsonMatch[1]));
 
-  const agent = config.agent[DOGFOOD_DEVELOPER_IDENTITY_ID];
-  assertExists(agent, "config must carry the dogfood identity's permission block");
+  const agent = config.agent[BARE_DELEGATE_AGENT_ID];
+  assertExists(agent, "config must carry the bare-delegate identity's permission block");
   assertEquals(agent.external_directory["**"], "deny", "external directory reads must be denied");
   assertEquals(agent.edit["*"], "deny", "edits outside the worktree must be denied");
   assertEquals(agent.edit["**"], "allow", "edits under the worktree must be allowed");
@@ -98,7 +102,7 @@ Deno.test("[security] the staged config matches the shared permission builder (d
   const jsonMatch = arg.match(/'(\{.*\})'/);
   assert(jsonMatch);
 
-  const expected = buildOpencodePermissionConfig(["**"]);
+  const expected = buildOpencodePermissionConfig(["**"], BARE_DELEGATE_AGENT_ID);
   assertEquals(JSON.parse(jsonMatch[1]), expected, "bare config must be byte-identical to the shared builder");
 });
 

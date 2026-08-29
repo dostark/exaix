@@ -108,6 +108,7 @@ export interface IExecutionLoopConfig {
     traceId: string,
     step: { number: number; title: string; content: string; successCriteria?: string[] },
     worktreePath: string,
+    identityId: string,
   ) => Promise<string>;
 
   /** Factory for creating per-execution IGitService instances. Required if portal/worktree execution is used. */
@@ -191,6 +192,7 @@ export class ExecutionLoop {
     traceId: string,
     step: { number: number; title: string; content: string; successCriteria?: string[] },
     worktreePath: string,
+    identityId: string,
   ) => Promise<string>;
   private gitServiceFactory?: IGitServiceFactory;
   private toolRegistryFactory?: IToolRegistryFactory;

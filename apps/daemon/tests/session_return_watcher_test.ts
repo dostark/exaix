@@ -80,6 +80,7 @@ async function makeRig(): Promise<IRig> {
 async function setup(rig: IRig, gate: SessionBrief["gate"], permitted: string[]): Promise<SessionBrief> {
   const brief = await rig.service.prepareBrief({
     traceId: crypto.randomUUID(),
+    identityId: "test-identity",
     gate,
     tool: "claude-code",
     objective: "Do the work.",
@@ -275,6 +276,7 @@ Deno.test("[session_return_watcher][Tier A] reconciled event persists delegation
       parentTraceId,
       parentStepId: "7",
       sequence: 7,
+      identityId: "test-identity",
       gate: "code_changes",
       tool: "codex",
       objective: "Persist lineage.",

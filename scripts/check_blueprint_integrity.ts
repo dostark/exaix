@@ -14,8 +14,9 @@
  *     2. dangling-skill    — every identity `default_skills` entry resolves to a
  *        `Blueprints/Skills/<id>.skill.md` file.
  *     3. orphan-identity   — every identity is referenced by >=1 flow. System
- *        identities (`default`, or any with a `mock:` model) are exempt: they are
- *        invoked directly (global fallback / CI fixture), not via flows.
+ *        identities (`default`, `dogfood-developer`, or any with a `mock:` model) are
+ *        exempt: they are invoked directly (global fallback / CI fixture / CLI
+ *        `--identity`), not via flows.
  *     4. orphan-skill      — every skill is referenced by >=1 identity's
  *        default_skills.
  * @architectural-layer Script
@@ -49,7 +50,7 @@ const TRIGGER_MATCHED_SKILLS: string[] = [
 ];
 
 /** Identities exempt from the orphan-identity rule (invoked directly, not via flows). */
-const EXEMPT_IDENTITY_IDS: ReadonlySet<string> = new Set(["default"]);
+const EXEMPT_IDENTITY_IDS: ReadonlySet<string> = new Set(["default", "dogfood-developer"]);
 
 interface IIdentityRecord {
   id: string;

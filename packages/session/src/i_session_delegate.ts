@@ -38,6 +38,8 @@ export interface IPrepareBriefInput {
   parentTraceId?: string;
   parentStepId?: string;
   sequence?: number;
+  /** The blueprint identity_id actually delegating this session. */
+  identityId: string;
   gate: SessionGate;
   tool: SessionTool;
   objective: string;
@@ -63,7 +65,7 @@ export interface IPrepareBriefInput {
 /** Result of a hardened-launch resolution (Phase 128 R3 Step 5). */
 export interface IHardenedLaunchResult {
   launch: ISessionLaunch;
-  /** If true, the generated agent.<name> key mismatches the delegate identity. */
+  /** If true, the generated agent.<identity_id> key mismatches brief.identity_id. */
   agentNameMismatch: boolean;
   /**
    * Warning from the version probe when the delegate binary is below the

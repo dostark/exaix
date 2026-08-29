@@ -9,7 +9,7 @@
 import { assertEquals } from "@std/assert";
 import { FlowLoader } from "@exaix/flow";
 import { FlowValidatorImpl } from "@exaix/flow";
-import { FlowStepExecutionMode } from "@exaix/core";
+import { FlowStepExecutionMode, FlowStepType } from "@exaix/core";
 import type { IFlowStep } from "@exaix/schemas/flow.ts";
 
 const FLOWS_DIR = "./Blueprints/Flows";
@@ -22,7 +22,7 @@ const NON_CATALOG_FIXTURES = new Set([
   "strategy-routing-smoke.flow.yaml",
 ]);
 
-type Decision = "react" | "cli_delegate" | "no-strategy" | "n/a-dynamic";
+type Decision = "react" | "cli_delegate" | "no-strategy" | "n/a-dynamic" | "session_delegate_cycle";
 
 /** Mirrors the "Flow catalog strategy audit table" in phase-159-flow-step-execution-strategy.md Step 7. */
 const AUDIT_TABLE: Record<string, Record<string, Decision>> = {
@@ -73,7 +73,7 @@ const AUDIT_TABLE: Record<string, Record<string, Decision>> = {
     "compile-documentation": "no-strategy",
   },
   "dogfood-loop": { "implement": "cli_delegate", "review": "react" },
-  "dogfood-meta-workflow": { "pre-gap": "react", "next-steps": "cli_delegate", "post-gap": "react" },
+  "dogfood-meta-workflow": { "pre-gap": "react", "next-steps": "session_delegate_cycle", "post-gap": "react" },
   "feature-development": {
     "analyze-requirements": "cli_delegate",
     "design-architecture": "cli_delegate",
@@ -155,6 +155,7 @@ async function listCatalogFlowIds(): Promise<string[]> {
 }
 
 function actualDecision(step: IFlowStep): Decision {
+  if (step.type === FlowStepType.SESSION_DELEGATE_CYCLE) return "session_delegate_cycle";
   if (step.execution_mode === FlowStepExecutionMode.DYNAMIC) return "n/a-dynamic";
   if (step.strategy === "react") return "react";
   if (step.strategy === "cli_delegate") return "cli_delegate";
@@ -196,17 +197,24 @@ Deno.test("Flow strategy audit: every catalog step has an explicit, recorded dec
   assertEquals(totalSteps, 96, `expected 96 steps across the 17-flow catalog, found ${totalSteps}`);
 });
 
-Deno.test("Flow strategy audit: audit table totals match the recorded 22/15/1/58 split", () => {
-  const counts: Record<Decision, number> = { "react": 0, "cli_delegate": 0, "no-strategy": 0, "n/a-dynamic": 0 };
+Deno.test("Flow strategy audit: audit table totals match the recorded 22/14/1/58/1 split", () => {
+  const counts: Record<Decision, number> = {
+    "react": 0,
+    "cli_delegate": 0,
+    "no-strategy": 0,
+    "n/a-dynamic": 0,
+    "session_delegate_cycle": 0,
+  };
   for (const flowTable of Object.values(AUDIT_TABLE)) {
     for (const decision of Object.values(flowTable)) {
       counts[decision]++;
     }
   }
   assertEquals(counts["react"], 22);
-  assertEquals(counts["cli_delegate"], 15);
+  assertEquals(counts["cli_delegate"], 14);
   assertEquals(counts["n/a-dynamic"], 1);
   assertEquals(counts["no-strategy"], 58);
+  assertEquals(counts["session_delegate_cycle"], 1);
 });
 
 Deno.test("Flow strategy audit: every catalog flow still validates after the strategy rollout", async () => {

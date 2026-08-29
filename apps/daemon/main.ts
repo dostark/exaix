@@ -53,7 +53,15 @@ import { EventLogger, EventLoggerStructuredOutput } from "@exaix/core/logger";
 import { AgentRunner, ExecutionLoop } from "@exaix/execution";
 import { initializeHealthChecks } from "@exaix/core/health";
 import { buildMilestoneEmitterFromConfig } from "@exaix/core/observability";
-import { AgentOrchestratorAdapter, FlowLoader, FlowRunner, FlowTraceStore, PlanContextResolver } from "@exaix/flow";
+import {
+  AgentOrchestratorAdapter,
+  createJudgeEvaluator,
+  FlowLoader,
+  FlowRunner,
+  FlowTraceStore,
+  GateEvaluator,
+  PlanContextResolver,
+} from "@exaix/flow";
 import {
   initializeMemoryAutoApprovalMaintenance,
   MemoryAutoApprovalService,
@@ -79,6 +87,7 @@ import type { IPortalKnowledgeConfig, PortalAnalysisMode } from "@exaix/core/typ
 import { createConfigReloadHandler, createDbWatcherHandler, getMaxOverrideId } from "@exaix/core/config";
 import { GracefulShutdown } from "./src/graceful_shutdown.ts";
 import { createFlowEventLogger } from "./src/flow_event_logger_adapter.ts";
+import { JudgeAgentRunner } from "./src/judge_agent_runner.ts";
 import { recoverOrphanedDelegations } from "./src/recovery.ts";
 import { buildTeamMcpClient } from "./src/build_team_mcp_client.ts";
 // registerTeamCapabilities is loaded dynamically inside the Team branch only —
@@ -939,8 +948,10 @@ if (import.meta.main) {
         sleep: (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
       }, logger)
       : undefined;
+    const gateEvaluator = new GateEvaluator(createJudgeEvaluator(new JudgeAgentRunner(llmProvider)));
     const flowRunner = new FlowRunner({
       agentExecutor: agentExecutorAdapter,
+      gateEvaluator,
       config,
       eventLogger: flowLogger,
       hitlPolicyEvaluator,
@@ -1029,6 +1040,7 @@ if (import.meta.main) {
           // Use optional chaining for obj access instead of type-assertion cast
           const brief = await _sessionDelegateService!.prepareBrief({
             traceId,
+            identityId: DAEMON_IDENTITY_ID,
             gate: GATE_REFINEMENT,
             tool: sd.tool,
             objective: body,

@@ -52,6 +52,7 @@ Deno.test("opencode adapter builds an 'opencode run --format json <objective>' h
 
   const brief = SessionBriefSchema.parse({
     trace_id: "00000000-0000-4000-8000-000000000000",
+    identity_id: "dogfood-coder",
     gate: "code_changes",
     tool: "opencode",
     objective: "Implement Step 0",

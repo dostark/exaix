@@ -17,15 +17,26 @@ steps:
       transform: passthrough
   - id: next-steps
     name: Implement Steps (TDD)
-    type: agent
+    type: session_delegate_cycle
     identity: dogfood-coder
-    strategy: cli_delegate
     dependsOn:
       - pre-gap
     input:
       source: step
       stepId: pre-gap
       transform: passthrough
+    delegateCycle:
+      requireChangedPaths: true
+      review:
+        identity: quality-judge
+        criteria:
+          - code_correctness
+          - has_tests
+          - task_fulfillment
+        threshold: 0.8
+        onFail: halt
+        maxRetries: 3
+        includeRequestCriteria: false
   - id: post-gap
     name: Post-Gap Analysis
     type: agent

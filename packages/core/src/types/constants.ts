@@ -3067,8 +3067,6 @@ export const SESSION_FLAG_OUTPUT_SCHEMA = "--output-schema";
  */
 export const SESSION_FLAG_SKIP_GIT_REPO_CHECK = "--skip-git-repo-check";
 
-/** Dogfood-developer identity ID — source of truth for the machine name used in OpenCode agent config keys (Phase 128 R3 Step 4). Must match `Blueprints/Identities/dogfood-developer.md:identity_id`. */
-export const DOGFOOD_DEVELOPER_IDENTITY_ID = "dogfood-developer";
 /**
  * Minimum supported versions for delegate tool permission-hardening features
  * (Phase 128 R3). Below these, the tool may not support --permission-mode /

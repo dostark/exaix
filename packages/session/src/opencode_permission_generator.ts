@@ -2,14 +2,13 @@
  * @module OpencodePermissionGenerator
  * @path packages/session/src/opencode_permission_generator.ts
  * @description Phase 128 Step 2 — builds the OpenCode opencode.jsonc permission
- *   config from a brief's permitted_paths. Pure builder + async disk writer.
- *   The agent key uses DOGFOOD_DEVELOPER_IDENTITY_ID from @exaix/core/types.
+ *   config from a brief's permitted_paths. Pure builder + async disk writer. The
+ *   agent key is the caller's real delegating identity_id, not a hardcoded stand-in.
  * @architectural-layer Services
  * @related-files [packages/schemas/src/opencode_config.ts, packages/session/src/scope_checker.ts, packages/session/src/mod.ts]
  */
 
 import { dirname } from "@std/path";
-import { DOGFOOD_DEVELOPER_IDENTITY_ID } from "@exaix/core/types";
 import { OpencodeConfigSchema } from "@exaix/schemas/opencode_config.ts";
 import type { OpencodeConfig } from "@exaix/schemas/opencode_config.ts";
 import type { PathResolver } from "@exaix/portal";
@@ -41,6 +40,7 @@ export function assertPathsWithinWorktree(permittedPaths: string[], worktreeRoot
 
 export function buildOpencodePermissionConfig(
   permittedPaths: string[],
+  identityId: string,
 ): OpencodeConfig {
   const editPermissions: Record<string, OpencodePermissionValue> = { "*": "deny" };
   for (const p of permittedPaths) {
@@ -49,7 +49,7 @@ export function buildOpencodePermissionConfig(
 
   return {
     agent: {
-      [DOGFOOD_DEVELOPER_IDENTITY_ID]: {
+      [identityId]: {
         edit: editPermissions,
         external_directory: { "**": "deny" },
         bash: { "*": "deny" },
@@ -63,9 +63,10 @@ export async function generateOpencodePermissionConfig(
   worktreeRoot: string,
   pathResolver: PathResolver,
   traceId: string,
+  identityId: string,
 ): Promise<IOpencodePermissionConfig> {
   assertPathsWithinWorktree(permittedPaths, worktreeRoot);
-  const config = buildOpencodePermissionConfig(permittedPaths);
+  const config = buildOpencodePermissionConfig(permittedPaths, identityId);
 
   const parsed = OpencodeConfigSchema.safeParse(config);
   if (!parsed.success) {
@@ -81,5 +82,5 @@ export async function generateOpencodePermissionConfig(
   await Deno.writeTextFile(tmpPath, JSON.stringify(config, null, 2));
   await Deno.rename(tmpPath, resolvedPath);
 
-  return { config, configPath: resolvedPath, agentKey: DOGFOOD_DEVELOPER_IDENTITY_ID };
+  return { config, configPath: resolvedPath, agentKey: identityId };
 }

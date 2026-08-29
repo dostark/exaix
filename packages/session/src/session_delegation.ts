@@ -21,6 +21,8 @@ export interface ISessionDelegationRequest {
   parentTraceId: string;
   parentStepId: string;
   sequence: number;
+  /** The blueprint identity_id actually delegating this session. */
+  identityId: string;
   objective: string;
   acceptanceCriteria: string[];
   artifactRef: string;

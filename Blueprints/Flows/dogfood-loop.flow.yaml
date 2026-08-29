@@ -9,7 +9,7 @@ steps:
   - id: implement
     name: Implement Step (TDD)
     type: agent
-    identity: dogfood-developer
+    identity: dogfood-coder
     strategy: cli_delegate
     dependsOn: []
     input:
