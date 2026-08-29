@@ -90,3 +90,54 @@ Deno.test("[schema] requireChangedPaths defaults to true when omitted", () => {
   const result = FlowStepSchema.parse(step);
   assertEquals(result.delegateCycle?.requireChangedPaths, true);
 });
+
+// GAP-4 remediation (Phase 174 Step 10): SessionDelegateCycleStepHandler halts
+// unconditionally on any failed review — it never honors onFail: retry or
+// continue-with-warning. The schema must reject those values for this step type
+// instead of silently accepting a configuration it cannot actually implement.
+
+Deno.test("[schema] session_delegate_cycle step rejects review.onFail: retry", () => {
+  const step = {
+    id: "cycle-step",
+    name: "Cycle Step",
+    identity: "senior-coder",
+    type: FlowStepType.SESSION_DELEGATE_CYCLE,
+    delegateCycle: { review: { ...VALID_DELEGATE_CYCLE.review, onFail: "retry" } },
+  };
+  assertThrows(() => FlowStepSchema.parse(step));
+});
+
+Deno.test("[schema] session_delegate_cycle step rejects review.onFail: continue-with-warning", () => {
+  const step = {
+    id: "cycle-step",
+    name: "Cycle Step",
+    identity: "senior-coder",
+    type: FlowStepType.SESSION_DELEGATE_CYCLE,
+    delegateCycle: { review: { ...VALID_DELEGATE_CYCLE.review, onFail: "continue-with-warning" } },
+  };
+  assertThrows(() => FlowStepSchema.parse(step));
+});
+
+Deno.test("[schema] session_delegate_cycle step accepts review.onFail: halt", () => {
+  const step = {
+    id: "cycle-step",
+    name: "Cycle Step",
+    identity: "senior-coder",
+    type: FlowStepType.SESSION_DELEGATE_CYCLE,
+    delegateCycle: { review: { ...VALID_DELEGATE_CYCLE.review, onFail: "halt" } },
+  };
+  const result = FlowStepSchema.parse(step);
+  assertEquals(result.delegateCycle?.review.onFail, "halt");
+});
+
+Deno.test("[schema] session_delegate_cycle step's review.onFail defaults to halt when omitted", () => {
+  const step = {
+    id: "cycle-step",
+    name: "Cycle Step",
+    identity: "senior-coder",
+    type: FlowStepType.SESSION_DELEGATE_CYCLE,
+    delegateCycle: VALID_DELEGATE_CYCLE,
+  };
+  const result = FlowStepSchema.parse(step);
+  assertEquals(result.delegateCycle?.review.onFail, "halt");
+});

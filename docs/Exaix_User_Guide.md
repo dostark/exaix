@@ -1868,8 +1868,8 @@ steps:
         identity: quality-judge # judge identity that reviews each completed step
         criteria: [code_correctness, has_tests, task_fulfillment]
         threshold: 0.8
-        onFail: halt # halt | retry (see caveat below)
-        maxRetries: 3
+        onFail: halt # only halt is accepted for this step type
+        maxRetries: 3 # accepted but unused — see Failure semantics below
         includeRequestCriteria: false
 ```
 
@@ -1892,11 +1892,11 @@ checkpoint whose plan or identity no longer matches (rather than silently overwr
 
 **Failure semantics:** any failure — a hollow or rejected delegate return, a failed review, an
 oversized/too-long plan, a plan-parse error, or a checkpoint mismatch — halts the cycle before
-launching the next step; there is no partial credit and no silent re-plan. **Caveat:** as shipped,
-`onFail: retry`/`maxRetries` are accepted by the schema but not yet honored by this step type —
-every failed review halts regardless of `onFail`, matching the catalog's own `onFail: halt`
-configuration. Full mechanism and journal-event detail:
-`packages/flow/README.md#session-delegate-cycle`.
+launching the next step; there is no partial credit and no silent re-plan. The step handler
+never implemented retry, so `session_delegate_cycle`'s `review.onFail` accepts only `halt` —
+`retry` and `continue-with-warning` fail schema validation rather than silently doing nothing
+(`maxRetries` is still accepted, inherited from the shared gate schema, but has no effect). Full
+mechanism and journal-event detail: `packages/flow/README.md#session-delegate-cycle`.
 
 **Production example:** `Blueprints/Flows/dogfood-meta-workflow.flow.yaml:next-steps` ships this
 configuration in production, replacing an earlier `strategy: cli_delegate` step.

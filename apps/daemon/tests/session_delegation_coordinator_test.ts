@@ -7,7 +7,7 @@
  * @related-files [apps/daemon/src/session_delegation_coordinator.ts, packages/session/src/session_delegation.ts]
  */
 
-import { assertEquals, assertNotEquals } from "@std/assert";
+import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
 import { DomainEventType } from "@exaix/core/events";
 import { EventLogger } from "@exaix/core/logger";
 import type { IEventLogger } from "@exaix/core/logger";
@@ -20,6 +20,8 @@ import type {
   IPrepareBriefInput,
   ISessionDelegateService,
 } from "@exaix/session/i_session_delegate.ts";
+import { SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
+import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adapter_registry.ts";
 import type { ISessionWaitStore } from "@exaix/session/wait/i_session_wait_store.ts";
 import {
   type ISessionDelegationOutcome,
@@ -298,5 +300,114 @@ Deno.test("[session_delegation_coordinator][Tier A] launched event is trace-link
     assertEquals(JSON.stringify(payload).includes("/tmp/worktree"), false);
   } finally {
     await cleanup();
+  }
+});
+
+// ─── GAP-2 remediation (Phase 174 Step 8): disabled/misconfigured session_delegate ───────
+//
+// packages/flow/tests/session_delegate_cycle_dispatch_test.ts proves the outer FlowRunner
+// state main.ts produces for these two misconfigurations (no coordinator constructed at
+// all, so the step type is never even registered). This proves the coordinator's own
+// independent defense-in-depth guard (`assertEnabled()`) also fails closed before the
+// launcher is ever reached, for a coordinator that somehow got constructed anyway.
+
+Deno.test("[session_delegation_coordinator][security] enabled=false rejects before the launcher is ever invoked", async () => {
+  const delegateService = new RecordingDelegateService();
+  const waitStore = new RecordingWaitStore();
+  const resultStore = new OutcomeResultStore();
+  const launcher = new RecordingLauncher();
+  const logger: IEventLogger = new EventLogger({ outputs: [] });
+  const coordinator = new SessionDelegationCoordinator(
+    { ...makeDeps(delegateService, waitStore, resultStore, launcher), config: { ...CONFIG, enabled: false } },
+    logger,
+  );
+
+  const outcome = await coordinator.delegate(request());
+
+  assertEquals(outcome.status, "launch_failed");
+  assertEquals(launcher.calls, 0, "the launcher must never be invoked when session_delegate is disabled");
+  assertEquals(
+    delegateService.prepared.length,
+    0,
+    "prepareBrief must never be called when session_delegate is disabled",
+  );
+});
+
+Deno.test("[session_delegation_coordinator][security] gates omitting code_changes rejects before the launcher is ever invoked", async () => {
+  const delegateService = new RecordingDelegateService();
+  const waitStore = new RecordingWaitStore();
+  const resultStore = new OutcomeResultStore();
+  const launcher = new RecordingLauncher();
+  const logger: IEventLogger = new EventLogger({ outputs: [] });
+  const coordinator = new SessionDelegationCoordinator(
+    { ...makeDeps(delegateService, waitStore, resultStore, launcher), config: { ...CONFIG, gates: ["refinement"] } },
+    logger,
+  );
+
+  const outcome = await coordinator.delegate(request());
+
+  assertEquals(outcome.status, "launch_failed");
+  assertEquals(launcher.calls, 0, "the launcher must never be invoked when gates omits code_changes");
+  assertEquals(delegateService.prepared.length, 0, "prepareBrief must never be called when gates omits code_changes");
+});
+
+// ─── GAP-3 remediation (Phase 174 Step 9): hardened-permission identity threading ────────
+//
+// Every other coordinator test above uses `RecordingDelegateService`, a stub whose
+// `resolveHardenedLaunch` always returns a fixed `agentNameMismatch: false` regardless of
+// input — it cannot prove the coordinator threads a caller-supplied `identityId` into the
+// real OpenCode permission config. This uses the real `SessionDelegateService` so
+// `resolveLaunch()`'s `harden_permissions` branch (session_delegation_coordinator.ts:204-224)
+// genuinely calls `generateOpencodePermissionConfig`, and reads the config file it writes.
+
+const HARDENED_CONFIG: SessionDelegateConfig = {
+  ...CONFIG,
+  tool: "opencode",
+  harden_permissions: true,
+};
+
+function realDelegateService(sessionDir: string): SessionDelegateService {
+  return new SessionDelegateService({
+    registry: createDefaultSessionAdapterRegistry(),
+    clock: { now: () => FIXED_NOW },
+    sessionDir,
+    pathResolver: {
+      resolve: (path: string) => Promise.resolve(`${sessionDir}/${path.replace("@Runtime/", "")}`),
+    } as never,
+  });
+}
+
+Deno.test("[session_delegation_coordinator][security] harden_permissions=true keys the generated permission config on the caller-supplied identityId, not a default", async () => {
+  const sessionDir = await Deno.makeTempDir();
+  try {
+    const waitStore = new RecordingWaitStore();
+    const resultStore = new OutcomeResultStore();
+    const launcher = new RecordingLauncher();
+    const logger: IEventLogger = new EventLogger({ outputs: [] });
+    const coordinator = new SessionDelegationCoordinator(
+      {
+        ...makeDeps(new RecordingDelegateService(), waitStore, resultStore, launcher),
+        config: HARDENED_CONFIG,
+        delegateService: realDelegateService(sessionDir),
+      },
+      logger,
+    );
+
+    for (const identityId of ["dogfood-coder", "some-other-identity"]) {
+      const delegationTraceId = crypto.randomUUID();
+      resultStore.request = { ...request(), identityId, delegationTraceId };
+      const outcome = await coordinator.delegate({ ...request(), identityId, delegationTraceId });
+
+      const configPath = `${sessionDir}/${outcome.delegationTraceId}/opencode_config.json`;
+      const config = JSON.parse(await Deno.readTextFile(configPath));
+      assertExists(config.agent[identityId], `config must key the agent block on '${identityId}'`);
+      assertEquals(
+        Object.keys(config.agent),
+        [identityId],
+        `config must not carry any identity key other than '${identityId}'`,
+      );
+    }
+  } finally {
+    await Deno.remove(sessionDir, { recursive: true });
   }
 });

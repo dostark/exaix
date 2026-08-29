@@ -384,8 +384,8 @@ steps:
         identity: quality-judge
         criteria: [code_correctness, has_tests, task_fulfillment]
         threshold: 0.8
-        onFail: halt # halt | retry
-        maxRetries: 3
+        onFail: halt # only halt is accepted for this step type
+        maxRetries: 3 # accepted but unused — see onFail below
         includeRequestCriteria: false
 ```
 
@@ -429,15 +429,15 @@ coordinator call. There is no partial credit and no silent re-plan: a halted cyc
 remains immutable evidence of what actually completed, and the flow step fails through the
 normal flow failure path rather than continuing with a different or skipped step.
 
-**`onFail`/`maxRetries` today:** `review.onFail`/`review.maxRetries` are part of the shared
+**`onFail`/`maxRetries`:** `review.onFail`/`review.maxRetries` are part of the shared
 `GateEvaluateSchema` other gate-driven step types also use, but
 `SessionDelegateCycleStepHandler` calls `IGateEvaluator.evaluate(...)` with a hardcoded
 `previousAttempts` of `0` and halts unconditionally on any failed review — it does not inspect
-`onFail`/read `maxRetries`/re-attempt the same sequence. `onFail: retry` is therefore currently
-a no-op for `session_delegate_cycle`; the shipped catalog config
-(`dogfood-meta-workflow.flow.yaml`) sets `onFail: halt` and observes exactly the halt behavior
-described above. Treat this as the current, verified behavior — not a documented retry
-capability that happens to be unused.
+`onFail`/read `maxRetries`/re-attempt the same sequence. Since retry was never implemented,
+`SessionDelegateCycleConfigSchema` rejects `onFail: retry` and `onFail: continue-with-warning`
+at validation time (Phase 174 Step 10/GAP-4) — `session_delegate_cycle`'s `review.onFail`
+accepts only `halt`, so the schema can never promise a capability the step handler does not
+have. `maxRetries` is still accepted (inherited from the shared schema) but has no effect.
 
 ## See Also
 

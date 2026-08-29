@@ -1,14 +1,15 @@
 /**
  * @module SessionDelegateCycleDogfoodE2eTest
  * @path apps/daemon/tests/session_delegate_cycle_dogfood_e2e_test.ts
- * @description [daemon scenario] a real booted daemon, the real `scripts/plan_to_requests.ts`
- *   generator (`--plan-context-root`), and the compiled mock session tool binary carry a
- *   hardened 2-step plan through the production `session_delegate_cycle` step
- *   configuration — the same `type`/`identity`/`delegateCycle` shape
- *   `dogfood-meta-workflow.flow.yaml:next-steps` ships. Proves reference/root
- *   provenance, ordered cycle events, distinct delegation traces, parent lineage, and
- *   non-empty paths_touched end to end; a second scenario proves a hollow return halts
- *   before the next step and never fabricates a third launch.
+ * @description [daemon scenario] a real booted daemon, the real, unmodified
+ *   `Blueprints/Flows/dogfood-meta-workflow.flow.yaml` catalog file, the real
+ *   `scripts/plan_to_requests.ts` generator (`--plan-context-root`), and the compiled mock
+ *   session tool binary carry a hardened 2-step plan through pre-gap → next-steps
+ *   (`session_delegate_cycle`) → post-gap. Proves the literal shipped catalog artifact
+ *   dispatches correctly — reference/root provenance, ordered cycle events, distinct
+ *   delegation traces, parent lineage, and non-empty paths_touched end to end (Phase 174
+ *   Step 7 / GAP-1 remediation); a second scenario proves a hollow return halts before the
+ *   next step and never fabricates a third launch.
  * @architectural-layer Tests
  * @related-files [scripts/plan_to_requests.ts, scripts/mock_session_tool.ts, packages/flow/src/step_handlers/session_delegate_cycle_step_handler.ts]
  */
@@ -34,7 +35,7 @@ const MOCK_BIN_EXISTS = (() => {
   }
 })();
 
-const FLOW_ID = "session-delegate-cycle-e2e";
+const FLOW_ID = "dogfood-meta-workflow";
 
 function twoStepPlan(): string {
   return planWithSteps(2);
@@ -60,53 +61,32 @@ function planWithSteps(count: number): string {
   return sections.join("\n");
 }
 
-function writeCycleFlow(root: string): void {
+/**
+ * Copies the real, unmodified `Blueprints/Flows/dogfood-meta-workflow.flow.yaml` (GAP-1
+ * remediation, Phase 174 Step 7) so this test proves the literal shipped catalog artifact —
+ * pre-gap (react) → next-steps (session_delegate_cycle) → post-gap (react) — dispatches
+ * correctly on a real booted daemon, not a hand-maintained clone that can silently drift
+ * from the real file's shape.
+ */
+function copyRealDogfoodFlow(root: string): void {
   const dir = join(root, "Blueprints", "Flows");
   Deno.mkdirSync(dir, { recursive: true });
-  Deno.writeTextFileSync(
+  Deno.copyFileSync(
+    join(REPO_ROOT, "Blueprints", "Flows", `${FLOW_ID}.flow.yaml`),
     join(dir, `${FLOW_ID}.flow.yaml`),
-    [
-      `id: "${FLOW_ID}"`,
-      'name: "Session delegate cycle E2E"',
-      'description: "Mirrors dogfood-meta-workflow next-steps in isolation."',
-      'version: "1.0"',
-      "steps:",
-      "  - id: next-steps",
-      '    name: "Implement Steps (TDD)"',
-      "    type: session_delegate_cycle",
-      "    identity: dogfood-coder",
-      "    dependsOn: []",
-      "    input:",
-      "      source: request",
-      "      transform: passthrough",
-      "    delegateCycle:",
-      "      requireChangedPaths: true",
-      "      review:",
-      "        identity: quality-judge",
-      "        criteria:",
-      "          - code_correctness",
-      "        threshold: 0.8",
-      "        onFail: halt",
-      "        maxRetries: 3",
-      "        includeRequestCriteria: false",
-      "output:",
-      "  from: next-steps",
-      "  format: markdown",
-      "settings:",
-      "  maxParallelism: 1",
-      "  failFast: true",
-      "",
-    ].join("\n"),
   );
 }
 
-function writeDogfoodCoderIdentity(root: string): void {
+/** Copies every identity the real dogfood-meta-workflow flow references (pre-gap/next-steps/post-gap). */
+function copyDogfoodFlowIdentities(root: string): void {
   const dir = join(root, "Blueprints", "Identities");
   Deno.mkdirSync(dir, { recursive: true });
-  Deno.copyFileSync(
-    join(REPO_ROOT, "Blueprints", "Identities", "dogfood-coder.md"),
-    join(dir, "dogfood-coder.md"),
-  );
+  for (const identity of ["dogfood-coder", "code-analyst", "code-reviewer"]) {
+    Deno.copyFileSync(
+      join(REPO_ROOT, "Blueprints", "Identities", `${identity}.md`),
+      join(dir, `${identity}.md`),
+    );
+  }
 }
 
 /**
@@ -176,9 +156,47 @@ function writeReviewPassFixture(recordingsDir: string): void {
         promptHash: "0000000000000000000000000000000000000000000000000000000000000000",
         promptPreview: "## Evaluation Request",
         response: JSON.stringify({
-          criteriaScores: { code_correctness: { score: 1.0, reasoning: "ok", passed: true } },
+          criteriaScores: {
+            code_correctness: { score: 1.0, reasoning: "ok", passed: true },
+            has_tests: { score: 1.0, reasoning: "ok", passed: true },
+            task_fulfillment: { score: 1.0, reasoning: "ok", passed: true },
+          },
           feedback: "Looks good.",
         }),
+        model: "test",
+        tokens: { input: 10, output: 10 },
+        recordedAt: "2026-08-13T00:00:00Z",
+      },
+      null,
+      2,
+    ),
+  );
+}
+
+const REACT_COMPLETION_SUMMARY =
+  "Completed the step successfully with high confidence. The implementation is correct and verified.";
+
+/**
+ * The real flow's pre-gap/post-gap react steps need their own recordings: `MockLLMProvider`
+ * only falls back to its generic pattern matcher when ZERO recordings are loaded at all, so
+ * loading the review-pass recording above disables that fallback for every other prompt.
+ * Neither step's output is asserted on directly by this test — session_delegate_cycle never
+ * reads pre-gap's output, and post-gap's plain-text summary fails the daemon's unrelated
+ * downstream plan-JSON validation exactly as a non-plan-shaped mock response would in any
+ * other flow-ending react step; that failure is orthogonal to the session_delegate_cycle
+ * behavior this test exists to prove and does not affect any assertion below.
+ */
+function writeReactCompletionFixture(recordingsDir: string, filename: string, identityName: string): void {
+  Deno.mkdirSync(recordingsDir, { recursive: true });
+  Deno.writeTextFileSync(
+    join(recordingsDir, filename),
+    JSON.stringify(
+      {
+        // promptHash is unused for matching (previewMatch below is what matches); it only
+        // needs to be schema-valid and distinct per fixture file.
+        promptHash: filename.padEnd(68, "0"),
+        promptPreview: `IDENTITY: ${identityName}`,
+        response: `THOUGHT: ${REACT_COMPLETION_SUMMARY}\nSTATUS: COMPLETE\nSUMMARY: ${REACT_COMPLETION_SUMMARY}`,
         model: "test",
         tokens: { input: 10, output: 10 },
         recordedAt: "2026-08-13T00:00:00Z",
@@ -302,10 +320,12 @@ Deno.test({
     Deno.mkdirSync(sessionDir, { recursive: true });
     const mockBinDir = await makeMockCodexBinDir(sessionDir);
     try {
-      writeCycleFlow(tempDir);
-      writeDogfoodCoderIdentity(tempDir);
+      copyRealDogfoodFlow(tempDir);
+      copyDogfoodFlowIdentities(tempDir);
       const recordingsDir = join(tempDir, "recordings");
       writeReviewPassFixture(recordingsDir);
+      writeReactCompletionFixture(recordingsDir, "pre-gap-react.json", "Code Analyst");
+      writeReactCompletionFixture(recordingsDir, "post-gap-react.json", "Code Reviewer");
       writeSessionDelegateConfig(configPath, tempDir, portalDir, recordingsDir);
 
       const fixturePlanPath = join(tempDir, "hardened-fixture.md");
@@ -381,10 +401,12 @@ Deno.test({
     Deno.mkdirSync(sessionDir, { recursive: true });
     const mockBinDir = await makeMockCodexBinDir(sessionDir, [2]);
     try {
-      writeCycleFlow(tempDir);
-      writeDogfoodCoderIdentity(tempDir);
+      copyRealDogfoodFlow(tempDir);
+      copyDogfoodFlowIdentities(tempDir);
       const recordingsDir = join(tempDir, "recordings");
       writeReviewPassFixture(recordingsDir);
+      writeReactCompletionFixture(recordingsDir, "pre-gap-react.json", "Code Analyst");
+      writeReactCompletionFixture(recordingsDir, "post-gap-react.json", "Code Reviewer");
       writeSessionDelegateConfig(configPath, tempDir, portalDir, recordingsDir);
 
       const plan = planWithSteps(3);
@@ -464,8 +486,8 @@ Deno.test({
     try {
       const initGit = await new Deno.Command("git", { args: ["init", "--quiet"], cwd: portalDir }).output();
       assert(initGit.success, "the live portal worktree must be a real git repo");
-      writeCycleFlow(tempDir);
-      writeDogfoodCoderIdentity(tempDir);
+      copyRealDogfoodFlow(tempDir);
+      copyDogfoodFlowIdentities(tempDir);
 
       const cfg = [
         ...daemonConfigSections(tempDir, ""),
@@ -499,6 +521,14 @@ Deno.test({
       const genOutDir = join(tempDir, "generated-requests");
       await runGenerator(fixturePlanPath, portalDir, genOutDir);
       const planContextRef = ".exa/PlanContext/hardened-fixture.md";
+      // pre-gap's file-change audit (AgentOrchestrator.auditGitChanges) flags ANY untracked
+      // file in the portal, including the PlanContext copy the generator just wrote — commit
+      // it so the worktree is clean before the real flow's first step runs.
+      await new Deno.Command("git", { args: ["add", "-A"], cwd: portalDir }).output();
+      await new Deno.Command("git", {
+        args: ["-c", "user.email=test@example.com", "-c", "user.name=test", "commit", "--quiet", "-m", "plan context"],
+        cwd: portalDir,
+      }).output();
 
       const traceId = crypto.randomUUID();
       const requestsDir = join(tempDir, "Workspace", "Requests");

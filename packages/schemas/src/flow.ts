@@ -249,6 +249,20 @@ const FlowStepSchemaBase = z.object({
 export const SessionDelegateCycleConfigSchema = z.object({
   requireChangedPaths: z.literal(true).default(true),
   review: GateEvaluateSchema,
+}).superRefine((config, ctx) => {
+  // GAP-4 remediation (Phase 174 Step 10): SessionDelegateCycleStepHandler halts
+  // unconditionally on any failed review — it never honors onFail: retry or
+  // continue-with-warning, so accepting them here would silently promise behavior
+  // this step type cannot deliver.
+  if (config.review.onFail !== FlowGateOnFail.HALT) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["review", "onFail"],
+      message: `session_delegate_cycle's review.onFail only supports "${FlowGateOnFail.HALT}" — ` +
+        `the step handler halts unconditionally on any failed review and does not implement retry ` +
+        `or continue-with-warning`,
+    });
+  }
 });
 
 export type ISessionDelegateCycleConfig = z.infer<typeof SessionDelegateCycleConfigSchema>;
