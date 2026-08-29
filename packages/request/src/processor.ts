@@ -56,7 +56,7 @@ import { MiddlewarePipeline } from "@exaix/core/func";
 import type { IServiceContext } from "@exaix/core/types";
 import { RequestAnalyzer, saveAnalysis } from "./analysis/mod.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import { ProviderType, RequestKind } from "@exaix/core";
+import { FlowStepType, ProviderType, RequestKind } from "@exaix/core";
 import { type ITaskComplexityClassifier, TaskComplexityClassifier } from "./task_complexity_classifier.ts";
 import { BlueprintResolver, type IBlueprintResolver } from "./blueprint_resolver.ts";
 import { type IPortalContextBuilder, PortalContextBuilder } from "./portal_context_builder.ts";
@@ -555,6 +555,32 @@ export class RequestProcessor {
     }
   }
 
+  /**
+   * A session_delegate_cycle flow step needs a portal-configured worktree root and the
+   * request's PlanContext pointer before it can dispatch (Phase 174 Step 2 GAP-1). Flow
+   * YAML and request text cannot choose `executionRoot` — it is derived solely from the
+   * daemon's configured portal registry. Returns `{}` for a flow with no cycle step.
+   */
+  private resolveCycleExecutionContext(
+    flow: IFlow,
+    frontmatter: IRequestFrontmatter,
+  ): { executionRoot?: string; planContextRef?: string; error?: string } {
+    const requiresCycle = flow.steps.some((step) => step.type === FlowStepType.SESSION_DELEGATE_CYCLE);
+    if (!requiresCycle) return {};
+
+    if (!frontmatter.portal) {
+      return { error: "session_delegate_cycle flow requires a request portal" };
+    }
+    if (!frontmatter.plan_context_ref) {
+      return { error: "session_delegate_cycle flow requires plan_context_ref" };
+    }
+    const executionRoot = (this.config.portals ?? []).find((p) => p.alias === frontmatter.portal)?.target_path;
+    if (!executionRoot) {
+      return { error: `session_delegate_cycle flow's portal '${frontmatter.portal}' is not configured` };
+    }
+    return { executionRoot, planContextRef: frontmatter.plan_context_ref };
+  }
+
   private async processFlowRequest(
     opts: IProcessRequestOptions,
   ): Promise<string | null> {
@@ -581,6 +607,16 @@ export class RequestProcessor {
       // flow request died with "Cannot read properties of undefined (reading 'length')".
       const flow = await this.loadFlowOrFail(frontmatter.flow!, filePath, traceLogger);
       if (!flow) return null;
+
+      const cycleContext = this.resolveCycleExecutionContext(flow, frontmatter);
+      if (cycleContext.error) {
+        traceLogger.error(DomainEventType.RequestFlowValidationFailed, frontmatter.flow!, {
+          error: cycleContext.error,
+        });
+        await this.statusManager.updateStatus(filePath, RequestStatus.FAILED, cycleContext.error);
+        return null;
+      }
+
       const body = await Deno.readTextFile(filePath);
       const flowResult = await this.flowRunner.execute(flow, {
         userPrompt: body,
@@ -592,6 +628,8 @@ export class RequestProcessor {
         // it. Without this, the transport stopped at FlowRunner.execute.
         scenarioId: frontmatter.scenario_id,
         stepId: frontmatter.step_id,
+        executionRoot: cycleContext.executionRoot,
+        planContextRef: cycleContext.planContextRef,
       });
 
       const result = {

@@ -780,6 +780,38 @@ Deno.test("[plan-context][relocation][security] pre-existing symlinked PlanConte
   }
 });
 
+// ─── Phase 174 Step 2 — plan_context_ref frontmatter provenance ────────────────
+
+Deno.test("[plan-to-requests][plan-context] frontmatter carries plan_context_ref only when a copy occurred", async () => {
+  const wt = await makeFakeWorktree({ withGit: true });
+  try {
+    const outDir = join(wt, "Workspace", "Requests");
+    const { code } = await runGenerator([CONTEXT_FIXTURE_PATH, "--out-dir", outDir, "--plan-context-root", wt]);
+    assertEquals(code, 0);
+
+    const request = await Deno.readTextFile(join(outDir, `${CONTEXT_SLUG}-step-1.md`));
+    const fm = productionFrontmatterOf(join(outDir, `${CONTEXT_SLUG}-step-1.md`));
+    assertEquals(fm.plan_context_ref, `.exa/PlanContext/${CONTEXT_SLUG}.md`);
+    assertEquals(RequestSchema.safeParse(fm).success, true, "stamped frontmatter must still pass RequestSchema");
+    assertEquals(request.includes("plan_context_ref"), true);
+  } finally {
+    await Deno.remove(wt, { recursive: true });
+  }
+});
+
+Deno.test("[regression][plan-context] default output (no --plan-context-root) has no plan_context_ref field", async () => {
+  const tmpDir = await Deno.makeTempDir({ prefix: "plan-to-req-no-ref-" });
+  try {
+    assertEquals((await runGenerator([join(FIXTURES_DIR, "phase-nn-fixture.md"), "--out-dir", tmpDir])).code, 0);
+    for (const stepNum of [1, 2, 3]) {
+      const content = await Deno.readTextFile(join(tmpDir, `phase-nn-fixture-step-${stepNum}.md`));
+      assertEquals(content.includes("plan_context_ref"), false, `step ${stepNum} must omit plan_context_ref`);
+    }
+  } finally {
+    await Deno.remove(tmpDir, { recursive: true });
+  }
+});
+
 Deno.test("[plan-context][metrics] treatment request stays within 3x stripped control across repeated runs", async () => {
   const MAX_TREATMENT_TO_CONTROL_RATIO = 3;
   const wt = await makeFakeWorktree({ withGit: false });

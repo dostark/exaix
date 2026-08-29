@@ -13,15 +13,10 @@
 
 import { basename, extname, join, resolve } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { parse as parseYaml } from "@std/yaml";
-import { type StepManifest, StepManifestSchema } from "@exaix/schemas/step_manifest.ts";
+import type { StepManifest } from "@exaix/schemas/step_manifest.ts";
 import { RequestSchema } from "@exaix/schemas/request.ts";
 import type { Opt, Reason } from "@exaix/core/types";
-
-interface ParsedStep {
-  stepNumber: number;
-  sectionText: string;
-}
+import { parsePhaseStepManifests, type PhaseStepDiagnosticCode } from "@exaix/flow/phase_step_manifest_parser.ts";
 
 interface FrontmatterFields {
   trace_id: string;
@@ -30,7 +25,15 @@ interface FrontmatterFields {
   priority: number;
   tags: string[];
   skills?: string[];
+  plan_context_ref?: string;
 }
+
+/** Diagnostics that abort generation before any request file is written (Phase 174 Step 2). */
+const FATAL_DIAGNOSTIC_CODES = new Set<PhaseStepDiagnosticCode>(["no_steps", "duplicate_step_number"]);
+/** Diagnostics surfaced as a non-fatal warning — matches the script's pre-Phase-174 behavior
+ *  exactly; `missing_manifest`, `non_contiguous_step_number`, and `missing_step_heading` are
+ *  new parser-level checks that stay silent here so default output remains byte-identical. */
+const WARNED_DIAGNOSTIC_CODES = new Set<PhaseStepDiagnosticCode>(["invalid_manifest_yaml", "invalid_manifest_schema"]);
 
 function parseArgs(): {
   planPath: string;
@@ -71,64 +74,6 @@ function parseArgs(): {
 function derivePlanSlug(planPath: string): string {
   const base = basename(planPath, extname(planPath));
   return base;
-}
-
-function extractSteps(content: string): ParsedStep[] {
-  const stepRegex = /^#{2,3}\s+Step\s+(\d+)/gm;
-  const steps: ParsedStep[] = [];
-  const seen = new Set<number>();
-  let match: RegExpExecArray | null;
-  // -1 (not 0) is the "no step seen yet" sentinel: a plan whose first step heading sits at
-  // offset 0 — no frontmatter or preamble — would otherwise have that step silently dropped.
-  let lastIndex = -1;
-  let lastStepNumber = 0;
-
-  while ((match = stepRegex.exec(content)) !== null) {
-    const stepNumber = parseInt(match[1], 10);
-    if (seen.has(stepNumber)) {
-      console.error(`Duplicate step number ${stepNumber}; each step must have a unique number.`);
-      Deno.exit(1);
-    }
-    seen.add(stepNumber);
-
-    if (lastIndex >= 0) {
-      steps.push({ stepNumber: lastStepNumber, sectionText: content.slice(lastIndex, match.index).trim() });
-    }
-    lastIndex = match.index;
-    lastStepNumber = stepNumber;
-  }
-
-  if (lastIndex >= 0) {
-    steps.push({ stepNumber: lastStepNumber, sectionText: content.slice(lastIndex).trim() });
-  }
-
-  if (steps.length === 0) {
-    console.error("No step headings found in plan file; each step must start with '## Step N' or '### Step N'.");
-    Deno.exit(1);
-  }
-
-  return steps.sort((a, b) => a.stepNumber - b.stepNumber);
-}
-
-function extractManifest(sectionText: string): StepManifest | null {
-  const yamlMatch = sectionText.match(/```yaml\s*\n([\s\S]*?)```/);
-  if (!yamlMatch) return null;
-
-  const yamlBlock = yamlMatch[1];
-  // Check for step-manifest marker
-  if (!yamlBlock.includes("# step-manifest")) return null;
-
-  try {
-    const parsed = parseYaml(yamlBlock);
-    if (typeof parsed !== "object" || parsed === null) return null;
-    const result = StepManifestSchema.safeParse(parsed);
-    if (result.success) return result.data;
-    console.warn(`Manifest failed validation: ${result.error.message}; falling back to heading scrape`);
-    return null;
-  } catch {
-    console.warn("YAML parse error; falling back to heading scrape");
-    return null;
-  }
 }
 
 function extractSection(text: string, heading: string): string {
@@ -322,6 +267,7 @@ function buildRequestFile(
   sectionText: string,
   content?: Opt<string, Reason.OptionalInput>,
   contextPointer?: Opt<string, Reason.OptionalInput>,
+  planContextRef?: Opt<string, Reason.OptionalInput>,
 ): string {
   const identityId = manifest?.identity ?? "senior-coder";
   const skills = manifest?.skills;
@@ -372,6 +318,7 @@ function buildRequestFile(
     tags,
   };
   if (skills) frontmatter.skills = skills;
+  if (planContextRef) frontmatter.plan_context_ref = planContextRef;
 
   // Validate against RequestSchema before assembling
   const validation = RequestSchema.safeParse(frontmatter);
@@ -430,7 +377,16 @@ async function main(): Promise<void> {
   }
 
   const planSlug = derivePlanSlug(planPath);
-  const steps = extractSteps(content);
+  const { steps, diagnostics } = parsePhaseStepManifests(content);
+
+  const fatalDiagnostic = diagnostics.find((d) => FATAL_DIAGNOSTIC_CODES.has(d.code));
+  if (fatalDiagnostic) {
+    console.error(fatalDiagnostic.message);
+    Deno.exit(1);
+  }
+  for (const diagnostic of diagnostics) {
+    if (WARNED_DIAGNOSTIC_CODES.has(diagnostic.code)) console.warn(diagnostic.message);
+  }
 
   // Phase 173 Step 2 — copy the phase doc into the delegate worktree (once per run,
   // before any request is written, so a rejection aborts before side effects).
@@ -444,9 +400,8 @@ async function main(): Promise<void> {
       Deno.exit(1);
     }
   }
-  const contextPointer = (!dryRun && planContextRoot !== undefined && !noCopyDoc)
-    ? planContextPointer(planSlug)
-    : undefined;
+  const contextPointer = performCopy ? planContextPointer(planSlug) : undefined;
+  const planContextRef = performCopy ? `${PLAN_CONTEXT_RELATIVE_DIR}/${planSlug}.md` : undefined;
 
   if (!dryRun) {
     await ensureDir(outDir);
@@ -454,7 +409,7 @@ async function main(): Promise<void> {
 
   let writtenCount = 0;
   for (const step of steps) {
-    const manifest = extractManifest(step.sectionText);
+    const manifest = step.manifest;
     const fileName = `${planSlug}-step-${step.stepNumber}.md`;
     const filePath = join(outDir, fileName);
     const requestContent = buildRequestFile(
@@ -464,6 +419,7 @@ async function main(): Promise<void> {
       step.sectionText,
       content,
       contextPointer,
+      planContextRef,
     );
 
     if (dryRun) {

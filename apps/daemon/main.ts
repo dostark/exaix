@@ -53,7 +53,7 @@ import { EventLogger, EventLoggerStructuredOutput } from "@exaix/core/logger";
 import { AgentRunner, ExecutionLoop } from "@exaix/execution";
 import { initializeHealthChecks } from "@exaix/core/health";
 import { buildMilestoneEmitterFromConfig } from "@exaix/core/observability";
-import { AgentOrchestratorAdapter, FlowLoader, FlowRunner } from "@exaix/flow";
+import { AgentOrchestratorAdapter, FlowLoader, FlowRunner, FlowTraceStore, PlanContextResolver } from "@exaix/flow";
 import {
   initializeMemoryAutoApprovalMaintenance,
   MemoryAutoApprovalService,
@@ -907,6 +907,28 @@ if (import.meta.main) {
         modelResolver,
       },
     );
+    // Phase 174 Step 2: built once, before FlowRunner, and shared with the code-changes
+    // delegate adapter below — the session_delegate_cycle flow step and the legacy
+    // PlanExecutor code-change path are two consumers of the same coordinator authority.
+    const sessionDelegationCoordinator = _sessionDelegateService && _sessionWaitStore && _sessionResultStore &&
+        _headlessLauncher && config.session_delegate?.gates?.includes(GATE_CODE_CHANGES)
+      ? new SessionDelegationCoordinator({
+        config: config.session_delegate,
+        delegateService: _sessionDelegateService,
+        waitStore: _sessionWaitStore,
+        resultStore: _sessionResultStore,
+        launcher: _headlessLauncher,
+        resolveModel: (traceId: string) =>
+          resolveModelFromTrace(
+            traceId,
+            join(config.system.root, "Workspace", DEFAULT_REQUESTS_PATH),
+            modelResolver,
+          ),
+        resolveProviderApiKey: (keyEnv: string) => Deno.env.get(keyEnv),
+        now: () => new Date(),
+        sleep: (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
+      }, logger)
+      : undefined;
     const flowRunner = new FlowRunner({
       agentExecutor: agentExecutorAdapter,
       config,
@@ -916,6 +938,9 @@ if (import.meta.main) {
       dynamicModeTools: DYNAMIC_MODE_TOOLS,
       dynamicModeApprovalTools: DYNAMIC_MODE_APPROVAL_TOOLS,
       mcpClient,
+      flowTraceStore: new FlowTraceStore(join(config.system.root, "Memory", "Execution", "flow_traces")),
+      sessionDelegationCoordinator,
+      planContextResolver: sessionDelegationCoordinator ? new PlanContextResolver() : undefined,
     });
 
     // The processor needs the flow itself, not a verdict about it: it previously cast
@@ -1103,25 +1128,9 @@ if (import.meta.main) {
       }
     }, { db: dbService });
 
-    const onCodeChangesDelegate = _sessionDelegateService && _sessionWaitStore && _sessionResultStore &&
-        _headlessLauncher && config.session_delegate?.gates?.includes(GATE_CODE_CHANGES)
+    const onCodeChangesDelegate = sessionDelegationCoordinator
       ? createCodeChangesDelegateAdapter({
-        coordinator: new SessionDelegationCoordinator({
-          config: config.session_delegate,
-          delegateService: _sessionDelegateService,
-          waitStore: _sessionWaitStore,
-          resultStore: _sessionResultStore,
-          launcher: _headlessLauncher,
-          resolveModel: (traceId: string) =>
-            resolveModelFromTrace(
-              traceId,
-              join(config.system.root, "Workspace", DEFAULT_REQUESTS_PATH),
-              modelResolver,
-            ),
-          resolveProviderApiKey: (keyEnv: string) => Deno.env.get(keyEnv),
-          now: () => new Date(),
-          sleep: (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
-        }, logger),
+        coordinator: sessionDelegationCoordinator,
         logger,
       })
       : undefined;

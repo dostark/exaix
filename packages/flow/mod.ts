@@ -16,6 +16,11 @@ export type { IAgentRequestContext } from "./src/feedback_loop.ts";
 export type { IIterationResult } from "./src/feedback_loop.ts";
 export type { IImprovementAgent } from "./src/feedback_loop.ts";
 export type { ISelfCorrectingConfig } from "./src/feedback_loop.ts";
+export type { IParsedPhaseStep } from "./src/phase_step_manifest_parser.ts";
+export type { IPhaseStepDiagnostic } from "./src/phase_step_manifest_parser.ts";
+export type { IPhaseStepManifestParseResult } from "./src/phase_step_manifest_parser.ts";
+export type { PhaseStepDiagnosticCode } from "./src/phase_step_manifest_parser.ts";
+export { parsePhaseStepManifests } from "./src/phase_step_manifest_parser.ts";
 export { flowStepOutputInstruction, resolveAggregateSources } from "./src/flow_runner.ts";
 export type { IAgentExecutor } from "./src/flow_runner.ts";
 export type { IFlowEventLogger } from "./src/flow_runner.ts";
@@ -71,6 +76,16 @@ export { createJudgeEvaluator, JudgeEvaluator } from "./src/judge_evaluator.ts";
 export { FlowStepHandlerRegistry } from "./src/step_handlers/step_handler_registry.ts";
 export { AgentStepHandler } from "./src/step_handlers/agent_step_handler.ts";
 export { GateStepHandler } from "./src/step_handlers/gate_step_handler.ts";
+export { SessionDelegateCycleStepHandler } from "./src/step_handlers/session_delegate_cycle_step_handler.ts";
+export type { ISessionDelegateCycleStepHandlerDeps } from "./src/step_handlers/session_delegate_cycle_step_handler.ts";
+export { FlowTraceStore, isUuid } from "./src/flow_trace_store.ts";
+export type { IFlowTraceStore } from "./src/flow_trace_store.ts";
+export { PlanContextResolver } from "./src/plan_context_resolver.ts";
+export type {
+  IPlanContextResolveInput,
+  IPlanContextResolver,
+  IPlanContextResolveResult,
+} from "./src/plan_context_resolver.ts";
 export { UnknownFlowStepError } from "./src/step_handlers/flow_step_error.ts";
 export type { IAgentStepHandlerDeps } from "./src/step_handlers/agent_step_handler.ts";
 export type { IGateStepHandlerDeps, IPendingWaitStateRef } from "./src/step_handlers/gate_step_handler.ts";
