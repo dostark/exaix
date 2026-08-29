@@ -143,7 +143,7 @@ Deno.test("[integration] a real FlowRunner dispatch reaches SessionDelegateCycle
   }
 });
 
-Deno.test("[restart] omitted traceId normalizes to one stable parent trace for the same requestId", async () => {
+Deno.test("[restart] omitted traceId normalizes to one stable parent trace for the same requestId, and a second dispatch replays idempotently", async () => {
   const root = await makeOneStepWorktree("phase-174-restart");
   const traceDir = await Deno.makeTempDir({ prefix: "flow-trace-store-restart-" });
   try {
@@ -167,12 +167,11 @@ Deno.test("[restart] omitted traceId normalizes to one stable parent trace for t
       });
     }
 
-    assertEquals(coordinator.requests.length, 2);
-    assertEquals(
-      coordinator.requests[0].parentTraceId,
-      coordinator.requests[1].parentTraceId,
-      "the same requestId must reuse one stable parent trace across calls",
-    );
+    // Phase 174 Step 4: the durable checkpoint makes the second dispatch for the same
+    // (stable) parent trace an idempotent replay, not a second full run — this is the
+    // "accepted work is not executed twice" success criterion, not a bug in trace reuse.
+    assertEquals(coordinator.requests.length, 1, "a completed checkpoint replays without relaunching");
+    assertEquals(coordinator.requests[0].parentTraceId, await flowTraceStore.getOrCreate("req-cycle-restart"));
   } finally {
     await Deno.remove(root, { recursive: true });
     await Deno.remove(traceDir, { recursive: true });

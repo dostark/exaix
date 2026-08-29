@@ -108,7 +108,7 @@ export class SessionDelegationCoordinator implements ISessionDelegationCoordinat
   ) {}
 
   async delegate(input: ISessionDelegationRequest): Promise<ISessionDelegationOutcome> {
-    const delegationTraceId = crypto.randomUUID();
+    const delegationTraceId = input.delegationTraceId ?? crypto.randomUUID();
     let parked = false;
     try {
       this.assertEnabled();

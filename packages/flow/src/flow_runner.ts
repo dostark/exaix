@@ -64,6 +64,14 @@ import { type IFlowTraceStore, isUuid } from "./flow_trace_store.ts";
 import type { IPlanContextResolver } from "./plan_context_resolver.ts";
 import type { ISessionDelegationCoordinator } from "@exaix/session/session_delegation.ts";
 import {
+  createInMemorySessionDelegateCycleClaimStore,
+  type ISessionDelegateCycleClaimStore,
+} from "@exaix/session/session_delegate_cycle_claim_store.ts";
+import {
+  createInMemorySessionDelegateCycleStore,
+  type ISessionDelegateCycleStore,
+} from "@exaix/session/session_delegate_cycle_store.ts";
+import {
   FlowCheckpointService,
   FlowNamespaceService,
   type IFlowCheckpointService,
@@ -236,6 +244,18 @@ export interface IFlowRunnerConfig {
   sessionDelegationCoordinator?: ISessionDelegationCoordinator;
   /** Resolves a request's plan_context_ref beneath its executionRoot. Required alongside sessionDelegationCoordinator. */
   planContextResolver?: IPlanContextResolver;
+  /**
+   * SQLite launch source of truth for session_delegate_cycle claims (Phase 174 Step 4).
+   * Falls back to a process-local in-memory store (correct within one process, not
+   * crash-durable) when omitted, so existing sessionDelegationCoordinator wiring keeps
+   * working without also supplying this.
+   */
+  sessionDelegateCycleClaimStore?: ISessionDelegateCycleClaimStore;
+  /**
+   * Atomic JSON checkpoint store for session_delegate_cycle resume (Phase 174 Step 4).
+   * Falls back to a process-local in-memory store (not crash-durable) when omitted.
+   */
+  sessionDelegateCycleStore?: ISessionDelegateCycleStore;
 }
 
 /**
@@ -624,6 +644,11 @@ export interface IFlowEventPayloadMap {
     traceId: string;
     stepCount: number;
   };
+  [DomainEventType.SessionDelegateCycleResumed]: {
+    flowRunId: string;
+    stepId: string;
+    traceId: string;
+  };
 }
 
 export type IFlowEventPayload<TEvent extends string> = TEvent extends keyof IFlowEventPayloadMap
@@ -872,6 +897,8 @@ export class FlowRunner implements IFlowRunner {
           planContextResolver: options.planContextResolver,
           gateEvaluator: this.gateEvaluator!,
           eventLogger: this.eventLogger,
+          claimStore: options.sessionDelegateCycleClaimStore ?? createInMemorySessionDelegateCycleClaimStore(),
+          cycleStore: options.sessionDelegateCycleStore ?? createInMemorySessionDelegateCycleStore(),
         }),
       );
     }

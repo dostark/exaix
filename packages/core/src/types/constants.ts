@@ -1906,6 +1906,29 @@ export const DEFAULT_SESSION_DELEGATE_CYCLE_MAX_STEPS: number = configurable({
 /** Schema version for flow checkpoints. Bump on breaking checkpoint shape changes. */
 export const FLOW_CHECKPOINT_SCHEMA_VERSION = "1";
 
+/** Poll interval while a session_delegate_cycle step awaits a claim another launcher owns. */
+export const DEFAULT_SESSION_DELEGATE_CYCLE_CLAIM_POLL_MS: number = configurable({
+  key: "flow.session_delegate_cycle_claim_poll_ms",
+  default: 2_000,
+  type: ConfigValueType.NUMBER,
+  description:
+    "Poll interval in milliseconds while a session_delegate_cycle step awaits a claim owned by another launcher",
+  min: 50,
+  max: 60_000,
+  swap: SwapClass.RESTART,
+});
+
+/** Poll attempts before a session_delegate_cycle step gives up awaiting an owned-elsewhere claim. */
+export const DEFAULT_SESSION_DELEGATE_CYCLE_CLAIM_MAX_POLLS: number = configurable({
+  key: "flow.session_delegate_cycle_claim_max_polls",
+  default: 150,
+  type: ConfigValueType.NUMBER,
+  description: "Maximum poll attempts before a session_delegate_cycle step fails a claim it does not own",
+  min: 1,
+  max: 10_000,
+  swap: SwapClass.RESTART,
+});
+
 // Flow event names
 export const FLOW_EVENT_STEP_RETRY = "flow.step.retry";
 export const FLOW_EVENT_STEP_FALLBACK = "flow.step.fallback";

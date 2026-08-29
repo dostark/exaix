@@ -180,6 +180,32 @@ CREATE INDEX IF NOT EXISTS idx_artifacts_request_id ON artifacts(request_id);
 CREATE INDEX IF NOT EXISTS idx_artifacts_created ON artifacts(created DESC);
 
 -- ============================================================================
+-- Session-Delegate Cycle Claims (Phase 174 Step 4)
+-- ============================================================================
+-- Launch source of truth for session_delegate_cycle flow steps. The unique key
+-- guarantees a single durable launch per (parent trace, flow step, plan-step
+-- sequence, plan digest) key across crash points and repeated handler/watcher
+-- entry; the JSON checkpoint (Memory/Execution/.../session_delegate_cycles/*.json)
+-- is a query/resume summary, not the authority. outcome_json is null until the
+-- claim reaches 'returned'.
+
+CREATE TABLE IF NOT EXISTS session_delegate_cycle_claims (
+  parent_trace_id     TEXT NOT NULL,
+  parent_step_id      TEXT NOT NULL,
+  sequence            INTEGER NOT NULL,
+  plan_digest         TEXT NOT NULL,
+  delegation_trace_id TEXT NOT NULL,
+  state               TEXT NOT NULL CHECK (state IN ('claimed', 'launched', 'returned', 'reviewed', 'failed')),
+  outcome_json        TEXT,
+  failure_reason      TEXT,
+  created_at          TEXT NOT NULL,
+  updated_at          TEXT NOT NULL,
+  UNIQUE (parent_trace_id, parent_step_id, sequence, plan_digest)
+);
+
+CREATE INDEX IF NOT EXISTS idx_cycle_claims_delegation_trace ON session_delegate_cycle_claims(delegation_trace_id);
+
+-- ============================================================================
 -- Team live model registry (Phase 135, §5.2 / §5.5 / §5.8.2)
 -- ============================================================================
 -- Owned by ModelRegistryService (@exaix-team/model-registry-live). All timestamps are
@@ -275,6 +301,8 @@ DROP INDEX IF EXISTS idx_latency_lookup;
 DROP TABLE IF EXISTS model_latency;
 DROP TABLE IF EXISTS model_pricing;
 DROP TABLE IF EXISTS model_catalog;
+DROP INDEX IF EXISTS idx_cycle_claims_delegation_trace;
+DROP TABLE IF EXISTS session_delegate_cycle_claims;
 DROP TABLE IF EXISTS artifacts;
 DROP TABLE IF EXISTS provider_costs;
 DROP TABLE IF EXISTS pending_tool_confirmations;

@@ -267,11 +267,12 @@ export const DomainEventType = {
   SessionDelegateCrashRecovered: "session.delegate.crash_recovered",
 
   // Phase 174 Step 3: session_delegate_cycle lifecycle (SessionDelegateCycleStepHandler).
-  // cycle_resumed is added in Step 4 alongside the durable checkpoint it reports on.
   SessionDelegateCycleStarted: "session.delegate.cycle_started",
   SessionDelegateCycleStepCompleted: "session.delegate.cycle_step_completed",
   SessionDelegateCycleStepRejected: "session.delegate.cycle_step_rejected",
   SessionDelegateCycleCompleted: "session.delegate.cycle_completed",
+  // Phase 174 Step 4: emitted when a matching non-terminal checkpoint resumes.
+  SessionDelegateCycleResumed: "session.delegate.cycle_resumed",
 
   // Cost tracking events
   LlmUsageRecorded: "llm.usage",

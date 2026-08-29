@@ -28,6 +28,8 @@ import type {
   ISessionDelegationOutcome,
   ISessionDelegationRequest,
 } from "@exaix/session/session_delegation.ts";
+import { createInMemorySessionDelegateCycleClaimStore } from "@exaix/session/session_delegate_cycle_claim_store.ts";
+import { createInMemorySessionDelegateCycleStore } from "@exaix/session/session_delegate_cycle_store.ts";
 
 function stepHeading(n: number): string {
   return `## Step ${n}\n\n**Actions:**\n- do ${n}\n\n\`\`\`yaml\n# step-manifest\nstep: ${n}\ntitle: Step ${n}\n\`\`\`\n`;
@@ -168,6 +170,8 @@ Deno.test("[unit] a three-step plan produces exactly three non-overlapping coord
     planContextResolver: new FakeResolver(nStepPlan(3)),
     gateEvaluator: new AlwaysPassGateEvaluator(),
     eventLogger: new NoOpFlowEventLogger(),
+    claimStore: createInMemorySessionDelegateCycleClaimStore(),
+    cycleStore: createInMemorySessionDelegateCycleStore(),
   });
 
   await handler.execute(makeCtx());
@@ -190,6 +194,8 @@ Deno.test("[unit] step N+1 is not invoked until step N's review promise resolves
     planContextResolver: new FakeResolver(nStepPlan(2)),
     gateEvaluator,
     eventLogger: new NoOpFlowEventLogger(),
+    claimStore: createInMemorySessionDelegateCycleClaimStore(),
+    cycleStore: createInMemorySessionDelegateCycleStore(),
   });
 
   const resultPromise = handler.execute(makeCtx());
@@ -218,6 +224,8 @@ async function assertHaltsBeforeNextStep(
     planContextResolver: new FakeResolver(nStepPlan(2)),
     gateEvaluator,
     eventLogger: new NoOpFlowEventLogger(),
+    claimStore: createInMemorySessionDelegateCycleClaimStore(),
+    cycleStore: createInMemorySessionDelegateCycleStore(),
   });
 
   await assertRejects(() => handler.execute(makeCtx()));
@@ -261,6 +269,8 @@ Deno.test("[security] an oversized plan fails before the first launch", async ()
     planContextResolver: new FakeResolver(oversizedContent),
     gateEvaluator: new AlwaysPassGateEvaluator(),
     eventLogger: new NoOpFlowEventLogger(),
+    claimStore: createInMemorySessionDelegateCycleClaimStore(),
+    cycleStore: createInMemorySessionDelegateCycleStore(),
   });
 
   await assertRejects(() => handler.execute(makeCtx()));
@@ -275,6 +285,8 @@ Deno.test("[security] a plan exceeding the step-count ceiling fails before the f
     planContextResolver: new FakeResolver(tooManySteps),
     gateEvaluator: new AlwaysPassGateEvaluator(),
     eventLogger: new NoOpFlowEventLogger(),
+    claimStore: createInMemorySessionDelegateCycleClaimStore(),
+    cycleStore: createInMemorySessionDelegateCycleStore(),
   });
 
   await assertRejects(() => handler.execute(makeCtx()));

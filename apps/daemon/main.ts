@@ -109,6 +109,8 @@ import {
   SessionDelegationCoordinator,
 } from "./src/session_delegation_coordinator.ts";
 import { SessionDelegateService } from "@exaix/session/session_delegate_service.ts";
+import { SessionDelegateCycleClaimStore } from "@exaix/session/session_delegate_cycle_claim_store.ts";
+import { SessionDelegateCycleStore } from "@exaix/session/session_delegate_cycle_store.ts";
 import { createDefaultSessionAdapterRegistry } from "@exaix/session/session_adapter_registry.ts";
 import type { SessionGate, SessionTool } from "@exaix/schemas/session_delegate.ts";
 import type { ISessionLaunch } from "@exaix/session/i_session_adapter.ts";
@@ -438,11 +440,19 @@ if (import.meta.main) {
     // produce a doubled Workspace/Workspace/Requests path the watcher never scans
     // (Phase 124 GAP-9, caught by the Step 4b E2E).
     const recoveryRoot = config.system.root;
+    // Phase 174 Step 4: shared with the session_delegate_cycle FlowRunner wiring below —
+    // the claim store is the launch source of truth cycle-owned orphan recovery routes
+    // through, and the cycle store is its atomic JSON resume checkpoint.
+    const sessionDelegateCycleClaimStore = new SessionDelegateCycleClaimStore(dbService);
+    const sessionDelegateCycleStore = new SessionDelegateCycleStore(
+      join(config.system.root, "Memory", "Execution"),
+    );
     const recoveredCount = await recoverOrphanedDelegations({
       db: dbService,
       logger,
       workspaceRoot: recoveryRoot,
       briefReader: new SessionBriefReader(join(config.system.root, "Session")),
+      claimStore: sessionDelegateCycleClaimStore,
     });
     if (recoveredCount > 0) {
       logger.info(DomainEventType.SessionDelegateCrashRecovered, "crash-recovery", { recovered: recoveredCount });
@@ -941,6 +951,8 @@ if (import.meta.main) {
       flowTraceStore: new FlowTraceStore(join(config.system.root, "Memory", "Execution", "flow_traces")),
       sessionDelegationCoordinator,
       planContextResolver: sessionDelegationCoordinator ? new PlanContextResolver() : undefined,
+      sessionDelegateCycleClaimStore,
+      sessionDelegateCycleStore,
     });
 
     // The processor needs the flow itself, not a verdict about it: it previously cast

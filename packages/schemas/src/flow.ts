@@ -266,6 +266,10 @@ export const SessionDelegateCycleRejectionReasonSchema = z.enum([
   "non_completed_status",
   "empty_paths_touched",
   "review_failed",
+  // Phase 174 Step 4: a persisted checkpoint's identity (parentTraceId/flowStepId) or
+  // planDigest no longer matches the current attempt, or the checkpoint is already
+  // terminal (completed/failed) and cannot be resumed.
+  "checkpoint_mismatch",
 ]);
 
 export type ISessionDelegateCycleRejectionReason = z.infer<typeof SessionDelegateCycleRejectionReasonSchema>;
