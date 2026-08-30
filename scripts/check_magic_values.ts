@@ -550,13 +550,6 @@ function detectViolations(
 
 // ── Sorting ──────────────────────────────────────────────────────────────────
 
-/**
- * Sort violations by:
- * 1. Candidate score (descending)
- * 2. Scope — GLOBAL before MODULE
- * 3. Distinct files affected (descending)
- * 4. Total occurrences (descending)
- */
 function sortViolations(violations: Violation[]): Violation[] {
   return violations.sort((a, b) => {
     if (a.score !== b.score) {

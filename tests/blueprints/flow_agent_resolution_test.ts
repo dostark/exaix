@@ -74,25 +74,10 @@ async function getFlowAgentRefs(flowPath: string): Promise<string[]> {
 // Flow Agent Resolution Tests
 // ============================================================================
 
-// ============================================================================
-// Catalog-wide Flow Tests
-// ============================================================================
-//
-// These enumerate Blueprints/Flows/ rather than naming files one per Deno.test. The previous
-// shape declared 22 tests hardcoding 11 filenames, which duplicated the catalog-wide agent
-// test already at the bottom of this file and broke wholesale when Phase 142 Step 13 renamed
-// the 13 snake_case flow files to match their kebab-case ids. A hardcoded list also cannot
-// cover a newly added flow — the case the drift it was meant to catch actually matters.
+// ============================================================================ Catalog-wide Flow Tests ============================================================================ These enumerate Blueprints/Flows/ rather than naming files one per Deno.test, so a renamed or newly added flow file is covered automatically instead of silently skipped.
 
-/**
- * Flows that have never declared `defaultSkills`.
- *
- * Surfaced the moment this test started enumerating the directory: the 11 hardcoded per-file
- * tests it replaced simply never named these two, so the gap was invisible rather than
- * accepted. They are listed rather than fixed because whether every flow REQUIRES
- * defaultSkills is an unconfirmed requirement, and inventing one to make a test green is how
- * an assertion stops meaning anything. The list must shrink, never grow.
- */
+/** Flows that have never declared `defaultSkills`. Listed rather than fixed because whether
+ * every flow REQUIRES defaultSkills is unconfirmed; this list must shrink, never grow. */
 const FLOWS_WITHOUT_DEFAULT_SKILLS = new Set(["analyze-codebase.flow.yaml", "api-documentation.flow.yaml"]);
 
 Deno.test("Flow validation: no flow loses its defaultSkills", async () => {

@@ -24,11 +24,8 @@ export function computeScenarioTotalCost(
   return steps.reduce((acc, step) => acc + (step.trackedCostUsd ?? 0), 0);
 }
 
-/**
- * Accumulates per-scenario cost between scenarios of an eval run. `shouldStop` is checked
- * BEFORE scheduling the next scenario; `recordScenarioCost` runs AFTER a scenario completes.
- * With no `maxCostUsd`, the tracker never stops (budget is opt-in).
- */
+/** `shouldStop` is checked BEFORE scheduling the next scenario; `recordScenarioCost` runs
+ *  AFTER a scenario completes. With no `maxCostUsd`, the tracker never stops (opt-in). */
 export class BudgetTracker {
   readonly maxCostUsd?: number;
   private accumulated = 0;

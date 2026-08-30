@@ -29,11 +29,7 @@ export interface IOpenRouterResponse extends Omit<OpenAIResponse, "usage"> {
   usage?: IOpenRouterUsage;
 }
 
-/**
- * Build a token mapper that captures OpenRouter's reported usage.cost verbatim.
- * When usage.cost is absent, cost_usd stays undefined (no blended fallback here —
- * the tracker's legacy path handles unpriced records).
- */
+/** Maps reported usage cost without estimating a fallback when it is absent. */
 export function tokenMapperOpenRouter(
   model: string,
 ): (d: IOpenRouterResponse) => TokenMap | undefined {

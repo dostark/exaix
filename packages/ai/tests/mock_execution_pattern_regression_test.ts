@@ -174,22 +174,12 @@ Deno.test("[regression] MockLLMProvider distinguishes execution from planning ke
   assertEquals(executionResponseText.includes(KEY_STEPS), false);
 });
 
-// ---------------------------------------------------------------------------
-// Phase 142 Step 13 — a flow step's prompt must not be mistaken for plan execution.
-//
-// A flow step's userPrompt is its predecessor's output run through the step's transform, and
-// `mergeAsContext` (core/func/transforms.ts:37) prefixes each section with a `## Step N`
-// markdown header. The execution pattern matches /Step \d+/i, so every flow step past the
-// first was answered with <actions> and no <content> — the step reported success with
-// outputLength 0, aggregation produced nothing, and plan validation then failed on empty
-// input. That is what held the flows pack at 0.500 with all 8 of api-design's steps "green".
-// ---------------------------------------------------------------------------
+// A flow step's userPrompt runs through mergeAsContext (core/func/transforms.ts:37), which
+// prefixes each section with a `## Step N` header — a shape indistinguishable from the
+// execution pattern's /Step \d+/i match, so a flow step could be misread as plan execution.
 
-/**
- * What the mock actually receives for a flow step: the identity's assembled system prompt,
- * then the merged context. The `## Step N` header is mid-prompt, never at its start — an
- * earlier fix anchored on the prompt's start and matched nothing in a real run.
- */
+/** A flow step's prompt is the system prompt followed by merged context; the `## Step N`
+ * header appears mid-prompt, never at the very start. */
 const MERGE_AS_CONTEXT_PROMPT = `# Software Architect Agent
 
 You design systems and document the reasoning behind each decision.
@@ -208,7 +198,7 @@ Deno.test("[flow-step] a mergeAsContext prompt yields content, not actions", asy
 
 Deno.test("[flow-step] a mergeAsContext prompt keeping its original title still yields content", async () => {
   // mergeAsContext lifts a leading `# Title` above the step headers, so the prompt can start
-  // with the request's own heading rather than with `## Step 1`.
+  // with the request's own heading instead of a `## Step N` header.
   const provider = new MockLLMProvider(MockStrategy.RECORDED, { recordings: [] });
 
   const response = await provider.generate(`# Design the REST interface\n\n${MERGE_AS_CONTEXT_PROMPT}`);
@@ -237,10 +227,9 @@ Deno.test("[flow-step] genuine plan-execution prompts still yield actions", asyn
 });
 
 Deno.test("[flow-step] a plan-execution prompt embedding `## Step N` headers still yields actions", async () => {
-  // The regression this guards: a plan's steps render as `## Step N` markdown headers, so an
-  // execution prompt carries the same header shape as merged flow context. A first fix matched
-  // the header alone and hijacked execution, starving the ReAct loop — "No actions generated
-  // in ReAct iteration" — which reads as an agent fault rather than a mock misclassification.
+  // The regression this guards: plan steps render as `## Step N` headers too, so an
+  // execution prompt can look like merged flow context. A prior fix matched the header alone
+  // and hijacked execution, surfacing as a misleading "no actions generated" error.
   const provider = new MockLLMProvider(MockStrategy.RECORDED, { recordings: [] });
 
   const prompt = `You are executing a plan.
@@ -261,17 +250,9 @@ Action required: implement step 1.`;
   assertEquals(response.content.includes(TAG_CONTENT), false);
 });
 
-// ---------------------------------------------------------------------------
-// Recorded replay must be honest about whether it replayed anything.
-//
-// `recorded` is the DEFAULT strategy, and with no fixtures configured the constructor
-// silently substitutes default patterns — so every scenario run so far reported
-// `provider: mock-recorded-<model>` while replaying nothing. Two guarantees make
-// fixture-backed runs trustworthy: the provider says when it is really pattern-matching, and
-// strict mode refuses a prompt it has no recording for instead of quietly answering from a
-// regex. Without the second, a fixture set with holes degrades into the same silent
-// misclassification that produced "No actions generated in ReAct iteration".
-// ---------------------------------------------------------------------------
+// `recorded` is the default strategy and silently pattern-matches when no fixtures are
+// configured, so isPatternFallback and strict-mode fixture checks below guard against tests
+// silently degrading into unverified pattern replay.
 
 Deno.test("[recorded] a provider with no fixtures reports that it is pattern-matching", () => {
   const provider = new MockLLMProvider(MockStrategy.RECORDED, { recordings: [] });

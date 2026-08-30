@@ -27,11 +27,8 @@ const CORPUS_ROOT = ".copilot";
 /** Extensions that carry prose or config an agent reads — i.e. anywhere a key could be pasted. */
 const SCANNED_EXTENSIONS = [".md", ".json", ".yaml", ".yml", ".txt"];
 
-/**
- * Credential shapes with enough structure to be unambiguous. Deliberately excludes loose patterns
- * like /api[_-]?key/ — the corpus documents configuration and is full of the WORD "api_key", so a
- * looser scanner would be permanently red and get disabled.
- */
+/** Credential shapes with enough structure to be unambiguous; excludes loose patterns like
+ * /api[_-]?key/ since the corpus is full of that word in config docs and would stay permanently red. */
 const SECRET_PATTERNS: ReadonlyArray<[name: string, pattern: RegExp]> = [
   ["AWS access key id", /AKIA[A-Z0-9]{16}/],
   ["OpenAI secret key", /sk-[a-zA-Z0-9]{32,}/],

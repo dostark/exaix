@@ -142,13 +142,6 @@ export class GitService implements IGitService {
     this.repoPath = options.repoPath || this.config.system.root;
   }
 
-  /**
-   * Set the repository path for git operations
-   * Validates that the path exists and is a git repository
-   *
-   * @param repoPath - Absolute path to git repository
-   * @throws GitRepositoryError if path is invalid or not a git repository
-   */
   setRepository(repoPath: string): void {
     // Validate directory exists
     try {
@@ -174,11 +167,6 @@ export class GitService implements IGitService {
     this.repoPath = repoPath;
   }
 
-  /**
-   * Get the current repository path
-   *
-   * @returns Absolute path to current git repository
-   */
   getRepository(): string {
     return this.repoPath;
   }
@@ -486,11 +474,6 @@ export class GitService implements IGitService {
     }
   }
 
-  /**
-   * Get the current branch name
-   *
-   * @returns Current branch name
-   */
   async getCurrentBranch(): Promise<string> {
     const result = await this.runGitCommand([GIT_CMD_BRANCH, "--show-current"]);
     return result.output.trim();
@@ -549,26 +532,14 @@ export class GitService implements IGitService {
     return GitBranchName.MAIN;
   }
 
-  /**
-   * Add a git worktree at the given path, checked out at the given base branch/ref.
-   *
-   * Note: This does not create a feature branch; callers should create/checkout the
-   * feature branch within the worktree checkout.
-   */
+  /** Adds a worktree at `worktreePath` checked out at `baseBranch`; does not create a feature branch — callers must do that within the worktree. */
   async addWorktree(worktreePath: string, baseBranch: string): Promise<void> {
     // Use --force to allow checking out branches that may be in use by other worktrees
     // This is safe because the execution worktree will create its own feature branch
     await this.runGitCommand([GIT_CMD_WORKTREE, GIT_CMD_ADD, worktreePath, baseBranch, "--force"]);
   }
 
-  /**
-   * Remove a git worktree.
-   *
-   * When `options.deleteBranch` is true, the branch checked out at that worktree
-   * is also deleted after the worktree is removed. This keeps the worktree and
-   * its ephemeral request branch lifecycle symmetric: a removed execution
-   * worktree must not leave an orphaned `feat/request-*` ref behind.
-   */
+  /** Removes a worktree; when `options.deleteBranch` is true also deletes its branch, to avoid leaving an orphaned `feat/request-*` ref behind. */
   async removeWorktree(
     worktreePath: string,
     options?: Opt<{ force?: boolean; deleteBranch?: boolean }, Reason.ExecutionConfig>,
@@ -605,18 +576,7 @@ export class GitService implements IGitService {
     return protectedBranches.includes(branchName.toLowerCase());
   }
 
-  /**
-   * Prune stale git worktree metadata.
-   *
-   * This is useful when worktree directories were deleted manually or after crashes,
-   * leaving stale entries under `.git/worktrees`.
-   *
-   * Also deletes orphaned `feat/request-*` branches: an ephemeral execution branch
-   * whose worktree directory is gone (e.g. a scenario-sandbox `/tmp` dir removed
-   * out-of-band) is a leak — the ref persists in the shared `.git` forever. Branches
-   * still checked out in a live worktree are untouched, so pending-review branches
-   * survive.
-   */
+  /** Prune stale git worktree metadata. This is useful when worktree directories were deleted manually or after crashes, leaving stale entries under `.git/worktrees`. Also deletes orphaned `feat/request-*` branches: an ephemeral execution branch whose worktree directory is gone (e.g. a scenario-sandbox `/tmp` dir removed out-of-band) is a leak — the ref persists in the shared `.git` forever. Branches still checked out in a live worktree are untouched, so pending-review branches survive. */
   async pruneWorktrees(
     options?: Opt<
       { dryRun?: boolean; verbose?: boolean; expire?: string },
@@ -635,10 +595,7 @@ export class GitService implements IGitService {
     return result.output;
   }
 
-  /**
-   * Delete `feat/request-*` branches whose worktree no longer exists. A branch is
-   * kept when any live worktree (including the main checkout) still references it.
-   */
+  /** Delete `feat/request-*` branches whose worktree no longer exists. A branch is kept when any live worktree (including the main checkout) still references it. */
   private async pruneOrphanedRequestBranches(): Promise<void> {
     const liveWorktrees = await this.listWorktrees();
     const liveBranches = new Set(
@@ -723,10 +680,7 @@ export class GitService implements IGitService {
     return worktrees;
   }
 
-  /**
-   * Validate git command for security violations
-   * @throws GitSecurityError if command violates security policies
-   */
+  /** Validate git command for security violations @throws GitSecurityError if command violates security policies */
   private validateGitCommandSecurity(args: string[]): void {
     const fullCommand = args.join(" ").toLowerCase();
 
@@ -740,10 +694,7 @@ export class GitService implements IGitService {
     }
   }
 
-  /**
-   * Validate git command arguments for security and policy compliance.
-   * Checks for dangerous options, protected branch operations, and destructive commands.
-   */
+  /** Validate git command arguments for security and policy compliance. Checks for dangerous options, protected branch operations, and destructive commands. */
   validateArgs(args: string[]): { valid: boolean; reason?: string } {
     const dangerousGitOptions = [
       "--exec-path",
@@ -801,11 +752,7 @@ export class GitService implements IGitService {
     return { valid: true };
   }
 
-  /**
-   * Error detail for a failed git command. git writes some failure messages
-   * (e.g. "nothing to commit") to stdout rather than stderr, so fall back to
-   * stdout when stderr is empty.
-   */
+  /** Error detail for a failed git command. git writes some failure messages (e.g. "nothing to commit") to stdout rather than stderr, so fall back to stdout when stderr is empty. */
   private errorDetail(errorOutput: string, output: string): string {
     return errorOutput || output;
   }

@@ -37,10 +37,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 // Helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Derive an actionability score from a partial heuristic result.
- * Uses ambiguity count and complexity as a proxy (no real score from heuristic).
- */
+/** Derive an actionability score from a partial heuristic result (ambiguity count + complexity proxy). */
 function heuristicActionabilityScore(partial: Partial<IRequestAnalysis>): number {
   let score = HEURISTIC_SCORE_BASELINE;
   const ambiguities = partial.ambiguities ?? [];
@@ -60,10 +57,8 @@ function mergeFileRefs(base: IRequestAnalysis, heuristic: Partial<IRequestAnalys
   return { ...base, referencedFiles: merged };
 }
 
-/**
- * Build a complete `IRequestAnalysis` from a partial heuristic result.
- * Fills all required fields with safe defaults so the result is always valid.
- */
+/** Build a complete `IRequestAnalysis` from a partial heuristic result, filling all
+ * required fields with safe defaults. */
 function completeFromHeuristic(
   partial: Partial<IRequestAnalysis>,
   requestText: string,
@@ -113,11 +108,8 @@ function completeFromHeuristic(
 // RequestAnalyzer
 // ---------------------------------------------------------------------------
 
-/**
- * Orchestrates heuristic and LLM analysis strategies to produce structured
- * request intent analysis.
- * @visible
- */
+/** Orchestrates heuristic and LLM analysis strategies to produce structured request intent analysis.
+ * @visible */
 export class RequestAnalyzer implements IRequestAnalyzerService {
   private readonly threshold: number;
   private readonly llmAnalyzer: LlmAnalyzer | null;

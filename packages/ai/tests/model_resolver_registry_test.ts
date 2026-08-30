@@ -239,7 +239,7 @@ Deno.test("[step134.2] registry getModelsByCapability throwing falls through to 
     throwing.getModelsByCapability = () => Promise.reject(new Error("registry unavailable"));
     const resolver = makeResolver(throwing);
 
-    // A throwing registry must NOT crash resolution — it degrades to Phase 132 scoring.
+    // A throwing registry must NOT crash resolution — it degrades to capability scoring instead.
     const result = await resolver.resolve({ model_size: "M" });
     assertEquals(result.provider, "resilient-provider");
     assertEquals(result.model.length > 0, true);

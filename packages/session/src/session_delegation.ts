@@ -27,11 +27,7 @@ export interface ISessionDelegationRequest {
   acceptanceCriteria: string[];
   artifactRef: string;
   worktreePath: string;
-  /**
-   * Pre-minted delegation trace id (Phase 174 Step 4). A session_delegate_cycle caller
-   * mints and durably claims this id before spawning, so the coordinator must use it
-   * rather than minting its own; omitted callers get a coordinator-minted id as before.
-   */
+  /** Pre-minted, durably claimed trace id the coordinator must use instead of minting its own; omitted callers get a coordinator-minted id. */
   delegationTraceId?: string;
 }
 

@@ -13,7 +13,7 @@ import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "@exaix/core";
-import type { IMemoryBankService } from "@exaix/core/types";
+import type { IMemoryBankService, Opt, Reason } from "@exaix/core/types";
 import type {
   IExecutionMemory,
   ILearning,
@@ -25,11 +25,6 @@ import { MemoryUpdateProposalSchema } from "@exaix/schemas/memory_bank.ts";
 import { LearningExtractor } from "./learning_extractor.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 
-/**
- * Memory Extractor Service
- *
- * Analyzes executions and manages memory update proposals.
- */
 export class MemoryExtractorService {
   private pendingDir: string;
 
@@ -37,7 +32,7 @@ export class MemoryExtractorService {
     private config: Config,
     private db: IDatabaseService,
     private memoryBank: IMemoryBankService,
-    private logger?: IEventLogger,
+    private logger?: Opt<IEventLogger, Reason.OptionalDependency>,
   ) {
     this.pendingDir = join(config.system?.root || Deno.cwd(), config.paths?.memory || "Memory", "Pending");
   }
@@ -46,25 +41,11 @@ export class MemoryExtractorService {
 
   // ===== Extraction Operations =====
 
-  /**
-   * Analyze an execution and extract potential learnings
-   *
-   * @param execution - Completed execution memory
-   * @returns Array of extracted learnings (without status, ready for proposal)
-   */
   analyzeExecution(execution: IExecutionMemory): IProposalLearning[] {
     return LearningExtractor.extract(execution);
   }
   // ===== Proposal Operations =====
 
-  /**
-   * Create a proposal from a learning and write to Pending directory
-   *
-   * @param learning - The learning to propose
-   * @param execution - Source execution
-   * @param identityId - Identity that created the learning
-   * @returns Proposal ID
-   */
   async createProposal(
     learning: IProposalLearning,
     execution: IExecutionMemory,
@@ -110,11 +91,6 @@ export class MemoryExtractorService {
     return proposal.id || "";
   }
 
-  /**
-   * List all pending proposals
-   *
-   * @returns Array of pending proposals
-   */
   async listPending(): Promise<IMemoryUpdateProposal[]> {
     const proposals: IMemoryUpdateProposal[] = [];
 
@@ -142,12 +118,6 @@ export class MemoryExtractorService {
     return proposals;
   }
 
-  /**
-   * Get a specific pending proposal
-   *
-   * @param proposalId - Proposal ID
-   * @returns Proposal or null if not found
-   */
   async getPending(proposalId: string): Promise<IMemoryUpdateProposal | null> {
     const proposalPath = join(this.pendingDir, `${proposalId}.json`);
 
@@ -163,11 +133,6 @@ export class MemoryExtractorService {
     }
   }
 
-  /**
-   * Approve a pending proposal and merge the learning
-   *
-   * @param proposalId - Proposal ID to approve
-   */
   async approvePending(proposalId: string, autoApproved = false): Promise<void> {
     const proposal = await this.getPending(proposalId);
     if (!proposal) {
@@ -214,12 +179,6 @@ export class MemoryExtractorService {
     );
   }
 
-  /**
-   * Reject a pending proposal
-   *
-   * @param proposalId - Proposal ID to reject
-   * @param reason - Rejection reason
-   */
   async rejectPending(proposalId: string, reason: string): Promise<void> {
     const proposal = await this.getPending(proposalId);
     if (!proposal) {
@@ -242,11 +201,6 @@ export class MemoryExtractorService {
     );
   }
 
-  /**
-   * Approve all pending proposals
-   *
-   * @returns Number of proposals approved
-   */
   async approveAll(): Promise<number> {
     const pending = await this.listPending();
     let approved = 0;

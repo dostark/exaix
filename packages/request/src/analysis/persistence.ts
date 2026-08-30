@@ -18,12 +18,8 @@ import type { IRequestAnalysis } from "@exaix/core/request";
 // Path helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Derive the `_analysis.json` path from the request `.md` path.
- *
- * Example:
- *   `Workspace/Requests/my-request.md` → `Workspace/Requests/my-request_analysis.json`
- */
+/** Derive the `_analysis.json` path from the request `.md` path, e.g.
+ * `Workspace/Requests/my-request.md` → `Workspace/Requests/my-request_analysis.json`. */
 export function deriveAnalysisPath(requestFilePath: string): string {
   // Strip any extension and append `_analysis.json`
   const dotIdx = requestFilePath.lastIndexOf(".");
@@ -35,10 +31,8 @@ export function deriveAnalysisPath(requestFilePath: string): string {
 // Save
 // ---------------------------------------------------------------------------
 
-/**
- * Persist `analysis` alongside `requestFilePath` as `<stem>_analysis.json`.
- * Writes atomically: first to `<path>.tmp`, then renames to the final path.
- */
+/** Persist `analysis` alongside `requestFilePath` as `<stem>_analysis.json`, atomically
+ * (temp file, then rename). */
 export async function saveAnalysis(
   requestFilePath: string,
   analysis: IRequestAnalysis,
@@ -54,11 +48,8 @@ export async function saveAnalysis(
 // Load
 // ---------------------------------------------------------------------------
 
-/**
- * Load and validate the `_analysis.json` sibling of `requestFilePath`.
- * Returns `null` if the file does not exist, cannot be parsed, or fails schema
- * validation — callers must handle the absent case gracefully.
- */
+/** Load and validate the `_analysis.json` sibling of `requestFilePath`; returns `null` if
+ * missing, unparsable, or schema-invalid. */
 export async function loadAnalysis(requestFilePath: string): Promise<IRequestAnalysis | null> {
   const jsonPath = deriveAnalysisPath(requestFilePath);
   let raw: string;

@@ -86,7 +86,7 @@ export type OpenAIUsage = {
   completion_tokens_details?: { reasoning_tokens?: number };
 };
 
-/** Phase 153: one OpenAI-format tool call, as it appears on the wire — `arguments` is a
+/** One OpenAI-format tool call, as it appears on the wire — `arguments` is a
  *  JSON-ENCODED STRING (unlike Anthropic's already-parsed `input` object), parsed by
  *  extractOpenAIToolCalls(). */
 export type OpenAIToolCall = {
@@ -100,8 +100,7 @@ export type OpenAIResponse = {
   choices?: Array<{
     message?: {
       content?: string;
-      /** Phase 153: present when finish_reason is "tool_calls". Absent for every
-       *  response until Step 2 (this step) is the first production caller. */
+      /** Present when finish_reason is "tool_calls". */
       tool_calls?: OpenAIToolCall[];
       /** Reasoning content disclosed by the model (Chat Completions reasoning models);
        *  must be echoed back on the replayed assistant message for multi-turn continuity
@@ -128,9 +127,9 @@ export type GoogleResponse = {
     content?: {
       parts?: Array<{
         text?: string;
-        /** Phase 153: present when Gemini selects a tool. `args` is already a PARSED
-         *  object on the wire (unlike OpenAI's JSON-encoded string) - confirmed via
-         *  official docs. No `id` field - extractGoogleToolCalls() generates one. */
+        /** Present when Gemini selects a tool. `args` is already a PARSED object on
+         *  the wire (unlike OpenAI's JSON-encoded string). No `id` field -
+         *  extractGoogleToolCalls() generates one. */
         functionCall?: { name: string; args: Record<string, JSONValue>; thoughtSignature?: string };
       }>;
     };
@@ -187,12 +186,9 @@ export function calculateCost(provider: string, totalTokens: number): number {
   return rate * (totalTokens / TOKENS_PER_COST_UNIT);
 }
 
-/**
- * Map a provider error response to the retry-semantics-bearing error class. The body's
- * documented error type (docs.anthropic.com/en/api/errors) wins over the HTTP status, so a
- * transient overloaded_error/rate_limit_error stays retryable even under a surprising
- * status; status-based mapping remains the fallback for untyped bodies.
- */
+/** Maps a provider error response to the retry-semantics-bearing error class. The
+ *  body's documented error type wins over the HTTP status, so a transient
+ *  overloaded_error/rate_limit_error stays retryable under a surprising status. */
 function classifyProviderError(
   status: number,
   errorType: Opt<string, Reason.OptionalContext>,
@@ -323,13 +319,12 @@ export function mapToolDefinitionOpenAI(tool: IToolDefinition): OpenAiWireToolDe
   };
 }
 
-/** OpenAI's wire-format `tool_choice`, mapped from IToolChoice per the Phase 153 mapping table. */
+/** OpenAI's wire-format `tool_choice`, mapped from IToolChoice. */
 export type OpenAiWireToolChoice = "auto" | "none" | "required" | { type: "function"; function: { name: string } };
 
-/** Map IToolChoice to OpenAI's wire-format tool_choice per the Phase 153 mapping table.
- *  `disable_parallel_tool_use` has no OpenAI Chat Completions equivalent within
- *  `tool_choice` itself - intentionally NOT wired to `parallel_tool_calls` (a different,
- *  unrelated top-level request field) in this phase (Pre-Gap Analysis GAP-1). */
+/** Map IToolChoice to OpenAI's wire-format tool_choice. `disable_parallel_tool_use`
+ *  has no equivalent within `tool_choice` itself and is intentionally NOT wired to
+ *  the unrelated top-level `parallel_tool_calls` request field. */
 export function mapToolChoiceOpenAI(choice: IToolChoice): OpenAiWireToolChoice {
   switch (choice.type) {
     case "auto":
@@ -354,9 +349,7 @@ function stringifyOpenAiToolResultContent(
 
 /** One outbound message in the OpenAI Chat Completions `messages[]` array, covering the
  *  three shapes this module constructs (priorTurn's assistant tool_calls + tool result,
- *  plus the plain user prompt). Exported so OpenRouter's byte-for-byte OpenAI-compatible
- *  request body (Step 4) can type its own `messages[]` field against the same shape instead
- *  of duplicating it. */
+ *  plus the plain user prompt). Exported for reuse by other OpenAI-compatible callers. */
 export type OpenAiChatMessage =
   | {
     role: "assistant";
@@ -374,12 +367,9 @@ export type OpenAiChatMessage =
  *  separately even though the literal value happens to match. */
 const OPENAI_MESSAGE_ROLE_TOOL = "tool";
 
-/**
- * Build the OpenAI Chat Completions `messages[]` array for `prompt`, optionally prepending
- * `priorTurn`'s 2-message exchange (assistant tool_calls + tool result) first. Exported so
- * OpenRouter's `buildRequestBody()` (Step 4) reuses this exact sequencing rather than
- * duplicating it - OpenRouter is a confirmed byte-for-byte pass-through of this wire shape.
- */
+/** Build the OpenAI Chat Completions `messages[]` array for `prompt`, optionally
+ *  prepending `priorTurn`'s 2-message exchange (assistant tool_calls + tool result)
+ *  first. Exported for reuse by other byte-for-byte OpenAI-compatible callers. */
 export function buildOpenAiMessages(
   prompt: string,
   priorTurn?: Opt<IProviderTurn, Reason.OptionalInput>,
@@ -408,24 +398,16 @@ export function buildOpenAiMessages(
   return messages;
 }
 
-/**
- * OpenAI's o-series and gpt-5.x reasoning models reject a non-default `temperature`/`top_p`
- * with a 400 invalid_request_error ("Only the default (1) value is supported") — confirmed
- * 2026-08-14 against a live gpt-5-mini call during Phase 153 Step 5's execution-phase
- * cutover. These models expose no fine-grained sampling control; only `reasoning.effort`
- * (Responses API, not part of Chat Completions) shapes generation. Matched by name prefix
- * since there is no `IProviderMetadata` capability flag for this today — `o1`/`o3`/`o4`
- * (bare "o" + digit) and the whole `gpt-5` family; `gpt-4o` ("o" for omni, not o-series)
- * and earlier models are unaffected.
- */
+/** OpenAI's o-series and gpt-5.x reasoning models reject a non-default
+ *  `temperature`/`top_p` with a 400 invalid_request_error; only `gpt-4o` ("o" for
+ *  omni, not o-series) and earlier models are unaffected. Matched by name prefix. */
 function isOpenAiReasoningModel(model: string): boolean {
   return /^(o\d|gpt-5)/.test(model);
 }
 
 /** OpenAI's `reasoning_effort` value that disables reasoning entirely — the only value
- *  Chat Completions accepts alongside function tools on gpt-5.6+ (see
- *  createOpenAIChatCompletionsRequestInit). Not a member of EffortTier ("low"/"medium"/
- *  "high"), so it is never a caller preference — only ever this forced override. */
+ *  Chat Completions accepts alongside function tools on gpt-5.6+. Not a member of
+ *  EffortTier, so it is never a caller preference, only a forced override. */
 const OPENAI_REASONING_EFFORT_NONE = "none";
 
 export function createOpenAIChatCompletionsRequestInit(
@@ -437,14 +419,8 @@ export function createOpenAIChatCompletionsRequestInit(
   const reasoningModel = isOpenAiReasoningModel(model);
   const hasTools = Boolean(options?.tools?.length);
   // gpt-5.6+ rejects function tools on Chat Completions unless reasoning_effort is
-  // exactly "none" ("Function tools with reasoning_effort are not supported for
-  // gpt-5.6-terra/gpt-5.6-luna in /v1/chat/completions... set reasoning_effort to
-  // 'none'" — confirmed live, 2026-08-14, against both tiers). Force it whenever tools
-  // are present so native tool-calling actually functions on this model family; "none"
-  // is not a valid EffortTier value, so this always overrides any caller preference for
-  // a tool-bearing call. Without tools, pass the caller's normalized EffortTier
-  // (low/medium/high, a valid subset of OpenAI's reasoning_effort values) through
-  // unchanged, preserving full reasoning-effort control for plain generation.
+  // exactly "none"; force it whenever tools are present so native tool-calling
+  // functions on this model family, overriding any caller-preferred effort tier.
   const reasoningEffort = reasoningModel ? (hasTools ? OPENAI_REASONING_EFFORT_NONE : options?.effort) : undefined;
   return {
     method: "POST",
@@ -455,11 +431,9 @@ export function createOpenAIChatCompletionsRequestInit(
     body: JSON.stringify({
       model,
       messages: buildOpenAiMessages(prompt, options?.priorTurn),
-      // OpenAI deprecated max_tokens in favor of max_completion_tokens (current API
-      // contract) and rejects max_tokens outright on o-series/gpt-5 reasoning models with
-      // a 400 invalid_request_error — confirmed 2026-08-14 against a live gpt-5-mini call
-      // during Phase 153 Step 5's execution-phase cutover. IModelOptions.max_tokens is
-      // Exaix's own field name (unchanged); only the OpenAI wire serialization moves.
+      // OpenAI deprecated max_tokens in favor of max_completion_tokens and rejects
+      // max_tokens outright on o-series/gpt-5 reasoning models; IModelOptions.max_tokens
+      // is Exaix's own field name — only the OpenAI wire serialization moves.
       max_completion_tokens: options?.max_tokens,
       temperature: reasoningModel ? undefined : options?.temperature,
       top_p: reasoningModel ? undefined : options?.top_p,
@@ -471,14 +445,9 @@ export function createOpenAIChatCompletionsRequestInit(
   };
 }
 
-/**
- * Extract ALL tool calls from an OpenAI response. Returns them as IProviderToolCall[]
- * when one or more exist, or undefined when none do. `function.arguments` is a
- * JSON-ENCODED STRING on the wire (unlike Anthropic's already-parsed `input`); a malformed
- * entry is logged and dropped rather than throwing (provider integrity, not crash) - the
- * remaining well-formed entries still come through. Does NOT modify extractOpenAIContent's
- * behavior - this is a separate pass.
- */
+/** Extract ALL tool calls from an OpenAI response, or undefined when none exist.
+ *  `function.arguments` is a JSON-ENCODED STRING on the wire (unlike Anthropic's
+ *  already-parsed `input`); a malformed entry is logged and dropped, not thrown. */
 export function extractOpenAIToolCalls(d: OpenAIResponse): IProviderToolCall[] | undefined {
   const rawCalls = d.choices?.[0]?.message?.tool_calls;
   if (!rawCalls || rawCalls.length === 0) return undefined;
@@ -532,15 +501,9 @@ export function extractGoogleContent(d: GoogleResponse): string {
   return d.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 }
 
-/**
- * Extract ALL tool calls from a Google response. Returns them as IProviderToolCall[] when one
- * or more `functionCall` parts exist, or undefined when none do. `args` is already a PARSED
- * object on the wire (unlike OpenAI's JSON-encoded `arguments` string) - no JSON.parse needed.
- * Gemini's `functionCall` has no `id` field, so a stable-enough-for-one-response synthetic id
- * is generated per call via crypto.randomUUID() (this codebase's established convention for
- * per-call ids, e.g. packages/ai/src/traced_provider.ts). Does NOT modify extractGoogleContent's
- * behavior - this is a separate pass.
- */
+/** Extract ALL tool calls from a Google response, or undefined when none exist.
+ *  `args` is already a PARSED object on the wire (unlike OpenAI's JSON-encoded
+ *  string). Gemini's `functionCall` has no `id`, so one is synthesized per call. */
 export function extractGoogleToolCalls(d: GoogleResponse): IProviderToolCall[] | undefined {
   const parts = d.candidates?.[0]?.content?.parts;
   if (!parts) return undefined;
@@ -585,12 +548,9 @@ export function tokenMapperAnthropic(model: string): ResponseTokenMapper<Anthrop
   };
 }
 
-/**
- * Extract textual content from Anthropic response. Thinking-capable models (Claude 5 family)
- * prepend a `thinking` content block before the `text` block when adaptive thinking triggers,
- * so taking content[0] blindly returns "" exactly when the model thought hardest — join every
- * text-bearing block instead (skipping blocks explicitly typed as something other than text).
- */
+/** Extract textual content from an Anthropic response. Thinking-capable models prepend
+ *  a `thinking` block before the `text` block, so content[0] alone can be empty —
+ *  join every text-bearing block instead. */
 export function extractAnthropicContent(d: AnthropicResponse): string {
   if (!d.content) return "";
   return d.content
@@ -599,14 +559,9 @@ export function extractAnthropicContent(d: AnthropicResponse): string {
     .join("");
 }
 
-/**
- * Extract ALL tool_use blocks from an Anthropic response. Returns the blocks as
- * IProviderToolCall[] when one or more exist, or undefined when none do.
- * The assistant message's leading `thinking` blocks (with their `signature`s) are captured
- * onto the tool call whose tool_use they accompanied — Anthropic requires replaying them
- * complete and unmodified (GAP-153-F). Does NOT modify extractAnthropicContent's behavior —
- * this is a separate pass.
- */
+/** Extract ALL tool_use blocks from an Anthropic response, or undefined when none exist.
+ *  The leading `thinking` blocks preceding each tool_use are captured onto it — Anthropic
+ *  requires replaying them complete and unmodified. */
 export function extractAnthropicToolCalls(d: AnthropicResponse): IProviderToolCall[] | undefined {
   if (!d.content) return undefined;
   const toolUseBlocks = d.content.filter((block) => block.type === "tool_use");
@@ -623,10 +578,9 @@ export function extractAnthropicToolCalls(d: AnthropicResponse): IProviderToolCa
   }));
 }
 
-/** Collect the `thinking` blocks immediately preceding the tool_use block at `toolUseIndex`
- *  in `content` (walking back from that tool_use, stopping at the next tool_use boundary or
- *  a text block — Anthropic's "preserving thinking blocks" rule). Returns `{ thinkingBlocks }`
- *  when at least one found, else undefined (so the spread omits the field entirely). */
+/** Collect the `thinking` blocks immediately preceding the tool_use block at
+ *  `toolUseIndex`, stopping at the previous tool_use boundary. Returns undefined
+ *  when none found, so the spread omits the field entirely. */
 function collectThinkingBlocksBefore(
   content: NonNullable<AnthropicResponse["content"]>,
   toolUseIndex: number,
@@ -644,10 +598,7 @@ function collectThinkingBlocksBefore(
   return blocks.length > 0 ? { thinkingBlocks: blocks } : undefined;
 }
 
-/**
- * Perform fetch with retries/backoff and timeout, and handle provider responses.
- * Centralizes abort handling, retry/backoff, and ensures bodies are consumed.
- */
+/** Perform fetch with retries/backoff and timeout, and handle provider responses. */
 export async function fetchJsonWithRetries<T>(
   url: string,
   fetchOptions: RequestInit,
@@ -692,10 +643,8 @@ export async function fetchJsonWithRetries<T>(
   return await withRetry(attemptFn, { maxRetries: maxAttempts, baseDelayMs: backoffBaseMs });
 }
 
-/**
- * Perform a provider call: fetch JSON with retries, then extract textual content using the provided extractor.
- * This centralizes the common provider pattern: fetch -> handleProviderResponse -> extract content.
- */
+/** Perform a provider call: fetch JSON with retries, then extract textual content
+ *  using the provided extractor. */
 export async function performProviderCall<T>(
   url: string,
   fetchOptions: RequestInit,
@@ -718,10 +667,8 @@ export async function performProviderCall<T>(
     tokenMapper?: (d: T, providerId?: string) => TokenMap | undefined;
     extractor?: (d: T) => string;
     stopReasonExtractor?: (d: T) => string | undefined;
-    /** Optional extractor for native tool-call blocks in the provider response.
-     *  When present and the response contains tool_use blocks, the result is
-     *  surfaced as IGenerateResult.toolCalls. Absent for every call today —
-     *  AnthropicProvider.postMessages() (Step 2) is the first consumer. */
+    /** Optional extractor for native tool-call blocks in the provider response,
+     *  surfaced as IGenerateResult.toolCalls when present. */
     toolCallExtractor?: (d: T) => IProviderToolCall[] | undefined;
   },
 ): Promise<IGenerateResult> {
@@ -733,10 +680,9 @@ export async function performProviderCall<T>(
     logger,
     tokenMapper,
   });
-  // Debug-level dump of the complete raw response body, symmetric with
-  // provider.request_debug_dump: content extraction deliberately strips parts of the
-  // response (e.g. thinking blocks), so follow-up investigation of a live-provider
-  // issue needs the unfiltered body in the journal.
+  // Debug-level dump of the raw response body: content extraction strips parts of
+  // it (e.g. thinking blocks), so investigating a live-provider issue needs the
+  // unfiltered body in the journal.
   if (logger) {
     void logger.debug(PROVIDER_EVENT_RESPONSE_DEBUG_DUMP, id, {
       provider: id,

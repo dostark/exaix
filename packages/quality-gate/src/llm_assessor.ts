@@ -65,10 +65,7 @@ Return ONLY the JSON object. No explanation, no markdown, no additional text.`;
 // LlmQualityAssessor class
 // ---------------------------------------------------------------------------
 
-/**
- * Quality assessor that uses an LLM to produce a detailed quality assessment.
- * Intended for "llm" and "hybrid" QualityGateMode.
- */
+/** Produces assessments for LLM and hybrid quality-gate modes. */
 export class LlmQualityAssessor {
   private readonly provider: IModelProvider;
   private readonly validator: IOutputValidator;
@@ -78,14 +75,7 @@ export class LlmQualityAssessor {
     this.validator = validator;
   }
 
-  /**
-   * Assess the quality of the given request text using an LLM.
-   * Falls back to the heuristic assessor when the LLM fails or
-   * returns a response that cannot be validated.
-   *
-   * @param requestText - Raw request body text to assess.
-   * @returns A complete `IRequestQualityAssessment`.
-   */
+  /** Falls back to heuristic assessment when the LLM call or validation fails. */
   async assess(requestText: string): Promise<IRequestQualityAssessment> {
     const start = performance.now();
 

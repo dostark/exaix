@@ -174,9 +174,7 @@ Deno.test({
       true,
       "Gate must detect an identity missing role-required skills",
     );
-    // Assert against the role matrix rather than a hardcoded skill name: this test previously
-    // named `portal-grounding`, which stopped being a role requirement when Phase 142 Step 17
-    // pruned it from every identity's defaults in favour of trigger matching.
+    // Assert against the role matrix rather than a hardcoded skill name, since role requirements change.
     assertEquals(
       missing.sort(),
       [...required].sort(),

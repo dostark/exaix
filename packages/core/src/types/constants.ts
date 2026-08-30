@@ -35,7 +35,7 @@ export const EDITION_TEAM = "team";
 export const EDITION_ENTERPRISE = "enterprise";
 
 // ============================================================================
-// Guardrail (Phase 107)
+// Guardrail
 // ============================================================================
 /** Maximum time (ms) to wait for a guardrail policy evaluation before timing out. */
 export const GUARDRAIL_SCREEN_TIMEOUT_MS: number = configurable({
@@ -52,7 +52,7 @@ export const GUARDRAIL_SCREEN_TIMEOUT_MS: number = configurable({
 export const GUARDRAIL_FLAGGED_EXCERPT_MAX_CHARS = 500;
 
 // ============================================================================
-// HITL / Governance (Phase 118)
+// HITL / Governance
 // ============================================================================
 /** Maximum time (ms) for a HitlPolicyEvaluator.evaluate() call to stay within. */
 export const HITL_EVAL_BUDGET_MS: number = configurable({
@@ -115,7 +115,7 @@ export const ExaPathDefaults = {
   memoryGlobal: `${DEFAULT_MEMORY_PATH}/${DEFAULT_GLOBAL_MEMORY_PATH}`,
 } as const;
 
-// Plan amendment constants (Phase 66)
+// Plan amendment constants
 export const AMENDMENT_ARTIFACTS_DIR = "amendments";
 export const DEFAULT_AMENDMENT_EXPIRY_MS: number = configurable({
   key: "amendment.expiry_ms",
@@ -153,7 +153,7 @@ export const DEFAULT_AMENDMENT_ON_TIMEOUT: AmendmentTimeoutAction = configurable
   swap: SwapClass.RESTART,
 });
 
-// Live execution streaming constants (Phase 67)
+// Live execution streaming constants
 export const STREAMING_EVENT_HEARTBEAT = "agent.heartbeat";
 export const STREAMING_EVENT_TOOL_START = "tool.start";
 export const STREAMING_EVENT_TOOL_END = "tool.end";
@@ -179,7 +179,7 @@ export const EVENT_BUS_MAX_SUBSCRIBER_QUEUE: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-// Milestone type constants (Phase 92)
+// Milestone type constants
 export const MILESTONE_FLOW_STARTED = "flow.started";
 export const MILESTONE_FLOW_STEP_STARTED = "flow.step.started";
 export const MILESTONE_FLOW_STEP_COMPLETED = "flow.step.completed";
@@ -279,10 +279,7 @@ export const DEFAULT_DATABASE_HALF_OPEN_SUCCESS_THRESHOLD: number = configurable
 // ============================================================================
 // Config DB — polling and dynamic key namespaces
 // ============================================================================
-/**
- * Polling interval (ms) for the Config DB watcher that detects external
- * overrides via MAX(id) change. Used in the daemon's polling loop.
- */
+/** Polling interval (ms) for the Config DB watcher that detects external overrides via MAX(id) change. */
 export const DEFAULT_CONFIG_DB_POLL_INTERVAL_MS: number = configurable({
   key: "config_db.poll_interval_ms",
   default: 5_000,
@@ -292,22 +289,13 @@ export const DEFAULT_CONFIG_DB_POLL_INTERVAL_MS: number = configurable({
   max: 60_000,
   swap: SwapClass.HOT,
 });
-/**
- * Key prefix for profile-scoped config keys (`profile.<name>.<base>`). A key
- * under this prefix validates against its stripped base key's registry metadata
- * rather than requiring its own `configurable()` registration. Used by
- * DirectConfigAdapter.resolveValidationKey().
- */
+/** Key prefix for profile-scoped config keys (`profile.<name>.<base>`); validates against the stripped base key's own `configurable()` metadata (see DirectConfigAdapter.resolveValidationKey()). */
 export const CONFIG_PROFILE_KEY_PREFIX = "profile.";
-/**
- * Wildcard segment used in `configurable()` pattern keys (e.g. `models.*.model`,
- * `paths.*`). A concrete key like `models.default.model` validates against the
- * matching pattern key's metadata.
- */
+/** Wildcard segment used in `configurable()` pattern keys (e.g. `models.*.model`); a concrete key validates against the matching pattern key's metadata. */
 export const CONFIG_PATTERN_WILDCARD = "*";
 
 // ============================================================================
-// Config Rate Limiting (Phase 138 Step 3)
+// Config Rate Limiting
 // ============================================================================
 
 /** Sliding window (ms) over which CLI `config set` writes are counted. */
@@ -322,20 +310,12 @@ export const CONFIG_DB_OVERRIDE_WARN_THRESHOLD = 100_000;
 export const CONFIG_DB_OVERRIDE_HARD_LIMIT = 1_000_000;
 
 // ============================================================================
-// Config Integrity Checksum (Phase 139 Step 5, §11.7)
+// Config Integrity Checksum (§11.7)
 // ============================================================================
 
-/**
- * Synthetic config_overrides key under which the Config-DB integrity checksum is
- * stored. Excluded from the checksum computation, from listOverrides/diff, and
- * from the DB watcher so it never surfaces as a user override.
- */
+/** Synthetic config_overrides key for the Config-DB integrity checksum; excluded from the checksum computation, listOverrides/diff, and the DB watcher so it never surfaces as a user override. */
 export const CONFIG_CHECKSUM_KEY = "_checksum";
-/**
- * How often (ms) the daemon re-verifies the Config-DB integrity checksum on its
- * existing DB-watcher poll loop (§11.7 "every 60s"). Tunable via
- * `exactl config set config.integrity.poll_interval_ms`.
- */
+/** How often (ms) the daemon re-verifies the Config-DB integrity checksum on its existing DB-watcher poll loop (§11.7). */
 export const CONFIG_INTEGRITY_POLL_INTERVAL_MS: number = configurable({
   key: "config.integrity.poll_interval_ms",
   default: 60_000,
@@ -390,7 +370,7 @@ export const DEFAULT_WATCHER_STABILITY_MIN_FILE_SIZE: number = configurable({
 // ============================================================================
 
 // ============================================================================
-// Session Delegate (Phase 111/123)
+// Session Delegate
 // ============================================================================
 /** Maximum time (ms) to drain a headless delegate's stdout stream. */
 export const DELEGATE_STDOUT_DRAIN_MS: number = configurable({
@@ -403,13 +383,9 @@ export const DELEGATE_STDOUT_DRAIN_MS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-/** Overall wall-clock deadline (ms) for one HeadlessSessionLauncher.launch() call — bounds
- *  total child-process lifetime independently of the per-read idle timeout
- *  (DELEGATE_STDOUT_DRAIN_MS, which only bounds silence between individual reads). On
- *  expiry the child is killed and the launch degrades to an abandoned return instead of
- *  blocking the caller indefinitely (Phase 167 GAP-15). Deliberately generous: a
- *  legitimate long-running session should never hit this; it exists solely to recover
- *  from a genuinely stuck child without requiring a daemon restart. */
+/** Overall wall-clock deadline (ms) for one HeadlessSessionLauncher.launch() call — bounds total
+ *  child-process lifetime independently of the per-read idle timeout (DELEGATE_STDOUT_DRAIN_MS).
+ *  On expiry the child is killed and the launch degrades to an abandoned return. */
 export const DELEGATE_LAUNCH_TIMEOUT_MS: number = configurable({
   key: "delegate.launch_timeout_ms",
   default: 7_200_000, // 2 hours
@@ -421,12 +397,9 @@ export const DELEGATE_LAUNCH_TIMEOUT_MS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-/** Cumulative byte cap per drained stream (stdout or stderr) inside
- *  HeadlessSessionLauncher's drainStream(). DELEGATE_STDOUT_DRAIN_MS only bounds idle
- *  time between reads, not total bytes — an adversarial or verbose child can otherwise
- *  grow the in-memory buffer without bound (Phase 167 GAP-15). Past the cap, further
- *  chunks are still read (to avoid reintroducing OS pipe backpressure) but no longer
- *  buffered. */
+/** Cumulative byte cap per drained stream (stdout or stderr) inside HeadlessSessionLauncher's
+ *  drainStream(): DELEGATE_STDOUT_DRAIN_MS only bounds idle time between reads, not total bytes.
+ *  Past the cap, chunks are still read (to avoid OS pipe backpressure) but no longer buffered. */
 export const DELEGATE_STREAM_MAX_BYTES: number = configurable({
   key: "delegate.stream_max_bytes",
   default: 10_485_760, // 10 MB
@@ -590,11 +563,7 @@ export const PLAN_AMENDMENT_EVENT_APPLIED = "plan.amendment.applied";
 export const SKILL_EVENT_MATCH_COMPLETED = "skills.match_completed";
 export const SKILL_EVENT_RETRIEVAL_TIMEOUT = "skills.retrieval_timeout";
 export const SKILL_EVENT_RETRIEVAL_FAILED = "skills.retrieval_failed";
-/**
- * The final skill set for a request, with the pinned/matched/default breakdown that produced
- * it (Phase 142 Step 17). Distinct from SKILL_EVENT_MATCH_COMPLETED, which reports only the
- * dynamic-matching stage and is not reached at all when a request pins skills explicitly.
- */
+/** The final skill set for a request, with the pinned/matched/default breakdown that produced it (Phase 142 Step 17). Distinct from SKILL_EVENT_MATCH_COMPLETED, which reports only the dynamic-matching stage and is not reached at all when a request pins skills explicitly. */
 export const SKILL_EVENT_RESOLVED = "skills.resolved";
 export const MEMORY_EVENT_AUTO_APPROVED = "memory.auto_approved";
 export const MEMORY_EVENT_TIER_SELECTED = "memory.tier_selected";
@@ -1165,10 +1134,7 @@ export const DEFAULT_SKILLS_LOG_MATCHED_IDS: boolean = configurable({
 /** Maximum allowed length for a saved session-memory insight description. */
 export const SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS = 2_000;
 
-// HARDCODED_MODEL_ALLOWLIST removed in Step 7b — the gate served its transition purpose.
-// All business logic now resolves models through IModelRegistry/IModelPricingLookup.
-// The curated data file (packages/model-registry/src/static_overlay.ts) is intentionally
-// exempt — it IS the Solo-tier data source, not an ad-hoc reference.
+// HARDCODED_MODEL_ALLOWLIST removed in Step 7b — the gate served its transition purpose. All business logic now resolves models through IModelRegistry/IModelPricingLookup. The curated data file (packages/model-registry/src/static_overlay.ts) is intentionally exempt — it IS the Solo-tier data source, not an ad-hoc reference.
 
 // Tokenizer backend modes
 export const TOKENIZER_BACKEND_AUTO = "auto" as const;
@@ -1226,10 +1192,7 @@ export const MEMORY_TIER_PROMOTION_SCORE_MEDIUM = 50;
 /** Initial promotion score for low-confidence tiered memory entries. */
 export const MEMORY_TIER_PROMOTION_SCORE_LOW = 20;
 
-/**
- * Base allocation weights for prompt budget sections (as proportions of usable context).
- * Sum should equal 1.0 after waterfall reallocation.
- */
+/** Base allocation weights for prompt budget sections (as proportions of usable context). Sum should equal 1.0 after waterfall reallocation. */
 export const SECTION_BASE_WEIGHTS = {
   system: 0.20,
   plan: 0.35,
@@ -1268,12 +1231,7 @@ export const DEFAULT_COST_TRACKING_MAX_BATCH_SIZE: number = configurable({
   max: COST_TRACKING_MAX_BATCH_SIZE_MAX,
   swap: SwapClass.RESTART,
 });
-/**
- * Phase 135 (§5.5.2, GAP-6) — fallback tolerance (percent) for reported-vs-computed
- * cost divergence when `config.model_registry.cost_divergence_tolerance_pct` is absent
- * (e.g. a Solo daemon with no `model_registry` block). The configurable value lives on
- * the `model_registry` config schema; this constant is the nullish-read default.
- */
+/** Phase 135 (§5.5.2, GAP-6) — fallback tolerance (percent) for reported-vs-computed cost divergence when `config.model_registry.cost_divergence_tolerance_pct` is absent (e.g. a Solo daemon with no `model_registry` block). The configurable value lives on the `model_registry` config schema; this constant is the nullish-read default. */
 export const DEFAULT_COST_DIVERGENCE_TOLERANCE_PCT = 5;
 // Rates per 1K tokens. Based on 2025-2026 output pricing:
 // OpenAI gpt-5-mini: $2.00/1M output → $0.002/1K
@@ -1512,11 +1470,7 @@ export const DEFAULT_SUBPROCESS_TIMEOUT_MS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-// ============================================================================
-// Keyboard Key Constants - DEPRECATED: Use KEYS from src/t../helpers/keyboard.ts
-// ============================================================================
-// All KEY_ constants have been moved to the KEYS object in src/t../helpers/keyboard.ts
-// for better type safety and consistency. Please import from there instead.
+// ============================================================================ Keyboard Key Constants - DEPRECATED: Use KEYS from src/t../helpers/keyboard.ts ============================================================================ All KEY_ constants have been moved to the KEYS object in src/t../helpers/keyboard.ts for better type safety and consistency. Please import from there instead.
 
 // ============================================================================
 // Logging Defaults
@@ -2318,10 +2272,7 @@ export const PORTAL_KNOWLEDGE_CONFIG_EXTENSIONS: string[] = [
   ".yml",
 ];
 
-/**
- * File name/path patterns that are always collected before the scan cap applies
- * (priority-first traversal). Matched using substring/suffix checks.
- */
+/** File name/path patterns that are always collected before the scan cap applies (priority-first traversal). Matched using substring/suffix checks. */
 export const PORTAL_KNOWLEDGE_PRIORITY_PATTERNS: string[] = [
   "package.json",
   "deno.json",
@@ -2342,10 +2293,7 @@ export const PORTAL_KNOWLEDGE_PRIORITY_PATTERNS: string[] = [
   "server.ts",
 ];
 
-/**
- * Maps well-known directory names to architecture layer descriptions.
- * Keys are directory names (relative path components). Values are responsibility strings.
- */
+/** Maps well-known directory names to architecture layer descriptions. Keys are directory names (relative path components). Values are responsibility strings. */
 export const PORTAL_KNOWLEDGE_ARCH_LAYER_DIRS: Record<string, string> = {
   services: "Core business logic and service implementations",
   controllers: "Request handling and routing controllers",
@@ -2388,10 +2336,7 @@ export const DEFAULT_QG_MODE: string = configurable({
   swap: SwapClass.RESTART,
 });
 
-/**
- * Score below which a request requires clarification or is rejected.
- * Requests scoring below this are not actionable without human input.
- */
+/** Score below which a request requires clarification or is rejected. Requests scoring below this are not actionable without human input. */
 export const DEFAULT_QG_MINIMUM_THRESHOLD: number = configurable({
   key: "quality_gate.minimum_threshold",
   default: 20,
@@ -2402,10 +2347,7 @@ export const DEFAULT_QG_MINIMUM_THRESHOLD: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-/**
- * Score below which auto-enrichment is applied (but above minimum).
- * Requests in the [minimum, enrichment) band are auto-enriched via LLM.
- */
+/** Score below which auto-enrichment is applied (but above minimum). Requests in the [minimum, enrichment) band are auto-enriched via LLM. */
 export const DEFAULT_QG_ENRICHMENT_THRESHOLD: number = configurable({
   key: "quality_gate.enrichment_threshold",
   default: 50,
@@ -2721,12 +2663,7 @@ export const LOOP_HISTORY_BUDGET_THRESHOLD = 0.8;
 /** Token compression ratio applied to compacted loop history entries. */
 export const LOOP_HISTORY_COMPRESSION_RATIO = 0.3;
 
-/**
- * Max tokens for LLM summarization prompt during loop history compaction.
- * Must leave headroom for models whose thinking blocks count against
- * max_tokens — a cap sized only for the summary text can be consumed
- * entirely by thinking, yielding an empty summary.
- */
+/** Max tokens for LLM summarization prompt during loop history compaction. Must leave headroom for models whose thinking blocks count against max_tokens — a cap sized only for the summary text can be consumed entirely by thinking, yielding an empty summary. */
 export const COMPACT_SUMMARY_MAX_TOKENS: number = configurable({
   key: "agent.compact_summary_max_tokens",
   default: 2048,
@@ -2748,28 +2685,16 @@ export const DEFAULT_KEEP_LAST_N_STEPS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-/**
- * Event name emitted after initial budget allocation with full breakdown.
- * @deprecated Use `DomainEventType.ContextBudgetAllocated` from `@exaix/core/events` instead.
- */
+/** Event name emitted after initial budget allocation with full breakdown. @deprecated Use `DomainEventType.ContextBudgetAllocated` from `@exaix/core/events` instead. */
 export const CONTEXT_BUDGET_ALLOCATED = "context.budget.allocated";
 
-/**
- * Event name emitted after each section is built in the execution prompt.
- * @deprecated Use `DomainEventType.ContextBudgetConsumed` from `@exaix/core/events` instead.
- */
+/** Event name emitted after each section is built in the execution prompt. @deprecated Use `DomainEventType.ContextBudgetConsumed` from `@exaix/core/events` instead. */
 export const CONTEXT_BUDGET_CONSUMED = "context.budget.consumed";
 
-/**
- * Event name emitted when a section is truncated to fit budget.
- * @deprecated Use `DomainEventType.ContextSectionTruncated` from `@exaix/core/events` instead.
- */
+/** Event name emitted when a section is truncated to fit budget. @deprecated Use `DomainEventType.ContextSectionTruncated` from `@exaix/core/events` instead. */
 export const CONTEXT_SECTION_TRUNCATED = "context.section.truncated";
 
-/**
- * Event name emitted when total estimated tokens exceed context window.
- * @deprecated Use `DomainEventType.ContextBudgetExceeded` from `@exaix/core/events` instead.
- */
+/** Event name emitted when total estimated tokens exceed context window. @deprecated Use `DomainEventType.ContextBudgetExceeded` from `@exaix/core/events` instead. */
 export const CONTEXT_BUDGET_EXCEEDED = "context.budget.exceeded";
 
 // ============================================================================
@@ -2779,12 +2704,7 @@ export const CONTEXT_BUDGET_EXCEEDED = "context.budget.exceeded";
 /** Maximum median latency in ms for the synchronous compaction tier (no LLM calls). */
 export const CONTEXT_BUDGET_OVERHEAD_TARGET_MS = 15;
 
-/**
- * Segment priority constants (range 0–100, higher = more protected).
- * Tie-break rule: insertion order (FIFO).
- * Segments with kind "system", "request", "acceptance_criteria" are always kept
- * regardless of these values.
- */
+/** Segment priority constants (range 0–100, higher = more protected). Tie-break rule: insertion order (FIFO). Segments with kind "system", "request", "acceptance_criteria" are always kept regardless of these values. */
 export const CONTEXT_PRIORITY_SYSTEM = 100;
 export const CONTEXT_PRIORITY_ACCEPTANCE_CRITERIA = 90;
 export const CONTEXT_PRIORITY_PLAN_STEP = 80;
@@ -2794,12 +2714,7 @@ export const CONTEXT_PRIORITY_REFLECTION = 40;
 export const CONTEXT_PRIORITY_TOOL_RESULT = 30;
 export const CONTEXT_PRIORITY_SUMMARY = 20;
 
-/**
- * Fraction of the loopHistory section budget applied as a per-segment cap
- * for tool_result segments in dynamic (ReAct) execution mode.
- * Used in ReActLoopStrategy.applyContextBudget() to prevent any single
- * tool result from consuming the entire loopHistory budget.
- */
+/** Fraction of the loopHistory section budget applied as a per-segment cap for tool_result segments in dynamic (ReAct) execution mode. Used in ReActLoopStrategy.applyContextBudget() to prevent any single tool result from consuming the entire loopHistory budget. */
 export const REACT_TOOL_RESULT_BUDGET_RATIO = 0.6;
 
 /** Canonical section names in IPromptBudget.sections (used for budget tracking). */
@@ -2956,10 +2871,7 @@ export const SESSION_DEFAULT_MAX_TOTAL_TOKENS: number = configurable({
   swap: SwapClass.RESTART,
 });
 
-/**
- * Token-budget environment variables injected into a delegated session tool's
- * launch. Tool-agnostic; the adapter sets only these (never inherits secrets).
- */
+/** Token-budget environment variables injected into a delegated session tool's launch. Tool-agnostic; the adapter sets only these (never inherits secrets). */
 export const SESSION_ENV_MAX_INPUT_TOKENS = "EXA_SESSION_MAX_INPUT_TOKENS";
 export const SESSION_ENV_MAX_OUTPUT_TOKENS = "EXA_SESSION_MAX_OUTPUT_TOKENS";
 export const SESSION_ENV_MAX_TOTAL_TOKENS = "EXA_SESSION_MAX_TOTAL_TOKENS";
@@ -2988,12 +2900,7 @@ export const SESSION_OUTPUT_FORMAT_JSON = "json";
 /** Headless model selector: `claude --model <m>` / `opencode run --model <m>` (Phase 122 Step 0b). */
 export const SESSION_FLAG_MODEL = "--model";
 
-/**
- * Claude Code headless output-streaming flags: `claude -p <objective>
- * --output-format stream-json --verbose` emits newline-delimited JSON events
- * for one turn, then exits — used by CliDelegateStrategy to parse tool-use
- * and usage out of a single cold-spawn call.
- */
+/** Claude Code headless output-streaming flags: `claude -p <objective> --output-format stream-json --verbose` emits newline-delimited JSON events for one turn, then exits — used by CliDelegateStrategy to parse tool-use and usage out of a single cold-spawn call. */
 export const SESSION_FLAG_INPUT_FORMAT = "--input-format";
 export const SESSION_INPUT_FORMAT_STREAM_JSON = "stream-json";
 export const SESSION_FLAG_VERBOSE = "--verbose";
@@ -3001,22 +2908,10 @@ export const SESSION_FLAG_VERBOSE = "--verbose";
 /** OpenCode session-continuation flag: `opencode run -s <session-id>` — session state lives server-side, resumed on each cold spawn. */
 export const SESSION_FLAG_SESSION_ID = "--session";
 
-/**
- * Claude Code session-continuation flag: `claude -p <objective> --resume
- * <session-id>` resumes a prior turn's conversation on a fresh cold spawn —
- * the officially documented multi-turn mechanism (Claude Code CLI reference),
- * mirroring opencode's own cold-spawn + session-id-resume shape. Captured
- * from the first turn's `system`/init event's `session_id` field.
- */
+/** Claude Code session-continuation flag: `claude -p <objective> --resume <session-id>` resumes a prior turn's conversation on a fresh cold spawn — the officially documented multi-turn mechanism (Claude Code CLI reference), mirroring opencode's own cold-spawn + session-id-resume shape. Captured from the first turn's `system`/init event's `session_id` field. */
 export const SESSION_FLAG_RESUME = "--resume";
 
-/**
- * Maximum time (ms) CliDelegateStrategy waits for ONE cold-spawned claude/
- * opencode subprocess call to finish. A turn can involve real tool use (file
- * reads, edits, running the target project's test suite) — this must be much
- * larger than SafeSubprocess.run's generic 30s default, which a plan step
- * doing substantive work reliably exceeds.
- */
+/** Maximum time (ms) CliDelegateStrategy waits for ONE cold-spawned claude/ opencode subprocess call to finish. A turn can involve real tool use (file reads, edits, running the target project's test suite) — this must be much larger than SafeSubprocess.run's generic 30s default, which a plan step doing substantive work reliably exceeds. */
 export const CLI_DELEGATE_TURN_TIMEOUT_MS: number = configurable({
   key: "cli_delegate.turn_timeout_ms",
   default: 300_000,
@@ -3041,14 +2936,7 @@ export const SESSION_BIN_CODEX = "codex";
 export const SESSION_BIN_CURSOR = "cursor";
 export const SESSION_BIN_VSCODE = "code";
 
-/**
- * Codex CLI (`codex exec`) headless flags/subcommands (Phase 166 Step 1). `exec` is the
- * non-interactive subcommand; `--json` streams JSONL events; `--sandbox read-only` pins
- * the safe posture explicitly rather than relying on an undocumented CLI default;
- * `resume <threadId>` continues a prior thread on a fresh cold spawn (mirrors claude's
- * `--resume`/opencode's `--session` shape); `--output-schema <path>` takes a file path,
- * unlike claude's inline `--json-schema <json-string>`.
- */
+/** Codex CLI (`codex exec`) headless flags/subcommands (Phase 166 Step 1). `exec` is the non-interactive subcommand; `--json` streams JSONL events; `--sandbox read-only` pins the safe posture explicitly rather than relying on an undocumented CLI default; `resume <threadId>` continues a prior thread on a fresh cold spawn (mirrors claude's `--resume`/opencode's `--session` shape); `--output-schema <path>` takes a file path, unlike claude's inline `--json-schema <json-string>`. */
 export const SESSION_SUBCMD_EXEC = "exec";
 export const SESSION_SUBCMD_RESUME = "resume";
 export const SESSION_FLAG_JSON = "--json";
@@ -3056,37 +2944,14 @@ export const SESSION_FLAG_SANDBOX = "--sandbox";
 export const SESSION_SANDBOX_READ_ONLY = "read-only";
 export const SESSION_SANDBOX_WORKSPACE_WRITE = "workspace-write";
 export const SESSION_FLAG_OUTPUT_SCHEMA = "--output-schema";
-/**
- * Codex refuses to run outside a directory it trusts or recognizes as a Git repository:
- * `Not inside a trusted directory and --skip-git-repo-check was not specified` (live-verified
- * exit code 1, Phase 167 Step 3). The embedded ReAct provider spawns codex from
- * `config.system.root` — the daemon's own data root, never a Git repository — so this flag
- * is required on every embedded-provider invocation, not just an opt-in convenience. It only
- * bypasses the Git-repository precondition; `--sandbox read-only` remains the operative
- * execution-permission control.
- */
+/** Codex refuses to run outside a directory it trusts or recognizes as a Git repository: `Not inside a trusted directory and --skip-git-repo-check was not specified` (live-verified exit code 1, Phase 167 Step 3). The embedded ReAct provider spawns codex from `config.system.root` — the daemon's own data root, never a Git repository — so this flag is required on every embedded-provider invocation, not just an opt-in convenience. It only bypasses the Git-repository precondition; `--sandbox read-only` remains the operative execution-permission control. */
 export const SESSION_FLAG_SKIP_GIT_REPO_CHECK = "--skip-git-repo-check";
 
-/**
- * Minimum supported versions for delegate tool permission-hardening features
- * (Phase 128 R3). Below these, the tool may not support --permission-mode /
- * --allowedTools (Claude Code) or agent-level permission blocks (OpenCode).
- * The probe warns but does not block, allowing users to upgrade at their own pace.
- */
+/** Minimum supported versions for delegate tool permission-hardening features (Phase 128 R3). Below these, the tool may not support --permission-mode / --allowedTools (Claude Code) or agent-level permission blocks (OpenCode). The probe warns but does not block, allowing users to upgrade at their own pace. */
 export const MINIMUM_VERSION_OPENCODE = "1.0.0";
 export const MINIMUM_VERSION_CLAUDE_CODE = "2.0.0";
 export const MINIMUM_VERSION_CLAUDE_CODE_JSON_SCHEMA = "2.1.205";
-/**
- * Minimum Codex CLI version this integration targets (Phase 166 Step 1), pinned to the
- * exact version live-verified against a real `codex exec --help`/`codex --version`
- * invocation during this phase's pre-implementation analysis: `codex-cli 0.77.0`. Unlike
- * `MINIMUM_VERSION_CLAUDE_CODE_JSON_SCHEMA`, this floor has **no active
- * `probeDelegateVersion` gate** in `CliDelegateModelProvider` — a documented Design
- * Decision (see phase-166-codex-cli-model-provider.md), not an oversight: no evidence was
- * found that `--output-schema`/`--sandbox`/`resume` were later additions to `codex exec`,
- * so an operator on a too-old Codex CLI gets a loud CLI-level flag-rejection error rather
- * than needing speculative version-gating machinery for a first integration pass.
- */
+/** Minimum Codex CLI version this integration targets (Phase 166 Step 1), pinned to the exact version live-verified against a real `codex exec --help`/`codex --version` invocation during this phase's pre-implementation analysis: `codex-cli 0.77.0`. Unlike `MINIMUM_VERSION_CLAUDE_CODE_JSON_SCHEMA`, this floor has **no active `probeDelegateVersion` gate** in `CliDelegateModelProvider` — a documented Design Decision (see phase-166-codex-cli-model-provider.md), not an oversight: no evidence was found that `--output-schema`/`--sandbox`/`resume` were later additions to `codex exec`, so an operator on a too-old Codex CLI gets a loud CLI-level flag-rejection error rather than needing speculative version-gating machinery for a first integration pass. */
 export const MINIMUM_VERSION_CODEX = "0.77.0";
 
 /** Filesystem event kinds that indicate a (re)written file worth processing. */
@@ -3099,13 +2964,7 @@ export const SESSION_COST_PROVIDER_PREFIX = "session:";
 // Daemon Least-Privilege Spawn Permissions (Phase 124)
 // ============================================================================
 
-/**
- * Binaries the daemon is allowed to run via `--allow-run`. This is the SINGLE
- * source of truth for the run allowlist — both `DaemonCommands.start()` and
- * `scripts/dogfood_daemon.ts` import it (Phase 124 GAP-6), so the list cannot
- * drift between the two launch paths. Mirrors the historical `deno task dev`
- * allowlist plus the delegate binaries (`opencode`, `claude`).
- */
+/** Binaries the daemon is allowed to run via `--allow-run`. This is the SINGLE source of truth for the run allowlist — both `DaemonCommands.start()` and `scripts/dogfood_daemon.ts` import it (Phase 124 GAP-6), so the list cannot drift between the two launch paths. Mirrors the historical `deno task dev` allowlist plus the delegate binaries (`opencode`, `claude`). */
 export const DAEMON_SPAWN_RUN_BINARIES: readonly string[] = [
   "git",
   "deno",
@@ -3131,37 +2990,18 @@ export const DAEMON_SPAWN_RUN_BINARIES: readonly string[] = [
   "alias",
 ];
 
-/**
- * Default outbound hosts the daemon may reach when `config.system.allow_net` is
- * `undefined`. An explicit `[]` blocks outbound entirely; a non-empty list
- * narrows to those hosts (enforced by `buildSpawnFlags` in Phase 124 Step 2).
- */
+/** Default outbound hosts the daemon may reach when `config.system.allow_net` is `undefined`. An explicit `[]` blocks outbound entirely; a non-empty list narrows to those hosts (enforced by `buildSpawnFlags` in Phase 124 Step 2). */
 export const DAEMON_DEFAULT_NET_HOSTS: readonly string[] = [
   "api.anthropic.com",
   "api.openai.com",
   // Phase 142 Step 7 — the first live nightly run died on `Requires net access to
-  // "generativelanguage.googleapis.com:443"`. Both of these are shipped, bootstrap-registered
-  // providers that `ProviderSelector` will choose, so omitting them was not a security posture:
-  // the daemon crashed the step with a permission error instead of refusing on policy, and the
-  // request failed several layers from the cause. Each host is traced to that provider package's
-  // own base-URL constant, and `net_allowlist_covers_providers_test.ts` keeps the two in step.
+  // "generativelanguage.googleapis.com:443"`. Both of these are shipped, bootstrap-registered providers that `ProviderSelector` will choose, so omitting them was not a security posture: the daemon crashed the step with a permission error instead of refusing on policy, and the request failed several layers from the cause. Each host is traced to that provider package's own base-URL constant, and `net_allowlist_covers_providers_test.ts` keeps the two in step.
   "generativelanguage.googleapis.com",
   "openrouter.ai",
   "localhost:11434",
 ];
 
-/**
- * Structured least-privilege permission set for the daemon spawn (Phase 124).
- * `buildSpawnFlags(config)` assembles the concrete `--allow-*` flags from these
- * typed fields, so per-flag scoping is expressible (GAP-7).
- *
- * Read scope decision (GAP-3): `--allow-read` is kept UNSCOPED. The daemon reads
- * far beyond `config.system.root` — the Deno module/plug cache (incl. the sqlite
- * native plugin), `$HOME` for identity, and the repo root for dynamic import —
- * and a scoped `--allow-read` that omits any of these fails the sqlite FFI load
- * at boot. Narrowing the headline SSRF surface is achieved by the `write` scope
- * (`config.system.root`) and the `net` allowlist, not by scoping reads.
- */
+/** Structured least-privilege permission set for the daemon spawn (Phase 124). `buildSpawnFlags(config)` assembles the concrete `--allow-*` flags from these typed fields, so per-flag scoping is expressible (GAP-7). Read scope decision (GAP-3): `--allow-read` is kept UNSCOPED. The daemon reads far beyond `config.system.root` — the Deno module/plug cache (incl. the sqlite native plugin), `$HOME` for identity, and the repo root for dynamic import — and a scoped `--allow-read` that omits any of these fails the sqlite FFI load at boot. Narrowing the headline SSRF surface is achieved by the `write` scope (`config.system.root`) and the `net` allowlist, not by scoping reads. */
 export interface IDaemonSpawnPermissions {
   /** Read scopes; empty array means unscoped `--allow-read` (see GAP-3 above). */
   readonly read: readonly string[];
@@ -3179,11 +3019,7 @@ export interface IDaemonSpawnPermissions {
   readonly import: boolean;
 }
 
-/**
- * The daemon's least-privilege permission template. `read`/`write` are left as
- * empty arrays here (meaning "decided at spawn time from the resolved config
- * root"); `buildSpawnFlags` resolves the write scope to `config.system.root`.
- */
+/** The daemon's least-privilege permission template. `read`/`write` are left as empty arrays here (meaning "decided at spawn time from the resolved config root"); `buildSpawnFlags` resolves the write scope to `config.system.root`. */
 export const DAEMON_SPAWN_PERMISSIONS: IDaemonSpawnPermissions = {
   read: [],
   write: [],
@@ -3194,14 +3030,7 @@ export const DAEMON_SPAWN_PERMISSIONS: IDaemonSpawnPermissions = {
   import: true,
 };
 
-/**
- * Permission flags for spawning the `exactl` CLI to run a `daemon` subcommand
- * (used by the TUI Daemon Control view). This is the CLI-dispatch layer — it
- * reads config, writes the PID file, runs git/deno, and opens sqlite for status;
- * the actual long-lived daemon it launches is separately narrowed via
- * `DAEMON_SPAWN_PERMISSIONS`/`buildSpawnFlags`. Scoped instead of `--allow-all`
- * (Phase 124 full-alignment).
- */
+/** Permission flags for spawning the `exactl` CLI to run a `daemon` subcommand (used by the TUI Daemon Control view). This is the CLI-dispatch layer — it reads config, writes the PID file, runs git/deno, and opens sqlite for status; the actual long-lived daemon it launches is separately narrowed via `DAEMON_SPAWN_PERMISSIONS`/`buildSpawnFlags`. Scoped instead of `--allow-all` (Phase 124 full-alignment). */
 export const EXACTL_CLI_SPAWN_FLAGS: readonly string[] = [
   "--allow-read",
   "--allow-write",
@@ -3215,23 +3044,11 @@ export const EXACTL_CLI_SPAWN_FLAGS: readonly string[] = [
 // Plan document constants
 export const MAX_PLAN_FILE_BYTES = 1_048_576; // 1 MB — safety bound for check_step_manifests.ts
 
-/**
- * Phase 135 Step 6 (§5.7.3, GAP-7) — composite route_health_score sub-signal weights.
- * The score is Σ(wᵢ·sᵢ) / Σ(wᵢ) over the sub-signals that have data: a sub-signal with
- * no value drops out and its weight is redistributed across the remaining ones (the
- * denominator is the sum of only the present weights), so the score stays well-defined
- * (and meaningful) before the latency / rate-limit data planes are populated. Only the
- * two circuit-breaker sub-signals are active in Step 6; latency (0.2) and rate-limit
- * (0.1) weights are omitted until those data planes are read (§10 / F4, out of scope).
- */
+/** Phase 135 Step 6 (§5.7.3, GAP-7) — composite route_health_score sub-signal weights. The score is Σ(wᵢ·sᵢ) / Σ(wᵢ) over the sub-signals that have data: a sub-signal with no value drops out and its weight is redistributed across the remaining ones (the denominator is the sum of only the present weights), so the score stays well-defined (and meaningful) before the latency / rate-limit data planes are populated. Only the two circuit-breaker sub-signals are active in Step 6; latency (0.2) and rate-limit (0.1) weights are omitted until those data planes are read (§10 / F4, out of scope). */
 export const ROUTE_HEALTH_WEIGHT_CIRCUIT = 0.4;
 export const ROUTE_HEALTH_WEIGHT_FAILURE_COUNT = 0.3;
 
-/**
- * Run async tasks with bounded concurrency.
- * Processes items in batches of `concurrency`, ensuring at most `concurrency`
- * promises are in-flight at any time.
- */
+/** Run async tasks with bounded concurrency. Processes items in batches of `concurrency`, ensuring at most `concurrency` promises are in-flight at any time. */
 export async function runWithConcurrency<T>(
   items: T[],
   concurrency: number,
@@ -3254,21 +3071,7 @@ export async function runWithConcurrency<T>(
 // ============================================================================
 // Subsystem Evaluation (Phase 142)
 // ============================================================================
-/**
- * Suite-score floor for a subsystem evaluation pack run (`deno task eval:subsystems`).
- *
- * Not an arbitrary round number: it sits inside a dynamic range that had to be repaired before it
- * meant anything. Step 7 measured that a suite score could not fall below ~0.8 — daemon start,
- * setup and teardown all carried equal weight with the one step that asserts the behaviour under
- * test, so a *total* failure of the mechanism a pack exists to test scored 0.800 and the gate
- * stayed green. With lifecycle steps now zero-weighted, the same mutation (breaking flow output
- * aggregation) takes a scenario to 0.500.
- *
- * 0.7 is therefore chosen to sit strictly between the measured broken score (0.500) and the
- * pre-fix floor (0.800): low enough that a healthy deterministic pack never trips it, high enough
- * that a broken mechanism does. `tests/eval/subsystem_score_threshold_test.ts` pins both bounds
- * and keeps the `deno.json` tasks — which cannot import a constant — in step with this value.
- */
+/** Suite-score floor for a subsystem evaluation pack run (`deno task eval:subsystems`). Not an arbitrary round number: it sits inside a dynamic range that had to be repaired before it meant anything. Step 7 measured that a suite score could not fall below ~0.8 — daemon start, setup and teardown all carried equal weight with the one step that asserts the behaviour under test, so a *total* failure of the mechanism a pack exists to test scored 0.800 and the gate stayed green. With lifecycle steps now zero-weighted, the same mutation (breaking flow output aggregation) takes a scenario to 0.500. 0.7 is therefore chosen to sit strictly between the measured broken score (0.500) and the pre-fix floor (0.800): low enough that a healthy deterministic pack never trips it, high enough that a broken mechanism does. `tests/eval/subsystem_score_threshold_test.ts` pins both bounds and keeps the `deno.json` tasks — which cannot import a constant — in step with this value. */
 export const SUBSYSTEM_EVAL_SCORE_THRESHOLD: number = configurable({
   key: "eval.subsystem_score_threshold",
   default: 0.7,

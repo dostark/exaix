@@ -118,7 +118,6 @@ export async function handleRequestCreate(
   const { requestCommands, display } = context;
 
   try {
-    // Phase 54: Use only identity field (agent field removed)
     const identityId = options.identity;
 
     const createOptions = {

@@ -39,7 +39,7 @@ import type { Opt, Reason } from "@exaix/core/types";
 export type OpenRouterSortStrategy = "throughput" | "latency" | "cost";
 export type OpenRouterDataCollection = "allow" | "deny";
 
-/** OpenRouter control-surface passthrough: provider routing, fallback models, privacy (Phase 123 R10). */
+/** OpenRouter passthrough for provider routing, fallback models, and privacy. */
 export interface IOpenRouterRouting {
   models?: string[];
   provider?: {
@@ -58,9 +58,8 @@ export interface IOpenRouterRouting {
   data_collection?: OpenRouterDataCollection;
 }
 
-/** Internal request-body shape for serialization. `messages`/`tools`/`tool_choice` reuse the
- *  same OpenAI Chat Completions shape Step 2 built (packages/ai/src/provider_common_utils.ts) -
- *  OpenRouter is a confirmed byte-for-byte pass-through of that contract. */
+/** Serialization shape; messages and tools reuse the byte-compatible OpenAI
+ *  Chat Completions contract. */
 interface OpenRouterRequestBody {
   model: string;
   messages: OpenAiChatMessage[];
@@ -70,7 +69,7 @@ interface OpenRouterRequestBody {
   stop?: string[];
   models?: string[];
   provider?: OpenRouterProviderBody;
-  /** Phase 135: request OpenRouter's reported usage.cost in the response. */
+  /** Requests OpenRouter's reported usage cost in the response. */
   usage?: { include: boolean };
   tools?: OpenAiWireToolDefinition[];
   tool_choice?: OpenAiWireToolChoice;
@@ -124,7 +123,6 @@ export class OpenRouterProvider extends BaseProvider {
     const body: OpenRouterRequestBody = {
       model: this.model,
       messages: buildOpenAiMessages(prompt, options?.priorTurn),
-      // Phase 135 (F6/G9): ask OpenRouter to report the authoritative cost.
       usage: { include: true },
     };
     if (options?.max_tokens !== undefined) body.max_tokens = options.max_tokens;

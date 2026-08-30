@@ -74,10 +74,9 @@ export function isRuntimeArtifactPath(path: string): boolean {
   return RUNTIME_ARTIFACT_EXTENSIONS.some((ext) => basename.endsWith(ext));
 }
 
-/** Matches a unified-diff file header line and captures its "b/" (new) side path — the same
- *  shape `git diff`/`git apply` produce, which is exactly what a vendored `reference.patch`
- *  contains. Deliberately ignores the "a/" side: a rename OUT of a runtime-artifact dir is not
- *  itself a violation, only content that lands (or already sits) inside one. */
+/** Matches a unified-diff file header line and captures its "b/" (new) side path. Deliberately
+ *  ignores the "a/" side: a rename OUT of a runtime-artifact dir is not itself a violation,
+ *  only content that lands (or already sits) inside one. */
 const DIFF_GIT_HEADER = /^diff --git a\/.+? b\/(.+)$/gm;
 
 /** Scans `content` (assumed to be unified-diff / `.patch` text) for embedded `diff --git`

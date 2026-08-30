@@ -15,14 +15,6 @@ import { GitTestHelper, setupPortalGitRepos } from "@exaix/git/testing";
 import { GitService } from "../src/git_service.ts";
 import type { Config } from "@exaix/schemas";
 
-/**
- * TDD Tests for GitService Portal Support
- * Task 3.1: Git Service Portal Support
- *
- * Tests that GitService can work with different repository paths
- * (portal repos vs deployed workspace repo)
- */
-
 describe("GitService Portal Support", () => {
   let tempDir: string;
   let portalRepoDir: string;

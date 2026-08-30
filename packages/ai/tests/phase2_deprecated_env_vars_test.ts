@@ -91,9 +91,3 @@ Deno.test("Phase 2: LlamaProvider uses config retry settings over defaults", () 
   // (We can't directly test private fields, but provider should be created successfully)
   assertEquals(provider.id, "llama-llama3.2:latest");
 });
-
-// Note: Testing OpenAIShim requires either:
-// 1. Exporting it from providers.ts (not ideal)
-// 2. Testing via ModelFactory.create() with gpt- models
-// 3. Integration tests that verify behavior
-// For now, we'll rely on integration tests and code review

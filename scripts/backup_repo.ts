@@ -21,16 +21,9 @@
 import { parse } from "@std/flags";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 
-/**
- * Name of the default branch checked out in the backup unless --branch overrides it.
- * Kept as a named constant for the project's no-magic-strings gate.
- */
 const DEFAULT_BACKUP_BRANCH = "main";
 
-/**
- * Parse the submodule sections of a .gitmodules file into a list of
- * `{ name, path, url }` records. Returns an empty array when the file is absent.
- */
+/** Parses .gitmodules submodule sections into `{ name, path, url }` records; returns [] if the file is absent. */
 export async function parseGitmodules(repoRoot: string): Promise<
   Array<{
     name: string;
@@ -104,10 +97,9 @@ export async function backupRepo(
   }
 
   console.log(`Backing up ${repoRoot} -> ${dest} (branch: ${branch})`);
-  // Note: a `--no-checkout` clone must NOT be used here — its index is empty, so submodule
-  // gitlinks are absent and `git submodule update` no-ops; the later checkout then fails
-  // with "not a git repository: ../.git/modules/<name>" on the gitlinks. A normal clone
-  // populates the index, so submodule update works on the checked-out tree.
+  // A `--no-checkout` clone leaves the index empty, so submodule gitlinks are missing and
+  // `git submodule update` no-ops, later failing on checkout. A normal clone keeps the
+  // index populated so submodule update works.
   if (!await run(["git", "clone", "--no-hardlinks", "-b", branch, repoRoot, dest])) {
     throw new Error("git clone failed");
   }

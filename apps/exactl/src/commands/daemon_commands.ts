@@ -93,8 +93,8 @@ export class DaemonCommands extends BaseCommand {
         .join(" ");
       const envPrefix = exaEnvVars ? `${exaEnvVars} ` : "";
 
-      // Build the minimal --allow-* spawn flags from config (Phase 124 R12);
-      // falls back to --allow-all only on a config-read exception (logged).
+      // Build the minimal --allow-* spawn flags from config; falls back to
+      // --allow-all only on a config-read exception (logged).
       const spawnFlags = this.buildSpawnFlags().join(" ");
       const cmd = new this.Command("bash", {
         args: [
@@ -159,23 +159,9 @@ export class DaemonCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Build the minimal `--allow-*` flag set for the daemon spawn from config
-   * (Phase 124 R12). Replaces the former blanket `--allow-all`.
-   *
-   * Permissions: `--allow-read` (unscoped — the daemon reads the Deno cache,
-   * sqlite plugin, `$HOME`, and the repo; see DAEMON_SPAWN_PERMISSIONS JSDoc),
-   * `--allow-write=<config.system.root>`, `--allow-run=<DAEMON_SPAWN_RUN_BINARIES>`,
-   * `--allow-env`, `--allow-ffi`, `--allow-import`, and a net flag governed by
-   * `config.system.allow_net`:
-   *   - `undefined` → `--allow-net=<DAEMON_DEFAULT_NET_HOSTS>`
-   *   - `[]`        → no `--allow-net` flag (outbound blocked)
-   *   - non-empty   → `--allow-net=host1,host2`
-   *
-   * GAP-2: the `--allow-all` fallback is reached ONLY when reading the config
-   * throws (defence-in-depth so a malformed config never blocks startup). A
-   * successfully-read `allow_net=[]` blocks outbound and must NOT fall back.
-   */
+  // Builds the minimal `--allow-*` flag set for the daemon spawn from config. The
+  // `--allow-all` fallback fires ONLY on a config-read exception — a successfully-read
+  // `allow_net=[]` must still block outbound (no --allow-net flag), never fall back.
   protected buildSpawnFlags(): string[] {
     try {
       const root = this.config.system.root!;
@@ -302,10 +288,6 @@ export class DaemonCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Get daemon status
-   * @returns Status information
-   */
   async status(): Promise<IDaemonStatus> {
     const version = BINARY_VERSION;
     const workspace_schema_version = WORKSPACE_SCHEMA_VERSION;
@@ -354,10 +336,7 @@ export class DaemonCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Check migration compatibility between binary schema version and on-disk workspace schema.
-   * Exit codes: 0 = up to date, 1 = migration required, 2 = binary older than workspace.
-   */
+  /** Check migration compatibility; exit codes: 0 up to date, 1 migration required, 2 binary older. */
   migrate(options: { check?: boolean; json?: boolean } = {}): number {
     if (!options.check) return 0;
 
@@ -400,11 +379,6 @@ export class DaemonCommands extends BaseCommand {
     return exitCode;
   }
 
-  /**
-   * Show daemon logs
-   * @param lines Number of lines to show
-   * @param follow Follow log output (tail -f)
-   */
   async logs(lines: number = CLI_DEFAULTS.LOG_LINES, follow: boolean = false): Promise<void> {
     try {
       const logFile = join(this.config.system.root!, this.config.paths.runtime!, "daemon.log");
@@ -438,13 +412,6 @@ export class DaemonCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Wait for a process to reach a desired state (running or stopped)
-   * @param pid Process ID to check
-   * @param shouldBeRunning Expected state (true = running, false = stopped)
-   * @param timeoutMs Maximum time to wait in milliseconds
-   * @returns true if desired state reached, false if timeout
-   */
   private async waitForProcessState(
     pid: number,
     shouldBeRunning: boolean,
@@ -468,14 +435,9 @@ export class DaemonCommands extends BaseCommand {
     return false;
   }
 
-  /**
-   * Poll the workspace journal for daemon.ready (the daemon process's signal that every
-   * file-watcher is confirmed listening).  Used after waitForProcessState to close the
-   * ~700ms race window between process-alive and watchers-up — the CLI only returns once
-   * the daemon is genuinely able to process incoming work.
-   *
-   * @returns true when daemon.ready is found, false on timeout or if the daemon dies.
-   */
+  // Polls the workspace journal for daemon.ready after waitForProcessState, to close the
+  // ~700ms race window between process-alive and watchers-up — the CLI only returns once
+  // the daemon is genuinely able to process incoming work.
   protected async waitForDaemonReady(
     workspaceRoot: string,
     pid: number,
@@ -523,10 +485,7 @@ export class DaemonCommands extends BaseCommand {
     }
   }
 
-  /**
-   * True if the activity table contains an event of `eventType` with a rowid greater
-   * than `sinceRowid`. Tolerant of missing/empty journal.
-   */
+  /** True if activity has an `eventType` row past `sinceRowid`; tolerant of missing/empty journal. */
   private async journalHasEvent(
     dbPath: string,
     eventType: string,

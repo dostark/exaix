@@ -16,24 +16,13 @@ export interface IPlanRef {
   step: number;
 }
 
-/**
- * The paths a plan step declares as its success-criteria source modules and
- * planned-test modules, the ledger tokens of any ⚠️ deferred items, plus any structural
- * errors found while parsing the step.
- */
 export interface IPlanStepPaths {
   criteriaPaths: string[];
   testPaths: string[];
   /** `→ <token>` of each `⚠️ deferred` criterion/test (must have a Reachability Ledger row). */
   deferredTokens: string[];
-  /**
-   * The raw text of every ✅ / ⚠️ deferred item line in the step (trimmed), used to verify
-   * these lines actually appear as added lines in the plan doc's diff for this commit. A
-   * bullet soft-wrapped across several source lines contributes one entry PER PHYSICAL
-   * LINE it spans (not one merged entry) — this matches git diff's own per-physical-line
-   * added-lines granularity, so every line of a freshly-authored wrapped bullet must show
-   * up as added, exactly like a single-line bullet already must.
-   */
+  /** Every ✅/⚠️ deferred item line (trimmed) — one entry per physical line, since a
+   *  soft-wrapped bullet spans several; this matches git diff's per-physical-line output. */
   itemLines: string[];
   errors: string[];
 }
@@ -47,10 +36,8 @@ export interface IPlanDiffResult {
   errors: string[];
 }
 
-/**
- * Everything the pure validator needs to enforce plan-step traceability, resolved
- * by the CLI entry point (doc read + git diff done there, matching stays pure/testable).
- */
+/** Inputs the pure validator needs for plan-step traceability; doc reads and git diffs
+ *  are resolved by the CLI entry point so this stays pure and testable. */
 export interface IPlanValidation {
   criteriaPaths: string[];
   testPaths: string[];
@@ -60,12 +47,8 @@ export interface IPlanValidation {
   deferredTokens?: string[];
   /** Symbols found in the plan doc's Reachability Ledger table (optional; default none). */
   ledgerSymbols?: string[];
-  /**
-   * Cross-repo diff/sync inputs (optional). When present, `validateCommitMsg` also runs
-   * `validatePlanStepDiff`: every step item line must be an added line of the plan doc's
-   * diff, and the submodule/parent must be in sync. Omit to skip the diff/sync facet
-   * (e.g. in unit tests of the path/ledger facet alone).
-   */
+  /** Cross-repo diff/sync inputs (optional): when present, `validateCommitMsg` also verifies
+   *  every step item line is an added plan-doc diff line and submodule/parent are in sync. */
   itemLines?: string[];
   addedPlanLines?: string[];
   planSync?: PlanSyncStatus;
@@ -88,15 +71,9 @@ const VALID_TYPES = [
 
 const REQUIRED_FIELDS = ["what", "rationale", "tests", "who", "impact"];
 
-/** Every field name `validateCommitMsg`'s per-line parser recognizes as a real field
- *  start — required fields plus the documented optional ones (see the "Optional:" line
- *  in the CLI's own usage output below). A line starting with `word:` whose word is NOT
- *  in this set is a continuation of the currently-open field, never a new field — this is
- *  what stops prose like "check:style/check:arch all clean." or "Corrects: the old
- *  value..." inside a field body from being misparsed as a phantom field, silently
- *  truncating the real field it belongs to (Phase 166 hit this twice while drafting
- *  closure commits: the "what:" field lost its Component-Traceability-bearing sentence
- *  to a phantom "corrects"/"check" field). */
+/** Field names `validateCommitMsg`'s per-line parser treats as starting a new field; a
+ *  `word:` line whose word is not here is a continuation of the current field (so prose
+ *  like "check:style clean." inside a field body isn't misparsed as a phantom field). */
 const KNOWN_COMMIT_FIELDS = new Set([
   ...REQUIRED_FIELDS,
   "model",
@@ -118,26 +95,17 @@ const VALID_MODELS = [
   "DeepSeek",
 ];
 
-/**
- * Extract the `plan:` field from a commit message, if present. The field references
- * the plan doc and step this commit implements, e.g.
- *   `plan: exaix-dev-docs/planning/phase-134.md#6`
- * The step suffix accepts `#6`, `#step-6`, or `#step 6` (case-insensitive).
- * Returns undefined when no `plan:` field is present (normal, non-plan commits).
- */
+/** Extracts the `plan:` field (e.g. `plan: docs/plan.md#6`) naming the plan doc + step this
+ *  commit implements; accepts `#6`, `#step-6`, or `#step 6` (case-insensitive). Returns
+ *  undefined when absent. */
 export function parsePlanField(text: string): IPlanRef | undefined {
   const match = text.match(/^plan:\s*(.+?)#\s*(?:step[-\s]*)?(\d+)\s*$/im);
   if (!match) return undefined;
   return { docPath: match[1].trim(), step: Number(match[2]) };
 }
 
-/**
- * Extract the source/test paths after a `→` on a plan bullet line. Paths MUST be
- * backtick-wrapped (`` `apps/x/foo.ts` ``) so plan docs stay clean under check:md-path,
- * which flags un-backticked real paths in prose. Returns the backticked paths plus
- * `hasBarePath` — true when a non-backticked path-like token (contains a `/`) appears
- * after the arrow, which the caller treats as an error.
- */
+/** Extracts backtick-wrapped paths after `→` on a plan bullet (required so plan docs stay
+ *  check:md-path-clean); `hasBarePath` flags a non-backticked path-like token after the arrow. */
 function extractArrowPaths(line: string): { paths: string[]; hasBarePath: boolean } {
   const arrowIdx = line.indexOf("→");
   if (arrowIdx === -1) return { paths: [], hasBarePath: false };
@@ -159,24 +127,15 @@ function extractArrowPaths(line: string): { paths: string[]; hasBarePath: boolea
   return { paths, hasBarePath };
 }
 
-/**
- * True when `line` starts a new plan-doc bullet (`- …`), a bold section heading
- * (`**…**`), or is blank — i.e. NOT a soft-wrapped continuation of the previous bullet.
- */
+/** True when `line` starts a new bullet (`- …`), a bold heading (`**…**`), or is blank —
+ *  i.e. not a soft-wrapped continuation of the previous bullet. */
 function startsNewPlanItem(line: string): boolean {
   return /^\s*-\s/.test(line) || /^\s*\*\*[^*]+\*\*/.test(line) || /^\s*$/.test(line);
 }
 
-/**
- * Joins `lines[startIdx]` (a bullet-start line) with every following soft-wrapped
- * continuation line — up to `end` — into one logical, single-space-joined string. Long
- * Success Criteria / Planned Tests bullets are routinely hand-wrapped across several
- * source lines for readability; without this, a `→ \`path\`` arrow placed on a
- * continuation line rather than the `- ✅ …` line itself is invisible to `parsePlanStep`'s
- * per-item matchers below, and a correctly-authored bullet is wrongly rejected as "marked
- * done but has no → source path". Returns the merged text plus `endIndex`, the index of
- * the last physical line consumed (the caller resumes scanning after it).
- */
+/** Joins `lines[startIdx]` with its soft-wrapped continuation lines (up to `end`) into one
+ *  string, so a `→ \`path\`` arrow on a continuation line is still found by `parsePlanStep`.
+ *  Returns the merged text plus `endIndex`, the last physical line consumed. */
 function joinWrappedBullet(
   lines: string[],
   startIdx: number,
@@ -192,17 +151,9 @@ function joinWrappedBullet(
   return { text, endIndex };
 }
 
-/**
- * Parse a single `### Step N:` section of a plan doc and collect the source paths
- * declared on **done** success criteria and **done** planned tests, both marked with a
- * leading `✅` (`- ✅ … → path`). Not-yet-done items (unchecked `- [ ]` criteria, or
- * bullets without a ✅) are intentionally ignored so partial-step commits are allowed.
- *
- * A ✅-marked criterion or test WITHOUT a `→ path` is a structural error (the whole point
- * of the convention is that a claimed item names where it is met). A bullet may be
- * soft-wrapped across several physical source lines (see `joinWrappedBullet`) — the whole
- * logical bullet is matched as one, so a `→ path` on a continuation line is still found.
- */
+/** Parses a `### Step N:` section, collecting source paths from **done** (`✅`) success
+ *  criteria and planned tests (`- ✅ … → path`); unchecked items are ignored so partial-step
+ *  commits are allowed. A ✅ item without `→ path` is a structural error. */
 export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
   const lines = docText.split("\n");
   const errors: string[] = [];
@@ -229,12 +180,9 @@ export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
       errors: [`Step ${step} not found in plan doc.`],
     };
   }
-  // Stop at the next step (`### `) OR the next phase-level section (`## `, e.g. Reachability
-  // Ledger, Risks & Mitigations, Success Metrics) — whichever comes first. Without the `## `
-  // check, the LAST `### Step N` in a doc has no following `### ` to bound it, so the scan ran
-  // to EOF and silently swept every later phase-level `- [ ]` (e.g. Success Metrics, which is
-  // intentionally left unchecked — see the plan skill's own guidance) into this step's
-  // criteria/tests, demanding they be resolved to commit the actual last step at all.
+  // Stop at the next step (`### `) OR next phase-level section (`## `) — without the latter,
+  // the last step in a doc has no `### ` to bound it, sweeping later phase-level `- [ ]`
+  // items (e.g. intentionally-unchecked Success Metrics) into this step's criteria/tests.
   let end = lines.length;
   for (let i = start + 1; i < lines.length; i++) {
     if (/^#{2,3}\s+/.test(lines[i])) {
@@ -266,11 +214,9 @@ export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
     // Only a `- …` line starts a new item; blank lines and stray prose are not bullets.
     if (!/^\s*-\s/.test(line)) continue;
 
-    // Join every soft-wrapped continuation line into one logical string before matching,
-    // so a `→ \`path\`` arrow landing on a continuation line is still found. Every
-    // physical line consumed is recorded in `itemLines` individually (not the merged
-    // text) so it still lines up with git diff's own per-physical-line added-lines output
-    // (see `validatePlanStepDiff`).
+    // Join wrapped continuation lines into one string for matching (so a `→ \`path\`` arrow
+    // on a continuation line is found), but record each physical line in `itemLines`
+    // individually to match git diff's per-physical-line added-lines output.
     const { text: joined, endIndex } = joinWrappedBullet(lines, i, end);
     const physicalLines = lines.slice(i, endIndex + 1).map((l) => l.trim());
     i = endIndex;
@@ -354,11 +300,8 @@ export function parsePlanStep(docText: string, step: number): IPlanStepPaths {
   };
 }
 
-/**
- * Extract the `→ <token…>` tokens of a deferred line. Unlike source paths these need not
- * contain a slash (a ledger symbol like `IModelRegistryProvider` is a bare identifier),
- * so any non-empty whitespace/comma-separated token after the arrow is kept.
- */
+/** Extracts `→ <token>` tokens of a deferred line; unlike source paths these need not
+ *  contain a slash (a ledger symbol is a bare identifier), so any non-empty token is kept. */
 function extractArrowTokens(line: string): string[] {
   const arrowIdx = line.indexOf("→");
   if (arrowIdx === -1) return [];

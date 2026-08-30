@@ -98,7 +98,7 @@ Deno.test("[step2][integration] a CLI-format YAML blueprint round-trips through 
   try {
     const identitiesDir = join(dir, "Identities");
     await ensureDir(identitiesDir);
-    // Mirror the CLI writer format: `---\n<yaml>---\n\n<body>` (Phase 131 Step 2).
+    // Mirror the CLI writer format: `---\n<yaml>---\n\n<body>`.
     const fm = {
       identity_id: "round-trip-agent",
       name: "Round Trip Agent",

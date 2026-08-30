@@ -68,8 +68,6 @@ function registerConcreteProviders(): void {
       ...OPENAI_PROVIDER_METADATA,
       capabilities: [...OPENAI_PROVIDER_METADATA.capabilities],
       pricingTier: PricingTier.MEDIUM,
-      // Phase 153 Step 2: OpenAIProvider.attemptGenerate() now serializes
-      // IModelOptions.tools/toolChoice into real tools[]/tool_choice request fields.
       supportsNativeTools: true,
     };
     ProviderRegistry.registerWithMetadata(
@@ -84,8 +82,6 @@ function registerConcreteProviders(): void {
       ...GOOGLE_PROVIDER_METADATA,
       capabilities: [...GOOGLE_PROVIDER_METADATA.capabilities],
       pricingTier: PricingTier.LOW,
-      // Phase 153 Step 3: GoogleProvider.attemptGenerate() now serializes
-      // IModelOptions.tools/toolChoice into real tools[]/toolConfig request fields.
       supportsNativeTools: true,
     };
     ProviderRegistry.registerWithMetadata(
@@ -102,16 +98,12 @@ function registerConcreteProviders(): void {
       ...OPENROUTER_PROVIDER_METADATA,
       capabilities: [...OPENROUTER_PROVIDER_METADATA.capabilities],
       pricingTier: PricingTier.MEDIUM,
-      // Phase 135 Step 4 (§5.7.2): OpenRouter is an aggregator reseller — the native
-      // admission path and the native_first route policy read this flag.
+      // OpenRouter is an aggregator reseller — the native admission path and the
+      // native_first route policy read this flag.
       isAggregator: true,
-      // Phase 153 Step 4: registered true at the PROVIDER level, not per-model. OpenRouter
-      // routes to many underlying models, not all of which support tool-calling (see
-      // supported_parameters=tools filtering on /api/v1/models, official docs). This phase
-      // does not add per-model capability detection — a config pointing OpenRouter at a
-      // tool-incapable model with native_tools_enabled will surface as an OpenRouter-side
-      // API error, not a silent Exaix-side failure. Known limitation (Risks R3), not
-      // silently unhandled.
+      // Registered true at the provider level, not per-model: pointing OpenRouter at a
+      // tool-incapable underlying model with native_tools_enabled surfaces as an
+      // OpenRouter-side API error, not a silent Exaix-side failure.
       supportsNativeTools: true,
     };
     ProviderRegistry.registerWithMetadata(

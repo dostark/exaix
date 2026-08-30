@@ -41,7 +41,7 @@ Deno.test("CircuitBreaker opens after failure threshold and recovers", async () 
 Deno.test("CircuitBreaker does NOT open on RateLimiterError (backpressure, not a provider fault)", async () => {
   // A local throttle rejection is expected backpressure — it must not be counted
   // toward opening the breaker, or a burst of self-throttled calls would starve
-  // every subsequent request (Phase 131 Step 8 identity e2e root cause).
+  // every subsequent request.
   const cb = new CircuitBreaker({
     failureThreshold: 2,
     resetTimeout: 100,
@@ -68,10 +68,9 @@ Deno.test("CircuitBreaker does NOT open on RateLimiterError (backpressure, not a
 class ContentError extends Error {}
 
 Deno.test("CircuitBreaker honors a caller-supplied isCountableFailure predicate", () => {
-  // The caller (e.g. the request processor's I/O breaker) decides which errors
-  // are infrastructure faults. A content-validation failure (bad LLM output) is
-  // per-request and must NOT open a cross-request breaker, or one bad response
-  // starves every following request (Phase 131 Step 8 identity e2e root cause).
+  // The caller (e.g. the request processor's I/O breaker) decides which errors are
+  // infrastructure faults. A content-validation failure (bad LLM output) is per-request and
+  // must NOT open a cross-request breaker, or one bad response starves every following request.
   const cb = new CircuitBreaker({
     failureThreshold: 2,
     resetTimeout: 100,

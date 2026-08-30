@@ -106,9 +106,6 @@ Deno.test("[step3] renderer returns empty critical section when no critical skil
 });
 
 Deno.test("[step3] the output contract and best-practices content live in skills (fragments retired in Step 7)", async () => {
-  // Step 7 retired the shared Fragments; their content was migrated into skills.
-  // The output contract now lives in the response-contract skill, and the
-  // best-practices guidance in the blueprint-best-practices skill.
   const responseContract = await Deno.readTextFile(join(SKILLS_DIR, "response-contract.skill.md"));
   assertStringIncludes(responseContract, "<thought>");
   assertStringIncludes(responseContract, "<content>");

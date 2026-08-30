@@ -42,24 +42,15 @@ import type { ISymbolExtractorRegistry } from "@exaix/portal/knowledge";
 import { EDITION_TEAM } from "@exaix/core";
 import type { Opt, Reason } from "@exaix/core/types";
 
-/** Runtime dependencies the Team model-registry provider closes over (Phase 135, GAP-3). */
+/** Runtime dependencies the Team model-registry provider closes over. */
 export interface ITeamModelRegistryDeps {
   db: IDatabaseService;
   config: Config;
   logger: IEventLogger;
 }
 
-/**
- * Register the Team live model-registry provider on the edition composer
- * (Phase 135 Step 1, GAP-2/GAP-3).
- *
- * MUST be called BEFORE main.ts selects the registry via
- * `getModelRegistryProvider()` — otherwise selection resolves to the Solo floor
- * and the Team catalog is never reached. The provider closes over db/config/logger
- * (which the seam's `createModelRegistry(deps)` does not carry) and builds the floor
- * from the seam-supplied `deps.healthChecker`, so the shared
- * `IModelRegistryProviderDeps` contract stays frozen.
- */
+/** Register the Team live model-registry provider; MUST be called BEFORE main.ts selects
+ * the registry via `getModelRegistryProvider()`, or selection falls back to the Solo floor. */
 export function registerTeamModelRegistry(
   composer: TeamComposer,
   deps: ITeamModelRegistryDeps,
@@ -102,12 +93,7 @@ function createTeamAdapterRegistry(): AdapterRegistry {
   return adapters;
 }
 
-/**
- * Build the per-provider adapter-context factory: resolves each provider's configured
- * key env + host root (no new secret surface). The OpenRouter key env honours the config
- * override; the natives use the standard envs. Shared by the resolution strategy (Step 3)
- * and the refresh scheduler (Step 5).
- */
+/** Build the per-provider adapter-context factory (key env + host root; no new secret surface). */
 function createBuildContext(config: Config): (provider: string) => IAdapterContext {
   const timeoutMs = config.model_registry?.refresh_timeout_ms ?? DEFAULT_ADAPTER_TIMEOUT_MS;
   const openrouterKeyEnv = config.ai_openrouter?.api_key_env ?? PROVIDER_CATALOG_DESCRIPTORS.openrouter.keyEnv;
@@ -121,12 +107,8 @@ function createBuildContext(config: Config): (provider: string) => IAdapterConte
   };
 }
 
-/**
- * Admission inputs per provider for a scheduled refresh (Step 5). Curated ∪ used are
- * derived from live state: curated = the provider's current catalog rows (curation-by-
- * usage is retained); the aggregator flag comes from provider metadata (§5.7.2). The
- * top-N benchmark path stays inert until Step 7 populates model_benchmark.
- */
+/** Admission inputs for a scheduled refresh; curatedModels mirrors the provider's current
+ * catalog rows, and usedModels stays empty until usage-based curation is wired. */
 async function admissionInputsFor(
   registry: ModelRegistryService,
   config: Config,
@@ -135,8 +117,8 @@ async function admissionInputsFor(
   const isAggregator = ProviderRegistry.getProviderMetadata(provider)?.isAggregator === true;
   const existing = await registry.getProviderModels(provider);
   const topN = config.model_registry?.admission?.top_n ?? DEFAULT_ADMISSION_TOP_N;
-  // G6 (Step 7): the top-N benchmark set from model_benchmark. Empty until the curated
-  // floor / models.dev ingest populates it, so the benchmark_topn admission path stays inert.
+  // benchmarkTopN stays empty until the curated floor / models.dev ingest populates
+  // model_benchmark, so the benchmark_topn admission path stays inert until then.
   const tracked = config.model_registry?.benchmark_source?.tracked_benchmarks ?? DEFAULT_TRACKED_BENCHMARKS;
   const benchmarkTopN = await registry.getBenchmarkTopN(tracked, topN);
   return {
@@ -150,17 +132,13 @@ async function admissionInputsFor(
 }
 
 const DEFAULT_ADMISSION_TOP_N = 25;
-// GAP-A (Step 8): kept in sync with ModelRegistryConfigSchema's benchmark_source
-// default so a hand-built Config (bypassing the Zod default) still unions all three.
+// Kept in sync with ModelRegistryConfigSchema's benchmark_source default so a
+// hand-built Config (bypassing the Zod default) still unions all three.
 const DEFAULT_TRACKED_BENCHMARKS = ["swe_bench_verified", "swe_bench_pro", "gpqa"];
 
-/**
- * Build the Team resolution strategy (Phase 135 Step 3 seam consumer, extended in
- * Step 4 with the four native adapters) that wires the live registry's
- * explicit-validation / auto-admit behaviour into ModelResolver via the
- * IResolutionStrategy seam. Returns undefined when the selected registry is not the Team
- * live service (defensive — Solo never reaches this call).
- */
+/** Build the Team resolution strategy wiring the live registry's explicit-validation /
+ * auto-admit behaviour into ModelResolver. Returns undefined when the registry isn't
+ * the Team live service (Solo never reaches this call). */
 export function buildTeamResolutionStrategy(
   modelRegistry: IModelRegistry,
   config: Config,
@@ -173,21 +151,19 @@ export function buildTeamResolutionStrategy(
     getAdapter: (p) => adapters.get(p),
     buildContext,
     isAggregator: (p) => ProviderRegistry.getProviderMetadata(p)?.isAggregator === true,
-    // D7: cost-exempt by provider metadata (LOCAL/FREE tier) — Step 6 route policy.
+    // D7: cost-exempt by provider metadata (LOCAL/FREE tier).
     costExempt: (p) => isCostExempt(ProviderRegistry.getProviderMetadata(p)),
     // D7 fallback: cost metadata for the post-pricing-lookup isCostExempt(metadata,
     // pricing) check (a $0 endpoint price on a nominally-paid tier).
     providerCostMetadata: (p) => ProviderRegistry.getProviderMetadata(p),
-    // §5.7.3 route health (Step 6): the daemon's health checker reports a boolean per
-    // provider (all-healthy stub pre-wiring); map it to the circuit sub-signal. Failure
-    // headroom / latency / rate-limit sub-signals are omitted here and renormalise (F3 —
-    // no per-route health state; the real CircuitBreaker binds where the checker is).
+    // The health checker reports a boolean per provider (stub: all healthy), mapped to the
+    // circuit sub-signal; other sub-signals renormalise since no per-route health state exists yet.
     routeHealth: () => ({ circuitState: 1 }),
     routePolicy: config.model_registry?.route_policy ?? DEFAULT_ROUTE_POLICY,
     routePriceTolerance: config.model_registry?.route_policy_price_tolerance ?? DEFAULT_ROUTE_PRICE_TOLERANCE,
     routeOrder: config.model_registry?.route_order ?? {},
-    // Step 8: benchmark_map feeds scoreBest; usage_tiebreak is the strategy's own
-    // config gate for rankUsage (the resolver has no opinion on the opt-in).
+    // benchmarkMap feeds scoreBest; usageTiebreak is the strategy's own config gate
+    // for rankUsage — the resolver has no opinion on the opt-in.
     benchmarkMap: config.model_registry?.benchmark_map,
     usageTiebreak: config.model_registry?.usage_tiebreak ?? false,
   });
@@ -197,12 +173,8 @@ export function buildTeamResolutionStrategy(
 const DEFAULT_ROUTE_POLICY: IRouteReason = "cheapest";
 const DEFAULT_ROUTE_PRICE_TOLERANCE = 0.05;
 
-/**
- * Build the opt-in registry refresh scheduler (Phase 135 Step 5). Returns undefined when
- * the selected registry is not the Team live service OR model_registry.enabled !== true
- * (the opt-in gate — a disabled/Solo daemon never constructs it, zero outbound calls).
- * The caller starts it (honouring refresh_on_start) and stops it on shutdown.
- */
+/** Build the opt-in registry refresh scheduler. Returns undefined unless the registry is
+ * the Team live service AND model_registry.enabled === true; the caller starts and stops it. */
 export function buildRefreshScheduler(
   modelRegistry: IModelRegistry,
   config: Config,
@@ -217,13 +189,9 @@ export function buildRefreshScheduler(
   });
 }
 
-/**
- * Populate the benchmark data plane at Team startup (Phase 135 Step 7/7a, §5.8). The curated
- * Tier-2 floor (static_benchmarks.ts) is applied UNCONDITIONALLY on a Team daemon so the
- * top-N admission path and the Step 8 `best` scorer always have data. The models.dev ingest
- * is DOUBLY gated — it runs only when model_registry.enabled AND benchmark_source.enabled.
- * A no-op on Solo (registry is not the Team service).
- */
+/** Populate the benchmark data plane at Team startup: the curated floor is applied
+ * unconditionally, but the models.dev ingest is doubly gated (model_registry.enabled
+ * AND benchmark_source.enabled). No-op on Solo. */
 export async function loadBenchmarkFloor(
   modelRegistry: IModelRegistry,
   config: Config,
@@ -241,13 +209,7 @@ export async function loadBenchmarkFloor(
   }
 }
 
-/**
- * Register all Team-edition capability modules and invoke their
- * seam-registration hooks against the FlowRunner.
- *
- * This is called from main.ts after FlowRunner construction, inside the
- * `if (editionType === EDITION_TEAM)` guard.
- */
+/** Called from main.ts after FlowRunner construction, inside the EDITION_TEAM guard. */
 export function registerTeamCapabilities(
   agentExecutorAdapter: AgentOrchestratorAdapter,
   logger: IEventLogger,
@@ -264,13 +226,11 @@ export function registerTeamCapabilities(
     );
   }
 
-  // Phase 118: Register HITL governance capability module (asserts edition mapping)
   if (hitlPolicyEvaluator) {
     const hitlModule = new HitlCapabilityModule();
     composer.registerCapabilityModule(hitlModule);
   }
 
-  // Phase 113: Wire voting capability through the edition-composer seam
   const votingExecutor: IExecutor = {
     run: async (blueprint, prompt) => {
       const result = await agentExecutorAdapter.run(blueprint, {
@@ -284,7 +244,6 @@ export function registerTeamCapabilities(
   const votingModule = new VotingCapabilityModule(votingService, logger);
   composer.registerCapabilityModule(votingModule);
 
-  // Phase 119: Register PortalExtractorsModule for extended-language symbol extraction
   const portalExtractorsModule = new PortalExtractorsModule();
   composer.registerCapabilityModule(portalExtractorsModule);
 

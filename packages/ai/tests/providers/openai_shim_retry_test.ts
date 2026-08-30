@@ -41,10 +41,8 @@ Deno.test("OpenAIShim retries on 429 and returns content", async () => {
   }
 });
 
-// --------------------------------------------------------------------------
-// Manual sanity test: check actual provider availability (opt-in)
-// This test is ignored unless EXA_TEST_ENABLE_PAID_LLM=1 and EXA_TEST_OPENAI_API_KEY is set.
-// --------------------------------------------------------------------------
+// Manual sanity test (opt-in): ignored unless EXA_TEST_ENABLE_PAID_LLM=1 and
+// EXA_TEST_OPENAI_API_KEY is set.
 const _enabled = Deno.env.get("EXA_TEST_ENABLE_PAID_LLM");
 Deno.test({ name: "OpenAIShim: sanity check against real LLM (manual)", ignore: _enabled !== "1" }, async () => {
   const apiKey = Deno.env.get("EXA_TEST_OPENAI_API_KEY");

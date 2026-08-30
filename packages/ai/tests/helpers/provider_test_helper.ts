@@ -344,8 +344,7 @@ export function testProviderRetryOn429<T extends { generate: (prompt: string) =>
 }
 
 /**
- * Register all standard provider tests.
- * Call this from each provider's test file for consistent coverage.
+ * Register all standard provider tests; call this from each provider's test file.
  */
 export function registerProviderTests<
   T extends {

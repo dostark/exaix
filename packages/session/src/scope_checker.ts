@@ -18,12 +18,7 @@ export interface IScopeCheckResult {
   accepted: string[];
 }
 
-/**
- * Validate that every path in pathsTouched (1) stays inside worktreeRoot (no null
- * byte, `..`, or absolute escape) and (2) matches at least one glob in
- * permittedPaths. Any path failing either stage is a scope violation and must
- * block reconciliation.
- */
+/** A path failing either the traversal-safety or the glob-match stage is a scope violation. */
 export function checkScope(
   pathsTouched: string[],
   permittedPaths: string[],

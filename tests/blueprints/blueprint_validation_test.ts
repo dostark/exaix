@@ -109,9 +109,6 @@ Deno.test("Blueprint validation: quality-judge.md passes schema", async () => {
 // Example Blueprint Tests
 // ============================================================================
 
-// The separate examples/ directory was retired in the Phase 131 catalog
-// reconciliation: 4 example stubs duplicated concrete identities and were
-// deleted, and research-synthesizer was promoted to a concrete identity.
 Deno.test("Blueprint validation: research-synthesizer.md (promoted from examples) passes schema", async () => {
   const content = await Deno.readTextFile(
     join(BLUEPRINTS_DIR, "research-synthesizer.md"),
@@ -131,7 +128,7 @@ Deno.test("Blueprint validation: research-synthesizer.md (promoted from examples
 });
 
 // ============================================================================
-// New Agent Tests (Phase 18)
+// New Agent Tests
 // ============================================================================
 
 Deno.test("Blueprint validation: security-expert.md passes schema", async () => {

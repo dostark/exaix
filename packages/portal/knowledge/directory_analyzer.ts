@@ -116,10 +116,7 @@ function detectLayers(
   return layers;
 }
 
-/**
- * Detect if the portal is a monorepo by looking for nested package config files
- * (package.json or deno.json) at depth 1 (packages/*) or depth 2 (packages/name/).
- */
+/** Detect monorepo packages by locating nested package.json/deno.json files. */
 function detectMonorepoPackages(
   files: string[],
 ): IMonorepoPackage[] {
@@ -188,7 +185,7 @@ function processEntry(
   }
 }
 
-/** Phase 1: collect root-level priority files (config/entrypoints) first. */
+/** Collect root-level priority files (config/entrypoints) before the BFS walk. */
 async function collectPriorityFiles(root: string, result: IWalkResult, scanLimit: number): Promise<boolean> {
   try {
     for await (const entry of Deno.readDir(root)) {
@@ -250,15 +247,7 @@ export async function walkDirectory(
 // Public API
 // ---------------------------------------------------------------------------
 
-/**
- * Analyse the directory structure of a portal codebase.
- *
- * @param portalPath     - Absolute path to the portal root.
- * @param ignorePatterns - Additional patterns to skip beyond DEFAULT_IGNORE_PATTERNS.
- * @param scanLimit      - Maximum number of files to include in the result.
- * @returns              Partial IPortalKnowledge with stats, layers, techStack,
- *                       and (if monorepo) packages[].
- */
+/** Analyse the directory structure of a portal codebase into stats, layers, and techStack. */
 export async function analyzeDirectory(
   portalPath: string,
   ignorePatterns: string[],

@@ -61,15 +61,7 @@ function formatIssuesForPrompt(issues: IRequestQualityIssue[]): string {
 // Public API
 // ---------------------------------------------------------------------------
 
-/**
- * Rewrite an underspecified request body using an LLM.
- * Falls back to the original body if the LLM call fails.
- *
- * @param provider - LLM provider to use for enrichment.
- * @param body - Original request body text.
- * @param issues - Quality issues that led to this enrichment being triggered.
- * @returns Enriched request body, or the original body on failure.
- */
+/** Rewrites an underspecified body, returning the original on LLM failure. */
 export async function enrichRequest(
   provider: IModelProvider,
   body: string,

@@ -44,11 +44,7 @@ const REPO_ROOT = join(import.meta.dirname!, "..", "..", "..");
 const DYNAMIC_STEP_COMPLETED = "dynamic_step_completed";
 const FLOW_STARTED = "flow.started";
 
-/**
- * ReAct completion fixture: the dynamic step's only LLM call (LlmClient.reasonNextAction)
- * declares the step complete. The preview is the stable prefix of the REACT_PROMPT_TEMPLATE
- * filled with the shipped senior-coder blueprint's name.
- */
+/** ReAct completion fixture; promptPreview is the stable REACT_PROMPT_TEMPLATE prefix for the shipped senior-coder blueprint. */
 const REACT_COMPLETE_FIXTURE = {
   promptHash: "0000000000000000000000000000000000000000000000000000000000000000",
   promptPreview: "\nYou are Senior Software Engineer,",
@@ -100,11 +96,7 @@ async function journalSummary(configPath: string): Promise<string> {
   }
 }
 
-/**
- * Single dynamic-mode step flow, sandboxed per boot. The step's identity is the shipped
- * `senior-coder` blueprint (copied into the sandbox), so the ReAct prompt prefix is
- * deterministic ("You are Senior Software Engineer,") and the recorded fixture hits.
- */
+/** Uses the shipped `senior-coder` blueprint so the ReAct prompt prefix is deterministic and the recorded fixture hits. */
 function writeWiringProbeFlow(root: string): void {
   const dir = join(root, "Blueprints", "Flows");
   Deno.mkdirSync(dir, { recursive: true });
@@ -238,10 +230,7 @@ function seedSoloWorkspace(root: string): void {
   writePortalDir(root);
 }
 
-/**
- * Boot the real daemon subprocess with a flow request injected mid-flight, then read the
- * activity journal. Team and Solo share this harness; only the config differs.
- */
+/** Boots the real daemon subprocess with a flow request injected mid-flight, then reads the activity journal. Team and Solo share this harness. */
 async function bootAndProbeFlow(
   configPath: string,
   root: string,
@@ -369,7 +358,7 @@ Deno.test({
   },
 });
 
-// ── Fail-soft degradation (Phase 163 Step 10) ────────────────────────────────
+// ── Fail-soft degradation ─────────────────────────────────────────────────
 
 Deno.test({
   name:
@@ -388,11 +377,9 @@ Deno.test({
       debug: () => Promise.resolve(),
       child: () => logger,
     };
-    // A context whose config.getAll() throws makes the first tool-handler factory's
-    // ToolHandler constructor throw inside buildDynamicHandlers — exercising the
-    // catch → log DynamicToolsInitFailed → return undefined (no crash) path. Spread a
-    // real stub context's config rather than double-casting an ad hoc object, so the
-    // override stays properly typed.
+    // A context whose config.getAll() throws makes buildDynamicHandlers' ToolHandler
+    // constructor throw, exercising the catch → log DynamicToolsInitFailed → return
+    // undefined (no crash) path.
     const validContext = createStubContext();
     const throwingContext: IApplicationContext = {
       ...validContext,

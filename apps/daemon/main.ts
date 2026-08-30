@@ -135,10 +135,9 @@ import {
 } from "@exaix/core/types/constants.ts";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
 import { SoloComposer } from "@exaix/core/composer";
-// Team modules are loaded dynamically ONLY inside the editionType !== "solo" branches
-// below, so the Solo binary never references @exaix-team/* at all (a static top-level
-// dependency would be bundled by `deno compile` even in Solo — defeating edition
-// separation). Type-only imports are erased at compile time and are safe to keep static.
+// Team modules load dynamically only inside non-Solo branches — a static top-level import
+// would be bundled into the Solo binary by `deno compile`, defeating edition separation.
+// Type-only imports are erased at compile time and stay safe as statics.
 import type { TeamComposer } from "@exaix-team/team-composer";
 import type { GuardrailRunner } from "@exaix-team/guardrail";
 import type { HitlPolicyEvaluator } from "@exaix-team/hitl";
@@ -147,19 +146,10 @@ import type { HitlPolicyEvaluator } from "@exaix-team/hitl";
 const traceModelCache = new Map<string, string>();
 const TRACE_CACHE_MAX = 100;
 
-/**
- * Representative migrated config key the daemon resolves through `configAdapter` at boot
- * (Phase 137 Step 11 / GAP-17). Its journalled provenance proves the cutover read path is
- * live end-to-end. `ai.timeout_ms` is registered via `configurable()` in Step 10.
- */
+/** Representative migrated config key resolved through `configAdapter` at boot; its journalled provenance proves the cutover read path works end-to-end. */
 const CONFIG_CUTOVER_PROBE_KEY = "ai.timeout_ms";
 
-/**
- * Read a request file, parse its frontmatter, build a IModelIntent from any CLI
- * flags present (model_size, thinking, effort, etc.), and resolve through
- * ModelResolver. Returns "provider:model" string or undefined if the request
- * has no IModelIntent fields or the file cannot be read.
- */
+/** Resolves a request file's IModelIntent (model_size, thinking, effort, etc.) via ModelResolver. Returns "provider:model", or undefined if the file lacks intent fields or can't be read. */
 async function resolveRequestModel(
   filePath: string,
   resolver: ModelResolver,
@@ -185,10 +175,6 @@ async function resolveRequestModel(
   }
 }
 
-/**
- * Find a request file by traceId and resolve its model.
- * Uses an in-memory LRU cache to avoid repeated filesystem scans (PG-6).
- */
 async function resolveModelFromTrace(
   traceId: string,
   requestsDir: string,
@@ -223,11 +209,9 @@ async function resolveModelFromTrace(
 }
 
 if (import.meta.main) {
-  // Scrub ambient injection-class env vars (LD_*, NODE_OPTIONS, git env-config, …)
-  // BEFORE any service init or spawn path reads the process env (Phase 167 Step 4):
-  // the daemon is started from a shell that may export them for unrelated toolchains,
-  // and every child it spawns — including raw Deno.Command calls that bypass
-  // SafeSubprocess — would otherwise inherit them.
+  // Scrub ambient injection-class env vars (LD_*, NODE_OPTIONS, git env-config, …) before
+  // any service init or spawn path reads the env — the daemon's shell may export them for
+  // unrelated toolchains, and every spawned child would otherwise inherit them.
   scrubProcessEnv();
 
   // Simple argument handling for the compiled binary
@@ -252,9 +236,9 @@ if (import.meta.main) {
     const config = configService.get();
     const checksum = configService.getChecksum();
 
-    // Initialize Config DB (dedicated SQLite connection — not journal DB).
-    // Phase 137 Step 3: keep the handle open for the daemon lifetime so the
-    // InMemoryConfigStore and DB watcher can share it. Close on graceful shutdown.
+    // Initialize Config DB (dedicated SQLite connection — not journal DB). Keep the handle
+    // open for the daemon lifetime so InMemoryConfigStore and the DB watcher can share it;
+    // close it on graceful shutdown.
     const configDbPath = ensureConfigDb(config.system.root);
     const configDb = new Database(configDbPath);
     migrateConfigDb(configDb);
@@ -269,9 +253,8 @@ if (import.meta.main) {
     const viewerOutput = new EventLoggerStructuredOutput(viewerLogDir);
 
     // Create main EventLogger with database connection and viewer output. Without minLevel,
-    // EventLogger defaults to INFO and config's log_level = "debug" silently never applies —
-    // debug-level diagnostics (prompt dumps, raw LLM responses, provider request bodies)
-    // would be filtered out of the journal no matter what the config says.
+    // EventLogger defaults to INFO and config's log_level="debug" would silently never apply,
+    // filtering debug diagnostics (prompt dumps, raw responses) out of the journal regardless.
     const logger = new EventLogger({
       db: dbService,
       prefix: "",
@@ -283,10 +266,9 @@ if (import.meta.main) {
     // Initialize GracefulShutdown service
     const gracefulShutdown = new GracefulShutdown(logger);
 
-    // Register signal handlers EARLY so SIGTERM during slow startup (e.g. CI)
-    // goes through graceful shutdown (which flushes the journal queue) instead of
-    // the default handler (immediate exit, queue lost). Cleanup tasks registered
-    // later (watchers, auto-approval) are no-ops if their services haven't started.
+    // Register signal handlers EARLY so SIGTERM during slow startup (e.g. CI) goes through
+    // graceful shutdown (flushes the journal queue) instead of the default immediate-exit
+    // handler. Cleanup tasks registered later are no-ops if their services haven't started.
     gracefulShutdown.registerSignalHandlers();
     gracefulShutdown.registerErrorHandlers();
 
@@ -302,29 +284,24 @@ if (import.meta.main) {
     });
 
     // ── Config DB: populate in-memory store and create adapter ────────────
-    // Phase 137 Step 3: populate InMemoryConfigStore from Config DB +
-    // registry defaults, then wire DaemonConfigAdapter into the context.
+    // Populate InMemoryConfigStore from Config DB + registry defaults, then
+    // wire DaemonConfigAdapter into the context.
     const configStore = new InMemoryConfigStore();
     const effectiveValues = getAllEffectiveValues(configDb);
     for (const [key, value] of effectiveValues) {
       const swap = getRegisteredDefaults().get(key)?.opts?.swap ?? SwapClass.HOT;
       configStore.set(key, value, swap);
     }
-    // The daemon IS the daemon — construct DaemonConfigAdapter directly rather than
-    // going through createConfigAdapter's PID-file detection (that factory is for
-    // CLI/MCP callers detecting whether a daemon is up; at boot the daemon has not
-    // written its PID yet, so detection would wrongly fall back to DirectConfigAdapter).
+    // The daemon IS the daemon — construct DaemonConfigAdapter directly rather than through
+    // createConfigAdapter's PID-file detection (built for CLI/MCP callers to detect whether a
+    // daemon is up); at boot the PID isn't written yet, so detection would wrongly fall back.
     const configAdapter = new DaemonConfigAdapter(configStore, configDb, logger);
     logger.info(DomainEventType.ConfigUpdated, "config_db_store", {
       keys: effectiveValues.size,
       adapterMode: configAdapter.mode,
     });
 
-    // Phase 137 Step 11 (GAP-17): prove the cutover is live — resolve a representative
-    // migrated key through the adapter (Config DB → registry → schema) and journal the
-    // result with its provenance. This is the daemon's first production read through
-    // `configAdapter`; the value + source are observable in the journal so the cutover is
-    // verifiable end-to-end (tests/integration/config_cutover_daemon_boot_test.ts).
+    // Record one adapter-resolved value and its provenance to verify the boot read path.
     const cutoverProvenance = configAdapter.getProvenance(CONFIG_CUTOVER_PROBE_KEY);
     logger.info(DomainEventType.ConfigCutoverResolved, "config_db", {
       key: CONFIG_CUTOVER_PROBE_KEY,
@@ -333,32 +310,26 @@ if (import.meta.main) {
       adapterMode: configAdapter.mode,
     });
 
-    // Phase 139 Step 7: verify config integrity at boot — journal the result so
-    // an operator can see whether the Config DB was tampered with while the daemon
-    // was down. This runs after the store is populated and the adapter is wired.
+    // Verify Config DB integrity after store initialization and journal the result
+    // so operators can detect offline tampering.
     await configAdapter.verifyIntegrity();
 
-    // Register configDb.close() on graceful shutdown (kept open for the
-    // watcher's lifetime). The DB-watcher's own teardown (Step 4) will be
-    // registered separately and must not double-close.
+    // Keep the Config DB open for the watcher; its separate teardown must not
+    // close the database a second time.
     gracefulShutdown.registerCleanup("close_config_db", () => {
       configDb.close();
       return Promise.resolve();
     });
 
-    // ── Config DB polling watcher ────────────────────────────────────────
-    // Phase 137 Step 4: poll for new MAX(id) in config_overrides and
-    // hot-apply swap:hot keys detected from external CLI writes. The interval
-    // defaults to DEFAULT_CONFIG_DB_POLL_INTERVAL_MS; EXA_CONFIG_DB_POLL_INTERVAL_MS
-    // overrides it so integration tests can drive the watcher within a short boot.
+    // Poll for external config overrides and hot-apply eligible keys.
+    // The environment override supports shorter integration-test intervals.
     const pollIntervalOverride = Number(Deno.env.get("EXA_CONFIG_DB_POLL_INTERVAL_MS"));
     const configDbPollIntervalMs = Number.isFinite(pollIntervalOverride) && pollIntervalOverride > 0
       ? pollIntervalOverride
       : DEFAULT_CONFIG_DB_POLL_INTERVAL_MS;
     let lastMaxId = getMaxOverrideId(configDb);
-    // Phase 139 Step 7: gate periodic integrity verify so independent of the
-    // shorter DB-watcher poll interval. Env override allows integration tests
-    // to drive the check within a test-length boot.
+    // Schedule integrity verification independently from the faster override poll.
+    // Its environment override supports shorter integration-test intervals.
     const integrityPollIntervalOverride = Number(Deno.env.get("EXA_INTEGRITY_POLL_INTERVAL_MS"));
     const integrityPollIntervalMs = Number.isFinite(integrityPollIntervalOverride) &&
         integrityPollIntervalOverride > 0
@@ -406,7 +377,6 @@ if (import.meta.main) {
       log_level: config.system.log_level,
     });
 
-    // Phase 121 Step 2: log the effective net allowlist
     if (config.system.allow_net === undefined) {
       await logger.info(DomainEventType.NetAllowlist, "default-allowlist", {
         // Read from the constant rather than restated: the literal here kept reporting three hosts
@@ -421,12 +391,7 @@ if (import.meta.main) {
       });
     }
 
-    // Phase 124 (full-alignment): self-enforce the allow_net policy regardless of
-    // how the daemon was launched. The launcher bakes --allow-net into the spawn,
-    // but a compiled binary or `deno task dev` freezes its flags at build time and
-    // cannot honour allow_net. If the config says "block all outbound" (allow_net=[])
-    // yet this process still holds net access, refuse to start (fail-closed) — the
-    // operator asked for no egress and we must not silently provide it.
+    // Fail closed when configuration forbids egress but the process has network access.
     const netStatus = await Deno.permissions.query({ name: "net" });
     const netPolicy = evaluateNetPolicy({
       allowNet: config.system.allow_net,
@@ -443,15 +408,10 @@ if (import.meta.main) {
       mode: "WAL",
     });
 
-    // Phase 121 Step 3: recover orphaned session delegations from journal.
-    // recovery.ts joins workspaceRoot + "Workspace" + "Requests", so pass the
-    // project root (config.system.root) here — NOT root/workspace, which would
-    // produce a doubled Workspace/Workspace/Requests path the watcher never scans
-    // (Phase 124 GAP-9, caught by the Step 4b E2E).
+    // Recovery appends Workspace/Requests, so pass the project root to avoid duplication.
     const recoveryRoot = config.system.root;
-    // Phase 174 Step 4: shared with the session_delegate_cycle FlowRunner wiring below —
-    // the claim store is the launch source of truth cycle-owned orphan recovery routes
-    // through, and the cycle store is its atomic JSON resume checkpoint.
+    // FlowRunner and orphan recovery share the claim store as launch authority;
+    // the cycle store holds atomic resume checkpoints.
     const sessionDelegateCycleClaimStore = new SessionDelegateCycleClaimStore(dbService);
     const sessionDelegateCycleStore = new SessionDelegateCycleStore(
       join(config.system.root, "Memory", "Execution"),
@@ -477,9 +437,8 @@ if (import.meta.main) {
       const { bootstrapTeamProviders, TeamComposer } = await import("@exaix-team/team-composer");
       bootstrapTeamProviders();
       const teamComposer = new TeamComposer();
-      // Phase 135 Step 1 (GAP-2): register the live model-registry provider BEFORE
-      // the registry is selected below (getModelRegistryProvider()), so a Team
-      // daemon resolves through ModelRegistryService rather than the Solo floor.
+      // Register the Team model registry before selection so Team does not
+      // fall back to the Solo registry.
       const { registerTeamModelRegistry } = await import("./src/bootstrap_team.ts");
       registerTeamModelRegistry(teamComposer, { db: dbService, config, logger });
       _editionComposer = teamComposer;
@@ -509,10 +468,7 @@ if (import.meta.main) {
       named_model: defaultModelName,
     });
 
-    // Phase 157 Step 4: on shutdown, report accumulated fixture drift for this run — a
-    // slowly staling fixture set should be visible before it is worthless. Unwraps through
-    // TracedProvider/RateLimitedProvider (ProviderFactory.createAndWrap applies both when a
-    // logger/rate-limiting is configured) to find the underlying MockLLMProvider, if any.
+    // Unwrap provider decorators to report mock-fixture drift at shutdown.
     gracefulShutdown.registerCleanup("report_fixture_drift", () => {
       const underlying = unwrapModelProvider(llmProvider);
       if (underlying instanceof MockLLMProvider) {
@@ -529,7 +485,6 @@ if (import.meta.main) {
       return Promise.resolve();
     });
 
-    // Construct GuardrailRunner if enabled and Team edition (Phase 107)
     let guardrailRunner: GuardrailRunner | undefined;
     if (editionType !== EDITION_SOLO && config.guardrail?.enabled) {
       try {
@@ -549,7 +504,6 @@ if (import.meta.main) {
       }
     }
 
-    // Phase 118: Initialize HITL policy evaluator if Team edition and enabled
     let hitlPolicyEvaluator: HitlPolicyEvaluator | undefined;
     if (editionType !== EDITION_SOLO && config.hitl?.enabled) {
       const { HitlPolicyEvaluator } = await import("@exaix-team/hitl");
@@ -643,9 +597,8 @@ if (import.meta.main) {
       gitHistoryCommitLimit: pkCfg.git_history_commit_limit,
       gitHistorySince: pkCfg.git_history_since,
     };
-    // Build per-language symbol-extractor registry (Phase 119 Step 4):
-    // Solo baseline includes TS/JS + Python tree-sitter; Team edition adds
-    // extended-language extractors via the composer hook (below, at :347).
+    // Solo registers TS/JS and Python extractors; Team composition adds
+    // extended-language extractors through its hook.
     const symbolRegistry: ISymbolExtractorRegistry = createDefaultSymbolExtractorRegistry();
     const portalKnowledge = new PortalKnowledgeService({
       config: portalKnowledgeConfig,
@@ -692,7 +645,7 @@ if (import.meta.main) {
     // ── Review Registry (needed before session-delegation for onReconciled wiring) ──
     const reviewRegistry = new ReviewRegistry(dbService, logger);
 
-    // ── Session-delegation runtime (Phase 111) ──────────────────────────
+    // ── Session-delegation runtime ──────────────────────────────────────
     const LAUNCH_MODE_HEADLESS = "headless";
     const GATE_REFINEMENT = "refinement";
     const GATE_PLAN_REVIEW = "plan_review";
@@ -754,9 +707,8 @@ if (import.meta.main) {
         registry: createDefaultSessionAdapterRegistry(),
         sessionDir,
         clock: { now: () => new Date() },
-        // pathResolver is REQUIRED for the OpenCode hardening path (resolveHardenedLaunch generates
-        // the per-path opencode.jsonc permission config). Without it, harden_permissions=true +
-        // tool=opencode throws at launch — the Phase 128 feature was unreachable in production.
+        // Hardened OpenCode launches require PathResolver to generate per-path
+        // opencode.jsonc permissions.
         pathResolver: new PathResolver(config),
       });
       const processor = new SessionReturnProcessor({
@@ -814,20 +766,14 @@ if (import.meta.main) {
       config.paths.waitStates ?? "WaitStates",
     );
 
-    // Create flow event logger adapter (EventLogger → IFlowEventLogger). Extracted to
-    // apps/daemon/src/flow_event_logger_adapter.ts (Phase 167 Step 3) — see that
-    // module's header for why forwarding payload.traceId as the explicit 4th
-    // logger.info() argument is required for trace_scoped journal-assert steps to
-    // find flow-runner events at all.
+    // The adapter forwards payload.traceId into the logger's explicit trace argument.
     const flowLogger = createFlowEventLogger(logger);
 
-    // Phase 132.4: Create ModelResolver for policy-driven model routing
     const healthChecker: IProviderHealthChecker = {
       checkProvider: (_providerName: string) => Promise.resolve(true),
     };
     const routingStrategy = new DefaultRoutingStrategy(ProviderRegistry, costTracker, healthChecker);
-    // Phase 134 D8: Select model registry via edition-composer seam.
-    // Solo -> DefaultModelRegistry; Team -> live registry via registered provider.
+    // The composer selects the live Team registry; Solo uses DefaultModelRegistry.
     const modelRegistryProvider = _editionComposer.getModelRegistryProvider();
     const modelRegistry = modelRegistryProvider
       ? modelRegistryProvider.createModelRegistry({
@@ -835,27 +781,20 @@ if (import.meta.main) {
         healthChecker,
       })
       : new DefaultModelRegistry(healthChecker);
-    // Phase 135 Step 2 (GAP-4, D9): late-bind the edition-selected registry as the
-    // CostTracker's pricing lookup — the tracker was constructed earlier (line ~517),
-    // before the registry existed. IModelRegistry satisfies IModelPricingLookup
-    // (getModelPricing). Edition-agnostic: floor in Solo, live service in Team.
+    // Late-bind pricing because CostTracker is constructed before the edition registry.
     costTracker.setPricingLookup(modelRegistry);
-    // Phase 135 Step 3 (GAP-1 consumer): in Team edition, wire the live registry's
-    // explicit-validation / auto-admit behaviour into the resolver via the
-    // IResolutionStrategy seam. Solo passes no strategy → byte-identical 134 behaviour.
+    // Team supplies live validation and auto-admission through IResolutionStrategy;
+    // Solo intentionally supplies no strategy.
     let resolutionStrategy: Opt<IResolutionStrategy, Reason.OptionalDependency>;
     if (editionType === EDITION_TEAM) {
       const bt = await import("./src/bootstrap_team.ts");
       const { buildTeamResolutionStrategy, buildRefreshScheduler, loadBenchmarkFloor } = bt;
       resolutionStrategy = buildTeamResolutionStrategy(modelRegistry, config, logger);
-      // Phase 135 Step 7: populate the benchmark data plane. Curated floor loads
-      // unconditionally; models.dev ingest runs only behind the double gate. Feeds top-N
-      // admission (G6) and the Step 8 `best` scorer.
+      // Always load the curated benchmark floor; external models.dev ingestion
+      // remains gated by registry configuration.
       await loadBenchmarkFloor(modelRegistry, config);
-      // Phase 135 Step 5: opt-in registry refresh scheduler. buildRefreshScheduler
-      // returns undefined unless model_registry.enabled === true, so a disabled Team
-      // daemon makes zero outbound calls. start() honours refresh_on_start; the single
-      // timer is skipped under DENO_TEST=1 and cleared on graceful shutdown.
+      // The factory returns no scheduler when refresh is disabled; an active
+      // scheduler is stopped during graceful shutdown.
       const refreshScheduler = buildRefreshScheduler(modelRegistry, config, logger);
       if (refreshScheduler) {
         refreshScheduler.start();
@@ -880,10 +819,7 @@ if (import.meta.main) {
       config.paths.blueprints,
       DEFAULT_IDENTITIES_PATH,
     );
-    // Without this, AgentRunner.matchAndApplySkills short-circuits (skillsService undefined) and
-    // a blueprint's default_skills (e.g. response-contract, the <thought>/<content> format
-    // contract) are never attached to an analysis-phase LLM call, regardless of the identity's
-    // frontmatter. Mirrors apps/exactl/src/init.ts's construction.
+    // Without this, AgentRunner.matchAndApplySkills short-circuits (skillsService undefined) and a blueprint's default_skills (e.g. response-contract, the <thought>/<content> format contract) are never attached to an analysis-phase LLM call, regardless of the identity's frontmatter. Mirrors apps/exactl/src/init.ts's construction.
     const skillsService = new SkillsService(
       { memoryDir: join(config.system.root, config.paths.memory), portal: config.paths.workspace },
       dbService,
@@ -898,18 +834,12 @@ if (import.meta.main) {
       milestoneEmitter: buildMilestoneEmitterFromConfig(config),
       skillsService,
       logger,
-      // Phase 143 Step 2: `skills.inject_in_prompt=false` (the skills ablation preset)
-      // fully disables skills matching+injection in the runner — no `skills.match_completed`
-      // / `skills.resolved` event is journaled. The flag defaults true, so ordinary configs
-      // are unaffected.
+      // Disabling prompt injection also disables skill matching and its journal events.
       disableSkills: !config.skills.inject_in_prompt,
     });
     const portalPermissions = new PortalPermissionsService(config.portals ?? []);
-    // Phase 163 Step 6: wire the real dynamic-step tool dispatcher into the Team-edition
-    // boot path. `buildDynamicHandlers` is Team-gated (BSL package); `LocalToolDispatcher`
-    // is MIT and imported statically. Follows the guardrail block's fail-soft convention:
-    // a wiring failure degrades to today's no-dynamic-step-mode behavior (log + continue)
-    // rather than taking the whole Team daemon down.
+    // Team composition provides dynamic-step dispatch; initialization failure
+    // degrades to execution without dynamic steps.
     let mcpClient: LocalToolDispatcher | undefined;
     if (editionType === EDITION_TEAM) {
       mcpClient = await buildTeamMcpClient(context, portalPermissions, logger);
@@ -926,9 +856,7 @@ if (import.meta.main) {
         modelResolver,
       },
     );
-    // Phase 174 Step 2: built once, before FlowRunner, and shared with the code-changes
-    // delegate adapter below — the session_delegate_cycle flow step and the legacy
-    // PlanExecutor code-change path are two consumers of the same coordinator authority.
+    // FlowRunner and PlanExecutor share one coordinator as delegation authority.
     const sessionDelegationCoordinator = _sessionDelegateService && _sessionWaitStore && _sessionResultStore &&
         _headlessLauncher && config.session_delegate?.gates?.includes(GATE_CODE_CHANGES)
       ? new SessionDelegationCoordinator({
@@ -966,13 +894,7 @@ if (import.meta.main) {
       sessionDelegateCycleStore,
     });
 
-    // The processor needs the flow itself, not a verdict about it: it previously cast
-    // `{ id } as IFlow` and FlowRunner crashed reading `steps.length` on the result.
-    //
-    // Read `config.paths.flows` rather than recomposing it from `paths.blueprints` and
-    // `DEFAULT_FLOWS_PATH`. The two agree on a default workspace and diverge the moment an
-    // operator overrides the setting — which would leave `exactl flow list` honouring the
-    // override while the daemon that actually runs the flows ignored it.
+    // The processor needs the flow itself, not a verdict about it: it previously cast `{ id } as IFlow` and FlowRunner crashed reading `steps.length` on the result.  Read `config.paths.flows` rather than recomposing it from `paths.blueprints` and `DEFAULT_FLOWS_PATH`. The two agree on a default workspace and diverge the moment an operator overrides the setting — which would leave `exactl flow list` honouring the override while the daemon that actually runs the flows ignored it.
     const flowLoader = new FlowLoaderAdapter(
       new FlowLoader(join(config.system.root, config.paths.flows)),
     );
@@ -1003,9 +925,7 @@ if (import.meta.main) {
       includeReasoning: true,
       context, // Support unified DI
       agentRunner,
-      // Phase 135 Step 9 (GAP-C9): share the daemon's own tracker (pricing lookup
-      // already set at line ~765) — a self-constructed tracker would never split-price
-      // (registry_computed permanently unreachable for standard-request generations).
+      // Share the tracker already bound to edition-specific registry pricing.
       costTracker,
       sessionMemory,
       flowRunner,
@@ -1089,11 +1009,8 @@ if (import.meta.main) {
                 delegateProviderEnv = _sessionDelegateService!.resolveDelegateEnv(sd, sd.tool, apiKey);
               }
             }
-            // Phase 124 Step 4a: emit launched before spawning (orphan marker on crash).
-            // traceId is passed both as target (existing display convention, see
-            // recovery.ts's SessionDelegateCrashRecovered) and as the explicit 4th
-            // argument, which is what actually populates the persisted row's trace_id
-            // column for trace_scoped journal-assert steps (Phase 167 Step 4).
+            // Emit before spawning; the explicit trace argument persists trace_id for
+            // orphan recovery and trace-scoped queries.
             await logger.info(DomainEventType.SessionDelegateLaunched, traceId, {
               gate: GATE_REFINEMENT,
               tool: sd.tool,
@@ -1196,22 +1113,11 @@ if (import.meta.main) {
           });
         },
       },
-      // Phase 135 Step 9 (GAP-C9): without a logger, ExecutionLoop.logActivity no-ops and
-      // the same unset logger passes through to PlanExecutor — silencing every plan-
-      // execution event (including model.resolved/model.route.selected/model.admitted
-      // emitted deeper in AgentOrchestrator/ModelResolver) from the Activity Journal.
+      // Share the daemon logger so execution and model-routing events reach the journal.
       logger,
-      // Phase 135 Step 9 (GAP-C9): threaded to PlanExecutor -> AgentOrchestrator so
-      // resolveModelFromBlueprint's ModelResolver.resolve() branch (best/route/
-      // auto-admit/task_type) is reachable during real plan execution — previously
-      // createAgentExecutor never received a resolver at all.
+      // Share the configured resolver so plan execution uses the same routing policy.
       modelResolver,
-      // Phase 135 Step 11 (GAP-10, context-window half): threaded to PlanExecutor so
-      // AgentOrchestrator's internally-constructed PromptBudgetAllocator resolves a step's
-      // real context window (via the same edition-selected registry already used for
-      // ModelResolver/CostTracker above) instead of always falling back to the
-      // hardcoded 128K default — previously createAgentExecutor never received a
-      // registry for its allocator at all.
+      // Share the edition registry so prompt budgeting uses resolved context windows.
       modelRegistry,
     });
 
@@ -1232,7 +1138,6 @@ if (import.meta.main) {
     });
 
     // Start file watcher for approved plans (Workspace/Active)
-    // Detection for Step 5.12: Plan Execution Flow
     const planWatcher = new FileWatcher(
       config,
       async (event) => {
@@ -1311,10 +1216,7 @@ if (import.meta.main) {
       );
     });
 
-    // Establish all watchers (start() returns once each FS watch is open and watcher.started is
-    // journalled — it does NOT block on the consume-loop). Awaiting these confirms every watcher
-    // is genuinely listening before we emit daemon.started, so that event is a true "fully
-    // functioning" readiness signal with no race window for a consumer that waits on it.
+    // Establish all watchers (start() returns once each FS watch is open and watcher.started is journalled — it does NOT block on the consume-loop). Awaiting these confirms every watcher is genuinely listening before we emit daemon.started, so that event is a true "fully functioning" readiness signal with no race window for a consumer that waits on it.
     const fileWatchers = [requestWatcher, planWatcher, configWatcher];
     await Promise.all(fileWatchers.map((w) => w.start()));
 
@@ -1323,10 +1225,7 @@ if (import.meta.main) {
     const longLived = fileWatchers.map((w) => w.run());
     if (sessionReturnWatcher) longLived.push(sessionReturnWatcher.start());
 
-    // daemon.ready (NOT daemon.started): the watchers above are confirmed listening, so this is the
-    // authoritative "fully functioning" signal. The CLI `daemon start` already emitted daemon.started
-    // on process-alive; emitting a distinct daemon.ready here avoids two same-named events and lets a
-    // consumer wait for genuine readiness (the request watcher is live) before submitting work.
+    // daemon.ready (NOT daemon.started): the watchers above are confirmed listening, so this is the authoritative "fully functioning" signal. The CLI `daemon start` already emitted daemon.started on process-alive; emitting a distinct daemon.ready here avoids two same-named events and lets a consumer wait for genuine readiness (the request watcher is live) before submitting work.
     await logger.log({
       action: DomainEventType.DaemonReady,
       target: "exaix",

@@ -69,9 +69,8 @@ export const PROVIDER_OPENROUTER_CAPABILITIES = ["chat", "multi-model"] as const
 export const PROVIDER_OPENROUTER_STRENGTHS = ["model-variety", "auto-fallback", "unified-billing"] as const;
 export const PROVIDER_OPENROUTER_COST_TIER = ProviderCostTier.PAID;
 
-/** Phase 132 capability metadata — context window (tokens). */
 export const OPENROUTER_CONTEXT_WINDOW = 200_000;
-/** Phase 132 capability metadata — reference price in USD per 1M tokens (routing constraint). */
+/** Reference routing price in USD per million tokens. */
 export const OPENROUTER_COST_PER_MTok = 3;
 
 export const OPENROUTER_PROVIDER_METADATA = {

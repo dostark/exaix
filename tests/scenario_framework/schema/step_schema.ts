@@ -82,11 +82,9 @@ export enum CriterionStatus {
   BLOCKED = "blocked",
 }
 
-/** Optional marker classifying a criterion's intent (Phase 143 Step 3). A `class: security`
- *  criterion failure gates the whole suite under `scoring: gated` (Harness-Bench
- *  Security·Completion·Process semantics). Declared here — not in runner/scoring.ts — because
- *  scoring.ts already imports `CriterionStatus` as a value from this module; putting the enum
- *  here keeps the schema→scoring edge one-directional (no runtime import cycle). */
+/** A `class: security` criterion failure gates the whole suite under `scoring: gated`.
+ *  Declared here, not in runner/scoring.ts, to keep the schema→scoring import edge
+ *  one-directional (scoring.ts imports `CriterionStatus` from this module). */
 export enum CriterionClass {
   SECURITY = "security",
 }
@@ -101,10 +99,9 @@ const CriterionClassSchema = z.nativeEnum(CriterionClass);
 export const PortalMountSchema = z.object({
   alias: NON_EMPTY_STRING,
   source_path: z.string().min(1),
-  /** When set, the fixture at `source_path` is clean-staged into this workspace path (the
-   *  runner removes any prior target, stale worktrees, and stale symlink first) and the
-   *  portal is mounted there. The runner owns reset + copy, so an evaluated repo can never
-   *  leak a previous scenario's/cell's changes. Absent → `source_path` is mounted directly. */
+  /** When set, the fixture at `source_path` is clean-staged into this workspace path (runner
+   *  clears any prior target/worktree/symlink first) so no scenario's changes leak into the
+   *  next. Absent → `source_path` is mounted directly. */
   target_path: z.string().min(1).optional(),
   /** Initialize a git repo (with an initial commit) in `target_path` after the fixture copy. */
   git_init: z.boolean().optional(),
@@ -117,9 +114,9 @@ const BaseCriterionSchema = z.object({
   kind: CriterionKindSchema,
   message: z.string().min(1).optional(),
   score_weight: z.number().min(0).max(1).optional(),
-  /** Optional classification marker (Phase 143 Step 3). `class: "security"` marks a
-   *  scope-violation / path-escape / approval-bypass criterion whose failure gates the
-   *  suite under `scoring: gated`. */
+  /** Optional classification marker. `class: "security"` marks a scope-violation /
+   *  path-escape / approval-bypass criterion whose failure gates the suite under
+   *  `scoring: gated`. */
   class: CriterionClassSchema.optional(),
 });
 
@@ -201,14 +198,13 @@ const JournalEventExistsCriterionSchema = BaseCriterionSchema.extend({
   kind: z.literal(CriterionKind.JOURNAL_EVENT_EXISTS),
   event_type: NON_EMPTY_STRING,
   journal_file: NON_EMPTY_STRING.optional(),
-  // Phase 127 Step 7: when set, a matching event must exist whose parsed `payload` does NOT
-  // carry every one of these key/value pairs. Distinguishes an ACCEPTED reconcile from a
-  // non-scope-rejected one (both emit session.delegate.reconciled) — see assertions.ts.
+  // When set, a matching event must exist whose parsed `payload` does NOT carry every one
+  // of these key/value pairs. Distinguishes an ACCEPTED reconcile from a non-scope-rejected
+  // one (both emit session.delegate.reconciled) — see assertions.ts.
   payload_absent: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
-  // Phase 142 Step 17: when set, a matching event must exist whose parsed `payload` carries,
-  // under each named key, an ARRAY containing every listed string. Membership rather than
-  // equality, so a criterion can pin the ids it cares about out of e.g. `skills.resolved`'s
-  // `skill_ids` without restating the whole resolved set — see assertions.ts.
+  // When set, a matching event must exist whose parsed `payload` carries, under each named
+  // key, an ARRAY containing every listed string (membership, not equality) — lets a
+  // criterion pin ids out of e.g. `skills.resolved`'s `skill_ids` set. See assertions.ts.
   payload_includes: z.record(z.string(), z.array(z.string().min(1)).min(1)).optional(),
 }).strict();
 
@@ -279,23 +275,19 @@ export type IExpectedSequenceEntry = z.infer<typeof ExpectedSequenceEntrySchema>
 const LlmJudgeCriterionSchema = BaseCriterionSchema.extend({
   kind: z.literal(CriterionKind.LLM_JUDGE),
   evidence_path: z.string().min(1).optional(),
-  // Path to a git-tracked file (relative to workspaceRoot) whose diff against its repo's
-  // root commit is computed as evidence instead of evidence_path's raw final-state content.
-  // Takes precedence over evidence_path when both are set. Makes "did anything change"
-  // unambiguous — a raw final-state snapshot leaves the judge inferring that from prose
-  // alone, and live testing showed it sometimes infers wrong.
+  // Path to a git-tracked file (relative to workspaceRoot) whose diff against its repo's root
+  // commit is computed as evidence instead of evidence_path's raw final-state content — makes
+  // "did anything change" unambiguous. Takes precedence over evidence_path when both are set.
   evidence_diff_path: z.string().min(1).optional(),
   // Path to a workspace-relative DIRECTORY that is the git repo whose ENTIRE branch diff (vs
-  // its root commit) is the judge evidence — the complete set of applied code changes. For a
-  // code-change task the judge reviews the diff, not a single file. Takes precedence over
-  // evidence_diff_path and evidence_path. See assertions.ts:computeGitDiffEvidence.
+  // its root commit) is the judge evidence. Takes precedence over evidence_diff_path and
+  // evidence_path. See assertions.ts:computeGitDiffEvidence.
   evidence_diff_dir: z.string().min(1).optional(),
   preset: z.string().min(1).optional(),
   rubric: z.string().min(1).optional(),
-  // Path to a file (relative to workspaceRoot, e.g. the original request fixture) whose
-  // content is passed as buildEvaluationPrompt's context. Without it, a preset like
-  // GOAL_ALIGNED_REVIEW asks the judge to score "goal_alignment"/"request_understanding"
-  // against a stated objective the judge was never shown — it can only guess.
+  // Path to a file (relative to workspaceRoot, e.g. the original request fixture) passed as
+  // buildEvaluationPrompt's context. Without it, presets like GOAL_ALIGNED_REVIEW ask the
+  // judge to score against a stated objective it was never shown.
   context_path: z.string().min(1).optional(),
   // Step id whose test-run outcome (PASSED/FAILED + exit code + output) is passed to the judge
   // as additional context. A judge must run and grade EVEN when the tests failed — the failure
@@ -344,8 +336,8 @@ export const CriterionResultSchema = z.object({
   score_weight: z.number().min(0).max(1).optional(),
   /** Continuous criterion score 0-1. Absent ⇒ derive from status (PASSED=1, else 0). */
   score: z.number().min(0).max(1).optional(),
-  /** Criterion class propagated from the criterion definition (Phase 143 Step 3) — lets
-   *  the gated scorer gate without re-resolving step definitions. */
+  /** Criterion class propagated from the criterion definition — lets the gated scorer
+   *  gate without re-resolving step definitions. */
   class: CriterionClassSchema.optional(),
   /** Judge provenance — populated only by llm-judge. */
   judge: z.object({
@@ -363,29 +355,23 @@ export const ScenarioStepSchema = z.object({
   name: NON_EMPTY_STRING.optional(),
   command: NON_EMPTY_STRING.optional(),
   args: z.array(z.string()).optional(),
-  /** Working directory the step runs in (and file_pattern/file criteria resolve against).
-   *  Omitted → workspace root. A relative path resolves against the workspace root. The token
-   *  `$WORKTREE` resolves to the scenario's newest execution worktree — so scenarios never
-   *  hardcode deep `.exa/worktrees/...` globs. */
+  /** Working directory the step runs in (and file criteria resolve against). Omitted →
+   *  workspace root. `$WORKTREE` resolves to the scenario's newest execution worktree, so
+   *  scenarios never hardcode deep `.exa/worktrees/...` globs. */
   cwd: z.string().min(1).optional(),
   env: z.record(z.string(), z.string()).optional(),
-  /** Matrix-cell scoping: when present, this step only runs for cells whose `tool` is in
-   *  this list — every other cell skips it entirely (removed before execution, not merely
-   *  no-opped). For scenarios whose matrix mixes cell types needing different one-time
-   *  setup (e.g. patch-blueprint-capability's cli_delegate capability patch, needed only by
-   *  CLI-delegate cells, never by direct-API cells sharing the same steps array). Omitted →
-   *  the step runs for every cell (and for matrix-less scenarios), unchanged. */
+  /** Matrix-cell scoping: when present, this step only runs for cells whose `tool` is in this
+   *  list — every other cell skips it entirely (removed before execution, not no-opped).
+   *  Omitted → the step runs for every cell (and for matrix-less scenarios), unchanged. */
   cells: z.array(NON_EMPTY_STRING).min(1).optional(),
   timeout_sec: z.number().int().positive().optional(),
-  // wait-for-file: an optional second glob polled alongside args[0]. If it matches before
-  // the success glob does, the step fails immediately (surfacing the matched file's content
-  // in stderr) instead of burning the rest of timeout_sec waiting for a file that a known
-  // failure (e.g. a rejected plan) means will never appear.
+  // wait-for-file: an optional second glob polled alongside args[0]. If it matches before the
+  // success glob does, the step fails immediately (surfacing the matched file's content in
+  // stderr) instead of burning timeout_sec waiting for a file that will never appear.
   failure_glob: NON_EMPTY_STRING.optional(),
   // journal-assert: declarative activity-journal query (no raw SQL). Filter fields narrow the
   // rows considered; `project`/`sums` shape the emitted JSON; `expect_*` picks the assertion
-  // contract (default: at least one matching row). `trace_scoped` scopes to the current
-  // request's trace (first request.created above the scenario baseline).
+  // contract. `trace_scoped` scopes to the current request's trace.
   action_type: NON_EMPTY_STRING.optional(),
   action_types: z.array(NON_EMPTY_STRING).min(1).optional(),
   action_type_prefix: NON_EMPTY_STRING.optional(),

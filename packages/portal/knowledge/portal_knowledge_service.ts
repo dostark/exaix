@@ -33,6 +33,8 @@ import type {
   IMemoryBankService,
   IPortalKnowledgeConfig,
   IPortalKnowledgeService,
+  Opt,
+  Reason,
 } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
@@ -61,7 +63,7 @@ export interface IPortalKnowledgeServiceOptions {
   validator?: IArchitectureValidator;
   evLogger?: IEventLogger;
   runner?: IDocCommandRunner;
-  /** Per-language symbol-extractor registry (Phase 115 Step 4); defaults to TS/JS only. */
+  /** Per-language symbol-extractor registry; defaults to TS/JS only. */
   symbolExtractorRegistry?: ISymbolExtractorRegistry;
   gitHeadResolver?: IGitHeadResolver;
   gitServiceFactory?: IGitServiceFactory;
@@ -116,13 +118,7 @@ const CHUNK_SENTENCE_OVERLAP = 1;
 /** Multiplier applied to maxFilesToRead for `deep` mode analysis. */
 const _DEEP_MODE_FILE_CAP_MULTIPLIER = 3;
 
-/**
- * Orchestrates all 6 analysis strategies and implements `IPortalKnowledgeService`.
- *
- * In-memory cache keyed by `portalAlias`: analysis results are stored here
- * for the lifetime of the service instance. Persistence to disk via
- * `KnowledgePersistence` is added in Step 10.
- */
+/** Orchestrates all 6 analysis strategies and implements `IPortalKnowledgeService`. In-memory cache keyed by `portalAlias`, for the lifetime of the service instance. */
 export class PortalKnowledgeService implements IPortalKnowledgeService {
   private readonly _config: IPortalKnowledgeConfig;
   private readonly _memoryBank: IMemoryBankService;
@@ -194,7 +190,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
   async analyze(
     portalAlias: string,
     portalPath: string,
-    mode?: PortalAnalysisMode,
+    mode?: Opt<PortalAnalysisMode, Reason.AbstractBoundary>,
   ): Promise<IPortalKnowledge> {
     const resolvedMode = mode ?? this._config.defaultMode;
     const startMs = Date.now();
@@ -294,13 +290,13 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     }
 
     // Strategy 6: symbol extraction (standard/deep + language-aware selection) — uses source
-    // files matching the primary language's extensions (Phase 119 Step 2). Falls back to
-    // TS_JS_EXTENSIONS for unrecognized languages (backward-compatible).
+    // files matching the primary language's extensions, falling back to TS_JS_EXTENSIONS for
+    // unrecognized languages.
     let symbolMap: IPortalKnowledge["symbolMap"] = [];
     let symbolSourceFilesScanned: number | undefined;
     if (resolvedMode !== PortalAnalysisMode.QUICK) {
-      // Select the extractor by primary language (Phase 115 Step 4); TS/JS → deno-doc extractor,
-      // other languages → registered extractor (Solo: Python; Team: extended set) or no-op.
+      // Select the extractor by primary language: TS/JS → deno-doc extractor, other
+      // languages → registered extractor (Solo: Python; Team: extended set) or no-op.
       const extractor = this._symbolExtractorRegistry.getForLanguage(primaryLanguage);
       const sourceExtensions = LANGUAGE_SOURCE_EXTENSIONS[primaryLanguage] ?? TS_JS_EXTENSIONS;
       const sourceFiles = fileList.filter((f) => sourceExtensions.some((ext) => f.endsWith(ext)));
@@ -519,7 +515,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
   updateKnowledge(
     portalAlias: string,
     portalPath: string,
-    _changedFiles?: string[],
+    _changedFiles?: Opt<string[], Reason.AbstractBoundary>,
   ): Promise<IPortalKnowledge> {
     return this.analyze(portalAlias, portalPath, this._config.defaultMode);
   }
@@ -593,11 +589,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
   // Private helpers
   // -------------------------------------------------------------------------
 
-  /**
-   * Resolve portal alias from a portal path by scanning the cached knowledge.
-   * Returns the first matching alias, or undefined if no cached knowledge
-   * references this path.
-   */
+  /** Resolve portal alias from a portal path by scanning the cached knowledge. */
   private _resolveAliasFromPath(_portalPath: string): string | undefined {
     for (const [alias] of this._cache) {
       return alias;
@@ -605,10 +597,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     return undefined;
   }
 
-  /**
-   * Load or build an in-memory index for the given portal alias.
-   * Attempts to load from disk cache first; returns undefined on miss.
-   */
+  /** Load an in-memory index for the given portal alias, from disk cache first, else undefined. */
   private async _loadIndex(
     portalAlias: string,
   ): Promise<{ index: IVectorIndex; chunks: Map<string, string> } | undefined> {
@@ -661,11 +650,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     await Deno.rename(tmpPath, indexPath);
   }
 
-  /**
-   * Split text into overlapping sentence groups for semantic coherence.
-   * Each group contains CHUNK_SENTENCE_GROUP_SIZE sentences with
-   * CHUNK_SENTENCE_OVERLAP overlap, so adjacent chunks share context.
-   */
+  /** Split text into overlapping sentence groups for semantic coherence. */
   private _splitSentences(text: string): string[] {
     const sentences = text.split(/(?<=[.!?])\s+/)
       .map((s) => s.trim())
@@ -706,10 +691,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     return `hash:${Math.abs(hash).toString(36)}`;
   }
 
-  /**
-   * Chunk IPortalKnowledge into embeddable text segments.
-   * Includes architecture overview, conventions, and key file descriptions.
-   */
+  /** Chunk IPortalKnowledge into embeddable text segments. */
   private _chunkKnowledge(
     knowledge: IPortalKnowledge,
   ): Array<{ id: string; text: string }> {

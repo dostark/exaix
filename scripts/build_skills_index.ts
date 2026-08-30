@@ -25,6 +25,7 @@ import { parse as parseYaml } from "@std/yaml";
 import { type ISkill, SkillSchema } from "@exaix/schemas/memory_bank.ts";
 import { MemoryScope } from "@exaix/core/types";
 
+import type { Opt, Reason } from "@exaix/core/types";
 /** Result of a single generator run. */
 export interface IBuildSkillsIndexResult {
   success: boolean;
@@ -33,11 +34,9 @@ export interface IBuildSkillsIndexResult {
   warnings: string[];
 }
 
-/**
- * Frontmatter parsed from a `.skill.md` file. The keys mirror SkillSchema; values
- * are validated by SkillSchema.parse, so the structural type is intentionally
- * permissive (YAML-sourced). Composed into a concrete ISkill before use.
- */
+/** Frontmatter parsed from a `.skill.md` file. Keys mirror SkillSchema; the
+ * structural type stays permissive since values are YAML-sourced and validated
+ * via SkillSchema.parse before use. */
 export interface ISkillMdFrontmatter {
   [key: string]: string | number | boolean | null | ISkillMdFrontmatter | Array<string | ISkillMdFrontmatter>;
 }
@@ -55,10 +54,8 @@ export interface IParsedCliArgs {
   check: boolean;
 }
 
-/**
- * Splits a `.skill.md` file into YAML frontmatter and markdown body.
- * The body (trimmed, with its leading H1 retained) becomes `instructions`.
- */
+/** Splits a `.skill.md` file into YAML frontmatter and markdown body; the body
+ * (trimmed, leading H1 retained) becomes `instructions`. */
 function parseSkillMd(content: string): { frontmatter: ISkillMdFrontmatter; body: string } | null {
   if (!content.startsWith("---\n")) return null;
   const endFmIndex = content.indexOf("\n---\n", 4);
@@ -73,18 +70,13 @@ function parseSkillMd(content: string): { frontmatter: ISkillMdFrontmatter; body
   }
 }
 
-/**
- * Composes a full SkillSchema object from `.skill.md` frontmatter + body.
- * The frontmatter already carries the SkillSchema fields; `instructions` comes
- * from the markdown body (authored source of truth). `managed` carries
- * regeneration-stable fields (id/created_at/usage_count) preserved from an
- * existing JSON; only its DEFINED values override the frontmatter, so an absent
- * existing file leaves the frontmatter's own id/created_at intact.
- */
+/** Composes a SkillSchema object from frontmatter + body; `instructions` comes
+ * from the body. Only managed fields that are DEFINED override the frontmatter,
+ * so an absent existing JSON leaves the frontmatter's own id/created_at intact. */
 function composeSkill(
   frontmatter: ISkillMdFrontmatter,
   body: string,
-  managed?: IManagedSkillFields,
+  managed?: Opt<IManagedSkillFields, Reason.OptionalInput>,
 ): ISkill {
   const overrides: ISkillMdFrontmatter = { instructions: body };
   if (managed?.id !== undefined) overrides.id = managed.id;
@@ -93,11 +85,6 @@ function composeSkill(
   return SkillSchema.parse({ ...frontmatter, ...overrides });
 }
 
-/**
- * Resolves the scope-relative output path for a skill:
- *   global  → <target>/global/<skill_id>.json
- *   project → <target>/project/<project>/<skill_id>.json (GAP-4)
- */
 function skillOutputPath(targetDir: string, skill: ISkill): string {
   if (skill.scope === MemoryScope.PROJECT) {
     const project = skill.project ?? "default";
@@ -106,10 +93,8 @@ function skillOutputPath(targetDir: string, skill: ISkill): string {
   return join(targetDir, String(skill.scope), `${skill.skill_id}.json`);
 }
 
-/**
- * Reads an existing generated skill JSON, preserving id/created_at/usage_count
- * so regeneration is stable. Returns null if absent or invalid.
- */
+/** Reads an existing generated skill JSON so regeneration is stable (preserves
+ * id/created_at/usage_count); returns null if absent or invalid. */
 function readExistingSkill(path: string): ISkill | null {
   try {
     const parsed = SkillSchema.safeParse(JSON.parse(Deno.readTextFileSync(path)));
@@ -119,11 +104,9 @@ function readExistingSkill(path: string): ISkill | null {
   }
 }
 
-/** Serializes a skill deterministically for write + drift comparison.
- * Ends with a trailing newline so the written JSON is `deno fmt`-clean (the
- * formatter otherwise reports the file dirty and fights this generator). Both
- * the write and the `--check` drift comparison route through here, so the
- * newline is applied symmetrically and the comparison stays correct. */
+/** Serializes a skill deterministically for write + drift comparison. Ends with
+ * a trailing newline so written JSON stays `deno fmt`-clean; both the write and
+ * `--check` drift comparison route through here for symmetry. */
 function serializeSkill(skill: ISkill): string {
   return JSON.stringify(skill, null, 2) + "\n";
 }
@@ -148,19 +131,14 @@ async function validateTargetInsideSandbox(targetDir: string, sandboxRoot: strin
   }
 }
 
-/**
- * Builds the runtime skill index from `<skillsDir>/*.skill.md` into `<targetDir>`.
- *
- * @param skillsDir   Path to `Blueprints/Skills/`.
- * @param targetDir   Output `Memory/Skills/` directory.
- * @param sandboxRoot Sandbox root for path-traversal validation (writes only).
- * @param options     `check: true` validates + detects drift without writing.
- */
+/** Builds the runtime skill index from `<skillsDir>/*.skill.md` into `<targetDir>`.
+ * `sandboxRoot` gates writes via path-traversal validation; `options.check`
+ * validates and detects drift without writing. */
 export async function buildSkillsIndex(
   skillsDir: string,
   targetDir: string,
   sandboxRoot: string,
-  options?: { check?: boolean },
+  options?: Opt<{ check?: boolean }, Reason.ExecutionConfig>,
 ): Promise<IBuildSkillsIndexResult> {
   const result: IBuildSkillsIndexResult = { success: true, generated: [], errors: [], warnings: [] };
 

@@ -49,19 +49,10 @@ export const DESTRUCTIVE_TOOLS = new Set([
   "create_directory",
 ]);
 
-/**
- * Identity-role matrix: maps identity_id → role-required default_skills.
- * Every identity must have at least one role-specific skill listed here
- * (beyond the universal response-contract added in Step 7).
- */
+/** Identity-role matrix: maps identity_id → role-required default_skills (beyond the universal
+ * response-contract). Every default is unconditional prompt weight on every request, so only
+ * skills an identity needs EVERY time belong here; situational skills use trigger matching instead. */
 export const ROLE_REQUIRED_SKILLS: Record<string, string[]> = {
-  // Phase 142 Step 17: this floor was rewritten when default_skills were pruned from 68
-  // entries to 33. Under the always-concatenate model every default is unconditional prompt
-  // weight on every request, so a default must be something the identity needs EVERY time.
-  // Situational skills (language-, task-, phase-specific) were removed and are reached by
-  // trigger matching instead — `portal-grounding` in particular, which was a default on 14
-  // of 15 identities despite only applying when a request names a portal, and which declares
-  // `portal`/`context`/`grounding` keyword triggers that fire exactly then.
   "default": ["response-contract"],
   "mock-agent": ["response-contract"],
   "aci-react": ["response-contract"],

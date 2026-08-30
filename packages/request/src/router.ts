@@ -65,16 +65,6 @@ export interface IFlowRunner {
   ): Promise<IFlowResult>;
 }
 
-/**
- * RequestRouter - Routes requests to appropriate execution engine
- * Implements Step 7.6 of the Exaix Implementation Plan
- *
- * Routing Priority:
- * 1. flow: <id> → FlowRunner (multi-agent)
- * 2. agent: <id> → IAgentRunner (single-agent)
- * 3. Neither → Default agent
- */
-
 export interface IRoutingDecision {
   type: RequestKind;
   flowId?: string;
@@ -403,10 +393,6 @@ export class RequestRouter {
     };
   }
 
-  /**
-   * Load an agent blueprint from the blueprints directory
-   * Uses unified IBlueprintLoader for consistent parsing
-   */
   protected async loadBlueprint(identityId: string): Promise<IBlueprint | null> {
     const loader = new IBlueprintLoader({ blueprintsPath: this.blueprintsPath });
     const loaded = await loader.load(identityId);
@@ -535,10 +521,8 @@ export class RequestRouter {
   }
 
   private createParsedRequest(request: RouterRequest, allowDynamicRouting: boolean): IParsedRequest {
-    // Carry the frontmatter fields skill resolution depends on. This builder previously
-    // forwarded only the body and ids, so `skills` never reached AgentRunner's explicit
-    // override branch and `tags` never reached trigger matching — both silently inert on
-    // every request routed through routeToIdentity / routeToDefaultAgent.
+    // `skills` and `tags` must be forwarded here — AgentRunner's explicit skill override
+    // and tag-based trigger matching read them from this parsed request.
     const parsedRequest: IParsedRequest = {
       userPrompt: request.body,
       context: {},

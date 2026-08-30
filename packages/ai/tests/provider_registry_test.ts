@@ -194,10 +194,8 @@ Deno.test("MockProviderFactory: creates providers", async () => {
 
   const provider = await factory.create(options);
   assertExists(provider);
-  // REVISED by Phase 142 Step 13: with no fixtures configured, MockLLMProvider substitutes
-  // default regex patterns, so `recorded` named a replay that never happened — every scenario
-  // journal reported `mock-recorded-<model>` while answering from patterns. The id now states
-  // what actually ran; asking for RECORDED *with* fixtures still yields `mock-recorded-*`.
+  // With no fixtures configured, MockLLMProvider falls back to regex patterns rather than
+  // replaying recordings, so the provider id reports "pattern", not "recorded".
   assertEquals(provider.id, "mock-pattern-test-model");
 });
 
@@ -249,9 +247,8 @@ Deno.test("ProviderFactory: uses registry for mock provider", async () => {
 
   const provider = await ProviderFactory.create(config);
   assertExists(provider);
-  // REVISED by Phase 142 Step 13: no fixtures_dir is configured here, so MockLLMProvider
-  // answers from regex patterns rather than replaying anything. The id now says so; claiming
-  // `recorded` meant every scenario journal misreported which responses the run actually saw.
+  // With no fixtures_dir configured, MockLLMProvider answers from regex patterns rather than
+  // replaying anything, so the id reports "pattern" here too.
   assertEquals(provider.id, "mock-pattern-test-model");
 });
 

@@ -26,15 +26,7 @@ export interface IBlueprintResolver {
   resolve(identityId: string, traceLogger: IEventLogger): Promise<ILoadedBlueprint | null>;
 }
 
-/**
- * Directory checked ahead of the shipped `Blueprints/Identities/` catalog for a single
- * identity, for the lifetime of this process (Phase 158 Step 2, closes GAP-1). An
- * `identity-config` arm sets this to compare an identity's shipped configuration against
- * a modified one without editing `Blueprints/Identities/` itself — the caller MUST have
- * already validated this directory via `PathResolver` (see
- * `tests/scenario_framework/runner/arm_overlay.ts`) before setting it; `BlueprintResolver`
- * trusts the value and does not re-validate it.
- */
+/** Directory checked ahead of the shipped `Blueprints/Identities/` catalog. Callers MUST validate this path via `PathResolver` before setting it — this resolver trusts it as-is. */
 export const EXA_EVAL_IDENTITY_OVERLAY_DIR_ENV_VAR = "EXA_EVAL_IDENTITY_OVERLAY_DIR";
 
 export class BlueprintResolver implements IBlueprintResolver {

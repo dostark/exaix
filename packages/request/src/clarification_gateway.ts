@@ -75,11 +75,8 @@ export class ClarificationGateway implements IClarificationGateway {
     this.onClarificationCreated = deps.onClarificationCreated;
   }
 
-  /**
-   * Loads IRequestSpecification from a completed clarification session, bypassing
-   * the quality gate assessment. Used when `assessed_at` is present in frontmatter
-   * (Gap §13: re-assessment bypass for already-assessed requests).
-   */
+  /** Loads a completed clarification's spec, bypassing quality-gate re-assessment
+   * (used when `assessed_at` is present in frontmatter). */
   async loadSpecFromClarification(
     filePath: string,
   ): Promise<{ earlyReturn: false; specification?: IRequestSpecification }> {
@@ -125,10 +122,7 @@ export class ClarificationGateway implements IClarificationGateway {
     return { earlyReturn: false };
   }
 
-  /**
-   * Phase 111 Step 5: config-gated refinement delegation branch.
-   * Returns true when delegation was initiated (brief prepared, wait parked, launch triggered).
-   */
+  /** Returns true when delegation was initiated (brief prepared, wait parked, launch triggered). */
   private async tryDelegateRefinement(
     filePath: string,
     requestId: string,

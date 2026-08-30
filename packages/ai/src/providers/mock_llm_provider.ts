@@ -44,32 +44,25 @@ export interface IRecordedResponse {
   tokens: { input: number; output: number };
   /** When this was recorded */
   recordedAt: string;
-  /** Where this recording was captured (Phase 157). When present, lookup addresses by call
-   *  site instead of prompt hash; the hash is still compared on replay to detect drift. */
+  /** Where this recording was captured. When present, lookup addresses by call site instead
+   *  of prompt hash; the hash is still compared on replay to detect drift. */
   callSite?: ICallSite;
-  /** Retry metadata from capture (Phase 157): how many attempts it took to get a
-   *  contract-satisfying response, and why the earlier ones were refused. Absent when
-   *  captured on the first attempt. The rate this represents across a fixture set is a
-   *  product finding, not noise to smooth away — see Step 4's flakiness reporting. */
+  /** Retry metadata from capture: how many attempts it took to get a contract-satisfying
+   *  response, and why the earlier ones were refused. The rate this represents across a
+   *  fixture set is a product finding, not noise to smooth away. */
   capture?: { attempts: number; failures: string[] };
 }
 
-/**
- * A call-site hit whose current prompt hash no longer matches the recorded fixture. The
- * fixture still replays — the recording may still be representative — but the mismatch is
- * reported so a human can decide whether to re-capture (Phase 157 Design Decision 1).
- */
+/** A call-site hit whose current prompt hash no longer matches the recorded fixture. It still
+ *  replays, but the mismatch is reported so a human can decide whether to re-capture. */
 export interface IFixtureDriftReport {
   callSite: ICallSite;
   expectedHash: string;
   actualHash: string;
 }
 
-/**
- * Aggregated drift, reported per run (Phase 157 Step 4). `totalCallSiteLookups` counts only
- * call-site lookups that found a recording — a miss is a coverage gap, not drift, and is
- * excluded so it cannot dilute the rate.
- */
+/** Aggregated drift, reported per run. `totalCallSiteLookups` counts only call-site lookups
+ *  that found a recording — a miss is a coverage gap, not drift, so it can't dilute the rate. */
 export interface IDriftSummary {
   totalCallSiteLookups: number;
   driftedCalls: number;
@@ -153,24 +146,21 @@ export class MockLLMError extends Error {
 // ============================================================================
 
 /** Stable string key for a call site, used to match a recording against options.callSite.
- *  Includes flowStepId (Phase 157 Step 3) so two different flow steps sharing (scenarioId,
- *  stepId, callIndex) — which happens when parallel-wave steps race the shared call-index
- *  counter — resolve to distinct fixtures instead of colliding. */
+ *  Includes flowStepId so two flow steps sharing (scenarioId, stepId, callIndex) — which
+ *  happens when parallel-wave steps race the shared call-index counter — don't collide. */
 function callSiteKey(callSite: ICallSite): string {
   return `${callSite.scenarioId}::${callSite.stepId}::${callSite.flowStepId ?? ""}::${callSite.callIndex}`;
 }
 
-/** Human-readable call site, used in error messages and drift warnings. Exported (Phase 157
- *  Step 2) so capture's own error messages describe a call site identically to replay's. */
+/** Human-readable call site, used in error messages and drift warnings. Exported so capture's
+ *  own error messages describe a call site identically to replay's. */
 export function describeCallSite(callSite: ICallSite): string {
   const flowSegment = callSite.flowStepId ? `/${callSite.flowStepId}` : "";
   return `${callSite.scenarioId}/${callSite.stepId}${flowSegment}#${callSite.callIndex}`;
 }
 
-/**
- * Hash a prompt for recording lookup. Exported (Phase 157) so capture writes the exact same
- * hash a later replay will compute — the algorithm drift detection compares against.
- */
+/** Hash a prompt for recording lookup. Exported so capture writes the exact same hash a later
+ *  replay will compute — the algorithm drift detection compares against. */
 export function hashPrompt(prompt: string): string {
   const encoder = new TextEncoder();
   const data = encoder.encode(prompt);
@@ -210,12 +200,9 @@ function isValidCallSite(value: Opt<Partial<ICallSite>, Reason.OptionalInput>): 
     typeof value.callIndex === "number";
 }
 
-/**
- * Validate a loaded fixture file against the IRecordedResponse contract, so a corrupt or
- * schema-violating recording fails loudly at load time — naming the file — instead of an
- * unvalidated JSON.parse crash or a silently-malformed recording than can never replay
- * correctly (Phase 157 Step 2).
- */
+/** Validate a loaded fixture file against the IRecordedResponse contract, so a corrupt or
+ *  schema-violating recording fails loudly at load time — naming the file — instead of an
+ *  unvalidated JSON.parse crash or a silently-malformed recording that can never replay correctly. */
 function validateRecordedResponse(value: JSONValue, filePath: string): IRecordedResponse {
   const fail = (reason: string): never => {
     throw new MockLLMError(`Corrupt fixture file "${filePath}": ${reason}.`);
@@ -239,32 +226,14 @@ function validateRecordedResponse(value: JSONValue, filePath: string): IRecorded
   return candidate as IRecordedResponse;
 }
 
-/**
- * Mock LLM provider for deterministic testing.
- * Implements IModelProvider for use in tests.
- */
-/**
- * What a flow step returns: a plan-shaped payload in <content>.
- *
- * Plan-shaped because the LAST step's content becomes the flow's aggregated output, which
- * RequestProcessor hands to plan validation — prose there fails with "Invalid JSON".
- */
+/** What a flow step returns: a plan-shaped payload in <content>. The LAST step's content becomes
+ *  the flow's aggregated output, which plan validation rejects with "Invalid JSON" if it's prose. */
 /** Markers a genuine plan-execution turn announces itself with; merged flow context has none. */
 const PLAN_EXECUTION_MARKERS = /executing a plan|Performing step|Action required:|Execution Context|Current Step:/i;
 
-/**
- * True when a prompt is a FLOW step rather than a plan-execution turn.
- *
- * A flow step's prompt is its predecessor's output run through `mergeAsContext`, which prefixes
- * sections with `## Step N` markdown headers — matching the same `/Step \d+/` alternative the
- * execution pattern uses. It needs <content> for the next step to consume, not the <actions> an
- * execution turn returns; without this every flow step past the first reported success with an
- * empty output.
- *
- * Decided here rather than by an earlier pattern because a genuine execution prompt ALSO
- * carries `## Step N` headers (it embeds the plan markdown), so matching the header alone
- * hijacks execution and starves the ReAct loop of actions.
- */
+/** True when a prompt is a FLOW step rather than a plan-execution turn. A flow step's prompt (via
+ *  mergeAsContext) carries the same `## Step N` headers a genuine execution prompt also has (it
+ *  embeds the plan markdown), so matching on the header alone would hijack execution turns too. */
 export function isFlowStepPrompt(prompt: string): boolean {
   return !PLAN_EXECUTION_MARKERS.test(prompt) && /^##\s+Step \d+/m.test(prompt);
 }
@@ -274,27 +243,18 @@ export function isReActLoopPrompt(prompt: string): boolean {
   return prompt.includes("IDENTITY: ") && prompt.includes("AVAILABLE TOOLS:");
 }
 
-/**
- * The response a prompt's own parser can read, when that is not the legacy <actions> envelope.
- *
- * A flow step needs <content> for its successor; a ReActLoopStrategy turn parses `THOUGHT:` and
- * `STATUS: COMPLETE`. Answering either in the legacy dialect produces a failure attributed to
- * the agent — "No actions generated in ReAct iteration" — rather than to the mock.
- */
+/** The response a prompt's own parser can read, when that isn't the legacy <actions> envelope. A
+ *  flow step needs <content>; a ReActLoopStrategy turn parses `THOUGHT:`/`STATUS: COMPLETE` —
+ *  answering in the legacy dialect fails as "No actions generated", misattributed to the agent. */
 export function responseForPromptDialect(prompt: string): string | null {
   if (isFlowStepPrompt(prompt)) return FLOW_STEP_RESPONSE;
   if (isReActLoopPrompt(prompt)) return REACT_COMPLETE_RESPONSE;
   return null;
 }
 
-/**
- * What a ReAct turn must return: its parser reads `THOUGHT:` and `STATUS: COMPLETE`.
- *
- * Worded with explicit certainty on purpose. PlanExecutor runs a low-confidence check over the
- * step result (`confidenceScorer.assessQuick`) and proposes an amendment below the threshold,
- * which halts execution awaiting approval — so hedged phrasing here stops every plan mid-run.
- * The drift branch above uses the mirror-image wording to trigger that path deliberately.
- */
+/** What a ReAct turn must return: its parser reads `THOUGHT:` and `STATUS: COMPLETE`. Worded with
+ *  explicit certainty on purpose — PlanExecutor's confidence check halts a plan on hedged phrasing,
+ *  awaiting approval; the drift branch above uses mirror-image wording to trigger that deliberately. */
 const REACT_COMPLETE_RESPONSE =
   `THOUGHT: Completed the step successfully with high confidence. The implementation is correct and verified.
 STATUS: COMPLETE
@@ -343,10 +303,6 @@ export class MockLLMProvider implements IModelProvider {
    *  reportDrift() rates against. A miss is a coverage gap, not drift, so it is excluded. */
   private _callSiteHitCount: number = 0;
 
-  /**
-   * @param strategy Mock strategy to use
-   * @param options Configuration options for the mock provider
-   */
   constructor(strategy: MockStrategy, options: IMockLLMProviderOptions = {}) {
     this.id = options.id ?? "mock-llm-provider";
     this.strategy = strategy;
@@ -383,11 +339,6 @@ export class MockLLMProvider implements IModelProvider {
   // IModelProvider Implementation
   // ============================================================================
 
-  /**
-   * Generate a response based on the configured strategy.
-   * @param prompt The prompt to generate a response for
-   * @param options Optional model options
-   */
   async generate(prompt: string, options?: Opt<IModelOptions, Reason.OptionalInput>): Promise<IGenerateResult> {
     if (this.strategy === "failing") {
       this._callCount++;
@@ -444,11 +395,8 @@ export class MockLLMProvider implements IModelProvider {
   // Strategy Implementations
   // ============================================================================
 
-  /**
-   * Recorded strategy: look up a response by call site when the caller supplies one
-   * (Phase 157), falling back to the pre-existing whole-prompt-hash lookup otherwise —
-   * byte-identical to today's behaviour for every call that doesn't set options.callSite.
-   */
+  /** Recorded strategy: look up a response by call site when the caller supplies one, falling
+   *  back to the whole-prompt-hash lookup otherwise — unchanged for calls without options.callSite. */
   private generateRecorded(prompt: string, options: Opt<IModelOptions, Reason.OptionalInput>): string {
     if (options?.callSite) {
       return this.generateRecordedByCallSite(prompt, options.callSite);
@@ -499,12 +447,9 @@ export class MockLLMProvider implements IModelProvider {
     );
   }
 
-  /**
-   * Look up a recording by call site (Phase 157 Design Decision 1). A hit whose prompt hash
-   * no longer matches still replays — the recording may still be representative — but is
-   * reported as drift. A miss is fatal under strictRecordings, naming the call site so the
-   * missing fixture can be captured; otherwise it falls back to pattern matching.
-   */
+  /** Look up a recording by call site. A hit whose prompt hash no longer matches still replays
+   *  but is reported as drift. A miss is fatal under strictRecordings, naming the call site so
+   *  the missing fixture can be captured; otherwise it falls back to pattern matching. */
   private generateRecordedByCallSite(prompt: string, callSite: ICallSite): string {
     const key = callSiteKey(callSite);
     const recording = this.recordings.find((r) => r.callSite && callSiteKey(r.callSite) === key);
@@ -615,19 +560,15 @@ export class MockLLMProvider implements IModelProvider {
     return { ...this._totalTokens };
   }
 
-  /**
-   * Call-site hits whose prompt hash no longer matched the recorded fixture (Phase 157).
-   * Empty when no call-site-keyed generation has drifted.
-   */
+  /** Call-site hits whose prompt hash no longer matched the recorded fixture. Empty when no
+   *  call-site-keyed generation has drifted. */
   get driftReports(): IFixtureDriftReport[] {
     return [...this._driftReports];
   }
 
-  /**
-   * Aggregate drift totals for this run (Phase 157 Step 4), rated against
-   * DEFAULT_FIXTURE_DRIFT_RECAPTURE_THRESHOLD unless a caller supplies its own. A miss is
-   * excluded from the denominator — it is a coverage gap, not drift.
-   */
+  /** Aggregate drift totals for this run, rated against DEFAULT_FIXTURE_DRIFT_RECAPTURE_THRESHOLD
+   *  unless a caller supplies its own. A miss is excluded from the denominator — it's a coverage
+   *  gap, not drift. */
   reportDrift(threshold: number = DEFAULT_FIXTURE_DRIFT_RECAPTURE_THRESHOLD): IDriftSummary {
     const driftedCalls = this._driftReports.length;
     const driftRate = this._callSiteHitCount > 0 ? driftedCalls / this._callSiteHitCount : 0;
@@ -725,16 +666,6 @@ export class MockLLMProvider implements IModelProvider {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  /**
-   * Get default patterns for fallback when no recordings available
-   *
-   * Updated for Step 6.7: Plans now use JSON format validated by PlanSchema.
-   * JSON is output within <content> tags and gets validated/converted to markdown by PlanAdapter.
-   */
-  /**
-   * Detect if a prompt is for execution (vs planning)
-   * Execution prompts contain specific markers indicating step execution
-   */
   private isExecutionPrompt(prompt: string): boolean {
     return (
       prompt.includes("executing a plan") ||
@@ -744,18 +675,9 @@ export class MockLLMProvider implements IModelProvider {
     );
   }
 
-  /**
-   * Get default pattern matchers for common request types
-   * Returns different patterns for planning vs execution prompts
-   */
-  /**
-   * True when this provider replayed nothing and is really pattern-matching.
-   *
-   * `recorded` is the default strategy and the constructor silently substitutes default
-   * patterns when no fixtures are configured, so a run labelled `mock-recorded-<model>`
-   * replayed no recordings at all. Callers building the provider id use this to say what
-   * actually happened.
-   */
+  /** True when this provider replayed nothing and is really pattern-matching. `recorded` is the
+   *  default strategy, and the constructor silently substitutes default patterns when no fixtures
+   *  are configured — so a run labelled `mock-recorded-<model>` may have replayed nothing at all. */
   private readonly strictRecordings: boolean;
 
   get isPatternFallback(): boolean {
@@ -781,18 +703,7 @@ export class MockLLMProvider implements IModelProvider {
 }`,
       },
       {
-        // Each amendment-scenario step's own prompt only carries that ONE step's own
-        // title/content (context.request/context.plan = step.content), not the whole plan
-        // body — so a RESUMED step (rewritten by PlanAmendmentService.applyApprovedAmendment)
-        // may carry none of the SIMULATE_DRIFT_TRIGGER marker text at all. "(amended)" is
-        // step 1's own rewritten content; "Corrected Refactor" / "Verify the fix" are step
-        // 2/3's own (updated or added) title/content — kept specific (not the bare word
-        // "Verification", which collides with an unrelated fixture's request text) to avoid
-        // hijacking other scenarios' mock responses. Without matching on ALL of these here
-        // too, a resumed step's prompt falls through to a later, unrelated pattern (e.g. the
-        // generic "Step \d+" executing-a-plan handler) that returns the legacy
-        // <thought>/<actions> JSON envelope instead of this handler's ReAct-aware response,
-        // which breaks ReActLoopStrategy parsing.
+        // Each amendment-scenario step's own prompt only carries that ONE step's own title/content (context.request/context.plan = step.content), not the whole plan body — so a RESUMED step (rewritten by PlanAmendmentService.applyApprovedAmendment) may carry none of the SIMULATE_DRIFT_TRIGGER marker text at all. "(amended)" is step 1's own rewritten content; "Corrected Refactor" / "Verify the fix" are step 2/3's own (updated or added) title/content — kept specific (not the bare word "Verification", which collides with an unrelated fixture's request text) to avoid hijacking other scenarios' mock responses. Without matching on ALL of these here too, a resumed step's prompt falls through to a later, unrelated pattern (e.g. the generic "Step \d+" executing-a-plan handler) that returns the legacy <thought>/<actions> JSON envelope instead of this handler's ReAct-aware response, which breaks ReActLoopStrategy parsing.
         pattern: /SIMULATE_DRIFT_TRIGGER|\(amended\)|Corrected Refactor|Verify the fix/i,
         response: (_match, prompt) => {
           // 1. Intent Analysis Phase
@@ -823,15 +734,7 @@ I see the drift instructions in the analysis phase.
 </content>`;
           }
 
-          // 2. Execution Phase — identities with capabilities:["react"] (e.g. "default")
-          // dispatch to ReActLoopStrategy, whose own prompt template (buildPrompt) is
-          // "IDENTITY: ...\n...\nAVAILABLE TOOLS:...", NOT the legacy PromptBuilder's
-          // "## Execution Context (SYSTEM CONTROLLED)" template — and its parseResponse()
-          // looks for the literal "THOUGHT: " prefix and "STATUS: COMPLETE" text, not the
-          // <thought>/<content> JSON envelope the legacy strategy expects. A response with
-          // neither STATUS: COMPLETE nor a ```toml action block throws "Agent provided no
-          // actions and did not signal completion", which itself becomes a NEW
-          // (tool_error-sourced) amendment trigger, looping forever regardless of content.
+          // 2. Execution Phase — identities with capabilities:["react"] (e.g. "default") dispatch to ReActLoopStrategy, whose own prompt template (buildPrompt) is "IDENTITY: ...\n...\nAVAILABLE TOOLS:...", NOT the legacy PromptBuilder's "## Execution Context (SYSTEM CONTROLLED)" template — and its parseResponse() looks for the literal "THOUGHT: " prefix and "STATUS: COMPLETE" text, not the <thought>/<content> JSON envelope the legacy strategy expects. A response with neither STATUS: COMPLETE nor a ```toml action block throws "Agent provided no actions and did not signal completion", which itself becomes a NEW (tool_error-sourced) amendment trigger, looping forever regardless of content.
           const isReActPrompt = prompt.includes("IDENTITY: ") && prompt.includes("AVAILABLE TOOLS:");
           if (prompt.includes("## Execution Context (SYSTEM CONTROLLED)") || isReActPrompt) {
             // Each step's prompt only carries that step's own content (context.request /

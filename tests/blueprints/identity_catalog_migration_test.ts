@@ -36,12 +36,8 @@ interface IFrontmatter {
   default_skills?: string[];
 }
 
-/**
- * Extract frontmatter fields from a markdown file using a real YAML parser, so
- * both single-line (`[a, b]`) and multi-line block-array `default_skills`
- * declarations are handled identically (a hand-rolled line parser mis-read the
- * multi-line form as a string).
- */
+/** Uses a real YAML parser so single-line and multi-line block-array `default_skills`
+ * declarations are handled identically. */
 function parseFrontmatter(filePath: string): IFrontmatter {
   const content = Deno.readTextFileSync(filePath);
   const m = content.match(/^---\n([\s\S]*?)\n---\n/);
@@ -76,12 +72,11 @@ function walkIdentitiesTree(): string[] {
 }
 
 // ─────────────────────────────────────────────
-// Test 1: Every active identity has response-contract (or response-contract-judge)
-// in default_skills
+// Test 1: Every identity has a response-contract skill in default_skills
 // ─────────────────────────────────────────────
-// Phase 142 Step 17: an identity carries exactly ONE output contract, and it is the most
-// specific one available — the four analysis identities carry a `response-contract-<domain>`
-// variant instead of the generic, so the whole family counts.
+
+/** Each identity carries exactly one output contract; the four analysis identities use a
+ * domain-specific response-contract-<domain> variant instead of the generic one. */
 const RESPONSE_CONTRACT_SKILLS = new Set([
   "response-contract",
   "response-contract-judge",
@@ -145,12 +140,8 @@ Deno.test({
   },
 });
 
-// (The examples/ and templates/ subdirectories were retired in the Phase 131
-// catalog reconciliation — example stubs were merged/promoted into concrete
-// identities and templates were converted to skills — so the former
-// "examples and templates declare default_skills" test no longer applies.
-// Active-identity default_skills coverage lives in referential_integrity_gate
-// and identity_catalog_load tests.)
+// Active-identity default_skills coverage lives in referential_integrity_gate and
+// identity_catalog_load tests.
 
 // ─────────────────────────────────────────────
 // Test: New skills exist on disk

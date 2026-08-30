@@ -51,21 +51,12 @@ function budgetEnv(brief: SessionBrief): Record<string, string> {
   };
 }
 
-/**
- * Strip the `provider:` prefix from a resolved `provider:model` string. The daemon
- * resolves models to `provider:model` and prepareBrief requires that colon form, but
- * both the `claude` and `codex` CLIs reject a provider-prefixed model id.
- */
+/** The `claude` and `codex` CLIs reject a provider-prefixed model id, unlike the brief's required `provider:model` form. */
 function stripProviderPrefix(model: string): string {
   return model.slice(model.indexOf(":") + 1);
 }
 
-/**
- * A single configurable adapter covering every built-in tool. `supportsSupervised`
- * also selects the argv shape: CLI tools pass the brief + budget flags, IDE tools
- * open the workspace folder. The brief's free-text fields are never placed on the
- * command line (GAP-4) — only the brief file path, numeric budget, and cwd.
- */
+/** A single configurable adapter covering every built-in tool. `supportsSupervised` also selects the argv shape: CLI tools pass the brief + budget flags, IDE tools open the workspace folder. The brief's free-text fields are never placed on the command line (GAP-4) — only the brief file path, numeric budget, and cwd. */
 export class BuiltinSessionAdapter implements ISessionAdapter {
   constructor(
     readonly tool: SessionTool,
@@ -99,10 +90,7 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
       }
       if (this.tool === "codex") {
         const codexModelFlag = brief.model ? [SESSION_FLAG_MODEL, stripProviderPrefix(brief.model)] : [];
-        // GAP-16 (Phase 167 post-gap-analysis): the base launch is never fully
-        // sandbox-unconstrained, independent of harden_permissions — resolveHardenedLaunch
-        // widens this to workspace-write only for the code_changes gate when
-        // harden_permissions=true (see SessionDelegateService.resolveHardenedLaunch).
+        // GAP-16 (Phase 167 post-gap-analysis): the base launch is never fully sandbox-unconstrained, independent of harden_permissions — resolveHardenedLaunch widens this to workspace-write only for the code_changes gate when harden_permissions=true (see SessionDelegateService.resolveHardenedLaunch).
         return {
           command: this.bin,
           args: [
@@ -117,11 +105,7 @@ export class BuiltinSessionAdapter implements ISessionAdapter {
           env: budgetEnv(brief),
         };
       }
-      // opencode headless — opencode run supports --format json, not --output-format
-      // Phase 150 LIVE-RT: prepareBrief requires provider:model (colon) but
-      // opencode --model uses provider/model (slash). Convert here.
-      // Also pass --dir so opencode resolves relative paths against the
-      // worktree, not the project's git root (which is the portal checkout).
+      // opencode headless — opencode run supports --format json, not --output-format Phase 150 LIVE-RT: prepareBrief requires provider:model (colon) but opencode --model uses provider/model (slash). Convert here. Also pass --dir so opencode resolves relative paths against the worktree, not the project's git root (which is the portal checkout).
       const opencodeWorkDir = brief.worktree_path ?? dirname(briefPath);
       const opencodeModelFlag = brief.model ? [SESSION_FLAG_MODEL, brief.model.replace(":", "/")] : [];
       const opencodeDirFlag = ["--dir", opencodeWorkDir];

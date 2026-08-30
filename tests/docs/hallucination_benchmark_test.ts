@@ -9,13 +9,6 @@ import { dirname, fromFileUrl, join } from "@std/path";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
 
-/**
- * These tests verify that the 'Nervous System' (frontmatter + AGENT_LOGIC)
- * contains the correct information and that it is discoverable.
- * In a real bench, these would be fed to an LLM.
- * Here we verify the 'Ground Truth' consistency.
- */
-
 Deno.test("[hallucination-bench] Verify Frontmatter Consistency", async () => {
   const content = await Deno.readTextFile(join(REPO_ROOT, "ARCHITECTURE.md"));
 

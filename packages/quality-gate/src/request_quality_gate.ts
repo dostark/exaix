@@ -33,10 +33,7 @@ import { ClarificationEngine } from "./clarification_engine.ts";
 // Config factory
 // ---------------------------------------------------------------------------
 
-/**
- * Shape of the `quality_gate` section as stored in `Config` (TOML-derived).
- * All fields are optional because the config schema provides defaults.
- */
+/** TOML-derived quality-gate input before defaults are applied. */
 export interface IQualityGateTomlConfig {
   enabled?: boolean;
   mode?: QualityGateMode | string;
@@ -50,11 +47,7 @@ export interface IQualityGateTomlConfig {
   };
 }
 
-/**
- * Converts the TOML `[quality_gate]` config section into the
- * `IRequestQualityGateConfig` expected by `RequestQualityGate`.
- * All fields fall back to the project-wide defaults when absent.
- */
+/** Converts TOML values to runtime config with project defaults. */
 export function buildQualityGateConfig(
   cfg: IQualityGateTomlConfig,
 ): IRequestQualityGateConfig {
@@ -72,13 +65,7 @@ export function buildQualityGateConfig(
   };
 }
 
-/**
- * Builds a RequestQualityGate from the TOML `[quality_gate]` config section
- * plus the provider/validator/logger a caller already has on hand. Shared by
- * any caller that constructs RequestProcessor without injecting its own gate
- * (production bootstrap, tests) so the config-driven default stays in one
- * place instead of being re-derived ad hoc.
- */
+/** Centralizes config-derived gate construction for callers without an injected gate. */
 export function buildRequestQualityGateFromConfig(
   cfg: IQualityGateTomlConfig,
   provider: Opt<IModelProvider, Reason.OptionalDependency>,
@@ -92,22 +79,7 @@ export function buildRequestQualityGateFromConfig(
 // RequestQualityGate
 // ---------------------------------------------------------------------------
 
-/**
- * Main service that implements the request quality gate pipeline.
- *
- * Assessment strategies:
- * - `heuristic`: zero-cost text signal analysis only (sandboxed-safe)
- * - `llm`: full LLM-powered assessment
- * - `hybrid`: heuristic first; escalate to LLM for borderline scores
- *
- * After assessment, the service optionally:
- * 1. Auto-enriches the request when `autoEnrich` is enabled and recommendation
- *    is `auto-enrich`.
- * 2. Overrides recommendation to `reject` when `blockUnactionable` is enabled
- *    and the score is below the configured minimum threshold.
- * 3. Logs `request.quality_assessed` to the activity journal when an
- *    `IEventLogger` was provided.
- */
+/** Applies configured heuristic, LLM, or hybrid request-quality assessment. */
 export class RequestQualityGate implements IRequestQualityGateService {
   private readonly provider?: IModelProvider;
   private readonly validator?: IOutputValidator;
@@ -193,7 +165,7 @@ export class RequestQualityGate implements IRequestQualityGateService {
   }
 
   // ---------------------------------------------------------------------------
-  // IRequestQualityGateService — clarification (stubbed; implemented in Step 10)
+  // IRequestQualityGateService — clarification
   // ---------------------------------------------------------------------------
 
   async startClarification(

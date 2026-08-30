@@ -46,41 +46,23 @@ export interface ISourceFile {
   source: string;
 }
 
-/**
- * Separators a list constant is realistically joined with in an assertion.
- *
- * A plain space is deliberately absent. Joining word-list constants (`QG_ACTION_VERBS`,
- * `QG_ACCEPTANCE_CRITERIA_KEYWORDS`) with a space matches ordinary English prose — "remove delete",
- * "then assert" — in a dozen unrelated fixtures. A check that noisy gets turned off.
- */
+/** Separators a list constant is realistically joined with in an assertion. A plain space is
+ * deliberately absent — it would match ordinary English prose in unrelated fixtures. */
 const JOIN_SEPARATORS: readonly string[] = [",", ", ", "|", ":"];
 
-/**
- * Characters that mark an element as a structured token rather than an English word.
- *
- * The values worth guarding are hostnames, paths, prefixes and extensions — things a test copies
- * verbatim and cannot restate by accident. A list of prose words is not a source of truth a test
- * duplicates; a list of hosts is.
- */
+/** Characters marking an element as a structured token (hostname, path, prefix, extension)
+ * rather than an English word — the kind of value a test copies verbatim. */
 const STRUCTURED_TOKEN_CHARS = /[./:\-_=]/;
 
-/**
- * Shortest run of elements that counts as a restatement.
- *
- * One element is an ordinary fixture value. Two consecutive elements in the declared order is a
- * copy of the list, which is what goes stale.
- */
+/** Shortest run of elements that counts as a restatement; one element is an ordinary
+ * fixture value, two consecutive ones in declared order is a copy of the list. */
 const MIN_RESTATED_ELEMENTS = 2;
 
 const CONSTANTS_MODULE = join("packages", "core", "src", "types", "constants.ts");
 const TEST_SUFFIX = "_test.ts";
 
-/**
- * Exported list-valued string constants, by name.
- *
- * Numeric lists are skipped: their elements appear in unrelated code constantly, so matching them
- * would produce noise rather than findings.
- */
+/** Exported list-valued string constants, by name. Numeric lists are skipped since their
+ * elements appear in unrelated code constantly and would produce noise. */
 export function parseListConstants(source: string): Map<string, string[]> {
   const constants = new Map<string, string[]>();
   const declaration = /export const ([A-Z][A-Z0-9_]*)\s*(?::[^=]+)?=\s*\[([\s\S]*?)\]/g;

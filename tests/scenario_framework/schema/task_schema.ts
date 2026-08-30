@@ -9,10 +9,8 @@
  */
 import { z } from "zod";
 
-/**
- * Provenance for a task ingested from an external public benchmark (Phase 144).
- * Absent for internal swe_tasks (harvested from Exaix's own git history).
- */
+/** Provenance for a task ingested from an external public benchmark; absent for
+ * internal swe_tasks harvested from Exaix's own git history. */
 export const TaskSourceSchema = z.object({
   /** Which external benchmark this task was ingested from. */
   benchmark: z.enum(["terminal-bench", "swe-bench"]),
@@ -24,11 +22,8 @@ export const TaskSourceSchema = z.object({
 
 export type ITaskSource = z.infer<typeof TaskSourceSchema>;
 
-/**
- * Zod schema for a swe_tasks task.json file.
- * Each task directory under fixtures/swe_tasks/<task-id>/ must contain
- * a valid task.json matching this schema.
- */
+/** Each task directory under fixtures/swe_tasks/<task-id>/ must contain a
+ * task.json matching this schema. */
 export const TaskJsonSchema = z.object({
   /** Full git SHA of the base ref (parent commit for harvested tasks). */
   base_ref: z.string().regex(/^[a-f0-9]{40}$/, "base_ref must be a full 40-char SHA"),
@@ -44,7 +39,7 @@ export const TaskJsonSchema = z.object({
   min_turns: z.number().int().min(1).max(100).optional().default(2),
   /** Name of the fixture portal directory (relative to fixtures/portals/). Defaults to "todo_app". */
   portal: z.string().min(1).optional().default("todo_app"),
-  /** Provenance for externally-sourced tasks (Phase 144). Absent for internal swe_tasks. */
+  /** Provenance for externally-sourced tasks. Absent for internal swe_tasks. */
   source: TaskSourceSchema.optional(),
   /** Human-readable task title. */
   title: z.string().optional(),

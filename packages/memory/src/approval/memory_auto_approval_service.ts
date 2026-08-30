@@ -48,11 +48,6 @@ export class MemoryAutoApprovalService {
     this.config = config.memory.auto_approve;
   }
 
-  /**
-   * List pending proposals that are eligible for auto-approval
-   *
-   * @returns List of eligible proposals
-   */
   async listEligible(): Promise<IEligibleMemoryUpdateProposal[]> {
     if (!this.config.enabled) {
       return [];
@@ -122,7 +117,7 @@ export class MemoryAutoApprovalService {
     return allowedSources;
   }
 
-  private getConfidenceScore(value: string | undefined): number {
+  private getConfidenceScore(value?: Opt<string, Reason.OptionalInput>): number {
     if (!value) {
       return 0;
     }
@@ -131,12 +126,6 @@ export class MemoryAutoApprovalService {
     return this.confidenceScores[normalized] || 0;
   }
 
-  /**
-   * Run the approval cycle to promote eligible learnings
-   *
-   * @param opts - Run options (e.g., dryRun)
-   * @returns Summary of the run
-   */
   async runApprovalCycle(
     opts: Opt<{ dryRun: boolean }, Reason.ExecutionConfig> = { dryRun: false },
   ): Promise<IAutoApprovalResult> {

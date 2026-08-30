@@ -43,12 +43,8 @@ export class ConfigCommands extends BaseCommand {
     super(context);
   }
 
-  /**
-   * Resolve (and cache) the config adapter. Uses the liveness-checked async factory
-   * `createConfigAdapterAsync` so that, once the CLI can attach to a running daemon's
-   * live store, a stale daemon PID correctly falls back to DirectConfigAdapter. Today
-   * the CLI passes no store/db, so this always resolves to a DirectConfigAdapter.
-   */
+  // Uses the liveness-checked async factory so a stale daemon PID correctly falls back to
+  // DirectConfigAdapter; today the CLI passes no store/db, so this always resolves there.
   private async ensureAdapter(): Promise<IConfigAdapter> {
     if (!this.adapter) {
       const dbPath = join(this.config.system.root, ".exa", "config.db");
@@ -57,12 +53,9 @@ export class ConfigCommands extends BaseCommand {
     return this.adapter;
   }
 
-  /**
-   * Scope a key to a named profile when `--profile` is supplied. `--profile dev`
-   * transforms `<key>` → `profile.dev.<key>`. Profile writes validate against the
-   * unscoped base key's metadata via the adapter's resolveValidationKey() (Step 1).
-   * Global reads/writes (no profile) are unchanged.
-   */
+  // Scopes a key to a named profile when `--profile` is supplied: `--profile dev`
+  // transforms `<key>` → `profile.dev.<key>`. Profile writes still validate against
+  // the unscoped base key's metadata via the adapter's resolveValidationKey().
   private scopeKey(path: string, profile?: Opt<string, Reason.OptionalInput>): string {
     return profile ? `${CONFIG_PROFILE_KEY_PREFIX}${profile}.${path}` : path;
   }
@@ -78,8 +71,8 @@ export class ConfigCommands extends BaseCommand {
 
   async set(path: string, valueStr: string, profile?: Opt<string, Reason.OptionalInput>): Promise<void> {
     const adapter = await this.ensureAdapter();
-    // Phase 138 Step 3: DB-backed debounce — survives across separate CLI
-    // processes (state lives in config_overrides timestamps, not process memory).
+    // DB-backed debounce — survives across separate CLI processes (state lives in
+    // config_overrides timestamps, not process memory).
     if (
       adapter.countRecentWrites(CLI_CONFIG_SET_DEBOUNCE_WINDOW_MS) >= CLI_CONFIG_SET_MAX_WRITES_PER_WINDOW
     ) {
@@ -186,7 +179,7 @@ export class ConfigCommands extends BaseCommand {
       .map((o) => o.key.replace("profile.", ""));
   }
 
-  // ── Phase 138 Step 2: MCP deny-permanently blocklist management ────────────
+  // ── MCP deny-permanently blocklist management ───────────────────────────────
 
   async blockAdd(pattern: string, reason?: Opt<string, Reason.OptionalInput>): Promise<void> {
     (await this.ensureAdapter()).addBlock(pattern, reason);
@@ -201,26 +194,17 @@ export class ConfigCommands extends BaseCommand {
     return blocks.map((b) => ({ pattern: b.key_pattern, reason: b.reason, created_at: b.created_at }));
   }
 
-  /**
-   * Phase 138 Step 3: compact config_overrides to one row per key (hard-limit
-   * escape hatch). Returns the number of superseded rows removed.
-   */
+  /** Compact config_overrides to one row per key; returns the number of rows removed. */
   async compact(): Promise<number> {
     return (await this.ensureAdapter()).compact();
   }
 
-  /**
-   * Phase 139 Step 2: the append-only override history for `key`, newest-first
-   * (DESC by id). Read-only — a thin wrapper over IConfigAdapter.getHistory.
-   */
+  /** The append-only override history for `key`, newest-first (DESC by id). */
   async history(path: string): Promise<IConfigOverrideEntry[]> {
     return (await this.ensureAdapter()).getHistory(path);
   }
 
-  /**
-   * Phase 139 Step 3: revert `path` to the value at history row `id` by appending
-   * a rollback row. Returns the restored value.
-   */
+  /** Revert `path` to the value at history row `id` by appending a rollback row. */
   async rollback(path: string, id: number): Promise<ConfigValue> {
     if (!Number.isInteger(id) || id < 1) {
       throw new Error(`rollback id must be a positive integer, got ${id}`);
@@ -228,7 +212,7 @@ export class ConfigCommands extends BaseCommand {
     return (await this.ensureAdapter()).rollback(path, id);
   }
 
-  // ── Phase 139 Step 4: key locking ──────────────────────────────────────────
+  // ── Key locking ──────────────────────────────────────────────────────────────
 
   async lock(path: string, reason?: Opt<string, Reason.OptionalInput>): Promise<void> {
     (await this.ensureAdapter()).lock(path, CONFIG_LOCKED_BY_CLI, reason);
@@ -242,15 +226,11 @@ export class ConfigCommands extends BaseCommand {
     return (await this.ensureAdapter()).listLocks();
   }
 
-  // ── Phase 139 Step 6: config edit ($EDITOR) ────────────────────────────────
+  // ── Config edit ($EDITOR) ─────────────────────────────────────────────────
 
-  /**
-   * Render the current overrides to a temp file (`key = value` lines), open it
-   * in `$EDITOR`, and apply any changed lines back through `adapter.set()` — so
-   * the editor stays inside the security funnel (lock + validation + debounce
-   * all still apply; blocklist enforcement remains MCP-only, per design GAP-2).
-   * A non-zero editor exit discards all changes.
-   */
+  // Renders overrides to a temp file, opens $EDITOR, and re-applies changed lines through
+  // adapter.set() so lock/validation/debounce still apply (blocklist enforcement remains
+  // MCP-only, per design GAP-2). A non-zero editor exit discards all changes.
   async edit(): Promise<void> {
     const adapter = await this.ensureAdapter();
     const overrides = adapter.listOverrides();

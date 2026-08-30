@@ -27,10 +27,9 @@ const SKIP_FILES = new Set([
 
 const TEST_PATTERNS = [/_test\.ts$/, /\/tests\//, /^tests\//];
 
-// Matches IEventLogger method calls where the first argument is a string literal.
-// Only matches calls on identifiers whose name ends with "logger" or "Logger" (case-insensitive),
-// to avoid false positives from display.info(), console.error(), output.warn(), etc.
-// Only flags strings starting with a lowercase letter (event type convention).
+// Matches IEventLogger calls with a string-literal first argument, on identifiers whose
+// name ends with "logger"/"Logger" (avoids display.info(), console.error(), etc.), and
+// only flags strings starting with a lowercase letter (event type convention).
 const LOGGER_INLINE_PATTERN =
   /\b\w*[Ll]og(?:ger)?\s*\.\s*(?:info|warn|error|fatal|debug)\s*\(\s*["'][a-z][a-zA-Z0-9._/:-]*/;
 

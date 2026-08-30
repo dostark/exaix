@@ -84,10 +84,9 @@ export interface IWiredUnusedFinding {
   tagged: boolean;
 }
 
-/** A @visible-tagged exported class with no audit-logger constructor dependency at all —
- *  the population the tool could not see before @visible existed; untagged classes are
- *  never checked for this (absence of a logger is only a gap when the class explicitly
- *  declared it must be covered). */
+/** A @visible-tagged exported class with no audit-logger constructor dependency at all;
+ *  untagged classes are never checked for this since absence of a logger is only a gap
+ *  when the class explicitly declared it must be covered. */
 export interface IMissingLoggerFinding {
   file: string;
   className: string;
@@ -138,13 +137,9 @@ export function unwrapOptTypeName(typeNode: ts.TypeNode): string | null {
 
 const VISIBLE_TAG_PATTERN = /@visible\b/;
 
-/** True when `cls`'s own leading JSDoc comment carries the `@visible` tag — a class
- *  explicitly declaring itself load-bearing for the ARCHITECTURE.md "Visibility"
- *  guarantee, escalating its coverage findings from advisory to blocking under
- *  `--fail-on-tagged`. Scoped to the class's own leading comment range (via
- *  `ts.getLeadingCommentRanges` at the class node's full start), not the whole file
- *  header, since one file may declare more than one class — mirrors
- *  `scripts/validate_architecture.ts`'s `@ungrounded` regex exactly in spirit. */
+/** True when `cls`'s own leading JSDoc comment carries the `@visible` tag, escalating its
+ *  coverage findings from advisory to blocking under `--fail-on-tagged`. Scoped to the
+ *  class's own leading comment range, not the whole file header. */
 export function hasVisibleTag(cls: ts.ClassDeclaration, sourceText: string): boolean {
   const ranges = ts.getLeadingCommentRanges(sourceText, cls.getFullStart());
   if (!ranges) return false;
@@ -155,8 +150,7 @@ const LOG_METHOD_FAMILY_DECORATOR_NAMES = new Set(["LogMethod", "LogSyncMethod",
 
 /** True when `expr` is a literal `DomainEventType.X` property access, or an object literal
  *  (an `ILifecycleActions`/`IGeneratorLifecycleActions` value) whose every property is
- *  itself a literal `DomainEventType.X` — covers both the single-action and per-phase-action
- *  decorator option shapes. */
+ *  itself a literal `DomainEventType.X`. */
 function isRegisteredActionExpression(expr: ts.Expression): boolean {
   if (ts.isPropertyAccessExpression(expr) && ts.isIdentifier(expr.expression)) {
     return expr.expression.text === "DomainEventType";
@@ -249,16 +243,7 @@ export function findAuditParam(params: readonly ts.ParameterDeclaration[]): stri
   return null;
 }
 
-/** Finds the class's audit-logger field, covering three idioms: a parameter-property
- *  (`constructor(private readonly logger?: IEventLogger)`), a plain constructor
- *  parameter assigned to a field in the constructor body (`this.audit = audit;`), and a
- *  single deps-bag parameter whose same-file-declared interface/type-alias exposes a
- *  logger-typed member, assigned as `this.audit = deps.eventLogger;` — a widespread
- *  Exaix DI convention the first two idioms can't see through. `sf` is optional and only
- *  needed for the third idiom; omit it to keep the first two working without a
- *  SourceFile in scope (e.g. a bare test fixture). Same-file only for the deps-bag
- *  idiom — a deliberate, documented limitation consistent with this script's advisory
- *  nature (a cross-file deps interface is a rarer shape; verify by hand). */
+/** Finds the class's audit-logger field, covering three idioms: a parameter-property (`constructor(private readonly logger?: IEventLogger)`), a plain constructor parameter assigned to a field in the constructor body (`this.audit = audit;`), and a single deps-bag parameter whose same-file-declared interface/type-alias exposes a logger-typed member, assigned as `this.audit = deps.eventLogger;` — a widespread Exaix DI convention the first two idioms can't see through. `sf` is optional and only needed for the third idiom; omit it to keep the first two working without a SourceFile in scope (e.g. a bare test fixture). Same-file only for the deps-bag idiom — a deliberate, documented limitation consistent with this script's advisory nature (a cross-file deps interface is a rarer shape; verify by hand). */
 export function findClassAuditField(
   cls: ts.ClassDeclaration,
   sf?: Opt<ts.SourceFile, Reason.OptionalContext>,
@@ -362,10 +347,7 @@ const DENO_WRITE_PATTERN =
   /^(writeTextFile|writeTextFileSync|writeFile|writeFileSync|mkdir|mkdirSync|remove|removeSync|rename|renameSync|truncate|truncateSync|symlink|symlinkSync)$/;
 const LOG_METHOD_PATTERN = /^(info|warn|error|fatal|debug|log|emit)$/;
 
-/** Finds `this.<field> = ...` assignments (any assignment operator), write-verb calls on
- *  another `this.<field>`, and direct Deno filesystem/subprocess writes within `body`.
- *  `excludeFieldNames` skips the audit-logger field itself (calling it is coverage, not a
- *  state change). Returns human-readable evidence strings, one per finding site. */
+/** Finds `this.<field> = ...` assignments (any assignment operator), write-verb calls on another `this.<field>`, and direct Deno filesystem/subprocess writes within `body`. `excludeFieldNames` skips the audit-logger field itself (calling it is coverage, not a state change). Returns human-readable evidence strings, one per finding site. */
 export function findStateChangeOperations(body: ts.Node, excludeFieldNames: Set<string>): string[] {
   const findings: string[] = [];
   const visit = (node: ts.Node) => {
@@ -444,13 +426,7 @@ function isDomainEventTypeRef(typeNode: Opt<ts.TypeNode, Reason.OptionalContext>
     typeNode.typeName.text === "TDomainEventType";
 }
 
-/** True when `action` resolves to a registered `DomainEventType` value: a literal
- *  `DomainEventType.X` property access, a bare parameter of the enclosing function/method
- *  typed `TDomainEventType` (e.g. `emitEvent(action: TDomainEventType, ...)`), or a property
- *  access into an object parameter whose matching member is typed `TDomainEventType` (e.g.
- *  `logActivity(event: { event_type: TDomainEventType, ... })` then `event.event_type`).
- *  One level of parameter indirection only, mirroring `callsLoggingPrivateHelper`'s own
- *  "one level only" design — the actual call-site argument isn't traced through. */
+/** True when `action` resolves to a registered `DomainEventType` value: a literal `DomainEventType.X` property access, a bare parameter of the enclosing function/method typed `TDomainEventType` (e.g. `emitEvent(action: TDomainEventType, ...)`), or a property access into an object parameter whose matching member is typed `TDomainEventType` (e.g. `logActivity(event: { event_type: TDomainEventType, ... })` then `event.event_type`). One level of parameter indirection only, mirroring `callsLoggingPrivateHelper`'s own "one level only" design — the actual call-site argument isn't traced through. */
 function resolvesToRegisteredAction(
   action: Opt<ts.Expression, Reason.OptionalContext>,
   enclosingParams: readonly ts.ParameterDeclaration[],
@@ -474,10 +450,7 @@ function resolvesToRegisteredAction(
   return false;
 }
 
-/** True when `body` calls the logger binding. Tagged callers may require a registered taxonomy
- *  action, resolved directly or through one level of parameter-typed indirection (see
- *  `resolvesToRegisteredAction`) — `enclosingParams` is `body`'s own owning function/method's
- *  parameter list, needed to resolve that indirection. */
+/** True when `body` calls the logger binding. Tagged callers may require a registered taxonomy action, resolved directly or through one level of parameter-typed indirection (see `resolvesToRegisteredAction`) — `enclosingParams` is `body`'s own owning function/method's parameter list, needed to resolve that indirection. */
 export function bodyCallsAuditBinding(
   body: ts.Node,
   binding: IAuditBinding,
@@ -510,15 +483,7 @@ function lineOf(node: ts.Node, sf: ts.SourceFile): number {
   return sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
 }
 
-/** True when `body` calls a private/protected method of `cls` whose own body calls the
- *  audit binding — the "one level of indirection through a same-class helper" pattern
- *  (e.g. `processAmendment()` calling `this.emitAmendmentEvent(...)`, a private method
- *  that itself calls `this.logger.info(...)`) — confirmed real and recurring across
- *  multiple classes (RequestAnalyzer, PlanAmendmentGate, MemoryBankService,
- *  MissionReporter all centralize their actual `.info()` call in exactly this shape).
- *  Deliberately one level only: chasing arbitrarily deep call chains would make "is this
- *  method covered" unboundedly expensive and hard to reason about; a helper-of-a-helper
- *  is a smell this checker doesn't try to untangle — verify by hand. */
+/** True when `body` calls a private/protected method of `cls` whose own body calls the audit binding — the "one level of indirection through a same-class helper" pattern (e.g. `processAmendment()` calling `this.emitAmendmentEvent(...)`, a private method that itself calls `this.logger.info(...)`) — confirmed real and recurring across multiple classes (RequestAnalyzer, PlanAmendmentGate, MemoryBankService, MissionReporter all centralize their actual `.info()` call in exactly this shape). Deliberately one level only: chasing arbitrarily deep call chains would make "is this method covered" unboundedly expensive and hard to reason about; a helper-of-a-helper is a smell this checker doesn't try to untangle — verify by hand. */
 function callsLoggingPrivateHelper(
   body: ts.Node,
   cls: ts.ClassDeclaration,
@@ -556,10 +521,7 @@ function callsLoggingPrivateHelper(
   return found;
 }
 
-/** Analyzes one class declaration. Returns per-method findings for methods with a state
- *  change or cross-component call and no logger call in their own body, plus a class-level
- *  "wired but silent" finding when NO method anywhere in the class ever calls the logger
- *  (in which case per-method findings are suppressed as redundant with the class-level one). */
+/** Analyzes one class declaration. Returns per-method findings for methods with a state change or cross-component call and no logger call in their own body, plus a class-level "wired but silent" finding when NO method anywhere in the class ever calls the logger (in which case per-method findings are suppressed as redundant with the class-level one). */
 export function analyzeClass(cls: ts.ClassDeclaration, sf: ts.SourceFile): IAnalyzeClassResult {
   const auditField = findClassAuditField(cls, sf);
   if (!auditField) return { findings: [], wiredUnused: null };
@@ -569,12 +531,7 @@ export function analyzeClass(cls: ts.ClassDeclaration, sf: ts.SourceFile): IAnal
   const excludeForStateChange = new Set([auditField]);
   const tagged = hasVisibleTag(cls, sf.getFullText());
 
-  // Class-level "is the logger used ANYWHERE" check must see every method, including
-  // private/protected helpers that centralize the actual .info()/.warn() call — a common,
-  // idiomatic pattern (e.g. a private logActivity() helper called by several public
-  // methods). Deliberately broader than the per-method loop below, which intentionally
-  // skips private/protected methods when deciding whether an INDIVIDUAL method needs its
-  // own adjacent event — a private helper isn't an independently-callable public API.
+  // Class-level "is the logger used ANYWHERE" check must see every method, including private/protected helpers that centralize the actual .info()/.warn() call — a common, idiomatic pattern (e.g. a private logActivity() helper called by several public methods). Deliberately broader than the per-method loop below, which intentionally skips private/protected methods when deciding whether an INDIVIDUAL method needs its own adjacent event — a private helper isn't an independently-callable public API.
   const anyMethodCallsLogger = cls.members.some((member) =>
     ts.isMethodDeclaration(member) && member.body !== undefined &&
     (bodyCallsAuditBinding(member.body, { name: auditField, isField: true }, tagged, member.parameters) ||
@@ -628,11 +585,7 @@ export function analyzeClass(cls: ts.ClassDeclaration, sf: ts.SourceFile): IAnal
   return { findings: wiredUnused ? [] : findings, wiredUnused };
 }
 
-/** For every `@visible`-tagged exported class with no audit-logger dependency at all
- *  (`findClassAuditField` returns null), emits an `IMissingLoggerFinding` — this is the
- *  population the tool could not see before `@visible` existed; untagged classes are never
- *  checked for this (absence of a logger is only a gap when the class explicitly declared
- *  it must be covered). */
+/** For every `@visible`-tagged exported class with no audit-logger dependency at all (`findClassAuditField` returns null), emits an `IMissingLoggerFinding` — this is the population the tool could not see before `@visible` existed; untagged classes are never checked for this (absence of a logger is only a gap when the class explicitly declared it must be covered). */
 export function findMissingLoggerFindings(
   sf: ts.SourceFile,
   fileName?: Opt<string, Reason.OptionalContext>,
@@ -698,10 +651,7 @@ export function analyzeSourceFile(
   return { findings, wiredUnused, missingLogger };
 }
 
-/** Computes whether `--fail-on-tagged` should exit the CLI with code 1 for a given result
- *  set: true when at least one `tagged: true` finding or `wiredUnused` entry exists, or any
- *  missing-logger finding exists at all — regardless of how many untagged findings are also
- *  present. Untagged findings never fail the build under this flag. */
+/** Computes whether `--fail-on-tagged` should exit the CLI with code 1 for a given result set: true when at least one `tagged: true` finding or `wiredUnused` entry exists, or any missing-logger finding exists at all — regardless of how many untagged findings are also present. Untagged findings never fail the build under this flag. */
 export function shouldFailOnTagged(
   findings: readonly IEventCoverageFinding[],
   wiredUnused: readonly IWiredUnusedFinding[],

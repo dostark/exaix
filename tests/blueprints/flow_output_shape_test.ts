@@ -25,16 +25,9 @@ import { walk } from "@std/fs";
 const REPO_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..");
 const FLOWS_DIR = join(REPO_ROOT, "Blueprints", "Flows");
 
-/**
- * Phase 142 Step 15 — the scenario framework's own flow fixtures are held to the same contract.
- *
- * They were exempt only because nothing loaded them: `flow_fixture` was parsed and acted on
- * nowhere, so no fixture flow had ever executed. Once the runner started staging them, all
- * thirteen aggregated to nothing — every one wrote `from: step` with a separate `step: <id>` key,
- * a shape `aggregateOutput` does not implement. It reads `output.from` as the step id, so
- * `stepResults.get("step")` missed, the flow completed "successfully" with `outputLength: 0`, and
- * the request died on `Invalid JSON: Unexpected end of JSON input` — four layers from the cause.
- */
+/** The scenario framework's own flow fixtures are held to the same output-shape contract:
+ * `aggregateOutput` reads `output.from` as the step id, so a fixture writing a separate
+ * `step: <id>` key aggregates to nothing at runtime. */
 const FIXTURE_FLOWS_DIR = join(REPO_ROOT, "tests", "scenario_framework", "fixtures", "flows");
 
 interface IFlowOutput {

@@ -7,15 +7,11 @@
  * @related-files [packages/core/src/config/service.ts, "packages/core/src/types/i_config_service.ts"]
  */
 
-import type { IConfigService, IPortalConfigEntry } from "@exaix/core/types";
+import type { IConfigService, IPortalConfigEntry, Opt, Reason } from "@exaix/core/types";
 import type { ConfigService } from "@exaix/core/config";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { PortalExecutionStrategy } from "@exaix/core";
 
-/**
- * Adapter that implements the IConfigService interface
- * and delegates to the core ConfigService.
- */
 export class ConfigAdapter implements IConfigService {
   constructor(private configService: ConfigService) {}
 
@@ -53,7 +49,7 @@ export class ConfigAdapter implements IConfigService {
   async addPortal(
     alias: string,
     targetPath: string,
-    options?: { defaultBranch?: string; executionStrategy?: PortalExecutionStrategy },
+    options?: Opt<{ defaultBranch?: string; executionStrategy?: PortalExecutionStrategy }, Reason.AbstractBoundary>,
   ): Promise<void> {
     return await this.configService.addPortal(alias, targetPath, options);
   }

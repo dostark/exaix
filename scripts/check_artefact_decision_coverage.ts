@@ -162,7 +162,7 @@ const FLOW_DECISIONS: IArtefactDecisionEntry[] = [
   ),
 ];
 
-/** The 2026-08-04 live run's decisions, exactly as recorded in the Phase 158 plan doc. */
+/** The 2026-08-04 live run's recorded decisions. */
 export const ARTEFACT_DECISIONS_2026_08_04: IArtefactDecisionEntry[] = [
   ...SKILL_DECISIONS,
   ...IDENTITY_DECISIONS,

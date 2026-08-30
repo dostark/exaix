@@ -175,10 +175,9 @@ export function checkAgentDocsIntegrity(copilotDir: string): IIntegrityResult {
     }
   }
 
-  // --- (f) docs-readme-symlink-list ---
-  // The "Symlinked root docs" section of docs/README.md may only name files that are
-  // actually symlinks there. GAP-133-2 caught the name-collision drift (a documented
-  // GLOSSARY.md symlink that did not exist); this makes it fail-closed.
+  // (f) docs-readme-symlink-list: the "Symlinked root docs" section of docs/README.md
+  // may only name files that are actually symlinks there, so a documented symlink that
+  // does not exist fails closed.
   try {
     const readmeContent = Deno.readTextFileSync(readmePath);
     const section = readmeContent.match(/### Symlinked root docs[\s\S]*?(?=\n#{1,3}\s|$)/)?.[0] ?? "";

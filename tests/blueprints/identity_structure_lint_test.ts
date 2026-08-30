@@ -125,8 +125,3 @@ Deno.test({
     }
   },
 });
-
-// (Example and template structure-lint tests were removed in the Phase 131
-// catalog reconciliation — the examples/ and templates/ directories no longer
-// exist; example content was merged/promoted into concrete identities and
-// templates were converted to skills.)

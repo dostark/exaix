@@ -74,12 +74,9 @@ Deno.test("[integration] registry_bootstrap: codex-cli's real factory-resolved p
   });
   assertInstanceOf(provider, CliDelegateModelProvider);
 
-  // CliDelegateProviderFactory.create() takes the standard, provider-agnostic
-  // IResolvedProviderOptions — no run-override seam exists there by design (adding one
-  // would leak a CLI-delegate-specific concern into every other provider's options). The
-  // only way to prove the REAL registration path reaches a real subprocess call site,
-  // without actually spawning the codex binary, is a temporary SafeSubprocess.run
-  // monkeypatch, restored unconditionally in `finally`.
+  // No run-override seam exists on the provider-agnostic create() options by design, so proving
+  // the real registration path reaches a real subprocess call site without spawning the codex
+  // binary requires a temporary SafeSubprocess.run monkeypatch, restored in `finally`.
   let seenCommand = "";
   let seenArgs: string[] = [];
   const originalRun = SafeSubprocess.run;

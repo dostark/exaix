@@ -278,10 +278,9 @@ Deno.test('[step135.14][GAP-12] ["best","cheapest"] where cheapest strictly domi
   const { cleanup } = await initTestDbService();
   try {
     ProviderRegistry.clear();
-    // A realistic (non-adversarial-binary) benchmark edge for "high-bench" (0.6 vs 0.5)
-    // is swamped by a large price gap (cost 100 vs 1) — cheap wins the blend, but the
-    // old code set reason: "best_ranked" unconditionally whenever "best" was requested
-    // and task_type was known, regardless of whether it actually decided the winner.
+    // A realistic edge case: high-bench's small benchmark edge (0.6 vs 0.5) is swamped by a
+    // large price gap (cost 100 vs 1), so "cheap" wins — the reason must reflect that, not
+    // default to "best_ranked" merely because "best" was among the requested characteristics.
     registerProvider("high-bench", { costPerMtok: 100 });
     registerProvider("cheap", { costPerMtok: 1 });
     const strategy: IResolutionStrategy = {
@@ -393,11 +392,9 @@ Deno.test("[step135.8][F8] rankUsage is offered the tied/no-characteristics pool
     const logger = createMockEventLogger();
     const resolver = makeResolver(strategy, logger);
     const result = await resolver.resolve({});
-    // usage_tiebreak's opt-in gating is a Team-config concern owned by the strategy
-    // implementation (edition boundary) — the resolver always offers the tied pool;
-    // a Team strategy with the flag off returns undefined internally (inert, see
-    // team_resolution_strategy tests). Here the injected strategy opts in and its
-    // order decides.
+    // usage_tiebreak's opt-in gating is an edition-boundary concern owned by the strategy
+    // implementation; the resolver always offers the tied pool. This injected strategy opts
+    // in, so its ranking order decides the winner.
     assertEquals(called !== null, true);
     assertEquals(result.provider, "mfu-leader");
     const resolvedEvents = logger.events.filter((e) => e.action === "model.resolved");

@@ -21,12 +21,7 @@ export interface IOpencodePermissionConfig {
   /** The agent key used in the generated config. */
   agentKey: string;
 }
-/**
- * Assert that every permitted path stays within the worktree root. Throws on the
- * first escaping path. Extracted from the config builder so the builder stays a
- * pure shape function and the worktree guard runs at the production call-site
- * (which always has a worktree root).
- */
+/** Separate from the config builder so that stays a pure shape function; this runs the worktree guard at the production call-site. */
 export function assertPathsWithinWorktree(permittedPaths: string[], worktreeRoot: string): void {
   for (const p of permittedPaths) {
     const result = checkScope([p], [p], worktreeRoot);

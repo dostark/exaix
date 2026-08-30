@@ -12,6 +12,7 @@
 
 import { basename, extname } from "@std/path";
 import type { ICodeConvention, IFileSignificance } from "@exaix/schemas";
+import type { Opt, Reason } from "@exaix/core/types";
 
 const MAX_EXAMPLES = 5;
 
@@ -48,20 +49,14 @@ const NAMING_KEYWORDS: ReadonlyArray<
   },
 ];
 
-/**
- * Detects code conventions and naming patterns from file structure.
- * Heuristic-only mode: no I/O, synchronous.
- */
+/** Detects code conventions and naming patterns from file structure (heuristic-only, synchronous). */
 export function detectPatterns(
   portalPath: string,
   fileList: string[],
   keyFiles: IFileSignificance[],
 ): ICodeConvention[];
 
-/**
- * Detects code conventions and naming patterns from file structure and content.
- * Content-based mode: reads a sample of files via `readFileContents` callback.
- */
+/** Detects code conventions and naming patterns from file structure and a sample of file contents. */
 export function detectPatterns(
   portalPath: string,
   fileList: string[],
@@ -73,7 +68,7 @@ export function detectPatterns(
   _portalPath: string,
   fileList: string[],
   _keyFiles: IFileSignificance[],
-  readFileContents?: (path: string) => Promise<string>,
+  readFileContents?: Opt<(path: string) => Promise<string>, Reason.AbstractBoundary>,
 ): ICodeConvention[] | Promise<ICodeConvention[]> {
   const conventions = runHeuristicPass(fileList);
   if (!readFileContents) return conventions;
@@ -231,10 +226,7 @@ function calcConfidence(count: number): ICodeConvention["confidence"] {
   return "low";
 }
 
-/**
- * Compute adaptive sample size as 5% of total files, clamped to [minSize, maxSize].
- * Returns 0 if totalFiles is 0.
- */
+/** Compute adaptive sample size as 5% of total files, clamped to [minSize, maxSize]. */
 export function computeAdaptiveSampleSize(
   totalFiles: number,
   minSize: number,
@@ -245,11 +237,7 @@ export function computeAdaptiveSampleSize(
   return Math.max(minSize, Math.min(maxSize, fivePercent));
 }
 
-/**
- * Select a stratified sample of files ensuring fair directory coverage.
- * Prefers TS/JS files within each directory bucket. Returns all files
- * when total ≤ sampleSize.
- */
+/** Select a stratified sample of files by directory, preferring TS/JS within each bucket. */
 export function selectSampleFiles(
   files: string[],
   sampleSize: number,

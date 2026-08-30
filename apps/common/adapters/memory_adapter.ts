@@ -6,7 +6,7 @@
  * @related-files ["packages/memory/src/bank/memory_bank.ts", "packages/memory/src/extraction/memory_extractor.ts", @exaix/core/types]
  */
 
-import type { IMemoryService } from "@exaix/core/types";
+import type { IMemoryService, Opt, Reason } from "@exaix/core/types";
 import type { MemoryBankService } from "@exaix/memory";
 import type { MemoryExtractorService } from "@exaix/memory";
 import type {
@@ -17,10 +17,6 @@ import type {
   IProjectMemory,
 } from "@exaix/schemas/memory_bank.ts";
 
-/**
- * Adapter that implements the IMemoryService interface used by the TUI
- * and delegates to the core services.
- */
 export class MemoryServiceAdapter implements IMemoryService {
   constructor(
     private memoryBank: MemoryBankService,
@@ -58,10 +54,12 @@ export class MemoryServiceAdapter implements IMemoryService {
   /**
    * Get execution history, optionally filtered
    */
-  async getExecutionHistory(options?: {
-    portal?: string;
-    limit?: number;
-  }): Promise<IExecutionMemory[]> {
+  async getExecutionHistory(
+    options?: Opt<{
+      portal?: string;
+      limit?: number;
+    }, Reason.QueryFilter>,
+  ): Promise<IExecutionMemory[]> {
     return await this.memoryBank.getExecutionHistory(options?.portal, options?.limit);
   }
 
@@ -70,7 +68,7 @@ export class MemoryServiceAdapter implements IMemoryService {
    */
   async search(
     query: string,
-    options?: { portal?: string; limit?: number },
+    options?: Opt<{ portal?: string; limit?: number }, Reason.QueryFilter>,
   ): Promise<IMemorySearchResult[]> {
     return await this.memoryBank.searchMemory(query, options);
   }

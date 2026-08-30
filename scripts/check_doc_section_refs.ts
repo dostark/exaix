@@ -67,11 +67,8 @@ export interface ISectionRefResult {
 }
 
 export interface ICheckOptions {
-  /**
-   * Restrict violations to this set of repo-relative markdown files (the pre-commit
-   * ratchet): only staged/changed docs block; pre-existing drift in untouched files
-   * is not enforced.
-   */
+  /** Restrict violations to this set of repo-relative markdown files (the pre-commit
+   * ratchet): only staged/changed docs block, not pre-existing drift elsewhere. */
   onlyFiles?: Set<string>;
 }
 

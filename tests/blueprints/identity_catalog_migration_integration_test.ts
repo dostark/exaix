@@ -96,11 +96,7 @@ interface ILoadedIdentityView {
   systemPrompt: string;
 }
 
-/**
- * Run an assertion callback for each loaded identity that passes the
- * PRE_EXISTING_SCHEMA_ISSUES gate. Eliminates the load + skip boilerplate
- * from individual tests.
- */
+/** Runs an assertion callback for each loaded identity that passes the PRE_EXISTING_SCHEMA_ISSUES gate. */
 async function forEachLoadedIdentity(
   fn: (identityId: string, blueprint: ILoadedIdentityView) => void | Promise<void>,
 ): Promise<void> {

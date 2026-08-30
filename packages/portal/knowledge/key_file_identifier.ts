@@ -166,13 +166,7 @@ const RULES: RoleRule[] = [
   },
 ];
 
-/**
- * Identify significant files in a portal by name/path heuristics.
- *
- * @param fileList - Relative file paths from the portal root.
- * @param limit    - Maximum number of results to return.
- * @returns        Significant files sorted by role importance, capped at limit.
- */
+/** Identify significant files in a portal by name/path heuristics, capped at `limit`. */
 export function identifyKeyFiles(
   fileList: string[],
   limit: number,

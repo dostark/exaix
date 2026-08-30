@@ -14,18 +14,8 @@ import { DEFAULT_GOOGLE_MODEL, GoogleProvider } from "@exaix/ai-google";
 import { DEFAULT_OPENAI_MODEL, OpenAIProvider } from "@exaix/ai-openai";
 import * as TEST_CONSTANTS from "@exaix/testing";
 
-/**
- * Live Regression Test for Provider Endpoints
- *
- * Verifies that the default models and endpoints are correctly configured and accepted by the providers' APIs.
- * Uses REAL API keys from the environment.
- *
- * Pre-requisites:
- * - GOOGLE_API_KEY
- * - OPENAI_API_KEY
- * - ANTHROPIC_API_KEY
- * must be set in the environment.
- */
+/** Live regression test: verifies default models/endpoints against real provider APIs.
+ * Requires GOOGLE_API_KEY, OPENAI_API_KEY, and ANTHROPIC_API_KEY in the environment. */
 
 const TEST_PROMPT = TEST_CONSTANTS.REGRESSION_TEST_PROMPT;
 

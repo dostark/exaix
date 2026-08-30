@@ -19,6 +19,7 @@
 import { walk } from "@std/fs";
 import { relative } from "@std/path";
 
+import type { Opt, Reason } from "@exaix/core/types";
 export interface IViolation {
   file: string;
   line: number;
@@ -52,15 +53,10 @@ const allowlist = new Set<string>([
   "mock:test-model",
 ]);
 
-/**
- * Scan a single file's content for hardcoded provider:model strings not in the
- * allowlist. Returns violations with file, line, col, model string, and context.
- * Test files and comment lines are automatically skipped.
- */
 export function findModelViolations(
   content: string,
   filePath: string,
-  allowlistArg?: Set<string>,
+  allowlistArg?: Opt<Set<string>, Reason.TestOverride>,
 ): IViolation[] {
   const list = allowlistArg ?? allowlist;
   const violations: IViolation[] = [];
@@ -97,12 +93,8 @@ export function findModelViolations(
   return violations;
 }
 
-/**
- * Walk packages/, apps/, packages-team/, and Blueprints/ directories and scan
- * TS source files + Blueprint .md files for hardcoded model violations.
- */
 export async function checkAllFiles(
-  allowlistArg?: Set<string>,
+  allowlistArg?: Opt<Set<string>, Reason.TestOverride>,
 ): Promise<IViolation[]> {
   const list = allowlistArg ?? allowlist;
   const allViolations: IViolation[] = [];

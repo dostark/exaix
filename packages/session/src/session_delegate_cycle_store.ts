@@ -104,11 +104,7 @@ export class SessionDelegateCycleStore implements ISessionDelegateCycleStore {
   }
 }
 
-/**
- * Process-local reference implementation; not crash-durable. Production wiring
- * (apps/daemon/main.ts) supplies SessionDelegateCycleStore instead. Also used by
- * FlowRunner as the fallback when no durable store is configured, and by tests.
- */
+/** Process-local, not crash-durable; production wiring uses SessionDelegateCycleStore instead. */
 export function createInMemorySessionDelegateCycleStore(): ISessionDelegateCycleStore {
   const checkpoints = new Map<string, ISessionDelegateCycleCheckpoint>();
   const keyOf = (parentTraceId: string, flowStepId: string): string => `${parentTraceId} ${flowStepId}`;

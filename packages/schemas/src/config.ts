@@ -81,11 +81,7 @@ function getCwdSafe(): string {
   }
 }
 
-/**
- * Build a z.number() schema from a configurable key's registered metadata.
- * Reads min/max/default from the registry at module-eval time, eliminating
- * the need for separate MIN/MAX named constants.
- */
+/** Builds a z.number() schema from a configurable key's registry metadata (min/max/default), avoiding separate MIN/MAX constants. */
 function c(key: string): z.ZodDefault<z.ZodNumber> {
   const { min, max, default: def } = resolveConfigurableBounds(key);
   let s: z.ZodNumber = z.number();
@@ -94,10 +90,7 @@ function c(key: string): z.ZodDefault<z.ZodNumber> {
   return s.default(def as number);
 }
 
-/**
- * Build a z.number() schema with only min/max bounds (no default).
- * Used for nested provider-override schemas inside z.record().
- */
+/** Builds a z.number() schema with only min/max bounds (no default), for nested provider-override schemas inside z.record(). */
 function cBounds(key: string): z.ZodNumber {
   const { min, max } = resolveConfigurableBounds(key);
   let s: z.ZodNumber = z.number();
@@ -143,13 +136,6 @@ const RoutingConfigSchema = z.object({
   enable_dynamic_routing: z.boolean().default(false),
 }).optional().prefault({});
 
-/**
- * Phase 135 — Team live model-registry block. Opt-in (`enabled` master gate);
- * absent by default so a Solo daemon is byte-identical to Phase 134. Later steps
- * (5/6/7/8) extend this block with route-policy, benchmark, and task-type fields
- * as their features land. Stays `.optional()`: Solo reads of nested fields use a
- * constant fallback (GAP-6, wired in Step 2).
- */
 /** §5.8 benchmark ingest fetch timeout — models.dev is larger than a catalog GET. */
 const DEFAULT_BENCHMARK_FETCH_TIMEOUT_MS = 30_000;
 /** Canonical tracked-benchmark names (§5.8), shared across the defaults below. */
@@ -172,26 +158,23 @@ export const ModelRegistryConfigSchema = z.object({
   price_staleness_max_days: z.number().int().positive().default(90),
   refresh_timeout_ms: z.number().int().positive().default(15000),
   refresh_on_start: z.boolean().default(false),
-  // §5.9 (F12) admission bounds — read by the Step 5 refresh scheduler when it builds
-  // per-provider admission inputs. top_n is defined but inert until Step 7's benchmarks.
+  // F12 admission bounds; top_n is defined but currently unused until benchmark ranking lands.
   admission: z.object({
     top_n: z.number().int().positive().default(25),
     keep_native_whole: z.boolean().default(true),
   }).prefault({}),
-  // §5.7 (F9 + G4) multi-route selection — read by the Step 6 route sub-step (Team).
   route_policy: z.enum(["cheapest", "reliability", "native_first", "user_order"]).default("cheapest"),
   // Near-tie fraction under `cheapest`: routes within this of the cheapest are health-broken.
   route_policy_price_tolerance: z.number().min(0).default(0.05),
   // G4: per-model provider order for `user_order` (model → provider list). Empty ⇒ cheapest.
   route_order: z.record(z.string(), z.array(z.string())).default({}),
-  // §5.8 (F13/G8) benchmark data plane — opt-in models.dev ingest read by the Step 7
-  // scheduler benchmark pass. Double-gated: enabled AND model_registry.enabled.
-  // G8 data-license: models.dev is MIT-licensed, community-maintained.
+  // Benchmark ingest from models.dev (MIT-licensed). Double-gated: this `enabled`
+  // flag AND model_registry.enabled must both be true.
   benchmark_source: z.object({
     enabled: z.boolean().default(true),
     dataset_url: z.string().default("https://models.dev/models.json"),
-    // §5.9 (GAP-A) widened beyond swe_bench_verified so "any tracked benchmark"
-    // top-N admission and the Step 8 best scorer are genuinely exercisable.
+    // More than one default benchmark so top-N admission and the `best` scorer
+    // have more than a single metric to exercise.
     tracked_benchmarks: z.array(z.string()).default([SWE_BENCH_VERIFIED, SWE_BENCH_PRO, GPQA]),
     refresh_cron: z.string().default("0 5 * * 0"), // weekly
     fetch_timeout_ms: z.number().int().positive().default(DEFAULT_BENCHMARK_FETCH_TIMEOUT_MS),
@@ -199,24 +182,20 @@ export const ModelRegistryConfigSchema = z.object({
   // §5.5.2 (Solo-read, D9): tolerance (percent) for reported-vs-computed cost
   // divergence before emitting model.cost.divergence.
   cost_divergence_tolerance_pct: z.number().min(0).default(5),
-  // §5.8.4 (GAP-B) — task-type → ranking benchmark(s), canonical TaskType keys only (G7).
-  // Read by the Step 8 `best` scorer (IResolutionStrategy.scoreBest).
+  // Task-type → ranking benchmark(s), canonical TaskType keys only (G7).
+  // Read by IResolutionStrategy.scoreBest.
   benchmark_map: z.record(z.nativeEnum(TaskType), z.array(z.string())).default(DEFAULT_BENCHMARK_MAP),
   // §5.8.8 — entity name → TaskType soft-match fallback for task-type derivation.
   // Never shadows an entity's own declaration (anti-drift). Canonical values only (G7).
   task_type_map: z.record(z.string(), z.nativeEnum(TaskType)).default({}),
   // F8 opt-in — last-resort MFU/MRU usage tiebreak (IResolutionStrategy.rankUsage).
   usage_tiebreak: z.boolean().default(false),
-  // GAP-C9 (Step 9) — per-provider catalog-adapter base URL override, read by
-  // apps/daemon/src/bootstrap_team.ts:createBuildContext. Test-only seam: lets a real
-  // daemon boot point its adapters at local stub HTTP servers instead of the vendor
-  // hosts. Empty by default — production never overrides a vendor base URL.
+  // GAP-C9 per-provider catalog-adapter base URL override, read by apps/daemon/src/bootstrap_team.ts:createBuildContext.
+  // Test-only seam for pointing adapters at local stub servers instead of vendor hosts; empty by default in production.
   adapter_base_urls: z.record(z.string(), z.string()).default({}),
 }).optional();
 
-/**
- * Phase 132 ModelPreset — capability profile for model_size-based selection.
- */
+/** ModelPreset — capability profile for model_size-based selection. */
 export const ModelPresetSchema = z.object({
   max_cost_per_mtok: z.number().min(0),
   min_context_window: z.number().int().min(1),
@@ -255,7 +234,7 @@ export const ToolsConfigSchema = z.object({
     exclude_dirs: z.array(z.string()).default([".git", "node_modules", "dist", "coverage"]),
   }).prefault({}),
 
-  // Tool confirmation interceptor timeout (Phase 79 — seconds; min 10, max 3600; fallback: DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S)
+  // Tool confirmation interceptor timeout in seconds; fallback: DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S when unset.
   confirmation_timeout_s: z.number().min(10).max(3600).optional(),
 });
 
@@ -430,7 +409,7 @@ export const ConfigSchema = z.object({
       timeout_ms: 120000,
     },
   }),
-  /** Phase 132 — capability presets keyed by model_size (S/M/L/XL). */
+  /** Capability presets keyed by model_size (S/M/L/XL). */
   model_presets: z.record(z.string(), ModelPresetSchema).default(DEFAULT_MODEL_PRESETS),
   /** AI provider endpoints configuration */
   ai_endpoints: z.record(z.string(), z.string()).optional().default({}),
@@ -466,11 +445,7 @@ export const ConfigSchema = z.object({
     api_version: z.string().default("2023-06-01"),
     default_model: z.string().default("claude-haiku-4-5-20251001"),
     max_tokens_default: z.number().positive().default(4096),
-    /**
-     * When false, disable the model's default adaptive thinking on every call that
-     * does not set a per-call thinking option. Undefined leaves the API default
-     * (adaptive thinking) untouched.
-     */
+    /** false disables the model's default adaptive thinking unless a call sets its own thinking option; undefined leaves the API default untouched. */
     thinking_default: z.boolean().optional(),
   }).optional().default({
     api_version: "2023-06-01",
@@ -490,7 +465,7 @@ export const ConfigSchema = z.object({
     api_key_env: z.string().default("OPENROUTER_API_KEY"),
     site_name: z.string().default("Exaix"),
     site_url: z.string().url().default("https://exaix.dev"),
-    /** Control-surface passthrough: model fallbacks, provider routing, privacy (Phase 123 R10). */
+    /** Control-surface passthrough: model fallbacks, provider routing, privacy settings. */
     routing: z.object({
       models: z.array(z.string()).max(3).optional(),
       provider: z.object({
@@ -529,7 +504,7 @@ export const ConfigSchema = z.object({
   }).optional().default({
     identity_id: DEFAULT_MCP_IDENTITY_ID,
   }),
-  /** Request quality gate configuration (Phase 47) */
+  /** Request quality gate configuration */
   quality_gate: z.object({
     /** Whether the quality gate runs at all. */
     enabled: z.boolean().default(true),
@@ -569,7 +544,7 @@ export const ConfigSchema = z.object({
       proceed: DEFAULTS.DEFAULT_QG_PROCEED_THRESHOLD,
     },
   }),
-  /** Plan amendment configuration (Phase 66) */
+  /** Plan amendment configuration */
   amendment: z.object({
     enabled: z.boolean().default(false),
     threshold: z.number().min(0).max(100).default(DEFAULTS.DEFAULT_AMENDMENT_THRESHOLD),
@@ -583,22 +558,14 @@ export const ConfigSchema = z.object({
     hitl_timeout_ms: DEFAULTS.DEFAULT_AMENDMENT_HITL_TIMEOUT_MS,
     on_timeout: DEFAULTS.DEFAULT_AMENDMENT_ON_TIMEOUT,
   }),
-  /** Prompt budget enforcement policy overrides (Phase 62) */
+  /** Prompt budget enforcement policy overrides */
   budget_enforcement: ZBudgetPolicy.optional(),
-  /** Flow retry cost budget guard (Phase 63). Omit or set to 0 to disable. */
+  /** Flow retry cost budget guard. Omit or set to 0 to disable. */
   max_flow_retry_cost_usd: z.number().min(0).optional(),
-  /** Request intent analysis configuration (Phase 45) */
+  /** Request intent analysis configuration */
   request_analysis: z.object({
-    /**
-     * Whether request analysis runs at all.
-     * Set to false to skip analysis entirely (for performance or testing).
-     */
     enabled: z.boolean().default(true),
 
-    /**
-     * Analysis strategy: heuristic, llm, or hybrid.
-     * Default depends on environment (usually hybrid in production).
-     */
     mode: z.nativeEnum(AnalysisMode).default(AnalysisMode.HYBRID),
 
     /** Score (0-100) below which hybrid mode escalates to LLM. */
@@ -607,10 +574,7 @@ export const ConfigSchema = z.object({
     /** Whether to infer acceptance criteria from imperatives. */
     infer_acceptance_criteria: z.boolean().default(true),
 
-    /**
-     * Whether to write the analysis result to a sibling `_analysis.json` file.
-     * Disable to run analysis in-memory only (useful in read-only environments).
-     */
+    /** Writes the analysis result to a sibling `_analysis.json` file; disable for in-memory-only analysis (e.g. read-only environments). */
     persist_analysis: z.boolean().default(true),
   }).optional().default({
     enabled: true,
@@ -688,7 +652,7 @@ export const ConfigSchema = z.object({
       .default(DEFAULTS.DEFAULT_PROVIDER_STRATEGY_FALLBACK_CHAINS),
     budgets: z.record(z.string(), z.number().min(DEFAULTS.PROVIDER_STRATEGY_BUDGETS_MIN)).optional(),
     task_routing: z.record(z.string(), z.array(z.string())).optional(),
-    /** Phase 132 — rate-limit headroom weight for provider scoring. 0=disabled, 1=max influence. */
+    /** Rate-limit headroom weight for provider scoring. 0=disabled, 1=max influence. */
     rate_limit_weight: z.number().min(0).max(1).default(0),
   }).optional().prefault({
     prefer_free: DEFAULTS.DEFAULT_PROVIDER_STRATEGY_PREFER_FREE,
@@ -699,19 +663,15 @@ export const ConfigSchema = z.object({
     rate_limit_weight: 0,
   }),
   routing: RoutingConfigSchema,
-  /** Phase 135 — optional Team live model-registry block. Disabled by default. */
+  /** Optional Team live model-registry block. Disabled by default. */
   model_registry: ModelRegistryConfigSchema,
-  /** Phase 106 — optional session-delegation block (global scope). */
+  /** Optional session-delegation block (global scope). */
   session_delegate: SessionDelegateConfigSchema.optional(),
   /** Optional per-step CLI-delegate execution block (headless claude/opencode as an IExecutionStrategy). */
   cli_delegate: CliDelegateConfigSchema.optional(),
-  /** Phase 107 — optional guardrail block. Disabled by default (enabled: false). */
+  /** Optional guardrail block. Disabled by default (enabled: false). */
   guardrail: GuardrailConfigSchema.optional(),
-  /**
-   * Per-action HITL governance (Phase 118).
-   * Distinct from `amendment.hitl_timeout_ms` — this governs per-tool action policy,
-   * not plan-amendment approval.
-   */
+  /** Per-action HITL governance. Distinct from `amendment.hitl_timeout_ms`, which governs plan-amendment approval, not per-tool action policy. */
   hitl: z.object({
     enabled: z.boolean().default(false),
     mandatory_rules: z.array(HitlRuleSchema).default([]),
@@ -791,9 +751,9 @@ export const ConfigSchema = z.object({
     memory_warn_percent: DEFAULTS.DEFAULT_MEMORY_WARN_PERCENT,
     memory_critical_percent: DEFAULTS.DEFAULT_MEMORY_CRITICAL_PERCENT,
   }),
-  /** Portal codebase knowledge gathering configuration (Phase 119) */
+  /** Portal codebase knowledge gathering configuration */
   portal_knowledge: z.object({
-    /** Whether request-time portal knowledge resolution/injection runs at all (Phase 143 ablation switch; default on, off disables the request-side injection only). */
+    /** Whether request-time portal knowledge resolution/injection runs at all (ablation switch; default on, off disables the request-side injection only). */
     injection_enabled: z.boolean().default(true),
     /** Automatically trigger knowledge analysis after portal mount. */
     auto_analyze_on_mount: z.boolean().default(false),
@@ -854,18 +814,18 @@ export const ConfigSchema = z.object({
     git_history_commit_limit: DEFAULTS.GIT_HISTORY_COMMIT_LIMIT,
     git_history_since: DEFAULTS.GIT_HISTORY_SINCE,
   }),
-  /** Tokenizer backend configuration (Phase 103) */
+  /** Tokenizer backend configuration */
   tokenizer: z.object({
     backend: z.enum([TokenizerBackend.AUTO, TokenizerBackend.LOCAL, TokenizerBackend.API])
       .default(TokenizerBackend.AUTO),
   }).optional().default({ backend: TokenizerBackend.AUTO }),
-  /** Execution configuration (Phase 103) */
+  /** Execution configuration */
   execution: z.object({
     /** Model to use for step summarization. Falls back to agent provider if unset. */
     summarization_model: z.string().optional(),
-    /** Whether semantic progress milestone streaming is enabled (Phase 92) */
+    /** Whether semantic progress milestone streaming is enabled */
     milestone_streaming_enabled: z.boolean().default(DEFAULTS.DEFAULT_MILESTONE_STREAMING_ENABLED),
-    /** Optional: file path for milestone NDJSON journal (Phase 92 E2E test / debugging). */
+    /** Optional: file path for milestone NDJSON journal (E2E test / debugging). */
     milestone_journal_path: z.string().optional(),
     /** Opt in to provider-enforced native tool selection (Anthropic + ReActLoopStrategy).
      *  When true and the provider supports it, ReActLoopStrategy uses native tool_choice
@@ -876,14 +836,8 @@ export const ConfigSchema = z.object({
   // Type assertion to avoid circular reference
   const configData = data as z.infer<typeof ConfigSchema>;
 
-  // `paths.flows` shipped as the bare `"Flows"` before Phase 142, which resolves to `<root>/Flows`
-  // — a directory the catalog has never lived in. The symptom was `exactl flow list` reporting
-  // "No flows found" against a workspace holding twenty flows, four layers from the cause. An
-  // existing config carrying that value would silently resolve to an empty catalog again, so it
-  // is rejected at load where the operator can act on it.
-  //
-  // Deliberately narrow: only the stale default is refused. Bare subfolder names in general are a
-  // legitimate choice for an operator who really does keep the catalog at the workspace root.
+  // `paths.flows` = the bare "Flows" resolves to an empty catalog (a stale legacy default), so it's rejected here.
+  // Deliberately narrow: only this exact stale value is refused; other bare subfolder names remain a legitimate operator choice.
   if (configData.paths?.flows === DEFAULTS.DEFAULT_FLOWS_PATH) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

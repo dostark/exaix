@@ -66,16 +66,7 @@ import { formatExecutionSummary } from "./formatters.ts";
 import { buildFilesIndex, buildPatternsIndex, buildTagsIndex, writeIndices } from "./index_builder.ts";
 import type { IMemoryBankService, IMemoryEmbeddingService } from "@exaix/core/types";
 import type { Opt, Reason } from "@exaix/core/types";
-/**
- * Memory Bank Service
- *
- * Manages all memory bank operations with IActivity Journal integration.
- * - Project memory (overview, patterns, decisions, references)
- * - Execution memory (trace records, lessons learned)
- * - Search and indexing operations
- * - IActivity Journal integration
- * @visible
- */
+/** @visible */
 export class MemoryBankService implements IMemoryBankService {
   private memoryRoot!: string;
   private projectsDir!: string;
@@ -85,12 +76,7 @@ export class MemoryBankService implements IMemoryBankService {
   private globalDir!: string;
   private embeddingService?: IMemoryEmbeddingService;
 
-  /**
-   * Create a new Memory Bank Service instance
-   *
-   * @param config - Exaix configuration
-   * @param db - Database service for IActivity Journal integration
-   */
+  /** Create a new Memory Bank Service instance @param config - Exaix configuration @param db - Database service for IActivity Journal integration */
   constructor(private config: Config, private logger?: Opt<IEventLogger, Reason.OptionalDependency>) {
     this.memoryRoot = join(config.system.root!, config.paths.memory!);
     // Use subdirectory names directly, not full paths (which already include Memory/)
@@ -104,11 +90,7 @@ export class MemoryBankService implements IMemoryBankService {
     this.initializeDirectories();
   }
 
-  /**
-   * Set the embedding service for semantic search support.
-   * Called during application initialization after the embedding
-   * provider is constructed.
-   */
+  /** Set the embedding service for semantic search support. Called during application initialization after the embedding provider is constructed. */
   setEmbeddingService(service: IMemoryEmbeddingService): void {
     this.embeddingService = service;
 
@@ -130,14 +112,7 @@ export class MemoryBankService implements IMemoryBankService {
     ensureDirSync(this.globalDir);
   }
 
-  /**
-   * Execute an operation with file-based locking to prevent concurrent access
-   *
-   * @param lockPath - Path to the lock file
-   * @param operation - Async operation to execute while holding the lock
-   * @param timeoutMs - Maximum time to wait for lock acquisition (default: 5000ms)
-   * @param maxRetries - Maximum number of retry attempts (default: 3)
-   */
+  /** Execute an operation with file-based locking to prevent concurrent access @param lockPath - Path to the lock file @param operation - Async operation to execute while holding the lock @param timeoutMs - Maximum time to wait for lock acquisition (default: 5000ms) @param maxRetries - Maximum number of retry attempts (default: 3) */
   private async withFileLock<T>(
     lockPath: string,
     operation: () => Promise<T>,
@@ -199,12 +174,7 @@ export class MemoryBankService implements IMemoryBankService {
 
   // ===== Project Memory Operations =====
 
-  /**
-   * Get project memory for a specific portal
-   *
-   * @param portal - Portal name
-   * @returns Project memory or null if not found
-   */
+  /** Get project memory for a specific portal @param portal - Portal name @returns Project memory or null if not found */
   async getProjectMemory(portal: string): Promise<IProjectMemory | null> {
     const projectDir = join(this.projectsDir, portal);
 
@@ -235,11 +205,7 @@ export class MemoryBankService implements IMemoryBankService {
     }
   }
 
-  /**
-   * Get list of project names (aliases) from memory banks.
-   *
-   * @returns Array of project names
-   */
+  /** Get list of project names (aliases) from memory banks. @returns Array of project names */
   async getProjects(): Promise<string[]> {
     const projects: string[] = [];
     try {
@@ -254,11 +220,7 @@ export class MemoryBankService implements IMemoryBankService {
     return projects;
   }
 
-  /**
-   * Create new project memory
-   *
-   * @param projectMem - Project memory data
-   */
+  /** Create new project memory @param projectMem - Project memory data */
   async createProjectMemory(projectMem: IProjectMemory): Promise<void> {
     // Validate schema
     ProjectMemorySchema.parse(projectMem);
@@ -302,12 +264,7 @@ export class MemoryBankService implements IMemoryBankService {
     });
   }
 
-  /**
-   * Update project memory (merge update)
-   *
-   * @param portal - Portal name
-   * @param updates - Partial project memory updates
-   */
+  /** Update project memory (merge update) @param portal - Portal name @param updates - Partial project memory updates */
   async updateProjectMemory(
     portal: string,
     updates: Partial<Omit<IProjectMemory, "portal">>,
@@ -341,12 +298,7 @@ export class MemoryBankService implements IMemoryBankService {
     });
   }
 
-  /**
-   * Add a pattern to project memory
-   *
-   * @param portal - Portal name
-   * @param pattern - Pattern to add
-   */
+  /** Add a pattern to project memory @param portal - Portal name @param pattern - Pattern to add */
   async addPattern(portal: string, pattern: IPattern): Promise<void> {
     const projectDir = join(this.projectsDir, portal);
     const lockPath = join(projectDir, "patterns.lock");
@@ -385,12 +337,7 @@ export class MemoryBankService implements IMemoryBankService {
     });
   }
 
-  /**
-   * Add a decision to project memory
-   *
-   * @param portal - Portal name
-   * @param decision - Decision to add
-   */
+  /** Add a decision to project memory @param portal - Portal name @param decision - Decision to add */
   async addDecision(portal: string, decision: IDecision): Promise<void> {
     const projectDir = join(this.projectsDir, portal);
     const lockPath = join(projectDir, "decisions.lock");
@@ -419,11 +366,7 @@ export class MemoryBankService implements IMemoryBankService {
 
   // ===== Execution Memory Operations =====
 
-  /**
-   * Create execution memory record
-   *
-   * @param execution - Execution memory data
-   */
+  /** Create execution memory record @param execution - Execution memory data */
   async createExecutionRecord(execution: IExecutionMemory): Promise<void> {
     // Validate schema - fail fast on invalid data
     ExecutionMemorySchema.parse(execution);
@@ -455,12 +398,7 @@ export class MemoryBankService implements IMemoryBankService {
     });
   }
 
-  /**
-   * Get execution memory by trace ID
-   *
-   * @param traceId - Execution trace ID (UUID)
-   * @returns Execution memory or null if not found
-   */
+  /** Get execution memory by trace ID @param traceId - Execution trace ID (UUID) @returns Execution memory or null if not found */
   async getExecutionByTraceId(traceId: string): Promise<IExecutionMemory | null> {
     const execDir = join(this.executionDir, traceId);
     const contextFile = join(execDir, "context.json");
@@ -479,13 +417,7 @@ export class MemoryBankService implements IMemoryBankService {
     }
   }
 
-  /**
-   * Get execution history with optional filtering
-   *
-   * @param portal - Optional portal filter
-   * @param limit - Maximum number of results (default: 100)
-   * @returns Array of execution memories, sorted by started_at descending
-   */
+  /** Get execution history with optional filtering @param portal - Optional portal filter @param limit - Maximum number of results (default: 100) @returns Array of execution memories, sorted by started_at descending */
   async getExecutionHistory(
     portal?: Opt<string, Reason.QueryFilter>,
     limit: number = 100,
@@ -521,11 +453,7 @@ export class MemoryBankService implements IMemoryBankService {
 
   // ===== Global Memory Operations (Phase 12.8) =====
 
-  /**
-   * Get global memory
-   *
-   * @returns Global memory or null if not initialized
-   */
+  /** Get global memory @returns Global memory or null if not initialized */
   async getGlobalMemory(): Promise<IGlobalMemory | null> {
     const jsonPath = join(this.globalDir, "learnings.json");
 
@@ -543,11 +471,7 @@ export class MemoryBankService implements IMemoryBankService {
     }
   }
 
-  /**
-   * Initialize global memory directory structure
-   *
-   * Creates Memory/Global/ with empty learnings, patterns, and anti-patterns files.
-   */
+  /** Initialize global memory directory structure Creates Memory/Global/ with empty learnings, patterns, and anti-patterns files. */
   async initGlobalMemory(): Promise<void> {
     await ensureDir(this.globalDir);
 
@@ -595,11 +519,7 @@ export class MemoryBankService implements IMemoryBankService {
     });
   }
 
-  /**
-   * Add a learning to global memory
-   *
-   * @param learning - Learning to add
-   */
+  /** Add a learning to global memory @param learning - Learning to add */
   async addGlobalLearning(learning: ILearning): Promise<void> {
     // Validate learning schema
     LearningSchema.parse(learning);
@@ -670,13 +590,7 @@ export class MemoryBankService implements IMemoryBankService {
     });
   }
 
-  /**
-   * Promote a learning from project to global scope
-   *
-   * @param portal - Source portal name
-   * @param promotion - Promotion details
-   * @returns ID of the created global learning
-   */
+  /** Promote a learning from project to global scope @param portal - Source portal name @param promotion - Promotion details @returns ID of the created global learning */
   async promoteLearning(
     portal: string,
     promotion: {
@@ -736,12 +650,7 @@ export class MemoryBankService implements IMemoryBankService {
     return learningId;
   }
 
-  /**
-   * Demote a learning from global to project scope
-   *
-   * @param learningId - ID of the learning to demote
-   * @param targetPortal - Target portal name
-   */
+  /** Demote a learning from global to project scope @param learningId - ID of the learning to demote @param targetPortal - Target portal name */
   async demoteLearning(learningId: string, targetPortal: string): Promise<void> {
     // Get global memory
     const globalMem = await this.getGlobalMemory();
@@ -860,13 +769,7 @@ export class MemoryBankService implements IMemoryBankService {
 
   // ===== Search Operations =====
 
-  /**
-   * Search memory banks for matching content
-   *
-   * @param query - Search query string
-   * @param options - Search options (portal filter, limit)
-   * @returns Array of search results
-   */
+  /** Search memory banks for matching content @param query - Search query string @param options - Search options (portal filter, limit) @returns Array of search results */
   async searchMemory(
     query: string,
     options?: Opt<{ portal?: string; limit?: number }, Reason.ExecutionConfig>,
@@ -874,13 +777,7 @@ export class MemoryBankService implements IMemoryBankService {
     return await searchMemoryHelper(query, options, this.buildSearchDeps());
   }
 
-  /**
-   * Search memory by tags (AND logic for multiple tags)
-   *
-   * @param tags - Array of tags to search for
-   * @param options - Optional search options (portal filter, limit)
-   * @returns Array of search results with matching tags
-   */
+  /** Search memory by tags (AND logic for multiple tags) @param tags - Array of tags to search for @param options - Optional search options (portal filter, limit) @returns Array of search results with matching tags */
   async searchByTags(
     tags: string[],
     options?: Opt<{ portal?: string; limit?: number }, Reason.ExecutionConfig>,
@@ -888,13 +785,7 @@ export class MemoryBankService implements IMemoryBankService {
     return await searchByTagsHelper(tags, options, this.buildSearchDeps());
   }
 
-  /**
-   * Search memory by keyword with frequency-based ranking
-   *
-   * @param keyword - Keyword to search for
-   * @param options - Optional search options (portal filter, limit)
-   * @returns Array of search results ranked by keyword frequency
-   */
+  /** Search memory by keyword with frequency-based ranking @param keyword - Keyword to search for @param options - Optional search options (portal filter, limit) @returns Array of search results ranked by keyword frequency */
   async searchByKeyword(
     keyword: string,
     options?: Opt<{ portal?: string; limit?: number }, Reason.ExecutionConfig>,
@@ -947,12 +838,7 @@ export class MemoryBankService implements IMemoryBankService {
     }
   }
 
-  /**
-   * Get recent activity summary
-   *
-   * @param limit - Maximum number of activities to return
-   * @returns Array of activity summaries
-   */
+  /** Get recent activity summary @param limit - Maximum number of activities to return @returns Array of activity summaries */
   async getRecentActivity(limit: number = 20): Promise<IActivitySummary[]> {
     const executions = await this.getExecutionHistory(undefined, limit);
 
@@ -968,14 +854,7 @@ export class MemoryBankService implements IMemoryBankService {
 
   // ===== Index Management =====
 
-  /**
-   * Rebuild all indices for fast lookups
-   *
-   * Creates:
-   * - files.json: File path → executions mapping
-   * - patterns.json: Pattern → projects mapping
-   * - tags.json: Tag → projects/patterns mapping
-   */
+  /** Rebuild all indices for fast lookups Creates: - files.json: File path → executions mapping - patterns.json: Pattern → projects mapping - tags.json: Tag → projects/patterns mapping */
   async rebuildIndices(): Promise<void> {
     // Build indices using extracted functions
     const executions = await this.getExecutionHistory(undefined, 1000);
@@ -999,14 +878,7 @@ export class MemoryBankService implements IMemoryBankService {
     });
   }
 
-  /**
-   * Rebuild all indices including embeddings
-   *
-   * This method rebuilds standard indices and also regenerates
-   * embedding vectors for all learnings using the provided embedding service.
-   *
-   * @param embeddingService - The embedding service to use for generating vectors
-   */
+  /** Rebuild all indices including embeddings This method rebuilds standard indices and also regenerates embedding vectors for all learnings using the provided embedding service. @param embeddingService - The embedding service to use for generating vectors */
   async rebuildIndicesWithEmbeddings(
     embeddingService: IMemoryEmbeddingService,
   ): Promise<void> {

@@ -16,11 +16,6 @@
 
 import { buildAllowlistChildEnv } from "@exaix/core/helpers/child_env.ts";
 
-/**
- * Build the child environment for a supervised launch: a minimal allowlist of
- * safe parent vars plus the adapter's (non-secret) launch vars. Any secret-named
- * variable is dropped from both sources. Delegates to the shared child-env policy.
- */
 export function sanitizeChildEnv(
   launchEnv: Record<string, string>,
   parentEnv: Record<string, string> = {},
@@ -35,11 +30,7 @@ export function assertBinaryAllowed(bin: string, allowlist: ReadonlySet<string>)
   }
 }
 
-/**
- * Merge delegate provider env onto a sanitized child env.
- * Applied after sanitizeChildEnv so injected API_KEY vars survive the SECRET_ENV_PATTERN strip.
- * The delegate env is additive — it never removes keys from the sanitized base.
- */
+/** Must run after sanitizeChildEnv so injected API_KEY vars survive the SECRET_ENV_PATTERN strip. */
 export function mergeDelegateEnv(
   sanitizedEnv: Record<string, string>,
   delegateEnv: Record<string, string>,

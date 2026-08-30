@@ -15,14 +15,14 @@
 
 import type { IPairedComparisonResult } from "./arm_comparison.ts";
 
-/** The recorded outcome of the Phase 142 mechanics scenarios bound to an artefact. */
+/** The recorded outcome of the mechanics scenarios bound to an artefact. */
 export enum MechanicsOutcome {
   GREEN = "green",
   RED = "red",
 }
 
-/** Binds an artefact to the Phase 142 mechanics scenarios that must be green, from the
- *  same commit, before a value run for it is admitted (Step 3 Actions). */
+/** Binds an artefact to the mechanics scenarios that must be green, from the same
+ *  commit, before a value run for it is admitted. */
 export interface IMechanicsBinding {
   artefactId: string;
   pack: string;
@@ -45,10 +45,8 @@ export interface IValidityGateResult {
   reason?: string;
 }
 
-/**
- * Rejects a value run unless the mechanics evidence covers the artefact's bound
- * scenarios, was recorded at the same commit as the value run, and is green.
- */
+/** Rejects a value run unless mechanics evidence covers the bound scenarios, matches
+ *  the run's commit, and is green. */
 export function evaluateValidityGate(
   binding: IMechanicsBinding,
   evidence: IMechanicsEvidence,
@@ -103,13 +101,9 @@ export function assertValidityGate(
   }
 }
 
-/**
- * Verifies a placebo (deliberately harmful) arm's paired comparison shows a detectable
- * non-zero, negative effect — proof the pipeline can detect an effect at all on the day
- * it runs, not just once at design time (Step 3 Success Criteria). A placebo result that
- * reads as `noEffect`, or that is non-negative, means detection itself is broken,
- * independent of whether any real artefact under test has value.
- */
+/** Verifies a placebo (deliberately harmful) arm's paired comparison shows a detectable,
+ *  negative effect — proof the pipeline can detect an effect at all on the day it runs.
+ *  A `noEffect` or non-negative result means detection itself is broken. */
 export function assertPlaceboDetected(result: IPairedComparisonResult): void {
   if (result.noEffect) {
     throw new Error(

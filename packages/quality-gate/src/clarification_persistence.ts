@@ -18,12 +18,7 @@ import { RequestStatus } from "@exaix/core/status";
 // Path derivation
 // ---------------------------------------------------------------------------
 
-/**
- * Derives the clarification JSON path from a request `.md` path.
- *
- * Example: `Workspace/Requests/my_request.md`
- *       →  `Workspace/Requests/my_request_clarification.json`
- */
+/** Derives the sibling clarification JSON path for a request file. */
 function deriveClarificationPath(requestFilePath: string): string {
   const dir = dirname(requestFilePath);
   const ext = extname(requestFilePath);
@@ -35,10 +30,7 @@ function deriveClarificationPath(requestFilePath: string): string {
 // Public API
 // ---------------------------------------------------------------------------
 
-/**
- * Persists a clarification session as JSON, writing atomically via a `.tmp`
- * file that is renamed into place on success.
- */
+/** Persists a clarification session through an atomic rename. */
 export async function saveClarification(
   requestFilePath: string,
   session: IClarificationSession,
@@ -51,10 +43,7 @@ export async function saveClarification(
   await Deno.rename(tmpPath, jsonPath);
 }
 
-/**
- * Loads a previously saved clarification session. Returns `null` when the file
- * does not exist or cannot be parsed / validated against the schema.
- */
+/** Loads a valid clarification session, returning null when absent or invalid. */
 export async function loadClarification(
   requestFilePath: string,
 ): Promise<IClarificationSession | null> {
@@ -79,17 +68,7 @@ export async function loadClarification(
 // Re-entry helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Finalizes a completed clarification session and writes `status: pending`
- * plus an `assessed_at` timestamp back to the request `.md` frontmatter
- * atomically (write `.tmp` → `Deno.rename`), triggering a FileWatcher re-entry
- * so the request re-enters the execution pipeline with the completed spec.
- *
- * @param requestFilePath - Absolute path to the request `.md` file.
- * @param session         - Completed `IClarificationSession` (any terminal status).
- * @param _spec           - `IRequestSpecification` compiled from the session
- *                          (injected into context on re-entry by the processor).
- */
+/** Atomically returns a clarified request to pending for watcher re-entry. */
 export async function finalizeAndWritePending(
   requestFilePath: string,
   session: IClarificationSession,
@@ -143,13 +122,7 @@ export async function finalizeAndWritePending(
 // Spec rendering
 // ---------------------------------------------------------------------------
 
-/**
- * Converts an `IRequestSpecification` into an agent-ready Markdown prompt.
- * Sections with empty arrays are omitted entirely; `summary` is always present.
- *
- * @param spec - The compiled specification from a clarification session.
- * @returns Structured Markdown string suitable for use as a `userPrompt`.
- */
+/** Renders a specification, omitting empty sections except the required summary. */
 export function renderSpecificationAsPrompt(spec: IRequestSpecification): string {
   const parts: string[] = [`## Summary\n${spec.summary}`];
 

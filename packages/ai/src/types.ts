@@ -15,23 +15,18 @@ import type { IGenerateResult, IThinkingReplayBlock } from "./providers/common.t
  */
 export type ToolCacheControlTtl = "5m" | "1h";
 
-/**
- * Cache control annotation for tool definitions (Anthropic prompt caching).
- * Defaults to "5m" when omitted.
- */
+/** Cache control annotation for tool definitions (Anthropic prompt caching).
+ *  Defaults to "5m" when omitted. */
 export interface IToolCacheControl {
   type: "ephemeral";
   ttl?: ToolCacheControlTtl;
 }
 
-/**
- * Mirrors Anthropic's Tool object — one tool definition in the tools[] array.
- * Every field except `name` and `inputSchema` is optional, matching Anthropic's
- * own schema. Provider-agnostic; future OpenAI/Google support reuses this type.
- */
+/** Mirrors Anthropic's Tool object — one tool definition in the tools[] array.
+ *  Provider-agnostic; other providers' tool support reuses this type. */
 export interface IToolDefinition {
   /** Must match Anthropic's ^[a-zA-Z0-9_-]{1,64}$ — validated at the
-   *  AnthropicProvider boundary (Step 2), not here. */
+   *  AnthropicProvider boundary, not here. */
   name: string;
   /** Strongly recommended. Detailed description of what the tool does and
    *  when to use it. */
@@ -91,11 +86,9 @@ export interface IModelOptions {
   top_p?: number;
   stop?: string[];
   stream?: boolean;
-  /**
-   * Indices of content blocks eligible for Anthropic cache_control.
-   * Set by AgentOrchestrator based on ContextCache stability analysis.
-   * Non-Anthropic providers ignore this field.
-   */
+  /** Indices of content blocks eligible for Anthropic cache_control, set by
+   *  AgentOrchestrator based on ContextCache stability analysis. Non-Anthropic
+   *  providers ignore this field. */
   cachedSections?: number[];
   /** Enable extended/chain-of-thought reasoning. Provider-specific mapping. */
   thinking?: boolean;
@@ -103,26 +96,11 @@ export interface IModelOptions {
   effort?: EffortTier;
   /** Provider-specific thinking budget cap (e.g. Anthropic max_tokens for thinking). */
   thinking_budget?: number;
-  /**
-   * Conversation/session continuity key. Calls sharing the same id resume the same
-   * underlying session where the provider supports it (e.g. CliDelegateModelProvider's
-   * headless claude/opencode subprocess, via --resume/--session) — mirrors
-   * CliDelegateStrategy's trace_id-keyed multi-turn mechanism, needed because a single
-   * IModelProvider instance is constructed once at daemon startup and reused across
-   * every request, so retries/multi-call flows for the SAME request must not silently
-   * start a brand-new, context-less session each call. Stateless HTTP providers ignore it.
-   */
+  /** Conversation/session continuity key. Calls sharing the same id resume the same underlying session where the provider supports it (e.g. CliDelegateModelProvider's headless subprocess), since a single IModelProvider instance is reused across every request. Stateless HTTP providers ignore it. */
   conversationId?: string;
-  /**
-   * JSON Schema to enforce via the provider's --json-schema mechanism (e.g. claude-code).
-   * Only CliDelegateModelProvider uses this; stateless HTTP providers ignore it.
-   */
+  /** JSON Schema to enforce via the provider's --json-schema mechanism (e.g. claude-code). Only CliDelegateModelProvider uses this; stateless HTTP providers ignore it. */
   jsonSchema?: Record<string, JSONValue>;
-  /** Native tool definitions for provider-enforced tool selection.
-   *  When set, the provider serializes these into a real API-level tools[]
-   *  parameter instead of relying on prose instructions. Absent for every
-   *  call today — this phase's ReActLoopStrategy code path (Step 5) is the
-   *  first production caller. */
+  /** Native tool definitions for provider-enforced tool selection. When set, the provider serializes these into a real API-level tools[] parameter instead of relying on prose instructions. Absent for every call today — this phase's ReActLoopStrategy code path (Step 5) is the first production caller. */
   tools?: IToolDefinition[];
   /** Provider-level tool choice constraint. Mirrors Anthropic's four-valued
    *  tool_choice plus disable_parallel_tool_use on auto/any/tool types.
@@ -136,29 +114,15 @@ export interface IModelOptions {
    *  with content_blocks/tool_use). "openai" = Chat Completions API with
    *  tool_calls/tool_call_id. "native" = Exaix TOML action blocks (Phase 151). */
   chatFormat?: ChatFormat;
-  /** Where this call happened, for fixture replay addressing (Phase 157). Assigned by
-   *  AgentRunner from IParsedRequest.scenarioId/stepId; absent for every call outside the
-   *  scenario framework, which keeps MockLLMProvider's recorded-strategy lookup keyed by
-   *  prompt hash exactly as before. */
+  /** Where this call happened, for fixture replay addressing (Phase 157). Assigned by AgentRunner from IParsedRequest.scenarioId/stepId; absent for every call outside the scenario framework, which keeps MockLLMProvider's recorded-strategy lookup keyed by prompt hash exactly as before. */
   callSite?: ICallSite;
 }
 
-/**
- * Where an LLM call happened, for fixture replay addressing (Phase 157). Recorded fixtures
- * are addressed by call site rather than by prompt content, so an edited system prompt
- * reports as drift on the affected fixtures instead of invalidating the whole set.
- */
+/** Where an LLM call happened, for fixture replay addressing (Phase 157). Recorded fixtures are addressed by call site rather than by prompt content, so an edited system prompt reports as drift on the affected fixtures instead of invalidating the whole set. */
 export interface ICallSite {
   scenarioId: string;
   stepId: string;
-  /** Flow-internal step id (e.g. "define-endpoints"), present only for calls FlowRunner
-   *  drives. Added (Phase 157 Step 3) because keying solely by (scenarioId, stepId, callIndex)
-   *  raced across flow steps in the same parallel wave — WaveOrchestrator.executeWave runs
-   *  wave steps concurrently via Promise.all, and the shared callIndex counter could be read
-   *  by two steps before either advanced it, landing both on the same index and causing one
-   *  step's captured fixture to silently overwrite the other's. A flow step's own id is
-   *  unique within its flow and never invoked concurrently with itself, so keying by it makes
-   *  the collision structurally impossible. */
+  /** Flow-internal step id (e.g. "define-endpoints"), present only for calls FlowRunner drives. Added (Phase 157 Step 3) because keying solely by (scenarioId, stepId, callIndex) raced across flow steps in the same parallel wave — WaveOrchestrator.executeWave runs wave steps concurrently via Promise.all, and the shared callIndex counter could be read by two steps before either advanced it, landing both on the same index and causing one step's captured fixture to silently overwrite the other's. A flow step's own id is unique within its flow and never invoked concurrently with itself, so keying by it makes the collision structurally impossible. */
   flowStepId?: string;
   /** Ordinal of this logical call within the step, incremented once per consumed response.
    *  A retried logical call (internal to executeWithRetry) keeps the same index. */
@@ -172,21 +136,10 @@ export interface IModelProvider {
   /** Unique identifier for this provider instance. */
   id: string;
 
-  /**
-   * Generate a response from the model.
-   * @param prompt The input prompt to send to the model
-   * @param options Optional generation parameters
-   * @returns The generated response payload
-   */
+  /** Generate a response from the model. @param prompt The input prompt to send to the model @param options Optional generation parameters @returns The generated response payload */
   generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult>;
 
-  /**
-   * Optional streaming variant. If implemented, yields content chunks as they
-   * are produced by the provider. Consumers collect chunks into the final
-   * IGenerateResult with streamed: true.
-   * @param prompt The input prompt to send to the model
-   * @param options Optional generation parameters (stream option hints streaming)
-   */
+  /** Optional streaming variant. If implemented, yields content chunks as they are produced by the provider. Consumers collect chunks into the final IGenerateResult with streamed: true. @param prompt The input prompt to send to the model @param options Optional generation parameters (stream option hints streaming) */
   generateStream?(prompt: string, options?: IModelOptions): AsyncGenerator<string>;
 }
 
@@ -211,10 +164,7 @@ export interface IResolvedProviderOptions {
   /** Refuse to answer a prompt/call site with no recording, instead of falling back to
    *  patterns (Phase 157). */
   mockStrict?: boolean;
-  /** Directory to record fixtures into, from EXA_CAPTURE_FIXTURES_DIR (Phase 157). Operator-
-   *  triggered only — never set by committed config. Refused when the resolved provider is
-   *  mock (capturing the mock's own guesses would manufacture an authoritative-looking
-   *  fixture set that encodes them). */
+  /** Directory to record fixtures into, from EXA_CAPTURE_FIXTURES_DIR (Phase 157). Operator- triggered only — never set by committed config. Refused when the resolved provider is mock (capturing the mock's own guesses would manufacture an authoritative-looking fixture set that encodes them). */
   captureFixturesDir?: string;
   /** Custom provider ID */
   id?: string;

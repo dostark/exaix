@@ -139,10 +139,9 @@ export async function buildIndex(includeSubmodule = false): Promise<void> {
 
   await generateDocsIndex(manifest.docs);
 
-  // Normalize the generated markdown/JSON to exactly what `deno fmt` produces,
-  // so the formatter never reports these generated files dirty (the generator
-  // and `deno fmt` would otherwise disagree on table alignment / trailing
-  // newline and drift forever). Non-fatal if `deno fmt` is unavailable.
+  // Normalize the generated markdown/JSON to what `deno fmt` produces, otherwise the
+  // generator and `deno fmt` disagree on table alignment/trailing newline and drift
+  // forever. Non-fatal if `deno fmt` is unavailable.
   await formatGenerated([`${AGENTS_DIR}/DOCS.md`, OUT_MANIFEST]);
 }
 

@@ -29,7 +29,7 @@ import {
   ANALYSIS_TASK_TYPE_VERBS,
 } from "@exaix/core";
 import type { IRequestAnalysis } from "@exaix/core/request";
-import type { IRequestAnalysisContext } from "@exaix/core/types";
+import type { IRequestAnalysisContext, Opt, Reason } from "@exaix/core/types";
 // ---------------------------------------------------------------------------
 // File reference extraction
 // ---------------------------------------------------------------------------
@@ -221,17 +221,12 @@ function extractTags(text: string, fileRefs: string[]): string[] {
 // Public API
 // ---------------------------------------------------------------------------
 
-/**
- * Perform zero-cost heuristic analysis of raw request text.
- *
- * Returns a `Partial<IRequestAnalysis>` — all fields that cannot be cheaply
- * computed (e.g. `goals`, `requirements`, `acceptanceCriteria`, `actionabilityScore`,
- * `metadata`) are omitted. The caller is responsible for merging with LLM output
- * or supplying defaults.
- */
+/** Zero-cost heuristic analysis. Returns a `Partial<IRequestAnalysis>` omitting fields that
+ * require LLM output or defaults (`goals`, `requirements`, `acceptanceCriteria`,
+ * `actionabilityScore`, `metadata`) — callers must merge or supply those. */
 export function analyzeHeuristic(
   requestText: string,
-  context?: Pick<IRequestAnalysisContext, "memories">,
+  context?: Opt<Pick<IRequestAnalysisContext, "memories">, Reason.OptionalContext>,
 ): Partial<IRequestAnalysis> {
   if (!requestText || requestText.trim().length === 0) {
     return {

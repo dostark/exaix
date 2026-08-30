@@ -28,11 +28,9 @@ for await (const entry of Deno.readDir(".")) {
   if (!entry.isDirectory || SKIP.includes(entry.name)) continue;
   const cmd = new Deno.Command("grep", {
     args: ["-rn", "--include=*.ts", "--include=*.js", "-E", PATTERN, entry.name],
-    // Some dev shells export LD_LIBRARY_PATH for unrelated native-toolchain reasons; Deno
-    // treats spawning a subprocess that would inherit it as a permission-sensitive op
-    // (dynamic-linker search path), which this script's `--allow-run=grep` grant doesn't
-    // cover. It has no bearing on grep's own resolution, so scrub it for the child (same
-    // convention as scripts/check_edition_graph.ts).
+    // Some dev shells export LD_LIBRARY_PATH; inheriting it makes subprocess spawn a
+    // permission-sensitive op that this script's `--allow-run=grep` grant doesn't cover,
+    // so scrub it for the child (same convention as check_edition_graph.ts).
     env: { LD_LIBRARY_PATH: "" },
     stdout: "piped",
     stderr: "null",

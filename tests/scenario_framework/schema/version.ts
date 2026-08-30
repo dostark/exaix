@@ -22,27 +22,14 @@
  */
 export const SCHEMA_VERSION = "1.0.0" as const;
 
-/**
- * Pattern used to validate version strings.
- * Matches semantic versioning format: X.Y.Z where X, Y, Z are non-negative integers.
- */
+/** Matches semantic versioning format X.Y.Z (non-negative integers). */
 export const VERSION_PATTERN = /^\d+\.\d+\.\d+$/;
 
-/**
- * Validates that a version string matches the expected format.
- * @param version The version string to validate
- * @returns true if the version matches the expected format
- */
 export function isValidVersion(version: string): boolean {
   return VERSION_PATTERN.test(version);
 }
 
-/**
- * Compares two version strings.
- * @param a First version string
- * @param b Second version string
- * @returns -1 if a < b, 0 if a === b, 1 if a > b
- */
+/** Standard comparator semantics: -1 if a < b, 0 if equal, 1 if a > b. */
 export function compareVersions(a: string, b: string): number {
   const aParts = a.split(".").map(Number);
   const bParts = b.split(".").map(Number);
@@ -55,12 +42,7 @@ export function compareVersions(a: string, b: string): number {
   return 0;
 }
 
-/**
- * Checks if a version is compatible with the current schema version.
- * Compatible means same major version and equal or lower minor/patch.
- * @param version The version to check
- * @returns true if the version is compatible
- */
+/** Compatible means same major version as SCHEMA_VERSION, regardless of minor/patch. */
 export function isCompatibleVersion(version: string): boolean {
   if (!isValidVersion(version)) return false;
 

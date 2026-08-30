@@ -37,17 +37,9 @@ export interface ISymbolExtractorOptions {
   importMap?: Record<string, string[]>;
 }
 
-/**
- * Edition-separation seam (Phase 115 Step 4): a pluggable, per-language symbol-index
- * extractor. Solo ships the deno-doc TS/JS {@link SymbolExtractor}; paid editions (P119)
- * register additional language extractors (e.g. tree-sitter) through the edition composer
- * via SymbolExtractorRegistry.
- */
+/** Edition-separation seam: a pluggable, per-language symbol-index extractor. Solo ships the deno-doc TS/JS {@link SymbolExtractor}; paid editions register additional language extractors (e.g. tree-sitter) via SymbolExtractorRegistry. */
 export interface ISymbolExtractor {
-  /**
-   * Extract a symbol index for the given files. Returns [] when the extractor does not
-   * support `options.primaryLanguage`.
-   */
+  /** Extract a symbol index; returns [] when the extractor does not support `options.primaryLanguage`. */
   extractSymbols(
     portalPath: string,
     filePaths: string[],
@@ -57,10 +49,7 @@ export interface ISymbolExtractor {
 
 /** Minimal interface for running `deno doc --json`; injectable for testing. */
 export interface IDocCommandRunner {
-  /**
-   * Run `deno doc --json` on the given entrypoint.
-   * @returns stdout JSON string, or null on non-zero exit / timeout.
-   */
+  /** Run `deno doc --json` on the given entrypoint; returns stdout JSON, or null on failure/timeout. */
   run(entrypoint: string, portalPath: string): Promise<string | null>;
 }
 
@@ -203,10 +192,7 @@ function computePageRankScores(
 // SymbolExtractor
 // ---------------------------------------------------------------------------
 
-/**
- * Normalise raw `deno doc --json` output into the legacy flat-node format.
- * Handles both Deno 1.x (bare array) and Deno 2.x (`{version, nodes: {...}}`).
- */
+/** Normalise raw `deno doc --json` output into the legacy flat-node format. Handles both Deno 1.x (bare array) and Deno 2.x (`{version, nodes: {...}}`). */
 function parseDenoDocNodes(raw: string): IDenoDocNode[] {
   const parsed = JSON.parse(raw);
 
@@ -267,12 +253,7 @@ export class SymbolExtractor implements ISymbolExtractor {
     this._runner = runner;
   }
 
-  /**
-   * Extract symbols from the given file paths.
-   * When many files are provided, groups by directory and runs `deno doc --json`
-   * per directory with bounded concurrency. Deduplicates symbols by name + file path.
-   * Returns [] immediately for non-TypeScript/JavaScript portals.
-   */
+  /** Extract symbols from the given file paths. When many files are provided, groups by directory and runs `deno doc --json` per directory with bounded concurrency. Deduplicates symbols by name + file path. Returns [] immediately for non-TypeScript/JavaScript portals. */
   async extractSymbols(
     portalPath: string,
     filePaths: string[],

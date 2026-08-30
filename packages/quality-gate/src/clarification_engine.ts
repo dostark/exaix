@@ -84,11 +84,7 @@ Each question must include: id (format r${roundNumber}q<N>, 1-based), question (
 // ClarificationEngine
 // ---------------------------------------------------------------------------
 
-/**
- * Manages multi-turn clarification Q&A sessions between the planning agent
- * (LLM) and the user, iterating until the agent is satisfied or max rounds
- * are reached.
- */
+/** Manages clarification rounds until satisfaction or the configured limit. */
 export class ClarificationEngine {
   private readonly provider: IModelProvider;
   private readonly validator: IOutputValidator;
@@ -108,10 +104,7 @@ export class ClarificationEngine {
   // Public API
   // ---------------------------------------------------------------------------
 
-  /**
-   * Creates a new clarification session and generates Round 1 questions.
-   * Falls back to an empty round if the LLM is unavailable.
-   */
+  /** Creates a session with an empty first round when the LLM is unavailable. */
   async startSession(
     requestId: string,
     body: string,
@@ -130,10 +123,7 @@ export class ClarificationEngine {
     return { ...session, rounds: [round1] };
   }
 
-  /**
-   * Incorporates user answers into the current round, then either finalises
-   * the session (agent satisfied or max rounds) or adds the next round.
-   */
+  /** Applies answers and either finalizes the session or appends another round. */
   async processAnswers(
     session: IClarificationSession,
     answers: Record<string, string>,
@@ -197,10 +187,7 @@ export class ClarificationEngine {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  /**
-   * Generates a new round by calling the planning agent. Falls back to an
-   * empty-questions round if the LLM fails or returns invalid JSON.
-   */
+  /** Returns an empty-question round when LLM output fails or is invalid. */
   private async _generateRound(
     session: IClarificationSession,
     roundNumber: number,

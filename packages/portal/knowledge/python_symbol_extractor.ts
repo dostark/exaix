@@ -45,17 +45,7 @@ const CAPTURE_KIND: Record<string, ISymbolEntry["kind"]> = {
 // PythonSymbolExtractor
 // ---------------------------------------------------------------------------
 
-/**
- * Python tree-sitter symbol extractor — Solo (MIT) tier.
- *
- * Uses `npm:tree-sitter-python` WASM grammar and the bundled `tags.scm` query.
- * Extracts:
- * - `function_definition` → `function`
- * - `class_definition` → `class`
- * - module-level UPPER_CASE assignment → `const`
- *
- * Returns `[]` for any `primaryLanguage` other than `"python"`.
- */
+/** Python tree-sitter symbol extractor — Solo (MIT) tier. Returns `[]` for any `primaryLanguage` other than `"python"`. */
 export class PythonSymbolExtractor extends TreeSitterSymbolExtractor {
   protected readonly languageName = "python";
   protected readonly grammarWasmSpecifier = "npm:tree-sitter-python/tree-sitter-python.wasm";
@@ -130,12 +120,7 @@ export class PythonSymbolExtractor extends TreeSitterSymbolExtractor {
   // Helpers
   // -----------------------------------------------------------------------
 
-  /**
-   * Build a one-line signature from the definition node text.
-   * For function definitions, extract the `def name(...)` line.
-   * For class definitions, extract `class Name`.
-   * For constants, extract `NAME = ...`.
-   */
+  /** Build a one-line signature from the definition node's first line. */
   private _buildSignature(
     nodeText: string,
     nodeType: string,
@@ -155,12 +140,7 @@ export class PythonSymbolExtractor extends TreeSitterSymbolExtractor {
     return firstLine;
   }
 
-  /**
-   * Extract the docstring from a function/class body (the first string literal).
-   * Python docstrings are either:
-   * - `"""..."""` (triple double-quotes)
-   * - `'''...'''` (triple single-quotes)
-   */
+  /** Extract the first triple-quoted (`"""` or `'''`) docstring from a definition body. */
   private _extractDocstring(nodeText: string): string | undefined {
     // Match the first triple-quoted string after the colon
     const m = nodeText.match(/"""(.*?)"""/s);

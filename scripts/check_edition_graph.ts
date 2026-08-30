@@ -51,12 +51,9 @@ const DEFAULT_ENTRIES = ["apps/daemon/main.ts", "apps/exactl/main.ts"];
 /** Hard cap on the `deno info` resolve so a hung subprocess cannot stall the CI gate. */
 const DENO_INFO_TIMEOUT_MS = 120_000;
 
-/**
- * Pure core: return every STATIC edge whose target tier is strictly higher than its source
- * tier. Edges between untiered modules (scripts/, tests/, external) are ignored, as are
- * dynamic edges (the sanctioned edition-gated load) and intra-/down-tier edges. This mirrors
- * the `[edition-leak]` static rule exactly, but over the resolved graph rather than source text.
- */
+/** Pure core: returns every STATIC edge whose target tier is strictly higher than its source
+ * tier, ignoring untiered endpoints, dynamic (sanctioned) edges, and intra-/down-tier edges.
+ * Mirrors the `[edition-leak]` static rule over the resolved graph rather than source text. */
 export function findStaticEditionLeaks(edges: IGraphEdge[]): IStaticEditionLeak[] {
   const leaks: IStaticEditionLeak[] = [];
   for (const edge of edges) {
@@ -98,10 +95,9 @@ function repoRelative(specifier: string, repoRootUrl: string): string | null {
 async function resolveGraphEdges(entry: string, repoRootUrl: string): Promise<IGraphEdge[]> {
   const cmd = new Deno.Command("deno", {
     args: ["info", "--json", entry],
-    // Some dev shells export LD_LIBRARY_PATH for unrelated native-toolchain reasons; Deno
-    // treats spawning a subprocess that would inherit it as a distinct permission-sensitive
-    // op (dynamic-linker search path), which this script's --allow-run=deno grant doesn't
-    // cover. It has no bearing on `deno info`'s own resolution, so scrub it for the child.
+    // Some dev shells export LD_LIBRARY_PATH; inheriting it makes subprocess spawn a
+    // distinct permission-sensitive op that this script's --allow-run=deno grant doesn't
+    // cover, so scrub it for the child (irrelevant to `deno info`'s own resolution).
     env: { LD_LIBRARY_PATH: "" },
     stdout: "piped",
     stderr: "piped",

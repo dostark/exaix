@@ -11,10 +11,6 @@ import { assertEquals, assertExists } from "@std/assert";
 import { OpenAIProvider } from "@exaix/ai-openai";
 import type { IGenerateResult } from "../../src/providers/common.ts";
 
-/**
- * Stub attemptGenerate on OpenAIProvider to bypass real network call.
- * Validates that the base class plumbing correctly surfaces the IGenerateResult.
- */
 Deno.test("Provider.generate returns IGenerateResult with usage and cost", async () => {
   const provider = new OpenAIProvider({ apiKey: "test" });
 

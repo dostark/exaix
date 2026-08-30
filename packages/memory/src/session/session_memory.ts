@@ -141,13 +141,6 @@ export const DEFAULT_SESSION_MEMORY_CONFIG: SessionMemoryConfig = {
 
 // ===== Session Memory Service =====
 
-/**
- * Session Memory Service
- *
- * Provides automatic memory lookup and context enhancement for agent execution.
- * Integrates with MemoryBankService for data storage and MemoryEmbeddingService
- * for semantic search.
- */
 export class SessionMemoryService {
   private config: SessionMemoryConfig;
   private _tieredEntries: Map<string, ITieredMemoryEntry> = new Map();
@@ -156,8 +149,8 @@ export class SessionMemoryService {
   constructor(
     private memoryBank: IMemoryBankService,
     private embeddingService: IMemoryEmbeddingService,
-    config?: Partial<SessionMemoryConfig>,
-    private tieredEntriesPath?: string,
+    config?: Opt<Partial<SessionMemoryConfig>, Reason.FactoryPreset>,
+    private tieredEntriesPath?: Opt<string, Reason.ExecutionConfig>,
   ) {
     this.config = { ...DEFAULT_SESSION_MEMORY_CONFIG, ...config };
   }
@@ -187,16 +180,6 @@ export class SessionMemoryService {
     await Deno.writeTextFile(p, JSON.stringify(entries, null, 2));
   }
 
-  /**
-   * Look up relevant memories for a request
-   *
-   * Performs semantic search across memory bank to find relevant past
-   * interactions, learnings, and patterns.
-   *
-   * @param query - The request or query to find memories for
-   * @param options - Optional override configuration
-   * @returns Array of relevant memory items
-   */
   async lookupMemories(
     query: string,
     tokenCap?: Opt<number, Reason.ExecutionConfig>,
@@ -309,14 +292,6 @@ export class SessionMemoryService {
 
     return cappedMemories;
   }
-  /**
-   * Looks up memories and formats them into a context string that can be
-   * injected into agent prompts.
-   *
-   * @param request - The original request
-   * @param options - Optional configuration overrides
-   * @returns Enhanced request with memory context
-   */
   async enhanceRequest(
     request: string,
     options?: Opt<Partial<SessionMemoryConfig>, Reason.ExecutionConfig>,
@@ -360,13 +335,6 @@ export class SessionMemoryService {
     };
   }
 
-  /**
-   * Creates a new learning entry in the memory bank that can be retrieved
-   * in future sessions.
-   *
-   * @param insight - The insight to save
-   * @returns Save result with learning ID if successful
-   */
   async saveInsight(insight: Insight): Promise<SaveInsightResult> {
     await this.ensureTieredEntriesLoaded();
     try {
@@ -424,13 +392,7 @@ export class SessionMemoryService {
     }
   }
 
-  /**
-   * Promote tiered memory entries up the hierarchy.
-   * WORKING → EPISODIC: when promotionScore exceeds threshold.
-   * EPISODIC → SEMANTIC: when accessCount exceeds threshold.
-   * SEMANTIC entries are never auto-demoted.
-   * @returns Number of entries promoted.
-   */
+  /** SEMANTIC entries are never auto-demoted. */
   async promoteMemories(): Promise<number> {
     let promotedCount = 0;
 
@@ -459,11 +421,7 @@ export class SessionMemoryService {
     return promotedCount;
   }
 
-  /**
-   * Record access to a tiered memory entry, incrementing access count
-   * and updating the last-accessed timestamp.
-   * @param index - The 1-based index of the entry to access.
-   */
+  /** @param index - 1-based index into the tiered entries (not 0-based). */
   async accessMemory(index: number): Promise<void> {
     await this.ensureTieredEntriesLoaded();
     const keys = Array.from(this._tieredEntries.keys());
@@ -477,12 +435,6 @@ export class SessionMemoryService {
     }
   }
 
-  /**
-   * Save multiple insights from agent execution
-   *
-   * @param insights - Array of insights to save
-   * @returns Array of save results
-   */
   async saveInsights(insights: Insight[]): Promise<SaveInsightResult[]> {
     const results: SaveInsightResult[] = [];
     for (const insight of insights) {
@@ -491,15 +443,6 @@ export class SessionMemoryService {
     }
     return results;
   }
-  /**
-   * Get memories by tag
-   *
-   * Retrieves memories that match specific tags.
-   *
-   * @param tags - Tags to search for
-   * @param options - Optional configuration
-   * @returns Matching memory items
-   */
   async getMemoriesByTag(
     tags: string[],
     options?: Opt<Partial<SessionMemoryConfig>, Reason.ExecutionConfig>,
@@ -520,17 +463,8 @@ export class SessionMemoryService {
     }));
   }
 
-  /**
-   * Get recent execution memories
-   *
-   * Retrieves memories from recent executions for a specific portal.
-   *
-   * @param portal - Portal to get executions for
-   * @param limit - Maximum number of executions
-   * @returns Memory items from executions
-   */
   async getRecentExecutions(
-    portal?: string,
+    portal?: Opt<string, Reason.OptionalContext>,
     limit: number = 5,
   ): Promise<MemoryItem[]> {
     const executions = await this.memoryBank.getExecutionHistory(portal, limit);
@@ -544,11 +478,6 @@ export class SessionMemoryService {
     }));
   }
 
-  /**
-   * Update configuration
-   *
-   * @param config - New configuration values
-   */
   updateConfig(config: Partial<SessionMemoryConfig>): void {
     this.config = { ...this.config, ...config };
   }
@@ -719,10 +648,6 @@ ${memory.content}`;
     }
   }
 
-  /**
-   * Compute tier-based relevance boosts for all tiered entries.
-   * WORKING → +0.3, EPISODIC → +0.2, SEMANTIC → +0.1
-   */
   private _computeTierBoosts(): Map<string, number> {
     const boosts = new Map<string, number>();
     for (const [id, entry] of this._tieredEntries) {
@@ -741,10 +666,6 @@ ${memory.content}`;
     return boosts;
   }
 
-  /**
-   * Extract learning ID from a memory item's source field.
-   * Source format: "learning:<uuid>" or "execution:<trace_id>".
-   */
   private _extractLearningId(memory: MemoryItem): string | undefined {
     if (!memory.source) return undefined;
     const match = memory.source.match(/^learning:(.+)$/);

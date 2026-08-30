@@ -46,7 +46,7 @@ export class RequestParser {
       // Normalize status to canonical set (guards against malformed/unknown values)
       frontmatter.status = coerceRequestStatus(frontmatter.status);
 
-      // Runtime guards for Phase 49 structured fields — strip malformed values.
+      // Runtime guards for structured fields — strip malformed values.
       await this.validateAcceptanceCriteria(frontmatter, filePath);
       await this.validateExpectedOutcomes(frontmatter, filePath);
       await this.validateScopeField(frontmatter, filePath);

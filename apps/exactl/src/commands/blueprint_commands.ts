@@ -46,9 +46,7 @@ export interface IBlueprintFrontmatterData {
   [key: string]: string | string[] | boolean | undefined;
 }
 
-/**
- * Filters for the blueprint list command (Phase 93 Solo salvage).
- */
+/** Filters for the blueprint list command. */
 export interface IBlueprintListOptions {
   /** Only return blueprints whose `capabilities` array contains this identifier. */
   capability?: string;
@@ -71,11 +69,8 @@ export interface IBlueprintRemoveOptions {
   force?: boolean;
 }
 
-/**
- * Minimal default system prompt used when `create` is given neither an explicit
- * prompt nor a `--from` prototype. Includes the mandatory contract tags so the
- * generated blueprint passes validation.
- */
+// Default system prompt used when `create` gets neither an explicit prompt nor a
+// `--from` prototype; includes the mandatory contract tags so the blueprint validates.
 const DEFAULT_SYSTEM_PROMPT = `# Agent
 
 You are a helpful AI agent. Analyse the request and respond using the required
@@ -268,10 +263,7 @@ export class BlueprintCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Extract frontmatter from blueprint content.
-   * Supports both TOML (+++) and YAML (---) formats for backwards compatibility.
-   */
+  /** Extract frontmatter, supporting both TOML (+++) and YAML (---) formats. */
   private extractTomlFrontmatter(content: string): {
     frontmatter: IBlueprintFrontmatterData | null;
     body: string;
@@ -304,11 +296,8 @@ export class BlueprintCommands extends BaseCommand {
     };
   }
 
-  /**
-   * Derive the lifecycle status from the `deprecated` flag — the single source
-   * of truth that routing/capability matching consumes. The value may arrive as
-   * a real boolean (TOML) or the string "true" (loose YAML parsing).
-   */
+  // Derive lifecycle status from `deprecated`, which may arrive as a real boolean
+  // (TOML) or the string "true" (loose YAML parsing).
   private deriveStatus(frontmatter: IBlueprintFrontmatterData): BlueprintStatus {
     const deprecated = frontmatter.deprecated;
     const isDeprecated = deprecated === true || deprecated === "true";
@@ -348,12 +337,9 @@ export class BlueprintCommands extends BaseCommand {
     return blueprintPath;
   }
 
-  /**
-   * Load an existing identity by id as a creation prototype (the `--from` source).
-   * Returns its model, capabilities, and body, or null if the identity does not
-   * exist. Replaces the retired separate `.template` library (Phase 131 cutover):
-   * a concrete identity is the single source of truth for scaffolding a new one.
-   */
+  // Loads an existing identity by id as a `--from` creation prototype (a concrete
+  // identity, not a separate template library) — returns its model, capabilities,
+  // and body, or null if the identity does not exist.
   private loadPrototype(identityId: string): { model: string; capabilities: string[]; systemPrompt: string } | null {
     const filePath = join(this.getBlueprintsDir(), `${identityId}.md`);
     try {
@@ -369,10 +355,8 @@ export class BlueprintCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Resolve the effective model / capabilities / system prompt for `create`,
-   * seeding any unset field from the `--from` prototype identity when given.
-   */
+  // Resolves the effective model / capabilities / system prompt for `create`,
+  // seeding any unset field from the `--from` prototype identity when given.
   private applyPrototype(
     options: IBlueprintCreateOptions,
   ): { model: string; capabilities: string[]; systemPrompt?: string } {
@@ -485,8 +469,7 @@ export class BlueprintCommands extends BaseCommand {
     model: string,
     options: IBlueprintCreateOptions,
   ): Promise<void> {
-    // YAML (---) is the canonical frontmatter format (Phase 131 Step 2: the
-    // TOML→YAML migration is finished and the runtime loader no longer parses +++).
+    // YAML (---) is the canonical frontmatter format; the runtime loader no longer parses +++.
     const content = `---
 ${stringifyYaml(frontmatter)}---
 
@@ -552,10 +535,7 @@ ${systemPrompt}
     }
   }
 
-  /**
-   * List all blueprints, optionally filtered by lifecycle status and/or a
-   * declared capability (Phase 93 Solo salvage).
-   */
+  /** List all blueprints, optionally filtered by lifecycle status and/or a declared capability. */
   async list(options: IBlueprintListOptions = {}): Promise<IBlueprintMetadata[]> {
     const blueprintsDir = this.getBlueprintsDir();
     const results: IBlueprintMetadata[] = [];
@@ -600,15 +580,9 @@ ${systemPrompt}
     return true;
   }
 
-  /**
-   * Mark a blueprint as deprecated (Phase 93 Solo salvage). Sets the
-   * `deprecated` frontmatter flag — the field that routing/capability matching
-   * (`packages/routing/src/capability_matcher.ts`) reads to exclude a blueprint
-   * from selection — so deprecation has a real runtime effect. The blueprint
-   * file remains the source of truth: this rewrites the flag in place,
-   * preserving the original format, field order, and comments, via an atomic
-   * write. The file is not deleted.
-   */
+  // Sets the `deprecated` frontmatter flag, which capability_matcher.ts reads to exclude
+  // a blueprint from selection. Rewrites the flag in place via an atomic write, preserving
+  // format, field order, and comments; the file itself is not deleted.
   async deprecate(identityId: string): Promise<void> {
     try {
       const blueprintPath = await this.getExistingBlueprintPath(identityId);
@@ -631,11 +605,8 @@ ${systemPrompt}
     }
   }
 
-  /**
-   * Surgically set `deprecated = true` inside a blueprint's frontmatter block,
-   * preserving the original delimiter style (TOML `+++` or YAML `---`) and all
-   * other lines. Replaces an existing `deprecated` entry or appends one.
-   */
+  // Sets `deprecated = true` inside a blueprint's frontmatter block, preserving the
+  // original delimiter style (TOML `+++` or YAML `---`) and all other lines.
   private setFrontmatterDeprecated(content: string, identityId: string): string {
     const isToml = /^\+\+\+\n/.test(content);
     const isYaml = /^---\n/.test(content);
@@ -739,10 +710,7 @@ ${systemPrompt}
     }
   }
 
-  /**
-   * Validate a blueprint file at an arbitrary path.
-   * Unlike validate(), this does not look up the blueprints directory.
-   */
+  /** Validate a blueprint file at an arbitrary path (unlike validate(), no directory lookup). */
   async validateFile(filePath: string): Promise<IBlueprintValidationResult> {
     const errors: string[] = [];
     const warnings: string[] = [];

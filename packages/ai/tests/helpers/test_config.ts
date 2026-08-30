@@ -25,9 +25,7 @@ import type { IModelProvider } from "../../src/types.ts";
 import { ProviderFactory } from "../../src/provider_factory.ts";
 
 /**
- * Create a minimal config for testing.
- * The aiConfig parameter is a partial input that gets parsed through AiConfigSchema
- * to apply defaults.
+ * Create a minimal config for testing; aiConfig is parsed through AiConfigSchema to apply defaults.
  */
 export function createTestConfig(aiConfig?: Partial<AiConfig>): Config {
   // Parse through schema to apply defaults

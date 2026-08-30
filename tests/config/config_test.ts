@@ -375,10 +375,8 @@ Deno.test("ConfigService handles validation errors", async (t) => {
     await t.step("should exit on missing required fields", () => {
       const configPath = `${tempDir}/test-missing-fields.toml`;
 
-      // Create config missing the required [system] section entirely. All
-      // other top-level sections (paths, watcher, skills, etc.) now default
-      // to {} when omitted, so [system] is the only field ConfigSchema still
-      // requires — every field inside it has its own default or is optional.
+      // [system] is the only top-level section ConfigSchema still requires; all others
+      // default to {} when omitted.
       Deno.writeTextFileSync(
         configPath,
         `
@@ -874,8 +872,7 @@ Deno.test("ConfigSchema accepts provider_strategy.task_routing", () => {
   }
 });
 
-// Regression: ensure sample config includes bootstrap entries
-// Phase 137: most settings moved to Config DB; sample TOML is bootstrap-only.
+// Regression: most settings live in the Config DB; sample TOML is bootstrap-only.
 Deno.test("[regression] Sample config includes bootstrap entries", () => {
   const samplePath = "templates/exa.config.sample.toml";
   const sampleContent = Deno.readTextFileSync(samplePath);

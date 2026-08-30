@@ -9,10 +9,7 @@ import type { IExecutionMemory, IProposalLearning } from "@exaix/schemas/memory_
 import { ExecutionStatus, LANG_TYPESCRIPT, MemoryReferenceType } from "@exaix/core";
 import { ConfidenceAssessmentLevel, LearningCategory, MemoryBankSource, MemoryScope } from "@exaix/core";
 
-/**
- * Extracts learnings from agent executions.
- * Separated from MemoryExtractorService to reduce complexity.
- */
+/** Split out of MemoryExtractorService to keep that class's complexity in check. */
 export class LearningExtractor {
   /**
    * Analyze an execution and extract potential learnings

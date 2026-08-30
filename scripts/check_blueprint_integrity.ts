@@ -90,12 +90,8 @@ function loadSkillIds(skillsDir: string): Set<string> {
   return ids;
 }
 
-/**
- * Real identities referenced by ANY flow file (recursively): both runnable
- * `*.flow.yaml` and `*.flow.template.yaml` pattern templates. `{{placeholder}}`
- * agent slots in templates are NOT identity references and are skipped (the
- * `identity:` regex only matches bare identifiers, never `{{…}}`).
- */
+/** Real identities referenced by any flow file (recursively, `*.flow.yaml` and
+ * `*.flow.template.yaml`); `{{placeholder}}` agent slots are skipped. */
 function loadFlowIdentityRefs(flowsDir: string): Set<string> {
   const refs = new Set<string>();
 

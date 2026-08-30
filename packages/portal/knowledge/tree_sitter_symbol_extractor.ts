@@ -28,14 +28,7 @@ import { resolveNpmPackageFile, resolveNpmWasmPath } from "./npm_wasm_loader.ts"
 // Base class
 // ---------------------------------------------------------------------------
 
-/**
- * Shared base for tree-sitter-based extractors. Subclasses implement:
- * - `languageName` — the primary language this extractor handles (e.g. "python")
- * - `grammarWasmSpecifier` — the npm specifier for the grammar WASM
- * - `scmQuerySource()` — the .scm query string
- * - `processMatch(match, file)` — convert a query match to ISymbolEntry[]
- * - `extractImports(source)` — extract import targets for pageRank
- */
+/** Shared base for tree-sitter-based extractors; see abstract members below. */
 export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
   protected abstract readonly languageName: string;
   protected abstract readonly grammarWasmSpecifier: string;
@@ -150,10 +143,9 @@ export abstract class TreeSitterSymbolExtractor implements ISymbolExtractor {
       }
     }
 
-    // Deduplicate by name: keep the last entry per name (preferred over type).
-    // When both "type" and "class"/"interface" match the same symbol (e.g.,
-    // a Go struct matching both generic type_spec and specific struct_type),
-    // the more specific kind wins by appearing later in tree-sitter output.
+    // Deduplicate by name, last-wins: when a generic and a specific kind both
+    // match the same symbol (e.g. a Go struct's type_spec and struct_type),
+    // the more specific kind appears later in tree-sitter output.
     const seen = new Map<string, number>();
     const deduped: ISymbolEntry[] = [];
     for (const sym of allSymbols) {

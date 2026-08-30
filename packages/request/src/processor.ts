@@ -126,24 +126,15 @@ export interface IRequestProcessorConfig {
   onClarificationCreated?: (traceId: string, requestId: string) => Promise<void>;
   /** Optional callback invoked when a clarification wait state should be resolved. */
   onClarificationResolved?: (traceId: string) => Promise<void>;
-  /**
-   * Optional callback invoked when the refinement gate delegates to a session
-   * tool. Fires after config-check: session_delegate.enabled && "refinement" in gates.
-   * The daemon wires this to prepareBrief + park + launch.
-   */
+  /** Optional callback fired after config-check (session_delegate.enabled && "refinement"
+   * in gates); the daemon wires this to prepareBrief + park + launch. */
   onDelegateRefinement?: (traceId: string, requestId: string, body: string) => Promise<void>;
-  /**
-   * Optional FlowRunner for executing flow requests.
-   * When set, processFlowRequest delegates to flowRunner.execute()
-   * instead of generating a stub plan.
-   */
+  /** Optional FlowRunner for executing flow requests; when set, processFlowRequest
+   * delegates to flowRunner.execute() instead of generating a stub plan. */
   flowRunner?: IFlowRunner;
 
-  /**
-   * Resolves a flow blueprint by id for processFlowRequest. Without it the processor cannot
-   * hand FlowRunner a real flow — the previous code cast `{ id }` to IFlow, leaving `steps`
-   * undefined and crashing the runner.
-   */
+  /** Resolves a flow blueprint by id for processFlowRequest — without it, processFlowRequest
+   * cannot construct a full `IFlow` (with `steps`) for FlowRunner. */
   flowLoader?: IFlowLoaderService;
 }
 
@@ -152,10 +143,8 @@ export interface IRequestProcessorConfig {
 // ============================================================================
 
 export class RequestProcessor {
-  /**
-   * Phase 132 (GAP-4): the request frontmatter's model intent fields, forwarded onto the
-   * plan so native execution applies request overrides (see PlanWriter.requestIntent).
-   */
+  /** Forwards the request frontmatter's model intent fields onto the plan so native
+   * execution applies request overrides (see PlanWriter.requestIntent). */
   private static requestIntentFromFrontmatter(frontmatter: IRequestFrontmatter): Partial<IModelIntent> {
     const intent: Partial<IModelIntent> = {};
     if (frontmatter.model_size !== undefined) intent.model_size = frontmatter.model_size as IModelIntent["model_size"];
@@ -200,7 +189,7 @@ export class RequestProcessor {
 
     this.db = ctx.db;
 
-    // Initialize milestone emitter(s): bus streaming + optional journal file (Phase 92)
+    // Initialize milestone emitter(s): bus streaming + optional journal file
     this.milestoneEmitter = buildMilestoneEmitterFromConfig(this.config);
 
     // Initialize services
@@ -264,11 +253,7 @@ export class RequestProcessor {
       failureThreshold: 3,
       resetTimeout: DEFAULT_AI_TIMEOUT_MS,
       halfOpenSuccessThreshold: 2,
-      // The I/O breaker guards plan-writing against genuine filesystem/I/O faults.
-      // A PlanValidationError means the LLM produced bad content for THIS request —
-      // it is per-request, retried locally, and must never count toward opening a
-      // cross-request breaker (which would starve every following identity). Only
-      // infrastructure failures should trip it.
+      // The I/O breaker guards plan-writing against genuine filesystem/I/O faults. A PlanValidationError means the LLM produced bad content for THIS request — it is per-request, retried locally, and must never count toward opening a cross-request breaker (which would starve every following identity). Only infrastructure failures should trip it.
       isCountableFailure: (error: Error) => !(error instanceof PlanValidationError),
     });
 
@@ -529,11 +514,7 @@ export class RequestProcessor {
     return this.processAgentRequest(opts);
   }
 
-  /**
-   * Resolve the flow blueprint, failing the request with a named cause when it cannot be
-   * loaded. A missing loader is a wiring fault rather than a bad request, so it is reported as
-   * such instead of silently degrading to a stub the runner cannot execute.
-   */
+  /** Resolve the flow blueprint, failing the request with a named cause when it cannot be loaded. A missing loader is a wiring fault rather than a bad request, so it is reported as such instead of silently degrading to a stub the runner cannot execute. */
   private async loadFlowOrFail(
     flowId: string,
     filePath: string,
@@ -555,12 +536,7 @@ export class RequestProcessor {
     }
   }
 
-  /**
-   * A session_delegate_cycle flow step needs a portal-configured worktree root and the
-   * request's PlanContext pointer before it can dispatch (Phase 174 Step 2 GAP-1). Flow
-   * YAML and request text cannot choose `executionRoot` — it is derived solely from the
-   * daemon's configured portal registry. Returns `{}` for a flow with no cycle step.
-   */
+  /** A session_delegate_cycle flow step needs a portal-configured worktree root and the request's PlanContext pointer before it can dispatch (Phase 174 Step 2 GAP-1). Flow YAML and request text cannot choose `executionRoot` — it is derived solely from the daemon's configured portal registry. Returns `{}` for a flow with no cycle step. */
   private resolveCycleExecutionContext(
     flow: IFlow,
     frontmatter: IRequestFrontmatter,
@@ -897,10 +873,7 @@ export class RequestProcessor {
   ): Promise<string> {
     const planResult = await this.ioBreaker.execute(() => this.planWriter.writePlan(result, metadata));
 
-    // Rule 3: the request's subject is NEVER overwritten by the agent's plan title — the request
-    // subject is authoritative and stable. The plan carries its own name in `title`; the request
-    // keeps its own subject. (Previously a fallback subject was "upgraded" to the agent title here;
-    // that cross-contamination is removed so subject and title stay distinct.)
+    // Rule 3: the request's subject is NEVER overwritten by the agent's plan title — the request subject is authoritative and stable. The plan carries its own name in `title`; the request keeps its own subject. (Previously a fallback subject was "upgraded" to the agent title here; that cross-contamination is removed so subject and title stay distinct.)
     await this.statusManager.updateStatus(filePath, RequestStatus.PLANNED, undefined);
 
     const logObj: LogMetadata = { plan_path: planResult.planPath, ...(extra ?? {}) };
@@ -913,11 +886,7 @@ export class RequestProcessor {
 // Exported helpers
 // ============================================================================
 
-/**
- * Build a capped Markdown summary of IPortalKnowledge for injection into agent prompts.
- * Includes: architecture overview (first 20 lines), top-5 key files, top-5 conventions
- * sorted by evidenceCount descending. Capped at maxLines lines.
- */
+/** Build a capped Markdown summary of IPortalKnowledge for injection into agent prompts. Includes: architecture overview (first 20 lines), top-5 key files, top-5 conventions sorted by evidenceCount descending. Capped at maxLines lines. */
 export function buildPortalKnowledgeSummary(
   knowledge: IPortalKnowledge,
   maxLines: Opt<number, Reason.SensibleDefault> = PORTAL_KNOWLEDGE_PROMPT_MAX_LINES,

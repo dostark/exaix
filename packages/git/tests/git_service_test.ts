@@ -24,19 +24,6 @@ import { createGitTestContext, GitTestHelper } from "@exaix/git/testing";
 import { createMockConfig } from "@exaix/git/testing";
 import { EventLogger } from "@exaix/core/logger";
 
-/**
- * Tests for Step 4.2: Git Integration (Identity Aware)
- *
- * Success Criteria:
- * - Auto-initializes git repository if not present
- * - Auto-configures git identity if missing
- * - Creates feature branches with naming convention: feat/{requestId}-{traceId}
- * - Commits with trace_id in commit message footer
- * - Handles branch name conflicts (appends timestamp)
- * - Validates changes exist before commit
- * - All git operations logged to IActivity Journal
- */
-
 Deno.test("GitService: auto-initializes repository if not present", async () => {
   const { repoDir, db, cleanup, git } = await createGitTestContext("git-test-init-");
   const helper = new GitTestHelper(repoDir);

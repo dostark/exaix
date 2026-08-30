@@ -70,12 +70,6 @@ Deno.test({
   },
 });
 
-// (The separate examples/ and templates/ directories were retired in the
-// Phase 131 catalog reconciliation: example stubs were merged into / promoted to
-// concrete identities, and templates were converted to skills + the --from CLI.
-// The catalog is now a flat set of concrete identities, covered by the tests above
-// and below.)
-
 // ── default_skills resolve to loadable .skill.md files ───────────────
 
 Deno.test({

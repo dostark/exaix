@@ -29,13 +29,8 @@ const PRODUCTION_ROOTS = ["apps", "packages"];
 /** Directory segments whose contents are tests or fixtures rather than shipped code. */
 const NON_PRODUCTION_SEGMENTS = ["/tests/", "/test/", "/fixtures/", "/node_modules/"];
 
-/**
- * Source with comments removed.
- *
- * The guard below asks whether a file *uses* the constant, not whether it mentions it: the
- * migrated call site explains in a comment why it no longer recomposes the path, and that
- * explanation is worth keeping.
- */
+/** Source with comments removed, so the guard below matches on constant *use*, not on a
+ * comment that merely mentions it. */
 function codeOnly(source: string): string {
   return source
     .replaceAll(/\/\*[\s\S]*?\*\//g, "")
@@ -55,13 +50,9 @@ async function productionSources(): Promise<string[]> {
   return files.sort();
 }
 
-/**
- * Statements that build a path by combining the blueprints directory with the flows subfolder.
- *
- * Recomposition is the defect, not any mention of the constant: comparing against it (as the
- * config schema's legacy-value refinement does) is legitimate, while joining it onto
- * `paths.blueprints` re-derives a setting the caller should have read.
- */
+/** Statements that build a path by combining the blueprints directory with the flows subfolder.
+ * Recomposition is the defect: comparing against the constant is legitimate, joining it onto
+ * `paths.blueprints` re-derives a setting the caller should have read. */
 function recompositionStatements(source: string): string[] {
   return source
     .split(/[;\n]/)
@@ -78,8 +69,6 @@ Deno.test("[flow-catalog] no production consumer recomposes the flows path from 
     const source = codeOnly(await Deno.readTextFile(file));
     // The defaults table's own declaration is the one legitimate composition site — identified
     // by what the file declares rather than by path, so the rule survives the table moving.
-    // (It currently lives in two files, `@exaix/core` and `@exaix/schemas`; unifying those is a
-    // separate concern from this guard.)
     if (/export const ExaPathDefaults\b/.test(source)) continue;
     for (const statement of recompositionStatements(source)) {
       offenders.push(`${relative(REPO_ROOT, file)}: ${statement}`);

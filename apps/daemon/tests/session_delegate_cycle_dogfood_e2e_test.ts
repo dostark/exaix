@@ -61,13 +61,9 @@ function planWithSteps(count: number): string {
   return sections.join("\n");
 }
 
-/**
- * Copies the real, unmodified `Blueprints/Flows/dogfood-meta-workflow.flow.yaml` (GAP-1
- * remediation, Phase 174 Step 7) so this test proves the literal shipped catalog artifact —
- * pre-gap (react) → next-steps (session_delegate_cycle) → post-gap (react) — dispatches
- * correctly on a real booted daemon, not a hand-maintained clone that can silently drift
- * from the real file's shape.
- */
+/** Copies the real, unmodified `Blueprints/Flows/dogfood-meta-workflow.flow.yaml` so this test
+ * proves the literal shipped catalog artifact dispatches correctly, not a hand-maintained clone
+ * that can silently drift from the real file's shape. */
 function copyRealDogfoodFlow(root: string): void {
   const dir = join(root, "Blueprints", "Flows");
   Deno.mkdirSync(dir, { recursive: true });
@@ -89,14 +85,9 @@ function copyDogfoodFlowIdentities(root: string): void {
   }
 }
 
-/**
- * Shadows `codex` on PATH for the daemon subprocess. The real codex adapter never passes
- * `--brief <path>` (that convention is test-only), so the shim locates the newest
- * `brief.json` under the Session tree itself — safe here because session_delegate_cycle
- * guarantees at most one delegation is in flight at a time. A brief whose `sequence`
- * appears in `hollowSequences` gets a "completed" return with empty `paths_touched`
- * instead of delegating to the real mock tool — the hollow-result failure arm.
- */
+/** Shadows `codex` on PATH; the shim locates the newest `brief.json` under the Session tree
+ * (safe since only one delegation is in flight at a time). A brief whose `sequence` appears in
+ * `hollowSequences` returns "completed" with empty `paths_touched` instead of delegating. */
 async function makeMockCodexBinDir(sessionDir: string, hollowSequences: number[] = []): Promise<string> {
   const binDir = await Deno.makeTempDir({ prefix: "mock-codex-bin-" });
   const shadowed = join(binDir, "codex");
@@ -176,16 +167,9 @@ function writeReviewPassFixture(recordingsDir: string): void {
 const REACT_COMPLETION_SUMMARY =
   "Completed the step successfully with high confidence. The implementation is correct and verified.";
 
-/**
- * The real flow's pre-gap/post-gap react steps need their own recordings: `MockLLMProvider`
- * only falls back to its generic pattern matcher when ZERO recordings are loaded at all, so
- * loading the review-pass recording above disables that fallback for every other prompt.
- * Neither step's output is asserted on directly by this test — session_delegate_cycle never
- * reads pre-gap's output, and post-gap's plain-text summary fails the daemon's unrelated
- * downstream plan-JSON validation exactly as a non-plan-shaped mock response would in any
- * other flow-ending react step; that failure is orthogonal to the session_delegate_cycle
- * behavior this test exists to prove and does not affect any assertion below.
- */
+/** The pre-gap/post-gap react steps need their own recordings: `MockLLMProvider` only falls
+ * back to its generic pattern matcher when ZERO recordings are loaded, so the review-pass
+ * recording above disables that fallback for every other prompt. Neither step's output is asserted on directly. */
 function writeReactCompletionFixture(recordingsDir: string, filename: string, identityName: string): void {
   Deno.mkdirSync(recordingsDir, { recursive: true });
   Deno.writeTextFileSync(
@@ -465,11 +449,8 @@ function hasRealOpencode(): boolean {
   }
 }
 
-/**
- * [live, operator-run] Uses the real, installed `opencode` CLI (no shadowed mock binary)
- * and a real Anthropic model for the review gate. Never runs in CI — an operator opts in
- * explicitly by exporting ANTHROPIC_API_KEY and having `opencode` authenticated locally.
- */
+/** [live, operator-run] Uses the real, installed `opencode` CLI and a real Anthropic model for
+ * the review gate. Never runs in CI; an operator opts in explicitly. */
 Deno.test({
   name: "[live, operator-run] a supported CLI completes a two-step hardened phase plan with real changed paths",
   // Deliberately requires an explicit opt-in flag, not just credential presence — this

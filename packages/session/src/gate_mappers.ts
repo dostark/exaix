@@ -86,13 +86,7 @@ export function buildReviewDecisionPatch(sessionReturn: ISessionDecisionResult):
   return status === ReviewStatus.REJECTED ? { status, rejection_reason: sessionReturn.summary } : { status };
 }
 
-/**
- * Record a delegated refinement as a schema-valid ClarificationSession (GAP-8).
- * A delegated enrichment is free-text, not an agent Q&A loop, so no synthetic
- * rounds are fabricated: an `enriched` return marks the session user-confirmed,
- * anything else (e.g. `abandoned`) marks it user-cancelled. The enrichment text
- * itself rides on the journaled return summary.
- */
+/** A delegated enrichment is free-text, not an agent Q&A loop, so no synthetic rounds are fabricated: an `enriched` return marks the session user-confirmed, anything else (e.g. `abandoned`) marks it user-cancelled. */
 export function buildClarificationFromDelegation(input: IRefinementClarificationInput): IClarificationSession {
   const status = input.sessionReturn.decision === "enriched"
     ? ClarificationSessionStatus.USER_CONFIRMED

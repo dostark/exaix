@@ -10,10 +10,6 @@ import type { IJournalService } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IActivityRecord, IJournalFilterOptions } from "@exaix/core/types";
 
-/**
- * Adapter that implements the IJournalService interface
- * and delegates to the core DatabaseService.
- */
 export class JournalServiceAdapter implements IJournalService {
   constructor(private db: IDatabaseService) {}
 
@@ -24,10 +20,7 @@ export class JournalServiceAdapter implements IJournalService {
     return await this.db.queryActivity(filters);
   }
 
-  /**
-   * Get distinct values for a field.
-   * Currently supports: actor, identity_id, action_type, target.
-   */
+  /** Get distinct values for a field (actor, identity_id, action_type, or target). */
   async getDistinctValues(field: string): Promise<string[]> {
     // Only allow specific fields for security and performance
     const allowedFields = ["actor", "identity_id", "action_type", "target"];

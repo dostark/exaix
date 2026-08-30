@@ -394,16 +394,9 @@ Deno.test(
 Deno.test(
   "ProviderFactory: createByName('default') honors config.ai_timeout.providers when config.ai is unset and config.models.default carries no timeout_ms",
   async () => {
-    // Live-observed bug: resolveOptions's `merged = {...baseAi, ...modelConfig}` spreads
-    // baseAi's hardcoded MOCK-provider fallback (`{ provider: MOCK, timeout_ms:
-    // DEFAULT_AI_TIMEOUT_MS }`, used whenever config.ai is unset) FIRST — so when
-    // modelConfig (config.models["default"]) has no timeout_ms of its own, the spread
-    // leaves baseAi's 30000ms fallback in merged.timeout_ms, which is truthy and wins over
-    // config.ai_timeout.providers[providerType] at the next `else if` branch. This silently
-    // defeats the ai_timeout.providers per-provider override for exactly the "config.ai
-    // unset, minimal config.models.default" shape createMockConfig-based callers (e.g. the
-    // eval-judge's callLlmEndpoint) use. A real headless-CLI judge call timed out at
-    // 30000ms even with ai_timeout.providers["claude-cli"] set to 300000.
+    // resolveOptions spreads `{...baseAi, ...modelConfig}`; baseAi's MOCK-provider fallback
+    // (timeout_ms: DEFAULT_AI_TIMEOUT_MS) is truthy, so when modelConfig has no timeout_ms of
+    // its own, that fallback wins over config.ai_timeout.providers[providerType] downstream.
     ProviderRegistry.clear();
     let capturedTimeoutMs: number | undefined;
     ProviderRegistry.registerWithMetadata(
@@ -856,16 +849,9 @@ Deno.test("ProviderFactory: getProviderInfoByName returns named provider details
   assertEquals(info.type, "mock");
 });
 
-// ---------------------------------------------------------------------------
-// The provider id the daemon journals must name the strategy that actually ran.
-//
-// `generateProviderId` builds the mock id independently of MockProviderFactory, and it is what
-// `getProviderInfoByName` — and therefore the daemon's own `daemon.ready` event — reports. It
-// derived the id from the CONFIGURED strategy, so every scenario journal said
-// `mock-recorded-<model>` while MockLLMProvider silently answered from regex patterns:
-// `recorded` is the default and no fixtures_dir was ever configured. Anyone auditing which
-// responses a scenario actually saw was given the wrong answer.
-// ---------------------------------------------------------------------------
+// `generateProviderId` names the mock's provider id independently of MockProviderFactory, and
+// `getProviderInfoByName` (surfaced in the daemon's `daemon.ready` event) reports it — so it
+// must reflect the strategy that actually ran, not merely the one configured.
 
 Deno.test("ProviderFactory: a mock with no fixtures is reported as pattern, not recorded", () => {
   const config = createTestConfig();
@@ -883,7 +869,7 @@ Deno.test("ProviderFactory: a mock with no fixtures is reported as pattern, not 
 // recordings can be supplied without going through config resolution.
 
 // ============================================================================
-// Capture Wiring Tests (Phase 157 Step 2)
+// Capture Wiring Tests
 // ============================================================================
 
 parallelSafeTest(

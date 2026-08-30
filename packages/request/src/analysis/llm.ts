@@ -140,11 +140,7 @@ function buildFallback(requestText: string): IRequestAnalysis {
 // LlmAnalyzer class
 // ---------------------------------------------------------------------------
 
-/**
- * Produces a full `IRequestAnalysis` using an LLM provider.
- * Uses `IOutputValidator.validate()` with `RequestAnalysisSchema` to parse
- * the LLM's JSON response, and returns a safe fallback on any failure.
- */
+/** Produces a full `IRequestAnalysis`, falling back to a safe default on any failure. */
 export class LlmAnalyzer {
   constructor(
     private readonly provider: IModelProvider,

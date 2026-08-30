@@ -15,7 +15,7 @@ import type { IFlowStep } from "@exaix/schemas/flow.ts";
 const FLOWS_DIR = "./Blueprints/Flows";
 const BLUEPRINTS_DIR = "./Blueprints";
 
-/** Phase 159 mechanism-proof fixtures — not part of the shipped 17-flow/96-step catalog. */
+/** Mechanism-proof fixtures — not part of the shipped 17-flow/96-step catalog. */
 const NON_CATALOG_FIXTURES = new Set([
   "strategy-comparison-cli-delegate.flow.yaml",
   "strategy-comparison-react.flow.yaml",
@@ -24,7 +24,7 @@ const NON_CATALOG_FIXTURES = new Set([
 
 type Decision = "react" | "cli_delegate" | "no-strategy" | "n/a-dynamic" | "session_delegate_cycle";
 
-/** Mirrors the "Flow catalog strategy audit table" in phase-159-flow-step-execution-strategy.md Step 7. */
+/** Mirrors the "Flow catalog strategy audit table" in phase-159-flow-step-execution-strategy.md. */
 const AUDIT_TABLE: Record<string, Record<string, Decision>> = {
   "analyze-codebase": { "explore": "n/a-dynamic", "write-report": "no-strategy" },
   "api-design": {

@@ -34,10 +34,6 @@ Deno.test("tokenMapperOpenRouter returns undefined when usage is absent", () => 
 });
 
 Deno.test("tokenMapperOpenRouter maps pass-through completion_tokens_details.reasoning_tokens into TokenMap.reasoning_tokens", () => {
-  // Phase 167 Step 12 — RED-first test. OpenRouter is an OpenAI-compatible gateway that
-  // proxies upstream reasoning models (o1/o3/gpt-5, gemini-thinking, etc.) and passes their
-  // completion_tokens_details.reasoning_tokens through verbatim, but IOpenRouterUsage only
-  // declared the OpenAI-shaped top-level fields — the breakdown was dropped at parse time.
   const mapper = tokenMapperOpenRouter("openrouter/o3-mini");
   const mapped = mapper({
     usage: {
