@@ -583,10 +583,8 @@ describe("ReviewCommands", () => {
     });
   });
 
-  /**
-   * Regression test: approve/show/reject previously only searched the workspace root, not portal
-   * repos ("Branch not found" error); findRepoForBranch() now searches all repositories.
-   */
+  /** Regression: approve/show/reject only searched the workspace root, not portal repos
+   *  ("Branch not found"); findRepoForBranch() now searches all repositories. */
   it("[regression] approve() should find and merge branches in portal repositories", async () => {
     // Create a portal repository
     const portalDir = await Deno.makeTempDir({ prefix: "portal-repo-" });

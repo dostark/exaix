@@ -1261,11 +1261,7 @@ export class ReviewCommands extends BaseCommand {
     }
   }
 
-  /**
-   * Reject review - delete branch without merging
-   * @param branchName Branch name or request_id
-   * @param reason Rejection reason
-   */
+  /** Reject review: delete `branchName` (or request_id) without merging, recording `reason`. */
   async reject(branchName: string, reason: string): Promise<void> {
     try {
       // Validate input

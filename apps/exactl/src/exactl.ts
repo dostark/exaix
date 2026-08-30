@@ -635,7 +635,7 @@ export const __test_command = new Command()
           }),
       ),
   )
-  // Wait state commands (Phase 84)
+  // Wait state commands
   .command(
     "wait",
     new Command()
@@ -2829,7 +2829,7 @@ const toolCommand = new Command()
 __test_command.command("tool", toolCommand);
 
 // ---------------------------------------------------------------------------
-// skills subcommand alias (Phase 70: Wiring Skills Service)
+// skills subcommand alias (wires the Skills Service)
 // ---------------------------------------------------------------------------
 
 const skillsCommand = new Command()
@@ -2888,7 +2888,7 @@ const skillsCommand = new Command()
 __test_command.command("skills", skillsCommand);
 
 // ---------------------------------------------------------------------------
-// watch subcommand (Phase 67: Live Execution Streaming)
+// watch subcommand (live execution streaming)
 // ---------------------------------------------------------------------------
 
 const watchCommand = new Command()
@@ -2908,7 +2908,7 @@ const watchCommand = new Command()
 __test_command.command("watch", watchCommand);
 
 // ---------------------------------------------------------------------------
-// eval subcommand (Phase 100: Evaluation Framework)
+// eval subcommand (evaluation framework)
 // ---------------------------------------------------------------------------
 
 const evalCommand = new Command()
@@ -3025,11 +3025,8 @@ __test_command.command("eval", evalCommand);
 
 export async function run(): Promise<void> {
   // Scrub ambient injection-class env vars (LD_*, NODE_OPTIONS, git env-config, …)
-  // BEFORE any command dispatch or subprocess spawn (Phase 167 Step 4): the CLI is
-  // launched from a shell that may export them for unrelated toolchains, and the
-  // daemon it spawns (`daemon start`) inherits this process env. The daemon scrubs
-  // its own env too — belt and suspenders, since raw Deno.Command sites in both
-  // processes must never see them.
+  // before any command dispatch or subprocess spawn — the daemon spawned by
+  // `daemon start` inherits this process env, and scrubs its own env too.
   scrubProcessEnv();
 
   await __test_command.parse(Deno.args);

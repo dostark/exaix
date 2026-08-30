@@ -35,16 +35,9 @@ import type { PlanStatusType } from "@exaix/core/status";
 import type { IPlanMetadata } from "@exaix/core/types";
 import type { IBlueprintCreateOptions, IBlueprintRemoveOptions } from "../src/commands/blueprint_commands.ts";
 
-/*
-  Note: This test file exercises the top-level CLI parsing and command
-  dispatch behavior using the module's internal test-mode context
-  (via `__test_getContext()` / `__test_command`). It intentionally
-  uses lightweight in-process stubs (no tempdir or real DB) so these
-  tests remain fast and focused on CLI wiring rather than full
-  integration with filesystem/DB helpers. For filesystem and DB
-  integration, use the other CLI test modules that rely on
-  `initTestDbService()` / `createCliTestContext()`.
-*/
+// Exercises top-level CLI parsing/dispatch via the internal test-mode context
+// (`__test_getContext()` / `__test_command`) with in-process stubs — no tempdir or
+// real DB. See other CLI test modules for filesystem/DB integration.
 
 // ---- Basic module export sanity tests ----
 Deno.test({

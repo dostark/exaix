@@ -69,10 +69,8 @@ const VALID_SIZES: readonly string[] = ["S", "M", "L", "XL"];
 /** Age (ms) beyond which an overlay `verified_at` is rendered as stale in `models list`. */
 const STALENESS_THRESHOLD_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
 
-/**
- * Display commands read the injected `IModelRegistry` floor; `config model` writes curated
- * lists to exa.config.toml via TOML write-back (the resolver's read surface).
- */
+/** Display commands read the injected `IModelRegistry` floor; `config model` writes
+ *  curated lists to exa.config.toml via TOML write-back. */
 export class ModelCommands {
   constructor(
     private readonly registry: IModelRegistry,
@@ -82,11 +80,8 @@ export class ModelCommands {
 
   // ── Display: models list / models pricing ──────────────────────────────────
 
-  /**
-   * `models list [--benchmark <name>]` shows provider:model, provenance, and verified_at
-   * staleness; `--benchmark` adds an advisory score column showing "-" when no reader is
-   * wired or the model is unscored (honest degradation).
-   */
+  /** `models list [--benchmark <name>]` shows provider:model, provenance, and verified_at
+   *  staleness; `--benchmark` adds an advisory score column, "-" when unscored. */
   async listModels(options?: Opt<IListModelsOptions, Reason.OptionalInput>): Promise<void> {
     const providers = await this.registry.getAllProviders();
     const rows: string[][] = [];
@@ -146,11 +141,9 @@ export class ModelCommands {
 
   // ── Team: models refresh ────────────────────────────────────────────────────
 
-  /**
-   * `models refresh` (Team surface). The refresh itself runs inside the daemon's
-   * RegistryRefreshScheduler; the CLI process holds only the Solo floor and cannot reach the
-   * live registry, so this reads `model_registry.enabled` to decide whether to refuse or guide.
-   */
+  /** `models refresh` (Team surface). Refresh runs inside the daemon's
+   *  RegistryRefreshScheduler; the CLI holds only the Solo floor, so this reads
+   *  `model_registry.enabled` to decide whether to refuse or guide. */
   // deno-lint-ignore require-await -- async so the guard's synchronous throw rejects the promise
   async refreshModels(): Promise<void> {
     const cfg = this.readConfig();
@@ -171,11 +164,9 @@ export class ModelCommands {
 
   // ── Curation: config model ──────────────────────────────────────────────────
 
-  /**
-   * `config model --size <S> <entries…>` validates and writes a curated candidate list.
-   * An unregistered provider is allowed (flagged `unconfigured`); an ambiguous bare name is
-   * rejected. The write is atomic — any rejection leaves the file untouched.
-   */
+  /** `config model --size <S> <entries…>` validates and writes a curated candidate list.
+   *  An unregistered provider is allowed (flagged `unconfigured`); an ambiguous bare name
+   *  is rejected. The write is atomic — any rejection leaves the file untouched. */
   async setCandidates(size: string, entries: string[]): Promise<void> {
     this.assertValidSize(size);
     await this.validateEntries(entries); // throws before any write on ambiguity
@@ -279,10 +270,8 @@ export class ModelCommands {
     return this.configPath;
   }
 
-  /**
-   * Returns the raw parse result (not narrowed) — handed back to `stringify` on write so
-   * untyped keys survive the round-trip. `IConfigToml` narrows only the `model_presets` slice.
-   */
+  /** Returns the raw parse result (not narrowed) — handed back to `stringify` on write
+   *  so untyped keys survive the round-trip. */
   private readRawConfig(): ReturnType<typeof parse> {
     const path = this.requireConfigPath();
     return parse(Deno.readTextFileSync(path));

@@ -159,10 +159,8 @@ export function getPortalCardPath(tempRoot: string, alias: string): string {
   return join(tempRoot, "Memory", "Projects", alias, "portal.md");
 }
 
-/**
- * Creates a unified CLI test context for tests.
- * Delegates to `initTestDbService()` and optionally creates extra directories.
- */
+/** Creates a unified CLI test context for tests. Delegates to `initTestDbService()`
+ *  and optionally creates extra directories. */
 export async function createCliTestContext(options?: { createDirs?: string[] }): Promise<{
   tempDir: string;
   db: Awaited<ReturnType<typeof initTestDbService>>["db"];

@@ -64,10 +64,8 @@ export class JournalCommands extends BaseCommand {
     JournalFormatter.render(results, filterOptions, options.format);
   }
 
-  /**
-   * Readiness barrier: blocks until `event` is journalled after `since` (default: the max rowid
-   * at call time, so only events appearing while waiting count). Exits 0 on match, 1 on timeout.
-   */
+  /** Readiness barrier: blocks until `event` is journalled after `since` (default: the max
+   *  rowid at call time). Exits 0 on match, 1 on timeout. */
   async wait(options: IJournalWaitOptions): Promise<void> {
     const event = options.event;
     const timeoutSec = options.timeout ?? JOURNAL_WAIT_DEFAULT_TIMEOUT_SEC;

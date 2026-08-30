@@ -986,7 +986,7 @@ Deno.test("request create with flow option", async () => {
   });
 });
 
-// ===== Phase 54: --agent flag removed =====
+// ===== --agent flag removed =====
 // Note: --agent flag removal is verified by CLI framework - unknown options automatically rejected
 
 // ===== __test_initializeServices with instantiateDb =====
