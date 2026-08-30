@@ -18,6 +18,22 @@
 >    (e.g., write "Model Intent CLI flags" not "packages/ai/src/model_resolver.ts")
 > 4. Link to the relevant section in `Exaix_User_Guide.md` for detailed docs.
 
+## Unreleased — Phase 174 (Governed Session-Delegated Step Cycling)
+
+### Added
+
+- A new `session_delegate_cycle` flow step type runs a hardened, multi-step implementation
+  plan as one governed sequence of external session delegations — each step's changes are
+  reviewed and gated before the next step launches, and progress survives a daemon restart
+  without re-running completed steps (see `Exaix_User_Guide.md` §4, "Session Delegate Cycle
+  Step Type").
+
+### Changed
+
+- `session_delegate_cycle`'s `review.onFail` accepts only `halt`; `retry` and
+  `continue-with-warning` are rejected at validation time instead of being silently ignored
+  at runtime.
+
 ## Unreleased — Phase 173 (Dogfood Step-Context Sufficiency)
 
 ### Added
