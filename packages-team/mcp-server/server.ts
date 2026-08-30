@@ -71,24 +71,20 @@ type ZodErrorCandidate =
   | JSONValue[]
   | null
   | undefined;
-/** Web-standard fetch response for the MCP-over-HTTP handler (Step 3). */
+/** Web-standard fetch response for the MCP-over-HTTP handler. */
 type McpHttpFetchResponse = Response;
 type McpHttpFetchResponsePromise = Promise<McpHttpFetchResponse>;
 
-/** Uniform outcome of executing one tool, decoupled from either transport's own top-level-vs-in-band error convention (Step 2). */
+/** Uniform outcome of executing one tool, decoupled from either transport's own
+ *  top-level-vs-in-band error convention. */
 interface IToolExecutionOutcome {
   result?: JsonRpcResult;
   error?: { code: number; message: string; data?: JsonRpcErrorData };
 }
 
-/**
- * No-op JSON-Schema validator provider for `fromJsonSchema` tool/prompt registrations
- * (Step 2). The SDK's own JSON-Schema pre-validation is intentionally bypassed here so
- * `tools/call`/`prompts/get` argument validation stays 100% delegated to each handler's
- * own Zod `.parse()` — exactly matching pre-migration behavior (Constraints: byte-identical,
- * not shape-only). Only `tools/list`/`prompts/list`'s advertised schema comes from
- * `fromJsonSchema`; runtime enforcement is unchanged. See Architecture Notes.
- */
+/** No-op JSON-Schema validator for `fromJsonSchema` tool/prompt registrations: SDK
+ *  pre-validation is bypassed so argument validation stays 100% delegated to each
+ *  handler's own Zod `.parse()`; only the advertised list schema comes from here. */
 const PASSTHROUGH_JSON_SCHEMA_VALIDATOR: IJsonSchemaValidatorProvider = {
   getValidator<T>(_schema: JsonSchemaType) {
     return (input): JsonSchemaValidatorResult<T> =>
@@ -96,13 +92,9 @@ const PASSTHROUGH_JSON_SCHEMA_VALIDATOR: IJsonSchemaValidatorProvider = {
   },
 };
 
-/**
- * Constant-time string equality for the MCP shared-secret Bearer token (Step 4).
- * Deno has no `crypto.timingSafeEqual` for strings, so this is the standard
- * XOR-accumulation equivalent: every byte pair is compared regardless of where
- * the first mismatch occurs (the early `length` check leaks only the length,
- * which is not secret for a configured token). Never use `===` on the token.
- */
+/** Constant-time string equality for the MCP shared-secret Bearer token — Deno has no
+ *  `crypto.timingSafeEqual` for strings, so this is the XOR-accumulation equivalent
+ *  (the early `length` check leaks only length, not secret). Never use `===` on the token. */
 function constantTimeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let diff = 0;
@@ -112,23 +104,9 @@ function constantTimeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-/**
- * Adapts a `ToolHandler.execute()` result onto the official SDK's `CallToolResult` (Step 2).
- * The 2026-07-28 spec's `ContentBlock` union (text/image/audio/resource/resource_link) has
- * no member for Exaix's proprietary `exaix_structured_data` content type — the SDK's
- * `registerTool` validates outgoing tool results against that union server-side and rejects
- * unknown content types with a protocol error (confirmed empirically: passing an
- * `exaix_structured_data` block straight through fails validation before it reaches the
- * wire). The SDK's own dedicated `structuredContent` result field (a free-form key-value
- * object) is the spec's real, dedicated mechanism for exactly this payload (arbitrary
- * structured data
- * alongside human-readable text) — this function moves each `exaix_structured_data` block's
- * `data` there instead of leaving it in `content`. Object-shaped `data` (e.g. domain-tool
- * results) maps directly; array/primitive-shaped `data` (e.g. `list_directory`'s
- * `string[]` entries) is wrapped under a `data` key, since `structuredContent` must itself
- * be an object. Lossless — the same information survives, only the wire envelope changes
- * to satisfy the SDK's real, unavoidable validation; not a tool-surface redesign.
- */
+/** Adapts a `ToolHandler.execute()` result onto the SDK's `CallToolResult`. The spec has
+ *  no ContentBlock member for Exaix's `exaix_structured_data` type (SDK rejects it), so
+ *  this moves each such block's `data` onto `structuredContent` instead — lossless. */
 export function toSdkCallToolResult(result: Opt<JsonRpcResult, Reason.OptionalInput>): CallToolResult {
   const raw = result as { content?: Array<{ type: string; data?: JSONValue }>; isError?: boolean } | undefined;
   const content: Array<{ type: string; data?: JSONValue }> = [];
@@ -150,25 +128,8 @@ export function toSdkCallToolResult(result: Opt<JsonRpcResult, Reason.OptionalIn
   } as CallToolResult;
 }
 
-/**
- * MCP Server Implementation
- *
- * Phase 2: First tool implementation (read_file)
- *
- * Provides Model Context Protocol interface for agent tool execution.
- * Currently supports:
- * - stdio transport
- * - initialize handshake
- * - tools/list with registered tools
- * - tools/call for read_file
- * - IActivity Journal logging
- *
- * Future phases will add:
- * - Additional tools (write_file, list_directory, git_*)
- * - Resource discovery (portal:// URIs)
- * - Prompt templates (execute_plan, create_review)
- */
-
+/** MCP server: stdio and HTTP transports, tool/resource/prompt registration, auth, and
+ *  Activity Journal logging. See @related-files above for tools/resources/prompts. */
 interface MCPServerOptions {
   context: ICliApplicationContext;
   transport: McpTransportType;
@@ -247,7 +208,7 @@ export class MCPServer implements OAuthTokenVerifier {
     toolName: string,
     policy: IToolResultRemediationPolicy,
   ) => IToolResultRemediationPolicy;
-  /** Retained so `stop()` can actually close the HTTP listener (Pre-Gap Analysis GAP-9). */
+  /** Retained so `stop()` can actually close the HTTP listener. */
   private httpServerHandle?: Deno.HttpServer;
   /** Retained so `stop()` can tear down the SDK's modern-leg in-flight state alongside the listener. */
   private mcpHttpHandler?: McpHttpHandler;
@@ -342,9 +303,8 @@ export class MCPServer implements OAuthTokenVerifier {
       },
     );
 
-    // Pre-Gap Analysis GAP-9: actually tear down the HTTP listener (fire-and-forget is
-    // acceptable here — stop() is synchronous by existing contract; both teardowns are
-    // idempotent and safe to leave unawaited).
+    // Actually tear down the HTTP listener (fire-and-forget is acceptable here — stop()
+    // is synchronous by contract; both teardowns are idempotent and safe unawaited).
     if (this.httpServerHandle) {
       void this.httpServerHandle.shutdown();
       this.httpServerHandle = undefined;
@@ -355,43 +315,23 @@ export class MCPServer implements OAuthTokenVerifier {
     }
   }
 
-  /**
-   * Returns whether the server is currently running
-   */
   isRunning(): boolean {
     return this.running;
   }
 
-  /**
-   * Returns the transport type (stdio)
-   */
   getTransport(): string {
     return this.transport;
   }
 
-  /**
-   * Returns the server name (exaix)
-   */
   getServerName(): string {
     return this.serverName;
   }
 
-  /**
-   * Returns the server version (from config)
-   */
   getVersion(): string {
     return this.serverVersion;
   }
 
-  /**
-   * Handles incoming JSON-RPC 2.0 requests
-   *
-   * Currently supports:
-   * - initialize: Protocol handshake
-   * - tools/list: Returns available tools (empty array in Phase 1)
-   *
-   * Returns JSON-RPC 2.0 response with result or error
-   */
+  /** Handles an incoming JSON-RPC 2.0 request, returning a response with result or error. */
   async handleRequest(request: JSONRPCRequest): Promise<JSONRPCResponse> {
     // Validate JSON-RPC 2.0 format
     if (!request.jsonrpc || request.jsonrpc !== "2.0") {
@@ -473,10 +413,7 @@ export class MCPServer implements OAuthTokenVerifier {
     };
   }
 
-  /**
-   * Handles tools/list request
-   * Returns all registered tools with their definitions
-   */
+  /** Handles tools/list request; returns all registered tools with their definitions. */
   private handleToolsList(
     request: JSONRPCRequest,
   ): JSONRPCResponse {
@@ -504,10 +441,7 @@ export class MCPServer implements OAuthTokenVerifier {
     };
   }
 
-  /**
-   * Handles tools/call request
-   * Executes the specified tool with provided arguments
-   */
+  /** Handles tools/call request; executes the specified tool with provided arguments. */
   private async handleToolsCall(
     request: JSONRPCRequest,
   ): Promise<JSONRPCResponse> {
@@ -544,22 +478,9 @@ export class MCPServer implements OAuthTokenVerifier {
     return { jsonrpc: "2.0", id: request.id, result: outcome.result };
   }
 
-  /**
-   * Executes one already-resolved tool, running the exact pre-migration
-   * validation/remediation/logging/classification pipeline (Constraints: byte-identical
-   * business logic, not rewritten) — extracted out of `handleToolsCall` (Step 2) so the
-   * official SDK's `registerTool` callback (`buildSdkServer`) can reuse it verbatim.
-   * Returns a transport-neutral outcome: `handleToolsCall` (HTTP/hand-rolled dispatch,
-   * pre-Step-3) wraps `error` as a top-level JSON-RPC error; `buildSdkServer`'s SDK
-   * callback wraps it as `isError:true` tool-result content instead, since the official
-   * SDK always converts a tool callback's thrown/returned error into in-band content —
-   * it never emits a top-level JSON-RPC error for a tool-execution failure (confirmed
-   * against the vendored SDK: even a thrown `ProtocolError` inside `registerTool`'s
-   * callback is caught and returned as `{content, isError:true}`). This is the one
-   * intentional, SDK-intrinsic behavior difference this migration cannot avoid; the
-   * diagnostic message/classification is preserved byte-for-byte, only the JSON-RPC
-   * envelope (top-level `error` vs in-band `isError`) changes for tool-execution failures.
-   */
+  /** Executes one already-resolved tool through the shared validation/remediation/logging pipeline. Returns a
+   *  transport-neutral outcome: `handleToolsCall` wraps `error` as a top-level JSON-RPC error, while the SDK's
+   *  `registerTool` callback wraps it in-band as `isError:true` content — the SDK never emits a top-level error. */
   private async executeToolInternal(
     toolName: string,
     tool: ToolHandler,
@@ -836,10 +757,7 @@ export class MCPServer implements OAuthTokenVerifier {
     };
   }
 
-  /**
-   * Handles resources/list request
-   * Returns all portal resources as URIs
-   */
+  /** Handles resources/list request; returns all portal resources as URIs. */
   private async handleResourcesList(
     request: JSONRPCRequest,
   ): Promise<JSONRPCResponse> {
@@ -857,10 +775,7 @@ export class MCPServer implements OAuthTokenVerifier {
     }
   }
 
-  /**
-   * Handles resources/read request
-   * Reads a resource by portal:// URI
-   */
+  /** Handles resources/read request; reads a resource by portal:// URI. */
   private async handleResourcesRead(
     request: JSONRPCRequest,
   ): Promise<JSONRPCResponse> {
@@ -915,10 +830,7 @@ export class MCPServer implements OAuthTokenVerifier {
     }
   }
 
-  /**
-   * Handles prompts/list request
-   * Returns all available prompt templates
-   */
+  /** Handles prompts/list request; returns all available prompt templates. */
   private handlePromptsList(
     request: JSONRPCRequest,
   ): JSONRPCResponse {
@@ -933,10 +845,7 @@ export class MCPServer implements OAuthTokenVerifier {
     };
   }
 
-  /**
-   * Handles prompts/get request
-   * Generates a specific prompt with provided arguments
-   */
+  /** Handles prompts/get request; generates a specific prompt with provided arguments. */
   private handlePromptsGet(
     request: JSONRPCRequest,
   ): JSONRPCResponse {
@@ -970,10 +879,8 @@ export class MCPServer implements OAuthTokenVerifier {
     }
   }
 
-  /**
-   * Handles exaix/tools/result_schema — returns the expected result schema descriptor
-   * for a named tool, derived from TOOL_MANIFEST and TOOL_RESULT_SCHEMA_REGISTRY.
-   */
+  /** Handles exaix/tools/result_schema — returns the expected result schema descriptor for
+   *  a named tool, derived from TOOL_MANIFEST and TOOL_RESULT_SCHEMA_REGISTRY. */
   private handleToolResultSchema(request: JSONRPCRequest): JSONRPCResponse {
     const parsed = ToolResultSchemaRequestSchema.safeParse(request.params);
     if (!parsed.success) {
@@ -1004,18 +911,9 @@ export class MCPServer implements OAuthTokenVerifier {
     };
   }
 
-  /**
-   * Builds an official-SDK `McpServer` instance from this server's already-constructed
-   * tools/config/permissions/logger (Step 2), for stdio serving via `serveStdio`. Reuses
-   * the exact existing tool-definition JSON schemas (`fromJsonSchema` + the
-   * no-op-validating `PASSTHROUGH_JSON_SCHEMA_VALIDATOR`) so `tools/list`/`prompts/list`
-   * stay byte-identical to Step 1's golden fixture, and reuses `executeToolInternal`/
-   * `generatePrompt`/`discoverAllResources`/`handleToolResultSchema`'s underlying logic
-   * verbatim (Constraints: business logic preserved, not rewritten) — only the protocol
-   * envelope (JSON-RPC dispatch vs SDK registration) changes. Does not yet touch the
-   * HTTP/"SSE" transport (Step 3) — this method is invoked only by `buildMcpServer` for
-   * the stdio path.
-   */
+  /** Builds an official-SDK `McpServer` from this server's already-constructed tools/config/permissions/logger, for
+   *  stdio serving via `serveStdio`. Reuses the existing tool schemas and executeToolInternal/generatePrompt/etc.
+   *  verbatim — only the protocol envelope (JSON-RPC dispatch vs SDK registration) changes. */
   buildSdkServer(): McpServer {
     const sdkServer = new McpServer({ name: this.serverName, version: this.serverVersion });
 
@@ -1057,10 +955,8 @@ export class MCPServer implements OAuthTokenVerifier {
           if (!result) {
             throw new Error(`Prompt '${prompt.name}' not found`);
           }
-          // IMCPPromptResult's role field (MessageRole enum: USER, ASSISTANT, or SYSTEM) is
-          // nominally wider than the SDK's user-or-assistant role restriction, but
-          // `generatePrompt` only ever emits MessageRole.USER (confirmed: grep of every
-          // prompts.ts generator) — safe structural cast, not a behavior change.
+          // IMCPPromptResult's role field is nominally wider than the SDK's user-or-assistant
+          // restriction, but `generatePrompt` only ever emits MessageRole.USER — safe cast.
           return result as GetPromptResult;
         },
       );
@@ -1115,10 +1011,7 @@ export class MCPServer implements OAuthTokenVerifier {
     return sdkServer;
   }
 
-  /**
-   * Returns comprehensive security headers for HTTP responses
-   * Implements Content Security Policy and other security measures
-   */
+  /** Returns comprehensive security headers for HTTP responses (CSP and other measures). */
   public getSecurityHeaders(): Record<string, string> {
     return {
       // Prevent XSS attacks with Content Security Policy
@@ -1149,10 +1042,7 @@ export class MCPServer implements OAuthTokenVerifier {
     };
   }
 
-  /**
-   * Adds security headers to an HTTP Response object
-   * Used for HTTP/SSE transport responses
-   */
+  /** Adds security headers to an HTTP Response object (HTTP/SSE transport responses). */
   public addSecurityHeaders(response: Response): Response {
     const headers = new Headers(response.headers);
 
@@ -1170,29 +1060,9 @@ export class MCPServer implements OAuthTokenVerifier {
     });
   }
 
-  /**
-   * Verifies a Bearer token against the configured static shared secret (Step 4),
-   * satisfying the SDK's `OAuthTokenVerifier` contract for `requireBearerAuth`.
-   *
-   * Design (Pre-Gap Analysis GAP-1): Exaix has no credential/session/access-token
-   * model anywhere in the repo to ground a fuller verifier in — the only
-   * credential-adjacent primitive, `SecureCredentialStore`, is an unrelated
-   * per-process secret-obfuscation store for provider API keys. This is therefore
-   * a deliberately minimal, correct mechanism for this tool's actual threat model
-   * (a single-operator, localhost-primary MCP server, not a multi-tenant OAuth
-   * deployment): the shared secret lives in the environment variable named by
-   * `mcp.auth_token_env` (env-var indirection, never in plaintext config — the same
-   * convention as `ai_openrouter.api_key_env`), compared via constant-time equality
-   * (`constantTimeEqual`, never `===`). On match the returned `AuthInfo` ALWAYS
-   * sets `expiresAt` (GAP-2: the SDK's verifier contract rejects tokens whose
-   * `expiresAt` is unset) to a far-future epoch, since a static shared secret has no
-   * natural expiry; on mismatch it throws `OAuthError` with
-   * `OAuthErrorCode.InvalidToken`, which `requireBearerAuth` maps to a 401
-   * `WWW-Authenticate: Bearer error="invalid_token"` challenge. RFC 9728 metadata
-   * serving (see `buildHttpFetch`) completes only the resource-server verification
-   * half of RFC 9728 — deliberately NOT a token-issuance authorization server,
-   * which Exaix does not need or operate.
-   */
+  /** Verifies a Bearer token against the static shared secret named by `mcp.auth_token_env`, compared via
+   *  `constantTimeEqual` (never `===`) — deliberately minimal for this tool's threat model (single-operator,
+   *  localhost-primary). `expiresAt` is always set to a far-future epoch (a static secret never expires); a mismatch throws `OAuthError` → 401. */
   verifyAccessToken(token: string): Promise<AuthInfo> {
     const mcpConfig = MCPConfigSchema.parse(this.config.mcp);
     const configured = Deno.env.get(mcpConfig.auth_token_env) ?? "";
@@ -1208,18 +1078,9 @@ export class MCPServer implements OAuthTokenVerifier {
     });
   }
 
-  /**
-   * RFC 9728 protected-resource metadata options for the current request (Step 4).
-   * The issuer/resource-server URL is derived from the request's own origin — the
-   * server binds `localhost` only (`startHTTPServer`'s `hostname: "localhost"`), so
-   * the derived issuer always satisfies the SDK's HTTPS-or-loopback rule (GAP-2:
-   * `dangerouslyAllowInsecureIssuerUrl` is never surfaced through any Exaix config;
-   * the issuer is always HTTPS or a loopback address by construction). The
-   * `OAuthMetadata`'s AS endpoints point at the server's own origin because, for a
-   * static shared-secret deployment, the server itself is the token authority —
-   * only the resource-server half of RFC 9728 is served, no token-issuance endpoints
-   * are implemented.
-   */
+  /** RFC 9728 protected-resource metadata for the current request. The issuer/resource-server URL derives from the
+   *  request's own origin — the server binds `localhost` only, so it always satisfies the SDK's HTTPS-or-loopback
+   *  rule. The AS endpoints point at the server's own origin, since for a static shared-secret deployment the server itself is the token authority (only the resource-server half of RFC 9728 is served). */
   private buildAuthMetadataOptions(request: Request): AuthMetadataOptions {
     const origin = new URL(request.url).origin;
     return {
@@ -1236,36 +1097,9 @@ export class MCPServer implements OAuthTokenVerifier {
     };
   }
 
-  /**
-   * Builds the composed web-standard `fetch` handler for MCP-over-HTTP (Steps 3-4):
-   * SDK Host/Origin validation (DNS-rebinding/CSRF defense, replacing the hand-rolled
-   * `isLoopbackHost`/`rejectUnsafeOrigin` this step retires) → the unrelated, unaffected
-   * trace-streaming route (`sse_handler.ts`, never part of the MCP protocol surface) →
-   * the official SDK's `createMcpHandler`-built MCP JSON-RPC dispatch → Exaix's own
-   * CSP/X-Frame-Options/nosniff header set (`addSecurityHeaders`, which the SDK has no
-   * equivalent for, so it is kept and wraps every response). `legacy: "stateless"` is the
-   * SDK's own default: each 2025-era (non-envelope) request — which is what every one of
-   * Exaix's current clients sends, since none negotiate the 2026-07-28 envelope — is
-   * answered by a fresh instance from the same factory over a stateless Streamable HTTP
-   * transport; this matches the Constraints note that current clients already speak plain
-   * POST/JSON, not real SSE, and required no `'reject'`-mode justification. One
-   * SDK-intrinsic, unavoidable behavior change from the hand-rolled path: real Streamable
-   * HTTP (per the spec, for both the modern and 2025-era legacy leg) always frames a
-   * response as a single-event SSE stream (`Content-Type: text/event-stream`), never a
-   * bare `application/json` body — confirmed empirically against the vendored SDK; this
-   * is the actual spec behavior this phase migrates onto, not a regression.
-   *
-   * Step 4 (auth): when `mcp.require_auth` is enabled, the composition additionally
-   * (a) fails fast at build time if the token env var is unset — an operator who opts
-   * in but forgets the secret gets a boot-time error, not a server that 401s every
-   * request — (b) serves RFC 9728 protected-resource metadata at
-   * `/.well-known/oauth-protected-resource` (and the RFC 8414 AS document) and (c)
-   * gates the MCP dispatch behind `requireBearerAuth({ verifier: this })`, forwarding
-   * the verified `AuthInfo` into `handler.fetch(request, { authInfo })` so tool
-   * handlers see it via `ctx.http.authInfo`. When `mcp.require_auth` is false (the
-   * default), behavior is byte-identical to pre-Step-4: no metadata routes, no gate,
-   * no header checks beyond the existing Host/Origin validation.
-   */
+  /** Composed fetch handler for MCP-over-HTTP: Host/Origin validation → `sse_handler.ts` trace route → SDK MCP
+   *  JSON-RPC dispatch → Exaix's security headers. Real Streamable HTTP always frames a response as a single-event
+   *  SSE stream, never bare JSON — spec behavior. `mcp.require_auth` gates dispatch behind `requireBearerAuth` and serves RFC 9728/8414 metadata when enabled; disabled (default) is byte-identical to no auth. */
   public buildHttpFetch(): (request: Request) => McpHttpFetchResponsePromise {
     const mcpConfig = MCPConfigSchema.parse(this.config.mcp);
     const requireAuth = mcpConfig.require_auth;
@@ -1300,9 +1134,8 @@ export class MCPServer implements OAuthTokenVerifier {
         if (metadata) {
           return this.addSecurityHeaders(metadata);
         }
-        // Phase 170 Weakness 2: the trace-stream SSE route must be gated by the same bearer
-        // auth as every other MCP HTTP route — it was previously dispatched before authGate
-        // ran, leaving the stream reachable without a token when mcp.require_auth=true.
+        // The trace-stream SSE route must be gated by the same bearer auth as every other
+        // MCP HTTP route, or it stays reachable without a token when mcp.require_auth=true.
         const auth = await authGate(request);
         if (auth instanceof Response) {
           return this.addSecurityHeaders(auth);
@@ -1323,11 +1156,8 @@ export class MCPServer implements OAuthTokenVerifier {
     };
   }
 
-  /**
-   * Starts HTTP server for MCP over HTTP/SSE transport. Only available when transport is
-   * configured as "sse". Returns the actual bound port (useful when `port` is `0` for an
-   * OS-assigned ephemeral port, e.g. in tests).
-   */
+  /** Starts HTTP server for MCP over HTTP/SSE transport (only when transport is "sse").
+   *  Returns the actual bound port (useful when `port` is `0`, e.g. in tests). */
   startHTTPServer(port: number = 3000): number {
     if (this.transport !== "sse") {
       throw new Error("HTTP server only available for SSE transport");
@@ -1339,9 +1169,8 @@ export class MCPServer implements OAuthTokenVerifier {
 
     this.running = true;
 
-    // Deno.serve() returns its handle synchronously (not a Promise) — Pre-Gap Analysis
-    // GAP-9: retained on the instance so stop() can actually close the listener, unlike
-    // the pre-migration fire-and-forget call that discarded it.
+    // Deno.serve() returns its handle synchronously (not a Promise) — retained on the
+    // instance so stop() can actually close the listener.
     this.httpServerHandle = Deno.serve({ port, hostname: "localhost" }, this.buildHttpFetch());
     const addr = this.httpServerHandle.addr;
     const boundPort = addr.transport === "tcp" || addr.transport === "udp" ? addr.port : port;
@@ -1375,12 +1204,9 @@ function createNoopLogger(): IEventLogger {
   };
 }
 
-/**
- * Builds the official-SDK `McpServer` factory Step 2's `serveStdio(buildMcpServer)`
- * consumes (`apps/mcp-server/main.ts`). Constructs the same `MCPServer` this file has
- * always built (reusing its constructor's context/config/permissions/tool-registration
- * logic verbatim) and adapts it onto the SDK via `buildSdkServer()`.
- */
+/** Builds the official-SDK `McpServer` factory `serveStdio(buildMcpServer)` consumes
+ *  (`apps/mcp-server/main.ts`): constructs the same `MCPServer` this file always built
+ *  and adapts it onto the SDK via `buildSdkServer()`. */
 export function buildMcpServer(options: ConstructorParameters<typeof MCPServer>[0]): McpServer {
   const mcpServer = new MCPServer(options);
   return mcpServer.buildSdkServer();
