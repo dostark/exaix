@@ -21,10 +21,8 @@ import { delay } from "@exaix/core/func";
 const EVENT_LOOP_RESPONSIVENESS_CHECKS = 20;
 const EVENT_LOOP_RESPONSIVE_THRESHOLD_MS = 25;
 
-/**
- * Tests for the file watcher's stable-read handling: debounced rapid rewrites,
- * chunked large writes, and graceful handling of a file deleted mid-watch.
- */
+/** Tests for the file watcher's stable-read handling: debounced rapid rewrites,
+ *  chunked large writes, and graceful handling of a file deleted mid-watch. */
 
 // Updated helper to use non-blocking delay utility
 async function readFileWhenStable(path: string): Promise<string> {

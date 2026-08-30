@@ -1012,8 +1012,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
 }
 
 // --- Legacy TUI Session (backwards compatibility) ---
-/**
- * Legacy TUI session for Request Manager.
+/** Legacy TUI session for Request Manager.
  * @deprecated Use RequestManagerTuiSession instead.
  */
 export class LegacyRequestManagerTuiSession {

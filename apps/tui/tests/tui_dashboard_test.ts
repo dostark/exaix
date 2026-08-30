@@ -444,7 +444,7 @@ Deno.test({
   },
 });
 
-// ===== Phase 13.9: Dashboard Integration Tests =====
+// ===== Dashboard Integration Tests =====
 
 Deno.test("TUI dashboard state initialization", async () => {
   const dashboard = await launchTuiDashboard({ testMode: true }) as ITuiDashboard;

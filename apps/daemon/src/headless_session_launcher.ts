@@ -57,10 +57,9 @@ const RETURN_FILE = "return.json";
 export class HeadlessSessionLauncher {
   constructor(private readonly deps: IHeadlessSessionLauncherDeps) {}
 
-  /**
-   * Fire-and-forget: returns once spawned; exit handling happens asynchronously. delegateProviderEnv
-   * is merged after sanitizeChildEnv so injected API_KEY vars survive the SECRET_ENV_PATTERN strip.
-   */
+  /** Fire-and-forget: returns once spawned; exit handling happens asynchronously.
+   *  delegateProviderEnv is merged after sanitizeChildEnv so injected API_KEY vars
+   *  survive the SECRET_ENV_PATTERN strip. */
   async launch(
     launch: ISessionLaunch,
     traceId: string,
@@ -132,10 +131,8 @@ export class HeadlessSessionLauncher {
     }
   }
 
-  /**
-   * @internal Visible for testing. Parses opencode --format json stdout and synthesizes return.json;
-   * fail-safe — catches all errors, including a mock ChildProcess with no real stdout.
-   */
+  /** @internal Visible for testing. Parses opencode --format json stdout and synthesizes
+   *  return.json; fail-safe — catches all errors, incl. a mock ChildProcess with no stdout. */
   async tryReadStdoutAndSynthesize(
     child: Deno.ChildProcess,
     traceId: string,
@@ -283,10 +280,8 @@ export class HeadlessSessionLauncher {
     return decoder.decode(combined);
   }
 
-  /**
-   * NUL-delimited porcelain status so tracked, untracked, deleted, copied, and renamed paths
-   * (both sides) reach scope reconciliation.
-   */
+  /** NUL-delimited porcelain status so tracked, untracked, deleted, copied, and renamed
+   *  paths (both sides) reach scope reconciliation. */
   private async computeGitChanges(worktreePath: string): Promise<string[]> {
     try {
       const statusCmd = new Deno.Command("git", {

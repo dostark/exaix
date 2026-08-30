@@ -107,7 +107,7 @@ Deno.test("CLIDaemonService: start, stop, restart, getStatus, getLogs, getErrors
   assert(Array.isArray(errors));
 });
 
-// ===== Phase 13.8: DaemonViewState Tests =====
+// ===== DaemonViewState Tests =====
 
 Deno.test("DaemonViewState: interface has all required properties", () => {
   // TypeScript compile-time check via usage
@@ -126,7 +126,7 @@ Deno.test("DaemonViewState: interface has all required properties", () => {
   assertEquals(state.status, DaemonStatus.UNKNOWN);
 });
 
-// ===== Phase 13.8: Icon Tests =====
+// ===== Icon Tests =====
 
 Deno.test("DAEMON_STATUS_ICONS: has all status types", () => {
   const requiredKeys = [DaemonStatus.RUNNING, DaemonStatus.STOPPED, "error", DaemonStatus.UNKNOWN];
@@ -146,7 +146,7 @@ Deno.test("DAEMON_STATUS_COLORS: has all status types", () => {
   }
 });
 
-// ===== Phase 13.8: Key Bindings Tests =====
+// ===== Key Bindings Tests =====
 
 Deno.test("DAEMON_KEY_BINDINGS: has all expected bindings", () => {
   const requiredActions = [
@@ -174,7 +174,7 @@ Deno.test("DAEMON_KEY_BINDINGS: each has key, action, description, category", ()
   }
 });
 
-// ===== Phase 13.8: TUI Session Tests =====
+// ===== TUI Session Tests =====
 
 Deno.test("DaemonControlTuiSession: initializes correctly", async () => {
   const { session } = await setupDaemonTest({

@@ -473,7 +473,7 @@ Deno.test("PlanReviewerTuiSession keyboard actions - invalid keys ignored", asyn
 });
 
 // ============================================================
-// Phase 13.4 Enhanced Plan Reviewer Tests
+// Enhanced Plan Reviewer Tests
 // ============================================================
 
 Deno.test("Phase 13.4: Plan tree is built with status groups", () => {

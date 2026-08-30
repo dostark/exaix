@@ -69,10 +69,8 @@ export class FileWatcher {
     return this.processingFiles.size;
   }
 
-  /**
-   * Resolves once the watch is open and `watcher.started` is journalled — NOT when watching
-   * ends. The consume-loop runs detached via `run()`; await `run()` after `start()` to block.
-   */
+  /** Resolves once the watch is open and `watcher.started` is journalled — NOT when
+   *  watching ends. Await `run()` after `start()` to block on the detached consume-loop. */
   async start(): Promise<void> {
     this.abortController = new AbortController();
 

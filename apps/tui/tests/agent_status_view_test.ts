@@ -154,7 +154,7 @@ Deno.test("AgentStatusView: formatUptime", () => {
   }
 });
 
-// ===== Phase 13.7: IAgentViewState Tests =====
+// ===== IAgentViewState Tests =====
 
 Deno.test("IAgentViewState: interface has all required properties", () => {
   // TypeScript compile-time check via usage
@@ -177,7 +177,7 @@ Deno.test("IAgentViewState: interface has all required properties", () => {
   }
 });
 
-// ===== Phase 13.7: Icon Tests =====
+// ===== Icon Tests =====
 
 Deno.test("AGENT_STATUS_ICONS: has all status types", () => {
   const requiredKeys = [AgentStatus.ACTIVE, AgentStatus.INACTIVE, AgentStatus.ERROR];
@@ -223,7 +223,7 @@ Deno.test("AGENT_STATUS_COLORS: has all status types", () => {
   }
 });
 
-// ===== Phase 13.7: Key Bindings Tests =====
+// ===== Key Bindings Tests =====
 
 Deno.test("AGENT_KEY_BINDINGS: has all expected bindings", () => {
   const requiredActions: AgentAction[] = [
@@ -251,7 +251,7 @@ Deno.test("AGENT_KEY_BINDINGS: each has key, action, description, category", () 
   }
 });
 
-// ===== Phase 13.7: TUI Session Tests =====
+// ===== TUI Session Tests =====
 
 Deno.test("AgentStatusTuiSession: initializes correctly", async () => {
   const session = await createInitializedSession();

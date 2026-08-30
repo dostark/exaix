@@ -80,11 +80,8 @@ export interface IDashboardViewsAndServices {
   services: IDashboardServices;
 }
 
-/**
- * If `options.services` is provided those are used directly; otherwise mock services are
- * created for test mode, or an error is thrown in production mode (services should be
- * created by the core factory).
- */
+/** If `options.services` is provided those are used directly; otherwise mock services
+ *  are created for test mode, or an error is thrown in production mode. */
 export function initDashboardViews(
   options: IDashboardViewOptions = {},
 ): IDashboardViewsAndServices {

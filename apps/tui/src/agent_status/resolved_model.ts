@@ -18,10 +18,8 @@ export interface IResolvedModelJournalEntry {
   payload?: Opt<JSONValue, Reason.OptionalInput>;
 }
 
-/**
- * Extracts the latest resolved provider:model from journaled `model.resolved` entries;
- * accepts both the structured `payload.selected` object and legacy string payloads.
- */
+/** Extracts the latest resolved provider:model from journaled `model.resolved` entries;
+ *  accepts both the structured `payload.selected` object and legacy string payloads. */
 export function deriveResolvedModel(entries: IResolvedModelJournalEntry[]): string | undefined {
   const resolved = entries.filter((e) => e.action === "model.resolved").at(-1);
   if (!resolved) return undefined;
@@ -42,10 +40,8 @@ function selectedToModelString(payload: Opt<JSONValue, Reason.OptionalInput>): s
   return undefined;
 }
 
-/**
- * Status line for a single identity: falls back to the journaled resolution when the
- * agent's declared model is empty.
- */
+/** Status line for a single identity: falls back to the journaled resolution when the
+ *  agent's declared model is empty. */
 export function renderResolvedModelLine(agentModel: string, journalEntries: IResolvedModelJournalEntry[]): string {
   if (agentModel) return agentModel;
   return deriveResolvedModel(journalEntries) ?? "(resolving)";
