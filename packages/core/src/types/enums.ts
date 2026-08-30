@@ -480,7 +480,7 @@ export enum McpToolName {
   LIST_PLANS = "exaix_list_plans",
   APPROVE_PLAN = "exaix_approve_plan",
   QUERY_JOURNAL = "exaix_query_journal",
-  // Config tools (Phase 137)
+  // Config tools
   CONFIG_GET = "exaix_config_get",
   CONFIG_SET = "exaix_config_set",
   CONFIG_VALIDATE = "exaix_config_validate",
@@ -604,10 +604,7 @@ export enum AgentHealth {
   CRITICAL = "critical",
 }
 
-/**
- * Status states for task and execution lifecycle.
- * Tracks the progress and completion state of operations.
- */
+/** Status states for task and execution lifecycle. */
 export enum ExecutionStatus {
   PENDING = GeneralStatus.PENDING,
   ACTIVE = GeneralStatus.ACTIVE,
@@ -635,12 +632,9 @@ export enum SkillStatus {
   DEPRECATED = GeneralStatus.DEPRECATED,
 }
 
-/**
- * Derived lifecycle view for a blueprint (Phase 93 Solo salvage). Projected from
- * the `deprecated` frontmatter flag — the single source of truth consumed by
- * routing/capability matching — rather than stored independently: a blueprint is
- * `deprecated` when its `deprecated` flag is set, otherwise `active`.
- */
+/** Derived lifecycle view for a blueprint. Projected from the `deprecated` frontmatter
+ *  flag — the single source of truth consumed by routing/capability matching — rather
+ *  than stored independently: `deprecated` when the flag is set, otherwise `active`. */
 export enum BlueprintStatus {
   ACTIVE = GeneralStatus.ACTIVE,
   DEPRECATED = GeneralStatus.DEPRECATED,
@@ -655,10 +649,7 @@ export enum DialogStatus {
   CANCELLED = GeneralStatus.CANCELLED,
 }
 
-/**
- * Confidence levels for AI-generated content and decisions.
- * Represents the system's certainty in its outputs.
- */
+/** Confidence levels for AI-generated content and decisions. */
 export enum ConfidenceLevel {
   /** Low confidence in the result */
   LOW = "low",
@@ -668,10 +659,7 @@ export enum ConfidenceLevel {
   HIGH = "high",
 }
 
-/**
- * Granular confidence assessment levels for detailed evaluation.
- * Provides more precise confidence measurements.
- */
+/** Granular confidence assessment levels for detailed evaluation. */
 export enum ConfidenceAssessmentLevel {
   /** Very low confidence, result is highly uncertain */
   VERY_LOW = "very_low",
@@ -685,10 +673,7 @@ export enum ConfidenceAssessmentLevel {
   VERY_HIGH = "very_high",
 }
 
-/**
- * Priority levels for task scheduling and execution.
- * Lower numeric values indicate higher priority.
- */
+/** Priority levels for task scheduling and execution — lower numeric values indicate higher priority. */
 export enum PriorityLevel {
   /** Highest priority for local operations */
   LOCAL = 0,
@@ -702,10 +687,7 @@ export enum PriorityLevel {
   DEFAULT = 999,
 }
 
-/**
- * Types of findings in code analysis and review results.
- * Categorizes different kinds of issues or observations found during analysis.
- */
+/** Types of findings in code analysis and review results. */
 export enum AnalysisFindingType {
   /** A problem that needs to be fixed */
   ISSUE = "issue",
@@ -719,10 +701,7 @@ export enum AnalysisFindingType {
   ERROR = "error",
 }
 
-/**
- * Severity levels for analysis findings.
- * Indicates the importance and urgency of addressing each finding.
- */
+/** Severity levels for analysis findings. */
 export enum AnalysisFindingSeverity {
   /** Minor issues that can be addressed later */
   LOW = "low",
@@ -734,10 +713,7 @@ export enum AnalysisFindingSeverity {
   CRITICAL = "critical",
 }
 
-/**
- * SQLite journal modes for database configuration.
- * Defines how SQLite handles the rollback journal file.
- */
+/** SQLite journal modes for database configuration. */
 export enum SqliteJournalMode {
   /** Delete the journal file after each transaction */
   DELETE = "delete",
@@ -753,10 +729,7 @@ export enum SqliteJournalMode {
   OFF = "off",
 }
 
-/**
- * Log levels for system logging configuration.
- * Defines the verbosity levels for logging output.
- */
+/** Log levels for system logging configuration. */
 export enum LogLevel {
   /** Detailed diagnostic information for debugging */
   DEBUG = "debug",
@@ -770,10 +743,7 @@ export enum LogLevel {
   FATAL = "fatal",
 }
 
-/**
- * Types of messages for status updates and notifications.
- * Used to categorize the nature of messages displayed to users.
- */
+/** Types of messages for status updates and notifications. */
 export enum MessageType {
   INFO = "info",
   SUCCESS = "success",
@@ -814,15 +784,12 @@ export enum FlowStepType {
   AGENT = "agent",
   GATE = "gate",
   BRANCH = "branch",
-  /**
-   * Deprecated — use VOTING_GROUP instead.
-   * In Team builds, CONSENSUS is aliased to VotingStepHandler.
-   * In Solo, it falls through to AgentStepHandler and logs a warning.
-   */
+  /** Deprecated — use VOTING_GROUP instead. In Team builds, CONSENSUS is aliased to
+   *  VotingStepHandler; in Solo it falls through to AgentStepHandler and logs a warning. */
   CONSENSUS = "consensus",
-  /** P113: Multi-agent voting/consensus — fans out N runners and resolves majority/weighted/llm-judge */
+  /** Multi-agent voting/consensus — fans out N runners and resolves majority/weighted/llm-judge. */
   VOTING_GROUP = "voting_group",
-  /** Phase 174: sequential per-plan-step session-delegation orchestration. Not an agent strategy. */
+  /** Sequential per-plan-step session-delegation orchestration. Not an agent strategy. */
   SESSION_DELEGATE_CYCLE = "session_delegate_cycle",
 }
 
@@ -845,35 +812,27 @@ export enum FlowConsensusMethod {
   JUDGE = "judge",
 }
 
-/**
- * Voting model slots for voting_group runner configuration (Phase 113).
- */
+/** Voting model slots for voting_group runner configuration. */
 export enum VotingModelSlot {
   DEFAULT = "default",
   FAST = "fast",
   LOCAL = "local",
 }
 
-/**
- * Voting strategies for multi-agent voting_group steps (Phase 113).
- */
+/** Voting strategies for multi-agent voting_group steps. */
 export enum VotingStrategy {
   MAJORITY = "majority",
   WEIGHTED = "weighted",
   LLM_JUDGE = "llm-judge",
 }
 
-/**
- * Source of a matching HITL governance rule (Phase 118).
- */
+/** Source of a matching HITL governance rule. */
 export enum HitlRuleSource {
   BLUEPRINT = "blueprint",
   MANDATORY = "mandatory",
 }
 
-/**
- * Execution surface where a HITL policy match occurred (Phase 118).
- */
+/** Execution surface where a HITL policy match occurred. */
 export enum HitlSurface {
   TOOL_REGISTRY = "tool_registry",
   DYNAMIC = "dynamic",
@@ -898,11 +857,8 @@ export enum FlowOutputFormat {
   CONCAT = "concat",
 }
 
-/**
- * Execution mode for a flow step.
- * - DECLARED: tools are committed in the plan before execution (default, current behavior)
- * - DYNAMIC: model selects tools from permitted_tools at runtime (ReAct-style)
- */
+/** Execution mode for a flow step: DECLARED commits tools in the plan before execution
+ *  (default); DYNAMIC lets the model select tools from permitted_tools at runtime. */
 export enum FlowStepExecutionMode {
   DECLARED = "declared",
   DYNAMIC = "dynamic",
@@ -1256,12 +1212,9 @@ export enum JsonRpcErrorCode {
   INTERNAL_ERROR = -32603,
 }
 
-/**
- * IClassification of a tool by its exposure kind.
- * mcp_handler: live MCP tool backed by a ToolHandler class (portal/file/git tools).
- * mcp_domain: live MCP tool backed by domain logic (exaix_* tools).
- * internal_only: tool available only to ToolRegistry / agent strategies, not exposed via MCP.
- */
+/** Classification of a tool by its exposure kind: mcp_handler is a live MCP tool backed by a
+ *  ToolHandler class (portal/file/git tools), mcp_domain is backed by domain logic
+ *  (exaix_* tools), internal_only is available only to ToolRegistry / agent strategies. */
 export enum ToolKind {
   MCP_HANDLER = "mcp_handler",
   MCP_DOMAIN = "mcp_domain",
@@ -1280,10 +1233,8 @@ export enum ToolCategory {
   META = "meta",
 }
 
-/**
- * Scope of side effects a tool may produce.
- * Used by dynamic executors and agent strategies for safe-execution decisions.
- */
+/** Scope of side effects a tool may produce; used by dynamic executors and agent
+ *  strategies for safe-execution decisions. */
 export enum ToolSideEffectScope {
   NONE = "none",
   PORTAL = "portal",
@@ -1301,32 +1252,24 @@ export enum AmendmentTimeoutAction {
   APPROVE = "approve",
 }
 
-/**
- * Storage tier for memory operations. LOCAL is free (keyword/HNSW over
- * local JSON files). REMOTE incurs cost (embedding API calls, remote DB).
- */
+/** Storage tier for memory operations: LOCAL is free (keyword/HNSW over local JSON
+ *  files), REMOTE incurs cost (embedding API calls, remote DB). */
 export enum MemoryStorageTier {
   LOCAL = "local",
   REMOTE = "remote",
 }
 
-/**
- * Tokenizer backend selection modes for prompt budget estimation.
- * AUTO uses ai-token-estimator locally; LOCAL forces local-only;
- * API permits provider-native tokenizer calls.
- */
+/** Tokenizer backend selection for prompt budget estimation: AUTO uses ai-token-estimator
+ *  locally, LOCAL forces local-only, API permits provider-native tokenizer calls. */
 export enum TokenizerBackend {
   AUTO = "auto",
   LOCAL = "local",
   API = "api",
 }
 
-/**
- * Memory tier for hierarchical memory promotion (Phase 103).
- * WORKING: newly created learnings during execution.
- * EPISODIC: promoted after meeting promotion threshold (retained across sessions).
- * SEMANTIC: promoted after repeated access (core knowledge, never auto-demoted).
- */
+/** Memory tier for hierarchical memory promotion: WORKING is newly created learnings
+ *  during execution; EPISODIC is promoted after meeting the promotion threshold
+ *  (retained across sessions); SEMANTIC is promoted after repeated access (never auto-demoted). */
 export enum MemoryTier {
   WORKING = "working",
   EPISODIC = "episodic",
@@ -1361,13 +1304,11 @@ export enum TestDetectionKind {
 }
 
 // ============================================================================
-// Step Execution Durability Enums (Phase 82)
+// Step Execution Durability Enums
 // ============================================================================
 
-/**
- * Disposition of a step execution record: executed normally, replayed,
- * skipped because a prior identical execution was reused, or invalidated.
- */
+/** Disposition of a step execution record: executed normally, replayed, skipped because a
+ *  prior identical execution was reused, or invalidated. */
 export enum StepExecutionDisposition {
   EXECUTED = "executed",
   REPLAYED = "replayed",
