@@ -225,12 +225,9 @@ export const DomainEventType = {
   WaitStateCreated: "wait_state.created",
   WaitStateResolved: "wait_state.resolved",
 
-  // Session delegation events (Phase 106).
-  // Emitted today by SessionReturnWatcher: returned, reconciled, scope_violation,
-  // token_rejected, budget_exceeded. The remaining four (briefed, launched,
-  // path_rejected, expired, cancelled) are emitted by the Phase 111 gate hooks /
-  // brief path-validation / wait-state deadline sweep / CLI cancel respectively —
-  // declared here so the taxonomy states intent rather than dead constants.
+  // Session delegation events. Emitted today by SessionReturnWatcher: returned,
+  // reconciled, scope_violation, token_rejected, budget_exceeded. The rest (briefed,
+  // launched, path_rejected, expired, cancelled) are declared to state intent, not dead constants.
   SessionDelegateBriefed: "session.delegate.briefed", // Phase 111: gate hook on prepareBrief
   SessionDelegateLaunched: "session.delegate.launched", // Phase 111: gate hook on launch
   SessionDelegateReturned: "session.delegate.returned",
@@ -244,21 +241,21 @@ export const DomainEventType = {
   SessionDelegateContentlessBrief: "session.delegate.contentless_brief", // Phase 150: placeholder/empty brief rejection
   SessionDelegateBriefFailed: "session.delegate.brief_failed", // Phase 150 Step 13: prepareBrief throw (distinct from reconciled)
 
-  // Phase 128: delegate permission-hardening events
+  // Delegate permission-hardening events
   SessionDelegateAgentMismatch: "session.delegate.agent_mismatch", // R3: generated agent.<name> key diverges from delegate identity
   SessionDelegateVersionWarning: "session.delegate.version_warning", // R3 post-gap: version probe below minimum
 
-  // Phase 121: net allowlist instrumentation
+  // Net allowlist instrumentation
   NetAllowlist: "net.allowlist",
-  // Phase 121: crash recovery for orphaned delegations
+  // Crash recovery for orphaned delegations
   SessionDelegateCrashRecovered: "session.delegate.crash_recovered",
 
-  // Phase 174 Step 3: session_delegate_cycle lifecycle (SessionDelegateCycleStepHandler).
+  // session_delegate_cycle lifecycle (SessionDelegateCycleStepHandler)
   SessionDelegateCycleStarted: "session.delegate.cycle_started",
   SessionDelegateCycleStepCompleted: "session.delegate.cycle_step_completed",
   SessionDelegateCycleStepRejected: "session.delegate.cycle_step_rejected",
   SessionDelegateCycleCompleted: "session.delegate.cycle_completed",
-  // Phase 174 Step 4: emitted when a matching non-terminal checkpoint resumes.
+  // Emitted when a matching non-terminal checkpoint resumes.
   SessionDelegateCycleResumed: "session.delegate.cycle_resumed",
 
   // Cost tracking events
@@ -350,11 +347,9 @@ export const DomainEventType = {
   PlanExecutionCompleted: "plan.execution_completed",
   PlanExecutionFailed: "plan.execution_failed",
   PlanAmendmentTriggered: "plan.amendment_triggered",
-  // Plan amendment lifecycle events (plan_amendment_gate.ts, execution_loop.ts,
-  // plan_executor.ts). Same values as the legacy PLAN_AMENDMENT_EVENT_* constants
-  // (packages/core/src/types/constants.ts) — apps/exactl/src/commands/plan_commands.ts
-  // and existing tests still reference those constants directly by name, so this registers
-  // the identical values under DomainEventType rather than renaming them.
+  // Plan amendment lifecycle events. Same values as the legacy PLAN_AMENDMENT_EVENT_*
+  // constants (still referenced directly by name elsewhere), so this registers the
+  // identical values under DomainEventType rather than renaming them.
   PlanAmendmentProposed: "plan.amendment.proposed",
   PlanAmendmentAwaitingApproval: "plan.amendment.awaiting_approval",
   PlanAmendmentApproved: "plan.amendment.approved",
@@ -429,10 +424,9 @@ export const DomainEventType = {
   // daemon.started: emitted by the `exactl daemon start` CLI once the process is ALIVE (a PID
   // check) — it does NOT mean the daemon's watchers are listening yet.
   DaemonStarted: "daemon.started",
-  // daemon.ready: emitted by the daemon process itself (apps/daemon/main.ts) ONLY after every
-  // file-watcher is confirmed listening — the authoritative "fully functioning" signal. A consumer
-  // that must not race the request watcher (e.g. before submitting a request) waits for THIS, not
-  // daemon.started.
+  // daemon.ready: emitted by the daemon process itself ONLY after every file-watcher is
+  // confirmed listening — the authoritative "fully functioning" signal. A consumer that
+  // must not race the request watcher waits for THIS, not daemon.started.
   DaemonReady: "daemon.ready",
   DaemonStopping: "daemon.stopping",
   DaemonStopped: "daemon.stopped",
@@ -461,7 +455,7 @@ export const DomainEventType = {
   ConfigDbWatcherStarted: "config.db_watcher.started",
   ConfigDbWatcherChangeDetected: "config.db_watcher.change_detected",
   ConfigCutoverResolved: "config.cutover.resolved",
-  // Phase 139 (configuring Phase 3): rollback, key locking, integrity checksum
+  // Config rollback, key locking, integrity checksum
   ConfigRolledBack: "config.rolled_back",
   ConfigKeyLocked: "config.key_locked",
   ConfigKeyUnlocked: "config.key_unlocked",
@@ -533,10 +527,10 @@ export const DomainEventType = {
   LlmStreamFailed: "llm.stream.failed",
   LlmStreamCancelled: "llm.stream.cancelled",
 
-  // Model resolution events (Phase 132)
+  // Model resolution events
   ModelResolved: "model.resolved",
 
-  // Model registry events (Phase 135)
+  // Model registry events
   ModelPricingStale: "model.pricing.stale",
   ModelCostDivergence: "model.cost.divergence",
   ModelAdmitted: "model.admitted",
@@ -548,21 +542,21 @@ export const DomainEventType = {
   ModelBenchmarkRefreshed: "model.benchmark.refreshed",
   ModelBenchmarkMissing: "model.benchmark.missing",
 
-  // Reserved for future use (Phase 85 — postponed)
+  // Reserved for future use (postponed)
   ChildRunSpawned: "child_run.spawned",
   ChildRunCompleted: "child_run.completed",
 
-  // Reserved for future use (Phase 86 — cancelled)
+  // Reserved for future use (cancelled)
   ResourceLockAcquired: "resource_lock.acquired",
   ResourceLockBlocked: "resource_lock.blocked",
   ResourceLockReleased: "resource_lock.released",
 
-  // Trigger lifecycle events (Phase 88)
+  // Trigger lifecycle events
   TriggerIngested: "trigger.ingested",
   TriggerAccepted: "trigger.accepted",
   TriggerRejected: "trigger.rejected",
 
-  // Context budget events (Phase 103)
+  // Context budget events
   ContextBudgetAllocated: "context.budget.allocated",
   ContextBudgetConsumed: "context.budget.consumed",
   ContextSectionTruncated: "context.section.truncated",
@@ -583,7 +577,7 @@ export const DomainEventType = {
   DaemonErrorHandlersRegistered: "daemon.error_handlers_registered",
 
   // ---------------------------------------------------------------------------
-  // Guardrail (Phase 107)
+  // Guardrail
   // ---------------------------------------------------------------------------
   GuardrailScreenPass: "guardrail.screen.pass",
   GuardrailScreenViolation: "guardrail.screen.violation",
@@ -594,12 +588,12 @@ export const DomainEventType = {
   GuardrailInitFailed: "guardrail.init_failed",
 
   // ---------------------------------------------------------------------------
-  // Dynamic tools (Phase 163)
+  // Dynamic tools
   // ---------------------------------------------------------------------------
   DynamicToolsInitFailed: "dynamic_tools.init_failed",
 
   // ---------------------------------------------------------------------------
-  // Voting / Consensus (Phase 113)
+  // Voting / Consensus
   // ---------------------------------------------------------------------------
   VotingStarted: "voting.started",
   VotingResolved: "voting.resolved",
@@ -608,20 +602,18 @@ export const DomainEventType = {
   VotingStepConsensusResolved: "voting.step.consensus_resolved",
 
   // ---------------------------------------------------------------------------
-  // HITL / Governance (Phase 118)
+  // HITL / Governance
   // ---------------------------------------------------------------------------
   HitlPolicyMatched: "hitl.policy.matched",
 
   // ---------------------------------------------------------------------------
-  // Health check events (Phase 168)
+  // Health check events
   // ---------------------------------------------------------------------------
   HealthCheckAll: "health.check_all",
   HealthCheckProvider: "health.check_provider",
 
   // ---------------------------------------------------------------------------
-  // Agent prompt assembly (Phase 112 Step 1). "agent.prompt_assembled" was
-  // previously an untyped raw string constant (AGENT_EVENT_PROMPT_ASSEMBLED,
-  // removed in the same change) — same value, now a registered taxonomy member.
+  // Agent prompt assembly. Same value as the old raw string constant AGENT_EVENT_PROMPT_ASSEMBLED, now a taxonomy member.
   // ---------------------------------------------------------------------------
   AgentPromptAssembled: "agent.prompt_assembled",
 } as const;
